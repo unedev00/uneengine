@@ -20,4 +20,9 @@ jobs:
           test -x /opt/metadrive/releases
           systemctl is-active --quiet metadrive-api.service
           systemctl is-active --quiet metadrive-worker.service
+          if sudo -n true 2>/dev/null; then
+            echo "Noninteractive sudo available"
+          else
+            echo "::warning::Runner has no noninteractive sudo"
+          fi
           echo "Oracle release directory readable; production unchanged."
