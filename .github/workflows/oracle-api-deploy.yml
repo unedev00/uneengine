@@ -1,0 +1,90 @@
+name: Oracle API and frontend deployment
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/server/**"
+      - "apps/web/**"
+      - "apps/connectors/**"
+      - "scripts/oracle/**"
+      - ".github/workflows/oracle-api-deploy.yml"
+      - "package*.json"
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/oracle-api-deploy.yml"
+      - "scripts/oracle/**"
+      - "tests/integration/suite.json"
+
+permissions:
+  contents: read
+  statuses: write
+
+concurrency:
+  group: oracle-production-full-stack
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - name: Verify existing Oracle deployment helpers
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash -n scripts/oracle/deploy-api.sh
+          bash -n scripts/oracle/deploy-frontend.sh
+          bash -n scripts/oracle/backup-production-sql.sh
+          bash -n scripts/oracle/deploy-full-stack.sh
+          bash -n scripts/oracle/check-communication-backlog.sh
+
+  deploy:
+    needs: validate
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    environment: oracle-production
+    runs-on: [self-hosted, linux, ARM64, metadrive-oracle]
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Build release on the target architecture
+        run: |
+          npm ci
+          npm run build
+      - name: Verify production runner and active services
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = "unedev00/uneengine"
+          test "$(uname -m)" = "aarch64"
+          sudo -n true
+          systemctl is-active --quiet metadrive-api.service
+          systemctl is-active --quiet metadrive-worker.service
+          systemctl is-active --quiet nginx.service
+          sudo -n test -e /etc/metadrive/production.env
+          sudo -n test -d /opt/metadrive/releases
+      # deploy-api.sh activates both entrypoint.js and job-worker-entrypoint.js.
+      - name: Deploy existing API/worker and frontend with SQL backup and rollback
+        shell: bash
+        run: sudo -n bash scripts/oracle/deploy-full-stack.sh "$GITHUB_WORKSPACE" "$GITHUB_SHA"
+      - name: Check Communication delivery health
+        continue-on-error: true
+        shell: bash
+        run: |
+          sudo -n bash scripts/oracle/check-communication-backlog.sh
+          # oracle-production/communication
+          # repair-oauth-function-owner.py remains an explicit, separately audited recovery tool.
