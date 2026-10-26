@@ -38,4 +38,8 @@ jobs:
             systemctl show "$svc" -p WorkingDirectory -p RootDirectory -p DynamicUser -p User -p ExecStart --no-pager | sed -E 's/(password|token|secret|key)=([^ ]+)/\1=[REDACTED]/gi'
             systemctl is-active "$svc" || true
           done
+          echo "pg_dump: $(command -v pg_dump || echo missing)"
+          echo "pg_restore: $(command -v pg_restore || echo missing)"
+          echo "Nginx static root entries:"
+          sudo -n nginx -T 2>/dev/null | grep -E '^[[:space:]]*(root|alias)[[:space:]]+' | sort -u || true
           echo "Diagnostics only; no change to production."
