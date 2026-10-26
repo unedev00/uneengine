@@ -1,0 +1,52 @@
+name: Oracle migration preflight
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/oracle-migration-preflight.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  source-validation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+
+  oracle-readonly-preflight:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: [self-hosted, linux, ARM64, metadrive-oracle]
+    timeout-minutes: 5
+    steps:
+      - name: Verify target and inspect installed services (read only)
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = "unedev00/uneengine"
+          test "$(uname -m)" = "aarch64"
+          printf '%s\n' 'Oracle migration preflight (read-only; no deploy)'
+          printf 'Node: '; node --version || true
+          printf 'npm: '; npm --version || true
+          printf 'Git: '; git --version || true
+          for svc in metadrive-api.service metadrive-worker.service nginx.service; do
+            printf '%s state: ' "$svc"
+            systemctl is-active "$svc" || true
+            systemctl show "$svc" -p FragmentPath -p WorkingDirectory -p User --no-pager || true
+          done
+          for path in /opt/metadrive /opt/metadrive/releases /opt/metadrive/current /var/www /etc/nginx; do
+            if [ -e "$path" ]; then
+              printf 'Exists: %s\n' "$path"
+            else
+              printf 'Missing: %s\n' "$path"
+            fi
+          done
+          printf '%s\n' 'No production changes were made.'
