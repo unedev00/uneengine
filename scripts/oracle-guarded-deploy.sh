@@ -57,7 +57,6 @@ restore() {
   systemctl restart "$api" "$worker" || true
   exit "$rc"
 }
-trap restore ERR
 # PostgreSQL source of truth: require a real backup BEFORE touching services.
 command -v pg_dump >/dev/null || { echo "pg_dump missing: aborting release" >&2; exit 1; }
 pid="$(systemctl show "$api" -p MainPID --value)"
@@ -73,6 +72,7 @@ mkdir -p "$dir"
 tar -C "$stage" --exclude=.git --exclude=.github --exclude=.env --exclude=.env.local -cf - . | tar -C "$dir" -xf -
 chown -R metadrive:metadrive "$dir"
 chmod -R o-rwx "$dir"
+trap restore ERR
 # Override both WorkingDirectory and the immutable executable path.
 printf '[Service]\nWorkingDirectory=%s\nExecStart=\nExecStart=/usr/local/bin/node %s/apps/server/dist-system/system-support/entrypoint.js\n' "$dir" "$dir" > "$apidrop"
 printf '[Service]\nWorkingDirectory=%s\nExecStart=\nExecStart=/usr/local/bin/node %s/apps/server/dist-system/system-support/job-worker-entrypoint.js\n' "$dir" "$dir" > "$workdrop"
