@@ -1,0 +1,79 @@
+name: Oracle staging release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: oracle-staging
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Stage release files
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p staging
+          mkdir -p staging/apps/server staging/apps/web
+          cp package.json package-lock.json staging/
+          cp apps/server/package.json staging/apps/server/
+          cp apps/web/package.json staging/apps/web/
+          cp -a apps/server/dist-system staging/apps/server/
+          cp -a apps/web/dist staging/apps/web/
+          test -f staging/apps/server/dist-system/system-support/entrypoint.js
+          test -d staging/apps/web/dist
+          tar -czf release.tar.gz -C staging .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: uneengine-release
+          path: release.tar.gz
+          if-no-files-found: error
+          retention-days: 7
+
+  stage-on-oracle:
+    needs: build
+    runs-on: [self-hosted, linux, ARM64, metadrive-oracle]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: uneengine-release
+          path: ${{ runner.temp }}/uneengine-artifact
+      - name: Stage and validate without touching live services
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = "unedev00/uneengine"
+          test "$(uname -m)" = "aarch64"
+          stage="$HOME/uneengine-staging/${GITHUB_SHA}"
+          mkdir -p "$stage"
+          tar -xzf "${RUNNER_TEMP}/uneengine-artifact/release.tar.gz" -C "$stage"
+          test -f "$stage/apps/server/dist-system/system-support/entrypoint.js"
+          test -f "$stage/apps/web/dist/index.html"
+          printf 'Staged source: %s\n' "$GITHUB_SHA"
+          printf 'Staging path: %s\n' "$stage"
+          for service in metadrive-api.service metadrive-worker.service nginx.service; do
+            systemctl is-active --quiet "$service" || { echo "Inactive: $service"; exit 1; }
+          done
+          for service in metadrive-api.service metadrive-worker.service; do
+            systemctl show "$service" -p WorkingDirectory -p User --no-pager
+          done
+          if [ -d /opt/metadrive/releases ]; then
+            echo "Production releases directory visible"
+          else
+            echo "::warning::Production releases directory missing/inaccessible to runner. Live deployment blocked until resolved."
+          fi
+          echo "No production services, database, or Nginx files modified."
