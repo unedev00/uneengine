@@ -77,6 +77,7 @@ jobs:
           systemctl is-active --quiet nginx.service
           sudo -n test -e /etc/metadrive/production.env
           sudo -n test -d /opt/metadrive/releases
+      # deploy-api.sh activates both entrypoint.js and job-worker-entrypoint.js.
       - name: Deploy existing API/worker and frontend with SQL backup and rollback
         shell: bash
         run: sudo -n bash scripts/oracle/deploy-full-stack.sh "$GITHUB_WORKSPACE" "$GITHUB_SHA"
