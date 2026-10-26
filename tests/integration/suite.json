@@ -17,6 +17,7 @@
     "apps/server/test/system/flow-record-query.test.ts",
     "apps/server/test/system/flow-record-triggers.test.ts",
     "apps/server/test/system/flow-subscription-runtime.test.ts",
+    "apps/server/test/system/mcp-connection.test.ts",
     "apps/server/test/system/object-engine-modules.test.ts",
     "apps/server/test/system/openapi-external-service.test.ts",
     "apps/server/test/system/outbound-webhook.test.ts",
@@ -25,7 +26,9 @@
     "apps/server/test/system/platform-event-stream.test.ts",
     "apps/server/test/system/record-query.test.ts",
     "apps/server/test/system/relationship-engine.test.ts",
-    "apps/server/test/system/versioned-api-query.test.ts",
-    "apps/server/test/system/mcp-connection.test.ts"
+    "apps/server/test/system/stalwart-jmap-client.test.ts",
+    "apps/server/test/system/stalwart-jmap-proxy.test.ts",
+    "apps/server/test/system/stalwart-mail-service.test.ts",
+    "apps/server/test/system/versioned-api-query.test.ts"
   ]
 }
