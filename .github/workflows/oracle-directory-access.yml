@@ -1,0 +1,28 @@
+name: Oracle directory access verification
+on:
+  push:
+    branches:
+      - ci/oracle-access-verify-final
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: [self-hosted, linux, ARM64, metadrive-oracle]
+    timeout-minutes: 5
+    steps:
+      - name: Verify release directory permissions without deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = "unedev00/uneengine"
+          test -d /opt/metadrive/releases
+          test -r /opt/metadrive/releases
+          test -x /opt/metadrive/releases
+          systemctl is-active --quiet metadrive-api.service
+          systemctl is-active --quiet metadrive-worker.service
+          if sudo -n true 2>/dev/null; then
+            echo "Noninteractive sudo available"
+          else
+            echo "::warning::Runner has no noninteractive sudo"
+          fi
+          echo "Oracle release directory readable; production unchanged."
