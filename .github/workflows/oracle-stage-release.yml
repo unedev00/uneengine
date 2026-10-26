@@ -27,11 +27,12 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p staging
+          mkdir -p staging/apps/server staging/apps/web
           cp package.json package-lock.json staging/
-          cp -a apps staging/
-          # Restrict artifact to compiled outputs and runtime dependencies metadata.
-          find staging/apps -mindepth 2 -maxdepth 2 -type d ! -name server ! -name web -exec rm -rf {} + || true
-          rm -rf staging/apps/web/src staging/apps/web/test staging/apps/server/src staging/apps/server/test
+          cp apps/server/package.json staging/apps/server/
+          cp apps/web/package.json staging/apps/web/
+          cp -a apps/server/dist-system staging/apps/server/
+          cp -a apps/web/dist staging/apps/web/
           test -f staging/apps/server/dist-system/system-support/entrypoint.js
           test -d staging/apps/web/dist
           tar -czf release.tar.gz -C staging .
