@@ -70,7 +70,7 @@ test -s "$backup/postgres.before.dump"
 pg_restore --list "$backup/postgres.before.dump" >/dev/null
 # Preserve live release; build artifacts and modules were prepared in runner checkout.
 mkdir -p "$dir"
-cp -a "$stage/." "$dir/"
+tar -C "$stage" --exclude=.git --exclude=.github --exclude=.env --exclude=.env.local -cf - . | tar -C "$dir" -xf -
 chown -R metadrive:metadrive "$dir"
 chmod -R o-rwx "$dir"
 # Override both WorkingDirectory and the immutable executable path.
