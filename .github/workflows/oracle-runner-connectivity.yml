@@ -1,0 +1,24 @@
+name: Oracle runner connectivity
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-runner:
+    name: Verify registered Oracle runner (no deployment)
+    runs-on: [self-hosted, linux, ARM64, metadrive-oracle]
+    timeout-minutes: 5
+    steps:
+      - name: Confirm runner identity without accessing production
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Repository: ${GITHUB_REPOSITORY}"
+          echo "Runner: ${RUNNER_NAME}"
+          echo "Architecture: $(uname -m)"
+          test "${GITHUB_REPOSITORY}" = "unedev00/uneengine"
+          test "$(uname -m)" = "aarch64"
+          echo "Oracle runner connectivity verified; no deployment performed."
