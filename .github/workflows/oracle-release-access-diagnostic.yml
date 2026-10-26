@@ -1,0 +1,41 @@
+name: Oracle release access diagnostic
+
+on:
+  push:
+    branches:
+      - ci/oracle-release-access-diagnostic
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: [self-hosted, linux, ARM64, metadrive-oracle]
+    timeout-minutes: 5
+    steps:
+      - name: Identify release path and service restrictions without modifying system
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = "unedev00/uneengine"
+          echo "Current user: $(id -un)"
+          for dir in /opt /opt/metadrive /opt/metadrive/releases; do
+            if [ -L "$dir" ]; then
+              echo "Symlink: $dir"
+              readlink "$dir" || true
+            elif [ -d "$dir" ]; then
+              echo "Directory: $dir"
+            elif [ -e "$dir" ]; then
+              echo "Other filesystem entry: $dir"
+            else
+              echo "Missing: $dir"
+            fi
+            stat -c 'Path=%n Mode=%A Owner=%U:%G' "$dir" 2>/dev/null || true
+          done
+          for svc in metadrive-api.service metadrive-worker.service; do
+            echo "Service: $svc"
+            systemctl show "$svc" -p WorkingDirectory -p RootDirectory -p DynamicUser -p User -p ExecStart --no-pager | sed -E 's/(password|token|secret|key)=([^ ]+)/\1=[REDACTED]/gi'
+            systemctl is-active "$svc" || true
+          done
+          echo "Diagnostics only; no change to production."
