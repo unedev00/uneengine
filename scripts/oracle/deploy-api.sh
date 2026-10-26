@@ -131,13 +131,6 @@ SWITCHED=0
 trap - ERR
 rm -f "$API_BACKUP" "$WORKER_BACKUP"
 echo "Oracle API and worker deployment verified: $SHA"
-# Rollback to the previously working release remains possible until health has
-# succeeded. After success, retain only the running immutable release. Git is
-# the source for re-deploying older revisions.
-LIVE_API_RELEASE="$(systemctl show "$API_SERVICE" -p WorkingDirectory --value)"
-LIVE_WORKER_RELEASE="$(systemctl show "$WORKER_SERVICE" -p WorkingDirectory --value)"
-if [[ "$LIVE_API_RELEASE" == "$RELEASE" && "$LIVE_WORKER_RELEASE" == "$RELEASE" ]]; then
-  bash "$SOURCE/scripts/oracle/prune-inactive-api-releases.sh" "$RELEASE_ROOT" "$RELEASE" "$RELEASE" || true
-else
-  echo "Skipping post-deploy release cleanup: active service directory mismatch" >&2
-fi
+# Keep the prior immutable release for coordinated frontend/backend rollback.
+# Cleanup is a separate, audited operation after production verification.
+echo "Previous release retained for recovery."
