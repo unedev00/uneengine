@@ -12,7 +12,7 @@ mkdir -p "$backup_root"
 chmod 700 "$backup_root"
 backup="$backup_root/pre-release-${GITHUB_SHA:-manual}-$(date -u +%Y%m%dT%H%M%SZ).dump"
 test ! -e "$backup"
-runuser -u postgres -- pg_dump --format=custom --no-owner --file=/dev/stdout "$DB" > "$backup"
+runuser -u postgres -- pg_dump --format=custom --no-owner "$DB" > "$backup"
 test -s "$backup"
 pg_restore --list "$backup" >/dev/null
 chmod 600 "$backup"
