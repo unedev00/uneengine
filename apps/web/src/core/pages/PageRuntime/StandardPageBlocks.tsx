@@ -1,0 +1,152 @@
+import {useEffect,useState} from 'react';
+import type {ObjectMetadata} from '../../metadata/Definitions/metadata';
+import {appRoutePath,type AppRoute} from '../../workspace/Navigation/appRouting';
+import {formatRecordValue} from '../../records/RecordWorkspace/recordCsvUtils';
+import {parseSafeRichText} from './safeRichText';
+
+/** Existing generic Record API is the source of truth for permission-checked rows. */
+export function StandardRecordList({
+  object,request,appId,onNavigate,columns,pageSize=25,recordFilter
+}:{
+  object:ObjectMetadata|undefined;
+  request:<T>(path:string,init?:RequestInit)=>Promise<T>;
+  appId:string;onNavigate:(route:AppRoute)=>void;
+  columns:string[];pageSize?:number;
+  recordFilter?:{field:string;recordId:string};
+}) {
+  const [offset,setOffset]=useState(0);
+  const [search,setSearch]=useState('');
+  const [sort,setSort]=useState('');
+  const [direction,setDirection]=useState<'asc'|'desc'>('asc');
+  const [rows,setRows]=useState<Array<Record<string,unknown>>>([]);
+  const [total,setTotal]=useState(0);
+  const [busy,setBusy]=useState(false);
+  const [error,setError]=useState('');
+  const limit=Math.max(1,Math.min(100,Math.trunc(pageSize)||25));
+  const names=columns.length?columns.slice(0,12):object?.fields.slice(0,4).map(field=>field.apiName)??[];
+  useEffect(()=>{
+    if(!object?.apiName){setRows([]);return;}
+    let active=true;
+    setBusy(true);setError('');
+    const params=new URLSearchParams({
+      limit:String(limit),offset:String(offset),
+      ...(search.trim()?{search:search.trim()}:{}),
+      ...(sort?{sortField:sort,sortDirection:direction}:{}),
+      ...(recordFilter?{relatedField:recordFilter.field,relatedId:recordFilter.recordId}:{})
+    });
+    void request<{records:Array<Record<string,unknown>>;total:number}>(
+      '/records/'+encodeURIComponent(object.apiName)+'?'+params.toString())
+      .then(result=>{if(active){setRows(result.records??[]);setTotal(result.total??0);}})
+      .catch(reason=>{if(active){setRows([]);setError(reason instanceof Error?reason.message:'Records unavailable');}})
+      .finally(()=>{if(active)setBusy(false);});
+    return ()=>{active=false;};
+  },[object?.apiName,request,limit,offset,search,sort,direction,
+    recordFilter?.field,recordFilter?.recordId]);
+  if(!object)return <p role="status">Select an Object in block settings.</p>;
+  return <section className="record-fields-card surface" aria-label={object.pluralLabel}>
+    <div className="record-fields-heading">
+      <h2>{object.pluralLabel}</h2>
+      <span>{total} records</span>
+    </div>
+    <label className="form-label">Search records
+      <input className="form-control" type="search" value={search}
+        onChange={event=>{setOffset(0);setSearch(event.target.value);}}/>
+    </label>
+    <label className="form-label">Sort
+      <select className="form-control" value={sort}
+        onChange={event=>{setSort(event.target.value);setOffset(0);}}>
+        <option value="">Default</option>
+        {names.map(name=><option value={name} key={name}>{object.fields.find(field=>field.apiName===name)?.label??name}</option>)}
+      </select>
+    </label>
+    {sort&&<button type="button" className="btn" onClick={()=>setDirection(old=>old==='asc'?'desc':'asc')}>
+      {direction==='asc'?'Ascending':'Descending'}</button>}
+    {error&&<p role="alert">{error}</p>}
+    {busy?<p role="status">Loading records…</p>
+      :<div className="records-table-wrap"><table className="slds-table records-table">
+        <thead><tr>{names.map(name=><th key={name}>{object.fields.find(field=>field.apiName===name)?.label??name}</th>)}</tr></thead>
+        <tbody>{rows.map(row=><tr key={String(row.Id)}>{names.map((name,index)=><td key={name}>
+          {index===0&&typeof row.Id==='string'
+            ?<a href={appRoutePath({kind:'record-detail',objectApiName:object.apiName,recordId:row.Id,appId})}
+              onClick={event=>{
+                if(event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
+                event.preventDefault();
+                onNavigate({kind:'record-detail',objectApiName:object.apiName,recordId:String(row.Id),appId});
+              }}>{formatRecordValue(row[name]??row.Id)}</a>
+            :formatRecordValue(row[name])}
+        </td>)}</tr>)}</tbody>
+      </table>{!rows.length&&<p className="records-empty">No readable matching records.</p>}</div>}
+    <nav className="records-pagination" aria-label={object.pluralLabel+' pages'}>
+      <button type="button" className="btn" disabled={offset===0||busy}
+        onClick={()=>setOffset(Math.max(0,offset-limit))}>Previous</button>
+      <span>{total?offset+1:0}–{Math.min(offset+rows.length,total)} of {total}</span>
+      <button type="button" className="btn" disabled={busy||offset+limit>=total}
+        onClick={()=>setOffset(offset+limit)}>Next</button>
+    </nav>
+  </section>;
+}
+
+/** A constrained formatted-text renderer, never raw HTML or uncontrolled DOM. */
+export function StandardRichText({text}:{text:string}) {
+  return <div className="record-fields-card surface" style={{whiteSpace:'pre-wrap'}}>
+    {parseSafeRichText(text).map((token,index)=> {
+      if(token.kind==='bold')return <strong key={index}>{token.text}</strong>;
+      if(token.kind==='italic')return <em key={index}>{token.text}</em>;
+      if(token.kind==='underline')return <u key={index}>{token.text}</u>;
+      if(token.kind==='link'&&token.href)return <a key={index} href={token.href}
+        rel="noopener noreferrer">{token.text}</a>;
+      return <span key={index}>{token.text}</span>;
+    })}
+  </div>;
+}
+
+export function StandardFlowLauncher({
+  label,flowApiName,flows,recordId,inputRecordIdAs,onLaunchFlow
+}:{
+  label:string;flowApiName:string;
+  flows:ReadonlyArray<{apiName:string;status:string;flowType:string}>;
+  recordId?:string;inputRecordIdAs?:string;
+  onLaunchFlow:(flowApiName:string,inputs?:Record<string,unknown>)=>void;
+}) {
+  const flow=flows.find(item=>item.apiName===flowApiName);
+  const available=flow?.status==='Active'&&flow.flowType==='Screen Flow';
+  return <section className="record-fields-card surface">
+    <button type="button" className="btn btn-brand" disabled={!available} onClick={()=>{
+      if(!available)return;
+      const inputs=recordId&&inputRecordIdAs&&/^[A-Za-z][A-Za-z0-9_]*$/.test(inputRecordIdAs)
+        ?{[inputRecordIdAs]:recordId}:{};
+      onLaunchFlow(flowApiName,inputs);
+    }}>{label}</button>
+    {!available&&<p role="status">Select an active Screen Flow in block settings.</p>}
+  </section>;
+}
+
+export function StandardRecordPath({
+  label,values,value,canEdit,onAdvance
+}:{
+  label:string;values:readonly string[];value:unknown;canEdit:boolean;
+  onAdvance:(nextValue:string)=>Promise<void>;
+}) {
+  const [error,setError]=useState('');
+  const [pending,setPending]=useState(false);
+  const [selected,setSelected]=useState('');
+  const current=String(value??'');
+  const chosen=selected||current;
+  return <section className="record-fields-card surface" aria-label={label}>
+    <div className="record-fields-heading"><h2>{label}</h2></div>
+    <ol className="record-path" style={{display:'flex',flexWrap:'wrap',gap:8,padding:0,listStyle:'none'}}>
+      {values.map((step,index)=><li key={step}><button type="button" className="btn"
+        aria-current={step===current?'step':undefined} aria-pressed={step===chosen}
+        disabled={!canEdit||pending} onClick={()=>setSelected(step)}>
+        {index+1}. {step}{step===current?' ✓':''}
+      </button></li>)}
+    </ol>
+    {canEdit&&selected&&selected!==current&&<button type="button" className="btn btn-brand"
+      disabled={pending} onClick={()=>{setPending(true);setError('');
+        void onAdvance(selected).then(()=>setSelected(''))
+          .catch(e=>setError(e instanceof Error?e.message:'Unable to update stage'))
+          .finally(()=>setPending(false));
+      }}>{pending?'Updating…':'Mark '+selected+' as current'}</button>}
+    {error&&<p role="alert">{error}</p>}
+  </section>;
+}

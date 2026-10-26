@@ -1,0 +1,381 @@
+{
+  "apiName": "OneItemGrid",
+  "label": "One-Item-Grid",
+  "category": "Data",
+  "description": "Universal ItemGrid component; metadata-configured presentation, data and events.",
+  "surfaces": [
+    "page",
+    "dashboard",
+    "flow"
+  ],
+  "version": 14,
+  "scope": "platform-core",
+  "jsxFile": "one/OneItemGrid/OneItemGrid.jsx",
+  "cssFile": "one/OneItemGrid/OneItemGrid.css",
+  "resize": {
+    "defaultWidth": 660,
+    "defaultHeight": 360,
+    "minWidth": 240,
+    "minHeight": 120
+  },
+  "propertyDefinitions": [
+    {
+      "propertyKey": "kind",
+      "label": "Component kind",
+      "kind": "SELECT",
+      "required": true,
+      "defaultValue": "ItemGrid",
+      "displayOrder": 0,
+      "choices": [
+        {
+          "key": "ItemGrid",
+          "label": "One-Item-Grid"
+        }
+      ]
+    },
+    {
+      "propertyKey": "title",
+      "label": "Gallery title",
+      "kind": "TEXT",
+      "displayOrder": 300,
+      "defaultValue": "Items"
+    },
+    {
+      "propertyKey": "categoryFieldApiName",
+      "label": "Category field API name",
+      "kind": "OBJECT_FIELD",
+      "defaultValue": "",
+      "displayOrder": 340
+    },
+    {
+      "propertyKey": "selectedCategory",
+      "label": "Selected category",
+      "kind": "TEXT",
+      "defaultValue": "",
+      "displayOrder": 350
+    },
+    {
+      "propertyKey": "filterKey",
+      "label": "Shared filter key",
+      "kind": "TEXT",
+      "defaultValue": "category",
+      "displayOrder": 370
+    },
+    {
+      "propertyKey": "cartTargetKey",
+      "label": "Add items to shared basket key",
+      "kind": "TEXT",
+      "defaultValue": "",
+      "displayOrder": 390
+    },
+    {
+      "propertyKey": "imageFieldApiName",
+      "label": "Product image field",
+      "kind": "OBJECT_FIELD",
+      "defaultValue": "",
+      "displayOrder": 400
+    },
+    {
+      "propertyKey": "titleFieldApiName",
+      "label": "Card title field",
+      "kind": "OBJECT_FIELD",
+      "defaultValue": "",
+      "displayOrder": 410
+    },
+    {
+      "propertyKey": "priceFieldApiName",
+      "label": "Card price field",
+      "kind": "OBJECT_FIELD",
+      "defaultValue": "",
+      "displayOrder": 420
+    },
+    {
+      "propertyKey": "currencyCode",
+      "label": "Display currency code",
+      "kind": "TEXT",
+      "defaultValue": "",
+      "displayOrder": 430
+    },
+    {
+      "propertyKey": "searchKey",
+      "label": "Shared search key",
+      "kind": "TEXT",
+      "defaultValue": "catalogue",
+      "displayOrder": 440
+    },
+    {
+      "propertyKey": "searchFieldApiNames",
+      "label": "Searchable fields (comma-separated)",
+      "kind": "TEXT",
+      "defaultValue": "",
+      "displayOrder": 450
+    },
+    {
+      "propertyKey": "selectionBehavior",
+      "label": "When an item is tapped",
+      "kind": "SELECT",
+      "defaultValue": "add",
+      "displayOrder": 460,
+      "choices": [
+        {
+          "key": "add",
+          "label": "Add to shared basket (existing behaviour)"
+        },
+        {
+          "key": "select",
+          "label": "Select record for detail / sibling components"
+        },
+        {
+          "key": "action",
+          "label": "Run configured itemSelect action only"
+        }
+      ]
+    },
+    {
+      "propertyKey": "selectionFilterKey",
+      "label": "Selected record shared state key",
+      "kind": "TEXT",
+      "defaultValue": "selectedRecord",
+      "displayOrder": 470
+    },
+    {
+      "propertyKey": "relatedFilterKey",
+      "label": "Selected parent shared key",
+      "kind": "TEXT",
+      "defaultValue": "",
+      "displayOrder": 720
+    },
+    {
+      "propertyKey": "relatedFieldApiName",
+      "label": "Lookup field linking record to selected parent",
+      "kind": "OBJECT_FIELD",
+      "defaultValue": "",
+      "displayOrder": 730
+    },
+    {
+      "propertyKey": "showHeading",
+      "label": "Show gallery heading",
+      "kind": "BOOLEAN",
+      "defaultValue": true,
+      "displayOrder": 310
+    },
+    {
+      "propertyKey": "recordSortFieldApiName",
+      "label": "Record display-order field",
+      "kind": "OBJECT_FIELD",
+      "defaultValue": "",
+      "displayOrder": 315
+    },
+    {
+      "propertyKey": "recordActiveFieldApiName",
+      "label": "Active record field",
+      "kind": "OBJECT_FIELD",
+      "defaultValue": "",
+      "displayOrder": 316
+    },
+    {
+      "propertyKey": "descriptionFieldApiName",
+      "label": "Card description field",
+      "kind": "OBJECT_FIELD",
+      "defaultValue": "",
+      "displayOrder": 425
+    },
+    {
+      "propertyKey": "showDescription",
+      "label": "Show card description",
+      "kind": "BOOLEAN",
+      "defaultValue": false,
+      "displayOrder": 426
+    },
+    {
+      "propertyKey": "badgeFieldApiName",
+      "label": "Product badge field",
+      "kind": "OBJECT_FIELD",
+      "defaultValue": "",
+      "displayOrder": 427
+    },
+    {
+      "propertyKey": "featuredFieldApiName",
+      "label": "Featured record flag field",
+      "kind": "OBJECT_FIELD",
+      "defaultValue": "",
+      "displayOrder": 428
+    },
+    {
+      "propertyKey": "featuredColumnSpan",
+      "label": "Featured tile width (columns)",
+      "kind": "NUMBER",
+      "defaultValue": 2,
+      "displayOrder": 429
+    },
+    {
+      "propertyKey": "featuredRowSpan",
+      "label": "Featured tile height (rows)",
+      "kind": "NUMBER",
+      "defaultValue": 1,
+      "displayOrder": 429.5
+    },
+    {
+      "propertyKey": "cardDensity",
+      "label": "Card density",
+      "kind": "SELECT",
+      "displayOrder": 430,
+      "choices": [
+        {
+          "key": "default",
+          "label": "Default"
+        },
+        {
+          "key": "compact",
+          "label": "Compact"
+        },
+        {
+          "key": "comfortable",
+          "label": "Comfortable"
+        },
+        {
+          "key": "image-focused",
+          "label": "Image focused"
+        }
+      ]
+    },
+    {
+      "propertyKey": "cardPadding",
+      "label": "Card padding (px)",
+      "kind": "NUMBER",
+      "displayOrder": 431
+    },
+    {
+      "propertyKey": "cardRadius",
+      "label": "Card radius (px)",
+      "kind": "NUMBER",
+      "displayOrder": 432
+    },
+    {
+      "propertyKey": "cardMinHeight",
+      "label": "Card minimum height (px)",
+      "kind": "NUMBER",
+      "displayOrder": 433
+    },
+    {
+      "propertyKey": "cardBackgroundColor",
+      "label": "Card background",
+      "kind": "COLOR",
+      "displayOrder": 434
+    },
+    {
+      "propertyKey": "cardBorderColor",
+      "label": "Card border colour",
+      "kind": "COLOR",
+      "displayOrder": 435
+    },
+    {
+      "propertyKey": "cardBorderWidth",
+      "label": "Card border width (px)",
+      "kind": "NUMBER",
+      "displayOrder": 436
+    },
+    {
+      "propertyKey": "cardShadow",
+      "label": "Card shadow",
+      "kind": "SELECT",
+      "displayOrder": 437,
+      "choices": [
+        {
+          "key": "none",
+          "label": "None"
+        },
+        {
+          "key": "small",
+          "label": "Small"
+        },
+        {
+          "key": "medium",
+          "label": "Medium"
+        },
+        {
+          "key": "large",
+          "label": "Large"
+        }
+      ]
+    },
+    {
+      "propertyKey": "cardHover",
+      "label": "Card hover effect",
+      "kind": "SELECT",
+      "displayOrder": 438,
+      "choices": [
+        {
+          "key": "none",
+          "label": "None"
+        },
+        {
+          "key": "lift",
+          "label": "Lift"
+        },
+        {
+          "key": "highlight",
+          "label": "Highlight"
+        }
+      ]
+    },
+    {
+      "propertyKey": "imageHeight",
+      "label": "Image height (px)",
+      "kind": "NUMBER",
+      "displayOrder": 439
+    },
+    {
+      "propertyKey": "imageFit",
+      "label": "Image fit",
+      "kind": "SELECT",
+      "displayOrder": 440,
+      "choices": [
+        {
+          "key": "contain",
+          "label": "Contain"
+        },
+        {
+          "key": "cover",
+          "label": "Cover"
+        },
+        {
+          "key": "fill",
+          "label": "Fill"
+        },
+        {
+          "key": "scale-down",
+          "label": "Scale down"
+        }
+      ]
+    },
+    {
+      "propertyKey": "imageAspectRatio",
+      "label": "Image aspect ratio",
+      "kind": "SELECT",
+      "displayOrder": 441,
+      "choices": [
+        {
+          "key": "auto",
+          "label": "Auto"
+        },
+        {
+          "key": "1/1",
+          "label": "1:1"
+        },
+        {
+          "key": "4/3",
+          "label": "4:3"
+        },
+        {
+          "key": "16/9",
+          "label": "16:9"
+        },
+        {
+          "key": "3/4",
+          "label": "3:4"
+        }
+      ]
+    }
+  ]
+}

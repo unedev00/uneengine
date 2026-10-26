@@ -1,0 +1,54 @@
+/* MetaDrive desktop density: resize shared application chrome, never recolour or reshape it.
+   Authored Page Builder components keep their own declared dimensions.
+   Browser zoom and CSS transforms are intentionally not used. */
+@media (min-width: 900px) and (pointer: fine) {
+  .lightning {
+    --md-fs-xs: 10px;
+    --md-fs-sm: 10px;
+    --md-fs-md: 11px;
+    --md-fs-body: 11px;
+    --md-fs-lg: 12px;
+    --md-fs-h3: 15px;
+    --md-fs-h2: 18px;
+    --md-fs-h1: 23px;
+    --md-fs-display: 30px;
+    --md-space-1: 3px;
+    --md-space-2: 6px;
+    --md-space-3: 9px;
+    --md-space-4: 12px;
+    --md-space-6: 18px;
+    --md-space-8: 24px;
+    --md-space-12: 36px;
+    --md-control-height: 30px;
+    font-size: var(--md-fs-body);
+  }
+  .lightning .salesforce-header { height: 38px; gap: 10px; padding-inline: 14px; }
+  .lightning .icon-button { width: 30px; height: 30px; min-width: 30px; min-height: 30px; }
+  .lightning .app-strip { height: 36px; gap: 19px; padding-inline: 15px; }
+  .lightning .app-title strong { font-size: 11px; }
+  .lightning .app-icon { width: 21px; height: 21px; }
+  .lightning .primary-tab { padding-inline: 10px; }
+  .lightning .brand { font-size: 12px; gap: 6px; }
+  .lightning .brand-cloud { width: 18px; height: 18px; font-size: 11px; }
+  .lightning .setup-layout { min-height: calc(100dvh - 74px); }
+  .lightning .setup-sidebar { width: 180px; min-width: 180px; }
+  .lightning .quick-find { padding: 11px 10px 10px; }
+  .lightning .quick-find-input { height: 24px; }
+  .lightning .tree-group-label { padding: 7px 11px 5px; }
+  .lightning .global-search { width: min(40vw, 315px); padding-inline: 7px; gap: 6px; }
+  .lightning .user-menu { padding-inline: 5px; }
+  .lightning .one-ui { --one-gap: var(--md-space-3); --one-pad: var(--md-space-4); }
+}
+/* Retain readable touch targets on tablets, phones and touch-first devices. */
+
+@media (min-width: 900px) and (pointer: fine) {
+  .lightning .tree-item { min-height: 24px; padding: 4px 9px 4px 13px; }
+  .lightning .setup-tree { padding-block: 6px 9px; }
+  .lightning .setup-tree-group { margin-top: 5px; }
+  .lightning .quick-find-title { font-size: 10px; margin-bottom: 6px; }
+  .lightning .global-search kbd { padding: 1px 3px; }
+  .lightning .notification-count { min-width: 14px; height: 14px; }
+  .lightning .notification-panel-heading { padding: 9px 11px; }
+  .lightning .notification-list li { gap: 4px; padding: 9px 11px; }
+  .lightning .md-scroll-area::-webkit-scrollbar { width: 6px; height: 6px; }
+}

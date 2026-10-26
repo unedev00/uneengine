@@ -1,0 +1,6 @@
+/** Resolve a reference only within the caller's tenant, without bypassing Record Engine RBAC. */
+export async function assertLookupTargetExists(db, tenantId, objectApi, recordId, fieldKey) {
+    const match = await db.query('SELECT id FROM md_records WHERE tenant_id=$1 AND object_api=$2 AND id=$3 AND is_deleted=false', [tenantId, objectApi, recordId]);
+    if (!match.rowCount)
+        throw new Error('Invalid relationship target: ' + fieldKey);
+}

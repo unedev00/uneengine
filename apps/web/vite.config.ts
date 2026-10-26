@@ -1,0 +1,44 @@
+import { resolve } from 'node:path';
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+
+const apiProxyTarget = process.env.METADRIVE_API_PROXY_TARGET ?? 'http://127.0.0.1:3001';
+// The custom-domain Pages deployment is rooted at /, not /metadrive/.
+// Keep the project-path default for repositories without a custom domain.
+const pagesBase = process.env.GITHUB_PAGES_BASE_PATH ?? '/metadrive/';
+if (pagesBase !== '/' && pagesBase !== '/metadrive/') {
+  throw new Error('Unsupported GitHub Pages base path');
+}
+
+export default defineConfig({
+  plugins: [react()],
+  build: {
+    // Multi-page build gives /acetill/ its own real document and JS entry,
+    // independent of MetaDrive admin router and GitHub Pages SPA fallback.
+    rollupOptions: {
+      input: {
+        main: resolve(process.cwd(), 'index.html'),
+        login: resolve(process.cwd(), 'login/index.html'),
+        acetill: resolve(process.cwd(), 'acetill/index.html')
+      }
+    }
+  },
+  base: process.env.GITHUB_PAGES === 'true' ? pagesBase : '/',
+  server: {
+    port: 5173,
+    host: '0.0.0.0',
+    proxy: {
+      '/health': { target: apiProxyTarget },
+      '/api': {
+        target: apiProxyTarget,
+        configure(proxy) {
+          proxy.on('proxyReq', (proxyRequest) => proxyRequest.removeHeader('origin'));
+        }
+      }
+    }
+  },
+  preview: {
+    port: 4173,
+    host: '0.0.0.0'
+  }
+});

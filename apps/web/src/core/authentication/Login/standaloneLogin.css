@@ -1,0 +1,56 @@
+/* Product route styling only. Login/API/MFA controls remain those of MetaDrive. */
+.auth-screen--standalone {
+  --standalone-accent: #1769d2;
+  background: radial-gradient(ellipse at 18% 15%, color-mix(in srgb, var(--standalone-accent) 22%, transparent), transparent 46%),
+              linear-gradient(140deg, #0b162b 0%, #132b46 52%, #07111e 100%);
+  min-height: 100vh;
+}
+.auth-screen--standalone .auth-card {
+  background: #fff;
+  border: 1px solid #e8edf3;
+  box-shadow: 0 26px 80px rgba(0,0,0,.25);
+  border-radius: 24px;
+  max-width: 465px;
+  padding: clamp(24px, 5vw, 46px);
+}
+.auth-product-identity { display:flex; align-items:center; gap:16px; margin-bottom:30px; }
+.auth-product-identity h1 { margin:2px 0 0; font-size:clamp(28px,4vw,36px); letter-spacing:-.045em; color:#17243a; }
+.auth-product-identity .eyebrow { color:var(--standalone-accent); font-size:11px; font-weight:800; letter-spacing:.13em; }
+.auth-product-monogram { display:grid; place-items:center; width:62px; height:62px; flex-shrink:0; font-size:33px; font-weight:800; border-radius:18px; background:var(--standalone-accent); color:white; }
+.auth-product-heading { margin:0 0 6px; font-size:24px; letter-spacing:-.025em; }
+.auth-product-subline { margin:0 0 24px; color:#64748b; font-size:13px; }
+.auth-screen--standalone .btn-brand { background:var(--standalone-accent); border-color:var(--standalone-accent); }
+.auth-product-powered { display:flex; align-items:center; justify-content:center; gap:9px; font-size:12px; color:#64748b; margin-top:22px; padding-top:16px; border-top:1px solid #e6eaf1; }
+.auth-product-powered .auth-product-powered-logo { height:28px; }
+@media(max-width:540px) { .auth-screen--standalone { padding:16px; } .auth-screen--standalone .auth-card { padding:24px; } }
+
+/* Keep light authentication surfaces readable regardless of workspace/theme inheritance.
+   The card is always white, so its foregrounds must be defined locally. */
+.auth-screen .auth-card {
+  color: #192230;
+  --text: #192230;
+  --muted: #526175;
+  --md-text: #192230;
+  --md-muted: #526175;
+  --border: #cbd5e1;
+  color-scheme: light;
+}
+.auth-screen .auth-card :is(h1,h2,h3,.auth-product-heading) { color: #192230; opacity: 1; }
+.auth-screen .auth-card :is(p,.eyebrow,.form-label) { color: #475569; opacity: 1; }
+.auth-screen .auth-card :is(.form-control,input:not([type="checkbox"]),textarea,select) {
+  color: #192230;
+  background: #fff;
+  border-color: #94a3b8;
+  -webkit-text-fill-color: #192230;
+  opacity: 1;
+}
+.auth-screen .auth-card :is(input,textarea)::placeholder {
+  color: #596579;
+  opacity: 1;
+}
+.auth-screen .auth-card :is(input,textarea,select):focus-visible {
+  outline: 2px solid #1769d2;
+  outline-offset: 2px;
+}
+.auth-screen .auth-card .auth-submit { color: #fff; -webkit-text-fill-color: #fff; }
+.auth-screen .auth-card .auth-error { color: #9b332c; }

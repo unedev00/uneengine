@@ -1,0 +1,279 @@
+{
+  "apiName": "une_modal",
+  "label": "UNE Modal",
+  "category": "Layout",
+  "description": "Reusable modal component for metadata-driven pages; shares MetaDrive runtime, events and tenant permissions.",
+  "surfaces": [
+    "page",
+    "dashboard",
+    "flow"
+  ],
+  "version": 2,
+  "scope": "platform-core",
+  "jsxFile": "one/une_modal/UneModal.jsx",
+  "cssFile": "one/une_modal/UneModal.css",
+  "resize": {
+    "defaultWidth": 180,
+    "defaultHeight": 48,
+    "minWidth": 120,
+    "minHeight": 44
+  },
+  "propertyDefinitions": [
+    {
+      "propertyKey": "theme",
+      "label": "Theme",
+      "kind": "SELECT",
+      "displayOrder": 10,
+      "defaultValue": "light",
+      "choices": [
+        {
+          "key": "light",
+          "label": "Light"
+        },
+        {
+          "key": "dark",
+          "label": "Dark"
+        }
+      ]
+    },
+    {
+      "propertyKey": "surface",
+      "label": "Surface",
+      "kind": "SELECT",
+      "displayOrder": 20,
+      "defaultValue": "glass",
+      "choices": [
+        {
+          "key": "glass",
+          "label": "Frosted glass"
+        },
+        {
+          "key": "solid",
+          "label": "Solid"
+        },
+        {
+          "key": "plain",
+          "label": "Transparent"
+        }
+      ]
+    },
+    {
+      "propertyKey": "tone",
+      "label": "Colour palette",
+      "kind": "SELECT",
+      "displayOrder": 30,
+      "defaultValue": "blue",
+      "choices": [
+        {
+          "key": "blue",
+          "label": "iOS blue"
+        },
+        {
+          "key": "mint",
+          "label": "Mint"
+        },
+        {
+          "key": "purple",
+          "label": "Purple"
+        },
+        {
+          "key": "orange",
+          "label": "Orange"
+        },
+        {
+          "key": "neutral",
+          "label": "Neutral"
+        }
+      ]
+    },
+    {
+      "propertyKey": "accentColor",
+      "label": "Custom accent colour",
+      "kind": "COLOR",
+      "displayOrder": 40,
+      "defaultValue": ""
+    },
+    {
+      "propertyKey": "backgroundColor",
+      "label": "Surface colour",
+      "kind": "COLOR",
+      "displayOrder": 50,
+      "defaultValue": ""
+    },
+    {
+      "propertyKey": "textColor",
+      "label": "Text colour",
+      "kind": "COLOR",
+      "displayOrder": 60,
+      "defaultValue": ""
+    },
+    {
+      "propertyKey": "borderColor",
+      "label": "Border colour",
+      "kind": "COLOR",
+      "displayOrder": 70,
+      "defaultValue": ""
+    },
+    {
+      "propertyKey": "density",
+      "label": "Spacing density",
+      "kind": "SELECT",
+      "displayOrder": 80,
+      "defaultValue": "comfortable",
+      "choices": [
+        {
+          "key": "compact",
+          "label": "Compact"
+        },
+        {
+          "key": "comfortable",
+          "label": "Comfortable"
+        },
+        {
+          "key": "spacious",
+          "label": "Spacious"
+        }
+      ]
+    },
+    {
+      "propertyKey": "radius",
+      "label": "Corner radius (px)",
+      "kind": "NUMBER",
+      "displayOrder": 90,
+      "defaultValue": 20
+    },
+    {
+      "propertyKey": "padding",
+      "label": "Padding (px)",
+      "kind": "NUMBER",
+      "displayOrder": 100,
+      "defaultValue": 16
+    },
+    {
+      "propertyKey": "gap",
+      "label": "Gap (px)",
+      "kind": "NUMBER",
+      "displayOrder": 110,
+      "defaultValue": 12
+    },
+    {
+      "propertyKey": "shadow",
+      "label": "Shadow",
+      "kind": "SELECT",
+      "displayOrder": 120,
+      "defaultValue": "medium",
+      "choices": [
+        {
+          "key": "none",
+          "label": "None"
+        },
+        {
+          "key": "small",
+          "label": "Small"
+        },
+        {
+          "key": "medium",
+          "label": "Medium"
+        },
+        {
+          "key": "large",
+          "label": "Large"
+        }
+      ]
+    },
+    {
+      "propertyKey": "glassBlur",
+      "label": "Glass blur (px)",
+      "kind": "NUMBER",
+      "displayOrder": 130,
+      "defaultValue": 12
+    },
+    {
+      "propertyKey": "layoutContainer",
+      "label": "Accept child components",
+      "kind": "BOOLEAN",
+      "displayOrder": 300,
+      "defaultValue": true
+    },
+    {
+      "propertyKey": "title",
+      "label": "Title",
+      "kind": "TEXT",
+      "displayOrder": 310,
+      "defaultValue": "Dialog"
+    },
+    {
+      "propertyKey": "openLabel",
+      "label": "Open button",
+      "kind": "TEXT",
+      "displayOrder": 320,
+      "defaultValue": "Open"
+    },
+    {
+      "propertyKey": "startOpen",
+      "label": "Open initially",
+      "kind": "BOOLEAN",
+      "displayOrder": 330,
+      "defaultValue": false
+    },
+    {
+      "propertyKey": "controlledOpen",
+      "label": "Control visibility from page state",
+      "kind": "BOOLEAN",
+      "displayOrder": 810,
+      "defaultValue": false
+    },
+    {
+      "propertyKey": "isOpen",
+      "label": "Page state: dialog is open",
+      "kind": "BOOLEAN",
+      "displayOrder": 820,
+      "defaultValue": false
+    },
+    {
+      "propertyKey": "showTrigger",
+      "label": "Show built-in open button",
+      "kind": "BOOLEAN",
+      "displayOrder": 830,
+      "defaultValue": true
+    },
+    {
+      "propertyKey": "showCloseButton",
+      "label": "Show close button",
+      "kind": "BOOLEAN",
+      "displayOrder": 840,
+      "defaultValue": true
+    },
+    {
+      "propertyKey": "closeOnBackdrop",
+      "label": "Close on backdrop click",
+      "kind": "BOOLEAN",
+      "displayOrder": 850,
+      "defaultValue": true
+    },
+    {
+      "propertyKey": "closeOnEscape",
+      "label": "Close on Escape key",
+      "kind": "BOOLEAN",
+      "displayOrder": 860,
+      "defaultValue": true
+    },
+    {
+      "propertyKey": "fullScreenOnMobile",
+      "label": "Full-screen dialog on phones",
+      "kind": "BOOLEAN",
+      "displayOrder": 870,
+      "defaultValue": false
+    }
+  ],
+  "eventDefinitions": [
+    {
+      "apiName": "open",
+      "label": "open"
+    },
+    {
+      "apiName": "close",
+      "label": "close"
+    }
+  ]
+}

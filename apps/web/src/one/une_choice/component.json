@@ -1,0 +1,278 @@
+{
+  "apiName": "une_choice",
+  "label": "UNE Choice",
+  "category": "Inputs",
+  "description": "Reusable choice component for metadata-driven pages; shares MetaDrive runtime, events and tenant permissions.",
+  "surfaces": [
+    "page",
+    "dashboard",
+    "flow"
+  ],
+  "version": 1,
+  "scope": "platform-core",
+  "jsxFile": "one/une_choice/UneChoice.jsx",
+  "cssFile": "one/une_choice/UneChoice.css",
+  "resize": {
+    "defaultWidth": 320,
+    "defaultHeight": 160,
+    "minWidth": 120,
+    "minHeight": 44
+  },
+  "propertyDefinitions": [
+    {
+      "propertyKey": "theme",
+      "label": "Theme",
+      "kind": "SELECT",
+      "displayOrder": 10,
+      "defaultValue": "light",
+      "choices": [
+        {
+          "key": "light",
+          "label": "Light"
+        },
+        {
+          "key": "dark",
+          "label": "Dark"
+        }
+      ]
+    },
+    {
+      "propertyKey": "surface",
+      "label": "Surface",
+      "kind": "SELECT",
+      "displayOrder": 20,
+      "defaultValue": "glass",
+      "choices": [
+        {
+          "key": "glass",
+          "label": "Frosted glass"
+        },
+        {
+          "key": "solid",
+          "label": "Solid"
+        },
+        {
+          "key": "plain",
+          "label": "Transparent"
+        }
+      ]
+    },
+    {
+      "propertyKey": "tone",
+      "label": "Colour palette",
+      "kind": "SELECT",
+      "displayOrder": 30,
+      "defaultValue": "blue",
+      "choices": [
+        {
+          "key": "blue",
+          "label": "iOS blue"
+        },
+        {
+          "key": "mint",
+          "label": "Mint"
+        },
+        {
+          "key": "purple",
+          "label": "Purple"
+        },
+        {
+          "key": "orange",
+          "label": "Orange"
+        },
+        {
+          "key": "neutral",
+          "label": "Neutral"
+        }
+      ]
+    },
+    {
+      "propertyKey": "accentColor",
+      "label": "Custom accent colour",
+      "kind": "COLOR",
+      "displayOrder": 40,
+      "defaultValue": ""
+    },
+    {
+      "propertyKey": "backgroundColor",
+      "label": "Surface colour",
+      "kind": "COLOR",
+      "displayOrder": 50,
+      "defaultValue": ""
+    },
+    {
+      "propertyKey": "textColor",
+      "label": "Text colour",
+      "kind": "COLOR",
+      "displayOrder": 60,
+      "defaultValue": ""
+    },
+    {
+      "propertyKey": "borderColor",
+      "label": "Border colour",
+      "kind": "COLOR",
+      "displayOrder": 70,
+      "defaultValue": ""
+    },
+    {
+      "propertyKey": "density",
+      "label": "Spacing density",
+      "kind": "SELECT",
+      "displayOrder": 80,
+      "defaultValue": "comfortable",
+      "choices": [
+        {
+          "key": "compact",
+          "label": "Compact"
+        },
+        {
+          "key": "comfortable",
+          "label": "Comfortable"
+        },
+        {
+          "key": "spacious",
+          "label": "Spacious"
+        }
+      ]
+    },
+    {
+      "propertyKey": "radius",
+      "label": "Corner radius (px)",
+      "kind": "NUMBER",
+      "displayOrder": 90,
+      "defaultValue": 20
+    },
+    {
+      "propertyKey": "padding",
+      "label": "Padding (px)",
+      "kind": "NUMBER",
+      "displayOrder": 100,
+      "defaultValue": 16
+    },
+    {
+      "propertyKey": "gap",
+      "label": "Gap (px)",
+      "kind": "NUMBER",
+      "displayOrder": 110,
+      "defaultValue": 12
+    },
+    {
+      "propertyKey": "shadow",
+      "label": "Shadow",
+      "kind": "SELECT",
+      "displayOrder": 120,
+      "defaultValue": "medium",
+      "choices": [
+        {
+          "key": "none",
+          "label": "None"
+        },
+        {
+          "key": "small",
+          "label": "Small"
+        },
+        {
+          "key": "medium",
+          "label": "Medium"
+        },
+        {
+          "key": "large",
+          "label": "Large"
+        }
+      ]
+    },
+    {
+      "propertyKey": "glassBlur",
+      "label": "Glass blur (px)",
+      "kind": "NUMBER",
+      "displayOrder": 130,
+      "defaultValue": 12
+    },
+    {
+      "propertyKey": "objectApiName",
+      "label": "Source Object",
+      "kind": "OBJECT",
+      "displayOrder": 300,
+      "defaultValue": ""
+    },
+    {
+      "propertyKey": "items",
+      "label": "Flow/Page State record collection",
+      "kind": "RECORD_LIST",
+      "displayOrder": 310,
+      "defaultValue": []
+    },
+    {
+      "propertyKey": "loading",
+      "label": "Loading state",
+      "kind": "BOOLEAN",
+      "displayOrder": 320,
+      "defaultValue": false
+    },
+    {
+      "propertyKey": "emptyText",
+      "label": "Empty message",
+      "kind": "TEXT",
+      "displayOrder": 330,
+      "defaultValue": "No records"
+    },
+    {
+      "propertyKey": "label",
+      "label": "Label",
+      "kind": "TEXT",
+      "displayOrder": 340,
+      "defaultValue": "Choose"
+    },
+    {
+      "propertyKey": "options",
+      "label": "Static choices",
+      "kind": "OPTIONS",
+      "displayOrder": 350,
+      "defaultValue": []
+    },
+    {
+      "propertyKey": "optionLabelFieldApiName",
+      "label": "Option label",
+      "kind": "OBJECT_FIELD",
+      "displayOrder": 360,
+      "defaultValue": ""
+    },
+    {
+      "propertyKey": "optionValueFieldApiName",
+      "label": "Option value",
+      "kind": "OBJECT_FIELD",
+      "displayOrder": 370,
+      "defaultValue": ""
+    },
+    {
+      "propertyKey": "mode",
+      "label": "Selection",
+      "kind": "SELECT",
+      "displayOrder": 380,
+      "defaultValue": "single",
+      "choices": [
+        {
+          "key": "single",
+          "label": "Single"
+        },
+        {
+          "key": "multiple",
+          "label": "Multiple"
+        }
+      ]
+    },
+    {
+      "propertyKey": "required",
+      "label": "Required",
+      "kind": "BOOLEAN",
+      "displayOrder": 390,
+      "defaultValue": false
+    }
+  ],
+  "eventDefinitions": [
+    {
+      "apiName": "change",
+      "label": "change"
+    }
+  ]
+}

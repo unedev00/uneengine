@@ -1,0 +1,116 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import React from 'react';
+import {renderToStaticMarkup} from 'react-dom/server';
+import {build} from 'esbuild';
+import {createRequire} from 'node:module';
+const require=createRequire(import.meta.url);
+async function loadEditor(name:string){
+ const built=await build({entryPoints:[`apps/web/src/core/builders/ComponentProperties/${name}.tsx`],bundle:true,write:false,platform:'node',format:'cjs',packages:'external',loader:{'.css':'empty'},define:{'import.meta.env':'{"VITE_API_BASE_URL":"http://localhost/api"}'},jsx:'automatic'});
+ const module={exports:{} as any};
+ new Function('require','module','exports',built.outputFiles[0].text)(require,module,module.exports);
+ return module.exports.default;
+}
+const CustomComponentPropertyEditor=await loadEditor('CustomComponentPropertyEditor');
+const PropertyDefinitionEditor=await loadEditor('PropertyDefinitionEditor');
+import {validateComponentDefinitions,type ComponentSettingDefinition} from '../src/core/components/Properties/componentSettingDefinitions';
+import {loadComponentCatalog} from '../../../scripts/component-catalog.mjs';
+import {behaviorTabs,behaviorAction,behaviorAppearance,behaviorField,behaviorInteractions} from '../src/core/pages/PageRuntime/pageBehaviorRuntime';
+test('all retained bundled descriptor definitions remain compatible',async()=>{
+ const catalog=await loadComponentCatalog();
+ assert.equal(catalog.components.length,46);
+ for(const component of catalog.components)assert.deepEqual(validateComponentDefinitions(component.propertyDefinitions??[]),[],component.apiName);
+});
+const definitions:ComponentSettingDefinition[]=[{propertyKey:'layout',label:'Layout',kind:'GROUP',fields:[
+ {propertyKey:'title',label:'Title',kind:'TEXT'},
+ {propertyKey:'rows',label:'Rows',kind:'COLLECTION',fields:[{propertyKey:'label',label:'Row label',kind:'TEXT'}]}
+]},{propertyKey:'fields',label:'Fields',kind:'STRING_LIST'}];
+test('groups, repeated settings and string lists have guided controls with unique IDs',()=>{
+ const html=renderToStaticMarkup(React.createElement(CustomComponentPropertyEditor,{definitions,
+  properties:{layout:{title:'Keep',rows:[{label:'First'},{label:'Second'}]},fields:['Name']},onChange:()=>{}}));
+ assert.match(html,/Add Rows row/);assert.match(html,/Add Fields item/);assert.match(html,/value="First"/);
+ assert.match(html,/value="Second"/);assert.doesNotMatch(html,/textarea/);
+ const ids=[...html.matchAll(/\bid="([^"]+)"/g)].map(m=>m[1]);assert.equal(ids.length,new Set(ids).size);
+});
+test('device-hidden declarations remain saved but are not exposed as unknown controls',()=>{
+ const html=renderToStaticMarkup(React.createElement(CustomComponentPropertyEditor,{device:'Mobile',
+ definitions:[{propertyKey:'desktopOnly',label:'Desktop only',kind:'TEXT',devices:['Desktop']}],
+ properties:{desktopOnly:'Preserved'},onChange:()=>{}}));
+ assert.doesNotMatch(html,/value="Preserved"/);
+});
+test('schema authoring supports all behaviour templates and nested properties without JSON',()=>{
+ const html=renderToStaticMarkup(React.createElement(PropertyDefinitionEditor,{value:definitions,onChange:()=>{}}));
+ for(const label of ['Field behaviour','Conditional appearance','Action rules','Tab rules','Component interactions'])assert.ok(html.includes(label));
+ assert.match(html,/Add property/);assert.match(html,/Available from component version/);
+});
+
+test('Page Behavior runtime enforces tab and action conditions by device',()=>{
+ const properties={pagePropertyContract:{version:1,
+  tabVisibility:[{tabId:'Admin',when:{logic:'All',conditions:[{source:'Device',operator:'Equals',value:'Desktop'}]}}],
+  actionVisibility:[{actionId:'delete',unavailable:'Disable',when:{logic:'All',conditions:[{source:'Device',operator:'Equals',value:'Desktop'}]}},
+   {actionId:'private',unavailable:'Hide',when:{logic:'All',conditions:[{source:'Device',operator:'Equals',value:'Desktop'}]}}]
+ }};
+ assert.deepEqual(behaviorTabs(properties,['Overview','Admin'],{formFactor:'Phone'}),['Overview']);
+ assert.deepEqual(behaviorTabs(properties,['Overview','Admin'],{formFactor:'Desktop'}),['Overview','Admin']);
+ assert.equal(behaviorAction(properties,'delete',{formFactor:'Phone'}),'disabled');
+ assert.equal(behaviorAction(properties,'private',{formFactor:'Phone'}),'hidden');
+ assert.equal(behaviorAction(properties,'delete',{formFactor:'Desktop'}),'enabled');
+ assert.equal(behaviorAction({},'delete',{formFactor:'Phone'}),'enabled');
+});
+test('conditional appearance is field-specific, safely color-tokenized and permission-aware',()=>{
+ const when={logic:'All',conditions:[{source:'Record Field',fieldApiName:'Status',operator:'Equals',value:'Active'}]};
+ const properties={pagePropertyContract:{version:1,conditionalFormatting:[
+  {fieldApiName:'Amount',when,appearance:{color:'#ff0055',backgroundColor:'url(javascript:alert(1))'}},
+  {fieldApiName:'Other',when,appearance:{color:'#00ffaa'}}]}};
+ const fields=[{apiName:'Status',label:'Status',dataType:'Text(80)'}];
+ const context={formFactor:'Desktop' as const,record:{Status:'Active'},fields,
+  readableFieldApiNames:new Set(['Status'])};
+ assert.deepEqual(behaviorAppearance(properties,context,'Amount'),{color:'#ff0055'});
+ assert.deepEqual(behaviorAppearance(properties,context,'Other'),{color:'#00ffaa'});
+ assert.deepEqual(behaviorAppearance(properties,{...context,readableFieldApiNames:new Set<string>()},'Amount'),{});
+});
+test('record field rules respect readable records and preserve no-rule defaults',()=>{
+ const properties={pagePropertyContract:{version:1,fieldRules:[
+  {fieldApiName:'Name',behavior:'Required',visibilityRules:{logic:'All',
+   conditions:[{source:'Record Field',fieldApiName:'Status',operator:'Equals',value:'Active'}]}},
+  {fieldApiName:'Email',behavior:'ReadOnly'}]}};
+ const context={formFactor:'Desktop' as const,record:{Status:'Active'},fields:[{apiName:'Status',label:'Status',dataType:'Text(40)'}],
+  readableFieldApiNames:new Set(['Status'])};
+ assert.deepEqual(behaviorField(properties,'Name',context),{visible:true,required:true,readOnly:false});
+ assert.deepEqual(behaviorField(properties,'Email',context),{visible:true,required:false,readOnly:true});
+ assert.deepEqual(behaviorField(properties,'Name',{...context,record:{Status:'Closed'}}),{visible:false,required:false,readOnly:false});
+ assert.equal(behaviorField(properties,'Unknown',context),null);
+});
+test('component interactions update declared bindable target properties only',()=>{
+ const rules={pagePropertyContract:{version:1,interactions:[
+  {event:'change',targetComponentId:'target',targetProperty:'title',source:'Event',sourceKey:'value'},
+  {event:'change',targetComponentId:'target',targetProperty:'onAction',source:'Literal',value:'unsafe'},
+  {event:'change',targetComponentId:'target',targetProperty:'unbound',source:'Literal',value:'unsafe'},
+  {event:'change',targetComponentId:'other',targetProperty:'title',source:'Literal',value:'unsafe'}]}};
+ const targets=[{id:'target',propertyDefinitions:[
+  {propertyKey:'title',label:'Title',kind:'TEXT' as const,isBindable:true},
+  {propertyKey:'unbound',label:'Unbound',kind:'TEXT' as const}]}];
+ assert.deepEqual(behaviorInteractions(rules,'change',{value:'Selected'}, {},targets,'Desktop'),
+  [{targetComponentId:'target',targetProperty:'title',value:'Selected'}]);
+ assert.deepEqual(behaviorInteractions(rules,'change',{value:{hidden:'nested'}},{},targets,'Desktop'),[]);
+ assert.deepEqual(behaviorInteractions(rules,'other',{value:'Selected'},{},targets,'Desktop'),[]);
+});
+
+
+test('no-code property editor offers metadata reference pickers without authored JSON',()=>{
+ const html=renderToStaticMarkup(React.createElement(CustomComponentPropertyEditor,{
+  definitions:[{propertyKey:'pagePropertyContract',label:'Page behaviour',kind:'GROUP',fields:[
+   {propertyKey:'interactions',label:'Interactions',kind:'COLLECTION',fields:[
+    {propertyKey:'event',label:'Event',kind:'TEXT'},
+    {propertyKey:'targetComponentId',label:'Target',kind:'TEXT'},
+    {propertyKey:'targetProperty',label:'Property',kind:'TEXT'}]}]}],
+  properties:{pagePropertyContract:{interactions:[{event:'change',targetComponentId:'card',targetProperty:'title'}]}},
+  choiceOverrides:{event:[{key:'change',label:'When value changes'}],
+   targetComponentId:[{key:'card',label:'Result card'}],
+   targetProperty:[{key:'title',label:'Title'}]},
+  onChange:()=>{}}));
+ assert.match(html,/Result card/);
+ assert.match(html,/When value changes/);
+ assert.match(html,/Title/);
+ assert.doesNotMatch(html,/textarea/);
+});

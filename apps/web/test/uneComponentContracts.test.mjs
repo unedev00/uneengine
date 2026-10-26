@@ -1,0 +1,69 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+import React from 'react';
+import {renderToStaticMarkup} from 'react-dom/server';
+import {loadComponentCatalog,buildBundledComponent} from '../../../scripts/component-catalog.mjs';
+const {components}=await loadComponentCatalog(),une=components.filter(x=>x.apiName.startsWith('une_'));
+const retained=['OneBadge','OneButton','OneCalendar','OneConversation','OneItemGrid','OneSearch','OneShoppingCart','OneText'];
+const names=['text','image','calendar','button','card','input','toggle','badge','stack','tabs',
+ 'container','grid','split_pane','navigation','menu','modal','drawer','item_grid','repeater','record_list',
+ 'search','lookup','choice','cart','conversation','form','table','line_items','date_picker','slot_picker',
+ 'metric','alert','progress','document_viewer','chart','option_groups'].map(s=>'une_'+s);
+const updated=new Set(['une_conversation','une_search','une_lookup','une_repeater','une_modal','une_tabs','une_input']);
+const allowed=new Set(['TEXT','NUMBER','BOOLEAN','COLOR','IMAGE','SELECT','OBJECT','OBJECT_FIELD','FLOW',
+  'CURRENCY','FIELD_LIST','COLUMNS','OPTIONS','RECORD_LIST']);
+class FixtureDate extends Date {
+ constructor(...args){super(...(args.length?args:['2026-10-24T12:00:00Z']));}
+ static now(){return new Date('2026-10-24T12:00:00Z').getTime();}
+}
+test('only eight retained One components exist alongside the new UNE catalog',()=>{
+ assert.deepEqual(components.filter(x=>x.apiName.startsWith('One')).map(x=>x.apiName).sort(),retained);
+ assert.deepEqual(une.map(x=>x.apiName),names);
+ assert.equal(une.length,new Set(une.map(x=>x.apiName)).size);
+});
+test('every UNE property has a supported visual editor contract',()=>{
+ for(const d of une){
+  const keys=new Set();
+  assert.deepEqual(d.surfaces,['page','dashboard','flow']);assert.equal(d.version,updated.has(d.apiName)?2:1);
+  for(const prop of d.propertyDefinitions){
+   assert.ok(allowed.has(prop.kind),d.apiName+' unknown kind '+prop.kind);
+   assert.match(prop.propertyKey,/^[A-Za-z][A-Za-z0-9_]*$/);
+   assert.ok(!keys.has(prop.propertyKey),d.apiName+' duplicate '+prop.propertyKey);
+   assert.ok(prop.label);keys.add(prop.propertyKey);
+   if(prop.kind==='RECORD_LIST')assert.deepEqual(prop.defaultValue,[]);
+  }
+  for(const k of ['theme','surface','tone','density','radius','padding','gap','shadow','glassBlur','fontFamily','fontSize','width','height','minWidth','maxWidth','opacity','hideOnPhone','hideOnTablet','hideOnDesktop'])
+   assert.ok(keys.has(k),d.apiName+' missing '+k);
+  for(const event of d.eventDefinitions??[])assert.match(event.apiName,/^[A-Za-z][A-Za-z0-9_]*$/);
+ }
+});
+const fixtures={
+ une_text:{text:'Hello UNE'},une_image:{src:'https://example.com/image.png',alt:'Picture'},
+ une_calendar:{records:[{Id:'1',BookedOn:'2026-10-24',Subject:'Meeting'}],dateFieldApiName:'BookedOn',titleFieldApiName:'Subject'},
+ une_button:{label:'Continue'},une_card:{title:'Card'},une_input:{label:'Email'},
+ une_toggle:{label:'Setting'},une_badge:{text:'New'},une_tabs:{tabs:'First, Second'},
+ une_item_grid:{currencyCode:'GBP',titleFieldApiName:'Name',priceFieldApiName:'Price'},
+ une_cart:{currencyCode:'GBP'},une_conversation:{conversations:[],messages:[]},
+ une_table:{items:[{Name:'Row'}],columns:[{key:'Name',label:'Name'}]},
+ une_line_items:{fields:[{apiName:'Quantity',label:'Quantity',inputType:'number'}]},
+ une_metric:{value:'42'},une_alert:{text:'Status'},une_progress:{value:50,max:100},
+ une_slot_picker:{items:[{Id:'slot',Name:'10:00',Available:true}],optionAvailableFieldApiName:'Available'},
+ une_chart:{items:[{Name:'Orders',Value:4}],chartLabelFieldApiName:'Name',chartValueFieldApiName:'Value'},
+ une_option_groups:{groups:[{id:'g1',label:'Choose sauce',required:true,choices:[{id:'c1',label:'Mayo'}]}]}
+};
+for(const d of une)test(d.apiName+' bundles and renders with a scoped UNE surface',async()=>{
+ const built=await buildBundledComponent(d);
+ assert.match(built.cssSource,/\.une-ui/);
+ assert.doesNotMatch(built.cssSource,/@import/);
+ assert.doesNotMatch(built.compiledJs,/require\(["'](?:react|\.\.)/);
+ const context={React,module:{exports:{}},Date:FixtureDate,Intl,URL,crypto:globalThis.crypto};
+ vm.runInNewContext(built.compiledJs,context);
+ const html=renderToStaticMarkup(React.createElement(context.module.exports.default,
+  {theme:'light',surface:'glass',...fixtures[d.apiName]}));
+ assert.match(html,/class="une-ui"/);
+ assert.match(html,/data-une-theme="light"/);
+ assert.doesNotMatch(html,/<script/i);
+ if(d.apiName==='une_text')assert.match(html,/Hello UNE/);
+ if(d.apiName==='une_metric')assert.match(html,/42/);
+});
