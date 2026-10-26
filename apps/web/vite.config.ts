@@ -2,11 +2,11 @@ import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-const apiProxyTarget = process.env.METADRIVE_API_PROXY_TARGET ?? 'http://127.0.0.1:3001';
+const apiProxyTarget = process.env.METADRIVE_API_PROXY_TARGET ?? 'http://127.0.0.1:10000';
 // The custom-domain Pages deployment is rooted at /, not /metadrive/.
-// Keep the project-path default for repositories without a custom domain.
-const pagesBase = process.env.GITHUB_PAGES_BASE_PATH ?? '/metadrive/';
-if (pagesBase !== '/' && pagesBase !== '/metadrive/') {
+// Keep the project-path default for repositories without a custom domain; this repository is uneengine.
+const pagesBase = process.env.GITHUB_PAGES_BASE_PATH ?? '/uneengine/';
+if (pagesBase !== '/' && pagesBase !== '/uneengine/') {
   throw new Error('Unsupported GitHub Pages base path');
 }
 
