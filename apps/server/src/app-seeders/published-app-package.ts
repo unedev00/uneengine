@@ -122,6 +122,14 @@ export async function seedPublishedAppPackage(
     if(!page.length||!component.length)
       throw new Error('App package Page Component dependency missing');
     const key=componentApi+'@'+item.slot+'#'+item.sort_order;
+    // Older installed pages may have been migrated in-place while their seed
+    // receipts still use One API names. Never add a duplicate on reinstall.
+    const {rows:existingParts}=await client.query<{id:string}>(`
+      SELECT id FROM md_page_components
+      WHERE tenant_id=$1 AND page_id=$2 AND component_api=$3
+        AND slot=$4 AND sort_order=$5
+    `,[tenantId,page[0].id,componentApi,item.slot,item.sort_order]);
+    if(existingParts.length)continue;
     await created('Page Component',item.page_api,key,`
       INSERT INTO md_page_components(tenant_id,page_id,component_api,slot,sort_order)
       VALUES($1,$2,$3,$4,$5)
