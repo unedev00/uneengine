@@ -23,6 +23,8 @@ export const appearanceChoiceFields = [
  * numeric limits above, while layoutStyle uses these published limits.
  */
 export const responsiveNumberFields = [
+  {key:'width',label:'Width',min:1,max:10000},
+  {key:'height',label:'Height',min:1,max:10000},
   {key:'padding',label:'Padding',min:0,max:160},
   {key:'margin',label:'Margin',min:0,max:160},
   {key:'borderWidth',label:'Border width',min:0,max:24},
