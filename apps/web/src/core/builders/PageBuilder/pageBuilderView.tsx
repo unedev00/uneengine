@@ -2162,24 +2162,21 @@ function PageBuilder({
             {([['Text','Text','Image','Rich Text'],['Buttons','Button','Link','Action'],['Sections','Section','Container','Columns'],['Data','Item Grid','Form','Record']] as const).map(([group,...names])=>
               <div className="office-ribbon-group" key={group}><div className="office-ribbon-stack">{names.map(name=>{
                 const component=paletteComponents.find(item=>item.label.toLowerCase()===name.toLowerCase())??paletteComponents.find(item=>item.label.toLowerCase().includes(name.toLowerCase()));
-                return <button key={name} disabled={!component} onClick={()=>component&&addPaletteComponent(component.type)}>{renderPaletteIcon({type:component?.type??name,label:component?.label??name})} {component?.label??name}</button>;
+                return <button key={name} disabled={!component} onClick={()=>component&&addPaletteComponent(component.type)}>{component ? renderPaletteIcon(component) : <Grid2X2 size={15}/>} {component?.label??name}</button>;
               })}</div><span>{group}</span></div>)}
           </>}
-          {selected && ribbonTab.startsWith('Component ') && <div className="office-ribbon-group"><div className="office-ribbon-stack">
-            <strong title={selected.label}>{selected.label}</strong>
-          </div><span>Selected component</span></div>}
           {selected && ribbonTab === 'Component Properties' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
             <label>Label <input aria-label="Component label" value={selected.label} onChange={event=>updateComponent(selected.id,{label:event.target.value})}/></label>
             <button disabled={isCanvasLocked(selected)} onClick={removeSelected}><Trash2 size={16}/> Delete block</button>
           </div><span>Content & appearance</span></div>}
           {selected && ribbonTab === 'Component Data' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
             <button onClick={()=>openComponentInspector('Data & Actions')}><Database size={16}/> Data bindings</button>
-                        <button onClick={()=>openComponentInspector('Data & Actions')}><Workflow size={16}/> Conditions</button>
+            <button onClick={()=>openComponentInspector('Data & Actions')}><Workflow size={16}/> Conditions</button>
           </div><span>Data</span></div>}
           {selected && ribbonTab === 'Component Action' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
             <button onClick={()=>openComponentInspector('Visibility')}><Workflow size={16}/> Actions & events</button>
             <button onClick={()=>openComponentInspector('Visibility')}><Eye size={16}/> Visibility rules</button>
-                      </div><span>Behaviour</span></div>}
+          </div><span>Behaviour</span></div>}
           {selected && ribbonTab === 'Component Layout' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
             <button onClick={()=>openComponentInspector('Position')}><Layers3 size={16}/> Position & size</button>
             <button disabled={isCanvasLocked(selected)} onClick={()=>moveSelected(-1)}><ArrowUp size={16}/> Bring forward</button>
@@ -2197,7 +2194,7 @@ function PageBuilder({
               <button onClick={()=>{setPageSettingsOpen(true);setActivePanel('page');}}><Settings2 size={17}/> Preview settings</button>
             </div><span>Preview</span></div>
           </>}
-          {ribbonTab === 'Add Block' && <div className="office-ribbon-library" aria-label="Component library"><select aria-label="Block category" value={paletteCategory} onChange={event=>setPaletteCategory(event.target.value as typeof paletteCategory)}>{pageBuilderPaletteCategories.map(category=><option key={category} value={category}>{pageBuilderCategoryLabels[category]}</option>)}</select><div className="office-ribbon-library-items">{filteredPaletteComponents.map(component=><button type="button" key={component.id} title={component.description} onClick={()=>addPaletteComponent(component.type)}>{renderPaletteIcon(component)}{component.label}</button>)}{page.pageType==='Record Page'&&fields.map(field=><button type="button" key={field.apiName} onClick={()=>addField(field.apiName)}><Database size={13}/>{field.label}</button>)}</div></div>}
+          {ribbonTab === 'Add Block' && <div className="office-ribbon-library office-ribbon-group" aria-label="Component library"><select aria-label="Block category" value={paletteCategory} onChange={event=>setPaletteCategory(event.target.value as typeof paletteCategory)}>{pageBuilderPaletteCategories.map(category=><option key={category} value={category}>{pageBuilderCategoryLabels[category]}</option>)}</select><div className="office-ribbon-library-items">{filteredPaletteComponents.map(component=><button type="button" key={component.id} title={component.description} onClick={()=>addPaletteComponent(component.type)}>{renderPaletteIcon(component)}{component.label}</button>)}{page.pageType==='Record Page'&&fields.map(field=><button type="button" key={field.apiName} onClick={()=>addField(field.apiName)}><Database size={13}/>{field.label}</button>)}</div><span>More blocks</span></div>}
           <div className="office-ribbon-inspector-host" ref={setRibbonPropertyHost} aria-label="Ribbon property controls" />
         </div>
       </section>
