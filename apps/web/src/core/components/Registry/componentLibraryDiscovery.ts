@@ -60,7 +60,7 @@ export function uniqueLibraryComponents(
 /** Friendly names are presentation-only. Never change stable component API names in saved pages. */
 export function libraryComponentLabel(component: LibraryComponentMetadata): string {
   if (component.apiName.startsWith('une_')) {
-    const raw = component.label.replace(/^\\s*(?:UNE|One)[\\s_-]*/i, '').trim();
+    const raw = component.label.replace(/^\s*(?:UNE|One)[\s_-]*/i, '').trim();
     return raw || component.apiName.slice(4).split('_').map(part => part.charAt(0).toUpperCase() + part.slice(1)).join(' ');
   }
   return component.scope === 'platform-system' ? component.label : oneComponentLabel(component);
