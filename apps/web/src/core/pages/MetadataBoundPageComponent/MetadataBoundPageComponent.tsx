@@ -174,7 +174,7 @@ export default function MetadataBoundPageComponent({
       .catch(() => {if(active) setChannelAccess({userId:'',viewAll:false,grants:[],eligibleAssignees:[]});});
     return () => {active = false;};
   }, [properties.channelAccessPath, properties.recordPresenterApiName, revision]);
-  const filteredRecords=filterPageComponentRecords(records,properties.filters,fields,{pageState,recordId,sessionId});
+  const filteredRecords=filterPageComponentRecords(records,properties.filters,fields,{pageState,recordId,sessionId},properties.filterLogic==='OR'?'OR':'AND');
   const relatedKey=String(properties.relatedFilterKey??'');
   const relatedField=String(properties.relatedFieldApiName??'');
   const parentId=relatedKey?selectedFilterRecords[relatedKey]?.recordId||pageState[relatedKey]:undefined;
