@@ -139,6 +139,7 @@ export function filterPageComponentRecords<T extends Record<string, unknown>>(
 ): T[] {
   if (definitions === undefined || definitions === null) return [...records];
   if (!Array.isArray(definitions)) return [];
+  if (definitions.length===0) return [...records];
   if (pageComponentRecordQuery(definitions,fields,context,logic).blocked)return [];
   return records.filter(record => definitions[logic==='OR'?'some':'every'](item => {
     const filter = item as PageFilter;
