@@ -2449,6 +2449,30 @@ function PageBuilder({
               properties={selected.properties}
               onChange={properties=>updateComponent(selected.id,{properties})}/>
           </div>}
+          {selected && ribbonTab === 'Component Action' && selectedCustomDefinition?.apiName==='une_item_grid'
+            && <div className="office-ribbon-group"><div className="office-ribbon-stack">
+              <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Add to cart</span>
+                <select aria-label="Choose a Cart component" value={page.components
+                  .filter(component=>component.type==='Custom:une_cart')
+                  .find(cart=>String(cart.properties.cartTargetKey??'cashier')===String(selected.properties.cartTargetKey??''))?.id??''}
+                  onChange={event=>{
+                    const target=page.components.find(component=>component.id===event.target.value&&component.type==='Custom:une_cart');
+                    const key=target?String(target.properties.cartTargetKey??'cashier'):'';
+                    updateComponent(selected.id,{properties:{...selected.properties,
+                      cartTargetKey:key,
+                      showAddIcon:Boolean(target),
+                      separateAddButton:Boolean(target)}});
+                  }}>
+                  <option value="">No cart connected</option>
+                  {page.components.filter(component=>component.type==='Custom:une_cart')
+                    .map(cart=><option key={cart.id} value={cart.id}>{cart.label}</option>)}
+                </select>
+              </label>
+              {page.components.filter(component=>component.type==='Custom:une_cart'
+                && String(component.properties.cartTargetKey??'cashier')===String(selected.properties.cartTargetKey)).length>1
+                && <span className="office-ribbon-stat" role="alert">More than one Cart shares this connection.</span>}
+              {selected.properties.cartTargetKey && <span className="office-ribbon-stat">Card Add button sends the selected record to Cart</span>}
+            </div><span>Cart connection</span></div>}
           {selected && ribbonTab === 'Component Action' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
             <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">When</span>
               <select aria-label="Choose supported event" value={actionEvent}
