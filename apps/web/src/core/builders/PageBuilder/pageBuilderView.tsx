@@ -2115,47 +2115,6 @@ function PageBuilder({
         </tr>)}</tbody></table>{!visiblePages.length && <div className="records-empty">No pages match the selected filter. Create a new page to begin.</div>}</div>
       </section>}
       {editorMode && <>
-      <div className="builder-titlebar builder-compact-toolbar">
-        <div className="builder-current-page">
-          <button type="button" className="icon-button subtle" aria-label="Back to page list" title="Back to pages" onClick={safeBackToPages}><ArrowLeft size={18}/></button>
-          <button type="button" className="builder-page-name" title="Edit page name" onClick={() => { setPageSettingsOpen(true); setActivePanel('page'); }}><Pencil size={13}/>{page.label}</button>
-          <label className="builder-layout-switcher">Layout
-            <select aria-label="Choose page layout" disabled={switchingLayout||saving}
-              value={page.layoutVariant??'Desktop'}
-              onChange={event=>void switchLayoutVariant(event.target.value as 'Mobile'|'Desktop'|'Tablet'|'Custom')}>
-              {(['Mobile','Desktop','Tablet','Custom'] as const).map(variant=>
-                <option key={variant} value={variant}>{variant}</option>)}
-            </select>
-          </label>
-          <span className="builder-page-status" aria-live="polite">
-            {undoStack.length?'Unsaved edits':
-              page.draftRevision&&page.draftRevision!==page.publishedRevision?'Unpublished changes':
-              savedFeedback?'Saved':page.status==='Active'?'Published':'Draft'}
-          </span>
-        </div>
-        <div className="toolbar-actions">
-          <button type="button" className="icon-button subtle" aria-label={activePanel ? 'Collapse panel' : 'Open blocks panel'} aria-pressed={activePanel !== null}
-            title={activePanel ? 'Collapse left panel' : 'Expand left panel'} onClick={() => setActivePanel(value => value ? null : 'palette')}><PanelLeft size={17}/></button>
-          <button type="button" className="icon-button subtle" aria-label="Open page dependencies" title="Dependencies for this page" onClick={()=>setDependenciesOpen(true)}><Puzzle size={17}/></button>
-          <button type="button" className="icon-button subtle" aria-label="Open page routes" title="Route aliases for this page" onClick={()=>setRouteDirectoryOpen(true)}><ExternalLink size={17}/></button>
-          <button type="button" className="icon-button subtle" aria-label="Page properties" title="Page properties" onClick={() => {setPageSettingsOpen(true);setActivePanel('page');}}><Settings2 size={17}/></button>
-          {page.layoutMode === 'free-canvas' && <button type="button" className={canvasSnap ? 'canvas-snap-toggle active' : 'canvas-snap-toggle'}
-            aria-pressed={canvasSnap} onClick={() => setCanvasSnap(value => !value)}>Snap {canvasSnap ? 'on' : 'off'}</button>}
-          <button type="button" className="btn btn-small"
-            aria-label="Test published page in its assigned application" title="Runs the active page and real Flows. Use a disposable test tenant."
-            disabled={page.pageType!=='App Page' || page.status!=='Active' || !currentPageIsAssignedToBuilderApp || !builderAppApiName}
-            onClick={()=>{
-              const url=appRoutePath({kind:'app-page',appId:builderAppApiName,pageApiName:page.apiName});
-              const opened=window.open(url,'_blank','noopener,noreferrer');
-              if(!opened)onNotify('Allow popups to test the published page in the assigned application.');
-            }}><ExternalLink size={14}/> Test active app</button>
-          <button type="button" className="btn btn-brand btn-small" aria-label="Save page" title={page.status === 'Active' ? 'Save updates to this live page' : 'Save this draft'} disabled={saving} onClick={()=>void savePage()}><Save size={16}/>{saving ? 'Saving…' : 'Save'}</button>
-          <button type="button" className="btn btn-small" title="Publish this layout for assigned users"
-            disabled={saving||switchingLayout||(page.status==='Active'&&!undoStack.length&&page.draftRevision===page.publishedRevision)}
-            onClick={()=>void publishCurrentLayout()}><Check size={15}/>{page.status==='Draft'?'Activate':'Publish'}</button>
-          <button type="button" className="icon-button subtle" aria-label="Page Builder help" title="How to build a page" onClick={() => setShowWelcome(current => !current)}><CircleHelp size={17}/></button>
-        </div>
-      </div>
       <section className="office-builder-ribbon" aria-label="Page Builder ribbon">
         <nav className="office-ribbon-tabs" role="tablist" aria-label="Page Builder tabs">
           {(['Home','Add Block',...(selected ? ['Component Properties','Component Data','Component Action','Component Layout'] : []),'Preview'] as Array<typeof ribbonTab>).map(tab =>
@@ -2174,6 +2133,43 @@ function PageBuilder({
               <button onClick={() => setRouteDirectoryOpen(true)}><ExternalLink size={16}/> Page routes</button>
             </div><span>Page configuration</span></div>
           </>}
+          {ribbonTab === 'Home' && <div className="office-ribbon-group office-ribbon-home-toolbar"><div className="office-home-actions"><div className="builder-current-page">
+          <button type="button" className="icon-button subtle" aria-label="Back to page list" title="Back to pages" onClick={safeBackToPages}><ArrowLeft size={18}/></button>
+          <button type="button" className="builder-page-name" title="Edit page name" onClick={() => { setPageSettingsOpen(true); setActivePanel('page'); }}><Pencil size={13}/>{page.label}</button>
+          <label className="builder-layout-switcher">Layout
+            <select aria-label="Choose page layout" disabled={switchingLayout||saving}
+              value={page.layoutVariant??'Desktop'}
+              onChange={event=>void switchLayoutVariant(event.target.value as 'Mobile'|'Desktop'|'Tablet'|'Custom')}>
+              {(['Mobile','Desktop','Tablet','Custom'] as const).map(variant=>
+                <option key={variant} value={variant}>{variant}</option>)}
+            </select>
+          </label>
+          <span className="builder-page-status" aria-live="polite">
+            {undoStack.length?'Unsaved edits':
+              page.draftRevision&&page.draftRevision!==page.publishedRevision?'Unpublished changes':
+              savedFeedback?'Saved':page.status==='Active'?'Published':'Draft'}
+          </span>
+        </div>
+        <div className="toolbar-actions">
+          <button type="button" className="icon-button subtle" aria-label="Open page dependencies" title="Dependencies for this page" onClick={()=>setDependenciesOpen(true)}><Puzzle size={17}/></button>
+          <button type="button" className="icon-button subtle" aria-label="Open page routes" title="Route aliases for this page" onClick={()=>setRouteDirectoryOpen(true)}><ExternalLink size={17}/></button>
+          <button type="button" className="icon-button subtle" aria-label="Page properties" title="Page properties" onClick={() => {setPageSettingsOpen(true);setActivePanel('page');}}><Settings2 size={17}/></button>
+          {page.layoutMode === 'free-canvas' && <button type="button" className={canvasSnap ? 'canvas-snap-toggle active' : 'canvas-snap-toggle'}
+            aria-pressed={canvasSnap} onClick={() => setCanvasSnap(value => !value)}>Snap {canvasSnap ? 'on' : 'off'}</button>}
+          <button type="button" className="btn btn-small"
+            aria-label="Test published page in its assigned application" title="Runs the active page and real Flows. Use a disposable test tenant."
+            disabled={page.pageType!=='App Page' || page.status!=='Active' || !currentPageIsAssignedToBuilderApp || !builderAppApiName}
+            onClick={()=>{
+              const url=appRoutePath({kind:'app-page',appId:builderAppApiName,pageApiName:page.apiName});
+              const opened=window.open(url,'_blank','noopener,noreferrer');
+              if(!opened)onNotify('Allow popups to test the published page in the assigned application.');
+            }}><ExternalLink size={14}/> Test active app</button>
+          <button type="button" className="btn btn-brand btn-small" aria-label="Save page" title={page.status === 'Active' ? 'Save updates to this live page' : 'Save this draft'} disabled={saving} onClick={()=>void savePage()}><Save size={16}/>{saving ? 'Saving…' : 'Save'}</button>
+          <button type="button" className="btn btn-small" title="Publish this layout for assigned users"
+            disabled={saving||switchingLayout||(page.status==='Active'&&!undoStack.length&&page.draftRevision===page.publishedRevision)}
+            onClick={()=>void publishCurrentLayout()}><Check size={15}/>{page.status==='Draft'?'Activate':'Publish'}</button>
+          <button type="button" className="icon-button subtle" aria-label="Page Builder help" title="How to build a page" onClick={() => setShowWelcome(current => !current)}><CircleHelp size={17}/></button>
+        </div></div><span>Page commands</span></div>}
           {ribbonTab === 'Add Block' && <>
             {([['Text','Text','Image','Rich Text'],['Buttons','Button','Link','Action'],['Sections','Section','Container','Columns'],['Data','Item Grid','Form','Record']] as const).map(([group,...names])=>
               <div className="office-ribbon-group" key={group}><div className="office-ribbon-stack">{names.map(name=>{
@@ -2219,6 +2215,7 @@ function PageBuilder({
               <button onClick={()=>{setPageSettingsOpen(true);setActivePanel('page');}}><Settings2 size={17}/> Preview settings</button>
             </div><span>Preview</span></div>
           </>}
+          {ribbonTab === 'Add Block' && <div className="office-ribbon-library" aria-label="Component library"><input aria-label="Search blocks" placeholder="Search blocks" value={paletteSearch} onChange={event=>setPaletteSearch(event.target.value)}/><select aria-label="Block category" value={paletteCategory} onChange={event=>setPaletteCategory(event.target.value as typeof paletteCategory)}>{pageBuilderPaletteCategories.map(category=><option key={category} value={category}>{pageBuilderCategoryLabels[category]}</option>)}</select><div className="office-ribbon-library-items">{filteredPaletteComponents.map(component=><button type="button" key={component.id} title={component.description} onClick={()=>addPaletteComponent(component.type)}><Plus size={13}/>{component.label}</button>)}{page.pageType==='Record Page'&&fields.map(field=><button type="button" key={field.apiName} onClick={()=>addField(field.apiName)}><Database size={13}/>{field.label}</button>)}</div></div>}
           <div className="office-ribbon-inspector-host" ref={setRibbonPropertyHost} aria-label="Ribbon property controls" />
         </div>
       </section>
@@ -2230,125 +2227,6 @@ function PageBuilder({
       </section>}
       <div className={`page-builder-layout canvas-unified-builder reference-builder-layout ${page.layoutMode === 'free-canvas' ? 'modern-canvas-builder' : ''} ${activePanel === null ? 'unified-panel-collapsed' : ''}`}
         style={{ '--component-panel-width': `${componentPanelWidth}px` } as React.CSSProperties}>
-        <nav className="builder-icon-rail" aria-label="Builder tools">
-          {([
-            ['Home', Grid2X2, () => openPalette('Components','All Components')],
-            ['Layout', PanelLeft, () => openPalette('Components','Layout')],
-            ['Data', Database, () => openPalette('Components','Data')],
-            ['Appearance', SlidersHorizontal, () => openComponentInspector('Design')],
-            ['Actions', Workflow, () => openComponentInspector('Visibility')],
-            ['Advanced', Settings2, () => openComponentInspector('Position')]
-          ] as const).map(([label, Icon, action]) =>
-            <button type="button" key={label} title={label} aria-label={label}
-              aria-pressed={(label === 'Home' && activePanel === 'palette' && paletteCategory === 'All Components') || (label === 'Layout' && activePanel === 'palette' && paletteCategory === 'Layout') || (label === 'Data' && activePanel === 'palette' && paletteCategory === 'Data') || (label === 'Appearance' && activePanel === 'properties' && inspectorTab === 'Design') || (label === 'Actions' && activePanel === 'properties' && inspectorTab === 'Visibility') || (label === 'Advanced' && activePanel === 'properties' && inspectorTab === 'Position')}
-              className={((label === 'Home' && activePanel === 'palette' && paletteCategory === 'All Components') || (label === 'Layout' && activePanel === 'palette' && paletteCategory === 'Layout') || (label === 'Data' && activePanel === 'palette' && paletteCategory === 'Data') || (label === 'Appearance' && activePanel === 'properties' && inspectorTab === 'Design') || (label === 'Actions' && activePanel === 'properties' && inspectorTab === 'Visibility') || (label === 'Advanced' && activePanel === 'properties' && inspectorTab === 'Position')) ? 'active' : ''}
-              onClick={action}><Icon size={21}/><span>{label}</span></button>)}
-        </nav>
-        <aside className="component-panel" style={activePanel !== 'palette' ? { display: 'none' } : undefined}>
-          <div className="builder-panel-collapse-row"><strong>{paletteTab === 'Components' ? (paletteCategory === 'All Components' ? 'Home' : pageBuilderCategoryLabels[paletteCategory]) : paletteTab === 'Layers' ? 'Page structure' : paletteTab}</strong>
-            <button type="button" aria-label="Collapse element panel" title="Collapse panel" className="icon-button subtle"
-              onClick={() => setActivePanel(null)}><X size={16}/></button>
-          </div>
-          <div className="builder-tabs">
-            <button className={paletteTab === 'Components' ? 'active' : ''} onClick={() => setPaletteTab('Components')}>Blocks</button>
-            <button className={paletteTab === 'Layers' ? 'active' : ''} onClick={() => setPaletteTab('Layers')}>Layers</button>
-            {page.pageType === 'Record Page' && <button className={paletteTab === 'Fields' ? 'active' : ''} onClick={() => setPaletteTab('Fields')}>Fields</button>}
-          </div>
-          {paletteTab === 'Components' && paletteCategory === 'All Components' && <div className="reference-home-intro">Add, edit and organise content on your page</div>}
-          {paletteTab === 'Components' && paletteCategory === 'All Components' && <div className="reference-insert-section">
-            <h3>Insert</h3><div className="reference-quick-insert">
-              {([
-                ['Text', Type], ['Image', ImageIcon], ['Button', MousePointer2],
-                ['Container', Square], ['Item Grid', Grid2X2], ['Form', FormInput]
-              ] as const).map(([label, Icon]) => {
-                const match = paletteComponents.find(item => item.label.toLowerCase() === label.toLowerCase()) ??
-                  paletteComponents.find(item => item.label.toLowerCase().includes(label.toLowerCase()) || item.type.toLowerCase().includes(label.toLowerCase().replace(' ', '-')));
-                return <button type="button" key={label} disabled={!match} title={match ? 'Add '+match.label : label+' unavailable'}
-                  onClick={() => match && addPaletteComponent(match.type)}><Icon size={21}/><span>{label}</span></button>;
-              })}
-            </div>
-            <h3>Page</h3><div className="reference-page-commands">
-              <button type="button" onClick={() => {setPageSettingsOpen(true);setActivePanel('page');}}><Settings2 size={16}/> Page settings</button>
-              <button type="button" onClick={() => openPalette('Layers')}><Layers3 size={16}/> Page layers</button>
-            </div>
-          </div>}
-          <div className="component-search"><Search size={14} /><input value={paletteSearch} onChange={(event) => setPaletteSearch(event.target.value)} placeholder={paletteTab === 'Components' ? 'Search blocks…' : `Search ${paletteTab.toLowerCase()}…`} aria-label={paletteTab === 'Components' ? 'Search blocks' : `Search ${paletteTab.toLowerCase()}`} /></div>
-          {paletteTab === 'Layers' ? <nav className="page-layer-tree" aria-label="Page component layers">
-            {page.components.filter(component => !paletteSearch || (component.label + ' ' + component.type).toLowerCase().includes(paletteSearch.toLowerCase())).map(component => {
-              const parent = component.parentId ?? (typeof component.properties.layoutParentId === 'string' ? component.properties.layoutParentId : '');
-              return <div key={component.id} className="page-layer-row" style={{paddingLeft:parent ? 20 : 6}}>
-                <button type="button" className={selectedId === component.id ? 'active btn btn-small' : 'btn btn-small'}
-                  onClick={() => { setSelectedId(component.id); setPageSettingsOpen(false); }}
-                  aria-label={'Select layer ' + component.label}>{component.label}</button>
-                <button type="button" className="icon-button subtle" aria-label={'Move layer ' + component.label + ' up'} title="Bring forward" disabled={previewMode || isCanvasLocked(component) || page.components[0]?.id === component.id} onClick={() => moveLayer(component.id, -1)}><ArrowUp size={13}/></button>
-                <button type="button" className="icon-button subtle" aria-label={'Move layer ' + component.label + ' down'} title="Send backward" disabled={previewMode || isCanvasLocked(component) || page.components[page.components.length-1]?.id === component.id} onClick={() => moveLayer(component.id, 1)}><ArrowDown size={13}/></button>
-                <button type="button" className="icon-button subtle" aria-label={'Toggle layer ' + component.label}
-                  disabled={previewMode || isCanvasLocked(component)}
-                  onClick={() => updateComponent(component.id, {visible: !component.visible})}>{component.visible ? <Eye size={14}/> : '○'}</button>
-                <button type="button" className="icon-button subtle" aria-label={(isCanvasLocked(component) ? 'Unlock ' : 'Lock ') + component.label}
-                  title={isCanvasLocked(component) ? 'Unlock layer' : 'Lock layer'}
-                  disabled={previewMode} onClick={() => toggleCanvasLock(component)}>{isCanvasLocked(component) ? <Lock size={14}/> : <Unlock size={14}/>}</button>
-              </div>;
-            })}
-            {!page.components.length && <p className="properties-help">Add a block to see the page structure.</p>}
-          </nav> : paletteTab === 'Components' ? <>
-            <nav className="component-category-list" aria-label="Component categories">
-              {pageBuilderPaletteCategories.map((category) => {
-                const count = category === 'All Components' ? paletteComponents.length
-                  : category === 'Favourites' ? paletteComponents.filter((component) => favouriteComponents.includes(component.id)).length
-                    : category === 'Recent' ? paletteComponents.filter((component) => recentComponents.includes(component.id)).length
-                    : paletteComponents.filter((component) => component.categories.includes(category)).length;
-                return <button type="button" key={category}
-                  className={paletteCategory === category ? 'component-category active' : 'component-category'}
-                  aria-pressed={paletteCategory === category} onClick={() => setPaletteCategory(category)}
-                  title={`Show ${pageBuilderCategoryLabels[category].toLowerCase()}`}>
-                  <span>{pageBuilderCategoryLabels[category]}</span><small>{count}</small>
-                </button>;
-              })}
-            </nav>
-            <div className="component-grid" aria-live="polite">
-              {filteredPaletteComponents.map((component) => {
-                const isFavourite = favouriteComponents.includes(component.id);
-                return <article className="component-library-card" key={component.id}
-                  draggable={!isPhoneBuilder && !previewMode}
-                  title={`${component.label}: ${component.description}`}
-                  onDragStart={(event) => event.dataTransfer.setData('text/plain', `component:${component.type}`)}>
-                  <span className="component-card-icon" aria-hidden="true">{renderPaletteIcon(component)}</span>
-                  <div className="component-card-copy">
-                    <strong>{component.label}</strong>
-                    <span>{component.description}</span>
-                  </div>
-                  <button type="button" className="component-card-action"
-                    draggable={!isPhoneBuilder && !previewMode}
-                    aria-label={`Add ${component.label} to canvas`}
-                    onClick={() => addPaletteComponent(component.type)}
-                    onDragStart={(event) => event.dataTransfer.setData('text/plain', `component:${component.type}`)}>
-                    <Plus size={14}/>
-                  </button>
-                  <button type="button" className={isFavourite ? 'component-favourite active' : 'component-favourite'}
-                    aria-label={`${isFavourite ? 'Remove' : 'Add'} ${component.label} ${isFavourite ? 'from' : 'to'} favourites`}
-                    title={`${isFavourite ? 'Remove from' : 'Add to'} favourites`}
-                    onClick={(event) => { event.stopPropagation(); toggleFavourite(component.id); }}>
-                    <Star size={14} fill={isFavourite ? 'currentColor' : 'none'} />
-                  </button>
-                </article>;
-              })}
-              {filteredPaletteComponents.length === 0 && <div className="palette-empty component-grid-empty">
-                <strong>No matching blocks</strong>
-                <span>Try another category or search for what you want to add.</span>
-              </div>}
-            </div>
-            {availableComponents.length !== pageTypeComponents.length && <div className="palette-note">Some components require object features to be enabled.</div>}
-          </> : <>
-            <div className="component-group-label">{targetObject?.label ?? 'Object'} Fields</div>
-            {fields.filter((field) => `${field.label} ${field.apiName} ${field.dataType}`.toLowerCase().includes(paletteSearch.trim().toLowerCase())).map((field) => <button className="component-option field-option" draggable={!previewMode} key={field.apiName} title={`${field.label} · ${field.dataType}`} onClick={() => addField(field.apiName)} onDragStart={(event) => event.dataTransfer.setData('text/plain', `field:${field.apiName}`)}><span className="component-option-icon"><Database size={13} /></span><span><strong>{field.label}</strong><small>{field.dataType}</small></span><Plus size={14} /></button>)}
-            {fields.filter((field) => `${field.label} ${field.apiName} ${field.dataType}`.toLowerCase().includes(paletteSearch.trim().toLowerCase())).length === 0 && <div className="palette-empty">No matching fields</div>}
-          </>}
-          <button type="button" className="component-panel-resize" aria-label="Resize component library panel"
-            title="Drag to resize this panel"
-            onPointerDown={startComponentPanelResize} onPointerMove={moveComponentPanelResize}
-            onPointerUp={endComponentPanelResize} onPointerCancel={endComponentPanelResize} />
-        </aside>
         <div className="page-preview-area" ref={pagePreviewAreaRef}>
           <div className="reference-canvas-toolbar">
             <span><Monitor size={16}/> {device} <ChevronDown size={13}/></span>

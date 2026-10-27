@@ -585,3 +585,26 @@
 .office-ribbon-inspector-host .metadata-card { max-width:280px; }
 .office-builder-ribbon:has(.office-ribbon-inspector-host:not(:empty)) .office-ribbon-content { min-height:188px; }
 @media (max-width:700px) { .office-ribbon-inspector-host { min-width:230px; } .office-ribbon-inspector-host .properties-panel { height:155px!important; max-height:155px!important; } }
+
+/* Final one-ribbon Page Builder arrangement. */
+.page-builder-layout.canvas-unified-builder.reference-builder-layout{display:block!important;grid-template-columns:minmax(0,1fr)!important;padding:0!important}
+.page-builder-layout .builder-icon-rail,.page-builder-layout .component-panel,.page-builder-layout .component-panel-resize{display:none!important}
+.page-builder-layout .page-preview-area{display:block!important;min-width:0!important;width:100%!important;max-width:none!important;margin:0!important}
+.office-builder-ribbon .office-ribbon-content{height:150px;min-height:150px!important;max-height:150px;overflow-x:auto;overflow-y:hidden;align-items:stretch}
+.office-ribbon-group{min-width:125px;max-width:none;padding-inline:9px}
+.office-ribbon-inspector-host{min-width:340px;overflow:auto}
+.office-ribbon-inspector-host .properties-panel{height:137px!important;max-height:137px!important;overflow:auto!important}
+.office-ribbon-library{display:flex;flex-direction:column;gap:4px;min-width:240px;max-width:540px;padding:4px 8px}
+.office-ribbon-library input,.office-ribbon-library select{height:25px;width:160px;min-width:0;border:1px solid #bbc6d6;border-radius:3px;background:#fff;font-size:12px;padding:2px 6px}
+.office-ribbon-library-items{display:flex;gap:3px;overflow:auto;max-height:72px;flex-wrap:wrap}
+.office-ribbon-library-items button{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;background:transparent;border:1px solid #ccd5e2;border-radius:3px;padding:3px 5px;font-size:11px;cursor:pointer}
+.office-ribbon-home-toolbar{min-width:400px;max-width:760px}
+.office-home-actions{display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap;max-height:118px;overflow:auto}
+.office-home-actions .builder-current-page,.office-home-actions .toolbar-actions{display:flex;align-items:center;align-content:start;gap:5px;flex-wrap:wrap;min-width:0}
+.office-home-actions .builder-page-name{max-width:140px;text-overflow:ellipsis;overflow:hidden}
+.office-home-actions button{font-size:11px;min-height:24px}
+.office-home-actions .builder-layout-switcher select{height:26px}
+.office-ribbon-inspector-host .properties-section{max-width:220px;min-width:135px}
+.office-ribbon-inspector-host .metadata-card{max-width:220px}
+.office-ribbon-inspector-host .form-control,.office-ribbon-inspector-host input:not([type=checkbox]),.office-ribbon-inspector-host select{max-width:175px;min-height:23px}
+@media(max-width:700px){.office-builder-ribbon .office-ribbon-content{height:140px;min-height:140px!important;max-height:140px}.office-ribbon-home-toolbar{min-width:290px}.office-ribbon-inspector-host .properties-panel{height:125px!important}}
