@@ -412,7 +412,7 @@ test('Contextual Page Builder tabs do not leak metadata from other tabs',async()
  assert.match(builder,/ribbonTab === 'Component Content'/);
  assert.match(builder,/ribbonTab==='Component Style' && selected \? <div className="office-ribbon-colours">/);
  assert.match(builder,/ribbonTab === 'Component Properties' && <div className="office-ribbon-group office-ribbon-appearance"/);
- assert.match(builder,/\['Component Properties','Component Layout'\]\.includes\(ribbonTab\)/);
+ assert.match(builder,/ribbonTab==='Component Layout' && <div className="office-ribbon-inspector-host"/);
  assert.doesNotMatch(builder,/dataEditorOpen && selected|Advanced data settings/);
  assert.match(builder,/ribbonTab === 'Component Properties'/);
  assert.match(css,/office-ribbon-colours \.compact-color-swatches/);
@@ -433,4 +433,23 @@ test('Page Builder contextual ribbon is generated from aligned three-row groups'
   assert.match(css,/color:#1b283a!important/);
   assert.match(css,/office-ribbon-responsive-editor>\.office-ribbon-responsive-group/);
   assert.match(css,/grid-template-rows:repeat\(3,28px\)!important/);
+});
+
+test('Design ribbon stays a single bounded strip and advanced metadata remains editable',async()=>{
+  const root=new URL('../src/core/builders/',import.meta.url);
+  const builder=await readFile(new URL('PageBuilder/pageBuilderView.tsx',root),'utf8');
+  const css=await readModularCss(new URL('PageBuilder/styles-md227.css',root));
+  const contract=css.slice(css.lastIndexOf('/* Page Builder compact ribbon: one bounded'));
+  assert.ok(contract.length>0,'Final Page Builder geometry contract is present');
+  assert.match(contract,/flex-flow:row nowrap/);
+  assert.match(contract,/height:142px!important/);
+  assert.match(contract,/overflow-x:auto!important/);
+  assert.match(contract,/overflow-y:hidden!important/);
+  assert.doesNotMatch(contract,/flex-wrap:wrap|height:auto;max-height:none/);
+  assert.match(builder,/openExpandedEditor\('design'\)/);
+  assert.match(builder,/expandedRibbonEditor\.kind==='design'/);
+  assert.match(builder,/Metadata-driven component properties/);
+  assert.match(builder,/Responsive colours/);
+  assert.doesNotMatch(builder,/\['Component Properties','Component Layout'\]\.includes\(ribbonTab\)/);
+  assert.match(builder,/office-ribbon-visibility-row/);
 });
