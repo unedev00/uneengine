@@ -130,7 +130,7 @@ import { isComponentVisible } from '../../components/Properties/componentVisibil
 import PageComponentVisualEditor from '../ComponentStyleEditor/PageComponentVisualEditor';
 import { canNestComponent, pageAppearanceTarget, pageAppearanceStyleKeys, updateLayoutSettings, type LayoutSettingKey, directChildren, isLayoutType, isDescendantOf, layoutTypes } from '../../pages/TemplatePageRuntime/pageComponentLayout';
 import PageComponentStyleEditor from '../ComponentStyleEditor/PageComponentStyleEditor';
-import { isCanvasLocked, wrapCanvasComponent, ungroupCanvasComponent, snapCanvasPosition, alignCanvasComponents, distributeCanvasComponents } from './canvasInteractions';
+import { isCanvasLocked, wrapCanvasComponent, groupCanvasComponents, ungroupCanvasComponent, snapCanvasPosition, alignCanvasComponents, distributeCanvasComponents } from './canvasInteractions';
 import { copyComponentTree, cloneComponentTree, assignTabOnReparent, type ComponentClipboard } from './pageComponentTree';
 import { filterPageComponentRecords, needsMetadataComponentRuntime } from '../../pages/PageRuntime/pageComponentBindings';
 import { childrenOf, canNest, componentLayoutProps, hasPageComponentAppearance, isLayoutContainer, rawLayoutParentId, reparentComponent, resolvePageComponentStyle, type LayoutDevice } from '../../pages/TemplatePageRuntime/pageComponentLayout';
@@ -774,7 +774,12 @@ function PageBuilder({
   const wrapSelectedInContainer = () => {
     if (!selected || !selected.position || isCanvasLocked(selected) || rawLayoutParentId(selected)) return;
     const groupId = 'group-' + crypto.randomUUID();
-    applyPage({ ...page, components: wrapCanvasComponent(page.components, selected.id, groupId) });
+    const eligible=page.components.filter(item=>selectionIds.includes(item.id)&&item.position&&!rawLayoutParentId(item)&&item.properties.canvasLocked!==true&&!isCanvasLocked(item));
+    const next=eligible.length>1
+      ?groupCanvasComponents(page.components,eligible.map(item=>item.id),groupId)
+      :wrapCanvasComponent(page.components,selected.id,groupId);
+    applyPage({ ...page, components: next });
+    setSelectionIds([groupId]);
     setSelectedId(groupId);
     setPaletteTab('Layers');
   };
