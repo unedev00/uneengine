@@ -34,3 +34,10 @@
     transform: none;
   }
 }
+
+.md-card-detail-rows {display:grid;gap:5px;margin:4px 0 0;min-width:0}
+.md-card-detail-row {display:grid;grid-template-columns:minmax(0,auto) minmax(0,1fr);gap:8px;align-items:start;font-size:.85em}
+.md-card-detail-row dt {font-weight:600;overflow-wrap:anywhere}
+.md-card-detail-row dd {margin:0;min-width:0;overflow-wrap:anywhere}
+.md-card-add-icon:is(button) {align-self:flex-start;cursor:pointer;border:1px solid currentColor;border-radius:6px;min-height:32px;min-width:32px}
+.md-card-add-icon:is(button):focus-visible {outline:2px solid currentColor;outline-offset:2px}
