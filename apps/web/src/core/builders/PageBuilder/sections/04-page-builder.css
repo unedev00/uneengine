@@ -561,3 +561,87 @@
   .office-builder-ribbon .office-ribbon-content {height:142px!important}
   .office-builder-ribbon .office-ribbon-group {max-width:none}
 }
+
+/* Advanced Design reuses the shared metadata/property engines without
+   squeezing their full configuration schema into the compact ribbon. */
+.page-ribbon-advanced-design {
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  gap:16px;
+  width:100%;
+  min-width:0;
+}
+.page-ribbon-advanced-design .page-ribbon-design-section {
+  min-width:0;
+  padding:12px 14px;
+  border:1px solid #d5deea;
+  border-radius:6px;
+  background:var(--surface,#fff);
+}
+.page-ribbon-advanced-design .page-ribbon-design-section>h3 {
+  margin:0 0 12px;
+  font-size:14px;
+  font-weight:600;
+}
+.page-ribbon-advanced-design .metadata-component-presentation {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(min(230px,100%),1fr));
+  gap:12px;
+  width:100%;
+}
+.page-ribbon-advanced-design .office-ribbon-presentation-group {
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  min-width:0;
+  padding:10px;
+  border:1px solid #e0e6ef;
+  border-radius:5px;
+}
+.page-ribbon-advanced-design .office-ribbon-group-heading {
+  position:static!important;
+  height:auto!important;
+  margin:0 0 6px!important;
+  font-size:12px;
+  font-weight:600;
+}
+.page-ribbon-advanced-design .office-ribbon-presentation-group>.form-label {
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  gap:5px;
+  min-width:0;
+  width:100%;
+}
+.page-ribbon-advanced-design .office-ribbon-presentation-group :is(input,select) {
+  box-sizing:border-box;
+  min-width:0;
+  max-width:100%;
+}
+.page-ribbon-advanced-design .page-component-style-editor.office-ribbon-responsive-editor {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:stretch;
+  gap:12px;
+}
+.page-ribbon-advanced-design .office-ribbon-responsive-group {
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  min-width:min(210px,100%);
+  padding:8px;
+  border:1px solid #e0e6ef;
+  border-radius:5px;
+}
+.page-ribbon-advanced-design .office-ribbon-responsive-group>.form-label {
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  gap:5px;
+}
+.page-ribbon-advanced-design .office-ribbon-responsive-group .form-control {
+  max-width:100%;
+}
+.page-ribbon-advanced-design .metadata-component-visual-editor {
+  max-width:100%;
+}
