@@ -529,6 +529,27 @@ function PageBuilder({
     const priority = (id: string) => favouriteComponents.includes(id) ? -10 : recentComponents.includes(id) ? recentComponents.indexOf(id) : 100;
     return priority(a.id) - priority(b.id);
   });
+  // Ribbon commands are resolved from the real, currently eligible palette.
+  // Never render disabled placeholders or repeat commands in More blocks.
+  const ribbonGroupRules = [
+    { label: 'Text', match: /text|image|photo|picture|paragraph|heading|rich.?text|label|icon|media/i },
+    { label: 'Buttons', match: /button|link|action|navigation|menu/i },
+    { label: 'Sections', match: /section|container|column|row|layout|accordion|tabs?/i },
+    { label: 'Data', match: /item[_ -]?grid|card[_ -]?grid|grid|form|record|table|list|chart|repeater/i }
+  ] as const;
+  const ribbonComponentIds = new Set<string>();
+  const ribbonComponentGroups = ribbonGroupRules.map(group => {
+    const candidates = paletteComponents.filter(component =>
+      group.match.test(`${component.type} ${component.label}`) && !ribbonComponentIds.has(component.id));
+    // A published UNE Item Grid should take priority over generic data blocks.
+    if (group.label === 'Data') candidates.sort((left,right) =>
+      Number(/item[_ -]?grid/i.test(`${right.type} ${right.label}`)) -
+      Number(/item[_ -]?grid/i.test(`${left.type} ${left.label}`)));
+    const components = candidates.slice(0, 3);
+    components.forEach(component => ribbonComponentIds.add(component.id));
+    return { label: group.label, components };
+  }).filter(group => group.components.length > 0);
+  const remainingRibbonComponents = filteredPaletteComponents.filter(component => !ribbonComponentIds.has(component.id));
   const renderPaletteIcon = (component: { type: string; label: string }) => {
     const name = `${component.label} ${component.type}`.toLowerCase();
     if (/\b(text|heading|paragraph|rich text|label)\b/.test(name)) return <Type size={15} />;
@@ -2157,11 +2178,13 @@ function PageBuilder({
             </div><span>Version history</span></div>
           </>}
           {ribbonTab === 'Add Block' && <>
-            {([['Text','Text','Image','Rich Text'],['Buttons','Button','Link','Action'],['Sections','Section','Container','Columns'],['Data','Item Grid','Form','Record']] as const).map(([group,...names])=>
-              <div className="office-ribbon-group" key={group}><div className="office-ribbon-stack">{names.map(name=>{
-                const component=paletteComponents.find(item=>item.label.toLowerCase()===name.toLowerCase())??paletteComponents.find(item=>item.label.toLowerCase().includes(name.toLowerCase()));
-                return <button key={name} disabled={!component} onClick={()=>component&&addPaletteComponent(component.type)}>{component ? renderPaletteIcon(component) : <Grid2X2 size={15}/>} {component?.label??name}</button>;
-              })}</div><span>{group}</span></div>)}
+            {ribbonComponentGroups.map(group=>
+              <div className="office-ribbon-group" key={group.label}><div className="office-ribbon-stack">
+                {group.components.map(component=><button type="button" key={component.id}
+                  title={component.description} onClick={()=>addPaletteComponent(component.type)}>
+                  {renderPaletteIcon(component)} {component.label}
+                </button>)}
+              </div><span>{group.label}</span></div>)}
           </>}
           {selected && ribbonTab === 'Component Properties' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
             <label className="office-ribbon-inline-field">Label <input aria-label="Component label" value={selected.label} onChange={event=>updateComponent(selected.id,{label:event.target.value})}/></label>
@@ -2190,7 +2213,7 @@ function PageBuilder({
               <button onClick={()=>{setPageSettingsOpen(true);setActivePanel('page');}}><Settings2 size={17}/> Preview settings</button>
             </div><span>Preview</span></div>
           </>}
-          {ribbonTab === 'Add Block' && <div className="office-ribbon-library office-ribbon-group" aria-label="Component library"><select aria-label="Block category" value={paletteCategory} onChange={event=>setPaletteCategory(event.target.value as typeof paletteCategory)}>{pageBuilderPaletteCategories.map(category=><option key={category} value={category}>{pageBuilderCategoryLabels[category]}</option>)}</select><div className="office-ribbon-library-items">{filteredPaletteComponents.map(component=><button type="button" key={component.id} title={component.description} onClick={()=>addPaletteComponent(component.type)}>{renderPaletteIcon(component)}{component.label}</button>)}{page.pageType==='Record Page'&&fields.map(field=><button type="button" key={field.apiName} onClick={()=>addField(field.apiName)}><Database size={13}/>{field.label}</button>)}</div><span>More blocks</span></div>}
+          {ribbonTab === 'Add Block' && <div className="office-ribbon-library office-ribbon-group" aria-label="Component library"><select aria-label="Block category" value={paletteCategory} onChange={event=>setPaletteCategory(event.target.value as typeof paletteCategory)}>{pageBuilderPaletteCategories.map(category=><option key={category} value={category}>{pageBuilderCategoryLabels[category]}</option>)}</select><div className="office-ribbon-library-items">{remainingRibbonComponents.map(component=><button type="button" key={component.id} title={component.description} onClick={()=>addPaletteComponent(component.type)}>{renderPaletteIcon(component)}{component.label}</button>)}{page.pageType==='Record Page'&&fields.map(field=><button type="button" key={field.apiName} onClick={()=>addField(field.apiName)}><Database size={13}/>{field.label}</button>)}</div><span>More blocks</span></div>}
           {(ribbonTab === 'Home' || ribbonTab.startsWith('Component ')) && <div className="office-ribbon-inspector-host" ref={setRibbonPropertyHost} aria-label="Ribbon property controls" />}
         </div>
       </section>
