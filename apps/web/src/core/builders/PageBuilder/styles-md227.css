@@ -1162,3 +1162,129 @@
   margin:0;padding:0;height:19px;line-height:19px;
   text-align:center;background:transparent
 }
+
+/* Shared ribbon geometry: all group content is three uniform rows.
+   This is scoped to Page Builder; it must not alter modal or runtime styles. */
+.office-builder-ribbon .office-ribbon-content{align-items:stretch;min-height:150px;overflow-x:auto;overflow-y:hidden}
+.office-builder-ribbon .office-ribbon-group{position:relative;display:flex;flex-direction:column;justify-content:flex-start;padding-bottom:24px;min-height:136px}
+.office-builder-ribbon .office-ribbon-group>.office-ribbon-stack{display:grid;grid-template-rows:repeat(3,28px);grid-auto-flow:column;gap:3px 8px;align-items:center;align-content:start}
+.office-builder-ribbon .office-ribbon-group>span:last-child{position:absolute;bottom:2px;left:0;right:0;text-align:center;line-height:18px}
+.office-builder-ribbon .office-ribbon-inline-field{display:grid!important;grid-template-columns:60px 120px;gap:6px;align-items:center;height:28px;min-height:28px}
+.office-builder-ribbon .office-ribbon-inline-field input:not([type=checkbox]){box-sizing:border-box;height:25px;min-height:25px;max-height:25px;width:120px;max-width:120px}
+.office-builder-ribbon .office-ribbon-inline-field input[type=number]{width:72px!important;max-width:72px!important}
+.office-builder-ribbon .office-ribbon-inline-field select{box-sizing:border-box;width:116px!important;max-width:116px!important;min-width:116px;height:25px}
+.office-builder-ribbon .office-ribbon-icon-button{width:28px;height:28px;min-width:28px}
+.office-ribbon-inspector-host .office-ribbon-inline-options{display:flex;flex:0 0 auto;align-items:flex-start;height:124px;max-width:none;min-width:0}
+.office-ribbon-inspector-host .office-ribbon-inline-options .metadata-component-presentation{display:flex;flex-direction:row;height:124px;align-items:stretch;min-width:0}
+.office-ribbon-inspector-host .office-ribbon-inline-options .office-ribbon-presentation-group{position:relative;display:grid;grid-template-rows:repeat(3,28px);grid-auto-flow:column;grid-auto-columns:190px;gap:3px 6px;min-width:190px;width:max-content;max-width:none;min-height:124px;height:124px;overflow:visible;padding:4px 10px 24px;border-right:1px solid #c8cdd4;box-sizing:border-box}
+.office-ribbon-inspector-host .office-ribbon-inline-options .office-ribbon-presentation-group>.office-ribbon-group-heading{position:absolute;bottom:2px;left:0;right:0;text-align:center;line-height:18px;height:18px;white-space:nowrap}
+.office-ribbon-inspector-host .office-ribbon-inline-options .office-ribbon-presentation-group>.form-label{box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:5px;height:28px;min-height:28px;max-width:190px;margin:0;font-size:11px}
+.office-ribbon-inspector-host .office-ribbon-inline-options .office-ribbon-presentation-group>.form-label input,
+.office-ribbon-inspector-host .office-ribbon-inline-options .office-ribbon-presentation-group>.form-label select{width:110px;min-width:80px;max-width:110px;height:25px;min-height:25px}
+.office-ribbon-inspector-host .office-ribbon-layout-responsive{flex:1 0 auto;min-width:0;height:124px}
+.office-ribbon-inspector-host .office-ribbon-layout-responsive .page-component-style-editor{position:relative!important;display:grid!important;grid-template-rows:repeat(3,28px)!important;grid-auto-flow:column!important;grid-auto-columns:200px!important;grid-template-columns:none!important;justify-content:start!important;align-content:start!important;align-items:center!important;gap:3px 8px!important;width:max-content!important;min-width:max-content!important;max-width:none!important;height:124px!important;min-height:124px!important;overflow:visible!important;padding:4px 10px 25px!important;box-sizing:border-box}
+.office-ribbon-inspector-host .office-ribbon-layout-responsive .page-component-style-editor>.office-ribbon-group-heading{position:absolute!important;inset:auto 0 2px!important;display:block!important;line-height:18px;height:18px;text-align:center;white-space:nowrap;margin:0}
+.office-ribbon-inspector-host .office-ribbon-layout-responsive .page-component-style-editor>.form-label{box-sizing:border-box!important;display:grid!important;grid-template-columns:95px 90px!important;gap:6px!important;align-items:center!important;height:28px!important;max-height:28px!important;min-height:28px!important;min-width:200px;max-width:200px;width:200px!important;overflow:visible!important;margin:0!important;line-height:14px!important;font-size:11px!important;white-space:normal!important}
+.office-ribbon-inspector-host .office-ribbon-layout-responsive .page-component-style-editor>.form-label input,
+.office-ribbon-inspector-host .office-ribbon-layout-responsive .page-component-style-editor>.form-label select{box-sizing:border-box!important;height:25px!important;min-height:25px!important;max-height:25px!important;width:90px!important;min-width:90px!important;max-width:90px!important;margin:0!important}
+.office-ribbon-inspector-host .office-ribbon-layout-responsive .page-component-style-editor>.metadata-array-property{display:flex!important;align-items:center!important;height:28px!important;min-height:28px!important;max-height:28px!important;overflow:visible!important;gap:6px!important}
+.office-ribbon-inspector-host .office-ribbon-layout-responsive .page-component-style-editor>.metadata-array-property .form-label{margin:0!important}
+/* Keep popup content legible in both themes, regardless of inherited ribbon typography. */
+.office-ribbon-config-modal{color:#1b283a!important;background:#fff!important;--md-text:#1b283a;--md-surface:#fff;--md-muted:#56647a;max-width:min(900px,94vw)!important}
+.office-ribbon-config-modal .modal-header,.office-ribbon-config-modal .modal-header h2,.office-ribbon-config-modal .modal-header button,
+.office-ribbon-config-modal .office-ribbon-modal-content,.office-ribbon-config-modal .office-ribbon-modal-content legend,
+.office-ribbon-config-modal .office-ribbon-modal-content label,.office-ribbon-config-modal .office-ribbon-modal-content summary,
+.office-ribbon-config-modal .office-ribbon-modal-content .form-label,.office-ribbon-config-modal .office-ribbon-modal-content .properties-help{color:#1b283a!important;opacity:1!important}
+.office-ribbon-config-modal .office-ribbon-modal-content .properties-help{color:#526073!important}
+.office-ribbon-config-modal .office-ribbon-modal-content input:not([type=checkbox]):not([type=radio]),.office-ribbon-config-modal .office-ribbon-modal-content select,.office-ribbon-config-modal .office-ribbon-modal-content textarea{color:#19283e!important;background:#fff!important;border:1px solid #b0bccb!important;opacity:1!important}
+.office-ribbon-config-modal .office-ribbon-modal-content input::placeholder,.office-ribbon-config-modal .office-ribbon-modal-content textarea::placeholder{color:#66758a!important;opacity:1}
+.office-ribbon-config-modal .office-ribbon-modal-content fieldset{border-color:#bcc6d3!important}
+.office-ribbon-config-modal .office-ribbon-modal-content details,.office-ribbon-config-modal .office-ribbon-modal-content .builder-advanced-panel{border-color:#c5cfdb!important;color:#1b283a!important}
+.office-ribbon-config-modal .office-ribbon-modal-content button:not(:disabled){opacity:1!important}
+.office-ribbon-config-modal .office-ribbon-modal-content button:disabled{opacity:.55!important}
+.office-ribbon-config-modal .office-ribbon-modal-content .properties-section-title{color:#273a54!important}
+
+/* True reusable responsive groups: each generated group owns its three rows. */
+.office-ribbon-inspector-host .office-ribbon-layout-responsive .page-component-style-editor.office-ribbon-responsive-editor,
+.office-ribbon-inspector-host .office-ribbon-colours .page-component-style-editor.office-ribbon-responsive-editor{
+  display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;
+  align-items:stretch!important;justify-content:flex-start!important;
+  column-gap:0!important;row-gap:0!important;
+  width:max-content!important;min-width:max-content!important;max-width:none!important;
+  height:124px!important;min-height:124px!important;max-height:124px!important;
+  padding:0!important;border:0!important;overflow:visible!important
+}
+.office-ribbon-inspector-host .office-ribbon-responsive-editor>.office-ribbon-responsive-group{
+  box-sizing:border-box!important;position:relative!important;
+  display:grid!important;grid-template-columns:190px!important;
+  grid-template-rows:repeat(3,28px)!important;grid-auto-flow:row!important;
+  align-items:center!important;align-content:start!important;
+  flex:0 0 212px!important;width:212px!important;min-width:212px!important;
+  max-width:212px!important;height:124px!important;max-height:124px!important;
+  gap:3px!important;padding:5px 11px 23px!important;
+  border-right:1px solid #cbd2dc!important;overflow:visible!important
+}
+.office-ribbon-inspector-host .office-ribbon-responsive-editor>.office-ribbon-device-group{flex-basis:206px!important;width:206px!important;min-width:206px!important}
+.office-ribbon-inspector-host .office-ribbon-responsive-editor>.office-ribbon-responsive-group>.form-label{
+  display:grid!important;grid-template-columns:92px 89px!important;
+  box-sizing:border-box!important;align-items:center!important;gap:5px!important;
+  width:190px!important;min-width:190px!important;max-width:190px!important;
+  height:28px!important;min-height:28px!important;max-height:28px!important;
+  margin:0!important;padding:0!important;white-space:nowrap!important;
+  font-size:11px!important;line-height:16px!important;overflow:visible!important
+}
+.office-ribbon-inspector-host .office-ribbon-responsive-editor>.office-ribbon-responsive-group>.form-label>span{
+  max-width:92px!important;overflow:hidden!important;text-overflow:ellipsis!important
+}
+.office-ribbon-inspector-host .office-ribbon-responsive-editor>.office-ribbon-responsive-group>.form-label input,
+.office-ribbon-inspector-host .office-ribbon-responsive-editor>.office-ribbon-responsive-group>.form-label select{
+  box-sizing:border-box!important;width:89px!important;min-width:89px!important;
+  max-width:89px!important;height:25px!important;min-height:25px!important;
+  max-height:25px!important;margin:0!important;padding:2px 4px!important
+}
+.office-ribbon-inspector-host .office-ribbon-responsive-editor>.office-ribbon-responsive-group>.checkbox-row{
+  display:flex!important;align-items:center!important;gap:6px!important;
+  height:28px!important;max-height:28px!important;margin:0!important;
+  font-size:11px!important
+}
+.office-ribbon-inspector-host .office-ribbon-responsive-editor>.office-ribbon-responsive-group>.office-ribbon-group-heading{
+  position:absolute!important;inset:auto 0 2px!important;display:block!important;
+  height:18px!important;line-height:18px!important;margin:0!important;padding:0!important;
+  text-align:center!important;white-space:nowrap!important;font-size:11px!important;
+  font-weight:400!important;color:#52627a!important;background:transparent!important
+}
+.office-ribbon-inspector-host .office-ribbon-responsive-editor>.office-ribbon-responsive-group>.btn{
+  width:max-content;max-height:27px;height:27px;padding:3px 8px;font-size:11px
+}
+/* Metadata-based Component Options share the same 3-row section geometry. */
+.office-builder-ribbon .office-ribbon-inline-options{display:flex;align-items:stretch;min-width:0;flex:0 0 auto}
+.office-builder-ribbon .office-ribbon-inline-options>.metadata-component-presentation{
+  display:flex!important;flex-direction:row!important;min-height:124px
+}
+.office-builder-ribbon .office-ribbon-inline-options .office-ribbon-presentation-group{
+  box-sizing:border-box!important;display:grid!important;position:relative!important;
+  grid-template-rows:repeat(3,28px)!important;grid-auto-flow:column!important;
+  grid-auto-columns:196px!important;gap:3px 8px!important;
+  align-content:start!important;width:max-content!important;min-width:210px!important;
+  height:124px!important;min-height:124px!important;max-height:124px!important;
+  padding:4px 9px 23px!important;border-right:1px solid #cbd2dc!important
+}
+.office-builder-ribbon .office-ribbon-inline-options .office-ribbon-presentation-group>.office-ribbon-group-heading{
+  position:absolute!important;inset:auto 0 2px!important;text-align:center!important;
+  line-height:18px!important;margin:0!important
+}
+.office-builder-ribbon .office-ribbon-inline-options .office-ribbon-presentation-group>.form-label{
+  display:grid!important;grid-template-columns:75px 109px!important;
+  align-items:center!important;gap:8px!important;
+  width:196px!important;min-width:196px!important;max-width:196px!important;
+  height:28px!important;min-height:28px!important;max-height:28px!important;
+  margin:0!important;overflow:visible!important;font-size:11px!important
+}
+.office-builder-ribbon .office-ribbon-inline-options .office-ribbon-presentation-group>.form-label>input,
+.office-builder-ribbon .office-ribbon-inline-options .office-ribbon-presentation-group>.form-label>select{
+  width:109px!important;max-width:109px!important;min-width:109px!important;
+  height:25px!important;min-height:25px!important;box-sizing:border-box!important
+}
+.office-builder-ribbon .office-ribbon-inline-options .office-ribbon-presentation-group>.form-label>div{
+  max-width:109px!important;min-width:109px!important
+}

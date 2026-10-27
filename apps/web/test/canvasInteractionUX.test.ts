@@ -153,7 +153,7 @@ test('Page Builder property editors filter controls by selected component capabi
   assert.match(builder, /<PageComponentStyleEditor\s+section="colors"\s+componentType=\{selected\.type\}/);
   assert.match(visual, /numericPresets\.filter\(preset => supportsAppearanceProperty\(componentType, preset\.key\)\)/);
   assert.match(visual, /appearanceNumberFields\.filter\(\(\{key\}\) => supportsAppearanceProperty\(componentType, key\)\)/);
-  assert.match(advanced, /numeric\.filter\(\(\[key\]\) => supportsAppearanceProperty\(componentType, key\)\)/);
+  assert.match(advanced, /numeric\.filter\(\(\[key\]\)=>supportsAppearanceProperty\(componentType,key\)\)/);
   assert.match(advanced, /componentAppearanceCapabilities\(componentType\)\.container/);
   assert.match(capabilities, /return capabilities\.container/);
   assert.match(capabilities, /return capabilities\.text \|\| capabilities\.data/);
@@ -363,7 +363,7 @@ test('Page Builder Office ribbon keeps each control in one permanent logical gro
   assert.doesNotMatch(presentation, /<details/);
   assert.match(presentation, /office-ribbon-presentation-group/);
   assert.match(visual, /section === 'colors' \|\| section === 'all'/);
-  assert.match(responsive, /section !== 'layout' && responsiveColorFields/);
+  assert.match(responsive, /section!=='layout' && responsiveColorFields/);
 });
 
 test('Grouping selected canvas components preserves children and absolute bounds', async () => {
@@ -395,4 +395,20 @@ test('Contextual Page Builder tabs do not leak metadata from other tabs',async()
  assert.doesNotMatch(builder,/ribbonTab === 'Component Properties' && <div className="office-ribbon-inspector-host"/);
  assert.match(css,/office-ribbon-colours \.compact-color-swatches/);
  assert.match(css,/metadata-component-properties>\.office-ribbon-data-section/);
+});
+
+test('Page Builder contextual ribbon is generated from aligned three-row groups',async()=>{
+  const root=new URL('../src/core/builders/',import.meta.url);
+  const builder=await readFile(new URL('PageBuilder/pageBuilderView.tsx',root),'utf8');
+  const css=await readFile(new URL('PageBuilder/styles-md227.css',root),'utf8');
+  const responsive=await readFile(new URL('ComponentStyleEditor/PageComponentStyleEditor.tsx',root),'utf8');
+  assert.match(builder,/office-ribbon-inline-options/);
+  assert.doesNotMatch(builder,/additionalPropertyDialogOpen && selectedCustomDefinition && createPortal/);
+  assert.match(responsive,/numberGroups\.flatMap/);
+  assert.match(responsive,/items\.slice\(index\*3,index\*3\+3\)/);
+  assert.match(responsive,/office-ribbon-responsive-group/);
+  assert.match(css,/office-ribbon-config-modal \.modal-header h2/);
+  assert.match(css,/color:#1b283a!important/);
+  assert.match(css,/office-ribbon-responsive-editor>\.office-ribbon-responsive-group/);
+  assert.match(css,/grid-template-rows:repeat\(3,28px\)!important/);
 });

@@ -2300,11 +2300,14 @@ function PageBuilder({
               </label>)}
             </div><span>Appearance</span>
           </div>}
-          {selected && ribbonTab === 'Component Properties' && selectedCustomDefinition?.propertyDefinitions?.length ? <div className="office-ribbon-group office-ribbon-additional-properties">
-            <div className="office-ribbon-stack">
-              <button type="button" onClick={()=>setAdditionalPropertyDialogOpen(true)}><Settings2 size={16}/> Component options</button>
-            </div><span>More properties</span>
-          </div> : null}
+          {selected && ribbonTab === 'Component Properties' && selectedCustomDefinition && <div className="office-ribbon-inline-options">
+            <ComponentPresentationProperties
+              definitions={availableComponentSettings(selectedCustomDefinition.propertyDefinitions??[],page.layoutVariant??'Desktop',selectedCustomDefinition.version)
+                .filter(definition=>definition.kind!=='COLOR'&&!/(?:colou?r|background|fill|tone|width|height|offset|align|fontSize|fontWeight|textDecoration|border|spacing|padding|margin)/i.test(definition.propertyKey)
+                && !(['text','label','content'].includes(definition.propertyKey)&&/text/i.test(selected.type+' '+selected.label)))}
+              properties={selected.properties}
+              onChange={properties=>updateComponent(selected.id,{properties})}/>
+          </div>}
           {selected && ribbonTab === 'Component Action' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
             <label className="office-ribbon-checkbox"><input type="checkbox" checked={selected.visible} onChange={event=>updateComponent(selected.id,{visible:event.target.checked})}/> Show block</label>
             <button type="button" onClick={()=>setVisibilityDialogOpen(true)}><Eye size={16}/> Configure visibility</button>
@@ -2373,27 +2376,6 @@ function PageBuilder({
           <div className="office-ribbon-modal-actions"><button type="button" className="btn btn-brand" onClick={()=>setPageSettingsDialogOpen(false)}>Close</button></div>
         </section>
       </div>}
-      {selected && additionalPropertyDialogOpen && selectedCustomDefinition && createPortal(<div className="modal-backdrop office-ribbon-modal-backdrop" role="presentation">
-        <section className="modal office-ribbon-config-modal" role="dialog" aria-modal="true" aria-label="Additional component properties">
-          <div className="modal-header"><h2>{selected.label} — Additional properties</h2>
-            <button type="button" className="icon-button" aria-label="Close component properties" onClick={()=>setAdditionalPropertyDialogOpen(false)}><X size={16}/></button></div>
-          <div className="office-ribbon-modal-content">
-            <ComponentPresentationProperties
-              definitions={availableComponentSettings(selectedCustomDefinition.propertyDefinitions??[],page.layoutVariant??'Desktop',selectedCustomDefinition.version)
-                .filter(definition=>definition.kind!=='COLOR'&&!/(?:colou?r|background|fill|tone)/i.test(definition.propertyKey))}
-              properties={selected.properties}
-              onChange={properties=>updateComponent(selected.id,{properties})}/>
-            <MetadataComponentProperties mode="details" properties={selected.properties}
-              onChange={(properties: Record<string,unknown>)=>updateComponent(selected.id,{properties})}
-              pageComponents={page.components} componentCatalog={libraryComponents}
-              definitions={selectedCustomDefinition.propertyDefinitions} eventDefinitions={selectedCustomDefinition.eventDefinitions}
-              componentVersion={selectedCustomDefinition.version} device={page.layoutVariant??'Desktop'}
-              objects={objects} apps={apps} pages={pages}
-              currentAppId={builderAppApiName||apps[0]?.apiName||'Records'} primaryObjectApiName={page.targetObject} flows={flows}/>
-          </div>
-          <div className="office-ribbon-modal-actions"><button className="btn btn-brand" type="button" onClick={()=>setAdditionalPropertyDialogOpen(false)}>Close</button></div>
-        </section>
-      </div>,document.body)}
       {selected && visibilityDialogOpen && createPortal(<div className="modal-backdrop office-ribbon-modal-backdrop" role="presentation">
         <section className="modal office-ribbon-config-modal" role="dialog" aria-modal="true" aria-label="Visibility conditions">
           <div className="modal-header"><h2>Visibility conditions</h2><button type="button" className="icon-button" aria-label="Close visibility" onClick={()=>setVisibilityDialogOpen(false)}><X size={16}/></button></div>
