@@ -29,6 +29,7 @@ const Workspace = lazy(async () => {
   await import('./core/workspace/WorkspaceTheme/operationalPolish.css');
   await import('./core/workspace/WorkspaceTheme/settingsAppearance.css');
   await import('./core/workspace/WorkspaceTheme/desktopDense.css');
+  await import('./core/workspace/WorkspaceTheme/contrastRepair.css');
   return import('./core/workspace/App/App');
 });
 
