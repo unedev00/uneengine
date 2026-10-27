@@ -2123,18 +2123,6 @@ function PageBuilder({
         <div className="office-ribbon-content" role="tabpanel" aria-label={ribbonTab}>
           {ribbonTab === 'Home' && <>
             <div className="office-ribbon-group"><div className="office-ribbon-stack">
-              <button onClick={() => {setPageSettingsOpen(true);setActivePanel('page');}}><Settings2 size={17}/> Page properties</button>
-              <button onClick={() => openPalette('Layers')}><Layers3 size={17}/> Page structure</button>
-              <button onClick={() => setDependenciesOpen(true)}><Puzzle size={17}/> Dependencies</button>
-            </div><span>Page layout</span></div>
-            <div className="office-ribbon-group"><div className="office-ribbon-stack">
-              <label>Device <select aria-label="Page device layout" value={page.layoutVariant??'Desktop'} disabled={switchingLayout||saving} onChange={event=>void switchLayoutVariant(event.target.value as 'Mobile'|'Desktop'|'Tablet'|'Custom')}>{(['Desktop','Mobile','Tablet','Custom'] as const).map(v=><option key={v}>{v}</option>)}</select></label>
-              <button onClick={() => {setPageSettingsOpen(true);setActivePanel('page');}}>Layout settings</button>
-              <button onClick={() => setRouteDirectoryOpen(true)}><ExternalLink size={16}/> Page routes</button>
-            </div><span>Page configuration</span></div>
-          </>}
-          {ribbonTab === 'Home' && <>
-            <div className="office-ribbon-group"><div className="office-ribbon-stack">
               <button onClick={safeBackToPages}><ArrowLeft size={16}/> Back to pages</button>
               <button onClick={()=>{setPageSettingsOpen(true);setActivePanel('page');}}><Pencil size={16}/> {page.label}</button>
               <span className="office-ribbon-status">{undoStack.length?'Unsaved edits':page.draftRevision&&page.draftRevision!==page.publishedRevision?'Unpublished changes':savedFeedback?'Saved':page.status==='Active'?'Published':'Draft'}</span>
