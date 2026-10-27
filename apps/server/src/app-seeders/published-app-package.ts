@@ -57,9 +57,9 @@ export async function seedPublishedAppPackage(
     SELECT api_name,renderer_key FROM md_app_package_component_templates
     WHERE app_id=$1 AND version=$2 ORDER BY api_name
   `,[appId,version]);
-  const systemAliases=new Map(components.filter(item=>
+  const systemAliases=new Map<string,string>(components.filter(item=>
     item.renderer_key==='one-bundled:'+item.api_name && systemUneNames[item.api_name]
-  ).map(item=>[item.api_name,systemUneNames[item.api_name]]));
+  ).map(item=>[item.api_name,systemUneNames[item.api_name]] as const));
   for(const item of components){
     const apiName=systemAliases.get(item.api_name)??item.api_name;
     const rendererKey=systemAliases.has(item.api_name)?'one-bundled:'+apiName:item.renderer_key;
