@@ -453,9 +453,11 @@ function PageBuilder({
   const [inspectorTab, setInspectorTab] = useState<'Design' | 'Data & Actions' | 'Visibility' | 'Position'>('Design');
   const [ribbonPropertyHost, setRibbonPropertyHost] = useState<HTMLDivElement | null>(null);
   const [visibilityDialogOpen,setVisibilityDialogOpen] = useState(false);
+  const [pageSettingsDialogOpen,setPageSettingsDialogOpen] = useState(false);
   const [ribbonTab, setRibbonTab] = useState<'Home' | 'Add Block' | 'Component Properties' | 'Component Style' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Preview'>('Home');
   const selectRibbonTab = (tab: typeof ribbonTab) => {
     setRibbonTab(tab);
+    setPageSettingsDialogOpen(false);
     if (tab === 'Add Block') { setPageSettingsOpen(false); openPalette('Components', 'All Components'); }
     if (tab === 'Home') { setPageSettingsOpen(true); setActivePanel('page'); }
     const inspector = { 'Component Properties': 'Design', 'Component Style': 'Design', 'Component Data': 'Data & Actions', 'Component Action': 'Visibility', 'Component Layout': 'Position' } as const;
@@ -2187,7 +2189,7 @@ function PageBuilder({
               <label className="office-ribbon-inline-field">Height <input aria-label="Page height" type="number" min={320} max={10000} value={page.canvasHeight} onChange={event=>{const n=Number(event.target.value);if(Number.isInteger(n)&&n>=320&&n<=10000)applyPage({...page,canvasHeight:n});}}/></label>
             </div><span>Layout</span></div>
             <div className="office-ribbon-group"><div className="office-ribbon-stack">
-              <button type="button" onClick={()=>{setPageSettingsOpen(true);setActivePanel('page');}}><Settings2 size={16}/> Page properties</button>
+              <button type="button" onClick={()=>{setPageSettingsOpen(true);setActivePanel('page');setPageSettingsDialogOpen(true);}}><Settings2 size={16}/> Page properties</button>
               <button type="button" onClick={()=>openPalette('Layers')}><Layers3 size={16}/> Page structure</button>
               <button onClick={()=>setDependenciesOpen(true)}><Puzzle size={16}/> Dependencies</button>
             </div><span>Page settings</span></div>
@@ -2224,8 +2226,8 @@ function PageBuilder({
               </div><span>{group.label}</span></div>)}
           </>}
           {selected && ribbonTab === 'Component Properties' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
-            <label className="office-ribbon-inline-field">Label <input aria-label="Component label" value={selected.label} onChange={event=>updateComponent(selected.id,{label:event.target.value})}/></label>
-            {(/text/i.test(selected.type) || /text/i.test(selected.label)) && selected.type!=='Rich Text' && <label className="office-ribbon-inline-field">Text <input aria-label="Component text" value={String(selected.properties.text??selected.properties.content??'Text')} onChange={event=>{const key=typeof selected.properties.content==='string'?'content':'text';updateComponent(selected.id,{properties:{...selected.properties,[key]:event.target.value}});}}/></label>}
+            <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Label</span><input aria-label="Component label" value={selected.label} onChange={event=>updateComponent(selected.id,{label:event.target.value})}/></label>
+            {(/text/i.test(selected.type) || /text/i.test(selected.label)) && selected.type!=='Rich Text' && <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Text</span><input aria-label="Component text" value={String(selected.properties.text??selected.properties.content??'Text')} onChange={event=>{const key=typeof selected.properties.content==='string'?'content':'text';updateComponent(selected.id,{properties:{...selected.properties,[key]:event.target.value}});}}/></label>}
             <button disabled={isCanvasLocked(selected)} onClick={removeSelected}><Trash2 size={16}/> Delete block</button>
           </div><span>Content</span></div>}
 
@@ -2307,9 +2309,16 @@ function PageBuilder({
             {fields.slice(0,3).map(field=><button type="button" key={field.apiName} onClick={()=>addField(field.apiName)}><Database size={16}/>{field.label}</button>)}
             {fields.length>3 && <button type="button" onClick={()=>openPalette('Fields')}><Plus size={16}/> More fields</button>}
           </div><span>Record Fields</span></div>}
-          {(ribbonTab === 'Home' || ribbonTab.startsWith('Component ')) && <div className="office-ribbon-inspector-host" ref={setRibbonPropertyHost} aria-label="Ribbon property controls" />}
+          {ribbonTab.startsWith('Component ') && <div className="office-ribbon-inspector-host" ref={setRibbonPropertyHost} aria-label="Ribbon property controls" />}
         </div>
       </section>
+      {ribbonTab==='Home' && pageSettingsDialogOpen && <div className="modal-backdrop office-ribbon-modal-backdrop" role="presentation">
+        <section className="modal office-ribbon-config-modal office-ribbon-page-settings-modal" role="dialog" aria-modal="true" aria-label="Page settings">
+          <div className="modal-header"><h2>Page settings</h2><button type="button" className="icon-button" aria-label="Close page settings" onClick={()=>setPageSettingsDialogOpen(false)}><X size={16}/></button></div>
+          <div className="office-ribbon-modal-content"><div className="office-ribbon-inspector-host" ref={setRibbonPropertyHost} aria-label="Page settings editor"/></div>
+          <div className="office-ribbon-modal-actions"><button type="button" className="btn btn-brand" onClick={()=>setPageSettingsDialogOpen(false)}>Close</button></div>
+        </section>
+      </div>}
       {selected && visibilityDialogOpen && createPortal(<div className="modal-backdrop office-ribbon-modal-backdrop" role="presentation">
         <section className="modal office-ribbon-config-modal" role="dialog" aria-modal="true" aria-label="Visibility conditions">
           <div className="modal-header"><h2>Visibility conditions</h2><button type="button" className="icon-button" aria-label="Close visibility" onClick={()=>setVisibilityDialogOpen(false)}><X size={16}/></button></div>
