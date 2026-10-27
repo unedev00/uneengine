@@ -460,7 +460,7 @@ function PageBuilder({
   const [showLayers, setShowLayers] = useState(false);
   const [inspectorTab, setInspectorTab] = useState<'Design' | 'Data & Actions' | 'Visibility' | 'Position'>('Design');
   const [ribbonPropertyHost, setRibbonPropertyHost] = useState<HTMLDivElement | null>(null);
-  const [expandedRibbonEditor,setExpandedRibbonEditor] = useState<{kind:'source'|'filters'|'visibility'|'actions'|'conditions'|'content'|'partDesign'|'partLayout';componentId:string}|null>(null);
+  const [expandedRibbonEditor,setExpandedRibbonEditor] = useState<{kind:'source'|'filters'|'visibility'|'actions'|'conditions'|'content'|'partDesign'|'partLayout'|'design';componentId:string}|null>(null);
   const [ribbonFilterDraft,setRibbonFilterDraft] = useState<Record<string,unknown>>({});
   const [actionEvent,setActionEvent] = useState('');
   const [cardPart,setCardPart] = useState<'Card'|'Image'|'Heading'|'Supporting text'|'Value'|'Gallery'>('Card');
@@ -2404,8 +2404,10 @@ function PageBuilder({
           {selected && ribbonTab === 'Component Properties' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
             <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Label</span><input aria-label="Component label" value={selected.label} onChange={event=>updateComponent(selected.id,{label:event.target.value})}/></label>
             {(/text/i.test(selected.type) || /text/i.test(selected.label)) && selected.type!=='Rich Text' && <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Text</span><input aria-label="Component text" value={String(selected.properties.text??selected.properties.content??'Text')} onChange={event=>{const key=typeof selected.properties.content==='string'?'content':'text';updateComponent(selected.id,{properties:{...selected.properties,[key]:event.target.value}});}}/></label>}
-            <label className="office-ribbon-checkbox"><input type="checkbox" checked={selected.visible} onChange={event=>updateComponent(selected.id,{visible:event.target.checked})}/> Show component</label>
-            <button type="button" onClick={()=>openExpandedEditor('visibility')}><Eye size={16}/> Visibility rules</button>
+            <div className="office-ribbon-visibility-row">
+              <label className="office-ribbon-checkbox"><input type="checkbox" checked={selected.visible} onChange={event=>updateComponent(selected.id,{visible:event.target.checked})}/> Show component</label>
+              <button type="button" onClick={()=>openExpandedEditor('visibility')}><Eye size={16}/> Visibility rules</button>
+            </div>
           </div><span>Content</span></div>}
 
           {selected && ribbonTab === 'Component Properties' && /text|button|label|badge|heading|paragraph|rich|input/i.test(selected.type+' '+selected.label) && <div className="office-ribbon-group office-ribbon-typography">
@@ -2456,13 +2458,11 @@ function PageBuilder({
               </label>)}
             </div><span>Appearance</span>
           </div>}
-          {selected && ribbonTab === 'Component Properties' && selectedCustomDefinition && <div className="office-ribbon-inline-options">
-            <ComponentPresentationProperties
-              definitions={availableComponentSettings(selectedCustomDefinition.propertyDefinitions??[],page.layoutVariant??'Desktop',selectedCustomDefinition.version)
-                .filter(definition=>!(definition as {group?:string}).group && presentationSection(definition)!=='Content' && definition.kind!=='COLOR'&&!/(?:colou?r|background|fill|tone|width|height|offset|align|fontSize|fontWeight|textDecoration|border|spacing|padding|margin)/i.test(definition.propertyKey)
-                && !(['text','label','content'].includes(definition.propertyKey)&&/text/i.test(selected.type+' '+selected.label)))}
-              properties={selected.properties}
-              onChange={properties=>updateComponent(selected.id,{properties})}/>
+          {selected && ribbonTab === 'Component Properties' && <div className="office-ribbon-group office-ribbon-design-more">
+            <div className="office-ribbon-stack">
+              <button type="button" onClick={()=>openExpandedEditor('design')}><Pencil size={16}/> Advanced design properties</button>
+              <span className="office-ribbon-stat">All component settings</span>
+            </div><span>More design</span>
           </div>}
           {selected && ribbonTab === 'Component Action' && selectedCustomDefinition?.apiName==='une_item_grid'
             && <div className="office-ribbon-group"><div className="office-ribbon-stack">
@@ -2579,7 +2579,7 @@ function PageBuilder({
               </select>
             </label></div><span>Add record field</span>
           </div>}
-          {['Component Properties','Component Layout'].includes(ribbonTab) && <div className="office-ribbon-inspector-host" ref={setRibbonPropertyHost} aria-label="Ribbon property controls" />}
+          {ribbonTab==='Component Layout' && <div className="office-ribbon-inspector-host" ref={setRibbonPropertyHost} aria-label="Ribbon property controls" />}
 
         </div>
       </section>
@@ -2589,7 +2589,7 @@ function PageBuilder({
         <header className="page-ribbon-expanded-heading">
           <strong>{selected.label} · {{
             source:'Source & record scope',filters:'Record filters',visibility:'Visibility rules',
-            actions:'Event actions',conditions:'Action conditions',content:'Card content',partDesign:'Part appearance',partLayout:'Part dimensions'
+            actions:'Event actions',conditions:'Action conditions',content:'Card content',partDesign:'Part appearance',partLayout:'Part dimensions',design:'Advanced design'
           }[expandedRibbonEditor.kind]}</strong>
           <button type="button" className="btn btn-small" aria-label="Collapse expanded ribbon editor"
             onClick={()=>setExpandedRibbonEditor(null)}><X size={16}/> Collapse</button>
@@ -2612,6 +2612,29 @@ function PageBuilder({
               currentAppId={builderAppApiName||apps[0]?.apiName||'Records'}
               primaryObjectApiName={page.targetObject} flows={flows}/>
           }
+          {expandedRibbonEditor.kind==='design' && <div className="page-ribbon-advanced-design">
+            {selectedCustomDefinition && <section className="page-ribbon-design-section">
+              <h3>Metadata-driven component properties</h3>
+              <ComponentPresentationProperties
+                definitions={availableComponentSettings(selectedCustomDefinition.propertyDefinitions??[],page.layoutVariant??'Desktop',selectedCustomDefinition.version)
+                  .filter(definition=>!(definition as {group?:string}).group
+                    && presentationSection(definition)!=='Content' && presentationSection(definition)!=='Layout')}
+                properties={selected.properties}
+                onChange={properties=>updateComponent(selected.id,{properties})}/>
+            </section>}
+            <section className="page-ribbon-design-section">
+              <h3>Visual appearance</h3>
+              <PageComponentVisualEditor section="appearance" componentType={selected.type}
+                value={selected.properties.visualStyle}
+                onChange={visualStyle=>updateComponent(selected.id,{properties:{...selected.properties,visualStyle}})}/>
+            </section>
+            <section className="page-ribbon-design-section">
+              <h3>Responsive colours</h3>
+              <PageComponentStyleEditor section="colors" componentType={selected.type}
+                properties={selected.properties}
+                onChange={(properties:Record<string,unknown>)=>updateComponent(selected.id,{properties})}/>
+            </section>
+          </div>}
           {expandedRibbonEditor.kind==='visibility' && <ComponentVisibilityEditor
             rules={selected.properties.visibilityRules} fields={fields}
             profiles={profiles.map(item=>({id:item.id,label:item.label}))}
