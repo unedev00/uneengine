@@ -529,27 +529,32 @@ function PageBuilder({
     const priority = (id: string) => favouriteComponents.includes(id) ? -10 : recentComponents.includes(id) ? recentComponents.indexOf(id) : 100;
     return priority(a.id) - priority(b.id);
   });
-  // Ribbon commands are resolved from the real, currently eligible palette.
-  // Never render disabled placeholders or repeat commands in More blocks.
+  // Every registered, eligible component belongs to one three-row Office ribbon group.
+  // Never render a separate More Blocks grid or duplicate a command.
   const ribbonGroupRules = [
-    { label: 'Text', match: /text|image|photo|picture|paragraph|heading|rich.?text|label|icon|media/i },
-    { label: 'Buttons', match: /button|link|action|navigation|menu/i },
-    { label: 'Sections', match: /section|container|column|row|layout|accordion|tabs?/i },
-    { label: 'Data', match: /item[_ -]?grid|card[_ -]?grid|grid|form|record|table|list|chart|repeater/i }
+    {label:'Text',match:/text|image|photo|picture|paragraph|heading|label|media/i},
+    {label:'Buttons',match:/button|link|action|menu/i},
+    {label:'Sections',match:/section|container|column|row|layout|split.pane|stack/i},
+    {label:'Data',match:/item[_ -]?grid|card[_ -]?grid|\bgrid\b|record|table|repeater|list/i},
+    {label:'Forms',match:/form|input|choice|toggle|lookup|select|date.picker|search/i},
+    {label:'Navigation',match:/tab|navigation|route|breadcrumb/i},
+    {label:'Commerce',match:/cart|shopping|checkout|line.items|price/i},
+    {label:'Widgets',match:/calendar|chart|badge|metric|progress|alert|document|conversation|modal|drawer/i}
   ] as const;
-  const ribbonComponentIds = new Set<string>();
-  const ribbonComponentGroups = ribbonGroupRules.map(group => {
-    const candidates = paletteComponents.filter(component =>
-      group.match.test(`${component.type} ${component.label}`) && !ribbonComponentIds.has(component.id));
-    // A published UNE Item Grid should take priority over generic data blocks.
-    if (group.label === 'Data') candidates.sort((left,right) =>
-      Number(/item[_ -]?grid/i.test(`${right.type} ${right.label}`)) -
-      Number(/item[_ -]?grid/i.test(`${left.type} ${left.label}`)));
-    const components = candidates.slice(0, 3);
-    components.forEach(component => ribbonComponentIds.add(component.id));
-    return { label: group.label, components };
-  }).filter(group => group.components.length > 0);
-  const remainingRibbonComponents = filteredPaletteComponents.filter(component => !ribbonComponentIds.has(component.id));
+  const ribbonCategories = new Map<string,typeof paletteComponents>();
+  for(const rule of ribbonGroupRules) ribbonCategories.set(rule.label,[]);
+  ribbonCategories.set('Other',[]);
+  for(const component of paletteComponents){
+    const name=`${component.type} ${component.label}`;
+    const category=ribbonGroupRules.find(group=>group.match.test(name))?.label??'Other';
+    ribbonCategories.get(category)!.push(component);
+  }
+  const ribbonComponentGroups = Array.from(ribbonCategories).flatMap(([label,components])=>
+    Array.from({length:Math.ceil(components.length/3)},(_,index)=>({
+      id:label+'-'+index,
+      label:index===0?label:`${label} ${index+1}`,
+      components:components.slice(index*3,index*3+3)
+    })));
   const renderPaletteIcon = (component: { type: string; label: string }) => {
     const name = `${component.label} ${component.type}`.toLowerCase();
     if (/\b(text|heading|paragraph|rich text|label)\b/.test(name)) return <Type size={15} />;
@@ -2177,10 +2182,15 @@ function PageBuilder({
               </select>
               <button type="button" disabled={saving||selectedHistoryVersion===null||layoutVersions.find(v=>v.version===selectedHistoryVersion)?.draft===true} onClick={()=>{if(selectedHistoryVersion!==null)void restoreLayoutVersion(selectedHistoryVersion);}}><RefreshCw size={16}/> Restore draft</button>
             </div><span>Version history</span></div>
+            <div className="office-ribbon-group"><div className="office-ribbon-stack">
+              <button disabled={!undoStack.length} onClick={undo}><Undo2 size={17}/> Undo</button>
+              <button disabled={!redoStack.length} onClick={redo}><Redo2 size={17}/> Redo</button>
+              <button onClick={()=>setCanvasRefreshKey(key=>key+1)}><RefreshCw size={17}/> Refresh canvas</button>
+            </div><span>History</span></div>
           </>}
           {ribbonTab === 'Add Block' && <>
             {ribbonComponentGroups.map(group=>
-              <div className="office-ribbon-group" key={group.label}><div className="office-ribbon-stack">
+              <div className="office-ribbon-group" key={group.id}><div className="office-ribbon-stack">
                 {group.components.map(component=><button type="button" key={component.id}
                   title={component.description} onClick={()=>addPaletteComponent(component.type)}>
                   {renderPaletteIcon(component)} {component.label}
@@ -2203,17 +2213,15 @@ function PageBuilder({
           </div><span>Arrange</span></div>}
           {ribbonTab === 'Preview' && <>
             <div className="office-ribbon-group"><div className="office-ribbon-stack">
-              <button disabled={!undoStack.length} onClick={undo}><Undo2 size={17}/> Undo</button>
-              <button disabled={!redoStack.length} onClick={redo}><Redo2 size={17}/> Redo</button>
-              <button onClick={()=>setCanvasRefreshKey(key=>key+1)}><RefreshCw size={17}/> Refresh canvas</button>
-            </div><span>History</span></div>
-            <div className="office-ribbon-group"><div className="office-ribbon-stack">
               <button onClick={openExternalPreview}><Eye size={17}/> Preview window</button>
               <button onClick={()=>setPreviewMode(value=>!value)}><Monitor size={17}/> {previewMode?'Exit preview':'Canvas preview'}</button>
               <button onClick={()=>{setPageSettingsOpen(true);setActivePanel('page');}}><Settings2 size={17}/> Preview settings</button>
             </div><span>Preview</span></div>
           </>}
-          {ribbonTab === 'Add Block' && <div className="office-ribbon-library office-ribbon-group" aria-label="Component library"><select aria-label="Block category" value={paletteCategory} onChange={event=>setPaletteCategory(event.target.value as typeof paletteCategory)}>{pageBuilderPaletteCategories.map(category=><option key={category} value={category}>{pageBuilderCategoryLabels[category]}</option>)}</select><div className="office-ribbon-library-items">{remainingRibbonComponents.map(component=><button type="button" key={component.id} title={component.description} onClick={()=>addPaletteComponent(component.type)}>{renderPaletteIcon(component)}{component.label}</button>)}{page.pageType==='Record Page'&&fields.map(field=><button type="button" key={field.apiName} onClick={()=>addField(field.apiName)}><Database size={13}/>{field.label}</button>)}</div><span>More blocks</span></div>}
+          {ribbonTab === 'Add Block' && page.pageType==='Record Page' && fields.length>0 && <div className="office-ribbon-group"><div className="office-ribbon-stack">
+            {fields.slice(0,3).map(field=><button type="button" key={field.apiName} onClick={()=>addField(field.apiName)}><Database size={16}/>{field.label}</button>)}
+            {fields.length>3 && <button type="button" onClick={()=>openPalette('Fields')}><Plus size={16}/> More fields</button>}
+          </div><span>Record Fields</span></div>}
           {(ribbonTab === 'Home' || ribbonTab.startsWith('Component ')) && <div className="office-ribbon-inspector-host" ref={setRibbonPropertyHost} aria-label="Ribbon property controls" />}
         </div>
       </section>
@@ -2784,7 +2792,7 @@ function PageBuilder({
               </div>
               <p className="properties-help">Applies only to published, authorised Custom layouts that are assigned to this app or record context.</p>
             </>}
-            <details className="builder-advanced-panel"><summary>Technical page ID</summary><label className="form-label" htmlFor="lightning-page-api">API Name</label><input id="lightning-page-api" className="form-control" value={page.apiName} onChange={(event) => applyPage({ ...page, apiName: event.target.value })} /></details>
+            
             {page.pageType === 'Record Page' && <>
               <label className="form-label">Related object</label><div className="form-display">{targetObject?.label ?? page.targetObject}</div>
               <div className="properties-section-title">Fields and sections</div>
@@ -2992,7 +3000,7 @@ function PageBuilder({
               <button className="btn btn-full" type="button" onClick={addHomeAssignment}>Add Home Page Assignment</button>
             </div>}
             <p className="properties-help">Device, dimensions and orientation are selected when creating a page. Create another page for a different layout size.</p>
-            <div className="page-property-summary"><strong>{page.components.length}</strong> components</div>
+            
           </>}
         </aside>, ribbonPropertyHost)}
       </div>
