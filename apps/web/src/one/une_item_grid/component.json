@@ -701,6 +701,190 @@
       "displayOrder": 671,
       "group": "Card",
       "section": "Actions"
+    },
+    {
+      "propertyKey": "headingFontWeight",
+      "label": "Heading weight",
+      "kind": "SELECT",
+      "choices": [
+        {
+          "key": "400",
+          "label": "Regular"
+        },
+        {
+          "key": "500",
+          "label": "Medium"
+        },
+        {
+          "key": "600",
+          "label": "Semibold"
+        },
+        {
+          "key": "700",
+          "label": "Bold"
+        }
+      ],
+      "group": "Heading",
+      "section": "Design",
+      "displayOrder": 753
+    },
+    {
+      "propertyKey": "headingTextAlign",
+      "label": "Heading alignment",
+      "kind": "SELECT",
+      "choices": [
+        {
+          "key": "left",
+          "label": "Left"
+        },
+        {
+          "key": "center",
+          "label": "Centre"
+        },
+        {
+          "key": "right",
+          "label": "Right"
+        }
+      ],
+      "group": "Heading",
+      "section": "Design",
+      "displayOrder": 754
+    },
+    {
+      "propertyKey": "headingLineLimit",
+      "label": "Heading maximum lines",
+      "kind": "NUMBER",
+      "min": 1,
+      "max": 12,
+      "group": "Heading",
+      "section": "Design",
+      "displayOrder": 755
+    },
+    {
+      "propertyKey": "descriptionFontWeight",
+      "label": "Supporting text weight",
+      "kind": "SELECT",
+      "choices": [
+        {
+          "key": "400",
+          "label": "Regular"
+        },
+        {
+          "key": "500",
+          "label": "Medium"
+        },
+        {
+          "key": "600",
+          "label": "Semibold"
+        },
+        {
+          "key": "700",
+          "label": "Bold"
+        }
+      ],
+      "group": "Supporting text",
+      "section": "Design",
+      "displayOrder": 756
+    },
+    {
+      "propertyKey": "descriptionTextAlign",
+      "label": "Supporting text alignment",
+      "kind": "SELECT",
+      "choices": [
+        {
+          "key": "left",
+          "label": "Left"
+        },
+        {
+          "key": "center",
+          "label": "Centre"
+        },
+        {
+          "key": "right",
+          "label": "Right"
+        }
+      ],
+      "group": "Supporting text",
+      "section": "Design",
+      "displayOrder": 757
+    },
+    {
+      "propertyKey": "descriptionLineLimit",
+      "label": "Supporting text maximum lines",
+      "kind": "NUMBER",
+      "min": 1,
+      "max": 12,
+      "group": "Supporting text",
+      "section": "Design",
+      "displayOrder": 758
+    },
+    {
+      "propertyKey": "valueFontWeight",
+      "label": "Value weight",
+      "kind": "SELECT",
+      "choices": [
+        {
+          "key": "400",
+          "label": "Regular"
+        },
+        {
+          "key": "500",
+          "label": "Medium"
+        },
+        {
+          "key": "600",
+          "label": "Semibold"
+        },
+        {
+          "key": "700",
+          "label": "Bold"
+        }
+      ],
+      "group": "Value",
+      "section": "Design",
+      "displayOrder": 759
+    },
+    {
+      "propertyKey": "valueTextAlign",
+      "label": "Value alignment",
+      "kind": "SELECT",
+      "choices": [
+        {
+          "key": "left",
+          "label": "Left"
+        },
+        {
+          "key": "center",
+          "label": "Centre"
+        },
+        {
+          "key": "right",
+          "label": "Right"
+        }
+      ],
+      "group": "Value",
+      "section": "Design",
+      "displayOrder": 760
+    },
+    {
+      "propertyKey": "valueLineLimit",
+      "label": "Value maximum lines",
+      "kind": "NUMBER",
+      "min": 1,
+      "max": 12,
+      "group": "Value",
+      "section": "Design",
+      "displayOrder": 761
+    },
+    {
+      "propertyKey": "cardWidth",
+      "label": "Card width (px)",
+      "kind": "NUMBER",
+      "min": 40,
+      "max": 1200,
+      "group": "Card",
+      "section": "Layout",
+      "displayOrder": 710
     }
   ],
   "eventDefinitions": [
