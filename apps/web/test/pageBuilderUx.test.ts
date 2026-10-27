@@ -3,7 +3,7 @@ import test from 'node:test';
 import {readFileSync} from 'node:fs';
 import { pageBuilderPaletteCategories } from '../src/core/builders/PageBuilder/pageBuilderPalette';
 import {
-  addRecentPageBlock, loadRecentPageBlocks, pageBuilderCategoryLabels, pageBuilderStartOptions
+  addRecentPageBlock, describeBuilderFilters, loadRecentPageBlocks, pageBuilderCategoryLabels, pageBuilderStartOptions
 } from '../src/core/builders/PageBuilder/pageBuilderUx';
 
 test('all builder palette groups have short non-technical display labels', () => {
@@ -57,4 +57,16 @@ test('card gallery exposes independent part metadata that is consumed by runtime
   }
   for(const part of ['Image','Heading','Supporting text','Value','Card','Gallery'])
     assert.equal(component.propertyDefinitions.some((definition:{group?:string})=>definition.group===part),true,part);
+});
+
+test('Data ribbon uses friendly field labels, readable values and safe missing-field summaries',()=>{
+  const fields=[{apiName:'IsActive',label:'Active',dataType:'Checkbox'},
+    {apiName:'Department',label:'Department',dataType:'Picklist'}];
+  assert.equal(describeBuilderFilters([],fields),'Add record filters');
+  assert.equal(describeBuilderFilters([{field:'IsActive',operator:'Equals',value:'true'}],fields),'Active is Yes');
+  assert.equal(describeBuilderFilters([
+    {field:'Department',operator:'Equals',value:{source:'PageState',key:'selector'}},
+    {field:'IsActive',operator:'Equals',value:'true'},
+    {field:'Deleted',operator:'Equals',value:'foo'}
+  ],fields),'Department is a page value; Active is Yes; +1 more');
 });
