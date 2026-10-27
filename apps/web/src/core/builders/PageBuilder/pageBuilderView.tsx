@@ -459,7 +459,7 @@ function PageBuilder({
   const [showLayers, setShowLayers] = useState(false);
   const [inspectorTab, setInspectorTab] = useState<'Design' | 'Data & Actions' | 'Visibility' | 'Position'>('Design');
   const [ribbonPropertyHost, setRibbonPropertyHost] = useState<HTMLDivElement | null>(null);
-  const [expandedRibbonEditor,setExpandedRibbonEditor] = useState<{kind:'source'|'filters'|'visibility'|'actions'|'conditions'|'content';componentId:string}|null>(null);
+  const [expandedRibbonEditor,setExpandedRibbonEditor] = useState<{kind:'source'|'filters'|'visibility'|'actions'|'conditions'|'content'|'partDesign'|'partLayout';componentId:string}|null>(null);
   const [ribbonFilterDraft,setRibbonFilterDraft] = useState<Record<string,unknown>>({});
   const [actionEvent,setActionEvent] = useState('');
   const [cardPart,setCardPart] = useState<'Card'|'Image'|'Heading'|'Supporting text'|'Value'|'Gallery'>('Card');
@@ -531,6 +531,13 @@ function PageBuilder({
   const selectedCustomDefinition = selected?.type.startsWith('Custom:')
     ? findRegisteredComponent(libraryComponents, selected.type.slice('Custom:'.length), 'page')
     : undefined;
+  const cardPartDefinitions = (selectedCustomDefinition?.apiName==='une_item_grid'
+    ? availableComponentSettings(selectedCustomDefinition.propertyDefinitions??[],page.layoutVariant??'Desktop',selectedCustomDefinition.version)
+    : []).filter(definition=>(definition as {group?:string}).group===cardPart
+      && !/(?:FieldApiName|ObjectApiName)$/.test(definition.propertyKey)
+      && ((definition as {section?:string}).section
+        ?? (/columns|gap|padding|width|height|radius|span|position/i.test(definition.propertyKey)?'Layout':'Design')) ===
+        (ribbonTab==='Component Layout'?'Layout':'Design'));
   const selectedComponentDescription = selectedCustomDefinition?.description
     ?? standardPageComponents.find((component) => component.apiName === selected?.type)?.description
     ?? (selected?.type === 'Field Section' ? 'Group record fields into a configurable section.' : '');
@@ -1925,6 +1932,10 @@ function PageBuilder({
             :target.closest('.md-product-price')?'priceFieldApiName'
             :target.closest('.md-product-badge')?'badgeFieldApiName':'';
           setFocusedCardMapping(mapping);
+          if(mapping==='imageFieldApiName')setCardPart('Image');
+          else if(mapping==='titleFieldApiName')setCardPart('Heading');
+          else if(mapping==='descriptionFieldApiName')setCardPart('Supporting text');
+          else if(mapping==='priceFieldApiName')setCardPart('Value');
         }else setFocusedCardMapping('');
         setPageSettingsOpen(false); setComponentMenuId('');
         if (!(event.shiftKey && page.layoutMode === 'free-canvas') && ['Home','Add Block','Preview'].includes(ribbonTab)) { setRibbonTab(componentNeedsData(component.type)?'Component Data':'Component Properties'); openComponentInspector(componentNeedsData(component.type)?'Data & Actions':'Design'); }
@@ -2336,6 +2347,26 @@ function PageBuilder({
           {selected && ribbonTab === 'Component Content' && selectedCustomDefinition?.apiName==='une_item_grid' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
             {(['descriptionFieldApiName','priceFieldApiName','badgeFieldApiName'] as const).map((key)=><label key={key} className="office-ribbon-inline-field"><span className="office-ribbon-field-name">{{descriptionFieldApiName:'Description',priceFieldApiName:'Value',badgeFieldApiName:'Badge'}[key]}</span><select aria-label={'Card '+key} value={String(selected.properties[key]??'')} onChange={event=>updateComponent(selected.id,{properties:{...selected.properties,[key]:event.target.value}})}><option value="">Not mapped</option>{(objects.find(obj=>obj.apiName===selected.properties.objectApiName)?.fields??[]).map(field=><option key={field.apiName} value={field.apiName}>{field.label}</option>)}</select></label>)}
           </div><span>Card details</span></div>}
+          {selected && selectedCustomDefinition?.apiName==='une_item_grid'
+            && (ribbonTab==='Component Properties'||ribbonTab==='Component Layout') && <>
+            <div className="office-ribbon-group"><div className="office-ribbon-stack">
+              <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Card part</span>
+                <select aria-label="Edit card part" value={cardPart} onChange={event=>setCardPart(event.target.value as typeof cardPart)}>
+                  {(['Card','Image','Heading','Supporting text','Value','Gallery'] as const).map(part=><option key={part}>{part}</option>)}
+                </select>
+              </label>
+              <span className="office-ribbon-stat">Editing {cardPart.toLowerCase()}</span>
+              {cardPartDefinitions.length>3 && <button type="button"
+                onClick={()=>openExpandedEditor(ribbonTab==='Component Layout'?'partLayout':'partDesign')}>
+                <Settings2 size={16}/> More part settings
+              </button>}
+            </div><span>Selected part</span></div>
+            {cardPartDefinitions.length>0 && <div className="office-ribbon-inline-options">
+              <ComponentPresentationProperties definitions={cardPartDefinitions.slice(0,3)}
+                properties={selected.properties}
+                onChange={properties=>updateComponent(selected.id,{properties})}/>
+            </div>}
+          </>}
           {selected && ribbonTab === 'Component Properties' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
             <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Label</span><input aria-label="Component label" value={selected.label} onChange={event=>updateComponent(selected.id,{label:event.target.value})}/></label>
             {(/text/i.test(selected.type) || /text/i.test(selected.label)) && selected.type!=='Rich Text' && <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Text</span><input aria-label="Component text" value={String(selected.properties.text??selected.properties.content??'Text')} onChange={event=>{const key=typeof selected.properties.content==='string'?'content':'text';updateComponent(selected.id,{properties:{...selected.properties,[key]:event.target.value}});}}/></label>}
@@ -2394,7 +2425,7 @@ function PageBuilder({
           {selected && ribbonTab === 'Component Properties' && selectedCustomDefinition && <div className="office-ribbon-inline-options">
             <ComponentPresentationProperties
               definitions={availableComponentSettings(selectedCustomDefinition.propertyDefinitions??[],page.layoutVariant??'Desktop',selectedCustomDefinition.version)
-                .filter(definition=>definition.kind!=='COLOR'&&!/(?:colou?r|background|fill|tone|width|height|offset|align|fontSize|fontWeight|textDecoration|border|spacing|padding|margin)/i.test(definition.propertyKey)
+                .filter(definition=>!(definition as {group?:string}).group && definition.kind!=='COLOR'&&!/(?:colou?r|background|fill|tone|width|height|offset|align|fontSize|fontWeight|textDecoration|border|spacing|padding|margin)/i.test(definition.propertyKey)
                 && !(['text','label','content'].includes(definition.propertyKey)&&/text/i.test(selected.type+' '+selected.label)))}
               properties={selected.properties}
               onChange={properties=>updateComponent(selected.id,{properties})}/>
@@ -2484,7 +2515,7 @@ function PageBuilder({
         <header className="page-ribbon-expanded-heading">
           <strong>{selected.label} · {{
             source:'Source & record scope',filters:'Record filters',visibility:'Visibility rules',
-            actions:'Event actions',conditions:'Action conditions',content:'Card content'
+            actions:'Event actions',conditions:'Action conditions',content:'Card content',partDesign:'Part appearance',partLayout:'Part dimensions'
           }[expandedRibbonEditor.kind]}</strong>
           <button type="button" className="btn btn-small" aria-label="Collapse expanded ribbon editor"
             onClick={()=>setExpandedRibbonEditor(null)}><X size={16}/> Collapse</button>
@@ -2518,6 +2549,15 @@ function PageBuilder({
               else delete properties.visibilityRules;
               updateComponent(selected.id,{properties});
             }}/>}
+          {(expandedRibbonEditor.kind==='partDesign'||expandedRibbonEditor.kind==='partLayout') && <ComponentPresentationProperties
+            definitions={(selectedCustomDefinition?.propertyDefinitions??[]).filter(definition=>
+              (definition as {group?:string}).group===cardPart
+              && !/(?:FieldApiName|ObjectApiName)$/.test(definition.propertyKey)
+              && ((definition as {section?:string}).section
+                ?? (/columns|gap|padding|width|height|radius|span|position/i.test(definition.propertyKey)?'Layout':'Design'))
+                ===(expandedRibbonEditor.kind==='partLayout'?'Layout':'Design')).slice(3)}
+            properties={selected.properties}
+            onChange={properties=>updateComponent(selected.id,{properties})}/>}
           {expandedRibbonEditor.kind==='content' && selectedCustomDefinition?.apiName==='une_item_grid' && <div className="page-ribbon-part-content">
             <p className="properties-help">Each card uses the mapped fields in the Content ribbon. These options control how the selected record is displayed.</p>
             {([
@@ -2660,7 +2700,7 @@ function PageBuilder({
               currentAppId={builderAppApiName||apps[0]?.apiName||'Records'} primaryObjectApiName={page.targetObject} flows={flows}/>}
             {inspectorTab === 'Design' && selectedCustomDefinition && <ComponentPresentationProperties
               definitions={availableComponentSettings(selectedCustomDefinition.propertyDefinitions??[],page.layoutVariant??'Desktop',selectedCustomDefinition.version).filter(definition=>
-                (ribbonTab==='Component Properties' || (definition.kind==='COLOR'||/(?:colou?r|background|fill|opacity|tone)/i.test(definition.propertyKey)))
+                !(definition as {group?:string}).group && (ribbonTab==='Component Properties' || (definition.kind==='COLOR'||/(?:colou?r|background|fill|opacity|tone)/i.test(definition.propertyKey)))
                 && !(ribbonTab==='Component Properties' && /text/i.test(selected.type+' '+selected.label) && definition.propertyKey==='text'))} properties={selected.properties}
               onChange={(properties) => updateComponent(selected.id, {properties})}/>}
             {inspectorTab === 'Design' && <PageComponentVisualEditor section={ribbonTab==='Component Style'?'colors':'appearance'} componentType={selected.type} value={selected.properties.visualStyle} onChange={(visualStyle) => updateComponent(selected.id, { properties: { ...selected.properties, visualStyle } })} />}
