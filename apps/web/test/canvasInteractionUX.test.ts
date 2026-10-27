@@ -131,8 +131,9 @@ test('Free Canvas uses clean component objects and a compact ribbon-based palett
   assert.doesNotMatch(source, /className="record-component-head"/);
   assert.doesNotMatch(source, /Select a component to add it, or drag it onto the canvas\./);
   assert.doesNotMatch(source, /Free Canvas uses registered components from the shared library\./);
-  assert.match(source, /className="office-ribbon-library office-ribbon-group"/);
-  assert.match(source, /remainingRibbonComponents\.map\(component=>/);
+  assert.match(source, /ribbonComponentGroups\.map\(group=>/);
+  assert.match(source, /components\.slice\(index\*3,index\*3\+3\)/);
+  assert.doesNotMatch(source, /remainingRibbonComponents\.map\(component=>/);
   assert.doesNotMatch(source, /<aside className="component-panel"/);
   assert.doesNotMatch(source, /renderPaletteComponentPreview/);
   assert.match(styles, /\.office-ribbon-library-items/);
@@ -147,8 +148,9 @@ test('Page Builder property editors filter controls by selected component capabi
 
   // Both editors must receive the selected component type and the contextual
   // colour/layout section. Attribute order is intentionally not an API contract.
-  assert.match(builder, /<PageComponentVisualEditor\s+section=\{ribbonTab==='Component Style'\?'colors':'layout'\}\s+componentType=\{selected\.type\}/);
-  assert.match(builder, /<PageComponentStyleEditor\s+section=\{ribbonTab==='Component Style'\?'colors':'layout'\}\s+componentType=\{selected\.type\}/);
+  assert.match(builder, /<PageComponentVisualEditor\s+section=\{ribbonTab==='Component Style'\?'colors':'appearance'\}\s+componentType=\{selected\.type\}/);
+  assert.match(builder, /<PageComponentStyleEditor\s+section="layout"\s+componentType=\{selected\.type\}/);
+  assert.match(builder, /<PageComponentStyleEditor\s+section="colors"\s+componentType=\{selected\.type\}/);
   assert.match(visual, /numericPresets\.filter\(preset => supportsAppearanceProperty\(componentType, preset\.key\)\)/);
   assert.match(visual, /appearanceNumberFields\.filter\(\(\{key\}\) => supportsAppearanceProperty\(componentType, key\)\)/);
   assert.match(advanced, /numeric\.filter\(\(\[key\]\) => supportsAppearanceProperty\(componentType, key\)\)/);
@@ -346,16 +348,38 @@ test('Page Builder Office ribbon keeps each control in one permanent logical gro
   assert.doesNotMatch(builder, /Save creates a private version/);
   assert.doesNotMatch(builder, /These settings belong only to the selected/);
   assert.doesNotMatch(builder, /<div className="reference-canvas-toolbar">/);
-  assert.doesNotMatch(builder, />Done<\/button>/);
-  assert.match(builder, /remainingRibbonComponents\.map\(component=>/);
-  assert.match(styles, /grid-template-rows:repeat\(3,25px\)/);
+  assert.doesNotMatch(builder, /<button className="btn btn-full" onClick=\{\(\) => setActivePanel\(null\)\}>Done<\/button>/);
+  assert.match(builder, /ribbonComponentGroups\.map\(group=>/);
+  assert.doesNotMatch(builder, /remainingRibbonComponents\.map\(component=>/);
+  assert.match(styles, /grid-template-rows:repeat\(3,28px\)/);
   assert.match(styles, /office-ribbon-data-section/);
   assert.doesNotMatch(data, /builder-connect-steps/);
   assert.match(data, /Connect data/);
   assert.match(data, /Choose records/);
   assert.match(data, /Set actions/);
+  assert.match(data, /Configure record filters/);
+  assert.match(data, /Configure component actions/);
+  assert.match(builder, /Configure visibility/);
+  assert.match(builder, /Group <ChevronDown/);
+  assert.doesNotMatch(builder, /Technical page ID/);
+  assert.doesNotMatch(builder, /page-property-summary/);
   assert.doesNotMatch(presentation, /<details/);
   assert.match(presentation, /office-ribbon-presentation-group/);
-  assert.match(visual, /section !== 'layout' && appearanceColorFields/);
+  assert.match(visual, /section === 'colors' \|\| section === 'all'/);
   assert.match(responsive, /section !== 'layout' && responsiveColorFields/);
+});
+
+test('Grouping selected canvas components preserves children and absolute bounds', async () => {
+  const { groupCanvasComponents, ungroupCanvasComponent } = await import('../src/core/builders/PageBuilder/canvasInteractions');
+  const components=[
+    {id:'a',type:'Custom:OneText',label:'A',visible:true,region:'main' as const,properties:{},position:{x:20,y:30,width:110,height:40}},
+    {id:'b',type:'Custom:OneText',label:'B',visible:true,region:'main' as const,properties:{},position:{x:170,y:90,width:100,height:50}}
+  ];
+  const grouped=groupCanvasComponents(components,['a','b'],'office-group');
+  const parent=grouped.find(item=>item.id==='office-group');
+  assert.deepEqual(parent?.position,{x:20,y:30,width:250,height:110});
+  assert.equal(grouped.find(item=>item.id==='b')?.parentId,'office-group');
+  const restored=ungroupCanvasComponent(grouped,'office-group');
+  assert.deepEqual(restored.map(item=>item.position),components.map(item=>item.position));
+  assert.equal(groupCanvasComponents(components,['a','missing'],'not-allowed').length,components.length);
 });
