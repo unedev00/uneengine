@@ -131,7 +131,7 @@ test('Free Canvas uses clean component objects and a compact ribbon-based palett
   assert.doesNotMatch(source, /className="record-component-head"/);
   assert.doesNotMatch(source, /Select a component to add it, or drag it onto the canvas\./);
   assert.doesNotMatch(source, /Free Canvas uses registered components from the shared library\./);
-  assert.match(source, /className="office-ribbon-library"/);
+  assert.match(source, /className="office-ribbon-library office-ribbon-group"/);
   assert.match(source, /filteredPaletteComponents\.map\(component=>/);
   assert.doesNotMatch(source, /<aside className="component-panel"/);
   assert.doesNotMatch(source, /renderPaletteComponentPreview/);
