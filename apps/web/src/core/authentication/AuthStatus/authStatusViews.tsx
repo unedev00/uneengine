@@ -67,7 +67,7 @@ export function ConnectionHealthIndicator() {
         const controller = new AbortController();
         const timeout = window.setTimeout(() => controller.abort(), 8000);
         try {
-          const response = await fetch(`${apiBase.replace(/\/api\/?$/, '')}/health`, { cache: 'no-store', signal: controller.signal });
+          const response = await fetch(`${apiBase.replace(/\/$/, '')}/health`, { cache: 'no-store', signal: controller.signal, credentials: 'same-origin' });
           const latency = Math.round(performance.now() - started);
           const result = response.ok ? await response.json() as { status?: string; persistence?: string; database?: string } : null;
           // /health exposes status and persistence; older API versions may expose database.
@@ -79,7 +79,7 @@ export function ConnectionHealthIndicator() {
           });
         } finally { window.clearTimeout(timeout); }
       } catch {
-        if (alive) setHealth({ status: 'offline', database: 'unreachable', latency: null, checked: new Date().toLocaleTimeString() });
+        if (alive) setHealth({ status: 'offline', database: 'unknown (health check failed)', latency: null, checked: new Date().toLocaleTimeString() });
       }
     };
     void check();
