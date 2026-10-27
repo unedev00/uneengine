@@ -3,19 +3,12 @@ import type { PoolClient } from 'pg';
 import type { SqlPersistence } from '../system-files/sql-persistence.js';
 import { UNE_COMPONENTS } from './une-components.js';
 
-/** Versioned snapshot of the reviewed web One- descriptor index.
+/** Versioned snapshot of the legacy registrations retired from the public catalog.
  * Test coverage rejects drift between this SQL seeder and the bundled manifest. */
-export const BUNDLED_COMPONENTS = [
-  "OneText",
-  "OneBadge",
-  "OneButton",
-  "OneSearch",
-  "OneCalendar",
-  "OneItemGrid",
-  "OneConversation",
-  "OneShoppingCart",
-] as const;
-export const BUNDLED_COMPONENT_SEED_VERSION = 'core-bundled-components-v3';
+// Legacy One renderers remain internal dependencies of UNE but are no longer
+// separate system components installed for new tenants.
+export const BUNDLED_COMPONENTS: readonly string[] = [];
+export const BUNDLED_COMPONENT_SEED_VERSION = 'core-bundled-components-v4';
 
 export async function seedFreshBundledComponents(client: PoolClient, tenantId: string) {
   for (const apiName of BUNDLED_COMPONENTS) {
@@ -32,7 +25,7 @@ export async function seedFreshBundledComponents(client: PoolClient, tenantId: s
 export async function deactivateUnavailableBundledComponents(
   client: Pick<PoolClient,'query'>, tenantId: string
 ): Promise<void> {
-  const reviewed: string[] = [...BUNDLED_COMPONENTS,...UNE_COMPONENTS];
+  const reviewed: string[] = [...UNE_COMPONENTS];
   await client.query(`
     UPDATE md_component_definitions AS d SET enabled=false
     WHERE d.tenant_id=$1 AND d.enabled=true
