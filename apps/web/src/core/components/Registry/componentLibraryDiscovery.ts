@@ -10,7 +10,19 @@ export function oneComponentLabel(component: Pick<LibraryComponentMetadata, 'lab
 
 /** Compatibility entries stay resolvable, but are not offered for new placements.
  * Only reviewed bundled aliases are consolidated; tenant components retain their identity. */
-const bundledAliases: Readonly<Record<string, string>> = { ChatterInbox: 'OneConversation' };
+/** Old system API names are readable aliases, not additional new components.
+ * Keep tenant-authored components with identical labels or unrelated API names. */
+export const legacyUneAliases: Readonly<Record<string,string>> = Object.freeze({
+  OneText: 'une_text',
+  OneBadge: 'une_badge',
+  OneButton: 'une_button',
+  OneSearch: 'une_search',
+  OneCalendar: 'une_calendar',
+  OneItemGrid: 'une_item_grid',
+  OneConversation: 'une_conversation',
+  OneShoppingCart: 'une_cart',
+});
+const bundledAliases: Readonly<Record<string, string>> = { ChatterInbox: 'une_conversation' };
 
 export function registeredComponentDefinitions(
   components: readonly LibraryComponentMetadata[],
@@ -37,6 +49,8 @@ export function uniqueLibraryComponents(
   const catalog = registeredComponentDefinitions(components, surface);
   const definitions = new Map(catalog.map(component => [component.apiName, component]));
   return catalog.filter(component => {
+    // The original eight One registrations are internal compatibility identities.
+    if (component.trustedBundled && legacyUneAliases[component.apiName]) return false;
     const canonical = definitions.get(bundledAliases[component.apiName]);
     return !(component.trustedBundled && canonical?.trustedBundled && canonical.status !== 'Draft' &&
       (component.surfaces ?? []).every(item => canonical.surfaces.includes(item)));

@@ -40,7 +40,7 @@ test('each builder offers one published definition per identity and supported su
 
 test('bundled alias is hidden from new placements while saved placements remain resolvable', () => {
   const alias = definition('ChatterInbox', { trustedBundled: true });
-  const canonical = definition('OneConversation', { trustedBundled: true });
+  const canonical = definition('une_conversation', { trustedBundled: true });
   for (const surface of ['page', 'dashboard', 'flow'] as const) {
     assert.deepEqual(uniqueLibraryComponents([alias, canonical], surface), [canonical]);
     assert.equal(findRegisteredComponent([alias, canonical], alias.apiName, surface), alias);
@@ -75,4 +75,25 @@ test('UNE palette uses published descriptor category instead of a guessed label'
   assert.deepEqual(getPageBuilderComponentCategories('une_option_groups','UNE Option Groups','Dynamic options',false,'Inputs'),['Inputs']);
   assert.deepEqual(getPageBuilderComponentCategories('une_cart','UNE Cart','Shopping',false,'Data'),['Data']);
   assert.deepEqual(getPageBuilderComponentCategories('une_calendar','Calendar','Appointments',false,'Data'),['Data']);
+});
+
+
+test('only UNE equivalents are offered for trusted retired One components',()=>{
+ const pairs: Array<[string,string]> = [
+  ['OneText','une_text'],['OneBadge','une_badge'],['OneButton','une_button'],
+  ['OneSearch','une_search'],['OneCalendar','une_calendar'],
+  ['OneItemGrid','une_item_grid'],['OneConversation','une_conversation'],
+  ['OneShoppingCart','une_cart']
+ ];
+ for(const [legacy,canonical] of pairs){
+  const old=definition(legacy,{trustedBundled:true});
+  const replacement=definition(canonical,{trustedBundled:true});
+  for(const surface of ['page','dashboard','flow'] as const){
+   assert.deepEqual(uniqueLibraryComponents([old,replacement],surface),[replacement]);
+   assert.equal(findRegisteredComponent([replacement],legacy,surface),replacement);
+   assert.equal(findRegisteredComponent([old,replacement],legacy,surface),old);
+  }
+  assert.deepEqual(uniqueLibraryComponents([definition(legacy),replacement]),[definition(legacy),replacement],
+   'tenant-owned components are never retired by name alone');
+ }
 });

@@ -62,10 +62,10 @@ export async function seedAceAssistInstalledHome(db:SqlPersistence,tenantId:stri
         VALUES($1,$2,'aceassist-default','App Default',$3,true,true,0)`,
         [tenantId,pageId,ACEASSIST_APP.apiName]);
       for(const [i,node] of ([
-        {key:'welcome',type:'Custom:OneText',label:'Ace Assist heading',region:'header',props:{text:'Welcome to Ace Assist',fontSize:28}},
-        {key:'hint',type:'Custom:OneText',label:'Booking status',region:'header',
+        {key:'welcome',type:'Custom:une_text',label:'Ace Assist heading',region:'header',props:{text:'Welcome to Ace Assist',fontSize:28}},
+        {key:'hint',type:'Custom:une_text',label:'Booking status',region:'header',
           props:{text:'Your calendar is ready. Appointment data will appear when booking Objects and Flows are configured in MetaDrive.',fontSize:14}},
-        {key:'calendar',type:'Custom:OneCalendar',label:'Appointments Calendar',region:'main',props:{kind:'Calendar',view:'month'}}
+        {key:'calendar',type:'Custom:une_calendar',label:'Appointments Calendar',region:'main',props:{kind:'Calendar',view:'month'}}
       ] as const).entries()){
         const componentApi=node.type.slice('Custom:'.length);
         const {rows:components}=await tx.query<{api_name:string}>(`SELECT api_name

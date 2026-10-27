@@ -57,7 +57,7 @@ try{
   ORDER BY api_name`,[tenantId]);
  assert.deepEqual(componentStatus.rows,[
   {api_name:'OneAccordion',enabled:false},
-  {api_name:'OneText',enabled:true},
+  {api_name:'OneText',enabled:false},
   {api_name:'TenantAccordion',enabled:true}
  ]);
  console.info('Stale bundled SQL component reconciliation: passed');

@@ -44,9 +44,9 @@ export async function seedOneChatterInstalledPage(client:Pick<PoolClient,'query'
       'AceChatterSendMessage'].every(name=>available.has(name));
     const allowContacts=available.has('AceChatterLoadContacts');
     const nodes=[
-      {key:'brand',type:'Custom:OneText',label:'OneChatter title',region:'header',
+      {key:'brand',type:'Custom:une_text',label:'OneChatter title',region:'header',
         props:{text:'OneChatter',fontSize:26,fontWeight:700,textColor:'#075E54'}},
-      {key:'inbox',type:'Custom:OneConversation',label:'Editable conversations',region:'main',
+      {key:'inbox',type:'Custom:une_conversation',label:'Editable conversations',region:'main',
         props:{
           viewMode:'inbox',title:'Chats',searchPlaceholder:'Search chats',
           placeholder:'Type a message',accentColor:'#128C7E',

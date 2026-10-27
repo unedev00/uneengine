@@ -7,14 +7,20 @@ const entries = await readdir(webSourceRoot, { withFileTypes: true });
 assert.deepEqual(entries.filter(entry => entry.isDirectory()).map(entry => entry.name).sort(), ['core', 'one']);
 assert.deepEqual(entries.filter(entry => entry.isFile()).map(entry => entry.name).sort(), ['README.md', 'main.tsx']);
 const { components } = await loadComponentCatalog();
-const registered = components.filter(component => component.apiName.startsWith('One'));
-assert.deepEqual(registered.map(component => component.apiName).sort(),
-  ['OneText','OneBadge','OneButton','OneSearch','OneItemGrid','OneShoppingCart','OneCalendar','OneConversation'].sort(),
-  'Only the eight approved app-page components remain registered');
+const publishedOne=components.filter(component=>component.apiName.startsWith('One'));
+assert.deepEqual(publishedOne,[], 'No legacy One components may be independently registered');
+const registered=components.filter(component=>component.apiName.startsWith('une_'));
+assert.equal(registered.length,36,'All 36 canonical UNE component descriptors must be registered');
+const retained=['OneText','OneBadge','OneButton','OneSearch','OneCalendar','OneItemGrid','OneConversation','OneShoppingCart'];
+for(const name of retained){
+  // UNE wrappers still reuse the old implementation code; it is not a public component.
+  for(const extension of ['jsx','css'])
+    await access(path.join(webSourceRoot,`one/${name}/${name}.${extension}`));
+}
 for (const component of registered) {
   const prefix = `one/${component.apiName}/`;
-  assert.equal(component.jsxFile, prefix + component.apiName + '.jsx');
-  assert.equal(component.cssFile, prefix + component.apiName + '.css');
-  for (const file of [component.jsxFile, component.cssFile, prefix + 'component.json']) await access(path.join(webSourceRoot, file));
+  assert.equal(component.jsxFile, prefix + component.apiName.split('_').slice(1).map(part=>part[0].toUpperCase()+part.slice(1)).join('').replace(/^/, 'Une') + '.jsx');
+  for (const file of [component.jsxFile,component.cssFile,prefix+'component.json'])
+    await access(path.join(webSourceRoot,file));
 }
-console.log(`Web layout verified: Core, One and ${registered.length} component folders.`);
+console.log(`Web layout verified: Core, UNE and ${registered.length} published components.`);
