@@ -20,12 +20,19 @@ export default function RecordFilterEditor({
   };
   const remove = (index: number) => onChange(filters.filter((_, i) => i !== index));
   const search = fieldSearch.trim().toLowerCase();
+  const matchingFields = search ? fields.filter(item => (item.label + ' ' + item.apiName).toLowerCase().includes(search)) : [];
   return <div className="metadata-record-filter-editor" aria-label={title + ' filter editor'}>
     <div className="properties-section-title">{title}</div>
     <label className="form-label">Find a field
       <input type="search" className="form-control" value={fieldSearch} placeholder="Search field names"
         onChange={e => setFieldSearch(e.target.value)} />
     </label>
+    {search && <div className="metadata-field-search-results" role="region" aria-label="Matching fields">
+      {matchingFields.length ? matchingFields.map(item => <button type="button" className="btn btn-small" key={item.apiName}
+        onClick={() => { onChange([...filters, { field: item.apiName, operator: 'Equals', value: '' }]); setFieldSearch(''); }}>
+        Add filter: {item.label} ({item.apiName})
+      </button>) : <p className="properties-help">No matching fields</p>}
+    </div>}
     {filters.map((entry, index) => {
       const raw = entry && typeof entry === 'object' && !Array.isArray(entry)
         ? entry as Record<string, unknown> : {};
