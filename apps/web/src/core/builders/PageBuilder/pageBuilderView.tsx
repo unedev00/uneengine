@@ -128,6 +128,7 @@ import ComponentLibrary from '../../components/ComponentLibrary/ComponentLibrary
 import RegisteredComponent from '../../components/RegisteredComponent/RegisteredComponent';
 import CustomComponentPropertyEditor from '../ComponentProperties/CustomComponentPropertyEditor';
 import ComponentPresentationProperties from '../ComponentProperties/ComponentPresentationProperties';
+import {presentationSection,isPresentationProperty} from '../ComponentProperties/presentationPropertyModel.mjs';
 import FlowInputBindingEditor from '../FlowInputBindingEditor/FlowInputBindingEditor';
 import RecordFilterEditor from '../../../one/OneRecordFilterEditor/RecordFilterEditor';
 import ComponentVisibilityEditor from '../ComponentProperties/ComponentVisibilityEditor';
@@ -2332,6 +2333,15 @@ function PageBuilder({
             <button type="button" onClick={()=>openExpandedEditor('filters')}><Filter size={16}/> {Array.isArray(selected.properties.filters)&&selected.properties.filters.length
               ?`${selected.properties.filters.length} base filter(s)`:'Add record filters'}</button>
           </div><span>Source & filters</span></div>}
+          {selected && ribbonTab === 'Component Content' && selectedCustomDefinition?.apiName!=='une_item_grid'
+            && selectedCustomDefinition && <div className="office-ribbon-inline-options">
+              <ComponentPresentationProperties
+                definitions={availableComponentSettings(selectedCustomDefinition.propertyDefinitions??[],
+                  page.layoutVariant??'Desktop',selectedCustomDefinition.version)
+                  .filter(definition=>isPresentationProperty(definition)&&presentationSection(definition)==='Content')}
+                properties={selected.properties}
+                onChange={properties=>updateComponent(selected.id,{properties})}/>
+            </div>}
           {selected && ribbonTab === 'Component Content' && selectedCustomDefinition?.apiName==='une_item_grid' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
             {(['imageFieldApiName','titleFieldApiName'] as const).map(key=><label key={key} className="office-ribbon-inline-field"><span className="office-ribbon-field-name">{key==='imageFieldApiName'?'Photo / image':'Heading'}</span>
               <select data-card-mapping-field={key} aria-label={'Card '+key} value={String(selected.properties[key]??'')}
@@ -2432,7 +2442,7 @@ function PageBuilder({
           {selected && ribbonTab === 'Component Properties' && selectedCustomDefinition && <div className="office-ribbon-inline-options">
             <ComponentPresentationProperties
               definitions={availableComponentSettings(selectedCustomDefinition.propertyDefinitions??[],page.layoutVariant??'Desktop',selectedCustomDefinition.version)
-                .filter(definition=>!(definition as {group?:string}).group && definition.kind!=='COLOR'&&!/(?:colou?r|background|fill|tone|width|height|offset|align|fontSize|fontWeight|textDecoration|border|spacing|padding|margin)/i.test(definition.propertyKey)
+                .filter(definition=>!(definition as {group?:string}).group && presentationSection(definition)!=='Content' && definition.kind!=='COLOR'&&!/(?:colou?r|background|fill|tone|width|height|offset|align|fontSize|fontWeight|textDecoration|border|spacing|padding|margin)/i.test(definition.propertyKey)
                 && !(['text','label','content'].includes(definition.propertyKey)&&/text/i.test(selected.type+' '+selected.label)))}
               properties={selected.properties}
               onChange={properties=>updateComponent(selected.id,{properties})}/>
@@ -2459,6 +2469,15 @@ function PageBuilder({
             <button type="button" onClick={()=>openExpandedEditor('actions')}><MousePointer2 size={16}/> Edit actions</button>
             <button type="button" onClick={()=>openExpandedEditor('conditions')}><Filter size={16}/> Only when</button>
           </div><span>Events & outcomes</span></div>}
+          {selected && ribbonTab==='Component Layout' && selectedCustomDefinition && <div className="office-ribbon-inline-options">
+            <ComponentPresentationProperties
+              definitions={availableComponentSettings(selectedCustomDefinition.propertyDefinitions??[],
+                page.layoutVariant??'Desktop',selectedCustomDefinition.version)
+                .filter(definition=>isPresentationProperty(definition)&&presentationSection(definition)==='Layout'
+                  && !(definition as {group?:string}).group)}
+              properties={selected.properties}
+              onChange={properties=>updateComponent(selected.id,{properties})}/>
+          </div>}
           {selected && ribbonTab === 'Component Layout' && <>
             <div className="office-ribbon-group office-ribbon-icon-group" aria-label="Arrange component">
               <div className="office-ribbon-stack">
@@ -2707,7 +2726,7 @@ function PageBuilder({
               currentAppId={builderAppApiName||apps[0]?.apiName||'Records'} primaryObjectApiName={page.targetObject} flows={flows}/>}
             {inspectorTab === 'Design' && selectedCustomDefinition && <ComponentPresentationProperties
               definitions={availableComponentSettings(selectedCustomDefinition.propertyDefinitions??[],page.layoutVariant??'Desktop',selectedCustomDefinition.version).filter(definition=>
-                !(definition as {group?:string}).group && (ribbonTab==='Component Properties' || (definition.kind==='COLOR'||/(?:colou?r|background|fill|opacity|tone)/i.test(definition.propertyKey)))
+                !(definition as {group?:string}).group && presentationSection(definition)!=='Content' && presentationSection(definition)!=='Layout' && (ribbonTab==='Component Properties' || (definition.kind==='COLOR'||/(?:colou?r|background|fill|opacity|tone)/i.test(definition.propertyKey)))
                 && !(ribbonTab==='Component Properties' && /text/i.test(selected.type+' '+selected.label) && definition.propertyKey==='text'))} properties={selected.properties}
               onChange={(properties) => updateComponent(selected.id, {properties})}/>}
             {inspectorTab === 'Design' && <PageComponentVisualEditor section={ribbonTab==='Component Style'?'colors':'appearance'} componentType={selected.type} value={selected.properties.visualStyle} onChange={(visualStyle) => updateComponent(selected.id, { properties: { ...selected.properties, visualStyle } })} />}
