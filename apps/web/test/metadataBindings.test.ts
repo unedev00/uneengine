@@ -178,12 +178,28 @@ test('secondary object field bindings resolve only within their selected object'
  assert.equal(resolveMetadataProperties(p,[object,contacts],[]).contactNameFieldApiName,'FullLabel');
  assert.equal(resolveMetadataProperties({...p,contactsObjectApiName:'metadata:deleted'},[object,contacts],[]).contactNameFieldApiName,'metadata:contact-name');
 });
-test('compatibility registration uses the same renderer and all registered JSX compiles',async()=>{
+test('ChatterInbox compatibility retains the shared conversation renderer and all registered JSX compiles',async()=>{
  const {components}=await loadComponentCatalog();
  const alias=components.find((c:any)=>c.apiName==='ChatterInbox');
- const canonical=components.find((c:any)=>c.apiName==='OneConversation');
- assert.equal(alias.jsxFile,canonical.jsxFile);assert.deepEqual(alias.defaults.actionFlows,{});
- for(const definition of components){const built=await buildBundledComponent(definition);assert.ok(built.compiledJs);assert.ok(built.cssSource);}
+ const canonical=components.find((c:any)=>c.apiName==='une_conversation');
+ assert.ok(alias,'existing ChatterInbox pages retain their compatibility registration');
+ assert.ok(canonical,'UNE conversation is the canonical registration');
+ assert.equal(components.some((c:any)=>c.apiName==='OneConversation'),false,
+  'retired OneConversation is not registered as a separate component');
+ assert.equal(alias.jsxFile,'one/OneConversation/OneConversation.jsx');
+ assert.equal(alias.cssFile,'one/OneConversation/OneConversation.css');
+ assert.deepEqual(alias.defaults.actionFlows,{});
+ assert.equal(canonical.jsxFile,'one/une_conversation/UneConversation.jsx');
+ assert.ok(canonical.propertyDefinitions.some((p:any)=>p.propertyKey==='conversationsObjectApiName'),
+  'UNE conversation remains metadata-driven');
+ const wrapper=await readFile(new URL('../src/one/une_conversation/UneConversation.jsx',import.meta.url),'utf8');
+ assert.match(wrapper,/from\\s+["']\\.\\.\\/OneConversation\\/OneConversation\\.jsx["']/,
+  'UNE conversation imports the shared legacy renderer');
+ assert.match(wrapper,/<OneComponent\\b/,'UNE wrapper actually renders the shared component');
+ for(const definition of components){
+  const built=await buildBundledComponent(definition);
+  assert.ok(built.compiledJs,definition.apiName);assert.ok(built.cssSource,definition.apiName);
+ }
 });
 
 test('record page layout assignments resolve profile, type and wildcard defaults',()=>{
