@@ -128,6 +128,23 @@ function ItemGrid({ p, rows }) {
   const cardMinHeight = Number(p.cardMinHeight);
   const cardBorderWidth = Number(p.cardBorderWidth);
   const imageHeight = Number(p.imageHeight);
+  const imageWidth = Number(p.imageWidth);
+  const boundedSize = (value,maximum=96) => {
+    const number=Number(value);
+    return Number.isFinite(number)&&number>=8&&number<=maximum?number:undefined;
+  };
+  const headingStyle = {
+    fontSize:boundedSize(p.headingFontSize),
+    color:typeof p.headingColor==="string"&&p.headingColor?p.headingColor:undefined,
+  };
+  const supportingStyle = {
+    fontSize:boundedSize(p.descriptionFontSize),
+    color:typeof p.descriptionColor==="string"&&p.descriptionColor?p.descriptionColor:undefined,
+  };
+  const valueStyle = {
+    fontSize:boundedSize(p.valueFontSize),
+    color:typeof p.valueColor==="string"&&p.valueColor?p.valueColor:undefined,
+  };
   const cardShadow = {
     none: "none",
     small: "0 1px 3px rgba(15, 23, 42, 0.12)",
@@ -166,7 +183,11 @@ function ItemGrid({ p, rows }) {
           const rowSpan = isFeatured ? Math.max(1, Math.min(6, Number(p.featuredRowSpan) || 1)) : 1;
           const imageStyle = {
             display: "block",
-            width: "100%",
+            width: Number.isFinite(imageWidth) && imageWidth > 0 ? Math.min(900,imageWidth) : "100%",
+            maxWidth: "100%",
+            borderRadius: p.imageShape==="circle" ? "50%" : p.imageShape==="rounded" ? 12 : 0,
+            marginInline: p.imagePosition==="center" ? "auto" : p.imagePosition==="right" ? "0" : undefined,
+            marginLeft: p.imagePosition==="right" ? "auto" : undefined,
             height: Number.isFinite(imageHeight) && imageHeight > 0
               ? Math.min(900, imageHeight)
               : density === "image-focused" ? 150 : undefined,
@@ -249,16 +270,19 @@ function ItemGrid({ p, rows }) {
                   style={imageStyle}
                 />
               )}
+              {p.showImage !== false && !validImage && p.missingImageBehavior==="placeholder" && (
+                <span className="md-product-image md-card-image-missing" style={imageStyle} role="img" aria-label="Image unavailable">No image</span>
+              )}
               {badge && <span className="md-product-badge" style={{display:"inline-block",
                 padding:"3px 8px",borderRadius:999,background:p.accentColor||"#E4002B",
                 color:"#fff",fontSize:"0.75em",fontWeight:700}}>{badge.slice(0,60)}</span>}
               {p.showTitle !== false && (
-                <strong className="md-product-name">{name}</strong>
+                <strong className="md-product-name" style={headingStyle}>{name}</strong>
               )}
               {p.showDescription === true && description &&
-                <small className="one-muted md-product-description">{description.slice(0,220)}</small>}
+                <small className="one-muted md-product-description" style={supportingStyle}>{description.slice(0,220)}</small>}
               {p.showPrice !== false && price != null && (
-                <span className="md-product-price">{currency(price)}</span>
+                <span className="md-product-price" style={valueStyle}>{currency(price)}</span>
               )}
               {p.showAddIcon === true && (
                 <span className="md-card-add-icon" aria-hidden="true">
