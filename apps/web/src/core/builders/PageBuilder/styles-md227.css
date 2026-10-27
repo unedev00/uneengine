@@ -733,3 +733,8 @@
 .office-ribbon-inspector-host .properties-panel .visual-preset-section{display:inline-flex;vertical-align:top;flex-direction:column;min-width:140px;max-width:200px;margin:3px;border-right:1px solid #c8cdd4;padding:3px 7px}
 .office-ribbon-inspector-host .compact-visual-groups{align-items:stretch;height:92px}
 .office-ribbon-inspector-host .compact-visual-group{justify-content:flex-start;gap:5px}
+
+.office-ribbon-page-controls { display:flex; align-items:center; gap:10px; margin-left:auto; padding-left:16px; flex:0 0 auto; color:#fff; font-size:12px; }
+.office-ribbon-page-controls > button { max-width:200px; overflow:hidden; text-overflow:ellipsis; padding:7px 8px; }
+.office-ribbon-page-controls label { display:flex; gap:6px; align-items:center; padding-bottom:3px; }
+.office-ribbon-page-controls select { max-width:115px; min-height:27px; border:1px solid #a9bfdd; background:#fff; color:#1c3558; border-radius:5px; padding:2px 6px; font-size:12px; }
