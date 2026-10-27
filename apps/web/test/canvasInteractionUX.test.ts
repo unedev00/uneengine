@@ -153,7 +153,7 @@ test('Page Builder property editors filter controls by selected component capabi
   assert.match(builder, /<PageComponentStyleEditor\s+section="colors"\s+componentType=\{selected\.type\}/);
   assert.match(visual, /numericPresets\.filter\(preset => supportsAppearanceProperty\(componentType, preset\.key\)\)/);
   assert.match(visual, /appearanceNumberFields\.filter\(\(\{key\}\) => supportsAppearanceProperty\(componentType, key\)\)/);
-  assert.match(advanced, /numeric\.filter\(\(\[key\]\) => supportsAppearanceProperty\(componentType, key\)\)/);
+  assert.match(advanced, /numeric\.filter\(\(\[key\]\)=>supportsAppearanceProperty\(componentType,key\)\)/);
   assert.match(advanced, /componentAppearanceCapabilities\(componentType\)\.container/);
   assert.match(capabilities, /return capabilities\.container/);
   assert.match(capabilities, /return capabilities\.text \|\| capabilities\.data/);
@@ -363,7 +363,7 @@ test('Page Builder Office ribbon keeps each control in one permanent logical gro
   assert.doesNotMatch(presentation, /<details/);
   assert.match(presentation, /office-ribbon-presentation-group/);
   assert.match(visual, /section === 'colors' \|\| section === 'all'/);
-  assert.match(responsive, /section !== 'layout' && responsiveColorFields/);
+  assert.match(responsive, /section!=='layout' && responsiveColorFields/);
 });
 
 test('Grouping selected canvas components preserves children and absolute bounds', async () => {
