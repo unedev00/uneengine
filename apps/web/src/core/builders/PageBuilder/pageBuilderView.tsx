@@ -459,12 +459,15 @@ function PageBuilder({
   const [showLayers, setShowLayers] = useState(false);
   const [inspectorTab, setInspectorTab] = useState<'Design' | 'Data & Actions' | 'Visibility' | 'Position'>('Design');
   const [ribbonPropertyHost, setRibbonPropertyHost] = useState<HTMLDivElement | null>(null);
-  const [dataEditorOpen,setDataEditorOpen]=useState(false);
+  const [expandedRibbonEditor,setExpandedRibbonEditor] = useState<{kind:'source'|'filters'|'visibility'|'actions'|'conditions'|'content';componentId:string}|null>(null);
+  const [ribbonFilterDraft,setRibbonFilterDraft] = useState<Record<string,unknown>>({});
+  const [actionEvent,setActionEvent] = useState('');
+  const [cardPart,setCardPart] = useState<'Card'|'Image'|'Heading'|'Supporting text'|'Value'|'Gallery'>('Card');
   const [visibilityDialogOpen,setVisibilityDialogOpen] = useState(false);
   const [additionalPropertyDialogOpen,setAdditionalPropertyDialogOpen] = useState(false);
   const [pageSettingsDialogOpen,setPageSettingsDialogOpen] = useState(false);
   const [focusedCardMapping,setFocusedCardMapping] = useState('');
-  const [ribbonTab, setRibbonTab] = useState<'Home' | 'Add Block' | 'Component Properties' | 'Component Style' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Preview'>('Home');
+  const [ribbonTab, setRibbonTab] = useState<'Home' | 'Add Block' | 'Component Content' | 'Component Properties' | 'Component Style' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Preview'>('Home');
   const componentNeedsData = (type: string) => {
     const metadata = type.startsWith('Custom:') ? findRegisteredComponent(libraryComponents,type.slice('Custom:'.length),'page') : undefined;
     return Boolean(metadata?.propertyDefinitions?.some(definition=>definition.kind==='OBJECT'||definition.kind==='OBJECT_FIELD'))
@@ -472,7 +475,6 @@ function PageBuilder({
   };
   const selectRibbonTab = (tab: typeof ribbonTab) => {
     setRibbonTab(tab);
-    setDataEditorOpen(false);
     setPageSettingsDialogOpen(false);
     if (tab === 'Add Block') { setPageSettingsOpen(false); openPalette('Components', 'All Components'); }
     if (tab === 'Home') { setPageSettingsOpen(true); setActivePanel('page'); }
@@ -480,7 +482,7 @@ function PageBuilder({
     if (tab in inspector) { setPageSettingsOpen(false); openComponentInspector(inspector[tab as keyof typeof inspector]); }
   };
   useEffect(()=>{
-    if(!focusedCardMapping||ribbonTab!=='Component Data')return;
+    if(!focusedCardMapping||ribbonTab!=='Component Content')return;
     const select=document.querySelector<HTMLSelectElement>(`select[data-card-mapping-field="${focusedCardMapping}"]`);
     if(select)select.focus();
   },[focusedCardMapping,ribbonTab,selectedId]);
@@ -522,6 +524,11 @@ function PageBuilder({
       setSelectedId(page.components[0].id);
     }
   }, [page.apiName, page.components.length]);
+  const openExpandedEditor = (kind:NonNullable<typeof expandedRibbonEditor>['kind']) => {
+    if(!selected)return;
+    if(kind==='filters')setRibbonFilterDraft({...selected.properties});
+    setExpandedRibbonEditor({kind,componentId:selected.id});
+  };
   const selectedCustomDefinition = selected?.type.startsWith('Custom:')
     ? findRegisteredComponent(libraryComponents, selected.type.slice('Custom:'.length), 'page')
     : undefined;
@@ -1921,7 +1928,7 @@ function PageBuilder({
           setFocusedCardMapping(mapping);
         }else setFocusedCardMapping('');
         setPageSettingsOpen(false); setComponentMenuId('');
-        if (!(event.shiftKey && page.layoutMode === 'free-canvas')) { setRibbonTab(componentNeedsData(component.type)?'Component Data':'Component Properties'); openComponentInspector(componentNeedsData(component.type)?'Data & Actions':'Design'); }
+        if (!(event.shiftKey && page.layoutMode === 'free-canvas') && ['Home','Add Block','Preview'].includes(ribbonTab)) { setRibbonTab(componentNeedsData(component.type)?'Component Data':'Component Properties'); openComponentInspector(componentNeedsData(component.type)?'Data & Actions':'Design'); }
       } } : undefined}
       onDoubleClick={!libraryPreview ? event => { event.stopPropagation(); if (!previewMode) { setSelectedRegion(null); setSelectedId(component.id); selectRibbonTab(componentNeedsData(component.type)?'Component Data':'Component Properties'); } } : undefined}
       onContextMenu={!libraryPreview && !previewMode ? event => { event.preventDefault(); event.stopPropagation(); setSelectedRegion(null); setSelectedId(component.id); setComponentMenuId(component.id); } : undefined}
@@ -2162,7 +2169,7 @@ function PageBuilder({
   const openAddBlocks = (region: 'header' | 'main' | 'sidebar' | null = null) => {
     setPaletteInsertRegion(region); setPaletteTab('Components'); setPaletteCategory('All Components'); setActivePanel('palette');
   };
-  const journeyTabs: Array<typeof ribbonTab> = ['Home','Add Block',...(selected ? ['Component Data','Component Properties','Component Layout','Component Action'] as const : []),'Preview'];
+  const journeyTabs: Array<typeof ribbonTab> = ['Home','Add Block',...(selected ? ['Component Data','Component Content','Component Properties','Component Layout','Component Action'] as const : []),'Preview'];
   const journeyIndex=journeyTabs.indexOf(ribbonTab);
   const addPaletteComponent = (type: string) => {
     const selectedIndex = page.components.findIndex((component) => component.id === selectedId);
@@ -2220,17 +2227,25 @@ function PageBuilder({
       <section className="office-builder-ribbon" aria-label="Page Builder ribbon">
         <nav className="office-ribbon-tabs" role="tablist" aria-label="Page Builder tabs">
           {journeyTabs.map(tab =>
-            <button key={tab} type="button" role="tab" aria-selected={ribbonTab === tab} className={ribbonTab===tab?'active':''} onClick={() => selectRibbonTab(tab)}>{{'Home':'Home','Add Block':'Add Component','Component Data':'Data Source','Component Properties':'Design','Component Style':'Style','Component Layout':'Layout','Component Action':'Actions','Preview':'Preview'}[tab]}</button>)}
+            <button key={tab} type="button" role="tab" aria-selected={ribbonTab === tab} className={ribbonTab===tab?'active':''} onClick={() => selectRibbonTab(tab)}>{{'Home':'Home','Add Block':'Add Component','Component Data':'Data','Component Content':'Content','Component Properties':'Design','Component Style':'Style','Component Layout':'Layout','Component Action':'Actions','Preview':'Preview'}[tab]}</button>)}
           <button type="button" aria-label="Previous Page Builder step" title="Previous step" disabled={journeyIndex<=0} onClick={()=>selectRibbonTab(journeyTabs[journeyIndex-1])}><ChevronLeft size={16}/></button>
           <button type="button" aria-label="Next Page Builder step" title="Next step" disabled={journeyIndex<0||journeyIndex===journeyTabs.length-1} onClick={()=>selectRibbonTab(journeyTabs[journeyIndex+1])}><ChevronRight size={16}/></button>
+          <label className="office-ribbon-header-field">Page <input aria-label="Page name" value={page.label}
+            onChange={event=>applyPage({...page,label:event.target.value})}/></label>
+          <label className="office-ribbon-header-field">Layout <select aria-label="Choose page layout"
+            value={page.layoutVariant??'Desktop'} disabled={switchingLayout||saving}
+            onChange={event=>void switchLayoutVariant(event.target.value as 'Mobile'|'Desktop'|'Tablet'|'Custom')}>
+            {(['Desktop','Tablet','Mobile','Custom'] as const).map(value=><option key={value} value={value}>{value}</option>)}
+          </select></label>
+          <span className="office-ribbon-header-status" role="status">
+            {saving?'Saving…':undoStack.length?'Unsaved edits':savedFeedback?'Saved':page.draftRevision&&page.draftRevision!==page.publishedRevision?'Saved draft · unpublished':'Draft'}
+          </span>
           <button type="button" className="office-ribbon-quick-save" aria-label="Save page from any tab" disabled={saving} onClick={()=>void savePage()}><Save size={15}/>{saving?'Saving…':'Save'}</button>
         </nav>
         <div className="office-ribbon-content" role="tabpanel" aria-label={ribbonTab}>
           {ribbonTab === 'Home' && <>
             <div className="office-ribbon-group"><div className="office-ribbon-stack">
               <button type="button" onClick={safeBackToPages}><ArrowLeft size={16}/> Back to pages</button>
-              <label className="office-ribbon-inline-field"><Pencil size={16}/><input aria-label="Page name" title="Page name" value={page.label} onChange={event=>applyPage({...page,label:event.target.value})}/></label>
-              <label className="office-ribbon-inline-field"><Monitor size={16}/> Device <select aria-label="Choose page layout" disabled={switchingLayout||saving} value={page.layoutVariant??'Desktop'} onChange={event=>void switchLayoutVariant(event.target.value as 'Mobile'|'Desktop'|'Tablet'|'Custom')}>{(['Desktop','Mobile','Tablet','Custom'] as const).map(v=><option key={v}>{v}</option>)}</select></label>
             </div><span>Page</span></div>
             <div className="office-ribbon-group"><div className="office-ribbon-stack">
               <label className="office-ribbon-inline-field"><Grid2X2 size={16}/> Design mode <select aria-label="Design mode" value={page.layoutMode} onChange={event=>setPageLayoutMode(event.target.value as LightningPageMetadata['layoutMode'])}><option value="template">Responsive sections</option><option value="free-canvas">Free canvas</option></select></label>
