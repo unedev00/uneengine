@@ -2148,27 +2148,27 @@ function PageBuilder({
             <div className="office-ribbon-group"><div className="office-ribbon-stack">
               <button type="button" onClick={safeBackToPages}><ArrowLeft size={16}/> Back to pages</button>
               <label className="office-ribbon-inline-field"><Pencil size={16}/><input aria-label="Page name" title="Page name" value={page.label} onChange={event=>applyPage({...page,label:event.target.value})}/></label>
-              <span className="office-ribbon-status">{undoStack.length?'Unsaved edits':page.draftRevision&&page.draftRevision!==page.publishedRevision?'Unpublished changes':savedFeedback?'Saved':page.status==='Active'?'Published':'Draft'}</span>
+              <label className="office-ribbon-inline-field"><Monitor size={16}/> Device <select aria-label="Choose page layout" disabled={switchingLayout||saving} value={page.layoutVariant??'Desktop'} onChange={event=>void switchLayoutVariant(event.target.value as 'Mobile'|'Desktop'|'Tablet'|'Custom')}>{(['Desktop','Mobile','Tablet','Custom'] as const).map(v=><option key={v}>{v}</option>)}</select></label>
             </div><span>Page</span></div>
             <div className="office-ribbon-group"><div className="office-ribbon-stack">
-              <label className="office-ribbon-inline-field"><Monitor size={16}/> Device <select aria-label="Choose page layout" disabled={switchingLayout||saving} value={page.layoutVariant??'Desktop'} onChange={event=>void switchLayoutVariant(event.target.value as 'Mobile'|'Desktop'|'Tablet'|'Custom')}>{(['Desktop','Mobile','Tablet','Custom'] as const).map(v=><option key={v}>{v}</option>)}</select></label>
               <label className="office-ribbon-inline-field"><Grid2X2 size={16}/> Design mode <select aria-label="Design mode" value={page.layoutMode} onChange={event=>setPageLayoutMode(event.target.value as LightningPageMetadata['layoutMode'])}><option value="template">Responsive sections</option><option value="free-canvas">Free canvas</option></select></label>
-              <button type="button" onClick={()=>{setPageSettingsOpen(true);setActivePanel('page');}}><Settings2 size={16}/> Page properties</button>
-            </div><span>Layout</span></div>
-            <div className="office-ribbon-group"><div className="office-ribbon-stack">
               <label className="office-ribbon-inline-field">Width <input aria-label="Page width" type="number" min={320} max={10000} value={page.canvasWidth} onChange={event=>{const n=Number(event.target.value);if(Number.isInteger(n)&&n>=320&&n<=10000)applyPage({...page,canvasWidth:n});}}/></label>
               <label className="office-ribbon-inline-field">Height <input aria-label="Page height" type="number" min={320} max={10000} value={page.canvasHeight} onChange={event=>{const n=Number(event.target.value);if(Number.isInteger(n)&&n>=320&&n<=10000)applyPage({...page,canvasHeight:n});}}/></label>
-              <button type="button" onClick={()=>openPalette('Layers')}><Layers3 size={16}/> Page structure</button>
-            </div><span>Canvas</span></div>
+            </div><span>Layout</span></div>
             <div className="office-ribbon-group"><div className="office-ribbon-stack">
+              <button type="button" onClick={()=>{setPageSettingsOpen(true);setActivePanel('page');}}><Settings2 size={16}/> Page properties</button>
+              <button type="button" onClick={()=>openPalette('Layers')}><Layers3 size={16}/> Page structure</button>
               <button onClick={()=>setDependenciesOpen(true)}><Puzzle size={16}/> Dependencies</button>
+            </div><span>Page settings</span></div>
+            <div className="office-ribbon-group"><div className="office-ribbon-stack">
               <button onClick={()=>setRouteDirectoryOpen(true)}><ExternalLink size={16}/> Page routes</button>
               {page.layoutMode==='free-canvas' ? <button aria-pressed={canvasSnap} onClick={()=>setCanvasSnap(v=>!v)}><Grid2X2 size={16}/> Snap {canvasSnap?'on':'off'}</button> : <button onClick={()=>setShowWelcome(v=>!v)}><CircleHelp size={16}/> Builder help</button>}
+              <button type="button" disabled={page.pageType!=='App Page'||page.status!=='Active'||!currentPageIsAssignedToBuilderApp||!builderAppApiName} onClick={()=>{const url=appRoutePath({kind:'app-page',appId:builderAppApiName,pageApiName:page.apiName});const opened=window.open(url,'_blank','noopener,noreferrer');if(!opened)onNotify('Allow popups to test the published page in the assigned application.');}}><ExternalLink size={16}/> Test active app</button>
             </div><span>Tools</span></div>
             <div className="office-ribbon-group"><div className="office-ribbon-stack">
               <button type="button" className="btn btn-brand btn-small" aria-label="Save page" disabled={saving} onClick={()=>void savePage()}><Save size={16}/>{saving?'Saving…':'Save'}</button>
               <button type="button" disabled={saving||switchingLayout||(page.status==='Active'&&!undoStack.length&&page.draftRevision===page.publishedRevision)} onClick={()=>void publishCurrentLayout()}><Check size={16}/>{page.status==='Draft'?'Activate':'Publish'}</button>
-              <button type="button" disabled={page.pageType!=='App Page'||page.status!=='Active'||!currentPageIsAssignedToBuilderApp||!builderAppApiName} onClick={()=>{const url=appRoutePath({kind:'app-page',appId:builderAppApiName,pageApiName:page.apiName});const opened=window.open(url,'_blank','noopener,noreferrer');if(!opened)onNotify('Allow popups to test the published page in the assigned application.');}}><ExternalLink size={16}/> Test active app</button>
+              <span className="office-ribbon-status">{undoStack.length?'Unsaved edits':page.draftRevision&&page.draftRevision!==page.publishedRevision?'Unpublished changes':savedFeedback?'Saved':page.status==='Active'?'Published':'Draft'}</span>
             </div><span>Save & publish</span></div>
             <div className="office-ribbon-group office-ribbon-version-group"><div className="office-ribbon-stack">
               <button type="button" onClick={()=>void loadLayoutHistory()}><Undo2 size={16}/> {showLayoutHistory?'Refresh versions':'Version history'}</button>
