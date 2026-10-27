@@ -271,7 +271,7 @@ export function isDescendantOf(components: PageComponentMetadata[], childId: str
 }
 
 export type LayoutDevice = 'Desktop' | 'Tablet' | 'Phone';
-export type LayoutSettingKey = 'padding' | 'margin' | 'backgroundColor' | 'borderColor'
+export type LayoutSettingKey = 'width' | 'height' | 'padding' | 'margin' | 'backgroundColor' | 'borderColor'
   | 'borderWidth' | 'borderRadius' | 'alignItems' | 'justifyContent' | 'gap' | 'opacity' | 'hidden'
   | 'fontSize' | 'fontWeight' | 'fontStyle' | 'textDecoration' | 'textAlign' | 'boxShadow'
   | 'position' | 'top' | 'bottom' | 'left' | 'right' | 'zIndex' | 'overflowY';
@@ -429,6 +429,8 @@ export function resolveLayoutStyle(
 ): Record<string, string | number | undefined> {
   const s = layoutSettings(properties, device);
   return {
+    ...(s.width !== undefined ? { width: Number(s.width) } : {}),
+    ...(s.height !== undefined ? { height: Number(s.height) } : {}),
     ...(s.padding !== undefined ? { padding: Number(s.padding) } : {}),
     ...(s.margin !== undefined ? { margin: Number(s.margin) } : {}),
     ...(s.backgroundColor ? { backgroundColor: String(s.backgroundColor) } : {}),
