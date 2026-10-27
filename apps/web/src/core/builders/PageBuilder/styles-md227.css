@@ -459,3 +459,18 @@
     border-bottom-color: #46566b;
   }
 }
+
+/* Inspector accessibility and searchable metadata controls */
+.modern-canvas-builder .properties-panel .properties-section-title,
+.modern-canvas-builder .properties-panel .metadata-record-filter-editor .properties-section-title,
+.canvas-unified-builder .properties-section-title,
+.canvas-unified-builder .metadata-component-properties .properties-section-title {
+  color: #172b4d !important;
+  background: #e9f0f8 !important;
+  opacity: 1 !important;
+  font-weight: 700;
+}
+.metadata-field-search-results { display:flex; flex-direction:column; gap:6px; max-height:200px; overflow:auto; margin:8px 0; }
+.metadata-field-search-results button { text-align:left; white-space:normal; }
+.component-advanced-custom-setting { margin:10px 0; }
+.component-advanced-custom-setting summary { cursor:pointer; font-weight:600; }
