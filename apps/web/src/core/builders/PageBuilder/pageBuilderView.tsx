@@ -2273,11 +2273,6 @@ function PageBuilder({
           </div> : selected && !pageSettingsOpen && activePanel !== 'page' ? <>
             {inspectorTab === 'Position' ? <div className="canvas-position-editor">
               <div className="properties-section-title">Arrange</div>
-              <div className="canvas-align-choices">
-                <button type="button" onClick={() => moveSelected(-1)} disabled={isCanvasLocked(selected)} title="Bring forward"><ArrowUp size={15}/> Forward</button>
-                <button type="button" onClick={() => moveSelected(1)} disabled={isCanvasLocked(selected)} title="Send backward"><ArrowDown size={15}/> Backward</button>
-                <button type="button" onClick={() => openPalette('Layers')} title="View all layers"><Layers3 size={15}/> Layers</button>
-              </div>
               {page.layoutMode === 'free-canvas' && selected.position ? <>
                 <label className="checkbox-row"><input type="checkbox" checked={selected.properties.canvasLocked === true}
                   onChange={event => updateComponent(selected.id, {properties:{...selected.properties,canvasLocked:event.target.checked}})}/> Lock position</label>
@@ -2318,15 +2313,12 @@ function PageBuilder({
               </> : <p className="properties-help">Choose a free-canvas element to edit precise position and size. Template layouts position children responsively.</p>}
               {page.layoutMode === 'free-canvas' && selected.position && !rawLayoutParentId(selected) && <button className="btn btn-small" type="button" onClick={wrapSelectedInContainer}>Group block</button>}
               {page.layoutMode === 'free-canvas' && selected.type === 'Container' && <button className="btn btn-small" type="button" onClick={ungroupSelected}>Ungroup blocks</button>}
-              <button type="button" className="btn btn-small" onClick={() => openComponentInspector('Design')}>Look & Feel</button>
             </div> : <>
             {inspectorTab === 'Data & Actions' && <details className="builder-advanced-panel"><summary>Technical details</summary>
               <label className="form-label" htmlFor="page-component-type">Component type</label><div className="form-display" id="page-component-type">{selected.type}</div>
             </details>}
             {inspectorTab === 'Visibility' && <>
               <div className="properties-section-title">When to show this block</div>
-              <label className="checkbox-row"><input type="checkbox" checked={selected.visible}
-                onChange={(event) => updateComponent(selected.id, { visible: event.target.checked })} /> Show block</label>
               <ComponentVisibilityEditor rules={selected.properties.visibilityRules} fields={fields}
                  profiles={profiles.map(item=>({id:item.id,label:item.label}))}
                  recordTypes={targetObject?.recordTypes?.map(item=>({id:item.id,label:item.label}))??[]}
@@ -2731,34 +2723,13 @@ function PageBuilder({
             </>}
             </>}
           </> : <>
-            <p className="properties-help">Edit page details and activation assignments. The related object and device layout are fixed at creation.</p>
-            <label className="form-label" htmlFor="lightning-page-label">Page name</label><input id="lightning-page-label" className="form-control" value={page.label} onChange={(event) => applyPage({ ...page, label: event.target.value })} />
-            <div className="properties-section-title">Layout design</div>
-            <p className="properties-help">These settings belong only to the selected {page.layoutVariant??'Desktop'} layout. Other device layouts remain unchanged.</p>
-            <label className="form-label">Design mode
-              <select className="form-control" value={page.layoutMode}
-                onChange={event=>setPageLayoutMode(event.target.value as LightningPageMetadata['layoutMode'])}>
-                <option value="template">Responsive sections</option><option value="free-canvas">Free canvas</option>
-              </select>
-            </label>
+            <div className="properties-section-title">Page configuration</div>
             {page.layoutMode==='template'&&<label className="form-label">Section arrangement
               <select className="form-control" value={page.template??'main-sidebar'}
                 onChange={event=>setPageTemplate(event.target.value as LightningPageTemplate)}>
                 {pageTemplates.map(item=><option key={item.id} value={item.id}>{item.label}</option>)}
               </select>
             </label>}
-            <div className="builder-layout-dimensions">
-              <label className="form-label">Width (px)
-                <input className="form-control" type="number" min={320} max={10000} value={page.canvasWidth}
-                  onChange={event=>{const n=Number(event.target.value);
-                    if(Number.isInteger(n)&&n>=320&&n<=10000)applyPage({...page,canvasWidth:n});}}/>
-              </label>
-              <label className="form-label">Height (px)
-                <input className="form-control" type="number" min={320} max={10000} value={page.canvasHeight}
-                  onChange={event=>{const n=Number(event.target.value);
-                    if(Number.isInteger(n)&&n>=320&&n<=10000)applyPage({...page,canvasHeight:n});}}/>
-              </label>
-            </div>
             {(page.layoutVariant??'Desktop')==='Custom'&&<>
               <div className="properties-section-title">Automatic Custom layout activation</div>
               <label className="checkbox-row"><input type="checkbox"
@@ -2788,25 +2759,6 @@ function PageBuilder({
               </div>
               <p className="properties-help">Applies only to published, authorised Custom layouts that are assigned to this app or record context.</p>
             </>}
-            <div className="properties-section-title">Versions</div>
-            <p className="properties-help">Save creates a private version. Publish makes that version live. Restoring an older version changes only your draft until you publish it.</p>
-            <div className="page-layout-version-summary">
-              <span>Draft v{page.draftRevision??'—'}</span>
-              <span>Published v{page.publishedRevision??'—'}</span>
-            </div>
-            <button type="button" className="btn btn-small" aria-expanded={showLayoutHistory}
-              onClick={()=>showLayoutHistory?setShowLayoutHistory(false):void loadLayoutHistory()}>
-              <Undo2 size={14}/> {showLayoutHistory?'Hide version history':'Version history'}
-            </button>
-            {showLayoutHistory&&<div className="page-layout-version-list" aria-label="Layout version history">
-              {layoutVersions.map(item=><div key={item.version} className="page-layout-version-row">
-                <span>v{item.version} {item.published?'· Published':''} {item.draft?'· Draft':''}
-                  <small>{new Date(item.createdAt).toLocaleString()}</small></span>
-                <button type="button" className="btn btn-small" disabled={saving||item.draft}
-                  onClick={()=>void restoreLayoutVersion(item.version)}>Restore draft</button>
-              </div>)}
-              {!layoutVersions.length&&<p className="properties-help">Save this layout to begin version history.</p>}
-            </div>}
             <details className="builder-advanced-panel"><summary>Technical page ID</summary><label className="form-label" htmlFor="lightning-page-api">API Name</label><input id="lightning-page-api" className="form-control" value={page.apiName} onChange={(event) => applyPage({ ...page, apiName: event.target.value })} /></details>
             {page.pageType === 'Record Page' && <>
               <label className="form-label">Related object</label><div className="form-display">{targetObject?.label ?? page.targetObject}</div>
