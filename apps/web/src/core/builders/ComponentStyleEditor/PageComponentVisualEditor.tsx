@@ -5,7 +5,7 @@ import { supportsAppearanceProperty } from './componentAppearanceCapabilities';
 /** Visual-first metadata editor used by the shared Page Builder inspector.
  * Presets and exact inputs update the same published visualStyle fields. */
 export default function PageComponentVisualEditor({ value, onChange, componentType = '', section = 'all' }: {
-  value: unknown; onChange: (next: Partial<VisualProperties>) => void; componentType?: string; section?: 'all' | 'layout' | 'colors';
+  value: unknown; onChange: (next: Partial<VisualProperties>) => void; componentType?: string; section?: 'all' | 'layout' | 'colors' | 'appearance' | 'size';
 }) {
   const visual = normalizeVisualProperties(value);
   // Persist only settings actually chosen; normalized defaults are display-only.
@@ -46,7 +46,7 @@ export default function PageComponentVisualEditor({ value, onChange, componentTy
   return <fieldset className="metadata-component-visual-editor compact-ribbon-visual-editor">
     <legend className="properties-section-title">{section === 'colors' ? 'Component colours' : 'Appearance & exact size'}</legend>
     <div className="compact-visual-groups">
-      {section !== 'colors' && numericPresets.filter(preset => supportsAppearanceProperty(componentType, preset.key)).map(preset =>
+      {section !== 'colors' && section !== 'size' && numericPresets.filter(preset => supportsAppearanceProperty(componentType, preset.key)).map(preset =>
         <div className="compact-visual-group" key={preset.key}>
           <label className="compact-visual-label">{preset.label}
             <select aria-label={preset.label} value={visual[preset.key]} onChange={event=>setNumber(preset.key,Number(event.target.value))}>
@@ -61,7 +61,7 @@ export default function PageComponentVisualEditor({ value, onChange, componentTy
             </button>)}
           </div>
         </div>)}
-      {section !== 'colors' && alignmentPresets.filter(preset=>supportsAppearanceProperty(componentType,preset.key)).map(preset=>
+      {section !== 'colors' && section !== 'size' && alignmentPresets.filter(preset=>supportsAppearanceProperty(componentType,preset.key)).map(preset=>
         <div className="compact-visual-group" key={preset.key}>
           <label className="compact-visual-label">{preset.label}
             <select value={visual[preset.key]} onChange={event=>set(preset.key,event.target.value as VisualProperties[typeof preset.key])}>
@@ -69,7 +69,7 @@ export default function PageComponentVisualEditor({ value, onChange, componentTy
             </select>
           </label>
         </div>)}
-      {section !== 'layout' && appearanceColorFields.filter(({key})=>supportsAppearanceProperty(componentType,key)).map(({key,label})=>
+      {(section === 'colors' || section === 'all') && appearanceColorFields.filter(({key})=>supportsAppearanceProperty(componentType,key)).map(({key,label})=>
         <div className="compact-visual-group" key={key}>
           <label className="compact-visual-label">{label}
             <span className="compact-color-controls">
@@ -84,7 +84,7 @@ export default function PageComponentVisualEditor({ value, onChange, componentTy
               style={{background:swatch==='transparent'?'repeating-conic-gradient(#d5dbe5 0% 25%,white 0% 50%) 50%/8px 8px':swatch}}/>)}
           </div>
         </div>)}
-      {section !== 'colors' && <section className="compact-visual-group office-ribbon-exact-size" aria-label="Exact size and dimensions">
+      {(section === 'size' || section === 'layout' || section === 'all') && <section className="compact-visual-group office-ribbon-exact-size" aria-label="Exact size and dimensions">
         <div className="office-ribbon-group-heading">Exact size</div>
         <div className="visual-advanced-grid">
           {appearanceNumberFields.filter(({key}) => supportsAppearanceProperty(componentType, key)).map(({key,label,min,max})=>number(key,label,min,max))}
@@ -95,7 +95,7 @@ export default function PageComponentVisualEditor({ value, onChange, componentTy
             </select></label>)}
         </div>
       </section>}
-      {section !== 'colors' && <div className="compact-visual-group"><button type="button" className="btn btn-small" onClick={()=>onChange({})}>Reset appearance</button></div>}
+      {(section === 'all' || section === 'layout' || section === 'appearance') && <div className="compact-visual-group"><button type="button" className="btn btn-small" onClick={()=>onChange({})}>Reset appearance</button></div>}
     </div>
   </fieldset>;
 }
