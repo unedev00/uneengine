@@ -82,6 +82,13 @@ jobs:
       - name: Deploy existing API/worker and frontend with SQL backup and rollback
         shell: bash
         run: sudo -n bash scripts/oracle/deploy-full-stack.sh "$GITHUB_WORKSPACE" "$GITHUB_SHA"
+      - name: Verify deployed frontend contains reference builder
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f apps/web/dist/index.html
+          grep -R -l --include='*.js' 'reference-builder-layout' apps/web/dist/assets >/dev/null
+          echo "Release contains reference builder layout."
       - name: Check Communication delivery health
         continue-on-error: true
         shell: bash
