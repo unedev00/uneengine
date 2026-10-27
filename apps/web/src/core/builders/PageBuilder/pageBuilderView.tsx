@@ -2276,7 +2276,7 @@ function PageBuilder({
           {selected && ribbonTab === 'Component Data' && selectedCustomDefinition && selectedCustomDefinition.apiName!=='une_item_grid' &&
             selectedCustomDefinition.propertyDefinitions?.some(definition=>definition.kind==='OBJECT_FIELD') &&
             <div className="office-ribbon-group"><div className="office-ribbon-stack">
-              {selectedCustomDefinition.propertyDefinitions.filter(definition=>definition.kind==='OBJECT_FIELD').map(definition=><label key={definition.propertyKey} className="office-ribbon-inline-field">
+              {selectedCustomDefinition.propertyDefinitions.filter(definition=>definition.kind==='OBJECT_FIELD').slice(0,3).map(definition=><label key={definition.propertyKey} className="office-ribbon-inline-field">
                 <span className="office-ribbon-field-name">{definition.label}</span>
                 <select aria-label={definition.label} value={String(selected.properties[definition.propertyKey]??'')}
                   onChange={event=>updateComponent(selected.id,{properties:{...selected.properties,[definition.propertyKey]:event.target.value}})}>
