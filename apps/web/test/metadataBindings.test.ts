@@ -206,3 +206,29 @@ test('record page layout assignments resolve profile, type and wildcard defaults
  assert.equal(pageLayoutForRecord({...object,pageLayoutAssignments:[]},'','manager')?.id,'fallback');
  assert.equal(pageLayoutForRecord(object,'','cashier')?.id,'type');
 });
+
+test('Page Builder record filters support AND or OR without unsafe server prefiltering',()=>{
+ const fields=[
+  {apiName:'Status',label:'Status',dataType:'Text'},
+  {apiName:'Category',label:'Category',dataType:'Text'}
+ ] as any;
+ const filters=[
+  {field:'Status',operator:'Equals',value:'Active'},
+  {field:'Category',operator:'Equals',value:'Featured'}
+ ];
+ const records=[
+  {Status:'Active',Category:'Standard'},
+  {Status:'Inactive',Category:'Featured'},
+  {Status:'Active',Category:'Featured'},
+  {Status:'Inactive',Category:'Standard'}
+ ];
+ assert.deepEqual(filterPageComponentRecords(records,filters,fields,{},'AND'),[records[2]]);
+ assert.deepEqual(filterPageComponentRecords(records,filters,fields,{},'OR'),records.slice(0,3));
+ const dynamic=[
+  {field:'Status',operator:'Equals',value:{source:'PageState',key:'status'}},
+  {field:'Category',operator:'Equals',value:'Featured'}
+ ];
+ const context={pageState:{status:'Active'}};
+ assert.equal(pageComponentRecordQuery(dynamic,fields,context,'OR').filter,undefined);
+ assert.deepEqual(filterPageComponentRecords(records,dynamic,fields,context,'OR'),records.slice(0,3));
+});

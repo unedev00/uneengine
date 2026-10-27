@@ -23,6 +23,8 @@ export const appearanceChoiceFields = [
  * numeric limits above, while layoutStyle uses these published limits.
  */
 export const responsiveNumberFields = [
+  {key:'width',label:'Width',min:1,max:10000},
+  {key:'height',label:'Height',min:1,max:10000},
   {key:'padding',label:'Padding',min:0,max:160},
   {key:'margin',label:'Margin',min:0,max:160},
   {key:'borderWidth',label:'Border width',min:0,max:24},
@@ -40,6 +42,8 @@ export const responsiveOptionFields = [
   {key:'alignItems',label:'Cross-axis alignment',options:['stretch','flex-start','center','flex-end']},
   {key:'justifyContent',label:'Main-axis alignment',options:['flex-start','center','flex-end','space-between','space-around']},
   {key:'fontWeight',label:'Font weight',options:['400','500','600','700','800']},
+  {key:'fontStyle',label:'Font style',options:['normal','italic']},
+  {key:'textDecoration',label:'Text decoration',options:['none','underline']},
   {key:'textAlign',label:'Text alignment',options:['left','center','right','start','end']},
   {key:'boxShadow',label:'Shadow',options:['none','sm','md','lg']},
   {key:'position',label:'Position',options:['static','relative','sticky','fixed','absolute']},

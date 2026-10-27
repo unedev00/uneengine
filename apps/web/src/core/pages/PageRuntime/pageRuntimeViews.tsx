@@ -359,7 +359,7 @@ function MetadataBoundPageComponent({
     return () => window.removeEventListener('metadrive:page-flow-mutated', sync);
   }, [pageSessionKey, sessionId]);
   const fields = objects.find((item) => item.apiName === objectApiName)?.fields ?? [];
-  const recordQuery=pageComponentRecordQuery(properties.filters,fields,{pageState,recordId,sessionId});
+  const recordQuery=pageComponentRecordQuery(properties.filters,fields,{pageState,recordId,sessionId},properties.filterLogic==='OR'?'OR':'AND');
   const recordQueryKey=JSON.stringify(recordQuery);
   useEffect(() => {
     let active = true;
@@ -481,7 +481,7 @@ function MetadataBoundPageComponent({
   })).filter(contact => contact.id && contact.phone);
   // Data from the previous object/filter must not flash while the new query is pending.
   const currentQueryRecords = recordsForQueryKey === recordQueryKey ? records : [];
-  const filteredRecords=filterPageComponentRecords(currentQueryRecords,properties.filters,fields,{pageState,recordId,sessionId});
+  const filteredRecords=filterPageComponentRecords(currentQueryRecords,properties.filters,fields,{pageState,recordId,sessionId},properties.filterLogic==='OR'?'OR':'AND');
   const relatedKey=String(properties.relatedFilterKey??'');
   const relatedField=String(properties.relatedFieldApiName??'');
   const selectedId=relatedKey?pageState[relatedKey]:undefined;

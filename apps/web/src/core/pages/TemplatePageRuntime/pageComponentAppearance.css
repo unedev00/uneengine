@@ -733,3 +733,7 @@
 [data-page-appearance="tabs"][data-page-style~="padding"] .registered-component .one-tabs {
   padding:var(--md-page-padding)!important;
 }
+
+/* Office-style typography commands share the persisted appearance metadata. */
+[data-page-style~="font-style"] .registered-component {font-style:var(--md-page-font-style)!important}
+[data-page-style~="text-decoration"] .registered-component {text-decoration:var(--md-page-text-decoration)!important}

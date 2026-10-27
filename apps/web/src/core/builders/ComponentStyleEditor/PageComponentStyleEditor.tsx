@@ -45,7 +45,7 @@ export default function PageComponentStyleEditor({
   };
   const inheritedCaption = mode === 'Base' ? 'Default' : 'Inherit base';
   return <section className="page-component-style-editor" aria-label="Advanced layout and responsive properties">
-    <div className="office-ribbon-group-heading">{section === 'colors' ? 'Responsive colours' : 'Responsive layout & typography'}</div>
+    <div className="office-ribbon-group-heading">{section === 'colors' ? 'Responsive colours' : 'Responsive layout'}</div>
     <label className="form-label">Edit breakpoint
       <select className="form-control" aria-label="Edit layout breakpoint" disabled={disabled} value={mode} onChange={(event) => setMode(event.target.value as Mode)}>
         <option value="Base">Base / default</option>
@@ -89,7 +89,7 @@ export default function PageComponentStyleEditor({
         {options.map((item) => <option key={item} value={item}>{item.replace('-', ' ')}</option>)}
       </select>
     </label>)}
-    {section !== 'colors' && typography.filter(([key]) => supportsAppearanceProperty(componentType, key)).map(([key, label, options]) => <label className="form-label" key={key}>{label}
+    {section === 'all' && typography.filter(([key]) => supportsAppearanceProperty(componentType, key)).map(([key, label, options]) => <label className="form-label" key={key}>{label}
       <select className="form-control" aria-label={label} disabled={disabled}
         value={String(current[key] ?? '')}
         onChange={(event) => change(key, event.target.value || null)}>
@@ -97,7 +97,7 @@ export default function PageComponentStyleEditor({
         {options.map(option => <option key={option} value={option}>{option}</option>)}
       </select>
     </label>)}
-    {section !== 'colors' && <label className="form-label">Visibility on {mode === 'Base' ? 'all devices' : mode}
+    {section === 'all' && <label className="form-label">Visibility on {mode === 'Base' ? 'all devices' : mode}
       <select className="form-control" disabled={disabled} aria-label="Component visibility"
         value={current.hidden === true ? 'hidden' : current.hidden === false ? 'visible' : 'inherit'}
         onChange={(event) => change('hidden', event.target.value === 'inherit' ? null : event.target.value === 'hidden')}>
@@ -106,7 +106,7 @@ export default function PageComponentStyleEditor({
         <option value="hidden">Hidden</option>
       </select>
     </label>}
-    {section !== 'colors' && (!componentType || componentAppearanceCapabilities(componentType).container) && <label className="checkbox-row"><input type="checkbox" disabled={disabled}
+    {section === 'all' && (!componentType || componentAppearanceCapabilities(componentType).container) && <label className="checkbox-row"><input type="checkbox" disabled={disabled}
       aria-label="Allow nested components"
       checked={properties.layoutContainer !== false}
       onChange={(event) => onChange({ ...properties, layoutContainer: event.target.checked })} />

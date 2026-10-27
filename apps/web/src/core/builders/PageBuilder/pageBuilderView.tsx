@@ -95,7 +95,28 @@ import {
   WifiOff,
   PanelLeft,
   PanelRight,
-  Layers3
+  Layers3,
+  AlignHorizontalJustifyStart,
+  AlignHorizontalJustifyCenter,
+  AlignHorizontalJustifyEnd,
+  AlignVerticalJustifyStart,
+  AlignVerticalJustifyCenter,
+  AlignVerticalJustifyEnd,
+  Group,
+  Ungroup,
+  Bold,
+  Italic,
+  Underline,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  ShoppingCart,
+  PanelsTopLeft,
+  MessageCircle,
+  BadgeCheck,
+  Table2,
+  Menu,
+  Repeat
 } from 'lucide-react';
 import FlowBuilderWorkspace from '../FlowBuilder/FlowBuilder';
 import FlowScreenContent from '../../automation/FlowScreen/FlowScreenContent';
@@ -114,9 +135,9 @@ import RichTextBlockEditor from '../ComponentProperties/RichTextBlockEditor';
 import PageRouteDirectory from '../../pages/PageRouteDirectory/PageRouteDirectory';
 import { isComponentVisible } from '../../components/Properties/componentVisibility';
 import PageComponentVisualEditor from '../ComponentStyleEditor/PageComponentVisualEditor';
-import { canNestComponent, pageAppearanceTarget, pageAppearanceStyleKeys, directChildren, isLayoutType, isDescendantOf, layoutTypes } from '../../pages/TemplatePageRuntime/pageComponentLayout';
+import { canNestComponent, pageAppearanceTarget, pageAppearanceStyleKeys, updateLayoutSettings, type LayoutSettingKey, directChildren, isLayoutType, isDescendantOf, layoutTypes } from '../../pages/TemplatePageRuntime/pageComponentLayout';
 import PageComponentStyleEditor from '../ComponentStyleEditor/PageComponentStyleEditor';
-import { isCanvasLocked, wrapCanvasComponent, ungroupCanvasComponent, snapCanvasPosition, alignCanvasComponents, distributeCanvasComponents } from './canvasInteractions';
+import { isCanvasLocked, wrapCanvasComponent, groupCanvasComponents, ungroupCanvasComponent, snapCanvasPosition, alignCanvasComponents, distributeCanvasComponents } from './canvasInteractions';
 import { copyComponentTree, cloneComponentTree, assignTabOnReparent, type ComponentClipboard } from './pageComponentTree';
 import { filterPageComponentRecords, needsMetadataComponentRuntime } from '../../pages/PageRuntime/pageComponentBindings';
 import { childrenOf, canNest, componentLayoutProps, hasPageComponentAppearance, isLayoutContainer, rawLayoutParentId, reparentComponent, resolvePageComponentStyle, type LayoutDevice } from '../../pages/TemplatePageRuntime/pageComponentLayout';
@@ -438,9 +459,12 @@ function PageBuilder({
   const [showLayers, setShowLayers] = useState(false);
   const [inspectorTab, setInspectorTab] = useState<'Design' | 'Data & Actions' | 'Visibility' | 'Position'>('Design');
   const [ribbonPropertyHost, setRibbonPropertyHost] = useState<HTMLDivElement | null>(null);
+  const [visibilityDialogOpen,setVisibilityDialogOpen] = useState(false);
+  const [pageSettingsDialogOpen,setPageSettingsDialogOpen] = useState(false);
   const [ribbonTab, setRibbonTab] = useState<'Home' | 'Add Block' | 'Component Properties' | 'Component Style' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Preview'>('Home');
   const selectRibbonTab = (tab: typeof ribbonTab) => {
     setRibbonTab(tab);
+    setPageSettingsDialogOpen(false);
     if (tab === 'Add Block') { setPageSettingsOpen(false); openPalette('Components', 'All Components'); }
     if (tab === 'Home') { setPageSettingsOpen(true); setActivePanel('page'); }
     const inspector = { 'Component Properties': 'Design', 'Component Style': 'Design', 'Component Data': 'Data & Actions', 'Component Action': 'Visibility', 'Component Layout': 'Position' } as const;
@@ -467,6 +491,12 @@ function PageBuilder({
   const fields = targetObject?.fields ?? [];
   const pageLayouts = targetObject?.pageLayouts ?? [];
   const selected = page.components.find((component) => component.id === selectedId);
+  const textStyle = selected?.properties.layoutStyle && typeof selected.properties.layoutStyle==='object'
+    ? selected.properties.layoutStyle as Record<string,unknown> : {};
+  const updateTextStyle = (key:LayoutSettingKey,value:string|number|null) => {
+    if (!selected) return;
+    updateComponent(selected.id,{properties:updateLayoutSettings(selected.properties,'Base',key,value)});
+  };
   useEffect(() => {
     if (!selected && ribbonTab.startsWith('Component ')) setRibbonTab('Home');
   }, [selectedId, page.components, ribbonTab]);
@@ -529,31 +559,45 @@ function PageBuilder({
     const priority = (id: string) => favouriteComponents.includes(id) ? -10 : recentComponents.includes(id) ? recentComponents.indexOf(id) : 100;
     return priority(a.id) - priority(b.id);
   });
-  // Ribbon commands are resolved from the real, currently eligible palette.
-  // Never render disabled placeholders or repeat commands in More blocks.
+  // Every registered, eligible component belongs to one three-row Office ribbon group.
+  // Never render a separate More Blocks grid or duplicate a command.
   const ribbonGroupRules = [
-    { label: 'Text', match: /text|image|photo|picture|paragraph|heading|rich.?text|label|icon|media/i },
-    { label: 'Buttons', match: /button|link|action|navigation|menu/i },
-    { label: 'Sections', match: /section|container|column|row|layout|accordion|tabs?/i },
-    { label: 'Data', match: /item[_ -]?grid|card[_ -]?grid|grid|form|record|table|list|chart|repeater/i }
+    {label:'Text',match:/text|image|photo|picture|paragraph|heading|label|media/i},
+    {label:'Buttons',match:/button|link|action|menu/i},
+    {label:'Sections',match:/section|container|column|row|layout|split.pane|stack/i},
+    {label:'Data',match:/item[_ -]?grid|card[_ -]?grid|\bgrid\b|record|table|repeater|list/i},
+    {label:'Forms',match:/form|input|choice|toggle|lookup|select|date.picker|search/i},
+    {label:'Navigation',match:/tab|navigation|route|breadcrumb/i},
+    {label:'Commerce',match:/cart|shopping|checkout|line.items|price/i},
+    {label:'Widgets',match:/calendar|chart|badge|metric|progress|alert|document|conversation|modal|drawer/i}
   ] as const;
-  const ribbonComponentIds = new Set<string>();
-  const ribbonComponentGroups = ribbonGroupRules.map(group => {
-    const candidates = paletteComponents.filter(component =>
-      group.match.test(`${component.type} ${component.label}`) && !ribbonComponentIds.has(component.id));
-    // A published UNE Item Grid should take priority over generic data blocks.
-    if (group.label === 'Data') candidates.sort((left,right) =>
-      Number(/item[_ -]?grid/i.test(`${right.type} ${right.label}`)) -
-      Number(/item[_ -]?grid/i.test(`${left.type} ${left.label}`)));
-    const components = candidates.slice(0, 3);
-    components.forEach(component => ribbonComponentIds.add(component.id));
-    return { label: group.label, components };
-  }).filter(group => group.components.length > 0);
-  const remainingRibbonComponents = filteredPaletteComponents.filter(component => !ribbonComponentIds.has(component.id));
+  const ribbonCategories = new Map<string,typeof paletteComponents>();
+  for(const rule of ribbonGroupRules) ribbonCategories.set(rule.label,[]);
+  ribbonCategories.set('Other',[]);
+  for(const component of paletteComponents){
+    const name=`${component.type} ${component.label}`;
+    const category=ribbonGroupRules.find(group=>group.match.test(name))?.label??'Other';
+    ribbonCategories.get(category)!.push(component);
+  }
+  const ribbonComponentGroups = Array.from(ribbonCategories).flatMap(([label,components])=>
+    Array.from({length:Math.ceil(components.length/3)},(_,index)=>({
+      id:label+'-'+index,
+      label:index===0?label:`${label} ${index+1}`,
+      components:components.slice(index*3,index*3+3)
+    })));
   const renderPaletteIcon = (component: { type: string; label: string }) => {
     const name = `${component.label} ${component.type}`.toLowerCase();
     if (/\b(text|heading|paragraph|rich text|label)\b/.test(name)) return <Type size={15} />;
     if (/\b(image|photo|picture|avatar|logo)\b/.test(name)) return <ImageIcon size={15} />;
+    if (/\b(cart|checkout|shopping)\b/.test(name)) return <ShoppingCart size={15} />;
+    if (/\b(calendar|date.picker)\b/.test(name)) return <CalendarDays size={15} />;
+    if (/\b(tabs?|accordion)\b/.test(name)) return <PanelsTopLeft size={15} />;
+    if (/\b(conversation|chat|message)\b/.test(name)) return <MessageCircle size={15} />;
+    if (/\b(badge|status)\b/.test(name)) return <BadgeCheck size={15} />;
+    if (/\b(table)\b/.test(name)) return <Table2 size={15} />;
+    if (/\b(menu)\b/.test(name)) return <Menu size={15} />;
+    if (/\b(repeater|repeat)\b/.test(name)) return <Repeat size={15} />;
+    if (/\b(search|lookup)\b/.test(name)) return <Search size={15} />;
     if (/\b(grid|columns?|rows?|layout)\b/.test(name)) return <Grid2X2 size={15} />;
     if (/\b(shape|rectangle|square|circle|line|divider|spacer)\b/.test(name)
       || layoutTypes.some((type) => type === component.type)) return <Square size={15} />;
@@ -747,8 +791,17 @@ function PageBuilder({
   };
   const wrapSelectedInContainer = () => {
     if (!selected || !selected.position || isCanvasLocked(selected) || rawLayoutParentId(selected)) return;
+    if (selectionIds.length<2 || selectionIds.some(id=>{
+      const item=page.components.find(component=>component.id===id);
+      return !item?.position||Boolean(rawLayoutParentId(item))||isCanvasLocked(item)||item.properties.canvasLocked===true;
+    }))return;
     const groupId = 'group-' + crypto.randomUUID();
-    applyPage({ ...page, components: wrapCanvasComponent(page.components, selected.id, groupId) });
+    const eligible=page.components.filter(item=>selectionIds.includes(item.id)&&item.position&&!rawLayoutParentId(item)&&item.properties.canvasLocked!==true&&!isCanvasLocked(item));
+    const next=eligible.length>1
+      ?groupCanvasComponents(page.components,eligible.map(item=>item.id),groupId)
+      :wrapCanvasComponent(page.components,selected.id,groupId);
+    applyPage({ ...page, components: next });
+    setSelectionIds([groupId]);
     setSelectedId(groupId);
     setPaletteTab('Layers');
   };
@@ -2156,7 +2209,7 @@ function PageBuilder({
               <label className="office-ribbon-inline-field">Height <input aria-label="Page height" type="number" min={320} max={10000} value={page.canvasHeight} onChange={event=>{const n=Number(event.target.value);if(Number.isInteger(n)&&n>=320&&n<=10000)applyPage({...page,canvasHeight:n});}}/></label>
             </div><span>Layout</span></div>
             <div className="office-ribbon-group"><div className="office-ribbon-stack">
-              <button type="button" onClick={()=>{setPageSettingsOpen(true);setActivePanel('page');}}><Settings2 size={16}/> Page properties</button>
+              <button type="button" onClick={()=>{setPageSettingsOpen(true);setActivePanel('page');setPageSettingsDialogOpen(true);}}><Settings2 size={16}/> Page properties</button>
               <button type="button" onClick={()=>openPalette('Layers')}><Layers3 size={16}/> Page structure</button>
               <button onClick={()=>setDependenciesOpen(true)}><Puzzle size={16}/> Dependencies</button>
             </div><span>Page settings</span></div>
@@ -2177,10 +2230,15 @@ function PageBuilder({
               </select>
               <button type="button" disabled={saving||selectedHistoryVersion===null||layoutVersions.find(v=>v.version===selectedHistoryVersion)?.draft===true} onClick={()=>{if(selectedHistoryVersion!==null)void restoreLayoutVersion(selectedHistoryVersion);}}><RefreshCw size={16}/> Restore draft</button>
             </div><span>Version history</span></div>
+            <div className="office-ribbon-group"><div className="office-ribbon-stack">
+              <button disabled={!undoStack.length} onClick={undo}><Undo2 size={17}/> Undo</button>
+              <button disabled={!redoStack.length} onClick={redo}><Redo2 size={17}/> Redo</button>
+              <button onClick={()=>setCanvasRefreshKey(key=>key+1)}><RefreshCw size={17}/> Refresh canvas</button>
+            </div><span>History</span></div>
           </>}
           {ribbonTab === 'Add Block' && <>
             {ribbonComponentGroups.map(group=>
-              <div className="office-ribbon-group" key={group.label}><div className="office-ribbon-stack">
+              <div className="office-ribbon-group" key={group.id}><div className="office-ribbon-stack">
                 {group.components.map(component=><button type="button" key={component.id}
                   title={component.description} onClick={()=>addPaletteComponent(component.type)}>
                   {renderPaletteIcon(component)} {component.label}
@@ -2188,35 +2246,113 @@ function PageBuilder({
               </div><span>{group.label}</span></div>)}
           </>}
           {selected && ribbonTab === 'Component Properties' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
-            <label className="office-ribbon-inline-field">Label <input aria-label="Component label" value={selected.label} onChange={event=>updateComponent(selected.id,{label:event.target.value})}/></label>
-            {(/text/i.test(selected.type) || /text/i.test(selected.label)) && selected.type!=='Rich Text' && <label className="office-ribbon-inline-field">Text <input aria-label="Component text" value={String(selected.properties.text??selected.properties.content??'Text')} onChange={event=>{const key=typeof selected.properties.content==='string'?'content':'text';updateComponent(selected.id,{properties:{...selected.properties,[key]:event.target.value}});}}/></label>}
+            <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Label</span><input aria-label="Component label" value={selected.label} onChange={event=>updateComponent(selected.id,{label:event.target.value})}/></label>
+            {(/text/i.test(selected.type) || /text/i.test(selected.label)) && selected.type!=='Rich Text' && <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Text</span><input aria-label="Component text" value={String(selected.properties.text??selected.properties.content??'Text')} onChange={event=>{const key=typeof selected.properties.content==='string'?'content':'text';updateComponent(selected.id,{properties:{...selected.properties,[key]:event.target.value}});}}/></label>}
             <button disabled={isCanvasLocked(selected)} onClick={removeSelected}><Trash2 size={16}/> Delete block</button>
           </div><span>Content</span></div>}
 
+          {selected && ribbonTab === 'Component Properties' && /text|button|label|badge|heading|paragraph|rich|input/i.test(selected.type+' '+selected.label) && <div className="office-ribbon-group office-ribbon-typography">
+            <div className="office-ribbon-stack">
+              <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Font size</span>
+                <input aria-label="Component font size" type="number" min={8} max={96} value={typeof textStyle.fontSize==='number'?textStyle.fontSize:Number(selected.properties.fontSize??16)}
+                  onChange={event=>{const size=Number(event.target.value);if(Number.isInteger(size)&&size>=8&&size<=96)updateTextStyle('fontSize',size);}}/>
+              </label>
+              <div className="office-ribbon-icon-line">
+                <button type="button" className="office-ribbon-icon-button" title="Bold" aria-label="Bold" aria-pressed={Number(textStyle.fontWeight??selected.properties.fontWeight??400)>=700}
+                  onClick={()=>updateTextStyle('fontWeight',Number(textStyle.fontWeight??selected.properties.fontWeight??400)>=700?'400':'700')}><Bold size={16}/></button>
+                <button type="button" className="office-ribbon-icon-button" title="Italic" aria-label="Italic" aria-pressed={textStyle.fontStyle==='italic'}
+                  onClick={()=>updateTextStyle('fontStyle',textStyle.fontStyle==='italic'?'normal':'italic')}><Italic size={16}/></button>
+                <button type="button" className="office-ribbon-icon-button" title="Underline" aria-label="Underline" aria-pressed={textStyle.textDecoration==='underline'}
+                  onClick={()=>updateTextStyle('textDecoration',textStyle.textDecoration==='underline'?'none':'underline')}><Underline size={16}/></button>
+              </div>
+              <div className="office-ribbon-icon-line">
+                {([['left',AlignLeft,'Align text left'],['center',AlignCenter,'Align text centre'],['right',AlignRight,'Align text right']] as const).map(([alignment,Icon,label])=>
+                  <button key={alignment} type="button" className="office-ribbon-icon-button" title={label} aria-label={label}
+                    aria-pressed={(textStyle.textAlign??selected.properties.textAlign??'left')===alignment}
+                    onClick={()=>updateTextStyle('textAlign',alignment)}><Icon size={16}/></button>)}
+              </div>
+            </div><span>Typography</span>
+          </div>}
+
           {selected && ribbonTab === 'Component Action' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
             <label className="office-ribbon-checkbox"><input type="checkbox" checked={selected.visible} onChange={event=>updateComponent(selected.id,{visible:event.target.checked})}/> Show block</label>
-          </div><span>Behaviour</span></div>}
-          {selected && ribbonTab === 'Component Layout' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
-            <button type="button" disabled={page.layoutMode!=='free-canvas'} onClick={()=>updateComponent(selected.id,{properties:{...selected.properties,canvasLocked:!selected.properties.canvasLocked}})}><Lock size={16}/> {selected.properties.canvasLocked?'Unlock':'Lock'} canvas</button>
-            <button disabled={isCanvasLocked(selected)} onClick={()=>moveSelected(-1)}><ArrowUp size={16}/> Bring forward</button>
-            <button disabled={isCanvasLocked(selected)} onClick={()=>moveSelected(1)}><ArrowDown size={16}/> Send backward</button>
-          </div><span>Arrange</span></div>}
+            <button type="button" onClick={()=>setVisibilityDialogOpen(true)}><Eye size={16}/> Configure visibility</button>
+            <button type="button" onClick={()=>setVisibilityDialogOpen(true)}><Plus size={16}/> Add visibility rule</button>
+          </div><span>Visibility</span></div>}
+          {selected && ribbonTab === 'Component Layout' && <>
+            <div className="office-ribbon-group office-ribbon-icon-group" aria-label="Arrange component">
+              <div className="office-ribbon-stack">
+                <div className="office-ribbon-icon-line">
+                  <button type="button" className="office-ribbon-icon-button" title="Bring forward" aria-label="Bring forward" disabled={isCanvasLocked(selected)} onClick={()=>moveSelected(-1)}><ArrowUp size={17}/></button>
+                  <button type="button" className="office-ribbon-icon-button" title="Send backward" aria-label="Send backward" disabled={isCanvasLocked(selected)} onClick={()=>moveSelected(1)}><ArrowDown size={17}/></button>
+                  <button type="button" className="office-ribbon-icon-button" title={selected.properties.canvasLocked?'Unlock position':'Lock position'} aria-label={selected.properties.canvasLocked?'Unlock position':'Lock position'} disabled={page.layoutMode!=='free-canvas'} onClick={()=>updateComponent(selected.id,{properties:{...selected.properties,canvasLocked:!selected.properties.canvasLocked}})}>{selected.properties.canvasLocked?<Unlock size={17}/>:<Lock size={17}/>}</button>
+                </div>
+                <details className="office-ribbon-group-menu">
+                  <summary title="Grouping options"><Group size={16}/> Group <ChevronDown size={12}/></summary>
+                  <div className="office-ribbon-group-menu-items">
+                    <button type="button" disabled={page.layoutMode!=='free-canvas'||selectionIds.length<2||!selected.position||isCanvasLocked(selected)||Boolean(rawLayoutParentId(selected))||selectionIds.some(id=>{
+                      const item=page.components.find(component=>component.id===id);
+                      return !item?.position||isCanvasLocked(item)||item.properties.canvasLocked===true||Boolean(rawLayoutParentId(item));
+                    })} onClick={()=>wrapSelectedInContainer()}><Group size={16}/> Group</button>
+                    <button type="button" disabled={page.layoutMode!=='free-canvas'||selected.type!=='Container'||isCanvasLocked(selected)||!childrenOf(page.components,selected.id).length} onClick={ungroupSelected}><Ungroup size={16}/> Ungroup</button>
+                  </div>
+                </details>
+              </div><span>Arrange</span>
+            </div>
+            <div className="office-ribbon-group office-ribbon-icon-group">
+              <div className="office-ribbon-stack">
+                <div className="office-ribbon-icon-line">
+                  {([['start',AlignHorizontalJustifyStart,'Align left'],['center',AlignHorizontalJustifyCenter,'Align centre'],['end',AlignHorizontalJustifyEnd,'Align right']] as const).map(([alignment,Icon,label])=><button key={alignment} type="button" title={label} aria-label={label} className="office-ribbon-icon-button" disabled={page.layoutMode!=='free-canvas'||isCanvasLocked(selected)} onClick={()=>alignSelected('x',alignment)}><Icon size={17}/></button>)}
+                </div>
+                <div className="office-ribbon-icon-line">
+                  {([['start',AlignVerticalJustifyStart,'Align top'],['center',AlignVerticalJustifyCenter,'Align middle'],['end',AlignVerticalJustifyEnd,'Align bottom']] as const).map(([alignment,Icon,label])=><button key={alignment} type="button" title={label} aria-label={label} className="office-ribbon-icon-button" disabled={page.layoutMode!=='free-canvas'||isCanvasLocked(selected)} onClick={()=>alignSelected('y',alignment)}><Icon size={17}/></button>)}
+                </div>
+                <div className="office-ribbon-icon-line">
+                  <button type="button" className="office-ribbon-icon-button" title="Distribute horizontally" aria-label="Distribute horizontally" disabled={selectionIds.length<3} onClick={()=>distributeSelected('x')}><ArrowRight size={17}/></button>
+                  <button type="button" className="office-ribbon-icon-button" title="Distribute vertically" aria-label="Distribute vertically" disabled={selectionIds.length<3} onClick={()=>distributeSelected('y')}><ArrowDown size={17}/></button>
+                </div>
+              </div><span>Alignment</span>
+            </div>
+            {selected.position && <div className="office-ribbon-group"><div className="office-ribbon-stack">
+              {(['x','y'] as const).map(key=><label key={key} className="office-ribbon-inline-field"><span className="office-ribbon-field-name">{key.toUpperCase()}</span><input aria-label={key.toUpperCase()+' position'} type="number" min={0} max={key==='x'?page.canvasWidth-selected.position!.width:page.canvasHeight-selected.position!.height} disabled={isCanvasLocked(selected)} value={selected.position![key]} onChange={event=>{const n=Number(event.target.value);if(Number.isFinite(n))updateComponent(selected.id,{position:{...selected.position!,[key]:Math.max(0,Math.min(key==='x'?page.canvasWidth-selected.position!.width:page.canvasHeight-selected.position!.height,Math.round(n)))}});}}/></label>)}
+              <label className="office-ribbon-checkbox"><input type="checkbox" checked={selected.properties.canvasLocked===true} disabled={page.layoutMode!=='free-canvas'} onChange={event=>updateComponent(selected.id,{properties:{...selected.properties,canvasLocked:event.target.checked}})}/> Lock position</label>
+            </div><span>Position</span></div>}
+            {selected.position && <div className="office-ribbon-group"><div className="office-ribbon-stack">
+              {(['width','height'] as const).map(key=><label key={key} className="office-ribbon-inline-field"><span className="office-ribbon-field-name">{key==='width'?'Width':'Height'}</span><input aria-label={'Component '+key} type="number" min={1} max={key==='width'?page.canvasWidth-selected.position!.x:page.canvasHeight-selected.position!.y} disabled={isCanvasLocked(selected)} value={selected.position![key]} onChange={event=>{const n=Number(event.target.value);if(Number.isFinite(n))updateComponent(selected.id,{position:{...selected.position!,[key]:Math.max(1,Math.min(key==='width'?page.canvasWidth-selected.position!.x:page.canvasHeight-selected.position!.y,Math.round(n)))}});}}/></label>)}
+              <span className="office-ribbon-stat">Canvas pixels</span>
+            </div><span>Size</span></div>}
+          </>}
           {ribbonTab === 'Preview' && <>
-            <div className="office-ribbon-group"><div className="office-ribbon-stack">
-              <button disabled={!undoStack.length} onClick={undo}><Undo2 size={17}/> Undo</button>
-              <button disabled={!redoStack.length} onClick={redo}><Redo2 size={17}/> Redo</button>
-              <button onClick={()=>setCanvasRefreshKey(key=>key+1)}><RefreshCw size={17}/> Refresh canvas</button>
-            </div><span>History</span></div>
             <div className="office-ribbon-group"><div className="office-ribbon-stack">
               <button onClick={openExternalPreview}><Eye size={17}/> Preview window</button>
               <button onClick={()=>setPreviewMode(value=>!value)}><Monitor size={17}/> {previewMode?'Exit preview':'Canvas preview'}</button>
-              <button onClick={()=>{setPageSettingsOpen(true);setActivePanel('page');}}><Settings2 size={17}/> Preview settings</button>
             </div><span>Preview</span></div>
           </>}
-          {ribbonTab === 'Add Block' && <div className="office-ribbon-library office-ribbon-group" aria-label="Component library"><select aria-label="Block category" value={paletteCategory} onChange={event=>setPaletteCategory(event.target.value as typeof paletteCategory)}>{pageBuilderPaletteCategories.map(category=><option key={category} value={category}>{pageBuilderCategoryLabels[category]}</option>)}</select><div className="office-ribbon-library-items">{remainingRibbonComponents.map(component=><button type="button" key={component.id} title={component.description} onClick={()=>addPaletteComponent(component.type)}>{renderPaletteIcon(component)}{component.label}</button>)}{page.pageType==='Record Page'&&fields.map(field=><button type="button" key={field.apiName} onClick={()=>addField(field.apiName)}><Database size={13}/>{field.label}</button>)}</div><span>More blocks</span></div>}
-          {(ribbonTab === 'Home' || ribbonTab.startsWith('Component ')) && <div className="office-ribbon-inspector-host" ref={setRibbonPropertyHost} aria-label="Ribbon property controls" />}
+          {ribbonTab === 'Add Block' && page.pageType==='Record Page' && Array.from({length:Math.ceil(fields.length/3)},(_,index)=>
+            <div key={index} className="office-ribbon-group"><div className="office-ribbon-stack">
+              {fields.slice(index*3,index*3+3).map(field=><button type="button" key={field.apiName} onClick={()=>addField(field.apiName)}><Database size={16}/>{field.label}</button>)}
+            </div><span>{index===0?'Record Fields':`Record Fields ${index+1}`}</span></div>)}
+          {ribbonTab.startsWith('Component ') && <div className="office-ribbon-inspector-host" ref={setRibbonPropertyHost} aria-label="Ribbon property controls" />}
         </div>
       </section>
+      {ribbonTab==='Home' && pageSettingsDialogOpen && <div className="modal-backdrop office-ribbon-modal-backdrop" role="presentation">
+        <section className="modal office-ribbon-config-modal office-ribbon-page-settings-modal" role="dialog" aria-modal="true" aria-label="Page settings">
+          <div className="modal-header"><h2>Page settings</h2><button type="button" className="icon-button" aria-label="Close page settings" onClick={()=>setPageSettingsDialogOpen(false)}><X size={16}/></button></div>
+          <div className="office-ribbon-modal-content"><div className="office-ribbon-inspector-host" ref={setRibbonPropertyHost} aria-label="Page settings editor"/></div>
+          <div className="office-ribbon-modal-actions"><button type="button" className="btn btn-brand" onClick={()=>setPageSettingsDialogOpen(false)}>Close</button></div>
+        </section>
+      </div>}
+      {selected && visibilityDialogOpen && createPortal(<div className="modal-backdrop office-ribbon-modal-backdrop" role="presentation">
+        <section className="modal office-ribbon-config-modal" role="dialog" aria-modal="true" aria-label="Visibility conditions">
+          <div className="modal-header"><h2>Visibility conditions</h2><button type="button" className="icon-button" aria-label="Close visibility" onClick={()=>setVisibilityDialogOpen(false)}><X size={16}/></button></div>
+          <div className="office-ribbon-modal-content"><ComponentVisibilityEditor rules={selected.properties.visibilityRules} fields={fields}
+            profiles={profiles.map(item=>({id:item.id,label:item.label}))}
+            recordTypes={targetObject?.recordTypes?.map(item=>({id:item.id,label:item.label}))??[]}
+            allowRecordFields={page.pageType==='Record Page'}
+            onChange={visibilityRules=>{const properties={...selected.properties};if(visibilityRules)properties.visibilityRules=visibilityRules;else delete properties.visibilityRules;updateComponent(selected.id,{properties});}}/></div>
+          <div className="office-ribbon-modal-actions"><button type="button" className="btn btn-brand" onClick={()=>setVisibilityDialogOpen(false)}>Done</button></div>
+        </section>
+      </div>,document.body)}
       {showWelcome && <section className="builder-quickstart" aria-label="Getting started with Page Builder">
         <div><strong>Build your page in three steps</strong>
           <span>1. Add a block</span><span>2. Click it to edit</span><span>3. Save and preview</span>
@@ -2294,72 +2430,26 @@ function PageBuilder({
             }}><Trash2 size={15}/> Remove section</button>}
             {selectedRegion === 'main' && <p className="properties-help">The Main section is required and cannot be deleted. Change the section arrangement to remove optional regions.</p>}
           </div> : selected && !pageSettingsOpen && activePanel !== 'page' ? <>
-            {inspectorTab === 'Position' ? <div className="canvas-position-editor">
-              <div className="properties-section-title">Arrange</div>
-              {page.layoutMode === 'free-canvas' && selected.position ? <>
-                <label className="checkbox-row"><input type="checkbox" checked={selected.properties.canvasLocked === true}
-                  onChange={event => updateComponent(selected.id, {properties:{...selected.properties,canvasLocked:event.target.checked}})}/> Lock position</label>
-                <div className="properties-section-title">Align {selectionIds.length>1?'selected elements':'to page'}</div>
-                <div className="canvas-align-choices" role="group" aria-label="Horizontal alignment">
-                  {(['start','center','end'] as const).map((alignment, index) =>
-                    <button type="button" key={alignment} disabled={isCanvasLocked(selected) || selected.properties.canvasLocked === true}
-                      aria-label={['Align left','Align centre','Align right'][index]}
-                      onClick={() => alignSelected('x', alignment)}>{['Left','Centre','Right'][index]}</button>)}
-                </div>
-                <div className="canvas-align-choices" role="group" aria-label="Vertical alignment">
-                  {(['start','center','end'] as const).map((alignment, index) =>
-                    <button type="button" key={alignment} disabled={isCanvasLocked(selected) || selected.properties.canvasLocked === true}
-                      aria-label={['Align top','Align middle','Align bottom'][index]}
-                      onClick={() => alignSelected('y', alignment)}>{['Top','Middle','Bottom'][index]}</button>)}
-                </div>
-                {selectionIds.length>=3&&<div className="canvas-align-choices" role="group" aria-label="Distribute selected elements">
-                  <button type="button" onClick={()=>distributeSelected('x')}>Distribute horizontally</button>
-                  <button type="button" onClick={()=>distributeSelected('y')}>Distribute vertically</button>
-                </div>}
-                <div className="properties-section-title">Size and position</div>
-                <div className="canvas-position-grid">
-                  {(['width','height','x','y'] as const).map(key => {
-                    const pos = selected.position!;
-                    const isSize = key === 'width' || key === 'height';
-                    const limit = key === 'width' || key === 'x' ? page.canvasWidth : page.canvasHeight;
-                    const other = key === 'width' ? pos.x : key === 'height' ? pos.y : key === 'x' ? pos.width : pos.height;
-                    return <label className="form-label" key={key}>{key.toUpperCase()} (px)
-                      <input type="number" className="form-control" step={1} min={isSize ? 1 : 0} max={Math.max(isSize ? 1 : 0, limit-other)}
-                        disabled={isCanvasLocked(selected) || selected.properties.canvasLocked === true} value={pos[key]}
-                        onChange={event => {const value = Number(event.target.value);
-                          if (Number.isFinite(value)) updateComponent(selected.id, { position: { ...pos,
-                            [key]: Math.max(isSize ? 1 : 0, Math.min(limit-other, Math.round(value))) } });
-                        }} />
-                    </label>;
-                  })}
-                </div>
-              </> : <p className="properties-help">Choose a free-canvas element to edit precise position and size. Template layouts position children responsively.</p>}
-              {page.layoutMode === 'free-canvas' && selected.position && !rawLayoutParentId(selected) && <button className="btn btn-small" type="button" onClick={wrapSelectedInContainer}>Group block</button>}
-              {page.layoutMode === 'free-canvas' && selected.type === 'Container' && <button className="btn btn-small" type="button" onClick={ungroupSelected}>Ungroup blocks</button>}
+            {inspectorTab === 'Position' ? <div className="office-ribbon-layout-responsive">
+              <PageComponentStyleEditor section="layout" componentType={selected.type} properties={selected.properties}
+                onChange={(properties: Record<string, unknown>)=>updateComponent(selected.id,{properties})}/>
             </div> : <>
             {inspectorTab === 'Data & Actions' && <details className="builder-advanced-panel"><summary>Technical details</summary>
               <label className="form-label" htmlFor="page-component-type">Component type</label><div className="form-display" id="page-component-type">{selected.type}</div>
             </details>}
-            {inspectorTab === 'Visibility' && <>
-              <div className="properties-section-title">When to show this block</div>
-              <ComponentVisibilityEditor rules={selected.properties.visibilityRules} fields={fields}
-                 profiles={profiles.map(item=>({id:item.id,label:item.label}))}
-                 recordTypes={targetObject?.recordTypes?.map(item=>({id:item.id,label:item.label}))??[]}
-                allowRecordFields={page.pageType === 'Record Page'}
-                onChange={visibilityRules => {
-                  const properties = { ...selected.properties };
-                  if (visibilityRules) properties.visibilityRules = visibilityRules;
-                  else delete properties.visibilityRules;
-                  updateComponent(selected.id, { properties });
-                }} />
-            </>}
+            {inspectorTab === 'Visibility' && <MetadataComponentProperties
+              mode="actions" properties={selected.properties} onChange={(properties: Record<string,unknown>)=>updateComponent(selected.id,{properties})}
+              pageComponents={page.components} componentCatalog={libraryComponents} device={page.layoutVariant??'Desktop'}
+              definitions={selectedCustomDefinition?.propertyDefinitions} eventDefinitions={selectedCustomDefinition?.eventDefinitions}
+              componentVersion={selectedCustomDefinition?.version} objects={objects} apps={apps} pages={pages}
+              currentAppId={builderAppApiName||apps[0]?.apiName||'Records'} primaryObjectApiName={page.targetObject} flows={flows}/>}
             {inspectorTab === 'Design' && selectedCustomDefinition && <ComponentPresentationProperties
               definitions={availableComponentSettings(selectedCustomDefinition.propertyDefinitions??[],page.layoutVariant??'Desktop',selectedCustomDefinition.version).filter(definition=>
                 (definition.kind==='COLOR'||/(?:colou?r|background|fill|opacity|tone)/i.test(definition.propertyKey)) === (ribbonTab==='Component Style')
                 && !(ribbonTab==='Component Properties' && /text/i.test(selected.type+' '+selected.label) && definition.propertyKey==='text'))} properties={selected.properties}
               onChange={(properties) => updateComponent(selected.id, {properties})}/>}
-            {inspectorTab === 'Design' && <PageComponentVisualEditor section={ribbonTab==='Component Style'?'colors':'layout'} componentType={selected.type} value={selected.properties.visualStyle} onChange={(visualStyle) => updateComponent(selected.id, { properties: { ...selected.properties, visualStyle } })} />}
-            {inspectorTab === 'Design' && <PageComponentStyleEditor section={ribbonTab==='Component Style'?'colors':'layout'} componentType={selected.type} properties={selected.properties}
+            {inspectorTab === 'Design' && <PageComponentVisualEditor section={ribbonTab==='Component Style'?'colors':'appearance'} componentType={selected.type} value={selected.properties.visualStyle} onChange={(visualStyle) => updateComponent(selected.id, { properties: { ...selected.properties, visualStyle } })} />}
+            {inspectorTab === 'Design' && ribbonTab==='Component Style' && <PageComponentStyleEditor section="colors" componentType={selected.type} properties={selected.properties}
                 onChange={(properties: Record<string, unknown>) => updateComponent(selected.id, { properties })} />}
             {inspectorTab === 'Data & Actions' && <>
             {selected.parentId && <button type="button" className="btn btn-small" onClick={() => updateComponent(selected.id, { parentId: undefined })}>Move out of section</button>}
@@ -2402,7 +2492,7 @@ function PageBuilder({
                 {!childrenOf(page.components, selected.id).length && <p className="properties-help">No children yet — drop components into this layout.</p>}
               </>}
               </section>
-              <MetadataComponentProperties
+              <MetadataComponentProperties mode="data"
                 pageComponents={page.components} componentCatalog={libraryComponents}
                 device={page.layoutVariant??'Desktop'}
                 componentVersion={findRegisteredComponent(libraryComponents,selected.type.startsWith('Custom:')?selected.type.slice('Custom:'.length):'','page')?.version}
@@ -2784,7 +2874,7 @@ function PageBuilder({
               </div>
               <p className="properties-help">Applies only to published, authorised Custom layouts that are assigned to this app or record context.</p>
             </>}
-            <details className="builder-advanced-panel"><summary>Technical page ID</summary><label className="form-label" htmlFor="lightning-page-api">API Name</label><input id="lightning-page-api" className="form-control" value={page.apiName} onChange={(event) => applyPage({ ...page, apiName: event.target.value })} /></details>
+            
             {page.pageType === 'Record Page' && <>
               <label className="form-label">Related object</label><div className="form-display">{targetObject?.label ?? page.targetObject}</div>
               <div className="properties-section-title">Fields and sections</div>
@@ -2992,7 +3082,7 @@ function PageBuilder({
               <button className="btn btn-full" type="button" onClick={addHomeAssignment}>Add Home Page Assignment</button>
             </div>}
             <p className="properties-help">Device, dimensions and orientation are selected when creating a page. Create another page for a different layout size.</p>
-            <div className="page-property-summary"><strong>{page.components.length}</strong> components</div>
+            
           </>}
         </aside>, ribbonPropertyHost)}
       </div>
