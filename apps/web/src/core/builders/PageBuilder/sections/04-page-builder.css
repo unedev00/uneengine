@@ -705,3 +705,103 @@
     max-height:144px;
   }
 }
+
+
+/* Reference mockup — Add Component is a searchable horizontal tile palette,
+   not stacked property labels. This remains metadata driven. */
+.office-builder-ribbon .office-ribbon-add-library {
+  display:flex;align-items:stretch;gap:10px;flex:1 0 100%;
+  min-width:0;height:124px;box-sizing:border-box;
+}
+.office-builder-ribbon .office-ribbon-add-browser {
+  display:flex;flex-direction:column;flex:0 0 155px;width:155px;
+  gap:4px;border-right:1px solid #d9e1ee;padding:2px 7px 0 0;
+}
+.office-builder-ribbon .office-ribbon-search-field {
+  display:flex;align-items:center;gap:4px;padding:0 5px;
+  height:26px;border:1px solid #cbd8e8;border-radius:4px;background:#fff;
+}
+.office-builder-ribbon .office-ribbon-search-field input {
+  min-width:0;width:100%;height:23px;border:0;outline:0;background:transparent;
+  font-size:11px;
+}
+.office-builder-ribbon .office-ribbon-add-categories {
+  display:flex;flex-direction:column;align-items:stretch;
+  overflow-y:auto;gap:2px;scrollbar-width:thin;
+}
+.office-builder-ribbon .office-ribbon-add-categories button {
+  border:0;background:transparent;text-align:left;padding:3px 6px;
+  border-radius:3px;font:500 11px "Segoe UI",Arial,sans-serif;
+  color:#263d60;cursor:pointer;
+}
+.office-builder-ribbon .office-ribbon-add-categories button.active,
+.office-builder-ribbon .office-ribbon-add-categories button:hover {
+  background:#e4eeff;color:#0751aa;
+}
+.office-builder-ribbon .office-ribbon-component-tiles {
+  display:flex;align-items:center;gap:10px;flex:1 1 auto;
+  min-width:0;overflow-x:auto;overflow-y:hidden;padding:1px 2px 6px;
+  scrollbar-width:thin;
+}
+.office-builder-ribbon .office-ribbon-component-tile {
+  display:flex;flex:0 0 78px;width:78px;height:82px;
+  flex-direction:column;align-items:center;justify-content:center;
+  gap:9px;box-sizing:border-box;padding:8px 4px;
+  border:1px solid #e1e7f0;background:#fff;border-radius:5px;
+  color:#135fc1;font:500 11px "Segoe UI",Arial,sans-serif;cursor:pointer;
+}
+.office-builder-ribbon .office-ribbon-component-tile:hover,
+.office-builder-ribbon .office-ribbon-component-tile:focus-visible {
+  background:#edf5ff;border-color:#478fe0;
+}
+.office-builder-ribbon .office-ribbon-component-tile svg {
+  width:21px;height:21px;flex:0 0 auto;
+}
+.office-builder-ribbon .office-ribbon-component-tile span {
+  color:#233a5a;text-align:center;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis;max-width:100%;
+}
+.office-builder-ribbon .office-ribbon-tabs>button[role=tab]:disabled {
+  opacity:.5;cursor:not-allowed;
+}
+
+/* Home follows the mockup's icon groups; advanced MetaDrive tools stay accessible. */
+.office-builder-ribbon .office-ribbon-home-icons {min-width:175px;}
+.office-builder-ribbon .office-ribbon-home-icon-row {
+  display:flex;align-items:flex-start;gap:7px;
+}
+.office-builder-ribbon .office-ribbon-home-icon-row button {
+  display:flex;flex:0 0 57px;min-width:0;flex-direction:column;
+  justify-content:flex-start;align-items:center;gap:6px;
+  padding:9px 3px 3px;border:0;background:transparent;
+  color:#2c486c;text-align:center;font:500 11px "Segoe UI",sans-serif;
+  cursor:pointer;
+}
+.office-builder-ribbon .office-ribbon-home-icon-row button svg{color:#245aa0}
+.office-builder-ribbon .office-ribbon-home-icon-row button:hover{background:#e5effe}
+.office-builder-ribbon .office-ribbon-home-icon-row button:disabled{opacity:.45;cursor:not-allowed}
+.office-builder-ribbon .office-ribbon-more-group{min-width:142px;}
+.office-builder-ribbon .office-ribbon-advanced-details summary{
+  cursor:pointer;font:600 12px "Segoe UI",sans-serif;padding:8px 5px;
+}
+.office-builder-ribbon .office-ribbon-advanced-details[open] .office-ribbon-advanced-popover {
+  position:fixed;left:16px;top:220px;z-index:200;
+  display:flex;flex-wrap:wrap;align-items:stretch;
+  width:min(1050px,calc(100vw - 32px));max-height:50vh;overflow:auto;
+  background:#fff;border:1px solid #bccbdf;box-shadow:0 8px 22px #173b6422;
+  padding:10px;
+}
+.office-builder-ribbon .office-ribbon-advanced-popover>.office-ribbon-group {
+  min-width:180px;max-width:245px;
+}
+
+/* Match the Preview mockup's horizontal device chooser. */
+.office-builder-ribbon .office-ribbon-preview-device {min-width:300px}
+.office-builder-ribbon .office-ribbon-preview-device .office-ribbon-home-icon-row button[aria-pressed=true] {
+  background:#e2efff;color:#075bb9;border-radius:5px;
+}
+.office-builder-ribbon .office-ribbon-preview-device .office-ribbon-home-icon-row button[aria-pressed=true] svg {color:#0969d7}
+.office-builder-ribbon .office-ribbon-group .office-ribbon-stat {
+  display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  font-size:11px;max-width:210px;
+}
