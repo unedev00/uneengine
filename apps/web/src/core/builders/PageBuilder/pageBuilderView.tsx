@@ -460,6 +460,7 @@ function PageBuilder({
   const [inspectorTab, setInspectorTab] = useState<'Design' | 'Data & Actions' | 'Visibility' | 'Position'>('Design');
   const [ribbonPropertyHost, setRibbonPropertyHost] = useState<HTMLDivElement | null>(null);
   const [visibilityDialogOpen,setVisibilityDialogOpen] = useState(false);
+  const [additionalPropertyDialogOpen,setAdditionalPropertyDialogOpen] = useState(false);
   const [pageSettingsDialogOpen,setPageSettingsDialogOpen] = useState(false);
   const [ribbonTab, setRibbonTab] = useState<'Home' | 'Add Block' | 'Component Properties' | 'Component Style' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Preview'>('Home');
   const selectRibbonTab = (tab: typeof ribbonTab) => {
@@ -2274,6 +2275,36 @@ function PageBuilder({
             </div><span>Typography</span>
           </div>}
 
+
+          {selected && ribbonTab === 'Component Properties' && <div className="office-ribbon-group office-ribbon-appearance">
+            <div className="office-ribbon-stack">
+              {([
+                {key:'borderRadius',label:'Corners',options:[[0,'Square'],[6,'Small'],[14,'Rounded'],[28,'Soft'],[64,'Pill']]},
+                {key:'padding',label:'Spacing',options:[[0,'None'],[8,'Tight'],[16,'Normal'],[24,'Roomy'],[32,'Wide']]},
+                {key:'borderWidth',label:'Border',options:[[0,'None'],[1,'Hairline'],[2,'Normal'],[4,'Bold']]}
+              ] as const).map(control=><label className="office-ribbon-inline-field" key={control.key}>
+                <span className="office-ribbon-field-name">{control.label}</span>
+                <select aria-label={control.label} value={String(
+                  (selected.properties.visualStyle && typeof selected.properties.visualStyle==='object'
+                    ? (selected.properties.visualStyle as Record<string,unknown>)[control.key] : undefined)
+                  ?? (control.key==='padding'?12:control.key==='borderRadius'?8:0)
+                )} onChange={event=>{
+                  const authored=selected.properties.visualStyle && typeof selected.properties.visualStyle==='object'
+                    ?selected.properties.visualStyle as Record<string,unknown>:{};
+                  updateComponent(selected.id,{properties:{...selected.properties,visualStyle:{...authored,[control.key]:Number(event.target.value)}}});
+                }}>
+                  {!control.options.some(([value])=>String(value)===String((selected.properties.visualStyle as Record<string,unknown>|undefined)?.[control.key]??(control.key==='padding'?12:control.key==='borderRadius'?8:0))) &&
+                    <option value={String((selected.properties.visualStyle as Record<string,unknown>|undefined)?.[control.key]??(control.key==='padding'?12:control.key==='borderRadius'?8:0))}>Current</option>}
+                  {control.options.map(([value,label])=><option key={value} value={value}>{label} · {value}px</option>)}
+                </select>
+              </label>)}
+            </div><span>Appearance</span>
+          </div>}
+          {selected && ribbonTab === 'Component Properties' && selectedCustomDefinition?.propertyDefinitions?.length ? <div className="office-ribbon-group office-ribbon-additional-properties">
+            <div className="office-ribbon-stack">
+              <button type="button" onClick={()=>setAdditionalPropertyDialogOpen(true)}><Settings2 size={16}/> Component options</button>
+            </div><span>More properties</span>
+          </div> : null}
           {selected && ribbonTab === 'Component Action' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
             <label className="office-ribbon-checkbox"><input type="checkbox" checked={selected.visible} onChange={event=>updateComponent(selected.id,{visible:event.target.checked})}/> Show block</label>
             <button type="button" onClick={()=>setVisibilityDialogOpen(true)}><Eye size={16}/> Configure visibility</button>
@@ -2332,7 +2363,7 @@ function PageBuilder({
             <div key={index} className="office-ribbon-group"><div className="office-ribbon-stack">
               {fields.slice(index*3,index*3+3).map(field=><button type="button" key={field.apiName} onClick={()=>addField(field.apiName)}><Database size={16}/>{field.label}</button>)}
             </div><span>{index===0?'Record Fields':`Record Fields ${index+1}`}</span></div>)}
-          {ribbonTab.startsWith('Component ') && <div className="office-ribbon-inspector-host" ref={setRibbonPropertyHost} aria-label="Ribbon property controls" />}
+          {['Component Style','Component Data','Component Action','Component Layout'].includes(ribbonTab) && <div className="office-ribbon-inspector-host" ref={setRibbonPropertyHost} aria-label="Ribbon property controls" />}
         </div>
       </section>
       {ribbonTab==='Home' && pageSettingsDialogOpen && <div className="modal-backdrop office-ribbon-modal-backdrop" role="presentation">
@@ -2342,6 +2373,27 @@ function PageBuilder({
           <div className="office-ribbon-modal-actions"><button type="button" className="btn btn-brand" onClick={()=>setPageSettingsDialogOpen(false)}>Close</button></div>
         </section>
       </div>}
+      {selected && additionalPropertyDialogOpen && selectedCustomDefinition && createPortal(<div className="modal-backdrop office-ribbon-modal-backdrop" role="presentation">
+        <section className="modal office-ribbon-config-modal" role="dialog" aria-modal="true" aria-label="Additional component properties">
+          <div className="modal-header"><h2>{selected.label} — Additional properties</h2>
+            <button type="button" className="icon-button" aria-label="Close component properties" onClick={()=>setAdditionalPropertyDialogOpen(false)}><X size={16}/></button></div>
+          <div className="office-ribbon-modal-content">
+            <ComponentPresentationProperties
+              definitions={availableComponentSettings(selectedCustomDefinition.propertyDefinitions??[],page.layoutVariant??'Desktop',selectedCustomDefinition.version)
+                .filter(definition=>definition.kind!=='COLOR'&&!/(?:colou?r|background|fill|tone)/i.test(definition.propertyKey))}
+              properties={selected.properties}
+              onChange={properties=>updateComponent(selected.id,{properties})}/>
+            <MetadataComponentProperties mode="details" properties={selected.properties}
+              onChange={(properties: Record<string,unknown>)=>updateComponent(selected.id,{properties})}
+              pageComponents={page.components} componentCatalog={libraryComponents}
+              definitions={selectedCustomDefinition.propertyDefinitions} eventDefinitions={selectedCustomDefinition.eventDefinitions}
+              componentVersion={selectedCustomDefinition.version} device={page.layoutVariant??'Desktop'}
+              objects={objects} apps={apps} pages={pages}
+              currentAppId={builderAppApiName||apps[0]?.apiName||'Records'} primaryObjectApiName={page.targetObject} flows={flows}/>
+          </div>
+          <div className="office-ribbon-modal-actions"><button className="btn btn-brand" type="button" onClick={()=>setAdditionalPropertyDialogOpen(false)}>Close</button></div>
+        </section>
+      </div>,document.body)}
       {selected && visibilityDialogOpen && createPortal(<div className="modal-backdrop office-ribbon-modal-backdrop" role="presentation">
         <section className="modal office-ribbon-config-modal" role="dialog" aria-modal="true" aria-label="Visibility conditions">
           <div className="modal-header"><h2>Visibility conditions</h2><button type="button" className="icon-button" aria-label="Close visibility" onClick={()=>setVisibilityDialogOpen(false)}><X size={16}/></button></div>
@@ -2419,7 +2471,28 @@ function PageBuilder({
         </div>
         {ribbonPropertyHost && createPortal(<aside id="lightning-page-properties" style={ribbonTab !== 'Home' && !ribbonTab.startsWith('Component ') ? { display: 'none' } : undefined}
           className={`properties-panel reference-properties-panel ${pageSettingsOpen || selected ? 'responsive-open' : ''}`}>
-          {selectedRegion && !pageSettingsOpen && activePanel !== 'page' ? <div className="properties-section">
+          {ribbonTab==='Component Data' && selected ? <MetadataComponentProperties
+            mode="data" properties={selected.properties}
+            onChange={(properties: Record<string,unknown>)=>updateComponent(selected.id,{properties})}
+            pageComponents={page.components} componentCatalog={libraryComponents} device={page.layoutVariant??'Desktop'}
+            definitions={selectedCustomDefinition?.propertyDefinitions}
+            eventDefinitions={selectedCustomDefinition?.eventDefinitions}
+            componentVersion={selectedCustomDefinition?.version}
+            objects={objects} apps={apps} pages={pages}
+            currentAppId={builderAppApiName||apps[0]?.apiName||'Records'} primaryObjectApiName={page.targetObject} flows={flows}
+          /> : ribbonTab==='Component Style' && selected ? <div className="office-ribbon-colours">
+            {selectedCustomDefinition && <ComponentPresentationProperties
+              definitions={availableComponentSettings(selectedCustomDefinition.propertyDefinitions??[],page.layoutVariant??'Desktop',selectedCustomDefinition.version)
+                .filter(definition=>definition.kind==='COLOR'||/(?:colou?r|background|fill|tone)/i.test(definition.propertyKey))}
+              properties={selected.properties}
+              onChange={properties=>updateComponent(selected.id,{properties})}/>}
+            <PageComponentVisualEditor section="colors" componentType={selected.type}
+              value={selected.properties.visualStyle}
+              onChange={visualStyle=>updateComponent(selected.id,{properties:{...selected.properties,visualStyle}})}/>
+            <PageComponentStyleEditor section="colors" componentType={selected.type}
+              properties={selected.properties}
+              onChange={(properties: Record<string,unknown>)=>updateComponent(selected.id,{properties})}/>
+          </div> : selectedRegion && !pageSettingsOpen && activePanel !== 'page' ? <div className="properties-section">
             <div className="properties-section-title">Section configuration</div>
             <p className="properties-help">Sections are responsive layout regions. Change the arrangement without deleting any blocks.</p>
             <label className="form-label">Section arrangement<select className="form-control" value={page.template ?? 'main-sidebar'} onChange={event => setPageTemplate(event.target.value as LightningPageTemplate)}>{pageTemplates.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>

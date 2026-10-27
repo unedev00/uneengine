@@ -222,7 +222,7 @@ test('builder and published runtime use the same appearance targeting and preser
   assert.match(search,/aria-label=\{p\.label\|\|"Search"\}/);
 });
 
-test('all 44 bundled Page components have explicitly verified appearance targets', async () => {
+test('every bundled UNE Page component has an explicitly verified appearance target', async () => {
   const manifest = JSON.parse(await readFile(new URL('../src/one/manifest.json', import.meta.url), 'utf8'));
   const expected: Record<string,string> = {
     une_text:'text',une_image:'image',une_calendar:'calendar',
@@ -379,4 +379,20 @@ test('Grouping selected canvas components preserves children and absolute bounds
   const restored=ungroupCanvasComponent(grouped,'office-group');
   assert.deepEqual(restored.map(item=>item.position),components.map(item=>item.position));
   assert.equal(groupCanvasComponents(components,['a','missing'],'not-allowed').length,components.length);
+});
+
+test('Contextual Page Builder tabs do not leak metadata from other tabs',async()=>{
+ const root=new URL('../src/core/builders/',import.meta.url);
+ const builder=await readFile(new URL('PageBuilder/pageBuilderView.tsx',root),'utf8');
+ const css=await readFile(new URL('PageBuilder/styles-md227.css',root),'utf8');
+ const mount=builder.indexOf("ribbonTab==='Component Data' && selected ? <MetadataComponentProperties");
+ const outdated=builder.indexOf("{inspectorTab === 'Data & Actions' && <details");
+ assert.ok(mount>0 && outdated>mount,'Data editor is rendered before legacy technical inspector');
+ assert.match(builder,/mode="data" properties=\{selected\.properties\}/);
+ assert.match(builder,/ribbonTab==='Component Style' && selected \? <div className="office-ribbon-colours">/);
+ assert.match(builder,/ribbonTab === 'Component Properties' && <div className="office-ribbon-group office-ribbon-appearance"/);
+ assert.match(builder,/\['Component Style','Component Data','Component Action','Component Layout'\]\.includes\(ribbonTab\)/);
+ assert.doesNotMatch(builder,/ribbonTab === 'Component Properties' && <div className="office-ribbon-inspector-host"/);
+ assert.match(css,/office-ribbon-colours \.compact-color-swatches/);
+ assert.match(css,/metadata-component-properties>\.office-ribbon-data-section/);
 });
