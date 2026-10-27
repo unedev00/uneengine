@@ -467,6 +467,7 @@ function PageBuilder({
   const [additionalPropertyDialogOpen,setAdditionalPropertyDialogOpen] = useState(false);
   const [pageSettingsDialogOpen,setPageSettingsDialogOpen] = useState(false);
   const [focusedCardMapping,setFocusedCardMapping] = useState('');
+  const [ribbonAddCategory,setRibbonAddCategory] = useState('Content');
   const [ribbonTab, setRibbonTab] = useState<'Home' | 'Add Block' | 'Component Content' | 'Component Properties' | 'Component Style' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Preview'>('Home');
   const componentNeedsData = (type: string) => {
     const metadata = type.startsWith('Custom:') ? findRegisteredComponent(libraryComponents,type.slice('Custom:'.length),'page') : undefined;
@@ -2291,7 +2292,15 @@ function PageBuilder({
             </div><span>History</span></div>
           </>}
           {ribbonTab === 'Add Block' && <>
-            {ribbonComponentGroups.map(group=>
+            <div className="office-ribbon-group"><div className="office-ribbon-stack">
+              <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Category</span>
+                <select aria-label="Choose component category" value={ribbonAddCategory}
+                  onChange={event=>setRibbonAddCategory(event.target.value)}>
+                  {Array.from(ribbonCategories.keys()).map(category=><option key={category}>{category}</option>)}
+                </select>
+              </label>
+            </div><span>Browse components</span></div>
+            {ribbonComponentGroups.filter(group=>group.id.startsWith(ribbonAddCategory+'-')).map(group=>
               <div className="office-ribbon-group" key={group.id}><div className="office-ribbon-stack">
                 {group.components.map(component=><button type="button" key={component.id}
                   title={component.description} onClick={()=>addPaletteComponent(component.type)}>
@@ -2553,10 +2562,17 @@ function PageBuilder({
               <button onClick={()=>setPreviewMode(value=>!value)}><Monitor size={17}/> {previewMode?'Exit preview':'Canvas preview'}</button>
             </div><span>Preview</span></div>
           </>}
-          {ribbonTab === 'Add Block' && page.pageType==='Record Page' && Array.from({length:Math.ceil(fields.length/3)},(_,index)=>
-            <div key={index} className="office-ribbon-group"><div className="office-ribbon-stack">
-              {fields.slice(index*3,index*3+3).map(field=><button type="button" key={field.apiName} onClick={()=>addField(field.apiName)}><Database size={16}/>{field.label}</button>)}
-            </div><span>{index===0?'Record Fields':`Record Fields ${index+1}`}</span></div>)}
+          {ribbonTab==='Add Block' && page.pageType==='Record Page' && <div className="office-ribbon-group">
+            <div className="office-ribbon-stack"><label className="office-ribbon-inline-field">
+              <span className="office-ribbon-field-name">Record field</span>
+              <select aria-label="Add record field" value="" onChange={event=>{
+                if(event.target.value)addField(event.target.value);
+              }}>
+                <option value="">Choose a field…</option>
+                {fields.map(field=><option key={field.apiName} value={field.apiName}>{field.label}</option>)}
+              </select>
+            </label></div><span>Add record field</span>
+          </div>}
           {['Component Properties','Component Layout'].includes(ribbonTab) && <div className="office-ribbon-inspector-host" ref={setRibbonPropertyHost} aria-label="Ribbon property controls" />}
 
         </div>
