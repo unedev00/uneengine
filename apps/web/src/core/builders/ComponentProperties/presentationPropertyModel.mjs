@@ -15,6 +15,9 @@ export function isPresentationProperty(definition) {
 }
 
 export function presentationSection(definition) {
+  // Explicit metadata owns the editing journey; legacy keys retain inferred sections.
+  if (definition.section === 'Design' || definition.section === 'Appearance') return 'Appearance';
+  if (definition.section === 'Content' || definition.section === 'Layout' || definition.section === 'Responsive') return definition.section;
   const key = definition.propertyKey.toLowerCase();
   if (/responsive|breakpoint|mobile|tablet|desktop|phone|device|orientation/.test(key)) return 'Responsive';
   if (/layout|position|width|height|align|column|rowspan|grid|gap|padding|margin|flex|wrap|direction|span|density/.test(key)) return 'Layout';
