@@ -1,0 +1,480 @@
+.brand-logo {
+  display: block;
+  width: auto;
+  height: 40px;
+  max-width: 72px;
+  object-fit: contain;
+  flex: 0 0 auto;
+}
+.header-records-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+.header-records-link:hover, .header-records-link.active { background: #eeece8; color: var(--brand-dark); }
+.header-records-link:disabled { opacity: .45; cursor: default; }
+.salesforce-header .global-search { min-width: 90px; }
+.salesforce-header .header-tools { flex: 0 0 auto; }
+.auth-brand-logo {
+  display: block;
+  width: min(220px, 100%);
+  height: auto;
+  margin: 0 auto 20px;
+  object-fit: contain;
+}
+
+/* Setup's search and footer remain accessible; only the long menu scrolls. */
+.setup-sidebar {
+  position: sticky;
+  top: 54px;
+  height: calc(100dvh - 54px);
+  max-height: calc(100dvh - 54px);
+  min-height: 0;
+  align-self: flex-start;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 0;
+  overflow: hidden;
+}
+.setup-sidebar-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 0 0 auto;
+  min-height: 36px;
+  padding-left: 13px;
+  border-bottom: 1px solid var(--border);
+}
+.setup-sidebar-toggle {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  background: transparent;
+}
+.setup-sidebar .quick-find { flex: 0 0 auto; }
+.setup-sidebar .setup-tree {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-gutter: stable;
+  overscroll-behavior-y: contain;
+}
+.setup-sidebar .sidebar-footer {
+  position: relative;
+  flex: 0 0 auto;
+}
+@media (max-width: 600px) {
+  .brand-logo { height: 32px; max-width: 48px; }
+  .salesforce-header .brand > span { display: none; }
+  .header-records-link { width: 34px; min-width: 34px; padding: 0; font-size: 0; gap: 0; }
+  .setup-sidebar { top: 47px; height: calc(100dvh - 47px); max-height: calc(100dvh - 47px); padding-bottom: 0; }
+  .setup-sidebar-toolbar { padding-left: 0; justify-content: center; }
+  .setup-sidebar-toolbar > strong { display: none; }
+}
+
+/* App Manager: scoped, responsive form alignment */
+.app-manager { width: min(100%, 1100px); max-width: 1100px; box-sizing: border-box; }
+.app-manager form { display: grid; gap: 16px; }
+.app-manager .permission-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: end; }
+.app-manager .form-label { display: flex; flex-direction: column; align-items: stretch; gap: 7px; margin: 0; min-width: 0; font-size: 13px; font-weight: 600; }
+.app-manager .form-control { box-sizing: border-box; width: 100%; min-height: 38px; font-size: 14px; line-height: 1.4; padding: 8px 11px; }
+.app-manager textarea.form-control { min-height: 86px; resize: vertical; }
+.app-manager-color-control { display: flex; align-items: center; gap: 10px; }
+.app-manager-color-control input[type="color"] { flex: none; width: 46px; height: 38px; padding: 3px; border: 1px solid #d8dde5; background: white; border-radius: 5px; cursor: pointer; }
+.app-manager-color-control .form-control { max-width: 128px; font-family: monospace; }
+.app-manager .app-manager-fieldset { box-sizing: border-box; width: 100%; min-width: 0; margin: 0; padding: 16px; }
+.app-manager .app-manager-fieldset legend { padding: 0 7px; font-weight: 650; }
+.app-manager .app-manager-fieldset p { margin: 0 0 12px; }
+.app-manager .app-manager-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+@media (max-width: 720px) { .app-manager .permission-form-grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* Flow landing: searchable, paginated and accessible existing-flow table */
+.flow-start-name-step { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; margin-top: 18px; }
+.flow-start-name-step .form-control { width: min(100%, 440px); }
+.flow-existing-controls { margin: 14px 0; }
+.flow-existing-controls .form-label { display: flex; flex-direction: column; gap: 6px; max-width: 420px; font-size: 12px; }
+.flow-existing-table-scroll { max-height: 480px; overflow: auto; border: 1px solid #dde2e8; border-radius: 6px; }
+.flow-existing-table { width: 100%; min-width: 640px; border-collapse: collapse; text-align: left; }
+.flow-existing-table th, .flow-existing-table td { padding: 12px; border-bottom: 1px solid #e8eaf0; }
+.flow-existing-table th { position: sticky; top: 0; background: #f8fafc; font-size: 12px; z-index: 1; }
+.flow-existing-table td .text-action { min-height: 32px; padding-block: 4px; }
+.flow-existing-pagination { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 14px; }
+.flow-existing-pagination span { margin-right: auto; }
+
+/* Shared header: logo navigation and live connectivity indicator */
+.brand-home-button { border: 0; background: none; padding: 4px 10px; cursor: pointer; display: inline-flex; align-items: center; flex-shrink: 0; }
+.brand-home-button:focus-visible { outline: 2px solid var(--md-primary,#1d4ed8); outline-offset: 2px; border-radius: 5px; }
+.app-current-label { font-size: 14px; font-weight: 650; white-space: nowrap; }
+.connection-health-wrap { position: relative; }
+.connection-health-healthy { color: #2e844a; }
+.connection-health-slow { color: #a76a00; }
+.connection-health-offline { color: #ba0517; }
+.connection-health-checking { color: #637381; }
+.connection-health-popover { position: absolute; z-index: 100; top: calc(100% + 8px); right: 0; width: 235px; background: #fff; border: 1px solid #d8dde5; box-shadow: 0 8px 24px #0002; border-radius: 8px; padding: 14px; color: #252a35; }
+.connection-health-popover p { font-size: 13px; margin: 8px 0 0; }
+
+/* Profile menu and accessible password dialog */
+.profile-menu-wrap { position: relative; }
+.profile-menu-panel { position: absolute; z-index: 105; right: 0; top: calc(100% + 8px); min-width: 175px; background: #fff; padding: 6px; border: 1px solid #d8dde5; border-radius: 7px; box-shadow: 0 10px 28px #0002; }
+.profile-menu-panel > button { display: block; width: 100%; padding: 10px; text-align: left; border: 0; border-radius: 4px; background: transparent; cursor: pointer; }
+.profile-menu-panel > button:hover { background: #f0f5fa; }
+.profile-password-backdrop { position: fixed; inset: 0; background: #0007; z-index: 500; display: flex; align-items: center; justify-content: center; padding: 16px; }
+.profile-password-dialog { width: min(100%, 440px); background: #fff; border-radius: 10px; padding: 24px; box-shadow: 0 20px 70px #0004; }
+.profile-password-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.profile-password-heading h2 { margin: 0; font-size: 19px; }
+.profile-password-dialog form { display: grid; gap: 14px; }
+.profile-password-dialog .form-label { display: grid; gap: 7px; }
+.profile-password-dialog .form-control { width: 100%; box-sizing: border-box; }
+.profile-password-dialog .toolbar-actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+/* Builder component gallery: recognisable live thumbnails and readable labels */
+.builder-page .component-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); gap: 12px; padding: 0 12px 16px; }
+.builder-page .component-library-card { grid-template-rows: 125px minmax(62px, auto); min-height: 190px; }
+.builder-page .component-card-preview { height: 125px; background: #fff; border-bottom: 1px solid #e5e9ef; }
+.builder-page .component-card-preview .component-rendered-preview { width: 125%; height: 157px; min-height: 157px; transform: scale(.8); }
+.builder-page .component-card-copy { padding: 10px 12px; gap: 5px; }
+.builder-page .component-card-copy strong { font-size: 13px; white-space: normal; line-height: 1.3; }
+.builder-page .component-card-copy span { font-size: var(--md-fs-sm,12px); line-height: 1.45; }
+
+/* Isolated external Page Builder draft-preview window */
+.external-page-preview { min-height: 100vh; background: #f4f6f9; font-family: inherit; }
+.external-preview-toolbar { position: sticky; top: 0; z-index: 10; background: #fff; box-shadow: 0 2px 7px #0001; border-bottom: 1px solid #dbe1e8; padding: 12px 20px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.external-preview-toolbar strong { font-size: 15px; }
+.external-preview-toolbar span { color: #5b6473; font-size: 12px; }
+.external-preview-device-choices { margin-left: auto; display: flex; gap: 6px; }
+.external-preview-viewport { padding: 22px; margin: 0 auto; overflow: auto; }
+.external-preview-viewport.tablet { width: min(100%, 820px); }
+.external-preview-viewport.phone { width: min(100%, 420px); }
+.external-preview-viewport .record-preview { margin: 0 auto; min-height: 65vh; background: #fff; box-shadow: 0 6px 22px #0001; }
+.external-preview-viewport .free-canvas-stage { transform-origin: top left; }
+.external-preview-viewport .component-rendered-preview { pointer-events: auto; }
+@media (max-width: 540px) { .external-preview-toolbar { padding: 10px; gap: 8px; } .external-preview-viewport { padding: 10px; } .external-preview-device-choices { margin-left: 0; } }
+
+/* Keep shared navigation visible while scrolling without covering page content */
+.salesforce-header { position: sticky; top: 0; z-index: 80; }
+.app-strip { position: sticky; top: 50px; z-index: 70; }
+.standalone-page-mode .salesforce-header, .standalone-page-mode .app-strip { display: none; }
+
+/* Named Credentials: compact, readable administration dialog. */
+.named-credential-modal { width: min(820px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow-y: auto; }
+.named-credential-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 18px; }
+.named-credential-form-grid > .form-label { min-width: 0; margin: 0; }
+.named-credential-form-grid .form-control { min-width: 0; width: 100%; }
+.named-credential-form-grid .named-credential-span-full { grid-column: 1 / -1; }
+.named-credential-form-grid .connector-config-fields { margin: 4px 0 !important; }
+.named-credential-form-grid .connector-config-fields .connector-config-row { grid-template-columns: minmax(120px, 1fr) minmax(0, 2fr) !important; }
+.named-credential-activation { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 12px; }
+.named-credential-activation strong { margin-right: auto; }
+@media (max-width: 640px) { .named-credential-form-grid { grid-template-columns: minmax(0, 1fr); } .named-credential-modal { padding: 14px; } }
+
+/* Flow landing screen: 30/70 master-detail layout, using all available width. */
+.flow-start-page.flow-start-page-split { width: 100%; max-width: none; margin: 0; padding: 20px clamp(16px, 2vw, 30px) 28px; box-sizing: border-box; }
+.flow-start-page-split .flow-start-heading { margin-bottom: 16px; }
+.flow-start-panels { display: grid; grid-template-columns: minmax(260px, 3fr) minmax(0, 7fr); gap: 18px; align-items: start; }
+.flow-start-page-split .flow-start-panels > .surface { min-width: 0; margin: 0; padding: 18px; border-radius: 10px; }
+.flow-start-page-split .flow-start-create { position: sticky; top: 72px; }
+.flow-start-page-split .flow-start-types { display: grid; grid-template-columns: minmax(0, 1fr); gap: 9px; margin-bottom: 14px; }
+.flow-start-page-split .flow-start-type { min-height: 59px; padding: 10px 12px; border-radius: 7px; }
+.flow-start-page-split .flow-start-name-step { display: flex; flex-direction: column; align-items: stretch; gap: 8px; }
+.flow-start-page-split .flow-start-name-step .btn { align-self: flex-start; }
+.flow-start-page-split .flow-existing-controls .form-label { display: block; width: min(100%, 420px); }
+.flow-start-page-split .flow-existing-table-scroll { max-height: min(70vh, 760px); overflow: auto; }
+.flow-start-page-split .flow-existing-table { min-width: 870px; }
+.flow-start-page-split .flow-existing-table th, .flow-start-page-split .flow-existing-table td { padding: 10px 9px; vertical-align: middle; }
+.flow-start-page-split .flow-existing-table td:first-child { min-width: 150px; }
+.flow-start-page-split .flow-existing-pagination { position: sticky; bottom: 0; background: #fff; padding-top: 12px; }
+@media (max-width: 920px) { .flow-start-panels { grid-template-columns: minmax(0, 1fr); } .flow-start-page-split .flow-start-create { position: static; } .flow-start-page-split .flow-start-types { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 540px) { .flow-start-page-split .flow-start-types { grid-template-columns: minmax(0,1fr); } .flow-start-page-split .flow-existing-pagination { gap: 5px; } }
+
+/* Compact, stable page-load duration immediately before Help */
+.navigation-load-time { display: inline-flex; align-items: center; justify-content: flex-end; min-width: 94px; white-space: nowrap; font-size: 12px; font-variant-numeric: tabular-nums; color: #54657a; }
+@media (max-width: 600px) { .navigation-load-time { font-size: var(--md-fs-sm,12px); min-width: 70px; } }
+
+/* Accessible connection enable/disable switch. No permissions are changed. */
+.credential-switch { position:relative; min-height:44px; display:inline-flex; align-items:center; gap:8px; cursor:pointer; font-size:12px; white-space:nowrap; }
+.credential-switch input { position:absolute; top:10px; left:0; width:44px; height:24px; opacity:0; }
+.credential-switch-track { position:relative; display:inline-block; width:44px; height:24px; flex:0 0 44px; border-radius:12px; background:#8794a3; transition:background .15s ease; }
+.credential-switch-track::after { content:""; position:absolute; left:4px; top:4px; width:16px; height:16px; border-radius:50%; background:white; transition:transform .15s ease; }
+.credential-switch input:checked + .credential-switch-track { background:#147d64; }
+.credential-switch input:checked + .credential-switch-track::after { transform:translateX(20px); }
+.credential-switch input:focus-visible + .credential-switch-track { outline:2px solid #1264c8; outline-offset:3px; }
+.credential-switch input:disabled + .credential-switch-track { opacity:.45; }
+
+/* Full UI/UX audit fixes: readable mobile navigation and accessible palette actions. */
+@media (max-width: 600px) {
+  .setup-sidebar .tree-item::before {
+    content: attr(data-short-label);
+    font-size:var(--md-fs-xs,11px);
+    line-height: 1;
+    font-weight: 700;
+    letter-spacing: .02em;
+    color: #34453e;
+  }
+  .setup-sidebar .tree-item { min-height: 44px; }
+  .setup-sidebar .tree-item.selected::before { color: #0c4b70; }
+  .setup-sidebar .tree-item:focus-visible { outline-offset: -2px; }
+}
+.tree-group-label { color: #55524e; }
+.builder-meta-bar { color: #515951; }
+.component-category small { color: #4d564e; }
+.component-card-copy span { color: #4d544e; }
+.component-favourite {
+  /* WCAG 2.2 target size: a usable 44x44 pointer target, not just a larger icon. */
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  top: 0;
+  right: 0;
+  color: #34483d;
+  touch-action: manipulation;
+}
+.component-favourite:focus-visible {
+  outline: 3px solid #126c8d;
+  outline-offset: -3px;
+}
+.component-card-action {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  cursor: grab;
+}
+.component-card-action:active { cursor: grabbing; }
+.component-card-action:focus-visible {
+  outline: 3px solid #126c8d;
+  outline-offset: -3px;
+}
+.component-library-card:has(.component-card-action:focus-visible) {
+  border-color: #126c8d;
+}
+.named-credentials-page {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+.named-credentials-page .table-scroll {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+}
+.named-credentials-page .table-scroll > table {
+  min-width: max-content;
+}
+.table-scroll:focus-visible {
+  outline: 2px solid #126c8d;
+  outline-offset: -2px;
+}
+
+/* The Builder title actions must wrap rather than cover page selection or badges. */
+.builder-titlebar {
+  height: auto;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+.builder-page-select {
+  min-width: 0;
+  flex: 1 1 420px;
+}
+.builder-title-controls {
+  min-width: 0;
+  flex-wrap: wrap;
+}
+.builder-titlebar > .toolbar-actions {
+  min-width: 0;
+  flex: 1 1 480px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  overflow: visible;
+}
+.builder-titlebar > .toolbar-actions > * {
+  flex: 0 0 auto;
+}
+.builder-meta-bar {
+  height: auto;
+  min-height: 46px;
+  padding-block: 7px;
+  flex-wrap: wrap;
+}
+.builder-meta-bar > .text-action {
+  margin-left: auto;
+}
+/* Contrast failures observed on warm backgrounds in the 114-screen audit. */
+:root { --muted: var(--md-muted,#596579); }
+.component-group-label,
+.properties-section-title { color: #504e48; }
+.welcome-quick button,
+.shortcut-title { color: #075c9a; }
+/* The static light-theme contrast ink is too dark on dark surfaces.
+ * Keep explicitly light Setup chrome legible even if the OS prefers dark. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .lightning:not(.md-setup-light):not([data-theme="light"]) :is(.welcome-quick button,.shortcut-title) {
+    color: #8cc5ff;
+  }
+}
+:root[data-theme="dark"] .lightning :is(.welcome-quick button,.shortcut-title),
+.lightning[data-theme="dark"] :is(.welcome-quick button,.shortcut-title) {
+  color: #8cc5ff;
+}
+@media (max-width: 600px) {
+  .builder-titlebar { align-items: stretch; }
+  .builder-page-select,
+  .builder-titlebar > .toolbar-actions { flex-basis: 100%; justify-content: flex-start; }
+  .builder-title-controls select { max-width: 100%; }
+  .builder-meta-bar { gap: 8px; }
+}
+
+/* Remaining high-confidence WCAG contrasts after the 114-screen re-audit. */
+.text-action { color: #075b95; }
+.page-region-label { color: #55564f; }
+.record-component-head > span { color: #555e58; }
+
+/* Prevent wide credential-table descendants from expanding the document.
+   The inner list remains independently horizontally scrollable. */
+.named-credentials-page { overflow-x: clip; }
+.named-credentials-page .table-scroll {
+  contain: layout paint;
+  isolation: isolate;
+  overflow-x: auto;
+  width: 100%;
+}
+@media (max-width: 600px) {
+  /* On narrow screens, force Builder's page selectors and actions onto
+     separate lines rather than allowing a second flex item beyond the edge. */
+  .builder-page .builder-titlebar {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    flex-wrap: nowrap;
+  }
+  .builder-page .builder-titlebar > .builder-page-select,
+  .builder-page .builder-titlebar > .toolbar-actions {
+    box-sizing: border-box;
+    flex: none;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    margin: 0;
+  }
+  .builder-page .builder-titlebar > .toolbar-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 6px;
+  }
+  .builder-page .builder-title-controls {
+    flex-wrap: wrap;
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+
+/* Audit regression guards: scroll within narrow content instead of expanding the page. */
+.builder-page,
+.builder-titlebar,
+.builder-meta-bar,
+.named-credentials-page {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.builder-titlebar > .toolbar-actions,
+.builder-page-select,
+.builder-title-controls {
+  min-width: 0;
+  max-width: 100%;
+}
+.named-credentials-page .table-scroll {
+  position: relative;
+  box-sizing: border-box;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+.named-credentials-page .table-scroll > table {
+  width: max-content;
+  max-width: none;
+}
+@media (max-width: 600px) {
+  .builder-page .builder-titlebar > .toolbar-actions > * {
+    max-width: 100%;
+  }
+  .builder-page .builder-title-controls,
+  .builder-page .builder-title-controls > * {
+    max-width: 100%;
+  }
+  .builder-page .builder-meta-bar {
+    height: auto;
+    min-width: 0;
+    max-width: 100%;
+    flex-wrap: wrap;
+  }
+}
+/* Keep contrast improvements scoped to labels already flagged by the audit. */
+.component-card-copy span { color: #3e4741; }
+.component-category small { color: #3e4741; }
+.tree-group-label { color: #45413c; }
+.page-region-label { color: #45453e; }
+.record-component-head > span { color: #3f4943; }
+
+/* Module 8: metadata-driven App Manager navigation and compact runtime selectors. */
+.app-manager-navigation-order { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.app-manager-navigation-order li { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; padding: 8px 10px; border: 1px solid var(--md-border,#e0e5eb); border-radius: 6px; background: #fff; }
+.app-manager-navigation-label { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.app-manager-navigation-label small { flex: 0 0 auto; font-size: var(--md-fs-sm,12px); color: var(--md-muted,#596579); }
+.app-manager-navigation-label strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.app-manager-order-controls { display: flex; gap: 6px; align-items: center; flex: 0 0 auto; }
+.app-manager-order-controls .btn { min-width: 32px; padding: 6px 8px; }
+.app-title-switcher { min-width: 120px; max-width: 240px; border: 0; background: transparent; color: inherit; font: inherit; font-weight: 700; cursor: pointer; }
+.header-record-object-select { width: clamp(120px, 12vw, 200px); min-width: 0; border: 1px solid #d9dde5; border-radius: 5px; background: #fff; color: #181818; padding: 5px 8px; font-size: 12px; }
+@media (max-width: 700px) {
+  .app-manager-navigation-order li { align-items: flex-start; flex-wrap: wrap; }
+  .app-manager-order-controls { margin-left: auto; }
+  .app-title-switcher { max-width: 140px; }
+  .header-record-object-select { width: 100px; }
+}
+
+/* Metadata-driven nested Page Builder components */
+.free-canvas-component.layout-container-component { overflow: auto; }
+.free-canvas-component.nested-page-component { min-width: 0; max-width: 100%; overflow: visible; }
+.record-component.layout-container-component > .md-widget,
+.record-component.layout-container-component > .registered-component,
+.record-component.layout-container-component > .registered-component > .md-widget {
+  min-width: 0; max-width: 100%; width: 100%; box-sizing: border-box;
+}
+.record-component.layout-container-component .nested-page-component {
+  box-sizing: border-box; flex: 1 1 120px; min-width: 0; max-width: 100%;
+}
+.free-canvas-runtime-component.nested-page-runtime {
+  box-sizing: border-box; flex: 1 1 120px; max-width: 100%; min-width: 0; overflow: visible;
+}
+.free-canvas-runtime-component.nested-page-runtime .registered-component { min-width: 0; }
+.page-component-style-editor { border-top: 1px solid var(--border); margin-top: 14px; padding-top: 12px; display: grid; gap: 8px; }
+.page-component-style-editor .form-label { min-width: 0; }
+.page-component-style-editor .metadata-array-property { padding: 8px 0; }
+.external-page-preview .component-rendered-preview { transform: none; width: auto; height: auto; min-height: 0; pointer-events: auto; }
+.external-page-preview .component-rendered-preview.free-canvas-component { position: absolute; }
+.external-page-preview .nested-page-component.component-rendered-preview { position: relative; }
+
