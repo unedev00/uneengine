@@ -213,19 +213,17 @@ function ItemGrid({ p, rows }) {
               : undefined,
             boxShadow: cardShadow,
           };
-          return (
-            <button
-              className={
-                "one-item one-item--interactive md-product-card md-product-card--" + density +
-                (["lift", "highlight"].includes(p.cardHover) ? " md-product-card--hover-" + p.cardHover : "")
-              }
-              style={cardStyle}
-              key={r.Id ?? r.id ?? i}
-              type="button"
-              aria-label={(p.selectionBehavior === "add" ? "Add " : "Select ") + name}
-              onClick={() => {
+          const hasSeparateAddButton=p.showAddIcon===true&&p.separateAddButton===true;
+          const addSelectedRecord=()=>{
+            if(p.cartTargetKey&&p.pageSessionKey&&typeof window!=="undefined")
+              window.dispatchEvent(new CustomEvent("metadrive:page-cart-add",{
+                detail:{pageSessionKey:p.pageSessionKey,cartTargetKey:p.cartTargetKey,record:r}
+              }));
+            if(p.actionFlows?.itemAdd)fire(p,"itemAdd",r);
+          };
+          const activateCard=()=>{
                 const behavior=p.selectionBehavior || "add";
-                if (behavior==="add" && p.cartTargetKey && p.pageSessionKey
+                if (behavior==="add" && !hasSeparateAddButton && p.cartTargetKey && p.pageSessionKey
                   && typeof window !== "undefined")
                   window.dispatchEvent(
                     new CustomEvent("metadrive:page-cart-add", {
@@ -258,6 +256,23 @@ function ItemGrid({ p, rows }) {
                       key:p.selectionFilterKey||"selectedRecord",value:String(r.Id??r.id??"")}
                   }));
                 if (p.actionFlows?.itemSelect) fire(p, "itemSelect", r);
+
+          };
+          return (
+            <div
+              role="button"
+              tabIndex={0}
+              className={
+                "one-item one-item--interactive md-product-card md-product-card--" + density +
+                (["lift", "highlight"].includes(p.cardHover) ? " md-product-card--hover-" + p.cardHover : "")
+              }
+              style={cardStyle}
+              key={r.Id ?? r.id ?? i}
+              aria-label={(p.selectionBehavior === "add" && !hasSeparateAddButton ? "Add " : "Select ") + name}
+              onClick={activateCard}
+              onKeyDown={event=>{
+                if(event.target!==event.currentTarget)return;
+                if(event.key==='Enter'||event.key===' '){event.preventDefault();activateCard();}
               }}
             >
               {p.showImage !== false && validImage && (
@@ -284,12 +299,14 @@ function ItemGrid({ p, rows }) {
               {p.showPrice !== false && price != null && (
                 <span className="md-product-price" style={valueStyle}>{currency(price)}</span>
               )}
-              {p.showAddIcon === true && (
-                <span className="md-card-add-icon" aria-hidden="true">
-                  ＋
-                </span>
+              {p.showAddIcon === true && (hasSeparateAddButton
+                ? <button type="button" className="md-card-add-icon" aria-label={"Add "+name}
+                    onClick={event=>{event.stopPropagation();addSelectedRecord();}}>
+                    ＋
+                  </button>
+                : <span className="md-card-add-icon" aria-hidden="true">＋</span>
               )}
-            </button>
+            </div>
           );
         })}
       </div>
