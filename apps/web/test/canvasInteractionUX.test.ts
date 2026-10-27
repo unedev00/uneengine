@@ -1,6 +1,23 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from 'node:path';
+
+// Resolve local CSS imports so stylesheet contract tests work with modular CSS.
+async function readModularCss(url: URL): Promise<string> {
+  const filename = fileURLToPath(url);
+  const source = await readFile(filename, 'utf8');
+  const imports = [...source.matchAll(/^@import\s+["'](\.\/[^"']+\.css)["'];\s*$/gm)];
+  let expanded = source;
+  for (const entry of imports) {
+    const importedUrl = new URL('file://' + resolve(dirname(filename), entry[1]));
+    const contents = await readModularCss(importedUrl);
+    expanded = expanded.replace(entry[0], contents);
+  }
+  return expanded;
+}
+
 import { pageAppearanceTarget, pageAppearanceStyleKeys, resolvePageComponentStyle, visualDefaults } from '../src/core/pages/TemplatePageRuntime/pageComponentLayout';
 import { snapCanvasPosition, snapCanvasSize, wrapCanvasComponent, ungroupCanvasComponent, alignCanvasComponents, distributeCanvasComponents } from '../src/core/builders/PageBuilder/canvasInteractions';
 import { copyComponentTree, cloneComponentTree, assignTabOnReparent } from '../src/core/builders/PageBuilder/pageComponentTree';
@@ -126,7 +143,7 @@ test('Page Builder records and restores selection state with undo and redo', asy
 
 test('Free Canvas uses clean component objects and a compact ribbon-based palette', async () => {
   const source = await readFile(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx', import.meta.url), 'utf8');
-  const styles = await readFile(new URL('../src/core/builders/PageBuilder/styles-md227.css', import.meta.url), 'utf8');
+  const styles = await readModularCss(new URL('../src/core/builders/PageBuilder/styles-md227.css', import.meta.url));
 
   assert.doesNotMatch(source, /className="record-component-head"/);
   assert.doesNotMatch(source, /Select a component to add it, or drag it onto the canvas\./);
@@ -330,7 +347,7 @@ test('native/common component settings style actual controls without outer chrom
 test('Page Builder Office ribbon keeps each control in one permanent logical group', async () => {
   const root = new URL('../src/core/builders/', import.meta.url);
   const builder = await readFile(new URL('PageBuilder/pageBuilderView.tsx', root), 'utf8');
-  const styles = await readFile(new URL('PageBuilder/styles-md227.css', root), 'utf8');
+  const styles = await readModularCss(new URL('PageBuilder/styles-md227.css', root));
   const presentation = await readFile(new URL('ComponentProperties/ComponentPresentationProperties.tsx', root), 'utf8');
   const data = await readFile(new URL('ComponentProperties/componentPropertiesView.tsx', root), 'utf8');
   const visual = await readFile(new URL('ComponentStyleEditor/PageComponentVisualEditor.tsx', root), 'utf8');
@@ -384,7 +401,7 @@ test('Grouping selected canvas components preserves children and absolute bounds
 test('Contextual Page Builder tabs do not leak metadata from other tabs',async()=>{
  const root=new URL('../src/core/builders/',import.meta.url);
  const builder=await readFile(new URL('PageBuilder/pageBuilderView.tsx',root),'utf8');
- const css=await readFile(new URL('PageBuilder/styles-md227.css',root),'utf8');
+ const css=await readModularCss(new URL('PageBuilder/styles-md227.css',root));
  const mount=builder.indexOf("ribbonTab==='Component Data' && selected ? <MetadataComponentProperties");
  const outdated=builder.indexOf("{inspectorTab === 'Data & Actions' && <details");
  assert.ok(mount>0 && outdated>mount,'Data editor is rendered before legacy technical inspector');
@@ -400,7 +417,7 @@ test('Contextual Page Builder tabs do not leak metadata from other tabs',async()
 test('Page Builder contextual ribbon is generated from aligned three-row groups',async()=>{
   const root=new URL('../src/core/builders/',import.meta.url);
   const builder=await readFile(new URL('PageBuilder/pageBuilderView.tsx',root),'utf8');
-  const css=await readFile(new URL('PageBuilder/styles-md227.css',root),'utf8');
+  const css=await readModularCss(new URL('PageBuilder/styles-md227.css',root));
   const responsive=await readFile(new URL('ComponentStyleEditor/PageComponentStyleEditor.tsx',root),'utf8');
   assert.match(builder,/office-ribbon-inline-options/);
   assert.doesNotMatch(builder,/additionalPropertyDialogOpen && selectedCustomDefinition && createPortal/);
