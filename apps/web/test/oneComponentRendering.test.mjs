@@ -60,3 +60,33 @@ test('retired One renderers remain usable by UNE without being independently reg
   assert.deepEqual(components.map(c => c.apiName).filter(n => n.startsWith('One')), []);
   assert.equal(components.filter(c => c.apiName.startsWith('une_')).length,36);
 });
+
+test('generic Card Grid renders employee directory mappings and reordered detail rows', async()=>{
+  const built=await buildBundledComponent({
+    apiName:'OneItemGrid',jsxFile:'one/OneItemGrid/OneItemGrid.jsx',cssFile:'one/OneItemGrid/OneItemGrid.css'
+  });
+  const context={React,module:{exports:{}},Date:FixtureDate,Intl,URL,crypto:globalThis.crypto};
+  vm.runInNewContext(built.compiledJs,context);
+  const employee={Id:'user-1',FullName:'Alex Morgan',JobTitle:'Engineer',
+    Department:'Research',Email:'alex@example.test',Photo:'https://example.test/alex.jpg'};
+  const html=renderToStaticMarkup(React.createElement(context.module.exports.default,{
+    title:'Employees',objectApiName:'Users',records:[employee],
+    titleFieldApiName:'FullName',descriptionFieldApiName:'JobTitle',
+    imageFieldApiName:'Photo',showDescription:true,showPrice:false,
+    headingFontSize:23,headingFontWeight:'700',descriptionFontSize:14,
+    imageWidth:88,imageHeight:88,imageShape:'circle',
+    detailRows:[
+      {fieldApiName:'Department',label:'Team',format:'Text'},
+      {fieldApiName:'Email',label:'Email',format:'Text'}
+    ]
+  }));
+  assert.match(html,/Alex Morgan/);
+  assert.match(html,/Engineer/);
+  assert.match(html,/Team/);
+  assert.match(html,/Research/);
+  assert.match(html,/alex@example\.test/);
+  assert.match(html,/font-size:23px/);
+  assert.match(html,/font-size:14px/);
+  assert.match(html,/width:88px/);
+  assert.match(html,/border-radius:50%/);
+});
