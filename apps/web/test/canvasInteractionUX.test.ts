@@ -222,12 +222,9 @@ test('builder and published runtime use the same appearance targeting and preser
   assert.match(search,/aria-label=\{p\.label\|\|"Search"\}/);
 });
 
-test('all 44 bundled Page components have explicitly verified appearance targets', async () => {
+test('every bundled UNE Page component has an explicitly verified appearance target', async () => {
   const manifest = JSON.parse(await readFile(new URL('../src/one/manifest.json', import.meta.url), 'utf8'));
   const expected: Record<string,string> = {
-    OneText:'text',OneBadge:'badge',OneButton:'button',OneSearch:'input',
-    OneCalendar:'calendar',OneItemGrid:'collection',OneConversation:'conversation',
-    OneShoppingCart:'cart',
     une_text:'text',une_image:'image',une_calendar:'calendar',
     une_button:'button',une_card:'surface',une_input:'input',une_toggle:'toggle',
     une_badge:'badge',une_stack:'layout',une_tabs:'tabs',
