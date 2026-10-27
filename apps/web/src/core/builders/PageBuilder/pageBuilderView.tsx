@@ -2195,10 +2195,9 @@ function PageBuilder({
 
           {selected && ribbonTab === 'Component Action' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
             <label className="office-ribbon-checkbox"><input type="checkbox" checked={selected.visible} onChange={event=>updateComponent(selected.id,{visible:event.target.checked})}/> Show block</label>
-            <button type="button" disabled={page.layoutMode!=='free-canvas'} onClick={()=>updateComponent(selected.id,{properties:{...selected.properties,canvasLocked:!selected.properties.canvasLocked}})}><Lock size={16}/> {selected.properties.canvasLocked?'Unlock':'Lock'} canvas</button>
           </div><span>Behaviour</span></div>}
           {selected && ribbonTab === 'Component Layout' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
-            <button onClick={()=>openComponentInspector('Position')}><Layers3 size={16}/> Position & size</button>
+            <button type="button" disabled={page.layoutMode!=='free-canvas'} onClick={()=>updateComponent(selected.id,{properties:{...selected.properties,canvasLocked:!selected.properties.canvasLocked}})}><Lock size={16}/> {selected.properties.canvasLocked?'Unlock':'Lock'} canvas</button>
             <button disabled={isCanvasLocked(selected)} onClick={()=>moveSelected(-1)}><ArrowUp size={16}/> Bring forward</button>
             <button disabled={isCanvasLocked(selected)} onClick={()=>moveSelected(1)}><ArrowDown size={16}/> Send backward</button>
           </div><span>Arrange</span></div>}
