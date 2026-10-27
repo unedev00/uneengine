@@ -683,12 +683,34 @@
       "displayOrder": 665,
       "group": "Value",
       "section": "Design"
+    },
+    {
+      "propertyKey": "showAddIcon",
+      "label": "Show Add button",
+      "kind": "BOOLEAN",
+      "defaultValue": false,
+      "displayOrder": 670,
+      "group": "Card",
+      "section": "Content"
+    },
+    {
+      "propertyKey": "separateAddButton",
+      "label": "Separate Add button action",
+      "kind": "BOOLEAN",
+      "defaultValue": false,
+      "displayOrder": 671,
+      "group": "Card",
+      "section": "Actions"
     }
   ],
   "eventDefinitions": [
     {
       "apiName": "itemSelect",
       "label": "When a card is selected"
+    },
+    {
+      "apiName": "itemAdd",
+      "label": "When Add button is clicked"
     }
   ]
 }
