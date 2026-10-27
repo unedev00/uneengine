@@ -1,7 +1,7 @@
 import {createHash} from 'node:crypto';
 import type {PoolClient} from 'pg';
 import type {SqlPersistence} from '../system-files/sql-persistence.js';
-/** UNE only; legacy One catalogue and existing Page metadata remain unchanged. */
+/** Canonical system component catalogue; legacy One references resolve through UNE compatibility. */
 export const UNE_COMPONENTS=[
   "une_text",
   "une_image",
