@@ -172,7 +172,7 @@ import {
   createComponentPreviewProps, getPageBuilderComponentCategories,
   publishedPageLibraryComponents, pageBuilderPaletteCategories
 } from './pageBuilderPalette';
-import { addRecentPageBlock, loadRecentPageBlocks, pageBuilderCategoryLabels, pageBuilderStartOptions } from './pageBuilderUx';
+import { addRecentPageBlock, describeBuilderFilters, loadRecentPageBlocks, pageBuilderCategoryLabels, pageBuilderStartOptions } from './pageBuilderUx';
 import {
   defaultFlow,
   defaultLightningPage,
@@ -2330,8 +2330,10 @@ function PageBuilder({
               </select>
             </label>}
             <button type="button" onClick={()=>openExpandedEditor('source')}><Settings2 size={16}/> Sources & record scope</button>
-            <button type="button" onClick={()=>openExpandedEditor('filters')}><Filter size={16}/> {Array.isArray(selected.properties.filters)&&selected.properties.filters.length
-              ?`${selected.properties.filters.length} base filter(s)`:'Add record filters'}</button>
+            <button type="button" onClick={()=>openExpandedEditor('filters')} title="Edit base record filters">
+              <Filter size={16}/> {describeBuilderFilters(selected.properties.filters,
+                objects.find(object=>object.apiName===selected.properties.objectApiName)?.fields??[])}
+            </button>
           </div><span>Source & filters</span></div>}
           {selected && ribbonTab === 'Component Content' && selectedCustomDefinition?.apiName!=='une_item_grid'
             && selectedCustomDefinition && <div className="office-ribbon-inline-options">
