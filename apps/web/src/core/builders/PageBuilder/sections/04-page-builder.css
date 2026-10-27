@@ -514,3 +514,97 @@
   .office-builder-ribbon .office-ribbon-group{max-width:100%}
   .office-builder-ribbon .office-ribbon-group>.office-ribbon-stack{grid-auto-flow:row}
 }
+
+/* Bound inline fields to their group so long labels cannot push controls over dividers. */
+.office-builder-ribbon .office-ribbon-stack .office-ribbon-inline-field {
+  display:flex!important;flex-wrap:nowrap;gap:6px;
+  width:100%;min-width:0;max-width:100%;white-space:normal;
+}
+.office-builder-ribbon .office-ribbon-inline-field>.office-ribbon-field-name {
+  flex:1 1 0;min-width:0;white-space:normal;overflow-wrap:anywhere;line-height:14px;
+}
+.office-builder-ribbon .office-ribbon-inline-field>:is(input:not([type=checkbox]),select,textarea) {
+  box-sizing:border-box;flex:0 1 116px;width:116px!important;min-width:0!important;max-width:116px!important;
+}
+
+.office-builder-ribbon .office-ribbon-topbar {
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;
+  gap:6px 12px;padding:5px 12px 0;background:#214f83;border-bottom:1px solid #173d68;
+}
+.office-builder-ribbon .office-ribbon-navigation {
+  display:flex;align-items:center;gap:4px;flex:1 1 640px;min-width:0;
+}
+.office-builder-ribbon .office-ribbon-tabs {
+  display:flex;align-items:stretch;flex-wrap:nowrap;gap:3px;flex:1 1 auto;
+  min-width:0;min-height:42px;padding:0;background:transparent;overflow-x:auto;
+  scrollbar-width:thin;
+}
+.office-builder-ribbon .office-ribbon-tabs>button[role=tab] {
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;flex:0 0 auto;
+  min-height:40px;padding:7px 11px;color:#eef5ff;background:transparent;
+  border:0;border-bottom:3px solid transparent;border-radius:5px 5px 0 0;
+  font-size:12px;font-weight:600;line-height:18px;white-space:nowrap;cursor:pointer;
+}
+.office-builder-ribbon .office-ribbon-tabs>button[role=tab] svg {
+  flex:0 0 16px;width:16px;height:16px;
+}
+.office-builder-ribbon .office-ribbon-tabs>button[role=tab].active {
+  color:#184878;background:#fff;border-bottom-color:#2b7de9;
+}
+.office-builder-ribbon .office-ribbon-tabs>button[role=tab]:hover:not(.active) {
+  color:#fff;background:#2c6097;
+}
+.office-builder-ribbon .office-ribbon-tabs>button[role=tab]:focus-visible,
+.office-builder-ribbon .office-ribbon-stepper button:focus-visible,
+.office-builder-ribbon .office-ribbon-quick-save:focus-visible {
+  outline:2px solid #9dccff;outline-offset:1px;
+}
+.office-builder-ribbon .office-ribbon-stepper {
+  display:flex;align-items:center;gap:2px;flex:0 0 auto;
+}
+.office-builder-ribbon .office-ribbon-stepper button {
+  display:inline-flex;align-items:center;justify-content:center;
+  width:30px;min-width:30px;height:30px;min-height:30px;padding:0;
+  color:#fff;background:transparent;border:1px solid transparent;border-radius:4px;
+}
+.office-builder-ribbon .office-ribbon-stepper button:hover:not(:disabled) {
+  background:#2c6097;border-color:#789ac0;
+}
+.office-builder-ribbon .office-ribbon-stepper button:disabled {
+  opacity:.45;cursor:not-allowed;
+}
+.office-builder-ribbon .office-ribbon-header-tools {
+  display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;
+  gap:7px;flex:0 0 auto;min-width:0;padding:0 0 5px;
+}
+.office-builder-ribbon .office-ribbon-header-field {
+  gap:6px;padding:0 3px;color:#f4f8ff;font-size:12px;font-weight:600;
+}
+.office-builder-ribbon .office-ribbon-header-field input,
+.office-builder-ribbon .office-ribbon-header-field select {
+  height:30px;max-width:160px;padding:4px 8px;
+  color:#1e3551;background:#fff;border-color:#c3d0e0;border-radius:4px;
+}
+.office-builder-ribbon .office-ribbon-header-field input {width:130px}
+.office-builder-ribbon .office-ribbon-header-status {
+  margin-left:0;padding:4px 7px;color:#eef5ff;font-size:12px;font-weight:500;
+}
+.office-builder-ribbon .office-ribbon-quick-save {
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  min-height:30px;padding:5px 10px;color:#184878;background:#fff;
+  border:1px solid #d4dfed;border-radius:4px;font-size:12px;font-weight:600;
+}
+.office-builder-ribbon .office-ribbon-quick-save:hover:not(:disabled) {
+  background:#f0f6ff;border-color:#a9c5e6;
+}
+.office-builder-ribbon .office-ribbon-quick-save:disabled {opacity:.65;cursor:wait}
+@media(max-width:900px) {
+  .office-builder-ribbon .office-ribbon-navigation,
+  .office-builder-ribbon .office-ribbon-header-tools {flex-basis:100%;width:100%}
+  .office-builder-ribbon .office-ribbon-header-tools {justify-content:flex-start}
+}
+@media(max-width:520px) {
+  .office-builder-ribbon .office-ribbon-topbar {padding-inline:6px}
+  .office-builder-ribbon .office-ribbon-tabs>button[role=tab] {gap:5px;padding-inline:8px}
+}
+}

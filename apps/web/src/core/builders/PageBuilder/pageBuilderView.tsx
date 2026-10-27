@@ -2237,24 +2237,61 @@ function PageBuilder({
       </section>}
       {editorMode && <>
       <section className="office-builder-ribbon" aria-label="Page Builder ribbon">
-        <nav className="office-ribbon-tabs" role="tablist" aria-label="Page Builder tabs">
-          {journeyTabs.map(tab =>
-            <button key={tab} type="button" role="tab" aria-selected={ribbonTab === tab} className={ribbonTab===tab?'active':''} onClick={() => selectRibbonTab(tab)}>{{'Home':'Home','Add Block':'Add Component','Component Data':'Data','Component Content':'Content','Component Properties':'Design','Component Style':'Style','Component Layout':'Layout','Component Action':'Actions','Preview':'Preview'}[tab]}</button>)}
-          <button type="button" aria-label="Previous Page Builder step" title="Previous step" disabled={journeyIndex<=0} onClick={()=>selectRibbonTab(journeyTabs[journeyIndex-1])}><ChevronLeft size={16}/></button>
-          <button type="button" aria-label="Next Page Builder step" title="Next step" disabled={journeyIndex<0||journeyIndex===journeyTabs.length-1} onClick={()=>selectRibbonTab(journeyTabs[journeyIndex+1])}><ChevronRight size={16}/></button>
-          <label className="office-ribbon-header-field">Page <input aria-label="Page name" value={page.label}
-            onChange={event=>applyPage({...page,label:event.target.value})}/></label>
-          <label className="office-ribbon-header-field">Layout <select aria-label="Choose page layout"
-            value={page.layoutVariant??'Desktop'} disabled={switchingLayout||saving}
-            onChange={event=>void switchLayoutVariant(event.target.value as 'Mobile'|'Desktop'|'Tablet'|'Custom')}>
-            {(['Desktop','Tablet','Mobile','Custom'] as const).map(value=><option key={value} value={value}>{value}</option>)}
-          </select></label>
-          <span className="office-ribbon-header-status" role="status">
-            {saving?'Saving…':undoStack.length?'Unsaved edits':savedFeedback?'Saved':page.draftRevision&&page.draftRevision!==page.publishedRevision?'Saved draft · unpublished':'Draft'}
-          </span>
-          <button type="button" className="office-ribbon-quick-save" aria-label="Save page from any tab" disabled={saving} onClick={()=>void savePage()}><Save size={15}/>{saving?'Saving…':'Save'}</button>
-        </nav>
-        <div className="office-ribbon-content" role="tabpanel" aria-label={ribbonTab}>
+        <div className="office-ribbon-topbar">
+          <div className="office-ribbon-navigation">
+            <nav className="office-ribbon-tabs" role="tablist" aria-label="Page Builder tabs">
+              {journeyTabs.map((tab,index) => {
+                const Icon = {
+                  Home: PanelsTopLeft,
+                  'Add Block': Puzzle,
+                  'Component Data': Database,
+                  'Component Content': Type,
+                  'Component Properties': SlidersHorizontal,
+                  'Component Style': SlidersHorizontal,
+                  'Component Layout': Layers3,
+                  'Component Action': Workflow,
+                  Preview: Eye
+                }[tab];
+                const label = {
+                  Home: 'Home',
+                  'Add Block': 'Add Component',
+                  'Component Data': 'Data',
+                  'Component Content': 'Content',
+                  'Component Properties': 'Design',
+                  'Component Style': 'Style',
+                  'Component Layout': 'Layout',
+                  'Component Action': 'Actions',
+                  Preview: 'Preview'
+                }[tab];
+                return <button key={tab} id={`page-builder-tab-${index}`} type="button"
+                  role="tab" tabIndex={ribbonTab===tab?0:-1} aria-selected={ribbonTab === tab}
+                  aria-controls="page-builder-tab-content"
+                  className={ribbonTab===tab?'active':''} onClick={() => selectRibbonTab(tab)}>
+                  <Icon size={16} aria-hidden="true"/><span>{label}</span>
+                </button>;
+              })}
+            </nav>
+            <div className="office-ribbon-stepper" aria-label="Page Builder journey navigation">
+              <button type="button" aria-label="Previous Page Builder step" title="Previous step" disabled={journeyIndex<=0} onClick={()=>selectRibbonTab(journeyTabs[journeyIndex-1])}><ChevronLeft size={16}/></button>
+              <button type="button" aria-label="Next Page Builder step" title="Next step" disabled={journeyIndex<0||journeyIndex===journeyTabs.length-1} onClick={()=>selectRibbonTab(journeyTabs[journeyIndex+1])}><ChevronRight size={16}/></button>
+            </div>
+          </div>
+          <div className="office-ribbon-header-tools">
+            <label className="office-ribbon-header-field">Page <input aria-label="Page name" value={page.label}
+              onChange={event=>applyPage({...page,label:event.target.value})}/></label>
+            <label className="office-ribbon-header-field">Layout <select aria-label="Choose page layout"
+              value={page.layoutVariant??'Desktop'} disabled={switchingLayout||saving}
+              onChange={event=>void switchLayoutVariant(event.target.value as 'Mobile'|'Desktop'|'Tablet'|'Custom')}>
+              {(['Desktop','Tablet','Mobile','Custom'] as const).map(value=><option key={value} value={value}>{value}</option>)}
+            </select></label>
+            <span className="office-ribbon-header-status" role="status">
+              {saving?'Saving…':undoStack.length?'Unsaved edits':savedFeedback?'Saved':page.draftRevision&&page.draftRevision!==page.publishedRevision?'Saved draft · unpublished':'Draft'}
+            </span>
+            <button type="button" className="office-ribbon-quick-save" aria-label="Save page from any tab" disabled={saving} onClick={()=>void savePage()}><Save size={15}/>{saving?'Saving…':'Save'}</button>
+          </div>
+        </div>
+        <div id="page-builder-tab-content" className="office-ribbon-content" role="tabpanel"
+          aria-label={ribbonTab} aria-labelledby={`page-builder-tab-${journeyIndex}`}>
           {ribbonTab === 'Home' && <>
             <div className="office-ribbon-group"><div className="office-ribbon-stack">
               <button type="button" onClick={safeBackToPages}><ArrowLeft size={16}/> Back to pages</button>

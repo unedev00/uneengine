@@ -46,6 +46,24 @@ test('journey mounts record filters inline and saves draft separately from publi
   assert.match(engine,/RecordFilterEditor/);
 });
 
+test('ribbon inline labels wrap and controls stay within their group dividers',()=>{
+  const styles=readFileSync(new URL('../src/core/builders/PageBuilder/sections/04-page-builder.css',import.meta.url),'utf8');
+  assert.match(styles,/\.office-ribbon-stack \.office-ribbon-inline-field \{[\s\S]*?display:flex!important;flex-wrap:nowrap/);
+  assert.match(styles,/\.office-ribbon-field-name \{[\s\S]*?min-width:0;white-space:normal;overflow-wrap:anywhere/);
+  assert.match(styles,/input:not\(\[type=checkbox\]\),select,textarea\) \{[\s\S]*?min-width:0!important;max-width:116px!important/);
+});
+
+test('ribbon keeps the eight-step component journey with icon-led, accessible tabs',()=>{
+  const source=readFileSync(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+  for(const label of ['Home','Add Component','Data','Content','Design','Layout','Actions','Preview'])
+    assert.ok(source.includes(`'${label}'`),label+' tab label remains available');
+  for(const icon of ['PanelsTopLeft','Puzzle','Database','Type','SlidersHorizontal','Layers3','Workflow','Eye'])
+    assert.ok(source.includes(icon),icon+' tab icon remains available');
+  assert.match(source,/className="office-ribbon-topbar"/);
+  assert.match(source,/role="tablist" aria-label="Page Builder tabs"/);
+  assert.match(source,/aria-controls="page-builder-tab-content"/);
+});
+
 test('card gallery exposes independent part metadata that is consumed by runtime', () => {
   const component=JSON.parse(readFileSync(new URL('../src/one/une_item_grid/component.json',import.meta.url),'utf8'));
   const runtime=readFileSync(new URL('../src/one/OneItemGrid/OneItemGrid.jsx',import.meta.url),'utf8');
