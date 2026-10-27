@@ -45,6 +45,7 @@ export default function CustomComponentPropertyEditor({
   const [propertyName, setPropertyName] = useState('');
   const [propertyType, setPropertyType] = useState<ComponentPropertyKind>('text');
   const [error, setError] = useState('');
+  const [propertySearch, setPropertySearch] = useState('');
   const update = (name: string, value: unknown) => onChange({ ...properties, [name]: value });
   const remove = (name: string) => {
     const next = { ...properties };
@@ -55,13 +56,18 @@ export default function CustomComponentPropertyEditor({
     const name = propertyName.trim();
     const validation = validateComponentPropertyName(name, properties);
     if (validation) { setError(validation); return; }
-    onChange(addComponentProperty(properties, name, propertyType));
+    const definition = definitions?.find(item => item.propertyKey === name);
+    const inferredType: ComponentPropertyKind = definition?.kind === 'BOOLEAN' ? 'boolean'
+      : ['NUMBER', 'CURRENCY'].includes(definition?.kind ?? '') ? 'number' : propertyType;
+    onChange(addComponentProperty(properties, name, inferredType));
     setPropertyName('');
     setError('');
   };
 
   const typedDefinitions = definitions ? sortComponentSettings(definitions).filter(d=>componentSettingAvailable(d,device,componentVersion)) : [];
   const definitionByName = new Map(typedDefinitions.map(definition => [definition.propertyKey, definition]));
+  const availablePropertyNames = typedDefinitions.filter(definition => !Object.prototype.hasOwnProperty.call(properties, definition.propertyKey));
+  const selectedDefinition = typedDefinitions.find(definition => definition.propertyKey === propertyName.trim());
   const visibleProperties = definitions ? [
     ...typedDefinitions.map(definition => [definition.propertyKey, properties[definition.propertyKey] ?? definition.defaultValue ?? ''] as const),
     ...Object.entries(properties).filter(([name]) => !definitions.some(d=>d.propertyKey===name))
@@ -148,19 +154,34 @@ export default function CustomComponentPropertyEditor({
       })}
     </details>}
     <div className="properties-section-title">Add setting</div>
-    <label className="form-label">Property API name
-      <input className="form-control" disabled={disabled} value={propertyName}
-        placeholder="e.g. title, accentColor, columns"
-        onChange={(event) => { setPropertyName(event.target.value); setError(''); }} />
-    </label>
-    <label className="form-label">Value type
+    {availablePropertyNames.length > 0 && <label className="form-label">Find a setting
+      <input className="form-control" type="search" value={propertySearch} disabled={disabled}
+        placeholder="Search available settings" onChange={event => setPropertySearch(event.target.value)} />
+    </label>}
+    {availablePropertyNames.length > 0 && <label className="form-label">Choose property
+      <select className="form-control" disabled={disabled} value={selectedDefinition?.propertyKey ?? ""}
+        onChange={event => { setPropertyName(event.target.value); setError(""); }}>
+        <option value="">Choose a setting…</option>
+        {availablePropertyNames.filter(definition => (definition.label + " " + definition.propertyKey).toLowerCase().includes(propertySearch.trim().toLowerCase()))
+          .map(definition => <option key={definition.propertyKey} value={definition.propertyKey}>{definition.label} ({definition.propertyKey})</option>)}
+      </select>
+    </label>}
+    <details className="component-advanced-custom-setting" open={!definitions?.length}>
+      <summary>Advanced: enter a custom property API name</summary>
+      <label className="form-label">Property API name
+        <input className="form-control" disabled={disabled} value={propertyName}
+          placeholder="e.g. title, accentColor, columns"
+          onChange={(event) => { setPropertyName(event.target.value); setError(""); }} />
+      </label>
+    </details>
+    {!selectedDefinition && <label className="form-label">Value type
       <select className="form-control" value={propertyType} disabled={disabled}
         onChange={(event) => setPropertyType(event.target.value as ComponentPropertyKind)}>
         <option value="text">Text</option>
         <option value="number">Number</option>
         <option value="boolean">True / false</option>
       </select>
-    </label>
+    </label>}
     {error && <div className="auth-error" role="alert">{error}</div>}
     <button type="button" className="btn" disabled={disabled || !propertyName.trim()}
       onClick={add}>Add property</button>
