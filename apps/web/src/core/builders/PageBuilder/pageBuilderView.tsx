@@ -136,6 +136,7 @@ import RichTextBlockEditor from '../ComponentProperties/RichTextBlockEditor';
 import PageRouteDirectory from '../../pages/PageRouteDirectory/PageRouteDirectory';
 import { isComponentVisible } from '../../components/Properties/componentVisibility';
 import PageComponentVisualEditor from '../ComponentStyleEditor/PageComponentVisualEditor';
+import RibbonColorPalette from './RibbonColorPalette';
 import { canNestComponent, pageAppearanceTarget, pageAppearanceStyleKeys, updateLayoutSettings, type LayoutSettingKey, directChildren, isLayoutType, isDescendantOf, layoutTypes } from '../../pages/TemplatePageRuntime/pageComponentLayout';
 import PageComponentStyleEditor from '../ComponentStyleEditor/PageComponentStyleEditor';
 import { isCanvasLocked, wrapCanvasComponent, groupCanvasComponents, ungroupCanvasComponent, snapCanvasPosition, alignCanvasComponents, distributeCanvasComponents } from './canvasInteractions';
@@ -469,7 +470,7 @@ function PageBuilder({
   const [focusedCardMapping,setFocusedCardMapping] = useState('');
   const [ribbonAddCategory,setRibbonAddCategory] = useState('Content');
   const [ribbonComponentSearch,setRibbonComponentSearch] = useState('');
-  const [ribbonTab, setRibbonTab] = useState<'Home' | 'Add Block' | 'Component Content' | 'Component Properties' | 'Component Style' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Preview'>('Home');
+  const [ribbonTab, setRibbonTab] = useState<'Home' | 'Add Block' | 'Component Content' | 'Component Properties' | 'Component Style' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Component Responsive' | 'Preview'>('Home');
   const componentNeedsData = (type: string) => {
     const metadata = type.startsWith('Custom:') ? findRegisteredComponent(libraryComponents,type.slice('Custom:'.length),'page') : undefined;
     return Boolean(metadata?.propertyDefinitions?.some(definition=>definition.kind==='OBJECT'||definition.kind==='OBJECT_FIELD'))
@@ -480,7 +481,7 @@ function PageBuilder({
     setPageSettingsDialogOpen(false);
     if (tab === 'Add Block') { setPageSettingsOpen(false); openPalette('Components', 'All Components'); }
     if (tab === 'Home') { setPageSettingsOpen(true); setActivePanel('page'); }
-    const inspector = { 'Component Properties': 'Design', 'Component Style': 'Design', 'Component Data': 'Data & Actions', 'Component Content': 'Data & Actions', 'Component Action': 'Visibility', 'Component Layout': 'Position' } as const;
+    const inspector = { 'Component Properties': 'Design', 'Component Style': 'Design', 'Component Data': 'Data & Actions', 'Component Content': 'Data & Actions', 'Component Action': 'Visibility', 'Component Layout': 'Position', 'Component Responsive': 'Position' } as const;
     if (tab in inspector) { setPageSettingsOpen(false); openComponentInspector(inspector[tab as keyof typeof inspector]); }
   };
   useEffect(()=>{
@@ -2182,7 +2183,7 @@ function PageBuilder({
   const openAddBlocks = (region: 'header' | 'main' | 'sidebar' | null = null) => {
     setPaletteInsertRegion(region); setPaletteTab('Components'); setPaletteCategory('All Components'); setActivePanel('palette');
   };
-  const journeyTabs: Array<typeof ribbonTab> = ['Home','Add Block','Component Data','Component Content','Component Properties','Component Layout','Component Action','Preview'];
+  const journeyTabs: Array<typeof ribbonTab> = ['Home','Add Block','Component Data','Component Content','Component Properties','Component Style','Component Layout','Component Responsive','Component Action','Preview'];
   const journeyIndex=journeyTabs.indexOf(ribbonTab);
   const addPaletteComponent = (type: string) => {
     const selectedIndex = page.components.findIndex((component) => component.id === selectedId);
@@ -2248,7 +2249,8 @@ function PageBuilder({
                   'Component Data': Database,
                   'Component Content': Type,
                   'Component Properties': SlidersHorizontal,
-                  'Component Style': SlidersHorizontal,
+                  'Component Style': Type,
+                  'Component Responsive': Smartphone,
                   'Component Layout': Layers3,
                   'Component Action': Workflow,
                   Preview: Eye
@@ -2259,7 +2261,8 @@ function PageBuilder({
                   'Component Data': 'Data',
                   'Component Content': 'Content',
                   'Component Properties': 'Design',
-                  'Component Style': 'Style',
+                  'Component Style': 'Format',
+                  'Component Responsive': 'Responsive',
                   'Component Layout': 'Layout',
                   'Component Action': 'Actions',
                   Preview: 'Preview'
@@ -2278,25 +2281,39 @@ function PageBuilder({
             </div>
           </div>
           <div className="office-ribbon-header-tools">
-            <label className="office-ribbon-header-field">Page <input aria-label="Page name" value={page.label}
-              onChange={event=>applyPage({...page,label:event.target.value})}/></label>
-            <label className="office-ribbon-header-field">Layout <select aria-label="Choose page layout"
-              value={page.layoutVariant??'Desktop'} disabled={switchingLayout||saving}
-              onChange={event=>void switchLayoutVariant(event.target.value as 'Mobile'|'Desktop'|'Tablet'|'Custom')}>
-              {(['Desktop','Tablet','Mobile','Custom'] as const).map(value=><option key={value} value={value}>{value}</option>)}
-            </select></label>
             <span className="office-ribbon-header-status" role="status">
               {saving?'Saving…':undoStack.length?'Unsaved edits':savedFeedback?'Saved':page.draftRevision&&page.draftRevision!==page.publishedRevision?'Saved draft · unpublished':'Draft'}
             </span>
-            <button type="button" className="office-ribbon-quick-save" aria-label="Save page from any tab" disabled={saving} onClick={()=>void savePage()}><Save size={15}/>{saving?'Saving…':'Save'}</button>
           </div>
         </div>
         <div id="page-builder-tab-content" className="office-ribbon-content" role="tabpanel"
           aria-label={ribbonTab} aria-labelledby={`page-builder-tab-${journeyIndex}`}>
           {ribbonTab === 'Home' && <>
-            <div className="office-ribbon-group"><div className="office-ribbon-stack">
+            <div className="office-ribbon-group office-ribbon-page-identity"><div className="office-ribbon-stack">
               <button type="button" onClick={safeBackToPages}><ArrowLeft size={16}/> Back to pages</button>
+              <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Page</span>
+                <input aria-label="Page name" value={page.label} onChange={event=>applyPage({...page,label:event.target.value})}/>
+              </label>
+              <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Layout</span>
+                <select aria-label="Choose page layout" value={page.layoutVariant??'Desktop'}
+                  disabled={switchingLayout||saving}
+                  onChange={event=>void switchLayoutVariant(event.target.value as 'Mobile'|'Desktop'|'Tablet'|'Custom')}>
+                  {(['Desktop','Tablet','Mobile','Custom'] as const).map(value=><option key={value} value={value}>{value}</option>)}
+                </select>
+              </label>
             </div><span>Page</span></div>
+            <div className="office-ribbon-group office-ribbon-icon-group office-ribbon-clipboard" aria-label="Clipboard">
+              <div className="office-ribbon-stack">
+                <div className="office-ribbon-icon-line">
+                  <button type="button" className="office-ribbon-icon-button" aria-label="Cut selected component" title="Cut (Ctrl+X)"
+                    disabled={!selected||isCanvasLocked(selected)} onClick={cutSelected}><Scissors size={17}/></button>
+                  <button type="button" className="office-ribbon-icon-button" aria-label="Copy selected component" title="Copy (Ctrl+C)"
+                    disabled={!selected} onClick={copySelected}><Copy size={17}/></button>
+                  <button type="button" className="office-ribbon-icon-button" aria-label="Paste component" title="Paste (Ctrl+V)"
+                    disabled={!componentClipboard} onClick={pasteComponent}><ClipboardPaste size={17}/></button>
+                </div>
+              </div><span>Clipboard</span>
+            </div>
             <div className="office-ribbon-group"><div className="office-ribbon-stack">
               <label className="office-ribbon-inline-field"><Grid2X2 size={16}/> Design mode <select aria-label="Design mode" value={page.layoutMode} onChange={event=>setPageLayoutMode(event.target.value as LightningPageMetadata['layoutMode'])}><option value="template">Responsive sections</option><option value="free-canvas">Free canvas</option></select></label>
               <label className="office-ribbon-inline-field">Width <input aria-label="Page width" type="number" min={320} max={10000} value={page.canvasWidth} onChange={event=>{const n=Number(event.target.value);if(Number.isInteger(n)&&n>=320&&n<=10000)applyPage({...page,canvasWidth:n});}}/></label>
@@ -2312,8 +2329,14 @@ function PageBuilder({
               <button type="button" disabled={page.pageType!=='App Page'||page.status!=='Active'||!currentPageIsAssignedToBuilderApp||!builderAppApiName} onClick={()=>{const url=appRoutePath({kind:'app-page',appId:builderAppApiName,pageApiName:page.apiName});const opened=window.open(url,'_blank','noopener,noreferrer');if(!opened)onNotify('Allow popups to test the published page in the assigned application.');}}><ExternalLink size={16}/> Test active app</button>
             </div><span>Tools</span></div>
             <div className="office-ribbon-group"><div className="office-ribbon-stack">
-              <button type="button" className="btn btn-brand btn-small" aria-label="Save page" disabled={saving} onClick={()=>void savePage()}><Save size={16}/>{saving?'Saving…':'Save'}</button>
-              <button type="button" disabled={saving||switchingLayout||(page.status==='Active'&&!undoStack.length&&page.draftRevision===page.publishedRevision)} onClick={()=>void publishCurrentLayout()}><Check size={16}/>{page.status==='Draft'?'Activate':'Publish'}</button>
+              <div className="office-ribbon-icon-line">
+                <button type="button" className="office-ribbon-icon-button" aria-label="Save page" title={saving?'Saving…':'Save page'}
+                  disabled={saving} onClick={()=>void savePage()}><Save size={17}/></button>
+                <button type="button" className="office-ribbon-icon-button" title={page.status==='Draft'?'Activate page':'Publish page'}
+                  aria-label={page.status==='Draft'?'Activate page':'Publish page'}
+                  disabled={saving||switchingLayout||(page.status==='Active'&&!undoStack.length&&page.draftRevision===page.publishedRevision)}
+                  onClick={()=>void publishCurrentLayout()}><Check size={17}/></button>
+              </div>
               <span className="office-ribbon-status">{undoStack.length?'Unsaved edits':page.draftRevision&&page.draftRevision!==page.publishedRevision?'Unpublished changes':savedFeedback?'Saved':page.status==='Active'?'Published':'Draft'}</span>
             </div><span>Save & publish</span></div>
             <div className="office-ribbon-group office-ribbon-version-group"><div className="office-ribbon-stack">
