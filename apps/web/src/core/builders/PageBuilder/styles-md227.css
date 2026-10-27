@@ -1032,3 +1032,27 @@
   flex-shrink:0;display:flex;justify-content:flex-end;align-items:center;
   gap:8px;padding:10px 18px;border-top:1px solid #d8dfe8
 }
+
+/* Full-size Home Page Settings editor lives in a dialog, not an extra ribbon group. */
+.office-ribbon-page-settings-modal .office-ribbon-inspector-host{
+  display:block;width:100%;min-width:0;max-width:none;overflow:visible
+}
+.office-ribbon-page-settings-modal .office-ribbon-inspector-host .properties-panel{
+  display:block!important;position:static!important;width:100%!important;
+  height:auto!important;max-height:none!important;min-height:0;
+  overflow:visible!important;margin:0!important;padding:8px!important
+}
+.office-ribbon-page-settings-modal .office-ribbon-inspector-host .properties-section-title{
+  margin:9px 0 5px;font-size:12px;font-weight:600
+}
+.office-ribbon-page-settings-modal .office-ribbon-inspector-host .form-label,
+.office-ribbon-page-settings-modal .office-ribbon-inspector-host .checkbox-row{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  max-width:600px;width:auto;min-height:32px;height:auto;margin:4px 0
+}
+.office-ribbon-page-settings-modal .office-ribbon-inspector-host .form-control{
+  max-width:260px;height:30px!important;min-height:30px!important
+}
+.office-ribbon-page-settings-modal .office-ribbon-inspector-host details{
+  display:block;max-width:none;margin:8px 0;padding:7px 9px
+}
