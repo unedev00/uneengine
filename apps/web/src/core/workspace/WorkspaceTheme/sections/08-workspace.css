@@ -1,0 +1,480 @@
+@media (pointer:coarse) {
+  .lightning .records-filter-chip,.lightning .records-selection-notice .btn { min-height:44px; }
+}
+
+
+/* Phase 7 — final cross-workspace accessibility and interaction polish. */
+.lightning :is(button,a,input,select,textarea,[role="button"],[role="tab"],[role="menuitem"]):focus-visible {
+  outline:2px solid var(--md-primary,#1d4ed8);
+  outline-offset:3px;
+}
+.lightning :is(button,[role="button"]):disabled {
+  cursor:not-allowed;
+}
+.lightning :is(.records-empty,.empty-state,.dashboard-empty-state,.app-manager-list-empty,.page-nested-empty) {
+  overflow-wrap:anywhere;
+  line-height:1.55;
+}
+.lightning :is(.records-list-card,.metadata-card,.record-fields-card,.dashboard-empty-state) {
+  min-width:0;
+}
+.lightning :is(.records-table-wrap,.table-scroll,.app-manager-list-scroll) {
+  overscroll-behavior-x:contain;
+}
+.lightning :is(.records-table,.slds-table) :is(button,a):focus-visible {
+  position:relative;z-index:1;
+}
+@media (max-width:600px) {
+  .lightning :is(.toolbar-actions,.records-list-actions,.dashboard-heading-actions,.flow-toolbar-actions) {
+    row-gap:10px;
+  }
+  .lightning :is(.records-empty,.empty-state,.dashboard-empty-state) {
+    padding-inline:max(12px,env(safe-area-inset-left,0px)) max(12px,env(safe-area-inset-right,0px));
+  }
+}
+@media (prefers-reduced-motion:reduce) {
+  .lightning *, .lightning *::before, .lightning *::after {
+    scroll-behavior:auto !important;
+    animation-duration:0.01ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:0.01ms !important;
+  }
+}
+@media (forced-colors:active) {
+  .lightning :is(button,a,input,select,textarea):focus-visible {
+    outline:2px solid Highlight;
+  }
+  .lightning :is(.records-filter-chip,.records-selection-notice) {
+    border:1px solid CanvasText;
+  }
+}
+/* Phase 5: shared no-code builder affordances and editing clarity. */
+.lightning :is(.builder-titlebar,.builder-meta-bar,.dashboard-heading-actions) {
+  row-gap:8px;
+  min-width:0;
+}
+.lightning :is(.component-option,.flow-element-option,.field-option) {
+  border-radius:var(--md-radius-md,8px);
+  transition:background-color 140ms ease,border-color 140ms ease;
+}
+.lightning :is(.component-option,.flow-element-option,.field-option):focus-visible,
+.lightning :is(.canvas-drop-zone,.record-component,.page-region):focus-visible {
+  outline:2px solid var(--md-primary,#1d4ed8);
+  outline-offset:2px;
+}
+.lightning :is(.component-option,.flow-element-option,.field-option):active {
+  background:var(--md-canvas,#f8fafc);
+}
+.lightning :is(.canvas-drop-zone,.record-component.drop-target) {
+  scroll-margin:24px;
+}
+.lightning :is(.canvas-drop-zone,.record-component.drop-target):focus-within {
+  border-color:var(--md-primary,#1d4ed8);
+  box-shadow:0 0 0 2px rgb(29 78 216 / 15%);
+}
+.lightning :is(.properties-panel,.flow-settings) :is(.properties-help,.settings-panel-copy) {
+  line-height:1.5;
+  overflow-wrap:anywhere;
+}
+@media(pointer:coarse) {
+  .lightning :is(.component-option,.flow-element-option,.field-option) { min-height:44px; }
+  .lightning :is(.properties-panel,.flow-settings) :is(button,[role="button"]) { min-height:44px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .lightning :is(.component-option,.flow-element-option,.field-option) { transition:none; }
+}
+
+/* Phase 5 completion: one coherent keyboard/touch language across optional builders. */
+.lightning :is(.page-manager-header-actions,.flow-toolbar-actions,.dashboard-heading-actions,.toolbar-actions) {
+  display:flex; flex-wrap:wrap; align-items:center; gap:8px;
+}
+.lightning :is(.flow-topbar,.dashboard-builder-header,.builder-titlebar,.page-manager-header) {
+  min-width:0; row-gap:10px;
+}
+.lightning :is(.flow-toolbox,.dashboard-builder-sidebar,.component-panel,.properties-panel) {
+  min-width:0; overscroll-behavior:contain;
+}
+.lightning :is(.flow-element-option,.dashboard-component-tools button,.page-layer-row,.dashboard-outline-select,.field-list-actions button) {
+  min-height:40px;
+}
+.lightning :is(.flow-element-option,.dashboard-component-tools button,.page-layer-row,.dashboard-outline-select):focus-visible {
+  outline:2px solid var(--md-primary,#1d4ed8); outline-offset:2px;
+}
+.lightning :is(.dashboard-builder-canvas,.flow-workarea,.free-canvas-stage,.page-region) {
+  min-width:0; scroll-margin:24px;
+}
+.lightning :is(.dashboard-empty-state,.page-nested-empty,.empty-list,.dashboard-sidebar-empty) {
+  line-height:1.5; overflow-wrap:anywhere;
+}
+.lightning :is(.component-search,.dashboard-name-input,.object-edit-form .form-control) {
+  max-width:100%; min-width:0;
+}
+.lightning :is(.flow-topbar,.dashboard-builder-header,.builder-titlebar) :is(button,[role="button"]):focus-visible {
+  outline:2px solid var(--md-primary,#1d4ed8);outline-offset:2px;
+}
+@media(max-width:900px) {
+  .lightning :is(.flow-workarea,.dashboard-builder-canvas,.page-manager-view) { min-width:0;max-width:100%; }
+  .lightning :is(.flow-topbar,.dashboard-builder-header,.builder-titlebar) { flex-wrap:wrap; }
+  .lightning :is(.flow-toolbar-actions,.dashboard-heading-actions,.toolbar-actions) { row-gap:8px; }
+  .lightning :is(.dashboard-builder-sidebar,.flow-toolbox) { max-width:100%; }
+}
+@media(pointer:coarse) {
+  .lightning :is(.flow-element-option,.dashboard-component-tools button,.page-layer-row,.dashboard-outline-select,.field-list-actions button) { min-height:44px; }
+}
+
+
+/* UI/UX audit 2026-10-23: one focus indicator per search control.
+   The wrapper owns the ring; the nested input must not draw a second one. */
+.lightning :is(.global-search,.mini-search,.records-search,.header-list-search,
+  .header-record-picker-control,.exchange-search,.scheduled-flows-search,
+  .quick-find-input,.object-search,.component-search,.app-manager-list-search,
+  .mobile-settings-search,.md-checklist-search) input:focus-visible {
+  outline: 0 !important;
+  box-shadow: none !important;
+}
+.lightning :is(.mini-search,.records-search,.header-list-search,.header-record-picker-control,
+  .exchange-search,.scheduled-flows-search,.quick-find-input,.object-search,
+  .component-search,.app-manager-list-search,.mobile-settings-search,.md-checklist-search):focus-within {
+  border-color: var(--md-primary,var(--focus));
+  box-shadow: none;
+  outline: 2px solid var(--md-primary,var(--focus));
+  outline-offset: 1px;
+}
+.lightning button.global-search:focus-visible {
+  border-color: var(--md-primary,var(--focus));
+  box-shadow: none;
+  outline: 2px solid var(--md-primary,var(--focus));
+  outline-offset: 1px;
+}
+
+/* Prevent iOS Safari focus zoom and keep touch controls comfortably tappable. */
+@media (max-width: 820px), (pointer: coarse) {
+  .lightning input:not([type="checkbox"]):not([type="radio"]),
+  .lightning select,
+  .lightning textarea {
+    font-size: 16px !important;
+  }
+}
+@media (pointer: coarse) {
+  .lightning .icon-button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .lightning .btn {
+    min-height: 44px;
+  }
+}
+
+/* Compact, stable phone header; page tabs get their own horizontally scrolling row. */
+@media (max-width: 700px) {
+  .lightning .salesforce-header {
+    height: 56px;
+    min-height: 56px;
+    flex-wrap: nowrap;
+    gap: 8px;
+    padding-inline: 10px;
+  }
+  .lightning .salesforce-header:has(.header-page-context) { margin-bottom: 44px; }
+  .lightning .salesforce-header .header-page-context {
+    position: absolute;
+    top: calc(100% + 1px);
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    max-width: none !important;
+    height: 44px;
+    margin: 0;
+    padding: 0 8px;
+    background: var(--surface,#fff);
+    border-bottom: 1px solid var(--border);
+    z-index: 4;
+  }
+  .lightning .header-page-tabs {
+    flex: 1 1 auto;
+    width: 100%;
+    max-width: none !important;
+    min-width: 0;
+    mask-image: linear-gradient(to right,#000 0%,#000 calc(100% - 18px),transparent 100%);
+    -webkit-mask-image: linear-gradient(to right,#000 0%,#000 calc(100% - 18px),transparent 100%);
+    scrollbar-width: none;
+  }
+  .lightning .header-page-tab { min-height: 40px; }
+  .lightning .header-installed-apps { position: relative; width: 44px; min-width: 44px; padding: 0; }
+  .lightning .header-installed-apps select {
+    appearance: none;
+    width: 44px;
+    min-width: 44px;
+    max-width: 44px;
+    height: 44px;
+    padding: 0;
+    font-size: 0;
+  }
+  .lightning .header-installed-apps select option { font-size: 14px; }
+  .lightning .header-installed-apps::after {
+    content: "▦";
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    pointer-events: none;
+    color: var(--md-text,#192230);
+    font-size: 20px;
+  }
+  .lightning .header-searches { flex: 0 0 auto; min-width: 0; }
+  .lightning .global-record-search {
+    width: 44px;
+    min-width: 44px;
+    max-width: 44px;
+    height: 44px;
+    justify-content: center;
+    padding: 0;
+  }
+  .lightning .global-record-search > span,
+  .lightning .global-record-search > kbd { display: none; }
+  .lightning .header-tools > :not(.profile-menu-wrap) { display: none !important; }
+  .lightning .profile-menu-panel {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    left: auto;
+    max-width: calc(100vw - 24px);
+  }
+}
+
+/* Tablet Setup: a 56px rail keeps the workspace full-width; expansion is an overlay. */
+@media (min-width: 601px) and (max-width: 1024px) {
+  .lightning .setup-layout { position: relative; min-width: 0; }
+  .lightning .setup-layout > .setup-sidebar.setup-sidebar-collapsed {
+    position: relative;
+    flex: 0 0 56px;
+    width: 56px;
+    min-width: 56px;
+    max-width: 56px;
+    overflow-x: hidden;
+  }
+  .lightning .setup-sidebar-collapsed .setup-sidebar-toolbar strong,
+  .lightning .setup-sidebar-collapsed .quick-find-title,
+  .lightning .setup-sidebar-collapsed .quick-find-input input,
+  .lightning .setup-sidebar-collapsed .quick-find-input button,
+  .lightning .setup-sidebar-collapsed .tree-group-label,
+  .lightning .setup-sidebar-collapsed .tree-item span,
+  .lightning .setup-sidebar-collapsed .sidebar-footer { display: none !important; }
+  .lightning .setup-sidebar-collapsed .setup-sidebar-toggle { margin-inline: auto; }
+  .lightning .setup-sidebar-collapsed .quick-find { padding: 8px 6px; }
+  .lightning .setup-sidebar-collapsed .quick-find-input { width: 44px; justify-content: center; padding: 0; }
+  .lightning .setup-sidebar-collapsed .tree-item { justify-content: center; padding-inline: 0; }
+  .lightning .setup-layout > .setup-sidebar:not(.setup-sidebar-collapsed) {
+    position: absolute;
+    inset-block: 0;
+    left: 0;
+    width: min(280px,calc(100vw - 72px));
+    min-width: 0;
+    z-index: 80;
+    box-shadow: 8px 0 24px rgb(15 23 42 / 18%);
+  }
+}
+
+/* Tablet Flow Builder: icon rail + overlay toolbox and inspector, never a squeezed canvas. */
+@media (min-width: 821px) and (max-width: 1100px) {
+  .lightning .flow-builder .flow-workarea {
+    position: relative;
+    grid-template-columns: 56px minmax(0,1fr) !important;
+  }
+  .lightning .flow-builder .flow-workarea > .flow-toolbox {
+    width: 56px;
+    max-width: 56px;
+    overflow-x: hidden;
+    z-index: 12;
+  }
+  .lightning .flow-builder .flow-workarea.flow-toolbox-collapsed .toolbox-heading h2,
+  .lightning .flow-builder .flow-workarea.flow-toolbox-collapsed .toolbox-tabs,
+  .lightning .flow-builder .flow-workarea.flow-toolbox-collapsed .component-search,
+  .lightning .flow-builder .flow-workarea.flow-toolbox-collapsed .toolbox-group h3,
+  .lightning .flow-builder .flow-workarea.flow-toolbox-collapsed .resource-list { display: none !important; }
+  .lightning .flow-builder .flow-workarea.flow-toolbox-collapsed .flow-toolbox .toolbox-heading {
+    justify-content: center;
+    padding-inline: 0;
+  }
+  .lightning .flow-builder .flow-workarea.flow-toolbox-collapsed .flow-toolbox .toolbox-group { padding: 4px 2px; }
+  .lightning .flow-builder .flow-workarea.flow-toolbox-collapsed .flow-element-option {
+    justify-content: center;
+    padding-inline: 0;
+    font-size: 0;
+  }
+  .lightning .flow-builder .flow-workarea.flow-toolbox-collapsed .flow-element-option > span {
+    flex: 0 0 28px;
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+  }
+  .lightning .flow-builder .flow-workarea.flow-toolbox-collapsed .flow-element-option svg { display: none; }
+  .lightning .flow-builder .flow-workarea.flow-toolbox-expanded > .flow-toolbox {
+    position: absolute;
+    inset-block: 0;
+    left: 0;
+    width: min(260px,75vw);
+    max-width: calc(100% - 56px);
+    z-index: 30;
+    box-shadow: 8px 0 24px rgb(15 23 42 / 18%);
+  }
+  .lightning .flow-builder .flow-workarea > .flow-settings {
+    position: absolute;
+    inset-block: 0;
+    right: 0;
+    width: min(320px,42vw);
+    max-width: calc(100% - 56px);
+    z-index: 20;
+    box-shadow: -8px 0 24px rgb(15 23 42 / 18%);
+  }
+  .lightning .flow-builder .flow-workarea > [role="separator"] { display: none; }
+}
+
+
+/* Tablet header: retain a single 56px row while keeping the app launcher and tabs reachable. */
+@media (min-width: 701px) and (max-width: 1024px) {
+  .lightning .salesforce-header {
+    height: 56px;
+    min-height: 56px;
+    flex-wrap: nowrap;
+    gap: 8px;
+    padding-inline: 10px;
+  }
+  .lightning .header-installed-apps { position: relative; width: 44px; min-width: 44px; padding: 0; }
+  .lightning .header-installed-apps > span { display: none; }
+  .lightning .header-installed-apps select {
+    appearance: none;
+    width: 44px;
+    min-width: 44px;
+    max-width: 44px;
+    height: 44px;
+    padding: 0;
+    font-size: 0;
+  }
+  .lightning .header-installed-apps select option { font-size: 14px; }
+  .lightning .header-installed-apps::after {
+    content: "▦";
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    pointer-events: none;
+    color: var(--md-text,#192230);
+    font-size: 20px;
+  }
+  .lightning .header-searches { flex: 0 0 auto; min-width: 0; }
+  .lightning .header-page-context { flex: 0 1 auto; min-width: 0; max-width: 28vw !important; }
+  .lightning .header-page-tabs { max-width: 100%; min-width: 0; }
+  .lightning .header-tools > :not(.profile-menu-wrap) { display: none !important; }
+}
+@media (min-width: 821px) and (max-width: 1024px) {
+  .lightning .global-record-search {
+    width: min(28vw,280px);
+    min-width: 180px;
+    max-width: 280px;
+    height: 44px;
+  }
+  .lightning .global-record-search > span { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lightning .global-record-search > kbd { display: none; }
+}
+@media (min-width: 701px) and (max-width: 820px) {
+  .lightning .global-record-search {
+    width: 44px;
+    min-width: 44px;
+    max-width: 44px;
+    height: 44px;
+    justify-content: center;
+    padding: 0;
+  }
+  .lightning .global-record-search > span,
+  .lightning .global-record-search > kbd { display: none; }
+}
+
+/* Keep custom focus rings visible in Windows high-contrast/forced-colors mode. */
+@media (forced-colors: active) {
+  .lightning :is(.mini-search,.records-search,.header-list-search,.header-record-picker-control,
+    .exchange-search,.scheduled-flows-search,.quick-find-input,.object-search,
+    .component-search,.app-manager-list-search,.mobile-settings-search,.md-checklist-search):focus-within,
+  .lightning button.global-search:focus-visible {
+    outline-color: Highlight;
+  }
+}
+
+/* Mobile-only shell, native-style record forms, and safe-area layout.
+   Isolated so desktop and metadata-authored app content keep their styling. */
+@media (max-width: 599px), (max-height: 500px) and (pointer: coarse) {
+  .lightning:not(.standalone-page-mode):not(.page-builder-editing) .salesforce-header {
+    position: sticky; top: 0; z-index: 80;
+    height: calc(44px + env(safe-area-inset-top, 0px));
+    min-height: calc(44px + env(safe-area-inset-top, 0px));
+    padding: env(safe-area-inset-top, 0px) 10px 0;
+    box-sizing: border-box;
+    margin-bottom: 0 !important;
+    background: var(--md-ios-surface, #fff);
+    border-bottom: .5px solid var(--md-ios-separator, #c6c6c8);
+  }
+  .lightning .salesforce-header .header-page-context { display: none !important; }
+  .lightning .salesforce-header .header-installed-apps { display: none !important; }
+  .lightning .salesforce-header .header-tools { margin-left: auto; }
+  .lightning .salesforce-header .profile-menu-panel {
+    position: fixed; left: 8px; right: 8px; top: auto;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    width: auto; max-width: none; max-height: 75dvh; overflow-y: auto;
+    border-radius: 14px; background: var(--md-ios-surface, #fff);
+    color: var(--md-ios-text, #1c1c1e);
+  }
+  .lightning .workspace-records { min-width: 0; }
+  .lightning .record-form-backdrop:has(.record-form-dialog),
+  .lightning .lookup-dialog-backdrop,
+  .lightning .palette-backdrop {
+    display: flex; align-items: flex-end; justify-content: center;
+    padding: 0; min-height: 100dvh;
+  }
+  .lightning .record-form-backdrop > .record-form-dialog,
+  .lightning .lookup-dialog-backdrop > .lookup-dialog,
+  .lightning .palette-backdrop > .palette-dialog {
+    position: relative;
+    width: 100%; max-width: 100vw;
+    max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 8px);
+    margin: 0; border-radius: 14px 14px 0 0;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: var(--md-ios-surface, #fff);
+    color: var(--md-ios-text, #1c1c1e);
+    box-sizing: border-box;
+  }
+  .lightning .record-form-backdrop > .record-form-dialog::before,
+  .lightning .lookup-dialog-backdrop > .lookup-dialog::before,
+  .lightning .palette-backdrop > .palette-dialog::before {
+    content: ""; position: absolute; top: 6px; left: calc(50% - 18px);
+    width: 36px; height: 5px; background: var(--md-ios-separator, #c6c6c8); border-radius: 999px;
+  }
+  .lightning .record-form-dialog > header,
+  .lightning .lookup-dialog > header { padding-top: 18px; }
+  .lightning .record-form-dialog .record-form-grid { grid-template-columns: minmax(0, 1fr); }
+  .lightning .record-form-dialog .form-control,
+  .lightning .lookup-dialog .form-control { min-height: 44px; font-size: 16px; }
+  .lightning .record-form-dialog > form > footer {
+    position: sticky; bottom: 0; background: var(--md-ios-surface, #fff);
+    padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
+    z-index: 2;
+  }
+  .lightning .record-form-inline .record-form-dialog::before { display: none; }
+  .lightning .record-form-inline .record-form-dialog { border-radius: 0; padding-bottom: 0; }
+  .lightning .records-main-toolbar:has(.records-phone-title-line) {
+    background: var(--md-ios-bg, #f2f2f7);
+  }
+}
+@media (prefers-reduced-motion: no-preference) and (max-width: 599px),
+       (prefers-reduced-motion: no-preference) and (max-height: 500px) and (pointer: coarse) {
+    .lightning .record-form-backdrop > .record-form-dialog,
+    .lightning .lookup-dialog-backdrop > .lookup-dialog,
+    .lightning .palette-backdrop > .palette-dialog { animation: md-mobile-rise .25s ease-out; }
+}
+
+/* File-level UI audit: shared Core chrome, not tenant-authored page content. */
+.lightning .icon-button {min-width:var(--md-control-height,40px);min-height:var(--md-control-height,40px)}
+.lightning .user-menu {font-size:var(--md-fs-md,13px);min-height:var(--md-control-height,40px)}
+.lightning .object-toggle button,.lightning .object-subnav button {
+ min-height:var(--md-control-height,40px);height:auto;font-size:var(--md-fs-md,13px)
+}
