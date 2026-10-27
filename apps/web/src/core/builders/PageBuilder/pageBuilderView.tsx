@@ -463,6 +463,11 @@ function PageBuilder({
   const [additionalPropertyDialogOpen,setAdditionalPropertyDialogOpen] = useState(false);
   const [pageSettingsDialogOpen,setPageSettingsDialogOpen] = useState(false);
   const [ribbonTab, setRibbonTab] = useState<'Home' | 'Add Block' | 'Component Properties' | 'Component Style' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Preview'>('Home');
+  const componentNeedsData = (type: string) => {
+    const metadata = type.startsWith('Custom:') ? findRegisteredComponent(libraryComponents,type.slice('Custom:'.length),'page') : undefined;
+    return Boolean(metadata?.propertyDefinitions?.some(definition=>definition.kind==='OBJECT'||definition.kind==='OBJECT_FIELD'))
+      || /^(?:Record Field|Record Detail|Related List|List View|Report Chart|Dashboard)$/.test(type);
+  };
   const selectRibbonTab = (tab: typeof ribbonTab) => {
     setRibbonTab(tab);
     setPageSettingsDialogOpen(false);
@@ -1008,7 +1013,7 @@ function PageBuilder({
       }
       : undefined;
     components.splice(Math.max(0, Math.min(position, components.length)), 0, {
-      id, type, label: custom?.label ?? type,
+      id, type, label: custom ? libraryComponentLabel(custom) : type,
       properties: custom
         ? { libraryComponentId: custom.apiName,
             ...Object.fromEntries((custom.propertyDefinitions??[]).filter(def=>Array.isArray(def.defaultValue)
@@ -1043,7 +1048,8 @@ function PageBuilder({
     setSelectedId(id);
     setPageSettingsOpen(false);
     setActivePanel('properties');
-    setInspectorTab('Design');
+    setInspectorTab(componentNeedsData(type)?'Data & Actions':'Design');
+    setRibbonTab(componentNeedsData(type)?'Component Data':'Component Properties');
   };
   const addField = (fieldApiName: string) => {
     if (dynamicFormsEnabled) {
@@ -1898,9 +1904,9 @@ function PageBuilder({
           setSelectedId(component.id);
         }
         setPageSettingsOpen(false); setComponentMenuId('');
-        if (!(event.shiftKey && page.layoutMode === 'free-canvas')) { setRibbonTab(component.type==='Custom:une_item_grid'?'Component Data':'Component Properties'); openComponentInspector(component.type==='Custom:une_item_grid'?'Data & Actions':'Design'); }
+        if (!(event.shiftKey && page.layoutMode === 'free-canvas')) { setRibbonTab(componentNeedsData(component.type)?'Component Data':'Component Properties'); openComponentInspector(componentNeedsData(component.type)?'Data & Actions':'Design'); }
       } } : undefined}
-      onDoubleClick={!libraryPreview ? event => { event.stopPropagation(); if (!previewMode) { setSelectedRegion(null); setSelectedId(component.id); selectRibbonTab(component.type==='Custom:une_item_grid'?'Component Data':'Component Properties'); } } : undefined}
+      onDoubleClick={!libraryPreview ? event => { event.stopPropagation(); if (!previewMode) { setSelectedRegion(null); setSelectedId(component.id); selectRibbonTab(componentNeedsData(component.type)?'Component Data':'Component Properties'); } } : undefined}
       onContextMenu={!libraryPreview && !previewMode ? event => { event.preventDefault(); event.stopPropagation(); setSelectedRegion(null); setSelectedId(component.id); setComponentMenuId(component.id); } : undefined}
       onPointerDown={!libraryPreview && page.layoutMode === 'free-canvas' && !nested ? event => startCanvasMove(event, component) : undefined}
       onPointerMove={!libraryPreview && page.layoutMode === 'free-canvas' && !nested ? moveCanvasPointer : undefined}
