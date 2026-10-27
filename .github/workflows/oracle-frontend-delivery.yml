@@ -1,0 +1,57 @@
+name: Oracle frontend delivery
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/web/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'scripts/oracle/deploy-frontend.sh'
+      - '.github/workflows/oracle-frontend-delivery.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: oracle-frontend-delivery
+  cancel-in-progress: false
+
+jobs:
+  frontend:
+    runs-on: [self-hosted, linux, ARM64, metadrive-oracle]
+    environment: oracle-production
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Build production frontend
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci
+          npm run build --workspace apps/web
+          test -s apps/web/dist/index.html
+          grep -R -l --include='*.js' 'reference-builder-layout' apps/web/dist/assets >/dev/null
+      - name: Deploy only frontend (no API or SQL changes)
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = "unedev00/uneengine"
+          test "$(uname -m)" = "aarch64"
+          sudo -n true
+          sudo -n bash scripts/oracle/deploy-frontend.sh "$GITHUB_WORKSPACE/apps/web/dist" "$GITHUB_SHA"
+      - name: Verify frontend symlink and served page
+        shell: bash
+        run: |
+          set -euo pipefail
+          deployed="$(readlink -f /var/www/metadrive-frontend/current)"
+          test "$deployed" = "/var/www/metadrive-frontend/releases/$GITHUB_SHA"
+          test -s "$deployed/index.html"
+          curl -fsS --max-time 15 -H 'Host: unesolutions.co.uk' http://127.0.0.1/ | grep -qi '<html'
