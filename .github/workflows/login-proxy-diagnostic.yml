@@ -27,6 +27,14 @@ jobs:
               if ($0 ~ /unesolutions|443|80|api\/|proxy_pass|301|location \/|listen/) print source " :: " $0
             }
           ' | head -n 85
+          echo "Frontend TLS site directives with line numbers:"
+          sudo -n grep -nE '^[[:space:]]*(server_name|listen|location|proxy_pass|try_files)' /etc/nginx/sites-enabled/metadrive-frontend | head -n 35
+          if [[ -n "${HTTPS_PROXY:-}${https_proxy:-}" ]]; then echo "HTTPS proxy environment present"; else echo "No HTTPS proxy variable"; fi
+          for localhost in "https://unesolutions.co.uk/api/auth/federation/complete" "https://api.unesolutions.co.uk/api/auth/federation/complete"; do
+            hostname="${localhost#https://}"; hostname="${hostname%%/*}"
+            status=$(curl --noproxy '*' --max-time 8 -s -o /dev/null -w '%{http_code}' --resolve "$hostname:443:127.0.0.1" -X POST -H 'Content-Type: application/json' --data '{}' "$localhost" || true)
+            echo "Local TLS $hostname federation endpoint: $status"
+          done
           for port in 10000 3001; do
             code=$(curl --max-time 5 -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' --data '{}' "http://127.0.0.1:$port/api/auth/federation/complete" || true)
             echo "Local API port $port POST /api/auth/federation/complete: $code"
