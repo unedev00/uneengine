@@ -2194,8 +2194,8 @@ function PageBuilder({
       {editorMode && <>
       <section className="office-builder-ribbon" aria-label="Page Builder ribbon">
         <nav className="office-ribbon-tabs" role="tablist" aria-label="Page Builder tabs">
-          {(['Home','Add Block',...(selected ? ['Component Properties','Component Style','Component Data','Component Action','Component Layout'] : []),'Preview'] as Array<typeof ribbonTab>).map(tab =>
-            <button key={tab} type="button" role="tab" aria-selected={ribbonTab === tab} className={ribbonTab===tab?'active':''} onClick={() => selectRibbonTab(tab)}>{tab}</button>)}
+          {(['Home','Add Block',...(selected ? ['Component Data','Component Properties','Component Style','Component Layout','Component Action'] : []),'Preview'] as Array<typeof ribbonTab>).map(tab =>
+            <button key={tab} type="button" role="tab" aria-selected={ribbonTab === tab} className={ribbonTab===tab?'active':''} onClick={() => selectRibbonTab(tab)}>{{'Add Block':'Add Component','Component Data':'Data Source','Component Properties':'Properties','Component Style':'Style','Component Layout':'Layout','Component Action':'Actions'}[tab]??tab}</button>)}
         </nav>
         <div className="office-ribbon-content" role="tabpanel" aria-label={ribbonTab}>
           {ribbonTab === 'Home' && <>
@@ -2210,6 +2210,7 @@ function PageBuilder({
               <label className="office-ribbon-inline-field">Height <input aria-label="Page height" type="number" min={320} max={10000} value={page.canvasHeight} onChange={event=>{const n=Number(event.target.value);if(Number.isInteger(n)&&n>=320&&n<=10000)applyPage({...page,canvasHeight:n});}}/></label>
             </div><span>Layout</span></div>
             <div className="office-ribbon-group"><div className="office-ribbon-stack">
+              <button type="button" disabled={!selected||isCanvasLocked(selected)} onClick={removeSelected}><Trash2 size={16}/> Delete selected component</button>
               <button onClick={()=>setDependenciesOpen(true)}><Puzzle size={16}/> Dependencies</button>
             </div><span>Page settings</span></div>
             <div className="office-ribbon-group"><div className="office-ribbon-stack">
@@ -2247,7 +2248,7 @@ function PageBuilder({
           {selected && ribbonTab === 'Component Properties' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
             <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Label</span><input aria-label="Component label" value={selected.label} onChange={event=>updateComponent(selected.id,{label:event.target.value})}/></label>
             {(/text/i.test(selected.type) || /text/i.test(selected.label)) && selected.type!=='Rich Text' && <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Text</span><input aria-label="Component text" value={String(selected.properties.text??selected.properties.content??'Text')} onChange={event=>{const key=typeof selected.properties.content==='string'?'content':'text';updateComponent(selected.id,{properties:{...selected.properties,[key]:event.target.value}});}}/></label>}
-            <button disabled={isCanvasLocked(selected)} onClick={removeSelected}><Trash2 size={16}/> Delete block</button>
+            <button type="button" onClick={()=>setVisibilityDialogOpen(true)}><Eye size={16}/> Visibility rules</button>
           </div><span>Content</span></div>}
 
           {selected && ribbonTab === 'Component Properties' && /text|button|label|badge|heading|paragraph|rich|input/i.test(selected.type+' '+selected.label) && <div className="office-ribbon-group office-ribbon-typography">
@@ -2307,10 +2308,8 @@ function PageBuilder({
               onChange={properties=>updateComponent(selected.id,{properties})}/>
           </div>}
           {selected && ribbonTab === 'Component Action' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
-            <label className="office-ribbon-checkbox"><input type="checkbox" checked={selected.visible} onChange={event=>updateComponent(selected.id,{visible:event.target.checked})}/> Show block</label>
-            <button type="button" onClick={()=>setVisibilityDialogOpen(true)}><Eye size={16}/> Configure visibility</button>
-            <button type="button" onClick={()=>setVisibilityDialogOpen(true)}><Plus size={16}/> Add visibility rule</button>
-          </div><span>Visibility</span></div>}
+            <button type="button" onClick={()=>openComponentInspector('Visibility')}><MousePointerClick size={16}/> Configure events and actions</button>
+          </div><span>Interactions</span></div>}
           {selected && ribbonTab === 'Component Layout' && <>
             <div className="office-ribbon-group office-ribbon-icon-group" aria-label="Arrange component">
               <div className="office-ribbon-stack">
