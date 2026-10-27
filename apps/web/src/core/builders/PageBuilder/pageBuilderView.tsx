@@ -2171,7 +2171,7 @@ function PageBuilder({
 
           {selected && ribbonTab === 'Component Action' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
             <label className="office-ribbon-checkbox"><input type="checkbox" checked={selected.visible} onChange={event=>updateComponent(selected.id,{visible:event.target.checked})}/> Show block</label>
-            <button type="button" disabled={isCanvasLocked(selected)} onClick={()=>updateComponent(selected.id,{properties:{...selected.properties,canvasLocked:!selected.properties.canvasLocked}})}><Lock size={16}/> {selected.properties.canvasLocked?'Unlock':'Lock'} canvas</button>
+            <button type="button" disabled={page.layoutMode!=='free-canvas'} onClick={()=>updateComponent(selected.id,{properties:{...selected.properties,canvasLocked:!selected.properties.canvasLocked}})}><Lock size={16}/> {selected.properties.canvasLocked?'Unlock':'Lock'} canvas</button>
           </div><span>Behaviour</span></div>}
           {selected && ribbonTab === 'Component Layout' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
             <button onClick={()=>openComponentInspector('Position')}><Layers3 size={16}/> Position & size</button>
@@ -2340,8 +2340,8 @@ function PageBuilder({
             {selected.parentId && <button type="button" className="btn btn-small" onClick={() => updateComponent(selected.id, { parentId: undefined })}>Move out of section</button>}
             {selectedCustomDefinition && <>
               <div className="properties-section-title">Connect & configure</div>
-              <details className="builder-advanced-panel"><summary>Section nesting</summary>
-              <div className="properties-section-title">Parent and child blocks</div>
+              <section className="office-ribbon-presentation-group" aria-label="Section nesting">
+              <div className="office-ribbon-group-heading">Section nesting</div>
               {true
                 && <label className="checkbox-row">
                   <input type="checkbox" checked={isLayoutContainer(selected)}
@@ -2376,7 +2376,7 @@ function PageBuilder({
                   onClick={() => setSelectedId(child.id)}>{child.label}</button>)}
                 {!childrenOf(page.components, selected.id).length && <p className="properties-help">No children yet — drop components into this layout.</p>}
               </>}
-              </details>
+              </section>
               <MetadataComponentProperties
                 pageComponents={page.components} componentCatalog={libraryComponents}
                 device={page.layoutVariant??'Desktop'}
