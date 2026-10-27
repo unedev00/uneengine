@@ -133,18 +133,25 @@ function ItemGrid({ p, rows }) {
     const number=Number(value);
     return Number.isFinite(number)&&number>=8&&number<=maximum?number:undefined;
   };
-  const headingStyle = {
-    fontSize:boundedSize(p.headingFontSize),
-    color:typeof p.headingColor==="string"&&p.headingColor?p.headingColor:undefined,
+  const textStyleFor = (part) => {
+    const lineLimit = Number(p[part+"LineLimit"]);
+    const limit = Number.isInteger(lineLimit)&&lineLimit>0&&lineLimit<=12?lineLimit:0;
+    const fontWeight = Number(p[part+"FontWeight"]);
+    const alignment = p[part+"TextAlign"];
+    return {
+      fontSize:boundedSize(p[part+"FontSize"]),
+      color:typeof p[part+"Color"]==="string"&&p[part+"Color"]?p[part+"Color"]:undefined,
+      fontWeight:Number.isInteger(fontWeight)&&fontWeight>=100&&fontWeight<=900?fontWeight:undefined,
+      textAlign:["left","center","right"].includes(alignment)?alignment:undefined,
+      display:limit?"-webkit-box":undefined,
+      WebkitBoxOrient:limit?"vertical":undefined,
+      WebkitLineClamp:limit||undefined,
+      overflow:limit?"hidden":undefined,
+    };
   };
-  const supportingStyle = {
-    fontSize:boundedSize(p.descriptionFontSize),
-    color:typeof p.descriptionColor==="string"&&p.descriptionColor?p.descriptionColor:undefined,
-  };
-  const valueStyle = {
-    fontSize:boundedSize(p.valueFontSize),
-    color:typeof p.valueColor==="string"&&p.valueColor?p.valueColor:undefined,
-  };
+  const headingStyle=textStyleFor("heading");
+  const supportingStyle=textStyleFor("description");
+  const valueStyle=textStyleFor("value");
   const cardShadow = {
     none: "none",
     small: "0 1px 3px rgba(15, 23, 42, 0.12)",
@@ -206,6 +213,9 @@ function ItemGrid({ p, rows }) {
             minHeight: Number.isFinite(cardMinHeight) && cardMinHeight > 0
               ? Math.min(1200, cardMinHeight)
               : undefined,
+            width:Number.isFinite(Number(p.cardWidth))&&Number(p.cardWidth)>0
+              ?Math.min(1200,Number(p.cardWidth)):undefined,
+            maxWidth:"100%",
             backgroundColor: typeof p.cardBackgroundColor === "string" ? p.cardBackgroundColor : undefined,
             borderColor: typeof p.cardBorderColor === "string" ? p.cardBorderColor : undefined,
             borderWidth: Number.isFinite(cardBorderWidth) && cardBorderWidth >= 0
