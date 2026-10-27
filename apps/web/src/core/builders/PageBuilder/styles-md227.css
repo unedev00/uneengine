@@ -551,3 +551,22 @@
 .builder-editor-mode .reference-builder-layout .reference-properties-panel .form-label {font-size:12px;font-weight:600;color:#31445e;}
 .builder-editor-mode .reference-builder-layout .reference-properties-panel details {border-color:#e4eaf3;border-radius:10px;}
 .builder-editor-mode .reference-builder-layout .reference-properties-panel summary {font-weight:700;color:#243751;}
+
+/* Contextual Office-style Page Builder ribbon: visual-only; existing handlers remain authoritative. */
+.office-builder-ribbon { background:#f4f5f7; border-bottom:1px solid #ccd2dd; color:#25344c; width:100%; }
+.office-ribbon-tabs { display:flex; align-items:end; gap:2px; padding:0 12px; min-height:38px; background:#285591; overflow-x:auto; }
+.office-ribbon-tabs button { appearance:none; border:0; border-radius:0; background:transparent; color:#fff; font:500 13px/1.2 inherit; white-space:nowrap; padding:12px 14px 10px; cursor:pointer; }
+.office-ribbon-tabs button.active { background:#f4f5f7; color:#183b68; }
+.office-ribbon-tabs button:focus-visible, .office-ribbon-content button:focus-visible { outline:2px solid #4087e6; outline-offset:-2px; }
+.office-ribbon-content { display:flex; align-items:stretch; gap:0; padding:5px 10px 3px; min-height:114px; overflow-x:auto; }
+.office-ribbon-group { display:flex; flex-direction:column; justify-content:space-between; flex:0 0 auto; min-width:142px; max-width:300px; border-right:1px solid #c8cdd4; padding:2px 14px 0; }
+.office-ribbon-group:last-child { border-right:0; }
+.office-ribbon-group > span { text-align:center; font-size:11px; color:#5f6773; padding-top:6px; }
+.office-ribbon-stack { display:grid; grid-template-rows:repeat(3,minmax(25px,auto)); gap:2px; align-content:start; }
+.office-ribbon-stack button { display:flex; gap:7px; align-items:center; min-width:0; padding:3px 7px; border:1px solid transparent; border-radius:3px; background:transparent; color:inherit; text-align:left; cursor:pointer; font-size:12px; white-space:nowrap; }
+.office-ribbon-stack button:hover:not(:disabled) { background:#e3ecfa; border-color:#b5cbe8; }
+.office-ribbon-stack button:disabled { opacity:.45; cursor:not-allowed; }
+.office-ribbon-stack label { display:flex; align-items:center; gap:7px; font-size:12px; }
+.office-ribbon-stack input, .office-ribbon-stack select { min-width:85px; max-width:175px; height:25px; padding:2px 5px; border:1px solid #b7c2d3; border-radius:3px; background:#fff; font:inherit; }
+.office-ribbon-stack strong { max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; }
+@media(max-width:700px){ .office-ribbon-tabs button{padding:10px 9px;font-size:12px} .office-ribbon-content{min-height:100px} .office-ribbon-group{min-width:125px;padding-inline:8px} }
