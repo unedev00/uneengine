@@ -2288,7 +2288,7 @@ function PageBuilder({
                 </button>)}
               </div><span>{group.label}</span></div>)}
           </>}
-          {selected && ribbonTab === 'Component Data' && selectedCustomDefinition && selectedCustomDefinition.apiName!=='une_item_grid' &&
+          {selected && ribbonTab === 'Component Content' && selectedCustomDefinition && selectedCustomDefinition.apiName!=='une_item_grid' &&
             selectedCustomDefinition.propertyDefinitions?.some(definition=>definition.kind==='OBJECT_FIELD') &&
             <div className="office-ribbon-group"><div className="office-ribbon-stack">
               {selectedCustomDefinition.propertyDefinitions.filter(definition=>definition.kind==='OBJECT_FIELD').slice(0,3).map(definition=><label key={definition.propertyKey} className="office-ribbon-inline-field">
@@ -2300,18 +2300,48 @@ function PageBuilder({
                 </select>
               </label>)}
             </div><span>Field mapping</span></div>}
-          {selected && ribbonTab === 'Component Data' && selectedCustomDefinition?.apiName==='une_item_grid' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
-            <label className="office-ribbon-inline-field"><Database size={16}/> Object<select aria-label="Card grid object" value={String(selected.properties.objectApiName??'')} onChange={event=>{const obj=objects.find(item=>item.apiName===event.target.value);const definitions=obj?.fields??[];const pick=(pattern:RegExp)=>definitions.find(field=>pattern.test(field.apiName+' '+field.label))?.apiName??'';updateComponent(selected.id,{properties:{...selected.properties,objectApiName:event.target.value,imageFieldApiName:pick(/image|photo|picture|thumbnail/i),titleFieldApiName:pick(/^(name|title|product_name)$/i)||pick(/name|title/i),descriptionFieldApiName:pick(/description|summary|detail/i),priceFieldApiName:pick(/price|amount|cost/i)}});}}><option value="">Select an object…</option>{objects.map(obj=><option key={obj.apiName} value={obj.apiName}>{obj.label}</option>)}</select></label>
-            {(['imageFieldApiName','titleFieldApiName'] as const).map((key)=><label key={key} className="office-ribbon-inline-field"><span className="office-ribbon-field-name">{{imageFieldApiName:'Image',titleFieldApiName:'Title',descriptionFieldApiName:'Description',priceFieldApiName:'Value',badgeFieldApiName:'Badge'}[key]}</span><select data-card-mapping-field={key} aria-label={'Card '+key} value={String(selected.properties[key]??'')} onChange={event=>updateComponent(selected.id,{properties:{...selected.properties,[key]:event.target.value}})}><option value="">Not mapped</option>{(objects.find(obj=>obj.apiName===selected.properties.objectApiName)?.fields??[]).map(field=><option key={field.apiName} value={field.apiName}>{field.label}</option>)}</select></label>)}
-          </div><span>Card source & title</span></div>}
-          {selected && ribbonTab === 'Component Data' && selectedCustomDefinition?.apiName==='une_item_grid' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
+          {selected && ribbonTab === 'Component Data' && selectedCustomDefinition && <div className="office-ribbon-group"><div className="office-ribbon-stack">
+            {(selectedCustomDefinition.propertyDefinitions??[]).some(definition=>definition.kind==='OBJECT') && <label className="office-ribbon-inline-field"><Database size={16}/> Source
+              <select aria-label="Choose source object" value={String(selected.properties.objectApiName??'')}
+                onChange={event=>{
+                  const source=objects.find(item=>item.apiName===event.target.value);
+                  const definitions=source?.fields??[];
+                  const pick=(pattern:RegExp)=>definitions.find(field=>pattern.test(field.apiName+' '+field.label))?.apiName??'';
+                  const suggestions=selectedCustomDefinition.apiName==='une_item_grid'?{
+                    imageFieldApiName:selected.properties.imageFieldApiName||pick(/image|photo|picture|thumbnail/i),
+                    titleFieldApiName:selected.properties.titleFieldApiName||pick(/^(name|title|product_name)$/i)||pick(/name|title/i),
+                    descriptionFieldApiName:selected.properties.descriptionFieldApiName||pick(/description|summary|detail/i),
+                    priceFieldApiName:selected.properties.priceFieldApiName||pick(/price|amount|cost/i)
+                  }:{};
+                  updateComponent(selected.id,{properties:{...selected.properties,objectApiName:event.target.value,...suggestions}});
+                }}>
+                <option value="">Choose an object…</option>{objects.map(object=><option key={object.apiName} value={object.apiName}>{object.label}</option>)}
+              </select>
+            </label>}
+            <button type="button" onClick={()=>openExpandedEditor('source')}><Settings2 size={16}/> Sources & record scope</button>
+            <button type="button" onClick={()=>openExpandedEditor('filters')}><Filter size={16}/> {Array.isArray(selected.properties.filters)&&selected.properties.filters.length
+              ?`${selected.properties.filters.length} base filter(s)`:'Add record filters'}</button>
+          </div><span>Source & filters</span></div>}
+          {selected && ribbonTab === 'Component Content' && selectedCustomDefinition?.apiName==='une_item_grid' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
+            {(['imageFieldApiName','titleFieldApiName'] as const).map(key=><label key={key} className="office-ribbon-inline-field"><span className="office-ribbon-field-name">{key==='imageFieldApiName'?'Photo / image':'Heading'}</span>
+              <select data-card-mapping-field={key} aria-label={'Card '+key} value={String(selected.properties[key]??'')}
+                onChange={event=>updateComponent(selected.id,{properties:{...selected.properties,[key]:event.target.value}})}>
+                <option value="">Not mapped</option>
+                {(objects.find(obj=>obj.apiName===selected.properties.objectApiName)?.fields??[])
+                  .filter(field=>key!=='imageFieldApiName'||/image|file|url|photo|picture/i.test(String(field.dataType)+' '+field.apiName))
+                  .map(field=><option key={field.apiName} value={field.apiName}>{field.label}</option>)}
+              </select>
+            </label>)}
+            <button type="button" onClick={()=>openExpandedEditor('content')}><Settings2 size={16}/> Edit card content</button>
+          </div><span>Card content</span></div>}
+          {selected && ribbonTab === 'Component Content' && selectedCustomDefinition?.apiName==='une_item_grid' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
             {(['descriptionFieldApiName','priceFieldApiName','badgeFieldApiName'] as const).map((key)=><label key={key} className="office-ribbon-inline-field"><span className="office-ribbon-field-name">{{descriptionFieldApiName:'Description',priceFieldApiName:'Value',badgeFieldApiName:'Badge'}[key]}</span><select aria-label={'Card '+key} value={String(selected.properties[key]??'')} onChange={event=>updateComponent(selected.id,{properties:{...selected.properties,[key]:event.target.value}})}><option value="">Not mapped</option>{(objects.find(obj=>obj.apiName===selected.properties.objectApiName)?.fields??[]).map(field=><option key={field.apiName} value={field.apiName}>{field.label}</option>)}</select></label>)}
           </div><span>Card details</span></div>}
           {selected && ribbonTab === 'Component Properties' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
             <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Label</span><input aria-label="Component label" value={selected.label} onChange={event=>updateComponent(selected.id,{label:event.target.value})}/></label>
             {(/text/i.test(selected.type) || /text/i.test(selected.label)) && selected.type!=='Rich Text' && <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Text</span><input aria-label="Component text" value={String(selected.properties.text??selected.properties.content??'Text')} onChange={event=>{const key=typeof selected.properties.content==='string'?'content':'text';updateComponent(selected.id,{properties:{...selected.properties,[key]:event.target.value}});}}/></label>}
             <label className="office-ribbon-checkbox"><input type="checkbox" checked={selected.visible} onChange={event=>updateComponent(selected.id,{visible:event.target.checked})}/> Show component</label>
-            <button type="button" onClick={()=>setVisibilityDialogOpen(true)}><Eye size={16}/> Visibility rules</button>
+            <button type="button" onClick={()=>openExpandedEditor('visibility')}><Eye size={16}/> Visibility rules</button>
           </div><span>Content</span></div>}
 
           {selected && ribbonTab === 'Component Properties' && /text|button|label|badge|heading|paragraph|rich|input/i.test(selected.type+' '+selected.label) && <div className="office-ribbon-group office-ribbon-typography">
@@ -2371,8 +2401,27 @@ function PageBuilder({
               onChange={properties=>updateComponent(selected.id,{properties})}/>
           </div>}
           {selected && ribbonTab === 'Component Action' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
-            <button type="button" onClick={()=>openComponentInspector('Visibility')}><MousePointer2 size={16}/> Configure events and actions</button>
-          </div><span>Interactions</span></div>}
+            <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">When</span>
+              <select aria-label="Choose supported event" value={actionEvent}
+                onChange={event=>{
+                  const name=event.target.value;
+                  setActionEvent(name);
+                  if(!name)return;
+                  const actions=selected.properties.actionFlows && typeof selected.properties.actionFlows==='object'
+                    ?selected.properties.actionFlows as Record<string,unknown>:{};
+                  if(!actions[name])updateComponent(selected.id,{properties:{...selected.properties,
+                    actionFlows:{...actions,[name]:{actionType:'Flow',flowApiName:'',inputs:{}}}}});
+                  openExpandedEditor('actions');
+                }}>
+                <option value="">Choose event…</option>
+                {[...new Map([...(selectedCustomDefinition?.eventDefinitions??[]).map(item=>[item.apiName,item.label] as const),
+                  ...Object.keys(selected.properties.actionFlows && typeof selected.properties.actionFlows==='object'?selected.properties.actionFlows:{}).map(name=>[name,name] as const)]).entries()]
+                  .map(([name,label])=><option key={name} value={name}>{label}</option>)}
+              </select>
+            </label>
+            <button type="button" onClick={()=>openExpandedEditor('actions')}><MousePointer2 size={16}/> Edit actions</button>
+            <button type="button" onClick={()=>openExpandedEditor('conditions')}><Filter size={16}/> Only when</button>
+          </div><span>Events & outcomes</span></div>}
           {selected && ribbonTab === 'Component Layout' && <>
             <div className="office-ribbon-group office-ribbon-icon-group" aria-label="Arrange component">
               <div className="office-ribbon-stack">
@@ -2426,16 +2475,11 @@ function PageBuilder({
             <div key={index} className="office-ribbon-group"><div className="office-ribbon-stack">
               {fields.slice(index*3,index*3+3).map(field=><button type="button" key={field.apiName} onClick={()=>addField(field.apiName)}><Database size={16}/>{field.label}</button>)}
             </div><span>{index===0?'Record Fields':`Record Fields ${index+1}`}</span></div>)}
-          {['Component Properties','Component Action','Component Layout'].includes(ribbonTab) && <div className="office-ribbon-inspector-host" ref={setRibbonPropertyHost} aria-label="Ribbon property controls" />}
-          {ribbonTab==='Component Data' && selected && <div className="office-ribbon-group"><div className="office-ribbon-stack"><button type="button" onClick={()=>setDataEditorOpen(true)}><Settings2 size={16}/> Advanced data settings</button><span className="office-ribbon-stat">Filters, relationships and bindings</span></div><span>More data</span></div>}
+          {['Component Properties','Component Layout'].includes(ribbonTab) && <div className="office-ribbon-inspector-host" ref={setRibbonPropertyHost} aria-label="Ribbon property controls" />}
+
         </div>
       </section>
-      {ribbonTab==='Component Data' && dataEditorOpen && selected && <div className="modal-backdrop office-ribbon-modal-backdrop" role="presentation">
-        <section className="modal office-ribbon-config-modal" role="dialog" aria-modal="true" aria-label="Data source configuration" style={{width:'min(900px,96vw)',maxHeight:'85vh',overflow:'auto'}}>
-          <div className="modal-header"><h2>Data source · {selected.label}</h2><button type="button" aria-label="Close data source settings" onClick={()=>setDataEditorOpen(false)}><X size={18}/></button></div>
-          <div ref={setRibbonPropertyHost} className="page-builder-data-dialog-content" />
-        </section>
-      </div>}
+
       {ribbonTab==='Home' && pageSettingsDialogOpen && <div className="modal-backdrop office-ribbon-modal-backdrop" role="presentation">
         <section className="modal office-ribbon-config-modal office-ribbon-page-settings-modal" role="dialog" aria-modal="true" aria-label="Page settings">
           <div className="modal-header"><h2>Page settings</h2><button type="button" className="icon-button" aria-label="Close page settings" onClick={()=>setPageSettingsDialogOpen(false)}><X size={16}/></button></div>
