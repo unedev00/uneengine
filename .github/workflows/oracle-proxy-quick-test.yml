@@ -1,0 +1,27 @@
+name: Oracle proxy targeted repair validation
+on:
+  push:
+    branches: [fix/login-federation-proxy]
+    paths:
+      - ".github/workflows/oracle-proxy-quick-test.yml"
+      - "scripts/oracle/ensure-frontend-api-proxy.sh"
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: [self-hosted, linux, ARM64, metadrive-oracle]
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Apply safe proxy edit and verify callback (rollback on failure)
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = "unedev00/uneengine"
+          bash -n scripts/oracle/ensure-frontend-api-proxy.sh
+          sudo -n bash scripts/oracle/ensure-frontend-api-proxy.sh
+          code=$(curl --noproxy '*' --max-time 8 --silent -o /dev/null -w '%{http_code}' --resolve unesolutions.co.uk:443:127.0.0.1 -X POST -H 'Content-Type: application/json' --data '{}' https://unesolutions.co.uk/api/auth/federation/complete)
+          test "$code" = "204"
+          echo "Main-domain login proxy works: HTTP $code"
