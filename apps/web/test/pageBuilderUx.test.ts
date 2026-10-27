@@ -70,3 +70,14 @@ test('Data ribbon uses friendly field labels, readable values and safe missing-f
     {field:'Deleted',operator:'Equals',value:'foo'}
   ],fields),'Department is a page value; Active is Yes; +1 more');
 });
+
+test('Card Grid optional Add button is independent of card activation and declared in metadata',()=>{
+  const component=JSON.parse(readFileSync(new URL('../src/one/une_item_grid/component.json',import.meta.url),'utf8'));
+  const runtime=readFileSync(new URL('../src/one/OneItemGrid/OneItemGrid.jsx',import.meta.url),'utf8');
+  assert.ok(component.eventDefinitions.some((event:{apiName:string})=>event.apiName==='itemAdd'));
+  assert.ok(component.propertyDefinitions.some((property:{propertyKey:string})=>property.propertyKey==='separateAddButton'));
+  assert.match(runtime,/hasSeparateAddButton=p.showAddIcon===true&&p.separateAddButton===true/);
+  assert.match(runtime,/event.stopPropagation\(\);addSelectedRecord\(\)/);
+  assert.match(runtime,/if\(p.actionFlows\?\.itemAdd\)fire\(p,"itemAdd",r\)/);
+  assert.match(runtime,/onKeyDown=\{event=>/);
+});
