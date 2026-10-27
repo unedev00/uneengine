@@ -1898,9 +1898,9 @@ function PageBuilder({
           setSelectedId(component.id);
         }
         setPageSettingsOpen(false); setComponentMenuId('');
-        if (!(event.shiftKey && page.layoutMode === 'free-canvas')) { setRibbonTab('Component Properties'); openComponentInspector('Design'); }
+        if (!(event.shiftKey && page.layoutMode === 'free-canvas')) { setRibbonTab(component.type==='Custom:une_item_grid'?'Component Data':'Component Properties'); openComponentInspector(component.type==='Custom:une_item_grid'?'Data & Actions':'Design'); }
       } } : undefined}
-      onDoubleClick={!libraryPreview ? event => { event.stopPropagation(); if (!previewMode) { setSelectedRegion(null); setSelectedId(component.id); openComponentInspector('Design'); } } : undefined}
+      onDoubleClick={!libraryPreview ? event => { event.stopPropagation(); if (!previewMode) { setSelectedRegion(null); setSelectedId(component.id); selectRibbonTab(component.type==='Custom:une_item_grid'?'Component Data':'Component Properties'); } } : undefined}
       onContextMenu={!libraryPreview && !previewMode ? event => { event.preventDefault(); event.stopPropagation(); setSelectedRegion(null); setSelectedId(component.id); setComponentMenuId(component.id); } : undefined}
       onPointerDown={!libraryPreview && page.layoutMode === 'free-canvas' && !nested ? event => startCanvasMove(event, component) : undefined}
       onPointerMove={!libraryPreview && page.layoutMode === 'free-canvas' && !nested ? moveCanvasPointer : undefined}
