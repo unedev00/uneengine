@@ -178,6 +178,7 @@
     "apps/web/test/uneChatProperties.test.mjs",
     "apps/web/test/uneComponentContracts.test.mjs",
     "apps/web/test/visiblePolling.test.ts",
+    "apps/web/test/workspaceContrastRepair.test.mjs",
     "apps/server/test/system/component-property-contract.test.ts",
     "apps/web/test/componentPropertySchema.test.ts"
   ]
