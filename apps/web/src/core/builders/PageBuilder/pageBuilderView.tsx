@@ -2321,23 +2321,29 @@ function PageBuilder({
               </label>)}
             </div><span>Field mapping</span></div>}
           {selected && ribbonTab === 'Component Data' && selectedCustomDefinition && <div className="office-ribbon-group"><div className="office-ribbon-stack">
-            {(selectedCustomDefinition.propertyDefinitions??[]).some(definition=>definition.kind==='OBJECT') && <label className="office-ribbon-inline-field"><Database size={16}/> Source
-              <select aria-label="Choose source object" value={String(selected.properties.objectApiName??'')}
-                onChange={event=>{
-                  const source=objects.find(item=>item.apiName===event.target.value);
-                  const definitions=source?.fields??[];
-                  const pick=(pattern:RegExp)=>definitions.find(field=>pattern.test(field.apiName+' '+field.label))?.apiName??'';
-                  const suggestions=selectedCustomDefinition.apiName==='une_item_grid'?{
-                    imageFieldApiName:selected.properties.imageFieldApiName||pick(/image|photo|picture|thumbnail/i),
-                    titleFieldApiName:selected.properties.titleFieldApiName||pick(/^(name|title|product_name)$/i)||pick(/name|title/i),
-                    descriptionFieldApiName:selected.properties.descriptionFieldApiName||pick(/description|summary|detail/i),
-                    priceFieldApiName:selected.properties.priceFieldApiName||pick(/price|amount|cost/i)
-                  }:{};
-                  updateComponent(selected.id,{properties:{...selected.properties,objectApiName:event.target.value,...suggestions}});
-                }}>
-                <option value="">Choose an object…</option>{objects.map(object=><option key={object.apiName} value={object.apiName}>{object.label}</option>)}
-              </select>
-            </label>}
+            {(selectedCustomDefinition.propertyDefinitions??[])
+              .filter(definition=>definition.kind==='OBJECT').slice(0,2)
+              .map(definition=><label className="office-ribbon-inline-field" key={definition.propertyKey}>
+                <span className="office-ribbon-field-name">{definition.label||'Source'}</span>
+                <select aria-label={definition.label||'Choose source object'}
+                  value={String(selected.properties[definition.propertyKey]??'')}
+                  onChange={event=>{
+                    const source=objects.find(item=>item.apiName===event.target.value);
+                    const definitions=source?.fields??[];
+                    const pick=(pattern:RegExp)=>definitions.find(field=>pattern.test(field.apiName+' '+field.label))?.apiName??'';
+                    const suggestions=selectedCustomDefinition.apiName==='une_item_grid'&&definition.propertyKey==='objectApiName'?{
+                      imageFieldApiName:selected.properties.imageFieldApiName||pick(/image|photo|picture|thumbnail/i),
+                      titleFieldApiName:selected.properties.titleFieldApiName||pick(/^(name|title|product_name)$/i)||pick(/name|title/i),
+                      descriptionFieldApiName:selected.properties.descriptionFieldApiName||pick(/description|summary|detail/i),
+                      priceFieldApiName:selected.properties.priceFieldApiName||pick(/price|amount|cost/i)
+                    }:{};
+                    updateComponent(selected.id,{properties:{...selected.properties,
+                      [definition.propertyKey]:event.target.value,...suggestions}});
+                  }}>
+                  <option value="">Choose an object…</option>
+                  {objects.map(object=><option key={object.apiName} value={object.apiName}>{object.label}</option>)}
+                </select>
+              </label>)}
             <button type="button" onClick={()=>openExpandedEditor('source')}><Settings2 size={16}/> Sources & record scope</button>
             <button type="button" onClick={()=>openExpandedEditor('filters')} title="Edit base record filters">
               <Filter size={16}/> {describeBuilderFilters(selected.properties.filters,
