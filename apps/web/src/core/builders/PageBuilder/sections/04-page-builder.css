@@ -486,31 +486,78 @@
   .page-ribbon-expanded-editor{height:330px;max-height:65vh}
 }
 
-/* Fewer visible category groups and line wrapping keep essential actions reachable without a side-scrolling ribbon. */
+/* Page Builder compact ribbon: one bounded horizontal strip, never a wrapping
+   property grid. The earlier unbounded flex-wrap rule pushed the canvas several
+   hundred pixels down and stacked independently positioned group captions. */
 .office-builder-ribbon .office-ribbon-content {
-  display:flex;flex-wrap:wrap;align-content:flex-start;align-items:stretch;
-  box-sizing:border-box;height:auto;max-height:none;overflow-x:hidden;overflow-y:visible;
+  display:flex;
+  flex-flow:row nowrap;
+  align-content:stretch;
+  align-items:flex-start;
+  box-sizing:border-box;
+  width:100%;
+  height:142px!important;
+  min-height:142px!important;
+  max-height:142px!important;
+  padding:3px 8px 2px;
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+  scrollbar-gutter:stable;
+  overscroll-behavior-x:contain;
+}
+.office-builder-ribbon .office-ribbon-content>.office-ribbon-group,
+.office-builder-ribbon .office-ribbon-content>.office-ribbon-inline-options,
+.office-builder-ribbon .office-ribbon-content>.office-ribbon-inspector-host {
+  flex:0 0 auto;
+  align-self:flex-start;
 }
 .office-builder-ribbon .office-ribbon-group {
-  flex:0 1 auto;min-width:0;max-width:min(100%,400px);
-  box-sizing:border-box;overflow:visible;
+  box-sizing:border-box;
+  height:124px!important;
+  min-height:124px!important;
+  max-height:124px!important;
+  max-width:none;
+  padding:4px 10px 24px;
 }
 .office-builder-ribbon .office-ribbon-group>.office-ribbon-stack {
-  min-width:0;max-width:100%;grid-auto-flow:row;
-  grid-template-rows:repeat(3,minmax(28px,auto));
+  display:grid;
+  grid-template-rows:repeat(3,28px)!important;
+  grid-auto-flow:column!important;
+  grid-auto-columns:max-content;
+  gap:3px 8px;
+  align-content:start;
 }
 .office-builder-ribbon .office-ribbon-inline-field {
-  grid-template-columns:minmax(60px,max-content) minmax(90px,1fr);
-  max-width:100%;height:auto;min-height:30px;
-}
-.office-builder-ribbon .office-ribbon-inline-field select {
-  min-width:100px;max-width:200px!important;
+  max-width:none;
+  height:28px;
+  min-height:28px;
 }
 .office-builder-ribbon .office-ribbon-header-field,
 .office-builder-ribbon .office-ribbon-header-status {
+  color:#fff!important;
   line-height:1.35;
 }
-@media(max-width:1280px) {
-  .office-builder-ribbon .office-ribbon-group{max-width:100%}
-  .office-builder-ribbon .office-ribbon-group>.office-ribbon-stack{grid-auto-flow:row}
+.office-builder-ribbon .office-ribbon-visibility-row {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  height:28px;
+  min-height:28px;
+  white-space:nowrap;
+}
+.office-builder-ribbon .office-ribbon-visibility-row>button {
+  box-sizing:border-box;
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  height:27px;
+  min-height:27px;
+  padding:3px 7px;
+  font-size:12px;
+}
+/* The ribbon is horizontally scrollable on small screens; advanced controls
+   are edited in the separate, resizable in-flow panel below the ribbon. */
+@media(max-width:900px) {
+  .office-builder-ribbon .office-ribbon-content {height:142px!important}
+  .office-builder-ribbon .office-ribbon-group {max-width:none}
 }
