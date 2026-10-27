@@ -2305,10 +2305,10 @@ function PageBuilder({
               <button onClick={()=>setPreviewMode(value=>!value)}><Monitor size={17}/> {previewMode?'Exit preview':'Canvas preview'}</button>
             </div><span>Preview</span></div>
           </>}
-          {ribbonTab === 'Add Block' && page.pageType==='Record Page' && fields.length>0 && <div className="office-ribbon-group"><div className="office-ribbon-stack">
-            {fields.slice(0,3).map(field=><button type="button" key={field.apiName} onClick={()=>addField(field.apiName)}><Database size={16}/>{field.label}</button>)}
-            {fields.length>3 && <button type="button" onClick={()=>openPalette('Fields')}><Plus size={16}/> More fields</button>}
-          </div><span>Record Fields</span></div>}
+          {ribbonTab === 'Add Block' && page.pageType==='Record Page' && Array.from({length:Math.ceil(fields.length/3)},(_,index)=>
+            <div key={index} className="office-ribbon-group"><div className="office-ribbon-stack">
+              {fields.slice(index*3,index*3+3).map(field=><button type="button" key={field.apiName} onClick={()=>addField(field.apiName)}><Database size={16}/>{field.label}</button>)}
+            </div><span>{index===0?'Record Fields':`Record Fields ${index+1}`}</span></div>)}
           {ribbonTab.startsWith('Component ') && <div className="office-ribbon-inspector-host" ref={setRibbonPropertyHost} aria-label="Ribbon property controls" />}
         </div>
       </section>
