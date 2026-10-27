@@ -49,5 +49,7 @@ jobs:
         run: npm run audit:architecture
       - name: Check Page Builder and UNE component contracts
         run: npm run test:components
+      - name: Check metadata binding regressions
+        run: npm run test:metadata
       - name: Build production web application
         run: npm run build --workspace apps/web
