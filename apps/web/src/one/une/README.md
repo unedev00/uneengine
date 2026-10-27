@@ -2,7 +2,7 @@
 
 UNE is an additional visual component library using the existing Page Builder,
 published Page Runtime, OneEngine RBAC, SQL component registry and Action/Flow engine.
-The legacy catalog cleanup is retained: only eight One components exist.
+The component catalogue has 36 UNE components and no separately registered One descriptors. Shared legacy rendering implementations remain internal UNE dependencies.
 
 The separate UNE AceChatter application creates metadata-driven pages only when a tenant
 explicitly installs that AppExchange entry. Existing standalone AceChatter is preserved.
