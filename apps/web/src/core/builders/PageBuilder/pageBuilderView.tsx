@@ -109,7 +109,14 @@ import {
   Underline,
   AlignLeft,
   AlignCenter,
-  AlignRight
+  AlignRight,
+  ShoppingCart,
+  PanelsTopLeft,
+  MessageCircle,
+  BadgeCheck,
+  Table2,
+  Menu,
+  Repeat
 } from 'lucide-react';
 import FlowBuilderWorkspace from '../FlowBuilder/FlowBuilder';
 import FlowScreenContent from '../../automation/FlowScreen/FlowScreenContent';
@@ -582,6 +589,15 @@ function PageBuilder({
     const name = `${component.label} ${component.type}`.toLowerCase();
     if (/\b(text|heading|paragraph|rich text|label)\b/.test(name)) return <Type size={15} />;
     if (/\b(image|photo|picture|avatar|logo)\b/.test(name)) return <ImageIcon size={15} />;
+    if (/\b(cart|checkout|shopping)\b/.test(name)) return <ShoppingCart size={15} />;
+    if (/\b(calendar|date.picker)\b/.test(name)) return <CalendarDays size={15} />;
+    if (/\b(tabs?|accordion)\b/.test(name)) return <PanelsTopLeft size={15} />;
+    if (/\b(conversation|chat|message)\b/.test(name)) return <MessageCircle size={15} />;
+    if (/\b(badge|status)\b/.test(name)) return <BadgeCheck size={15} />;
+    if (/\b(table)\b/.test(name)) return <Table2 size={15} />;
+    if (/\b(menu)\b/.test(name)) return <Menu size={15} />;
+    if (/\b(repeater|repeat)\b/.test(name)) return <Repeat size={15} />;
+    if (/\b(search|lookup)\b/.test(name)) return <Search size={15} />;
     if (/\b(grid|columns?|rows?|layout)\b/.test(name)) return <Grid2X2 size={15} />;
     if (/\b(shape|rectangle|square|circle|line|divider|spacer)\b/.test(name)
       || layoutTypes.some((type) => type === component.type)) return <Square size={15} />;
