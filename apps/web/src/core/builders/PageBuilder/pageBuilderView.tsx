@@ -2294,6 +2294,27 @@ function PageBuilder({
         <div id="page-builder-tab-content" className="office-ribbon-content" role="tabpanel"
           aria-label={ribbonTab} aria-labelledby={`page-builder-tab-${journeyIndex}`}>
           {ribbonTab === 'Home' && <>
+            <div className="office-ribbon-group office-ribbon-home-icons"><div className="office-ribbon-home-icon-row">
+              <button type="button" onClick={()=>setPageSettingsDialogOpen(true)}><Settings2 size={20}/>Page settings</button>
+              <button type="button" onClick={()=>setRouteDirectoryOpen(true)}><ExternalLink size={20}/>Routes / SEO</button>
+              <button type="button" onClick={()=>setDependenciesOpen(true)}><Lock size={20}/>Access</button>
+            </div><span>Page Settings</span></div>
+            <div className="office-ribbon-group office-ribbon-home-icons"><div className="office-ribbon-home-icon-row">
+              <button type="button" disabled={!undoStack.length} onClick={undo}><Undo2 size={20}/>Undo</button>
+              <button type="button" disabled={!redoStack.length} onClick={redo}><Redo2 size={20}/>Redo</button>
+              <button type="button" onClick={()=>void loadLayoutHistory()}><Copy size={20}/>Versions</button>
+              <button type="button" disabled={!selected||isCanvasLocked(selected)} onClick={removeSelected}><Trash2 size={20}/>Delete</button>
+            </div><span>Edit</span></div>
+            <div className="office-ribbon-group office-ribbon-home-icons"><div className="office-ribbon-home-icon-row">
+              <button type="button" onClick={()=>setPageSettingsDialogOpen(true)}><Layers3 size={20}/>Page layout</button>
+            </div><span>Component Hierarchy</span></div>
+            <div className="office-ribbon-group"><div className="office-ribbon-stack">
+              <button type="button" aria-pressed={canvasSnap} onClick={()=>setCanvasSnap(value=>!value)}><Grid2X2 size={16}/> Snap {canvasSnap?'on':'off'}</button>
+              <button type="button" onClick={()=>setCanvasRefreshKey(key=>key+1)}><RefreshCw size={16}/> Refresh canvas</button>
+            </div><span>View</span></div>
+            <div className="office-ribbon-group office-ribbon-more-group"><div className="office-ribbon-stack">
+              <details className="office-ribbon-advanced-details"><summary>More page commands</summary><div className="office-ribbon-advanced-popover">
+
             <div className="office-ribbon-group"><div className="office-ribbon-stack">
               <button type="button" onClick={safeBackToPages}><ArrowLeft size={16}/> Back to pages</button>
             </div><span>Page</span></div>
@@ -2328,6 +2349,9 @@ function PageBuilder({
               <button disabled={!redoStack.length} onClick={redo}><Redo2 size={17}/> Redo</button>
               <button onClick={()=>setCanvasRefreshKey(key=>key+1)}><RefreshCw size={17}/> Refresh canvas</button>
             </div><span>History</span></div>
+          
+              </div></details>
+            </div><span>More</span></div>
           </>}
           {ribbonTab === 'Add Block' && <div className="office-ribbon-add-library" aria-label="Add component library">
             <div className="office-ribbon-add-browser">
