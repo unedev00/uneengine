@@ -46,7 +46,7 @@ export default function PageComponentVisualEditor({ value, onChange, componentTy
   return <fieldset className="metadata-component-visual-editor compact-ribbon-visual-editor">
     <legend className="properties-section-title">Appearance</legend>
     <div className="compact-visual-groups">
-      {numericPresets.filter(preset => supportsAppearanceProperty(componentType,preset.key)).map(preset =>
+      {numericPresets.filter(preset => supportsAppearanceProperty(componentType, preset.key)).map(preset =>
         <div className="compact-visual-group" key={preset.key}>
           <label className="compact-visual-label">{preset.label}
             <select aria-label={preset.label} value={visual[preset.key]} onChange={event=>setNumber(preset.key,Number(event.target.value))}>
@@ -87,7 +87,7 @@ export default function PageComponentVisualEditor({ value, onChange, componentTy
       <details className="compact-visual-group visual-advanced-properties">
         <summary>Exact size & responsive settings</summary>
         <div className="visual-advanced-grid">
-          {appearanceNumberFields.filter(({key})=>supportsAppearanceProperty(componentType,key)).map(({key,label,min,max})=>number(key,label,min,max))}
+          {appearanceNumberFields.filter(({key}) => supportsAppearanceProperty(componentType, key)).map(({key,label,min,max})=>number(key,label,min,max))}
           {appearanceChoiceFields.filter(({key})=>supportsAppearanceProperty(componentType,key)).map(({key,label,options})=>
             <label className="form-label" key={key}>{label}<select className="form-control" value={visual[key]}
               onChange={event=>set(key,event.target.value as VisualProperties[typeof key])}>
