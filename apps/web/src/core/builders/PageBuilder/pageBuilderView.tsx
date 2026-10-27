@@ -2164,16 +2164,14 @@ function PageBuilder({
               })}</div><span>{group}</span></div>)}
           </>}
           {selected && ribbonTab === 'Component Properties' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
-            <label>Label <input aria-label="Component label" value={selected.label} onChange={event=>updateComponent(selected.id,{label:event.target.value})}/></label>
+            <label className="office-ribbon-inline-field">Label <input aria-label="Component label" value={selected.label} onChange={event=>updateComponent(selected.id,{label:event.target.value})}/></label>
+            {(/text/i.test(selected.type) || /text/i.test(selected.label)) && selected.type!=='Rich Text' && <label className="office-ribbon-inline-field">Text <input aria-label="Component text" value={String(selected.properties.text??selected.properties.content??'')} onChange={event=>{const key=typeof selected.properties.content==='string'?'content':'text';updateComponent(selected.id,{properties:{...selected.properties,[key]:event.target.value}});}}/></label>}
             <button disabled={isCanvasLocked(selected)} onClick={removeSelected}><Trash2 size={16}/> Delete block</button>
-          </div><span>Content & appearance</span></div>}
-          {selected && ribbonTab === 'Component Data' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
-            <button onClick={()=>openComponentInspector('Data & Actions')}><Database size={16}/> Data bindings</button>
-            <button onClick={()=>openComponentInspector('Data & Actions')}><Workflow size={16}/> Conditions</button>
-          </div><span>Data</span></div>}
+          </div><span>Content</span></div>}
+
           {selected && ribbonTab === 'Component Action' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
-            <button onClick={()=>openComponentInspector('Visibility')}><Workflow size={16}/> Actions & events</button>
-            <button onClick={()=>openComponentInspector('Visibility')}><Eye size={16}/> Visibility rules</button>
+            <label className="office-ribbon-checkbox"><input type="checkbox" checked={selected.visible} onChange={event=>updateComponent(selected.id,{visible:event.target.checked})}/> Show block</label>
+            <button type="button" disabled={isCanvasLocked(selected)} onClick={()=>updateComponent(selected.id,{properties:{...selected.properties,canvasLocked:!selected.properties.canvasLocked}})}><Lock size={16}/> {selected.properties.canvasLocked?'Unlock':'Lock'} canvas</button>
           </div><span>Behaviour</span></div>}
           {selected && ribbonTab === 'Component Layout' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
             <button onClick={()=>openComponentInspector('Position')}><Layers3 size={16}/> Position & size</button>
@@ -2193,7 +2191,7 @@ function PageBuilder({
             </div><span>Preview</span></div>
           </>}
           {ribbonTab === 'Add Block' && <div className="office-ribbon-library office-ribbon-group" aria-label="Component library"><select aria-label="Block category" value={paletteCategory} onChange={event=>setPaletteCategory(event.target.value as typeof paletteCategory)}>{pageBuilderPaletteCategories.map(category=><option key={category} value={category}>{pageBuilderCategoryLabels[category]}</option>)}</select><div className="office-ribbon-library-items">{filteredPaletteComponents.map(component=><button type="button" key={component.id} title={component.description} onClick={()=>addPaletteComponent(component.type)}>{renderPaletteIcon(component)}{component.label}</button>)}{page.pageType==='Record Page'&&fields.map(field=><button type="button" key={field.apiName} onClick={()=>addField(field.apiName)}><Database size={13}/>{field.label}</button>)}</div><span>More blocks</span></div>}
-          <div className="office-ribbon-inspector-host" ref={setRibbonPropertyHost} aria-label="Ribbon property controls" />
+          {(ribbonTab === 'Home' || ribbonTab.startsWith('Component ')) && <div className="office-ribbon-inspector-host" ref={setRibbonPropertyHost} aria-label="Ribbon property controls" />}
         </div>
       </section>
       {showWelcome && <section className="builder-quickstart" aria-label="Getting started with Page Builder">
@@ -2262,11 +2260,6 @@ function PageBuilder({
         </div>
         {ribbonPropertyHost && createPortal(<aside id="lightning-page-properties" style={ribbonTab !== 'Home' && !ribbonTab.startsWith('Component ') ? { display: 'none' } : undefined}
           className={`properties-panel reference-properties-panel ${pageSettingsOpen || selected ? 'responsive-open' : ''}`}>
-          <div className="properties-header"><Grid2X2 size={19} color="#0866e9"/><h2>{selectedRegion && !pageSettingsOpen && activePanel !== 'page' ? `${selectedRegion.toUpperCase()} section` : pageSettingsOpen || !selected || activePanel === 'page' ? 'Page settings' : selected.label}</h2>
-            <button type="button" className="icon-button subtle" aria-label="Collapse panel" title="Collapse panel" onClick={() => setActivePanel(null)}><X size={16}/></button>
-            {selected && !pageSettingsOpen && activePanel !== 'page' && <button className="icon-button subtle"
-              onClick={removeSelected} aria-label="Remove component" title={isCanvasLocked(selected)?'Unlock before deleting':'Delete component'}
-              disabled={isCanvasLocked(selected)}><Trash2 size={15}/></button>}</div>
           {selectedRegion && !pageSettingsOpen && activePanel !== 'page' ? <div className="properties-section">
             <div className="properties-section-title">Section configuration</div>
             <p className="properties-help">Sections are responsive layout regions. Change the arrangement without deleting any blocks.</p>
@@ -2346,14 +2339,11 @@ function PageBuilder({
                 }} />
             </>}
             {inspectorTab === 'Design' && selectedCustomDefinition && <ComponentPresentationProperties
-              definitions={availableComponentSettings(selectedCustomDefinition.propertyDefinitions??[],page.layoutVariant??'Desktop',selectedCustomDefinition.version)} properties={selected.properties}
+              definitions={availableComponentSettings(selectedCustomDefinition.propertyDefinitions??[],page.layoutVariant??'Desktop',selectedCustomDefinition.version).filter(definition=>/(?:colou?r|background|fill|opacity)/i.test(definition.propertyKey) === (ribbonTab==='Component Style'))} properties={selected.properties}
               onChange={(properties) => updateComponent(selected.id, {properties})}/>}
-            {inspectorTab === 'Design' && <PageComponentVisualEditor componentType={selected.type} value={selected.properties.visualStyle} onChange={(visualStyle) => updateComponent(selected.id, { properties: { ...selected.properties, visualStyle } })} />}
-            {inspectorTab === 'Design' && <details className="visual-advanced-properties">
-              <summary>More appearance options</summary>
-              <PageComponentStyleEditor componentType={selected.type} properties={selected.properties}
-                onChange={(properties: Record<string, unknown>) => updateComponent(selected.id, { properties })} />
-            </details>}
+            {inspectorTab === 'Design' && <PageComponentVisualEditor section={ribbonTab==='Component Style'?'colors':'layout'} componentType={selected.type} value={selected.properties.visualStyle} onChange={(visualStyle) => updateComponent(selected.id, { properties: { ...selected.properties, visualStyle } })} />}
+            {inspectorTab === 'Design' && <PageComponentStyleEditor section={ribbonTab==='Component Style'?'colors':'layout'} componentType={selected.type} properties={selected.properties}
+                onChange={(properties: Record<string, unknown>) => updateComponent(selected.id, { properties })} />}
             {inspectorTab === 'Data & Actions' && <>
             {selected.parentId && <button type="button" className="btn btn-small" onClick={() => updateComponent(selected.id, { parentId: undefined })}>Move out of section</button>}
             {selectedCustomDefinition && <>
@@ -2739,7 +2729,6 @@ function PageBuilder({
               </label>
             </>}
             </>}
-            <button className="btn btn-full" onClick={() => setActivePanel(null)}>Done</button>
             </>}
           </> : <>
             <p className="properties-help">Edit page details and activation assignments. The related object and device layout are fixed at creation.</p>
