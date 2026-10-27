@@ -1768,7 +1768,7 @@ export default function FlowBuilder({
       ref={workareaRef} style={{ gridTemplateColumns:phoneFlow?'minmax(0, 1fr)':`minmax(0, 1fr) 8px ${clampPropertiesWidth(propertiesWidth)}px` }}>
       <aside className="flow-toolbox flow-manager-workspace" data-ribbon-open={ribbonTab==='Manager'?'true':'false'} style={{right:phoneFlow?0:clampPropertiesWidth(propertiesWidth)+8}}>
   <div className="flow-manager-workspace-heading">
-    <div><strong>${({overview:'Flow Management',versions:'Version History',portability:'Import & Export',tests:'Flow Tests',details:'Flow Details','new-flow':'Create a Flow',events:'Platform Events',resources:'Resources',credentials:'Named Credentials',alerts:'Email Alerts'} as const)[managerSection]} </strong><small>Manage flow settings without leaving the builder</small></div>
+    <div><strong>{({overview:'Flow Management',versions:'Version History',portability:'Import & Export',tests:'Flow Tests',details:'Flow Details','new-flow':'Create a Flow',events:'Platform Events',resources:'Resources',credentials:'Named Credentials',alerts:'Email Alerts'} as const)[managerSection]} </strong><small>Manage flow settings without leaving the builder</small></div>
     <button className="btn btn-small" onClick={()=>setRibbonTab('Home')}><X size={14}/>Close Manager</button>
   </div>
   <div className="resource-list flow-manager-workspace-body">
