@@ -230,6 +230,7 @@ export function MetadataComponentProperties({ properties, objects, apps, pages, 
   const [detailsPopup,setDetailsPopup] = useState(false);
   const [conditionsPopup,setConditionsPopup] = useState(false);
   const [filterDraft,setFilterDraft] = useState<Record<string,unknown[]>>({});
+  const [filterLogicDraft,setFilterLogicDraft] = useState<'AND'|'OR'>('AND');
   const [fieldSearch, setFieldSearch] = useState<Record<string,string>>({});
   const [advancedDraft, setAdvancedDraft] = useState('');
   const [advancedError, setAdvancedError] = useState('');
@@ -275,7 +276,7 @@ export function MetadataComponentProperties({ properties, objects, apps, pages, 
     return Array.isArray(value) ? value : [];
   };
   const sourceKeys = new Set(['libraryComponentId', 'targetObject', 'flowApiName',
-    'actionFlows', 'pagePropertyContract', 'columns', 'rowActions', 'stateBindings', 'layoutContainer', 'layoutParentId', 'layoutStyle', 'layoutResponsive']);
+    'actionFlows', 'pagePropertyContract', 'columns', 'rowActions', 'stateBindings', 'filterLogic', 'layoutContainer', 'layoutParentId', 'layoutStyle', 'layoutResponsive']);
   const isObjectBinding = (key: string) => key === 'objectApiName' || key.endsWith('ObjectApiName');
   const isField = (key: string) => /(?:Field|FieldApiName)$/.test(key);
   const isFilter = (key: string) => key === 'filters' || key.endsWith('Filters');
@@ -319,8 +320,8 @@ export function MetadataComponentProperties({ properties, objects, apps, pages, 
   const filterKeys=Array.from(new Set(['filters',...Object.keys(properties).filter(isFilter)]));
   const totalFilters=filterKeys.reduce((count,key)=>count+listProperty(key).length,0);
   const editorProps={properties,objects,apps,pages,currentAppId,flows,onChange,definitions,device,componentVersion,eventDefinitions,primaryObjectApiName,pageComponents,componentCatalog};
-  const openFilterPopup=()=>{setFilterDraft(Object.fromEntries(filterKeys.map(key=>[key,[...listProperty(key)]])));setFilterPopup(true);};
-  const applyFilters=()=>{onChange({...properties,...filterDraft});setFilterPopup(false);};
+  const openFilterPopup=()=>{setFilterDraft(Object.fromEntries(filterKeys.map(key=>[key,[...listProperty(key)]])));setFilterLogicDraft(properties.filterLogic==='OR'?'OR':'AND');setFilterPopup(true);};
+  const applyFilters=()=>{onChange({...properties,...filterDraft,filterLogic:filterLogicDraft});setFilterPopup(false);};
   return <div className="metadata-component-properties">
     {(mode==='all'||mode==='data') && <section className="office-ribbon-data-section" aria-label="Connect data"><div className="office-ribbon-group-heading">Connect data</div>
       <p className="properties-help">Choose an object, then select fields and how records are displayed. These options use the shared data engine.</p>
@@ -628,6 +629,11 @@ export function MetadataComponentProperties({ properties, objects, apps, pages, 
       <section className="modal office-ribbon-config-modal" role="dialog" aria-modal="true" aria-label="Configure record filters">
         <div className="modal-header"><h2>Configure record filters</h2><button type="button" className="icon-button" aria-label="Close filters" onClick={()=>setFilterPopup(false)}><X size={16}/></button></div>
         <div className="office-ribbon-modal-content">
+          <label className="form-label">Match conditions
+            <select className="form-control" aria-label="Filter AND or OR logic" value={filterLogicDraft} onChange={event=>setFilterLogicDraft(event.target.value as 'AND'|'OR')}>
+              <option value="AND">All conditions (AND)</option><option value="OR">Any condition (OR)</option>
+            </select>
+          </label>
           {filterKeys.map(key=><RecordFilterEditor key={key} title={key==='filters'?'Record filters':labelFor(key)} fields={fieldsFor(key)}
             filters={filterDraft[key]??[]} onChange={next=>setFilterDraft(draft=>({...draft,[key]:next}))}/>)}
         </div>
