@@ -128,6 +128,7 @@ import ComponentLibrary from '../../components/ComponentLibrary/ComponentLibrary
 import RegisteredComponent from '../../components/RegisteredComponent/RegisteredComponent';
 import CustomComponentPropertyEditor from '../ComponentProperties/CustomComponentPropertyEditor';
 import ComponentPresentationProperties from '../ComponentProperties/ComponentPresentationProperties';
+import MetadataCollectionEditor from '../ComponentProperties/MetadataCollectionEditor';
 import {presentationSection,isPresentationProperty} from '../ComponentProperties/presentationPropertyModel.mjs';
 import FlowInputBindingEditor from '../FlowInputBindingEditor/FlowInputBindingEditor';
 import RecordFilterEditor from '../../../one/OneRecordFilterEditor/RecordFilterEditor';
@@ -2350,6 +2351,13 @@ function PageBuilder({
                 objects.find(object=>object.apiName===selected.properties.objectApiName)?.fields??[])}
             </button>
           </div><span>Source & filters</span></div>}
+          {selected && ribbonTab==='Component Content' && selectedCustomDefinition
+            && (selectedCustomDefinition.propertyDefinitions??[]).some(definition=>definition.kind==='COLLECTION') &&
+            <div className="office-ribbon-group"><div className="office-ribbon-stack">
+              <button type="button" onClick={()=>openExpandedEditor('content')}>
+                <List size={16}/> Edit content rows
+              </button>
+            </div><span>Content lists</span></div>}
           {selected && ribbonTab === 'Component Content' && selectedCustomDefinition?.apiName!=='une_item_grid'
             && selectedCustomDefinition && <div className="office-ribbon-inline-options">
               <ComponentPresentationProperties
@@ -2632,6 +2640,13 @@ function PageBuilder({
                 ===(expandedRibbonEditor.kind==='partLayout'?'Layout':'Design')).slice(3)}
             properties={selected.properties}
             onChange={properties=>updateComponent(selected.id,{properties})}/>}
+          {expandedRibbonEditor.kind==='content' && (selectedCustomDefinition?.propertyDefinitions??[])
+            .filter(definition=>definition.kind==='COLLECTION')
+            .map(definition=><MetadataCollectionEditor key={definition.propertyKey}
+              definition={definition}
+              value={selected.properties[definition.propertyKey]}
+              fields={objects.find(object=>object.apiName===selected.properties.objectApiName)?.fields??fields}
+              onChange={next=>updateComponent(selected.id,{properties:{...selected.properties,[definition.propertyKey]:next}})}/>)}
           {expandedRibbonEditor.kind==='content' && selectedCustomDefinition?.apiName==='une_item_grid' && <div className="page-ribbon-part-content">
             <p className="properties-help">Each card uses the mapped fields in the Content ribbon. These options control how the selected record is displayed.</p>
             {([
