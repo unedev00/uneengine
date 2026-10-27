@@ -5,6 +5,7 @@ import { useFormFactor } from '../../workspace/Responsive/useFormFactor';
 import './MobileBuilderReadMode.css';
 import {confirmDestructiveAction} from '../../components/ConfirmAction/confirmDestructiveAction';
 import './PageBuilderNoCode.css';
+import './PageBuilderRibbonGallery.css';
 import '../../pages/TemplatePageRuntime/pageComponentAppearance.css';
 import '../SharedBuilderFrame/adaptiveBuilder.css';
 import { libraryComponentLabel } from '../../components/Registry/componentLibraryDiscovery';
