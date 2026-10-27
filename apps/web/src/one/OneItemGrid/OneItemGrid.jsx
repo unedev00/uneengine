@@ -84,6 +84,24 @@ function ItemGrid({ p, rows }) {
   const featuredField = String(p.featuredFieldApiName || "").trim();
   const descriptionField = String(p.descriptionFieldApiName || "").trim();
   const badgeField = String(p.badgeFieldApiName || "").trim();
+  const detailRows = Array.isArray(p.detailRows) ? p.detailRows.filter(row=>
+    row && typeof row === "object" && !Array.isArray(row)
+    && /^[A-Za-z][A-Za-z0-9_]*$/.test(String(row.fieldApiName||""))).slice(0,20) : [];
+  const formatDetail = (value,row) => {
+    if(value===null||value===undefined||value==="")return String(row.fallback??"");
+    const type=String(row.format||"Auto");
+    try {
+      if(type==="Number"&&Number.isFinite(Number(value)))return new Intl.NumberFormat().format(Number(value));
+      if(type==="Percent"&&Number.isFinite(Number(value)))
+        return new Intl.NumberFormat(undefined,{maximumFractionDigits:2}).format(Number(value))+"%";
+      if(type==="Date"){
+        const parsed=new Date(value);
+        if(!Number.isNaN(parsed.getTime()))return new Intl.DateTimeFormat().format(parsed);
+      }
+      if(type==="Money")return currency(value);
+    }catch{ /* A badly formatted row never crashes its cards. */ }
+    return view(value);
+  };
   const safeField = (field) => !field || /^[A-Za-z][A-Za-z0-9_]*$/.test(field);
   if (![activeField, sortField, featuredField, descriptionField, badgeField].every(safeField))
     return <div role="alert">Choose valid display and sorting fields.</div>;
@@ -128,6 +146,30 @@ function ItemGrid({ p, rows }) {
   const cardMinHeight = Number(p.cardMinHeight);
   const cardBorderWidth = Number(p.cardBorderWidth);
   const imageHeight = Number(p.imageHeight);
+  const imageWidth = Number(p.imageWidth);
+  const boundedSize = (value,maximum=96) => {
+    const number=Number(value);
+    return Number.isFinite(number)&&number>=8&&number<=maximum?number:undefined;
+  };
+  const textStyleFor = (part) => {
+    const lineLimit = Number(p[part+"LineLimit"]);
+    const limit = Number.isInteger(lineLimit)&&lineLimit>0&&lineLimit<=12?lineLimit:0;
+    const fontWeight = Number(p[part+"FontWeight"]);
+    const alignment = p[part+"TextAlign"];
+    return {
+      fontSize:boundedSize(p[part+"FontSize"]),
+      color:typeof p[part+"Color"]==="string"&&p[part+"Color"]?p[part+"Color"]:undefined,
+      fontWeight:Number.isInteger(fontWeight)&&fontWeight>=100&&fontWeight<=900?fontWeight:undefined,
+      textAlign:["left","center","right"].includes(alignment)?alignment:undefined,
+      display:limit?"-webkit-box":undefined,
+      WebkitBoxOrient:limit?"vertical":undefined,
+      WebkitLineClamp:limit||undefined,
+      overflow:limit?"hidden":undefined,
+    };
+  };
+  const headingStyle=textStyleFor("heading");
+  const supportingStyle=textStyleFor("description");
+  const valueStyle=textStyleFor("value");
   const cardShadow = {
     none: "none",
     small: "0 1px 3px rgba(15, 23, 42, 0.12)",
@@ -166,7 +208,11 @@ function ItemGrid({ p, rows }) {
           const rowSpan = isFeatured ? Math.max(1, Math.min(6, Number(p.featuredRowSpan) || 1)) : 1;
           const imageStyle = {
             display: "block",
-            width: "100%",
+            width: Number.isFinite(imageWidth) && imageWidth > 0 ? Math.min(900,imageWidth) : "100%",
+            maxWidth: "100%",
+            borderRadius: p.imageShape==="circle" ? "50%" : p.imageShape==="rounded" ? 12 : 0,
+            marginInline: p.imagePosition==="center" ? "auto" : p.imagePosition==="right" ? "0" : undefined,
+            marginLeft: p.imagePosition==="right" ? "auto" : undefined,
             height: Number.isFinite(imageHeight) && imageHeight > 0
               ? Math.min(900, imageHeight)
               : density === "image-focused" ? 150 : undefined,
@@ -185,6 +231,9 @@ function ItemGrid({ p, rows }) {
             minHeight: Number.isFinite(cardMinHeight) && cardMinHeight > 0
               ? Math.min(1200, cardMinHeight)
               : undefined,
+            width:Number.isFinite(Number(p.cardWidth))&&Number(p.cardWidth)>0
+              ?Math.min(1200,Number(p.cardWidth)):undefined,
+            maxWidth:"100%",
             backgroundColor: typeof p.cardBackgroundColor === "string" ? p.cardBackgroundColor : undefined,
             borderColor: typeof p.cardBorderColor === "string" ? p.cardBorderColor : undefined,
             borderWidth: Number.isFinite(cardBorderWidth) && cardBorderWidth >= 0
@@ -192,19 +241,17 @@ function ItemGrid({ p, rows }) {
               : undefined,
             boxShadow: cardShadow,
           };
-          return (
-            <button
-              className={
-                "one-item one-item--interactive md-product-card md-product-card--" + density +
-                (["lift", "highlight"].includes(p.cardHover) ? " md-product-card--hover-" + p.cardHover : "")
-              }
-              style={cardStyle}
-              key={r.Id ?? r.id ?? i}
-              type="button"
-              aria-label={(p.selectionBehavior === "add" ? "Add " : "Select ") + name}
-              onClick={() => {
+          const hasSeparateAddButton=p.showAddIcon===true&&p.separateAddButton===true;
+          const addSelectedRecord=()=>{
+            if(p.cartTargetKey&&p.pageSessionKey&&typeof window!=="undefined")
+              window.dispatchEvent(new CustomEvent("metadrive:page-cart-add",{
+                detail:{pageSessionKey:p.pageSessionKey,cartTargetKey:p.cartTargetKey,record:r}
+              }));
+            if(p.actionFlows?.itemAdd)fire(p,"itemAdd",r);
+          };
+          const activateCard=()=>{
                 const behavior=p.selectionBehavior || "add";
-                if (behavior==="add" && p.cartTargetKey && p.pageSessionKey
+                if (behavior==="add" && !hasSeparateAddButton && p.cartTargetKey && p.pageSessionKey
                   && typeof window !== "undefined")
                   window.dispatchEvent(
                     new CustomEvent("metadrive:page-cart-add", {
@@ -237,6 +284,23 @@ function ItemGrid({ p, rows }) {
                       key:p.selectionFilterKey||"selectedRecord",value:String(r.Id??r.id??"")}
                   }));
                 if (p.actionFlows?.itemSelect) fire(p, "itemSelect", r);
+
+          };
+          return (
+            <div
+              role="button"
+              tabIndex={0}
+              className={
+                "one-item one-item--interactive md-product-card md-product-card--" + density +
+                (["lift", "highlight"].includes(p.cardHover) ? " md-product-card--hover-" + p.cardHover : "")
+              }
+              style={cardStyle}
+              key={r.Id ?? r.id ?? i}
+              aria-label={(p.selectionBehavior === "add" && !hasSeparateAddButton ? "Add " : "Select ") + name}
+              onClick={activateCard}
+              onKeyDown={event=>{
+                if(event.target!==event.currentTarget)return;
+                if(event.key==='Enter'||event.key===' '){event.preventDefault();activateCard();}
               }}
             >
               {p.showImage !== false && validImage && (
@@ -249,23 +313,39 @@ function ItemGrid({ p, rows }) {
                   style={imageStyle}
                 />
               )}
+              {p.showImage !== false && !validImage && p.missingImageBehavior==="placeholder" && (
+                <span className="md-product-image md-card-image-missing" style={imageStyle} role="img" aria-label="Image unavailable">No image</span>
+              )}
               {badge && <span className="md-product-badge" style={{display:"inline-block",
                 padding:"3px 8px",borderRadius:999,background:p.accentColor||"#E4002B",
                 color:"#fff",fontSize:"0.75em",fontWeight:700}}>{badge.slice(0,60)}</span>}
               {p.showTitle !== false && (
-                <strong className="md-product-name">{name}</strong>
+                <strong className="md-product-name" style={headingStyle}>{name}</strong>
               )}
               {p.showDescription === true && description &&
-                <small className="one-muted md-product-description">{description.slice(0,220)}</small>}
+                <small className="one-muted md-product-description" style={supportingStyle}>{description.slice(0,220)}</small>}
+              {detailRows.length>0 && <dl className="md-card-detail-rows">
+                {detailRows.map((detail,index)=>{
+                  const raw=r?.[detail.fieldApiName];
+                  const display=formatDetail(raw,detail);
+                  if((raw===null||raw===undefined||raw==="")&&!String(detail.fallback??""))return null;
+                  return <div className="md-card-detail-row" key={detail.fieldApiName+"-"+index}>
+                    <dt>{String(detail.label||detail.fieldApiName)}</dt>
+                    <dd>{display}</dd>
+                  </div>;
+                })}
+              </dl>}
               {p.showPrice !== false && price != null && (
-                <span className="md-product-price">{currency(price)}</span>
+                <span className="md-product-price" style={valueStyle}>{currency(price)}</span>
               )}
-              {p.showAddIcon === true && (
-                <span className="md-card-add-icon" aria-hidden="true">
-                  ＋
-                </span>
+              {p.showAddIcon === true && (hasSeparateAddButton
+                ? <button type="button" className="md-card-add-icon" aria-label={"Add "+name}
+                    onClick={event=>{event.stopPropagation();addSelectedRecord();}}>
+                    ＋
+                  </button>
+                : <span className="md-card-add-icon" aria-hidden="true">＋</span>
               )}
-            </button>
+            </div>
           );
         })}
       </div>

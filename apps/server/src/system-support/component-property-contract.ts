@@ -14,6 +14,9 @@ export type ComponentSettingDefinition = {
  min?:number; max?:number; maxLength?:number; minItems?:number; maxItems?:number;
  schemaVersion?:number; sinceVersion?:number; devices?:readonly PropertyDevice[];
  helpText?:string;
+ /** Ribbon journey tab and selected component part. Stable persisted property keys are unchanged. */
+ section?:'Data'|'Content'|'Design'|'Layout'|'Actions'|'Responsive'|'Appearance'|string;
+ group?:string;
 };
 export type PropertyIssue={path:string;message:string};
 const keyPattern=/^[A-Za-z][A-Za-z0-9_]{0,127}$/;
@@ -98,6 +101,9 @@ export function validateComponentDefinitions(raw:unknown):PropertyIssue[]{
    if(d.min!==undefined&&d.max!==undefined&&d.min>d.max||d.minItems!==undefined&&d.maxItems!==undefined&&d.minItems>d.maxItems)issues.push({path:p,message:'Minimum exceeds maximum'});
    if(d.devices!==undefined&&(!Array.isArray(d.devices)||!d.devices.length||new Set(d.devices).size!==d.devices.length||d.devices.some(x=>!['Mobile','Desktop','Tablet','Custom'].includes(x))))issues.push({path:p,message:'Invalid device list'});
    if(d.helpText!==undefined&&(typeof d.helpText!=='string'||d.helpText.length>2000))issues.push({path:p,message:'Invalid help text'});
+   for(const name of ['section','group'] as const)
+    if(d[name]!==undefined&&(typeof d[name]!=='string'||!d[name]!.trim()||d[name]!.length>100))
+     issues.push({path:p+'.'+name,message:'Choose a readable ribbon section or component part (up to 100 characters)'});
    if(d.kind==='SELECT'&&(!Array.isArray(d.choices)||!d.choices.length||d.choices.length>500||d.choices.some(c=>!isPropertyRecord(c)||typeof c.key!=='string'||typeof c.label!=='string')||new Set(d.choices.map(c=>c.key)).size!==d.choices.length))issues.push({path:p,message:'Invalid choices'});
    if(d.kind==='GROUP'||d.kind==='COLLECTION')issues.push(...walk(d.fields,p+'.fields',depth+1));
    else if(d.fields!==undefined)issues.push({path:p,message:'Only groups and collections have fields'});
