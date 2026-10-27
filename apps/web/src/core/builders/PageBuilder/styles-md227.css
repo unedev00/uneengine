@@ -516,3 +516,38 @@
  .builder-editor-mode .reference-builder-layout .builder-icon-rail > button {width:58px;}
  .builder-editor-mode .reference-builder-layout .reference-properties-panel {position:absolute;right:0;top:0;bottom:0;width:min(340px,78vw);z-index:20;box-shadow:-8px 0 25px #14233b1c;}
 }
+
+/* The screenshot's six-button vertical ribbon is the sole primary navigation. */
+.builder-editor-mode .reference-builder-layout .builder-icon-rail {justify-content:flex-start;gap:10px;overflow-y:auto;}
+.builder-editor-mode .reference-builder-layout .builder-icon-rail > button {flex-shrink:0;min-height:76px;border-radius:12px;transition:background .15s,color .15s;}
+.builder-editor-mode .reference-builder-layout .builder-icon-rail > button.active,
+.builder-editor-mode .reference-builder-layout .builder-icon-rail > button[aria-pressed="true"] {background:#0869e9;color:#fff;box-shadow:0 4px 10px #0663e41a;}
+.builder-editor-mode .reference-builder-layout .component-panel {padding:0 12px 22px;}
+.builder-editor-mode .reference-builder-layout .builder-panel-collapse-row {padding:13px 12px;min-height:58px;}
+.builder-editor-mode .reference-builder-layout .builder-panel-collapse-row strong {font-size:17px;font-weight:750;color:#15253e;}
+.builder-editor-mode .reference-builder-layout .reference-home-intro {padding:5px 12px 17px;font-size:12px;line-height:1.6;color:#687991;}
+.builder-editor-mode .reference-builder-layout .reference-insert-section {padding:0 10px 12px;}
+.builder-editor-mode .reference-builder-layout .reference-insert-section h3 {margin:12px 0 9px;font-size:12px;font-weight:750;color:#243650;}
+.builder-editor-mode .reference-builder-layout .reference-quick-insert {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}
+.builder-editor-mode .reference-builder-layout .reference-quick-insert button {min-width:0;min-height:78px;border:1px solid #e1e7f0;border-radius:10px;background:#f9fbfe;color:#1c365a;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;font:600 11px "Segoe UI",sans-serif;}
+.builder-editor-mode .reference-builder-layout .reference-quick-insert button svg {color:#0869e9;}
+.builder-editor-mode .reference-builder-layout .reference-quick-insert button:hover {border-color:#0871ee;background:#edf5ff;}
+.builder-editor-mode .reference-builder-layout .reference-quick-insert button:disabled {opacity:.42;cursor:not-allowed;}
+.builder-editor-mode .reference-builder-layout .reference-page-commands {display:grid;gap:5px;margin-bottom:9px;}
+.builder-editor-mode .reference-builder-layout .reference-page-commands button {border:0;background:#fff;text-align:left;display:flex;align-items:center;gap:10px;color:#31445f;padding:10px;border-radius:7px;cursor:pointer;}
+.builder-editor-mode .reference-builder-layout .reference-page-commands button:hover {background:#edf5ff;}
+.builder-editor-mode .reference-builder-layout .component-search {margin-top:8px;}
+/* The reference inspector has three primary tabs; advanced positioning remains available from the ribbon. */
+.builder-editor-mode .reference-builder-layout .reference-inspector-tabs {grid-template-columns:repeat(3,minmax(0,1fr));margin:0 -14px 15px;}
+.builder-editor-mode .reference-builder-layout .reference-inspector-tabs button {min-height:48px;font:600 12px "Segoe UI",sans-serif;padding:10px 3px;color:#556984;}
+.builder-editor-mode .reference-builder-layout .reference-inspector-tabs button.active {color:#0668e9;}
+.builder-editor-mode .reference-builder-layout .reference-inspector-tabs button.reference-advanced-tab {display:none;}
+.builder-editor-mode .reference-builder-layout .reference-properties-panel {padding:16px 17px 28px;background:#fff;}
+.builder-editor-mode .reference-builder-layout .reference-properties-panel .properties-header {padding:0 0 17px;margin-bottom:10px;}
+.builder-editor-mode .reference-builder-layout .reference-properties-panel .properties-header h2 {font-size:18px;letter-spacing:-.03em;}
+.builder-editor-mode .reference-builder-layout .reference-properties-panel .properties-section {border:1px solid #e6ebf3;border-radius:11px;padding:12px;margin:10px 0;background:#fff;}
+.builder-editor-mode .reference-builder-layout .reference-properties-panel .properties-section-title {border-radius:7px;padding:11px 12px;font-size:12px;letter-spacing:.02em;}
+.builder-editor-mode .reference-builder-layout .reference-properties-panel .form-control {border:1px solid #d9e2ef;border-radius:8px;min-height:39px;background:#fff;color:#263953;}
+.builder-editor-mode .reference-builder-layout .reference-properties-panel .form-label {font-size:12px;font-weight:600;color:#31445e;}
+.builder-editor-mode .reference-builder-layout .reference-properties-panel details {border-color:#e4eaf3;border-radius:10px;}
+.builder-editor-mode .reference-builder-layout .reference-properties-panel summary {font-weight:700;color:#243751;}
