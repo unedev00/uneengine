@@ -437,6 +437,7 @@ function PageBuilder({
   } | null>(null);
   const [showLayers, setShowLayers] = useState(false);
   const [inspectorTab, setInspectorTab] = useState<'Design' | 'Data & Actions' | 'Visibility' | 'Position'>('Design');
+  const [ribbonPropertyHost, setRibbonPropertyHost] = useState<HTMLDivElement | null>(null);
   const [ribbonTab, setRibbonTab] = useState<'Home' | 'Add Block' | 'Component Properties' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Preview'>('Home');
   const selectRibbonTab = (tab: typeof ribbonTab) => {
     setRibbonTab(tab);
@@ -2218,6 +2219,7 @@ function PageBuilder({
               <button onClick={()=>{setPageSettingsOpen(true);setActivePanel('page');}}><Settings2 size={17}/> Preview settings</button>
             </div><span>Preview</span></div>
           </>}
+          <div className="office-ribbon-inspector-host" ref={setRibbonPropertyHost} aria-label="Ribbon property controls" />
         </div>
       </section>
       {showWelcome && <section className="builder-quickstart" aria-label="Getting started with Page Builder">
@@ -2411,7 +2413,7 @@ function PageBuilder({
             </div>
           </div>
         </div>
-        <aside id="lightning-page-properties" style={activePanel !== 'properties' && activePanel !== 'page' ? { display: 'none' } : undefined}
+        {ribbonPropertyHost && createPortal(<aside id="lightning-page-properties" style={ribbonTab !== 'Home' && !ribbonTab.startsWith('Component ') ? { display: 'none' } : undefined}
           className={`properties-panel reference-properties-panel ${pageSettingsOpen || selected ? 'responsive-open' : ''}`}>
           <div className="properties-header"><Grid2X2 size={19} color="#0866e9"/><h2>{selectedRegion && !pageSettingsOpen && activePanel !== 'page' ? `${selectedRegion.toUpperCase()} section` : pageSettingsOpen || !selected || activePanel === 'page' ? 'Page settings' : selected.label}</h2>
             <button type="button" className="icon-button subtle" aria-label="Collapse panel" title="Collapse panel" onClick={() => setActivePanel(null)}><X size={16}/></button>
@@ -2429,20 +2431,6 @@ function PageBuilder({
             }}><Trash2 size={15}/> Remove section</button>}
             {selectedRegion === 'main' && <p className="properties-help">The Main section is required and cannot be deleted. Change the section arrangement to remove optional regions.</p>}
           </div> : selected && !pageSettingsOpen && activePanel !== 'page' ? <>
-            <div className="modern-inspector-tabs reference-inspector-tabs" role="tablist" aria-label="Component inspector">
-              {(['Design', 'Data & Actions', 'Visibility', 'Position'] as const).map(tab => {
-                const config = {
-                  Design: { label: 'Properties', Icon: Pencil },
-                  'Data & Actions': { label: 'Data', Icon: Database },
-                  Visibility: { label: 'Actions', Icon: Workflow },
-                  Position: { label: 'Advanced', Icon: Layers3 }
-                }[tab];
-                return <button key={tab} type="button" role="tab" title={config.label}
-                  aria-label={config.label} aria-selected={inspectorTab === tab}
-                  className={`${inspectorTab === tab ? 'active' : ''} ${tab === 'Position' ? 'reference-advanced-tab' : ''}`}
-                  onClick={() => setInspectorTab(tab)}><config.Icon size={17}/><span>{config.label}</span></button>;
-              })}
-            </div>
             {inspectorTab === 'Position' ? <div className="canvas-position-editor">
               <div className="properties-section-title">Arrange</div>
               <div className="canvas-align-choices">
@@ -3193,7 +3181,7 @@ function PageBuilder({
             <p className="properties-help">Device, dimensions and orientation are selected when creating a page. Create another page for a different layout size.</p>
             <div className="page-property-summary"><strong>{page.components.length}</strong> components</div>
           </>}
-        </aside>
+        </aside>, ribbonPropertyHost)}
       </div>
       </>}
       {!editorMode && pendingArchivePageApiName && (() => {
