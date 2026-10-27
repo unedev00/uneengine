@@ -794,3 +794,14 @@
 .office-builder-ribbon .office-ribbon-advanced-popover>.office-ribbon-group {
   min-width:180px;max-width:245px;
 }
+
+/* Match the Preview mockup's horizontal device chooser. */
+.office-builder-ribbon .office-ribbon-preview-device {min-width:300px}
+.office-builder-ribbon .office-ribbon-preview-device .office-ribbon-home-icon-row button[aria-pressed=true] {
+  background:#e2efff;color:#075bb9;border-radius:5px;
+}
+.office-builder-ribbon .office-ribbon-preview-device .office-ribbon-home-icon-row button[aria-pressed=true] svg {color:#0969d7}
+.office-builder-ribbon .office-ribbon-group .office-ribbon-stat {
+  display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  font-size:11px;max-width:210px;
+}
