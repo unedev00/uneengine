@@ -2160,43 +2160,14 @@ function PageBuilder({
             ['Home', Grid2X2, () => openPalette('Components','All Components')],
             ['Layout', PanelLeft, () => openPalette('Components','Layout')],
             ['Data', Database, () => openPalette('Components','Data')],
-            ['Appearance', Settings2, () => {setInspectorTab('Design');openComponentInspector();}],
-            ['Actions', Workflow, () => {setInspectorTab('Data & Actions');openComponentInspector();}],
-            ['Advanced', SlidersHorizontal, () => {setInspectorTab('Position');openComponentInspector();}]
+            ['Appearance', SlidersHorizontal, () => openComponentInspector('Design')],
+            ['Actions', Workflow, () => openComponentInspector('Visibility')],
+            ['Advanced', Settings2, () => openComponentInspector('Position')]
           ] as const).map(([label, Icon, action]) =>
             <button type="button" key={label} title={label} aria-label={label}
-              className={label === 'Home' && activePanel === 'palette' && paletteCategory === 'All Components' ? 'active' : ''}
+              aria-pressed={(label === 'Home' && activePanel === 'palette' && paletteCategory === 'All Components') || (label === 'Layout' && activePanel === 'palette' && paletteCategory === 'Layout') || (label === 'Data' && activePanel === 'palette' && paletteCategory === 'Data') || (label === 'Appearance' && activePanel === 'properties' && inspectorTab === 'Design') || (label === 'Actions' && activePanel === 'properties' && inspectorTab === 'Visibility') || (label === 'Advanced' && activePanel === 'properties' && inspectorTab === 'Position')}
+              className={((label === 'Home' && activePanel === 'palette' && paletteCategory === 'All Components') || (label === 'Layout' && activePanel === 'palette' && paletteCategory === 'Layout') || (label === 'Data' && activePanel === 'palette' && paletteCategory === 'Data') || (label === 'Appearance' && activePanel === 'properties' && inspectorTab === 'Design') || (label === 'Actions' && activePanel === 'properties' && inspectorTab === 'Visibility') || (label === 'Advanced' && activePanel === 'properties' && inspectorTab === 'Position')) ? 'active' : ''}
               onClick={action}><Icon size={21}/><span>{label}</span></button>)}
-          <div className="reference-builder-legacy-tools">
-          {([
-            ['All Components', Grid2X2, 'Blocks'],
-            ['Layout', PanelLeft, 'Sections'],
-            ['Display', FileText, 'Text & media'],
-            ['Inputs', SlidersHorizontal, 'Forms'],
-            ['Data', Database, 'Lists & data'],
-            ['Navigation', ArrowRight, 'Buttons'],
-            ['Favourites', Star, 'Favourites'],
-            ['Recent', RefreshCw, 'Recent']
-          ] as const).map(([category, Icon, label]) => <button type="button" key={category}
-            aria-label={label} title={label} aria-pressed={activePanel === 'palette' && paletteTab === 'Components' && paletteCategory === category}
-            className={activePanel === 'palette' && paletteTab === 'Components' && paletteCategory === category ? 'active' : ''}
-            onClick={() => activePanel === 'palette' && paletteTab === 'Components' && paletteCategory === category ? setActivePanel(null) : openPalette('Components', category)}>
-            <Icon size={19}/><span>{label}</span>
-          </button>)}
-          {page.pageType === 'Record Page' && <button type="button" title="Fields" aria-label="Fields"
-            aria-pressed={activePanel === 'palette' && paletteTab === 'Fields'}
-            className={activePanel === 'palette' && paletteTab === 'Fields' ? 'active' : ''}
-            onClick={() => openPalette('Fields')}><Database size={19}/><span>Fields</span></button>}
-          <button type="button" title="Layers" aria-label="Layers" aria-pressed={activePanel === 'palette' && paletteTab === 'Layers'}
-            className={activePanel === 'palette' && paletteTab === 'Layers' ? 'active' : ''}
-            onClick={() => openPalette('Layers')}><Layers3 size={19}/><span>Layers</span></button>
-          <button type="button" title="Element properties" aria-label="Element properties" aria-pressed={activePanel === 'properties'}
-            className={activePanel === 'properties' ? 'active' : ''} onClick={() => openComponentInspector()}>
-            <Settings2 size={19}/><span>Edit block</span></button>
-          <button type="button" title="Page settings" aria-label="Page settings" aria-pressed={activePanel === 'page'}
-            className={activePanel === 'page' ? 'active' : ''} onClick={() => {setPageSettingsOpen(true);setActivePanel('page');}}>
-            <SlidersHorizontal size={19}/><span>Page</span></button>
-          </div>
         </nav>
         <aside className="component-panel" style={activePanel !== 'palette' ? { display: 'none' } : undefined}>
           <div className="builder-panel-collapse-row"><strong>{paletteTab === 'Components' ? (paletteCategory === 'All Components' ? 'Home' : pageBuilderCategoryLabels[paletteCategory]) : paletteTab === 'Layers' ? 'Page structure' : paletteTab}</strong>
@@ -2208,6 +2179,24 @@ function PageBuilder({
             <button className={paletteTab === 'Layers' ? 'active' : ''} onClick={() => setPaletteTab('Layers')}>Layers</button>
             {page.pageType === 'Record Page' && <button className={paletteTab === 'Fields' ? 'active' : ''} onClick={() => setPaletteTab('Fields')}>Fields</button>}
           </div>
+          {paletteTab === 'Components' && paletteCategory === 'All Components' && <div className="reference-home-intro">Add, edit and organise content on your page</div>}
+          {paletteTab === 'Components' && paletteCategory === 'All Components' && <div className="reference-insert-section">
+            <h3>Insert</h3><div className="reference-quick-insert">
+              {([
+                ['Text', Type], ['Image', ImageIcon], ['Button', MousePointer2],
+                ['Container', Square], ['Item Grid', Grid2X2], ['Form', FormInput]
+              ] as const).map(([label, Icon]) => {
+                const match = paletteComponents.find(item => item.label.toLowerCase() === label.toLowerCase()) ??
+                  paletteComponents.find(item => item.label.toLowerCase().includes(label.toLowerCase()) || item.type.toLowerCase().includes(label.toLowerCase().replace(' ', '-')));
+                return <button type="button" key={label} disabled={!match} title={match ? 'Add '+match.label : label+' unavailable'}
+                  onClick={() => match && addPaletteComponent(match.type)}><Icon size={21}/><span>{label}</span></button>;
+              })}
+            </div>
+            <h3>Page</h3><div className="reference-page-commands">
+              <button type="button" onClick={() => {setPageSettingsOpen(true);setActivePanel('page');}}><Settings2 size={16}/> Page settings</button>
+              <button type="button" onClick={() => openPalette('Layers')}><Layers3 size={16}/> Page layers</button>
+            </div>
+          </div>}
           <div className="component-search"><Search size={14} /><input value={paletteSearch} onChange={(event) => setPaletteSearch(event.target.value)} placeholder={paletteTab === 'Components' ? 'Search blocks…' : `Search ${paletteTab.toLowerCase()}…`} aria-label={paletteTab === 'Components' ? 'Search blocks' : `Search ${paletteTab.toLowerCase()}`} /></div>
           {paletteTab === 'Layers' ? <nav className="page-layer-tree" aria-label="Page component layers">
             {page.components.filter(component => !paletteSearch || (component.label + ' ' + component.type).toLowerCase().includes(paletteSearch.toLowerCase())).map(component => {
@@ -2369,12 +2358,12 @@ function PageBuilder({
                 const config = {
                   Design: { label: 'Properties', Icon: Pencil },
                   'Data & Actions': { label: 'Data', Icon: Database },
-                  Visibility: { label: 'Actions', Icon: Eye },
-                  Position: { label: 'Layout', Icon: Layers3 }
+                  Visibility: { label: 'Actions', Icon: Workflow },
+                  Position: { label: 'Advanced', Icon: Layers3 }
                 }[tab];
                 return <button key={tab} type="button" role="tab" title={config.label}
                   aria-label={config.label} aria-selected={inspectorTab === tab}
-                  className={inspectorTab === tab ? 'active' : ''}
+                  className={`${inspectorTab === tab ? 'active' : ''} ${tab === 'Position' ? 'reference-advanced-tab' : ''}`}
                   onClick={() => setInspectorTab(tab)}><config.Icon size={17}/><span>{config.label}</span></button>;
               })}
             </div>
