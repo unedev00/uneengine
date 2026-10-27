@@ -2660,7 +2660,7 @@ function PageBuilder({
             <div className="office-ribbon-group"><div className="office-ribbon-stack">
               <span className="office-ribbon-stat">Page: {page.label}</span>
               <span className="office-ribbon-stat">Type: {page.pageType}</span>
-              <button type="button" onClick={()=>setPageSettingsDialogOpen(true)}><Settings2 size={16}/> Preview options</button>
+              <button type="button" onClick={()=>{setRibbonTab('Home');setPageSettingsDialogOpen(true);}}><Settings2 size={16}/> Page preview settings</button>
             </div><span>Preview Options</span></div>
           </>}
           {ribbonTab==='Add Block' && page.pageType==='Record Page' && <div className="office-ribbon-group">
