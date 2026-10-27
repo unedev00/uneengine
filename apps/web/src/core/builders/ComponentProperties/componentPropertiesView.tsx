@@ -343,7 +343,7 @@ export function MetadataComponentProperties({ properties, objects, apps, pages, 
         {objects.map((object) => <option key={object.apiName} value={object.apiName}>{object.label}</option>)}
       </select>
     </label>)}
-    {Object.keys(properties).filter(isField).map((key) => fieldPicker(key, properties[key]))}
+    {Array.from(new Set([...availableDefinitions.filter(definition=>definition.kind==='OBJECT_FIELD').map(definition=>definition.propertyKey),...Object.keys(properties).filter(isField)])).map((key) => fieldPicker(key, properties[key]))}
     {mode==='all' && (properties.kind === 'Table' || (definitionsByKey.has('striped') && definitionsByKey.has('pageSize')))
       && <TableRowConfigurationEditor properties={properties} object={selectedObject} onChange={onChange}/>}
     {mode==='all' && <details className="builder-advanced-panel"><summary>Advanced: connect to a page value</summary><p className="properties-help">Optional: use a value supplied by another block or automation.</p><PageStatePropertyBindingsEditor properties={properties} definitions={definitions} onChange={onChange}/></details>}
