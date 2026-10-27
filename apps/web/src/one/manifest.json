@@ -557,14 +557,6 @@
     }
   ],
   "components": [
-    "OneText/component.json",
-    "OneBadge/component.json",
-    "OneButton/component.json",
-    "OneSearch/component.json",
-    "OneCalendar/component.json",
-    "OneItemGrid/component.json",
-    "OneConversation/component.json",
-    "OneShoppingCart/component.json",
     "une_text/component.json",
     "une_image/component.json",
     "une_calendar/component.json",
