@@ -80,6 +80,37 @@ export function wrapCanvasComponent(
     : [component]);
 }
 
+/** Group compatible root-level free-canvas components without losing absolute geometry. */
+export function groupCanvasComponents(
+  components: readonly PageComponentMetadata[],
+  ids: readonly string[],
+  groupId: string
+): PageComponentMetadata[] {
+  const selection=new Set(ids);
+  const children=components.filter(item=>selection.has(item.id));
+  if(children.length<2||children.length!==selection.size||children.some(item=>
+    !item.position||item.parentId||item.properties.layoutParentId||item.properties.canvasLocked===true||isCanvasLocked(item)
+  ))return [...components];
+  const left=Math.min(...children.map(item=>item.position!.x));
+  const top=Math.min(...children.map(item=>item.position!.y));
+  const right=Math.max(...children.map(item=>item.position!.x+item.position!.width));
+  const bottom=Math.max(...children.map(item=>item.position!.y+item.position!.height));
+  const group:PageComponentMetadata={
+    id:groupId,type:'Container',label:'Group',visible:true,region:children[0].region??'main',
+    position:{x:left,y:top,width:right-left,height:bottom-top},
+    properties:{layoutContainer:true,visualStyle:{padding:0,margin:0,gap:0}}
+  };
+  let added=false;
+  return components.flatMap(item=>{
+    if(!selection.has(item.id))return [item];
+    const child={...item,parentId:groupId,
+      properties:{...item.properties,layoutParentId:groupId},
+      position:{...item.position!,x:item.position!.x-left,y:item.position!.y-top}};
+    if(!added){added=true;return [group,child];}
+    return [child];
+  });
+}
+
 /** Restore grouped children to absolute canvas coordinates without data migrations. */
 export function ungroupCanvasComponent(
   components: readonly PageComponentMetadata[], id: string
