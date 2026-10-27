@@ -2,6 +2,8 @@ import {generateMetadataApiName,metadataNameConflict,suggestMetadataApiName} fro
 import {useFormFactor} from '../../workspace/Responsive/useFormFactor';
 import {confirmDestructiveAction} from '../../components/ConfirmAction/confirmDestructiveAction';
 import './FlowBuilderMobile.css';
+import './FlowBuilderRibbon.css';
+import FlowBuilderRibbon from './FlowBuilderRibbon';
 import '../SharedBuilderFrame/adaptiveBuilder.css';
 import { uniqueLibraryComponents, libraryComponentLabel } from '../../components/Registry/componentLibraryDiscovery';
 import { FlowPropertiesResizeHandle, useFlowPropertiesWidth } from './FlowPropertiesResizeHandle';
@@ -22,7 +24,7 @@ import FlowReferenceInput from '../FlowReferenceInput/FlowReferenceInput';
 import { FlowConditionRows, FlowFieldAssignments } from './FlowValueEditors';
 import PageComponentStyleEditor from '../ComponentStyleEditor/PageComponentStyleEditor';
 import { parseComponentProperties } from '../../components/Properties/componentProperties';
-import { Fragment, useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState, type CSSProperties } from 'react';
 import {
   Activity,
   ArrowLeft,
@@ -171,7 +173,8 @@ export default function FlowBuilder({
   const flowTypeOptions = flowCreateOptions(capabilityCatalog);
   const flowElementMetadata = capabilityCatalog?.elements.filter(element => element.builderEnabled) ?? [];
   const [elementSearch, setElementSearch] = useState('');
-  const [toolboxExpanded, setToolboxExpanded] = useState(false);
+  const [ribbonTab,setRibbonTab] = useState('Home');
+  const [managerSection,setManagerSection] = useState('Flows');
   const [insertionConnectorId, setInsertionConnectorId] = useState('');
   const [newFlowLabel, setNewFlowLabel] = useState('');
   const [newFlowType, setNewFlowType] = useState<FlowDefinitionMetadata['flowType'] | null>(null);
@@ -248,6 +251,7 @@ export default function FlowBuilder({
     setInsertionConnectorId(connector.id);
     setActiveGraphPath(connector.id);
     onToolTab('Elements');
+    setRibbonTab(toolboxGroups[0]??'Home');
   };
   const duplicateSelected=()=>{
     if(!selected||selected.type==='Start'||selected.type==='End')return;
@@ -256,6 +260,7 @@ export default function FlowBuilder({
     try{
       if(branch.length>1&&!connectorId){
         onToolTab('Elements');
+        setRibbonTab(toolboxGroups[0]??'Home');
         onNotify('Select a connector path before duplicating a branching element.');
         return;
       }
@@ -270,11 +275,11 @@ export default function FlowBuilder({
     event.preventDefault();event.stopPropagation();setDropActive(false);
     const type=event.dataTransfer.getData('application/x-metadrive-flow-type');
     if(!type||!isElementAvailable(type)||!flowElementMetadata.some(item=>item.type===type)){
-      onNotify('Select an available Flow element from the toolbox.');return;
+      onNotify('Select an available Flow element from the ribbon.');return;
     }
     const outgoing=flow.connectors.filter(edge=>edge.from===fromId);
     if(outgoing.length>1&&!connectorId){
-      onSelect(fromId);onToolTab('Elements');
+      onSelect(fromId);onToolTab('Elements');setRibbonTab(toolboxGroups[0]??'Home');
       onNotify('Select the specific outcome, fault or scheduled path first.');return;
     }
     onAdd(type,fromId,connectorId);
@@ -282,7 +287,7 @@ export default function FlowBuilder({
 
   const selectedObject = objects.find((object) => object.apiName === flow.triggerObject);
   const selectedPlatformEvent = platformEvents.find((event) => event.apiName === flow.triggerObject);
-  const toolboxGroups = [...new Set(flowElementMetadata.map((item) => item.group))];
+  const toolboxGroups = [...new Set(flowElementMetadata.filter((item)=>isToolboxElement(item.type)).map((item) => item.group))];
   const freeformLayout = flow.startConfig?.canvasLayoutMode === 'Freeform';
   const { graphNodeWidth, graphPadding, graphWidth, graphHeight, graphPositions, autoGraphPositions } = layoutFlowGraph(flow, freeformLayout, dragPreview);
   const setCanvasPosition = (id: number, position: { x: number; y: number }) => {
@@ -1732,65 +1737,83 @@ export default function FlowBuilder({
     </div>
   </div>;
   return <div className={phoneFlow?'flow-builder flow-mobile-builder':'flow-builder'}>
-    <div className="flow-topbar">
-      <button className="icon-button subtle" aria-label="Back to setup" onClick={onExit}><ArrowLeft size={17} /></button>
-      <div className="flow-name"><input aria-label="Flow label" value={flow.label} onChange={(event) => onFlowChange({ ...flow, label: event.target.value })} /><span className="flow-type-pill">{flow.status} · v{flow.versionNumber}</span><span className={`flow-save-state ${isDirty ? 'dirty' : ''}`} role="status">{isDirty ? 'Unsaved changes' : 'Saved'}</span><ChevronDown size={13} /></div>
-      <div className="flow-toolbar-actions">
-        <button className="icon-button subtle" title="Undo" aria-label="Undo" onClick={onUndo} disabled={!canUndo}><Undo2 size={15} /></button>
-        <button className="icon-button subtle" title="Redo" aria-label="Redo" onClick={onRedo} disabled={!canRedo}><Redo2 size={15} /></button>
-        <button className="btn" onClick={onValidate}><Check size={14} />Check</button>
-        <button className="btn" onClick={onSave}><Save size={14} />Save</button>
-        {(['Autolaunched Flow', 'Screen Flow', 'Flow Orchestration', 'Record-Triggered Flow'].includes(flow.flowType)) && <button className="btn" onClick={onDebug} disabled={!canRunFlows} title={!canRunFlows ? 'The Run Flows permission is required.' : 'Debug the most recently saved version with sample inputs.'}>Debug</button>}
-        {(['Autolaunched Flow', 'Screen Flow', 'Flow Orchestration'].includes(flow.flowType)) && <button className="btn" onClick={onRun} disabled={!canRunFlows} title={!canRunFlows ? 'The Run Flows permission is required.' : isDirty ? 'Runs the most recently saved version; unsaved changes are excluded.' : undefined}>Run</button>}
-        <button className="btn btn-brand" onClick={onActivate}><Check size={14} />Activate</button>
-        <button className="icon-button subtle" title="Flow Builder help" onClick={() => onNotify('Configure the Start node, build element paths, check, then save or activate.')}><CircleHelp size={16} /></button>
-      </div>
-    </div>
-    {phoneFlow && <div className="flow-phone-top-actions">
-      <p>Full editor works best on a tablet or larger. Tap a step to inspect its properties.</p>
-      <button type="button" className="btn" aria-expanded={toolboxExpanded} onClick={()=>setToolboxExpanded(current=>!current)}>
-        {toolboxExpanded?'Close elements':'Add step'}
-      </button>
-    </div>}
-    <div className={`flow-workarea ${toolboxExpanded ? 'flow-toolbox-expanded' : 'flow-toolbox-collapsed'} ${phoneFlow&&phoneInspectorOpen&&flow.elements.some(element=>element.id===selectedId)?'flow-mobile-inspector-open':''}`}
-      ref={workareaRef} style={{ gridTemplateColumns:phoneFlow?'minmax(0, 1fr)':`240px minmax(0, 1fr) 8px ${clampPropertiesWidth(propertiesWidth)}px` }}>
-      <aside className="flow-toolbox">
-        <div className="toolbox-heading"><h2>Toolbox</h2><button className="icon-button subtle" aria-label={toolboxExpanded ? 'Collapse toolbox' : 'Expand toolbox'} aria-expanded={toolboxExpanded} title={toolboxExpanded ? 'Collapse toolbox' : 'Expand toolbox'} onClick={() => setToolboxExpanded((expanded) => !expanded)}><MoreHorizontal size={16} /></button></div>
-        <div className="toolbox-tabs"><button className={toolTab === 'Elements' ? 'active' : ''} onClick={() => onToolTab('Elements')}>Elements</button><button className={toolTab === 'Manager' ? 'active' : ''} onClick={() => onToolTab('Manager')}>Manager</button></div>
-        {toolTab === 'Elements' ? <>
-          {capabilityError && <div className="info-callout" role="alert">{capabilityError}</div>}
-           <div className="component-search"><Search size={14} /><input placeholder="Search elements..." aria-label="Search flow elements" value={elementSearch} onChange={(event) => setElementSearch(event.target.value)} /></div>
-          {insertionPaths.length > 1 && <label className="form-label">Insert onto path
-            <select className="form-control" aria-label="Choose Flow insertion path"
-              value={insertionPaths.some((connector) => connector.id === insertionConnectorId) ? insertionConnectorId : ''}
-              onChange={(event) => setInsertionConnectorId(event.target.value)}>
-              <option value="">Select outcome, fault, or scheduled path</option>
-              {insertionPaths.map((connector) => <option value={connector.id} key={connector.id}>
-                {connector.label || connector.kind} · {flow.elements.find((element) => element.id === connector.to)?.label ?? connector.to}
-              </option>)}
-            </select>
-          </label>}
-          {toolboxGroups.map((group) => {
-            const elements = flowElementMetadata.filter((item) => item.group === group && item.type.toLowerCase().includes(elementSearch.trim().toLowerCase()) && isToolboxElement(item.type));
-            return elements.length ? <div className="toolbox-group" key={group}><h3>{group}</h3>{elements.map((element) => <button key={element.type} className="flow-element-option" title={element.type} draggable
-              aria-label={`Click to add ${element.type}, or drag onto the canvas`}
-              onDragStart={(event)=>{event.dataTransfer.effectAllowed='copy';
-                event.dataTransfer.setData('application/x-metadrive-flow-type',element.type);}}
-              onClick={() => {
-              const selectedPath = insertionPaths.some((connector) => connector.id === insertionConnectorId)
-                ? insertionConnectorId : undefined;
-              if (insertionPaths.length > 1 && !selectedPath) {
-                onNotify('Choose an outcome or fault path before inserting an element.');
-                return;
-              }
-              onAdd(element.type, selectedId, selectedPath);
-              setInsertionConnectorId('');
-            }}><span>{element.icon}</span>{element.type}<Plus size={13} /></button>)}</div> : null;
-          })}
-          {flowElementMetadata.filter((item) => item.type.toLowerCase().includes(elementSearch.trim().toLowerCase()) && isToolboxElement(item.type)).length === 0 && <p className="empty-list">No elements found.</p>}
-        </> : <div className="resource-list">
-          <div className="toolbox-group"><h3>Flows</h3>{flows.map((candidate) => <div className="flow-manager-row" key={candidate.apiName}><button className={`flow-manager-item ${flow.apiName === candidate.apiName ? 'active' : ''}`} onClick={() => onSelectFlow(candidate.apiName)}><span>{candidate.flowType}</span><strong>{candidate.label}</strong><small>{candidate.status} · v{candidate.versionNumber}</small></button><div className="flow-manager-actions"><button className="btn btn-small" aria-label={`Clone ${candidate.label}`} title="Clone flow" onClick={() => onCloneFlow(candidate)}><Copy size={13} />Clone</button>{candidate.status === 'Active' && <button className="btn btn-small" aria-label={`Deactivate ${candidate.label}`} onClick={() => onDeactivateFlow(candidate.apiName)}>Deactivate</button>}<button className="btn btn-small" aria-label={`Delete ${candidate.label}`} onClick={() => { if (window.confirm(`Delete the ENTIRE flow "${candidate.label}" including ALL versions? This is not a version-only delete. To edit v1, use Version History → Restore as Draft.`)) onDeleteFlow(candidate.apiName); }}>Delete Entire Flow</button></div></div>)}</div>
-          <div className="toolbox-group"><h3>Version History</h3>{flow.versions.length
+    <FlowBuilderRibbon
+      label={flow.label} status={flow.status} version={flow.versionNumber} isDirty={isDirty}
+      onLabelChange={label=>onFlowChange({...flow,label})}
+      tab={ribbonTab} onTabChange={next=>{setRibbonTab(next);if(next==='Manager')onToolTab('Manager');else onToolTab('Elements');}}
+      groups={toolboxGroups}
+      elements={flowElementMetadata.filter(item=>isToolboxElement(item.type))}
+      search={elementSearch} onSearchChange={setElementSearch}
+      pathOptions={insertionPaths.map(edge=>({id:edge.id,
+        label:(edge.label||edge.kind)+' · '+(flow.elements.find(item=>item.id===edge.to)?.label??edge.to)}))}
+      selectedPath={insertionPaths.some(edge=>edge.id===insertionConnectorId)?insertionConnectorId:''}
+      onPathChange={setInsertionConnectorId}
+      onInsert={type=>{
+        const path=insertionPaths.some(edge=>edge.id===insertionConnectorId)?insertionConnectorId:undefined;
+        if(insertionPaths.length>1&&!path){
+          onNotify('Select an outcome, fault or scheduled path before inserting an element.');return;
+        }
+        onAdd(type,selectedId,path);
+        setInsertionConnectorId('');
+      }}
+      home={<>
+        <div className="office-ribbon-group"><div className="office-ribbon-stack">
+          <button type="button" onClick={onExit}><ArrowLeft size={16}/>All flows</button>
+          <button type="button" onClick={()=>{setManagerSection('Flows');setRibbonTab('Manager');}}><Copy size={16}/>Manage flows</button>
+          <button type="button" onClick={()=>{setManagerSection('Version History');setRibbonTab('Manager');}}><Activity size={16}/>Version history</button>
+        </div><span>Flow</span></div>
+        <div className="office-ribbon-group"><div className="office-ribbon-stack">
+          <button type="button" onClick={onUndo} disabled={!canUndo}><Undo2 size={16}/>Undo</button>
+          <button type="button" onClick={onRedo} disabled={!canRedo}><Redo2 size={16}/>Redo</button>
+          <button type="button" onClick={()=>selected&&onRemove(selected.id)} disabled={!selected||!canBypassFlowElement(flow,selected.id)}><X size={16}/>Delete step</button>
+        </div><span>Edit</span></div>
+        <div className="office-ribbon-group"><div className="office-ribbon-stack">
+          <button type="button" aria-pressed={freeformLayout} onClick={switchCanvasMode}><Pencil size={16}/>{freeformLayout?'Auto layout':'Freeform layout'}</button>
+          <button type="button" disabled={!freeformLayout} onClick={resetFreeformLayout}><MoveRight size={16}/>Reset positions</button>
+          <button type="button" onClick={fitGraphToCanvas}><Search size={16}/>Fit graph</button>
+        </div><span>Layout</span></div>
+        <div className="office-ribbon-group"><div className="office-ribbon-stack">
+          <button type="button" aria-expanded={showGraphReview} onClick={()=>setShowGraphReview(value=>!value)}><Activity size={16}/>Review graph{graphProblems.length?' ('+graphProblems.length+')':''}</button>
+          <button type="button" onClick={onValidate}><Check size={16}/>Errors &amp; warnings</button>
+          <button type="button" disabled={flow.status!=='Draft'} onClick={()=>{
+            const repaired=completeFlowEndPaths(flow,`connector-${crypto.randomUUID()}`);
+            if(JSON.stringify(repaired)===JSON.stringify(flow))onNotify('All current paths already have an End.');
+            else{onFlowChange(repaired);onNotify('End paths added. Review, Check and Save the Flow.');}
+          }}><Check size={16}/>Complete end paths</button>
+        </div><span>Review</span></div>
+        <div className="office-ribbon-group"><div className="office-ribbon-stack">
+          <button type="button" onClick={onValidate}><Check size={16}/>Check</button>
+          {['Autolaunched Flow','Screen Flow','Flow Orchestration','Record-Triggered Flow'].includes(flow.flowType)&&<button type="button" onClick={onDebug} disabled={!canRunFlows} title="Debug the most recently saved version"><Activity size={16}/>Debug</button>}
+          {['Autolaunched Flow','Screen Flow','Flow Orchestration'].includes(flow.flowType)&&<button type="button" onClick={onRun} disabled={!canRunFlows} title={isDirty?'Runs the saved version, without unsaved changes':undefined}><MoveRight size={16}/>Run</button>}
+          <button type="button" onClick={()=>{setManagerSection('Tests');setRibbonTab('Manager');}}><Check size={16}/>Flow tests</button>
+        </div><span>Test &amp; debug</span></div>
+        <div className="office-ribbon-group"><div className="office-ribbon-stack">
+          <button type="button" onClick={onSave}><Save size={16}/>Save</button>
+          <button type="button" aria-pressed={flow.status==='Active'} onClick={()=>flow.status==='Active'?onDeactivateFlow(flow.apiName):onActivate()}>
+            <Check size={16}/>{flow.status==='Active'?'Deactivate':'Activate'}
+          </button>
+          <button type="button" onClick={()=>onNotify('Choose an element ribbon tab, select an insertion path if needed, then configure the step on the right. Ctrl/Cmd+S saves; Z/Y undo/redo; D duplicates; Delete removes a safe step.')}><CircleHelp size={16}/>Shortcuts &amp; help</button>
+        </div><span>Save &amp; publish</span></div>
+      </>}
+      manager={<>
+        {(['Flows','Version History','Flow Portability','Tests','Flow Description','New Flow','Platform Events','Resources','Named Credentials','Email Alerts'] as const).map((name,index)=>
+          <div key={name} className="office-ribbon-group flow-ribbon-menu"><div className="office-ribbon-stack">
+            <button type="button" aria-pressed={managerSection===name}
+              onClick={()=>setManagerSection(name)}><span className="flow-ribbon-element-icon">{index+1}</span>{name}</button>
+          </div><span>{index<4?'Flow management':index<7?'Configuration':'Resources & integrations'}</span></div>)}
+        <div className="office-ribbon-group"><div className="office-ribbon-stack">
+          <button type="button" onClick={()=>setRibbonTab('Home')}><X size={16}/>Close manager</button>
+        </div><span>View</span></div>
+      </>}
+    />
+    <div className={`flow-workarea ${ribbonTab==='Manager'?'flow-manager-open':''} ${phoneFlow&&phoneInspectorOpen&&flow.elements.some(element=>element.id===selectedId)?'flow-mobile-inspector-open':''}`}
+      ref={workareaRef} style={{'--flow-properties-width':`${clampPropertiesWidth(propertiesWidth)}px`} as CSSProperties}>
+      <aside className="flow-toolbox flow-manager-panel" aria-label="Flow manager" aria-hidden={ribbonTab!=='Manager'}>
+        <div className="toolbox-heading"><h2>{managerSection}</h2><button className="icon-button subtle"
+          aria-label="Close Flow manager" onClick={()=>setRibbonTab('Home')}><X size={16}/></button></div>
+        <div className="resource-list">
+          <div className="toolbox-group" hidden={managerSection!=='Flows'}><h3>Flows</h3>{flows.map((candidate) => <div className="flow-manager-row" key={candidate.apiName}><button className={`flow-manager-item ${flow.apiName === candidate.apiName ? 'active' : ''}`} onClick={() => onSelectFlow(candidate.apiName)}><span>{candidate.flowType}</span><strong>{candidate.label}</strong><small>{candidate.status} · v{candidate.versionNumber}</small></button><div className="flow-manager-actions"><button className="btn btn-small" aria-label={`Clone ${candidate.label}`} title="Clone flow" onClick={() => onCloneFlow(candidate)}><Copy size={13} />Clone</button>{candidate.status === 'Active' && <button className="btn btn-small" aria-label={`Deactivate ${candidate.label}`} onClick={() => onDeactivateFlow(candidate.apiName)}>Deactivate</button>}<button className="btn btn-small" aria-label={`Delete ${candidate.label}`} onClick={() => { if (window.confirm(`Delete the ENTIRE flow "${candidate.label}" including ALL versions? This is not a version-only delete. To edit v1, use Version History → Restore as Draft.`)) onDeleteFlow(candidate.apiName); }}>Delete Entire Flow</button></div></div>)}</div>
+          <div className="toolbox-group" hidden={managerSection!=='Version History'}><h3>Version History</h3>{flow.versions.length
             ? [...flow.versions].sort((left, right) => right.versionNumber - left.versionNumber).map((version, index) =>
               <div className="flow-resource-card" key={`${version.versionNumber}-${index}`}>
                 <strong>Version {version.versionNumber} · {version.status}</strong>
@@ -1800,15 +1823,15 @@ export default function FlowBuilder({
                   onClick={() => onRestoreFlowVersion(version)}>Restore as Draft</button>
               </div>)
             : <p className="empty-list">No saved versions yet.</p>}</div>
-          <div className="toolbox-group"><h3>Flow Portability</h3><button className="btn" onClick={onExportFlow}>Export Flow JSON</button><label className="form-label">Import Flow JSON<input className="form-control" type="file" accept=".json,application/json" onChange={(event) => {
+          <div className="toolbox-group" hidden={managerSection!=='Flow Portability'}><h3>Flow Portability</h3><button className="btn" onClick={onExportFlow}>Export Flow JSON</button><label className="form-label">Import Flow JSON<input className="form-control" type="file" accept=".json,application/json" onChange={(event) => {
             const file = event.target.files?.[0];
             if (file) onImportFlow(file);
             event.target.value = '';
           }} /></label><p className="settings-panel-copy">Import creates a separate Draft and will not overwrite an existing Flow.</p></div>
-          <FlowTestsPanel flow={flow} isDirty={isDirty} canRun={canRunFlows} onChange={onFlowChange} onRunTests={onRunTests} onNotify={onNotify} />
-          <div className="toolbox-group"><h3>Flow Description</h3><label className="form-label">Description<textarea className="form-control" rows={3} value={flow.description ?? ''} onChange={(event) => onFlowChange({ ...flow, description: event.target.value })} /></label></div>
-          <div className="toolbox-group"><h3>New Flow</h3><label className="form-label">Flow Type<select className="form-control" value={newFlowType ?? ''} onChange={(event) => setNewFlowType(event.target.value ? event.target.value as FlowDefinitionMetadata['flowType'] : null)}><option value="">Select flow type</option>{flowTypeOptions.map((option) => <option key={option.type} value={option.type}>{option.type}</option>)}</select></label>{newFlowType && <><label className="form-label">Flow Name<input className="form-control" value={newFlowLabel} onChange={(event) => setNewFlowLabel(event.target.value)} /></label><button className="btn btn-brand" disabled={!newFlowLabel.trim()} onClick={() => { onCreateFlow(newFlowLabel.trim(), newFlowType); setNewFlowLabel(''); }}><Plus size={13} />Create Flow</button></>}</div>
-          <div className="toolbox-group"><h3>Platform Events</h3>
+          <div hidden={managerSection!=='Tests'}><FlowTestsPanel flow={flow} isDirty={isDirty} canRun={canRunFlows} onChange={onFlowChange} onRunTests={onRunTests} onNotify={onNotify} /></div>
+          <div className="toolbox-group" hidden={managerSection!=='Flow Description'}><h3>Flow Description</h3><label className="form-label">Description<textarea className="form-control" rows={3} value={flow.description ?? ''} onChange={(event) => onFlowChange({ ...flow, description: event.target.value })} /></label></div>
+          <div className="toolbox-group" hidden={managerSection!=='New Flow'}><h3>New Flow</h3><label className="form-label">Flow Type<select className="form-control" value={newFlowType ?? ''} onChange={(event) => setNewFlowType(event.target.value ? event.target.value as FlowDefinitionMetadata['flowType'] : null)}><option value="">Select flow type</option>{flowTypeOptions.map((option) => <option key={option.type} value={option.type}>{option.type}</option>)}</select></label>{newFlowType && <><label className="form-label">Flow Name<input className="form-control" value={newFlowLabel} onChange={(event) => setNewFlowLabel(event.target.value)} /></label><button className="btn btn-brand" disabled={!newFlowLabel.trim()} onClick={() => { onCreateFlow(newFlowLabel.trim(), newFlowType); setNewFlowLabel(''); }}><Plus size={13} />Create Flow</button></>}</div>
+          <div className="toolbox-group" hidden={managerSection!=='Platform Events'}><h3>Platform Events</h3>
             <button className="btn" onClick={() => {
               setPlatformEventApiName('');
               setPlatformEventLabel('');
@@ -1855,7 +1878,7 @@ export default function FlowBuilder({
             <button className="text-action" onClick={addPlatformEventField}><Plus size={13} />Add Field</button>
             <button className="btn btn-brand" disabled={!platformEventLabel.trim() || !platformEventFields.length || platformEventFields.some((field) => !field.apiName.trim() || !field.label.trim())} onClick={() => void savePlatformEvent().catch((error: unknown) => onNotify(error instanceof Error ? error.message : String(error)))}><Save size={13} />Save Platform Event</button>
           </div>
-          <div className="toolbox-group"><h3>Resources</h3><label className="form-label">Resource Label<input className="form-control" value={resourceLabel} onChange={(event) => setResourceLabel(event.target.value)} /></label><label className="form-label">Resource Type<select className="form-control" value={resourceType} onChange={(event) => {
+          <div className="toolbox-group" hidden={managerSection!=='Resources'}><h3>Resources</h3><label className="form-label">Resource Label<input className="form-control" value={resourceLabel} onChange={(event) => setResourceLabel(event.target.value)} /></label><label className="form-label">Resource Type<select className="form-control" value={resourceType} onChange={(event) => {
             const type = event.target.value as FlowResourceMetadata['type'];
             setResourceType(type);
             if (type === 'Record' || type === 'Record Collection') setResourceDataType(objects[0]?.apiName ?? '');
@@ -1901,7 +1924,7 @@ export default function FlowBuilder({
               <button className="text-action" onClick={() => onFlowChange({ ...flow, resources: flow.resources.filter((item) => item.name !== resource.name) })}><X size={13} />Delete Resource</button>
             </div>)}
           </div>
-          <div className="toolbox-group"><h3>Named Credentials</h3>          <p>Tenant-scoped HTTPS and SMTP credentials are encrypted at rest. Secrets are never returned to the browser.</p>
+          <div className="toolbox-group" hidden={managerSection!=='Named Credentials'}><h3>Named Credentials</h3>          <p>Tenant-scoped HTTPS and SMTP credentials are encrypted at rest. Secrets are never returned to the browser.</p>
             <label className="form-label">API Name<input className="form-control" value={credentialName} onChange={(event) => setCredentialName(event.target.value.replace(/[^A-Za-z0-9_]/g, ''))} placeholder="Partner_API" /></label>
             <label className="form-label">Label<input className="form-control" value={credentialLabel} onChange={(event) => setCredentialLabel(event.target.value)} placeholder="Partner API" /></label>
             <label className="form-label">Protocol<select className="form-control" value={credentialProtocol} onChange={(event) => { const protocol = event.target.value as NamedCredentialMetadata['protocol']; setCredentialProtocol(protocol); if (protocol === 'SMTP' && credentialAuthType !== 'Basic' && credentialAuthType !== 'None') setCredentialAuthType('Basic'); }}><option>HTTPS</option><option>SMTP</option></select></label>
@@ -1915,7 +1938,7 @@ export default function FlowBuilder({
             {namedCredentials.map((credential) => <div className="flow-resource-card" key={credential.id}><strong>{credential.label}</strong><small>{credential.protocol} · {credential.name} · {credential.authType} · key {credential.keyId}</small><small>{credential.baseUrl} · Secret {credential.hasSecret ? 'stored (masked)' : 'not required'}</small><div className="toolbar-actions"><button className="btn" onClick={() => editCredential(credential)}>Edit</button><button className="btn" onClick={() => { if (!confirmDestructiveAction('Delete', 'Named Credential "'+credential.label+'"', 'Flows or integrations using this credential may fail.')) return; void onDeleteNamedCredential(credential.id).catch((error: unknown) => onNotify(error instanceof Error ? error.message : 'Unable to delete credential')); }}>Delete</button></div></div>)}
             {!namedCredentials.length && <p className="empty-list">No Named Credentials are configured.</p>}
           </div>
-          <div className="toolbox-group"><h3>Email Alerts</h3>
+          <div className="toolbox-group" hidden={managerSection!=='Email Alerts'}><h3>Email Alerts</h3>
             <p>Reusable, tenant-scoped alerts for record-triggered flows. Recipients, subject, and body support Flow record references.</p>
             <label className="form-label">API Name<input className="form-control" value={emailAlertName} onChange={(event) => setEmailAlertName(event.target.value.replace(/[^A-Za-z0-9_]/g, ''))} placeholder="Account_Notification" /></label>
             <label className="form-label">Label<input className="form-control" value={emailAlertLabel} onChange={(event) => setEmailAlertLabel(event.target.value)} placeholder="Account Notification" /></label>
@@ -1930,35 +1953,12 @@ export default function FlowBuilder({
             {emailAlerts.map((alert) => <div className="flow-resource-card" key={alert.id}><strong>{alert.label}</strong><small>{alert.name} · {alert.objectApiName}</small><small>{alert.recipients} · SMTP credential: {namedCredentials.find((credential) => credential.id === alert.namedCredentialId)?.label ?? 'Unavailable'}</small><div className="toolbar-actions"><button className="btn" onClick={() => editEmailAlert(alert)}>Edit</button><button className="btn" onClick={() => { if (!confirmDestructiveAction('Delete', 'Email Alert "'+alert.label+'"')) return; void onDeleteEmailAlert(alert.id).catch((error: unknown) => onNotify(error instanceof Error ? error.message : 'Unable to delete Email Alert')); }}>Delete</button></div></div>)}
             {!emailAlerts.length && <p className="empty-list">No Email Alerts are configured.</p>}
           </div>
-        </div>}
+        </div>
       </aside>
       <section className="flow-canvas-region">
-        <div className="flow-canvas-top">
-          <div><span className="flow-status-dot" />{freeformLayout ? 'Freeform Layout' : 'Auto-Layout'} · {flow.elements.length} elements · {Math.round(zoom * 100)}%</div>
-          <div className="flow-toolbar-actions">
-            <button type="button" className="btn btn-small" onClick={switchCanvasMode}
-              aria-pressed={freeformLayout}>{freeformLayout ? 'Switch to Auto-Layout' : 'Switch to Freeform'}</button>
-            {freeformLayout && <button type="button" className="btn btn-small" onClick={resetFreeformLayout}>Reset Positions</button>}
-            <button type="button" className="btn btn-small" aria-expanded={showGraphReview}
-              onClick={()=>setShowGraphReview(value=>!value)}>
-              Review graph{graphProblems.length?' ('+graphProblems.length+')':''}
-            </button>
-            {selected?.type!=='Start'&&selected?.type!=='End'&&<button type="button"
-              className="btn btn-small" aria-label="Duplicate selected element" onClick={duplicateSelected}>
-              <Copy size={13}/>Duplicate
-            </button>}
-            {flow.status === 'Draft' && <button type="button" className="btn btn-small" onClick={() => {
-              const repaired = completeFlowEndPaths(flow, `connector-${crypto.randomUUID()}`);
-              if (JSON.stringify(repaired) === JSON.stringify(flow)) {
-                onNotify('All current paths already have an End.');
-              } else {
-                onFlowChange(repaired);
-                onNotify('End paths added to the draft. Review, Check and Save the Flow.');
-              }
-            }}><Check size={13} />Complete End Paths</button>}
-            <button className="btn btn-small" onClick={onValidate}><Activity size={13} />Errors and Warnings</button>
-          </div>
-        </div>
+        <div className="flow-canvas-top"><div><span className="flow-status-dot" />
+          {freeformLayout?'Freeform Layout':'Auto-Layout'} · {flow.elements.length} elements · {Math.round(zoom*100)}%
+        </div></div>
         {showGraphReview&&<div className="flow-graph-review" role="region"
           aria-label="Flow graph review">
           <strong>{graphProblems.length?graphProblems.length+' graph issue(s)':'No disconnected or unfinished paths found'}</strong>
@@ -2026,7 +2026,7 @@ export default function FlowBuilder({
               className={`flow-edge-insert ${activeGraphPath===connector.id?'active':''}`}
               style={{left:x,top:y}}
               aria-label={`Choose insertion path ${connector.label||connector.kind} from ${flow.elements.find(item=>item.id===connector.from)?.label??connector.from}`}
-              title="Choose this branch path; drag an element here or select one in the toolbox"
+              title="Choose this branch path; drag an element here or select one in the ribbon"
               onClick={()=>selectGraphPath(connector)}
               onDragOver={event=>event.preventDefault()}
               onDrop={event=>dropElement(event,connector.from,connector.id)}>
@@ -2084,8 +2084,8 @@ export default function FlowBuilder({
               {selectedId === element.id && <div className="flow-node-inline-actions"
                 style={{ left: position.x + graphNodeWidth + 8, top: position.y + 8 }}>
                 <button type="button" className="icon-button" aria-label={`Add element after ${element.label}`}
-                  title="Choose an element from the toolbox to insert on this path"
-                  onClick={() => { setInsertionConnectorId(''); onToolTab('Elements'); }}>
+                  title="Choose an element from the ribbon to insert on this path"
+                  onClick={() => { setInsertionConnectorId(''); onToolTab('Elements'); setRibbonTab(toolboxGroups[0]??'Home'); }}>
                   <Plus size={16} />
                 </button>
                 <button type="button" className="icon-button" aria-label={`Remove ${element.label}`}
@@ -2142,6 +2142,6 @@ export default function FlowBuilder({
         <button className="btn btn-brand btn-full" onClick={onSave}>Save Flow</button>
       </aside>
     </div>
-    <div className="flow-bottom-bar"><span>Flow Builder</span><span>{flow.status} · Version {flow.versionNumber}</span><button className="text-action" onClick={() => onNotify('Click a connector + to insert on a branch, or drag an element from the toolbox onto a path. Ctrl/Cmd+D duplicates, Delete removes safe nodes, Ctrl/Cmd+Z/Y undo/redo, Ctrl/Cmd+S saves.')}><CircleHelp size={12} />Keyboard shortcuts</button></div>
+
   </div>;
 }
