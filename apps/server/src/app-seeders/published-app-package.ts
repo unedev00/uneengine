@@ -1,5 +1,12 @@
 import type {PoolClient} from 'pg';
 
+/** Only built-in package registrations may be remapped; customer names stay exact. */
+const systemUneNames:Readonly<Record<string,string>>={
+ OneText:'une_text',OneBadge:'une_badge',OneButton:'une_button',OneSearch:'une_search',
+ OneCalendar:'une_calendar',OneItemGrid:'une_item_grid',
+ OneConversation:'une_conversation',OneShoppingCart:'une_cart'
+};
+
 /** Transactional, non-destructive materialisation of published SQL application templates.
  * Only this tenant's chosen package is inspected; nothing app-specific runs at startup.
  */
@@ -50,10 +57,25 @@ export async function seedPublishedAppPackage(
     SELECT api_name,renderer_key FROM md_app_package_component_templates
     WHERE app_id=$1 AND version=$2 ORDER BY api_name
   `,[appId,version]);
-  for(const item of components)await created('Component','',item.api_name,`
-    INSERT INTO md_component_definitions(tenant_id,api_name,renderer_key,enabled)
-    VALUES($1,$2,$3,true) ON CONFLICT DO NOTHING
-  `,[tenantId,item.api_name,item.renderer_key]);
+  const systemAliases=new Map<string,string>(components.filter(item=>
+    item.renderer_key==='one-bundled:'+item.api_name && systemUneNames[item.api_name]
+  ).map(item=>[item.api_name,systemUneNames[item.api_name]] as const));
+  for(const item of components){
+    const apiName=systemAliases.get(item.api_name)??item.api_name;
+    const rendererKey=systemAliases.has(item.api_name)?'one-bundled:'+apiName:item.renderer_key;
+    if(rendererKey==='one-bundled:'+apiName){
+      // UNE is preinstalled as a shared system component, not owned by this App.
+      const {rows:existing}=await client.query<{renderer_key:string;enabled:boolean}>(`
+        SELECT renderer_key,enabled FROM md_component_definitions
+        WHERE tenant_id=$1 AND api_name=$2
+      `,[tenantId,apiName]);
+      if(existing[0]?.renderer_key===rendererKey && existing[0]?.enabled)continue;
+    }
+    await created('Component','',apiName,`
+      INSERT INTO md_component_definitions(tenant_id,api_name,renderer_key,enabled)
+      VALUES($1,$2,$3,true) ON CONFLICT DO NOTHING
+    `,[tenantId,apiName,rendererKey]);
+  }
 
   const {rows:pages}=await client.query<{api_name:string;title:string}>(`
     SELECT api_name,title FROM md_app_package_page_templates
@@ -88,6 +110,7 @@ export async function seedPublishedAppPackage(
     WHERE app_id=$1 AND version=$2 ORDER BY page_api,sort_order,component_api
   `,[appId,version]);
   for(const item of pageParts){
+    const componentApi=systemAliases.get(item.component_api)??item.component_api;
     const {rows:page}=await client.query<{id:string}>(`
       SELECT id FROM md_page_definitions
       WHERE tenant_id=$1 AND api_name=$2 AND enabled=true
@@ -95,14 +118,22 @@ export async function seedPublishedAppPackage(
     const {rows:component}=await client.query<{api_name:string}>(`
       SELECT api_name FROM md_component_definitions
       WHERE tenant_id=$1 AND api_name=$2 AND enabled=true
-    `,[tenantId,item.component_api]);
+    `,[tenantId,componentApi]);
     if(!page.length||!component.length)
       throw new Error('App package Page Component dependency missing');
-    const key=item.component_api+'@'+item.slot+'#'+item.sort_order;
+    const key=componentApi+'@'+item.slot+'#'+item.sort_order;
+    // Older installed pages may have been migrated in-place while their seed
+    // receipts still use One API names. Never add a duplicate on reinstall.
+    const {rows:existingParts}=await client.query<{id:string}>(`
+      SELECT id FROM md_page_components
+      WHERE tenant_id=$1 AND page_id=$2 AND component_api=$3
+        AND slot=$4 AND sort_order=$5
+    `,[tenantId,page[0].id,componentApi,item.slot,item.sort_order]);
+    if(existingParts.length)continue;
     await created('Page Component',item.page_api,key,`
       INSERT INTO md_page_components(tenant_id,page_id,component_api,slot,sort_order)
       VALUES($1,$2,$3,$4,$5)
-    `,[tenantId,page[0].id,item.component_api,item.slot,item.sort_order]);
+    `,[tenantId,page[0].id,componentApi,item.slot,item.sort_order]);
   }
   const {rows:properties}=await client.query<{
     page_api:string;component_api:string;slot:string;sort_order:number;
@@ -115,12 +146,13 @@ export async function seedPublishedAppPackage(
     WHERE app_id=$1 AND version=$2 ORDER BY page_api,component_api,slot,property_path
   `,[appId,version]);
   for(const property of properties){
+    const componentApi=systemAliases.get(property.component_api)??property.component_api;
     const {rows:instances}=await client.query<{id:string}>(`
       SELECT part.id FROM md_page_components part
       JOIN md_page_definitions page ON page.id=part.page_id AND page.tenant_id=part.tenant_id
       WHERE part.tenant_id=$1 AND page.api_name=$2 AND part.component_api=$3
         AND part.slot=$4 AND part.sort_order=$5
-    `,[tenantId,property.page_api,property.component_api,property.slot,property.sort_order]);
+    `,[tenantId,property.page_api,componentApi,property.slot,property.sort_order]);
     if(instances.length!==1)throw new Error('App package Page Component property target unavailable or ambiguous');
     let objectId:string|null=null,fieldId:string|null=null,flowId:string|null=null;
     if(property.data_type==='reference'){
