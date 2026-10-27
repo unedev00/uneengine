@@ -485,3 +485,32 @@
   .page-ribbon-expanded-content .metadata-component-properties>*{margin-bottom:16px}
   .page-ribbon-expanded-editor{height:330px;max-height:65vh}
 }
+
+/* Fewer visible category groups and line wrapping keep essential actions reachable without a side-scrolling ribbon. */
+.office-builder-ribbon .office-ribbon-content {
+  display:flex;flex-wrap:wrap;align-content:flex-start;align-items:stretch;
+  box-sizing:border-box;height:auto;max-height:none;overflow-x:hidden;overflow-y:visible;
+}
+.office-builder-ribbon .office-ribbon-group {
+  flex:0 1 auto;min-width:0;max-width:min(100%,400px);
+  box-sizing:border-box;overflow:visible;
+}
+.office-builder-ribbon .office-ribbon-group>.office-ribbon-stack {
+  min-width:0;max-width:100%;grid-auto-flow:row;
+  grid-template-rows:repeat(3,minmax(28px,auto));
+}
+.office-builder-ribbon .office-ribbon-inline-field {
+  grid-template-columns:minmax(60px,max-content) minmax(90px,1fr);
+  max-width:100%;height:auto;min-height:30px;
+}
+.office-builder-ribbon .office-ribbon-inline-field select {
+  min-width:100px;max-width:200px!important;
+}
+.office-builder-ribbon .office-ribbon-header-field,
+.office-builder-ribbon .office-ribbon-header-status {
+  line-height:1.35;
+}
+@media(max-width:1280px) {
+  .office-builder-ribbon .office-ribbon-group{max-width:100%}
+  .office-builder-ribbon .office-ribbon-group>.office-ribbon-stack{grid-auto-flow:row}
+}
