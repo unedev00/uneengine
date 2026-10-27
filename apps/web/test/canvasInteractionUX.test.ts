@@ -439,7 +439,9 @@ test('Design ribbon stays a single bounded strip and advanced metadata remains e
   const root=new URL('../src/core/builders/',import.meta.url);
   const builder=await readFile(new URL('PageBuilder/pageBuilderView.tsx',root),'utf8');
   const css=await readModularCss(new URL('PageBuilder/styles-md227.css',root));
-  const contract=css.slice(css.lastIndexOf('/* Page Builder compact ribbon: one bounded'));
+  const start=css.lastIndexOf('/* Page Builder compact ribbon: one bounded');
+  const end=css.indexOf('/* Advanced Design reuses',start);
+  const contract=css.slice(start,end);
   assert.ok(contract.length>0,'Final Page Builder geometry contract is present');
   assert.match(contract,/flex-flow:row nowrap/);
   assert.match(contract,/height:142px!important/);
