@@ -2151,8 +2151,6 @@ function PageBuilder({
           </span>
         </div>
         <div className="toolbar-actions">
-          <button type="button" className="icon-button subtle" aria-label={activePanel ? 'Collapse panel' : 'Open blocks panel'} aria-pressed={activePanel !== null}
-            title={activePanel ? 'Collapse left panel' : 'Expand left panel'} onClick={() => setActivePanel(value => value ? null : 'palette')}><PanelLeft size={17}/></button>
           <button type="button" className="icon-button subtle" aria-label="Open page dependencies" title="Dependencies for this page" onClick={()=>setDependenciesOpen(true)}><Puzzle size={17}/></button>
           <button type="button" className="icon-button subtle" aria-label="Open page routes" title="Route aliases for this page" onClick={()=>setRouteDirectoryOpen(true)}><ExternalLink size={17}/></button>
           <button type="button" className="icon-button subtle" aria-label="Page properties" title="Page properties" onClick={() => {setPageSettingsOpen(true);setActivePanel('page');}}><Settings2 size={17}/></button>
