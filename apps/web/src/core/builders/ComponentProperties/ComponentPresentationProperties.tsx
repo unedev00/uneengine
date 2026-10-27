@@ -22,9 +22,9 @@ export default function ComponentPresentationProperties({
   };
   if (!groups.length) return null;
   return <div className="metadata-component-presentation" aria-label="Content and appearance settings">
-    {groups.map(group => <section key={group.section} className="office-ribbon-presentation-group">
-      <div className="office-ribbon-group-heading">{group.section}</div>
-      {group.definitions.map(definition => {
+    {groups.flatMap(group => Array.from({length:Math.ceil(group.definitions.length/3)},(_,index)=><section key={group.section+'-'+index} className="office-ribbon-presentation-group">
+      <div className="office-ribbon-group-heading">{group.section}{index>0?' '+(index+1):''}</div>
+      {group.definitions.slice(index*3,index*3+3).map(definition => {
         const key = definition.propertyKey;
         const value = presentationValue(properties, definition);
         const label = definition.label || key.replace(/([a-z])([A-Z])/g, '$1 $2');
@@ -65,6 +65,6 @@ export default function ComponentPresentationProperties({
             value={String(value ?? '')} onChange={event => update(key, event.target.value)}/>
         </label>;
       })}
-    </section>)}
+    </section>))}
   </div>;
 }
