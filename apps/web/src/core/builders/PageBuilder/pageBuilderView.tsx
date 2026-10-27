@@ -2486,7 +2486,7 @@ function PageBuilder({
               {page.components.filter(component=>component.type==='Custom:une_cart'
                 && String(component.properties.cartTargetKey??'cashier')===String(selected.properties.cartTargetKey)).length>1
                 && <span className="office-ribbon-stat" role="alert">More than one Cart shares this connection.</span>}
-              {selected.properties.cartTargetKey && <span className="office-ribbon-stat">Card Add button sends the selected record to Cart</span>}
+              {Boolean(selected.properties.cartTargetKey) && <span className="office-ribbon-stat">Card Add button sends the selected record to Cart</span>}
             </div><span>Cart connection</span></div>}
           {selected && ribbonTab === 'Component Action' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
             <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">When</span>
