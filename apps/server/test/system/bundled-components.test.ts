@@ -5,11 +5,13 @@ import type { PoolClient } from 'pg';
 import { BUNDLED_COMPONENTS,seedFreshBundledComponents,deactivateUnavailableBundledComponents } from '../../src/app-seeders/bundled-components.js';
 import {UNE_COMPONENTS,seedFreshUneComponents} from '../../src/app-seeders/une-components.js';
 
-test('SQL component seed matches the reviewed One manifest without duplicates', async()=>{
+test('SQL component seed matches the UNE-only manifest without duplicates', async()=>{
   const catalog=JSON.parse(await readFile(new URL('../../../web/src/one/manifest.json',import.meta.url),'utf8')) as {components:string[]};
   assert.deepEqual([...BUNDLED_COMPONENTS,...UNE_COMPONENTS],catalog.components.map(path=>path.split('/')[0]));
-  assert.ok(BUNDLED_COMPONENTS.includes('OneShoppingCart'));
-  assert.ok(BUNDLED_COMPONENTS.includes('OneItemGrid'));
+  assert.deepEqual(BUNDLED_COMPONENTS,[]);
+  assert.ok(UNE_COMPONENTS.includes('une_cart'));
+  assert.ok(UNE_COMPONENTS.includes('une_item_grid'));
+  assert.equal(catalog.components.filter(path=>path.startsWith('One')).length,0);
 });
 
 test('obsolete system-only OneAccordion is disabled without modifying tenant components',async()=>{
@@ -21,7 +23,7 @@ test('obsolete system-only OneAccordion is disabled without modifying tenant com
   assert.equal(writes.length,1);
   const write=writes[0];
   assert.equal(write.args[0],'tenant-a');
-  assert.ok((write.args[1] as string[]).includes('OneText'));
+  assert.ok(!(write.args[1] as string[]).includes('OneText'));
   assert.ok((write.args[1] as string[]).includes('une_text'));
   assert.ok(!(write.args[1] as string[]).includes('OneAccordion'));
   assert.match(write.sql,/UPDATE md_component_definitions/);
