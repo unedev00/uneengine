@@ -43,6 +43,7 @@ jobs:
           set -euo pipefail
           bash -n scripts/oracle/deploy-api.sh
           bash -n scripts/oracle/deploy-frontend.sh
+          bash -n scripts/oracle/ensure-frontend-api-proxy.sh
           bash -n scripts/oracle/backup-production-sql.sh
           bash -n scripts/oracle/deploy-full-stack.sh
           bash -n scripts/oracle/check-communication-backlog.sh
