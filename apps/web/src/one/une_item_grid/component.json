@@ -154,7 +154,8 @@
       "label": "Gap (px)",
       "kind": "NUMBER",
       "displayOrder": 110,
-      "defaultValue": 12
+      "defaultValue": 12,
+      "group": "Gallery"
     },
     {
       "propertyKey": "shadow",
@@ -228,21 +229,24 @@
       "label": "Card image field",
       "kind": "OBJECT_FIELD",
       "defaultValue": "",
-      "displayOrder": 350
+      "displayOrder": 350,
+      "group": "Image"
     },
     {
       "propertyKey": "titleFieldApiName",
       "label": "Card title field",
       "kind": "OBJECT_FIELD",
       "defaultValue": "",
-      "displayOrder": 360
+      "displayOrder": 360,
+      "group": "Heading"
     },
     {
       "propertyKey": "priceFieldApiName",
       "label": "Card value or price field",
       "kind": "OBJECT_FIELD",
       "defaultValue": "",
-      "displayOrder": 370
+      "displayOrder": 370,
+      "group": "Value"
     },
     {
       "propertyKey": "currencyCode",
@@ -333,7 +337,8 @@
       "label": "Card description field",
       "kind": "OBJECT_FIELD",
       "defaultValue": "",
-      "displayOrder": 480
+      "displayOrder": 480,
+      "group": "Supporting text"
     },
     {
       "propertyKey": "showDescription",
@@ -398,37 +403,44 @@
       "propertyKey": "cardPadding",
       "label": "Card padding (px)",
       "kind": "NUMBER",
-      "displayOrder": 550
+      "displayOrder": 550,
+      "group": "Card"
     },
     {
       "propertyKey": "cardRadius",
       "label": "Card radius (px)",
       "kind": "NUMBER",
-      "displayOrder": 560
+      "displayOrder": 560,
+      "group": "Card"
     },
     {
       "propertyKey": "cardMinHeight",
       "label": "Card minimum height (px)",
       "kind": "NUMBER",
-      "displayOrder": 570
+      "displayOrder": 570,
+      "group": "Card",
+      "section": "Layout"
     },
     {
       "propertyKey": "cardBackgroundColor",
       "label": "Card background",
       "kind": "COLOR",
-      "displayOrder": 580
+      "displayOrder": 580,
+      "group": "Card"
     },
     {
       "propertyKey": "cardBorderColor",
       "label": "Card border colour",
       "kind": "COLOR",
-      "displayOrder": 590
+      "displayOrder": 590,
+      "group": "Card"
     },
     {
       "propertyKey": "cardBorderWidth",
       "label": "Card border width (px)",
       "kind": "NUMBER",
-      "displayOrder": 600
+      "displayOrder": 600,
+      "group": "Card"
     },
     {
       "propertyKey": "cardShadow",
@@ -452,7 +464,8 @@
           "key": "large",
           "label": "Large"
         }
-      ]
+      ],
+      "group": "Card"
     },
     {
       "propertyKey": "cardHover",
@@ -478,7 +491,9 @@
       "propertyKey": "imageHeight",
       "label": "Image height (px)",
       "kind": "NUMBER",
-      "displayOrder": 630
+      "displayOrder": 630,
+      "group": "Image",
+      "section": "Layout"
     },
     {
       "propertyKey": "imageFit",
@@ -502,7 +517,9 @@
           "key": "scale-down",
           "label": "Scale down"
         }
-      ]
+      ],
+      "group": "Image",
+      "section": "Design"
     },
     {
       "propertyKey": "imageAspectRatio",
@@ -530,7 +547,9 @@
           "key": "3/4",
           "label": "3:4"
         }
-      ]
+      ],
+      "group": "Image",
+      "section": "Layout"
     },
     {
       "propertyKey": "objectApiName",
@@ -545,6 +564,125 @@
       "kind": "RECORD_LIST",
       "displayOrder": 300,
       "defaultValue": []
+    },
+    {
+      "propertyKey": "imageWidth",
+      "label": "Image width (px)",
+      "kind": "NUMBER",
+      "displayOrder": 631,
+      "group": "Image",
+      "section": "Layout"
+    },
+    {
+      "propertyKey": "imageShape",
+      "label": "Image shape",
+      "kind": "SELECT",
+      "displayOrder": 652,
+      "group": "Image",
+      "section": "Design",
+      "choices": [
+        {
+          "key": "square",
+          "label": "Square"
+        },
+        {
+          "key": "rounded",
+          "label": "Rounded"
+        },
+        {
+          "key": "circle",
+          "label": "Circle"
+        }
+      ]
+    },
+    {
+      "propertyKey": "imagePosition",
+      "label": "Image position",
+      "kind": "SELECT",
+      "displayOrder": 653,
+      "group": "Image",
+      "section": "Layout",
+      "choices": [
+        {
+          "key": "left",
+          "label": "Left"
+        },
+        {
+          "key": "center",
+          "label": "Centre"
+        },
+        {
+          "key": "right",
+          "label": "Right"
+        }
+      ]
+    },
+    {
+      "propertyKey": "missingImageBehavior",
+      "label": "When image missing",
+      "kind": "SELECT",
+      "displayOrder": 654,
+      "group": "Image",
+      "section": "Content",
+      "defaultValue": "hide",
+      "choices": [
+        {
+          "key": "hide",
+          "label": "Hide image"
+        },
+        {
+          "key": "placeholder",
+          "label": "Show placeholder"
+        }
+      ]
+    },
+    {
+      "propertyKey": "headingFontSize",
+      "label": "Heading size (px)",
+      "kind": "NUMBER",
+      "displayOrder": 660,
+      "group": "Heading",
+      "section": "Design"
+    },
+    {
+      "propertyKey": "headingColor",
+      "label": "Heading colour",
+      "kind": "COLOR",
+      "displayOrder": 661,
+      "group": "Heading",
+      "section": "Design"
+    },
+    {
+      "propertyKey": "descriptionFontSize",
+      "label": "Supporting size (px)",
+      "kind": "NUMBER",
+      "displayOrder": 662,
+      "group": "Supporting text",
+      "section": "Design"
+    },
+    {
+      "propertyKey": "descriptionColor",
+      "label": "Supporting colour",
+      "kind": "COLOR",
+      "displayOrder": 663,
+      "group": "Supporting text",
+      "section": "Design"
+    },
+    {
+      "propertyKey": "valueFontSize",
+      "label": "Value size (px)",
+      "kind": "NUMBER",
+      "displayOrder": 664,
+      "group": "Value",
+      "section": "Design"
+    },
+    {
+      "propertyKey": "valueColor",
+      "label": "Value colour",
+      "kind": "COLOR",
+      "displayOrder": 665,
+      "group": "Value",
+      "section": "Design"
     }
   ],
   "eventDefinitions": [
