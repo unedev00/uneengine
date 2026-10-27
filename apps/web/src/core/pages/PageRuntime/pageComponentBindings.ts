@@ -112,7 +112,7 @@ export function resolvePageFilterValue(value:unknown,context:PageFilterContext):
 }
 /** Block unbound parent filters *before* querying; missing context never means "all records". */
 export function pageComponentRecordQuery(
-  definitions:unknown,fields:ReadonlyArray<FieldMetadata>,context:PageFilterContext={}
+  definitions:unknown,fields:ReadonlyArray<FieldMetadata>,context:PageFilterContext={},logic:'AND'|'OR'='AND'
 ):{blocked:boolean;filter?:PageQueryFilter}{
   if(definitions===undefined||definitions===null)return {blocked:false};
   if(!Array.isArray(definitions))return {blocked:true};
@@ -123,7 +123,7 @@ export function pageComponentRecordQuery(
     const resolved=resolvePageFilterValue(filter.value,context);
     if(isDynamic(filter.value)&&(resolved===undefined||resolved===null||resolved===''))
       return {blocked:true};
-    if(isDynamic(filter.value)&&filter.operator==='Equals'&&!first
+    if(logic==='AND'&&isDynamic(filter.value)&&filter.operator==='Equals'&&!first
       &&['string','number','boolean'].includes(typeof resolved)){
       const field=fields.find(candidate=>candidate.apiName===filter.field);
       first={field:filter.field,value:String(resolved),related:Boolean(field?.relationship)};
@@ -135,12 +135,12 @@ export function filterPageComponentRecords<T extends Record<string, unknown>>(
   records: readonly T[],
   definitions: unknown,
   fields: ReadonlyArray<FieldMetadata>,
-  context: PageFilterContext={}
+  context: PageFilterContext={},logic:'AND'|'OR'='AND'
 ): T[] {
   if (definitions === undefined || definitions === null) return [...records];
   if (!Array.isArray(definitions)) return [];
-  if (pageComponentRecordQuery(definitions,fields,context).blocked)return [];
-  return records.filter(record => definitions.every(item => {
+  if (pageComponentRecordQuery(definitions,fields,context,logic).blocked)return [];
+  return records.filter(record => definitions[logic==='OR'?'some':'every'](item => {
     const filter = item as PageFilter;
     const resolved=resolvePageFilterValue(filter.value,context);
     if (!Object.prototype.hasOwnProperty.call(record, filter.field)) return false;
