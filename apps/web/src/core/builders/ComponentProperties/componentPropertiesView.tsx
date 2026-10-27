@@ -223,7 +223,6 @@ export function MetadataComponentProperties({ properties, objects, apps, pages, 
   onChange: (next: ComponentPropertyRecord) => void;
 }) {
   const [advancedOpen, setAdvancedOpen] = useState(false);
-  const [guidedStep,setGuidedStep] = useState<'data'|'filters'|'actions'>('data');
   const [newEventName, setNewEventName] = useState('');
   const [fieldSearch, setFieldSearch] = useState<Record<string,string>>({});
   const [advancedDraft, setAdvancedDraft] = useState('');
@@ -312,13 +311,7 @@ export function MetadataComponentProperties({ properties, objects, apps, pages, 
     </label>;
   };
   return <div className="metadata-component-properties">
-    <nav className="builder-connect-steps" aria-label="Configure block without code">
-      {([{id:'data',name:'1. Connect data'},{id:'filters',name:'2. Choose records'},
-        {id:'actions',name:'3. Set actions'}] as const).map(step=>
-        <button type="button" key={step.id} className={guidedStep===step.id?'active':''}
-          aria-pressed={guidedStep===step.id} onClick={()=>setGuidedStep(step.id)}>{step.name}</button>)}
-    </nav>
-    <section hidden={guidedStep!=='data'} aria-label="Choose data and field bindings">
+    <section className="office-ribbon-data-section" aria-label="Connect data"><div className="office-ribbon-group-heading">Connect data</div>
       <p className="properties-help">Choose an object, then select fields and how records are displayed. These options use the shared data engine.</p>
     {typeof properties.layoutParentId === 'string' && properties.layoutParentId && <label className="form-label">Split pane placement
       <select className="form-control" value={String(properties.layoutPane ?? 'first')}
@@ -342,16 +335,14 @@ export function MetadataComponentProperties({ properties, objects, apps, pages, 
     {(properties.kind === 'Table' || (definitionsByKey.has('striped') && definitionsByKey.has('pageSize')))
       && <TableRowConfigurationEditor properties={properties} object={selectedObject} onChange={onChange}/>}
     <details className="builder-advanced-panel"><summary>Advanced: connect to a page value</summary><p className="properties-help">Optional: use a value supplied by another block or automation.</p><PageStatePropertyBindingsEditor properties={properties} definitions={definitions} onChange={onChange}/></details>
-      <button type="button" className="btn btn-small" onClick={()=>setGuidedStep('filters')}>Next: Choose records</button>
     </section>
-    <section hidden={guidedStep!=='filters'} aria-label="Filter records">
+    <section className="office-ribbon-data-section" aria-label="Choose records"><div className="office-ribbon-group-heading">Choose records</div>
       <p className="properties-help">Show all records or add field conditions. Date and number options follow each field type.</p>
       {Array.from(new Set(['filters', ...Object.keys(properties).filter(isFilter)])).map(key =>
         <RecordFilterEditor key={key} title={key === 'filters' ? 'Which records?' : labelFor(key)} fields={fieldsFor(key)}
           filters={listProperty(key)} onChange={filters => update(key, filters)} />)}
-      <button type="button" className="btn btn-small" onClick={()=>setGuidedStep('actions')}>Next: Set actions</button>
     </section>
-    <section hidden={guidedStep!=='actions'} aria-label="Configure actions and automations">
+    <section className="office-ribbon-data-section" aria-label="Set actions"><div className="office-ribbon-group-heading">Set actions</div>
     <div className="properties-section-title">What happens?</div>
     <p className="properties-help">Choose what this block should do when someone uses it. Available actions and destinations depend on the block.</p>
     {Object.entries(actionFlows ?? {}).map(([eventName, raw]) => {
