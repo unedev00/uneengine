@@ -2468,11 +2468,27 @@ function PageBuilder({
             <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Label</span><input aria-label="Component label" value={selected.label} onChange={event=>updateComponent(selected.id,{label:event.target.value})}/></label>
             {(/text/i.test(selected.type) || /text/i.test(selected.label)) && selected.type!=='Rich Text' && <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Text</span><input aria-label="Component text" value={String(selected.properties.text??selected.properties.content??'Text')} onChange={event=>{const key=typeof selected.properties.content==='string'?'content':'text';updateComponent(selected.id,{properties:{...selected.properties,[key]:event.target.value}});}}/></label>}
             <label className="office-ribbon-checkbox"><input type="checkbox" checked={selected.visible} onChange={event=>updateComponent(selected.id,{visible:event.target.checked})}/> Show component</label>
-            <button type="button" onClick={()=>selectRibbonTab('Component Style')}><SlidersHorizontal size={16}/> More style controls</button>
-            <button type="button" onClick={()=>openExpandedEditor('visibility')}><Eye size={16}/> Visibility rules</button>
+            <button type="button" onClick={()=>selectRibbonTab('Component Style')}><SlidersHorizontal size={16}/> Format controls</button>
+            <button type="button" onClick={()=>selectRibbonTab('Component Responsive')}><Eye size={16}/> Responsive & visibility</button>
           </div><span>Content</span></div>}
 
-          {selected && ribbonTab === 'Component Properties' && /text|button|label|badge|heading|paragraph|rich|input/i.test(selected.type+' '+selected.label) && <div className="office-ribbon-group office-ribbon-typography">
+          {selected && ribbonTab==='Component Properties' && <div className="office-ribbon-group office-ribbon-icon-group office-ribbon-colour-group"><div className="office-ribbon-stack">
+            <div className="office-ribbon-icon-line">
+              {([['text','Text colour','color'],['fill','Fill colour','backgroundColor'],['border','Border colour','borderColor']] as const)
+                .map(([kind,label,key])=><RibbonColorPalette key={kind} kind={kind} label={label}
+                  value={String((selected.properties.visualStyle as Record<string,unknown>|undefined)?.[key]??'#111827')}
+                  onChange={colour=>{
+                    const authored=selected.properties.visualStyle && typeof selected.properties.visualStyle==='object'
+                      ?selected.properties.visualStyle as Record<string,unknown>:{};
+                    updateComponent(selected.id,{properties:{...selected.properties,visualStyle:{...authored,[key]:colour}}});
+                  }}/>)}
+            </div></div><span>Colours</span></div>}
+          {selected && ribbonTab==='Component Responsive' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
+            <label className="office-ribbon-checkbox"><input type="checkbox" checked={selected.visible}
+              onChange={event=>updateComponent(selected.id,{visible:event.target.checked})}/> Show component</label>
+            <button type="button" onClick={()=>openExpandedEditor('visibility')}><Eye size={16}/> Visibility rules</button>
+          </div><span>Visibility</span></div>}
+          {selected && ribbonTab === 'Component Style' && /text|button|label|badge|heading|paragraph|rich|input/i.test(selected.type+' '+selected.label) && <div className="office-ribbon-group office-ribbon-typography">
             <div className="office-ribbon-stack">
               <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Font size</span>
                 <input aria-label="Component font size" type="number" min={8} max={96} value={typeof textStyle.fontSize==='number'?textStyle.fontSize:Number(selected.properties.fontSize??16)}
@@ -2496,7 +2512,7 @@ function PageBuilder({
           </div>}
 
 
-          {selected && ribbonTab === 'Component Properties' && <div className="office-ribbon-group office-ribbon-appearance">
+          {selected && ribbonTab === 'Component Style' && <div className="office-ribbon-group office-ribbon-appearance">
             <div className="office-ribbon-stack">
               {([
                 {key:'borderRadius',label:'Corners',options:[[0,'Square'],[6,'Small'],[14,'Rounded'],[28,'Soft'],[64,'Pill']]},
@@ -2520,11 +2536,16 @@ function PageBuilder({
               </label>)}
             </div><span>Appearance</span>
           </div>}
-          {selected && ribbonTab === 'Component Properties' && selectedCustomDefinition && <div className="office-ribbon-inline-options">
+          {selected && (ribbonTab==='Component Properties'||ribbonTab==='Component Style') && selectedCustomDefinition && <div className="office-ribbon-inline-options">
             <ComponentPresentationProperties
               definitions={availableComponentSettings(selectedCustomDefinition.propertyDefinitions??[],page.layoutVariant??'Desktop',selectedCustomDefinition.version)
-                .filter(definition=>!(definition as {group?:string}).group && presentationSection(definition)!=='Content' && definition.kind!=='COLOR'&&!/(?:colou?r|background|fill|tone|width|height|offset|align|fontSize|fontWeight|textDecoration|border|spacing|padding|margin)/i.test(definition.propertyKey)
-                && !(['text','label','content'].includes(definition.propertyKey)&&/text/i.test(selected.type+' '+selected.label)))}
+                .filter(definition=>!(definition as {group?:string}).group
+                  && presentationSection(definition)!=='Content' && presentationSection(definition)!=='Layout'
+                  && (ribbonTab==='Component Properties'
+                    ? /(?:theme|surface|tone|colou?r|background|fill)/i.test(definition.propertyKey)
+                    : !/(?:theme|surface|tone|colou?r|background|fill)/i.test(definition.propertyKey))
+                  && !(ribbonTab==='Component Style' && ['text','label','content'].includes(definition.propertyKey)
+                    && /text/i.test(selected.type+' '+selected.label)))}
               properties={selected.properties}
               onChange={properties=>updateComponent(selected.id,{properties})}/>
           </div>}
@@ -2574,12 +2595,15 @@ function PageBuilder({
             <button type="button" onClick={()=>openExpandedEditor('actions')}><MousePointer2 size={16}/> Edit actions</button>
             <button type="button" onClick={()=>openExpandedEditor('conditions')}><Filter size={16}/> Only when</button>
           </div><span>Events & outcomes</span></div>}
-          {selected && ribbonTab==='Component Layout' && selectedCustomDefinition && <div className="office-ribbon-inline-options">
+          {selected && (ribbonTab==='Component Layout'||ribbonTab==='Component Responsive') && selectedCustomDefinition && <div className="office-ribbon-inline-options">
             <ComponentPresentationProperties
               definitions={availableComponentSettings(selectedCustomDefinition.propertyDefinitions??[],
                 page.layoutVariant??'Desktop',selectedCustomDefinition.version)
                 .filter(definition=>isPresentationProperty(definition)&&presentationSection(definition)==='Layout'
-                  && !(definition as {group?:string}).group)}
+                  && !(definition as {group?:string}).group
+                  && (ribbonTab==='Component Responsive'
+                    ? /(?:device|breakpoint|mobile|tablet|desktop|phone|responsive|hidden|visible|visibility)/i.test(definition.propertyKey)
+                    : !/(?:device|breakpoint|mobile|tablet|desktop|phone|responsive|hidden|visible|visibility)/i.test(definition.propertyKey)))}
               properties={selected.properties}
               onChange={properties=>updateComponent(selected.id,{properties})}/>
           </div>}
@@ -2643,7 +2667,7 @@ function PageBuilder({
               </select>
             </label></div><span>Add record field</span>
           </div>}
-          {['Component Properties','Component Layout'].includes(ribbonTab) && <div className="office-ribbon-inspector-host" ref={setRibbonPropertyHost} aria-label="Ribbon property controls" />}
+          {['Component Properties','Component Style','Component Layout','Component Responsive'].includes(ribbonTab) && <div className="office-ribbon-inspector-host" ref={setRibbonPropertyHost} aria-label="Ribbon property controls" />}
 
         </div>
       </section>
@@ -2800,19 +2824,7 @@ function PageBuilder({
         </div>
         {ribbonPropertyHost && createPortal(<aside id="lightning-page-properties" style={ribbonTab !== 'Home' && !ribbonTab.startsWith('Component ') ? { display: 'none' } : undefined}
           className={`properties-panel reference-properties-panel ${pageSettingsOpen || selected ? 'responsive-open' : ''}`}>
-          {ribbonTab==='Component Style' && selected ? <div className="office-ribbon-colours">
-            {selectedCustomDefinition && <ComponentPresentationProperties
-              definitions={availableComponentSettings(selectedCustomDefinition.propertyDefinitions??[],page.layoutVariant??'Desktop',selectedCustomDefinition.version)
-                .filter(definition=>definition.kind==='COLOR'||/(?:colou?r|background|fill|tone)/i.test(definition.propertyKey))}
-              properties={selected.properties}
-              onChange={properties=>updateComponent(selected.id,{properties})}/>}
-            <PageComponentVisualEditor section="colors" componentType={selected.type}
-              value={selected.properties.visualStyle}
-              onChange={visualStyle=>updateComponent(selected.id,{properties:{...selected.properties,visualStyle}})}/>
-            <PageComponentStyleEditor section="colors" componentType={selected.type}
-              properties={selected.properties}
-              onChange={(properties: Record<string,unknown>)=>updateComponent(selected.id,{properties})}/>
-          </div> : selectedRegion && !pageSettingsOpen && activePanel !== 'page' ? <div className="properties-section">
+          {selectedRegion && !pageSettingsOpen && activePanel !== 'page' ? <div className="properties-section">
             <div className="properties-section-title">Section configuration</div>
             <p className="properties-help">Sections are responsive layout regions. Change the arrangement without deleting any blocks.</p>
             <label className="form-label">Section arrangement<select className="form-control" value={page.template ?? 'main-sidebar'} onChange={event => setPageTemplate(event.target.value as LightningPageTemplate)}>{pageTemplates.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>
@@ -2824,7 +2836,7 @@ function PageBuilder({
             {selectedRegion === 'main' && <p className="properties-help">The Main section is required and cannot be deleted. Change the section arrangement to remove optional regions.</p>}
           </div> : selected && !pageSettingsOpen && activePanel !== 'page' ? <>
             {inspectorTab === 'Position' ? <div className="office-ribbon-layout-responsive">
-              <PageComponentStyleEditor section="layout" componentType={selected.type} properties={selected.properties}
+              <PageComponentStyleEditor section={ribbonTab==='Component Responsive'?'all':'layout'} componentType={selected.type} properties={selected.properties}
                 onChange={(properties: Record<string, unknown>)=>updateComponent(selected.id,{properties})}/>
             </div> : <>
             {inspectorTab === 'Data & Actions' && <details className="builder-advanced-panel"><summary>Technical details</summary>
@@ -2836,14 +2848,9 @@ function PageBuilder({
               definitions={selectedCustomDefinition?.propertyDefinitions} eventDefinitions={selectedCustomDefinition?.eventDefinitions}
               componentVersion={selectedCustomDefinition?.version} objects={objects} apps={apps} pages={pages}
               currentAppId={builderAppApiName||apps[0]?.apiName||'Records'} primaryObjectApiName={page.targetObject} flows={flows}/>}
-            {inspectorTab === 'Design' && selectedCustomDefinition && <ComponentPresentationProperties
-              definitions={availableComponentSettings(selectedCustomDefinition.propertyDefinitions??[],page.layoutVariant??'Desktop',selectedCustomDefinition.version).filter(definition=>
-                !(definition as {group?:string}).group && presentationSection(definition)!=='Content' && presentationSection(definition)!=='Layout' && (ribbonTab==='Component Properties' || (definition.kind==='COLOR'||/(?:colou?r|background|fill|opacity|tone)/i.test(definition.propertyKey)))
-                && !(ribbonTab==='Component Properties' && /text/i.test(selected.type+' '+selected.label) && definition.propertyKey==='text'))} properties={selected.properties}
-              onChange={(properties) => updateComponent(selected.id, {properties})}/>}
-            {inspectorTab === 'Design' && <PageComponentVisualEditor section={ribbonTab==='Component Style'?'colors':'appearance'} componentType={selected.type} value={selected.properties.visualStyle} onChange={(visualStyle) => updateComponent(selected.id, { properties: { ...selected.properties, visualStyle } })} />}
-            {inspectorTab === 'Design' && ribbonTab==='Component Properties' && <PageComponentStyleEditor section="colors" componentType={selected.type} properties={selected.properties}
-                onChange={(properties: Record<string, unknown>) => updateComponent(selected.id, { properties })} />}
+            {inspectorTab === 'Design' && ribbonTab==='Component Style' && <PageComponentVisualEditor
+              section="appearance" componentType={selected.type} value={selected.properties.visualStyle}
+              onChange={visualStyle=>updateComponent(selected.id,{properties:{...selected.properties,visualStyle}})}/>}
             {inspectorTab === 'Data & Actions' && <>
             {selected.parentId && <button type="button" className="btn btn-small" onClick={() => updateComponent(selected.id, { parentId: undefined })}>Move out of section</button>}
             {selectedCustomDefinition && <>
