@@ -145,8 +145,10 @@ test('Page Builder property editors filter controls by selected component capabi
   const advanced = await readFile(new URL('../src/core/builders/ComponentStyleEditor/PageComponentStyleEditor.tsx', import.meta.url), 'utf8');
   const capabilities = await readFile(new URL('../src/core/builders/ComponentStyleEditor/componentAppearanceCapabilities.ts', import.meta.url), 'utf8');
 
-  assert.match(builder, /PageComponentVisualEditor componentType=\{selected\.type\}/);
-  assert.match(builder, /PageComponentStyleEditor componentType=\{selected\.type\}/);
+  // Both editors must receive the selected component type and the contextual
+  // colour/layout section. Attribute order is intentionally not an API contract.
+  assert.match(builder, /<PageComponentVisualEditor\s+section=\{ribbonTab==='Component Style'\?'colors':'layout'\}\s+componentType=\{selected\.type\}/);
+  assert.match(builder, /<PageComponentStyleEditor\s+section=\{ribbonTab==='Component Style'\?'colors':'layout'\}\s+componentType=\{selected\.type\}/);
   assert.match(visual, /numericPresets\.filter\(preset => supportsAppearanceProperty\(componentType, preset\.key\)\)/);
   assert.match(visual, /appearanceNumberFields\.filter\(\(\{key\}\) => supportsAppearanceProperty\(componentType, key\)\)/);
   assert.match(advanced, /numeric\.filter\(\(\[key\]\) => supportsAppearanceProperty\(componentType, key\)\)/);
