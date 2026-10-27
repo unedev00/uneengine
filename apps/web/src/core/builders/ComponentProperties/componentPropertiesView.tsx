@@ -352,8 +352,13 @@ export function MetadataComponentProperties({ properties, objects, apps, pages, 
       <div className="office-ribbon-group-heading">Choose records</div>
       {(['sortBy','sortField','pageSize','limit','recordLimit'] as const).filter(key=>Boolean(definitionsByKey.has(key)||key in properties)).map(key=>
         <label className="form-label" key={key}>{labelFor(key)}
-          <input className="form-control" aria-label={labelFor(key)} type={/size|limit/i.test(key)?'number':'text'}
-            value={String(properties[key]??'')} onChange={event=>update(key,/size|limit/i.test(key)?Number(event.target.value):event.target.value)}/>
+          {/sort/i.test(key)
+            ? <select className="form-control" aria-label={labelFor(key)} value={String(properties[key]??'')} onChange={event=>update(key,event.target.value)}>
+                <option value="">Default order</option>
+                {fields.map(field=><option key={field.apiName} value={field.apiName}>{field.label}</option>)}
+              </select>
+            : <input className="form-control" aria-label={labelFor(key)} type="number" min={1} max={10000}
+                value={String(properties[key]??'')} onChange={event=>update(key,Number(event.target.value))}/>}
         </label>)}
       <button type="button" className="office-ribbon-command" onClick={()=>setDetailsPopup(true)}><Settings2 size={15}/> More data settings</button>
     </section>}
@@ -363,10 +368,30 @@ export function MetadataComponentProperties({ properties, objects, apps, pages, 
       <button type="button" className="office-ribbon-command" onClick={openFilterPopup}><Plus size={15}/> Add filter</button>
       <span className="office-ribbon-stat">{totalFilters} filter{totalFilters===1?'':'s'} · {properties.filterLogic==='OR'?'OR':'AND'}</span>
     </section>}
+    {mode==='actions' && <section className="office-ribbon-data-section" aria-label="Events">
+      <div className="office-ribbon-group-heading">Events</div>
+      <label className="form-label">Event
+        <select className="form-control" aria-label="Choose component event" value={newEventName} onChange={event=>setNewEventName(event.target.value)}>
+          <option value="">Choose event…</option>
+          {allowedEventNames.map(name=><option value={name} key={name}>{eventDefinitions.find(event=>event.apiName===name)?.label??labelFor(name)}</option>)}
+        </select>
+      </label>
+      <button type="button" className="office-ribbon-command" disabled={!newEventName||Boolean(actionFlows?.[newEventName])}
+        onClick={()=>{update('actionFlows',{...(actionFlows??{}),[newEventName]:{actionType:'Flow',flowApiName:'',inputs:{}}});setNewEventName('');}}>
+        <Plus size={15}/> Add event
+      </button>
+      <span className="office-ribbon-stat">{Object.keys(actionFlows??{}).length} linked event{Object.keys(actionFlows??{}).length===1?'':'s'}</span>
+    </section>}
     {mode==='actions' && <section className="office-ribbon-data-section" aria-label="Actions"><div className="office-ribbon-group-heading">Actions</div>
       <button type="button" className="office-ribbon-command" onClick={()=>setActionsPopup(true)}><Workflow size={15}/> Configure actions</button>
       <button type="button" className="office-ribbon-command" onClick={()=>setActionsPopup(true)}><Plus size={15}/> Add action</button>
       <span className="office-ribbon-stat">{Object.keys(actionFlows??{}).length} configured</span>
+    </section>}
+    {mode==='actions' && <section className="office-ribbon-data-section" aria-label="Mappings">
+      <div className="office-ribbon-group-heading">Mappings</div>
+      <button type="button" className="office-ribbon-command" onClick={()=>setActionsPopup(true)}><Database size={15}/> Input mappings</button>
+      <button type="button" className="office-ribbon-command" onClick={()=>setActionsPopup(true)}><Workflow size={15}/> Output mappings</button>
+      <button type="button" className="office-ribbon-command" onClick={()=>setActionsPopup(true)}><Settings2 size={15}/> Action settings</button>
     </section>}
     {(mode==='actions'||mode==='actions-editor') && mode==='actions' && <section className="office-ribbon-data-section" aria-label="Action conditions"><div className="office-ribbon-group-heading">Conditions</div>
       <button type="button" className="office-ribbon-command" onClick={()=>setConditionsPopup(true)}><Filter size={15}/> Configure conditions</button>
