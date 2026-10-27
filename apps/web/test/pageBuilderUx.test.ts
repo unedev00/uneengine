@@ -53,7 +53,11 @@ test('card gallery exposes independent part metadata that is consumed by runtime
   for(const key of ['imageWidth','imageHeight','imageFit','imageAspectRatio','imageShape',
     'headingFontSize','headingColor','descriptionFontSize','descriptionColor','valueFontSize','valueColor']) {
     assert.equal(keys.has(key),true,key+' must be configurable');
-    assert.ok(runtime.includes('p.'+key),key+' must change rendering');
+    const computedTextProperty=/^(heading|description|value)(FontSize|Color|FontWeight|TextAlign|LineLimit)$/.test(key);
+    assert.ok(computedTextProperty
+      ? runtime.includes('p[part+"'+key.replace(/^(heading|description|value)/,'')+'"]')
+        && runtime.includes('textStyleFor("'+key.match(/^(heading|description|value)/)?.[0]+'")')
+      : runtime.includes('p.'+key),key+' must change rendering');
   }
   for(const part of ['Image','Heading','Supporting text','Value','Card','Gallery'])
     assert.equal(component.propertyDefinitions.some((definition:{group?:string})=>definition.group===part),true,part);
