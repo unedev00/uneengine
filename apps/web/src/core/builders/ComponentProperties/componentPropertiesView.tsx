@@ -210,9 +210,10 @@ import {
 
 type ComponentPropertyRecord = Record<string, unknown>;
 
-export function MetadataComponentProperties({ properties, objects, apps, pages, currentAppId, flows, onChange, definitions, device, componentVersion, eventDefinitions = [], primaryObjectApiName = '', pageComponents = [], componentCatalog = [] }: { definitions?: LibraryComponentMetadata['propertyDefinitions']; eventDefinitions?: LibraryComponentMetadata['eventDefinitions'];
+export function MetadataComponentProperties({ properties, objects, apps, pages, currentAppId, flows, onChange, definitions, device, componentVersion, eventDefinitions = [], primaryObjectApiName = '', pageComponents = [], componentCatalog = [], mode='all' }: { definitions?: LibraryComponentMetadata['propertyDefinitions']; eventDefinitions?: LibraryComponentMetadata['eventDefinitions'];
   pageComponents?:PageComponentMetadata[];componentCatalog?:LibraryComponentMetadata[];
   device?:PropertyDevice; componentVersion?:number;
+  mode?: 'all'|'data'|'actions'|'actions-editor'|'details'|'conditions';
   primaryObjectApiName?: string;
   properties: ComponentPropertyRecord;
   objects: ObjectMetadata[];
@@ -224,6 +225,11 @@ export function MetadataComponentProperties({ properties, objects, apps, pages, 
 }) {
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [newEventName, setNewEventName] = useState('');
+  const [filterPopup,setFilterPopup] = useState(false);
+  const [actionsPopup,setActionsPopup] = useState(false);
+  const [detailsPopup,setDetailsPopup] = useState(false);
+  const [conditionsPopup,setConditionsPopup] = useState(false);
+  const [filterDraft,setFilterDraft] = useState<Record<string,unknown[]>>({});
   const [fieldSearch, setFieldSearch] = useState<Record<string,string>>({});
   const [advancedDraft, setAdvancedDraft] = useState('');
   const [advancedError, setAdvancedError] = useState('');
@@ -310,8 +316,13 @@ export function MetadataComponentProperties({ properties, objects, apps, pages, 
       </datalist>
     </label>;
   };
+  const filterKeys=Array.from(new Set(['filters',...Object.keys(properties).filter(isFilter)]));
+  const totalFilters=filterKeys.reduce((count,key)=>count+listProperty(key).length,0);
+  const editorProps={properties,objects,apps,pages,currentAppId,flows,onChange,definitions,device,componentVersion,eventDefinitions,primaryObjectApiName,pageComponents,componentCatalog};
+  const openFilterPopup=()=>{setFilterDraft(Object.fromEntries(filterKeys.map(key=>[key,[...listProperty(key)]])));setFilterPopup(true);};
+  const applyFilters=()=>{onChange({...properties,...filterDraft});setFilterPopup(false);};
   return <div className="metadata-component-properties">
-    <section className="office-ribbon-data-section" aria-label="Connect data"><div className="office-ribbon-group-heading">Connect data</div>
+    {(mode==='all'||mode==='data') && <section className="office-ribbon-data-section" aria-label="Connect data"><div className="office-ribbon-group-heading">Connect data</div>
       <p className="properties-help">Choose an object, then select fields and how records are displayed. These options use the shared data engine.</p>
     {typeof properties.layoutParentId === 'string' && properties.layoutParentId && <label className="form-label">Split pane placement
       <select className="form-control" value={String(properties.layoutPane ?? 'first')}
@@ -335,14 +346,32 @@ export function MetadataComponentProperties({ properties, objects, apps, pages, 
     {(properties.kind === 'Table' || (definitionsByKey.has('striped') && definitionsByKey.has('pageSize')))
       && <TableRowConfigurationEditor properties={properties} object={selectedObject} onChange={onChange}/>}
     <details className="builder-advanced-panel"><summary>Advanced: connect to a page value</summary><p className="properties-help">Optional: use a value supplied by another block or automation.</p><PageStatePropertyBindingsEditor properties={properties} definitions={definitions} onChange={onChange}/></details>
-    </section>
-    <section className="office-ribbon-data-section" aria-label="Choose records"><div className="office-ribbon-group-heading">Choose records</div>
-      <p className="properties-help">Show all records or add field conditions. Date and number options follow each field type.</p>
-      {Array.from(new Set(['filters', ...Object.keys(properties).filter(isFilter)])).map(key =>
-        <RecordFilterEditor key={key} title={key === 'filters' ? 'Which records?' : labelFor(key)} fields={fieldsFor(key)}
-          filters={listProperty(key)} onChange={filters => update(key, filters)} />)}
-    </section>
-    <section className="office-ribbon-data-section" aria-label="Set actions"><div className="office-ribbon-group-heading">Set actions</div>
+    </section>}
+    {(mode==='all'||mode==='data') && <section className="office-ribbon-data-section" aria-label="Choose records">
+      <div className="office-ribbon-group-heading">Choose records</div>
+      {(['sortBy','sortField','pageSize','limit','recordLimit'] as const).filter(key=>Boolean(definitionsByKey.has(key)||key in properties)).map(key=>
+        <label className="form-label" key={key}>{labelFor(key)}
+          <input className="form-control" aria-label={labelFor(key)} type={/size|limit/i.test(key)?'number':'text'}
+            value={String(properties[key]??'')} onChange={event=>update(key,/size|limit/i.test(key)?Number(event.target.value):event.target.value)}/>
+        </label>)}
+      <button type="button" className="office-ribbon-command" onClick={()=>setDetailsPopup(true)}><Settings2 size={15}/> More data settings</button>
+    </section>}
+    {(mode==='all'||mode==='data') && <section className="office-ribbon-data-section" aria-label="Filters">
+      <div className="office-ribbon-group-heading">Filters</div>
+      <button type="button" className="office-ribbon-command" onClick={openFilterPopup}><Filter size={15}/> Configure filters</button>
+      <button type="button" className="office-ribbon-command" onClick={openFilterPopup}><Plus size={15}/> Add filter</button>
+      <span className="office-ribbon-stat">{totalFilters} active filter{totalFilters===1?'':'s'}</span>
+    </section>}
+    {mode==='actions' && <section className="office-ribbon-data-section" aria-label="Actions"><div className="office-ribbon-group-heading">Actions</div>
+      <button type="button" className="office-ribbon-command" onClick={()=>setActionsPopup(true)}><Workflow size={15}/> Configure actions</button>
+      <button type="button" className="office-ribbon-command" onClick={()=>setActionsPopup(true)}><Plus size={15}/> Add action</button>
+      <span className="office-ribbon-stat">{Object.keys(actionFlows??{}).length} configured</span>
+    </section>}
+    {(mode==='actions'||mode==='actions-editor') && mode==='actions' && <section className="office-ribbon-data-section" aria-label="Action conditions"><div className="office-ribbon-group-heading">Conditions</div>
+      <button type="button" className="office-ribbon-command" onClick={()=>setConditionsPopup(true)}><Filter size={15}/> Configure conditions</button>
+      <button type="button" className="office-ribbon-command" onClick={()=>setConditionsPopup(true)}><Plus size={15}/> Add condition</button>
+    </section>}
+    {(mode==='all'||mode==='actions-editor') && <section className="office-ribbon-data-section" aria-label="Set actions"><div className="office-ribbon-group-heading">Set actions</div>
     <div className="properties-section-title">What happens?</div>
     <p className="properties-help">Choose what this block should do when someone uses it. Available actions and destinations depend on the block.</p>
     {Object.entries(actionFlows ?? {}).map(([eventName, raw]) => {
@@ -475,7 +504,8 @@ export function MetadataComponentProperties({ properties, objects, apps, pages, 
         {flows.filter(flow=>flow.status==='Active').map(flow => <option key={flow.apiName} value={flow.apiName}>{flow.label}</option>)}
       </select>
     </label>}
-    </section>
+    </section>}
+    {(mode==='all'||mode==='details') && <div className="office-ribbon-metadata-details">
     {typeof properties.platformSlotKey === 'string' && properties.platformSlotKey && <>
       <div className="properties-section-title">Administration control presentation</div>
       <p className="properties-help">Configure this existing protected control without changing its OneEngine action, validation or permissions.</p>
@@ -587,5 +617,43 @@ export function MetadataComponentProperties({ properties, objects, apps, pages, 
       }}>Apply advanced metadata</button>
       {advancedError && <div className="auth-error" role="alert">{advancedError}</div>}
     </>}</>}
+    </div>}
+    {mode==='conditions' && <CustomComponentPropertyEditor definitions={[pagePropertyContract]}
+      choiceOverrides={behaviorPickers} targetBindableOptions={targetBindableOptions}
+      properties={{pagePropertyContract:properties.pagePropertyContract??{version:1}}}
+      onChange={next=>update('pagePropertyContract',next.pagePropertyContract)}
+      device={device} componentVersion={componentVersion} objects={objects} flows={flows}
+      primaryObjectApiName={objectApiName||primaryObjectApiName} appObjectApiNames={appObjectApiNames}/>}
+    {filterPopup && createPortal(<div className="modal-backdrop office-ribbon-modal-backdrop" role="presentation">
+      <section className="modal office-ribbon-config-modal" role="dialog" aria-modal="true" aria-label="Configure record filters">
+        <div className="modal-header"><h2>Configure record filters</h2><button type="button" className="icon-button" aria-label="Close filters" onClick={()=>setFilterPopup(false)}><X size={16}/></button></div>
+        <div className="office-ribbon-modal-content">
+          {filterKeys.map(key=><RecordFilterEditor key={key} title={key==='filters'?'Record filters':labelFor(key)} fields={fieldsFor(key)}
+            filters={filterDraft[key]??[]} onChange={next=>setFilterDraft(draft=>({...draft,[key]:next}))}/>)}
+        </div>
+        <div className="office-ribbon-modal-actions"><button type="button" className="btn" onClick={()=>setFilterPopup(false)}>Cancel</button><button type="button" className="btn btn-brand" onClick={applyFilters}>Apply filters</button></div>
+      </section>
+    </div>,document.body)}
+    {actionsPopup && createPortal(<div className="modal-backdrop office-ribbon-modal-backdrop" role="presentation">
+      <section className="modal office-ribbon-config-modal" role="dialog" aria-modal="true" aria-label="Configure component actions">
+        <div className="modal-header"><h2>Configure component actions</h2><button type="button" className="icon-button" aria-label="Close actions" onClick={()=>setActionsPopup(false)}><X size={16}/></button></div>
+        <div className="office-ribbon-modal-content"><MetadataComponentProperties {...editorProps} mode="actions-editor"/></div>
+        <div className="office-ribbon-modal-actions"><button type="button" className="btn btn-brand" onClick={()=>setActionsPopup(false)}>Done</button></div>
+      </section>
+    </div>,document.body)}
+    {conditionsPopup && createPortal(<div className="modal-backdrop office-ribbon-modal-backdrop" role="presentation">
+      <section className="modal office-ribbon-config-modal" role="dialog" aria-modal="true" aria-label="Configure action conditions">
+        <div className="modal-header"><h2>Conditions and interaction rules</h2><button type="button" className="icon-button" aria-label="Close conditions" onClick={()=>setConditionsPopup(false)}><X size={16}/></button></div>
+        <div className="office-ribbon-modal-content"><MetadataComponentProperties {...editorProps} mode="conditions"/></div>
+        <div className="office-ribbon-modal-actions"><button type="button" className="btn btn-brand" onClick={()=>setConditionsPopup(false)}>Done</button></div>
+      </section>
+    </div>,document.body)}
+    {detailsPopup && createPortal(<div className="modal-backdrop office-ribbon-modal-backdrop" role="presentation">
+      <section className="modal office-ribbon-config-modal" role="dialog" aria-modal="true" aria-label="Component data settings">
+        <div className="modal-header"><h2>Additional component settings</h2><button type="button" className="icon-button" aria-label="Close settings" onClick={()=>setDetailsPopup(false)}><X size={16}/></button></div>
+        <div className="office-ribbon-modal-content"><MetadataComponentProperties {...editorProps} mode="details"/></div>
+        <div className="office-ribbon-modal-actions"><button type="button" className="btn btn-brand" onClick={()=>setDetailsPopup(false)}>Done</button></div>
+      </section>
+    </div>,document.body)}
   </div>;
 }
