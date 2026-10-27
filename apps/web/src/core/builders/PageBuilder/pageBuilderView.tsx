@@ -2123,40 +2123,28 @@ function PageBuilder({
         <div className="office-ribbon-content" role="tabpanel" aria-label={ribbonTab}>
           {ribbonTab === 'Home' && <>
             <div className="office-ribbon-group"><div className="office-ribbon-stack">
-              <button onClick={() => {setPageSettingsOpen(true);setActivePanel('page');}}><Settings2 size={17}/> Page properties</button>
-              <button onClick={() => openPalette('Layers')}><Layers3 size={17}/> Page structure</button>
-              <button onClick={() => setDependenciesOpen(true)}><Puzzle size={17}/> Dependencies</button>
-            </div><span>Page layout</span></div>
+              <button onClick={safeBackToPages}><ArrowLeft size={16}/> Back to pages</button>
+              <button onClick={()=>{setPageSettingsOpen(true);setActivePanel('page');}}><Pencil size={16}/> {page.label}</button>
+              <span className="office-ribbon-status">{undoStack.length?'Unsaved edits':page.draftRevision&&page.draftRevision!==page.publishedRevision?'Unpublished changes':savedFeedback?'Saved':page.status==='Active'?'Published':'Draft'}</span>
+            </div><span>Page</span></div>
             <div className="office-ribbon-group"><div className="office-ribbon-stack">
-              <label>Device <select aria-label="Page device layout" value={page.layoutVariant??'Desktop'} disabled={switchingLayout||saving} onChange={event=>void switchLayoutVariant(event.target.value as 'Mobile'|'Desktop'|'Tablet'|'Custom')}>{(['Desktop','Mobile','Tablet','Custom'] as const).map(v=><option key={v}>{v}</option>)}</select></label>
-              <button onClick={() => {setPageSettingsOpen(true);setActivePanel('page');}}>Layout settings</button>
-              <button onClick={() => setRouteDirectoryOpen(true)}><ExternalLink size={16}/> Page routes</button>
-            </div><span>Page configuration</span></div>
-          </>}
-          {ribbonTab === 'Home' && <div className="office-ribbon-group office-ribbon-home-toolbar"><div className="office-home-actions"><div className="builder-current-page">
-          <button type="button" className="icon-button subtle" aria-label="Back to page list" title="Back to pages" onClick={safeBackToPages}><ArrowLeft size={18}/></button>
-          <button type="button" className="builder-page-name" title="Edit page name" onClick={() => { setPageSettingsOpen(true); setActivePanel('page'); }}><Pencil size={13}/>{page.label}</button>
-          <label className="builder-layout-switcher">Layout
-            <select aria-label="Choose page layout" disabled={switchingLayout||saving}
-              value={page.layoutVariant??'Desktop'}
-              onChange={event=>void switchLayoutVariant(event.target.value as 'Mobile'|'Desktop'|'Tablet'|'Custom')}>
-              {(['Mobile','Desktop','Tablet','Custom'] as const).map(variant=>
-                <option key={variant} value={variant}>{variant}</option>)}
-            </select>
-          </label>
-          <span className="builder-page-status" aria-live="polite">
-            {undoStack.length?'Unsaved edits':
-              page.draftRevision&&page.draftRevision!==page.publishedRevision?'Unpublished changes':
-              savedFeedback?'Saved':page.status==='Active'?'Published':'Draft'}
-          </span>
-        </div>
-        <div className="toolbar-actions">
-          <button type="button" className="icon-button subtle" aria-label="Open page dependencies" title="Dependencies for this page" onClick={()=>setDependenciesOpen(true)}><Puzzle size={17}/></button>
-          <button type="button" className="icon-button subtle" aria-label="Open page routes" title="Route aliases for this page" onClick={()=>setRouteDirectoryOpen(true)}><ExternalLink size={17}/></button>
-          <button type="button" className="icon-button subtle" aria-label="Page properties" title="Page properties" onClick={() => {setPageSettingsOpen(true);setActivePanel('page');}}><Settings2 size={17}/></button>
-          {page.layoutMode === 'free-canvas' && <button type="button" className={canvasSnap ? 'canvas-snap-toggle active' : 'canvas-snap-toggle'}
-            aria-pressed={canvasSnap} onClick={() => setCanvasSnap(value => !value)}>Snap {canvasSnap ? 'on' : 'off'}</button>}
-          <button type="button" className="btn btn-small"
+              <label><Monitor size={16}/> Device <select aria-label="Choose page layout" disabled={switchingLayout||saving} value={page.layoutVariant??'Desktop'} onChange={event=>void switchLayoutVariant(event.target.value as 'Mobile'|'Desktop'|'Tablet'|'Custom')}>{(['Desktop','Mobile','Tablet','Custom'] as const).map(v=><option key={v}>{v}</option>)}</select></label>
+              <button onClick={()=>{setPageSettingsOpen(true);setActivePanel('page');}}><Settings2 size={16}/> Page properties</button>
+              <button onClick={()=>openPalette('Layers')}><Layers3 size={16}/> Page structure</button>
+            </div><span>Layout</span></div>
+            <div className="office-ribbon-group"><div className="office-ribbon-stack">
+              <button onClick={()=>setDependenciesOpen(true)}><Puzzle size={16}/> Dependencies</button>
+              <button onClick={()=>setRouteDirectoryOpen(true)}><ExternalLink size={16}/> Page routes</button>
+              {page.layoutMode==='free-canvas' ? <button aria-pressed={canvasSnap} onClick={()=>setCanvasSnap(v=>!v)}><Grid2X2 size={16}/> Snap {canvasSnap?'on':'off'}</button> : <button onClick={()=>setShowWelcome(v=>!v)}><CircleHelp size={16}/> Builder help</button>}
+            </div><span>Tools</span></div>
+            <div className="office-ribbon-group"><div className="office-ribbon-stack">
+                        <button type="button" className="btn btn-brand btn-small" aria-label="Save page" title={page.status === 'Active' ? 'Save updates to this live page' : 'Save this draft'} disabled={saving} onClick={()=>void savePage()}><Save size={16}/>{saving ? 'Saving…' : 'Save'}</button>
+
+                        <button type="button" className="btn btn-small" title="Publish this layout for assigned users"
+            disabled={saving||switchingLayout||(page.status==='Active'&&!undoStack.length&&page.draftRevision===page.publishedRevision)}
+            onClick={()=>void publishCurrentLayout()}><Check size={15}/>{page.status==='Draft'?'Activate':'Publish'}</button>
+
+                        <button type="button" className="btn btn-small"
             aria-label="Test published page in its assigned application" title="Runs the active page and real Flows. Use a disposable test tenant."
             disabled={page.pageType!=='App Page' || page.status!=='Active' || !currentPageIsAssignedToBuilderApp || !builderAppApiName}
             onClick={()=>{
@@ -2164,12 +2152,9 @@ function PageBuilder({
               const opened=window.open(url,'_blank','noopener,noreferrer');
               if(!opened)onNotify('Allow popups to test the published page in the assigned application.');
             }}><ExternalLink size={14}/> Test active app</button>
-          <button type="button" className="btn btn-brand btn-small" aria-label="Save page" title={page.status === 'Active' ? 'Save updates to this live page' : 'Save this draft'} disabled={saving} onClick={()=>void savePage()}><Save size={16}/>{saving ? 'Saving…' : 'Save'}</button>
-          <button type="button" className="btn btn-small" title="Publish this layout for assigned users"
-            disabled={saving||switchingLayout||(page.status==='Active'&&!undoStack.length&&page.draftRevision===page.publishedRevision)}
-            onClick={()=>void publishCurrentLayout()}><Check size={15}/>{page.status==='Draft'?'Activate':'Publish'}</button>
-          <button type="button" className="icon-button subtle" aria-label="Page Builder help" title="How to build a page" onClick={() => setShowWelcome(current => !current)}><CircleHelp size={17}/></button>
-        </div></div><span>Page commands</span></div>}
+
+            </div><span>Save & publish</span></div>
+          </>}
           {ribbonTab === 'Add Block' && <>
             {([['Text','Text','Image','Rich Text'],['Buttons','Button','Link','Action'],['Sections','Section','Container','Columns'],['Data','Item Grid','Form','Record']] as const).map(([group,...names])=>
               <div className="office-ribbon-group" key={group}><div className="office-ribbon-stack">{names.map(name=>{

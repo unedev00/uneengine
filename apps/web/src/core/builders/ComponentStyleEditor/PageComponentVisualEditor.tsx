@@ -43,65 +43,59 @@ export default function PageComponentVisualEditor({ value, onChange, componentTy
     {key:'justify',label:'Content position',values:['start','center','end','space-between']}
   ];
   const swatches = ['transparent','#ffffff','#f8fafc','#e0e7ff','#dbeafe','#dcfce7','#fee2e2','#111827'];
-  return <fieldset className="metadata-component-visual-editor">
-    <legend className="properties-section-title">Appearance & responsive layout</legend>
-    <p className="properties-help">Choose a style visually. Use Advanced controls for exact measurements.</p>
-    {numericPresets.filter(preset => supportsAppearanceProperty(componentType, preset.key)).map(preset => <div className="visual-preset-section" key={preset.key}>
-      <div className="visual-preset-heading">{preset.label}<small>{visual[preset.key]} px</small></div>
-      <div className="visual-preset-grid" role="group" aria-label={preset.label}>
-        {preset.values.map((n,index) => <button type="button" key={n}
-          className={visual[preset.key] === n ? 'visual-preset active' : 'visual-preset'}
-          aria-label={`${preset.label}: ${preset.labels[index]} (${n} pixels)`}
-          aria-pressed={visual[preset.key] === n}
-          onClick={() => setNumber(preset.key,n)}>
-          <span className="visual-preset-sample" aria-hidden="true">
-            {preset.key === 'borderRadius' ? <span className="visual-corner-example" style={{borderRadius:`${n}px`}}/> :
-              preset.key === 'borderWidth' ? <span className="visual-border-example" style={{borderWidth:`${n}px`}}/> :
-              <span className="visual-space-example" style={{padding:preset.key === 'padding' ? n/3 : 3}}>
-                <i/><i style={{marginLeft:preset.key === 'gap' ? n/2 : 2}}/>
-              </span>}
-          </span>
-          <span>{preset.labels[index]}</span>
-        </button>)}
-      </div>
-    </div>)}
-    {alignmentPresets.filter(preset => supportsAppearanceProperty(componentType, preset.key)).map(preset => <div className="visual-preset-section" key={preset.key}>
-      <div className="visual-preset-heading">{preset.label}</div>
-      <div className="visual-preset-grid" role="group" aria-label={preset.label}>
-        {preset.values.map(alignment => <button type="button" key={alignment}
-          className={visual[preset.key] === alignment ? 'visual-preset active' : 'visual-preset'}
-          aria-label={`${preset.label}: ${alignment}`} aria-pressed={visual[preset.key] === alignment}
-          onClick={() => set(preset.key,alignment as VisualProperties[typeof preset.key])}>
-          <span className={`visual-alignment-example visual-align-${alignment}`} aria-hidden="true"><i/><i/><i/></span>
-          <span>{alignment === 'space-between' ? 'Spread' : alignment[0].toUpperCase()+alignment.slice(1)}</span>
-        </button>)}
-      </div>
-    </div>)}
-    <div className="visual-preset-section">
-      <div className="visual-preset-heading">Background colour</div>
-      <div className="visual-swatch-grid" role="group" aria-label="Background colour presets">
-        {swatches.map(swatch => <button type="button" key={swatch}
-          style={{background:swatch === 'transparent' ? 'repeating-conic-gradient(#e6eaf0 0% 25%,white 0% 50%) 50%/12px 12px' : swatch}}
-          className={visual.backgroundColor.toLowerCase() === swatch ? 'visual-swatch active' : 'visual-swatch'}
-          title={swatch} aria-label={`Background ${swatch}`}
-          aria-pressed={visual.backgroundColor.toLowerCase() === swatch}
-          onClick={() => set('backgroundColor',swatch)} />)}
-      </div>
-    </div>
-    <details className="visual-advanced-properties">
-      <summary>Advanced · Exact values and responsive layout</summary>
-      <div className="visual-advanced-grid">
-        {appearanceNumberFields.filter(({key}) => supportsAppearanceProperty(componentType, key)).map(({key,label,min,max}) => number(key,label,min,max))}
-        {appearanceColorFields.filter(({key}) => supportsAppearanceProperty(componentType, key)).map(({key,label}) => color(key,label))}
-        {appearanceChoiceFields.filter(({key}) => supportsAppearanceProperty(componentType, key)).map(({key,label,options}) =>
-          <label className="form-label" key={key}>{label}
-            <select className="form-control" value={visual[key]}
-              onChange={event => set(key,event.target.value as VisualProperties[typeof key])}>
-              {options.map(item => <option key={item} value={item}>{item}</option>)}
+  return <fieldset className="metadata-component-visual-editor compact-ribbon-visual-editor">
+    <legend className="properties-section-title">Appearance</legend>
+    <div className="compact-visual-groups">
+      {numericPresets.filter(preset => supportsAppearanceProperty(componentType, preset.key)).map(preset =>
+        <div className="compact-visual-group" key={preset.key}>
+          <label className="compact-visual-label">{preset.label}
+            <select aria-label={preset.label} value={visual[preset.key]} onChange={event=>setNumber(preset.key,Number(event.target.value))}>
+              {preset.values.map((n,index)=><option key={n} value={n}>{preset.labels[index]} · {n}px</option>)}
             </select>
-          </label>)}
-      </div>
-    </details>
-    <button type="button" className="btn btn-small" onClick={() => onChange({})}>Reset appearance to defaults</button>
+          </label>
+          <div className="compact-visual-presets" role="group" aria-label={preset.label}>
+            {preset.values.map((n,index)=><button type="button" key={n} title={preset.labels[index]+' · '+n+'px'}
+              aria-label={preset.label+': '+preset.labels[index]} aria-pressed={visual[preset.key]===n}
+              className={visual[preset.key]===n?'active':''} onClick={()=>setNumber(preset.key,n)}>
+              <span className="compact-shape" style={preset.key==='borderRadius'?{borderRadius:Math.min(8,n/3)}:preset.key==='borderWidth'?{borderWidth:Math.max(1,n/2)}:{padding:Math.min(5,n/5)}} />
+            </button>)}
+          </div>
+        </div>)}
+      {alignmentPresets.filter(preset=>supportsAppearanceProperty(componentType,preset.key)).map(preset=>
+        <div className="compact-visual-group" key={preset.key}>
+          <label className="compact-visual-label">{preset.label}
+            <select value={visual[preset.key]} onChange={event=>set(preset.key,event.target.value as VisualProperties[typeof preset.key])}>
+              {preset.values.map(item=><option key={item} value={item}>{item}</option>)}
+            </select>
+          </label>
+        </div>)}
+      {appearanceColorFields.filter(({key})=>supportsAppearanceProperty(componentType,key)).map(({key,label})=>
+        <div className="compact-visual-group" key={key}>
+          <label className="compact-visual-label">{label}
+            <span className="compact-color-controls">
+              <input type="color" aria-label={label+' palette'} value={/^#[0-9a-f]{6}$/i.test(visual[key])?visual[key]:'#ffffff'} onChange={event=>set(key,event.target.value)}/>
+              <input type="text" aria-label={label+' hex code'} placeholder="#RRGGBB" value={visual[key]}
+                onChange={event=>{const next=event.target.value;if(next===''||/^(?:#[0-9a-f]{0,8}|[a-z]*)$/i.test(next))set(key,next);}}/>
+            </span>
+          </label>
+          <div className="compact-color-swatches" role="group" aria-label={label+' presets'}>
+            {swatches.map(swatch=><button type="button" key={swatch} aria-label={label+' '+swatch} title={swatch}
+              aria-pressed={visual[key].toLowerCase()===swatch} onClick={()=>set(key,swatch)}
+              style={{background:swatch==='transparent'?'repeating-conic-gradient(#d5dbe5 0% 25%,white 0% 50%) 50%/8px 8px':swatch}}/>)}
+          </div>
+        </div>)}
+      <details className="compact-visual-group visual-advanced-properties">
+        <summary>Exact size & responsive settings</summary>
+        <div className="visual-advanced-grid">
+          {appearanceNumberFields.filter(({key}) => supportsAppearanceProperty(componentType, key)).map(({key,label,min,max})=>number(key,label,min,max))}
+          {appearanceChoiceFields.filter(({key})=>supportsAppearanceProperty(componentType,key)).map(({key,label,options})=>
+            <label className="form-label" key={key}>{label}<select className="form-control" value={visual[key]}
+              onChange={event=>set(key,event.target.value as VisualProperties[typeof key])}>
+              {options.map(item=><option key={item} value={item}>{item}</option>)}
+            </select></label>)}
+        </div>
+      </details>
+      <div className="compact-visual-group"><button type="button" className="btn btn-small" onClick={()=>onChange({})}>Reset appearance</button></div>
+    </div>
   </fieldset>;
 }
