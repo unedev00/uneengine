@@ -2194,8 +2194,9 @@ function PageBuilder({
       {editorMode && <>
       <section className="office-builder-ribbon" aria-label="Page Builder ribbon">
         <nav className="office-ribbon-tabs" role="tablist" aria-label="Page Builder tabs">
-          {(['Home','Add Block',...(selected ? ['Component Data','Component Properties','Component Style','Component Layout','Component Action'] : []),'Preview'] as Array<typeof ribbonTab>).map(tab =>
-            <button key={tab} type="button" role="tab" aria-selected={ribbonTab === tab} className={ribbonTab===tab?'active':''} onClick={() => selectRibbonTab(tab)}>{{'Add Block':'Add Component','Component Data':'Data Source','Component Properties':'Properties','Component Style':'Style','Component Layout':'Layout','Component Action':'Actions'}[tab]??tab}</button>)}
+          {(['Home','Add Block',...(selected ? ['Component Data','Component Properties','Component Layout','Component Action'] : []),'Preview'] as Array<typeof ribbonTab>).map(tab =>
+            <button key={tab} type="button" role="tab" aria-selected={ribbonTab === tab} className={ribbonTab===tab?'active':''} onClick={() => selectRibbonTab(tab)}>{{'Add Block':'Add Component','Component Data':'Data Source','Component Properties':'Design','Component Style':'Style','Component Layout':'Layout','Component Action':'Actions'}[tab]??tab}</button>)}
+          <button type="button" className="office-ribbon-quick-save" aria-label="Save page from any tab" disabled={saving} onClick={()=>void savePage()}><Save size={15}/>{saving?'Saving…':'Save'}</button>
         </nav>
         <div className="office-ribbon-content" role="tabpanel" aria-label={ribbonTab}>
           {ribbonTab === 'Home' && <>
@@ -2245,6 +2246,10 @@ function PageBuilder({
                 </button>)}
               </div><span>{group.label}</span></div>)}
           </>}
+          {selected && ribbonTab === 'Component Data' && selectedCustomDefinition?.apiName==='une_item_grid' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
+            <label className="office-ribbon-inline-field"><Database size={16}/> Object<select aria-label="Card grid object" value={String(selected.properties.objectApiName??'')} onChange={event=>{const obj=objects.find(item=>item.apiName===event.target.value);const definitions=obj?.fields??[];const pick=(pattern:RegExp)=>definitions.find(field=>pattern.test(field.apiName+' '+field.label))?.apiName??'';updateComponent(selected.id,{properties:{...selected.properties,objectApiName:event.target.value,imageFieldApiName:pick(/image|photo|picture|thumbnail/i),titleFieldApiName:pick(/^(name|title|product_name)$/i)||pick(/name|title/i),descriptionFieldApiName:pick(/description|summary|detail/i),priceFieldApiName:pick(/price|amount|cost/i)}});}}><option value="">Select an object…</option>{objects.map(obj=><option key={obj.apiName} value={obj.apiName}>{obj.label}</option>)}</select></label>
+            {(['imageFieldApiName','titleFieldApiName','descriptionFieldApiName','priceFieldApiName','badgeFieldApiName'] as const).map((key)=><label key={key} className="office-ribbon-inline-field"><span className="office-ribbon-field-name">{{imageFieldApiName:'Image',titleFieldApiName:'Title',descriptionFieldApiName:'Description',priceFieldApiName:'Value',badgeFieldApiName:'Badge'}[key]}</span><select aria-label={'Card '+key} value={String(selected.properties[key]??'')} onChange={event=>updateComponent(selected.id,{properties:{...selected.properties,[key]:event.target.value}})}><option value="">Not mapped</option>{(objects.find(obj=>obj.apiName===selected.properties.objectApiName)?.fields??[]).map(field=><option key={field.apiName} value={field.apiName}>{field.label}</option>)}</select></label>)}
+          </div><span>Card fields</span></div>}
           {selected && ribbonTab === 'Component Properties' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
             <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Label</span><input aria-label="Component label" value={selected.label} onChange={event=>updateComponent(selected.id,{label:event.target.value})}/></label>
             {(/text/i.test(selected.type) || /text/i.test(selected.label)) && selected.type!=='Rich Text' && <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Text</span><input aria-label="Component text" value={String(selected.properties.text??selected.properties.content??'Text')} onChange={event=>{const key=typeof selected.properties.content==='string'?'content':'text';updateComponent(selected.id,{properties:{...selected.properties,[key]:event.target.value}});}}/></label>}
@@ -2363,7 +2368,7 @@ function PageBuilder({
             <div key={index} className="office-ribbon-group"><div className="office-ribbon-stack">
               {fields.slice(index*3,index*3+3).map(field=><button type="button" key={field.apiName} onClick={()=>addField(field.apiName)}><Database size={16}/>{field.label}</button>)}
             </div><span>{index===0?'Record Fields':`Record Fields ${index+1}`}</span></div>)}
-          {['Component Style','Component Data','Component Action','Component Layout'].includes(ribbonTab) && <div className="office-ribbon-inspector-host" ref={setRibbonPropertyHost} aria-label="Ribbon property controls" />}
+          {['Component Properties','Component Data','Component Action','Component Layout'].includes(ribbonTab) && <div className="office-ribbon-inspector-host" ref={setRibbonPropertyHost} aria-label="Ribbon property controls" />}
         </div>
       </section>
       {ribbonTab==='Home' && pageSettingsDialogOpen && <div className="modal-backdrop office-ribbon-modal-backdrop" role="presentation">
@@ -2497,11 +2502,11 @@ function PageBuilder({
               currentAppId={builderAppApiName||apps[0]?.apiName||'Records'} primaryObjectApiName={page.targetObject} flows={flows}/>}
             {inspectorTab === 'Design' && selectedCustomDefinition && <ComponentPresentationProperties
               definitions={availableComponentSettings(selectedCustomDefinition.propertyDefinitions??[],page.layoutVariant??'Desktop',selectedCustomDefinition.version).filter(definition=>
-                (definition.kind==='COLOR'||/(?:colou?r|background|fill|opacity|tone)/i.test(definition.propertyKey)) === (ribbonTab==='Component Style')
+                (ribbonTab==='Component Properties' || (definition.kind==='COLOR'||/(?:colou?r|background|fill|opacity|tone)/i.test(definition.propertyKey)))
                 && !(ribbonTab==='Component Properties' && /text/i.test(selected.type+' '+selected.label) && definition.propertyKey==='text'))} properties={selected.properties}
               onChange={(properties) => updateComponent(selected.id, {properties})}/>}
             {inspectorTab === 'Design' && <PageComponentVisualEditor section={ribbonTab==='Component Style'?'colors':'appearance'} componentType={selected.type} value={selected.properties.visualStyle} onChange={(visualStyle) => updateComponent(selected.id, { properties: { ...selected.properties, visualStyle } })} />}
-            {inspectorTab === 'Design' && ribbonTab==='Component Style' && <PageComponentStyleEditor section="colors" componentType={selected.type} properties={selected.properties}
+            {inspectorTab === 'Design' && ribbonTab==='Component Properties' && <PageComponentStyleEditor section="colors" componentType={selected.type} properties={selected.properties}
                 onChange={(properties: Record<string, unknown>) => updateComponent(selected.id, { properties })} />}
             {inspectorTab === 'Data & Actions' && <>
             {selected.parentId && <button type="button" className="btn btn-small" onClick={() => updateComponent(selected.id, { parentId: undefined })}>Move out of section</button>}
