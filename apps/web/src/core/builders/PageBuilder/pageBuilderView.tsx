@@ -791,6 +791,10 @@ function PageBuilder({
   };
   const wrapSelectedInContainer = () => {
     if (!selected || !selected.position || isCanvasLocked(selected) || rawLayoutParentId(selected)) return;
+    if (selectionIds.length<2 || selectionIds.some(id=>{
+      const item=page.components.find(component=>component.id===id);
+      return !item?.position||Boolean(rawLayoutParentId(item))||isCanvasLocked(item)||item.properties.canvasLocked===true;
+    }))return;
     const groupId = 'group-' + crypto.randomUUID();
     const eligible=page.components.filter(item=>selectionIds.includes(item.id)&&item.position&&!rawLayoutParentId(item)&&item.properties.canvasLocked!==true&&!isCanvasLocked(item));
     const next=eligible.length>1
@@ -2286,7 +2290,10 @@ function PageBuilder({
                 <details className="office-ribbon-group-menu">
                   <summary title="Grouping options"><Group size={16}/> Group <ChevronDown size={12}/></summary>
                   <div className="office-ribbon-group-menu-items">
-                    <button type="button" disabled={page.layoutMode!=='free-canvas'||!selected.position||isCanvasLocked(selected)||Boolean(rawLayoutParentId(selected))} onClick={()=>wrapSelectedInContainer()}><Group size={16}/> Group</button>
+                    <button type="button" disabled={page.layoutMode!=='free-canvas'||selectionIds.length<2||!selected.position||isCanvasLocked(selected)||Boolean(rawLayoutParentId(selected))||selectionIds.some(id=>{
+                      const item=page.components.find(component=>component.id===id);
+                      return !item?.position||isCanvasLocked(item)||item.properties.canvasLocked===true||Boolean(rawLayoutParentId(item));
+                    })} onClick={()=>wrapSelectedInContainer()}><Group size={16}/> Group</button>
                     <button type="button" disabled={page.layoutMode!=='free-canvas'||selected.type!=='Container'||isCanvasLocked(selected)||!childrenOf(page.components,selected.id).length} onClick={ungroupSelected}><Ungroup size={16}/> Ungroup</button>
                   </div>
                 </details>
