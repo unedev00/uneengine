@@ -27,6 +27,9 @@ jobs:
               if ($0 ~ /unesolutions|443|80|api\/|proxy_pass|301|location \/|listen/) print source " :: " $0
             }
           ' | head -n 85
+          for site in /etc/nginx/sites-available/metadrive-frontend /etc/nginx/sites-enabled/metadrive-frontend; do
+            echo "site=$site type=$(stat -c %F "$site") target=$(readlink -f "$site")"
+          done
           echo "Frontend TLS site directives with line numbers:"
           sudo -n grep -nE '^[[:space:]]*(server_name|listen|location|proxy_pass|try_files)' /etc/nginx/sites-enabled/metadrive-frontend | head -n 35
           if [[ -n "${HTTPS_PROXY:-}${https_proxy:-}" ]]; then echo "HTTPS proxy environment present"; else echo "No HTTPS proxy variable"; fi
