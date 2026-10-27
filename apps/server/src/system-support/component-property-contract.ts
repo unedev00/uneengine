@@ -17,7 +17,7 @@ export type ComponentSettingDefinition = {
  /** Ribbon journey tab and selected component part. Stable persisted property keys are unchanged. */
  section?:'Data'|'Content'|'Design'|'Layout'|'Actions'|'Responsive'|'Appearance'|string;
  group?:string;
-
+};
 export type PropertyIssue={path:string;message:string};
 const keyPattern=/^[A-Za-z][A-Za-z0-9_]{0,127}$/;
 const blocked=new Set(['__proto__','constructor','prototype']);
