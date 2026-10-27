@@ -459,6 +459,7 @@ function PageBuilder({
   const [showLayers, setShowLayers] = useState(false);
   const [inspectorTab, setInspectorTab] = useState<'Design' | 'Data & Actions' | 'Visibility' | 'Position'>('Design');
   const [ribbonPropertyHost, setRibbonPropertyHost] = useState<HTMLDivElement | null>(null);
+  const [dataEditorOpen,setDataEditorOpen]=useState(false);
   const [visibilityDialogOpen,setVisibilityDialogOpen] = useState(false);
   const [additionalPropertyDialogOpen,setAdditionalPropertyDialogOpen] = useState(false);
   const [pageSettingsDialogOpen,setPageSettingsDialogOpen] = useState(false);
@@ -471,6 +472,7 @@ function PageBuilder({
   };
   const selectRibbonTab = (tab: typeof ribbonTab) => {
     setRibbonTab(tab);
+    setDataEditorOpen(false);
     setPageSettingsDialogOpen(false);
     if (tab === 'Add Block') { setPageSettingsOpen(false); openPalette('Components', 'All Components'); }
     if (tab === 'Home') { setPageSettingsOpen(true); setActivePanel('page'); }
@@ -2274,7 +2276,7 @@ function PageBuilder({
           {selected && ribbonTab === 'Component Data' && selectedCustomDefinition && selectedCustomDefinition.apiName!=='une_item_grid' &&
             selectedCustomDefinition.propertyDefinitions?.some(definition=>definition.kind==='OBJECT_FIELD') &&
             <div className="office-ribbon-group"><div className="office-ribbon-stack">
-              {selectedCustomDefinition.propertyDefinitions.filter(definition=>definition.kind==='OBJECT_FIELD').map(definition=><label key={definition.propertyKey} className="office-ribbon-inline-field">
+              {selectedCustomDefinition.propertyDefinitions.filter(definition=>definition.kind==='OBJECT_FIELD').slice(0,3).map(definition=><label key={definition.propertyKey} className="office-ribbon-inline-field">
                 <span className="office-ribbon-field-name">{definition.label}</span>
                 <select aria-label={definition.label} value={String(selected.properties[definition.propertyKey]??'')}
                   onChange={event=>updateComponent(selected.id,{properties:{...selected.properties,[definition.propertyKey]:event.target.value}})}>
@@ -2409,9 +2411,16 @@ function PageBuilder({
             <div key={index} className="office-ribbon-group"><div className="office-ribbon-stack">
               {fields.slice(index*3,index*3+3).map(field=><button type="button" key={field.apiName} onClick={()=>addField(field.apiName)}><Database size={16}/>{field.label}</button>)}
             </div><span>{index===0?'Record Fields':`Record Fields ${index+1}`}</span></div>)}
-          {['Component Properties','Component Data','Component Action','Component Layout'].includes(ribbonTab) && <div className="office-ribbon-inspector-host" ref={setRibbonPropertyHost} aria-label="Ribbon property controls" />}
+          {['Component Properties','Component Action','Component Layout'].includes(ribbonTab) && <div className="office-ribbon-inspector-host" ref={setRibbonPropertyHost} aria-label="Ribbon property controls" />}
+          {ribbonTab==='Component Data' && selected && <div className="office-ribbon-group"><div className="office-ribbon-stack"><button type="button" onClick={()=>setDataEditorOpen(true)}><Settings2 size={16}/> Advanced data settings</button><span className="office-ribbon-stat">Filters, relationships and bindings</span></div><span>More data</span></div>}
         </div>
       </section>
+      {ribbonTab==='Component Data' && dataEditorOpen && selected && <div className="modal-backdrop office-ribbon-modal-backdrop" role="presentation">
+        <section className="modal office-ribbon-config-modal" role="dialog" aria-modal="true" aria-label="Data source configuration" style={{width:'min(900px,96vw)',maxHeight:'85vh',overflow:'auto'}}>
+          <div className="modal-header"><h2>Data source · {selected.label}</h2><button type="button" aria-label="Close data source settings" onClick={()=>setDataEditorOpen(false)}><X size={18}/></button></div>
+          <div ref={setRibbonPropertyHost} className="page-builder-data-dialog-content" />
+        </section>
+      </div>}
       {ribbonTab==='Home' && pageSettingsDialogOpen && <div className="modal-backdrop office-ribbon-modal-backdrop" role="presentation">
         <section className="modal office-ribbon-config-modal office-ribbon-page-settings-modal" role="dialog" aria-modal="true" aria-label="Page settings">
           <div className="modal-header"><h2>Page settings</h2><button type="button" className="icon-button" aria-label="Close page settings" onClick={()=>setPageSettingsDialogOpen(false)}><X size={16}/></button></div>

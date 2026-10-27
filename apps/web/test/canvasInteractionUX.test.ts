@@ -408,7 +408,9 @@ test('Contextual Page Builder tabs do not leak metadata from other tabs',async()
  assert.match(builder,/mode="data" properties=\{selected\.properties\}/);
  assert.match(builder,/ribbonTab==='Component Style' && selected \? <div className="office-ribbon-colours">/);
  assert.match(builder,/ribbonTab === 'Component Properties' && <div className="office-ribbon-group office-ribbon-appearance"/);
- assert.match(builder,/\['Component Properties','Component Data','Component Action','Component Layout'\]\.includes\(ribbonTab\)/);
+ assert.match(builder,/\['Component Properties','Component Action','Component Layout'\]\.includes\(ribbonTab\)/);
+ assert.match(builder,/dataEditorOpen && selected/);
+ assert.match(builder,/Advanced data settings/);
  assert.match(builder,/ribbonTab === 'Component Properties'/);
  assert.match(css,/office-ribbon-colours \.compact-color-swatches/);
  assert.match(css,/metadata-component-properties>\.office-ribbon-data-section/);

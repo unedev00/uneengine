@@ -384,3 +384,41 @@
   bottom:6px!important;
   line-height:17px!important;
 }
+
+/* Data Source journey: one compact row per mapped field; advanced definitions
+   live in a dedicated dialog instead of a second ribbon-wide inspector. */
+.office-builder-ribbon .office-ribbon-content:has(.office-ribbon-stack select[aria-label="Card grid object"]) {
+  overflow-x:auto;
+}
+.office-builder-ribbon .office-ribbon-group:has(select[aria-label="Card grid object"]),
+.office-builder-ribbon .office-ribbon-group:has(select[aria-label="Card descriptionFieldApiName"]),
+.office-builder-ribbon .office-ribbon-group:has(select[data-card-mapping-field]) {
+  flex:0 0 auto;
+  min-width:0!important;
+  width:auto!important;
+  max-width:260px;
+}
+.office-builder-ribbon .office-ribbon-group:has(select[data-card-mapping-field]) .office-ribbon-stack {
+  display:grid;grid-template-columns:minmax(0,1fr);
+  grid-template-rows:repeat(3,28px);
+  width:100%;max-width:250px;gap:3px;
+}
+.office-builder-ribbon .office-ribbon-group:has(select[data-card-mapping-field]) .office-ribbon-inline-field {
+  display:grid!important;grid-template-columns:64px minmax(115px,1fr);
+  gap:6px;align-items:center;width:100%;max-width:250px;overflow:hidden;
+  white-space:nowrap;
+}
+.office-builder-ribbon .office-ribbon-group:has(select[data-card-mapping-field]) .office-ribbon-inline-field>select {
+  min-width:0!important;width:100%!important;max-width:155px!important;
+}
+.office-builder-ribbon .office-ribbon-group:has(select[data-card-mapping-field]) .office-ribbon-inline-field>span {
+  overflow:hidden;text-overflow:ellipsis;min-width:0;
+}
+.page-builder-data-dialog-content .properties-panel {
+  position:static!important;display:block!important;max-height:none!important;
+  width:100%!important;max-width:none!important;min-width:0!important;
+  overflow:visible!important;box-shadow:none!important;
+}
+.page-builder-data-dialog-content .metadata-component-properties {
+  display:block!important;width:100%!important;
+}
