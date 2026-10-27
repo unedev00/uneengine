@@ -5,7 +5,6 @@ import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {loadComponentCatalog,buildBundledComponent} from '../../../scripts/component-catalog.mjs';
 const {components}=await loadComponentCatalog(),une=components.filter(x=>x.apiName.startsWith('une_'));
-const retained=['OneBadge','OneButton','OneCalendar','OneConversation','OneItemGrid','OneSearch','OneShoppingCart','OneText'];
 const names=['text','image','calendar','button','card','input','toggle','badge','stack','tabs',
  'container','grid','split_pane','navigation','menu','modal','drawer','item_grid','repeater','record_list',
  'search','lookup','choice','cart','conversation','form','table','line_items','date_picker','slot_picker',
@@ -17,8 +16,8 @@ class FixtureDate extends Date {
  constructor(...args){super(...(args.length?args:['2026-10-24T12:00:00Z']));}
  static now(){return new Date('2026-10-24T12:00:00Z').getTime();}
 }
-test('only eight retained One components exist alongside the new UNE catalog',()=>{
- assert.deepEqual(components.filter(x=>x.apiName.startsWith('One')).map(x=>x.apiName).sort(),retained);
+test('UNE is the only published system component family',()=>{
+ assert.deepEqual(components.filter(x=>x.apiName.startsWith('One')).map(x=>x.apiName),[]);
  assert.deepEqual(une.map(x=>x.apiName),names);
  assert.equal(une.length,new Set(une.map(x=>x.apiName)).size);
 });
