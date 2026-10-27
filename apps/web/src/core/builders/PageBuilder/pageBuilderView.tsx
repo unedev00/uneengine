@@ -2355,7 +2355,9 @@ function PageBuilder({
                 }} />
             </>}
             {inspectorTab === 'Design' && selectedCustomDefinition && <ComponentPresentationProperties
-              definitions={availableComponentSettings(selectedCustomDefinition.propertyDefinitions??[],page.layoutVariant??'Desktop',selectedCustomDefinition.version).filter(definition=>(definition.kind==='COLOR'||/(?:colou?r|background|fill|opacity|tone)/i.test(definition.propertyKey)) === (ribbonTab==='Component Style'))} properties={selected.properties}
+              definitions={availableComponentSettings(selectedCustomDefinition.propertyDefinitions??[],page.layoutVariant??'Desktop',selectedCustomDefinition.version).filter(definition=>
+                (definition.kind==='COLOR'||/(?:colou?r|background|fill|opacity|tone)/i.test(definition.propertyKey)) === (ribbonTab==='Component Style')
+                && !(ribbonTab==='Component Properties' && /text/i.test(selected.type+' '+selected.label) && definition.propertyKey==='text'))} properties={selected.properties}
               onChange={(properties) => updateComponent(selected.id, {properties})}/>}
             {inspectorTab === 'Design' && <PageComponentVisualEditor section={ribbonTab==='Component Style'?'colors':'layout'} componentType={selected.type} value={selected.properties.visualStyle} onChange={(visualStyle) => updateComponent(selected.id, { properties: { ...selected.properties, visualStyle } })} />}
             {inspectorTab === 'Design' && <PageComponentStyleEditor section={ribbonTab==='Component Style'?'colors':'layout'} componentType={selected.type} properties={selected.properties}
