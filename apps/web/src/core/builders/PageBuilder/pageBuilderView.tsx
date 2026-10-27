@@ -468,6 +468,7 @@ function PageBuilder({
   const [pageSettingsDialogOpen,setPageSettingsDialogOpen] = useState(false);
   const [focusedCardMapping,setFocusedCardMapping] = useState('');
   const [ribbonAddCategory,setRibbonAddCategory] = useState('Content');
+  const [ribbonComponentSearch,setRibbonComponentSearch] = useState('');
   const [ribbonTab, setRibbonTab] = useState<'Home' | 'Add Block' | 'Component Content' | 'Component Properties' | 'Component Style' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Preview'>('Home');
   const componentNeedsData = (type: string) => {
     const metadata = type.startsWith('Custom:') ? findRegisteredComponent(libraryComponents,type.slice('Custom:'.length),'page') : undefined;
@@ -2328,23 +2329,25 @@ function PageBuilder({
               <button onClick={()=>setCanvasRefreshKey(key=>key+1)}><RefreshCw size={17}/> Refresh canvas</button>
             </div><span>History</span></div>
           </>}
-          {ribbonTab === 'Add Block' && <>
-            <div className="office-ribbon-group"><div className="office-ribbon-stack">
-              <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Category</span>
-                <select aria-label="Choose component category" value={ribbonAddCategory}
-                  onChange={event=>setRibbonAddCategory(event.target.value)}>
-                  {Array.from(ribbonCategories.keys()).map(category=><option key={category}>{category}</option>)}
-                </select>
-              </label>
-            </div><span>Browse components</span></div>
-            {ribbonComponentGroups.filter(group=>group.id.startsWith(ribbonAddCategory+'-')).map(group=>
-              <div className="office-ribbon-group" key={group.id}><div className="office-ribbon-stack">
-                {group.components.map(component=><button type="button" key={component.id}
+          {ribbonTab === 'Add Block' && <div className="office-ribbon-add-library" aria-label="Add component library">
+            <div className="office-ribbon-add-browser">
+              <label className="office-ribbon-search-field"><Search size={14}/><input aria-label="Search components" placeholder="Search components…" value={ribbonComponentSearch} onChange={event=>setRibbonComponentSearch(event.target.value)}/></label>
+              <div className="office-ribbon-add-categories" role="group" aria-label="Component categories">
+                <button type="button" className={ribbonAddCategory==='All Components'?'active':''} onClick={()=>setRibbonAddCategory('All Components')}>All Components</button>
+                {Array.from(ribbonCategories.keys()).filter(category=>category!=='All Components').map(category=><button key={category} type="button" className={ribbonAddCategory===category?'active':''} onClick={()=>setRibbonAddCategory(category)}>{category}</button>)}
+              </div>
+            </div>
+            <div className="office-ribbon-component-tiles">
+              {ribbonComponentGroups.flatMap(group=>group.components)
+                .filter((component,index,all)=>all.findIndex(item=>item.type===component.type)===index)
+                .filter(component=>(ribbonAddCategory==='All Components'||ribbonComponentGroups.some(group=>group.id.startsWith(ribbonAddCategory+'-')&&group.components.some(item=>item.type===component.type)))
+                  && (!ribbonComponentSearch.trim()||(component.label+' '+component.description).toLowerCase().includes(ribbonComponentSearch.trim().toLowerCase())))
+                .map(component=><button className="office-ribbon-component-tile" type="button" key={component.type}
                   title={component.description} onClick={()=>addPaletteComponent(component.type)}>
-                  {renderPaletteIcon(component)} {component.label}
+                  {renderPaletteIcon(component)}<span>{component.label}</span>
                 </button>)}
-              </div><span>{group.label}</span></div>)}
-          </>}
+            </div>
+          </div>}
           {selected && ribbonTab === 'Component Content' && selectedCustomDefinition && selectedCustomDefinition.apiName!=='une_item_grid' &&
             selectedCustomDefinition.propertyDefinitions?.some(definition=>definition.kind==='OBJECT_FIELD') &&
             <div className="office-ribbon-group"><div className="office-ribbon-stack">
