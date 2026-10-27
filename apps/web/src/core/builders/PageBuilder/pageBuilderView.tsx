@@ -2372,6 +2372,17 @@ function PageBuilder({
                 </button>)}
             </div>
           </div>}
+          {selected && ribbonTab==='Component Data' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
+            <button type="button" onClick={()=>openExpandedEditor('filters')}><Filter size={16}/> Edit record filters</button>
+            <button type="button" onClick={()=>openExpandedEditor('source')}><Database size={16}/> Record scope</button>
+          </div><span>Record Scope</span></div>}
+          {selected && ribbonTab==='Component Data' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
+            <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Page size</span><input type="number" min={1} max={500} value={Number(selected.properties.pageSize??12)} onChange={event=>{const n=Number(event.target.value);if(Number.isInteger(n)&&n>=1&&n<=500)updateComponent(selected.id,{properties:{...selected.properties,pageSize:n}});}}/></label>
+            <label className="office-ribbon-checkbox"><input type="checkbox" checked={selected.properties.enablePagination===true} onChange={event=>updateComponent(selected.id,{properties:{...selected.properties,enablePagination:event.target.checked}})}/> Enable pagination</label>
+          </div><span>Pagination</span></div>}
+          {selected && ribbonTab==='Component Data' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
+            <button type="button" onClick={()=>openExpandedEditor('source')}><Plus size={16}/> Manage relationships</button>
+          </div><span>Relationships</span></div>}
           {selected && ribbonTab === 'Component Content' && selectedCustomDefinition && selectedCustomDefinition.apiName!=='une_item_grid' &&
             selectedCustomDefinition.propertyDefinitions?.some(definition=>definition.kind==='OBJECT_FIELD') &&
             <div className="office-ribbon-group"><div className="office-ribbon-stack">
@@ -2629,9 +2640,17 @@ function PageBuilder({
           </>}
           {ribbonTab === 'Preview' && <>
             <div className="office-ribbon-group"><div className="office-ribbon-stack">
-              <button onClick={openExternalPreview}><Eye size={17}/> Preview window</button>
-              <button onClick={()=>setPreviewMode(value=>!value)}><Monitor size={17}/> {previewMode?'Exit preview':'Canvas preview'}</button>
+              <button type="button" onClick={openExternalPreview}><Eye size={17}/> Preview Page</button>
+              <label className="office-ribbon-checkbox"><input type="checkbox" checked={previewMode} onChange={event=>setPreviewMode(event.target.checked)}/> Show preview</label>
             </div><span>Preview</span></div>
+            <div className="office-ribbon-group office-ribbon-preview-device"><div className="office-ribbon-home-icon-row">
+              {(['Desktop','Tablet','Mobile','Custom'] as const).map(device=><button key={device} type="button" aria-pressed={(page.layoutVariant??'Desktop')===device} disabled={switchingLayout||saving} onClick={()=>void switchLayoutVariant(device)}>{device==='Desktop'?<Monitor size={20}/>:device==='Tablet'?<Tablet size={20}/>:device==='Mobile'?<Smartphone size={20}/>:<Maximize2 size={20}/>}<span>{device}</span></button>)}
+            </div><span>Device Preview</span></div>
+            <div className="office-ribbon-group"><div className="office-ribbon-stack">
+              <span className="office-ribbon-stat">Page: {page.label}</span>
+              <span className="office-ribbon-stat">Type: {page.pageType}</span>
+              <button type="button" onClick={()=>setPageSettingsDialogOpen(true)}><Settings2 size={16}/> Preview options</button>
+            </div><span>Preview Options</span></div>
           </>}
           {ribbonTab==='Add Block' && page.pageType==='Record Page' && <div className="office-ribbon-group">
             <div className="office-ribbon-stack"><label className="office-ribbon-inline-field">
