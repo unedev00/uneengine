@@ -16,6 +16,8 @@ for(const name of retained){
   // UNE wrappers still reuse the old implementation code; it is not a public component.
   for(const extension of ['jsx','css'])
     await access(path.join(webSourceRoot,`one/${name}/${name}.${extension}`));
+  await assert.rejects(access(path.join(webSourceRoot,`one/${name}/component.json`)),
+    {code:'ENOENT'},name+' must not retain a standalone descriptor');
 }
 for (const component of registered) {
   const prefix = `one/${component.apiName}/`;
