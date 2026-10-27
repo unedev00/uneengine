@@ -45,7 +45,7 @@ export default function PageComponentStyleEditor({
   };
   const inheritedCaption = mode === 'Base' ? 'Default' : 'Inherit base';
   return <section className="page-component-style-editor" aria-label="Advanced layout and responsive properties">
-    <div className="office-ribbon-group-heading">{section === 'colors' ? 'Responsive colours' : 'Responsive layout & typography'}</div>
+    <div className="office-ribbon-group-heading">{section === 'colors' ? 'Responsive colours' : 'Responsive layout'}</div>
     <label className="form-label">Edit breakpoint
       <select className="form-control" aria-label="Edit layout breakpoint" disabled={disabled} value={mode} onChange={(event) => setMode(event.target.value as Mode)}>
         <option value="Base">Base / default</option>
