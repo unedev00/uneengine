@@ -12,7 +12,7 @@ This is a **descriptor inventory and outstanding E2E validation matrix**, not a 
 | Alert | `une_alert` | 15 | None | Content / Design / Actions | dismiss scope and feedback |
 | Button | `une_button` | 16 | `click` | Content / Actions | loading, failed writes, repeated-click protection |
 | Card | `une_card` | 18 | None | Content / Design / Layout / Actions | part mapping and context-specific child action |
-| Card Grid | `une_item_grid` | 63 | `itemSelect, itemAdd` | Data / Content / Design / Layout / Actions | generic details rows; more complete per-part controls; selection/add event runtime |
+| Card Grid | `une_item_grid` | 73 | `itemSelect, itemAdd` | Data / Content / Design / Layout / Actions | generic details rows; more complete per-part controls; selection/add event runtime |
 | Record List | `une_record_list` | 24 | `itemSelect` | Data / Content / Actions | row selection and empty/permission states |
 | Table | `une_table` | 20 | `rowSelect` | Data / Content / Actions | editing, row validation and selection |
 | Repeater | `une_repeater` | 31 | `itemSelect` | Data / Content / Layout / Actions | nested item bindings and event context |
@@ -48,7 +48,7 @@ This is a **descriptor inventory and outstanding E2E validation matrix**, not a 
 - A dedicated Content ribbon journey step and central persistent page/save/device header.
 - Data source vs Content field mapping for Card Grid, including preserved mappings, suggestions and missing-mapping warning.
 - Shared inline editors for source scope, staged base record filters, visibility rules and event actions; no Page Builder-specific Data or Visibility modal.
-- Card Grid part selection and runtime-backed image width/height/position/shape and independent heading, supporting and value typography; optional child Add button with separately emitted `itemAdd` event, and friendly Cart component selection; associated component metadata.
+- Card Grid part selection and runtime-backed image width/height/position/shape, independent heading/supporting/value typography (size, weight, colour, alignment, line limit), and card width; optional child Add button with separately emitted `itemAdd` event, and friendly Cart component selection; associated component metadata.
 - Shared browser/server setting definition now includes validated `section` and `group` presentation hints.
 - Targeted source-contract regression tests. CI and browser E2E outcomes must be recorded separately.
 
