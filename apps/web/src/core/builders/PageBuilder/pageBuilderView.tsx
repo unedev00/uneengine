@@ -103,7 +103,13 @@ import {
   AlignVerticalJustifyCenter,
   AlignVerticalJustifyEnd,
   Group,
-  Ungroup
+  Ungroup,
+  Bold,
+  Italic,
+  Underline,
+  AlignLeft,
+  AlignCenter,
+  AlignRight
 } from 'lucide-react';
 import FlowBuilderWorkspace from '../FlowBuilder/FlowBuilder';
 import FlowScreenContent from '../../automation/FlowScreen/FlowScreenContent';
@@ -122,7 +128,7 @@ import RichTextBlockEditor from '../ComponentProperties/RichTextBlockEditor';
 import PageRouteDirectory from '../../pages/PageRouteDirectory/PageRouteDirectory';
 import { isComponentVisible } from '../../components/Properties/componentVisibility';
 import PageComponentVisualEditor from '../ComponentStyleEditor/PageComponentVisualEditor';
-import { canNestComponent, pageAppearanceTarget, pageAppearanceStyleKeys, directChildren, isLayoutType, isDescendantOf, layoutTypes } from '../../pages/TemplatePageRuntime/pageComponentLayout';
+import { canNestComponent, pageAppearanceTarget, pageAppearanceStyleKeys, updateLayoutSettings, type LayoutSettingKey, directChildren, isLayoutType, isDescendantOf, layoutTypes } from '../../pages/TemplatePageRuntime/pageComponentLayout';
 import PageComponentStyleEditor from '../ComponentStyleEditor/PageComponentStyleEditor';
 import { isCanvasLocked, wrapCanvasComponent, ungroupCanvasComponent, snapCanvasPosition, alignCanvasComponents, distributeCanvasComponents } from './canvasInteractions';
 import { copyComponentTree, cloneComponentTree, assignTabOnReparent, type ComponentClipboard } from './pageComponentTree';
@@ -476,6 +482,12 @@ function PageBuilder({
   const fields = targetObject?.fields ?? [];
   const pageLayouts = targetObject?.pageLayouts ?? [];
   const selected = page.components.find((component) => component.id === selectedId);
+  const textStyle = selected?.properties.layoutStyle && typeof selected.properties.layoutStyle==='object'
+    ? selected.properties.layoutStyle as Record<string,unknown> : {};
+  const updateTextStyle = (key:LayoutSettingKey,value:string|number|null) => {
+    if (!selected) return;
+    updateComponent(selected.id,{properties:updateLayoutSettings(selected.properties,'Base',key,value)});
+  };
   useEffect(() => {
     if (!selected && ribbonTab.startsWith('Component ')) setRibbonTab('Home');
   }, [selectedId, page.components, ribbonTab]);
@@ -2212,6 +2224,29 @@ function PageBuilder({
             <button disabled={isCanvasLocked(selected)} onClick={removeSelected}><Trash2 size={16}/> Delete block</button>
           </div><span>Content</span></div>}
 
+          {selected && ribbonTab === 'Component Properties' && /text|button|label|badge|heading|paragraph|rich|input/i.test(selected.type+' '+selected.label) && <div className="office-ribbon-group office-ribbon-typography">
+            <div className="office-ribbon-stack">
+              <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Font size</span>
+                <input aria-label="Component font size" type="number" min={8} max={96} value={typeof textStyle.fontSize==='number'?textStyle.fontSize:Number(selected.properties.fontSize??16)}
+                  onChange={event=>{const size=Number(event.target.value);if(Number.isInteger(size)&&size>=8&&size<=96)updateTextStyle('fontSize',size);}}/>
+              </label>
+              <div className="office-ribbon-icon-line">
+                <button type="button" className="office-ribbon-icon-button" title="Bold" aria-label="Bold" aria-pressed={Number(textStyle.fontWeight??selected.properties.fontWeight??400)>=700}
+                  onClick={()=>updateTextStyle('fontWeight',Number(textStyle.fontWeight??selected.properties.fontWeight??400)>=700?'400':'700')}><Bold size={16}/></button>
+                <button type="button" className="office-ribbon-icon-button" title="Italic" aria-label="Italic" aria-pressed={textStyle.fontStyle==='italic'}
+                  onClick={()=>updateTextStyle('fontStyle',textStyle.fontStyle==='italic'?'normal':'italic')}><Italic size={16}/></button>
+                <button type="button" className="office-ribbon-icon-button" title="Underline" aria-label="Underline" aria-pressed={textStyle.textDecoration==='underline'}
+                  onClick={()=>updateTextStyle('textDecoration',textStyle.textDecoration==='underline'?'none':'underline')}><Underline size={16}/></button>
+              </div>
+              <div className="office-ribbon-icon-line">
+                {([['left',AlignLeft,'Align text left'],['center',AlignCenter,'Align text centre'],['right',AlignRight,'Align text right']] as const).map(([alignment,Icon,label])=>
+                  <button key={alignment} type="button" className="office-ribbon-icon-button" title={label} aria-label={label}
+                    aria-pressed={(textStyle.textAlign??selected.properties.textAlign??'left')===alignment}
+                    onClick={()=>updateTextStyle('textAlign',alignment)}><Icon size={16}/></button>)}
+              </div>
+            </div><span>Typography</span>
+          </div>}
+
           {selected && ribbonTab === 'Component Action' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
             <label className="office-ribbon-checkbox"><input type="checkbox" checked={selected.visible} onChange={event=>updateComponent(selected.id,{visible:event.target.checked})}/> Show block</label>
             <button type="button" onClick={()=>setVisibilityDialogOpen(true)}><Eye size={16}/> Configure visibility</button>
@@ -2261,7 +2296,6 @@ function PageBuilder({
             <div className="office-ribbon-group"><div className="office-ribbon-stack">
               <button onClick={openExternalPreview}><Eye size={17}/> Preview window</button>
               <button onClick={()=>setPreviewMode(value=>!value)}><Monitor size={17}/> {previewMode?'Exit preview':'Canvas preview'}</button>
-              <button onClick={()=>{setPageSettingsOpen(true);setActivePanel('page');}}><Settings2 size={17}/> Preview settings</button>
             </div><span>Preview</span></div>
           </>}
           {ribbonTab === 'Add Block' && page.pageType==='Record Page' && fields.length>0 && <div className="office-ribbon-group"><div className="office-ribbon-stack">
