@@ -84,6 +84,24 @@ function ItemGrid({ p, rows }) {
   const featuredField = String(p.featuredFieldApiName || "").trim();
   const descriptionField = String(p.descriptionFieldApiName || "").trim();
   const badgeField = String(p.badgeFieldApiName || "").trim();
+  const detailRows = Array.isArray(p.detailRows) ? p.detailRows.filter(row=>
+    row && typeof row === "object" && !Array.isArray(row)
+    && /^[A-Za-z][A-Za-z0-9_]*$/.test(String(row.fieldApiName||""))).slice(0,20) : [];
+  const formatDetail = (value,row) => {
+    if(value===null||value===undefined||value==="")return String(row.fallback??"");
+    const type=String(row.format||"Auto");
+    try {
+      if(type==="Number"&&Number.isFinite(Number(value)))return new Intl.NumberFormat().format(Number(value));
+      if(type==="Percent"&&Number.isFinite(Number(value)))
+        return new Intl.NumberFormat(undefined,{maximumFractionDigits:2}).format(Number(value))+"%";
+      if(type==="Date"){
+        const parsed=new Date(value);
+        if(!Number.isNaN(parsed.getTime()))return new Intl.DateTimeFormat().format(parsed);
+      }
+      if(type==="Money")return currency(value);
+    }catch{ /* A badly formatted row never crashes its cards. */ }
+    return view(value);
+  };
   const safeField = (field) => !field || /^[A-Za-z][A-Za-z0-9_]*$/.test(field);
   if (![activeField, sortField, featuredField, descriptionField, badgeField].every(safeField))
     return <div role="alert">Choose valid display and sorting fields.</div>;
@@ -306,6 +324,17 @@ function ItemGrid({ p, rows }) {
               )}
               {p.showDescription === true && description &&
                 <small className="one-muted md-product-description" style={supportingStyle}>{description.slice(0,220)}</small>}
+              {detailRows.length>0 && <dl className="md-card-detail-rows">
+                {detailRows.map((detail,index)=>{
+                  const raw=r?.[detail.fieldApiName];
+                  const display=formatDetail(raw,detail);
+                  if((raw===null||raw===undefined||raw==="")&&!String(detail.fallback??""))return null;
+                  return <div className="md-card-detail-row" key={detail.fieldApiName+"-"+index}>
+                    <dt>{String(detail.label||detail.fieldApiName)}</dt>
+                    <dd>{display}</dd>
+                  </div>;
+                })}
+              </dl>}
               {p.showPrice !== false && price != null && (
                 <span className="md-product-price" style={valueStyle}>{currency(price)}</span>
               )}
