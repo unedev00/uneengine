@@ -2159,15 +2159,10 @@ function PageBuilder({
             {([['Text','Text','Image','Rich Text'],['Buttons','Button','Link','Action'],['Sections','Section','Container','Columns'],['Data','Item Grid','Form','Record']] as const).map(([group,...names])=>
               <div className="office-ribbon-group" key={group}><div className="office-ribbon-stack">{names.map(name=>{
                 const component=paletteComponents.find(item=>item.label.toLowerCase()===name.toLowerCase())??paletteComponents.find(item=>item.label.toLowerCase().includes(name.toLowerCase()));
-                return <button key={name} disabled={!component} onClick={()=>component&&addPaletteComponent(component.type)}><Plus size={15}/> {component?.label??name}</button>;
+                return <button key={name} disabled={!component} onClick={()=>component&&addPaletteComponent(component.type)}>{component ? renderPaletteIcon(component) : <Grid2X2 size={15}/>} {component?.label??name}</button>;
               })}</div><span>{group}</span></div>)}
             <div className="office-ribbon-group"><div className="office-ribbon-stack"><button onClick={()=>openPalette('Components','All Components')}><Grid2X2 size={17}/> All blocks</button><button onClick={()=>openPalette('Layers')}><Layers3 size={17}/> Layers</button></div><span>Library</span></div>
           </>}
-          {selected && ribbonTab.startsWith('Component ') && <div className="office-ribbon-group"><div className="office-ribbon-stack">
-            <strong title={selected.label}>{selected.label}</strong>
-            <button onClick={()=>selectRibbonTab('Component Properties')}><Pencil size={16}/> Properties</button>
-            <button onClick={()=>setActivePanel('properties')}><Settings2 size={16}/> Detailed settings</button>
-          </div><span>Selected component</span></div>}
           {selected && ribbonTab === 'Component Properties' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
             <label>Label <input aria-label="Component label" value={selected.label} onChange={event=>updateComponent(selected.id,{label:event.target.value})}/></label>
             <button onClick={()=>openComponentInspector('Design')}><SlidersHorizontal size={16}/> Appearance</button>
@@ -2200,7 +2195,7 @@ function PageBuilder({
               <button onClick={()=>{setPageSettingsOpen(true);setActivePanel('page');}}><Settings2 size={17}/> Preview settings</button>
             </div><span>Preview</span></div>
           </>}
-          {ribbonTab === 'Add Block' && <div className="office-ribbon-library" aria-label="Component library"><input aria-label="Search blocks" placeholder="Search blocks" value={paletteSearch} onChange={event=>setPaletteSearch(event.target.value)}/><select aria-label="Block category" value={paletteCategory} onChange={event=>setPaletteCategory(event.target.value as typeof paletteCategory)}>{pageBuilderPaletteCategories.map(category=><option key={category} value={category}>{pageBuilderCategoryLabels[category]}</option>)}</select><div className="office-ribbon-library-items">{filteredPaletteComponents.map(component=><button type="button" key={component.id} title={component.description} onClick={()=>addPaletteComponent(component.type)}><Plus size={13}/>{component.label}</button>)}{page.pageType==='Record Page'&&fields.map(field=><button type="button" key={field.apiName} onClick={()=>addField(field.apiName)}><Database size={13}/>{field.label}</button>)}</div></div>}
+          {ribbonTab === 'Add Block' && <div className="office-ribbon-library office-ribbon-group" aria-label="Component library"><input aria-label="Search blocks" placeholder="Search blocks" value={paletteSearch} onChange={event=>setPaletteSearch(event.target.value)}/><select aria-label="Block category" value={paletteCategory} onChange={event=>setPaletteCategory(event.target.value as typeof paletteCategory)}>{pageBuilderPaletteCategories.map(category=><option key={category} value={category}>{pageBuilderCategoryLabels[category]}</option>)}</select><div className="office-ribbon-library-items">{filteredPaletteComponents.map(component=><button type="button" key={component.id} title={component.description} onClick={()=>addPaletteComponent(component.type)}>{renderPaletteIcon(component)}{component.label}</button>)}{page.pageType==='Record Page'&&fields.map(field=><button type="button" key={field.apiName} onClick={()=>addField(field.apiName)}><Database size={13}/>{field.label}</button>)}</div><span>More blocks</span></div>}
           <div className="office-ribbon-inspector-host" ref={setRibbonPropertyHost} aria-label="Ribbon property controls" />
         </div>
       </section>
