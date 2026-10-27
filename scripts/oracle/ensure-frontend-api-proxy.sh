@@ -40,7 +40,7 @@ p.write_text(s.replace(needle,location+needle,1))
 PY
   nginx -t
   systemctl reload nginx
-  code="$(curl --fail-with-body -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' --data '{}' -H 'Host: unesolutions.co.uk' http://127.0.0.1/api/auth/federation/complete)"
+  code="$(curl --silent --show-error --max-time 10 --resolve unesolutions.co.uk:443:127.0.0.1 -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' --data '{}' https://unesolutions.co.uk/api/auth/federation/complete)"
   [[ "$code" == "204" ]] || { echo "Unexpected local federation status: $code" >&2; false; }
   trap - ERR
   rm -f "$backup"
