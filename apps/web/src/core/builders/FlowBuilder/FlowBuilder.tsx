@@ -128,7 +128,7 @@ type FlowBuilderProps = {
   onDeletePlatformEvent: (apiName: string) => Promise<void>;
 };
 export default function FlowBuilder({
-  landing = false, flow, flows, onListFlows, onLoadCapabilities, onLoadExternalServices, onImportExternalService, libraryComponents, platformEvents, objects, users, approvalProcesses, namedCredentials, emailAlerts, connectorProviders, integrationConnections, validation, isDirty, canRunFlows, selectedId, toolTab, canUndo, canRedo, onExit, onOpenFlowList,
+  landing = false, flow, flows, onListFlows, onLoadCapabilities, onLoadExternalServices, onImportExternalService, libraryComponents, platformEvents, objects, users, approvalProcesses, namedCredentials, emailAlerts, connectorProviders, integrationConnections, validation, isDirty, canRunFlows, selectedId, canUndo, canRedo, onOpenFlowList,
   onFlowChange, onSelectFlow, onRestoreFlowVersion, onExportFlow, onImportFlow, onCloneFlow, onDeactivateFlow, onDeleteFlow, onCreateFlow, onUndo, onRedo, onSelect, onToolTab,
   onAdd, onUpdateLabel, onUpdateConfig, onRemove, onValidate, onSave, onActivate, onRun, onDebug, onRunTests, onNotify,
   onSaveNamedCredential, onDeleteNamedCredential, onSaveEmailAlert, onDeleteEmailAlert, onSavePlatformEvent, onDeletePlatformEvent
@@ -172,7 +172,6 @@ export default function FlowBuilder({
   }, [landing]);
   const flowTypeOptions = flowCreateOptions(capabilityCatalog);
   const flowElementMetadata = capabilityCatalog?.elements.filter(element => element.builderEnabled) ?? [];
-  const [elementSearch, setElementSearch] = useState('');
   const [toolboxExpanded, setToolboxExpanded] = useState(false);
   const [ribbonTab,setRibbonTab] = useState<'Home'|'Add Element'|'Manager'>('Home');
   const [managerSection, setManagerSection] = useState<'overview'|'versions'|'portability'|'tests'|'details'|'new-flow'|'events'|'resources'|'credentials'|'alerts'>('overview');
