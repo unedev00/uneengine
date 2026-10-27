@@ -4,14 +4,14 @@ import vm from 'node:vm';
 import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {loadComponentCatalog,buildBundledComponent} from '../../../scripts/component-catalog.mjs';
+import {propertyKinds} from '../src/core/components/Properties/componentSettingDefinitions.ts';
 const {components}=await loadComponentCatalog(),une=components.filter(x=>x.apiName.startsWith('une_'));
 const names=['text','image','calendar','button','card','input','toggle','badge','stack','tabs',
  'container','grid','split_pane','navigation','menu','modal','drawer','item_grid','repeater','record_list',
  'search','lookup','choice','cart','conversation','form','table','line_items','date_picker','slot_picker',
  'metric','alert','progress','document_viewer','chart','option_groups'].map(s=>'une_'+s);
 const updated=new Set(['une_conversation','une_search','une_lookup','une_repeater','une_modal','une_tabs','une_input']);
-const allowed=new Set(['TEXT','NUMBER','BOOLEAN','COLOR','IMAGE','SELECT','OBJECT','OBJECT_FIELD','FLOW',
-  'CURRENCY','FIELD_LIST','COLUMNS','OPTIONS','RECORD_LIST']);
+const allowed=new Set(propertyKinds);
 class FixtureDate extends Date {
  constructor(...args){super(...(args.length?args:['2026-10-24T12:00:00Z']));}
  static now(){return new Date('2026-10-24T12:00:00Z').getTime();}
@@ -31,6 +31,11 @@ test('every UNE property has a supported visual editor contract',()=>{
    assert.ok(!keys.has(prop.propertyKey),d.apiName+' duplicate '+prop.propertyKey);
    assert.ok(prop.label);keys.add(prop.propertyKey);
    if(prop.kind==='RECORD_LIST')assert.deepEqual(prop.defaultValue,[]);
+   if(prop.kind==='COLLECTION'){
+    assert.ok(Array.isArray(prop.fields)&&prop.fields.length>0,d.apiName+' '+prop.propertyKey+' requires row property definitions');
+    assert.deepEqual(prop.defaultValue,[],d.apiName+' '+prop.propertyKey+' defaults to an empty collection');
+    for(const field of prop.fields)assert.ok(allowed.has(field.kind),d.apiName+' '+prop.propertyKey+' invalid nested kind '+field.kind);
+   }
   }
   for(const k of ['theme','surface','tone','density','radius','padding','gap','shadow','glassBlur','fontFamily','fontSize','width','height','minWidth','maxWidth','opacity','hideOnPhone','hideOnTablet','hideOnDesktop'])
    assert.ok(keys.has(k),d.apiName+' missing '+k);

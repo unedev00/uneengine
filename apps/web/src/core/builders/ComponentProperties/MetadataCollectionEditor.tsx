@@ -50,7 +50,7 @@ export default function MetadataCollectionEditor({
             <select className="form-control" aria-label={label+' for item '+(index+1)}
               value={String(selected??'')} onChange={event=>update(index,key,event.target.value)}>
               <option value="">Choose a field…</option>
-              {selected&&!fields.some(candidate=>candidate.apiName===selected)
+              {Boolean(selected)&&!fields.some(candidate=>candidate.apiName===selected)
                 &&<option value={String(selected)} disabled>Unavailable: {String(selected)}</option>}
               {fields.map(field=><option key={field.apiName} value={field.apiName}>
                 {field.label}</option>)}
