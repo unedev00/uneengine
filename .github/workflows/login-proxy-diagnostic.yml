@@ -1,0 +1,30 @@
+name: Diagnose login API routing
+on:
+  push:
+    branches: [fix/login-federation-proxy]
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: [self-hosted, linux, ARM64, metadrive-oracle]
+    timeout-minutes: 5
+    steps:
+      - name: Inspect login API proxy without credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo -n nginx -T 2>/dev/null | awk '
+            /^[[:space:]]*server_name[[:space:]]/ {print}
+            /^[[:space:]]*location[[:space:]]/ {print}
+            /^[[:space:]]*proxy_pass[[:space:]]/ {print}
+            /^[[:space:]]*root[[:space:]]/ {print}
+            /^[[:space:]]*try_files[[:space:]]/ {print}
+          ' | sort -u
+          for port in 10000 3001; do
+            code=$(curl --max-time 5 -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' --data '{}' "http://127.0.0.1:$port/api/auth/federation/complete" || true)
+            echo "Local API port $port POST /api/auth/federation/complete: $code"
+          done
+          for host in unesolutions.co.uk api.unesolutions.co.uk; do
+            code=$(curl --max-time 8 -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' --data '{}' "https://$host/api/auth/federation/complete" || true)
+            echo "Public $host POST /api/auth/federation/complete: $code"
+          done
