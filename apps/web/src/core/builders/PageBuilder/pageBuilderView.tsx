@@ -2308,7 +2308,7 @@ function PageBuilder({
               onChange={properties=>updateComponent(selected.id,{properties})}/>
           </div>}
           {selected && ribbonTab === 'Component Action' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
-            <button type="button" onClick={()=>openComponentInspector('Visibility')}><MousePointerClick size={16}/> Configure events and actions</button>
+            <button type="button" onClick={()=>openComponentInspector('Visibility')}><MousePointer2 size={16}/> Configure events and actions</button>
           </div><span>Interactions</span></div>}
           {selected && ribbonTab === 'Component Layout' && <>
             <div className="office-ribbon-group office-ribbon-icon-group" aria-label="Arrange component">
