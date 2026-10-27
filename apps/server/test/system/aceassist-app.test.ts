@@ -31,7 +31,7 @@ test('new tenant SQL landing is component-based, active and creates no appointme
   assert.ok(calls.some(x=>x.includes('INSERT INTO md_lightning_page_details')&&x.includes("'Active'")));
   assert.ok(calls.some(x=>x.includes('INSERT INTO md_permission_sets')));
   assert.ok(!calls.some(x=>/md_records|md_record_values|md_permission_assignments/.test(x)));
-  assert.ok(all.filter(x=>x.sql.includes('INSERT INTO md_lightning_page_nodes')).some(x=>x.args[3]==='Custom:OneCalendar'));
+  assert.ok(all.filter(x=>x.sql.includes('INSERT INTO md_lightning_page_nodes')).some(x=>x.args[3]==='Custom:une_calendar'));
 });
 
 test('rerunning a customised Ace Assist page never overwrites nodes or styling',async()=>{
