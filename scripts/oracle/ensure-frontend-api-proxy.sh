@@ -40,7 +40,13 @@ p.write_text(s.replace(needle,location+needle,1))
 PY
   nginx -t
   systemctl reload nginx
-  code="$(curl --fail-with-body -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' --data '{}' -H 'Host: unesolutions.co.uk' http://127.0.0.1/api/auth/federation/complete)"
+  echo "Effective Nginx API locations:"
+  nginx -T 2>/dev/null | grep -A 12 'location \^~ /api/' | head -n 16 || true
+  for hostname in unesolutions.co.uk api.unesolutions.co.uk; do
+    direct=$(curl --noproxy '*' --max-time 5 -s -o /dev/null -w '%{http_code}' --resolve "$hostname:443:127.0.0.1" -X POST -H 'Content-Type: application/json' --data '{}' "https://$hostname/api/auth/federation/complete" || true)
+    echo "Local HTTPS $hostname: $direct"
+  done
+  code="$(curl --noproxy '*' --silent --show-error --max-time 10 --resolve unesolutions.co.uk:443:127.0.0.1 -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' --data '{}' https://unesolutions.co.uk/api/auth/federation/complete)"
   [[ "$code" == "204" ]] || { echo "Unexpected local federation status: $code" >&2; false; }
   trap - ERR
   rm -f "$backup"
