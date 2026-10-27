@@ -611,7 +611,7 @@ function PageBuilder({
   const ribbonComponentGroups = Array.from(ribbonCategories).flatMap(([label,components])=>
     Array.from({length:Math.ceil(components.length/3)},(_,index)=>({
       id:label+'-'+index,
-      label:index===0?label:`${label} ${index+1}`,
+      label,
       components:components.slice(index*3,index*3+3)
     })));
   const renderPaletteIcon = (component: { type: string; label: string }) => {
