@@ -1820,7 +1820,7 @@ function PageBuilder({
           setSelectedId(component.id);
         }
         setPageSettingsOpen(false); setComponentMenuId('');
-        if (!(event.shiftKey && page.layoutMode === 'free-canvas')) openComponentInspector('Design');
+        if (!(event.shiftKey && page.layoutMode === 'free-canvas')) { setRibbonTab('Component Properties'); openComponentInspector('Design'); }
       } } : undefined}
       onDoubleClick={!libraryPreview ? event => { event.stopPropagation(); if (!previewMode) { setSelectedRegion(null); setSelectedId(component.id); openComponentInspector('Design'); } } : undefined}
       onContextMenu={!libraryPreview && !previewMode ? event => { event.preventDefault(); event.stopPropagation(); setSelectedRegion(null); setSelectedId(component.id); setComponentMenuId(component.id); } : undefined}
@@ -2356,7 +2356,10 @@ function PageBuilder({
               <button type="button" title="Open page settings" onClick={() => {setPageSettingsOpen(true);setActivePanel('page');}}><Settings2 size={16}/></button>
             </div>
           </div>
-          <div className="page-stage" key={canvasRefreshKey} onDragOver={(event) => event.preventDefault()} onDrop={(event) => handleDrop(event)}>
+          <div className="page-stage" key={canvasRefreshKey} onClick={(event) => {
+            if ((event.target as HTMLElement).closest('.record-component,.canvas-drop-zone,button,input,select,textarea')) return;
+            setSelectedId(''); setSelectionIds([]); setSelectedRegion(null); setRibbonTab('Home'); setPageSettingsOpen(false); setActivePanel(null);
+          }} onDragOver={(event) => event.preventDefault()} onDrop={(event) => handleDrop(event)}>
             <div
               className={`record-preview ${page.layoutMode === 'free-canvas' ? 'free-canvas-preview' : page.pageType === 'Record Page' ? 'record-page-preview' : page.pageType === 'App Page' ? 'app-page-preview' : 'home-page-preview'} ${device === 'Phone' ? 'phone-preview' : device === 'Tablet' ? 'tablet-preview' : ''}`}
               style={page.layoutMode === 'free-canvas' && fitCanvas ? {
