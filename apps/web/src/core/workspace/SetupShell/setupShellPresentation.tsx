@@ -636,6 +636,7 @@ export function renderSetupShell(ctx: any) {
               canUndo={flowHistory.current.undo.length > 0}
               canRedo={flowHistory.current.redo.length > 0}
               onExit={() => openSetupWorkspace('home')}
+              onOpenFlowList={() => navigateRoute({kind:'setup',workspace:'flow-builder'})}
               onFlowChange={commitFlow}
               onSelectFlow={selectFlow}
               onRestoreFlowVersion={restoreFlowVersion}
