@@ -764,3 +764,33 @@
 .office-builder-ribbon .office-ribbon-tabs>button[role=tab]:disabled {
   opacity:.5;cursor:not-allowed;
 }
+
+/* Home follows the mockup's icon groups; advanced MetaDrive tools stay accessible. */
+.office-builder-ribbon .office-ribbon-home-icons {min-width:175px;}
+.office-builder-ribbon .office-ribbon-home-icon-row {
+  display:flex;align-items:flex-start;gap:7px;
+}
+.office-builder-ribbon .office-ribbon-home-icon-row button {
+  display:flex;flex:0 0 57px;min-width:0;flex-direction:column;
+  justify-content:flex-start;align-items:center;gap:6px;
+  padding:9px 3px 3px;border:0;background:transparent;
+  color:#2c486c;text-align:center;font:500 11px "Segoe UI",sans-serif;
+  cursor:pointer;
+}
+.office-builder-ribbon .office-ribbon-home-icon-row button svg{color:#245aa0}
+.office-builder-ribbon .office-ribbon-home-icon-row button:hover{background:#e5effe}
+.office-builder-ribbon .office-ribbon-home-icon-row button:disabled{opacity:.45;cursor:not-allowed}
+.office-builder-ribbon .office-ribbon-more-group{min-width:142px;}
+.office-builder-ribbon .office-ribbon-advanced-details summary{
+  cursor:pointer;font:600 12px "Segoe UI",sans-serif;padding:8px 5px;
+}
+.office-builder-ribbon .office-ribbon-advanced-details[open] .office-ribbon-advanced-popover {
+  position:fixed;left:16px;top:220px;z-index:200;
+  display:flex;flex-wrap:wrap;align-items:stretch;
+  width:min(1050px,calc(100vw - 32px));max-height:50vh;overflow:auto;
+  background:#fff;border:1px solid #bccbdf;box-shadow:0 8px 22px #173b6422;
+  padding:10px;
+}
+.office-builder-ribbon .office-ribbon-advanced-popover>.office-ribbon-group {
+  min-width:180px;max-width:245px;
+}
