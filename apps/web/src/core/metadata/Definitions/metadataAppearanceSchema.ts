@@ -40,6 +40,8 @@ export const responsiveOptionFields = [
   {key:'alignItems',label:'Cross-axis alignment',options:['stretch','flex-start','center','flex-end']},
   {key:'justifyContent',label:'Main-axis alignment',options:['flex-start','center','flex-end','space-between','space-around']},
   {key:'fontWeight',label:'Font weight',options:['400','500','600','700','800']},
+  {key:'fontStyle',label:'Font style',options:['normal','italic']},
+  {key:'textDecoration',label:'Text decoration',options:['none','underline']},
   {key:'textAlign',label:'Text alignment',options:['left','center','right','start','end']},
   {key:'boxShadow',label:'Shadow',options:['none','sm','md','lg']},
   {key:'position',label:'Position',options:['static','relative','sticky','fixed','absolute']},
