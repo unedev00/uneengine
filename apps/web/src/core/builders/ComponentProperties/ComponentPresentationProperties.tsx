@@ -22,9 +22,8 @@ export default function ComponentPresentationProperties({
   };
   if (!groups.length) return null;
   return <div className="metadata-component-presentation" aria-label="Content and appearance settings">
-    {groups.map(group => <details key={group.section} className="builder-advanced-panel"
-      open={group.section === 'Content' ? true : undefined}>
-      <summary className="properties-section-title">{group.section}</summary>
+    {groups.map(group => <section key={group.section} className="office-ribbon-presentation-group">
+      <div className="office-ribbon-group-heading">{group.section}</div>
       {group.definitions.map(definition => {
         const key = definition.propertyKey;
         const value = presentationValue(properties, definition);
@@ -59,6 +58,6 @@ export default function ComponentPresentationProperties({
             value={String(value ?? '')} onChange={event => update(key, event.target.value)}/>
         </label>;
       })}
-    </details>)}
+    </section>)}
   </div>;
 }
