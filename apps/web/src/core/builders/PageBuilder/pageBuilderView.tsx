@@ -95,7 +95,15 @@ import {
   WifiOff,
   PanelLeft,
   PanelRight,
-  Layers3
+  Layers3,
+  AlignHorizontalJustifyStart,
+  AlignHorizontalJustifyCenter,
+  AlignHorizontalJustifyEnd,
+  AlignVerticalJustifyStart,
+  AlignVerticalJustifyCenter,
+  AlignVerticalJustifyEnd,
+  Group,
+  Ungroup
 } from 'lucide-react';
 import FlowBuilderWorkspace from '../FlowBuilder/FlowBuilder';
 import FlowScreenContent from '../../automation/FlowScreen/FlowScreenContent';
@@ -438,6 +446,7 @@ function PageBuilder({
   const [showLayers, setShowLayers] = useState(false);
   const [inspectorTab, setInspectorTab] = useState<'Design' | 'Data & Actions' | 'Visibility' | 'Position'>('Design');
   const [ribbonPropertyHost, setRibbonPropertyHost] = useState<HTMLDivElement | null>(null);
+  const [visibilityDialogOpen,setVisibilityDialogOpen] = useState(false);
   const [ribbonTab, setRibbonTab] = useState<'Home' | 'Add Block' | 'Component Properties' | 'Component Style' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Preview'>('Home');
   const selectRibbonTab = (tab: typeof ribbonTab) => {
     setRibbonTab(tab);
@@ -2205,12 +2214,49 @@ function PageBuilder({
 
           {selected && ribbonTab === 'Component Action' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
             <label className="office-ribbon-checkbox"><input type="checkbox" checked={selected.visible} onChange={event=>updateComponent(selected.id,{visible:event.target.checked})}/> Show block</label>
-          </div><span>Behaviour</span></div>}
-          {selected && ribbonTab === 'Component Layout' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
-            <button type="button" disabled={page.layoutMode!=='free-canvas'} onClick={()=>updateComponent(selected.id,{properties:{...selected.properties,canvasLocked:!selected.properties.canvasLocked}})}><Lock size={16}/> {selected.properties.canvasLocked?'Unlock':'Lock'} canvas</button>
-            <button disabled={isCanvasLocked(selected)} onClick={()=>moveSelected(-1)}><ArrowUp size={16}/> Bring forward</button>
-            <button disabled={isCanvasLocked(selected)} onClick={()=>moveSelected(1)}><ArrowDown size={16}/> Send backward</button>
-          </div><span>Arrange</span></div>}
+            <button type="button" onClick={()=>setVisibilityDialogOpen(true)}><Eye size={16}/> Configure visibility</button>
+            <button type="button" onClick={()=>setVisibilityDialogOpen(true)}><Plus size={16}/> Add visibility rule</button>
+          </div><span>Visibility</span></div>}
+          {selected && ribbonTab === 'Component Layout' && <>
+            <div className="office-ribbon-group office-ribbon-icon-group" aria-label="Arrange component">
+              <div className="office-ribbon-stack">
+                <div className="office-ribbon-icon-line">
+                  <button type="button" className="office-ribbon-icon-button" title="Bring forward" aria-label="Bring forward" disabled={isCanvasLocked(selected)} onClick={()=>moveSelected(-1)}><ArrowUp size={17}/></button>
+                  <button type="button" className="office-ribbon-icon-button" title="Send backward" aria-label="Send backward" disabled={isCanvasLocked(selected)} onClick={()=>moveSelected(1)}><ArrowDown size={17}/></button>
+                  <button type="button" className="office-ribbon-icon-button" title={selected.properties.canvasLocked?'Unlock position':'Lock position'} aria-label={selected.properties.canvasLocked?'Unlock position':'Lock position'} disabled={page.layoutMode!=='free-canvas'} onClick={()=>updateComponent(selected.id,{properties:{...selected.properties,canvasLocked:!selected.properties.canvasLocked}})}>{selected.properties.canvasLocked?<Unlock size={17}/>:<Lock size={17}/>}</button>
+                </div>
+                <details className="office-ribbon-group-menu">
+                  <summary title="Grouping options"><Group size={16}/> Group <ChevronDown size={12}/></summary>
+                  <div className="office-ribbon-group-menu-items">
+                    <button type="button" disabled={page.layoutMode!=='free-canvas'||!selected.position||isCanvasLocked(selected)||Boolean(rawLayoutParentId(selected))} onClick={()=>wrapSelectedInContainer()}><Group size={16}/> Group</button>
+                    <button type="button" disabled={page.layoutMode!=='free-canvas'||selected.type!=='Container'||isCanvasLocked(selected)||!childrenOf(page.components,selected.id).length} onClick={ungroupSelected}><Ungroup size={16}/> Ungroup</button>
+                  </div>
+                </details>
+              </div><span>Arrange</span>
+            </div>
+            <div className="office-ribbon-group office-ribbon-icon-group">
+              <div className="office-ribbon-stack">
+                <div className="office-ribbon-icon-line">
+                  {([['start',AlignHorizontalJustifyStart,'Align left'],['center',AlignHorizontalJustifyCenter,'Align centre'],['end',AlignHorizontalJustifyEnd,'Align right']] as const).map(([alignment,Icon,label])=><button key={alignment} type="button" title={label} aria-label={label} className="office-ribbon-icon-button" disabled={page.layoutMode!=='free-canvas'||isCanvasLocked(selected)} onClick={()=>alignSelected('x',alignment)}><Icon size={17}/></button>)}
+                </div>
+                <div className="office-ribbon-icon-line">
+                  {([['start',AlignVerticalJustifyStart,'Align top'],['center',AlignVerticalJustifyCenter,'Align middle'],['end',AlignVerticalJustifyEnd,'Align bottom']] as const).map(([alignment,Icon,label])=><button key={alignment} type="button" title={label} aria-label={label} className="office-ribbon-icon-button" disabled={page.layoutMode!=='free-canvas'||isCanvasLocked(selected)} onClick={()=>alignSelected('y',alignment)}><Icon size={17}/></button>)}
+                </div>
+                <div className="office-ribbon-icon-line">
+                  <button type="button" className="office-ribbon-icon-button" title="Distribute horizontally" aria-label="Distribute horizontally" disabled={selectionIds.length<3} onClick={()=>distributeSelected('x')}><ArrowRight size={17}/></button>
+                  <button type="button" className="office-ribbon-icon-button" title="Distribute vertically" aria-label="Distribute vertically" disabled={selectionIds.length<3} onClick={()=>distributeSelected('y')}><ArrowDown size={17}/></button>
+                </div>
+              </div><span>Alignment</span>
+            </div>
+            {selected.position && <div className="office-ribbon-group"><div className="office-ribbon-stack">
+              {(['x','y'] as const).map(key=><label key={key} className="office-ribbon-inline-field"><span className="office-ribbon-field-name">{key.toUpperCase()}</span><input aria-label={key.toUpperCase()+' position'} type="number" min={0} max={key==='x'?page.canvasWidth-selected.position!.width:page.canvasHeight-selected.position!.height} disabled={isCanvasLocked(selected)} value={selected.position![key]} onChange={event=>{const n=Number(event.target.value);if(Number.isFinite(n))updateComponent(selected.id,{position:{...selected.position!,[key]:Math.max(0,Math.min(key==='x'?page.canvasWidth-selected.position!.width:page.canvasHeight-selected.position!.height,Math.round(n)))}});}}/></label>)}
+              <label className="office-ribbon-checkbox"><input type="checkbox" checked={selected.properties.canvasLocked===true} disabled={page.layoutMode!=='free-canvas'} onChange={event=>updateComponent(selected.id,{properties:{...selected.properties,canvasLocked:event.target.checked}})}/> Lock position</label>
+            </div><span>Position</span></div>}
+            {selected.position && <div className="office-ribbon-group"><div className="office-ribbon-stack">
+              {(['width','height'] as const).map(key=><label key={key} className="office-ribbon-inline-field"><span className="office-ribbon-field-name">{key==='width'?'Width':'Height'}</span><input aria-label={'Component '+key} type="number" min={1} max={key==='width'?page.canvasWidth-selected.position!.x:page.canvasHeight-selected.position!.y} disabled={isCanvasLocked(selected)} value={selected.position![key]} onChange={event=>{const n=Number(event.target.value);if(Number.isFinite(n))updateComponent(selected.id,{position:{...selected.position!,[key]:Math.max(1,Math.min(key==='width'?page.canvasWidth-selected.position!.x:page.canvasHeight-selected.position!.y,Math.round(n)))}});}}/></label>)}
+              <span className="office-ribbon-stat">Canvas pixels</span>
+            </div><span>Size</span></div>}
+          </>}
           {ribbonTab === 'Preview' && <>
             <div className="office-ribbon-group"><div className="office-ribbon-stack">
               <button onClick={openExternalPreview}><Eye size={17}/> Preview window</button>
@@ -2225,6 +2271,17 @@ function PageBuilder({
           {(ribbonTab === 'Home' || ribbonTab.startsWith('Component ')) && <div className="office-ribbon-inspector-host" ref={setRibbonPropertyHost} aria-label="Ribbon property controls" />}
         </div>
       </section>
+      {selected && visibilityDialogOpen && createPortal(<div className="modal-backdrop office-ribbon-modal-backdrop" role="presentation">
+        <section className="modal office-ribbon-config-modal" role="dialog" aria-modal="true" aria-label="Visibility conditions">
+          <div className="modal-header"><h2>Visibility conditions</h2><button type="button" className="icon-button" aria-label="Close visibility" onClick={()=>setVisibilityDialogOpen(false)}><X size={16}/></button></div>
+          <div className="office-ribbon-modal-content"><ComponentVisibilityEditor rules={selected.properties.visibilityRules} fields={fields}
+            profiles={profiles.map(item=>({id:item.id,label:item.label}))}
+            recordTypes={targetObject?.recordTypes?.map(item=>({id:item.id,label:item.label}))??[]}
+            allowRecordFields={page.pageType==='Record Page'}
+            onChange={visibilityRules=>{const properties={...selected.properties};if(visibilityRules)properties.visibilityRules=visibilityRules;else delete properties.visibilityRules;updateComponent(selected.id,{properties});}}/></div>
+          <div className="office-ribbon-modal-actions"><button type="button" className="btn btn-brand" onClick={()=>setVisibilityDialogOpen(false)}>Done</button></div>
+        </section>
+      </div>,document.body)}
       {showWelcome && <section className="builder-quickstart" aria-label="Getting started with Page Builder">
         <div><strong>Build your page in three steps</strong>
           <span>1. Add a block</span><span>2. Click it to edit</span><span>3. Save and preview</span>
@@ -2302,72 +2359,26 @@ function PageBuilder({
             }}><Trash2 size={15}/> Remove section</button>}
             {selectedRegion === 'main' && <p className="properties-help">The Main section is required and cannot be deleted. Change the section arrangement to remove optional regions.</p>}
           </div> : selected && !pageSettingsOpen && activePanel !== 'page' ? <>
-            {inspectorTab === 'Position' ? <div className="canvas-position-editor">
-              <div className="properties-section-title">Arrange</div>
-              {page.layoutMode === 'free-canvas' && selected.position ? <>
-                <label className="checkbox-row"><input type="checkbox" checked={selected.properties.canvasLocked === true}
-                  onChange={event => updateComponent(selected.id, {properties:{...selected.properties,canvasLocked:event.target.checked}})}/> Lock position</label>
-                <div className="properties-section-title">Align {selectionIds.length>1?'selected elements':'to page'}</div>
-                <div className="canvas-align-choices" role="group" aria-label="Horizontal alignment">
-                  {(['start','center','end'] as const).map((alignment, index) =>
-                    <button type="button" key={alignment} disabled={isCanvasLocked(selected) || selected.properties.canvasLocked === true}
-                      aria-label={['Align left','Align centre','Align right'][index]}
-                      onClick={() => alignSelected('x', alignment)}>{['Left','Centre','Right'][index]}</button>)}
-                </div>
-                <div className="canvas-align-choices" role="group" aria-label="Vertical alignment">
-                  {(['start','center','end'] as const).map((alignment, index) =>
-                    <button type="button" key={alignment} disabled={isCanvasLocked(selected) || selected.properties.canvasLocked === true}
-                      aria-label={['Align top','Align middle','Align bottom'][index]}
-                      onClick={() => alignSelected('y', alignment)}>{['Top','Middle','Bottom'][index]}</button>)}
-                </div>
-                {selectionIds.length>=3&&<div className="canvas-align-choices" role="group" aria-label="Distribute selected elements">
-                  <button type="button" onClick={()=>distributeSelected('x')}>Distribute horizontally</button>
-                  <button type="button" onClick={()=>distributeSelected('y')}>Distribute vertically</button>
-                </div>}
-                <div className="properties-section-title">Size and position</div>
-                <div className="canvas-position-grid">
-                  {(['width','height','x','y'] as const).map(key => {
-                    const pos = selected.position!;
-                    const isSize = key === 'width' || key === 'height';
-                    const limit = key === 'width' || key === 'x' ? page.canvasWidth : page.canvasHeight;
-                    const other = key === 'width' ? pos.x : key === 'height' ? pos.y : key === 'x' ? pos.width : pos.height;
-                    return <label className="form-label" key={key}>{key.toUpperCase()} (px)
-                      <input type="number" className="form-control" step={1} min={isSize ? 1 : 0} max={Math.max(isSize ? 1 : 0, limit-other)}
-                        disabled={isCanvasLocked(selected) || selected.properties.canvasLocked === true} value={pos[key]}
-                        onChange={event => {const value = Number(event.target.value);
-                          if (Number.isFinite(value)) updateComponent(selected.id, { position: { ...pos,
-                            [key]: Math.max(isSize ? 1 : 0, Math.min(limit-other, Math.round(value))) } });
-                        }} />
-                    </label>;
-                  })}
-                </div>
-              </> : <p className="properties-help">Choose a free-canvas element to edit precise position and size. Template layouts position children responsively.</p>}
-              {page.layoutMode === 'free-canvas' && selected.position && !rawLayoutParentId(selected) && <button className="btn btn-small" type="button" onClick={wrapSelectedInContainer}>Group block</button>}
-              {page.layoutMode === 'free-canvas' && selected.type === 'Container' && <button className="btn btn-small" type="button" onClick={ungroupSelected}>Ungroup blocks</button>}
+            {inspectorTab === 'Position' ? <div className="office-ribbon-layout-responsive">
+              <PageComponentStyleEditor section="layout" componentType={selected.type} properties={selected.properties}
+                onChange={(properties: Record<string, unknown>)=>updateComponent(selected.id,{properties})}/>
             </div> : <>
             {inspectorTab === 'Data & Actions' && <details className="builder-advanced-panel"><summary>Technical details</summary>
               <label className="form-label" htmlFor="page-component-type">Component type</label><div className="form-display" id="page-component-type">{selected.type}</div>
             </details>}
-            {inspectorTab === 'Visibility' && <>
-              <div className="properties-section-title">When to show this block</div>
-              <ComponentVisibilityEditor rules={selected.properties.visibilityRules} fields={fields}
-                 profiles={profiles.map(item=>({id:item.id,label:item.label}))}
-                 recordTypes={targetObject?.recordTypes?.map(item=>({id:item.id,label:item.label}))??[]}
-                allowRecordFields={page.pageType === 'Record Page'}
-                onChange={visibilityRules => {
-                  const properties = { ...selected.properties };
-                  if (visibilityRules) properties.visibilityRules = visibilityRules;
-                  else delete properties.visibilityRules;
-                  updateComponent(selected.id, { properties });
-                }} />
-            </>}
+            {inspectorTab === 'Visibility' && <MetadataComponentProperties
+              mode="actions" properties={selected.properties} onChange={(properties: Record<string,unknown>)=>updateComponent(selected.id,{properties})}
+              pageComponents={page.components} componentCatalog={libraryComponents} device={page.layoutVariant??'Desktop'}
+              definitions={selectedCustomDefinition?.propertyDefinitions} eventDefinitions={selectedCustomDefinition?.eventDefinitions}
+              componentVersion={selectedCustomDefinition?.version} objects={objects} apps={apps} pages={pages}
+              currentAppId={builderAppApiName||apps[0]?.apiName||'Records'} primaryObjectApiName={page.targetObject} flows={flows}/>}
             {inspectorTab === 'Design' && selectedCustomDefinition && <ComponentPresentationProperties
               definitions={availableComponentSettings(selectedCustomDefinition.propertyDefinitions??[],page.layoutVariant??'Desktop',selectedCustomDefinition.version).filter(definition=>
                 (definition.kind==='COLOR'||/(?:colou?r|background|fill|opacity|tone)/i.test(definition.propertyKey)) === (ribbonTab==='Component Style')
                 && !(ribbonTab==='Component Properties' && /text/i.test(selected.type+' '+selected.label) && definition.propertyKey==='text'))} properties={selected.properties}
               onChange={(properties) => updateComponent(selected.id, {properties})}/>}
-            {inspectorTab === 'Design' && <PageComponentVisualEditor section={ribbonTab==='Component Style'?'colors':'layout'} componentType={selected.type} value={selected.properties.visualStyle} onChange={(visualStyle) => updateComponent(selected.id, { properties: { ...selected.properties, visualStyle } })} />}
-            {inspectorTab === 'Design' && <PageComponentStyleEditor section={ribbonTab==='Component Style'?'colors':'layout'} componentType={selected.type} properties={selected.properties}
+            {inspectorTab === 'Design' && <PageComponentVisualEditor section={ribbonTab==='Component Style'?'colors':'appearance'} componentType={selected.type} value={selected.properties.visualStyle} onChange={(visualStyle) => updateComponent(selected.id, { properties: { ...selected.properties, visualStyle } })} />}
+            {inspectorTab === 'Design' && ribbonTab==='Component Style' && <PageComponentStyleEditor section="colors" componentType={selected.type} properties={selected.properties}
                 onChange={(properties: Record<string, unknown>) => updateComponent(selected.id, { properties })} />}
             {inspectorTab === 'Data & Actions' && <>
             {selected.parentId && <button type="button" className="btn btn-small" onClick={() => updateComponent(selected.id, { parentId: undefined })}>Move out of section</button>}
@@ -2410,7 +2421,7 @@ function PageBuilder({
                 {!childrenOf(page.components, selected.id).length && <p className="properties-help">No children yet — drop components into this layout.</p>}
               </>}
               </section>
-              <MetadataComponentProperties
+              <MetadataComponentProperties mode="data"
                 pageComponents={page.components} componentCatalog={libraryComponents}
                 device={page.layoutVariant??'Desktop'}
                 componentVersion={findRegisteredComponent(libraryComponents,selected.type.startsWith('Custom:')?selected.type.slice('Custom:'.length):'','page')?.version}
