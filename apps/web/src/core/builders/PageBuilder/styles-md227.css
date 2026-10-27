@@ -585,3 +585,13 @@
 .office-ribbon-inspector-host .metadata-card { max-width:280px; }
 .office-builder-ribbon:has(.office-ribbon-inspector-host:not(:empty)) .office-ribbon-content { min-height:188px; }
 @media (max-width:700px) { .office-ribbon-inspector-host { min-width:230px; } .office-ribbon-inspector-host .properties-panel { height:155px!important; max-height:155px!important; } }
+
+/* Ribbon-only builder: canvas owns all available horizontal space. */
+.page-builder-layout.canvas-unified-builder.reference-builder-layout { display:block!important; grid-template-columns:minmax(0,1fr)!important; padding:0!important; }
+.page-builder-layout .builder-icon-rail, .page-builder-layout .component-panel, .page-builder-layout .component-panel-resize { display:none!important; }
+.page-builder-layout .page-preview-area { display:block!important; width:100%!important; max-width:none!important; min-width:0!important; margin:0!important; }
+.office-ribbon-library { min-width:260px; flex:1 1 400px; padding:4px 10px; display:flex; gap:6px; align-items:flex-start; flex-wrap:wrap; }
+.office-ribbon-library > input, .office-ribbon-library > select { height:27px; border:1px solid #b7c2d3; border-radius:3px; background:#fff; padding:3px 7px; font-size:12px; max-width:200px; }
+.office-ribbon-library-items { display:flex; flex-wrap:wrap; gap:3px; width:100%; max-height:120px; overflow:auto; }
+.office-ribbon-library-items button { display:inline-flex; align-items:center; gap:4px; font-size:11px; padding:4px 7px; border:1px solid #ccd5e2; border-radius:3px; background:#fff; color:#25344c; cursor:pointer; }
+.office-ribbon-library-items button:hover { background:#e3ecfa; }
