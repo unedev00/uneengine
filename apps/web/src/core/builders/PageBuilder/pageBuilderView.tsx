@@ -2210,8 +2210,6 @@ function PageBuilder({
               <label className="office-ribbon-inline-field">Height <input aria-label="Page height" type="number" min={320} max={10000} value={page.canvasHeight} onChange={event=>{const n=Number(event.target.value);if(Number.isInteger(n)&&n>=320&&n<=10000)applyPage({...page,canvasHeight:n});}}/></label>
             </div><span>Layout</span></div>
             <div className="office-ribbon-group"><div className="office-ribbon-stack">
-              <button type="button" onClick={()=>{setPageSettingsOpen(true);setActivePanel('page');setPageSettingsDialogOpen(true);}}><Settings2 size={16}/> Page properties</button>
-              <button type="button" onClick={()=>openPalette('Layers')}><Layers3 size={16}/> Page structure</button>
               <button onClick={()=>setDependenciesOpen(true)}><Puzzle size={16}/> Dependencies</button>
             </div><span>Page settings</span></div>
             <div className="office-ribbon-group"><div className="office-ribbon-stack">

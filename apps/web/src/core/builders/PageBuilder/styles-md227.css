@@ -1420,3 +1420,101 @@
 .office-builder-ribbon .office-ribbon-content :is(input,select,button,summary):focus-visible {
   outline:2px solid #2874cc;outline-offset:1px;
 }
+
+/* Office ribbon density: keep captions clear of the horizontal scrollbar and
+   size metadata groups to their actual labels/controls, not empty columns. */
+.office-builder-ribbon .office-ribbon-content {
+  padding-bottom:16px;
+  scrollbar-gutter:stable;
+}
+.office-builder-ribbon .office-ribbon-group {
+  padding-inline:6px;
+  padding-bottom:27px;
+}
+.office-builder-ribbon .office-ribbon-group>.office-ribbon-stack {gap:3px 5px}
+.office-builder-ribbon .office-ribbon-stack .office-ribbon-inline-field {
+  gap:4px;
+  width:max-content;
+  max-width:none;
+}
+.office-builder-ribbon .office-ribbon-inline-field>.office-ribbon-field-name {
+  min-width:0;
+}
+.office-builder-ribbon .office-ribbon-inline-field>:is(input,select) {
+  margin-left:0;
+}
+.office-builder-ribbon :is(.office-ribbon-inline-options,.office-ribbon-colours) .office-ribbon-presentation-group {
+  grid-template-columns:194px!important;
+  grid-auto-columns:194px!important;
+  width:206px!important;
+  min-width:206px!important;
+  max-width:206px!important;
+  padding:4px 6px 27px!important;
+}
+.office-builder-ribbon :is(.office-ribbon-inline-options,.office-ribbon-colours) .office-ribbon-presentation-group>.form-label {
+  grid-template-columns:88px 100px!important;
+  gap:6px!important;
+  width:194px!important;
+  min-width:194px!important;
+  max-width:194px!important;
+}
+.office-builder-ribbon .office-ribbon-presentation-group .compact-color-controls {
+  width:100px;
+  min-width:100px;
+}
+.office-builder-ribbon .office-ribbon-colours .compact-visual-label {
+  flex-basis:194px;
+  width:194px;
+  min-width:194px;
+  gap:5px;
+}
+.office-builder-ribbon .office-ribbon-inspector-host .office-ribbon-responsive-editor>.office-ribbon-responsive-group {
+  grid-template-columns:194px!important;
+  flex-basis:206px!important;
+  width:206px!important;
+  min-width:206px!important;
+  max-width:206px!important;
+  padding:4px 6px 27px!important;
+}
+.office-builder-ribbon .office-ribbon-inspector-host .office-ribbon-responsive-editor>.office-ribbon-responsive-group>.form-label {
+  grid-template-columns:88px 100px!important;
+  width:194px!important;
+  min-width:194px!important;
+  max-width:194px!important;
+  gap:6px!important;
+}
+.office-builder-ribbon .office-ribbon-inspector-host .office-ribbon-responsive-editor>.office-ribbon-responsive-group>.form-label>span {
+  max-width:88px!important;
+}
+.office-builder-ribbon .office-ribbon-inspector-host .office-ribbon-responsive-editor>.office-ribbon-responsive-group>.form-label :is(input,select) {
+  width:100px!important;
+  min-width:100px!important;
+  max-width:100px!important;
+}
+.office-builder-ribbon .office-ribbon-inspector-host .office-ribbon-responsive-editor>.office-ribbon-device-group {
+  flex-basis:206px!important;
+  width:206px!important;
+  min-width:206px!important;
+}
+.office-builder-ribbon .office-ribbon-inspector-host .office-ribbon-layout-responsive .page-component-style-editor>.form-label {
+  grid-template-columns:82px 86px!important;
+  gap:5px!important;
+  width:174px!important;
+  min-width:174px!important;
+  max-width:174px!important;
+}
+.office-builder-ribbon .office-ribbon-inspector-host .office-ribbon-layout-responsive .page-component-style-editor {
+  grid-auto-columns:174px!important;
+  gap:3px 5px!important;
+  padding-bottom:27px!important;
+}
+.office-builder-ribbon .office-ribbon-inspector-host .office-ribbon-layout-responsive .page-component-style-editor>.form-label :is(input,select) {
+  width:86px!important;
+  min-width:86px!important;
+  max-width:86px!important;
+}
+.office-builder-ribbon :is(.office-ribbon-group>span:last-child,.office-ribbon-group-heading,
+  .office-ribbon-colours .compact-ribbon-visual-editor legend) {
+  bottom:6px!important;
+  line-height:17px!important;
+}
