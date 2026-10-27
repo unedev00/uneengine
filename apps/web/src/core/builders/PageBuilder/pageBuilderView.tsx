@@ -2195,7 +2195,7 @@ function PageBuilder({
       <section className="office-builder-ribbon" aria-label="Page Builder ribbon">
         <nav className="office-ribbon-tabs" role="tablist" aria-label="Page Builder tabs">
           {(['Home','Add Block',...(selected ? ['Component Data','Component Properties','Component Layout','Component Action'] : []),'Preview'] as Array<typeof ribbonTab>).map(tab =>
-            <button key={tab} type="button" role="tab" aria-selected={ribbonTab === tab} className={ribbonTab===tab?'active':''} onClick={() => selectRibbonTab(tab)}>{{'Add Block':'Add Component','Component Data':'Data Source','Component Properties':'Design','Component Style':'Style','Component Layout':'Layout','Component Action':'Actions'}[tab]??tab}</button>)}
+            <button key={tab} type="button" role="tab" aria-selected={ribbonTab === tab} className={ribbonTab===tab?'active':''} onClick={() => selectRibbonTab(tab)}>{{'Home':'Home','Add Block':'Add Component','Component Data':'Data Source','Component Properties':'Design','Component Style':'Style','Component Layout':'Layout','Component Action':'Actions','Preview':'Preview'}[tab]}</button>)}
           <button type="button" className="office-ribbon-quick-save" aria-label="Save page from any tab" disabled={saving} onClick={()=>void savePage()}><Save size={15}/>{saving?'Saving…':'Save'}</button>
         </nav>
         <div className="office-ribbon-content" role="tabpanel" aria-label={ribbonTab}>
