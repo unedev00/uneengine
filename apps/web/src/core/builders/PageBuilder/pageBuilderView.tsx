@@ -2465,7 +2465,7 @@ function PageBuilder({
             <PageComponentStyleEditor section="colors" componentType={selected.type}
               properties={selected.properties}
               onChange={(properties: Record<string,unknown>)=>updateComponent(selected.id,{properties})}/>
-          </div> : {selectedRegion && !pageSettingsOpen && activePanel !== 'page' ? <div className="properties-section">
+          </div> : selectedRegion && !pageSettingsOpen && activePanel !== 'page' ? <div className="properties-section">
             <div className="properties-section-title">Section configuration</div>
             <p className="properties-help">Sections are responsive layout regions. Change the arrangement without deleting any blocks.</p>
             <label className="form-label">Section arrangement<select className="form-control" value={page.template ?? 'main-sidebar'} onChange={event => setPageTemplate(event.target.value as LightningPageTemplate)}>{pageTemplates.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>
