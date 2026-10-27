@@ -44,7 +44,7 @@ export default function PageComponentVisualEditor({ value, onChange, componentTy
   ];
   const swatches = ['transparent','#ffffff','#f8fafc','#e0e7ff','#dbeafe','#dcfce7','#fee2e2','#111827'];
   return <fieldset className="metadata-component-visual-editor compact-ribbon-visual-editor">
-    <legend className="properties-section-title">{section === 'colors' ? 'Component colours' : 'Appearance & exact size'}</legend>
+    <legend className="properties-section-title">{section === 'colors' ? 'Component colours' : section === 'appearance' ? 'Appearance' : section === 'size' ? 'Exact size' : 'Appearance & exact size'}</legend>
     <div className="compact-visual-groups">
       {section !== 'colors' && section !== 'size' && numericPresets.filter(preset => supportsAppearanceProperty(componentType, preset.key)).map(preset =>
         <div className="compact-visual-group" key={preset.key}>
