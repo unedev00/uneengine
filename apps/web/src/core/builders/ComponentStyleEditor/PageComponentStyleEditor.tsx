@@ -20,12 +20,13 @@ const alignments: Array<[LayoutSettingKey,string,readonly string[]]> =
     .map(({key,label,options})=>[key,label,options]);
 
 export default function PageComponentStyleEditor({
-  properties, onChange, disabled = false, componentType = ''
+  properties, onChange, disabled = false, componentType = '', section = 'all'
 }: {
   properties: Record<string, unknown>;
   onChange: (properties: Record<string, unknown>) => void;
   disabled?: boolean;
   componentType?: string;
+  section?: 'all' | 'layout' | 'colors';
 }) {
   const [mode, setMode] = useState<Mode>('Base');
   const [error, setError] = useState('');
@@ -44,8 +45,7 @@ export default function PageComponentStyleEditor({
   };
   const inheritedCaption = mode === 'Base' ? 'Default' : 'Inherit base';
   return <section className="page-component-style-editor" aria-label="Advanced layout and responsive properties">
-    <div className="properties-section-title">Advanced appearance and layout</div>
-    <p className="properties-help">All values are stored with the page. Desktop, tablet and phone overrides inherit the base values until changed.</p>
+    <div className="office-ribbon-group-heading">{section === 'colors' ? 'Responsive colours' : 'Responsive layout & typography'}</div>
     <label className="form-label">Edit breakpoint
       <select className="form-control" aria-label="Edit layout breakpoint" disabled={disabled} value={mode} onChange={(event) => setMode(event.target.value as Mode)}>
         <option value="Base">Base / default</option>
@@ -54,7 +54,7 @@ export default function PageComponentStyleEditor({
         <option value="Phone">Phone override</option>
       </select>
     </label>
-    {numeric.filter(([key]) => supportsAppearanceProperty(componentType, key)).map(([key, label, min, max]) => <label className="form-label" key={key}>{label} (px{key === 'opacity' ? ' or %' : ''})
+    {section !== 'colors' && numeric.filter(([key]) => supportsAppearanceProperty(componentType, key)).map(([key, label, min, max]) => <label className="form-label" key={key}>{label} (px{key === 'opacity' ? ' or %' : ''})
       <input className="form-control" type="number" disabled={disabled} min={min} max={max} step={1}
         aria-label={label}
         placeholder={String(inherited[key] ?? inheritedCaption)}
@@ -66,7 +66,7 @@ export default function PageComponentStyleEditor({
           if (Number.isFinite(value)) change(key, value);
         }} />
     </label>)}
-    {responsiveColorFields.filter(({key}) => supportsAppearanceProperty(componentType, key)).map(({key,label}) => {
+    {section !== 'layout' && responsiveColorFields.filter(({key}) => supportsAppearanceProperty(componentType, key)).map(({key,label}) => {
       const chosen = String(current[key] ?? inherited[key] ?? '#ffffff');
       const transparent = chosen === 'transparent';
       return <div className="metadata-array-property" key={key}>
@@ -82,14 +82,14 @@ export default function PageComponentStyleEditor({
           onClick={() => change(key, null)}>Inherit base colour</button>}
       </div>;
     })}
-    {alignments.filter(([key]) => supportsAppearanceProperty(componentType, key)).map(([key, label, options]) => <label className="form-label" key={key}>{label}
+    {section !== 'colors' && alignments.filter(([key]) => supportsAppearanceProperty(componentType, key)).map(([key, label, options]) => <label className="form-label" key={key}>{label}
       <select className="form-control" disabled={disabled} value={String(current[key] ?? '')}
         onChange={(event) => change(key, event.target.value || null)}>
         <option value="">{inheritedCaption}</option>
         {options.map((item) => <option key={item} value={item}>{item.replace('-', ' ')}</option>)}
       </select>
     </label>)}
-    {typography.filter(([key]) => supportsAppearanceProperty(componentType, key)).map(([key, label, options]) => <label className="form-label" key={key}>{label}
+    {section !== 'colors' && typography.filter(([key]) => supportsAppearanceProperty(componentType, key)).map(([key, label, options]) => <label className="form-label" key={key}>{label}
       <select className="form-control" aria-label={label} disabled={disabled}
         value={String(current[key] ?? '')}
         onChange={(event) => change(key, event.target.value || null)}>
@@ -97,7 +97,7 @@ export default function PageComponentStyleEditor({
         {options.map(option => <option key={option} value={option}>{option}</option>)}
       </select>
     </label>)}
-    <label className="form-label">Visibility on {mode === 'Base' ? 'all devices' : mode}
+    {section !== 'colors' && <label className="form-label">Visibility on {mode === 'Base' ? 'all devices' : mode}
       <select className="form-control" disabled={disabled} aria-label="Component visibility"
         value={current.hidden === true ? 'hidden' : current.hidden === false ? 'visible' : 'inherit'}
         onChange={(event) => change('hidden', event.target.value === 'inherit' ? null : event.target.value === 'hidden')}>
@@ -105,14 +105,14 @@ export default function PageComponentStyleEditor({
         <option value="visible">Visible</option>
         <option value="hidden">Hidden</option>
       </select>
-    </label>
-    {(!componentType || componentAppearanceCapabilities(componentType).container) && <label className="checkbox-row"><input type="checkbox" disabled={disabled}
+    </label>}
+    {section !== 'colors' && (!componentType || componentAppearanceCapabilities(componentType).container) && <label className="checkbox-row"><input type="checkbox" disabled={disabled}
       aria-label="Allow nested components"
       checked={properties.layoutContainer !== false}
       onChange={(event) => onChange({ ...properties, layoutContainer: event.target.checked })} />
       Allow child components (container capability)
     </label>}
     {error && <div className="auth-error" role="alert">{error}</div>}
-    <div className="properties-help">Reset a numeric field by clearing it. Values outside the accepted ranges cannot be saved.</div>
+
   </section>;
 }

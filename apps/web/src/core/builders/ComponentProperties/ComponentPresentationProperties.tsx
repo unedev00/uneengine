@@ -22,9 +22,8 @@ export default function ComponentPresentationProperties({
   };
   if (!groups.length) return null;
   return <div className="metadata-component-presentation" aria-label="Content and appearance settings">
-    {groups.map(group => <details key={group.section} className="builder-advanced-panel"
-      open={group.section === 'Content' ? true : undefined}>
-      <summary className="properties-section-title">{group.section}</summary>
+    {groups.map(group => <section key={group.section} className="office-ribbon-presentation-group">
+      <div className="office-ribbon-group-heading">{group.section}</div>
       {group.definitions.map(definition => {
         const key = definition.propertyKey;
         const value = presentationValue(properties, definition);
@@ -47,6 +46,13 @@ export default function ComponentPresentationProperties({
             onChange={event => update(key, event.target.checked)}/>
           {label}
         </label>;
+        if (definition.kind === 'COLOR') return <label key={key} className="form-label office-ribbon-metadata-color">
+          {label}
+          <span className="compact-color-controls">
+            <input type="color" aria-label={label+' palette'} value={/^#[0-9a-f]{6}$/i.test(String(value??''))?String(value):'#ffffff'} onChange={event=>update(key,event.target.value)}/>
+            <input type="text" aria-label={label+' hex code'} placeholder="#RRGGBB" value={String(value??'')} onChange={event=>update(key,event.target.value)}/>
+          </span>
+        </label>;
         if (definition.kind === 'NUMBER' || definition.kind === 'CURRENCY') return <label key={key} className="form-label">
           {label}
           <input className="form-control" aria-label={label} type="number"
@@ -59,6 +65,6 @@ export default function ComponentPresentationProperties({
             value={String(value ?? '')} onChange={event => update(key, event.target.value)}/>
         </label>;
       })}
-    </details>)}
+    </section>)}
   </div>;
 }

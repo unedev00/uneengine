@@ -145,8 +145,10 @@ test('Page Builder property editors filter controls by selected component capabi
   const advanced = await readFile(new URL('../src/core/builders/ComponentStyleEditor/PageComponentStyleEditor.tsx', import.meta.url), 'utf8');
   const capabilities = await readFile(new URL('../src/core/builders/ComponentStyleEditor/componentAppearanceCapabilities.ts', import.meta.url), 'utf8');
 
-  assert.match(builder, /PageComponentVisualEditor componentType=\{selected\.type\}/);
-  assert.match(builder, /PageComponentStyleEditor componentType=\{selected\.type\}/);
+  // Both editors must receive the selected component type and the contextual
+  // colour/layout section. Attribute order is intentionally not an API contract.
+  assert.match(builder, /<PageComponentVisualEditor\s+section=\{ribbonTab==='Component Style'\?'colors':'layout'\}\s+componentType=\{selected\.type\}/);
+  assert.match(builder, /<PageComponentStyleEditor\s+section=\{ribbonTab==='Component Style'\?'colors':'layout'\}\s+componentType=\{selected\.type\}/);
   assert.match(visual, /numericPresets\.filter\(preset => supportsAppearanceProperty\(componentType, preset\.key\)\)/);
   assert.match(visual, /appearanceNumberFields\.filter\(\(\{key\}\) => supportsAppearanceProperty\(componentType, key\)\)/);
   assert.match(advanced, /numeric\.filter\(\(\[key\]\) => supportsAppearanceProperty\(componentType, key\)\)/);
@@ -324,4 +326,36 @@ test('native/common component settings style actual controls without outer chrom
   assert.match(builder,/layoutTransparent props=\{/);
   assert.match(runtime,/layoutTransparent props=\{/);
   assert.doesNotMatch(builder,/layoutTransparent=\{!isLayoutContainer\(component\)\}/);
+});
+
+test('Page Builder Office ribbon keeps each control in one permanent logical group', async () => {
+  const root = new URL('../src/core/builders/', import.meta.url);
+  const builder = await readFile(new URL('PageBuilder/pageBuilderView.tsx', root), 'utf8');
+  const styles = await readFile(new URL('PageBuilder/styles-md227.css', root), 'utf8');
+  const presentation = await readFile(new URL('ComponentProperties/ComponentPresentationProperties.tsx', root), 'utf8');
+  const data = await readFile(new URL('ComponentProperties/componentPropertiesView.tsx', root), 'utf8');
+  const visual = await readFile(new URL('ComponentStyleEditor/PageComponentVisualEditor.tsx', root), 'utf8');
+  const responsive = await readFile(new URL('ComponentStyleEditor/PageComponentStyleEditor.tsx', root), 'utf8');
+
+  assert.match(builder, /'Component Style'/);
+  assert.match(builder, /selectedHistoryVersion/);
+  assert.match(builder, /aria-label="Choose page layout"/);
+  assert.match(builder, /aria-label="Page width"/);
+  assert.match(builder, /aria-label="Page height"/);
+  assert.doesNotMatch(builder, /office-ribbon-page-controls/);
+  assert.doesNotMatch(builder, /Save creates a private version/);
+  assert.doesNotMatch(builder, /These settings belong only to the selected/);
+  assert.doesNotMatch(builder, /<div className="reference-canvas-toolbar">/);
+  assert.doesNotMatch(builder, />Done<\/button>/);
+  assert.match(builder, /remainingRibbonComponents\.map\(component=>/);
+  assert.match(styles, /grid-template-rows:repeat\(3,25px\)/);
+  assert.match(styles, /office-ribbon-data-section/);
+  assert.doesNotMatch(data, /builder-connect-steps/);
+  assert.match(data, /Connect data/);
+  assert.match(data, /Choose records/);
+  assert.match(data, /Set actions/);
+  assert.doesNotMatch(presentation, /<details/);
+  assert.match(presentation, /office-ribbon-presentation-group/);
+  assert.match(visual, /section !== 'layout' && appearanceColorFields/);
+  assert.match(responsive, /section !== 'layout' && responsiveColorFields/);
 });
