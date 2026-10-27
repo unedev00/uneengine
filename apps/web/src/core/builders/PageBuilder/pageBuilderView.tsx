@@ -2153,9 +2153,21 @@ function PageBuilder({
         </div>
         <button type="button" className="btn btn-small" onClick={dismissWelcome} aria-label="Dismiss getting started tips">Got it <X size={14}/></button>
       </section>}
-      <div className={`page-builder-layout canvas-unified-builder ${page.layoutMode === 'free-canvas' ? 'modern-canvas-builder' : ''} ${activePanel === null ? 'unified-panel-collapsed' : ''}`}
+      <div className={`page-builder-layout canvas-unified-builder reference-builder-layout ${page.layoutMode === 'free-canvas' ? 'modern-canvas-builder' : ''} ${activePanel === null ? 'unified-panel-collapsed' : ''}`}
         style={{ '--component-panel-width': `${componentPanelWidth}px` } as React.CSSProperties}>
         <nav className="builder-icon-rail" aria-label="Builder tools">
+          {([
+            ['Home', Grid2X2, () => openPalette('Components','All Components')],
+            ['Layout', PanelLeft, () => openPalette('Components','Layout')],
+            ['Data', Database, () => openPalette('Components','Data')],
+            ['Appearance', Settings2, () => {setInspectorTab('Design');openComponentInspector();}],
+            ['Actions', Workflow, () => {setInspectorTab('Data & Actions');openComponentInspector();}],
+            ['Advanced', SlidersHorizontal, () => {setInspectorTab('Position');openComponentInspector();}]
+          ] as const).map(([label, Icon, action]) =>
+            <button type="button" key={label} title={label} aria-label={label}
+              className={label === 'Home' && activePanel === 'palette' && paletteCategory === 'All Components' ? 'active' : ''}
+              onClick={action}><Icon size={21}/><span>{label}</span></button>)}
+          <div className="reference-builder-legacy-tools">
           {([
             ['All Components', Grid2X2, 'Blocks'],
             ['Layout', PanelLeft, 'Sections'],
@@ -2184,9 +2196,10 @@ function PageBuilder({
           <button type="button" title="Page settings" aria-label="Page settings" aria-pressed={activePanel === 'page'}
             className={activePanel === 'page' ? 'active' : ''} onClick={() => {setPageSettingsOpen(true);setActivePanel('page');}}>
             <SlidersHorizontal size={19}/><span>Page</span></button>
+          </div>
         </nav>
         <aside className="component-panel" style={activePanel !== 'palette' ? { display: 'none' } : undefined}>
-          <div className="builder-panel-collapse-row"><strong>{paletteTab === 'Components' ? pageBuilderCategoryLabels[paletteCategory] : paletteTab === 'Layers' ? 'Page structure' : paletteTab}</strong>
+          <div className="builder-panel-collapse-row"><strong>{paletteTab === 'Components' ? (paletteCategory === 'All Components' ? 'Home' : pageBuilderCategoryLabels[paletteCategory]) : paletteTab === 'Layers' ? 'Page structure' : paletteTab}</strong>
             <button type="button" aria-label="Collapse element panel" title="Collapse panel" className="icon-button subtle"
               onClick={() => setActivePanel(null)}><X size={16}/></button>
           </div>
@@ -2273,6 +2286,14 @@ function PageBuilder({
             onPointerUp={endComponentPanelResize} onPointerCancel={endComponentPanelResize} />
         </aside>
         <div className="page-preview-area" ref={pagePreviewAreaRef}>
+          <div className="reference-canvas-toolbar">
+            <span><Monitor size={16}/> {device} <ChevronDown size={13}/></span>
+            <strong>Page: {page.label}</strong>
+            <div className="reference-canvas-toolbar-actions">
+              <button type="button" title="Preview page" onClick={openExternalPreview}><Eye size={15}/> Preview</button>
+              <button type="button" title="Open page settings" onClick={() => {setPageSettingsOpen(true);setActivePanel('page');}}><Settings2 size={16}/></button>
+            </div>
+          </div>
           <div className="page-stage" key={canvasRefreshKey} onDragOver={(event) => event.preventDefault()} onDrop={(event) => handleDrop(event)}>
             <div
               className={`record-preview ${page.layoutMode === 'free-canvas' ? 'free-canvas-preview' : page.pageType === 'Record Page' ? 'record-page-preview' : page.pageType === 'App Page' ? 'app-page-preview' : 'home-page-preview'} ${device === 'Phone' ? 'phone-preview' : device === 'Tablet' ? 'tablet-preview' : ''}`}
@@ -2326,8 +2347,8 @@ function PageBuilder({
           </div>
         </div>
         <aside id="lightning-page-properties" style={activePanel !== 'properties' && activePanel !== 'page' ? { display: 'none' } : undefined}
-          className={`properties-panel ${pageSettingsOpen || selected ? 'responsive-open' : ''}`}>
-          <div className="properties-header"><h2>{selectedRegion && !pageSettingsOpen && activePanel !== 'page' ? `${selectedRegion.toUpperCase()} section` : pageSettingsOpen || !selected || activePanel === 'page' ? 'Page settings' : selected.label}</h2>
+          className={`properties-panel reference-properties-panel ${pageSettingsOpen || selected ? 'responsive-open' : ''}`}>
+          <div className="properties-header"><Grid2X2 size={19} color="#0866e9"/><h2>{selectedRegion && !pageSettingsOpen && activePanel !== 'page' ? `${selectedRegion.toUpperCase()} section` : pageSettingsOpen || !selected || activePanel === 'page' ? 'Page settings' : selected.label}</h2>
             <button type="button" className="icon-button subtle" aria-label="Collapse panel" title="Collapse panel" onClick={() => setActivePanel(null)}><X size={16}/></button>
             {selected && !pageSettingsOpen && activePanel !== 'page' && <button className="icon-button subtle"
               onClick={removeSelected} aria-label="Remove component" title={isCanvasLocked(selected)?'Unlock before deleting':'Delete component'}
@@ -2343,13 +2364,13 @@ function PageBuilder({
             }}><Trash2 size={15}/> Remove section</button>}
             {selectedRegion === 'main' && <p className="properties-help">The Main section is required and cannot be deleted. Change the section arrangement to remove optional regions.</p>}
           </div> : selected && !pageSettingsOpen && activePanel !== 'page' ? <>
-            <div className="modern-inspector-tabs" role="tablist" aria-label="Component inspector">
+            <div className="modern-inspector-tabs reference-inspector-tabs" role="tablist" aria-label="Component inspector">
               {(['Design', 'Data & Actions', 'Visibility', 'Position'] as const).map(tab => {
                 const config = {
-                  Design: { label: 'Editing', Icon: Pencil },
+                  Design: { label: 'Properties', Icon: Pencil },
                   'Data & Actions': { label: 'Data', Icon: Database },
-                  Visibility: { label: 'Show / Hide', Icon: Eye },
-                  Position: { label: 'Arrange', Icon: Layers3 }
+                  Visibility: { label: 'Actions', Icon: Eye },
+                  Position: { label: 'Layout', Icon: Layers3 }
                 }[tab];
                 return <button key={tab} type="button" role="tab" title={config.label}
                   aria-label={config.label} aria-selected={inspectorTab === tab}
