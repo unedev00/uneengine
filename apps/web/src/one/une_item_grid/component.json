@@ -885,6 +885,67 @@
       "group": "Card",
       "section": "Layout",
       "displayOrder": 710
+    },
+    {
+      "propertyKey": "detailRows",
+      "label": "Detail rows",
+      "kind": "COLLECTION",
+      "displayOrder": 740,
+      "group": "Details",
+      "section": "Content",
+      "defaultValue": [],
+      "helpText": "Choose extra fields such as Department and Email, set optional labels, then reorder the rows.",
+      "maxItems": 20,
+      "fields": [
+        {
+          "propertyKey": "fieldApiName",
+          "label": "Field to show",
+          "kind": "OBJECT_FIELD",
+          "required": true
+        },
+        {
+          "propertyKey": "label",
+          "label": "Label",
+          "kind": "TEXT"
+        },
+        {
+          "propertyKey": "format",
+          "label": "Display format",
+          "kind": "SELECT",
+          "defaultValue": "Auto",
+          "choices": [
+            {
+              "key": "Auto",
+              "label": "Automatic"
+            },
+            {
+              "key": "Text",
+              "label": "Text"
+            },
+            {
+              "key": "Number",
+              "label": "Number"
+            },
+            {
+              "key": "Date",
+              "label": "Date"
+            },
+            {
+              "key": "Percent",
+              "label": "Percent"
+            },
+            {
+              "key": "Money",
+              "label": "Money"
+            }
+          ]
+        },
+        {
+          "propertyKey": "fallback",
+          "label": "When blank, show",
+          "kind": "TEXT"
+        }
+      ]
     }
   ],
   "eventDefinitions": [
