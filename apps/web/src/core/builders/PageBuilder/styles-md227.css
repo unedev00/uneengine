@@ -474,3 +474,45 @@
 .metadata-field-search-results button { text-align:left; white-space:normal; }
 .component-advanced-custom-setting { margin:10px 0; }
 .component-advanced-custom-setting summary { cursor:pointer; font-weight:600; }
+
+/* Page Builder reference UI: permanent three-pane workspace, accessible tool tabs. */
+.builder-editor-mode .reference-builder-layout.page-builder-layout.canvas-unified-builder,
+.builder-editor-mode .reference-builder-layout.page-builder-layout.canvas-unified-builder.modern-canvas-builder,
+.builder-editor-mode .reference-builder-layout.page-builder-layout.canvas-unified-builder.unified-panel-collapsed {
+  --reference-inspector-width: 340px;
+  grid-template-columns: 86px var(--component-panel-width, 310px) minmax(0, 1fr) var(--reference-inspector-width) !important;
+  gap: 0;
+  background: #f2f6fc;
+  font-family: "Segoe UI", Inter, system-ui, sans-serif;
+}
+.builder-editor-mode .reference-builder-layout .builder-icon-rail {grid-column:1;grid-row:1;width:86px;padding:12px 6px;gap:7px;background:#fff;}
+.builder-editor-mode .reference-builder-layout .builder-icon-rail > button {width:73px;min-height:72px;gap:7px;color:#253754;font-weight:600;}
+.builder-editor-mode .reference-builder-layout .builder-icon-rail > button.active {background:#0668e9;color:#fff;}
+.builder-editor-mode .reference-builder-layout .builder-icon-rail > button span {font-size:12px;}
+.builder-editor-mode .reference-builder-layout .reference-builder-legacy-tools {margin-top:auto;display:flex;flex-direction:column;gap:3px;border-top:1px solid #e3e9f3;padding-top:8px;}
+.builder-editor-mode .reference-builder-layout .reference-builder-legacy-tools button {width:72px;min-height:46px;font-size:11px;}
+.builder-editor-mode .reference-builder-layout .component-panel {grid-column:2;grid-row:1;display:block!important;padding:12px;min-width:0;border-right:1px solid #e5eaf2;}
+.builder-editor-mode .reference-builder-layout .component-panel[style*="display: none"] {visibility:hidden;display:block!important;}
+.builder-editor-mode .reference-builder-layout .page-preview-area,
+.builder-editor-mode .reference-builder-layout.unified-panel-collapsed .page-preview-area {grid-column:3;grid-row:1;min-width:0;background-color:#f1f6fc;}
+.builder-editor-mode .reference-builder-layout .reference-properties-panel {grid-column:4;grid-row:1;display:block!important;min-width:0;overflow-y:auto;border-left:1px solid #e5eaf2;border-right:0;background:#fff;padding:14px;}
+.builder-editor-mode .reference-builder-layout .reference-properties-panel[style*="display: none"] {visibility:hidden;display:block!important;}
+.builder-editor-mode .reference-builder-layout .properties-header {display:flex;align-items:center;gap:9px;border-bottom:1px solid #e7ecf4;padding-bottom:15px;}
+.builder-editor-mode .reference-builder-layout .properties-header h2 {font-size:16px;color:#14243b;margin-right:auto;}
+.builder-editor-mode .reference-builder-layout .reference-inspector-tabs {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;background:transparent;border-bottom:1px solid #e6ebf3;padding:0;}
+.builder-editor-mode .reference-builder-layout .reference-inspector-tabs button {background:none;border-radius:0;box-shadow:none;font-size:11px;min-width:0;}
+.builder-editor-mode .reference-builder-layout .reference-inspector-tabs button.active {border-bottom:3px solid #086bf0;color:#086bf0;}
+.builder-editor-mode .reference-builder-layout .reference-inspector-tabs svg {display:none;}
+.builder-editor-mode .reference-builder-layout .reference-canvas-toolbar {height:54px;display:flex;align-items:center;gap:15px;background:#fff;border:1px solid #e1e8f2;border-radius:11px;margin:10px 12px;padding:0 12px;color:#29394e;font-size:12px;}
+.builder-editor-mode .reference-builder-layout .reference-canvas-toolbar > span {display:flex;align-items:center;gap:8px;border:1px solid #e5eaf2;padding:8px;border-radius:7px;}
+.builder-editor-mode .reference-builder-layout .reference-canvas-toolbar-actions {display:flex;gap:8px;margin-left:auto;}
+.builder-editor-mode .reference-builder-layout .reference-canvas-toolbar-actions button {display:flex;align-items:center;gap:6px;border:1px solid #e5eaf2;border-radius:7px;padding:8px;color:#1269e8;background:white;cursor:pointer;}
+.builder-editor-mode .reference-builder-layout .page-stage {margin:0 12px 14px;}
+.builder-editor-mode .reference-builder-layout .properties-section-title {color:#1a2a43!important;-webkit-text-fill-color:#1a2a43!important;background:#eef3f9!important;opacity:1!important;}
+.builder-editor-mode .reference-builder-layout .form-label {color:#25364e;}
+@media (max-width:1200px) {
+ .builder-editor-mode .reference-builder-layout.page-builder-layout.canvas-unified-builder {grid-template-columns:68px 240px minmax(0,1fr) !important;}
+ .builder-editor-mode .reference-builder-layout .builder-icon-rail {width:68px;}
+ .builder-editor-mode .reference-builder-layout .builder-icon-rail > button {width:58px;}
+ .builder-editor-mode .reference-builder-layout .reference-properties-panel {position:absolute;right:0;top:0;bottom:0;width:min(340px,78vw);z-index:20;box-shadow:-8px 0 25px #14233b1c;}
+}
