@@ -213,7 +213,7 @@ type ComponentPropertyRecord = Record<string, unknown>;
 export function MetadataComponentProperties({ properties, objects, apps, pages, currentAppId, flows, onChange, definitions, device, componentVersion, eventDefinitions = [], primaryObjectApiName = '', pageComponents = [], componentCatalog = [], mode='all' }: { definitions?: LibraryComponentMetadata['propertyDefinitions']; eventDefinitions?: LibraryComponentMetadata['eventDefinitions'];
   pageComponents?:PageComponentMetadata[];componentCatalog?:LibraryComponentMetadata[];
   device?:PropertyDevice; componentVersion?:number;
-  mode?: 'all'|'data'|'actions'|'actions-editor'|'details'|'conditions';
+  mode?: 'all'|'data'|'data-source'|'filters-editor'|'actions'|'actions-editor'|'details'|'conditions';
   primaryObjectApiName?: string;
   properties: ComponentPropertyRecord;
   objects: ObjectMetadata[];
@@ -323,7 +323,7 @@ export function MetadataComponentProperties({ properties, objects, apps, pages, 
   const openFilterPopup=()=>{setFilterDraft(Object.fromEntries(filterKeys.map(key=>[key,[...listProperty(key)]])));setFilterLogicDraft(properties.filterLogic==='OR'?'OR':'AND');setFilterPopup(true);};
   const applyFilters=()=>{onChange({...properties,...filterDraft,filterLogic:filterLogicDraft});setFilterPopup(false);};
   return <div className="metadata-component-properties">
-    {(mode==='all'||mode==='data') && <section className="office-ribbon-data-section" aria-label="Connect data"><div className="office-ribbon-group-heading">Connect data</div>
+    {(mode==='all'||mode==='data'||mode==='data-source') && <section className="office-ribbon-data-section" aria-label="Connect data"><div className="office-ribbon-group-heading">Connect data</div>
       <p className="properties-help">Choose an object, then select fields and how records are displayed. These options use the shared data engine.</p>
     {typeof properties.layoutParentId === 'string' && properties.layoutParentId && <label className="form-label">Split pane placement
       <select className="form-control" value={String(properties.layoutPane ?? 'first')}
@@ -348,7 +348,7 @@ export function MetadataComponentProperties({ properties, objects, apps, pages, 
       && <TableRowConfigurationEditor properties={properties} object={selectedObject} onChange={onChange}/>}
     {mode==='all' && <details className="builder-advanced-panel"><summary>Advanced: connect to a page value</summary><p className="properties-help">Optional: use a value supplied by another block or automation.</p><PageStatePropertyBindingsEditor properties={properties} definitions={definitions} onChange={onChange}/></details>}
     </section>}
-    {(mode==='all'||mode==='data') && <section className="office-ribbon-data-section" aria-label="Choose records">
+    {(mode==='all'||mode==='data'||mode==='data-source') && <section className="office-ribbon-data-section" aria-label="Choose records">
       <div className="office-ribbon-group-heading">Choose records</div>
       {(['sortBy','sortField','pageSize','limit','recordLimit'] as const).filter(key=>Boolean(definitionsByKey.has(key)||key in properties)).map(key=>
         <label className="form-label" key={key}>{labelFor(key)}
@@ -367,6 +367,17 @@ export function MetadataComponentProperties({ properties, objects, apps, pages, 
       <button type="button" className="office-ribbon-command" onClick={openFilterPopup}><Filter size={15}/> Configure filters</button>
       <button type="button" className="office-ribbon-command" onClick={openFilterPopup}><Plus size={15}/> Add filter</button>
       <span className="office-ribbon-stat">{totalFilters} filter{totalFilters===1?'':'s'} · {properties.filterLogic==='OR'?'OR':'AND'}</span>
+    </section>}
+    {mode==='filters-editor' && <section className="office-ribbon-data-expanded" aria-label="Edit record filters">
+      <p className="properties-help">Base filters restrict the records shown to visitors. Edit and apply these rules without changing visitor selections.</p>
+      <label className="form-label">Match conditions
+        <select className="form-control" aria-label="Filter AND or OR logic" value={properties.filterLogic==='OR'?'OR':'AND'}
+          onChange={event=>update('filterLogic',event.target.value)}>
+          <option value="AND">All conditions (AND)</option><option value="OR">Any condition (OR)</option>
+        </select>
+      </label>
+      {filterKeys.map(key=><RecordFilterEditor key={key} title={key==='filters'?'Record filters':labelFor(key)}
+        fields={fieldsFor(key)} filters={listProperty(key)} onChange={next=>update(key,next)}/>)}
     </section>}
     {mode==='actions' && <section className="office-ribbon-data-section" aria-label="Events">
       <div className="office-ribbon-group-heading">Events</div>
