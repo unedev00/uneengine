@@ -193,9 +193,10 @@ test('ChatterInbox compatibility retains the shared conversation renderer and al
  assert.ok(canonical.propertyDefinitions.some((p:any)=>p.propertyKey==='conversationsObjectApiName'),
   'UNE conversation remains metadata-driven');
  const wrapper=await readFile(new URL('../src/one/une_conversation/UneConversation.jsx',import.meta.url),'utf8');
- assert.match(wrapper,/from\\s+["']\\.\\.\\/OneConversation\\/OneConversation\\.jsx["']/,
+ assert.ok(wrapper.includes('from "../OneConversation/OneConversation.jsx"') ||
+  wrapper.includes("from '../OneConversation/OneConversation.jsx'"),
   'UNE conversation imports the shared legacy renderer');
- assert.match(wrapper,/<OneComponent\\b/,'UNE wrapper actually renders the shared component');
+ assert.ok(wrapper.includes('<OneComponent '),'UNE wrapper actually renders the shared component');
  for(const definition of components){
   const built=await buildBundledComponent(definition);
   assert.ok(built.compiledJs,definition.apiName);assert.ok(built.cssSource,definition.apiName);
