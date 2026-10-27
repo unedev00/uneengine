@@ -554,6 +554,7 @@ function PageBuilder({
     const name = `${component.label} ${component.type}`.toLowerCase();
     if (/\b(text|heading|paragraph|rich text|label)\b/.test(name)) return <Type size={15} />;
     if (/\b(image|photo|picture|avatar|logo)\b/.test(name)) return <ImageIcon size={15} />;
+    if (/\b(grid|columns?|rows?|layout)\b/.test(name)) return <Grid2X2 size={15} />;
     if (/\b(shape|rectangle|square|circle|line|divider|spacer)\b/.test(name)
       || layoutTypes.some((type) => type === component.type)) return <Square size={15} />;
     if (/\b(button|link|navigation|action)\b/.test(name)) return <MousePointer2 size={15} />;
@@ -2188,7 +2189,7 @@ function PageBuilder({
           </>}
           {selected && ribbonTab === 'Component Properties' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
             <label className="office-ribbon-inline-field">Label <input aria-label="Component label" value={selected.label} onChange={event=>updateComponent(selected.id,{label:event.target.value})}/></label>
-            {(/text/i.test(selected.type) || /text/i.test(selected.label)) && selected.type!=='Rich Text' && <label className="office-ribbon-inline-field">Text <input aria-label="Component text" value={String(selected.properties.text??selected.properties.content??'')} onChange={event=>{const key=typeof selected.properties.content==='string'?'content':'text';updateComponent(selected.id,{properties:{...selected.properties,[key]:event.target.value}});}}/></label>}
+            {(/text/i.test(selected.type) || /text/i.test(selected.label)) && selected.type!=='Rich Text' && <label className="office-ribbon-inline-field">Text <input aria-label="Component text" value={String(selected.properties.text??selected.properties.content??'Text')} onChange={event=>{const key=typeof selected.properties.content==='string'?'content':'text';updateComponent(selected.id,{properties:{...selected.properties,[key]:event.target.value}});}}/></label>}
             <button disabled={isCanvasLocked(selected)} onClick={removeSelected}><Trash2 size={16}/> Delete block</button>
           </div><span>Content</span></div>}
 
@@ -2354,7 +2355,7 @@ function PageBuilder({
                 }} />
             </>}
             {inspectorTab === 'Design' && selectedCustomDefinition && <ComponentPresentationProperties
-              definitions={availableComponentSettings(selectedCustomDefinition.propertyDefinitions??[],page.layoutVariant??'Desktop',selectedCustomDefinition.version).filter(definition=>/(?:colou?r|background|fill|opacity)/i.test(definition.propertyKey) === (ribbonTab==='Component Style'))} properties={selected.properties}
+              definitions={availableComponentSettings(selectedCustomDefinition.propertyDefinitions??[],page.layoutVariant??'Desktop',selectedCustomDefinition.version).filter(definition=>(definition.kind==='COLOR'||/(?:colou?r|background|fill|opacity|tone)/i.test(definition.propertyKey)) === (ribbonTab==='Component Style'))} properties={selected.properties}
               onChange={(properties) => updateComponent(selected.id, {properties})}/>}
             {inspectorTab === 'Design' && <PageComponentVisualEditor section={ribbonTab==='Component Style'?'colors':'layout'} componentType={selected.type} value={selected.properties.visualStyle} onChange={(visualStyle) => updateComponent(selected.id, { properties: { ...selected.properties, visualStyle } })} />}
             {inspectorTab === 'Design' && <PageComponentStyleEditor section={ribbonTab==='Component Style'?'colors':'layout'} componentType={selected.type} properties={selected.properties}
