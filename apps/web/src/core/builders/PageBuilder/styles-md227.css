@@ -474,3 +474,25 @@
 .metadata-field-search-results button { text-align:left; white-space:normal; }
 .component-advanced-custom-setting { margin:10px 0; }
 .component-advanced-custom-setting summary { cursor:pointer; font-weight:600; }
+
+/* Shared Page Builder inspector heading contrast: covers layout, appearance,
+   data, interactions, advanced panels and nested metadata editors. */
+:where(.modern-canvas-builder, .canvas-unified-builder) :is(.properties-panel, .canvas-inspector, .metadata-component-properties, .metadata-record-filter-editor, .builder-advanced-panel) .properties-section-title,
+:where(.modern-canvas-builder, .canvas-unified-builder) .properties-section-title {
+  color: #172b4d !important;
+  -webkit-text-fill-color: #172b4d !important;
+  background-color: #e9f0f8 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  text-shadow: none !important;
+}
+:where(.modern-canvas-builder, .canvas-unified-builder) .properties-section-title :is(span, strong, label, small) {
+  color: inherit !important;
+  -webkit-text-fill-color: inherit !important;
+  opacity: 1 !important;
+}
+:where(.modern-canvas-builder, .canvas-unified-builder)[data-theme="dark"] .properties-section-title {
+  color: #f1f5f9 !important;
+  -webkit-text-fill-color: #f1f5f9 !important;
+  background-color: #243247 !important;
+}
