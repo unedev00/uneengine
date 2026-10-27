@@ -642,3 +642,72 @@
 .compact-visual-group summary{cursor:pointer;white-space:nowrap}
 .compact-visual-group .visual-advanced-grid{display:grid;grid-template-columns:repeat(2,minmax(110px,1fr));gap:5px;max-height:100px;overflow:auto;background:var(--md-surface,#fff);padding:6px}
 .office-ribbon-inspector-host .metadata-component-visual-editor .visual-preset-grid,.office-ribbon-inspector-host .metadata-component-visual-editor .visual-swatch-grid{max-width:220px}
+
+/* All component tabs: three compact control rows per Office-style group. */
+.office-ribbon-inspector-host {display:block;flex:1 1 auto;min-width:300px;overflow:hidden}
+.office-ribbon-inspector-host .properties-panel {
+  display:block!important;
+  height:132px!important;max-height:132px!important;
+  white-space:normal;
+  overflow-x:auto!important;overflow-y:auto!important;
+  scrollbar-width:thin;
+  padding:0 9px!important;
+}
+.office-ribbon-inspector-host .properties-header{height:23px;min-height:23px;position:sticky;top:0;z-index:4}
+.office-ribbon-inspector-host .properties-header .icon-button{height:23px;width:23px}
+.office-ribbon-inspector-host .properties-section,
+.office-ribbon-inspector-host .canvas-position-editor,
+.office-ribbon-inspector-host fieldset,
+.office-ribbon-inspector-host .metadata-component-visual-editor,
+.office-ribbon-inspector-host .builder-advanced-panel,
+.office-ribbon-inspector-host .visual-advanced-properties {
+  vertical-align:top;
+  display:inline-flex;
+  flex-direction:column;
+  flex-wrap:nowrap;
+  flex:0 0 auto;
+  gap:3px;
+  min-width:145px;
+  max-width:245px;
+  margin:2px 0!important;
+  padding:2px 9px!important;
+  border:0;
+  border-right:1px solid #cbd1dc!important;
+  background:transparent;
+}
+.office-ribbon-inspector-host .properties-section-title{
+  display:block;font-size:11px;font-weight:600;margin:2px 0;padding:0;line-height:16px
+}
+.office-ribbon-inspector-host .form-label,
+.office-ribbon-inspector-host .checkbox-row{
+  display:flex;align-items:center;gap:6px;min-height:25px;max-width:228px;
+  font-size:11px;margin:0;white-space:normal
+}
+.office-ribbon-inspector-host .form-control,
+.office-ribbon-inspector-host input:not([type=checkbox]):not([type=color]),
+.office-ribbon-inspector-host select{width:auto;max-width:140px;min-height:24px!important;height:24px;font-size:11px!important}
+.office-ribbon-inspector-host .properties-help{font-size:10px;line-height:1.3;max-width:230px;margin:2px 0}
+.office-ribbon-inspector-host .canvas-position-grid,
+.office-ribbon-inspector-host .form-grid,
+.office-ribbon-inspector-host .visual-advanced-grid{
+  display:grid;grid-template-columns:repeat(2,minmax(95px,1fr));
+  gap:3px 7px;max-width:240px
+}
+.office-ribbon-inspector-host .canvas-position-grid .form-label,
+.office-ribbon-inspector-host .form-grid .form-label{display:flex;flex-direction:column;align-items:flex-start;gap:2px}
+.office-ribbon-inspector-host .canvas-position-grid input{width:80px!important}
+.office-ribbon-inspector-host .canvas-align-choices{display:flex;flex-wrap:wrap;gap:3px;max-width:235px}
+.office-ribbon-inspector-host .canvas-align-choices button,
+.office-ribbon-inspector-host .btn-small{min-height:24px;height:auto;padding:3px 6px;font-size:11px}
+.office-ribbon-inspector-host .metadata-component-visual-editor.compact-ribbon-visual-editor {
+  display:inline-block;max-width:none;border-right:0!important;padding:0 6px!important
+}
+.office-ribbon-inspector-host .compact-visual-groups{height:80px;align-items:flex-start}
+.office-ribbon-inspector-host .compact-visual-group{height:78px;min-width:128px;max-width:215px}
+.office-ribbon-inspector-host .compact-visual-group select{width:104px}
+.office-ribbon-inspector-host details summary{cursor:pointer;font-size:11px;min-height:24px;white-space:normal}
+.office-ribbon-inspector-host .builder-advanced-panel[open],
+.office-ribbon-inspector-host .visual-advanced-properties[open]{
+  position:relative;z-index:3;background:var(--md-surface,#fff);
+  max-height:115px;overflow:auto
+}
