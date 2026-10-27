@@ -462,6 +462,7 @@ function PageBuilder({
   const [visibilityDialogOpen,setVisibilityDialogOpen] = useState(false);
   const [additionalPropertyDialogOpen,setAdditionalPropertyDialogOpen] = useState(false);
   const [pageSettingsDialogOpen,setPageSettingsDialogOpen] = useState(false);
+  const [focusedCardMapping,setFocusedCardMapping] = useState('');
   const [ribbonTab, setRibbonTab] = useState<'Home' | 'Add Block' | 'Component Properties' | 'Component Style' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Preview'>('Home');
   const componentNeedsData = (type: string) => {
     const metadata = type.startsWith('Custom:') ? findRegisteredComponent(libraryComponents,type.slice('Custom:'.length),'page') : undefined;
@@ -476,6 +477,11 @@ function PageBuilder({
     const inspector = { 'Component Properties': 'Design', 'Component Style': 'Design', 'Component Data': 'Data & Actions', 'Component Action': 'Visibility', 'Component Layout': 'Position' } as const;
     if (tab in inspector) { setPageSettingsOpen(false); openComponentInspector(inspector[tab as keyof typeof inspector]); }
   };
+  useEffect(()=>{
+    if(!focusedCardMapping||ribbonTab!=='Component Data')return;
+    const select=document.querySelector<HTMLSelectElement>(`select[data-card-mapping-field="${focusedCardMapping}"]`);
+    if(select)select.focus();
+  },[focusedCardMapping,ribbonTab,selectedId]);
   const [componentClipboard, setComponentClipboard] = useState<ComponentClipboard | null>(null);
   const [recordScope, setRecordScope] = useState<PageActivationAssignmentMetadata['scope']>('Org Default');
   const [recordAppId, setRecordAppId] = useState(builderAppApiName || apps[0]?.apiName || '');
@@ -1903,6 +1909,15 @@ function PageBuilder({
           setSelectedRegion(null);
           setSelectedId(component.id);
         }
+        if(component.type==='Custom:une_item_grid'){
+          const target=event.target as HTMLElement;
+          const mapping=target.closest('.md-product-image')?'imageFieldApiName'
+            :target.closest('.md-product-name')?'titleFieldApiName'
+            :target.closest('.md-product-description')?'descriptionFieldApiName'
+            :target.closest('.md-product-price')?'priceFieldApiName'
+            :target.closest('.md-product-badge')?'badgeFieldApiName':'';
+          setFocusedCardMapping(mapping);
+        }else setFocusedCardMapping('');
         setPageSettingsOpen(false); setComponentMenuId('');
         if (!(event.shiftKey && page.layoutMode === 'free-canvas')) { setRibbonTab(componentNeedsData(component.type)?'Component Data':'Component Properties'); openComponentInspector(componentNeedsData(component.type)?'Data & Actions':'Design'); }
       } } : undefined}
@@ -2270,7 +2285,7 @@ function PageBuilder({
             </div><span>Field mapping</span></div>}
           {selected && ribbonTab === 'Component Data' && selectedCustomDefinition?.apiName==='une_item_grid' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
             <label className="office-ribbon-inline-field"><Database size={16}/> Object<select aria-label="Card grid object" value={String(selected.properties.objectApiName??'')} onChange={event=>{const obj=objects.find(item=>item.apiName===event.target.value);const definitions=obj?.fields??[];const pick=(pattern:RegExp)=>definitions.find(field=>pattern.test(field.apiName+' '+field.label))?.apiName??'';updateComponent(selected.id,{properties:{...selected.properties,objectApiName:event.target.value,imageFieldApiName:pick(/image|photo|picture|thumbnail/i),titleFieldApiName:pick(/^(name|title|product_name)$/i)||pick(/name|title/i),descriptionFieldApiName:pick(/description|summary|detail/i),priceFieldApiName:pick(/price|amount|cost/i)}});}}><option value="">Select an object…</option>{objects.map(obj=><option key={obj.apiName} value={obj.apiName}>{obj.label}</option>)}</select></label>
-            {(['imageFieldApiName','titleFieldApiName'] as const).map((key)=><label key={key} className="office-ribbon-inline-field"><span className="office-ribbon-field-name">{{imageFieldApiName:'Image',titleFieldApiName:'Title',descriptionFieldApiName:'Description',priceFieldApiName:'Value',badgeFieldApiName:'Badge'}[key]}</span><select aria-label={'Card '+key} value={String(selected.properties[key]??'')} onChange={event=>updateComponent(selected.id,{properties:{...selected.properties,[key]:event.target.value}})}><option value="">Not mapped</option>{(objects.find(obj=>obj.apiName===selected.properties.objectApiName)?.fields??[]).map(field=><option key={field.apiName} value={field.apiName}>{field.label}</option>)}</select></label>)}
+            {(['imageFieldApiName','titleFieldApiName'] as const).map((key)=><label key={key} className="office-ribbon-inline-field"><span className="office-ribbon-field-name">{{imageFieldApiName:'Image',titleFieldApiName:'Title',descriptionFieldApiName:'Description',priceFieldApiName:'Value',badgeFieldApiName:'Badge'}[key]}</span><select data-card-mapping-field={key} aria-label={'Card '+key} value={String(selected.properties[key]??'')} onChange={event=>updateComponent(selected.id,{properties:{...selected.properties,[key]:event.target.value}})}><option value="">Not mapped</option>{(objects.find(obj=>obj.apiName===selected.properties.objectApiName)?.fields??[]).map(field=><option key={field.apiName} value={field.apiName}>{field.label}</option>)}</select></label>)}
           </div><span>Card source & title</span></div>}
           {selected && ribbonTab === 'Component Data' && selectedCustomDefinition?.apiName==='une_item_grid' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
             {(['descriptionFieldApiName','priceFieldApiName','badgeFieldApiName'] as const).map((key)=><label key={key} className="office-ribbon-inline-field"><span className="office-ribbon-field-name">{{descriptionFieldApiName:'Description',priceFieldApiName:'Value',badgeFieldApiName:'Badge'}[key]}</span><select aria-label={'Card '+key} value={String(selected.properties[key]??'')} onChange={event=>updateComponent(selected.id,{properties:{...selected.properties,[key]:event.target.value}})}><option value="">Not mapped</option>{(objects.find(obj=>obj.apiName===selected.properties.objectApiName)?.fields??[]).map(field=><option key={field.apiName} value={field.apiName}>{field.label}</option>)}</select></label>)}
