@@ -1,0 +1,62 @@
+/* Shared Office ribbon anatomy, matching Page Builder without loading Page Builder code. */
+.flow-builder .flow-office-ribbon{background:#f4f5f7;border-bottom:1px solid #ccd2dd;color:#25344c;flex:none;width:100%}
+.flow-builder .office-ribbon-tabs{display:flex;align-items:end;gap:2px;min-height:38px;padding:0 12px;background:#285591;overflow-x:auto}
+.flow-builder .office-ribbon-tabs>button{appearance:none;border:0;border-radius:0;background:transparent;color:#fff;font-size:13px;font-weight:500;white-space:nowrap;padding:12px 14px 10px;cursor:pointer}
+.flow-builder .office-ribbon-tabs>button.active{background:#f4f5f7;color:#183b68}
+.flow-builder .office-ribbon-content{display:flex;align-items:stretch;gap:0;height:116px;min-height:116px;max-height:116px;padding:5px 10px 3px;overflow-x:auto;overflow-y:hidden}
+.flow-builder .office-ribbon-group{display:flex;flex-direction:column;justify-content:space-between;flex:0 0 auto;box-sizing:border-box;min-width:135px;max-width:270px;padding:2px 12px 0;border-right:1px solid #c8cdd4}
+.flow-builder .office-ribbon-group:last-child{border-right:0}
+.flow-builder .office-ribbon-group>span{font-size:11px;color:#5f6773;text-align:center;padding-top:6px}
+.flow-builder .office-ribbon-stack{display:grid;grid-template-rows:repeat(3,27px);gap:2px;align-content:start}
+.flow-builder .office-ribbon-stack>button{display:flex;align-items:center;gap:7px;min-width:0;min-height:27px;padding:3px 7px;border:1px solid transparent;border-radius:3px;background:transparent;color:inherit;text-align:left;font-size:12px;white-space:nowrap;cursor:pointer}
+.flow-builder .office-ribbon-stack>button:hover:not(:disabled){background:#e3ecfa;border-color:#b5cbe8}
+.flow-builder .office-ribbon-stack>button:focus-visible,.flow-builder .office-ribbon-tabs>button:focus-visible{outline:2px solid #4087e6;outline-offset:-2px}
+.flow-builder .office-ribbon-stack>button:disabled{opacity:.45;cursor:default}
+.flow-builder .office-ribbon-stack>button svg{flex:none}
+.flow-builder .office-ribbon-stack>label{display:flex;align-items:center;gap:7px;min-height:27px;font-size:12px;white-space:nowrap}
+.flow-builder .office-ribbon-stack input,.flow-builder .office-ribbon-stack select{box-sizing:border-box;min-width:90px;max-width:185px;height:25px;padding:2px 5px;border:1px solid #b7c2d3;border-radius:3px;background:white;color:#25344c;font:inherit}
+.flow-builder .office-ribbon-page-controls{display:flex;align-items:center;gap:9px;margin-left:auto;min-width:max-content;padding-left:15px;color:#fff}
+.flow-builder .office-ribbon-page-controls input{max-width:220px;width:17vw;min-width:120px;background:transparent;color:#fff;border:1px solid transparent;font-size:12px;font-weight:600;padding:5px}
+.flow-builder .office-ribbon-page-controls input:focus{outline:1px solid #d3e3ff;border-color:#d3e3ff}
+.flow-builder .office-ribbon-page-controls .flow-save-state{color:#d4f7df}
+.flow-builder .office-ribbon-page-controls .flow-save-state.dirty{color:#ffe6b5}
+.flow-builder .flow-ribbon-status{border-radius:12px;padding:4px 9px;background:#526b91;color:#fff;font-size:11px}
+.flow-builder .flow-ribbon-status.active{background:#247648}
+.flow-builder .flow-ribbon-element-icon{display:inline-grid;place-items:center;min-width:19px;height:19px;font-size:16px}
+.flow-builder .flow-ribbon-find{min-width:205px}
+.flow-builder .flow-ribbon-empty{padding:8px 16px;color:#5f6773;font-size:12px}
+.flow-builder .flow-ribbon-menu{min-width:185px}
+.flow-builder .flow-workarea{position:relative;grid-template-columns:minmax(0,1fr) 8px var(--flow-properties-width,330px)!important}
+.flow-builder .flow-workarea>.flow-toolbox{display:none!important}
+.flow-builder .flow-workarea.flow-manager-open>.flow-toolbox{display:block!important;position:absolute;z-index:40;top:0;left:0;width:min(430px,88vw);max-width:88vw;height:100%;max-height:100%;overflow-y:auto;background:#fff;border-right:1px solid #ccd2dd;box-shadow:9px 0 28px rgb(15 23 42 / 18%)}
+.flow-builder .flow-workarea>.flow-canvas-region{grid-column:1}
+.flow-builder .flow-workarea>.flow-properties-resize-handle{grid-column:2}
+.flow-builder .flow-workarea>.flow-settings{grid-column:3}
+.flow-builder .flow-manager-panel .toolbox-heading{position:sticky;top:0;z-index:2;background:white}
+.flow-builder .flow-manager-panel .toolbox-group[hidden],.flow-builder .flow-manager-panel [hidden]{display:none!important}
+.flow-builder .flow-manager-panel .toolbox-group{padding:14px}
+.flow-builder .flow-manager-panel .resource-list{padding-bottom:24px}
+.flow-builder .flow-canvas-top{height:28px;min-height:28px;background:transparent;border:0;pointer-events:none}
+.flow-builder .flow-canvas-top>div{pointer-events:auto}
+@media(max-width:1100px){
+ .lightning .flow-builder .flow-workarea{grid-template-columns:minmax(0,1fr) 8px min(340px,38vw)!important}
+ .lightning .flow-builder .flow-workarea>.flow-toolbox{display:none!important}
+ .lightning .flow-builder .flow-workarea.flow-manager-open>.flow-toolbox{display:block!important;position:absolute;left:0;top:0;width:min(430px,88vw);max-width:88vw;z-index:50}
+ .lightning .flow-builder .flow-workarea>.flow-settings{position:static;inset:auto;width:auto;max-width:none;box-shadow:none;grid-column:3}
+ .lightning .flow-builder .flow-workarea>.flow-canvas-region{grid-column:1}
+ .lightning .flow-builder .flow-workarea>.flow-properties-resize-handle{display:block;grid-column:2}
+}
+@media(max-width:820px){
+ .lightning .flow-builder .flow-workarea{grid-template-columns:minmax(0,1fr)!important}
+ .lightning .flow-builder .flow-workarea>.flow-settings{grid-column:1;max-height:45dvh;position:relative}
+ .lightning .flow-builder .flow-workarea>.flow-canvas-region{grid-column:1;min-height:350px}
+ .lightning .flow-builder .flow-workarea>.flow-properties-resize-handle{display:none}
+ .flow-builder .office-ribbon-tabs>button{padding:10px 9px;font-size:12px}
+ .flow-builder .office-ribbon-page-controls input{width:130px}
+ .flow-builder .office-ribbon-group{min-width:125px;padding-inline:8px}
+}
+@media(max-width:599px),(max-height:500px) and (pointer:coarse){
+ .flow-mobile-builder .flow-phone-top-actions{display:none}
+ .flow-mobile-builder .flow-workarea>.flow-toolbox{display:none!important}
+ .lightning .flow-builder.flow-mobile-builder .flow-workarea.flow-manager-open>.flow-toolbox{display:block!important;position:fixed!important;left:0;right:0;bottom:0;top:auto;z-index:980;width:100%;max-width:100%;height:auto;max-height:78dvh;overflow:auto;border-radius:16px 16px 0 0}
+}
