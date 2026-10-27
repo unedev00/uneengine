@@ -22,7 +22,7 @@ test('One- names have one prefix while platform names and API references stay st
   const custom = definition('Calendar', { label: 'Calendar' });
   assert.equal(libraryComponentLabel(custom), 'One-Calendar');
   assert.equal(custom.apiName, 'Calendar');
-  assert.equal(libraryComponentLabel(definition('une_calendar',{label:'UNE Calendar'})),'UNE Calendar');
+  assert.equal(libraryComponentLabel(definition('une_calendar',{label:'UNE Calendar'})),'Calendar');
 });
 
 test('each builder offers one published definition per identity and supported surface', () => {

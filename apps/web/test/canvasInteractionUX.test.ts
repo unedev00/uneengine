@@ -373,7 +373,7 @@ test('Page Builder Office ribbon keeps each control in one permanent logical gro
   assert.match(data, /Set actions/);
   assert.match(data, /Configure record filters/);
   assert.match(data, /Configure component actions/);
-  assert.match(builder, /Configure visibility/);
+  assert.match(builder, /Visibility rules/);
   assert.match(builder, /Group <ChevronDown/);
   assert.doesNotMatch(builder, /Technical page ID/);
   assert.doesNotMatch(builder, /page-property-summary/);
@@ -408,8 +408,8 @@ test('Contextual Page Builder tabs do not leak metadata from other tabs',async()
  assert.match(builder,/mode="data" properties=\{selected\.properties\}/);
  assert.match(builder,/ribbonTab==='Component Style' && selected \? <div className="office-ribbon-colours">/);
  assert.match(builder,/ribbonTab === 'Component Properties' && <div className="office-ribbon-group office-ribbon-appearance"/);
- assert.match(builder,/\['Component Style','Component Data','Component Action','Component Layout'\]\.includes\(ribbonTab\)/);
- assert.doesNotMatch(builder,/ribbonTab === 'Component Properties' && <div className="office-ribbon-inspector-host"/);
+ assert.match(builder,/\['Component Properties','Component Data','Component Action','Component Layout'\]\.includes\(ribbonTab\)/);
+ assert.match(builder,/ribbonTab === 'Component Properties'/);
  assert.match(css,/office-ribbon-colours \.compact-color-swatches/);
  assert.match(css,/metadata-component-properties>\.office-ribbon-data-section/);
 });

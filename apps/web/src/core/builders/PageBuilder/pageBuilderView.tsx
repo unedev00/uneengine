@@ -462,7 +462,13 @@ function PageBuilder({
   const [visibilityDialogOpen,setVisibilityDialogOpen] = useState(false);
   const [additionalPropertyDialogOpen,setAdditionalPropertyDialogOpen] = useState(false);
   const [pageSettingsDialogOpen,setPageSettingsDialogOpen] = useState(false);
+  const [focusedCardMapping,setFocusedCardMapping] = useState('');
   const [ribbonTab, setRibbonTab] = useState<'Home' | 'Add Block' | 'Component Properties' | 'Component Style' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Preview'>('Home');
+  const componentNeedsData = (type: string) => {
+    const metadata = type.startsWith('Custom:') ? findRegisteredComponent(libraryComponents,type.slice('Custom:'.length),'page') : undefined;
+    return Boolean(metadata?.propertyDefinitions?.some(definition=>definition.kind==='OBJECT'||definition.kind==='OBJECT_FIELD'))
+      || /^(?:Record Field|Record Detail|Related List|List View|Report Chart|Dashboard)$/.test(type);
+  };
   const selectRibbonTab = (tab: typeof ribbonTab) => {
     setRibbonTab(tab);
     setPageSettingsDialogOpen(false);
@@ -471,6 +477,11 @@ function PageBuilder({
     const inspector = { 'Component Properties': 'Design', 'Component Style': 'Design', 'Component Data': 'Data & Actions', 'Component Action': 'Visibility', 'Component Layout': 'Position' } as const;
     if (tab in inspector) { setPageSettingsOpen(false); openComponentInspector(inspector[tab as keyof typeof inspector]); }
   };
+  useEffect(()=>{
+    if(!focusedCardMapping||ribbonTab!=='Component Data')return;
+    const select=document.querySelector<HTMLSelectElement>(`select[data-card-mapping-field="${focusedCardMapping}"]`);
+    if(select)select.focus();
+  },[focusedCardMapping,ribbonTab,selectedId]);
   const [componentClipboard, setComponentClipboard] = useState<ComponentClipboard | null>(null);
   const [recordScope, setRecordScope] = useState<PageActivationAssignmentMetadata['scope']>('Org Default');
   const [recordAppId, setRecordAppId] = useState(builderAppApiName || apps[0]?.apiName || '');
@@ -1008,7 +1019,7 @@ function PageBuilder({
       }
       : undefined;
     components.splice(Math.max(0, Math.min(position, components.length)), 0, {
-      id, type, label: custom?.label ?? type,
+      id, type, label: custom ? libraryComponentLabel(custom) : type,
       properties: custom
         ? { libraryComponentId: custom.apiName,
             ...Object.fromEntries((custom.propertyDefinitions??[]).filter(def=>Array.isArray(def.defaultValue)
@@ -1043,7 +1054,8 @@ function PageBuilder({
     setSelectedId(id);
     setPageSettingsOpen(false);
     setActivePanel('properties');
-    setInspectorTab('Design');
+    setInspectorTab(componentNeedsData(type)?'Data & Actions':'Design');
+    setRibbonTab(componentNeedsData(type)?'Component Data':'Component Properties');
   };
   const addField = (fieldApiName: string) => {
     if (dynamicFormsEnabled) {
@@ -1897,10 +1909,19 @@ function PageBuilder({
           setSelectedRegion(null);
           setSelectedId(component.id);
         }
+        if(component.type==='Custom:une_item_grid'){
+          const target=event.target as HTMLElement;
+          const mapping=target.closest('.md-product-image')?'imageFieldApiName'
+            :target.closest('.md-product-name')?'titleFieldApiName'
+            :target.closest('.md-product-description')?'descriptionFieldApiName'
+            :target.closest('.md-product-price')?'priceFieldApiName'
+            :target.closest('.md-product-badge')?'badgeFieldApiName':'';
+          setFocusedCardMapping(mapping);
+        }else setFocusedCardMapping('');
         setPageSettingsOpen(false); setComponentMenuId('');
-        if (!(event.shiftKey && page.layoutMode === 'free-canvas')) { setRibbonTab('Component Properties'); openComponentInspector('Design'); }
+        if (!(event.shiftKey && page.layoutMode === 'free-canvas')) { setRibbonTab(componentNeedsData(component.type)?'Component Data':'Component Properties'); openComponentInspector(componentNeedsData(component.type)?'Data & Actions':'Design'); }
       } } : undefined}
-      onDoubleClick={!libraryPreview ? event => { event.stopPropagation(); if (!previewMode) { setSelectedRegion(null); setSelectedId(component.id); openComponentInspector('Design'); } } : undefined}
+      onDoubleClick={!libraryPreview ? event => { event.stopPropagation(); if (!previewMode) { setSelectedRegion(null); setSelectedId(component.id); selectRibbonTab(componentNeedsData(component.type)?'Component Data':'Component Properties'); } } : undefined}
       onContextMenu={!libraryPreview && !previewMode ? event => { event.preventDefault(); event.stopPropagation(); setSelectedRegion(null); setSelectedId(component.id); setComponentMenuId(component.id); } : undefined}
       onPointerDown={!libraryPreview && page.layoutMode === 'free-canvas' && !nested ? event => startCanvasMove(event, component) : undefined}
       onPointerMove={!libraryPreview && page.layoutMode === 'free-canvas' && !nested ? moveCanvasPointer : undefined}
@@ -2139,6 +2160,8 @@ function PageBuilder({
   const openAddBlocks = (region: 'header' | 'main' | 'sidebar' | null = null) => {
     setPaletteInsertRegion(region); setPaletteTab('Components'); setPaletteCategory('All Components'); setActivePanel('palette');
   };
+  const journeyTabs: Array<typeof ribbonTab> = ['Home','Add Block',...(selected ? ['Component Data','Component Properties','Component Layout','Component Action'] as const : []),'Preview'];
+  const journeyIndex=journeyTabs.indexOf(ribbonTab);
   const addPaletteComponent = (type: string) => {
     const selectedIndex = page.components.findIndex((component) => component.id === selectedId);
     const selectedRegion = paletteInsertRegion ?? page.components[selectedIndex]?.region ?? 'main';
@@ -2194,8 +2217,11 @@ function PageBuilder({
       {editorMode && <>
       <section className="office-builder-ribbon" aria-label="Page Builder ribbon">
         <nav className="office-ribbon-tabs" role="tablist" aria-label="Page Builder tabs">
-          {(['Home','Add Block',...(selected ? ['Component Properties','Component Style','Component Data','Component Action','Component Layout'] : []),'Preview'] as Array<typeof ribbonTab>).map(tab =>
-            <button key={tab} type="button" role="tab" aria-selected={ribbonTab === tab} className={ribbonTab===tab?'active':''} onClick={() => selectRibbonTab(tab)}>{tab}</button>)}
+          {journeyTabs.map(tab =>
+            <button key={tab} type="button" role="tab" aria-selected={ribbonTab === tab} className={ribbonTab===tab?'active':''} onClick={() => selectRibbonTab(tab)}>{{'Home':'Home','Add Block':'Add Component','Component Data':'Data Source','Component Properties':'Design','Component Style':'Style','Component Layout':'Layout','Component Action':'Actions','Preview':'Preview'}[tab]}</button>)}
+          <button type="button" aria-label="Previous Page Builder step" title="Previous step" disabled={journeyIndex<=0} onClick={()=>selectRibbonTab(journeyTabs[journeyIndex-1])}><ChevronLeft size={16}/></button>
+          <button type="button" aria-label="Next Page Builder step" title="Next step" disabled={journeyIndex<0||journeyIndex===journeyTabs.length-1} onClick={()=>selectRibbonTab(journeyTabs[journeyIndex+1])}><ChevronRight size={16}/></button>
+          <button type="button" className="office-ribbon-quick-save" aria-label="Save page from any tab" disabled={saving} onClick={()=>void savePage()}><Save size={15}/>{saving?'Saving…':'Save'}</button>
         </nav>
         <div className="office-ribbon-content" role="tabpanel" aria-label={ribbonTab}>
           {ribbonTab === 'Home' && <>
@@ -2210,6 +2236,7 @@ function PageBuilder({
               <label className="office-ribbon-inline-field">Height <input aria-label="Page height" type="number" min={320} max={10000} value={page.canvasHeight} onChange={event=>{const n=Number(event.target.value);if(Number.isInteger(n)&&n>=320&&n<=10000)applyPage({...page,canvasHeight:n});}}/></label>
             </div><span>Layout</span></div>
             <div className="office-ribbon-group"><div className="office-ribbon-stack">
+              <button type="button" disabled={!selected||isCanvasLocked(selected)} onClick={removeSelected}><Trash2 size={16}/> Delete selected component</button>
               <button onClick={()=>setDependenciesOpen(true)}><Puzzle size={16}/> Dependencies</button>
             </div><span>Page settings</span></div>
             <div className="office-ribbon-group"><div className="office-ribbon-stack">
@@ -2244,10 +2271,30 @@ function PageBuilder({
                 </button>)}
               </div><span>{group.label}</span></div>)}
           </>}
+          {selected && ribbonTab === 'Component Data' && selectedCustomDefinition && selectedCustomDefinition.apiName!=='une_item_grid' &&
+            selectedCustomDefinition.propertyDefinitions?.some(definition=>definition.kind==='OBJECT_FIELD') &&
+            <div className="office-ribbon-group"><div className="office-ribbon-stack">
+              {selectedCustomDefinition.propertyDefinitions.filter(definition=>definition.kind==='OBJECT_FIELD').map(definition=><label key={definition.propertyKey} className="office-ribbon-inline-field">
+                <span className="office-ribbon-field-name">{definition.label}</span>
+                <select aria-label={definition.label} value={String(selected.properties[definition.propertyKey]??'')}
+                  onChange={event=>updateComponent(selected.id,{properties:{...selected.properties,[definition.propertyKey]:event.target.value}})}>
+                  <option value="">Not mapped</option>
+                  {(objects.find(obj=>obj.apiName===(selected.properties.objectApiName||page.targetObject))?.fields??[]).map(field=><option key={field.apiName} value={field.apiName}>{field.label}</option>)}
+                </select>
+              </label>)}
+            </div><span>Field mapping</span></div>}
+          {selected && ribbonTab === 'Component Data' && selectedCustomDefinition?.apiName==='une_item_grid' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
+            <label className="office-ribbon-inline-field"><Database size={16}/> Object<select aria-label="Card grid object" value={String(selected.properties.objectApiName??'')} onChange={event=>{const obj=objects.find(item=>item.apiName===event.target.value);const definitions=obj?.fields??[];const pick=(pattern:RegExp)=>definitions.find(field=>pattern.test(field.apiName+' '+field.label))?.apiName??'';updateComponent(selected.id,{properties:{...selected.properties,objectApiName:event.target.value,imageFieldApiName:pick(/image|photo|picture|thumbnail/i),titleFieldApiName:pick(/^(name|title|product_name)$/i)||pick(/name|title/i),descriptionFieldApiName:pick(/description|summary|detail/i),priceFieldApiName:pick(/price|amount|cost/i)}});}}><option value="">Select an object…</option>{objects.map(obj=><option key={obj.apiName} value={obj.apiName}>{obj.label}</option>)}</select></label>
+            {(['imageFieldApiName','titleFieldApiName'] as const).map((key)=><label key={key} className="office-ribbon-inline-field"><span className="office-ribbon-field-name">{{imageFieldApiName:'Image',titleFieldApiName:'Title',descriptionFieldApiName:'Description',priceFieldApiName:'Value',badgeFieldApiName:'Badge'}[key]}</span><select data-card-mapping-field={key} aria-label={'Card '+key} value={String(selected.properties[key]??'')} onChange={event=>updateComponent(selected.id,{properties:{...selected.properties,[key]:event.target.value}})}><option value="">Not mapped</option>{(objects.find(obj=>obj.apiName===selected.properties.objectApiName)?.fields??[]).map(field=><option key={field.apiName} value={field.apiName}>{field.label}</option>)}</select></label>)}
+          </div><span>Card source & title</span></div>}
+          {selected && ribbonTab === 'Component Data' && selectedCustomDefinition?.apiName==='une_item_grid' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
+            {(['descriptionFieldApiName','priceFieldApiName','badgeFieldApiName'] as const).map((key)=><label key={key} className="office-ribbon-inline-field"><span className="office-ribbon-field-name">{{descriptionFieldApiName:'Description',priceFieldApiName:'Value',badgeFieldApiName:'Badge'}[key]}</span><select aria-label={'Card '+key} value={String(selected.properties[key]??'')} onChange={event=>updateComponent(selected.id,{properties:{...selected.properties,[key]:event.target.value}})}><option value="">Not mapped</option>{(objects.find(obj=>obj.apiName===selected.properties.objectApiName)?.fields??[]).map(field=><option key={field.apiName} value={field.apiName}>{field.label}</option>)}</select></label>)}
+          </div><span>Card details</span></div>}
           {selected && ribbonTab === 'Component Properties' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
             <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Label</span><input aria-label="Component label" value={selected.label} onChange={event=>updateComponent(selected.id,{label:event.target.value})}/></label>
             {(/text/i.test(selected.type) || /text/i.test(selected.label)) && selected.type!=='Rich Text' && <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Text</span><input aria-label="Component text" value={String(selected.properties.text??selected.properties.content??'Text')} onChange={event=>{const key=typeof selected.properties.content==='string'?'content':'text';updateComponent(selected.id,{properties:{...selected.properties,[key]:event.target.value}});}}/></label>}
-            <button disabled={isCanvasLocked(selected)} onClick={removeSelected}><Trash2 size={16}/> Delete block</button>
+            <label className="office-ribbon-checkbox"><input type="checkbox" checked={selected.visible} onChange={event=>updateComponent(selected.id,{visible:event.target.checked})}/> Show component</label>
+            <button type="button" onClick={()=>setVisibilityDialogOpen(true)}><Eye size={16}/> Visibility rules</button>
           </div><span>Content</span></div>}
 
           {selected && ribbonTab === 'Component Properties' && /text|button|label|badge|heading|paragraph|rich|input/i.test(selected.type+' '+selected.label) && <div className="office-ribbon-group office-ribbon-typography">
@@ -2307,10 +2354,8 @@ function PageBuilder({
               onChange={properties=>updateComponent(selected.id,{properties})}/>
           </div>}
           {selected && ribbonTab === 'Component Action' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
-            <label className="office-ribbon-checkbox"><input type="checkbox" checked={selected.visible} onChange={event=>updateComponent(selected.id,{visible:event.target.checked})}/> Show block</label>
-            <button type="button" onClick={()=>setVisibilityDialogOpen(true)}><Eye size={16}/> Configure visibility</button>
-            <button type="button" onClick={()=>setVisibilityDialogOpen(true)}><Plus size={16}/> Add visibility rule</button>
-          </div><span>Visibility</span></div>}
+            <button type="button" onClick={()=>openComponentInspector('Visibility')}><MousePointer2 size={16}/> Configure events and actions</button>
+          </div><span>Interactions</span></div>}
           {selected && ribbonTab === 'Component Layout' && <>
             <div className="office-ribbon-group office-ribbon-icon-group" aria-label="Arrange component">
               <div className="office-ribbon-stack">
@@ -2364,7 +2409,7 @@ function PageBuilder({
             <div key={index} className="office-ribbon-group"><div className="office-ribbon-stack">
               {fields.slice(index*3,index*3+3).map(field=><button type="button" key={field.apiName} onClick={()=>addField(field.apiName)}><Database size={16}/>{field.label}</button>)}
             </div><span>{index===0?'Record Fields':`Record Fields ${index+1}`}</span></div>)}
-          {['Component Style','Component Data','Component Action','Component Layout'].includes(ribbonTab) && <div className="office-ribbon-inspector-host" ref={setRibbonPropertyHost} aria-label="Ribbon property controls" />}
+          {['Component Properties','Component Data','Component Action','Component Layout'].includes(ribbonTab) && <div className="office-ribbon-inspector-host" ref={setRibbonPropertyHost} aria-label="Ribbon property controls" />}
         </div>
       </section>
       {ribbonTab==='Home' && pageSettingsDialogOpen && <div className="modal-backdrop office-ribbon-modal-backdrop" role="presentation">
@@ -2498,11 +2543,11 @@ function PageBuilder({
               currentAppId={builderAppApiName||apps[0]?.apiName||'Records'} primaryObjectApiName={page.targetObject} flows={flows}/>}
             {inspectorTab === 'Design' && selectedCustomDefinition && <ComponentPresentationProperties
               definitions={availableComponentSettings(selectedCustomDefinition.propertyDefinitions??[],page.layoutVariant??'Desktop',selectedCustomDefinition.version).filter(definition=>
-                (definition.kind==='COLOR'||/(?:colou?r|background|fill|opacity|tone)/i.test(definition.propertyKey)) === (ribbonTab==='Component Style')
+                (ribbonTab==='Component Properties' || (definition.kind==='COLOR'||/(?:colou?r|background|fill|opacity|tone)/i.test(definition.propertyKey)))
                 && !(ribbonTab==='Component Properties' && /text/i.test(selected.type+' '+selected.label) && definition.propertyKey==='text'))} properties={selected.properties}
               onChange={(properties) => updateComponent(selected.id, {properties})}/>}
             {inspectorTab === 'Design' && <PageComponentVisualEditor section={ribbonTab==='Component Style'?'colors':'appearance'} componentType={selected.type} value={selected.properties.visualStyle} onChange={(visualStyle) => updateComponent(selected.id, { properties: { ...selected.properties, visualStyle } })} />}
-            {inspectorTab === 'Design' && ribbonTab==='Component Style' && <PageComponentStyleEditor section="colors" componentType={selected.type} properties={selected.properties}
+            {inspectorTab === 'Design' && ribbonTab==='Component Properties' && <PageComponentStyleEditor section="colors" componentType={selected.type} properties={selected.properties}
                 onChange={(properties: Record<string, unknown>) => updateComponent(selected.id, { properties })} />}
             {inspectorTab === 'Data & Actions' && <>
             {selected.parentId && <button type="button" className="btn btn-small" onClick={() => updateComponent(selected.id, { parentId: undefined })}>Move out of section</button>}
