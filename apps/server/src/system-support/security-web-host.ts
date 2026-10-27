@@ -1,4 +1,5 @@
 import {resolve} from 'node:path';
+import {existsSync} from 'node:fs';
 import {isIP} from 'node:net';
 import express,{type Express} from 'express';
 import type {SqlPersistence} from '../system-files/sql-persistence.js';
@@ -14,7 +15,11 @@ export function configureTrustedProxy(app:Express,raw:string|undefined){
 /** Optional same-origin production host applies tenant SQL security headers to HTML, not just API JSON. */
 export function registerSecurityWebHost(app:Express,db:SqlPersistence,folder:string|undefined){
  if(!folder)return;
- const root=resolve(folder);
+ const configuredRoot=resolve(folder);
+ // The API can outlive a staged release. Prefer the current independently
+ // deployed frontend when its index exists, falling back to the configured root.
+ const liveRoot='/var/www/metadrive-frontend/current';
+ const root=()=>existsSync(resolve(liveRoot,'index.html'))?liveRoot:configuredRoot;
  app.use(async(req,res,next)=>{
   if(req.method!=='GET'||req.path.startsWith('/api/')||req.path.startsWith('/services/')){next();return;}
   try{
@@ -24,9 +29,9 @@ export function registerSecurityWebHost(app:Express,db:SqlPersistence,folder:str
    next();
   }catch(error){next(error);}
  });
- app.use(express.static(root,{index:false,redirect:false}));
+ app.use((req,res,next)=>express.static(root(),{index:false,redirect:false})(req,res,next));
  app.get('*',(req,res,next)=>{
   if(req.path.startsWith('/api/')||req.path.startsWith('/services/')){next();return;}
-  res.setHeader('Cache-Control','no-store');res.sendFile(resolve(root,'index.html'));
+  res.setHeader('Cache-Control','no-store');res.sendFile(resolve(root(),'index.html'));
  });
 }
