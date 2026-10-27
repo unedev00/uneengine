@@ -123,6 +123,8 @@ const pageStyleFlags: Record<string, string> = {
   '--md-page-shadow':'shadow',
   '--md-page-font-size':'font-size',
   '--md-page-font-weight':'font-weight',
+  '--md-page-font-style':'font-style',
+  '--md-page-text-decoration':'text-decoration',
   '--md-page-text-align':'text-align',
   '--md-page-opacity':'opacity',
   '--md-page-gap':'gap',
@@ -217,7 +219,7 @@ export function resolvePageComponentStyle(
   // Position, dimensions, external margin and visibility belong to the frame.
   // All visible appearance properties belong to the component itself.
   const { padding, borderRadius, borderWidth, borderColor, backgroundColor,
-    boxShadow, color, borderStyle, fontSize, fontWeight, textAlign, opacity,
+    boxShadow, color, borderStyle, fontSize, fontWeight, fontStyle, textDecoration, textAlign, opacity,
     gap, alignItems, justifyContent, overflowY, ...frame } = style;
   const tokens: Record<string, string> = {};
   const put = (key: string, value: unknown, unit = '') => {
@@ -232,6 +234,8 @@ export function resolvePageComponentStyle(
   put('--md-page-shadow',boxShadow);
   put('--md-page-font-size',fontSize,'px');
   put('--md-page-font-weight',fontWeight);
+  put('--md-page-font-style',fontStyle);
+  put('--md-page-text-decoration',textDecoration);
   put('--md-page-text-align',textAlign);
   put('--md-page-opacity',opacity);
   put('--md-page-gap',gap,'px');
@@ -269,7 +273,7 @@ export function isDescendantOf(components: PageComponentMetadata[], childId: str
 export type LayoutDevice = 'Desktop' | 'Tablet' | 'Phone';
 export type LayoutSettingKey = 'padding' | 'margin' | 'backgroundColor' | 'borderColor'
   | 'borderWidth' | 'borderRadius' | 'alignItems' | 'justifyContent' | 'gap' | 'opacity' | 'hidden'
-  | 'fontSize' | 'fontWeight' | 'textAlign' | 'boxShadow'
+  | 'fontSize' | 'fontWeight' | 'fontStyle' | 'textDecoration' | 'textAlign' | 'boxShadow'
   | 'position' | 'top' | 'bottom' | 'left' | 'right' | 'zIndex' | 'overflowY';
 export type LayoutSettings = Partial<Record<LayoutSettingKey, string | number | boolean>>;
 export const layoutContainerTypes = new Set(['Container', 'Row', 'Column', 'Card', 'Grid', 'Tabs', 'Accordion']);
@@ -437,6 +441,8 @@ export function resolveLayoutStyle(
     ...(s.opacity !== undefined ? { opacity: Number(s.opacity) / 100 } : {}),
     ...(s.fontSize !== undefined ? { fontSize: Number(s.fontSize) } : {}),
     ...(s.fontWeight ? { fontWeight: Number(s.fontWeight) } : {}),
+    ...(s.fontStyle ? { fontStyle: String(s.fontStyle) as 'normal'|'italic' } : {}),
+    ...(s.textDecoration ? { textDecoration: String(s.textDecoration) } : {}),
     ...(s.textAlign ? { textAlign: String(s.textAlign) } : {}),
     ...(s.boxShadow ? { boxShadow: safeShadows[String(s.boxShadow)] } : {}),
     ...(s.position ? { position: String(s.position) } : {}),
