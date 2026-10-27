@@ -42,6 +42,7 @@ NGINX
 elif [ ! -e /etc/nginx/sites-enabled/metadrive-frontend ]; then
   ln -s "$SITE" /etc/nginx/sites-enabled/metadrive-frontend
 fi
+bash "$(dirname "$0")/ensure-frontend-api-proxy.sh"
 PREVIOUS=$(readlink "$BASE/current" || true)
 ln -sfn "$RELEASE" "$BASE/.next"
 mv -Tf "$BASE/.next" "$BASE/current"
