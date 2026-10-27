@@ -463,7 +463,6 @@ function PageBuilder({
   const [ribbonFilterDraft,setRibbonFilterDraft] = useState<Record<string,unknown>>({});
   const [actionEvent,setActionEvent] = useState('');
   const [cardPart,setCardPart] = useState<'Card'|'Image'|'Heading'|'Supporting text'|'Value'|'Gallery'>('Card');
-  const [visibilityDialogOpen,setVisibilityDialogOpen] = useState(false);
   const [additionalPropertyDialogOpen,setAdditionalPropertyDialogOpen] = useState(false);
   const [pageSettingsDialogOpen,setPageSettingsDialogOpen] = useState(false);
   const [focusedCardMapping,setFocusedCardMapping] = useState('');
@@ -2480,6 +2479,75 @@ function PageBuilder({
         </div>
       </section>
 
+      {selected && expandedRibbonEditor?.componentId===selected.id && <section className="page-ribbon-expanded-editor"
+        aria-label={`${selected.label} ${expandedRibbonEditor.kind} editor`}>
+        <header className="page-ribbon-expanded-heading">
+          <strong>{selected.label} · {{
+            source:'Source & record scope',filters:'Record filters',visibility:'Visibility rules',
+            actions:'Event actions',conditions:'Action conditions',content:'Card content'
+          }[expandedRibbonEditor.kind]}</strong>
+          <button type="button" className="btn btn-small" aria-label="Collapse expanded ribbon editor"
+            onClick={()=>setExpandedRibbonEditor(null)}><X size={16}/> Collapse</button>
+        </header>
+        <div className="page-ribbon-expanded-content">
+          {(expandedRibbonEditor.kind==='source'||expandedRibbonEditor.kind==='filters'
+            ||expandedRibbonEditor.kind==='actions'||expandedRibbonEditor.kind==='conditions') &&
+            <MetadataComponentProperties
+              mode={expandedRibbonEditor.kind==='source'?'data-source':expandedRibbonEditor.kind==='filters'?'filters-editor':
+                expandedRibbonEditor.kind==='actions'?'actions-editor':'conditions'}
+              properties={expandedRibbonEditor.kind==='filters'?ribbonFilterDraft:selected.properties}
+              onChange={(properties:Record<string,unknown>)=>{
+                if(expandedRibbonEditor.kind==='filters')setRibbonFilterDraft(properties);
+                else updateComponent(selected.id,{properties});
+              }}
+              pageComponents={page.components} componentCatalog={libraryComponents}
+              device={page.layoutVariant??'Desktop'} definitions={selectedCustomDefinition?.propertyDefinitions}
+              eventDefinitions={selectedCustomDefinition?.eventDefinitions} componentVersion={selectedCustomDefinition?.version}
+              objects={objects} apps={apps} pages={pages}
+              currentAppId={builderAppApiName||apps[0]?.apiName||'Records'}
+              primaryObjectApiName={page.targetObject} flows={flows}/>
+          }
+          {expandedRibbonEditor.kind==='visibility' && <ComponentVisibilityEditor
+            rules={selected.properties.visibilityRules} fields={fields}
+            profiles={profiles.map(item=>({id:item.id,label:item.label}))}
+            recordTypes={targetObject?.recordTypes?.map(item=>({id:item.id,label:item.label}))??[]}
+            allowRecordFields={page.pageType==='Record Page'}
+            onChange={visibilityRules=>{
+              const properties={...selected.properties};
+              if(visibilityRules)properties.visibilityRules=visibilityRules;
+              else delete properties.visibilityRules;
+              updateComponent(selected.id,{properties});
+            }}/>}
+          {expandedRibbonEditor.kind==='content' && selectedCustomDefinition?.apiName==='une_item_grid' && <div className="page-ribbon-part-content">
+            <p className="properties-help">Each card uses the mapped fields in the Content ribbon. These options control how the selected record is displayed.</p>
+            {([
+              ['showImage','Show image'],['showTitle','Show heading'],
+              ['showDescription','Show supporting text'],['showPrice','Show highlighted value']
+            ] as const).map(([key,label])=><label className="checkbox-row" key={key}>
+              <input type="checkbox" checked={selected.properties[key]===true || (selected.properties[key]!==false && key!=='showDescription')}
+                onChange={event=>updateComponent(selected.id,{properties:{...selected.properties,[key]:event.target.checked}})}/>
+              {label}
+            </label>)}
+            <label className="form-label">Empty state
+              <input className="form-control" aria-label="Card grid empty state"
+                value={String(selected.properties.emptyText??'No matching records')}
+                onChange={event=>updateComponent(selected.id,{properties:{...selected.properties,emptyText:event.target.value}})}/>
+            </label>
+          </div>}
+        </div>
+        <footer className="page-ribbon-expanded-actions">
+          {expandedRibbonEditor.kind==='filters' && <>
+            <button type="button" className="btn" onClick={()=>setExpandedRibbonEditor(null)}>Cancel changes</button>
+            <button type="button" className="btn btn-brand" onClick={()=>{
+              const changed=Object.fromEntries(Object.entries(ribbonFilterDraft)
+                .filter(([key])=>key==='filters'||key.endsWith('Filters')||key==='filterLogic'));
+              updateComponent(selected.id,{properties:{...selected.properties,...changed}});
+              setExpandedRibbonEditor(null);
+            }}>Apply filters</button>
+          </>}
+          {expandedRibbonEditor.kind!=='filters' && <button type="button" className="btn" onClick={()=>setExpandedRibbonEditor(null)}>Done</button>}
+        </footer>
+      </section>}
       {ribbonTab==='Home' && pageSettingsDialogOpen && <div className="modal-backdrop office-ribbon-modal-backdrop" role="presentation">
         <section className="modal office-ribbon-config-modal office-ribbon-page-settings-modal" role="dialog" aria-modal="true" aria-label="Page settings">
           <div className="modal-header"><h2>Page settings</h2><button type="button" className="icon-button" aria-label="Close page settings" onClick={()=>setPageSettingsDialogOpen(false)}><X size={16}/></button></div>
@@ -2487,17 +2555,7 @@ function PageBuilder({
           <div className="office-ribbon-modal-actions"><button type="button" className="btn btn-brand" onClick={()=>setPageSettingsDialogOpen(false)}>Close</button></div>
         </section>
       </div>}
-      {selected && visibilityDialogOpen && createPortal(<div className="modal-backdrop office-ribbon-modal-backdrop" role="presentation">
-        <section className="modal office-ribbon-config-modal" role="dialog" aria-modal="true" aria-label="Visibility conditions">
-          <div className="modal-header"><h2>Visibility conditions</h2><button type="button" className="icon-button" aria-label="Close visibility" onClick={()=>setVisibilityDialogOpen(false)}><X size={16}/></button></div>
-          <div className="office-ribbon-modal-content"><ComponentVisibilityEditor rules={selected.properties.visibilityRules} fields={fields}
-            profiles={profiles.map(item=>({id:item.id,label:item.label}))}
-            recordTypes={targetObject?.recordTypes?.map(item=>({id:item.id,label:item.label}))??[]}
-            allowRecordFields={page.pageType==='Record Page'}
-            onChange={visibilityRules=>{const properties={...selected.properties};if(visibilityRules)properties.visibilityRules=visibilityRules;else delete properties.visibilityRules;updateComponent(selected.id,{properties});}}/></div>
-          <div className="office-ribbon-modal-actions"><button type="button" className="btn btn-brand" onClick={()=>setVisibilityDialogOpen(false)}>Done</button></div>
-        </section>
-      </div>,document.body)}
+
       {showWelcome && <section className="builder-quickstart" aria-label="Getting started with Page Builder">
         <div><strong>Build your page in three steps</strong>
           <span>1. Add a block</span><span>2. Click it to edit</span><span>3. Save and preview</span>
@@ -2564,16 +2622,7 @@ function PageBuilder({
         </div>
         {ribbonPropertyHost && createPortal(<aside id="lightning-page-properties" style={ribbonTab !== 'Home' && !ribbonTab.startsWith('Component ') ? { display: 'none' } : undefined}
           className={`properties-panel reference-properties-panel ${pageSettingsOpen || selected ? 'responsive-open' : ''}`}>
-          {ribbonTab==='Component Data' && selected ? <MetadataComponentProperties
-            mode="data" properties={selected.properties}
-            onChange={(properties: Record<string,unknown>)=>updateComponent(selected.id,{properties})}
-            pageComponents={page.components} componentCatalog={libraryComponents} device={page.layoutVariant??'Desktop'}
-            definitions={selectedCustomDefinition?.propertyDefinitions}
-            eventDefinitions={selectedCustomDefinition?.eventDefinitions}
-            componentVersion={selectedCustomDefinition?.version}
-            objects={objects} apps={apps} pages={pages}
-            currentAppId={builderAppApiName||apps[0]?.apiName||'Records'} primaryObjectApiName={page.targetObject} flows={flows}
-          /> : ribbonTab==='Component Style' && selected ? <div className="office-ribbon-colours">
+          {ribbonTab==='Component Style' && selected ? <div className="office-ribbon-colours">
             {selectedCustomDefinition && <ComponentPresentationProperties
               definitions={availableComponentSettings(selectedCustomDefinition.propertyDefinitions??[],page.layoutVariant??'Desktop',selectedCustomDefinition.version)
                 .filter(definition=>definition.kind==='COLOR'||/(?:colou?r|background|fill|tone)/i.test(definition.propertyKey))}
