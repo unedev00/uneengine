@@ -17,8 +17,9 @@ class FixtureDate extends Date {
 }
 for (const fixture of fixtures) {
   test(`${fixture.apiName} preserves original rendering after extraction`, async () => {
-    const definition = components.find(item => item.apiName === fixture.apiName);
-    assert.ok(definition);
+    // Retained renderer internals are still exercised, but are not public catalog entries.
+    const definition = JSON.parse(await readFile(
+      new URL('../src/one/'+fixture.apiName+'/component.json', import.meta.url),'utf8'));
     const built = await buildBundledComponent(definition);
     const context = { React, module: { exports: {} }, Date: FixtureDate, Intl, URL, crypto: globalThis.crypto };
     vm.runInNewContext(built.compiledJs, context);
@@ -51,7 +52,7 @@ test('shared appearance preserves each original family, including numeric and th
 });
 
 
-test('the bundled catalog contains only approved app-page components', () => {
-  const approved = ['OneText','OneBadge','OneButton','OneSearch','OneItemGrid','OneShoppingCart','OneCalendar','OneConversation'];
-  assert.deepEqual(components.map(c => c.apiName).filter(n => n.startsWith('One')).sort(), approved.sort());
+test('retired One renderers remain usable by UNE without being independently registered', () => {
+  assert.deepEqual(components.map(c => c.apiName).filter(n => n.startsWith('One')), []);
+  assert.equal(components.filter(c => c.apiName.startsWith('une_')).length,36);
 });
