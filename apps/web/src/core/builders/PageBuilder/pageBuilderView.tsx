@@ -2394,7 +2394,7 @@ function PageBuilder({
                   {(objects.find(obj=>obj.apiName===(selected.properties.objectApiName||page.targetObject))?.fields??[]).map(field=><option key={field.apiName} value={field.apiName}>{field.label}</option>)}
                 </select>
               </label>)}
-            </div><span>Field mapping</span></div>}
+            </div><span>Content Source</span></div>}
           {selected && ribbonTab === 'Component Data' && selectedCustomDefinition && <div className="office-ribbon-group"><div className="office-ribbon-stack">
             {(selectedCustomDefinition.propertyDefinitions??[])
               .filter(definition=>definition.kind==='OBJECT').slice(0,2)
@@ -2445,10 +2445,10 @@ function PageBuilder({
               </select>
             </label>)}
             <button type="button" onClick={()=>openExpandedEditor('content')}><Settings2 size={16}/> Edit card content</button>
-          </div><span>Card content</span></div>}
+          </div><span>Content Source & Image</span></div>}
           {selected && ribbonTab === 'Component Content' && selectedCustomDefinition?.apiName==='une_item_grid' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
             {(['descriptionFieldApiName','priceFieldApiName','badgeFieldApiName'] as const).map((key)=><label key={key} className="office-ribbon-inline-field"><span className="office-ribbon-field-name">{{descriptionFieldApiName:'Description',priceFieldApiName:'Value',badgeFieldApiName:'Badge'}[key]}</span><select aria-label={'Card '+key} value={String(selected.properties[key]??'')} onChange={event=>updateComponent(selected.id,{properties:{...selected.properties,[key]:event.target.value}})}><option value="">Not mapped</option>{(objects.find(obj=>obj.apiName===selected.properties.objectApiName)?.fields??[]).map(field=><option key={field.apiName} value={field.apiName}>{field.label}</option>)}</select></label>)}
-          </div><span>Card details</span></div>}
+          </div><span>Additional Content</span></div>}
           {selected && selectedCustomDefinition?.apiName==='une_item_grid'
             && (ribbonTab==='Component Properties'||ribbonTab==='Component Layout') && <>
             <div className="office-ribbon-group"><div className="office-ribbon-stack">
@@ -2530,7 +2530,7 @@ function PageBuilder({
                   {control.options.map(([value,label])=><option key={value} value={value}>{label} · {value}px</option>)}
                 </select>
               </label>)}
-            </div><span>Appearance</span>
+            </div><span>Card Style</span>
           </div>}
           {selected && ribbonTab === 'Component Properties' && selectedCustomDefinition && <div className="office-ribbon-inline-options">
             <ComponentPresentationProperties
@@ -2586,6 +2586,17 @@ function PageBuilder({
             <button type="button" onClick={()=>openExpandedEditor('actions')}><MousePointer2 size={16}/> Edit actions</button>
             <button type="button" onClick={()=>openExpandedEditor('conditions')}><Filter size={16}/> Only when</button>
           </div><span>Events & outcomes</span></div>}
+          {selected && ribbonTab==='Component Action' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
+            <button type="button" onClick={()=>openExpandedEditor('actions')}><Plus size={16}/> Add action</button>
+            <button type="button" onClick={()=>openExpandedEditor('conditions')}><Filter size={16}/> Add condition</button>
+          </div><span>Additional Actions</span></div>}
+          {selected && ribbonTab==='Component Action' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
+            <button type="button" onClick={()=>openExpandedEditor('conditions')}><SlidersHorizontal size={16}/> Only when…</button>
+          </div><span>Conditions</span></div>}
+          {selected && ribbonTab==='Component Layout' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
+            <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Width</span><input aria-label="Layout width" value={String(selected.properties.width??'100%')} onChange={event=>updateComponent(selected.id,{properties:{...selected.properties,width:event.target.value}})}/></label>
+            <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Height</span><input aria-label="Layout height" value={String(selected.properties.height??'auto')} onChange={event=>updateComponent(selected.id,{properties:{...selected.properties,height:event.target.value}})}/></label>
+          </div><span>Dimensions</span></div>}
           {selected && ribbonTab==='Component Layout' && selectedCustomDefinition && <div className="office-ribbon-inline-options">
             <ComponentPresentationProperties
               definitions={availableComponentSettings(selectedCustomDefinition.propertyDefinitions??[],
