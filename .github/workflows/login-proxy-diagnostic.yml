@@ -20,6 +20,13 @@ jobs:
             /^[[:space:]]*root[[:space:]]/ {print}
             /^[[:space:]]*try_files[[:space:]]/ {print}
           ' | sort -u
+          echo "Nginx virtual-host file and relevant directives:"
+          sudo -n nginx -T 2>/dev/null | awk '
+            /^# configuration file / { source=$0 }
+            /^[[:space:]]*(listen|server_name|location|proxy_pass|return)[[:space:]]/ {
+              if ($0 ~ /unesolutions|443|80|api\/|proxy_pass|301|location \/|listen/) print source " :: " $0
+            }
+          ' | head -n 85
           for port in 10000 3001; do
             code=$(curl --max-time 5 -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' --data '{}' "http://127.0.0.1:$port/api/auth/federation/complete" || true)
             echo "Local API port $port POST /api/auth/federation/complete: $code"
