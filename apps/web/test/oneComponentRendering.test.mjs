@@ -17,9 +17,13 @@ class FixtureDate extends Date {
 }
 for (const fixture of fixtures) {
   test(`${fixture.apiName} preserves original rendering after extraction`, async () => {
-    // Retained renderer internals are still exercised, but are not public catalog entries.
-    const definition = JSON.parse(await readFile(
-      new URL('../src/one/'+fixture.apiName+'/component.json', import.meta.url),'utf8'));
+    // Retired implementation fixtures deliberately have no public component.json.
+    // Keep these snapshot tests to protect the shared UNE renderer dependencies.
+    const definition = {
+      apiName: fixture.apiName,
+      jsxFile: `one/${fixture.apiName}/${fixture.apiName}.jsx`,
+      cssFile: `one/${fixture.apiName}/${fixture.apiName}.css`
+    };
     const built = await buildBundledComponent(definition);
     const context = { React, module: { exports: {} }, Date: FixtureDate, Intl, URL, crypto: globalThis.crypto };
     vm.runInNewContext(built.compiledJs, context);

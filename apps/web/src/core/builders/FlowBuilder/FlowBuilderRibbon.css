@@ -1,8 +1,5 @@
 /* Compact Office-style ribbon for the optional Flow Builder. */
 .flow-office-ribbon{display:flex;flex-direction:column;flex-shrink:0;background:#fff;border-bottom:1px solid #d5dce7;min-width:0}
-.flow-ribbon-title{height:36px;display:flex;align-items:center;gap:10px;padding:0 12px}
-.flow-ribbon-title input{font-weight:650;font-size:13px;border:0;min-width:120px;max-width:390px;flex:1;background:transparent;color:inherit}
-.flow-ribbon-title input:focus{outline:1px solid #9fbee9;border-radius:3px}
 .flow-ribbon-tabs{display:flex;align-items:center;gap:3px;min-height:32px;padding:0 12px;border-bottom:1px solid #e2e8f0;font-size:12px}
 .flow-ribbon-tabs button{border:0;background:transparent;padding:7px 15px;cursor:pointer;color:#3a4b63;font-weight:550}
 .flow-ribbon-tabs button.active{color:#1264c8;border-bottom:2px solid #1264c8;background:#f4f8ff}
@@ -25,3 +22,51 @@
 .flow-workarea .flow-canvas-region{grid-column:1}
 .flow-workarea .flow-canvas-region .flow-graph-review{position:relative}
 @media(max-width:760px){.flow-ribbon-title{height:38px}.flow-ribbon-groups{min-height:85px}.flow-ribbon-group{padding:5px 7px 3px}.flow-ribbon-tabs>span:last-child{display:none}}
+
+/* The Flow identity belongs to Home, not a second header above the ribbon. */
+.flow-ribbon-identity .flow-ribbon-controls{align-items:center}
+.flow-ribbon-identity .flow-ribbon-name-field{display:flex;flex-direction:column;gap:5px;min-width:185px;max-width:285px;color:#64748b;font-size:11px}
+.flow-ribbon-identity .flow-ribbon-name-field input{font-size:13px;font-weight:600;border:1px solid #d5deeb;border-radius:5px;padding:7px 8px;width:100%;color:#24354c;background:#fff;min-width:0}
+.flow-ribbon-flow-state{display:flex;flex-direction:column;justify-content:center;align-items:start;gap:7px;min-width:80px}
+.flow-ribbon-flow-state .flow-type-pill{white-space:nowrap}
+.flow-ribbon-controls>button.flow-ribbon-selected{background:#eaf3ff;border-color:#95c3f4;color:#0954a5}
+.flow-ribbon-controls>button.flow-ribbon-selected svg{color:#0954a5}
+/* Selecting Manager replaces the central canvas with a full-width management
+   workspace; the inspector on the right remains available for element details. */
+.flow-workarea>.flow-toolbox.flow-manager-workspace[data-ribbon-open="true"]{
+  display:flex;flex-direction:column;position:absolute;top:0;bottom:0;left:0;
+  width:auto;max-width:none;height:auto;padding:0;border-right:1px solid #d5deeb;
+  background:#fff;box-shadow:none;z-index:15;min-width:0;overflow:hidden;
+}
+.flow-manager-workspace-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:62px;padding:12px 20px;border-bottom:1px solid #e2e8f0;background:#f9fbfe}
+.flow-manager-workspace-heading>div{display:flex;flex-direction:column;gap:4px}
+.flow-manager-workspace-heading strong{font-size:17px;color:#182d4b}
+.flow-manager-workspace-heading small{font-size:11px;color:#64748b}
+.flow-manager-workspace-body{flex:1;min-height:0;min-width:0;overflow:auto;padding:20px 24px 48px;background:#fff}
+.flow-manager-section-content{max-width:1000px;width:100%;margin:0 auto}
+.flow-manager-section-content>.toolbox-group{border:0;padding:0;max-width:100%;margin:0}
+.flow-manager-section-content>.toolbox-group>h3{font-size:16px;margin:0 0 14px;color:#1e3a5f}
+.flow-manager-section-content .flow-resource-card{margin:8px 0;padding:12px;border:1px solid #e2e8f0;border-radius:6px}
+.flow-manager-section-content .form-label{max-width:100%;white-space:normal}
+.flow-manager-section-content .form-control{max-width:100%}
+.flow-manager-overview{margin:auto;max-width:950px}
+.flow-manager-overview h3{font-size:18px;margin:0 0 9px;color:#193757}
+.flow-manager-overview p{color:#64748b;font-size:13px;margin:0 0 22px}
+.flow-manager-overview-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.flow-manager-overview-actions button{min-height:37px}
+@media(max-width:760px){
+  .flow-ribbon-identity .flow-ribbon-name-field{min-width:155px}
+  .flow-manager-workspace-heading{padding:10px 12px}
+  .flow-manager-workspace-body{padding:12px}
+}
+
+/* On phones the Manager uses the existing bottom-sheet affordance, not the
+   legacy element toolbox. It must remain operable with narrow viewports. */
+@media(max-width:599px), (max-height:500px) and (pointer:coarse){
+  .lightning .flow-builder.flow-mobile-builder .flow-workarea.flow-toolbox-expanded>.flow-toolbox.flow-manager-workspace[data-ribbon-open="true"]{
+    display:flex!important;flex-direction:column;position:fixed!important;
+    top:auto!important;bottom:0!important;left:0!important;right:0!important;
+    width:100%!important;max-width:100%;max-height:78dvh!important;
+    border-radius:16px 16px 0 0;z-index:980;overflow:hidden;
+  }
+}
