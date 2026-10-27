@@ -344,9 +344,9 @@ export function MetadataComponentProperties({ properties, objects, apps, pages, 
       </select>
     </label>)}
     {Object.keys(properties).filter(isField).map((key) => fieldPicker(key, properties[key]))}
-    {(properties.kind === 'Table' || (definitionsByKey.has('striped') && definitionsByKey.has('pageSize')))
+    {mode==='all' && (properties.kind === 'Table' || (definitionsByKey.has('striped') && definitionsByKey.has('pageSize')))
       && <TableRowConfigurationEditor properties={properties} object={selectedObject} onChange={onChange}/>}
-    <details className="builder-advanced-panel"><summary>Advanced: connect to a page value</summary><p className="properties-help">Optional: use a value supplied by another block or automation.</p><PageStatePropertyBindingsEditor properties={properties} definitions={definitions} onChange={onChange}/></details>
+    {mode==='all' && <details className="builder-advanced-panel"><summary>Advanced: connect to a page value</summary><p className="properties-help">Optional: use a value supplied by another block or automation.</p><PageStatePropertyBindingsEditor properties={properties} definitions={definitions} onChange={onChange}/></details>}
     </section>}
     {(mode==='all'||mode==='data') && <section className="office-ribbon-data-section" aria-label="Choose records">
       <div className="office-ribbon-group-heading">Choose records</div>
@@ -361,7 +361,7 @@ export function MetadataComponentProperties({ properties, objects, apps, pages, 
       <div className="office-ribbon-group-heading">Filters</div>
       <button type="button" className="office-ribbon-command" onClick={openFilterPopup}><Filter size={15}/> Configure filters</button>
       <button type="button" className="office-ribbon-command" onClick={openFilterPopup}><Plus size={15}/> Add filter</button>
-      <span className="office-ribbon-stat">{totalFilters} active filter{totalFilters===1?'':'s'}</span>
+      <span className="office-ribbon-stat">{totalFilters} filter{totalFilters===1?'':'s'} · {properties.filterLogic==='OR'?'OR':'AND'}</span>
     </section>}
     {mode==='actions' && <section className="office-ribbon-data-section" aria-label="Actions"><div className="office-ribbon-group-heading">Actions</div>
       <button type="button" className="office-ribbon-command" onClick={()=>setActionsPopup(true)}><Workflow size={15}/> Configure actions</button>
@@ -507,6 +507,12 @@ export function MetadataComponentProperties({ properties, objects, apps, pages, 
     </label>}
     </section>}
     {(mode==='all'||mode==='details') && <div className="office-ribbon-metadata-details">
+    {mode==='details' && <section className="office-ribbon-data-advanced">
+      <div className="properties-section-title">Page value bindings</div>
+      <PageStatePropertyBindingsEditor properties={properties} definitions={definitions} onChange={onChange}/>
+      {(properties.kind==='Table'||(definitionsByKey.has('striped')&&definitionsByKey.has('pageSize'))) &&
+        <TableRowConfigurationEditor properties={properties} object={selectedObject} onChange={onChange}/>}
+    </section>}
     {typeof properties.platformSlotKey === 'string' && properties.platformSlotKey && <>
       <div className="properties-section-title">Administration control presentation</div>
       <p className="properties-help">Configure this existing protected control without changing its OneEngine action, validation or permissions.</p>
