@@ -38,7 +38,7 @@ function place(key:string):[Tab,string]{
     return ['Component Layout','Size'];
   if(/(?:padding|margin|gap|density|columns|rows|span|ratio|position|direction|wrap|layoutContainer|splitRatio|corner|xOffset|yOffset)/i.test(key))
     return ['Component Layout',/padding|margin|gap|density/i.test(key)?'Spacing':/position|offset/i.test(key)?'Position':/layoutContainer/i.test(key)?'Nesting':'Container'];
-  if(/^(theme|surface|tone|accentColor|glassBlur)$/.test(key))return ['Component Properties','Appearance'];
+  if(/^(surface|tone|accentColor|glassBlur)$/.test(key))return ['Component Properties','Appearance'];
   if(/^(?:backgroundColor|borderColor|textColor|radius|shadow|opacity)$/.test(key))return ['Component Properties','Surface'];
   if(/^card(?:Background|Border|Radius|Shadow|Hover|Density)/.test(key))return ['Component Properties','Card'];
   if(/^heading(?:Font|Color|Text|Line)/.test(key))return ['Component Properties','Heading'];
