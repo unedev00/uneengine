@@ -81,48 +81,6 @@
       "kind": "OBJECT",
       "displayOrder": 300,
       "defaultValue": ""
-    },
-    {
-      "propertyKey": "loading",
-      "label": "Loading state",
-      "kind": "BOOLEAN",
-      "displayOrder": 320,
-      "defaultValue": false
-    },
-    {
-      "propertyKey": "emptyText",
-      "label": "Empty message",
-      "kind": "TEXT",
-      "displayOrder": 330,
-      "defaultValue": "No records"
-    },
-    {
-      "propertyKey": "label",
-      "label": "Label",
-      "kind": "TEXT",
-      "displayOrder": 340,
-      "defaultValue": "Available times"
-    },
-    {
-      "propertyKey": "optionLabelFieldApiName",
-      "label": "Slot label",
-      "kind": "OBJECT_FIELD",
-      "displayOrder": 350,
-      "defaultValue": ""
-    },
-    {
-      "propertyKey": "optionValueFieldApiName",
-      "label": "Slot value",
-      "kind": "OBJECT_FIELD",
-      "displayOrder": 360,
-      "defaultValue": ""
-    },
-    {
-      "propertyKey": "optionAvailableFieldApiName",
-      "label": "Available flag",
-      "kind": "OBJECT_FIELD",
-      "displayOrder": 370,
-      "defaultValue": ""
     }
   ],
   "eventDefinitions": [
