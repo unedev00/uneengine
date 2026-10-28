@@ -109,6 +109,8 @@ function CommandPopover({group,command,definitions,properties,onChange}:{
   const [position,setPosition]=useState({top:0,left:0});
   const trigger=useRef<HTMLButtonElement>(null);
   const panel=useRef<HTMLDivElement>(null);
+  const simple=definitions.length===1&&['SELECT','NUMBER'].includes(definitions[0].kind);
+  const property=definitions[0];
   useEffect(()=>{
     if(!open)return;
     const outside=(event:PointerEvent)=>{
@@ -141,10 +143,23 @@ function CommandPopover({group,command,definitions,properties,onChange}:{
       aria-label={group+' '+command.name} aria-expanded={open} aria-haspopup="dialog" onClick={toggle}>
       <span className="office-ribbon-command-glyph">{command.icon}</span><span className="office-ribbon-command-label">{command.name}</span>
     </button>
-    {open&&createPortal(<div ref={panel} className="office-ribbon-capability-dialog office-ribbon-capability-popover"
+    {open&&createPortal(<div ref={panel} className={'office-ribbon-capability-dialog office-ribbon-capability-popover'+(simple?' is-compact':'')}
       role="dialog" aria-label={group+' '+command.name+' settings'} style={{top:position.top,left:position.left}}>
-      <header><strong>{group} · {command.name}</strong><button type="button" onClick={()=>setOpen(false)} aria-label="Close settings">×</button></header>
-      <PageBuilderRibbonMetadataPager definitions={definitions} properties={properties} onChange={onChange}/>
+      {simple?<label className="office-ribbon-direct-property">
+        <span>{property.label}</span>
+        {property.kind==='SELECT'?<select aria-label={property.label}
+          value={String(properties[property.propertyKey]??property.defaultValue??'')}
+          onChange={event=>{onChange({...properties,[property.propertyKey]:event.target.value});setOpen(false);}}>
+          <option value="">Default</option>
+          {(property.choices??[]).map(choice=><option key={choice.key} value={choice.key}>{choice.label}</option>)}
+        </select>:<input type="number" aria-label={property.label} min={property.min} max={property.max}
+          value={String(properties[property.propertyKey]??property.defaultValue??'')}
+          onChange={event=>{const input=event.target.value;const n=Number(input);
+            if(input===''||Number.isFinite(n))onChange({...properties,[property.propertyKey]:input===''?undefined:n});}}/>}
+      </label>:<>
+        <header><strong>{group} · {command.name}</strong><button type="button" onClick={()=>setOpen(false)} aria-label="Close settings">×</button></header>
+        <PageBuilderRibbonMetadataPager definitions={definitions} properties={properties} onChange={onChange}/>
+      </>}
     </div>,document.body)}
   </>;
 }
