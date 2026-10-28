@@ -15,7 +15,7 @@ export function uneProps(p,kind){
   const textKeys=["text","label","title","subtitle","description","caption","placeholder","helpText","emptyText","submitLabel","openLabel","confirmLabel","searchPlaceholder","badge","value","message"];
   for(const key of textKeys){
    const raw=result[key];
-   if(typeof raw==="string"&&/^\\s*@(?:[A-Za-z][A-Za-z0-9_]*)(?:\\s*&|\\s*$)/.test(raw))
+   if(typeof raw==="string"&&/^\s*@(?:[A-Za-z][A-Za-z0-9_]*)(?:\s*&|\s*$)/.test(raw))
     result[key]=evaluateFieldExpression(raw,record);
   }
  }
