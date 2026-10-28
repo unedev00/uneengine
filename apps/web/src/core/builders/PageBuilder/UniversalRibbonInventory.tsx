@@ -1,6 +1,7 @@
 import {useState} from 'react';
 import {createPortal} from 'react-dom';
-import type {LibraryComponentMetadata} from '../../metadata/Definitions/metadata';
+import type {LibraryComponentMetadata,ObjectMetadata,FlowDefinitionMetadata} from '../../metadata/Definitions/metadata';
+import CustomComponentPropertyEditor from '../ComponentProperties/CustomComponentPropertyEditor';
 import TenantMediaPicker from '../ComponentProperties/TenantMediaPicker';
 
 /**
@@ -67,10 +68,12 @@ for(const groups of slots.values())for(const defs of groups.values())defs.sort((
 export const universalRibbonInventoryCount=Array.from(slots.values()).reduce((total,groups)=>total+Array.from(groups.values()).reduce((sum,defs)=>sum+defs.length,0),0);
 export const universalRibbonComponentCount=validManifests.length;
 
-function PropertyEditor({definition,enabled,properties,onChange}:{
+function PropertyEditor({definition,enabled,properties,onChange,objects,flows}:{
  definition:Definition;enabled:boolean;properties:Properties;onChange:(next:Properties)=>void;
+ objects:readonly ObjectMetadata[];flows:readonly FlowDefinitionMetadata[];
 }){
  const [mediaOpen,setMediaOpen]=useState(false);
+ const [complexOpen,setComplexOpen]=useState(false);
  const [jsonError,setJsonError]=useState('');
  const key=definition.propertyKey;
  const label=definition.label||key.replace(/([a-z])([A-Z])/g,'$1 $2');
@@ -91,6 +94,19 @@ function PropertyEditor({definition,enabled,properties,onChange}:{
       <div role="dialog" aria-modal="true" aria-label={label+' media library'}><button type="button" onClick={()=>setMediaOpen(false)}>Close</button>
         <TenantMediaPicker assetOnly initiallyOpen value={String(value)} onChange={next=>{update(next);setMediaOpen(false);}}/>
       </div></div>,document.body)}</>;
+ else if(!['BOOLEAN','SELECT','NUMBER','CURRENCY','IMAGE','COLOR','TEXT','LONG_TEXT','TEXTAREA','STRING'].includes(definition.kind)){
+   editor=<><button type="button" disabled={!enabled} title={tip} onClick={()=>setComplexOpen(true)}>Configure</button>
+     {complexOpen&&createPortal(<div className="une-universal-media-overlay" role="presentation" onMouseDown={event=>{if(event.currentTarget===event.target)setComplexOpen(false);}}>
+       <div role="dialog" aria-modal="true" aria-label={label+' property editor'}>
+         <header className="une-universal-editor-header"><strong>{label}</strong>
+           <button type="button" onClick={()=>setComplexOpen(false)}>Close</button></header>
+         <CustomComponentPropertyEditor definitions={[definition]} properties={properties}
+           objects={objects} flows={flows} primaryObjectApiName={String(properties.objectApiName??'')}
+           onChange={next=>onChange(next)}/>
+       </div>
+     </div>,document.body)}
+   </>;
+ }
  else if(definition.kind==='COLOR')editor=<input {...props} type="color" value={/^#[0-9a-f]{6}$/i.test(String(value))?String(value):'#ffffff'}
    onChange={e=>update(e.target.value)}/>;
  else if(value!==null&&typeof value==='object')editor=<textarea {...props} rows={1} value={JSON.stringify(value)}
@@ -114,9 +130,10 @@ export type UniversalBuilderControls={
  onOpenFilters?:()=>void;
  onOpenVisibility?:()=>void;
 };
-export default function UniversalRibbonInventory({tab,definition,properties,onChange,builder}:{
+export default function UniversalRibbonInventory({tab,definition,properties,onChange,objects=[],flows=[],builder}:{
  tab:Tab;definition?:LibraryComponentMetadata;properties:Properties;
  onChange:(next:Properties)=>void;
+ objects?:readonly ObjectMetadata[];flows?:readonly FlowDefinitionMetadata[];
  builder?:UniversalBuilderControls;
 }){
  const enabled=new Set((definition?.propertyDefinitions??[]).map(item=>item.propertyKey));
@@ -167,7 +184,7 @@ export default function UniversalRibbonInventory({tab,definition,properties,onCh
        </button>}
        {defs.map(def=><PropertyEditor key={def.propertyKey} definition={enabled.has(def.propertyKey)
          ?definition?.propertyDefinitions?.find(item=>item.propertyKey===def.propertyKey)??def:def}
-         enabled={enabled.has(def.propertyKey)} properties={properties} onChange={onChange}/>)}
+         enabled={enabled.has(def.propertyKey)} properties={properties} onChange={onChange} objects={objects} flows={flows}/>)}
      </div>
      <span className="une-universal-ribbon-caption">{section}</span>
    </section>)}
