@@ -134,11 +134,5 @@ visible:boolean;onVisibleChange:(visible:boolean)=>void;
         </label>
       </div><span>Visibility</span>
     </div>
-    <div className="office-ribbon-group office-ribbon-responsive-rules">
-      <div className="office-ribbon-stack">
-        <button type="button" onClick={onVisibilityRules}><ShieldCheck size={18}/> Edit visibility rules</button>
-        <span className="office-ribbon-stat">{ruleCount} {ruleCount===1?'rule':'rules'} configured</span>
-      </div><span>Visibility Rules</span>
-    </div>
   </>;
 }
