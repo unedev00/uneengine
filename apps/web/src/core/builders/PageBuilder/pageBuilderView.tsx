@@ -579,7 +579,19 @@ function PageBuilder({
     Table:<List size={15}/>,Calendar:<CalendarDays size={15}/>,Chart:<BarChart3 size={15}/>,
     Input:<FormInput size={15}/>,Navigation:<PanelLeft size={15}/>,Container:<Square size={15}/>
   };
-  const ribbonAppearanceGroups = ['Card','Heading','Supporting text','Badge','Image','Gallery','Text','Button','Table','Calendar','Chart','Input','Navigation','Container'] as const;
+  // Visible slots follow the selected component, as in the accepted blueprint.
+  // Within each slot, the registry determines which commands are actually enabled.
+  const designRibbonGroups:readonly string[] = selectedCustomDefinition?.apiName==='une_item_grid'
+    ? ['Surface','Card','Heading','Supporting text','Badge','Image']
+    : selectedCustomDefinition?.apiName==='une_calendar'
+    ? ['Surface','Card','Heading','Event','Calendar']
+    : ['Surface',...([
+      ['une_text','Text'],['une_button','Button'],['une_image','Image'],['une_chart','Chart'],
+      ['une_table','Table'],['une_navigation','Navigation'],['une_search','Input'],
+      ['une_input','Input'],['une_container','Container'],['une_grid','Container'],
+      ['une_stack','Container'],['une_split_pane','Container']
+    ] as const).filter(([api])=>api===selectedCustomDefinition?.apiName).map(([,group])=>group)];
+  const layoutRibbonGroups:readonly string[] = ['Size','Position','Spacing','Component'];
   const appearanceDefinitions = availableComponentSettings(selectedCustomDefinition?.propertyDefinitions??[],page.layoutVariant??'Desktop',selectedCustomDefinition?.version);
   // Registry metadata remains authoritative. Legacy property declarations which omit
   // a presentation group are assigned only where the component already declares the key.
@@ -599,11 +611,27 @@ function PageBuilder({
     une_input:{inputType:{group:'Input',section:'Design'},multiline:{group:'Input',section:'Layout'},rows:{group:'Input',section:'Layout'}}
   };
   const inferredAppearanceGroup=(key:string)=>implicitParts[selectedCustomDefinition?.apiName??'']?.[key];
+  const baseSurfaceKeys=new Set(['theme','surface','tone','accentColor','backgroundColor',
+    'textColor','borderColor','density','radius','shadow','glassBlur','opacity']);
+  const inferredRibbonGroup=(key:string,section:'Design'|'Layout')=>{
+    if(section==='Design'&&baseSurfaceKeys.has(key))return 'Surface';
+    if(section==='Layout'){
+      if(/(?:min|max)?(?:Width|Height)$|^width$|^height$|^imageAspectRatio$/i.test(key))return 'Size';
+      if(/(?:^|[A-Z])(padding|margin|gap)|^padding$|^margin$|^gap$/i.test(key))return 'Spacing';
+      if(/position|offset|anchor/i.test(key))return 'Position';
+      if(/columns|rows|span|fit|align|wrap|direction/i.test(key))return 'Component';
+    }
+    return undefined;
+  };
   const definitionsForPart=(group:string,section:'Design'|'Layout')=>appearanceDefinitions.filter(definition=>{
     const mapped=inferredAppearanceGroup(definition.propertyKey);
-    const part=(definition as {group?:string}).group??mapped?.group;
+    const part=section==='Layout'
+      ? inferredRibbonGroup(definition.propertyKey,section)
+      : ((definition as {group?:string}).group??mapped?.group??inferredRibbonGroup(definition.propertyKey,section));
     return part===group&&!/(?:FieldApiName|ObjectApiName)$/.test(definition.propertyKey)
-      && ((definition as {section?:string}).section??mapped?.section??(/columns|gap|padding|width|height|radius|span|position/i.test(definition.propertyKey)?'Layout':'Design'))===section;
+      && (section==='Layout'
+        ? Boolean(inferredRibbonGroup(definition.propertyKey,section))
+        : ((definition as {section?:string}).section??mapped?.section??'Design')===section);
   });
   const inferredGroupKeys=appearanceDefinitions.filter(d=>inferredAppearanceGroup(d.propertyKey)&&!(d as {group?:string}).group).map(d=>d.propertyKey);
   const selectedComponentDescription = selectedCustomDefinition?.description
@@ -2478,13 +2506,13 @@ function PageBuilder({
               </div>;
             })}
           </>}
-          {ribbonTab==='Component Properties' && ribbonAppearanceGroups.map(group=>{
+          {ribbonTab==='Component Properties' && designRibbonGroups.map(group=>{
             const definitions=selected?definitionsForPart(group,'Design'):[];
             return <div className="office-ribbon-group office-ribbon-part-group" data-ribbon-group={group} key={group}>
               <fieldset className="office-ribbon-part-fieldset" title={definitions.length?group:'Not supported by selected component'}><RibbonCapabilityControls group={group} definitions={definitions} properties={selected?.properties??{}} icon={ribbonPartIcons[group]??<Settings2 size={15}/>} onChange={properties=>{if(selected)updateComponent(selected.id,{properties});}}/></fieldset><span>{group}</span>
             </div>;
           })}
-          {selected && ribbonTab==='Component Layout' && ribbonAppearanceGroups.map(group=>{
+          {selected && ribbonTab==='Component Layout' && layoutRibbonGroups.map(group=>{
             const definitions=definitionsForPart(group,'Layout');
             return <div className="office-ribbon-group office-ribbon-part-group" data-ribbon-group={group} key={group}>
               <fieldset className="office-ribbon-part-fieldset" title={definitions.length?group:'Not supported by selected component'}><RibbonCapabilityControls group={group} definitions={definitions} properties={selected?.properties??{}} icon={ribbonPartIcons[group]??<Settings2 size={15}/>} onChange={properties=>{if(selected)updateComponent(selected.id,{properties});}}/></fieldset><span>{group} layout</span>
