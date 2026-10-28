@@ -18,12 +18,14 @@ export type TenantRequest={
   developerEmail:string;
   developerPassword:string;
   developerName?:string;
+  tenantDeveloperEmail?:string;
 };
 export type ProvisioningAuthority={actorTenantId:string;actorUserId:string;idempotencyKey:string};
 export class TenantProvisioning {
   constructor(private readonly db:SqlPersistence) {}
   async provision(request:TenantRequest,authority?:ProvisioningAuthority) {
     const {slug,name,domain,developerEmail,developerPassword,developerName}=request;
+    const tenantDeveloperEmail=request.tenantDeveloperEmail??'developer@'+domain;
     if(!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug))throw new Error('Invalid tenant slug');
     if(!name.trim())throw new Error('Invalid tenant name');
     if(!/^[a-z0-9-]+(?:\.[a-z0-9-]+)*$/.test(domain) || domain!==domain.toLowerCase())
@@ -31,14 +33,16 @@ export class TenantProvisioning {
     if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(developerEmail))throw new Error('Invalid developer email');
     if(developerName!==undefined&&(typeof developerName!=='string'||!developerName.trim()||developerName.length>120))throw new Error('Invalid developer name');
     if(authority&&!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(authority.idempotencyKey))throw new Error('Invalid idempotency key');
-    const developerIdentityEmail='developer@'+domain;
+    const developerIdentityEmail=tenantDeveloperEmail.toLowerCase();
+    if(!/^[a-z0-9][a-z0-9._+-]{0,62}@unesolutions\.co\.uk$/.test(developerIdentityEmail))
+      throw new Error('Invalid tenant developer email');
     if(developerIdentityEmail.toLowerCase()===developerEmail.toLowerCase())
       throw new Error('Administrator email must differ from tenant developer identity');
     const passwordHash=await new AuthenticationService(this.db).hashPassword(developerPassword);
     // Never reuse the administrator password or expose an initial developer password.
     const developerDisabledHash=await new AuthenticationService(this.db).hashPassword(
       randomBytes(48).toString('base64url'));
-    const digest=createHash('sha256').update(JSON.stringify([slug,name,domain,developerEmail.toLowerCase(),developerPassword,developerName??''])).digest('hex');
+    const digest=createHash('sha256').update(JSON.stringify([slug,name,domain,developerEmail.toLowerCase(),developerPassword,developerName??'',developerIdentityEmail])).digest('hex');
     return this.db.transaction(async client=>{
       if(authority){
         await client.query('SELECT pg_advisory_xact_lock(hashtext($1))',
@@ -56,6 +60,8 @@ export class TenantProvisioning {
       }
       const existing=await client.query('SELECT id FROM md_tenants WHERE slug=$1',[slug]);
       if(existing.rowCount)throw new Error('Tenant already exists; refusing to overwrite');
+      const duplicate=await client.query('SELECT 1 FROM md_users WHERE lower(email)=$1 LIMIT 1',[developerIdentityEmail]);
+      if(duplicate.rowCount)throw new Error('Tenant developer email already registered');
       const tenant=await client.query<{id:string}>(
         'INSERT INTO md_tenants (slug,name) VALUES ($1,$2) RETURNING id',[slug,name]);
       const tenantId=tenant.rows[0].id;
