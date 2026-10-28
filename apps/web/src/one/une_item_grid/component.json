@@ -946,6 +946,88 @@
           "kind": "TEXT"
         }
       ]
+    },
+    {
+      "propertyKey": "imageExpression",
+      "label": "Image expression",
+      "kind": "TEXT",
+      "group": "Image",
+      "section": "Content",
+      "displayOrder": 805
+    },
+    {
+      "propertyKey": "headingExpression",
+      "label": "Heading expression",
+      "kind": "TEXT",
+      "group": "Heading",
+      "section": "Content",
+      "displayOrder": 806
+    },
+    {
+      "propertyKey": "descriptionExpression",
+      "label": "Supporting expression",
+      "kind": "TEXT",
+      "group": "Supporting text",
+      "section": "Content",
+      "displayOrder": 807
+    },
+    {
+      "propertyKey": "badgeExpression",
+      "label": "Badge expression",
+      "kind": "TEXT",
+      "group": "Badge",
+      "section": "Content",
+      "displayOrder": 808
+    },
+    {
+      "propertyKey": "badgeBackgroundColor",
+      "label": "Badge background",
+      "kind": "COLOR",
+      "group": "Badge",
+      "section": "Design",
+      "displayOrder": 809
+    },
+    {
+      "propertyKey": "badgeTextColor",
+      "label": "Badge text colour",
+      "kind": "COLOR",
+      "group": "Badge",
+      "section": "Design",
+      "displayOrder": 810
+    },
+    {
+      "propertyKey": "badgeFontSize",
+      "label": "Badge text size (px)",
+      "kind": "NUMBER",
+      "group": "Badge",
+      "section": "Design",
+      "displayOrder": 811
+    },
+    {
+      "propertyKey": "badgeFontWeight",
+      "label": "Badge weight",
+      "kind": "SELECT",
+      "group": "Badge",
+      "section": "Design",
+      "displayOrder": 812,
+      "choices": [
+        {
+          "key": "400",
+          "label": "Regular"
+        },
+        {
+          "key": "500",
+          "label": "Medium"
+        },
+        {
+          "key": "600",
+          "label": "Semibold"
+        },
+        {
+          "key": "700",
+          "label": "Bold"
+        }
+      ]
     }
   ],
   "eventDefinitions": [
