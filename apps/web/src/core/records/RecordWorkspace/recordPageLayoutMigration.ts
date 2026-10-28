@@ -72,7 +72,11 @@ export function legacyLayoutToRecordComponents(
     ||id==='migrated-related-'+device||id==='record-actions-'+device;
   // Never delete hand-authored standard components or another device's
   // components. Repeated import preserves edits to converter-owned instances.
-  const retained=existing.filter(component=>!owned(component.id));
+  const retained=existing.filter(component=>!owned(component.id)&&
+    // The original unconfigured starter is a converter placeholder, not an
+    // authored layout. Preserve every other standard/UNE component.
+    !(component.id==='starter'&&component.type==='Record Detail'&&
+      Object.keys(component.properties??{}).length===0));
   const previous=new Map(existing.filter(component=>owned(component.id))
     .map(component=>[component.id,component]));
   const sections=layout.sections.map((section,index):PageComponentMetadata=>({
