@@ -247,8 +247,6 @@ try{
  assert.equal(mobileDraft.draftRevision,2);
  assert.equal(mobileDraft.publishedRevision,1);
  assert.equal(mobileDraft.components[0].label,'Mobile record details');
- assert.deepEqual(mobileDraft.components[0].properties.pagePropertyContract,
-   mobileDraft.components[0].properties.pagePropertyContract);
  assert.equal(mobileDraft.components[0].properties.pagePropertyContract.fieldRules[0].visibilityRules.logic,'Any');
  assert.equal((await pageService.metadata(tenantId,savedPage.apiName,'Mobile')).components[0].label,'Details',
   'Saving a draft must never replace the published Mobile layout');
