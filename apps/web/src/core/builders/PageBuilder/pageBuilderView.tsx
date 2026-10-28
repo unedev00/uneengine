@@ -2395,6 +2395,7 @@ function PageBuilder({
                 definitions={availableComponentSettings(selectedCustomDefinition.propertyDefinitions??[],
                   page.layoutVariant??'Desktop',selectedCustomDefinition.version)
                   .filter(definition=>isPresentationProperty(definition)&&presentationSection(definition)==='Content')}
+                expressionFields={objects.find(obj=>obj.apiName===String(selected.properties.objectApiName||page.targetObject))?.fields??[]}
                 properties={selected.properties}
                 onChange={properties=>updateComponent(selected.id,{properties})}/>
             </div>}
