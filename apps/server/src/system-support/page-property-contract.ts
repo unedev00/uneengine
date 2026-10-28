@@ -3,6 +3,7 @@ const text=(propertyKey:string,label:string,required=false):ComponentSettingDefi
 const choice=(propertyKey:string,label:string,values:string[]):ComponentSettingDefinition=>({propertyKey,label,kind:'SELECT',choices:values.map(key=>({key,label:key}))});
 export const conditionSettings:ComponentSettingDefinition[]=[
  {...choice('logic','Match conditions',['All','Any']),defaultValue:'All'},
+ {...text('expression','Condition expression (e.g. 1 AND (2 OR 3))'),maxLength:160},
  {propertyKey:'conditions',label:'Conditions',kind:'COLLECTION',minItems:1,maxItems:20,fields:[
   {...choice('source','Source',['Device','Record Field','Record Type','User Profile','Record Permission']),required:true},
   text('fieldApiName','Record field'),{...choice('operator','Comparison',['Equals','Not Equals','Contains','Greater Than','Less Than']),required:true},text('value','Value')
