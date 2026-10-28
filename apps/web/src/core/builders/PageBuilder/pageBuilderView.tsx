@@ -138,7 +138,6 @@ import {presentationSection,isPresentationProperty} from '../ComponentProperties
 import FlowInputBindingEditor from '../FlowInputBindingEditor/FlowInputBindingEditor';
 import RecordFilterEditor from '../../../one/OneRecordFilterEditor/RecordFilterEditor';
 import ComponentVisibilityEditor from '../ComponentProperties/ComponentVisibilityEditor';
-import RichTextBlockEditor from '../ComponentProperties/RichTextBlockEditor';
 import PageRouteDirectory from '../../pages/PageRouteDirectory/PageRouteDirectory';
 import { isComponentVisible } from '../../components/Properties/componentVisibility';
 import PageComponentVisualEditor from '../ComponentStyleEditor/PageComponentVisualEditor';
@@ -260,7 +259,6 @@ import {
   type UserMetadata,
   type WorkspaceId
 } from '../../metadata/Definitions/metadata';
-import SavedListViewPicker from './SavedListViewPicker';
 import RibbonImageContent from './RibbonImageContent';
 export function createPageBuilder(MetadataComponentProperties: React.ComponentType<any>, MetadataBoundPageComponent: React.ComponentType<any>) {
 function PageBuilder({
@@ -1230,15 +1228,6 @@ function PageBuilder({
     updateComponent(sectionId, { properties: { ...section.properties, fieldApiNames: [...fieldApiNames, fieldApiName] } });
     setSelectedId(sectionId);
     setPageSettingsOpen(false);
-  };
-  const moveSectionField = (sectionId: string, fieldIndex: number, offset: -1 | 1) => {
-    const section = page.components.find((component) => component.id === sectionId && component.type === 'Field Section');
-    if (!section) return;
-    const fieldApiNames = stringList(section.properties.fieldApiNames, []);
-    const nextIndex = fieldIndex + offset;
-    if (nextIndex < 0 || nextIndex >= fieldApiNames.length) return;
-    [fieldApiNames[fieldIndex], fieldApiNames[nextIndex]] = [fieldApiNames[nextIndex]!, fieldApiNames[fieldIndex]!];
-    updateComponent(sectionId, { properties: { ...section.properties, fieldApiNames } });
   };
   const importLegacyRecordLayout = () => {
     if (!selectedMigrationLayout || page.pageType !== 'Record Page') return;
@@ -2280,15 +2269,6 @@ function PageBuilder({
       {regionComponents.length > 0 && !previewMode && <div className="canvas-drop-zone" onDragOver={(event) => event.preventDefault()} onDrop={(event) => handleDrop(event, page.components.length, region)}><Plus size={15} /><span>Drop here to add to {region}</span></div>}
     </section>;
   };
-  const selectedRelatedLists = selected
-    ? stringList(selected.properties.relatedLists, defaultRelatedLists)
-    : defaultRelatedLists;
-  const componentRelatedListOptions = [
-    ...relatedListOptions,
-    ...selectedRelatedLists
-      .filter((name) => !relatedListOptions.some((option) => option.apiName === name))
-      .map((apiName) => ({ apiName, label: apiName }))
-  ];
   const openAddBlocks = (region: 'header' | 'main' | 'sidebar' | null = null) => {
     setPaletteInsertRegion(region); setPaletteTab('Components'); setPaletteCategory('All Components'); setActivePanel('palette');
   };
