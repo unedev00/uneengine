@@ -42,6 +42,34 @@ export function behaviorAction(properties:Readonly<Record<string,unknown>>,
   if(behaviorMatches(rule.when,context))return 'enabled';
   return rule.unavailable==='Hide'?'hidden':'disabled';
 }
+/** Resolve versioned action rules together with the retained record-layout rules.
+ * A legacy condition may hide an action, but never override a versioned denial.
+ * This only controls presentation; the Record API enforces actual grants.
+ */
+export function behaviorRecordAction(
+  properties:Readonly<Record<string,unknown>>,
+  actionId:string,context:BehaviorContext,
+  legacyCondition?:{fieldApiName:string;equalsValue:string;operator?:string}
+):BehaviorActionState{
+  const state=behaviorAction(properties,actionId,context);
+  if(state!=='enabled'||!legacyCondition)return state;
+  const field=legacyCondition.fieldApiName;
+  if(!context.record||!context.readableFieldApiNames?.has(field)
+    ||!Object.prototype.hasOwnProperty.call(context.record,field))return 'hidden';
+  const value=context.record[field];
+  const text=value===null||value===undefined?'':String(value);
+  const expected=legacyCondition.equalsValue;
+  let matched=false;
+  switch(legacyCondition.operator??'Equals'){
+    case 'Equals':matched=text===expected;break;
+    case 'NotEquals':matched=text!==expected;break;
+    case 'Contains':matched=!!expected&&text.toLocaleLowerCase().includes(expected.toLocaleLowerCase());break;
+    case 'IsBlank':matched=!text.trim();break;
+    case 'IsNotBlank':matched=!!text.trim();break;
+    default:matched=false;
+  }
+  return matched?'enabled':'hidden';
+}
 export function behaviorAppearance(properties:Readonly<Record<string,unknown>>,
   context:BehaviorContext,fieldApiName?:string):Record<string,string>{
   const output:Record<string,string>={};
