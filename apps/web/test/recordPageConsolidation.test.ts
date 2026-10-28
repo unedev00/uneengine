@@ -54,3 +54,17 @@ test('consolidation never drops old SQL assignments or discards authored Record 
   assert.match(migration,/md_page_layout_heads/);
   assert.doesNotMatch(migration,/DROP TABLE|TRUNCATE|DELETE FROM md_object_page_layout/i);
 });
+
+test('PB28 repeated migration preserves authored components, edits and device-isolated IDs',()=>{
+ const custom={id:'hand-authored-field',type:'Record Field',label:'Special',
+  visible:true,properties:{fieldApiName:'PrivateNotes',customStyle:'keep'}};
+ const initial=legacyLayoutToRecordComponents(legacy,[custom],'Desktop');
+ const edited=initial.map(component=>component.type==='Field Section'
+   ?{...component,properties:{...component.properties,columns:1}}:component);
+ const repeated=legacyLayoutToRecordComponents(legacy,edited,'Desktop');
+ assert.deepEqual(repeated,edited);
+ assert.deepEqual(repeated.find(component=>component.id===custom.id),custom);
+ const mobile=legacyLayoutToRecordComponents(legacy,[custom],'Mobile');
+ assert.notEqual(repeated.find(component=>component.type==='Field Section')?.id,
+  mobile.find(component=>component.type==='Field Section')?.id);
+});
