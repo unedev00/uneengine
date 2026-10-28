@@ -256,6 +256,7 @@ import {
   type UserMetadata,
   type WorkspaceId
 } from '../../metadata/Definitions/metadata';
+import {analyzePagePerformance} from './pagePerformanceAnalysis';
 export function createPageBuilder(MetadataComponentProperties: React.ComponentType<any>, MetadataBoundPageComponent: React.ComponentType<any>) {
 function PageBuilder({
   page, pages, objects, apps, profiles, reports, dashboards, libraryComponents, flows, onChange, onSelectPage, onTargetObjectChange, onSave, onPublish, onDeactivate, onSaveApp, onDeleteApp, onDeletePage, onExit, onNotify, onLaunchFlow,
@@ -2298,6 +2299,16 @@ function PageBuilder({
   };
   return (
     <div className={`builder-page ${editorMode ? "builder-editor-mode" : "builder-list-mode"} ${isPhoneBuilder ? 'builder-phone-read-mode' : ''}`}>
+      {editorMode && <details className="builder-performance-analysis" aria-label="Page performance analysis">
+        <summary>Performance analysis ({analyzePagePerformance(page).length} findings)</summary>
+        <p>Configuration analysis only; this does not estimate network latency or render duration.</p>
+        {analyzePagePerformance(page).length===0
+          ? <p>No configuration-based hotspots identified. Measure real request and render timings separately.</p>
+          : <ul>{analyzePagePerformance(page).map((finding,index)=>
+            <li key={finding.componentId+'-'+finding.category+'-'+index}>
+              <strong>{finding.label}</strong>: {finding.reason}. {finding.recommendation}
+            </li>)}</ul>}
+      </details>}
       {editorMode && isPhoneBuilder && <p className="builder-phone-guidance" role="status">
         Phone preview: tap a component to edit its properties. Drag-and-drop and canvas positioning are available on tablet and desktop.
       </p>}
