@@ -2239,8 +2239,10 @@ function RecordWorkspace({
         const apiName=String(component.properties.stageFieldApiName??'');
         const field=readableRecordFields.find(item=>item.apiName===apiName);
         if(!field||field.dataType!=='Picklist')return <p key={component.id} role="status">Choose a readable Picklist field for Path.</p>;
+        const recordType=object.recordTypes?.find(item=>item.id===record.RecordTypeId);
+        const allowedStages=recordType?.picklistValues?.[apiName]??field.picklistValues??[];
         return <StandardRecordPath key={component.id} label={component.label}
-          values={field.picklistValues??[]} value={record[apiName]}
+          values={allowedStages} value={record[apiName]}
           record={record} readableFields={readableRecordFields}
           guidanceByStage={component.properties.guidanceByStage as Record<string,string>|undefined}
           keyFieldsByStage={component.properties.keyFieldsByStage as Record<string,string[]>|undefined}
@@ -2248,6 +2250,7 @@ function RecordWorkspace({
           onAdvance={async(nextValue)=>{
             if(!canEdit||!fieldAccess[`${object.apiName}.${apiName}`]?.edit)
               throw new Error('Stage change is not permitted');
+            if(!allowedStages.includes(nextValue))throw new Error('Stage is not allowed for this record type');
             await apiRequest(`/records/${encodeURIComponent(object.apiName)}/${encodeURIComponent(record.Id)}`,{
               method:'PUT',...(typeof record.LastModifiedDate==='string'
                 ?{headers:{'If-Unmodified-Since':record.LastModifiedDate}}:{}),
