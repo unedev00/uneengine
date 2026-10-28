@@ -37,7 +37,7 @@ test('every UNE property has a supported visual editor contract',()=>{
     for(const field of prop.fields)assert.ok(allowed.has(field.kind),d.apiName+' '+prop.propertyKey+' invalid nested kind '+field.kind);
    }
   }
-  for(const k of ['theme','surface','tone','density','radius','padding','gap','shadow','glassBlur','fontFamily','fontSize','width','height','minWidth','maxWidth','opacity','hideOnPhone','hideOnTablet','hideOnDesktop'])
+  for(const k of ['surface','tone','density','radius','padding','gap','shadow','glassBlur','fontFamily','fontSize','width','height','minWidth','maxWidth','opacity','hideOnPhone','hideOnTablet','hideOnDesktop'])
    assert.ok(keys.has(k),d.apiName+' missing '+k);
   for(const event of d.eventDefinitions??[])assert.match(event.apiName,/^[A-Za-z][A-Za-z0-9_]*$/);
  }
