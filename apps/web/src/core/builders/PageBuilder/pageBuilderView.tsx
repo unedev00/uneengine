@@ -550,11 +550,13 @@ function PageBuilder({
   const selectedCustomDefinition = selected?.type.startsWith('Custom:')
     ? findRegisteredComponent(libraryComponents, selected.type.slice('Custom:'.length), 'page')
     : undefined;
-  const ribbonAppearanceGroups = ['Card','Heading','Supporting text','Badge','Image','Gallery','Table','Calendar','Chart','Input','Navigation','Container'] as const;
+  const ribbonAppearanceGroups = ['Card','Heading','Supporting text','Badge','Image','Gallery','Text','Button','Table','Calendar','Chart','Input','Navigation','Container'] as const;
   const appearanceDefinitions = availableComponentSettings(selectedCustomDefinition?.propertyDefinitions??[],page.layoutVariant??'Desktop',selectedCustomDefinition?.version);
   // Several legacy UNE components declare valid properties but omit their visual group.
   // Only map verified existing keys; a stable group stays disabled if none are supported.
   const implicitParts:Record<string,Record<string,{group:string;section:'Design'|'Layout'}>> = {
+    une_text:{fontSize:{group:'Text',section:'Design'}},
+    une_button:{variant:{group:'Button',section:'Design'}},
     une_item_grid:{cardDensity:{group:'Card',section:'Design'},cardHover:{group:'Card',section:'Design'},featuredColumnSpan:{group:'Gallery',section:'Layout'},featuredRowSpan:{group:'Gallery',section:'Layout'}},
     une_calendar:{view:{group:'Calendar',section:'Design'},firstDayOfWeek:{group:'Calendar',section:'Design'},showWeekends:{group:'Calendar',section:'Design'}},
     une_chart:{chartType:{group:'Chart',section:'Design'}},
