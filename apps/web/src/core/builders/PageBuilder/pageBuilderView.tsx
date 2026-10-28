@@ -7,6 +7,7 @@ import './MobileBuilderReadMode.css';
 import {confirmDestructiveAction} from '../../components/ConfirmAction/confirmDestructiveAction';
 import './PageBuilderNoCode.css';
 import './PageBuilderRibbonGallery.css';
+import RibbonCapabilityControls from './RibbonCapabilityControls';
 import '../../pages/TemplatePageRuntime/pageComponentAppearance.css';
 import '../SharedBuilderFrame/adaptiveBuilder.css';
 import { libraryComponentLabel } from '../../components/Registry/componentLibraryDiscovery';
@@ -2474,17 +2475,13 @@ function PageBuilder({
           {ribbonTab==='Component Properties' && ribbonAppearanceGroups.map(group=>{
             const definitions=selected?definitionsForPart(group,'Design'):[];
             return <div className="office-ribbon-group office-ribbon-part-group" key={group}>
-              <fieldset className="office-ribbon-part-fieldset" disabled={!definitions.length} title={!definitions.length?'Not supported by selected component':group}>
-                {definitions.length&&selected?<PageBuilderRibbonMetadataPager key={selected.id+group} definitions={definitions} properties={selected.properties} onChange={properties=>updateComponent(selected.id,{properties})}/>:<div className="office-ribbon-disabled-group" aria-label={`${group} controls unavailable`}><button type="button" disabled aria-label={`${group} unavailable`} title={`${group} not supported by this component`} className="office-ribbon-disabled-icon">{ribbonPartIcons[group]??<Settings2 size={15}/>}</button><button type="button" disabled aria-label={`${group} options unavailable`} className="office-ribbon-disabled-icon"><SlidersHorizontal size={15}/></button><button type="button" disabled aria-label={`${group} appearance unavailable`} className="office-ribbon-disabled-icon"><Settings2 size={15}/></button></div>}
-              </fieldset><span>{group}</span>
+              <fieldset className="office-ribbon-part-fieldset" title={definitions.length?group:'Not supported by selected component'}><RibbonCapabilityControls group={group} definitions={definitions} properties={selected?.properties??{}} icon={ribbonPartIcons[group]??<Settings2 size={15}/>} onChange={properties=>{if(selected)updateComponent(selected.id,{properties});}}/></fieldset><span>{group}</span>
             </div>;
           })}
           {selected && ribbonTab==='Component Layout' && ribbonAppearanceGroups.map(group=>{
             const definitions=definitionsForPart(group,'Layout');
             return <div className="office-ribbon-group office-ribbon-part-group" key={group}>
-              <fieldset className="office-ribbon-part-fieldset" disabled={!definitions.length} title={!definitions.length?'Not supported by selected component':group}>
-                {definitions.length?<PageBuilderRibbonMetadataPager key={selected.id+group+'layout'} definitions={definitions} properties={selected.properties} onChange={properties=>updateComponent(selected.id,{properties})}/>:<div className="office-ribbon-disabled-group" aria-label={`${group} controls unavailable`}><button type="button" disabled aria-label={`${group} unavailable`} title={`${group} not supported by this component`} className="office-ribbon-disabled-icon">{ribbonPartIcons[group]??<Settings2 size={15}/>}</button><button type="button" disabled aria-label={`${group} options unavailable`} className="office-ribbon-disabled-icon"><SlidersHorizontal size={15}/></button><button type="button" disabled aria-label={`${group} appearance unavailable`} className="office-ribbon-disabled-icon"><Settings2 size={15}/></button></div>}
-              </fieldset><span>{group} layout</span>
+              <fieldset className="office-ribbon-part-fieldset" title={definitions.length?group:'Not supported by selected component'}><RibbonCapabilityControls group={group} definitions={definitions} properties={selected?.properties??{}} icon={ribbonPartIcons[group]??<Settings2 size={15}/>} onChange={properties=>{if(selected)updateComponent(selected.id,{properties});}}/></fieldset><span>{group} layout</span>
             </div>;
           })}
           {selected && ribbonTab==='Component Content' && selectedCustomDefinition?.apiName==='une_item_grid'
