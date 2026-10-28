@@ -12,6 +12,12 @@ export default function RibbonCapabilityControls({group,definitions,properties,o
 }){
  const [active,setActive]=useState<string|null>(null);
  const commands:Record<string,Array<{name:string;icon:ReactNode}>>={
+  Surface:[{name:'Fill',icon:<PaintBucket size={16}/>},{name:'Border',icon:<Square size={16}/>},{name:'Radius',icon:<Scan size={16}/>},{name:'Shadow',icon:<Layers size={16}/>},{name:'Opacity',icon:<Blend size={16}/>}],
+  Event:[{name:'Text',icon:<Type size={16}/>},{name:'Colour',icon:<Palette size={16}/>},{name:'Border',icon:<Square size={16}/>},{name:'Size',icon:<Ratio size={16}/>}],
+  Size:[{name:'Width',icon:<Ratio size={16}/>},{name:'Height',icon:<Ratio size={16}/>},{name:'Min',icon:<Scan size={16}/>}],
+  Position:[{name:'Position',icon:<Move size={16}/>},{name:'Align',icon:<AlignLeft size={16}/>}],
+  Spacing:[{name:'Padding',icon:<Grid2X2 size={16}/>},{name:'Margin',icon:<Square size={16}/>},{name:'Gap',icon:<Columns3 size={16}/>}],
+  Component:[{name:'Columns',icon:<Columns3 size={16}/>},{name:'Width',icon:<Ratio size={16}/>},{name:'Fit',icon:<Image size={16}/>},{name:'Wrap',icon:<WrapText size={16}/>}],
   Card:[{name:'Fill',icon:<PaintBucket size={16}/>},{name:'Border',icon:<Square size={16}/>},{name:'Corners',icon:<Scan size={16}/>},{name:'Shadow',icon:<Layers size={16}/>},{name:'Opacity',icon:<Blend size={16}/>}],
   Heading:[{name:'Size',icon:<Type size={16}/>},{name:'Colour',icon:<Palette size={16}/>},{name:'Bold',icon:<Bold size={16}/>},{name:'Align',icon:<AlignLeft size={16}/>}],
   'Supporting text':[{name:'Size',icon:<Type size={16}/>},{name:'Colour',icon:<Palette size={16}/>},{name:'Bold',icon:<Bold size={16}/>},{name:'Align',icon:<AlignLeft size={16}/>}],
@@ -28,16 +34,16 @@ export default function RibbonCapabilityControls({group,definitions,properties,o
  const named=commands[group]??[{name:group,icon},{name:'Settings',icon:<Settings2 size={16}/>},{name:'Options',icon:<SlidersHorizontal size={16}/>}];
  const aliases:Record<string,RegExp>={
    colour:/color|colour|tone|palette/i,fill:/fill|surface|background/i,
-   corners:/radius|corner|round/i,border:/border|stroke|outline/i,
+   corners:/radius|corner|round/i,radius:/radius|corner|round/i,border:/border|stroke|outline/i,
    shadow:/shadow|elevation/i,opacity:/opacity|alpha/i,
-   size:/size|fontsize|font-size|width|height/i,bold:/bold|weight/i,
+   size:/size|fontsize|font-size|width|height/i,width:/width|colspan/i,height:/height|rowspan/i,min:/minheight|minwidth/i,bold:/bold|weight/i,
    align:/align|justify|alignment/i,text:/text|caption|description|label/i,
    shape:/shape|radius|crop/i,fit:/fit|objectfit|scale/i,
    ratio:/ratio|aspect/i,position:/position|offset|left|top|anchor/i,
    time:/time|hour|minute/i,weekends:/weekend|daysofweek/i,
    header:/header|title/i,view:/view|mode/i,
    columns:/column|colspan/i,grid:/grid|column/i,wrap:/wrap|overflow/i,
-   direction:/direction|orientation/i,button:/button|variant|appearance/i,
+   padding:/padding|inset/i,margin:/margin/i,gap:/gap|spacing/i,direction:/direction|orientation/i,button:/button|variant|appearance/i,
    menu:/menu|navigation|nav/i,type:/type|variant|style/i
  };
  const matched=(name:string)=>definitions.filter(def=>{
