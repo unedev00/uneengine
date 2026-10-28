@@ -418,7 +418,7 @@ test('Page Builder contextual ribbon respects the fixed-height no-scroll contrac
   assert.match(builder,/ribbonTab==='Visibility Rules' && <RibbonVisibilityRules/);
   assert.match(builder,/ribbonTab==='Source'/);
   assert.match(builder,/ribbonTab === 'Component Content'/);
-  assert.match(builder,/ribbonTab === 'Component Style' && <RibbonFormat/);
+  assert.match(builder,/<RibbonFormat properties=\{selected.properties\}/);
   assert.match(filters,/validateVisibilityRule/);
   assert.match(filters,/examineRecordFilter/);
   assert.match(actions,/actionType/);
