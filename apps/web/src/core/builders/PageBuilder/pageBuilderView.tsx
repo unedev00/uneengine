@@ -619,7 +619,7 @@ function PageBuilder({
     une_input:{inputType:{group:'Input',section:'Design'},multiline:{group:'Input',section:'Layout'},rows:{group:'Input',section:'Layout'}}
   };
   const inferredAppearanceGroup=(key:string)=>implicitParts[selectedCustomDefinition?.apiName??'']?.[key];
-  const baseSurfaceKeys=new Set(['theme','surface','tone','accentColor','backgroundColor',
+  const baseSurfaceKeys=new Set(['surface','tone','accentColor','backgroundColor',
     'textColor','borderColor','density','radius','shadow','glassBlur','opacity']);
   const inferredRibbonGroup=(key:string,section:'Design'|'Layout')=>{
     if(section==='Design'&&baseSurfaceKeys.has(key))return 'Surface';
