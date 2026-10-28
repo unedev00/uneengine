@@ -2307,51 +2307,6 @@ function PageBuilder({
   };
   return (
     <div className={`builder-page ${editorMode ? "builder-editor-mode" : "builder-list-mode"} ${isPhoneBuilder ? 'builder-phone-read-mode' : ''}`}>
-      {editorMode&&selected?.type==='Related List'&&(()=>{
-        const names=Array.isArray(selected.properties.relatedLists)
-          ?selected.properties.relatedLists.filter((name):name is string=>typeof name==='string'):[];
-        const relation=names[0]??'';
-        const settings=((selected.properties.relatedListSettings??{}) as Record<string,Record<string,unknown>>);
-        const current=settings[relation]??{};
-        const setRelatedSetting=(key:string,value:unknown)=>updateComponent(selected.id,{properties:{
-          ...selected.properties,relatedListSettings:{...settings,[relation]:{...current,[key]:value}}}});
-        return <section className="builder-related-list-settings" aria-label="Related List configuration">
-          <label className="form-label">Related list
-            <select className="form-control" value={relation}
-              onChange={event=>updateComponent(selected.id,{properties:{
-                ...selected.properties,relatedLists:[event.target.value]}})}>
-              <option value="">Choose relationship</option>
-              {[...new Set([...defaultRelatedLists,...names])].map(name=><option key={name} value={name}>{name}</option>)}
-            </select>
-          </label>
-          {relation&&<>
-            <label className="form-label"><input type="checkbox"
-              checked={selected.properties.serverPaged===true}
-              onChange={event=>updateComponent(selected.id,{properties:{
-                ...selected.properties,serverPaged:event.target.checked}})}/>
-              Independent server-side paging, search and sorting
-            </label>
-            <label className="form-label">Records per page
-              <select className="form-control" value={Number(current.pageSize??25)}
-                onChange={event=>setRelatedSetting('pageSize',Number(event.target.value))}>
-                {[10,25,50].map(size=><option key={size} value={size}>{size}</option>)}
-              </select>
-            </label>
-            <label className="form-label">Sort field
-              <input className="form-control" value={String(current.sortField??'')}
-                onChange={event=>setRelatedSetting('sortField',event.target.value)} />
-            </label>
-            <label className="form-label">Filter field
-              <input className="form-control" value={String(current.filterField??'')}
-                onChange={event=>setRelatedSetting('filterField',event.target.value)} />
-            </label>
-            <label className="form-label">Filter value
-              <input className="form-control" value={String(current.filterValue??'')}
-                onChange={event=>setRelatedSetting('filterValue',event.target.value)} />
-            </label>
-          </>}
-        </section>;
-      })()}
       {editorMode && isPhoneBuilder && <p className="builder-phone-guidance" role="status">
         Phone preview: tap a component to edit its properties. Drag-and-drop and canvas positioning are available on tablet and desktop.
       </p>}
