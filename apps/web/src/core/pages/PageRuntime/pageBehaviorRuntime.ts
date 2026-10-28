@@ -42,6 +42,15 @@ export function behaviorAction(properties:Readonly<Record<string,unknown>>,
   if(behaviorMatches(rule.when,context))return 'enabled';
   return rule.unavailable==='Hide'?'hidden':'disabled';
 }
+/** Declarative client-side validation before an event runs. Server APIs retain their own RBAC and validation. */
+export function behaviorValidation(properties:Readonly<Record<string,unknown>>,
+  event:string,context:BehaviorContext):string|null{
+  for(const rule of asRows(pageBehaviors(properties)?.validationRules)){
+    if(rule.event!==event||!behaviorMatches(rule.when,context))continue;
+    return typeof rule.message==='string'&&rule.message.trim()?rule.message:'This action is not valid.';
+  }
+  return null;
+}
 export function behaviorAppearance(properties:Readonly<Record<string,unknown>>,
   context:BehaviorContext,fieldApiName?:string):Record<string,string>{
   const output:Record<string,string>={};
