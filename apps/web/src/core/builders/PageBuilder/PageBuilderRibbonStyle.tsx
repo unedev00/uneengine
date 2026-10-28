@@ -1,4 +1,4 @@
-import { AlignLeft, AlignCenter, AlignRight, Bold, Italic, Underline, RefreshCw, Eye, Monitor, Tablet, Smartphone, ShieldCheck } from 'lucide-react';
+import { AlignLeft, AlignCenter, AlignRight, Bold, Italic, Underline, RefreshCw, Eye, Monitor, Tablet, Smartphone, } from 'lucide-react';
 import RibbonColorPalette from './RibbonColorPalette';
 import PageBuilderRibbonMetadataPager from './PageBuilderRibbonMetadataPager';
 import {availableComponentSettings,type PropertyDevice} from '../../components/Properties/componentSettingDefinitions';
@@ -113,17 +113,14 @@ export function RibbonFormat({properties,componentType,definition,device,onChang
   </>;
 }
 
-export function RibbonResponsive({properties,onChange,onVisibilityRules,visible,onVisibleChange}:Props&{
-  onVisibilityRules:()=>void;visible:boolean;onVisibleChange:(visible:boolean)=>void;
+export function RibbonResponsive({properties,onChange,visible,onVisibleChange}:Props&{
+visible:boolean;onVisibleChange:(visible:boolean)=>void;
 }){
   const deviceChoices=[
     {key:'hideOnDesktop',label:'Desktop',Icon:Monitor},
     {key:'hideOnTablet',label:'Tablet',Icon:Tablet},
     {key:'hideOnPhone',label:'Mobile',Icon:Smartphone}
   ] as const;
-  const rules=properties.visibilityRules;
-  const ruleCount=rules&&typeof rules==='object'&&!Array.isArray(rules)
-    ? (Array.isArray((rules as Record<string,unknown>).rules)?((rules as {rules:unknown[]}).rules.length):1):0;
   return <>
     <div className="office-ribbon-group office-ribbon-responsive-visibility">
       <div className="office-ribbon-responsive-icons">
