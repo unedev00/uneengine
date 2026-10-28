@@ -1219,3 +1219,52 @@
 .office-builder-ribbon .office-ribbon-group-navigation button:disabled{
   opacity:0;pointer-events:none;
 }
+
+/* Content editors occupy real horizontal ribbon groups rather than the legacy
+   270px property inspector column. Keep every control within the fixed strip. */
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Content"] > .office-ribbon-inline-options {
+  display:flex!important;
+  flex:0 0 auto!important;
+  width:max-content!important;
+  min-width:0!important;
+  max-width:none!important;
+  height:133px!important;
+  max-height:133px!important;
+  overflow:hidden!important;
+  align-items:stretch!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Content"] > .office-ribbon-inline-options > .metadata-component-presentation {
+  display:flex!important;
+  flex-flow:row nowrap!important;
+  align-items:stretch!important;
+  width:max-content!important;
+  min-width:0!important;
+  max-width:none!important;
+  height:133px!important;
+  max-height:133px!important;
+  overflow:hidden!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Content"] .office-ribbon-presentation-group {
+  display:flex!important;
+  flex:0 0 245px!important;
+  flex-direction:column!important;
+  flex-wrap:nowrap!important;
+  width:245px!important;
+  min-width:245px!important;
+  max-width:245px!important;
+  height:133px!important;
+  max-height:133px!important;
+  padding:4px 8px 20px!important;
+  overflow:hidden!important;
+  box-sizing:border-box!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Content"] .office-ribbon-presentation-group :is(input,select,textarea) {
+  box-sizing:border-box!important;
+  min-width:0!important;
+  max-width:100%!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Content"] .office-ribbon-presentation-group .form-label {
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+}
