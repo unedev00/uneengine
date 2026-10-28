@@ -117,8 +117,8 @@ test('Excel-style ribbon keeps nine permanent tabs, relocates page identity and 
   assert.match(source,/aria-label="Paste"/);
   const advanced=readFileSync(new URL('../src/core/builders/PageBuilder/PageBuilderAdvancedStyle.tsx',import.meta.url),'utf8');
   assert.match(source,/<PageBuilderAdvancedStyle/);
-  assert.match(advanced,/<RibbonDesign properties=\{properties\}/);
-  assert.match(advanced,/<RibbonFormat properties=\{properties\}/);
+  assert.match(advanced,/office-ribbon-extra-grid/);
+  assert.doesNotMatch(advanced,/createPortal/);
   assert.match(source,/office-ribbon-quick-grid/);
   assert.match(source,/ribbonTab==='Component Responsive'/);
   assert.match(source,/<RibbonResponsive/);
