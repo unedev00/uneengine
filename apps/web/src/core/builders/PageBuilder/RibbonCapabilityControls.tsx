@@ -15,7 +15,7 @@ const commandGroups:Record<string,Command[]>={
   Position:[{name:'Position',icon:<Move size={16}/>},{name:'Align',icon:<AlignLeft size={16}/>}],
   Spacing:[{name:'Padding',icon:<Grid2X2 size={16}/>},{name:'Margin',icon:<Square size={16}/>},{name:'Gap',icon:<Columns3 size={16}/>}],
   Component:[{name:'Columns',icon:<Columns3 size={16}/>},{name:'Fit',icon:<Image size={16}/>},{name:'Wrap',icon:<WrapText size={16}/>}],
-  Card:[{name:'Fill',icon:<PaintBucket size={16}/>},{name:'Border',icon:<Square size={16}/>},{name:'Corners',icon:<Scan size={16}/>},{name:'Shadow',icon:<Layers size={16}/>},{name:'Opacity',icon:<Blend size={16}/>}],
+  Card:[{name:'Fill',icon:<PaintBucket size={16}/>},{name:'Border',icon:<Square size={16}/>},{name:'Corners',icon:<Scan size={16}/>},{name:'Shadow',icon:<Layers size={16}/>},{name:'Stroke',icon:<Square size={16}/>}],
   Heading:[{name:'Size',icon:<Type size={16}/>},{name:'Colour',icon:<Palette size={16}/>},{name:'Bold',icon:<Bold size={16}/>},{name:'Align',icon:<AlignLeft size={16}/>}],
   'Supporting text':[{name:'Size',icon:<Type size={16}/>},{name:'Colour',icon:<Palette size={16}/>},{name:'Bold',icon:<Bold size={16}/>},{name:'Align',icon:<AlignLeft size={16}/>}],
   Badge:[{name:'Fill',icon:<PaintBucket size={16}/>},{name:'Text',icon:<CaseSensitive size={16}/>},{name:'Border',icon:<Square size={16}/>}],
@@ -251,6 +251,11 @@ export default function RibbonCapabilityControls({group,definitions,properties,o
       const definition=definitions.find(d=>d.propertyKey===key&&d.kind==='NUMBER');
       if(definition)return <DirectNumber key={key} definition={definition} properties={properties}
         onChange={update} label={group==='Card'?'Card radius':'Radius'} icon={<Scan size={16}/>}/>;
+    }
+    if(group==='Card'&&command.name==='Stroke'){
+      const definition=definitions.find(d=>d.propertyKey==='cardBorderWidth'&&d.kind==='NUMBER');
+      if(definition)return <DirectNumber key="cardBorderWidth" definition={definition}
+        properties={properties} onChange={update} label="Border width" icon={<Square size={16}/>}/>;
     }
     if(['Fill','Border','Colour','Text'].includes(command.name)){
       const direct=colourCommand(command.name);
