@@ -2398,14 +2398,18 @@ function PageBuilder({
           </div>}
           {selected && ribbonTab==='Component Data' && (selectedCustomDefinition?.propertyDefinitions?.some(d=>d.kind==='OBJECT'||d.kind==='OBJECT_FIELD'||/(?:filter|sourceObject)/i.test(d.propertyKey))
             || /^(?:Record Field|Record Detail|Related List|List View|Report Chart|Dashboard|Table)$/.test(selected.type)
-            || 'filters' in selected.properties) && <div className="office-ribbon-group"><div className="office-ribbon-stack">
-            <button type="button" onClick={()=>openExpandedEditor('filters')}><Filter size={16}/> Record filters</button>
-            <button type="button" onClick={()=>openExpandedEditor('source')}><Database size={16}/> Record scope</button>
-          </div><span>Data rules</span></div>}
+            || 'filters' in selected.properties) && <>
+            <div className="office-ribbon-group office-ribbon-data-source"><div className="office-ribbon-stack">
+              <button type="button" onClick={()=>openExpandedEditor('source')}><Database size={16}/> Open source</button>
+            </div><span>Source</span></div>
+            <div className="office-ribbon-group office-ribbon-data-filters"><div className="office-ribbon-stack">
+              <button type="button" onClick={()=>openExpandedEditor('filters')}><Filter size={16}/> Open filters</button>
+            </div><span>Filters</span></div>
+          </>
           {selected && ribbonTab==='Component Data' && selectedCustomDefinition?.propertyDefinitions?.some(d=>['pageSize','enablePagination'].includes(d.propertyKey)) && <div className="office-ribbon-group"><div className="office-ribbon-stack">
             {selectedCustomDefinition.propertyDefinitions.some(d=>d.propertyKey==='pageSize')&&<label className="office-ribbon-inline-field">Page size <input type="number" min={1} max={500} value={Number(selected.properties.pageSize??12)} onChange={event=>{const n=Number(event.target.value);if(Number.isInteger(n)&&n>=1&&n<=500)updateComponent(selected.id,{properties:{...selected.properties,pageSize:n}});}}/></label>}
             {selectedCustomDefinition.propertyDefinitions.some(d=>d.propertyKey==='enablePagination')&&<label className="office-ribbon-checkbox"><input type="checkbox" checked={selected.properties.enablePagination===true} onChange={event=>updateComponent(selected.id,{properties:{...selected.properties,enablePagination:event.target.checked}})}/> Enable pagination</label>}
-          </div><span>Pagination</span></div>}
+          </div><span>Records</span></div>}
           {selected && ribbonTab === 'Component Content' && selectedCustomDefinition && selectedCustomDefinition.apiName!=='une_item_grid' &&
             selectedCustomDefinition.propertyDefinitions?.some(definition=>definition.kind==='OBJECT_FIELD') &&
             <div className="office-ribbon-group"><div className="office-ribbon-stack">
