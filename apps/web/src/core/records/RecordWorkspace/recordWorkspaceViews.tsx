@@ -2214,7 +2214,7 @@ function RecordWorkspace({
           ?component.properties.columns.filter((name):name is string=>typeof name==='string'):[];
         return <StandardRecordList key={component.id} object={source} request={apiRequest}
           appId={route.appId??''} onNavigate={onNavigate} columns={columns}
-          pageSize={typeof component.properties.pageSize==='number'?component.properties.pageSize:25}/>;
+          pageSize={typeof component.properties.pageSize==='number'?component.properties.pageSize:25} savedViewId={typeof component.properties.savedViewId==='string'?component.properties.savedViewId:undefined}/>;
       }
       if(component.type==='Screen Flow'){
         const props={
