@@ -37,77 +37,6 @@
       ]
     },
     {
-      "propertyKey": "surface",
-      "label": "Surface",
-      "kind": "SELECT",
-      "displayOrder": 20,
-      "defaultValue": "glass",
-      "choices": [
-        {
-          "key": "glass",
-          "label": "Frosted glass"
-        },
-        {
-          "key": "solid",
-          "label": "Solid"
-        },
-        {
-          "key": "plain",
-          "label": "Transparent"
-        }
-      ]
-    },
-    {
-      "propertyKey": "tone",
-      "label": "Colour palette",
-      "kind": "SELECT",
-      "displayOrder": 30,
-      "defaultValue": "blue",
-      "choices": [
-        {
-          "key": "blue",
-          "label": "iOS blue"
-        },
-        {
-          "key": "mint",
-          "label": "Mint"
-        },
-        {
-          "key": "purple",
-          "label": "Purple"
-        },
-        {
-          "key": "orange",
-          "label": "Orange"
-        },
-        {
-          "key": "neutral",
-          "label": "Neutral"
-        }
-      ]
-    },
-    {
-      "propertyKey": "accentColor",
-      "label": "Custom accent colour",
-      "kind": "COLOR",
-      "displayOrder": 40,
-      "defaultValue": ""
-    },
-    {
-      "propertyKey": "backgroundColor",
-      "label": "Surface colour",
-      "kind": "COLOR",
-      "displayOrder": 50,
-      "defaultValue": ""
-    },
-    {
-      "propertyKey": "textColor",
-      "label": "Text colour",
-      "kind": "COLOR",
-      "displayOrder": 60,
-      "defaultValue": ""
-    },
-    {
       "propertyKey": "borderColor",
       "label": "Border colour",
       "kind": "COLOR",
@@ -115,46 +44,11 @@
       "defaultValue": ""
     },
     {
-      "propertyKey": "density",
-      "label": "Spacing density",
-      "kind": "SELECT",
-      "displayOrder": 80,
-      "defaultValue": "comfortable",
-      "choices": [
-        {
-          "key": "compact",
-          "label": "Compact"
-        },
-        {
-          "key": "comfortable",
-          "label": "Comfortable"
-        },
-        {
-          "key": "spacious",
-          "label": "Spacious"
-        }
-      ]
-    },
-    {
       "propertyKey": "radius",
       "label": "Corner radius (px)",
       "kind": "NUMBER",
       "displayOrder": 90,
       "defaultValue": 20
-    },
-    {
-      "propertyKey": "padding",
-      "label": "Padding (px)",
-      "kind": "NUMBER",
-      "displayOrder": 100,
-      "defaultValue": 16
-    },
-    {
-      "propertyKey": "gap",
-      "label": "Gap (px)",
-      "kind": "NUMBER",
-      "displayOrder": 110,
-      "defaultValue": 12
     },
     {
       "propertyKey": "shadow",
@@ -182,13 +76,6 @@
       ]
     },
     {
-      "propertyKey": "glassBlur",
-      "label": "Glass blur (px)",
-      "kind": "NUMBER",
-      "displayOrder": 130,
-      "defaultValue": 12
-    },
-    {
       "propertyKey": "objectApiName",
       "label": "Source Object",
       "kind": "OBJECT",
@@ -196,45 +83,10 @@
       "defaultValue": ""
     },
     {
-      "propertyKey": "loading",
-      "label": "Loading state",
-      "kind": "BOOLEAN",
-      "displayOrder": 320,
-      "defaultValue": false
-    },
-    {
-      "propertyKey": "emptyText",
-      "label": "Empty message",
-      "kind": "TEXT",
-      "displayOrder": 330,
-      "defaultValue": "No records"
-    },
-    {
-      "propertyKey": "recordTitleFieldApiName",
-      "label": "Record title",
-      "kind": "OBJECT_FIELD",
-      "displayOrder": 340,
-      "defaultValue": ""
-    },
-    {
-      "propertyKey": "recordValueFieldApiName",
-      "label": "Record ID",
-      "kind": "OBJECT_FIELD",
-      "displayOrder": 350,
-      "defaultValue": ""
-    },
-    {
       "propertyKey": "recordSubtitleFieldApiName",
       "label": "Subtitle",
       "kind": "OBJECT_FIELD",
       "displayOrder": 360,
-      "defaultValue": ""
-    },
-    {
-      "propertyKey": "recordImageFieldApiName",
-      "label": "Image",
-      "kind": "OBJECT_FIELD",
-      "displayOrder": 370,
       "defaultValue": ""
     },
     {
@@ -264,41 +116,6 @@
       "kind": "OBJECT_FIELD",
       "displayOrder": 830,
       "defaultValue": ""
-    },
-    {
-      "propertyKey": "searchValue",
-      "label": "Search value",
-      "kind": "TEXT",
-      "displayOrder": 840,
-      "defaultValue": ""
-    },
-    {
-      "propertyKey": "loadingText",
-      "label": "Loading message",
-      "kind": "TEXT",
-      "displayOrder": 850,
-      "defaultValue": "Loading records…"
-    },
-    {
-      "propertyKey": "selectedValue",
-      "label": "Selected record ID",
-      "kind": "TEXT",
-      "displayOrder": 860,
-      "defaultValue": ""
-    },
-    {
-      "propertyKey": "maxItems",
-      "label": "Maximum visible records",
-      "kind": "NUMBER",
-      "displayOrder": 870,
-      "defaultValue": 200
-    },
-    {
-      "propertyKey": "disabled",
-      "label": "Disable row selection",
-      "kind": "BOOLEAN",
-      "displayOrder": 880,
-      "defaultValue": false
     },
     {
       "propertyKey": "sourceObjectApiName",

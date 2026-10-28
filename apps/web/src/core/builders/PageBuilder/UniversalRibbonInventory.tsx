@@ -1,4 +1,4 @@
-import {useEffect,useState} from 'react';
+import {useState} from 'react';
 import {auditUniversalRibbonCoverage} from './universalRibbonCoverage.mjs';
 import {createPortal} from 'react-dom';
 import RibbonColorPalette from './RibbonColorPalette';
@@ -9,7 +9,7 @@ import TenantMediaPicker from '../ComponentProperties/TenantMediaPicker';
 /**
  * Universal Page Builder ribbon inventory. Importing metadata eagerly is confined to
  * the lazy-loaded builder; published app runtimes never import this catalog.
- * Shared group definitions, but only properties declared by the selected component are rendered.
+ * Fixed property slots for every UNE component; unsupported controls stay visible and disabled.
  */
 type Definition=NonNullable<LibraryComponentMetadata['propertyDefinitions']>[number];
 type Properties=Record<string,unknown>;
@@ -151,58 +151,53 @@ export default function UniversalRibbonInventory({tab,definition,componentId,pro
  objects?:readonly ObjectMetadata[];flows?:readonly FlowDefinitionMetadata[];
  builder?:UniversalBuilderControls;
 }){
- // Selected-component scope prevents unrelated UNE properties appearing on this ribbon.
- const [reviewDraft,setReviewDraft]=useState<Properties>({});
- useEffect(()=>{setReviewDraft({});},[componentId]);
- const reviewProperties={...properties,...reviewDraft};
- const reviewPositionValue=(key:keyof CanvasPosition):number|string=>{
-   const value=builder?.position?.[key]??reviewDraft['__previewCanvas_'+key];
-   return typeof value==='number'||typeof value==='string'?value:'';
- };
+ // Every component uses the same inventory, section order and control positions.
+ const reviewPositionValue=(key:keyof CanvasPosition):number|string=>builder?.position?.[key]??'';
  const editCanvas=(key:keyof CanvasPosition,min:number,raw:string)=>{
    const value=Number(raw);
    if(!Number.isFinite(value)||value<min)return;
    if(builder?.position&&builder.layoutMode==='free-canvas')
      builder.onPositionChange?.({...builder.position,[key]:Math.round(value)});
-   else setReviewDraft(previous=>({...previous,['__previewCanvas_'+key]:Math.round(value)}));
  };
  const enabled=new Set((definition?.propertyDefinitions??[]).map(item=>item.propertyKey));
+ const canEditCanvas=builder?.layoutMode==='free-canvas'&&Boolean(builder.position)&&Boolean(builder.onPositionChange);
+ const canOpenSource=Boolean(builder?.onOpenSource)&&(definition?.propertyDefinitions??[]).some(item=>/object|fieldApiName|mapping/i.test(item.propertyKey));
+ const canOpenFilters=Boolean(builder?.onOpenFilters)&&(definition?.propertyDefinitions??[]).some(item=>/object|filter|searchField/i.test(item.propertyKey));
  const groups=slots.get(tab);
  if(!groups)return null;
  return <div className="une-universal-ribbon" aria-label="Universal UNE property ribbon"
-   data-component={definition?.apiName??'none'} data-inventory-count={universalRibbonInventoryCount}
-   data-review-mode="selected-only">
-   {Array.from(groups).filter(([section,defs])=>defs.some(item=>enabled.has(item.propertyKey)) || (tab==='Component Layout'&&['Size','Position'].includes(section)) || (tab==='Component Data'&&['Source','Filters'].includes(section))).map(([section,defs])=><section key={section} className="une-universal-ribbon-section" aria-label={section}>
+   data-component={definition?.apiName??'none'} data-component-id={componentId??'none'} data-inventory-count={universalRibbonInventoryCount}
+   data-review-mode="all-disabled">
+   {Array.from(groups).map(([section,defs])=><section key={section} className="une-universal-ribbon-section" aria-label={section}>
      <div className="une-universal-ribbon-controls">
        {tab==='Component Layout'&&section==='Size'&&(['width','height'] as const).map(key=>
          <label key={'canvas-'+key} className="une-universal-property" title={'Canvas '+key}>
            <span className="une-universal-property-label">Canvas {key}</span>
-           <input aria-label={'Canvas '+key} type="number" min={1} value={reviewPositionValue(key)}
+           <input aria-label={'Canvas '+key} type="number" min={1} disabled={!canEditCanvas} value={reviewPositionValue(key)}
              onChange={event=>editCanvas(key,1,event.target.value)}/>
          </label>)}
        {tab==='Component Layout'&&section==='Position'&&(['x','y'] as const).map(key=>
          <label key={'canvas-'+key} className="une-universal-property" title={'Canvas '+key}>
            <span className="une-universal-property-label">Canvas {key.toUpperCase()}</span>
-           <input aria-label={'Canvas '+key.toUpperCase()} type="number" min={0}
+           <input aria-label={'Canvas '+key.toUpperCase()} type="number" min={0} disabled={!canEditCanvas}
              value={reviewPositionValue(key)}
              onChange={event=>editCanvas(key,0,event.target.value)}/>
          </label>)}
        {tab==='Component Data'&&section==='Source'&&<button type="button"
-         className="une-universal-builder-command" disabled={!builder?.onOpenSource} onClick={builder?.onOpenSource}>
+         className="une-universal-builder-command" disabled={!canOpenSource} onClick={builder?.onOpenSource}>
          Source mappings
        </button>}
        {tab==='Component Data'&&section==='Filters'&&<button type="button"
-         className="une-universal-builder-command" disabled={!builder?.onOpenFilters} onClick={builder?.onOpenFilters}>
+         className="une-universal-builder-command" disabled={!canOpenFilters} onClick={builder?.onOpenFilters}>
          Filter conditions
        </button>}
-       {defs.filter(item=>enabled.has(item.propertyKey)).map(def=>{
+       {defs.map(def=>{
          const supported=enabled.has(def.propertyKey);
          return <PropertyEditor key={def.propertyKey}
            definition={supported?definition?.propertyDefinitions?.find(item=>item.propertyKey===def.propertyKey)??def:def}
-           enabled={true} reviewOnly={!supported} properties={reviewProperties}
+           enabled={supported} properties={properties}
            onChange={next=>{
              if(supported)onChange({...properties,[def.propertyKey]:next[def.propertyKey]});
-             else setReviewDraft(previous=>({...previous,[def.propertyKey]:next[def.propertyKey]}));
            }}
            objects={objects} flows={flows}/>;
        })}

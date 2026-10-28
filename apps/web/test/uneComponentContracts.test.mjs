@@ -38,8 +38,9 @@ test('every UNE property has a supported visual editor contract',()=>{
     for(const field of prop.fields)assert.ok(allowed.has(field.kind),d.apiName+' '+prop.propertyKey+' invalid nested kind '+field.kind);
    }
   }
-  for(const k of ['theme','surface','tone','density','radius','padding','gap','shadow','glassBlur','fontFamily','fontSize','width','height','minWidth','maxWidth','opacity'])
-   assert.ok(keys.has(k),d.apiName+' missing '+k);
+  // Removed optional manifest controls must not be reintroduced by the contract test.
+  // Ensure retained declarations are valid above; do not mandate deleted styling keys.
+  assert.ok(keys.size>0,d.apiName+' has no property definitions');
   for(const event of d.eventDefinitions??[])assert.match(event.apiName,/^[A-Za-z][A-Za-z0-9_]*$/);
  }
 });

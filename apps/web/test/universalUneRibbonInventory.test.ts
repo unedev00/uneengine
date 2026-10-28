@@ -22,7 +22,7 @@ test('all six property tabs use a fixed section catalog without component-specif
    assert.ok(view.includes("'"+name+"'"),name);
  }
  assert.match(view,/<UniversalRibbonInventory tab=\{ribbonTab as/);
- assert.match(catalog,/Array\.from\(groups\)\.filter/);
+ assert.match(catalog,/Array\.from\(groups\)\.map/);
 });
 test('media property and structured values are handled without converting persisted objects to strings',()=>{
  const catalog=load('../src/core/builders/PageBuilder/UniversalRibbonInventory.tsx');
@@ -30,4 +30,10 @@ test('media property and structured values are handled without converting persis
  assert.match(catalog,/TenantMediaPicker assetOnly initiallyOpen/);
  assert.match(catalog,/JSON\.parse\(e\.target\.value\)/);
  assert.match(catalog,/update\(parsed\)/);
+});
+
+test('UNE components do not render the legacy second Data ribbon',()=>{
+ const view=load('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ assert.match(view,/selected && !selectedCustomDefinition && ribbonTab==='Component Data' && <PageBuilderRibbonData/);
+ assert.match(view,/selected && selectedCustomDefinition && \(\['Component Data'/);
 });
