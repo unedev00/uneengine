@@ -3,7 +3,6 @@ import {generateMetadataApiName,metadataNameConflict,suggestMetadataApiName} fro
 import {useFormFactor} from '../../workspace/Responsive/useFormFactor';
 import {confirmDestructiveAction} from '../../components/ConfirmAction/confirmDestructiveAction';
 import './FlowBuilderMobile.css';
-import './FlowBuilderRibbon.css';
 import '../SharedBuilderFrame/adaptiveBuilder.css';
 import { uniqueLibraryComponents, libraryComponentLabel } from '../../components/Registry/componentLibraryDiscovery';
 import { FlowPropertiesResizeHandle, useFlowPropertiesWidth } from './FlowPropertiesResizeHandle';
@@ -174,7 +173,6 @@ export default function FlowBuilder({
   const flowTypeOptions = flowCreateOptions(capabilityCatalog);
   const flowElementMetadata = capabilityCatalog?.elements.filter(element => element.builderEnabled) ?? [];
   const [toolboxExpanded, setToolboxExpanded] = useState(false);
-  const [ribbonTab,setRibbonTab] = useState<'Home'|'Add Element'|'Manager'>('Home');
   const [managerSection, setManagerSection] = useState<'overview'|'versions'|'portability'|'tests'|'details'|'new-flow'|'events'|'resources'|'credentials'|'alerts'>('overview');
   const [insertionConnectorId, setInsertionConnectorId] = useState('');
   const [newFlowLabel, setNewFlowLabel] = useState('');
@@ -1740,31 +1738,29 @@ export default function FlowBuilder({
     </div>
   </div>;
   return <div className={phoneFlow?'flow-builder flow-mobile-builder':'flow-builder'}>
-    <div className="flow-office-ribbon" role="region" aria-label="Flow Builder ribbon">
-<div className="flow-ribbon-tabs" role="tablist">{(['Home','Add Element','Manager'] as const).map(tab=><button role="tab" aria-selected={ribbonTab===tab} key={tab} className={ribbonTab===tab?'active':''} onClick={()=>{setRibbonTab(tab);setToolboxExpanded(tab==='Manager');if(tab==='Manager')setManagerSection('overview');}}>{tab}</button>)}<span className="flow-ribbon-tabs-spacer"/><span>{freeformLayout?'Freeform':'Auto-Layout'} · {flow.elements.length} elements · {Math.round(zoom*100)}%</span></div>
-<div className="flow-ribbon-groups">
-{ribbonTab==='Home'&&<>
-<div className="flow-ribbon-group flow-ribbon-identity">
- <div className="flow-ribbon-controls">
-  <button title="Back to Flows" onClick={onOpenFlowList}><ArrowLeft/>All Flows</button>
-  <label className="flow-ribbon-name-field">Flow Name<input aria-label="Flow label" value={flow.label} onChange={e=>onFlowChange({...flow,label:e.target.value})}/></label>
-  <div className="flow-ribbon-flow-state"><span className="flow-type-pill">{flow.status} · v{flow.versionNumber}</span><span className={`flow-save-state ${isDirty?'dirty':''}`} role="status">{isDirty?'Unsaved changes':'Saved'}</span></div>
- </div><small>Current Flow</small>
-</div>
-<div className="flow-ribbon-group"><div className="flow-ribbon-controls"><button onClick={onSave}><Save/>Save</button><button onClick={onValidate}><Check/>Check</button><button onClick={onActivate}><Check/>Activate</button>{flow.status==='Active'&&<button onClick={()=>onDeactivateFlow(flow.apiName)}><X/>Deactivate</button>}</div><small>Flow Status</small></div>
-<div className="flow-ribbon-group"><div className="flow-ribbon-controls"><button onClick={onUndo} disabled={!canUndo}><Undo2/>Undo</button><button onClick={onRedo} disabled={!canRedo}><Redo2/>Redo</button><button onClick={duplicateSelected} disabled={selected?.type==='Start'||selected?.type==='End'}><Copy/>Duplicate</button><button disabled={!selected||!canBypassFlowElement(flow,selected.id)} onClick={()=>{if(selected&&canBypassFlowElement(flow,selected.id)&&confirmDestructiveAction('Delete',selected.label))onRemove(selected.id);}}><X/>Delete</button></div><small>Edit</small></div>
-<div className="flow-ribbon-group"><div className="flow-ribbon-controls"><button onClick={switchCanvasMode}><MoveRight/>{freeformLayout?'Auto-Layout':'Freeform'}</button>{freeformLayout&&<button onClick={resetFreeformLayout}><Undo2/>Reset</button>}<button aria-expanded={showGraphReview} onClick={()=>setShowGraphReview(v=>!v)}><Activity/>Review Graph</button><button onClick={onValidate}><Activity/>Errors &amp; Warnings</button>{flow.status==='Draft'&&<button onClick={()=>{const fixed=completeFlowEndPaths(flow,`connector-${crypto.randomUUID()}`);if(JSON.stringify(fixed)===JSON.stringify(flow))onNotify('All paths already end.');else{onFlowChange(fixed);onNotify('End paths added. Check and Save.');}}}><Check/>Complete Paths</button>}</div><small>Layout &amp; Review</small></div>
-<div className="flow-ribbon-group"><div className="flow-ribbon-controls">{['Autolaunched Flow','Screen Flow','Flow Orchestration','Record-Triggered Flow'].includes(flow.flowType)&&<button disabled={!canRunFlows} onClick={onDebug}><Activity/>Debug</button>}{['Autolaunched Flow','Screen Flow','Flow Orchestration'].includes(flow.flowType)&&<button disabled={!canRunFlows} onClick={onRun}><MoveRight/>Run</button>}<button onClick={()=>{setRibbonTab('Manager');setManagerSection('overview');setToolboxExpanded(true);}}><MoreHorizontal/>Manager</button><button onClick={()=>onNotify('Configure Start, add elements, Check, Save and Activate.')}><CircleHelp/>Help</button></div><small>Tools</small></div>
-</>}
-{ribbonTab==='Add Element'&&<>{capabilityError&&<span role="alert">{capabilityError}</span>}{insertionPaths.length>1&&<label className="flow-ribbon-path">Insert onto path<select aria-label="Choose Flow insertion path" value={insertionPaths.some(c=>c.id===insertionConnectorId)?insertionConnectorId:''} onChange={e=>setInsertionConnectorId(e.target.value)}><option value="">Select path</option>{insertionPaths.map(c=><option key={c.id} value={c.id}>{c.label||c.kind}</option>)}</select></label>}{toolboxGroups.map(group=><div className="flow-ribbon-group" key={group}><div className="flow-ribbon-controls">{flowElementMetadata.filter(item=>item.group===group&&isToolboxElement(item.type)).map(element=><button key={element.type} draggable title={element.type} onDragStart={e=>{e.dataTransfer.effectAllowed='copy';e.dataTransfer.setData('application/x-metadrive-flow-type',element.type);}} onClick={()=>{const path=insertionPaths.some(c=>c.id===insertionConnectorId)?insertionConnectorId:undefined;if(insertionPaths.length>1&&!path){onNotify('Choose an outcome or fault path first.');return;}onAdd(element.type,selectedId,path);setInsertionConnectorId('');}}><span className="flow-ribbon-element-icon">{element.icon}</span>{element.type}</button>)}</div><small>{group}</small></div>)}</>}
-{ribbonTab==='Manager'&&<><div className="flow-ribbon-group"><div className="flow-ribbon-controls"><button type="button" className={managerSection==='overview'?'flow-ribbon-selected':''} aria-pressed={managerSection==='overview'} onClick={()=>setManagerSection('overview')}><MoreHorizontal/>Overview</button><button type="button" className={managerSection==='new-flow'?'flow-ribbon-selected':''} aria-pressed={managerSection==='new-flow'} onClick={()=>setManagerSection('new-flow')}><Plus/>New Flow</button><button type="button" className={managerSection==='versions'?'flow-ribbon-selected':''} aria-pressed={managerSection==='versions'} onClick={()=>setManagerSection('versions')}><Copy/>Versions</button><button type="button" className={managerSection==='details'?'flow-ribbon-selected':''} aria-pressed={managerSection==='details'} onClick={()=>setManagerSection('details')}><Pencil/>Flow Details</button></div><small>Flows</small></div>
-<div className="flow-ribbon-group"><div className="flow-ribbon-controls"><button type="button" className={managerSection==='resources'?'flow-ribbon-selected':''} aria-pressed={managerSection==='resources'} onClick={()=>setManagerSection('resources')}><Plus/>Resources</button><button type="button" className={managerSection==='events'?'flow-ribbon-selected':''} aria-pressed={managerSection==='events'} onClick={()=>setManagerSection('events')}><Activity/>Platform Events</button></div><small>Data</small></div>
-<div className="flow-ribbon-group"><div className="flow-ribbon-controls"><button type="button" className={managerSection==='credentials'?'flow-ribbon-selected':''} aria-pressed={managerSection==='credentials'} onClick={()=>setManagerSection('credentials')}><Save/>Credentials</button><button type="button" className={managerSection==='alerts'?'flow-ribbon-selected':''} aria-pressed={managerSection==='alerts'} onClick={()=>setManagerSection('alerts')}><Activity/>Email Alerts</button></div><small>Integrations</small></div>
-<div className="flow-ribbon-group"><div className="flow-ribbon-controls"><button type="button" className={managerSection==='tests'?'flow-ribbon-selected':''} aria-pressed={managerSection==='tests'} onClick={()=>setManagerSection('tests')}><Check/>Tests</button><button type="button" className={managerSection==='portability'?'flow-ribbon-selected':''} aria-pressed={managerSection==='portability'} onClick={()=>setManagerSection('portability')}><MoveRight/>Import / Export</button></div><small>Quality & Transfer</small></div><div className="flow-ribbon-group"><div className="flow-ribbon-controls"><button onClick={onOpenFlowList}><ArrowLeft/>All Flows</button><button onClick={()=>{setRibbonTab('Home');setToolboxExpanded(false);}}><X/>Close Manager</button></div><small>Navigation</small></div></>}
-</div></div>
+    <div className="flow-topbar">
+      <button className="icon-button subtle" aria-label="Back to setup" onClick={onExit}><ArrowLeft size={17} /></button>
+      <div className="flow-name"><input aria-label="Flow label" value={flow.label} onChange={(event) => onFlowChange({ ...flow, label: event.target.value })} /><span className="flow-type-pill">{flow.status} · v{flow.versionNumber}</span><span className={`flow-save-state ${isDirty ? 'dirty' : ''}`} role="status">{isDirty ? 'Unsaved changes' : 'Saved'}</span><ChevronDown size={13} /></div>
+      <div className="flow-toolbar-actions">
+        <button className="icon-button subtle" title="Undo" aria-label="Undo" onClick={onUndo} disabled={!canUndo}><Undo2 size={15} /></button>
+        <button className="icon-button subtle" title="Redo" aria-label="Redo" onClick={onRedo} disabled={!canRedo}><Redo2 size={15} /></button>
+        <button className="btn" onClick={onValidate}><Check size={14} />Check</button>
+        <button className="btn" onClick={onSave}><Save size={14} />Save</button>
+        {(['Autolaunched Flow', 'Screen Flow', 'Flow Orchestration', 'Record-Triggered Flow'].includes(flow.flowType)) && <button className="btn" onClick={onDebug} disabled={!canRunFlows} title={!canRunFlows ? 'The Run Flows permission is required.' : 'Debug the most recently saved version with sample inputs.'}>Debug</button>}
+        {(['Autolaunched Flow', 'Screen Flow', 'Flow Orchestration'].includes(flow.flowType)) && <button className="btn" onClick={onRun} disabled={!canRunFlows} title={!canRunFlows ? 'The Run Flows permission is required.' : isDirty ? 'Runs the most recently saved version; unsaved changes are excluded.' : undefined}>Run</button>}
+        <button className="btn btn-brand" onClick={onActivate}><Check size={14} />Activate</button>
+        <button className="icon-button subtle" title="Flow Builder help" onClick={() => onNotify('Configure the Start node, build element paths, check, then save or activate.')}><CircleHelp size={16} /></button>
+      </div>
+    </div>
+    {phoneFlow && <div className="flow-phone-top-actions">
+      <p>Full editor works best on a tablet or larger. Tap a step to inspect its properties.</p>
+      <button type="button" className="btn" aria-expanded={toolboxExpanded} onClick={()=>setToolboxExpanded(current=>!current)}>
+        {toolboxExpanded?'Close elements':'Add step'}
+      </button>
+    </div>}
 <div className={`flow-workarea ${toolboxExpanded ? 'flow-toolbox-expanded' : 'flow-toolbox-collapsed'} ${phoneFlow&&phoneInspectorOpen&&flow.elements.some(element=>element.id===selectedId)?'flow-mobile-inspector-open':''}`}
-      ref={workareaRef} style={{ gridTemplateColumns:phoneFlow?'minmax(0, 1fr)':`minmax(0, 1fr) 8px ${clampPropertiesWidth(propertiesWidth)}px` }}>
-      <aside className="flow-toolbox flow-manager-workspace" data-ribbon-open={ribbonTab==='Manager'?'true':'false'} style={{right:phoneFlow?0:clampPropertiesWidth(propertiesWidth)+8}}>
+      ref={workareaRef} style={{ gridTemplateColumns:phoneFlow?'minmax(0, 1fr)':`240px minmax(0, 1fr) 8px ${clampPropertiesWidth(propertiesWidth)}px` }}>
+      <aside className="flow-toolbox flow-manager-workspace" style={{right:phoneFlow?0:clampPropertiesWidth(propertiesWidth)+8}}>
   <div className="flow-manager-workspace-heading">
     <div><strong>{({overview:'Flow Management',versions:'Version History',portability:'Import & Export',tests:'Flow Tests',details:'Flow Details','new-flow':'Create a Flow',events:'Platform Events',resources:'Resources',credentials:'Named Credentials',alerts:'Email Alerts'} as const)[managerSection]} </strong><small>Manage flow settings without leaving the builder</small></div>
     <button className="btn btn-small" onClick={()=>{setRibbonTab('Home');setToolboxExpanded(false);}}><X size={14}/>Close Manager</button>
@@ -1923,6 +1919,32 @@ export default function FlowBuilder({
   </div>
 </aside>
       <section className="flow-canvas-region">
+        <div className="flow-canvas-top">
+          <div><span className="flow-status-dot" />{freeformLayout ? 'Freeform Layout' : 'Auto-Layout'} · {flow.elements.length} elements · {Math.round(zoom * 100)}%</div>
+          <div className="flow-toolbar-actions">
+            <button type="button" className="btn btn-small" onClick={switchCanvasMode}
+              aria-pressed={freeformLayout}>{freeformLayout ? 'Switch to Auto-Layout' : 'Switch to Freeform'}</button>
+            {freeformLayout && <button type="button" className="btn btn-small" onClick={resetFreeformLayout}>Reset Positions</button>}
+            <button type="button" className="btn btn-small" aria-expanded={showGraphReview}
+              onClick={()=>setShowGraphReview(value=>!value)}>
+              Review graph{graphProblems.length?' ('+graphProblems.length+')':''}
+            </button>
+            {selected?.type!=='Start'&&selected?.type!=='End'&&<button type="button"
+              className="btn btn-small" aria-label="Duplicate selected element" onClick={duplicateSelected}>
+              <Copy size={13}/>Duplicate
+            </button>}
+            {flow.status === 'Draft' && <button type="button" className="btn btn-small" onClick={() => {
+              const repaired = completeFlowEndPaths(flow, `connector-${crypto.randomUUID()}`);
+              if (JSON.stringify(repaired) === JSON.stringify(flow)) {
+                onNotify('All current paths already have an End.');
+              } else {
+                onFlowChange(repaired);
+                onNotify('End paths added to the draft. Review, Check and Save the Flow.');
+              }
+            }}><Check size={13} />Complete End Paths</button>}
+            <button className="btn btn-small" onClick={onValidate}><Activity size={13} />Errors and Warnings</button>
+          </div>
+        </div>
         {showGraphReview&&<div className="flow-graph-review" role="region"
           aria-label="Flow graph review">
           <strong>{graphProblems.length?graphProblems.length+' graph issue(s)':'No disconnected or unfinished paths found'}</strong>
