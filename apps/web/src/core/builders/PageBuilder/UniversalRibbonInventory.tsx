@@ -1,4 +1,5 @@
 import {useState} from 'react';
+import {auditUniversalRibbonCoverage} from './universalRibbonCoverage.mjs';
 import {createPortal} from 'react-dom';
 import type {LibraryComponentMetadata,ObjectMetadata,FlowDefinitionMetadata} from '../../metadata/Definitions/metadata';
 import CustomComponentPropertyEditor from '../ComponentProperties/CustomComponentPropertyEditor';
@@ -65,6 +66,13 @@ for(const [key,definition] of definitionMap){
   slots.get(tab)?.get(section)?.push(definition);
 }
 for(const groups of slots.values())for(const defs of groups.values())defs.sort((a,b)=>a.propertyKey.localeCompare(b.propertyKey));
+export const universalRibbonCoverage=auditUniversalRibbonCoverage(
+  validManifests,
+  Array.from(slots.values()).flatMap(groups=>Array.from(groups.values()).flatMap(defs=>defs.map(def=>def.propertyKey))),
+  [...excluded]
+);
+if(import.meta.env.DEV&&(universalRibbonCoverage.missing.length||universalRibbonCoverage.duplicates.length))
+  throw new Error('UNE ribbon registry coverage failed: '+JSON.stringify(universalRibbonCoverage));
 export const universalRibbonInventoryCount=Array.from(slots.values()).reduce((total,groups)=>total+Array.from(groups.values()).reduce((sum,defs)=>sum+defs.length,0),0);
 export const universalRibbonComponentCount=validManifests.length;
 
