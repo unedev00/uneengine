@@ -2357,7 +2357,9 @@ function PageBuilder({
               </div>;
             })()}
           </div>}
-          {selected && ribbonTab==='Component Data' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
+          {selected && ribbonTab==='Component Data' && (selectedCustomDefinition?.propertyDefinitions?.some(d=>d.kind==='OBJECT'||d.kind==='OBJECT_FIELD'||/(?:filter|sourceObject)/i.test(d.propertyKey))
+            || /^(?:Record Field|Record Detail|Related List|List View|Report Chart|Dashboard|Table)$/.test(selected.type)
+            || 'filters' in selected.properties) && <div className="office-ribbon-group"><div className="office-ribbon-stack">
             <button type="button" onClick={()=>openExpandedEditor('filters')}><Filter size={16}/> Record filters</button>
             <button type="button" onClick={()=>openExpandedEditor('source')}><Database size={16}/> Record scope</button>
           </div><span>Data rules</span></div>}
@@ -2377,7 +2379,7 @@ function PageBuilder({
                 </select>
               </label>)}
             </div><span>Content Source</span></div>}
-          {selected && ribbonTab === 'Component Data' && selectedCustomDefinition && <div className="office-ribbon-group"><div className="office-ribbon-stack">
+          {selected && ribbonTab === 'Component Data' && selectedCustomDefinition?.propertyDefinitions?.some(d=>d.kind==='OBJECT') && <div className="office-ribbon-group"><div className="office-ribbon-stack">
             {(selectedCustomDefinition.propertyDefinitions??[])
               .filter(definition=>definition.kind==='OBJECT').slice(0,2)
               .map(definition=><label className="office-ribbon-inline-field" key={definition.propertyKey}>
