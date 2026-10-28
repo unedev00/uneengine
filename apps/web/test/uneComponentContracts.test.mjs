@@ -71,3 +71,16 @@ for(const d of une)test(d.apiName+' bundles and renders with a scoped UNE surfac
  if(d.apiName==='une_text')assert.match(html,/Hello UNE/);
  if(d.apiName==='une_metric')assert.match(html,/42/);
 });
+
+test('all 14 requested UNE components omit public Flow/Page State record collections',()=>{
+ const targets=['calendar','item_grid','chart','choice','form','line_items','lookup','menu',
+  'navigation','record_list','repeater','search','slot_picker','table'].map(name=>'une_'+name);
+ for(const name of targets){
+  const component=une.find(item=>item.apiName===name);
+  assert.ok(component,name+' exists');
+  assert.ok(!component.propertyDefinitions.some(property=>property.propertyKey==='items'&&property.kind==='RECORD_LIST'),
+   name+' must not expose an items record collection');
+  assert.ok(!component.propertyDefinitions.some(property=>/Flow\\s*\\/\\s*Page State records|Flow\\/Page State record collection/i.test(property.label)),
+   name+' must not expose legacy collection labels');
+ }
+});
