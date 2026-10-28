@@ -1,6 +1,6 @@
 import {useState,type ReactNode} from 'react';
 import {createPortal} from 'react-dom';
-import {SlidersHorizontal,ChevronDown,PaintBucket,Square,Scan,Layers,Blend,Type,Bold,AlignLeft,Palette,CaseSensitive,Image,Ratio,Move,CalendarDays,CalendarRange,Clock,Table2,ChartNoAxesCombined,Grid2X2,Columns3,WrapText,PanelTop,Menu,MousePointer,Settings2} from 'lucide-react';
+import {SlidersHorizontal,PaintBucket,Square,Scan,Layers,Blend,Type,Bold,AlignLeft,Palette,CaseSensitive,Image,Ratio,Move,CalendarDays,CalendarRange,Clock,Table2,ChartNoAxesCombined,Grid2X2,Columns3,WrapText,PanelTop,Menu,MousePointer,Settings2} from 'lucide-react';
 import type {LibraryComponentMetadata} from '../../metadata/Definitions/metadata';
 import PageBuilderRibbonMetadataPager from './PageBuilderRibbonMetadataPager';
 
