@@ -1410,3 +1410,35 @@
  display:block;font:500 8px/10px "Segoe UI",Arial,sans-serif;
  white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:clip;
 }
+
+/* Match compact Office ribbon proportions (mockup ~110px below tabs).
+   Keep the navigation arrows anchored and prevent vertical scrollbars. */
+.office-builder-ribbon #page-builder-tab-content.office-ribbon-content{
+ height:122px!important;min-height:122px!important;max-height:122px!important;
+ box-sizing:border-box!important;padding-top:4px!important;padding-bottom:4px!important;
+ overflow-y:hidden!important;
+}
+.office-builder-ribbon #page-builder-tab-content > .office-ribbon-group{
+ height:112px!important;min-height:112px!important;max-height:112px!important;
+ padding-top:3px!important;padding-bottom:19px!important;box-sizing:border-box!important;
+}
+.office-builder-ribbon #page-builder-tab-content > .office-ribbon-part-group,
+.office-builder-ribbon #page-builder-tab-content > .office-ribbon-part-group > .office-ribbon-part-fieldset{
+ height:111px!important;min-height:0!important;max-height:111px!important;
+}
+.office-builder-ribbon #page-builder-tab-content > .office-ribbon-part-group > .office-ribbon-part-fieldset{
+ height:88px!important;max-height:88px!important;
+}
+.office-builder-ribbon #page-builder-tab-content .office-ribbon-capabilities{
+ height:86px!important;max-height:86px!important;overflow:hidden!important;
+}
+.office-builder-ribbon #page-builder-tab-content > .office-ribbon-add-library,
+.office-builder-ribbon #page-builder-tab-content > .office-ribbon-add-library > .office-ribbon-gallery-pages{
+ height:112px!important;max-height:112px!important;
+}
+.office-builder-ribbon #page-builder-tab-content > .office-ribbon-add-library > .office-ribbon-gallery-pages > .office-ribbon-component-tiles {
+ height:110px!important;max-height:110px!important;
+}
+.office-builder-ribbon #page-builder-tab-content > .office-ribbon-add-library > .office-ribbon-gallery-pages > .office-ribbon-component-tiles > .office-ribbon-component-tile{
+ height:88px!important;min-height:88px!important;max-height:88px!important;
+}
