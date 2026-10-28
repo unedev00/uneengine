@@ -1,7 +1,7 @@
 -- Backfill four independently versioned layouts for existing tenant pages.
 -- Never modify an existing variant, draft, published revision, node or tenant customization.
 -- Run after 20261217-four-page-device-assignments.sql.
-CREATE TEMP TABLE IF NOT EXISTS md_layout_backfill_targets ON COMMIT DROP AS
+CREATE TEMP TABLE IF NOT EXISTS md_layout_backfill_targets AS
  SELECT d.tenant_id,d.page_id,v.variant
  FROM md_lightning_page_details d
  CROSS JOIN (VALUES ('Desktop'),('Mobile'),('Tablet'),('Custom')) v(variant)
@@ -48,3 +48,5 @@ SELECT t.tenant_id,t.page_id,t.variant,1,CASE WHEN d.status='Active' THEN 1 ELSE
 FROM md_layout_backfill_targets t
 JOIN md_lightning_page_details d ON d.tenant_id=t.tenant_id AND d.page_id=t.page_id
 ON CONFLICT DO NOTHING;
+
+DROP TABLE IF EXISTS pg_temp.md_layout_backfill_targets;
