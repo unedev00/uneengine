@@ -418,3 +418,41 @@
 .office-builder-ribbon #page-builder-tab-content>.office-ribbon-part-group{
  height:103px!important;max-height:103px!important;
 }
+
+/* Match the reference Layout order without duplicating free-canvas fields:
+   Size | Position | Spacing | Arrange | Component. The existing independent
+   align/distribute commands remain in a compact adjacent Arrange group. */
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Layout"]>.office-ribbon-part-group[data-ribbon-group="Size"],
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Layout"]>.office-ribbon-layout-size-physical{
+ order:0!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Layout"]>.office-ribbon-part-group[data-ribbon-group="Position"],
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Layout"]>.office-ribbon-layout-position-physical{
+ order:1!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Layout"]>.office-ribbon-part-group[data-ribbon-group="Spacing"]{
+ order:2!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Layout"]>.office-ribbon-layout-arrange{
+ order:3!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Layout"]>.office-ribbon-layout-align{
+ order:4!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Layout"]>.office-ribbon-part-group[data-ribbon-group="Component"]{
+ order:5!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Layout"]>.office-ribbon-layout-size-physical,
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Layout"]>.office-ribbon-layout-position-physical{
+ flex:0 0 185px!important;width:185px!important;min-width:185px!important;
+ max-width:185px!important;height:103px!important;padding:4px 8px 18px!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Layout"]>.office-ribbon-layout-size-physical .office-ribbon-inline-field,
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Layout"]>.office-ribbon-layout-position-physical .office-ribbon-inline-field{
+ display:grid!important;grid-template-columns:60px 95px!important;align-items:center!important;
+ gap:5px!important;min-height:22px!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Layout"]>.office-ribbon-layout-size-physical input,
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Layout"]>.office-ribbon-layout-position-physical input{
+ height:21px!important;max-width:95px!important;font-size:10px!important;
+}
