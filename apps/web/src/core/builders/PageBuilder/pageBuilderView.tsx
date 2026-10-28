@@ -263,6 +263,7 @@ import {
   type WorkspaceId
 } from '../../metadata/Definitions/metadata';
 import SavedListViewPicker from './SavedListViewPicker';
+import {uneRibbonIcon} from './uneRibbonIcon';
 import RibbonImageContent from './RibbonImageContent';
 export function createPageBuilder(MetadataComponentProperties: React.ComponentType<any>, MetadataBoundPageComponent: React.ComponentType<any>) {
 function PageBuilder({
@@ -732,6 +733,8 @@ function PageBuilder({
       components:components.slice(index*4,index*4+4)
     })));
   const renderPaletteIcon = (component: { type: string; label: string }) => {
+    const svgIcon=uneRibbonIcon(component.type,null);
+    if(svgIcon)return svgIcon;
     const name = `${component.label} ${component.type}`.toLowerCase();
     if (/\b(text|heading|paragraph|rich text|label)\b/.test(name)) return <Type size={15} />;
     if (/\b(image|photo|picture|avatar|logo)\b/.test(name)) return <ImageIcon size={15} />;
