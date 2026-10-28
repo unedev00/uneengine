@@ -36,11 +36,17 @@ export function behaviorTabs(properties:Readonly<Record<string,unknown>>,
 export type BehaviorActionState='enabled'|'disabled'|'hidden';
 export function behaviorAction(properties:Readonly<Record<string,unknown>>,
   actionId:string,context:BehaviorContext):BehaviorActionState{
-  const rule=asRows(pageBehaviors(properties)?.actionVisibility)
-    .find(row=>row.actionId===actionId);
-  if(!rule)return 'enabled';
-  if(behaviorMatches(rule.when,context))return 'enabled';
-  return rule.unavailable==='Hide'?'hidden':'disabled';
+  const rules=asRows(pageBehaviors(properties)?.actionVisibility)
+    .filter(row=>row.actionId===actionId);
+  // Multiple conditions on one action are conjunctive at the row level.
+  // A hidden action may never be re-enabled by a later matching row.
+  let state:BehaviorActionState='enabled';
+  for(const rule of rules){
+    if(behaviorMatches(rule.when,context))continue;
+    if(rule.unavailable==='Hide')return 'hidden';
+    state='disabled';
+  }
+  return state;
 }
 /** Declarative client-side validation before an event runs. Server APIs retain their own RBAC and validation. */
 export function behaviorValidation(properties:Readonly<Record<string,unknown>>,
@@ -100,12 +106,19 @@ export function behaviorField(properties:Readonly<Record<string,unknown>>,
   if(!rules.length)return null;
   let required=false,readOnly=false;
   for(const rule of rules){
+    // Conditions must be evaluated per rule, not allow a single unrelated rule
+    // to suppress every matching rule for the same field.
     if(rule.visibilityRules!==undefined&&!behaviorMatches(rule.visibilityRules,context))
-      return {visible:false,required:false,readOnly:false};
+      continue;
     if(rule.behavior==='Required')required=true;
     else if(rule.behavior==='ReadOnly')readOnly=true;
+    else if(rule.behavior!=='Editable')continue;
   }
-  return {visible:true,required:required&&!readOnly,readOnly};
+  // A field with exclusively conditional rules stays hidden until at least one
+  // condition is met; unconditional rows keep the field visible.
+  const visible=rules.some(rule=>rule.visibilityRules===undefined
+    ||behaviorMatches(rule.visibilityRules,context));
+  return {visible,required:visible&&required&&!readOnly,readOnly:visible&&readOnly};
 }
 export type BehaviorInteraction={targetComponentId:string;targetProperty:string;value:string|number|boolean|null};
 /** Resolve only primitive values and declared bindable target properties. */

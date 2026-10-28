@@ -36,7 +36,8 @@ export function recordEditPageLayout(
   for (const component of page.components) {
     // Apply the same component-level visibility contract as the record renderer.
     // A page-level field/section condition must not be ignored by the edit form.
-    if (!isComponentVisible(component,context,Boolean(context.fields?.length))) continue;
+    if (!isComponentVisible(component,context,
+      Boolean(context.fields||context.record||context.recordPermissions||context.profileId))) continue;
     if (component.type === 'Record Detail') {
       // Keep the standard Object Page Layout as fallback, but never let a
       // starter Record Detail block override subsequently authored dynamic fields.

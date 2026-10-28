@@ -2294,11 +2294,22 @@ export function createSystemServer(db:SqlPersistence) {
     const actorSession=await sessionMetadata(db,actor.tenant_id,actor.user_id);
     const device=String(req.query.formFactor??'Desktop');
     const viewportWidth=Number(req.query.viewportWidth??0);
+    const requestedType=typeof req.query.editRecordTypeId==='string'
+      ?req.query.editRecordTypeId.trim():'';
+    if(requestedType){
+      const accessKey=req.params.objectApi+'.'+requestedType;
+      const access=actorSession.user.recordTypeAccess;
+      if(Object.prototype.hasOwnProperty.call(access,accessKey)&&access[accessKey]!==true)
+        throw new Error('Record type is not available for this user');
+    }
     const context=[actor.tenant_id,req.params.objectApi,
       String(req.query.appId??'Records'),actorSession.user.profileId,String(record.RecordTypeId??''),device] as const;
+    const editContext=[actor.tenant_id,req.params.objectApi,
+      String(req.query.appId??'Records'),actorSession.user.profileId,
+      requestedType||String(record.RecordTypeId??''),device] as const;
     const [page,editPage]=await Promise.all([
       pages.resolveRecordPage(...context,'View',viewportWidth),
-      pages.resolveRecordPage(...context,'Edit',viewportWidth)
+      pages.resolveRecordPage(...editContext,'Edit',viewportWidth)
     ]);
     res.setHeader('Cache-Control','private, no-store');
     const [canCreate,canEdit,canDelete]=await Promise.all([

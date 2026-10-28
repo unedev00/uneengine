@@ -137,3 +137,18 @@ test('nested device and version restrictions apply to defaults and validation to
  assert.deepEqual(values,{group:{legacy:'Keep'}});
  assert.deepEqual(validateComponentSettings(active,values),[]);
 });
+
+test('P1 field and action rules survive metadata encoding, validation and decoding',()=>{
+ const properties={pagePropertyContract:{version:1,
+  fieldRules:[{fieldApiName:'Name',behavior:'Required',visibilityRules:{logic:'Any',
+   conditions:[{source:'Record Permission',operator:'Equals',value:'Edit'},
+    {source:'Device',operator:'Equals',value:'Phone'}]}}],
+  actionVisibility:[{actionId:'Edit',unavailable:'Disable',when:{logic:'All',
+   conditions:[{source:'Record Permission',operator:'Equals',value:'Edit'}]}}]}};
+ assert.deepEqual(pagePropertyIssues('Record Field',properties),[]);
+ const rows:Array<{path:string;kind:string;text:string|null}>=[];
+ encodeMetadataValue(properties,'/properties',rows);
+ assert.deepEqual(decodeMetadataValues(rows.map(row=>({
+  property_path:row.path,value_kind:row.kind,value_text:row.text
+ }))),{properties});
+});

@@ -156,3 +156,37 @@ test('record-permission action conditions evaluate with no readable record field
  assert.equal(behaviorAction(data,'Edit',{formFactor:'Desktop',
   recordPermissions:new Set<'Create'|'Edit'|'Delete'>()}),'hidden');
 });
+
+test('P1 multiple field behavior rules resolve independently as values change',()=>{
+ const rules={pagePropertyContract:{version:1,fieldRules:[
+  {fieldApiName:'Name',behavior:'Required',visibilityRules:{logic:'All',conditions:[
+   {source:'Record Field',fieldApiName:'Status',operator:'Equals',value:'Active'}]}},
+  {fieldApiName:'Name',behavior:'ReadOnly',visibilityRules:{logic:'All',conditions:[
+   {source:'Record Field',fieldApiName:'Status',operator:'Equals',value:'Locked'}]}}
+ ]}};
+ const base={formFactor:'Desktop' as const,fields:[{apiName:'Status',label:'Status',dataType:'Text(40)'}],
+  readableFieldApiNames:new Set(['Status'])};
+ assert.deepEqual(behaviorField(rules,'Name',{...base,record:{Status:'Active'}}),
+  {visible:true,required:true,readOnly:false});
+ assert.deepEqual(behaviorField(rules,'Name',{...base,record:{Status:'Locked'}}),
+  {visible:true,required:false,readOnly:true});
+ assert.deepEqual(behaviorField(rules,'Name',{...base,record:{Status:'Other'}}),
+  {visible:false,required:false,readOnly:false});
+});
+
+test('P1 duplicate action rules combine with hide precedence and recalculate',()=>{
+ const p={pagePropertyContract:{version:1,actionVisibility:[
+  {actionId:'Edit',unavailable:'Disable',when:{logic:'All',conditions:[
+   {source:'Record Field',fieldApiName:'Status',operator:'Equals',value:'Active'}]}},
+  {actionId:'Edit',unavailable:'Hide',when:{logic:'All',conditions:[
+   {source:'Record Permission',operator:'Equals',value:'Edit'}]}}
+ ]}};
+ const c={formFactor:'Desktop' as const,record:{Status:'Inactive'},
+  fields:[{apiName:'Status',label:'Status',dataType:'Text(40)'}],
+  readableFieldApiNames:new Set(['Status']),
+  recordPermissions:new Set<'Create'|'Edit'|'Delete'>()};
+ assert.equal(behaviorAction(p,'Edit',c),'hidden');
+ assert.equal(behaviorAction(p,'Edit',{...c,recordPermissions:new Set<'Create'|'Edit'|'Delete'>(['Edit'])}),'disabled');
+ assert.equal(behaviorAction(p,'Edit',{...c,record:{Status:'Active'},
+  recordPermissions:new Set<'Create'|'Edit'|'Delete'>(['Edit'])}),'enabled');
+});
