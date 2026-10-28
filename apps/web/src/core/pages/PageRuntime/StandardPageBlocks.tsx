@@ -158,8 +158,8 @@ export function StandardRecordPath({
         {index+1}. {step}{step===current?' ✓':''}
       </button></li>)}
     </ol>
-    {guidanceByStage?.[chosen]&&<p className="records-message">{guidanceByStage[chosen]}</p>}
-    {keyFieldsByStage?.[chosen]?.length&&record&&<dl className="record-fields-grid">
+    {typeof guidanceByStage?.[chosen]==='string'&&Boolean(guidanceByStage[chosen])&&<p className="records-message">{guidanceByStage[chosen]}</p>}
+    {Array.isArray(keyFieldsByStage?.[chosen])&&Boolean(keyFieldsByStage[chosen].length)&&record&&<dl className="record-fields-grid">
       {keyFieldsByStage[chosen].filter(name=>readableFields?.some(field=>field.apiName===name))
         .map(name=><div key={name}><dt>{readableFields?.find(field=>field.apiName===name)?.label??name}</dt>
           <dd>{formatRecordValue(record[name])}</dd></div>)}
