@@ -173,6 +173,8 @@ export default function FlowBuilder({
   const flowTypeOptions = flowCreateOptions(capabilityCatalog);
   const flowElementMetadata = capabilityCatalog?.elements.filter(element => element.builderEnabled) ?? [];
   const [toolboxExpanded, setToolboxExpanded] = useState(false);
+  const [toolTab, setToolTab] = useState<'Elements' | 'Manager'>('Elements');
+  const [elementSearch, setElementSearch] = useState('');
   const [insertionConnectorId, setInsertionConnectorId] = useState('');
   const [newFlowLabel, setNewFlowLabel] = useState('');
   const [newFlowType, setNewFlowType] = useState<FlowDefinitionMetadata['flowType'] | null>(null);
@@ -1738,7 +1740,7 @@ export default function FlowBuilder({
   </div>;
   return <div className={phoneFlow?'flow-builder flow-mobile-builder':'flow-builder'}>
     <div className="flow-topbar">
-      <button className="icon-button subtle" aria-label="Back to setup" onClick={onExit}><ArrowLeft size={17} /></button>
+      <button className="icon-button subtle" aria-label="Back to setup" onClick={onOpenFlowList}><ArrowLeft size={17} /></button>
       <div className="flow-name"><input aria-label="Flow label" value={flow.label} onChange={(event) => onFlowChange({ ...flow, label: event.target.value })} /><span className="flow-type-pill">{flow.status} · v{flow.versionNumber}</span><span className={`flow-save-state ${isDirty ? 'dirty' : ''}`} role="status">{isDirty ? 'Unsaved changes' : 'Saved'}</span><ChevronDown size={13} /></div>
       <div className="flow-toolbar-actions">
         <button className="icon-button subtle" title="Undo" aria-label="Undo" onClick={onUndo} disabled={!canUndo}><Undo2 size={15} /></button>
@@ -1761,7 +1763,7 @@ export default function FlowBuilder({
       ref={workareaRef} style={{ gridTemplateColumns:phoneFlow?'minmax(0, 1fr)':`240px minmax(0, 1fr) 8px ${clampPropertiesWidth(propertiesWidth)}px` }}>
       <aside className="flow-toolbox">
         <div className="toolbox-heading"><h2>Toolbox</h2><button className="icon-button subtle" aria-label={toolboxExpanded ? 'Collapse toolbox' : 'Expand toolbox'} aria-expanded={toolboxExpanded} title={toolboxExpanded ? 'Collapse toolbox' : 'Expand toolbox'} onClick={() => setToolboxExpanded((expanded) => !expanded)}><MoreHorizontal size={16} /></button></div>
-        <div className="toolbox-tabs"><button className={toolTab === 'Elements' ? 'active' : ''} onClick={() => onToolTab('Elements')}>Elements</button><button className={toolTab === 'Manager' ? 'active' : ''} onClick={() => onToolTab('Manager')}>Manager</button></div>
+        <div className="toolbox-tabs"><button className={toolTab === 'Elements' ? 'active' : ''} onClick={() => { setToolTab('Elements'); onToolTab('Elements'); }}>Elements</button><button className={toolTab === 'Manager' ? 'active' : ''} onClick={() => { setToolTab('Manager'); onToolTab('Manager'); }}>Manager</button></div>
         {toolTab === 'Elements' ? <>
           {capabilityError && <div className="info-callout" role="alert">{capabilityError}</div>}
            <div className="component-search"><Search size={14} /><input placeholder="Search elements..." aria-label="Search flow elements" value={elementSearch} onChange={(event) => setElementSearch(event.target.value)} /></div>
