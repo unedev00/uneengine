@@ -21,3 +21,15 @@ test('PB23 related record filter and sorting persist through saved view queries'
  assert.equal(params.get('sortField'),'Name');
  assert.equal(params.get('sortDirection'),'desc');
 });
+
+test('PB10 independent related list applies both relationship and server-side filter',()=>{
+ const params=new URLSearchParams(standardListQuery({limit:10,offset:20,search:'',
+  sort:'Name',direction:'desc',recordFilter:{field:'AccountId',recordId:'parent'},
+  extraFilter:{field:'Status',value:'Open',operator:'Equals'}}));
+ assert.equal(params.get('relatedField'),'AccountId');
+ assert.equal(params.get('relatedId'),'parent');
+ assert.equal(params.get('filterField'),'Status');
+ assert.equal(params.get('filterValue'),'Open');
+ assert.equal(params.get('filterOperator'),'Equals');
+ assert.equal(params.get('offset'),'20');
+});
