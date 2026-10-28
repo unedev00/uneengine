@@ -1160,3 +1160,16 @@
   flex:0 0 auto!important;min-width:0!important;max-width:270px!important;
   height:133px!important;overflow:visible!important;
 }
+
+/* Unified ribbon groups: fixed slots, muted unsupported capabilities. */
+.office-builder-ribbon .office-ribbon-part-group{width:225px!important;min-width:225px!important;max-width:225px!important}
+.office-builder-ribbon .office-ribbon-part-fieldset{border:0;margin:0;padding:0;min-width:0;height:100px;overflow:hidden}
+.office-builder-ribbon .office-ribbon-disabled-group{display:flex;height:80px;align-items:center;justify-content:center;font-size:11px;color:#9aa4b2}
+.office-builder-ribbon .office-ribbon-part-group .office-ribbon-metadata-pager{height:100px!important;min-height:100px!important;max-width:213px!important;border-right:0}
+.office-builder-ribbon .office-ribbon-part-group .metadata-component-presentation{height:100px!important}
+.office-builder-ribbon .office-ribbon-add-browser{display:none!important}
+.office-builder-ribbon .office-ribbon-gallery-pages .office-ribbon-component-tiles{grid-template-columns:repeat(12,minmax(0,1fr))!important;grid-template-rows:repeat(2,62px)!important}
+.office-builder-ribbon .office-ribbon-gallery-pages .office-ribbon-component-tile{flex-direction:column!important;text-align:center;justify-content:center!important;height:61px!important}
+.office-builder-ribbon .office-ribbon-gallery-pages .office-ribbon-component-tile span{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:12px}
+.office-builder-ribbon .office-ribbon-logic-actions{display:flex;align-items:center;gap:3px}
+.office-builder-ribbon .office-ribbon-logic-actions>button{min-height:26px;height:26px;padding:2px 5px;font-size:10px}
