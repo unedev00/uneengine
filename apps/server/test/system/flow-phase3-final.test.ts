@@ -4,6 +4,7 @@ import {prepareFlowHttpRequest,mapFlowHttpResponse,parseFlowHttpMapping,publicHt
  '../../src/system-files/flow-http-mapping.js';
 import {resolveFlowIntegrationCallout} from '../../src/system-files/flow-integration-connection.js';
 import {evaluateFlowFormula,validateFlowFormula} from '../../src/system-files/flow-formula-runtime.js';
+import {supportedFunctions} from '../../src/expression-engine/FormulaFunctionRegistry.js';
 import type {SqlExecutor} from '../../src/system-files/sql-persistence.js';
 import type {RbacEngine} from '../../src/system-files/rbac-engine.js';
 
@@ -126,6 +127,18 @@ test('VLOOKUP supports bounded typed read-only record collection values',()=>{
   name=>name==='Products'?rows:null),null);
  assert.throws(()=>evaluateFlowFormula(lookup,()=>Array(201).fill({SKU:'B',Price:4})),
   /bounded record collection/);
+});
+
+test('Flow Builder formula insert catalog matches the supported runtime functions',async()=>{
+ const {readFileSync}=await import('node:fs');
+ const source=readFileSync(new URL(
+  '../../../web/src/core/builders/FlowBuilder/flowEditorCatalog.ts',import.meta.url),'utf8');
+ const catalog=source.match(/export const formulaFunctions = \[([\s\S]*?)\];/);
+ assert.ok(catalog,'Flow Builder formula function catalog is present');
+ const editorFunctions=new Set([...catalog[1].matchAll(/'([A-Z][A-Z0-9]*)'/g)]
+  .map(match=>match[1]));
+ assert.deepEqual([...supportedFunctions].filter(name=>!editorFunctions.has(name)),[]);
+ assert.deepEqual([...editorFunctions].filter(name=>!supportedFunctions.has(name)),[]);
 });
 
 test('Provider message Actions are exposed only through the browser metadata editor',async()=>{
