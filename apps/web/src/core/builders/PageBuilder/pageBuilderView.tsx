@@ -2300,6 +2300,38 @@ function PageBuilder({
   };
   return (
     <div className={`builder-page ${editorMode ? "builder-editor-mode" : "builder-list-mode"} ${isPhoneBuilder ? 'builder-phone-read-mode' : ''}`}>
+      {editorMode&&selected?.type==='Highlights Panel'&&(()=>{
+        const source=objects.find(item=>item.apiName===page.targetObject);
+        const fields=source?.fields??[];
+        const configured=(key:'primaryFieldApiNames'|'secondaryFieldApiNames')=>
+          Array.isArray(selected.properties[key])
+            ?(selected.properties[key] as unknown[]).filter((name):name is string=>typeof name==='string'):[];
+        return <section className="builder-highlights-settings" aria-label="Highlights Panel configuration">
+          {(['primaryFieldApiNames','secondaryFieldApiNames'] as const).map(key=>{
+            const names=configured(key);
+            return <div key={key}>
+              <label className="form-label">{key==='primaryFieldApiNames'?'Primary fields':'Secondary fields'}
+                <select className="form-control" multiple value={names}
+                  onChange={event=>updateComponent(selected.id,{properties:{...selected.properties,
+                    [key]:Array.from(event.target.selectedOptions,option=>option.value)}})}>
+                  {fields.map(field=><option key={field.apiName} value={field.apiName}>{field.label}</option>)}
+                </select>
+              </label>
+              {names.map((name,index)=><div key={name}>
+                <span>{fields.find(field=>field.apiName===name)?.label??name}</span>
+                <button type="button" disabled={index===0}
+                  aria-label={'Move '+name+' up'}
+                  onClick={()=>{const updated=[...names];[updated[index-1],updated[index]]=[updated[index],updated[index-1]];
+                    updateComponent(selected.id,{properties:{...selected.properties,[key]:updated}});}}>Up</button>
+                <button type="button" disabled={index===names.length-1}
+                  aria-label={'Move '+name+' down'}
+                  onClick={()=>{const updated=[...names];[updated[index+1],updated[index]]=[updated[index],updated[index+1]];
+                    updateComponent(selected.id,{properties:{...selected.properties,[key]:updated}});}}>Down</button>
+              </div>)}
+            </div>;
+          })}
+        </section>;
+      })()}
       {editorMode&&selected?.type==='Path'&&(()=>{
         const source=objects.find(item=>item.apiName===page.targetObject);
         const stage=String(selected.properties.stageFieldApiName??'');
