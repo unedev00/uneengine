@@ -1,0 +1,458 @@
+/* Shared Page Builder ribbon blueprint.  Current JSX is the source of truth.
+   This is deliberately imported AFTER the legacy editor styles. */
+
+/* Consistent, compact ribbon height and horizontal group navigation. */
+.office-builder-ribbon #page-builder-tab-content.office-ribbon-content {
+  display:flex!important;flex-flow:row nowrap!important;align-items:stretch!important;
+  box-sizing:border-box!important;gap:0!important;
+  height:122px!important;min-height:122px!important;max-height:122px!important;
+  padding:4px 26px!important;overflow-x:auto!important;overflow-y:hidden!important;
+  scrollbar-width:none!important;
+}
+.office-builder-ribbon #page-builder-tab-content::-webkit-scrollbar{display:none!important}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-group{
+  flex-shrink:0!important;height:112px!important;min-height:112px!important;
+  max-height:112px!important;box-sizing:border-box!important;
+  padding:3px 7px 19px!important;overflow:hidden!important;
+}
+/* Insert: seventeen real registered components, one icon/caption row.
+   Paging is owned by the existing React buttons; no nested scrollbars. */
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-add-library{
+  display:block!important;flex:1 1 auto!important;width:100%!important;
+  min-width:0!important;max-width:100%!important;height:112px!important;
+  margin:0!important;padding:0!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-add-library>.office-ribbon-gallery-pages{
+  display:flex!important;flex-flow:row nowrap!important;align-items:center!important;
+  gap:6px!important;width:100%!important;height:112px!important;min-width:0!important;
+  overflow:hidden!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-add-library>.office-ribbon-gallery-pages>.office-ribbon-icon-button{
+  flex:0 0 26px!important;width:26px!important;min-width:26px!important;height:34px!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-add-library>.office-ribbon-gallery-pages>.office-ribbon-component-tiles{
+  display:flex!important;flex:1 1 auto!important;flex-flow:row nowrap!important;
+  align-items:center!important;justify-content:space-between!important;gap:0!important;
+  width:100%!important;min-width:0!important;height:110px!important;max-height:110px!important;
+  overflow:hidden!important;margin:0!important;padding:0!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-add-library>.office-ribbon-gallery-pages>.office-ribbon-component-tiles>.office-ribbon-component-tile{
+  display:flex!important;flex:1 1 0!important;flex-direction:column!important;
+  align-items:center!important;justify-content:center!important;gap:9px!important;
+  width:auto!important;min-width:50px!important;max-width:110px!important;
+  height:88px!important;min-height:88px!important;max-height:88px!important;
+  margin:0!important;padding:5px 3px!important;border:0!important;
+  border-right:1px solid #dbe2ed!important;border-radius:0!important;
+  background:transparent!important;text-align:center!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-add-library>.office-ribbon-gallery-pages>.office-ribbon-component-tiles>.office-ribbon-component-tile:hover{
+  background:#e7f1ff!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-add-library>.office-ribbon-gallery-pages>.office-ribbon-component-tiles>.office-ribbon-component-tile>svg{
+  flex:0 0 21px!important;width:21px!important;height:21px!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-add-library>.office-ribbon-gallery-pages>.office-ribbon-component-tiles>.office-ribbon-component-tile>span{
+  display:block!important;width:100%!important;min-width:0!important;
+  overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;
+  font:500 10px/13px "Segoe UI",Arial,sans-serif!important;text-align:center!important;
+  color:#163553!important;
+}
+/* Content: use the actual metadata presentation groups horizontally, not the
+   obsolete 270px inspector-width rule. */
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Content"]>.office-ribbon-inline-options{
+  display:flex!important;flex:0 0 auto!important;flex-flow:row nowrap!important;
+  width:max-content!important;max-width:none!important;min-width:0!important;
+  height:112px!important;max-height:112px!important;overflow:hidden!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Content"]>.office-ribbon-inline-options>.metadata-component-presentation{
+  display:flex!important;flex-flow:row nowrap!important;align-items:stretch!important;
+  width:max-content!important;max-width:none!important;min-width:0!important;
+  height:112px!important;max-height:112px!important;overflow:hidden!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Content"] .office-ribbon-presentation-group{
+  flex:0 0 205px!important;width:205px!important;min-width:205px!important;
+  max-width:205px!important;height:111px!important;max-height:111px!important;
+  padding:3px 6px 15px!important;box-sizing:border-box!important;overflow:hidden!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Content"] .office-ribbon-presentation-group :is(input,select,textarea){
+  min-width:0!important;max-width:100%!important;box-sizing:border-box!important;
+}
+/* Design and Layout: stable positions, icon-first compact groups. Unavailable
+   commands remain visible and genuinely disabled, based on registry metadata. */
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-part-group{
+  flex:0 0 118px!important;width:118px!important;min-width:118px!important;
+  max-width:118px!important;height:112px!important;padding:3px 5px 19px!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-part-group>.office-ribbon-part-fieldset{
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  width:100%!important;height:88px!important;min-height:0!important;
+  max-height:88px!important;padding:0!important;margin:0!important;
+  overflow:hidden!important;border:0!important;
+}
+.office-builder-ribbon #page-builder-tab-content .office-ribbon-capabilities{
+  display:grid!important;grid-template-columns:repeat(4,26px)!important;
+  grid-auto-rows:43px!important;justify-content:center!important;align-content:center!important;
+  gap:1px 2px!important;width:100%!important;height:86px!important;max-height:86px!important;
+  overflow:hidden!important;
+}
+.office-builder-ribbon #page-builder-tab-content .office-ribbon-capability-icon{
+  display:flex!important;flex-direction:column!important;align-items:center!important;
+  justify-content:center!important;gap:3px!important;flex:none!important;
+  width:26px!important;min-width:26px!important;height:43px!important;
+  padding:2px!important;box-sizing:border-box!important;border:1px solid transparent!important;
+  border-radius:3px!important;background:transparent!important;color:#173c68!important;
+}
+.office-builder-ribbon #page-builder-tab-content .office-ribbon-capability-icon:hover:not(:disabled){
+  background:#e7f1ff!important;border-color:#9fbfe8!important;
+}
+.office-builder-ribbon #page-builder-tab-content .office-ribbon-capability-icon:disabled{
+  color:#a6afbb!important;opacity:.45!important;cursor:not-allowed!important;
+}
+.office-builder-ribbon #page-builder-tab-content .office-ribbon-command-glyph{
+  display:flex!important;justify-content:center!important;align-items:center!important;height:17px!important;
+}
+.office-builder-ribbon #page-builder-tab-content .office-ribbon-command-label{
+  display:block!important;max-width:100%!important;overflow:hidden!important;
+  font:500 8px/10px "Segoe UI",Arial,sans-serif!important;white-space:nowrap!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-part-group>span{
+  display:block!important;font:500 10px/13px "Segoe UI",Arial,sans-serif!important;
+  text-align:center!important;white-space:nowrap!important;
+}
+/* Property dialogs reuse the existing metadata editor rather than a replacement
+   storage model.  Keep these dialogs independent of the clipped ribbon strip. */
+.office-ribbon-capability-backdrop{
+  position:fixed;inset:0;z-index:1600;display:flex;
+  justify-content:center;align-items:flex-start;
+  padding:10vh 12px 12px;box-sizing:border-box;background:#122b4266;
+}
+.office-ribbon-capability-dialog{
+  display:flex;flex-direction:column;gap:12px;box-sizing:border-box;
+  width:min(500px,100%);max-height:80vh;overflow:auto;
+  background:#fff;border:1px solid #b6cbe5;border-radius:7px;
+  padding:15px;box-shadow:0 12px 42px #0e284a55;
+}
+.office-ribbon-capability-dialog>header{
+  display:flex;justify-content:space-between;align-items:center;
+}
+@media(max-width:1050px){
+ .office-builder-ribbon #page-builder-tab-content>.office-ribbon-add-library>.office-ribbon-gallery-pages>.office-ribbon-component-tiles>.office-ribbon-component-tile{
+   min-width:55px!important;
+ }
+}
+
+/* Match group-specific spacing in the reference, so five commands remain
+   on one row instead of spilling into a second row. */
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-part-group:is([data-ribbon-group="Card"],[data-ribbon-group="Image"],[data-ribbon-group="Calendar"]){
+ flex:0 0 161px!important;width:161px!important;min-width:161px!important;max-width:161px!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-part-group:is([data-ribbon-group="Heading"],[data-ribbon-group="Supporting text"]){
+ flex:0 0 150px!important;width:150px!important;min-width:150px!important;max-width:150px!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-part-group:is([data-ribbon-group="Card"],[data-ribbon-group="Image"],[data-ribbon-group="Calendar"]) .office-ribbon-capabilities,
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-part-group:is([data-ribbon-group="Heading"],[data-ribbon-group="Supporting text"]) .office-ribbon-capabilities{
+ display:flex!important;flex-flow:row nowrap!important;justify-content:space-evenly!important;
+ align-items:center!important;gap:1px!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-part-group:is([data-ribbon-group="Card"],[data-ribbon-group="Image"],[data-ribbon-group="Calendar"]) .office-ribbon-capability-icon,
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-part-group:is([data-ribbon-group="Heading"],[data-ribbon-group="Supporting text"]) .office-ribbon-capability-icon{
+ width:29px!important;min-width:29px!important;height:57px!important;
+}
+
+/* The capability editor lives in a portal: reset fixed-ribbon pager constraints
+   so users can actually edit every permitted metadata property. */
+.office-ribbon-capability-dialog .office-ribbon-metadata-pager{
+ display:flex!important;flex-flow:row nowrap!important;align-items:flex-start!important;
+ width:100%!important;max-width:none!important;height:auto!important;
+ min-height:90px!important;max-height:none!important;overflow:visible!important;gap:8px!important;
+}
+.office-ribbon-capability-dialog .metadata-component-presentation{
+ display:flex!important;flex:1 1 auto!important;flex-flow:column nowrap!important;
+ gap:10px!important;width:auto!important;max-width:none!important;
+ height:auto!important;max-height:none!important;overflow:visible!important;
+}
+.office-ribbon-capability-dialog .office-ribbon-presentation-group{
+ display:flex!important;flex-flow:column nowrap!important;gap:8px!important;
+ width:100%!important;max-width:none!important;min-height:0!important;
+ height:auto!important;max-height:none!important;overflow:visible!important;
+ padding:4px 0!important;
+}
+.office-ribbon-capability-dialog .form-label{
+ display:flex!important;align-items:center!important;justify-content:space-between!important;
+ gap:12px!important;width:100%!important;max-width:100%!important;
+}
+.office-ribbon-capability-dialog .form-label :is(input,select,textarea){
+ flex:0 1 230px!important;width:230px!important;min-width:0!important;
+ max-width:230px!important;box-sizing:border-box!important;
+}
+
+/* The blueprint contains only the selected component's Design groups; all
+   less-common style operations remain in a separate, accessible dialog. */
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-advanced-style-trigger{
+ flex:0 0 100px!important;width:100px!important;min-width:100px!important;
+ max-width:100px!important;display:flex!important;align-items:center!important;
+ justify-content:center!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-advanced-style-trigger button{
+ display:flex;flex-flow:column nowrap;align-items:center;justify-content:center;
+ gap:5px!important;width:80px!important;min-height:60px!important;
+ border:0!important;background:transparent!important;color:#173c68!important;
+ font:500 10px/13px "Segoe UI",Arial,sans-serif!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-advanced-style-trigger button:hover{
+ background:#e7f1ff!important;
+}
+.office-ribbon-advanced-style-dialog{
+ box-sizing:border-box;width:min(820px,100%);max-height:80vh;overflow-y:auto;
+ border:1px solid #b6cbe5;border-radius:7px;background:#fff;
+ padding:18px;box-shadow:0 12px 42px #0e284a55;
+}
+.office-ribbon-advanced-style-dialog>header{
+ display:flex;align-items:center;justify-content:space-between;margin-bottom:15px;
+}
+.office-ribbon-advanced-style-content{
+ display:flex!important;flex-flow:row wrap!important;gap:8px!important;align-items:flex-start!important;
+ max-width:100%!important;overflow-x:auto!important;padding-bottom:14px;
+}
+.office-ribbon-advanced-style-content>.office-ribbon-group{
+ flex:0 0 205px!important;min-width:180px!important;max-width:245px!important;
+ height:auto!important;min-height:100px!important;max-height:none!important;
+ overflow:visible!important;padding:8px!important;border:1px solid #dbe2ed!important;
+}
+
+/* Three Responsive groups from the reference: visible device toggles, override
+   status, and permission-aware rule editor. */
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-responsive-visibility,
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-responsive-overrides {
+ flex:0 0 290px!important;width:290px!important;min-width:290px!important;max-width:290px!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-responsive-rules {
+ flex:0 0 230px!important;width:230px!important;min-width:230px!important;
+}
+.office-builder-ribbon .office-ribbon-responsive-icons {
+ display:flex!important;flex-flow:row nowrap!important;align-items:center!important;
+ justify-content:space-evenly!important;gap:9px!important;width:100%!important;height:78px!important;
+}
+.office-builder-ribbon .office-ribbon-device-toggle,
+.office-builder-ribbon .office-ribbon-device-status {
+ display:flex!important;flex-direction:column!important;align-items:center!important;
+ justify-content:center!important;gap:4px!important;min-width:56px!important;
+ font:500 10px/12px "Segoe UI",Arial,sans-serif!important;color:#163c6c!important;
+}
+.office-builder-ribbon .office-ribbon-device-toggle>input {
+ width:13px!important;height:13px!important;min-width:13px!important;
+ accent-color:#0871e9!important;margin:0!important;
+}
+.office-builder-ribbon .office-ribbon-override-dot {
+ width:6px!important;height:6px!important;border-radius:50%!important;background:#0871e9!important;
+}
+.office-builder-ribbon .office-ribbon-master-visibility-toggle {
+ display:flex!important;align-items:center!important;gap:3px!important;
+ font-size:10px!important;max-width:87px!important;
+}
+.office-builder-ribbon .office-ribbon-responsive-rules>.office-ribbon-stack{
+ display:flex!important;flex-direction:column!important;justify-content:center!important;
+ height:78px!important;gap:10px!important;
+}
+
+/* Three compact data groups are kept in the fixed strip, with all controls
+   bound to the same metadata keys as the contextual Source/Filters editors. */
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-data-group {
+  display:flex!important;flex:0 0 290px!important;flex-direction:column!important;
+  width:290px!important;min-width:290px!important;max-width:290px!important;
+  height:112px!important;max-height:112px!important;
+  padding:5px 10px 19px 30px!important;position:relative!important;
+  gap:5px!important;
+}
+.office-builder-ribbon .office-ribbon-data-heading {
+  position:absolute;left:6px;top:8px;display:flex;align-items:center;gap:7px;
+  font:600 10px/13px "Segoe UI",Arial,sans-serif;color:#1c3555;
+}
+.office-builder-ribbon .office-ribbon-data-heading>strong {position:relative;left:20px}
+.office-builder-ribbon .office-ribbon-data-field {
+  display:grid!important;grid-template-columns:78px minmax(0,1fr)!important;
+  align-items:center!important;gap:5px!important;min-height:21px!important;
+  width:100%!important;font:500 10px/12px "Segoe UI",Arial,sans-serif;
+  color:#2e4162!important;
+}
+.office-builder-ribbon .office-ribbon-data-group>.office-ribbon-data-field:nth-child(2) {margin-top:21px!important}
+.office-builder-ribbon .office-ribbon-data-field>:is(input,select){
+  width:100%!important;min-width:0!important;max-width:100%!important;
+  height:20px!important;min-height:20px!important;padding:1px 5px!important;
+  box-sizing:border-box!important;background:#fff!important;
+  border:1px solid #d5dfec!important;border-radius:3px!important;
+  font:500 10px/14px "Segoe UI",Arial,sans-serif!important;
+}
+.office-builder-ribbon .office-ribbon-data-link{
+  display:flex!important;align-items:center!important;gap:5px!important;
+  justify-content:flex-start!important;min-height:20px!important;
+  width:max-content!important;padding:1px 3px!important;margin-left:78px!important;
+  border:0!important;background:transparent!important;color:#086bdf!important;
+  font:500 10px/15px "Segoe UI",Arial,sans-serif!important;
+}
+.office-builder-ribbon .office-ribbon-data-link:disabled{color:#9aa9bf!important}
+.office-builder-ribbon .office-ribbon-data-pagination{
+  display:flex!important;align-items:center!important;gap:7px!important;
+  font-size:10px!important;white-space:nowrap!important;
+}
+.office-builder-ribbon .office-ribbon-data-pagination label{display:flex!important;align-items:center!important;gap:3px!important}
+.office-builder-ribbon .office-ribbon-data-pagination input[type=number]{
+  width:45px!important;min-width:45px!important;height:20px!important;font-size:10px!important;
+}
+.office-builder-ribbon .office-ribbon-data-pagination input[type=checkbox]{
+  width:13px!important;height:13px!important;accent-color:#0871e9!important;
+}
+
+/* Blueprint item-grid and calendar Content: four distinct compact blocks,
+   icon headings, inline field bindings and actual metadata-backed toggles. */
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-content-card{
+ position:relative!important;display:flex!important;flex-direction:column!important;
+ flex:0 0 250px!important;width:250px!important;min-width:250px!important;
+ max-width:250px!important;height:112px!important;max-height:112px!important;
+ padding:5px 9px 19px 28px!important;gap:5px!important;
+ box-sizing:border-box!important;overflow:hidden!important;
+}
+.office-builder-ribbon .office-ribbon-content-heading{
+ position:absolute!important;left:5px!important;top:7px!important;
+ display:flex!important;gap:6px!important;align-items:center!important;
+ color:#173c68!important;font:600 10px/12px "Segoe UI",Arial,sans-serif!important;
+}
+.office-builder-ribbon .office-ribbon-content-heading>strong{
+ position:relative!important;left:17px!important;
+}
+.office-builder-ribbon .office-ribbon-content-fields{
+ display:flex!important;flex-direction:column!important;justify-content:flex-start!important;
+ gap:5px!important;width:100%!important;min-height:0!important;margin-top:20px!important;
+}
+.office-builder-ribbon .office-ribbon-content-row,
+.office-builder-ribbon .office-ribbon-content-card .office-ribbon-expression-input{
+ display:grid!important;grid-template-columns:78px minmax(0,1fr)!important;
+ gap:5px!important;align-items:center!important;margin:0!important;
+ height:20px!important;min-height:20px!important;width:100%!important;
+ font:500 10px/12px "Segoe UI",Arial,sans-serif!important;
+}
+.office-builder-ribbon .office-ribbon-content-row>:is(select,input:not([type=checkbox])),
+.office-builder-ribbon .office-ribbon-content-card .office-ribbon-expression-input input{
+ box-sizing:border-box!important;width:100%!important;min-width:0!important;
+ max-width:100%!important;height:20px!important;min-height:20px!important;
+ padding:1px 3px!important;font:500 10px/14px "Segoe UI",Arial,sans-serif!important;
+}
+.office-builder-ribbon .office-ribbon-content-row>input[type=checkbox]{
+ width:14px!important;height:14px!important;min-width:14px!important;
+ justify-self:center!important;accent-color:#0871e9!important;
+}
+.office-builder-ribbon .office-ribbon-content-card .office-ribbon-expression-input>.office-ribbon-expression-anchor{
+ min-width:0!important;width:100%!important;
+}
+.office-builder-ribbon .office-ribbon-content-more{
+ border:0!important;background:transparent!important;color:#086bdf!important;
+ font:500 10px/12px "Segoe UI",Arial,sans-serif!important;text-align:left!important;
+ padding:0!important;width:max-content!important;
+}
+
+/* Blueprint header is a light Office-style tab rail, not the old solid blue
+   50px navigation bar. Retain status and keyboard-accessible journey tabs. */
+.office-builder-ribbon>.office-ribbon-topbar {
+ display:flex!important;flex-flow:row nowrap!important;align-items:center!important;
+ height:34px!important;min-height:34px!important;max-height:34px!important;
+ box-sizing:border-box!important;gap:9px!important;padding:0 9px!important;
+ background:#f6f9fd!important;border-bottom:1px solid #d4deeb!important;
+}
+.office-builder-ribbon .office-ribbon-navigation{
+ display:flex!important;align-items:center!important;flex:1 1 auto!important;
+ min-width:0!important;height:33px!important;
+}
+.office-builder-ribbon .office-ribbon-tabs{
+ height:33px!important;max-height:33px!important;display:flex!important;
+ align-items:stretch!important;gap:5px!important;
+}
+.office-builder-ribbon .office-ribbon-tabs>button[role=tab]{
+ height:33px!important;min-height:33px!important;max-height:33px!important;
+ box-sizing:border-box!important;padding:4px 12px!important;
+ color:#253c5b!important;background:transparent!important;
+ border:0!important;border-bottom:3px solid transparent!important;
+ border-radius:0!important;font:600 11px/15px "Segoe UI",Arial,sans-serif!important;
+}
+.office-builder-ribbon .office-ribbon-tabs>button[role=tab] svg{
+ display:none!important;
+}
+.office-builder-ribbon .office-ribbon-tabs>button[role=tab].active{
+ color:#0869dc!important;border-bottom-color:#0874ef!important;
+ background:transparent!important;
+}
+.office-builder-ribbon .office-ribbon-tabs>button[role=tab]:hover:not(.active){
+ color:#065aaf!important;background:#e7f1ff!important;
+}
+.office-builder-ribbon .office-ribbon-tabs>button[role=tab]:disabled{
+ color:#9ca8bb!important;opacity:.65!important;
+}
+.office-builder-ribbon .office-ribbon-stepper button{
+ color:#23466e!important;min-height:28px!important;height:28px!important;
+}
+.office-builder-ribbon .office-ribbon-stepper button:hover:not(:disabled){
+ background:#e5f0fd!important;border-color:#b2cbe8!important;
+}
+.office-builder-ribbon .office-ribbon-header-tools{
+ height:33px!important;max-height:33px!important;align-items:center!important;
+ padding:0!important;
+}
+.office-builder-ribbon .office-ribbon-header-status{
+ color:#566c86!important;font-size:10px!important;
+}
+.office-builder-ribbon .office-ribbon-selection-context{
+ flex:0 0 auto;display:flex;align-items:center;justify-content:center;
+ max-width:150px;height:28px;padding:0 9px;border-radius:3px 3px 0 0;
+ overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+ background:#123b5e;color:#fff;font:600 10px/13px "Segoe UI",Arial,sans-serif;
+}
+/* Compact enough for the reference while retaining three usable
+   20px controls, section headings and bottom labels without clipping. */
+.office-builder-ribbon #page-builder-tab-content.office-ribbon-content{
+ height:120px!important;min-height:120px!important;max-height:120px!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-group{
+ height:111px!important;min-height:111px!important;max-height:111px!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-content-card,
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-data-group,
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-part-group{
+ height:111px!important;max-height:111px!important;
+}
+
+/* Match the reference Layout order without duplicating free-canvas fields:
+   Size | Position | Spacing | Arrange | Component. The existing independent
+   align/distribute commands remain in a compact adjacent Arrange group. */
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Layout"]>.office-ribbon-part-group[data-ribbon-group="Size"],
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Layout"]>.office-ribbon-layout-size-physical{
+ order:0!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Layout"]>.office-ribbon-part-group[data-ribbon-group="Position"],
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Layout"]>.office-ribbon-layout-position-physical{
+ order:1!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Layout"]>.office-ribbon-part-group[data-ribbon-group="Spacing"]{
+ order:2!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Layout"]>.office-ribbon-layout-arrange{
+ order:3!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Layout"]>.office-ribbon-layout-align{
+ order:4!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Layout"]>.office-ribbon-part-group[data-ribbon-group="Component"]{
+ order:5!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Layout"]>.office-ribbon-layout-size-physical,
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Layout"]>.office-ribbon-layout-position-physical{
+ flex:0 0 185px!important;width:185px!important;min-width:185px!important;
+ max-width:185px!important;height:103px!important;padding:4px 8px 18px!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Layout"]>.office-ribbon-layout-size-physical .office-ribbon-inline-field,
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Layout"]>.office-ribbon-layout-position-physical .office-ribbon-inline-field{
+ display:grid!important;grid-template-columns:60px 95px!important;align-items:center!important;
+ gap:5px!important;min-height:22px!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Layout"]>.office-ribbon-layout-size-physical input,
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Layout"]>.office-ribbon-layout-position-physical input{
+ height:21px!important;max-width:95px!important;font-size:10px!important;
+}

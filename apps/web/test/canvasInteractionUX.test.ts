@@ -154,7 +154,11 @@ test('Free Canvas uses clean component objects and a compact ribbon-based palett
   assert.doesNotMatch(source, /ribbonComponentSearch\.trim\(\)/);
   assert.match(source, /ribbonAddOffset/);
   assert.doesNotMatch(source, /aria-label="Component category"/);
-  assert.match(source, /const pageSize=24;/);
+  assert.match(source, /const pageSize=17;/);
+  assert.match(source, /office-ribbon-gallery-pages/);
+  const blueprint=await readFile(new URL('../src/core/builders/PageBuilder/PageBuilderRibbonBlueprint.css',import.meta.url),'utf8');
+  assert.match(blueprint, /office-ribbon-component-tiles/);
+  assert.match(blueprint, /flex-flow:row nowrap!important/);
   assert.match(source, /onClick=\{\(\)=>addPaletteComponent\(component\.type\)\}/);
   assert.doesNotMatch(source, /remainingRibbonComponents\.map\(component=>/);
   assert.doesNotMatch(source, /<aside className="component-panel"/);
@@ -171,9 +175,14 @@ test('Page Builder property editors filter controls by selected component capabi
 
   // A single metadata-aware editor owns each responsibility.
   const ribbonStyle=await readFile(new URL('../src/core/builders/PageBuilder/PageBuilderRibbonStyle.tsx',import.meta.url),'utf8');
-  assert.match(builder, /<RibbonDesign properties=\{selected\.properties\}/);
-  assert.match(builder, /<RibbonFormat properties=\{selected\.properties\}/);
-  assert.match(builder, /<RibbonResponsive properties=\{selected\.properties\}/);
+  const advancedStyle=await readFile(new URL('../src/core/builders/PageBuilder/PageBuilderAdvancedStyle.tsx',import.meta.url),'utf8');
+  const capability=await readFile(new URL('../src/core/builders/PageBuilder/RibbonCapabilityControls.tsx',import.meta.url),'utf8');
+  assert.match(builder, /<PageBuilderAdvancedStyle/);
+  assert.match(advancedStyle, /<RibbonDesign properties=\{properties\}/);
+  assert.match(advancedStyle, /<RibbonFormat properties=\{properties\}/);
+  assert.match(builder, /<RibbonResponsive/);
+  assert.match(builder, /visible=\{selected\.visible\}/);
+  assert.match(capability, /disabled=\{!matched\(cmd\.name\)\.length\}/);
   assert.match(ribbonStyle, /RibbonColorPalette kind="text"/);
   assert.match(ribbonStyle, /availableComponentSettings/);
   assert.doesNotMatch(builder, /<PageComponentStyleEditor section="all"/);
@@ -419,7 +428,12 @@ test('Page Builder contextual ribbon respects the fixed-height no-scroll contrac
   assert.match(builder,/ribbonTab==='Visibility Rules' && <RibbonVisibilityRules/);
   assert.match(builder,/ribbonTab==='Source'/);
   assert.match(builder,/ribbonTab === 'Component Content'/);
-  assert.match(builder,/<RibbonFormat properties=\{selected.properties\}/);
+  const advancedStyle=await readFile(new URL('PageBuilder/PageBuilderAdvancedStyle.tsx',root),'utf8');
+  const blueprint=await readFile(new URL('PageBuilder/PageBuilderRibbonBlueprint.css',root),'utf8');
+  assert.match(builder,/<PageBuilderAdvancedStyle/);
+  assert.match(advancedStyle,/<RibbonFormat properties=\{properties\}/);
+  assert.match(blueprint,/#page-builder-tab-content\.office-ribbon-content/);
+  assert.match(blueprint,/overflow-x:auto!important;overflow-y:hidden!important/);
   assert.match(filters,/validateVisibilityRule/);
   assert.match(filters,/examineRecordFilter/);
   assert.match(actions,/actionType/);
