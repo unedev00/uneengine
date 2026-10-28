@@ -759,3 +759,18 @@
   border-style: solid !important;
   border-width: var(--md-page-border-width) !important;
 }
+
+/* Shared renderer tokens for authored text metrics. Applied to native component
+   content, not the builder selection frame or canvas geometry. */
+[data-page-style~="line-height"] .registered-component {
+  line-height:var(--md-page-line-height)!important;
+}
+[data-page-style~="line-height"] .registered-component :is(.one-heading,.one-muted,.md-product-name,.md-product-description){
+  line-height:var(--md-page-line-height)!important;
+}
+[data-page-style~="letter-spacing"] .registered-component{
+  letter-spacing:var(--md-page-letter-spacing)!important;
+}
+[data-page-style~="font-family"] .registered-component{
+  font-family:var(--md-page-font-family)!important;
+}
