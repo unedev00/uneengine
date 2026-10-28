@@ -1369,6 +1369,10 @@ function RecordWorkspace({
     (['Create','Edit','Delete'] as const).filter(key=>
       recordGrants!=null&&recordGrants.objectApi===object?.apiName&&recordGrants[key]===true)
   );
+  const authoredDynamicFields=Boolean(visibleEditPage?.status==='Active'
+    &&visibleEditPage.pageType==='Record Page'&&visibleEditPage.recordMode==='Edit'
+    &&visibleEditPage.components.some(component=>
+      component.type==='Record Field'||component.type==='Field Section'));
   const selectedLayout = recordEditPageLayout(visibleEditPage,sourceLayout,{
     formFactor,record:formValues,fields:object?.fields??[],profileId,
     recordPermissions:formRecordPermissions,
@@ -1482,7 +1486,8 @@ function RecordWorkspace({
           fieldAccess[`${object.apiName}.${field.apiName}`]?.edit===true).map(field=>field.apiName)));
       Object.assign(writableValues,effectiveValues);
       const layoutWritable=filterLayoutWritableValues(writableValues,selectedLayout,
-        new Set(object.fields.filter(field=>field.required).map(field=>field.apiName)));
+        new Set(object.fields.filter(field=>field.required).map(field=>field.apiName)),
+        authoredDynamicFields);
       Object.keys(writableValues).forEach(name=>{if(!(name in layoutWritable))delete writableValues[name];});
       const missingLayoutFields=missingLayoutRequiredFields(writableValues,selectedLayout,
         new Set(object.fields.filter(field=>
@@ -1973,7 +1978,7 @@ function RecordWorkspace({
         <ArrowLeft size={14} />Back to {editingId ? object.label : object.pluralLabel}
       </button>
     </div>
-    <RecordFormDialog embedded object={object} objects={objects} activeRecordTypes={activeRecordTypes} selectedRecordTypeId={selectedRecordTypeId} profileId={profileId} selectedLayout={selectedLayout}
+    <RecordFormDialog embedded object={object} objects={objects} activeRecordTypes={activeRecordTypes} selectedRecordTypeId={selectedRecordTypeId} profileId={profileId} selectedLayout={selectedLayout} authoredDynamicFields={authoredDynamicFields}
         fieldAccess={fieldAccess} userRoles={userRoles}
         formValues={formValues} recordId={editingId} lookupRecords={lookupRecords}
         searchLookupRecords={searchLookupRecords} formError={formError} saving={saving} editing={Boolean(editingId)}
