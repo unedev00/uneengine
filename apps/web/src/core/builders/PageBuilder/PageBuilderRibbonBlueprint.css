@@ -783,3 +783,27 @@
  outline:2px solid #1264ba!important;outline-offset:1px!important;
 }
 /* The legacy advanced dialog is retired. No overlay is rendered from Design. */
+
+/* Layout line-height and density use the same compact three-digit field scale. */
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Layout"]>.office-ribbon-layout-typography{
+ flex:0 0 152px!important;width:152px!important;min-width:152px!important;max-width:152px!important;
+ padding:4px 7px 19px!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Layout"]>.office-ribbon-layout-typography .office-ribbon-stack {
+ display:flex!important;flex-flow:column nowrap!important;align-items:stretch!important;
+ justify-content:center!important;gap:4px!important;height:84px!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Layout"]>.office-ribbon-layout-typography .office-ribbon-inline-field{
+ display:flex!important;align-items:center!important;justify-content:space-between!important;
+ gap:3px!important;width:137px!important;min-height:25px!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Layout"]>.office-ribbon-layout-typography .office-ribbon-field-name{
+ flex:0 0 58px!important;min-width:58px!important;max-width:58px!important;
+ font-size:10px!important;white-space:nowrap!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Layout"]>.office-ribbon-layout-typography :is(input[type=number],select){
+ box-sizing:border-box!important;flex:0 0 68px!important;min-width:68px!important;
+ max-width:68px!important;width:68px!important;height:23px!important;padding:1px 3px!important;
+ font:11px/17px "Segoe UI",Arial,sans-serif!important;color:#173c68!important;background:#fff!important;
+ border:1px solid #bdc9d8!important;border-radius:2px!important;
+}
