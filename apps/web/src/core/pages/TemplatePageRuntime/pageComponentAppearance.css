@@ -48,8 +48,8 @@
 [data-page-appearance="surface"][data-page-style~="radius"] > .component-demo-accordion,
 [data-page-appearance="surface"][data-page-style~="radius"] > .component-demo-activity,
 [data-page-appearance="surface"][data-page-style~="radius"] > .component-demo-highlights,
-[data-page-appearance="collection"][data-page-style~="radius"] .registered-component .one-item,
-[data-page-appearance="collection"][data-page-style~="radius"] .registered-component .md-product-card,
+[data-page-appearance="collection"][data-page-style~="radius"] .registered-component:not(.metadrive-component-une_item_grid) .one-item,
+[data-page-appearance="collection"][data-page-style~="radius"] .registered-component:not(.metadrive-component-une_item_grid) .md-product-card,
 [data-page-appearance="collection"][data-page-style~="radius"] .registered-component .une-phone-record-row,
 [data-page-appearance="collection"][data-page-style~="radius"] .registered-component .une-option-group,
 [data-page-appearance="collection"][data-page-style~="radius"] .registered-component .une-option-card,
@@ -104,8 +104,8 @@
 [data-page-appearance="surface"][data-page-style~="padding"] > .component-demo-accordion,
 [data-page-appearance="surface"][data-page-style~="padding"] > .component-demo-activity,
 [data-page-appearance="surface"][data-page-style~="padding"] > .component-demo-highlights,
-[data-page-appearance="collection"][data-page-style~="padding"] .registered-component .one-item,
-[data-page-appearance="collection"][data-page-style~="padding"] .registered-component .md-product-card,
+[data-page-appearance="collection"][data-page-style~="padding"] .registered-component:not(.metadrive-component-une_item_grid) .one-item,
+[data-page-appearance="collection"][data-page-style~="padding"] .registered-component:not(.metadrive-component-une_item_grid) .md-product-card,
 [data-page-appearance="collection"][data-page-style~="padding"] .registered-component .une-phone-record-row,
 [data-page-appearance="collection"][data-page-style~="padding"] .registered-component .une-option-group,
 [data-page-appearance="collection"][data-page-style~="padding"] .registered-component .une-option-card,
@@ -758,4 +758,31 @@
 .registered-component.metadrive-component-une_item_grid > section {
   border-style: solid !important;
   border-width: var(--md-page-border-width) !important;
+}
+
+/* Shared renderer tokens for authored text metrics. Applied to native component
+   content, not the builder selection frame or canvas geometry. */
+[data-page-style~="line-height"] .registered-component {
+  line-height:var(--md-page-line-height)!important;
+}
+[data-page-style~="line-height"] .registered-component :is(.one-heading,.one-muted,.md-product-name,.md-product-description){
+  line-height:var(--md-page-line-height)!important;
+}
+[data-page-style~="letter-spacing"] .registered-component{
+  letter-spacing:var(--md-page-letter-spacing)!important;
+}
+[data-page-style~="font-family"] .registered-component{
+  font-family:var(--md-page-font-family)!important;
+}
+
+/* UNE Item Grid owns two independent layers:
+   Surface radius/padding affect the collection section, while cardRadius and
+   cardPadding remain on individual cards. Never override per-card inline style. */
+[data-page-appearance="collection"][data-page-style~="radius"]
+.registered-component.metadrive-component-une_item_grid > section {
+  border-radius:var(--md-page-radius)!important;
+}
+[data-page-appearance="collection"][data-page-style~="padding"]
+.registered-component.metadrive-component-une_item_grid > section {
+  padding:var(--md-page-padding)!important;
 }

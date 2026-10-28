@@ -139,9 +139,14 @@ function ItemGrid({ p, rows }) {
     Number.isFinite(Number(value))
       ? formatter ? formatter.format(Number(value)) : view(value)
       : view(value);
-  const density = ["default", "compact", "comfortable", "image-focused"].includes(p.cardDensity)
-    ? p.cardDensity
-    : "default";
+  // The universal density property and the card-specific override are both
+  // supported; an explicitly authored card density wins for existing pages.
+  const density = ["default", "compact", "comfortable", "image-focused", "spacious"].includes(p.cardDensity)
+    && p.cardDensity !== "default" ? p.cardDensity
+    : ["compact", "comfortable", "spacious"].includes(p.density) ? p.density : "default";
+  const lineHeight = Number(p.lineHeight);
+  const validLineHeight = Number.isFinite(lineHeight) && lineHeight > 0
+    ? (lineHeight > 10 ? lineHeight / 100 : lineHeight) : undefined;
   const cardPadding = Number(p.cardPadding);
   const cardRadius = Number(p.cardRadius);
   const cardMinHeight = Number(p.cardMinHeight);
@@ -162,6 +167,10 @@ function ItemGrid({ p, rows }) {
       color:typeof p[part+"Color"]==="string"&&p[part+"Color"]?p[part+"Color"]:undefined,
       fontWeight:Number.isInteger(fontWeight)&&fontWeight>=100&&fontWeight<=900?fontWeight:undefined,
       textAlign:["left","center","right"].includes(alignment)?alignment:undefined,
+      lineHeight:validLineHeight,
+      minWidth:0,
+      whiteSpace:"normal",
+      overflowWrap:"anywhere",
       display:limit?"-webkit-box":undefined,
       WebkitBoxOrient:limit?"vertical":undefined,
       WebkitLineClamp:limit||undefined,
@@ -184,7 +193,7 @@ function ItemGrid({ p, rows }) {
     ? p.imageAspectRatio
     : undefined;
   return (
-    <section>
+    <section style={{lineHeight:validLineHeight}}>
       {p.showHeading !== false && <h3 className="one-heading" style={{ marginBottom: 12 }}>
         {p.title || "Cards"}
       </h3>}
@@ -194,6 +203,7 @@ function ItemGrid({ p, rows }) {
           "--one-grid-desktop": count,
           "--one-grid-tablet": tabletCount,
           "--one-grid-mobile": phoneCount,
+          ...(Number.isFinite(Number(p.gap)) && p.gap!==undefined && Number(p.gap)>=0 && Number(p.gap)<=160 ? {gap:Number(p.gap)} : {}),
         }}
       >
         {visibleRows.map((r, i) => {
@@ -210,10 +220,14 @@ function ItemGrid({ p, rows }) {
           const imageStyle = {
             display: "block",
             width: Number.isFinite(imageWidth) && imageWidth > 0 ? Math.min(900,imageWidth) : "100%",
-            maxWidth: "100%",
+            // Without an explicit pixel width, alignment still needs visible
+            // breathing room: CSS max-width keeps images from filling the card.
+            ...(Number.isFinite(imageWidth) && imageWidth > 0 ? {} : {
+              maxWidth:["left","center","right"].includes(p.imagePosition)?"min(78%, 180px)":"100%"
+            }),
             borderRadius: p.imageShape==="circle" ? "50%" : p.imageShape==="rounded" ? 12 : 0,
-            marginInline: p.imagePosition==="center" ? "auto" : p.imagePosition==="right" ? "0" : undefined,
-            marginLeft: p.imagePosition==="right" ? "auto" : undefined,
+            marginLeft:p.imagePosition==="right" ? "auto" : p.imagePosition==="left" ? "0" : p.imagePosition==="center" ? "auto" : undefined,
+            marginRight:p.imagePosition==="left" ? "auto" : p.imagePosition==="right" ? "0" : p.imagePosition==="center" ? "auto" : undefined,
             height: Number.isFinite(imageHeight) && imageHeight > 0
               ? Math.min(900, imageHeight)
               : density === "image-focused" ? 150 : imageFit ? 140 : undefined,
@@ -227,7 +241,7 @@ function ItemGrid({ p, rows }) {
             gridRow: rowSpan > 1 ? "span " + rowSpan : undefined,
             padding: Number.isFinite(cardPadding) && cardPadding >= 0
               ? Math.min(64, cardPadding)
-              : density === "compact" ? 8 : density === "comfortable" ? 16 : density === "image-focused" ? 10 : undefined,
+              : density === "compact" ? 8 : density === "comfortable" ? 16 : density === "spacious" ? 24 : density === "image-focused" ? 10 : undefined,
             borderRadius: Number.isFinite(cardRadius) && cardRadius >= 0
               ? Math.min(48, cardRadius)
               : undefined,

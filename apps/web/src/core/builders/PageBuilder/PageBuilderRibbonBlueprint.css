@@ -625,3 +625,223 @@
   background:#fff!important;color:#18314f!important;border:1px solid #b9c8d9!important;
   border-radius:3px!important;font:12px/18px "Segoe UI",Arial,sans-serif!important;
 }
+
+/* Batch 2: compact horizontal ribbon; inputs are sized to their values. */
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Layout"]>.office-ribbon-layout-size-physical,
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Layout"]>.office-ribbon-layout-position-physical{
+ flex:0 0 126px!important;width:126px!important;min-width:126px!important;max-width:126px!important;
+ padding:4px 6px 19px!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Layout"]>
+:is(.office-ribbon-layout-size-physical,.office-ribbon-layout-position-physical) .office-ribbon-inline-field {
+ display:flex!important;flex-wrap:nowrap!important;justify-content:flex-start!important;
+ align-items:center!important;gap:5px!important;width:112px!important;min-height:25px!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Layout"]>
+:is(.office-ribbon-layout-size-physical,.office-ribbon-layout-position-physical) .office-ribbon-field-name {
+ flex:0 0 42px!important;min-width:42px!important;max-width:42px!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Layout"]>
+:is(.office-ribbon-layout-size-physical,.office-ribbon-layout-position-physical) input[type=number] {
+ box-sizing:border-box!important;flex:0 0 57px!important;min-width:57px!important;
+ width:57px!important;max-width:57px!important;height:22px!important;
+ padding:1px 3px!important;font-size:11px!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Layout"]>.office-ribbon-layout-arrange {
+ flex:0 0 88px!important;width:88px!important;min-width:88px!important;max-width:88px!important;
+ padding:4px 4px 19px!important;
+}
+.office-builder-ribbon .office-ribbon-layout-arrange .office-ribbon-arrange-column{
+ display:flex!important;flex-direction:column!important;align-items:stretch!important;
+ justify-content:center!important;gap:2px!important;height:88px!important;
+}
+.office-builder-ribbon .office-ribbon-layout-arrange .office-ribbon-arrange-column button {
+ display:flex!important;align-items:center!important;justify-content:flex-start!important;gap:5px!important;
+ width:78px!important;min-width:78px!important;max-width:78px!important;
+ height:27px!important;min-height:27px!important;padding:1px 4px!important;
+ color:#173c68!important;background:transparent!important;border:1px solid transparent!important;
+ border-radius:3px!important;font:500 10px/13px "Segoe UI",Arial,sans-serif!important;
+}
+.office-builder-ribbon .office-ribbon-layout-arrange .office-ribbon-arrange-column button:disabled{opacity:.4!important}
+.office-builder-ribbon .office-ribbon-layout-arrange .office-ribbon-arrange-column button:hover:not(:disabled){
+ background:#e7f1ff!important;border-color:#9fbfe8!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-part-group[data-ribbon-group="Spacing"]{
+ flex:0 0 158px!important;width:158px!important;min-width:158px!important;max-width:158px!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-part-group[data-ribbon-group="Spacing"] .office-ribbon-part-fieldset{
+ width:100%!important;max-width:100%!important;
+}
+.office-builder-ribbon .office-ribbon-direct-spacing{
+ display:grid!important;grid-template-columns:repeat(2,72px)!important;grid-auto-rows:42px!important;
+ gap:2px 3px!important;align-content:center!important;justify-content:center!important;height:86px!important;
+}
+.office-builder-ribbon .office-ribbon-direct-number{
+ display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;
+ gap:1px!important;box-sizing:border-box!important;width:74px!important;min-width:74px!important;
+ height:38px!important;min-height:38px!important;max-height:42px!important;
+ margin:0!important;padding:1px 2px!important;color:#173c68!important;
+}
+.office-builder-ribbon .office-ribbon-direct-number .office-ribbon-command-glyph{
+ display:none!important;
+}
+.office-builder-ribbon .office-ribbon-direct-number select{
+ box-sizing:border-box!important;display:block!important;flex:0 0 21px!important;
+ width:60px!important;min-width:60px!important;max-width:60px!important;
+ height:21px!important;min-height:21px!important;max-height:21px!important;
+ padding:1px 2px!important;background:#fff!important;color:#173c68!important;
+ border:1px solid #bac9da!important;border-radius:2px!important;
+ font:500 11px/16px "Segoe UI",Arial,sans-serif!important;
+}
+.office-builder-ribbon .office-ribbon-direct-number .office-ribbon-command-label{
+ display:block!important;overflow:visible!important;text-align:center!important;
+ white-space:nowrap!important;font:500 9px/11px "Segoe UI",Arial,sans-serif!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-part-group:has(.office-ribbon-direct-number):not([data-ribbon-group="Spacing"]){
+ flex:0 0 178px!important;width:178px!important;min-width:178px!important;max-width:178px!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-part-group:has(.office-ribbon-direct-number):not([data-ribbon-group="Spacing"]) .office-ribbon-capabilities:not(.office-ribbon-typography-capabilities){
+ grid-template-columns:repeat(3,minmax(0,54px))!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-part-group:has(.office-ribbon-direct-number):not([data-ribbon-group="Spacing"]) .office-ribbon-direct-number{
+ width:54px!important;min-width:54px!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-part-group:has(.office-ribbon-direct-number):not([data-ribbon-group="Spacing"]) .office-ribbon-direct-number select{
+ width:50px!important;min-width:50px!important;max-width:50px!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-part-group:has(.office-ribbon-direct-number) .office-ribbon-typography-primary{
+ gap:2px!important;justify-content:center!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-content-card{
+ padding-left:34px!important;padding-right:12px!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-content-card .office-ribbon-content-fields{
+ width:100%!important;gap:6px!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-content-card .office-ribbon-content-row{
+ grid-template-columns:83px minmax(0,1fr)!important;
+}
+/* Direct Design appearance controls replace the advanced popup, including unique
+   inherited typography and colour settings. */
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-extra-appearance{
+ flex:0 0 156px!important;width:156px!important;min-width:156px!important;max-width:156px!important;
+ padding:4px 7px 20px!important;
+}
+.office-builder-ribbon .office-ribbon-extra-grid{
+ display:flex!important;flex-direction:column!important;justify-content:flex-start!important;
+ align-items:stretch!important;gap:3px!important;height:87px!important;overflow:hidden!important;
+}
+.office-builder-ribbon .office-ribbon-extra-field{
+ display:flex!important;align-items:center!important;justify-content:space-between!important;
+ gap:4px!important;width:100%!important;height:24px!important;min-height:24px!important;
+ color:#173c68!important;font:500 10px/12px "Segoe UI",Arial,sans-serif!important;
+}
+.office-builder-ribbon .office-ribbon-extra-field span{
+ overflow:hidden!important;white-space:nowrap!important;text-overflow:ellipsis!important;
+}
+.office-builder-ribbon .office-ribbon-extra-field :is(input[type=number],select){
+ box-sizing:border-box!important;flex:0 0 61px!important;width:61px!important;min-width:61px!important;
+ max-width:61px!important;height:22px!important;min-height:22px!important;
+ padding:1px 3px!important;color:#173c68!important;background:#fff!important;
+ border:1px solid #b6c6d8!important;border-radius:3px!important;
+}
+.office-builder-ribbon .office-ribbon-extra-field input[type=checkbox]{width:13px!important;min-width:13px!important;height:13px!important}
+.office-builder-ribbon .office-ribbon-extra-colour{height:32px;display:flex;align-items:center;justify-content:center}
+.office-builder-ribbon .office-ribbon-extra-text-buttons{display:flex;gap:6px;align-items:center;justify-content:center;height:85px}
+.office-builder-ribbon .office-ribbon-extra-text-buttons button{
+ border:1px solid transparent;background:transparent;color:#173c68;min-width:30px;min-height:30px;border-radius:3px;
+}
+.office-builder-ribbon .office-ribbon-extra-text-buttons button[aria-pressed=true]{background:#dceaff;border-color:#558bd7}
+.office-builder-ribbon .office-ribbon-reset-style{
+ display:flex!important;flex-flow:column nowrap!important;align-items:center!important;justify-content:center!important;
+ gap:5px!important;width:100%!important;height:80px!important;font:500 10px/14px "Segoe UI",Arial,sans-serif!important;
+}
+/* Palette contrast: never inherit dark button/input styles from the builder. */
+.office-ribbon-colour-palette .office-ribbon-palette-hex input,
+.office-ribbon-colour-palette .office-ribbon-palette-hex input[type=text]{
+ color:#172b45!important;background:#fff!important;border:1px solid #8297b0!important;
+ border-radius:2px!important;opacity:1!important;box-shadow:none!important;
+}
+.office-ribbon-colour-palette .office-ribbon-palette-hex input::placeholder{color:#61728b!important;opacity:1!important}
+.office-ribbon-colour-palette .office-ribbon-palette-hex button{
+ color:#0f3f79!important;background:#e8f1fc!important;border:1px solid #7299c8!important;
+ border-radius:3px!important;opacity:1!important;cursor:pointer!important;
+}
+.office-ribbon-colour-palette .office-ribbon-palette-hex button:disabled{
+ color:#596c84!important;background:#f0f3f7!important;border-color:#c8d2dc!important;
+ opacity:1!important;cursor:not-allowed!important;
+}
+.office-ribbon-colour-palette .office-ribbon-palette-footer button{
+ color:#10549d!important;background:transparent!important;border:0!important;
+}
+.office-ribbon-colour-palette .office-ribbon-palette-footer input[type=color]{
+ background:#fff!important;border:1px solid #879bb2!important;padding:2px!important;
+}
+.office-ribbon-colour-palette .office-ribbon-swatch:hover,
+.office-ribbon-colour-palette .office-ribbon-swatch:focus-visible,
+.office-ribbon-colour-palette .office-ribbon-swatch.selected{
+ outline:2px solid #1264ba!important;outline-offset:1px!important;
+}
+/* The legacy advanced dialog is retired. No overlay is rendered from Design. */
+
+/* Layout line-height and density use the same compact three-digit field scale. */
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Layout"]>.office-ribbon-layout-typography{
+ flex:0 0 152px!important;width:152px!important;min-width:152px!important;max-width:152px!important;
+ padding:4px 7px 19px!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Layout"]>.office-ribbon-layout-typography .office-ribbon-stack {
+ display:flex!important;flex-flow:column nowrap!important;align-items:stretch!important;
+ justify-content:center!important;gap:4px!important;height:84px!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Layout"]>.office-ribbon-layout-typography .office-ribbon-inline-field{
+ display:flex!important;align-items:center!important;justify-content:space-between!important;
+ gap:3px!important;width:137px!important;min-height:25px!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Layout"]>.office-ribbon-layout-typography .office-ribbon-field-name{
+ flex:0 0 58px!important;min-width:58px!important;max-width:58px!important;
+ font-size:10px!important;white-space:nowrap!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Layout"]>.office-ribbon-layout-typography :is(input[type=number],select){
+ box-sizing:border-box!important;flex:0 0 68px!important;min-width:68px!important;
+ max-width:68px!important;width:68px!important;height:23px!important;padding:1px 3px!important;
+ font:11px/17px "Segoe UI",Arial,sans-serif!important;color:#173c68!important;background:#fff!important;
+ border:1px solid #bdc9d8!important;border-radius:2px!important;
+}
+
+/* Numeric property controls retain their icons rather than rendering as plain inputs. */
+.office-builder-ribbon .office-ribbon-direct-number {
+ display:grid!important;grid-template-columns:16px minmax(0,1fr)!important;
+ grid-template-rows:23px 12px!important;column-gap:1px!important;row-gap:1px!important;
+ justify-items:center!important;align-content:center!important;
+}
+.office-builder-ribbon .office-ribbon-direct-number .office-ribbon-command-glyph{
+ display:flex!important;grid-column:1;grid-row:1;
+ width:16px!important;height:19px!important;align-items:center!important;justify-content:center!important;
+}
+.office-builder-ribbon .office-ribbon-direct-number select{
+ grid-column:2!important;grid-row:1!important;
+ width:50px!important;min-width:0!important;max-width:50px!important;align-self:center!important;
+}
+.office-builder-ribbon .office-ribbon-direct-number .office-ribbon-command-label{
+ grid-column:1 / span 2!important;grid-row:2!important;justify-self:center!important;
+ text-align:center!important;max-width:none!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-part-group:has(.office-ribbon-direct-number):not([data-ribbon-group="Spacing"]){
+ flex:0 0 212px!important;width:212px!important;min-width:212px!important;max-width:212px!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-part-group:has(.office-ribbon-direct-number):not([data-ribbon-group="Spacing"]) .office-ribbon-capabilities:not(.office-ribbon-typography-capabilities){
+ grid-template-columns:repeat(3,minmax(0,64px))!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-part-group:has(.office-ribbon-direct-number):not([data-ribbon-group="Spacing"]) .office-ribbon-direct-number{
+ width:64px!important;min-width:64px!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-part-group:has(.office-ribbon-direct-number):not([data-ribbon-group="Spacing"]) .office-ribbon-direct-number select{
+ width:45px!important;max-width:45px!important;
+}
+/* Typography rows remain three columns and keep the four-B row intact. */
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-part-group:has(.office-ribbon-typography-capabilities){
+ flex:0 0 172px!important;width:172px!important;min-width:172px!important;max-width:172px!important;
+}
+.office-builder-ribbon .office-ribbon-typography-capabilities .office-ribbon-direct-number{
+ width:65px!important;min-width:65px!important;
+}

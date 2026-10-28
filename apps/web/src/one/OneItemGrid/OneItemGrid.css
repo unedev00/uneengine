@@ -41,3 +41,13 @@
 .md-card-detail-row dd {margin:0;min-width:0;overflow-wrap:anywhere}
 .md-card-add-icon:is(button) {align-self:flex-start;cursor:pointer;border:1px solid currentColor;border-radius:6px;min-height:32px;min-width:32px}
 .md-card-add-icon:is(button):focus-visible {outline:2px solid currentColor;outline-offset:2px}
+
+/* The metadata-driven density and line clamp must affect the rendered card. */
+.md-product-card--spacious {gap:16px}
+.md-product-card .md-product-name,
+.md-product-card .md-product-description{min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere}
+.md-product-card .md-product-name[style*="-webkit-line-clamp"],
+.md-product-card .md-product-description[style*="-webkit-line-clamp"]{
+  display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden;
+}
+.md-product-card .md-product-image{max-width:100%;align-self:initial}

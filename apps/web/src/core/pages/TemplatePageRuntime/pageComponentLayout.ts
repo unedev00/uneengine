@@ -122,6 +122,9 @@ const pageStyleFlags: Record<string, string> = {
   '--md-page-color':'color',
   '--md-page-shadow':'shadow',
   '--md-page-font-size':'font-size',
+  '--md-page-line-height':'line-height',
+  '--md-page-letter-spacing':'letter-spacing',
+  '--md-page-font-family':'font-family',
   '--md-page-font-weight':'font-weight',
   '--md-page-font-style':'font-style',
   '--md-page-text-decoration':'text-decoration',
@@ -182,6 +185,14 @@ export function resolvePageComponentStyle(
     configured.color = colour('textColor');
     configured.margin = number('margin',0,160);
     configured.fontSize = number('fontSize',8,96);
+    // Support both CSS multipliers (1.5) and familiar percent entry (150).
+    const authoredLineHeight=number('lineHeight',0.5,300);
+    if(authoredLineHeight!==undefined)configured.lineHeight=authoredLineHeight>10?authoredLineHeight/100:authoredLineHeight;
+    const authoredLetterSpacing=number('letterSpacing',-10,40);
+    if(authoredLetterSpacing!==undefined)configured.letterSpacing=authoredLetterSpacing+'px';
+    const families:Record<string,string>={system:'system-ui, sans-serif',sans:'Arial, Helvetica, sans-serif',serif:'Georgia, serif',mono:'Consolas, monospace'};
+    const family=String(properties.fontFamily??'');
+    if(families[family])configured.fontFamily=families[family];
     configured.gap = number('gap',0,160);
     const opacityValue = number('opacity',0,100);
     if (opacityValue !== undefined) configured.opacity = opacityValue / 100;
@@ -219,7 +230,8 @@ export function resolvePageComponentStyle(
   // Position, dimensions, external margin and visibility belong to the frame.
   // All visible appearance properties belong to the component itself.
   const { padding, borderRadius, borderWidth, borderColor, backgroundColor,
-    boxShadow, color, borderStyle, fontSize, fontWeight, fontStyle, textDecoration, textAlign, opacity,
+    boxShadow, color, borderStyle, fontSize, fontWeight, fontStyle, textDecoration, textAlign,
+    lineHeight, letterSpacing, fontFamily, opacity,
     gap, alignItems, justifyContent, overflowY, ...frame } = style;
   const tokens: Record<string, string> = {};
   const put = (key: string, value: unknown, unit = '') => {
@@ -233,6 +245,9 @@ export function resolvePageComponentStyle(
   put('--md-page-color',color);
   put('--md-page-shadow',boxShadow);
   put('--md-page-font-size',fontSize,'px');
+  put('--md-page-line-height',lineHeight);
+  put('--md-page-letter-spacing',letterSpacing);
+  put('--md-page-font-family',fontFamily);
   put('--md-page-font-weight',fontWeight);
   put('--md-page-font-style',fontStyle);
   put('--md-page-text-decoration',textDecoration);

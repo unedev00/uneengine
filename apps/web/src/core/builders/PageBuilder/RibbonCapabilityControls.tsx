@@ -14,8 +14,8 @@ const commandGroups:Record<string,Command[]>={
   Size:[{name:'Width',icon:<Ratio size={16}/>},{name:'Height',icon:<Ratio size={16}/>},{name:'Min',icon:<Scan size={16}/>}],
   Position:[{name:'Position',icon:<Move size={16}/>},{name:'Align',icon:<AlignLeft size={16}/>}],
   Spacing:[{name:'Padding',icon:<Grid2X2 size={16}/>},{name:'Margin',icon:<Square size={16}/>},{name:'Gap',icon:<Columns3 size={16}/>}],
-  Component:[{name:'Columns',icon:<Columns3 size={16}/>},{name:'Width',icon:<Ratio size={16}/>},{name:'Fit',icon:<Image size={16}/>},{name:'Wrap',icon:<WrapText size={16}/>}],
-  Card:[{name:'Fill',icon:<PaintBucket size={16}/>},{name:'Border',icon:<Square size={16}/>},{name:'Corners',icon:<Scan size={16}/>},{name:'Shadow',icon:<Layers size={16}/>},{name:'Opacity',icon:<Blend size={16}/>}],
+  Component:[{name:'Columns',icon:<Columns3 size={16}/>},{name:'Fit',icon:<Image size={16}/>},{name:'Wrap',icon:<WrapText size={16}/>}],
+  Card:[{name:'Fill',icon:<PaintBucket size={16}/>},{name:'Border',icon:<Square size={16}/>},{name:'Corners',icon:<Scan size={16}/>},{name:'Shadow',icon:<Layers size={16}/>},{name:'Stroke',icon:<Square size={16}/>}],
   Heading:[{name:'Size',icon:<Type size={16}/>},{name:'Colour',icon:<Palette size={16}/>},{name:'Bold',icon:<Bold size={16}/>},{name:'Align',icon:<AlignLeft size={16}/>}],
   'Supporting text':[{name:'Size',icon:<Type size={16}/>},{name:'Colour',icon:<Palette size={16}/>},{name:'Bold',icon:<Bold size={16}/>},{name:'Align',icon:<AlignLeft size={16}/>}],
   Badge:[{name:'Fill',icon:<PaintBucket size={16}/>},{name:'Text',icon:<CaseSensitive size={16}/>},{name:'Border',icon:<Square size={16}/>}],
@@ -75,6 +75,37 @@ function SizeSelect({definition,properties,onChange,label}:{
       {values.map(size=><option key={size} value={size}>{size}</option>)}
     </select><span>Size</span>
   </label>;
+}
+/** Reusable bounded, metadata-backed Excel-style numeric selector. */
+function DirectNumber({definition,properties,onChange,label,icon}:{
+ definition:PropertyDefinition;properties:Values;onChange:(next:Values)=>void;label:string;icon?:ReactNode;
+}){
+ const current=Number(properties[definition.propertyKey]??definition.defaultValue??0);
+ const min=definition.min??0,max=definition.max??128;
+ const choices=[...new Set([0,1,2,3,4,6,8,10,12,16,20,24,28,32,40,48,64,80,96,100,120,128,...(Number.isFinite(current)?[current]:[])])]
+  .filter(n=>n>=min&&n<=max).sort((a,b)=>a-b);
+ return <label className="office-ribbon-direct-number" title={definition.label}>
+  {icon&&<span className="office-ribbon-command-glyph">{icon}</span>}
+  <select aria-label={definition.label} value={Number.isFinite(current)?current:''}
+    onChange={e=>onChange({...properties,[definition.propertyKey]:Number(e.target.value)})}>
+    {choices.map(n=><option key={n} value={n}>{n}</option>)}
+  </select><span className="office-ribbon-command-label">{label}</span>
+ </label>;
+}
+function SpacingControls({definitions,properties,onChange}:{
+ definitions:readonly PropertyDefinition[];properties:Values;onChange:(next:Values)=>void;
+}){
+ const items=[{key:'padding',label:'Padding',icon:<Grid2X2 size={15}/>},
+  {key:'cardPadding',label:'Card padding',icon:<Grid2X2 size={15}/>},
+  {key:'margin',label:'Margin',icon:<Square size={15}/>},
+  {key:'gap',label:'Gap',icon:<Columns3 size={15}/>}];
+ return <div className="office-ribbon-direct-spacing" aria-label="Spacing controls">
+  {items.map(item=>{
+   const definition=definitions.find(d=>d.propertyKey===item.key&&d.kind==='NUMBER');
+   return definition?<DirectNumber key={item.key} definition={definition} properties={properties}
+     onChange={onChange} label={item.label} icon={item.icon}/>:null;
+  })}
+ </div>;
 }
 function WeightOptions({definition,properties,onChange,label}:{
   definition:PropertyDefinition;properties:Values;onChange:(next:Values)=>void;label:string;
@@ -163,26 +194,75 @@ function CommandPopover({group,command,definitions,properties,onChange}:{
     </div>,document.body)}
   </>;
 }
+/** Update an authored legacy page-style layer only when it already owns the
+ * same property. This prevents a stale visual/responsive override concealing
+ * a direct ribbon edit, without authoring overrides on other devices. */
+function reconcileAuthoredLayers(before:Values,after:Values,device:string):Values{
+ const styleKeys:Record<string,string>={
+   radius:'borderRadius',backgroundColor:'backgroundColor',borderColor:'borderColor',
+   textColor:'color',padding:'padding',margin:'margin',gap:'gap'
+ };
+ const changed=Object.entries(styleKeys).filter(([key])=>before[key]!==after[key]);
+ if(!changed.length)return after;
+ const next={...after};
+ const existingVisual=before.visualStyle&&typeof before.visualStyle==='object'&&!Array.isArray(before.visualStyle)
+   ?before.visualStyle as Values:{};
+ const visual={...existingVisual};
+ let changedVisual=false;
+ const existingBase=before.layoutStyle&&typeof before.layoutStyle==='object'&&!Array.isArray(before.layoutStyle)
+   ?before.layoutStyle as Values:{};
+ const base={...existingBase};
+ let changedBase=false;
+ const responsive=before.layoutResponsive&&typeof before.layoutResponsive==='object'&&!Array.isArray(before.layoutResponsive)
+   ?before.layoutResponsive as Values:{};
+ const activeDevice=device==='Mobile'?'Phone':device==='Custom'?'Desktop':device;
+ const active=responsive[activeDevice]&&typeof responsive[activeDevice]==='object'&&!Array.isArray(responsive[activeDevice])
+   ?responsive[activeDevice] as Values:{};
+ const override={...active};
+ let changedOverride=false;
+ for(const [key,visualKey] of changed){
+   if(existingVisual[visualKey]!==undefined){visual[visualKey]=after[key];changedVisual=true;}
+   if(existingBase[visualKey]!==undefined){base[visualKey]=after[key];changedBase=true;}
+   if(active[visualKey]!==undefined){override[visualKey]=after[key];changedOverride=true;}
+ }
+ if(changedVisual)next.visualStyle=visual;
+ if(changedBase)next.layoutStyle=base;
+ if(changedOverride)next.layoutResponsive={...responsive,[activeDevice]:override};
+ return next;
+}
 /** Icon commands and direct controls use the same registered, persisted property definitions. */
-export default function RibbonCapabilityControls({group,definitions,properties,onChange,icon}:{
-  group:string;definitions:readonly PropertyDefinition[];properties:Values;onChange:(next:Values)=>void;icon:ReactNode;
+export default function RibbonCapabilityControls({group,definitions,properties,onChange,icon,device='Desktop'}:{
+  group:string;definitions:readonly PropertyDefinition[];properties:Values;onChange:(next:Values)=>void;icon:ReactNode;device?:string;
 }){
+  const update=(next:Values)=>onChange(reconcileAuthoredLayers(properties,next,device));
   const named=commandGroups[group]??[{name:group,icon},{name:'Settings',icon:<Settings2 size={16}/>},{name:'Options',icon:<SlidersHorizontal size={16}/>}];
+  if(group==='Spacing')return <SpacingControls definitions={definitions} properties={properties} onChange={update}/>;
   const colourCommand=(name:string)=>{
     const definition=colourFor(definitions,name);
     if(!definition)return null;
     const kind=name==='Border'?'border':name==='Fill'?'fill':'text';
     return <RibbonColorPalette key={name} kind={kind} label={name} variant="capability"
       value={String(properties[definition.propertyKey]??definition.defaultValue??'')}
-      onChange={value=>onChange({...properties,[definition.propertyKey]:value})}/>;
+      onChange={value=>update({...properties,[definition.propertyKey]:value})}/>;
   };
   const renderCommand=(command:Command)=>{
+    if((group==='Surface'&&command.name==='Radius')||(group==='Card'&&command.name==='Corners')){
+      const key=group==='Card'?'cardRadius':'radius';
+      const definition=definitions.find(d=>d.propertyKey===key&&d.kind==='NUMBER');
+      if(definition)return <DirectNumber key={key} definition={definition} properties={properties}
+        onChange={update} label={group==='Card'?'Card radius':'Radius'} icon={<Scan size={16}/>}/>;
+    }
+    if(group==='Card'&&command.name==='Stroke'){
+      const definition=definitions.find(d=>d.propertyKey==='cardBorderWidth'&&d.kind==='NUMBER');
+      if(definition)return <DirectNumber key="cardBorderWidth" definition={definition}
+        properties={properties} onChange={update} label="Border width" icon={<Square size={16}/>}/>;
+    }
     if(['Fill','Border','Colour','Text'].includes(command.name)){
       const direct=colourCommand(command.name);
       if(direct)return direct;
     }
     return <CommandPopover key={command.name} group={group} command={command}
-      definitions={matches(definitions,command.name)} properties={properties} onChange={onChange}/>;
+      definitions={matches(definitions,command.name)} properties={properties} onChange={update}/>;
   };
   const size=propertyFor(definitions,'size');
   const weight=propertyFor(definitions,'weight');
@@ -191,23 +271,23 @@ export default function RibbonCapabilityControls({group,definitions,properties,o
   const typography=(group==='Heading'||group==='Supporting text'||group==='Text')&&Boolean(size||weight||align);
   if(typography)return <div className="office-ribbon-capabilities office-ribbon-typography-capabilities" aria-label={group+' commands'}>
     <div className="office-ribbon-typography-primary">
-      {size&&<SizeSelect definition={size} properties={properties} onChange={onChange} label={group}/>}
+      {size&&<SizeSelect definition={size} properties={properties} onChange={update} label={group}/>}
       {colourCommand('Colour')}
-      {lines&&<CommandPopover group={group} command={{name:'Lines',icon:<WrapText size={16}/>}}
-        definitions={[lines]} properties={properties} onChange={onChange}/>}
+      {lines&&<DirectNumber definition={lines} properties={properties} onChange={update}
+        label="Lines" icon={<WrapText size={16}/>}/>}
     </div>
-    {align&&<AlignmentOptions definition={align} properties={properties} onChange={onChange} label={group}/>}
-    {weight&&<WeightOptions definition={weight} properties={properties} onChange={onChange} label={group}/>}
+    {align&&<AlignmentOptions definition={align} properties={properties} onChange={update} label={group}/>}
+    {weight&&<WeightOptions definition={weight} properties={properties} onChange={update} label={group}/>}
   </div>;
   if(group==='Badge'&&(size||weight))return <div className="office-ribbon-capabilities office-ribbon-typography-capabilities" aria-label={group+' commands'}>
     <div className="office-ribbon-typography-primary">
       {colourCommand('Fill')}{colourCommand('Text')}
-      {size&&<SizeSelect definition={size} properties={properties} onChange={onChange} label={group}/>}
+      {size&&<SizeSelect definition={size} properties={properties} onChange={update} label={group}/>}
     </div>
     {matches(definitions,'Border').length>0&&<div className="office-ribbon-typography-secondary">
       {renderCommand({name:'Border',icon:<Square size={16}/>})}
     </div>}
-    {weight&&<WeightOptions definition={weight} properties={properties} onChange={onChange} label={group}/>}
+    {weight&&<WeightOptions definition={weight} properties={properties} onChange={update} label={group}/>}
   </div>;
   return <div className="office-ribbon-capabilities" aria-label={group+' commands'}>
     {named.map(renderCommand)}

@@ -601,7 +601,7 @@ function PageBuilder({
   const implicitParts:Record<string,Record<string,{group:string;section:'Design'|'Layout'}>> = {
     une_text:{fontSize:{group:'Text',section:'Design'}},
     une_button:{variant:{group:'Button',section:'Design'}},
-    une_item_grid:{cardDensity:{group:'Card',section:'Design'},cardHover:{group:'Card',section:'Design'},featuredColumnSpan:{group:'Gallery',section:'Layout'},featuredRowSpan:{group:'Gallery',section:'Layout'}},
+    une_item_grid:{cardDensity:{group:'Card',section:'Design'},cardHover:{group:'Card',section:'Design'},featuredColumnSpan:{group:'Component',section:'Layout'},featuredRowSpan:{group:'Component',section:'Layout'}},
     une_calendar:{view:{group:'Calendar',section:'Design'},firstDayOfWeek:{group:'Calendar',section:'Design'},showWeekends:{group:'Calendar',section:'Design'}},
     une_chart:{chartType:{group:'Chart',section:'Design'}},
     une_image:{imageFit:{group:'Image',section:'Design'},imageHeight:{group:'Image',section:'Layout'}},
@@ -629,13 +629,20 @@ function PageBuilder({
   const definitionsForPart=(group:string,section:'Design'|'Layout')=>appearanceDefinitions.filter(definition=>{
     const mapped=inferredAppearanceGroup(definition.propertyKey);
     const part=section==='Layout'
-      ? inferredRibbonGroup(definition.propertyKey,section)
+      ? (mapped?.section==='Layout'?mapped.group:inferredRibbonGroup(definition.propertyKey,section))
       : ((definition as {group?:string}).group??mapped?.group??inferredRibbonGroup(definition.propertyKey,section));
     const mirroredImageDesign=section==='Design'&&selectedCustomDefinition?.apiName==='une_item_grid'
       &&group==='Image'&&['imageAspectRatio','imagePosition'].includes(definition.propertyKey);
+    const isDuplicateImageLayout=section==='Layout'&&selectedCustomDefinition?.apiName==='une_item_grid'
+      &&['imageAspectRatio','imagePosition'].includes(definition.propertyKey);
+    const isInactiveFeaturedLayout=section==='Layout'&&selectedCustomDefinition?.apiName==='une_item_grid'
+      &&['featuredColumnSpan','featuredRowSpan'].includes(definition.propertyKey)
+      &&!selected?.properties.featuredFieldApiName;
     return part===group&&!/(?:FieldApiName|ObjectApiName)$/.test(definition.propertyKey)
+      &&!isDuplicateImageLayout&&!isInactiveFeaturedLayout
       && (mirroredImageDesign||(section==='Layout'
-        ? Boolean(inferredRibbonGroup(definition.propertyKey,section))
+        ? ((definition as {section?:string}).section!=='Design')
+          &&Boolean(inferredRibbonGroup(definition.propertyKey,section))
         : ((definition as {section?:string}).section??mapped?.section??'Design')===section));
   });
   const inferredGroupKeys=appearanceDefinitions.filter(d=>inferredAppearanceGroup(d.propertyKey)&&!(d as {group?:string}).group).map(d=>d.propertyKey);
@@ -2471,15 +2478,38 @@ function PageBuilder({
           {ribbonTab==='Component Properties' && designRibbonGroups.map(group=>{
             const definitions=selected?definitionsForPart(group,'Design'):[];
             return <div className="office-ribbon-group office-ribbon-part-group" data-ribbon-group={group} key={group}>
-              <fieldset className="office-ribbon-part-fieldset" title={definitions.length?group:'Not supported by selected component'}><RibbonCapabilityControls group={group} definitions={definitions} properties={selected?.properties??{}} icon={ribbonPartIcons[group]??<Settings2 size={15}/>} onChange={properties=>{if(selected)updateComponent(selected.id,{properties});}}/></fieldset><span>{group}</span>
+              <fieldset className="office-ribbon-part-fieldset" title={definitions.length?group:'Not supported by selected component'}><RibbonCapabilityControls group={group} device={page.layoutVariant??'Desktop'} definitions={definitions} properties={selected?.properties??{}} icon={ribbonPartIcons[group]??<Settings2 size={15}/>} onChange={properties=>{if(selected)updateComponent(selected.id,{properties});}}/></fieldset><span>{group}</span>
             </div>;
           })}
           {selected && ribbonTab==='Component Layout' && layoutRibbonGroups.map(group=>{
             const definitions=definitionsForPart(group,'Layout');
             return <div className="office-ribbon-group office-ribbon-part-group" data-ribbon-group={group} key={group}>
-              <fieldset className="office-ribbon-part-fieldset" title={definitions.length?group:'Not supported by selected component'}><RibbonCapabilityControls group={group} definitions={definitions} properties={selected?.properties??{}} icon={ribbonPartIcons[group]??<Settings2 size={15}/>} onChange={properties=>{if(selected)updateComponent(selected.id,{properties});}}/></fieldset><span>{group} layout</span>
+              <fieldset className="office-ribbon-part-fieldset" title={definitions.length?group:'Not supported by selected component'}><RibbonCapabilityControls group={group} device={page.layoutVariant??'Desktop'} definitions={definitions} properties={selected?.properties??{}} icon={ribbonPartIcons[group]??<Settings2 size={15}/>} onChange={properties=>{if(selected)updateComponent(selected.id,{properties});}}/></fieldset><span>{group} layout</span>
             </div>;
           })}
+          {selected && ribbonTab==='Component Layout' && (selectedCustomDefinition?.propertyDefinitions??[]).some(d=>d.propertyKey==='lineHeight'||d.propertyKey==='density') &&
+            <div className="office-ribbon-group office-ribbon-layout-typography">
+              <div className="office-ribbon-stack">
+                {selectedCustomDefinition?.propertyDefinitions?.some(d=>d.propertyKey==='lineHeight')&&
+                  <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Line height</span>
+                    <input aria-label="Line height" type="number" min={50} max={300} step={5}
+                      value={Number(selected.properties.lineHeight??100)}
+                      onChange={event=>{const n=Number(event.target.value);
+                        if(Number.isFinite(n)&&n>=50&&n<=300)updateComponent(selected.id,{properties:{...selected.properties,lineHeight:n}});}}/>
+                  </label>}
+                {selectedCustomDefinition?.propertyDefinitions?.find(d=>d.propertyKey==='density')&&
+                  <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Density</span>
+                    <select aria-label="Spacing density" value={String(selected.properties.density??'comfortable')}
+                      onChange={event=>updateComponent(selected.id,{properties:{...selected.properties,
+                        density:event.target.value,
+                        ...(selectedCustomDefinition?.propertyDefinitions?.some(d=>d.propertyKey==='cardDensity')
+                          ?{cardDensity:'default'}:{})}})}>
+                      {selectedCustomDefinition?.propertyDefinitions?.find(d=>d.propertyKey==='density')?.choices?.map(choice=>
+                        <option key={choice.key} value={choice.key}>{choice.label}</option>)}
+                    </select>
+                  </label>}
+              </div><span>Text & density</span>
+            </div>}
           {selected && ribbonTab==='Component Content' && selectedCustomDefinition?.apiName==='une_item_grid'
             && (['imageFieldApiName','titleFieldApiName','descriptionFieldApiName','priceFieldApiName','badgeFieldApiName'] as const)
               .some(key=>Boolean(selected.properties[key]) && !(objects.find(object=>object.apiName===selected.properties.objectApiName)?.fields??[])
@@ -2548,50 +2578,33 @@ function PageBuilder({
                   && !(definition as {group?:string}).group
                   && (ribbonTab==='Component Responsive'
                     ? false
-                    : !/(?:device|breakpoint|mobile|tablet|desktop|phone|responsive|hidden|visible|visibility|borderWidth|borderRadius|radius|margin|padding|gap|opacity)/i.test(definition.propertyKey) && !/^(?:width|height|minWidth|maxWidth|minHeight|maxHeight)$/.test(definition.propertyKey)))}
+                    : !/(?:device|breakpoint|mobile|tablet|desktop|phone|responsive|hidden|visible|visibility|borderWidth|borderRadius|radius|margin|padding|gap|opacity|textAlign|lineHeight|density)/i.test(definition.propertyKey) && !/^(?:width|height|minWidth|maxWidth|minHeight|maxHeight)$/.test(definition.propertyKey)))}
               properties={selected.properties} onChange={properties=>updateComponent(selected.id,{properties})}/>
           </div>}
           {selected && ribbonTab==='Component Layout' && page.layoutMode!=='free-canvas' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
             {(['width','height'] as const).map(key=><label key={key} className="office-ribbon-inline-field">{key==='width'?'Width':'Height'} <input aria-label={'Layout '+key} value={String(selected.properties[key]??(key==='width'?'100%':'auto'))}
               onChange={event=>updateComponent(selected.id,{properties:{...selected.properties,[key]:event.target.value}})}/></label>)}
           </div><span>Dimensions</span></div>}
-          {selected && ribbonTab==='Component Layout' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
-            {(['margin','gap'] as const).map(key=><label key={key} className="office-ribbon-inline-field">{key==='margin'?'Margin':'Gap'} <input type="number" min={0} max={128} aria-label={'Component '+key}
-              value={Number((selected.properties.visualStyle as Record<string,unknown>|undefined)?.[key]??selected.properties[key]??0)}
-              onChange={event=>{const n=Number(event.target.value);if(Number.isFinite(n)&&n>=0&&n<=128)writeRibbonVisual(key,n);}}/></label>)}
-            {selectedCustomDefinition?.propertyDefinitions?.some(d=>d.propertyKey==='layoutContainer')&&<label className="office-ribbon-checkbox"><input type="checkbox" checked={selected.properties.layoutContainer===true} disabled={childrenOf(page.components,selected.id).length>0}
-              onChange={event=>updateComponent(selected.id,{properties:{...selected.properties,layoutContainer:event.target.checked}})}/> Allow child components</label>}
-          </div><span>Spacing & nesting</span></div>}
+          {selected && ribbonTab==='Component Layout' && selectedCustomDefinition?.propertyDefinitions?.some(d=>d.propertyKey==='layoutContainer') && <div className="office-ribbon-group office-ribbon-layout-nesting">
+             <div className="office-ribbon-stack"><label className="office-ribbon-checkbox"><input type="checkbox"
+               checked={selected.properties.layoutContainer===true} disabled={childrenOf(page.components,selected.id).length>0}
+               onChange={event=>updateComponent(selected.id,{properties:{...selected.properties,layoutContainer:event.target.checked}})}/> Allow child components</label></div>
+             <span>Nesting</span>
+           </div>}
           {selected && ribbonTab === 'Component Layout' && <>
             <div className="office-ribbon-group office-ribbon-icon-group office-ribbon-layout-arrange" aria-label="Arrange component">
-              <div className="office-ribbon-stack">
-                <div className="office-ribbon-icon-line">
-                  <button type="button" className="office-ribbon-icon-button" title="Bring forward" aria-label="Bring forward" disabled={isCanvasLocked(selected)} onClick={()=>moveSelected(-1)}><ArrowUp size={17}/></button>
-                  <button type="button" className="office-ribbon-icon-button" title="Send backward" aria-label="Send backward" disabled={isCanvasLocked(selected)} onClick={()=>moveSelected(1)}><ArrowDown size={17}/></button>
-                  <button type="button" className="office-ribbon-icon-button" title={selected.properties.canvasLocked?'Unlock position':'Lock position'} aria-label={selected.properties.canvasLocked?'Unlock position':'Lock position'} disabled={page.layoutMode!=='free-canvas'} onClick={()=>updateComponent(selected.id,{properties:{...selected.properties,canvasLocked:!selected.properties.canvasLocked}})}>{selected.properties.canvasLocked?<Unlock size={17}/>:<Lock size={17}/>}</button>
-                </div>
-                <div className="office-ribbon-icon-line" aria-label="Grouping">
-                    <button type="button" disabled={page.layoutMode!=='free-canvas'||selectionIds.length<2||!selected.position||isCanvasLocked(selected)||Boolean(rawLayoutParentId(selected))||selectionIds.some(id=>{
-                      const item=page.components.find(component=>component.id===id);
-                      return !item?.position||isCanvasLocked(item)||item.properties.canvasLocked===true||Boolean(rawLayoutParentId(item));
-                    })} onClick={()=>wrapSelectedInContainer()}><Group size={16}/> Group</button>
-                    <button type="button" disabled={page.layoutMode!=='free-canvas'||selected.type!=='Container'||isCanvasLocked(selected)||!childrenOf(page.components,selected.id).length} onClick={ungroupSelected}><Ungroup size={16}/> Ungroup</button>
-                  </div>
+              <div className="office-ribbon-arrange-column">
+                <button type="button" className="office-ribbon-icon-button" title={selected.properties.canvasLocked?'Unlock position':'Lock position'}
+                  aria-label={selected.properties.canvasLocked?'Unlock position':'Lock position'} disabled={page.layoutMode!=='free-canvas'}
+                  onClick={()=>updateComponent(selected.id,{properties:{...selected.properties,canvasLocked:!selected.properties.canvasLocked}})}>
+                  {selected.properties.canvasLocked?<Unlock size={16}/>:<Lock size={16}/>} <span>{selected.properties.canvasLocked?'Unlock':'Lock'}</span>
+                </button>
+                <button type="button" disabled={page.layoutMode!=='free-canvas'||selectionIds.length<2||!selected.position||isCanvasLocked(selected)||Boolean(rawLayoutParentId(selected))||selectionIds.some(id=>{
+                  const item=page.components.find(component=>component.id===id);
+                  return !item?.position||isCanvasLocked(item)||item.properties.canvasLocked===true||Boolean(rawLayoutParentId(item));
+                })} onClick={()=>wrapSelectedInContainer()}><Group size={16}/> Group</button>
+                <button type="button" disabled={page.layoutMode!=='free-canvas'||selected.type!=='Container'||isCanvasLocked(selected)||!childrenOf(page.components,selected.id).length} onClick={ungroupSelected}><Ungroup size={16}/> Ungroup</button>
               </div><span>Arrange</span>
-            </div>
-            <div className="office-ribbon-group office-ribbon-icon-group office-ribbon-layout-align">
-              <div className="office-ribbon-stack">
-                <div className="office-ribbon-icon-line">
-                  {([['start',AlignHorizontalJustifyStart,'Align left'],['center',AlignHorizontalJustifyCenter,'Align centre'],['end',AlignHorizontalJustifyEnd,'Align right']] as const).map(([alignment,Icon,label])=><button key={alignment} type="button" title={label} aria-label={label} className="office-ribbon-icon-button" disabled={page.layoutMode!=='free-canvas'||isCanvasLocked(selected)} onClick={()=>alignSelected('x',alignment)}><Icon size={17}/></button>)}
-                </div>
-                <div className="office-ribbon-icon-line">
-                  {([['start',AlignVerticalJustifyStart,'Align top'],['center',AlignVerticalJustifyCenter,'Align middle'],['end',AlignVerticalJustifyEnd,'Align bottom']] as const).map(([alignment,Icon,label])=><button key={alignment} type="button" title={label} aria-label={label} className="office-ribbon-icon-button" disabled={page.layoutMode!=='free-canvas'||isCanvasLocked(selected)} onClick={()=>alignSelected('y',alignment)}><Icon size={17}/></button>)}
-                </div>
-                <div className="office-ribbon-icon-line">
-                  <button type="button" className="office-ribbon-icon-button" title="Distribute horizontally" aria-label="Distribute horizontally" disabled={selectionIds.length<3} onClick={()=>distributeSelected('x')}><ArrowRight size={17}/></button>
-                  <button type="button" className="office-ribbon-icon-button" title="Distribute vertically" aria-label="Distribute vertically" disabled={selectionIds.length<3} onClick={()=>distributeSelected('y')}><ArrowDown size={17}/></button>
-                </div>
-              </div><span>Alignment</span>
             </div>
             {selected.position && <div className="office-ribbon-group office-ribbon-layout-position-physical"><div className="office-ribbon-stack">
               {(['x','y'] as const).map(key=><label key={key} className="office-ribbon-inline-field"><span className="office-ribbon-field-name">{key.toUpperCase()}</span><input aria-label={key.toUpperCase()+' position'} type="number" min={0} max={key==='x'?page.canvasWidth-selected.position!.width:page.canvasHeight-selected.position!.height} disabled={isCanvasLocked(selected)} value={selected.position![key]} onChange={event=>{const n=Number(event.target.value);if(Number.isFinite(n))updateComponent(selected.id,{position:{...selected.position!,[key]:Math.max(0,Math.min(key==='x'?page.canvasWidth-selected.position!.width:page.canvasHeight-selected.position!.height,Math.round(n)))}});}}/></label>)}
