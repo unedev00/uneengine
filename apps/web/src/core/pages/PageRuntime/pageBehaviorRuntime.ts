@@ -29,8 +29,10 @@ export function behaviorTabs(properties:Readonly<Record<string,unknown>>,
   tabs:readonly string[],context:BehaviorContext):string[]{
   const rules=asRows(pageBehaviors(properties)?.tabVisibility);
   return tabs.filter(tab=>{
-    const rule=rules.find(row=>row.tabId===tab);
-    return !rule||behaviorMatches(rule.when,context);
+    const matching=rules.filter(row=>row.tabId===tab);
+    // All authored rules for a tab must permit display; a later rule cannot
+    // override an earlier denial, matching Dynamic Action composition.
+    return matching.every(rule=>behaviorMatches(rule.when,context));
   });
 }
 export type BehaviorActionState='enabled'|'disabled'|'hidden';
