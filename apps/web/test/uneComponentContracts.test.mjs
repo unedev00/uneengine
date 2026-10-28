@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
+import {readFile} from 'node:fs/promises';
 import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {loadComponentCatalog,buildBundledComponent} from '../../../scripts/component-catalog.mjs';
@@ -37,7 +38,7 @@ test('every UNE property has a supported visual editor contract',()=>{
     for(const field of prop.fields)assert.ok(allowed.has(field.kind),d.apiName+' '+prop.propertyKey+' invalid nested kind '+field.kind);
    }
   }
-  for(const k of ['theme','surface','tone','density','radius','padding','gap','shadow','glassBlur','fontFamily','fontSize','width','height','minWidth','maxWidth','opacity','hideOnPhone','hideOnTablet','hideOnDesktop'])
+  for(const k of ['theme','surface','tone','density','radius','padding','gap','shadow','glassBlur','fontFamily','fontSize','width','height','minWidth','maxWidth','opacity'])
    assert.ok(keys.has(k),d.apiName+' missing '+k);
   for(const event of d.eventDefinitions??[])assert.match(event.apiName,/^[A-Za-z][A-Za-z0-9_]*$/);
  }
@@ -70,4 +71,16 @@ for(const d of une)test(d.apiName+' bundles and renders with a scoped UNE surfac
  assert.doesNotMatch(html,/<script/i);
  if(d.apiName==='une_text')assert.match(html,/Hello UNE/);
  if(d.apiName==='une_metric')assert.match(html,/42/);
+});
+
+test('device show/hide properties are not available in UNE metadata or the Page Builder ribbon', async () => {
+ const appearance=JSON.parse(await readFile(new URL('../src/one/une/shared/appearance-properties.json',import.meta.url),'utf8'));
+ const manifest=JSON.parse(await readFile(new URL('../src/one/manifest.json',import.meta.url),'utf8'));
+ const ribbon=await readFile(new URL('../src/core/builders/PageBuilder/PageBuilderRibbonStyle.tsx',import.meta.url),'utf8');
+ for(const key of ['hideOnPhone','hideOnTablet','hideOnDesktop']){
+  assert.ok(!appearance.some(property=>property.propertyKey===key),key+' in shared metadata');
+  assert.ok(!JSON.stringify(manifest).includes('"propertyKey":"'+key+'"'),key+' in UNE manifest');
+  assert.ok(!ribbon.includes(key),key+' in ribbon');
+ }
+ assert.ok(!ribbon.includes('Show on '),'no per-device visibility switches');
 });

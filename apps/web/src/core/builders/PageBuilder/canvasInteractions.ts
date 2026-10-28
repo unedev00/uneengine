@@ -89,7 +89,7 @@ export function groupCanvasComponents(
   const selection=new Set(ids);
   const children=components.filter(item=>selection.has(item.id));
   if(children.length<2||children.length!==selection.size||children.some(item=>
-    !item.position||item.parentId||item.properties.layoutParentId||item.properties.canvasLocked===true||isCanvasLocked(item)
+    !item.position||item.parentId||item.properties.layoutParentId||isCanvasLocked(item)
   ))return [...components];
   const left=Math.min(...children.map(item=>item.position!.x));
   const top=Math.min(...children.map(item=>item.position!.y));
@@ -145,7 +145,7 @@ export function alignCanvasComponents(
   const ids = new Set(selectedIds);
   const dimension = axis === 'x' ? 'width' : 'height';
   const eligible=components.filter(item=>ids.has(item.id)&&item.position
-    &&!isCanvasLocked(item)&&item.properties.canvasLocked!==true);
+    &&!isCanvasLocked(item));
   if(!eligible.length)return [...components];
   const group=eligible.length>1;
   const low=group?Math.min(...eligible.map(item=>item.position![axis])):0;
@@ -153,8 +153,7 @@ export function alignCanvasComponents(
     :(axis==='x'?canvas.width:canvas.height);
   const mid=(low+high)/2;
   return components.map(item=>{
-    if(!ids.has(item.id)||!item.position||isCanvasLocked(item)
-      ||item.properties.canvasLocked===true)return item;
+    if(!ids.has(item.id)||!item.position||isCanvasLocked(item))return item;
     const value=anchor==='start'?low:anchor==='center'
       ?Math.round(mid-item.position[dimension]/2):high-item.position[dimension];
     return {...item,position:{...item.position,[axis]:Math.round(value)}};
@@ -168,7 +167,7 @@ export function distributeCanvasComponents(
   const selected=new Set(ids);
   const dimension=axis==='x'?'width':'height';
   const eligible=components.filter(item=>selected.has(item.id)&&item.position
-    &&!isCanvasLocked(item)&&item.properties.canvasLocked!==true)
+    &&!isCanvasLocked(item))
     .sort((a,b)=>a.position![axis]-b.position![axis]);
   if(eligible.length<3)return [...components];
   const first=eligible[0].position![axis];
