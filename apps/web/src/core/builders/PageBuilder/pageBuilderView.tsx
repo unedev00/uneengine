@@ -2480,13 +2480,13 @@ function PageBuilder({
           </>}
           {ribbonTab==='Component Properties' && ribbonAppearanceGroups.map(group=>{
             const definitions=selected?definitionsForPart(group,'Design'):[];
-            return <div className="office-ribbon-group office-ribbon-part-group" key={group}>
+            return <div className="office-ribbon-group office-ribbon-part-group" data-ribbon-group={group} key={group}>
               <fieldset className="office-ribbon-part-fieldset" title={definitions.length?group:'Not supported by selected component'}><RibbonCapabilityControls group={group} definitions={definitions} properties={selected?.properties??{}} icon={ribbonPartIcons[group]??<Settings2 size={15}/>} onChange={properties=>{if(selected)updateComponent(selected.id,{properties});}}/></fieldset><span>{group}</span>
             </div>;
           })}
           {selected && ribbonTab==='Component Layout' && ribbonAppearanceGroups.map(group=>{
             const definitions=definitionsForPart(group,'Layout');
-            return <div className="office-ribbon-group office-ribbon-part-group" key={group}>
+            return <div className="office-ribbon-group office-ribbon-part-group" data-ribbon-group={group} key={group}>
               <fieldset className="office-ribbon-part-fieldset" title={definitions.length?group:'Not supported by selected component'}><RibbonCapabilityControls group={group} definitions={definitions} properties={selected?.properties??{}} icon={ribbonPartIcons[group]??<Settings2 size={15}/>} onChange={properties=>{if(selected)updateComponent(selected.id,{properties});}}/></fieldset><span>{group} layout</span>
             </div>;
           })}
