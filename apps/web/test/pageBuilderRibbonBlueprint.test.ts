@@ -122,7 +122,7 @@ test('Card Grid Design keeps exactly two Appearance choices and two Card extras'
  const source=readFileSync(new URL('../src/core/builders/PageBuilder/PageBuilderAdvancedStyle.tsx',import.meta.url),'utf8');
  assert.match(source,/const itemGridDesignKeys=new Set\(\['surface','cardDensity','cardHover'\]\)/);
  assert.match(source,/const isItemGrid=definition\?\.apiName==='une_item_grid'/);
- assert.match(source,/name:'Appearance',defs:all\.filter\(d=>d\.propertyKey==='theme'\|\|d\.propertyKey==='surface'\)/);
+ assert.match(source,/name:'Appearance',defs:all\.filter\(d=>d\.propertyKey==='surface'\)/);
  assert.match(source,/name:'Card extras',defs:all\.filter\(d=>cardExtras\.has\(d\.propertyKey\)\)/);
  assert.match(source,/\(!isItemGrid\|\|itemGridDesignKeys\.has\(d\.propertyKey\)\)/);
  assert.match(source,/<RibbonColorPalette/,'shared colour picker is retained for components that need it');
