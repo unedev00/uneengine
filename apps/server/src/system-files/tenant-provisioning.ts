@@ -34,7 +34,7 @@ export class TenantProvisioning {
     if(developerName!==undefined&&(typeof developerName!=='string'||!developerName.trim()||developerName.length>120))throw new Error('Invalid developer name');
     if(authority&&!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(authority.idempotencyKey))throw new Error('Invalid idempotency key');
     const developerIdentityEmail=tenantDeveloperEmail.toLowerCase();
-    if(!/^[a-z0-9][a-z0-9._+-]{0,62}@unesolutions\.co\.uk$/.test(developerIdentityEmail))
+    if(request.tenantDeveloperEmail!==undefined && !/^[a-z0-9][a-z0-9._+-]{0,62}@unesolutions\.co\.uk$/.test(developerIdentityEmail))
       throw new Error('Invalid tenant developer email');
     if(developerIdentityEmail.toLowerCase()===developerEmail.toLowerCase())
       throw new Error('Administrator email must differ from tenant developer identity');
