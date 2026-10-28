@@ -823,6 +823,12 @@ export async function validateFlowDraft(rbac:RbacEngine|undefined,tenantId:strin
   addFields(objectApi,value.map(condition=>condition&&typeof condition==='object'
    &&!Array.isArray(condition)?(condition as Record<string,unknown>).field:undefined));
  };
+ if(['Record-Triggered Flow','Schedule-Triggered Flow'].includes(String(data.flowType))
+   &&typeof startConfig.object==='string'
+   &&/^[A-Za-z][A-Za-z0-9_]*$/.test(startConfig.object)){
+  objectApis.add(startConfig.object);
+  addConditions(startConfig.object,startConfig.entryConditions);
+ }
  for(const resource of resources){
   if(resource.type==='Record'||resource.type==='Record Collection'){
    if(typeof resource.dataType!=='string'||!/^[A-Za-z][A-Za-z0-9_]*$/.test(resource.dataType))

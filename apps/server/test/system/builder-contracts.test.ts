@@ -99,6 +99,47 @@ test('Flow drafts are checked before writes and supported Screen graph validatio
   assert.match(invalidVisibility.errors.join(' '),/Unsupported Screen visibility operator/);
 });
 
+test('record and schedule trigger conditions reference fields on their configured Object',async()=>{
+  const db=withFlowCapabilities({
+    query:async(sql:string,values:unknown[]=[]):Promise<{rows:Array<Record<string,unknown>>}>=>{
+      if(sql.includes('FROM md_object_definitions'))
+        return {rows:(values[1] as string[]).filter(apiName=>apiName==='Account')
+          .map(api_name=>({api_name}))};
+      if(sql.includes('FROM md_field_definitions')&&sql.includes('deleted_at IS NULL')){
+        const objects=values[1] as string[],fields=values[2] as string[];
+        return {rows:objects.includes('Account')
+          ?fields.filter(field=>field==='Status').map(api_name=>({object_api:'Account',api_name}))
+          :[]};
+      }
+      throw new Error('Unexpected trigger metadata query: '+sql);
+    }
+  } as unknown as SqlPersistence);
+  const engine=new FlowRuntime(db,{require:async()=>{}} as unknown as RbacEngine);
+  const draft=(flowType:'Record-Triggered Flow'|'Schedule-Triggered Flow',field:string)=>({
+    apiName:'TriggerFieldFlow',flowType,triggerObject:'Account',
+    elements:[
+      {id:1,type:'Start',config:flowType==='Record-Triggered Flow'
+        ?{object:'Account',trigger:'updated',runWhen:'after-save',
+          entryConditions:[{field,operator:'Equals',value:'Active'}]}
+        :{object:'Account',startDate:'2026-10-28',startTime:'09:00',
+          timeZone:'UTC',frequency:'Daily',
+          entryConditions:[{field,operator:'Equals',value:'Active'}]}},
+      {id:2,type:'End',config:{}}
+    ],
+    connectors:[{from:1,to:2,kind:'normal'}]
+  });
+  for(const flowType of ['Record-Triggered Flow','Schedule-Triggered Flow'] as const){
+    const valid=await engine.validateDraft('tenant','user','TriggerFieldFlow',
+      draft(flowType,'Status'));
+    assert.equal(valid.valid,true,valid.errors.join('; '));
+    const invalid=await engine.validateDraft('tenant','user','TriggerFieldFlow',
+      draft(flowType,'Missing'));
+    assert.equal(invalid.valid,false);
+    assert.ok(invalid.errors.some(error=>error.includes('Account.Missing')),
+      invalid.errors.join('; '));
+  }
+});
+
 test('activating a newer Flow version deactivates existing versions before publishing',async()=>{
   const statements:string[]=[];
   const db={
