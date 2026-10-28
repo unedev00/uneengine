@@ -140,6 +140,7 @@ import PageComponentVisualEditor from '../ComponentStyleEditor/PageComponentVisu
 import RibbonColorPalette from './RibbonColorPalette';
 import {RibbonFilters,RibbonVisibilityRules} from './PageBuilderRibbonEditors';
 import PageBuilderActionRibbon from './PageBuilderActionRibbon';
+import PageBuilderRibbonMetadataPager from './PageBuilderRibbonMetadataPager';
 import {RibbonDesign,RibbonFormat,RibbonResponsive} from './PageBuilderRibbonStyle';
 import type {ComponentVisibilityRule} from '../../components/Properties/componentVisibility';
 import { canNestComponent, pageAppearanceTarget, pageAppearanceStyleKeys, updateLayoutSettings, type LayoutSettingKey, directChildren, isLayoutType, isDescendantOf, layoutTypes } from '../../pages/TemplatePageRuntime/pageComponentLayout';
@@ -2505,7 +2506,7 @@ function PageBuilder({
             </>}/>}
 
           {selected && (ribbonTab==='Component Layout'||ribbonTab==='Component Responsive') && selectedCustomDefinition && <div className="office-ribbon-inline-options">
-            <ComponentPresentationProperties
+            <PageBuilderRibbonMetadataPager key={selected.id}
               definitions={availableComponentSettings(selectedCustomDefinition.propertyDefinitions??[],
                 page.layoutVariant??'Desktop',selectedCustomDefinition.version)
                 .filter(definition=>isPresentationProperty(definition)&&presentationSection(definition)==='Layout'
@@ -2513,8 +2514,7 @@ function PageBuilder({
                   && (ribbonTab==='Component Responsive'
                     ? false
                     : !/(?:device|breakpoint|mobile|tablet|desktop|phone|responsive|hidden|visible|visibility|width|height|borderWidth|borderRadius|radius|minWidth|maxWidth|minHeight|maxHeight|margin|padding|gap|opacity)/i.test(definition.propertyKey)))}
-              properties={selected.properties}
-              onChange={properties=>updateComponent(selected.id,{properties})}/>
+              properties={selected.properties} onChange={properties=>updateComponent(selected.id,{properties})}/>
           </div>}
           {selected && ribbonTab==='Component Layout' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
             {(['margin','gap'] as const).map(key=><label key={key} className="office-ribbon-inline-field">{key==='margin'?'Margin':'Gap'} <input type="number" min={0} max={128} aria-label={'Component '+key}
