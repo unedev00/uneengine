@@ -2478,13 +2478,13 @@ function PageBuilder({
           {ribbonTab==='Component Properties' && designRibbonGroups.map(group=>{
             const definitions=selected?definitionsForPart(group,'Design'):[];
             return <div className="office-ribbon-group office-ribbon-part-group" data-ribbon-group={group} key={group}>
-              <fieldset className="office-ribbon-part-fieldset" title={definitions.length?group:'Not supported by selected component'}><RibbonCapabilityControls group={group} definitions={definitions} properties={selected?.properties??{}} icon={ribbonPartIcons[group]??<Settings2 size={15}/>} onChange={properties=>{if(selected)updateComponent(selected.id,{properties});}}/></fieldset><span>{group}</span>
+              <fieldset className="office-ribbon-part-fieldset" title={definitions.length?group:'Not supported by selected component'}><RibbonCapabilityControls group={group} device={page.layoutVariant??'Desktop'} definitions={definitions} properties={selected?.properties??{}} icon={ribbonPartIcons[group]??<Settings2 size={15}/>} onChange={properties=>{if(selected)updateComponent(selected.id,{properties});}}/></fieldset><span>{group}</span>
             </div>;
           })}
           {selected && ribbonTab==='Component Layout' && layoutRibbonGroups.map(group=>{
             const definitions=definitionsForPart(group,'Layout');
             return <div className="office-ribbon-group office-ribbon-part-group" data-ribbon-group={group} key={group}>
-              <fieldset className="office-ribbon-part-fieldset" title={definitions.length?group:'Not supported by selected component'}><RibbonCapabilityControls group={group} definitions={definitions} properties={selected?.properties??{}} icon={ribbonPartIcons[group]??<Settings2 size={15}/>} onChange={properties=>{if(selected)updateComponent(selected.id,{properties});}}/></fieldset><span>{group} layout</span>
+              <fieldset className="office-ribbon-part-fieldset" title={definitions.length?group:'Not supported by selected component'}><RibbonCapabilityControls group={group} device={page.layoutVariant??'Desktop'} definitions={definitions} properties={selected?.properties??{}} icon={ribbonPartIcons[group]??<Settings2 size={15}/>} onChange={properties=>{if(selected)updateComponent(selected.id,{properties});}}/></fieldset><span>{group} layout</span>
             </div>;
           })}
           {selected && ribbonTab==='Component Layout' && (selectedCustomDefinition?.propertyDefinitions??[]).some(d=>d.propertyKey==='lineHeight'||d.propertyKey==='density') &&
