@@ -36,11 +36,17 @@ export function behaviorTabs(properties:Readonly<Record<string,unknown>>,
 export type BehaviorActionState='enabled'|'disabled'|'hidden';
 export function behaviorAction(properties:Readonly<Record<string,unknown>>,
   actionId:string,context:BehaviorContext):BehaviorActionState{
-  const rule=asRows(pageBehaviors(properties)?.actionVisibility)
-    .find(row=>row.actionId===actionId);
-  if(!rule)return 'enabled';
-  if(behaviorMatches(rule.when,context))return 'enabled';
-  return rule.unavailable==='Hide'?'hidden':'disabled';
+  const rules=asRows(pageBehaviors(properties)?.actionVisibility)
+    .filter(row=>row.actionId===actionId);
+  // Multiple conditions on one action are conjunctive at the row level.
+  // A hidden action may never be re-enabled by a later matching row.
+  let state:BehaviorActionState='enabled';
+  for(const rule of rules){
+    if(behaviorMatches(rule.when,context))continue;
+    if(rule.unavailable==='Hide')return 'hidden';
+    state='disabled';
+  }
+  return state;
 }
 /** Declarative client-side validation before an event runs. Server APIs retain their own RBAC and validation. */
 export function behaviorValidation(properties:Readonly<Record<string,unknown>>,
