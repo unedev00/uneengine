@@ -1,5 +1,6 @@
 import type {LibraryComponentMetadata} from '../../metadata/Definitions/metadata';
 import TenantMediaPicker from './TenantMediaPicker';
+import RibbonColorPalette from '../PageBuilder/RibbonColorPalette';
 import {groupedPresentationProperties, presentationValue} from './presentationPropertyModel.mjs';
 
 type Properties = Record<string, unknown>;
@@ -32,6 +33,17 @@ export default function ComponentPresentationProperties({
           <label>{label}</label>
           <TenantMediaPicker value={String(value ?? '')} onChange={next => update(key, next)} />
         </div>;
+        if (definition.kind === 'SELECT' && /(?:heading|description|badge|value)FontWeight$/i.test(key) && definition.choices?.length)
+          return <div key={key} className="form-label office-ribbon-metadata-weight">
+            <span>{label}</span>
+            <div className="office-ribbon-weight-choices">
+              {definition.choices.map(choice=><button key={choice.key} type="button"
+                title={choice.label} aria-label={label+': '+choice.label}
+                aria-pressed={String(value??'')===String(choice.key)}
+                style={{fontWeight:Number(choice.key)||400}}
+                onClick={()=>update(key,choice.key)}>B</button>)}
+            </div>
+          </div>;
         if (definition.kind === 'SELECT' && definition.choices?.length) return <label key={key} className="form-label">
           {label}
           <select className="form-control" aria-label={label} value={String(value ?? '')}
@@ -46,13 +58,17 @@ export default function ComponentPresentationProperties({
             onChange={event => update(key, event.target.checked)}/>
           {label}
         </label>;
-        if (definition.kind === 'COLOR') return <label key={key} className="form-label office-ribbon-metadata-color">
-          {label}
-          <span className="compact-color-controls">
-            <input type="color" aria-label={label+' palette'} value={/^#[0-9a-f]{6}$/i.test(String(value??''))?String(value):'#ffffff'} onChange={event=>update(key,event.target.value)}/>
-            <input type="text" aria-label={label+' hex code'} placeholder="#RRGGBB" value={String(value??'')} onChange={event=>update(key,event.target.value)}/>
-          </span>
-        </label>;
+        if (definition.kind === 'COLOR') return <div key={key} className="form-label office-ribbon-metadata-color">
+          <span>{label}</span>
+          <RibbonColorPalette kind={/border/i.test(key)?'border':/background|fill|accent/i.test(key)?'fill':'text'}
+            label={label} value={String(value??'')} onChange={next=>update(key,next)}/>
+        </div>;
+        if (definition.kind === 'NUMBER' && /(?:heading|description|badge|value)FontSize$/i.test(key))
+          return <label key={key} className="form-label office-ribbon-metadata-size">{label}
+            <input className="form-control" aria-label={label} type="number" min={8} max={96}
+              value={typeof value==='number'?value:''}
+              onChange={event=>event.target.value===''?clear(key):update(key,Number(event.target.value))}/>
+          </label>;
         if (definition.kind === 'NUMBER' || definition.kind === 'CURRENCY') return <label key={key} className="form-label">
           {label}
           <input className="form-control" aria-label={label} type="number"
