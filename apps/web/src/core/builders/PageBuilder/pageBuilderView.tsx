@@ -62,8 +62,6 @@ import {
   ExternalLink,
   Eye,
   EyeOff,
-  Lock,
-  Unlock,
   FileText,
   Filter,
   Grid2X2,
@@ -137,10 +135,8 @@ import ComponentPresentationProperties from '../ComponentProperties/ComponentPre
 import {presentationSection,isPresentationProperty} from '../ComponentProperties/presentationPropertyModel.mjs';
 import FlowInputBindingEditor from '../FlowInputBindingEditor/FlowInputBindingEditor';
 import RecordFilterEditor from '../../../one/OneRecordFilterEditor/RecordFilterEditor';
-import ComponentVisibilityEditor from '../ComponentProperties/ComponentVisibilityEditor';
 import RichTextBlockEditor from '../ComponentProperties/RichTextBlockEditor';
 import PageRouteDirectory from '../../pages/PageRouteDirectory/PageRouteDirectory';
-import { isComponentVisible } from '../../components/Properties/componentVisibility';
 import PageComponentVisualEditor from '../ComponentStyleEditor/PageComponentVisualEditor';
 import RibbonColorPalette from './RibbonColorPalette';
 import {RibbonFilters} from './PageBuilderRibbonEditors';
