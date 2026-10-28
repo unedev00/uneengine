@@ -1534,6 +1534,14 @@ function RecordWorkspace({
   };
   const runCustomObjectAction = async (action: ObjectActionMetadata) => {
     if(!object||!record||!action.behavior)return;
+    // Re-resolve against current Object metadata; never dispatch a stale,
+    // disabled, or removed action even if an old button callback still exists.
+    const currentAction=object.actions?.find(item=>item.id===action.id
+      &&item.enabled!==false&&item.type==='Custom');
+    if(!currentAction){
+      setCustomActionMessage('This action is no longer available.');
+      return;
+    }
     // UI state is never a grant, but programmatic action invocation must still
     // obey the same published conditional state as its Header/Publisher buttons.
     const actionsBlock=activeLightningPage?.components.find(component=>
