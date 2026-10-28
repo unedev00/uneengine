@@ -2496,11 +2496,11 @@ function PageBuilder({
             eventDefinitions={selectedCustomDefinition?.eventDefinitions??[]} flows={flows}
             onChange={actions=>updateComponent(selected.id,{properties:{...selected.properties,actionFlows:actions}})}
             advanced={<>
-              <MetadataComponentProperties mode="actions-editor" properties={selected.properties} onChange={properties=>updateComponent(selected.id,{properties})}
+              <MetadataComponentProperties mode="actions-editor" properties={selected.properties} onChange={(properties:Record<string,unknown>)=>updateComponent(selected.id,{properties})}
                 eventDefinitions={selectedCustomDefinition?.eventDefinitions??[]} definitions={selectedCustomDefinition?.propertyDefinitions}
                 device={page.layoutVariant??'Desktop'} componentVersion={selectedCustomDefinition?.version} pageComponents={page.components} componentCatalog={libraryComponents}
                 objects={objects} apps={apps} pages={pages} currentAppId={builderAppApiName||apps[0]?.apiName||'Records'} flows={flows} primaryObjectApiName={page.targetObject}/>
-              <MetadataComponentProperties mode="conditions" properties={selected.properties} onChange={properties=>updateComponent(selected.id,{properties})}
+              <MetadataComponentProperties mode="conditions" properties={selected.properties} onChange={(properties:Record<string,unknown>)=>updateComponent(selected.id,{properties})}
                 eventDefinitions={selectedCustomDefinition?.eventDefinitions??[]} definitions={selectedCustomDefinition?.propertyDefinitions}
                 device={page.layoutVariant??'Desktop'} componentVersion={selectedCustomDefinition?.version} pageComponents={page.components} componentCatalog={libraryComponents}
                 objects={objects} apps={apps} pages={pages} currentAppId={builderAppApiName||apps[0]?.apiName||'Records'} flows={flows} primaryObjectApiName={page.targetObject}/>
