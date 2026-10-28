@@ -193,6 +193,7 @@
  padding-top:12px;font-weight:800;font-size:18px}
 .assist-document-error,.assist-document-lock{margin:0;padding:10px 12px;
  background:#fff6f3;color:#843c2d;border-radius:9px;font-size:13px}
+.assist-document-validation{grid-column:1/-1;margin:0;color:#526175;font-size:13px}
 .assist-document-form .assist-modal-footer{margin-top:3px}
 .assist-related-item{display:grid;gap:4px;padding:9px 0;border-bottom:1px solid #e8eef3}
 .assist-related-item span{font-size:12px;color:#53667b;font-variant-numeric:tabular-nums}

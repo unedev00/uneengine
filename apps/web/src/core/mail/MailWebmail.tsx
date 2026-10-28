@@ -63,6 +63,7 @@ function iconForFolder(name:string){
 export default function MailWebmail(){
  const [email,setEmail]=useState('');
  const [password,setPassword]=useState('');
+ const [passwordVisible,setPasswordVisible]=useState(false);
  const [loggedIn,setLoggedIn]=useState(false);
  const [folders,setFolders]=useState<FolderItem[]>([]);
  const [folder,setFolder]=useState('INBOX');
@@ -208,8 +209,13 @@ export default function MailWebmail(){
     <input type="email" required autoComplete="username" value={email} onChange={e=>setEmail(e.target.value)} placeholder="name@example.com"/>
    </label>
    <label className="md-mail-field">Password
-    <input type="password" required autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)}/>
+    <input id="mail-login-password" type={passwordVisible?'text':'password'} required autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)}/>
    </label>
+   <div className="md-mail-login-help">
+    <button type="button" className="md-mail-password-toggle" aria-controls="mail-login-password"
+     onClick={()=>setPasswordVisible(value=>!value)}>{passwordVisible?'Hide password':'Show password'}</button>
+    <span>Forgot your password? Contact your administrator to reset it.</span>
+   </div>
    <button className="md-mail-primary md-mail-login-submit" disabled={busy}>{busy?'Signing in…':'Sign in'}</button>
    <a className="md-mail-login-admin" href="/mail-admin">Mail administration</a>
   </form>
