@@ -3,7 +3,7 @@ import test from 'node:test';
 import {
   evaluateConditionExpression,isComponentVisible,validateVisibilityRule
 } from '../src/core/components/Properties/componentVisibility';
-import {behaviorAction,behaviorTabs} from '../src/core/pages/PageRuntime/pageBehaviorRuntime';
+import {behaviorAction,behaviorTabs,behaviorField} from '../src/core/pages/PageRuntime/pageBehaviorRuntime';
 
 test('P2 mixed AND/OR precedence, parentheses and full token consumption',()=>{
  assert.equal(evaluateConditionExpression('1 AND (2 OR 3)',[true,false,true]),true);
@@ -45,4 +45,28 @@ test('P2 nested expressions also drive shared action and tab conditions',()=>{
  assert.deepEqual(behaviorTabs(props,['details','other'],{formFactor:'Desktop'}),['details','other']);
  assert.equal(behaviorAction(props,'Edit',{formFactor:'Phone'}),'hidden');
  assert.deepEqual(behaviorTabs(props,['details','other'],{formFactor:'Phone'}),['other']);
+});
+
+test('P2 nested expressions update Dynamic Forms required/hidden rules on unsaved values',()=>{
+ const when={logic:'All',expression:'1 AND (2 OR 3)',conditions:[
+  {source:'Device',operator:'Equals',value:'Desktop'},
+  {source:'Record Field',fieldApiName:'Status',operator:'Equals',value:'Open'},
+  {source:'Record Permission',operator:'Equals',value:'Edit'}
+ ]};
+ const props={pagePropertyContract:{version:1,fieldRules:[
+  {fieldApiName:'Phone',behavior:'Required',visibilityRules:when}]}};
+ const base={formFactor:'Desktop' as const,
+  fields:[{apiName:'Status',label:'Status',dataType:'Text(40)'}],
+  readableFieldApiNames:new Set(['Status']),
+  recordPermissions:new Set<'Create'|'Edit'|'Delete'>()};
+ assert.deepEqual(behaviorField(props,'Phone',{...base,record:{Status:'Closed'}}),
+  {visible:false,required:false,readOnly:false});
+ assert.deepEqual(behaviorField(props,'Phone',{...base,record:{Status:'Open'}}),
+  {visible:true,required:true,readOnly:false});
+ assert.deepEqual(behaviorField(props,'Phone',{...base,record:{Status:'Closed'},
+  recordPermissions:new Set<'Create'|'Edit'|'Delete'>(['Edit'])}),
+  {visible:true,required:true,readOnly:false});
+ assert.deepEqual(behaviorField(props,'Phone',{...base,record:{Status:'Open'},
+  readableFieldApiNames:new Set<string>()}),
+  {visible:false,required:false,readOnly:false});
 });
