@@ -12,7 +12,7 @@ export function evaluateFieldExpression(expression, record) {
   let requireTerm = true;
   let parts = 0;
   while (index < input.length && parts <= 64) {
-    while (/\\s/.test(input[index] || "") && index < input.length) index++;
+    while (/\s/.test(input[index] || "") && index < input.length) index++;
     if (index >= input.length) break;
     if (!requireTerm) {
       if (input[index] !== "&") return "";
