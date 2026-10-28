@@ -2065,11 +2065,12 @@ function RecordWorkspace({
       .filter((field): field is FieldMetadata => Boolean(field && fieldAccess[`${object.apiName}.${field.apiName}`]?.read && record && field.apiName in record));
     const assignedPage = activeLightningPage?.targetObject === object.apiName ? activeLightningPage : null;
     const renderRelatedList = (relationshipName: string,component?:PageComponentMetadata) => {
-      const related = Object.entries(relatedRecords).find(([name, value]) => {
+      const relatedEntry = Object.entries(relatedRecords).find(([name, value]) => {
         const childObject = objects.find((item) => item.apiName === value.objectApiName);
         return name.toLocaleLowerCase() === relationshipName.toLocaleLowerCase()
           || childObject?.pluralLabel.toLocaleLowerCase() === relationshipName.toLocaleLowerCase();
-      })?.[1];
+      });
+      const related=relatedEntry?.[1];
       if (!related) return <section className="record-fields-card surface" key={relationshipName}><div className="record-fields-heading"><h2>{relationshipName}</h2></div><div className="records-empty">This related list is unavailable for this record.</div></section>;
       const childObject = objects.find((item) => item.apiName === related.objectApiName);
       const overrides=(component?.properties.relatedListSettings??{}) as Record<string,Record<string,unknown>>;
@@ -2088,7 +2089,7 @@ function RecordWorkspace({
         &&action.targetObjectApi===childObject?.apiName&&action.relationshipFieldApi===related.fieldApiName
         &&allowedActionIds.includes(action.id)
         &&(!recordLayout||recordLayout.actions.includes(action.id)));
-      return <section className="record-fields-card surface related-records-card" id={'related-'+relationshipName} key={relationshipName}>
+      return <section className="record-fields-card surface related-records-card" id={'related-'+relatedEntry![0]} key={relationshipName}>
         <div className="record-fields-heading"><h2>{relationshipName}</h2><span>{related.total} record{related.total === 1 ? '' : 's'}</span>
           {settings?.showNewAction!==false&&newAction&&childObject&&<button type="button" className="btn"
             onClick={()=>onNavigate({kind:'record-list',objectApiName:childObject.apiName,appId:route.appId,
@@ -2190,11 +2191,15 @@ function RecordWorkspace({
         const available=visibleRelatedListQuickLinks(names,relatedRecords,objects);
         if(!available.length)return null;
         return <nav key={component.id} className="record-fields-card surface" aria-label={component.label}>
-          {available.map(name=><a key={name} href={'#related-'+encodeURIComponent(name)}
+          {available.map(name=>{
+            const entry=Object.entries(relatedRecords).find(([key,value])=>
+              key.toLowerCase()===name.toLowerCase()||objects.find(item=>item.apiName===value.objectApiName)?.pluralLabel.toLowerCase()===name.toLowerCase());
+            const anchor='related-'+entry![0];
+            return <a key={name} href={'#'+encodeURIComponent(anchor)}
             onClick={event=>{
-              const target=document.getElementById('related-'+name);
+              const target=document.getElementById(anchor);
               if(target){event.preventDefault();target.scrollIntoView({behavior:'smooth'});}
-            }}>{name}</a>)}
+            }}>{name}</a>})}
         </nav>;
       }
       if(component.type==='Items to Approve')
