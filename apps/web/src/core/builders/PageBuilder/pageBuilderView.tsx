@@ -2352,31 +2352,6 @@ function PageBuilder({
           </>}
         </section>;
       })()}
-      {editorMode&&selected?.type==='Record Field'&&(()=>{
-        const source=objects.find(item=>item.apiName===page.targetObject);
-        const lookupName=String(selected.properties.relatedLookupFieldApiName??'');
-        const lookup=source?.fields.find(item=>item.apiName===lookupName&&item.relationship);
-        const target=objects.find(item=>item.apiName===lookup?.relationship?.targetObject);
-        return <section className="builder-cross-object-settings" aria-label="Cross-object field configuration">
-          <label className="form-label">Related record lookup
-            <select className="form-control" value={lookupName}
-              onChange={event=>updateComponent(selected.id,{properties:{
-                ...selected.properties,relatedLookupFieldApiName:event.target.value,relatedFieldApiName:''}})}>
-              <option value="">Current record field (no relationship)</option>
-              {(source?.fields??[]).filter(item=>Boolean(item.relationship)).map(item=>
-                <option key={item.apiName} value={item.apiName}>{item.label}</option>)}
-            </select>
-          </label>
-          {lookup&&<label className="form-label">Related field from {target?.label??lookup.relationship?.targetObject}
-            <select className="form-control" value={String(selected.properties.relatedFieldApiName??'')}
-              onChange={event=>updateComponent(selected.id,{properties:{
-                ...selected.properties,relatedFieldApiName:event.target.value}})}>
-              <option value="">Choose a related field</option>
-              {(target?.fields??[]).map(item=><option key={item.apiName} value={item.apiName}>{item.label}</option>)}
-            </select>
-          </label>}
-        </section>;
-      })()}
       {editorMode && isPhoneBuilder && <p className="builder-phone-guidance" role="status">
         Phone preview: tap a component to edit its properties. Drag-and-drop and canvas positioning are available on tablet and desktop.
       </p>}
