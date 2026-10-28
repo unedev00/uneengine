@@ -153,7 +153,8 @@ test('Free Canvas uses clean component objects and a compact ribbon-based palett
   assert.match(source, /ribbonComponentGroups\.flatMap\(group=>group\.components\)/);
   assert.doesNotMatch(source, /ribbonComponentSearch\.trim\(\)/);
   assert.match(source, /ribbonAddOffset/);
-  assert.match(source, /aria-label="Component category"/);
+  assert.doesNotMatch(source, /aria-label="Component category"/);
+  assert.match(source, /const pageSize=24;/);
   assert.match(source, /onClick=\{\(\)=>addPaletteComponent\(component\.type\)\}/);
   assert.doesNotMatch(source, /remainingRibbonComponents\.map\(component=>/);
   assert.doesNotMatch(source, /<aside className="component-panel"/);
