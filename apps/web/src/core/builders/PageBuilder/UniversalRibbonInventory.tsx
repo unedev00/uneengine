@@ -6,7 +6,7 @@ import TenantMediaPicker from '../ComponentProperties/TenantMediaPicker';
 /**
  * Universal Page Builder ribbon inventory. Importing metadata eagerly is confined to
  * the lazy-loaded builder; published app runtimes never import this catalog.
- * Every UNE component shares the same property slots, independent of selection.
+ * Shared group placement; render only the selected component's declared properties.
  */
 type Definition=NonNullable<LibraryComponentMetadata['propertyDefinitions']>[number];
 type Properties=Record<string,unknown>;
@@ -110,9 +110,9 @@ export default function UniversalRibbonInventory({tab,definition,properties,onCh
  if(!groups)return null;
  return <div className="une-universal-ribbon" aria-label="Universal UNE property ribbon"
    data-component={definition?.apiName??'none'} data-inventory-count={universalRibbonInventoryCount}>
-   {Array.from(groups).map(([section,defs])=><section key={section} className="une-universal-ribbon-section" aria-label={section}>
+   {Array.from(groups).filter(([,defs])=>defs.some(item=>enabled.has(item.propertyKey))).map(([section,defs])=><section key={section} className="une-universal-ribbon-section" aria-label={section}>
      <div className="une-universal-ribbon-controls">
-       {defs.map(def=><PropertyEditor key={def.propertyKey} definition={enabled.has(def.propertyKey)
+       {defs.filter(item=>enabled.has(item.propertyKey)).map(def=><PropertyEditor key={def.propertyKey} definition={enabled.has(def.propertyKey)
          ?definition?.propertyDefinitions?.find(item=>item.propertyKey===def.propertyKey)??def:def}
          enabled={enabled.has(def.propertyKey)} properties={properties} onChange={onChange}/>)}
      </div>
