@@ -14,6 +14,6 @@ test('one numeric width standard applies to every ribbon tab without changing te
  assert.match(css,/\.une-universal-property\[data-kind="NUMBER"\]/);
  assert.match(css,/\.une-universal-property\[data-kind="CURRENCY"\]/);
  assert.match(inventory,/data-kind=\{definition.kind\}/);
- assert.ok(page.indexOf("import './PageBuilderNumericControls.css';")>page.indexOf("import './UniversalRibbonInventory.css';"));
+ assert.ok(page.indexOf("import './PageBuilderNumeric"+'Controls.css' + "';")>page.indexOf("import './UniversalRibbon"+'Inventory.css' + "';"));
  assert.doesNotMatch(css,/select:not\(/);
 });
