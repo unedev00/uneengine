@@ -1121,3 +1121,16 @@
     grid-template-columns:repeat(4,minmax(0,1fr));
   }
 }
+
+/* Keep legacy card-part editors out of normal page flow: no extra ribbon bar or canvas shift. */
+.builder-page.editor-mode,
+.builder-page:has(.office-builder-ribbon) {position:relative}
+.builder-page:has(.office-builder-ribbon)>.page-ribbon-expanded-editor,
+.builder-page:has(.office-builder-ribbon) .page-ribbon-expanded-editor {
+  position:absolute!important;top:184px!important;left:50%!important;
+  transform:translateX(-50%)!important;z-index:85!important;
+  width:min(900px,calc(100vw - 50px))!important;max-width:calc(100vw - 50px)!important;
+  max-height:min(58vh,580px)!important;overflow-y:auto!important;
+  background:#fff!important;border:1px solid #aab8c6!important;
+  box-shadow:0 12px 26px #12263a38!important;
+}
