@@ -1346,13 +1346,10 @@ function RecordWorkspace({
   const defaultRecordTypeId = activeRecordTypes.find((item) => item.isDefault)?.id ?? activeRecordTypes[0]?.id ?? '';
   const selectedRecordTypeId = String(formValues.RecordTypeId ?? defaultRecordTypeId);
   const sourceLayout = object ? pageLayoutForRecord(object, selectedRecordTypeId, profileId) : undefined;
-  const visibleEditPage = activeEditLightningPage && object ? {...activeEditLightningPage,
-    components:activeEditLightningPage.components.filter(component=>isComponentVisible(component,{
-      formFactor,record:formValues,fields:object.fields,profileId,
-      
-      readableFieldApiNames:new Set(object.fields.filter(field=>fieldAccess[`${object.apiName}.${field.apiName}`]?.read)
-        .map(field=>field.apiName))
-    },true))} : null;
+  // Preserve authored components until the layout resolver evaluates their
+  // conditions. Pre-filtering would erase evidence of intentionally hidden
+  // Dynamic Forms sections and could reintroduce legacy fallback fields.
+  const visibleEditPage=activeEditLightningPage;
   const selectedLayout = recordEditPageLayout(visibleEditPage,sourceLayout,{
     formFactor,record:formValues,fields:object?.fields??[],profileId,
     readableFieldApiNames:new Set(object?.fields.filter(field=>fieldAccess[`${object.apiName}.${field.apiName}`]?.read)
