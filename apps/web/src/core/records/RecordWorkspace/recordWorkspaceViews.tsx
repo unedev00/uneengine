@@ -770,6 +770,7 @@ function RecordWorkspace({
   const [editingTimestamp, setEditingTimestamp] = useState('');
   // Edit layouts are published metadata resolved for the current actor, app,
   // profile, record type and device; list-row edits use the same endpoint.
+  const [formValues, setFormValues] = useState<Record<string, unknown>>({});
   useEffect(()=>{
     if(!formOpen||!editingId||!object)return;
     let active=true;
@@ -778,18 +779,18 @@ function RecordWorkspace({
     const params=new URLSearchParams({
       appId:route.kind==='record-detail'||route.kind==='record-list'?route.appId??'Records':'Records',
       formFactor:typeof window!=='undefined'&&new URLSearchParams(window.location.search).get('pageLayout')==='Custom'
-        ? 'Custom' : viewportFactor==='Tablet'?'Tablet':formFactor==='Phone'?'Mobile':'Desktop'
+        ? 'Custom' : viewportFactor==='Tablet'?'Tablet':formFactor==='Phone'?'Mobile':'Desktop',
+      editRecordTypeId:String(formValues.RecordTypeId??'')
     });
     void apiRequest<{editLightningPage?:LightningPageMetadata;recordPermissions?:{Create:boolean;Edit:boolean;Delete:boolean}}>(
       `/records/${encodeURIComponent(object.apiName)}/${encodeURIComponent(editingId)}?${params}`)
       .then(payload=>{if(active){setActiveEditLightningPage(payload.editLightningPage??null);
-        setEditPageResolvedRecordId(editingId);
+        setEditPageResolvedRecordId([editingId,String(formValues.RecordTypeId??''),profileId].join('|'));
         if(payload.recordPermissions)setRecordGrants({objectApi:object.apiName,...payload.recordPermissions});}})
       .catch(error=>{if(active)setEditPageError(error instanceof Error?error.message:'Unable to resolve Record Edit Page');})
       .finally(()=>{if(active)setEditPageLoading(false);});
     return()=>{active=false;};
-  },[formOpen,editingId,object?.apiName,formFactor,viewportFactor,route.kind,route.appId,profileId]);
-  const [formValues, setFormValues] = useState<Record<string, unknown>>({});
+  },[formOpen,editingId,object?.apiName,formFactor,viewportFactor,route.kind,route.appId,profileId,formValues.RecordTypeId]);
   // Creation uses the published Edit-page field contract too, not the legacy
   // Object layout alone. Changes to RecordTypeId resolve the correct assignment.
   useEffect(()=>{
@@ -1958,7 +1959,7 @@ function RecordWorkspace({
     {!editPageError?<div className="records-loading" role="status">Loading published creation layout…</div>
       :<div className="records-message" role="alert">Unable to load creation layout: {editPageError}</div>}
   </main>;
-  if (formOpen && editingId && (editPageResolvedRecordId!==editingId||editPageLoading||editPageError)) return <main className="records-page record-editor-page">
+  if (formOpen && editingId && (editPageResolvedRecordId!==[editingId,String(formValues.RecordTypeId??''),profileId].join('|')||editPageLoading||editPageError)) return <main className="records-page record-editor-page">
     <button className="text-action" type="button" onClick={()=>setFormOpen(false)}>Back to record</button>
     {!editPageError?<div className="records-loading" role="status">Loading published Record Edit layout…</div>
       :<div className="records-message" role="alert">Unable to load Record Edit layout: {editPageError}</div>}
