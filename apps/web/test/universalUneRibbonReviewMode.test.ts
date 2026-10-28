@@ -10,7 +10,9 @@ test('ribbon displays stable slots and disables unsupported properties',()=>{
  assert.match(source,/Array\.from\(groups\)\.map/);
  assert.match(source,/if\(supported\)onChange/);
  assert.match(source,/componentId/);
- assert.match(source,/useEffect\(\(\)=>\{setReviewDraft\(\{\}\);\},\[componentId\]\)/);
+ assert.match(source,/disabled=\{!canEditCanvas\}/);
+ assert.match(source,/disabled=\{!canOpenSource\}/);
+ assert.match(source,/disabled=\{!canOpenFilters\}/);
  assert.match(source,/onPositionChange/);
  assert.match(source,/editCanvas\(key,1,event\.target\.value\)/);
 });
