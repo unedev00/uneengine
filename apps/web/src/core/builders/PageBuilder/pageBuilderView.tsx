@@ -461,6 +461,7 @@ function PageBuilder({
   const [ribbonFilterDraft,setRibbonFilterDraft] = useState<Record<string,unknown>>({});
   const [ribbonVisibilityDraft,setRibbonVisibilityDraft] = useState<ComponentVisibilityRule|undefined>(undefined);
   const [ribbonAddOffset,setRibbonAddOffset] = useState(0);
+  const [ribbonSourceOffset,setRibbonSourceOffset] = useState(0);
   const [cardPart,setCardPart] = useState<'Card'|'Image'|'Heading'|'Supporting text'|'Value'|'Gallery'>('Card');
   const [additionalPropertyDialogOpen,setAdditionalPropertyDialogOpen] = useState(false);
   const [pageSettingsDialogOpen,setPageSettingsDialogOpen] = useState(false);
@@ -2568,13 +2569,21 @@ function PageBuilder({
               const changed=Object.fromEntries(Object.entries(ribbonFilterDraft).filter(([key])=>key==='filters'||key.endsWith('Filters')||key==='filterLogic'));
               updateComponent(selected.id,{properties:{...selected.properties,...changed}});selectRibbonTab('Component Data');
             }} onCancel={()=>selectRibbonTab('Component Data')}/>}
-          {selected && ribbonTab==='Source' && <div className="office-ribbon-compact-strip" aria-label="Source and record scope">
-            {(selectedCustomDefinition?.propertyDefinitions??[]).filter(d=>d.kind==='OBJECT'||d.kind==='OBJECT_FIELD').slice(0,7).map(definition=><div className="office-ribbon-mini-group" key={definition.propertyKey}>
-              <label>{definition.label} <select value={String(selected.properties[definition.propertyKey]??'')} onChange={e=>updateComponent(selected.id,{properties:{...selected.properties,[definition.propertyKey]:e.target.value}})}>
-                <option value="">Not selected</option>{(definition.kind==='OBJECT'?objects:objects.find(o=>o.apiName===(selected.properties.objectApiName??page.targetObject))?.fields??[]).map(item=><option key={item.apiName} value={item.apiName}>{item.label}</option>)}
-              </select></label><span className="office-ribbon-group-heading">Source</span></div>)}
-            <button type="button" onClick={()=>selectRibbonTab('Component Data')}>Done</button>
-          </div>}
+          {selected && ribbonTab==='Source' && (()=>{
+            const definitions=(selectedCustomDefinition?.propertyDefinitions??[]).filter(d=>d.kind==='OBJECT'||d.kind==='OBJECT_FIELD');
+            const offset=Math.min(ribbonSourceOffset,Math.max(0,definitions.length-5));
+            return <div className="office-ribbon-compact-strip" aria-label="Source and record scope">
+              <button type="button" className="office-ribbon-icon-button" title="Previous mappings" aria-label="Previous mappings" disabled={!offset}
+                onClick={()=>setRibbonSourceOffset(Math.max(0,offset-5))}><ChevronLeft size={16}/></button>
+              {definitions.slice(offset,offset+5).map(definition=><div className="office-ribbon-mini-group" key={definition.propertyKey}>
+                <label>{definition.label} <select value={String(selected.properties[definition.propertyKey]??'')} onChange={e=>updateComponent(selected.id,{properties:{...selected.properties,[definition.propertyKey]:e.target.value}})}>
+                  <option value="">Not selected</option>{(definition.kind==='OBJECT'?objects:objects.find(o=>o.apiName===(selected.properties.objectApiName??page.targetObject))?.fields??[]).map(item=><option key={item.apiName} value={item.apiName}>{item.label}</option>)}
+                </select></label><span className="office-ribbon-group-heading">Source</span></div>)}
+              <button type="button" className="office-ribbon-icon-button" title="Next mappings" aria-label="Next mappings" disabled={offset+5>=definitions.length}
+                onClick={()=>setRibbonSourceOffset(offset+5)}><ChevronRight size={16}/></button>
+              <button type="button" onClick={()=>selectRibbonTab('Component Data')}>Done</button>
+            </div>;
+          })()}
           {selected && ribbonTab==='Visibility Rules' && <RibbonVisibilityRules key={selected.id} draft={ribbonVisibilityDraft} onChange={setRibbonVisibilityDraft}
             fields={fields} allowRecordFields={page.pageType==='Record Page'}
             profiles={profiles.map(item=>({id:item.id,label:item.label}))} recordTypes={targetObject?.recordTypes?.map(item=>({id:item.id,label:item.label}))??[]}
