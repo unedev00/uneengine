@@ -267,6 +267,13 @@ try{
  assert.deepEqual((await pageService.layoutHistory(tenantId,savedPage.apiName,'Mobile')).map(item=>item.version),[2,1]);
  await pageService.rollbackLayout(tenantId,savedPage.apiName,'Mobile',1);
  assert.equal((await pageService.editor(tenantId,savedPage.apiName,'Mobile')).components[0].label,'Details');
+ assert.equal((await pageService.editor(tenantId,savedPage.apiName,'Mobile'))
+   .components[0].properties.pagePropertyContract,undefined,
+   'Draft rollback restores the previous version of form/action rules');
+ assert.deepEqual((await pageService.metadata(tenantId,savedPage.apiName,'Mobile'))
+   .components[0].properties.pagePropertyContract,
+   mobileDraft.components[0].properties.pagePropertyContract,
+   'Rollback must not mutate still-published rules');
  assert.equal((await pageService.metadata(tenantId,savedPage.apiName,'Mobile')).components[0].label,'Mobile record details',
   'Restore to draft must not affect the published layout');
  const afterRestore=await pageService.saveLayoutDraft(tenantId,savedPage.apiName,'Mobile',{
