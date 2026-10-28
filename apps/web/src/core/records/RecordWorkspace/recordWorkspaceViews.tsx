@@ -7,7 +7,8 @@ import { resolvePhoneColumns } from '../ResponsiveDataList/phoneColumns.mjs';
 import { RecordFormDialog } from '../RecordFormDialog/recordFormDialogView';
 import InlineRecordField from './InlineRecordField';
 import {recordEditPageLayout} from './recordEditPageLayout';
-import {behaviorAction,behaviorAppearance,behaviorField,behaviorTabs,behaviorInteractions} from '../../pages/PageRuntime/pageBehaviorRuntime';
+import {filterLayoutWritableValues,missingLayoutRequiredFields,applyRequiredLayoutDefaults} from './layoutWritableValues';
+import {behaviorAction,behaviorRecordAction,behaviorAppearance,behaviorField,behaviorTabs,behaviorInteractions} from '../../pages/PageRuntime/pageBehaviorRuntime';
 import {recordPagePresentationLayout} from './recordPageLayoutMigration';
 import {actionVisibleInArea} from './recordActionPlacement';
 import RichTextContent from './RichTextContent';
@@ -96,7 +97,7 @@ import { filterPageComponentRecords, needsMetadataComponentRuntime } from '../..
 import { childrenOf, canNest, componentLayoutProps, hasPageComponentAppearance, isLayoutContainer, rawLayoutParentId, reparentComponent, resolvePageComponentStyle, type LayoutDevice } from '../../pages/TemplatePageRuntime/pageComponentLayout';
 import {GlobalRecordSearch} from '../../../one/OneGlobalRecordSearch/GlobalRecordSearch';
 import {useDismissOnOutside} from '../../accessibility/Dismiss/useDismissOnOutside';
-import {recordActionConditionVisible} from './recordActionVisibility';
+
 import { pageIsAvailableInApp, resolvePageActionRoute } from '../../pages/PageRuntime/pageActionRouting';
 import ApprovalProcessManager from '../../automation/ApprovalProcessManager/ApprovalProcessManager';
 import { standardPageComponents } from '../../components/Catalog/index';
@@ -563,6 +564,11 @@ function RecordWorkspace({
   const layoutDevice = usePageLayoutDevice();
   const [records, setRecords] = useState<RecordData[]>([]);
   const [record, setRecord] = useState<RecordData | null>(null);
+  // Server-issued Object grants for page condition evaluation. Presentation
+  // hints and Object action metadata cannot substitute for OneEngine RBAC.
+  const [recordGrants,setRecordGrants]=useState<{
+    objectApi:string;Create:boolean;Edit:boolean;Delete:boolean
+  }|null>(null);
   const [overlayRecordId, setOverlayRecordId] = useState<string | null>(null);
   const [contextRecord,setContextRecord]=useState<{item:RecordData;x:number;y:number}|null>(null);
   const [listPaneWidth, setListPaneWidth] = useState<number | null>(null);
@@ -602,6 +608,7 @@ function RecordWorkspace({
   const [editPageLoading,setEditPageLoading]=useState(false);
   const [editPageError,setEditPageError]=useState('');
   const [editPageResolvedRecordId,setEditPageResolvedRecordId]=useState<string|null>(null);
+  const [createPageResolvedTypeId,setCreatePageResolvedTypeId]=useState<string|null>(null);
   const [activeRuntimeTabs, setActiveRuntimeTabs] = useState<Record<string,string>>({});
   const [recordActivities, setRecordActivities] = useState<RecordActivity[]>([]);
   const [activityError, setActivityError] = useState('');
@@ -773,15 +780,40 @@ function RecordWorkspace({
       formFactor:typeof window!=='undefined'&&new URLSearchParams(window.location.search).get('pageLayout')==='Custom'
         ? 'Custom' : viewportFactor==='Tablet'?'Tablet':formFactor==='Phone'?'Mobile':'Desktop'
     });
-    void apiRequest<{editLightningPage?:LightningPageMetadata}>(
+    void apiRequest<{editLightningPage?:LightningPageMetadata;recordPermissions?:{Create:boolean;Edit:boolean;Delete:boolean}}>(
       `/records/${encodeURIComponent(object.apiName)}/${encodeURIComponent(editingId)}?${params}`)
       .then(payload=>{if(active){setActiveEditLightningPage(payload.editLightningPage??null);
-        setEditPageResolvedRecordId(editingId);}})
+        setEditPageResolvedRecordId(editingId);
+        if(payload.recordPermissions)setRecordGrants({objectApi:object.apiName,...payload.recordPermissions});}})
       .catch(error=>{if(active)setEditPageError(error instanceof Error?error.message:'Unable to resolve Record Edit Page');})
       .finally(()=>{if(active)setEditPageLoading(false);});
     return()=>{active=false;};
-  },[formOpen,editingId,object?.apiName,formFactor,viewportFactor,route.kind,route.appId]);
+  },[formOpen,editingId,object?.apiName,formFactor,viewportFactor,route.kind,route.appId,profileId]);
   const [formValues, setFormValues] = useState<Record<string, unknown>>({});
+  // Creation uses the published Edit-page field contract too, not the legacy
+  // Object layout alone. Changes to RecordTypeId resolve the correct assignment.
+  useEffect(()=>{
+    if(!formOpen||editingId||!object)return;
+    let active=true;
+    setEditPageLoading(true);setEditPageError('');setActiveEditLightningPage(null);
+    setCreatePageResolvedTypeId(null);
+    const params=new URLSearchParams({
+      appId:route.kind==='record-detail'||route.kind==='record-list'?route.appId??'Records':'Records',
+      formFactor:typeof window!=='undefined'&&new URLSearchParams(window.location.search).get('pageLayout')==='Custom'
+        ?'Custom':viewportFactor==='Tablet'?'Tablet':formFactor==='Phone'?'Mobile':'Desktop',
+      recordTypeId:String(formValues.RecordTypeId??object.recordTypes?.find(item=>item.active&&item.isDefault&&recordTypeAccess[`${object.apiName}.${item.id}`]!==false)?.id??object.recordTypes?.find(item=>item.active&&recordTypeAccess[`${object.apiName}.${item.id}`]!==false)?.id??'')
+    });
+    void apiRequest<{editLightningPage?:LightningPageMetadata;recordPermissions?:{Create:boolean;Edit:boolean;Delete:boolean}}>(
+      `/records/${encodeURIComponent(object.apiName)}/create-layout?${params}`
+    ).then(payload=>{if(active){setActiveEditLightningPage(payload.editLightningPage??null);
+      setCreatePageResolvedTypeId([object.apiName,String(formValues.RecordTypeId??''),route.kind==='record-detail'||route.kind==='record-list'?route.appId??'Records':'Records',formFactor,viewportFactor].join('|'));
+      if(payload.recordPermissions)setRecordGrants({objectApi:object.apiName,...payload.recordPermissions});}})
+      .catch(error=>{if(active)setEditPageError(error instanceof Error?error.message:'Unable to resolve create form');})
+      .finally(()=>{if(active)setEditPageLoading(false);});
+    return()=>{active=false;};
+  },[formOpen,editingId,object?.apiName,formFactor,viewportFactor,route.kind,route.appId,
+    formValues.RecordTypeId,profileId]);
+
   const [lookupRecords, setLookupRecords] = useState<Record<string, RecordData[]>>({});
   const [lookupError, setLookupError] = useState('');
   const [reportingUsers, setReportingUsers] = useState<Array<{id:string;name:string;email:string}>>([]);
@@ -1099,13 +1131,14 @@ function RecordWorkspace({
               && new URLSearchParams(window.location.search).get('pageLayout') === 'Custom'
               ? 'Custom' : viewportFactor === 'Tablet' ? 'Tablet' : formFactor === 'Phone' ? 'Mobile' : 'Desktop'
           });
-          const payload = await apiRequest<{ record: RecordData; lightningPage?: LightningPageMetadata; editLightningPage?:LightningPageMetadata }>(
+          const payload = await apiRequest<{ record: RecordData; lightningPage?: LightningPageMetadata; editLightningPage?:LightningPageMetadata;recordPermissions?:{Create:boolean;Edit:boolean;Delete:boolean} }>(
             `/records/${encodeURIComponent(route.objectApiName)}/${encodeURIComponent(route.recordId)}?${recordQuery.toString()}`);
           const history = route.objectApiName === 'User'
             ? { history: [] as Array<Record<string, unknown>> }
             : await apiRequest<{ history: Array<Record<string, unknown>> }>(`/records/${encodeURIComponent(route.objectApiName)}/${encodeURIComponent(route.recordId)}/history`);
           if (active) {
             setRecord(payload.record);
+            if(payload.recordPermissions)setRecordGrants({objectApi:route.objectApiName,...payload.recordPermissions});
             setActiveLightningPage(payload.lightningPage ?? null);
             setActiveEditLightningPage(payload.editLightningPage??null);
             setFieldHistory(history.history);
@@ -1322,17 +1355,22 @@ function RecordWorkspace({
   const defaultRecordTypeId = activeRecordTypes.find((item) => item.isDefault)?.id ?? activeRecordTypes[0]?.id ?? '';
   const selectedRecordTypeId = String(formValues.RecordTypeId ?? defaultRecordTypeId);
   const sourceLayout = object ? pageLayoutForRecord(object, selectedRecordTypeId, profileId) : undefined;
-  const visibleEditPage = activeEditLightningPage && object ? {...activeEditLightningPage,
-    components:activeEditLightningPage.components.filter(component=>isComponentVisible(component,{
-      formFactor,record:formValues,fields:object.fields,
-      readableFieldApiNames:new Set(object.fields.filter(field=>fieldAccess[`${object.apiName}.${field.apiName}`]?.read)
-        .map(field=>field.apiName))
-    },true))} : null;
-  const selectedLayout = editingId ? recordEditPageLayout(visibleEditPage,sourceLayout,{
+  // Preserve authored components until the layout resolver evaluates their
+  // conditions. Pre-filtering would erase evidence of intentionally hidden
+  // Dynamic Forms sections and could reintroduce legacy fallback fields.
+  const visibleEditPage=activeEditLightningPage;
+  // Use the same action availability source for conditional form visibility.
+  // Backend Record API permissions remain authoritative for every mutation.
+  const formRecordPermissions=new Set<'Create'|'Edit'|'Delete'>(
+    (['Create','Edit','Delete'] as const).filter(key=>
+      recordGrants?.objectApi===object?.apiName&&recordGrants[key]===true)
+  );
+  const selectedLayout = recordEditPageLayout(visibleEditPage,sourceLayout,{
     formFactor,record:formValues,fields:object?.fields??[],profileId,
+    recordPermissions:formRecordPermissions,
     readableFieldApiNames:new Set(object?.fields.filter(field=>fieldAccess[`${object.apiName}.${field.apiName}`]?.read)
       .map(field=>field.apiName)??[])
-  }) : sourceLayout;
+  });
   // Standard CRUD is universal: missing layout buttons must not silently disable
   // record operations. Explicitly disabled metadata actions still opt out.
   // The shared Record API remains the mandatory tenant/RBAC/FLS enforcement point.
@@ -1415,6 +1453,13 @@ function RecordWorkspace({
   const saveRecord = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!object) return;
+    // A successful form layout lookup carries the current OneEngine object
+    // grant. Do not submit with a stale grant or after the operation was revoked.
+    const permission:'Edit'|'Create'=editingId?'Edit':'Create';
+    if(recordGrants?.objectApi!==object.apiName||recordGrants[permission]!==true){
+      setFormError('You do not have permission to save this record.');
+      return;
+    }
     setSaving(true);
     setFormError('');
     try {
@@ -1428,6 +1473,21 @@ function RecordWorkspace({
             && (fieldAccess[`${object.apiName}.${apiName}`]?.edit !== false)
           : (apiName === 'RecordTypeId' || fieldAccess[`${object.apiName}.${apiName}`]?.edit))
       ));
+      const effectiveValues=editingId?writableValues:applyRequiredLayoutDefaults(writableValues,selectedLayout,
+        object.fields,new Set(object.fields.filter(field=>
+          fieldAccess[`${object.apiName}.${field.apiName}`]?.edit===true).map(field=>field.apiName)));
+      Object.assign(writableValues,effectiveValues);
+      const layoutWritable=filterLayoutWritableValues(writableValues,selectedLayout,
+        new Set(object.fields.filter(field=>field.required).map(field=>field.apiName)));
+      Object.keys(writableValues).forEach(name=>{if(!(name in layoutWritable))delete writableValues[name];});
+      const missingLayoutFields=missingLayoutRequiredFields(writableValues,selectedLayout,
+        new Set(object.fields.filter(field=>
+          fieldAccess[`${object.apiName}.${field.apiName}`]?.edit===true)
+          .map(field=>field.apiName)));
+      if(missingLayoutFields.length){
+        throw new Error('Complete required fields: '+missingLayoutFields.map(name=>
+          object.fields.find(field=>field.apiName===name)?.label??name).join(', '));
+      }
       // A record without an assigned type must not submit an empty type ID:
       // the generic API treats an explicitly supplied ID as an assignment request.
       if (writableValues.RecordTypeId == null || writableValues.RecordTypeId === '') delete writableValues.RecordTypeId;
@@ -1485,6 +1545,42 @@ function RecordWorkspace({
   };
   const runCustomObjectAction = async (action: ObjectActionMetadata) => {
     if(!object||!record||!action.behavior)return;
+    // Re-resolve against current Object metadata; never dispatch a stale,
+    // disabled, or removed action even if an old button callback still exists.
+    const currentAction=object.actions?.find(item=>item.id===action.id
+      &&item.enabled!==false&&item.type==='Custom');
+    if(!currentAction){
+      setCustomActionMessage('This action is no longer available.');
+      return;
+    }
+    // Execute the current action definition, not the stale callback snapshot.
+    action=currentAction;
+    if((currentAction.behavior==='Set Field Value'||currentAction.behavior==='Log Call')
+      &&(recordGrants?.objectApi!==object.apiName||!recordGrants.Edit
+        ||(currentAction.behavior==='Set Field Value'&&
+          (!currentAction.fieldApiName||
+            fieldAccess[`${object.apiName}.${currentAction.fieldApiName}`]?.edit!==true)))){
+      setCustomActionMessage('Edit permission is required for this action.');
+      return;
+    }
+    // UI state is never a grant, but programmatic action invocation must still
+    // obey the same published conditional state as its Header/Publisher buttons.
+    const actionsBlock=activeLightningPage?.components.find(component=>
+      component.type==='Record Actions'&&component.visible!==false);
+    const actionLayout=recordPagePresentationLayout(activeLightningPage,
+      pageLayoutForRecord(object,String(record.RecordTypeId??defaultRecordTypeId),profileId));
+    const actionState=behaviorRecordAction(actionsBlock?.properties??{},action.id,{
+      formFactor,record,profileId,fields:object.fields,
+      readableFieldApiNames:new Set(object.fields.filter(field=>
+        fieldAccess[`${object.apiName}.${field.apiName}`]?.read).map(field=>field.apiName)),
+      recordPermissions:new Set<'Create'|'Edit'|'Delete'>(
+        (['Create','Edit','Delete'] as const).filter(key=>
+          recordGrants?.objectApi===object.apiName&&recordGrants[key]===true))
+    },actionLayout?.actionVisibility?.[action.id]);
+    if(actionState!=='enabled'||(actionsBlock&&actionLayout&&!actionLayout.actions.includes(action.id))){
+      setCustomActionMessage('This action is unavailable for the current record.');
+      return;
+    }
     if(action.behavior==='Send Email'){
       setEmailAction(action);
       setEmailDraft({to:'',subject:'',body:''});
@@ -1539,17 +1635,26 @@ function RecordWorkspace({
       setError(failure instanceof Error ? failure.message : 'Unable to delete record');
     }
   };
+  // Clone opens the same published create form instead of immediately creating
+  // a record. The actor may edit the copy before the normal Record API validates it.
   const cloneCurrentRecord=async()=>{
-    if(!object||!record||object.apiName==='User')return;
-    setError('');
-    try{
-      const result=await apiRequest<{id:string}>(
-        `/records/${encodeURIComponent(object.apiName)}/${encodeURIComponent(record.Id)}/clone`,
-        {method:'POST',body:JSON.stringify({})});
-      onNavigate({kind:'record-detail',objectApiName:object.apiName,recordId:result.id});
-    }catch(failure){
-      setError(failure instanceof Error?failure.message:'Unable to clone record');
-    }
+    if(!object||!record||object.apiName==='User'||!canCreate)return;
+    const writable=new Set(object.fields.filter(field=>
+      fieldAccess[`${object.apiName}.${field.apiName}`]?.read &&
+      fieldAccess[`${object.apiName}.${field.apiName}`]?.edit &&
+      !field.formula && field.dataType !== 'Text (Encrypted)' &&
+      !field.dataType.toLowerCase().startsWith('auto number')
+    ).map(field=>field.apiName));
+    const excluded=new Set(['Id','OwnerId','CreatedById','LastModifiedById',
+      'CreatedDate','LastModifiedDate','SystemModstamp','IsDeleted']);
+    const values=Object.fromEntries(Object.entries(record).filter(([name])=>
+      writable.has(name)&&!excluded.has(name)));
+    if(typeof record.RecordTypeId==='string')values.RecordTypeId=record.RecordTypeId;
+    setEditingId(null);
+    setEditingTimestamp('');
+    setFormValues(values);
+    setFormError('');
+    setFormOpen(true);
   };
   const deleteSelectedRecords = async () => {
     if (!object) return;
@@ -1848,6 +1953,11 @@ function RecordWorkspace({
   };
   if (!object && !metadataLoaded) return <div className="records-loading">Loading object metadata…</div>;
   if (!object) return <div className="records-page"><div className="records-message" role="alert">Object “{route.objectApiName}” was not found.</div></div>;
+  if (formOpen && !editingId && (createPageResolvedTypeId!==[object.apiName,String(formValues.RecordTypeId??''),route.kind==='record-detail'||route.kind==='record-list'?route.appId??'Records':'Records',formFactor,viewportFactor].join('|')||editPageLoading||editPageError)) return <main className="records-page record-editor-page">
+    <button className="text-action" type="button" onClick={()=>setFormOpen(false)}>Back to records</button>
+    {!editPageError?<div className="records-loading" role="status">Loading published creation layout…</div>
+      :<div className="records-message" role="alert">Unable to load creation layout: {editPageError}</div>}
+  </main>;
   if (formOpen && editingId && (editPageResolvedRecordId!==editingId||editPageLoading||editPageError)) return <main className="records-page record-editor-page">
     <button className="text-action" type="button" onClick={()=>setFormOpen(false)}>Back to record</button>
     {!editPageError?<div className="records-loading" role="status">Loading published Record Edit layout…</div>
@@ -1906,18 +2016,17 @@ function RecordWorkspace({
       component.type==='Record Actions' && component.visible!==false));
     const actionBlock=activeLightningPage?.components.find(component=>component.type==='Record Actions'&&component.visible!==false);
     const actionContext={formFactor,record,profileId,fields:object.fields,
+      recordPermissions:new Set<'Create'|'Edit'|'Delete'>(
+        (['Create','Edit','Delete'] as const).filter(key=>
+          recordGrants?.objectApi===object.apiName&&recordGrants[key]===true)
+      ),
       readableFieldApiNames:new Set(object.fields.filter(field=>fieldAccess[`${object.apiName}.${field.apiName}`]?.read)
         .map(field=>field.apiName))};
-    const pageActionState=(name:string)=>behaviorAction(actionBlock?.properties??{},name,actionContext);
+    const pageActionState=(name:string)=>behaviorRecordAction(
+      actionBlock?.properties??{},name,actionContext,recordLayout?.actionVisibility?.[name]);
     const showRecordAction=(name:string)=>{
-      if(pageActionState(name)==='hidden')return false;
       if(recordPageActionOverride&&recordLayout&&!recordLayout.actions.includes(name))return false;
-      const condition=recordLayout?.actionVisibility?.[name];
-      if(!condition)return true;
-      // Visibility is not authorisation. Hide a conditional action when the
-      // viewer cannot read its controlling field or the record is unavailable.
-      if(!record||!fieldAccess[`${object.apiName}.${condition.fieldApiName}`]?.read)return false;
-      return recordActionConditionVisible(condition,record,true);
+      return pageActionState(name)!=='hidden';
     };
     // A configured override without current Action permission is hidden, not
     // silently downgraded to the native button (especially for Delete).
@@ -2124,16 +2233,16 @@ function RecordWorkspace({
       if (component.type === 'Highlights Panel') return <section className="record-highlights surface" key={component.id} aria-label="Record highlights">
         {compactFields.map((field) => <div key={field.apiName}><span>{field.label}</span><strong>{formatFieldValue(field, record[field.apiName])}</strong></div>)}
         <div className="record-highlight-actions">
-          {canEdit&&component.properties.showEditAction===true&&behaviorAction(component.properties,'Edit',runtimeBehaviorContext)!=='hidden'&&<button type="button" className="btn"
-            disabled={behaviorAction(component.properties,'Edit',runtimeBehaviorContext)==='disabled'}
+          {canEdit&&component.properties.showEditAction===true&&showRecordAction('Edit')&&behaviorAction(component.properties,'Edit',runtimeBehaviorContext)!=='hidden'&&<button type="button" className="btn"
+            disabled={pageActionState('Edit')==='disabled'||behaviorAction(component.properties,'Edit',runtimeBehaviorContext)==='disabled'}
             onClick={()=>openEditForm(record)}>Edit</button>}
           {canCreate&&component.properties.showCloneAction===true&&object.apiName!=='User'
-            &&behaviorAction(component.properties,'Clone',runtimeBehaviorContext)!=='hidden'&&
-            <button type="button" className="btn" disabled={behaviorAction(component.properties,'Clone',runtimeBehaviorContext)==='disabled'} onClick={()=>void cloneCurrentRecord()}>Clone</button>}
+            &&showRecordAction('Clone')&&behaviorAction(component.properties,'Clone',runtimeBehaviorContext)!=='hidden'&&
+            <button type="button" className="btn" disabled={pageActionState('Clone')==='disabled'||behaviorAction(component.properties,'Clone',runtimeBehaviorContext)==='disabled'} onClick={()=>void cloneCurrentRecord()}>Clone</button>}
           {(object.actions??[]).filter(action=>action.enabled&&action.type==='Custom'
             &&actionVisibleInArea(action,'Highlights')
             &&Array.isArray(component.properties.actionIds)&&component.properties.actionIds.includes(action.id)
-            &&allowedActionIds.includes(action.id)
+            &&allowedActionIds.includes(action.id)&&showRecordAction(action.id)
             &&behaviorAction(component.properties,action.id,runtimeBehaviorContext)!=='hidden'
             &&(!recordLayout||recordLayout.actions.includes(action.id))
             &&(['Run Flow','Open Component','Create Related','Send Email'].includes(action.behavior??'')
@@ -2141,7 +2250,7 @@ function RecordWorkspace({
                 ||action.behavior==='Set Field Value'&&Boolean(action.fieldApiName
                   &&fieldAccess[`${object.apiName}.${action.fieldApiName}`]?.edit))))
             .map(action=><button type="button" className="btn" key={action.id}
-              disabled={Boolean(customActionPendingId)||behaviorAction(component.properties,action.id,runtimeBehaviorContext)==='disabled'}
+              disabled={Boolean(customActionPendingId)||pageActionState(action.id)==='disabled'||behaviorAction(component.properties,action.id,runtimeBehaviorContext)==='disabled'}
               onClick={()=>void runCustomObjectAction(action)}>
               {customActionPendingId===action.id?'Running…':action.label}
             </button>)}
@@ -2395,7 +2504,7 @@ function RecordWorkspace({
           <h2>Actions</h2>
           <div className="record-highlight-actions">{publisherActions.map(action=>
             <button className="btn" type="button" key={action.id}
-              disabled={Boolean(customActionPendingId)}
+              disabled={Boolean(customActionPendingId)||pageActionState(action.id)==='disabled'}
               onClick={()=>void runCustomObjectAction(action)}>
               {customActionPendingId===action.id?'Running…':action.label}
             </button>)}</div>

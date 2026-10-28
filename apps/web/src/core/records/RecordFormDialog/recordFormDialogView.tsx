@@ -298,7 +298,8 @@ export function RecordFormDialog({
     && !field.dataType.toLocaleLowerCase().startsWith('auto number')
     && fieldAccess[`${object.apiName}.${field.apiName}`]?.read
     && (!selectedLayout || layoutFieldNames.includes(field.apiName) || field.required))
-    .map(field=>requiredOnLayout.has(field.apiName)?{...field,required:true}:field);
+    .map(field=>requiredOnLayout.has(field.apiName)&&!readOnlyOnLayout.has(field.apiName)
+      ?{...field,required:true}:field);
   const unplacedRequiredFields = visibleFields.filter((field) => field.required && !layoutFieldNames.includes(field.apiName));
   const allowedPicklistValues = (field: FieldMetadata, recordTypeId = selectedRecordTypeId, values = formValues) => {
     const recordTypeValues = object.recordTypes?.find((recordType) => recordType.id === recordTypeId)?.picklistValues?.[field.apiName];
@@ -406,7 +407,7 @@ export function RecordFormDialog({
     const value = rawValue === undefined || rawValue === null ? '' : String(rawValue);
     const dataType = field.dataType.toLocaleLowerCase();
     const helpTextId = `record-field-help-${field.apiName}`;
-    const common = { id: `record-field-${field.apiName}`, name: field.apiName, required: field.required, disabled: saving || !fieldAccess[`${object.apiName}.${field.apiName}`]?.edit
+    const common = { id: `record-field-${field.apiName}`, name: field.apiName, required: field.required && !readOnlyOnLayout.has(field.apiName), disabled: saving || !fieldAccess[`${object.apiName}.${field.apiName}`]?.edit
       || readOnlyOnLayout.has(field.apiName), 'aria-describedby': field.helpText ? helpTextId : undefined };
     const helpText = field.helpText ? <small className="field-help-text" id={helpTextId}>{field.helpText}</small> : null;
     if(dataType==='file')return <div className="form-label" key={field.apiName}>
@@ -446,14 +447,14 @@ export function RecordFormDialog({
         <div className="form-options">
           <label className="form-label">Latitude
             <input className="form-control" type="number" min="-90" max="90" step="any"
-              aria-label={`${displayFieldLabel(field)} latitude`} required={field.required}
+              aria-label={`${displayFieldLabel(field)} latitude`} required={common.required}
               disabled={saving || !fieldAccess[`${object.apiName}.${field.apiName}`]?.edit || readOnlyOnLayout.has(field.apiName)}
               value={coordinates.latitude == null ? '' : String(coordinates.latitude)}
               onChange={(event) => updateCoordinate('latitude', event.target.value)} />
           </label>
           <label className="form-label">Longitude
             <input className="form-control" type="number" min="-180" max="180" step="any"
-              aria-label={`${displayFieldLabel(field)} longitude`} required={field.required}
+              aria-label={`${displayFieldLabel(field)} longitude`} required={common.required}
               disabled={saving || !fieldAccess[`${object.apiName}.${field.apiName}`]?.edit || readOnlyOnLayout.has(field.apiName)}
               value={coordinates.longitude == null ? '' : String(coordinates.longitude)}
               onChange={(event) => updateCoordinate('longitude', event.target.value)} />
@@ -476,7 +477,7 @@ export function RecordFormDialog({
           <input className="form-control" type="text" maxLength={{
             street: 255, city: 40, state: 80, postalCode: 20, country: 80
           }[apiName]} aria-label={`${displayFieldLabel(field)} ${label}`}
-            required={field.required && apiName === 'street'}
+            required={common.required && apiName === 'street'}
             disabled={common.disabled} value={typeof address[apiName] === 'string' ? address[apiName] as string : ''}
             onChange={(event) => {
               const next = { ...address, [apiName]: event.target.value || null };
@@ -501,7 +502,7 @@ export function RecordFormDialog({
           <input className="form-control" id={common.id} name={common.name} aria-label={displayFieldLabel(field)}
             value={selectedRecord ? lookupRecordLabel(field, selectedRecord) : ''}
             placeholder={targetObject ? `Search ${targetObject.label}…` : 'Related object unavailable'}
-            readOnly aria-readonly="true" required={field.required && !value} disabled={common.disabled}
+            readOnly aria-readonly="true" required={common.required && !value} disabled={common.disabled}
             onClick={() => { if (!common.disabled && targetObject) openLookupDialog(field); }} />
           <button type="button" className="btn lookup-picker-button" disabled={common.disabled || !targetObject}
             aria-label={`Search ${targetObject?.label ?? 'related records'} for ${displayFieldLabel(field)}`}
@@ -509,7 +510,7 @@ export function RecordFormDialog({
             <Search size={14} />Search
           </button>
           {value && !common.disabled && <button type="button" className="btn lookup-picker-clear" aria-label={`Clear ${displayFieldLabel(field)}`}
-            disabled={field.required} onClick={() => onChange(field.apiName, null)}><X size={14} /></button>}
+            disabled={common.required} onClick={() => onChange(field.apiName, null)}><X size={14} /></button>}
         </div>
         {selectedRecord && selectedCompactFields.length > 0 && <div className="lookup-selected-card" aria-label={`${targetObject?.label ?? 'Related record'} compact details`}>
           {selectedCompactFields.map((compactField) => <div key={compactField.apiName}><small>{compactField.label}</small><strong>{formatRecordValue(selectedRecord[compactField.apiName])}</strong></div>)}
@@ -526,7 +527,7 @@ export function RecordFormDialog({
       </select></label>;
     if (dataType === 'picklist') return <label className="form-label" htmlFor={common.id} key={field.apiName}>{displayFieldLabel(field)}{field.required && <b aria-hidden="true"> *</b>}
       <select className="form-control" {...common} value={value} onChange={(event) => changeFieldValue(field.apiName, event.target.value)}>
-        <option value="" disabled={field.required}>{field.required ? 'Select a value…' : '— None —'}</option>
+        <option value="" disabled={common.required}>{field.required ? 'Select a value…' : '— None —'}</option>
         {(() => {
           const picklistValues = allowedPicklistValues(field);
           return <>

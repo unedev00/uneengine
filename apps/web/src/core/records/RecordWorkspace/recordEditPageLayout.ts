@@ -1,6 +1,7 @@
 import type {LightningPageMetadata,PageLayoutMetadata,PageLayoutSectionMetadata} from '../../metadata/Definitions/metadata';
 import {recordPagePresentationLayout} from './recordPageLayoutMigration';
 import {behaviorField} from '../../pages/PageRuntime/pageBehaviorRuntime';
+import {isComponentVisible} from '../../components/Properties/componentVisibility';
 import type {ComponentVisibilityContext} from '../../components/Properties/componentVisibility';
 
 /** Resolve published Record Edit Field Sections into the existing generic CRUD form.
@@ -33,7 +34,9 @@ export function recordEditPageLayout(
       typeof value==='string'&&available.includes(value)))];
   };
   for (const component of page.components) {
-    if (component.visible === false) continue;
+    // Apply the same component-level visibility contract as the record renderer.
+    // A page-level field/section condition must not be ignored by the edit form.
+    if (!isComponentVisible(component,context,Boolean(context.fields?.length))) continue;
     if (component.type === 'Record Detail') {
       // Keep the standard Object Page Layout as fallback, but never let a
       // starter Record Detail block override subsequently authored dynamic fields.
@@ -45,8 +48,9 @@ export function recordEditPageLayout(
         const rule=behaviorField(component.properties,name,context);
         if(rule?.visible===false)continue;
         used.add(name);standalone.push(name);
-        if(component.properties.requiredOnLayout===true||rule?.required)standaloneRequired.push(name);
-        else if(component.properties.readOnlyOnLayout===true||rule?.readOnly)standaloneReadOnly.push(name);
+        // Read-only wins over a conflicting layout-required declaration.
+        if(component.properties.readOnlyOnLayout===true||rule?.readOnly)standaloneReadOnly.push(name);
+        else if(component.properties.requiredOnLayout===true||rule?.required)standaloneRequired.push(name);
       }
     }
     if (component.type === 'Field Section') {
@@ -58,11 +62,11 @@ export function recordEditPageLayout(
         used.add(name);return true;
       });
       if (unique.length){
-        const required=[...new Set([...selectedFields(component.properties?.requiredFieldApiNames,unique),
-          ...unique.filter(name=>behaviorField(component.properties,name,context)?.required)])];
         const readOnly=[...new Set([...selectedFields(component.properties?.readOnlyFieldApiNames,unique),
-          ...unique.filter(name=>behaviorField(component.properties,name,context)?.readOnly)])]
-          .filter(name=>!required.includes(name));
+          ...unique.filter(name=>behaviorField(component.properties,name,context)?.readOnly)])];
+        const required=[...new Set([...selectedFields(component.properties?.requiredFieldApiNames,unique),
+          ...unique.filter(name=>behaviorField(component.properties,name,context)?.required)])]
+          .filter(name=>!readOnly.includes(name));
         sections.push({id:component.id,label:component.label,
           columns:component.properties?.columns===1?1:2,fieldApiNames:unique,
           ...(required.length?{requiredFieldApiNames:required}:{}),
@@ -71,7 +75,10 @@ export function recordEditPageLayout(
     }
   }
   flush();
-  if (!sections.length) return presentation;
+  // An authored Dynamic Forms page with all conditional sections hidden must not
+  // silently restore the legacy fields (and reveal fields the rule hid).
+  if (!sections.length && !page.components.some(component=>
+    component.type==='Record Field'||component.type==='Field Section')) return presentation;
   return {...(presentation ?? {id:'record-edit',label:page.label,relatedLists:[],actions:['New','Edit','Delete']}),
     label:page.label,sections};
 }

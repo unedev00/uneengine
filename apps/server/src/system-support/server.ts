@@ -2263,6 +2263,31 @@ export function createSystemServer(db:SqlPersistence) {
     res.json(await records.importRecords(actor.tenant_id,actor.user_id,
       req.params.objectApi,req.body?.records));
   }));
+  // Resolve the actor's published Record Edit Page for a new record.
+  // The selector uses the same tenant/profile/app/device/record-type rules as edit.
+  app.get('/api/records/:objectApi/create-layout',route(async(req,res)=>{
+    const actor=req.actor!;
+    if(!await rbac.allowed(actor.tenant_id,actor.user_id,req.params.objectApi,'create'))
+      throw new Error('Insufficient Create permission for this Object');
+    const actorSession=await sessionMetadata(db,actor.tenant_id,actor.user_id);
+    const device=String(req.query.formFactor??'Desktop');
+    const viewportWidth=Number(req.query.viewportWidth??0);
+    const recordTypeId=typeof req.query.recordTypeId==='string'?req.query.recordTypeId:'';
+    const typeAccess=actorSession.user.recordTypeAccess;
+    const typeKey=req.params.objectApi+'.'+recordTypeId;
+    if(recordTypeId&&Object.prototype.hasOwnProperty.call(typeAccess,typeKey)
+      &&typeAccess[typeKey]!==true)
+      throw new Error('Record type is not available for this user');
+    const [editLightningPage,canEdit,canDelete]=await Promise.all([
+      pages.resolveRecordPage(actor.tenant_id,req.params.objectApi,
+        String(req.query.appId??'Records'),actorSession.user.profileId,
+        recordTypeId,device,'Edit',viewportWidth),
+      rbac.allowed(actor.tenant_id,actor.user_id,req.params.objectApi,'update'),
+      rbac.allowed(actor.tenant_id,actor.user_id,req.params.objectApi,'delete')
+    ]);
+    res.setHeader('Cache-Control','private, no-store');
+    res.json({editLightningPage,recordPermissions:{Create:true,Edit:canEdit,Delete:canDelete}});
+  }));
   app.get('/api/records/:objectApi/:id',route(async(req,res)=>{
     const actor=req.actor!;
     const record=await records.get(actor.tenant_id,actor.user_id,req.params.objectApi,req.params.id);
@@ -2276,7 +2301,13 @@ export function createSystemServer(db:SqlPersistence) {
       pages.resolveRecordPage(...context,'Edit',viewportWidth)
     ]);
     res.setHeader('Cache-Control','private, no-store');
-    res.json({record,lightningPage:page,editLightningPage:editPage});
+    const [canCreate,canEdit,canDelete]=await Promise.all([
+      rbac.allowed(actor.tenant_id,actor.user_id,req.params.objectApi,'create'),
+      rbac.allowed(actor.tenant_id,actor.user_id,req.params.objectApi,'update'),
+      rbac.allowed(actor.tenant_id,actor.user_id,req.params.objectApi,'delete')
+    ]);
+    res.json({record,lightningPage:page,editLightningPage:editPage,
+      recordPermissions:{Create:canCreate,Edit:canEdit,Delete:canDelete}});
   
   }));
   app.get('/api/records/:objectApi/:id/history',route(async(req,res)=>{

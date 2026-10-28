@@ -15,7 +15,7 @@ const CustomComponentPropertyEditor=await loadEditor('CustomComponentPropertyEdi
 const PropertyDefinitionEditor=await loadEditor('PropertyDefinitionEditor');
 import {validateComponentDefinitions,type ComponentSettingDefinition} from '../src/core/components/Properties/componentSettingDefinitions';
 import {loadComponentCatalog} from '../../../scripts/component-catalog.mjs';
-import {behaviorTabs,behaviorAction,behaviorAppearance,behaviorField,behaviorInteractions} from '../src/core/pages/PageRuntime/pageBehaviorRuntime';
+import {behaviorTabs,behaviorAction,behaviorRecordAction,behaviorAppearance,behaviorField,behaviorInteractions} from '../src/core/pages/PageRuntime/pageBehaviorRuntime';
 test('all retained bundled descriptor definitions remain compatible',async()=>{
  const catalog=await loadComponentCatalog();
  assert.equal(catalog.components.length,38); // 36 UNE and two Core platform descriptors
@@ -113,4 +113,46 @@ test('no-code property editor offers metadata reference pickers without authored
  assert.match(html,/When value changes/);
  assert.match(html,/Title/);
  assert.doesNotMatch(html,/textarea/);
+});
+
+test('Dynamic Actions respect record permission conditions and fail closed when context is absent',()=>{
+ const properties={pagePropertyContract:{version:1,actionVisibility:[
+  {actionId:'delete',unavailable:'Hide',when:{logic:'All',conditions:[
+   {source:'Record Permission',operator:'Equals',value:'Delete'}]}}
+ ]}};
+ const allowed={formFactor:'Desktop' as const,record:{Id:'record-1'},
+  fields:[{apiName:'Name',label:'Name',dataType:'Text(40)'}],
+  readableFieldApiNames:new Set(['Name']),
+  recordPermissions:new Set<'Create'|'Edit'|'Delete'>(['Delete'])};
+ assert.equal(behaviorAction(properties,'delete',allowed),'enabled');
+ assert.equal(behaviorAction(properties,'delete',{...allowed,recordPermissions:new Set<'Create'|'Edit'|'Delete'>()}),'hidden');
+ assert.equal(behaviorAction(properties,'delete',{formFactor:'Desktop'}),'hidden');
+});
+
+test('legacy and versioned Dynamic Action conditions compose without overriding a denial',()=>{
+ const prop={pagePropertyContract:{version:1,actionVisibility:[{
+  actionId:'Delete',unavailable:'Disable',when:{logic:'All',conditions:[
+   {source:'Record Permission',operator:'Equals',value:'Delete'}]}
+ }]}};
+ const ctx={formFactor:'Desktop' as const,record:{Status:'Open'},fields:[
+  {apiName:'Status',label:'Status',dataType:'Text(30)'}],
+  readableFieldApiNames:new Set(['Status']),
+  recordPermissions:new Set<'Create'|'Edit'|'Delete'>(['Delete'])};
+ const legacy={fieldApiName:'Status',equalsValue:'Open',operator:'Equals'};
+ assert.equal(behaviorRecordAction(prop,'Delete',ctx,legacy),'enabled');
+ assert.equal(behaviorRecordAction(prop,'Delete',{...ctx,record:{Status:'Closed'}},legacy),'hidden');
+ assert.equal(behaviorRecordAction(prop,'Delete',{...ctx,readableFieldApiNames:new Set<string>()},legacy),'hidden');
+ assert.equal(behaviorRecordAction(prop,'Delete',{...ctx,recordPermissions:new Set<'Create'|'Edit'|'Delete'>()},legacy),'disabled');
+ assert.equal(behaviorRecordAction(prop,'Delete',ctx,{...legacy,operator:'Unexpected'}),'hidden');
+});
+
+test('record-permission action conditions evaluate with no readable record fields',()=>{
+ const data={pagePropertyContract:{version:1,actionVisibility:[{
+  actionId:'Edit',unavailable:'Hide',when:{logic:'All',conditions:[
+   {source:'Record Permission',operator:'Equals',value:'Edit'}]}
+ }]}};
+ assert.equal(behaviorAction(data,'Edit',{formFactor:'Desktop',
+  recordPermissions:new Set<'Create'|'Edit'|'Delete'>(['Edit'])}),'enabled');
+ assert.equal(behaviorAction(data,'Edit',{formFactor:'Desktop',
+  recordPermissions:new Set<'Create'|'Edit'|'Delete'>()}),'hidden');
 });

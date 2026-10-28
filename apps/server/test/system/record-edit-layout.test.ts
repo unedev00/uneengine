@@ -51,8 +51,8 @@ test('Record Page layout field behavior is per-device, deduplicated and does not
   return component;
  })};
  const layout=recordEditPageLayout(configured,fallback);
- assert.deepEqual(layout?.sections[0]?.requiredFieldApiNames,['Phone']);
- assert.deepEqual(layout?.sections[0]?.readOnlyFieldApiNames,['Name']);
+ assert.equal(layout?.sections[0]?.requiredFieldApiNames,undefined);
+ assert.deepEqual(layout?.sections[0]?.readOnlyFieldApiNames,['Name','Phone']);
  assert.deepEqual(layout?.sections[1]?.readOnlyFieldApiNames,['BillingAddress']);
  assert.equal(layout?.sections[1]?.requiredFieldApiNames,undefined);
  const unchanged=recordEditPageLayout(page,fallback);
@@ -169,5 +169,45 @@ test('version-1 field rules apply to published forms without widening Object per
  assert.equal(hidden?.sections[0]?.requiredFieldApiNames,undefined);
  const unreadable=recordEditPageLayout(configured,fallback,{...context,readableFieldApiNames:new Set<string>()});
  assert.deepEqual(unreadable?.sections[0]?.fieldApiNames,['Phone']);
+ assert.deepEqual(fallback.sections[0].fieldApiNames,['Name','Phone']);
+});
+
+test('component visibility is evaluated in the Edit layout with current, authorised field values',()=>{
+ const conditional:LightningPageMetadata={...page,components:page.components.map(component=>
+  component.id==='first'?{...component,properties:{...component.properties,
+   visibilityRules:{logic:'All',conditions:[{source:'Record Field',fieldApiName:'Status',
+    operator:'Equals',value:'Open'}]}}}:component)};
+ const context={formFactor:'Desktop' as const,record:{Status:'Open'},
+  fields:[{apiName:'Status',label:'Status',dataType:'Text(40)'}],
+  readableFieldApiNames:new Set(['Status'])};
+ const shown=recordEditPageLayout(conditional,fallback,context);
+ assert.deepEqual(shown?.sections[0]?.fieldApiNames,['Phone','Name']);
+ const hidden=recordEditPageLayout(conditional,fallback,{...context,record:{Status:'Closed'}});
+ assert.equal(hidden?.sections.some(section=>section.id==='first'),false);
+ const denied=recordEditPageLayout(conditional,fallback,{
+  ...context,readableFieldApiNames:new Set<string>()});
+ assert.equal(denied?.sections.some(section=>section.id==='first'),false);
+});
+
+test('per-field conflicts never make a read-only field simultaneously layout-required',()=>{
+ const changed:LightningPageMetadata={...page,components:page.components.map(component=>
+  component.id==='address'?{...component,properties:{...component.properties,
+   requiredOnLayout:true,readOnlyOnLayout:true}}:component)};
+ const layout=recordEditPageLayout(changed,fallback);
+ assert.deepEqual(layout?.sections.at(-1)?.readOnlyFieldApiNames,['BillingAddress']);
+ assert.equal(layout?.sections.at(-1)?.requiredFieldApiNames,undefined);
+});
+
+test('an authored Dynamic Forms layout never leaks hidden fields through legacy fallback',()=>{
+ const conditional:LightningPageMetadata={...page,components:[{
+  id:'private-fields',type:'Field Section',label:'Private',visible:true,
+  properties:{fieldApiNames:['Secret'],visibilityRules:{logic:'All',conditions:[
+   {source:'Record Field',fieldApiName:'Status',operator:'Equals',value:'Authorized'}]}}
+ }]};
+ const context={formFactor:'Desktop' as const,record:{Status:'Denied'},
+  fields:[{apiName:'Status',label:'Status',dataType:'Text(40)'}],
+  readableFieldApiNames:new Set(['Status'])};
+ const result=recordEditPageLayout(conditional,fallback,context);
+ assert.deepEqual(result?.sections,[]);
  assert.deepEqual(fallback.sections[0].fieldApiNames,['Name','Phone']);
 });

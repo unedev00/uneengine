@@ -23,7 +23,7 @@ export function pageBehaviors(properties:Readonly<Record<string,unknown>>):Row|n
 export function behaviorMatches(rule:unknown,context:BehaviorContext):boolean{
   if(!isPropertyRecord(rule))return false;
   return isComponentVisible({visible:true,properties:{visibilityRules:rule}},context,
-    Boolean(context.fields?.length&&context.readableFieldApiNames));
+    Boolean(context.fields||context.record||context.recordPermissions||context.profileId));
 }
 export function behaviorTabs(properties:Readonly<Record<string,unknown>>,
   tabs:readonly string[],context:BehaviorContext):string[]{
@@ -50,6 +50,34 @@ export function behaviorValidation(properties:Readonly<Record<string,unknown>>,
     return typeof rule.message==='string'&&rule.message.trim()?rule.message:'This action is not valid.';
   }
   return null;
+}
+/** Resolve versioned action rules together with the retained record-layout rules.
+ * A legacy condition may hide an action, but never override a versioned denial.
+ * This only controls presentation; the Record API enforces actual grants.
+ */
+export function behaviorRecordAction(
+  properties:Readonly<Record<string,unknown>>,
+  actionId:string,context:BehaviorContext,
+  legacyCondition?:{fieldApiName:string;equalsValue:string;operator?:string}
+):BehaviorActionState{
+  const state=behaviorAction(properties,actionId,context);
+  if(state!=='enabled'||!legacyCondition)return state;
+  const field=legacyCondition.fieldApiName;
+  if(!context.record||!context.readableFieldApiNames?.has(field)
+    ||!Object.prototype.hasOwnProperty.call(context.record,field))return 'hidden';
+  const value=context.record[field];
+  const text=value===null||value===undefined?'':String(value);
+  const expected=legacyCondition.equalsValue;
+  let matched=false;
+  switch(legacyCondition.operator??'Equals'){
+    case 'Equals':matched=text===expected;break;
+    case 'NotEquals':matched=text!==expected;break;
+    case 'Contains':matched=!!expected&&text.toLocaleLowerCase().includes(expected.toLocaleLowerCase());break;
+    case 'IsBlank':matched=!text.trim();break;
+    case 'IsNotBlank':matched=!!text.trim();break;
+    default:matched=false;
+  }
+  return matched?'enabled':'hidden';
 }
 export function behaviorAppearance(properties:Readonly<Record<string,unknown>>,
   context:BehaviorContext,fieldApiName?:string):Record<string,string>{
