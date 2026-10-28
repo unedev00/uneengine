@@ -602,6 +602,7 @@ function RecordWorkspace({
   const [editPageLoading,setEditPageLoading]=useState(false);
   const [editPageError,setEditPageError]=useState('');
   const [editPageResolvedRecordId,setEditPageResolvedRecordId]=useState<string|null>(null);
+  const [createPageResolvedTypeId,setCreatePageResolvedTypeId]=useState<string|null>(null);
   const [activeRuntimeTabs, setActiveRuntimeTabs] = useState<Record<string,string>>({});
   const [recordActivities, setRecordActivities] = useState<RecordActivity[]>([]);
   const [activityError, setActivityError] = useState('');
@@ -788,6 +789,7 @@ function RecordWorkspace({
     if(!formOpen||editingId||!object)return;
     let active=true;
     setEditPageLoading(true);setEditPageError('');setActiveEditLightningPage(null);
+    setCreatePageResolvedTypeId(null);
     const params=new URLSearchParams({
       appId:route.kind==='record-detail'||route.kind==='record-list'?route.appId??'Records':'Records',
       formFactor:typeof window!=='undefined'&&new URLSearchParams(window.location.search).get('pageLayout')==='Custom'
@@ -796,7 +798,8 @@ function RecordWorkspace({
     });
     void apiRequest<{editLightningPage?:LightningPageMetadata}>(
       `/records/${encodeURIComponent(object.apiName)}/create-layout?${params}`
-    ).then(payload=>{if(active)setActiveEditLightningPage(payload.editLightningPage??null);})
+    ).then(payload=>{if(active){setActiveEditLightningPage(payload.editLightningPage??null);
+      setCreatePageResolvedTypeId(String(formValues.RecordTypeId??''));}})
       .catch(error=>{if(active)setEditPageError(error instanceof Error?error.message:'Unable to resolve create form');})
       .finally(()=>{if(active)setEditPageLoading(false);});
     return()=>{active=false;};
@@ -1881,6 +1884,11 @@ function RecordWorkspace({
   };
   if (!object && !metadataLoaded) return <div className="records-loading">Loading object metadata…</div>;
   if (!object) return <div className="records-page"><div className="records-message" role="alert">Object “{route.objectApiName}” was not found.</div></div>;
+  if (formOpen && !editingId && (createPageResolvedTypeId!==String(formValues.RecordTypeId??'')||editPageLoading||editPageError)) return <main className="records-page record-editor-page">
+    <button className="text-action" type="button" onClick={()=>setFormOpen(false)}>Back to records</button>
+    {!editPageError?<div className="records-loading" role="status">Loading published creation layout…</div>
+      :<div className="records-message" role="alert">Unable to load creation layout: {editPageError}</div>}
+  </main>;
   if (formOpen && editingId && (editPageResolvedRecordId!==editingId||editPageLoading||editPageError)) return <main className="records-page record-editor-page">
     <button className="text-action" type="button" onClick={()=>setFormOpen(false)}>Back to record</button>
     {!editPageError?<div className="records-loading" role="status">Loading published Record Edit layout…</div>
