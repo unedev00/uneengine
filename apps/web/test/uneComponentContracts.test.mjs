@@ -80,7 +80,7 @@ test('all 14 requested UNE components omit public Flow/Page State record collect
   assert.ok(component,name+' exists');
   assert.ok(!component.propertyDefinitions.some(property=>property.propertyKey==='items'&&property.kind==='RECORD_LIST'),
    name+' must not expose an items record collection');
-  assert.ok(!component.propertyDefinitions.some(property=>/Flow\\s*\\/\\s*Page State records|Flow\\/Page State record collection/i.test(property.label)),
+   assert.ok(!component.propertyDefinitions.some(property=>property.label.includes('Flow/Page State record collection')||property.label.includes('Flow / Page State records')),
    name+' must not expose legacy collection labels');
  }
 });
