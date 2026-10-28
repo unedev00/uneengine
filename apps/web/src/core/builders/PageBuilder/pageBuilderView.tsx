@@ -548,9 +548,26 @@ function PageBuilder({
   const selectedCustomDefinition = selected?.type.startsWith('Custom:')
     ? findRegisteredComponent(libraryComponents, selected.type.slice('Custom:'.length), 'page')
     : undefined;
-  const ribbonAppearanceGroups = ['Card','Heading','Supporting text','Badge','Image','Gallery','Table','Calendar','Chart','Input','Navigation','Container'] as const;
+  // Group positions stay fixed for every canvas selection. Metadata controls
+  // availability; keys listed here are existing renderer-supported properties.
+  const ribbonAppearanceGroups = ['Card','Heading','Supporting text','Badge','Image','Gallery','Text','Button','Table','Calendar','Chart','Input','Navigation','Container'] as const;
   const appearanceDefinitions = availableComponentSettings(selectedCustomDefinition?.propertyDefinitions??[],page.layoutVariant??'Desktop',selectedCustomDefinition?.version);
-  const definitionsForPart=(group:string,section:'Design'|'Layout')=>appearanceDefinitions.filter(definition=>(definition as {group?:string}).group===group&&!/(?:FieldApiName|ObjectApiName)$/.test(definition.propertyKey)&&((definition as {section?:string}).section??(/columns|gap|padding|width|height|radius|span|position/i.test(definition.propertyKey)?'Layout':'Design'))===section);
+  const inferredAppearanceGroup=(key:string):string|undefined=>{
+    const component=selectedCustomDefinition?.apiName;
+    if(component==='une_text'&&key==='fontSize')return 'Text';
+    if(component==='une_button'&&key==='variant')return 'Button';
+    if(component==='une_calendar'&&['view','firstDayOfWeek','showWeekends'].includes(key))return 'Calendar';
+    if(component==='une_chart'&&key==='chartType')return 'Chart';
+    if(['une_navigation','une_container','une_stack'].includes(component??'')&&key==='direction')return component==='une_navigation'?'Navigation':'Container';
+    return undefined;
+  };
+  const definitionsForPart=(group:string,section:'Design'|'Layout')=>appearanceDefinitions.filter(definition=>{
+    const part=(definition as {group?:string}).group??inferredAppearanceGroup(definition.propertyKey);
+    const inferredSection=inferredAppearanceGroup(definition.propertyKey)&&['direction'].includes(definition.propertyKey)?'Layout':undefined;
+    return part===group&&!/(?:FieldApiName|ObjectApiName)$/.test(definition.propertyKey)
+      && ((definition as {section?:string}).section??inferredSection??(/columns|gap|padding|width|height|radius|span|position/i.test(definition.propertyKey)?'Layout':'Design'))===section;
+  });
+  const inferredGroupKeys=appearanceDefinitions.filter(d=>inferredAppearanceGroup(d.propertyKey)).map(d=>d.propertyKey);
   const selectedComponentDescription = selectedCustomDefinition?.description
     ?? standardPageComponents.find((component) => component.apiName === selected?.type)?.description
     ?? (selected?.type === 'Field Section' ? 'Group record fields into a configurable section.' : '');
@@ -2456,7 +2473,7 @@ function PageBuilder({
             </div><span>Visibility</span></div>
             <RibbonDesign properties={selected.properties} componentType={selected.type} definition={selectedCustomDefinition}
               device={page.layoutVariant??'Desktop'} onChange={properties=>updateComponent(selected.id,{properties})}/>
-            <RibbonFormat properties={selected.properties} componentType={selected.type} definition={selectedCustomDefinition} device={page.layoutVariant??'Desktop'} onChange={properties=>updateComponent(selected.id,{properties})}/>
+            <RibbonFormat properties={selected.properties} componentType={selected.type} definition={selectedCustomDefinition} device={page.layoutVariant??'Desktop'} excludeKeys={inferredGroupKeys} onChange={properties=>updateComponent(selected.id,{properties})}/>
           </>}
           {selected && ribbonTab==='Component Responsive' && <RibbonResponsive properties={selected.properties} componentType={selected.type}
             definition={selectedCustomDefinition} device={page.layoutVariant??'Desktop'}
