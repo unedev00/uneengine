@@ -23,7 +23,13 @@ for(const component of validManifests){
     if(!definitionMap.has(def.propertyKey))definitionMap.set(def.propertyKey,def);
   }
 }
-const excluded=new Set(['fontFamily','fontStyle','textDecoration']);
+// Never expose retired or duplicate source selectors as individual ribbon slots.
+// Object-source variants remain available through the Source mappings editor.
+const isExcludedRibbonProperty=(key:string)=>
+  ['fontFamily','fontStyle','textDecoration','theme'].includes(key)
+  || /(?:ageRestriction|barcode)/i.test(key)
+  || (/(?:ObjectApiName|SourceObjectApi|ObjectAPI)$/i.test(key) && key!=='objectApiName');
+const excluded=new Set(Array.from(definitionMap.keys()).filter(isExcludedRibbonProperty));
 const sections:Record<Tab,readonly string[]>={
   'Component Data':['Source','Fields','Filters','Records','Data integration'],
   'Component Content':['Text','Image','Options','Content fields','Component content'],
@@ -159,7 +165,7 @@ export default function UniversalRibbonInventory({tab,definition,componentId,pro
    if(builder?.position&&builder.layoutMode==='free-canvas')
      builder.onPositionChange?.({...builder.position,[key]:Math.round(value)});
  };
- const enabled=new Set((definition?.propertyDefinitions??[]).map(item=>item.propertyKey));
+ const enabled=new Set((definition?.propertyDefinitions??[]).filter(item=>!isExcludedRibbonProperty(item.propertyKey)).map(item=>item.propertyKey));
  const canEditCanvas=builder?.layoutMode==='free-canvas'&&Boolean(builder.position)&&Boolean(builder.onPositionChange);
  const canOpenSource=Boolean(builder?.onOpenSource)&&(definition?.propertyDefinitions??[]).some(item=>/object|fieldApiName|mapping/i.test(item.propertyKey));
  const canOpenFilters=Boolean(builder?.onOpenFilters)&&(definition?.propertyDefinitions??[]).some(item=>/object|filter|searchField/i.test(item.propertyKey));
