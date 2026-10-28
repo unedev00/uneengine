@@ -70,3 +70,11 @@ test('P2 nested expressions update Dynamic Forms required/hidden rules on unsave
   readableFieldApiNames:new Set<string>()}),
   {visible:false,required:false,readOnly:false});
 });
+
+test('PB19 App/Home visibility evaluates authorised viewer profile without record context',()=>{
+ const component={visible:true,properties:{visibilityRules:{logic:'All',conditions:[
+  {source:'User Profile' as const,operator:'Equals' as const,value:'profile-A'}]}}};
+ assert.equal(isComponentVisible(component,{formFactor:'Desktop',profileId:'profile-A'},false),true);
+ assert.equal(isComponentVisible(component,{formFactor:'Desktop',profileId:'profile-B'},false),false);
+ assert.equal(isComponentVisible(component,{formFactor:'Desktop'},false),false);
+});
