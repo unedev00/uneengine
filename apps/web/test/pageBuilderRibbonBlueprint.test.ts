@@ -49,8 +49,8 @@ test('Data and Responsive are three stable functional ribbon groups',()=>{
 });
 test('extra metadata styling remains available outside the fixed ribbon',()=>{
  const style=readFileSync(new URL('../src/core/builders/PageBuilder/PageBuilderAdvancedStyle.tsx',import.meta.url),'utf8');
- assert.match(style,/RibbonDesign properties=\{properties\}/);
- assert.match(style,/RibbonFormat properties=\{properties\}/);
+ assert.match(style,/office-ribbon-extra-grid/);
+ assert.doesNotMatch(style,/createPortal|Additional styling/);
 });
 
 test('Data ribbon moves source/filter shortcuts into headings and removes redundant Active record',()=>{
@@ -61,10 +61,11 @@ test('Data ribbon moves source/filter shortcuts into headings and removes redund
  assert.match(source,/recordSortFieldApiName/);
  assert.match(source,/Enable pagination/);
 });
-test('Content ribbon keeps legacy value and empty message inline with no modal',()=>{
+test('Content ribbon removes unwanted legacy and empty sections but preserves editing',()=>{
  const source=readFileSync(new URL('../src/core/builders/PageBuilder/PageBuilderRibbonContent.tsx',import.meta.url),'utf8');
- assert.match(source,/aria-label="Show legacy value"/);
- assert.match(source,/aria-label="Empty state message"/);
+ assert.doesNotMatch(source,/aria-label="Show legacy value"|section\('Empty State'/);
+ assert.match(source,/toggle\('Show image','showImage'\)/);
+ assert.match(source,/toggle\('Show heading','showTitle'\)/);
  assert.doesNotMatch(source,/moreContent|createPortal|More content settings/);
 });
 test('Design icons provide direct Excel-style colour, size, weight and alignment choices',()=>{
@@ -80,4 +81,39 @@ test('Design icons provide direct Excel-style colour, size, weight and alignment
  assert.match(css,/office-ribbon-weight-direct/);
  assert.match(css,/office-ribbon-align-direct/);
  assert.match(css,/office-ribbon-content-card>\.office-ribbon-group-heading/);
+});
+
+test('Batch 2 removes redundant Layout controls and keeps unique positioning',()=>{
+ const source=readFileSync(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+ assert.doesNotMatch(source,/className="office-ribbon-group office-ribbon-icon-group office-ribbon-layout-align"/);
+ assert.doesNotMatch(source,/title="Bring forward" aria-label="Bring forward"/);
+ assert.match(source,/office-ribbon-arrange-column/);
+ assert.match(source,/aria-label="Line height"/);
+ assert.match(source,/aria-label="Spacing density"/);
+ assert.match(source,/aria-label=\{'Component '\+key\}/);
+});
+test('Batch 2 keeps all styling accessible without the old advanced dialog',()=>{
+ const capability=readFileSync(new URL('../src/core/builders/PageBuilder/RibbonCapabilityControls.tsx',import.meta.url),'utf8');
+ const advanced=readFileSync(new URL('../src/core/builders/PageBuilder/PageBuilderAdvancedStyle.tsx',import.meta.url),'utf8');
+ const responsive=readFileSync(new URL('../src/core/builders/PageBuilder/PageBuilderRibbonStyle.tsx',import.meta.url),'utf8');
+ assert.match(capability,/function DirectNumber/);
+ assert.match(capability,/function SpacingControls/);
+ assert.doesNotMatch(capability,/\{name:'Width',icon:<Ratio size=\{16\}\/>,\{name:'Fit'/);
+ assert.match(advanced,/groups\.map/);
+ assert.doesNotMatch(advanced,/role="dialog"|createPortal/);
+ assert.doesNotMatch(responsive,/office-ribbon-responsive-overrides/);
+});
+test('Batch 2 grid runtime reads density, line-height, radius and image position',()=>{
+ const runtime=readFileSync(new URL('../src/one/OneItemGrid/OneItemGrid.jsx',import.meta.url),'utf8');
+ const page=readFileSync(new URL('../src/core/pages/TemplatePageRuntime/pageComponentLayout.ts',import.meta.url),'utf8');
+ for(const key of ['p.density','p.lineHeight','p.cardRadius','p.imagePosition','p.headingExpression','p[part+"LineLimit"]'])
+   assert.ok(runtime.includes(key),key);
+ assert.match(runtime,/gap:Number\(p\.gap\)/);
+ assert.match(page,/--md-page-line-height/);
+});
+test('Batch 2 fixes shared palette contrast and Layout numeric input widths',()=>{
+ const css=readFileSync(new URL('../src/core/builders/PageBuilder/PageBuilderRibbonBlueprint.css',import.meta.url),'utf8');
+ assert.match(css,/office-ribbon-palette-hex input::placeholder/);
+ assert.match(css,/office-ribbon-layout-typography/);
+ assert.match(css,/max-width:57px!important/);
 });
