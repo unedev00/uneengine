@@ -16,3 +16,30 @@ export function filterLayoutWritableValues(
     name==='RecordTypeId'||(!readOnly.has(name)&&(visible.has(name)||schemaRequired.has(name)))
   ));
 }
+
+/** Validate only writable, visible layout-required fields. Hidden conditional
+ * fields cannot block submission; read-only fields cannot demand an input.
+ * Schema/server validation is intentionally independent and remains authoritative.
+ */
+export function missingLayoutRequiredFields(
+  values:Readonly<Record<string,unknown>>,
+  layout:PageLayoutMetadata|undefined,
+  writable:ReadonlySet<string>,
+  editing:boolean
+):string[]{
+  if(!layout)return [];
+  const missing:string[]=[];
+  const visited=new Set<string>();
+  for(const section of layout.sections){
+    const visible=new Set(section.fieldApiNames);
+    const disabled=new Set(section.readOnlyFieldApiNames??[]);
+    for(const name of section.requiredFieldApiNames??[]){
+      if(visited.has(name)||!visible.has(name)||disabled.has(name)||!writable.has(name))continue;
+      visited.add(name);
+      const value=values[name];
+      if(value===null||value===undefined||(typeof value==='string'&&value.trim()===''))
+        missing.push(name);
+    }
+  }
+  return missing;
+}
