@@ -2537,7 +2537,6 @@ function PageBuilder({
                     })} onClick={()=>wrapSelectedInContainer()}><Group size={16}/> Group</button>
                     <button type="button" disabled={page.layoutMode!=='free-canvas'||selected.type!=='Container'||isCanvasLocked(selected)||!childrenOf(page.components,selected.id).length} onClick={ungroupSelected}><Ungroup size={16}/> Ungroup</button>
                   </div>
-                </div>
               </div><span>Arrange</span>
             </div>
             <div className="office-ribbon-group office-ribbon-icon-group">
@@ -2563,18 +2562,33 @@ function PageBuilder({
               <span className="office-ribbon-stat">Canvas pixels</span>
             </div><span>Size</span></div>}
           </>}
+          {selected && ribbonTab==='Filters' && <RibbonFilters key={selected.id} draft={ribbonFilterDraft} onChange={setRibbonFilterDraft}
+            fields={objects.find(object=>object.apiName===(selected.properties.objectApiName??selected.properties.targetObject??page.targetObject))?.fields??[]}
+            onApply={()=>{
+              const changed=Object.fromEntries(Object.entries(ribbonFilterDraft).filter(([key])=>key==='filters'||key.endsWith('Filters')||key==='filterLogic'));
+              updateComponent(selected.id,{properties:{...selected.properties,...changed}});selectRibbonTab('Component Data');
+            }} onCancel={()=>selectRibbonTab('Component Data')}/>}
+          {selected && ribbonTab==='Source' && <div className="office-ribbon-compact-strip" aria-label="Source and record scope">
+            {(selectedCustomDefinition?.propertyDefinitions??[]).filter(d=>d.kind==='OBJECT'||d.kind==='OBJECT_FIELD').slice(0,7).map(definition=><div className="office-ribbon-mini-group" key={definition.propertyKey}>
+              <label>{definition.label} <select value={String(selected.properties[definition.propertyKey]??'')} onChange={e=>updateComponent(selected.id,{properties:{...selected.properties,[definition.propertyKey]:e.target.value}})}>
+                <option value="">Not selected</option>{(definition.kind==='OBJECT'?objects:objects.find(o=>o.apiName===(selected.properties.objectApiName??page.targetObject))?.fields??[]).map(item=><option key={item.apiName} value={item.apiName}>{item.label}</option>)}
+              </select></label><span className="office-ribbon-group-heading">Source</span></div>)}
+            <button type="button" onClick={()=>selectRibbonTab('Component Data')}>Done</button>
+          </div>}
+          {selected && ribbonTab==='Visibility Rules' && <RibbonVisibilityRules key={selected.id} draft={ribbonVisibilityDraft} onChange={setRibbonVisibilityDraft}
+            fields={fields} allowRecordFields={page.pageType==='Record Page'}
+            profiles={profiles.map(item=>({id:item.id,label:item.label}))} recordTypes={targetObject?.recordTypes?.map(item=>({id:item.id,label:item.label}))??[]}
+            onApply={()=>{const properties={...selected.properties};if(ribbonVisibilityDraft)properties.visibilityRules=ribbonVisibilityDraft;else delete properties.visibilityRules;updateComponent(selected.id,{properties});selectRibbonTab('Component Responsive');}}
+            onCancel={()=>selectRibbonTab('Component Responsive')}/>}
           {ribbonTab === 'Preview' && <>
             <div className="office-ribbon-group"><div className="office-ribbon-stack">
               <button onClick={openExternalPreview}><Eye size={17}/> Preview window</button>
               <button onClick={()=>setPreviewMode(value=>!value)}><Monitor size={17}/> {previewMode?'Exit preview':'Canvas preview'}</button>
             </div><span>Preview</span></div>
-<div className="office-ribbon-group office-ribbon-preview-device"><div className="office-ribbon-home-icon-row">
-              {(['Desktop','Tablet','Mobile','Custom'] as const).map(device=><button key={device} type="button" aria-pressed={(page.layoutVariant??'Desktop')===device} disabled={switchingLayout||saving} onClick={()=>void switchLayoutVariant(device)}>{device==='Desktop'?<Monitor size={20}/>:device==='Tablet'?<Tablet size={20}/>:device==='Mobile'?<Smartphone size={20}/>:<Maximize2 size={20}/>}<span>{device}</span></button>)}
-            </div><span>Device Preview</span></div>
             <div className="office-ribbon-group"><div className="office-ribbon-stack">
               <span className="office-ribbon-stat">Page: {page.label}</span>
               <span className="office-ribbon-stat">Type: {page.pageType}</span>
-              <button type="button" onClick={()=>{setRibbonTab('Home');setPageSettingsDialogOpen(true);}}><Settings2 size={16}/> Page preview settings</button>
+
             </div><span>Preview Options</span></div>
           </>}
           {ribbonTab==='Add Block' && page.pageType==='Record Page' && <div className="office-ribbon-group">
@@ -2588,7 +2602,7 @@ function PageBuilder({
               </select>
             </label></div><span>Add record field</span>
           </div>}
-          {['Component Properties','Component Style','Component Layout','Component Responsive'].includes(ribbonTab) && <div className="office-ribbon-inspector-host" ref={setRibbonPropertyHost} aria-label="Ribbon property controls" />}
+          {['Component Properties','Component Style'].includes(ribbonTab) && <div className="office-ribbon-inspector-host" ref={setRibbonPropertyHost} aria-label="Ribbon property controls" />}
 
         </div>
       </section>
@@ -2752,12 +2766,7 @@ function PageBuilder({
             {selectedRegion === 'main' && <p className="properties-help">The Main section is required and cannot be deleted. Change the section arrangement to remove optional regions.</p>}
           </div> : selected && !pageSettingsOpen && activePanel !== 'page' ? <>
             {inspectorTab === 'Position' ? <div className="office-ribbon-layout-responsive">
-              {ribbonTab==='Component Responsive'
-                ? <PageComponentStyleEditor section="all" componentType={selected.type} properties={selected.properties}
-                    onChange={(properties: Record<string, unknown>)=>updateComponent(selected.id,{properties})}/>
-                : <PageComponentVisualEditor section="size" componentType={selected.type}
-                    value={selected.properties.visualStyle}
-                    onChange={visualStyle=>updateComponent(selected.id,{properties:{...selected.properties,visualStyle}})}/>}
+}
             </div> : <>
             {inspectorTab === 'Data & Actions' && <details className="builder-advanced-panel"><summary>Technical details</summary>
               <label className="form-label" htmlFor="page-component-type">Component type</label><div className="form-display" id="page-component-type">{selected.type}</div>
@@ -2768,9 +2777,7 @@ function PageBuilder({
               definitions={selectedCustomDefinition?.propertyDefinitions} eventDefinitions={selectedCustomDefinition?.eventDefinitions}
               componentVersion={selectedCustomDefinition?.version} objects={objects} apps={apps} pages={pages}
               currentAppId={builderAppApiName||apps[0]?.apiName||'Records'} primaryObjectApiName={page.targetObject} flows={flows}/>}
-            {inspectorTab === 'Design' && ribbonTab==='Component Style' && <PageComponentVisualEditor
-              section="appearance" componentType={selected.type} value={selected.properties.visualStyle}
-              onChange={visualStyle=>updateComponent(selected.id,{properties:{...selected.properties,visualStyle}})}/>}
+}
             {inspectorTab === 'Data & Actions' && <>
             {selected.parentId && <button type="button" className="btn btn-small" onClick={() => updateComponent(selected.id, { parentId: undefined })}>Move out of section</button>}
             {selectedCustomDefinition && <>
