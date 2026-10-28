@@ -1134,3 +1134,29 @@
   background:#fff!important;border:1px solid #aab8c6!important;
   box-shadow:0 12px 26px #12263a38!important;
 }
+
+/* Bounded metadata property groups (all declared properties remain reachable). */
+.office-builder-ribbon .office-ribbon-metadata-pager {
+  box-sizing:border-box;display:flex!important;flex-direction:row;align-items:center;
+  max-width:265px!important;height:132px!important;min-height:132px!important;min-width:0;
+  overflow:visible!important;gap:2px;border-right:1px solid #c8cfd9;
+}
+.office-builder-ribbon .office-ribbon-metadata-pager>button {
+  flex:0 0 22px;min-width:22px;width:22px;height:28px;padding:2px;
+}
+.office-builder-ribbon .office-ribbon-metadata-pager>.metadata-component-presentation {
+  display:flex;max-width:210px!important;min-width:0!important;height:130px!important;
+  flex:1 1 auto;overflow:hidden!important;
+}
+.office-builder-ribbon .office-ribbon-metadata-pager .office-ribbon-presentation-group {
+  box-sizing:border-box;min-width:0!important;max-width:207px!important;width:207px!important;
+  padding:4px 4px 22px!important;overflow:hidden!important;
+}
+.office-builder-ribbon .office-ribbon-metadata-pager .form-label input,
+.office-builder-ribbon .office-ribbon-metadata-pager .form-label select {
+  width:82px!important;max-width:82px!important;min-width:0!important;
+}
+.office-builder-ribbon .office-ribbon-inline-options {
+  flex:0 0 auto!important;min-width:0!important;max-width:270px!important;
+  height:133px!important;overflow:visible!important;
+}
