@@ -453,12 +453,12 @@ test('Card Grid surface colour and individual card colour stay separate in build
     assert.match(css,new RegExp('data-page-style~="'+flag+'"\\] \\.registered-component:not\\(\\.metadrive-component-une_item_grid\\) \\.md-product-card'));
     assert.doesNotMatch(css,new RegExp('data-page-style~="'+flag+'"\\] \\.registered-component \\.md-product-card'));
   }
-  assert.match(css,/\\.registered-component\\.metadrive-component-une_item_grid > section\\s*\\{\\s*background-color: var\\(--md-page-background\\) !important;/);
-  assert.match(css,/\\.registered-component\\.metadrive-component-une_item_grid > section\\s*\\{\\s*border-style: solid !important;/);
-  assert.match(renderer,/backgroundColor: typeof p\\.cardBackgroundColor === "string" \\? p\\.cardBackgroundColor : undefined/);
-  assert.match(renderer,/borderColor: typeof p\\.cardBorderColor === "string" \\? p\\.cardBorderColor : undefined/);
-  assert.match(ribbon,/isItemGrid\\?'Component background':'Background \\/ Fill'/);
-  assert.match(ribbon,/responsive\\[key\\]\\?\\?base\\[key\\]\\?\\?visual\\[key\\]\\?\\?properties\\[metadataKey\\]/);
+  assert.match(css,/\.registered-component\.metadrive-component-une_item_grid > section\s*\{\s*background-color: var\(--md-page-background\) !important;/);
+  assert.match(css,/\.registered-component\.metadrive-component-une_item_grid > section\s*\{\s*border-style: solid !important;/);
+  assert.match(renderer,/backgroundColor: typeof p\.cardBackgroundColor === "string" \? p\.cardBackgroundColor : undefined/);
+  assert.match(renderer,/borderColor: typeof p\.cardBorderColor === "string" \? p\.cardBorderColor : undefined/);
+  assert.match(ribbon,/isItemGrid\?'Component background':'Background \/ Fill'/);
+  assert.match(ribbon,/responsive\[key\]\?\?base\[key\]\?\?visual\[key\]\?\?properties\[metadataKey\]/);
   const result=resolvePageComponentStyle({backgroundColor:'#223344',cardBackgroundColor:'#cc4422',borderColor:'#776655',cardBorderColor:'#004488'},'Custom:une_item_grid');
   const vars=result as Record<string,unknown>;
   assert.equal(vars['--md-page-background'],'#223344');
