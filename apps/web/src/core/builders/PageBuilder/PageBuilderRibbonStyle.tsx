@@ -16,8 +16,26 @@ const has=(definition:LibraryComponentMetadata|undefined,key:string)=>Boolean(de
 export function RibbonDesign({properties,componentType,definition,device,onChange}:Props){
   const visual=object(properties.visualStyle);
   const responsive=object(object(properties.layoutResponsive)[mode(device)]);
+  const isItemGrid=definition?.apiName==='une_item_grid';
   const write=(key:'color'|'backgroundColor'|'borderColor'|'accentColor',value:string)=>{
     const metadataKey=key==='color'?'textColor':key;
+    // Older Page Builder versions could persist the same Grid surface colour
+    // in metadata, visualStyle, and responsive layout overrides. Those layers
+    // have different precedence, causing the colour swatch to disagree with
+    // the rendered result. Update only previously authored competing layers
+    // for the current device, leaving other device-specific values intact.
+    if(isItemGrid&&(key==='backgroundColor'||key==='borderColor')){
+      const next:Properties={...properties,[metadataKey]:value};
+      if(visual[key]!==undefined)next.visualStyle={...visual,[key]:value};
+      const base=object(properties.layoutStyle);
+      if(base[key]!==undefined)next.layoutStyle={...base,[key]:value};
+      if(responsive[key]!==undefined){
+        const all=object(properties.layoutResponsive);
+        next.layoutResponsive={...all,[mode(device)]:{...responsive,[key]:value}};
+      }
+      onChange(next);
+      return;
+    }
     if(has(definition,metadataKey)){onChange({...properties,[metadataKey]:value});return;}
     if(key==='accentColor')return;
     if(mode(device)!=='Base'&&mode(device)!=='Desktop'&&(key==='backgroundColor'||key==='borderColor')){
@@ -27,6 +45,11 @@ export function RibbonDesign({properties,componentType,definition,device,onChang
   };
   const value=(key:'color'|'backgroundColor'|'borderColor'|'accentColor')=>{
     const metadataKey=key==='color'?'textColor':key;
+    if(isItemGrid&&(key==='backgroundColor'||key==='borderColor')){
+      // Match resolvePageComponentStyle: responsive > layoutStyle > visual > metadata.
+      const base=object(properties.layoutStyle);
+      return String(responsive[key]??base[key]??visual[key]??properties[metadataKey]??'#ffffff');
+    }
     return String(properties[metadataKey]??responsive[key]??visual[key]??(key==='color'?'#111827':'#ffffff'));
   };
   const settings=availableComponentSettings(definition?.propertyDefinitions??[],device,definition?.version)
@@ -35,8 +58,8 @@ export function RibbonDesign({properties,componentType,definition,device,onChang
     <div className="office-ribbon-group office-ribbon-icon-group office-ribbon-colour-group">
       <div className="office-ribbon-icon-line">
         <RibbonColorPalette kind="text" label="Text" value={value('color')} onChange={v=>write('color',v)}/>
-        <RibbonColorPalette kind="fill" label="Background / Fill" value={value('backgroundColor')} onChange={v=>write('backgroundColor',v)}/>
-        <RibbonColorPalette kind="border" label="Border" value={value('borderColor')} onChange={v=>write('borderColor',v)}/>
+        <RibbonColorPalette kind="fill" label={isItemGrid?'Component background':'Background / Fill'} value={value('backgroundColor')} onChange={v=>write('backgroundColor',v)}/>
+        <RibbonColorPalette kind="border" label={isItemGrid?'Component border':'Border'} value={value('borderColor')} onChange={v=>write('borderColor',v)}/>
         {has(definition,'accentColor')&&<RibbonColorPalette kind="fill" label="Accent" value={value('accentColor')} onChange={v=>write('accentColor',v)}/>}
       </div><span>Colours</span>
     </div>
