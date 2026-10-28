@@ -11,7 +11,7 @@ const localPart=/^[a-z0-9](?:[a-z0-9._+-]{0,62}[a-z0-9])?$/;
 const socketPath=process.env.METADRIVE_MCP_BROKER_SOCKET??'/run/metadrive-mcp-broker.sock';
 const domainPattern=/^(?=.{4,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/;
 type Operation='mailbox_add'|'mailbox_reset'|'mailbox_delete'|'mailbox_list'|'sender_approve';
-function broker(action:Operation,address?:string,password?:string):Promise<string>{
+export function broker(action:Operation,address?:string,password?:string):Promise<string>{
  return new Promise((resolve,reject)=>{
   const conn=createConnection(socketPath);let data='',settled=false;
   const fail=(error:Error)=>{if(!settled){settled=true;conn.destroy();reject(error);}};
