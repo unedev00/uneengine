@@ -2,6 +2,7 @@ import {useState,type ReactNode} from 'react';
 import {createPortal} from 'react-dom';
 import {SlidersHorizontal,ChevronDown,PaintBucket,Square,Scan,Layers,Blend,Type,Bold,AlignLeft,Palette,CaseSensitive,Image,Ratio,Move,CalendarDays,CalendarRange,Clock,Table2,ChartNoAxesCombined,Grid2X2,Columns3,WrapText,PanelTop,Menu,MousePointer,Settings2} from 'lucide-react';
 import type {LibraryComponentMetadata} from '../../metadata/Definitions/metadata';
+import PageBuilderRibbonMetadataPager from './PageBuilderRibbonMetadataPager';
 
 type PropertyDefinition=NonNullable<LibraryComponentMetadata['propertyDefinitions']>[number];
 type Values=Record<string,unknown>;
@@ -34,17 +35,7 @@ export default function RibbonCapabilityControls({group,definitions,properties,o
      <section role="dialog" aria-modal="true" aria-label={group+' '+active+' properties'} className="office-ribbon-capability-dialog"
        onMouseDown={event=>event.stopPropagation()}>
        <header><strong>{group} · {active}</strong><button type="button" onClick={()=>setActive(null)}>Close</button></header>
-       {matched(active).map(def=>{
-         const key=def.propertyKey,value=properties[key]??def.defaultValue??'';
-         const update=(next:unknown)=>onChange({...properties,[key]:next});
-         if(def.kind==='BOOLEAN')return <label key={key}><input type="checkbox" checked={value===true} onChange={e=>update(e.target.checked)}/>{def.label}</label>;
-         if(def.kind==='SELECT')return <label key={key}>{def.label}<select value={String(value)} onChange={e=>update(e.target.value)}>
-           <option value="">Choose</option>{(def.choices??[]).map(option=><option key={option.key} value={option.key}>{option.label}</option>)}
-         </select></label>;
-         if(def.kind==='NUMBER'||def.kind==='CURRENCY')return <label key={key}>{def.label}<input type="number" value={typeof value==='number'?value:''} onChange={e=>update(e.target.value===''?undefined:Number(e.target.value))}/></label>;
-         if(['TEXT','STRING','LONG_TEXT','TEXTAREA','COLOR'].includes(def.kind))return <label key={key}>{def.label}<input type="text" value={String(value)} onChange={e=>update(e.target.value)}/></label>;
-         return <p key={key}>{def.label}: use the detailed metadata editor for this property.</p>;
-       })}
+       <PageBuilderRibbonMetadataPager definitions={matched(active)} properties={properties} onChange={onChange}/>
      </section>
    </div>,document.body)}
  </div>;
