@@ -2861,8 +2861,12 @@ function PageBuilder({
             {selectedRegion === 'main' && <p className="properties-help">The Main section is required and cannot be deleted. Change the section arrangement to remove optional regions.</p>}
           </div> : selected && !pageSettingsOpen && activePanel !== 'page' ? <>
             {inspectorTab === 'Position' ? <div className="office-ribbon-layout-responsive">
-              <PageComponentStyleEditor section={ribbonTab==='Component Responsive'?'all':'layout'} componentType={selected.type} properties={selected.properties}
-                onChange={(properties: Record<string, unknown>)=>updateComponent(selected.id,{properties})}/>
+              {ribbonTab==='Component Responsive'
+                ? <PageComponentStyleEditor section="all" componentType={selected.type} properties={selected.properties}
+                    onChange={(properties: Record<string, unknown>)=>updateComponent(selected.id,{properties})}/>
+                : <PageComponentVisualEditor section="size" componentType={selected.type}
+                    value={selected.properties.visualStyle}
+                    onChange={visualStyle=>updateComponent(selected.id,{properties:{...selected.properties,visualStyle}})}/>}
             </div> : <>
             {inspectorTab === 'Data & Actions' && <details className="builder-advanced-panel"><summary>Technical details</summary>
               <label className="form-label" htmlFor="page-component-type">Component type</label><div className="form-display" id="page-component-type">{selected.type}</div>
