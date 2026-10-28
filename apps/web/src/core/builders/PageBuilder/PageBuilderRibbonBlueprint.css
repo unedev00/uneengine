@@ -609,3 +609,19 @@
 ) {
   flex:0 0 156px!important;width:156px!important;min-width:156px!important;max-width:156px!important;
 }
+
+/* A single metadata SELECT/NUMBER renders as the actual menu/input, not as
+   a full capability dialog. Radius, Shadow and similar settings need one click. */
+.office-ribbon-capability-dialog.office-ribbon-capability-popover.is-compact{
+  width:235px!important;max-height:150px!important;padding:8px!important;
+}
+.office-ribbon-capability-popover .office-ribbon-direct-property{
+  display:flex!important;flex-flow:column nowrap!important;gap:6px!important;
+  color:#18314f!important;font:500 12px/16px "Segoe UI",Arial,sans-serif!important;
+}
+.office-ribbon-capability-popover .office-ribbon-direct-property :is(input,select){
+  box-sizing:border-box!important;display:block!important;width:100%!important;max-width:100%!important;
+  height:29px!important;min-height:29px!important;padding:3px 6px!important;
+  background:#fff!important;color:#18314f!important;border:1px solid #b9c8d9!important;
+  border-radius:3px!important;font:12px/18px "Segoe UI",Arial,sans-serif!important;
+}
