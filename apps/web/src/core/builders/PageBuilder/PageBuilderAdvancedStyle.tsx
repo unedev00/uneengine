@@ -56,7 +56,11 @@ export default function PageBuilderAdvancedStyle({properties,componentType,defin
    {name:'Typography',defs:all.filter(d=>typographyKeys.has(d.propertyKey))},
    {name:'Borders',defs:all.filter(d=>borderKeys.has(d.propertyKey))},
    {name:'Other styles',defs:all.filter(d=>!included.has(d.propertyKey))}
- ].filter(group=>group.defs.length>0);
+ ].filter(group=>group.defs.length>0).flatMap(group=>
+   Array.from({length:Math.ceil(group.defs.length/3)},(_,index)=>({
+     name:group.name+(index?' '+(index+1):''),
+     defs:group.defs.slice(index*3,index*3+3)
+   })));
  const textEnabled=/text|button|label|badge|heading|paragraph|rich|input/i.test(componentType);
  const style=layoutSettings(properties,device==='Mobile'?'Phone':device==='Custom'?'Desktop':device);
  const changeStyle=(key:'fontStyle'|'textDecoration',value:string)=>
