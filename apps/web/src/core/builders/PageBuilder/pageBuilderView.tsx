@@ -594,7 +594,7 @@ function PageBuilder({
       ['une_input','Input'],['une_container','Container'],['une_grid','Container'],
       ['une_stack','Container'],['une_split_pane','Container']
     ] as const).filter(([api])=>api===selectedCustomDefinition?.apiName).map(([,group])=>group)];
-  const layoutRibbonGroups:readonly string[] = ['Size','Position','Spacing','Component'];
+  const layoutRibbonGroups:readonly string[] = selected?.position ? ['Spacing','Component'] : ['Size','Position','Spacing','Component'];
   const appearanceDefinitions = availableComponentSettings(selectedCustomDefinition?.propertyDefinitions??[],page.layoutVariant??'Desktop',selectedCustomDefinition?.version);
   // Registry metadata remains authoritative. Legacy property declarations which omit
   // a presentation group are assigned only where the component already declares the key.
@@ -2563,7 +2563,7 @@ function PageBuilder({
               onChange={event=>updateComponent(selected.id,{properties:{...selected.properties,layoutContainer:event.target.checked}})}/> Allow child components</label>}
           </div><span>Spacing & nesting</span></div>}
           {selected && ribbonTab === 'Component Layout' && <>
-            <div className="office-ribbon-group office-ribbon-icon-group" aria-label="Arrange component">
+            <div className="office-ribbon-group office-ribbon-icon-group office-ribbon-layout-arrange" aria-label="Arrange component">
               <div className="office-ribbon-stack">
                 <div className="office-ribbon-icon-line">
                   <button type="button" className="office-ribbon-icon-button" title="Bring forward" aria-label="Bring forward" disabled={isCanvasLocked(selected)} onClick={()=>moveSelected(-1)}><ArrowUp size={17}/></button>
@@ -2579,7 +2579,7 @@ function PageBuilder({
                   </div>
               </div><span>Arrange</span>
             </div>
-            <div className="office-ribbon-group office-ribbon-icon-group">
+            <div className="office-ribbon-group office-ribbon-icon-group office-ribbon-layout-align">
               <div className="office-ribbon-stack">
                 <div className="office-ribbon-icon-line">
                   {([['start',AlignHorizontalJustifyStart,'Align left'],['center',AlignHorizontalJustifyCenter,'Align centre'],['end',AlignHorizontalJustifyEnd,'Align right']] as const).map(([alignment,Icon,label])=><button key={alignment} type="button" title={label} aria-label={label} className="office-ribbon-icon-button" disabled={page.layoutMode!=='free-canvas'||isCanvasLocked(selected)} onClick={()=>alignSelected('x',alignment)}><Icon size={17}/></button>)}
@@ -2593,11 +2593,11 @@ function PageBuilder({
                 </div>
               </div><span>Alignment</span>
             </div>
-            {selected.position && <div className="office-ribbon-group"><div className="office-ribbon-stack">
+            {selected.position && <div className="office-ribbon-group office-ribbon-layout-position-physical"><div className="office-ribbon-stack">
               {(['x','y'] as const).map(key=><label key={key} className="office-ribbon-inline-field"><span className="office-ribbon-field-name">{key.toUpperCase()}</span><input aria-label={key.toUpperCase()+' position'} type="number" min={0} max={key==='x'?page.canvasWidth-selected.position!.width:page.canvasHeight-selected.position!.height} disabled={isCanvasLocked(selected)} value={selected.position![key]} onChange={event=>{const n=Number(event.target.value);if(Number.isFinite(n))updateComponent(selected.id,{position:{...selected.position!,[key]:Math.max(0,Math.min(key==='x'?page.canvasWidth-selected.position!.width:page.canvasHeight-selected.position!.height,Math.round(n)))}});}}/></label>)}
 
             </div><span>Position</span></div>}
-            {selected.position && <div className="office-ribbon-group"><div className="office-ribbon-stack">
+            {selected.position && <div className="office-ribbon-group office-ribbon-layout-size-physical"><div className="office-ribbon-stack">
               {(['width','height'] as const).map(key=><label key={key} className="office-ribbon-inline-field"><span className="office-ribbon-field-name">{key==='width'?'Width':'Height'}</span><input aria-label={'Component '+key} type="number" min={1} max={key==='width'?page.canvasWidth-selected.position!.x:page.canvasHeight-selected.position!.y} disabled={isCanvasLocked(selected)} value={selected.position![key]} onChange={event=>{const n=Number(event.target.value);if(Number.isFinite(n))updateComponent(selected.id,{position:{...selected.position!,[key]:Math.max(1,Math.min(key==='width'?page.canvasWidth-selected.position!.x:page.canvasHeight-selected.position!.y,Math.round(n)))}});}}/></label>)}
               <span className="office-ribbon-stat">Canvas pixels</span>
             </div><span>Size</span></div>}
