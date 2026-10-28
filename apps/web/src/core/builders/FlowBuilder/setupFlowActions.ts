@@ -4,6 +4,7 @@ import {generateMetadataApiName,suggestMetadataApiName} from '../../metadata/Def
 import type { FormEvent } from 'react';
 import type { FlowDefinitionMetadata, FlowElementMetadata, FlowValidationMetadata, FlowVersionMetadata, PlatformEventMetadata, ApprovalProcessInput, NamedCredentialMetadata, EmailAlertMetadata } from '../../metadata/Definitions/metadata';
 import { initialScreenValues } from '../../automation/FlowScreen/flowScreenRuntimeUtils';
+import { flowTestValuesEqual } from './flowTestAssertions';
 
 export function createSetupFlowActions(ctx: any) {
  const { apiRequest, apps, confirmDiscardFlowChanges, confirmFlowNavigation, flow, flowDebug, flowHistory, flowRun, flowSnapshots, flows, navigateRoute, notify, object, objects, platformEvents, setApprovalProcesses, setEmailAlerts, setFlow, setFlowDebug, setFlowRun, setFlowRunnerError, setFlowRunnerSubmitting, setFlowValidation, setFlows, setNamedCredentials, setPlatformEvents, setSelectedFlowId, workspace } = ctx;
@@ -302,7 +303,7 @@ export function createSetupFlowActions(ctx: any) {
         const outputs = response.outputs && typeof response.outputs === 'object' && !Array.isArray(response.outputs)
           ? response.outputs as Record<string, unknown> : {};
         for (const [name, expected] of Object.entries(test.expectedOutputs ?? {})) {
-          if (JSON.stringify(outputs[name]) !== JSON.stringify(expected)) wrongOutputs.push(name);
+          if (!flowTestValuesEqual(outputs[name], expected)) wrongOutputs.push(name);
         }
         const passed = actualStatus === test.expectedStatus && wrongOutputs.length === 0;
         results.push({

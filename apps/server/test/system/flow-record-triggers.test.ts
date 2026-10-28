@@ -220,6 +220,7 @@ test('Flow activation validates Scheduled Path context, source field type, and o
      element_type,flow_type:'Record-Triggered Flow',builder_allowed:element_type==='End'
    }))};
   if(sql.includes('FROM md_flow_capability_properties'))return {rows:[]};
+  if(sql.includes('FROM md_object_definitions'))return {rows:[{api_name:'Account'}]};
   return {rows:dataType?[{data_type:dataType}]:[]};
  }} as never;
  const rbac={require:async()=>undefined} as unknown as RbacEngine;

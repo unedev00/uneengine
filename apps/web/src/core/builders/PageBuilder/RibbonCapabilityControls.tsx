@@ -110,12 +110,22 @@ function SpacingControls({definitions,properties,onChange}:{
 function WeightOptions({definition,properties,onChange,label}:{
   definition:PropertyDefinition;properties:Values;onChange:(next:Values)=>void;label:string;
 }){
+  // Only expose the three requested levels, resolving actual registry choices.
+  // Never persist an invented font weight.
+  const choices=definition.choices??[];
+  const byWeight=(weight:number)=>choices.find(choice=>Number(choice.key)===weight);
+  const levels=[
+    {name:'Light',choice:byWeight(400)??choices[0]},
+    {name:'Mid',choice:byWeight(500)??byWeight(600)??choices[Math.min(1,choices.length-1)]},
+    {name:'Hard',choice:byWeight(700)??byWeight(800)??byWeight(900)??choices[choices.length-1]}
+  ].flatMap(level=>level.choice?[{name:level.name,choice:level.choice}]:[]);
+  const distinct=levels.filter((level,index)=>levels.findIndex(other=>other.choice.key===level.choice.key)===index);
   return <div className="office-ribbon-weight-direct" role="group" aria-label={label+' weight'}>
-    {(definition.choices??[]).map(choice=><button key={choice.key} type="button"
-      title={label+' '+choice.label} aria-label={label+' weight '+choice.label}
-      aria-pressed={String(properties[definition.propertyKey]??definition.defaultValue??'')===String(choice.key)}
-      onClick={()=>onChange({...properties,[definition.propertyKey]:choice.key})}
-      style={{fontWeight:Number(choice.key)||400}}>B</button>)}
+    {distinct.map(level=><button key={level.name} type="button"
+      title={label+' '+level.name} aria-label={label+' weight '+level.name}
+      aria-pressed={String(properties[definition.propertyKey]??definition.defaultValue??'')===String(level.choice.key)}
+      onClick={()=>onChange({...properties,[definition.propertyKey]:level.choice.key})}
+      style={{fontWeight:Number(level.choice.key)||400}}>B</button>)}
   </div>;
 }
 function AlignmentOptions({definition,properties,onChange,label}:{
@@ -250,7 +260,7 @@ export default function RibbonCapabilityControls({group,definitions,properties,o
       const key=group==='Card'?'cardRadius':'radius';
       const definition=definitions.find(d=>d.propertyKey===key&&d.kind==='NUMBER');
       if(definition)return <DirectNumber key={key} definition={definition} properties={properties}
-        onChange={update} label={group==='Card'?'Card radius':'Radius'} icon={<Scan size={16}/>}/>;
+        onChange={update} label={group==='Card'?'Card radius':'Radius'}/>;
     }
     if(group==='Card'&&command.name==='Stroke'){
       const definition=definitions.find(d=>d.propertyKey==='cardBorderWidth'&&d.kind==='NUMBER');
@@ -269,25 +279,25 @@ export default function RibbonCapabilityControls({group,definitions,properties,o
   const align=propertyFor(definitions,'align');
   const lines=propertyFor(definitions,'lines');
   const typography=(group==='Heading'||group==='Supporting text'||group==='Text')&&Boolean(size||weight||align);
-  if(typography)return <div className="office-ribbon-capabilities office-ribbon-typography-capabilities" aria-label={group+' commands'}>
-    <div className="office-ribbon-typography-primary">
+  if(typography)return <div className="office-ribbon-capabilities office-ribbon-typography-capabilities office-ribbon-text-layout" aria-label={group+' commands'}>
+    <div className="office-ribbon-text-top">
       {size&&<SizeSelect definition={size} properties={properties} onChange={update} label={group}/>}
       {colourCommand('Colour')}
+    </div>
+    <div className="office-ribbon-text-middle">
       {lines&&<DirectNumber definition={lines} properties={properties} onChange={update}
-        label="Lines" icon={<WrapText size={16}/>}/>}
+        label="Lines"/>}
+      {align&&<AlignmentOptions definition={align} properties={properties} onChange={update} label={group}/>}
     </div>
-    {align&&<AlignmentOptions definition={align} properties={properties} onChange={update} label={group}/>}
-    {weight&&<WeightOptions definition={weight} properties={properties} onChange={update} label={group}/>}
+    <div className="office-ribbon-text-bottom">
+      {weight&&<WeightOptions definition={weight} properties={properties} onChange={update} label={group}/>}
+    </div>
   </div>;
-  if(group==='Badge'&&(size||weight))return <div className="office-ribbon-capabilities office-ribbon-typography-capabilities" aria-label={group+' commands'}>
-    <div className="office-ribbon-typography-primary">
-      {colourCommand('Fill')}{colourCommand('Text')}
-      {size&&<SizeSelect definition={size} properties={properties} onChange={update} label={group}/>}
-    </div>
-    {matches(definitions,'Border').length>0&&<div className="office-ribbon-typography-secondary">
-      {renderCommand({name:'Border',icon:<Square size={16}/>})}
-    </div>}
-    {weight&&<WeightOptions definition={weight} properties={properties} onChange={update} label={group}/>}
+  if(group==='Badge'&&(size||weight))return <div className="office-ribbon-capabilities office-ribbon-typography-capabilities office-ribbon-badge-layout" aria-label={group+' commands'}>
+    <div className="office-ribbon-badge-fill">{colourCommand('Fill')}</div>
+    <div className="office-ribbon-badge-size">{size&&<SizeSelect definition={size} properties={properties} onChange={update} label={group}/>}</div>
+    <div className="office-ribbon-badge-text">{colourCommand('Text')}</div>
+    <div className="office-ribbon-badge-weights">{weight&&<WeightOptions definition={weight} properties={properties} onChange={update} label={group}/>}</div>
   </div>;
   return <div className="office-ribbon-capabilities" aria-label={group+' commands'}>
     {named.map(renderCommand)}

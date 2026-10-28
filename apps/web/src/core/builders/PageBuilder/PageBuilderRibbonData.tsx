@@ -13,7 +13,10 @@ export default function PageBuilderRibbonData({properties,definition,objects,fal
  onChange:(properties:Properties)=>void;onOpenSource:()=>void;onOpenFilters:()=>void;
 }){
  const defs=definition?.propertyDefinitions;
- const objectDef=defs?.find(def=>def.kind==='OBJECT');
+ const objectDef=defs?.find(def=>def.kind==='OBJECT'||def.propertyKey==='objectApiName');
+ const supportsFilters=Boolean(defs?.some(def=>/^(filterLogic|filters|filterKey|selectionFilterKey|relatedFilterKey|recordFilters)$/i.test(def.propertyKey)));
+ const supportsLogic=has(defs,'filterLogic');
+ const supportsRecords=Boolean(defs?.some(def=>['recordSortFieldApiName','enablePagination','pageSize'].includes(def.propertyKey)));
  const objectKey=objectDef?.propertyKey??'objectApiName';
  const activeObject=String(properties[objectKey]??fallbackObject??'');
  const fields=objects.find(object=>object.apiName===activeObject)?.fields??[];
@@ -39,10 +42,10 @@ export default function PageBuilderRibbonData({properties,definition,objects,fal
  return <>
    <div className="office-ribbon-group office-ribbon-data-group" aria-label="Data source">
      <div className="office-ribbon-data-heading"><Database size={18}/> <strong>Source</strong>
-       <button className="office-ribbon-data-link" type="button" onClick={onOpenSource} disabled={!objectDef}
-         title="Open source" aria-label="Open source"><ExternalLink size={15}/></button></div>
+       <button className="office-ribbon-data-link" type="button" onClick={onOpenSource} disabled={!objectDef} title={!objectDef?"Not supported by selected component":"Open source"}
+          aria-label="Open source"><ExternalLink size={15}/></button></div>
      <label className="office-ribbon-data-field"><span>Object</span>
-       <select aria-label="Source object" disabled={!objectDef} value={objectDef?String(properties[objectKey]??''):''}
+       <select aria-label="Source object" disabled={!objectDef} title={!objectDef?"Not supported by selected component":"Source object"} value={objectDef?String(properties[objectKey]??''):''}
          onChange={event=>changeObject(event.target.value)}>
          <option value="">Choose object</option>{objects.map(object=><option key={object.apiName} value={object.apiName}>{object.label}</option>)}
        </select>
@@ -53,24 +56,24 @@ export default function PageBuilderRibbonData({properties,definition,objects,fal
    </div>
    <div className="office-ribbon-group office-ribbon-data-group" aria-label="Data filters">
      <div className="office-ribbon-data-heading"><Filter size={18}/> <strong>Filters</strong>
-       <button className="office-ribbon-data-link" type="button" onClick={onOpenFilters}
-         title="Open filters" aria-label="Open filters"><ExternalLink size={15}/></button></div>
+       <button className="office-ribbon-data-link" type="button" onClick={onOpenFilters} disabled={!supportsFilters}
+         title={supportsFilters?"Open filters":"Not supported by selected component"} aria-label="Open filters"><ExternalLink size={15}/></button></div>
      <label className="office-ribbon-data-field"><span>Active filters</span>
-       <input aria-label="Active filter count" readOnly value={filters+' '+(filters===1?'filter':'filters')}/></label>
+       <input aria-label="Active filter count" readOnly disabled={!supportsFilters} title={!supportsFilters?"Not supported by selected component":"Active filters"} value={filters+' '+(filters===1?'filter':'filters')}/></label>
      <label className="office-ribbon-data-field"><span>Filter logic</span>
-       <select aria-label="Filter logic" value={String(properties.filterLogic??'AND')==='OR'?'OR':'AND'}
+       <select aria-label="Filter logic" disabled={!supportsLogic} title={!supportsLogic?"Not supported by selected component":"Filter logic"} value={String(properties.filterLogic??'AND')==='OR'?'OR':'AND'}
          onChange={event=>bind('filterLogic',event.target.value)}>
          <option value="AND">All (AND)</option><option value="OR">Any (OR)</option>
        </select></label>
      <span className="office-ribbon-group-heading">Filters</span>
    </div>
-   <div className="office-ribbon-group office-ribbon-data-group" aria-label="Data records">
+   <div className="office-ribbon-group office-ribbon-data-group" aria-label="Data records" data-available={supportsRecords}>
      <div className="office-ribbon-data-heading"><ListFilter size={18}/> <strong>Records</strong></div>
      {fieldSelect('Sort field','recordSortFieldApiName',!has(defs,'recordSortFieldApiName'))}
      <div className="office-ribbon-data-pagination">
-       <label><input aria-label="Enable pagination" type="checkbox" disabled={!has(defs,'enablePagination')}
+       <label><input aria-label="Enable pagination" type="checkbox" disabled={!has(defs,'enablePagination')} title={!has(defs,'enablePagination')?"Not supported by selected component":"Pagination"}
          checked={properties.enablePagination===true} onChange={event=>bind('enablePagination',event.target.checked)}/> Pagination</label>
-       <label>Page size <input aria-label="Page size" type="number" min={1} max={500} disabled={!has(defs,'pageSize')||properties.enablePagination!==true}
+       <label>Page size <input aria-label="Page size" type="number" min={1} max={500} disabled={!has(defs,'pageSize')||properties.enablePagination!==true} title={!has(defs,'pageSize')?"Not supported by selected component":"Enable pagination to edit page size"}
          value={typeof properties.pageSize==='number'?properties.pageSize:12}
          onChange={event=>{const value=Number(event.target.value);if(Number.isInteger(value)&&value>0&&value<=500)bind('pageSize',value);}}/></label>
      </div><span className="office-ribbon-group-heading">Records</span>

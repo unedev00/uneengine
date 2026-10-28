@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import type {FlowDefinitionMetadata, ObjectMetadata} from '../src/core/metadata/Definitions/metadata';
 import {flowReferenceChoices} from '../src/core/builders/FlowBuilder/flowReferenceCatalog';
+import {flowTestValuesEqual} from '../src/core/builders/FlowBuilder/flowTestAssertions';
 
 const account: ObjectMetadata={
   apiName:'Account',label:'Account',pluralLabel:'Accounts',kind:'Standard Object',
@@ -44,4 +45,14 @@ test('Create Records exposes new record Id in the following Create Records step'
   const choices=flowReferenceChoices(draft,4,[sale,account]);
   assert.ok(choices.some(choice=>choice.reference==='{!record3.Id}'
     &&choice.targetObject==='Sale'));
+});
+
+test('Flow test output matching ignores object key order but preserves array order and exact values',()=>{
+  assert.equal(flowTestValuesEqual(
+    {record:{Name:'Sample',Quantity:2},items:[{Id:'a'},{Id:'b'}]},
+    {items:[{Id:'a'},{Id:'b'}],record:{Quantity:2,Name:'Sample'}}
+  ),true);
+  assert.equal(flowTestValuesEqual([{Id:'a'},{Id:'b'}],[{Id:'b'},{Id:'a'}]),false);
+  assert.equal(flowTestValuesEqual({Quantity:2},{Quantity:'2'}),false);
+  assert.equal(flowTestValuesEqual({Name:'Expected',Other:true},{Name:'Expected'}),false);
 });
