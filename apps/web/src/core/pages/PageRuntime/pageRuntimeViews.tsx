@@ -81,7 +81,7 @@ import RegisteredComponent from '../../components/RegisteredComponent/Registered
 import { findRegisteredComponent } from '../../components/Registry/componentRegistryLookup';
 import PageRouteDirectory from '../PageRouteDirectory/PageRouteDirectory';
 import { isComponentVisible } from '../../components/Properties/componentVisibility';
-import {behaviorAction,behaviorAppearance,behaviorInteractions,behaviorTabs,pageBehaviors} from './pageBehaviorRuntime';
+import {behaviorValidation,behaviorAction,behaviorAppearance,behaviorInteractions,behaviorTabs,pageBehaviors} from './pageBehaviorRuntime';
 import { canNestComponent, componentVisualStyle, directChildren, isLayoutType, isDescendantOf, layoutTypes } from '../TemplatePageRuntime/pageComponentLayout';
 import { isCanvasLocked, wrapCanvasComponent, ungroupCanvasComponent } from '../../builders/PageBuilder/canvasInteractions';
 import { filterPageComponentRecords, pageComponentRecordQuery, bindPageStateProperties, needsMetadataComponentRuntime, resolvePageStatePath } from './pageComponentBindings';
@@ -532,6 +532,8 @@ function MetadataBoundPageComponent({
     if (disableActions) throw new Error('Page Builder preview is read-only. Open the assigned app to test actions.');
     if(behaviorAction(properties,action.event,{formFactor})!=='enabled')
       throw new Error('This action is unavailable under the published Page rules.');
+    const validationError=behaviorValidation(properties,action.event,{formFactor});
+    if(validationError)throw new Error(validationError);
     const hasInteraction=Array.isArray(pageBehaviors(properties)?.interactions)
       &&(pageBehaviors(properties)!.interactions as Array<{event?:unknown}>).some(item=>item?.event===action.event);
     if(hasInteraction)window.dispatchEvent(new CustomEvent('metadrive:page-component-interaction',{
