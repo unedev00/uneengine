@@ -807,3 +807,41 @@
  font:11px/17px "Segoe UI",Arial,sans-serif!important;color:#173c68!important;background:#fff!important;
  border:1px solid #bdc9d8!important;border-radius:2px!important;
 }
+
+/* Numeric property controls retain their icons rather than rendering as plain inputs. */
+.office-builder-ribbon .office-ribbon-direct-number {
+ display:grid!important;grid-template-columns:16px minmax(0,1fr)!important;
+ grid-template-rows:23px 12px!important;column-gap:1px!important;row-gap:1px!important;
+ justify-items:center!important;align-content:center!important;
+}
+.office-builder-ribbon .office-ribbon-direct-number .office-ribbon-command-glyph{
+ display:flex!important;grid-column:1;grid-row:1;
+ width:16px!important;height:19px!important;align-items:center!important;justify-content:center!important;
+}
+.office-builder-ribbon .office-ribbon-direct-number select{
+ grid-column:2!important;grid-row:1!important;
+ width:50px!important;min-width:0!important;max-width:50px!important;align-self:center!important;
+}
+.office-builder-ribbon .office-ribbon-direct-number .office-ribbon-command-label{
+ grid-column:1 / span 2!important;grid-row:2!important;justify-self:center!important;
+ text-align:center!important;max-width:none!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-part-group:has(.office-ribbon-direct-number):not([data-ribbon-group="Spacing"]){
+ flex:0 0 212px!important;width:212px!important;min-width:212px!important;max-width:212px!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-part-group:has(.office-ribbon-direct-number):not([data-ribbon-group="Spacing"]) .office-ribbon-capabilities:not(.office-ribbon-typography-capabilities){
+ grid-template-columns:repeat(3,minmax(0,64px))!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-part-group:has(.office-ribbon-direct-number):not([data-ribbon-group="Spacing"]) .office-ribbon-direct-number{
+ width:64px!important;min-width:64px!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-part-group:has(.office-ribbon-direct-number):not([data-ribbon-group="Spacing"]) .office-ribbon-direct-number select{
+ width:45px!important;max-width:45px!important;
+}
+/* Typography rows remain three columns and keep the four-B row intact. */
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-part-group:has(.office-ribbon-typography-capabilities){
+ flex:0 0 172px!important;width:172px!important;min-width:172px!important;max-width:172px!important;
+}
+.office-builder-ribbon .office-ribbon-typography-capabilities .office-ribbon-direct-number{
+ width:65px!important;min-width:65px!important;
+}
