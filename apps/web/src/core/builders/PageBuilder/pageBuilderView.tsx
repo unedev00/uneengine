@@ -148,6 +148,7 @@ import RibbonFieldExpressionInput from './RibbonFieldExpressionInput';
 import {RibbonResponsive} from './PageBuilderRibbonStyle';
 import PageBuilderAdvancedStyle from './PageBuilderAdvancedStyle';
 import PageBuilderRibbonData from './PageBuilderRibbonData';
+import PageBuilderRibbonContent from './PageBuilderRibbonContent';
 import type {ComponentVisibilityRule} from '../../components/Properties/componentVisibility';
 import { canNestComponent, pageAppearanceTarget, pageAppearanceStyleKeys, updateLayoutSettings, type LayoutSettingKey, directChildren, isLayoutType, isDescendantOf, layoutTypes } from '../../pages/TemplatePageRuntime/pageComponentLayout';
 import PageComponentStyleEditor from '../ComponentStyleEditor/PageComponentStyleEditor';
@@ -2432,7 +2433,7 @@ function PageBuilder({
             onChange={properties=>updateComponent(selected.id,{properties})}
             onOpenSource={()=>openExpandedEditor('source')}
             onOpenFilters={()=>openExpandedEditor('filters')}/>}
-          {selected && ribbonTab === 'Component Content' && selectedCustomDefinition && selectedCustomDefinition.apiName!=='une_item_grid' &&
+          {selected && ribbonTab === 'Component Content' && selectedCustomDefinition && !['une_item_grid','une_calendar'].includes(selectedCustomDefinition.apiName) &&
             selectedCustomDefinition.propertyDefinitions?.some(definition=>definition.kind==='OBJECT_FIELD') &&
             <div className="office-ribbon-group"><div className="office-ribbon-stack">
               {selectedCustomDefinition.propertyDefinitions.filter(definition=>definition.kind==='OBJECT_FIELD').slice(0,3).map(definition=><label key={definition.propertyKey} className="office-ribbon-inline-field">
@@ -2445,7 +2446,7 @@ function PageBuilder({
               </label>)}
             </div><span>Content Source</span></div>}
           
-          {selected && ribbonTab === 'Component Content' && selectedCustomDefinition?.apiName!=='une_item_grid'
+          {selected && ribbonTab === 'Component Content' && !['une_item_grid','une_calendar'].includes(selectedCustomDefinition?.apiName??'')
             && selectedCustomDefinition && <div className="office-ribbon-inline-options">
               <ComponentPresentationProperties
                 definitions={availableComponentSettings(selectedCustomDefinition.propertyDefinitions??[],
@@ -2455,25 +2456,12 @@ function PageBuilder({
                 properties={selected.properties}
                 onChange={properties=>updateComponent(selected.id,{properties})}/>
             </div>}
-          {selected && ribbonTab==='Component Content' && selectedCustomDefinition?.apiName==='une_item_grid' && <>
-            {([
-              ['Image','imageExpression','imageFieldApiName'],
-              ['Heading','headingExpression','titleFieldApiName'],
-              ['Supporting Text','descriptionExpression','descriptionFieldApiName'],
-              ['Badge','badgeExpression','badgeFieldApiName']
-            ] as const).map(([label,expressionKey,legacyKey])=>{
-              const fields=objects.find(obj=>obj.apiName===selected.properties.objectApiName)?.fields??[];
-              const existing=String(selected.properties[expressionKey]??'');
-              const legacy=String(selected.properties[legacyKey]??'');
-              return <div className="office-ribbon-group office-ribbon-expression-group" key={expressionKey}>
-                <div className="office-ribbon-stack">
-                  <RibbonFieldExpressionInput label={label} value={existing||(!Object.prototype.hasOwnProperty.call(selected.properties,expressionKey)&&legacy?'@'+legacy:'')}
-                    fields={fields} onChange={value=>updateComponent(selected.id,{properties:{...selected.properties,[expressionKey]:value}})}/>
-                  <span className="office-ribbon-stat">{fields.length?fields.length+' fields available':'Choose Source Object'}</span>
-                </div><span>{label}</span>
-              </div>;
-            })}
-          </>}
+          {selected && ribbonTab==='Component Content' && selectedCustomDefinition
+            && (selectedCustomDefinition.apiName==='une_item_grid'||selectedCustomDefinition.apiName==='une_calendar')
+            && <PageBuilderRibbonContent key={selected.id}
+              componentApiName={selectedCustomDefinition.apiName} properties={selected.properties}
+              definition={selectedCustomDefinition} objects={objects}
+              onChange={properties=>updateComponent(selected.id,{properties})}/>}
           {ribbonTab==='Component Properties' && designRibbonGroups.map(group=>{
             const definitions=selected?definitionsForPart(group,'Design'):[];
             return <div className="office-ribbon-group office-ribbon-part-group" data-ribbon-group={group} key={group}>
@@ -2493,15 +2481,6 @@ function PageBuilder({
             <div className="office-ribbon-group office-ribbon-mapping-warning" role="alert">
               Some mapped fields are not available on this object. Choose replacement fields; existing mappings were preserved.
             </div>}
-          {selected && ribbonTab==='Component Content' && selectedCustomDefinition?.apiName==='une_item_grid' && <>
-            <div className="office-ribbon-group"><div className="office-ribbon-stack">
-              {([['showImage','Show image'],['showTitle','Show heading'],['showDescription','Show supporting text']] as const).map(([key,label])=><label key={key} className="office-ribbon-checkbox"><input type="checkbox" checked={selected.properties[key]===true||(selected.properties[key]!==false&&key!=='showDescription')} onChange={e=>updateComponent(selected.id,{properties:{...selected.properties,[key]:e.target.checked}})}/>{label}</label>)}
-            </div><span>Card Display</span></div>
-            <div className="office-ribbon-group"><div className="office-ribbon-stack">
-              {Boolean(selected.properties.priceFieldApiName)&&<label className="office-ribbon-checkbox"><input type="checkbox" checked={selected.properties.showPrice!==false} onChange={e=>updateComponent(selected.id,{properties:{...selected.properties,showPrice:e.target.checked}})}/>Show legacy value</label>}
-              <label className="office-ribbon-inline-field">Empty state <input aria-label="Card grid empty state" value={String(selected.properties.emptyText??'No matching records')} onChange={e=>updateComponent(selected.id,{properties:{...selected.properties,emptyText:e.target.value}})}/></label>
-            </div><span>Empty State</span></div>
-          </>}
           {selected && ribbonTab === 'Component Properties' && <PageBuilderAdvancedStyle
             key={selected.id} properties={selected.properties} componentType={selected.type}
             definition={selectedCustomDefinition} device={page.layoutVariant??'Desktop'}
