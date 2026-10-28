@@ -51,6 +51,7 @@ export default function NamedCredentials({
   preset,
   fieldLabels,
   embedded = false,
+  webhookOnly = false,
   onSave,
   onDelete,
   onRotate,
@@ -66,6 +67,7 @@ export default function NamedCredentials({
   providerName?: string;
   preset?: { name: string; label: string; baseUrl: string; authType: CredentialDraft['authType']; configuration: Record<string, string> };
   embedded?: boolean;
+  webhookOnly?: boolean;
   fieldLabels?: Record<string,string>;
   onSave: (credential: CredentialInput) => Promise<{credential:NamedCredentialMetadata;webhookVerifyToken?:string}>;
   onDelete: (id: string) => Promise<void>;
@@ -141,7 +143,7 @@ export default function NamedCredentials({
       webhookRequired: credential.webhookEnabled===true,
       webhookSecret: '',
       webhookVerifyToken: ''
-    } : preset ? { ...blankCredential(), ...preset, protocol: 'HTTPS' } : blankCredential());
+    } : preset ? { ...blankCredential(), ...preset, protocol: 'HTTPS', webhookRequired: webhookOnly } : {...blankCredential(), webhookRequired: webhookOnly});
   };
 
   const submit = async () => {
@@ -184,7 +186,7 @@ export default function NamedCredentials({
     }
   };
 
-  const visibleCredentials = credentials.filter((credential) =>
+  const visibleCredentials = credentials.filter((credential) => (!webhookOnly || Boolean(credential.webhookId)) &&
     `${credential.label} ${credential.name} ${credential.protocol} ${credential.baseUrl}`
       .toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));
   const totalPages = Math.max(1, Math.ceil(visibleCredentials.length / 50));
@@ -255,7 +257,7 @@ export default function NamedCredentials({
 
   return <section className="surface object-setting-surface named-credentials-page">
     <div className="section-toolbar">
-      <div><h1 className="audit-page-heading">{embedded ? 'Connection Settings' : 'Named Credentials'}</h1><p>{embedded ? 'Tenant-specific HTTPS connection configuration. Secrets remain encrypted and masked.' : 'Manage tenant-wide HTTPS credentials used by HTTP Callouts and webhook integrations.'}</p></div>
+      <div><h1 className="audit-page-heading">{embedded ? 'Connection Settings' : webhookOnly ? 'Webhook Endpoints' : 'Named Credentials'}</h1><p>{embedded ? 'Tenant-specific HTTPS connection configuration. Secrets remain encrypted and masked.' : 'Manage tenant-wide HTTPS credentials used by HTTP Callouts and webhook integrations.'}</p></div>
       <button className="btn btn-brand" disabled={!canManage || encryptionReady === false} title={!canManage ? 'Requires namedCredentials:manage permission' : encryptionReady === false ? 'Credential encryption is not configured on the server' : undefined} onClick={() => editCredential()}><Plus size={14} />{embedded ? 'Configure Connection' : 'New Named Credential'}</button>
     </div>
     {!embedded && <div className="record-type-create">
@@ -276,6 +278,7 @@ export default function NamedCredentials({
         {apiName:'secret',label:'Secret',render:credential=>credential.authType==='None'?'Not required':credential.hasSecret?'Stored · masked':'Not configured'},
         {apiName:'test',label:'Connection test',render:credential=>testResults[credential.id]??'Not tested'},
         {apiName:'actions',label:'Actions',render:credential=><div className="toolbar-actions">
+          {credential.webhookId && <button type="button" className="btn btn-small" onClick={() => void copyWebhookUrl(credential)}>{copiedWebhookId === credential.id ? 'Copied URL' : 'Copy webhook URL'}</button>}
           <button className="btn btn-small" type="button"
             disabled={!(canTest??canManage)||!onTest||credential.enabled===false||Boolean(busyId)}
             onClick={()=>void testCredential(credential)}>Test</button>
@@ -289,23 +292,11 @@ export default function NamedCredentials({
       ]}/>
     <div className="table-scroll md-mobile-table-replaced">
       <table className="slds-table">
-        <thead><tr><th>Label</th><th>API Name</th><th>Protocol</th><th>Base URL</th><th>Authentication</th><th>Secret</th><th>Updated</th><th>Connection Test</th><th>Inbound Webhook</th>{!embedded && <th>Status</th>}<th>Actions</th></tr></thead>
+        <thead><tr><th>Label</th><th>Authentication</th><th>Connection Test</th>{!embedded && <th>Status</th>}<th>Actions</th></tr></thead>
         <tbody>{pagedCredentials.map((credential) => <tr key={credential.id}>
-          <td><button className="btn btn-link" onClick={() => editCredential(credential, true)}>{credential.label}</button></td>
-          <td>{credential.name}</td>
-          <td>{credential.protocol}</td>
-          <td>{credential.baseUrl}</td>
-          <td>{credential.authType}</td>
-          <td>{credential.authType === 'None' ? 'Not required' : credential.hasSecret ? 'Stored · masked' : 'Not configured'}</td>
-          <td>{new Date(credential.updatedAt).toLocaleString()}</td>
+          <td><button className="btn btn-link" onClick={() => editCredential(credential, true)}>{credential.label}</button><div className="api-name" title={credential.name}>{credential.name}</div>{credential.webhookId && <button className="btn btn-link" onClick={() => editCredential(credential, true)}>Webhook: {credential.webhookEnabled ? 'enabled' : 'disabled'}</button>}</td>
+                    <td>{credential.authType}</td>
           <td role="status">{testResults[credential.id] ?? 'Not tested'}</td>
-          <td>{credential.webhookId ? <div style={{display:'grid',gap:6}}>
-            <span>{credential.webhookEnabled ? 'Enabled' : 'Disabled'}</span>
-            {callbackFor(credential) ? <>
-              <button type="button" className="btn btn-small" onClick={()=>void copyWebhookUrl(credential)}>{copiedWebhookId===credential.id?'Copied URL':'Copy callback URL'}</button>
-              <button type="button" className="btn btn-link" onClick={()=>editCredential(credential,true)}>View webhook details</button>
-            </> : <span role="alert">Callback URL unavailable</span>}
-          </div> : <span>Not configured</span>}</td>
           {!embedded && <td><label className="credential-switch" aria-label={`Connection status for ${credential.label}`}><input type="checkbox" role="switch" checked={credential.enabled !== false} disabled={!canManage || !onToggleEnabled || Boolean(toggleBusyId)} onChange={() => void toggleEnabled(credential)} /><span className="credential-switch-track" aria-hidden="true" /><span>{toggleBusyId === credential.id ? 'Updating…' : credential.enabled === false ? 'Disabled' : 'Enabled'}</span></label></td>}
           <td><div className="toolbar-actions">
             {credential.authType==='OAuth Authorization Code'&&onOAuthAuthorize&&
@@ -457,3 +448,4 @@ export default function NamedCredentials({
     </div>}
   </section>;
 }
+

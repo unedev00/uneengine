@@ -222,6 +222,7 @@ function Permissions({
   onNotify: (message: string) => void;
 }) {
   const [draft, setDraft] = useState(accessControl);
+  const [newRoleId, setNewRoleId] = useState<string | null>(null);
   const [tab, setTab] = useState<'profiles' | 'sets' | 'groups' | 'users' | 'sharing' | 'roles' | 'publicGroups' | 'queues' | 'sharingRules'>(() =>
     routeResourceApiName === 'Users' ? 'users'
       : routeResourceApiName === 'Roles' ? 'roles'
@@ -366,6 +367,7 @@ function Permissions({
     onRouteResourceChange('Profiles', profile.apiName);
   };
   const createRole = () => {
+    if (newRoleId) { setSelectedId(newRoleId); return; }
     const id = crypto.randomUUID();
     const role = {
       id,
@@ -374,6 +376,7 @@ function Permissions({
       parentRoleId: null
     };
     setDraft((current) => ({ ...current, roles: [...current.roles, role] }));
+    setNewRoleId(id);
     setSelectedId(id);
     onRouteResourceChange('Roles', id);
   };
@@ -477,6 +480,7 @@ function Permissions({
     setError('');
     try {
       await onSave(draft);
+      setNewRoleId(null);
     } catch (failure) {
       const message = failure instanceof Error ? failure.message : String(failure);
       setError(message);
@@ -525,16 +529,17 @@ function Permissions({
         : tab === 'sharingRules' ? 'Sharing Rules' : 'Users';
 
   return <PlatformPageSlot slotKey="permissions"><div className="permissions-page">
-    <PageHeading eyebrow="Setup / Users" title={tabLabel} description="Build reusable access grants, combine them into permission set groups, mute group permissions, and assign access to tenant users." actions={<>
+    <PageHeading eyebrow={`Setup / ${tabLabel}`} title={tabLabel} description={{profiles: 'Configure baseline permissions and field access for users.', sets: 'Build reusable permission grants and assign them to users.', groups: 'Combine permission sets and configure muted permissions.', users: 'Manage users, profiles, roles and permission assignments.', roles: 'Configure the role hierarchy and inherited record access.', publicGroups: 'Group users and roles for shared record access.', queues: 'Configure shared work queues and their members.', sharing: 'Configure default record visibility and hierarchy access for each object.', sharingRules: 'Grant additional record access through owner-based or criteria-based rules.'}[tab]} actions={<>
       {tab === 'sets' && <button className="btn btn-brand" onClick={createSet} disabled={Boolean(accessControlError)}><Plus size={14} />New Permission Set</button>}
       {tab === 'groups' && <button className="btn btn-brand" onClick={createGroup} disabled={Boolean(accessControlError)}><Plus size={14} />New Permission Set Group</button>}
       {tab === 'profiles' && <button className="btn btn-brand" onClick={createProfile} disabled={Boolean(accessControlError)}><Plus size={14} />New Profile</button>}
       {tab === 'roles' && <button className="btn btn-brand" onClick={createRole} disabled={Boolean(accessControlError)}><Plus size={14} />New Role</button>}
       {tab === 'publicGroups' && <button className="btn btn-brand" onClick={createPublicGroup} disabled={Boolean(accessControlError)}><Plus size={14} />New Public Group</button>}
       {tab === 'queues' && <button className="btn btn-brand" onClick={createQueue} disabled={Boolean(accessControlError) || !objects.some((object) => object.fields.some((field) => field.apiName === 'OwnerId'))}><Plus size={14} />New Queue</button>}
-      {tab === 'sharingRules' && <button className="btn btn-brand" onClick={createSharingRule} disabled={Boolean(accessControlError) || !draft.publicGroups.length}><Plus size={14} />New Sharing Rule</button>}
+      {tab === 'sharingRules' && <button className="btn btn-brand" onClick={createSharingRule} disabled={Boolean(accessControlError) || (!draft.publicGroups.length || !objects.length)}><Plus size={14} />New Sharing Rule</button>}
       <button className="btn" onClick={() => void saveDraft()} disabled={saving || Boolean(accessControlError)}><Save size={14} />{saving ? 'Saving…' : 'Save Changes'}</button>
     </>} />
+    {tab === 'sharingRules' && !draft.publicGroups.length && <p className="info-callout">Create a Public Group first to provide a sharing-rule recipient. <button type="button" className="text-action" onClick={() => changeTab('publicGroups')}>Open Public Groups</button></p>}
     {accessControlError && <div className="auth-error" role="alert">Unable to load access-control metadata: {accessControlError}</div>}
     {error && <div className="auth-error" role="alert">{error}</div>}
     <PlatformPageSlot slotKey="rbac-tabs"><div className="permission-tabs">
@@ -555,7 +560,7 @@ function Permissions({
         {tab === 'sets' && visibleSets.map((item) => <button key={item.id} className={`permission-list-item ${item.id === selectedId ? 'selected' : ''}`} onClick={() => { setSelectedId(item.id); onRouteResourceChange('PermissionSets', item.apiName); }}><strong>{item.label}</strong><small>{item.apiName}</small></button>)}
         {tab === 'groups' && visibleGroups.map((item) => <button key={item.id} className={`permission-list-item ${item.id === selectedId ? 'selected' : ''}`} onClick={() => { setSelectedId(item.id); onRouteResourceChange('PermissionSetGroups', item.apiName); }}><strong>{item.label}</strong><small>{item.apiName} · {item.permissionSetIds.length} sets</small></button>)}
         {tab === 'users' && draft.users.filter((item) => `${item.name} ${item.username} ${item.role}`.toLowerCase().includes(normalizedQuery)).map((item) => <button key={item.id} className={`permission-list-item ${item.id === selectedId ? 'selected' : ''}`} onClick={() => { setSelectedId(item.id); onRouteResourceChange('Users', item.id); }}><strong>{item.name}</strong><small>{item.username} · {item.role}</small></button>)}
-        {tab === 'roles' && visibleRoles.map((item) => <button key={item.id} className={`permission-list-item ${item.id === selectedId ? 'selected' : ''}`} onClick={() => { setSelectedId(item.id); onRouteResourceChange('Roles', item.id); }}><strong>{item.name}</strong><small>{item.apiName} · {item.parentRoleId ? draft.roles.find((role) => role.id === item.parentRoleId)?.name ?? 'Unknown parent' : 'Top level'}</small></button>)}
+        {tab === 'roles' && visibleRoles.map((item) => <button key={item.id} className={`permission-list-item ${item.id === selectedId ? 'selected' : ''}`} onClick={() => { setSelectedId(item.id); onRouteResourceChange('Roles', item.id); }}><strong>{item.name}{item.id === newRoleId ? ' · Unsaved draft' : ''}</strong><small>{item.apiName} · {item.parentRoleId ? draft.roles.find((role) => role.id === item.parentRoleId)?.name ?? 'Unknown parent' : 'Top level'}</small></button>)}
         {tab === 'publicGroups' && visiblePublicGroups.map((item) => <button key={item.id} className={`permission-list-item ${item.id === selectedId ? 'selected' : ''}`} onClick={() => { setSelectedId(item.id); onRouteResourceChange('PublicGroups', item.id); }}><strong>{item.label}</strong><small>{item.apiName} · {item.userIds.length + item.roleIds.length + item.roleAndSubordinateIds.length + item.groupIds.length} members</small></button>)}
         {tab === 'queues' && visibleQueues.map((item) => <button key={item.id} className={`permission-list-item ${item.id === selectedId ? 'selected' : ''}`} onClick={() => { setSelectedId(item.id); onRouteResourceChange('Queues', item.id); }}><strong>{item.label}</strong><small>{item.apiName} · {item.supportedObjectApiNames.length} object types</small></button>)}
         {tab === 'sharingRules' && visibleSharingRules.map((item) => <button key={item.id} className={`permission-list-item ${item.id === selectedId ? 'selected' : ''}`} onClick={() => { setSelectedId(item.id); onRouteResourceChange('SharingRules', item.id); }}><strong>{item.label}</strong><small>{item.objectApiName} · {item.type === 'OwnerBased' ? 'Owner-based' : 'Criteria-based'}</small></button>)}
@@ -703,6 +708,7 @@ function Permissions({
               <PlatformPageSlot slotKey="field-rbac-16"><label className="form-label">Role API Name<input className="form-control" value={selectedRole.apiName} onChange={(event) => setDraft((current) => ({ ...current, roles: current.roles.map((role) => role.id === selectedRole.id ? { ...role, apiName: event.target.value } : role) }))} /></label></PlatformPageSlot>
               <PlatformPageSlot slotKey="field-rbac-17"><label className="form-label">Parent Role (permission structure, not reporting manager)<select className="form-control" value={selectedRole.parentRoleId ?? ''} onChange={(event) => setDraft((current) => ({ ...current, roles: current.roles.map((role) => role.id === selectedRole.id ? { ...role, parentRoleId: event.target.value || null } : role) }))}><option value="">No parent role</option>{draft.roles.filter((role) => role.id !== selectedRole.id).map((role) => <option key={role.id} value={role.id}>{role.name}</option>)}</select></label></PlatformPageSlot>
             </div>
+            {selectedRole.id === newRoleId && <div className="setup-draft-footer"><span role="status">Unsaved role draft</span><button className="btn" disabled={saving} onClick={() => { setDraft(current => ({...current, roles: current.roles.filter(role => role.id !== newRoleId)})); setNewRoleId(null); setSelectedId(''); onRouteResourceChange('Roles'); }}>Discard draft</button><button className="btn btn-brand" disabled={saving || !selectedRole.name.trim() || !selectedRole.apiName.trim()} onClick={() => void saveDraft()}>{saving ? 'Saving…' : 'Save role'}</button></div>}
             <h3 className="permission-section-heading">Assigned Users</h3>
             {assignedUsers.length ? <ul>{assignedUsers.map((user) => <li key={user.id}>{user.name} · {user.username}</li>)}</ul> : <p className="permission-help">Assign users to this role in Users & Assignments.</p>}
           </>;
@@ -909,3 +915,4 @@ function Permissions({
 
 return Permissions;
 }
+

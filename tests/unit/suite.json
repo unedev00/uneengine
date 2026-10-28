@@ -180,6 +180,15 @@
     "apps/web/test/visiblePolling.test.ts",
     "apps/web/test/workspaceContrastRepair.test.mjs",
     "apps/server/test/system/component-property-contract.test.ts",
-    "apps/web/test/componentPropertySchema.test.ts"
+    "apps/web/test/componentPropertySchema.test.ts",
+    "apps/web/test/itemGridExpressions.test.ts",
+    "apps/web/test/layoutWritableValues.test.ts",
+    "apps/web/test/pageBehaviorValidation.test.ts",
+    "apps/web/test/pageBuilderActionDependencies.test.ts",
+    "apps/web/test/pageBuilderInsertGalleryLayout.test.ts",
+    "apps/web/test/pageBuilderRibbonBlueprint.test.ts",
+    "apps/web/test/registeredFieldExpressionRuntime.test.ts",
+    "apps/web/test/ribbonExpressionCaret.test.ts",
+    "apps/web/test/uneFieldExpression.test.ts"
   ]
 }

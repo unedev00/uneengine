@@ -217,7 +217,6 @@ export function ReportBuilder({
 }) {
   const availableObjects = objects.filter((item) => item.apiName !== 'User' && item.settings?.allowReports);
   const reportTypeCategoryForObject = (object: ObjectMetadata) => {
-    if (object.kind === 'Custom Object') return 'Other Reports';
     const categories: Record<string, string> = {
       Account: 'Accounts & Contacts',
       Contact: 'Accounts & Contacts',
@@ -227,7 +226,7 @@ export function ReportBuilder({
       Asset: 'Products & Assets',
       Product2: 'Products & Assets'
     };
-    return categories[object.apiName] ?? 'Other Reports';
+    return categories[object.apiName] ?? (object.kind === 'Custom Object' ? 'Custom Object Reports' : 'Other Reports');
   };
   const reportTypeCategories = [...new Set(availableObjects.map(reportTypeCategoryForObject))];
   const [selectedApiName, setSelectedApiName] = useState('');
@@ -895,7 +894,7 @@ export function ReportBuilder({
           onClick={()=>setTabletOutlineOpen(open=>!open)}>Reports &amp; outline</button>}
         {runPage
           ? <><button className="btn" disabled={busy} onClick={() => setRunPage(false)}>Edit</button><button className="btn btn-brand" disabled={!current || busy} onClick={() => void run(pageOffset)}><Activity size={14} />{busy ? 'Running…' : 'Run'}</button></>
-          : <><button className="btn" disabled={!current || busy || !current.label.trim() || !current.fieldApiNames.length} onClick={() => void save()}><Save size={14} />Save</button>
+          : <><button className="btn" title={!current ? 'Choose a report type to start' : !current.fieldApiNames.length ? 'Add at least one report column' : undefined} disabled={!current || busy || !current.label.trim() || !current.fieldApiNames.length} onClick={() => void save()}><Save size={14} />Save</button>
             <button className="btn btn-brand" disabled={!current || busy || !current.label.trim() || !current.fieldApiNames.length} onClick={() => void run()}><Activity size={14} />{busy ? 'Working…' : 'Save & Run'}</button></>}
         {current && reports.some((item) => item.apiName === current.apiName) && <button className="btn" disabled={busy} onClick={cloneCurrent}>Clone</button>}
         {current && reports.some((item) => item.apiName === current.apiName) && <button className="btn" disabled={busy} onClick={() => void deleteCurrent()}><Trash2 size={14} />Delete</button>}
@@ -905,7 +904,7 @@ export function ReportBuilder({
     <div className={`report-builder-layout md-builder-frame${runPage ? ' report-run-page' : ''}${fieldsPanelOpen && current && !runPage ? ' report-fields-open' : ''}${tabletOutlineOpen&&!runPage?' md-builder-library-open':''}`}>
       <aside className="report-outline" id="md-report-outline">
         <div className="mini-search"><Search size={13} /><input aria-label="Search reports" placeholder="Search reports" value={query} onChange={(event) => setQuery(event.target.value)} /></div>
-        {!runPage && <button className="btn btn-brand btn-full" onClick={openReportTypeSelector}><Plus size={14} />New Report</button>}
+        {!runPage && current && <button className="btn btn-brand btn-full" onClick={openReportTypeSelector}><Plus size={14} />New Report</button>}
         {reportFolders.map((folder) => {
           const folderReports = filteredReports.filter((report) => report.folderId === folder.id);
           return <div className="report-panel-block" key={folder.id}><h3>{folder.label.toLocaleUpperCase()} <span>{folderReports.length}</span></h3>
@@ -1366,7 +1365,7 @@ export function ReportBuilder({
         </div>
       </aside>}
       <div className="report-preview" onDragOver={(event) => event.preventDefault()} onDrop={(event) => handleFieldDrop(event, 'column')}>
-        {!current ? <div className="dashboard-empty-state"><h2>Create a report to get started</h2><p>Choose an object, select columns, and run it against records you can access.</p><button className="btn btn-brand" onClick={openReportTypeSelector}><Plus size={14} />New Report</button></div> : <>
+        {!current ? <div className="dashboard-empty-state"><h2>Create a report to get started</h2><p>Choose a report type and add at least one column to enable Save and Save &amp; Run.</p><p>Choose an object, select columns, and run it against records you can access.</p><button className="btn btn-brand" onClick={openReportTypeSelector}><Plus size={14} />New Report</button></div> : <>
           <div className="report-toolbar">{!runPage && <div className="report-type-select"><span>Report source</span><select aria-label="Report object" value={current.objectApiName} onChange={(event) => changeObject(event.target.value)}>
             {availableObjects.map((object) => <option key={object.apiName} value={object.apiName}>{object.label}</option>)}
           </select><button className="btn" onClick={() => { setFieldsPanelOpen((open) => !open); setFieldQuery(''); }}>{fieldsPanelOpen ? 'Hide Fields' : 'Show Fields'}</button>
@@ -1546,4 +1545,5 @@ export function ReportBuilder({
     </div>}
   </div>;
 }
+
 

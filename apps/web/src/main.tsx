@@ -30,6 +30,7 @@ const Workspace = lazy(async () => {
   await import('./core/workspace/WorkspaceTheme/settingsAppearance.css');
   await import('./core/workspace/WorkspaceTheme/desktopDense.css');
   await import('./core/workspace/WorkspaceTheme/contrastRepair.css');
+  await import('./core/workspace/WorkspaceTheme/setupUsability.css');
   return import('./core/workspace/App/App');
 });
 
@@ -83,7 +84,7 @@ class WorkspaceFailureBoundary extends React.Component<
       </details>
       <button type="button" onClick={missingChunk ? reloadLatestWorkspace : () => window.location.reload()}>
         {missingChunk ? 'Load latest version' : 'Retry loading'}
-      </button>
+      </button> <button type="button" onClick={() => window.location.assign(`${import.meta.env.BASE_URL}une/setup/rbac/Users`)}>Back to user setup</button>
     </main>;
   }
 }

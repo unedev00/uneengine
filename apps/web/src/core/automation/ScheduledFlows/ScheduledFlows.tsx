@@ -30,7 +30,7 @@ export default function ScheduledFlows({ flows, objects, loading, onEdit }: Sche
       <div className="page-heading">
         <div>
           <div className="eyebrow">SETUP / AUTOMATION</div>
-          <h1>Automation Explorer</h1>
+          <h1>Scheduled Flows</h1>
           <p>Review scheduled flows and inspect record-triggered execution order and published versions.</p>
         </div>
       </div>
@@ -119,3 +119,4 @@ export default function ScheduledFlows({ flows, objects, loading, onEdit }: Sche
     </div>
   );
 }
+
