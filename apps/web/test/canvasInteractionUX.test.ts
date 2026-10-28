@@ -395,7 +395,8 @@ test('Page Builder Office ribbon keeps each control in one permanent logical gro
   assert.match(data, /Configure component actions/);
   assert.match(builder, /ribbonTab==='Visibility Rules'/);
   assert.doesNotMatch(builder, /Group <ChevronDown/);
-  assert.match(builder, /aria-label="Grouping"/);
+  assert.match(builder, /office-ribbon-arrange-column/);
+  assert.match(builder, /onClick=\{\(\)=>wrapSelectedInContainer\(\)\}/);
   assert.doesNotMatch(builder, /Technical page ID/);
   assert.doesNotMatch(builder, /page-property-summary/);
   assert.doesNotMatch(presentation, /<details/);
@@ -432,7 +433,7 @@ test('Page Builder contextual ribbon respects the fixed-height no-scroll contrac
   const advancedStyle=await readFile(new URL('PageBuilder/PageBuilderAdvancedStyle.tsx',root),'utf8');
   const blueprint=await readFile(new URL('PageBuilder/PageBuilderRibbonBlueprint.css',root),'utf8');
   assert.match(builder,/<PageBuilderAdvancedStyle/);
-  assert.match(advancedStyle,/<RibbonFormat properties=\{properties\}/);
+  assert.match(advancedStyle,/office-ribbon-extra-grid/);
   assert.match(blueprint,/#page-builder-tab-content\.office-ribbon-content/);
   assert.match(blueprint,/overflow-x:auto!important;overflow-y:hidden!important/);
   assert.match(filters,/validateVisibilityRule/);
