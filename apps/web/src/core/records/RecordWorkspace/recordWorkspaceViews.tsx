@@ -2326,6 +2326,7 @@ function RecordWorkspace({
         const selectedTab = tabs.includes(activeRuntimeTabs[component.id])
           ? activeRuntimeTabs[component.id] : tabs[0];
         const nested=childrenOf(assignedPage?.components??[],component.id);
+        if(!tabs.length)return null;
         return <div className="record-runtime-tabs" key={component.id}>
           <div className="record-tabs" role="tablist" aria-label={component.label}>
             {tabs.map((tab) => <button type="button" role="tab" aria-selected={selectedTab === tab} className={selectedTab === tab ? 'active' : ''}
