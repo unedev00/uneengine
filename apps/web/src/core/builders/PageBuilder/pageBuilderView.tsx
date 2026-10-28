@@ -145,7 +145,8 @@ import {RibbonFilters,RibbonVisibilityRules} from './PageBuilderRibbonEditors';
 import PageBuilderActionRibbon from './PageBuilderActionRibbon';
 import PageBuilderRibbonMetadataPager from './PageBuilderRibbonMetadataPager';
 import RibbonFieldExpressionInput from './RibbonFieldExpressionInput';
-import {RibbonDesign,RibbonFormat,RibbonResponsive} from './PageBuilderRibbonStyle';
+import {RibbonResponsive} from './PageBuilderRibbonStyle';
+import PageBuilderAdvancedStyle from './PageBuilderAdvancedStyle';
 import type {ComponentVisibilityRule} from '../../components/Properties/componentVisibility';
 import { canNestComponent, pageAppearanceTarget, pageAppearanceStyleKeys, updateLayoutSettings, type LayoutSettingKey, directChildren, isLayoutType, isDescendantOf, layoutTypes } from '../../pages/TemplatePageRuntime/pageComponentLayout';
 import PageComponentStyleEditor from '../ComponentStyleEditor/PageComponentStyleEditor';
@@ -2534,17 +2535,21 @@ function PageBuilder({
               <label className="office-ribbon-inline-field">Empty state <input aria-label="Card grid empty state" value={String(selected.properties.emptyText??'No matching records')} onChange={e=>updateComponent(selected.id,{properties:{...selected.properties,emptyText:e.target.value}})}/></label>
             </div><span>Empty State</span></div>
           </>}
-          {selected && ribbonTab === 'Component Properties' && <>
-            <div className="office-ribbon-group"><div className="office-ribbon-stack">
-              <label className="office-ribbon-checkbox"><input type="checkbox" checked={selected.visible} onChange={event=>updateComponent(selected.id,{visible:event.target.checked})}/> Show component</label>
-            </div><span>Visibility</span></div>
-            <RibbonDesign properties={selected.properties} componentType={selected.type} definition={selectedCustomDefinition}
-              device={page.layoutVariant??'Desktop'} onChange={properties=>updateComponent(selected.id,{properties})}/>
-            <RibbonFormat properties={selected.properties} componentType={selected.type} definition={selectedCustomDefinition} device={page.layoutVariant??'Desktop'} excludeKeys={inferredGroupKeys} onChange={properties=>updateComponent(selected.id,{properties})}/>
-          </>}
-          {selected && ribbonTab==='Component Responsive' && <RibbonResponsive properties={selected.properties} componentType={selected.type}
+          {selected && ribbonTab === 'Component Properties' && <PageBuilderAdvancedStyle
+            key={selected.id} properties={selected.properties} componentType={selected.type}
             definition={selectedCustomDefinition} device={page.layoutVariant??'Desktop'}
-            onChange={properties=>updateComponent(selected.id,{properties})} onVisibilityRules={()=>openExpandedEditor('visibility')}/>}
+            excludeKeys={inferredGroupKeys} onChange={properties=>updateComponent(selected.id,{properties})}/>}
+          {selected && ribbonTab==='Component Responsive' && <>
+            <div className="office-ribbon-group office-ribbon-master-visibility"><div className="office-ribbon-stack">
+              <label className="office-ribbon-checkbox">
+                <input type="checkbox" checked={selected.visible} onChange={event=>updateComponent(selected.id,{visible:event.target.checked})}/>
+                Show component
+              </label>
+            </div><span>Visibility</span></div>
+            <RibbonResponsive properties={selected.properties} componentType={selected.type}
+              definition={selectedCustomDefinition} device={page.layoutVariant??'Desktop'}
+              onChange={properties=>updateComponent(selected.id,{properties})} onVisibilityRules={()=>openExpandedEditor('visibility')}/>
+          </>}
           
           {selected && ribbonTab === 'Component Action' && selectedCustomDefinition?.apiName==='une_item_grid'
             && <div className="office-ribbon-group"><div className="office-ribbon-stack">
