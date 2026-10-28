@@ -196,13 +196,6 @@
       "defaultValue": ""
     },
     {
-      "propertyKey": "items",
-      "label": "Flow/Page State record collection",
-      "kind": "RECORD_LIST",
-      "displayOrder": 310,
-      "defaultValue": []
-    },
-    {
       "propertyKey": "loading",
       "label": "Loading state",
       "kind": "BOOLEAN",
