@@ -2399,9 +2399,9 @@ function PageBuilder({
           {selected && ribbonTab==='Component Data' && (selectedCustomDefinition?.propertyDefinitions?.some(d=>d.kind==='OBJECT'||d.kind==='OBJECT_FIELD'||/(?:filter|sourceObject)/i.test(d.propertyKey))
             || /^(?:Record Field|Record Detail|Related List|List View|Report Chart|Dashboard|Table)$/.test(selected.type)
             || 'filters' in selected.properties) && <>
-            <div className="office-ribbon-group office-ribbon-data-source"><div className="office-ribbon-stack">
+            {!selectedCustomDefinition?.propertyDefinitions?.some(d=>d.kind==='OBJECT')&&<div className="office-ribbon-group office-ribbon-data-source"><div className="office-ribbon-stack">
               <button type="button" onClick={()=>openExpandedEditor('source')}><Database size={16}/> Open source</button>
-            </div><span>Source</span></div>
+            </div><span>Source</span></div>}
             <div className="office-ribbon-group office-ribbon-data-filters"><div className="office-ribbon-stack">
               <button type="button" onClick={()=>openExpandedEditor('filters')}><Filter size={16}/> Open filters</button>
             </div><span>Filters</span></div>
@@ -2447,7 +2447,8 @@ function PageBuilder({
                 </select>
               </label>)}
 
-          </div><span>Source & filters</span></div>}
+          <button type="button" onClick={()=>openExpandedEditor('source')}><Database size={16}/> Open source</button>
+          </div><span>Source</span></div>}
           {selected && ribbonTab === 'Component Content' && selectedCustomDefinition?.apiName!=='une_item_grid'
             && selectedCustomDefinition && <div className="office-ribbon-inline-options">
               <ComponentPresentationProperties
