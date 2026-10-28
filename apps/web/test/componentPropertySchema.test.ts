@@ -173,3 +173,20 @@ test('P1 multiple field behavior rules resolve independently as values change',(
  assert.deepEqual(behaviorField(rules,'Name',{...base,record:{Status:'Other'}}),
   {visible:false,required:false,readOnly:false});
 });
+
+test('P1 duplicate action rules combine with hide precedence and recalculate',()=>{
+ const p={pagePropertyContract:{version:1,actionVisibility:[
+  {actionId:'Edit',unavailable:'Disable',when:{logic:'All',conditions:[
+   {source:'Record Field',fieldApiName:'Status',operator:'Equals',value:'Active'}]}},
+  {actionId:'Edit',unavailable:'Hide',when:{logic:'All',conditions:[
+   {source:'Record Permission',operator:'Equals',value:'Edit'}]}}
+ ]}};
+ const c={formFactor:'Desktop' as const,record:{Status:'Inactive'},
+  fields:[{apiName:'Status',label:'Status',dataType:'Text(40)'}],
+  readableFieldApiNames:new Set(['Status']),
+  recordPermissions:new Set<'Create'|'Edit'|'Delete'>()};
+ assert.equal(behaviorAction(p,'Edit',c),'hidden');
+ assert.equal(behaviorAction(p,'Edit',{...c,recordPermissions:new Set<'Create'|'Edit'|'Delete'>(['Edit'])}),'disabled');
+ assert.equal(behaviorAction(p,'Edit',{...c,record:{Status:'Active'},
+  recordPermissions:new Set<'Create'|'Edit'|'Delete'>(['Edit'])}),'enabled');
+});
