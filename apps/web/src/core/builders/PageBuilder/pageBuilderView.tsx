@@ -2688,7 +2688,6 @@ function PageBuilder({
           {selected && ribbonTab==='Component Responsive' && <RibbonResponsive
             properties={selected.properties} componentType={selected.type}
             definition={selectedCustomDefinition} device={page.layoutVariant??'Desktop'}
-            visible={selected.visible} onVisibleChange={visible=>updateComponent(selected.id,{visible})}
             onChange={properties=>updateComponent(selected.id,{properties})}
             onVisibilityRules={()=>openExpandedEditor('visibility')}/>}
           {selected && ribbonTab === 'Component Action' && selectedCustomDefinition?.apiName==='une_item_grid'
