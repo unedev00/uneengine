@@ -2559,7 +2559,17 @@ function PageBuilder({
           {selected && selectedCustomDefinition && (['Component Data','Component Content','Component Properties','Component Layout','Component Responsive','Component Action'] as string[]).includes(ribbonTab) &&
             <UniversalRibbonInventory tab={ribbonTab as 'Component Data'|'Component Content'|'Component Properties'|'Component Layout'|'Component Responsive'|'Component Action'}
               definition={selectedCustomDefinition} properties={selected.properties}
-              onChange={properties=>updateComponent(selected.id,{properties})}/>}
+              onChange={properties=>updateComponent(selected.id,{properties})}
+              builder={{
+                position:selected.position,
+                onPositionChange:position=>updateComponent(selected.id,{position}),
+                visible:selected.visible!==false,
+                onVisibleChange:visible=>updateComponent(selected.id,{visible}),
+                layoutMode:page.layoutMode,canvasWidth:page.canvasWidth,canvasHeight:page.canvasHeight,
+                onOpenSource:()=>openExpandedEditor('source'),
+                onOpenFilters:()=>openExpandedEditor('filters'),
+                onOpenVisibility:()=>openExpandedEditor('visibility')
+              }}/>}
           {ribbonTab === 'Home' && <>
             <div className="office-ribbon-group office-ribbon-page-identity"><div className="office-ribbon-stack">
               <button type="button" onClick={safeBackToPages}><ArrowLeft size={16}/> Back to pages</button>
