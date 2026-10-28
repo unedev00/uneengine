@@ -135,9 +135,13 @@ export function StandardFlowLauncher({
 }
 
 export function StandardRecordPath({
-  label,values,value,canEdit,onAdvance
+  label,values,value,canEdit,onAdvance,guidanceByStage,keyFieldsByStage,record,readableFields
 }:{
   label:string;values:readonly string[];value:unknown;canEdit:boolean;
+  guidanceByStage?:Readonly<Record<string,string>>;
+  keyFieldsByStage?:Readonly<Record<string,readonly string[]>>;
+  record?:Readonly<Record<string,unknown>>;
+  readableFields?:ReadonlyArray<{apiName:string;label:string}>;
   onAdvance:(nextValue:string)=>Promise<void>;
 }) {
   const [error,setError]=useState('');
@@ -154,6 +158,12 @@ export function StandardRecordPath({
         {index+1}. {step}{step===current?' ✓':''}
       </button></li>)}
     </ol>
+    {guidanceByStage?.[chosen]&&<p className="records-message">{guidanceByStage[chosen]}</p>}
+    {keyFieldsByStage?.[chosen]?.length&&record&&<dl className="record-fields-grid">
+      {keyFieldsByStage[chosen].filter(name=>readableFields?.some(field=>field.apiName===name))
+        .map(name=><div key={name}><dt>{readableFields?.find(field=>field.apiName===name)?.label??name}</dt>
+          <dd>{formatRecordValue(record[name])}</dd></div>)}
+    </dl>}
     {canEdit&&selected&&selected!==current&&<button type="button" className="btn btn-brand"
       disabled={pending} onClick={()=>{setPending(true);setError('');
         void onAdvance(selected).then(()=>setSelected(''))
