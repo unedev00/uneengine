@@ -2267,6 +2267,8 @@ export function createSystemServer(db:SqlPersistence) {
   // The selector uses the same tenant/profile/app/device/record-type rules as edit.
   app.get('/api/records/:objectApi/create-layout',route(async(req,res)=>{
     const actor=req.actor!;
+    if(!await rbac.allowed(actor.tenant_id,actor.user_id,req.params.objectApi,'create'))
+      throw new Error('Insufficient Create permission for this Object');
     const actorSession=await sessionMetadata(db,actor.tenant_id,actor.user_id);
     const device=String(req.query.formFactor??'Desktop');
     const viewportWidth=Number(req.query.viewportWidth??0);
