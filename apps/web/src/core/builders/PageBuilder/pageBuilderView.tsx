@@ -2650,15 +2650,21 @@ function PageBuilder({
             onApply={()=>{const properties={...selected.properties};if(ribbonVisibilityDraft)properties.visibilityRules=ribbonVisibilityDraft;else delete properties.visibilityRules;updateComponent(selected.id,{properties});selectRibbonTab('Component Responsive');}}
             onCancel={()=>selectRibbonTab('Component Responsive')}/>}
           {ribbonTab === 'Preview' && <>
-            <div className="office-ribbon-group"><div className="office-ribbon-stack">
-              <button onClick={openExternalPreview}><Eye size={17}/> Preview window</button>
-              <button onClick={()=>setPreviewMode(value=>!value)}><Monitor size={17}/> {previewMode?'Exit preview':'Canvas preview'}</button>
-            </div><span>Preview</span></div>
-            <div className="office-ribbon-group"><div className="office-ribbon-stack">
-              <span className="office-ribbon-stat">Page: {page.label}</span>
-              <span className="office-ribbon-stat">Type: {page.pageType}</span>
-
-            </div><span>Preview Options</span></div>
+            <div className="office-ribbon-group office-ribbon-preview-actions"><div className="office-ribbon-stack">
+              <button type="button" onClick={()=>setPreviewMode(value=>!value)}><Eye size={17}/> {previewMode?'Exit canvas preview':'Canvas preview'}</button>
+              <button type="button" onClick={openExternalPreview}><ExternalLink size={17}/> Open preview window</button>
+            </div><span>Canvas Preview</span></div>
+            <div className="office-ribbon-group office-ribbon-preview-information"><div className="office-ribbon-stack">
+              <span className="office-ribbon-stat">Page name: {page.label}</span>
+              <span className="office-ribbon-stat">Page type: {page.pageType}</span>
+              <span className="office-ribbon-stat">Layout: {page.layoutVariant??'Desktop'}</span>
+            </div><span>Page Information</span></div>
+            <div className="office-ribbon-group office-ribbon-preview-test"><div className="office-ribbon-stack">
+              <button type="button" disabled={page.status!=='Active'||!currentPageIsAssignedToBuilderApp||!builderAppApiName}
+                onClick={()=>{const url=appRoutePath({kind:'app-page',appId:builderAppApiName,pageApiName:page.apiName});const opened=window.open(url,'_blank','noopener,noreferrer');if(!opened)onNotify('Allow popups to test the published page.');}}>
+                <ExternalLink size={17}/> Test in active app
+              </button>
+            </div><span>Test</span></div>
           </>}
           {ribbonTab==='Add Block' && page.pageType==='Record Page' && <div className="office-ribbon-group">
             <div className="office-ribbon-stack"><label className="office-ribbon-inline-field">
