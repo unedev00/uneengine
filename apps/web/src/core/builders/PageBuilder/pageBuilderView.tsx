@@ -633,9 +633,16 @@ function PageBuilder({
       : ((definition as {group?:string}).group??mapped?.group??inferredRibbonGroup(definition.propertyKey,section));
     const mirroredImageDesign=section==='Design'&&selectedCustomDefinition?.apiName==='une_item_grid'
       &&group==='Image'&&['imageAspectRatio','imagePosition'].includes(definition.propertyKey);
+    const isDuplicateImageLayout=section==='Layout'&&selectedCustomDefinition?.apiName==='une_item_grid'
+      &&['imageAspectRatio','imagePosition'].includes(definition.propertyKey);
+    const isInactiveFeaturedLayout=section==='Layout'&&selectedCustomDefinition?.apiName==='une_item_grid'
+      &&['featuredColumnSpan','featuredRowSpan'].includes(definition.propertyKey)
+      &&!selected?.properties.featuredFieldApiName;
     return part===group&&!/(?:FieldApiName|ObjectApiName)$/.test(definition.propertyKey)
+      &&!isDuplicateImageLayout&&!isInactiveFeaturedLayout
       && (mirroredImageDesign||(section==='Layout'
-        ? Boolean(inferredRibbonGroup(definition.propertyKey,section))
+        ? ((definition as {section?:string}).section!=='Design')
+          &&Boolean(inferredRibbonGroup(definition.propertyKey,section))
         : ((definition as {section?:string}).section??mapped?.section??'Design')===section));
   });
   const inferredGroupKeys=appearanceDefinitions.filter(d=>inferredAppearanceGroup(d.propertyKey)&&!(d as {group?:string}).group).map(d=>d.propertyKey);
