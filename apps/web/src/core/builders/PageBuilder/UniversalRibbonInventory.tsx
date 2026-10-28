@@ -101,9 +101,23 @@ function PropertyEditor({definition,enabled,properties,onChange}:{
    {editor}
  </label>;
 }
-export default function UniversalRibbonInventory({tab,definition,properties,onChange}:{
+type CanvasPosition={x:number;y:number;width:number;height:number};
+export type UniversalBuilderControls={
+ position?:CanvasPosition;
+ onPositionChange?:(position:CanvasPosition)=>void;
+ visible:boolean;
+ onVisibleChange:(visible:boolean)=>void;
+ layoutMode:'template'|'free-canvas'|string;
+ canvasWidth:number;
+ canvasHeight:number;
+ onOpenSource?:()=>void;
+ onOpenFilters?:()=>void;
+ onOpenVisibility?:()=>void;
+};
+export default function UniversalRibbonInventory({tab,definition,properties,onChange,builder}:{
  tab:Tab;definition?:LibraryComponentMetadata;properties:Properties;
  onChange:(next:Properties)=>void;
+ builder?:UniversalBuilderControls;
 }){
  const enabled=new Set((definition?.propertyDefinitions??[]).map(item=>item.propertyKey));
  const groups=slots.get(tab);
@@ -112,6 +126,45 @@ export default function UniversalRibbonInventory({tab,definition,properties,onCh
    data-component={definition?.apiName??'none'} data-inventory-count={universalRibbonInventoryCount}>
    {Array.from(groups).map(([section,defs])=><section key={section} className="une-universal-ribbon-section" aria-label={section}>
      <div className="une-universal-ribbon-controls">
+       {tab==='Component Layout'&&section==='Size'&&(['width','height'] as const).map(key=>
+         <label key={'canvas-'+key} className="une-universal-property" title={'Canvas '+key}>
+           <span className="une-universal-property-label">Canvas {key}</span>
+           <input aria-label={'Canvas '+key} type="number" min={1} disabled={!builder?.position||builder.layoutMode!=='free-canvas'}
+             value={builder?.position?.[key]??''}
+             onChange={event=>{const n=Number(event.target.value);if(Number.isFinite(n)&&n>=1&&builder?.position)
+               builder.onPositionChange?.({...builder.position,[key]:Math.round(n)});}}/>
+         </label>)}
+       {tab==='Component Layout'&&section==='Position'&&(['x','y'] as const).map(key=>
+         <label key={'canvas-'+key} className="une-universal-property" title={'Canvas '+key}>
+           <span className="une-universal-property-label">Canvas {key.toUpperCase()}</span>
+           <input aria-label={'Canvas '+key.toUpperCase()} type="number" min={0}
+             disabled={!builder?.position||builder.layoutMode!=='free-canvas'}
+             value={builder?.position?.[key]??''}
+             onChange={event=>{const n=Number(event.target.value);if(Number.isFinite(n)&&n>=0&&builder?.position)
+               builder.onPositionChange?.({...builder.position,[key]:Math.round(n)});}}/>
+         </label>)}
+       {tab==='Component Layout'&&section==='Arrangement'&&<label className="une-universal-property">
+         <span className="une-universal-property-label">Canvas locked</span>
+         <input type="checkbox" aria-label="Canvas locked" disabled={builder?.layoutMode!=='free-canvas'}
+           checked={properties.canvasLocked===true} onChange={event=>onChange({...properties,canvasLocked:event.target.checked})}/>
+       </label>}
+       {tab==='Component Responsive'&&section==='Visibility'&&<label className="une-universal-property">
+         <span className="une-universal-property-label">Visible</span>
+         <input type="checkbox" aria-label="Component visible" checked={builder?.visible??true}
+           disabled={!builder} onChange={event=>builder?.onVisibleChange(event.target.checked)}/>
+       </label>}
+       {tab==='Component Responsive'&&section==='Visibility'&&<button type="button"
+         className="une-universal-builder-command" disabled={!builder?.onOpenVisibility} onClick={builder?.onOpenVisibility}>
+         Visibility rules
+       </button>}
+       {tab==='Component Data'&&section==='Source'&&<button type="button"
+         className="une-universal-builder-command" disabled={!builder?.onOpenSource} onClick={builder?.onOpenSource}>
+         Source mappings
+       </button>}
+       {tab==='Component Data'&&section==='Filters'&&<button type="button"
+         className="une-universal-builder-command" disabled={!builder?.onOpenFilters} onClick={builder?.onOpenFilters}>
+         Filter conditions
+       </button>}
        {defs.map(def=><PropertyEditor key={def.propertyKey} definition={enabled.has(def.propertyKey)
          ?definition?.propertyDefinitions?.find(item=>item.propertyKey===def.propertyKey)??def:def}
          enabled={enabled.has(def.propertyKey)} properties={properties} onChange={onChange}/>)}
