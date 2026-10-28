@@ -232,11 +232,24 @@ try{
  // to the record runtime until an explicit publish. No tenant data is replaced.
  const mobileDraft=await pageService.saveLayoutDraft(tenantId,savedPage.apiName,'Mobile',{
    ...savedPage,layoutVariant:'Mobile',draftRevision:0,canvasWidth:390,canvasHeight:844,
-   components:[{...savedPage.components[0],label:'Mobile record details',properties:{fields:['Name']}}]
+   components:[{...savedPage.components[0],label:'Mobile record details',properties:{
+     fields:['Name'],pagePropertyContract:{version:1,
+       fieldRules:[{fieldApiName:'Name',behavior:'Required',visibilityRules:{
+         logic:'Any',conditions:[
+           {source:'Device',operator:'Equals',value:'Phone'},
+           {source:'Record Permission',operator:'Equals',value:'Edit'}
+         ]}}],
+       actionVisibility:[{actionId:'Edit',unavailable:'Hide',when:{
+         logic:'All',conditions:[{source:'Record Permission',operator:'Equals',value:'Edit'}]}}]
+     }
+   }}]
  });
  assert.equal(mobileDraft.draftRevision,2);
  assert.equal(mobileDraft.publishedRevision,1);
  assert.equal(mobileDraft.components[0].label,'Mobile record details');
+ assert.deepEqual(mobileDraft.components[0].properties.pagePropertyContract,
+   mobileDraft.components[0].properties.pagePropertyContract);
+ assert.equal(mobileDraft.components[0].properties.pagePropertyContract.fieldRules[0].visibilityRules.logic,'Any');
  assert.equal((await pageService.metadata(tenantId,savedPage.apiName,'Mobile')).components[0].label,'Details',
   'Saving a draft must never replace the published Mobile layout');
  assert.equal((await pageService.metadata(tenantId,savedPage.apiName,'Desktop')).components[0].label,'Details');
@@ -245,6 +258,10 @@ try{
  }),/revision conflict/);
  await pageService.publishLayout(tenantId,savedPage.apiName,'Mobile',mobileDraft.draftRevision);
  assert.equal((await pageService.metadata(tenantId,savedPage.apiName,'Mobile')).components[0].label,'Mobile record details');
+ assert.deepEqual((await pageService.metadata(tenantId,savedPage.apiName,'Mobile'))
+   .components[0].properties.pagePropertyContract,
+   mobileDraft.components[0].properties.pagePropertyContract,
+   'Published Dynamic Form and Action conditions must match the saved draft');
  assert.equal((await pageService.metadata(tenantId,savedPage.apiName,'Desktop')).components[0].label,'Details',
   'Publishing Mobile must not change Desktop');
  assert.equal((await pageService.metadata(tenantId,savedPage.apiName,'Tablet')).canvasWidth,1024);
