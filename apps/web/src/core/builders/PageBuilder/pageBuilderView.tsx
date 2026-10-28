@@ -552,7 +552,31 @@ function PageBuilder({
     : undefined;
   const ribbonAppearanceGroups = ['Card','Heading','Supporting text','Badge','Image','Gallery','Table','Calendar','Chart','Input','Navigation','Container'] as const;
   const appearanceDefinitions = availableComponentSettings(selectedCustomDefinition?.propertyDefinitions??[],page.layoutVariant??'Desktop',selectedCustomDefinition?.version);
-  const definitionsForPart=(group:string,section:'Design'|'Layout')=>appearanceDefinitions.filter(definition=>(definition as {group?:string}).group===group&&!/(?:FieldApiName|ObjectApiName)$/.test(definition.propertyKey)&&((definition as {section?:string}).section??(/columns|gap|padding|width|height|radius|span|position/i.test(definition.propertyKey)?'Layout':'Design'))===section);
+  // Several legacy UNE components declare valid properties but omit their visual group.
+  // Only map verified existing keys; a stable group stays disabled if none are supported.
+  const implicitParts:Record<string,Record<string,{group:string;section:'Design'|'Layout'}>> = {
+    une_item_grid:{cardDensity:{group:'Card',section:'Design'},cardHover:{group:'Card',section:'Design'},featuredColumnSpan:{group:'Gallery',section:'Layout'},featuredRowSpan:{group:'Gallery',section:'Layout'}},
+    une_calendar:{view:{group:'Calendar',section:'Design'},firstDayOfWeek:{group:'Calendar',section:'Design'},showWeekends:{group:'Calendar',section:'Design'}},
+    une_chart:{chartType:{group:'Chart',section:'Design'}},
+    une_image:{imageFit:{group:'Image',section:'Design'},imageHeight:{group:'Image',section:'Layout'}},
+    une_grid:{desktopColumns:{group:'Container',section:'Layout'},tabletColumns:{group:'Container',section:'Layout'},mobileColumns:{group:'Container',section:'Layout'}},
+    une_container:{direction:{group:'Container',section:'Layout'}},
+    une_stack:{direction:{group:'Container',section:'Layout'},wrap:{group:'Container',section:'Layout'}},
+    une_split_pane:{splitRatio:{group:'Container',section:'Layout'}},
+    une_navigation:{direction:{group:'Navigation',section:'Design'}},
+    une_table:{phoneLayout:{group:'Table',section:'Layout'}},
+    une_input:{inputType:{group:'Input',section:'Design'},multiline:{group:'Input',section:'Layout'},rows:{group:'Input',section:'Layout'}}
+  };
+  const partComponent=selectedCustomDefinition?.apiName??'';
+  const definitionsForPart=(group:string,section:'Design'|'Layout')=>appearanceDefinitions.filter(definition=>{
+    if(/(?:FieldApiName|ObjectApiName)$/.test(definition.propertyKey))return false;
+    const explicit=(definition as {group?:string}).group;
+    const mapped=implicitParts[partComponent]?.[definition.propertyKey];
+    const resolvedGroup=explicit??mapped?.group;
+    const resolvedSection=(definition as {section?:string}).section??mapped?.section
+      ??(/columns|gap|padding|width|height|radius|span|position/i.test(definition.propertyKey)?'Layout':'Design');
+    return resolvedGroup===group&&resolvedSection===section;
+  });
   const selectedComponentDescription = selectedCustomDefinition?.description
     ?? standardPageComponents.find((component) => component.apiName === selected?.type)?.description
     ?? (selected?.type === 'Field Section' ? 'Group record fields into a configurable section.' : '');
