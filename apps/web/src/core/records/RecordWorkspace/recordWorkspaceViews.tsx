@@ -782,6 +782,27 @@ function RecordWorkspace({
     return()=>{active=false;};
   },[formOpen,editingId,object?.apiName,formFactor,viewportFactor,route.kind,route.appId]);
   const [formValues, setFormValues] = useState<Record<string, unknown>>({});
+  // Creation uses the published Edit-page field contract too, not the legacy
+  // Object layout alone. Changes to RecordTypeId resolve the correct assignment.
+  useEffect(()=>{
+    if(!formOpen||editingId||!object)return;
+    let active=true;
+    setEditPageLoading(true);setEditPageError('');setActiveEditLightningPage(null);
+    const params=new URLSearchParams({
+      appId:route.kind==='record-detail'||route.kind==='record-list'?route.appId??'Records':'Records',
+      formFactor:typeof window!=='undefined'&&new URLSearchParams(window.location.search).get('pageLayout')==='Custom'
+        ?'Custom':viewportFactor==='Tablet'?'Tablet':formFactor==='Phone'?'Mobile':'Desktop',
+      recordTypeId:String(formValues.RecordTypeId??defaultRecordTypeId??'')
+    });
+    void apiRequest<{editLightningPage?:LightningPageMetadata}>(
+      `/records/${encodeURIComponent(object.apiName)}/create-layout?${params}`
+    ).then(payload=>{if(active)setActiveEditLightningPage(payload.editLightningPage??null);})
+      .catch(error=>{if(active)setEditPageError(error instanceof Error?error.message:'Unable to resolve create form');})
+      .finally(()=>{if(active)setEditPageLoading(false);});
+    return()=>{active=false;};
+  },[formOpen,editingId,object?.apiName,formFactor,viewportFactor,route.kind,route.appId,
+    formValues.RecordTypeId,defaultRecordTypeId]);
+
   const [lookupRecords, setLookupRecords] = useState<Record<string, RecordData[]>>({});
   const [lookupError, setLookupError] = useState('');
   const [reportingUsers, setReportingUsers] = useState<Array<{id:string;name:string;email:string}>>([]);
@@ -1329,11 +1350,11 @@ function RecordWorkspace({
       readableFieldApiNames:new Set(object.fields.filter(field=>fieldAccess[`${object.apiName}.${field.apiName}`]?.read)
         .map(field=>field.apiName))
     },true))} : null;
-  const selectedLayout = editingId ? recordEditPageLayout(visibleEditPage,sourceLayout,{
+  const selectedLayout = recordEditPageLayout(visibleEditPage,sourceLayout,{
     formFactor,record:formValues,fields:object?.fields??[],profileId,
     readableFieldApiNames:new Set(object?.fields.filter(field=>fieldAccess[`${object.apiName}.${field.apiName}`]?.read)
       .map(field=>field.apiName)??[])
-  }) : sourceLayout;
+  });
   // Standard CRUD is universal: missing layout buttons must not silently disable
   // record operations. Explicitly disabled metadata actions still opt out.
   // The shared Record API remains the mandatory tenant/RBAC/FLS enforcement point.
