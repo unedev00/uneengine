@@ -1,4 +1,4 @@
-import { AlignLeft, AlignCenter, AlignRight, Bold, Italic, Underline, RefreshCw, ShieldCheck } from 'lucide-react';
+import { AlignLeft, AlignCenter, AlignRight, Bold, Italic, Underline, RefreshCw, Eye, ShieldCheck } from 'lucide-react';
 import RibbonColorPalette from './RibbonColorPalette';
 import PageBuilderRibbonMetadataPager from './PageBuilderRibbonMetadataPager';
 import {availableComponentSettings,type PropertyDevice} from '../../components/Properties/componentSettingDefinitions';
@@ -113,20 +113,13 @@ export function RibbonFormat({properties,componentType,definition,device,onChang
   </>;
 }
 
-export function RibbonResponsive({properties,onChange,onVisibilityRules,visible,onVisibleChange}:Props&{
-  onVisibilityRules:()=>void;visible:boolean;onVisibleChange:(visible:boolean)=>void;
+export function RibbonResponsive({properties,onChange,onVisibilityRules}:Props&{
+  onVisibilityRules:()=>void;
 }){
   const rules=properties.visibilityRules;
   const ruleCount=rules&&typeof rules==='object'&&!Array.isArray(rules)
     ? (Array.isArray((rules as Record<string,unknown>).rules)?((rules as {rules:unknown[]}).rules.length):1):0;
   return <>
-    <div className="office-ribbon-group office-ribbon-responsive-visibility">
-      <div className="office-ribbon-responsive-icons">
-        <label className="office-ribbon-master-visibility-toggle">
-          <input type="checkbox" checked={visible} onChange={event=>onVisibleChange(event.target.checked)}/> Show component
-        </label>
-      </div><span>Visibility</span>
-    </div>
     <div className="office-ribbon-group office-ribbon-responsive-rules">
       <div className="office-ribbon-stack">
         <button type="button" onClick={onVisibilityRules}><ShieldCheck size={18}/> Edit visibility rules</button>

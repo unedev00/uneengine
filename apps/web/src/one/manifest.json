@@ -196,13 +196,6 @@
       "defaultValue": 1
     },
     {
-      "propertyKey": "hideOnPhone",
-      "label": "Hide on phone",
-      "kind": "BOOLEAN",
-      "displayOrder": 190,
-      "defaultValue": false
-    },
-    {
       "propertyKey": "objectApiName",
       "label": "Bound object",
       "kind": "TEXT",
@@ -356,18 +349,6 @@
       "label": "Border width (px)",
       "kind": "NUMBER",
       "displayOrder": 285
-    },
-    {
-      "propertyKey": "hideOnTablet",
-      "label": "Hide on tablet",
-      "kind": "BOOLEAN",
-      "displayOrder": 290
-    },
-    {
-      "propertyKey": "hideOnDesktop",
-      "label": "Hide on desktop",
-      "kind": "BOOLEAN",
-      "displayOrder": 295
     },
     {
       "propertyKey": "cardDensity",

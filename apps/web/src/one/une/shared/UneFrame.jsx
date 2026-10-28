@@ -62,7 +62,6 @@ export function UneFrame({p,children}){
    opacity:px(p.opacity,100,100)/100
   };
  return <div className="une-ui" data-une-theme={theme} data-une-surface={surface}
-  data-une-density={density} data-une-shadow={shadow} data-une-hide-phone={p.hideOnPhone===true}
-  data-une-hide-tablet={p.hideOnTablet===true} data-une-hide-desktop={p.hideOnDesktop===true}
+  data-une-density={density} data-une-shadow={shadow}
   style={style}>{children}</div>;
 }
