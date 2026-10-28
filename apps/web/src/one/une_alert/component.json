@@ -194,31 +194,6 @@
       "kind": "TEXT",
       "displayOrder": 300,
       "defaultValue": "Information"
-    },
-    {
-      "propertyKey": "severity",
-      "label": "Severity",
-      "kind": "SELECT",
-      "displayOrder": 310,
-      "defaultValue": "info",
-      "choices": [
-        {
-          "key": "info",
-          "label": "info"
-        },
-        {
-          "key": "success",
-          "label": "success"
-        },
-        {
-          "key": "warning",
-          "label": "warning"
-        },
-        {
-          "key": "error",
-          "label": "error"
-        }
-      ]
     }
   ]
 }
