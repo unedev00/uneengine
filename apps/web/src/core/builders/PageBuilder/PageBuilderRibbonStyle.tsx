@@ -1,4 +1,4 @@
-import { AlignLeft, AlignCenter, AlignRight, Bold, Italic, Underline, RefreshCw, Eye, Monitor, Tablet, Smartphone, ShieldCheck } from 'lucide-react';
+import { AlignLeft, AlignCenter, AlignRight, Bold, Italic, Underline, RefreshCw, Eye, ShieldCheck } from 'lucide-react';
 import RibbonColorPalette from './RibbonColorPalette';
 import PageBuilderRibbonMetadataPager from './PageBuilderRibbonMetadataPager';
 import {availableComponentSettings,type PropertyDevice} from '../../components/Properties/componentSettingDefinitions';
