@@ -2535,10 +2535,14 @@ function PageBuilder({
             eventDefinitions={selectedCustomDefinition?.eventDefinitions??[]} flows={flows}
             onChange={actions=>updateComponent(selected.id,{properties:{...selected.properties,actionFlows:actions}})}
             advanced={<>
+              <section aria-label="Advanced event action mappings"><strong>Event action bindings, inputs, outputs and destinations</strong>
+                <p className="properties-help">Mappings are stored in the existing actionFlows metadata and executed by the shared action runtime.</p></section>
               <MetadataComponentProperties mode="actions-editor" properties={selected.properties} onChange={(properties:Record<string,unknown>)=>updateComponent(selected.id,{properties})}
                 eventDefinitions={selectedCustomDefinition?.eventDefinitions??[]} definitions={selectedCustomDefinition?.propertyDefinitions}
                 device={page.layoutVariant??'Desktop'} componentVersion={selectedCustomDefinition?.version} pageComponents={page.components} componentCatalog={libraryComponents}
                 objects={objects} apps={apps} pages={pages} currentAppId={builderAppApiName||apps[0]?.apiName||'Records'} flows={flows} primaryObjectApiName={page.targetObject}/>
+              <section aria-label="Validation and action conditions"><strong>Validation and conditional behaviour</strong>
+                <p className="properties-help">Use the shared Page Property Contract editor below for supported conditions and validation metadata. Existing rules are preserved.</p></section>
               <MetadataComponentProperties mode="conditions" properties={selected.properties} onChange={(properties:Record<string,unknown>)=>updateComponent(selected.id,{properties})}
                 eventDefinitions={selectedCustomDefinition?.eventDefinitions??[]} definitions={selectedCustomDefinition?.propertyDefinitions}
                 device={page.layoutVariant??'Desktop'} componentVersion={selectedCustomDefinition?.version} pageComponents={page.components} componentCatalog={libraryComponents}
