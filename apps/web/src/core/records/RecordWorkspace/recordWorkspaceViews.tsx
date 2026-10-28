@@ -1370,7 +1370,7 @@ function RecordWorkspace({
       recordGrants!=null&&recordGrants.objectApi===object?.apiName&&recordGrants[key]===true)
   );
   const authoredDynamicFields=Boolean(visibleEditPage?.status==='Active'
-    &&visibleEditPage.recordMode==='Edit'
+    &&visibleEditPage.pageType==='Record Page'&&visibleEditPage.recordMode==='Edit'
     &&visibleEditPage.components.some(component=>
       component.type==='Record Field'||component.type==='Field Section'));
   const selectedLayout = recordEditPageLayout(visibleEditPage,sourceLayout,{
