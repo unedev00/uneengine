@@ -1,3 +1,4 @@
+import {nextAccessibleTabIndex} from '../PageRuntime/tabKeyboardNavigation';
 import {visibleRelatedListQuickLinks} from './relatedQuickLinks';
 import { useFormFactor, useRuntimeFormFactor } from '../../workspace/Responsive/useFormFactor';
 import {useViewportWidth} from '../../workspace/Responsive/useViewportWidth';
@@ -2330,7 +2331,16 @@ function RecordWorkspace({
         return <div className="record-runtime-tabs" key={component.id}>
           <div className="record-tabs" role="tablist" aria-label={component.label}>
             {tabs.map((tab) => <button type="button" role="tab" aria-selected={selectedTab === tab} className={selectedTab === tab ? 'active' : ''}
-              key={tab} onClick={() => setActiveRuntimeTabs(current=>({...current,[component.id]:tab}))}>{tab}</button>)}
+              key={tab} tabIndex={selectedTab===tab?0:-1}
+              onKeyDown={event=>{
+                const next=nextAccessibleTabIndex(event.key,tabs.indexOf(tab),tabs.length);
+                if(next===null)return;
+                event.preventDefault();
+                setActiveRuntimeTabs(current=>({...current,[component.id]:tabs[next]}));
+                const buttons=event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]');
+                buttons?.[next]?.focus();
+              }}
+              onClick={() => setActiveRuntimeTabs(current=>({...current,[component.id]:tab}))}>{tab}</button>)}
           </div>
           <div role="tabpanel" className="record-runtime-tab-panel">
             {nested.length
