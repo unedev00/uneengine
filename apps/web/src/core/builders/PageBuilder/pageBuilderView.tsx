@@ -568,6 +568,15 @@ function PageBuilder({
     : undefined;
   // Group positions stay fixed for every canvas selection. Metadata controls
   // availability; keys listed here are existing renderer-supported properties.
+  // Disabled ribbon controls remain discoverable as icons, never blank panels.
+  const ribbonPartIcons:Record<string,ReactNode>={
+    Card:<Grid2X2 size={15}/>,Heading:<Type size={15}/>,
+    'Supporting text':<AlignHorizontalJustifyStart size={15}/>,Badge:<Star size={15}/>,
+    Image:<ImageIcon size={15}/>,Gallery:<Grid2X2 size={15}/>,
+    Text:<Type size={15}/>,Button:<MousePointer2 size={15}/>,
+    Table:<List size={15}/>,Calendar:<CalendarDays size={15}/>,Chart:<BarChart3 size={15}/>,
+    Input:<FormInput size={15}/>,Navigation:<PanelLeft size={15}/>,Container:<Square size={15}/>
+  };
   const ribbonAppearanceGroups = ['Card','Heading','Supporting text','Badge','Image','Gallery','Text','Button','Table','Calendar','Chart','Input','Navigation','Container'] as const;
   const appearanceDefinitions = availableComponentSettings(selectedCustomDefinition?.propertyDefinitions??[],page.layoutVariant??'Desktop',selectedCustomDefinition?.version);
   // Registry metadata remains authoritative. Legacy property declarations which omit
@@ -2466,7 +2475,7 @@ function PageBuilder({
             const definitions=selected?definitionsForPart(group,'Design'):[];
             return <div className="office-ribbon-group office-ribbon-part-group" key={group}>
               <fieldset className="office-ribbon-part-fieldset" disabled={!definitions.length} title={!definitions.length?'Not supported by selected component':group}>
-                {definitions.length&&selected?<PageBuilderRibbonMetadataPager key={selected.id+group} definitions={definitions} properties={selected.properties} onChange={properties=>updateComponent(selected.id,{properties})}/>:<span className="office-ribbon-disabled-group">Not applicable</span>}
+                {definitions.length&&selected?<PageBuilderRibbonMetadataPager key={selected.id+group} definitions={definitions} properties={selected.properties} onChange={properties=>updateComponent(selected.id,{properties})}/>:<div className="office-ribbon-disabled-group" aria-label={`${group} controls unavailable`}><button type="button" disabled aria-label={`${group} unavailable`} title={`${group} not supported by this component`} className="office-ribbon-disabled-icon">{ribbonPartIcons[group]??<Settings2 size={15}/>}</button><button type="button" disabled aria-label={`${group} options unavailable`} className="office-ribbon-disabled-icon"><SlidersHorizontal size={15}/></button><button type="button" disabled aria-label={`${group} appearance unavailable`} className="office-ribbon-disabled-icon"><Settings2 size={15}/></button></div>}
               </fieldset><span>{group}</span>
             </div>;
           })}
@@ -2474,7 +2483,7 @@ function PageBuilder({
             const definitions=definitionsForPart(group,'Layout');
             return <div className="office-ribbon-group office-ribbon-part-group" key={group}>
               <fieldset className="office-ribbon-part-fieldset" disabled={!definitions.length} title={!definitions.length?'Not supported by selected component':group}>
-                {definitions.length?<PageBuilderRibbonMetadataPager key={selected.id+group+'layout'} definitions={definitions} properties={selected.properties} onChange={properties=>updateComponent(selected.id,{properties})}/>:<span className="office-ribbon-disabled-group">Not applicable</span>}
+                {definitions.length?<PageBuilderRibbonMetadataPager key={selected.id+group+'layout'} definitions={definitions} properties={selected.properties} onChange={properties=>updateComponent(selected.id,{properties})}/>:<div className="office-ribbon-disabled-group" aria-label={`${group} controls unavailable`}><button type="button" disabled aria-label={`${group} unavailable`} title={`${group} not supported by this component`} className="office-ribbon-disabled-icon">{ribbonPartIcons[group]??<Settings2 size={15}/>}</button><button type="button" disabled aria-label={`${group} options unavailable`} className="office-ribbon-disabled-icon"><SlidersHorizontal size={15}/></button><button type="button" disabled aria-label={`${group} appearance unavailable`} className="office-ribbon-disabled-icon"><Settings2 size={15}/></button></div>}
               </fieldset><span>{group} layout</span>
             </div>;
           })}
