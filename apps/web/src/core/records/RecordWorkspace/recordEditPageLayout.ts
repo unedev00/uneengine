@@ -75,7 +75,10 @@ export function recordEditPageLayout(
     }
   }
   flush();
-  if (!sections.length) return presentation;
+  // An authored Dynamic Forms page with all conditional sections hidden must not
+  // silently restore the legacy fields (and reveal fields the rule hid).
+  if (!sections.length && !page.components.some(component=>
+    component.type==='Record Field'||component.type==='Field Section')) return presentation;
   return {...(presentation ?? {id:'record-edit',label:page.label,relatedLists:[],actions:['New','Edit','Delete']}),
     label:page.label,sections};
 }
