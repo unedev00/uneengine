@@ -298,7 +298,8 @@ export function RecordFormDialog({
     && !field.dataType.toLocaleLowerCase().startsWith('auto number')
     && fieldAccess[`${object.apiName}.${field.apiName}`]?.read
     && (!selectedLayout || layoutFieldNames.includes(field.apiName) || field.required))
-    .map(field=>requiredOnLayout.has(field.apiName)?{...field,required:true}:field);
+    .map(field=>requiredOnLayout.has(field.apiName)&&!readOnlyOnLayout.has(field.apiName)
+      ?{...field,required:true}:field);
   const unplacedRequiredFields = visibleFields.filter((field) => field.required && !layoutFieldNames.includes(field.apiName));
   const allowedPicklistValues = (field: FieldMetadata, recordTypeId = selectedRecordTypeId, values = formValues) => {
     const recordTypeValues = object.recordTypes?.find((recordType) => recordType.id === recordTypeId)?.picklistValues?.[field.apiName];
@@ -406,7 +407,7 @@ export function RecordFormDialog({
     const value = rawValue === undefined || rawValue === null ? '' : String(rawValue);
     const dataType = field.dataType.toLocaleLowerCase();
     const helpTextId = `record-field-help-${field.apiName}`;
-    const common = { id: `record-field-${field.apiName}`, name: field.apiName, required: field.required, disabled: saving || !fieldAccess[`${object.apiName}.${field.apiName}`]?.edit
+    const common = { id: `record-field-${field.apiName}`, name: field.apiName, required: field.required && !readOnlyOnLayout.has(field.apiName), disabled: saving || !fieldAccess[`${object.apiName}.${field.apiName}`]?.edit
       || readOnlyOnLayout.has(field.apiName), 'aria-describedby': field.helpText ? helpTextId : undefined };
     const helpText = field.helpText ? <small className="field-help-text" id={helpTextId}>{field.helpText}</small> : null;
     if(dataType==='file')return <div className="form-label" key={field.apiName}>
