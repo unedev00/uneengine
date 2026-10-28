@@ -405,18 +405,18 @@
  overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
  background:#123b5e;color:#fff;font:600 10px/13px "Segoe UI",Arial,sans-serif;
 }
-/* Make the complete ribbon compact enough to match the reference while
-   retaining three 20px data/content rows and group bottom captions. */
+/* Compact enough for the reference while retaining three usable
+   20px controls, section headings and bottom labels without clipping. */
 .office-builder-ribbon #page-builder-tab-content.office-ribbon-content{
- height:112px!important;min-height:112px!important;max-height:112px!important;
+ height:120px!important;min-height:120px!important;max-height:120px!important;
 }
 .office-builder-ribbon #page-builder-tab-content>.office-ribbon-group{
- height:103px!important;min-height:103px!important;max-height:103px!important;
+ height:111px!important;min-height:111px!important;max-height:111px!important;
 }
 .office-builder-ribbon #page-builder-tab-content>.office-ribbon-content-card,
 .office-builder-ribbon #page-builder-tab-content>.office-ribbon-data-group,
 .office-builder-ribbon #page-builder-tab-content>.office-ribbon-part-group{
- height:103px!important;max-height:103px!important;
+ height:111px!important;max-height:111px!important;
 }
 
 /* Match the reference Layout order without duplicating free-canvas fields:
