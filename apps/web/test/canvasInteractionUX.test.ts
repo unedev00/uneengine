@@ -486,12 +486,13 @@ test('Card Grid surface colour and individual card colour stay separate in build
 test('Card Grid keeps authored collection radius and padding separate from card properties',async()=>{
   const css=await readFile(new URL('../src/core/pages/TemplatePageRuntime/pageComponentAppearance.css',import.meta.url),'utf8');
   for(const property of ['radius','padding']){
-    assert.match(css,new RegExp('data-page-style\\\\~="'+property+'"\\\\] \\.registered-component:not\\\\(\\.metadrive-component-une_item_grid\\\\) \\.one-item'));
-    assert.ok(css.includes('[data-page-style~="'+property+'"]\\n.registered-component.metadrive-component-une_item_grid > section'));
+    const scoped='[data-page-appearance="collection"][data-page-style~="'+property+'"] .registered-component:not(.metadrive-component-une_item_grid) .one-item';
+    assert.ok(css.includes(scoped),'generic collection '+property+' may not override item-grid cards');
+    assert.ok(css.includes('registered-component.metadrive-component-une_item_grid > section'),'surface styling must target the collection');
   }
   const grid=await readFile(new URL('../src/one/OneItemGrid/OneItemGrid.jsx',import.meta.url),'utf8');
-  assert.match(grid,/borderRadius: Number\\.isFinite\\(cardRadius\\)/);
-  assert.match(grid,/padding: Number\\.isFinite\\(cardPadding\\)/);
+  assert.ok(grid.includes('borderRadius: Number.isFinite(cardRadius)'));
+  assert.ok(grid.includes('padding: Number.isFinite(cardPadding)'));
 });
 test('Page Runtime produces typed native line-height and letter-spacing tokens',()=>{
   const values=resolvePageComponentStyle({lineHeight:150,letterSpacing:2,fontFamily:'serif'},'Custom:une_item_grid') as Record<string,unknown>;
