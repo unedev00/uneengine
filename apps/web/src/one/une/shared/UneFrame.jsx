@@ -12,7 +12,11 @@ export function uneProps(p,kind){
    Array.isArray(p.records)&&p.records.length?p.records[0]:
    Array.isArray(p.items)&&p.items.length?p.items[0]:null;
  if(record){
-  const textKeys=["text","label","title","subtitle","description","caption","placeholder","helpText","emptyText","submitLabel","openLabel","confirmLabel","searchPlaceholder","badge","value","message"];
+  const textKeys=["text","label","title","subtitle","description","caption","placeholder","helpText","emptyText","emptyTitle","loadingText",
+   "src","alt","imageSrc","imageAlt","submitLabel","openLabel","confirmLabel","searchPlaceholder","searchLabel",
+   "filterLabel","newConversationLabel","refreshLabel","contactSearchLabel","sentNoticeText","emptyConversationsText",
+   "newMessageNoticeLabel","badge","value","message","basketTitle","basketPresentation","checkoutLabel",
+   "clearLabel","totalLabel","emptyBasketText","nextTransactionLabel"];
   for(const key of textKeys){
    const raw=result[key];
    if(typeof raw==="string"&&/^\s*@(?:[A-Za-z][A-Za-z0-9_]*)(?:\s*&|\s*$)/.test(raw))
