@@ -4,6 +4,7 @@ import {appRoutePath,type AppRoute} from '../../workspace/Navigation/appRouting'
 import {formatRecordValue} from '../../records/RecordWorkspace/recordCsvUtils';
 import {parseSafeRichText} from './safeRichText';
 import {resolveStandardListColumns} from './standardListColumns';
+import {standardListQuery} from './standardListQuery';
 
 /** Existing generic Record API is the source of truth for permission-checked rows. */
 export function StandardRecordList({
@@ -45,15 +46,9 @@ export function StandardRecordList({
     if(!object?.apiName){setRows([]);return;}
     let active=true;
     setBusy(true);setError('');
-    const params=new URLSearchParams({
-      limit:String(limit),offset:String(offset),
-      ...(savedViewId?{viewId:savedViewId}:{}),
-      ...(search.trim()?{search:search.trim()}:{}),
-      ...(sort?{sortField:sort,sortDirection:direction}:{}),
-      ...(recordFilter?{relatedField:recordFilter.field,relatedId:recordFilter.recordId}:{})
-    });
+    const params=standardListQuery({limit,offset,search,sort,direction,savedViewId,recordFilter});
     void request<{records:Array<Record<string,unknown>>;total:number}>(
-      '/records/'+encodeURIComponent(object.apiName)+'?'+params.toString())
+      '/records/'+encodeURIComponent(object.apiName)+'?'+params)
       .then(result=>{if(active){setRows(result.records??[]);setTotal(result.total??0);}})
       .catch(reason=>{if(active){setRows([]);setError(reason instanceof Error?reason.message:'Records unavailable');}})
       .finally(()=>{if(active)setBusy(false);});
