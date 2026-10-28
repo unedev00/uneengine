@@ -352,6 +352,9 @@ export default function MetadataBoundPageComponent({
           void onAction({ event: 'change', value }).catch(() => {});
       },
       loading: dataLoading, sessionId, previewOnly: disableActions,
+      // Only bind scalar expressions when one authorised record is in scope.
+      // Multi-row components resolve their per-row values inside their own renderer.
+      ...(visibleRecords.length===1 ? {record:visibleRecords[0]} : {}),
       ...(objectApiName ? { records: visibleRecords } : {}),
       ...presented
     }} />
