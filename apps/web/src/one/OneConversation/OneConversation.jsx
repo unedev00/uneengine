@@ -1,3 +1,5 @@
+import {readConversationPart} from '../une_conversation/conversationParts.mjs';
+import {ConversationButton,ConversationSearch,ConversationInput,ConversationText} from '../une_conversation/ConversationParts.jsx';
 function sendAction(props, event, value) {
   if (typeof props.onAction !== "function")
     throw Error("Configure a Flow action for this conversation event.");
@@ -159,7 +161,7 @@ function ConversationInbox({ props }) {
       if (result === null || result === false) return;
       setDraft("");
       if (editorRef.current) editorRef.current.value = "";
-      setNotice(props.sentNoticeText || "Message request submitted.");
+      setNotice(readConversationPart(props,"submissionNotice","text") || "Message request submitted.");
     } catch (cause) {
       setError(
         cause instanceof Error ? cause.message : "Unable to send message.",
@@ -238,11 +240,11 @@ function ConversationInbox({ props }) {
       <aside className="one-surface one-conversation-list">
         <header>
           <div className="one-row" style={{ justifyContent: "space-between" }}>
-            <h3 className="one-heading">{props.title || "Conversations"}</h3>
+            <ConversationText as="h3" className="one-heading" text={readConversationPart(props,"heading","text") || "Conversations"}/>
             {props.showConversationCount!==false&&<span className="one-muted">{visible.length}</span>}
           </div>
           {props.enableNewConversation === true && (
-            <button
+            <ConversationButton
               className="one-btn"
               type="button"
               disabled={!assignedAccounts.length&&props.requireChannelAccountForNew!==false}
@@ -263,12 +265,12 @@ function ConversationInbox({ props }) {
                 );
               }}
             >
-              {props.newConversationLabel || "New conversation"}
-            </button>
+              {readConversationPart(props,"newConversation","label") || "New conversation"}
+            </ConversationButton>
           )}
-          {props.showRefresh===true&&<button className="one-btn one-btn--ghost" type="button"
+          {props.showRefresh===true&&<ConversationButton className="one-btn one-btn--ghost" type="button"
              disabled={!props.actionFlows?.refresh} onClick={()=>optionalAction("refresh",{selectedConversationId:activeId})}>
-             {props.refreshLabel||"Refresh"}</button>}
+             {readConversationPart(props,"refresh","label")||"Refresh"}</ConversationButton>}
           {props.showAccountSelector!==false&&<label className="one-label">
             {props.accountLabel || "Account"}
             <select
@@ -291,19 +293,19 @@ function ConversationInbox({ props }) {
               ))}
             </select>
           </label>}
-          {props.showSearch!==false&&<input
+          {props.showSearch!==false&&<ConversationSearch
             className="one-control"
             type="search"
-            aria-label={props.searchLabel || "Search conversations"}
+            label={readConversationPart(props,"inboxSearch","label") || "Search conversations"}
             value={search}
-            placeholder={props.searchPlaceholder || "Search conversations"}
+            placeholder={readConversationPart(props,"inboxSearch","placeholder") || "Search conversations"}
             onChange={(event) => setSearch(event.target.value)}
             onKeyDown={event=>{if(event.key==="Enter"&&props.searchMode==="event"){
               event.preventDefault();optionalAction("search",{searchTerm:search});}}}
           />}
           {props.showFilterTabs!==false&&<nav
             className="one-row"
-            aria-label={props.filterLabel || "Conversation filters"}
+            aria-label={readConversationPart(props,"filterHeading","text") || "Conversation filters"}
           >
             {(Array.isArray(props.filterOptions)&&props.filterOptions.length
               ?props.filterOptions.filter(item=>["all","unread","mine"].includes(item?.value))
@@ -360,7 +362,7 @@ function ConversationInbox({ props }) {
           {!filtered.length && (
             <p className="one-empty" role="status">
               {allowed.length || props.conversationSourceMode === "flowRecords"
-                ? props.emptyConversationsText ||
+                ? readConversationPart(props,"emptyInbox","text") ||
                   "No conversations match these filters."
                 : props.noAccessText || "No conversation access is assigned."}
             </p>
@@ -399,7 +401,7 @@ function ConversationInbox({ props }) {
               </select>
             </label>
             <label className="one-label">
-              {props.contactSearchLabel || "Find contact"}
+              {readConversationPart(props,"contactSearch","label") || "Find contact"}
               <input
                 className="one-control"
                 type="search"
@@ -440,7 +442,7 @@ function ConversationInbox({ props }) {
               <textarea
                 className="one-control"
                 required
-                maxLength={Number(props.messageMaxLength) || 4096}
+                maxLength={Number(readConversationPart(props,"composer","maxLength")) || 4096}
                 defaultValue={draft}
                 ref={editorRef}
                 onInput={(event) => setDraft(event.currentTarget.value)}
@@ -554,20 +556,20 @@ function ConversationInbox({ props }) {
                 </p>
               )}
             </div>
-            {hasNewMessages&&props.showNewMessageNotice!==false&&<button
+            {hasNewMessages&&props.showNewMessageNotice!==false&&<ConversationButton
               className="one-btn one-btn--ghost" type="button"
               onClick={()=>{const el=threadViewport.current;if(el){el.scrollTop=el.scrollHeight;
                  followLatest.current=true;setHasNewMessages(false);}}}>
-              {props.newMessageNoticeLabel||"New messages"}
-            </button>}
+              {readConversationPart(props,"newMessages","label")||"New messages"}
+            </ConversationButton>}
             {props.showComposer!==false&&<form className="one-row one-conversation-compose" onSubmit={send}>
-              <input
+              <ConversationInput
                 className="one-control"
                 aria-label={props.messageLabel || "Message"}
                 defaultValue={draft}
                 ref={editorRef}
-                maxLength={Number(props.messageMaxLength) || 4096}
-                placeholder={props.placeholder || "Write a message…"}
+                maxLength={Number(readConversationPart(props,"composer","maxLength")) || 4096}
+                placeholder={readConversationPart(props,"composer","placeholder") || "Write a message…"}
                 onInput={(event) => setDraft(event.currentTarget.value)}
               />
               <button
@@ -587,7 +589,7 @@ function ConversationInbox({ props }) {
           </div>
         ) : (
           <div className="one-empty" role="status">
-            {props.emptyTitle || "Select a conversation"}
+            {readConversationPart(props,"emptyThread","text") || "Select a conversation"}
           </div>
         )}
         {error && <p role="alert">{error}</p>}
@@ -635,7 +637,7 @@ function ConversationThread({ props, rows }) {
           className="one-control"
           style={{ flex: 1 }}
           aria-label={props.messageLabel || "Message"}
-          placeholder={props.placeholder || "Write a message…"}
+          placeholder={readConversationPart(props,"composer","placeholder") || "Write a message…"}
           value={message}
           onChange={(event) => setMessage(event.target.value)}
         />
