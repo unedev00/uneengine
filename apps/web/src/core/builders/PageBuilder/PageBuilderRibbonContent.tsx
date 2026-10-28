@@ -40,36 +40,27 @@ export default function PageBuilderRibbonContent({componentApiName,properties,de
  </div>;
  if(componentApiName==='une_item_grid')return <>
    {section('Image',<ImageIcon size={18}/>,<>
-     {expr('Image field','imageExpression','imageFieldApiName')}
      {toggle('Show image','showImage')}
+     {expr('Image field','imageExpression','imageFieldApiName')}
      {has('missingImageBehavior')&&<label className="office-ribbon-content-row"><span>Missing image</span><select
        aria-label="Missing image" value={String(properties.missingImageBehavior??'')} onChange={e=>update('missingImageBehavior',e.target.value)}>
        <option value="">Default</option>{definition?.propertyDefinitions?.find(d=>d.propertyKey==='missingImageBehavior')?.choices?.map(c=><option key={c.key} value={c.key}>{c.label}</option>)}
      </select></label>}
    </>)}
    {section('Heading',<Type size={18}/>,<>
-     {expr('Heading','headingExpression','titleFieldApiName')}
      {toggle('Show heading','showTitle')}
+     {expr('Heading','headingExpression','titleFieldApiName')}
    </>)}
    {section('Supporting Text',<AlignLeft size={18}/>,<>
-     {expr('Text','descriptionExpression','descriptionFieldApiName')}
      {toggle('Show text','showDescription',false)}
+     {expr('Text','descriptionExpression','descriptionFieldApiName')}
      {number('Lines','descriptionLineLimit',has('descriptionLineLimit'))}
    </>)}
    {section('Badge',<Ellipsis size={18}/>,<>
      {expr('Badge','badgeExpression','badgeFieldApiName')}
-     {has('badgeFontWeight')&&<label className="office-ribbon-content-row"><span>Badge weight</span><select
-       aria-label="Badge weight" value={String(properties.badgeFontWeight??'')} onChange={e=>update('badgeFontWeight',e.target.value)}>
-       <option value="">Default</option>{definition?.propertyDefinitions?.find(d=>d.propertyKey==='badgeFontWeight')?.choices?.map(c=><option key={c.key} value={c.key}>{c.label}</option>)}
-     </select></label>}
-     <label className="office-ribbon-content-row"><span>Legacy value</span>
-       <input type="checkbox" aria-label="Show legacy value" checked={properties.showPrice!==false}
-         disabled={!properties.priceFieldApiName} onChange={e=>update('showPrice',e.target.checked)}/></label>
+
    </>)}
-   {section('Empty State',<Ellipsis size={18}/>,
-     <label className="office-ribbon-content-row"><span>Message</span>
-       <input type="text" aria-label="Empty state message" value={String(properties.emptyText??'No matching records')}
-         onChange={e=>update('emptyText',e.target.value)}/></label>)}
+
 
  </>;
  if(componentApiName==='une_calendar')return <>
