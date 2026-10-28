@@ -182,7 +182,8 @@ test('Page Builder property editors filter controls by selected component capabi
   assert.match(advancedStyle, /<RibbonFormat properties=\{properties\}/);
   assert.match(builder, /<RibbonResponsive/);
   assert.match(builder, /visible=\{selected\.visible\}/);
-  assert.match(capability, /disabled=\{!matched\(cmd\.name\)\.length\}/);
+  assert.match(capability, /disabled=\{!definitions.length\}/);
+  assert.match(capability, /RibbonColorPalette key=\{name\}/);
   assert.match(ribbonStyle, /RibbonColorPalette kind="text"/);
   assert.match(ribbonStyle, /availableComponentSettings/);
   assert.doesNotMatch(builder, /<PageComponentStyleEditor section="all"/);

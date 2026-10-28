@@ -1,5 +1,4 @@
-import {useState,type ReactNode} from 'react';
-import {createPortal} from 'react-dom';
+import type {ReactNode} from 'react';
 import {Image as ImageIcon,Type,AlignLeft,CalendarDays,Clock,Ellipsis} from 'lucide-react';
 import type {FieldMetadata,LibraryComponentMetadata} from '../../metadata/Definitions/metadata';
 import RibbonFieldExpressionInput from './RibbonFieldExpressionInput';
@@ -14,7 +13,6 @@ export default function PageBuilderRibbonContent({componentApiName,properties,de
  componentApiName:string;properties:Properties;definition?:LibraryComponentMetadata;
  objects:DataObject[];onChange:(next:Properties)=>void;
 }){
- const [moreContent,setMoreContent]=useState(false);
  const fields=objects.find(o=>o.apiName===String(properties.objectApiName??''))?.fields??[];
  const has=(key:string)=>Boolean(definition?.propertyDefinitions?.some(d=>d.propertyKey===key));
  const update=(key:string,value:unknown)=>onChange({...properties,[key]:value});
@@ -38,7 +36,7 @@ export default function PageBuilderRibbonContent({componentApiName,properties,de
    onChange={value=>update(key,value)}/>;
  const section=(title:string,icon:ReactNode,content:ReactNode)=><div key={title} className="office-ribbon-group office-ribbon-content-card">
    <div className="office-ribbon-content-heading">{icon}<strong>{title}</strong></div>
-   <div className="office-ribbon-content-fields">{content}</div><span>{title}</span>
+   <div className="office-ribbon-content-fields">{content}</div><span className="office-ribbon-group-heading">{title}</span>
  </div>;
  if(componentApiName==='une_item_grid')return <>
    {section('Image',<ImageIcon size={18}/>,<>
@@ -64,19 +62,15 @@ export default function PageBuilderRibbonContent({componentApiName,properties,de
        aria-label="Badge weight" value={String(properties.badgeFontWeight??'')} onChange={e=>update('badgeFontWeight',e.target.value)}>
        <option value="">Default</option>{definition?.propertyDefinitions?.find(d=>d.propertyKey==='badgeFontWeight')?.choices?.map(c=><option key={c.key} value={c.key}>{c.label}</option>)}
      </select></label>}
-     <button type="button" className="office-ribbon-content-more" onClick={()=>setMoreContent(true)}>More content settings</button>
+     <label className="office-ribbon-content-row"><span>Legacy value</span>
+       <input type="checkbox" aria-label="Show legacy value" checked={properties.showPrice!==false}
+         disabled={!properties.priceFieldApiName} onChange={e=>update('showPrice',e.target.checked)}/></label>
    </>)}
-   {moreContent&&createPortal(<div className="office-ribbon-capability-backdrop" onMouseDown={()=>setMoreContent(false)}>
-     <section className="office-ribbon-capability-dialog" role="dialog" aria-modal="true"
-       aria-label="Additional item grid content settings" onMouseDown={e=>e.stopPropagation()}>
-       <header><strong>Additional item grid content</strong>
-         <button type="button" onClick={()=>setMoreContent(false)}>Close</button></header>
-       <label><input type="checkbox" checked={properties.showPrice!==false} disabled={!properties.priceFieldApiName}
-         onChange={e=>update('showPrice',e.target.checked)}/> Show legacy value</label>
-       <label>Empty state message <input value={String(properties.emptyText??'No matching records')}
-         onChange={e=>update('emptyText',e.target.value)}/></label>
-     </section>
-   </div>,document.body)}
+   {section('Empty State',<Ellipsis size={18}/>,
+     <label className="office-ribbon-content-row"><span>Message</span>
+       <input type="text" aria-label="Empty state message" value={String(properties.emptyText??'No matching records')}
+         onChange={e=>update('emptyText',e.target.value)}/></label>)}
+
  </>;
  if(componentApiName==='une_calendar')return <>
    {section('Event Title',<CalendarDays size={18}/>,<>{select('Title field','titleFieldApiName')}{select('Date field','dateFieldApiName')}</>)}

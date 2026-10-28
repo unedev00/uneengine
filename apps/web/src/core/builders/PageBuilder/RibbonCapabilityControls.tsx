@@ -1,17 +1,14 @@
-import {useState,type ReactNode} from 'react';
+import {useEffect,useRef,useState,type ReactNode} from 'react';
 import {createPortal} from 'react-dom';
-import {SlidersHorizontal,PaintBucket,Square,Scan,Layers,Blend,Type,Bold,AlignLeft,Palette,CaseSensitive,Image,Ratio,Move,CalendarDays,CalendarRange,Clock,Table2,ChartNoAxesCombined,Grid2X2,Columns3,WrapText,PanelTop,Menu,MousePointer,Settings2} from 'lucide-react';
+import {SlidersHorizontal,PaintBucket,Square,Scan,Layers,Blend,Type,Bold,AlignLeft,AlignCenter,AlignRight,Palette,CaseSensitive,Image,Ratio,Move,CalendarDays,CalendarRange,Clock,Table2,ChartNoAxesCombined,Grid2X2,Columns3,WrapText,PanelTop,Menu,MousePointer,Settings2} from 'lucide-react';
 import type {LibraryComponentMetadata} from '../../metadata/Definitions/metadata';
 import PageBuilderRibbonMetadataPager from './PageBuilderRibbonMetadataPager';
+import RibbonColorPalette from './RibbonColorPalette';
 
 type PropertyDefinition=NonNullable<LibraryComponentMetadata['propertyDefinitions']>[number];
 type Values=Record<string,unknown>;
-/** A compact icon-first surface backed exclusively by the component's declared metadata. */
-export default function RibbonCapabilityControls({group,definitions,properties,onChange,icon}:{
- group:string;definitions:readonly PropertyDefinition[];properties:Values;onChange:(next:Values)=>void;icon:ReactNode;
-}){
- const [active,setActive]=useState<string|null>(null);
- const commands:Record<string,Array<{name:string;icon:ReactNode}>>={
+type Command={name:string;icon:ReactNode};
+const commandGroups:Record<string,Command[]>={
   Surface:[{name:'Fill',icon:<PaintBucket size={16}/>},{name:'Border',icon:<Square size={16}/>},{name:'Radius',icon:<Scan size={16}/>},{name:'Shadow',icon:<Layers size={16}/>},{name:'Opacity',icon:<Blend size={16}/>}],
   Event:[{name:'Text',icon:<Type size={16}/>},{name:'Colour',icon:<Palette size={16}/>},{name:'Border',icon:<Square size={16}/>},{name:'Size',icon:<Ratio size={16}/>}],
   Size:[{name:'Width',icon:<Ratio size={16}/>},{name:'Height',icon:<Ratio size={16}/>},{name:'Min',icon:<Scan size={16}/>}],
@@ -30,36 +27,189 @@ export default function RibbonCapabilityControls({group,definitions,properties,o
   Navigation:[{name:'Menu',icon:<Menu size={16}/>},{name:'Direction',icon:<Move size={16}/>}],
   Button:[{name:'Button',icon:<MousePointer size={16}/>},{name:'Colour',icon:<Palette size={16}/>}],
   Text:[{name:'Text',icon:<Type size={16}/>},{name:'Colour',icon:<Palette size={16}/>}]
- };
- const named=commands[group]??[{name:group,icon},{name:'Settings',icon:<Settings2 size={16}/>},{name:'Options',icon:<SlidersHorizontal size={16}/>}];
- const aliases:Record<string,RegExp>={
-   colour:/color|colour|tone|palette/i,fill:/fill|surface|background/i,
-   corners:/radius|corner|round/i,radius:/radius|corner|round/i,border:/border|stroke|outline/i,
-   shadow:/shadow|elevation/i,opacity:/opacity|alpha/i,
-   size:/size|fontsize|font-size|width|height/i,width:/width|colspan/i,height:/height|rowspan/i,min:/minheight|minwidth/i,bold:/bold|weight/i,
-   align:/align|justify|alignment/i,text:/text|caption|description|label/i,
-   shape:/shape|radius|crop/i,fit:/fit|objectfit|scale/i,
-   ratio:/ratio|aspect/i,position:/position|offset|left|top|anchor/i,
-   time:/time|hour|minute/i,weekends:/weekend|daysofweek/i,
-   header:/header|title/i,view:/view|mode/i,
-   columns:/column|colspan/i,grid:/grid|column/i,wrap:/wrap|overflow/i,
-   padding:/padding|inset/i,margin:/margin/i,gap:/gap|spacing/i,direction:/direction|orientation/i,button:/button|variant|appearance/i,
-   menu:/menu|navigation|nav/i,type:/type|variant|style/i
- };
- const matched=(name:string)=>definitions.filter(def=>{
-   const key=(def.propertyKey+' '+def.label).toLowerCase().replace(/[\s_-]/g,'');
-   return key.includes(name.toLowerCase().replace(/[\s_-]/g,''))||Boolean(aliases[name.toLowerCase()]?.test(key));
- });
- return <div className="office-ribbon-capabilities" aria-label={group+' commands'}>
-   {named.map(cmd=><button key={cmd.name} type="button" className="office-ribbon-capability-icon"
-     disabled={!matched(cmd.name).length} title={matched(cmd.name).length?group+' '+cmd.name:group+' '+cmd.name+' unavailable'}
-     aria-label={group+' '+cmd.name} onClick={()=>setActive(cmd.name)}><span className="office-ribbon-command-glyph">{cmd.icon}</span><span className="office-ribbon-command-label">{cmd.name}</span></button>)}
-   {active&&createPortal(<div className="office-ribbon-capability-backdrop" role="presentation" onMouseDown={()=>setActive(null)}>
-     <section role="dialog" aria-modal="true" aria-label={group+' '+active+' properties'} className="office-ribbon-capability-dialog"
-       onMouseDown={event=>event.stopPropagation()}>
-       <header><strong>{group} · {active}</strong><button type="button" onClick={()=>setActive(null)}>Close</button></header>
-       <PageBuilderRibbonMetadataPager definitions={matched(active)} properties={properties} onChange={onChange}/>
-     </section>
-   </div>,document.body)}
- </div>;
+};
+const aliases:Record<string,RegExp>={
+  colour:/color|colour|tone|palette/i,fill:/fill|surface|background/i,
+  corners:/radius|corner|round/i,radius:/radius|corner|round/i,border:/border|stroke|outline/i,
+  shadow:/shadow|elevation/i,opacity:/opacity|alpha/i,
+  size:/size|fontsize|font-size|width|height/i,width:/width|colspan/i,height:/height|rowspan/i,min:/minheight|minwidth/i,bold:/bold|weight/i,
+  align:/align|justify|alignment/i,text:/text|caption|description|label/i,
+  shape:/shape|radius|crop/i,fit:/fit|objectfit|scale/i,
+  ratio:/ratio|aspect/i,position:/position|offset|left|top|anchor/i,
+  time:/time|hour|minute/i,weekends:/weekend|daysofweek/i,
+  header:/header|title/i,view:/view|mode/i,
+  columns:/column|colspan/i,grid:/grid|column/i,wrap:/wrap|overflow/i,
+  padding:/padding|inset/i,margin:/margin/i,gap:/gap|spacing/i,direction:/direction|orientation/i,button:/button|variant|appearance/i,
+  menu:/menu|navigation|nav/i,type:/type|variant|style/i
+};
+const matches=(definitions:readonly PropertyDefinition[],name:string)=>definitions.filter(def=>{
+  const key=(def.propertyKey+' '+def.label).toLowerCase().replace(/[\s_-]/g,'');
+  return key.includes(name.toLowerCase().replace(/[\s_-]/g,''))||Boolean(aliases[name.toLowerCase()]?.test(key));
+});
+/** Use declared COLOR metadata to choose the appropriate part. Never write an invented style key. */
+function colourFor(definitions:readonly PropertyDefinition[],command:string){
+  const colours=definitions.filter(def=>def.kind==='COLOR');
+  if(!colours.length)return undefined;
+  const patterns:Record<string,RegExp>={
+    Fill:/background|fill|surface/i,Border:/border|stroke|outline/i,
+    Text:/text|font/i,Colour:/color|colour/i
+  };
+  const pattern=patterns[command];
+  if(!pattern)return undefined;
+  if(command==='Colour')return colours.find(def=>!/background|border|fill|surface/i.test(def.propertyKey))??colours[0];
+  return colours.find(def=>pattern.test(def.propertyKey))??(command==='Text'?colours[0]:undefined);
+}
+function propertyFor(definitions:readonly PropertyDefinition[],kind:'size'|'weight'|'align'|'lines'){
+  const pattern=kind==='size'?/fontSize|textSize/i:kind==='weight'?/fontWeight|textWeight/i:kind==='align'?/textAlign|textAlignment/i:/lineLimit|maxLines/i;
+  return definitions.find(def=>pattern.test(def.propertyKey)&&
+    (kind==='size'||kind==='lines'?def.kind==='NUMBER':def.kind==='SELECT'));
+}
+function SizeSelect({definition,properties,onChange,label}:{
+  definition:PropertyDefinition;properties:Values;onChange:(next:Values)=>void;label:string;
+}){
+  const current=Number(properties[definition.propertyKey]??definition.defaultValue??16);
+  const values=[...new Set([8,9,10,11,12,14,16,18,20,22,24,26,28,32,36,48,72,96,...(Number.isFinite(current)?[current]:[])])].sort((a,b)=>a-b);
+  return <label className="office-ribbon-compact-size" title={label+' font size'}>
+    <select aria-label={label+' font size'} value={Number.isFinite(current)?current:16}
+      onChange={event=>onChange({...properties,[definition.propertyKey]:Number(event.target.value)})}>
+      {values.map(size=><option key={size} value={size}>{size}</option>)}
+    </select><span>Size</span>
+  </label>;
+}
+function WeightOptions({definition,properties,onChange,label}:{
+  definition:PropertyDefinition;properties:Values;onChange:(next:Values)=>void;label:string;
+}){
+  return <div className="office-ribbon-weight-direct" role="group" aria-label={label+' weight'}>
+    {(definition.choices??[]).map(choice=><button key={choice.key} type="button"
+      title={label+' '+choice.label} aria-label={label+' weight '+choice.label}
+      aria-pressed={String(properties[definition.propertyKey]??definition.defaultValue??'')===String(choice.key)}
+      onClick={()=>onChange({...properties,[definition.propertyKey]:choice.key})}
+      style={{fontWeight:Number(choice.key)||400}}>B</button>)}
+  </div>;
+}
+function AlignmentOptions({definition,properties,onChange,label}:{
+  definition:PropertyDefinition;properties:Values;onChange:(next:Values)=>void;label:string;
+}){
+  const allowed=new Set((definition.choices??[]).map(choice=>String(choice.key).toLowerCase()));
+  return <div className="office-ribbon-align-direct" role="group" aria-label={label+' alignment'}>
+    {([['left',AlignLeft],['center',AlignCenter],['right',AlignRight]] as const).map(([alignment,Icon])=>
+      <button key={alignment} type="button" title={label+' align '+alignment}
+        aria-label={label+' align '+alignment} disabled={allowed.size>0&&!allowed.has(alignment)}
+        aria-pressed={String(properties[definition.propertyKey]??definition.defaultValue??'').toLowerCase()===alignment}
+        onClick={()=>onChange({...properties,[definition.propertyKey]:alignment})}>
+        <Icon size={16}/>
+      </button>)}
+  </div>;
+}
+/** Anchored, nonmodal editing surface: clicking the command opens its actual settings immediately. */
+function CommandPopover({group,command,definitions,properties,onChange}:{
+  group:string;command:Command;definitions:PropertyDefinition[];properties:Values;onChange:(next:Values)=>void;
+}){
+  const [open,setOpen]=useState(false);
+  const [position,setPosition]=useState({top:0,left:0});
+  const trigger=useRef<HTMLButtonElement>(null);
+  const panel=useRef<HTMLDivElement>(null);
+  const simple=definitions.length===1&&['SELECT','NUMBER'].includes(definitions[0].kind);
+  const property=definitions[0];
+  useEffect(()=>{
+    if(!open)return;
+    const outside=(event:PointerEvent)=>{
+      if(!panel.current?.contains(event.target as Node)&&!trigger.current?.contains(event.target as Node))setOpen(false);
+    };
+    const escape=(event:KeyboardEvent)=>{if(event.key==='Escape'){setOpen(false);trigger.current?.focus();}};
+    const dismiss=()=>setOpen(false);
+    document.addEventListener('pointerdown',outside);
+    document.addEventListener('keydown',escape);
+    window.addEventListener('resize',dismiss);
+    window.addEventListener('scroll',dismiss,true);
+    return()=>{
+      document.removeEventListener('pointerdown',outside);
+      document.removeEventListener('keydown',escape);
+      window.removeEventListener('resize',dismiss);
+      window.removeEventListener('scroll',dismiss,true);
+    };
+  },[open]);
+  const toggle=()=>{
+    if(!open&&trigger.current){
+      const rect=trigger.current.getBoundingClientRect();
+      setPosition({top:window.innerHeight-rect.bottom>240?rect.bottom+5:Math.max(8,rect.top-245),
+        left:Math.max(8,Math.min(rect.left,window.innerWidth-370))});
+    }
+    setOpen(value=>!value);
+  };
+  return <>
+    <button ref={trigger} type="button" className="office-ribbon-capability-icon"
+      disabled={!definitions.length} title={definitions.length?group+' '+command.name:group+' '+command.name+' unavailable'}
+      aria-label={group+' '+command.name} aria-expanded={open} aria-haspopup="dialog" onClick={toggle}>
+      <span className="office-ribbon-command-glyph">{command.icon}</span><span className="office-ribbon-command-label">{command.name}</span>
+    </button>
+    {open&&createPortal(<div ref={panel} className={'office-ribbon-capability-dialog office-ribbon-capability-popover'+(simple?' is-compact':'')}
+      role="dialog" aria-label={group+' '+command.name+' settings'} style={{top:position.top,left:position.left}}>
+      {simple?<label className="office-ribbon-direct-property">
+        <span>{property.label}</span>
+        {property.kind==='SELECT'?<select aria-label={property.label}
+          value={String(properties[property.propertyKey]??property.defaultValue??'')}
+          onChange={event=>{onChange({...properties,[property.propertyKey]:event.target.value});setOpen(false);}}>
+          <option value="">Default</option>
+          {(property.choices??[]).map(choice=><option key={choice.key} value={choice.key}>{choice.label}</option>)}
+        </select>:<input type="number" aria-label={property.label} min={property.min} max={property.max}
+          value={String(properties[property.propertyKey]??property.defaultValue??'')}
+          onChange={event=>{const input=event.target.value;const n=Number(input);
+            if(input===''||Number.isFinite(n))onChange({...properties,[property.propertyKey]:input===''?undefined:n});}}/>}
+      </label>:<>
+        <header><strong>{group} · {command.name}</strong><button type="button" onClick={()=>setOpen(false)} aria-label="Close settings">×</button></header>
+        <PageBuilderRibbonMetadataPager definitions={definitions} properties={properties} onChange={onChange}/>
+      </>}
+    </div>,document.body)}
+  </>;
+}
+/** Icon commands and direct controls use the same registered, persisted property definitions. */
+export default function RibbonCapabilityControls({group,definitions,properties,onChange,icon}:{
+  group:string;definitions:readonly PropertyDefinition[];properties:Values;onChange:(next:Values)=>void;icon:ReactNode;
+}){
+  const named=commandGroups[group]??[{name:group,icon},{name:'Settings',icon:<Settings2 size={16}/>},{name:'Options',icon:<SlidersHorizontal size={16}/>}];
+  const colourCommand=(name:string)=>{
+    const definition=colourFor(definitions,name);
+    if(!definition)return null;
+    const kind=name==='Border'?'border':name==='Fill'?'fill':'text';
+    return <RibbonColorPalette key={name} kind={kind} label={name} variant="capability"
+      value={String(properties[definition.propertyKey]??definition.defaultValue??'')}
+      onChange={value=>onChange({...properties,[definition.propertyKey]:value})}/>;
+  };
+  const renderCommand=(command:Command)=>{
+    if(['Fill','Border','Colour','Text'].includes(command.name)){
+      const direct=colourCommand(command.name);
+      if(direct)return direct;
+    }
+    return <CommandPopover key={command.name} group={group} command={command}
+      definitions={matches(definitions,command.name)} properties={properties} onChange={onChange}/>;
+  };
+  const size=propertyFor(definitions,'size');
+  const weight=propertyFor(definitions,'weight');
+  const align=propertyFor(definitions,'align');
+  const lines=propertyFor(definitions,'lines');
+  const typography=(group==='Heading'||group==='Supporting text'||group==='Text')&&Boolean(size||weight||align);
+  if(typography)return <div className="office-ribbon-capabilities office-ribbon-typography-capabilities" aria-label={group+' commands'}>
+    <div className="office-ribbon-typography-primary">
+      {size&&<SizeSelect definition={size} properties={properties} onChange={onChange} label={group}/>}
+      {colourCommand('Colour')}
+      {lines&&<CommandPopover group={group} command={{name:'Lines',icon:<WrapText size={16}/>}}
+        definitions={[lines]} properties={properties} onChange={onChange}/>}
+    </div>
+    {align&&<AlignmentOptions definition={align} properties={properties} onChange={onChange} label={group}/>}
+    {weight&&<WeightOptions definition={weight} properties={properties} onChange={onChange} label={group}/>}
+  </div>;
+  if(group==='Badge'&&(size||weight))return <div className="office-ribbon-capabilities office-ribbon-typography-capabilities" aria-label={group+' commands'}>
+    <div className="office-ribbon-typography-primary">
+      {colourCommand('Fill')}{colourCommand('Text')}
+      {size&&<SizeSelect definition={size} properties={properties} onChange={onChange} label={group}/>}
+    </div>
+    {matches(definitions,'Border').length>0&&<div className="office-ribbon-typography-secondary">
+      {renderCommand({name:'Border',icon:<Square size={16}/>})}
+    </div>}
+    {weight&&<WeightOptions definition={weight} properties={properties} onChange={onChange} label={group}/>}
+  </div>;
+  return <div className="office-ribbon-capabilities" aria-label={group+' commands'}>
+    {named.map(renderCommand)}
+  </div>;
 }

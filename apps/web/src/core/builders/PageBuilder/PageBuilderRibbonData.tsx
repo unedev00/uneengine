@@ -38,7 +38,9 @@ export default function PageBuilderRibbonData({properties,definition,objects,fal
    </select></label>;
  return <>
    <div className="office-ribbon-group office-ribbon-data-group" aria-label="Data source">
-     <div className="office-ribbon-data-heading"><Database size={18}/> <strong>Source</strong></div>
+     <div className="office-ribbon-data-heading"><Database size={18}/> <strong>Source</strong>
+       <button className="office-ribbon-data-link" type="button" onClick={onOpenSource} disabled={!objectDef}
+         title="Open source" aria-label="Open source"><ExternalLink size={15}/></button></div>
      <label className="office-ribbon-data-field"><span>Object</span>
        <select aria-label="Source object" disabled={!objectDef} value={objectDef?String(properties[objectKey]??''):''}
          onChange={event=>changeObject(event.target.value)}>
@@ -47,12 +49,12 @@ export default function PageBuilderRibbonData({properties,definition,objects,fal
      </label>
      {mappingKey?fieldSelect('Record field',mappingKey,false)
        :<label className="office-ribbon-data-field"><span>Record field</span><select aria-label="Record field" disabled value=""><option>Not supported</option></select></label>}
-     <button className="office-ribbon-data-link" type="button" onClick={onOpenSource} disabled={!objectDef}>
-       Open source <ExternalLink size={12}/></button>
      <span className="office-ribbon-group-heading">Source</span>
    </div>
    <div className="office-ribbon-group office-ribbon-data-group" aria-label="Data filters">
-     <div className="office-ribbon-data-heading"><Filter size={18}/> <strong>Filters</strong></div>
+     <div className="office-ribbon-data-heading"><Filter size={18}/> <strong>Filters</strong>
+       <button className="office-ribbon-data-link" type="button" onClick={onOpenFilters}
+         title="Open filters" aria-label="Open filters"><ExternalLink size={15}/></button></div>
      <label className="office-ribbon-data-field"><span>Active filters</span>
        <input aria-label="Active filter count" readOnly value={filters+' '+(filters===1?'filter':'filters')}/></label>
      <label className="office-ribbon-data-field"><span>Filter logic</span>
@@ -60,14 +62,11 @@ export default function PageBuilderRibbonData({properties,definition,objects,fal
          onChange={event=>bind('filterLogic',event.target.value)}>
          <option value="AND">All (AND)</option><option value="OR">Any (OR)</option>
        </select></label>
-     <button className="office-ribbon-data-link" type="button" onClick={onOpenFilters}>
-       Open filters <ExternalLink size={12}/></button>
      <span className="office-ribbon-group-heading">Filters</span>
    </div>
    <div className="office-ribbon-group office-ribbon-data-group" aria-label="Data records">
      <div className="office-ribbon-data-heading"><ListFilter size={18}/> <strong>Records</strong></div>
      {fieldSelect('Sort field','recordSortFieldApiName',!has(defs,'recordSortFieldApiName'))}
-     {fieldSelect('Active record','recordActiveFieldApiName',!has(defs,'recordActiveFieldApiName'))}
      <div className="office-ribbon-data-pagination">
        <label><input aria-label="Enable pagination" type="checkbox" disabled={!has(defs,'enablePagination')}
          checked={properties.enablePagination===true} onChange={event=>bind('enablePagination',event.target.checked)}/> Pagination</label>

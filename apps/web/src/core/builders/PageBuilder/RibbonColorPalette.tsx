@@ -17,8 +17,9 @@ const themeColumns=[
 ];
 const standard=['#c00000','#ff0000','#ffc000','#ffff00','#92d050','#00b050','#00b0f0','#0070c0','#002060','#7030a0'];
 
-export default function RibbonColorPalette({kind,label,value,onChange}:{
+export default function RibbonColorPalette({kind,label,value,onChange,variant='icon'}:{
   kind:ColourKind;label:string;value:string;onChange:(color:string)=>void;
+  variant?:'icon'|'capability';
 }){
   const [open,setOpen]=useState(false);
   const [customHex,setCustomHex]=useState(value);
@@ -31,8 +32,9 @@ export default function RibbonColorPalette({kind,label,value,onChange}:{
   const toggle=()=>{
     if(!open&&trigger.current){
       const rect=trigger.current.getBoundingClientRect();
-      setPosition({top:Math.min(rect.bottom+5,window.innerHeight-30),
-        left:Math.max(8,Math.min(rect.left,window.innerWidth-378))});
+      const paletteHeight=390;
+      setPosition({top:window.innerHeight-rect.bottom>=paletteHeight?rect.bottom+5:Math.max(8,rect.top-paletteHeight-5),
+        left:Math.max(8,Math.min(rect.left,window.innerWidth-371))});
     }
     setOpen(current=>!current);
   };
@@ -61,11 +63,11 @@ export default function RibbonColorPalette({kind,label,value,onChange}:{
       onClick={()=>choose(colour)}/>
   );
   return <>
-    <button ref={trigger} type="button" className="office-ribbon-icon-button office-ribbon-colour-command"
+    <button ref={trigger} type="button" className={variant==='capability'?'office-ribbon-capability-icon office-ribbon-direct-colour':'office-ribbon-icon-button office-ribbon-colour-command'}
       title={label} aria-label={label+' colour palette'} aria-expanded={open} aria-haspopup="dialog"
       onClick={toggle}>
-      {icon}<span className="office-ribbon-colour-underline" style={{background:value||'#111827'}}/>
-      <ChevronDown size={11}/>
+      <span className="office-ribbon-command-glyph">{icon}<span className="office-ribbon-colour-underline" style={{background:value||'#111827'}}/></span>
+      {variant==='capability'?<span className="office-ribbon-command-label">{label}</span>:<ChevronDown size={11}/>}
     </button>
     {open&&createPortal(<div ref={popup} className="office-ribbon-colour-palette" role="dialog"
       aria-label={label+' colour palette'} style={{top:position.top,left:position.left}}>
@@ -85,7 +87,9 @@ export default function RibbonColorPalette({kind,label,value,onChange}:{
         <button type="button" disabled={!/^#[0-9a-f]{6}$/i.test(customHex)} onClick={()=>choose(customHex)}>Apply</button>
       </div>
       <div className="office-ribbon-palette-footer">
-        <button type="button" onClick={()=>choose('transparent')}>No colour</button>
+        <button type="button" onClick={()=>choose(kind==='text'?'':'transparent')}>
+          {kind==='text'?'Automatic':kind==='fill'?'No fill':'No colour'}
+        </button>
         <label>More colours… <input type="color" aria-label={'Custom '+label+' colour'}
           value={/^#[0-9a-f]{6}$/i.test(value)?value:'#000000'}
           onChange={event=>choose(event.target.value)}/></label>
