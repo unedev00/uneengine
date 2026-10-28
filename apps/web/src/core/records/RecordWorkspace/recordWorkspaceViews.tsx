@@ -1453,6 +1453,13 @@ function RecordWorkspace({
   const saveRecord = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!object) return;
+    // A successful form layout lookup carries the current OneEngine object
+    // grant. Do not submit with a stale grant or after the operation was revoked.
+    const permission=editingId?'Edit':'Create';
+    if(recordGrants?.objectApi!==object.apiName||recordGrants[permission]!==true){
+      setFormError('You do not have permission to save this record.');
+      return;
+    }
     setSaving(true);
     setFormError('');
     try {
@@ -1466,10 +1473,20 @@ function RecordWorkspace({
             && (fieldAccess[`${object.apiName}.${apiName}`]?.edit !== false)
           : (apiName === 'RecordTypeId' || fieldAccess[`${object.apiName}.${apiName}`]?.edit))
       ));
+      // Match the form's visible default values with the actual submitted
+      // payload, including layout-required fields that the user left unchanged.
+      const layoutRequired=new Set(selectedLayout?.sections.flatMap(section=>
+        section.requiredFieldApiNames??[])??[]);
+      for(const field of object.fields){
+        if(!layoutRequired.has(field.apiName)||field.defaultValue==null
+          ||writableValues[field.apiName]!==undefined
+          ||fieldAccess[`${object.apiName}.${field.apiName}`]?.edit!==true)continue;
+        writableValues[field.apiName]=field.defaultValue;
+      }
       const layoutWritable=filterLayoutWritableValues(writableValues,selectedLayout,
         new Set(object.fields.filter(field=>field.required).map(field=>field.apiName)));
       Object.keys(writableValues).forEach(name=>{if(!(name in layoutWritable))delete writableValues[name];});
-      const missingLayoutFields=missingLayoutRequiredFields(formValues,selectedLayout,
+      const missingLayoutFields=missingLayoutRequiredFields(writableValues,selectedLayout,
         new Set(object.fields.filter(field=>
           fieldAccess[`${object.apiName}.${field.apiName}`]?.edit===true)
           .map(field=>field.apiName)));
