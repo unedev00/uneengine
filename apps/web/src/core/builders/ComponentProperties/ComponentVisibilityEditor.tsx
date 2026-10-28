@@ -59,6 +59,14 @@ export default function ComponentVisibilityEditor({
           <option value="Any">Any condition (OR)</option>
         </select>
       </label>
+      <label className="form-label">Advanced condition logic (optional)
+        <input className="form-control" aria-label="Visibility condition expression"
+          placeholder="1 AND (2 OR 3)" value={config.expression??''}
+          onChange={event=>update({...config,
+            expression:event.target.value||undefined})} />
+        <small className="properties-help">Use condition numbers with AND, OR and parentheses.
+          Leave empty to use the match setting above. Invalid expressions hide the component.</small>
+      </label>
       {config.conditions.map((condition, index) => {
         const recordCondition = condition.source === 'Record Field' ? condition : null;
         const field = recordCondition
