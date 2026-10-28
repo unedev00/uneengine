@@ -222,7 +222,9 @@ function ItemGrid({ p, rows }) {
             width: Number.isFinite(imageWidth) && imageWidth > 0 ? Math.min(900,imageWidth) : "100%",
             // Without an explicit pixel width, alignment still needs visible
             // breathing room: CSS max-width keeps images from filling the card.
-            ...(Number.isFinite(imageWidth) && imageWidth > 0 ? {} : {maxWidth:"min(100%, 180px)"}),
+            ...(Number.isFinite(imageWidth) && imageWidth > 0 ? {} : {
+              maxWidth:["left","center","right"].includes(p.imagePosition)?"min(78%, 180px)":"100%"
+            }),
             borderRadius: p.imageShape==="circle" ? "50%" : p.imageShape==="rounded" ? 12 : 0,
             marginLeft:p.imagePosition==="right" ? "auto" : p.imagePosition==="left" ? "0" : p.imagePosition==="center" ? "auto" : undefined,
             marginRight:p.imagePosition==="left" ? "auto" : p.imagePosition==="right" ? "0" : p.imagePosition==="center" ? "auto" : undefined,
