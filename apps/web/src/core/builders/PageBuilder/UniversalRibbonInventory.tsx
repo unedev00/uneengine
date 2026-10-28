@@ -1,4 +1,4 @@
-import {useState} from 'react';
+import {useEffect,useState} from 'react';
 import {auditUniversalRibbonCoverage} from './universalRibbonCoverage.mjs';
 import {createPortal} from 'react-dom';
 import type {LibraryComponentMetadata,ObjectMetadata,FlowDefinitionMetadata} from '../../metadata/Definitions/metadata';
@@ -138,17 +138,23 @@ export type UniversalBuilderControls={
  onOpenFilters?:()=>void;
  onOpenVisibility?:()=>void;
 };
-export default function UniversalRibbonInventory({tab,definition,properties,onChange,objects=[],flows=[],builder}:{
- tab:Tab;definition?:LibraryComponentMetadata;properties:Properties;
+export default function UniversalRibbonInventory({tab,definition,componentId,properties,onChange,objects=[],flows=[],builder}:{
+ tab:Tab;definition?:LibraryComponentMetadata;componentId?:string;properties:Properties;
  onChange:(next:Properties)=>void;
  objects?:readonly ObjectMetadata[];flows?:readonly FlowDefinitionMetadata[];
  builder?:UniversalBuilderControls;
 }){
+ // Review mode: every slot is interactive, but unsupported keys remain in
+ // component-local draft state and are never persisted into invalid metadata.
+ const [reviewDraft,setReviewDraft]=useState<Properties>({});
+ useEffect(()=>{setReviewDraft({});},[componentId]);
+ const reviewProperties={...properties,...reviewDraft};
  const enabled=new Set((definition?.propertyDefinitions??[]).map(item=>item.propertyKey));
  const groups=slots.get(tab);
  if(!groups)return null;
  return <div className="une-universal-ribbon" aria-label="Universal UNE property ribbon"
-   data-component={definition?.apiName??'none'} data-inventory-count={universalRibbonInventoryCount}>
+   data-component={definition?.apiName??'none'} data-inventory-count={universalRibbonInventoryCount}
+   data-review-mode="all-enabled">
    {Array.from(groups).map(([section,defs])=><section key={section} className="une-universal-ribbon-section" aria-label={section}>
      <div className="une-universal-ribbon-controls">
        {tab==='Component Layout'&&section==='Size'&&(['width','height'] as const).map(key=>
@@ -190,9 +196,17 @@ export default function UniversalRibbonInventory({tab,definition,properties,onCh
          className="une-universal-builder-command" disabled={!builder?.onOpenFilters} onClick={builder?.onOpenFilters}>
          Filter conditions
        </button>}
-       {defs.map(def=><PropertyEditor key={def.propertyKey} definition={enabled.has(def.propertyKey)
-         ?definition?.propertyDefinitions?.find(item=>item.propertyKey===def.propertyKey)??def:def}
-         enabled={enabled.has(def.propertyKey)} properties={properties} onChange={onChange} objects={objects} flows={flows}/>)}
+       {defs.map(def=>{
+         const supported=enabled.has(def.propertyKey);
+         return <PropertyEditor key={def.propertyKey}
+           definition={supported?definition?.propertyDefinitions?.find(item=>item.propertyKey===def.propertyKey)??def:def}
+           enabled={true} properties={reviewProperties}
+           onChange={next=>{
+             if(supported)onChange({...properties,[def.propertyKey]:next[def.propertyKey]});
+             else setReviewDraft(previous=>({...previous,[def.propertyKey]:next[def.propertyKey]}));
+           }}
+           objects={objects} flows={flows}/>;
+       })}
      </div>
      <span className="une-universal-ribbon-caption">{section}</span>
    </section>)}
