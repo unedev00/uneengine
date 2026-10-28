@@ -76,8 +76,8 @@ if(import.meta.env.DEV&&(universalRibbonCoverage.missing.length||universalRibbon
 export const universalRibbonInventoryCount=Array.from(slots.values()).reduce((total,groups)=>total+Array.from(groups.values()).reduce((sum,defs)=>sum+defs.length,0),0);
 export const universalRibbonComponentCount=validManifests.length;
 
-function PropertyEditor({definition,enabled,properties,onChange,objects,flows}:{
- definition:Definition;enabled:boolean;properties:Properties;onChange:(next:Properties)=>void;
+function PropertyEditor({definition,enabled,reviewOnly=false,properties,onChange,objects,flows}:{
+ definition:Definition;enabled:boolean;reviewOnly?:boolean;properties:Properties;onChange:(next:Properties)=>void;
  objects:readonly ObjectMetadata[];flows:readonly FlowDefinitionMetadata[];
 }){
  const [mediaOpen,setMediaOpen]=useState(false);
@@ -87,7 +87,7 @@ function PropertyEditor({definition,enabled,properties,onChange,objects,flows}:{
  const label=definition.label||key.replace(/([a-z])([A-Z])/g,'$1 $2');
  const value=properties[key]??definition.defaultValue??'';
  const update=(next:unknown)=>{if(enabled)onChange({...properties,[key]:next});};
- const tip=enabled?label:'Not supported by selected component';
+ const tip=reviewOnly?label+' — review only; not saved for this component':enabled?label:'Not supported by selected component';
  const props={disabled:!enabled,title:tip,'aria-label':label};
  let editor;
  if(definition.kind==='BOOLEAN')editor=<input type="checkbox" {...props} checked={value===true} onChange={e=>update(e.target.checked)}/>;
@@ -120,7 +120,7 @@ function PropertyEditor({definition,enabled,properties,onChange,objects,flows}:{
  else if(value!==null&&typeof value==='object')editor=<textarea {...props} rows={1} value={JSON.stringify(value)}
    aria-invalid={!!jsonError} onChange={e=>{try{const parsed:unknown=JSON.parse(e.target.value);if(parsed===null||typeof parsed!=='object')throw Error('Expected an object or array');setJsonError('');update(parsed);}catch{setJsonError('Invalid structured value');}}}/>;
  else editor=<input {...props} type="text" value={String(value)} onChange={e=>update(e.target.value)}/>;
- return <label className={'une-universal-property'+(enabled?'':' is-disabled')} title={tip} data-property={key}>
+ return <label className={'une-universal-property'+(enabled?'':' is-disabled')+(reviewOnly?' is-review-only':'')} title={tip} data-property={key}>
    <span className="une-universal-property-label">{label}</span>
    {editor}
  </label>;
@@ -149,6 +149,15 @@ export default function UniversalRibbonInventory({tab,definition,componentId,pro
  const [reviewDraft,setReviewDraft]=useState<Properties>({});
  useEffect(()=>{setReviewDraft({});},[componentId]);
  const reviewProperties={...properties,...reviewDraft};
+ const reviewPositionValue=(key:keyof CanvasPosition)=>
+   builder?.position?.[key]??reviewDraft['__previewCanvas_'+key]??'';
+ const editCanvas=(key:keyof CanvasPosition,min:number,raw:string)=>{
+   const value=Number(raw);
+   if(!Number.isFinite(value)||value<min)return;
+   if(builder?.position&&builder.layoutMode==='free-canvas')
+     builder.onPositionChange?.({...builder.position,[key]:Math.round(value)});
+   else setReviewDraft(previous=>({...previous,['__previewCanvas_'+key]:Math.round(value)}));
+ };
  const enabled=new Set((definition?.propertyDefinitions??[]).map(item=>item.propertyKey));
  const groups=slots.get(tab);
  if(!groups)return null;
@@ -160,24 +169,22 @@ export default function UniversalRibbonInventory({tab,definition,componentId,pro
        {tab==='Component Layout'&&section==='Size'&&(['width','height'] as const).map(key=>
          <label key={'canvas-'+key} className="une-universal-property" title={'Canvas '+key}>
            <span className="une-universal-property-label">Canvas {key}</span>
-           <input aria-label={'Canvas '+key} type="number" min={1} disabled={!builder?.position||builder.layoutMode!=='free-canvas'}
-             value={builder?.position?.[key]??''}
-             onChange={event=>{const n=Number(event.target.value);if(Number.isFinite(n)&&n>=1&&builder?.position)
-               builder.onPositionChange?.({...builder.position,[key]:Math.round(n)});}}/>
+           <input aria-label={'Canvas '+key} type="number" min={1} value={reviewPositionValue(key)}
+             onChange={event=>editCanvas(key,1,event.target.value)}/>
          </label>)}
        {tab==='Component Layout'&&section==='Position'&&(['x','y'] as const).map(key=>
          <label key={'canvas-'+key} className="une-universal-property" title={'Canvas '+key}>
            <span className="une-universal-property-label">Canvas {key.toUpperCase()}</span>
            <input aria-label={'Canvas '+key.toUpperCase()} type="number" min={0}
-             disabled={!builder?.position||builder.layoutMode!=='free-canvas'}
-             value={builder?.position?.[key]??''}
-             onChange={event=>{const n=Number(event.target.value);if(Number.isFinite(n)&&n>=0&&builder?.position)
-               builder.onPositionChange?.({...builder.position,[key]:Math.round(n)});}}/>
+             value={reviewPositionValue(key)}
+             onChange={event=>editCanvas(key,0,event.target.value)}/>
          </label>)}
        {tab==='Component Layout'&&section==='Arrangement'&&<label className="une-universal-property">
          <span className="une-universal-property-label">Canvas locked</span>
-         <input type="checkbox" aria-label="Canvas locked" disabled={builder?.layoutMode!=='free-canvas'}
-           checked={properties.canvasLocked===true} onChange={event=>onChange({...properties,canvasLocked:event.target.checked})}/>
+         <input type="checkbox" aria-label="Canvas locked" checked={(reviewDraft.__previewCanvasLocked??properties.canvasLocked)===true}
+           onChange={event=>builder?.layoutMode==='free-canvas'
+             ?onChange({...properties,canvasLocked:event.target.checked})
+             :setReviewDraft(previous=>({...previous,__previewCanvasLocked:event.target.checked}))}/>
        </label>}
        {tab==='Component Responsive'&&section==='Visibility'&&<label className="une-universal-property">
          <span className="une-universal-property-label">Visible</span>
@@ -200,7 +207,7 @@ export default function UniversalRibbonInventory({tab,definition,componentId,pro
          const supported=enabled.has(def.propertyKey);
          return <PropertyEditor key={def.propertyKey}
            definition={supported?definition?.propertyDefinitions?.find(item=>item.propertyKey===def.propertyKey)??def:def}
-           enabled={true} properties={reviewProperties}
+           enabled={true} reviewOnly={!supported} properties={reviewProperties}
            onChange={next=>{
              if(supported)onChange({...properties,[def.propertyKey]:next[def.propertyKey]});
              else setReviewDraft(previous=>({...previous,[def.propertyKey]:next[def.propertyKey]}));
