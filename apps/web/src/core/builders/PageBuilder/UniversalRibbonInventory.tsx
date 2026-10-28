@@ -1,4 +1,4 @@
-import {useEffect,useState} from 'react';
+import {useState} from 'react';
 import {auditUniversalRibbonCoverage} from './universalRibbonCoverage.mjs';
 import {createPortal} from 'react-dom';
 import RibbonColorPalette from './RibbonColorPalette';
@@ -152,20 +152,17 @@ export default function UniversalRibbonInventory({tab,definition,componentId,pro
  builder?:UniversalBuilderControls;
 }){
  // Every component uses the same inventory, section order and control positions.
- const [reviewDraft,setReviewDraft]=useState<Properties>({});
- useEffect(()=>{setReviewDraft({});},[componentId]);
- const reviewPositionValue=(key:keyof CanvasPosition):number|string=>{
-   const value=builder?.position?.[key]??reviewDraft['__previewCanvas_'+key];
-   return typeof value==='number'||typeof value==='string'?value:'';
- };
+ const reviewPositionValue=(key:keyof CanvasPosition):number|string=>builder?.position?.[key]??'';
  const editCanvas=(key:keyof CanvasPosition,min:number,raw:string)=>{
    const value=Number(raw);
    if(!Number.isFinite(value)||value<min)return;
    if(builder?.position&&builder.layoutMode==='free-canvas')
      builder.onPositionChange?.({...builder.position,[key]:Math.round(value)});
-   else setReviewDraft(previous=>({...previous,['__previewCanvas_'+key]:Math.round(value)}));
  };
  const enabled=new Set((definition?.propertyDefinitions??[]).map(item=>item.propertyKey));
+ const canEditCanvas=builder?.layoutMode==='free-canvas'&&Boolean(builder.position)&&Boolean(builder.onPositionChange);
+ const canOpenSource=Boolean(builder?.onOpenSource)&&(definition?.propertyDefinitions??[]).some(item=>/object|fieldApiName|mapping/i.test(item.propertyKey));
+ const canOpenFilters=Boolean(builder?.onOpenFilters)&&(definition?.propertyDefinitions??[]).some(item=>/object|filter|searchField/i.test(item.propertyKey));
  const groups=slots.get(tab);
  if(!groups)return null;
  return <div className="une-universal-ribbon" aria-label="Universal UNE property ribbon"
@@ -176,22 +173,22 @@ export default function UniversalRibbonInventory({tab,definition,componentId,pro
        {tab==='Component Layout'&&section==='Size'&&(['width','height'] as const).map(key=>
          <label key={'canvas-'+key} className="une-universal-property" title={'Canvas '+key}>
            <span className="une-universal-property-label">Canvas {key}</span>
-           <input aria-label={'Canvas '+key} type="number" min={1} value={reviewPositionValue(key)}
+           <input aria-label={'Canvas '+key} type="number" min={1} disabled={!canEditCanvas} value={reviewPositionValue(key)}
              onChange={event=>editCanvas(key,1,event.target.value)}/>
          </label>)}
        {tab==='Component Layout'&&section==='Position'&&(['x','y'] as const).map(key=>
          <label key={'canvas-'+key} className="une-universal-property" title={'Canvas '+key}>
            <span className="une-universal-property-label">Canvas {key.toUpperCase()}</span>
-           <input aria-label={'Canvas '+key.toUpperCase()} type="number" min={0}
+           <input aria-label={'Canvas '+key.toUpperCase()} type="number" min={0} disabled={!canEditCanvas}
              value={reviewPositionValue(key)}
              onChange={event=>editCanvas(key,0,event.target.value)}/>
          </label>)}
        {tab==='Component Data'&&section==='Source'&&<button type="button"
-         className="une-universal-builder-command" disabled={!builder?.onOpenSource} onClick={builder?.onOpenSource}>
+         className="une-universal-builder-command" disabled={!canOpenSource} onClick={builder?.onOpenSource}>
          Source mappings
        </button>}
        {tab==='Component Data'&&section==='Filters'&&<button type="button"
-         className="une-universal-builder-command" disabled={!builder?.onOpenFilters} onClick={builder?.onOpenFilters}>
+         className="une-universal-builder-command" disabled={!canOpenFilters} onClick={builder?.onOpenFilters}>
          Filter conditions
        </button>}
        {defs.map(def=>{
