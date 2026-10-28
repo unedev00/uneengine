@@ -1542,6 +1542,8 @@ function RecordWorkspace({
       setCustomActionMessage('This action is no longer available.');
       return;
     }
+    // Execute the current action definition, not the stale callback snapshot.
+    action=currentAction;
     if((currentAction.behavior==='Set Field Value'||currentAction.behavior==='Log Call')
       &&(recordGrants?.objectApi!==object.apiName||!recordGrants.Edit
         ||(currentAction.behavior==='Set Field Value'&&
