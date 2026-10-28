@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import type {PoolClient} from 'pg';
 import {resolveComponentSettings,validateComponentDefinitions,validateComponentSettings,
  availableComponentSettings,mergeComponentSettings,componentSettingAvailable,type ComponentSettingDefinition} from '../../src/system-support/component-property-contract.js';
-import {pageBehaviorSchemas,pagePropertyContract,pagePropertyIssues} from '../../src/system-support/page-property-contract.js';
+import {pageBehaviorSchemas,pagePropertyContract,pagePropertyIssues,conditionExpressionIssues} from '../../src/system-support/page-property-contract.js';
 import {encodeMetadataValue,decodeMetadataValues} from '../../src/system-files/component-runtime.js';
 import {writeComponentContract,readComponentContract,validateComponentContract,validatePageComponentContracts} from '../../src/system-support/component-contract-store.js';
 import {ComponentLibraryService} from '../../src/system-support/component-library-service.js';
@@ -151,4 +151,20 @@ test('P1 field and action rules survive metadata encoding, validation and decodi
  assert.deepEqual(decodeMetadataValues(rows.map(row=>({
   property_path:row.path,value_kind:row.kind,value_text:row.text
  }))),{properties});
+});
+
+test('P2 server rejects malformed or unsafe nested condition references',()=>{
+ const conditions=[{source:'Device',operator:'Equals',value:'Desktop'},
+  {source:'Device',operator:'Equals',value:'Phone'},
+  {source:'Device',operator:'Not Equals',value:'Phone'}];
+ const valid={logic:'All',expression:'1 AND (2 OR 3)',conditions};
+ assert.deepEqual(conditionExpressionIssues(valid),[]);
+ for(const expression of ['1 && 2','1 OR 99','(1 AND 2','1 OR process.exit()','0','1 OR']){
+   assert.ok(conditionExpressionIssues({...valid,expression}).length>0,expression);
+   const metadata={pagePropertyContract:{version:1,fieldRules:[
+    {fieldApiName:'Name',behavior:'Required',visibilityRules:{...valid,expression}}]}};
+   assert.ok(pagePropertyIssues('Record Field',metadata).length>0,expression);
+ }
+ assert.deepEqual(pagePropertyIssues('Record Field',{pagePropertyContract:{version:1,
+  fieldRules:[{fieldApiName:'Name',behavior:'Required',visibilityRules:valid}]}}),[]);
 });
