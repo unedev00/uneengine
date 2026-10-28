@@ -7,13 +7,14 @@ import type {PageLayoutMetadata} from '../../metadata/Definitions/metadata';
 export function filterLayoutWritableValues(
   values:Readonly<Record<string,unknown>>,
   layout:PageLayoutMetadata|undefined,
-  schemaRequired:ReadonlySet<string>
+  schemaRequired:ReadonlySet<string>,
+  authoredDynamicFields=false
 ):Record<string,unknown>{
   if(!layout)return {...values};
   const visible=new Set(layout.sections.flatMap(section=>section.fieldApiNames));
   const readOnly=new Set(layout.sections.flatMap(section=>section.readOnlyFieldApiNames??[]));
   return Object.fromEntries(Object.entries(values).filter(([name])=>
-    name==='RecordTypeId'||(!readOnly.has(name)&&(visible.has(name)||schemaRequired.has(name)))
+    name==='RecordTypeId'||(!readOnly.has(name)&&(visible.has(name)||(!authoredDynamicFields&&schemaRequired.has(name))))
   ));
 }
 
