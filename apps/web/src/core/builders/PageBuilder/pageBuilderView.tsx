@@ -467,7 +467,6 @@ function PageBuilder({
   const [additionalPropertyDialogOpen,setAdditionalPropertyDialogOpen] = useState(false);
   const [pageSettingsDialogOpen,setPageSettingsDialogOpen] = useState(false);
   const [focusedCardMapping,setFocusedCardMapping] = useState('');
-  const [ribbonAddCategory,setRibbonAddCategory] = useState('All Components');
   const [ribbonTab, setRibbonTab] = useState<'Home' | 'Add Block' | 'Component Content' | 'Component Properties' | 'Component Style' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Component Responsive' | 'Preview' | 'Filters' | 'Source' | 'Visibility Rules'>('Home');
   const componentNeedsData = (type: string) => {
     const metadata = type.startsWith('Custom:') ? findRegisteredComponent(libraryComponents,type.slice('Custom:'.length),'page') : undefined;
@@ -2331,20 +2330,15 @@ function PageBuilder({
             </div><span>Test</span></div>}
           </>}
           {ribbonTab === 'Add Block' && <div className="office-ribbon-add-library" aria-label="Add component library">
-            <div className="office-ribbon-add-browser">
-              <label className="office-ribbon-inline-field">Category <select aria-label="Component category" value={ribbonAddCategory} onChange={e=>{setRibbonAddCategory(e.target.value);setRibbonAddOffset(0);}}>
-                {Array.from(ribbonCategories.keys()).map(category=><option key={category} value={category}>{category}</option>)}
-              </select></label>
-            </div>
             {(()=>{
               const items=ribbonComponentGroups.flatMap(group=>group.components)
-                .filter((component,index,all)=>all.findIndex(item=>item.type===component.type)===index)
-                .filter(component=>ribbonAddCategory==='All Components'||ribbonComponentGroups.some(group=>group.id.startsWith(ribbonAddCategory+'-')&&group.components.some(item=>item.type===component.type)));
-              const start=Math.min(ribbonAddOffset,Math.max(0,items.length-27));
+                .filter((component,index,all)=>all.findIndex(item=>item.type===component.type)===index);
+              const pageSize=24;
+              const start=Math.min(ribbonAddOffset,Math.max(0,items.length-pageSize));
               return <div className="office-ribbon-gallery-pages">
-                <button className="office-ribbon-icon-button" title="Previous components" aria-label="Previous components" disabled={!start} onClick={()=>setRibbonAddOffset(Math.max(0,start-27))}><ChevronLeft size={17}/></button>
-                <div className="office-ribbon-component-tiles">{items.slice(start,start+27).map(component=><button className="office-ribbon-component-tile" type="button" key={component.type} title={component.description} onClick={()=>addPaletteComponent(component.type)}>{renderPaletteIcon(component)}<span>{component.label}</span></button>)}</div>
-                <button className="office-ribbon-icon-button" title="Next components" aria-label="Next components" disabled={start+27>=items.length} onClick={()=>setRibbonAddOffset(start+27)}><ChevronRight size={17}/></button>
+                <button className="office-ribbon-icon-button" title="Previous components" aria-label="Previous components" disabled={!start} onClick={()=>setRibbonAddOffset(Math.max(0,start-pageSize))}><ChevronLeft size={17}/></button>
+                <div className="office-ribbon-component-tiles">{items.slice(start,start+pageSize).map(component=><button className="office-ribbon-component-tile" type="button" key={component.type} title={component.description} onClick={()=>addPaletteComponent(component.type)}>{renderPaletteIcon(component)}<span>{component.label}</span></button>)}</div>
+                <button className="office-ribbon-icon-button" title="Next components" aria-label="Next components" disabled={start+pageSize>=items.length} onClick={()=>setRibbonAddOffset(start+pageSize)}><ChevronRight size={17}/></button>
               </div>;
             })()}
           </div>}
