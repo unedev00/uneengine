@@ -168,9 +168,10 @@ test('Page Builder property editors filter controls by selected component capabi
 
   // Both editors must receive the selected component type and the contextual
   // colour/layout section. Attribute order is intentionally not an API contract.
-  assert.match(builder, /<PageComponentVisualEditor\s+section=\{ribbonTab==='Component Style'\?'colors':'appearance'\}\s+componentType=\{selected\.type\}/);
-  assert.match(builder, /<PageComponentStyleEditor\s+section="layout"\s+componentType=\{selected\.type\}/);
-  assert.match(builder, /<PageComponentStyleEditor\s+section="colors"\s+componentType=\{selected\.type\}/);
+  assert.match(builder, /<PageComponentVisualEditor\s+section="appearance"\s+componentType=\{selected\.type\}/);
+  assert.match(builder, /<PageComponentVisualEditor\s+section="size"\s+componentType=\{selected\.type\}/);
+  assert.match(builder, /<PageComponentStyleEditor\s+section="all"\s+componentType=\{selected\.type\}/);
+  assert.match(builder, /RibbonColorPalette key=\{kind\}/);
   assert.match(visual, /numericPresets\.filter\(preset => supportsAppearanceProperty\(componentType, preset\.key\)\)/);
   assert.match(visual, /appearanceNumberFields\.filter\(\(\{key\}\) => supportsAppearanceProperty\(componentType, key\)\)/);
   assert.match(advanced, /numeric\.filter\(\(\[key\]\)=>supportsAppearanceProperty\(componentType,key\)\)/);
@@ -414,9 +415,9 @@ test('Contextual Page Builder tabs do not leak metadata from other tabs',async()
  assert.match(builder,/Cancel changes/);
  assert.match(builder,/Apply filters/);
  assert.match(builder,/ribbonTab === 'Component Content'/);
- assert.match(builder,/ribbonTab==='Component Style' && selected \? <div className="office-ribbon-colours">/);
- assert.match(builder,/ribbonTab === 'Component Properties' && <div className="office-ribbon-group office-ribbon-appearance"/);
- assert.match(builder,/\['Component Properties','Component Layout'\]\.includes\(ribbonTab\)/);
+ assert.match(builder,/ribbonTab==='Component Style' && <PageComponentVisualEditor/);
+ assert.match(builder,/ribbonTab === 'Component Style' && <div className="office-ribbon-group office-ribbon-appearance"/);
+ assert.match(builder,/\['Component Properties','Component Style','Component Layout','Component Responsive'\]\.includes\(ribbonTab\)/);
  assert.doesNotMatch(builder,/dataEditorOpen && selected|Advanced data settings/);
  assert.match(builder,/ribbonTab === 'Component Properties'/);
  assert.match(css,/office-ribbon-colours \.compact-color-swatches/);

@@ -53,11 +53,11 @@ test('ribbon inline labels wrap and controls stay within their group dividers',(
   assert.match(styles,/input:not\(\[type=checkbox\]\),select,textarea\) \{[\s\S]*?min-width:0!important;max-width:116px!important/);
 });
 
-test('ribbon keeps the eight-step component journey with icon-led, accessible tabs',()=>{
+test('ribbon keeps the ten-step component journey with icon-led, accessible tabs',()=>{
   const source=readFileSync(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
-  for(const label of ['Home','Add Component','Data','Content','Design','Layout','Actions','Preview'])
+  for(const label of ['Home','Add Component','Data','Content','Design','Format','Layout','Responsive','Actions','Preview'])
     assert.ok(source.includes(`'${label}'`),label+' tab label remains available');
-  for(const icon of ['PanelsTopLeft','Puzzle','Database','Type','SlidersHorizontal','Layers3','Workflow','Eye'])
+  for(const icon of ['PanelsTopLeft','Puzzle','Database','Type','SlidersHorizontal','Layers3','Smartphone','Workflow','Eye'])
     assert.ok(source.includes(icon),icon+' tab icon remains available');
   assert.match(source,/className="office-ribbon-topbar"/);
   assert.match(source,/role="tablist" aria-label="Page Builder tabs"/);
@@ -102,4 +102,31 @@ test('Card Grid optional Add button is independent of card activation and declar
   assert.match(runtime,/event.stopPropagation\(\);addSelectedRecord\(\)/);
   assert.match(runtime,/if\(p.actionFlows\?\.itemAdd\)fire\(p,"itemAdd",r\)/);
   assert.match(runtime,/onKeyDown=\{event=>/);
+});
+
+test('Excel-style ribbon keeps all ten tabs, relocates page identity and removes duplicate Save',()=>{
+  const source=readFileSync(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+  const content=source.slice(source.indexOf('className="office-ribbon-topbar"'),source.indexOf('id="page-builder-tab-content"'));
+  assert.doesNotMatch(content,/aria-label="Page name"/);
+  assert.doesNotMatch(content,/office-ribbon-quick-save/);
+  assert.match(source,/className="office-ribbon-group office-ribbon-page-identity"/);
+  assert.match(source,/aria-label="Page name"/);
+  assert.match(source,/aria-label="Choose page layout"/);
+  assert.match(source,/aria-label="Cut selected component"/);
+  assert.match(source,/aria-label="Copy selected component"/);
+  assert.match(source,/aria-label="Paste component"/);
+  assert.match(source,/RibbonColorPalette/);
+  assert.match(source,/ribbonTab==='Component Responsive'/);
+  assert.match(source,/ribbonTab==='Component Style'/);
+});
+
+test('colour pickers share a single accessible, metadata-backed palette',()=>{
+  const source=readFileSync(new URL('../src/core/builders/PageBuilder/RibbonColorPalette.tsx',import.meta.url),'utf8');
+  for(const token of ['Theme colours','Standard colours','More colours','aria-haspopup="dialog"','onChange(colour)'])
+    assert.ok(source.includes(token),token);
+  const styles=readFileSync(new URL('../src/core/builders/PageBuilder/sections/04-page-builder.css',import.meta.url),'utf8');
+  assert.match(styles,/Excel-style 10-tab ribbon/);
+  assert.match(styles,/overflow-x:hidden!important;overflow-y:auto!important/);
+  assert.match(styles,/flex-flow:row wrap!important/);
+  assert.match(styles,/office-ribbon-colour-palette/);
 });

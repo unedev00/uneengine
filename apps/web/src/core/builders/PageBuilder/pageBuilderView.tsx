@@ -137,6 +137,7 @@ import RichTextBlockEditor from '../ComponentProperties/RichTextBlockEditor';
 import PageRouteDirectory from '../../pages/PageRouteDirectory/PageRouteDirectory';
 import { isComponentVisible } from '../../components/Properties/componentVisibility';
 import PageComponentVisualEditor from '../ComponentStyleEditor/PageComponentVisualEditor';
+import RibbonColorPalette from './RibbonColorPalette';
 import { canNestComponent, pageAppearanceTarget, pageAppearanceStyleKeys, updateLayoutSettings, type LayoutSettingKey, directChildren, isLayoutType, isDescendantOf, layoutTypes } from '../../pages/TemplatePageRuntime/pageComponentLayout';
 import PageComponentStyleEditor from '../ComponentStyleEditor/PageComponentStyleEditor';
 import { isCanvasLocked, wrapCanvasComponent, groupCanvasComponents, ungroupCanvasComponent, snapCanvasPosition, alignCanvasComponents, distributeCanvasComponents } from './canvasInteractions';
@@ -470,7 +471,7 @@ function PageBuilder({
   const [focusedCardMapping,setFocusedCardMapping] = useState('');
   const [ribbonAddCategory,setRibbonAddCategory] = useState('Content');
   const [ribbonComponentSearch,setRibbonComponentSearch] = useState('');
-  const [ribbonTab, setRibbonTab] = useState<'Home' | 'Add Block' | 'Component Content' | 'Component Properties' | 'Component Style' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Preview'>('Home');
+  const [ribbonTab, setRibbonTab] = useState<'Home' | 'Add Block' | 'Component Content' | 'Component Properties' | 'Component Style' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Component Responsive' | 'Preview'>('Home');
   const componentNeedsData = (type: string) => {
     const metadata = type.startsWith('Custom:') ? findRegisteredComponent(libraryComponents,type.slice('Custom:'.length),'page') : undefined;
     return Boolean(metadata?.propertyDefinitions?.some(definition=>definition.kind==='OBJECT'||definition.kind==='OBJECT_FIELD'))
@@ -481,7 +482,7 @@ function PageBuilder({
     setPageSettingsDialogOpen(false);
     if (tab === 'Add Block') { setPageSettingsOpen(false); openPalette('Components', 'All Components'); }
     if (tab === 'Home') { setPageSettingsOpen(true); setActivePanel('page'); }
-    const inspector = { 'Component Properties': 'Design', 'Component Style': 'Design', 'Component Data': 'Data & Actions', 'Component Content': 'Data & Actions', 'Component Action': 'Visibility', 'Component Layout': 'Position' } as const;
+    const inspector = { 'Component Properties': 'Design', 'Component Style': 'Design', 'Component Data': 'Data & Actions', 'Component Content': 'Data & Actions', 'Component Action': 'Visibility', 'Component Layout': 'Position', 'Component Responsive': 'Position' } as const;
     if (tab in inspector) { setPageSettingsOpen(false); openComponentInspector(inspector[tab as keyof typeof inspector]); }
   };
   useEffect(()=>{
@@ -2183,7 +2184,7 @@ function PageBuilder({
   const openAddBlocks = (region: 'header' | 'main' | 'sidebar' | null = null) => {
     setPaletteInsertRegion(region); setPaletteTab('Components'); setPaletteCategory('All Components'); setActivePanel('palette');
   };
-  const journeyTabs: Array<typeof ribbonTab> = ['Home','Add Block','Component Data','Component Content','Component Properties','Component Layout','Component Action','Preview'];
+  const journeyTabs: Array<typeof ribbonTab> = ['Home','Add Block','Component Data','Component Content','Component Properties','Component Style','Component Layout','Component Responsive','Component Action','Preview'];
   const journeyIndex=journeyTabs.indexOf(ribbonTab);
   const addPaletteComponent = (type: string) => {
     const selectedIndex = page.components.findIndex((component) => component.id === selectedId);
@@ -2249,7 +2250,8 @@ function PageBuilder({
                   'Component Data': Database,
                   'Component Content': Type,
                   'Component Properties': SlidersHorizontal,
-                  'Component Style': SlidersHorizontal,
+                  'Component Style': Type,
+                  'Component Responsive': Smartphone,
                   'Component Layout': Layers3,
                   'Component Action': Workflow,
                   Preview: Eye
@@ -2260,7 +2262,8 @@ function PageBuilder({
                   'Component Data': 'Data',
                   'Component Content': 'Content',
                   'Component Properties': 'Design',
-                  'Component Style': 'Style',
+                  'Component Style': 'Format',
+                  'Component Responsive': 'Responsive',
                   'Component Layout': 'Layout',
                   'Component Action': 'Actions',
                   Preview: 'Preview'
@@ -2279,46 +2282,39 @@ function PageBuilder({
             </div>
           </div>
           <div className="office-ribbon-header-tools">
-            <label className="office-ribbon-header-field">Page <input aria-label="Page name" value={page.label}
-              onChange={event=>applyPage({...page,label:event.target.value})}/></label>
-            <label className="office-ribbon-header-field">Layout <select aria-label="Choose page layout"
-              value={page.layoutVariant??'Desktop'} disabled={switchingLayout||saving}
-              onChange={event=>void switchLayoutVariant(event.target.value as 'Mobile'|'Desktop'|'Tablet'|'Custom')}>
-              {(['Desktop','Tablet','Mobile','Custom'] as const).map(value=><option key={value} value={value}>{value}</option>)}
-            </select></label>
             <span className="office-ribbon-header-status" role="status">
               {saving?'Saving…':undoStack.length?'Unsaved edits':savedFeedback?'Saved':page.draftRevision&&page.draftRevision!==page.publishedRevision?'Saved draft · unpublished':'Draft'}
             </span>
-            <button type="button" className="office-ribbon-quick-save" aria-label="Save page from any tab" disabled={saving} onClick={()=>void savePage()}><Save size={15}/>{saving?'Saving…':'Save'}</button>
           </div>
         </div>
         <div id="page-builder-tab-content" className="office-ribbon-content" role="tabpanel"
           aria-label={ribbonTab} aria-labelledby={`page-builder-tab-${journeyIndex}`}>
           {ribbonTab === 'Home' && <>
-            <div className="office-ribbon-group office-ribbon-home-icons"><div className="office-ribbon-home-icon-row">
-              <button type="button" onClick={()=>setPageSettingsDialogOpen(true)}><Settings2 size={20}/>Page settings</button>
-              <button type="button" onClick={()=>setRouteDirectoryOpen(true)}><ExternalLink size={20}/>Routes / SEO</button>
-              <button type="button" onClick={()=>setDependenciesOpen(true)}><Lock size={20}/>Access</button>
-            </div><span>Page Settings</span></div>
-            <div className="office-ribbon-group office-ribbon-home-icons"><div className="office-ribbon-home-icon-row">
-              <button type="button" disabled={!undoStack.length} onClick={undo}><Undo2 size={20}/>Undo</button>
-              <button type="button" disabled={!redoStack.length} onClick={redo}><Redo2 size={20}/>Redo</button>
-              <button type="button" onClick={()=>void loadLayoutHistory()}><Copy size={20}/>Versions</button>
-              <button type="button" disabled={!selected||isCanvasLocked(selected)} onClick={removeSelected}><Trash2 size={20}/>Delete</button>
-            </div><span>Edit</span></div>
-            <div className="office-ribbon-group office-ribbon-home-icons"><div className="office-ribbon-home-icon-row">
-              <button type="button" onClick={()=>setPageSettingsDialogOpen(true)}><Layers3 size={20}/>Page layout</button>
-            </div><span>Component Hierarchy</span></div>
-            <div className="office-ribbon-group"><div className="office-ribbon-stack">
-              <button type="button" aria-pressed={canvasSnap} onClick={()=>setCanvasSnap(value=>!value)}><Grid2X2 size={16}/> Snap {canvasSnap?'on':'off'}</button>
-              <button type="button" onClick={()=>setCanvasRefreshKey(key=>key+1)}><RefreshCw size={16}/> Refresh canvas</button>
-            </div><span>View</span></div>
-            <div className="office-ribbon-group office-ribbon-more-group"><div className="office-ribbon-stack">
-              <details className="office-ribbon-advanced-details"><summary>More page commands</summary><div className="office-ribbon-advanced-popover">
-
-            <div className="office-ribbon-group"><div className="office-ribbon-stack">
+            <div className="office-ribbon-group office-ribbon-page-identity"><div className="office-ribbon-stack">
               <button type="button" onClick={safeBackToPages}><ArrowLeft size={16}/> Back to pages</button>
+              <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Page</span>
+                <input aria-label="Page name" value={page.label} onChange={event=>applyPage({...page,label:event.target.value})}/>
+              </label>
+              <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Layout</span>
+                <select aria-label="Choose page layout" value={page.layoutVariant??'Desktop'}
+                  disabled={switchingLayout||saving}
+                  onChange={event=>void switchLayoutVariant(event.target.value as 'Mobile'|'Desktop'|'Tablet'|'Custom')}>
+                  {(['Desktop','Tablet','Mobile','Custom'] as const).map(value=><option key={value} value={value}>{value}</option>)}
+                </select>
+              </label>
             </div><span>Page</span></div>
+            <div className="office-ribbon-group office-ribbon-icon-group office-ribbon-clipboard" aria-label="Clipboard">
+              <div className="office-ribbon-stack">
+                <div className="office-ribbon-icon-line">
+                  <button type="button" className="office-ribbon-icon-button" aria-label="Cut selected component" title="Cut (Ctrl+X)"
+                    disabled={!selected||isCanvasLocked(selected)} onClick={cutSelected}><Scissors size={17}/></button>
+                  <button type="button" className="office-ribbon-icon-button" aria-label="Copy selected component" title="Copy (Ctrl+C)"
+                    disabled={!selected} onClick={copySelected}><Copy size={17}/></button>
+                  <button type="button" className="office-ribbon-icon-button" aria-label="Paste component" title="Paste (Ctrl+V)"
+                    disabled={!componentClipboard} onClick={pasteComponent}><ClipboardPaste size={17}/></button>
+                </div>
+              </div><span>Clipboard</span>
+            </div>
             <div className="office-ribbon-group"><div className="office-ribbon-stack">
               <label className="office-ribbon-inline-field"><Grid2X2 size={16}/> Design mode <select aria-label="Design mode" value={page.layoutMode} onChange={event=>setPageLayoutMode(event.target.value as LightningPageMetadata['layoutMode'])}><option value="template">Responsive sections</option><option value="free-canvas">Free canvas</option></select></label>
               <label className="office-ribbon-inline-field">Width <input aria-label="Page width" type="number" min={320} max={10000} value={page.canvasWidth} onChange={event=>{const n=Number(event.target.value);if(Number.isInteger(n)&&n>=320&&n<=10000)applyPage({...page,canvasWidth:n});}}/></label>
@@ -2326,6 +2322,7 @@ function PageBuilder({
             </div><span>Layout</span></div>
             <div className="office-ribbon-group"><div className="office-ribbon-stack">
               <button type="button" disabled={!selected||isCanvasLocked(selected)} onClick={removeSelected}><Trash2 size={16}/> Delete selected component</button>
+              <button type="button" onClick={()=>setPageSettingsDialogOpen(true)}><Settings2 size={16}/> Page settings</button>
               <button onClick={()=>setDependenciesOpen(true)}><Puzzle size={16}/> Dependencies</button>
             </div><span>Page settings</span></div>
             <div className="office-ribbon-group"><div className="office-ribbon-stack">
@@ -2334,8 +2331,14 @@ function PageBuilder({
               <button type="button" disabled={page.pageType!=='App Page'||page.status!=='Active'||!currentPageIsAssignedToBuilderApp||!builderAppApiName} onClick={()=>{const url=appRoutePath({kind:'app-page',appId:builderAppApiName,pageApiName:page.apiName});const opened=window.open(url,'_blank','noopener,noreferrer');if(!opened)onNotify('Allow popups to test the published page in the assigned application.');}}><ExternalLink size={16}/> Test active app</button>
             </div><span>Tools</span></div>
             <div className="office-ribbon-group"><div className="office-ribbon-stack">
-              <button type="button" className="btn btn-brand btn-small" aria-label="Save page" disabled={saving} onClick={()=>void savePage()}><Save size={16}/>{saving?'Saving…':'Save'}</button>
-              <button type="button" disabled={saving||switchingLayout||(page.status==='Active'&&!undoStack.length&&page.draftRevision===page.publishedRevision)} onClick={()=>void publishCurrentLayout()}><Check size={16}/>{page.status==='Draft'?'Activate':'Publish'}</button>
+              <div className="office-ribbon-icon-line">
+                <button type="button" className="office-ribbon-icon-button" aria-label="Save page" title={saving?'Saving…':'Save page'}
+                  disabled={saving} onClick={()=>void savePage()}><Save size={17}/></button>
+                <button type="button" className="office-ribbon-icon-button" title={page.status==='Draft'?'Activate page':'Publish page'}
+                  aria-label={page.status==='Draft'?'Activate page':'Publish page'}
+                  disabled={saving||switchingLayout||(page.status==='Active'&&!undoStack.length&&page.draftRevision===page.publishedRevision)}
+                  onClick={()=>void publishCurrentLayout()}><Check size={17}/></button>
+              </div>
               <span className="office-ribbon-status">{undoStack.length?'Unsaved edits':page.draftRevision&&page.draftRevision!==page.publishedRevision?'Unpublished changes':savedFeedback?'Saved':page.status==='Active'?'Published':'Draft'}</span>
             </div><span>Save & publish</span></div>
             <div className="office-ribbon-group office-ribbon-version-group"><div className="office-ribbon-stack">
@@ -2350,9 +2353,6 @@ function PageBuilder({
               <button disabled={!redoStack.length} onClick={redo}><Redo2 size={17}/> Redo</button>
               <button onClick={()=>setCanvasRefreshKey(key=>key+1)}><RefreshCw size={17}/> Refresh canvas</button>
             </div><span>History</span></div>
-          
-              </div></details>
-            </div><span>More</span></div>
           </>}
           {ribbonTab === 'Add Block' && <div className="office-ribbon-add-library" aria-label="Add component library">
             <div className="office-ribbon-add-browser">
@@ -2481,11 +2481,27 @@ function PageBuilder({
             <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Label</span><input aria-label="Component label" value={selected.label} onChange={event=>updateComponent(selected.id,{label:event.target.value})}/></label>
             {(/text/i.test(selected.type) || /text/i.test(selected.label)) && selected.type!=='Rich Text' && <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Text</span><input aria-label="Component text" value={String(selected.properties.text??selected.properties.content??'Text')} onChange={event=>{const key=typeof selected.properties.content==='string'?'content':'text';updateComponent(selected.id,{properties:{...selected.properties,[key]:event.target.value}});}}/></label>}
             <label className="office-ribbon-checkbox"><input type="checkbox" checked={selected.visible} onChange={event=>updateComponent(selected.id,{visible:event.target.checked})}/> Show component</label>
-            <button type="button" onClick={()=>selectRibbonTab('Component Style')}><SlidersHorizontal size={16}/> More style controls</button>
-            <button type="button" onClick={()=>openExpandedEditor('visibility')}><Eye size={16}/> Visibility rules</button>
+            <button type="button" onClick={()=>selectRibbonTab('Component Style')}><SlidersHorizontal size={16}/> Format controls</button>
+            <button type="button" onClick={()=>selectRibbonTab('Component Responsive')}><Eye size={16}/> Responsive & visibility</button>
           </div><span>Content</span></div>}
 
-          {selected && ribbonTab === 'Component Properties' && /text|button|label|badge|heading|paragraph|rich|input/i.test(selected.type+' '+selected.label) && <div className="office-ribbon-group office-ribbon-typography">
+          {selected && ribbonTab==='Component Properties' && <div className="office-ribbon-group office-ribbon-icon-group office-ribbon-colour-group"><div className="office-ribbon-stack">
+            <div className="office-ribbon-icon-line">
+              {([['text','Text colour','color'],['fill','Fill colour','backgroundColor'],['border','Border colour','borderColor']] as const)
+                .map(([kind,label,key])=><RibbonColorPalette key={kind} kind={kind} label={label}
+                  value={String((selected.properties.visualStyle as Record<string,unknown>|undefined)?.[key]??'#111827')}
+                  onChange={colour=>{
+                    const authored=selected.properties.visualStyle && typeof selected.properties.visualStyle==='object'
+                      ?selected.properties.visualStyle as Record<string,unknown>:{};
+                    updateComponent(selected.id,{properties:{...selected.properties,visualStyle:{...authored,[key]:colour}}});
+                  }}/>)}
+            </div></div><span>Colours</span></div>}
+          {selected && ribbonTab==='Component Responsive' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
+            <label className="office-ribbon-checkbox"><input type="checkbox" checked={selected.visible}
+              onChange={event=>updateComponent(selected.id,{visible:event.target.checked})}/> Show component</label>
+            <button type="button" onClick={()=>openExpandedEditor('visibility')}><Eye size={16}/> Visibility rules</button>
+          </div><span>Visibility</span></div>}
+          {selected && ribbonTab === 'Component Style' && /text|button|label|badge|heading|paragraph|rich|input/i.test(selected.type+' '+selected.label) && <div className="office-ribbon-group office-ribbon-typography">
             <div className="office-ribbon-stack">
               <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Font size</span>
                 <input aria-label="Component font size" type="number" min={8} max={96} value={typeof textStyle.fontSize==='number'?textStyle.fontSize:Number(selected.properties.fontSize??16)}
@@ -2509,7 +2525,7 @@ function PageBuilder({
           </div>}
 
 
-          {selected && ribbonTab === 'Component Properties' && <div className="office-ribbon-group office-ribbon-appearance">
+          {selected && ribbonTab === 'Component Style' && <div className="office-ribbon-group office-ribbon-appearance">
             <div className="office-ribbon-stack">
               {([
                 {key:'borderRadius',label:'Corners',options:[[0,'Square'],[6,'Small'],[14,'Rounded'],[28,'Soft'],[64,'Pill']]},
@@ -2531,13 +2547,18 @@ function PageBuilder({
                   {control.options.map(([value,label])=><option key={value} value={value}>{label} · {value}px</option>)}
                 </select>
               </label>)}
-            </div><span>Card Style</span>
+            </div><span>Appearance</span>
           </div>}
-          {selected && ribbonTab === 'Component Properties' && selectedCustomDefinition && <div className="office-ribbon-inline-options">
+          {selected && (ribbonTab==='Component Properties'||ribbonTab==='Component Style') && selectedCustomDefinition && <div className="office-ribbon-inline-options">
             <ComponentPresentationProperties
               definitions={availableComponentSettings(selectedCustomDefinition.propertyDefinitions??[],page.layoutVariant??'Desktop',selectedCustomDefinition.version)
-                .filter(definition=>!(definition as {group?:string}).group && presentationSection(definition)!=='Content' && definition.kind!=='COLOR'&&!/(?:colou?r|background|fill|tone|width|height|offset|align|fontSize|fontWeight|textDecoration|border|spacing|padding|margin)/i.test(definition.propertyKey)
-                && !(['text','label','content'].includes(definition.propertyKey)&&/text/i.test(selected.type+' '+selected.label)))}
+                .filter(definition=>!(definition as {group?:string}).group
+                  && presentationSection(definition)!=='Content' && presentationSection(definition)!=='Layout'
+                  && (ribbonTab==='Component Properties'
+                    ? /(?:theme|surface|tone|colou?r|background|fill)/i.test(definition.propertyKey)
+                    : !/(?:theme|surface|tone|colou?r|background|fill)/i.test(definition.propertyKey))
+                  && !(ribbonTab==='Component Style' && ['text','label','content'].includes(definition.propertyKey)
+                    && /text/i.test(selected.type+' '+selected.label)))}
               properties={selected.properties}
               onChange={properties=>updateComponent(selected.id,{properties})}/>
           </div>}
@@ -2587,23 +2608,19 @@ function PageBuilder({
             <button type="button" onClick={()=>openExpandedEditor('actions')}><MousePointer2 size={16}/> Edit actions</button>
             <button type="button" onClick={()=>openExpandedEditor('conditions')}><Filter size={16}/> Only when</button>
           </div><span>Events & outcomes</span></div>}
-          {selected && ribbonTab==='Component Action' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
-            <button type="button" onClick={()=>openExpandedEditor('actions')}><Plus size={16}/> Add action</button>
-            <button type="button" onClick={()=>openExpandedEditor('conditions')}><Filter size={16}/> Add condition</button>
-          </div><span>Additional Actions</span></div>}
-          {selected && ribbonTab==='Component Action' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
-            <button type="button" onClick={()=>openExpandedEditor('conditions')}><SlidersHorizontal size={16}/> Only when…</button>
-          </div><span>Conditions</span></div>}
           {selected && ribbonTab==='Component Layout' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
             <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Width</span><input aria-label="Layout width" value={String(selected.properties.width??'100%')} onChange={event=>updateComponent(selected.id,{properties:{...selected.properties,width:event.target.value}})}/></label>
             <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Height</span><input aria-label="Layout height" value={String(selected.properties.height??'auto')} onChange={event=>updateComponent(selected.id,{properties:{...selected.properties,height:event.target.value}})}/></label>
           </div><span>Dimensions</span></div>}
-          {selected && ribbonTab==='Component Layout' && selectedCustomDefinition && <div className="office-ribbon-inline-options">
+          {selected && (ribbonTab==='Component Layout'||ribbonTab==='Component Responsive') && selectedCustomDefinition && <div className="office-ribbon-inline-options">
             <ComponentPresentationProperties
               definitions={availableComponentSettings(selectedCustomDefinition.propertyDefinitions??[],
                 page.layoutVariant??'Desktop',selectedCustomDefinition.version)
                 .filter(definition=>isPresentationProperty(definition)&&presentationSection(definition)==='Layout'
-                  && !(definition as {group?:string}).group)}
+                  && !(definition as {group?:string}).group
+                  && (ribbonTab==='Component Responsive'
+                    ? /(?:device|breakpoint|mobile|tablet|desktop|phone|responsive|hidden|visible|visibility)/i.test(definition.propertyKey)
+                    : !/(?:device|breakpoint|mobile|tablet|desktop|phone|responsive|hidden|visible|visibility)/i.test(definition.propertyKey)))}
               properties={selected.properties}
               onChange={properties=>updateComponent(selected.id,{properties})}/>
           </div>}
@@ -2652,10 +2669,10 @@ function PageBuilder({
           </>}
           {ribbonTab === 'Preview' && <>
             <div className="office-ribbon-group"><div className="office-ribbon-stack">
-              <button type="button" onClick={openExternalPreview}><Eye size={17}/> Preview Page</button>
-              <label className="office-ribbon-checkbox"><input type="checkbox" checked={previewMode} onChange={event=>setPreviewMode(event.target.checked)}/> Show preview</label>
+              <button onClick={openExternalPreview}><Eye size={17}/> Preview window</button>
+              <button onClick={()=>setPreviewMode(value=>!value)}><Monitor size={17}/> {previewMode?'Exit preview':'Canvas preview'}</button>
             </div><span>Preview</span></div>
-            <div className="office-ribbon-group office-ribbon-preview-device"><div className="office-ribbon-home-icon-row">
+<div className="office-ribbon-group office-ribbon-preview-device"><div className="office-ribbon-home-icon-row">
               {(['Desktop','Tablet','Mobile','Custom'] as const).map(device=><button key={device} type="button" aria-pressed={(page.layoutVariant??'Desktop')===device} disabled={switchingLayout||saving} onClick={()=>void switchLayoutVariant(device)}>{device==='Desktop'?<Monitor size={20}/>:device==='Tablet'?<Tablet size={20}/>:device==='Mobile'?<Smartphone size={20}/>:<Maximize2 size={20}/>}<span>{device}</span></button>)}
             </div><span>Device Preview</span></div>
             <div className="office-ribbon-group"><div className="office-ribbon-stack">
@@ -2675,7 +2692,7 @@ function PageBuilder({
               </select>
             </label></div><span>Add record field</span>
           </div>}
-          {['Component Properties','Component Layout'].includes(ribbonTab) && <div className="office-ribbon-inspector-host" ref={setRibbonPropertyHost} aria-label="Ribbon property controls" />}
+          {['Component Properties','Component Style','Component Layout','Component Responsive'].includes(ribbonTab) && <div className="office-ribbon-inspector-host" ref={setRibbonPropertyHost} aria-label="Ribbon property controls" />}
 
         </div>
       </section>
@@ -2832,19 +2849,7 @@ function PageBuilder({
         </div>
         {ribbonPropertyHost && createPortal(<aside id="lightning-page-properties" style={ribbonTab !== 'Home' && !ribbonTab.startsWith('Component ') ? { display: 'none' } : undefined}
           className={`properties-panel reference-properties-panel ${pageSettingsOpen || selected ? 'responsive-open' : ''}`}>
-          {ribbonTab==='Component Style' && selected ? <div className="office-ribbon-colours">
-            {selectedCustomDefinition && <ComponentPresentationProperties
-              definitions={availableComponentSettings(selectedCustomDefinition.propertyDefinitions??[],page.layoutVariant??'Desktop',selectedCustomDefinition.version)
-                .filter(definition=>definition.kind==='COLOR'||/(?:colou?r|background|fill|tone)/i.test(definition.propertyKey))}
-              properties={selected.properties}
-              onChange={properties=>updateComponent(selected.id,{properties})}/>}
-            <PageComponentVisualEditor section="colors" componentType={selected.type}
-              value={selected.properties.visualStyle}
-              onChange={visualStyle=>updateComponent(selected.id,{properties:{...selected.properties,visualStyle}})}/>
-            <PageComponentStyleEditor section="colors" componentType={selected.type}
-              properties={selected.properties}
-              onChange={(properties: Record<string,unknown>)=>updateComponent(selected.id,{properties})}/>
-          </div> : selectedRegion && !pageSettingsOpen && activePanel !== 'page' ? <div className="properties-section">
+          {selectedRegion && !pageSettingsOpen && activePanel !== 'page' ? <div className="properties-section">
             <div className="properties-section-title">Section configuration</div>
             <p className="properties-help">Sections are responsive layout regions. Change the arrangement without deleting any blocks.</p>
             <label className="form-label">Section arrangement<select className="form-control" value={page.template ?? 'main-sidebar'} onChange={event => setPageTemplate(event.target.value as LightningPageTemplate)}>{pageTemplates.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>
@@ -2856,8 +2861,12 @@ function PageBuilder({
             {selectedRegion === 'main' && <p className="properties-help">The Main section is required and cannot be deleted. Change the section arrangement to remove optional regions.</p>}
           </div> : selected && !pageSettingsOpen && activePanel !== 'page' ? <>
             {inspectorTab === 'Position' ? <div className="office-ribbon-layout-responsive">
-              <PageComponentStyleEditor section="layout" componentType={selected.type} properties={selected.properties}
-                onChange={(properties: Record<string, unknown>)=>updateComponent(selected.id,{properties})}/>
+              {ribbonTab==='Component Responsive'
+                ? <PageComponentStyleEditor section="all" componentType={selected.type} properties={selected.properties}
+                    onChange={(properties: Record<string, unknown>)=>updateComponent(selected.id,{properties})}/>
+                : <PageComponentVisualEditor section="size" componentType={selected.type}
+                    value={selected.properties.visualStyle}
+                    onChange={visualStyle=>updateComponent(selected.id,{properties:{...selected.properties,visualStyle}})}/>}
             </div> : <>
             {inspectorTab === 'Data & Actions' && <details className="builder-advanced-panel"><summary>Technical details</summary>
               <label className="form-label" htmlFor="page-component-type">Component type</label><div className="form-display" id="page-component-type">{selected.type}</div>
@@ -2868,14 +2877,9 @@ function PageBuilder({
               definitions={selectedCustomDefinition?.propertyDefinitions} eventDefinitions={selectedCustomDefinition?.eventDefinitions}
               componentVersion={selectedCustomDefinition?.version} objects={objects} apps={apps} pages={pages}
               currentAppId={builderAppApiName||apps[0]?.apiName||'Records'} primaryObjectApiName={page.targetObject} flows={flows}/>}
-            {inspectorTab === 'Design' && selectedCustomDefinition && <ComponentPresentationProperties
-              definitions={availableComponentSettings(selectedCustomDefinition.propertyDefinitions??[],page.layoutVariant??'Desktop',selectedCustomDefinition.version).filter(definition=>
-                !(definition as {group?:string}).group && presentationSection(definition)!=='Content' && presentationSection(definition)!=='Layout' && (ribbonTab==='Component Properties' || (definition.kind==='COLOR'||/(?:colou?r|background|fill|opacity|tone)/i.test(definition.propertyKey)))
-                && !(ribbonTab==='Component Properties' && /text/i.test(selected.type+' '+selected.label) && definition.propertyKey==='text'))} properties={selected.properties}
-              onChange={(properties) => updateComponent(selected.id, {properties})}/>}
-            {inspectorTab === 'Design' && <PageComponentVisualEditor section={ribbonTab==='Component Style'?'colors':'appearance'} componentType={selected.type} value={selected.properties.visualStyle} onChange={(visualStyle) => updateComponent(selected.id, { properties: { ...selected.properties, visualStyle } })} />}
-            {inspectorTab === 'Design' && ribbonTab==='Component Properties' && <PageComponentStyleEditor section="colors" componentType={selected.type} properties={selected.properties}
-                onChange={(properties: Record<string, unknown>) => updateComponent(selected.id, { properties })} />}
+            {inspectorTab === 'Design' && ribbonTab==='Component Style' && <PageComponentVisualEditor
+              section="appearance" componentType={selected.type} value={selected.properties.visualStyle}
+              onChange={visualStyle=>updateComponent(selected.id,{properties:{...selected.properties,visualStyle}})}/>}
             {inspectorTab === 'Data & Actions' && <>
             {selected.parentId && <button type="button" className="btn btn-small" onClick={() => updateComponent(selected.id, { parentId: undefined })}>Move out of section</button>}
             {selectedCustomDefinition && <>
