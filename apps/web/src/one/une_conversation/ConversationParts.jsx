@@ -5,5 +5,5 @@
  */
 export function ConversationButton(props){return <button {...props}/>;}
 export function ConversationSearch({label,...props}){return <input {...props} aria-label={label}/>;}
-export function ConversationInput(props){return <input {...props}/>;}
+export const ConversationInput=React.forwardRef(function ConversationInput(props,ref){return <input {...props} ref={ref}/>;});
 export function ConversationText({as:Tag='span',text,...props}){return <Tag {...props}>{text}</Tag>;}
