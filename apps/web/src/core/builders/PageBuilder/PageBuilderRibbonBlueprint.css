@@ -302,3 +302,50 @@
 .office-builder-ribbon .office-ribbon-data-pagination input[type=checkbox]{
   width:13px!important;height:13px!important;accent-color:#0871e9!important;
 }
+
+/* Blueprint item-grid and calendar Content: four distinct compact blocks,
+   icon headings, inline field bindings and actual metadata-backed toggles. */
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-content-card{
+ position:relative!important;display:flex!important;flex-direction:column!important;
+ flex:0 0 250px!important;width:250px!important;min-width:250px!important;
+ max-width:250px!important;height:112px!important;max-height:112px!important;
+ padding:5px 9px 19px 28px!important;gap:5px!important;
+ box-sizing:border-box!important;overflow:hidden!important;
+}
+.office-builder-ribbon .office-ribbon-content-heading{
+ position:absolute!important;left:5px!important;top:7px!important;
+ display:flex!important;gap:6px!important;align-items:center!important;
+ color:#173c68!important;font:600 10px/12px "Segoe UI",Arial,sans-serif!important;
+}
+.office-builder-ribbon .office-ribbon-content-heading>strong{
+ position:relative!important;left:17px!important;
+}
+.office-builder-ribbon .office-ribbon-content-fields{
+ display:flex!important;flex-direction:column!important;justify-content:flex-start!important;
+ gap:5px!important;width:100%!important;min-height:0!important;margin-top:20px!important;
+}
+.office-builder-ribbon .office-ribbon-content-row,
+.office-builder-ribbon .office-ribbon-content-card .office-ribbon-expression-input{
+ display:grid!important;grid-template-columns:78px minmax(0,1fr)!important;
+ gap:5px!important;align-items:center!important;margin:0!important;
+ height:20px!important;min-height:20px!important;width:100%!important;
+ font:500 10px/12px "Segoe UI",Arial,sans-serif!important;
+}
+.office-builder-ribbon .office-ribbon-content-row>:is(select,input:not([type=checkbox])),
+.office-builder-ribbon .office-ribbon-content-card .office-ribbon-expression-input input{
+ box-sizing:border-box!important;width:100%!important;min-width:0!important;
+ max-width:100%!important;height:20px!important;min-height:20px!important;
+ padding:1px 3px!important;font:500 10px/14px "Segoe UI",Arial,sans-serif!important;
+}
+.office-builder-ribbon .office-ribbon-content-row>input[type=checkbox]{
+ width:14px!important;height:14px!important;min-width:14px!important;
+ justify-self:center!important;accent-color:#0871e9!important;
+}
+.office-builder-ribbon .office-ribbon-content-card .office-ribbon-expression-input>.office-ribbon-expression-anchor{
+ min-width:0!important;width:100%!important;
+}
+.office-builder-ribbon .office-ribbon-content-more{
+ border:0!important;background:transparent!important;color:#086bdf!important;
+ font:500 10px/12px "Segoe UI",Arial,sans-serif!important;text-align:left!important;
+ padding:0!important;width:max-content!important;
+}
