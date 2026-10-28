@@ -42,3 +42,26 @@ export function missingLayoutRequiredFields(
   }
   return missing;
 }
+
+/** Use the same defaults presented by the create form when a required input
+ * was not changed. Preserve explicit false, zero and empty values.
+ */
+export function applyRequiredLayoutDefaults(
+ values:Readonly<Record<string,unknown>>,
+ layout:PageLayoutMetadata|undefined,
+ fields:ReadonlyArray<{apiName:string;defaultValue?:unknown}>,
+ writable:ReadonlySet<string>
+):Record<string,unknown>{
+ const result={...values};
+ if(!layout)return result;
+ const required=new Set(layout.sections.flatMap(section=>
+   (section.requiredFieldApiNames??[]).filter(name=>
+     section.fieldApiNames.includes(name)&&!(section.readOnlyFieldApiNames??[]).includes(name))));
+ for(const field of fields){
+   if(!required.has(field.apiName)||!writable.has(field.apiName)
+     ||Object.prototype.hasOwnProperty.call(result,field.apiName)
+     ||field.defaultValue===undefined||field.defaultValue===null)continue;
+   result[field.apiName]=field.defaultValue;
+ }
+ return result;
+}
