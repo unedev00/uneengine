@@ -84,7 +84,7 @@ export default function ComponentVisibilityEditor({
               <option value="Device">Device</option>
               {allowRecordFields && <option value="Record Field">Current record field</option>}
               {allowRecordFields && <option value="Record Type">Record type</option>}
-              {allowRecordFields && <option value="User Profile">Viewer profile</option>}
+              <option value="User Profile">Viewer profile</option>
               {allowRecordFields && <option value="Record Permission">Viewer record permission</option>}
             </select>
           </label>

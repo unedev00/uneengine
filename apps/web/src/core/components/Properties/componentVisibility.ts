@@ -98,7 +98,7 @@ export function validateVisibilityRule(
         ?[]:['Condition '+(index+1)+' needs a record permission.'];
     }
     if(entry.source==='Record Type'||entry.source==='User Profile'){
-      if(!allowRecordFields)return ['Record visibility conditions require a Record Page.'];
+      if(entry.source==='Record Type'&&!allowRecordFields)return ['Record type conditions require a Record Page.'];
       return (entry.operator==='Equals'||entry.operator==='Not Equals')
         &&typeof entry.value==='string'&&entry.value.length>0&&entry.value.length<=128
         ?[]:['Condition '+(index+1)+' needs a valid profile or record type.'];

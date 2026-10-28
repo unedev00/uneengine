@@ -277,12 +277,12 @@ export function renderSetupShell(ctx: any) {
           {route.kind === 'app-home' && <LightningAppRuntime appId={route.appId} objects={objects} apps={apps} pages={pages} reports={reports}
             libraryComponents={libraryComponents} availableFlows={flows.filter((item) => ['Screen Flow', 'Autolaunched Flow'].includes(item.flowType))
               .map(({ id, apiName, label, flowType, status }) => ({ id, apiName, label, flowType, status }))}
-            formFactor={runtimeFormFactor} onNavigate={navigateRoute}
+            formFactor={runtimeFormFactor} profileId={currentProfileId} onNavigate={navigateRoute}
             onLaunchFlow={(apiName: string, inputs: Record<string, unknown>,context?:{requestId?:string}) => void runFlow(apiName, inputs,context)} onStandaloneModeChange={setStandalonePageMode} />}
           {route.kind === 'app-page' && <LightningAppRuntime appId={route.appId} pageApiName={route.pageApiName} objects={objects} apps={apps} pages={pages} reports={reports}
             libraryComponents={libraryComponents} availableFlows={flows.filter((item) => ['Screen Flow', 'Autolaunched Flow'].includes(item.flowType))
               .map(({ id, apiName, label, flowType, status }) => ({ id, apiName, label, flowType, status }))}
-            formFactor={runtimeFormFactor} onNavigate={navigateRoute}
+            formFactor={runtimeFormFactor} profileId={currentProfileId} onNavigate={navigateRoute}
             onLaunchFlow={(apiName: string, inputs: Record<string, unknown>,context?:{requestId?:string}) => void runFlow(apiName, inputs,context)} onStandaloneModeChange={setStandalonePageMode} />}
           {route.kind === 'setup' && workspace === 'home' && (runtimeFormFactor === 'Phone'
             ? <MobileSettingsHome

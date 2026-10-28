@@ -29,8 +29,10 @@ export function behaviorTabs(properties:Readonly<Record<string,unknown>>,
   tabs:readonly string[],context:BehaviorContext):string[]{
   const rules=asRows(pageBehaviors(properties)?.tabVisibility);
   return tabs.filter(tab=>{
-    const rule=rules.find(row=>row.tabId===tab);
-    return !rule||behaviorMatches(rule.when,context);
+    const matching=rules.filter(row=>row.tabId===tab);
+    // All authored rules for a tab must permit display; a later rule cannot
+    // override an earlier denial, matching Dynamic Action composition.
+    return matching.every(rule=>behaviorMatches(rule.when,context));
   });
 }
 export type BehaviorActionState='enabled'|'disabled'|'hidden';
@@ -97,6 +99,20 @@ export function behaviorAppearance(properties:Readonly<Record<string,unknown>>,
     }
   }
   return output;
+}
+/** Text alongside conditional colour is required for non-colour-dependent
+ * interpretation. Only bounded literal labels from matched declarative rules.
+ */
+export function behaviorAppearanceLabel(properties:Readonly<Record<string,unknown>>,
+ context:BehaviorContext,fieldApiName?:string):string{
+ let result='';
+ for(const rule of asRows(pageBehaviors(properties)?.conditionalFormatting)){
+  if(fieldApiName!==undefined&&rule.fieldApiName!==fieldApiName)continue;
+  if(!behaviorMatches(rule.when,context)||!isPropertyRecord(rule.appearance))continue;
+  const label=rule.appearance.accessibleLabel;
+  if(typeof label==='string'&&label.trim()&&label.length<=160)result=label.trim();
+ }
+ return result;
 }
 /** A field rule never overrides OneEngine's authorization; hidden fields are omitted. */
 export function behaviorField(properties:Readonly<Record<string,unknown>>,

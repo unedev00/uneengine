@@ -1,3 +1,8 @@
+import CrossObjectRecordField from './CrossObjectRecordField';
+import {resolveHighlightFields} from './highlightFieldSelection';
+import {behaviorAppearanceLabel} from '../../pages/PageRuntime/pageBehaviorRuntime';
+import {nextAccessibleTabIndex} from '../../pages/PageRuntime/tabKeyboardNavigation';
+import {visibleRelatedListQuickLinks} from './relatedQuickLinks';
 import { useFormFactor, useRuntimeFormFactor } from '../../workspace/Responsive/useFormFactor';
 import {useViewportWidth} from '../../workspace/Responsive/useViewportWidth';
 import './recordsListToolbar.css';
@@ -2064,17 +2069,19 @@ function RecordWorkspace({
       .filter((field): field is FieldMetadata => Boolean(field && fieldAccess[`${object.apiName}.${field.apiName}`]?.read && record && field.apiName in record));
     const assignedPage = activeLightningPage?.targetObject === object.apiName ? activeLightningPage : null;
     const renderRelatedList = (relationshipName: string,component?:PageComponentMetadata) => {
-      const related = Object.entries(relatedRecords).find(([name, value]) => {
+      const relatedEntry = Object.entries(relatedRecords).find(([name, value]) => {
         const childObject = objects.find((item) => item.apiName === value.objectApiName);
         return name.toLocaleLowerCase() === relationshipName.toLocaleLowerCase()
           || childObject?.pluralLabel.toLocaleLowerCase() === relationshipName.toLocaleLowerCase();
-      })?.[1];
+      });
+      const related=relatedEntry?.[1];
       if (!related) return <section className="record-fields-card surface" key={relationshipName}><div className="record-fields-heading"><h2>{relationshipName}</h2></div><div className="records-empty">This related list is unavailable for this record.</div></section>;
       const childObject = objects.find((item) => item.apiName === related.objectApiName);
       const overrides=(component?.properties.relatedListSettings??{}) as Record<string,Record<string,unknown>>;
       const settings={...(recordLayout?.relatedListSettings?.[relationshipName]??{}),
         ...(overrides[relationshipName]??{})} as {
         columns?:string[];pageSize?:number;sortField?:string;sortDirection?:'asc'|'desc';
+        filterField?:string;filterValue?:string;filterOperator?:'Equals'|'Includes'|'Excludes';
         showNewAction?:boolean;showRowActions?:boolean;
       };
       const availableFields=childObject?.fields.filter(field=>field.apiName!==related.fieldApiName
@@ -2087,7 +2094,25 @@ function RecordWorkspace({
         &&action.targetObjectApi===childObject?.apiName&&action.relationshipFieldApi===related.fieldApiName
         &&allowedActionIds.includes(action.id)
         &&(!recordLayout||recordLayout.actions.includes(action.id)));
-      return <section className="record-fields-card surface related-records-card" id={'related-'+relationshipName} key={relationshipName}>
+      if(component?.properties.serverPaged===true&&childObject&&settings.showRowActions!==true)
+        return <section className="record-fields-card surface related-records-card"
+          id={'related-'+relatedEntry![0]} key={relationshipName}>
+          <div className="record-fields-heading"><h2>{relationshipName}</h2>
+            {settings.showNewAction!==false&&newAction&&<button type="button" className="btn"
+              onClick={()=>onNavigate({kind:'record-list',objectApiName:childObject.apiName,appId:route.appId,
+                relatedCreation:{sourceObjectApi:object.apiName,sourceRecordId:record.Id,actionId:newAction.id}})}>New</button>}
+          </div>
+          <StandardRecordList object={childObject} request={apiRequest}
+            appId={route.appId??''} onNavigate={onNavigate}
+            columns={settings.columns??displayFields.map(item=>item.apiName)}
+            pageSize={settings.pageSize??25} initialSort={settings.sortField}
+            initialDirection={settings.sortDirection}
+            extraFilter={settings.filterField&&settings.filterValue!==undefined
+              ?{field:settings.filterField,value:settings.filterValue,operator:settings.filterOperator??'Equals'}
+              :undefined}
+            recordFilter={{field:related.fieldApiName,recordId:String(record.Id)}}/>
+        </section>;
+      return <section className="record-fields-card surface related-records-card" id={'related-'+relatedEntry![0]} key={relationshipName}>
         <div className="record-fields-heading"><h2>{relationshipName}</h2><span>{related.total} record{related.total === 1 ? '' : 's'}</span>
           {settings?.showNewAction!==false&&newAction&&childObject&&<button type="button" className="btn"
             onClick={()=>onNavigate({kind:'record-list',objectApiName:childObject.apiName,appId:route.appId,
@@ -2184,12 +2209,20 @@ function RecordWorkspace({
       if(component.type==='Related List Quick Links'){
         const names=Array.isArray(component.properties.relatedLists)
           ?component.properties.relatedLists.filter((name):name is string=>typeof name==='string'):[];
+        // Links are navigational only: never reveal a relation that the
+        // authorised related-record response did not provide.
+        const available=visibleRelatedListQuickLinks(names,relatedRecords,objects);
+        if(!available.length)return null;
         return <nav key={component.id} className="record-fields-card surface" aria-label={component.label}>
-          {names.map(name=><a key={name} href={'#related-'+encodeURIComponent(name)}
+          {available.map(name=>{
+            const entry=Object.entries(relatedRecords).find(([key,value])=>
+              key.toLowerCase()===name.toLowerCase()||objects.find(item=>item.apiName===value.objectApiName)?.pluralLabel.toLowerCase()===name.toLowerCase());
+            const anchor='related-'+entry![0];
+            return <a key={name} href={'#'+encodeURIComponent(anchor)}
             onClick={event=>{
-              const target=document.getElementById('related-'+name);
+              const target=document.getElementById(anchor);
               if(target){event.preventDefault();target.scrollIntoView({behavior:'smooth'});}
-            }}>{name}</a>)}
+            }}>{name}</a>})}
         </nav>;
       }
       if(component.type==='Items to Approve')
@@ -2204,7 +2237,7 @@ function RecordWorkspace({
           ?component.properties.columns.filter((name):name is string=>typeof name==='string'):[];
         return <StandardRecordList key={component.id} object={source} request={apiRequest}
           appId={route.appId??''} onNavigate={onNavigate} columns={columns}
-          pageSize={typeof component.properties.pageSize==='number'?component.properties.pageSize:25}/>;
+          pageSize={typeof component.properties.pageSize==='number'?component.properties.pageSize:25} savedViewId={typeof component.properties.savedViewId==='string'?component.properties.savedViewId:undefined}/>;
       }
       if(component.type==='Screen Flow'){
         const props={
@@ -2225,12 +2258,18 @@ function RecordWorkspace({
         const apiName=String(component.properties.stageFieldApiName??'');
         const field=readableRecordFields.find(item=>item.apiName===apiName);
         if(!field||field.dataType!=='Picklist')return <p key={component.id} role="status">Choose a readable Picklist field for Path.</p>;
+        const recordType=object.recordTypes?.find(item=>item.id===record.RecordTypeId);
+        const allowedStages=recordType?.picklistValues?.[apiName]??field.picklistValues??[];
         return <StandardRecordPath key={component.id} label={component.label}
-          values={field.picklistValues??[]} value={record[apiName]}
+          values={allowedStages} value={record[apiName]}
+          record={record} readableFields={readableRecordFields}
+          guidanceByStage={component.properties.guidanceByStage as Record<string,string>|undefined}
+          keyFieldsByStage={component.properties.keyFieldsByStage as Record<string,string[]>|undefined}
           canEdit={canEdit&&fieldAccess[`${object.apiName}.${apiName}`]?.edit===true}
           onAdvance={async(nextValue)=>{
             if(!canEdit||!fieldAccess[`${object.apiName}.${apiName}`]?.edit)
               throw new Error('Stage change is not permitted');
+            if(!allowedStages.includes(nextValue))throw new Error('Stage is not allowed for this record type');
             await apiRequest(`/records/${encodeURIComponent(object.apiName)}/${encodeURIComponent(record.Id)}`,{
               method:'PUT',...(typeof record.LastModifiedDate==='string'
                 ?{headers:{'If-Unmodified-Since':record.LastModifiedDate}}:{}),
@@ -2240,7 +2279,18 @@ function RecordWorkspace({
           }}/>;
       }
       if (component.type === 'Highlights Panel') return <section className="record-highlights surface" key={component.id} aria-label="Record highlights">
-        {compactFields.map((field) => <div key={field.apiName}><span>{field.label}</span><strong>{formatFieldValue(field, record[field.apiName])}</strong></div>)}
+        {resolveHighlightFields(
+          Array.isArray(component.properties.primaryFieldApiNames)
+            ?component.properties.primaryFieldApiNames.filter((x):x is string=>typeof x==='string')
+            :undefined,compactFields,readableRecordFields
+        ).map(field=><div key={field.apiName}><span>{field.label}</span>
+          <strong>{formatFieldValue(field, record[field.apiName])}</strong></div>)}
+        {resolveHighlightFields(
+          Array.isArray(component.properties.secondaryFieldApiNames)
+            ?component.properties.secondaryFieldApiNames.filter((x):x is string=>typeof x==='string')
+            :[],[],readableRecordFields
+        ).map(field=><div key={'secondary-'+field.apiName}><span>{field.label}</span>
+          <strong>{formatFieldValue(field, record[field.apiName])}</strong></div>)}
         <div className="record-highlight-actions">
           {canEdit&&component.properties.showEditAction===true&&showRecordAction('Edit')&&behaviorAction(component.properties,'Edit',runtimeBehaviorContext)!=='hidden'&&<button type="button" className="btn"
             disabled={pageActionState('Edit')==='disabled'||behaviorAction(component.properties,'Edit',runtimeBehaviorContext)==='disabled'}
@@ -2292,6 +2342,25 @@ function RecordWorkspace({
             : <div className="records-empty">No readable fields are configured in this section.</div>}
         </section>;
       }
+      if (component.type === 'Record Field' &&
+          typeof component.properties.relatedLookupFieldApiName==='string' &&
+          component.properties.relatedLookupFieldApiName &&
+          typeof component.properties.relatedFieldApiName==='string' &&
+          component.properties.relatedFieldApiName){
+        const lookup=readableRecordFields.find(item=>
+          item.apiName===component.properties.relatedLookupFieldApiName);
+        const targetObject=lookup?.relationship?.targetObject;
+        const targetField=objects.find(item=>item.apiName===targetObject)?.fields
+          .find(item=>item.apiName===component.properties.relatedFieldApiName);
+        const targetReadable=Boolean(targetObject&&targetField&&
+          fieldAccess[targetObject+'.'+targetField.apiName]?.read===true);
+        const relatedId=lookup?record[lookup.apiName]:undefined;
+        if(!targetReadable||typeof relatedId!=='string'||!relatedId)return <p
+          className="records-empty" role="status" key={component.id}>Related field is unavailable.</p>;
+        return <CrossObjectRecordField key={component.id} objectApi={targetObject!}
+          recordId={relatedId} fieldApi={targetField!.apiName}
+          label={component.label||targetField!.label} request={apiRequest}/>;
+      }
       if (component.type === 'Record Field') {
         const fieldApiName = typeof component.properties.fieldApiName === 'string' ? component.properties.fieldApiName : '';
         const field = readableRecordFields.find((item) => item.apiName === fieldApiName);
@@ -2299,6 +2368,7 @@ function RecordWorkspace({
           ? <section className="record-fields-card surface record-single-field" key={component.id}
               style={behaviorAppearance(component.properties,runtimeBehaviorContext,fieldApiName)}>
             <div className="record-fields-heading"><h2>{component.label}</h2></div>
+            {behaviorAppearanceLabel(component.properties,runtimeBehaviorContext,fieldApiName)&&<p className="records-message" role="status">{behaviorAppearanceLabel(component.properties,runtimeBehaviorContext,fieldApiName)}</p>}
             <dl className="record-fields-grid columns-1"><div className="record-field"><dt>{field.label}</dt><dd>{renderPageField(field)}</dd></div></dl>
           </section>
           : <div className="records-empty" role="status" key={component.id}>This field is unavailable or not readable.</div>;
@@ -2316,10 +2386,20 @@ function RecordWorkspace({
         const selectedTab = tabs.includes(activeRuntimeTabs[component.id])
           ? activeRuntimeTabs[component.id] : tabs[0];
         const nested=childrenOf(assignedPage?.components??[],component.id);
+        if(!tabs.length)return null;
         return <div className="record-runtime-tabs" key={component.id}>
           <div className="record-tabs" role="tablist" aria-label={component.label}>
             {tabs.map((tab) => <button type="button" role="tab" aria-selected={selectedTab === tab} className={selectedTab === tab ? 'active' : ''}
-              key={tab} onClick={() => setActiveRuntimeTabs(current=>({...current,[component.id]:tab}))}>{tab}</button>)}
+              key={tab} tabIndex={selectedTab===tab?0:-1}
+              onKeyDown={event=>{
+                const next=nextAccessibleTabIndex(event.key,tabs.indexOf(tab),tabs.length);
+                if(next===null)return;
+                event.preventDefault();
+                setActiveRuntimeTabs(current=>({...current,[component.id]:tabs[next]}));
+                const buttons=event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]');
+                buttons?.[next]?.focus();
+              }}
+              onClick={() => setActiveRuntimeTabs(current=>({...current,[component.id]:tab}))}>{tab}</button>)}
           </div>
           <div role="tabpanel" className="record-runtime-tab-panel">
             {nested.length

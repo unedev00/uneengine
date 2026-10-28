@@ -3,45 +3,62 @@ import type {ObjectMetadata} from '../../metadata/Definitions/metadata';
 import {appRoutePath,type AppRoute} from '../../workspace/Navigation/appRouting';
 import {formatRecordValue} from '../../records/RecordWorkspace/recordCsvUtils';
 import {parseSafeRichText} from './safeRichText';
+import {resolveStandardListColumns} from './standardListColumns';
+import {standardListQuery} from './standardListQuery';
 
 /** Existing generic Record API is the source of truth for permission-checked rows. */
 export function StandardRecordList({
-  object,request,appId,onNavigate,columns,pageSize=25,recordFilter
+  object,request,appId,onNavigate,columns,pageSize=25,recordFilter,savedViewId,extraFilter,initialSort,initialDirection
 }:{
   object:ObjectMetadata|undefined;
   request:<T>(path:string,init?:RequestInit)=>Promise<T>;
   appId:string;onNavigate:(route:AppRoute)=>void;
-  columns:string[];pageSize?:number;
+  columns:string[];pageSize?:number;savedViewId?:string;
+  extraFilter?:{field:string;value:string;operator:'Equals'|'Includes'|'Excludes'};
+  initialSort?:string;initialDirection?:'asc'|'desc';
   recordFilter?:{field:string;recordId:string};
 }) {
   const [offset,setOffset]=useState(0);
   const [search,setSearch]=useState('');
-  const [sort,setSort]=useState('');
-  const [direction,setDirection]=useState<'asc'|'desc'>('asc');
+  const [sort,setSort]=useState(initialSort??'');
+  const [direction,setDirection]=useState<'asc'|'desc'>(initialDirection??'asc');
+  useEffect(()=>{setSort(initialSort??'');setDirection(initialDirection??'asc');setOffset(0);},[initialSort,initialDirection]);
   const [rows,setRows]=useState<Array<Record<string,unknown>>>([]);
   const [total,setTotal]=useState(0);
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState('');
+  const [savedColumns,setSavedColumns]=useState<string[]>([]);
+  useEffect(()=>{
+    if(!savedViewId||!object?.apiName){setSavedColumns([]);return;}
+    let active=true;setSavedColumns([]);
+    void request<{view:{columns?:string[]}}>(
+      '/records/'+encodeURIComponent(object.apiName)+'/list-views/'+encodeURIComponent(savedViewId))
+      .then(result=>{if(active)setSavedColumns(Array.isArray(result.view?.columns)
+        ?result.view.columns.filter(name=>typeof name==='string'):[]);})
+      .catch(()=>{if(active)setSavedColumns([]);});
+    return()=>{active=false;};
+  },[object?.apiName,savedViewId,request]);
   const limit=Math.max(1,Math.min(100,Math.trunc(pageSize)||25));
-  const names=columns.length?columns.slice(0,12):object?.fields.slice(0,4).map(field=>field.apiName)??[];
+  // Display only fields returned through the object metadata accessible to this
+  // session. A saved view ID affects the server query, not field-level grants.
+  const allowedNames=new Set(object?.fields.map(field=>field.apiName)??[]);
+  const names=resolveStandardListColumns(columns,savedColumns,[...allowedNames],
+    object?.fields.slice(0,4).map(field=>field.apiName)??[]);
+  useEffect(()=>setOffset(0),[object?.apiName,savedViewId,limit,recordFilter?.field,recordFilter?.recordId]);
   useEffect(()=>{
     if(!object?.apiName){setRows([]);return;}
     let active=true;
     setBusy(true);setError('');
-    const params=new URLSearchParams({
-      limit:String(limit),offset:String(offset),
-      ...(search.trim()?{search:search.trim()}:{}),
-      ...(sort?{sortField:sort,sortDirection:direction}:{}),
-      ...(recordFilter?{relatedField:recordFilter.field,relatedId:recordFilter.recordId}:{})
-    });
+    const params=standardListQuery({limit,offset,search,sort,direction,savedViewId,recordFilter,extraFilter});
     void request<{records:Array<Record<string,unknown>>;total:number}>(
-      '/records/'+encodeURIComponent(object.apiName)+'?'+params.toString())
+      '/records/'+encodeURIComponent(object.apiName)+'?'+params)
       .then(result=>{if(active){setRows(result.records??[]);setTotal(result.total??0);}})
       .catch(reason=>{if(active){setRows([]);setError(reason instanceof Error?reason.message:'Records unavailable');}})
       .finally(()=>{if(active)setBusy(false);});
     return ()=>{active=false;};
   },[object?.apiName,request,limit,offset,search,sort,direction,
-    recordFilter?.field,recordFilter?.recordId]);
+    recordFilter?.field,recordFilter?.recordId,savedViewId,
+    extraFilter?.field,extraFilter?.value,extraFilter?.operator]);
   if(!object)return <p role="status">Select an Object in block settings.</p>;
   return <section className="record-fields-card surface" aria-label={object.pluralLabel}>
     <div className="record-fields-heading">
@@ -122,9 +139,13 @@ export function StandardFlowLauncher({
 }
 
 export function StandardRecordPath({
-  label,values,value,canEdit,onAdvance
+  label,values,value,canEdit,onAdvance,guidanceByStage,keyFieldsByStage,record,readableFields
 }:{
   label:string;values:readonly string[];value:unknown;canEdit:boolean;
+  guidanceByStage?:Readonly<Record<string,string>>;
+  keyFieldsByStage?:Readonly<Record<string,readonly string[]>>;
+  record?:Readonly<Record<string,unknown>>;
+  readableFields?:ReadonlyArray<{apiName:string;label:string}>;
   onAdvance:(nextValue:string)=>Promise<void>;
 }) {
   const [error,setError]=useState('');
@@ -141,6 +162,12 @@ export function StandardRecordPath({
         {index+1}. {step}{step===current?' ✓':''}
       </button></li>)}
     </ol>
+    {typeof guidanceByStage?.[chosen]==='string'&&Boolean(guidanceByStage[chosen])&&<p className="records-message">{guidanceByStage[chosen]}</p>}
+    {Array.isArray(keyFieldsByStage?.[chosen])&&Boolean(keyFieldsByStage[chosen].length)&&record&&<dl className="record-fields-grid">
+      {keyFieldsByStage[chosen].filter(name=>readableFields?.some(field=>field.apiName===name))
+        .map(name=><div key={name}><dt>{readableFields?.find(field=>field.apiName===name)?.label??name}</dt>
+          <dd>{formatRecordValue(record[name])}</dd></div>)}
+    </dl>}
     {canEdit&&selected&&selected!==current&&<button type="button" className="btn btn-brand"
       disabled={pending} onClick={()=>{setPending(true);setError('');
         void onAdvance(selected).then(()=>setSelected(''))

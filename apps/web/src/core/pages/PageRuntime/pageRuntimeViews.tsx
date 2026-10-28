@@ -1,3 +1,4 @@
+import {nextAccessibleTabIndex} from '../PageRuntime/tabKeyboardNavigation';
 import { useFormFactor } from '../../workspace/Responsive/useFormFactor';
 import {resolveMetadataProperties} from '../../metadata/Definitions/metadataReferences';
 import {useFlowStateChannel} from '../../automation/FlowScreen/useFlowStateChannel';
@@ -255,6 +256,7 @@ function MetadataBoundPageComponent({
   reports: ReportMetadata[];
   availableFlows: Array<Pick<FlowDefinitionMetadata, 'id' | 'apiName' | 'label' | 'flowType' | 'status'>>;
   formFactor: 'Desktop' | 'Tablet' | 'Phone';
+  profileId?:string;
   onNavigate: (route: AppRoute) => void;
   onLaunchFlow: (flowApiName: string, inputs?: Record<string, unknown>, context?:{requestId?:string}) => void;
   disableActions?: boolean;
@@ -755,6 +757,7 @@ function LightningAppRuntime({
   libraryComponents,
   availableFlows,
   formFactor,
+  profileId,
   onNavigate,
   onLaunchFlow,
   onStandaloneModeChange
@@ -768,6 +771,7 @@ function LightningAppRuntime({
   libraryComponents: LibraryComponentMetadata[];
   availableFlows: Array<Pick<FlowDefinitionMetadata, 'id' | 'apiName' | 'label' | 'flowType' | 'status'>>;
   formFactor: 'Desktop' | 'Tablet' | 'Phone';
+  profileId?: string;
   onNavigate: (route: AppRoute) => void;
   onLaunchFlow: (flowApiName: string, inputs?: Record<string, unknown>, context?:{requestId?:string}) => void;
   onStandaloneModeChange: (enabled: boolean) => void;
@@ -877,7 +881,7 @@ function LightningAppRuntime({
   if (!page) return <main className="records-page"><section className="records-empty records-home-unassigned" aria-labelledby="records-home-empty-heading"><h1 id="records-home-empty-heading">Home page is not configured</h1><p>This app has no active Home Page assigned for your current profile and device.</p><p>Ask an administrator to activate and assign a Home Page in the Lightning App Builder. Existing app pages and records remain available from navigation.</p></section></main>;
   const isStandaloneRuntime = isStandalonePagePresentation(page);
   const regions: Array<'header' | 'main' | 'sidebar'> = ['header', 'main', 'sidebar'];
-  const appVisibilityContext = { formFactor } as const;
+  const appVisibilityContext = { formFactor,profileId } as const;
   const isAppComponentVisible = (component: PageComponentMetadata) =>
     isComponentVisible(component, appVisibilityContext, false);
   const emitInteraction=(component:PageComponentMetadata,event:string,value:unknown)=>{
@@ -939,7 +943,7 @@ function LightningAppRuntime({
         ?component.properties.columns.filter((name):name is string=>typeof name==='string'):[];
       return <StandardRecordList key={component.id} object={source} request={apiRequest}
         appId={appId} onNavigate={onNavigate} columns={columns}
-        pageSize={typeof component.properties.pageSize==='number'?component.properties.pageSize:25}/>;
+        pageSize={typeof component.properties.pageSize==='number'?component.properties.pageSize:25} savedViewId={typeof component.properties.savedViewId==='string'?component.properties.savedViewId:undefined}/>;
     }
     if(component.type==='Screen Flow')
       return component.properties.embed===false
@@ -969,6 +973,7 @@ function LightningAppRuntime({
       const tabs = behaviorTabs(component.properties,Array.isArray(component.properties.tabs)
         ? component.properties.tabs.filter((tab): tab is string => typeof tab === 'string')
         : [],appVisibilityContext);
+      if(!tabs.length)return null;
       const selected = tabs.includes(activeTabs[component.id]) ? activeTabs[component.id] : tabs[0];
       const nested=childrenOf(page.components,component.id);
       const selectedChildren=nested.filter(child=>
@@ -981,7 +986,15 @@ function LightningAppRuntime({
       return <section className="record-fields-card surface" key={component.id}>
         <div className="record-tabs" role="tablist" aria-label={component.label}>
           {tabs.map(tab=><button type="button" role="tab" key={tab} aria-selected={selected===tab}
-            className={selected===tab?'active':''}
+            className={selected===tab?'active':''} tabIndex={selected===tab?0:-1}
+            onKeyDown={event=>{
+              const next=nextAccessibleTabIndex(event.key,tabs.indexOf(tab),tabs.length);
+              if(next===null)return;
+              event.preventDefault();
+              setActiveTabs(current=>({...current,[component.id]:tabs[next]}));
+              const buttons=event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]');
+              buttons?.[next]?.focus();
+            }}
             onClick={()=>setActiveTabs(current=>({...current,[component.id]:tab}))}>{tab}</button>)}
         </div>
         <div className="record-runtime-tab-panel" role="tabpanel">

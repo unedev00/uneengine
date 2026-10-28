@@ -15,7 +15,7 @@ const CustomComponentPropertyEditor=await loadEditor('CustomComponentPropertyEdi
 const PropertyDefinitionEditor=await loadEditor('PropertyDefinitionEditor');
 import {validateComponentDefinitions,type ComponentSettingDefinition} from '../src/core/components/Properties/componentSettingDefinitions';
 import {loadComponentCatalog} from '../../../scripts/component-catalog.mjs';
-import {behaviorTabs,behaviorAction,behaviorRecordAction,behaviorAppearance,behaviorField,behaviorInteractions} from '../src/core/pages/PageRuntime/pageBehaviorRuntime';
+import {behaviorTabs,behaviorAction,behaviorRecordAction,behaviorAppearance,behaviorAppearanceLabel,behaviorField,behaviorInteractions} from '../src/core/pages/PageRuntime/pageBehaviorRuntime';
 test('all retained bundled descriptor definitions remain compatible',async()=>{
  const catalog=await loadComponentCatalog();
  assert.equal(catalog.components.length,38); // 36 UNE and two Core platform descriptors
@@ -189,4 +189,28 @@ test('P1 duplicate action rules combine with hide precedence and recalculate',()
  assert.equal(behaviorAction(p,'Edit',{...c,recordPermissions:new Set<'Create'|'Edit'|'Delete'>(['Edit'])}),'disabled');
  assert.equal(behaviorAction(p,'Edit',{...c,record:{Status:'Active'},
   recordPermissions:new Set<'Create'|'Edit'|'Delete'>(['Edit'])}),'enabled');
+});
+
+test('parity PB21 conditional tabs never expose panels after a second rule denies',()=>{
+ const p={pagePropertyContract:{version:1,tabVisibility:[
+  {tabId:'Details',when:{logic:'All',conditions:[{source:'Device',operator:'Equals',value:'Desktop'}]}},
+  {tabId:'Details',when:{logic:'All',conditions:[{source:'Record Permission',operator:'Equals',value:'Edit'}]}}
+ ]}};
+ const base={formFactor:'Desktop' as const,recordPermissions:new Set<'Create'|'Edit'|'Delete'>()};
+ assert.deepEqual(behaviorTabs(p,['Details','History'],base),['History']);
+ assert.deepEqual(behaviorTabs(p,['Details','History'],{
+  ...base,recordPermissions:new Set<'Create'|'Edit'|'Delete'>(['Edit'])}),['Details','History']);
+ assert.deepEqual(behaviorTabs(p,['Details','History'],{
+  ...base,formFactor:'Phone',recordPermissions:new Set<'Create'|'Edit'|'Delete'>(['Edit'])}),['History']);
+});
+
+test('PB18 conditional formatting presents a non-colour accessible state label',()=>{
+ const properties={pagePropertyContract:{version:1,conditionalFormatting:[{
+  id:'caution',fieldApiName:'Status',
+  when:{logic:'All',conditions:[{source:'Device',operator:'Equals',value:'Desktop'}]},
+  appearance:{color:'#f00',accessibleLabel:'Requires attention'}
+ }]}};
+ assert.equal(behaviorAppearanceLabel(properties,{formFactor:'Desktop'},'Status'),'Requires attention');
+ assert.equal(behaviorAppearanceLabel(properties,{formFactor:'Phone'},'Status'),'');
+ assert.equal(behaviorAppearanceLabel(properties,{formFactor:'Desktop'},'Other'),'');
 });
