@@ -1,0 +1,137 @@
+/* Page Builder ribbon polish — loaded LAST (see pageBuilderView.tsx).
+   Presentation only: no metadata, property keys or actions are changed here.
+   Fixes the shared UNE property ribbon (Data, Content, Design, Layout,
+   Responsive, Action tabs): clipped labels, 72px-only controls, unreadable
+   colour boxes, a visible scrollbar and arrows overlapping the first/last group. */
+
+.office-builder-ribbon{
+  --rb-border:#d3dbe7;
+  --rb-border-soft:#e6ebf3;
+  --rb-text:#1f3350;
+  --rb-label:#4a5f7c;
+  --rb-accent:#2563b8;
+  --rb-focus:#2563b8;
+  --rb-field-bg:#fff;
+  --rb-field-border:#b9c6d8;
+  --rb-cell-w:148px;
+  --rb-cell-h:34px;
+}
+
+/* ── Scroll strip: arrows only, no scrollbar, arrows never cover content ── */
+.office-builder-ribbon #page-builder-tab-content:has(>.une-universal-ribbon){
+  scrollbar-width:none!important;
+  padding:3px 30px!important;
+  scroll-padding-inline:30px;
+}
+.office-builder-ribbon #page-builder-tab-content:has(>.une-universal-ribbon)::-webkit-scrollbar{display:none!important}
+.office-builder-ribbon .office-ribbon-group-navigation button{
+  width:24px;height:34px;border-radius:4px;box-shadow:0 1px 3px #0b254a24;
+}
+.office-builder-ribbon .office-ribbon-group-navigation button:focus-visible{outline:2px solid var(--rb-focus);outline-offset:1px}
+
+/* ── Groups: even padding, soft dividers, caption centred on a clear rule ── */
+.office-builder-ribbon .une-universal-ribbon-section{
+  padding:4px 10px!important;
+  border-right:1px solid var(--rb-border)!important;
+  min-width:var(--rb-cell-w)!important;
+}
+.office-builder-ribbon .une-universal-ribbon-section:last-child{border-right:0!important}
+.office-builder-ribbon .une-universal-ribbon-caption{
+  border-top:1px solid var(--rb-border-soft)!important;
+  font:600 11px/18px "Segoe UI",Arial,sans-serif!important;
+  letter-spacing:.01em;color:var(--rb-label)!important;
+}
+
+/* ── Control grid: three aligned rows, fixed cell size ── */
+.office-builder-ribbon .une-universal-ribbon-controls{
+  grid-template-rows:repeat(3,var(--rb-cell-h))!important;
+  grid-auto-columns:var(--rb-cell-w)!important;
+  gap:4px 10px!important;
+}
+
+/* Label above control, both using the full cell width (no more "Heading maxi…"). */
+.office-builder-ribbon .une-universal-property{
+  display:grid!important;
+  grid-template-rows:11px 21px!important;
+  grid-template-columns:minmax(0,1fr)!important;
+  row-gap:1px!important;align-content:center!important;
+  width:var(--rb-cell-w)!important;min-width:var(--rb-cell-w)!important;max-width:var(--rb-cell-w)!important;
+  height:var(--rb-cell-h)!important;min-height:var(--rb-cell-h)!important;max-height:var(--rb-cell-h)!important;
+  padding:0!important;
+}
+.office-builder-ribbon .une-universal-property-label{
+  grid-row:1!important;
+  font:500 10.5px/12px "Segoe UI",Arial,sans-serif!important;
+  color:var(--rb-label)!important;
+}
+.office-builder-ribbon .une-universal-property :is(input:not([type=checkbox]),select,textarea),
+.office-builder-ribbon .une-universal-property>button{
+  grid-row:2!important;
+  width:100%!important;min-width:0!important;max-width:100%!important;flex:none!important;
+  height:21px!important;min-height:21px!important;max-height:21px!important;
+  padding:1px 6px!important;box-sizing:border-box!important;
+  border:1px solid var(--rb-field-border)!important;border-radius:3px!important;
+  background:var(--rb-field-bg)!important;color:var(--rb-text)!important;
+  font:12px/18px "Segoe UI",Arial,sans-serif!important;
+}
+.office-builder-ribbon .une-universal-property select{padding-right:2px!important;text-overflow:ellipsis}
+.office-builder-ribbon .une-universal-property input[type=number]{text-align:left}
+.office-builder-ribbon .une-universal-property>button{
+  cursor:pointer;background:#f3f7fd!important;color:var(--rb-accent)!important;font-weight:600!important;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.office-builder-ribbon .une-universal-property>button:hover:not(:disabled){background:#e6f0fc!important}
+.office-builder-ribbon .une-universal-property :is(input,select,textarea,button):focus-visible{
+  outline:2px solid var(--rb-focus)!important;outline-offset:0!important;border-color:var(--rb-focus)!important;
+}
+
+/* Boolean properties: checkbox + label on one line. */
+.office-builder-ribbon .une-universal-property:has(>input[type=checkbox]){
+  grid-template-columns:18px minmax(0,1fr)!important;grid-template-rows:auto!important;
+  column-gap:6px!important;align-items:center!important;
+}
+.office-builder-ribbon .une-universal-property>input[type=checkbox]{
+  grid-column:1!important;grid-row:1!important;width:16px!important;height:16px!important;margin:0!important;
+  accent-color:var(--rb-accent);
+}
+.office-builder-ribbon .une-universal-property:has(>input[type=checkbox])>.une-universal-property-label{
+  grid-column:2!important;grid-row:1!important;font-size:11px!important;color:var(--rb-text)!important;
+}
+
+/* Colour: swatch + hex + reset. Unset reads "Not set", never an empty white box. */
+.office-builder-ribbon .une-colour-control{
+  grid-row:2;display:grid;grid-template-columns:21px minmax(0,1fr) auto;align-items:center;column-gap:6px;
+  height:21px;min-width:0;
+}
+.office-builder-ribbon .une-colour-swatch{
+  position:relative;display:block;width:21px;height:21px;box-sizing:border-box;
+  border:1px solid var(--rb-field-border);border-radius:3px;overflow:hidden;background:#fff;
+}
+.office-builder-ribbon .une-colour-control.is-unset .une-colour-swatch{
+  background:
+    linear-gradient(135deg,transparent 47%,#9aa8bd 47%,#9aa8bd 53%,transparent 53%),#fff;
+}
+.office-builder-ribbon .une-universal-property .une-colour-swatch>input[type=color]{
+  position:absolute!important;inset:0!important;width:100%!important;height:100%!important;
+  min-width:0!important;max-width:none!important;max-height:none!important;
+  padding:0!important;border:0!important;opacity:0;cursor:pointer;
+}
+.office-builder-ribbon .une-colour-swatch:focus-within{outline:2px solid var(--rb-focus);outline-offset:1px}
+.office-builder-ribbon .une-colour-value{
+  font:11px/21px "Segoe UI",Arial,sans-serif;color:var(--rb-text);
+  overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+}
+.office-builder-ribbon .une-colour-control.is-unset .une-colour-value{color:#7a8aa3;font-style:italic}
+.office-builder-ribbon .une-universal-property .une-colour-reset{
+  grid-row:auto!important;width:18px!important;min-width:18px!important;max-width:18px!important;
+  height:18px!important;min-height:18px!important;max-height:18px!important;padding:0!important;
+  border:0!important;border-radius:50%!important;background:transparent!important;color:#6b7c95!important;
+  font:14px/16px "Segoe UI",Arial,sans-serif!important;cursor:pointer;
+}
+.office-builder-ribbon .une-universal-property .une-colour-reset:hover:not(:disabled){background:#e8eef7!important;color:#c0392b!important}
+
+/* Unsupported for the selected component: clearly greyed, never interactive. */
+.office-builder-ribbon .une-universal-property.is-disabled{opacity:.42!important;filter:grayscale(1)!important}
+.office-builder-ribbon .une-universal-property.is-disabled :is(input,select,textarea,button){
+  background:#f1f4f9!important;cursor:not-allowed!important;pointer-events:none!important;
+}

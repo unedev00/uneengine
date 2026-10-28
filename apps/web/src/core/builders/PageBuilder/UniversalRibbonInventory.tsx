@@ -91,8 +91,18 @@ function PropertyEditor({definition,enabled,properties,onChange}:{
       <div role="dialog" aria-modal="true" aria-label={label+' media library'}><button type="button" onClick={()=>setMediaOpen(false)}>Close</button>
         <TenantMediaPicker assetOnly initiallyOpen value={String(value)} onChange={next=>{update(next);setMediaOpen(false);}}/>
       </div></div>,document.body)}</>;
- else if(definition.kind==='COLOR')editor=<input {...props} type="color" value={/^#[0-9a-f]{6}$/i.test(String(value))?String(value):'#ffffff'}
-   onChange={e=>update(e.target.value)}/>;
+ else if(definition.kind==='COLOR'){
+   const hex=/^#[0-9a-f]{6}$/i.test(String(value))?String(value):'';
+   // Swatch + value + reset: an unset colour reads "Not set" instead of looking like white.
+   editor=<span className={'une-colour-control'+(hex?'':' is-unset')}>
+     <span className="une-colour-swatch" style={hex?{background:hex}:undefined}>
+       <input {...props} type="color" value={hex||'#ffffff'} onChange={e=>update(e.target.value)}/>
+     </span>
+     <span className="une-colour-value">{hex?hex.toUpperCase():'Not set'}</span>
+     {hex&&<button type="button" className="une-colour-reset" disabled={!enabled} title="Reset to default" aria-label={label+': reset to default'}
+       onClick={e=>{e.preventDefault();update(undefined);}}>×</button>}
+   </span>;
+ }
  else if(value!==null&&typeof value==='object')editor=<textarea {...props} rows={1} value={JSON.stringify(value)}
    aria-invalid={!!jsonError} onChange={e=>{try{const parsed:unknown=JSON.parse(e.target.value);if(parsed===null||typeof parsed!=='object')throw Error('Expected an object or array');setJsonError('');update(parsed);}catch{setJsonError('Invalid structured value');}}}/>;
  else editor=<input {...props} type="text" value={String(value)} onChange={e=>update(e.target.value)}/>;
