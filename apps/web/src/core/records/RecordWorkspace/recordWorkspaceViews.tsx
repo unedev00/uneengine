@@ -2081,6 +2081,7 @@ function RecordWorkspace({
       const settings={...(recordLayout?.relatedListSettings?.[relationshipName]??{}),
         ...(overrides[relationshipName]??{})} as {
         columns?:string[];pageSize?:number;sortField?:string;sortDirection?:'asc'|'desc';
+        filterField?:string;filterValue?:string;filterOperator?:'Equals'|'Includes'|'Excludes';
         showNewAction?:boolean;showRowActions?:boolean;
       };
       const availableFields=childObject?.fields.filter(field=>field.apiName!==related.fieldApiName
@@ -2093,6 +2094,24 @@ function RecordWorkspace({
         &&action.targetObjectApi===childObject?.apiName&&action.relationshipFieldApi===related.fieldApiName
         &&allowedActionIds.includes(action.id)
         &&(!recordLayout||recordLayout.actions.includes(action.id)));
+      if(component?.properties.serverPaged===true&&childObject&&settings.showRowActions!==true)
+        return <section className="record-fields-card surface related-records-card"
+          id={'related-'+relatedEntry![0]} key={relationshipName}>
+          <div className="record-fields-heading"><h2>{relationshipName}</h2>
+            {settings.showNewAction!==false&&newAction&&<button type="button" className="btn"
+              onClick={()=>onNavigate({kind:'record-list',objectApiName:childObject.apiName,appId:route.appId,
+                relatedCreation:{sourceObjectApi:object.apiName,sourceRecordId:record.Id,actionId:newAction.id}})}>New</button>}
+          </div>
+          <StandardRecordList object={childObject} request={apiRequest}
+            appId={route.appId??''} onNavigate={onNavigate}
+            columns={settings.columns??displayFields.map(item=>item.apiName)}
+            pageSize={settings.pageSize??25} initialSort={settings.sortField}
+            initialDirection={settings.sortDirection}
+            extraFilter={settings.filterField&&settings.filterValue!==undefined
+              ?{field:settings.filterField,value:settings.filterValue,operator:settings.filterOperator??'Equals'}
+              :undefined}
+            recordFilter={{field:related.fieldApiName,recordId:String(record.Id)}}/>
+        </section>;
       return <section className="record-fields-card surface related-records-card" id={'related-'+relatedEntry![0]} key={relationshipName}>
         <div className="record-fields-heading"><h2>{relationshipName}</h2><span>{related.total} record{related.total === 1 ? '' : 's'}</span>
           {settings?.showNewAction!==false&&newAction&&childObject&&<button type="button" className="btn"
