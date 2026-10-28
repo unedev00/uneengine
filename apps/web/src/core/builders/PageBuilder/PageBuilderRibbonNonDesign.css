@@ -1,0 +1,133 @@
+/* Non-Design ribbon corrections. Keep Design-tab blueprint unchanged. */
+.office-builder-ribbon #page-builder-tab-content[aria-label="Add Block"]{
+  height:122px!important;min-height:122px!important;max-height:122px!important;
+  padding:4px 8px!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Add Block"]>.office-ribbon-add-library,
+.office-builder-ribbon #page-builder-tab-content[aria-label="Add Block"] .office-ribbon-gallery-pages{
+  height:112px!important;min-height:112px!important;max-height:112px!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Add Block"] .office-ribbon-gallery-pages{
+  display:flex!important;align-items:stretch!important;justify-content:flex-start!important;
+  gap:0!important;overflow-x:auto!important;overflow-y:hidden!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Add Block"] .office-ribbon-gallery-group{
+  display:flex!important;flex-direction:column!important;flex:0 0 auto!important;
+  width:max-content!important;min-width:0!important;max-width:none!important;
+  box-sizing:border-box!important;padding:3px 5px 0!important;
+  border-right:1px solid #cad4e3!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Add Block"] .office-ribbon-gallery-group-tiles{
+  --une-ribbon-tile-width:clamp(54px,3.9vw,68px);
+  display:grid!important;grid-template-columns:repeat(2,var(--une-ribbon-tile-width))!important;
+  grid-template-rows:repeat(2,39px)!important;grid-auto-flow:row!important;
+  align-content:start!important;justify-content:start!important;
+  gap:2px 3px!important;height:80px!important;width:max-content!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Add Block"] .office-ribbon-gallery-group-tiles:has(>:only-child),
+.office-builder-ribbon #page-builder-tab-content[aria-label="Add Block"] .office-ribbon-gallery-group-tiles:has(>:nth-child(2):last-child){
+  grid-template-columns:var(--une-ribbon-tile-width)!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Add Block"] .office-ribbon-gallery-group-tiles>.office-ribbon-component-tile{
+  display:flex!important;flex-direction:column!important;
+  align-items:center!important;justify-content:center!important;
+  box-sizing:border-box!important;flex:none!important;
+  width:var(--une-ribbon-tile-width)!important;min-width:var(--une-ribbon-tile-width)!important;
+  max-width:var(--une-ribbon-tile-width)!important;
+  height:39px!important;min-height:39px!important;max-height:39px!important;
+  padding:2px 1px!important;margin:0!important;gap:2px!important;
+  border:1px solid #dce5f0!important;border-radius:4px!important;
+  background:#fff!important;color:#096be6!important;text-align:center!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Add Block"] .office-ribbon-gallery-group-tiles>.office-ribbon-component-tile>svg,
+.office-builder-ribbon #page-builder-tab-content[aria-label="Add Block"] .office-ribbon-gallery-group-tiles>.office-ribbon-component-tile>img{
+  flex:0 0 17px!important;width:17px!important;height:17px!important;
+  display:block!important;object-fit:contain!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Add Block"] .office-ribbon-gallery-group-tiles>.office-ribbon-component-tile>span{
+  display:block!important;max-width:100%!important;width:100%!important;
+  font:500 9px/12px "Segoe UI",Arial,sans-serif!important;
+  text-align:center!important;white-space:nowrap!important;overflow:hidden!important;
+  text-overflow:ellipsis!important;color:#234468!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Add Block"] .office-ribbon-gallery-group-caption{
+  font:500 10px/15px "Segoe UI",Arial,sans-serif!important;
+  color:#526780!important;margin-top:auto!important;text-align:center!important;
+}
+/* Disabled controls stay visible and do not suggest that unsupported data is editable. */
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Data"] :is(input,select,button):disabled{
+  opacity:.38!important;filter:grayscale(1)!important;cursor:not-allowed!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Content"]:has(>.office-ribbon-image-content){
+  height:150px!important;min-height:150px!important;max-height:150px!important;
+  padding:5px 8px!important;overflow-x:auto!important;overflow-y:hidden!important;
+}
+.office-builder-ribbon .office-ribbon-image-content{
+  display:flex;flex-flow:row nowrap;align-items:stretch;gap:0;
+  min-width:650px;width:max-content;height:138px;
+}
+.office-builder-ribbon .office-ribbon-image-content>section{
+  display:flex;flex-direction:column;gap:8px;box-sizing:border-box;
+  padding:8px 12px 5px;min-width:190px;max-width:400px;
+  border-right:1px solid #cad4e3;
+}
+.office-builder-ribbon .office-ribbon-image-content strong{
+  display:flex;align-items:center;gap:6px;font-size:12px;color:#243852;
+}
+.office-builder-ribbon .office-ribbon-image-actions{
+  display:flex;flex-direction:column;gap:5px;
+}
+.office-builder-ribbon .office-ribbon-image-content button{
+  display:inline-flex;align-items:center;justify-content:flex-start;gap:6px;
+  height:29px;min-height:29px;min-width:0;padding:4px 8px;border-radius:4px;
+  border:1px solid #cbd6e5;background:#fff;color:#174477;
+  font:500 11px/16px "Segoe UI",Arial,sans-serif;cursor:pointer;
+}
+.office-builder-ribbon .office-ribbon-image-actions>button:first-child{
+  background:#096ee8;color:white;border-color:#096ee8;font-weight:600;
+}
+.office-builder-ribbon .office-ribbon-image-binding{
+  flex:0 0 340px;max-width:400px;
+}
+.office-builder-ribbon .office-ribbon-image-source-modes{
+  display:flex;gap:5px;
+}
+.office-builder-ribbon .office-ribbon-image-source-modes button[aria-pressed="true"]{
+  color:#075dce;border-color:#75aae8;background:#eaf3ff;
+}
+.office-builder-ribbon .office-ribbon-image-content label{
+  display:flex;flex-direction:column;gap:4px;font-size:11px;color:#3d506b;
+}
+.office-builder-ribbon .office-ribbon-image-content input,
+.office-builder-ribbon .office-ribbon-image-content select{
+  width:100%;height:29px;min-height:29px;box-sizing:border-box;
+  padding:3px 7px;border:1px solid #bfcbdc;border-radius:4px;
+  background:#fff;color:#183b64;font-size:12px;
+}
+.office-builder-ribbon .office-ribbon-image-options{
+  flex:0 0 190px;
+}
+.office-ribbon-image-picker-backdrop{
+  position:fixed;inset:0;z-index:1700;display:flex;align-items:flex-start;
+  justify-content:center;padding:12vh 16px 16px;box-sizing:border-box;
+  background:#0d264e66;
+}
+.office-ribbon-image-picker-dialog{
+  box-sizing:border-box;width:min(520px,100%);max-height:75vh;overflow-y:auto;
+  border-radius:8px;border:1px solid #c9d5e8;background:#fff;
+  padding:16px;box-shadow:0 16px 52px #09213e55;
+}
+.office-ribbon-image-picker-dialog>header{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  margin-bottom:12px;color:#1b3558;
+}
+.office-ribbon-image-picker-dialog>header button{
+  display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;
+  background:#fff;border:1px solid #ccd5e3;border-radius:4px;
+}
+.office-ribbon-image-picker-dialog .metadata-array-property{
+  display:flex;flex-direction:column;gap:10px;
+}
+.office-ribbon-image-picker-dialog input[type=file],.office-ribbon-image-picker-dialog select{
+  max-width:100%;min-width:0;width:100%;box-sizing:border-box;
+}
