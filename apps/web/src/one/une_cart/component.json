@@ -309,7 +309,7 @@
     },
     {
       "propertyKey": "stateObjectApiName",
-      "label": "State object",
+      "label": "Source Object — State",
       "kind": "OBJECT",
       "displayOrder": 450,
       "defaultValue": ""
