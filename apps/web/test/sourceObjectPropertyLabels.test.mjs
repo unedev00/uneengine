@@ -22,7 +22,7 @@ test('List View editor uses Source Object in both edit surfaces',()=>{
  assert.match(view,/<div className="properties-section-title">List records<\/div>\s*<label className="form-label">Source Object/);
 });
 test('SQL metadata label migration is tenant scoped, exact and preserves property names',()=>{
- const migration=file('../../server/src/system-support/migrations/20261028-source-object-property-labels.sql');
+ const migration=file('../../server/src/system-support/migrations/20270116-source-object-property-labels.sql');
  assert.match(migration,/p\.tenant_id=h\.tenant_id/);
  assert.match(migration,/p\.value_text=labels\.old_label/);
  assert.match(migration,/p\.property_path LIKE '\/propertyDefinitions\/%\/label'/);
