@@ -45,7 +45,7 @@ test('Data keeps functional groups and Responsive removes its redundant override
  assert.match(data,/recordSortFieldApiName/);
  assert.match(responsive,/office-ribbon-responsive-visibility/);
  assert.doesNotMatch(responsive,/office-ribbon-responsive-overrides/);
- assert.match(responsive,/office-ribbon-responsive-rules/);
+ assert.doesNotMatch(responsive,/office-ribbon-responsive-rules/);
 });
 test('extra metadata styling remains available outside the fixed ribbon',()=>{
  const style=readFileSync(new URL('../src/core/builders/PageBuilder/PageBuilderAdvancedStyle.tsx',import.meta.url),'utf8');
