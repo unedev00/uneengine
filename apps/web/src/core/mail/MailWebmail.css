@@ -200,6 +200,9 @@
 .md-mail-login-admin { margin:20px auto 0;color:var(--mail-blue);font-size:13px;text-decoration:none; }
 .md-mail-login-admin:hover { text-decoration:underline; }
 .md-mail-login-card .md-mail-error { padding:12px;border-radius:8px; }
+.md-mail-login-help { display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin:-7px 0 16px;color:var(--mail-muted);font-size:13px; }
+.md-mail-password-toggle { padding:0;border:0;background:none;color:var(--mail-blue);font:inherit;font-weight:650;text-decoration:underline;text-underline-offset:2px;cursor:pointer; }
+.md-mail-password-toggle:focus-visible { outline:2px solid var(--mail-blue);outline-offset:3px;border-radius:2px; }
 
 @media(max-width:1050px){
  .md-mail-header { grid-template-columns:205px minmax(160px,1fr) auto;gap:10px;padding-right:14px; }
@@ -321,3 +324,140 @@
 @media(prefers-color-scheme:dark){
  .md-mail:not([data-theme="light"]){--mail-action-ink:#9acaff}
 }
+
+/* Keep mail screens self-contained: workspace/browser dark-mode tokens must not
+   combine light surfaces with light text (or vice versa). Covers login, inbox,
+   message reading and compose, including native inputs/autofill. */
+.md-mail {
+  --mail-bg: #f5f7fc;
+  --mail-surface: #ffffff;
+  --mail-text: #192b3e;
+  --mail-muted: #506174;
+  --mail-line: #cfd9e6;
+  --mail-blue: #0754b8;
+  --mail-soft-blue: #deebff;
+  --mail-button-blue: #0754b8;
+  --mail-field-bg: #ffffff;
+  --mail-subtle-bg: #edf3fa;
+  --mail-hover-bg: #e5edf8;
+  --mail-error-bg: #fff0f1;
+  --mail-error-text: #912234;
+  --mail-notice-bg: #e5f6eb;
+  --mail-notice-text: #155a33;
+  --mail-action-ink: #0754b8;
+  color-scheme: light;
+  background: var(--mail-bg);
+  color: var(--mail-text);
+}
+@media (prefers-color-scheme: dark) {
+  .md-mail:not([data-theme="light"]) {
+    --mail-bg: #181d26;
+    --mail-surface: #252d39;
+    --mail-text: #f2f6fc;
+    --mail-muted: #bdcadb;
+    --mail-line: #526076;
+    --mail-blue: #8dbbff;
+    --mail-soft-blue: #283f61;
+    --mail-button-blue: #1455ae;
+    --mail-field-bg: #1b2430;
+    --mail-subtle-bg: #323e50;
+    --mail-hover-bg: #38485d;
+    --mail-error-bg: #4c2630;
+    --mail-error-text: #ffd3d9;
+    --mail-notice-bg: #1f4637;
+    --mail-notice-text: #b8f0d0;
+    --mail-action-ink: #b0d1ff;
+    color-scheme: dark;
+  }
+}
+.md-mail[data-theme="dark"] {
+  --mail-bg: #181d26;
+  --mail-surface: #252d39;
+  --mail-text: #f2f6fc;
+  --mail-muted: #bdcadb;
+  --mail-line: #526076;
+  --mail-blue: #8dbbff;
+  --mail-soft-blue: #283f61;
+  --mail-button-blue: #1455ae;
+  --mail-field-bg: #1b2430;
+  --mail-subtle-bg: #323e50;
+  --mail-hover-bg: #38485d;
+  --mail-error-bg: #4c2630;
+  --mail-error-text: #ffd3d9;
+  --mail-notice-bg: #1f4637;
+  --mail-notice-text: #b8f0d0;
+  --mail-action-ink: #b0d1ff;
+  color-scheme: dark;
+}
+.md-mail :is(h1,h2,h3),
+.md-mail-login-card,
+.md-mail-compose-header h2 { color: var(--mail-text); opacity: 1; }
+.md-mail-login-card,
+.md-mail-compose-window,
+.md-mail-main,
+.md-mail-secondary,
+.md-mail-attachment,
+.md-mail-message-row { background: var(--mail-surface); color: var(--mail-text); }
+.md-mail-kicker,
+.md-mail-muted,
+.md-mail-field,
+.md-mail-sidebar-caption,
+.md-mail-count,
+.md-mail-progress,
+.md-mail-empty,
+.md-mail-account,
+.md-mail-row-date,
+.md-mail-compose-line,
+.md-mail-compose-header .md-mail-icon-button { color: var(--mail-muted); }
+.md-mail-field input,
+.md-mail-compose-line input,
+.md-mail-compose-body,
+.md-mail-search input {
+  background: var(--mail-field-bg);
+  color: var(--mail-text);
+  -webkit-text-fill-color: var(--mail-text);
+  caret-color: var(--mail-text);
+}
+.md-mail-field input { border-color: var(--mail-line); }
+.md-mail :is(input,textarea)::placeholder { color: var(--mail-muted); opacity: 1; }
+.md-mail :is(input,textarea,button,select):focus-visible {
+  outline: 2px solid var(--mail-blue);
+  outline-offset: 2px;
+}
+.md-mail-search input { background: transparent; }
+.md-mail-compose-body { background: var(--mail-surface); }
+.md-mail-search,
+.md-mail-compose-header,
+.md-mail-row-avatar,
+.md-mail-avatar,
+.md-mail-attachment,
+.md-mail-compose-files>span { background: var(--mail-subtle-bg); color: var(--mail-text); }
+.md-mail-search:focus-within { background: var(--mail-field-bg); }
+.md-mail-icon-button:hover:not(:disabled),
+.md-mail-secondary:hover,
+.md-mail-attachment:hover,
+.md-mail-attach-button:hover,
+.md-mail-draft-button:hover { background: var(--mail-hover-bg); }
+.md-mail-compose-line input { border-color: var(--mail-line); }
+.md-mail-login-icon,
+.md-mail-empty-icon { background: var(--mail-soft-blue); color: var(--mail-blue); }
+.md-mail-login-card .md-mail-login-admin { color: var(--mail-blue); }
+.md-mail-login-card .md-mail-field input:focus { border-color: var(--mail-blue); }
+.md-mail-primary,
+.md-mail-compose-button { background: var(--mail-button-blue); color: #fff; -webkit-text-fill-color: #fff; }
+.md-mail-primary:hover:not(:disabled),
+.md-mail-compose-button:hover:not(:disabled) { background: color-mix(in srgb,var(--mail-button-blue) 85%,black); }
+.md-mail-error { background: var(--mail-error-bg); color: var(--mail-error-text); }
+.md-mail-notice { background: var(--mail-notice-bg); color: var(--mail-notice-text); }
+.md-mail-empty h2,
+.md-mail-compose-header h2,
+.md-mail-message-meta strong { color: var(--mail-text); }
+.md-mail-unread-label { background: var(--mail-soft-blue); color: var(--mail-action-ink); }
+.md-mail-folder.is-active { color: var(--mail-action-ink); }
+.md-mail-folder:hover:not(:disabled) { background: var(--mail-hover-bg); }
+.md-mail-compose-files button,
+.md-mail-feedback button { color: inherit; }
+.md-mail-message-row.is-unread { background: var(--mail-soft-blue); color: var(--mail-text); }
+.md-mail-message-row.is-unread:hover:not(:disabled) { background: var(--mail-hover-bg); }
+.md-mail-header .md-mail-icon-button,
+.md-mail-compose-footer .md-mail-icon-button { color: var(--mail-muted); }

@@ -27,20 +27,64 @@ export function screenFieldIsVisible(field: Record<string, unknown>, values: Rec
   const checks = conditions.map((condition) => {
     const actual = values[String(condition.field ?? '')];
     const expected = condition.value;
+    const actualNumber = comparableNumber(actual);
+    const expectedNumber = comparableNumber(expected);
+    const actualDate = comparableDate(actual);
+    const expectedDate = comparableDate(expected);
+    const comparison = actualNumber !== undefined && expectedNumber !== undefined
+      ? Math.sign(actualNumber - expectedNumber)
+      : actualDate !== undefined && expectedDate !== undefined
+        ? Math.sign(actualDate - expectedDate)
+        : undefined;
+    const actualText = String(actual ?? '');
+    const expectedText = String(expected ?? '');
     switch (String(condition.operator ?? 'Equals')) {
       case 'Not Equals':
-      case 'Not Equal To': return String(actual ?? '') !== String(expected ?? '');
-      case 'Is Null': return actual === undefined || actual === null || actual === '';
-      case 'Is Not Null': return actual !== undefined && actual !== null && actual !== '';
-      case 'Contains': return String(actual ?? '').includes(String(expected ?? ''));
-      case 'Starts With': return String(actual ?? '').toLocaleLowerCase().startsWith(String(expected ?? '').toLocaleLowerCase());
-      case 'Equals':
-      default: return String(actual ?? '') === String(expected ?? '');
+      case 'Not Equal To':
+      case 'Does Not Equal': return actualText !== expectedText;
+      case 'Is Null': return actual === undefined || actual === null || actual === ''
+        || (Array.isArray(actual) && actual.length === 0);
+      case 'Is Not Null': return actual !== undefined && actual !== null && actual !== ''
+        && !(Array.isArray(actual) && actual.length === 0);
+      case 'Greater Than': return comparison !== undefined && comparison > 0;
+      case 'Greater Than or Equal':
+      case 'Greater Than or Equal To': return comparison !== undefined && comparison >= 0;
+      case 'Less Than': return comparison !== undefined && comparison < 0;
+      case 'Less Than or Equal':
+      case 'Less Than or Equal To': return comparison !== undefined && comparison <= 0;
+      case 'Contains': return typeof actual === 'string' && actual.includes(expectedText);
+      case 'Does Not Contain': return typeof actual === 'string' && !actual.includes(expectedText);
+      case 'Starts With': return actualText.toLocaleLowerCase().startsWith(expectedText.toLocaleLowerCase());
+      case 'Includes': return Array.isArray(actual)
+        ? actual.some((item) => String(item) === expectedText)
+        : typeof actual === 'string' && actual.split(';').includes(expectedText);
+      case 'Equals': return actualText === expectedText;
+      default: return false;
     }
   });
   return String(field.visibilityLogic ?? 'All').toLowerCase() === 'any'
     ? checks.some(Boolean)
     : checks.every(Boolean);
+}
+
+function comparableNumber(value: unknown): number | undefined {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : undefined;
+  if (typeof value !== 'string' || value.trim() === '') return undefined;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function comparableDate(value: unknown): number | undefined {
+  if (typeof value !== 'string'
+      || !/^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})?)?$/.test(value)) {
+    return undefined;
+  }
+  const [year, month, day] = value.slice(0, 10).split('-').map(Number);
+  const calendarDate = new Date(Date.UTC(year, month - 1, day));
+  if (calendarDate.getUTCFullYear() !== year || calendarDate.getUTCMonth() !== month - 1
+      || calendarDate.getUTCDate() !== day) return undefined;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
 }
 
 

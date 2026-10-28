@@ -36,6 +36,10 @@ export function createLoginView(logoUrl: string) {
     const [passwordVisible, setPasswordVisible] = useState(false);
     const [message, setMessage] = useState(error ?? '');
     const [submitting, setSubmitting] = useState(false);
+    const [mailAdminLogin] = useState(() => {
+      try { return window.sessionStorage.getItem('md_auth_return_to') === '/mail-admin'; }
+      catch { return false; }
+    });
     const [challenge,setChallenge]=useState<{challenge_token:string;setup_secret?:string;enrollment_required?:boolean}|null>(null);
     const [code,setCode]=useState('');
     const [providers,setProviders]=useState<Array<{id:string;label:string}>>([]);
@@ -104,7 +108,7 @@ export function createLoginView(logoUrl: string) {
         {branding && <div className="auth-product-identity"><div className="auth-product-monogram" aria-hidden="true">{branding.label.slice(0,1)}</div><div><div className="eyebrow">{branding.eyebrow}</div><h1>{branding.label}</h1></div></div>}
         {!branding && <UneBrandLogo className="auth-brand-logo" src={logoUrl} />}
         {!branding && <div className="eyebrow">UNEENGINE WORKSPACE</div>}
-        {branding ? <><h2 className="auth-product-heading">Welcome back</h2><p>{branding.signInDescription}</p></> : <><h1>Welcome back</h1><p>Sign in to manage your organization&apos;s metadata and workflows.</p></>}
+        {branding ? <><h2 className="auth-product-heading">Welcome back</h2><p>{branding.signInDescription}</p></> : <><h1>Welcome back</h1><p>{mailAdminLogin?'Sign in to Mail Administration.':'Sign in to manage your organization&apos;s metadata and workflows.'}</p></>}
         {branding && <div className="auth-product-subline">{branding.tagline}</div>}
         {message && <div className="auth-error" role="alert">
           {message}{onRetry && <button type="button" className="text-action" onClick={onRetry}>Retry connection</button>}
@@ -124,12 +128,14 @@ export function createLoginView(logoUrl: string) {
         <input className="form-control" id="login-password" name="password"
           type={passwordVisible ? 'text' : 'password'} value={password}
           onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" required />
-        <button className="text-action" type="button" aria-controls="login-password" onClick={(event) => {
-          const field = event.currentTarget.form?.elements.namedItem('password');
-          if (field instanceof HTMLInputElement) setPassword(field.value);
-          setPasswordVisible((value) => !value);
-        }}>{passwordVisible ? 'Hide password' : 'Show password'}</button>
-        <button className="text-action" type="button" onClick={()=>setRecovering(true)}>Forgot password?</button>
+        <div className="auth-inline-actions">
+          <button className="text-action" type="button" aria-controls="login-password" onClick={(event) => {
+            const field = event.currentTarget.form?.elements.namedItem('password');
+            if (field instanceof HTMLInputElement) setPassword(field.value);
+            setPasswordVisible((value) => !value);
+          }}>{passwordVisible ? 'Hide password' : 'Show password'}</button>
+          <button className="text-action" type="button" onClick={()=>setRecovering(true)}>Forgot password?</button>
+        </div>
         {providers.map(provider=><button key={provider.id} type="button" className="btn" disabled={submitting} onClick={()=>{
           setSubmitting(true);void apiRequest<{url:string}>('/auth/federation/start',{method:'POST',body:JSON.stringify({providerId:provider.id})})
             .then(r=>{

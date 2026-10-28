@@ -68,6 +68,35 @@ test('Flow drafts are checked before writes and supported Screen graph validatio
     connectors:[{from:1,to:2,kind:'normal'},{from:2,to:3,kind:'normal'}]});
   assert.equal(validation.valid,true);
   assert.deepEqual(validation.errors,[]);
+  const visibility=await engine.validateDraft('tenant','user','ScreenVisibility',{
+    apiName:'ScreenVisibility',flowType:'Screen Flow',elements:[
+      {id:1,type:'Start',config:{}},
+      {id:2,type:'Screen',config:{fields:[
+        {apiName:'Quantity',type:'Number'},
+        {apiName:'ShowDetails',type:'Text',visibilityLogic:'All',visibilityConditions:[
+          {field:'Quantity',operator:'Greater Than or Equal To',value:'10'}
+        ]}
+      ]}},
+      {id:3,type:'End',config:{}}
+    ],connectors:[{from:1,to:2,kind:'normal'},{from:2,to:3,kind:'normal'}]
+  });
+  assert.equal(visibility.valid,true);
+  const invalidVisibility=await engine.validateDraft('tenant','user','InvalidScreenVisibility',{
+    apiName:'InvalidScreenVisibility',flowType:'Screen Flow',elements:[
+      {id:1,type:'Start',config:{}},
+      {id:2,type:'Screen',config:{fields:[
+        {apiName:'Quantity',type:'Number'},
+        {apiName:'ShowDetails',type:'Text',visibilityLogic:'Every',visibilityConditions:[
+          {field:'Missing',operator:'Unknown Operator',value:'10'}
+        ]}
+      ]}},
+      {id:3,type:'End',config:{}}
+    ],connectors:[{from:1,to:2,kind:'normal'},{from:2,to:3,kind:'normal'}]
+  });
+  assert.equal(invalidVisibility.valid,false);
+  assert.match(invalidVisibility.errors.join(' '),/visibility logic must be All or Any/);
+  assert.match(invalidVisibility.errors.join(' '),/must reference another screen field/);
+  assert.match(invalidVisibility.errors.join(' '),/Unsupported Screen visibility operator/);
 });
 
 test('activating a newer Flow version deactivates existing versions before publishing',async()=>{

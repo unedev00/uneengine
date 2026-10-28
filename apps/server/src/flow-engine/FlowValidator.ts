@@ -39,6 +39,12 @@ export async function validateFlowDraft(rbac:RbacEngine|undefined,tenantId:strin
   'equals','notequals','greaterthan','greaterthanorequalto','lessthan','lessthanorequalto',
   'isnull','isnotnull','contains','startswith','endswith','doesnotcontain','notcontains','ischanged','wasset'
  ]);
+ const screenVisibilityOperators=new Set([
+  'Equals','Not Equals','Not Equal To','Does Not Equal','Greater Than',
+  'Greater Than or Equal','Greater Than or Equal To','Less Than',
+  'Less Than or Equal','Less Than or Equal To','Is Null',
+  'Is Not Null','Contains','Does Not Contain','Starts With','Includes'
+ ]);
  const normalizeOperator=(value:unknown)=>String(value??'Equals').trim().toLowerCase().replace(/[\s_-]+/g,'');
  const validConditionList=(value:unknown,recordTrigger:boolean,location:string,
   fieldPattern?:RegExp)=>{
@@ -700,6 +706,28 @@ export async function validateFlowDraft(rbac:RbacEngine|undefined,tenantId:strin
      if(typeof name!=='string'||!/^[A-Za-z][A-Za-z0-9_]*$/.test(name)||names.has(name))
       errors.push('Screen fields require unique safe API names');
      else names.add(name);
+    }
+    for(const field of fields){
+     if(!field||typeof field!=='object'||Array.isArray(field))continue;
+     const config=field as Record<string,unknown>;
+     const fieldName=String(config.apiName??'');
+     if(config.visibilityLogic!==undefined
+       &&!['all','any'].includes(String(config.visibilityLogic).toLowerCase()))
+      errors.push('Screen visibility logic must be All or Any: '+fieldName);
+     if(config.visibilityConditions===undefined)continue;
+     if(!Array.isArray(config.visibilityConditions)){
+      errors.push('Screen visibility conditions must be a list: '+fieldName);continue;
+     }
+     for(const condition of config.visibilityConditions){
+      if(!condition||typeof condition!=='object'||Array.isArray(condition)){
+       errors.push('Screen contains an invalid visibility condition: '+fieldName);continue;
+      }
+      const rule=condition as Record<string,unknown>;
+      if(typeof rule.field!=='string'||!names.has(rule.field)||rule.field===fieldName)
+       errors.push('Screen visibility condition must reference another screen field: '+fieldName);
+      if(!screenVisibilityOperators.has(String(rule.operator??'Equals')))
+       errors.push('Unsupported Screen visibility operator: '+String(rule.operator??''));
+     }
     }
    }
   }

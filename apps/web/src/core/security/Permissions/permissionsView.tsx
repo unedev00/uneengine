@@ -11,7 +11,7 @@ import { isStandalonePagePresentation, pageCanvasPresentationStyle } from '../..
 import { insertFlowElementAtPath } from '../../builders/FlowBuilder/flowInsertElement.mjs';
 import AdvancedPermissionRules from './AdvancedPermissionRules';
 import AdvancedSharingSettings from './AdvancedSharingSettings';
-import FieldSecurityWizard from './FieldSecurityWizard';
+import FieldSecurityWizard from './FieldSecurityWizardPanel';
 import {resolveSetupNavigation} from '../../platform/Workspace/platformSetupNavigation';
 import {readVerifiedMetadata,saveVerifiedMetadata,type MetadataPublicationResponse} from '../../metadata/Cache/verifiedMetadataCache';
 import { queueOfflineRecord, listOfflineRecords, markOfflineRecord, removeOfflineRecord,
@@ -236,6 +236,12 @@ function Permissions({
   const [selectedId, setSelectedId] = useState(accessControl.permissionSets[0]?.id ?? '');
   const [query, setQuery] = useState('');
   const [saving, setSaving] = useState(false);
+  useEffect(()=>{
+    if(tab!=='roles'||!newRoleId)return;
+    const previous=document.activeElement instanceof HTMLElement?document.activeElement:null;
+    document.querySelector<HTMLElement>('.permission-role-dialog input:not([disabled])')?.focus();
+    return()=>previous?.focus();
+  },[tab,newRoleId]);
   const [navigationApps, setNavigationApps] = useState<Array<{ apiName: string; label: string }>>([]);
   const [actionPermissionOptions,setActionPermissionOptions] = useState<Array<{resource:string;label:string}>>([]);
   useEffect(()=>{
@@ -379,6 +385,11 @@ function Permissions({
     setNewRoleId(id);
     setSelectedId(id);
     onRouteResourceChange('Roles', id);
+  };
+  const discardRoleDraft=()=>{
+    if(!newRoleId||saving)return;
+    setDraft(current=>({...current,roles:current.roles.filter(role=>role.id!==newRoleId)}));
+    setNewRoleId(null);setSelectedId('');onRouteResourceChange('Roles');
   };
   const createPublicGroup = () => {
     const id = crypto.randomUUID();
@@ -696,7 +707,7 @@ function Permissions({
           if (!selectedRole) return <div className="empty-state">Select a role or create one to get started.</div>;
           const assignedUsers = draft.users.filter((user) => user.roleId === selectedRole.id);
           const childRoles = draft.roles.filter((role) => role.parentRoleId === selectedRole.id);
-          return <>
+          const roleContent = <>
             <div className="section-toolbar"><div><h2>{selectedRole.name}</h2><p>Role hierarchy · {assignedUsers.length} assigned users · {childRoles.length} child roles</p></div><button className="btn" onClick={() => {
               if (assignedUsers.length || childRoles.length) return;
               if (!confirmDestructiveAction('Delete', 'Role "'+selectedRole.name+'"')) return;
@@ -704,14 +715,29 @@ function Permissions({
               setSelectedId('');
             }} disabled={Boolean(assignedUsers.length || childRoles.length)}><Trash2 size={14} />Delete</button></div>
             <div className="permission-form-grid">
-              <PlatformPageSlot slotKey="field-rbac-15"><label className="form-label">Role Name<input className="form-control" value={selectedRole.name} onChange={(event) => setDraft((current) => ({ ...current, roles: current.roles.map((role) => role.id === selectedRole.id ? { ...role, name: event.target.value } : role) }))} /></label></PlatformPageSlot>
+              <PlatformPageSlot slotKey="field-rbac-15"><label className="form-label">Role Name<input className="form-control" autoFocus={selectedRole.id===newRoleId} value={selectedRole.name} onChange={(event) => setDraft((current) => ({ ...current, roles: current.roles.map((role) => role.id === selectedRole.id ? { ...role, name: event.target.value } : role) }))} /></label></PlatformPageSlot>
               <PlatformPageSlot slotKey="field-rbac-16"><label className="form-label">Role API Name<input className="form-control" value={selectedRole.apiName} onChange={(event) => setDraft((current) => ({ ...current, roles: current.roles.map((role) => role.id === selectedRole.id ? { ...role, apiName: event.target.value } : role) }))} /></label></PlatformPageSlot>
               <PlatformPageSlot slotKey="field-rbac-17"><label className="form-label">Parent Role (permission structure, not reporting manager)<select className="form-control" value={selectedRole.parentRoleId ?? ''} onChange={(event) => setDraft((current) => ({ ...current, roles: current.roles.map((role) => role.id === selectedRole.id ? { ...role, parentRoleId: event.target.value || null } : role) }))}><option value="">No parent role</option>{draft.roles.filter((role) => role.id !== selectedRole.id).map((role) => <option key={role.id} value={role.id}>{role.name}</option>)}</select></label></PlatformPageSlot>
             </div>
-            {selectedRole.id === newRoleId && <div className="setup-draft-footer"><span role="status">Unsaved role draft</span><button className="btn" disabled={saving} onClick={() => { setDraft(current => ({...current, roles: current.roles.filter(role => role.id !== newRoleId)})); setNewRoleId(null); setSelectedId(''); onRouteResourceChange('Roles'); }}>Discard draft</button><button className="btn btn-brand" disabled={saving || !selectedRole.name.trim() || !selectedRole.apiName.trim()} onClick={() => void saveDraft()}>{saving ? 'Saving…' : 'Save role'}</button></div>}
+            {selectedRole.id === newRoleId && <div className="setup-draft-footer"><span role="status">Unsaved role draft</span><button className="btn" disabled={saving} onClick={discardRoleDraft}>Discard draft</button><button className="btn btn-brand" disabled={saving || !selectedRole.name.trim() || !selectedRole.apiName.trim()} onClick={() => void saveDraft()}>{saving ? 'Saving…' : 'Save role'}</button></div>}
             <h3 className="permission-section-heading">Assigned Users</h3>
             {assignedUsers.length ? <ul>{assignedUsers.map((user) => <li key={user.id}>{user.name} · {user.username}</li>)}</ul> : <p className="permission-help">Assign users to this role in Users & Assignments.</p>}
           </>;
+          if(selectedRole.id!==newRoleId)return roleContent;
+          return createPortal(<div className="permission-role-backdrop" role="presentation">
+            <section className="permission-role-dialog" role="dialog" aria-modal="true" aria-label="Create role"
+              onKeyDown={event=>{
+                if(event.key==='Escape'){event.preventDefault();discardRoleDraft();return;}
+                if(event.key!=='Tab')return;
+                const controls=Array.from(event.currentTarget.querySelectorAll<HTMLElement>(
+                  'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'
+                ));
+                if(!controls.length){event.preventDefault();return;}
+                const first=controls[0],last=controls[controls.length-1];
+                if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
+                else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
+              }}>{roleContent}</section>
+          </div>,document.body);
         })()}
         {tab === 'profiles' && selectedProfile && <>
           <AdvancedPermissionRules actionOptions={actionPermissionOptions} systemPermissionKeys={allSystemPermissions.map(([key])=>key)} policy={selectedProfile} onChange={patch=>patchProfile(selectedProfile.id,patch)}/>
@@ -915,4 +941,3 @@ function Permissions({
 
 return Permissions;
 }
-
