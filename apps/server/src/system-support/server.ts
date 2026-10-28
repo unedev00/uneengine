@@ -2273,6 +2273,11 @@ export function createSystemServer(db:SqlPersistence) {
     const device=String(req.query.formFactor??'Desktop');
     const viewportWidth=Number(req.query.viewportWidth??0);
     const recordTypeId=typeof req.query.recordTypeId==='string'?req.query.recordTypeId:'';
+    const typeAccess=actorSession.user.recordTypeAccess;
+    const typeKey=req.params.objectApi+'.'+recordTypeId;
+    if(recordTypeId&&Object.prototype.hasOwnProperty.call(typeAccess,typeKey)
+      &&typeAccess[typeKey]!==true)
+      throw new Error('Record type is not available for this user');
     const [editLightningPage,canEdit,canDelete]=await Promise.all([
       pages.resolveRecordPage(actor.tenant_id,req.params.objectApi,
         String(req.query.appId??'Records'),actorSession.user.profileId,
