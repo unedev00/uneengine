@@ -185,3 +185,37 @@
  flex:0 1 230px!important;width:230px!important;min-width:0!important;
  max-width:230px!important;box-sizing:border-box!important;
 }
+
+/* The blueprint contains only the selected component's Design groups; all
+   less-common style operations remain in a separate, accessible dialog. */
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-advanced-style-trigger{
+ flex:0 0 100px!important;width:100px!important;min-width:100px!important;
+ max-width:100px!important;display:flex!important;align-items:center!important;
+ justify-content:center!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-advanced-style-trigger button{
+ display:flex;flex-flow:column nowrap;align-items:center;justify-content:center;
+ gap:5px!important;width:80px!important;min-height:60px!important;
+ border:0!important;background:transparent!important;color:#173c68!important;
+ font:500 10px/13px "Segoe UI",Arial,sans-serif!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-advanced-style-trigger button:hover{
+ background:#e7f1ff!important;
+}
+.office-ribbon-advanced-style-dialog{
+ box-sizing:border-box;width:min(820px,100%);max-height:80vh;overflow-y:auto;
+ border:1px solid #b6cbe5;border-radius:7px;background:#fff;
+ padding:18px;box-shadow:0 12px 42px #0e284a55;
+}
+.office-ribbon-advanced-style-dialog>header{
+ display:flex;align-items:center;justify-content:space-between;margin-bottom:15px;
+}
+.office-ribbon-advanced-style-content{
+ display:flex!important;flex-flow:row wrap!important;gap:8px!important;align-items:flex-start!important;
+ max-width:100%!important;overflow-x:auto!important;padding-bottom:14px;
+}
+.office-ribbon-advanced-style-content>.office-ribbon-group{
+ flex:0 0 205px!important;min-width:180px!important;max-width:245px!important;
+ height:auto!important;min-height:100px!important;max-height:none!important;
+ overflow:visible!important;padding:8px!important;border:1px solid #dbe2ed!important;
+}
