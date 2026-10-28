@@ -32,7 +32,12 @@ export function RibbonFilters({draft,onChange,onApply,onCancel,fields}:{
     <div className="office-ribbon-mini-group">
       <label>Match <select aria-label="Filter logic" value={draft.filterLogic==='OR'?'OR':'AND'} onChange={e=>onChange({...draft,filterLogic:e.target.value})}>
         <option value="AND">All (AND)</option><option value="OR">Any (OR)</option>
-      </select></label><span className="office-ribbon-group-heading">Logic</span>
+      </select></label>
+      <div className="office-ribbon-logic-actions">
+        <button type="button" className="office-ribbon-icon-button" title="Add filter" aria-label="Add filter" disabled={!fields.length} onClick={add}><Plus size={17}/></button>
+        <button type="button" onClick={onCancel}>Cancel</button>
+        <button type="button" disabled={invalid} onClick={onApply}>Apply</button>
+      </div><span className="office-ribbon-group-heading">Logic</span>
     </div>
     <RibbonPages count={all.length} shown={4}>{(start,end)=>all.slice(start,end).map(({key,index,filter},i)=>{
       const raw=asRecord(filter),fieldName=String(raw.field??''),field=fields.find(f=>f.apiName===fieldName);
@@ -64,11 +69,7 @@ export function RibbonFilters({draft,onChange,onApply,onCancel,fields}:{
         <span className="office-ribbon-group-heading">Filter {start+i+1}{key!=='filters'?' · '+key:''}</span>
       </div>;
     })}</RibbonPages>
-    <button type="button" className="office-ribbon-icon-button" title="Add filter" aria-label="Add filter" disabled={!fields.length} onClick={add}><Plus size={17}/></button>
-    <div className="office-ribbon-commit-group">
-      <button type="button" onClick={onCancel}>Cancel</button>
-      <button type="button" disabled={invalid} onClick={onApply}>Apply</button>
-    </div>
+
   </div>;
 }
 const newCondition=():VisibilityCondition=>({source:'Device',operator:'Equals',value:'Desktop'});
