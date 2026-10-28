@@ -1,13 +1,13 @@
-import {useState} from 'react';
+import {useState,type ReactNode} from 'react';
 import {createPortal} from 'react-dom';
-import {Settings2,SlidersHorizontal,ChevronDown} from 'lucide-react';
+import {SlidersHorizontal,ChevronDown} from 'lucide-react';
 import type {LibraryComponentMetadata} from '../../metadata/Definitions/metadata';
 
 type PropertyDefinition=NonNullable<LibraryComponentMetadata['propertyDefinitions']>[number];
 type Values=Record<string,unknown>;
 /** A compact icon-first surface backed exclusively by the component's declared metadata. */
 export default function RibbonCapabilityControls({group,definitions,properties,onChange,icon}:{
- group:string;definitions:readonly PropertyDefinition[];properties:Values;onChange:(next:Values)=>void;icon:React.ReactNode;
+ group:string;definitions:readonly PropertyDefinition[];properties:Values;onChange:(next:Values)=>void;icon:ReactNode;
 }){
  const [open,setOpen]=useState(false);
  const enabled=definitions.length>0;
