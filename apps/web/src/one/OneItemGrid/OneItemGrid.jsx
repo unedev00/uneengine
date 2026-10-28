@@ -1,4 +1,5 @@
 import OneTenantImage from "../shared/OneTenantImage.jsx";
+import { evaluateFieldExpression } from "../shared/OneFieldExpression.js";
 import {
   css,
   records,
@@ -196,13 +197,13 @@ function ItemGrid({ p, rows }) {
         }}
       >
         {visibleRows.map((r, i) => {
-          const image = r?.[imageField],
+          const image = p.imageExpression ? evaluateFieldExpression(p.imageExpression,r) : r?.[imageField],
             validImage =
               typeof image === "string" && (/^https:\/\//i.test(image) || /^asset:[0-9a-f-]{36}$/i.test(image));
-          const name = view(r?.[titleField] ?? r?.Name ?? r?.name ?? "Record"),
+          const name = p.headingExpression ? evaluateFieldExpression(p.headingExpression,r) : view(r?.[titleField] ?? r?.Name ?? r?.name ?? "Record"),
             price = r?.[priceField];
-          const badge = badgeField ? String(r?.[badgeField] ?? "") : "";
-          const description = descriptionField ? String(r?.[descriptionField] ?? "") : "";
+          const badge = p.badgeExpression ? evaluateFieldExpression(p.badgeExpression,r) : badgeField ? String(r?.[badgeField] ?? "") : "";
+          const description = p.descriptionExpression ? evaluateFieldExpression(p.descriptionExpression,r) : descriptionField ? String(r?.[descriptionField] ?? "") : "";
           const isFeatured = featuredField && (r?.[featuredField] === true || r?.[featuredField] === "true");
           const span = isFeatured ? Math.max(1, Math.min(count, Number(p.featuredColumnSpan) || 2)) : 1;
           const rowSpan = isFeatured ? Math.max(1, Math.min(6, Number(p.featuredRowSpan) || 1)) : 1;
