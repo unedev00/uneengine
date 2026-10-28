@@ -1,6 +1,6 @@
 import { AlignLeft, AlignCenter, AlignRight, Bold, Italic, Underline, RefreshCw, Eye } from 'lucide-react';
 import RibbonColorPalette from './RibbonColorPalette';
-import ComponentPresentationProperties from '../ComponentProperties/ComponentPresentationProperties';
+import PageBuilderRibbonMetadataPager from './PageBuilderRibbonMetadataPager';
 import {availableComponentSettings,type PropertyDevice} from '../../components/Properties/componentSettingDefinitions';
 import {isPresentationProperty,presentationSection} from '../ComponentProperties/presentationPropertyModel.mjs';
 import {updateLayoutSettings,layoutSettings,type LayoutSettingKey} from '../../pages/TemplatePageRuntime/pageComponentLayout';
@@ -41,7 +41,7 @@ export function RibbonDesign({properties,componentType,definition,device,onChang
       </div><span>Colours</span>
     </div>
     {settings.length>0&&<div className="office-ribbon-inline-options office-ribbon-appearance-single">
-      <ComponentPresentationProperties definitions={settings} properties={properties} onChange={onChange}/>
+      <PageBuilderRibbonMetadataPager definitions={settings} properties={properties} onChange={onChange}/>
     </div>}
   </>;
 }
@@ -86,7 +86,7 @@ export function RibbonFormat({properties,componentType,definition,device,onChang
     <div className="office-ribbon-group"><div className="office-ribbon-stack">
       <label className="office-ribbon-inline-field">Opacity <input type="number" aria-label="Opacity percent" min={0} max={100} value={opacity} onChange={e=>{const n=Number(e.target.value);if(Number.isFinite(n)&&n>=0&&n<=100)setLayout('opacity',n);}}/></label>
     </div><span>Effects</span></div>
-    {remaining.length>0&&<div className="office-ribbon-inline-options"><ComponentPresentationProperties definitions={remaining} properties={properties} onChange={onChange}/></div>}
+    {remaining.length>0&&<div className="office-ribbon-inline-options"><PageBuilderRibbonMetadataPager definitions={remaining} properties={properties} onChange={onChange}/></div>}
   </>;
 }
 
