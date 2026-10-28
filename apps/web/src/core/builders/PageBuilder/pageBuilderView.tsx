@@ -2573,16 +2573,21 @@ function PageBuilder({
             }} onCancel={()=>selectRibbonTab('Component Data')}/>}
           {selected && ribbonTab==='Source' && (()=>{
             const definitions=(selectedCustomDefinition?.propertyDefinitions??[]).filter(d=>d.kind==='OBJECT'||d.kind==='OBJECT_FIELD');
-            const offset=Math.min(ribbonSourceOffset,Math.max(0,definitions.length-5));
+            const offset=Math.min(ribbonSourceOffset,Math.max(0,definitions.length-9));
+            const shown=definitions.slice(offset,offset+9);
+            const batches=Array.from({length:Math.ceil(shown.length/3)},(_,index)=>shown.slice(index*3,index*3+3));
             return <div className="office-ribbon-compact-strip" aria-label="Source and record scope">
-              <button type="button" className="office-ribbon-icon-button" title="Previous mappings" aria-label="Previous mappings" disabled={!offset}
-                onClick={()=>setRibbonSourceOffset(Math.max(0,offset-5))}><ChevronLeft size={16}/></button>
-              {definitions.slice(offset,offset+5).map(definition=><div className="office-ribbon-mini-group" key={definition.propertyKey}>
-                <label>{definition.label} <select value={String(selected.properties[definition.propertyKey]??'')} onChange={e=>updateComponent(selected.id,{properties:{...selected.properties,[definition.propertyKey]:e.target.value}})}>
-                  <option value="">Not selected</option>{(definition.kind==='OBJECT'?objects:objects.find(o=>o.apiName===(selected.properties.objectApiName??page.targetObject))?.fields??[]).map(item=><option key={item.apiName} value={item.apiName}>{item.label}</option>)}
-                </select></label><span className="office-ribbon-group-heading">Source</span></div>)}
-              <button type="button" className="office-ribbon-icon-button" title="Next mappings" aria-label="Next mappings" disabled={offset+5>=definitions.length}
-                onClick={()=>setRibbonSourceOffset(offset+5)}><ChevronRight size={16}/></button>
+              <button type="button" className="office-ribbon-icon-button" title="Previous mappings" aria-label="Previous mappings" disabled={!offset} onClick={()=>setRibbonSourceOffset(Math.max(0,offset-9))}><ChevronLeft size={16}/></button>
+              {batches.map((batch,index)=><div className="office-ribbon-mini-group" key={'source-'+index}>
+                {batch.map(definition=><label key={definition.propertyKey}>{definition.label}
+                  <select aria-label={definition.label} value={String(selected.properties[definition.propertyKey]??'')} onChange={e=>updateComponent(selected.id,{properties:{...selected.properties,[definition.propertyKey]:e.target.value}})}>
+                    <option value="">Not selected</option>
+                    {(definition.kind==='OBJECT'?objects:objects.find(o=>o.apiName===(selected.properties.objectApiName??page.targetObject))?.fields??[]).map(item=><option key={item.apiName} value={item.apiName}>{item.label}</option>)}
+                  </select>
+                </label>)}
+                <span className="office-ribbon-group-heading">Source {index+1}</span>
+              </div>)}
+              <button type="button" className="office-ribbon-icon-button" title="Next mappings" aria-label="Next mappings" disabled={offset+9>=definitions.length} onClick={()=>setRibbonSourceOffset(offset+9)}><ChevronRight size={16}/></button>
               <button type="button" onClick={()=>selectRibbonTab('Component Data')}>Done</button>
             </div>;
           })()}
