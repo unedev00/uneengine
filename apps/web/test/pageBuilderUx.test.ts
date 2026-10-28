@@ -109,7 +109,7 @@ test('Excel-style ribbon keeps all ten tabs, relocates page identity and removes
   const content=source.slice(source.indexOf('className="office-ribbon-topbar"'),source.indexOf('id="page-builder-tab-content"'));
   assert.doesNotMatch(content,/aria-label="Page name"/);
   assert.doesNotMatch(content,/office-ribbon-quick-save/);
-  assert.match(source,/className="office-ribbon-page-identity"/);
+  assert.match(source,/className="office-ribbon-group office-ribbon-page-identity"/);
   assert.match(source,/aria-label="Page name"/);
   assert.match(source,/aria-label="Choose page layout"/);
   assert.match(source,/aria-label="Cut selected component"/);
