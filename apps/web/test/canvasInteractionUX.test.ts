@@ -148,8 +148,11 @@ test('Free Canvas uses clean component objects and a compact ribbon-based palett
   assert.doesNotMatch(source, /className="record-component-head"/);
   assert.doesNotMatch(source, /Select a component to add it, or drag it onto the canvas\./);
   assert.doesNotMatch(source, /Free Canvas uses registered components from the shared library\./);
-  assert.match(source, /ribbonComponentGroups\.filter\(group=>group.id.startsWith\(ribbonAddCategory\+'-'\)\)\.map\(group=>/);
-  assert.match(source, /components\.slice\(index\*3,index\*3\+3\)/);
+  assert.match(source, /className="office-ribbon-add-library"/);
+  assert.match(source, /className="office-ribbon-component-tiles"/);
+  assert.match(source, /ribbonComponentGroups\.flatMap\(group=>group\.components\)/);
+  assert.match(source, /ribbonComponentSearch\.trim\(\)/);
+  assert.match(source, /onClick=\{\(\)=>addPaletteComponent\(component\.type\)\}/);
   assert.doesNotMatch(source, /remainingRibbonComponents\.map\(component=>/);
   assert.doesNotMatch(source, /<aside className="component-panel"/);
   assert.doesNotMatch(source, /renderPaletteComponentPreview/);
@@ -363,7 +366,8 @@ test('Page Builder Office ribbon keeps each control in one permanent logical gro
   assert.doesNotMatch(builder, /These settings belong only to the selected/);
   assert.doesNotMatch(builder, /<div className="reference-canvas-toolbar">/);
   assert.doesNotMatch(builder, /<button className="btn btn-full" onClick=\{\(\) => setActivePanel\(null\)\}>Done<\/button>/);
-  assert.match(builder, /ribbonComponentGroups\.filter\(group=>group.id.startsWith\(ribbonAddCategory\+'-'\)\)\.map\(group=>/);
+  assert.match(builder, /className="office-ribbon-add-library"/);
+  assert.match(builder, /className="office-ribbon-component-tile"/);
   assert.doesNotMatch(builder, /remainingRibbonComponents\.map\(component=>/);
   assert.match(styles, /grid-template-rows:repeat\(3,28px\)/);
   assert.match(styles, /office-ribbon-data-section/);
