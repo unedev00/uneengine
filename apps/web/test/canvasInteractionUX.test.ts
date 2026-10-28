@@ -520,6 +520,13 @@ test('Page Builder no longer offers redundant Show component controls', async ()
   const ribbon = await readFile(new URL('../src/core/builders/PageBuilder/PageBuilderRibbonStyle.tsx',import.meta.url),'utf8');
   const builder = await readFile(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
 
+
+
+  assert.doesNotMatch(ribbon,/Show component|onVisibleChange/);
+  assert.doesNotMatch(builder,/\{component\.visible \? 'Hide' : 'Show'\} element/);
+  assert.match(builder,/if \(!component\.visible\) return null;/, 'existing saved visibility remains respected');
+});
+
 test('Page Builder delegates conditional appearance to flows without exposing the legacy visibility rules editor', async () => {
   const builder = await readFile(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
   const ribbon = await readFile(new URL('../src/core/builders/PageBuilder/PageBuilderRibbonStyle.tsx',import.meta.url),'utf8');
@@ -529,10 +536,5 @@ test('Page Builder delegates conditional appearance to flows without exposing th
   // Published metadata is preserved for compatibility; the change only removes the editor.
   const runtime = await readFile(new URL('../src/core/components/Properties/componentVisibility.ts',import.meta.url),'utf8');
   assert.match(runtime,/visibilityRules|VisibilityRule/);
-});
-
-  assert.doesNotMatch(ribbon,/Show component|onVisibleChange/);
-  assert.doesNotMatch(builder,/\{component\.visible \? 'Hide' : 'Show'\} element/);
-  assert.match(builder,/if \(!component\.visible\) return null;/, 'existing saved visibility remains respected');
 });
 
