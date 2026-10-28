@@ -214,3 +214,86 @@
   width:96px!important;min-width:96px!important;max-width:96px!important;
   height:25px!important;
 }
+
+
+/* Typography overlap correction: both controls use the same 90px dropdown.
+   Reserve a complete column for numeric controls, never place alignment above it. */
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Properties"]>
+.office-ribbon-part-group:is([data-ribbon-group="Heading"],[data-ribbon-group="Supporting text"]){
+  flex:0 0 205px!important;width:205px!important;min-width:205px!important;max-width:205px!important;
+  padding:3px 7px 19px!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Properties"]
+.office-ribbon-text-layout.office-ribbon-typography-capabilities{
+  box-sizing:border-box!important;display:grid!important;
+  grid-template-columns:minmax(0,1fr)!important;
+  grid-template-rows:36px 36px 17px!important;gap:0!important;
+  width:100%!important;height:89px!important;min-height:89px!important;
+  max-height:89px!important;overflow:visible!important;align-content:center!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Properties"]
+:is(.office-ribbon-text-top,.office-ribbon-text-middle){
+  box-sizing:border-box!important;display:grid!important;
+  grid-template-columns:94px 80px!important;column-gap:5px!important;
+  align-items:center!important;justify-content:center!important;
+  width:100%!important;min-width:0!important;height:36px!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Properties"]
+.office-ribbon-text-top .office-ribbon-compact-size{
+  display:grid!important;grid-template-rows:25px 11px!important;gap:0!important;
+  justify-items:center!important;align-items:center!important;
+  width:94px!important;min-width:94px!important;max-width:94px!important;
+  height:36px!important;min-height:36px!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Properties"]
+.office-ribbon-text-top .office-ribbon-compact-size select{
+  box-sizing:border-box!important;display:block!important;width:90px!important;
+  min-width:90px!important;max-width:90px!important;height:25px!important;
+  min-height:25px!important;padding:2px 4px!important;font-size:12px!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Properties"]
+.office-ribbon-text-middle .office-ribbon-direct-number{
+  box-sizing:border-box!important;display:grid!important;
+  grid-template-columns:94px!important;grid-template-rows:25px 11px!important;
+  width:94px!important;min-width:94px!important;max-width:94px!important;
+  height:36px!important;min-height:36px!important;max-height:36px!important;
+  justify-items:center!important;align-items:center!important;
+  gap:0!important;padding:0!important;margin:0!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Properties"]
+.office-ribbon-text-middle .office-ribbon-direct-number .office-ribbon-command-glyph{
+  display:none!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Properties"]
+.office-ribbon-text-middle .office-ribbon-direct-number select{
+  box-sizing:border-box!important;grid-column:1!important;grid-row:1!important;
+  width:90px!important;min-width:90px!important;max-width:90px!important;
+  height:25px!important;min-height:25px!important;padding:2px 4px!important;
+  font-size:12px!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Properties"]
+.office-ribbon-text-middle .office-ribbon-direct-number .office-ribbon-command-label{
+  display:block!important;grid-column:1!important;grid-row:2!important;
+  width:94px!important;min-width:94px!important;max-width:94px!important;
+  justify-self:center!important;text-align:center!important;
+  font:500 10px/11px "Segoe UI",Arial,sans-serif!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Properties"]
+.office-ribbon-text-middle .office-ribbon-align-direct{
+  grid-column:2!important;display:grid!important;
+  grid-template-columns:repeat(3,24px)!important;gap:3px!important;
+  justify-content:center!important;align-content:center!important;
+  align-items:center!important;justify-items:center!important;
+  width:80px!important;min-width:80px!important;max-width:80px!important;
+  height:28px!important;min-height:28px!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Properties"]
+.office-ribbon-text-bottom{
+  justify-content:flex-end!important;width:100%!important;height:17px!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Properties"]
+.office-ribbon-text-bottom .office-ribbon-weight-direct{
+  display:grid!important;grid-template-columns:repeat(3,24px)!important;gap:3px!important;
+  justify-content:center!important;align-items:center!important;
+  width:80px!important;height:17px!important;max-height:17px!important;
+}

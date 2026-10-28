@@ -286,7 +286,7 @@ export default function RibbonCapabilityControls({group,definitions,properties,o
     </div>
     <div className="office-ribbon-text-middle">
       {lines&&<DirectNumber definition={lines} properties={properties} onChange={update}
-        label="Lines" icon={<WrapText size={16}/>}/>}
+        label="Lines"/>}
       {align&&<AlignmentOptions definition={align} properties={properties} onChange={update} label={group}/>}
     </div>
     <div className="office-ribbon-text-bottom">
