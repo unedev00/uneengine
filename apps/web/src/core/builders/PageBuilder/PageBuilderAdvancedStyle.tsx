@@ -11,6 +11,9 @@ const appearanceKeys=new Set(['theme','surface','tone','accentColor','glassBlur'
 const typographyKeys=new Set(['fontFamily','fontSize','fontWeight','lineHeight','letterSpacing','textAlign','textColor']);
 const borderKeys=new Set(['borderWidth','borderStyle']);
 const cardExtras=new Set(['cardDensity','cardHover']);
+/** The Item Grid already offers all of its other style actions in the six
+ * dedicated Design groups. Avoid duplicate Typography, Borders and palettes. */
+const itemGridDesignKeys=new Set(['theme','surface','cardDensity','cardHover']);
 const included=new Set([...appearanceKeys,...typographyKeys,...borderKeys]);
 const skipped=new Set(['radius','cardRadius','shadow','cardShadow','backgroundColor','borderColor',
   'opacity','padding','cardPadding','margin','gap','density','cardBorderWidth','lineHeight']);
@@ -22,8 +25,10 @@ export default function PageBuilderAdvancedStyle({properties,componentType,defin
  properties:Values;componentType:string;definition?:LibraryComponentMetadata;
  device:PropertyDevice;excludeKeys:string[];onChange:(properties:Values)=>void;
 }){
+ const isItemGrid=definition?.apiName==='une_item_grid';
  const all=availableComponentSettings(definition?.propertyDefinitions??[],device,definition?.version)
-   .filter(d=>isPresentationProperty(d)&&(cardExtras.has(d.propertyKey)||!excludeKeys.includes(d.propertyKey))&&
+   .filter(d=>(!isItemGrid||itemGridDesignKeys.has(d.propertyKey))&&
+     isPresentationProperty(d)&&(cardExtras.has(d.propertyKey)||!excludeKeys.includes(d.propertyKey))&&
      (cardExtras.has(d.propertyKey)||!d.group)&&!skipped.has(d.propertyKey)&&
      (cardExtras.has(d.propertyKey)||included.has(d.propertyKey)||d.section==='Appearance'||d.section==='Design'));
  const control=(d:Definition)=>{
@@ -52,13 +57,15 @@ export default function PageBuilderAdvancedStyle({properties,componentType,defin
    </label>;
    return null;
  };
- const groups=[
-   {name:'Appearance',defs:all.filter(d=>appearanceKeys.has(d.propertyKey))},
-   {name:'Typography',defs:all.filter(d=>typographyKeys.has(d.propertyKey))},
-   {name:'Borders',defs:all.filter(d=>borderKeys.has(d.propertyKey))},
-   {name:'Card extras',defs:all.filter(d=>cardExtras.has(d.propertyKey))},
-   {name:'Other styles',defs:all.filter(d=>!included.has(d.propertyKey)&&!cardExtras.has(d.propertyKey))}
- ].filter(group=>group.defs.length>0).flatMap(group=>
+ const groups=(isItemGrid
+   ? [{name:'Appearance',defs:all.filter(d=>d.propertyKey==='theme'||d.propertyKey==='surface')},
+      {name:'Card extras',defs:all.filter(d=>cardExtras.has(d.propertyKey))}]
+   : [{name:'Appearance',defs:all.filter(d=>appearanceKeys.has(d.propertyKey))},
+      {name:'Typography',defs:all.filter(d=>typographyKeys.has(d.propertyKey))},
+      {name:'Borders',defs:all.filter(d=>borderKeys.has(d.propertyKey))},
+      {name:'Card extras',defs:all.filter(d=>cardExtras.has(d.propertyKey))},
+      {name:'Other styles',defs:all.filter(d=>!included.has(d.propertyKey)&&!cardExtras.has(d.propertyKey))}]
+ ).filter(group=>group.defs.length>0).flatMap(group=>
    Array.from({length:Math.ceil(group.defs.length/3)},(_,index)=>({
      name:group.name+(index?' '+(index+1):''),
      defs:group.defs.slice(index*3,index*3+3)
@@ -68,11 +75,11 @@ export default function PageBuilderAdvancedStyle({properties,componentType,defin
  const changeStyle=(key:'fontStyle'|'textDecoration',value:string)=>
    onChange(updateLayoutSettings(properties,device==='Mobile'?'Phone':device==='Custom'?'Desktop':device,key,value));
  return <>
-  {groups.map(group=><div key={group.name} className="office-ribbon-group office-ribbon-extra-appearance">
+  {groups.map(group=><div key={group.name} className={'office-ribbon-group office-ribbon-extra-appearance'+(isItemGrid?' office-ribbon-item-grid-extra':'')}>
     <div className="office-ribbon-extra-grid">{group.defs.map(control)}</div>
     <span>{group.name}</span>
   </div>)}
-  {textEnabled&&<div className="office-ribbon-group office-ribbon-extra-appearance">
+  {textEnabled&&!isItemGrid&&<div className="office-ribbon-group office-ribbon-extra-appearance">
     <div className="office-ribbon-extra-text-buttons">
       <button type="button" title="Italic" aria-label="Italic" aria-pressed={style.fontStyle==='italic'}
         onClick={()=>changeStyle('fontStyle',style.fontStyle==='italic'?'normal':'italic')}><Italic size={17}/></button>
@@ -80,7 +87,7 @@ export default function PageBuilderAdvancedStyle({properties,componentType,defin
         onClick={()=>changeStyle('textDecoration',style.textDecoration==='underline'?'none':'underline')}><Underline size={17}/></button>
     </div><span>Text style</span>
   </div>}
-  {properties.visualStyle!==undefined&&<div className="office-ribbon-group office-ribbon-extra-appearance">
+  {!isItemGrid&&properties.visualStyle!==undefined&&<div className="office-ribbon-group office-ribbon-extra-appearance">
     <button type="button" className="office-ribbon-reset-style" title="Reset legacy visual overrides"
       onClick={()=>onChange({...properties,visualStyle:{}})}><RefreshCw size={16}/> Reset overrides</button>
     <span>Reset</span>
