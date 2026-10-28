@@ -81,7 +81,7 @@ export function bindPageStateProperties<T extends Record<string,unknown>>(
     const value=state[key];
     // Only explicitly declared list-shaped properties accept record collections.
     // Other state-bound text values retain their original scalar behaviour.
-    if(Array.isArray(properties[target])){
+    if(target==='items'||Array.isArray(properties[target])){
       const records=safePageStateRecordCollection(value);
       if(records)next[target]=records;
     }else if(value===null||['string','number','boolean'].includes(typeof value))
