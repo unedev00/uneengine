@@ -142,6 +142,7 @@ import RibbonColorPalette from './RibbonColorPalette';
 import {RibbonFilters,RibbonVisibilityRules} from './PageBuilderRibbonEditors';
 import PageBuilderActionRibbon from './PageBuilderActionRibbon';
 import PageBuilderRibbonMetadataPager from './PageBuilderRibbonMetadataPager';
+import RibbonFieldExpressionInput from './RibbonFieldExpressionInput';
 import {RibbonDesign,RibbonFormat,RibbonResponsive} from './PageBuilderRibbonStyle';
 import type {ComponentVisibilityRule} from '../../components/Properties/componentVisibility';
 import { canNestComponent, pageAppearanceTarget, pageAppearanceStyleKeys, updateLayoutSettings, type LayoutSettingKey, directChildren, isLayoutType, isDescendantOf, layoutTypes } from '../../pages/TemplatePageRuntime/pageComponentLayout';
@@ -2399,21 +2400,25 @@ function PageBuilder({
                 properties={selected.properties}
                 onChange={properties=>updateComponent(selected.id,{properties})}/>
             </div>}
-          {selected && ribbonTab === 'Component Content' && selectedCustomDefinition?.apiName==='une_item_grid' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
-            {(['imageFieldApiName','titleFieldApiName'] as const).map(key=><label key={key} className="office-ribbon-inline-field"><span className="office-ribbon-field-name">{key==='imageFieldApiName'?'Photo / image':'Heading'}</span>
-              <select data-card-mapping-field={key} aria-label={'Card '+key} value={String(selected.properties[key]??'')}
-                onChange={event=>updateComponent(selected.id,{properties:{...selected.properties,[key]:event.target.value}})}>
-                <option value="">Not mapped</option>
-                {(objects.find(obj=>obj.apiName===selected.properties.objectApiName)?.fields??[])
-                  .filter(field=>key!=='imageFieldApiName'||/image|file|url|photo|picture/i.test(String(field.dataType)+' '+field.apiName))
-                  .map(field=><option key={field.apiName} value={field.apiName}>{field.label}</option>)}
-              </select>
-            </label>)}
-
-          </div><span>Content Source & Image</span></div>}
-          {selected && ribbonTab === 'Component Content' && selectedCustomDefinition?.apiName==='une_item_grid' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
-            {(['descriptionFieldApiName','priceFieldApiName','badgeFieldApiName'] as const).map((key)=><label key={key} className="office-ribbon-inline-field"><span className="office-ribbon-field-name">{{descriptionFieldApiName:'Description',priceFieldApiName:'Value',badgeFieldApiName:'Badge'}[key]}</span><select aria-label={'Card '+key} value={String(selected.properties[key]??'')} onChange={event=>updateComponent(selected.id,{properties:{...selected.properties,[key]:event.target.value}})}><option value="">Not mapped</option>{(objects.find(obj=>obj.apiName===selected.properties.objectApiName)?.fields??[]).map(field=><option key={field.apiName} value={field.apiName}>{field.label}</option>)}</select></label>)}
-          </div><span>Additional Content</span></div>}
+          {selected && ribbonTab==='Component Content' && selectedCustomDefinition?.apiName==='une_item_grid' && <>
+            {([
+              ['Image','imageExpression','imageFieldApiName'],
+              ['Heading','headingExpression','titleFieldApiName'],
+              ['Supporting Text','descriptionExpression','descriptionFieldApiName'],
+              ['Badge','badgeExpression','badgeFieldApiName']
+            ] as const).map(([label,expressionKey,legacyKey])=>{
+              const fields=objects.find(obj=>obj.apiName===selected.properties.objectApiName)?.fields??[];
+              const existing=String(selected.properties[expressionKey]??'');
+              const legacy=String(selected.properties[legacyKey]??'');
+              return <div className="office-ribbon-group office-ribbon-expression-group" key={expressionKey}>
+                <div className="office-ribbon-stack">
+                  <RibbonFieldExpressionInput label={label} value={existing||(!Object.prototype.hasOwnProperty.call(selected.properties,expressionKey)&&legacy?'@'+legacy:'')}
+                    fields={fields} onChange={value=>updateComponent(selected.id,{properties:{...selected.properties,[expressionKey]:value}})}/>
+                  <span className="office-ribbon-stat">{fields.length?fields.length+' fields available':'Choose Source Object'}</span>
+                </div><span>{label}</span>
+              </div>;
+            })}
+          </>}
           {ribbonTab==='Component Properties' && ribbonAppearanceGroups.map(group=>{
             const definitions=selected?definitionsForPart(group,'Design'):[];
             return <div className="office-ribbon-group office-ribbon-part-group" key={group}>
@@ -2442,7 +2447,7 @@ function PageBuilder({
               {([['showImage','Show image'],['showTitle','Show heading'],['showDescription','Show supporting text']] as const).map(([key,label])=><label key={key} className="office-ribbon-checkbox"><input type="checkbox" checked={selected.properties[key]===true||(selected.properties[key]!==false&&key!=='showDescription')} onChange={e=>updateComponent(selected.id,{properties:{...selected.properties,[key]:e.target.checked}})}/>{label}</label>)}
             </div><span>Card Display</span></div>
             <div className="office-ribbon-group"><div className="office-ribbon-stack">
-              <label className="office-ribbon-checkbox"><input type="checkbox" checked={selected.properties.showPrice!==false} onChange={e=>updateComponent(selected.id,{properties:{...selected.properties,showPrice:e.target.checked}})}/>Show legacy value</label>
+              {Boolean(selected.properties.priceFieldApiName)&&<label className="office-ribbon-checkbox"><input type="checkbox" checked={selected.properties.showPrice!==false} onChange={e=>updateComponent(selected.id,{properties:{...selected.properties,showPrice:e.target.checked}})}/>Show legacy value</label>}
               <label className="office-ribbon-inline-field">Empty state <input aria-label="Card grid empty state" value={String(selected.properties.emptyText??'No matching records')} onChange={e=>updateComponent(selected.id,{properties:{...selected.properties,emptyText:e.target.value}})}/></label>
             </div><span>Empty State</span></div>
           </>}
