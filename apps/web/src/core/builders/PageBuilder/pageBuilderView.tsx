@@ -146,6 +146,8 @@ import RibbonColorPalette from './RibbonColorPalette';
 import {RibbonFilters,RibbonVisibilityRules} from './PageBuilderRibbonEditors';
 import PageBuilderActionRibbon from './PageBuilderActionRibbon';
 import PageBuilderRibbonMetadataPager from './PageBuilderRibbonMetadataPager';
+import UniversalRibbonInventory from './UniversalRibbonInventory';
+import './UniversalRibbonInventory.css';
 import RibbonFieldExpressionInput from './RibbonFieldExpressionInput';
 import {RibbonResponsive} from './PageBuilderRibbonStyle';
 import PageBuilderAdvancedStyle from './PageBuilderAdvancedStyle';
@@ -2554,6 +2556,10 @@ function PageBuilder({
         </div>
         <div id="page-builder-tab-content" ref={ribbonStripRef} onScroll={measureRibbonOverflow} className="office-ribbon-content" role="tabpanel"
           aria-label={ribbonTab} aria-labelledby={`page-builder-tab-${Math.max(0,ribbonTabsVisible.indexOf(ribbonTab))}`}>
+          {selected && selectedCustomDefinition && (['Component Data','Component Content','Component Properties','Component Layout','Component Responsive','Component Action'] as string[]).includes(ribbonTab) &&
+            <UniversalRibbonInventory tab={ribbonTab as 'Component Data'|'Component Content'|'Component Properties'|'Component Layout'|'Component Responsive'|'Component Action'}
+              definition={selectedCustomDefinition} properties={selected.properties}
+              onChange={properties=>updateComponent(selected.id,{properties})}/>}
           {ribbonTab === 'Home' && <>
             <div className="office-ribbon-group office-ribbon-page-identity"><div className="office-ribbon-stack">
               <button type="button" onClick={safeBackToPages}><ArrowLeft size={16}/> Back to pages</button>

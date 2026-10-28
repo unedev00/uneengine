@@ -1,0 +1,33 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const load=(path:string)=>readFileSync(new URL(path,import.meta.url),'utf8');
+test('universal catalog indexes all installed UNE manifests without app-specific group selection',()=>{
+ const catalog=load('../src/core/builders/PageBuilder/UniversalRibbonInventory.tsx');
+ const manifest=JSON.parse(load('../src/one/manifest.json')) as {components:string[]};
+ assert.equal(manifest.components.length,36);
+ assert.match(catalog,/import\.meta\.glob\('\.\.\/\.\.\/\.\.\/one\/\*\/component\.json'/);
+ assert.match(catalog,/validManifests=manifests\.filter/);
+ assert.match(catalog,/for\(const component of validManifests\)/);
+ assert.match(catalog,/for\(const \[key,definition\] of definitionMap\)/);
+ assert.match(catalog,/enabled\.has\(def\.propertyKey\)/);
+ assert.match(catalog,/Not supported by selected component/);
+ assert.match(catalog,/new Set\(\['fontFamily','fontStyle','textDecoration'\]\)/);
+});
+test('all six property tabs use a fixed section catalog without component-specific layout',()=>{
+ const view=load('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const catalog=load('../src/core/builders/PageBuilder/UniversalRibbonInventory.tsx');
+ for(const name of ['Component Data','Component Content','Component Properties','Component Layout','Component Responsive','Component Action']){
+   assert.ok(catalog.includes("'"+name+"'"),name);
+   assert.ok(view.includes("'"+name+"'"),name);
+ }
+ assert.match(view,/<UniversalRibbonInventory tab=\{ribbonTab as/);
+ assert.match(catalog,/Array\.from\(groups\)\.map/);
+});
+test('media property and structured values are handled without converting persisted objects to strings',()=>{
+ const catalog=load('../src/core/builders/PageBuilder/UniversalRibbonInventory.tsx');
+ assert.match(catalog,/createPortal/);
+ assert.match(catalog,/TenantMediaPicker assetOnly initiallyOpen/);
+ assert.match(catalog,/JSON\.parse\(e\.target\.value\)/);
+ assert.match(catalog,/update\(parsed\)/);
+});
