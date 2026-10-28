@@ -10,9 +10,10 @@ type Definition=NonNullable<LibraryComponentMetadata['propertyDefinitions']>[num
 const appearanceKeys=new Set(['theme','surface','tone','accentColor','glassBlur']);
 const typographyKeys=new Set(['fontFamily','fontSize','fontWeight','lineHeight','letterSpacing','textAlign','textColor']);
 const borderKeys=new Set(['borderWidth','borderStyle']);
+const cardExtras=new Set(['cardDensity','cardHover']);
 const included=new Set([...appearanceKeys,...typographyKeys,...borderKeys]);
 const skipped=new Set(['radius','cardRadius','shadow','cardShadow','backgroundColor','borderColor',
-  'opacity','padding','cardPadding','margin','gap','density','cardDensity','cardBorderWidth','lineHeight']);
+  'opacity','padding','cardPadding','margin','gap','density','cardBorderWidth','lineHeight']);
 /**
  * All previously hidden appearance properties are edited in the ribbon.
  * No modal, no alternate persistence format and no duplicate property owners.
@@ -22,9 +23,9 @@ export default function PageBuilderAdvancedStyle({properties,componentType,defin
  device:PropertyDevice;excludeKeys:string[];onChange:(properties:Values)=>void;
 }){
  const all=availableComponentSettings(definition?.propertyDefinitions??[],device,definition?.version)
-   .filter(d=>isPresentationProperty(d)&&!excludeKeys.includes(d.propertyKey)&&
-     !d.group&&!skipped.has(d.propertyKey)&&
-     (included.has(d.propertyKey)||d.section==='Appearance'||d.section==='Design'));
+   .filter(d=>isPresentationProperty(d)&&(cardExtras.has(d.propertyKey)||!excludeKeys.includes(d.propertyKey))&&
+     (cardExtras.has(d.propertyKey)||!d.group)&&!skipped.has(d.propertyKey)&&
+     (cardExtras.has(d.propertyKey)||included.has(d.propertyKey)||d.section==='Appearance'||d.section==='Design'));
  const control=(d:Definition)=>{
    const value=properties[d.propertyKey]??d.defaultValue??'';
    const change=(v:unknown)=>onChange({...properties,[d.propertyKey]:v});
@@ -55,7 +56,8 @@ export default function PageBuilderAdvancedStyle({properties,componentType,defin
    {name:'Appearance',defs:all.filter(d=>appearanceKeys.has(d.propertyKey))},
    {name:'Typography',defs:all.filter(d=>typographyKeys.has(d.propertyKey))},
    {name:'Borders',defs:all.filter(d=>borderKeys.has(d.propertyKey))},
-   {name:'Other styles',defs:all.filter(d=>!included.has(d.propertyKey))}
+   {name:'Card extras',defs:all.filter(d=>cardExtras.has(d.propertyKey))},
+   {name:'Other styles',defs:all.filter(d=>!included.has(d.propertyKey)&&!cardExtras.has(d.propertyKey))}
  ].filter(group=>group.defs.length>0).flatMap(group=>
    Array.from({length:Math.ceil(group.defs.length/3)},(_,index)=>({
      name:group.name+(index?' '+(index+1):''),
