@@ -2,6 +2,7 @@ import {isDeepStrictEqual} from 'node:util';
 import type {SqlPersistence} from './sql-persistence.js';
 import type {RbacEngine} from './rbac-engine.js';
 import {TenantProvisioning} from './tenant-provisioning.js';
+import {TenantDeveloperMailbox} from '../system-support/tenant-developer-mailbox.js';
 
 export class PlatformTenantService {
  constructor(private readonly db:SqlPersistence,private readonly rbac:RbacEngine){}
@@ -261,11 +262,38 @@ export class PlatformTenantService {
   if(!base||!/^[a-z0-9-]+(?:\.[a-z0-9-]+)+$/.test(base)
      ||x.developerDomain.toLowerCase()!==expectedDomain)
     throw new Error('Invalid tenant domain: use the configured platform-owned tenant subdomain');
+  const mail=new TenantDeveloperMailbox(this.db);
+  if(typeof x.tenantDeveloperEmail!=='string'||!/^([a-z0-9][a-z0-9._+-]{0,62})@unesolutions\.co\.uk$/.test(x.tenantDeveloperEmail))
+    throw new Error('Tenant developer email is required');
+  const chosen=x.tenantDeveloperEmail.toLowerCase();
+  // Do not reject an idempotent retry before reading its original reservation.
   const result=await new TenantProvisioning(this.db).provision({
     slug:x.tenantId.toLowerCase(),name:x.tenantName,domain:x.developerDomain.toLowerCase(),
-    developerEmail:x.email,developerPassword:x.password,developerName:x.adminName
+    developerEmail:x.email,developerPassword:x.password,developerName:x.adminName,tenantDeveloperEmail:chosen
   },{actorTenantId:tenantId,actorUserId:userId,idempotencyKey});
+  const target=await this.db.query<{id:string}>("SELECT id FROM md_tenants WHERE slug=$1",[result.slug]);
+  const targetId=target.rows[0]?.id;
+  if(!targetId)throw new Error('Tenant provisioning failed');
+  // Replaying a completed request must never undo a later administrative suspension.
+  if(result.replayed){
+    const mailbox=await this.db.query<{status:string}>(`
+      SELECT status FROM md_mail_accounts WHERE email=$1 AND tenant_id=$2`,[chosen,targetId]);
+    if(mailbox.rows[0]?.status==='active')
+      return {...await this.get(tenantId,userId,result.slug),replayed:true};
+  }
+  // Fail closed: the new tenant cannot authenticate until its mailbox is provisioned.
+  await this.db.query("UPDATE md_tenants SET status='SUSPENDED' WHERE id=$1",[targetId]);
+  try{
+    await mail.provision(result.slug,chosen,tenantId,userId);
+  }catch(error){
+    throw new Error('Tenant created but developer mailbox provisioning failed; tenant suspended. Retry the same request to resume provisioning.');
+  }
+  await this.db.query("UPDATE md_tenants SET status='ACTIVE' WHERE id=$1",[targetId]);
   return {...await this.get(tenantId,userId,result.slug),replayed:result.replayed};
+ }
+ async developerEmailAvailability(tenantId:string,userId:string,slug:string){
+  await this.requirePlatform(tenantId,userId);
+  return new TenantDeveloperMailbox(this.db).suggestions(slug);
  }
  async get(tenantId:string,userId:string,slug:string) {
   const platform=await this.platformScope(tenantId,userId);

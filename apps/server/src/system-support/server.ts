@@ -893,6 +893,12 @@ export function createSystemServer(db:SqlPersistence) {
       res.json(await platformTenants.transition(actor.tenant_id,actor.user_id,req.params.slug,operation));
     }));
   }
+  app.get('/api/platform/tenants/developer-email-availability',route(async(req,res)=>{
+    const actor=req.actor!;
+    const slug=String(req.query.slug??'');
+    res.setHeader('Cache-Control','private, no-store');
+    res.json(await platformTenants.developerEmailAvailability(actor.tenant_id,actor.user_id,slug));
+  }));
   app.post('/api/platform/tenants',route(async(req,res)=>{
     const actor=req.actor!;
     const payload=await platformTenants.create(actor.tenant_id,actor.user_id,req.body,req.get('idempotency-key'));
