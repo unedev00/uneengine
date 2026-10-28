@@ -53,9 +53,9 @@ test('ribbon inline labels wrap and controls stay within their group dividers',(
   assert.match(styles,/input:not\(\[type=checkbox\]\),select,textarea\) \{[\s\S]*?min-width:0!important;max-width:116px!important/);
 });
 
-test('ribbon keeps the ten-step component journey with icon-led, accessible tabs',()=>{
+test('ribbon keeps the nine-step component journey with icon-led, accessible tabs',()=>{
   const source=readFileSync(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
-  for(const label of ['Home','Add Component','Data','Content','Design','Format','Layout','Responsive','Actions','Preview'])
+  for(const label of ['Home','Insert','Data','Content','Design','Layout','Responsive','Actions','Preview'])
     assert.ok(source.includes(`'${label}'`),label+' tab label remains available');
   for(const icon of ['PanelsTopLeft','Puzzle','Database','Type','SlidersHorizontal','Layers3','Smartphone','Workflow','Eye'])
     assert.ok(source.includes(icon),icon+' tab icon remains available');
@@ -104,7 +104,7 @@ test('Card Grid optional Add button is independent of card activation and declar
   assert.match(runtime,/onKeyDown=\{event=>/);
 });
 
-test('Excel-style ribbon keeps all ten tabs, relocates page identity and removes duplicate Save',()=>{
+test('Excel-style ribbon keeps nine permanent tabs, relocates page identity and removes duplicate Save',()=>{
   const source=readFileSync(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
   const content=source.slice(source.indexOf('className="office-ribbon-topbar"'),source.indexOf('id="page-builder-tab-content"'));
   assert.doesNotMatch(content,/aria-label="Page name"/);
@@ -118,7 +118,7 @@ test('Excel-style ribbon keeps all ten tabs, relocates page identity and removes
   assert.match(source,/RibbonDesign/);
   assert.match(source,/office-ribbon-quick-grid/);
   assert.match(source,/ribbonTab==='Component Responsive'/);
-  assert.match(source,/ribbonTab === 'Component Style' && <RibbonFormat/);
+  assert.match(source,/<RibbonFormat properties=\{selected.properties\}/);
 });
 
 test('colour pickers share a single accessible, metadata-backed palette',()=>{
