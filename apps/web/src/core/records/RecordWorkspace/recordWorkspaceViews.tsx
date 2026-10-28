@@ -2178,12 +2178,12 @@ function RecordWorkspace({
       if (component.type === 'Highlights Panel') return <section className="record-highlights surface" key={component.id} aria-label="Record highlights">
         {compactFields.map((field) => <div key={field.apiName}><span>{field.label}</span><strong>{formatFieldValue(field, record[field.apiName])}</strong></div>)}
         <div className="record-highlight-actions">
-          {canEdit&&component.properties.showEditAction===true&&behaviorAction(component.properties,'Edit',runtimeBehaviorContext)!=='hidden'&&<button type="button" className="btn"
-            disabled={behaviorAction(component.properties,'Edit',runtimeBehaviorContext)==='disabled'}
+          {canEdit&&component.properties.showEditAction===true&&showRecordAction('Edit')&&behaviorAction(component.properties,'Edit',runtimeBehaviorContext)!=='hidden'&&<button type="button" className="btn"
+            disabled={pageActionState('Edit')==='disabled'||behaviorAction(component.properties,'Edit',runtimeBehaviorContext)==='disabled'}
             onClick={()=>openEditForm(record)}>Edit</button>}
           {canCreate&&component.properties.showCloneAction===true&&object.apiName!=='User'
-            &&behaviorAction(component.properties,'Clone',runtimeBehaviorContext)!=='hidden'&&
-            <button type="button" className="btn" disabled={behaviorAction(component.properties,'Clone',runtimeBehaviorContext)==='disabled'} onClick={()=>void cloneCurrentRecord()}>Clone</button>}
+            &&showRecordAction('Clone')&&behaviorAction(component.properties,'Clone',runtimeBehaviorContext)!=='hidden'&&
+            <button type="button" className="btn" disabled={pageActionState('Clone')==='disabled'||behaviorAction(component.properties,'Clone',runtimeBehaviorContext)==='disabled'} onClick={()=>void cloneCurrentRecord()}>Clone</button>}
           {(object.actions??[]).filter(action=>action.enabled&&action.type==='Custom'
             &&actionVisibleInArea(action,'Highlights')
             &&Array.isArray(component.properties.actionIds)&&component.properties.actionIds.includes(action.id)
