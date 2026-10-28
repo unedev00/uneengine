@@ -1,3 +1,4 @@
+import CrossObjectRecordField from './CrossObjectRecordField';
 import {resolveHighlightFields} from './highlightFieldSelection';
 import {behaviorAppearanceLabel} from '../../pages/PageRuntime/pageBehaviorRuntime';
 import {nextAccessibleTabIndex} from '../../pages/PageRuntime/tabKeyboardNavigation';
@@ -2318,6 +2319,25 @@ function RecordWorkspace({
               <div className="record-field" key={field.apiName} style={behaviorAppearance(component.properties,runtimeBehaviorContext,field.apiName)}><dt>{field.label}</dt><dd>{renderPageField(field)}</dd></div>)}</dl>
             : <div className="records-empty">No readable fields are configured in this section.</div>}
         </section>;
+      }
+      if (component.type === 'Record Field' &&
+          typeof component.properties.relatedLookupFieldApiName==='string' &&
+          component.properties.relatedLookupFieldApiName &&
+          typeof component.properties.relatedFieldApiName==='string' &&
+          component.properties.relatedFieldApiName){
+        const lookup=readableRecordFields.find(item=>
+          item.apiName===component.properties.relatedLookupFieldApiName);
+        const targetObject=lookup?.relationship?.targetObject;
+        const targetField=objects.find(item=>item.apiName===targetObject)?.fields
+          .find(item=>item.apiName===component.properties.relatedFieldApiName);
+        const targetReadable=Boolean(targetObject&&targetField&&
+          fieldAccess[targetObject+'.'+targetField.apiName]?.read===true);
+        const relatedId=lookup?record[lookup.apiName]:undefined;
+        if(!targetReadable||typeof relatedId!=='string'||!relatedId)return <p
+          className="records-empty" role="status" key={component.id}>Related field is unavailable.</p>;
+        return <CrossObjectRecordField key={component.id} objectApi={targetObject!}
+          recordId={relatedId} fieldApi={targetField!.apiName}
+          label={component.label||targetField!.label} request={apiRequest}/>;
       }
       if (component.type === 'Record Field') {
         const fieldApiName = typeof component.properties.fieldApiName === 'string' ? component.properties.fieldApiName : '';
