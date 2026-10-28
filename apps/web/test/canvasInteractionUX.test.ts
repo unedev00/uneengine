@@ -74,7 +74,7 @@ test('multi-select alignment updates every selected unlocked component in one im
   const components = [
     {id:'a',type:'Card',label:'A',visible:true,region:'main' as const,properties:{},position:{x:80,y:20,width:100,height:60}},
     {id:'b',type:'Card',label:'B',visible:true,region:'main' as const,properties:{},position:{x:220,y:90,width:200,height:80}},
-    {id:'locked',type:'Card',label:'Locked',visible:true,region:'main' as const,properties:{canvasLocked:true},position:{x:60,y:40,width:120,height:60}},
+    {id:'locked',type:'Card',label:'Locked',visible:true,region:'main' as const,properties:{editorLocked:true},position:{x:60,y:40,width:120,height:60}},
     {id:'other',type:'Card',label:'Other',visible:true,region:'main' as const,properties:{},position:{x:30,y:10,width:80,height:40}}
   ];
   const aligned = alignCanvasComponents(components,['a','b','locked'],'x','center',{width:800,height:600});
@@ -125,12 +125,26 @@ test('distribution uses selected bounds and ignores locked elements', () => {
     {id:'a',type:'Card',label:'A',visible:true,properties:{},position:{x:0,y:0,width:100,height:60}},
     {id:'b',type:'Card',label:'B',visible:true,properties:{},position:{x:260,y:0,width:100,height:60}},
     {id:'c',type:'Card',label:'C',visible:true,properties:{},position:{x:400,y:0,width:100,height:60}},
-    {id:'locked',type:'Card',label:'Locked',visible:true,properties:{canvasLocked:true},
+    {id:'locked',type:'Card',label:'Locked',visible:true,properties:{editorLocked:true},
       position:{x:32,y:0,width:50,height:60}}
   ];
   const result=distributeCanvasComponents(source,['a','b','c','locked'],'x');
   assert.deepEqual(result.slice(0,3).map(item=>item.position?.x),[0,200,400]);
   assert.equal(result[3].position?.x,32);
+});
+
+test('legacy position-lock values do not block movement and the ribbon no longer advertises Lock position', async () => {
+  const components=[
+    {id:'a',type:'Card',label:'A',visible:true,properties:{canvasLocked:true},position:{x:0,y:0,width:100,height:60}},
+    {id:'b',type:'Card',label:'B',visible:true,properties:{},position:{x:200,y:0,width:100,height:60}}
+  ];
+  const aligned=alignCanvasComponents(components,['a','b'],'x','start',{width:800,height:600});
+  assert.equal(aligned[0].position?.x,0);
+  assert.equal(aligned[1].position?.x,0,'saved canvasLocked no longer blocks alignment');
+  const source=await readFile(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+  const interactions=await readFile(new URL('../src/core/builders/PageBuilder/canvasInteractions.ts',import.meta.url),'utf8');
+  assert.doesNotMatch(source,/canvasLocked|Lock position|Unlock position/);
+  assert.doesNotMatch(interactions,/canvasLocked/);
 });
 
 test('Page Builder records and restores selection state with undo and redo', async () => {
