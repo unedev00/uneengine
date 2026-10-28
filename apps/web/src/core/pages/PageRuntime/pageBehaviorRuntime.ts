@@ -100,12 +100,19 @@ export function behaviorField(properties:Readonly<Record<string,unknown>>,
   if(!rules.length)return null;
   let required=false,readOnly=false;
   for(const rule of rules){
+    // Conditions must be evaluated per rule, not allow a single unrelated rule
+    // to suppress every matching rule for the same field.
     if(rule.visibilityRules!==undefined&&!behaviorMatches(rule.visibilityRules,context))
-      return {visible:false,required:false,readOnly:false};
+      continue;
     if(rule.behavior==='Required')required=true;
     else if(rule.behavior==='ReadOnly')readOnly=true;
+    else if(rule.behavior!=='Editable')continue;
   }
-  return {visible:true,required:required&&!readOnly,readOnly};
+  // A field with exclusively conditional rules stays hidden until at least one
+  // condition is met; unconditional rows keep the field visible.
+  const visible=rules.some(rule=>rule.visibilityRules===undefined
+    ||behaviorMatches(rule.visibilityRules,context));
+  return {visible,required:visible&&required&&!readOnly,readOnly:visible&&readOnly};
 }
 export type BehaviorInteraction={targetComponentId:string;targetProperty:string;value:string|number|boolean|null};
 /** Resolve only primitive values and declared bindable target properties. */
