@@ -792,7 +792,7 @@ function RecordWorkspace({
       appId:route.kind==='record-detail'||route.kind==='record-list'?route.appId??'Records':'Records',
       formFactor:typeof window!=='undefined'&&new URLSearchParams(window.location.search).get('pageLayout')==='Custom'
         ?'Custom':viewportFactor==='Tablet'?'Tablet':formFactor==='Phone'?'Mobile':'Desktop',
-      recordTypeId:String(formValues.RecordTypeId??defaultRecordTypeId??'')
+      recordTypeId:String(formValues.RecordTypeId??'')
     });
     void apiRequest<{editLightningPage?:LightningPageMetadata}>(
       `/records/${encodeURIComponent(object.apiName)}/create-layout?${params}`
@@ -801,7 +801,7 @@ function RecordWorkspace({
       .finally(()=>{if(active)setEditPageLoading(false);});
     return()=>{active=false;};
   },[formOpen,editingId,object?.apiName,formFactor,viewportFactor,route.kind,route.appId,
-    formValues.RecordTypeId,defaultRecordTypeId]);
+    formValues.RecordTypeId]);
 
   const [lookupRecords, setLookupRecords] = useState<Record<string, RecordData[]>>({});
   const [lookupError, setLookupError] = useState('');
