@@ -53,7 +53,7 @@ export function RibbonDesign({properties,componentType,definition,device,onChang
     return String(properties[metadataKey]??responsive[key]??visual[key]??(key==='color'?'#111827':'#ffffff'));
   };
   const settings=availableComponentSettings(definition?.propertyDefinitions??[],device,definition?.version)
-    .filter(d=>isPresentationProperty(d)&&['theme','surface','tone'].includes(d.propertyKey));
+    .filter(d=>isPresentationProperty(d)&&['surface','tone'].includes(d.propertyKey));
   return <>
     <div className="office-ribbon-group office-ribbon-icon-group office-ribbon-colour-group">
       <div className="office-ribbon-icon-line">
