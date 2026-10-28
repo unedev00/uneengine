@@ -254,3 +254,51 @@
  display:flex!important;flex-direction:column!important;justify-content:center!important;
  height:78px!important;gap:10px!important;
 }
+
+/* Three compact data groups are kept in the fixed strip, with all controls
+   bound to the same metadata keys as the contextual Source/Filters editors. */
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-data-group {
+  display:flex!important;flex:0 0 290px!important;flex-direction:column!important;
+  width:290px!important;min-width:290px!important;max-width:290px!important;
+  height:112px!important;max-height:112px!important;
+  padding:5px 10px 19px 30px!important;position:relative!important;
+  gap:5px!important;
+}
+.office-builder-ribbon .office-ribbon-data-heading {
+  position:absolute;left:6px;top:8px;display:flex;align-items:center;gap:7px;
+  font:600 10px/13px "Segoe UI",Arial,sans-serif;color:#1c3555;
+}
+.office-builder-ribbon .office-ribbon-data-heading>strong {position:relative;left:20px}
+.office-builder-ribbon .office-ribbon-data-field {
+  display:grid!important;grid-template-columns:78px minmax(0,1fr)!important;
+  align-items:center!important;gap:5px!important;min-height:21px!important;
+  width:100%!important;font:500 10px/12px "Segoe UI",Arial,sans-serif;
+  color:#2e4162!important;
+}
+.office-builder-ribbon .office-ribbon-data-group>.office-ribbon-data-field:nth-child(2) {margin-top:21px!important}
+.office-builder-ribbon .office-ribbon-data-field>:is(input,select){
+  width:100%!important;min-width:0!important;max-width:100%!important;
+  height:20px!important;min-height:20px!important;padding:1px 5px!important;
+  box-sizing:border-box!important;background:#fff!important;
+  border:1px solid #d5dfec!important;border-radius:3px!important;
+  font:500 10px/14px "Segoe UI",Arial,sans-serif!important;
+}
+.office-builder-ribbon .office-ribbon-data-link{
+  display:flex!important;align-items:center!important;gap:5px!important;
+  justify-content:flex-start!important;min-height:20px!important;
+  width:max-content!important;padding:1px 3px!important;margin-left:78px!important;
+  border:0!important;background:transparent!important;color:#086bdf!important;
+  font:500 10px/15px "Segoe UI",Arial,sans-serif!important;
+}
+.office-builder-ribbon .office-ribbon-data-link:disabled{color:#9aa9bf!important}
+.office-builder-ribbon .office-ribbon-data-pagination{
+  display:flex!important;align-items:center!important;gap:7px!important;
+  font-size:10px!important;white-space:nowrap!important;
+}
+.office-builder-ribbon .office-ribbon-data-pagination label{display:flex!important;align-items:center!important;gap:3px!important}
+.office-builder-ribbon .office-ribbon-data-pagination input[type=number]{
+  width:45px!important;min-width:45px!important;height:20px!important;font-size:10px!important;
+}
+.office-builder-ribbon .office-ribbon-data-pagination input[type=checkbox]{
+  width:13px!important;height:13px!important;accent-color:#0871e9!important;
+}
