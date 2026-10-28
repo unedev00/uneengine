@@ -5,8 +5,8 @@ import {readFileSync} from 'node:fs';
 test('ribbon preserves real disabled commands instead of Not applicable placeholders',()=>{
  const source=readFileSync(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
  assert.doesNotMatch(source,/<span className="office-ribbon-disabled-group">Not applicable<\/span>/);
- assert.match(source,/className="office-ribbon-disabled-icon"/);
- assert.match(source,/disabled aria-label=\{\x60\$\{group\} unavailable\x60\}/);
+ assert.match(source,/RibbonCapabilityControls group=\{group\}/);
+ assert.match(source,/ribbonPartIcons\[group\]/);
 });
 test('the real Insert, Content and Design ribbon structures have compact overrides',()=>{
  const css=readFileSync(new URL('../src/core/builders/PageBuilder/sections/04-page-builder.css',import.meta.url),'utf8');
