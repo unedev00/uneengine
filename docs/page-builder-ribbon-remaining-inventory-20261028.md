@@ -2,6 +2,8 @@
 
 Generated from UNE component manifests on the PR branch. The shared ribbon has a fixed slot order; applicable component controls are enabled and the others disabled.
 
+**SQL inventory scope:** Bundled `une_*` components are seeded into `md_component_definitions` with `renderer_key='one-bundled:<api>'` and no per-property SQL entries. Their editable property inventory comes from these source manifests, so the requested property deletions are source-metadata changes, not SQL row deletions. No entire component was marked for deletion in the supplied list, so system SQL component rows remain registered. Version-owned `md_component_library_contract_properties` belongs to separately authored tenant components and has not been deleted. Existing published page values are preserved for compatibility.
+
 ## Shared ribbon — complete tab-by-tab property slots
 
 These are the property definitions actually collected by the universal UNE ribbon. Each row remains in its fixed tab/group and is enabled only for the listed UNE components. **System/Canvas commands and non-UNE standard components are separate from this metadata table.**
