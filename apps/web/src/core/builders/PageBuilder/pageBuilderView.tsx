@@ -2488,32 +2488,21 @@ function PageBuilder({
                 && <span className="office-ribbon-stat" role="alert">More than one Cart shares this connection.</span>}
               {Boolean(selected.properties.cartTargetKey) && <span className="office-ribbon-stat">Card Add button sends the selected record to Cart</span>}
             </div><span>Cart connection</span></div>}
-          {selected && ribbonTab === 'Component Action' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
-            <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">When</span>
-              <select aria-label="Choose supported event" value={actionEvent}
-                onChange={event=>{
-                  const name=event.target.value;
-                  setActionEvent(name);
-                  if(!name)return;
-                  const actions=selected.properties.actionFlows && typeof selected.properties.actionFlows==='object'
-                    ?selected.properties.actionFlows as Record<string,unknown>:{};
-                  if(!actions[name])updateComponent(selected.id,{properties:{...selected.properties,
-                    actionFlows:{...actions,[name]:{actionType:'Flow',flowApiName:'',inputs:{}}}}});
-                  openExpandedEditor('actions');
-                }}>
-                <option value="">Choose event…</option>
-                {[...new Map([...(selectedCustomDefinition?.eventDefinitions??[]).map(item=>[item.apiName,item.label] as const),
-                  ...Object.keys(selected.properties.actionFlows && typeof selected.properties.actionFlows==='object'?selected.properties.actionFlows:{}).map(name=>[name,name] as const)]).entries()]
-                  .map(([name,label])=><option key={name} value={name}>{label}</option>)}
-              </select>
-            </label>
-            <button type="button" onClick={()=>openExpandedEditor('actions')}><MousePointer2 size={16}/> Edit actions</button>
-            <button type="button" onClick={()=>openExpandedEditor('conditions')}><Filter size={16}/> Only when</button>
-          </div><span>Events & outcomes</span></div>}
-          {selected && ribbonTab==='Component Layout' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
-            <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Width</span><input aria-label="Layout width" value={String(selected.properties.width??'100%')} onChange={event=>updateComponent(selected.id,{properties:{...selected.properties,width:event.target.value}})}/></label>
-            <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Height</span><input aria-label="Layout height" value={String(selected.properties.height??'auto')} onChange={event=>updateComponent(selected.id,{properties:{...selected.properties,height:event.target.value}})}/></label>
-          </div><span>Dimensions</span></div>}
+          {selected && ribbonTab === 'Component Action' && <PageBuilderActionRibbon key={selected.id}
+            actions={selected.properties.actionFlows&&typeof selected.properties.actionFlows==='object'?selected.properties.actionFlows as Record<string,unknown>:{}}
+            eventDefinitions={selectedCustomDefinition?.eventDefinitions??[]} flows={flows}
+            onChange={actions=>updateComponent(selected.id,{properties:{...selected.properties,actionFlows:actions}})}
+            advanced={<>
+              <MetadataComponentProperties mode="actions-editor" properties={selected.properties} onChange={properties=>updateComponent(selected.id,{properties})}
+                eventDefinitions={selectedCustomDefinition?.eventDefinitions??[]} definitions={selectedCustomDefinition?.propertyDefinitions}
+                device={page.layoutVariant??'Desktop'} componentVersion={selectedCustomDefinition?.version} pageComponents={page.components} componentCatalog={libraryComponents}
+                objects={objects} apps={apps} pages={pages} currentAppId={builderAppApiName||apps[0]?.apiName||'Records'} flows={flows} primaryObjectApiName={page.targetObject}/>
+              <MetadataComponentProperties mode="conditions" properties={selected.properties} onChange={properties=>updateComponent(selected.id,{properties})}
+                eventDefinitions={selectedCustomDefinition?.eventDefinitions??[]} definitions={selectedCustomDefinition?.propertyDefinitions}
+                device={page.layoutVariant??'Desktop'} componentVersion={selectedCustomDefinition?.version} pageComponents={page.components} componentCatalog={libraryComponents}
+                objects={objects} apps={apps} pages={pages} currentAppId={builderAppApiName||apps[0]?.apiName||'Records'} flows={flows} primaryObjectApiName={page.targetObject}/>
+            </>}/>}
+
           {selected && (ribbonTab==='Component Layout'||ribbonTab==='Component Responsive') && selectedCustomDefinition && <div className="office-ribbon-inline-options">
             <ComponentPresentationProperties
               definitions={availableComponentSettings(selectedCustomDefinition.propertyDefinitions??[],
@@ -2521,11 +2510,18 @@ function PageBuilder({
                 .filter(definition=>isPresentationProperty(definition)&&presentationSection(definition)==='Layout'
                   && !(definition as {group?:string}).group
                   && (ribbonTab==='Component Responsive'
-                    ? /(?:device|breakpoint|mobile|tablet|desktop|phone|responsive|hidden|visible|visibility)/i.test(definition.propertyKey)
-                    : !/(?:device|breakpoint|mobile|tablet|desktop|phone|responsive|hidden|visible|visibility)/i.test(definition.propertyKey)))}
+                    ? false
+                    : !/(?:device|breakpoint|mobile|tablet|desktop|phone|responsive|hidden|visible|visibility|width|height|borderWidth|borderRadius|radius|minWidth|maxWidth|minHeight|maxHeight|margin|padding|gap|opacity)/i.test(definition.propertyKey)))}
               properties={selected.properties}
               onChange={properties=>updateComponent(selected.id,{properties})}/>
           </div>}
+          {selected && ribbonTab==='Component Layout' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
+            {(['margin','gap'] as const).map(key=><label key={key} className="office-ribbon-inline-field">{key==='margin'?'Margin':'Gap'} <input type="number" min={0} max={128} aria-label={'Component '+key}
+              value={Number((selected.properties.visualStyle as Record<string,unknown>|undefined)?.[key]??selected.properties[key]??0)}
+              onChange={event=>{const n=Number(event.target.value);if(Number.isFinite(n)&&n>=0&&n<=128)writeRibbonVisual(key,n);}}/></label>)}
+            {selectedCustomDefinition?.propertyDefinitions?.some(d=>d.propertyKey==='layoutContainer')&&<label className="office-ribbon-checkbox"><input type="checkbox" checked={selected.properties.layoutContainer===true} disabled={childrenOf(page.components,selected.id).length>0}
+              onChange={event=>updateComponent(selected.id,{properties:{...selected.properties,layoutContainer:event.target.checked}})}/> Allow child components</label>}
+          </div><span>Spacing & nesting</span></div>}
           {selected && ribbonTab === 'Component Layout' && <>
             <div className="office-ribbon-group office-ribbon-icon-group" aria-label="Arrange component">
               <div className="office-ribbon-stack">
@@ -2534,16 +2530,14 @@ function PageBuilder({
                   <button type="button" className="office-ribbon-icon-button" title="Send backward" aria-label="Send backward" disabled={isCanvasLocked(selected)} onClick={()=>moveSelected(1)}><ArrowDown size={17}/></button>
                   <button type="button" className="office-ribbon-icon-button" title={selected.properties.canvasLocked?'Unlock position':'Lock position'} aria-label={selected.properties.canvasLocked?'Unlock position':'Lock position'} disabled={page.layoutMode!=='free-canvas'} onClick={()=>updateComponent(selected.id,{properties:{...selected.properties,canvasLocked:!selected.properties.canvasLocked}})}>{selected.properties.canvasLocked?<Unlock size={17}/>:<Lock size={17}/>}</button>
                 </div>
-                <details className="office-ribbon-group-menu">
-                  <summary title="Grouping options"><Group size={16}/> Group <ChevronDown size={12}/></summary>
-                  <div className="office-ribbon-group-menu-items">
+                <div className="office-ribbon-icon-line" aria-label="Grouping">
                     <button type="button" disabled={page.layoutMode!=='free-canvas'||selectionIds.length<2||!selected.position||isCanvasLocked(selected)||Boolean(rawLayoutParentId(selected))||selectionIds.some(id=>{
                       const item=page.components.find(component=>component.id===id);
                       return !item?.position||isCanvasLocked(item)||item.properties.canvasLocked===true||Boolean(rawLayoutParentId(item));
                     })} onClick={()=>wrapSelectedInContainer()}><Group size={16}/> Group</button>
                     <button type="button" disabled={page.layoutMode!=='free-canvas'||selected.type!=='Container'||isCanvasLocked(selected)||!childrenOf(page.components,selected.id).length} onClick={ungroupSelected}><Ungroup size={16}/> Ungroup</button>
                   </div>
-                </details>
+                </div>
               </div><span>Arrange</span>
             </div>
             <div className="office-ribbon-group office-ribbon-icon-group">
@@ -2562,7 +2556,7 @@ function PageBuilder({
             </div>
             {selected.position && <div className="office-ribbon-group"><div className="office-ribbon-stack">
               {(['x','y'] as const).map(key=><label key={key} className="office-ribbon-inline-field"><span className="office-ribbon-field-name">{key.toUpperCase()}</span><input aria-label={key.toUpperCase()+' position'} type="number" min={0} max={key==='x'?page.canvasWidth-selected.position!.width:page.canvasHeight-selected.position!.height} disabled={isCanvasLocked(selected)} value={selected.position![key]} onChange={event=>{const n=Number(event.target.value);if(Number.isFinite(n))updateComponent(selected.id,{position:{...selected.position!,[key]:Math.max(0,Math.min(key==='x'?page.canvasWidth-selected.position!.width:page.canvasHeight-selected.position!.height,Math.round(n)))}});}}/></label>)}
-              <label className="office-ribbon-checkbox"><input type="checkbox" checked={selected.properties.canvasLocked===true} disabled={page.layoutMode!=='free-canvas'} onChange={event=>updateComponent(selected.id,{properties:{...selected.properties,canvasLocked:event.target.checked}})}/> Lock position</label>
+
             </div><span>Position</span></div>}
             {selected.position && <div className="office-ribbon-group"><div className="office-ribbon-stack">
               {(['width','height'] as const).map(key=><label key={key} className="office-ribbon-inline-field"><span className="office-ribbon-field-name">{key==='width'?'Width':'Height'}</span><input aria-label={'Component '+key} type="number" min={1} max={key==='width'?page.canvasWidth-selected.position!.x:page.canvasHeight-selected.position!.y} disabled={isCanvasLocked(selected)} value={selected.position![key]} onChange={event=>{const n=Number(event.target.value);if(Number.isFinite(n))updateComponent(selected.id,{position:{...selected.position!,[key]:Math.max(1,Math.min(key==='width'?page.canvasWidth-selected.position!.x:page.canvasHeight-selected.position!.y,Math.round(n)))}});}}/></label>)}
