@@ -1392,3 +1392,21 @@
  display:flex!important;flex-direction:column!important;align-items:center!important;
  justify-content:center!important;padding:2px!important;
 }
+
+/* Icon and caption form a single command as in the comparison blueprint. */
+.office-builder-ribbon #page-builder-tab-content .office-ribbon-capabilities {
+ grid-template-columns:repeat(4,26px)!important;grid-auto-rows:52px!important;
+ row-gap:2px!important;column-gap:2px!important;
+}
+.office-builder-ribbon #page-builder-tab-content .office-ribbon-capability-icon {
+ width:26px!important;min-width:26px!important;height:51px!important;
+ display:flex!important;flex-direction:column!important;
+ align-items:center!important;justify-content:center!important;gap:5px!important;
+}
+.office-builder-ribbon #page-builder-tab-content .office-ribbon-command-glyph {
+ display:flex;justify-content:center;align-items:center;height:18px;
+}
+.office-builder-ribbon #page-builder-tab-content .office-ribbon-command-label {
+ display:block;font:500 8px/10px "Segoe UI",Arial,sans-serif;
+ white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:clip;
+}
