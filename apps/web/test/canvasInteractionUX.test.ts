@@ -442,3 +442,26 @@ test('Page Builder contextual ribbon is generated from aligned three-row groups'
   assert.match(css,/office-ribbon-responsive-editor>\.office-ribbon-responsive-group/);
   assert.match(css,/grid-template-rows:repeat\(3,28px\)!important/);
 });
+
+test('Card Grid surface colour and individual card colour stay separate in builder and runtime',async()=>{
+  const css=await readFile(new URL('../src/core/pages/TemplatePageRuntime/pageComponentAppearance.css',import.meta.url),'utf8');
+  const ribbon=await readFile(new URL('../src/core/builders/PageBuilder/PageBuilderRibbonStyle.tsx',import.meta.url),'utf8');
+  const renderer=await readFile(new URL('../src/one/OneItemGrid/OneItemGrid.jsx',import.meta.url),'utf8');
+  // Native collection cards must not inherit the component-wide background or
+  // border tokens; only the surrounding Card Grid surface uses those tokens.
+  for(const flag of ['background','stroke','border']){
+    assert.match(css,new RegExp('data-page-style~="'+flag+'"\\] \\.registered-component:not\\(\\.metadrive-component-une_item_grid\\) \\.md-product-card'));
+    assert.doesNotMatch(css,new RegExp('data-page-style~="'+flag+'"\\] \\.registered-component \\.md-product-card'));
+  }
+  assert.match(css,/\\.registered-component\\.metadrive-component-une_item_grid > section\\s*\\{\\s*background-color: var\\(--md-page-background\\) !important;/);
+  assert.match(css,/\\.registered-component\\.metadrive-component-une_item_grid > section\\s*\\{\\s*border-style: solid !important;/);
+  assert.match(renderer,/backgroundColor: typeof p\\.cardBackgroundColor === "string" \\? p\\.cardBackgroundColor : undefined/);
+  assert.match(renderer,/borderColor: typeof p\\.cardBorderColor === "string" \\? p\\.cardBorderColor : undefined/);
+  assert.match(ribbon,/isItemGrid\\?'Component background':'Background \\/ Fill'/);
+  assert.match(ribbon,/responsive\\[key\\]\\?\\?base\\[key\\]\\?\\?visual\\[key\\]\\?\\?properties\\[metadataKey\\]/);
+  const result=resolvePageComponentStyle({backgroundColor:'#223344',cardBackgroundColor:'#cc4422',borderColor:'#776655',cardBorderColor:'#004488'},'Custom:une_item_grid');
+  const vars=result as Record<string,unknown>;
+  assert.equal(vars['--md-page-background'],'#223344');
+  assert.equal(vars['--md-page-border-color'],'#776655');
+  assert.equal(vars['--md-card-background'],undefined);
+});
