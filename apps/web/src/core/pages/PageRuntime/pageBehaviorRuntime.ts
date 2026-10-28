@@ -22,8 +22,10 @@ export function pageBehaviors(properties:Readonly<Record<string,unknown>>):Row|n
 }
 export function behaviorMatches(rule:unknown,context:BehaviorContext):boolean{
   if(!isPropertyRecord(rule))return false;
+  // Record permissions/profile context are valid even when no fields are readable.
+  // An empty field list must not disable an otherwise valid permission rule.
   return isComponentVisible({visible:true,properties:{visibilityRules:rule}},context,
-    Boolean(context.fields?.length&&context.readableFieldApiNames));
+    Boolean(context.fields||context.record||context.recordPermissions||context.profileId));
 }
 export function behaviorTabs(properties:Readonly<Record<string,unknown>>,
   tabs:readonly string[],context:BehaviorContext):string[]{
