@@ -1947,10 +1947,6 @@ function PageBuilder({
             :target.closest('.md-product-price')?'priceFieldApiName'
             :target.closest('.md-product-badge')?'badgeFieldApiName':'';
           setFocusedCardMapping(mapping);
-          if(mapping==='imageFieldApiName')setCardPart('Image');
-          else if(mapping==='titleFieldApiName')setCardPart('Heading');
-          else if(mapping==='descriptionFieldApiName')setCardPart('Supporting text');
-          else if(mapping==='priceFieldApiName')setCardPart('Value');
         }else setFocusedCardMapping('');
         setPageSettingsOpen(false); setComponentMenuId('');
         if (!(event.shiftKey && page.layoutMode === 'free-canvas') && ['Home','Add Block','Preview'].includes(ribbonTab)) { setRibbonTab(componentNeedsData(component.type)?'Component Data':'Component Properties'); openComponentInspector(componentNeedsData(component.type)?'Data & Actions':'Design'); }
