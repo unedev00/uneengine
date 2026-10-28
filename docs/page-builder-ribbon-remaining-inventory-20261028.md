@@ -2,6 +2,441 @@
 
 Generated from UNE component manifests on the PR branch. The shared ribbon has a fixed slot order; applicable component controls are enabled and the others disabled.
 
+## Shared ribbon — complete tab-by-tab property slots
+
+These are the property definitions actually collected by the universal UNE ribbon. Each row remains in its fixed tab/group and is enabled only for the listed UNE components. **System/Canvas commands and non-UNE standard components are separate from this metadata table.**
+
+### Component Data
+
+**Source**
+
+| Property key | Display label | Enabled for UNE components |
+|---|---|---|
+| `channelAccountObjectApiName` | Source Object — Account | conversation |
+| `contactsObjectApiName` | Source Object — Contact | conversation |
+| `contactSourceObjectApi` | Source Object — Contact (Flow) | conversation |
+| `conversationsObjectApiName` | Source Object — Conversation | conversation |
+| `messagesObjectApiName` | Source Object — Message | conversation |
+| `objectApiName` | Source Object | calendar, item_grid, repeater, record_list, search, lookup, choice, cart, conversation, form, table, slot_picker, chart |
+| `recordPresenterApiName` | Record presentation | conversation |
+| `sourceObjectApiName` | Source Object — Flow Records | repeater |
+| `stateObjectApiName` | Source Object — State | cart |
+
+**Fields**
+
+| Property key | Display label | Enabled for UNE components |
+|---|---|---|
+| `ageRestrictedFieldApiName` | Age restriction field | cart |
+| `badgeFieldApiName` | Card badge field | item_grid |
+| `barcodeFieldApiName` | Barcode field | cart |
+| `categoryFieldApiName` | Category field API name | item_grid, cart |
+| `contactDisplayNameFieldApiNames` | Contact display name fields (priority) | conversation |
+| `contactNameFieldApiName` | Contact name field | conversation |
+| `contactSearchFieldApiName` | Contact search field | conversation |
+| `conversationAccountFieldApiName` | Conversation account field | conversation |
+| `conversationAssignedUserFieldApiName` | Conversation assignedUser field | conversation |
+| `conversationBodyFieldApiName` | Conversation body field | conversation |
+| `conversationContactNameFieldApiName` | Conversation contactName field | conversation |
+| `conversationFromFieldApiName` | Conversation from field | conversation |
+| `conversationIdFieldApiName` | Conversation record ID field | conversation |
+| `conversationMediaNameFieldApiName` | Conversation mediaName field | conversation |
+| `conversationMediaTypeFieldApiName` | Conversation mediaType field | conversation |
+| `conversationMediaUrlFieldApiName` | Conversation mediaUrl field | conversation |
+| `conversationNameFieldApiName` | Conversation record name field | conversation |
+| `conversationOccurredFieldApiName` | Conversation occurred field | conversation |
+| `conversationOutgoingOccurredFieldApiName` | Outgoing message date field | conversation |
+| `conversationReadAtFieldApiName` | Conversation readAt field | conversation |
+| `conversationStatusFieldApiName` | Conversation status field | conversation |
+| `conversationToFieldApiName` | Conversation to field | conversation |
+| `dateFieldApiName` | Event date | calendar |
+| `descriptionFieldApiName` | Card description field | item_grid |
+| `featuredFieldApiName` | Featured record flag field | item_grid |
+| `imageFieldApiName` | Card image field | item_grid, cart |
+| `messageBodyFieldApiName` | Message body field | conversation |
+| `messageChannelFieldApiName` | Message channel field | conversation |
+| `messageExternalIdFieldApiName` | Provider message ID field | conversation |
+| `messageIdFieldApiName` | Message record ID field | conversation |
+| `messageReceivedAtFieldApiName` | Message received timestamp field | conversation |
+| `messageRecipientFieldApiName` | Message recipient field | conversation |
+| `messageSenderFieldApiName` | Message sender field | conversation |
+| `messageSentAtFieldApiName` | Message sent timestamp field | conversation |
+| `messageStatusFieldApiName` | Message delivery status field | conversation |
+| `nameFieldApiName` | Product name field | cart |
+| `priceFieldApiName` | Card value or price field | item_grid, cart |
+| `recordActiveFieldApiName` | Active record field | item_grid |
+| `recordBadgeFieldApiName` | Record badge field | repeater |
+| `recordNameFieldApiNames` | Possible contact name fields | lookup |
+| `recordSortFieldApiName` | Record display-order field | item_grid |
+| `recordSubtitleFieldApiName` | Subtitle | repeater, lookup |
+| `recordTitleFieldApiName` | Record name | lookup |
+| `recordTrailingFieldApiName` | Record trailing field | repeater |
+| `recordValueFieldApiName` | Record ID | lookup |
+| `relatedFieldApiName` | Lookup field linking record to selected parent | item_grid |
+| `resourceFieldApiName` | Staff/resource field | calendar |
+| `searchFieldApiName` | Record search field | repeater, lookup |
+| `searchFieldApiNames` | Search fields | item_grid |
+| `serviceFieldApiName` | Service field | calendar |
+| `skuFieldApiName` | SKU field | cart |
+| `titleFieldApiName` | Event title | calendar, item_grid |
+| `vatApplicableFieldApiName` | VAT applicability field | cart |
+
+**Filters**
+
+| Property key | Display label | Enabled for UNE components |
+|---|---|---|
+| `filterInboxBusinessNumber` | Hide own business number as customer | conversation |
+| `filterKey` | Shared category filter | item_grid |
+| `filterLabel` | Filter group label | conversation |
+| `filterOptions` | Visible conversation filters | conversation |
+| `relatedFilterKey` | Selected parent shared key | item_grid |
+| `restrictToAssigned` | Restrict to assigned conversations | conversation |
+| `searchKey` | Shared search filter | item_grid, search |
+| `searchMode` | Search behaviour | conversation |
+| `searchTerm` | Inbox search term from page state | conversation |
+| `selectedCategory` | Selected category | item_grid |
+| `selectionFilterKey` | Selected record shared state key | item_grid, repeater, record_list |
+| `showFilterTabs` | Show conversation filters | conversation |
+
+**Records**
+
+| Property key | Display label | Enabled for UNE components |
+|---|---|---|
+| `items` | Navigation links | navigation, menu |
+| `loading` | Loading state | lookup |
+| `loadingText` | Loading message | lookup |
+| `recordViewAdapter` | Record view adapter | conversation |
+
+### Component Content
+
+**Text**
+
+| Property key | Display label | Enabled for UNE components |
+|---|---|---|
+| `allCategoriesLabel` | All categories label | cart |
+| `basketTitle` | Basket heading | cart |
+| `categoryTabsLabel` | Category tabs accessibility label | cart |
+| `clearLabel` | Clear basket label | cart |
+| `contactSearchLabel` | Contact picker search label | conversation |
+| `descriptionExpression` | Supporting expression | item_grid |
+| `displayButtonLabel` | Customer display button | cart |
+| `emptyBasketText` | Empty basket message | cart |
+| `emptyConversationsText` | Empty inbox message | conversation |
+| `emptyText` | Empty state message | item_grid, lookup |
+| `emptyTitle` | Empty conversation title | conversation |
+| `helpText` | Input help text | input |
+| `label` | Button label | button, input, toggle, search, lookup |
+| `messageChannelValue` | Allowed channel value | conversation |
+| `messageMaxLength` | Maximum message length | conversation |
+| `messageRequireBody` | Exclude messages with empty body | conversation |
+| `messages` | Messages from authorised Flow/page state | conversation |
+| `messageStatusNamePrefixToIgnore` | Ignored status name prefix | conversation |
+| `messageStatusPrefixToIgnore` | Ignored status event prefix | conversation |
+| `newConversationLabel` | New conversation label | conversation |
+| `newMessageNoticeLabel` | New messages button label | conversation |
+| `nextTransactionLabel` | Next customer button label | cart |
+| `openLabel` | Open button | modal |
+| `placeholder` | Placeholder | input, search, lookup, conversation |
+| `refreshLabel` | Refresh button label | conversation |
+| `searchLabel` | Search input label | conversation |
+| `searchPlaceholder` | Search placeholder | conversation |
+| `sentNoticeText` | Flow submission notice | conversation |
+| `showDescription` | Show card description | item_grid |
+| `submitLabel` | Search button label | search |
+| `tabLabel` | Tab group accessibility label | tabs |
+| `text` | Text | text, badge |
+| `title` | Title | modal, item_grid, cart, conversation, form, metric |
+| `topbarActionLabelProperty` | Topbar action label property | cart |
+| `totalLabel` | Basket total label | cart |
+| `valueTextAlign` | Value alignment | item_grid |
+
+**Image**
+
+| Property key | Display label | Enabled for UNE components |
+|---|---|---|
+| `imageExpression` | Image expression | item_grid |
+| `missingImageBehavior` | When image missing | item_grid |
+
+**Options**
+
+| Property key | Display label | Enabled for UNE components |
+|---|---|---|
+| `contactChoices` | Contact choices from authorised Flow | conversation |
+| `controlledOpen` | Control visibility from page state | modal |
+| `controlledSelection` | Control selected tab from page state | tabs, conversation |
+| `controlledValue` | Control search value from page state | search |
+| `conversationAccessMode` | Conversation permission source | conversation |
+| `conversationSourceMode` | Conversation record format | conversation |
+| `disabled` | Disabled | button, input, toggle, lookup |
+| `enableAssignment` | Enable assignment actions | conversation |
+| `enableNewConversation` | Enable new conversations | conversation |
+| `inputMode` | Virtual keyboard type | input |
+| `liveFlowRefreshEnabled` | Refresh Flow data while page is visible | conversation |
+| `liveRefreshEnabled` | Refresh live records | conversation |
+| `required` | Required | input |
+| `selectedIndex` | Selected tab index from page state | tabs |
+| `showAccountSelector` | Show account selector | conversation |
+| `showAddIcon` | Show Add button | item_grid |
+| `showCategoryTabs` | Show category tabs | cart |
+| `showCloseButton` | Show close button | modal |
+| `showComposer` | Show message composer | conversation |
+| `showConversationCount` | Show conversation count | conversation |
+| `showDeliveryStatus` | Show message status | conversation |
+| `showHeading` | Show gallery heading | item_grid |
+| `showPanel` | Show content | tabs |
+| `showRefresh` | Show refresh button | conversation |
+| `showSearch` | Show inbox search | conversation |
+| `showSubmitButton` | Show search button | search |
+| `showSuggestions` | Show record suggestions | search |
+| `showTrigger` | Show built-in open button | modal |
+| `showVatTotal` | Show VAT total | cart |
+| `showWeekends` | Show weekends | calendar |
+| `variant` | Variant | button |
+| `viewMode` | Presentation | cart, conversation |
+
+**Component content**
+
+| Property key | Display label | Enabled for UNE components |
+|---|---|---|
+| `autoComplete` | Browser autocomplete hint | input |
+| `badgeExpression` | Badge expression | item_grid |
+| `basketPresentation` | Basket presentation | cart |
+| `cartTargetKey` | Optional shared basket | item_grid, cart |
+| `channelAccessPath` | Permission endpoint | conversation |
+| `channelAccounts` | Available authorised channel accounts | conversation |
+| `closeOnBackdrop` | Close on backdrop click | modal |
+| `closeOnEscape` | Close on Escape key | modal |
+| `conversationDefaultAccount` | Default communication channel | conversation |
+| `conversationIncomingValue` | Incoming direction value | conversation |
+| `conversationNameFromParticipant` | Show participant names from sender / recipient fields | conversation |
+| `conversationOutgoingValue` | Outgoing direction value | conversation |
+| `conversations` | Conversations from authorised Flow/page state | conversation |
+| `currencyCode` | Currency code (only for monetary values) | item_grid, cart |
+| `customerDisplayUrl` | Customer display URL | cart |
+| `eligibleAssignees` | Authorised conversation assignees | conversation |
+| `fields` | Line item fields | line_items |
+| `firstDayOfWeek` | First day of week | calendar |
+| `headingExpression` | Heading expression | item_grid |
+| `inactivityResetSeconds` | Reset abandoned customer session after seconds (0 = disabled, 30-3600) | cart |
+| `inputType` | Input type | input |
+| `isOpen` | Page state: dialog is open | modal |
+| `liveFlowRefreshEvents` | Comma-separated read Flow event names | conversation |
+| `liveFlowRefreshIntervalMs` | Flow refresh interval in milliseconds | conversation |
+| `maxLength` | Maximum text length | input |
+| `multiline` | Multiline | input |
+| `newConversationPresentation` | New conversation presentation | conversation |
+| `pattern` | Input validation pattern | input |
+| `requireChannelAccountForNew` | Require channel account for new conversation | conversation |
+| `resourceValue` | Selected staff/resource | calendar |
+| `searchValue` | Search query from page state | lookup |
+| `selectedConversationId` | Selected conversation ID from page state | conversation |
+| `selectedDate` | Selected date | calendar |
+| `selectionBehavior` | When someone selects a card | item_grid |
+| `selectionPayload` | Selection event value | lookup |
+| `separateAddButton` | Separate Add button action | item_grid |
+| `serviceValue` | Selected service | calendar |
+| `standalonePresentation` | Standalone paired display | cart |
+| `startOpen` | Open initially | modal |
+| `storeName` | Store name | cart |
+| `tabs` | Tab labels | tabs |
+| `timeZone` | Business timezone | calendar |
+| `topbarActionEvent` | Topbar action event | cart |
+| `topbarActionRequiresProperty` | Topbar action requires property | cart |
+| `value` | Input value from page state | input, toggle, search, lookup |
+| `valueColor` | Value colour | item_grid |
+| `valueLineLimit` | Value maximum lines | item_grid |
+| `vatRate` | Tax rate (%) | cart |
+| `view` | Calendar view | calendar |
+
+### Component Properties
+
+**Surface**
+
+| Property key | Display label | Enabled for UNE components |
+|---|---|---|
+| `backgroundColor` | Surface colour | text, calendar, button, input, toggle, badge, stack, tabs, modal, item_grid, search, lookup, cart, conversation |
+| `borderColor` | Border colour | text, image, calendar, button, card, input, toggle, badge, stack, tabs, container, grid, split_pane, navigation, menu, modal, drawer, item_grid, repeater, record_list, search, lookup, choice, cart, conversation, form, table, line_items, date_picker, slot_picker, metric, alert, progress, document_viewer, chart, option_groups |
+| `radius` | Corner radius (px) | text, image, calendar, button, card, input, toggle, badge, stack, tabs, container, grid, split_pane, navigation, menu, modal, drawer, item_grid, repeater, record_list, search, lookup, choice, cart, conversation, form, table, line_items, date_picker, slot_picker, metric, alert, progress, document_viewer, chart, option_groups |
+| `shadow` | Shadow | text, image, calendar, button, card, input, toggle, badge, stack, tabs, container, grid, split_pane, navigation, menu, modal, drawer, item_grid, repeater, record_list, search, lookup, choice, cart, conversation, form, table, line_items, date_picker, slot_picker, metric, alert, progress, document_viewer, chart, option_groups |
+| `textColor` | Text colour | text, calendar, button, input, toggle, badge, stack, tabs, modal, item_grid, search, lookup, cart, conversation |
+
+**Card**
+
+| Property key | Display label | Enabled for UNE components |
+|---|---|---|
+| `cardBackgroundColor` | Card background | item_grid |
+| `cardBorderColor` | Card border colour | item_grid |
+| `cardBorderWidth` | Card border width (px) | item_grid |
+| `cardHover` | Card hover effect | item_grid |
+| `cardRadius` | Card radius (px) | item_grid |
+| `cardShadow` | Card shadow | item_grid |
+
+**Heading**
+
+| Property key | Display label | Enabled for UNE components |
+|---|---|---|
+| `headingColor` | Heading colour | item_grid |
+| `headingFontSize` | Heading size (px) | item_grid |
+| `headingFontWeight` | Heading weight | item_grid |
+| `headingLineLimit` | Heading maximum lines | item_grid |
+| `headingTextAlign` | Heading alignment | item_grid |
+
+**Supporting text**
+
+| Property key | Display label | Enabled for UNE components |
+|---|---|---|
+| `descriptionColor` | Supporting colour | item_grid |
+| `descriptionFontSize` | Supporting size (px) | item_grid |
+| `descriptionFontWeight` | Supporting text weight | item_grid |
+| `descriptionLineLimit` | Supporting text maximum lines | item_grid |
+| `descriptionTextAlign` | Supporting text alignment | item_grid |
+
+**Badge**
+
+| Property key | Display label | Enabled for UNE components |
+|---|---|---|
+| `badgeBackgroundColor` | Badge background | item_grid |
+| `badgeFontSize` | Badge text size (px) | item_grid |
+| `badgeFontWeight` | Badge weight | item_grid |
+| `badgeTextColor` | Badge text colour | item_grid |
+
+**Image**
+
+| Property key | Display label | Enabled for UNE components |
+|---|---|---|
+| `imageFit` | Image fit | item_grid |
+| `imageShape` | Image shape | item_grid |
+
+**Appearance**
+
+| Property key | Display label | Enabled for UNE components |
+|---|---|---|
+| `accentColor` | Custom accent colour | text, calendar, button, input, toggle, badge, stack, tabs, modal, item_grid, search, lookup, cart, conversation |
+| `glassBlur` | Glass blur (px) | text, calendar, button, input, toggle, badge, stack, tabs, modal, item_grid, search, lookup, cart, conversation |
+| `surface` | Surface | text, calendar, button, input, toggle, badge, stack, tabs, modal, item_grid, search, lookup, cart, conversation |
+| `theme` | Theme | text, image, calendar, button, card, input, toggle, badge, stack, tabs, container, grid, split_pane, navigation, menu, modal, drawer, item_grid, repeater, record_list, search, lookup, choice, cart, conversation, form, table, line_items, date_picker, slot_picker, metric, alert, progress, document_viewer, chart, option_groups |
+| `tone` | Colour palette | text, calendar, button, input, toggle, badge, stack, tabs, modal, item_grid, search, lookup, cart, conversation |
+
+**Additional styling**
+
+| Property key | Display label | Enabled for UNE components |
+|---|---|---|
+| `fontSize` | Font size | text |
+| `valueFontSize` | Value size (px) | item_grid |
+| `valueFontWeight` | Value weight | item_grid |
+
+### Component Layout
+
+**Size**
+
+| Property key | Display label | Enabled for UNE components |
+|---|---|---|
+| `cardMinHeight` | Card minimum height (px) | item_grid |
+| `cardWidth` | Card width (px) | item_grid |
+| `catalogueWidthPercent` | Catalogue width percentage | cart |
+| `imageHeight` | Image height (px) | item_grid |
+| `imageWidth` | Image width (px) | item_grid |
+| `productCardMinWidth` | Minimum product card width | cart |
+
+**Position**
+
+| Property key | Display label | Enabled for UNE components |
+|---|---|---|
+| `imagePosition` | Image position | item_grid |
+
+**Spacing**
+
+| Property key | Display label | Enabled for UNE components |
+|---|---|---|
+| `cardDensity` | Card density | item_grid |
+| `cardPadding` | Card padding (px) | item_grid |
+| `density` | Spacing density | text, calendar, button, input, toggle, badge, stack, tabs, modal, item_grid, search, lookup, cart, conversation |
+| `gap` | Gap (px) | text, calendar, button, input, toggle, badge, stack, tabs, modal, item_grid, search, lookup, cart, conversation |
+| `padding` | Padding (px) | text, calendar, button, input, toggle, badge, stack, tabs, modal, item_grid, search, lookup, cart, conversation |
+
+**Container**
+
+| Property key | Display label | Enabled for UNE components |
+|---|---|---|
+| `conversationDirectionFieldApiName` | Conversation direction field | conversation |
+| `detailRows` | Detail rows | item_grid |
+| `direction` | Direction | stack |
+| `featuredColumnSpan` | Featured tile width (columns) | item_grid |
+| `featuredRowSpan` | Featured tile height (rows) | item_grid |
+| `imageAspectRatio` | Image aspect ratio | item_grid |
+| `messageDirectionFieldApiName` | Message direction field | conversation |
+| `rows` | Rows | input |
+| `wrap` | Wrap | stack |
+
+**Nesting**
+
+| Property key | Display label | Enabled for UNE components |
+|---|---|---|
+| `layoutContainer` | Accept child components | stack, tabs, modal |
+
+### Component Responsive
+
+**Responsive layout**
+
+| Property key | Display label | Enabled for UNE components |
+|---|---|---|
+| `autoScrollOnNewMessage` | Follow latest thread messages | conversation |
+| `messageAutoScrollThreshold` | Bottom-follow distance in pixels | conversation |
+| `showNewMessageNotice` | Show newer-message notice when scrolled up | conversation |
+
+**Mobile behaviour**
+
+| Property key | Display label | Enabled for UNE components |
+|---|---|---|
+| `avoidKeyboardOverlap` | Keep mobile composer above keyboard | conversation |
+| `contactPhoneFieldApiName` | Contact phone field | conversation |
+| `contactPhoneFieldApiNames` | Contact phone fields (priority) | conversation |
+| `conversationNormalizePhoneNumbers` | Normalize participant phone numbers | conversation |
+| `conversationPhoneFieldApiName` | Conversation record phone field | conversation |
+| `fullScreenOnMobile` | Full-screen dialog on phones | modal |
+| `normaliseSelectedPhone` | Normalise selected phone digits | lookup |
+| `recordPhoneFieldApiNames` | Possible phone fields, first valid selected | lookup |
+
+### Component Action
+
+**Events**
+
+| Property key | Display label | Enabled for UNE components |
+|---|---|---|
+| `eventEndFieldApiName` | Event end field | calendar |
+| `eventStartFieldApiName` | Event start field | calendar |
+| `operationEvents` | Configured operation events | cart |
+
+**Actions**
+
+| Property key | Display label | Enabled for UNE components |
+|---|---|---|
+| `canSend` | Allow sending when authorised Flow is active | conversation |
+| `checkoutLabel` | Checkout button label | cart |
+| `enableSendPreparation` | Resolve Conversation record through configured Flows before send | conversation |
+| `requirePerRecordSendGrant` | Require per-record send grant | conversation |
+| `sendEnabled` | Enable composer (requires authorised send Flow) | conversation |
+
+**Flows**
+
+| Property key | Display label | Enabled for UNE components |
+|---|---|---|
+| `checkoutChangeOutput` | Checkout change (minor units) output | cart |
+| `checkoutMessageOutput` | Checkout message output | cart |
+| `checkoutRequestOutput` | Checkout request output | cart |
+| `checkoutStatusOutput` | Checkout lifecycle output | cart |
+| `stateKeyInput` | State key input | cart |
+| `statePollIntervalMs` | State polling interval (ms) | cart |
+| `stateReadFlowApiName` | State read Flow | cart |
+| `stateRecordIdOutput` | State record output | cart |
+| `stateSessionQueryParam` | Display session query parameter | cart |
+| `stateSyncEnabled` | Synchronise paired display through Flow | cart |
+| `stateValueFieldApiName` | State value field | cart |
+| `stateValueInput` | State value input | cart |
+| `stateValueOutput` | State value output | cart |
+| `stateVersionFieldApiName` | State revision field | cart |
+| `stateVersionOutput` | State revision output | cart |
+| `stateWriteFlowApiName` | State write Flow | cart |
+
 ## une_text
 
 | Property key | Label | Kind |
