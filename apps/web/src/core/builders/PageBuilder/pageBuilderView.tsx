@@ -2346,8 +2346,8 @@ function PageBuilder({
           {selected && ribbonTab==='Component Data' && (selectedCustomDefinition?.propertyDefinitions?.some(d=>d.kind==='OBJECT'||d.kind==='OBJECT_FIELD'||/(?:filter|sourceObject)/i.test(d.propertyKey))
             || /^(?:Record Field|Record Detail|Related List|List View|Report Chart|Dashboard|Table)$/.test(selected.type)
             || 'filters' in selected.properties) && <div className="office-ribbon-group"><div className="office-ribbon-stack">
-            <button type="button" onClick={()=>openExpandedEditor('filters')}><Filter size={16}/> Record filters</button>
-            <button type="button" onClick={()=>openExpandedEditor('source')}><Database size={16}/> Record scope</button>
+            <button type="button" onClick={()=>selectRibbonTab('Filters')}><Filter size={16}/> Record filters</button>
+            <button type="button" onClick={()=>selectRibbonTab('Source')}><Database size={16}/> Record scope</button>
           </div><span>Data rules</span></div>}
           {selected && ribbonTab==='Component Data' && selectedCustomDefinition?.propertyDefinitions?.some(d=>['pageSize','enablePagination'].includes(d.propertyKey)) && <div className="office-ribbon-group"><div className="office-ribbon-stack">
             {selectedCustomDefinition.propertyDefinitions.some(d=>d.propertyKey==='pageSize')&&<label className="office-ribbon-inline-field">Page size <input type="number" min={1} max={500} value={Number(selected.properties.pageSize??12)} onChange={event=>{const n=Number(event.target.value);if(Number.isInteger(n)&&n>=1&&n<=500)updateComponent(selected.id,{properties:{...selected.properties,pageSize:n}});}}/></label>}
@@ -2461,7 +2461,7 @@ function PageBuilder({
           </>}
           {selected && ribbonTab==='Component Responsive' && <RibbonResponsive properties={selected.properties} componentType={selected.type}
             definition={selectedCustomDefinition} device={page.layoutVariant??'Desktop'}
-            onChange={properties=>updateComponent(selected.id,{properties})} onVisibilityRules={()=>openExpandedEditor('visibility')}/>}
+            onChange={properties=>updateComponent(selected.id,{properties})} onVisibilityRules={()=>selectRibbonTab('Visibility Rules')}/>}
           
           {selected && ribbonTab === 'Component Action' && selectedCustomDefinition?.apiName==='une_item_grid'
             && <div className="office-ribbon-group"><div className="office-ribbon-stack">
