@@ -68,7 +68,13 @@ export function recordPagePresentationLayout(
 export function legacyLayoutToRecordComponents(
   layout:PageLayoutMetadata,existing:PageComponentMetadata[],device:string
 ):PageComponentMetadata[] {
-  const retained=existing.filter(component=>!['Record Detail','Field Section','Record Field','Related List','Record Actions'].includes(component.type));
+  const owned=(id:string)=>id.startsWith('migrated-section-'+device+'-')
+    ||id==='migrated-related-'+device||id==='record-actions-'+device;
+  // Never delete hand-authored standard components or another device's
+  // components. Repeated import preserves edits to converter-owned instances.
+  const retained=existing.filter(component=>!owned(component.id));
+  const previous=new Map(existing.filter(component=>owned(component.id))
+    .map(component=>[component.id,component]));
   const sections=layout.sections.map((section,index):PageComponentMetadata=>({
     id:'migrated-section-'+device+'-'+index+'-'+section.id.replace(/[^A-Za-z0-9_-]/g,'_').slice(0,48),
     type:'Field Section',label:section.label,region:'main',visible:true,
@@ -85,5 +91,6 @@ export function legacyLayoutToRecordComponents(
     properties:{actions:[...layout.actions],customLinks:(layout.customLinks??[]).map(link=>({...link})),
       relatedListSettings:{...(layout.relatedListSettings??{})}}
   };
-  return [...retained,...sections,...related,controls];
+  const generated=[...sections,...related,controls];
+  return [...retained,...generated.map(component=>previous.get(component.id)??component)];
 }
