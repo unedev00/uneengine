@@ -2238,6 +2238,9 @@ function RecordWorkspace({
         if(!field||field.dataType!=='Picklist')return <p key={component.id} role="status">Choose a readable Picklist field for Path.</p>;
         return <StandardRecordPath key={component.id} label={component.label}
           values={field.picklistValues??[]} value={record[apiName]}
+          record={record} readableFields={readableRecordFields}
+          guidanceByStage={component.properties.guidanceByStage as Record<string,string>|undefined}
+          keyFieldsByStage={component.properties.keyFieldsByStage as Record<string,string[]>|undefined}
           canEdit={canEdit&&fieldAccess[`${object.apiName}.${apiName}`]?.edit===true}
           onAdvance={async(nextValue)=>{
             if(!canEdit||!fieldAccess[`${object.apiName}.${apiName}`]?.edit)
