@@ -2539,18 +2539,12 @@ function PageBuilder({
             key={selected.id} properties={selected.properties} componentType={selected.type}
             definition={selectedCustomDefinition} device={page.layoutVariant??'Desktop'}
             excludeKeys={inferredGroupKeys} onChange={properties=>updateComponent(selected.id,{properties})}/>}
-          {selected && ribbonTab==='Component Responsive' && <>
-            <div className="office-ribbon-group office-ribbon-master-visibility"><div className="office-ribbon-stack">
-              <label className="office-ribbon-checkbox">
-                <input type="checkbox" checked={selected.visible} onChange={event=>updateComponent(selected.id,{visible:event.target.checked})}/>
-                Show component
-              </label>
-            </div><span>Visibility</span></div>
-            <RibbonResponsive properties={selected.properties} componentType={selected.type}
-              definition={selectedCustomDefinition} device={page.layoutVariant??'Desktop'}
-              onChange={properties=>updateComponent(selected.id,{properties})} onVisibilityRules={()=>openExpandedEditor('visibility')}/>
-          </>}
-          
+          {selected && ribbonTab==='Component Responsive' && <RibbonResponsive
+            properties={selected.properties} componentType={selected.type}
+            definition={selectedCustomDefinition} device={page.layoutVariant??'Desktop'}
+            visible={selected.visible} onVisibleChange={visible=>updateComponent(selected.id,{visible})}
+            onChange={properties=>updateComponent(selected.id,{properties})}
+            onVisibilityRules={()=>openExpandedEditor('visibility')}/>}
           {selected && ribbonTab === 'Component Action' && selectedCustomDefinition?.apiName==='une_item_grid'
             && <div className="office-ribbon-group"><div className="office-ribbon-stack">
               <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Add to cart</span>
