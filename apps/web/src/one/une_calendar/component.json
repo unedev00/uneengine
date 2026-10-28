@@ -221,13 +221,6 @@
       "defaultValue": ""
     },
     {
-      "propertyKey": "items",
-      "label": "Flow / Page State records",
-      "kind": "RECORD_LIST",
-      "displayOrder": 300,
-      "defaultValue": []
-    },
-    {
       "propertyKey": "dateFieldApiName",
       "label": "Event date",
       "kind": "OBJECT_FIELD",
