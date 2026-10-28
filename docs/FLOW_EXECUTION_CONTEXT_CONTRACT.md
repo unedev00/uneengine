@@ -1,6 +1,6 @@
 # Flow execution context contract
 
-Status: **security architecture contract** (not a claim of automatic-trigger runtime support).
+Status: **runtime constraints and security contract** (deployment and authenticated end-to-end release gates remain required).
 
 ## Principles
 
@@ -60,4 +60,4 @@ Component event bindings may pass arrays only to declared, input-enabled Record 
 - A triggered Flow cannot gain access solely by being automatic. Test with revoked rights, tenant mismatch, unpublished/inactive versions, uninstalled apps, retries, deactivation and attempted cross-tenant access.
 - Production rollout additionally needs passing CI, a real PostgreSQL integration run, an independent security review, and authenticated end-to-end testing of published flows.
 
-Scheduled Flow dispatch currently resolves local times in an IANA zone and supports Once, Daily and every-seven-days Weekly schedules, with a 500-active-schedule scan cap and a 500-record per-run cap. This is not complete Salesforce scheduling. Production SQL validation and authenticated end-to-end release readiness are still required; unsupported automatic Flow capabilities remain disabled, and existing authorization guards are not relaxed.
+Scheduled Flow dispatch resolves local wall times in an IANA zone and supports Once, Daily, every-seven-days Weekly, and Monthly schedules. Monthly runs stay anchored to the configured start-date day and clamp to the last day of shorter months without drifting. The durable dispatcher uses keyset paging in batches of 200 and processes up to 20,000 active schedules per poll; each scheduled Flow run remains bounded to 500 records. Catch-up is bounded: the dispatcher queues at most the latest eligible occurrence within the frequency-specific window (36 hours for Once/Daily, 8 days for Weekly, 35 days for Monthly). This is not complete Salesforce scheduling. Production SQL validation and authenticated end-to-end release readiness are still required; unsupported automatic Flow capabilities remain disabled, and existing authorization guards are not relaxed.
