@@ -1,4 +1,5 @@
 import OneTenantImage from "../shared/OneTenantImage.jsx";
+import { evaluateFieldExpression } from "../shared/OneFieldExpression.js";
 import {
   css,
   records,
@@ -196,13 +197,13 @@ function ItemGrid({ p, rows }) {
         }}
       >
         {visibleRows.map((r, i) => {
-          const image = r?.[imageField],
+          const image = p.imageExpression ? evaluateFieldExpression(p.imageExpression,r) : r?.[imageField],
             validImage =
               typeof image === "string" && (/^https:\/\//i.test(image) || /^asset:[0-9a-f-]{36}$/i.test(image));
-          const name = view(r?.[titleField] ?? r?.Name ?? r?.name ?? "Record"),
+          const name = p.headingExpression ? evaluateFieldExpression(p.headingExpression,r) : view(r?.[titleField] ?? r?.Name ?? r?.name ?? "Record"),
             price = r?.[priceField];
-          const badge = badgeField ? String(r?.[badgeField] ?? "") : "";
-          const description = descriptionField ? String(r?.[descriptionField] ?? "") : "";
+          const badge = p.badgeExpression ? evaluateFieldExpression(p.badgeExpression,r) : badgeField ? String(r?.[badgeField] ?? "") : "";
+          const description = p.descriptionExpression ? evaluateFieldExpression(p.descriptionExpression,r) : descriptionField ? String(r?.[descriptionField] ?? "") : "";
           const isFeatured = featuredField && (r?.[featuredField] === true || r?.[featuredField] === "true");
           const span = isFeatured ? Math.max(1, Math.min(count, Number(p.featuredColumnSpan) || 2)) : 1;
           const rowSpan = isFeatured ? Math.max(1, Math.min(6, Number(p.featuredRowSpan) || 1)) : 1;
@@ -317,8 +318,10 @@ function ItemGrid({ p, rows }) {
                 <span className="md-product-image md-card-image-missing" style={imageStyle} role="img" aria-label="Image unavailable">No image</span>
               )}
               {badge && <span className="md-product-badge" style={{display:"inline-block",
-                padding:"3px 8px",borderRadius:999,background:p.accentColor||"#E4002B",
-                color:"#fff",fontSize:"0.75em",fontWeight:700}}>{badge.slice(0,60)}</span>}
+                padding:"3px 8px",borderRadius:999,background:p.badgeBackgroundColor||p.accentColor||"#E4002B",
+                color:p.badgeTextColor||"#fff",
+                fontSize:boundedSize(p.badgeFontSize,48)??"0.75em",
+                fontWeight:[400,500,600,700].includes(Number(p.badgeFontWeight))?Number(p.badgeFontWeight):700}}>{badge.slice(0,120)}</span>}
               {p.showTitle !== false && (
                 <strong className="md-product-name" style={headingStyle}>{name}</strong>
               )}

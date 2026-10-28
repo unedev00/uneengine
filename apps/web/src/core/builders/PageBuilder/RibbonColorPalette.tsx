@@ -21,11 +21,13 @@ export default function RibbonColorPalette({kind,label,value,onChange}:{
   kind:ColourKind;label:string;value:string;onChange:(color:string)=>void;
 }){
   const [open,setOpen]=useState(false);
+  const [customHex,setCustomHex]=useState(value);
   const [position,setPosition]=useState({top:0,left:0});
   const trigger=useRef<HTMLButtonElement>(null);
   const popup=useRef<HTMLDivElement>(null);
   const icon=kind==='text'?<Baseline size={17}/>:kind==='fill'?<PaintBucket size={17}/>:<Square size={17}/>;
   const choose=(colour:string)=>{onChange(colour);setOpen(false);trigger.current?.focus();};
+  useEffect(()=>setCustomHex(value),[value]);
   const toggle=()=>{
     if(!open&&trigger.current){
       const rect=trigger.current.getBoundingClientRect();
@@ -76,6 +78,11 @@ export default function RibbonColorPalette({kind,label,value,onChange}:{
       <div className="office-ribbon-palette-heading">Standard colours</div>
       <div className="office-ribbon-palette-standard">
         {standard.map(colour=>swatch(colour,colour))}
+      </div>
+      <div className="office-ribbon-palette-hex">
+        <label>HEX <input type="text" aria-label={'HEX for '+label} value={customHex} placeholder="#RRGGBB" maxLength={7}
+          onChange={event=>setCustomHex(event.target.value)} onKeyDown={event=>{if(event.key==='Enter'&&/^#[0-9a-f]{6}$/i.test(customHex))choose(customHex);}}/></label>
+        <button type="button" disabled={!/^#[0-9a-f]{6}$/i.test(customHex)} onClick={()=>choose(customHex)}>Apply</button>
       </div>
       <div className="office-ribbon-palette-footer">
         <button type="button" onClick={()=>choose('transparent')}>No colour</button>

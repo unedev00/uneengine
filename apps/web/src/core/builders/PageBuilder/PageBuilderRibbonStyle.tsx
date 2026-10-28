@@ -87,7 +87,7 @@ export function RibbonFormat({properties,componentType,definition,device,onChang
   const fontSize=num(style.fontSize??properties.fontSize,16);
   const weight=num(style.fontWeight??properties.fontWeight,400);
   const remaining=availableComponentSettings(definition?.propertyDefinitions??[],device,definition?.version)
-    .filter(d=>isPresentationProperty(d)&&presentationSection(d)!=='Content'&&presentationSection(d)!=='Layout'&&!/^(?:theme|surface|tone|textColor|accentColor|backgroundColor|borderColor|fontFamily|fontWeight|fontSize|textAlign|borderWidth|borderRadius|radius|padding|margin|gap|opacity|minWidth|maxWidth|minHeight|maxHeight)$/.test(d.propertyKey));
+    .filter(d=>isPresentationProperty(d)&&!(d as {group?:string}).group&&presentationSection(d)!=='Content'&&presentationSection(d)!=='Layout'&&!/^(?:theme|surface|tone|textColor|accentColor|backgroundColor|borderColor|fontFamily|fontWeight|fontSize|textAlign|borderWidth|borderRadius|radius|padding|margin|gap|opacity|minWidth|maxWidth|minHeight|maxHeight)$/.test(d.propertyKey));
   return <>
     {supportedText&&<div className="office-ribbon-group office-ribbon-typography"><div className="office-ribbon-stack">
       <label className="office-ribbon-inline-field">Text size <input type="number" aria-label="Text size" min={8} max={96} value={fontSize} onChange={e=>{const n=Number(e.target.value);if(Number.isInteger(n)&&n>=8&&n<=96)setLayout('fontSize',n);}}/></label>
