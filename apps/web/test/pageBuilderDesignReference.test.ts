@@ -20,7 +20,7 @@ test('Radius and Card radius do not render a leading glyph',()=>{
 test('Font weights expose only light, mid, hard using existing metadata choices',()=>{
  const code=source('../src/core/builders/PageBuilder/RibbonCapabilityControls.tsx');
  for(const name of ['Light','Mid','Hard'])assert.ok(code.includes(`name:'${name}'`));
- assert.match(code,/\.filter\(level=>level\.choice\)/);
+ assert.ok(code.includes('.flatMap(level=>level.choice'));
  assert.match(code,/\[definition\.propertyKey\]:level\.choice\.key/);
 });
 test('Badge, Image and Appearance grids follow approved compact placement',()=>{
