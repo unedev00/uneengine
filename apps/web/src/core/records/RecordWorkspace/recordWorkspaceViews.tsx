@@ -1473,7 +1473,7 @@ function RecordWorkspace({
             && (fieldAccess[`${object.apiName}.${apiName}`]?.edit !== false)
           : (apiName === 'RecordTypeId' || fieldAccess[`${object.apiName}.${apiName}`]?.edit))
       ));
-      const effectiveValues=applyRequiredLayoutDefaults(writableValues,selectedLayout,
+      const effectiveValues=editingId?writableValues:applyRequiredLayoutDefaults(writableValues,selectedLayout,
         object.fields,new Set(object.fields.filter(field=>
           fieldAccess[`${object.apiName}.${field.apiName}`]?.edit===true).map(field=>field.apiName)));
       Object.assign(writableValues,effectiveValues);
