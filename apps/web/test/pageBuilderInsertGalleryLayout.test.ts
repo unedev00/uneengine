@@ -8,7 +8,7 @@ test('Insert gallery CSS targets the current JSX wrapper, not only the removed b
   assert.match(jsx,/className="office-ribbon-add-library"/);
   assert.match(jsx,/className="office-ribbon-gallery-pages"/);
   assert.match(css,/#page-builder-tab-content > \.office-ribbon-add-library > \.office-ribbon-gallery-pages/);
-  assert.match(css,/grid-template-rows:repeat\(3,40px\)!important/);
-  assert.match(css,/grid-template-columns:repeat\(8,minmax\(0,1fr\)\)!important/);
+  assert.match(jsx,/className="office-ribbon-gallery-group-tiles"/);
+  assert.match(jsx,/components\.slice\(index\*4,index\*4\+4\)/);
   assert.match(css,/\.office-ribbon-component-tile > span \{/);
 });
