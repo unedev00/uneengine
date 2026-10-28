@@ -1363,7 +1363,7 @@ function RecordWorkspace({
   // Backend Record API permissions remain authoritative for every mutation.
   const formRecordPermissions=new Set<'Create'|'Edit'|'Delete'>(
     (['Create','Edit','Delete'] as const).filter(key=>
-      recordGrants?.objectApi===object?.apiName&&recordGrants[key]===true)
+      recordGrants!=null&&recordGrants.objectApi===object?.apiName&&recordGrants[key]===true)
   );
   const selectedLayout = recordEditPageLayout(visibleEditPage,sourceLayout,{
     formFactor,record:formValues,fields:object?.fields??[],profileId,
