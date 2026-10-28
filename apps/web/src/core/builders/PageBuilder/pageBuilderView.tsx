@@ -257,6 +257,7 @@ import {
   type WorkspaceId
 } from '../../metadata/Definitions/metadata';
 import SavedListViewPicker from './SavedListViewPicker';
+import RibbonImageContent from './RibbonImageContent';
 export function createPageBuilder(MetadataComponentProperties: React.ComponentType<any>, MetadataBoundPageComponent: React.ComponentType<any>) {
 function PageBuilder({
   page, pages, objects, apps, profiles, reports, dashboards, libraryComponents, flows, onChange, onSelectPage, onTargetObjectChange, onSave, onPublish, onDeactivate, onSaveApp, onDeleteApp, onDeletePage, onExit, onNotify, onLaunchFlow,
@@ -694,8 +695,8 @@ function PageBuilder({
     const priority = (id: string) => favouriteComponents.includes(id) ? -10 : recentComponents.includes(id) ? recentComponents.indexOf(id) : 100;
     return priority(a.id) - priority(b.id);
   });
-  // Every registered, eligible component belongs to one three-row Office ribbon group.
-  // Never render a separate More Blocks grid or duplicate a command.
+  // Show each eligible UNE registry component exactly once. Do not surface legacy
+  // layout shortcuts or platform component aliases as duplicate Insert commands.
   const ribbonGroupRules = [
     {label:'Text',match:/text|image|photo|picture|paragraph|heading|label|media/i},
     {label:'Buttons',match:/button|link|action|menu/i},
@@ -709,10 +710,14 @@ function PageBuilder({
   const ribbonCategories = new Map<string,typeof paletteComponents>();
   for(const rule of ribbonGroupRules) ribbonCategories.set(rule.label,[]);
   ribbonCategories.set('Other',[]);
+  const seenRibbonComponents=new Set<string>();
   for(const component of paletteComponents){
-    const name=`${component.type} ${component.label}`;
+    const apiName=component.type.startsWith('Custom:')?component.type.slice('Custom:'.length):component.type;
+    if(!/^une_[a-z0-9_]+$/.test(apiName)||seenRibbonComponents.has(apiName))continue;
+    seenRibbonComponents.add(apiName);
+    const name=`${apiName} ${component.label}`;
     const category=ribbonGroupRules.find(group=>group.match.test(name))?.label??'Other';
-    ribbonCategories.get(category)!.push(component);
+    ribbonCategories.get(category)!.push({...component,label:component.label.replace(/^UNE[ _-]+/i,'')});
   }
   const ribbonComponentGroups = Array.from(ribbonCategories).flatMap(([label,components])=>
     Array.from({length:Math.ceil(components.length/4)},(_,index)=>({
@@ -2598,7 +2603,12 @@ function PageBuilder({
             onChange={properties=>updateComponent(selected.id,{properties})}
             onOpenSource={()=>openExpandedEditor('source')}
             onOpenFilters={()=>openExpandedEditor('filters')}/>}
-          {selected && ribbonTab === 'Component Content' && selectedCustomDefinition && !['une_item_grid','une_calendar'].includes(selectedCustomDefinition.apiName) &&
+          {selected && ribbonTab === 'Component Content' && selectedCustomDefinition?.apiName==='une_image' &&
+            <RibbonImageContent
+              properties={selected.properties}
+              definitions={selectedCustomDefinition.propertyDefinitions??[]}
+              onChange={properties=>updateComponent(selected.id,{properties})}/>}
+          {selected && ribbonTab === 'Component Content' && selectedCustomDefinition && !['une_item_grid','une_calendar','une_image'].includes(selectedCustomDefinition.apiName) &&
             selectedCustomDefinition.propertyDefinitions?.some(definition=>definition.kind==='OBJECT_FIELD') &&
             <div className="office-ribbon-group"><div className="office-ribbon-stack">
               {selectedCustomDefinition.propertyDefinitions.filter(definition=>definition.kind==='OBJECT_FIELD').slice(0,3).map(definition=><label key={definition.propertyKey} className="office-ribbon-inline-field">
@@ -2611,7 +2621,7 @@ function PageBuilder({
               </label>)}
             </div><span>Content Source</span></div>}
           
-          {selected && ribbonTab === 'Component Content' && !['une_item_grid','une_calendar'].includes(selectedCustomDefinition?.apiName??'')
+          {selected && ribbonTab === 'Component Content' && !['une_item_grid','une_calendar','une_image'].includes(selectedCustomDefinition?.apiName??'')
             && selectedCustomDefinition && <div className="office-ribbon-inline-options">
               <ComponentPresentationProperties
                 definitions={availableComponentSettings(selectedCustomDefinition.propertyDefinitions??[],
