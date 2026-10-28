@@ -11,7 +11,7 @@ import {resolvePageActionRoute} from '../PageRuntime/pageActionRouting';
 import {resolveFlowOutputBindings} from '../../automation/FlowScreen/flowInputBindings';
 import {componentLayoutProps} from '../TemplatePageRuntime/pageComponentLayout';
 import RegisteredComponent from '../../components/RegisteredComponent/RegisteredComponent';
-import {behaviorAction,pageBehaviors,type BehaviorContext} from '../PageRuntime/pageBehaviorRuntime';
+import {behaviorValidation,behaviorAction,pageBehaviors,type BehaviorContext} from '../PageRuntime/pageBehaviorRuntime';
 import type {LibraryComponentMetadata,PageComponentMetadata,ObjectMetadata,LightningAppMetadata,LightningPageMetadata,ReportMetadata,FlowDefinitionMetadata} from '../../metadata/Definitions/metadata';
 import type {AppRoute} from '../../workspace/Navigation/appRouting';
 
@@ -215,6 +215,8 @@ export default function MetadataBoundPageComponent({
     if(disableActions)throw new Error('Page Builder preview is read-only.');
     if(behaviorAction(properties,action.event,behaviorContext??{formFactor})!=='enabled')
       throw new Error('This action is unavailable under the published Page rules.');
+    const validationError=behaviorValidation(properties,action.event,behaviorContext??{formFactor});
+    if(validationError)throw new Error(validationError);
     const interactions=pageBehaviors(properties)?.interactions;
     const hasInteraction=Array.isArray(interactions)&&interactions.some(item=>item?.event===action.event);
     if(hasInteraction)window.dispatchEvent(new CustomEvent('metadrive:page-component-interaction',{
