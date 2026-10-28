@@ -570,22 +570,31 @@ function PageBuilder({
   // availability; keys listed here are existing renderer-supported properties.
   const ribbonAppearanceGroups = ['Card','Heading','Supporting text','Badge','Image','Gallery','Text','Button','Table','Calendar','Chart','Input','Navigation','Container'] as const;
   const appearanceDefinitions = availableComponentSettings(selectedCustomDefinition?.propertyDefinitions??[],page.layoutVariant??'Desktop',selectedCustomDefinition?.version);
-  const inferredAppearanceGroup=(key:string):string|undefined=>{
-    const component=selectedCustomDefinition?.apiName;
-    if(component==='une_text'&&key==='fontSize')return 'Text';
-    if(component==='une_button'&&key==='variant')return 'Button';
-    if(component==='une_calendar'&&['view','firstDayOfWeek','showWeekends'].includes(key))return 'Calendar';
-    if(component==='une_chart'&&key==='chartType')return 'Chart';
-    if(['une_navigation','une_container','une_stack'].includes(component??'')&&key==='direction')return component==='une_navigation'?'Navigation':'Container';
-    return undefined;
+  // Registry metadata remains authoritative. Legacy property declarations which omit
+  // a presentation group are assigned only where the component already declares the key.
+  const implicitParts:Record<string,Record<string,{group:string;section:'Design'|'Layout'}>> = {
+    une_text:{fontSize:{group:'Text',section:'Design'}},
+    une_button:{variant:{group:'Button',section:'Design'}},
+    une_item_grid:{cardDensity:{group:'Card',section:'Design'},cardHover:{group:'Card',section:'Design'},featuredColumnSpan:{group:'Gallery',section:'Layout'},featuredRowSpan:{group:'Gallery',section:'Layout'}},
+    une_calendar:{view:{group:'Calendar',section:'Design'},firstDayOfWeek:{group:'Calendar',section:'Design'},showWeekends:{group:'Calendar',section:'Design'}},
+    une_chart:{chartType:{group:'Chart',section:'Design'}},
+    une_image:{imageFit:{group:'Image',section:'Design'},imageHeight:{group:'Image',section:'Layout'}},
+    une_grid:{desktopColumns:{group:'Container',section:'Layout'},tabletColumns:{group:'Container',section:'Layout'},mobileColumns:{group:'Container',section:'Layout'}},
+    une_container:{direction:{group:'Container',section:'Layout'}},
+    une_stack:{direction:{group:'Container',section:'Layout'},wrap:{group:'Container',section:'Layout'}},
+    une_split_pane:{splitRatio:{group:'Container',section:'Layout'}},
+    une_navigation:{direction:{group:'Navigation',section:'Design'}},
+    une_table:{phoneLayout:{group:'Table',section:'Layout'}},
+    une_input:{inputType:{group:'Input',section:'Design'},multiline:{group:'Input',section:'Layout'},rows:{group:'Input',section:'Layout'}}
   };
+  const inferredAppearanceGroup=(key:string)=>implicitParts[selectedCustomDefinition?.apiName??'']?.[key];
   const definitionsForPart=(group:string,section:'Design'|'Layout')=>appearanceDefinitions.filter(definition=>{
-    const part=(definition as {group?:string}).group??inferredAppearanceGroup(definition.propertyKey);
-    const inferredSection=inferredAppearanceGroup(definition.propertyKey)&&['direction'].includes(definition.propertyKey)?'Layout':undefined;
+    const mapped=inferredAppearanceGroup(definition.propertyKey);
+    const part=(definition as {group?:string}).group??mapped?.group;
     return part===group&&!/(?:FieldApiName|ObjectApiName)$/.test(definition.propertyKey)
-      && ((definition as {section?:string}).section??inferredSection??(/columns|gap|padding|width|height|radius|span|position/i.test(definition.propertyKey)?'Layout':'Design'))===section;
+      && ((definition as {section?:string}).section??mapped?.section??(/columns|gap|padding|width|height|radius|span|position/i.test(definition.propertyKey)?'Layout':'Design'))===section;
   });
-  const inferredGroupKeys=appearanceDefinitions.filter(d=>inferredAppearanceGroup(d.propertyKey)).map(d=>d.propertyKey);
+  const inferredGroupKeys=appearanceDefinitions.filter(d=>inferredAppearanceGroup(d.propertyKey)&&!(d as {group?:string}).group).map(d=>d.propertyKey);
   const selectedComponentDescription = selectedCustomDefinition?.description
     ?? standardPageComponents.find((component) => component.apiName === selected?.type)?.description
     ?? (selected?.type === 'Field Section' ? 'Group record fields into a configurable section.' : '');
