@@ -143,7 +143,7 @@ import PageRouteDirectory from '../../pages/PageRouteDirectory/PageRouteDirector
 import { isComponentVisible } from '../../components/Properties/componentVisibility';
 import PageComponentVisualEditor from '../ComponentStyleEditor/PageComponentVisualEditor';
 import RibbonColorPalette from './RibbonColorPalette';
-import {RibbonFilters,RibbonVisibilityRules} from './PageBuilderRibbonEditors';
+import {RibbonFilters} from './PageBuilderRibbonEditors';
 import PageBuilderActionRibbon from './PageBuilderActionRibbon';
 import PageBuilderRibbonMetadataPager from './PageBuilderRibbonMetadataPager';
 import UniversalRibbonInventory from './UniversalRibbonInventory';
@@ -153,7 +153,6 @@ import {RibbonResponsive} from './PageBuilderRibbonStyle';
 import PageBuilderAdvancedStyle from './PageBuilderAdvancedStyle';
 import PageBuilderRibbonData from './PageBuilderRibbonData';
 import PageBuilderRibbonContent from './PageBuilderRibbonContent';
-import type {ComponentVisibilityRule} from '../../components/Properties/componentVisibility';
 import { canNestComponent, pageAppearanceTarget, pageAppearanceStyleKeys, updateLayoutSettings, type LayoutSettingKey, directChildren, isLayoutType, isDescendantOf, layoutTypes } from '../../pages/TemplatePageRuntime/pageComponentLayout';
 import PageComponentStyleEditor from '../ComponentStyleEditor/PageComponentStyleEditor';
 import { isCanvasLocked, wrapCanvasComponent, groupCanvasComponents, ungroupCanvasComponent, snapCanvasPosition, alignCanvasComponents, distributeCanvasComponents } from './canvasInteractions';
@@ -472,7 +471,6 @@ function PageBuilder({
   const [inspectorTab, setInspectorTab] = useState<'Design' | 'Data & Actions' | 'Visibility' | 'Position'>('Design');
   const [ribbonPropertyHost, setRibbonPropertyHost] = useState<HTMLDivElement | null>(null);
   const [ribbonFilterDraft,setRibbonFilterDraft] = useState<Record<string,unknown>>({});
-  const [ribbonVisibilityDraft,setRibbonVisibilityDraft] = useState<ComponentVisibilityRule|undefined>(undefined);
   const [ribbonSourceOffset,setRibbonSourceOffset] = useState(0);
   const [additionalPropertyDialogOpen,setAdditionalPropertyDialogOpen] = useState(false);
   const [pageSettingsDialogOpen,setPageSettingsDialogOpen] = useState(false);
@@ -484,7 +482,7 @@ function PageBuilder({
     if(!element)return;
     setRibbonOverflow({left:element.scrollLeft>3,right:element.scrollLeft+element.clientWidth<element.scrollWidth-3});
   };
-  const [ribbonTab, setRibbonTab] = useState<'Home' | 'Add Block' | 'Component Content' | 'Component Properties' | 'Component Style' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Component Responsive' | 'Preview' | 'Filters' | 'Source' | 'Visibility Rules'>('Home');
+  const [ribbonTab, setRibbonTab] = useState<'Home' | 'Add Block' | 'Component Content' | 'Component Properties' | 'Component Style' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Component Responsive' | 'Preview' | 'Filters' | 'Source'>('Home');
   useEffect(()=>{
     const element=ribbonStripRef.current;
     if(!element)return;
@@ -557,7 +555,7 @@ function PageBuilder({
     else if(key!=='accentColor')writeRibbonVisual(key,value);
   };
   useEffect(() => {
-    if (!selected && (ribbonTab.startsWith('Component ')||['Filters','Source','Visibility Rules'].includes(ribbonTab))) setRibbonTab('Home');
+    if (!selected && (ribbonTab.startsWith('Component ')||['Filters','Source'].includes(ribbonTab))) setRibbonTab('Home');
   }, [selectedId, page.components, ribbonTab]);
   // Metadata pages may hydrate after PageBuilder mounts; select their first
   // component when records arrive so the inspector is immediately usable.
@@ -567,10 +565,9 @@ function PageBuilder({
       setSelectedId(page.components[0].id);
     }
   }, [page.apiName, page.components.length]);
-  const openExpandedEditor = (kind:'source'|'filters'|'visibility') => {
+  const openExpandedEditor = (kind:'source'|'filters') => {
     if(!selected)return;
     if(kind==='filters'){setRibbonFilterDraft({...selected.properties});setRibbonTab('Filters');return;}
-    if(kind==='visibility'){setRibbonVisibilityDraft(selected.properties.visibilityRules as ComponentVisibilityRule|undefined);setRibbonTab('Visibility Rules');return;}
     if(kind==='source'){setRibbonTab('Source');return;}
   };
   const selectedCustomDefinition = selected?.type.startsWith('Custom:')
@@ -2297,7 +2294,6 @@ function PageBuilder({
   const ribbonTabsVisible: Array<typeof ribbonTab> = [...journeyTabs];
   if(ribbonTab==='Filters')ribbonTabsVisible.splice(journeyTabs.indexOf('Component Data')+1,0,'Filters');
   if(ribbonTab==='Source')ribbonTabsVisible.splice(journeyTabs.indexOf('Component Data')+1,0,'Source');
-  if(ribbonTab==='Visibility Rules')ribbonTabsVisible.splice(journeyTabs.indexOf('Component Responsive')+1,0,'Visibility Rules');
   const addPaletteComponent = (type: string) => {
     const selectedIndex = page.components.findIndex((component) => component.id === selectedId);
     const selectedRegion = paletteInsertRegion ?? page.components[selectedIndex]?.region ?? 'main';
@@ -2521,7 +2517,7 @@ function PageBuilder({
                   'Component Responsive': Smartphone,
                   'Component Layout': Layers3,
                   'Component Action': Workflow,
-                  Preview: Eye, Filters: Filter, Source: Database, 'Visibility Rules': Eye
+                  Preview: Eye, Filters: Filter, Source: Database
                 }[tab];
                 const label = {
                   Home: 'Home',
@@ -2533,7 +2529,7 @@ function PageBuilder({
                   'Component Responsive': 'Responsive',
                   'Component Layout': 'Layout',
                   'Component Action': 'Actions',
-                  Preview: 'Preview', Filters: 'Filters', Source: 'Source', 'Visibility Rules': 'Visibility Rules'
+                  Preview: 'Preview', Filters: 'Filters', Source: 'Source'
                 }[tab];
                 return <button key={tab} id={`page-builder-tab-${index}`} type="button"
                   role="tab" tabIndex={ribbonTab===tab?0:-1} aria-selected={ribbonTab === tab}
@@ -2695,8 +2691,7 @@ function PageBuilder({
             properties={selected.properties} componentType={selected.type}
             definition={selectedCustomDefinition} device={page.layoutVariant??'Desktop'}
             visible={selected.visible} onVisibleChange={visible=>updateComponent(selected.id,{visible})}
-            onChange={properties=>updateComponent(selected.id,{properties})}
-            onVisibilityRules={()=>openExpandedEditor('visibility')}/>}
+            onChange={properties=>updateComponent(selected.id,{properties})}/>}
           {selected && ribbonTab === 'Component Action' && selectedCustomDefinition?.apiName==='une_item_grid'
             && <div className="office-ribbon-group"><div className="office-ribbon-stack">
               <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Add to cart</span>
@@ -2811,11 +2806,6 @@ function PageBuilder({
               <button type="button" onClick={()=>selectRibbonTab('Component Data')}>Done</button>
             </div>;
           })()}
-          {selected && ribbonTab==='Visibility Rules' && <RibbonVisibilityRules key={selected.id} draft={ribbonVisibilityDraft} onChange={setRibbonVisibilityDraft}
-            fields={fields} allowRecordFields={page.pageType==='Record Page'}
-            profiles={profiles.map(item=>({id:item.id,label:item.label}))} recordTypes={targetObject?.recordTypes?.map(item=>({id:item.id,label:item.label}))??[]}
-            onApply={()=>{const properties={...selected.properties};if(ribbonVisibilityDraft)properties.visibilityRules=ribbonVisibilityDraft;else delete properties.visibilityRules;updateComponent(selected.id,{properties});selectRibbonTab('Component Responsive');}}
-            onCancel={()=>selectRibbonTab('Component Responsive')}/>}
           {ribbonTab === 'Preview' && <>
             <div className="office-ribbon-group office-ribbon-preview-actions"><div className="office-ribbon-stack">
               <button type="button" onClick={()=>setPreviewMode(value=>!value)}><Eye size={17}/> {previewMode?'Exit canvas preview':'Canvas preview'}</button>
