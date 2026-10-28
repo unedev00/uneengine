@@ -118,7 +118,7 @@ test('Excel-style ribbon keeps all ten tabs, relocates page identity and removes
   assert.match(source,/RibbonDesign/);
   assert.match(source,/office-ribbon-quick-grid/);
   assert.match(source,/ribbonTab==='Component Responsive'/);
-  assert.match(source,/ribbonTab==='Component Style'/);
+  assert.match(source,/ribbonTab === 'Component Style' && <RibbonFormat/);
 });
 
 test('colour pickers share a single accessible, metadata-backed palette',()=>{
