@@ -349,3 +349,72 @@
  font:500 10px/12px "Segoe UI",Arial,sans-serif!important;text-align:left!important;
  padding:0!important;width:max-content!important;
 }
+
+/* Blueprint header is a light Office-style tab rail, not the old solid blue
+   50px navigation bar. Retain status and keyboard-accessible journey tabs. */
+.office-builder-ribbon>.office-ribbon-topbar {
+ display:flex!important;flex-flow:row nowrap!important;align-items:center!important;
+ height:34px!important;min-height:34px!important;max-height:34px!important;
+ box-sizing:border-box!important;gap:9px!important;padding:0 9px!important;
+ background:#f6f9fd!important;border-bottom:1px solid #d4deeb!important;
+}
+.office-builder-ribbon .office-ribbon-navigation{
+ display:flex!important;align-items:center!important;flex:1 1 auto!important;
+ min-width:0!important;height:33px!important;
+}
+.office-builder-ribbon .office-ribbon-tabs{
+ height:33px!important;max-height:33px!important;display:flex!important;
+ align-items:stretch!important;gap:5px!important;
+}
+.office-builder-ribbon .office-ribbon-tabs>button[role=tab]{
+ height:33px!important;min-height:33px!important;max-height:33px!important;
+ box-sizing:border-box!important;padding:4px 12px!important;
+ color:#253c5b!important;background:transparent!important;
+ border:0!important;border-bottom:3px solid transparent!important;
+ border-radius:0!important;font:600 11px/15px "Segoe UI",Arial,sans-serif!important;
+}
+.office-builder-ribbon .office-ribbon-tabs>button[role=tab] svg{
+ display:none!important;
+}
+.office-builder-ribbon .office-ribbon-tabs>button[role=tab].active{
+ color:#0869dc!important;border-bottom-color:#0874ef!important;
+ background:transparent!important;
+}
+.office-builder-ribbon .office-ribbon-tabs>button[role=tab]:hover:not(.active){
+ color:#065aaf!important;background:#e7f1ff!important;
+}
+.office-builder-ribbon .office-ribbon-tabs>button[role=tab]:disabled{
+ color:#9ca8bb!important;opacity:.65!important;
+}
+.office-builder-ribbon .office-ribbon-stepper button{
+ color:#23466e!important;min-height:28px!important;height:28px!important;
+}
+.office-builder-ribbon .office-ribbon-stepper button:hover:not(:disabled){
+ background:#e5f0fd!important;border-color:#b2cbe8!important;
+}
+.office-builder-ribbon .office-ribbon-header-tools{
+ height:33px!important;max-height:33px!important;align-items:center!important;
+ padding:0!important;
+}
+.office-builder-ribbon .office-ribbon-header-status{
+ color:#566c86!important;font-size:10px!important;
+}
+.office-builder-ribbon .office-ribbon-selection-context{
+ flex:0 0 auto;display:flex;align-items:center;justify-content:center;
+ max-width:150px;height:28px;padding:0 9px;border-radius:3px 3px 0 0;
+ overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+ background:#123b5e;color:#fff;font:600 10px/13px "Segoe UI",Arial,sans-serif;
+}
+/* Make the complete ribbon compact enough to match the reference while
+   retaining three 20px data/content rows and group bottom captions. */
+.office-builder-ribbon #page-builder-tab-content.office-ribbon-content{
+ height:112px!important;min-height:112px!important;max-height:112px!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-group{
+ height:103px!important;min-height:103px!important;max-height:103px!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-content-card,
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-data-group,
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-part-group{
+ height:103px!important;max-height:103px!important;
+}
