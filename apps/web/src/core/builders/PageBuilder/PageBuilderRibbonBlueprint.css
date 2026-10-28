@@ -845,3 +845,159 @@
 .office-builder-ribbon .office-ribbon-typography-capabilities .office-ribbon-direct-number{
  width:65px!important;min-width:65px!important;
 }
+
+/* Approved Item Grid Design ribbon: at most three controls in any row.
+   These overrides are scoped to Design and never affect Layout, other tabs,
+   the shared metadata property editor, or published page styling. */
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Properties"]>
+.office-ribbon-part-group:is([data-ribbon-group="Surface"],[data-ribbon-group="Card"]) {
+  flex:0 0 208px!important;width:208px!important;min-width:208px!important;max-width:208px!important;
+  padding:3px 5px 19px!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Properties"]>
+.office-ribbon-part-group[data-ribbon-group="Image"] {
+  flex:0 0 185px!important;width:185px!important;min-width:185px!important;max-width:185px!important;
+  padding:3px 5px 19px!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Properties"]>
+.office-ribbon-part-group:is([data-ribbon-group="Heading"],[data-ribbon-group="Supporting text"]) {
+  flex:0 0 196px!important;width:196px!important;min-width:196px!important;max-width:196px!important;
+  padding:3px 5px 19px!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Properties"]>
+.office-ribbon-part-group[data-ribbon-group="Badge"] {
+  flex:0 0 185px!important;width:185px!important;min-width:185px!important;max-width:185px!important;
+  padding:3px 5px 19px!important;
+}
+/* Surface and Card are two explicit rows: 3 + 2. Image is 3 + 1. */
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Properties"]>
+.office-ribbon-part-group:is([data-ribbon-group="Surface"],[data-ribbon-group="Card"],[data-ribbon-group="Image"])
+.office-ribbon-capabilities:not(.office-ribbon-typography-capabilities) {
+  display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  grid-template-rows:repeat(2,41px)!important;grid-auto-rows:41px!important;
+  justify-items:center!important;align-items:center!important;align-content:center!important;
+  gap:3px 2px!important;height:87px!important;max-height:87px!important;overflow:hidden!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Properties"]>
+.office-ribbon-part-group:is([data-ribbon-group="Surface"],[data-ribbon-group="Card"],[data-ribbon-group="Image"])
+.office-ribbon-capability-icon {
+  box-sizing:border-box!important;width:100%!important;min-width:0!important;max-width:65px!important;
+  height:39px!important;min-height:39px!important;max-height:39px!important;
+  padding:2px 1px!important;gap:2px!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Properties"]>
+.office-ribbon-part-group:is([data-ribbon-group="Surface"],[data-ribbon-group="Card"])
+.office-ribbon-direct-number {
+  box-sizing:border-box!important;display:grid!important;grid-template-columns:15px minmax(0,1fr)!important;
+  grid-template-rows:23px 12px!important;width:65px!important;min-width:0!important;max-width:65px!important;
+  height:40px!important;min-height:40px!important;padding:1px 0!important;gap:1px!important;
+  align-items:center!important;justify-items:center!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Properties"]>
+.office-ribbon-part-group:is([data-ribbon-group="Surface"],[data-ribbon-group="Card"])
+.office-ribbon-direct-number .office-ribbon-command-glyph {
+  display:flex!important;grid-column:1!important;grid-row:1!important;
+  width:15px!important;min-width:15px!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Properties"]>
+.office-ribbon-part-group:is([data-ribbon-group="Surface"],[data-ribbon-group="Card"])
+.office-ribbon-direct-number select {
+  box-sizing:border-box!important;grid-column:2!important;grid-row:1!important;
+  flex:none!important;width:47px!important;min-width:47px!important;max-width:47px!important;
+  height:22px!important;padding:0 1px!important;font-size:11px!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Properties"]>
+.office-ribbon-part-group:is([data-ribbon-group="Surface"],[data-ribbon-group="Card"])
+.office-ribbon-direct-number .office-ribbon-command-label{
+  grid-column:1 / -1!important;grid-row:2!important;width:auto!important;max-width:65px!important;
+  font:500 9px/11px "Segoe UI",Arial,sans-serif!important;text-align:center!important;
+}
+/* Heading and Supporting Text each have precisely three property cells,
+   three alignment icons and as many weight rows as metadata declares. */
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Properties"]>
+.office-ribbon-part-group:is([data-ribbon-group="Heading"],[data-ribbon-group="Supporting text"],[data-ribbon-group="Badge"])
+.office-ribbon-capabilities.office-ribbon-typography-capabilities {
+  display:grid!important;grid-template-columns:minmax(0,1fr)!important;
+  grid-template-rows:34px 22px minmax(0,34px)!important;gap:1px!important;
+  align-items:center!important;justify-items:center!important;align-content:center!important;
+  height:90px!important;max-height:90px!important;overflow:hidden!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Properties"]>
+.office-ribbon-part-group[data-ribbon-group="Badge"]
+.office-ribbon-capabilities.office-ribbon-typography-capabilities {
+  grid-template-rows:34px minmax(0,48px)!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Properties"]>
+.office-ribbon-part-group:is([data-ribbon-group="Heading"],[data-ribbon-group="Supporting text"],[data-ribbon-group="Badge"])
+.office-ribbon-typography-primary {
+  display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  grid-template-rows:34px!important;justify-items:center!important;align-items:center!important;
+  width:100%!important;height:34px!important;min-height:34px!important;gap:1px!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Properties"]>
+.office-ribbon-part-group:is([data-ribbon-group="Heading"],[data-ribbon-group="Supporting text"],[data-ribbon-group="Badge"])
+.office-ribbon-typography-primary > * {
+  width:100%!important;min-width:0!important;max-width:62px!important;
+  justify-self:center!important;box-sizing:border-box!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Properties"]>
+.office-ribbon-part-group:is([data-ribbon-group="Heading"],[data-ribbon-group="Supporting text"],[data-ribbon-group="Badge"])
+.office-ribbon-typography-primary .office-ribbon-direct-number{
+  width:100%!important;min-width:0!important;max-width:62px!important;height:35px!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Properties"]>
+.office-ribbon-part-group:is([data-ribbon-group="Heading"],[data-ribbon-group="Supporting text"],[data-ribbon-group="Badge"])
+.office-ribbon-typography-primary .office-ribbon-direct-number select{
+  width:42px!important;min-width:0!important;max-width:42px!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Properties"]>
+.office-ribbon-part-group:is([data-ribbon-group="Heading"],[data-ribbon-group="Supporting text"])
+.office-ribbon-align-direct {
+  display:grid!important;grid-template-columns:repeat(3,29px)!important;
+  justify-items:center!important;justify-content:center!important;align-items:center!important;
+  width:100%!important;height:21px!important;gap:3px!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Properties"]>
+.office-ribbon-part-group:is([data-ribbon-group="Heading"],[data-ribbon-group="Supporting text"],[data-ribbon-group="Badge"])
+.office-ribbon-weight-direct {
+  display:grid!important;grid-template-columns:repeat(3,25px)!important;
+  grid-auto-rows:17px!important;justify-content:center!important;align-content:center!important;
+  justify-items:center!important;align-items:center!important;
+  gap:0 4px!important;width:100%!important;height:auto!important;max-height:35px!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Properties"]>
+.office-ribbon-part-group:is([data-ribbon-group="Heading"],[data-ribbon-group="Supporting text"],[data-ribbon-group="Badge"])
+.office-ribbon-weight-direct button{
+  box-sizing:border-box!important;width:24px!important;min-width:24px!important;max-width:24px!important;
+  height:17px!important;min-height:17px!important;padding:0!important;
+  font-size:13px!important;line-height:16px!important;
+}
+/* The two allowed Appearance dropdowns and two Card extras dropdowns fit in
+   two full-width rows: no clipped captions or hidden "Appearance 2". */
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Properties"]>
+.office-ribbon-item-grid-extra {
+  flex:0 0 173px!important;width:173px!important;min-width:173px!important;max-width:173px!important;
+  padding:5px 7px 19px!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Properties"]>
+.office-ribbon-item-grid-extra .office-ribbon-extra-grid{
+  display:flex!important;flex-direction:column!important;justify-content:center!important;
+  align-items:stretch!important;gap:7px!important;width:100%!important;
+  height:85px!important;max-height:85px!important;overflow:visible!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Properties"]>
+.office-ribbon-item-grid-extra .office-ribbon-extra-field{
+  display:grid!important;grid-template-columns:minmax(0,1fr) 76px!important;
+  gap:5px!important;align-items:center!important;width:100%!important;
+  min-height:29px!important;height:29px!important;max-height:29px!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Properties"]>
+.office-ribbon-item-grid-extra .office-ribbon-extra-field span{
+  overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;
+  text-align:left!important;font-size:10px!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Properties"]>
+.office-ribbon-item-grid-extra .office-ribbon-extra-field select{
+  min-width:76px!important;width:76px!important;max-width:76px!important;
+  height:25px!important;min-height:25px!important;padding:2px 1px!important;
+}
