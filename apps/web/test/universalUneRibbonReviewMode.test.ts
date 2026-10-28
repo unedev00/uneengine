@@ -3,18 +3,25 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const load=(name:string)=>readFileSync(new URL(name,import.meta.url),'utf8');
 
-test('all property slots are interactive for review, but undeclared properties do not persist',()=>{
+test('ribbon displays only property definitions supported by selected component',()=>{
  const source=load('../src/core/builders/PageBuilder/UniversalRibbonInventory.tsx');
- assert.match(source,/data-review-mode="all-enabled"/);
- assert.match(source,/enabled=\{true\} reviewOnly=\{!supported\}/);
+ assert.match(source,/data-review-mode="selected-only"/);
+ assert.match(source,/defs\.filter\(item=>enabled\.has\(item\.propertyKey\)\)\.map/);
+ assert.match(source,/Array\.from\(groups\)\.filter/);
  assert.match(source,/if\(supported\)onChange/);
- assert.match(source,/else setReviewDraft/);
  assert.match(source,/componentId/);
  assert.match(source,/useEffect\(\(\)=>\{setReviewDraft\(\{\}\);\},\[componentId\]\)/);
- assert.match(source,/review only; not saved for this component/);
  assert.match(source,/onPositionChange/);
  assert.match(source,/editCanvas\(key,1,event\.target\.value\)/);
 });
+
+test('component unrelated source mappings are not declared on Card Grid',()=>{
+ const component=JSON.parse(load('../src/one/une_item_grid/component.json')) as {propertyDefinitions:{propertyKey:string}[]};
+ const keys=new Set(component.propertyDefinitions.map(item=>item.propertyKey));
+ for(const forbidden of ['ageRestrictionFieldApiName','barcodeFieldApiName','channelAccountObjectApiName','stateObjectApiName'])
+  assert.ok(!keys.has(forbidden),forbidden);
+});
+
 test('the coverage check has an ESM TypeScript declaration',()=>{
  const declaration=load('../src/core/builders/PageBuilder/universalRibbonCoverage.d.mts');
  assert.match(declaration,/export function auditUniversalRibbonCoverage/);

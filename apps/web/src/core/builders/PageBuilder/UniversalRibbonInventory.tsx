@@ -9,7 +9,7 @@ import TenantMediaPicker from '../ComponentProperties/TenantMediaPicker';
 /**
  * Universal Page Builder ribbon inventory. Importing metadata eagerly is confined to
  * the lazy-loaded builder; published app runtimes never import this catalog.
- * Every UNE component shares the same property slots, independent of selection.
+ * Shared group definitions, but only properties declared by the selected component are rendered.
  */
 type Definition=NonNullable<LibraryComponentMetadata['propertyDefinitions']>[number];
 type Properties=Record<string,unknown>;
@@ -151,8 +151,7 @@ export default function UniversalRibbonInventory({tab,definition,componentId,pro
  objects?:readonly ObjectMetadata[];flows?:readonly FlowDefinitionMetadata[];
  builder?:UniversalBuilderControls;
 }){
- // Review mode: every slot is interactive, but unsupported keys remain in
- // component-local draft state and are never persisted into invalid metadata.
+ // Selected-component scope prevents unrelated UNE properties appearing on this ribbon.
  const [reviewDraft,setReviewDraft]=useState<Properties>({});
  useEffect(()=>{setReviewDraft({});},[componentId]);
  const reviewProperties={...properties,...reviewDraft};
@@ -172,8 +171,8 @@ export default function UniversalRibbonInventory({tab,definition,componentId,pro
  if(!groups)return null;
  return <div className="une-universal-ribbon" aria-label="Universal UNE property ribbon"
    data-component={definition?.apiName??'none'} data-inventory-count={universalRibbonInventoryCount}
-   data-review-mode="all-enabled">
-   {Array.from(groups).map(([section,defs])=><section key={section} className="une-universal-ribbon-section" aria-label={section}>
+   data-review-mode="selected-only">
+   {Array.from(groups).filter(([section,defs])=>defs.some(item=>enabled.has(item.propertyKey)) || (tab==='Component Layout'&&['Size','Position'].includes(section)) || (tab==='Component Data'&&['Source','Filters'].includes(section))).map(([section,defs])=><section key={section} className="une-universal-ribbon-section" aria-label={section}>
      <div className="une-universal-ribbon-controls">
        {tab==='Component Layout'&&section==='Size'&&(['width','height'] as const).map(key=>
          <label key={'canvas-'+key} className="une-universal-property" title={'Canvas '+key}>
@@ -196,7 +195,7 @@ export default function UniversalRibbonInventory({tab,definition,componentId,pro
          className="une-universal-builder-command" disabled={!builder?.onOpenFilters} onClick={builder?.onOpenFilters}>
          Filter conditions
        </button>}
-       {defs.map(def=>{
+       {defs.filter(item=>enabled.has(item.propertyKey)).map(def=>{
          const supported=enabled.has(def.propertyKey);
          return <PropertyEditor key={def.propertyKey}
            definition={supported?definition?.propertyDefinitions?.find(item=>item.propertyKey===def.propertyKey)??def:def}
