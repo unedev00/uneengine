@@ -1,15 +1,15 @@
 import {randomInt} from 'node:crypto';
 import {executeCustomActionBridgeNode} from './nodes/CustomActionBridgeNode.js';
 import {template,uuid,scalar,type ActionContext} from './nodes/ActionNodeShared.js';
-import type {PoolClient} from 'pg';
 import type {RbacEngine} from './rbac-engine.js';
 import type {FormulaEvaluationContext} from './flow-formula-runtime.js';
 import type {RecordEngine} from './record-engine.js';
 import {executeQuickActionNode} from './nodes/QuickActionNode.js';
 import {executePlatformEventPublishNode} from './nodes/PlatformEventPublishNode.js';
 import {executeActionEmailNode} from './nodes/ActionEmailNode.js';
+import type {SqlExecutor} from './sql-persistence.js';
 
-export async function loadFlowUserResource(client:PoolClient,tenantId:string,userId:string,
+export async function loadFlowUserResource(client:SqlExecutor,tenantId:string,userId:string,
  graph:unknown,variables:Record<string,unknown>):Promise<FormulaEvaluationContext> {
  if(typeof graph!=='string'||!(/\$User\.(?:Name|Email|TimeZone|ManagerId|AncestorIds|DescendantIds|DirectReportIds)\b/.test(graph)
    ||/\b(?:TODAY|TIMENOW|DAY|MONTH|YEAR|HOUR|MINUTE|SECOND|WEEKDAY|ISOWEEK|ISOYEAR|DATEVALUE|DATETIMEVALUE|TIMEVALUE|ADDMONTHS|TZOFFSET|CURRENCYRATE)\s*\(/i.test(graph)))
