@@ -2273,12 +2273,15 @@ export function createSystemServer(db:SqlPersistence) {
     const device=String(req.query.formFactor??'Desktop');
     const viewportWidth=Number(req.query.viewportWidth??0);
     const recordTypeId=typeof req.query.recordTypeId==='string'?req.query.recordTypeId:'';
-    const editLightningPage=await pages.resolveRecordPage(
-      actor.tenant_id,req.params.objectApi,String(req.query.appId??'Records'),
-      actorSession.user.profileId,recordTypeId,device,'Edit',viewportWidth
-    );
+    const [editLightningPage,canEdit,canDelete]=await Promise.all([
+      pages.resolveRecordPage(actor.tenant_id,req.params.objectApi,
+        String(req.query.appId??'Records'),actorSession.user.profileId,
+        recordTypeId,device,'Edit',viewportWidth),
+      rbac.allowed(actor.tenant_id,actor.user_id,req.params.objectApi,'update'),
+      rbac.allowed(actor.tenant_id,actor.user_id,req.params.objectApi,'delete')
+    ]);
     res.setHeader('Cache-Control','private, no-store');
-    res.json({editLightningPage});
+    res.json({editLightningPage,recordPermissions:{Create:true,Edit:canEdit,Delete:canDelete}});
   }));
   app.get('/api/records/:objectApi/:id',route(async(req,res)=>{
     const actor=req.actor!;
@@ -2293,7 +2296,13 @@ export function createSystemServer(db:SqlPersistence) {
       pages.resolveRecordPage(...context,'Edit',viewportWidth)
     ]);
     res.setHeader('Cache-Control','private, no-store');
-    res.json({record,lightningPage:page,editLightningPage:editPage});
+    const [canCreate,canEdit,canDelete]=await Promise.all([
+      rbac.allowed(actor.tenant_id,actor.user_id,req.params.objectApi,'create'),
+      rbac.allowed(actor.tenant_id,actor.user_id,req.params.objectApi,'update'),
+      rbac.allowed(actor.tenant_id,actor.user_id,req.params.objectApi,'delete')
+    ]);
+    res.json({record,lightningPage:page,editLightningPage:editPage,
+      recordPermissions:{Create:canCreate,Edit:canEdit,Delete:canDelete}});
   
   }));
   app.get('/api/records/:objectApi/:id/history',route(async(req,res)=>{
