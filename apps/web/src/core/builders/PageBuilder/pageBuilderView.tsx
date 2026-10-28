@@ -2514,9 +2514,13 @@ function PageBuilder({
                   && !(definition as {group?:string}).group
                   && (ribbonTab==='Component Responsive'
                     ? false
-                    : !/(?:device|breakpoint|mobile|tablet|desktop|phone|responsive|hidden|visible|visibility|width|height|borderWidth|borderRadius|radius|minWidth|maxWidth|minHeight|maxHeight|margin|padding|gap|opacity)/i.test(definition.propertyKey)))}
+                    : !/(?:device|breakpoint|mobile|tablet|desktop|phone|responsive|hidden|visible|visibility|borderWidth|borderRadius|radius|margin|padding|gap|opacity)/i.test(definition.propertyKey) && !/^(?:width|height|minWidth|maxWidth|minHeight|maxHeight)$/.test(definition.propertyKey)))}
               properties={selected.properties} onChange={properties=>updateComponent(selected.id,{properties})}/>
           </div>}
+          {selected && ribbonTab==='Component Layout' && page.layoutMode!=='free-canvas' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
+            {(['width','height'] as const).map(key=><label key={key} className="office-ribbon-inline-field">{key==='width'?'Width':'Height'} <input aria-label={'Layout '+key} value={String(selected.properties[key]??(key==='width'?'100%':'auto'))}
+              onChange={event=>updateComponent(selected.id,{properties:{...selected.properties,[key]:event.target.value}})}/></label>)}
+          </div><span>Dimensions</span></div>}
           {selected && ribbonTab==='Component Layout' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
             {(['margin','gap'] as const).map(key=><label key={key} className="office-ribbon-inline-field">{key==='margin'?'Margin':'Gap'} <input type="number" min={0} max={128} aria-label={'Component '+key}
               value={Number((selected.properties.visualStyle as Record<string,unknown>|undefined)?.[key]??selected.properties[key]??0)}
@@ -2775,9 +2779,7 @@ function PageBuilder({
             }}><Trash2 size={15}/> Remove section</button>}
             {selectedRegion === 'main' && <p className="properties-help">The Main section is required and cannot be deleted. Change the section arrangement to remove optional regions.</p>}
           </div> : selected && !pageSettingsOpen && activePanel !== 'page' ? <>
-            {inspectorTab === 'Position' ? <div className="office-ribbon-layout-responsive">
-}
-            </div> : <>
+            {inspectorTab === 'Position' ? <div className="office-ribbon-layout-responsive" /> : <>
             {inspectorTab === 'Data & Actions' && <details className="builder-advanced-panel"><summary>Technical details</summary>
               <label className="form-label" htmlFor="page-component-type">Component type</label><div className="form-display" id="page-component-type">{selected.type}</div>
             </details>}
@@ -2787,7 +2789,6 @@ function PageBuilder({
               definitions={selectedCustomDefinition?.propertyDefinitions} eventDefinitions={selectedCustomDefinition?.eventDefinitions}
               componentVersion={selectedCustomDefinition?.version} objects={objects} apps={apps} pages={pages}
               currentAppId={builderAppApiName||apps[0]?.apiName||'Records'} primaryObjectApiName={page.targetObject} flows={flows}/>}
-}
             {inspectorTab === 'Data & Actions' && <>
             {selected.parentId && <button type="button" className="btn btn-small" onClick={() => updateComponent(selected.id, { parentId: undefined })}>Move out of section</button>}
             {selectedCustomDefinition && <>
