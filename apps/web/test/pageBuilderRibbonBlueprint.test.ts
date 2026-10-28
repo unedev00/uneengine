@@ -117,3 +117,30 @@ test('Batch 2 fixes shared palette contrast and Layout numeric input widths',()=
  assert.match(css,/office-ribbon-layout-typography/);
  assert.match(css,/max-width:57px!important/);
 });
+
+test('Card Grid Design keeps exactly two Appearance choices and two Card extras',()=>{
+ const source=readFileSync(new URL('../src/core/builders/PageBuilder/PageBuilderAdvancedStyle.tsx',import.meta.url),'utf8');
+ assert.match(source,/const itemGridDesignKeys=new Set\(\['theme','surface','cardDensity','cardHover'\]\)/);
+ assert.match(source,/const isItemGrid=definition\?\.apiName==='une_item_grid'/);
+ assert.match(source,/name:'Appearance',defs:all\.filter\(d=>d\.propertyKey==='theme'\|\|d\.propertyKey==='surface'\)/);
+ assert.match(source,/name:'Card extras',defs:all\.filter\(d=>cardExtras\.has\(d\.propertyKey\)\)/);
+ assert.match(source,/\(!isItemGrid\|\|itemGridDesignKeys\.has\(d\.propertyKey\)\)/);
+ assert.match(source,/<RibbonColorPalette/,'shared colour picker is retained for components that need it');
+});
+test('Item Grid ribbon groups have three-column caps, never five icons on a row',()=>{
+ const css=readFileSync(new URL('../src/core/builders/PageBuilder/PageBuilderRibbonBlueprint.css',import.meta.url),'utf8');
+ assert.match(css,/Approved Item Grid Design ribbon: at most three controls in any row/);
+ assert.match(css,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)!important/);
+ assert.match(css,/grid-template-rows:repeat\(2,41px\)!important/);
+ assert.match(css,/grid-template-columns:repeat\(3,25px\)!important/);
+ assert.match(css,/office-ribbon-weight-direct button/);
+ assert.match(css,/office-ribbon-item-grid-extra \.office-ribbon-extra-field select/);
+});
+test('Item Grid retains direct heading and badge controls rather than duplicated Typography groups',()=>{
+ const controls=readFileSync(new URL('../src/core/builders/PageBuilder/RibbonCapabilityControls.tsx',import.meta.url),'utf8');
+ assert.match(controls,/group==='Heading'\|\|group==='Supporting text'/);
+ assert.match(controls,/group==='Badge'/);
+ assert.match(controls,/weight&&<WeightOptions/);
+ assert.match(controls,/align&&<AlignmentOptions/);
+ assert.match(controls,/lines&&<DirectNumber/);
+});
