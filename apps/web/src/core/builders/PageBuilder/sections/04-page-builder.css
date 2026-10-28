@@ -1185,3 +1185,16 @@
 .office-ribbon-field-suggestions>button:hover,.office-ribbon-field-suggestions>button[aria-selected=true]{background:#e4effe}
 .office-ribbon-field-suggestions small{font-size:10px;color:#63748e}
 .office-ribbon-expression-hint{display:block;font-size:11px;padding:7px;color:#586b82}
+
+.office-builder-ribbon .office-ribbon-metadata-color{display:flex!important;flex-direction:row!important;align-items:center;justify-content:space-between;gap:4px;height:28px}
+.office-builder-ribbon .office-ribbon-metadata-color>.office-ribbon-colour-command{width:33px!important;min-width:33px!important;height:27px!important;padding:2px}
+.office-builder-ribbon .office-ribbon-metadata-size{display:flex!important;align-items:center;justify-content:space-between;gap:4px;height:28px}
+.office-builder-ribbon .office-ribbon-metadata-size>input{flex:0 0 54px!important;width:54px!important;max-width:54px!important;min-width:54px!important}
+.office-builder-ribbon .office-ribbon-metadata-weight{display:flex!important;align-items:center;justify-content:space-between;gap:2px;height:28px}
+.office-builder-ribbon .office-ribbon-weight-choices{display:flex;align-items:center;gap:2px}
+.office-builder-ribbon .office-ribbon-weight-choices button{padding:2px 5px;min-height:25px;height:25px;min-width:22px;border:1px solid #c6cfda;background:#fff;border-radius:2px;cursor:pointer;font-size:15px}
+.office-builder-ribbon .office-ribbon-weight-choices button[aria-pressed=true]{background:#dceaff;border-color:#558bd7}
+.office-ribbon-palette-hex{display:flex;justify-content:space-between;align-items:center;gap:7px;padding:8px 0 3px;border-bottom:1px solid #e1e5eb}
+.office-ribbon-palette-hex label{display:flex;align-items:center;gap:8px;font-size:11px}
+.office-ribbon-palette-hex input{width:105px;min-width:105px;height:25px;box-sizing:border-box}
+.office-ribbon-palette-hex button{height:26px;padding:2px 8px}
