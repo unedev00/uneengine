@@ -308,7 +308,7 @@ test('component surface CSS covers every target without styling collection frame
     'gap','align-items','justify-content','overflow'])
     assert.ok(css.includes('data-page-style~="'+property+'"'),property);
   assert.ok(css.includes('background:transparent!important'),'editor frames must remain unstyled');
-  assert.match(css,/data-page-appearance="collection"\]\[data-page-style~="background"\] \.registered-component \.one-item/);
+  assert.match(css,/data-page-appearance="collection"\]\[data-page-style~="background"\] \.registered-component:not\(\.metadrive-component-une_item_grid\) \.one-item/);
 });
 
 test('standard record components and layout primitives have real visual targets', async () => {
