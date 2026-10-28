@@ -256,6 +256,7 @@ function MetadataBoundPageComponent({
   reports: ReportMetadata[];
   availableFlows: Array<Pick<FlowDefinitionMetadata, 'id' | 'apiName' | 'label' | 'flowType' | 'status'>>;
   formFactor: 'Desktop' | 'Tablet' | 'Phone';
+  profileId?:string;
   onNavigate: (route: AppRoute) => void;
   onLaunchFlow: (flowApiName: string, inputs?: Record<string, unknown>, context?:{requestId?:string}) => void;
   disableActions?: boolean;
@@ -756,6 +757,7 @@ function LightningAppRuntime({
   libraryComponents,
   availableFlows,
   formFactor,
+  profileId,
   onNavigate,
   onLaunchFlow,
   onStandaloneModeChange
@@ -878,7 +880,7 @@ function LightningAppRuntime({
   if (!page) return <main className="records-page"><section className="records-empty records-home-unassigned" aria-labelledby="records-home-empty-heading"><h1 id="records-home-empty-heading">Home page is not configured</h1><p>This app has no active Home Page assigned for your current profile and device.</p><p>Ask an administrator to activate and assign a Home Page in the Lightning App Builder. Existing app pages and records remain available from navigation.</p></section></main>;
   const isStandaloneRuntime = isStandalonePagePresentation(page);
   const regions: Array<'header' | 'main' | 'sidebar'> = ['header', 'main', 'sidebar'];
-  const appVisibilityContext = { formFactor } as const;
+  const appVisibilityContext = { formFactor,profileId } as const;
   const isAppComponentVisible = (component: PageComponentMetadata) =>
     isComponentVisible(component, appVisibilityContext, false);
   const emitInteraction=(component:PageComponentMetadata,event:string,value:unknown)=>{
