@@ -2335,6 +2335,10 @@ function PageBuilder({
       {editorMode && <>
       <section className="office-builder-ribbon" aria-label="Page Builder ribbon">
         <div className="office-ribbon-topbar">
+          {selected && !['Home','Add Block','Preview'].includes(ribbonTab) &&
+            <div className="office-ribbon-selection-context" title={selected.label||selected.type}>
+              {selected.label||selected.type} selected
+            </div>}
           <div className="office-ribbon-navigation">
             <nav className="office-ribbon-tabs" role="tablist" aria-label="Page Builder tabs">
               {ribbonTabsVisible.map((tab,index) => {
