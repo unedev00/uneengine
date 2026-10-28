@@ -955,3 +955,169 @@
   flex-flow:row wrap!important;align-content:flex-start!important;align-items:flex-start!important;
   overflow-x:hidden!important;overflow-y:auto!important;
 }
+
+/* Corrections 1–36: single fixed-height office ribbon, no ribbon scrollbars. */
+.office-builder-ribbon .office-ribbon-topbar {
+  flex-wrap:nowrap!important;min-height:39px;max-height:39px;
+}
+.office-builder-ribbon .office-ribbon-navigation,.office-builder-ribbon .office-ribbon-tabs {
+  flex-wrap:nowrap!important;min-width:0;
+}
+.office-builder-ribbon .office-ribbon-tabs {
+  overflow:hidden!important;white-space:nowrap;flex-shrink:1;
+}
+.office-builder-ribbon .office-ribbon-tabs>button[role=tab] {
+  padding-inline:7px!important;font-size:11px;min-width:0;
+}
+.office-builder-ribbon .office-ribbon-content {
+  display:flex!important;flex-wrap:nowrap!important;align-items:stretch!important;
+  box-sizing:border-box;height:146px!important;min-height:146px!important;max-height:146px!important;
+  overflow:visible!important;padding:5px 6px 6px!important;gap:0!important;
+}
+.office-builder-ribbon .office-ribbon-content>.office-ribbon-group {
+  flex:0 0 auto!important;max-height:133px!important;height:133px!important;
+  min-height:133px!important;overflow:visible!important;padding:4px 7px 23px!important;
+}
+.office-builder-ribbon .office-ribbon-content>.office-ribbon-inspector-host {
+  display:none!important;
+}
+.office-builder-ribbon .office-ribbon-group .office-ribbon-inline-field>:is(input:not([type=checkbox]),select) {
+  flex:0 1 82px!important;width:82px!important;max-width:82px!important;
+  min-width:0!important;
+}
+.office-builder-ribbon .office-ribbon-page-identity .office-ribbon-inline-field>:is(input,select) {
+  width:142px!important;max-width:142px!important;
+}
+.office-builder-ribbon .office-ribbon-quick-access {min-width:112px!important}
+.office-builder-ribbon .office-ribbon-quick-grid {
+  display:grid;grid-template-columns:repeat(3,28px);grid-template-rows:repeat(3,28px);
+  gap:3px;justify-content:center;
+}
+.office-builder-ribbon .office-ribbon-quick-grid>button {padding:3px!important}
+.office-builder-ribbon .office-ribbon-corners {min-width:112px!important}
+.office-builder-ribbon .office-ribbon-corner-grid {
+  display:grid;grid-template-columns:repeat(3,28px);grid-template-rows:repeat(3,28px);
+  gap:3px;
+}
+.office-builder-ribbon .ribbon-corner-shape {
+  display:block;width:17px;height:17px;border:1.5px solid currentColor;
+}
+.office-builder-ribbon .ribbon-stroke {
+  display:block;width:18px;height:9px;border-color:currentColor;
+}
+.office-builder-ribbon .office-ribbon-add-library {
+  display:flex!important;flex:1;min-width:0;max-width:100%;height:133px!important;
+  flex-flow:row nowrap!important;overflow:hidden!important;gap:5px!important;
+}
+.office-builder-ribbon .office-ribbon-add-browser {
+  display:flex;flex:0 0 165px!important;max-width:165px!important;
+  padding:4px;align-items:start!important;
+}
+.office-builder-ribbon .office-ribbon-add-browser>.office-ribbon-inline-field {
+  display:flex;flex-direction:column;gap:3px;width:100%;
+}
+.office-builder-ribbon .office-ribbon-add-browser select {
+  width:152px!important;max-width:152px!important;height:26px;
+}
+.office-builder-ribbon .office-ribbon-gallery-pages {
+  display:flex;flex:1 1 auto;min-width:0;align-items:center;gap:2px;overflow:hidden;
+}
+.office-builder-ribbon .office-ribbon-gallery-pages>.office-ribbon-icon-button {
+  flex:0 0 24px;width:24px!important;height:28px!important;padding:2px;
+}
+.office-builder-ribbon .office-ribbon-gallery-pages .office-ribbon-component-tiles {
+  display:grid!important;flex:1 1 auto;min-width:0;width:100%!important;height:129px!important;
+  max-height:129px!important;grid-template-columns:repeat(9,minmax(0,1fr));
+  grid-template-rows:repeat(3,40px);grid-auto-flow:column;gap:2px 3px!important;
+  overflow:hidden!important;align-content:start!important;padding:1px 0!important;
+}
+.office-builder-ribbon .office-ribbon-gallery-pages .office-ribbon-component-tile {
+  display:flex!important;flex-direction:row!important;align-items:center!important;
+  justify-content:flex-start!important;gap:3px!important;
+  box-sizing:border-box;width:100%!important;min-width:0!important;min-height:0!important;
+  height:39px!important;padding:2px 3px!important;border-radius:3px;font-size:10px;
+}
+.office-builder-ribbon .office-ribbon-gallery-pages .office-ribbon-component-tile svg {
+  width:16px!important;height:16px!important;min-width:16px!important;
+}
+.office-builder-ribbon .office-ribbon-gallery-pages .office-ribbon-component-tile span {
+  min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.office-builder-ribbon .office-ribbon-compact-strip {
+  display:flex;position:relative;align-items:center;flex:1 1 100%;min-width:0;
+  width:100%;height:133px!important;max-height:133px!important;gap:4px;
+  flex-wrap:nowrap!important;overflow:visible!important;
+}
+.office-builder-ribbon .office-ribbon-mini-group {
+  display:flex;position:relative;box-sizing:border-box;flex:0 0 228px;
+  min-width:0;height:132px;max-height:132px;flex-direction:column;
+  justify-content:flex-start;padding:5px 12px 25px 5px;gap:3px;
+  border-right:1px solid #c8cfd9;overflow:visible;
+}
+.office-builder-ribbon .office-ribbon-mini-group>label {
+  display:flex;align-items:center;justify-content:space-between;
+  box-sizing:border-box;min-width:0;max-width:100%;height:28px;
+  font-size:11px;gap:4px;white-space:nowrap;
+}
+.office-builder-ribbon .office-ribbon-mini-group input,
+.office-builder-ribbon .office-ribbon-mini-group select {
+  box-sizing:border-box;width:145px;max-width:145px;min-width:0;height:26px;
+  font-size:11px;text-overflow:ellipsis;
+}
+.office-builder-ribbon .office-ribbon-mini-group .office-ribbon-group-heading {
+  position:absolute;bottom:3px;left:0;right:0;text-align:center;
+  font-size:11px;line-height:17px;height:17px;
+}
+.office-builder-ribbon .ribbon-condition-delete {
+  position:absolute;top:1px;right:1px;z-index:1;border:0;background:transparent;
+  color:#5b6370;padding:1px 2px;cursor:pointer;
+}
+.office-builder-ribbon .ribbon-condition-value,
+.office-builder-ribbon .ribbon-action-target {
+  display:flex;align-items:center;gap:3px;height:28px;min-width:0;
+}
+.office-builder-ribbon .ribbon-condition-value select,
+.office-builder-ribbon .ribbon-condition-value input,
+.office-builder-ribbon .ribbon-action-target select,
+.office-builder-ribbon .ribbon-action-target input {
+  flex:1 1 0;min-width:0!important;max-width:100%;height:25px!important;
+}
+.office-builder-ribbon .ribbon-condition-value select:first-child:not(:last-child) {
+  flex:0 0 82px;max-width:82px;
+}
+.office-builder-ribbon .ribbon-action-target .office-ribbon-icon-button {
+  flex:0 0 26px;min-width:26px;width:26px;height:26px;
+}
+.office-builder-ribbon .ribbon-compact-readonly {font-size:10px}
+.office-builder-ribbon .office-ribbon-action-card {flex-basis:245px}
+.office-builder-ribbon .ribbon-add-event {flex-basis:182px}
+.office-builder-ribbon .ribbon-add-event .office-ribbon-icon-button {
+  align-self:flex-start;
+}
+.office-builder-ribbon .office-ribbon-commit-group {
+  display:flex;flex:0 0 82px;flex-direction:column;gap:6px;
+  align-items:stretch;justify-content:center;height:96px;
+}
+.office-builder-ribbon .office-ribbon-commit-group>button {
+  width:78px;min-height:28px;font-size:11px;
+}
+.office-builder-ribbon .office-ribbon-action-overlay {
+  position:absolute;top:calc(100% + 4px);left:5px;z-index:100;
+  display:block;width:min(780px,calc(100vw - 70px));
+  max-height:calc(100vh - 225px);overflow-y:auto;
+  background:#fff;border:1px solid #aab6c4;box-shadow:0 9px 26px #12233945;
+  padding:12px;box-sizing:border-box;color:#172637;
+}
+.office-builder-ribbon .ribbon-action-overlay-header {
+  display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;
+}
+.office-builder-ribbon .office-ribbon-action-overlay .home-page-assignment {
+  display:block;
+}
+@media(max-width:900px) {
+  .office-builder-ribbon .office-ribbon-tabs>button[role=tab] span {display:none}
+  .office-builder-ribbon .office-ribbon-mini-group {flex-basis:170px}
+  .office-builder-ribbon .office-ribbon-gallery-pages .office-ribbon-component-tiles {
+    grid-template-columns:repeat(4,minmax(0,1fr));
+  }
+}
