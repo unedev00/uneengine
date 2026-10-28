@@ -48,7 +48,8 @@ export function RibbonDesign({properties,componentType,definition,device,onChang
 
 export function RibbonFormat({properties,componentType,definition,device,onChange}:Props){
   const visual=object(properties.visualStyle);
-  const style=layoutSettings(properties,mode(device)==='Base'?'Desktop':mode(device));
+  const activeDevice=mode(device);
+  const style=layoutSettings(properties,activeDevice==='Base'?'Desktop':activeDevice);
   const setVisual=(key:string,value:unknown)=>{
     const metadataKey=key==='borderRadius'?'radius':key;
     if(has(definition,metadataKey)){onChange({...properties,[metadataKey]:value});return;}
