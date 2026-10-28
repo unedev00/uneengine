@@ -501,3 +501,15 @@ test('Page Runtime produces typed native line-height and letter-spacing tokens',
   assert.equal(values['--md-page-font-family'],'Georgia, serif');
   assert.equal(values.lineHeight,undefined,'line-height must not decorate the canvas editor frame');
 });
+
+
+test('Page Builder delegates conditional appearance to flows without exposing the legacy visibility rules editor', async () => {
+  const builder = await readFile(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+  const ribbon = await readFile(new URL('../src/core/builders/PageBuilder/PageBuilderRibbonStyle.tsx',import.meta.url),'utf8');
+  assert.doesNotMatch(builder,/RibbonVisibilityRules|ribbonVisibilityDraft|onVisibilityRules|Edit visibility rules/);
+  assert.doesNotMatch(ribbon,/onVisibilityRules|Edit visibility rules/);
+  assert.doesNotMatch(builder,/ribbonTab==='Visibility Rules'/);
+  // Published metadata is preserved for compatibility; the change only removes the editor.
+  const runtime = await readFile(new URL('../src/core/components/Properties/componentVisibility.ts',import.meta.url),'utf8');
+  assert.match(runtime,/visibilityRules|VisibilityRule/);
+});
