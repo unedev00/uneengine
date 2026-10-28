@@ -1324,7 +1324,8 @@ function RecordWorkspace({
   const sourceLayout = object ? pageLayoutForRecord(object, selectedRecordTypeId, profileId) : undefined;
   const visibleEditPage = activeEditLightningPage && object ? {...activeEditLightningPage,
     components:activeEditLightningPage.components.filter(component=>isComponentVisible(component,{
-      formFactor,record:formValues,fields:object.fields,
+      formFactor,record:formValues,fields:object.fields,profileId,
+      
       readableFieldApiNames:new Set(object.fields.filter(field=>fieldAccess[`${object.apiName}.${field.apiName}`]?.read)
         .map(field=>field.apiName))
     },true))} : null;
@@ -1906,6 +1907,11 @@ function RecordWorkspace({
       component.type==='Record Actions' && component.visible!==false));
     const actionBlock=activeLightningPage?.components.find(component=>component.type==='Record Actions'&&component.visible!==false);
     const actionContext={formFactor,record,profileId,fields:object.fields,
+      recordPermissions:new Set<'Create'|'Edit'|'Delete'>([
+        ...(canCreate?['Create' as const]:[]),
+        ...(canEdit?['Edit' as const]:[]),
+        ...(canDelete?['Delete' as const]:[])
+      ]),
       readableFieldApiNames:new Set(object.fields.filter(field=>fieldAccess[`${object.apiName}.${field.apiName}`]?.read)
         .map(field=>field.apiName))};
     const pageActionState=(name:string)=>behaviorAction(actionBlock?.properties??{},name,actionContext);
