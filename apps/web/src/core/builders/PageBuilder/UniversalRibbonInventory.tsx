@@ -144,7 +144,6 @@ export type UniversalBuilderControls={
  canvasHeight:number;
  onOpenSource?:()=>void;
  onOpenFilters?:()=>void;
- onOpenVisibility?:()=>void;
 };
 export default function UniversalRibbonInventory({tab,definition,componentId,properties,onChange,objects=[],flows=[],builder}:{
  tab:Tab;definition?:LibraryComponentMetadata;componentId?:string;properties:Properties;
@@ -189,22 +188,6 @@ export default function UniversalRibbonInventory({tab,definition,componentId,pro
              value={reviewPositionValue(key)}
              onChange={event=>editCanvas(key,0,event.target.value)}/>
          </label>)}
-       {tab==='Component Layout'&&section==='Arrangement'&&<label className="une-universal-property">
-         <span className="une-universal-property-label">Canvas locked</span>
-         <input type="checkbox" aria-label="Canvas locked" checked={(reviewDraft.__previewCanvasLocked??properties.canvasLocked)===true}
-           onChange={event=>builder?.layoutMode==='free-canvas'
-             ?onChange({...properties,canvasLocked:event.target.checked})
-             :setReviewDraft(previous=>({...previous,__previewCanvasLocked:event.target.checked}))}/>
-       </label>}
-       {tab==='Component Responsive'&&section==='Visibility'&&<label className="une-universal-property">
-         <span className="une-universal-property-label">Visible</span>
-         <input type="checkbox" aria-label="Component visible" checked={builder?.visible??true}
-           disabled={!builder} onChange={event=>builder?.onVisibleChange(event.target.checked)}/>
-       </label>}
-       {tab==='Component Responsive'&&section==='Visibility'&&<button type="button"
-         className="une-universal-builder-command" disabled={!builder?.onOpenVisibility} onClick={builder?.onOpenVisibility}>
-         Visibility rules
-       </button>}
        {tab==='Component Data'&&section==='Source'&&<button type="button"
          className="une-universal-builder-command" disabled={!builder?.onOpenSource} onClick={builder?.onOpenSource}>
          Source mappings
