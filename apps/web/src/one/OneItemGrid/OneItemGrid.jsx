@@ -203,6 +203,7 @@ function ItemGrid({ p, rows }) {
           "--one-grid-desktop": count,
           "--one-grid-tablet": tabletCount,
           "--one-grid-mobile": phoneCount,
+          ...(Number.isFinite(Number(p.gap)) && p.gap!==undefined && Number(p.gap)>=0 && Number(p.gap)<=160 ? {gap:Number(p.gap)} : {}),
         }}
       >
         {visibleRows.map((r, i) => {
