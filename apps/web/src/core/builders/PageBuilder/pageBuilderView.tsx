@@ -8,6 +8,7 @@ import {confirmDestructiveAction} from '../../components/ConfirmAction/confirmDe
 import './PageBuilderNoCode.css';
 import './PageBuilderRibbonGallery.css';
 import './PageBuilderRibbonBlueprint.css';
+import './PageBuilderRibbonNonDesign.css';
 import RibbonCapabilityControls from './RibbonCapabilityControls';
 import '../../pages/TemplatePageRuntime/pageComponentAppearance.css';
 import '../SharedBuilderFrame/adaptiveBuilder.css';
