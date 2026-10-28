@@ -6,12 +6,12 @@ import {parseSafeRichText} from './safeRichText';
 
 /** Existing generic Record API is the source of truth for permission-checked rows. */
 export function StandardRecordList({
-  object,request,appId,onNavigate,columns,pageSize=25,recordFilter
+  object,request,appId,onNavigate,columns,pageSize=25,recordFilter,savedViewId
 }:{
   object:ObjectMetadata|undefined;
   request:<T>(path:string,init?:RequestInit)=>Promise<T>;
   appId:string;onNavigate:(route:AppRoute)=>void;
-  columns:string[];pageSize?:number;
+  columns:string[];pageSize?:number;savedViewId?:string;
   recordFilter?:{field:string;recordId:string};
 }) {
   const [offset,setOffset]=useState(0);
@@ -30,6 +30,7 @@ export function StandardRecordList({
     setBusy(true);setError('');
     const params=new URLSearchParams({
       limit:String(limit),offset:String(offset),
+      ...(savedViewId?{viewId:savedViewId}:{}),
       ...(search.trim()?{search:search.trim()}:{}),
       ...(sort?{sortField:sort,sortDirection:direction}:{}),
       ...(recordFilter?{relatedField:recordFilter.field,relatedId:recordFilter.recordId}:{})
@@ -41,7 +42,7 @@ export function StandardRecordList({
       .finally(()=>{if(active)setBusy(false);});
     return ()=>{active=false;};
   },[object?.apiName,request,limit,offset,search,sort,direction,
-    recordFilter?.field,recordFilter?.recordId]);
+    recordFilter?.field,recordFilter?.recordId,savedViewId]);
   if(!object)return <p role="status">Select an Object in block settings.</p>;
   return <section className="record-fields-card surface" aria-label={object.pluralLabel}>
     <div className="record-fields-heading">
