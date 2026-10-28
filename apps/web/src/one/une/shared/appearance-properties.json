@@ -146,26 +146,5 @@
     "label": "Border width (px)",
     "kind": "NUMBER",
     "displayOrder": 220
-  },
-  {
-    "propertyKey": "hideOnPhone",
-    "label": "Hide on phone",
-    "kind": "BOOLEAN",
-    "displayOrder": 225,
-    "defaultValue": false
-  },
-  {
-    "propertyKey": "hideOnTablet",
-    "label": "Hide on tablet",
-    "kind": "BOOLEAN",
-    "displayOrder": 230,
-    "defaultValue": false
-  },
-  {
-    "propertyKey": "hideOnDesktop",
-    "label": "Hide on desktop",
-    "kind": "BOOLEAN",
-    "displayOrder": 235,
-    "defaultValue": false
   }
 ]
