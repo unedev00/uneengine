@@ -113,6 +113,6 @@ export function RibbonFormat({properties,componentType,definition,device,onChang
   </>;
 }
 
-export function RibbonResponsive({properties,onChange}:Props){
+export function RibbonResponsive(_props:Props){
   return null;
 }

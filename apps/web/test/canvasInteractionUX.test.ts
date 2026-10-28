@@ -516,6 +516,9 @@ test('Page Runtime produces typed native line-height and letter-spacing tokens',
   assert.equal(values.lineHeight,undefined,'line-height must not decorate the canvas editor frame');
 });
 
+test('Page Builder no longer offers redundant Show component controls', async () => {
+  const ribbon = await readFile(new URL('../src/core/builders/PageBuilder/PageBuilderRibbonStyle.tsx',import.meta.url),'utf8');
+  const builder = await readFile(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
 
 test('Page Builder delegates conditional appearance to flows without exposing the legacy visibility rules editor', async () => {
   const builder = await readFile(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
@@ -528,9 +531,6 @@ test('Page Builder delegates conditional appearance to flows without exposing th
   assert.match(runtime,/visibilityRules|VisibilityRule/);
 });
 
-test('Page Builder no longer offers redundant Show component controls', async () => {
-  const ribbon = await readFile(new URL('../src/core/builders/PageBuilder/PageBuilderRibbonStyle.tsx',import.meta.url),'utf8');
-  const builder = await readFile(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
   assert.doesNotMatch(ribbon,/Show component|onVisibleChange/);
   assert.doesNotMatch(builder,/\{component\.visible \? 'Hide' : 'Show'\} element/);
   assert.match(builder,/if \(!component\.visible\) return null;/, 'existing saved visibility remains respected');
