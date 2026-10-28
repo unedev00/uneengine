@@ -927,8 +927,6 @@ function PageBuilder({
     if (isCanvasLocked(target) && update.properties?.editorLocked !== false) return;
     applyPage({ ...page, components: page.components.map((component) => component.id === id ? { ...component, ...update } : component) });
   };
-  const toggleCanvasLock = (component: PageComponentMetadata) =>
-    updateComponent(component.id, { properties: { ...component.properties, editorLocked: !isCanvasLocked(component) } });
   const moveLayer = (id: string, offset: -1 | 1) => {
     const index = page.components.findIndex(component => component.id === id);
     const target = index + offset;
