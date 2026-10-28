@@ -112,10 +112,11 @@ test('Excel-style ribbon keeps all ten tabs, relocates page identity and removes
   assert.match(source,/className="office-ribbon-group office-ribbon-page-identity"/);
   assert.match(source,/aria-label="Page name"/);
   assert.match(source,/aria-label="Choose page layout"/);
-  assert.match(source,/aria-label="Cut selected component"/);
-  assert.match(source,/aria-label="Copy selected component"/);
-  assert.match(source,/aria-label="Paste component"/);
-  assert.match(source,/RibbonColorPalette/);
+  assert.match(source,/aria-label="Cut"/);
+  assert.match(source,/aria-label="Copy"/);
+  assert.match(source,/aria-label="Paste"/);
+  assert.match(source,/RibbonDesign/);
+  assert.match(source,/office-ribbon-quick-grid/);
   assert.match(source,/ribbonTab==='Component Responsive'/);
   assert.match(source,/ribbonTab==='Component Style'/);
 });
@@ -126,7 +127,8 @@ test('colour pickers share a single accessible, metadata-backed palette',()=>{
     assert.ok(source.includes(token),token);
   const styles=readFileSync(new URL('../src/core/builders/PageBuilder/sections/04-page-builder.css',import.meta.url),'utf8');
   assert.match(styles,/Excel-style 10-tab ribbon/);
-  assert.match(styles,/overflow-x:hidden!important;overflow-y:auto!important/);
-  assert.match(styles,/flex-flow:row wrap!important/);
+  assert.match(styles,/height:146px!important;min-height:146px!important;max-height:146px!important/);
+  assert.match(styles,/overflow:visible!important;padding:5px 6px/);
+  assert.match(styles,/flex-wrap:nowrap!important/);
   assert.match(styles,/office-ribbon-colour-palette/);
 });
