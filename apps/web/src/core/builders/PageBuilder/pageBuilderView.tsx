@@ -2092,7 +2092,6 @@ function PageBuilder({
         onPointerDown={event => event.stopPropagation()} onClick={event => event.stopPropagation()}>
         <button type="button" onClick={() => openComponentInspector('Design')} title="Edit block"><Pencil size={15}/> Edit</button>
         {page.layoutMode === 'free-canvas' && <button type="button" onClick={() => openComponentInspector('Position')} title="Position and size"><Maximize2 size={15}/> Position</button>}
-        <button type="button" onClick={() => toggleCanvasLock(component)} title={isCanvasLocked(component) ? 'Unlock' : 'Lock'}>{isCanvasLocked(component) ? <Unlock size={16}/> : <Lock size={16}/>}</button>
         <button type="button" onClick={duplicateSelected} disabled={isCanvasLocked(component)} title="Duplicate"><Copy size={16}/></button>
         <button type="button" onClick={() => setComponentMenuId(current => current === component.id ? '' : component.id)}
           aria-expanded={componentMenuId === component.id} aria-label="More component actions"><MoreHorizontal size={18}/></button>
