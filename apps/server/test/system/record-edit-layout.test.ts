@@ -211,3 +211,29 @@ test('an authored Dynamic Forms layout never leaks hidden fields through legacy 
  assert.deepEqual(result?.sections,[]);
  assert.deepEqual(fallback.sections[0].fieldApiNames,['Name','Phone']);
 });
+
+test('P1 published form re-evaluates AND/OR fields when values and access change',()=>{
+ const dynamic:LightningPageMetadata={...page,components:[{
+  id:'dynamic-fields',type:'Field Section',label:'Conditional',visible:true,properties:{
+   fieldApiNames:['Name','Phone'],fieldRules:[]
+  ,pagePropertyContract:{version:1,fieldRules:[
+   {fieldApiName:'Phone',behavior:'Required',visibilityRules:{logic:'Any',conditions:[
+    {source:'Record Field',fieldApiName:'Status',operator:'Equals',value:'Open'},
+    {source:'Record Permission',operator:'Equals',value:'Edit'}
+   ]}}
+  ]}
+ }}]};
+ const base={formFactor:'Desktop' as const,fields:[{apiName:'Status',label:'Status',dataType:'Text(40)'}],
+  readableFieldApiNames:new Set(['Status']),recordPermissions:new Set<'Create'|'Edit'|'Delete'>()};
+ const closed=recordEditPageLayout(dynamic,fallback,{...base,record:{Status:'Closed'}});
+ assert.deepEqual(closed?.sections[0].fieldApiNames,['Name']);
+ const open=recordEditPageLayout(dynamic,fallback,{...base,record:{Status:'Open'}});
+ assert.deepEqual(open?.sections[0].fieldApiNames,['Name','Phone']);
+ assert.deepEqual(open?.sections[0].requiredFieldApiNames,['Phone']);
+ const editGranted=recordEditPageLayout(dynamic,fallback,{...base,record:{Status:'Closed'},
+  recordPermissions:new Set<'Create'|'Edit'|'Delete'>(['Edit'])});
+ assert.deepEqual(editGranted?.sections[0].requiredFieldApiNames,['Phone']);
+ const deniedRead=recordEditPageLayout(dynamic,fallback,{...base,
+  readableFieldApiNames:new Set<string>(),record:{Status:'Open'}});
+ assert.deepEqual(deniedRead?.sections[0].fieldApiNames,['Name']);
+});
