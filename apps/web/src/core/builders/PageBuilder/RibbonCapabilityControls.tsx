@@ -118,7 +118,7 @@ function WeightOptions({definition,properties,onChange,label}:{
     {name:'Light',choice:byWeight(400)??choices[0]},
     {name:'Mid',choice:byWeight(500)??byWeight(600)??choices[Math.min(1,choices.length-1)]},
     {name:'Hard',choice:byWeight(700)??byWeight(800)??byWeight(900)??choices[choices.length-1]}
-  ].filter(level=>level.choice);
+  ].flatMap(level=>level.choice?[{name:level.name,choice:level.choice}]:[]);
   const distinct=levels.filter((level,index)=>levels.findIndex(other=>other.choice.key===level.choice.key)===index);
   return <div className="office-ribbon-weight-direct" role="group" aria-label={label+' weight'}>
     {distinct.map(level=><button key={level.name} type="button"
