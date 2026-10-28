@@ -1,5 +1,6 @@
 import {availableComponentSettings,resolveComponentSettings,validateComponentSettings} from '../../components/Properties/componentSettingDefinitions';
 import {pagePropertyIssues} from '../../components/Properties/pagePropertyContract';
+import {resolveMetadataProperties} from '../../metadata/Definitions/metadataReferences';
 import {generateMetadataApiName,suggestMetadataApiName} from '../../metadata/Definitions/metadataApiNames';
 import { useFormFactor } from '../../workspace/Responsive/useFormFactor';
 import './MobileBuilderReadMode.css';
@@ -2564,7 +2565,7 @@ function PageBuilder({
             </div><span>Size</span></div>}
           </>}
           {selected && ribbonTab==='Filters' && <RibbonFilters key={selected.id} draft={ribbonFilterDraft} onChange={setRibbonFilterDraft}
-            fields={objects.find(object=>object.apiName===(selected.properties.objectApiName??selected.properties.targetObject??page.targetObject))?.fields??[]}
+            fields={objects.find(object=>object.apiName===String(resolveMetadataProperties(selected.properties,objects,flows).objectApiName??selected.properties.targetObject??page.targetObject))?.fields??[]}
             onApply={()=>{
               const changed=Object.fromEntries(Object.entries(ribbonFilterDraft).filter(([key])=>key==='filters'||key.endsWith('Filters')||key==='filterLogic'));
               updateComponent(selected.id,{properties:{...selected.properties,...changed}});selectRibbonTab('Component Data');
