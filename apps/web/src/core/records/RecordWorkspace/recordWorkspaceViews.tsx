@@ -7,7 +7,7 @@ import { resolvePhoneColumns } from '../ResponsiveDataList/phoneColumns.mjs';
 import { RecordFormDialog } from '../RecordFormDialog/recordFormDialogView';
 import InlineRecordField from './InlineRecordField';
 import {recordEditPageLayout} from './recordEditPageLayout';
-import {filterLayoutWritableValues} from './layoutWritableValues';
+import {filterLayoutWritableValues,missingLayoutRequiredFields} from './layoutWritableValues';
 import {behaviorAction,behaviorRecordAction,behaviorAppearance,behaviorField,behaviorTabs,behaviorInteractions} from '../../pages/PageRuntime/pageBehaviorRuntime';
 import {recordPagePresentationLayout} from './recordPageLayoutMigration';
 import {actionVisibleInArea} from './recordActionPlacement';
@@ -1469,6 +1469,14 @@ function RecordWorkspace({
       const layoutWritable=filterLayoutWritableValues(writableValues,selectedLayout,
         new Set(object.fields.filter(field=>field.required).map(field=>field.apiName)));
       Object.keys(writableValues).forEach(name=>{if(!(name in layoutWritable))delete writableValues[name];});
+      const missingLayoutFields=missingLayoutRequiredFields(formValues,selectedLayout,
+        new Set(object.fields.filter(field=>
+          fieldAccess[`${object.apiName}.${field.apiName}`]?.edit===true)
+          .map(field=>field.apiName)));
+      if(missingLayoutFields.length){
+        throw new Error('Complete required fields: '+missingLayoutFields.map(name=>
+          object.fields.find(field=>field.apiName===name)?.label??name).join(', '));
+      }
       // A record without an assigned type must not submit an empty type ID:
       // the generic API treats an explicitly supplied ID as an assignment request.
       if (writableValues.RecordTypeId == null || writableValues.RecordTypeId === '') delete writableValues.RecordTypeId;
