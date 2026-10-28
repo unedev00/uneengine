@@ -2300,6 +2300,40 @@ function PageBuilder({
   };
   return (
     <div className={`builder-page ${editorMode ? "builder-editor-mode" : "builder-list-mode"} ${isPhoneBuilder ? 'builder-phone-read-mode' : ''}`}>
+      {editorMode&&selected?.type==='Path'&&(()=>{
+        const source=objects.find(item=>item.apiName===page.targetObject);
+        const stage=String(selected.properties.stageFieldApiName??'');
+        const field=source?.fields.find(item=>item.apiName===stage);
+        const guidance=(selected.properties.guidanceByStage??{}) as Record<string,string>;
+        const keys=(selected.properties.keyFieldsByStage??{}) as Record<string,string[]>;
+        return <section className="builder-path-settings" aria-label="Path configuration">
+          <label className="form-label">Stage field
+            <select className="form-control" value={stage}
+              onChange={event=>updateComponent(selected.id,{properties:{
+                ...selected.properties,stageFieldApiName:event.target.value}})}>
+              <option value="">Choose picklist</option>
+              {(source?.fields??[]).filter(item=>item.dataType==='Picklist').map(item=>
+                <option key={item.apiName} value={item.apiName}>{item.label}</option>)}
+            </select>
+          </label>
+          {(field?.picklistValues??[]).map(value=><div key={value}>
+            <label className="form-label">Guidance for {value}
+              <input className="form-control" value={guidance[value]??''}
+                onChange={event=>updateComponent(selected.id,{properties:{
+                  ...selected.properties,guidanceByStage:{...guidance,[value]:event.target.value}}})}/>
+            </label>
+            <label className="form-label">Key fields for {value}
+              <select className="form-control" multiple
+                aria-label={'Key fields for '+value} value={keys[value]??[]}
+                onChange={event=>updateComponent(selected.id,{properties:{
+                  ...selected.properties,keyFieldsByStage:{...keys,
+                    [value]:Array.from(event.target.selectedOptions,option=>option.value)}}})}>
+                {(source?.fields??[]).map(item=><option key={item.apiName} value={item.apiName}>{item.label}</option>)}
+              </select>
+            </label>
+          </div>)}
+        </section>;
+      })()}
       {editorMode&&selected?.type==='List View'&&
         <section className="builder-list-view-settings" aria-label="Saved List View block configuration">
           <label className="form-label">List Object
