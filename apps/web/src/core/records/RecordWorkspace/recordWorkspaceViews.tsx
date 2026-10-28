@@ -812,7 +812,7 @@ function RecordWorkspace({
       .finally(()=>{if(active)setEditPageLoading(false);});
     return()=>{active=false;};
   },[formOpen,editingId,object?.apiName,formFactor,viewportFactor,route.kind,route.appId,
-    formValues.RecordTypeId,profileId,recordTypeAccess]);
+    formValues.RecordTypeId,profileId]);
 
   const [lookupRecords, setLookupRecords] = useState<Record<string, RecordData[]>>({});
   const [lookupError, setLookupError] = useState('');
