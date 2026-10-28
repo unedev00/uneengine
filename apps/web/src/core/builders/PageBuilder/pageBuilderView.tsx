@@ -2386,7 +2386,7 @@ function PageBuilder({
             {(()=>{
               const items=ribbonComponentGroups.flatMap(group=>group.components)
                 .filter((component,index,all)=>all.findIndex(item=>item.type===component.type)===index);
-              const pageSize=24;
+              const pageSize=17;
               const start=Math.min(ribbonAddOffset,Math.max(0,items.length-pageSize));
               return <div className="office-ribbon-gallery-pages">
                 <button className="office-ribbon-icon-button" title="Previous components" aria-label="Previous components" disabled={!start} onClick={()=>setRibbonAddOffset(Math.max(0,start-pageSize))}><ChevronLeft size={17}/></button>
