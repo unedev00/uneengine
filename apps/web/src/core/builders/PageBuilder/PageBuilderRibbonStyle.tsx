@@ -116,22 +116,12 @@ export function RibbonFormat({properties,componentType,definition,device,onChang
 export function RibbonResponsive({properties,onChange,onVisibilityRules,visible,onVisibleChange}:Props&{
   onVisibilityRules:()=>void;visible:boolean;onVisibleChange:(visible:boolean)=>void;
 }){
-  const deviceChoices=[
-    {key:'hideOnDesktop',label:'Desktop',Icon:Monitor},
-    {key:'hideOnTablet',label:'Tablet',Icon:Tablet},
-    {key:'hideOnPhone',label:'Mobile',Icon:Smartphone}
-  ] as const;
   const rules=properties.visibilityRules;
   const ruleCount=rules&&typeof rules==='object'&&!Array.isArray(rules)
     ? (Array.isArray((rules as Record<string,unknown>).rules)?((rules as {rules:unknown[]}).rules.length):1):0;
   return <>
     <div className="office-ribbon-group office-ribbon-responsive-visibility">
       <div className="office-ribbon-responsive-icons">
-        {deviceChoices.map(({key,label,Icon})=><label className="office-ribbon-device-toggle" key={key}
-          title={'Show on '+label}><Icon size={17}/><span>{label}</span>
-          <input type="checkbox" aria-label={'Show on '+label}
-            checked={properties[key]!==true} onChange={event=>onChange({...properties,[key]:!event.target.checked})}/>
-        </label>)}
         <label className="office-ribbon-master-visibility-toggle">
           <input type="checkbox" checked={visible} onChange={event=>onVisibleChange(event.target.checked)}/> Show component
         </label>
