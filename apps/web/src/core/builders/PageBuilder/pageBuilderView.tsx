@@ -2446,7 +2446,7 @@ function PageBuilder({
       })()}
       {editorMode&&selected?.type==='List View'&&
         <section className="builder-list-view-settings" aria-label="Saved List View block configuration">
-          <label className="form-label">List Object
+          <label className="form-label">Source Object
             <select className="form-control" aria-label="List View Object"
               value={String(selected.properties.listObjectApiName??'')}
               onChange={event=>updateComponent(selected.id,{properties:{
@@ -3030,7 +3030,7 @@ function PageBuilder({
             </>}
             {selected.type === 'List View' && <>
               <div className="properties-section-title">List records</div>
-              <label className="form-label">Object
+              <label className="form-label">Source Object
                 <select className="form-control" value={String(selected.properties.listObjectApiName??'')}
                   onChange={event=>updateComponent(selected.id,{properties:{...selected.properties,
                     listObjectApiName:event.target.value,columns:[]}})}>

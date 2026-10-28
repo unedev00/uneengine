@@ -105,7 +105,7 @@ CREATE TABLE IF NOT EXISTS md_app_entitlements (
 CREATE TABLE IF NOT EXISTS md_app_home_pages (
   tenant_id uuid NOT NULL REFERENCES md_tenants(id),
   app_id uuid NOT NULL REFERENCES md_apps(id),
-  form_factor text NOT NULL CHECK (form_factor IN ('desktop','tablet','phone')),
+  form_factor text NOT NULL CHECK (form_factor IN ('desktop','tablet','phone','custom')),
   page_id uuid NOT NULL,
   PRIMARY KEY (tenant_id,app_id,form_factor),
   FOREIGN KEY(tenant_id,app_id) REFERENCES md_app_installations(tenant_id,app_id),

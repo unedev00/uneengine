@@ -3,8 +3,8 @@ import {validateAppNavigation} from '../app-runtime/AppNavigationRegistry.js';
 import {resolveTenantAppMetadata} from '../app-runtime/AppMetadataResolver.js';
 import type {SqlPersistence} from './sql-persistence.js';
 /** Reuse shared published App Page variants while retaining existing form-factor data. */
-export function appHomeFormFactor(variant:string):'desktop'|'tablet'|'phone' {
-  return variant==='Phone'||variant==='Mobile'?'phone':variant==='Tablet'?'tablet':'desktop';
+export function appHomeFormFactor(variant:string):'desktop'|'tablet'|'phone'|'custom' {
+  return variant==='Phone'||variant==='Mobile'?'phone':variant==='Tablet'?'tablet':variant==='Custom'?'custom':'desktop';
 }
 export class AppRuntime {
   constructor(private readonly db:SqlPersistence) {}
@@ -293,7 +293,7 @@ export class AppRuntime {
         WHERE x.tenant_id=$1 AND x.app_api=$2 AND d.status='Active'
           AND d.page_type='Home Page' AND hp.enabled=true
           AND ((x.scope='App Default') OR (x.scope='App and Profile' AND x.profile_id=$4))
-          AND (($3='desktop' AND x.desktop) OR ($3='tablet' AND x.desktop) OR ($3='phone' AND x.phone))
+          AND (($3='desktop' AND x.desktop) OR ($3='tablet' AND x.tablet) OR ($3='phone' AND x.phone) OR ($3='custom' AND x.custom))
         ORDER BY CASE x.scope WHEN 'App and Profile' THEN 2 ELSE 1 END DESC,
           d.updated_at DESC LIMIT 1
       ) home ON true
