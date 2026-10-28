@@ -2187,7 +2187,7 @@ function RecordWorkspace({
           {(object.actions??[]).filter(action=>action.enabled&&action.type==='Custom'
             &&actionVisibleInArea(action,'Highlights')
             &&Array.isArray(component.properties.actionIds)&&component.properties.actionIds.includes(action.id)
-            &&allowedActionIds.includes(action.id)
+            &&allowedActionIds.includes(action.id)&&showRecordAction(action.id)
             &&behaviorAction(component.properties,action.id,runtimeBehaviorContext)!=='hidden'
             &&(!recordLayout||recordLayout.actions.includes(action.id))
             &&(['Run Flow','Open Component','Create Related','Send Email'].includes(action.behavior??'')
@@ -2195,7 +2195,7 @@ function RecordWorkspace({
                 ||action.behavior==='Set Field Value'&&Boolean(action.fieldApiName
                   &&fieldAccess[`${object.apiName}.${action.fieldApiName}`]?.edit))))
             .map(action=><button type="button" className="btn" key={action.id}
-              disabled={Boolean(customActionPendingId)||behaviorAction(component.properties,action.id,runtimeBehaviorContext)==='disabled'}
+              disabled={Boolean(customActionPendingId)||pageActionState(action.id)==='disabled'||behaviorAction(component.properties,action.id,runtimeBehaviorContext)==='disabled'}
               onClick={()=>void runCustomObjectAction(action)}>
               {customActionPendingId===action.id?'Running…':action.label}
             </button>)}
@@ -2449,7 +2449,7 @@ function RecordWorkspace({
           <h2>Actions</h2>
           <div className="record-highlight-actions">{publisherActions.map(action=>
             <button className="btn" type="button" key={action.id}
-              disabled={Boolean(customActionPendingId)}
+              disabled={Boolean(customActionPendingId)||pageActionState(action.id)==='disabled'}
               onClick={()=>void runCustomObjectAction(action)}>
               {customActionPendingId===action.id?'Running…':action.label}
             </button>)}</div>
