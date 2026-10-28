@@ -148,6 +148,7 @@ import PageBuilderActionRibbon from './PageBuilderActionRibbon';
 import PageBuilderRibbonMetadataPager from './PageBuilderRibbonMetadataPager';
 import UniversalRibbonInventory from './UniversalRibbonInventory';
 import './UniversalRibbonInventory.css';
+import './PageBuilderRibbonPolish.css';
 import RibbonFieldExpressionInput from './RibbonFieldExpressionInput';
 import {RibbonResponsive} from './PageBuilderRibbonStyle';
 import PageBuilderAdvancedStyle from './PageBuilderAdvancedStyle';
@@ -261,6 +262,7 @@ import {
   type WorkspaceId
 } from '../../metadata/Definitions/metadata';
 import SavedListViewPicker from './SavedListViewPicker';
+import {uneRibbonIcon} from './uneRibbonIcon';
 import RibbonImageContent from './RibbonImageContent';
 export function createPageBuilder(MetadataComponentProperties: React.ComponentType<any>, MetadataBoundPageComponent: React.ComponentType<any>) {
 function PageBuilder({
@@ -730,6 +732,8 @@ function PageBuilder({
       components:components.slice(index*4,index*4+4)
     })));
   const renderPaletteIcon = (component: { type: string; label: string }) => {
+    const svgIcon=uneRibbonIcon(component.type,null);
+    if(svgIcon)return svgIcon;
     const name = `${component.label} ${component.type}`.toLowerCase();
     if (/\b(text|heading|paragraph|rich text|label)\b/.test(name)) return <Type size={15} />;
     if (/\b(image|photo|picture|avatar|logo)\b/.test(name)) return <ImageIcon size={15} />;
@@ -2445,7 +2449,7 @@ function PageBuilder({
       })()}
       {editorMode&&selected?.type==='List View'&&
         <section className="builder-list-view-settings" aria-label="Saved List View block configuration">
-          <label className="form-label">List Object
+          <label className="form-label">Source Object
             <select className="form-control" aria-label="List View Object"
               value={String(selected.properties.listObjectApiName??'')}
               onChange={event=>updateComponent(selected.id,{properties:{
@@ -3039,7 +3043,7 @@ function PageBuilder({
             </>}
             {selected.type === 'List View' && <>
               <div className="properties-section-title">List records</div>
-              <label className="form-label">Object
+              <label className="form-label">Source Object
                 <select className="form-control" value={String(selected.properties.listObjectApiName??'')}
                   onChange={event=>updateComponent(selected.id,{properties:{...selected.properties,
                     listObjectApiName:event.target.value,columns:[]}})}>

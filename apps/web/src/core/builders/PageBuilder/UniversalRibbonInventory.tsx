@@ -1,6 +1,7 @@
 import {useEffect,useState} from 'react';
 import {auditUniversalRibbonCoverage} from './universalRibbonCoverage.mjs';
 import {createPortal} from 'react-dom';
+import RibbonColorPalette from './RibbonColorPalette';
 import type {LibraryComponentMetadata,ObjectMetadata,FlowDefinitionMetadata} from '../../metadata/Definitions/metadata';
 import CustomComponentPropertyEditor from '../ComponentProperties/CustomComponentPropertyEditor';
 import TenantMediaPicker from '../ComponentProperties/TenantMediaPicker';
@@ -120,8 +121,8 @@ function PropertyEditor({definition,enabled,reviewOnly=false,properties,onChange
  else if(value!==null&&typeof value==='object')editor=<textarea {...props} rows={1} value={JSON.stringify(value)}
    aria-invalid={!!jsonError} onChange={e=>{try{const parsed:unknown=JSON.parse(e.target.value);if(parsed===null||typeof parsed!=='object')throw Error('Expected an object or array');setJsonError('');update(parsed);}catch{setJsonError('Invalid structured value');}}}/>;
  else editor=<input {...props} type="text" value={String(value)} onChange={e=>update(e.target.value)}/>;
- return <label className={'une-universal-property'+(enabled?'':' is-disabled')+(reviewOnly?' is-review-only':'')} title={tip} data-property={key}>
-   <span className="une-universal-property-label">{label}</span>
+ return <label className={'une-universal-property'+(enabled?'':' is-disabled')+(reviewOnly?' is-review-only':'')} title={tip} data-property={key} data-kind={definition.kind}>
+   <span className="une-universal-property-label" title={label}>{shownLabel}</span>
    {editor}
  </label>;
 }
