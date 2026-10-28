@@ -2480,6 +2480,29 @@ function PageBuilder({
               <fieldset className="office-ribbon-part-fieldset" title={definitions.length?group:'Not supported by selected component'}><RibbonCapabilityControls group={group} definitions={definitions} properties={selected?.properties??{}} icon={ribbonPartIcons[group]??<Settings2 size={15}/>} onChange={properties=>{if(selected)updateComponent(selected.id,{properties});}}/></fieldset><span>{group} layout</span>
             </div>;
           })}
+          {selected && ribbonTab==='Component Layout' && (selectedCustomDefinition?.propertyDefinitions??[]).some(d=>d.propertyKey==='lineHeight'||d.propertyKey==='density') &&
+            <div className="office-ribbon-group office-ribbon-layout-typography">
+              <div className="office-ribbon-stack">
+                {selectedCustomDefinition?.propertyDefinitions?.some(d=>d.propertyKey==='lineHeight')&&
+                  <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Line height</span>
+                    <input aria-label="Line height" type="number" min={50} max={300} step={5}
+                      value={Number(selected.properties.lineHeight??100)}
+                      onChange={event=>{const n=Number(event.target.value);
+                        if(Number.isFinite(n)&&n>=50&&n<=300)updateComponent(selected.id,{properties:{...selected.properties,lineHeight:n}});}}/>
+                  </label>}
+                {selectedCustomDefinition?.propertyDefinitions?.find(d=>d.propertyKey==='density')&&
+                  <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Density</span>
+                    <select aria-label="Spacing density" value={String(selected.properties.density??'comfortable')}
+                      onChange={event=>updateComponent(selected.id,{properties:{...selected.properties,
+                        density:event.target.value,
+                        ...(selectedCustomDefinition?.propertyDefinitions?.some(d=>d.propertyKey==='cardDensity')
+                          ?{cardDensity:'default'}:{})}})}>
+                      {selectedCustomDefinition.propertyDefinitions.find(d=>d.propertyKey==='density')?.choices?.map(choice=>
+                        <option key={choice.key} value={choice.key}>{choice.label}</option>)}
+                    </select>
+                  </label>}
+              </div><span>Text & density</span>
+            </div>}
           {selected && ribbonTab==='Component Content' && selectedCustomDefinition?.apiName==='une_item_grid'
             && (['imageFieldApiName','titleFieldApiName','descriptionFieldApiName','priceFieldApiName','badgeFieldApiName'] as const)
               .some(key=>Boolean(selected.properties[key]) && !(objects.find(object=>object.apiName===selected.properties.objectApiName)?.fields??[])
