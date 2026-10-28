@@ -1,3 +1,4 @@
+import {visibleRelatedListQuickLinks} from './relatedQuickLinks';
 import { useFormFactor, useRuntimeFormFactor } from '../../workspace/Responsive/useFormFactor';
 import {useViewportWidth} from '../../workspace/Responsive/useViewportWidth';
 import './recordsListToolbar.css';
@@ -2186,11 +2187,7 @@ function RecordWorkspace({
           ?component.properties.relatedLists.filter((name):name is string=>typeof name==='string'):[];
         // Links are navigational only: never reveal a relation that the
         // authorised related-record response did not provide.
-        const available=names.filter(name=>Object.entries(relatedRecords).some(([key,value])=>{
-          const child=objects.find(item=>item.apiName===value.objectApiName);
-          return key.toLowerCase()===name.toLowerCase()
-            ||child?.pluralLabel.toLowerCase()===name.toLowerCase();
-        }));
+        const available=visibleRelatedListQuickLinks(names,relatedRecords,objects);
         if(!available.length)return null;
         return <nav key={component.id} className="record-fields-card surface" aria-label={component.label}>
           {available.map(name=><a key={name} href={'#related-'+encodeURIComponent(name)}
