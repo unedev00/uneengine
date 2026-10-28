@@ -31,3 +31,9 @@ test('media property and structured values are handled without converting persis
  assert.match(catalog,/JSON\.parse\(e\.target\.value\)/);
  assert.match(catalog,/update\(parsed\)/);
 });
+
+test('UNE components do not render the legacy second Data ribbon',()=>{
+ const view=load('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ assert.match(view,/selected && !selectedCustomDefinition && ribbonTab==='Component Data' && <PageBuilderRibbonData/);
+ assert.match(view,/selected && selectedCustomDefinition && \(\['Component Data'/);
+});
