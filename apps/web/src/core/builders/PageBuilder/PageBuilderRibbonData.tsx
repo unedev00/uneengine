@@ -20,6 +20,17 @@ export default function PageBuilderRibbonData({properties,definition,objects,fal
  const mappingKey=defs?.find(def=>/^(?:recordKeyFieldApiName|recordIdFieldApiName|dateFieldApiName|eventStartFieldApiName)$/i.test(def.propertyKey))?.propertyKey;
  const filters=Object.entries(properties).reduce((total,[key,value])=>total+(key==='filters'||key.endsWith('Filters')?Array.isArray(value)?value.length:0:0),0);
  const bind=(key:string,value:unknown)=>onChange({...properties,[key]:value});
+ const changeObject=(apiName:string)=>{
+   const sourceFields=objects.find(object=>object.apiName===apiName)?.fields??[];
+   const pick=(pattern:RegExp)=>sourceFields.find(field=>pattern.test(field.apiName+' '+field.label))?.apiName??'';
+   const suggestions=definition?.apiName==='une_item_grid'&&objectKey==='objectApiName'?{
+     imageFieldApiName:properties.imageFieldApiName||pick(/image|photo|picture|thumbnail/i),
+     titleFieldApiName:properties.titleFieldApiName||pick(/^(name|title|product_name)$/i)||pick(/name|title/i),
+     descriptionFieldApiName:properties.descriptionFieldApiName||pick(/description|summary|detail/i),
+     priceFieldApiName:properties.priceFieldApiName||pick(/price|amount|cost/i)
+   }:{};
+   onChange({...properties,[objectKey]:apiName,...suggestions});
+ };
  const fieldSelect=(label:string,key:string,disabled:boolean)=> <label className="office-ribbon-data-field" key={key}>
    <span>{label}</span><select aria-label={label} value={String(properties[key]??'')} disabled={disabled||!fields.length}
      onChange={event=>bind(key,event.target.value)}>
@@ -30,7 +41,7 @@ export default function PageBuilderRibbonData({properties,definition,objects,fal
      <div className="office-ribbon-data-heading"><Database size={18}/> <strong>Source</strong></div>
      <label className="office-ribbon-data-field"><span>Object</span>
        <select aria-label="Source object" disabled={!objectDef} value={objectDef?String(properties[objectKey]??''):''}
-         onChange={event=>bind(objectKey,event.target.value)}>
+         onChange={event=>changeObject(event.target.value)}>
          <option value="">Choose object</option>{objects.map(object=><option key={object.apiName} value={object.apiName}>{object.label}</option>)}
        </select>
      </label>
