@@ -11,7 +11,7 @@ test('validation rules remain legal versioned component metadata',()=>{
 });
 
 test('event validation evaluates declared conditions and does not block unrelated events',()=>{
- assert.equal(behaviorValidation(properties,'change',{formFactor:'Phone'}),'Unavailable on phone');
+ assert.equal(behaviorValidation(properties,'click',{formFactor:'Phone'}),'Unavailable on phone');
  assert.equal(behaviorValidation(properties,'click',{formFactor:'Desktop'}),null);
  assert.equal(behaviorValidation(properties,'change',{formFactor:'Phone'}),null);
  assert.equal(behaviorValidation({},'click',{formFactor:'Phone'}),null);
