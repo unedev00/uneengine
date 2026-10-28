@@ -1542,6 +1542,14 @@ function RecordWorkspace({
       setCustomActionMessage('This action is no longer available.');
       return;
     }
+    if((currentAction.behavior==='Set Field Value'||currentAction.behavior==='Log Call')
+      &&(recordGrants?.objectApi!==object.apiName||!recordGrants.Edit
+        ||(currentAction.behavior==='Set Field Value'&&
+          (!currentAction.fieldApiName||
+            fieldAccess[`${object.apiName}.${currentAction.fieldApiName}`]?.edit!==true)))){
+      setCustomActionMessage('Edit permission is required for this action.');
+      return;
+    }
     // UI state is never a grant, but programmatic action invocation must still
     // obey the same published conditional state as its Header/Publisher buttons.
     const actionsBlock=activeLightningPage?.components.find(component=>
