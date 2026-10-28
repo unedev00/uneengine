@@ -147,6 +147,7 @@ import PageBuilderRibbonMetadataPager from './PageBuilderRibbonMetadataPager';
 import RibbonFieldExpressionInput from './RibbonFieldExpressionInput';
 import {RibbonResponsive} from './PageBuilderRibbonStyle';
 import PageBuilderAdvancedStyle from './PageBuilderAdvancedStyle';
+import PageBuilderRibbonData from './PageBuilderRibbonData';
 import type {ComponentVisibilityRule} from '../../components/Properties/componentVisibility';
 import { canNestComponent, pageAppearanceTarget, pageAppearanceStyleKeys, updateLayoutSettings, type LayoutSettingKey, directChildren, isLayoutType, isDescendantOf, layoutTypes } from '../../pages/TemplatePageRuntime/pageComponentLayout';
 import PageComponentStyleEditor from '../ComponentStyleEditor/PageComponentStyleEditor';
@@ -2425,20 +2426,12 @@ function PageBuilder({
               </div>;
             })()}
           </div>}
-          {selected && ribbonTab==='Component Data' && (selectedCustomDefinition?.propertyDefinitions?.some(d=>d.kind==='OBJECT'||d.kind==='OBJECT_FIELD'||/(?:filter|sourceObject)/i.test(d.propertyKey))
-            || /^(?:Record Field|Record Detail|Related List|List View|Report Chart|Dashboard|Table)$/.test(selected.type)
-            || 'filters' in selected.properties) && <>
-            {!selectedCustomDefinition?.propertyDefinitions?.some(d=>d.kind==='OBJECT')&&<div className="office-ribbon-group office-ribbon-data-source"><div className="office-ribbon-stack">
-              <button type="button" onClick={()=>openExpandedEditor('source')}><Database size={16}/> Open source</button>
-            </div><span>Source</span></div>}
-            <div className="office-ribbon-group office-ribbon-data-filters"><div className="office-ribbon-stack">
-              <button type="button" onClick={()=>openExpandedEditor('filters')}><Filter size={16}/> Open filters</button>
-            </div><span>Filters</span></div>
-          </>
-          {selected && ribbonTab==='Component Data' && selectedCustomDefinition?.propertyDefinitions?.some(d=>['pageSize','enablePagination'].includes(d.propertyKey)) && <div className="office-ribbon-group"><div className="office-ribbon-stack">
-            {selectedCustomDefinition.propertyDefinitions.some(d=>d.propertyKey==='pageSize')&&<label className="office-ribbon-inline-field">Page size <input type="number" min={1} max={500} value={Number(selected.properties.pageSize??12)} onChange={event=>{const n=Number(event.target.value);if(Number.isInteger(n)&&n>=1&&n<=500)updateComponent(selected.id,{properties:{...selected.properties,pageSize:n}});}}/></label>}
-            {selectedCustomDefinition.propertyDefinitions.some(d=>d.propertyKey==='enablePagination')&&<label className="office-ribbon-checkbox"><input type="checkbox" checked={selected.properties.enablePagination===true} onChange={event=>updateComponent(selected.id,{properties:{...selected.properties,enablePagination:event.target.checked}})}/> Enable pagination</label>}
-          </div><span>Records</span></div>}
+          {selected && ribbonTab==='Component Data' && <PageBuilderRibbonData
+            properties={selected.properties} definition={selectedCustomDefinition}
+            objects={objects} fallbackObject={String(page.targetObject??'')}
+            onChange={properties=>updateComponent(selected.id,{properties})}
+            onOpenSource={()=>openExpandedEditor('source')}
+            onOpenFilters={()=>openExpandedEditor('filters')}/>}
           {selected && ribbonTab === 'Component Content' && selectedCustomDefinition && selectedCustomDefinition.apiName!=='une_item_grid' &&
             selectedCustomDefinition.propertyDefinitions?.some(definition=>definition.kind==='OBJECT_FIELD') &&
             <div className="office-ribbon-group"><div className="office-ribbon-stack">
@@ -2451,33 +2444,7 @@ function PageBuilder({
                 </select>
               </label>)}
             </div><span>Content Source</span></div>}
-          {selected && ribbonTab === 'Component Data' && selectedCustomDefinition?.propertyDefinitions?.some(d=>d.kind==='OBJECT') && <div className="office-ribbon-group"><div className="office-ribbon-stack">
-            {(selectedCustomDefinition.propertyDefinitions??[])
-              .filter(definition=>definition.kind==='OBJECT').slice(0,2)
-              .map(definition=><label className="office-ribbon-inline-field" key={definition.propertyKey}>
-                <span className="office-ribbon-field-name">{definition.label||'Source'}</span>
-                <select aria-label={definition.label||'Choose source object'}
-                  value={String(selected.properties[definition.propertyKey]??'')}
-                  onChange={event=>{
-                    const source=objects.find(item=>item.apiName===event.target.value);
-                    const definitions=source?.fields??[];
-                    const pick=(pattern:RegExp)=>definitions.find(field=>pattern.test(field.apiName+' '+field.label))?.apiName??'';
-                    const suggestions=selectedCustomDefinition.apiName==='une_item_grid'&&definition.propertyKey==='objectApiName'?{
-                      imageFieldApiName:selected.properties.imageFieldApiName||pick(/image|photo|picture|thumbnail/i),
-                      titleFieldApiName:selected.properties.titleFieldApiName||pick(/^(name|title|product_name)$/i)||pick(/name|title/i),
-                      descriptionFieldApiName:selected.properties.descriptionFieldApiName||pick(/description|summary|detail/i),
-                      priceFieldApiName:selected.properties.priceFieldApiName||pick(/price|amount|cost/i)
-                    }:{};
-                    updateComponent(selected.id,{properties:{...selected.properties,
-                      [definition.propertyKey]:event.target.value,...suggestions}});
-                  }}>
-                  <option value="">Choose an object…</option>
-                  {objects.map(object=><option key={object.apiName} value={object.apiName}>{object.label}</option>)}
-                </select>
-              </label>)}
-
-          <button type="button" onClick={()=>openExpandedEditor('source')}><Database size={16}/> Open source</button>
-          </div><span>Source</span></div>}
+          
           {selected && ribbonTab === 'Component Content' && selectedCustomDefinition?.apiName!=='une_item_grid'
             && selectedCustomDefinition && <div className="office-ribbon-inline-options">
               <ComponentPresentationProperties
