@@ -208,7 +208,7 @@ export default function TenantManagement({ request, permitted }: { request: Requ
     {notice && <div className="tenant-alert" role="status">{notice}</div>}
     <section className="tenant-overview" aria-label="Tenant overview"><div><strong>{total}</strong><span>Matching tenants</span></div><div><strong>{activeOnPage}</strong><span>Active on this page</span></div><div><strong>{suspendedOnPage}</strong><span>Suspended on this page</span></div><div><strong>{archivedOnPage}</strong><span>Archived on this page</span></div></section>
     <div className={`tenant-columns${showCreate ? ' tenant-columns-creating' : ''}`}>
-      <PlatformPageSlot slotKey="directory"><section className="tenant-panel" aria-label="Tenants">
+      {!showCreate && <PlatformPageSlot slotKey="directory"><section className="tenant-panel" aria-label="Tenants">
         <div className="tenant-toolbar">
           <label className="tenant-search"><Search size={16} /><input type="search" aria-label="Search tenants" placeholder="Search name or tenant ID" value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} /></label>
           <label className="tenant-filter">Status <select aria-label="Filter tenant status" value={status} onChange={(event) => { setStatus(event.target.value); setPage(1); }}><option value="ALL">All</option><option value="ACTIVE">Active</option><option value="SUSPENDED">Suspended</option><option value="ARCHIVED">Archived</option></select></label>
@@ -234,7 +234,7 @@ export default function TenantManagement({ request, permitted }: { request: Requ
           <button aria-label="Previous tenants" disabled={page === 1 || loading} onClick={() => setPage((n) => Math.max(1, n - 1))}><ChevronLeft size={16} /></button>
           <button aria-label="Next tenants" disabled={page * pageSize >= total || loading} onClick={() => setPage((n) => n + 1)}><ChevronRight size={16} /></button>
         </div></footer>
-      </section></PlatformPageSlot>
+      </section></PlatformPageSlot>}
       <PlatformPageSlot slotKey="tenant-details"><section className="tenant-panel tenant-detail" aria-label={showCreate ? 'Create tenant' : 'Tenant details'}>
         {showCreate ? <form aria-label="New tenant draft" onSubmit={(event) => void createTenant(event)}>
           <div className="tenant-detail-heading"><h2>New tenant</h2><button type="button" className="tenant-button" onClick={() => { setShowCreate(false); setCreate(emptyCreate); setCreateKey(crypto.randomUUID()); }}>Cancel</button></div>

@@ -19,7 +19,7 @@
   .lightning .named-credentials-page .slds-table td:first-child { max-width: 180px; overflow-wrap: anywhere; }
   .lightning .named-credentials-page .slds-table .toolbar-actions { flex-wrap: wrap; }
   .lightning .named-credentials-page .slds-table :is(th,td):last-child { position: sticky; right: 0; background: var(--md-surface, #fff); z-index: 1; }
-  .lightning .tenant-columns-creating { grid-template-columns: minmax(0, 1fr); }
+  .lightning .tenant-console .tenant-columns.tenant-columns-creating { grid-template-columns: minmax(0, 1fr); }
   .tenant-columns-creating .tenant-detail { width: 100%; max-width: 860px; justify-self: center; }
 }
 .flow-create-dialog { width: min(720px, calc(100vw - 32px)); max-height: calc(100dvh - 48px); overflow-y: auto; }
@@ -38,3 +38,6 @@
   .lightning :is(.permissions-page,.object-manager,.flow-logs-page) .slds-table th { position:sticky; top:0; background:var(--md-surface,#fff); z-index:2; }
   .lightning .flow-logs-table :is(th,td):nth-child(3) { white-space:normal; min-width:140px; }
 }
+
+.tenant-columns-creating .tenant-detail form { max-height:calc(100dvh - 350px); min-height:280px; overflow-y:auto; padding-right:8px; }
+.tenant-columns-creating .tenant-detail .setup-draft-footer { position:sticky; bottom:0; padding:12px 0; }

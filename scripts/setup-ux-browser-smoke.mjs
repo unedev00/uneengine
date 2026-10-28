@@ -26,6 +26,16 @@ try {
  await save.click();
  await page.getByRole('status').filter({hasText:'selections saved'}).waitFor();
  assert.equal((await page.evaluate(()=>window.savedSelections)).selections[0].recordIds[0],'00000000-0000-0000-0000-000000000001');
+ await open('tenants');
+ await page.getByRole('button',{name:'New tenant',exact:true}).click();
+ const tenantForm=page.getByRole('form',{name:'New tenant draft'});
+ await tenantForm.waitFor();
+ assert.equal(await page.getByRole('region',{name:'Tenants',exact:true}).count(),0);
+ const tenantAction=tenantForm.getByRole('button',{name:'Create tenant',exact:true});
+ const actionVisible=await tenantAction.evaluate(el=>{const r=el.getBoundingClientRect();return r.bottom<=window.innerHeight && r.top>=0;});
+ assert.equal(actionVisible,true,'Create tenant footer must be visible without scrolling the directory');
+ await tenantForm.getByRole('button',{name:'Discard',exact:true}).click();
+ assert.equal(await page.getByRole('form',{name:'New tenant draft'}).count(),0);
  await open('credentials');
  const table=page.locator('.md-mobile-table-replaced table');
  assert.equal(await table.locator('th').count(),5);
@@ -49,5 +59,5 @@ try {
  await open('records-import');
  await page.getByText('Record workspace import passed',{exact:true}).waitFor();
  assert.deepEqual(errors,[]);
- console.log('PASS: dashboard permission/create, offline object/record/save, credential width/details, history details, flow dialog/create, record route chunk import (1365×768)');
+ console.log('PASS: dashboard permission/create, offline object/record/save, tenant draft/footer/discard, credential width/details, history details, flow dialog/create, record route chunk import (1365×768)');
 } finally { await browser.close(); }

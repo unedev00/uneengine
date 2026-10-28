@@ -1,5 +1,6 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
+import TenantManagement from '../src/core/platform/TenantManagement/TenantManagement';
 import OfflineBriefcaseSettings from '../src/core/platform/OfflineBriefcaseSettings/OfflineBriefcaseSettings';
 import DashboardBuilder from '../src/core/builders/DashboardBuilder/DashboardBuilder';
 import NamedCredentials from '../src/core/integrations/NamedCredentials/NamedCredentials';
@@ -22,6 +23,7 @@ const arrays={dashboards:[],dashboardFolders:[],objects:[],libraryComponents:[],
 const callbacks=Object.fromEntries(['Select','OpenViewer','ExitViewer','Notify','Save','Delete','LoadRecords','RunReport','LoadSnapshots','LoadSubscriptions'].map(key=>['on'+key,noop]));
 const object={apiName:'Account',label:'Account',pluralLabel:'Accounts',fields:[],compactLayout:{fieldApiNames:['Name']}};
 const request=async(path,init)=>{
+ if(path.startsWith('/platform/tenants'))return {tenants:[],total:0};
  if(path.startsWith('/records/'))return {records:[{Id:'00000000-0000-0000-0000-000000000001',Name:'Acme Corporation'}]};
  if(init?.method==='PUT'){window.savedSelections=JSON.parse(init.body);return {briefcase:JSON.parse(init.body)};}
  return {briefcase:{selections:[]}};
@@ -30,7 +32,8 @@ const credentials=[{id:'sample',name:'Sample_Credential',label:'Sample credentia
 function RecordImportCheck(){ const [ready,setReady]=React.useState(false); React.useEffect(()=>{import('../src/core/records/RecordWorkspace/recordWorkspaceViews').then(module=>setReady(typeof module.createRecordWorkspaceViews === 'function'));},[]);return <p>{ready ? 'Record workspace import passed' : 'Loading record workspace'}</p>; }
 function Fixture(){
  let content;
- if(view==='records-import')content=<RecordImportCheck/>;
+ if(view==='tenants')content=<TenantManagement request={request} permitted/>;
+ else if(view==='records-import')content=<RecordImportCheck/>;
  else if(view==='offline')content=<OfflineBriefcaseSettings request={request} permitted objects={[object]}/>;
  else if(view==='dashboard')content=<DashboardBuilder {...arrays} {...callbacks} userId="test" canCreate={params.get('allowed')==='true'} canManageAll={false} />;
  else if(view==='credentials')content=<NamedCredentials credentials={credentials} canManage encryptionReady onSave={noop} onDelete={noop}/>;
