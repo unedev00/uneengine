@@ -794,7 +794,7 @@ function RecordWorkspace({
       appId:route.kind==='record-detail'||route.kind==='record-list'?route.appId??'Records':'Records',
       formFactor:typeof window!=='undefined'&&new URLSearchParams(window.location.search).get('pageLayout')==='Custom'
         ?'Custom':viewportFactor==='Tablet'?'Tablet':formFactor==='Phone'?'Mobile':'Desktop',
-      recordTypeId:String(formValues.RecordTypeId??'')
+      recordTypeId:String(formValues.RecordTypeId??object.recordTypes?.find(item=>item.active&&item.isDefault&&recordTypeAccess[`${object.apiName}.${item.id}`]!==false)?.id??object.recordTypes?.find(item=>item.active&&recordTypeAccess[`${object.apiName}.${item.id}`]!==false)?.id??'')
     });
     void apiRequest<{editLightningPage?:LightningPageMetadata}>(
       `/records/${encodeURIComponent(object.apiName)}/create-layout?${params}`
