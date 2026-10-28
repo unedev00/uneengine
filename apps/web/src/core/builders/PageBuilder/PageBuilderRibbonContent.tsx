@@ -1,3 +1,4 @@
+import type {ReactNode} from 'react';
 import {Image as ImageIcon,Type,AlignLeft,CalendarDays,Clock,Ellipsis} from 'lucide-react';
 import type {FieldMetadata,LibraryComponentMetadata} from '../../metadata/Definitions/metadata';
 import RibbonFieldExpressionInput from './RibbonFieldExpressionInput';
@@ -33,7 +34,7 @@ export default function PageBuilderRibbonContent({componentApiName,properties,de
    label={label} fields={fields}
    value={String(properties[key]??(properties[legacyKey]?'@'+properties[legacyKey]:''))}
    onChange={value=>update(key,value)}/>;
- const section=(title:string,icon:React.ReactNode,content:React.ReactNode)=><div key={title} className="office-ribbon-group office-ribbon-content-card">
+ const section=(title:string,icon:ReactNode,content:ReactNode)=><div key={title} className="office-ribbon-group office-ribbon-content-card">
    <div className="office-ribbon-content-heading">{icon}<strong>{title}</strong></div>
    <div className="office-ribbon-content-fields">{content}</div><span>{title}</span>
  </div>;
