@@ -121,7 +121,7 @@ export default function AppExchange(props: Props) {
       {error && <div className="records-message" role="alert">{error}</div>}
       <PlatformPageSlot slotKey="marketplace-filters"><div className="exchange-tabs" role="tablist" aria-label="Marketplace views">
         <button role="tab" aria-selected={view === 'discover'} className={view === 'discover' ? 'active' : ''} onClick={() => setView('discover')}>Discover apps</button>
-        <button role="tab" aria-selected={view === 'installed'} className={view === 'installed' ? 'active' : ''} onClick={() => setView('installed')}>Installed apps <span>{installed}</span></button>
+        <button role="tab" aria-selected={view === 'installed'} className={view === 'installed' ? 'active' : ''} onClick={() => setView('installed')}>Installed apps <span aria-live="polite">{loading ? 'Loading…' : error ? 'Unavailable' : installed}</span></button>
       </div>
       <div className="exchange-section-heading"><div><h2>{view === 'installed' ? 'Installed packages' : 'Available packages'}</h2>
         <p>Published package versions, installation status and licences come from tenant-scoped SQL metadata.</p></div>
@@ -201,3 +201,4 @@ export default function AppExchange(props: Props) {
     </div></PlatformPageSlot>}
   </div>;
 }
+

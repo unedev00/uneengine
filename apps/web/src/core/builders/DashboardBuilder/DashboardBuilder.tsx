@@ -1674,7 +1674,7 @@ export default function DashboardBuilder({
         {!current || (viewerMode && current.status !== 'Deployed') ? <div className="dashboard-empty-state surface">
           <span className="dashboard-empty-icon"><LayoutDashboard size={25} /></span>
           <h2>{viewerMode ? 'Dashboard unavailable' : 'Build a dashboard'}</h2><p>{viewerMode ? 'This dashboard does not exist or you do not have permission to view it.' : 'Bring metrics, charts, and record tables together in one view.'}</p>
-          {!viewerMode && <button className="btn btn-brand" onClick={() => setCreating(true)}><Plus size={14} />Create dashboard</button>}
+          {!viewerMode && <><button className="btn btn-brand" disabled={!canCreate} onClick={() => setCreating(true)}><Plus size={14} />Create dashboard</button>{!canCreate && <p role="status">Ask an administrator for dashboard creation access in your Profile or Permission Set.</p>}</>}
         </div> : <>
           {previewMode && snapshotsOpen && current.status === 'Deployed' && <section className="dashboard-snapshots surface" aria-label="Dashboard snapshots">
             <div className="dashboard-snapshots-heading"><div><strong>Point-in-time snapshots</strong><p>Snapshots preserve data visible to you when captured. Other dashboard viewers cannot access your saved snapshots.</p></div>
@@ -2735,3 +2735,4 @@ export default function DashboardBuilder({
     </div>}
   </div>;
 }
+

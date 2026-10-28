@@ -1,4 +1,5 @@
-import { useState, type ReactNode } from 'react';
+import type { ObjectMetadata } from '../../metadata/Definitions/metadata';
+import { cloneElement, useState, type ReactElement, type ReactNode } from 'react';
 import { ChevronLeft, ChevronRight, Settings2 } from 'lucide-react';
 import BusinessCalendarSettings from '../../platform/BusinessCalendarSettings/BusinessCalendarSettings';
 import OfflineBriefcaseSettings from '../../platform/OfflineBriefcaseSettings/OfflineBriefcaseSettings';
@@ -13,8 +14,8 @@ const sections:ReadonlyArray<{id:Section;label:string}>=[
 {id:'contacts',label:'Contacts'},{id:'mobile',label:'Mobile & Offline'},{id:'integrations',label:'Integrations'},
 {id:'security',label:'Security & Recovery'},{id:'developer',label:'Developer'}];
 /** Presentation only: retains existing OneEngine-protected runtime controls and slots. */
-export default function CompanySettingsWorkspace({company,domains,developer,usage,calendar,recovery,mfa,emailRecovery,locks,sessions,audit,onNavigateDeveloper,developerAccess,mobile=false}:{
-company:ReactNode;domains:ReactNode;developer:ReactNode;usage:ReactNode;calendar?:ReactNode;
+export default function CompanySettingsWorkspace({company,domains,developer,usage,calendar,recovery,mfa,emailRecovery,locks,sessions,audit,onNavigateDeveloper,developerAccess,objects=[],mobile=false}:{
+objects?:ObjectMetadata[];company:ReactNode;domains:ReactNode;developer:ReactNode;usage:ReactNode;calendar?:ReactNode;
 recovery:ReactNode;mfa:ReactNode;emailRecovery:ReactNode;locks:ReactNode;sessions:ReactNode;audit:ReactNode;
  onNavigateDeveloper?:(workspace:string)=>void;
  developerAccess?:{metadata:boolean;apps:boolean;packages?:boolean;flows:boolean;dashboards:boolean;reports:boolean;approvals:boolean;security:boolean};
@@ -63,16 +64,17 @@ recovery:ReactNode;mfa:ReactNode;emailRecovery:ReactNode;locks:ReactNode;session
    {currentSection && <div className={"company-workspace-body company-workspace-section-"+currentSection}>
      {/* CompanySettings currently contains both company details and currency sections.
          Render it once, avoiding duplicate state and network requests. */}
-     {(currentSection==='general'||currentSection==='currency'||currentSection==='contacts'||currentSection==='branding')&&company}
+     {(currentSection==='general'||currentSection==='currency'||currentSection==='contacts'||currentSection==='branding')&&(typeof company === 'object' && company !== null && 'props' in company ? cloneElement(company as ReactElement, {section:currentSection}) : company)}
      {currentSection==='integrations'&&<section className="company-workspace-stack">{domains}{developer}</section>}
      {currentSection==='security'&&<section className="company-workspace-stack">{mfa}{emailRecovery}{locks}{sessions}{recovery}{audit}</section>}
      {currentSection==='business'&&<div className="company-workspace-secondary">
        {calendar??<BusinessCalendarSettings request={apiRequest} permitted />}
        {usage}
      </div>}
-     {currentSection==='mobile'&&<OfflineBriefcaseSettings request={apiRequest} permitted />}
+     {currentSection==='mobile'&&<OfflineBriefcaseSettings request={apiRequest} permitted objects={objects} />}
      {currentSection==='developer'&&<><section className="company-workspace-card" aria-label="Developer tools"><h2>Developer tools</h2><p>Build and manage your apps with OneEngine-controlled access.</p><div className="company-developer-links">{available.map(item=><button type="button" key={item.workspace} onClick={()=>onNavigateDeveloper?.(item.workspace)} disabled={!onNavigateDeveloper}><strong>{item.label}</strong><span>{item.description}</span><span aria-hidden="true">›</span></button>)}</div></section>
        <MetadataPackageManager request={apiRequest} permitted={!!rights?.metadata} canManage={!!(rights?.packages??rights?.apps)} /></>}
    </div>}
  </div>;
 }
+

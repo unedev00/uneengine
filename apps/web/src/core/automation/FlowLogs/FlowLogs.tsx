@@ -84,10 +84,8 @@ export default function FlowLogs({ logs, loading, loadingMore, hasMore, onLoadMo
                 <th scope="col">Status</th>
                 <th scope="col">Type / Version</th>
                 <th scope="col">Started</th>
-                <th scope="col">Finished</th>
-                <th scope="col">Duration</th>
-                <th scope="col">Error</th>
-                <th scope="col">User ID</th>
+                                <th scope="col">Duration</th>
+                <th scope="col">Details</th>
               </tr>
             </thead>
             <tbody>
@@ -102,14 +100,12 @@ export default function FlowLogs({ logs, loading, loadingMore, hasMore, onLoadMo
                   <td>{log.status ?? 'failed'}</td>
                   <td>{log.flowType ?? log.trigger}{log.versionNumber ? ' · v' + log.versionNumber : ''}</td>
                   <td>{formatTime(log.startedAt ?? log.failedAt)}</td>
-                  <td>{formatTime(log.finishedAt ?? (log.status ? null : log.failedAt))}</td>
-                  <td>{log.durationMs == null ? '—' : (log.durationMs / 1000).toFixed(2) + ' s'}</td>
-                  <td className="flow-log-error">{log.error ?? '—'}</td>
-                  <td>{log.userId ?? 'System'}</td>
+                                    <td>{log.durationMs == null ? '—' : (log.durationMs / 1000).toFixed(2) + ' s'}</td>
+                  <td><details><summary>Run details</summary><dl><dt>Run ID</dt><dd>{log.id}</dd><dt>Finished</dt><dd>{formatTime(log.finishedAt ?? (log.status ? null : log.failedAt))}</dd><dt>User</dt><dd>{log.userId ?? 'System'}</dd><dt>Error</dt><dd>{log.error ?? 'None'}</dd></dl></details></td>
                 </tr>
               ))}
               {!loading && filteredLogs.length === 0 && (
-                <tr><td className="scheduled-flows-empty" colSpan={8}>
+                <tr><td className="scheduled-flows-empty" colSpan={6}>
                   {search || status !== 'all' ? 'No matching executions in the loaded history.' : 'No Flow executions have been logged.'}
                 </td></tr>
               )}
@@ -122,3 +118,4 @@ export default function FlowLogs({ logs, loading, loadingMore, hasMore, onLoadMo
     </div>
   );
 }
+

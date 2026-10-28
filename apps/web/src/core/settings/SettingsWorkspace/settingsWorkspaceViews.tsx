@@ -372,7 +372,8 @@ const companyFields:ReadonlyArray<{key:keyof CompanyProfile;label:string}>= [
 {key:'city',label:'Town / City'},{key:'postcode',label:'Postcode'},
 {key:'country',label:'Country'},{key:'timezone',label:'Time zone'},{key:'locale',label:'Locale'}];
 
-function CompanySettings({ canManage }: { canManage: boolean }) {
+function CompanySettings({ canManage, section = 'general' }: { canManage: boolean; section?: string }) {
+  const sectionTitle = section === 'branding' ? 'Company branding' : section === 'contacts' ? 'Contact details' : 'Company details';
   const [company,setCompany]=useState<CompanyProfile>(blankCompanyProfile);
   const [companyBeforeEdit,setCompanyBeforeEdit]=useState<CompanyProfile|null>(null);
   const [companyEditing,setCompanyEditing]=useState(false);
@@ -525,9 +526,9 @@ function CompanySettings({ canManage }: { canManage: boolean }) {
   return <div className="home-content settings-read-first-page company-settings-page">
     <PageHeading eyebrow="Company Settings" title="Company Settings"
       description="Manage your organisation settings, base currency, VAT and exchange rates in one workspace." />
-    <section className="surface permission-section company-profile-section" aria-label="Company details">
-      <div className="section-toolbar"><div><h2>Company details</h2><p>Organisation, contact and regional information.</p></div>
-      {canManage&&!companyEditing&&!companyLoading&&<button type="button" className="btn" onClick={()=>{setCompanyBeforeEdit({...company});setCompanyEditing(true);}}>Edit details</button>}</div>
+    <section className="surface permission-section company-profile-section" aria-label={sectionTitle}>
+      <div className="section-toolbar"><div><h2>{sectionTitle}</h2><p>Organisation, contact and regional information.</p></div>
+      {canManage&&!companyEditing&&!companyLoading&&<button type="button" className="btn" onClick={()=>{setCompanyBeforeEdit({...company});setCompanyEditing(true);}}>{section === 'branding' ? 'Edit logo' : section === 'contacts' ? 'Edit contacts' : 'Edit details'}</button>}</div>
       {companyLoading?<p>Loading company details…</p>:<><div className="company-profile-logo">{(company.logoUrl?.startsWith("data:image/")||company.logoUrl?.startsWith("https://"))?<img src={company.logoUrl} alt="Company logo" />:<span aria-label="No logo configured">No logo</span>}</div><div className="company-profile-grid">{companyEditing&&<div className="company-profile-field" data-company-field="logoUrl"><label htmlFor="company-logo-upload">Company logo</label><input id="company-logo-upload" type="file" accept="image/png,image/jpeg,image/webp" disabled={companySaving||logoReading} onChange={event=>{void selectCompanyLogo(event.target.files?.[0]);event.target.value='';}}/><small>PNG, JPG or WebP · maximum 128 KB</small>{company.logoUrl&&<button className="btn" type="button" disabled={companySaving||logoReading} onClick={()=>{ if (!confirmDestructiveAction('Remove','company logo','Save company settings to apply the removal.')) return; setCompany(previous=>({...previous,logoUrl:''})); }}>Remove logo</button>}</div>}
       {companyFields.map(field=><div className="company-profile-field" data-company-field={field.key} key={field.key}><label htmlFor={'company-'+field.key}>{field.label}</label>
         {companyEditing?<input id={'company-'+field.key} className="form-control" value={company[field.key]}

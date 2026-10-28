@@ -1,0 +1,40 @@
+/* Setup audit: shared administrative tables, never authored page components. */
+@media (min-width: 900px) {
+  .lightning .setup-sidebar { width: 224px; min-width: 224px; }
+  .lightning .setup-sidebar .tree-item { word-break: normal; overflow-wrap: normal; white-space: normal; line-height: 1.4; min-height: 32px; gap: 8px; }
+  .lightning .setup-sidebar .tree-item svg { flex-shrink: 0; }
+  .lightning .setup-sidebar .tree-item span { min-width: 0; word-break: normal; overflow-wrap: normal; }
+  .lightning .permissions-page .slds-table :is(th,td),
+  .lightning .object-manager .slds-table :is(th,td),
+  .lightning .flow-logs-table :is(th,td),
+  .lightning .flow-existing-table :is(th,td),
+  .lightning .named-credentials-page .slds-table :is(th,td) { font-size: 13px; padding: 9px 12px; line-height: 1.4; }
+  .lightning .permissions-page .slds-table .api-name { font-size: 12px; }
+  .lightning .flow-start-page .flow-start-panels { display: block; }
+  .lightning .flow-existing-table, .lightning .flow-logs-table { table-layout: auto; width: 100%; }
+  .lightning .flow-existing-table :is(th,td), .lightning .flow-logs-table :is(th,td) { white-space: nowrap; word-break: normal; }
+  .lightning .flow-existing-table td:nth-child(2), .lightning .flow-logs-table td:first-child { max-width: 300px; }
+  .lightning .flow-existing-table td:nth-child(2) button, .lightning .flow-logs-table .flow-log-link { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lightning .named-credentials-page .slds-table { table-layout: auto; min-width: 0; width: 100%; }
+  .lightning .named-credentials-page .slds-table td:first-child { max-width: 180px; overflow-wrap: anywhere; }
+  .lightning .named-credentials-page .slds-table .toolbar-actions { flex-wrap: wrap; }
+  .lightning .named-credentials-page .slds-table :is(th,td):last-child { position: sticky; right: 0; background: var(--md-surface, #fff); z-index: 1; }
+  .lightning .tenant-columns-creating { grid-template-columns: minmax(0, 1fr); }
+  .tenant-columns-creating .tenant-detail { width: 100%; max-width: 860px; justify-self: center; }
+}
+.flow-create-dialog { width: min(720px, calc(100vw - 32px)); max-height: calc(100dvh - 48px); overflow-y: auto; }
+.setup-draft-footer { position: sticky; bottom: 0; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 12px; padding: 16px 0; background: var(--md-surface, #fff); border-top: 1px solid var(--md-border, #dce3eb); z-index: 2; }
+.setup-draft-footer > span { margin-right: auto; }
+.flow-logs-table details[open], .flow-existing-table details[open] { white-space: normal; min-width: 220px; max-width: 360px; }
+.flow-logs-table dd, .flow-existing-table dd { margin: 0 0 8px; overflow-wrap: anywhere; }
+.flow-logs-table dt, .flow-existing-table dt { font-weight: 600; }
+.company-workspace-tabs { position: sticky; top: 0; z-index: 3; }
+@media (min-width:900px) {
+  .lightning .setup-sidebar.setup-sidebar-collapsed { width:58px; min-width:58px; }
+  .lightning .named-credentials-page .slds-table { table-layout:fixed; }
+  .lightning .named-credentials-page .slds-table :is(th,td) { white-space:normal; overflow-wrap:anywhere; }
+  .lightning .named-credentials-page .slds-table :is(th,td):last-child { width:30%; }
+  .lightning :is(.permissions-page,.object-manager,.flow-logs-page) .table-scroll { max-height:65dvh; overflow:auto; }
+  .lightning :is(.permissions-page,.object-manager,.flow-logs-page) .slds-table th { position:sticky; top:0; background:var(--md-surface,#fff); z-index:2; }
+  .lightning .flow-logs-table :is(th,td):nth-child(3) { white-space:normal; min-width:140px; }
+}

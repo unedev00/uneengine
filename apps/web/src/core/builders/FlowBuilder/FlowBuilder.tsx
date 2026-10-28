@@ -1,3 +1,4 @@
+import {useModalAccessibility} from '../../accessibility/Modal/useModalAccessibility';
 import {generateMetadataApiName,metadataNameConflict,suggestMetadataApiName} from '../../metadata/Definitions/metadataApiNames';
 import {useFormFactor} from '../../workspace/Responsive/useFormFactor';
 import {confirmDestructiveAction} from '../../components/ConfirmAction/confirmDestructiveAction';
@@ -23,7 +24,7 @@ import FlowReferenceInput from '../FlowReferenceInput/FlowReferenceInput';
 import { FlowConditionRows, FlowFieldAssignments } from './FlowValueEditors';
 import PageComponentStyleEditor from '../ComponentStyleEditor/PageComponentStyleEditor';
 import { parseComponentProperties } from '../../components/Properties/componentProperties';
-import { Fragment, useEffect, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import {
   Activity,
   ArrowLeft,
@@ -1657,15 +1658,20 @@ export default function FlowBuilder({
     </>;
     return <label className="form-label">Configuration<textarea className="form-control" rows={4} value={JSON.stringify(selected.config, null, 2)} readOnly /></label>;
   };
+  const [showCreateFlow, setShowCreateFlow] = useState(false);
+  const createFlowDialog = useRef<HTMLElement>(null);
+  const closeCreateFlow = useCallback(() => setShowCreateFlow(false), []);
+  useModalAccessibility(showCreateFlow, createFlowDialog, closeCreateFlow);
   if (landing) return <div className="flow-start-page flow-start-page-split">
     <div className="flow-start-heading">
       <div className="eyebrow">AUTOMATION</div>
       <h1>Flows</h1>
       {capabilityError && <div className="info-callout" role="alert">{capabilityError}</div>}
-      <p>Create a flow or find an existing automation.</p>
+      <p>Create a flow or find an existing automation.</p><button type="button" className="btn btn-brand" onClick={() => setShowCreateFlow(true)}><Plus size={14} />New Flow</button>
     </div>
     <div className="flow-start-panels">
-    <section className="flow-start-create surface" aria-labelledby="flow-start-types">
+    {showCreateFlow && <div className="modal-backdrop"><section ref={createFlowDialog} tabIndex={-1} className="modal flow-create-dialog" role="dialog" aria-modal="true" aria-labelledby="flow-start-types" onKeyDown={event => { if (event.key === 'Escape') setShowCreateFlow(false); }}>
+      <button type="button" className="btn" autoFocus onClick={() => setShowCreateFlow(false)}>Cancel</button>
       <h2 id="flow-start-types">Create a flow</h2>
       <div className="flow-start-types">
         {flowTypeOptions.map((option) => <button type="button" key={option.type}
@@ -1683,17 +1689,17 @@ export default function FlowBuilder({
         onKeyDown={(event) => {
           if (event.key === 'Enter' && newFlowLabel.trim() && newFlowType) {
             onCreateFlow(newFlowLabel.trim(), newFlowType);
-            setNewFlowLabel('');
+            setNewFlowLabel(''); setShowCreateFlow(false);
           }
         }}
         placeholder="For example, Send Appointment Reminder" />
       <button className="btn btn-brand" type="button" disabled={!newFlowLabel.trim()}
         onClick={() => {
           onCreateFlow(newFlowLabel.trim(), newFlowType);
-          setNewFlowLabel('');
+          setNewFlowLabel(''); setShowCreateFlow(false);
         }}><Plus size={14} />Create Flow</button>
       </div>}
-    </section>
+    </section></div>}
     <section className="flow-start-existing surface" aria-labelledby="flow-start-existing-title">
       <h2 id="flow-start-existing-title">Existing flows</h2>
       <div className="flow-existing-controls">
@@ -1705,14 +1711,13 @@ export default function FlowBuilder({
       {remoteFlowLoading && <p role="status" className="settings-panel-copy">Loading flows…</p>}
       {totalFlowCount ? <div className="flow-existing-table-scroll">
         <table className="flow-existing-table">
-          <thead><tr><th aria-label="Edit flow">Edit</th><th>Flow Name</th><th>Flow Type</th><th>Status</th><th>Version</th><th>Created By</th><th>Created Date</th><th>Modified By</th><th>Modified Date</th></tr></thead>
+          <thead><tr><th aria-label="Edit flow">Edit</th><th>Flow Name</th><th>Flow Type</th><th>Status</th><th>Version</th><th>Details</th></tr></thead>
           <tbody>{displayedFlows.map((candidate) =>
             <tr key={candidate.apiName}>
               <td><button type="button" className="icon-button subtle" aria-label={`Edit ${candidate.label}`} title={`Edit ${candidate.label}`} onClick={() => onSelectFlow(candidate.apiName)}><Pencil size={16} /></button></td>
               <td><button type="button" className="text-action" onClick={() => onSelectFlow(candidate.apiName)}>{candidate.label}</button></td>
               <td>{candidate.flowType}</td><td>{candidate.status}</td><td>v{candidate.versionNumber}</td>
-              <td>{candidate.createdBy || '—'}</td><td>{candidate.createdAt ? new Date(candidate.createdAt).toLocaleString() : '—'}</td>
-              <td>{candidate.lastModifiedBy || '—'}</td><td>{candidate.lastModifiedAt ? new Date(candidate.lastModifiedAt).toLocaleString() : '—'}</td>
+              <td><details><summary>View details</summary><dl><dt>Created by</dt><dd>{candidate.createdBy || '—'}</dd><dt>Created</dt><dd>{candidate.createdAt ? new Date(candidate.createdAt).toLocaleString() : '—'}</dd><dt>Modified by</dt><dd>{candidate.lastModifiedBy || '—'}</dd><dt>Modified</dt><dd>{candidate.lastModifiedAt ? new Date(candidate.lastModifiedAt).toLocaleString() : '—'}</dd></dl></details></td>
             </tr>)}</tbody>
         </table>
       </div> : <p className="settings-panel-copy">No matching flows found.</p>}

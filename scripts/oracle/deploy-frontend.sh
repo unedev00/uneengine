@@ -18,6 +18,9 @@ if [ ! -d "$RELEASE" ]; then
   mv "$TEMP" "$RELEASE"
   trap - EXIT
 fi
+# Publish old hashed chunks alongside the new build before switching current.
+mapfile -t PRIOR_RELEASES < <(find "$BASE/releases" -mindepth 1 -maxdepth 1 -type d -regextype posix-extended -regex '.*/[a-f0-9]{40}' -printf '%T@ %p\n' | sort -nr | cut -d' ' -f2-)
+bash "$(dirname "$0")/retain-frontend-assets.sh" "$RELEASE" "${PRIOR_RELEASES[@]}"
 # Do not alter existing API or other Nginx vhosts.
 SITE=/etc/nginx/sites-available/metadrive-frontend
 if [ ! -e "$SITE" ]; then

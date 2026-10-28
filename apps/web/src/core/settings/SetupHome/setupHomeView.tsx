@@ -29,7 +29,7 @@ function SetupHome({ onNavigate, request, onShowShortcuts }: { onNavigate: (work
       </div>
       <div className="home-section-title"><div><h2>Quick access</h2><p>Open setup tools for this organisation.</p></div></div>
       <div className="shortcut-grid">
-        {setupShortcuts.map(({ title, description, workspace, icon: Icon }) => (
+        {setupShortcuts.filter(item => !['object-manager', 'flow-builder', 'rbac'].includes(item.workspace)).map(({ title, description, workspace, icon: Icon }) => (
           <button key={title} className="shortcut-card" onClick={() => onNavigate(workspace)}>
             <span className="shortcut-icon"><Icon size={19} /></span><span className="shortcut-title">{title}</span><span className="shortcut-description">{description}</span><ArrowRight className="shortcut-arrow" size={15} />
           </button>
@@ -58,3 +58,4 @@ function SetupHome({ onNavigate, request, onShowShortcuts }: { onNavigate: (work
 
 return SetupHome;
 }
+
