@@ -274,6 +274,13 @@ export class PlatformTenantService {
   const target=await this.db.query<{id:string}>("SELECT id FROM md_tenants WHERE slug=$1",[result.slug]);
   const targetId=target.rows[0]?.id;
   if(!targetId)throw new Error('Tenant provisioning failed');
+  // Replaying a completed request must never undo a later administrative suspension.
+  if(result.replayed){
+    const mailbox=await this.db.query<{status:string}>(`
+      SELECT status FROM md_mail_accounts WHERE email=$1 AND tenant_id=$2`,[chosen,targetId]);
+    if(mailbox.rows[0]?.status==='active')
+      return {...await this.get(tenantId,userId,result.slug),replayed:true};
+  }
   // Fail closed: the new tenant cannot authenticate until its mailbox is provisioned.
   await this.db.query("UPDATE md_tenants SET status='SUSPENDED' WHERE id=$1",[targetId]);
   try{
