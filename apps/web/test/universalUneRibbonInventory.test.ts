@@ -12,7 +12,7 @@ test('universal catalog indexes all installed UNE manifests without app-specific
  assert.match(catalog,/for\(const \[key,definition\] of definitionMap\)/);
  assert.match(catalog,/enabled\.has\(def\.propertyKey\)/);
  assert.match(catalog,/Not supported by selected component/);
- assert.match(catalog,/new Set\(\['fontFamily','fontStyle','textDecoration'\]\)/);
+ assert.match(catalog,/isExcludedRibbonProperty/);
 });
 test('all six property tabs use a fixed section catalog without component-specific layout',()=>{
  const view=load('../src/core/builders/PageBuilder/pageBuilderView.tsx');
@@ -36,4 +36,13 @@ test('UNE components do not render the legacy second Data ribbon',()=>{
  const view=load('../src/core/builders/PageBuilder/pageBuilderView.tsx');
  assert.match(view,/selected && !selectedCustomDefinition && ribbonTab==='Component Data' && <PageBuilderRibbonData/);
  assert.match(view,/selected && selectedCustomDefinition && \(\['Component Data'/);
+});
+
+test('obsolete and duplicate Source Object controls are omitted rather than greyed out',()=>{
+ const source=load('../src/core/builders/PageBuilder/UniversalRibbonInventory.tsx');
+ assert.match(source,/ageRestriction\|barcode/);
+ assert.match(source,/ObjectApiName\|SourceObjectApi\|ObjectAPI/);
+ assert.match(source,/key!=='objectApiName'/);
+ assert.match(source,/excluded=new Set\(Array\.from\(definitionMap\.keys\(\)\)\.filter\(isExcludedRibbonProperty\)\)/);
+ assert.match(source,/\['fontFamily','fontStyle','textDecoration','theme'\]/);
 });
