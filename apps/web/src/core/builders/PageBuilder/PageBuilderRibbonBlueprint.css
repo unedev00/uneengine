@@ -1001,3 +1001,74 @@
   min-width:76px!important;width:76px!important;max-width:76px!important;
   height:25px!important;min-height:25px!important;padding:2px 1px!important;
 }
+
+
+/* Ribbon session specification: compact two-by-two category groups.
+   Width follows actual populated columns; no blank reserved slots. */
+.office-builder-ribbon #page-builder-tab-content:has(>.office-ribbon-add-library){
+  height:122px!important;min-height:122px!important;max-height:122px!important;
+  padding:4px 8px!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-add-library{
+  height:112px!important;overflow:hidden!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-add-library>.office-ribbon-gallery-pages{
+  display:flex!important;flex-flow:row nowrap!important;align-items:stretch!important;
+  justify-content:flex-start!important;gap:0!important;
+  height:112px!important;overflow-x:auto!important;overflow-y:hidden!important;
+  scrollbar-width:thin!important;
+}
+.office-builder-ribbon #page-builder-tab-content .office-ribbon-gallery-group{
+  display:flex!important;flex-direction:column!important;flex:0 0 auto!important;
+  width:max-content!important;min-width:0!important;max-width:none!important;
+  box-sizing:border-box!important;padding:3px 7px 1px!important;
+  margin:0!important;border-right:1px solid #d0d8e5!important;
+}
+.office-builder-ribbon #page-builder-tab-content .office-ribbon-gallery-group-tiles{
+  display:grid!important;grid-template-columns:repeat(2,86px)!important;
+  grid-auto-rows:38px!important;grid-auto-flow:row!important;
+  gap:3px 5px!important;justify-content:start!important;align-content:start!important;
+  height:79px!important;width:max-content!important;
+}
+.office-builder-ribbon #page-builder-tab-content .office-ribbon-gallery-group-tiles:has(> :only-child){
+  grid-template-columns:86px!important;
+}
+.office-builder-ribbon #page-builder-tab-content .office-ribbon-gallery-group-tiles>.office-ribbon-component-tile{
+  display:flex!important;flex-direction:row!important;align-items:center!important;
+  justify-content:flex-start!important;gap:5px!important;
+  width:86px!important;min-width:86px!important;max-width:86px!important;
+  height:38px!important;min-height:38px!important;max-height:38px!important;
+  padding:3px 5px!important;margin:0!important;border:1px solid #dce5f0!important;
+  border-radius:4px!important;background:#fff!important;box-sizing:border-box!important;
+}
+.office-builder-ribbon #page-builder-tab-content .office-ribbon-gallery-group-tiles>.office-ribbon-component-tile>svg{
+  width:18px!important;height:18px!important;flex:0 0 18px!important;
+}
+.office-builder-ribbon #page-builder-tab-content .office-ribbon-gallery-group-tiles>.office-ribbon-component-tile>span{
+  font:500 10px/12px "Segoe UI",Arial,sans-serif!important;
+  overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;
+}
+.office-builder-ribbon #page-builder-tab-content .office-ribbon-gallery-group-caption{
+  display:block!important;text-align:center!important;min-height:17px!important;
+  font:500 11px/17px "Segoe UI",Arial,sans-serif!important;color:#53637c!important;
+  margin-top:auto!important;
+}
+/* The selected component's registry definitions govern disabled commands. */
+.office-builder-ribbon #page-builder-tab-content .office-ribbon-capability-icon:disabled{
+  opacity:.35!important;filter:grayscale(1)!important;cursor:not-allowed!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-part-group{
+  padding-left:9px!important;padding-right:9px!important;
+}
+.office-builder-ribbon #page-builder-tab-content .office-ribbon-capabilities{
+  justify-items:center!important;align-items:center!important;
+  column-gap:5px!important;row-gap:3px!important;
+}
+.office-builder-ribbon #page-builder-tab-content .office-ribbon-command-label{
+  text-align:center!important;
+}
+
+/* One or two entries stack in one column; three or four use two columns. */
+.office-builder-ribbon #page-builder-tab-content .office-ribbon-gallery-group-tiles:has(> :nth-child(2):last-child){
+ grid-template-columns:86px!important;
+}

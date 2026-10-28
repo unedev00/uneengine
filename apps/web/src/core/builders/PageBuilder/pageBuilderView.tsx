@@ -256,7 +256,6 @@ import {
   type UserMetadata,
   type WorkspaceId
 } from '../../metadata/Definitions/metadata';
-import {analyzePagePerformance} from './pagePerformanceAnalysis';
 import SavedListViewPicker from './SavedListViewPicker';
 export function createPageBuilder(MetadataComponentProperties: React.ComponentType<any>, MetadataBoundPageComponent: React.ComponentType<any>) {
 function PageBuilder({
@@ -469,7 +468,6 @@ function PageBuilder({
   const [ribbonPropertyHost, setRibbonPropertyHost] = useState<HTMLDivElement | null>(null);
   const [ribbonFilterDraft,setRibbonFilterDraft] = useState<Record<string,unknown>>({});
   const [ribbonVisibilityDraft,setRibbonVisibilityDraft] = useState<ComponentVisibilityRule|undefined>(undefined);
-  const [ribbonAddOffset,setRibbonAddOffset] = useState(0);
   const [ribbonSourceOffset,setRibbonSourceOffset] = useState(0);
   const [additionalPropertyDialogOpen,setAdditionalPropertyDialogOpen] = useState(false);
   const [pageSettingsDialogOpen,setPageSettingsDialogOpen] = useState(false);
@@ -717,10 +715,10 @@ function PageBuilder({
     ribbonCategories.get(category)!.push(component);
   }
   const ribbonComponentGroups = Array.from(ribbonCategories).flatMap(([label,components])=>
-    Array.from({length:Math.ceil(components.length/3)},(_,index)=>({
+    Array.from({length:Math.ceil(components.length/4)},(_,index)=>({
       id:label+'-'+index,
       label,
-      components:components.slice(index*3,index*3+3)
+      components:components.slice(index*4,index*4+4)
     })));
   const renderPaletteIcon = (component: { type: string; label: string }) => {
     const name = `${component.label} ${component.type}`.toLowerCase();
@@ -2451,16 +2449,6 @@ function PageBuilder({
             savedViewId={String(selected.properties.savedViewId??'')} request={request}
             onChange={id=>updateComponent(selected.id,{properties:{...selected.properties,savedViewId:id}})}/>
         </section>}
-      {editorMode && <details className="builder-performance-analysis" aria-label="Page performance analysis">
-        <summary>Performance analysis ({analyzePagePerformance(page).length} findings)</summary>
-        <p>Configuration analysis only; this does not estimate network latency or render duration.</p>
-        {analyzePagePerformance(page).length===0
-          ? <p>No configuration-based hotspots identified. Measure real request and render timings separately.</p>
-          : <ul>{analyzePagePerformance(page).map((finding,index)=>
-            <li key={finding.componentId+'-'+finding.category+'-'+index}>
-              <strong>{finding.label}</strong>: {finding.reason}. {finding.recommendation}
-            </li>)}</ul>}
-      </details>}
       {editorMode && isPhoneBuilder && <p className="builder-phone-guidance" role="status">
         Phone preview: tap a component to edit its properties. Drag-and-drop and canvas positioning are available on tablet and desktop.
       </p>}
@@ -2591,17 +2579,18 @@ function PageBuilder({
             </div><span>Test</span></div>}
           </>}
           {ribbonTab === 'Add Block' && <div className="office-ribbon-add-library" aria-label="Add component library">
-            {(()=>{
-              const items=ribbonComponentGroups.flatMap(group=>group.components)
-                .filter((component,index,all)=>all.findIndex(item=>item.type===component.type)===index);
-              const pageSize=17;
-              const start=Math.min(ribbonAddOffset,Math.max(0,items.length-pageSize));
-              return <div className="office-ribbon-gallery-pages">
-                <button className="office-ribbon-icon-button" title="Previous components" aria-label="Previous components" disabled={!start} onClick={()=>setRibbonAddOffset(Math.max(0,start-pageSize))}><ChevronLeft size={17}/></button>
-                <div className="office-ribbon-component-tiles">{items.slice(start,start+pageSize).map(component=><button className="office-ribbon-component-tile" type="button" key={component.type} title={component.description} onClick={()=>addPaletteComponent(component.type)}>{renderPaletteIcon(component)}<span>{component.label}</span></button>)}</div>
-                <button className="office-ribbon-icon-button" title="Next components" aria-label="Next components" disabled={start+pageSize>=items.length} onClick={()=>setRibbonAddOffset(start+pageSize)}><ChevronRight size={17}/></button>
-              </div>;
-            })()}
+            <div className="office-ribbon-gallery-pages">
+              {ribbonComponentGroups.filter(group=>group.components.length>0).map(group=>
+                <section key={group.id} className="office-ribbon-gallery-group" aria-label={group.label}>
+                  <div className="office-ribbon-gallery-group-tiles">
+                    {group.components.map(component=><button className="office-ribbon-component-tile" type="button"
+                      key={component.type} title={component.description} onClick={()=>addPaletteComponent(component.type)}>
+                      {renderPaletteIcon(component)}<span>{component.label}</span>
+                    </button>)}
+                  </div>
+                  <span className="office-ribbon-gallery-group-caption">{group.label}</span>
+                </section>)}
+            </div>
           </div>}
           {selected && ribbonTab==='Component Data' && <PageBuilderRibbonData
             properties={selected.properties} definition={selectedCustomDefinition}

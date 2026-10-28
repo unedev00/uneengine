@@ -170,7 +170,7 @@ function CommandPopover({group,command,definitions,properties,onChange}:{
   };
   return <>
     <button ref={trigger} type="button" className="office-ribbon-capability-icon"
-      disabled={!definitions.length} title={definitions.length?group+' '+command.name:group+' '+command.name+' unavailable'}
+      disabled={!definitions.length} title={definitions.length?group+' '+command.name:'Not supported by selected component'}
       aria-label={group+' '+command.name} aria-expanded={open} aria-haspopup="dialog" onClick={toggle}>
       <span className="office-ribbon-command-glyph">{command.icon}</span><span className="office-ribbon-command-label">{command.name}</span>
     </button>
