@@ -788,7 +788,7 @@ function RecordWorkspace({
       .catch(error=>{if(active)setEditPageError(error instanceof Error?error.message:'Unable to resolve Record Edit Page');})
       .finally(()=>{if(active)setEditPageLoading(false);});
     return()=>{active=false;};
-  },[formOpen,editingId,object?.apiName,formFactor,viewportFactor,route.kind,route.appId]);
+  },[formOpen,editingId,object?.apiName,formFactor,viewportFactor,route.kind,route.appId,profileId]);
   const [formValues, setFormValues] = useState<Record<string, unknown>>({});
   // Creation uses the published Edit-page field contract too, not the legacy
   // Object layout alone. Changes to RecordTypeId resolve the correct assignment.
@@ -812,7 +812,7 @@ function RecordWorkspace({
       .finally(()=>{if(active)setEditPageLoading(false);});
     return()=>{active=false;};
   },[formOpen,editingId,object?.apiName,formFactor,viewportFactor,route.kind,route.appId,
-    formValues.RecordTypeId]);
+    formValues.RecordTypeId,profileId,recordTypeAccess]);
 
   const [lookupRecords, setLookupRecords] = useState<Record<string, RecordData[]>>({});
   const [lookupError, setLookupError] = useState('');
@@ -1455,7 +1455,7 @@ function RecordWorkspace({
     if (!object) return;
     // A successful form layout lookup carries the current OneEngine object
     // grant. Do not submit with a stale grant or after the operation was revoked.
-    const permission=editingId?'Edit':'Create';
+    const permission:'Edit'|'Create'=editingId?'Edit':'Create';
     if(recordGrants?.objectApi!==object.apiName||recordGrants[permission]!==true){
       setFormError('You do not have permission to save this record.');
       return;
