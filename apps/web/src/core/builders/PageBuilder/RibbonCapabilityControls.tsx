@@ -10,7 +10,6 @@ export default function RibbonCapabilityControls({group,definitions,properties,o
  group:string;definitions:readonly PropertyDefinition[];properties:Values;onChange:(next:Values)=>void;icon:ReactNode;
 }){
  const [active,setActive]=useState<string|null>(null);
- const enabled=definitions.length>0;
  const commands:Record<string,Array<{name:string;icon:ReactNode}>>={
   Card:[{name:'Fill',icon:<PaintBucket size={16}/>},{name:'Border',icon:<Square size={16}/>},{name:'Corners',icon:<Scan size={16}/>},{name:'Shadow',icon:<Layers size={16}/>},{name:'Opacity',icon:<Blend size={16}/>}],
   Heading:[{name:'Size',icon:<Type size={16}/>},{name:'Colour',icon:<Palette size={16}/>},{name:'Bold',icon:<Bold size={16}/>},{name:'Align',icon:<AlignLeft size={16}/>}],
