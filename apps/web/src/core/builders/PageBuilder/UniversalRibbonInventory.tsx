@@ -86,6 +86,9 @@ function PropertyEditor({definition,enabled,reviewOnly=false,properties,onChange
  const [jsonError,setJsonError]=useState('');
  const key=definition.propertyKey;
  const label=definition.label||key.replace(/([a-z])([A-Z])/g,'$1 $2');
+ const unitMatch=/^(.*?)\s*\((px|%|ms|s|columns|rows|lines|deg)\)\s*$/i.exec(label);
+ const unit=(definition.kind==='NUMBER'||definition.kind==='CURRENCY')&&unitMatch?unitMatch[2]:'';
+ const shownLabel=unit&&unitMatch?unitMatch[1]:label;
  const value=properties[key]??definition.defaultValue??'';
  const update=(next:unknown)=>{if(enabled)onChange({...properties,[key]:next});};
  const tip=reviewOnly?label+' — review only; not saved for this component':enabled?label:'Not supported by selected component';
