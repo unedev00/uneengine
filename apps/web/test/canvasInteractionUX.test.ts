@@ -407,7 +407,7 @@ test('Page Builder Office ribbon keeps each control in one permanent logical gro
   assert.match(data, /Set actions/);
   assert.match(data, /Configure record filters/);
   assert.match(data, /Configure component actions/);
-  assert.match(builder, /ribbonTab==='Visibility Rules'/);
+  assert.doesNotMatch(builder, /ribbonTab==='Visibility Rules'/);
   assert.doesNotMatch(builder, /Group <ChevronDown/);
   assert.match(builder, /office-ribbon-arrange-column/);
   assert.match(builder, /onClick=\{\(\)=>wrapSelectedInContainer\(\)\}/);
@@ -441,7 +441,7 @@ test('Page Builder contextual ribbon respects the fixed-height no-scroll contrac
   const filters=await readFile(new URL('PageBuilder/PageBuilderRibbonEditors.tsx',root),'utf8');
   const actions=await readFile(new URL('PageBuilder/PageBuilderActionRibbon.tsx',root),'utf8');
   assert.match(builder,/ribbonTab==='Filters' && <RibbonFilters/);
-  assert.match(builder,/ribbonTab==='Visibility Rules' && <RibbonVisibilityRules/);
+  assert.doesNotMatch(builder,/ribbonTab==='Visibility Rules' && <RibbonVisibilityRules/);
   assert.match(builder,/ribbonTab==='Source'/);
   assert.match(builder,/ribbonTab === 'Component Content'/);
   const advancedStyle=await readFile(new URL('PageBuilder/PageBuilderAdvancedStyle.tsx',root),'utf8');
@@ -519,8 +519,22 @@ test('Page Runtime produces typed native line-height and letter-spacing tokens',
 test('Page Builder no longer offers redundant Show component controls', async () => {
   const ribbon = await readFile(new URL('../src/core/builders/PageBuilder/PageBuilderRibbonStyle.tsx',import.meta.url),'utf8');
   const builder = await readFile(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+
+
+
   assert.doesNotMatch(ribbon,/Show component|onVisibleChange/);
   assert.doesNotMatch(builder,/\{component\.visible \? 'Hide' : 'Show'\} element/);
   assert.match(builder,/if \(!component\.visible\) return null;/, 'existing saved visibility remains respected');
+});
+
+test('Page Builder delegates conditional appearance to flows without exposing the legacy visibility rules editor', async () => {
+  const builder = await readFile(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+  const ribbon = await readFile(new URL('../src/core/builders/PageBuilder/PageBuilderRibbonStyle.tsx',import.meta.url),'utf8');
+  assert.doesNotMatch(builder,/RibbonVisibilityRules|ribbonVisibilityDraft|onVisibilityRules|Edit visibility rules/);
+  assert.doesNotMatch(ribbon,/onVisibilityRules|Edit visibility rules/);
+  assert.doesNotMatch(builder,/ribbonTab==='Visibility Rules'/);
+  // Published metadata is preserved for compatibility; the change only removes the editor.
+  const runtime = await readFile(new URL('../src/core/components/Properties/componentVisibility.ts',import.meta.url),'utf8');
+  assert.match(runtime,/visibilityRules|VisibilityRule/);
 });
 

@@ -1,4 +1,4 @@
-import { AlignLeft, AlignCenter, AlignRight, Bold, Italic, Underline, RefreshCw, Eye, ShieldCheck } from 'lucide-react';
+import { AlignLeft, AlignCenter, AlignRight, Bold, Italic, Underline, RefreshCw, Eye } from 'lucide-react';
 import RibbonColorPalette from './RibbonColorPalette';
 import PageBuilderRibbonMetadataPager from './PageBuilderRibbonMetadataPager';
 import {availableComponentSettings,type PropertyDevice} from '../../components/Properties/componentSettingDefinitions';
@@ -113,18 +113,6 @@ export function RibbonFormat({properties,componentType,definition,device,onChang
   </>;
 }
 
-export function RibbonResponsive({properties,onChange,onVisibilityRules}:Props&{
-  onVisibilityRules:()=>void;
-}){
-  const rules=properties.visibilityRules;
-  const ruleCount=rules&&typeof rules==='object'&&!Array.isArray(rules)
-    ? (Array.isArray((rules as Record<string,unknown>).rules)?((rules as {rules:unknown[]}).rules.length):1):0;
-  return <>
-    <div className="office-ribbon-group office-ribbon-responsive-rules">
-      <div className="office-ribbon-stack">
-        <button type="button" onClick={onVisibilityRules}><ShieldCheck size={18}/> Edit visibility rules</button>
-        <span className="office-ribbon-stat">{ruleCount} {ruleCount===1?'rule':'rules'} configured</span>
-      </div><span>Visibility Rules</span>
-    </div>
-  </>;
+export function RibbonResponsive(_props:Props){
+  return null;
 }
