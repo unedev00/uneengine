@@ -23,7 +23,12 @@ export function StandardRecordList({
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState('');
   const limit=Math.max(1,Math.min(100,Math.trunc(pageSize)||25));
-  const names=columns.length?columns.slice(0,12):object?.fields.slice(0,4).map(field=>field.apiName)??[];
+  // Display only fields returned through the object metadata accessible to this
+  // session. A saved view ID affects the server query, not field-level grants.
+  const allowedNames=new Set(object?.fields.map(field=>field.apiName)??[]);
+  const names=(columns.length?columns.slice(0,12):object?.fields.slice(0,4).map(field=>field.apiName)??[])
+    .filter(name=>allowedNames.has(name));
+  useEffect(()=>setOffset(0),[object?.apiName,savedViewId,limit,recordFilter?.field,recordFilter?.recordId]);
   useEffect(()=>{
     if(!object?.apiName){setRows([]);return;}
     let active=true;
