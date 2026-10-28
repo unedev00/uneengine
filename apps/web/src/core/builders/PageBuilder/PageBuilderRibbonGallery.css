@@ -74,3 +74,80 @@
 .office-builder-ribbon .office-ribbon-add-library .office-ribbon-component-tile:hover {
   background:#edf5ff!important;border-color:#3987ec!important;
 }
+
+/* The live Insert JSX has .office-ribbon-gallery-pages as the direct child.
+   Older selectors targeted removed .office-ribbon-add-browser markup, causing
+   the gallery to inherit a 150px two-column grid and collapse all 24 tiles. */
+.office-builder-ribbon #page-builder-tab-content > .office-ribbon-add-library {
+  display:block!important;
+  width:100%!important;
+  min-width:0!important;
+  max-width:100%!important;
+  height:132px!important;
+}
+.office-builder-ribbon #page-builder-tab-content > .office-ribbon-add-library > .office-ribbon-gallery-pages {
+  display:flex!important;
+  flex-direction:row!important;
+  flex-wrap:nowrap!important;
+  align-items:center!important;
+  width:100%!important;
+  min-width:0!important;
+  height:132px!important;
+  gap:6px!important;
+  overflow:hidden!important;
+}
+.office-builder-ribbon #page-builder-tab-content > .office-ribbon-add-library > .office-ribbon-gallery-pages > .office-ribbon-icon-button {
+  flex:0 0 28px!important;
+  width:28px!important;
+  min-width:28px!important;
+  height:32px!important;
+}
+.office-builder-ribbon #page-builder-tab-content > .office-ribbon-add-library > .office-ribbon-gallery-pages > .office-ribbon-component-tiles {
+  display:grid!important;
+  flex:1 1 auto!important;
+  grid-template-columns:repeat(8,minmax(0,1fr))!important;
+  grid-template-rows:repeat(3,40px)!important;
+  grid-auto-flow:column!important;
+  column-gap:6px!important;
+  row-gap:3px!important;
+  width:100%!important;
+  min-width:0!important;
+  height:129px!important;
+  max-height:129px!important;
+  overflow:hidden!important;
+  align-content:center!important;
+}
+.office-builder-ribbon #page-builder-tab-content > .office-ribbon-add-library > .office-ribbon-gallery-pages > .office-ribbon-component-tiles > .office-ribbon-component-tile {
+  display:flex!important;
+  flex-direction:row!important;
+  align-items:center!important;
+  justify-content:flex-start!important;
+  flex:initial!important;
+  width:100%!important;
+  min-width:0!important;
+  max-width:none!important;
+  height:39px!important;
+  min-height:39px!important;
+  max-height:39px!important;
+  padding:3px 5px!important;
+  gap:5px!important;
+  text-align:left!important;
+  white-space:nowrap!important;
+}
+.office-builder-ribbon #page-builder-tab-content > .office-ribbon-add-library > .office-ribbon-gallery-pages > .office-ribbon-component-tiles > .office-ribbon-component-tile > svg {
+  flex:0 0 16px!important;
+  width:16px!important;
+  height:16px!important;
+}
+.office-builder-ribbon #page-builder-tab-content > .office-ribbon-add-library > .office-ribbon-gallery-pages > .office-ribbon-component-tiles > .office-ribbon-component-tile > span {
+  display:block!important;
+  min-width:0!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+@media (max-width:1050px) {
+  .office-builder-ribbon #page-builder-tab-content > .office-ribbon-add-library > .office-ribbon-gallery-pages > .office-ribbon-component-tiles {
+    grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  }
+}
