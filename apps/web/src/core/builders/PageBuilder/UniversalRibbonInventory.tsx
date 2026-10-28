@@ -1,3 +1,5 @@
+import {useState} from 'react';
+import {createPortal} from 'react-dom';
 import type {LibraryComponentMetadata} from '../../metadata/Definitions/metadata';
 import TenantMediaPicker from '../ComponentProperties/TenantMediaPicker';
 
@@ -68,6 +70,8 @@ export const universalRibbonComponentCount=validManifests.length;
 function PropertyEditor({definition,enabled,properties,onChange}:{
  definition:Definition;enabled:boolean;properties:Properties;onChange:(next:Properties)=>void;
 }){
+ const [mediaOpen,setMediaOpen]=useState(false);
+ const [jsonError,setJsonError]=useState('');
  const key=definition.propertyKey;
  const label=definition.label||key.replace(/([a-z])([A-Z])/g,'$1 $2');
  const value=properties[key]??definition.defaultValue??'';
@@ -82,11 +86,16 @@ function PropertyEditor({definition,enabled,properties,onChange}:{
  else if(definition.kind==='NUMBER'||definition.kind==='CURRENCY')editor=<input {...props} type="number"
    min={definition.min} max={definition.max} value={typeof value==='number'?value:''}
    onChange={e=>update(e.target.value===''?undefined:Number(e.target.value))}/>;
- else if(definition.kind==='IMAGE'&&enabled)editor=<TenantMediaPicker value={String(value)} onChange={update}/>;
+ else if(definition.kind==='IMAGE')editor=<><button type="button" disabled={!enabled} title={tip} onClick={()=>setMediaOpen(true)}>Choose / Upload</button>
+   {mediaOpen&&createPortal(<div className="une-universal-media-overlay" role="presentation" onMouseDown={e=>{if(e.currentTarget===e.target)setMediaOpen(false);}}>
+      <div role="dialog" aria-modal="true" aria-label={label+' media library'}><button type="button" onClick={()=>setMediaOpen(false)}>Close</button>
+        <TenantMediaPicker assetOnly initiallyOpen value={String(value)} onChange={next=>{update(next);setMediaOpen(false);}}/>
+      </div></div>,document.body)}</>;
  else if(definition.kind==='COLOR')editor=<input {...props} type="color" value={/^#[0-9a-f]{6}$/i.test(String(value))?String(value):'#ffffff'}
    onChange={e=>update(e.target.value)}/>;
- else editor=<input {...props} type="text" value={typeof value==='object'?JSON.stringify(value):String(value)}
-   onChange={e=>update(e.target.value)}/>;
+ else if(value!==null&&typeof value==='object')editor=<textarea {...props} rows={1} value={JSON.stringify(value)}
+   aria-invalid={!!jsonError} onChange={e=>{try{const parsed:unknown=JSON.parse(e.target.value);if(parsed===null||typeof parsed!=='object')throw Error('Expected an object or array');setJsonError('');update(parsed);}catch{setJsonError('Invalid structured value');}}}/>;
+ else editor=<input {...props} type="text" value={String(value)} onChange={e=>update(e.target.value)}/>;
  return <label className={'une-universal-property'+(enabled?'':' is-disabled')} title={tip} data-property={key}>
    <span className="une-universal-property-label">{label}</span>
    {editor}
