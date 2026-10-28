@@ -98,3 +98,10 @@ test('all 14 requested UNE components omit public Flow/Page State record collect
    name+' must not expose legacy collection labels');
  }
 });
+
+test('Theme is absent from all UNE manifests and shared defaults after remarks cleanup',async()=>{
+ const manifest=JSON.parse(await readFile(new URL('../src/one/manifest.json',import.meta.url),'utf8'));
+ assert.ok(!manifest.commonProperties.some(property=>property.propertyKey==='theme'));
+ for(const component of une)
+  assert.ok(!component.propertyDefinitions.some(property=>property.propertyKey==='theme'),component.apiName+' still exposes Theme');
+});
