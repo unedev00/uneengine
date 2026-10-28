@@ -7,13 +7,13 @@ import RibbonColorPalette from './RibbonColorPalette';
 
 type Values=Record<string,unknown>;
 type Definition=NonNullable<LibraryComponentMetadata['propertyDefinitions']>[number];
-const appearanceKeys=new Set(['theme','surface','tone','accentColor','glassBlur']);
+const appearanceKeys=new Set(['surface','tone','accentColor','glassBlur']);
 const typographyKeys=new Set(['fontFamily','fontSize','fontWeight','lineHeight','letterSpacing','textAlign','textColor']);
 const borderKeys=new Set(['borderWidth','borderStyle']);
 const cardExtras=new Set(['cardDensity','cardHover']);
 /** The Item Grid already offers all of its other style actions in the six
  * dedicated Design groups. Avoid duplicate Typography, Borders and palettes. */
-const itemGridDesignKeys=new Set(['theme','surface','cardDensity','cardHover']);
+const itemGridDesignKeys=new Set(['surface','cardDensity','cardHover']);
 const included=new Set([...appearanceKeys,...typographyKeys,...borderKeys]);
 const skipped=new Set(['radius','cardRadius','shadow','cardShadow','backgroundColor','borderColor',
   'opacity','padding','cardPadding','margin','gap','density','cardBorderWidth','lineHeight']);
@@ -58,7 +58,7 @@ export default function PageBuilderAdvancedStyle({properties,componentType,defin
    return null;
  };
  const groups=(isItemGrid
-   ? [{name:'Appearance',defs:all.filter(d=>d.propertyKey==='theme'||d.propertyKey==='surface')},
+   ? [{name:'Appearance',defs:all.filter(d=>d.propertyKey==='surface')},
       {name:'Card extras',defs:all.filter(d=>cardExtras.has(d.propertyKey))}]
    : [{name:'Appearance',defs:all.filter(d=>appearanceKeys.has(d.propertyKey))},
       {name:'Typography',defs:all.filter(d=>typographyKeys.has(d.propertyKey))},
