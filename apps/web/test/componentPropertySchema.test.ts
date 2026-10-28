@@ -114,3 +114,17 @@ test('no-code property editor offers metadata reference pickers without authored
  assert.match(html,/Title/);
  assert.doesNotMatch(html,/textarea/);
 });
+
+test('Dynamic Actions respect record permission conditions and fail closed when context is absent',()=>{
+ const properties={pagePropertyContract:{version:1,actionVisibility:[
+  {actionId:'delete',unavailable:'Hide',when:{logic:'All',conditions:[
+   {source:'Record Permission',operator:'Equals',value:'Delete'}]}}
+ ]}};
+ const allowed={formFactor:'Desktop' as const,record:{Id:'record-1'},
+  fields:[{apiName:'Name',label:'Name',dataType:'Text(40)'}],
+  readableFieldApiNames:new Set(['Name']),
+  recordPermissions:new Set<'Create'|'Edit'|'Delete'>(['Delete'])};
+ assert.equal(behaviorAction(properties,'delete',allowed),'enabled');
+ assert.equal(behaviorAction(properties,'delete',{...allowed,recordPermissions:new Set<'Create'|'Edit'|'Delete'>()}),'hidden');
+ assert.equal(behaviorAction(properties,'delete',{formFactor:'Desktop'}),'hidden');
+});
