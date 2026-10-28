@@ -2497,7 +2497,7 @@ function PageBuilder({
                         density:event.target.value,
                         ...(selectedCustomDefinition?.propertyDefinitions?.some(d=>d.propertyKey==='cardDensity')
                           ?{cardDensity:'default'}:{})}})}>
-                      {selectedCustomDefinition.propertyDefinitions.find(d=>d.propertyKey==='density')?.choices?.map(choice=>
+                      {selectedCustomDefinition?.propertyDefinitions?.find(d=>d.propertyKey==='density')?.choices?.map(choice=>
                         <option key={choice.key} value={choice.key}>{choice.label}</option>)}
                     </select>
                   </label>}
