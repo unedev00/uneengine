@@ -140,3 +140,21 @@
    min-width:55px!important;
  }
 }
+
+/* Match group-specific spacing in the reference, so five commands remain
+   on one row instead of spilling into a second row. */
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-part-group:is([data-ribbon-group="Card"],[data-ribbon-group="Image"],[data-ribbon-group="Calendar"]){
+ flex:0 0 161px!important;width:161px!important;min-width:161px!important;max-width:161px!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-part-group:is([data-ribbon-group="Heading"],[data-ribbon-group="Supporting text"]){
+ flex:0 0 150px!important;width:150px!important;min-width:150px!important;max-width:150px!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-part-group:is([data-ribbon-group="Card"],[data-ribbon-group="Image"],[data-ribbon-group="Calendar"]) .office-ribbon-capabilities,
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-part-group:is([data-ribbon-group="Heading"],[data-ribbon-group="Supporting text"]) .office-ribbon-capabilities{
+ display:flex!important;flex-flow:row nowrap!important;justify-content:space-evenly!important;
+ align-items:center!important;gap:1px!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-part-group:is([data-ribbon-group="Card"],[data-ribbon-group="Image"],[data-ribbon-group="Calendar"]) .office-ribbon-capability-icon,
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-part-group:is([data-ribbon-group="Heading"],[data-ribbon-group="Supporting text"]) .office-ribbon-capability-icon{
+ width:29px!important;min-width:29px!important;height:57px!important;
+}
