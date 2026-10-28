@@ -602,3 +602,10 @@
   font:500 10px/12px "Segoe UI",Arial,sans-serif!important;text-align:center!important;
   color:#465b77!important;white-space:nowrap!important;pointer-events:none!important;
 }
+
+/* Three primary controls (size + two text colours) must never clip by 2px. */
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-part-group:is(
+  [data-ribbon-group="Heading"],[data-ribbon-group="Supporting text"],[data-ribbon-group="Badge"]
+) {
+  flex:0 0 156px!important;width:156px!important;min-width:156px!important;max-width:156px!important;
+}
