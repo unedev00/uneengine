@@ -151,7 +151,9 @@ test('Free Canvas uses clean component objects and a compact ribbon-based palett
   assert.match(source, /className="office-ribbon-add-library"/);
   assert.match(source, /className="office-ribbon-component-tiles"/);
   assert.match(source, /ribbonComponentGroups\.flatMap\(group=>group\.components\)/);
-  assert.match(source, /ribbonComponentSearch\.trim\(\)/);
+  assert.doesNotMatch(source, /ribbonComponentSearch\.trim\(\)/);
+  assert.match(source, /ribbonAddOffset/);
+  assert.match(source, /aria-label="Component category"/);
   assert.match(source, /onClick=\{\(\)=>addPaletteComponent\(component\.type\)\}/);
   assert.doesNotMatch(source, /remainingRibbonComponents\.map\(component=>/);
   assert.doesNotMatch(source, /<aside className="component-panel"/);
@@ -166,12 +168,14 @@ test('Page Builder property editors filter controls by selected component capabi
   const advanced = await readFile(new URL('../src/core/builders/ComponentStyleEditor/PageComponentStyleEditor.tsx', import.meta.url), 'utf8');
   const capabilities = await readFile(new URL('../src/core/builders/ComponentStyleEditor/componentAppearanceCapabilities.ts', import.meta.url), 'utf8');
 
-  // Both editors must receive the selected component type and the contextual
-  // colour/layout section. Attribute order is intentionally not an API contract.
-  assert.match(builder, /<PageComponentVisualEditor\s+section="appearance"\s+componentType=\{selected\.type\}/);
-  assert.match(builder, /<PageComponentVisualEditor\s+section="size"\s+componentType=\{selected\.type\}/);
-  assert.match(builder, /<PageComponentStyleEditor\s+section="all"\s+componentType=\{selected\.type\}/);
-  assert.match(builder, /RibbonColorPalette key=\{kind\}/);
+  // A single metadata-aware editor owns each responsibility.
+  const ribbonStyle=await readFile(new URL('../src/core/builders/PageBuilder/PageBuilderRibbonStyle.tsx',import.meta.url),'utf8');
+  assert.match(builder, /<RibbonDesign properties=\{selected\.properties\}/);
+  assert.match(builder, /<RibbonFormat properties=\{selected\.properties\}/);
+  assert.match(builder, /<RibbonResponsive properties=\{selected\.properties\}/);
+  assert.match(ribbonStyle, /RibbonColorPalette kind="text"/);
+  assert.match(ribbonStyle, /availableComponentSettings/);
+  assert.doesNotMatch(builder, /<PageComponentStyleEditor section="all"/);
   assert.match(visual, /numericPresets\.filter\(preset => supportsAppearanceProperty\(componentType, preset\.key\)\)/);
   assert.match(visual, /appearanceNumberFields\.filter\(\(\{key\}\) => supportsAppearanceProperty\(componentType, key\)\)/);
   assert.match(advanced, /numeric\.filter\(\(\[key\]\)=>supportsAppearanceProperty\(componentType,key\)\)/);
@@ -379,7 +383,8 @@ test('Page Builder Office ribbon keeps each control in one permanent logical gro
   assert.match(data, /Configure record filters/);
   assert.match(data, /Configure component actions/);
   assert.match(builder, /Visibility rules/);
-  assert.match(builder, /Group <ChevronDown/);
+  assert.doesNotMatch(builder, /Group <ChevronDown/);
+  assert.match(builder, /aria-label="Grouping"/);
   assert.doesNotMatch(builder, /Technical page ID/);
   assert.doesNotMatch(builder, /page-property-summary/);
   assert.doesNotMatch(presentation, /<details/);
@@ -403,25 +408,23 @@ test('Grouping selected canvas components preserves children and absolute bounds
   assert.equal(groupCanvasComponents(components,['a','missing'],'not-allowed').length,components.length);
 });
 
-test('Contextual Page Builder tabs do not leak metadata from other tabs',async()=>{
- const root=new URL('../src/core/builders/',import.meta.url);
- const builder=await readFile(new URL('PageBuilder/pageBuilderView.tsx',root),'utf8');
- const css=await readModularCss(new URL('PageBuilder/styles-md227.css',root));
- const source=builder.indexOf("ribbonTab === 'Component Data' && selectedCustomDefinition");
- const inline=builder.indexOf("page-ribbon-expanded-editor");
- const canvas=builder.indexOf("page-builder-layout canvas-unified-builder");
- assert.ok(source>0 && inline>source && canvas>inline,'Data editing is mounted in document flow above canvas');
- assert.match(builder,/expandedRibbonEditor\.kind==='filters'/);
- assert.match(builder,/Cancel changes/);
- assert.match(builder,/Apply filters/);
- assert.match(builder,/ribbonTab === 'Component Content'/);
- assert.match(builder,/ribbonTab==='Component Style' && <PageComponentVisualEditor/);
- assert.match(builder,/ribbonTab === 'Component Style' && <div className="office-ribbon-group office-ribbon-appearance"/);
- assert.match(builder,/\['Component Properties','Component Style','Component Layout','Component Responsive'\]\.includes\(ribbonTab\)/);
- assert.doesNotMatch(builder,/dataEditorOpen && selected|Advanced data settings/);
- assert.match(builder,/ribbonTab === 'Component Properties'/);
- assert.match(css,/office-ribbon-colours \.compact-color-swatches/);
- assert.match(css,/metadata-component-properties>\.office-ribbon-data-section/);
+test('Page Builder contextual ribbon respects the fixed-height no-scroll contract',async()=>{
+  const root=new URL('../src/core/builders/',import.meta.url);
+  const builder=await readFile(new URL('PageBuilder/pageBuilderView.tsx',root),'utf8');
+  const css=await readModularCss(new URL('PageBuilder/styles-md227.css',root));
+  const filters=await readFile(new URL('PageBuilder/PageBuilderRibbonEditors.tsx',root),'utf8');
+  const actions=await readFile(new URL('PageBuilder/PageBuilderActionRibbon.tsx',root),'utf8');
+  assert.match(builder,/ribbonTab==='Filters' && <RibbonFilters/);
+  assert.match(builder,/ribbonTab==='Visibility Rules' && <RibbonVisibilityRules/);
+  assert.match(builder,/ribbonTab==='Source'/);
+  assert.match(builder,/ribbonTab === 'Component Content'/);
+  assert.match(builder,/ribbonTab === 'Component Style' && <RibbonFormat/);
+  assert.match(filters,/validateVisibilityRule/);
+  assert.match(filters,/examineRecordFilter/);
+  assert.match(actions,/actionType/);
+  assert.match(css,/height:146px!important;min-height:146px!important;max-height:146px!important/);
+  assert.match(css,/overflow:visible!important;padding:5px 6px/);
+  assert.doesNotMatch(builder,/ribbonComponentSearch/);
 });
 
 test('Page Builder contextual ribbon is generated from aligned three-row groups',async()=>{
