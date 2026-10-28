@@ -1,3 +1,4 @@
+import {resolveHighlightFields} from './highlightFieldSelection';
 import {nextAccessibleTabIndex} from '../PageRuntime/tabKeyboardNavigation';
 import {visibleRelatedListQuickLinks} from './relatedQuickLinks';
 import { useFormFactor, useRuntimeFormFactor } from '../../workspace/Responsive/useFormFactor';
@@ -2254,7 +2255,18 @@ function RecordWorkspace({
           }}/>;
       }
       if (component.type === 'Highlights Panel') return <section className="record-highlights surface" key={component.id} aria-label="Record highlights">
-        {compactFields.map((field) => <div key={field.apiName}><span>{field.label}</span><strong>{formatFieldValue(field, record[field.apiName])}</strong></div>)}
+        {resolveHighlightFields(
+          Array.isArray(component.properties.primaryFieldApiNames)
+            ?component.properties.primaryFieldApiNames.filter((x):x is string=>typeof x==='string')
+            :undefined,compactFields,readableRecordFields
+        ).map(field=><div key={field.apiName}><span>{field.label}</span>
+          <strong>{formatFieldValue(field, record[field.apiName])}</strong></div>)}
+        {resolveHighlightFields(
+          Array.isArray(component.properties.secondaryFieldApiNames)
+            ?component.properties.secondaryFieldApiNames.filter((x):x is string=>typeof x==='string')
+            :[],[],readableRecordFields
+        ).map(field=><div key={'secondary-'+field.apiName}><span>{field.label}</span>
+          <strong>{formatFieldValue(field, record[field.apiName])}</strong></div>)}
         <div className="record-highlight-actions">
           {canEdit&&component.properties.showEditAction===true&&showRecordAction('Edit')&&behaviorAction(component.properties,'Edit',runtimeBehaviorContext)!=='hidden'&&<button type="button" className="btn"
             disabled={pageActionState('Edit')==='disabled'||behaviorAction(component.properties,'Edit',runtimeBehaviorContext)==='disabled'}
