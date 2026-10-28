@@ -87,7 +87,9 @@ export default function RibbonColorPalette({kind,label,value,onChange,variant='i
         <button type="button" disabled={!/^#[0-9a-f]{6}$/i.test(customHex)} onClick={()=>choose(customHex)}>Apply</button>
       </div>
       <div className="office-ribbon-palette-footer">
-        <button type="button" onClick={()=>choose('transparent')}>No colour</button>
+        <button type="button" onClick={()=>choose(kind==='text'?'':'transparent')}>
+          {kind==='text'?'Automatic':kind==='fill'?'No fill':'No colour'}
+        </button>
         <label>More colours… <input type="color" aria-label={'Custom '+label+' colour'}
           value={/^#[0-9a-f]{6}$/i.test(value)?value:'#000000'}
           onChange={event=>choose(event.target.value)}/></label>
