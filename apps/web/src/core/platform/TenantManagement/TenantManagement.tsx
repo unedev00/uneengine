@@ -62,6 +62,12 @@ export default function TenantManagement({ request, permitted }: { request: Requ
   const suspendedOnPage = tenants.filter(item => item.status === 'SUSPENDED').length;
   const archivedOnPage = tenants.filter(item => item.status === 'ARCHIVED').length;
 
+  useEffect(()=>{
+    if(!showCreate)return;
+    const previous=document.activeElement instanceof HTMLElement?document.activeElement:null;
+    document.querySelector<HTMLElement>('.tenant-create-dialog input:not([disabled])')?.focus();
+    return()=>previous?.focus();
+  },[showCreate]);
   useEffect(() => {
     const id = window.setTimeout(() => setDebouncedQuery(query), 250);
     return () => window.clearTimeout(id);
@@ -226,8 +232,8 @@ export default function TenantManagement({ request, permitted }: { request: Requ
     {error && <div className="tenant-alert tenant-alert-error" role="alert"><CircleAlert size={17} /> {error}</div>}
     {notice && <div className="tenant-alert" role="status">{notice}</div>}
     <section className="tenant-overview" aria-label="Tenant overview"><div><strong>{total}</strong><span>Matching tenants</span></div><div><strong>{activeOnPage}</strong><span>Active on this page</span></div><div><strong>{suspendedOnPage}</strong><span>Suspended on this page</span></div><div><strong>{archivedOnPage}</strong><span>Archived on this page</span></div></section>
-    <div className={`tenant-columns${showCreate ? ' tenant-columns-creating' : ''}`}>
-      {!showCreate && <PlatformPageSlot slotKey="directory"><section className="tenant-panel" aria-label="Tenants">
+    <div className="tenant-columns">
+      <PlatformPageSlot slotKey="directory"><section className="tenant-panel" aria-label="Tenants">
         <div className="tenant-toolbar">
           <label className="tenant-search"><Search size={16} /><input type="search" aria-label="Search tenants" placeholder="Search name or tenant ID" value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} /></label>
           <label className="tenant-filter">Status <select aria-label="Filter tenant status" value={status} onChange={(event) => { setStatus(event.target.value); setPage(1); }}><option value="ALL">All</option><option value="ACTIVE">Active</option><option value="SUSPENDED">Suspended</option><option value="ARCHIVED">Archived</option></select></label>
@@ -253,25 +259,9 @@ export default function TenantManagement({ request, permitted }: { request: Requ
           <button aria-label="Previous tenants" disabled={page === 1 || loading} onClick={() => setPage((n) => Math.max(1, n - 1))}><ChevronLeft size={16} /></button>
           <button aria-label="Next tenants" disabled={page * pageSize >= total || loading} onClick={() => setPage((n) => n + 1)}><ChevronRight size={16} /></button>
         </div></footer>
-      </section></PlatformPageSlot>}
-      <PlatformPageSlot slotKey="tenant-details"><section className="tenant-panel tenant-detail" aria-label={showCreate ? 'Create tenant' : 'Tenant details'}>
-        {showCreate ? <form aria-label="New tenant draft" onSubmit={(event) => void createTenant(event)}>
-          <div className="tenant-detail-heading"><h2>New tenant</h2><button type="button" className="tenant-button" onClick={() => { setShowCreate(false); setCreate(emptyCreate); setCreateKey(crypto.randomUUID()); }}>Cancel</button></div>
-          {tenantCreateFieldDefinitions.map(field=><AdminPropertyControl
-            key={field.key} definition={{...field,propertyKey:field.key,kind:'TEXT'}}
-            value={create[field.key]??''}
-            onChange={value=>{setCreateKey(crypto.randomUUID());setCreate(old=>({...old,[field.key]:value,...(field.key==='tenantId'?{tenantDeveloperEmail:value+'@unesolutions.co.uk'}:{})}));}}/>)}
-          <div className="tenant-help" aria-live="polite">
-            {emailChecking?'Checking mailbox availability…':emailCheck?
-              <><strong>{emailCheck.email}</strong> — {emailCheck.available?'Available':'Already in use'}
-                {!emailCheck.available&&<div>Choose a verified alternative: {emailCheck.alternatives.map(email=>
-                  <button type="button" className="tenant-button" key={email}
-                    onClick={()=>{setCreateKey(crypto.randomUUID());setCreate(old=>({...old,tenantDeveloperEmail:email}));}}>{email}</button>)}</div>}
-              </>:'Enter a valid tenant ID to verify developer mailbox availability.'}
-          </div>
-          <p className="tenant-help">Creates an initial administrator and a disabled developer account with full starting tenant permissions. The new developer identity uses the selected @unesolutions.co.uk mailbox. The tenant administrator activates the developer account from Company Settings; no password is shared with platform operators.</p>
-          <div className="setup-draft-footer"><span>Unsaved tenant draft</span><button type="button" className="tenant-button" disabled={busy} onClick={() => { setShowCreate(false); setCreate(emptyCreate); setCreateKey(crypto.randomUUID()); }}>Discard</button><button type="submit" className="tenant-button tenant-button-primary" disabled={busy||emailChecking||!emailCheck||!(create.tenantDeveloperEmail===emailCheck.email&&emailCheck.available||emailCheck.alternatives.includes(create.tenantDeveloperEmail))}>{busy ? 'Creating…' : 'Create tenant'}</button></div>
-        </form> : selected ? <><div className="tenant-detail-tabs" role="tablist" aria-label="Tenant details sections">{([["details","Details"],["usage","Usage"],["domains","Domains"],["recovery","Recovery"],["seeders","Seeders"]] as const).map(([id,label]) => <button type="button" key={id} role="tab" aria-selected={detailTab === id} className={detailTab === id ? "active" : ""} onClick={() => setDetailTab(id)}>{label}</button>)}</div>{detailTab === "details" && <form onSubmit={(event) => void saveTenant(event)}>
+      </section></PlatformPageSlot>
+      {!showCreate&&<PlatformPageSlot slotKey="tenant-details"><section className="tenant-panel tenant-detail" aria-label="Tenant details">
+        {selected ? <><div className="tenant-detail-tabs" role="tablist" aria-label="Tenant details sections">{([["details","Details"],["usage","Usage"],["domains","Domains"],["recovery","Recovery"],["seeders","Seeders"]] as const).map(([id,label]) => <button type="button" key={id} role="tab" aria-selected={detailTab === id} className={detailTab === id ? "active" : ""} onClick={() => setDetailTab(id)}>{label}</button>)}</div>{detailTab === "details" && <form onSubmit={(event) => void saveTenant(event)}>
           <div className="tenant-detail-heading"><div><h2>{selected.name}</h2><code>{selected.tenantId}</code></div><button type="button" className="tenant-button" onClick={() => setSelected(null)}>Close</button></div>
           <p className="tenant-provisioning-status"><span className="tenant-pill tenant-pill-active">Provisioning ready</span> <small>Version {selected.provisioning.version} · {shortDate(selected.provisioning.completedAt)}</small></p>
           {selected.developerAccount && <p className="tenant-help">Developer seeder: <strong>{selected.developerAccount.email}</strong> — {selected.developerAccount.activated ? 'Tenant activated' : 'Pending tenant activation'}. The tenant owns all access changes.</p>}
@@ -292,8 +282,39 @@ export default function TenantManagement({ request, permitted }: { request: Requ
             <p className="tenant-help">Retention metadata is audited. No automatic or manual data deletion is enabled.</p>
           </section>
         </form>}{detailTab === "usage" && <PlatformPageSlot slotKey="tenant-usage"><TenantUsagePanel request={request} tenantId={selected.tenantId} permitted={permitted} /></PlatformPageSlot>}{detailTab === "domains" && <PlatformPageSlot slotKey="tenant-domains"><TenantDomains request={request} permitted={permitted} tenantId={selected.tenantId} /></PlatformPageSlot>}{detailTab === "seeders" && <SeederManager request={request} tenantId={selected.tenantId} />}{detailTab === "recovery" && <PlatformPageSlot slotKey="tenant-recovery"><TenantRecoveryPanel request={request} operator permitted={permitted} tenantId={selected.tenantId} /></PlatformPageSlot>}</> : <div className="tenant-placeholder"><Building2 size={30} /><h2>Tenant details</h2><p>Select a tenant to view or edit it, or create a new tenant.</p></div>}
-      </section></PlatformPageSlot>
+      </section></PlatformPageSlot>}
     </div>
+    {showCreate&&<div className="tenant-create-backdrop" role="presentation">
+      <section className="tenant-create-dialog" role="dialog" aria-modal="true" aria-labelledby="tenant-create-title"
+        onKeyDown={event=>{
+          if(event.key==='Escape'){event.preventDefault();if(!busy){setShowCreate(false);setCreate(emptyCreate);setCreateKey(crypto.randomUUID());}return;}
+          if(event.key!=='Tab')return;
+          const controls=Array.from(event.currentTarget.querySelectorAll<HTMLElement>(
+            'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'
+          ));
+          if(!controls.length){event.preventDefault();return;}
+          const first=controls[0],last=controls[controls.length-1];
+          if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
+          else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
+        }}>
+        <form aria-label="New tenant draft" onSubmit={(event) => void createTenant(event)}>
+          <div className="tenant-detail-heading"><h2 id="tenant-create-title">New tenant</h2><button type="button" className="tenant-button" disabled={busy} onClick={() => { setShowCreate(false); setCreate(emptyCreate); setCreateKey(crypto.randomUUID()); }}>Close</button></div>
+          {tenantCreateFieldDefinitions.map(field=><AdminPropertyControl
+            key={field.key} definition={{...field,propertyKey:field.key,kind:'TEXT'}}
+            value={create[field.key]??''}
+            onChange={value=>{setCreateKey(crypto.randomUUID());setCreate(old=>({...old,[field.key]:value,...(field.key==='tenantId'?{tenantDeveloperEmail:value+'@unesolutions.co.uk'}:{})}));}}/>)}
+          <div className="tenant-help" aria-live="polite">
+            {emailChecking?'Checking mailbox availability…':emailCheck?
+              <><strong>{emailCheck.email}</strong> — {emailCheck.available?'Available':'Already in use'}
+                {!emailCheck.available&&<div>Choose a verified alternative: {emailCheck.alternatives.map(email=>
+                  <button type="button" className="tenant-button" key={email}
+                    onClick={()=>{setCreateKey(crypto.randomUUID());setCreate(old=>({...old,tenantDeveloperEmail:email}));}}>{email}</button>)}</div>}
+              </>:'Enter a valid tenant ID to verify developer mailbox availability.'}
+          </div>
+          <p className="tenant-help">Creates an initial administrator and a disabled developer account with full starting tenant permissions. The new developer identity uses the selected @unesolutions.co.uk mailbox. The tenant administrator activates the developer account from Company Settings; no password is shared with platform operators.</p>
+          <div className="setup-draft-footer"><span>Unsaved tenant draft</span><button type="button" className="tenant-button" disabled={busy} onClick={() => { setShowCreate(false); setCreate(emptyCreate); setCreateKey(crypto.randomUUID()); }}>Discard</button><button type="submit" className="tenant-button tenant-button-primary" disabled={busy||emailChecking||!emailCheck||!(create.tenantDeveloperEmail===emailCheck.email&&emailCheck.available||emailCheck.alternatives.includes(create.tenantDeveloperEmail))}>{busy ? 'Creating…' : 'Create tenant'}</button></div>
+        </form>
+      </section>
+    </div>}
   </div>;
 }
-
