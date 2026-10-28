@@ -383,7 +383,7 @@ test('Page Builder Office ribbon keeps each control in one permanent logical gro
   assert.match(data, /Set actions/);
   assert.match(data, /Configure record filters/);
   assert.match(data, /Configure component actions/);
-  assert.match(builder, /Visibility rules/);
+  assert.match(builder, /ribbonTab==='Visibility Rules'/);
   assert.doesNotMatch(builder, /Group <ChevronDown/);
   assert.match(builder, /aria-label="Grouping"/);
   assert.doesNotMatch(builder, /Technical page ID/);

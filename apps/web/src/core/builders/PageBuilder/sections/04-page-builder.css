@@ -1198,3 +1198,24 @@
 .office-ribbon-palette-hex label{display:flex;align-items:center;gap:8px;font-size:11px}
 .office-ribbon-palette-hex input{width:105px;min-width:105px;height:25px;box-sizing:border-box}
 .office-ribbon-palette-hex button{height:26px;padding:2px 8px}
+
+/* Property groups are reachable through arrows without visible scrollbars. */
+.office-builder-ribbon{position:relative}
+.office-builder-ribbon .office-ribbon-content{
+  overflow-x:auto!important;overflow-y:hidden!important;
+  scrollbar-width:none!important;scroll-behavior:smooth;
+  padding-left:26px!important;padding-right:26px!important;
+}
+.office-builder-ribbon .office-ribbon-content::-webkit-scrollbar{display:none!important}
+.office-builder-ribbon .office-ribbon-group-navigation{
+  position:absolute;left:2px;right:2px;top:95px;display:flex;
+  justify-content:space-between;align-items:center;pointer-events:none;z-index:25;
+}
+.office-builder-ribbon .office-ribbon-group-navigation button{
+  pointer-events:auto;display:inline-flex;justify-content:center;align-items:center;
+  box-sizing:border-box;width:23px;height:30px;padding:2px;
+  border:1px solid #b6c5da;background:#f2f6fc;color:#204f85;border-radius:3px;
+}
+.office-builder-ribbon .office-ribbon-group-navigation button:disabled{
+  opacity:0;pointer-events:none;
+}

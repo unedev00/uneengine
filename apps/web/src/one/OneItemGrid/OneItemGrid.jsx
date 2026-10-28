@@ -216,7 +216,9 @@ function ItemGrid({ p, rows }) {
             marginLeft: p.imagePosition==="right" ? "auto" : undefined,
             height: Number.isFinite(imageHeight) && imageHeight > 0
               ? Math.min(900, imageHeight)
-              : density === "image-focused" ? 150 : undefined,
+              : density === "image-focused" ? 150 : imageFit ? 140 : undefined,
+            // object-fit only has a visible effect when the image has a bounded box.
+            // Preserve legacy auto height until an explicit imageFit is authored.
             objectFit: imageFit,
             aspectRatio: imageAspectRatio && imageAspectRatio !== "auto" ? imageAspectRatio : undefined,
           };
