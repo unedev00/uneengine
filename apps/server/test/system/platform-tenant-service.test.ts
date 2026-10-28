@@ -73,7 +73,7 @@ test('tenant request retries reuse the same SQL tenant and reject changes to req
  const request={slug:'customer',name:'Customer',domain:'customer.example.org',
    developerEmail:'admin@customer.example.org',developerPassword:'StrongPassword123!',developerName:'Tenant Developer'};
  const digest=createHash('sha256').update(JSON.stringify([
-  request.slug,request.name,request.domain,request.developerEmail,request.developerPassword,request.developerName
+  request.slug,request.name,request.domain,request.developerEmail,request.developerPassword,request.developerName,'developer@'+request.domain
  ])).digest('hex');
  const statements:string[]=[];
  let created=false;
