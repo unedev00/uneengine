@@ -2,31 +2,6 @@
   "schemaVersion": 1,
   "commonProperties": [
     {
-      "propertyKey": "theme",
-      "label": "Theme",
-      "kind": "SELECT",
-      "displayOrder": 10,
-      "defaultValue": "glass",
-      "choices": [
-        {
-          "key": "glass",
-          "label": "Glass"
-        },
-        {
-          "key": "light",
-          "label": "Light"
-        },
-        {
-          "key": "dark",
-          "label": "Dark"
-        },
-        {
-          "key": "transparent",
-          "label": "Transparent"
-        }
-      ]
-    },
-    {
       "propertyKey": "size",
       "label": "Size",
       "kind": "SELECT",
