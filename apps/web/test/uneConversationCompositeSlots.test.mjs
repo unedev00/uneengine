@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import vm from 'node:vm';
+import React from 'react';
+import {renderToStaticMarkup} from 'react-dom/server';
+import {buildBundledComponent} from '../../../scripts/component-catalog.mjs';
 import {conversationPartSlots,conversationRootDefinition,conversationPartDefinition,
   conversationPartEditorProperties,updateConversationPartProperties,readConversationPart}
   from '../src/one/une_conversation/conversationParts.mjs';
@@ -51,4 +55,30 @@ test('conversation keeps its existing shell and authorised actions',()=>{
  assert.match(adapters,/return <input \{\.\.\.props\}\/>/);
  assert.match(builder,/Edit conversation element/);
  assert.match(builder,/conversationPartDefinition\(/);
+});
+
+test('rendered Conversation retains native controls, classes, content and wired actions',async()=>{
+ const built=await buildBundledComponent(parent);
+ const context={React,module:{exports:{}},Intl,Date,URL,crypto:globalThis.crypto};
+ vm.runInNewContext(built.compiledJs,context);
+ const html=renderToStaticMarkup(React.createElement(context.module.exports.default,{
+  viewMode:'inbox',title:'My Inbox',showRefresh:true,refreshLabel:'Reload chats',
+  actionFlows:{refresh:'RefreshFlow'},enableNewConversation:true,
+  newConversationLabel:'New chat',channelAccounts:[{id:'a1',name:'Work',canSend:true}],
+  allowedAccountIds:['a1'],showAccountSelector:false,showFilterTabs:false,
+  searchLabel:'Search label',searchPlaceholder:'Find chat',controlledSelection:true,
+  selectedConversationId:'c1',showComposer:true,placeholder:'Type chat',messageMaxLength:144,
+  conversations:[{id:'c1',contactName:'Alice',channelAccountId:'a1',canSend:false}],
+  messages:[{id:'m1',conversationId:'c1',direction:'inbound',body:'Hello',sentAt:'2026-10-28T12:00:00Z'}]
+ }));
+ for(const token of ['one-conversation-inbox','one-conversation-thread',
+   'one-conversation-list','one-conversation-messages','one-conversation-compose',
+   'My Inbox','Reload chats','New chat','Find chat','Search label','Type chat','Hello'])
+   assert.ok(html.includes(token),token);
+ assert.match(html,/<button[^>]*class="one-btn one-btn--ghost"[^>]*>Reload chats<\/button>/);
+ assert.match(html,/maxLength="144"/);
+ assert.match(html,/aria-label="Search label"/);
+ // A child renderer's extra root wrapper must never be introduced.
+ assert.equal((html.match(/class="une-ui"/g)||[]).length,1);
+ assert.equal((html.match(/one-conversation-root/g)||[]).length,1);
 });
