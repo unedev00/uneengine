@@ -26,7 +26,24 @@ export default function RibbonCapabilityControls({group,definitions,properties,o
   Text:[{name:'Text',icon:<Type size={16}/>},{name:'Colour',icon:<Palette size={16}/>}]
  };
  const named=commands[group]??[{name:group,icon},{name:'Settings',icon:<Settings2 size={16}/>},{name:'Options',icon:<SlidersHorizontal size={16}/>}];
- const matched=(name:string)=>definitions.filter(def=>{const key=(def.propertyKey+' '+def.label).toLowerCase();const token=name.toLowerCase();return key.includes(token)|| (token==='colour'&&/color|colour|tone/i.test(key))||(token==='corners'&&/radius|corner/i.test(key))||(token==='fill'&&/surface|background|fill/i.test(key))||(token==='align'&&/align|justify/i.test(key))||(token==='size'&&/size|font|width|height/i.test(key));});
+ const aliases:Record<string,RegExp>={
+   colour:/color|colour|tone|palette/i,fill:/fill|surface|background/i,
+   corners:/radius|corner|round/i,border:/border|stroke|outline/i,
+   shadow:/shadow|elevation/i,opacity:/opacity|alpha/i,
+   size:/size|fontsize|font-size|width|height/i,bold:/bold|weight/i,
+   align:/align|justify|alignment/i,text:/text|caption|description|label/i,
+   shape:/shape|radius|crop/i,fit:/fit|objectfit|scale/i,
+   ratio:/ratio|aspect/i,position:/position|offset|left|top|anchor/i,
+   time:/time|hour|minute/i,weekends:/weekend|daysofweek/i,
+   header:/header|title/i,view:/view|mode/i,
+   columns:/column|colspan/i,grid:/grid|column/i,wrap:/wrap|overflow/i,
+   direction:/direction|orientation/i,button:/button|variant|appearance/i,
+   menu:/menu|navigation|nav/i,type:/type|variant|style/i
+ };
+ const matched=(name:string)=>definitions.filter(def=>{
+   const key=(def.propertyKey+' '+def.label).toLowerCase().replace(/[\s_-]/g,'');
+   return key.includes(name.toLowerCase().replace(/[\s_-]/g,''))||Boolean(aliases[name.toLowerCase()]?.test(key));
+ });
  return <div className="office-ribbon-capabilities" aria-label={group+' commands'}>
    {named.map(cmd=><button key={cmd.name} type="button" className="office-ribbon-capability-icon"
      disabled={!matched(cmd.name).length} title={matched(cmd.name).length?group+' '+cmd.name:group+' '+cmd.name+' unavailable'}
