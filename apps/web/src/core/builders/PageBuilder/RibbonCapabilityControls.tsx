@@ -30,7 +30,7 @@ export default function RibbonCapabilityControls({group,definitions,properties,o
  return <div className="office-ribbon-capabilities" aria-label={group+' commands'}>
    {named.map(cmd=><button key={cmd.name} type="button" className="office-ribbon-capability-icon"
      disabled={!matched(cmd.name).length} title={matched(cmd.name).length?group+' '+cmd.name:group+' '+cmd.name+' unavailable'}
-     aria-label={group+' '+cmd.name} onClick={()=>setActive(cmd.name)}>{cmd.icon}</button>)}
+     aria-label={group+' '+cmd.name} onClick={()=>setActive(cmd.name)}><span className="office-ribbon-command-glyph">{cmd.icon}</span><span className="office-ribbon-command-label">{cmd.name}</span></button>)}
    {active&&createPortal(<div className="office-ribbon-capability-backdrop" role="presentation" onMouseDown={()=>setActive(null)}>
      <section role="dialog" aria-modal="true" aria-label={group+' '+active+' properties'} className="office-ribbon-capability-dialog"
        onMouseDown={event=>event.stopPropagation()}>
