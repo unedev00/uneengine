@@ -11,6 +11,8 @@ export type VisibilityCondition =
 export type ComponentVisibilityRule = {
   logic: 'All' | 'Any';
   conditions: VisibilityCondition[];
+  /** Optional one-based condition expression, e.g. 1 AND (2 OR 3). */
+  expression?: string;
 };
 
 export type ComponentVisibilityContext = {
@@ -23,6 +25,44 @@ export type ComponentVisibilityContext = {
 };
 
 const safeName = /^[A-Za-z][A-Za-z0-9_]*$/;
+
+/** Bounded boolean expression parser. Numbers reference one-based condition rows.
+ * No eval, functions, property traversal or arbitrary executable syntax.
+ */
+export function evaluateConditionExpression(expression:string,results:readonly boolean[]):boolean|null{
+  if(expression.length>160)return null;
+  const compact=expression.replace(/\\s+/g,'').toUpperCase();
+  if(!compact)return null;
+  const tokens=compact.match(/\\d+|AND|OR|\\(|\\)/g)??[];
+  if(tokens.join('')!==compact||tokens.length>100)return null;
+  let at=0;
+  const primary=():boolean=>{
+    const token=tokens[at++];
+    if(token==='('){
+      const value=or();
+      if(tokens[at++]!==')')throw Error('Unclosed group');
+      return value;
+    }
+    if(!token||!/^\\d+$/.test(token))throw Error('Expected condition reference');
+    const index=Number(token);
+    if(!Number.isSafeInteger(index)||index<1||index>results.length)throw Error('Invalid condition reference');
+    return results[index-1];
+  };
+  const and=():boolean=>{
+    let value=primary();
+    while(tokens[at]==='AND'){at++;const right=primary();value=value&&right;}
+    return value;
+  };
+  const or=():boolean=>{
+    let value=and();
+    while(tokens[at]==='OR'){at++;const right=and();value=value||right;}
+    return value;
+  };
+  try{
+    const value=or();
+    return at===tokens.length?value:null;
+  }catch{return null;}
+}
 
 /** Visibility controls presentation, NEVER the server's object/record/field permissions. */
 export function validateVisibilityRule(
@@ -37,6 +77,10 @@ export function validateVisibilityRule(
   if (!Array.isArray(rule.conditions) || rule.conditions.length === 0 || rule.conditions.length > 20) {
     return ['Add between 1 and 20 visibility conditions.'];
   }
+  if(rule.expression!==undefined&&
+    (typeof rule.expression!=='string'||
+      evaluateConditionExpression(rule.expression,rule.conditions.map(()=>true))===null))
+    return ['Invalid condition expression. Use numbered conditions with AND, OR and parentheses.'];
   return rule.conditions.flatMap((item: unknown, index: number) => {
     if (!item || typeof item !== 'object' || Array.isArray(item)) {
       return ['Condition ' + (index + 1) + ' is invalid.'];
@@ -119,5 +163,6 @@ export function isComponentVisible(
     // Only compare fields already authorised by the caller's readable set.
     return compareMetadataValue(context.record[condition.fieldApiName], condition.operator, condition.value);
   });
+  if(definition.expression!==undefined)return evaluateConditionExpression(definition.expression,results)===true;
   return definition.logic === 'All' ? results.every(Boolean) : results.some(Boolean);
 }
