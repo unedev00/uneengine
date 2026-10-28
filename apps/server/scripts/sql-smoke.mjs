@@ -235,7 +235,7 @@ try{
    components:[{...savedPage.components[0],label:'Mobile record details',properties:{
      fields:['Name'],pagePropertyContract:{version:1,
        fieldRules:[{fieldApiName:'Name',behavior:'Required',visibilityRules:{
-         logic:'Any',conditions:[
+         logic:'Any',expression:'1 OR 2',conditions:[
            {source:'Device',operator:'Equals',value:'Phone'},
            {source:'Record Permission',operator:'Equals',value:'Edit'}
          ]}}],
@@ -248,6 +248,7 @@ try{
  assert.equal(mobileDraft.publishedRevision,1);
  assert.equal(mobileDraft.components[0].label,'Mobile record details');
  assert.equal(mobileDraft.components[0].properties.pagePropertyContract.fieldRules[0].visibilityRules.logic,'Any');
+ assert.equal(mobileDraft.components[0].properties.pagePropertyContract.fieldRules[0].visibilityRules.expression,'1 OR 2');
  assert.equal((await pageService.metadata(tenantId,savedPage.apiName,'Mobile')).components[0].label,'Details',
   'Saving a draft must never replace the published Mobile layout');
  assert.equal((await pageService.metadata(tenantId,savedPage.apiName,'Desktop')).components[0].label,'Details');
