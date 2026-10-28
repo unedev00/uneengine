@@ -2558,7 +2558,7 @@ function PageBuilder({
           aria-label={ribbonTab} aria-labelledby={`page-builder-tab-${Math.max(0,ribbonTabsVisible.indexOf(ribbonTab))}`}>
           {selected && selectedCustomDefinition && (['Component Data','Component Content','Component Properties','Component Layout','Component Responsive','Component Action'] as string[]).includes(ribbonTab) &&
             <UniversalRibbonInventory tab={ribbonTab as 'Component Data'|'Component Content'|'Component Properties'|'Component Layout'|'Component Responsive'|'Component Action'}
-              definition={selectedCustomDefinition} properties={selected.properties}
+              definition={selectedCustomDefinition} properties={selected.properties} objects={objects} flows={flows}
               onChange={properties=>updateComponent(selected.id,{properties})}
               builder={{
                 position:selected.position,
