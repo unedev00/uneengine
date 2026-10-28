@@ -31,9 +31,9 @@ const safeName = /^[A-Za-z][A-Za-z0-9_]*$/;
  */
 export function evaluateConditionExpression(expression:string,results:readonly boolean[]):boolean|null{
   if(expression.length>160)return null;
-  const compact=expression.replace(/\\s+/g,'').toUpperCase();
+  const compact=expression.replace(/\s+/g,'').toUpperCase();
   if(!compact)return null;
-  const tokens=compact.match(/\\d+|AND|OR|\\(|\\)/g)??[];
+  const tokens=compact.match(/\d+|AND|OR|\(|\)/g)??[];
   if(tokens.join('')!==compact||tokens.length>100)return null;
   let at=0;
   const primary=():boolean=>{
@@ -43,7 +43,7 @@ export function evaluateConditionExpression(expression:string,results:readonly b
       if(tokens[at++]!==')')throw Error('Unclosed group');
       return value;
     }
-    if(!token||!/^\\d+$/.test(token))throw Error('Expected condition reference');
+    if(!token||!/^\d+$/.test(token))throw Error('Expected condition reference');
     const index=Number(token);
     if(!Number.isSafeInteger(index)||index<1||index>results.length)throw Error('Invalid condition reference');
     return results[index-1];
