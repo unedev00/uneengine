@@ -24,8 +24,7 @@ export function filterLayoutWritableValues(
 export function missingLayoutRequiredFields(
   values:Readonly<Record<string,unknown>>,
   layout:PageLayoutMetadata|undefined,
-  writable:ReadonlySet<string>,
-  editing:boolean
+  writable:ReadonlySet<string>
 ):string[]{
   if(!layout)return [];
   const missing:string[]=[];
