@@ -100,6 +100,20 @@ export function behaviorAppearance(properties:Readonly<Record<string,unknown>>,
   }
   return output;
 }
+/** Text alongside conditional colour is required for non-colour-dependent
+ * interpretation. Only bounded literal labels from matched declarative rules.
+ */
+export function behaviorAppearanceLabel(properties:Readonly<Record<string,unknown>>,
+ context:BehaviorContext,fieldApiName?:string):string{
+ let result='';
+ for(const rule of asRows(pageBehaviors(properties)?.conditionalFormatting)){
+  if(fieldApiName!==undefined&&rule.fieldApiName!==fieldApiName)continue;
+  if(!behaviorMatches(rule.when,context)||!isPropertyRecord(rule.appearance))continue;
+  const label=rule.appearance.accessibleLabel;
+  if(typeof label==='string'&&label.trim()&&label.length<=160)result=label.trim();
+ }
+ return result;
+}
 /** A field rule never overrides OneEngine's authorization; hidden fields are omitted. */
 export function behaviorField(properties:Readonly<Record<string,unknown>>,
   fieldApiName:string,context:BehaviorContext):
