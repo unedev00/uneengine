@@ -257,6 +257,7 @@ import {
   type WorkspaceId
 } from '../../metadata/Definitions/metadata';
 import {analyzePagePerformance} from './pagePerformanceAnalysis';
+import SavedListViewPicker from './SavedListViewPicker';
 export function createPageBuilder(MetadataComponentProperties: React.ComponentType<any>, MetadataBoundPageComponent: React.ComponentType<any>) {
 function PageBuilder({
   page, pages, objects, apps, profiles, reports, dashboards, libraryComponents, flows, onChange, onSelectPage, onTargetObjectChange, onSave, onPublish, onDeactivate, onSaveApp, onDeleteApp, onDeletePage, onExit, onNotify, onLaunchFlow,
@@ -2299,6 +2300,21 @@ function PageBuilder({
   };
   return (
     <div className={`builder-page ${editorMode ? "builder-editor-mode" : "builder-list-mode"} ${isPhoneBuilder ? 'builder-phone-read-mode' : ''}`}>
+      {editorMode&&selected?.type==='List View'&&
+        <section className="builder-list-view-settings" aria-label="Saved List View block configuration">
+          <label className="form-label">List Object
+            <select className="form-control" aria-label="List View Object"
+              value={String(selected.properties.listObjectApiName??'')}
+              onChange={event=>updateComponent(selected.id,{properties:{
+                ...selected.properties,listObjectApiName:event.target.value,savedViewId:''}})}>
+              <option value="">Select Object</option>
+              {objects.map(item=><option key={item.apiName} value={item.apiName}>{item.pluralLabel}</option>)}
+            </select>
+          </label>
+          <SavedListViewPicker objectApi={String(selected.properties.listObjectApiName??'')}
+            savedViewId={String(selected.properties.savedViewId??'')} request={request}
+            onChange={id=>updateComponent(selected.id,{properties:{...selected.properties,savedViewId:id}})}/>
+        </section>}
       {editorMode && <details className="builder-performance-analysis" aria-label="Page performance analysis">
         <summary>Performance analysis ({analyzePagePerformance(page).length} findings)</summary>
         <p>Configuration analysis only; this does not estimate network latency or render duration.</p>
