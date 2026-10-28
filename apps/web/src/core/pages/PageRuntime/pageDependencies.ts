@@ -96,7 +96,7 @@ export function inspectPageDependencies(page: LightningPageMetadata, scope: Depe
     for (const [event, raw] of Object.entries(rawEvents)) {
       if (!raw || typeof raw !== 'object' || Array.isArray(raw)) continue;
       const binding = raw as Record<string, unknown>;
-      if (binding.actionType !== 'Navigate') {
+      if (binding.actionType === 'Flow' || (binding.actionType === undefined && typeof binding.flowApiName === 'string')) {
         const name = identifier(binding.flowApiName);
         if (!name) continue;
         const flow = scope.flows.find(item => item.apiName === name);
@@ -108,6 +108,8 @@ export function inspectPageDependencies(page: LightningPageMetadata, scope: Depe
         continue;
       }
 
+      // PageState and SetFilter are local actions, not Flow dependencies.
+      if (binding.actionType !== 'Navigate') continue;
       const target = binding.navigationTargetType ?? 'Record List';
       const explicitApp = identifier(binding.navigationAppId);
       const navigationApp = explicitApp || appContext;

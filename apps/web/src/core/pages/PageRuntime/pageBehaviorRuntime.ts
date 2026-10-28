@@ -22,8 +22,6 @@ export function pageBehaviors(properties:Readonly<Record<string,unknown>>):Row|n
 }
 export function behaviorMatches(rule:unknown,context:BehaviorContext):boolean{
   if(!isPropertyRecord(rule))return false;
-  // Record permissions/profile context are valid even when no fields are readable.
-  // An empty field list must not disable an otherwise valid permission rule.
   return isComponentVisible({visible:true,properties:{visibilityRules:rule}},context,
     Boolean(context.fields||context.record||context.recordPermissions||context.profileId));
 }
@@ -43,6 +41,15 @@ export function behaviorAction(properties:Readonly<Record<string,unknown>>,
   if(!rule)return 'enabled';
   if(behaviorMatches(rule.when,context))return 'enabled';
   return rule.unavailable==='Hide'?'hidden':'disabled';
+}
+/** Declarative client-side validation before an event runs. Server APIs retain their own RBAC and validation. */
+export function behaviorValidation(properties:Readonly<Record<string,unknown>>,
+  event:string,context:BehaviorContext):string|null{
+  for(const rule of asRows(pageBehaviors(properties)?.validationRules)){
+    if(rule.event!==event||!behaviorMatches(rule.when,context))continue;
+    return typeof rule.message==='string'&&rule.message.trim()?rule.message:'This action is not valid.';
+  }
+  return null;
 }
 /** Resolve versioned action rules together with the retained record-layout rules.
  * A legacy condition may hide an action, but never override a versioned denial.

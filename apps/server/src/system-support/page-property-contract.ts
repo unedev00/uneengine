@@ -23,6 +23,10 @@ export const pageBehaviorSchemas:Record<string,ComponentSettingDefinition>={
    {...text('color','Text colour'),kind:'COLOR'},{...text('backgroundColor','Background colour'),kind:'COLOR'},text('icon','Icon'),text('accessibleLabel','Accessible label')
   ]}
  ]},
+ validationRules:{propertyKey:'validationRules',label:'Action validation rules',kind:'COLLECTION',maxItems:100,fields:[
+  text('event','Event',true),text('message','Error message',true),
+  {propertyKey:'when',label:'Reject when',kind:'GROUP',required:true,fields:conditionSettings}
+ ]},
  actionVisibility:{propertyKey:'actionVisibility',label:'Action rules',kind:'COLLECTION',maxItems:100,fields:[
   text('actionId','Action',true),{...choice('unavailable','When unavailable',['Hide','Disable']),defaultValue:'Disable'},
   {propertyKey:'when',label:'Show / Enable when',kind:'GROUP',required:true,fields:conditionSettings}

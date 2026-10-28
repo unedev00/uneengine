@@ -8,6 +8,7 @@ import {applyRecordViewAdapter} from '../../records/RecordWorkspace/recordViewAd
 import {registeredComponentAppearance, registeredComponentAppearanceClasses} from './registeredComponentAppearance';
 import './registeredComponentAppearance.css';
 import {pagePropertyIssues} from '../Properties/pagePropertyContract';
+import {resolveRegisteredTextProperties} from './fieldExpressionRuntime';
 import {validatePrimitiveMetadata, primitiveAccessibilityProps} from './sharedPrimitiveMetadata';
 
 type ComponentBoundaryState = { error?: string };
@@ -94,7 +95,7 @@ export default function RegisteredComponent({ definition, props, layoutTranspare
   const issues=[...validateComponentSettings(definitions.filter(d=>d.schemaVersion===1),configuredProps),
     ...pagePropertyIssues('Custom:'+definition.apiName,configuredProps)];
   if(issues.length)return <div role="alert" className="registered-component-error">Invalid component settings: {issues.map(i=>i.path+' '+i.message).join('; ')}</div>;
-  const effectiveProps = applyRecordViewAdapter(configuredProps);
+  const effectiveProps = resolveRegisteredTextProperties(definitions,applyRecordViewAdapter(configuredProps));
   const primitive = definition.primitiveMetadata;
   const primitiveCheck = primitive ? validatePrimitiveMetadata(primitive) : null;
   if (primitiveCheck && !primitiveCheck.valid) return <div className="registered-component-error" role="alert">Invalid primitive metadata: {primitiveCheck.errors.join('; ')}</div>;

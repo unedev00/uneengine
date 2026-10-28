@@ -1,3 +1,4 @@
+import {evaluateFieldExpression} from "../../shared/OneFieldExpression.js";
 const accents={blue:"#007aff",mint:"#00a98f",purple:"#8855e8",orange:"#ff8a00",neutral:"#64748b"};
 const oneOf=(value,options,fallback)=>options.includes(value)?value:fallback;
 const px=(value,fallback,max=160)=>Number.isFinite(Number(value))&&Number(value)>=0?Math.min(max,Number(value)):fallback;
@@ -5,6 +6,23 @@ export function uneProps(p,kind){
  const tone=oneOf(p.tone,Object.keys(accents),"blue");
  const result={...p,kind,theme:oneOf(p.theme,["light","dark"],"light"),accentColor:p.accentColor||accents[tone],
  radius:px(p.radius,20),padding:px(p.padding,16),gap:px(p.gap,12),glassBlur:px(p.glassBlur,12,40)};
+ // Resolve only declared text slots with a valid record context. Keep legacy
+ // literals untouched and never evaluate arbitrary code or numeric properties.
+ const record=p.record&&typeof p.record==="object"&&!Array.isArray(p.record)?p.record:
+   Array.isArray(p.records)&&p.records.length?p.records[0]:
+   Array.isArray(p.items)&&p.items.length?p.items[0]:null;
+ if(record){
+  const textKeys=["text","label","title","subtitle","description","caption","placeholder","helpText","emptyText","emptyTitle","loadingText",
+   "src","alt","imageSrc","imageAlt","submitLabel","openLabel","confirmLabel","searchPlaceholder","searchLabel",
+   "filterLabel","newConversationLabel","refreshLabel","contactSearchLabel","sentNoticeText","emptyConversationsText",
+   "newMessageNoticeLabel","badge","value","message","basketTitle","basketPresentation","checkoutLabel",
+   "clearLabel","totalLabel","emptyBasketText","nextTransactionLabel"];
+  for(const key of textKeys){
+   const raw=result[key];
+   if(typeof raw==="string"&&/^\s*@(?:[A-Za-z][A-Za-z0-9_]*)(?:\s*&|\s*$)/.test(raw))
+    result[key]=evaluateFieldExpression(raw,record);
+  }
+ }
  if(kind==="Calendar"&&Array.isArray(p.records)&&(p.dateFieldApiName||p.titleFieldApiName))
   result.records=p.records.map(item=>({...item,
    ...(p.dateFieldApiName?{date:item[p.dateFieldApiName]}:{}),

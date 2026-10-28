@@ -1,4 +1,4 @@
-import { AlignLeft, AlignCenter, AlignRight, Bold, Italic, Underline, RefreshCw, Eye } from 'lucide-react';
+import { AlignLeft, AlignCenter, AlignRight, Bold, Italic, Underline, RefreshCw, Eye, Monitor, Tablet, Smartphone, ShieldCheck } from 'lucide-react';
 import RibbonColorPalette from './RibbonColorPalette';
 import PageBuilderRibbonMetadataPager from './PageBuilderRibbonMetadataPager';
 import {availableComponentSettings,type PropertyDevice} from '../../components/Properties/componentSettingDefinitions';
@@ -7,7 +7,7 @@ import {updateLayoutSettings,layoutSettings,type LayoutSettingKey} from '../../p
 import type {LibraryComponentMetadata} from '../../metadata/Definitions/metadata';
 
 type Properties=Record<string,unknown>;
-type Props={properties:Properties;componentType:string;definition?:LibraryComponentMetadata;device:PropertyDevice;onChange:(next:Properties)=>void};
+type Props={properties:Properties;componentType:string;definition?:LibraryComponentMetadata;device:PropertyDevice;onChange:(next:Properties)=>void;excludeKeys?:string[]};
 const object=(v:unknown):Properties=>v&&typeof v==='object'&&!Array.isArray(v)?v as Properties:{};
 const mode=(v:string):'Base'|'Desktop'|'Tablet'|'Phone'=>v==='Mobile'?'Phone':v==='Tablet'?'Tablet':v==='Desktop'?'Desktop':'Base';
 const num=(v:unknown,fallback:number)=>typeof v==='number'?v:Number(v??fallback);
@@ -69,7 +69,7 @@ export function RibbonDesign({properties,componentType,definition,device,onChang
   </>;
 }
 
-export function RibbonFormat({properties,componentType,definition,device,onChange}:Props){
+export function RibbonFormat({properties,componentType,definition,device,onChange,excludeKeys=[]}:Props){
   const visual=object(properties.visualStyle);
   const activeDevice=mode(device);
   const style=layoutSettings(properties,activeDevice==='Base'?'Desktop':activeDevice);
@@ -87,7 +87,7 @@ export function RibbonFormat({properties,componentType,definition,device,onChang
   const fontSize=num(style.fontSize??properties.fontSize,16);
   const weight=num(style.fontWeight??properties.fontWeight,400);
   const remaining=availableComponentSettings(definition?.propertyDefinitions??[],device,definition?.version)
-    .filter(d=>isPresentationProperty(d)&&!(d as {group?:string}).group&&presentationSection(d)!=='Content'&&presentationSection(d)!=='Layout'&&!/^(?:theme|surface|tone|textColor|accentColor|backgroundColor|borderColor|fontFamily|fontWeight|fontSize|textAlign|borderWidth|borderRadius|radius|padding|margin|gap|opacity|minWidth|maxWidth|minHeight|maxHeight)$/.test(d.propertyKey));
+    .filter(d=>isPresentationProperty(d)&&!excludeKeys.includes(d.propertyKey)&&!(d as {group?:string}).group&&presentationSection(d)!=='Content'&&presentationSection(d)!=='Layout'&&!/^(?:theme|surface|tone|textColor|accentColor|backgroundColor|borderColor|fontFamily|fontWeight|fontSize|textAlign|borderWidth|borderRadius|radius|padding|margin|gap|opacity|minWidth|maxWidth|minHeight|maxHeight)$/.test(d.propertyKey));
   return <>
     {supportedText&&<div className="office-ribbon-group office-ribbon-typography"><div className="office-ribbon-stack">
       <label className="office-ribbon-inline-field">Text size <input type="number" aria-label="Text size" min={8} max={96} value={fontSize} onChange={e=>{const n=Number(e.target.value);if(Number.isInteger(n)&&n>=8&&n<=96)setLayout('fontSize',n);}}/></label>
@@ -113,10 +113,46 @@ export function RibbonFormat({properties,componentType,definition,device,onChang
   </>;
 }
 
-export function RibbonResponsive({properties,onChange,onVisibilityRules}:Props&{onVisibilityRules:()=>void}){
-  return <div className="office-ribbon-group"><div className="office-ribbon-stack">
-    <button type="button" onClick={onVisibilityRules}><Eye size={16}/> Visibility rules</button>
-    {([['hideOnPhone','Mobile'],['hideOnTablet','Tablet'],['hideOnDesktop','Desktop']] as const).map(([key,label])=>
-      <label key={key} className="office-ribbon-checkbox"><input type="checkbox" checked={properties[key]!==true} onChange={e=>onChange({...properties,[key]:!e.target.checked})}/> Show on {label}</label>)}
-  </div><span>Devices & rules</span></div>;
+export function RibbonResponsive({properties,onChange,onVisibilityRules,visible,onVisibleChange}:Props&{
+  onVisibilityRules:()=>void;visible:boolean;onVisibleChange:(visible:boolean)=>void;
+}){
+  const deviceChoices=[
+    {key:'hideOnDesktop',label:'Desktop',Icon:Monitor},
+    {key:'hideOnTablet',label:'Tablet',Icon:Tablet},
+    {key:'hideOnPhone',label:'Mobile',Icon:Smartphone}
+  ] as const;
+  const overrides=properties.layoutResponsive&&typeof properties.layoutResponsive==='object'&&!Array.isArray(properties.layoutResponsive)
+    ? properties.layoutResponsive as Record<string,unknown>:{};
+  const rules=properties.visibilityRules;
+  const ruleCount=rules&&typeof rules==='object'&&!Array.isArray(rules)
+    ? (Array.isArray((rules as Record<string,unknown>).rules)?((rules as {rules:unknown[]}).rules.length):1):0;
+  return <>
+    <div className="office-ribbon-group office-ribbon-responsive-visibility">
+      <div className="office-ribbon-responsive-icons">
+        {deviceChoices.map(({key,label,Icon})=><label className="office-ribbon-device-toggle" key={key}
+          title={'Show on '+label}><Icon size={17}/><span>{label}</span>
+          <input type="checkbox" aria-label={'Show on '+label}
+            checked={properties[key]!==true} onChange={event=>onChange({...properties,[key]:!event.target.checked})}/>
+        </label>)}
+        <label className="office-ribbon-master-visibility-toggle">
+          <input type="checkbox" checked={visible} onChange={event=>onVisibleChange(event.target.checked)}/> Show component
+        </label>
+      </div><span>Visibility</span>
+    </div>
+    <div className="office-ribbon-group office-ribbon-responsive-overrides">
+      <div className="office-ribbon-responsive-icons">
+        {deviceChoices.map(({label,Icon})=><div className="office-ribbon-device-status" key={label}
+          title={overrides[label]?'Overrides configured for '+label:'No '+label+' overrides'}>
+          <Icon size={18}/><span>{label}</span>
+          {overrides[label]?<span className="office-ribbon-override-dot" aria-label="Configured"/>:null}
+        </div>)}
+      </div><span>Device Overrides</span>
+    </div>
+    <div className="office-ribbon-group office-ribbon-responsive-rules">
+      <div className="office-ribbon-stack">
+        <button type="button" onClick={onVisibilityRules}><ShieldCheck size={18}/> Edit visibility rules</button>
+        <span className="office-ribbon-stat">{ruleCount} {ruleCount===1?'rule':'rules'} configured</span>
+      </div><span>Visibility Rules</span>
+    </div>
+  </>;
 }
