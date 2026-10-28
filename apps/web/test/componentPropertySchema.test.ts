@@ -145,3 +145,14 @@ test('legacy and versioned Dynamic Action conditions compose without overriding 
  assert.equal(behaviorRecordAction(prop,'Delete',{...ctx,recordPermissions:new Set<'Create'|'Edit'|'Delete'>()},legacy),'disabled');
  assert.equal(behaviorRecordAction(prop,'Delete',ctx,{...legacy,operator:'Unexpected'}),'hidden');
 });
+
+test('record-permission action conditions evaluate with no readable record fields',()=>{
+ const data={pagePropertyContract:{version:1,actionVisibility:[{
+  actionId:'Edit',unavailable:'Hide',when:{logic:'All',conditions:[
+   {source:'Record Permission',operator:'Equals',value:'Edit'}]}
+ }]}};
+ assert.equal(behaviorAction(data,'Edit',{formFactor:'Desktop',
+  recordPermissions:new Set<'Create'|'Edit'|'Delete'>(['Edit'])}),'enabled');
+ assert.equal(behaviorAction(data,'Edit',{formFactor:'Desktop',
+  recordPermissions:new Set<'Create'|'Edit'|'Delete'>()}),'hidden');
+});
