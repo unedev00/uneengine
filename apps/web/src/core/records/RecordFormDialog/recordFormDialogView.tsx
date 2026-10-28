@@ -218,6 +218,7 @@ export function RecordFormDialog({
   selectedRecordTypeId,
   profileId,
   selectedLayout,
+  authoredDynamicFields = false,
   fieldAccess,
   userRoles,
   formValues,
@@ -240,6 +241,7 @@ export function RecordFormDialog({
   selectedRecordTypeId: string;
   profileId: string;
   selectedLayout: PageLayoutMetadata | undefined;
+  authoredDynamicFields?: boolean;
   fieldAccess: Record<string, { read: boolean; edit: boolean }>;
   userRoles: Array<{id:string;name:string}>;
   formValues: Record<string, unknown>;
@@ -297,7 +299,7 @@ export function RecordFormDialog({
   const visibleFields = object.fields.filter((field) => !field.formula
     && !field.dataType.toLocaleLowerCase().startsWith('auto number')
     && fieldAccess[`${object.apiName}.${field.apiName}`]?.read
-    && (!selectedLayout || layoutFieldNames.includes(field.apiName) || field.required))
+    && (!selectedLayout || layoutFieldNames.includes(field.apiName) || (!authoredDynamicFields&&field.required)))
     .map(field=>requiredOnLayout.has(field.apiName)&&!readOnlyOnLayout.has(field.apiName)
       ?{...field,required:true}:field);
   const unplacedRequiredFields = visibleFields.filter((field) => field.required && !layoutFieldNames.includes(field.apiName));
