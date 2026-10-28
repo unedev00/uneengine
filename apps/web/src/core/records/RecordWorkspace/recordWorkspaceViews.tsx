@@ -1436,7 +1436,8 @@ function RecordWorkspace({
         const readOnlyFields=new Set(selectedLayout.sections.flatMap(section=>section.readOnlyFieldApiNames??[]));
         for (const name of Object.keys(writableValues)) {
           if (name==='RecordTypeId') continue;
-          if (!visibleFields.has(name) || readOnlyFields.has(name)) delete writableValues[name];
+          if ((!visibleFields.has(name) && !object.fields.some(field=>field.apiName===name&&field.required))
+            || readOnlyFields.has(name)) delete writableValues[name];
         }
       }
       // A record without an assigned type must not submit an empty type ID:
