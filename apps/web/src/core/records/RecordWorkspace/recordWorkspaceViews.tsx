@@ -806,7 +806,7 @@ function RecordWorkspace({
     void apiRequest<{editLightningPage?:LightningPageMetadata;recordPermissions?:{Create:boolean;Edit:boolean;Delete:boolean}}>(
       `/records/${encodeURIComponent(object.apiName)}/create-layout?${params}`
     ).then(payload=>{if(active){setActiveEditLightningPage(payload.editLightningPage??null);
-      setCreatePageResolvedTypeId([object.apiName,String(formValues.RecordTypeId??''),route.kind==='record-detail'||route.kind==='record-list'?route.appId??'Records':'Records',formFactor,viewportFactor].join('|'));
+      setCreatePageResolvedTypeId([object.apiName,String(formValues.RecordTypeId??''),route.kind==='record-detail'||route.kind==='record-list'?route.appId??'Records':'Records',formFactor,viewportFactor,profileId].join('|'));
       if(payload.recordPermissions)setRecordGrants({objectApi:object.apiName,...payload.recordPermissions});}})
       .catch(error=>{if(active)setEditPageError(error instanceof Error?error.message:'Unable to resolve create form');})
       .finally(()=>{if(active)setEditPageLoading(false);});
@@ -1953,7 +1953,7 @@ function RecordWorkspace({
   };
   if (!object && !metadataLoaded) return <div className="records-loading">Loading object metadata…</div>;
   if (!object) return <div className="records-page"><div className="records-message" role="alert">Object “{route.objectApiName}” was not found.</div></div>;
-  if (formOpen && !editingId && (createPageResolvedTypeId!==[object.apiName,String(formValues.RecordTypeId??''),route.kind==='record-detail'||route.kind==='record-list'?route.appId??'Records':'Records',formFactor,viewportFactor].join('|')||editPageLoading||editPageError)) return <main className="records-page record-editor-page">
+  if (formOpen && !editingId && (createPageResolvedTypeId!==[object.apiName,String(formValues.RecordTypeId??''),route.kind==='record-detail'||route.kind==='record-list'?route.appId??'Records':'Records',formFactor,viewportFactor,profileId].join('|')||editPageLoading||editPageError)) return <main className="records-page record-editor-page">
     <button className="text-action" type="button" onClick={()=>setFormOpen(false)}>Back to records</button>
     {!editPageError?<div className="records-loading" role="status">Loading published creation layout…</div>
       :<div className="records-message" role="alert">Unable to load creation layout: {editPageError}</div>}
