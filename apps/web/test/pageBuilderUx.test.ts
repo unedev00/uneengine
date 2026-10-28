@@ -40,7 +40,7 @@ test('journey mounts record filters inline and saves draft separately from publi
   assert.match(source,/ribbonTab==='Source'/);
   assert.match(source,/ribbonFilterDraft/);
   assert.match(source,/onApply=\{\(\)=>\{/);
-  assert.match(source,/Cancel changes/);
+  assert.match(source,/onCancel=\{\(\)=>selectRibbonTab\('Component Data'\)\}/);
   assert.doesNotMatch(source,/dataEditorOpen|visibilityDialogOpen/);
   assert.match(engine,/mode==='filters-editor'/);
   assert.match(engine,/RecordFilterEditor/);
