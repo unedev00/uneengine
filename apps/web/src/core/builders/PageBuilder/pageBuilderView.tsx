@@ -467,7 +467,25 @@ function PageBuilder({
   const [additionalPropertyDialogOpen,setAdditionalPropertyDialogOpen] = useState(false);
   const [pageSettingsDialogOpen,setPageSettingsDialogOpen] = useState(false);
   const [focusedCardMapping,setFocusedCardMapping] = useState('');
+  const ribbonStripRef=useRef<HTMLDivElement|null>(null);
+  const [ribbonOverflow,setRibbonOverflow]=useState({left:false,right:false});
+  const measureRibbonOverflow=()=>{
+    const element=ribbonStripRef.current;
+    if(!element)return;
+    setRibbonOverflow({left:element.scrollLeft>3,right:element.scrollLeft+element.clientWidth<element.scrollWidth-3});
+  };
   const [ribbonTab, setRibbonTab] = useState<'Home' | 'Add Block' | 'Component Content' | 'Component Properties' | 'Component Style' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Component Responsive' | 'Preview' | 'Filters' | 'Source' | 'Visibility Rules'>('Home');
+  useEffect(()=>{
+    const element=ribbonStripRef.current;
+    if(!element)return;
+    element.scrollLeft=0;
+    const update=()=>measureRibbonOverflow();
+    const frame=window.requestAnimationFrame(update);
+    const observer=typeof ResizeObserver!=='undefined'?new ResizeObserver(update):null;
+    observer?.observe(element);
+    window.addEventListener('resize',update);
+    return ()=>{window.cancelAnimationFrame(frame);observer?.disconnect();window.removeEventListener('resize',update);};
+  },[ribbonTab,selectedId,page.layoutVariant,page.components.length]);
   const componentNeedsData = (type: string) => {
     const metadata = type.startsWith('Custom:') ? findRegisteredComponent(libraryComponents,type.slice('Custom:'.length),'page') : undefined;
     return Boolean(metadata?.propertyDefinitions?.some(definition=>definition.kind==='OBJECT'||definition.kind==='OBJECT_FIELD'))
@@ -2312,7 +2330,7 @@ function PageBuilder({
             </span>
           </div>
         </div>
-        <div id="page-builder-tab-content" className="office-ribbon-content" role="tabpanel"
+        <div id="page-builder-tab-content" ref={ribbonStripRef} onScroll={measureRibbonOverflow} className="office-ribbon-content" role="tabpanel"
           aria-label={ribbonTab} aria-labelledby={`page-builder-tab-${Math.max(0,ribbonTabsVisible.indexOf(ribbonTab))}`}>
           {ribbonTab === 'Home' && <>
             <div className="office-ribbon-group office-ribbon-page-identity"><div className="office-ribbon-stack">
@@ -2635,6 +2653,12 @@ function PageBuilder({
           </div>}
           {['Component Properties','Component Style'].includes(ribbonTab) && <div className="office-ribbon-inspector-host" ref={setRibbonPropertyHost} aria-label="Ribbon property controls" />}
 
+        </div>
+        <div className="office-ribbon-group-navigation" aria-label="Ribbon group navigation">
+          <button type="button" title="Previous ribbon groups" aria-label="Previous ribbon groups" disabled={!ribbonOverflow.left}
+            onClick={()=>ribbonStripRef.current?.scrollBy({left:-Math.max(260,(ribbonStripRef.current?.clientWidth??500)-160),behavior:'smooth'})}><ChevronLeft size={17}/></button>
+          <button type="button" title="Next ribbon groups" aria-label="Next ribbon groups" disabled={!ribbonOverflow.right}
+            onClick={()=>ribbonStripRef.current?.scrollBy({left:Math.max(260,(ribbonStripRef.current?.clientWidth??500)-160),behavior:'smooth'})}><ChevronRight size={17}/></button>
         </div>
       </section>
 
