@@ -88,6 +88,46 @@ test('read-only debug uses runtime collection Assignment semantics and rejects d
  assert.match(String(division.reason),/divide by zero/i);
 });
 
+test('read-only debug resolves Flow constants, formulas and text templates',async()=>{
+ const resources=[
+  {name:'Greeting',type:'Constant',dataType:'Text',value:'MetaDrive'},
+  {name:'TaxRate',type:'Constant',dataType:'Number',value:'0.2'},
+  {name:'UpperGreeting',type:'Formula',dataType:'Text',value:'UPPER({!Greeting})'},
+  {name:'TaxLabel',type:'Text Template',dataType:'Text',value:'Rate: {!TaxRate}'},
+  {name:'CurrencyRate',type:'Formula',dataType:'Number',value:'CURRENCYRATE("GBP")'},
+  {name:'UserGreeting',type:'Formula',dataType:'Text',value:'UPPER({!$User.Name})'}
+ ];
+ const result=await simulateFlowGraph({apiName:'ResourceDebug',version:1,
+  flowType:'Autolaunched Flow',recordTriggered:false,resources,
+  nodes:[start,
+   {id:2,type:'Assignment',config:{variable:'Result',value:'{!UpperGreeting}'}},
+   {id:3,type:'Assignment',config:{variable:'TemplateResult',value:'{!TaxLabel}'}},
+   {id:4,type:'Assignment',config:{variable:'RateResult',value:'{!CurrencyRate}'}},
+   {id:5,type:'Assignment',config:{variable:'UserResult',value:'{!UserGreeting}'}},end],
+  edges:[edge(1,2),edge(2,3),edge(3,4),edge(4,5),edge(5,9)],inputs:{},
+  formulaContext:{currencyRates:{GBP:0.79}},userResource:{Name:'Sample User'}});
+ assert.equal(result.status,'completed');
+ assert.equal((result.outputs as Record<string,unknown>).Greeting,'MetaDrive');
+ assert.equal((result.outputs as Record<string,unknown>).TaxRate,0.2);
+ assert.equal((result.outputs as Record<string,unknown>).UpperGreeting,'METADRIVE');
+ assert.equal((result.outputs as Record<string,unknown>).TaxLabel,'Rate: 0.2');
+ assert.equal((result.outputs as Record<string,unknown>).Result,'METADRIVE');
+ assert.equal((result.outputs as Record<string,unknown>).TemplateResult,'Rate: 0.2');
+ assert.equal((result.outputs as Record<string,unknown>).RateResult,0.79);
+ assert.equal((result.outputs as Record<string,unknown>).UserResult,'SAMPLE USER');
+});
+
+test('read-only Flow debug fails safely on circular formula resource references',async()=>{
+ const result=await simulateFlowGraph({apiName:'CircularFormula',version:1,
+  flowType:'Autolaunched Flow',recordTriggered:false,resources:[
+   {name:'First',type:'Formula',dataType:'Text',value:'{!Second}'},
+   {name:'Second',type:'Formula',dataType:'Text',value:'{!First}'}
+  ],nodes:[start,{id:2,type:'Assignment',config:{variable:'Result',value:'{!First}'}},end],
+  edges:[edge(1,2),edge(2,9)],inputs:{}});
+ assert.equal(result.status,'failed');
+ assert.match(String(result.reason),/Circular Flow formula reference/);
+});
+
 test('record entry conditions compare record fields to literal values, not same-named fields',async()=>{
  const result=await simulateFlowGraph({apiName:'RecordFilter',version:1,
   flowType:'Record-Triggered Flow',recordTriggered:true,

@@ -1,6 +1,8 @@
 import {evaluateFlowDecisionOutcome} from '../system-files/flow-decision-runtime.js';
 import {evaluateFlowCollectionStep} from '../system-files/flow-data-actions.js';
 import {executeFlowAssignment} from '../system-files/flow-assignment-runtime.js';
+import {evaluateFlowFormula,isFormulaImageResult,type FormulaEvaluationContext}
+  from '../system-files/flow-formula-runtime.js';
 
 type Node={id:number;type:string;label?:string;config:Record<string,unknown>};
 type Edge={from:number;to:number;label?:string;kind?:string};
@@ -17,13 +19,14 @@ const record=(value:unknown):value is Dict=>
 const secret=/password|secret|token|credential|authorization|api.?key|private.?key/i;
 
 export function flowDebugResources(value:unknown):Array<{
-  name:string;type:string;dataType:string;isCollection?:boolean
+  name:string;type:string;dataType:string;isCollection?:boolean;value?:unknown
 }> {
   if(!Array.isArray(value))return [];
   return value.flatMap(item=>record(item)&&typeof item.name==='string'
     &&typeof item.type==='string'&&typeof item.dataType==='string'
     ?[{name:item.name,type:item.type,dataType:item.dataType,
-      ...(typeof item.isCollection==='boolean'?{isCollection:item.isCollection}:{})}]
+      ...(typeof item.isCollection==='boolean'?{isCollection:item.isCollection}:{}),
+      ...(Object.hasOwn(item,'value')?{value:item.value}:{})}]
     :[]);
 }
 
@@ -49,10 +52,12 @@ export type FlowDebugStep={
 export async function simulateFlowGraph(options:{
   apiName:string;version:number;flowType:string;nodes:Node[];edges:Edge[];
   inputs:unknown;recordTriggered:boolean;
-  resources?:Array<{name:string;type:string;dataType:string;isCollection?:boolean}>;
+  resources?:Array<{name:string;type:string;dataType:string;isCollection?:boolean;value?:unknown}>;
+  formulaContext?:FormulaEvaluationContext;userResource?:Dict;
   findRecords?:Query;
 }){
-  const {apiName,version,flowType,nodes,edges,inputs,recordTriggered,findRecords}=options;
+  const {apiName,version,flowType,nodes,edges,inputs,recordTriggered,findRecords,
+    formulaContext,userResource}=options;
   if(!record(inputs)||Object.keys(inputs).length>100
     ||JSON.stringify(inputs).length>32768)throw new Error('Invalid or oversized debug inputs');
   if(recordTriggered&&flowType!=='Record-Triggered Flow')
@@ -84,6 +89,7 @@ export async function simulateFlowGraph(options:{
       resources.push({name:node.config.loopVariable,type:'Record',dataType:source.dataType});
   }
   const vars:Dict=Object.create(null) as Dict;
+  if(userResource)vars.$User=structuredClone(userResource);
   let event='created',prior:Dict|null=null;
   if(recordTriggered){
     if(!record(inputs.record))throw new Error('Current debug record must be an object');
@@ -101,9 +107,56 @@ export async function simulateFlowGraph(options:{
       throw new Error('Invalid debug resource');
     vars[key]=structuredClone(value);
   }
+  const formulaStack=new Set<string>();
   const resolveResource=(name:string):unknown=>{
     const [resource,...path]=name.split('.');
-    if(!Object.hasOwn(vars,resource))throw new Error('Unknown debug resource: '+resource);
+    if(!Object.hasOwn(vars,resource)){
+      const definition=resources.find(item=>item.name===resource);
+      if(!definition)throw new Error('Unknown debug resource: '+resource);
+      if(definition.type==='Formula'){
+        if(formulaStack.has(resource))throw new Error('Circular Flow formula reference: '+resource);
+        if(typeof definition.value!=='string')
+          throw new Error('Flow formula resource has no expression: '+resource);
+        formulaStack.add(resource);
+        try{
+          const evaluated=evaluateFlowFormula(definition.value,resolveResource,formulaContext);
+          const value=isFormulaImageResult(evaluated)?evaluated.url:evaluated;
+          if(['Number','Currency','Percent'].includes(definition.dataType)
+            &&(typeof value!=='number'||!Number.isFinite(value)))
+            throw new Error('Flow formula did not return a finite number: '+resource);
+          if(['Boolean','Checkbox'].includes(definition.dataType)&&typeof value!=='boolean')
+            throw new Error('Flow formula did not return a Boolean: '+resource);
+          if(!['Boolean','Checkbox','Number','Currency','Percent'].includes(definition.dataType)
+            &&value!==null&&typeof value!=='string')
+            throw new Error('Flow formula did not return text: '+resource);
+          vars[resource]=value;
+        }finally{
+          formulaStack.delete(resource);
+        }
+      }else if(definition.type==='Constant'||definition.type==='Choice'){
+        const value=definition.value??null;
+        if(['Number','Currency','Percent'].includes(definition.dataType)){
+          const parsed=typeof value==='number'?value:Number(value);
+          if(!Number.isFinite(parsed))throw new Error('Invalid Flow constant: '+resource);
+          vars[resource]=parsed;
+        }else if(['Boolean','Checkbox'].includes(definition.dataType)){
+          if(typeof value==='boolean')vars[resource]=value;
+          else if(value==='true'||value==='false')vars[resource]=value==='true';
+          else throw new Error('Invalid Flow constant: '+resource);
+        }else if(scalar(value))vars[resource]=value;
+        else throw new Error('Invalid Flow constant: '+resource);
+      }else if(definition.type==='Text Template'){
+        if(typeof definition.value!=='string')
+          throw new Error('Flow text template has no text: '+resource);
+        vars[resource]=definition.value.replace(/\{!([A-Za-z_$][A-Za-z0-9_$.]*)\}/g,
+          (_match,reference:string)=>{
+            const value=resolveResource(reference);
+            if(value!==null&&value!==undefined&&!scalar(value))
+              throw new Error('Text template references a non-scalar resource');
+            return value===null||value===undefined?'':String(value);
+          });
+      }else throw new Error('Unknown Flow resource: '+resource);
+    }
     let value=vars[resource];
     for(const segment of path){
       if(!record(value)||!Object.hasOwn(value,segment))

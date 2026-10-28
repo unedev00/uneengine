@@ -1085,11 +1085,16 @@ export class FlowRuntime {
           }))
       };
     }
+    const userResource:Record<string,unknown>={};
+    const formulaContext=await loadFlowUserResource(this.db,tenantId,userId,
+      JSON.stringify([doc.resources,doc.elements]),userResource);
     return simulateFlowGraph({
       apiName,version:version.version,flowType:String(doc.flowType??'Autolaunched Flow'),
       nodes:doc.elements as Array<{id:number;type:string;label:string;config:Record<string,unknown>}>,
       edges:doc.connectors as Array<{from:number;to:number;label:string;kind:string}>,
       inputs,recordTriggered,resources:flowDebugResources(doc.resources),
+      formulaContext,userResource:Object.keys(userResource).length?userResource.$User as
+        Record<string,unknown>:undefined,
       findRecords:this.recordQuery
         ?(object,conditions,logic,options)=>
           this.recordQuery!.find(tenantId,userId,object,conditions,logic,options)
