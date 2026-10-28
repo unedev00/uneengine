@@ -12,13 +12,20 @@ export default function RibbonFieldExpressionInput({label,value,fields,onChange,
   const positionPicker=()=>{const box=inputRef.current?.getBoundingClientRect();if(box)setPosition({top:box.bottom+3,left:Math.max(8,Math.min(box.left,window.innerWidth-350))});};
   useEffect(()=>{if(!focused)return;const close=()=>setFocused(false);window.addEventListener('scroll',close,true);window.addEventListener('resize',close);return()=>{window.removeEventListener('scroll',close,true);window.removeEventListener('resize',close);};},[focused]);
   const [choice,setChoice]=useState(0);
-  const token=/@([A-Za-z0-9_]*)$/.exec(value);
+  const [caret,setCaret]=useState(value.length);
+  const at=Math.min(caret,value.length);
+  const token=/@([A-Za-z0-9_]*)$/.exec(value.slice(0,at));
   const query=token?.[1]?.toLowerCase()??'';
   const suggestions=token?fields.filter(field=>field.apiName.toLowerCase().includes(query)||field.label.toLowerCase().includes(query)).slice(0,12):[];
   const insert=(index:number)=>{
     const field=suggestions[index];
     if(!field)return;
-    onChange(value.slice(0,value.length-(token?.[0].length??0))+'@'+field.apiName);
+    const replacement='@'+field.apiName;
+    const prefix=value.slice(0,at-(token?.[0].length??0));
+    onChange(prefix+replacement+value.slice(at));
+    const nextCaret=prefix.length+replacement.length;
+    setCaret(nextCaret);
+    requestAnimationFrame(()=>{inputRef.current?.focus();inputRef.current?.setSelectionRange(nextCaret,nextCaret);});
     setFocused(false);setChoice(0);
   };
   const onKey=(event:KeyboardEvent<HTMLInputElement>)=>{
@@ -33,8 +40,11 @@ export default function RibbonFieldExpressionInput({label,value,fields,onChange,
     <span className="office-ribbon-expression-anchor">
       <input ref={inputRef} type="text" aria-label={label+' expression'} autoComplete="off"
         value={value} placeholder={placeholder??'Type @ for fields'} onKeyDown={onKey}
-        onFocus={()=>{positionPicker();setFocused(true);}} onBlur={()=>setFocused(false)}
-        onChange={event=>{onChange(event.target.value);setChoice(0);positionPicker();setFocused(true);}}/>
+        onFocus={event=>{setCaret(event.currentTarget.selectionStart??value.length);positionPicker();setFocused(true);}}
+        onClick={event=>{setCaret(event.currentTarget.selectionStart??value.length);setChoice(0);}}
+        onKeyUp={event=>{setCaret(event.currentTarget.selectionStart??value.length);}}
+        onBlur={()=>setFocused(false)}
+        onChange={event=>{setCaret(event.currentTarget.selectionStart??event.currentTarget.value.length);onChange(event.currentTarget.value);setChoice(0);positionPicker();setFocused(true);}}/>
       {focused&&token&&createPortal(<div className="office-ribbon-field-suggestions" role="listbox" aria-label="Fields from selected source object" style={{position:"fixed",top:position.top,left:position.left}}>
         {!fields.length?<span className="office-ribbon-expression-hint">Choose a Source Object first</span>:suggestions.length===0?<span className="office-ribbon-expression-hint">No matching fields</span>:
         suggestions.map((field,index)=><button type="button" role="option" aria-selected={choice===index}
