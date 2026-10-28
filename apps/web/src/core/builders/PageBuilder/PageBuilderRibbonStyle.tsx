@@ -1,13 +1,13 @@
 import { AlignLeft, AlignCenter, AlignRight, Bold, Italic, Underline, RefreshCw, Eye } from 'lucide-react';
 import RibbonColorPalette from './RibbonColorPalette';
 import ComponentPresentationProperties from '../ComponentProperties/ComponentPresentationProperties';
-import {availableComponentSettings} from '../../components/Properties/componentSettingDefinitions';
+import {availableComponentSettings,type PropertyDevice} from '../../components/Properties/componentSettingDefinitions';
 import {isPresentationProperty,presentationSection} from '../ComponentProperties/presentationPropertyModel.mjs';
 import {updateLayoutSettings,layoutSettings,type LayoutSettingKey} from '../../pages/TemplatePageRuntime/pageComponentLayout';
 import type {LibraryComponentMetadata} from '../../metadata/Definitions/metadata';
 
 type Properties=Record<string,unknown>;
-type Props={properties:Properties;componentType:string;definition?:LibraryComponentMetadata;device:string;onChange:(next:Properties)=>void};
+type Props={properties:Properties;componentType:string;definition?:LibraryComponentMetadata;device:PropertyDevice;onChange:(next:Properties)=>void};
 const object=(v:unknown):Properties=>v&&typeof v==='object'&&!Array.isArray(v)?v as Properties:{};
 const mode=(v:string):'Base'|'Desktop'|'Tablet'|'Phone'=>v==='Mobile'?'Phone':v==='Tablet'?'Tablet':v==='Desktop'?'Desktop':'Base';
 const num=(v:unknown,fallback:number)=>typeof v==='number'?v:Number(v??fallback);
@@ -29,7 +29,7 @@ export function RibbonDesign({properties,componentType,definition,device,onChang
     const metadataKey=key==='color'?'textColor':key;
     return String(properties[metadataKey]??responsive[key]??visual[key]??(key==='color'?'#111827':'#ffffff'));
   };
-  const settings=availableComponentSettings(definition?.propertyDefinitions??[],device==='Mobile'?'Phone':device,definition?.version)
+  const settings=availableComponentSettings(definition?.propertyDefinitions??[],device,definition?.version)
     .filter(d=>isPresentationProperty(d)&&['theme','surface','tone'].includes(d.propertyKey));
   return <>
     <div className="office-ribbon-group office-ribbon-icon-group office-ribbon-colour-group">
@@ -62,7 +62,7 @@ export function RibbonFormat({properties,componentType,definition,device,onChang
   const opacity=num(style.opacity??properties.opacity,100);
   const fontSize=num(style.fontSize??properties.fontSize,16);
   const weight=num(style.fontWeight??properties.fontWeight,400);
-  const remaining=availableComponentSettings(definition?.propertyDefinitions??[],device==='Mobile'?'Phone':device,definition?.version)
+  const remaining=availableComponentSettings(definition?.propertyDefinitions??[],device,definition?.version)
     .filter(d=>isPresentationProperty(d)&&presentationSection(d)!=='Content'&&presentationSection(d)!=='Layout'&&!/^(?:theme|surface|tone|textColor|accentColor|backgroundColor|borderColor|fontFamily|fontWeight|fontSize|textAlign|borderWidth|borderRadius|radius|padding|margin|gap|opacity|minWidth|maxWidth|minHeight|maxHeight)$/.test(d.propertyKey));
   return <>
     {supportedText&&<div className="office-ribbon-group office-ribbon-typography"><div className="office-ribbon-stack">
