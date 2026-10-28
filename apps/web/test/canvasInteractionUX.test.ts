@@ -195,7 +195,7 @@ test('Page Builder property editors filter controls by selected component capabi
   assert.match(advancedStyle, /office-ribbon-extra-grid/);
   assert.doesNotMatch(advancedStyle, /office-ribbon-capability-backdrop/);
   assert.match(builder, /<RibbonResponsive/);
-  assert.match(builder, /visible=\{selected\.visible\}/);
+  assert.doesNotMatch(builder, /visible=\{selected\.visible\}/);
   assert.match(capability, /disabled=\{!definitions.length\}/);
   assert.match(capability, /RibbonColorPalette key=\{name\}/);
   assert.match(ribbonStyle, /RibbonColorPalette kind="text"/);
