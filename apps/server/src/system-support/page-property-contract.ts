@@ -83,8 +83,11 @@ export function conditionExpressionIssues(raw:unknown):string[]{
 }
 function nestedConditionIssues(properties:Record<string,unknown>):Array<{path:string;message:string}>{
  const envelope=properties.pagePropertyContract;
- if(!isPropertyRecord(envelope))return [];
+ if(!isPropertyRecord(envelope))return conditionExpressionIssues(properties.visibilityRules)
+   .map(message=>({path:'visibilityRules.expression',message}));
  const output:Array<{path:string;message:string}>=[];
+ for(const error of conditionExpressionIssues(properties.visibilityRules))
+   output.push({path:'visibilityRules.expression',message:error});
  for(const key of ['fieldRules','actionVisibility','tabVisibility','validationRules','conditionalFormatting']){
    const entries=envelope[key];
    if(!Array.isArray(entries))continue;
