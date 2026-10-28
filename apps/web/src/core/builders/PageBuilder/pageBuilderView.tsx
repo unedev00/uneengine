@@ -7,6 +7,7 @@ import './MobileBuilderReadMode.css';
 import {confirmDestructiveAction} from '../../components/ConfirmAction/confirmDestructiveAction';
 import './PageBuilderNoCode.css';
 import './PageBuilderRibbonGallery.css';
+import './PageBuilderRibbonBlueprint.css';
 import RibbonCapabilityControls from './RibbonCapabilityControls';
 import '../../pages/TemplatePageRuntime/pageComponentAppearance.css';
 import '../SharedBuilderFrame/adaptiveBuilder.css';
