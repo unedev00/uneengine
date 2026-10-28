@@ -197,3 +197,17 @@ test('per-field conflicts never make a read-only field simultaneously layout-req
  assert.deepEqual(layout?.sections.at(-1)?.readOnlyFieldApiNames,['BillingAddress']);
  assert.equal(layout?.sections.at(-1)?.requiredFieldApiNames,undefined);
 });
+
+test('an authored Dynamic Forms layout never leaks hidden fields through legacy fallback',()=>{
+ const conditional:LightningPageMetadata={...page,components:[{
+  id:'private-fields',type:'Field Section',label:'Private',visible:true,
+  properties:{fieldApiNames:['Secret'],visibilityRules:{logic:'All',conditions:[
+   {source:'Record Field',fieldApiName:'Status',operator:'Equals',value:'Authorized'}]}}
+ }]};
+ const context={formFactor:'Desktop' as const,record:{Status:'Denied'},
+  fields:[{apiName:'Status',label:'Status',dataType:'Text(40)'}],
+  readableFieldApiNames:new Set(['Status'])};
+ const result=recordEditPageLayout(conditional,fallback,context);
+ assert.deepEqual(result?.sections,[]);
+ assert.deepEqual(fallback.sections[0].fieldApiNames,['Name','Phone']);
+});
