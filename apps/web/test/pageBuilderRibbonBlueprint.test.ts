@@ -37,14 +37,14 @@ test('selected Item Grid and Calendar render blueprint-specific Design and Conte
  assert.match(content,/section\('Supporting Text'/);
  assert.match(content,/RibbonFieldExpressionInput/);
 });
-test('Data and Responsive are three stable functional ribbon groups',()=>{
+test('Data keeps functional groups and Responsive removes its redundant override indicator',()=>{
  const data=readFileSync(new URL('../src/core/builders/PageBuilder/PageBuilderRibbonData.tsx',import.meta.url),'utf8');
  const responsive=readFileSync(new URL('../src/core/builders/PageBuilder/PageBuilderRibbonStyle.tsx',import.meta.url),'utf8');
  assert.match(data,/office-ribbon-data-group/);
  assert.match(data,/onOpenFilters/);
  assert.match(data,/recordSortFieldApiName/);
  assert.match(responsive,/office-ribbon-responsive-visibility/);
- assert.match(responsive,/office-ribbon-responsive-overrides/);
+ assert.doesNotMatch(responsive,/office-ribbon-responsive-overrides/);
  assert.match(responsive,/office-ribbon-responsive-rules/);
 });
 test('extra metadata styling remains available outside the fixed ribbon',()=>{
