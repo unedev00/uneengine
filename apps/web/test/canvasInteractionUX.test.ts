@@ -393,7 +393,7 @@ test('Page Builder Office ribbon keeps each control in one permanent logical gro
   assert.match(data, /Set actions/);
   assert.match(data, /Configure record filters/);
   assert.match(data, /Configure component actions/);
-  assert.match(builder, /ribbonTab==='Visibility Rules'/);
+  assert.doesNotMatch(builder, /ribbonTab==='Visibility Rules'/);
   assert.doesNotMatch(builder, /Group <ChevronDown/);
   assert.match(builder, /office-ribbon-arrange-column/);
   assert.match(builder, /onClick=\{\(\)=>wrapSelectedInContainer\(\)\}/);
@@ -427,7 +427,7 @@ test('Page Builder contextual ribbon respects the fixed-height no-scroll contrac
   const filters=await readFile(new URL('PageBuilder/PageBuilderRibbonEditors.tsx',root),'utf8');
   const actions=await readFile(new URL('PageBuilder/PageBuilderActionRibbon.tsx',root),'utf8');
   assert.match(builder,/ribbonTab==='Filters' && <RibbonFilters/);
-  assert.match(builder,/ribbonTab==='Visibility Rules' && <RibbonVisibilityRules/);
+  assert.doesNotMatch(builder,/ribbonTab==='Visibility Rules' && <RibbonVisibilityRules/);
   assert.match(builder,/ribbonTab==='Source'/);
   assert.match(builder,/ribbonTab === 'Component Content'/);
   const advancedStyle=await readFile(new URL('PageBuilder/PageBuilderAdvancedStyle.tsx',root),'utf8');
