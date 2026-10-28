@@ -3,6 +3,7 @@ const text=(propertyKey:string,label:string,required=false):ComponentSettingDefi
 const choice=(propertyKey:string,label:string,values:string[]):ComponentSettingDefinition=>({propertyKey,label,kind:'SELECT',choices:values.map(key=>({key,label:key}))});
 export const conditionSettings:ComponentSettingDefinition[]=[
  {...choice('logic','Match conditions',['All','Any']),defaultValue:'All'},
+ {...text('expression','Condition expression (e.g. 1 AND (2 OR 3))'),maxLength:160},
  {propertyKey:'conditions',label:'Conditions',kind:'COLLECTION',minItems:1,maxItems:20,fields:[
   {...choice('source','Source',['Device','Record Field','Record Type','User Profile','Record Permission']),required:true},
   text('fieldApiName','Record field'),{...choice('operator','Comparison',['Equals','Not Equals','Contains','Greater Than','Less Than']),required:true},text('value','Value')
@@ -54,12 +55,57 @@ export const pagePropertyContract:ComponentSettingDefinition={
   ...Object.values(pageBehaviorSchemas)
  ]
 };
+/** The server validates the same bounded expression grammar before draft publication.
+ * Numbered references must point to existing condition rows. No executable syntax.
+ */
+export function conditionExpressionIssues(raw:unknown):string[]{
+ if(!isPropertyRecord(raw)||raw.expression===undefined)return [];
+ const expression=raw.expression;
+ const conditions=raw.conditions;
+ if(typeof expression!=='string'||expression.length>160||!Array.isArray(conditions))
+   return ['Invalid condition expression'];
+ const compact=expression.replace(/\s+/g,'').toUpperCase();
+ const tokens=compact.match(/\d+|AND|OR|\(|\)/g)??[];
+ if(!compact||tokens.length>100||tokens.join('')!==compact)
+   return ['Invalid condition expression'];
+ let index=0;
+ const primary=():void=>{
+   const token=tokens[index++];
+   if(token==='('){or();if(tokens[index++]!==')')throw Error('Invalid grouping');return;}
+   if(!token||!/^\d+$/.test(token)||!Number.isSafeInteger(Number(token))
+     ||Number(token)<1||Number(token)>conditions.length)
+     throw Error('Invalid condition reference');
+ };
+ const and=():void=>{primary();while(tokens[index]==='AND'){index++;primary();}};
+ const or=():void=>{and();while(tokens[index]==='OR'){index++;and();}};
+ try{or();return index===tokens.length?[]:['Unexpected condition token'];}
+ catch{return ['Invalid condition expression'];}
+}
+function nestedConditionIssues(properties:Record<string,unknown>):Array<{path:string;message:string}>{
+ const envelope=properties.pagePropertyContract;
+ if(!isPropertyRecord(envelope))return conditionExpressionIssues(properties.visibilityRules)
+   .map(message=>({path:'visibilityRules.expression',message}));
+ const output:Array<{path:string;message:string}>=[];
+ for(const error of conditionExpressionIssues(properties.visibilityRules))
+   output.push({path:'visibilityRules.expression',message:error});
+ for(const key of ['fieldRules','actionVisibility','tabVisibility','validationRules','conditionalFormatting']){
+   const entries=envelope[key];
+   if(!Array.isArray(entries))continue;
+   entries.forEach((entry,index)=>{
+     if(!isPropertyRecord(entry))return;
+     const prop=key==='fieldRules'?'visibilityRules':'when';
+     for(const error of conditionExpressionIssues(entry[prop]))
+       output.push({path:'pagePropertyContract.'+key+'['+index+'].'+prop+'.expression',message:error});
+   });
+ }
+ return output;
+}
 export function pagePropertyIssues(type:string,properties:unknown){
  if(properties===undefined)return [];
  if(!isPropertyRecord(properties))return [{path:'properties',message:'Invalid component properties'}];
  const definitions=[pagePropertyContract,
   ...(type==='Record Field'?recordFieldSettings:type==='Field Section'?recordSectionSettings:[])];
- return validateComponentSettings(definitions,properties);
+ return [...validateComponentSettings(definitions,properties),...nestedConditionIssues(properties)];
 }
 export function requirePagePropertyContract(type:string,properties:unknown){
  const issues=pagePropertyIssues(type,properties);
