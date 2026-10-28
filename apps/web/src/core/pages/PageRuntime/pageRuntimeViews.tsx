@@ -969,6 +969,7 @@ function LightningAppRuntime({
       const tabs = behaviorTabs(component.properties,Array.isArray(component.properties.tabs)
         ? component.properties.tabs.filter((tab): tab is string => typeof tab === 'string')
         : [],appVisibilityContext);
+      if(!tabs.length)return null;
       const selected = tabs.includes(activeTabs[component.id]) ? activeTabs[component.id] : tabs[0];
       const nested=childrenOf(page.components,component.id);
       const selectedChildren=nested.filter(child=>
