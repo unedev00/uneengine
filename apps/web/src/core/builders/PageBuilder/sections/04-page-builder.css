@@ -1306,3 +1306,40 @@
    grid-template-columns:repeat(4,minmax(0,1fr))!important;
  }
 }
+
+/* Blueprint icon-first capabilities. Compact commands retain functional
+   metadata editors while the ribbon stays a single fixed-height row. */
+.office-builder-ribbon #page-builder-tab-content > .office-ribbon-part-group{
+  flex:0 0 112px!important;width:112px!important;min-width:112px!important;max-width:112px!important;
+}
+.office-builder-ribbon #page-builder-tab-content > .office-ribbon-part-group > .office-ribbon-part-fieldset{
+  width:100%!important;height:99px!important;display:flex!important;align-items:center!important;justify-content:center!important;
+}
+.office-builder-ribbon .office-ribbon-capabilities{
+  display:flex!important;align-items:center!important;justify-content:center!important;gap:4px!important;
+  width:100%!important;min-height:50px!important;
+}
+.office-builder-ribbon .office-ribbon-capability-icon{
+  display:inline-flex!important;flex:0 0 29px!important;align-items:center!important;justify-content:center!important;
+  width:29px!important;height:33px!important;padding:3px!important;border:1px solid transparent!important;
+  border-radius:3px!important;background:transparent!important;color:#163d68!important;
+}
+.office-builder-ribbon .office-ribbon-capability-icon:hover:not(:disabled){
+  background:#e7f1ff!important;border-color:#9fbfe8!important;
+}
+.office-builder-ribbon .office-ribbon-capability-icon:disabled{
+  color:#a6afbb!important;opacity:.45!important;cursor:not-allowed!important;
+}
+.office-ribbon-capability-backdrop{
+  position:fixed;inset:0;z-index:1600;background:#122b4266;
+  display:flex;justify-content:center;align-items:flex-start;padding:10vh 12px 12px;box-sizing:border-box;
+}
+.office-ribbon-capability-dialog{
+  display:flex;flex-direction:column;gap:12px;max-height:80vh;overflow:auto;
+  width:min(480px,100%);background:#fff;border:1px solid #b6cbe5;border-radius:7px;
+  padding:15px;box-shadow:0 12px 42px #0e284a55;
+}
+.office-ribbon-capability-dialog header{display:flex;justify-content:space-between;align-items:center}
+.office-ribbon-capability-dialog label{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:12px}
+.office-ribbon-capability-dialog label input:not([type=checkbox]),
+.office-ribbon-capability-dialog label select{width:210px;max-width:60%;min-height:30px;box-sizing:border-box}
