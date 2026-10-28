@@ -190,3 +190,16 @@ test('P1 duplicate action rules combine with hide precedence and recalculate',()
  assert.equal(behaviorAction(p,'Edit',{...c,record:{Status:'Active'},
   recordPermissions:new Set<'Create'|'Edit'|'Delete'>(['Edit'])}),'enabled');
 });
+
+test('parity PB21 conditional tabs never expose panels after a second rule denies',()=>{
+ const p={pagePropertyContract:{version:1,tabVisibility:[
+  {tabId:'Details',when:{logic:'All',conditions:[{source:'Device',operator:'Equals',value:'Desktop'}]}},
+  {tabId:'Details',when:{logic:'All',conditions:[{source:'Record Permission',operator:'Equals',value:'Edit'}]}}
+ ]}};
+ const base={formFactor:'Desktop' as const,recordPermissions:new Set<'Create'|'Edit'|'Delete'>()};
+ assert.deepEqual(behaviorTabs(p,['Details','History'],base),['History']);
+ assert.deepEqual(behaviorTabs(p,['Details','History'],{
+  ...base,recordPermissions:new Set<'Create'|'Edit'|'Delete'>(['Edit'])}),['Details','History']);
+ assert.deepEqual(behaviorTabs(p,['Details','History'],{
+  ...base,formFactor:'Phone',recordPermissions:new Set<'Create'|'Edit'|'Delete'>(['Edit'])}),['History']);
+});
