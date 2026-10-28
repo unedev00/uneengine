@@ -2614,7 +2614,7 @@ function PageBuilder({
                 </section>)}
             </div>
           </div>}
-          {selected && ribbonTab==='Component Data' && <PageBuilderRibbonData
+          {selected && !selectedCustomDefinition && ribbonTab==='Component Data' && <PageBuilderRibbonData
             properties={selected.properties} definition={selectedCustomDefinition}
             objects={objects} fallbackObject={String(page.targetObject??'')}
             onChange={properties=>updateComponent(selected.id,{properties})}
