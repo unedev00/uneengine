@@ -149,8 +149,10 @@ export default function UniversalRibbonInventory({tab,definition,componentId,pro
  const [reviewDraft,setReviewDraft]=useState<Properties>({});
  useEffect(()=>{setReviewDraft({});},[componentId]);
  const reviewProperties={...properties,...reviewDraft};
- const reviewPositionValue=(key:keyof CanvasPosition)=>
-   builder?.position?.[key]??reviewDraft['__previewCanvas_'+key]??'';
+ const reviewPositionValue=(key:keyof CanvasPosition):number|string=>{
+   const value=builder?.position?.[key]??reviewDraft['__previewCanvas_'+key];
+   return typeof value==='number'||typeof value==='string'?value:'';
+ };
  const editCanvas=(key:keyof CanvasPosition,min:number,raw:string)=>{
    const value=Number(raw);
    if(!Number.isFinite(value)||value<min)return;
