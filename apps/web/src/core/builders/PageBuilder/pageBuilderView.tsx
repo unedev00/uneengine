@@ -1159,7 +1159,7 @@ function PageBuilder({
           : type === 'Rich Text'
             ? { content: '' }
           : type === 'List View'
-            ? { listObjectApiName: page.targetObject, columns: [], pageSize: 25 }
+            ? { listObjectApiName: page.targetObject, savedViewId: '', columns: [], pageSize: 25 }
           : type === 'Screen Flow'
             ? { flowApiName: '', inputRecordIdAs: '', embed: true }
           : type === 'Path'
