@@ -1575,17 +1575,25 @@ function RecordWorkspace({
       setError(failure instanceof Error ? failure.message : 'Unable to delete record');
     }
   };
+  // Clone opens the same published create form instead of immediately creating
+  // a record. The actor may edit the copy before the normal Record API validates it.
   const cloneCurrentRecord=async()=>{
-    if(!object||!record||object.apiName==='User')return;
-    setError('');
-    try{
-      const result=await apiRequest<{id:string}>(
-        `/records/${encodeURIComponent(object.apiName)}/${encodeURIComponent(record.Id)}/clone`,
-        {method:'POST',body:JSON.stringify({})});
-      onNavigate({kind:'record-detail',objectApiName:object.apiName,recordId:result.id});
-    }catch(failure){
-      setError(failure instanceof Error?failure.message:'Unable to clone record');
-    }
+    if(!object||!record||object.apiName==='User'||!canCreate)return;
+    const writable=new Set(object.fields.filter(field=>
+      fieldAccess[`${object.apiName}.${field.apiName}`]?.read &&
+      fieldAccess[`${object.apiName}.${field.apiName}`]?.edit &&
+      !field.formula && !field.dataType.toLowerCase().startsWith('auto number')
+    ).map(field=>field.apiName));
+    const excluded=new Set(['Id','OwnerId','CreatedById','LastModifiedById',
+      'CreatedDate','LastModifiedDate','SystemModstamp','IsDeleted']);
+    const values=Object.fromEntries(Object.entries(record).filter(([name])=>
+      writable.has(name)&&!excluded.has(name)));
+    if(typeof record.RecordTypeId==='string')values.RecordTypeId=record.RecordTypeId;
+    setEditingId(null);
+    setEditingTimestamp('');
+    setFormValues(values);
+    setFormError('');
+    setFormOpen(true);
   };
   const deleteSelectedRecords = async () => {
     if (!object) return;
