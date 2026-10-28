@@ -1526,6 +1526,24 @@ function RecordWorkspace({
   };
   const runCustomObjectAction = async (action: ObjectActionMetadata) => {
     if(!object||!record||!action.behavior)return;
+    // UI state is never a grant, but programmatic action invocation must still
+    // obey the same published conditional state as its Header/Publisher buttons.
+    const actionsBlock=activeLightningPage?.components.find(component=>
+      component.type==='Record Actions'&&component.visible!==false);
+    const actionLayout=recordPagePresentationLayout(activeLightningPage,
+      pageLayoutForRecord(object,String(record.RecordTypeId??defaultRecordTypeId),profileId));
+    const actionState=behaviorRecordAction(actionsBlock?.properties??{},action.id,{
+      formFactor,record,profileId,fields:object.fields,
+      readableFieldApiNames:new Set(object.fields.filter(field=>
+        fieldAccess[`${object.apiName}.${field.apiName}`]?.read).map(field=>field.apiName)),
+      recordPermissions:new Set<'Create'|'Edit'|'Delete'>(
+        (['Create','Edit','Delete'] as const).filter(key=>
+          recordGrants?.objectApi===object.apiName&&recordGrants[key]===true))
+    },actionLayout?.actionVisibility?.[action.id]);
+    if(actionState!=='enabled'||(actionsBlock&&actionLayout&&!actionLayout.actions.includes(action.id))){
+      setCustomActionMessage('This action is unavailable for the current record.');
+      return;
+    }
     if(action.behavior==='Send Email'){
       setEmailAction(action);
       setEmailDraft({to:'',subject:'',body:''});
