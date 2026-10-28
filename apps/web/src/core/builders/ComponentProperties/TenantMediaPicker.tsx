@@ -4,13 +4,13 @@ import {apiRequest} from '../../authentication/Client/authClient';
 type Asset={id:string;name:string;contentType:string;size:number;assetRef:string};
 const safe=/^asset:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const maxBytes=5*1024*1024;
-export default function TenantMediaPicker({value,onChange,disabled=false,assetOnly=false}:{
-  value:string;onChange:(value:string)=>void;disabled?:boolean;assetOnly?:boolean
+export default function TenantMediaPicker({value,onChange,disabled=false,assetOnly=false,initiallyOpen=false}:{
+  value:string;onChange:(value:string)=>void;disabled?:boolean;assetOnly?:boolean;initiallyOpen?:boolean
 }) {
   const [assets,setAssets]=useState<Asset[]>([]);
   const [error,setError]=useState('');
   const [busy,setBusy]=useState(false);
-  const [opened,setOpened]=useState(false);
+  const [opened,setOpened]=useState(initiallyOpen);
   const refresh=async()=>{
     const result=await apiRequest<{assets:Asset[]}>('/media-assets');
     setAssets(result.assets.filter(item=>item.contentType.startsWith('image/')));
