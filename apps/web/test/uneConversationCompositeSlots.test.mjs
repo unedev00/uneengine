@@ -52,7 +52,8 @@ test('conversation keeps its existing shell and authorised actions',()=>{
    'followLatest.current=true;setHasNewMessages(false)'])
    assert.ok(jsx.includes(token),token);
  assert.match(adapters,/return <button \{\.\.\.props\}\/>/);
- assert.match(adapters,/return <input \{\.\.\.props\}\/>/);
+ assert.match(adapters,/React\.forwardRef\(/);
+ assert.match(adapters,/return <input \{\.\.\.props\} ref=\{ref\}\/>/);
  assert.match(builder,/Edit conversation element/);
  assert.match(builder,/conversationPartDefinition\(/);
 });
