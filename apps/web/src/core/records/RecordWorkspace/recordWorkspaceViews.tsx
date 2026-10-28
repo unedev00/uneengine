@@ -8,7 +8,7 @@ import { RecordFormDialog } from '../RecordFormDialog/recordFormDialogView';
 import InlineRecordField from './InlineRecordField';
 import {recordEditPageLayout} from './recordEditPageLayout';
 import {filterLayoutWritableValues} from './layoutWritableValues';
-import {behaviorAction,behaviorAppearance,behaviorField,behaviorTabs,behaviorInteractions} from '../../pages/PageRuntime/pageBehaviorRuntime';
+import {behaviorAction,behaviorRecordAction,behaviorAppearance,behaviorField,behaviorTabs,behaviorInteractions} from '../../pages/PageRuntime/pageBehaviorRuntime';
 import {recordPagePresentationLayout} from './recordPageLayoutMigration';
 import {actionVisibleInArea} from './recordActionPlacement';
 import RichTextContent from './RichTextContent';
@@ -1967,16 +1967,11 @@ function RecordWorkspace({
       ]),
       readableFieldApiNames:new Set(object.fields.filter(field=>fieldAccess[`${object.apiName}.${field.apiName}`]?.read)
         .map(field=>field.apiName))};
-    const pageActionState=(name:string)=>behaviorAction(actionBlock?.properties??{},name,actionContext);
+    const pageActionState=(name:string)=>behaviorRecordAction(
+      actionBlock?.properties??{},name,actionContext,recordLayout?.actionVisibility?.[name]);
     const showRecordAction=(name:string)=>{
-      if(pageActionState(name)==='hidden')return false;
       if(recordPageActionOverride&&recordLayout&&!recordLayout.actions.includes(name))return false;
-      const condition=recordLayout?.actionVisibility?.[name];
-      if(!condition)return true;
-      // Visibility is not authorisation. Hide a conditional action when the
-      // viewer cannot read its controlling field or the record is unavailable.
-      if(!record||!fieldAccess[`${object.apiName}.${condition.fieldApiName}`]?.read)return false;
-      return recordActionConditionVisible(condition,record,true);
+      return pageActionState(name)!=='hidden';
     };
     // A configured override without current Action permission is hidden, not
     // silently downgraded to the native button (especially for Delete).
