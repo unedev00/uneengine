@@ -84,3 +84,16 @@ test('device show/hide properties are not available in UNE metadata or the Page 
  }
  assert.ok(!ribbon.includes('Show on '),'no per-device visibility switches');
 });
+
+test('all 14 requested UNE components omit public Flow/Page State record collections',()=>{
+ const targets=['calendar','item_grid','chart','choice','form','line_items','lookup','menu',
+  'navigation','record_list','repeater','search','slot_picker','table'].map(name=>'une_'+name);
+ for(const name of targets){
+  const component=une.find(item=>item.apiName===name);
+  assert.ok(component,name+' exists');
+  assert.ok(!component.propertyDefinitions.some(property=>property.propertyKey==='items'&&property.kind==='RECORD_LIST'),
+   name+' must not expose an items record collection');
+   assert.ok(!component.propertyDefinitions.some(property=>property.label.includes('Flow/Page State record collection')||property.label.includes('Flow / Page State records')),
+   name+' must not expose legacy collection labels');
+ }
+});

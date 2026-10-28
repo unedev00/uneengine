@@ -36,3 +36,11 @@ test('Page Builder Flow actions safely bind nested fields from selected page sta
  assert.equal(resolvePageStatePath(state,'selectedContact.__proto__'),undefined);
  assert.equal(resolvePageStatePath(state,'selectedContact.missing'),undefined);
 });
+
+test('Flow collections bind without an exposed items property definition or initial items array',()=>{
+ const props={objectApiName:'Appointment',stateBindings:{items:'flowRows'}};
+ const result=bindPageStateProperties(props,{flowRows:[{Id:'a',Title:'From API Flow'}]});
+ assert.deepEqual((result as Record<string,unknown>).items,[{Id:'a',Title:'From API Flow'}]);
+ const invalid=bindPageStateProperties(props,{flowRows:[{__proto__:'unsafe',Name:'Wrong'}]});
+ assert.ok(Array.isArray((invalid as Record<string,unknown>).items)||!('items' in invalid));
+});

@@ -15,6 +15,7 @@ export default function PageStatePropertyBindingsEditor({properties,onChange,def
   const entries=Object.entries(bindings).filter(([key,value])=>valid.test(key)
     &&!blocked.has(key)&&typeof value==='string');
   const targets=Array.from(new Set(['value','subtitle','title','label',
+     ...(typeof properties.objectApiName==='string'||'items' in properties||'items' in bindings?['items']:[]),
      ...definitions.filter(def=>!blocked.has(def.propertyKey)
        && ['RECORD_LIST','TEXT','NUMBER','BOOLEAN','SELECT','COLOR'].includes(def.kind)).map(def=>def.propertyKey),
     ...Object.entries(properties).filter(([key,value])=>valid.test(key)

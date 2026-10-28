@@ -210,13 +210,6 @@
       "defaultValue": ""
     },
     {
-      "propertyKey": "items",
-      "label": "Flow / Page State records",
-      "kind": "RECORD_LIST",
-      "displayOrder": 300,
-      "defaultValue": []
-    },
-    {
       "propertyKey": "value",
       "label": "Search term from page state",
       "kind": "TEXT",
