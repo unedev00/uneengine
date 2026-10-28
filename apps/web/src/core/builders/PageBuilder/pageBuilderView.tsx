@@ -140,6 +140,7 @@ import PageComponentVisualEditor from '../ComponentStyleEditor/PageComponentVisu
 import RibbonColorPalette from './RibbonColorPalette';
 import {RibbonFilters,RibbonVisibilityRules} from './PageBuilderRibbonEditors';
 import PageBuilderActionRibbon from './PageBuilderActionRibbon';
+import {RibbonDesign,RibbonFormat,RibbonResponsive} from './PageBuilderRibbonStyle';
 import type {ComponentVisibilityRule} from '../../components/Properties/componentVisibility';
 import { canNestComponent, pageAppearanceTarget, pageAppearanceStyleKeys, updateLayoutSettings, type LayoutSettingKey, directChildren, isLayoutType, isDescendantOf, layoutTypes } from '../../pages/TemplatePageRuntime/pageComponentLayout';
 import PageComponentStyleEditor from '../ComponentStyleEditor/PageComponentStyleEditor';
@@ -2450,91 +2451,19 @@ function PageBuilder({
             <div className="office-ribbon-group office-ribbon-mapping-warning" role="alert">
               Some mapped fields are not available on this object. Choose replacement fields; existing mappings were preserved.
             </div>}
-          {selected && ribbonTab === 'Component Properties' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
-            <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Label</span><input aria-label="Component label" value={selected.label} onChange={event=>updateComponent(selected.id,{label:event.target.value})}/></label>
-            {(/text/i.test(selected.type) || /text/i.test(selected.label)) && selected.type!=='Rich Text' && <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Text</span><input aria-label="Component text" value={String(selected.properties.text??selected.properties.content??'Text')} onChange={event=>{const key=typeof selected.properties.content==='string'?'content':'text';updateComponent(selected.id,{properties:{...selected.properties,[key]:event.target.value}});}}/></label>}
-            <label className="office-ribbon-checkbox"><input type="checkbox" checked={selected.visible} onChange={event=>updateComponent(selected.id,{visible:event.target.checked})}/> Show component</label>
-            <button type="button" onClick={()=>selectRibbonTab('Component Style')}><SlidersHorizontal size={16}/> Format controls</button>
-            <button type="button" onClick={()=>selectRibbonTab('Component Responsive')}><Eye size={16}/> Responsive & visibility</button>
-          </div><span>Content</span></div>}
-
-          {selected && ribbonTab==='Component Properties' && <div className="office-ribbon-group office-ribbon-icon-group office-ribbon-colour-group"><div className="office-ribbon-stack">
-            <div className="office-ribbon-icon-line">
-              {([['text','Text colour','color'],['fill','Fill colour','backgroundColor'],['border','Border colour','borderColor']] as const)
-                .map(([kind,label,key])=><RibbonColorPalette key={kind} kind={kind} label={label}
-                  value={String((selected.properties.visualStyle as Record<string,unknown>|undefined)?.[key]??'#111827')}
-                  onChange={colour=>{
-                    const authored=selected.properties.visualStyle && typeof selected.properties.visualStyle==='object'
-                      ?selected.properties.visualStyle as Record<string,unknown>:{};
-                    updateComponent(selected.id,{properties:{...selected.properties,visualStyle:{...authored,[key]:colour}}});
-                  }}/>)}
-            </div></div><span>Colours</span></div>}
-          {selected && ribbonTab==='Component Responsive' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
-            <label className="office-ribbon-checkbox"><input type="checkbox" checked={selected.visible}
-              onChange={event=>updateComponent(selected.id,{visible:event.target.checked})}/> Show component</label>
-            <button type="button" onClick={()=>openExpandedEditor('visibility')}><Eye size={16}/> Visibility rules</button>
-          </div><span>Visibility</span></div>}
-          {selected && ribbonTab === 'Component Style' && /text|button|label|badge|heading|paragraph|rich|input/i.test(selected.type+' '+selected.label) && <div className="office-ribbon-group office-ribbon-typography">
-            <div className="office-ribbon-stack">
-              <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Font size</span>
-                <input aria-label="Component font size" type="number" min={8} max={96} value={typeof textStyle.fontSize==='number'?textStyle.fontSize:Number(selected.properties.fontSize??16)}
-                  onChange={event=>{const size=Number(event.target.value);if(Number.isInteger(size)&&size>=8&&size<=96)updateTextStyle('fontSize',size);}}/>
-              </label>
-              <div className="office-ribbon-icon-line">
-                <button type="button" className="office-ribbon-icon-button" title="Bold" aria-label="Bold" aria-pressed={Number(textStyle.fontWeight??selected.properties.fontWeight??400)>=700}
-                  onClick={()=>updateTextStyle('fontWeight',Number(textStyle.fontWeight??selected.properties.fontWeight??400)>=700?'400':'700')}><Bold size={16}/></button>
-                <button type="button" className="office-ribbon-icon-button" title="Italic" aria-label="Italic" aria-pressed={textStyle.fontStyle==='italic'}
-                  onClick={()=>updateTextStyle('fontStyle',textStyle.fontStyle==='italic'?'normal':'italic')}><Italic size={16}/></button>
-                <button type="button" className="office-ribbon-icon-button" title="Underline" aria-label="Underline" aria-pressed={textStyle.textDecoration==='underline'}
-                  onClick={()=>updateTextStyle('textDecoration',textStyle.textDecoration==='underline'?'none':'underline')}><Underline size={16}/></button>
-              </div>
-              <div className="office-ribbon-icon-line">
-                {([['left',AlignLeft,'Align text left'],['center',AlignCenter,'Align text centre'],['right',AlignRight,'Align text right']] as const).map(([alignment,Icon,label])=>
-                  <button key={alignment} type="button" className="office-ribbon-icon-button" title={label} aria-label={label}
-                    aria-pressed={(textStyle.textAlign??selected.properties.textAlign??'left')===alignment}
-                    onClick={()=>updateTextStyle('textAlign',alignment)}><Icon size={16}/></button>)}
-              </div>
-            </div><span>Typography</span>
-          </div>}
-
-
-          {selected && ribbonTab === 'Component Style' && <div className="office-ribbon-group office-ribbon-appearance">
-            <div className="office-ribbon-stack">
-              {([
-                {key:'borderRadius',label:'Corners',options:[[0,'Square'],[6,'Small'],[14,'Rounded'],[28,'Soft'],[64,'Pill']]},
-                {key:'padding',label:'Spacing',options:[[0,'None'],[8,'Tight'],[16,'Normal'],[24,'Roomy'],[32,'Wide']]},
-                {key:'borderWidth',label:'Border',options:[[0,'None'],[1,'Hairline'],[2,'Normal'],[4,'Bold']]}
-              ] as const).map(control=><label className="office-ribbon-inline-field" key={control.key}>
-                <span className="office-ribbon-field-name">{control.label}</span>
-                <select aria-label={control.label} value={String(
-                  (selected.properties.visualStyle && typeof selected.properties.visualStyle==='object'
-                    ? (selected.properties.visualStyle as Record<string,unknown>)[control.key] : undefined)
-                  ?? (control.key==='padding'?12:control.key==='borderRadius'?8:0)
-                )} onChange={event=>{
-                  const authored=selected.properties.visualStyle && typeof selected.properties.visualStyle==='object'
-                    ?selected.properties.visualStyle as Record<string,unknown>:{};
-                  updateComponent(selected.id,{properties:{...selected.properties,visualStyle:{...authored,[control.key]:Number(event.target.value)}}});
-                }}>
-                  {!control.options.some(([value])=>String(value)===String((selected.properties.visualStyle as Record<string,unknown>|undefined)?.[control.key]??(control.key==='padding'?12:control.key==='borderRadius'?8:0))) &&
-                    <option value={String((selected.properties.visualStyle as Record<string,unknown>|undefined)?.[control.key]??(control.key==='padding'?12:control.key==='borderRadius'?8:0))}>Current</option>}
-                  {control.options.map(([value,label])=><option key={value} value={value}>{label} · {value}px</option>)}
-                </select>
-              </label>)}
-            </div><span>Appearance</span>
-          </div>}
-          {selected && (ribbonTab==='Component Properties'||ribbonTab==='Component Style') && selectedCustomDefinition && <div className="office-ribbon-inline-options">
-            <ComponentPresentationProperties
-              definitions={availableComponentSettings(selectedCustomDefinition.propertyDefinitions??[],page.layoutVariant??'Desktop',selectedCustomDefinition.version)
-                .filter(definition=>!(definition as {group?:string}).group
-                  && presentationSection(definition)!=='Content' && presentationSection(definition)!=='Layout'
-                  && (ribbonTab==='Component Properties'
-                    ? /(?:theme|surface|tone|colou?r|background|fill)/i.test(definition.propertyKey)
-                    : !/(?:theme|surface|tone|colou?r|background|fill)/i.test(definition.propertyKey))
-                  && !(ribbonTab==='Component Style' && ['text','label','content'].includes(definition.propertyKey)
-                    && /text/i.test(selected.type+' '+selected.label)))}
-              properties={selected.properties}
-              onChange={properties=>updateComponent(selected.id,{properties})}/>
-          </div>}
+          {selected && ribbonTab === 'Component Properties' && <>
+            <div className="office-ribbon-group"><div className="office-ribbon-stack">
+              <label className="office-ribbon-checkbox"><input type="checkbox" checked={selected.visible} onChange={event=>updateComponent(selected.id,{visible:event.target.checked})}/> Show component</label>
+            </div><span>Visibility</span></div>
+            <RibbonDesign properties={selected.properties} componentType={selected.type} definition={selectedCustomDefinition}
+              device={page.layoutVariant??'Desktop'} onChange={properties=>updateComponent(selected.id,{properties})}/>
+          </>}
+          {selected && ribbonTab==='Component Responsive' && <RibbonResponsive properties={selected.properties} componentType={selected.type}
+            definition={selectedCustomDefinition} device={page.layoutVariant??'Desktop'}
+            onChange={properties=>updateComponent(selected.id,{properties})} onVisibilityRules={()=>openExpandedEditor('visibility')}/>}
+          {selected && ribbonTab === 'Component Style' && <RibbonFormat properties={selected.properties} componentType={selected.type}
+            definition={selectedCustomDefinition} device={page.layoutVariant??'Desktop'}
+            onChange={properties=>updateComponent(selected.id,{properties})}/>}
           {selected && ribbonTab === 'Component Action' && selectedCustomDefinition?.apiName==='une_item_grid'
             && <div className="office-ribbon-group"><div className="office-ribbon-stack">
               <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Add to cart</span>
