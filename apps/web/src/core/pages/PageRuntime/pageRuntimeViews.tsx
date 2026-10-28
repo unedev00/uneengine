@@ -1,3 +1,4 @@
+import {nextAccessibleTabIndex} from '../PageRuntime/tabKeyboardNavigation';
 import { useFormFactor } from '../../workspace/Responsive/useFormFactor';
 import {resolveMetadataProperties} from '../../metadata/Definitions/metadataReferences';
 import {useFlowStateChannel} from '../../automation/FlowScreen/useFlowStateChannel';
@@ -982,7 +983,15 @@ function LightningAppRuntime({
       return <section className="record-fields-card surface" key={component.id}>
         <div className="record-tabs" role="tablist" aria-label={component.label}>
           {tabs.map(tab=><button type="button" role="tab" key={tab} aria-selected={selected===tab}
-            className={selected===tab?'active':''}
+            className={selected===tab?'active':''} tabIndex={selected===tab?0:-1}
+            onKeyDown={event=>{
+              const next=nextAccessibleTabIndex(event.key,tabs.indexOf(tab),tabs.length);
+              if(next===null)return;
+              event.preventDefault();
+              setActiveTabs(current=>({...current,[component.id]:tabs[next]}));
+              const buttons=event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]');
+              buttons?.[next]?.focus();
+            }}
             onClick={()=>setActiveTabs(current=>({...current,[component.id]:tab}))}>{tab}</button>)}
         </div>
         <div className="record-runtime-tab-panel" role="tabpanel">
