@@ -309,7 +309,7 @@
     },
     {
       "propertyKey": "sourceObjectApiName",
-      "label": "Flow record source Object API",
+      "label": "Source Object — Flow Records",
       "kind": "TEXT",
       "displayOrder": 890,
       "defaultValue": ""
