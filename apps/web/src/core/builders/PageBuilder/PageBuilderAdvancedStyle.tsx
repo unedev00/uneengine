@@ -8,11 +8,11 @@ import RibbonColorPalette from './RibbonColorPalette';
 type Values=Record<string,unknown>;
 type Definition=NonNullable<LibraryComponentMetadata['propertyDefinitions']>[number];
 const appearanceKeys=new Set(['theme','surface','tone','accentColor','glassBlur']);
-const typographyKeys=new Set(['fontFamily','fontSize','fontWeight','lineHeight','letterSpacing','textAlign']);
+const typographyKeys=new Set(['fontFamily','fontSize','fontWeight','lineHeight','letterSpacing','textAlign','textColor']);
 const borderKeys=new Set(['borderWidth','borderStyle']);
 const included=new Set([...appearanceKeys,...typographyKeys,...borderKeys]);
 const skipped=new Set(['radius','cardRadius','shadow','cardShadow','backgroundColor','borderColor',
-  'textColor','opacity','padding','cardPadding','margin','gap','density','cardDensity','cardBorderWidth','lineHeight']);
+  'opacity','padding','cardPadding','margin','gap','density','cardDensity','cardBorderWidth','lineHeight']);
 /**
  * All previously hidden appearance properties are edited in the ribbon.
  * No modal, no alternate persistence format and no duplicate property owners.
