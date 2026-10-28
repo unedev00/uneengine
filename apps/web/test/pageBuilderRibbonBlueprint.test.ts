@@ -13,5 +13,5 @@ test('the real Insert, Content and Design ribbon structures have compact overrid
  assert.match(css,/#page-builder-tab-content > \.office-ribbon-part-group/);
  assert.match(css,/#page-builder-tab-content\[aria-label="Component Content"\] > \.office-ribbon-inline-options/);
  assert.match(css,/#page-builder-tab-content > \.office-ribbon-add-library > \.office-ribbon-gallery-pages/);
- assert.match(css,/grid-template-rows:repeat\(3,40px\)!important/);
+ assert.match(css,/flex-flow:row nowrap!important/);
 });
