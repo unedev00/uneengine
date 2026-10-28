@@ -203,13 +203,6 @@
       "defaultValue": []
     },
     {
-      "propertyKey": "items",
-      "label": "Initial line values / Flow records",
-      "kind": "RECORD_LIST",
-      "displayOrder": 320,
-      "defaultValue": []
-    },
-    {
       "propertyKey": "maxRows",
       "label": "Maximum rows",
       "kind": "NUMBER",
