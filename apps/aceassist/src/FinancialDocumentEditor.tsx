@@ -157,6 +157,13 @@ export function FinancialDocumentEditor({
   return {subtotal:acc.subtotal+x.subtotal,discount:acc.discount+x.discount,
    tax:acc.tax+x.tax,total:acc.total+x.total};
  },{subtotal:0,discount:0,tax:0,total:0});
+ const lineIssue=!lines.length||lines.length>200?'A financial document requires 1 to 200 line items.':
+  lines.map((line,index)=>{const issue=validLine(line);return issue?'Line '+(index+1)+': '+issue:null;})
+   .find((issue):issue is string=>Boolean(issue));
+ const namedCustomerSelected=customers.some(customer=>
+  String(customer.Id??customer.id)===header.Customer||String(customer.Name??'')===header.Customer);
+ const saveIssue=!header.Customer?'Select a customer before saving.':
+  !namedCustomerSelected?'Choose a customer with a name before saving.':lineIssue;
  return <div className="assist-modal-backdrop" role="presentation">
   <section className="assist-modal assist-document-modal" role="dialog" aria-modal="true"
    aria-label={(operation==='Create'?'New ':'Edit ')+type}>
@@ -178,8 +185,11 @@ export function FinancialDocumentEditor({
       .map(field=><React.Fragment key={field.apiName}>
       {field.apiName==='Customer'?
        <div className="assist-customer-picker">
-        <SearchRecord label="Customer" value={header.Customer??''} options={customers}
-         emptyMessage="No matching customer — use + to add one"
+        <SearchRecord label="Customer" value={header.Customer??''}
+         options={customers.filter(customer=>String(customer.Name??'').trim())} required
+         emptyMessage={onCreateCustomer
+          ?'No named customers found — use + to add one or complete a customer record'
+          :'No named customers found. Ask an administrator to add or complete a customer record.'}
          addNew={onCreateCustomer?()=>setCustomerDialog(true):undefined}
          onChange={id=>setHeader(previous=>({...previous,Customer:id}))}/>
         {onCreateCustomer&&<button type="button" className="assist-add-customer"
@@ -192,7 +202,7 @@ export function FinancialDocumentEditor({
     </div>
     <div className="assist-document-line-heading">
      <div><h3>Products and services</h3>
-      <p>Line totals and document totals are verified when saved by OneEngine.</p></div>
+      <p>Totals are calculated automatically. Product, quantity, and price details are checked before saving.</p></div>
      <button type="button" disabled={!canEdit||lines.length>=200}
       onClick={()=>setLines(list=>[...list,draft()])}>+ Add line</button>
     </div>
@@ -202,7 +212,7 @@ export function FinancialDocumentEditor({
       return <fieldset className="assist-document-line" key={line.key} disabled={!canEdit}>
        <legend>Item {index+1}</legend>
        <div className="assist-document-line-main">
-        <SearchRecord label="Product / service" value={line.Product} options={products}
+        <SearchRecord label="Product / service" value={line.Product} options={products} required
          emptyMessage="No matching product or service"
          onChange={id=>{
           const product=products.find(p=>String(p.Id)===id);
@@ -242,8 +252,11 @@ export function FinancialDocumentEditor({
     {(localError||error)&&<p role="alert" className="assist-document-error">{localError||error}</p>}
     <footer className="assist-modal-footer">
      <button type="button" disabled={busy} onClick={onCancel}>Cancel</button>
-     <button type="submit" disabled={!canEdit}>{busy?'Saving document…':'Save '+type}</button>
+     <button type="submit" disabled={!canEdit||Boolean(saveIssue)}>{busy?'Saving document…':'Save '+type}</button>
     </footer>
+    <p className="assist-document-validation" role="status">
+     {saveIssue??'Totals will be calculated automatically when you save.'}
+    </p>
    </form>
   </section>
   {customerDialog&&<div className="assist-modal-backdrop assist-customer-overlay" role="presentation">

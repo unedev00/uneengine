@@ -10,9 +10,9 @@ const display=(r:Row)=>{
   return name;
  return String(r.Email??r.email??r.Phone??'Unnamed record');
 };
-export function SearchRecord({label,value,options,onChange,addNew,emptyMessage}:{
+export function SearchRecord({label,value,options,onChange,addNew,emptyMessage,required}:{
  label:string;value:string;options:Row[];onChange:(id:string)=>void;
- addNew?:()=>void;emptyMessage?:string
+ addNew?:()=>void;emptyMessage?:string;required?:boolean
 }){
  const [query,setQuery]=useState('');
  const [expanded,setExpanded]=useState(false);
@@ -34,8 +34,8 @@ export function SearchRecord({label,value,options,onChange,addNew,emptyMessage}:
  const results=options.filter(r=>display(r).toLowerCase().includes(query.toLowerCase())
   ||String(r.Email??'').toLowerCase().includes(query.toLowerCase())).slice(0,40);
  return <div className="assist-lookup" ref={lookupRef}>
-  <label>{label}<input type="search" role="combobox" aria-expanded={expanded}
-   aria-autocomplete="list" autoComplete="off" value={expanded?query:selected?display(selected):query}
+  <label>{label}{required?' *':''}<input type="search" role="combobox" aria-expanded={expanded}
+   aria-autocomplete="list" aria-required={required||undefined} autoComplete="off" value={expanded?query:selected?display(selected):query}
    placeholder={'Search '+label.toLowerCase()} onFocus={()=>{setExpanded(true);setQuery('');}}
    onChange={e=>{setQuery(e.target.value);setExpanded(true);}} /></label>
   {expanded&&<div className="assist-lookup-menu" role="listbox">
@@ -76,6 +76,7 @@ export function DateSlotPicker({label,value,onChange,calendar,startDate,minTime,
    {slots.map(x=><option key={x} value={x}>{x}</option>)}
   </select></label>
   {date&&!hours&&<small>No bookable hours on this date</small>}
+  {date&&hours&&!slots.length&&<small>No available time slots on this date. Check the service, staff and date, or choose another date.</small>}
   {date&&hours&&preview&&<small>Preliminary slot choices; availability is verified again when saving.</small>}
  </div>;
 }

@@ -640,6 +640,15 @@ export default function AceAssistRuntime({entry,onLogout}:{
  const week=Array.from({length:daysToShow},(_,i)=>{
   const d=new Date(startOfCalendar);d.setDate(d.getDate()+i);return dateKey(d);
  });
+ const editingFormFields=visibleFields(editingObject).filter(field=>
+  editingObject!=='Appointment'||editing!=='Create'||
+   !['CompletedAt','ExternalBookingId','Resource','Status','TimeZone','ReminderAt','Name','EndDateTime','Service','ServiceProduct'].includes(field.apiName));
+ if(editingObject==='Customer'&&editing==='Create'){
+  const priority:Record<string,number>={Name:0,Email:1,Phone:2,CustomerNumber:3,
+   Account:4,Active:5,BillingAddress:6,ShippingAddress:7,EmailOptIn:8,WhatsAppOptIn:9};
+  editingFormFields.sort((left,right)=>
+   (priority[left.apiName]??10)-(priority[right.apiName]??10));
+ }
  const logout=async()=>{
   try{await apiRequest('/auth/logout',{method:'POST'});}catch{/* clear local session */}
   onLogout();window.location.assign('/login');
@@ -655,9 +664,10 @@ export default function AceAssistRuntime({entry,onLogout}:{
   </header>
   <main className="custom-assist">
    {screen==='records'&&<div className="custom-heading"><div><span className="custom-eyebrow">ACE ASSIST</span>
-    <h1>{current.object==='Appointment'?'Calendar':current.label}</h1><p>Live tenant Objects · OneEngine Flows</p></div>
-    <label className="custom-date">{calendarView==='day'?'Date':calendarView==='month'?'Month of':'Week of'}
+    <h1>{current.object==='Appointment'?'Calendar':current.label}</h1><p>Your appointments, customers and billing in one place.</p></div>
+    {current.object==='Appointment'&&<label className="custom-date">{calendarView==='day'?'Date':calendarView==='month'?'Month of':'Week of'}
       <input type="date" value={weekOf} onChange={e=>setWeekOf(e.target.value)}/></label>
+    }
    </div>}
    {error&&<p role="alert" className="standalone-product-message">{error}</p>}
    {notice&&<p role="status" className="standalone-product-message">{notice}</p>}
@@ -754,7 +764,7 @@ export default function AceAssistRuntime({entry,onLogout}:{
      })}</div>:<div className="custom-record-list">
      {rows.map((row,i)=><div className="assist-record-row" key={String(row.Id??i)}>
        <button type="button" className="assist-record-open" onClick={()=>setChosen(row)}>
-        <strong>{current.object==='Customer'?String(row.Name||row.Email||row.Phone||'Unnamed customer'):
+        <strong>{current.object==='Customer'?String(row.Name||'Incomplete customer record'):
          current.object==='CashLedger'?String(row.TransactionNumber??row.Reference??'Cash receipt'):
          current.object==='Quotation'?String(row.QuotationNumber??row.DocumentNumber??row.Name??'Quotation'):title(row)}</strong>
         <small>{current.object==='Customer'?String([row.Email,row.Phone].filter(Boolean).join(' · ')||'Customer'):
@@ -771,7 +781,7 @@ export default function AceAssistRuntime({entry,onLogout}:{
     {current.object==='Appointment'&&!busy&&rows.length>0&&filteredAppointments.length===0&&
      <p className="custom-empty">No appointments match the selected staff and service filters.</p>}
     {busy&&<p role="status">Running OneEngine Flow…</p>}
-    {!busy&&rows.length===0&&can('Load')&&<p className="custom-empty">No accessible records.</p>}
+    {!busy&&rows.length===0&&can('Load')&&<p className="custom-empty">No {current.label.toLocaleLowerCase()} found.</p>}
    </section>
    <aside className={'custom-visit-detail'+(!chosen?' custom-detail-empty':'')}>
     <button type="button" className="assist-detail-back" onClick={()=>setChosen(null)}>
@@ -930,7 +940,7 @@ export default function AceAssistRuntime({entry,onLogout}:{
      ?(lookupRows.Quotation??[]).find(row=>idOf(row)===String(chosen?.Quotation??'')):null)):null}
     sourceLines={quoteInvoiceLines}
     metadataFields={documentFields(editingObject,editing)}
-    customers={lookupRows.Customer??[]} products={lookupRows.Product??[]}
+    customers={(lookupRows.Customer??[]).filter(customer=>String(customer.Name??'').trim())} products={lookupRows.Product??[]}
     busy={busy} error={error}
     onCreateCustomer={canDynamic('Create','Customer')||actions.has('AceAssistCreateCustomer')
      ?createCustomerForDocument:undefined}
@@ -946,9 +956,7 @@ export default function AceAssistRuntime({entry,onLogout}:{
       onClick={()=>{setEditing(null);setReturnToAppointment(false);}}>✕</button></header>
     <form className="custom-crud-form" onSubmit={e=>void submit(e)}>
      {editing==='Delete'?<p>Delete this record? This action cannot be undone.</p>:
-      visibleFields(editingObject)
-       .filter(field=>editingObject!=='Appointment'||editing!=='Create'||!['CompletedAt','ExternalBookingId','Resource','Status','TimeZone','ReminderAt','Name','EndDateTime','Service','ServiceProduct'].includes(field.apiName))
-       .map(field=><React.Fragment key={field.apiName}>
+      editingFormFields.map(field=><React.Fragment key={field.apiName}>
         {editingObject==='Appointment'&&['AssignedTo','AssignedUser'].includes(field.apiName)?
          <SearchRecord label="Assigned to" value={form[field.apiName]??''}
           options={selfId&&!lookupRows.User?.some(x=>idOf(x)===selfId)
@@ -957,7 +965,9 @@ export default function AceAssistRuntime({entry,onLogout}:{
           onChange={id=>setForm(x=>({...x,[field.apiName]:id}))}/>:
         editingObject==='Appointment'&&field.apiName==='Customer'?
          <SearchRecord label="Customer" value={form.Customer??''}
-          options={lookupRows.Customer??[]}
+          options={(lookupRows.Customer??[]).filter(customer=>String(customer.Name??'').trim())}
+          required={Boolean(field.required)}
+          emptyMessage="No named customers found. Add a customer or complete an existing record."
           onChange={id=>setForm(x=>({...x,Customer:id}))}
           addNew={()=>{setAppointmentDraft(form);setReturnToAppointment(true);setEditingObject('Customer');
             setForm({Active:'true'});setChosen(null);}}/>:
@@ -1000,7 +1010,13 @@ export default function AceAssistRuntime({entry,onLogout}:{
            targetObject(field)!=='BookableResource'||row.Active!==false&&row.Active!=='false')}
           emptyMessage="No accessible records available for selection"
           onChange={id=>setForm(x=>({...x,[field.apiName]:id}))}/>:
-         <RecordFieldInput field={editingObject==='Appointment'&&field.apiName==='Location'?{...field,label:'Address'}:editingObject==='Appointment'&&field.apiName==='Notes'?{...field,dataType:'textarea'}:field} value={form[field.apiName]??''}
+         <RecordFieldInput field={editingObject==='Customer'&&field.apiName==='EmailOptIn'
+          ?{...field,label:'Email appointment reminders'}
+          :editingObject==='Customer'&&field.apiName==='WhatsAppOptIn'
+           ?{...field,label:'WhatsApp appointment reminders'}
+           :editingObject==='Appointment'&&field.apiName==='Location'?{...field,label:'Address'}
+           :editingObject==='Appointment'&&field.apiName==='Notes'?{...field,dataType:'textarea'}:field}
+          value={form[field.apiName]??''}
           onChange={v=>setForm(x=>({...x,[field.apiName]:v}))}/>}
        </React.Fragment>)}
      {editingObject==='Appointment'&&editing==='Create'&&

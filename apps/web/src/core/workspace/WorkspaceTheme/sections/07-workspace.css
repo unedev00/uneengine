@@ -570,6 +570,33 @@
   width: 24px; height: 24px; min-width: 24px; min-height: 24px; flex: 0 0 24px;
   accent-color: #016ec4;
 }
+.permission-role-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgb(15 23 42 / 58%);
+}
+.permission-role-dialog {
+  width: min(760px, 100%);
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  padding: clamp(18px, 3vw, 28px);
+  border: 1px solid var(--md-border,#d7e0e8);
+  border-radius: 12px;
+  background: var(--md-surface,#fff);
+  box-shadow: 0 24px 80px rgb(7 17 30 / 34%);
+}
+.permission-role-dialog .setup-draft-footer {
+  position: sticky;
+  bottom: -1px;
+  flex-wrap: wrap;
+  padding: 12px 0 0;
+  border-top: 1px solid var(--md-border,#e0e5eb);
+  background: var(--md-surface,#fff);
+}
 .settings-read-first-page .permission-help { font-size: 12px; line-height: 1.5; }
 .tenant-recovery-panel .permission-help { font-size: 12px; line-height: 1.5; }
 .tenant-recovery-panel .form-label { font-size: 12px; line-height: 1.45; }

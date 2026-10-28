@@ -200,6 +200,9 @@
 .md-mail-login-admin { margin:20px auto 0;color:var(--mail-blue);font-size:13px;text-decoration:none; }
 .md-mail-login-admin:hover { text-decoration:underline; }
 .md-mail-login-card .md-mail-error { padding:12px;border-radius:8px; }
+.md-mail-login-help { display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin:-7px 0 16px;color:var(--mail-muted);font-size:13px; }
+.md-mail-password-toggle { padding:0;border:0;background:none;color:var(--mail-blue);font:inherit;font-weight:650;text-decoration:underline;text-underline-offset:2px;cursor:pointer; }
+.md-mail-password-toggle:focus-visible { outline:2px solid var(--mail-blue);outline-offset:3px;border-radius:2px; }
 
 @media(max-width:1050px){
  .md-mail-header { grid-template-columns:205px minmax(160px,1fr) auto;gap:10px;padding-right:14px; }

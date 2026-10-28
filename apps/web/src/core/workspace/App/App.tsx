@@ -252,10 +252,23 @@ function App() {
 
   useEffect(()=>{
     if(authState==='anonymous'&&!standaloneEntry&&window.location.pathname!=='/login'&&window.location.pathname!=='/oauth/authorize'){
+      if(window.location.pathname==='/mail-admin'||window.location.pathname==='/mail-admin/'){
+        try{sessionStorage.setItem('md_auth_return_to','/mail-admin');}catch{/* The normal landing route remains available if storage is disabled. */}
+      }
       window.location.replace('/login');
     }
   },[authState,standaloneEntry]);
-  const loginSuccess = (timing: EntryTiming) => { sessionGeneration.current += 1; setEntryTiming(timing); setAuthState('authenticated'); };
+  const loginSuccess = (timing: EntryTiming) => {
+    sessionGeneration.current += 1;
+    try {
+      if(sessionStorage.getItem('md_auth_return_to')==='/mail-admin'){
+        sessionStorage.removeItem('md_auth_return_to');
+        window.history.replaceState({},'','/mail-admin');
+      }
+    } catch { /* The assigned landing route remains available if storage is disabled. */ }
+    setEntryTiming(timing);
+    setAuthState('authenticated');
+  };
   const cancelRestore = () => { sessionGeneration.current += 1; };
   if (authState === 'restoring') return <div className="auth-loading" role="status">Restoring session…</div>;
   if (authState === 'anonymous' && !standaloneEntry && window.location.pathname!=='/login') return <div role="status">Opening login…</div>;

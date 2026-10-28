@@ -53,4 +53,15 @@
   outline-offset: 2px;
 }
 .auth-screen .auth-card .auth-submit { color: #fff; -webkit-text-fill-color: #fff; }
+.auth-screen:not(.auth-screen--standalone) .auth-card .auth-submit {
+  background: #0b57d0;
+  border-color: #0b57d0;
+}
+.auth-inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 2px;
+}
 .auth-screen .auth-card .auth-error { color: #9b332c; }
