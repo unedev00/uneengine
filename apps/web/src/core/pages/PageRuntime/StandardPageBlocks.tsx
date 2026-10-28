@@ -8,18 +8,21 @@ import {standardListQuery} from './standardListQuery';
 
 /** Existing generic Record API is the source of truth for permission-checked rows. */
 export function StandardRecordList({
-  object,request,appId,onNavigate,columns,pageSize=25,recordFilter,savedViewId
+  object,request,appId,onNavigate,columns,pageSize=25,recordFilter,savedViewId,extraFilter,initialSort,initialDirection
 }:{
   object:ObjectMetadata|undefined;
   request:<T>(path:string,init?:RequestInit)=>Promise<T>;
   appId:string;onNavigate:(route:AppRoute)=>void;
   columns:string[];pageSize?:number;savedViewId?:string;
+  extraFilter?:{field:string;value:string;operator:'Equals'|'Includes'|'Excludes'};
+  initialSort?:string;initialDirection?:'asc'|'desc';
   recordFilter?:{field:string;recordId:string};
 }) {
   const [offset,setOffset]=useState(0);
   const [search,setSearch]=useState('');
-  const [sort,setSort]=useState('');
-  const [direction,setDirection]=useState<'asc'|'desc'>('asc');
+  const [sort,setSort]=useState(initialSort??'');
+  const [direction,setDirection]=useState<'asc'|'desc'>(initialDirection??'asc');
+  useEffect(()=>{setSort(initialSort??'');setDirection(initialDirection??'asc');setOffset(0);},[initialSort,initialDirection]);
   const [rows,setRows]=useState<Array<Record<string,unknown>>>([]);
   const [total,setTotal]=useState(0);
   const [busy,setBusy]=useState(false);
@@ -46,7 +49,7 @@ export function StandardRecordList({
     if(!object?.apiName){setRows([]);return;}
     let active=true;
     setBusy(true);setError('');
-    const params=standardListQuery({limit,offset,search,sort,direction,savedViewId,recordFilter});
+    const params=standardListQuery({limit,offset,search,sort,direction,savedViewId,recordFilter,extraFilter});
     void request<{records:Array<Record<string,unknown>>;total:number}>(
       '/records/'+encodeURIComponent(object.apiName)+'?'+params)
       .then(result=>{if(active){setRows(result.records??[]);setTotal(result.total??0);}})
@@ -54,7 +57,8 @@ export function StandardRecordList({
       .finally(()=>{if(active)setBusy(false);});
     return ()=>{active=false;};
   },[object?.apiName,request,limit,offset,search,sort,direction,
-    recordFilter?.field,recordFilter?.recordId,savedViewId]);
+    recordFilter?.field,recordFilter?.recordId,savedViewId,
+    extraFilter?.field,extraFilter?.value,extraFilter?.operator]);
   if(!object)return <p role="status">Select an Object in block settings.</p>;
   return <section className="record-fields-card surface" aria-label={object.pluralLabel}>
     <div className="record-fields-heading">
