@@ -1,14 +1,15 @@
 import ResponsiveDataList from '../records/ResponsiveDataList/ResponsiveDataList';
 import React,{useCallback,useEffect,useState} from 'react';
 import {apiRequest} from '../authentication/Client/authClient';
+import './MailboxAdmin.css';
 
 type Domain={id:string;name:string;isEnabled:boolean;verificationToken?:string|null};
 type Mailbox={id:string;emailAddress:string;name:string;domainId:string;description:string;usedDiskQuota:number;quotas?:Record<string,number>;createdAt:string|null};
 type Props={onLogout:()=>void};
-const panel:React.CSSProperties={background:'#fff',border:'1px solid #d9e0e7',borderRadius:12,padding:20};
+const panel:React.CSSProperties={background:'#fff',color:'#172b3f',border:'1px solid #d9e0e7',borderRadius:12,padding:20};
 const field:React.CSSProperties={display:'grid',gap:6,marginBottom:14};
-const input:React.CSSProperties={width:'100%',boxSizing:'border-box',padding:'10px 12px',border:'1px solid #cbd5e1',borderRadius:8,font:'inherit'};
-const button:React.CSSProperties={padding:'9px 13px',border:'1px solid #cbd5e1',borderRadius:8,background:'#fff',cursor:'pointer',font:'inherit'};
+const input:React.CSSProperties={width:'100%',boxSizing:'border-box',padding:'10px 12px',border:'1px solid #94a3b8',borderRadius:8,font:'inherit',background:'#fff',color:'#172b3f',colorScheme:'light'};
+const button:React.CSSProperties={padding:'9px 13px',border:'1px solid #94a3b8',borderRadius:8,background:'#fff',color:'#172b3f',cursor:'pointer',font:'inherit'};
 const primary:React.CSSProperties={...button,background:'#163a5f',borderColor:'#163a5f',color:'#fff'};
 const fmtBytes=(raw:number)=>{const n=Number(raw)||0;if(n<1024)return n+' B';if(n<1048576)return (n/1024).toFixed(1)+' KB';if(n<1073741824)return (n/1048576).toFixed(1)+' MB';return (n/1073741824).toFixed(2)+' GB';};
 
@@ -93,7 +94,7 @@ export default function MailboxAdmin({onLogout}:Props){
   }catch(e){setError(e instanceof Error?e.message:'Mailbox deletion failed');}
   finally{setBusy(false);}
  };
- return <main style={{minHeight:'100vh',background:'#f4f7fb',color:'#172b3f',fontFamily:'Inter,system-ui,sans-serif',padding:'28px clamp(16px,4vw,56px)',boxSizing:'border-box'}}>
+ return <main className="md-mail-admin" style={{minHeight:'100vh',background:'#f4f7fb',color:'#172b3f',colorScheme:'light',fontFamily:'Inter,system-ui,sans-serif',padding:'28px clamp(16px,4vw,56px)',boxSizing:'border-box'}}>
   <header style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:16,flexWrap:'wrap',marginBottom:24}}>
    <div><p style={{margin:'0 0 5px',color:'#52677b',fontSize:12,fontWeight:700,letterSpacing:1.2}}>METADRIVE · ADMINISTRATION</p>
     <h1 style={{margin:0,fontSize:30}}>Mailboxes</h1><p style={{margin:'8px 0 0',color:'#52677b'}}>Manage tenant mail accounts on Docker Mailserver Mail.</p></div>

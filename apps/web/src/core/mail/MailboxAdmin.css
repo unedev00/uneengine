@@ -1,0 +1,57 @@
+/* Mail administration uses a deliberately light, high-contrast surface.
+   Do not inherit dark workspace palette tokens into its white forms/cards. */
+.md-mail-admin {
+  color-scheme: light;
+  --md-ios-surface: #ffffff;
+  --md-ios-text: #172b3f;
+  --md-ios-secondary: #52677b;
+  --md-ios-group: #f0f5fb;
+  --md-ios-separator: #cbd5e1;
+  --md-ios-pressed: #e5edf6;
+  --md-ios-accent: #0754b8;
+}
+.md-mail-admin :is(h1,h2,h3,label,dt,dd,summary,code) {
+  color: #172b3f;
+  opacity: 1;
+}
+.md-mail-admin :is(input,select,textarea) {
+  background-color: #fff;
+  color: #172b3f;
+  -webkit-text-fill-color: #172b3f;
+  caret-color: #172b3f;
+  opacity: 1;
+}
+.md-mail-admin :is(input,textarea)::placeholder {
+  color: #52677b;
+  opacity: 1;
+}
+.md-mail-admin :is(button,input,select,textarea):focus-visible,
+.md-mail-admin .md-responsive-item>summary:focus-visible {
+  outline: 3px solid #0754b8;
+  outline-offset: 2px;
+}
+.md-mail-admin button:disabled { opacity: .62; cursor: not-allowed; }
+.md-mail-admin .md-responsive-item,
+.md-mail-admin .md-responsive-details,
+.md-mail-admin .md-responsive-badge {
+  color: #172b3f;
+}
+.md-mail-admin .md-responsive-item-text small,
+.md-mail-admin .md-responsive-trailing,
+.md-mail-admin .md-responsive-details dt {
+  color: #52677b;
+}
+.md-mail-admin .md-responsive-details :is(dt,dd) {
+  overflow-wrap: anywhere;
+}
+.md-mail-admin code {
+  background: #eef3f9;
+  padding: 2px 4px;
+  border-radius: 4px;
+  overflow-wrap: anywhere;
+}
+@media (forced-colors: active) {
+  .md-mail-admin :is(button,input,select,textarea):focus-visible {
+    outline-color: Highlight;
+  }
+}
