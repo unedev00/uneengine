@@ -219,3 +219,38 @@
  height:auto!important;min-height:100px!important;max-height:none!important;
  overflow:visible!important;padding:8px!important;border:1px solid #dbe2ed!important;
 }
+
+/* Three Responsive groups from the reference: visible device toggles, override
+   status, and permission-aware rule editor. */
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-responsive-visibility,
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-responsive-overrides {
+ flex:0 0 290px!important;width:290px!important;min-width:290px!important;max-width:290px!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-responsive-rules {
+ flex:0 0 230px!important;width:230px!important;min-width:230px!important;
+}
+.office-builder-ribbon .office-ribbon-responsive-icons {
+ display:flex!important;flex-flow:row nowrap!important;align-items:center!important;
+ justify-content:space-evenly!important;gap:9px!important;width:100%!important;height:78px!important;
+}
+.office-builder-ribbon .office-ribbon-device-toggle,
+.office-builder-ribbon .office-ribbon-device-status {
+ display:flex!important;flex-direction:column!important;align-items:center!important;
+ justify-content:center!important;gap:4px!important;min-width:56px!important;
+ font:500 10px/12px "Segoe UI",Arial,sans-serif!important;color:#163c6c!important;
+}
+.office-builder-ribbon .office-ribbon-device-toggle>input {
+ width:13px!important;height:13px!important;min-width:13px!important;
+ accent-color:#0871e9!important;margin:0!important;
+}
+.office-builder-ribbon .office-ribbon-override-dot {
+ width:6px!important;height:6px!important;border-radius:50%!important;background:#0871e9!important;
+}
+.office-builder-ribbon .office-ribbon-master-visibility-toggle {
+ display:flex!important;align-items:center!important;gap:3px!important;
+ font-size:10px!important;max-width:87px!important;
+}
+.office-builder-ribbon .office-ribbon-responsive-rules>.office-ribbon-stack{
+ display:flex!important;flex-direction:column!important;justify-content:center!important;
+ height:78px!important;gap:10px!important;
+}
