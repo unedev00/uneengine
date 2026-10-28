@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {filterLayoutWritableValues,missingLayoutRequiredFields} from '../src/core/records/RecordWorkspace/layoutWritableValues';
+import {filterLayoutWritableValues,missingLayoutRequiredFields,applyRequiredLayoutDefaults} from '../src/core/records/RecordWorkspace/layoutWritableValues';
 import type {PageLayoutMetadata} from '../src/core/metadata/Definitions/metadata';
 const layout:PageLayoutMetadata={
   id:'dynamic',label:'Dynamic form',actions:[],relatedLists:[],
@@ -33,4 +33,19 @@ test('conditional layout required fields validate only visible writable inputs',
  assert.deepEqual(missingLayoutRequiredFields({Name:'Present',Status:false},
   dynamic,new Set(['Name','Status'])),[]);
  assert.deepEqual(missingLayoutRequiredFields({},undefined,new Set(['Name'])),[]);
+});
+
+test('required defaults match create-form values without overriding explicit input',()=>{
+ const required:PageLayoutMetadata={...layout,sections:[{...layout.sections[0],
+   requiredFieldApiNames:['Name','Status','ReadOnly']}]};
+ const fields=[{apiName:'Name',defaultValue:'Default name'},
+   {apiName:'Status',defaultValue:'Draft'},
+   {apiName:'ReadOnly',defaultValue:'No edits'}];
+ const resolved=applyRequiredLayoutDefaults({Status:''},required,fields,
+   new Set(['Name','Status','ReadOnly']));
+ assert.deepEqual(resolved,{Name:'Default name',Status:''});
+ assert.deepEqual(missingLayoutRequiredFields(resolved,required,
+   new Set(['Name','Status','ReadOnly'])),['Status']);
+ assert.deepEqual(applyRequiredLayoutDefaults({Name:false},required,
+   [{apiName:'Name',defaultValue:'Replace'}],new Set(['Name'])),{Name:false});
 });
