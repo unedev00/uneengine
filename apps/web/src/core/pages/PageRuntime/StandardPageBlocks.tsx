@@ -3,6 +3,7 @@ import type {ObjectMetadata} from '../../metadata/Definitions/metadata';
 import {appRoutePath,type AppRoute} from '../../workspace/Navigation/appRouting';
 import {formatRecordValue} from '../../records/RecordWorkspace/recordCsvUtils';
 import {parseSafeRichText} from './safeRichText';
+import {resolveStandardListColumns} from './standardListColumns';
 
 /** Existing generic Record API is the source of truth for permission-checked rows. */
 export function StandardRecordList({
@@ -37,8 +38,8 @@ export function StandardRecordList({
   // Display only fields returned through the object metadata accessible to this
   // session. A saved view ID affects the server query, not field-level grants.
   const allowedNames=new Set(object?.fields.map(field=>field.apiName)??[]);
-  const names=(columns.length?columns.slice(0,12):savedColumns.length?savedColumns.slice(0,12):object?.fields.slice(0,4).map(field=>field.apiName)??[])
-    .filter(name=>allowedNames.has(name));
+  const names=resolveStandardListColumns(columns,savedColumns,[...allowedNames],
+    object?.fields.slice(0,4).map(field=>field.apiName)??[]);
   useEffect(()=>setOffset(0),[object?.apiName,savedViewId,limit,recordFilter?.field,recordFilter?.recordId]);
   useEffect(()=>{
     if(!object?.apiName){setRows([]);return;}
