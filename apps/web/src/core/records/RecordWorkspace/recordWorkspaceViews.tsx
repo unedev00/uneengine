@@ -1,4 +1,5 @@
 import {resolveHighlightFields} from './highlightFieldSelection';
+import {behaviorAppearanceLabel} from '../../pages/PageRuntime/pageBehaviorRuntime';
 import {nextAccessibleTabIndex} from '../../pages/PageRuntime/tabKeyboardNavigation';
 import {visibleRelatedListQuickLinks} from './relatedQuickLinks';
 import { useFormFactor, useRuntimeFormFactor } from '../../workspace/Responsive/useFormFactor';
@@ -2325,6 +2326,7 @@ function RecordWorkspace({
           ? <section className="record-fields-card surface record-single-field" key={component.id}
               style={behaviorAppearance(component.properties,runtimeBehaviorContext,fieldApiName)}>
             <div className="record-fields-heading"><h2>{component.label}</h2></div>
+            {behaviorAppearanceLabel(component.properties,runtimeBehaviorContext,fieldApiName)&&<p className="records-message" role="status">{behaviorAppearanceLabel(component.properties,runtimeBehaviorContext,fieldApiName)}</p>}
             <dl className="record-fields-grid columns-1"><div className="record-field"><dt>{field.label}</dt><dd>{renderPageField(field)}</dd></div></dl>
           </section>
           : <div className="records-empty" role="status" key={component.id}>This field is unavailable or not readable.</div>;
