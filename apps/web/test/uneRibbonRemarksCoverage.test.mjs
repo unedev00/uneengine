@@ -43,3 +43,10 @@ test('the complete approved remarks inventory is checked rather than screenshot 
    assert.ok(!component.propertyDefinitions.some(property=>property.label===label),
     component.apiName+' still contains '+label);
 });
+
+test('legacy standard properties marked delete are absent from Page Builder controls',()=>{
+ const source=readFileSync(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+ assert.ok(!source.includes('page-component-accordion-content'),'Accordion content editor is still visible');
+ assert.ok(!source.includes('page-component-dashboard'),'Published dashboard editor is still visible');
+ assert.ok(!source.includes('toggleCanvasLock(component)'),'Lock position toolbar is still visible');
+});
