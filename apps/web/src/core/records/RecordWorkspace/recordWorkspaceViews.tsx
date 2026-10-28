@@ -7,6 +7,7 @@ import { resolvePhoneColumns } from '../ResponsiveDataList/phoneColumns.mjs';
 import { RecordFormDialog } from '../RecordFormDialog/recordFormDialogView';
 import InlineRecordField from './InlineRecordField';
 import {recordEditPageLayout} from './recordEditPageLayout';
+import {filterLayoutWritableValues} from './layoutWritableValues';
 import {behaviorAction,behaviorAppearance,behaviorField,behaviorTabs,behaviorInteractions} from '../../pages/PageRuntime/pageBehaviorRuntime';
 import {recordPagePresentationLayout} from './recordPageLayoutMigration';
 import {actionVisibleInArea} from './recordActionPlacement';
@@ -1450,17 +1451,9 @@ function RecordWorkspace({
             && (fieldAccess[`${object.apiName}.${apiName}`]?.edit !== false)
           : (apiName === 'RecordTypeId' || fieldAccess[`${object.apiName}.${apiName}`]?.edit))
       ));
-      // Layout visibility and read-only settings control what the form may submit.
-      // Keep the Record API as the authoritative RBAC/validation boundary.
-      if (selectedLayout) {
-        const visibleFields=new Set(selectedLayout.sections.flatMap(section=>section.fieldApiNames));
-        const readOnlyFields=new Set(selectedLayout.sections.flatMap(section=>section.readOnlyFieldApiNames??[]));
-        for (const name of Object.keys(writableValues)) {
-          if (name==='RecordTypeId') continue;
-          if ((!visibleFields.has(name) && !object.fields.some(field=>field.apiName===name&&field.required))
-            || readOnlyFields.has(name)) delete writableValues[name];
-        }
-      }
+      const layoutWritable=filterLayoutWritableValues(writableValues,selectedLayout,
+        new Set(object.fields.filter(field=>field.required).map(field=>field.apiName)));
+      Object.keys(writableValues).forEach(name=>{if(!(name in layoutWritable))delete writableValues[name];});
       // A record without an assigned type must not submit an empty type ID:
       // the generic API treats an explicitly supplied ID as an assignment request.
       if (writableValues.RecordTypeId == null || writableValues.RecordTypeId === '') delete writableValues.RecordTypeId;
