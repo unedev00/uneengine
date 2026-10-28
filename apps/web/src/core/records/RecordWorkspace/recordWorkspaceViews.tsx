@@ -1,5 +1,5 @@
 import {resolveHighlightFields} from './highlightFieldSelection';
-import {nextAccessibleTabIndex} from '../PageRuntime/tabKeyboardNavigation';
+import {nextAccessibleTabIndex} from '../../pages/PageRuntime/tabKeyboardNavigation';
 import {visibleRelatedListQuickLinks} from './relatedQuickLinks';
 import { useFormFactor, useRuntimeFormFactor } from '../../workspace/Responsive/useFormFactor';
 import {useViewportWidth} from '../../workspace/Responsive/useViewportWidth';
