@@ -564,6 +564,11 @@ function RecordWorkspace({
   const layoutDevice = usePageLayoutDevice();
   const [records, setRecords] = useState<RecordData[]>([]);
   const [record, setRecord] = useState<RecordData | null>(null);
+  // Server-issued Object grants for page condition evaluation. Presentation
+  // hints and Object action metadata cannot substitute for OneEngine RBAC.
+  const [recordGrants,setRecordGrants]=useState<{
+    objectApi:string;Create:boolean;Edit:boolean;Delete:boolean
+  }|null>(null);
   const [overlayRecordId, setOverlayRecordId] = useState<string | null>(null);
   const [contextRecord,setContextRecord]=useState<{item:RecordData;x:number;y:number}|null>(null);
   const [listPaneWidth, setListPaneWidth] = useState<number | null>(null);
@@ -775,10 +780,11 @@ function RecordWorkspace({
       formFactor:typeof window!=='undefined'&&new URLSearchParams(window.location.search).get('pageLayout')==='Custom'
         ? 'Custom' : viewportFactor==='Tablet'?'Tablet':formFactor==='Phone'?'Mobile':'Desktop'
     });
-    void apiRequest<{editLightningPage?:LightningPageMetadata}>(
+    void apiRequest<{editLightningPage?:LightningPageMetadata;recordPermissions?:{Create:boolean;Edit:boolean;Delete:boolean}}>(
       `/records/${encodeURIComponent(object.apiName)}/${encodeURIComponent(editingId)}?${params}`)
       .then(payload=>{if(active){setActiveEditLightningPage(payload.editLightningPage??null);
-        setEditPageResolvedRecordId(editingId);}})
+        setEditPageResolvedRecordId(editingId);
+        if(payload.recordPermissions)setRecordGrants({objectApi:object.apiName,...payload.recordPermissions});}})
       .catch(error=>{if(active)setEditPageError(error instanceof Error?error.message:'Unable to resolve Record Edit Page');})
       .finally(()=>{if(active)setEditPageLoading(false);});
     return()=>{active=false;};
@@ -797,10 +803,11 @@ function RecordWorkspace({
         ?'Custom':viewportFactor==='Tablet'?'Tablet':formFactor==='Phone'?'Mobile':'Desktop',
       recordTypeId:String(formValues.RecordTypeId??object.recordTypes?.find(item=>item.active&&item.isDefault&&recordTypeAccess[`${object.apiName}.${item.id}`]!==false)?.id??object.recordTypes?.find(item=>item.active&&recordTypeAccess[`${object.apiName}.${item.id}`]!==false)?.id??'')
     });
-    void apiRequest<{editLightningPage?:LightningPageMetadata}>(
+    void apiRequest<{editLightningPage?:LightningPageMetadata;recordPermissions?:{Create:boolean;Edit:boolean;Delete:boolean}}>(
       `/records/${encodeURIComponent(object.apiName)}/create-layout?${params}`
     ).then(payload=>{if(active){setActiveEditLightningPage(payload.editLightningPage??null);
-      setCreatePageResolvedTypeId(String(formValues.RecordTypeId??''));}})
+      setCreatePageResolvedTypeId(String(formValues.RecordTypeId??''));
+      if(payload.recordPermissions)setRecordGrants({objectApi:object.apiName,...payload.recordPermissions});}})
       .catch(error=>{if(active)setEditPageError(error instanceof Error?error.message:'Unable to resolve create form');})
       .finally(()=>{if(active)setEditPageLoading(false);});
     return()=>{active=false;};
@@ -1124,13 +1131,14 @@ function RecordWorkspace({
               && new URLSearchParams(window.location.search).get('pageLayout') === 'Custom'
               ? 'Custom' : viewportFactor === 'Tablet' ? 'Tablet' : formFactor === 'Phone' ? 'Mobile' : 'Desktop'
           });
-          const payload = await apiRequest<{ record: RecordData; lightningPage?: LightningPageMetadata; editLightningPage?:LightningPageMetadata }>(
+          const payload = await apiRequest<{ record: RecordData; lightningPage?: LightningPageMetadata; editLightningPage?:LightningPageMetadata;recordPermissions?:{Create:boolean;Edit:boolean;Delete:boolean} }>(
             `/records/${encodeURIComponent(route.objectApiName)}/${encodeURIComponent(route.recordId)}?${recordQuery.toString()}`);
           const history = route.objectApiName === 'User'
             ? { history: [] as Array<Record<string, unknown>> }
             : await apiRequest<{ history: Array<Record<string, unknown>> }>(`/records/${encodeURIComponent(route.objectApiName)}/${encodeURIComponent(route.recordId)}/history`);
           if (active) {
             setRecord(payload.record);
+            if(payload.recordPermissions)setRecordGrants({objectApi:route.objectApiName,...payload.recordPermissions});
             setActiveLightningPage(payload.lightningPage ?? null);
             setActiveEditLightningPage(payload.editLightningPage??null);
             setFieldHistory(history.history);
@@ -1353,17 +1361,10 @@ function RecordWorkspace({
   const visibleEditPage=activeEditLightningPage;
   // Use the same action availability source for conditional form visibility.
   // Backend Record API permissions remain authoritative for every mutation.
-  const formRecordPermissions=new Set<'Create'|'Edit'|'Delete'>([
-    ...((Boolean(object)&&(object?.apiName!=='User'||canManageUserIdentities))
-      &&object?.actions?.find(action=>action.label==='New')?.enabled!==false
-      ?['Create' as const]:[]),
-    ...((Boolean(object)&&(object?.apiName!=='User'||canManageUserIdentities))
-      &&object?.actions?.find(action=>action.label==='Edit')?.enabled!==false
-      ?['Edit' as const]:[]),
-    ...((Boolean(object)&&(object?.apiName!=='User'||canManageUserIdentities))
-      &&object?.actions?.find(action=>action.label==='Delete')?.enabled!==false
-      ?['Delete' as const]:[])
-  ]);
+  const formRecordPermissions=new Set<'Create'|'Edit'|'Delete'>(
+    (['Create','Edit','Delete'] as const).filter(key=>
+      recordGrants?.objectApi===object?.apiName&&recordGrants[key]===true)
+  );
   const selectedLayout = recordEditPageLayout(visibleEditPage,sourceLayout,{
     formFactor,record:formValues,fields:object?.fields??[],profileId,
     recordPermissions:formRecordPermissions,
@@ -1960,11 +1961,10 @@ function RecordWorkspace({
       component.type==='Record Actions' && component.visible!==false));
     const actionBlock=activeLightningPage?.components.find(component=>component.type==='Record Actions'&&component.visible!==false);
     const actionContext={formFactor,record,profileId,fields:object.fields,
-      recordPermissions:new Set<'Create'|'Edit'|'Delete'>([
-        ...(canCreate?['Create' as const]:[]),
-        ...(canEdit?['Edit' as const]:[]),
-        ...(canDelete?['Delete' as const]:[])
-      ]),
+      recordPermissions:new Set<'Create'|'Edit'|'Delete'>(
+        (['Create','Edit','Delete'] as const).filter(key=>
+          recordGrants?.objectApi===object.apiName&&recordGrants[key]===true)
+      ),
       readableFieldApiNames:new Set(object.fields.filter(field=>fieldAccess[`${object.apiName}.${field.apiName}`]?.read)
         .map(field=>field.apiName))};
     const pageActionState=(name:string)=>behaviorRecordAction(
