@@ -12,7 +12,7 @@ const typographyKeys=new Set(['fontFamily','fontSize','fontWeight','lineHeight',
 const borderKeys=new Set(['borderWidth','borderStyle']);
 const included=new Set([...appearanceKeys,...typographyKeys,...borderKeys]);
 const skipped=new Set(['radius','cardRadius','shadow','cardShadow','backgroundColor','borderColor',
-  'textColor','opacity','padding','cardPadding','margin','gap','density','cardDensity','cardBorderWidth']);
+  'textColor','opacity','padding','cardPadding','margin','gap','density','cardDensity','cardBorderWidth','lineHeight']);
 /**
  * All previously hidden appearance properties are edited in the ribbon.
  * No modal, no alternate persistence format and no duplicate property owners.
