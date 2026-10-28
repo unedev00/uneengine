@@ -121,8 +121,6 @@ export function RibbonResponsive({properties,onChange,onVisibilityRules,visible,
     {key:'hideOnTablet',label:'Tablet',Icon:Tablet},
     {key:'hideOnPhone',label:'Mobile',Icon:Smartphone}
   ] as const;
-  const overrides=properties.layoutResponsive&&typeof properties.layoutResponsive==='object'&&!Array.isArray(properties.layoutResponsive)
-    ? properties.layoutResponsive as Record<string,unknown>:{};
   const rules=properties.visibilityRules;
   const ruleCount=rules&&typeof rules==='object'&&!Array.isArray(rules)
     ? (Array.isArray((rules as Record<string,unknown>).rules)?((rules as {rules:unknown[]}).rules.length):1):0;
@@ -138,15 +136,6 @@ export function RibbonResponsive({properties,onChange,onVisibilityRules,visible,
           <input type="checkbox" checked={visible} onChange={event=>onVisibleChange(event.target.checked)}/> Show component
         </label>
       </div><span>Visibility</span>
-    </div>
-    <div className="office-ribbon-group office-ribbon-responsive-overrides">
-      <div className="office-ribbon-responsive-icons">
-        {deviceChoices.map(({label,Icon})=><div className="office-ribbon-device-status" key={label}
-          title={overrides[label]?'Overrides configured for '+label:'No '+label+' overrides'}>
-          <Icon size={18}/><span>{label}</span>
-          {overrides[label]?<span className="office-ribbon-override-dot" aria-label="Configured"/>:null}
-        </div>)}
-      </div><span>Device Overrides</span>
     </div>
     <div className="office-ribbon-group office-ribbon-responsive-rules">
       <div className="office-ribbon-stack">
