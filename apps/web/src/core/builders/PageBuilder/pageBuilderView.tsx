@@ -148,6 +148,8 @@ import PageBuilderActionRibbon from './PageBuilderActionRibbon';
 import PageBuilderRibbonMetadataPager from './PageBuilderRibbonMetadataPager';
 import UniversalRibbonInventory from './UniversalRibbonInventory';
 import './UniversalRibbonInventory.css';
+import './PageBuilderNumericControls.css';
+import './PageBuilderRibbonPolish.css';
 import RibbonFieldExpressionInput from './RibbonFieldExpressionInput';
 import {RibbonResponsive} from './PageBuilderRibbonStyle';
 import PageBuilderAdvancedStyle from './PageBuilderAdvancedStyle';
@@ -261,6 +263,7 @@ import {
   type WorkspaceId
 } from '../../metadata/Definitions/metadata';
 import SavedListViewPicker from './SavedListViewPicker';
+import {uneRibbonIcon} from './uneRibbonIcon';
 import RibbonImageContent from './RibbonImageContent';
 export function createPageBuilder(MetadataComponentProperties: React.ComponentType<any>, MetadataBoundPageComponent: React.ComponentType<any>) {
 function PageBuilder({
@@ -730,6 +733,8 @@ function PageBuilder({
       components:components.slice(index*4,index*4+4)
     })));
   const renderPaletteIcon = (component: { type: string; label: string }) => {
+    const svgIcon=uneRibbonIcon(component.type,null);
+    if(svgIcon)return svgIcon;
     const name = `${component.label} ${component.type}`.toLowerCase();
     if (/\b(text|heading|paragraph|rich text|label)\b/.test(name)) return <Type size={15} />;
     if (/\b(image|photo|picture|avatar|logo)\b/.test(name)) return <ImageIcon size={15} />;
@@ -937,10 +942,10 @@ function PageBuilder({
     if (!selected || !selected.position || isCanvasLocked(selected) || rawLayoutParentId(selected)) return;
     if (selectionIds.length<2 || selectionIds.some(id=>{
       const item=page.components.find(component=>component.id===id);
-      return !item?.position||Boolean(rawLayoutParentId(item))||isCanvasLocked(item)||item.properties.canvasLocked===true;
+      return !item?.position||Boolean(rawLayoutParentId(item))||isCanvasLocked(item);
     }))return;
     const groupId = 'group-' + crypto.randomUUID();
-    const eligible=page.components.filter(item=>selectionIds.includes(item.id)&&item.position&&!rawLayoutParentId(item)&&item.properties.canvasLocked!==true&&!isCanvasLocked(item));
+    const eligible=page.components.filter(item=>selectionIds.includes(item.id)&&item.position&&!rawLayoutParentId(item)&&!isCanvasLocked(item));
     const next=eligible.length>1
       ?groupCanvasComponents(page.components,eligible.map(item=>item.id),groupId)
       :wrapCanvasComponent(page.components,selected.id,groupId);
@@ -992,7 +997,7 @@ function PageBuilder({
   // Move only the selected DOM element while dragging. Commit metadata and
   // a single undo step on release, avoiding a page-wide render per pointer frame.
   const startCanvasMove = (event: React.PointerEvent<HTMLDivElement>, component: PageComponentMetadata) => {
-    if (previewMode || !component.position || isCanvasLocked(component) || component.properties.canvasLocked === true
+    if (previewMode || !component.position || isCanvasLocked(component)
       || event.button !== 0 || event.shiftKey || canvasMoveStart.current) return;
     if ((event.target as HTMLElement).closest('button,input,select,textarea,a,[contenteditable="true"],.free-canvas-resize-handle,.canvas-element-actions')) return;
     const element = event.currentTarget.closest<HTMLElement>('.free-canvas-component');
@@ -1002,7 +1007,7 @@ function PageBuilder({
     event.currentTarget.setPointerCapture(event.pointerId);
     const stage = element.closest('.free-canvas-stage');
     const group = page.components.filter(item => item.id !== component.id && selectionIds.includes(item.id)
-      && item.position && !rawLayoutParentId(item) && !isCanvasLocked(item) && item.properties.canvasLocked !== true)
+      && item.position && !rawLayoutParentId(item) && !isCanvasLocked(item))
       .flatMap(item => {
         const node = Array.from(stage?.querySelectorAll<HTMLElement>('.free-canvas-component') ?? [])
           .find(candidate => candidate.dataset.componentId === item.id);
@@ -1085,7 +1090,7 @@ function PageBuilder({
     applyPage({ ...page, components: items });
   };
   const startCanvasResize = (event: React.PointerEvent<HTMLButtonElement>, component: PageComponentMetadata, edge: ResizeEdge) => {
-    if (!component.position || isCanvasLocked(component) || component.properties.canvasLocked === true) return;
+    if (!component.position || isCanvasLocked(component)) return;
     const element = event.currentTarget.closest<HTMLElement>('.free-canvas-component');
     if (!element) return;
     event.preventDefault(); event.stopPropagation(); event.currentTarget.setPointerCapture(event.pointerId);
@@ -1428,10 +1433,9 @@ function PageBuilder({
   const alignSelected = (axis: 'x' | 'y', anchor: 'start' | 'center' | 'end') => {
     const targets = page.components.filter(component =>
       selectionIds.includes(component.id) && component.position
-      && !rawLayoutParentId(component) && !isCanvasLocked(component)
-      && component.properties.canvasLocked !== true);
+      && !rawLayoutParentId(component) && !isCanvasLocked(component));
     const selectedTargets = targets.length > 1 ? targets
-      : selected?.position && !isCanvasLocked(selected) && selected.properties.canvasLocked !== true
+      : selected?.position && !isCanvasLocked(selected)
         ? [selected] : [];
     if (!selectedTargets.length) return;
     const aligned = alignCanvasComponents(page.components, selectedTargets.map(component => component.id),
@@ -1818,11 +1822,7 @@ function PageBuilder({
           page.layoutMode === 'free-canvas' ? canvasPositionFromEvent(event) : undefined, parentId);
         return;
       }
-      const dragged = page.components.find(item => item.id === draggedId);
-      if (dragged?.properties.canvasLocked === true) {
-        onNotify('Unlock this component before moving it.');
-        return;
-      }
+
       if (!canNest(page.components, draggedId, parentId)) {
         onNotify('Cannot nest a component inside itself or one of its descendants.');
         return;
@@ -1878,7 +1878,7 @@ function PageBuilder({
     return { x: number(values.x), y: number(values.y), rotation: number(values.rotation) };
   };
   const beginTemplatePlacement = (event: React.PointerEvent<HTMLButtonElement>, component: PageComponentMetadata, mode: 'move' | 'rotate') => {
-    if (previewMode || isCanvasLocked(component) || component.properties.canvasLocked === true || event.button !== 0) return;
+    if (previewMode || isCanvasLocked(component) || event.button !== 0) return;
     const node = event.currentTarget.closest<HTMLElement>('.record-component');
     if (!node) return;
     event.preventDefault(); event.stopPropagation();
@@ -1920,7 +1920,7 @@ function PageBuilder({
   type TemplateResizeEdge = 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'nw';
   const templateResizeRef = useRef<{ id: string; pointerId: number; edge: TemplateResizeEdge; width: number; height: number; x: number; y: number; node: HTMLElement; nextWidth: number; nextHeight: number; initialX: number; initialY: number; rotation: number; nextX: number; nextY: number } | null>(null);
   const beginTemplateResize = (event: React.PointerEvent<HTMLButtonElement>, component: PageComponentMetadata, edge: TemplateResizeEdge) => {
-    if (previewMode || isCanvasLocked(component) || component.properties.canvasLocked === true || event.button !== 0) return;
+    if (previewMode || isCanvasLocked(component) || event.button !== 0) return;
     const node = event.currentTarget.closest<HTMLElement>('.record-component');
     if (!node) return;
     event.preventDefault(); event.stopPropagation();
@@ -2064,7 +2064,7 @@ function PageBuilder({
          if (event.currentTarget !== event.target || previewMode) return;
          if (event.key === 'Enter' || event.key === ' ') {
            event.preventDefault(); setSelectedId(component.id); setPageSettingsOpen(false);
-         } else if (page.layoutMode === 'free-canvas' && component.position && !nested && component.properties.canvasLocked !== true
+         } else if (page.layoutMode === 'free-canvas' && component.position && !nested
            && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) {
            event.preventDefault();
            const delta = event.shiftKey ? 1 : canvasSnap ? 8 : 1;
@@ -2082,7 +2082,7 @@ function PageBuilder({
       onDrop={!libraryPreview && !isPhoneBuilder ? (event) => handleDrop(event, index, component.region ?? 'main', isLayoutContainer(component) ? component.id : rawLayoutParentId(component)) : undefined}
       draggable={!isPhoneBuilder && !previewMode && !libraryPreview && page.layoutMode !== 'free-canvas' && !isCanvasLocked(component)}
       data-component-id={libraryPreview ? undefined : component.id}
-      onDragStart={!libraryPreview && !isPhoneBuilder ? (event) => { if (component.properties.canvasLocked === true || canvasMoveStart.current?.id === component.id) { event.preventDefault(); return; } event.stopPropagation(); event.dataTransfer.setData('text/plain', `component:${component.type}`); event.dataTransfer.setData('application/x-metadrive-component-id', component.id); } : undefined}
+      onDragStart={!libraryPreview && !isPhoneBuilder ? (event) => { if (canvasMoveStart.current?.id === component.id) { event.preventDefault(); return; } event.stopPropagation(); event.dataTransfer.setData('text/plain', `component:${component.type}`); event.dataTransfer.setData('application/x-metadrive-component-id', component.id); } : undefined}
       role={libraryPreview ? undefined : page.layoutMode === 'free-canvas' ? 'group' : 'button'} tabIndex={previewMode || libraryPreview ? -1 : 0} aria-label={libraryPreview ? undefined : `${component.label} component`}
       aria-hidden={libraryPreview && !interactivePreview || undefined}
     >
@@ -2104,7 +2104,7 @@ function PageBuilder({
           <button type="button" role="menuitem" onClick={() => {moveSelected(-1);setComponentMenuId('');}}>Bring forward</button>
           <button type="button" role="menuitem" onClick={() => {moveSelected(1);setComponentMenuId('');}}>Send backward</button>
           <button type="button" role="menuitem" onClick={() => openComponentInspector('Data & Actions')}>Data, links and actions</button>
-          <button type="button" role="menuitem" onClick={() => {updateComponent(component.id,{visible:!component.visible});setComponentMenuId('');}}>{component.visible ? 'Hide' : 'Show'} element</button>
+
           <button type="button" role="menuitem" disabled={isCanvasLocked(component)} onClick={() => {removeSelected();setComponentMenuId('');}}>Delete <kbd>Delete</kbd></button>
         </div>}
       </div>}
@@ -2231,7 +2231,7 @@ function PageBuilder({
         && <div className="metadata-nested-host">{nestedChildren}</div>}
       {!libraryPreview && !previewMode && isLayoutContainer(component) && !nestedChildren?.length
         && <div className="page-nested-empty">Drop components into this {component.label} or choose a child from the palette</div>}
-      {!libraryPreview && page.layoutMode === 'template' && selectedId === component.id && !previewMode && !isCanvasLocked(component) && component.properties.canvasLocked !== true
+      {!libraryPreview && page.layoutMode === 'template' && selectedId === component.id && !previewMode && !isCanvasLocked(component)
         && (['move', 'rotate'] as const).map(mode => <button key={mode} type="button"
           className={`template-placement-handle template-placement-${mode}`}
           aria-label={mode === 'move' ? `Move ${component.label}` : `Rotate ${component.label}`}
@@ -2244,7 +2244,7 @@ function PageBuilder({
           onClick={event => event.stopPropagation()}>
           {mode === 'move' ? <MousePointer2 size={13}/> : <RefreshCw size={13}/>}
         </button>)}
-      {!libraryPreview && page.layoutMode === 'template' && selectedId === component.id && !previewMode && !isCanvasLocked(component) && component.properties.canvasLocked !== true
+      {!libraryPreview && page.layoutMode === 'template' && selectedId === component.id && !previewMode && !isCanvasLocked(component)
         && (['n','ne','e','se','s','sw','w','nw'] as const).map(edge =>
           <button key={edge} type="button" className={`template-component-resize-handle resize-${edge}`}
             aria-label={`Resize ${component.label} ${edge}`} title="Drag edge or corner to resize"
@@ -2254,7 +2254,7 @@ function PageBuilder({
             onPointerUp={event => finishTemplateResize(event)}
             onPointerCancel={event => finishTemplateResize(event, true)}
             onClick={event => event.stopPropagation()} />)}
-      {!libraryPreview && page.layoutMode === 'free-canvas' && !nested && selectedId === component.id && !previewMode && !isCanvasLocked(component) && component.properties.canvasLocked !== true
+      {!libraryPreview && page.layoutMode === 'free-canvas' && !nested && selectedId === component.id && !previewMode && !isCanvasLocked(component)
         && (['n','ne','e','se','s','sw','w','nw'] as const).map(edge =>
           <button key={edge} type="button" className={`free-canvas-resize-handle resize-${edge}`}
             aria-label={`Resize ${component.label} ${edge}`} title="Drag edge or corner to resize"
@@ -2445,7 +2445,7 @@ function PageBuilder({
       })()}
       {editorMode&&selected?.type==='List View'&&
         <section className="builder-list-view-settings" aria-label="Saved List View block configuration">
-          <label className="form-label">List Object
+          <label className="form-label">Source Object
             <select className="form-control" aria-label="List View Object"
               value={String(selected.properties.listObjectApiName??'')}
               onChange={event=>updateComponent(selected.id,{properties:{
@@ -2558,8 +2558,18 @@ function PageBuilder({
           aria-label={ribbonTab} aria-labelledby={`page-builder-tab-${Math.max(0,ribbonTabsVisible.indexOf(ribbonTab))}`}>
           {selected && selectedCustomDefinition && (['Component Data','Component Content','Component Properties','Component Layout','Component Responsive','Component Action'] as string[]).includes(ribbonTab) &&
             <UniversalRibbonInventory tab={ribbonTab as 'Component Data'|'Component Content'|'Component Properties'|'Component Layout'|'Component Responsive'|'Component Action'}
-              definition={selectedCustomDefinition} properties={selected.properties}
-              onChange={properties=>updateComponent(selected.id,{properties})}/>}
+              definition={selectedCustomDefinition} componentId={selected.id} properties={selected.properties} objects={objects} flows={flows}
+              onChange={properties=>updateComponent(selected.id,{properties})}
+              builder={{
+                position:selected.position,
+                onPositionChange:position=>updateComponent(selected.id,{position}),
+                visible:selected.visible!==false,
+                onVisibleChange:visible=>updateComponent(selected.id,{visible}),
+                layoutMode:page.layoutMode,canvasWidth:page.canvasWidth,canvasHeight:page.canvasHeight,
+                onOpenSource:()=>openExpandedEditor('source'),
+                onOpenFilters:()=>openExpandedEditor('filters'),
+                onOpenVisibility:()=>openExpandedEditor('visibility')
+              }}/>}
           {ribbonTab === 'Home' && <>
             <div className="office-ribbon-group office-ribbon-page-identity"><div className="office-ribbon-stack">
               <button type="button" onClick={safeBackToPages}><ArrowLeft size={16}/> Back to pages</button>
@@ -2694,7 +2704,7 @@ function PageBuilder({
           {selected && ribbonTab==='Component Responsive' && <RibbonResponsive
             properties={selected.properties} componentType={selected.type}
             definition={selectedCustomDefinition} device={page.layoutVariant??'Desktop'}
-            visible={selected.visible} onVisibleChange={visible=>updateComponent(selected.id,{visible})}
+
             onChange={properties=>updateComponent(selected.id,{properties})}
             onVisibilityRules={()=>openExpandedEditor('visibility')}/>}
           {selected && ribbonTab === 'Component Action' && selectedCustomDefinition?.apiName==='une_item_grid'
@@ -2764,14 +2774,10 @@ function PageBuilder({
           {selected && ribbonTab === 'Component Layout' && <>
             <div className="office-ribbon-group office-ribbon-icon-group office-ribbon-layout-arrange" aria-label="Arrange component">
               <div className="office-ribbon-arrange-column">
-                <button type="button" className="office-ribbon-icon-button" title={selected.properties.canvasLocked?'Unlock position':'Lock position'}
-                  aria-label={selected.properties.canvasLocked?'Unlock position':'Lock position'} disabled={page.layoutMode!=='free-canvas'}
-                  onClick={()=>updateComponent(selected.id,{properties:{...selected.properties,canvasLocked:!selected.properties.canvasLocked}})}>
-                  {selected.properties.canvasLocked?<Unlock size={16}/>:<Lock size={16}/>} <span>{selected.properties.canvasLocked?'Unlock':'Lock'}</span>
-                </button>
+
                 <button type="button" disabled={page.layoutMode!=='free-canvas'||selectionIds.length<2||!selected.position||isCanvasLocked(selected)||Boolean(rawLayoutParentId(selected))||selectionIds.some(id=>{
                   const item=page.components.find(component=>component.id===id);
-                  return !item?.position||isCanvasLocked(item)||item.properties.canvasLocked===true||Boolean(rawLayoutParentId(item));
+                  return !item?.position||isCanvasLocked(item)||Boolean(rawLayoutParentId(item));
                 })} onClick={()=>wrapSelectedInContainer()}><Group size={16}/> Group</button>
                 <button type="button" disabled={page.layoutMode!=='free-canvas'||selected.type!=='Container'||isCanvasLocked(selected)||!childrenOf(page.components,selected.id).length} onClick={ungroupSelected}><Ungroup size={16}/> Ungroup</button>
               </div><span>Arrange</span>
@@ -3029,7 +3035,7 @@ function PageBuilder({
             </>}
             {selected.type === 'List View' && <>
               <div className="properties-section-title">List records</div>
-              <label className="form-label">Object
+              <label className="form-label">Source Object
                 <select className="form-control" value={String(selected.properties.listObjectApiName??'')}
                   onChange={event=>updateComponent(selected.id,{properties:{...selected.properties,
                     listObjectApiName:event.target.value,columns:[]}})}>

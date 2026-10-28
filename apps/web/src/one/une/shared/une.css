@@ -47,9 +47,6 @@ font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",Inter,system-ui,sans-
 @media(max-width:600px){.une-ui .une-calendar-day{min-height:52px}.une-ui .une-calendar-event{font-size:10px}}
 
 .une-ui .one-surface,.une-ui .one-item{border-width:var(--une-border-width,1px)}
-@media(min-width:1001px){.une-ui[data-une-hide-desktop="true"]{display:none!important}}
-@media(min-width:651px) and (max-width:1000px){.une-ui[data-une-hide-tablet="true"]{display:none!important}}
-@media(max-width:650px){.une-ui[data-une-hide-phone="true"]{display:none!important}}
 
 /* Shared metadata-backed phone rows: desktop tables stay intact. */
 .une-ui .une-phone-records{display:none}

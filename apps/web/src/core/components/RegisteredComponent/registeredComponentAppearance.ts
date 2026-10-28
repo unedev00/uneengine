@@ -28,7 +28,7 @@ const appearanceKeys = [
   'fontFamily','fontSize','fontWeight','lineHeight','letterSpacing','textAlign','margin',
   'minWidth','minHeight','maxWidth','maxHeight','borderWidth','cardDensity','cardPadding',
   'cardRadius','cardMinHeight','cardBackgroundColor','cardBorderColor','cardBorderWidth',
-  'cardShadow','cardHover','imageHeight','imageFit','imageAspectRatio','hideOnTablet','hideOnDesktop'
+  'cardShadow','cardHover','imageHeight','imageFit','imageAspectRatio'
 ];
 export const hasCustomComponentAppearance = (props: Record<string, unknown>) =>
   appearanceKeys.some(key => props[key] !== undefined);

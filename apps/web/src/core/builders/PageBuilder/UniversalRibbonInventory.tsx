@@ -1,6 +1,9 @@
-import {useState} from 'react';
+import {useEffect,useState} from 'react';
+import {auditUniversalRibbonCoverage} from './universalRibbonCoverage.mjs';
 import {createPortal} from 'react-dom';
-import type {LibraryComponentMetadata} from '../../metadata/Definitions/metadata';
+import RibbonColorPalette from './RibbonColorPalette';
+import type {LibraryComponentMetadata,ObjectMetadata,FlowDefinitionMetadata} from '../../metadata/Definitions/metadata';
+import CustomComponentPropertyEditor from '../ComponentProperties/CustomComponentPropertyEditor';
 import TenantMediaPicker from '../ComponentProperties/TenantMediaPicker';
 
 /**
@@ -64,57 +67,163 @@ for(const [key,definition] of definitionMap){
   slots.get(tab)?.get(section)?.push(definition);
 }
 for(const groups of slots.values())for(const defs of groups.values())defs.sort((a,b)=>a.propertyKey.localeCompare(b.propertyKey));
+export const universalRibbonCoverage=auditUniversalRibbonCoverage(
+  validManifests,
+  Array.from(slots.values()).flatMap(groups=>Array.from(groups.values()).flatMap(defs=>defs.map(def=>def.propertyKey))),
+  [...excluded]
+);
+if(import.meta.env.DEV&&(universalRibbonCoverage.missing.length||universalRibbonCoverage.duplicates.length))
+  throw new Error('UNE ribbon registry coverage failed: '+JSON.stringify(universalRibbonCoverage));
 export const universalRibbonInventoryCount=Array.from(slots.values()).reduce((total,groups)=>total+Array.from(groups.values()).reduce((sum,defs)=>sum+defs.length,0),0);
 export const universalRibbonComponentCount=validManifests.length;
 
-function PropertyEditor({definition,enabled,properties,onChange}:{
- definition:Definition;enabled:boolean;properties:Properties;onChange:(next:Properties)=>void;
+function PropertyEditor({definition,enabled,reviewOnly=false,properties,onChange,objects,flows}:{
+ definition:Definition;enabled:boolean;reviewOnly?:boolean;properties:Properties;onChange:(next:Properties)=>void;
+ objects:readonly ObjectMetadata[];flows:readonly FlowDefinitionMetadata[];
 }){
  const [mediaOpen,setMediaOpen]=useState(false);
+ const [complexOpen,setComplexOpen]=useState(false);
  const [jsonError,setJsonError]=useState('');
  const key=definition.propertyKey;
  const label=definition.label||key.replace(/([a-z])([A-Z])/g,'$1 $2');
+ const unitMatch=/^(.*?)\s*\((px|%|ms|s|columns|rows|lines|deg)\)\s*$/i.exec(label);
+ const unit=(definition.kind==='NUMBER'||definition.kind==='CURRENCY')&&unitMatch?unitMatch[2]:'';
+ const shownLabel=unit&&unitMatch?unitMatch[1]:label;
  const value=properties[key]??definition.defaultValue??'';
  const update=(next:unknown)=>{if(enabled)onChange({...properties,[key]:next});};
- const tip=enabled?label:'Not supported by selected component';
+ const tip=reviewOnly?label+' — review only; not saved for this component':enabled?label:'Not supported by selected component';
  const props={disabled:!enabled,title:tip,'aria-label':label};
  let editor;
  if(definition.kind==='BOOLEAN')editor=<input type="checkbox" {...props} checked={value===true} onChange={e=>update(e.target.checked)}/>;
  else if(definition.kind==='SELECT')editor=<select {...props} value={String(value)} onChange={e=>update(e.target.value)}>
    <option value="">Default</option>{(definition.choices??[]).map(choice=><option key={choice.key} value={choice.key}>{choice.label}</option>)}
  </select>;
- else if(definition.kind==='NUMBER'||definition.kind==='CURRENCY')editor=<input {...props} type="number"
-   min={definition.min} max={definition.max} value={typeof value==='number'?value:''}
-   onChange={e=>update(e.target.value===''?undefined:Number(e.target.value))}/>;
+ else if(definition.kind==='NUMBER'||definition.kind==='CURRENCY'){
+   const field=<input {...props} type="number" min={definition.min} max={definition.max} value={typeof value==='number'?value:''} onChange={e=>update(e.target.value===''?undefined:Number(e.target.value))}/>;
+   editor=unit?<span className="une-unit-field" data-unit={unit}>{field}</span>:field;
+ }
  else if(definition.kind==='IMAGE')editor=<><button type="button" disabled={!enabled} title={tip} onClick={()=>setMediaOpen(true)}>Choose / Upload</button>
    {mediaOpen&&createPortal(<div className="une-universal-media-overlay" role="presentation" onMouseDown={e=>{if(e.currentTarget===e.target)setMediaOpen(false);}}>
       <div role="dialog" aria-modal="true" aria-label={label+' media library'}><button type="button" onClick={()=>setMediaOpen(false)}>Close</button>
         <TenantMediaPicker assetOnly initiallyOpen value={String(value)} onChange={next=>{update(next);setMediaOpen(false);}}/>
       </div></div>,document.body)}</>;
- else if(definition.kind==='COLOR')editor=<input {...props} type="color" value={/^#[0-9a-f]{6}$/i.test(String(value))?String(value):'#ffffff'}
-   onChange={e=>update(e.target.value)}/>;
+ else if(!['BOOLEAN','SELECT','NUMBER','CURRENCY','IMAGE','COLOR','TEXT','LONG_TEXT','TEXTAREA','STRING'].includes(definition.kind)){
+   editor=<><button type="button" disabled={!enabled} title={tip} onClick={()=>setComplexOpen(true)}>Configure</button>
+     {complexOpen&&createPortal(<div className="une-universal-media-overlay" role="presentation" onMouseDown={event=>{if(event.currentTarget===event.target)setComplexOpen(false);}}>
+       <div role="dialog" aria-modal="true" aria-label={label+' property editor'}>
+         <header className="une-universal-editor-header"><strong>{label}</strong>
+           <button type="button" onClick={()=>setComplexOpen(false)}>Close</button></header>
+         <CustomComponentPropertyEditor definitions={[definition]} properties={properties}
+           objects={objects} flows={flows} primaryObjectApiName={String(properties.objectApiName??'')}
+           onChange={next=>onChange(next)}/>
+       </div>
+     </div>,document.body)}
+   </>;
+ }
+ else if(definition.kind==='COLOR'){
+   const hex=/^#[0-9a-f]{6}$/i.test(String(value))?String(value):String(value).startsWith('#')||value==='transparent'?String(value):'';
+   const kind=/border/i.test(key)?'border':/text|font|heading|description|supporting|value|icon/i.test(key)&&!/background/i.test(key)?'text':'fill';
+   editor=<RibbonColorPalette variant="property" kind={kind} label={label} value={hex} disabled={!enabled} onChange={next=>update(next===''?undefined:next)}/>;
+ }
  else if(value!==null&&typeof value==='object')editor=<textarea {...props} rows={1} value={JSON.stringify(value)}
    aria-invalid={!!jsonError} onChange={e=>{try{const parsed:unknown=JSON.parse(e.target.value);if(parsed===null||typeof parsed!=='object')throw Error('Expected an object or array');setJsonError('');update(parsed);}catch{setJsonError('Invalid structured value');}}}/>;
  else editor=<input {...props} type="text" value={String(value)} onChange={e=>update(e.target.value)}/>;
- return <label className={'une-universal-property'+(enabled?'':' is-disabled')} title={tip} data-property={key}>
-   <span className="une-universal-property-label">{label}</span>
+ return <label className={'une-universal-property'+(enabled?'':' is-disabled')+(reviewOnly?' is-review-only':'')} title={tip} data-property={key} data-kind={definition.kind}>
+   <span className="une-universal-property-label" title={label}>{shownLabel}</span>
    {editor}
  </label>;
 }
-export default function UniversalRibbonInventory({tab,definition,properties,onChange}:{
- tab:Tab;definition?:LibraryComponentMetadata;properties:Properties;
+type CanvasPosition={x:number;y:number;width:number;height:number};
+export type UniversalBuilderControls={
+ position?:CanvasPosition;
+ onPositionChange?:(position:CanvasPosition)=>void;
+ visible:boolean;
+ onVisibleChange:(visible:boolean)=>void;
+ layoutMode:'template'|'free-canvas'|string;
+ canvasWidth:number;
+ canvasHeight:number;
+ onOpenSource?:()=>void;
+ onOpenFilters?:()=>void;
+ onOpenVisibility?:()=>void;
+};
+export default function UniversalRibbonInventory({tab,definition,componentId,properties,onChange,objects=[],flows=[],builder}:{
+ tab:Tab;definition?:LibraryComponentMetadata;componentId?:string;properties:Properties;
  onChange:(next:Properties)=>void;
+ objects?:readonly ObjectMetadata[];flows?:readonly FlowDefinitionMetadata[];
+ builder?:UniversalBuilderControls;
 }){
+ // Review mode: every slot is interactive, but unsupported keys remain in
+ // component-local draft state and are never persisted into invalid metadata.
+ const [reviewDraft,setReviewDraft]=useState<Properties>({});
+ useEffect(()=>{setReviewDraft({});},[componentId]);
+ const reviewProperties={...properties,...reviewDraft};
+ const reviewPositionValue=(key:keyof CanvasPosition):number|string=>{
+   const value=builder?.position?.[key]??reviewDraft['__previewCanvas_'+key];
+   return typeof value==='number'||typeof value==='string'?value:'';
+ };
+ const editCanvas=(key:keyof CanvasPosition,min:number,raw:string)=>{
+   const value=Number(raw);
+   if(!Number.isFinite(value)||value<min)return;
+   if(builder?.position&&builder.layoutMode==='free-canvas')
+     builder.onPositionChange?.({...builder.position,[key]:Math.round(value)});
+   else setReviewDraft(previous=>({...previous,['__previewCanvas_'+key]:Math.round(value)}));
+ };
  const enabled=new Set((definition?.propertyDefinitions??[]).map(item=>item.propertyKey));
  const groups=slots.get(tab);
  if(!groups)return null;
  return <div className="une-universal-ribbon" aria-label="Universal UNE property ribbon"
-   data-component={definition?.apiName??'none'} data-inventory-count={universalRibbonInventoryCount}>
+   data-component={definition?.apiName??'none'} data-inventory-count={universalRibbonInventoryCount}
+   data-review-mode="all-enabled">
    {Array.from(groups).map(([section,defs])=><section key={section} className="une-universal-ribbon-section" aria-label={section}>
      <div className="une-universal-ribbon-controls">
-       {defs.map(def=><PropertyEditor key={def.propertyKey} definition={enabled.has(def.propertyKey)
-         ?definition?.propertyDefinitions?.find(item=>item.propertyKey===def.propertyKey)??def:def}
-         enabled={enabled.has(def.propertyKey)} properties={properties} onChange={onChange}/>)}
+       {tab==='Component Layout'&&section==='Size'&&(['width','height'] as const).map(key=>
+         <label key={'canvas-'+key} className="une-universal-property" title={'Canvas '+key}>
+           <span className="une-universal-property-label">Canvas {key}</span>
+           <input aria-label={'Canvas '+key} type="number" min={1} value={reviewPositionValue(key)}
+             onChange={event=>editCanvas(key,1,event.target.value)}/>
+         </label>)}
+       {tab==='Component Layout'&&section==='Position'&&(['x','y'] as const).map(key=>
+         <label key={'canvas-'+key} className="une-universal-property" title={'Canvas '+key}>
+           <span className="une-universal-property-label">Canvas {key.toUpperCase()}</span>
+           <input aria-label={'Canvas '+key.toUpperCase()} type="number" min={0}
+             value={reviewPositionValue(key)}
+             onChange={event=>editCanvas(key,0,event.target.value)}/>
+         </label>)}
+       {tab==='Component Layout'&&section==='Arrangement'&&<label className="une-universal-property">
+         <span className="une-universal-property-label">Canvas locked</span>
+         <input type="checkbox" aria-label="Canvas locked" checked={(reviewDraft.__previewCanvasLocked??properties.canvasLocked)===true}
+           onChange={event=>builder?.layoutMode==='free-canvas'
+             ?onChange({...properties,canvasLocked:event.target.checked})
+             :setReviewDraft(previous=>({...previous,__previewCanvasLocked:event.target.checked}))}/>
+       </label>}
+       {tab==='Component Responsive'&&section==='Visibility'&&<label className="une-universal-property">
+         <span className="une-universal-property-label">Visible</span>
+         <input type="checkbox" aria-label="Component visible" checked={builder?.visible??true}
+           disabled={!builder} onChange={event=>builder?.onVisibleChange(event.target.checked)}/>
+       </label>}
+       {tab==='Component Responsive'&&section==='Visibility'&&<button type="button"
+         className="une-universal-builder-command" disabled={!builder?.onOpenVisibility} onClick={builder?.onOpenVisibility}>
+         Visibility rules
+       </button>}
+       {tab==='Component Data'&&section==='Source'&&<button type="button"
+         className="une-universal-builder-command" disabled={!builder?.onOpenSource} onClick={builder?.onOpenSource}>
+         Source mappings
+       </button>}
+       {tab==='Component Data'&&section==='Filters'&&<button type="button"
+         className="une-universal-builder-command" disabled={!builder?.onOpenFilters} onClick={builder?.onOpenFilters}>
+         Filter conditions
+       </button>}
+       {defs.map(def=>{
+         const supported=enabled.has(def.propertyKey);
+         return <PropertyEditor key={def.propertyKey}
+           definition={supported?definition?.propertyDefinitions?.find(item=>item.propertyKey===def.propertyKey)??def:def}
+           enabled={true} reviewOnly={!supported} properties={reviewProperties}
+           onChange={next=>{
+             if(supported)onChange({...properties,[def.propertyKey]:next[def.propertyKey]});
+             else setReviewDraft(previous=>({...previous,[def.propertyKey]:next[def.propertyKey]}));
+           }}
+           objects={objects} flows={flows}/>;
+       })}
      </div>
      <span className="une-universal-ribbon-caption">{section}</span>
    </section>)}

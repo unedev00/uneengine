@@ -43,7 +43,7 @@ test('Data keeps functional groups and Responsive removes its redundant override
  assert.match(data,/office-ribbon-data-group/);
  assert.match(data,/onOpenFilters/);
  assert.match(data,/recordSortFieldApiName/);
- assert.match(responsive,/office-ribbon-responsive-visibility/);
+ assert.doesNotMatch(responsive,/office-ribbon-responsive-visibility/);
  assert.doesNotMatch(responsive,/office-ribbon-responsive-overrides/);
  assert.match(responsive,/office-ribbon-responsive-rules/);
 });

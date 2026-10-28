@@ -96,3 +96,27 @@
 }
 .une-universal-media-overlay .metadata-array-property{display:flex;flex-direction:column;gap:10px}
 .une-universal-media-overlay input[type=file],.une-universal-media-overlay select{width:100%;max-width:100%;box-sizing:border-box}
+
+/* Native complex-field editors open in a spacious portal; no raw JSON requirement. */
+.une-universal-editor-header{
+ display:flex;align-items:center;justify-content:space-between;gap:12px;
+ margin-bottom:12px;font:600 14px/20px "Segoe UI",Arial,sans-serif;
+}
+.une-universal-media-overlay [role="dialog"] .metadata-component-properties{
+ width:100%;box-sizing:border-box;
+}
+.une-universal-media-overlay [role="dialog"] .metadata-array-property{
+ width:100%;box-sizing:border-box;
+}
+.une-universal-media-overlay [role="dialog"] :is(input,select,textarea){
+ max-width:100%;box-sizing:border-box;
+}
+.office-builder-ribbon .une-universal-builder-command{
+ flex:0 0 148px;min-width:148px;max-width:148px;height:29px;
+ padding:4px 8px;border:1px solid #bfcde0;background:#fff;
+ color:#164779;border-radius:4px;font:500 11px/17px "Segoe UI",Arial,sans-serif;
+ cursor:pointer;white-space:nowrap;
+}
+.office-builder-ribbon .une-universal-builder-command:disabled{
+ opacity:.4;cursor:not-allowed;
+}
