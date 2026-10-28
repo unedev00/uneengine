@@ -9,7 +9,7 @@ type Values=Record<string,unknown>;
 export default function RibbonCapabilityControls({group,definitions,properties,onChange,icon}:{
  group:string;definitions:readonly PropertyDefinition[];properties:Values;onChange:(next:Values)=>void;icon:ReactNode;
 }){
- const [open,setOpen]=useState(false);
+ const [active,setActive]=useState<string|null>(null);
  const enabled=definitions.length>0;
  const commands:Record<string,Array<{name:string;icon:ReactNode}>>={
   Card:[{name:'Fill',icon:<PaintBucket size={16}/>},{name:'Border',icon:<Square size={16}/>},{name:'Corners',icon:<Scan size={16}/>},{name:'Shadow',icon:<Layers size={16}/>},{name:'Opacity',icon:<Blend size={16}/>}],
@@ -26,15 +26,16 @@ export default function RibbonCapabilityControls({group,definitions,properties,o
   Text:[{name:'Text',icon:<Type size={16}/>},{name:'Colour',icon:<Palette size={16}/>}]
  };
  const named=commands[group]??[{name:group,icon},{name:'Settings',icon:<Settings2 size={16}/>},{name:'Options',icon:<SlidersHorizontal size={16}/>}];
+ const matched=(name:string)=>definitions.filter(def=>{const key=(def.propertyKey+' '+def.label).toLowerCase();const token=name.toLowerCase();return key.includes(token)|| (token==='colour'&&/color|colour|tone/i.test(key))||(token==='corners'&&/radius|corner/i.test(key))||(token==='fill'&&/surface|background|fill/i.test(key))||(token==='align'&&/align|justify/i.test(key))||(token==='size'&&/size|font|width|height/i.test(key));});
  return <div className="office-ribbon-capabilities" aria-label={group+' commands'}>
    {named.map(cmd=><button key={cmd.name} type="button" className="office-ribbon-capability-icon"
-     disabled={!enabled} title={enabled?group+' '+cmd.name:group+' '+cmd.name+' unavailable'}
-     aria-label={group+' '+cmd.name} onClick={()=>setOpen(true)}>{cmd.icon}</button>)}
-   {open&&createPortal(<div className="office-ribbon-capability-backdrop" role="presentation" onMouseDown={()=>setOpen(false)}>
-     <section role="dialog" aria-modal="true" aria-label={group+' properties'} className="office-ribbon-capability-dialog"
+     disabled={!matched(cmd.name).length} title={matched(cmd.name).length?group+' '+cmd.name:group+' '+cmd.name+' unavailable'}
+     aria-label={group+' '+cmd.name} onClick={()=>setActive(cmd.name)}>{cmd.icon}</button>)}
+   {active&&createPortal(<div className="office-ribbon-capability-backdrop" role="presentation" onMouseDown={()=>setActive(null)}>
+     <section role="dialog" aria-modal="true" aria-label={group+' '+active+' properties'} className="office-ribbon-capability-dialog"
        onMouseDown={event=>event.stopPropagation()}>
-       <header><strong>{group} properties</strong><button type="button" onClick={()=>setOpen(false)}>Close</button></header>
-       {definitions.map(def=>{
+       <header><strong>{group} · {active}</strong><button type="button" onClick={()=>setActive(null)}>Close</button></header>
+       {matched(active).map(def=>{
          const key=def.propertyKey,value=properties[key]??def.defaultValue??'';
          const update=(next:unknown)=>onChange({...properties,[key]:next});
          if(def.kind==='BOOLEAN')return <label key={key}><input type="checkbox" checked={value===true} onChange={e=>update(e.target.checked)}/>{def.label}</label>;
