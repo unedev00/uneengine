@@ -166,7 +166,7 @@ export default function UniversalRibbonInventory({tab,definition,componentId,pro
  const groups=slots.get(tab);
  if(!groups)return null;
  return <div className="une-universal-ribbon" aria-label="Universal UNE property ribbon"
-   data-component={definition?.apiName??'none'} data-inventory-count={universalRibbonInventoryCount}
+   data-component={definition?.apiName??'none'} data-component-id={componentId??'none'} data-inventory-count={universalRibbonInventoryCount}
    data-review-mode="all-disabled">
    {Array.from(groups).map(([section,defs])=><section key={section} className="une-universal-ribbon-section" aria-label={section}>
      <div className="une-universal-ribbon-controls">
