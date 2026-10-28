@@ -1354,13 +1354,13 @@ function RecordWorkspace({
   // Use the same action availability source for conditional form visibility.
   // Backend Record API permissions remain authoritative for every mutation.
   const formRecordPermissions=new Set<'Create'|'Edit'|'Delete'>([
-    ...((object?.apiName!=='User'||canManageUserIdentities)
+    ...((Boolean(object)&&(object?.apiName!=='User'||canManageUserIdentities))
       &&object?.actions?.find(action=>action.label==='New')?.enabled!==false
       ?['Create' as const]:[]),
-    ...((object?.apiName!=='User'||canManageUserIdentities)
+    ...((Boolean(object)&&(object?.apiName!=='User'||canManageUserIdentities))
       &&object?.actions?.find(action=>action.label==='Edit')?.enabled!==false
       ?['Edit' as const]:[]),
-    ...((object?.apiName!=='User'||canManageUserIdentities)
+    ...((Boolean(object)&&(object?.apiName!=='User'||canManageUserIdentities))
       &&object?.actions?.find(action=>action.label==='Delete')?.enabled!==false
       ?['Delete' as const]:[])
   ]);
