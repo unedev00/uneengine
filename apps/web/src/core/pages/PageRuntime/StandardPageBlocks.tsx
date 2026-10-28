@@ -22,11 +22,22 @@ export function StandardRecordList({
   const [total,setTotal]=useState(0);
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState('');
+  const [savedColumns,setSavedColumns]=useState<string[]>([]);
+  useEffect(()=>{
+    if(!savedViewId||!object?.apiName){setSavedColumns([]);return;}
+    let active=true;setSavedColumns([]);
+    void request<{view:{columns?:string[]}}>(
+      '/records/'+encodeURIComponent(object.apiName)+'/list-views/'+encodeURIComponent(savedViewId))
+      .then(result=>{if(active)setSavedColumns(Array.isArray(result.view?.columns)
+        ?result.view.columns.filter(name=>typeof name==='string'):[]);})
+      .catch(()=>{if(active)setSavedColumns([]);});
+    return()=>{active=false;};
+  },[object?.apiName,savedViewId,request]);
   const limit=Math.max(1,Math.min(100,Math.trunc(pageSize)||25));
   // Display only fields returned through the object metadata accessible to this
   // session. A saved view ID affects the server query, not field-level grants.
   const allowedNames=new Set(object?.fields.map(field=>field.apiName)??[]);
-  const names=(columns.length?columns.slice(0,12):object?.fields.slice(0,4).map(field=>field.apiName)??[])
+  const names=(columns.length?columns.slice(0,12):savedColumns.length?savedColumns.slice(0,12):object?.fields.slice(0,4).map(field=>field.apiName)??[])
     .filter(name=>allowedNames.has(name));
   useEffect(()=>setOffset(0),[object?.apiName,savedViewId,limit,recordFilter?.field,recordFilter?.recordId]);
   useEffect(()=>{
