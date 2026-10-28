@@ -178,8 +178,8 @@ test('Page Builder property editors filter controls by selected component capabi
   const advancedStyle=await readFile(new URL('../src/core/builders/PageBuilder/PageBuilderAdvancedStyle.tsx',import.meta.url),'utf8');
   const capability=await readFile(new URL('../src/core/builders/PageBuilder/RibbonCapabilityControls.tsx',import.meta.url),'utf8');
   assert.match(builder, /<PageBuilderAdvancedStyle/);
-  assert.match(advancedStyle, /<RibbonDesign properties=\{properties\}/);
-  assert.match(advancedStyle, /<RibbonFormat properties=\{properties\}/);
+  assert.match(advancedStyle, /office-ribbon-extra-grid/);
+  assert.doesNotMatch(advancedStyle, /office-ribbon-capability-backdrop/);
   assert.match(builder, /<RibbonResponsive/);
   assert.match(builder, /visible=\{selected\.visible\}/);
   assert.match(capability, /disabled=\{!definitions.length\}/);
