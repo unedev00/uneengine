@@ -22,7 +22,7 @@ test('all six property tabs use a fixed section catalog without component-specif
    assert.ok(view.includes("'"+name+"'"),name);
  }
  assert.match(view,/<UniversalRibbonInventory tab=\{ribbonTab as/);
- assert.match(catalog,/Array\.from\(groups\)\.map/);
+ assert.match(catalog,/Array\.from\(groups\)\.filter/);
 });
 test('media property and structured values are handled without converting persisted objects to strings',()=>{
  const catalog=load('../src/core/builders/PageBuilder/UniversalRibbonInventory.tsx');
