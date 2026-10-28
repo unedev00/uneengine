@@ -49,3 +49,13 @@ test('required defaults match create-form values without overriding explicit inp
  assert.deepEqual(applyRequiredLayoutDefaults({Name:false},required,
    [{apiName:'Name',defaultValue:'Replace'}],new Set(['Name'])),{Name:false});
 });
+
+test('authored Dynamic Forms never leak hidden schema-required values into a write',()=>{
+ const values={Name:'Visible',RequiredOutside:'Hidden but required',ReadOnly:'Blocked',RecordTypeId:'rt'};
+ assert.deepEqual(filterLayoutWritableValues(values,layout,
+   new Set(['RequiredOutside','ReadOnly']),true),{Name:'Visible',RecordTypeId:'rt'});
+ // Legacy layouts keep their compatibility behaviour.
+ assert.deepEqual(filterLayoutWritableValues(values,layout,
+   new Set(['RequiredOutside','ReadOnly']),false),
+   {Name:'Visible',RequiredOutside:'Hidden but required',RecordTypeId:'rt'});
+});
