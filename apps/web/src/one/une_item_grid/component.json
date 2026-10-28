@@ -1028,6 +1028,15 @@
           "label": "Bold"
         }
       ]
+    },
+    {
+      "propertyKey": "emptyText",
+      "label": "Empty state message",
+      "kind": "TEXT",
+      "group": "Empty State",
+      "section": "Content",
+      "defaultValue": "No matching records",
+      "displayOrder": 813
     }
   ],
   "eventDefinitions": [
