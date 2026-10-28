@@ -62,8 +62,6 @@ import {
   ExternalLink,
   Eye,
   EyeOff,
-  Lock,
-  Unlock,
   FileText,
   Filter,
   Grid2X2,
@@ -137,10 +135,8 @@ import ComponentPresentationProperties from '../ComponentProperties/ComponentPre
 import {presentationSection,isPresentationProperty} from '../ComponentProperties/presentationPropertyModel.mjs';
 import FlowInputBindingEditor from '../FlowInputBindingEditor/FlowInputBindingEditor';
 import RecordFilterEditor from '../../../one/OneRecordFilterEditor/RecordFilterEditor';
-import ComponentVisibilityEditor from '../ComponentProperties/ComponentVisibilityEditor';
 import RichTextBlockEditor from '../ComponentProperties/RichTextBlockEditor';
 import PageRouteDirectory from '../../pages/PageRouteDirectory/PageRouteDirectory';
-import { isComponentVisible } from '../../components/Properties/componentVisibility';
 import PageComponentVisualEditor from '../ComponentStyleEditor/PageComponentVisualEditor';
 import RibbonColorPalette from './RibbonColorPalette';
 import {RibbonFilters} from './PageBuilderRibbonEditors';
@@ -927,8 +923,6 @@ function PageBuilder({
     if (isCanvasLocked(target) && update.properties?.editorLocked !== false) return;
     applyPage({ ...page, components: page.components.map((component) => component.id === id ? { ...component, ...update } : component) });
   };
-  const toggleCanvasLock = (component: PageComponentMetadata) =>
-    updateComponent(component.id, { properties: { ...component.properties, editorLocked: !isCanvasLocked(component) } });
   const moveLayer = (id: string, offset: -1 | 1) => {
     const index = page.components.findIndex(component => component.id === id);
     const target = index + offset;
@@ -2092,7 +2086,6 @@ function PageBuilder({
         onPointerDown={event => event.stopPropagation()} onClick={event => event.stopPropagation()}>
         <button type="button" onClick={() => openComponentInspector('Design')} title="Edit block"><Pencil size={15}/> Edit</button>
         {page.layoutMode === 'free-canvas' && <button type="button" onClick={() => openComponentInspector('Position')} title="Position and size"><Maximize2 size={15}/> Position</button>}
-        <button type="button" onClick={() => toggleCanvasLock(component)} title={isCanvasLocked(component) ? 'Unlock' : 'Lock'}>{isCanvasLocked(component) ? <Unlock size={16}/> : <Lock size={16}/>}</button>
         <button type="button" onClick={duplicateSelected} disabled={isCanvasLocked(component)} title="Duplicate"><Copy size={16}/></button>
         <button type="button" onClick={() => setComponentMenuId(current => current === component.id ? '' : component.id)}
           aria-expanded={componentMenuId === component.id} aria-label="More component actions"><MoreHorizontal size={18}/></button>
@@ -3178,25 +3171,6 @@ function PageBuilder({
                 </select>
               </label>;
             })()}
-            {selected.type === 'Accordion' && <>
-              <div className="properties-section-title">Accordion Content</div>
-              <label className="form-label" htmlFor="page-component-accordion-content">Content</label>
-              <textarea id="page-component-accordion-content" className="form-control" rows={4}
-                value={typeof selected.properties.content === 'string' ? selected.properties.content : ''}
-                onChange={(event) => updateComponent(selected.id, { properties: { ...selected.properties, content: event.target.value } })} />
-            </>}
-            {selected.type === 'Dashboard' && <>
-              <div className="properties-section-title">Dashboard</div>
-              <label className="form-label" htmlFor="page-component-dashboard">Published dashboard</label>
-              <select id="page-component-dashboard" className="form-control"
-                value={typeof selected.properties.dashboardApiName === 'string' ? selected.properties.dashboardApiName : ''}
-                onChange={(event) => updateComponent(selected.id, { properties: { ...selected.properties, dashboardApiName: event.target.value } })}>
-                <option value="">Select a published dashboard…</option>
-                {dashboards.filter(dashboard => dashboard.status === 'Deployed').map(dashboard =>
-                  <option key={dashboard.apiName} value={dashboard.apiName}>{dashboard.label}</option>)}
-              </select>
-              <p className="properties-help">The live dashboard checks tenant, folder, viewer and record permissions at runtime.</p>
-            </>}
             {selected.type === 'Report Chart' && <>
               <div className="properties-section-title">Report</div>
               <label className="form-label" htmlFor="page-component-report">Source report</label>

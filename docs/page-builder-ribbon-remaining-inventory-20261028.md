@@ -14,15 +14,8 @@ These are the property definitions actually collected by the universal UNE ribbo
 
 | Property key | Display label | Enabled for UNE components |
 |---|---|---|
-| `channelAccountObjectApiName` | Source Object — Account | conversation |
-| `contactsObjectApiName` | Source Object — Contact | conversation |
-| `contactSourceObjectApi` | Source Object — Contact (Flow) | conversation |
-| `conversationsObjectApiName` | Source Object — Conversation | conversation |
-| `messagesObjectApiName` | Source Object — Message | conversation |
 | `objectApiName` | Source Object | calendar, item_grid, repeater, record_list, search, lookup, choice, cart, conversation, form, table, slot_picker, chart |
 | `recordPresenterApiName` | Record presentation | conversation |
-| `sourceObjectApiName` | Source Object — Flow Records | repeater |
-| `stateObjectApiName` | Source Object — State | cart |
 
 **Fields**
 
@@ -30,7 +23,6 @@ These are the property definitions actually collected by the universal UNE ribbo
 |---|---|---|
 | `ageRestrictedFieldApiName` | Age restriction field | cart |
 | `badgeFieldApiName` | Card badge field | item_grid |
-| `barcodeFieldApiName` | Barcode field | cart |
 | `categoryFieldApiName` | Category field API name | item_grid, cart |
 | `contactDisplayNameFieldApiNames` | Contact display name fields (priority) | conversation |
 | `contactNameFieldApiName` | Contact name field | conversation |
@@ -315,7 +307,6 @@ These are the property definitions actually collected by the universal UNE ribbo
 | `accentColor` | Custom accent colour | text, calendar, button, input, toggle, badge, stack, tabs, modal, item_grid, search, lookup, cart, conversation |
 | `glassBlur` | Glass blur (px) | text, calendar, button, input, toggle, badge, stack, tabs, modal, item_grid, search, lookup, cart, conversation |
 | `surface` | Surface | text, calendar, button, input, toggle, badge, stack, tabs, modal, item_grid, search, lookup, cart, conversation |
-| `theme` | Theme | text, image, calendar, button, card, input, toggle, badge, stack, tabs, container, grid, split_pane, navigation, menu, modal, drawer, item_grid, repeater, record_list, search, lookup, choice, cart, conversation, form, table, line_items, date_picker, slot_picker, metric, alert, progress, document_viewer, chart, option_groups |
 | `tone` | Colour palette | text, calendar, button, input, toggle, badge, stack, tabs, modal, item_grid, search, lookup, cart, conversation |
 
 **Additional styling**
@@ -443,7 +434,6 @@ These are the property definitions actually collected by the universal UNE ribbo
 
 | Property key | Label | Kind |
 |---|---|---|
-| `theme` | Theme | SELECT |
 | `surface` | Surface | SELECT |
 | `tone` | Colour palette | SELECT |
 | `accentColor` | Custom accent colour | COLOR |
@@ -463,7 +453,6 @@ These are the property definitions actually collected by the universal UNE ribbo
 
 | Property key | Label | Kind |
 |---|---|---|
-| `theme` | Theme | SELECT |
 | `borderColor` | Border colour | COLOR |
 | `radius` | Corner radius (px) | NUMBER |
 | `shadow` | Shadow | SELECT |
@@ -472,7 +461,6 @@ These are the property definitions actually collected by the universal UNE ribbo
 
 | Property key | Label | Kind |
 |---|---|---|
-| `theme` | Theme | SELECT |
 | `surface` | Surface | SELECT |
 | `tone` | Colour palette | SELECT |
 | `accentColor` | Custom accent colour | COLOR |
@@ -504,7 +492,6 @@ These are the property definitions actually collected by the universal UNE ribbo
 
 | Property key | Label | Kind |
 |---|---|---|
-| `theme` | Theme | SELECT |
 | `surface` | Surface | SELECT |
 | `tone` | Colour palette | SELECT |
 | `accentColor` | Custom accent colour | COLOR |
@@ -525,7 +512,6 @@ These are the property definitions actually collected by the universal UNE ribbo
 
 | Property key | Label | Kind |
 |---|---|---|
-| `theme` | Theme | SELECT |
 | `borderColor` | Border colour | COLOR |
 | `radius` | Corner radius (px) | NUMBER |
 | `shadow` | Shadow | SELECT |
@@ -534,7 +520,6 @@ These are the property definitions actually collected by the universal UNE ribbo
 
 | Property key | Label | Kind |
 |---|---|---|
-| `theme` | Theme | SELECT |
 | `surface` | Surface | SELECT |
 | `tone` | Colour palette | SELECT |
 | `accentColor` | Custom accent colour | COLOR |
@@ -565,7 +550,6 @@ These are the property definitions actually collected by the universal UNE ribbo
 
 | Property key | Label | Kind |
 |---|---|---|
-| `theme` | Theme | SELECT |
 | `surface` | Surface | SELECT |
 | `tone` | Colour palette | SELECT |
 | `accentColor` | Custom accent colour | COLOR |
@@ -586,7 +570,6 @@ These are the property definitions actually collected by the universal UNE ribbo
 
 | Property key | Label | Kind |
 |---|---|---|
-| `theme` | Theme | SELECT |
 | `surface` | Surface | SELECT |
 | `tone` | Colour palette | SELECT |
 | `accentColor` | Custom accent colour | COLOR |
@@ -605,7 +588,6 @@ These are the property definitions actually collected by the universal UNE ribbo
 
 | Property key | Label | Kind |
 |---|---|---|
-| `theme` | Theme | SELECT |
 | `surface` | Surface | SELECT |
 | `tone` | Colour palette | SELECT |
 | `accentColor` | Custom accent colour | COLOR |
@@ -626,7 +608,6 @@ These are the property definitions actually collected by the universal UNE ribbo
 
 | Property key | Label | Kind |
 |---|---|---|
-| `theme` | Theme | SELECT |
 | `surface` | Surface | SELECT |
 | `tone` | Colour palette | SELECT |
 | `accentColor` | Custom accent colour | COLOR |
@@ -650,7 +631,6 @@ These are the property definitions actually collected by the universal UNE ribbo
 
 | Property key | Label | Kind |
 |---|---|---|
-| `theme` | Theme | SELECT |
 | `borderColor` | Border colour | COLOR |
 | `radius` | Corner radius (px) | NUMBER |
 | `shadow` | Shadow | SELECT |
@@ -659,7 +639,6 @@ These are the property definitions actually collected by the universal UNE ribbo
 
 | Property key | Label | Kind |
 |---|---|---|
-| `theme` | Theme | SELECT |
 | `borderColor` | Border colour | COLOR |
 | `radius` | Corner radius (px) | NUMBER |
 | `shadow` | Shadow | SELECT |
@@ -668,7 +647,6 @@ These are the property definitions actually collected by the universal UNE ribbo
 
 | Property key | Label | Kind |
 |---|---|---|
-| `theme` | Theme | SELECT |
 | `borderColor` | Border colour | COLOR |
 | `radius` | Corner radius (px) | NUMBER |
 | `shadow` | Shadow | SELECT |
@@ -677,7 +655,6 @@ These are the property definitions actually collected by the universal UNE ribbo
 
 | Property key | Label | Kind |
 |---|---|---|
-| `theme` | Theme | SELECT |
 | `borderColor` | Border colour | COLOR |
 | `radius` | Corner radius (px) | NUMBER |
 | `shadow` | Shadow | SELECT |
@@ -687,7 +664,6 @@ These are the property definitions actually collected by the universal UNE ribbo
 
 | Property key | Label | Kind |
 |---|---|---|
-| `theme` | Theme | SELECT |
 | `borderColor` | Border colour | COLOR |
 | `radius` | Corner radius (px) | NUMBER |
 | `shadow` | Shadow | SELECT |
@@ -697,7 +673,6 @@ These are the property definitions actually collected by the universal UNE ribbo
 
 | Property key | Label | Kind |
 |---|---|---|
-| `theme` | Theme | SELECT |
 | `surface` | Surface | SELECT |
 | `tone` | Colour palette | SELECT |
 | `accentColor` | Custom accent colour | COLOR |
@@ -726,7 +701,6 @@ These are the property definitions actually collected by the universal UNE ribbo
 
 | Property key | Label | Kind |
 |---|---|---|
-| `theme` | Theme | SELECT |
 | `borderColor` | Border colour | COLOR |
 | `radius` | Corner radius (px) | NUMBER |
 | `shadow` | Shadow | SELECT |
@@ -735,7 +709,6 @@ These are the property definitions actually collected by the universal UNE ribbo
 
 | Property key | Label | Kind |
 |---|---|---|
-| `theme` | Theme | SELECT |
 | `surface` | Surface | SELECT |
 | `tone` | Colour palette | SELECT |
 | `accentColor` | Custom accent colour | COLOR |
@@ -822,7 +795,6 @@ These are the property definitions actually collected by the universal UNE ribbo
 
 | Property key | Label | Kind |
 |---|---|---|
-| `theme` | Theme | SELECT |
 | `borderColor` | Border colour | COLOR |
 | `radius` | Corner radius (px) | NUMBER |
 | `shadow` | Shadow | SELECT |
@@ -832,13 +804,11 @@ These are the property definitions actually collected by the universal UNE ribbo
 | `recordBadgeFieldApiName` | Record badge field | OBJECT_FIELD |
 | `recordTrailingFieldApiName` | Record trailing field | OBJECT_FIELD |
 | `searchFieldApiName` | Record search field | OBJECT_FIELD |
-| `sourceObjectApiName` | Source Object — Flow Records | TEXT |
 
 ## une_record_list
 
 | Property key | Label | Kind |
 |---|---|---|
-| `theme` | Theme | SELECT |
 | `borderColor` | Border colour | COLOR |
 | `radius` | Corner radius (px) | NUMBER |
 | `shadow` | Shadow | SELECT |
@@ -849,7 +819,6 @@ These are the property definitions actually collected by the universal UNE ribbo
 
 | Property key | Label | Kind |
 |---|---|---|
-| `theme` | Theme | SELECT |
 | `surface` | Surface | SELECT |
 | `tone` | Colour palette | SELECT |
 | `accentColor` | Custom accent colour | COLOR |
@@ -876,7 +845,6 @@ These are the property definitions actually collected by the universal UNE ribbo
 
 | Property key | Label | Kind |
 |---|---|---|
-| `theme` | Theme | SELECT |
 | `surface` | Surface | SELECT |
 | `tone` | Colour palette | SELECT |
 | `accentColor` | Custom accent colour | COLOR |
@@ -911,7 +879,6 @@ These are the property definitions actually collected by the universal UNE ribbo
 
 | Property key | Label | Kind |
 |---|---|---|
-| `theme` | Theme | SELECT |
 | `borderColor` | Border colour | COLOR |
 | `radius` | Corner radius (px) | NUMBER |
 | `shadow` | Shadow | SELECT |
@@ -921,7 +888,6 @@ These are the property definitions actually collected by the universal UNE ribbo
 
 | Property key | Label | Kind |
 |---|---|---|
-| `theme` | Theme | SELECT |
 | `surface` | Surface | SELECT |
 | `tone` | Colour palette | SELECT |
 | `accentColor` | Custom accent colour | COLOR |
@@ -938,7 +904,6 @@ These are the property definitions actually collected by the universal UNE ribbo
 | `title` | Title | TEXT |
 | `nameFieldApiName` | Product name field | OBJECT_FIELD |
 | `priceFieldApiName` | Product price field | OBJECT_FIELD |
-| `barcodeFieldApiName` | Barcode field | OBJECT_FIELD |
 | `skuFieldApiName` | SKU field | OBJECT_FIELD |
 | `imageFieldApiName` | Product image field | OBJECT_FIELD |
 | `ageRestrictedFieldApiName` | Age restriction field | OBJECT_FIELD |
@@ -949,7 +914,6 @@ These are the property definitions actually collected by the universal UNE ribbo
 | `stateSyncEnabled` | Synchronise paired display through Flow | BOOLEAN |
 | `stateReadFlowApiName` | State read Flow | TEXT |
 | `stateWriteFlowApiName` | State write Flow | TEXT |
-| `stateObjectApiName` | Source Object — State | OBJECT |
 | `stateValueFieldApiName` | State value field | OBJECT_FIELD |
 | `stateVersionFieldApiName` | State revision field | OBJECT_FIELD |
 | `stateKeyInput` | State key input | TEXT |
@@ -992,7 +956,6 @@ These are the property definitions actually collected by the universal UNE ribbo
 
 | Property key | Label | Kind |
 |---|---|---|
-| `theme` | Theme | SELECT |
 | `surface` | Surface | SELECT |
 | `tone` | Colour palette | SELECT |
 | `accentColor` | Custom accent colour | COLOR |
@@ -1010,10 +973,6 @@ These are the property definitions actually collected by the universal UNE ribbo
 | `enableNewConversation` | Enable new conversations | BOOLEAN |
 | `title` | Title | TEXT |
 | `searchPlaceholder` | Search placeholder | TEXT |
-| `conversationsObjectApiName` | Source Object — Conversation | OBJECT |
-| `messagesObjectApiName` | Source Object — Message | OBJECT |
-| `channelAccountObjectApiName` | Source Object — Account | OBJECT |
-| `contactsObjectApiName` | Source Object — Contact | OBJECT |
 | `recordPresenterApiName` | Record presentation | TEXT |
 | `restrictToAssigned` | Restrict to assigned conversations | BOOLEAN |
 | `enableAssignment` | Enable assignment actions | BOOLEAN |
@@ -1093,7 +1052,6 @@ These are the property definitions actually collected by the universal UNE ribbo
 | `messageStatusPrefixToIgnore` | Ignored status event prefix | TEXT |
 | `messageStatusNamePrefixToIgnore` | Ignored status name prefix | TEXT |
 | `messageRequireBody` | Exclude messages with empty body | BOOLEAN |
-| `contactSourceObjectApi` | Source Object — Contact (Flow) | TEXT |
 | `liveFlowRefreshEnabled` | Refresh Flow data while page is visible | BOOLEAN |
 | `liveFlowRefreshIntervalMs` | Flow refresh interval in milliseconds | NUMBER |
 | `liveFlowRefreshEvents` | Comma-separated read Flow event names | TEXT |
@@ -1111,7 +1069,6 @@ These are the property definitions actually collected by the universal UNE ribbo
 
 | Property key | Label | Kind |
 |---|---|---|
-| `theme` | Theme | SELECT |
 | `borderColor` | Border colour | COLOR |
 | `radius` | Corner radius (px) | NUMBER |
 | `shadow` | Shadow | SELECT |
@@ -1122,7 +1079,6 @@ These are the property definitions actually collected by the universal UNE ribbo
 
 | Property key | Label | Kind |
 |---|---|---|
-| `theme` | Theme | SELECT |
 | `borderColor` | Border colour | COLOR |
 | `radius` | Corner radius (px) | NUMBER |
 | `shadow` | Shadow | SELECT |
@@ -1132,7 +1088,6 @@ These are the property definitions actually collected by the universal UNE ribbo
 
 | Property key | Label | Kind |
 |---|---|---|
-| `theme` | Theme | SELECT |
 | `borderColor` | Border colour | COLOR |
 | `radius` | Corner radius (px) | NUMBER |
 | `shadow` | Shadow | SELECT |
@@ -1142,7 +1097,6 @@ These are the property definitions actually collected by the universal UNE ribbo
 
 | Property key | Label | Kind |
 |---|---|---|
-| `theme` | Theme | SELECT |
 | `borderColor` | Border colour | COLOR |
 | `radius` | Corner radius (px) | NUMBER |
 | `shadow` | Shadow | SELECT |
@@ -1151,7 +1105,6 @@ These are the property definitions actually collected by the universal UNE ribbo
 
 | Property key | Label | Kind |
 |---|---|---|
-| `theme` | Theme | SELECT |
 | `borderColor` | Border colour | COLOR |
 | `radius` | Corner radius (px) | NUMBER |
 | `shadow` | Shadow | SELECT |
@@ -1161,7 +1114,6 @@ These are the property definitions actually collected by the universal UNE ribbo
 
 | Property key | Label | Kind |
 |---|---|---|
-| `theme` | Theme | SELECT |
 | `borderColor` | Border colour | COLOR |
 | `radius` | Corner radius (px) | NUMBER |
 | `shadow` | Shadow | SELECT |
@@ -1171,7 +1123,6 @@ These are the property definitions actually collected by the universal UNE ribbo
 
 | Property key | Label | Kind |
 |---|---|---|
-| `theme` | Theme | SELECT |
 | `borderColor` | Border colour | COLOR |
 | `radius` | Corner radius (px) | NUMBER |
 | `shadow` | Shadow | SELECT |
@@ -1180,7 +1131,6 @@ These are the property definitions actually collected by the universal UNE ribbo
 
 | Property key | Label | Kind |
 |---|---|---|
-| `theme` | Theme | SELECT |
 | `borderColor` | Border colour | COLOR |
 | `radius` | Corner radius (px) | NUMBER |
 | `shadow` | Shadow | SELECT |
@@ -1189,7 +1139,6 @@ These are the property definitions actually collected by the universal UNE ribbo
 
 | Property key | Label | Kind |
 |---|---|---|
-| `theme` | Theme | SELECT |
 | `borderColor` | Border colour | COLOR |
 | `radius` | Corner radius (px) | NUMBER |
 | `shadow` | Shadow | SELECT |
@@ -1198,7 +1147,6 @@ These are the property definitions actually collected by the universal UNE ribbo
 
 | Property key | Label | Kind |
 |---|---|---|
-| `theme` | Theme | SELECT |
 | `borderColor` | Border colour | COLOR |
 | `radius` | Corner radius (px) | NUMBER |
 | `shadow` | Shadow | SELECT |
@@ -1208,7 +1156,6 @@ These are the property definitions actually collected by the universal UNE ribbo
 
 | Property key | Label | Kind |
 |---|---|---|
-| `theme` | Theme | SELECT |
 | `borderColor` | Border colour | COLOR |
 | `radius` | Corner radius (px) | NUMBER |
 | `shadow` | Shadow | SELECT |
