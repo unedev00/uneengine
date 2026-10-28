@@ -3175,25 +3175,6 @@ function PageBuilder({
                 </select>
               </label>;
             })()}
-            {selected.type === 'Accordion' && <>
-              <div className="properties-section-title">Accordion Content</div>
-              <label className="form-label" htmlFor="page-component-accordion-content">Content</label>
-              <textarea id="page-component-accordion-content" className="form-control" rows={4}
-                value={typeof selected.properties.content === 'string' ? selected.properties.content : ''}
-                onChange={(event) => updateComponent(selected.id, { properties: { ...selected.properties, content: event.target.value } })} />
-            </>}
-            {selected.type === 'Dashboard' && <>
-              <div className="properties-section-title">Dashboard</div>
-              <label className="form-label" htmlFor="page-component-dashboard">Published dashboard</label>
-              <select id="page-component-dashboard" className="form-control"
-                value={typeof selected.properties.dashboardApiName === 'string' ? selected.properties.dashboardApiName : ''}
-                onChange={(event) => updateComponent(selected.id, { properties: { ...selected.properties, dashboardApiName: event.target.value } })}>
-                <option value="">Select a published dashboard…</option>
-                {dashboards.filter(dashboard => dashboard.status === 'Deployed').map(dashboard =>
-                  <option key={dashboard.apiName} value={dashboard.apiName}>{dashboard.label}</option>)}
-              </select>
-              <p className="properties-help">The live dashboard checks tenant, folder, viewer and record permissions at runtime.</p>
-            </>}
             {selected.type === 'Report Chart' && <>
               <div className="properties-section-title">Report</div>
               <label className="form-label" htmlFor="page-component-report">Source report</label>
