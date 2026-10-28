@@ -1219,3 +1219,90 @@
 .office-builder-ribbon .office-ribbon-group-navigation button:disabled{
   opacity:0;pointer-events:none;
 }
+
+/* Ribbon blueprint parity: compact capability groups and visible disabled icons.
+   Use a component tab's actual DOM, not legacy inspector markup. */
+.office-builder-ribbon #page-builder-tab-content > .office-ribbon-part-group {
+  flex:0 0 132px!important;width:132px!important;min-width:132px!important;
+  max-width:132px!important;height:132px!important;max-height:132px!important;
+  padding:5px 5px 21px!important;box-sizing:border-box!important;
+}
+.office-builder-ribbon #page-builder-tab-content > .office-ribbon-part-group > .office-ribbon-part-fieldset {
+  display:flex!important;justify-content:center!important;align-items:center!important;
+  width:100%!important;height:101px!important;min-height:0!important;
+  overflow:hidden!important;padding:0!important;
+}
+.office-builder-ribbon #page-builder-tab-content .office-ribbon-disabled-group {
+  display:flex!important;flex-flow:row wrap!important;justify-content:center!important;
+  align-content:center!important;gap:7px!important;
+  width:100%!important;height:95px!important;max-height:95px!important;
+}
+.office-builder-ribbon #page-builder-tab-content .office-ribbon-disabled-icon {
+  display:inline-flex!important;justify-content:center!important;align-items:center!important;
+  width:28px!important;min-width:28px!important;height:30px!important;
+  border:0!important;background:transparent!important;color:#9eacbf!important;
+  opacity:.5!important;cursor:not-allowed!important;padding:3px!important;
+}
+.office-builder-ribbon #page-builder-tab-content .office-ribbon-part-group > span {
+  display:block!important;white-space:nowrap!important;font-size:10px!important;
+  text-align:center!important;
+}
+.office-builder-ribbon #page-builder-tab-content .office-ribbon-part-group .office-ribbon-metadata-pager {
+  width:121px!important;min-width:0!important;max-width:121px!important;
+  height:100px!important;max-height:100px!important;overflow:hidden!important;
+}
+/* Fix Content's 270px clipped legacy panel: its real groups must flow horizontally. */
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Content"] > .office-ribbon-inline-options {
+  display:flex!important;flex:0 0 auto!important;width:max-content!important;
+  max-width:none!important;min-width:0!important;height:133px!important;
+  overflow:hidden!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Content"] > .office-ribbon-inline-options > .metadata-component-presentation {
+  display:flex!important;flex-flow:row nowrap!important;width:max-content!important;
+  max-width:none!important;min-width:0!important;height:133px!important;
+  overflow:hidden!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Content"] .office-ribbon-presentation-group {
+  flex:0 0 205px!important;width:205px!important;min-width:205px!important;
+  max-width:205px!important;height:133px!important;max-height:133px!important;
+  overflow:hidden!important;box-sizing:border-box!important;padding:4px 6px 17px!important;
+}
+.office-builder-ribbon #page-builder-tab-content[aria-label="Component Content"] .office-ribbon-presentation-group :is(input,select,textarea) {
+  min-width:0!important;max-width:100%!important;box-sizing:border-box!important;
+}
+/* Insert: correct the hierarchy in the current JSX, restoring visible component tiles. */
+.office-builder-ribbon #page-builder-tab-content > .office-ribbon-add-library {
+  display:block!important;flex:1 1 auto!important;width:100%!important;min-width:0!important;
+  height:132px!important;max-height:132px!important;
+}
+.office-builder-ribbon #page-builder-tab-content > .office-ribbon-add-library > .office-ribbon-gallery-pages {
+  display:flex!important;flex-flow:row nowrap!important;align-items:center!important;
+  width:100%!important;height:132px!important;min-width:0!important;overflow:hidden!important;
+}
+.office-builder-ribbon #page-builder-tab-content > .office-ribbon-add-library > .office-ribbon-gallery-pages > .office-ribbon-icon-button {
+  flex:0 0 25px!important;width:25px!important;min-width:25px!important;
+}
+.office-builder-ribbon #page-builder-tab-content > .office-ribbon-add-library > .office-ribbon-gallery-pages > .office-ribbon-component-tiles {
+  display:grid!important;flex:1 1 auto!important;min-width:0!important;
+  grid-template-columns:repeat(8,minmax(0,1fr))!important;
+  grid-template-rows:repeat(3,40px)!important;grid-auto-flow:column!important;
+  gap:3px 6px!important;height:129px!important;max-height:129px!important;
+  overflow:hidden!important;
+}
+.office-builder-ribbon #page-builder-tab-content > .office-ribbon-add-library > .office-ribbon-gallery-pages > .office-ribbon-component-tiles > .office-ribbon-component-tile {
+  display:flex!important;flex-direction:row!important;justify-content:flex-start!important;
+  width:100%!important;min-width:0!important;max-width:none!important;
+  height:39px!important;min-height:39px!important;max-height:39px!important;
+  padding:3px 5px!important;gap:4px!important;text-align:left!important;
+}
+.office-builder-ribbon #page-builder-tab-content > .office-ribbon-add-library > .office-ribbon-gallery-pages > .office-ribbon-component-tiles > .office-ribbon-component-tile > svg {
+  flex:0 0 16px!important;width:16px!important;height:16px!important;
+}
+.office-builder-ribbon #page-builder-tab-content > .office-ribbon-add-library > .office-ribbon-gallery-pages > .office-ribbon-component-tiles > .office-ribbon-component-tile > span {
+  display:block!important;min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;
+}
+@media(max-width:1050px){
+ .office-builder-ribbon #page-builder-tab-content > .office-ribbon-add-library > .office-ribbon-gallery-pages > .office-ribbon-component-tiles {
+   grid-template-columns:repeat(4,minmax(0,1fr))!important;
+ }
+}
