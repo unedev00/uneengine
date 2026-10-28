@@ -148,6 +148,8 @@ import PageBuilderActionRibbon from './PageBuilderActionRibbon';
 import PageBuilderRibbonMetadataPager from './PageBuilderRibbonMetadataPager';
 import UniversalRibbonInventory from './UniversalRibbonInventory';
 import './UniversalRibbonInventory.css';
+import './PageBuilderNumericControls.css';
+import './PageBuilderRibbonPolish.css';
 import RibbonFieldExpressionInput from './RibbonFieldExpressionInput';
 import {RibbonResponsive} from './PageBuilderRibbonStyle';
 import PageBuilderAdvancedStyle from './PageBuilderAdvancedStyle';
@@ -261,6 +263,7 @@ import {
   type WorkspaceId
 } from '../../metadata/Definitions/metadata';
 import SavedListViewPicker from './SavedListViewPicker';
+import {uneRibbonIcon} from './uneRibbonIcon';
 import RibbonImageContent from './RibbonImageContent';
 export function createPageBuilder(MetadataComponentProperties: React.ComponentType<any>, MetadataBoundPageComponent: React.ComponentType<any>) {
 function PageBuilder({
@@ -730,6 +733,8 @@ function PageBuilder({
       components:components.slice(index*4,index*4+4)
     })));
   const renderPaletteIcon = (component: { type: string; label: string }) => {
+    const svgIcon=uneRibbonIcon(component.type,null);
+    if(svgIcon)return svgIcon;
     const name = `${component.label} ${component.type}`.toLowerCase();
     if (/\b(text|heading|paragraph|rich text|label)\b/.test(name)) return <Type size={15} />;
     if (/\b(image|photo|picture|avatar|logo)\b/.test(name)) return <ImageIcon size={15} />;
@@ -1817,6 +1822,7 @@ function PageBuilder({
           page.layoutMode === 'free-canvas' ? canvasPositionFromEvent(event) : undefined, parentId);
         return;
       }
+
       if (!canNest(page.components, draggedId, parentId)) {
         onNotify('Cannot nest a component inside itself or one of its descendants.');
         return;
@@ -2098,6 +2104,7 @@ function PageBuilder({
           <button type="button" role="menuitem" onClick={() => {moveSelected(-1);setComponentMenuId('');}}>Bring forward</button>
           <button type="button" role="menuitem" onClick={() => {moveSelected(1);setComponentMenuId('');}}>Send backward</button>
           <button type="button" role="menuitem" onClick={() => openComponentInspector('Data & Actions')}>Data, links and actions</button>
+
           <button type="button" role="menuitem" disabled={isCanvasLocked(component)} onClick={() => {removeSelected();setComponentMenuId('');}}>Delete <kbd>Delete</kbd></button>
         </div>}
       </div>}
@@ -2438,7 +2445,7 @@ function PageBuilder({
       })()}
       {editorMode&&selected?.type==='List View'&&
         <section className="builder-list-view-settings" aria-label="Saved List View block configuration">
-          <label className="form-label">List Object
+          <label className="form-label">Source Object
             <select className="form-control" aria-label="List View Object"
               value={String(selected.properties.listObjectApiName??'')}
               onChange={event=>updateComponent(selected.id,{properties:{
@@ -2687,6 +2694,7 @@ function PageBuilder({
           {selected && ribbonTab==='Component Responsive' && <RibbonResponsive
             properties={selected.properties} componentType={selected.type}
             definition={selectedCustomDefinition} device={page.layoutVariant??'Desktop'}
+
             onChange={properties=>updateComponent(selected.id,{properties})}
             onVisibilityRules={()=>openExpandedEditor('visibility')}/>}
           {selected && ribbonTab === 'Component Action' && selectedCustomDefinition?.apiName==='une_item_grid'
@@ -2756,6 +2764,7 @@ function PageBuilder({
           {selected && ribbonTab === 'Component Layout' && <>
             <div className="office-ribbon-group office-ribbon-icon-group office-ribbon-layout-arrange" aria-label="Arrange component">
               <div className="office-ribbon-arrange-column">
+
                 <button type="button" disabled={page.layoutMode!=='free-canvas'||selectionIds.length<2||!selected.position||isCanvasLocked(selected)||Boolean(rawLayoutParentId(selected))||selectionIds.some(id=>{
                   const item=page.components.find(component=>component.id===id);
                   return !item?.position||isCanvasLocked(item)||Boolean(rawLayoutParentId(item));
@@ -3016,7 +3025,7 @@ function PageBuilder({
             </>}
             {selected.type === 'List View' && <>
               <div className="properties-section-title">List records</div>
-              <label className="form-label">Object
+              <label className="form-label">Source Object
                 <select className="form-control" value={String(selected.properties.listObjectApiName??'')}
                   onChange={event=>updateComponent(selected.id,{properties:{...selected.properties,
                     listObjectApiName:event.target.value,columns:[]}})}>

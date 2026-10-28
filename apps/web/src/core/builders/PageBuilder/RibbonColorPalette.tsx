@@ -17,9 +17,9 @@ const themeColumns=[
 ];
 const standard=['#c00000','#ff0000','#ffc000','#ffff00','#92d050','#00b050','#00b0f0','#0070c0','#002060','#7030a0'];
 
-export default function RibbonColorPalette({kind,label,value,onChange,variant='icon'}:{
+export default function RibbonColorPalette({kind,label,value,onChange,variant='icon',disabled=false}:{
   kind:ColourKind;label:string;value:string;onChange:(color:string)=>void;
-  variant?:'icon'|'capability';
+  variant?:'icon'|'capability'|'property';disabled?:boolean;
 }){
   const [open,setOpen]=useState(false);
   const [customHex,setCustomHex]=useState(value);
@@ -63,10 +63,10 @@ export default function RibbonColorPalette({kind,label,value,onChange,variant='i
       onClick={()=>choose(colour)}/>
   );
   return <>
-    <button ref={trigger} type="button" className={variant==='capability'?'office-ribbon-capability-icon office-ribbon-direct-colour':'office-ribbon-icon-button office-ribbon-colour-command'}
-      title={label} aria-label={label+' colour palette'} aria-expanded={open} aria-haspopup="dialog"
+    <button ref={trigger} type="button" disabled={disabled} className={variant==='capability'?'office-ribbon-capability-icon office-ribbon-direct-colour':variant==='property'?'office-ribbon-colour-property':'office-ribbon-icon-button office-ribbon-colour-command'}
+      title={disabled?'Not supported by selected component':label+(value?' ('+value+')':' (not set)')} aria-label={label+' colour palette'} aria-expanded={open} aria-haspopup="dialog"
       onClick={toggle}>
-      <span className="office-ribbon-command-glyph">{icon}<span className="office-ribbon-colour-underline" style={{background:value||'#111827'}}/></span>
+      <span className="office-ribbon-command-glyph">{icon}<span className={'office-ribbon-colour-underline'+(value?'':' is-unset')} style={value?{background:value}:undefined}/></span>
       {variant==='capability'?<span className="office-ribbon-command-label">{label}</span>:<ChevronDown size={11}/>}
     </button>
     {open&&createPortal(<div ref={popup} className="office-ribbon-colour-palette" role="dialog"

@@ -235,28 +235,28 @@
     },
     {
       "propertyKey": "conversationsObjectApiName",
-      "label": "Conversation object",
+      "label": "Source Object — Conversation",
       "kind": "OBJECT",
       "displayOrder": 350,
       "defaultValue": ""
     },
     {
       "propertyKey": "messagesObjectApiName",
-      "label": "Message object",
+      "label": "Source Object — Message",
       "kind": "OBJECT",
       "displayOrder": 360,
       "defaultValue": ""
     },
     {
       "propertyKey": "channelAccountObjectApiName",
-      "label": "Account object",
+      "label": "Source Object — Account",
       "kind": "OBJECT",
       "displayOrder": 370,
       "defaultValue": ""
     },
     {
       "propertyKey": "contactsObjectApiName",
-      "label": "Contact object",
+      "label": "Source Object — Contact",
       "kind": "OBJECT",
       "displayOrder": 380,
       "defaultValue": ""
@@ -873,7 +873,7 @@
     },
     {
       "propertyKey": "contactSourceObjectApi",
-      "label": "Contact source Object API from Flow",
+      "label": "Source Object — Contact (Flow)",
       "kind": "TEXT",
       "defaultValue": "",
       "displayOrder": 1150
