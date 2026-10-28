@@ -158,3 +158,30 @@
 .office-builder-ribbon #page-builder-tab-content>.office-ribbon-part-group:is([data-ribbon-group="Heading"],[data-ribbon-group="Supporting text"]) .office-ribbon-capability-icon{
  width:29px!important;min-width:29px!important;height:57px!important;
 }
+
+/* The capability editor lives in a portal: reset fixed-ribbon pager constraints
+   so users can actually edit every permitted metadata property. */
+.office-ribbon-capability-dialog .office-ribbon-metadata-pager{
+ display:flex!important;flex-flow:row nowrap!important;align-items:flex-start!important;
+ width:100%!important;max-width:none!important;height:auto!important;
+ min-height:90px!important;max-height:none!important;overflow:visible!important;gap:8px!important;
+}
+.office-ribbon-capability-dialog .metadata-component-presentation{
+ display:flex!important;flex:1 1 auto!important;flex-flow:column nowrap!important;
+ gap:10px!important;width:auto!important;max-width:none!important;
+ height:auto!important;max-height:none!important;overflow:visible!important;
+}
+.office-ribbon-capability-dialog .office-ribbon-presentation-group{
+ display:flex!important;flex-flow:column nowrap!important;gap:8px!important;
+ width:100%!important;max-width:none!important;min-height:0!important;
+ height:auto!important;max-height:none!important;overflow:visible!important;
+ padding:4px 0!important;
+}
+.office-ribbon-capability-dialog .form-label{
+ display:flex!important;align-items:center!important;justify-content:space-between!important;
+ gap:12px!important;width:100%!important;max-width:100%!important;
+}
+.office-ribbon-capability-dialog .form-label :is(input,select,textarea){
+ flex:0 1 230px!important;width:230px!important;min-width:0!important;
+ max-width:230px!important;box-sizing:border-box!important;
+}
