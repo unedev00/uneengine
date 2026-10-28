@@ -1572,7 +1572,8 @@ function RecordWorkspace({
     const writable=new Set(object.fields.filter(field=>
       fieldAccess[`${object.apiName}.${field.apiName}`]?.read &&
       fieldAccess[`${object.apiName}.${field.apiName}`]?.edit &&
-      !field.formula && !field.dataType.toLowerCase().startsWith('auto number')
+      !field.formula && field.dataType !== 'Text (Encrypted)' &&
+      !field.dataType.toLowerCase().startsWith('auto number')
     ).map(field=>field.apiName));
     const excluded=new Set(['Id','OwnerId','CreatedById','LastModifiedById',
       'CreatedDate','LastModifiedDate','SystemModstamp','IsDeleted']);
