@@ -2184,8 +2184,16 @@ function RecordWorkspace({
       if(component.type==='Related List Quick Links'){
         const names=Array.isArray(component.properties.relatedLists)
           ?component.properties.relatedLists.filter((name):name is string=>typeof name==='string'):[];
+        // Links are navigational only: never reveal a relation that the
+        // authorised related-record response did not provide.
+        const available=names.filter(name=>Object.entries(relatedRecords).some(([key,value])=>{
+          const child=objects.find(item=>item.apiName===value.objectApiName);
+          return key.toLowerCase()===name.toLowerCase()
+            ||child?.pluralLabel.toLowerCase()===name.toLowerCase();
+        }));
+        if(!available.length)return null;
         return <nav key={component.id} className="record-fields-card surface" aria-label={component.label}>
-          {names.map(name=><a key={name} href={'#related-'+encodeURIComponent(name)}
+          {available.map(name=><a key={name} href={'#related-'+encodeURIComponent(name)}
             onClick={event=>{
               const target=document.getElementById('related-'+name);
               if(target){event.preventDefault();target.scrollIntoView({behavior:'smooth'});}
