@@ -235,6 +235,13 @@
       "kind": "TEXT",
       "displayOrder": 300,
       "defaultValue": ""
+    },
+    {
+      "propertyKey": "disabled",
+      "label": "Disabled",
+      "kind": "BOOLEAN",
+      "displayOrder": 340,
+      "defaultValue": false
     }
   ],
   "eventDefinitions": [
