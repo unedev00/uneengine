@@ -215,6 +215,7 @@
     "apps/web/test/universalUneRibbonReviewMode.test.ts",
     "apps/web/test/visibilityExpression.test.ts",
     "apps/web/test/visiblePolling.test.ts",
-    "apps/web/test/workspaceContrastRepair.test.mjs"
+    "apps/web/test/workspaceContrastRepair.test.mjs",
+    "apps/web/test/workspaceThemeContrast.test.mjs"
   ]
 }

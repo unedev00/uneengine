@@ -31,6 +31,7 @@ const Workspace = lazy(async () => {
   await import('./core/workspace/WorkspaceTheme/desktopDense.css');
   await import('./core/workspace/WorkspaceTheme/contrastRepair.css');
   await import('./core/workspace/WorkspaceTheme/setupUsability.css');
+  await import('./core/workspace/WorkspaceTheme/workspaceContrastBaseline.css');
   await import('./core/workspace/TableUsability/tableResizing.css');
   const { installWorkspaceTableResizing } = await import('./core/workspace/TableUsability/installWorkspaceTableResizing');
   installWorkspaceTableResizing();
