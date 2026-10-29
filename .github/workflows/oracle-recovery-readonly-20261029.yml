@@ -109,5 +109,6 @@ jobs:
 
           echo '=== global Ribbon metadata only, no business records ==='
           sudo -n runuser -u postgres -- psql -X -Atq -v ON_ERROR_STOP=1 -d "$db" -c "SELECT 'property_tab='||tab||';count='||count(*) FROM md_builder_shared_properties GROUP BY tab ORDER BY tab"
-          sudo -n runuser -u postgres -- psql -X -Atq -v ON_ERROR_STOP=1 -d "$db" -c "SELECT 'ribbon_component_prefix='||CASE WHEN component_api LIKE 'smart\\_%' ESCAPE '\\' THEN 'smart' WHEN component_api LIKE 'une\\_%' ESCAPE '\\' THEN 'legacy' ELSE 'other' END||';count='||count(*) FROM md_builder_ribbon_components GROUP BY 1 ORDER BY 1"
+          sudo -n runuser -u postgres -- psql -X -Atq -v ON_ERROR_STOP=1 -d "$db" -c "SELECT component_api, count(*) FROM md_builder_ribbon_components GROUP BY component_api ORDER BY component_api" | awk -F'|' 'BEGIN{smart=0;legacy=0;other=0} {if($1 ~ /^smart_/)smart++; else if($1 ~ /^une_/)legacy++; else other++} END{printf "Ribbon component registry: smart=%d legacy=%d other=%d\\n",smart,legacy,other}'
+          sudo -n runuser -u postgres -- psql -X -Atq -v ON_ERROR_STOP=1 -d "$db" -c "SELECT version FROM md_system_migrations WHERE version LIKE '202701%' ORDER BY version" | sed 's/^/Applied migration: /'
           echo 'Read-only Oracle audit complete.'
