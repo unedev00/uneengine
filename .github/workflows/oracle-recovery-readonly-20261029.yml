@@ -155,7 +155,7 @@ jobs:
           [[ "$(timeout 8 systemctl show metadrive-worker.service -p Environment --value)" == *"METADRIVE_RELEASE_SHA=2bea5cfd5a0613fd177b34bb0232503632d30105"* ]] ||
             { echo 'Worker release SHA does not match production release'; exit 1; }
           api_release="$(timeout 8 systemctl show metadrive-api.service -p WorkingDirectory --value)"
-          grep -q 'api/metadata/builder-ribbon' "$api_release/apps/server/dist-system/system-support/server.js" ||
+          sudo -n grep -q 'api/metadata/builder-ribbon' "$api_release/apps/server/dist-system/system-support/server.js" ||
             { echo 'Deployed Ribbon endpoint missing'; exit 1; }
           for sql in "SELECT count(*) FROM md_builder_shared_properties WHERE tab='Home'" "SELECT count(*) FROM md_builder_ribbon_components WHERE left(component_api,6)='smart_'" "SELECT count(DISTINCT tenant_id) FROM md_component_definitions WHERE api_name='smart_button'"; do
             count="$(sudo -n runuser -u postgres -- psql -X -Atq -v ON_ERROR_STOP=1 -d "$db" -c "$sql")"
