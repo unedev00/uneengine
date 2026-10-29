@@ -251,7 +251,7 @@
  --chat-muted:var(--md-text-2,#5c5c63);
  --chat-line:var(--md-separator,#d8dddf);
  --chat-action:#076c60;
- --chat-link:color-mix(in srgb,#128c7e 60%,var(--chat-ink));
+ --chat-link:color-mix(in srgb,#128c7e 28%,var(--chat-ink));
  background:var(--chat-canvas);color:var(--chat-ink);
 }
 .ace-chat :is(.ace-chat-sidebar,.ace-chat-sidebar-heading,.ace-chat-conversation-list,
