@@ -170,6 +170,13 @@
       "kind": "NUMBER",
       "displayOrder": 130,
       "defaultValue": 12
+    },
+    {
+      "propertyKey": "helpText",
+      "label": "Help text",
+      "kind": "TEXT",
+      "displayOrder": 860,
+      "defaultValue": ""
     }
   ],
   "eventDefinitions": [
