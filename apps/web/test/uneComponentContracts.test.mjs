@@ -25,7 +25,7 @@ test('UNE is the only published system component family',()=>{
 test('every UNE property has a supported visual editor contract',()=>{
  for(const d of une){
   const keys=new Set();
-  assert.deepEqual(d.surfaces,['page','dashboard','flow']);assert.equal(d.version,d.apiName==='une_input'?3:updated.has(d.apiName)?2:1);
+  assert.deepEqual(d.surfaces,['page','dashboard','flow']);assert.equal(d.version,updated.has(d.apiName)?2:1);
   for(const prop of d.propertyDefinitions){
    assert.ok(allowed.has(prop.kind),d.apiName+' unknown kind '+prop.kind);
    assert.match(prop.propertyKey,/^[A-Za-z][A-Za-z0-9_]*$/);
