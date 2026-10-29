@@ -9,9 +9,14 @@ import {conversationPartSlots,conversationRootDefinition,conversationPartDefinit
   conversationPartEditorProperties,updateConversationPartProperties,readConversationPart}
   from '../src/one/une_conversation/conversationParts.mjs';
 const read=path=>readFileSync(new URL(path,import.meta.url),'utf8');
-const manifest=name=>JSON.parse(read('../src/one/'+name+'/component.json'));
-const parent=manifest('une_conversation');
-const children=['une_input','une_button','une_search'].map(manifest);
+const manifest=async name=>{
+ const registration=JSON.parse(read('../src/one/'+name+'/component.json'));
+ const {propertyDefinitions}=await import(new URL('../src/one/'+name+'/app-properties.mjs',import.meta.url));
+ assert.deepEqual(registration.propertyDefinitions,[],'UNE registry must not expose app settings');
+ return {...registration,propertyDefinitions};
+};
+const parent=await manifest('une_conversation');
+const children=await Promise.all(['une_input','une_button','une_search'].map(manifest));
 test('conversation slot definitions reuse actual UNE child contracts',()=>{
  for(const part of conversationPartSlots){
   const definition=conversationPartDefinition(part.id,parent,children);
