@@ -73,16 +73,23 @@ fi
 test -f "$RELEASE/apps/server/dist-system/system-support/entrypoint.js"
 test -f "$RELEASE/apps/server/dist-system/system-support/job-worker-entrypoint.js"
 
+# Stamp the code we are about to activate, not the latest main branch.
+# On rollback the previous systemd overrides (and their stamps) are restored.
+RELEASE_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 mkdir -p "$(dirname "$API_OVERRIDE")" "$(dirname "$WORKER_OVERRIDE")"
 cat > "$API_OVERRIDE" <<EOF
 [Service]
 WorkingDirectory=$RELEASE
+Environment=METADRIVE_RELEASE_SHA=$SHA
+Environment=METADRIVE_RELEASE_AT=$RELEASE_AT
 ExecStart=
 ExecStart=$(command -v node) $RELEASE/apps/server/dist-system/system-support/entrypoint.js
 EOF
 cat > "$WORKER_OVERRIDE" <<EOF
 [Service]
 WorkingDirectory=$RELEASE
+Environment=METADRIVE_RELEASE_SHA=$SHA
+Environment=METADRIVE_RELEASE_AT=$RELEASE_AT
 ExecStart=
 ExecStart=$(command -v node) $RELEASE/apps/server/dist-system/system-support/job-worker-entrypoint.js
 EOF

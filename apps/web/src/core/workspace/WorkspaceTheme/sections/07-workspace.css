@@ -59,9 +59,24 @@
 @media (max-width: 920px) { .flow-start-panels { grid-template-columns: minmax(0, 1fr); } .flow-start-page-split .flow-start-create { position: static; } .flow-start-page-split .flow-start-types { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 540px) { .flow-start-page-split .flow-start-types { grid-template-columns: minmax(0,1fr); } .flow-start-page-split .flow-existing-pagination { gap: 5px; } }
 
-/* Compact, stable page-load duration immediately before Help */
-.navigation-load-time { display: inline-flex; align-items: center; justify-content: flex-end; min-width: 94px; white-space: nowrap; font-size: 12px; font-variant-numeric: tabular-nums; color: #54657a; }
-@media (max-width: 600px) { .navigation-load-time { font-size: var(--md-fs-sm,12px); min-width: 70px; } }
+/* The header always shows only the gear; diagnostics live in a dismissible popover. */
+.navigation-diagnostics { position: relative; display: inline-flex; align-items: center; flex: 0 0 auto; }
+.navigation-diagnostics-trigger { display: inline-flex; align-items: center; justify-content: center; }
+.navigation-diagnostics-popover {
+  position: absolute; top: calc(100% + 10px); right: 0; z-index: 2000;
+  box-sizing: border-box; width: min(310px, calc(100vw - 24px));
+  padding: 14px 16px; border: 1px solid var(--md-border,#d7e0e8);
+  border-radius: 10px; background: var(--md-surface,#fff); color: var(--text,#263649);
+  box-shadow: 0 12px 36px rgb(15 23 42 / 18%);
+  font-size: 12px; line-height: 1.45; white-space: normal; text-align: left;
+}
+.navigation-diagnostics-heading { display: block; font-size: 14px; margin-bottom: 10px; }
+.navigation-diagnostics-details { display: grid; gap: 9px; margin: 0; }
+.navigation-diagnostics-details > div { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.navigation-diagnostics-details dt { color: var(--md-muted,#596b7f); flex: 0 0 auto; }
+.navigation-diagnostics-details dd { margin: 0; min-width: 0; overflow-wrap: anywhere; text-align: right; font-variant-numeric: tabular-nums; font-weight: 500; }
+.navigation-diagnostics-note { margin: 12px 0 0; color: var(--md-muted,#596b7f); font-size: 11px; }
+@media (max-width: 600px) { .navigation-diagnostics-popover { right: -44px; } }
 
 /* Accessible connection enable/disable switch. No permissions are changed. */
 .credential-switch { position:relative; min-height:44px; display:inline-flex; align-items:center; gap:8px; cursor:pointer; font-size:12px; white-space:nowrap; }

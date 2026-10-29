@@ -338,11 +338,24 @@ export function createSystemServer(db:SqlPersistence) {
     } catch(error) {if(error instanceof Error&&error.message==='Invalid session')res.status(401).json({error:'Invalid session'});else next(error);}
   };
 
+  // These values are stamped into Oracle's systemd release at activation.
+  // Never report a source-checkout SHA as the running production release.
+  const oracleRelease=(()=>{
+    const commit=process.env.METADRIVE_RELEASE_SHA;
+    const deployedAt=process.env.METADRIVE_RELEASE_AT;
+    return commit && /^[a-f0-9]{40}$/.test(commit) && deployedAt
+      && Number.isFinite(Date.parse(deployedAt))
+      ? {commit,deployedAt} : null;
+  })();
   app.get('/health',route(async(_req,res)=>{
-    await db.query('SELECT 1 FROM md_tenants LIMIT 1');res.json({status:'ok',persistence:'sql'});
+    await db.query('SELECT 1 FROM md_tenants LIMIT 1');
+    res.set('Cache-Control','no-store');
+    res.json({status:'ok',persistence:'sql',release:oracleRelease});
   }));
   app.get('/api/health',route(async(_req,res)=>{
-    await db.query('SELECT 1 FROM md_tenants LIMIT 1');res.json({status:'ok',persistence:'sql'});
+    await db.query('SELECT 1 FROM md_tenants LIMIT 1');
+    res.set('Cache-Control','no-store');
+    res.json({status:'ok',persistence:'sql',release:oracleRelease});
   }));
   // Landing routing is returned with the authenticated session, not fetched after rendering Setup.
   const landingPreference=async(tenantId:string,userId:string)=>{
