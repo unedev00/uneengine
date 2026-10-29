@@ -8,7 +8,7 @@
     "dashboard",
     "flow"
   ],
-  "version": 3,
+  "version": 2,
   "scope": "platform-core",
   "jsxFile": "one/une_input/UneInput.jsx",
   "cssFile": "one/une_input/UneInput.css",
