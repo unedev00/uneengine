@@ -456,7 +456,7 @@ test('Page Builder contextual ribbon respects the fixed-height no-scroll contrac
   assert.doesNotMatch(builder,/ribbonTab==='Filters' && <RibbonFilters/);
   assert.doesNotMatch(builder,/ribbonTab==='Visibility Rules' && <RibbonVisibilityRules/);
   assert.match(builder,/ribbonTab==='Source'/);
-  assert.match(builder,/ribbonTab === 'Component Content'/);
+  assert.doesNotMatch(builder,/ribbonTab === 'Component Content'/);
   const advancedStyle=await readFile(new URL('PageBuilder/PageBuilderAdvancedStyle.tsx',root),'utf8');
   const blueprint=await readFile(new URL('PageBuilder/PageBuilderRibbonBlueprint.css',root),'utf8');
   assert.doesNotMatch(builder,/<PageBuilderAdvancedStyle/);

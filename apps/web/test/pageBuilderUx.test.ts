@@ -130,7 +130,7 @@ test('SQL-defined Home groups preserve page actions without duplicating Save',()
   assert.match(advanced,/office-ribbon-extra-grid/);
   assert.doesNotMatch(advanced,/createPortal/);
   assert.match(source,/office-ribbon-quick-grid/);
-  assert.match(source,/ribbonTab==='Component Responsive'/);
+  assert.doesNotMatch(source,/ribbonTab==='Component Responsive'/);
   assert.doesNotMatch(source,/<RibbonResponsive/);
 });
 
