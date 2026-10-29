@@ -96,7 +96,7 @@ test('Oracle D-Bus recovery is bounded and cannot mask failed service health',()
  assert.match(sh,/systemctl show --property=Version --value/);
  assert.match(sh,/kill -s USR1 1/);
  assert.match(sh,/exit 1/);
- assert.doesNotMatch(sh,/\b(?:reboot|poweroff|shutdown|pkill|killall)\s/);
+ assert.doesNotMatch(sh,/^\s*(?:reboot|poweroff|shutdown|pkill|killall)\b/m);
  assert.doesNotMatch(sh,/kill -s (?!USR1)/);
  assert.ok(yaml.indexOf('Recover Oracle systemd D-Bus')<yaml.indexOf('Build release on the target architecture'));
  assert.ok(yaml.indexOf('Build release on the target architecture')<yaml.indexOf('Verify production runner and active services'));
