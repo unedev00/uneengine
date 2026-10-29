@@ -105,3 +105,14 @@ test('Theme is absent from all UNE manifests and shared defaults after remarks c
  for(const component of une)
   assert.ok(!component.propertyDefinitions.some(property=>property.propertyKey==='theme'),component.apiName+' still exposes Theme');
 });
+
+test('AceChatter Conversation button controls are internal code defaults, not metadata',async()=>{
+ const conversation=une.find(component=>component.apiName==='une_conversation');
+ assert.ok(conversation);
+ for(const key of ['showRefresh','refreshLabel','newMessageNoticeLabel'])
+  assert.ok(!conversation.propertyDefinitions.some(property=>property.propertyKey===key),key+' still in metadata');
+ const code=await readFile(new URL('../src/one/une_conversation/UneConversation.jsx',import.meta.url),'utf8');
+ assert.match(code,/showRefresh:false/);
+ assert.match(code,/refreshLabel:"Refresh conversations"/);
+ assert.match(code,/newMessageNoticeLabel:"New messages"/);
+});
