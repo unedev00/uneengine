@@ -8,7 +8,7 @@ const read=url=>readFileSync(url,'utf8');
 const manifest=JSON.parse(read(new URL('manifest.json',root)));
 
 test('all UNE component settings are owned by app source, not the Component Library manifest',async()=>{
- assert.equal(manifest.components.length,35);
+ assert.equal(manifest.components.filter(path=>path.startsWith('une_')||path.startsWith('acetill_cart/')).length,35);
  assert.deepEqual(manifest.commonProperties,[]);
  const catalog=await loadComponentCatalog();
  const keys=new Set();

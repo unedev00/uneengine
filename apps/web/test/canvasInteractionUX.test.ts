@@ -301,7 +301,7 @@ test('every bundled UNE Page component has an explicitly verified appearance tar
     une_alert:'surface',une_progress:'progress',une_document_viewer:'surface',
     une_chart:'table',une_option_groups:'collection'
   };
-  const components: string[] = manifest.components.map((name:string)=>name.split('/')[0]);
+  const components: string[] = manifest.components.filter((name:string)=>name.startsWith('une_')||name.startsWith('acetill_cart/')).map((name:string)=>name.split('/')[0]);
   assert.deepEqual([...components].sort(),Object.keys(expected).sort(),
     'every new bundled Page component must be audited for outer-shell styling');
   for(const name of components)

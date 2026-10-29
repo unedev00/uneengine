@@ -50,7 +50,7 @@ export function uniqueLibraryComponents(
   const catalog = registeredComponentDefinitions(components, surface);
   const definitions = new Map(catalog.map(component => [component.apiName, component]));
   return catalog.filter(component => {
-    if (component.trustedBundled && (component.apiName.startsWith('une_') || /^(acetill|aceassist|onechatter|uneacechatter)_/.test(component.apiName))) return false;
+    if (component.trustedBundled && (component.apiName.startsWith('une_') || component.apiName === 'ChatterInbox' || /^(acetill|aceassist|onechatter|uneacechatter)_/.test(component.apiName))) return false;
     // The original eight One registrations are internal compatibility identities.
     if (component.trustedBundled && legacyUneAliases[component.apiName]) return false;
     const canonical = definitions.get(bundledAliases[component.apiName]);

@@ -20,7 +20,7 @@ export default function ComponentLibrary({
   onPublish: (apiName: string) => Promise<void>;
   onRollback: (apiName: string, version: number) => Promise<void>;
 }) {
-  const visibleComponents=components.filter(component=>!component.apiName.startsWith('une_'));
+  const visibleComponents=components.filter(component=>!component.apiName.startsWith('une_') && !(component.trustedBundled && /^(acetill|aceassist|onechatter|uneacechatter)_/.test(component.apiName)));
   const [editingApiName, setEditingApiName] = useState('');
   const [apiName, setApiName] = useState('');
   const [manualApiName,setManualApiName]=useState(false);

@@ -100,7 +100,11 @@ const specificPageTargets: Record<string, PageAppearanceTarget> = {
 export function pageAppearanceTarget(type: string): PageAppearanceTarget {
   if (isLayoutType(type)) return 'layout';
   const name = type.replace(/^Custom:/i, '').replace(/[^a-z0-9]/gi, '').toLowerCase();
-  if (specificPageTargets[name]) return specificPageTargets[name];
+  // Private application identities keep the same native appearance targets as their
+  // former UNE renderers; only the app owns the component, not its styling engine.
+  const legacyName = name.replace(/^(?:acetill|aceassist|onechatter|uneacechatter)/,'une');
+  if (specificPageTargets[name] || specificPageTargets[legacyName])
+    return specificPageTargets[name] ?? specificPageTargets[legacyName];
   if (/search|input|lookup|date.?picker|select|dropdown|choice|checkbox|radio|slider|slot.?picker/.test(name)) return 'input';
   if (/button|navigation|menu|link|action/.test(name)) return 'button';
   if (/badge|chip|tag/.test(name)) return 'badge';

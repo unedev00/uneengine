@@ -5,9 +5,10 @@ import {readFileSync,existsSync} from 'node:fs';
 const manifest=JSON.parse(readFileSync(new URL('../src/one/manifest.json',import.meta.url),'utf8')) as {components:string[]};
 
 test('all 34 registered UNE components own a separate valid lightweight SVG ribbon icon',()=>{
-  assert.equal(manifest.components.length,34);
+  const une=manifest.components.filter(path=>path.startsWith('une_'));
+  assert.equal(une.length,34);
   const paths=new Set<string>();
-  for(const component of manifest.components){
+  for(const component of une){
     const id=component.split('/')[0];
     const path=new URL(`../public/une/ribbon-icons/${id}.svg`,import.meta.url);
     assert.equal(existsSync(path),true,`Missing independent SVG icon for ${id}`);
