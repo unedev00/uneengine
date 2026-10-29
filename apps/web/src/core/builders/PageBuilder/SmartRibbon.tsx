@@ -21,7 +21,8 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  const objectName=fallback(properties.objectApiName)||pageObjectApiName;
  const object=objects.find(o=>o.apiName===objectName);
  const update=(key:string,value:unknown)=>onChange({...properties,[key]:value});
- const sections=[...new Set(definitions.filter(p=>p.tab===tab).map(p=>p.group))];
+ const visible=definitions.filter(p=>p.tab===tab&&p.components.includes(api));
+ const sections=[...new Set(visible.map(p=>p.group))];
  const controls=(property:UneRibbonProperty)=>{
    const supported=property.components.includes(api);
    const kind=property.kindOverrides?.[api]??property.kind;
@@ -64,7 +65,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
      label={title} value={String(value)} disabled={!enabled} onChange={write}/>;
    else if(kind==='number'||kind==='position')editor=<span className="smart-numeric">
      {property.id==='width'?<ArrowLeftRight size={15}/>:property.id==='height'?<ArrowUpDown size={15}/>:null}
-     <input type="number" aria-label={title} disabled={!enabled} min={property.min??0} max={property.max}
+     <input type="number" className="smart-office-number" aria-label={title} disabled={!enabled} min={property.min??0} max={property.max}
        value={kind==='position'&&useCanvasPosition?position?.[property.id as keyof Position]??'':
         typeof value==='string'?Number.parseFloat(value)||'':value as number}
        onChange={e=>{if(e.target.value!==''){const n=Number(e.target.value);if(Number.isFinite(n))write(n);}}}/>
@@ -94,6 +95,9 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
          onChange={e=>write(e.target.checked?[...(Array.isArray(value)?value:[]),day]:
            (Array.isArray(value)?value:[]).filter(x=>x!==day))}/>{label}</label>)}</div>}
    </div>;
+   else if(property.id==='defaultCheck')editor=<select className="smart-select" aria-label={title}
+     value={value===true||value==='true'?'true':'false'} onChange={e=>write(e.target.value==='true')}>
+     <option value="false">False</option><option value="true">True</option></select>;
    else if(kind==='choice')editor=<select className="smart-select" aria-label={title} disabled={!enabled}
      value={String(value)} onChange={e=>write(e.target.value)}><option value="">Select</option>
      {options.map(s=><option value={s} key={s}>{s.replaceAll('-',' ')}</option>)}</select>;
@@ -102,7 +106,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  };
  return <div className="smart-ribbon" data-smart-api={api} aria-label="Smart shared property ribbon">
   {sections.map(section=><section className="smart-ribbon-group" key={section} aria-label={section}>
-   <div className="smart-ribbon-items">{definitions.filter(p=>p.tab===tab&&p.group===section).map(controls)}</div>
+   <div className="smart-ribbon-items">{visible.filter(p=>p.group===section).map(controls)}</div>
    <span className="smart-ribbon-caption">{section}</span>
   </section>)}
   {mediaOpen&&createPortal(<div className="smart-dialog-backdrop" role="presentation">

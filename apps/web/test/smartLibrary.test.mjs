@@ -63,3 +63,20 @@ test('Insert Ribbon exposes visible Smart components without requiring a selecte
  assert.match(css,/grid-template-rows:repeat\(3,35px\)/);
  assert.match(css,/office-builder-ribbon #page-builder-tab-content:has\(>\.smart-insert-ribbon\)/);
 });
+
+test('Smart visual/property fixes are registered without changing historic SQL migrations',()=>{
+ const runtime=read('../src/one/smart/shared/SmartRuntime.jsx');
+ const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
+ const formula=read('../src/core/builders/PageBuilder/SmartFormulaField.tsx');
+ const sql=read('../../server/src/system-support/migrations/20270125-smart-ribbon-property-corrections.sql');
+ assert.match(runtime,/className="smart-switch"/);
+ assert.match(runtime,/p.defaultCheck/);
+ assert.match(runtime,/textAlign:p.labelAlignment/);
+ assert.match(runtime,/borderRadius:number\(p.radius,10\)/);
+ assert.match(ribbon,/p.components.includes\(api\)/);
+ assert.match(ribbon,/property.id==='defaultCheck'/);
+ assert.match(formula,/createPortal/);
+ assert.match(formula,/window.addEventListener\('scroll',recalc,true\)/);
+ assert.match(sql,/DELETE FROM md_builder_ribbon_component_rules/);
+ assert.match(sql,/smart_lookup/);
+});

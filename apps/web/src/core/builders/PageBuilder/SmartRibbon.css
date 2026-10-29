@@ -19,3 +19,10 @@
 .smart-dialog{background:#fff;color:#243448;border:1px solid #c5d1df;border-radius:9px;box-shadow:0 15px 40px #0003;max-height:80vh;overflow:auto;min-width:380px;max-width:min(650px,95vw);padding:18px}
 .smart-dialog header{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}
 .smart-dialog header button{background:white;border:1px solid #b8c5d8;border-radius:4px;padding:5px 12px;cursor:pointer}
+
+/* Compact Office sizing without native spinner arrows. */
+.smart-property input.smart-office-number{-moz-appearance:textfield;appearance:textfield;width:58px;max-width:58px;text-align:center}
+.smart-property input.smart-office-number::-webkit-outer-spin-button,
+.smart-property input.smart-office-number::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.smart-ribbon-group{min-width:0}
+.smart-property{min-width:0}
