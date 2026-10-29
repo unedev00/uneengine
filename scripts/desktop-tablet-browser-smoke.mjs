@@ -32,14 +32,62 @@ const cases=[
   <article class="ak-product"><div class="ak-image">🥗</div><div class="ak-product-body"><h2>Example salad</h2><p>Freshly prepared</p><div><span>£7.00</span><button>Add</button></div></div></article></div>
  </div></main></div>`},
  {name:'aceassist',path:'apps/aceassist/src/aceassist.css',html:`
- <main class="custom-assist"><header class="custom-heading"><div><h1>Appointments</h1><p>Plan and manage visits</p></div><label>Choose date<input type="date" value="2026-10-25"></label></header>
+ <div class="custom-aceassist"><main class="custom-assist"><header class="custom-heading"><div><h1>Appointments</h1><p>Plan and manage visits</p></div><label>Choose date<input type="date" value="2026-10-25"></label></header>
  <nav class="custom-tabs" aria-label="Appointment views"><button aria-current="page">Calendar</button><button>Clients</button><button>Invoices</button></nav>
  <div class="custom-assist-layout"><section class="custom-calendar"><div class="custom-panel-title"><h2>Week view</h2></div><div class="custom-week">
   <div class="custom-day"><small>Mon</small><button class="custom-visit">09:00 · Consultation</button></div>
   <div class="custom-day"><small>Tue</small></div><div class="custom-day"><small>Wed</small></div>
   <div class="custom-day"><small>Thu</small></div><div class="custom-day"><small>Fri</small></div>
   <div class="custom-day"><small>Sat</small></div><div class="custom-day"><small>Sun</small></div>
- </div></section><aside class="custom-visit-detail"><h2>Visit details</h2><dl><div><dt>Time</dt><dd>09:00</dd></div></dl></aside></div></main>`},
+ </div></section><aside class="custom-visit-detail"><h2>Visit details</h2><dl><div><dt>Time</dt><dd>09:00</dd></div></dl></aside></div></main></div>`},
+
+ // Supplemental screens catch regressions beyond each app's landing page.
+ {name:'acekiosk-checkout',path:'apps/acekiosk/src/acekiosk.css',html:`
+ <div class="ak-shell"><header class="ak-header"><span class="ak-header-label">Self-service kiosk</span></header>
+ <main class="ak-main"><section class="ak-order"><h1>Your basket</h1>
+ <div class="ak-orderline"><strong>Example meal</strong><p>Quantity 1</p><strong>£8.00</strong></div>
+ <div class="ak-subtotal"><span>Total</span><strong>£8.00</strong></div>
+ <div class="ak-paymethods"><button class="active">Card</button><button>Cash</button></div>
+ <label class="ak-tender">Amount paid<input type="number" value="10" /></label>
+ <button class="ak-primary">Confirm order</button></section></main>
+ <div class="ak-floating"><button class="ak-basket-open">Show basket <span>1</span></button><button class="ak-place">Place order £8.00</button></div>
+ </div>`},
+ {name:'acekiosk-options',path:'apps/acekiosk/src/acekiosk.css',html:`
+ <div class="ak-shell"><div class="ak-modal-backdrop"><section class="ak-modal" role="dialog" aria-modal="true" aria-label="Customise meal">
+ <header class="ak-modal-top"><strong>Customise meal</strong><button>Close</button></header>
+ <div class="ak-modal-body"><h2>Example meal</h2><fieldset class="ak-options"><legend>Choose a side</legend>
+ <label class="ak-option selected"><input type="radio" name="side" checked /><span>Fries <small>Included</small></span></label>
+ <label class="ak-option"><input type="radio" name="side" /><span>Salad <small>No charge</small></span></label>
+ </fieldset></div><footer class="ak-modal-footer"><button class="ak-primary">Add to basket</button></footer>
+ </section></div></div>`},
+ {name:'acetill-receipt',path:'apps/acetill/src/acetill-terminal.css',html:`
+ <div class="standalone-product"><main class="acetill-receipt-screen"><div class="acetill-receipt-panel">
+ <h1>Payment complete</h1><p>Receipt ready</p><dl><div><dt>Paid</dt><dd>£8.00</dd></div></dl>
+ <div class="acetill-receipt-actions"><button>Print receipt</button><button class="acetill-charge">New sale</button></div>
+ </div></main></div>`},
+ {name:'aceassist-editor',path:'apps/aceassist/src/aceassist.css',html:`
+ <div class="custom-aceassist"><main class="custom-assist"><div class="assist-modal-backdrop">
+ <section class="assist-modal" role="dialog" aria-modal="true" aria-label="Create appointment">
+ <div class="assist-modal-heading"><h2>New appointment</h2></div>
+ <form class="custom-crud-form"><label>Customer<input value="Example customer" /></label>
+ <label>Start date<input type="date" value="2026-10-29" /></label>
+ <div class="assist-modal-footer"><button type="button">Cancel</button><button type="submit">Save</button></div>
+ </form></section></div></main></div>`},
+ {name:'acechatter',path:'apps/acechatter/src/aceChatter.css',html:`
+ <div class="ace-chat"><aside class="ace-chat-sidebar">
+ <header class="ace-chat-brand"><strong>AceChatter</strong><button class="ace-chat-signout">Sign out</button></header>
+ <div class="ace-chat-sidebar-heading"><h1>Messages</h1><button class="ace-chat-new-button">New</button></div>
+ <label class="ace-chat-search">Search<input placeholder="Search conversations" /></label>
+ <nav class="ace-chat-conversation-list" aria-label="Conversations"><button class="ace-chat-conversation selected">
+ <span class="ace-chat-avatar">A</span><span class="ace-chat-conversation-copy"><strong>Example customer</strong><small>Latest message</small></span>
+ </button></nav></aside>
+ <main class="ace-chat-main"><div class="ace-chat-top"><span class="ace-chat-avatar">A</span>
+ <span class="ace-chat-thread-heading"><strong>Example customer</strong><small>Connected</small></span></div>
+ <div class="ace-chat-thread"><article class="ace-chat-bubble"><p>Can you help me?</p><small>10:20</small></article>
+ <article class="ace-chat-bubble outgoing"><p>Of course.</p><small>10:21</small></article></div>
+ <div class="ace-chat-compose"><div class="ace-chat-compose-row"><textarea aria-label="Write message" placeholder="Type a message"></textarea>
+ <button class="ace-chat-send-button" aria-label="Send message">➤</button></div><small>Messages are private</small></div>
+ </main></div>`},
  {name:'mail',path:'apps/web/src/core/mail/MailWebmail.css',html:`
  <div class="md-mail"><header class="md-mail-header"><strong class="md-mail-brand">Mail</strong>
  <label class="md-mail-search">Search mail<input aria-label="Search mail"></label><div class="md-mail-header-actions"><button class="md-mail-icon-button">Refresh</button></div></header>

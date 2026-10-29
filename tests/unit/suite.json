@@ -134,6 +134,7 @@
     "apps/server/test/system/user-account-lock-contract.test.ts",
     "apps/server/test/system/whatsapp-communication-status.test.ts",
     "apps/server/test/system/whatsapp-named-credential.test.ts",
+    "apps/web/test/aceAppsContrast.test.mjs",
     "apps/web/test/acekiosk/contract.test.ts",
     "apps/web/test/adaptiveUi.test.ts",
     "apps/web/test/authentication/business-calendar-no-fabricated-defaults.test.mjs",
