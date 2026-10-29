@@ -189,9 +189,9 @@ function ItemGrid({ p, rows }) {
     medium: "0 4px 12px rgba(15, 23, 42, 0.14)",
     large: "0 8px 24px rgba(15, 23, 42, 0.18)",
   }[p.cardShadow];
-  const imageFit = ["contain", "cover", "fill", "scale-down"].includes(p.imageFit)
-    ? p.imageFit
-    : undefined;
+  const imageFit = p.imageFill==="fit"?"contain":p.imageFill==="stretch"?"fill":
+    p.imageFill==="fill"?"cover":
+    ["contain", "cover", "fill", "scale-down"].includes(p.imageFit)?p.imageFit:undefined;
   const imageAspectRatio = ["auto", "1/1", "4/3", "16/9", "3/4"].includes(p.imageAspectRatio)
     ? p.imageAspectRatio
     : undefined;
