@@ -13,6 +13,7 @@ on:
   workflow_dispatch:
   pull_request:
     paths:
+      - "apps/server/**"
       - ".github/workflows/oracle-api-deploy.yml"
       - "scripts/oracle/**"
       - "tests/integration/suite.json"
