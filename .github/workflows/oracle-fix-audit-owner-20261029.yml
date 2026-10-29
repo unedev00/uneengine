@@ -1,0 +1,25 @@
+name: One-time production migration audit ownership recovery
+on:
+  push:
+    branches: [ops/oracle-audit-table-ownership-20261029]
+permissions:
+  contents: read
+concurrency:
+  group: oracle-production-full-stack
+  cancel-in-progress: false
+jobs:
+  repair:
+    if: github.repository == 'unedev00/uneengine' && github.ref == 'refs/heads/ops/oracle-audit-table-ownership-20261029'
+    environment: oracle-production
+    runs-on: [self-hosted, linux, ARM64, metadrive-oracle]
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Validate SQL ownership correction script
+        run: bash -n scripts/oracle/fix-migration-audit-owner-20261029.sh
+      - name: Dry-run in rolled-back SQL transaction
+        run: sudo -n env GITHUB_REPOSITORY="$GITHUB_REPOSITORY" GITHUB_REF="$GITHUB_REF" GITHUB_WORKSPACE="$GITHUB_WORKSPACE" bash scripts/oracle/fix-migration-audit-owner-20261029.sh dry-run
+      - name: Backup SQL and correct audit metadata ownership
+        run: sudo -n env GITHUB_REPOSITORY="$GITHUB_REPOSITORY" GITHUB_REF="$GITHUB_REF" GITHUB_WORKSPACE="$GITHUB_WORKSPACE" GITHUB_SHA="$GITHUB_SHA" bash scripts/oracle/fix-migration-audit-owner-20261029.sh apply
