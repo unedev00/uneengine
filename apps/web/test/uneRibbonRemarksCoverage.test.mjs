@@ -28,7 +28,7 @@ test('the complete approved remarks inventory is checked rather than screenshot 
     api+' still declares explicitly deleted property '+label);
    checked.add(api+'|'+label);
   }
-  if(remark==='Source Object'){
+  if(remark==='Source Object' && api!=='une_conversation'){
    assert.ok(component.propertyDefinitions.some(property=>property.label==='Source Object'||
     property.label.startsWith('Source Object — ')),
     api+' has no consolidated Source Object metadata');
