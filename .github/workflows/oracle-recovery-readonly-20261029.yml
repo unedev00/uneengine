@@ -1,0 +1,37 @@
+name: Oracle manager emergency diagnostics (read only)
+on:
+  push:
+    branches: [ops/oracle-recovery-diagnostics-20261029]
+permissions:
+  contents: read
+jobs:
+  inspect:
+    if: github.repository == 'unedev00/uneengine' && github.ref == 'refs/heads/ops/oracle-recovery-diagnostics-20261029'
+    environment: oracle-production
+    runs-on: [self-hosted, linux, ARM64, metadrive-oracle]
+    timeout-minutes: 7
+    steps:
+      - name: Read-only systemd and reboot readiness checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = "unedev00/uneengine"
+          test "$(uname -m)" = "aarch64"
+          echo '=== boot and manager process ==='
+          ps -p 1 -o comm=,stat=,etime=
+          uptime
+          echo '=== disk and memory (capacity only) ==='
+          df -h / /run
+          free -m
+          echo '=== systemd manager and reload status (no changes) ==='
+          timeout 8 systemctl show --property=Version --value || echo 'manager show unresponsive'
+          timeout 8 systemctl show metadrive-api.service -p ActiveState -p SubState -p WorkingDirectory --no-pager || echo 'api status unresponsive'
+          echo '=== system bus status ==='
+          timeout 8 busctl --system --no-pager list >/dev/null && echo 'system bus works' || echo 'system bus unresponsive'
+          echo '=== runner capabilities ==='
+          sudo -n true && echo 'noninteractive sudo available'
+          if command -v oci >/dev/null 2>&1; then echo 'OCI CLI installed'; else echo 'OCI CLI unavailable'; fi
+          if [ -f "$HOME/.oci/config" ]; then echo 'OCI CLI user config present'; else echo 'OCI CLI user config unavailable'; fi
+          echo '=== kernel process waiting indicators ==='
+          ps -eo stat=,comm= | awk '$1 ~ /^D/ {count++} END {print "uninterruptible processes:",count+0}'
+          echo 'Read-only Oracle audit complete.'
