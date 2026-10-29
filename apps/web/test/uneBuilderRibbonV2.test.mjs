@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {evaluateFieldExpression} from '../src/one/shared/OneFieldExpression.js';
-import {UNE_BUILDER_COMPONENTS,UNE_RIBBON_PROPERTIES,UNE_RIBBON_GROUPS,uneBuilderDefaults} from '../src/core/builders/PageBuilder/uneBuilderPropertyInventory';
+import {UNE_BUILDER_COMPONENTS,UNE_RIBBON_PROPERTIES,UNE_RIBBON_GROUPS,uneBuilderDefaults} from '../src/core/builders/PageBuilder/uneBuilderPropertyInventory.ts';
 
 const src=path=>readFileSync(new URL(path,import.meta.url),'utf8');
 test('new UNE ribbon is source-controlled and has permanent slots for the seven approved components',()=>{
