@@ -164,6 +164,12 @@ WHERE d.enabled=true AND d.api_name LIKE 'une\_%' ESCAPE '\'
     WHERE v.tenant_id=d.tenant_id AND v.component_api=d.api_name)
  AND NOT EXISTS (SELECT 1 FROM md_component_properties cp
     WHERE cp.tenant_id=d.tenant_id AND cp.component_id=d.id)
+ AND NOT EXISTS (SELECT 1 FROM md_metadata_package_components pkg
+    WHERE pkg.tenant_id=d.tenant_id AND pkg.component_type='component'
+      AND pkg.component_api=d.api_name)
+ AND NOT EXISTS (SELECT 1 FROM md_dashboard_snapshots snap
+    WHERE snap.tenant_id=d.tenant_id
+      AND position(d.api_name in snap.content::text)>0)
  -- Conservative on purpose: flattened and structured Flow metadata may both
  -- hold old component IDs; avoid disabling a renderer for either representation.
  AND NOT EXISTS (SELECT 1 FROM md_flow_node_properties f
