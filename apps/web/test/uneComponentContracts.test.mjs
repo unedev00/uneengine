@@ -168,6 +168,6 @@ test('Card Grid retires only its 16 removed settings; original runtime remains b
  for(const name of ['title','helpText','imageFieldApiName','badgeFieldApiName','priceFieldApiName'])
    assert.ok(declared.has(name),name);
  const runtime=await readFile(new URL('../src/one/OneItemGrid/OneItemGrid.jsx',import.meta.url),'utf8');
- assert.match(runtime,/p\\.cartTargetKey/);
- assert.match(runtime,/p\\.showAddIcon/);
+ assert.ok(runtime.includes('p.cartTargetKey'));
+ assert.ok(runtime.includes('p.showAddIcon'));
 });
