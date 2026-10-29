@@ -3,7 +3,7 @@
  * enhancement is for other table-based lists and does not alter metadata.
  */
 const SKIP = '.records-data-table, [data-md-table-no-resize], [role="presentation"]';
-const EXCLUDED_ANCESTORS = '[contenteditable="true"], .document-print, .md-mail-message-body';
+const EXCLUDED_ANCESTORS = '[contenteditable="true"], .document-print, .md-mail-message-body, .builder-editor-mode';
 const MIN_WIDTH = 80;
 const MAX_WIDTH = 1200;
 
@@ -67,6 +67,9 @@ function enhance(table: HTMLTableElement) {
     const initial = Math.max(MIN_WIDTH, Math.round(header.getBoundingClientRect().width));
     handle.setAttribute('aria-valuenow', String(initial));
 
+    // Keep table headers, rows and Page Builder actions inert while resizing.
+    handle.addEventListener('click', event => { event.preventDefault(); event.stopPropagation(); });
+    handle.addEventListener('dblclick', event => { event.preventDefault(); event.stopPropagation(); });
     handle.addEventListener('pointerdown', event => {
       if (event.button !== 0) return;
       const columns = ensureWidths(table, headers);
