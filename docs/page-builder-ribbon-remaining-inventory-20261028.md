@@ -1,5 +1,7 @@
 # Page Builder remaining property inventory (after requested removals)
 
+**AceChatter-only exception:** `une_conversation` is intentionally excluded from public Component Library and Page Builder Insert. Its `showRefresh`, `refreshLabel`, and `newMessageNoticeLabel` button settings are ordinary code props with runtime defaults, not public property metadata. Existing saved runtime references remain resolvable.
+
 Generated from UNE component manifests on the PR branch. The shared ribbon has a fixed slot order; applicable component controls are enabled and the others disabled.
 
 **SQL inventory scope:** Bundled `une_*` components are seeded into `md_component_definitions` with `renderer_key='one-bundled:<api>'` and no per-property SQL entries. Their editable property inventory comes from these source manifests, so the requested property deletions are source-metadata changes, not SQL row deletions. No entire component was marked for deletion in the supplied list, so system SQL component rows remain registered. Version-owned `md_component_library_contract_properties` belongs to separately authored tenant components and has not been deleted. Existing published page values are preserved for compatibility.
@@ -126,11 +128,9 @@ These are the property definitions actually collected by the universal UNE ribbo
 | `messageStatusNamePrefixToIgnore` | Ignored status name prefix | conversation |
 | `messageStatusPrefixToIgnore` | Ignored status event prefix | conversation |
 | `newConversationLabel` | New conversation label | conversation |
-| `newMessageNoticeLabel` | New messages button label | conversation |
 | `nextTransactionLabel` | Next customer button label | cart |
 | `openLabel` | Open button | modal |
 | `placeholder` | Placeholder | input, search, lookup, conversation |
-| `refreshLabel` | Refresh button label | conversation |
 | `searchLabel` | Search input label | conversation |
 | `searchPlaceholder` | Search placeholder | conversation |
 | `sentNoticeText` | Flow submission notice | conversation |
@@ -177,7 +177,6 @@ These are the property definitions actually collected by the universal UNE ribbo
 | `showDeliveryStatus` | Show message status | conversation |
 | `showHeading` | Show gallery heading | item_grid |
 | `showPanel` | Show content | tabs |
-| `showRefresh` | Show refresh button | conversation |
 | `showSearch` | Show inbox search | conversation |
 | `showSubmitButton` | Show search button | search |
 | `showSuggestions` | Show record suggestions | search |
@@ -1014,7 +1013,6 @@ These are the property definitions actually collected by the universal UNE ribbo
 | `showSearch` | Show inbox search | BOOLEAN |
 | `showFilterTabs` | Show conversation filters | BOOLEAN |
 | `showAccountSelector` | Show account selector | BOOLEAN |
-| `showRefresh` | Show refresh button | BOOLEAN |
 | `showConversationCount` | Show conversation count | BOOLEAN |
 | `showComposer` | Show message composer | BOOLEAN |
 | `showDeliveryStatus` | Show message status | BOOLEAN |
@@ -1023,7 +1021,6 @@ These are the property definitions actually collected by the universal UNE ribbo
 | `selectedConversationId` | Selected conversation ID from page state | TEXT |
 | `searchTerm` | Inbox search term from page state | TEXT |
 | `newConversationLabel` | New conversation label | TEXT |
-| `refreshLabel` | Refresh button label | TEXT |
 | `canSend` | Allow sending when authorised Flow is active | BOOLEAN |
 | `searchLabel` | Search input label | TEXT |
 | `filterLabel` | Filter group label | TEXT |
@@ -1057,7 +1054,6 @@ These are the property definitions actually collected by the universal UNE ribbo
 | `liveFlowRefreshEvents` | Comma-separated read Flow event names | TEXT |
 | `autoScrollOnNewMessage` | Follow latest thread messages | BOOLEAN |
 | `showNewMessageNotice` | Show newer-message notice when scrolled up | BOOLEAN |
-| `newMessageNoticeLabel` | New messages button label | TEXT |
 | `contactDisplayNameFieldApiNames` | Contact display name fields (priority) | TEXT |
 | `contactPhoneFieldApiNames` | Contact phone fields (priority) | TEXT |
 | `contactSearchFieldApiName` | Contact search field | OBJECT_FIELD |

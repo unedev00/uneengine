@@ -76,8 +76,9 @@ test('UNE chat components expose editable metadata, flow events and mapped colle
  const convo=components.find(x=>x.apiName==='une_conversation');
  const keys=new Set(convo.propertyDefinitions.map(x=>x.propertyKey));
  for(const field of ['conversations','messages','contactChoices','selectedConversationId','conversationSourceMode',
-  'contactSourceObjectApi','messageChannelValue','showFilterTabs','showRefresh','canSend'])
+  'contactSourceObjectApi','messageChannelValue','showFilterTabs','canSend'])
   assert.ok(keys.has(field),field);
+ for(const key of ['showRefresh','refreshLabel','newMessageNoticeLabel'])assert.ok(!keys.has(key),key+' still public');
  for(const event of ['start','select','search','refresh','create','resolve','send','contactSelect','contactSearch','newConversationOpen'])
   assert.ok(convo.eventDefinitions.some(x=>x.apiName===event),event);
  const html=await build('une_conversation',{...p,viewMode:'inbox',showFilterTabs:false,showAccountSelector:false,
