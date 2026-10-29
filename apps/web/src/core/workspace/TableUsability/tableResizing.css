@@ -12,16 +12,21 @@ table.md-resizable-table {
   table-layout: auto;
 }
 table.md-resizable-table :is(th, td) {
-  white-space: nowrap;
-  overflow-wrap: normal;
-  word-break: normal;
+  white-space: nowrap !important;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
   overflow: hidden;
   text-overflow: ellipsis;
   vertical-align: middle;
 }
 table.md-resizable-table:not(.md-table-width-set) :is(th, td) { max-width: 360px; }
 table.md-resizable-table td :is(small, strong, code, span, a, button) {
-  white-space: nowrap;
+  white-space: nowrap !important;
+}
+table.md-resizable-table td:has(> :is(.toolbar-actions, .app-manager-list-actions)),
+table.md-resizable-table td.page-manager-actions {
+  max-width: none;
+  overflow: visible;
 }
 table.md-resizable-table td [class*="actions"] {
   flex-wrap: nowrap;
