@@ -551,3 +551,13 @@ test('Page Builder authors shared visibility rules without replacing conditional
   const runtime = await readFile(new URL('../src/core/components/Properties/componentVisibility.ts',import.meta.url),'utf8');
   assert.match(runtime,/visibilityRules|VisibilityRule/);
 });
+
+test('each Smart component is explicitly mapped for Page Runtime appearance',()=>{
+ const targets:Record<string,string>={
+  smart_button:'button',smart_toggle:'toggle',smart_lookup:'input',smart_tabs:'tabs',
+  smart_text:'input',smart_card_grid:'collection',smart_image:'image',
+  smart_calendar:'calendar',smart_navigation:'button',smart_container:'layout'
+ };
+ for(const [api,target] of Object.entries(targets))
+  assert.equal(pageAppearanceTarget('Custom:'+api),target,api);
+});

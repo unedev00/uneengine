@@ -146,6 +146,7 @@ import PageBuilderActionRibbon from './PageBuilderActionRibbon';
 import PageBuilderRibbonMetadataPager from './PageBuilderRibbonMetadataPager';
 import UniversalRibbonInventory from './UniversalRibbonInventory';
 import UneBuilderRibbon from './UneBuilderRibbon';
+import SmartRibbon from './SmartRibbon';
 import {isUneBuilderApi,uneBuilderDefaults,type SharedRibbonCatalog,type UneBuilderApi} from './uneBuilderPropertyInventory';
 import './UniversalRibbonInventory.css';
 import './PageBuilderNumericControls.css';
@@ -739,13 +740,14 @@ function PageBuilder({
       &&component.status!=='Draft'&&!RETIRED_UNE_PAGE_BUILDER_COMPONENTS.has(component.apiName)).map(component=>({
       id:'Custom:'+component.apiName,
       type:'Custom:'+component.apiName,
-      label:component.apiName==='une_item_grid'?'Card Grid':component.apiName==='une_lookup'?'Lookup Record':
-        component.apiName==='une_input'?'Input Box':component.apiName==='une_navigation'?'Navigation Bar':component.apiName.slice(4).split('_').map(word=>word[0].toUpperCase()+word.slice(1)).join(' '),
+      label:component.apiName==='smart_card_grid'?'Card Grid':component.apiName==='smart_lookup'?'Lookup Record':
+        component.apiName==='smart_text'?'Input Box':component.apiName==='smart_navigation'?'Navigation Bar':
+        component.apiName.startsWith('smart_')?component.apiName.slice(6).split('_').map(word=>word[0].toUpperCase()+word.slice(1)).join(' '):component.label,
       description:component.description,
       categories:getPageBuilderComponentCategories(component.apiName,component.label,component.description,false,
         component.apiName==='une_item_grid'?'Data':component.apiName==='une_image'?'Display':undefined)
     })),
-    ...publishedPageLibraryComponents(libraryComponents).map((component) => ({
+    ...publishedPageLibraryComponents(libraryComponents).filter(component=>!isUneBuilderApi(component.apiName,ribbonCatalog?.components??[])).map((component) => ({
       id: `Custom:${component.apiName}`,
       type: `Custom:${component.apiName}`,
       label: libraryComponentLabel(component),
@@ -2733,7 +2735,15 @@ function PageBuilder({
                </div><span>{group}</span>
             </div>)}</>;
           })()}
-
+          {selectedNewUne && selected && ribbonCatalog &&
+            (ribbonTab==='Component Data'||ribbonTab==='Component Properties'||ribbonTab==='Component Layout') &&
+            <SmartRibbon
+              tab={ribbonTab==='Component Data'?'Data':ribbonTab==='Component Layout'?'Layout':'Design'}
+              api={selected.type.slice(7)} definitions={ribbonCatalog.properties}
+              properties={selected.properties} objects={objects} pageObjectApiName={page.targetObject}
+              onChange={properties=>updateComponent(selected.id,{properties})}
+              position={selected.position} layoutMode={page.layoutMode}
+              onPositionChange={position=>updateComponent(selected.id,{position})}/>}
         </div>
         <div className="office-ribbon-group-navigation" aria-label="Ribbon group navigation">
           <button type="button" title="Previous ribbon groups" aria-label="Previous ribbon groups" disabled={!ribbonOverflow.left}

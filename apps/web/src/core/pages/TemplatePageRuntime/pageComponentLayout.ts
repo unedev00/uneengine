@@ -84,6 +84,10 @@ export type PageAppearanceTarget =
   | 'surface' | 'collection' | 'table' | 'calendar' | 'progress'
   | 'layout' | 'tabs' | 'conversation' | 'cart' | 'form' | 'overlay';
 const specificPageTargets: Record<string, PageAppearanceTarget> = {
+  smartbutton:'button',smarttoggle:'toggle',smartlookup:'input',
+  smarttabs:'tabs',smarttext:'input',smartcardgrid:'collection',
+  smartimage:'image',smartcalendar:'calendar',smartnavigation:'button',
+  smartcontainer:'layout',
   oneitemgrid:'collection', unerepeater:'collection', unerecordlist:'collection',
   uneitemgrid:'collection', uneoptiongroups:'collection',
   unetable:'table', unelineitems:'table', reportchart:'surface',

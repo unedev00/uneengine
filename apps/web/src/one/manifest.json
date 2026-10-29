@@ -52,6 +52,16 @@
     "uneacechatter_stack/component.json",
     "uneacechatter_lookup/component.json",
     "uneacechatter_button/component.json",
-    "uneacechatter_search/component.json"
+    "uneacechatter_search/component.json",
+    "smart_button/component.json",
+    "smart_toggle/component.json",
+    "smart_lookup/component.json",
+    "smart_tabs/component.json",
+    "smart_text/component.json",
+    "smart_card_grid/component.json",
+    "smart_image/component.json",
+    "smart_calendar/component.json",
+    "smart_navigation/component.json",
+    "smart_container/component.json"
   ]
 }
