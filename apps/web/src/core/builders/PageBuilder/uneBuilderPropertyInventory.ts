@@ -7,14 +7,20 @@ export const UNE_BUILDER_COMPONENTS=[
   "une_tabs",
   "une_input",
   "une_item_grid",
-  "une_image"
+  "une_image",
+  "une_calendar",
+  "une_navigation",
+  "une_container"
 ] as const;
 export type UneBuilderApi=(typeof UNE_BUILDER_COMPONENTS)[number];
 export type UneBuilderTab='Data'|'Design'|'Layout';
 export type UneRibbonProperty={
  id:string;label:string;tab:UneBuilderTab;group:string;
- kind:'color'|'shadow'|'expression'|'align'|'number'|'position'|'boolean'|'choice'|'object';
- components:readonly UneBuilderApi[];default?:string|number|boolean;
+ kind:'color'|'shadow'|'expression'|'align'|'number'|'position'|'boolean'|'choice'|'object'|'weekdays';
+ kindOverrides?:Partial<Record<UneBuilderApi,UneRibbonProperty['kind']>>;
+ defaultsOverrides?:Partial<Record<UneBuilderApi,string|number|boolean>>;
+ choicesOverrides?:Partial<Record<UneBuilderApi,readonly string[]>>;
+ components:readonly UneBuilderApi[];default?:string|number|boolean|readonly string[];
  min?:number;max?:number;choices?:readonly string[];field?:boolean;
 };
 export const UNE_RIBBON_PROPERTIES:readonly UneRibbonProperty[]=[
@@ -30,7 +36,10 @@ export const UNE_RIBBON_PROPERTIES:readonly UneRibbonProperty[]=[
       "une_lookup",
       "une_tabs",
       "une_input",
-      "une_item_grid"
+      "une_item_grid",
+      "une_calendar",
+      "une_navigation",
+      "une_container"
     ]
   },
   {
@@ -46,7 +55,10 @@ export const UNE_RIBBON_PROPERTIES:readonly UneRibbonProperty[]=[
       "une_tabs",
       "une_input",
       "une_item_grid",
-      "une_image"
+      "une_image",
+      "une_calendar",
+      "une_navigation",
+      "une_container"
     ]
   },
   {
@@ -62,8 +74,14 @@ export const UNE_RIBBON_PROPERTIES:readonly UneRibbonProperty[]=[
       "une_tabs",
       "une_input",
       "une_item_grid",
-      "une_image"
-    ]
+      "une_image",
+      "une_calendar",
+      "une_navigation",
+      "une_container"
+    ],
+    "kindOverrides": {
+      "une_calendar": "color"
+    }
   },
   {
     "id": "label",
@@ -77,8 +95,13 @@ export const UNE_RIBBON_PROPERTIES:readonly UneRibbonProperty[]=[
       "une_lookup",
       "une_tabs",
       "une_input",
-      "une_item_grid"
-    ]
+      "une_item_grid",
+      "une_calendar",
+      "une_container"
+    ],
+    "kindOverrides": {
+      "une_calendar": "color"
+    }
   },
   {
     "id": "labelAlignment",
@@ -92,8 +115,13 @@ export const UNE_RIBBON_PROPERTIES:readonly UneRibbonProperty[]=[
       "une_lookup",
       "une_tabs",
       "une_input",
-      "une_item_grid"
-    ]
+      "une_item_grid",
+      "une_calendar",
+      "une_container"
+    ],
+    "kindOverrides": {
+      "une_calendar": "color"
+    }
   },
   {
     "id": "labelColor",
@@ -107,7 +135,10 @@ export const UNE_RIBBON_PROPERTIES:readonly UneRibbonProperty[]=[
       "une_lookup",
       "une_tabs",
       "une_input",
-      "une_item_grid"
+      "une_item_grid",
+      "une_calendar",
+      "une_navigation",
+      "une_container"
     ]
   },
   {
@@ -118,7 +149,8 @@ export const UNE_RIBBON_PROPERTIES:readonly UneRibbonProperty[]=[
     "kind": "color",
     "components": [
       "une_lookup",
-      "une_item_grid"
+      "une_item_grid",
+      "une_calendar"
     ]
   },
   {
@@ -134,7 +166,10 @@ export const UNE_RIBBON_PROPERTIES:readonly UneRibbonProperty[]=[
       "une_tabs",
       "une_input",
       "une_item_grid",
-      "une_image"
+      "une_image",
+      "une_calendar",
+      "une_navigation",
+      "une_container"
     ],
     "default": 12
   },
@@ -150,7 +185,10 @@ export const UNE_RIBBON_PROPERTIES:readonly UneRibbonProperty[]=[
       "une_lookup",
       "une_tabs",
       "une_input",
-      "une_item_grid"
+      "une_item_grid",
+      "une_calendar",
+      "une_navigation",
+      "une_container"
     ],
     "default": 16,
     "min": 0
@@ -179,7 +217,10 @@ export const UNE_RIBBON_PROPERTIES:readonly UneRibbonProperty[]=[
       "une_tabs",
       "une_input",
       "une_item_grid",
-      "une_image"
+      "une_image",
+      "une_calendar",
+      "une_navigation",
+      "une_container"
     ]
   },
   {
@@ -195,7 +236,10 @@ export const UNE_RIBBON_PROPERTIES:readonly UneRibbonProperty[]=[
       "une_tabs",
       "une_input",
       "une_item_grid",
-      "une_image"
+      "une_image",
+      "une_calendar",
+      "une_navigation",
+      "une_container"
     ]
   },
   {
@@ -211,7 +255,10 @@ export const UNE_RIBBON_PROPERTIES:readonly UneRibbonProperty[]=[
       "une_tabs",
       "une_input",
       "une_item_grid",
-      "une_image"
+      "une_image",
+      "une_calendar",
+      "une_navigation",
+      "une_container"
     ]
   },
   {
@@ -227,7 +274,10 @@ export const UNE_RIBBON_PROPERTIES:readonly UneRibbonProperty[]=[
       "une_tabs",
       "une_input",
       "une_item_grid",
-      "une_image"
+      "une_image",
+      "une_calendar",
+      "une_navigation",
+      "une_container"
     ]
   },
   {
@@ -238,8 +288,20 @@ export const UNE_RIBBON_PROPERTIES:readonly UneRibbonProperty[]=[
     "kind": "expression",
     "components": [
       "une_toggle",
-      "une_lookup"
-    ]
+      "une_lookup",
+      "une_calendar"
+    ],
+    "kindOverrides": {
+      "une_calendar": "choice"
+    },
+    "choicesOverrides": {
+      "une_calendar": [
+        "today"
+      ]
+    },
+    "defaultsOverrides": {
+      "une_calendar": "today"
+    }
   },
   {
     "id": "tabHeight",
@@ -438,7 +500,9 @@ export const UNE_RIBBON_PROPERTIES:readonly UneRibbonProperty[]=[
       "une_tabs",
       "une_input",
       "une_item_grid",
-      "une_image"
+      "une_image",
+      "une_navigation",
+      "une_container"
     ]
   },
   {
@@ -449,7 +513,8 @@ export const UNE_RIBBON_PROPERTIES:readonly UneRibbonProperty[]=[
     "kind": "expression",
     "components": [
       "une_item_grid",
-      "une_image"
+      "une_image",
+      "une_container"
     ],
     "field": true
   },
@@ -464,7 +529,9 @@ export const UNE_RIBBON_PROPERTIES:readonly UneRibbonProperty[]=[
       "une_tabs",
       "une_input",
       "une_item_grid",
-      "une_image"
+      "une_image",
+      "une_navigation",
+      "une_container"
     ],
     "field": true
   },
@@ -476,7 +543,8 @@ export const UNE_RIBBON_PROPERTIES:readonly UneRibbonProperty[]=[
     "kind": "expression",
     "components": [
       "une_item_grid",
-      "une_image"
+      "une_image",
+      "une_container"
     ],
     "field": true
   },
@@ -488,7 +556,8 @@ export const UNE_RIBBON_PROPERTIES:readonly UneRibbonProperty[]=[
     "kind": "choice",
     "components": [
       "une_item_grid",
-      "une_image"
+      "une_image",
+      "une_container"
     ],
     "choices": [
       "image-top-left",
@@ -512,7 +581,8 @@ export const UNE_RIBBON_PROPERTIES:readonly UneRibbonProperty[]=[
     "kind": "number",
     "components": [
       "une_item_grid",
-      "une_image"
+      "une_image",
+      "une_container"
     ],
     "default": 12,
     "min": 0
@@ -525,7 +595,8 @@ export const UNE_RIBBON_PROPERTIES:readonly UneRibbonProperty[]=[
     "kind": "boolean",
     "components": [
       "une_item_grid",
-      "une_image"
+      "une_image",
+      "une_container"
     ],
     "default": true
   },
@@ -537,7 +608,8 @@ export const UNE_RIBBON_PROPERTIES:readonly UneRibbonProperty[]=[
     "kind": "color",
     "components": [
       "une_item_grid",
-      "une_image"
+      "une_image",
+      "une_container"
     ]
   },
   {
@@ -548,19 +620,92 @@ export const UNE_RIBBON_PROPERTIES:readonly UneRibbonProperty[]=[
     "kind": "boolean",
     "components": [
       "une_item_grid",
-      "une_image"
+      "une_image",
+      "une_container"
     ],
     "default": false
+  },
+  {
+    "id": "showDays",
+    "label": "Show Days",
+    "tab": "Layout",
+    "group": "Calendar",
+    "kind": "weekdays",
+    "components": [
+      "une_calendar"
+    ],
+    "default": [
+      "sun",
+      "mon",
+      "tue",
+      "wed",
+      "thu",
+      "fri",
+      "sat"
+    ]
+  },
+  {
+    "id": "firstDay",
+    "label": "First Day",
+    "tab": "Layout",
+    "group": "Calendar",
+    "kind": "choice",
+    "components": [
+      "une_calendar"
+    ],
+    "default": "mon",
+    "choices": [
+      "sun",
+      "mon",
+      "tue",
+      "wed",
+      "thu",
+      "fri",
+      "sat"
+    ]
+  },
+  {
+    "id": "navigationDirection",
+    "label": "Horizontal/vertical",
+    "tab": "Layout",
+    "group": "Navigation",
+    "kind": "choice",
+    "components": [
+      "une_navigation"
+    ],
+    "default": "horizontal",
+    "choices": [
+      "horizontal",
+      "vertical"
+    ]
+  },
+  {
+    "id": "imageFill",
+    "label": "Image Fill",
+    "tab": "Design",
+    "group": "Image",
+    "kind": "choice",
+    "components": [
+      "une_item_grid",
+      "une_image",
+      "une_navigation"
+    ],
+    "default": "fill",
+    "choices": [
+      "fill",
+      "fit",
+      "stretch"
+    ]
   }
 ];
 export const UNE_RIBBON_GROUPS:Record<UneBuilderTab,readonly string[]>={
  Data:['Source'],Design:['Body','Typography','Default','Tabs','Image','Header','Cards','Badge'],
- Layout:['Size','Position','Cards','Header']
+ Layout:['Size','Position','Cards','Header','Calendar','Navigation']
 };
 export const isUneBuilderApi=(value:string):value is UneBuilderApi=>
  (UNE_BUILDER_COMPONENTS as readonly string[]).includes(value);
 export const isUneRibbonSupported=(api:UneBuilderApi,key:string)=>
  Boolean(UNE_RIBBON_PROPERTIES.find(row=>row.id===key)?.components.includes(api));
 export const uneBuilderDefaults=(api:UneBuilderApi):Record<string,unknown>=>
- Object.fromEntries(UNE_RIBBON_PROPERTIES.filter(p=>p.components.includes(api)&&p.default!==undefined)
- .map(p=>[p.id,p.default]));
+ Object.fromEntries(UNE_RIBBON_PROPERTIES.filter(p=>p.components.includes(api)&&(p.defaultsOverrides?.[api]??p.default)!==undefined)
+ .map(p=>[p.id,p.defaultsOverrides?.[api]??p.default]));
