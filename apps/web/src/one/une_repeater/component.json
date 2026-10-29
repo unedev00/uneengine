@@ -106,6 +106,13 @@
       "kind": "TEXT",
       "displayOrder": 890,
       "defaultValue": ""
+    },
+    {
+      "propertyKey": "helpText",
+      "label": "Help text",
+      "kind": "TEXT",
+      "displayOrder": 860,
+      "defaultValue": ""
     }
   ],
   "eventDefinitions": [
