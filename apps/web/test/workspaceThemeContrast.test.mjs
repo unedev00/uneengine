@@ -25,8 +25,8 @@ test('record switcher, options, global search and row actions retain contrasting
     assert.ok(workspace.includes(selector),selector);
   }
   assert.match(workspace,/\.header-record-picker-control input[^\n]*color:var\(--md-text/);
-  assert.match(workspace,/\.header-record-picker-options button[^\n]*color:var\(--md-text/);
-  assert.match(workspace,/\.global-record-search-results > button[^\n]*background:var\(--md-surface/);
+  assert.match(workspace,/\.header-record-picker-options button \{[\s\S]*?color:var\(--md-text/);
+  assert.match(workspace,/\.global-record-search-results > button \{[\s\S]*?background:var\(--md-surface/);
   assert.match(toolbar,/\.records-layout-switcher button\.active \{ background:var\(--md-surface/);
   assert.match(toolbar,/\.records-tool-count[\s\S]*?color:var\(--md-action-ink/);
 });
