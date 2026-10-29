@@ -9,6 +9,7 @@ const workflow=new URL('../../../../.github/workflows/oracle-api-deploy.yml',imp
 const diagnostic=new URL('../../../../scripts/oracle/check-communication-backlog.sh',import.meta.url);
 const startupDiagnostic=new URL('../../../../scripts/oracle/diagnose-api-startup.py',import.meta.url);
 const ownerRepair=new URL('../../../../scripts/oracle/repair-oauth-function-owner.py',import.meta.url);
+const busRecovery=new URL('../../../../scripts/oracle/recover-systemd-bus.sh',import.meta.url);
 const ownerTests=new URL('../../../../scripts/oracle/',import.meta.url);
 
 test('Oracle backend release deploys API and Communication worker as one rollback unit',()=>{
@@ -80,5 +81,27 @@ test('Oracle OAuth function ownership repair is restricted, repeatable, and secr
    fileURLToPath(ownerTests),'-p','test_repair_oauth_function_owner.py'],
    {encoding:'utf8'});
   assert.equal(py.status,0,py.stdout+py.stderr);
+ }
+});
+
+test('Oracle D-Bus recovery is bounded and cannot mask failed service health',()=>{
+ const sh=readFileSync(busRecovery,'utf8');
+ const yaml=readFileSync(workflow,'utf8');
+ assert.match(yaml,/Recover Oracle systemd D-Bus control plane if unresponsive/);
+ assert.match(yaml,/sudo -n bash scripts\/oracle\/recover-systemd-bus\.sh/);
+ assert.match(yaml,/bash -n scripts\/oracle\/recover-systemd-bus\.sh/);
+ assert.match(sh,/GITHUB_REPOSITORY/);
+ assert.match(sh,/uname -m/);
+ assert.match(sh,/\/proc\/1\/comm/);
+ assert.match(sh,/systemctl show --property=Version --value/);
+ assert.match(sh,/kill -s USR1 1/);
+ assert.match(sh,/exit 1/);
+ assert.doesNotMatch(sh,/\b(?:reboot|poweroff|shutdown|pkill|killall)\s/);
+ assert.doesNotMatch(sh,/kill -s (?!USR1)/);
+ assert.ok(yaml.indexOf('Recover Oracle systemd D-Bus')<yaml.indexOf('Build release on the target architecture'));
+ assert.ok(yaml.indexOf('Build release on the target architecture')<yaml.indexOf('Verify production runner and active services'));
+ if(process.platform!=='win32'){
+  const parsed=spawnSync('bash',['-n',fileURLToPath(busRecovery)],{encoding:'utf8'});
+  assert.equal(parsed.status,0,parsed.stderr);
  }
 });
