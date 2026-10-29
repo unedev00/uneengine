@@ -44,6 +44,11 @@ export async function seedAceAssistInstalledHome(db:SqlPersistence,tenantId:stri
     const appId=appRows[0]?.id;
     if(!appId)throw Error('Ace Assist must be installed and licensed for this tenant');
 
+    // Private renderers installed only with their owning app; no shared property catalog.
+    for(const apiName of ["aceassist_input","aceassist_calendar"])await tx.query(
+      'INSERT INTO md_component_definitions(tenant_id,api_name,renderer_key,enabled) VALUES($1,$2,$3,true) ON CONFLICT(tenant_id,api_name) DO NOTHING',
+      [tenantId,apiName,'one-bundled:'+apiName]);
+  
     const {rows:created}=await tx.query<{id:string}>(`INSERT INTO md_page_definitions
       (tenant_id,api_name,title,enabled) VALUES($1,$2,'Appointments Calendar',true)
       ON CONFLICT(tenant_id,api_name) DO NOTHING RETURNING id`,
@@ -62,10 +67,10 @@ export async function seedAceAssistInstalledHome(db:SqlPersistence,tenantId:stri
         VALUES($1,$2,'aceassist-default','App Default',$3,true,true,0)`,
         [tenantId,pageId,ACEASSIST_APP.apiName]);
       for(const [i,node] of ([
-        {key:'welcome',type:'Custom:une_input',label:'Ace Assist heading',region:'header',props:{allowTyping:false,value:'Welcome to Ace Assist',fontSize:28}},
-        {key:'hint',type:'Custom:une_input',label:'Booking status',region:'header',
+        {key:'welcome',type:'Custom:aceassist_input',label:'Ace Assist heading',region:'header',props:{allowTyping:false,value:'Welcome to Ace Assist',fontSize:28}},
+        {key:'hint',type:'Custom:aceassist_input',label:'Booking status',region:'header',
           props:{allowTyping:false,value:'Your calendar is ready. Appointment data will appear when booking Objects and Flows are configured in MetaDrive.',fontSize:14}},
-        {key:'calendar',type:'Custom:une_calendar',label:'Appointments Calendar',region:'main',props:{kind:'Calendar',view:'month'}}
+        {key:'calendar',type:'Custom:aceassist_calendar',label:'Appointments Calendar',region:'main',props:{kind:'Calendar',view:'month'}}
       ] as const).entries()){
         const componentApi=node.type.slice('Custom:'.length);
         const {rows:components}=await tx.query<{api_name:string}>(`SELECT api_name

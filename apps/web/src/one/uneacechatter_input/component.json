@@ -1,0 +1,20 @@
+{
+  "apiName": "uneacechatter_input",
+  "label": "uneacechatter Input",
+  "category": "App Internal",
+  "description": "Private uneacechatter UI renderer, not a shared Page Builder component.",
+  "surfaces": [
+    "page"
+  ],
+  "version": 1,
+  "jsxFile": "one/uneacechatter_input/AppComponent.jsx",
+  "cssFile": "one/une_input/UneInput.css",
+  "resize": {
+    "defaultWidth": 320,
+    "defaultHeight": 80,
+    "minWidth": 100,
+    "minHeight": 40
+  },
+  "propertyDefinitions": [],
+  "eventDefinitions": []
+}

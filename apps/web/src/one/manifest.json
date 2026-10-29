@@ -36,6 +36,22 @@
     "une_document_viewer/component.json",
     "une_chart/component.json",
     "une_option_groups/component.json",
-    "acetill_cart/component.json"
+    "acetill_cart/component.json",
+    "acetill_input/component.json",
+    "acetill_search/component.json",
+    "acetill_item_grid/component.json",
+    "acetill_button/component.json",
+    "aceassist_input/component.json",
+    "aceassist_calendar/component.json",
+    "onechatter_input/component.json",
+    "onechatter_conversation/component.json",
+    "uneacechatter_input/component.json",
+    "uneacechatter_conversation/component.json",
+    "uneacechatter_modal/component.json",
+    "uneacechatter_tabs/component.json",
+    "uneacechatter_stack/component.json",
+    "uneacechatter_lookup/component.json",
+    "uneacechatter_button/component.json",
+    "uneacechatter_search/component.json"
   ]
 }
