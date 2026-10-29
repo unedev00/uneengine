@@ -64,6 +64,13 @@
       "kind": "TEXT",
       "displayOrder": 300,
       "defaultValue": "Metric"
+    },
+    {
+      "propertyKey": "helpText",
+      "label": "Help text",
+      "kind": "TEXT",
+      "displayOrder": 860,
+      "defaultValue": ""
     }
   ]
 }
