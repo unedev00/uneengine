@@ -18,10 +18,19 @@ const fire=(p,event,value)=>p.actionFlows?.[event]&&typeof p.onAction==="functio
  ?Promise.resolve(p.onAction({event,value})).catch(()=>{}):undefined;
 export default function UneSchedule(p){
  const viewChoices=["month","week","day","agenda"],initial=viewChoices.includes(p.view)?p.view:"month";
- const [view,setView]=React.useState(initial),[date,setDate]=React.useState(()=>parseDate(p.selectedDate||new Date().toISOString().slice(0,10)));
+ const initialDate=p.selectedDate||(p.defaultValue&&p.defaultValue!=="today"?p.defaultValue:null);
+ const [view,setView]=React.useState(initial),[date,setDate]=React.useState(()=>parseDate(initialDate||new Date().toISOString().slice(0,10)));
  React.useEffect(()=>{if(viewChoices.includes(p.view))setView(p.view)},[p.view]);
  React.useEffect(()=>{if(p.selectedDate&&!Number.isNaN(parseDate(p.selectedDate).getTime()))setDate(parseDate(p.selectedDate))},[p.selectedDate]);
- const firstDay=p.firstDayOfWeek==="sunday"?0:1,selected=Number.isNaN(date.getTime())?new Date():date;
+ const weekCodes=["sun","mon","tue","wed","thu","fri","sat"];
+ const startDay=weekCodes.indexOf(p.firstDay);
+ const firstDay=startDay>=0?startDay:p.firstDayOfWeek==="sunday"?0:1;
+ const configuredDays=Array.isArray(p.showDays)?p.showDays.filter(day=>weekCodes.includes(day)):null;
+ const enabledDays=new Set(configuredDays??(p.showWeekends===false?weekCodes.slice(1,6):weekCodes));
+ const activeDayCount=Math.max(1,enabledDays.size);
+ const dayEnabled=day=>enabledDays.has(weekCodes[day]);
+ const safeColor=value=>typeof value==="string"&&/^#[0-9a-f]{6}$/i.test(value)?value:undefined;
+ const selected=Number.isNaN(date.getTime())?new Date():date;
  const dateField=p.dateFieldApiName||p.eventStartFieldApiName||"StartDateTime";
  const titleField=p.titleFieldApiName||"Name",resourceField=p.resourceFieldApiName||"",serviceField=p.serviceFieldApiName||"";
  const events=sourceRecords(p).filter(row=>(!resourceField||!p.resourceValue||String(read(row,resourceField,""))===String(p.resourceValue))
@@ -42,10 +51,15 @@ export default function UneSchedule(p){
  });
  const selectDay=(day,items)=>{setDate(day);fire(p,"dateSelect",{date:iso(day),events:items.map(i=>i.row)})};
  const eventClick=item=>fire(p,"eventSelect",{record:item.row,date:item.date});
- return <section className="one-ui one-surface une-calendar" style={{padding:12}} aria-label={p.label||"Calendar"}>
-  <div className="one-row" style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10}}>
+ return <section className="one-ui one-surface une-calendar" style={{
+   padding:12,backgroundColor:safeColor(p.backgroundColor),borderColor:safeColor(p.borderColor),
+   borderRadius:Number.isFinite(Number(p.radius))?Math.max(0,Math.min(80,Number(p.radius))):undefined,
+   boxShadow:safeColor(p.calendarShadowColor)?"0 5px 16px "+safeColor(p.calendarShadowColor)+"55":undefined
+ }} aria-label={p.label||"Calendar"}>
+  <div className="one-row" style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10,
+    backgroundColor:safeColor(p.calendarHeaderColor)}}>
    <button className="one-btn" type="button" aria-label="Previous period" onClick={()=>shift(-1)}>‹</button>
-   <strong>{selected.toLocaleString(undefined,{month:"long",year:"numeric"})}</strong>
+   <strong style={{color:safeColor(p.calendarMonthTitleColor)}}>{selected.toLocaleString(undefined,{month:"long",year:"numeric"})}</strong>
    <button className="one-btn" type="button" aria-label="Next period" onClick={()=>shift(1)}>›</button>
    <button className="one-btn" type="button" onClick={()=>setDate(new Date())}>Today</button>
    <label>View <select className="one-control" value={view} onChange={e=>{
@@ -58,13 +72,15 @@ export default function UneSchedule(p){
      .map((item,i)=><button key={i} type="button" className="one-item"
        onClick={()=>eventClick(item)}>{item.date} · {item.title}</button>)}
    {!events.length&&<p>No appointments</p>}
-  </div>:<div className="une-calendar-grid" style={{"--une-calendar-columns":view==="day"?1:p.showWeekends===false?5:7}}>
-   {view!=="day"&&Array.from({length:7},(_,i)=>(firstDay+i)%7).filter(day=>p.showWeekends!==false||![0,6].includes(day)).map(day=><strong key={day} style={{textAlign:"center"}}>
+  </div>:<div className="une-calendar-grid" style={{"--une-calendar-columns":view==="day"?1:activeDayCount}}>
+   {view!=="day"&&Array.from({length:7},(_,i)=>(firstDay+i)%7).filter(dayEnabled).map(day=><strong key={day} style={{textAlign:"center",color:safeColor(p.labelColor)}}>
       {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][day]}</strong>)}
-   {days.filter(d=>p.showWeekends!==false||![0,6].includes(d.getDay())).map(day=>{
+   {days.filter(d=>view==="day"||dayEnabled(d.getDay())).map(day=>{
      const found=events.filter(item=>item.date===iso(day));
      return <div className="une-calendar-day" key={iso(day)}>
        <button className="one-btn" type="button" aria-label={"Select "+iso(day)}
+        style={{color:safeColor(p.labelColor),...(iso(day)===iso(selected)&&safeColor(p.defaultValueColor)
+           ?{backgroundColor:p.defaultValueColor}:{} )}}
         onClick={()=>selectDay(day,found)}>{day.getDate()}</button>
        {found.slice(0,view==="month"?3:20).map((item,i)=><button type="button"
          key={i} className="une-calendar-event" title={item.title} onClick={()=>eventClick(item)}>{item.title}</button>)}
