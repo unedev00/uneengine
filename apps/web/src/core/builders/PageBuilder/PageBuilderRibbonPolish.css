@@ -113,3 +113,8 @@
 .office-builder-ribbon .une-universal-property.is-disabled :is(input,select,textarea,button){
   background:#f1f4f9!important;cursor:not-allowed!important;pointer-events:none!important;
 }
+
+/* Data tab: visible left-to-right scrollbar and fixed ribbon height. */
+.office-builder-ribbon #page-builder-tab-content:has(>.une-universal-ribbon){scrollbar-width:thin!important;scrollbar-color:#9aaec8 transparent!important;overflow-x:auto!important;overflow-y:hidden!important;height:158px!important;min-height:158px!important;max-height:158px!important;direction:ltr!important;padding:3px 8px!important}
+.office-builder-ribbon #page-builder-tab-content:has(>.une-universal-ribbon)::-webkit-scrollbar{display:block!important;height:9px!important}
+.office-builder-ribbon #page-builder-tab-content:has(>.une-universal-ribbon)::-webkit-scrollbar-thumb{background:#9aaec8;border-radius:8px}
