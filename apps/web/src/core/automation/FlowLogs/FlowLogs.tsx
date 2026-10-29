@@ -67,6 +67,7 @@ export default function FlowLogs({ logs, loading, loadingMore, hasMore, onLoadMo
         <ResponsiveDataList rows={filteredLogs} getId={log=>log.id}
           columns={[
             {apiName:'flow',label:'Flow',phoneRole:'title',render:log=>log.flowLabel},
+            {apiName:'apiName',label:'API Name',render:log=>log.flowApiName},
             {apiName:'status',label:'Status',phoneRole:'badge',render:log=>log.status??'failed'},
             {apiName:'started',label:'Started',phoneRole:'trailing',render:log=>formatTime(log.startedAt??log.failedAt)},
             {apiName:'type',label:'Flow type',phoneRole:'subtitle',render:log=>(log.flowType??log.trigger) + (log.versionNumber?' · v'+log.versionNumber:'')},
@@ -81,6 +82,7 @@ export default function FlowLogs({ logs, loading, loadingMore, hasMore, onLoadMo
             <thead>
               <tr>
                 <th scope="col">Flow</th>
+                <th scope="col">API Name</th>
                 <th scope="col">Status</th>
                 <th scope="col">Type / Version</th>
                 <th scope="col">Started</th>
@@ -95,8 +97,8 @@ export default function FlowLogs({ logs, loading, loadingMore, hasMore, onLoadMo
                     <button className="flow-log-link" type="button" onClick={() => onOpenFlow(log.flowApiName)}>
                       {log.flowLabel}
                     </button>
-                    <div className="api-name">{log.flowApiName}</div>
                   </td>
+                  <td title={log.flowApiName}><code>{log.flowApiName}</code></td>
                   <td>{log.status ?? 'failed'}</td>
                   <td>{log.flowType ?? log.trigger}{log.versionNumber ? ' · v' + log.versionNumber : ''}</td>
                   <td>{formatTime(log.startedAt ?? log.failedAt)}</td>
@@ -105,7 +107,7 @@ export default function FlowLogs({ logs, loading, loadingMore, hasMore, onLoadMo
                 </tr>
               ))}
               {!loading && filteredLogs.length === 0 && (
-                <tr><td className="scheduled-flows-empty" colSpan={6}>
+                <tr><td className="scheduled-flows-empty" colSpan={7}>
                   {search || status !== 'all' ? 'No matching executions in the loaded history.' : 'No Flow executions have been logged.'}
                 </td></tr>
               )}
