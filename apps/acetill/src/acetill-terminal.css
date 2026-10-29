@@ -285,8 +285,8 @@
  * hardcoded light controls with a dark themed foreground. No Flow/UI changes. */
 .acetill-terminal{
   --till-subtle:var(--md-surface-2,#f8f9fc);
-  --till-action:color-mix(in srgb,var(--till-accent) 68%,black);
-  --till-link:color-mix(in srgb,var(--till-accent) 62%,var(--till-ink));
+  --till-action:color-mix(in srgb,var(--till-accent) 45%,black);
+  --till-link:color-mix(in srgb,var(--till-accent) 28%,var(--till-ink));
   color:var(--till-ink);
 }
 .acetill-terminal :is(.acetill-search input,.acetill-qty button,
@@ -325,11 +325,11 @@
 }
 .standalone-product .acetill-receipt-actions button:not(.acetill-charge){
   background:var(--md-surface-2,#fafafc);
-  color:color-mix(in srgb,var(--product-accent,#007aff) 60%,var(--md-text,#1d1d1f));
+  color:color-mix(in srgb,var(--product-accent,#007aff) 28%,var(--md-text,#1d1d1f));
   border-color:var(--md-separator,#d8dce4);
 }
 .standalone-product .acetill-receipt-actions .acetill-charge{
-  background:color-mix(in srgb,var(--product-accent,#007aff) 68%,black);color:#fff;
+  background:color-mix(in srgb,var(--product-accent,#007aff) 45%,black);color:#fff;
 }
 .standalone-product :is(.acetill-payment-dialog,.acetill-pin-setup){
   background:var(--md-surface,#fff);color:var(--md-text,#1d1d1f);
@@ -343,7 +343,7 @@
   border-color:var(--md-separator,#d8dce4);
 }
 .standalone-product :is(.acetill-payment-buttons .acetill-charge,.acetill-pin-setup button[type="submit"]){
-  background:color-mix(in srgb,var(--product-accent,#007aff) 68%,black);color:#fff;
+  background:color-mix(in srgb,var(--product-accent,#007aff) 45%,black);color:#fff;
 }
 .standalone-product .acetill-cashier-header>button{
   background:var(--md-surface-2,#fafafc);color:var(--md-text,#1d1d1f);
@@ -351,7 +351,7 @@
 }
 .standalone-product :is(.acetill-display-button,.acetill-lock-button){
   background:var(--md-surface-2,#fafafc);
-  color:color-mix(in srgb,var(--product-accent,#007aff) 62%,var(--md-text,#1d1d1f));
+  color:color-mix(in srgb,var(--product-accent,#007aff) 28%,var(--md-text,#1d1d1f));
   border-color:var(--md-separator,#d8dce4);
 }
 
