@@ -51,6 +51,7 @@ jobs:
           bash -n scripts/oracle/backup-production-sql.sh
           bash -n scripts/oracle/deploy-full-stack.sh
           bash -n scripts/oracle/recover-systemd-bus.sh
+          bash -n scripts/oracle/recover-systemd-manager.sh
           bash -n scripts/oracle/check-communication-backlog.sh
 
   deploy:
@@ -75,6 +76,14 @@ jobs:
           test "$(uname -m)" = "aarch64"
           sudo -n true
           sudo -n env GITHUB_REPOSITORY="$GITHUB_REPOSITORY" bash scripts/oracle/recover-systemd-bus.sh
+      - name: Recover stalled systemd daemon-reload once per boot
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = "unedev00/uneengine"
+          test "$(uname -m)" = "aarch64"
+          sudo -n true
+          sudo -n env GITHUB_REPOSITORY="$GITHUB_REPOSITORY" bash scripts/oracle/recover-systemd-manager.sh
       - name: Build release on the target architecture
         run: |
           npm ci
