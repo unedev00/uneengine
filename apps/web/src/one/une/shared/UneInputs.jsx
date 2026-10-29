@@ -42,11 +42,13 @@ export function UneInput(p){
  </div>;
 }
 export function UneToggle(p){
- const [local,setLocal]=React.useState(p.value??p.defaultValue??false),checked=local;
+ const [local,setLocal]=React.useState(Boolean(p.value??p.defaultValue??false));
  React.useEffect(()=>setLocal(Boolean(p.value??p.defaultValue??false)),[p.value,p.defaultValue]);
- return <label className="one-ui one-row" style={{justifyContent:"space-between",gap:12}}>
-  <span>{p.label||"Setting"}</span><input role="switch" type="checkbox" checked={checked} disabled={p.disabled===true}
-    onChange={e=>{setLocal(e.target.checked);fire(p,"change",e.target.checked)}}/></label>;
+ return <label className="one-ui one-row une-toggle-control" data-une-surface={p.surface||"glass"} data-une-density={p.density||"comfortable"}
+   style={{justifyContent:"space-between",gap:n(p.gap,12,0,120),padding:n(p.padding,16,0,160)}}>
+  <span>{p.label??"Setting"}</span><input role="switch" type="checkbox" checked={local} disabled={p.disabled===true}
+    onChange={e=>{setLocal(e.target.checked);fire(p,"change",e.target.checked)}}/>
+ </label>;
 }
 const options=p=>{
  const rows=records(p);
@@ -89,7 +91,7 @@ export function UneLookup(p){
     ?{value,record:record??null,phoneNumber:phone,contactName:rawName||phone}
     :value);
  };
- return <div className="one-ui one-field" aria-busy={p.loading===true}>
+ return <div className="one-ui one-field une-lookup-control" data-une-surface={p.surface||"glass"} data-une-density={p.density||"comfortable"} aria-busy={p.loading===true} style={{display:"flex",flexDirection:"column",gap:n(p.gap,12,0,120),padding:n(p.padding,16,0,160)}}>
   <label className="one-label">{p.label||"Lookup"}
    <input className="one-control" placeholder={p.placeholder||"Search records"}
     value={query} disabled={p.disabled===true} onChange={e=>{setLocalQuery(e.target.value);fire(p,"search",e.target.value)}}/>
