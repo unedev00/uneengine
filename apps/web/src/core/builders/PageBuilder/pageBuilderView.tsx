@@ -145,7 +145,7 @@ import PageBuilderActionRibbon from './PageBuilderActionRibbon';
 import PageBuilderRibbonMetadataPager from './PageBuilderRibbonMetadataPager';
 import UniversalRibbonInventory from './UniversalRibbonInventory';
 import UneBuilderRibbon from './UneBuilderRibbon';
-import {isUneBuilderApi,uneBuilderDefaults,type UneBuilderApi} from './uneBuilderPropertyInventory';
+import {isUneBuilderApi,uneBuilderDefaults,UNE_RIBBON_PROPERTIES,type UneBuilderApi} from './uneBuilderPropertyInventory';
 import './UniversalRibbonInventory.css';
 import './PageBuilderNumericControls.css';
 import './PageBuilderRibbonPolish.css';
@@ -2647,7 +2647,7 @@ function PageBuilder({
           {ribbonTab === 'Home' && <>
             <div className="office-ribbon-group office-ribbon-page-identity"><div className="office-ribbon-stack">
               <button type="button" onClick={safeBackToPages}><ArrowLeft size={16}/> Back to pages</button>
-              <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Page</span><input aria-label="Page name" value={page.label} onChange={event=>applyPage({...page,label:event.target.value})}/></label>
+              <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Page</span><input aria-label="Page name" value={page.label} readOnly/></label>
               <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Device</span><select aria-label="Choose page layout" value={page.layoutVariant??'Desktop'} disabled={switchingLayout||saving} onChange={event=>void switchLayoutVariant(event.target.value as 'Desktop'|'Tablet'|'Mobile'|'Custom')}>{(['Desktop','Tablet','Mobile','Custom'] as const).map(v=><option key={v}>{v}</option>)}</select></label>
             </div><span>Page</span></div>
             <div className="office-ribbon-group office-ribbon-quick-access"><div className="office-ribbon-quick-grid">
@@ -2662,9 +2662,18 @@ function PageBuilder({
               <button className="office-ribbon-icon-button" title="Refresh canvas" aria-label="Refresh canvas" onClick={()=>setCanvasRefreshKey(key=>key+1)}><RefreshCw size={16}/></button>
             </div><span>Quick Access</span></div>
             <div className="office-ribbon-group"><div className="office-ribbon-stack">
+              <button type="button" disabled={!selectedNewUne||!selected} title="Reset selected UNE component properties"
+                onClick={()=>{
+                  if(!selected||!isUneBuilderApi(selected.type.slice(7)))return;
+                  const keys=new Set(UNE_RIBBON_PROPERTIES.map(prop=>prop.id));
+                  const kept=Object.fromEntries(Object.entries(selected.properties).filter(([key])=>!keys.has(key)));
+                  updateComponent(selected.id,{properties:{...kept,...uneBuilderDefaults(selected.type.slice(7))}});
+                }}><RefreshCw size={16}/> Reset component</button>
+            </div><span>Reset Component</span></div>
+            <div className="office-ribbon-group"><div className="office-ribbon-stack">
               <label className="office-ribbon-inline-field">Mode <select aria-label="Design mode" value={page.layoutMode} onChange={event=>setPageLayoutMode(event.target.value as LightningPageMetadata['layoutMode'])}><option value="template">Responsive sections</option><option value="free-canvas">Free canvas</option></select></label>
-              <label className="office-ribbon-inline-field">Width <input aria-label="Page width" type="number" min={320} max={10000} value={page.canvasWidth} onChange={event=>{const n=Number(event.target.value);if(Number.isInteger(n)&&n>=320&&n<=10000)applyPage({...page,canvasWidth:n});}}/></label>
-              <label className="office-ribbon-inline-field">Height <input aria-label="Page height" type="number" min={320} max={10000} value={page.canvasHeight} onChange={event=>{const n=Number(event.target.value);if(Number.isInteger(n)&&n>=320&&n<=10000)applyPage({...page,canvasHeight:n});}}/></label>
+              <label className="office-ribbon-inline-field">Width <input aria-label="Page width" type="number" disabled={page.layoutVariant!=='Custom'} min={320} max={10000} value={page.canvasWidth} onChange={event=>{const n=Number(event.target.value);if(Number.isInteger(n)&&n>=320&&n<=10000)applyPage({...page,canvasWidth:n});}}/></label>
+              <label className="office-ribbon-inline-field">Height <input aria-label="Page height" type="number" disabled={page.layoutVariant!=='Custom'} min={320} max={10000} value={page.canvasHeight} onChange={event=>{const n=Number(event.target.value);if(Number.isInteger(n)&&n>=320&&n<=10000)applyPage({...page,canvasHeight:n});}}/></label>
             </div><span>Canvas</span></div>
             <div className="office-ribbon-group office-ribbon-version-group"><div className="office-ribbon-stack">
               <button type="button" onClick={()=>void loadLayoutHistory()}><Undo2 size={16}/> {showLayoutHistory?'Refresh versions':'Version history'}</button>
