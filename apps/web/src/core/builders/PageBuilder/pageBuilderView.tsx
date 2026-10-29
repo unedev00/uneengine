@@ -2826,7 +2826,10 @@ function PageBuilder({
             </div><span>Cart connection</span></div>}
           {selected && ribbonTab === 'Component Action' && <PageBuilderActionRibbon key={selected.id}
             actions={selected.properties.actionFlows&&typeof selected.properties.actionFlows==='object'?selected.properties.actionFlows as Record<string,unknown>:{}}
-            eventDefinitions={selectedCustomDefinition?.eventDefinitions??[]} flows={flows}
+            eventDefinitions={selectedNewUne&&selected.type==='Custom:une_image'
+              ? [...(selectedCustomDefinition?.eventDefinitions??[]).filter(event=>event.apiName!=='click'),
+                 {apiName:'click',label:'When image is clicked'}]
+              : selectedCustomDefinition?.eventDefinitions??[]} flows={flows}
             onChange={actions=>updateComponent(selected.id,{properties:{...selected.properties,actionFlows:actions}})}
             advanced={<>
               <section aria-label="Advanced event action mappings"><strong>Event action bindings, inputs, outputs and destinations</strong>
