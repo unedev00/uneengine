@@ -3011,6 +3011,8 @@ function PageBuilder({
                   <li>Tenant component source is compiled for the isolated renderer; published versions remain separate from drafts.</li>
                   <li>Tree and page copies remap interaction targets that point to copied components.</li>
                   <li>Page filters support inclusive comparisons, blank checks, multi-select sets and formula result types.</li>
+                  <li>Bound records use the shared paged Record API when every filter is safely server-queryable.</li>
+                  <li>Interactions validate typed literals, declared event payload paths and target component versions.</li>
                   <li>Standard and published tenant blocks are discoverable; hidden-tab children stay hidden.</li>
                   <li>Record inline editing applies layout-required and read-only rules.</li>
                 </ul>
@@ -3021,7 +3023,8 @@ function PageBuilder({
               <div className="office-ribbon-stack">
                 <ul>
                   <li>Context-dependent formulas and complete Salesforce formula parity remain outstanding.</li>
-                  <li>Visibility authoring, full interaction contracts, record layouts and paged data loading need more work.</li>
+                  <li>Formula or unsupported bound filters still restrict results to the first page; custom-permission visibility and complete record layouts remain.</li>
+                  <li>Interaction action coverage and full record/profile/permission context across hosts need more work.</li>
                   <li>Reports, dashboards, embedded Flow/activity, calendar, templates and reusable blocks need more parity work.</li>
                   <li>UNE component implementations and Apex are excluded from this effort.</li>
                 </ul>

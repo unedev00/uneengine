@@ -646,16 +646,20 @@ function RecordWorkspace({
   },[recordSessionKey]);
   useEffect(()=>{
     if(!recordSessionKey||!activeLightningPage)return;
-    const targets=activeLightningPage.components.map(item=>({id:item.id,
-      propertyDefinitions:item.type.startsWith('Custom:')
-        ?libraryComponents.find(c=>c.apiName===item.type.slice('Custom:'.length))?.propertyDefinitions:undefined}));
+    const targets=activeLightningPage.components.map(item=>{
+      const definition=item.type.startsWith('Custom:')
+        ?libraryComponents.find(c=>c.apiName===item.type.slice('Custom:'.length)):undefined;
+      return {id:item.id,propertyDefinitions:definition?.propertyDefinitions,
+        componentVersion:definition?.version};
+    });
     const onInteraction=(event:Event)=>{
       const detail=(event as CustomEvent<{pageSessionKey:string;componentId:string;event:string;value:unknown}>).detail;
       if(detail?.pageSessionKey!==recordSessionKey||typeof detail.componentId!=='string')return;
       const source=activeLightningPage.components.find(item=>item.id===detail.componentId);
       if(!source)return;
       const updates=behaviorInteractions(source.properties,detail.event,detail.value,recordPageState,targets,
-        formFactor==='Phone'?'Mobile':formFactor);
+        formFactor==='Phone'?'Mobile':formFactor,source.type.startsWith('Custom:')
+          ?libraryComponents.find(c=>c.apiName===source.type.slice('Custom:'.length))?.eventDefinitions:undefined);
       if(updates.length)setRecordInteractionOverrides(previous=>{
         const next={...previous};
         for(const item of updates)next[item.targetComponentId]={...(next[item.targetComponentId]??{}),[item.targetProperty]:item.value};

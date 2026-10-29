@@ -1,6 +1,8 @@
 import {isComponentVisible,type ComponentVisibilityContext} from '../../components/Properties/componentVisibility';
 import {isPropertyRecord,validateComponentSetting} from '../../components/Properties/componentSettingDefinitions';
 import type {ComponentSettingDefinition,PropertyDevice} from '../../components/Properties/componentSettingDefinitions';
+import type {ComponentEventDefinition,ComponentEventPayloadField} from '../../metadata/Definitions/metadata';
+import {resolvePageStatePath} from './pageComponentBindings';
 
 /**
  * Runtime adapter for the versioned Page Property Contract. It deliberately
@@ -145,12 +147,41 @@ export function behaviorField(properties:Readonly<Record<string,unknown>>,
   return {visible,required:visible&&required&&!readOnly,readOnly:visible&&readOnly};
 }
 export type BehaviorInteraction={targetComponentId:string;targetProperty:string;value:string|number|boolean|null};
+function payloadPathValue(payload:unknown,path:string):unknown{
+ if(!path)return payload;
+ const parts=path.split('.');
+ if(parts.length>4||!parts.every(part=>namePattern.test(part)&&!denied.has(part)))return undefined;
+ let value:unknown=payload;
+ for(const part of parts){
+  if(!isPropertyRecord(value)||!Object.prototype.hasOwnProperty.call(value,part))return undefined;
+  value=value[part];
+ }
+ return value;
+}
+function payloadSchemaField(fields:readonly ComponentEventPayloadField[],path:string):ComponentEventPayloadField|undefined{
+ const parts=path.split('.');
+ if(parts.length>4||!parts.every(part=>namePattern.test(part)&&!denied.has(part)))return undefined;
+ let current=fields;
+ let match:ComponentEventPayloadField|undefined;
+ for(const part of parts){
+  match=current.find(field=>field.apiName===part);
+  if(!match)return undefined;
+  current=match.fields??[];
+ }
+ return match;
+}
+function payloadKindMatches(kind:ComponentEventPayloadField['kind'],value:unknown):boolean{
+ if(kind==='TEXT')return typeof value==='string';
+ if(kind==='NUMBER')return typeof value==='number'&&Number.isFinite(value);
+ if(kind==='BOOLEAN')return typeof value==='boolean';
+ return isPropertyRecord(value);
+}
 /** Resolve only primitive values and declared bindable target properties. */
 export function behaviorInteractions(
   sourceProperties:Readonly<Record<string,unknown>>,eventName:string,payload:unknown,
   pageState:Readonly<Record<string,unknown>>,
-  targets:ReadonlyArray<{id:string;propertyDefinitions?:readonly ComponentSettingDefinition[]}>,
-  device?:PropertyDevice,componentVersion?:number
+  targets:ReadonlyArray<{id:string;propertyDefinitions?:readonly ComponentSettingDefinition[];componentVersion?:number}>,
+  device?:PropertyDevice,sourceEventDefinitions?:readonly ComponentEventDefinition[]
 ):BehaviorInteraction[]{
   const actions=asRows(pageBehaviors(sourceProperties)?.interactions);
   const result:BehaviorInteraction[]=[];
@@ -162,30 +193,49 @@ export function behaviorInteractions(
     if(!target)continue;
     const definition=target.propertyDefinitions?.find(item=>item.propertyKey===row.targetProperty
       &&item.isBindable===true&&(!device||!item.devices||item.devices.includes(device))
-      &&(!componentVersion||!item.sinceVersion||item.sinceVersion<=componentVersion));
+      &&(!item.sinceVersion||target.componentVersion!==undefined&&item.sinceVersion<=target.componentVersion));
     if(!definition)continue;
     let value:unknown;
-    if(row.source==='Literal')value=row.value;
+    if(row.source==='Literal'){
+      const literalType=row.valueType??'Text';
+      if(literalType==='Text'&&typeof row.value==='string')value=row.value;
+      else if(literalType==='Number'&&(typeof row.value==='number'
+        ||typeof row.value==='string'&&row.value.trim()!=='')){
+        value=Number(row.value);
+        if(!Number.isFinite(value))continue;
+      }else if(literalType==='Boolean'&&(row.value===true||row.value===false
+        ||row.value==='true'||row.value==='false'))value=row.value===true||row.value==='true';
+      else if(literalType==='Null')value=null;
+      else continue;
+    }
     else if(row.source==='PageState'){
       const key=row.sourceKey;
-      if(typeof key!=='string'||!namePattern.test(key))continue;
-      value=pageState[key];
+      if(typeof key!=='string')continue;
+      value=resolvePageStatePath(pageState,key);
     } else if(row.source==='Event'){
       const key=row.sourceKey;
-      if(key===undefined||key==='')value=payload;
-      else if(typeof key==='string'&&namePattern.test(key)&&isPropertyRecord(payload))
-        value=payload[key];
-      else continue;
+      if(key!==undefined&&typeof key!=='string')continue;
+      const path=typeof key==='string'?key:'';
+      const event=sourceEventDefinitions?.find(item=>item.apiName===eventName);
+      if(sourceEventDefinitions&&!event)continue;
+      if(path&&event?.payloadFields){
+        const field=payloadSchemaField(event.payloadFields,path);
+        if(!field)continue;
+        value=payloadPathValue(payload,path);
+        if(!payloadKindMatches(field.kind,value))continue;
+      }else value=payloadPathValue(payload,path);
     } else continue;
     if(value!==null&&!['string','number','boolean'].includes(typeof value))continue;
     if(typeof value==='string'&&value.length>20000)continue;
     if(typeof value==='number'&&!Number.isFinite(value))continue;
-    if(definition.kind==='NUMBER'||definition.kind==='CURRENCY'){
-      if(typeof value!=='number')continue;
-    }else if(definition.kind==='BOOLEAN'){
-      if(typeof value!=='boolean')continue;
-    }else if(!['TEXT','COLOR','SELECT'].includes(definition.kind)
-      ||typeof value!=='string')continue;
+    if(value!==null){
+      if(definition.kind==='NUMBER'||definition.kind==='CURRENCY'){
+        if(typeof value!=='number')continue;
+      }else if(definition.kind==='BOOLEAN'){
+        if(typeof value!=='boolean')continue;
+      }else if(!['TEXT','COLOR','SELECT','IMAGE'].includes(definition.kind)
+        ||typeof value!=='string')continue;
+    }
     if(!validateComponentSetting(definition,value))continue;
     result.push({targetComponentId:target.id,targetProperty:row.targetProperty,
       value:value as string|number|boolean|null});

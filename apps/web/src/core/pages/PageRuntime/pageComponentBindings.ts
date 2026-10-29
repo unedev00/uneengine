@@ -96,6 +96,27 @@ export type PageFilterContext={
 };
 type PageFilter={field:string;operator:string;value:unknown};
 export type PageQueryFilter={field:string;value:string;related:boolean};
+export type PageServerRecordFilter={field:string;operator:string;value:string};
+const serverFilterOperators:Record<string,string>={
+  'Equals':'eq','Not Equals':'ne','Contains':'contains',
+  'Greater Than':'gt','Greater Than or Equal':'gte',
+  'Less Than':'lt','Less Than or Equal':'lte',
+  'Is Blank':'isBlank','Is Not Blank':'isNotBlank',
+  'Includes':'includes','Excludes':'excludes'
+};
+function isServerFilterable(field:FieldMetadata,operator:string):boolean{
+ const dataType=field.dataType.trim();
+ if(/^Formula\(/i.test(dataType)||/^(Geolocation|Address|EncryptedText)/i.test(dataType))return false;
+ if(operator==='Contains')return /^(Text|Email|Phone|Url|Picklist)(\(|$)/i.test(dataType);
+ if(operator==='Includes'||operator==='Excludes')
+  return /^(Multi-Select Picklist|Multipicklist)$/i.test(dataType);
+ if(['Greater Than','Greater Than or Equal','Less Than','Less Than or Equal'].includes(operator)
+   &&/^Time(\(|$)/i.test(dataType))return false;
+ if(operator==='Equals'||operator==='Not Equals'){
+  if(field.relationship&&operator==='Not Equals')return false;
+ }
+ return true;
+}
 const isDynamic=(value:unknown):value is {source:string;key?:string}=>
   Boolean(value&&typeof value==='object'&&!Array.isArray(value));
 /** Resolve only declared, typed page context sources; never evaluate expressions. */
@@ -113,24 +134,40 @@ export function resolvePageFilterValue(value:unknown,context:PageFilterContext):
 /** Block unbound parent filters *before* querying; missing context never means "all records". */
 export function pageComponentRecordQuery(
   definitions:unknown,fields:ReadonlyArray<FieldMetadata>,context:PageFilterContext={},logic:'AND'|'OR'='AND'
-):{blocked:boolean;filter?:PageQueryFilter}{
-  if(definitions===undefined||definitions===null)return {blocked:false};
-  if(!Array.isArray(definitions))return {blocked:true};
+):{blocked:boolean;filter?:PageQueryFilter;filters?:PageServerRecordFilter[];filterLogic?:string;serverFilterable:boolean}{
+  if(definitions===undefined||definitions===null)return {blocked:false,serverFilterable:true};
+  if(!Array.isArray(definitions))return {blocked:true,serverFilterable:false};
   let first:PageQueryFilter|undefined;
+  const serverFilters:PageServerRecordFilter[]=[];
+  let serverFilterable=true;
   for(const value of definitions){
-    if(examineRecordFilter(value,fields)!==null)return {blocked:true};
+    if(examineRecordFilter(value,fields)!==null)return {blocked:true,serverFilterable:false};
     const filter=value as PageFilter;
-    if(['Is Blank','Is Not Blank','Includes','Excludes'].includes(filter.operator))continue;
     const resolved=resolvePageFilterValue(filter.value,context);
     if(isDynamic(filter.value)&&(resolved===undefined||resolved===null||resolved===''))
-      return {blocked:true};
+      return {blocked:true,serverFilterable:false};
+    const field=fields.find(candidate=>candidate.apiName===filter.field);
+    const operator=serverFilterOperators[filter.operator];
+    if(!field||!operator||!isServerFilterable(field,filter.operator)){
+      serverFilterable=false;
+      continue;
+    }
+    if(logic==='OR'&&field.relationship){
+      serverFilterable=false;
+      continue;
+    }
+    serverFilters.push({field:filter.field,operator,
+      value:['Is Blank','Is Not Blank'].includes(filter.operator)?'':String(resolved??'')});
     if(logic==='AND'&&isDynamic(filter.value)&&filter.operator==='Equals'&&!first
       &&['string','number','boolean'].includes(typeof resolved)){
-      const field=fields.find(candidate=>candidate.apiName===filter.field);
       first={field:filter.field,value:String(resolved),related:Boolean(field?.relationship)};
     }
   }
-  return {blocked:false,filter:first};
+  const filters=serverFilterable&&serverFilters.length===definitions.length&&serverFilters.length>0
+    ?serverFilters:undefined;
+  return {blocked:false,filter:first,filters,
+    filterLogic:filters&&filters.length>1?filters.map((_,index)=>String(index+1)).join(` ${logic} `):undefined,
+    serverFilterable};
 }
 export function filterPageComponentRecords<T extends Record<string, unknown>>(
   records: readonly T[],

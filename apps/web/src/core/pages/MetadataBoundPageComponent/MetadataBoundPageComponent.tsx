@@ -1,6 +1,7 @@
 import {resolveMetadataProperties} from '../../metadata/Definitions/metadataReferences';
 import * as React from 'react';
 import {useState,useEffect,useRef} from 'react';
+import {loadFlowScreenRecordPage} from '../../authentication/Client/authClient';
 // Load the browser API client only during the mounted effect, not on SSR import.
 import {presentPageRecords,type ChannelGrant} from '../../records/RecordWorkspace/recordPresentationAdapters';
 import {filterPageComponentRecords,pageComponentRecordQuery,bindPageStateProperties} from '../PageRuntime/pageComponentBindings';
@@ -65,9 +66,13 @@ export default function MetadataBoundPageComponent({
     return ()=>window.removeEventListener('metadrive:page-local-state',receive);
   },[pageSessionKey]);
   const fields = objects.find((item) => item.apiName === objectApiName)?.fields ?? [];
-  const recordQuery=pageComponentRecordQuery(properties.filters,fields,{pageState,recordId,sessionId});
+  const recordQuery=pageComponentRecordQuery(properties.filters,fields,{pageState,recordId,sessionId},
+    properties.filterLogic==='OR'?'OR':'AND');
   const recordQueryKey=JSON.stringify(recordQuery);
   const [records, setRecords] = useState<Record<string, unknown>[]>([]);
+  const [recordTotal,setRecordTotal]=useState(0);
+  const [recordOffset,setRecordOffset]=useState(0);
+  const recordPageSize=100;
   const [dataError, setDataError] = useState('');
   const [actionError, setActionError] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<Record<string,string>>({});
@@ -95,6 +100,7 @@ export default function MetadataBoundPageComponent({
   });
   const initializedSessions = useRef<Set<string>>(new Set());
   const pendingFlowOutputs=useRef(new Map<string,{flowApiName:string;mappings:Record<string,unknown>}>());
+  useEffect(()=>setRecordOffset(0),[objectApiName,recordQueryKey]);
   useEffect(()=>{
     const complete=(event:Event)=>{
       const detail=(event as CustomEvent<{requestId?:string;flowApiName?:string;outputs?:Record<string,unknown>}>).detail;
@@ -148,6 +154,7 @@ export default function MetadataBoundPageComponent({
   useEffect(() => {
     let active = true;
     setRecords([]);
+    setRecordTotal(0);
     setDataError('');
     if (!objectApiName || recordQuery.blocked) {
       setDataLoading(false);
@@ -155,14 +162,18 @@ export default function MetadataBoundPageComponent({
     }
     setDataLoading(true);
     // Existing shared Object API enforces tenant, field and record permissions.
-    void import('../../authentication/Client/authClient').then(({loadFlowScreenRecords})=>loadFlowScreenRecords(objectApiName,recordQuery.filter))
-      .then((rows) => { if (active) setRecords(rows); })
+    void loadFlowScreenRecordPage(objectApiName,{
+      limit:recordPageSize,offset:recordOffset,
+      filter:recordQuery.serverFilterable?recordQuery.filter:undefined,
+      filters:recordQuery.filters,filterLogic:recordQuery.filterLogic
+    })
+      .then((page) => { if (active) {setRecords(page.records);setRecordTotal(page.total);} })
       .catch((reason: unknown) => {
         if (active) setDataError(reason instanceof Error ? reason.message : 'Unable to load records');
       })
       .finally(() => { if (active) setDataLoading(false); });
     return () => { active = false; };
-  }, [objectApiName, recordQueryKey, revision]);
+  }, [objectApiName, recordQueryKey, recordOffset, revision]);
   useEffect(() => {
     setChannelAccess({userId:'',viewAll:false,grants:[],eligibleAssignees:[]});
     const accessPath=String(properties.channelAccessPath??'');
@@ -174,7 +185,8 @@ export default function MetadataBoundPageComponent({
       .catch(() => {if(active) setChannelAccess({userId:'',viewAll:false,grants:[],eligibleAssignees:[]});});
     return () => {active = false;};
   }, [properties.channelAccessPath, properties.recordPresenterApiName, revision]);
-  const filteredRecords=filterPageComponentRecords(records,properties.filters,fields,{pageState,recordId,sessionId},properties.filterLogic==='OR'?'OR':'AND');
+  const filteredRecords=recordQuery.filters?records:filterPageComponentRecords(
+    records,properties.filters,fields,{pageState,recordId,sessionId},properties.filterLogic==='OR'?'OR':'AND');
   const relatedKey=String(properties.relatedFilterKey??'');
   const relatedField=String(properties.relatedFieldApiName??'');
   const parentId=relatedKey?selectedFilterRecords[relatedKey]?.recordId||pageState[relatedKey]:undefined;
@@ -358,7 +370,23 @@ export default function MetadataBoundPageComponent({
       // Multi-row components resolve their per-row values inside their own renderer.
       ...(visibleRecords.length===1 ? {record:visibleRecords[0]} : {}),
       ...(objectApiName ? { records: visibleRecords } : {}),
+      ...(objectApiName ? {recordPagination:{
+        limit:recordPageSize,offset:recordOffset,total:recordTotal,
+        hasPrevious:recordOffset>0,hasNext:recordOffset+recordPageSize<recordTotal,
+        available:recordQuery.serverFilterable
+      }} : {}),
       ...presented
     }} />
+    {objectApiName&&recordQuery.serverFilterable&&recordTotal>recordPageSize&&<nav
+      className="records-pagination" aria-label={component.label+' record pages'}>
+      <button type="button" className="btn" disabled={dataLoading||recordOffset===0}
+        onClick={()=>setRecordOffset(offset=>Math.max(0,offset-recordPageSize))}>Previous</button>
+      <span>{recordOffset+1}–{Math.min(recordOffset+recordPageSize,recordTotal)} of {recordTotal}</span>
+      <button type="button" className="btn" disabled={dataLoading||recordOffset+recordPageSize>=recordTotal}
+        onClick={()=>setRecordOffset(offset=>offset+recordPageSize)}>Next</button>
+    </nav>}
+    {objectApiName&&!recordQuery.serverFilterable&&recordTotal>recordPageSize&&<p role="status">
+      This filter combination cannot be paged safely by the server; showing only the first page of matching records.
+    </p>}
   </div>;
 }

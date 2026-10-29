@@ -178,15 +178,35 @@ export async function executeConnectorAppLifecycleFlow(apiName: string, appKey: 
     method: 'POST', body: JSON.stringify({AppKey:appKey})
   });
 }
+export type FlowScreenRecordPageOptions={
+  limit?:number;
+  offset?:number;
+  filter?:{field:string;value:string;related:boolean};
+  filters?:Array<{field:string;operator:string;value:string}>;
+  filterLogic?:string;
+};
+export async function loadFlowScreenRecordPage(
+  objectApiName:string,options:FlowScreenRecordPageOptions={}
+):Promise<{records:Record<string,unknown>[];total:number}> {
+  const limit=options.limit??100,offset=options.offset??0;
+  if(!Number.isInteger(limit)||limit<1||limit>100||!Number.isInteger(offset)||offset<0||offset>1000000)
+    throw new Error('Invalid record page request');
+  const params=new URLSearchParams({limit:String(limit),offset:String(offset)});
+  if(options.filter){
+    params.set(options.filter.related?'relatedField':'filterField',options.filter.field);
+    params.set(options.filter.related?'relatedId':'filterValue',options.filter.value);
+  }
+  if(options.filters?.length){
+    params.set('filters',JSON.stringify(options.filters));
+    if(options.filterLogic)params.set('filterLogic',options.filterLogic);
+  }
+  return apiRequest<{records:Record<string,unknown>[];total:number}>(
+    '/records/'+encodeURIComponent(objectApiName)+'?'+params.toString());
+}
 export async function loadFlowScreenRecords(
   objectApiName:string,filter?:{field:string;value:string;related:boolean}
 ):Promise<Record<string,unknown>[]> {
-  const params=filter?new URLSearchParams({
-    filterField:filter.field,filterValue:filter.value,limit:'200'
-  }):null;
-  const path='/records/'+encodeURIComponent(objectApiName)
-    +(params?'?'+params.toString():'');
-  const result=await apiRequest<{records:Record<string,unknown>[]}>(path);
+  const result=await loadFlowScreenRecordPage(objectApiName,{filter});
   return result.records;
 }
 

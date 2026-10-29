@@ -39,7 +39,9 @@ export const pageBehaviorSchemas:Record<string,ComponentSettingDefinition>={
  ]},
  interactions:{propertyKey:'interactions',label:'Component interactions',kind:'COLLECTION',maxItems:100,fields:[
   text('event','Source event',true),text('targetComponentId','Target component',true),text('targetProperty','Target property',true),
-  {...choice('source','Value source',['Event','PageState','Literal']),required:true},text('sourceKey','Source key'),text('value','Literal value')
+  {...choice('source','Value source',['Event','PageState','Literal']),required:true},
+  {...choice('valueType','Literal type',['Text','Number','Boolean','Null']),defaultValue:'Text'},
+  text('sourceKey','Source key'),text('value','Literal value')
  ]}
 };
 export const recordFieldSettings:ComponentSettingDefinition[]=[
