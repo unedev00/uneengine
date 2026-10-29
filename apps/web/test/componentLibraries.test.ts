@@ -100,10 +100,13 @@ test('only UNE equivalents are offered for trusted retired One components',()=>{
 
 test('retired UNE insert components are hidden but retained components remain',()=>{
  const names=['une_alert','une_chart','une_table','une_card','une_image','une_form','une_repeater','une_record_list','une_progress','une_navigation'];
- const retained=['une_button','une_text','une_calendar','une_search','une_item_grid','une_cart'];
- const entries=[...names,...retained].map(name=>definition(name));
+ const retained=['une_button','une_text','une_calendar','une_search','une_item_grid'];
+ const privatelyRegistered=['une_cart'];
+ const entries=[...names,...retained,...privatelyRegistered].map(name=>definition(name));
  assert.deepEqual(publishedPageLibraryComponents(entries).map(d=>d.apiName),retained);
  assert.ok(findRegisteredComponent(entries,'une_table','page'));
+ assert.ok(findRegisteredComponent(entries,'une_cart','page'));
+ assert.ok(!publishedPageLibraryComponents(entries).some(d=>d.apiName==='une_cart'));
 });
 
 test('UNE Conversation is AceChatter-only, hidden from new Page Builder placements', async () => {

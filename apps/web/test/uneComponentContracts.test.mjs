@@ -133,3 +133,15 @@ test('only common shared settings remain in AceChatter Conversation metadata',as
   assert.ok(code.includes('"'+key+'":'),key+' missing from internal runtime defaults');
  assert.match(code,/\.\.\.uneProps\(props,"Conversation"\)/);
 });
+
+test('Cart-specific settings are internal defaults while shared styling remains public',async()=>{
+ const cart=une.find(component=>component.apiName==='une_cart');
+ const common=new Set(['surface','tone','accentColor','backgroundColor','textColor','borderColor','density','radius','padding','gap','shadow','glassBlur','objectApiName']);
+ const raw=JSON.parse(await readFile(new URL('../src/one/une_cart/component.json',import.meta.url),'utf8'));
+ assert.deepEqual(new Set(raw.propertyDefinitions.map(p=>p.propertyKey)),common);
+ const code=await readFile(new URL('../src/one/une_cart/UneCart.jsx',import.meta.url),'utf8');
+ for(const key of ['viewMode','checkoutLabel','stateSyncEnabled','stateReadFlowApiName','stateWriteFlowApiName','showVatTotal','customerDisplayUrl','ageRestrictedFieldApiName'])
+  assert.ok(code.includes('"'+key+'":'),key+' must be internal');
+ assert.ok(!cart.propertyDefinitions.some(p=>p.propertyKey==='checkoutLabel'));
+ assert.match(code,/\.\.\.uneProps\(props,"ShoppingCart"\)/);
+});
