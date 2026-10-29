@@ -116,3 +116,16 @@ test('AceChatter Conversation button controls are internal code defaults, not me
  assert.match(code,/"refreshLabel": "Refresh conversations"/);
  assert.match(code,/"newMessageNoticeLabel": "New messages"/);
 });
+
+test('only common shared settings remain in AceChatter Conversation metadata',async()=>{
+ const conversation=une.find(item=>item.apiName==='une_conversation');
+ const common=new Set(['surface','tone','accentColor','backgroundColor','textColor','borderColor',
+   'density','radius','padding','gap','shadow','glassBlur','objectApiName']);
+ assert.deepEqual(new Set(conversation.propertyDefinitions.map(item=>item.propertyKey)),common);
+ const code=await readFile(new URL('../src/one/une_conversation/UneConversation.jsx',import.meta.url),'utf8');
+ for(const key of ['conversations','messages','contactChoices','channelAccounts','canSend',
+  'showRefresh','refreshLabel','newMessageNoticeLabel','conversationSourceMode','messageMaxLength',
+  'conversationIdFieldApiName','showComposer','filterOptions'])
+  assert.ok(code.includes('"'+key+'":'),key+' missing from internal runtime defaults');
+ assert.match(code,/\.\.\.uneProps\(props,"Conversation"\)/);
+});
