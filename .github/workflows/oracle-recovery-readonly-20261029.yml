@@ -128,4 +128,7 @@ jobs:
             fi
           done < <(sudo -n runuser -u postgres -- psql -X -Atq -v ON_ERROR_STOP=1 -d "$db" -c "SELECT version,checksum FROM md_system_migrations WHERE version LIKE '%.sql' ORDER BY version")
           echo "Applied SQL audit: scanned=$scanned mismatched=$mismatches missing_from_checkout=$missing"
+
+          echo '=== Ribbon SQL column inventory (schema only) ==='
+          sudo -n runuser -u postgres -- psql -X -Atq -v ON_ERROR_STOP=1 -d "$db" -c "SELECT table_name||'.'||column_name||' '||data_type||' nullable='||is_nullable FROM information_schema.columns WHERE table_schema='public' AND table_name IN ('md_builder_shared_properties','md_builder_ribbon_component_rules','md_builder_ribbon_components') ORDER BY table_name,ordinal_position"
           echo 'Read-only Oracle audit complete.'
