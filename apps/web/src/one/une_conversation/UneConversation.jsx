@@ -3,7 +3,7 @@ import {UneFrame,uneProps} from "../une/shared/UneFrame.jsx";
 import {presentFlowConversationCollections} from "./flowConversationPresenter.js";
 export default function UneConversation(props){
  // AceChatter-owned internal button presentation, not public metadriven settings.
- const p={...uneProps(props,"Conversation"),showRefresh:false,refreshLabel:"Refresh conversations",newMessageNoticeLabel:"New messages"};
+ const p={showRefresh:false,refreshLabel:"Refresh conversations",newMessageNoticeLabel:"New messages",...uneProps(props,"Conversation")};
  // Flow records are already tenant/field/record-authorised; only their presentation
  // is transformed here. All mappings are Page Builder properties.
  const flow=p.conversationSourceMode==="flowRecords"?presentFlowConversationCollections(p):null;
