@@ -1,7 +1,7 @@
 import type {SqlPersistence} from '../system-files/sql-persistence.js';
 import type {RbacEngine} from '../system-files/rbac-engine.js';
 import {isPlatformRecoveryMailConfigured} from './platform-recovery-mailer.js';
-import {defaultRecoveryFlow,readRecoveryFlow,recoveryActionReady,uuidPattern,
+import {readRecoveryFlow,recoveryActionReady,uuidPattern,
  type RecoveryChannelAction,type RecoveryFlowConfig} from './password-recovery-flow-config.js';
 
 const textField=(value:unknown,max:number,label:string)=>{
