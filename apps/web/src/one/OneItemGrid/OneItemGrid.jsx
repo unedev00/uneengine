@@ -1,4 +1,4 @@
-import OneTenantImage from "../shared/OneTenantImage.jsx";
+import OneCardCore from "../shared/OneCardCore.jsx";
 import { evaluateFieldExpression } from "../shared/OneFieldExpression.js";
 import {
   css,
@@ -336,43 +336,13 @@ function ItemGrid({ p, rows }) {
                 if(event.key==='Enter'||event.key===' '){event.preventDefault();activateCard();}
               }}
             >
-              {p.showImage !== false && validImage && (
-                <OneTenantImage
-                  loading="lazy"
-                  src={image}
-                  loadAsset={p.loadAsset}
-                  alt={name}
-                  className="md-product-image"
-                  style={imageStyle}
-                />
-              )}
-              {p.showImage !== false && !validImage && p.missingImageBehavior==="placeholder" && (
-                <span className="md-product-image md-card-image-missing" style={imageStyle} role="img" aria-label="Image unavailable">No image</span>
-              )}
-              {badgeEnabled && <span className="md-product-badge" style={{display:"inline-block",
-                ...(badgePlacement.startsWith("image-")?{
-                  position:"absolute",zIndex:3,
-                  top:badgePlacement.includes("bottom")?undefined:8,
-                  bottom:badgePlacement.includes("bottom")?8:undefined,
-                  left:badgePlacement.includes("left")?8:badgePlacement.includes("center")?"50%":undefined,
-                  right:badgePlacement.includes("right")?8:undefined,
-                  transform:badgePlacement.includes("center")?"translateX(-50%)":undefined
-                }:{}),
-                padding:"3px 8px",borderRadius:999,background:p.badgeBackgroundColor||p.accentColor||"#E4002B",
-                color:p.badgeTextColor||"#fff",
-                fontWeight:p.badgeBold===false?400:700,
-                fontSize:boundedSize(p.badgeTextSize,48)??boundedSize(p.badgeFontSize,48)??"0.75em",
-                fontWeight:[400,500,600,700].includes(Number(p.badgeFontWeight))?Number(p.badgeFontWeight):700}}>{badge.slice(0,120)}</span>}
-              {headerVisible && p.showTitle !== false && (
-                <strong className="md-product-name" style={{
-                  ...headingStyle,order:1,
-                  ...(p.headerBoxHeight!==undefined?{height:Math.max(0,headerHeight),overflow:"hidden"}:{}),
-                  ...(p.headerBorderColor?{border:"1px solid "+p.headerBorderColor}:{}),
-                  ...(p.headerAlignment?{textAlign:p.headerAlignment}:{}),
-                  ...(p.headerBold!==undefined?{fontWeight:p.headerBold?700:400}:{}),
-                  ...(p.wrapText===false?{whiteSpace:"nowrap"}:{})
-                }}>{name}</strong>
-              )}
+              <OneCardCore
+                source={validImage?image:""} header={name} badge={badge} props={p}
+                loadAsset={p.loadAsset} imageStyle={imageStyle}
+                headerStyle={headingStyle}
+                missingImageBehavior={p.missingImageBehavior}
+                designer={p.builderPreview===true||p.previewOnly===true}
+              />
               {p.showDescription === true && description &&
                 <small className="one-muted md-product-description" style={supportingStyle}>{description.slice(0,220)}</small>}
               {detailRows.length>0 && <dl className="md-card-detail-rows">
