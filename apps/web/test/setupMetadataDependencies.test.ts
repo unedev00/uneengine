@@ -87,18 +87,35 @@ test('shared API coalesces only identical default GETs and preserves explicit re
 test('home-page authorization and profile reads run concurrently before assignment resolution', () => {
   const server = readFileSync(new URL('../../server/src/system-support/server.ts', import.meta.url), 'utf8');
   assert.match(server, /const \[\,session\]=await Promise\.all\(\[\s*rbac\.require\(actor\.tenant_id,actor\.user_id,'App:'\+req\.params\.appId,'read'\),\s*sessionMetadata\(db,actor\.tenant_id,actor\.user_id\)\s*\]\);/);
-  assert.match(server, /const assigned=await apps\.homePage\(actor\.tenant_id,req\.params\.appId,/);
-  assert.match(server, /appHomeFormFactor\(factor\),session\.user\.profileId\);/);
+  // Primary and optional Custom assignments are independent reads that start
+  // only after the authorization and session lookup have both succeeded.
+  assert.match(server, /const \[assigned,customHome\]=await Promise\.all\(\[/);
+  assert.match(server, /apps\.homePage\(actor\.tenant_id,req\.params\.appId,\s*appHomeFormFactor\(factor\),session\.user\.profileId\)/);
+  assert.match(server, /apps\.homePage\(actor\.tenant_id,req\.params\.appId,appHomeFormFactor\('Custom'\),session\.user\.profileId\)/);
+  assert.match(server, /if\(!targeted&&assignedResult\.error\)throw assignedResult\.error/);
 });
 
 
 test('Lightning page loading uses its metadata query instead of a redundant existence round trip', () => {
   const runtime = readFileSync(new URL('../../server/src/system-files/page-runtime.ts', import.meta.url), 'utf8');
   assert.match(runtime, /const page=rows\[0\];if\(!page\)throw new Error\('Page not found'\);/);
-  assert.match(runtime, /const page=await this\.metadata\(tenantId,pageApi,variant\)\.catch\(error=>\{\s*if\(error instanceof Error&&error\.message==='Page not found'\)return null;\s*throw error;\s*\}\);\s*return page\?\{page\}:this\.loadLegacy\(tenantId,pageApi\);/);
+  assert.match(runtime, /const page=await this\.metadata\(tenantId,pageApi,variant\)\.catch\(error=>\{\s*if\(error instanceof Error&&error\.message==='Page not found'\)return null;\s*throw error;\s*\}\);/);
+  // Legacy pages retain the per-request entitlement check and must never
+  // become permission-bypassing entries in the published page cache.
+  assert.match(runtime, /if\(!page\)return this\.loadLegacy\(tenantId,pageApi\);/);
+  assert.match(runtime, /const key=this\.publishedCacheKey\(tenantId,pageApi,variant\);/);
+  assert.match(runtime, /this\.invalidatePublishedCache\(tenantId,pageApi\);/);
   assert.doesNotMatch(runtime, /SELECT EXISTS\(\s*SELECT 1 FROM md_page_definitions p JOIN md_lightning_page_details/);
 });
 
+
+test('cached page navigation never mounts previous route components', () => {
+  const runtime = readFileSync(new URL('../src/core/pages/PageRuntime/pageRuntimeViews.tsx', import.meta.url), 'utf8');
+  assert.match(runtime, /const page=routePending\?cached:pageLoad\.page;/);
+  assert.match(runtime, /setPageLoad\(\{routeKey,appId,page:null,error:'',loading:true\}\);/);
+  assert.match(runtime, /JSON\.stringify\(\[appId,pageApiName\?\?'__home__',layout,viewportWidth,profileId\?\?''\]\)/);
+  assert.doesNotMatch(runtime, /pageLoad\.appId===appId\?pageLoad\.page/);
+});
 
 test('login and MFA include landing bootstrap; session restore uses one authenticated bootstrap request', () => {
   const server = readFileSync(new URL('../../server/src/system-support/server.ts', import.meta.url), 'utf8');
