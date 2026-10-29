@@ -40,6 +40,14 @@ export const propertyDefinitions = [
     ]
   },
   {
+    "propertyKey": "navigationLabelFieldApiName",
+    "label": "Navigation item field",
+    "kind": "OBJECT_FIELD",
+    "group": "Fields",
+    "section": "Data",
+    "displayOrder": 299
+  },
+  {
     "propertyKey": "items",
     "label": "Navigation links",
     "kind": "OPTIONS",
