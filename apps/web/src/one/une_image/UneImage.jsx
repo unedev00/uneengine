@@ -37,7 +37,7 @@ export default function UneImage(props){
        boxSizing:"border-box",minWidth:0,display:"flex",alignItems:"center",
        justifyContent:p.headerAlignment==="right"?"flex-end":p.headerAlignment==="center"?"center":"flex-start",
        overflowWrap:"anywhere",
-       height:safe(p.headerBoxHeight,header?44:0)
+       height:placement==="left"||placement==="right"?undefined:safe(p.headerBoxHeight,header?44:0)
      }}
    />
  </figure></UneFrame>;
