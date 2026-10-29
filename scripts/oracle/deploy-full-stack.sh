@@ -44,21 +44,18 @@ trap rollback ERR
 bash "$SOURCE/scripts/oracle/backup-production-sql.sh"
 bash "$SOURCE/scripts/oracle/deploy-api.sh" "$SOURCE" "$SHA"
 API_ACTIVATED=1
-# The new Page Builder requires this SQL-backed API. Never publish an
-# incompatible frontend if the new backend is still serving the generic 404.
-# Use the same local API health endpoint as deploy-api.sh.
-api_health_url="${METADRIVE_API_HEALTH_URL:-http://127.0.0.1:3001/api/health}"
-api_base="${api_health_url%/api/health}"
-api_base="${api_base%/health}"
-catalog_probe="$(mktemp)"
-catalog_status="$(curl -sS -o "$catalog_probe" -w '%{http_code}' --max-time 15 "$api_base/api/metadata/builder-ribbon" || true)"
-if [[ "$catalog_status" == 404 || "$catalog_status" == 000 || "$catalog_status" == 500 || "$catalog_status" == 502 || "$catalog_status" == 503 ]] ||
-   grep -q 'API endpoint not implemented in SQL runtime' "$catalog_probe"; then
-  rm -f "$catalog_probe"
-  echo "SQL-backed Page Builder API is unavailable; frontend publication blocked." >&2
-  exit 1
-fi
-rm -f "$catalog_probe"
+# Never publish the SQL-backed Page Builder frontend unless the API and
+# worker have been activated from this exact immutable release. A protected
+# endpoint returning HTTP 401 cannot prove that it exists, so do not mistake
+# unauthenticated HTTP responses for API readiness.
+api_release="$(systemctl show "$API" -p WorkingDirectory --value)"
+worker_release="$(systemctl show "$WORKER" -p WorkingDirectory --value)"
+[[ "$api_release" == "/opt/metadrive/releases/gh-$SHA" ]] ||
+  { echo "API release mismatch; frontend publication blocked" >&2; exit 1; }
+[[ "$worker_release" == "/opt/metadrive/releases/gh-$SHA" ]] ||
+  { echo "Worker release mismatch; frontend publication blocked" >&2; exit 1; }
+grep -q "api/metadata/builder-ribbon"   "$api_release/apps/server/dist-system/system-support/server.js" ||
+  { echo "SQL-backed builder ribbon API missing from active server release" >&2; exit 1; }
 FRONT_STARTED=1
 bash "$SOURCE/scripts/oracle/deploy-frontend.sh" "$SOURCE/apps/web/dist" "$SHA"
 systemctl is-active --quiet "$API"
