@@ -156,8 +156,8 @@
   --ak-foreground:var(--md-text,#1d1d1f);
   --ak-secondary:var(--md-text-2,#5c5c63);
   --ak-outline:var(--md-separator,#d7d7db);
-  --ak-action:color-mix(in srgb,var(--ak-accent) 68%,black);
-  --ak-link:color-mix(in srgb,var(--ak-accent) 62%,var(--ak-foreground));
+  --ak-action:color-mix(in srgb,var(--ak-accent) 45%,black);
+  --ak-link:color-mix(in srgb,var(--ak-accent) 28%,var(--ak-foreground));
   color:var(--ak-foreground);
 }
 .ak-shell :is(.ak-header,.ak-welcome,.ak-categories,.ak-product,.ak-order,
