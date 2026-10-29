@@ -164,25 +164,28 @@ WHERE d.enabled=true AND d.api_name LIKE 'une\_%' ESCAPE '\'
     WHERE v.tenant_id=d.tenant_id AND v.component_api=d.api_name)
  AND NOT EXISTS (SELECT 1 FROM md_component_properties cp
     WHERE cp.tenant_id=d.tenant_id AND cp.component_id=d.id)
+ -- Conservative on purpose: flattened and structured Flow metadata may both
+ -- hold old component IDs; avoid disabling a renderer for either representation.
  AND NOT EXISTS (SELECT 1 FROM md_flow_node_properties f
-    WHERE f.tenant_id=d.tenant_id AND f.api_name IN
-      ('componentApiName','customComponentApiName','libraryComponentId')
-      AND f.value_text=d.api_name)
+    WHERE f.tenant_id=d.tenant_id AND position(d.api_name in COALESCE(f.value_text,''))>0)
  AND NOT EXISTS (SELECT 1 FROM md_flow_editor_values f
-    WHERE f.tenant_id=d.tenant_id AND f.value_text=d.api_name
-      AND f.property_path ~ '(^|/)(componentApiName|customComponentApiName|libraryComponentId)$')
+    WHERE f.tenant_id=d.tenant_id AND position(d.api_name in COALESCE(f.value_text,''))>0)
  AND NOT EXISTS (SELECT 1 FROM md_object_actions a
     WHERE a.tenant_id=d.tenant_id AND a.component_api_name=d.api_name)
  AND NOT EXISTS (SELECT 1 FROM md_global_quick_actions a
     WHERE a.tenant_id=d.tenant_id AND a.component_api_name=d.api_name)
  AND NOT EXISTS (SELECT 1 FROM md_system_definitions s
-    WHERE s.tenant_id=d.tenant_id AND s.kind='dashboards'
-      AND position(d.api_name in s.properties::text)>0)
+    WHERE s.tenant_id=d.tenant_id AND position(d.api_name in s.properties::text)>0)
  AND NOT EXISTS (
    SELECT 1 FROM md_tenant_app_installed_versions installed
    JOIN md_app_package_component_templates template
      ON template.app_id=installed.app_id AND template.version=installed.version
    WHERE installed.tenant_id=d.tenant_id AND template.api_name=d.api_name
+ )
+ AND NOT EXISTS (SELECT 1 FROM md_tenant_app_installed_versions installed
+   JOIN md_app_package_page_component_templates t
+     ON t.app_id=installed.app_id AND t.version=installed.version
+   WHERE installed.tenant_id=d.tenant_id AND t.component_api=d.api_name
  );
 
 -- Saved page props, versioned layout nodes and business data have not been deleted.
