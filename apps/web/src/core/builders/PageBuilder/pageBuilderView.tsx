@@ -994,7 +994,10 @@ function PageBuilder({
     if (!target) return;
     // Lock prevents accidental edits; an explicit unlock is always allowed.
     if (isCanvasLocked(target) && update.properties?.editorLocked !== false) return;
-    applyPage({ ...page, components: page.components.map((component) => component.id === id ? { ...component, ...update } : component) });
+    const nextUpdate=target.type==='Custom:smart_toggle'&&update.position
+      ? {...update,position:{...update.position,height:Math.min(update.position.height,
+          Math.max(24,Math.round(update.position.width/1.6)))}}:update;
+    applyPage({ ...page, components: page.components.map((component) => component.id === id ? { ...component, ...nextUpdate } : component) });
   };
   const moveLayer = (id: string, offset: -1 | 1) => {
     const index = page.components.findIndex(component => component.id === id);
@@ -2061,7 +2064,10 @@ function PageBuilder({
       ...previewProperties,
       ...component.properties,
       ...componentLayoutProps(component.properties, device),
-      label: component.label,
+      ...(customDefinition?.apiName?.startsWith('smart_') && component.position && page.layoutMode==='free-canvas'
+        ? {width:component.position.width,height:component.position.height}:{}),
+      label: customDefinition?.apiName?.startsWith('smart_') && typeof component.properties.label==='string'
+        ? component.properties.label : component.label,
       properties: component.properties,
       object: page.pageType === 'Record Page' ? targetObject : undefined,
       device,

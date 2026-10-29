@@ -6,3 +6,5 @@
 .smart-formula-list{position:absolute;left:0;top:26px;z-index:5100;min-width:210px;max-height:200px;overflow:auto;background:#fff;border:1px solid #a3b4ca;box-shadow:0 9px 25px #0002}
 .smart-formula-list button{display:block;width:100%;background:white;color:#29476a;text-align:left;border:0;padding:7px 9px;cursor:pointer}
 .smart-formula-list button:hover{background:#dff0ff}
+
+.smart-formula-list{z-index:6000!important;overflow-y:auto;pointer-events:auto}
