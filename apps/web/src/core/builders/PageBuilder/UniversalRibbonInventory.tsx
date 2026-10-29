@@ -1,4 +1,4 @@
-import {useState} from 'react';
+import {useMemo,useState} from 'react';
 import {auditUniversalRibbonCoverage} from './universalRibbonCoverage.mjs';
 import {createPortal} from 'react-dom';
 import RibbonColorPalette from './RibbonColorPalette';
@@ -84,6 +84,27 @@ if(import.meta.env.DEV&&(universalRibbonCoverage.missing.length||universalRibbon
   throw new Error('UNE ribbon registry coverage failed: '+JSON.stringify(universalRibbonCoverage));
 export const universalRibbonInventoryCount=Array.from(slots.values()).reduce((total,groups)=>total+Array.from(groups.values()).reduce((sum,defs)=>sum+defs.length,0),0);
 export const universalRibbonComponentCount=validManifests.length;
+
+// Include additional active SQL/library-defined UNE properties in the SAME
+// shared inventory. The complete catalog is passed for every component; never
+// derive the layout from just the selected component's property definitions.
+function mergeCatalogSlots(tab:Tab,catalog:readonly LibraryComponentMetadata[]):Map<string,Definition[]>{
+ const baseline=slots.get(tab);
+ const result=new Map<string,Definition[]>(Array.from(baseline??[],([section,defs])=>[section,[...defs]]));
+ const known=new Set(definitionMap.keys());
+ for(const component of catalog){
+   if(!/^une_[a-z0-9_]+$/.test(component.apiName))continue;
+   for(const def of component.propertyDefinitions??[]){
+     if(known.has(def.propertyKey))continue;
+     known.add(def.propertyKey);
+     const [target,section]=place(def.propertyKey);
+     if(target===tab)result.get(section)?.push(def);
+   }
+ }
+ for(const defs of result.values())defs.sort((a,b)=>a.propertyKey.localeCompare(b.propertyKey));
+ return result;
+}
+
 
 function PropertyEditor({definition,enabled,reviewOnly=false,properties,onChange,objects,flows,onOpenComplex,complexSelected}:{
  definition:Definition;enabled:boolean;reviewOnly?:boolean;properties:Properties;onChange:(next:Properties)=>void;
@@ -175,10 +196,11 @@ export type UniversalBuilderControls={
  onOpenSource?:()=>void;
  onOpenFilters?:()=>void;
 };
-export default function UniversalRibbonInventory({tab,definition,componentId,properties,onChange,objects=[],flows=[],builder}:{
+export default function UniversalRibbonInventory({tab,definition,componentId,properties,onChange,objects=[],flows=[],catalog=[],builder}:{
  tab:Tab;definition?:LibraryComponentMetadata;componentId?:string;properties:Properties;
  onChange:(next:Properties)=>void;
  objects?:readonly ObjectMetadata[];flows?:readonly FlowDefinitionMetadata[];
+ catalog?:readonly LibraryComponentMetadata[];
  builder?:UniversalBuilderControls;
 }){
  // Every component uses the same inventory, section order and control positions.
@@ -192,7 +214,7 @@ export default function UniversalRibbonInventory({tab,definition,componentId,pro
  const selectedDefinitions=new Map((definition?.propertyDefinitions??[]).map(item=>[item.propertyKey,item]));
  const enabled=new Set(selectedDefinitions.keys());
  const canEditCanvas=builder?.layoutMode==='free-canvas'&&Boolean(builder.position)&&Boolean(builder.onPositionChange);
- const groups=slots.get(tab);
+ const groups=useMemo(()=>mergeCatalogSlots(tab,catalog),[tab,catalog]);
  if(!groups)return null;
  return <div className="une-universal-ribbon" aria-label="Universal UNE property ribbon"
    data-component={definition?.apiName??'none'} data-component-id={componentId??'none'} data-inventory-count={universalRibbonInventoryCount}
