@@ -16,3 +16,10 @@
 .smart-lookup-menu button{display:block;width:100%;text-align:left;background:white;border:0;
  padding:8px 10px;color:#213d5f;cursor:pointer}
 .smart-lookup-menu button:hover{background:#eaf3ff}
+
+.smart-tabs-heading{display:block;padding:5px 7px}
+.smart-badge.image-top-center{left:50%;right:auto;transform:translateX(-50%)}
+.smart-badge.image-bottom-center{top:auto;bottom:8px;left:50%;right:auto;transform:translateX(-50%)}
+.smart-badge.text-left{top:auto;bottom:8px;left:8px;right:auto}
+.smart-badge.text-center{top:auto;bottom:8px;left:50%;right:auto;transform:translateX(-50%)}
+.smart-badge.text-right,.smart-badge.text-bottom{top:auto;bottom:8px;right:8px}
