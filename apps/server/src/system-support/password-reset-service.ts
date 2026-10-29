@@ -2,11 +2,12 @@ import {createHash,createHmac,randomBytes,randomInt,randomUUID,timingSafeEqual} 
 import type {SqlPersistence} from '../system-files/sql-persistence.js';
 import type {AuthenticationService} from '../system-files/authentication.js';
 import {checkPasswordHistory,retainPasswordHistory} from './password-policy-service.js';
+import {isPlatformRecoveryMailConfigured} from './platform-recovery-mailer.js';
 import {readRecoveryFlow,renderRecoveryText,recoveryActionReady,
  type RecoveryChannel} from './password-recovery-flow-config.js';
 
 const digest=(s:string)=>createHash('sha256').update(s).digest('hex');
-const emailPattern=/^[^\\s@]{1,64}@[^\\s@]{1,189}$/;
+const emailPattern=/^[^\s@]{1,64}@[^\s@]{1,189}$/;
 const acknowledgement='If this account exists, recovery instructions have been sent.';
 const invalidOtp='Incorrect or expired verification code.';
 type Sender=(tenantId:string,credentialId:string,from:string,to:string,subject:string,body:string)=>Promise<void>;
@@ -32,8 +33,9 @@ export class PasswordResetService {
   private readonly send:Sender,private readonly httpCallout?:Callout){}
  async options(tenantId:string){
   const flow=await readRecoveryFlow(this.db,tenantId);
-  const mailReady=!!process.env.METADRIVE_PASSWORD_RESET_OTP_SECRET
-   &&Buffer.byteLength(process.env.METADRIVE_PASSWORD_RESET_OTP_SECRET)>=32;
+  const mailReady=isPlatformRecoveryMailConfigured()
+   &&(flow.method==='LINK'||!!process.env.METADRIVE_PASSWORD_RESET_OTP_SECRET
+     &&Buffer.byteLength(process.env.METADRIVE_PASSWORD_RESET_OTP_SECRET)>=32);
   return {otpLength:flow.otpLength,method:flow.method,
    channels:{email:mailReady,
     sms:flow.method==='OTP'&&recoveryActionReady(flow.channels.sms)&&!!this.httpCallout,
@@ -91,7 +93,7 @@ export class PasswordResetService {
     }
     const subject=renderRecoveryText(flow.emailSubject,verification,expires,user.name);
     const text=flow.emailTemplate.includes('{!Verification.Value}')
-     ?flow.emailTemplate:flow.emailTemplate+'\\n{!Verification.Value}';
+     ?flow.emailTemplate:flow.emailTemplate+'\n{!Verification.Value}';
     await this.send(tenantId,'','',email,subject,
      renderRecoveryText(text,verification,expires,user.name));
    }else{
