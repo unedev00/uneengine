@@ -36,8 +36,8 @@ test('OneChatter installation creates a new editable metadata page, reuses exist
   assert.equal(await seedOneChatterInstalledPage(client as never,tenant),true);
   assert.equal(calls.filter(x=>x.sql.includes('INSERT INTO md_lightning_page_nodes')).length,2);
   assert.equal(calls.filter(x=>x.sql.includes('INSERT INTO md_app_home_pages')).length,3);
-  assert.ok(calls.some(x=>x.params.includes('Custom:une_conversation')));
-  assert.ok(calls.some(x=>x.params.includes('Custom:une_input')));
+  assert.ok(calls.some(x=>x.params.includes('Custom:onechatter_conversation')));
+  assert.ok(calls.some(x=>x.params.includes('Custom:onechatter_input')));
   assert.ok(calls.some(x=>x.sql.includes('md_lightning_page_details')&&x.sql.includes("'Active'")));
   assert.ok(calls.some(x=>x.params.includes('AceChatterSendMessage')));
   assert.ok(!calls.some(x=>/UPDATE |DELETE |INSERT INTO md_flow_definitions|INSERT INTO md_record_values|INSERT INTO md_app_seed_pages/.test(x.sql)));

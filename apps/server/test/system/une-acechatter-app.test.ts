@@ -7,8 +7,8 @@ import {seedUneAceChatterInstalledPages}
  from '../../src/app-seeders/une-acechatter-pages.js';
 
 const tenant='tenant-a';
-const componentNames=['une_conversation','une_modal','une_tabs','une_stack',
- 'une_lookup','une_input','une_button','une_search'];
+const componentNames=['uneacechatter_conversation','uneacechatter_modal','uneacechatter_tabs','uneacechatter_stack',
+ 'uneacechatter_lookup','uneacechatter_input','uneacechatter_button','uneacechatter_search'];
 const flows=['AceChatterLoadConversations','AceChatterLoadCommunications',
  'AceChatterLoadContacts','AceChatterCreateConversation',
  'AceChatterFindConversationByPhone','AceChatterSendMessage'];
@@ -57,10 +57,10 @@ test('install creates four independent editable layouts and only references exis
  assert.equal(calls.filter(x=>x.sql.includes('INSERT INTO md_lightning_page_activation')).length,4);
  const nodes=calls.filter(x=>x.sql.includes('INSERT INTO md_lightning_page_nodes'));
  assert.equal(nodes.length,48);
- assert.ok(nodes.some(x=>x.params.includes('Custom:une_conversation')));
- assert.ok(nodes.some(x=>x.params.includes('Custom:une_modal')));
- assert.ok(nodes.some(x=>x.params.includes('Custom:une_lookup')));
- assert.ok(nodes.every(x=>String(x.params[3]).startsWith('Custom:une_')));
+ assert.ok(nodes.some(x=>x.params.includes('Custom:uneacechatter_conversation')));
+ assert.ok(nodes.some(x=>x.params.includes('Custom:uneacechatter_modal')));
+ assert.ok(nodes.some(x=>x.params.includes('Custom:uneacechatter_lookup')));
+ assert.ok(nodes.every(x=>String(x.params[3]).startsWith('Custom:uneacechatter_')));
  const encoded=calls.filter(x=>x.sql.includes('INSERT INTO md_lightning_page_node_properties'));
  for(const flow of flows)assert.ok(encoded.some(x=>x.params.includes(flow)),'missing '+flow);
  assert.ok(encoded.some(x=>x.params.includes('/props/stateBindings/messages')
