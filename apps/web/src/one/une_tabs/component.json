@@ -162,6 +162,13 @@
       "kind": "COLOR",
       "displayOrder": 67,
       "defaultValue": ""
+    },
+    {
+      "propertyKey": "helpText",
+      "label": "Help text",
+      "kind": "TEXT",
+      "displayOrder": 860,
+      "defaultValue": ""
     }
   ],
   "eventDefinitions": [
