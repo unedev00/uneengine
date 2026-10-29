@@ -34,8 +34,12 @@ test('independent values have independent labelled table columns', () => {
   assert.match(interviews, /<th>Flow<\/th><th>Version<\/th>/);
   const routes = source('core/pages/PageRouteDirectory/PageRouteDirectory.tsx');
   assert.match(routes, /<th>Destination<\/th><th>Type<\/th><th>Destination API Name<\/th>/);
+  const logs = source('core/automation/FlowLogs/FlowLogs.tsx');
+  assert.match(logs, /<th scope="col">Flow<\/th>\s*<th scope="col">API Name<\/th>/);
   const triggers = source('core/automation/FlowTriggerExplorer/FlowTriggerExplorer.tsx');
   assert.match(triggers, /<th scope="col">Flow<\/th><th scope="col">API Name<\/th>/);
   const permissions = source('core/security/Permissions/permissionsView.tsx');
   assert.match(permissions, /<th>Object<\/th><th>API Name<\/th><th>Policy status<\/th>/);
+  assert.match(permissions, /<th>Field<\/th><th>API Name<\/th>/);
+  assert.doesNotMatch(permissions, /<td><strong>\{field\.label\}<\/strong><small>\{field\.apiName\}<\/small>/);
 });
