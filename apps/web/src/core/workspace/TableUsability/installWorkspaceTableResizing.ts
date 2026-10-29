@@ -33,6 +33,7 @@ function ensureWidths(table: HTMLTableElement, headers: HTMLTableCellElement[]) 
     table.style.width = widths.reduce((sum, value) => sum + value, 0) + 'px';
     table.style.minWidth = '0';
     table.style.tableLayout = 'fixed';
+    table.classList.add('md-table-width-set');
   }
   const cols = Array.from(group.children) as HTMLTableColElement[];
   return cols.length === headers.length ? cols : null;
@@ -112,7 +113,7 @@ export function installWorkspaceTableResizing() {
   const scan = (node: Node) => {
     if (!(node instanceof Element)) return;
     if (node instanceof HTMLTableElement) enhance(node);
-    else {
+    else if (node.matches('thead, th, tr') && node.closest('thead')) {
       const parent = node.closest('table');
       if (parent instanceof HTMLTableElement) enhance(parent);
     }
