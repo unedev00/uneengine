@@ -1,4 +1,9 @@
 import test from 'node:test';
+import vm from 'node:vm';
+import React from 'react';
+import {renderToStaticMarkup} from 'react-dom/server';
+import {buildBundledComponent} from '../../../scripts/component-catalog.mjs';
+
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {evaluateFieldExpression} from '../src/one/shared/OneFieldExpression.js';
@@ -98,4 +103,42 @@ test('new Calendar Layout controls and navigation, container and image renderers
  const builder=src('../src/core/builders/PageBuilder/pageBuilderView.tsx');
  assert.match(builder,/component.apiName==='une_navigation'\?'Navigation Bar'/);
  assert.match(builder,/data-une-v2/);
+});
+
+async function renderUne(apiName,props){
+ const descriptor=JSON.parse(src('../src/one/'+apiName+'/component.json'));
+ const built=await buildBundledComponent(descriptor);
+ const sandbox={React,module:{exports:{}},Date,Intl,URL,crypto:globalThis.crypto};
+ vm.runInNewContext(built.compiledJs,sandbox);
+ return renderToStaticMarkup(React.createElement(sandbox.module.exports.default,props));
+}
+test('calendar week view renders only chosen days, respects selected first day and selected-date color',async()=>{
+ const html=await renderUne('une_calendar',{
+  view:'week',selectedDate:'2026-10-21',firstDay:'wed',showDays:['wed','fri'],
+  defaultValueColor:'#123456',labelColor:'#abcdef',defaultValue:'today'
+ });
+ assert.match(html,/--une-calendar-columns:2/);
+ assert.match(html,/Select 2026-10-21/);
+ assert.match(html,/Select 2026-10-23/);
+ assert.doesNotMatch(html,/Select 2026-10-22/);
+ assert.match(html,/#123456/i);
+});
+test('navigation and container preserve usable rendering with new text, image, badge and direction options',async()=>{
+ const nav=await renderUne('une_navigation',{
+  navigationDirection:'vertical',record:{Heading:'Menu'},textSource:'@Heading',
+  items:[{label:'Home',value:'home',imageSrc:'https://example.com/nav.png'}],imageFill:'fit'
+ });
+ assert.match(nav,/flex-direction:column/);
+ assert.match(nav,/Menu/);
+ assert.match(nav,/Home/);
+ assert.match(nav,/object-fit:contain/);
+ const container=await renderUne('une_container',{
+  imageSource:'@Image',textSource:'@Heading',badgeText:'@Badge',
+  badgeVisible:true,imageFill:'stretch',
+  record:{Image:'https://example.com/card.png',Heading:'Store',Badge:'NEW'}
+ });
+ assert.match(container,/une-container-root/);
+ assert.match(container,/Store/);
+ assert.match(container,/NEW/);
+ assert.match(container,/object-fit:fill/);
 });
