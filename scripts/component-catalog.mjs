@@ -1,6 +1,6 @@
 import { readFile, realpath } from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { build } from 'esbuild';
 
 export const webSourceRoot = fileURLToPath(new URL('../apps/web/src/', import.meta.url));
@@ -21,11 +21,15 @@ export async function loadComponentCatalog() {
     if (!within(oneRoot, file)) throw Error('Component descriptor escapes One');
     const definition = await readJson(file);
     if (path.basename(path.dirname(file)) !== definition.apiName) throw Error('Component folder must match its API name');
-    return definition;
+    // App code owns UNE settings; JSON descriptors now contain only identity,
+    // renderer and placement metadata.
+    const module=await import(pathToFileURL(path.join(path.dirname(file),'app-properties.mjs')).href);
+    if(!Array.isArray(module.propertyDefinitions))throw Error('Missing UNE app properties: '+definition.apiName);
+    return {...definition,propertyDefinitions:module.propertyDefinitions};
   }));
   const core = await readJson(path.join(webSourceRoot, 'core/components/BundledCatalog/manifest.json'));
   // Shared appearance is a declarative UNE mixin, not a second rendering engine.
-  const uneAppearance=await readJson(path.join(oneRoot,'une/shared/appearance-properties.json'));
+  const {appearanceProperties:uneAppearance}=await import(pathToFileURL(path.join(oneRoot,'une/shared/appearance-properties.mjs')).href);
   const merged=one.map(definition=>{
     if(!definition.apiName.startsWith('une_'))return definition;
     const own=definition.propertyDefinitions??[],keys=new Set(own.map(p=>p.propertyKey));
@@ -37,7 +41,8 @@ export async function loadComponentCatalog() {
     if (names.has(component.apiName)) throw Error('Duplicate bundled API name: ' + component.apiName);
     names.add(component.apiName);
   }
-  return { schemaVersion: manifest.schemaVersion, commonProperties: manifest.commonProperties, components };
+  const {commonProperties}=await import(pathToFileURL(path.join(oneRoot,'common-properties.mjs')).href);
+  return { schemaVersion: manifest.schemaVersion, commonProperties, components };
 }
 
 /** Bundle local source imports before registration. Runtime and sandbox still

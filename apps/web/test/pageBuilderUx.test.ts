@@ -64,8 +64,10 @@ test('ribbon keeps the nine-step component journey with icon-led, accessible tab
   assert.match(source,/aria-controls="page-builder-tab-content"/);
 });
 
-test('card gallery exposes independent part metadata that is consumed by runtime', () => {
-  const component=JSON.parse(readFileSync(new URL('../src/one/une_item_grid/component.json',import.meta.url),'utf8'));
+test('card gallery properties live in application code and are consumed by runtime', async () => {
+  const component={propertyDefinitions:(await import('../src/one/une_item_grid/app-properties.mjs')).propertyDefinitions};
+  const registration=JSON.parse(readFileSync(new URL('../src/one/une_item_grid/component.json',import.meta.url),'utf8'));
+  assert.deepEqual(registration.propertyDefinitions,[]);
   const runtime=readFileSync(new URL('../src/one/OneItemGrid/OneItemGrid.jsx',import.meta.url),'utf8');
   const keys=new Set(component.propertyDefinitions.map((definition:{propertyKey:string})=>definition.propertyKey));
   for(const key of ['imageWidth','imageHeight','imageFit','imageAspectRatio','imageShape',

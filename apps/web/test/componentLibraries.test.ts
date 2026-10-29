@@ -64,7 +64,7 @@ test('library starts in Core with two library choices and no custom registration
     onSave: async () => {}, onDelete: async () => {}, onPublish: async () => {}, onRollback: async () => {}
   }));
   assert.match(markup, /Core library/);
-  assert.match(markup, /UNE library/);
+  assert.doesNotMatch(markup, /UNE library/);
   assert.match(markup, /One- library/);
   assert.match(markup, /Core · Page components/);
   assert.doesNotMatch(markup, /id="library-component-label"/);
@@ -103,7 +103,7 @@ test('retired UNE insert components are hidden but retained components remain',(
  const retained=['une_button','une_input','une_calendar','une_item_grid'];
  const privatelyRegistered=['une_cart','une_search','une_modal'];
  const entries=[...names,...retained,...privatelyRegistered].map(name=>definition(name));
- assert.deepEqual(publishedPageLibraryComponents(entries).map(d=>d.apiName),retained);
+ assert.deepEqual(publishedPageLibraryComponents(entries).map(d=>d.apiName),[]);
  assert.ok(findRegisteredComponent(entries,'une_table','page'));
  assert.ok(findRegisteredComponent(entries,'une_cart','page'));
  assert.ok(!publishedPageLibraryComponents(entries).some(d=>d.apiName==='une_cart'));
@@ -112,6 +112,6 @@ test('retired UNE insert components are hidden but retained components remain',(
 test('UNE Conversation is AceChatter-only, hidden from new Page Builder placements', async () => {
  const { RETIRED_UNE_PAGE_BUILDER_COMPONENTS }=await import('../src/core/builders/PageBuilder/pageBuilderPalette');
  assert.ok(RETIRED_UNE_PAGE_BUILDER_COMPONENTS.has('une_conversation'));
- assert.deepEqual(publishedPageLibraryComponents([definition('une_conversation'),definition('une_button')]).map(x=>x.apiName),['une_button']);
+ assert.deepEqual(publishedPageLibraryComponents([definition('une_conversation'),definition('une_button')]).map(x=>x.apiName),[]);
  assert.equal(findRegisteredComponent([definition('une_conversation')],'une_conversation','page')?.apiName,'une_conversation');
 });

@@ -1,4 +1,5 @@
-[
+// App-owned shared visual defaults, not exposed to the SQL component registry.
+export const appearanceProperties = [
   {
     "propertyKey": "fontFamily",
     "label": "Font family",
@@ -147,4 +148,4 @@
     "kind": "NUMBER",
     "displayOrder": 220
   }
-]
+];

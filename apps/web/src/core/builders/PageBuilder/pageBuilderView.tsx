@@ -578,6 +578,7 @@ function PageBuilder({
   const selectedCustomDefinition = selected?.type.startsWith('Custom:')
     ? findRegisteredComponent(libraryComponents, selected.type.slice('Custom:'.length), 'page')
     : undefined;
+  const selectedAppOwnedUne=Boolean(selected?.type.startsWith('Custom:une_'));
   const editingConversation=selectedCustomDefinition?.apiName==='une_conversation';
   // Child element selection affects the inspector only; runtime DOM is unchanged.
   const conversationEditorDefinition=editingConversation
@@ -2593,8 +2594,9 @@ function PageBuilder({
             </span>
           </div>
         </div>
-        <div id="page-builder-tab-content" ref={ribbonStripRef} onScroll={measureRibbonOverflow} className="office-ribbon-content" role="tabpanel"
+        <div id="page-builder-tab-content" data-app-owned-une={selectedAppOwnedUne?'true':'false'} ref={ribbonStripRef} onScroll={measureRibbonOverflow} className="office-ribbon-content" role="tabpanel"
           aria-label={ribbonTab} aria-labelledby={`page-builder-tab-${Math.max(0,ribbonTabsVisible.indexOf(ribbonTab))}`}>
+          {selectedAppOwnedUne && ribbonTab.startsWith('Component ') && <div className="une-app-owned-note" role="status">UNE component properties are maintained in application code, not in the Component Library or Page Builder ribbon.</div>}
           {selected && editingConversation && (['Component Data','Component Content','Component Properties','Component Layout','Component Responsive','Component Action'] as string[]).includes(ribbonTab) &&
             <div className="office-ribbon-group office-ribbon-conversation-parts">
               <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Edit conversation element</span>

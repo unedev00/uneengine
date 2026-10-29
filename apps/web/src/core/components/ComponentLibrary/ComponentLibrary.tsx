@@ -20,7 +20,7 @@ export default function ComponentLibrary({
   onPublish: (apiName: string) => Promise<void>;
   onRollback: (apiName: string, version: number) => Promise<void>;
 }) {
-  const visibleComponents=components.filter(component=>component.apiName!=='une_conversation'&&component.apiName!=='une_cart'&&component.apiName!=='une_search'&&component.apiName!=='une_modal');
+  const visibleComponents=components.filter(component=>!component.apiName.startsWith('une_'));
   const [editingApiName, setEditingApiName] = useState('');
   const [apiName, setApiName] = useState('');
   const [manualApiName,setManualApiName]=useState(false);
@@ -38,7 +38,7 @@ export default function ComponentLibrary({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [catalogSearch, setCatalogSearch] = useState('');
-  const [activeLibrary, setActiveLibrary] = useState<'Core' | 'One-' | 'UNE'>('Core');
+  const [activeLibrary, setActiveLibrary] = useState<'Core' | 'One-'>('Core');
   const [publicationStatus, setPublicationStatus] = useState<'Draft' | 'Published'>('Draft');
   const [restoreVersion, setRestoreVersion] = useState(0);
 
@@ -181,32 +181,30 @@ export default function ComponentLibrary({
   const visibleDashboardWidgets = standardDashboardComponents.filter(matchesSearch);
   const catalog = uniqueLibraryComponents(visibleComponents);
   const coreComponents = catalog.filter(component => component.scope === 'platform-system');
-  const uneComponents = catalog.filter(component => component.apiName.startsWith('une_'));
   const customComponents = catalog.filter(component => component.scope !== 'platform-system' && !component.apiName.startsWith('une_'));
   const visibleCoreComponents = coreComponents.filter(matchesSearch);
   const visibleCustomComponents = customComponents.filter(component => matchesSearch({ ...component, label: libraryComponentLabel(component) }));
-  const visibleUneComponents = uneComponents.filter(component => matchesSearch({ ...component, label: libraryComponentLabel(component) }));
   const totalCount = standardPageComponents.length + standardDashboardComponents.length + catalog.length;
-  const libraryCount = activeLibrary === 'Core' ? totalCount-customComponents.length-uneComponents.length : activeLibrary === 'UNE' ? uneComponents.length : customComponents.length;
+  const libraryCount = activeLibrary === 'Core' ? totalCount-customComponents.length : customComponents.length;
   const shownCount = activeLibrary === 'Core'
     ? visibleStandardPages.length + visibleDashboardWidgets.length + visibleCoreComponents.length
-    : activeLibrary === 'UNE' ? visibleUneComponents.length : visibleCustomComponents.length;
+    : visibleCustomComponents.length;
 
   return <div className="component-library-page">
     <div className="page-heading">
-      <div><div className="eyebrow">Setup / Platform Tools</div><h1>Component Libraries</h1><p>Core contains built-in platform components. UNE contains reusable iOS-style components. One- contains tenant components for pages, dashboards, and Flows.</p></div>
+      <div><div className="eyebrow">Setup / Platform Tools</div><h1>Component Libraries</h1><p>Core contains built-in platform components. One- contains tenant components for pages, dashboards, and Flows. UNE components are maintained directly by their applications.</p></div>
       {canManage && <button className="btn btn-brand" onClick={() => { reset(); setActiveLibrary('One-'); }}><Plus size={14} />Register One- component</button>}
     </div>
     {!canManage && <div className="info-callout component-library-notice">You can use shared components in builders. A user with the <strong>Manage tenant components</strong> permission is required to register, update, or remove library entries.</div>}
     {error && <div className="auth-error" role="alert">{error}</div>}
     <div className="component-library-layout" style={activeLibrary !== 'One-' || !canManage ? { gridTemplateColumns: 'minmax(0, 1fr)' } : undefined}>
       <section className="surface component-library-list">
-        <div className="list-view-header"><div><div className="list-view-label">Shared catalog</div><h2>All components</h2><span>{totalCount} components · {standardPageComponents.length + standardDashboardComponents.length + coreComponents.length} Core · {customComponents.length} One- · {uneComponents.length} UNE</span></div></div>
+        <div className="list-view-header"><div><div className="list-view-label">Shared catalog</div><h2>All components</h2><span>{totalCount} components · {standardPageComponents.length + standardDashboardComponents.length + coreComponents.length} Core · {customComponents.length} One-</span></div></div>
         <label className="form-label" htmlFor="component-library-search">Search components
           <input id="component-library-search" className="form-control" type="search" value={catalogSearch} onChange={(event) => setCatalogSearch(event.target.value)} placeholder="Search label, API name or description" />
         </label>
         <div style={{ display: 'flex', gap: 8, padding: '0 14px' }} role="group" aria-label="Component library">
-          {(['Core', 'UNE', 'One-'] as const).map(name => <button key={name} className={`btn ${activeLibrary === name ? 'btn-brand' : ''}`} aria-pressed={activeLibrary === name} onClick={() => setActiveLibrary(name)}>{name} library</button>)}
+          {(['Core', 'One-'] as const).map(name => <button key={name} className={`btn ${activeLibrary === name ? 'btn-brand' : ''}`} aria-pressed={activeLibrary === name} onClick={() => setActiveLibrary(name)}>{name} library</button>)}
         </div>
         <p className="properties-help">Showing {shownCount} of {libraryCount} components in {activeLibrary}</p>
         {activeLibrary === 'Core' && [
@@ -220,16 +218,6 @@ export default function ComponentLibrary({
             <div className="library-component-info"><strong>{component.label}</strong><code>{component.apiName}</code><small>{section.label}</small><p>{component.description}</p></div>
           </article>)}
         </div>)}
-        {activeLibrary === 'UNE' && <div className="component-library-section">
-           <div className="component-library-section-heading"><h3>UNE · iOS-inspired components</h3>
-             <span>Published from the shared SQL registry; configured with Page Builder</span></div>
-           {visibleUneComponents.map(component => <article className="library-component-card" key={component.apiName}>
-             <span className="component-option-icon"><Puzzle size={16}/></span>
-             <div className="library-component-info"><strong>{component.label}</strong><code>{component.apiName}</code>
-               <small>{component.surfaces.join(' · ')} · v{component.version}</small><p>{component.description}</p></div>
-           </article>)}
-           {!uneComponents.length && <div className="component-library-empty">UNE components will appear after SQL registration.</div>}
-        </div>}
         {activeLibrary === 'One-' && <div className="component-library-section">
           <div className="component-library-section-heading"><h3>One- · Custom components</h3><span>Registered in this shared library</span></div>
         {visibleCustomComponents.map((component) => <article className={`library-component-card ${editingApiName === component.apiName ? 'selected' : ''}`} key={component.apiName}>

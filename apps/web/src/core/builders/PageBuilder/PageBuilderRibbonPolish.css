@@ -118,3 +118,10 @@
 .office-builder-ribbon #page-builder-tab-content:has(>.une-universal-ribbon){scrollbar-width:thin!important;scrollbar-color:#9aaec8 transparent!important;overflow-x:auto!important;overflow-y:hidden!important;height:158px!important;min-height:158px!important;max-height:158px!important;direction:ltr!important;padding:3px 8px!important}
 .office-builder-ribbon #page-builder-tab-content:has(>.une-universal-ribbon)::-webkit-scrollbar{display:block!important;height:9px!important}
 .office-builder-ribbon #page-builder-tab-content:has(>.une-universal-ribbon)::-webkit-scrollbar-thumb{background:#9aaec8;border-radius:8px}
+
+/* All UNE applications own their properties. Never render duplicate SQL/ribbon
+   property editors over an existing application component. Shared tenant-built
+   components continue to use their own editor without this suppression. */
+.office-builder-ribbon #page-builder-tab-content[data-app-owned-une="true"][aria-label^="Component "]>:not(.une-app-owned-note){display:none!important}
+.office-builder-ribbon #page-builder-tab-content[data-app-owned-une="true"][aria-label^="Component "]{height:82px!important;min-height:82px!important;max-height:82px!important;overflow:hidden!important}
+.office-builder-ribbon .une-app-owned-note{display:flex;align-items:center;max-width:100%;padding:12px 18px;color:#44546b;font:12px/18px "Segoe UI",Arial,sans-serif}
