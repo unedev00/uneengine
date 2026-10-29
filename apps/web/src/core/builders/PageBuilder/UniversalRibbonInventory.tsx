@@ -47,7 +47,8 @@ function place(key:string):[Tab,string]{
     return ['Component Layout','Size'];
   if(/(?:padding|margin|gap|density|columns|rows|span|ratio|position|direction|wrap|layoutContainer|splitRatio|corner|xOffset|yOffset)/i.test(key))
     return ['Component Layout',/padding|margin|gap|density/i.test(key)?'Spacing':/position|offset/i.test(key)?'Position':/layoutContainer/i.test(key)?'Nesting':'Container'];
-  if(/^(theme|surface|tone|accentColor|glassBlur)$/.test(key))return ['Component Properties','Appearance'];
+  if(key==='surface')return ['Component Properties','Surface'];
+  if(/^(theme|tone|accentColor|glassBlur)$/.test(key))return ['Component Properties','Appearance'];
   if(/^(?:backgroundColor|borderColor|textColor|radius|shadow|opacity)$/.test(key))return ['Component Properties','Surface'];
   if(/^card(?:Background|Border|Radius|Shadow|Hover|Density)/.test(key))return ['Component Properties','Card'];
   if(/^heading(?:Font|Color|Text|Line)/.test(key))return ['Component Properties','Heading'];
@@ -90,6 +91,9 @@ function PropertyEditor({definition,enabled,reviewOnly=false,properties,onChange
  const [mediaOpen,setMediaOpen]=useState(false);
  const [complexOpen,setComplexOpen]=useState(false);
  const [jsonError,setJsonError]=useState('');
+ // Hold the literal edit while typing, including the empty value and partial numbers.
+ // Otherwise replacing 16 with 22 immediately reinstates the default after Delete.
+ const [numberDraft,setNumberDraft]=useState<string|null>(null);
  const key=definition.propertyKey;
  const label=definition.label||key.replace(/([a-z])([A-Z])/g,'$1 $2');
  const unitMatch=/^(.*?)\s*\((px|%|ms|s|columns|rows|lines|deg)\)\s*$/i.exec(label);
@@ -105,7 +109,17 @@ function PropertyEditor({definition,enabled,reviewOnly=false,properties,onChange
    <option value="">Default</option>{(definition.choices??[]).map(choice=><option key={choice.key} value={choice.key}>{choice.label}</option>)}
  </select>;
  else if(definition.kind==='NUMBER'||definition.kind==='CURRENCY'){
-   const field=<input {...props} type="number" min={definition.min} max={definition.max} value={typeof value==='number'?value:''} onChange={e=>update(e.target.value===''?undefined:Number(e.target.value))}/>;
+   const field=<input {...props} type="number" min={definition.min} max={definition.max}
+     value={numberDraft??(typeof value==='number'?String(value):'')}
+     onChange={e=>{
+       const raw=e.target.value;
+       setNumberDraft(raw);
+       if(raw.trim()==='')return;
+       const parsed=Number(raw);
+       if(Number.isFinite(parsed)&&(definition.min===undefined||parsed>=definition.min)
+         &&(definition.max===undefined||parsed<=definition.max))update(parsed);
+     }}
+     onBlur={()=>setNumberDraft(null)}/>;
    editor=unit?<span className="une-unit-field" data-unit={unit}>{field}</span>:field;
  }
  else if(definition.kind==='IMAGE')editor=<><button type="button" disabled={!enabled} title={tip} onClick={()=>setMediaOpen(true)}>Choose / Upload</button>
@@ -177,15 +191,15 @@ export default function UniversalRibbonInventory({tab,definition,componentId,pro
    {Array.from(groups).map(([section,defs])=><section key={section} className="une-universal-ribbon-section" aria-label={section}>
      <div className="une-universal-ribbon-controls">
        {tab==='Component Layout'&&section==='Size'&&(['width','height'] as const).map(key=>
-         <label key={'canvas-'+key} className="une-universal-property" title={'Canvas '+key}>
-           <span className="une-universal-property-label">Canvas {key}</span>
-           <input aria-label={'Canvas '+key} type="number" min={1} disabled={!canEditCanvas} value={reviewPositionValue(key)}
+         <label key={'canvas-'+key} className="une-universal-property" title={'Component '+key}>
+           <span className="une-universal-property-label">{key==='width'?'Width':'Height'}</span>
+           <input aria-label={'Component '+key} type="number" min={1} disabled={!canEditCanvas} value={reviewPositionValue(key)}
              onChange={event=>editCanvas(key,1,event.target.value)}/>
          </label>)}
        {tab==='Component Layout'&&section==='Position'&&(['x','y'] as const).map(key=>
-         <label key={'canvas-'+key} className="une-universal-property" title={'Canvas '+key}>
-           <span className="une-universal-property-label">Canvas {key.toUpperCase()}</span>
-           <input aria-label={'Canvas '+key.toUpperCase()} type="number" min={0} disabled={!canEditCanvas}
+         <label key={'canvas-'+key} className="une-universal-property" title={key.toUpperCase()+' position'}>
+           <span className="une-universal-property-label">{key.toUpperCase()} position</span>
+           <input aria-label={key.toUpperCase()+' position'} type="number" min={0} disabled={!canEditCanvas}
              value={reviewPositionValue(key)}
              onChange={event=>editCanvas(key,0,event.target.value)}/>
          </label>)}
@@ -198,6 +212,10 @@ export default function UniversalRibbonInventory({tab,definition,componentId,pro
          Filter conditions
        </button>}
        {defs.map(def=>{
+         // UNE Text no longer exposes the legacy palette; other UNE controls retain it.
+         if(definition?.apiName==='une_text'&&def.propertyKey==='tone')return null;
+         // Free-canvas geometry already has dedicated Width/Height controls.
+         if(canEditCanvas&&(def.propertyKey==='width'||def.propertyKey==='height'))return null;
          const supported=enabled.has(def.propertyKey);
          return <PropertyEditor key={def.propertyKey}
            definition={supported?definition?.propertyDefinitions?.find(item=>item.propertyKey===def.propertyKey)??def:def}
