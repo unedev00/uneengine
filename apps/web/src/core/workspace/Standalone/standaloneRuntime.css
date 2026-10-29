@@ -26,7 +26,7 @@
 .standalone-product-brand{color:inherit}
 .standalone-product-brand small{color:var(--md-text-2,#5c5c63)}
 .standalone-product-mark{
-  background:color-mix(in srgb,var(--product-accent,#007aff) 68%,black);
+  background:color-mix(in srgb,var(--product-accent,#007aff) 45%,black);
   color:#fff;
 }
 .standalone-product-logout{
