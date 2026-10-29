@@ -1,0 +1,70 @@
+name: Provision Mail Admin master on Oracle
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/oracle/ensure-mail-admin-master.sh"
+      - ".github/workflows/oracle-mail-admin-master.yml"
+  pull_request:
+    paths:
+      - "scripts/oracle/ensure-mail-admin-master.sh"
+      - ".github/workflows/oracle-mail-admin-master.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Oracle mail account provisioning script
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash -n scripts/oracle/ensure-mail-admin-master.sh
+          test -s scripts/oracle/ensure-mail-admin-master.sh
+
+  provision:
+    needs: validate
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, linux, ARM64, metadrive-oracle]
+    environment: oracle-production
+    concurrency:
+      group: oracle-production-full-stack
+      cancel-in-progress: false
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify target and existing services
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = "unedev00/uneengine"
+          test "$(uname -m)" = "aarch64"
+          sudo -n true
+          systemctl is-active --quiet metadrive-api.service
+          sudo -n test -e /etc/metadrive/production.env
+          sudo -n docker inspect -f '{{.State.Running}}' metadrive-docker-mailserver | grep -qx true
+      - name: Provision dedicated Dovecot master credential on Oracle host
+        shell: bash
+        run: sudo -n bash scripts/oracle/ensure-mail-admin-master.sh
+      - name: Activate admin session support in the existing API
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo -n systemctl restart metadrive-api.service
+          for attempt in $(seq 1 60); do
+            if curl --silent --show-error --fail --max-time 4 https://api.unesolutions.co.uk/api/health |
+              grep -q '"status":"ok"'; then
+              echo "Mail Admin API activated and health check passed"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "API did not recover after activation" >&2
+          exit 1
