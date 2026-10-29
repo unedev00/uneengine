@@ -2,7 +2,7 @@ import OneTenantImage from "../shared/OneTenantImage.jsx";
 import {evaluateFieldExpression} from "../shared/OneFieldExpression.js";
 import {UneFrame,uneProps} from "../une/shared/UneFrame.jsx";
 const numeric=(v,fallback,max=1200)=>Number.isFinite(Number(v))&&Number(v)>=0?Math.min(Number(v),max):fallback;
-const display=(expr,row)=>typeof expr==='string'&&expr.trim()&&(/@[A-Za-z]/.test(expr)||/[&+*/]/.test(expr)||/^\s*"/.test(expr))
+const display=(expr,row)=>typeof expr==='string'&&expr.trim()&&(/@[A-Za-z]/.test(expr)||/\s[&+*/]\s/.test(expr)||/^\s*"/.test(expr))
  ? evaluateFieldExpression(expr,row??{}):typeof expr==='string'?expr:'';
 /** Image is ONE configurable card (image, heading/text and optional badge).
  * A headerBoxHeight of zero hides the text area; badgeVisible=false hides its

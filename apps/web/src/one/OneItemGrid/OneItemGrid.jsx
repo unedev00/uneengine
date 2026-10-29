@@ -223,6 +223,7 @@ function ItemGrid({ p, rows }) {
           const isFeatured = featuredField && (r?.[featuredField] === true || r?.[featuredField] === "true");
           const span = isFeatured ? Math.max(1, Math.min(count, Number(p.featuredColumnSpan) || 2)) : 1;
           const rowSpan = isFeatured ? Math.max(1, Math.min(6, Number(p.featuredRowSpan) || 1)) : 1;
+          const placement=["top","left","right","bottom"].includes(p.imagePlacement)?p.imagePlacement:"top";
           const imageStyle = {
             display: "block",
             width: Number.isFinite(imageWidth) && imageWidth > 0 ? Math.min(900,imageWidth) : "100%",
@@ -244,7 +245,6 @@ function ItemGrid({ p, rows }) {
             objectFit: imageFit,
             aspectRatio: imageAspectRatio && imageAspectRatio !== "auto" ? imageAspectRatio : undefined,
           };
-          const placement=["top","left","right","bottom"].includes(p.imagePlacement)?p.imagePlacement:"top";
           const headerHeight=Number(p.headerBoxHeight);
           const headerVisible=p.headerBoxHeight===undefined||!Number.isFinite(headerHeight)||headerHeight>0;
           const badgeEnabled=p.badgeVisible===undefined?Boolean(badge):p.badgeVisible===true&&Boolean(badge);

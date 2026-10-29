@@ -88,7 +88,8 @@ export function evaluateFieldExpression(expression,record){
  if(typeof expression!=='string'||expression.length>2048)return '';
  const input=expression.trim();if(!input)return '';
  // Plain text is just plain text, including spaces and punctuation.
- if(!/@[A-Za-z]/.test(input)&&!/[&+*/]/.test(input)&&!/\s-\s/.test(input)
-   &&!/^["(0-9]/.test(input))return expression;
+ if(!/@[A-Za-z]/.test(input)&&!/\s[&+*/-]\s/.test(input)
+   &&!/^(?:["(]|[-+]?\d+(?:\.\d+)?\s*[+*\/-])/.test(input)
+   &&!/^[A-Za-z]+\s*\(/.test(input))return expression;
  try{return evaluateTokens(tokenize(input),record);}catch{return '';}
 }

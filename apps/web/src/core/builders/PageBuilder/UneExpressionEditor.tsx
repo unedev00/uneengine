@@ -67,7 +67,7 @@ export default function UneExpressionEditor({value,onChange,objects,objectApiNam
      onChange={event=>update(event.currentTarget.value,event.currentTarget.selectionStart??event.currentTarget.value.length)}
      onClick={event=>{const el=event.currentTarget;const ref=activeReference(el.value,el.selectionStart??0);
        if(ref&&object)setPicker({...ref,caret:el.selectionStart??0,rect:el.getBoundingClientRect()});}}
-     onBlur={()=>{ /* The portal picker handles selection via mousedown. */ }}
+     onBlur={()=>setPicker(null)}
    />
    {picker&&matches.length>0&&createPortal(<div id="une-expression-picker"
       className="une-expression-picker" role="listbox" aria-label={label+' fields'}
