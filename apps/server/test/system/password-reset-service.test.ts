@@ -48,7 +48,7 @@ function fixture(options:{digits?:4|6;phone?:string|null;sms?:boolean;failDelive
   return {rows:[],rowCount:1};
  };
  const db={query:fakeQuery,
-  transaction:async<T>(callback:(client:{query:typeof fakeQuery})=>Promise<T>)=>
+  transaction:async(callback:(client:{query:typeof fakeQuery})=>Promise<unknown>)=>
    callback({query:fakeQuery})} as unknown as SqlPersistence;
  const auth={hashPassword:async()=> 'new-hash',verifyPassword:async()=>false}
   as unknown as AuthenticationService;
