@@ -38,3 +38,12 @@ test('old app source paths only delegate to the shared presentation helper',asyn
  const shared=await readFile(new URL('../../../web/src/one/une/shared/flowConversationPresenter.js',import.meta.url),'utf8');
  assert.match(shared,/export function presentFlowConversationCollections/);
 });
+
+
+test('unused One component source directories are fully retired',async()=>{
+ const {access}=await import('node:fs/promises');
+ for(const name of ["OneAccordion","OneAvatar","OneBoard","OneDashboardEmbed","OneDivider","OneFileUpload","OneIcon","OneOverlay","OnePagination","OneRecordForm","OneSlider","OneTimeline","OneTree"]){
+  await assert.rejects(access(new URL('../../../web/src/one/'+name+'/',import.meta.url)),
+   {code:'ENOENT'},name+' must not ship as a stale standalone component');
+ }
+});
