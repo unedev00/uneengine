@@ -13,3 +13,8 @@
 .une-ui .une-input-surface .une-input-display{white-space:pre-wrap;overflow-wrap:anywhere;color:inherit;font:inherit}
 .une-ui .une-input-surface .une-input-lines{display:flex;flex-direction:column;gap:var(--one-gap,12px)}
 .une-ui .une-input-surface .one-field{min-width:0}
+
+.une-ui .une-input-field{width:100%;max-width:100%;background:transparent}
+.une-ui .une-input-field .une-input-surface{min-width:0;box-sizing:border-box}
+.une-ui .une-input-field .one-control{color:var(--une-fg);background:transparent}
+.une-ui .une-input-field textarea.one-control{resize:vertical}

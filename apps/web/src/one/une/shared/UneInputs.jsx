@@ -7,6 +7,8 @@ const field=(row,name,fallback)=>key(name)?row?.[name]??fallback:fallback;
 const n=(v,fallback,min=0,max=200)=>Number.isFinite(Number(v))?Math.max(min,Math.min(max,Number(v))):fallback;
 export function UneInput(p){
  // Old Text instances may retain 'text' until their saved metadata is migrated.
+ const generatedId=React.useId();
+ const id=p.inputId||generatedId;
  const legacyText=p.text!==undefined&&p.text!==null;
  const initial=p.value!==undefined&&(p.value!==""||!legacyText)?p.value:(legacyText?p.text:p.defaultValue??"");
  const [local,setLocal]=React.useState(initial);
@@ -20,15 +22,19 @@ export function UneInput(p){
  const type=["text","email","number","tel","date","time","search","password","url"].includes(p.inputType)?p.inputType:"text";
  const inputMode=["text","tel","numeric","decimal","email","search","url","none"].includes(p.inputMode)?p.inputMode:undefined;
  const maxLength=Number(p.maxLength)>0?n(p.maxLength,4096,1,100000):undefined;
- const attributes={id:p.inputId,className:"one-control",required:p.required===true,value:value??"",
+ const attributes={id,className:"one-control",required:p.required===true,value:value??"",
   placeholder:p.placeholder||"",disabled:p.disabled===true,maxLength,
   autoComplete:p.autoComplete||undefined,inputMode,
   pattern:typeof p.pattern==="string"&&p.pattern.length>0&&p.pattern.length<=250?p.pattern:undefined};
+ const gap=n(p.gap,12,0,120);
+ const densityGap=p.density==="compact"?Math.max(2,gap/2):p.density==="spacious"?gap*1.5:gap;
+ const helpId=p.helpText?id+"-help":undefined;
  const display=String(value??"");
  const visual=type==="password"?"•".repeat(display.length):display;
  const lines=visual.split(/\r?\n/);
- return <div className="one-ui one-field">
-  {p.label&&<label className="one-label" htmlFor={p.inputId}>{p.label}</label>}
+ return <div className="one-ui one-field une-input-field" style={{display:"flex",flexDirection:"column",gap:densityGap}}>
+  {p.label&&<label className="one-label" htmlFor={id}>{p.label}</label>}
+  <div className="une-input-surface" style={{padding:n(p.padding,16,0,100)}}>
   {!editable
     ?<div className="une-input-display" role="text" aria-label={p.label||undefined}>
        {lines.length>1
@@ -38,7 +44,8 @@ export function UneInput(p){
     :p.multiline?<textarea {...attributes} rows={n(p.rows,3,1,16)} onChange={e=>set(e.target.value)}/>
     :<input {...attributes} type={type}
       onChange={e=>set(type==="number"?(e.target.value===""?"":Number(e.target.value)):e.target.value)}/>}
-  {p.helpText&&<small className="one-muted">{p.helpText}</small>}
+  </div>
+  {p.helpText&&<small className="one-muted" id={helpId} title={String(p.helpText)}>{p.helpText}</small>}
  </div>;
 }
 export function UneToggle(p){
