@@ -137,4 +137,8 @@ jobs:
 
           echo '=== normalized Ribbon metadata columns only ==='
           sudo -n runuser -u postgres -- psql -X -Atq -v ON_ERROR_STOP=1 -d "$db" -c "SELECT table_name||'.'||column_name||' '||data_type||' nullable='||is_nullable FROM information_schema.columns WHERE table_schema='public' AND table_name IN ('md_builder_shared_property_defaults','md_builder_shared_property_default_items','md_builder_shared_property_choices','md_builder_ribbon_rule_defaults','md_builder_ribbon_rule_default_items','md_builder_ribbon_rule_choices') ORDER BY table_name,ordinal_position"
+
+          echo '=== normalized Ribbon global value kinds and row counts only ==='
+          sudo -n runuser -u postgres -- psql -X -Atq -v ON_ERROR_STOP=1 -d "$db" -c "SELECT 'property-default '||value_kind||' '||count(*) FROM md_builder_shared_property_defaults GROUP BY value_kind UNION ALL SELECT 'rule-default '||value_kind||' '||count(*) FROM md_builder_ribbon_rule_defaults GROUP BY value_kind ORDER BY 1"
+          sudo -n runuser -u postgres -- psql -X -Atq -v ON_ERROR_STOP=1 -d "$db" -c "SELECT 'property choices='||count(*) FROM md_builder_shared_property_choices UNION ALL SELECT 'rule choices='||count(*) FROM md_builder_ribbon_rule_choices UNION ALL SELECT 'default items='||count(*) FROM md_builder_shared_property_default_items UNION ALL SELECT 'rule default items='||count(*) FROM md_builder_ribbon_rule_default_items"
           echo 'Read-only Oracle audit complete.'
