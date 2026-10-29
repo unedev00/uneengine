@@ -39,6 +39,6 @@ test('same UNE Input renders display-only text and an editable text box',async()
  const legacy=render({text:'Legacy title'});
  assert.match(legacy,/Legacy title/);
  assert.match(legacy,/une-input-display/);
- const multiline=render({value:'First\\nSecond',allowTyping:false,gap:18});
+ const multiline=render({value:'First\nSecond',allowTyping:false,gap:18});
  assert.match(multiline,/une-input-lines/);
 });
