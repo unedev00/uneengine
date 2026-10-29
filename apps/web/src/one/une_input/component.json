@@ -41,13 +41,6 @@
       ]
     },
     {
-      "propertyKey": "accentColor",
-      "label": "Custom accent colour",
-      "kind": "COLOR",
-      "displayOrder": 40,
-      "defaultValue": ""
-    },
-    {
       "propertyKey": "backgroundColor",
       "label": "Surface colour",
       "kind": "COLOR",
@@ -209,32 +202,11 @@
       "defaultValue": false
     },
     {
-      "propertyKey": "disabled",
-      "label": "Disabled",
-      "kind": "BOOLEAN",
-      "displayOrder": 340,
-      "defaultValue": false
-    },
-    {
       "propertyKey": "multiline",
       "label": "Multiline",
       "kind": "BOOLEAN",
       "displayOrder": 350,
       "defaultValue": false
-    },
-    {
-      "propertyKey": "rows",
-      "label": "Rows",
-      "kind": "NUMBER",
-      "displayOrder": 360,
-      "defaultValue": 3
-    },
-    {
-      "propertyKey": "value",
-      "label": "Text / data source",
-      "kind": "TEXT",
-      "displayOrder": 300,
-      "defaultValue": ""
     },
     {
       "propertyKey": "allowTyping",
@@ -251,63 +223,8 @@
       "defaultValue": 0
     },
     {
-      "propertyKey": "autoComplete",
-      "label": "Browser autocomplete hint",
-      "kind": "TEXT",
-      "displayOrder": 830,
-      "defaultValue": ""
-    },
-    {
-      "propertyKey": "inputMode",
-      "label": "Virtual keyboard type",
-      "kind": "SELECT",
-      "displayOrder": 840,
-      "defaultValue": "text",
-      "choices": [
-        {
-          "key": "text",
-          "label": "Text"
-        },
-        {
-          "key": "tel",
-          "label": "Tel"
-        },
-        {
-          "key": "numeric",
-          "label": "Numeric"
-        },
-        {
-          "key": "decimal",
-          "label": "Decimal"
-        },
-        {
-          "key": "email",
-          "label": "Email"
-        },
-        {
-          "key": "search",
-          "label": "Search"
-        },
-        {
-          "key": "url",
-          "label": "Url"
-        },
-        {
-          "key": "none",
-          "label": "None"
-        }
-      ]
-    },
-    {
-      "propertyKey": "pattern",
-      "label": "Input validation pattern",
-      "kind": "TEXT",
-      "displayOrder": 850,
-      "defaultValue": ""
-    },
-    {
       "propertyKey": "helpText",
-      "label": "Input help text",
+      "label": "Help text",
       "kind": "TEXT",
       "displayOrder": 860,
       "defaultValue": ""
