@@ -7,7 +7,13 @@ const index = [];
 await mkdir('dist/component-library/components', { recursive: true });
 for (const component of catalog.components) {
   const built = { ...component, ...await buildBundledComponent(component) };
-  components.push(built);
+  const appOwned=component.apiName.startsWith('une_');
+  const defaultProps=appOwned?Object.fromEntries((component.propertyDefinitions??[])
+    .filter(def=>Object.prototype.hasOwnProperty.call(def,'defaultValue'))
+    .map(def=>[def.propertyKey,def.defaultValue])):{};
+  // The compiled component stays usable, but SQL/public indexes never receive
+  // UNE property definitions. App-owned defaults ship with the renderer asset.
+  components.push(appOwned?{...built,propertyDefinitions:[]}:built);
   index.push({
     apiName: component.apiName,
     label: component.label,
@@ -16,12 +22,12 @@ for (const component of catalog.components) {
     surfaces: component.surfaces,
     resize: component.resize,
     version: component.version,
-    propertyDefinitions: component.propertyDefinitions ?? [],
+    propertyDefinitions: appOwned ? [] : (component.propertyDefinitions ?? []),
     eventDefinitions: component.eventDefinitions ?? [],
     scope: component.scope === 'platform-system' ? 'platform-system' : undefined
   });
   await writeFile(`dist/component-library/components/${component.apiName}.json`,JSON.stringify({
-    apiName:component.apiName,version:component.version,compiledJs:built.compiledJs,scopedCss:built.cssSource
+    apiName:component.apiName,version:component.version,compiledJs:built.compiledJs,scopedCss:built.cssSource,defaultProps
   }));
 }
 await writeFile('dist/component-library/catalog-index.json',JSON.stringify({
