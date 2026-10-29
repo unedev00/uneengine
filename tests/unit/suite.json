@@ -169,6 +169,7 @@
     "apps/web/test/oneComponentRendering.test.mjs",
     "apps/web/test/openPageActionNode.test.ts",
     "apps/web/test/pageBehaviorValidation.test.ts",
+    "apps/web/test/pageBuilderMergeRegressions.test.ts",
     "apps/web/test/pageBuilderActionDependencies.test.ts",
     "apps/web/test/pageBuilderDesignReference.test.ts",
     "apps/web/test/pageBuilderInsertGalleryLayout.test.ts",

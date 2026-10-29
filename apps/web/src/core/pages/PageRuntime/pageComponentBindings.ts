@@ -1,6 +1,6 @@
 import { compareMetadataValue } from '../../metadata/Definitions/metadataValueComparison';
 import type { FieldMetadata } from '../../metadata/Definitions/metadata';
-import { examineRecordFilter } from '../../records/RecordWorkspace/recordFilterMetadata';
+import { examineRecordFilter, isNumericFilterField } from '../../records/RecordWorkspace/recordFilterMetadata';
 
 /**
  * The Page Builder supplies event bindings to the existing platform Flow/Action
@@ -106,7 +106,9 @@ const serverFilterOperators:Record<string,string>={
 };
 function isServerFilterable(field:FieldMetadata,operator:string):boolean{
  const dataType=field.dataType.trim();
- if(/^Formula\(/i.test(dataType)||/^(Geolocation|Address|EncryptedText)/i.test(dataType))return false;
+ // Legacy SQL exclusions include absent values; page rules deliberately fail closed.
+ if(operator==='Not Equals'||operator==='Excludes')return false;
+ if(/^Formula\(/i.test(dataType)||/^(Geolocation|Address|EncryptedText|Text\s*\(Encrypted\))/i.test(dataType))return false;
  if(operator==='Contains')return /^(Text|Email|Phone|Url|Picklist)(\(|$)/i.test(dataType);
  if(operator==='Includes'||operator==='Excludes')
   return /^(Multi-Select Picklist|Multipicklist)$/i.test(dataType);
@@ -116,6 +118,12 @@ function isServerFilterable(field:FieldMetadata,operator:string):boolean{
   if(field.relationship&&operator==='Not Equals')return false;
  }
  return true;
+}
+export function pageComponentRelatedQuery(properties:Record<string,unknown>,fields:ReadonlyArray<FieldMetadata>,parentId:unknown):{blocked:boolean;filter?:PageQueryFilter}{
+ if(!properties.relatedFilterKey)return {blocked:false};
+ const field=fields.find(field=>field.apiName===properties.relatedFieldApiName);
+ if(!field||typeof parentId!=='string'||!parentId||!isServerFilterable(field,'Equals'))return {blocked:true};
+ return {blocked:false,filter:{field:field.apiName,value:parentId,related:Boolean(field.relationship)}};
 }
 const isDynamic=(value:unknown):value is {source:string;key?:string}=>
   Boolean(value&&typeof value==='object'&&!Array.isArray(value));
@@ -169,6 +177,28 @@ export function pageComponentRecordQuery(
     filterLogic:filters&&filters.length>1?filters.map((_,index)=>String(index+1)).join(` ${logic} `):undefined,
     serverFilterable};
 }
+export function comparePageFilterValue(actual:unknown,operator:string,expected:unknown,field:FieldMetadata|undefined):boolean{
+ if(actual!=null&&isNumericFilterField(field)&&['Equals','Not Equals'].includes(operator)
+   &&String(actual).trim()!==''&&String(expected??'').trim()!==''){
+  const a=Number(actual),b=Number(expected);
+  return Number.isFinite(a)&&Number.isFinite(b)&&(operator==='Equals'?a===b:a!==b);
+ }
+ if(actual!=null&&/^(Date|Date\/Time|DateTime)(\(|$)/i.test(field?.dataType??'')
+   &&typeof expected==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(expected)){
+  const a=Date.parse(String(actual)),start=Date.parse(expected+'T00:00:00Z'),end=start+86400000;
+  if(Number.isFinite(a)&&Number.isFinite(start)){
+   switch(operator){
+    case 'Equals':return a>=start&&a<end;
+    case 'Not Equals':return a<start||a>=end;
+    case 'Less Than':return a<start;
+    case 'Less Than or Equal':return a<end;
+    case 'Greater Than':return a>=end;
+    case 'Greater Than or Equal':return a>=start;
+   }
+  }
+ }
+ return compareMetadataValue(actual,operator,expected,true);
+}
 export function filterPageComponentRecords<T extends Record<string, unknown>>(
   records: readonly T[],
   definitions: unknown,
@@ -183,7 +213,7 @@ export function filterPageComponentRecords<T extends Record<string, unknown>>(
     const filter = item as PageFilter;
     const resolved=resolvePageFilterValue(filter.value,context);
     if (!Object.prototype.hasOwnProperty.call(record, filter.field)) return false;
-    return compareMetadataValue(record[filter.field], filter.operator, resolved, true);
+    return comparePageFilterValue(record[filter.field], filter.operator, resolved, fields.find(field=>field.apiName===filter.field));
   }));
 }
 

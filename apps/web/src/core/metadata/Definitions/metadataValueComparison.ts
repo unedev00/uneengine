@@ -18,9 +18,9 @@ export function compareMetadataValue(
       ? left.toLocaleLowerCase().includes(right.toLocaleLowerCase())
       : left.toLowerCase().includes(right.toLowerCase());
     case 'Includes':
-      return String(actual).split(';').map(value=>value.trim()).includes(right);
+      return right.split(';').every(value=>left.split(';').includes(value));
     case 'Excludes':
-      return !String(actual).split(';').map(value=>value.trim()).includes(right);
+      return !right.split(';').every(value=>left.split(';').includes(value));
     case 'Greater Than':
     case 'Greater Than or Equal':
     case 'Less Than':

@@ -85,7 +85,7 @@ import { isComponentVisible } from '../../components/Properties/componentVisibil
 import {behaviorValidation,behaviorAction,behaviorAppearance,behaviorInteractions,behaviorTabs,behaviorTabForChild,pageBehaviors} from './pageBehaviorRuntime';
 import { canNestComponent, componentVisualStyle, directChildren, isLayoutType, isDescendantOf, layoutTypes } from '../TemplatePageRuntime/pageComponentLayout';
 import { isCanvasLocked, wrapCanvasComponent, ungroupCanvasComponent } from '../../builders/PageBuilder/canvasInteractions';
-import { filterPageComponentRecords, pageComponentRecordQuery, bindPageStateProperties, needsMetadataComponentRuntime, resolvePageStatePath } from './pageComponentBindings';
+import { filterPageComponentRecords, pageComponentRecordQuery,pageComponentRelatedQuery, bindPageStateProperties, needsMetadataComponentRuntime, resolvePageStatePath } from './pageComponentBindings';
 import {filterRelatedRecords} from './filterRelatedRecords.mjs';
 import {resolveMentionProperties} from '../../../one/OneSmartFieldInput/smartFieldMentions';
 import { explicitMentionRecordId, useRelationshipMentionContext } from '../../records/RecordFormDialog/useRelationshipMentionContext';
@@ -362,7 +362,11 @@ function MetadataBoundPageComponent({
   }, [pageSessionKey, sessionId]);
   const fields = objects.find((item) => item.apiName === objectApiName)?.fields ?? [];
   const recordQuery=pageComponentRecordQuery(properties.filters,fields,{pageState,recordId,sessionId},properties.filterLogic==='OR'?'OR':'AND');
-  const recordQueryKey=JSON.stringify(recordQuery);
+  const relatedKey=String(properties.relatedFilterKey??'');
+  const relatedField=String(properties.relatedFieldApiName??'');
+  const selectedId=relatedKey?pageState[relatedKey]:undefined;
+  const relatedQuery=pageComponentRelatedQuery(properties,fields,selectedId);
+  const recordQueryKey=JSON.stringify([recordQuery,relatedQuery]);
   useEffect(()=>setRecordOffset(0),[objectApiName,recordQueryKey]);
   useEffect(() => {
     let active = true;
@@ -373,7 +377,7 @@ function MetadataBoundPageComponent({
     setRecordTotal(0);
     setDataError('');
     setDataErrorForQueryKey('');
-    if (!objectApiName || recordQuery.blocked) {
+    if (!objectApiName || recordQuery.blocked || relatedQuery.blocked) {
       setDataLoading(false);
       return () => { active = false; };
     }
@@ -384,7 +388,7 @@ function MetadataBoundPageComponent({
       try {
         const page=await loadFlowScreenRecordPage(objectApiName,{
           limit:recordPageSize,offset:recordOffset,
-          filter:recordQuery.serverFilterable?recordQuery.filter:undefined,
+          filter:relatedQuery.filter??(recordQuery.serverFilterable?recordQuery.filter:undefined),
           filters:recordQuery.filters,filterLogic:recordQuery.filterLogic
         });
         if (active && request === requestId) {
@@ -478,9 +482,6 @@ function MetadataBoundPageComponent({
   const currentQueryRecords = recordsForQueryKey === recordQueryKey ? records : [];
   const filteredRecords=recordQuery.filters?currentQueryRecords:filterPageComponentRecords(
     currentQueryRecords,properties.filters,fields,{pageState,recordId,sessionId},properties.filterLogic==='OR'?'OR':'AND');
-  const relatedKey=String(properties.relatedFilterKey??'');
-  const relatedField=String(properties.relatedFieldApiName??'');
-  const selectedId=relatedKey?pageState[relatedKey]:undefined;
   const visibleRecords=relatedKey?filterRelatedRecords(filteredRecords,selectedId,relatedField):filteredRecords;
   const mentionContext = useRelationshipMentionContext(objects, mentionRootObjectApiName,
     recordId || explicitMentionRecordId(properties), properties, apiRequest, revision);
@@ -746,7 +747,7 @@ function MetadataBoundPageComponent({
         onClick={()=>setRecordOffset(offset=>offset+recordPageSize)}>Next</button>
     </nav>}
     {objectApiName&&!recordQuery.serverFilterable&&recordTotal>recordPageSize&&<p role="status">
-      This filter combination cannot be paged safely by the server; showing only the first page of matching records.
+      Results are incomplete: this filter was applied only to the first 100 fetched records. Additional matches may exist; pagination is unavailable for this filter combination.
     </p>}
   </div>;
 }

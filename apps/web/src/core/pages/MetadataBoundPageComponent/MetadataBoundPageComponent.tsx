@@ -4,7 +4,7 @@ import {useState,useEffect,useRef} from 'react';
 import {loadFlowScreenRecordPage} from '../../authentication/Client/authClient';
 // Load the browser API client only during the mounted effect, not on SSR import.
 import {presentPageRecords,type ChannelGrant} from '../../records/RecordWorkspace/recordPresentationAdapters';
-import {filterPageComponentRecords,pageComponentRecordQuery,bindPageStateProperties} from '../PageRuntime/pageComponentBindings';
+import {filterPageComponentRecords,pageComponentRecordQuery,pageComponentRelatedQuery,bindPageStateProperties} from '../PageRuntime/pageComponentBindings';
 import {filterRelatedRecords} from '../PageRuntime/filterRelatedRecords.mjs';
 import {resolveMentionProperties} from '../../../one/OneSmartFieldInput/smartFieldMentions';
 import { explicitMentionRecordId, useRelationshipMentionContext } from '../../records/RecordFormDialog/useRelationshipMentionContext';
@@ -66,9 +66,6 @@ export default function MetadataBoundPageComponent({
     return ()=>window.removeEventListener('metadrive:page-local-state',receive);
   },[pageSessionKey]);
   const fields = objects.find((item) => item.apiName === objectApiName)?.fields ?? [];
-  const recordQuery=pageComponentRecordQuery(properties.filters,fields,{pageState,recordId,sessionId},
-    properties.filterLogic==='OR'?'OR':'AND');
-  const recordQueryKey=JSON.stringify(recordQuery);
   const [records, setRecords] = useState<Record<string, unknown>[]>([]);
   const [recordTotal,setRecordTotal]=useState(0);
   const [recordOffset,setRecordOffset]=useState(0);
@@ -79,6 +76,14 @@ export default function MetadataBoundPageComponent({
   const [selectedFilterRecords, setSelectedFilterRecords] = useState<Record<string,{
     recordId:string;label:string;sourceObjectApiName:string
   }>>({});
+  const relatedKey=String(properties.relatedFilterKey??'');
+  const relatedField=String(properties.relatedFieldApiName??'');
+  const parentId=relatedKey?selectedFilterRecords[relatedKey]?.recordId||pageState[relatedKey]:undefined;
+  const relatedQuery=pageComponentRelatedQuery(properties,fields,parentId);
+  const recordQuery=pageComponentRecordQuery(properties.filters,fields,{pageState,recordId,sessionId},
+    properties.filterLogic==='OR'?'OR':'AND');
+  const recordQueryKey=JSON.stringify([recordQuery,relatedQuery]);
+
   useEffect(() => {
     const listener = (event: Event) => {
       const data = (event as CustomEvent<{pageSessionKey:string;filterKey:string;value:string;
@@ -156,7 +161,7 @@ export default function MetadataBoundPageComponent({
     setRecords([]);
     setRecordTotal(0);
     setDataError('');
-    if (!objectApiName || recordQuery.blocked) {
+    if (!objectApiName || recordQuery.blocked || relatedQuery.blocked) {
       setDataLoading(false);
       return () => { active = false; };
     }
@@ -164,7 +169,7 @@ export default function MetadataBoundPageComponent({
     // Existing shared Object API enforces tenant, field and record permissions.
     void loadFlowScreenRecordPage(objectApiName,{
       limit:recordPageSize,offset:recordOffset,
-      filter:recordQuery.serverFilterable?recordQuery.filter:undefined,
+      filter:relatedQuery.filter??(recordQuery.serverFilterable?recordQuery.filter:undefined),
       filters:recordQuery.filters,filterLogic:recordQuery.filterLogic
     })
       .then((page) => { if (active) {setRecords(page.records);setRecordTotal(page.total);} })
@@ -187,9 +192,6 @@ export default function MetadataBoundPageComponent({
   }, [properties.channelAccessPath, properties.recordPresenterApiName, revision]);
   const filteredRecords=recordQuery.filters?records:filterPageComponentRecords(
     records,properties.filters,fields,{pageState,recordId,sessionId},properties.filterLogic==='OR'?'OR':'AND');
-  const relatedKey=String(properties.relatedFilterKey??'');
-  const relatedField=String(properties.relatedFieldApiName??'');
-  const parentId=relatedKey?selectedFilterRecords[relatedKey]?.recordId||pageState[relatedKey]:undefined;
   const visibleRecords=relatedKey?filterRelatedRecords(filteredRecords,parentId,relatedField):filteredRecords;
   const mentionContext = useRelationshipMentionContext(objects, mentionRootObjectApiName,
     recordId || explicitMentionRecordId(properties), properties, apiRequest, revision);
@@ -386,7 +388,7 @@ export default function MetadataBoundPageComponent({
         onClick={()=>setRecordOffset(offset=>offset+recordPageSize)}>Next</button>
     </nav>}
     {objectApiName&&!recordQuery.serverFilterable&&recordTotal>recordPageSize&&<p role="status">
-      This filter combination cannot be paged safely by the server; showing only the first page of matching records.
+      Results are incomplete: this filter was applied only to the first 100 fetched records. Additional matches may exist; pagination is unavailable for this filter combination.
     </p>}
   </div>;
 }

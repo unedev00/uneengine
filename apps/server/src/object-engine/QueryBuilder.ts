@@ -23,8 +23,7 @@ export type RecordCursor = {
 
 const apiName = /^[A-Za-z][A-Za-z0-9_]*$/;
 const operators = new Set<RecordFilterOperator>([
-  'eq', 'ne', 'lt', 'lte', 'gt', 'gte', 'contains', 'startsWith', 'includes', 'excludes', 'in',
-  'isBlank', 'isNotBlank',
+  'eq', 'ne', 'lt', 'lte', 'gt', 'gte', 'contains', 'startsWith', 'includes', 'excludes', 'in', 'isBlank', 'isNotBlank',
 ]);
 const typedColumns: Record<string, { column: string; cast: string }> = {
   number: { column: 'value_number', cast: 'numeric' },
@@ -209,16 +208,16 @@ export function compileRecordFilters(
       const column = 'fv.' + typed!.column;
       const comparisons: Record<string, string> = {
         eq: column + '>=' + boundary(start) + ' AND ' + column + '<' + boundary(end),
-        ne: column + ' IS NOT NULL AND NOT (' + column + '>=' + boundary(start)
-          + ' AND ' + column + '<' + boundary(end) + ')',
+        ne: column + '>=' + boundary(start) + ' AND ' + column + '<' + boundary(end),
         lt: column + '<' + boundary(start),
         lte: column + '<' + boundary(end),
         gt: column + '>=' + boundary(end),
         gte: column + '>=' + boundary(start),
       };
-      return 'EXISTS(SELECT 1 FROM md_record_values fv WHERE fv.tenant_id=r.tenant_id' +
+      const existence = 'EXISTS(SELECT 1 FROM md_record_values fv WHERE fv.tenant_id=r.tenant_id' +
         ' AND fv.record_id=r.id AND fv.object_api=r.object_api AND fv.field_api=' + fieldParameter +
         ' AND (' + comparisons[filter.operator] + '))';
+      return filter.operator === 'ne' ? 'NOT ' + existence : existence;
     }
     if (typeof filter.value === 'string' && relativeDatePeriods[filter.value] &&
         typed && sourceType !== 'date' && sourceType !== 'datetime')
@@ -248,7 +247,7 @@ export function compileRecordFilters(
           AND mv.object_api=r.object_api AND mv.field_api=${fieldParameter}),ARRAY[]::text[])`;
       return filter.operator==='includes'
         ?`${membership} @> ${valueParameter}::text[]`
-        :`cardinality(${membership})>0 AND NOT (${membership} @> ${valueParameter}::text[])`;
+        :`NOT (${membership} @> ${valueParameter}::text[])`;
     }
     if (filter.operator === 'contains' || filter.operator === 'startsWith') {
       if (!['text', 'email', 'phone', 'url', 'picklist'].includes(field.data_type))
@@ -261,9 +260,16 @@ export function compileRecordFilters(
     }
     if (filter.operator === 'includes'||filter.operator==='excludes')
       throw new Error('Includes requires a multi-select picklist');
-    const sqlOperators: Record<string, string> = {
-      eq: '=', ne: '<>', lt: '<', lte: '<=', gt: '>', gte: '>='
-    };
+    if (filter.operator === 'ne') {
+      parameters.push(filter.value);
+      const comparison = typed
+        ? `fv.${typed.column}=${valueParameter}::${typed.cast}`
+        : `COALESCE(fv.value_text,fv.reference_record_id::text)=${valueParameter}`;
+      return `NOT EXISTS(SELECT 1 FROM md_record_values fv WHERE fv.tenant_id=r.tenant_id
+        AND fv.record_id=r.id AND fv.object_api=r.object_api AND fv.field_api=${fieldParameter}
+        AND ${comparison})`;
+    }
+    const sqlOperators: Record<string, string> = { eq: '=', lt: '<', lte: '<=', gt: '>', gte: '>=' };
     const sqlOperator = sqlOperators[filter.operator];
     if (!sqlOperator) throw new Error('Invalid record filter operator');
     parameters.push(filter.value);

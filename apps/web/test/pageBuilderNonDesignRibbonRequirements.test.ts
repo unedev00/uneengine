@@ -3,12 +3,13 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
 const file=(relative:string)=>readFileSync(new URL(relative,import.meta.url),'utf8');
-test('Insert only exposes unique registered UNE components in two-row vertical tiles',()=>{
+test('Insert exposes unique eligible standard and registered components in two-row vertical tiles',()=>{
  const view=file('../src/core/builders/PageBuilder/pageBuilderView.tsx');
  const css=file('../src/core/builders/PageBuilder/PageBuilderRibbonNonDesign.css');
  assert.match(view,/seenRibbonComponents=new Set<string>\(\)/);
- assert.match(view,/\^une_\[a-z0-9_\]\+\$/);
- assert.match(view,/seenRibbonComponents\.has\(apiName\)/);
+ assert.doesNotMatch(view,/if\(!\/\^une_/);
+ assert.match(view,/RETIRED_UNE_PAGE_BUILDER_COMPONENTS/);
+ assert.match(view,/seenRibbonComponents\.has\(component\.type\)/);
  assert.match(view,/components\.slice\(index\*4,index\*4\+4\)/);
  assert.match(css,/grid-template-rows:repeat\(2,39px\)/);
  assert.match(css,/flex-direction:column!important/);

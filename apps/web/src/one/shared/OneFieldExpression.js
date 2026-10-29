@@ -209,7 +209,7 @@ const evaluateCall=(name,args)=>{
   case 'DATE':arity(3);{
    const year=Math.trunc(numeric(args[0])),month=Math.trunc(numeric(args[1])),day=Math.trunc(numeric(args[2]));
    if(year<1||year>9999||month<1||month>12||day<1||day>31)throw Error('Invalid DATE value');
-   const value=new Date(Date.UTC(0,month-1,day));value.setUTCFullYear(year);
+   const value=new Date(0);value.setUTCFullYear(year,month-1,day);
    if(!Number.isFinite(value.getTime())||value.getUTCFullYear()!==year||value.getUTCMonth()!==month-1||value.getUTCDate()!==day)throw Error('Invalid DATE value');
    return dateText(value);
   }
@@ -430,7 +430,7 @@ export function evaluateFieldExpressionDetailed(expression,record){
  const input=expression.trim();if(!input)return {value:''};
  if(!/@[A-Za-z]/.test(input)&&!input.startsWith('@')&&!/^[A-Za-z]+\s*\(/.test(input)
   &&!/^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)+(?:\s*\(|$)/.test(input)
-  &&!/^(?:["(]|[-+]?\d+(?:\.\d+)?\s*[+*\/-])/.test(input)
+  &&!/^(?:["(]|[-+]?\d+(?:\.\d+)?\s*[+*\/%^<>=!-])/.test(input)
   &&!/\s(?:[&+*/%^<>=!]|AND\b|OR\b)\s/i.test(input))return {value:expression};
  try{
   const result=parse(tokenize(input),record);

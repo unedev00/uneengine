@@ -37,13 +37,13 @@ test('blank, not-equal and multi-select exclusion filters preserve value semanti
 
   const notEqual=compileRecordFilters([{field:'Name',operator:'ne',value:'Ada'}],
     undefined,fields,1);
-  assert.match(notEqual.predicate,/EXISTS/);
-  assert.match(notEqual.predicate,/COALESCE\(fv\.value_text,fv\.reference_record_id::text\)<>\$2/);
-  assert.doesNotMatch(notEqual.predicate,/NOT EXISTS/);
+  assert.match(notEqual.predicate,/NOT EXISTS/);
+  assert.match(notEqual.predicate,/COALESCE\(fv\.value_text,fv\.reference_record_id::text\)=\$2/);
+
 
   const multi=compileRecordFilters([{field:'Tags',operator:'excludes',value:'A'}],
     undefined,new Map([['Tags',{api_name:'Tags',data_type:'multipicklist'}]]),1);
-  assert.match(multi.predicate,/cardinality/);
+  assert.doesNotMatch(multi.predicate,/cardinality/);
   assert.match(multi.predicate,/NOT \(COALESCE/);
 });
 
@@ -64,8 +64,8 @@ test('saved date filters resolve relative periods at query time and include whol
     {field:'DueDate',operator:'ne',value:'@last_week'},
   ],undefined,dateFields,1);
   assert.deepEqual(lastWeek.parameters,['DueDate']);
-  assert.match(lastWeek.predicate,/EXISTS/);
-  assert.match(lastWeek.predicate,/value_date IS NOT NULL AND NOT/);
+  assert.match(lastWeek.predicate,/NOT EXISTS/);
+  assert.doesNotMatch(lastWeek.predicate,/IS NOT NULL/);
   assert.match(lastWeek.predicate,/date_trunc\('week'/);
   const explicit=compileRecordFilters([
     {field:'OccurredAt',operator:'eq',value:'2026-10-25'},
