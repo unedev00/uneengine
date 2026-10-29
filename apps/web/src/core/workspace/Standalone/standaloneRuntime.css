@@ -10,3 +10,32 @@
 
 .standalone-product :is(.standalone-product-brand,.standalone-product-logout):focus-visible{outline:2px solid var(--md-focus-ring,var(--md-primary,#1d4ed8));outline-offset:2px}
 @media(pointer:coarse){.standalone-product :is(.standalone-product-brand,.standalone-product-logout){min-height:var(--md-control-touch,44px)}}
+
+
+/* ACE standalone chrome: foreground and surface must come from the same
+ * appearance palette. Hardcoded white headers hid the title in dark mode. */
+.standalone-product{
+  background:var(--md-bg,#f5f5f7);
+  color:var(--md-text,#1d1d1f);
+}
+.standalone-product-header{
+  background:var(--md-surface,#fff);
+  color:var(--md-text,#1d1d1f);
+  border-color:var(--md-separator,#d8dce4);
+}
+.standalone-product-brand{color:inherit}
+.standalone-product-brand small{color:var(--md-text-2,#5c5c63)}
+.standalone-product-mark{
+  background:color-mix(in srgb,var(--product-accent,#007aff) 68%,black);
+  color:#fff;
+}
+.standalone-product-logout{
+  background:var(--md-surface-2,#f6f7f9);
+  color:var(--md-text,#1d1d1f);
+  border-color:var(--md-separator,#d8dce4);
+}
+.standalone-product-message{
+  background:var(--md-surface,#fff);
+  color:var(--md-text,#1d1d1f);
+  border-color:var(--md-separator,#d8dce4);
+}
