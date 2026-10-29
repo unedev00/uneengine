@@ -3,6 +3,7 @@ import {createPortal} from 'react-dom';
 import type {ObjectMetadata} from '../../metadata/Definitions/metadata';
 import {sharedPropertyGroups,type UneBuilderApi,type UneBuilderTab,type UneRibbonProperty} from './uneBuilderPropertyInventory';
 import UneExpressionEditor from './UneExpressionEditor';
+import RibbonColorPalette from './RibbonColorPalette';
 import './UneBuilderRibbon.css';
 
 const WEEKDAYS=[['sun','Sun'],['mon','Mon'],['tue','Tue'],['wed','Wed'],['thu','Thu'],['fri','Fri'],['sat','Sat']] as const;
@@ -37,7 +38,6 @@ function WeekdaysPicker({value,onChange,disabled}:{value:readonly string[];onCha
    </div>,document.body)}
  </>;
 }
-const color=(value:unknown)=>typeof value==='string'&&/^#[0-9a-f]{6}$/i.test(value)?value:'#ffffff';
 const number=(value:unknown,fallback=0)=>typeof value==='number'&&Number.isFinite(value)?value:fallback;
 type Position={x:number;y:number;width:number;height:number};
 export default function UneBuilderRibbon({tab,api,definitions,properties,onChange,objects,pageObjectApiName='',position,onPositionChange,layoutMode}:{
@@ -71,10 +71,10 @@ export default function UneBuilderRibbon({tab,api,definitions,properties,onChang
       <option value="">Choose Object</option>{objects.map(o=><option key={o.apiName} value={o.apiName}>{o.label}</option>)}
     </select>;
   else if(kind==='color')
-    editor=<div className="une-v2-color"><input type="color" aria-label={name} disabled={!enabled}
-       value={color(v)} onChange={e=>write(e.target.value)}/>
-       <button type="button" title={'Clear '+name} disabled={!enabled} aria-label={'Clear '+name}
-        onClick={()=>write('')}>×</button></div>;
+    editor=<RibbonColorPalette variant="property"
+       kind={/border/i.test(property.id)?'border':/label|text|value/i.test(property.id)?'text':'fill'}
+       label={name} value={typeof v==='string'?v:''} disabled={!enabled}
+       onChange={next=>write(next)}/>;
   else if(kind==='number'||kind==='position')
     editor=<input className="une-v2-number" type="number" aria-label={name} disabled={!enabled}
       min={property.min??0} max={property.max}
