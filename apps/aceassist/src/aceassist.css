@@ -732,8 +732,8 @@
  --assist-line:var(--md-separator,#d7dde5);
  --assist-paper:var(--md-surface,#fff);
  --assist-quiet:var(--md-surface-2,#fafafc);
- --assist-action:color-mix(in srgb,var(--product-accent,#147d74) 68%,black);
- --assist-link:color-mix(in srgb,var(--product-accent,#147d74) 62%,var(--assist-ink));
+ --assist-action:color-mix(in srgb,var(--product-accent,#147d74) 45%,black);
+ --assist-link:color-mix(in srgb,var(--product-accent,#147d74) 28%,var(--assist-ink));
  color:var(--assist-ink);background:var(--md-bg,#f5f5f7);
 }
 .custom-aceassist .custom-assist{
