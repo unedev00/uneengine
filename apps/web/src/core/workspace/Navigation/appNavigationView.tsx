@@ -146,7 +146,7 @@ export function NavigationLoadTime({ routeKey, startedAt, ready, kind, authMs }:
       <dl className="navigation-diagnostics-details">
         {showTimings && <>
           <div><dt>Screen load</dt><dd role="status" title={isEntry
-            ? `From ${kind === 'login' ? 'sign in' : 'session restoration'} until landing content is ready.`
+            ? `From ${kind === 'login' ? 'Sign in click' : 'session restoration'} until landing content is ready. session request: ${requestSeconds ?? 'unknown'}s.`
             : 'From route navigation until page content is ready.'}>{timing}</dd></div>
           {isEntry && requestSeconds !== null && <div><dt>Authentication</dt><dd>{requestSeconds}s</dd></div>}
         </>}
