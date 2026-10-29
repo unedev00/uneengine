@@ -61,7 +61,7 @@ export function UneFrame({p,children}){
    ...(p.margin!==undefined?{margin:px(p.margin,0,160)+"px"}:{}),
    opacity:px(p.opacity,100,100)/100
   };
- return <div className="une-ui" data-une-theme={theme} data-une-surface={surface}
+ return <div className="une-ui" title={typeof p.helpText==="string"&&p.helpText.trim()?p.helpText:undefined} data-une-theme={theme} data-une-surface={surface}
   data-une-density={density} data-une-shadow={shadow}
   style={style}>{children}</div>;
 }
