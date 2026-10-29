@@ -11,6 +11,9 @@ jobs:
     runs-on: [self-hosted, linux, ARM64, metadrive-oracle]
     timeout-minutes: 7
     steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Read-only systemd and reboot readiness checks
         shell: bash
         run: |
@@ -71,4 +74,18 @@ jobs:
             checkout="$(sha256sum "apps/server/src/system-support/migrations/$filename" | cut -d ' ' -f 1)"
             echo "Checked-out SQL sha256: $checkout"
           fi
+
+          echo '=== checkout and retained release SQL hashes ==='
+          if [[ -f "apps/server/src/system-support/migrations/$filename" ]]; then
+            sha256sum "apps/server/src/system-support/migrations/$filename" | cut -d ' ' -f 1 | sed 's/^/Checked-out SQL sha256: /'
+          fi
+          sudo -n bash -c '
+            set -euo pipefail
+            base=/opt/metadrive/releases
+            for f in "$base"/gh-*/apps/server/dist-system/system-support/migrations/20270122-global-shared-builder-ribbon.sql; do
+              [[ -f "$f" ]] || continue
+              hash="$(sha256sum "$f" | cut -d " " -f 1)"
+              printf "Retained release SQL sha256: %s\n" "$hash"
+            done
+          '
           echo 'Read-only Oracle audit complete.'
