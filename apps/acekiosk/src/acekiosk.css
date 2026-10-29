@@ -211,3 +211,13 @@
   border-color:var(--ak-outline);
 }
 .ak-shell .ak-header:after{pointer-events:none}
+
+
+/* Root appearance is authoritative even if the OS prefers a different scheme. */
+.ak-shell.ak-shell{
+ --ak-surface:var(--md-surface,#fff);
+ --ak-bg:var(--md-bg,#f5f5f7);
+ --ak-text:var(--md-text,#1d1d1f);
+ --ak-border:var(--md-separator,#d7dde5);
+ background:var(--ak-bg);
+}
