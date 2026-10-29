@@ -120,7 +120,7 @@ test('AceChatter Conversation button controls are internal code defaults, not me
 test('only common shared settings remain in AceChatter Conversation metadata',async()=>{
  const conversation=une.find(item=>item.apiName==='une_conversation');
  const common=new Set(['surface','tone','accentColor','backgroundColor','textColor','borderColor',
-   'density','radius','padding','gap','shadow','glassBlur','objectApiName']);
+   'density','radius','padding','gap','shadow','glassBlur','objectApiName','helpText']);
  const raw=JSON.parse(await readFile(new URL('../src/one/une_conversation/component.json',import.meta.url),'utf8'));
  assert.deepEqual(new Set(raw.propertyDefinitions.map(item=>item.propertyKey)),common);
  const catalogShared=new Set(JSON.parse(await readFile(new URL('../src/one/manifest.json',import.meta.url),'utf8')).commonProperties.map(item=>item.propertyKey));
@@ -136,7 +136,7 @@ test('only common shared settings remain in AceChatter Conversation metadata',as
 
 test('Cart-specific settings are internal defaults while shared styling remains public',async()=>{
  const cart=une.find(component=>component.apiName==='une_cart');
- const common=new Set(['surface','tone','accentColor','backgroundColor','textColor','borderColor','density','radius','padding','gap','shadow','glassBlur','objectApiName']);
+ const common=new Set(['surface','tone','accentColor','backgroundColor','textColor','borderColor','density','radius','padding','gap','shadow','glassBlur','objectApiName','helpText']);
  const raw=JSON.parse(await readFile(new URL('../src/one/une_cart/component.json',import.meta.url),'utf8'));
  assert.deepEqual(new Set(raw.propertyDefinitions.map(p=>p.propertyKey)),common);
  const code=await readFile(new URL('../src/one/une_cart/UneCart.jsx',import.meta.url),'utf8');
@@ -147,7 +147,7 @@ test('Cart-specific settings are internal defaults while shared styling remains 
 });
 
 test('UNE Search and Modal expose only shared properties while retaining internal runtime defaults',async()=>{
- const shared=new Set(['surface','tone','accentColor','backgroundColor','textColor','borderColor','density','radius','padding','gap','shadow','glassBlur','objectApiName']);
+ const shared=new Set(['surface','tone','accentColor','backgroundColor','textColor','borderColor','density','radius','padding','gap','shadow','glassBlur','objectApiName','helpText']);
  for(const [name,internal] of [['search',['placeholder','searchKey','value','label','showSubmitButton','submitLabel','showSuggestions','controlledValue']],['modal',['layoutContainer','title','openLabel','startOpen','controlledOpen','isOpen','showTrigger','showCloseButton','closeOnBackdrop','closeOnEscape','fullScreenOnMobile']]]){
   const raw=JSON.parse(await readFile(new URL('../src/one/une_'+name+'/component.json',import.meta.url),'utf8'));
   assert.ok(raw.propertyDefinitions.every(item=>shared.has(item.propertyKey)),name+' exposes non-shared metadata');
