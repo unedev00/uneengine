@@ -210,7 +210,8 @@ function ItemGrid({ p, rows }) {
         }}
       >
         {displayedRows.map((r, i) => {
-          const image = p.imageSource ? evaluateFieldExpression(p.imageSource,r) :
+          const image = p.imageSource ? (Object.prototype.hasOwnProperty.call(r,p.imageSource)
+            ? String(r[p.imageSource]??"") : evaluateFieldExpression(p.imageSource,r)) :
             p.imageExpression ? evaluateFieldExpression(p.imageExpression,r) : r?.[imageField],
             validImage =
               typeof image === "string" && (/^https:\/\//i.test(image) || /^asset:[0-9a-f-]{36}$/i.test(image));

@@ -40,6 +40,14 @@ export const propertyDefinitions = [
     ]
   },
   {
+    "propertyKey": "badgeBodyColor",
+    "label": "Badge Body Color",
+    "kind": "COLOR",
+    "group": "Badge",
+    "section": "Design",
+    "displayOrder": 809.5
+  },
+  {
     "propertyKey": "helpText",
     "label": "Help text",
     "kind": "TEXT",

@@ -3,8 +3,6 @@ import {UneFrame,uneProps} from "../une/shared/UneFrame.jsx";
 /** UNE Input is the single text-box renderer for display and entry. */
 export default function UneInput(props){
  return <UneFrame p={props}>
-  <div className="une-input-surface" data-une-accent={props.accentColor?"custom":"default"}>
-   <Primitive {...uneProps(props,"Input")}/>
-  </div>
+  <Primitive {...uneProps(props,"Input")}/>
  </UneFrame>;
 }
