@@ -8,7 +8,7 @@
   ],
   "version": 1,
   "jsxFile": "one/onechatter_conversation/AppComponent.jsx",
-  "cssFile": "one/une_conversation/UneConversation.css",
+  "cssFile": "one/onechatter_conversation/AppComponent.css",
   "resize": {
     "defaultWidth": 320,
     "defaultHeight": 80,

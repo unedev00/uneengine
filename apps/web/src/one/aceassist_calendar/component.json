@@ -8,7 +8,7 @@
   ],
   "version": 1,
   "jsxFile": "one/aceassist_calendar/AppComponent.jsx",
-  "cssFile": "one/une_calendar/UneCalendar.css",
+  "cssFile": "one/aceassist_calendar/AppComponent.css",
   "resize": {
     "defaultWidth": 320,
     "defaultHeight": 80,
