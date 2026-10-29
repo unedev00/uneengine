@@ -58,5 +58,5 @@ test('shared appearance preserves each original family, including numeric and th
 
 test('retired One renderers remain usable by UNE without being independently registered', () => {
   assert.deepEqual(components.map(c => c.apiName).filter(n => n.startsWith('One')), []);
-  assert.equal(components.filter(c => c.apiName.startsWith('une_')).length,35);
+  assert.equal(components.filter(c => c.apiName.startsWith('une_')).length,34);
 });

@@ -519,7 +519,6 @@
     "une_card/component.json",
     "une_input/component.json",
     "une_toggle/component.json",
-    "une_badge/component.json",
     "une_stack/component.json",
     "une_tabs/component.json",
     "une_container/component.json",

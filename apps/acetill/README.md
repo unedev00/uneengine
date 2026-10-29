@@ -44,7 +44,7 @@ not require the app user to have Flow Definition read access.
 
 ## UI-only handoff to Flow Builder
 
-The SQL package declares four editable Acetill pages and reuses OneText, OneBadge,
+The SQL package declares four editable Acetill pages and reuses OneInput,
 OneSearch, OneItemGrid, OneShoppingCart and OneButton. Sale components reference Product.Name,
 Product.Price and Product.Active, and share the same `acetill` cart target.
 

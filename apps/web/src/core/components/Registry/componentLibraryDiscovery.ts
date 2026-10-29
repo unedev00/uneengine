@@ -15,7 +15,7 @@ export function oneComponentLabel(component: Pick<LibraryComponentMetadata, 'lab
 export const legacyUneAliases: Readonly<Record<string,string>> = Object.freeze({
   OneText: 'une_input',
   une_text: 'une_input',
-  OneBadge: 'une_badge',
+  OneBadge: 'une_input',
   OneButton: 'une_button',
   OneSearch: 'une_search',
   OneCalendar: 'une_calendar',
