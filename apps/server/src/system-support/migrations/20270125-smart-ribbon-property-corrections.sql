@@ -8,7 +8,8 @@ WHERE (component_api='smart_toggle' AND property_key IN
 DELETE FROM md_builder_shared_properties WHERE property_key='placeholderSize' AND tab<>'Home';
 INSERT INTO md_builder_shared_properties
  (property_key,label,tab,section_group,control_kind,sort_order,default_value,choices,scope)
- VALUES ('defaultCheck','Default Check','Design','Behaviour','choice',44,'false'::jsonb,
+ VALUES ('defaultCheck','Default Check','Design','Behaviour','choice',
+ (SELECT COALESCE(MAX(sort_order),0)+1 FROM md_builder_shared_properties),'false'::jsonb,
  '["false","true"]'::jsonb,'component')
  ON CONFLICT(property_key) DO NOTHING;
 INSERT INTO md_builder_ribbon_component_rules

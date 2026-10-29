@@ -86,3 +86,9 @@ test('Smart canvas positions remain the source of truth for rendered sizes',()=>
  assert.ok(view.includes('component.position.width,height:component.position.height'));
  assert.ok(view.includes("target.type==='Custom:smart_toggle'&&update.position"));
 });
+
+test('Default Check SQL uses globally unique order allocation',()=>{
+ const sql=read('../../server/src/system-support/migrations/20270125-smart-ribbon-property-corrections.sql');
+ assert.match(sql,/COALESCE\(MAX\(sort_order\),0\)\+1 FROM md_builder_shared_properties/);
+ assert.doesNotMatch(sql,/Default Check[^\n]*'choice',44,/);
+});
