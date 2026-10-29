@@ -1,0 +1,28 @@
+/* One fixed 3-row ribbon layout for every selected UNE component.
+   Only enabled/disabled state changes; section positions never change. */
+.office-builder-ribbon #page-builder-tab-content[data-une-v2="true"]{
+  height:158px!important;min-height:158px!important;max-height:158px!important;
+  display:block!important;overflow-x:auto!important;overflow-y:hidden!important;
+  direction:ltr!important;scrollbar-width:thin!important;scrollbar-color:#9caec8 transparent!important;
+  padding:4px 7px!important
+}
+.office-builder-ribbon #page-builder-tab-content[data-une-v2="true"]>:not(.une-v2-ribbon){display:none!important}
+.office-builder-ribbon #page-builder-tab-content[data-une-v2="true"]::-webkit-scrollbar{display:block!important;height:9px!important}
+.office-builder-ribbon #page-builder-tab-content[data-une-v2="true"]::-webkit-scrollbar-thumb{background:#9caec8;border-radius:8px}
+.office-builder-ribbon .une-v2-ribbon{display:flex;align-items:stretch;height:139px;width:max-content;min-width:100%;gap:0;background:#fff}
+.office-builder-ribbon .une-v2-group{display:flex;flex-flow:column nowrap;flex:0 0 auto;min-width:90px;padding:3px 11px;border-right:1px solid #d3dbe7;box-sizing:border-box}
+.office-builder-ribbon .une-v2-controls{display:grid;grid-auto-flow:column;grid-template-rows:repeat(3,34px);grid-auto-columns:max-content;gap:3px 15px;height:112px;align-content:start}
+.office-builder-ribbon .une-v2-property{display:flex;align-items:center;gap:8px;min-width:155px;width:max-content;height:30px;white-space:nowrap;font:11px "Segoe UI",Arial,sans-serif;color:#314963}
+.office-builder-ribbon .une-v2-property.is-disabled{opacity:.35;filter:grayscale(1);pointer-events:none}
+.office-builder-ribbon .une-v2-name{min-width:0;flex:1 0 auto;white-space:nowrap}
+.office-builder-ribbon .une-v2-number,.office-builder-ribbon .une-v2-select{box-sizing:border-box;width:95px;height:25px;border-radius:3px;border:1px solid #b9c6d8;padding:2px 5px;font:12px "Segoe UI",Arial,sans-serif;background:#fff;color:#1a3654}
+.office-builder-ribbon .une-v2-number{width:65px}
+.office-builder-ribbon .une-v2-property input[type=checkbox]{height:16px;width:16px;accent-color:#2760b5;margin:0 0 0 auto}
+.office-builder-ribbon .une-v2-color{display:flex;align-items:center;gap:3px;height:26px}
+.office-builder-ribbon .une-v2-color input{height:24px;width:40px;padding:0;border:1px solid #b9c6d8;border-radius:2px}
+.office-builder-ribbon .une-v2-color button{height:23px;border:0;background:#eef2f8;color:#64748b;cursor:pointer}
+.office-builder-ribbon .une-v2-icon-options{display:inline-flex;gap:2px}
+.office-builder-ribbon .une-v2-icon-options button{display:flex;align-items:center;justify-content:center;background:#fff;border:1px solid #b9c6d8;border-radius:3px;width:24px;height:24px;padding:2px;font:13px/1 "Segoe UI",Arial;cursor:pointer}
+.office-builder-ribbon .une-v2-icon-options button[aria-pressed="true"]{background:#e2efff;border-color:#4a89cf}
+.office-builder-ribbon .une-v2-icon-options button span{height:12px;width:12px;background:#edf3fb;border:1px solid #7c8ba1}
+.office-builder-ribbon .une-v2-caption{margin-top:auto;text-align:center;font:600 11px/18px "Segoe UI",Arial,sans-serif;border-top:1px solid #e5eaf2;color:#445c76}
