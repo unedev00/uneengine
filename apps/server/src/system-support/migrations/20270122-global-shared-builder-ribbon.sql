@@ -16,6 +16,9 @@ CREATE TABLE IF NOT EXISTS md_builder_shared_properties(
    ('color','shadow','expression','align','number','position','boolean','choice','object','weekdays','command','readonly')),
  sort_order integer NOT NULL UNIQUE,
  default_value jsonb,
+ min_value integer,
+ max_value integer,
+ field_select boolean NOT NULL DEFAULT false,
  choices jsonb NOT NULL DEFAULT '[]'::jsonb CHECK(jsonb_typeof(choices)='array'),
  scope text NOT NULL DEFAULT 'component' CHECK(scope IN ('component','page'))
 );
@@ -104,6 +107,18 @@ VALUES
  ('save','Save','Home','Quick Access','command',57,NULL,'[]'::jsonb,'page'),
  ('activate','Activate','Home','Quick Access','command',58,NULL,'[]'::jsonb,'page')
 ON CONFLICT(property_key) DO NOTHING;
+UPDATE md_builder_shared_properties SET min_value=0 WHERE property_key='textSize';
+UPDATE md_builder_shared_properties SET min_value=0 WHERE property_key='tabHeight';
+UPDATE md_builder_shared_properties SET min_value=0 WHERE property_key='tabWidth';
+UPDATE md_builder_shared_properties SET min_value=1,max_value=30 WHERE property_key='tabCount';
+UPDATE md_builder_shared_properties SET min_value=1,max_value=12 WHERE property_key='cardsPerRow';
+UPDATE md_builder_shared_properties SET min_value=1,max_value=12 WHERE property_key='cardsPerColumn';
+UPDATE md_builder_shared_properties SET min_value=0 WHERE property_key='imageHeight';
+UPDATE md_builder_shared_properties SET min_value=0 WHERE property_key='headerBoxHeight';
+UPDATE md_builder_shared_properties SET field_select=true WHERE property_key='imageSource';
+UPDATE md_builder_shared_properties SET field_select=true WHERE property_key='textSource';
+UPDATE md_builder_shared_properties SET field_select=true WHERE property_key='badgeText';
+UPDATE md_builder_shared_properties SET min_value=0 WHERE property_key='badgeTextSize';
 -- Rules do not duplicate property definitions; they link an existing component
 -- to one global property and may override its control presentation where Excel requires.
 INSERT INTO md_builder_ribbon_component_rules(
