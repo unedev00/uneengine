@@ -24,7 +24,7 @@ export default function OneCardCore({source,header,badge,props:p={},loadAsset,
  const showImage=p.showImage!==false;
  const valid=showImage&&imageUrl(source);
  const showHeader=p.headerBoxHeight===undefined||safeNum(p.headerBoxHeight,0,0,1200)>0;
- const badgeEnabled=p.badgeVisible===undefined?Boolean(badge):p.badgeVisible===true&&Boolean(badge);
+ const badgeEnabled=p.badgeVisible===undefined?Boolean(badge):p.badgeVisible===true&&(Boolean(badge)||designer);
  const placement=["top","left","right","bottom"].includes(p.imagePlacement)?p.imagePlacement:"top";
  const imageOrder=placement==="bottom"||placement==="right"?2:0;
  const fit=p.imageFill==="fit"?"contain":p.imageFill==="stretch"?"fill":p.imageFill==="fill"?"cover":p.imageFit||"cover";
@@ -42,13 +42,12 @@ export default function OneCardCore({source,header,badge,props:p={},loadAsset,
        background:"var(--une-card-placeholder,#edf2f7)",color:"#64748b"
      }} role="img" aria-label="Image area">Image area</div>:null;
  const computedHeaderStyle={
-   order:1,
+   ...headerStyle,order:1,
    ...(p.headerBoxHeight!==undefined?{height:safeNum(p.headerBoxHeight,0,0,1200),overflow:"hidden"}:{}),
    ...(p.headerBorderColor?{border:"1px solid "+p.headerBorderColor}:{}),
    ...(p.headerAlignment?{textAlign:p.headerAlignment}:{}),
    ...(p.headerBold!==undefined?{fontWeight:p.headerBold?700:400}:{}),
-   ...(p.wrapText===false?{whiteSpace:"nowrap"}:{}),
-   ...headerStyle
+   ...(p.wrapText===false?{whiteSpace:"nowrap"}:{})
  };
  const badgeNode=badgeEnabled?<span className={badgeClassName} style={{
    display:"inline-block",padding:"3px 8px",borderRadius:999,
@@ -58,11 +57,11 @@ export default function OneCardCore({source,header,badge,props:p={},loadAsset,
    fontSize:safeNum(p.badgeTextSize,12,0,60),
    ...placeBadge(p.badgeAlignment,Boolean(imageNode)),
    ...badgeStyle
- }}>{String(badge).slice(0,120)}</span>:null;
+ }}>{String(badge||'Badge').slice(0,120)}</span>:null;
  return <>
   {imageNode}
   {badgeNode}
-  {showHeader&&p.showTitle!==false&&Boolean(header)&&
-    <strong className={headerClassName} style={computedHeaderStyle}>{header}</strong>}
+  {showHeader&&p.showTitle!==false&&(Boolean(header)||designer)&&
+    <strong className={headerClassName} style={computedHeaderStyle}>{header||'Header / text'}</strong>}
  </>;
 }
