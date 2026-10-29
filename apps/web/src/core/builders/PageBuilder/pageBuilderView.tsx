@@ -2061,7 +2061,8 @@ function PageBuilder({
       ...previewProperties,
       ...component.properties,
       ...componentLayoutProps(component.properties, device),
-      label: component.label,
+      label: customDefinition?.apiName?.startsWith('smart_') && typeof component.properties.label==='string'
+        ? component.properties.label : component.label,
       properties: component.properties,
       object: page.pageType === 'Record Page' ? targetObject : undefined,
       device,

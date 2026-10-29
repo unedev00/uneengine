@@ -23,3 +23,17 @@
 .smart-badge.text-left{top:auto;bottom:8px;left:8px;right:auto}
 .smart-badge.text-center{top:auto;bottom:8px;left:50%;right:auto;transform:translateX(-50%)}
 .smart-badge.text-right,.smart-badge.text-bottom{top:auto;bottom:8px;right:8px}
+
+.smart-runtime.smart_button,.smart-runtime.smart_lookup,.smart-runtime.smart_text{display:flex;align-items:stretch}
+.smart-runtime.smart_button>.smart-button,.smart-runtime.smart_lookup>.smart-lookup,.smart-runtime.smart_lookup .smart-search,
+.smart-runtime.smart_text>.smart-field,.smart-runtime.smart_text .smart-field input{height:100%;min-height:0;max-height:100%;flex:1 1 auto;min-width:0}
+.smart-runtime.smart_tabs,.smart-runtime.smart_toggle{background:transparent!important;border:0!important;box-shadow:none!important}
+.smart-tabs-shell{width:100%;height:100%}.smart-tabs{align-content:start}
+.smart-switch{display:flex;align-items:center;justify-content:center;width:100%;height:100%;position:relative;cursor:pointer}
+.smart-switch>input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;z-index:1;margin:0}
+.smart-switch-track{display:block;position:relative;width:54px;height:32px;max-width:100%;max-height:100%;border-radius:999px;transition:background .2s,box-shadow .2s}
+.smart-switch-thumb{position:absolute;top:3px;left:3px;width:24px;height:24px;max-height:calc(100% - 6px);aspect-ratio:1;background:white;border-radius:50%;box-shadow:0 1px 3px #0003;transition:left .2s}
+.smart-switch>input:checked+.smart-switch-track .smart-switch-thumb{left:calc(100% - 27px)}
+.smart-switch>input:focus-visible+.smart-switch-track{outline:2px solid #2563eb;outline-offset:3px}
+.smart-lookup .smart-search::placeholder{color:var(--smart-placeholder-color,#64748b);opacity:1}
+.smart-lookup .smart-lookup-menu button{font-size:inherit;text-align:inherit}

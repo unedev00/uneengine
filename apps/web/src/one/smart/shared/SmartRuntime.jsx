@@ -92,21 +92,22 @@ function SmartCalendar({p}){
  </div>;
 }
 function SmartLookup({p,style,fire}){
- const [query,setQuery]=React.useState(()=>expression(p.defaultValue??"",recordOf(p)));
+ const [query,setQuery]=React.useState("");
  const [opened,setOpened]=React.useState(false);
  const candidates=recordsOf(p).slice(0,200).filter(item=>item&&typeof item==="object");
  const display=row=>expression(p.textSource??row.Name??row.name??row.label??row.title??row.id??"",row);
  const matches=candidates.filter(row=>display(row).toLowerCase().includes(query.toLowerCase())).slice(0,20);
- return <div className="smart-lookup" style={style}>
+ return <div className="smart-lookup" style={{...style,"--smart-placeholder-color":p.labelColor||"#64748b"}}>
   <input className="smart-search" type="search" role="combobox"
    aria-label={text(p.placeholder||p.label||"Search records")}
    aria-expanded={opened&&matches.length>0} aria-controls="smart-lookup-suggestions"
    placeholder={text(p.placeholder||p.label||"Search records…")}
+   style={{textAlign:p.labelAlignment||"left",fontSize:number(p.textSize,16),color:p.labelColor||undefined}}
    value={query} onFocus={()=>setOpened(true)}
    onChange={event=>{setQuery(event.target.value);setOpened(true);fire("change",event.target.value)}}/>
-  {opened&&query&&matches.length>0&&<div id="smart-lookup-suggestions" className="smart-lookup-menu" role="listbox">
+  {opened&&query&&matches.length>0&&<div id="smart-lookup-suggestions" className="smart-lookup-menu" role="listbox" style={{textAlign:p.labelAlignment||"left",fontSize:number(p.textSize,16)}}>
    {matches.map((record,i)=><button type="button" key={text(record.id??i)} role="option"
-    aria-selected={false} onMouseDown={event=>event.preventDefault()}
+    aria-selected={false} style={{textAlign:"inherit",fontSize:"inherit"}} onMouseDown={event=>event.preventDefault()}
     onClick={()=>{setQuery(display(record));setOpened(false);fire("select",{record,value:record.id??null})}}>
      {display(record)}
    </button>)}
@@ -117,36 +118,46 @@ function SmartTabs({p,record,fire}){
  const [active,setActive]=React.useState(0);
  const tabs=Array.isArray(p.tabs)?p.tabs:Array.from({length:number(p.tabCount,3,1,20)},(_,i)=>"Tab "+(i+1));
  const heading=expression(p.textSource??p.label??"",record);
- return <div className="smart-tabs-shell">
+ return <div className="smart-tabs-shell" style={{background:p.backgroundColor||undefined}}>
   {heading&&<strong className="smart-tabs-heading">{heading}</strong>}
   <nav className="smart-tabs" aria-label={heading||"Tabs"}>
    {tabs.map((tab,index)=><button key={index} type="button" role="tab"
     aria-selected={active===index} style={{height:number(p.tabHeight,44),
-     minWidth:number(p.tabWidth,120),color:p.tabColor||undefined,
+     minWidth:number(p.tabWidth,120),borderRadius:number(p.radius,10),fontSize:number(p.textSize,16),textAlign:p.labelAlignment||"center",color:p.labelColor||undefined,
      background:active===index?p.selectedTabColor||"#eaf2ff":undefined}}
     onClick={()=>{setActive(index);fire("change",index)}}>{text(tab?.label??tab)}</button>)}
   </nav>
  </div>;
 }
+function SmartToggle({p,fire}){
+ const asBoolean=v=>v===true||v==="true"||v==="True";
+ const [checked,setChecked]=React.useState(()=>asBoolean(p.value??p.defaultCheck??false));
+ React.useEffect(()=>setChecked(asBoolean(p.value??p.defaultCheck??false)),[p.value,p.defaultCheck]);
+ return <label className="smart-switch"><input type="checkbox" role="switch" aria-label="Toggle" checked={checked}
+  onChange={e=>{setChecked(e.target.checked);fire("change",e.target.checked)}}/>
+  <span className="smart-switch-track" style={{background:checked?(p.backgroundColor||"#34c759"):"#e5e5ea",
+   border:p.borderColor?"1px solid "+p.borderColor:undefined,
+   boxShadow:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none"}}>
+   <span className="smart-switch-thumb"/></span></label>;
+}
 export default function SmartRuntime(p){
  const name=p.kind||"smart_text",record=recordOf(p),label=expression(p.label||"",record);
- const style={fontSize:number(p.textSize,16),color:p.labelColor||undefined,textAlign:p.labelAlignment||"left",
-   borderRadius:number(p.radius,12),boxShadow:p.shadow==="none"?"none":p.shadow==="large"?"0 8px 20px #0002":p.shadow==="medium"?"0 3px 9px #0002":"none"};
+ const style={fontSize:number(p.textSize,16),color:p.labelColor||undefined,textAlign:p.labelAlignment||"left",borderRadius:number(p.radius,12)};
+ const shadowStyle={boxShadow:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none",borderRadius:number(p.radius,12)};
  const fire=(event,value)=>{if(p.previewOnly||p.builderPreview)return;
   if(typeof p.onAction==="function")void Promise.resolve(p.onAction({event,value})).catch(()=>{});
  };
  let content;
  if(name==="smart_button")content=<button type="button" className="smart-button"
-   onClick={()=>fire("click",record)} style={{...style,background:p.backgroundColor||"#2267bc",color:p.labelColor||"#fff",borderColor:p.borderColor}}>{label||"Button"}</button>;
- else if(name==="smart_toggle")content=<label className="smart-toggle" style={style}>
-  <input type="checkbox" defaultChecked={p.defaultValue===true} onChange={e=>fire("change",e.target.checked)}/>{label||"Toggle"}</label>;
+   onClick={()=>fire("click",record)} style={{...style,...shadowStyle,background:p.backgroundColor||"#2267bc",color:p.labelColor||"#fff",borderColor:p.borderColor}}>{label||"Button"}</button>;
+ else if(name==="smart_toggle")content=<SmartToggle p={p} fire={fire}/>;
  else if(name==="smart_text")content=<label className="smart-field" style={{...style,background:p.backgroundColor||undefined}}>
   {label&&<span>{label}</span>}<input type="text" placeholder={text(p.placeholder||"")} defaultValue={expression(p.textSource??p.defaultValue??p.value??"",record)}
   style={{color:p.defaultValueColor||p.labelColor||undefined,borderColor:p.borderColor||undefined}}
   onChange={e=>fire("change",e.target.value)}/></label>;
  else if(name==="smart_lookup")content=<SmartLookup p={p} fire={fire}
    style={{...style,backgroundColor:p.backgroundColor||undefined,borderColor:p.borderColor||undefined,
-    color:p.defaultValueColor||p.labelColor||undefined,fontSize:number(p.placeholderSize,p.textSize||14)}}/>;
+    color:p.labelColor||undefined,fontSize:number(p.textSize,16)}}/>;
  else if(name==="smart_image")content=<SmartCard p={p} record={record}/>;
  else if(name==="smart_card_grid")content=<div className="smart-grid" style={{gridTemplateColumns:"repeat("+number(p.cardsPerRow,3,1,12)+",minmax(0,1fr))"}}>
   {recordsOf(p).slice(0,number(p.cardsPerRow,3,1,12)*number(p.cardsPerColumn,1,1,12)).map((r,i)=>
@@ -162,7 +173,7 @@ export default function SmartRuntime(p){
   {p.label&&<strong>{label}</strong>}
   {(p.imageSource||p.textSource||p.badgeText)&&<SmartCard p={p} record={record}/>}
   {p.children||null}</div>;
- return <div className={"smart-runtime "+name} style={{...style,backgroundColor:p.backgroundColor||undefined,
+ return <div className={"smart-runtime "+name} style={{...style,...(!["smart_button","smart_toggle","smart_tabs"].includes(name)?shadowStyle:{}),backgroundColor:["smart_button","smart_toggle","smart_tabs"].includes(name)?undefined:p.backgroundColor||undefined,
    ...(p.borderColor?{border:"1px solid "+p.borderColor}:{}),
    ...(p.width!==undefined&&p.width!==''?{width:number(parseFloat(p.width),undefined,0,10000)}:{}),
    ...(p.height!==undefined&&p.height!==''?{height:number(parseFloat(p.height),undefined,0,10000)}:{})}}>{content}</div>;
