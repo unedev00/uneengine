@@ -7,22 +7,32 @@ import {buildBundledComponent} from '../../../scripts/component-catalog.mjs';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {evaluateFieldExpression} from '../src/one/shared/OneFieldExpression.js';
-import {UNE_BUILDER_COMPONENTS,UNE_RIBBON_PROPERTIES,UNE_RIBBON_GROUPS,uneBuilderDefaults} from '../src/core/builders/PageBuilder/uneBuilderPropertyInventory.ts';
+
 
 const src=path=>readFileSync(new URL(path,import.meta.url),'utf8');
-test('new UNE ribbon is source-controlled and has permanent slots for all ten approved components',()=>{
- assert.equal(UNE_BUILDER_COMPONENTS.length,10);
- assert.equal(UNE_RIBBON_PROPERTIES.length,43);
- for(const component of UNE_BUILDER_COMPONENTS){
-  assert.ok(UNE_RIBBON_PROPERTIES.some(slot=>slot.components.includes(component)),component);
-  const manifest=JSON.parse(src('../src/one/'+component+'/component.json'));
-  assert.deepEqual(manifest.propertyDefinitions,[],'old SQL/library properties must remain absent');
+const sql=readFileSync(new URL('../../server/src/system-support/migrations/20270122-global-shared-builder-ribbon.sql',import.meta.url),'utf8');
+const components=['une_button','une_toggle','une_lookup','une_tabs','une_input','une_item_grid','une_image','une_calendar','une_navigation','une_container'];
+const slots=[...sql.matchAll(/^\\s*\\('([a-z][A-Za-z0-9_]*)','([^']+)','(Home|Data|Design|Layout)','([^']+)','([^']+)',(\\d+),/gm)]
+ .map(m=>({id:m[1],label:m[2],tab:m[3],group:m[4],kind:m[5],order:Number(m[6])}));
+const rules=[...sql.matchAll(/^\\s*\\('(une_[a-z_]+)','([A-Za-z0-9_]+)',true,/gm)]
+ .map(m=>({component:m[1],id:m[2]}));
+const slot=id=>slots.find(p=>p.id===id);
+const supported=(id,component)=>rules.some(r=>r.id===id&&r.component===component);
+test('one SQL global inventory: 58 unique slots, ten components, default-disabled applicability',()=>{
+ assert.equal(slots.length,58);
+ assert.equal(new Set(slots.map(s=>s.id)).size,58,'No duplicate property definitions');
+ assert.equal(slots.filter(s=>s.tab!=='Home').length,43);
+ assert.equal(slots.filter(s=>s.tab==='Home').length,15);
+ assert.equal(components.length,10);
+ assert.match(sql,/CREATE TABLE IF NOT EXISTS md_builder_shared_properties/);
+ assert.match(sql,/CREATE TABLE IF NOT EXISTS md_builder_ribbon_component_rules/);
+ assert.match(sql,/enabled boolean NOT NULL DEFAULT false/);
+ for(const name of components){
+  assert.match(sql,new RegExp("'"+name+"'"));
+  const manifest=JSON.parse(src('../src/one/'+name+'/component.json'));
+  assert.deepEqual(manifest.propertyDefinitions,[],'App renderer must not duplicate SQL property definitions');
  }
- for(const slot of UNE_RIBBON_PROPERTIES){
-   assert.ok(UNE_RIBBON_GROUPS[slot.tab].includes(slot.group),slot.id);
- }
- assert.equal(uneBuilderDefaults('une_image').headerBoxHeight,44);
- assert.equal(uneBuilderDefaults('une_image').badgeVisible,false);
+ for(const rule of rules){assert.ok(components.includes(rule.component),rule.component);assert.ok(slot(rule.id),rule.id)}
 });
 test('field picker is shared by every @ text and Field Select property',()=>{
  const editor=src('../src/core/builders/PageBuilder/UneExpressionEditor.tsx');
@@ -33,7 +43,7 @@ test('field picker is shared by every @ text and Field Select property',()=>{
  assert.match(editor,/une-expression-reference/);
  assert.match(ui,/kind==='expression'/);
  assert.match(ui,/UneExpressionEditor/);
- for(const id of ['imageSource','textSource','badgeText'])assert.equal(UNE_RIBBON_PROPERTIES.find(p=>p.id===id)?.kind,'expression');
+ for(const id of ['imageSource','textSource','badgeText']){assert.equal(slot(id)?.kind,'expression');assert.match(sql,new RegExp("WHERE property_key='"+id+"'"))}
 });
 test('existing UNE expression evaluator supports literal strings, field concatenation and arithmetic',()=>{
  const row={FirstName:'John',Department:'Sales',Price:10,Quantity:2,ImageField:'https://example.com/image.png'};
@@ -58,29 +68,23 @@ test('Image and Card Grid support independent badge/text/heading/card positionin
  assert.match(palette,/!component\.apiName\.startsWith\('une_'\)/);
 });
 
-test('updated matrix adds Calendar, Navigation Bar and Container to identical fixed ribbon slots',()=>{
- const names=['une_calendar','une_navigation','une_container'];
- for(const name of names)assert.ok(UNE_BUILDER_COMPONENTS.includes(name),name+' missing');
- const lookup=id=>UNE_RIBBON_PROPERTIES.find(p=>p.id===id);
- assert.deepEqual(lookup('showDays').components,['une_calendar']);
- assert.deepEqual(lookup('firstDay').components,['une_calendar']);
- assert.deepEqual(lookup('navigationDirection').components,['une_navigation']);
- assert.deepEqual(lookup('imageFill').components,['une_item_grid','une_image','une_navigation']);
- assert.deepEqual([lookup('showDays').tab,lookup('showDays').group],['Layout','Calendar']);
- assert.deepEqual([lookup('navigationDirection').tab,lookup('navigationDirection').group],['Layout','Navigation']);
- assert.deepEqual([lookup('imageFill').tab,lookup('imageFill').group],['Design','Image']);
- assert.deepEqual(lookup('imageFill').choices,['fill','fit','stretch']);
- assert.deepEqual(uneBuilderDefaults('une_calendar').showDays,['sun','mon','tue','wed','thu','fri','sat']);
- assert.equal(uneBuilderDefaults('une_calendar').firstDay,'mon');
- assert.equal(uneBuilderDefaults('une_calendar').defaultValue,'today');
- assert.equal(uneBuilderDefaults('une_navigation').navigationDirection,'horizontal');
- assert.equal(uneBuilderDefaults('une_image').imageFill,'fill');
- for(const id of ['objectApiName','imageSource','textSource','badgeText','badgeVisible','badgeAlignment'])
-  assert.ok(lookup(id).components.includes('une_container'),id+' missing in Container');
- assert.ok(lookup('textSource').components.includes('une_navigation'));
- assert.equal(lookup('shadow').kindOverrides?.une_calendar,'color');
- assert.equal(lookup('label').kindOverrides?.une_calendar,'color');
- assert.equal(lookup('labelAlignment').kindOverrides?.une_calendar,'color');
+test('Excel property locations and component rules are globally shared',()=>{
+ assert.deepEqual([slot('labelAlignment').tab,slot('labelAlignment').group],['Design','Typography']);
+ assert.deepEqual([slot('imageSource').tab,slot('imageSource').group],['Data','Source']);
+ assert.deepEqual([slot('showDays').tab,slot('showDays').group],['Layout','Calendar']);
+ assert.deepEqual([slot('firstDay').tab,slot('firstDay').group],['Layout','Calendar']);
+ assert.deepEqual([slot('navigationDirection').tab,slot('navigationDirection').group],['Layout','Navigation']);
+ assert.deepEqual([slot('imageFill').tab,slot('imageFill').group],['Design','Image']);
+ assert.equal(supported('labelAlignment','une_button'),true);
+ assert.equal(supported('labelAlignment','une_image'),false);
+ assert.equal(supported('labelAlignment','une_calendar'),true);
+ assert.equal(supported('imageSource','une_image'),true);
+ assert.equal(supported('imageSource','une_button'),false);
+ assert.equal(supported('showDays','une_calendar'),true);
+ assert.equal(supported('showDays','une_navigation'),false);
+ assert.match(sql,/calendarMonthTitleColor/);
+ assert.match(sql,/calendarHeaderColor/);
+ assert.match(sql,/calendarShadowColor/);
 });
 test('new Calendar Layout controls and navigation, container and image renderers are wired',()=>{
  const ribbon=src('../src/core/builders/PageBuilder/UneBuilderRibbon.tsx');
@@ -96,7 +100,7 @@ test('new Calendar Layout controls and navigation, container and image renderers
  const grid=src('../src/one/OneItemGrid/OneItemGrid.jsx');
  const image=src('../src/one/une_image/UneImage.jsx');
  for(const code of [grid,image])assert.ok(code.includes("imageFill"),'image fit mode missing');
- for(const name of UNE_BUILDER_COMPONENTS){
+ for(const name of components){
   const registration=JSON.parse(src('../src/one/'+name+'/component.json'));
   assert.deepEqual(registration.propertyDefinitions,[],'SQL metadata leaked into '+name);
  }
@@ -143,23 +147,17 @@ test('navigation and container preserve usable rendering with new text, image, b
  assert.match(container,/object-fit:fill/);
 });
 
-test('new UNE selections never mount the retired ribbon next to the 43 Excel slots',()=>{
+test('Page Builder renders only the SQL-backed ribbon, without invented Content shortcuts',()=>{
  const page=src('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const ribbon=src('../src/core/builders/PageBuilder/UneBuilderRibbon.tsx');
  const inventory=src('../src/core/builders/PageBuilder/uneBuilderPropertyInventory.ts');
- const css=src('../src/core/builders/PageBuilder/UneBuilderRibbon.css');
- assert.match(page,/selectedNewUne && selected && \['Component Data','Component Properties','Component Layout'\]/);
- assert.match(page,/selected && !selectedNewUne && selectedCustomDefinition && \(\['Component Data','Component Content'/);
- assert.match(page,/ribbonTab==='Component Properties' && !selectedNewUne && designRibbonGroups\.map/);
- assert.match(page,/selected && !selectedNewUne && ribbonTab==='Component Layout' && layoutRibbonGroups\.map/);
- assert.match(page,/selected && !selectedNewUne && ribbonTab === 'Component Properties' && <PageBuilderAdvancedStyle/);
- assert.match(page,/selectedNewUne && selected && \['Component Content','Component Responsive','Component Action'\]/);
- assert.match(page,/className="une-v2-tab-guide"/);
- assert.match(css,/data-une-v2="true"/);
- assert.match(css,/\.une-v2-tab-guide-links button/);
- assert.match(inventory,/UNE_RIBBON_PROPERTIES/);
- for(const slot of UNE_RIBBON_PROPERTIES){
-   assert.ok(UNE_RIBBON_GROUPS[slot.tab].includes(slot.group),slot.label+' misplaced');
- }
+ assert.match(page,/request<SharedRibbonCatalog>\\('\/metadata\/builder-ribbon'\\)/);
+ assert.match(page,/<UneBuilderRibbon tab=/);
+ assert.match(page,/!selectedNewUne && selectedCustomDefinition/);
+ assert.doesNotMatch(page,/className="une-v2-tab-guide"/);
+ assert.doesNotMatch(inventory,/export const UNE_RIBBON_PROPERTIES/);
+ assert.match(ribbon,/sharedPropertyGroups\\(definitions,tab\\)/);
+ assert.match(ribbon,/definitions\\.filter\\(prop=>prop.tab===tab/);
 });
 test('Image action tab offers a declared click event without triggering it in the designer',async()=>{
  const registration=JSON.parse(src('../src/one/une_image/component.json'));
