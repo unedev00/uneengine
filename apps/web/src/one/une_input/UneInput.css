@@ -1,1 +1,9 @@
 @import "../une/shared/une.css";
+.une-ui .une-input-field{width:100%;max-width:100%;background:transparent}
+.une-ui .une-input-field .une-input-surface{min-width:0;border-radius:var(--one-radius,20px);background:var(--une-bg,#fff);border:1px solid var(--une-border,#d9e0eb);box-shadow:var(--une-elevation);box-sizing:border-box}
+.une-ui[data-une-surface="glass"] .une-input-field .une-input-surface{background:color-mix(in srgb,var(--une-bg,#fff) 80%,transparent);backdrop-filter:blur(var(--une-blur,12px));-webkit-backdrop-filter:blur(var(--une-blur,12px))}
+.une-ui[data-une-surface="plain"] .une-input-field .une-input-surface{background:transparent;border-color:transparent;box-shadow:none}
+.une-ui .une-input-field .one-control{color:var(--une-fg,#182333);background:transparent;border:0;box-shadow:none;width:100%;max-width:100%;padding:0;font:inherit;min-height:24px}
+.une-ui .une-input-field textarea.one-control{resize:vertical;min-height:66px}
+.une-ui .une-input-field .one-control::placeholder{color:color-mix(in srgb,var(--une-fg,#182333) 55%,transparent)}
+.une-ui .une-input-field .one-label{color:inherit}
