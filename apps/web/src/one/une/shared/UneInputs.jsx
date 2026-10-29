@@ -22,7 +22,9 @@ export function UneInput(p){
  const type=["text","email","number","tel","date","time","search","password","url"].includes(p.inputType)?p.inputType:"text";
  const inputMode=["text","tel","numeric","decimal","email","search","url","none"].includes(p.inputMode)?p.inputMode:undefined;
  const maxLength=Number(p.maxLength)>0?n(p.maxLength,4096,1,100000):undefined;
- const attributes={id,className:"one-control",required:p.required===true,value:value??"",
+ const align=["left","center","right"].includes(p.labelAlignment)?p.labelAlignment:undefined;
+ const inputTextStyle={textAlign:align};
+ const attributes={id,className:"one-control",style:inputTextStyle,required:p.required===true,value:value??"",
   placeholder:p.placeholder||"",disabled:p.disabled===true,maxLength,
   autoComplete:p.autoComplete||undefined,inputMode,
   pattern:typeof p.pattern==="string"&&p.pattern.length>0&&p.pattern.length<=250?p.pattern:undefined};
@@ -36,7 +38,7 @@ export function UneInput(p){
   {p.label&&<label className="one-label" htmlFor={id}>{p.label}</label>}
   <div className="une-input-surface" style={{padding:n(p.padding,16,0,100)}}>
   {!editable
-    ?<div className="une-input-display" role="text" aria-label={p.label||undefined}>
+    ?<div className="une-input-display" style={inputTextStyle} role="text" aria-label={p.label||undefined}>
        {lines.length>1
          ?<span className="une-input-lines">{lines.map((line,i)=><span key={i}>{line||"\u00a0"}</span>)}</span>
          :visual}
