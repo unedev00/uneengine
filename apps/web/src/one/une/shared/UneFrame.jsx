@@ -19,9 +19,17 @@ export function uneProps(p,kind){
    "clearLabel","totalLabel","emptyBasketText","nextTransactionLabel"];
   for(const key of textKeys){
    const raw=result[key];
-   if(typeof raw==="string"&&/^\s*@(?:[A-Za-z][A-Za-z0-9_]*)(?:\s*&|\s*$)/.test(raw))
+   if(typeof raw==="string"&&(/@(?:[A-Za-z][A-Za-z0-9_]*)/.test(raw)||/^\s*[A-Za-z]+\s*\(/.test(raw)))
     result[key]=evaluateFieldExpression(raw,record);
   }
+ }
+ // Data > Text Source is an app-owned expression property; the evaluated
+ // display value uses the same record context as other text fields.
+ if(record&&typeof p.textSource==="string"&&p.textSource.trim()&&
+    ["Input","Lookup","Tabs"].includes(kind)){
+   const resolved=evaluateFieldExpression(p.textSource,record);
+   if(kind==="Input"||kind==="Lookup")result.value=resolved;
+   else result.label=resolved;
  }
  if(kind==="Calendar"&&Array.isArray(p.records)&&(p.dateFieldApiName||p.titleFieldApiName))
   result.records=p.records.map(item=>({...item,
@@ -50,7 +58,9 @@ export function UneFrame({p,children}){
    "--one-pad":px(p.padding,16,160)+"px","--one-gap":px(p.gap,12,120)+"px",
    ...(p.borderWidth!==undefined?{"--une-border-width":px(p.borderWidth,1,12)+"px"}:{}),
    fontFamily:family[p.fontFamily]||family.system,
-   ...(p.fontSize!==undefined?{fontSize:px(p.fontSize,17,80)+"px"}:{}),
+   ...(p.textSize!==undefined||p.fontSize!==undefined?{fontSize:px(p.textSize??p.fontSize,17,80)+"px"}:{}),
+   ...(p.labelColor?{"--une-label-color":p.labelColor}:{}),
+   ...(p.labelAlignment?{"--une-label-alignment":p.labelAlignment}:{}),
    ...(Number.isFinite(weight)&&weight>=100&&weight<=900?{fontWeight:weight}:{}),
    ...(Number.isFinite(Number(p.lineHeight))&&Number(p.lineHeight)>=1&&Number(p.lineHeight)<=3?{lineHeight:Number(p.lineHeight)}:{}),
    ...(Number.isFinite(Number(p.letterSpacing))&&Math.abs(Number(p.letterSpacing))<=15?{letterSpacing:Number(p.letterSpacing)+"px"}:{}),
