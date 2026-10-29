@@ -31,7 +31,12 @@ export function conversationPartDefinition(id,parent,catalog){
  const fields=Object.keys(part.bindings).map(key=>{
    const def=child.propertyDefinitions?.find(item=>item.propertyKey===key);
    const legacy=parent.propertyDefinitions?.find(item=>item.propertyKey===part.bindings[key]);
-   return def?{...def,defaultValue:legacy?.defaultValue??def.defaultValue}:null;
+   // Search's reusable UI contract is now private code, not public ribbon metadata.
+   // Keep the AceChatter composite editor's named child slots operational.
+   const internal=part.component==='une_search'&&['label','placeholder'].includes(key)
+     ?{propertyKey:key,label:key==='label'?'Search label':'Search placeholder',kind:'TEXT',defaultValue:key==='label'?'Search':'Search'}:null;
+   const effective=def??internal;
+   return effective?{...effective,defaultValue:legacy?.defaultValue??effective.defaultValue}:null;
  }).filter(Boolean);
  if(!fields.length)return undefined;
  return {...child,label:part.label,propertyDefinitions:fields};
