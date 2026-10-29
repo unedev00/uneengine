@@ -25,12 +25,18 @@ export function UneCard(p){return <section className="one-ui one-surface" style=
   {p.imageSrc&&<OneTenantImage src={p.imageSrc} alt={p.title||""} loadAsset={p.loadAsset}
    style={{width:"100%",maxHeight:260,objectFit:"cover",borderRadius:12}}/>}{p.children}</section>}
 export function UneTabs(p){
- const tabs=parse(p.tabs||"Overview, Details"),children=React.Children.toArray(p.children);
+ const original=parse(p.tabs||"Overview, Details"),tabs=Number.isInteger(Number(p.tabCount))&&Number(p.tabCount)>0
+  ?Array.from({length:Math.min(30,Number(p.tabCount))},(_,i)=>original[i]||"Tab "+(i+1))
+  :original,children=React.Children.toArray(p.children);
  const [selected,setSelected]=React.useState(0);
  const active=Math.max(0,Math.min(selected,tabs.length-1)),uid=React.useId();
  return <section className="one-ui une-tabs-root" style={{"--une-tab-bg":p.tabColor||undefined,"--une-selected-text":p.selectedTabTextColor||undefined}}><div className="one-tabs" role="tablist" aria-label={p.label||"Tabs"}>
   {tabs.map((label,i)=><button className="one-tab" type="button" role="tab" key={label+i}
    id={uid+"-tab-"+i} aria-controls={uid+"-panel"} aria-selected={i===active}
+   style={{...(Number.isFinite(Number(p.tabHeight))&&Number(p.tabHeight)>=0?{height:Number(p.tabHeight)}:{}),
+    ...(Number.isFinite(Number(p.tabWidth))&&Number(p.tabWidth)>=0?{width:Number(p.tabWidth)}:{}),
+    ...(p.selectedTabColor&&i===active?{backgroundColor:p.selectedTabColor}:{}),
+    ...(p.tabColor&&i!==active?{backgroundColor:p.tabColor}:{})}}
    onClick={()=>{setSelected(i);fire(p,"tabChange",{index:i,label,value:label})}}>{label}</button>)}</div>
   {<div className="une-tabs-panel" id={uid+"-panel"} role="tabpanel" aria-labelledby={uid+"-tab-"+active}>{children[active]??null}</div>}</section>;
 }

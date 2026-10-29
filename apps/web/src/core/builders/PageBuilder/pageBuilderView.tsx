@@ -144,6 +144,8 @@ import {RibbonFilters} from './PageBuilderRibbonEditors';
 import PageBuilderActionRibbon from './PageBuilderActionRibbon';
 import PageBuilderRibbonMetadataPager from './PageBuilderRibbonMetadataPager';
 import UniversalRibbonInventory from './UniversalRibbonInventory';
+import UneBuilderRibbon from './UneBuilderRibbon';
+import {isUneBuilderApi,uneBuilderDefaults,UNE_RIBBON_PROPERTIES,type UneBuilderApi} from './uneBuilderPropertyInventory';
 import './UniversalRibbonInventory.css';
 import './PageBuilderNumericControls.css';
 import './PageBuilderRibbonPolish.css';
@@ -500,7 +502,8 @@ function PageBuilder({
   },[ribbonTab,selectedId,page.layoutVariant,page.components.length]);
   const componentNeedsData = (type: string) => {
     const metadata = type.startsWith('Custom:') ? findRegisteredComponent(libraryComponents,type.slice('Custom:'.length),'page') : undefined;
-    return Boolean(metadata?.propertyDefinitions?.some(definition=>definition.kind==='OBJECT'||definition.kind==='OBJECT_FIELD'))
+    return Boolean(type.startsWith('Custom:')&&isUneBuilderApi(type.slice(7)))
+      || Boolean(metadata?.propertyDefinitions?.some(definition=>definition.kind==='OBJECT'||definition.kind==='OBJECT_FIELD'))
       || /^(?:Record Field|Record Detail|Related List|List View|Report Chart|Dashboard)$/.test(type);
   };
   const selectRibbonTab = (tab: typeof ribbonTab) => {
@@ -578,7 +581,8 @@ function PageBuilder({
   const selectedCustomDefinition = selected?.type.startsWith('Custom:')
     ? findRegisteredComponent(libraryComponents, selected.type.slice('Custom:'.length), 'page')
     : undefined;
-  const selectedAppOwnedUne=Boolean(selected?.type.startsWith('Custom:une_'));
+  const selectedNewUne=Boolean(selected?.type.startsWith('Custom:')&&isUneBuilderApi(selected.type.slice(7)));
+  const selectedAppOwnedUne=Boolean(selected?.type.startsWith('Custom:une_'))&&!selectedNewUne;
   const editingConversation=selectedCustomDefinition?.apiName==='une_conversation';
   // Child element selection affects the inspector only; runtime DOM is unchanged.
   const conversationEditorDefinition=editingConversation
@@ -695,6 +699,15 @@ function PageBuilder({
       description: 'Group selected record fields into a one- or two-column section.',
       categories: ['Layout'] as (typeof pageBuilderPaletteCategories)[number][]
     }] : []),
+    ...libraryComponents.filter(component=>isUneBuilderApi(component.apiName)&&component.status!=='Draft').map(component=>({
+      id:'Custom:'+component.apiName,
+      type:'Custom:'+component.apiName,
+      label:component.apiName==='une_item_grid'?'Card Grid':component.apiName==='une_lookup'?'Lookup Record':
+        component.apiName==='une_input'?'Input Box':component.apiName.slice(4).split('_').map(word=>word[0].toUpperCase()+word.slice(1)).join(' '),
+      description:component.description,
+      categories:getPageBuilderComponentCategories(component.apiName,component.label,component.description,false,
+        component.apiName==='une_item_grid'?'Data':component.apiName==='une_image'?'Display':undefined)
+    })),
     ...publishedPageLibraryComponents(libraryComponents).map((component) => ({
       id: `Custom:${component.apiName}`,
       type: `Custom:${component.apiName}`,
@@ -1173,6 +1186,7 @@ function PageBuilder({
       id, type, label: custom ? libraryComponentLabel(custom) : type,
       properties: custom
         ? { libraryComponentId: custom.apiName,
+            ...(isUneBuilderApi(custom.apiName)?uneBuilderDefaults(custom.apiName):{}),
             ...Object.fromEntries((custom.propertyDefinitions??[]).filter(def=>Array.isArray(def.defaultValue)
               || (def.propertyKey==='layoutContainer'&&def.defaultValue===true))
               .map(def=>[def.propertyKey,Array.isArray(def.defaultValue)?[...def.defaultValue]:def.defaultValue])),
@@ -2594,8 +2608,15 @@ function PageBuilder({
             </span>
           </div>
         </div>
-        <div id="page-builder-tab-content" data-app-owned-une={selectedAppOwnedUne?'true':'false'} ref={ribbonStripRef} onScroll={measureRibbonOverflow} className="office-ribbon-content" role="tabpanel"
+        <div id="page-builder-tab-content" data-une-v2={selectedNewUne&&['Component Data','Component Properties','Component Layout'].includes(ribbonTab)?'true':'false'} data-app-owned-une={selectedAppOwnedUne?'true':'false'} ref={ribbonStripRef} onScroll={measureRibbonOverflow} className="office-ribbon-content" role="tabpanel"
           aria-label={ribbonTab} aria-labelledby={`page-builder-tab-${Math.max(0,ribbonTabsVisible.indexOf(ribbonTab))}`}>
+          {selectedNewUne && selected && ['Component Data','Component Properties','Component Layout'].includes(ribbonTab) &&
+            <UneBuilderRibbon tab={ribbonTab==='Component Data'?'Data':ribbonTab==='Component Layout'?'Layout':'Design'}
+              api={selected.type.slice(7) as UneBuilderApi} properties={selected.properties}
+              onChange={properties=>updateComponent(selected.id,{properties})}
+              objects={objects} pageObjectApiName={page.targetObject} position={selected.position}
+              onPositionChange={position=>updateComponent(selected.id,{position})}
+              layoutMode={page.layoutMode}/>}
           {selectedAppOwnedUne && ribbonTab.startsWith('Component ') && <div className="une-app-owned-note" role="status">UNE component properties are maintained in application code, not in the Component Library or Page Builder ribbon.</div>}
           {selected && editingConversation && (['Component Data','Component Content','Component Properties','Component Layout','Component Responsive','Component Action'] as string[]).includes(ribbonTab) &&
             <div className="office-ribbon-group office-ribbon-conversation-parts">
@@ -2626,7 +2647,7 @@ function PageBuilder({
           {ribbonTab === 'Home' && <>
             <div className="office-ribbon-group office-ribbon-page-identity"><div className="office-ribbon-stack">
               <button type="button" onClick={safeBackToPages}><ArrowLeft size={16}/> Back to pages</button>
-              <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Page</span><input aria-label="Page name" value={page.label} onChange={event=>applyPage({...page,label:event.target.value})}/></label>
+              <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Page</span><input aria-label="Page name" value={page.label} readOnly/></label>
               <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Device</span><select aria-label="Choose page layout" value={page.layoutVariant??'Desktop'} disabled={switchingLayout||saving} onChange={event=>void switchLayoutVariant(event.target.value as 'Desktop'|'Tablet'|'Mobile'|'Custom')}>{(['Desktop','Tablet','Mobile','Custom'] as const).map(v=><option key={v}>{v}</option>)}</select></label>
             </div><span>Page</span></div>
             <div className="office-ribbon-group office-ribbon-quick-access"><div className="office-ribbon-quick-grid">
@@ -2641,9 +2662,18 @@ function PageBuilder({
               <button className="office-ribbon-icon-button" title="Refresh canvas" aria-label="Refresh canvas" onClick={()=>setCanvasRefreshKey(key=>key+1)}><RefreshCw size={16}/></button>
             </div><span>Quick Access</span></div>
             <div className="office-ribbon-group"><div className="office-ribbon-stack">
+              <button type="button" disabled={!selectedNewUne||!selected} title="Reset selected UNE component properties"
+                onClick={()=>{
+                  if(!selected||!isUneBuilderApi(selected.type.slice(7)))return;
+                  const keys=new Set(UNE_RIBBON_PROPERTIES.map(prop=>prop.id));
+                  const kept=Object.fromEntries(Object.entries(selected.properties).filter(([key])=>!keys.has(key)));
+                  updateComponent(selected.id,{properties:{...kept,...uneBuilderDefaults(selected.type.slice(7) as UneBuilderApi)}});
+                }}><RefreshCw size={16}/> Reset component</button>
+            </div><span>Reset Component</span></div>
+            <div className="office-ribbon-group"><div className="office-ribbon-stack">
               <label className="office-ribbon-inline-field">Mode <select aria-label="Design mode" value={page.layoutMode} onChange={event=>setPageLayoutMode(event.target.value as LightningPageMetadata['layoutMode'])}><option value="template">Responsive sections</option><option value="free-canvas">Free canvas</option></select></label>
-              <label className="office-ribbon-inline-field">Width <input aria-label="Page width" type="number" min={320} max={10000} value={page.canvasWidth} onChange={event=>{const n=Number(event.target.value);if(Number.isInteger(n)&&n>=320&&n<=10000)applyPage({...page,canvasWidth:n});}}/></label>
-              <label className="office-ribbon-inline-field">Height <input aria-label="Page height" type="number" min={320} max={10000} value={page.canvasHeight} onChange={event=>{const n=Number(event.target.value);if(Number.isInteger(n)&&n>=320&&n<=10000)applyPage({...page,canvasHeight:n});}}/></label>
+              <label className="office-ribbon-inline-field">Width <input aria-label="Page width" type="number" disabled={page.layoutVariant!=='Custom'} min={320} max={10000} value={page.canvasWidth} onChange={event=>{const n=Number(event.target.value);if(Number.isInteger(n)&&n>=320&&n<=10000)applyPage({...page,canvasWidth:n});}}/></label>
+              <label className="office-ribbon-inline-field">Height <input aria-label="Page height" type="number" disabled={page.layoutVariant!=='Custom'} min={320} max={10000} value={page.canvasHeight} onChange={event=>{const n=Number(event.target.value);if(Number.isInteger(n)&&n>=320&&n<=10000)applyPage({...page,canvasHeight:n});}}/></label>
             </div><span>Canvas</span></div>
             <div className="office-ribbon-group office-ribbon-version-group"><div className="office-ribbon-stack">
               <button type="button" onClick={()=>void loadLayoutHistory()}><Undo2 size={16}/> {showLayoutHistory?'Refresh versions':'Version history'}</button>

@@ -35,7 +35,7 @@ function ItemGrid({ p, rows }) {
     return () =>
       window.removeEventListener("metadrive:page-filter-selected", receive);
   }, [p.pageSessionKey, p.filterKey, p.searchKey]);
-  const count = Math.max(1, Math.min(12, Number(p.desktopColumns) || 3));
+  const count = Math.max(1, Math.min(12, Number(p.cardsPerRow) || Number(p.desktopColumns) || 3));
   const tabletCount = Math.max(1, Math.min(12, Number(p.tabletColumns) || 2));
   const phoneCount = Math.max(1, Math.min(12, Number(p.mobileColumns) || 2));
   const categoryField = String(p.categoryFieldApiName || "").trim();
@@ -123,6 +123,9 @@ function ItemGrid({ p, rows }) {
     if (av!=null && bv!=null && Number.isFinite(na) && Number.isFinite(nb)) return na-nb;
     return String(av??"").localeCompare(String(bv??""));
   });
+  const maxCards=Number.isFinite(Number(p.cardsPerColumn))&&Number(p.cardsPerColumn)>0
+    ?count*Math.min(40,Number(p.cardsPerColumn)):Infinity;
+  const displayedRows=visibleRows.slice(0,maxCards);
   let formatter;
   try {
     if (p.showPrice !== false && priceField && p.currencyCode) {
@@ -206,17 +209,21 @@ function ItemGrid({ p, rows }) {
           ...(Number.isFinite(Number(p.gap)) && p.gap!==undefined && Number(p.gap)>=0 && Number(p.gap)<=160 ? {gap:Number(p.gap)} : {}),
         }}
       >
-        {visibleRows.map((r, i) => {
-          const image = p.imageExpression ? evaluateFieldExpression(p.imageExpression,r) : r?.[imageField],
+        {displayedRows.map((r, i) => {
+          const image = p.imageSource ? evaluateFieldExpression(p.imageSource,r) :
+            p.imageExpression ? evaluateFieldExpression(p.imageExpression,r) : r?.[imageField],
             validImage =
               typeof image === "string" && (/^https:\/\//i.test(image) || /^asset:[0-9a-f-]{36}$/i.test(image));
-          const name = p.headingExpression ? evaluateFieldExpression(p.headingExpression,r) : view(r?.[titleField] ?? r?.Name ?? r?.name ?? "Record"),
+          const name = p.textSource ? evaluateFieldExpression(p.textSource,r) :
+            p.headingExpression ? evaluateFieldExpression(p.headingExpression,r) : view(r?.[titleField] ?? r?.Name ?? r?.name ?? "Record"),
             price = r?.[priceField];
-          const badge = p.badgeExpression ? evaluateFieldExpression(p.badgeExpression,r) : badgeField ? String(r?.[badgeField] ?? "") : "";
+          const badge = p.badgeText ? evaluateFieldExpression(p.badgeText,r) :
+            p.badgeExpression ? evaluateFieldExpression(p.badgeExpression,r) : badgeField ? String(r?.[badgeField] ?? "") : "";
           const description = p.descriptionExpression ? evaluateFieldExpression(p.descriptionExpression,r) : descriptionField ? String(r?.[descriptionField] ?? "") : "";
           const isFeatured = featuredField && (r?.[featuredField] === true || r?.[featuredField] === "true");
           const span = isFeatured ? Math.max(1, Math.min(count, Number(p.featuredColumnSpan) || 2)) : 1;
           const rowSpan = isFeatured ? Math.max(1, Math.min(6, Number(p.featuredRowSpan) || 1)) : 1;
+          const placement=["top","left","right","bottom"].includes(p.imagePlacement)?p.imagePlacement:"top";
           const imageStyle = {
             display: "block",
             width: Number.isFinite(imageWidth) && imageWidth > 0 ? Math.min(900,imageWidth) : "100%",
@@ -226,6 +233,8 @@ function ItemGrid({ p, rows }) {
               maxWidth:["left","center","right"].includes(p.imagePosition)?"min(78%, 180px)":"100%"
             }),
             borderRadius: p.imageShape==="circle" ? "50%" : p.imageShape==="rounded" ? 12 : 0,
+            border:p.imageBorderColor?"1px solid "+p.imageBorderColor:undefined,
+            order:placement==="bottom"||placement==="right"?2:0,
             marginLeft:p.imagePosition==="right" ? "auto" : p.imagePosition==="left" ? "0" : p.imagePosition==="center" ? "auto" : undefined,
             marginRight:p.imagePosition==="left" ? "auto" : p.imagePosition==="right" ? "0" : p.imagePosition==="center" ? "auto" : undefined,
             height: Number.isFinite(imageHeight) && imageHeight > 0
@@ -236,7 +245,13 @@ function ItemGrid({ p, rows }) {
             objectFit: imageFit,
             aspectRatio: imageAspectRatio && imageAspectRatio !== "auto" ? imageAspectRatio : undefined,
           };
+          const headerHeight=Number(p.headerBoxHeight);
+          const headerVisible=p.headerBoxHeight===undefined||!Number.isFinite(headerHeight)||headerHeight>0;
+          const badgeEnabled=p.badgeVisible===undefined?Boolean(badge):p.badgeVisible===true&&Boolean(badge);
+          const badgePlacement=String(p.badgeAlignment||"image-top-right");
           const cardStyle = {
+            ...(p.imagePlacement?{display:"flex",flexDirection:placement==="left"||placement==="right"?"row":"column"}:{}),
+            position:"relative",
             gridColumn: span > 1 ? "span " + span : undefined,
             gridRow: rowSpan > 1 ? "span " + rowSpan : undefined,
             padding: Number.isFinite(cardPadding) && cardPadding >= 0
@@ -334,13 +349,29 @@ function ItemGrid({ p, rows }) {
               {p.showImage !== false && !validImage && p.missingImageBehavior==="placeholder" && (
                 <span className="md-product-image md-card-image-missing" style={imageStyle} role="img" aria-label="Image unavailable">No image</span>
               )}
-              {badge && <span className="md-product-badge" style={{display:"inline-block",
+              {badgeEnabled && <span className="md-product-badge" style={{display:"inline-block",
+                ...(badgePlacement.startsWith("image-")?{
+                  position:"absolute",zIndex:3,
+                  top:badgePlacement.includes("bottom")?undefined:8,
+                  bottom:badgePlacement.includes("bottom")?8:undefined,
+                  left:badgePlacement.includes("left")?8:badgePlacement.includes("center")?"50%":undefined,
+                  right:badgePlacement.includes("right")?8:undefined,
+                  transform:badgePlacement.includes("center")?"translateX(-50%)":undefined
+                }:{}),
                 padding:"3px 8px",borderRadius:999,background:p.badgeBackgroundColor||p.accentColor||"#E4002B",
                 color:p.badgeTextColor||"#fff",
-                fontSize:boundedSize(p.badgeFontSize,48)??"0.75em",
+                fontWeight:p.badgeBold===false?400:700,
+                fontSize:boundedSize(p.badgeTextSize,48)??boundedSize(p.badgeFontSize,48)??"0.75em",
                 fontWeight:[400,500,600,700].includes(Number(p.badgeFontWeight))?Number(p.badgeFontWeight):700}}>{badge.slice(0,120)}</span>}
-              {p.showTitle !== false && (
-                <strong className="md-product-name" style={headingStyle}>{name}</strong>
+              {headerVisible && p.showTitle !== false && (
+                <strong className="md-product-name" style={{
+                  ...headingStyle,order:1,
+                  ...(p.headerBoxHeight!==undefined?{height:Math.max(0,headerHeight),overflow:"hidden"}:{}),
+                  ...(p.headerBorderColor?{border:"1px solid "+p.headerBorderColor}:{}),
+                  ...(p.headerAlignment?{textAlign:p.headerAlignment}:{}),
+                  ...(p.headerBold!==undefined?{fontWeight:p.headerBold?700:400}:{}),
+                  ...(p.wrapText===false?{whiteSpace:"nowrap"}:{})
+                }}>{name}</strong>
               )}
               {p.showDescription === true && description &&
                 <small className="one-muted md-product-description" style={supportingStyle}>{description.slice(0,220)}</small>}
