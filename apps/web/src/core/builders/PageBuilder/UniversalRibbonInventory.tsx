@@ -90,7 +90,7 @@ export const universalRibbonComponentCount=validManifests.length;
 // derive the layout from just the selected component's property definitions.
 function mergeCatalogSlots(tab:Tab,catalog:readonly LibraryComponentMetadata[]):Map<string,Definition[]>{
  const baseline=slots.get(tab);
- const result=new Map<string,Definition[]>(Array.from(baseline??[],([section,defs])=>[section,[...defs]]));
+ const result=new Map<string,Definition[]>(Array.from(baseline??[],([section,defs]):[string,Definition[]]=>[section,[...defs]]));
  const known=new Set(definitionMap.keys());
  for(const component of catalog){
    if(!/^une_[a-z0-9_]+$/.test(component.apiName))continue;
