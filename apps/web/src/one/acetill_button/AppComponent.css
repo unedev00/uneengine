@@ -1,0 +1,22 @@
+@import "../une/shared/une.css";
+/* The UNE button owns its visual box; the outer frame is not a second button. */
+.une-button-control{display:inline-flex;max-width:100%;min-width:0}
+.une-button-control>.one-ui{width:100%;max-width:100%}
+.une-button-control .one-btn{
+ width:100%;height:100%;min-height:0;
+ border-radius:var(--one-radius,20px);
+ padding:var(--une-button-padding,16px);
+ gap:var(--une-button-gap,12px);
+ font-size:inherit;
+ background:var(--une-bg,var(--une-accent));
+ color:var(--une-fg,#fff);
+ border-color:var(--une-border,var(--une-accent));
+ box-shadow:var(--une-elevation);
+}
+.une-ui[data-une-surface="glass"] .une-button-control .one-btn{
+ background:color-mix(in srgb,var(--une-bg,#fff) 82%,transparent);
+ backdrop-filter:blur(var(--une-blur));-webkit-backdrop-filter:blur(var(--une-blur));
+}
+.une-ui[data-une-surface="plain"] .une-button-control .one-btn{background:transparent}
+.une-ui .une-button-control .one-btn:hover:not(:disabled){filter:brightness(.96)}
+.une-ui[data-une-density] .une-button-control .one-btn{padding:var(--une-button-padding,16px);min-height:0}

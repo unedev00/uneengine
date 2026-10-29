@@ -8,7 +8,7 @@
   ],
   "version": 1,
   "jsxFile": "one/acetill_item_grid/AppComponent.jsx",
-  "cssFile": "one/une_item_grid/UneItemGrid.css",
+  "cssFile": "one/acetill_item_grid/AppComponent.css",
   "resize": {
     "defaultWidth": 320,
     "defaultHeight": 80,

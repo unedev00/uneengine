@@ -1,2 +1,3 @@
-// App-owned renderer identity; reuse low-level UI until saved pages are upgraded.
-export {default} from '../une_item_grid/UneItemGrid.jsx';
+import OneComponent from "../OneItemGrid/OneItemGrid.jsx";
+import {UneFrame,uneProps} from "../une/shared/UneFrame.jsx";
+export default function AcetillItemGrid(props){return <UneFrame p={props}><OneComponent {...uneProps(props,"ItemGrid")}/></UneFrame>}

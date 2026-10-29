@@ -1,0 +1,23 @@
+@import "../une/shared/une.css";
+@import "../OneItemGrid/OneItemGrid.css";
+
+/* Per-card design settings must reach the actual cards in builder and runtime. */
+.une-ui .md-product-card {
+  background-color:var(--md-card-background,var(--une-bg,#fff));
+  transition:transform 140ms ease,box-shadow 140ms ease,border-color 140ms ease,filter 140ms ease;
+}
+.une-ui .md-product-card--hover-highlight:hover,
+.une-ui .md-product-card--hover-highlight:focus-visible {
+  border-color:var(--une-accent,#007aff);
+  box-shadow:0 0 0 2px var(--une-accent,#007aff),var(--une-elevation,0 4px 12px #0002);
+  filter:brightness(.95);
+}
+.une-ui .md-product-card--hover-lift:hover,
+.une-ui .md-product-card--hover-lift:focus-visible {
+  transform:translateY(-3px);
+  box-shadow:0 9px 22px rgba(15,23,42,.20);
+}
+@media (prefers-reduced-motion:reduce) {
+  .une-ui .md-product-card {transition:none}
+  .une-ui .md-product-card--hover-lift:hover {transform:none}
+}
