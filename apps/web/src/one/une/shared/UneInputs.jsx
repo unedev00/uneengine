@@ -49,8 +49,9 @@ export function UneInput(p){
  </div>;
 }
 export function UneToggle(p){
- const [local,setLocal]=React.useState(Boolean(p.value??p.defaultValue??false));
- React.useEffect(()=>setLocal(Boolean(p.value??p.defaultValue??false)),[p.value,p.defaultValue]);
+ const toggleValue=v=>v===true||v===1||v==='true';
+ const [local,setLocal]=React.useState(toggleValue(p.value??p.defaultValue??false));
+ React.useEffect(()=>setLocal(toggleValue(p.value??p.defaultValue??false)),[p.value,p.defaultValue]);
  return <label className="one-ui one-row une-toggle-control" data-une-surface={p.surface||"glass"} data-une-density={p.density||"comfortable"}
    style={{justifyContent:"space-between",gap:n(p.gap,12,0,120),padding:n(p.padding,16,0,160)}}>
   <span>{p.label??"Setting"}</span><input role="switch" type="checkbox" checked={local} disabled={p.disabled===true}
