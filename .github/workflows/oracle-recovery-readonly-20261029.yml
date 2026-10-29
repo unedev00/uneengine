@@ -106,4 +106,8 @@ jobs:
             fi
           done < <(git for-each-ref --format='%(refname)' refs/remotes/origin)
           echo "Compared historical branch tips with migration: $checked; matches: $found"
+
+          echo '=== global Ribbon metadata only, no business records ==='
+          sudo -n runuser -u postgres -- psql -X -Atq -v ON_ERROR_STOP=1 -d "$db" -c "SELECT 'property_tab='||tab||';count='||count(*) FROM md_builder_shared_properties GROUP BY tab ORDER BY tab"
+          sudo -n runuser -u postgres -- psql -X -Atq -v ON_ERROR_STOP=1 -d "$db" -c "SELECT 'ribbon_component_prefix='||CASE WHEN component_api LIKE 'smart\\_%' ESCAPE '\\' THEN 'smart' WHEN component_api LIKE 'une\\_%' ESCAPE '\\' THEN 'legacy' ELSE 'other' END||';count='||count(*) FROM md_builder_ribbon_components GROUP BY 1 ORDER BY 1"
           echo 'Read-only Oracle audit complete.'
