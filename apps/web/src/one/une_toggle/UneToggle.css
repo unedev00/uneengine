@@ -1,1 +1,8 @@
 @import "../une/shared/une.css";
+.une-ui .une-toggle-control{border:1px solid var(--une-border,#d9e0eb);border-radius:var(--one-radius,20px);background:var(--une-bg,#fff);box-shadow:var(--une-elevation);box-sizing:border-box;width:100%;max-width:100%;color:var(--une-fg,#182333)}
+.une-ui .une-toggle-control input[role="switch"]{flex:none;accent-color:var(--une-accent,#007aff)}
+.une-ui[data-une-density="compact"] .une-toggle-control{min-height:38px}
+.une-ui[data-une-density="spacious"] .une-toggle-control{min-height:58px}
+.une-ui[data-une-surface="glass"] .une-toggle-control{background:color-mix(in srgb,var(--une-bg,#fff) 80%,transparent);backdrop-filter:blur(var(--une-blur,12px));-webkit-backdrop-filter:blur(var(--une-blur,12px))}
+.une-ui[data-une-surface="plain"] .une-toggle-control{background:transparent;border-color:transparent;box-shadow:none}
+
