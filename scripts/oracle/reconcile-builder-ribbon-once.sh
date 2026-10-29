@@ -45,6 +45,42 @@ BEGIN
   RAISE EXCEPTION 'SQL migration checksum changed during reconciliation';
  END IF;
 END $$;
+-- The applied 20270123 normalization moved flexible defaults/choices to
+-- relational tables. Preserve those as source of truth and expose compatible
+-- JSONB projection columns expected by the current shared SQL API.
+ALTER TABLE md_builder_shared_properties ADD COLUMN IF NOT EXISTS default_value jsonb;
+ALTER TABLE md_builder_shared_properties ADD COLUMN IF NOT EXISTS choices jsonb NOT NULL DEFAULT '[]'::jsonb;
+ALTER TABLE md_builder_ribbon_component_rules ADD COLUMN IF NOT EXISTS default_value_override jsonb;
+ALTER TABLE md_builder_ribbon_component_rules ADD COLUMN IF NOT EXISTS choices_override jsonb;
+UPDATE md_builder_shared_properties p
+ SET default_value=CASE d.value_kind
+  WHEN 'string' THEN to_jsonb(d.value_text)
+  WHEN 'number' THEN to_jsonb(d.value_number)
+  WHEN 'boolean' THEN to_jsonb(d.value_boolean)
+  WHEN 'array' THEN COALESCE((SELECT jsonb_agg(i.item_value ORDER BY i.sort_order)
+     FROM md_builder_shared_property_default_items i WHERE i.property_key=p.property_key),'[]'::jsonb)
+  ELSE NULL END
+ FROM md_builder_shared_property_defaults d
+ WHERE p.property_key=d.property_key;
+UPDATE md_builder_shared_properties p
+ SET choices=COALESCE((SELECT jsonb_agg(c.choice_value ORDER BY c.sort_order)
+    FROM md_builder_shared_property_choices c WHERE c.property_key=p.property_key),'[]'::jsonb);
+UPDATE md_builder_ribbon_component_rules r
+ SET default_value_override=CASE d.value_kind
+  WHEN 'string' THEN to_jsonb(d.value_text)
+  WHEN 'number' THEN to_jsonb(d.value_number)
+  WHEN 'boolean' THEN to_jsonb(d.value_boolean)
+  WHEN 'array' THEN COALESCE((SELECT jsonb_agg(i.item_value ORDER BY i.sort_order)
+     FROM md_builder_ribbon_rule_default_items i
+     WHERE i.component_api=r.component_api AND i.property_key=r.property_key),'[]'::jsonb)
+  ELSE NULL END
+ FROM md_builder_ribbon_rule_defaults d
+ WHERE r.component_api=d.component_api AND r.property_key=d.property_key;
+UPDATE md_builder_ribbon_component_rules r
+ SET choices_override=COALESCE((SELECT jsonb_agg(c.choice_value ORDER BY c.sort_order)
+   FROM md_builder_ribbon_rule_choices c
+   WHERE c.component_api=r.component_api AND c.property_key=r.property_key),'[]'::jsonb)
+ WHERE r.choices_override_present=true;
 CREATE TEMP TABLE _md_home_snapshot ON COMMIT DROP AS
  SELECT property_key,to_jsonb(p) AS snapshot
  FROM md_builder_shared_properties p WHERE tab='Home';
