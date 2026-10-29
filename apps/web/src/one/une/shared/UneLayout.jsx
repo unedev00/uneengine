@@ -12,7 +12,7 @@ const textFrom=(source,record)=>typeof source==="string"&&source.trim()?evaluate
 export function UneContainer(p){
  const record=recordFor(p),image=textFrom(p.imageSource,record),heading=textFrom(p.textSource,record)||p.label||"";
  const badge=textFrom(p.badgeText,record),badgeVisible=p.badgeVisible===true&&Boolean(badge);
- const alignment=String(p.badgeAlignment||"image-top-right"),onImage=alignment.startsWith("image-");
+ const alignment=String(p.badgeAlignment||"image-top-right"),onImage=alignment.startsWith("image-")&&Boolean(image);
  const colorValue=v=>typeof v==="string"&&/^#[0-9a-f]{6}$/i.test(v)?v:undefined;
  const badgeNode=badgeVisible?<span className="une-container-badge" style={{
    position:onImage?"absolute":undefined,zIndex:2,

@@ -502,7 +502,8 @@ function PageBuilder({
   },[ribbonTab,selectedId,page.layoutVariant,page.components.length]);
   const componentNeedsData = (type: string) => {
     const metadata = type.startsWith('Custom:') ? findRegisteredComponent(libraryComponents,type.slice('Custom:'.length),'page') : undefined;
-    return Boolean(type.startsWith('Custom:')&&isUneBuilderApi(type.slice(7)))
+    return Boolean(type.startsWith('Custom:')&&isUneBuilderApi(type.slice(7))
+      &&UNE_RIBBON_PROPERTIES.some(row=>row.tab==='Data'&&row.components.includes(type.slice(7) as UneBuilderApi)))
       || Boolean(metadata?.propertyDefinitions?.some(definition=>definition.kind==='OBJECT'||definition.kind==='OBJECT_FIELD'))
       || /^(?:Record Field|Record Detail|Related List|List View|Report Chart|Dashboard)$/.test(type);
   };
@@ -703,7 +704,7 @@ function PageBuilder({
       id:'Custom:'+component.apiName,
       type:'Custom:'+component.apiName,
       label:component.apiName==='une_item_grid'?'Card Grid':component.apiName==='une_lookup'?'Lookup Record':
-        component.apiName==='une_input'?'Input Box':component.apiName.slice(4).split('_').map(word=>word[0].toUpperCase()+word.slice(1)).join(' '),
+        component.apiName==='une_input'?'Input Box':component.apiName==='une_navigation'?'Navigation Bar':component.apiName.slice(4).split('_').map(word=>word[0].toUpperCase()+word.slice(1)).join(' '),
       description:component.description,
       categories:getPageBuilderComponentCategories(component.apiName,component.label,component.description,false,
         component.apiName==='une_item_grid'?'Data':component.apiName==='une_image'?'Display':undefined)
@@ -2665,7 +2666,8 @@ function PageBuilder({
               <button type="button" disabled={!selectedNewUne||!selected} title="Reset selected UNE component properties"
                 onClick={()=>{
                   if(!selected||!isUneBuilderApi(selected.type.slice(7)))return;
-                  const keys=new Set(UNE_RIBBON_PROPERTIES.map(prop=>prop.id));
+                  const keys=new Set([...UNE_RIBBON_PROPERTIES.map(prop=>prop.id),
+                    'calendarShadowColor','calendarMonthTitleColor','calendarHeaderColor']);
                   const kept=Object.fromEntries(Object.entries(selected.properties).filter(([key])=>!keys.has(key)));
                   updateComponent(selected.id,{properties:{...kept,...uneBuilderDefaults(selected.type.slice(7) as UneBuilderApi)}});
                 }}><RefreshCw size={16}/> Reset component</button>

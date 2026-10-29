@@ -20,7 +20,7 @@ export default function UneImage(props){
  const imageHeight=numeric(props.imageHeight,220);
  const placement=['top','bottom','left','right'].includes(props.imagePlacement)?props.imagePlacement:'top';
  const badgePlace=String(props.badgeAlignment||'image-top-right');
- const onImage=badgePlace.startsWith('image-');
+ const onImage=badgePlace.startsWith('image-')&&Boolean(source);
  const badgeNode=badgeEnabled?<span className="une-image-card-badge" style={{
    fontSize:numeric(props.badgeTextSize,12,60),
    fontWeight:props.badgeBold!==false?700:400,
@@ -34,7 +34,7 @@ export default function UneImage(props){
  const imageNode=<div className="une-image-card-picture" style={{position:'relative',minWidth:0,
    order:placement==='bottom'||placement==='right'?2:0,flex:placement==='left'||placement==='right'?'1 1 50%':undefined}}>
     {source&&<OneTenantImage src={source} loadAsset={p.loadAsset} alt={p.alt||header||''}
-      style={{display:'block',width:'100%',height:imageHeight,objectFit:p.imageFit||'cover',
+      style={{display:'block',width:'100%',height:imageHeight,objectFit:props.imageFill==='fit'?'contain':props.imageFill==='stretch'?'fill':props.imageFill==='fill'?'cover':p.imageFit||'cover',
         borderRadius:numeric(p.radius,12,80),border:props.imageBorderColor?'1px solid '+props.imageBorderColor:undefined}}/>}
     {onImage&&badgeNode}
   </div>;
