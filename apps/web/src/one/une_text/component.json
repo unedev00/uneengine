@@ -38,36 +38,8 @@
           "key": "plain",
           "label": "Transparent"
         }
-      ]
-    },
-    {
-      "propertyKey": "tone",
-      "label": "Colour palette",
-      "kind": "SELECT",
-      "displayOrder": 30,
-      "defaultValue": "blue",
-      "choices": [
-        {
-          "key": "blue",
-          "label": "iOS blue"
-        },
-        {
-          "key": "mint",
-          "label": "Mint"
-        },
-        {
-          "key": "purple",
-          "label": "Purple"
-        },
-        {
-          "key": "orange",
-          "label": "Orange"
-        },
-        {
-          "key": "neutral",
-          "label": "Neutral"
-        }
-      ]
+      ],
+      "helpText": "Choose frosted glass, solid fill or transparent fill; borders and shadows are controlled separately."
     },
     {
       "propertyKey": "accentColor",
@@ -116,7 +88,8 @@
           "key": "spacious",
           "label": "Spacious"
         }
-      ]
+      ],
+      "helpText": "Adjusts text line height and inner padding."
     },
     {
       "propertyKey": "radius",
@@ -137,7 +110,8 @@
       "label": "Gap (px)",
       "kind": "NUMBER",
       "displayOrder": 110,
-      "defaultValue": 12
+      "defaultValue": 12,
+      "helpText": "Vertical space between lines when the text contains line breaks."
     },
     {
       "propertyKey": "shadow",
