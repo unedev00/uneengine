@@ -1,0 +1,48 @@
+name: Verify Smart Ribbon production property inventory (read only)
+on:
+  push:
+    branches: [ops/verify-smart-ribbon-live-20261029]
+permissions:
+  contents: read
+jobs:
+  verify:
+    if: github.repository == 'unedev00/uneengine'
+    environment: oracle-production
+    runs-on: [self-hosted,linux,ARM64,metadrive-oracle]
+    timeout-minutes: 5
+    steps:
+      - name: Verify active release, Home properties and Smart rules without changing data
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected=805f63dd55db101ba62167f209b7349d0fb34479
+          [[ "$(readlink -f /var/www/metadrive-frontend/current)" == "/var/www/metadrive-frontend/releases/$expected" ]] || {
+            echo "Frontend release pointer mismatch"; exit 1;
+          }
+          for service in metadrive-api.service metadrive-worker.service nginx.service; do
+            systemctl is-active --quiet "$service" || { echo "Inactive: $service"; exit 1; }
+          done
+          db=metadrive_sql_20261022_production
+          query(){
+            sudo -n runuser -u postgres -- psql -X -Atq -v ON_ERROR_STOP=1 -d "$db" -c "$1"
+          }
+          assert_count(){
+            count="$(query "$2")"
+            [[ "$count" == "$3" ]] || { echo "FAIL: $1 count=$count (expected $3)"; exit 1; }
+            echo "PASS: $1 ($count)"
+          }
+          assert_count 'Home Ribbon properties' "SELECT count(*) FROM md_builder_shared_properties WHERE tab='Home'" 15
+          assert_count 'Smart components' "SELECT count(*) FROM md_builder_ribbon_components WHERE left(component_api,6)='smart_'" 10
+          assert_count 'Default Check inventory' "SELECT count(*) FROM md_builder_shared_properties WHERE property_key='defaultCheck'" 1
+          assert_count 'Toggle Default Check enabled' "SELECT count(*) FROM md_builder_ribbon_component_rules WHERE component_api='smart_toggle' AND property_key='defaultCheck' AND enabled=true" 1
+          assert_count 'Toggle Default Value removed' "SELECT count(*) FROM md_builder_ribbon_component_rules WHERE component_api='smart_toggle' AND property_key='defaultValue'" 0
+          assert_count 'Toggle label removed' "SELECT count(*) FROM md_builder_ribbon_component_rules WHERE component_api='smart_toggle' AND property_key IN ('label','labelAlignment','textSize','labelColor')" 0
+          assert_count 'Lookup Default Value disabled' "SELECT count(*) FROM md_builder_ribbon_component_rules WHERE component_api='smart_lookup' AND property_key IN ('defaultValue','defaultValueColor')" 0
+          assert_count 'Placeholder Size removed' "SELECT count(*) FROM md_builder_shared_properties WHERE property_key='placeholderSize'" 0
+          assert_count 'Lookup Label remains enabled' "SELECT count(*) FROM md_builder_ribbon_component_rules WHERE component_api='smart_lookup' AND property_key='label' AND enabled=true" 1
+          frontend=/var/www/metadrive-frontend/current/assets
+          grep -rFl -- 'smart-switch-track' "$frontend" >/dev/null || { echo 'iOS toggle bundle not found'; exit 1; }
+          grep -rFl -- 'smart-formula-list' "$frontend" >/dev/null || { echo 'Formula popup CSS bundle not found'; exit 1; }
+          echo 'PASS: deployed frontend includes Smart switch and Formula Field assets'
+          curl --fail --silent --max-time 6 http://127.0.0.1:3001/api/health >/dev/null
+          echo 'PASS: live Smart property inventory and backend health'
