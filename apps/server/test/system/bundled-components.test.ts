@@ -56,3 +56,16 @@ test('UNE seeding never overwrites tenant customisations',async()=>{
   assert.equal(write.args[0],'tenant-une');assert.equal(write.args[2],'one-bundled:'+write.args[1]);
  }
 });
+
+test('retired UNE Badge has no app placement, system manifest, or insert registration',async()=>{
+  assert.equal((UNE_COMPONENTS as readonly string[]).includes('une_badge'),false);
+  const app=await readFile(new URL('../../../acetill/sql/register-v2.sql',import.meta.url),'utf8');
+  assert.doesNotMatch(app,/une_badge|OneBadge/);
+  const catalog=JSON.parse(await readFile(new URL('../../../web/src/one/manifest.json',import.meta.url),'utf8')) as {components:string[]};
+  assert.ok(!catalog.components.includes('une_badge/component.json'));
+  const migration=await readFile(new URL('../../src/system-support/migrations/20270118-retire-une-badge.sql',import.meta.url),'utf8');
+  for(const clause of ['DELETE FROM md_lightning_page_nodes','DELETE FROM md_page_layout_version_nodes',
+   'DELETE FROM md_page_components','DELETE FROM md_app_package_page_component_templates',
+   "UPDATE md_component_definitions SET enabled=false"])
+    assert.ok(migration.includes(clause),clause);
+});
