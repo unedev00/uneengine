@@ -62,3 +62,17 @@
   color:#61728b;font:10px/13px "Segoe UI",Arial,sans-serif;
   text-align:left;white-space:normal;
 }
+
+/* SQL-owned Home positions; no extra buttons or duplicate page identities. */
+.office-builder-ribbon .une-sql-home-group{min-width:64px;max-width:none;display:flex;flex-direction:column}
+.office-builder-ribbon .une-sql-home-control{display:flex;align-items:center;gap:7px;min-height:28px;box-sizing:border-box;white-space:nowrap;font:11px "Segoe UI",Arial,sans-serif;color:#33475f}
+.office-builder-ribbon .une-sql-home-control>span{min-width:48px;flex:0 0 auto}
+.office-builder-ribbon .une-sql-home-control input,.office-builder-ribbon .une-sql-home-control select{
+ max-width:160px;min-width:64px;height:26px;box-sizing:border-box
+}
+.office-builder-ribbon .une-sql-home-control button{display:inline-flex;align-items:center;justify-content:center;gap:5px}
+.office-builder-ribbon .une-sql-home-group:has([data-ribbon-property="backIcon"]) button{width:44px;height:44px}
+.office-builder-ribbon .une-sql-home-group:has([data-ribbon-property="resetIcon"]) button{width:36px;height:36px}
+.office-builder-ribbon .une-sql-home-group .office-ribbon-quick-grid{display:grid;grid-template-columns:repeat(4,34px);gap:3px}
+.office-builder-ribbon .une-sql-home-group:has(.office-ribbon-quick-grid) .une-sql-home-control{min-height:31px}
+.office-builder-ribbon .une-ribbon-catalog-status{padding:14px 16px;color:#475569;font:12px "Segoe UI",Arial,sans-serif}

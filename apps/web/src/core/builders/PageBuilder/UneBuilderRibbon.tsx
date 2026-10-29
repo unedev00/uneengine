@@ -1,8 +1,9 @@
 import {useEffect,useRef,useState} from 'react';
 import {createPortal} from 'react-dom';
 import type {ObjectMetadata} from '../../metadata/Definitions/metadata';
-import {UNE_RIBBON_GROUPS,UNE_RIBBON_PROPERTIES,type UneBuilderApi,type UneBuilderTab,type UneRibbonProperty} from './uneBuilderPropertyInventory';
+import {sharedPropertyGroups,type UneBuilderApi,type UneBuilderTab,type UneRibbonProperty} from './uneBuilderPropertyInventory';
 import UneExpressionEditor from './UneExpressionEditor';
+import RibbonColorPalette from './RibbonColorPalette';
 import './UneBuilderRibbon.css';
 
 const WEEKDAYS=[['sun','Sun'],['mon','Mon'],['tue','Tue'],['wed','Wed'],['thu','Thu'],['fri','Fri'],['sat','Sat']] as const;
@@ -37,11 +38,10 @@ function WeekdaysPicker({value,onChange,disabled}:{value:readonly string[];onCha
    </div>,document.body)}
  </>;
 }
-const color=(value:unknown)=>typeof value==='string'&&/^#[0-9a-f]{6}$/i.test(value)?value:'#ffffff';
 const number=(value:unknown,fallback=0)=>typeof value==='number'&&Number.isFinite(value)?value:fallback;
 type Position={x:number;y:number;width:number;height:number};
-export default function UneBuilderRibbon({tab,api,properties,onChange,objects,pageObjectApiName='',position,onPositionChange,layoutMode}:{
- tab:UneBuilderTab;api:UneBuilderApi;properties:Record<string,unknown>;
+export default function UneBuilderRibbon({tab,api,definitions,properties,onChange,objects,pageObjectApiName='',position,onPositionChange,layoutMode}:{
+ tab:UneBuilderTab;api:UneBuilderApi;definitions:readonly UneRibbonProperty[];properties:Record<string,unknown>;
  onChange:(next:Record<string,unknown>)=>void;objects:readonly ObjectMetadata[];pageObjectApiName?:string;
  position?:Position;onPositionChange?:(next:Position)=>void;layoutMode:string;
 }){
@@ -50,9 +50,7 @@ export default function UneBuilderRibbon({tab,api,properties,onChange,objects,pa
  const control=(property:UneRibbonProperty)=>{
   const supported=property.components.includes(api);
   const kind=property.kindOverrides?.[api]??property.kind;
-  const sourceKey=api==='une_calendar'?
-   ({shadow:'calendarShadowColor',label:'calendarMonthTitleColor',labelAlignment:'calendarHeaderColor'} as Record<string,string>)[property.id]??property.id
-   :property.id;
+  const sourceKey=property.valueKeys?.[api]??property.id;
   const enabled=supported&&(kind!=='position'||layoutMode==='free-canvas'&&Boolean(position&&onPositionChange));
   const v=properties[sourceKey]??property.defaultsOverrides?.[api]??property.default??'';
   const choices=property.choicesOverrides?.[api]??property.choices;
@@ -73,10 +71,10 @@ export default function UneBuilderRibbon({tab,api,properties,onChange,objects,pa
       <option value="">Choose Object</option>{objects.map(o=><option key={o.apiName} value={o.apiName}>{o.label}</option>)}
     </select>;
   else if(kind==='color')
-    editor=<div className="une-v2-color"><input type="color" aria-label={name} disabled={!enabled}
-       value={color(v)} onChange={e=>write(e.target.value)}/>
-       <button type="button" title={'Clear '+name} disabled={!enabled} aria-label={'Clear '+name}
-        onClick={()=>write('')}>×</button></div>;
+    editor=<RibbonColorPalette variant="property"
+       kind={/border/i.test(property.id)?'border':/label|text|value/i.test(property.id)?'text':'fill'}
+       label={name} value={typeof v==='string'?v:''} disabled={!enabled}
+       onChange={next=>write(next)}/>;
   else if(kind==='number'||kind==='position')
     editor=<input className="une-v2-number" type="number" aria-label={name} disabled={!enabled}
       min={property.min??0} max={property.max}
@@ -87,7 +85,7 @@ export default function UneBuilderRibbon({tab,api,properties,onChange,objects,pa
       checked={v===true} onChange={e=>write(e.target.checked)}/>;
   else if(kind==='shadow')
     editor=<div className="une-v2-icon-options" role="group" aria-label={name}>
-      {['none','small','medium','large'].map((opt,i)=><button key={opt} type="button" disabled={!enabled}
+      {['none','medium','large'].map((opt,i)=><button key={opt} type="button" disabled={!enabled}
        title={opt} aria-label={name+' '+opt} aria-pressed={v===opt} onClick={()=>write(opt)}>
         <span style={{boxShadow:i===0?'none':i===1?'1px 1px 2px #64748b':i===2?'2px 3px 5px #64748b':'3px 4px 9px #64748b'}}/>
        </button>)}
@@ -114,9 +112,9 @@ export default function UneBuilderRibbon({tab,api,properties,onChange,objects,pa
  };
  return <div className="une-v2-ribbon" aria-label="UNE application property ribbon"
     data-component={api} data-tab={tab}>
-   {UNE_RIBBON_GROUPS[tab].map(group=><section key={group} className="une-v2-group" aria-label={group}>
+   {sharedPropertyGroups(definitions,tab).map(group=><section key={group} className="une-v2-group" aria-label={group}>
      <div className="une-v2-controls">
-      {UNE_RIBBON_PROPERTIES.filter(prop=>prop.tab===tab&&prop.group===group).map(control)}
+      {definitions.filter(prop=>prop.tab===tab&&prop.group===group).map(control)}
      </div>
      <span className="une-v2-caption">{group}</span>
    </section>)}

@@ -59,7 +59,12 @@ export default function UneSchedule(p){
   <div className="one-row" style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10,
     backgroundColor:safeColor(p.calendarHeaderColor)}}>
    <button className="one-btn" type="button" aria-label="Previous period" onClick={()=>shift(-1)}>‹</button>
-   <strong style={{color:safeColor(p.calendarMonthTitleColor)}}>{selected.toLocaleString(undefined,{month:"long",year:"numeric"})}</strong>
+   <strong style={{color:safeColor(p.labelColor)||safeColor(p.calendarMonthTitleColor),
+      textAlign:["left","center","right"].includes(p.labelAlignment)?p.labelAlignment:undefined,
+      flex:"1 1 auto",fontSize:Number.isFinite(Number(p.textSize))&&Number(p.textSize)>0?Number(p.textSize):undefined}}>
+      {typeof p.label==="string"&&p.label.trim()?p.label+" · ":""}
+      {selected.toLocaleString(undefined,{month:"long",year:"numeric"})}
+   </strong>
    <button className="one-btn" type="button" aria-label="Next period" onClick={()=>shift(1)}>›</button>
    <button className="one-btn" type="button" onClick={()=>setDate(new Date())}>Today</button>
    <label>View <select className="one-control" value={view} onChange={e=>{
