@@ -4,7 +4,7 @@ import {apiRequest} from '../Client/authClient';
 type Channel='email'|'whatsapp'|'sms';
 type RecoveryStep='choose'|'verify'|'reset'|'done';
 type Options={otpLength:4|6;method:'OTP'|'LINK';channels:Record<Channel,boolean>};
-const defaults:Options={otpLength:6,method:'OTP',channels:{email:true,whatsapp:false,sms:false}};
+const defaults:Options={otpLength:6,method:'OTP',channels:{email:false,whatsapp:false,sms:false}};
 const channelButtons:Array<{channel:Channel;label:string}>=[
  {channel:'email',label:'Send OTP by Email'},
  {channel:'whatsapp',label:'Send OTP by WhatsApp'},
@@ -43,8 +43,8 @@ export default function LoginRecovery({onClose}:{onClose:()=>void}){
    const response=await apiRequest<{message:string}>('/auth/password-reset/request',{
     method:'POST',body:JSON.stringify({email:email.trim(),channel:selected})
    });
-   setStep('verify');
-   setMessage(response.message);
+   if(options.method==='OTP')setStep('verify');
+   setMessage(options.method==='LINK'?'If your account exists, check your email for a reset link.':response.message);
   }catch(error){setMessage(error instanceof Error?error.message:'Recovery request failed');}
   finally{setBusy(false);}
  };
@@ -82,7 +82,7 @@ export default function LoginRecovery({onClose}:{onClose:()=>void}){
    <div className="auth-recovery-channels">
     {channelButtons.map(item=><button key={item.channel} type="button"
      className="btn auth-recovery-channel" disabled={busy||!email.trim()||!options.channels[item.channel]}
-     onClick={()=>void request(item.channel)}>{item.label}
+     onClick={()=>void request(item.channel)} >{options.method==='LINK'&&item.channel==='email'?'Send reset link by Email':item.label}
      {!options.channels[item.channel]&&' — Not configured'}
     </button>)}
    </div>
