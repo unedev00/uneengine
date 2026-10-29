@@ -19,9 +19,12 @@ const fire=(p,event,value)=>p.actionFlows?.[event]&&typeof p.onAction==="functio
 export default function UneSchedule(p){
  const viewChoices=["month","week","day","agenda"],initial=viewChoices.includes(p.view)?p.view:"month";
  const initialDate=p.selectedDate||(p.defaultValue&&p.defaultValue!=="today"?p.defaultValue:null);
- const [view,setView]=React.useState(initial),[date,setDate]=React.useState(()=>parseDate(initialDate||new Date().toISOString().slice(0,10)));
+ const [view,setView]=React.useState(initial),[date,setDate]=React.useState(()=>parseDate(initialDate||iso(new Date())));
  React.useEffect(()=>{if(viewChoices.includes(p.view))setView(p.view)},[p.view]);
- React.useEffect(()=>{if(p.selectedDate&&!Number.isNaN(parseDate(p.selectedDate).getTime()))setDate(parseDate(p.selectedDate))},[p.selectedDate]);
+ React.useEffect(()=>{if(p.selectedDate&&!Number.isNaN(parseDate(p.selectedDate).getTime()))setDate(parseDate(p.selectedDate));
+  else if(p.defaultValue==="today")setDate(new Date());
+  else if(p.defaultValue&&!Number.isNaN(parseDate(p.defaultValue).getTime()))setDate(parseDate(p.defaultValue));
+ },[p.selectedDate,p.defaultValue]);
  const weekCodes=["sun","mon","tue","wed","thu","fri","sat"];
  const startDay=weekCodes.indexOf(p.firstDay);
  const firstDay=startDay>=0?startDay:p.firstDayOfWeek==="sunday"?0:1;
@@ -54,15 +57,13 @@ export default function UneSchedule(p){
  return <section className="one-ui one-surface une-calendar" style={{
    padding:12,backgroundColor:safeColor(p.backgroundColor),borderColor:safeColor(p.borderColor),
    borderRadius:Number.isFinite(Number(p.radius))?Math.max(0,Math.min(80,Number(p.radius))):undefined,
-   boxShadow:safeColor(p.calendarShadowColor)?"0 5px 16px "+safeColor(p.calendarShadowColor)+"55":undefined
+   boxShadow:p.shadow==="none"?"none":p.shadow==="small"?"0 1px 3px #0002":p.shadow==="large"?"0 10px 28px #0004":"0 4px 12px #0003"
  }} aria-label={p.label||"Calendar"}>
   <div className="one-row" style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10,
     backgroundColor:safeColor(p.calendarHeaderColor)}}>
    <button className="one-btn" type="button" aria-label="Previous period" onClick={()=>shift(-1)}>‹</button>
-   <strong style={{color:safeColor(p.labelColor)||safeColor(p.calendarMonthTitleColor),
-      textAlign:["left","center","right"].includes(p.labelAlignment)?p.labelAlignment:undefined,
+   <strong style={{color:safeColor(p.calendarMonthTitleColor),
       flex:"1 1 auto",fontSize:Number.isFinite(Number(p.textSize))&&Number(p.textSize)>0?Number(p.textSize):undefined}}>
-      {typeof p.label==="string"&&p.label.trim()?p.label+" · ":""}
       {selected.toLocaleString(undefined,{month:"long",year:"numeric"})}
    </strong>
    <button className="one-btn" type="button" aria-label="Next period" onClick={()=>shift(1)}>›</button>
@@ -78,14 +79,14 @@ export default function UneSchedule(p){
        onClick={()=>eventClick(item)}>{item.date} · {item.title}</button>)}
    {!events.length&&<p>No appointments</p>}
   </div>:<div className="une-calendar-grid" style={{"--une-calendar-columns":view==="day"?1:activeDayCount}}>
-   {view!=="day"&&Array.from({length:7},(_,i)=>(firstDay+i)%7).filter(dayEnabled).map(day=><strong key={day} style={{textAlign:"center",color:safeColor(p.labelColor)}}>
+   {view!=="day"&&Array.from({length:7},(_,i)=>(firstDay+i)%7).filter(dayEnabled).map(day=><strong key={day} style={{textAlign:"center",color:safeColor(p.textColor)}}>
       {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][day]}</strong>)}
    {days.filter(d=>view==="day"||dayEnabled(d.getDay())).map(day=>{
      const found=events.filter(item=>item.date===iso(day));
      return <div className="une-calendar-day" key={iso(day)}>
        <button className="one-btn" type="button" aria-label={"Select "+iso(day)}
-        style={{color:safeColor(p.labelColor),...(iso(day)===iso(selected)&&safeColor(p.defaultValueColor)
-           ?{backgroundColor:p.defaultValueColor}:{} )}}
+        style={{color:safeColor(p.textColor),...(iso(day)===iso(selected)
+           ?{backgroundColor:safeColor(p.defaultValueColor)||"var(--une-accent,#2563eb)",color:safeColor(p.selectedDateTextColor)||"#fff"}:{} )}}
         onClick={()=>selectDay(day,found)}>{day.getDate()}</button>
        {found.slice(0,view==="month"?3:20).map((item,i)=><button type="button"
          key={i} className="une-calendar-event" title={item.title} onClick={()=>eventClick(item)}>{item.title}</button>)}
