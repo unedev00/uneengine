@@ -85,7 +85,7 @@ export default function UneBuilderRibbon({tab,api,definitions,properties,onChang
       checked={v===true} onChange={e=>write(e.target.checked)}/>;
   else if(kind==='shadow')
     editor=<div className="une-v2-icon-options" role="group" aria-label={name}>
-      {['none','small','medium','large'].map((opt,i)=><button key={opt} type="button" disabled={!enabled}
+      {['none','medium','large'].map((opt,i)=><button key={opt} type="button" disabled={!enabled}
        title={opt} aria-label={name+' '+opt} aria-pressed={v===opt} onClick={()=>write(opt)}>
         <span style={{boxShadow:i===0?'none':i===1?'1px 1px 2px #64748b':i===2?'2px 3px 5px #64748b':'3px 4px 9px #64748b'}}/>
        </button>)}
