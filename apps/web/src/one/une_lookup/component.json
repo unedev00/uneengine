@@ -263,6 +263,13 @@
       "kind": "BOOLEAN",
       "defaultValue": false,
       "displayOrder": 1230
+    },
+    {
+      "propertyKey": "helpText",
+      "label": "Help text",
+      "kind": "TEXT",
+      "displayOrder": 860,
+      "defaultValue": ""
     }
   ],
   "eventDefinitions": [
