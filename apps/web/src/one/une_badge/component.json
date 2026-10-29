@@ -177,6 +177,13 @@
       "kind": "TEXT",
       "displayOrder": 300,
       "defaultValue": "Status"
+    },
+    {
+      "propertyKey": "helpText",
+      "label": "Help text",
+      "kind": "TEXT",
+      "displayOrder": 860,
+      "defaultValue": ""
     }
   ]
 }
