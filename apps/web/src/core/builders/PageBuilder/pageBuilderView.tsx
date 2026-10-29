@@ -2667,7 +2667,7 @@ function PageBuilder({
                   if(!selected||!isUneBuilderApi(selected.type.slice(7)))return;
                   const keys=new Set(UNE_RIBBON_PROPERTIES.map(prop=>prop.id));
                   const kept=Object.fromEntries(Object.entries(selected.properties).filter(([key])=>!keys.has(key)));
-                  updateComponent(selected.id,{properties:{...kept,...uneBuilderDefaults(selected.type.slice(7))}});
+                  updateComponent(selected.id,{properties:{...kept,...uneBuilderDefaults(selected.type.slice(7) as UneBuilderApi)}});
                 }}><RefreshCw size={16}/> Reset component</button>
             </div><span>Reset Component</span></div>
             <div className="office-ribbon-group"><div className="office-ribbon-stack">
