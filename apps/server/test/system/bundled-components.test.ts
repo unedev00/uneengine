@@ -7,7 +7,8 @@ import {UNE_COMPONENTS,UNE_INSERT_EXCLUDED,seedFreshUneComponents} from '../../s
 
 test('SQL component seed matches the UNE-only manifest without duplicates', async()=>{
   const catalog=JSON.parse(await readFile(new URL('../../../web/src/one/manifest.json',import.meta.url),'utf8')) as {components:string[]};
-  assert.deepEqual([...BUNDLED_COMPONENTS,...UNE_COMPONENTS],catalog.components.map(path=>path.split('/')[0]));
+  assert.deepEqual([...BUNDLED_COMPONENTS,...UNE_COMPONENTS],catalog.components.filter(path=>path.startsWith('une_')).map(path=>path.split('/')[0]));
+  assert.ok(catalog.components.includes('acetill_cart/component.json'));
   assert.deepEqual(BUNDLED_COMPONENTS,[]);
   assert.ok(UNE_COMPONENTS.includes('une_cart'));
   assert.ok(UNE_COMPONENTS.includes('une_item_grid'));
