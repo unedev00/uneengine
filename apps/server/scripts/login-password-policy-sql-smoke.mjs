@@ -25,7 +25,7 @@ export async function verifyLoginPasswordSql(db,additionalChecks){
    CREATE TABLE md_user_profiles(tenant_id uuid,user_id uuid,profile_id uuid);
    CREATE TABLE md_sessions(id uuid DEFAULT gen_random_uuid(),tenant_id uuid,user_id uuid,token_hash text,expires_at timestamptz,mfa_verified boolean,revoked_at timestamptz);
    CREATE TABLE md_refresh_sessions(LIKE md_sessions);
-   CREATE TABLE md_password_reset_challenges(id uuid DEFAULT gen_random_uuid(),tenant_id uuid,user_id uuid,token_hash text,consumed_at timestamptz,expires_at timestamptz);
+   CREATE TABLE md_password_reset_challenges(id uuid DEFAULT gen_random_uuid(),tenant_id uuid,user_id uuid,token_hash text,consumed_at timestamptz,expires_at timestamptz,otp_length integer,verified_at timestamptz);
    CREATE TABLE md_named_credentials(tenant_id uuid,id uuid,protocol text,enabled boolean);
    CREATE TABLE md_password_recovery_settings(tenant_id uuid,smtp_credential_id uuid,from_email text);`);
   const tenant=(await db.query('INSERT INTO md_tenants DEFAULT VALUES RETURNING id')).rows[0].id;
