@@ -546,13 +546,6 @@
       "defaultValue": true
     },
     {
-      "propertyKey": "showRefresh",
-      "label": "Show refresh button",
-      "kind": "BOOLEAN",
-      "displayOrder": 890,
-      "defaultValue": false
-    },
-    {
       "propertyKey": "showConversationCount",
       "label": "Show conversation count",
       "kind": "BOOLEAN",
@@ -627,13 +620,6 @@
       "kind": "TEXT",
       "displayOrder": 970,
       "defaultValue": "New conversation"
-    },
-    {
-      "propertyKey": "refreshLabel",
-      "label": "Refresh button label",
-      "kind": "TEXT",
-      "displayOrder": 980,
-      "defaultValue": "Refresh conversations"
     },
     {
       "propertyKey": "canSend",
@@ -895,13 +881,6 @@
       "kind": "BOOLEAN",
       "defaultValue": true,
       "displayOrder": 1436
-    },
-    {
-      "propertyKey": "newMessageNoticeLabel",
-      "label": "New messages button label",
-      "kind": "TEXT",
-      "defaultValue": "New messages",
-      "displayOrder": 1437
     },
     {
       "propertyKey": "contactDisplayNameFieldApiNames",
