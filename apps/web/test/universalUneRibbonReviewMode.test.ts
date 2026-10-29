@@ -3,18 +3,24 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const load=(name:string)=>readFileSync(new URL(name,import.meta.url),'utf8');
 
-test('ribbon displays stable slots and disables unsupported properties',()=>{
+test('every declared UNE property occupies one fixed slot regardless of selected component',()=>{
  const source=load('../src/core/builders/PageBuilder/UniversalRibbonInventory.tsx');
- assert.match(source,/data-review-mode="all-disabled"/);
+ const inventory=load('../src/core/builders/PageBuilder/universalRibbonCoverage.mjs');
+ assert.match(source,/const excluded=new Set<string>\(\)/);
  assert.match(source,/defs\.map\(def=>/);
  assert.match(source,/Array\.from\(groups\)\.map/);
+ assert.match(source,/const enabled=new Set\(selectedDefinitions\.keys\(\)\)/);
+ assert.match(source,/definition=\{controlDefinition\}/);
+ assert.match(source,/const supported=enabled\.has\(def\.propertyKey\)/);
  assert.match(source,/if\(supported\)onChange/);
+ assert.match(source,/disabled:!enabled/);
+ assert.doesNotMatch(source,/if\(definition\?\.apiName===.*return null/);
+ assert.doesNotMatch(source,/if\(canEditCanvas&&.*return null/);
+ assert.doesNotMatch(source,/definition=\{supported\?definition\?\.propertyDefinitions/);
  assert.match(source,/componentId/);
  assert.match(source,/disabled=\{!canEditCanvas\}/);
- assert.match(source,/disabled=\{!canOpenSource\}/);
- assert.match(source,/disabled=\{!canOpenFilters\}/);
  assert.match(source,/onPositionChange/);
- assert.match(source,/editCanvas\(key,1,event\.target\.value\)/);
+ assert.match(inventory,/auditUniversalRibbonCoverage/);
 });
 
 test('component unrelated source mappings are not declared on Card Grid',()=>{

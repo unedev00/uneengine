@@ -1,4 +1,4 @@
-import {useState} from 'react';
+import {useMemo,useState} from 'react';
 import {auditUniversalRibbonCoverage} from './universalRibbonCoverage.mjs';
 import {createPortal} from 'react-dom';
 import RibbonColorPalette from './RibbonColorPalette';
@@ -24,14 +24,11 @@ for(const component of validManifests){
     if(!definitionMap.has(def.propertyKey))definitionMap.set(def.propertyKey,def);
   }
 }
-// Never expose retired or duplicate source selectors as individual ribbon slots.
-// Object-source variants remain available through the Source mappings editor.
-const isExcludedRibbonProperty=(key:string)=>
-  ['fontFamily','fontStyle','textDecoration','theme'].includes(key)
-  || /(?:ageRestriction|barcode)/i.test(key)
-  || (/(?:ObjectApiName|SourceObjectApi|ObjectAPI)$/i.test(key) && key!=='objectApiName');
-const retiredItemGridProps=new Set(["accentColor","tone","descriptionExpression","emptyText","showDescription","valueTextAlign","missingImageBehavior","showAddIcon","showHeading","badgeExpression","cartTargetKey","currencyCode","headingExpression","separateAddButton","valueColor","valueLineLimit"]);
-const excluded=new Set(Array.from(definitionMap.keys()).filter(isExcludedRibbonProperty));
+// Every active property in any UNE manifest gets one permanent slot in the
+// universal ribbon. Component selection only changes enabled/disabled state.
+// A property retired from one component remains as a disabled slot if another
+// component still declares it. No component-specific filtering is permitted.
+const excluded=new Set<string>();
 const sections:Record<Tab,readonly string[]>={
   'Component Data':['Source','Fields','Filters','Records','Data integration'],
   'Component Content':['Text','Image','Options','Content fields','Component content'],
@@ -87,6 +84,27 @@ if(import.meta.env.DEV&&(universalRibbonCoverage.missing.length||universalRibbon
   throw new Error('UNE ribbon registry coverage failed: '+JSON.stringify(universalRibbonCoverage));
 export const universalRibbonInventoryCount=Array.from(slots.values()).reduce((total,groups)=>total+Array.from(groups.values()).reduce((sum,defs)=>sum+defs.length,0),0);
 export const universalRibbonComponentCount=validManifests.length;
+
+// Include additional active SQL/library-defined UNE properties in the SAME
+// shared inventory. The complete catalog is passed for every component; never
+// derive the layout from just the selected component's property definitions.
+function mergeCatalogSlots(tab:Tab,catalog:readonly LibraryComponentMetadata[]):Map<string,Definition[]>{
+ const baseline=slots.get(tab);
+ const result=new Map<string,Definition[]>(Array.from(baseline??[],([section,defs]):[string,Definition[]]=>[section,[...defs]]));
+ const known=new Set(definitionMap.keys());
+ for(const component of catalog){
+   if(!/^une_[a-z0-9_]+$/.test(component.apiName))continue;
+   for(const def of component.propertyDefinitions??[]){
+     if(known.has(def.propertyKey))continue;
+     known.add(def.propertyKey);
+     const [target,section]=place(def.propertyKey);
+     if(target===tab)result.get(section)?.push(def);
+   }
+ }
+ for(const defs of result.values())defs.sort((a,b)=>a.propertyKey.localeCompare(b.propertyKey));
+ return result;
+}
+
 
 function PropertyEditor({definition,enabled,reviewOnly=false,properties,onChange,objects,flows,onOpenComplex,complexSelected}:{
  definition:Definition;enabled:boolean;reviewOnly?:boolean;properties:Properties;onChange:(next:Properties)=>void;
@@ -178,10 +196,11 @@ export type UniversalBuilderControls={
  onOpenSource?:()=>void;
  onOpenFilters?:()=>void;
 };
-export default function UniversalRibbonInventory({tab,definition,componentId,properties,onChange,objects=[],flows=[],builder}:{
+export default function UniversalRibbonInventory({tab,definition,componentId,properties,onChange,objects=[],flows=[],catalog=[],builder}:{
  tab:Tab;definition?:LibraryComponentMetadata;componentId?:string;properties:Properties;
  onChange:(next:Properties)=>void;
  objects?:readonly ObjectMetadata[];flows?:readonly FlowDefinitionMetadata[];
+ catalog?:readonly LibraryComponentMetadata[];
  builder?:UniversalBuilderControls;
 }){
  // Every component uses the same inventory, section order and control positions.
@@ -192,9 +211,10 @@ export default function UniversalRibbonInventory({tab,definition,componentId,pro
    if(builder?.position&&builder.layoutMode==='free-canvas')
      builder.onPositionChange?.({...builder.position,[key]:Math.round(value)});
  };
- const enabled=new Set((definition?.propertyDefinitions??[]).filter(item=>!isExcludedRibbonProperty(item.propertyKey)).map(item=>item.propertyKey));
+ const selectedDefinitions=new Map((definition?.propertyDefinitions??[]).map(item=>[item.propertyKey,item]));
+ const enabled=new Set(selectedDefinitions.keys());
  const canEditCanvas=builder?.layoutMode==='free-canvas'&&Boolean(builder.position)&&Boolean(builder.onPositionChange);
- const groups=slots.get(tab);
+ const groups=useMemo(()=>mergeCatalogSlots(tab,catalog),[tab,catalog]);
  if(!groups)return null;
  return <div className="une-universal-ribbon" aria-label="Universal UNE property ribbon"
    data-component={definition?.apiName??'none'} data-component-id={componentId??'none'} data-inventory-count={universalRibbonInventoryCount}
@@ -215,15 +235,17 @@ export default function UniversalRibbonInventory({tab,definition,componentId,pro
              onChange={event=>editCanvas(key,0,event.target.value)}/>
          </label>)}
        {defs.map(def=>{
-         // Removed Card Grid settings never appear as disabled legacy slots.
-         if(definition?.apiName==='une_item_grid'&&retiredItemGridProps.has(def.propertyKey))return null;
-         // UNE Text no longer exposes the legacy palette; other UNE controls retain it.
-         if(definition?.apiName==='une_text'&&def.propertyKey==='tone')return null;
-         // Free-canvas geometry already has dedicated Width/Height controls.
-         if(canEditCanvas&&(def.propertyKey==='width'||def.propertyKey==='height'))return null;
          const supported=enabled.has(def.propertyKey);
+         const selectedDefinition=selectedDefinitions.get(def.propertyKey);
+         // The slot's label, kind and position MUST NOT change when selection
+         // changes. Runtime-specific options and defaults may change without
+         // changing the visible ribbon layout.
+         const controlDefinition=supported&&selectedDefinition
+           ? {...def,choices:selectedDefinition.choices??def.choices,
+               defaultValue:selectedDefinition.defaultValue??def.defaultValue}
+           : def;
          return <PropertyEditor key={def.propertyKey}
-           definition={supported?definition?.propertyDefinitions?.find(item=>item.propertyKey===def.propertyKey)??def:def}
+           definition={controlDefinition}
            enabled={supported} properties={properties}
            onChange={next=>{
              if(supported)onChange({...properties,[def.propertyKey]:next[def.propertyKey]});
