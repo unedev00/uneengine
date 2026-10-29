@@ -55,19 +55,24 @@ test('existing UNE expression evaluator supports literal strings, field concaten
  assert.equal(evaluateFieldExpression('https://example.com/image.png',row),'https://example.com/image.png');
  assert.equal(evaluateFieldExpression('@__proto__',row),'');
 });
-test('Image and Card Grid support independent badge/text/heading/card positioning',()=>{
- const image=src('../src/one/une_image/UneImage.jsx'),grid=src('../src/one/OneItemGrid/OneItemGrid.jsx');
- for(const code of [image,grid]){
-  for(const key of ['headerBoxHeight','badgeVisible','badgeAlignment','imagePlacement','imageSource','textSource','badgeText'])
-   assert.ok(code.includes(key),'Missing '+key);
- }
+test('Image renders ONE Card and Card Grid renders the same shared Card repeatedly',()=>{
+ const image=src('../src/one/une_image/UneImage.jsx');
+ const grid=src('../src/one/OneItemGrid/OneItemGrid.jsx');
+ const card=src('../src/one/shared/OneCardCore.jsx');
+ assert.match(image,/import OneCardCore/);
+ assert.match(grid,/import OneCardCore/);
+ assert.match(image,/<OneCardCore /);
+ assert.match(grid,/<OneCardCore/);
+ for(const key of ['headerBoxHeight','badgeVisible','badgeAlignment','imagePlacement','imageFill','imageBorderColor','headerBorderColor'])
+   assert.ok(card.includes(key),'Shared Card missing '+key);
+ assert.match(card,/Header \/ text/);
+ assert.match(card,/Image area/);
  const builder=src('../src/core/builders/PageBuilder/pageBuilderView.tsx');
  assert.match(builder,/selectedNewUne/);
  assert.match(builder,/<UneBuilderRibbon tab=/);
  const palette=src('../src/core/builders/PageBuilder/pageBuilderPalette.ts');
- assert.match(palette,/!component\.apiName\.startsWith\('une_'\)/);
+ assert.match(palette,/!component\\.apiName\\.startsWith\\('une_'\\)/);
 });
-
 test('Excel property locations and component rules are globally shared',()=>{
  assert.deepEqual([slot('labelAlignment').tab,slot('labelAlignment').group],['Design','Typography']);
  assert.deepEqual([slot('imageSource').tab,slot('imageSource').group],['Data','Source']);
@@ -99,7 +104,7 @@ test('new Calendar Layout controls and navigation, container and image renderers
   assert.ok(layout.includes(term),'Container/Navigation missing '+term);
  const grid=src('../src/one/OneItemGrid/OneItemGrid.jsx');
  const image=src('../src/one/une_image/UneImage.jsx');
- for(const code of [grid,image])assert.ok(code.includes("imageFill"),'image fit mode missing');
+ assert.ok(src('../src/one/shared/OneCardCore.jsx').includes("imageFill"),'shared Card image fit missing');
  for(const name of components){
   const registration=JSON.parse(src('../src/one/'+name+'/component.json'));
   assert.deepEqual(registration.propertyDefinitions,[],'SQL metadata leaked into '+name);
