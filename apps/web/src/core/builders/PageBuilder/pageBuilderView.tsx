@@ -147,6 +147,7 @@ import PageBuilderRibbonMetadataPager from './PageBuilderRibbonMetadataPager';
 import UniversalRibbonInventory from './UniversalRibbonInventory';
 import UneBuilderRibbon from './UneBuilderRibbon';
 import SmartRibbon from './SmartRibbon';
+import SmartInsertRibbon from './SmartInsertRibbon';
 import {isUneBuilderApi,uneBuilderDefaults,type SharedRibbonCatalog,type UneBuilderApi} from './uneBuilderPropertyInventory';
 import './UniversalRibbonInventory.css';
 import './PageBuilderNumericControls.css';
@@ -2735,6 +2736,11 @@ function PageBuilder({
                </div><span>{group}</span>
             </div>)}</>;
           })()}
+          {ribbonTab==='Add Block' && <SmartInsertRibbon
+            items={paletteComponents}
+            onInsert={addPaletteComponent}
+            renderIcon={renderPaletteIcon}
+            onOpenLibrary={()=>openAddBlocks()}/>}
           {selectedNewUne && selected && ribbonCatalog &&
             (ribbonTab==='Component Data'||ribbonTab==='Component Properties'||ribbonTab==='Component Layout') &&
             <SmartRibbon
