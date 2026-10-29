@@ -20,6 +20,7 @@ export default function ComponentLibrary({
   onPublish: (apiName: string) => Promise<void>;
   onRollback: (apiName: string, version: number) => Promise<void>;
 }) {
+  const visibleComponents=components.filter(component=>component.apiName!=='une_conversation');
   const [editingApiName, setEditingApiName] = useState('');
   const [apiName, setApiName] = useState('');
   const [manualApiName,setManualApiName]=useState(false);
@@ -178,7 +179,7 @@ export default function ComponentLibrary({
     [component.apiName, component.label, component.description].join(' ').toLowerCase().includes(catalogSearch.trim().toLowerCase());
   const visibleStandardPages = standardPageComponents.filter(matchesSearch);
   const visibleDashboardWidgets = standardDashboardComponents.filter(matchesSearch);
-  const catalog = uniqueLibraryComponents(components);
+  const catalog = uniqueLibraryComponents(visibleComponents);
   const coreComponents = catalog.filter(component => component.scope === 'platform-system');
   const uneComponents = catalog.filter(component => component.apiName.startsWith('une_'));
   const customComponents = catalog.filter(component => component.scope !== 'platform-system' && !component.apiName.startsWith('une_'));
