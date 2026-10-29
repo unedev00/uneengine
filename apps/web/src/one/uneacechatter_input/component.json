@@ -8,7 +8,7 @@
   ],
   "version": 1,
   "jsxFile": "one/uneacechatter_input/AppComponent.jsx",
-  "cssFile": "one/une_input/UneInput.css",
+  "cssFile": "one/uneacechatter_input/AppComponent.css",
   "resize": {
     "defaultWidth": 320,
     "defaultHeight": 80,

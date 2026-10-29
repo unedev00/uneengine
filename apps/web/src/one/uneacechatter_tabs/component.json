@@ -8,7 +8,7 @@
   ],
   "version": 1,
   "jsxFile": "one/uneacechatter_tabs/AppComponent.jsx",
-  "cssFile": "one/une_tabs/UneTabs.css",
+  "cssFile": "one/uneacechatter_tabs/AppComponent.css",
   "resize": {
     "defaultWidth": 320,
     "defaultHeight": 80,

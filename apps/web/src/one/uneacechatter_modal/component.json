@@ -8,7 +8,7 @@
   ],
   "version": 1,
   "jsxFile": "one/uneacechatter_modal/AppComponent.jsx",
-  "cssFile": "one/une_modal/UneModal.css",
+  "cssFile": "one/uneacechatter_modal/AppComponent.css",
   "resize": {
     "defaultWidth": 320,
     "defaultHeight": 80,
