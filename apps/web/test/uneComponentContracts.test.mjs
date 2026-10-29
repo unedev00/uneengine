@@ -112,7 +112,7 @@ test('AceChatter Conversation button controls are internal code defaults, not me
  for(const key of ['showRefresh','refreshLabel','newMessageNoticeLabel'])
   assert.ok(!conversation.propertyDefinitions.some(property=>property.propertyKey===key),key+' still in metadata');
  const code=await readFile(new URL('../src/one/une_conversation/UneConversation.jsx',import.meta.url),'utf8');
- assert.match(code,/showRefresh:false/);
- assert.match(code,/refreshLabel:"Refresh conversations"/);
- assert.match(code,/newMessageNoticeLabel:"New messages"/);
+ assert.match(code,/"showRefresh": false/);
+ assert.match(code,/"refreshLabel": "Refresh conversations"/);
+ assert.match(code,/"newMessageNoticeLabel": "New messages"/);
 });
