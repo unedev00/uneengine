@@ -6,9 +6,16 @@ const key=k=>typeof k==="string"&&/^[A-Za-z][A-Za-z0-9_]*$/.test(k);
 const field=(row,name,fallback)=>key(name)?row?.[name]??fallback:fallback;
 const n=(v,fallback,min=0,max=200)=>Number.isFinite(Number(v))?Math.max(min,Math.min(max,Number(v))):fallback;
 export function UneInput(p){
- const [local,setLocal]=React.useState(p.value??p.defaultValue??"");
- React.useEffect(()=>{if(p.value!==undefined)setLocal(p.value)},[p.value]);
+ // Old Text instances may retain 'text' until their saved metadata is migrated.
+ const legacyText=p.text!==undefined&&p.text!==null;
+ const initial=p.value!==undefined&&(p.value!==""||!legacyText)?p.value:(legacyText?p.text:p.defaultValue??"");
+ const [local,setLocal]=React.useState(initial);
+ React.useEffect(()=>{
+  if(p.value!==undefined&&(p.value!==""||!legacyText))setLocal(p.value);
+  else if(legacyText)setLocal(p.text);
+ },[p.value,p.text]);
  const value=local;
+ const editable=p.allowTyping===true||(p.allowTyping!==false&&!legacyText);
  const set=v=>{setLocal(v);fire(p,"change",v)};
  const type=["text","email","number","tel","date","time","search","password","url"].includes(p.inputType)?p.inputType:"text";
  const inputMode=["text","tel","numeric","decimal","email","search","url","none"].includes(p.inputMode)?p.inputMode:undefined;
@@ -17,11 +24,20 @@ export function UneInput(p){
   placeholder:p.placeholder||"",disabled:p.disabled===true,maxLength,
   autoComplete:p.autoComplete||undefined,inputMode,
   pattern:typeof p.pattern==="string"&&p.pattern.length>0&&p.pattern.length<=250?p.pattern:undefined};
+ const display=String(value??"");
+ const visual=type==="password"?"•".repeat(display.length):display;
+ const lines=visual.split(/\r?\n/);
  return <div className="one-ui one-field">
   {p.label&&<label className="one-label" htmlFor={p.inputId}>{p.label}</label>}
-  {p.multiline?<textarea {...attributes} rows={n(p.rows,3,1,16)} onChange={e=>set(e.target.value)}/>:
-   <input {...attributes} type={type}
-    onChange={e=>set(type==="number"?(e.target.value===""?"":Number(e.target.value)):e.target.value)}/>}
+  {!editable
+    ?<div className="une-input-display" role="text" aria-label={p.label||undefined}>
+       {lines.length>1
+         ?<span className="une-input-lines">{lines.map((line,i)=><span key={i}>{line||"\u00a0"}</span>)}</span>
+         :visual}
+     </div>
+    :p.multiline?<textarea {...attributes} rows={n(p.rows,3,1,16)} onChange={e=>set(e.target.value)}/>
+    :<input {...attributes} type={type}
+      onChange={e=>set(type==="number"?(e.target.value===""?"":Number(e.target.value)):e.target.value)}/>}
   {p.helpText&&<small className="one-muted">{p.helpText}</small>}
  </div>;
 }

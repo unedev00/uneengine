@@ -11,12 +11,12 @@ const component = name => JSON.parse(readFileSync(
 const fields = name => groupedPresentationProperties(component(name).propertyDefinitions)
   .flatMap(group => group.definitions.map(definition => definition.propertyKey));
 
-test('new UNE Text can edit its declared Text default in the Editing panel with no binding', () => {
-  const text = component('une_text').propertyDefinitions.find(p => p.propertyKey === 'text');
+test('new UNE Input can edit its declared Text default in the Editing panel with no binding', () => {
+  const text = component('une_input').propertyDefinitions.find(p => p.propertyKey === 'value');
   assert.ok(isPresentationProperty(text));
-  assert.equal(presentationValue({libraryComponentId:'une_text'}, text), text.defaultValue);
-  assert.ok(fields('une_text').includes('text'));
-  assert.ok(fields('une_text').includes('fontSize'));
+  assert.equal(presentationValue({libraryComponentId:'une_input'}, text), text.defaultValue);
+  assert.ok(fields('une_input').includes('value'));
+  assert.ok(fields('une_input').includes('allowTyping'));
 });
 
 test('UNE Button label and visual variants are available without adding technical settings', () => {
@@ -36,9 +36,9 @@ test('data binding, object fields, record collections and action configuration s
 });
 
 test('reading defaults never mutates or binds the component', () => {
-  const original = {libraryComponentId:'une_text'};
-  const definition = component('une_text').propertyDefinitions.find(p => p.propertyKey === 'text');
+  const original = {libraryComponentId:'une_input'};
+  const definition = component('une_input').propertyDefinitions.find(p => p.propertyKey === 'value');
   presentationValue(original, definition);
-  assert.deepEqual(original,{libraryComponentId:'une_text'});
-  assert.equal(presentationValue({...original,text:'Acetill'},definition),'Acetill');
+  assert.deepEqual(original,{libraryComponentId:'une_input'});
+  assert.equal(presentationValue({...original,value:'Acetill'},definition),'Acetill');
 });

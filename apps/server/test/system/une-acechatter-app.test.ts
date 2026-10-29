@@ -7,7 +7,7 @@ import {seedUneAceChatterInstalledPages}
  from '../../src/app-seeders/une-acechatter-pages.js';
 
 const tenant='tenant-a';
-const componentNames=['une_text','une_conversation','une_modal','une_tabs','une_stack',
+const componentNames=['une_conversation','une_modal','une_tabs','une_stack',
  'une_lookup','une_input','une_button','une_search'];
 const flows=['AceChatterLoadConversations','AceChatterLoadCommunications',
  'AceChatterLoadContacts','AceChatterCreateConversation',

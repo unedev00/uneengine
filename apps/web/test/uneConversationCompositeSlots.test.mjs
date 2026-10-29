@@ -11,7 +11,7 @@ import {conversationPartSlots,conversationRootDefinition,conversationPartDefinit
 const read=path=>readFileSync(new URL(path,import.meta.url),'utf8');
 const manifest=name=>JSON.parse(read('../src/one/'+name+'/component.json'));
 const parent=manifest('une_conversation');
-const children=['une_text','une_button','une_search','une_input'].map(manifest);
+const children=['une_input','une_button','une_search'].map(manifest);
 test('conversation slot definitions reuse actual UNE child contracts',()=>{
  for(const part of conversationPartSlots){
   const definition=conversationPartDefinition(part.id,parent,children);

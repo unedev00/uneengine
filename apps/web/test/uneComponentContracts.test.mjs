@@ -7,7 +7,7 @@ import {renderToStaticMarkup} from 'react-dom/server';
 import {loadComponentCatalog,buildBundledComponent} from '../../../scripts/component-catalog.mjs';
 import {propertyKinds} from '../src/core/components/Properties/componentSettingDefinitions.ts';
 const {components}=await loadComponentCatalog(),une=components.filter(x=>x.apiName.startsWith('une_'));
-const names=['text','image','calendar','button','card','input','toggle','badge','stack','tabs',
+const names=['image','calendar','button','card','input','toggle','badge','stack','tabs',
  'container','grid','split_pane','navigation','menu','modal','drawer','item_grid','repeater','record_list',
  'search','lookup','choice','cart','conversation','form','table','line_items','date_picker','slot_picker',
  'metric','alert','progress','document_viewer','chart','option_groups'].map(s=>'une_'+s);
@@ -25,7 +25,7 @@ test('UNE is the only published system component family',()=>{
 test('every UNE property has a supported visual editor contract',()=>{
  for(const d of une){
   const keys=new Set();
-  assert.deepEqual(d.surfaces,['page','dashboard','flow']);assert.equal(d.version,updated.has(d.apiName)?2:1);
+  assert.deepEqual(d.surfaces,['page','dashboard','flow']);assert.equal(d.version,d.apiName==='une_input'?3:updated.has(d.apiName)?2:1);
   for(const prop of d.propertyDefinitions){
    assert.ok(allowed.has(prop.kind),d.apiName+' unknown kind '+prop.kind);
    assert.match(prop.propertyKey,/^[A-Za-z][A-Za-z0-9_]*$/);
@@ -45,9 +45,9 @@ test('every UNE property has a supported visual editor contract',()=>{
  }
 });
 const fixtures={
- une_text:{text:'Hello UNE'},une_image:{src:'https://example.com/image.png',alt:'Picture'},
+une_image:{src:'https://example.com/image.png',alt:'Picture'},
  une_calendar:{records:[{Id:'1',BookedOn:'2026-10-24',Subject:'Meeting'}],dateFieldApiName:'BookedOn',titleFieldApiName:'Subject'},
- une_button:{label:'Continue'},une_card:{title:'Card'},une_input:{label:'Email'},
+ une_button:{label:'Continue'},une_card:{title:'Card'},une_input:{value:'Hello UNE',allowTyping:false},
  une_toggle:{label:'Setting'},une_badge:{text:'New'},une_tabs:{tabs:'First, Second'},
  une_item_grid:{currencyCode:'GBP',titleFieldApiName:'Name',priceFieldApiName:'Price'},
  une_cart:{currencyCode:'GBP'},une_conversation:{conversations:[],messages:[]},
@@ -70,7 +70,7 @@ for(const d of une)test(d.apiName+' bundles and renders with a scoped UNE surfac
  assert.match(html,/class="une-ui"/);
  assert.match(html,/data-une-theme="light"/);
  assert.doesNotMatch(html,/<script/i);
- if(d.apiName==='une_text')assert.match(html,/Hello UNE/);
+ if(d.apiName==='une_input')assert.match(html,/Hello UNE/);
  if(d.apiName==='une_metric')assert.match(html,/42/);
 });
 

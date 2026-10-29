@@ -8,7 +8,7 @@ const sql=readFileSync(fileURLToPath(new URL('../sql/register-v2.sql',import.met
 
 test('SQL template declares all Acetill pages and shared One components',()=>{
  for(const {apiName} of ACETILL.pages)assert.match(sql,new RegExp("'"+apiName+"'"));
- for(const component of ['une_text','une_badge','une_search','une_item_grid','une_cart','une_button'])
+ for(const component of ['une_input','une_badge','une_search','une_item_grid','une_cart','une_button'])
    assert.match(sql,new RegExp("'"+component+"'"));
  assert.match(sql,/md_app_package_page_component_templates/);
  assert.match(sql,/md_app_package_page_property_templates/);

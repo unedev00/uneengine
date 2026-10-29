@@ -1,9 +1,8 @@
 import type {ReactNode} from 'react';
 
-/** The 36 bundled UNE descriptors own lightweight individual SVG assets.
+/** The 35 bundled UNE descriptors own lightweight individual SVG assets.
  * Tenant-authored components continue using the existing registry fallback. */
 const bundledUneIcons = new Set([
-  "une_text",
   "une_image",
   "une_calendar",
   "une_button",

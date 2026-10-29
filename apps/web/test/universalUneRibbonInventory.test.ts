@@ -5,7 +5,7 @@ const load=(path:string)=>readFileSync(new URL(path,import.meta.url),'utf8');
 test('universal catalog indexes all installed UNE manifests without app-specific group selection',()=>{
  const catalog=load('../src/core/builders/PageBuilder/UniversalRibbonInventory.tsx');
  const manifest=JSON.parse(load('../src/one/manifest.json')) as {components:string[]};
- assert.equal(manifest.components.length,36);
+ assert.equal(manifest.components.length,35);
  assert.match(catalog,/import\.meta\.glob\('\.\.\/\.\.\/\.\.\/one\/\*\/component\.json'/);
  assert.match(catalog,/validManifests=manifests\.filter/);
  assert.match(catalog,/for\(const component of validManifests\)/);

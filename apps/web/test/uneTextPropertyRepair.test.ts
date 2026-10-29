@@ -1,31 +1,44 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-const load=(p:string)=>readFileSync(new URL(p,import.meta.url),'utf8');
+import React from 'react';
+import {renderToStaticMarkup} from 'react-dom/server';
+import vm from 'node:vm';
+import {loadComponentCatalog,buildBundledComponent} from '../../../scripts/component-catalog.mjs';
+const load=p=>readFileSync(new URL(p,import.meta.url),'utf8');
 
-test('UNE Text paints a dedicated metadata-controlled surface while retaining shared text runtime',()=>{
- const jsx=load('../src/one/une_text/UneText.jsx');
- const css=load('../src/one/une_text/UneText.css');
- assert.match(jsx,/une-text-surface/);
- assert.match(jsx,/OneComponent/);
- for(const variable of ['--une-fg','--une-bg','--une-border','--une-elevation','--one-radius','--one-pad','--une-blur','--one-gap','--une-accent'])
-   assert.ok(css.includes(variable),variable);
- assert.match(css,/data-une-density="compact"/);
- assert.match(css,/data-une-density="spacious"/);
- assert.match(css,/data-une-surface="glass"/);
- assert.match(css,/data-une-surface="plain"/);
- const text=load('../src/one/OneText/OneText.jsx');
- assert.match(text,/multilineGap/);
- assert.match(text,/lines\.map/);
+test('UNE Input replaces public UNE Text and keeps shared styling and data binding',async()=>{
+ const catalog=await loadComponentCatalog();
+ assert.ok(!catalog.components.some(c=>c.apiName==='une_text'));
+ const component=catalog.components.find(c=>c.apiName==='une_input');
+ assert.ok(component);
+ const keys=new Set(component.propertyDefinitions.map(p=>p.propertyKey));
+ for(const key of ['value','allowTyping','label','disabled','radius','padding','shadow','glassBlur',
+                   'backgroundColor','textColor','borderColor','fontSize'])assert.ok(keys.has(key),key);
+ assert.ok(!keys.has('text'));
+ const manifest=JSON.parse(load('../src/one/manifest.json'));
+ assert.ok(!manifest.components.includes('une_text/component.json'));
 });
 
-test('UNE Text removes colour palette metadata and displays surface under Surface section',()=>{
- const manifest=JSON.parse(load('../src/one/une_text/component.json'));
- assert.ok(!manifest.propertyDefinitions.some((p:{propertyKey:string})=>p.propertyKey==='tone'));
- const inv=load('../src/core/builders/PageBuilder/UniversalRibbonInventory.tsx');
- assert.match(inv,/key==='surface'.*'Component Properties','Surface'/);
- assert.match(inv,/definition\?\.apiName==='une_text'&&def\.propertyKey==='tone'/);
- assert.match(inv,/key==='width'\?'Width':'Height'/);
- assert.match(inv,/numberDraft/);
- assert.match(inv,/onBlur=\{\(\)=>setNumberDraft\(null\)\}/);
+test('same UNE Input renders display-only text and an editable text box',async()=>{
+ const catalog=await loadComponentCatalog();
+ const component=catalog.components.find(c=>c.apiName==='une_input');
+ const built=await buildBundledComponent(component);
+ const context={React,module:{exports:{}},Intl,Date,URL,crypto:globalThis.crypto};
+ vm.runInNewContext(built.compiledJs,context);
+ const render=props=>renderToStaticMarkup(React.createElement(context.module.exports.default,props));
+ const display=render({value:'Account name',allowTyping:false,fontSize:22,
+   surface:'glass',backgroundColor:'#ffffff',borderColor:'#123456',radius:9});
+ assert.match(display,/Account name/);
+ assert.match(display,/une-input-display/);
+ assert.doesNotMatch(display,/<input[^>]+value="Account name"/);
+ assert.match(display,/une-input-surface/);
+ const edit=render({value:'Jane',allowTyping:true,placeholder:'Enter name'});
+ assert.match(edit,/<input/);
+ assert.match(edit,/value="Jane"/);
+ const legacy=render({text:'Legacy title'});
+ assert.match(legacy,/Legacy title/);
+ assert.match(legacy,/une-input-display/);
+ const multiline=render({value:'First\\nSecond',allowTyping:false,gap:18});
+ assert.match(multiline,/une-input-lines/);
 });
