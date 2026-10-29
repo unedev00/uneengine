@@ -17,6 +17,7 @@ jobs:
           set -euo pipefail
           test "$GITHUB_REPOSITORY" = "unedev00/uneengine"
           test "$(uname -m)" = "aarch64"
+          echo '=== POST GRACEFUL REBOOT VERIFICATION ==='
           echo '=== boot and manager process ==='
           ps -p 1 -o comm=,stat=,etime=
           uptime
