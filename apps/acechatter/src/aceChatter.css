@@ -238,3 +238,95 @@
 /* Operational metadata must remain readable at 100% zoom and keyboard magnification. */
 .ace-chat .ace-chat-conversation-meta,
 .ace-chat .ace-chat-bubble small { font-size:12px; }
+
+
+/* WhatsApp-inspired conversation UI remains app-owned, but all foregrounds,
+ * inputs, bubbles, toolbars, contacts and dialogs follow the selected theme.
+ * No global selectors or changed message/Flow behaviour. */
+.ace-chat{
+ --chat-paper:var(--md-surface,#fff);
+ --chat-subtle:var(--md-surface-2,#f0f2f5);
+ --chat-canvas:var(--md-bg,#f5f5f7);
+ --chat-ink:var(--md-text,#1d1d1f);
+ --chat-muted:var(--md-text-2,#5c5c63);
+ --chat-line:var(--md-separator,#d8dddf);
+ --chat-action:#076c60;
+ --chat-link:color-mix(in srgb,#128c7e 60%,var(--chat-ink));
+ background:var(--chat-canvas);color:var(--chat-ink);
+}
+.ace-chat :is(.ace-chat-sidebar,.ace-chat-sidebar-heading,.ace-chat-conversation-list,
+ .ace-chat-conversation,.ace-chat-contact-panel,.ace-chat-contact-row,
+ .ace-chat-modal,.ace-chat-new-chat-tabs button,.ace-chat-number-form,
+ .ace-chat-bubble){
+ background:var(--chat-paper);color:var(--chat-ink);border-color:var(--chat-line);
+}
+.ace-chat :is(.ace-chat-main,.ace-chat-thread){background-color:var(--chat-canvas);color:var(--chat-ink)}
+.ace-chat .ace-chat-thread{
+ background-image:radial-gradient(var(--chat-line) .7px,transparent .7px);
+}
+.ace-chat :is(.ace-chat-top,.ace-chat-compose,.ace-chat-icon-button,
+ .ace-chat-search,.ace-chat-contact-search,.ace-chat-new-chat-tabs,
+ .ace-chat-thread-empty){
+ background:var(--chat-subtle);color:var(--chat-ink);border-color:var(--chat-line);
+}
+.ace-chat :is(.ace-chat-search input,.ace-chat-contact-search input,
+ .ace-chat-compose textarea,.ace-chat-number-form input){
+ color:var(--chat-ink);background:var(--chat-paper);border-color:var(--chat-line);
+}
+.ace-chat :is(.ace-chat-search input,.ace-chat-contact-search input){
+ background:transparent;
+}
+.ace-chat :is(input,textarea)::placeholder{color:var(--chat-muted);opacity:1}
+.ace-chat :is(.ace-chat-conversation-copy small,.ace-chat-conversation-meta,
+ .ace-chat-thread-heading small,.ace-chat-bubble small,.ace-chat-compose>small,
+ .ace-chat-list-empty,.ace-chat-list-empty p,.ace-chat-welcome,
+ .ace-chat-hint,.ace-chat-contact-copy small,.ace-chat-contact-state,
+ .ace-chat-number-form label,.ace-chat-number-form>small,
+ .ace-chat-thread-empty){
+ color:var(--chat-muted);
+}
+.ace-chat :is(.ace-chat-sidebar-heading h1,.ace-chat-thread-heading strong,
+ .ace-chat-list-empty strong,.ace-chat-welcome h2,.ace-chat-conversation-copy strong,
+ .ace-chat-contact-copy strong){
+ color:var(--chat-ink);
+}
+.ace-chat :is(.ace-chat-conversation.selected,.ace-chat-conversation:hover,
+ .ace-chat-contact-row:not(:disabled):hover,.ace-chat-new-chat-tabs button.active,
+ .ace-chat-bubble.outgoing){
+ background:color-mix(in srgb,#128c7e 14%,var(--chat-paper));
+ color:var(--chat-ink);
+}
+.ace-chat :is(.ace-chat-avatar,.ace-chat-welcome>span){
+ background:color-mix(in srgb,#128c7e 18%,var(--chat-paper));
+ color:var(--chat-link);
+}
+.ace-chat :is(.ace-chat-new-button,.ace-chat-send-button,
+ .ace-chat-start-button,.ace-chat-welcome button,.ace-chat-list-empty button,
+ .ace-chat-latest){
+ background:var(--chat-action);color:#fff;
+}
+.ace-chat :is(.ace-chat-new-chat-tabs button.active,.ace-chat-contact-arrow,
+ .ace-chat-search button,.ace-chat-contact-search button,.ace-chat-back){
+ color:var(--chat-link);
+}
+.ace-chat .ace-chat-new-chat-tabs button.active{border-bottom-color:var(--chat-link)}
+.ace-chat :is(.ace-chat-brand,.ace-chat-modal-header){background:#075e54;color:#fff}
+.ace-chat :is(.ace-chat-brand small,.ace-chat-modal-header p){color:#e2f3ef}
+.ace-chat :is(.ace-chat-contact-error,.ace-chat-alert){
+ background:color-mix(in srgb,#b42318 14%,var(--chat-paper));
+ color:color-mix(in srgb,#e54b40 58%,var(--chat-ink));
+}
+.ace-chat .ace-chat-notice{
+ background:color-mix(in srgb,#10865a 13%,var(--chat-paper));
+ color:color-mix(in srgb,#18976c 55%,var(--chat-ink));
+}
+.ace-chat :is(.ace-chat-contact-search,.ace-chat-search,.ace-chat-conversation,
+ .ace-chat-top,.ace-chat-compose,.ace-chat-contact-row,.ace-chat-new-chat-tabs){
+ border-color:var(--chat-line);
+}
+.ace-chat :is(button,input,select,textarea):focus-visible{
+ outline:3px solid var(--md-focus-ring,#419d96);outline-offset:2px;
+}
+@media(max-width:760px){
+ .ace-chat .ace-chat-top{background:var(--chat-subtle)}
+}
