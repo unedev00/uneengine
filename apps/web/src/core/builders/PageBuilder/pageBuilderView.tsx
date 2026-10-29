@@ -144,6 +144,8 @@ import {RibbonFilters} from './PageBuilderRibbonEditors';
 import PageBuilderActionRibbon from './PageBuilderActionRibbon';
 import PageBuilderRibbonMetadataPager from './PageBuilderRibbonMetadataPager';
 import UniversalRibbonInventory from './UniversalRibbonInventory';
+import UneBuilderRibbon from './UneBuilderRibbon';
+import {isUneBuilderApi,uneBuilderDefaults,type UneBuilderApi} from './uneBuilderPropertyInventory';
 import './UniversalRibbonInventory.css';
 import './PageBuilderNumericControls.css';
 import './PageBuilderRibbonPolish.css';
@@ -500,7 +502,8 @@ function PageBuilder({
   },[ribbonTab,selectedId,page.layoutVariant,page.components.length]);
   const componentNeedsData = (type: string) => {
     const metadata = type.startsWith('Custom:') ? findRegisteredComponent(libraryComponents,type.slice('Custom:'.length),'page') : undefined;
-    return Boolean(metadata?.propertyDefinitions?.some(definition=>definition.kind==='OBJECT'||definition.kind==='OBJECT_FIELD'))
+    return Boolean(type.startsWith('Custom:')&&isUneBuilderApi(type.slice(7)))
+      || Boolean(metadata?.propertyDefinitions?.some(definition=>definition.kind==='OBJECT'||definition.kind==='OBJECT_FIELD'))
       || /^(?:Record Field|Record Detail|Related List|List View|Report Chart|Dashboard)$/.test(type);
   };
   const selectRibbonTab = (tab: typeof ribbonTab) => {
@@ -578,7 +581,8 @@ function PageBuilder({
   const selectedCustomDefinition = selected?.type.startsWith('Custom:')
     ? findRegisteredComponent(libraryComponents, selected.type.slice('Custom:'.length), 'page')
     : undefined;
-  const selectedAppOwnedUne=Boolean(selected?.type.startsWith('Custom:une_'));
+  const selectedNewUne=Boolean(selected?.type.startsWith('Custom:')&&isUneBuilderApi(selected.type.slice(7)));
+  const selectedAppOwnedUne=Boolean(selected?.type.startsWith('Custom:une_'))&&!selectedNewUne;
   const editingConversation=selectedCustomDefinition?.apiName==='une_conversation';
   // Child element selection affects the inspector only; runtime DOM is unchanged.
   const conversationEditorDefinition=editingConversation
@@ -695,6 +699,15 @@ function PageBuilder({
       description: 'Group selected record fields into a one- or two-column section.',
       categories: ['Layout'] as (typeof pageBuilderPaletteCategories)[number][]
     }] : []),
+    ...libraryComponents.filter(component=>isUneBuilderApi(component.apiName)&&component.status!=='Draft').map(component=>({
+      id:'Custom:'+component.apiName,
+      type:'Custom:'+component.apiName,
+      label:component.apiName==='une_item_grid'?'Card Grid':component.apiName==='une_lookup'?'Lookup Record':
+        component.apiName==='une_input'?'Input Box':component.apiName.slice(4).split('_').map(word=>word[0].toUpperCase()+word.slice(1)).join(' '),
+      description:component.description,
+      categories:getPageBuilderComponentCategories(component.apiName,component.label,component.description,false,
+        component.apiName==='une_item_grid'?'Data':component.apiName==='une_image'?'Display':undefined)
+    })),
     ...publishedPageLibraryComponents(libraryComponents).map((component) => ({
       id: `Custom:${component.apiName}`,
       type: `Custom:${component.apiName}`,
@@ -1173,6 +1186,7 @@ function PageBuilder({
       id, type, label: custom ? libraryComponentLabel(custom) : type,
       properties: custom
         ? { libraryComponentId: custom.apiName,
+            ...(isUneBuilderApi(custom.apiName)?uneBuilderDefaults(custom.apiName):{}),
             ...Object.fromEntries((custom.propertyDefinitions??[]).filter(def=>Array.isArray(def.defaultValue)
               || (def.propertyKey==='layoutContainer'&&def.defaultValue===true))
               .map(def=>[def.propertyKey,Array.isArray(def.defaultValue)?[...def.defaultValue]:def.defaultValue])),
@@ -2594,8 +2608,15 @@ function PageBuilder({
             </span>
           </div>
         </div>
-        <div id="page-builder-tab-content" data-app-owned-une={selectedAppOwnedUne?'true':'false'} ref={ribbonStripRef} onScroll={measureRibbonOverflow} className="office-ribbon-content" role="tabpanel"
+        <div id="page-builder-tab-content" data-une-v2={selectedNewUne&&['Component Data','Component Properties','Component Layout'].includes(ribbonTab)?'true':'false'} data-app-owned-une={selectedAppOwnedUne?'true':'false'} ref={ribbonStripRef} onScroll={measureRibbonOverflow} className="office-ribbon-content" role="tabpanel"
           aria-label={ribbonTab} aria-labelledby={`page-builder-tab-${Math.max(0,ribbonTabsVisible.indexOf(ribbonTab))}`}>
+          {selectedNewUne && selected && ['Component Data','Component Properties','Component Layout'].includes(ribbonTab) &&
+            <UneBuilderRibbon tab={ribbonTab==='Component Data'?'Data':ribbonTab==='Component Layout'?'Layout':'Design'}
+              api={selected.type.slice(7) as UneBuilderApi} properties={selected.properties}
+              onChange={properties=>updateComponent(selected.id,{properties})}
+              objects={objects} position={selected.position}
+              onPositionChange={position=>updateComponent(selected.id,{position})}
+              layoutMode={page.layoutMode}/>}
           {selectedAppOwnedUne && ribbonTab.startsWith('Component ') && <div className="une-app-owned-note" role="status">UNE component properties are maintained in application code, not in the Component Library or Page Builder ribbon.</div>}
           {selected && editingConversation && (['Component Data','Component Content','Component Properties','Component Layout','Component Responsive','Component Action'] as string[]).includes(ribbonTab) &&
             <div className="office-ribbon-group office-ribbon-conversation-parts">
