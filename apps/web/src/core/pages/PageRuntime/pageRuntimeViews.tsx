@@ -82,7 +82,7 @@ import RegisteredComponent from '../../components/RegisteredComponent/Registered
 import { findRegisteredComponent } from '../../components/Registry/componentRegistryLookup';
 import PageRouteDirectory from '../PageRouteDirectory/PageRouteDirectory';
 import { isComponentVisible } from '../../components/Properties/componentVisibility';
-import {behaviorValidation,behaviorAction,behaviorAppearance,behaviorInteractions,behaviorTabs,pageBehaviors} from './pageBehaviorRuntime';
+import {behaviorValidation,behaviorAction,behaviorAppearance,behaviorInteractions,behaviorTabs,behaviorTabForChild,pageBehaviors} from './pageBehaviorRuntime';
 import { canNestComponent, componentVisualStyle, directChildren, isLayoutType, isDescendantOf, layoutTypes } from '../TemplatePageRuntime/pageComponentLayout';
 import { isCanvasLocked, wrapCanvasComponent, ungroupCanvasComponent } from '../../builders/PageBuilder/canvasInteractions';
 import { filterPageComponentRecords, pageComponentRecordQuery, bindPageStateProperties, needsMetadataComponentRuntime, resolvePageStatePath } from './pageComponentBindings';
@@ -970,15 +970,15 @@ function LightningAppRuntime({
       </section>;
     }
     if (component.type === 'Tabs') {
-      const tabs = behaviorTabs(component.properties,Array.isArray(component.properties.tabs)
+      const configuredTabs=Array.isArray(component.properties.tabs)
         ? component.properties.tabs.filter((tab): tab is string => typeof tab === 'string')
-        : [],appVisibilityContext);
+        : [];
+      const tabs = behaviorTabs(component.properties,configuredTabs,appVisibilityContext);
       if(!tabs.length)return null;
       const selected = tabs.includes(activeTabs[component.id]) ? activeTabs[component.id] : tabs[0];
       const nested=childrenOf(page.components,component.id);
       const selectedChildren=nested.filter(child=>
-        (typeof child.properties.tabLabel==='string'&&tabs.includes(child.properties.tabLabel)
-          ?child.properties.tabLabel:tabs[0])===selected);
+        behaviorTabForChild(child.properties.tabLabel,configuredTabs,tabs)===selected);
       // Legacy pages put a sibling with the same label under each tab.
       const legacy = nested.length===0 ? page.components.find((item) =>
         item.id !== component.id && isAppComponentVisible(item)

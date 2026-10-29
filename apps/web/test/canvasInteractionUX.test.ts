@@ -102,7 +102,11 @@ test('dragging or adding a nested block preserves the selected tab identity',()=
 
 test('nested component clipboard duplicates every descendant with remapped IDs', () => {
   const original = [
-    {id:'root',type:'Tabs',label:'Tabs',visible:true,properties:{tabs:['Details','Related']}},
+    {id:'root',type:'Tabs',label:'Tabs',visible:true,properties:{tabs:['Details','Related'],
+      pagePropertyContract:{version:1,interactions:[
+        {event:'click',targetComponentId:'nested',targetProperty:'value',value:'updated'},
+        {event:'click',targetComponentId:'external',targetProperty:'value',value:'unchanged'}
+      ]}}},
     {id:'nested',type:'Accordion',label:'Accordion',visible:true,parentId:'root',
       properties:{layoutParentId:'root',tabLabel:'Details'}},
     {id:'inner',type:'Custom:Demo',label:'Data',visible:true,parentId:'nested',
@@ -117,6 +121,10 @@ test('nested component clipboard duplicates every descendant with remapped IDs',
   assert.equal(copy.components[2].parentId,'2');
   assert.equal(copy.components[2].properties.layoutParentId,'2');
   assert.equal(copy.components[2].properties.dataSource,'Customer');
+  assert.deepEqual(copy.components[0].properties.pagePropertyContract.interactions,[
+    {event:'click',targetComponentId:'2',targetProperty:'value',value:'updated'},
+    {event:'click',targetComponentId:'external',targetProperty:'value',value:'unchanged'}
+  ]);
   assert.equal(original[2].parentId,'nested');
 });
 
@@ -537,4 +545,3 @@ test('Page Builder delegates conditional appearance to flows without exposing th
   const runtime = await readFile(new URL('../src/core/components/Properties/componentVisibility.ts',import.meta.url),'utf8');
   assert.match(runtime,/visibilityRules|VisibilityRule/);
 });
-

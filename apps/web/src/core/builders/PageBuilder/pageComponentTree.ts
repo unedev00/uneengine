@@ -36,6 +36,20 @@ export function cloneComponentTree(
     const originalParent = rawLayoutParentId(item);
     const parent = root ? rootParentId : ids.get(originalParent ?? '') ?? null;
     const properties = structuredClone(item.properties);
+    const contract = properties.pagePropertyContract;
+    if (contract && typeof contract === 'object' && !Array.isArray(contract)) {
+      const interactions = (contract as Record<string, unknown>).interactions;
+      if (Array.isArray(interactions)) {
+        (contract as Record<string, unknown>).interactions = interactions.map(interaction => {
+          if (!interaction || typeof interaction !== 'object' || Array.isArray(interaction)) return interaction;
+          const targetId = (interaction as Record<string, unknown>).targetComponentId;
+          const replacement = typeof targetId === 'string' ? ids.get(targetId) : undefined;
+          return replacement
+            ? {...interaction as Record<string, unknown>, targetComponentId: replacement}
+            : interaction;
+        });
+      }
+    }
     if (parent) properties.layoutParentId = parent;
     else delete properties.layoutParentId;
     return {

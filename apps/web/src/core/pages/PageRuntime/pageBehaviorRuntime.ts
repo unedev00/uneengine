@@ -35,6 +35,14 @@ export function behaviorTabs(properties:Readonly<Record<string,unknown>>,
     return matching.every(rule=>behaviorMatches(rule.when,context));
   });
 }
+export function behaviorTabForChild(
+  childTab:unknown,configuredTabs:readonly string[],visibleTabs:readonly string[]
+):string|null {
+  if (typeof childTab === 'string' && configuredTabs.includes(childTab)) {
+    return visibleTabs.includes(childTab) ? childTab : null;
+  }
+  return visibleTabs[0] ?? null;
+}
 export type BehaviorActionState='enabled'|'disabled'|'hidden';
 export function behaviorAction(properties:Readonly<Record<string,unknown>>,
   actionId:string,context:BehaviorContext):BehaviorActionState{

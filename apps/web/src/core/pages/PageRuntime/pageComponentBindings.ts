@@ -120,6 +120,7 @@ export function pageComponentRecordQuery(
   for(const value of definitions){
     if(examineRecordFilter(value,fields)!==null)return {blocked:true};
     const filter=value as PageFilter;
+    if(filter.operator==='Is Blank'||filter.operator==='Is Not Blank')continue;
     const resolved=resolvePageFilterValue(filter.value,context);
     if(isDynamic(filter.value)&&(resolved===undefined||resolved===null||resolved===''))
       return {blocked:true};

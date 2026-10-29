@@ -43,6 +43,26 @@ test('dynamic related-record filter isolates current parent and blocks missing p
    [{Cart:'cart-1',Id:'line-1'},{Cart:'cart-2',Id:'line-2'}],definitions,fields,context),
    [{Cart:'cart-1',Id:'line-1'}]);
 });
+test('numeric and date filters support inclusive comparisons and blank checks',()=>{
+ const fields=[
+  {apiName:'Amount',label:'Amount',dataType:'Currency'},
+  {apiName:'DueDate',label:'Due Date',dataType:'Date'},
+  {apiName:'Summary',label:'Summary',dataType:'Text'}
+ ] as any;
+ const records=[
+  {Amount:10,DueDate:'2026-10-28',Summary:''},
+  {Amount:11,DueDate:'2026-10-29',Summary:'Ready'},
+  {Amount:12,DueDate:'2026-10-30',Summary:null}
+ ];
+ assert.deepEqual(filterPageComponentRecords(records,
+  [{field:'Amount',operator:'Greater Than or Equal',value:'11'}],fields),records.slice(1));
+ assert.deepEqual(filterPageComponentRecords(records,
+  [{field:'DueDate',operator:'Less Than or Equal',value:'2026-10-29'}],fields),records.slice(0,2));
+ assert.deepEqual(filterPageComponentRecords(records,
+  [{field:'Summary',operator:'Is Blank',value:''}],fields),[records[0],records[2]]);
+ assert.deepEqual(filterPageComponentRecords(records,
+  [{field:'Summary',operator:'Is Not Blank',value:''}],fields),[records[1]]);
+});
 test('Flow outputs can supply state filters, display values and downstream Flow inputs',()=>{
  assert.equal(encodeInputSource('Page State','CurrentCartId',[]),'$state.CurrentCartId');
  assert.equal(decodeInputSource('$state.CurrentCartId').detail,'CurrentCartId');

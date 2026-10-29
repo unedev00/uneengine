@@ -1,7 +1,12 @@
 /** Resolve text-property bindings against the already authorised record supplied to the component.
  * Never eval expressions, traverse dotted paths or fetch fields outside the runtime record. */
+function isFieldTextExpression(value: string): boolean {
+  const input = value.trim();
+  return input.startsWith('@') || /^"(?:[^"]|"")*"\s*&\s*@/.test(input);
+}
+
 export function resolveFieldText(expression:unknown,record:unknown):unknown {
-  if(typeof expression!=='string'||!expression.trim().startsWith('@'))return expression;
+  if(typeof expression!=='string'||!isFieldTextExpression(expression))return expression;
   if(expression.length>2048)return '';
   const source=record&&typeof record==='object'&&!Array.isArray(record)?record as Record<string,unknown>:{};
   const input=expression.trim();
@@ -9,7 +14,7 @@ export function resolveFieldText(expression:unknown,record:unknown):unknown {
   let index=0;
   let expectValue=true;
   while(index<input.length&&tokens.length<64){
-    while(index<input.length&&/\\s/.test(input[index]))index++;
+    while(index<input.length&&/\s/.test(input[index]))index++;
     if(index===input.length)break;
     if(!expectValue){if(input[index]!=='&')return '';index++;expectValue=true;continue;}
     if(input[index]==='@'){
@@ -34,7 +39,7 @@ export function resolveRegisteredTextProperties(definitions:ReadonlyArray<{prope
   for(const definition of definitions){
     if(!['TEXT','LONG_TEXT','TEXTAREA','STRING'].includes(definition.kind))continue;
     const value=properties[definition.propertyKey];
-    if(typeof value!=='string'||!value.trim().startsWith('@'))continue;
+    if(typeof value!=='string'||!isFieldTextExpression(value))continue;
     if(next===properties)next={...properties};
     next[definition.propertyKey]=resolveFieldText(value,record);
   }

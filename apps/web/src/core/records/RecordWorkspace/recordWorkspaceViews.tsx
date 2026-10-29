@@ -13,7 +13,7 @@ import { RecordFormDialog } from '../RecordFormDialog/recordFormDialogView';
 import InlineRecordField from './InlineRecordField';
 import {recordEditPageLayout} from './recordEditPageLayout';
 import {filterLayoutWritableValues,missingLayoutRequiredFields,applyRequiredLayoutDefaults} from './layoutWritableValues';
-import {behaviorAction,behaviorRecordAction,behaviorAppearance,behaviorField,behaviorTabs,behaviorInteractions} from '../../pages/PageRuntime/pageBehaviorRuntime';
+import {behaviorAction,behaviorRecordAction,behaviorAppearance,behaviorField,behaviorTabs,behaviorTabForChild,behaviorInteractions} from '../../pages/PageRuntime/pageBehaviorRuntime';
 import {recordPagePresentationLayout} from './recordPageLayoutMigration';
 import {actionVisibleInArea} from './recordActionPlacement';
 import RichTextContent from './RichTextContent';
@@ -2138,26 +2138,34 @@ function RecordWorkspace({
         {renderRelatedPagination(relationshipName, related.total, related.records.length)}
       </section>;
     };
-    const renderPageField=(field:FieldMetadata)=> <InlineRecordField
-      field={field} value={record[field.apiName]} display={formatFieldValue(field,record[field.apiName])}
-      editable={canEdit&&fieldAccess[`${object.apiName}.${field.apiName}`]?.edit===true}
-      onEditFull={()=>openEditForm(record)}
-      onSave={async(value)=>{
-        if(!canEdit||!fieldAccess[`${object.apiName}.${field.apiName}`]?.edit)
-          throw new Error('Field editing is not permitted');
-        await apiRequest(`/records/${encodeURIComponent(object.apiName)}/${encodeURIComponent(record.Id)}`,{
-          method:'PUT',
-          ...(typeof record.LastModifiedDate==='string'
-            ?{headers:{'If-Unmodified-Since':record.LastModifiedDate}}:{}),
-          body:JSON.stringify({[field.apiName]:value})
-        });
-        setRefreshKey(previous=>previous+1);
-      }}/>;
     const runtimeBehaviorContext={formFactor,record,fields:object.fields,profileId,
       readableFieldApiNames:new Set(readableRecordFields.map(field=>field.apiName)),
       recordPermissions:new Set<'Create'|'Edit'|'Delete'>([
         ...(canCreate?['Create' as const]:[]),...(canEdit?['Edit' as const]:[]),
         ...(canDelete?['Delete' as const]:[])])};
+    const renderPageField=(field:FieldMetadata,componentProperties?:Record<string,unknown>)=>{
+      const fieldBehavior=componentProperties
+        ?behaviorField(componentProperties,field.apiName,runtimeBehaviorContext):null;
+      const layoutReadOnly=componentProperties?.readOnlyOnLayout===true||fieldBehavior?.readOnly===true;
+      return <InlineRecordField
+        field={field} value={record[field.apiName]} display={formatFieldValue(field,record[field.apiName])}
+        editable={!layoutReadOnly&&canEdit&&fieldAccess[`${object.apiName}.${field.apiName}`]?.edit===true}
+        onEditFull={()=>openEditForm(record)}
+        onSave={async(value)=>{
+          if(!canEdit||!fieldAccess[`${object.apiName}.${field.apiName}`]?.edit||layoutReadOnly)
+            throw new Error('Field editing is not permitted');
+          if((field.required||fieldBehavior?.required)
+            &&(value===null||value===undefined||typeof value==='string'&&!value.trim()))
+            throw new Error(`${field.label} is required`);
+          await apiRequest(`/records/${encodeURIComponent(object.apiName)}/${encodeURIComponent(record.Id)}`,{
+            method:'PUT',
+            ...(typeof record.LastModifiedDate==='string'
+              ?{headers:{'If-Unmodified-Since':record.LastModifiedDate}}:{}),
+            body:JSON.stringify({[field.apiName]:value})
+          });
+          setRefreshKey(previous=>previous+1);
+        }}/>;
+    };
     const renderRuntimeComponent = (original: PageComponentMetadata) => {
       const component={...original,properties:{...original.properties,...recordInteractionOverrides[original.id]}};
       if (!isComponentVisible(component, {
@@ -2324,7 +2332,7 @@ function RecordWorkspace({
         return <section className="record-fields-card surface" key={component.id}>
           <div className="record-fields-heading"><h2>{component.label}</h2></div>
           <dl className="record-fields-grid">{visibleFields.map((field) =>
-            <div className="record-field" key={field.apiName}><dt>{field.label}</dt><dd>{renderPageField(field)}</dd></div>)}</dl>
+            <div className="record-field" key={field.apiName}><dt>{field.label}</dt><dd>{renderPageField(field,component.properties)}</dd></div>)}</dl>
         </section>;
       }
       if (component.type === 'Field Section') {
@@ -2338,7 +2346,7 @@ function RecordWorkspace({
           <div className="record-fields-heading"><h2>{component.label}</h2></div>
           {visibleFields.length
             ? <dl className={`record-fields-grid columns-${component.properties.columns === 1 ? 1 : 2}`}>{visibleFields.map((field) =>
-              <div className="record-field" key={field.apiName} style={behaviorAppearance(component.properties,runtimeBehaviorContext,field.apiName)}><dt>{field.label}</dt><dd>{renderPageField(field)}</dd></div>)}</dl>
+              <div className="record-field" key={field.apiName} style={behaviorAppearance(component.properties,runtimeBehaviorContext,field.apiName)}><dt>{field.label}</dt><dd>{renderPageField(field,component.properties)}</dd></div>)}</dl>
             : <div className="records-empty">No readable fields are configured in this section.</div>}
         </section>;
       }
@@ -2369,7 +2377,7 @@ function RecordWorkspace({
               style={behaviorAppearance(component.properties,runtimeBehaviorContext,fieldApiName)}>
             <div className="record-fields-heading"><h2>{component.label}</h2></div>
             {behaviorAppearanceLabel(component.properties,runtimeBehaviorContext,fieldApiName)&&<p className="records-message" role="status">{behaviorAppearanceLabel(component.properties,runtimeBehaviorContext,fieldApiName)}</p>}
-            <dl className="record-fields-grid columns-1"><div className="record-field"><dt>{field.label}</dt><dd>{renderPageField(field)}</dd></div></dl>
+            <dl className="record-fields-grid columns-1"><div className="record-field"><dt>{field.label}</dt><dd>{renderPageField(field,component.properties)}</dd></div></dl>
           </section>
           : <div className="records-empty" role="status" key={component.id}>This field is unavailable or not readable.</div>;
       }
@@ -2380,9 +2388,10 @@ function RecordWorkspace({
         return <div key={component.id}>{names.map(name=>renderRelatedList(name,component))}</div>;
       }
       if (component.type === 'Tabs') {
-        const tabs = behaviorTabs(component.properties,Array.isArray(component.properties.tabs)
+        const configuredTabs=Array.isArray(component.properties.tabs)
           ? component.properties.tabs.filter((tab): tab is string => typeof tab === 'string')
-          : ['Related', 'Details'],runtimeBehaviorContext);
+          : ['Related', 'Details'];
+        const tabs = behaviorTabs(component.properties,configuredTabs,runtimeBehaviorContext);
         const selectedTab = tabs.includes(activeRuntimeTabs[component.id])
           ? activeRuntimeTabs[component.id] : tabs[0];
         const nested=childrenOf(assignedPage?.components??[],component.id);
@@ -2403,8 +2412,8 @@ function RecordWorkspace({
           </div>
           <div role="tabpanel" className="record-runtime-tab-panel">
             {nested.length
-              ? nested.filter(child=>(typeof child.properties.tabLabel==='string'
-                &&tabs.includes(child.properties.tabLabel)?child.properties.tabLabel:tabs[0])===selectedTab)
+              ? nested.filter(child=>behaviorTabForChild(
+                child.properties.tabLabel,configuredTabs,tabs)===selectedTab)
                 .map(renderRuntimeComponent)
               : selectedTab?.toLocaleLowerCase() === 'details'
               ? assignedPage?.components.some((item) => item.visible && ['Field Section', 'Record Field'].includes(item.type))

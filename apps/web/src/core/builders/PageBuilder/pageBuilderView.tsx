@@ -488,7 +488,7 @@ function PageBuilder({
   };
   const [selectedConversationPart,setSelectedConversationPart]=useState('parent');
   useEffect(()=>setSelectedConversationPart('parent'),[selectedId]);
-  const [ribbonTab, setRibbonTab] = useState<'Home' | 'Add Block' | 'Component Content' | 'Component Properties' | 'Component Style' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Component Responsive' | 'Preview' | 'Filters' | 'Source'>('Home');
+  const [ribbonTab, setRibbonTab] = useState<'Home' | 'Add Block' | 'Component Content' | 'Component Properties' | 'Component Style' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Component Responsive' | 'Preview' | 'Filters' | 'Source' | 'Parity'>('Home');
   useEffect(()=>{
     const element=ribbonStripRef.current;
     if(!element)return;
@@ -2351,6 +2351,7 @@ function PageBuilder({
   const ribbonTabsVisible: Array<typeof ribbonTab> = [...journeyTabs];
   if(ribbonTab==='Filters')ribbonTabsVisible.splice(journeyTabs.indexOf('Component Data')+1,0,'Filters');
   if(ribbonTab==='Source')ribbonTabsVisible.splice(journeyTabs.indexOf('Component Data')+1,0,'Source');
+  ribbonTabsVisible.push('Parity');
 
   const addPaletteComponent = (type: string) => {
     const selectedIndex = page.components.findIndex((component) => component.id === selectedId);
@@ -2575,7 +2576,7 @@ function PageBuilder({
                   'Component Responsive': Smartphone,
                   'Component Layout': Layers3,
                   'Component Action': Workflow,
-                  Preview: Eye, Filters: Filter, Source: Database
+                  Preview: Eye, Filters: Filter, Source: Database, Parity: ClipboardList
                 }[tab];
                 const label = {
                   Home: 'Home',
@@ -2587,7 +2588,7 @@ function PageBuilder({
                   'Component Responsive': 'Responsive',
                   'Component Layout': 'Layout',
                   'Component Action': 'Actions',
-                  Preview: 'Preview', Filters: 'Filters', Source: 'Source'
+                  Preview: 'Preview', Filters: 'Filters', Source: 'Source', Parity: 'Parity'
                 }[tab];
                 return <button key={tab} id={`page-builder-tab-${index}`} type="button"
                   role="tab" tabIndex={ribbonTab===tab?0:-1} aria-selected={ribbonTab === tab}
@@ -2899,6 +2900,31 @@ function PageBuilder({
               <button type="button" onClick={()=>selectRibbonTab('Component Data')}>Done</button>
             </div>;
           })()}
+
+          {ribbonTab==='Parity' && <div className="office-ribbon-compact-strip" aria-label="Salesforce parity coverage">
+            <section className="office-ribbon-mini-group" aria-labelledby="page-builder-parity-complete">
+              <div className="office-ribbon-stack">
+                <ul>
+                  <li>Text field bindings support whitespace and literal-first concatenation.</li>
+                  <li>Copying a component tree remaps interactions targeting cloned descendants.</li>
+                  <li>Page filters support inclusive numeric/date comparisons and blank checks.</li>
+                  <li>Content assigned to a hidden conditional tab stays hidden.</li>
+                  <li>Record-page inline editing respects page read-only and required-field rules.</li>
+                </ul>
+              </div>
+              <span id="page-builder-parity-complete" className="office-ribbon-group-heading">Shared builder improvements</span>
+            </section>
+            <section className="office-ribbon-mini-group" aria-labelledby="page-builder-parity-remaining">
+              <div className="office-ribbon-stack">
+                <ul>
+                  <li>Full arithmetic and function-based formula evaluation is still pending.</li>
+                  <li>Further record editing, data-loading, report, dashboard, Flow, and publishing gaps remain.</li>
+                  <li>UNE component work and Apex are outside this scope.</li>
+                </ul>
+              </div>
+              <span id="page-builder-parity-remaining" className="office-ribbon-group-heading">Not included yet</span>
+            </section>
+          </div>}
 
           {ribbonTab === 'Preview' && <>
             <div className="office-ribbon-group office-ribbon-preview-actions"><div className="office-ribbon-stack">
