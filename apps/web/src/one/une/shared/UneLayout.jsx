@@ -1,11 +1,47 @@
 import OneTenantImage from "../../shared/OneTenantImage.jsx";
+import {evaluateFieldExpression} from "../../shared/OneFieldExpression.js";
 const fire=(p,event,value)=>p.actionFlows?.[event]&&typeof p.onAction==="function"
   ?Promise.resolve(p.onAction({event,value})).catch(()=>{}):undefined;
 const clamp=(value,fallback,min=0,max=100)=>Number.isFinite(Number(value))?Math.max(min,Math.min(max,Number(value))):fallback;
 const parse=v=>Array.isArray(v)?v:String(v??"").split(",").map(s=>s.trim()).filter(Boolean);
-export function UneContainer(p){return <section className="one-ui one-surface" style={{
-  display:"flex",flexDirection:p.direction==="row"?"row":"column",gap:clamp(p.gap,12),
-  padding:clamp(p.padding,16),borderRadius:clamp(p.radius,20)}}>{p.children}</section>}
+const objectFit=p=>p.imageFill==="fit"?"contain":p.imageFill==="stretch"?"fill":p.imageFill==="fill"?"cover":p.imageFit||"cover";
+const recordFor=p=>p.record&&typeof p.record==="object"&&!Array.isArray(p.record)?p.record:
+  Array.isArray(p.records)&&p.records.length?p.records[0]:
+  Array.isArray(p.items)&&p.items.length?p.items[0]:{};
+const textFrom=(source,record)=>typeof source==="string"&&source.trim()?evaluateFieldExpression(source,record):"";
+export function UneContainer(p){
+ const record=recordFor(p),image=textFrom(p.imageSource,record),heading=textFrom(p.textSource,record)||p.label||"";
+ const badge=textFrom(p.badgeText,record),badgeVisible=p.badgeVisible===true&&Boolean(badge);
+ const alignment=String(p.badgeAlignment||"image-top-right"),onImage=alignment.startsWith("image-");
+ const colorValue=v=>typeof v==="string"&&/^#[0-9a-f]{6}$/i.test(v)?v:undefined;
+ const badgeNode=badgeVisible?<span className="une-container-badge" style={{
+   position:onImage?"absolute":undefined,zIndex:2,
+   top:onImage&&!alignment.includes("bottom")?8:undefined,
+   bottom:onImage&&alignment.includes("bottom")?8:undefined,
+   left:onImage&&alignment.includes("left")?8:onImage&&alignment.includes("center")?"50%":undefined,
+   right:onImage&&alignment.includes("right")?8:undefined,
+   transform:onImage&&alignment.includes("center")?"translateX(-50%)":undefined,
+   borderRadius:16,padding:"3px 8px",backgroundColor:"var(--une-accent,#2563eb)",
+   color:colorValue(p.badgeTextColor)||"#fff",fontSize:clamp(p.badgeTextSize,12,0,60),
+   fontWeight:p.badgeBold===false?400:700
+ }}>{badge}</span>:null;
+ return <section className="one-ui one-surface une-container-root" style={{
+   display:"flex",flexDirection:p.direction==="row"?"row":"column",gap:clamp(p.gap,12),
+   padding:clamp(p.padding,16),borderRadius:clamp(p.radius,20),
+   backgroundColor:colorValue(p.backgroundColor),borderColor:colorValue(p.borderColor)
+ }}>
+   {heading&&<span className="une-container-label" style={{
+     color:colorValue(p.labelColor),textAlign:["left","center","right"].includes(p.labelAlignment)?p.labelAlignment:undefined
+   }}>{heading}</span>}
+   {image&&<div className="une-container-image" style={{position:"relative",minWidth:0}}>
+     <OneTenantImage src={image} loadAsset={p.loadAsset} alt={heading}
+       style={{display:"block",width:"100%",height:180,objectFit:objectFit(p)}}/>
+     {onImage&&badgeNode}
+   </div>}
+   {!onImage&&badgeNode}
+   {p.children}
+ </section>;
+}
 export function UneStack(p){return <div className="one-ui une-stack-root" style={{display:"flex",
   flexDirection:p.direction==="row"?"row":"column",flexWrap:p.wrap===false?"nowrap":"wrap",
   gap:clamp(p.gap,12),padding:clamp(p.padding,16)}}>{p.children}</div>}
@@ -42,10 +78,25 @@ export function UneTabs(p){
 }
 const menuOptions=v=>Array.isArray(v)?v:parse(v).map(label=>({label,value:label}));
 export function UneNavigation(p){
- return <nav className="one-ui one-row" aria-label={p.label||"Navigation"} style={{
- display:"flex",flexDirection:p.direction==="column"?"column":"row",gap:clamp(p.gap,8)}}>
+ const heading=textFrom(p.textSource,recordFor(p));
+ const direction=p.navigationDirection==="vertical"?"column":p.navigationDirection==="horizontal"?"row":
+   p.direction==="column"?"column":"row";
+ const itemImage=item=>typeof item.imageSrc==="string"?item.imageSrc:typeof item.image==="string"?item.image:"";
+ return <nav className="one-ui one-row une-navigation-bar" aria-label={p.label||"Navigation"} style={{
+   display:"flex",flexDirection:direction,alignItems:direction==="row"?"center":"stretch",
+   gap:clamp(p.gap,8),
+   backgroundColor:p.backgroundColor||undefined,
+   borderColor:p.borderColor||undefined,
+   borderRadius:clamp(p.radius,12)
+ }}>
+ {heading&&<span className="une-navigation-heading" style={{
+  color:p.labelColor||undefined,fontSize:clamp(p.textSize,16,8,70)
+ }}>{heading}</span>}
  {menuOptions(p.items).map((item,i)=><button className="one-btn" type="button" key={i}
+  style={{display:"inline-flex",alignItems:"center",gap:6}}
   onClick={()=>fire(p,"navigate",{label:item.label??String(item.value??""),value:item.value??item.label})}>
+  {itemImage(item)&&<OneTenantImage src={itemImage(item)} alt="" loadAsset={p.loadAsset}
+    style={{width:24,height:24,objectFit:objectFit(p)}}/>}
   {item.label??String(item.value??"")}</button>)}</nav>;
 }
 export function UneMenu(p){return <UneNavigation {...p} direction="column"/>}
