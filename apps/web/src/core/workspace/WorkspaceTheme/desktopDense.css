@@ -31,7 +31,6 @@
   .lightning .brand { font-size: 12px; gap: 6px; }
   .lightning .brand-cloud { width: 18px; height: 18px; font-size: 11px; }
   .lightning .setup-layout { min-height: calc(100dvh - 74px); }
-  .lightning .setup-sidebar { width: 180px; min-width: 180px; }
   .lightning .quick-find { padding: 11px 10px 10px; }
   .lightning .quick-find-input { height: 24px; }
   .lightning .tree-group-label { padding: 7px 11px 5px; }
@@ -52,3 +51,18 @@
   .lightning .notification-list li { gap: 4px; padding: 9px 11px; }
   .lightning .md-scroll-area::-webkit-scrollbar { width: 6px; height: 6px; }
 }
+
+/* Setup chrome: these selectors deliberately match the specificity of the rules in
+   settingsAppearance.css / setupUsability.css (loaded around this file) so the
+   dense sizes actually apply. Collapsed rail rules are untouched. */
+@media (min-width: 900px) and (pointer: fine) {
+  .lightning .setup-layout .setup-sidebar:not(.setup-sidebar-collapsed) { width: 200px; min-width: 200px; }
+  .lightning .setup-layout .setup-sidebar:not(.setup-sidebar-collapsed) .tree-item {
+    min-height: 34px; padding: 3px 8px; gap: 8px; border-radius: 9px;
+  }
+  .lightning :is(.setup-layout, .mobile-settings-home) .md-setup-icon {
+    width: 26px; height: 26px; min-width: 26px; flex: 0 0 26px; border-radius: 8px;
+  }
+  .lightning :is(.setup-layout, .mobile-settings-home) .md-setup-icon svg { width: 15px; height: 15px; }
+}
+
