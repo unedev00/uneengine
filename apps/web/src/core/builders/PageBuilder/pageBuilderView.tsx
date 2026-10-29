@@ -2614,7 +2614,7 @@ function PageBuilder({
             <UneBuilderRibbon tab={ribbonTab==='Component Data'?'Data':ribbonTab==='Component Layout'?'Layout':'Design'}
               api={selected.type.slice(7) as UneBuilderApi} properties={selected.properties}
               onChange={properties=>updateComponent(selected.id,{properties})}
-              objects={objects} position={selected.position}
+              objects={objects} pageObjectApiName={page.targetObject} position={selected.position}
               onPositionChange={position=>updateComponent(selected.id,{position})}
               layoutMode={page.layoutMode}/>}
           {selectedAppOwnedUne && ribbonTab.startsWith('Component ') && <div className="une-app-owned-note" role="status">UNE component properties are maintained in application code, not in the Component Library or Page Builder ribbon.</div>}

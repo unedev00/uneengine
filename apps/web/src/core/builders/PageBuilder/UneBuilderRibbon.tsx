@@ -6,12 +6,12 @@ import './UneBuilderRibbon.css';
 const color=(value:unknown)=>typeof value==='string'&&/^#[0-9a-f]{6}$/i.test(value)?value:'#ffffff';
 const number=(value:unknown,fallback=0)=>typeof value==='number'&&Number.isFinite(value)?value:fallback;
 type Position={x:number;y:number;width:number;height:number};
-export default function UneBuilderRibbon({tab,api,properties,onChange,objects,position,onPositionChange,layoutMode}:{
+export default function UneBuilderRibbon({tab,api,properties,onChange,objects,pageObjectApiName='',position,onPositionChange,layoutMode}:{
  tab:UneBuilderTab;api:UneBuilderApi;properties:Record<string,unknown>;
- onChange:(next:Record<string,unknown>)=>void;objects:readonly ObjectMetadata[];
+ onChange:(next:Record<string,unknown>)=>void;objects:readonly ObjectMetadata[];pageObjectApiName?:string;
  position?:Position;onPositionChange?:(next:Position)=>void;layoutMode:string;
 }){
- const objectName=typeof properties.objectApiName==='string'?properties.objectApiName:'';
+ const objectName=typeof properties.objectApiName==='string'&&properties.objectApiName?properties.objectApiName:pageObjectApiName;
  const set=(id:string,value:unknown)=>onChange({...properties,[id]:value});
  const control=(property:UneRibbonProperty)=>{
   const supported=property.components.includes(api);
