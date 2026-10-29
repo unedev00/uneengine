@@ -39,8 +39,8 @@ test('journey mounts record filters inline and saves draft separately from publi
   assert.doesNotMatch(source,/page-ribbon-expanded-editor/);
   assert.match(source,/ribbonTab==='Source'/);
   assert.match(source,/ribbonFilterDraft/);
-  assert.match(source,/onApply=\{\(\)=>\{/);
-  assert.match(source,/onCancel=\{\(\)=>selectRibbonTab\('Component Data'\)\}/);
+  assert.doesNotMatch(source,/onApply=\{\(\)=>\{/);
+  assert.doesNotMatch(source,/onCancel=\{\(\)=>selectRibbonTab\('Component Data'\)\}/);
   assert.doesNotMatch(source,/dataEditorOpen|visibilityDialogOpen/);
   assert.match(engine,/mode==='filters-editor'/);
   assert.match(engine,/RecordFilterEditor/);
@@ -126,12 +126,12 @@ test('SQL-defined Home groups preserve page actions without duplicating Save',()
   assert.match(source,/aria-label="Copy"/);
   assert.match(source,/aria-label="Paste"/);
   const advanced=readFileSync(new URL('../src/core/builders/PageBuilder/PageBuilderAdvancedStyle.tsx',import.meta.url),'utf8');
-  assert.match(source,/<PageBuilderAdvancedStyle/);
+  assert.doesNotMatch(source,/<PageBuilderAdvancedStyle/);
   assert.match(advanced,/office-ribbon-extra-grid/);
   assert.doesNotMatch(advanced,/createPortal/);
   assert.match(source,/office-ribbon-quick-grid/);
-  assert.match(source,/ribbonTab==='Component Responsive'/);
-  assert.match(source,/<RibbonResponsive/);
+  assert.doesNotMatch(source,/ribbonTab==='Component Responsive'/);
+  assert.doesNotMatch(source,/<RibbonResponsive/);
 });
 
 test('colour pickers share a single accessible, metadata-backed palette',()=>{

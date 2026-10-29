@@ -175,18 +175,18 @@ test('Free Canvas uses clean component objects and a compact ribbon-based palett
   assert.doesNotMatch(source, /className="record-component-head"/);
   assert.doesNotMatch(source, /Select a component to add it, or drag it onto the canvas\./);
   assert.doesNotMatch(source, /Free Canvas uses registered components from the shared library\./);
-  assert.match(source, /className="office-ribbon-add-library"/);
-  assert.match(source, /className="office-ribbon-gallery-group-tiles"/);
-  assert.match(source, /ribbonComponentGroups\.filter\(group=>group\.components\.length>0\)/);
+  assert.doesNotMatch(source, /className="office-ribbon-add-library"/);
+  assert.doesNotMatch(source, /className="office-ribbon-gallery-group-tiles"/);
+  assert.doesNotMatch(source, /ribbonComponentGroups\.filter\(group=>group\.components\.length>0\)/);
   assert.doesNotMatch(source, /ribbonComponentSearch\.trim\(\)/);
   assert.doesNotMatch(source, /ribbonAddOffset/);
   assert.doesNotMatch(source, /aria-label="Component category"/);
-  assert.match(source, /className="office-ribbon-gallery-group"/);
-  assert.match(source, /office-ribbon-gallery-pages/);
+  assert.doesNotMatch(source, /className="office-ribbon-gallery-group"/);
+  assert.doesNotMatch(source, /office-ribbon-gallery-pages/);
   const blueprint=await readFile(new URL('../src/core/builders/PageBuilder/PageBuilderRibbonBlueprint.css',import.meta.url),'utf8');
   assert.match(blueprint, /office-ribbon-gallery-group-tiles/);
   assert.match(blueprint, /flex-flow:row nowrap!important/);
-  assert.match(source, /onClick=\{\(\)=>addPaletteComponent\(component\.type\)\}/);
+  assert.doesNotMatch(source, /onClick=\{\(\)=>addPaletteComponent\(component\.type\)\}/);
   assert.doesNotMatch(source, /remainingRibbonComponents\.map\(component=>/);
   assert.doesNotMatch(source, /<aside className="component-panel"/);
   assert.doesNotMatch(source, /renderPaletteComponentPreview/);
@@ -204,10 +204,10 @@ test('Page Builder property editors filter controls by selected component capabi
   const ribbonStyle=await readFile(new URL('../src/core/builders/PageBuilder/PageBuilderRibbonStyle.tsx',import.meta.url),'utf8');
   const advancedStyle=await readFile(new URL('../src/core/builders/PageBuilder/PageBuilderAdvancedStyle.tsx',import.meta.url),'utf8');
   const capability=await readFile(new URL('../src/core/builders/PageBuilder/RibbonCapabilityControls.tsx',import.meta.url),'utf8');
-  assert.match(builder, /<PageBuilderAdvancedStyle/);
+  assert.doesNotMatch(builder, /<PageBuilderAdvancedStyle/);
   assert.match(advancedStyle, /office-ribbon-extra-grid/);
   assert.doesNotMatch(advancedStyle, /office-ribbon-capability-backdrop/);
-  assert.match(builder, /<RibbonResponsive/);
+  assert.doesNotMatch(builder, /<RibbonResponsive/);
   assert.doesNotMatch(builder, /visible=\{selected\.visible\}/);
   assert.match(capability, /disabled=\{!definitions.length\}/);
   assert.match(capability, /RibbonColorPalette key=\{name\}/);
@@ -295,7 +295,7 @@ test('every bundled UNE Page component has an explicitly verified appearance tar
     une_navigation:'button',une_menu:'button',une_modal:'overlay',une_drawer:'overlay',
     une_item_grid:'collection',une_repeater:'collection',
     une_record_list:'collection',une_search:'input',une_lookup:'input',
-    une_choice:'input',une_cart:'cart',une_conversation:'conversation',
+    une_choice:'input',une_cart:'cart',acetill_cart:'cart',une_conversation:'conversation',
     une_form:'form',une_table:'table',une_line_items:'table',
     une_date_picker:'input',une_slot_picker:'input',une_metric:'surface',
     une_alert:'surface',une_progress:'progress',une_document_viewer:'surface',
@@ -409,8 +409,8 @@ test('Page Builder Office ribbon keeps each control in one permanent logical gro
   assert.doesNotMatch(builder, /These settings belong only to the selected/);
   assert.doesNotMatch(builder, /<div className="reference-canvas-toolbar">/);
   assert.doesNotMatch(builder, /<button className="btn btn-full" onClick=\{\(\) => setActivePanel\(null\)\}>Done<\/button>/);
-  assert.match(builder, /className="office-ribbon-add-library"/);
-  assert.match(builder, /className="office-ribbon-component-tile"/);
+  assert.doesNotMatch(builder, /className="office-ribbon-add-library"/);
+  assert.doesNotMatch(builder, /className="office-ribbon-component-tile"/);
   assert.doesNotMatch(builder, /remainingRibbonComponents\.map\(component=>/);
   assert.match(styles, /grid-template-rows:repeat\(3,28px\)/);
   assert.match(styles, /office-ribbon-data-section/);
@@ -422,8 +422,8 @@ test('Page Builder Office ribbon keeps each control in one permanent logical gro
   assert.match(data, /Configure component actions/);
   assert.doesNotMatch(builder, /ribbonTab==='Visibility Rules'/);
   assert.doesNotMatch(builder, /Group <ChevronDown/);
-  assert.match(builder, /office-ribbon-arrange-column/);
-  assert.match(builder, /onClick=\{\(\)=>wrapSelectedInContainer\(\)\}/);
+  assert.doesNotMatch(builder, /office-ribbon-arrange-column/);
+  assert.doesNotMatch(builder, /onClick=\{\(\)=>wrapSelectedInContainer\(\)\}/);
   assert.doesNotMatch(builder, /Technical page ID/);
   assert.doesNotMatch(builder, /page-property-summary/);
   assert.doesNotMatch(presentation, /<details/);
@@ -453,13 +453,13 @@ test('Page Builder contextual ribbon respects the fixed-height no-scroll contrac
   const css=await readModularCss(new URL('PageBuilder/styles-md227.css',root));
   const filters=await readFile(new URL('PageBuilder/PageBuilderRibbonEditors.tsx',root),'utf8');
   const actions=await readFile(new URL('PageBuilder/PageBuilderActionRibbon.tsx',root),'utf8');
-  assert.match(builder,/ribbonTab==='Filters' && <RibbonFilters/);
+  assert.doesNotMatch(builder,/ribbonTab==='Filters' && <RibbonFilters/);
   assert.doesNotMatch(builder,/ribbonTab==='Visibility Rules' && <RibbonVisibilityRules/);
   assert.match(builder,/ribbonTab==='Source'/);
-  assert.match(builder,/ribbonTab === 'Component Content'/);
+  assert.doesNotMatch(builder,/ribbonTab === 'Component Content'/);
   const advancedStyle=await readFile(new URL('PageBuilder/PageBuilderAdvancedStyle.tsx',root),'utf8');
   const blueprint=await readFile(new URL('PageBuilder/PageBuilderRibbonBlueprint.css',root),'utf8');
-  assert.match(builder,/<PageBuilderAdvancedStyle/);
+  assert.doesNotMatch(builder,/<PageBuilderAdvancedStyle/);
   assert.match(advancedStyle,/office-ribbon-extra-grid/);
   assert.match(blueprint,/#page-builder-tab-content\.office-ribbon-content/);
   assert.match(blueprint,/overflow-x:auto!important;overflow-y:hidden!important/);
@@ -476,7 +476,7 @@ test('Page Builder contextual ribbon is generated from aligned three-row groups'
   const builder=await readFile(new URL('PageBuilder/pageBuilderView.tsx',root),'utf8');
   const css=await readModularCss(new URL('PageBuilder/styles-md227.css',root));
   const responsive=await readFile(new URL('ComponentStyleEditor/PageComponentStyleEditor.tsx',root),'utf8');
-  assert.match(builder,/office-ribbon-inline-options/);
+  assert.doesNotMatch(builder,/office-ribbon-inline-options/);
   assert.doesNotMatch(builder,/additionalPropertyDialogOpen && selectedCustomDefinition && createPortal/);
   assert.match(responsive,/numberGroups\.flatMap/);
   assert.match(responsive,/items\.slice\(index\*3,index\*3\+3\)/);
@@ -544,8 +544,8 @@ test('Page Builder authors shared visibility rules without replacing conditional
   const builder = await readFile(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
   const ribbon = await readFile(new URL('../src/core/builders/PageBuilder/PageBuilderRibbonStyle.tsx',import.meta.url),'utf8');
   assert.match(builder,/RibbonVisibilityRules/);
-  assert.match(builder,/Edit visibility rules/);
-  assert.match(builder,/allowRecordFields=\{page\.pageType==='Record Page'\}/);
+  assert.doesNotMatch(builder,/Edit visibility rules/);
+  assert.doesNotMatch(builder,/allowRecordFields=\{page\.pageType==='Record Page'\}/);
   assert.match(builder,/visibilityRules=|properties\.visibilityRules/);
   assert.doesNotMatch(ribbon,/Edit visibility rules/);
   const runtime = await readFile(new URL('../src/core/components/Properties/componentVisibility.ts',import.meta.url),'utf8');

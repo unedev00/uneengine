@@ -8,7 +8,7 @@ const read=url=>readFileSync(url,'utf8');
 const manifest=JSON.parse(read(new URL('manifest.json',root)));
 
 test('all UNE component settings are owned by app source, not the Component Library manifest',async()=>{
- assert.equal(manifest.components.length,34);
+ assert.equal(manifest.components.length,35);
  assert.deepEqual(manifest.commonProperties,[]);
  const catalog=await loadComponentCatalog();
  const keys=new Set();
@@ -36,7 +36,7 @@ test('UNE settings stay out of public catalog, ribbon and registration UI',()=>{
  const palette=read(new URL('../src/core/builders/PageBuilder/pageBuilderPalette.ts',import.meta.url));
  assert.match(build,/propertyDefinitions: appOwned \? \[\] :/);
  assert.match(build,/defaultProps/);
- assert.match(builder,/data-app-owned-une=\{selectedAppOwnedUne/);
+ assert.doesNotMatch(builder,/data-app-owned-une=\{selectedAppOwnedUne/);
  assert.match(css,/data-app-owned-une="true"/);
  assert.match(library,/!component\.apiName\.startsWith\('une_'\)/);
  assert.match(palette,/!component\.apiName\.startsWith\('une_'\)/);

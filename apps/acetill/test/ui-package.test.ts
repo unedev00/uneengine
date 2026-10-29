@@ -4,11 +4,11 @@ import {readFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import {ACETILL} from '../src/manifest.js';
 
-const sql=readFileSync(fileURLToPath(new URL('../sql/register-v2.sql',import.meta.url)),'utf8');
+const sql=readFileSync(fileURLToPath(new URL('../sql/register-v3.sql',import.meta.url)),'utf8');
 
 test('SQL template declares Acetill pages and shared components without retired Badge',()=>{
  for(const {apiName} of ACETILL.pages)assert.match(sql,new RegExp("'"+apiName+"'"));
- for(const component of ['une_input','une_search','une_item_grid','une_cart','une_button'])
+ for(const component of ['une_input','une_search','une_item_grid','acetill_cart','une_button'])
    assert.match(sql,new RegExp("'"+component+"'"));
  assert.doesNotMatch(sql,/une_badge/);
  assert.match(sql,/md_app_package_page_component_templates/);
@@ -16,9 +16,9 @@ test('SQL template declares Acetill pages and shared components without retired 
 });
 test('Acetill publishes metadata without seeding business records or granting implicit access',()=>{
  assert.doesNotMatch(sql,/INSERT INTO md_records|INSERT INTO md_users|INSERT INTO md_permission_assignments/i);
- assert.match(sql,/2,true/);
+ assert.match(sql,/3,true/);
  assert.match(sql,/md_app_package_home_page_templates/);
- assert.match(sql,/2,'Field',f\.api_name,'Product'/);
+ assert.match(sql,/3,'Field',f\.api_name,'Product'/);
 });
 test('checkout and receipt actions require named active Flows at runtime',()=>{
  assert.match(sql,/actionFlows\.checkout\.flowApiName','string','AcetillCompleteSale'/);
@@ -28,7 +28,7 @@ test('checkout and receipt actions require named active Flows at runtime',()=>{
 test('catalogue and basket bind shared Product fields and same cart state',()=>{
  assert.match(sql,/une_item_grid','main',20,'objectApiName','string','Product'/);
  assert.match(sql,/une_item_grid','main',20,'cartTargetKey','string','acetill'/);
- assert.match(sql,/une_cart','sidebar',30,'cartTargetKey','string','acetill'/);
+ assert.match(sql,/acetill_cart','sidebar',30,'cartTargetKey','string','acetill'/);
 });
 
 test('standalone entrypoint uses the shared product-aware workspace shell',()=>{

@@ -35,6 +35,7 @@
     "une_progress/component.json",
     "une_document_viewer/component.json",
     "une_chart/component.json",
-    "une_option_groups/component.json"
+    "une_option_groups/component.json",
+    "acetill_cart/component.json"
   ]
 }

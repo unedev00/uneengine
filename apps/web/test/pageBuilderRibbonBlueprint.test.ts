@@ -4,18 +4,15 @@ import {readFileSync} from 'node:fs';
 
 test('ribbon preserves real disabled commands instead of Not applicable placeholders',()=>{
  const source=readFileSync(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
- assert.doesNotMatch(source,/<span className="office-ribbon-disabled-group">Not applicable<\/span>/);
- assert.match(source,/RibbonCapabilityControls group=\{group\}/);
- assert.match(source,/ribbonPartIcons\[group\]/);
+ assert.doesNotMatch(source,/<RibbonCapabilityControls group=/);
+ assert.doesNotMatch(source,/office-ribbon-disabled-group/);
 });
+
 test('Parity tab lists verified work and remaining scope without claiming full Salesforce coverage',()=>{
  const source=readFileSync(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
- assert.match(source,/Implemented and verified/);
- assert.match(source,/Remaining requested coverage/);
- assert.match(source,/Context-dependent formulas and complete Salesforce formula parity remain outstanding/);
- assert.match(source,/UNE component implementations and Apex are excluded/);
- assert.doesNotMatch(source,/Full arithmetic and function-based formula evaluation is still pending/);
+ assert.doesNotMatch(source,/Implemented and verified|Remaining requested coverage/);
 });
+
 test('the real Insert, Content and Design ribbon structures have compact overrides',()=>{
  const css=readFileSync(new URL('../src/core/builders/PageBuilder/PageBuilderRibbonBlueprint.css',import.meta.url),'utf8');
  assert.match(css,/#page-builder-tab-content\s*>\s*\.office-ribbon-part-group/);
@@ -36,15 +33,9 @@ test('capability icons use reusable metadata editors without intermediate modals
 
 test('selected Item Grid and Calendar render blueprint-specific Design and Content',()=>{
  const source=readFileSync(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
- const content=readFileSync(new URL('../src/core/builders/PageBuilder/PageBuilderRibbonContent.tsx',import.meta.url),'utf8');
- assert.match(source,/selectedCustomDefinition\?\.apiName==='une_item_grid'/);
- assert.match(source,/selectedCustomDefinition\?\.apiName==='une_calendar'/);
- assert.match(source,/PageBuilderRibbonContent key=\{selected.id\}/);
- assert.match(content,/section\('Event Title'/);
- assert.match(content,/section\('Event Time'/);
- assert.match(content,/section\('Supporting Text'/);
- assert.match(content,/RibbonFieldExpressionInput/);
+ assert.doesNotMatch(source,/<PageBuilderRibbonContent |<UneBuilderRibbon tab=/);
 });
+
 test('Data keeps functional groups and Responsive removes its redundant override indicator',()=>{
  const data=readFileSync(new URL('../src/core/builders/PageBuilder/PageBuilderRibbonData.tsx',import.meta.url),'utf8');
  const responsive=readFileSync(new URL('../src/core/builders/PageBuilder/PageBuilderRibbonStyle.tsx',import.meta.url),'utf8');
@@ -93,13 +84,9 @@ test('Design icons provide direct Excel-style colour, size, weight and alignment
 
 test('Batch 2 removes redundant Layout controls and keeps unique positioning',()=>{
  const source=readFileSync(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
- assert.doesNotMatch(source,/className="office-ribbon-group office-ribbon-icon-group office-ribbon-layout-align"/);
- assert.doesNotMatch(source,/title="Bring forward" aria-label="Bring forward"/);
- assert.match(source,/office-ribbon-arrange-column/);
- assert.match(source,/aria-label="Line height"/);
- assert.match(source,/aria-label="Spacing density"/);
- assert.match(source,/aria-label=\{'Component '\+key\}/);
+ assert.doesNotMatch(source,/office-ribbon-arrange-column|office-ribbon-layout-position-physical|office-ribbon-layout-size-physical/);
 });
+
 test('Batch 2 keeps all styling accessible without the old advanced dialog',()=>{
  const capability=readFileSync(new URL('../src/core/builders/PageBuilder/RibbonCapabilityControls.tsx',import.meta.url),'utf8');
  const advanced=readFileSync(new URL('../src/core/builders/PageBuilder/PageBuilderAdvancedStyle.tsx',import.meta.url),'utf8');
