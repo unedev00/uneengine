@@ -92,6 +92,7 @@ import {registerPlatformEventStreamRoutes} from './platform-event-stream-routes.
 import {registerOutboundWebhookRoutes} from './outbound-webhook-service.js';
 import {registerDockerMailAdminRoutes} from './docker-mail-admin-routes.js';
 import {registerDockerMailWebRoutes} from './docker-mail-web-routes.js';
+import {MailAdminAccess} from './mail-admin-access.js';
 import {registerInboundWebhookPublicRoutes,registerInboundWebhookAdminRoutes} from './inbound-webhook-service.js';
 import {createIntegrationCommunicationWriter,IntegrationCommunicationOutbox} from './integration-api-log.js';
 import {countTenantApiRequests,registerTenantInspectionRoutes} from './tenant-inspection-routes.js';
@@ -197,7 +198,8 @@ export function createSystemServer(db:SqlPersistence) {
     }
     next();
   });
-  registerDockerMailWebRoutes(app);
+  let adminMailAccess:MailAdminAccess|undefined;
+  registerDockerMailWebRoutes(app,undefined,undefined,undefined,()=>adminMailAccess);
   app.use('/api/media-assets',express.json({limit:'8mb'}));
   app.use(express.json({limit:'2mb',verify:(req,_res,bytes)=>{
     if((req.url??'').startsWith('/api/inbound-webhooks/') && bytes.length<=262144)
@@ -207,6 +209,7 @@ export function createSystemServer(db:SqlPersistence) {
   app.use((_req,res,next)=>{res.set(browserSecurityHeaders({frame_policy:'DENY',csp_enabled:true}));next();});
   const auth=new AuthenticationService(db);
   const rbac=new RbacEngine(db);
+  adminMailAccess=new MailAdminAccess(db,rbac);
   const nativeTenantRecords=new NativeTenantRecordReader(db,rbac);
   const connected=new ConnectedAppService(db,auth,rbac),securityMonitor=new SecurityMonitorService(db,rbac);
   auth.setLoginGuard(async(tenant,user,context)=>{
@@ -2575,7 +2578,7 @@ export function createSystemServer(db:SqlPersistence) {
   registerVersionedApiRoutes(app,records,definitions,rbac,db);
   registerPlatformEventStreamRoutes(app,db,rbac);
   registerOutboundWebhookRoutes(app,db,rbac);
-  registerDockerMailAdminRoutes(app,db,rbac);
+  registerDockerMailAdminRoutes(app,db,rbac,adminMailAccess);
   registerInboundWebhookAdminRoutes(app,db,namedCredentials,rbac);
   app.use('/api',(_req,res)=>{res.status(404).json({error:'API endpoint not implemented in SQL runtime'});});
   registerSecurityWebHost(app,db,process.env.METADRIVE_WEB_DIST);

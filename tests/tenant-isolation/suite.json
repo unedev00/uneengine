@@ -8,6 +8,7 @@
     "apps/server/test/system/docker-mail-tenant-isolation.test.ts",
     "apps/server/test/system/durable-job-tenant-status.test.ts",
     "apps/server/test/system/identity-session-policy.test.ts",
+    "apps/server/test/system/mail-admin-access.test.ts",
     "apps/server/test/system/oneengine-identity.test.ts",
     "apps/server/test/system/permission-set-administration.test.ts",
     "apps/server/test/system/platform-tenant-service.test.ts",

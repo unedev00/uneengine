@@ -65,6 +65,8 @@ export default function MailWebmail(){
  const [password,setPassword]=useState('');
  const [passwordVisible,setPasswordVisible]=useState(false);
  const [loggedIn,setLoggedIn]=useState(false);
+ const [adminToken,setAdminToken]=useState('');
+ const [adminLoading,setAdminLoading]=useState(()=>typeof window!=='undefined'&&window.location.hash.startsWith('#admin='));
  const [folders,setFolders]=useState<FolderItem[]>([]);
  const [folder,setFolder]=useState('INBOX');
  const [messages,setMessages]=useState<Message[]>([]);
@@ -84,13 +86,13 @@ export default function MailWebmail(){
  const invoke=useCallback(async(data:Record<string,unknown>)=>{
   const response=await fetch(endpoint,{
    method:'POST',
-   headers:{'Content-Type':'application/json',Authorization:'Basic '+b64(email.trim()+':'+password)},
+   headers:{'Content-Type':'application/json',Authorization:adminToken?'Bearer '+adminToken:'Basic '+b64(email.trim()+':'+password)},
    body:JSON.stringify(data),redirect:'error'
   });
   const value=await response.json() as Record<string,unknown>;
   if(!response.ok)throw new Error(typeof value.error==='string'?value.error:'Mail request failed ('+response.status+')');
   return value;
- },[email,password,endpoint]);
+ },[email,password,endpoint,adminToken]);
 
  const load=useCallback(async(name:string)=>{
   const id=++requestId.current;
@@ -106,6 +108,49 @@ export default function MailWebmail(){
    if(id===requestId.current)setBusy(false);
   }
  },[invoke]);
+
+
+ // The fragment ticket is single-use and cleared before contacting the API.
+ React.useEffect(()=>{
+  const match=/^#admin=([A-Za-z0-9_-]{43})$/.exec(window.location.hash);
+  if(!match){
+   if(window.location.hash.startsWith('#admin=')){window.history.replaceState(null,'',window.location.pathname+window.location.search);setAdminLoading(false);setError('Invalid admin mailbox link');}
+   return;
+  }
+  window.history.replaceState(null,'',window.location.pathname+window.location.search);
+  let cancelled=false;
+  void (async()=>{
+   try{
+    const response=await fetch(endpoint+'admin/redeem',{method:'POST',redirect:'error',
+     headers:{'Content-Type':'application/json'},body:JSON.stringify({ticket:match[1]})});
+    const value=await response.json() as {token?:string;email?:string;error?:string};
+    if(!response.ok||!value.token||!value.email)throw new Error(value.error||'Unable to start admin session');
+    if(cancelled)return;
+    setEmail(value.email);setAdminToken(value.token);
+   }catch(e){
+    if(!cancelled){setError(e instanceof Error?e.message:'Admin session failed');setAdminLoading(false);}
+   }
+  })();
+  return()=>{cancelled=true;};
+ },[endpoint]);
+ React.useEffect(()=>{
+  if(!adminToken)return;
+  let cancelled=false;
+  void (async()=>{
+   try{
+    const data=await invoke({action:'folders'});
+    if(cancelled)return;
+    const list=(Array.isArray(data.folders)?data.folders as FolderItem[]:[])
+     .map(item=>({id:normalizeLegacyFolder(item.id),name:normalizeLegacyFolder(item.name)}));
+    const available=list.length?list:[{id:'INBOX',name:'Inbox'}];
+    setFolders(available);setLoggedIn(true);
+    await load(available.find(x=>folderKind(x.name)==='inbox')?.id??available[0].id);
+   }catch(e){
+    if(!cancelled){setAdminToken('');setError(e instanceof Error?e.message:'Admin access failed');}
+   }finally{if(!cancelled)setAdminLoading(false);}
+  })();
+  return()=>{cancelled=true;};
+ },[adminToken,invoke,load]);
 
  const signIn=async(e:React.FormEvent)=>{
   e.preventDefault();setBusy(true);setError('');setNotice('');
@@ -131,7 +176,7 @@ export default function MailWebmail(){
    const data=await invoke({action:'message',folder,uid:item.id});
    if(id!==requestId.current)return;
    setSelected({...item,...data} as FullMessage);
-   if(!item.seen){
+   if(!adminToken&&!item.seen){
     try{
      await invoke({action:'mark_read',folder,uid:item.id});
      if(id===requestId.current)setMessages(current=>current.map(m=>m.id===item.id?{...m,seen:true}:m));
@@ -161,6 +206,8 @@ export default function MailWebmail(){
   }
  };
  const signOut=()=>{
+  if(adminToken)void fetch(endpoint+'admin/revoke',{method:'POST',redirect:'error',headers:{Authorization:'Bearer '+adminToken,'Content-Type':'application/json'},body:'{}'}).catch(()=>{});
+  setAdminToken('');setAdminLoading(false);
   ++requestId.current;
   setLoggedIn(false);setEmail('');setPassword('');setSelected(null);
   setMessages([]);setFolders([]);setComposing(false);setTo('');
@@ -198,6 +245,7 @@ export default function MailWebmail(){
  const currentName=folderTitle(folders.find(f=>f.id===folder)?.name??folder);
  const unread=messages.filter(m=>!m.seen).length;
 
+ if(adminLoading)return <main className="md-mail md-mail-login"><div className="md-mail-login-card" role="status">Opening administrator mailbox…</div></main>;
  if(!loggedIn)return <main className="md-mail md-mail-login">
   <form className="md-mail-login-card" onSubmit={signIn}>
    <div className="md-mail-login-icon"><Mail size={30}/></div>
@@ -241,10 +289,11 @@ export default function MailWebmail(){
    </div>
   </header>
 
+  {adminToken&&<div role="status" style={{background:'#fff5d8',color:'#5f4106',padding:'10px 20px',fontWeight:650,borderBottom:'1px solid #e6c980'}}>Admin read-only access · {email} · expires after 15 minutes. Sending, composing and changing message status are disabled.</div>}
   {sidebarOpen&&<button type="button" className="md-mail-overlay" aria-label="Close folders" onClick={()=>setSidebarOpen(false)}/>}
   <div className={'md-mail-layout'+(sidebarOpen?'':' is-compact')}>
    <aside className={'md-mail-sidebar'+(sidebarOpen?' is-visible':'')} aria-label="Mail folders">
-    <button type="button" className="md-mail-compose-button" onClick={()=>{setComposing(true);setError('');}}><Plus size={24}/>Compose</button>
+    {!adminToken&&<button type="button" className="md-mail-compose-button" onClick={()=>{setComposing(true);setError('');}}><Plus size={24}/>Compose</button>}
     <p className="md-mail-sidebar-caption">Folders</p>
     <nav aria-label="Mailbox folders">
      {orderedFolders.map(f=><button key={f.id} type="button" className={'md-mail-folder'+(f.id===folder?' is-active':'')} aria-current={f.id===folder?'page':undefined} disabled={busy} onClick={()=>chooseFolder(f.id)}>
@@ -269,10 +318,10 @@ export default function MailWebmail(){
 
     {selected?<article className="md-mail-reading">
      <h2>{selected.subject||'(no subject)'}</h2>
-     <div className="md-mail-reading-actions">
+     {!adminToken&&<div className="md-mail-reading-actions">
       <button type="button" className="md-mail-secondary" onClick={()=>startReply('reply')}><CornerUpLeft size={17}/>Reply</button>
       <button type="button" className="md-mail-secondary" onClick={()=>startReply('forward')}><Forward size={17}/>Forward</button>
-     </div>
+     </div>}
      <div className="md-mail-message-meta">
       <span className="md-mail-avatar">{senderName(selected.from).slice(0,1).toUpperCase()}</span>
       <div><strong>{senderName(selected.from)}</strong><span>From: {selected.from}</span><span>To: {selected.to}</span></div>
@@ -300,7 +349,7 @@ export default function MailWebmail(){
    </section>
   </div>
 
-  {composing&&<section className="md-mail-compose-window" role="dialog" aria-label="New message">
+  {composing&&!adminToken&&<section className="md-mail-compose-window" role="dialog" aria-label="New message">
    <div className="md-mail-compose-header"><h2>New Message</h2><button type="button" className="md-mail-icon-button" title="Close composer (keep text in this session)" aria-label="Close composer" onClick={()=>setComposing(false)}><X size={19}/></button></div>
    <form className="md-mail-compose-form" onSubmit={e=>{e.preventDefault();void saveMessage('send');}}>
     <label className="md-mail-compose-line"><span>To</span><input type="email" value={to} onChange={e=>setTo(e.target.value)} required autoFocus placeholder="Recipient"/></label>
