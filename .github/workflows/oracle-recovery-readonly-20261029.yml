@@ -34,4 +34,18 @@ jobs:
           if [ -f "$HOME/.oci/config" ]; then echo 'OCI CLI user config present'; else echo 'OCI CLI user config unavailable'; fi
           echo '=== kernel process waiting indicators ==='
           ps -eo stat=,comm= | awk '$1 ~ /^D/ {count++} END {print "uninterruptible processes:",count+0}'
+          echo '=== OCI metadata and instance principal (no identifiers output) ==='
+          instance_id="$(curl --silent --show-error --fail --noproxy '*' --max-time 8 -H 'Authorization: Bearer Oracle' http://169.254.169.254/opc/v2/instance/id || true)"
+          if [[ "$instance_id" == ocid1.instance.* ]]; then
+            echo 'OCI instance metadata is available'
+            if timeout 35 oci --auth instance_principal compute instance get --instance-id "$instance_id" --query 'data."lifecycle-state"' --raw-output > /tmp/metadrive-oci-state 2>/dev/null; then
+              echo 'Instance principal can read OCI compute state'
+              cat /tmp/metadrive-oci-state
+            else
+              echo 'Instance principal has no usable compute read permission or cannot authenticate'
+            fi
+            rm -f /tmp/metadrive-oci-state
+          else
+            echo 'OCI instance metadata unavailable; cannot use self-action'
+          fi
           echo 'Read-only Oracle audit complete.'
