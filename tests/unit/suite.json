@@ -202,6 +202,7 @@
     "apps/web/test/uneComponentContracts.test.mjs",
     "apps/web/test/uneConversationCompositeSlots.test.mjs",
     "apps/web/test/uneFieldExpression.test.ts",
+    "apps/web/test/uneHelpTextCoverage.test.mjs",
     "apps/web/test/uneRibbonIconAssets.test.ts",
     "apps/web/test/uneRibbonRemarksCoverage.test.mjs",
     "apps/web/test/uneTextPropertyRepair.test.ts",

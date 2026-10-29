@@ -41,42 +41,6 @@
       ]
     },
     {
-      "propertyKey": "tone",
-      "label": "Colour palette",
-      "kind": "SELECT",
-      "displayOrder": 30,
-      "defaultValue": "blue",
-      "choices": [
-        {
-          "key": "blue",
-          "label": "iOS blue"
-        },
-        {
-          "key": "mint",
-          "label": "Mint"
-        },
-        {
-          "key": "purple",
-          "label": "Purple"
-        },
-        {
-          "key": "orange",
-          "label": "Orange"
-        },
-        {
-          "key": "neutral",
-          "label": "Neutral"
-        }
-      ]
-    },
-    {
-      "propertyKey": "accentColor",
-      "label": "Custom accent colour",
-      "kind": "COLOR",
-      "displayOrder": 40,
-      "defaultValue": ""
-    },
-    {
       "propertyKey": "backgroundColor",
       "label": "Surface colour",
       "kind": "COLOR",
@@ -201,13 +165,6 @@
       "displayOrder": 330
     },
     {
-      "propertyKey": "cartTargetKey",
-      "label": "Optional shared basket",
-      "kind": "TEXT",
-      "defaultValue": "",
-      "displayOrder": 340
-    },
-    {
       "propertyKey": "imageFieldApiName",
       "label": "Card image field",
       "kind": "OBJECT_FIELD",
@@ -230,13 +187,6 @@
       "defaultValue": "",
       "displayOrder": 370,
       "group": "Value"
-    },
-    {
-      "propertyKey": "currencyCode",
-      "label": "Currency code (only for monetary values)",
-      "kind": "TEXT",
-      "defaultValue": "",
-      "displayOrder": 380
     },
     {
       "propertyKey": "searchKey",
@@ -295,13 +245,6 @@
       "displayOrder": 440
     },
     {
-      "propertyKey": "showHeading",
-      "label": "Show gallery heading",
-      "kind": "BOOLEAN",
-      "defaultValue": true,
-      "displayOrder": 450
-    },
-    {
       "propertyKey": "recordSortFieldApiName",
       "label": "Record display-order field",
       "kind": "OBJECT_FIELD",
@@ -322,13 +265,6 @@
       "defaultValue": "",
       "displayOrder": 480,
       "group": "Supporting text"
-    },
-    {
-      "propertyKey": "showDescription",
-      "label": "Show card description",
-      "kind": "BOOLEAN",
-      "defaultValue": false,
-      "displayOrder": 490
     },
     {
       "propertyKey": "badgeFieldApiName",
@@ -594,25 +530,6 @@
       ]
     },
     {
-      "propertyKey": "missingImageBehavior",
-      "label": "When image missing",
-      "kind": "SELECT",
-      "displayOrder": 654,
-      "group": "Image",
-      "section": "Content",
-      "defaultValue": "hide",
-      "choices": [
-        {
-          "key": "hide",
-          "label": "Hide image"
-        },
-        {
-          "key": "placeholder",
-          "label": "Show placeholder"
-        }
-      ]
-    },
-    {
       "propertyKey": "headingFontSize",
       "label": "Heading size (px)",
       "kind": "NUMBER",
@@ -651,32 +568,6 @@
       "displayOrder": 664,
       "group": "Value",
       "section": "Design"
-    },
-    {
-      "propertyKey": "valueColor",
-      "label": "Value colour",
-      "kind": "COLOR",
-      "displayOrder": 665,
-      "group": "Value",
-      "section": "Design"
-    },
-    {
-      "propertyKey": "showAddIcon",
-      "label": "Show Add button",
-      "kind": "BOOLEAN",
-      "defaultValue": false,
-      "displayOrder": 670,
-      "group": "Card",
-      "section": "Content"
-    },
-    {
-      "propertyKey": "separateAddButton",
-      "label": "Separate Add button action",
-      "kind": "BOOLEAN",
-      "defaultValue": false,
-      "displayOrder": 671,
-      "group": "Card",
-      "section": "Actions"
     },
     {
       "propertyKey": "headingFontWeight",
@@ -821,38 +712,6 @@
       "displayOrder": 759
     },
     {
-      "propertyKey": "valueTextAlign",
-      "label": "Value alignment",
-      "kind": "SELECT",
-      "choices": [
-        {
-          "key": "left",
-          "label": "Left"
-        },
-        {
-          "key": "center",
-          "label": "Centre"
-        },
-        {
-          "key": "right",
-          "label": "Right"
-        }
-      ],
-      "group": "Value",
-      "section": "Design",
-      "displayOrder": 760
-    },
-    {
-      "propertyKey": "valueLineLimit",
-      "label": "Value maximum lines",
-      "kind": "NUMBER",
-      "min": 1,
-      "max": 12,
-      "group": "Value",
-      "section": "Design",
-      "displayOrder": 761
-    },
-    {
       "propertyKey": "cardWidth",
       "label": "Card width (px)",
       "kind": "NUMBER",
@@ -932,30 +791,6 @@
       "displayOrder": 805
     },
     {
-      "propertyKey": "headingExpression",
-      "label": "Heading expression",
-      "kind": "TEXT",
-      "group": "Heading",
-      "section": "Content",
-      "displayOrder": 806
-    },
-    {
-      "propertyKey": "descriptionExpression",
-      "label": "Supporting expression",
-      "kind": "TEXT",
-      "group": "Supporting text",
-      "section": "Content",
-      "displayOrder": 807
-    },
-    {
-      "propertyKey": "badgeExpression",
-      "label": "Badge expression",
-      "kind": "TEXT",
-      "group": "Badge",
-      "section": "Content",
-      "displayOrder": 808
-    },
-    {
       "propertyKey": "badgeBackgroundColor",
       "label": "Badge background",
       "kind": "COLOR",
@@ -1004,15 +839,6 @@
           "label": "Bold"
         }
       ]
-    },
-    {
-      "propertyKey": "emptyText",
-      "label": "Empty state message",
-      "kind": "TEXT",
-      "group": "Empty State",
-      "section": "Content",
-      "defaultValue": "No matching records",
-      "displayOrder": 813
     },
     {
       "propertyKey": "helpText",
