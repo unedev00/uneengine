@@ -61,6 +61,7 @@ jobs:
             echo 'Production migration checksum missing or invalid'; exit 1
           fi
           echo "Applied SQL sha256: $actual"
+          sudo -n runuser -u postgres -- psql -X -Atq -v ON_ERROR_STOP=1 -d "$db" -c "SELECT to_char(applied_at AT TIME ZONE 'UTC','YYYY-MM-DD HH24:MI:SS') FROM md_system_migrations WHERE version='$filename'" | sed 's/^/Migration first applied (UTC): /'
           release="$(timeout 8 systemctl show metadrive-api.service -p WorkingDirectory --value)"
           path="$release/apps/server/dist-system/system-support/migrations/$filename"
           if [[ -f "$path" ]]; then
