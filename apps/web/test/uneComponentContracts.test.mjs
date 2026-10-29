@@ -121,7 +121,11 @@ test('only common shared settings remain in AceChatter Conversation metadata',as
  const conversation=une.find(item=>item.apiName==='une_conversation');
  const common=new Set(['surface','tone','accentColor','backgroundColor','textColor','borderColor',
    'density','radius','padding','gap','shadow','glassBlur','objectApiName']);
- assert.deepEqual(new Set(conversation.propertyDefinitions.map(item=>item.propertyKey)),common);
+ const raw=JSON.parse(await readFile(new URL('../src/one/une_conversation/component.json',import.meta.url),'utf8'));
+ assert.deepEqual(new Set(raw.propertyDefinitions.map(item=>item.propertyKey)),common);
+ const catalogShared=new Set(JSON.parse(await readFile(new URL('../src/one/manifest.json',import.meta.url),'utf8')).commonProperties.map(item=>item.propertyKey));
+ for(const key of conversation.propertyDefinitions.map(item=>item.propertyKey))
+  assert.ok(common.has(key)||catalogShared.has(key),key+' is not a shared property');
  const code=await readFile(new URL('../src/one/une_conversation/UneConversation.jsx',import.meta.url),'utf8');
  for(const key of ['conversations','messages','contactChoices','channelAccounts','canSend',
   'showRefresh','refreshLabel','newMessageNoticeLabel','conversationSourceMode','messageMaxLength',
