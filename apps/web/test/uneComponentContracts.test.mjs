@@ -145,3 +145,15 @@ test('Cart-specific settings are internal defaults while shared styling remains 
  assert.ok(!cart.propertyDefinitions.some(p=>p.propertyKey==='checkoutLabel'));
  assert.match(code,/\.\.\.uneProps\(props,"ShoppingCart"\)/);
 });
+
+test('UNE Search and Modal expose only shared properties while retaining internal runtime defaults',async()=>{
+ const shared=new Set(['surface','tone','accentColor','backgroundColor','textColor','borderColor','density','radius','padding','gap','shadow','glassBlur','objectApiName']);
+ for(const [name,internal] of [['search',['placeholder','searchKey','value','label','showSubmitButton','submitLabel','showSuggestions','controlledValue']],['modal',['layoutContainer','title','openLabel','startOpen','controlledOpen','isOpen','showTrigger','showCloseButton','closeOnBackdrop','closeOnEscape','fullScreenOnMobile']]]){
+  const raw=JSON.parse(await readFile(new URL('../src/one/une_'+name+'/component.json',import.meta.url),'utf8'));
+  assert.ok(raw.propertyDefinitions.every(item=>shared.has(item.propertyKey)),name+' exposes non-shared metadata');
+  assert.ok(raw.propertyDefinitions.length>=12,name+' lost shared properties');
+  const code=await readFile(new URL('../src/one/une_'+name+'/Une'+name[0].toUpperCase()+name.slice(1)+'.jsx',import.meta.url),'utf8');
+  for(const key of internal){assert.ok(!raw.propertyDefinitions.some(item=>item.propertyKey===key),key+' remains public');assert.ok(code.includes('"'+key+'":'),key+' missing from code defaults');}
+  assert.match(code,/\.\.\.uneProps\(props,/);
+ }
+});
