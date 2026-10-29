@@ -1,7 +1,7 @@
 import {useEffect,useRef,useState} from 'react';
 import {createPortal} from 'react-dom';
 import type {ObjectMetadata} from '../../metadata/Definitions/metadata';
-import {UNE_RIBBON_GROUPS,UNE_RIBBON_PROPERTIES,type UneBuilderApi,type UneBuilderTab,type UneRibbonProperty} from './uneBuilderPropertyInventory';
+import {sharedPropertyGroups,type UneBuilderApi,type UneBuilderTab,type UneRibbonProperty} from './uneBuilderPropertyInventory';
 import UneExpressionEditor from './UneExpressionEditor';
 import './UneBuilderRibbon.css';
 
@@ -40,8 +40,8 @@ function WeekdaysPicker({value,onChange,disabled}:{value:readonly string[];onCha
 const color=(value:unknown)=>typeof value==='string'&&/^#[0-9a-f]{6}$/i.test(value)?value:'#ffffff';
 const number=(value:unknown,fallback=0)=>typeof value==='number'&&Number.isFinite(value)?value:fallback;
 type Position={x:number;y:number;width:number;height:number};
-export default function UneBuilderRibbon({tab,api,properties,onChange,objects,pageObjectApiName='',position,onPositionChange,layoutMode}:{
- tab:UneBuilderTab;api:UneBuilderApi;properties:Record<string,unknown>;
+export default function UneBuilderRibbon({tab,api,definitions,properties,onChange,objects,pageObjectApiName='',position,onPositionChange,layoutMode}:{
+ tab:UneBuilderTab;api:UneBuilderApi;definitions:readonly UneRibbonProperty[];properties:Record<string,unknown>;
  onChange:(next:Record<string,unknown>)=>void;objects:readonly ObjectMetadata[];pageObjectApiName?:string;
  position?:Position;onPositionChange?:(next:Position)=>void;layoutMode:string;
 }){
@@ -50,9 +50,7 @@ export default function UneBuilderRibbon({tab,api,properties,onChange,objects,pa
  const control=(property:UneRibbonProperty)=>{
   const supported=property.components.includes(api);
   const kind=property.kindOverrides?.[api]??property.kind;
-  const sourceKey=api==='une_calendar'?
-   ({shadow:'calendarShadowColor',label:'calendarMonthTitleColor',labelAlignment:'calendarHeaderColor'} as Record<string,string>)[property.id]??property.id
-   :property.id;
+  const sourceKey=property.valueKeys?.[api]??property.id;
   const enabled=supported&&(kind!=='position'||layoutMode==='free-canvas'&&Boolean(position&&onPositionChange));
   const v=properties[sourceKey]??property.defaultsOverrides?.[api]??property.default??'';
   const choices=property.choicesOverrides?.[api]??property.choices;
@@ -114,9 +112,9 @@ export default function UneBuilderRibbon({tab,api,properties,onChange,objects,pa
  };
  return <div className="une-v2-ribbon" aria-label="UNE application property ribbon"
     data-component={api} data-tab={tab}>
-   {UNE_RIBBON_GROUPS[tab].map(group=><section key={group} className="une-v2-group" aria-label={group}>
+   {sharedPropertyGroups(definitions,tab).map(group=><section key={group} className="une-v2-group" aria-label={group}>
      <div className="une-v2-controls">
-      {UNE_RIBBON_PROPERTIES.filter(prop=>prop.tab===tab&&prop.group===group).map(control)}
+      {definitions.filter(prop=>prop.tab===tab&&prop.group===group).map(control)}
      </div>
      <span className="une-v2-caption">{group}</span>
    </section>)}
