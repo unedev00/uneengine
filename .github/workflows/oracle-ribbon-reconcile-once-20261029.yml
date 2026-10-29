@@ -1,0 +1,25 @@
+name: One-time audited Oracle Ribbon migration reconciliation
+on:
+  push:
+    branches: [ops/oracle-ribbon-reconcile-20261029]
+permissions:
+  contents: read
+concurrency:
+  group: oracle-production-full-stack
+  cancel-in-progress: false
+jobs:
+  reconcile:
+    if: github.repository == 'unedev00/uneengine' && github.ref == 'refs/heads/ops/oracle-ribbon-reconcile-20261029'
+    environment: oracle-production
+    runs-on: [self-hosted, linux, ARM64, metadrive-oracle]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Validate guarded SQL reconciliation script
+        run: bash -n scripts/oracle/reconcile-builder-ribbon-once.sh
+      - name: Validate in a rolled-back transaction (no production modifications)
+        run: sudo -n bash scripts/oracle/reconcile-builder-ribbon-once.sh dry-run
+      - name: Apply authorised metadata-only reconciliation with SQL backup and audit
+        run: sudo -n bash scripts/oracle/reconcile-builder-ribbon-once.sh apply
