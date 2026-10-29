@@ -1243,13 +1243,17 @@ export function createSystemServer(db:SqlPersistence) {
         ?apps.homePage(actor.tenant_id,req.params.appId,appHomeFormFactor('Custom'),session.user.profileId)
         :Promise.resolve(null)
     ]);
-    const [customPage,assignedPage]=await Promise.all([
+    // Start both loads together, but do not fail a valid Custom target if the
+    // fallback assignment's layout is missing or fails to load.
+    const [customPage,assignedResult]=await Promise.all([
       customHome?.apiName
         ?pages.load(actor.tenant_id,customHome.apiName,'Custom').then(result=>result.page)
         :Promise.resolve(null),
       assigned?.apiName
-        ?pages.load(actor.tenant_id,assigned.apiName,runtimeLayoutVariant(factor)).then(result=>result.page)
-        :Promise.resolve(null)
+        ?pages.load(actor.tenant_id,assigned.apiName,runtimeLayoutVariant(factor))
+          .then(result=>({page:result.page,error:null as unknown}))
+          .catch(error=>({page:null,error}))
+        :Promise.resolve({page:null,error:null as unknown})
     ]);
     const customAssigned=customPage?.activationAssignments?.some(assignment=>
       Array.isArray(assignment.formFactors)&&assignment.formFactors.includes('Custom')
@@ -1260,7 +1264,8 @@ export function createSystemServer(db:SqlPersistence) {
       &&viewportWidth>=(customPage.customTargetMinWidth??320)
       &&viewportWidth<=(customPage.customTargetMaxWidth??10000)
       ?customPage:null;
-    const page=targeted??assignedPage;
+    if(!targeted&&assignedResult.error)throw assignedResult.error;
+    const page=targeted??assignedResult.page;
     res.setHeader('Cache-Control','private, no-store');
     res.setHeader('Vary','Authorization, Cookie');
     res.json({page});
