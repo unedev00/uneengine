@@ -120,3 +120,34 @@
 .office-builder-ribbon .une-universal-builder-command:disabled{
  opacity:.4;cursor:not-allowed;
 }
+
+/* Complex editors live in the ribbon as their own scrollable section, never a popup. */
+.office-builder-ribbon #page-builder-tab-content:has(>.une-universal-ribbon .une-universal-complex-section){
+  height:360px!important;min-height:360px!important;max-height:360px!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.une-universal-ribbon:has(.une-universal-complex-section){
+  height:350px!important;min-height:350px!important;
+}
+.office-builder-ribbon .une-universal-complex-section{
+  flex:0 0 490px!important;width:490px!important;min-width:490px!important;
+  max-width:490px!important;height:348px!important;
+  padding:6px 10px!important;border-left:1px solid #cbd7e8!important;
+}
+.office-builder-ribbon .une-universal-complex-header{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  font:600 12px/20px "Segoe UI",Arial,sans-serif;
+}
+.office-builder-ribbon .une-universal-complex-header button{
+  border:1px solid #bfcde0;border-radius:4px;background:#fff;
+  padding:2px 9px;color:#164779;cursor:pointer;
+}
+.office-builder-ribbon .une-universal-complex-body{
+  flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;
+  padding:5px 2px;max-width:100%;
+}
+.office-builder-ribbon .une-universal-complex-body .metadata-component-properties{
+  width:100%;max-width:100%;box-sizing:border-box;
+}
+.office-builder-ribbon .une-universal-complex-body :is(input,select,textarea){
+  max-width:100%;box-sizing:border-box;
+}

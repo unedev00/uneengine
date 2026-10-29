@@ -84,12 +84,12 @@ if(import.meta.env.DEV&&(universalRibbonCoverage.missing.length||universalRibbon
 export const universalRibbonInventoryCount=Array.from(slots.values()).reduce((total,groups)=>total+Array.from(groups.values()).reduce((sum,defs)=>sum+defs.length,0),0);
 export const universalRibbonComponentCount=validManifests.length;
 
-function PropertyEditor({definition,enabled,reviewOnly=false,properties,onChange,objects,flows}:{
+function PropertyEditor({definition,enabled,reviewOnly=false,properties,onChange,objects,flows,onOpenComplex,complexSelected}:{
  definition:Definition;enabled:boolean;reviewOnly?:boolean;properties:Properties;onChange:(next:Properties)=>void;
  objects:readonly ObjectMetadata[];flows:readonly FlowDefinitionMetadata[];
+ onOpenComplex?:(key:string)=>void;complexSelected?:boolean;
 }){
  const [mediaOpen,setMediaOpen]=useState(false);
- const [complexOpen,setComplexOpen]=useState(false);
  const [jsonError,setJsonError]=useState('');
  // Hold the literal edit while typing, including the empty value and partial numbers.
  // Otherwise replacing 16 with 22 immediately reinstates the default after Delete.
@@ -128,17 +128,9 @@ function PropertyEditor({definition,enabled,reviewOnly=false,properties,onChange
         <TenantMediaPicker assetOnly initiallyOpen value={String(value)} onChange={next=>{update(next);setMediaOpen(false);}}/>
       </div></div>,document.body)}</>;
  else if(!['BOOLEAN','SELECT','NUMBER','CURRENCY','IMAGE','COLOR','TEXT','LONG_TEXT','TEXTAREA','STRING'].includes(definition.kind)){
-   editor=<><button type="button" disabled={!enabled} title={tip} onClick={()=>setComplexOpen(true)}>Configure</button>
-     {complexOpen&&createPortal(<div className="une-universal-media-overlay" role="presentation" onMouseDown={event=>{if(event.currentTarget===event.target)setComplexOpen(false);}}>
-       <div role="dialog" aria-modal="true" aria-label={label+' property editor'}>
-         <header className="une-universal-editor-header"><strong>{label}</strong>
-           <button type="button" onClick={()=>setComplexOpen(false)}>Close</button></header>
-         <CustomComponentPropertyEditor definitions={[definition]} properties={properties}
-           objects={objects} flows={flows} primaryObjectApiName={String(properties.objectApiName??'')}
-           onChange={next=>onChange(next)}/>
-       </div>
-     </div>,document.body)}
-   </>;
+   editor=<button type="button" disabled={!enabled} title={tip}
+     aria-expanded={Boolean(complexSelected)} aria-controls="une-ribbon-complex-editor"
+     onClick={()=>onOpenComplex?.(key)}>{complexSelected?'Editing':'Configure'}</button>;
  }
  else if(definition.kind==='COLOR'){
    const hex=/^#[0-9a-f]{6}$/i.test(String(value))?String(value):String(value).startsWith('#')||value==='transparent'?String(value):'';
@@ -171,6 +163,7 @@ export default function UniversalRibbonInventory({tab,definition,componentId,pro
  objects?:readonly ObjectMetadata[];flows?:readonly FlowDefinitionMetadata[];
  builder?:UniversalBuilderControls;
 }){
+ const [expandedProperty,setExpandedProperty]=useState<string|null>(null);
  // Every component uses the same inventory, section order and control positions.
  const reviewPositionValue=(key:keyof CanvasPosition):number|string=>builder?.position?.[key]??'';
  const editCanvas=(key:keyof CanvasPosition,min:number,raw:string)=>{
@@ -183,6 +176,7 @@ export default function UniversalRibbonInventory({tab,definition,componentId,pro
  const canEditCanvas=builder?.layoutMode==='free-canvas'&&Boolean(builder.position)&&Boolean(builder.onPositionChange);
  const canOpenSource=Boolean(builder?.onOpenSource)&&(definition?.propertyDefinitions??[]).some(item=>/object|fieldApiName|mapping/i.test(item.propertyKey));
  const canOpenFilters=Boolean(builder?.onOpenFilters)&&(definition?.propertyDefinitions??[]).some(item=>/object|filter|searchField/i.test(item.propertyKey));
+ const expandedDefinition=definition?.propertyDefinitions?.find(d=>d.propertyKey===expandedProperty);
  const groups=slots.get(tab);
  if(!groups)return null;
  return <div className="une-universal-ribbon" aria-label="Universal UNE property ribbon"
@@ -223,10 +217,19 @@ export default function UniversalRibbonInventory({tab,definition,componentId,pro
            onChange={next=>{
              if(supported)onChange({...properties,[def.propertyKey]:next[def.propertyKey]});
            }}
-           objects={objects} flows={flows}/>;
+           objects={objects} flows={flows}
+           complexSelected={expandedProperty===def.propertyKey}
+           onOpenComplex={key=>setExpandedProperty(previous=>previous===key?null:key)}/>;
        })}
      </div>
      <span className="une-universal-ribbon-caption">{section}</span>
    </section>)}
+   {expandedDefinition&&<section id="une-ribbon-complex-editor" className="une-universal-ribbon-section une-universal-complex-section" aria-label={expandedDefinition.label+' settings'}>
+     <div className="une-universal-complex-header"><strong>{expandedDefinition.label}</strong><button type="button" onClick={()=>setExpandedProperty(null)}>Close section</button></div>
+     <div className="une-universal-complex-body"><CustomComponentPropertyEditor definitions={[expandedDefinition]} properties={properties}
+       objects={objects} flows={flows} primaryObjectApiName={String(properties.objectApiName??'')}
+       onChange={next=>onChange(next)}/></div>
+     <span className="une-universal-ribbon-caption">Settings</span>
+   </section>}
  </div>;
 }
