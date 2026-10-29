@@ -145,4 +145,25 @@ jobs:
           echo '=== audit table and SQL migration ownership (roles only) ==='
           sudo -n runuser -u postgres -- psql -X -Atq -v ON_ERROR_STOP=1 -d "$db" -c "SELECT tablename||'|'||tableowner FROM pg_tables WHERE schemaname='public' AND tablename IN ('md_system_migrations','md_system_migration_reconciliation_audit') ORDER BY tablename"
           sudo -n runuser -u postgres -- psql -X -Atq -v ON_ERROR_STOP=1 -d "$db" -c "SELECT grantee||'|'||privilege_type FROM information_schema.role_table_grants WHERE table_schema='public' AND table_name='md_system_migration_reconciliation_audit' ORDER BY grantee,privilege_type"
+
+          echo '=== deployed Ribbon readiness ==='
+          for svc in metadrive-api.service metadrive-worker.service nginx.service; do
+            timeout 8 systemctl is-active --quiet "$svc" || { echo "Required service inactive: $svc"; exit 1; }
+          done
+          [[ "$(timeout 8 systemctl show metadrive-api.service -p Environment --value)" == *"METADRIVE_RELEASE_SHA=2bea5cfd5a0613fd177b34bb0232503632d30105"* ]] ||
+            { echo 'API release SHA does not match production release'; exit 1; }
+          [[ "$(timeout 8 systemctl show metadrive-worker.service -p Environment --value)" == *"METADRIVE_RELEASE_SHA=2bea5cfd5a0613fd177b34bb0232503632d30105"* ]] ||
+            { echo 'Worker release SHA does not match production release'; exit 1; }
+          api_release="$(timeout 8 systemctl show metadrive-api.service -p WorkingDirectory --value)"
+          grep -q 'api/metadata/builder-ribbon' "$api_release/apps/server/dist-system/system-support/server.js" ||
+            { echo 'Deployed Ribbon endpoint missing'; exit 1; }
+          for sql in "SELECT count(*) FROM md_builder_shared_properties WHERE tab='Home'" "SELECT count(*) FROM md_builder_ribbon_components WHERE left(component_api,6)='smart_'" "SELECT count(DISTINCT tenant_id) FROM md_component_definitions WHERE api_name='smart_button'"; do
+            count="$(sudo -n runuser -u postgres -- psql -X -Atq -v ON_ERROR_STOP=1 -d "$db" -c "$sql")"
+            echo "Ribbon smoke count: $count"
+            [[ "$count" =~ ^[0-9]+$ ]] || exit 1
+            [[ "$count" -gt 0 ]] || exit 1
+          done
+          curl --silent --fail --max-time 6 https://api.unesolutions.co.uk/api/health | grep -q '"status":"ok"' ||
+            { echo 'Public API health check failed'; exit 1; }
+          echo 'Ribbon backend code, SQL metadata, tenant seeding, API/worker SHA, and public health verified'
           echo 'Read-only Oracle audit complete.'
