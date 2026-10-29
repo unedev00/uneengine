@@ -1,6 +1,6 @@
 # Page Builder remaining property inventory (after requested removals)
 
-**AceChatter-only exception:** `une_conversation` is intentionally excluded from public Component Library and Page Builder Insert. Its `showRefresh`, `refreshLabel`, and `newMessageNoticeLabel` button settings are ordinary code props with runtime defaults, not public property metadata. Existing saved runtime references remain resolvable.
+**AceChatter-only exception:** `une_conversation` is intentionally excluded from public Component Library and Page Builder Insert. Only 13 shared styling/source properties remain metadriven. All 100 component-specific settings, including the three button controls, live as ordinary AceChatter code defaults and existing runtime overrides are preserved. Existing saved runtime references remain resolvable.
 
 Generated from UNE component manifests on the PR branch. The shared ribbon has a fixed slot order; applicable component controls are enabled and the others disabled.
 
@@ -17,7 +17,6 @@ These are the property definitions actually collected by the universal UNE ribbo
 | Property key | Display label | Enabled for UNE components |
 |---|---|---|
 | `objectApiName` | Source Object | calendar, item_grid, repeater, record_list, search, lookup, choice, cart, conversation, form, table, slot_picker, chart |
-| `recordPresenterApiName` | Record presentation | conversation |
 
 **Fields**
 
@@ -26,37 +25,10 @@ These are the property definitions actually collected by the universal UNE ribbo
 | `ageRestrictedFieldApiName` | Age restriction field | cart |
 | `badgeFieldApiName` | Card badge field | item_grid |
 | `categoryFieldApiName` | Category field API name | item_grid, cart |
-| `contactDisplayNameFieldApiNames` | Contact display name fields (priority) | conversation |
-| `contactNameFieldApiName` | Contact name field | conversation |
-| `contactSearchFieldApiName` | Contact search field | conversation |
-| `conversationAccountFieldApiName` | Conversation account field | conversation |
-| `conversationAssignedUserFieldApiName` | Conversation assignedUser field | conversation |
-| `conversationBodyFieldApiName` | Conversation body field | conversation |
-| `conversationContactNameFieldApiName` | Conversation contactName field | conversation |
-| `conversationFromFieldApiName` | Conversation from field | conversation |
-| `conversationIdFieldApiName` | Conversation record ID field | conversation |
-| `conversationMediaNameFieldApiName` | Conversation mediaName field | conversation |
-| `conversationMediaTypeFieldApiName` | Conversation mediaType field | conversation |
-| `conversationMediaUrlFieldApiName` | Conversation mediaUrl field | conversation |
-| `conversationNameFieldApiName` | Conversation record name field | conversation |
-| `conversationOccurredFieldApiName` | Conversation occurred field | conversation |
-| `conversationOutgoingOccurredFieldApiName` | Outgoing message date field | conversation |
-| `conversationReadAtFieldApiName` | Conversation readAt field | conversation |
-| `conversationStatusFieldApiName` | Conversation status field | conversation |
-| `conversationToFieldApiName` | Conversation to field | conversation |
 | `dateFieldApiName` | Event date | calendar |
 | `descriptionFieldApiName` | Card description field | item_grid |
 | `featuredFieldApiName` | Featured record flag field | item_grid |
 | `imageFieldApiName` | Card image field | item_grid, cart |
-| `messageBodyFieldApiName` | Message body field | conversation |
-| `messageChannelFieldApiName` | Message channel field | conversation |
-| `messageExternalIdFieldApiName` | Provider message ID field | conversation |
-| `messageIdFieldApiName` | Message record ID field | conversation |
-| `messageReceivedAtFieldApiName` | Message received timestamp field | conversation |
-| `messageRecipientFieldApiName` | Message recipient field | conversation |
-| `messageSenderFieldApiName` | Message sender field | conversation |
-| `messageSentAtFieldApiName` | Message sent timestamp field | conversation |
-| `messageStatusFieldApiName` | Message delivery status field | conversation |
 | `nameFieldApiName` | Product name field | cart |
 | `priceFieldApiName` | Card value or price field | item_grid, cart |
 | `recordActiveFieldApiName` | Active record field | item_grid |
@@ -80,18 +52,11 @@ These are the property definitions actually collected by the universal UNE ribbo
 
 | Property key | Display label | Enabled for UNE components |
 |---|---|---|
-| `filterInboxBusinessNumber` | Hide own business number as customer | conversation |
 | `filterKey` | Shared category filter | item_grid |
-| `filterLabel` | Filter group label | conversation |
-| `filterOptions` | Visible conversation filters | conversation |
 | `relatedFilterKey` | Selected parent shared key | item_grid |
-| `restrictToAssigned` | Restrict to assigned conversations | conversation |
 | `searchKey` | Shared search filter | item_grid, search |
-| `searchMode` | Search behaviour | conversation |
-| `searchTerm` | Inbox search term from page state | conversation |
 | `selectedCategory` | Selected category | item_grid |
 | `selectionFilterKey` | Selected record shared state key | item_grid, repeater, record_list |
-| `showFilterTabs` | Show conversation filters | conversation |
 
 **Records**
 
@@ -100,7 +65,6 @@ These are the property definitions actually collected by the universal UNE ribbo
 | `items` | Navigation links | navigation, menu |
 | `loading` | Loading state | lookup |
 | `loadingText` | Loading message | lookup |
-| `recordViewAdapter` | Record view adapter | conversation |
 
 ### Component Content
 
@@ -112,28 +76,15 @@ These are the property definitions actually collected by the universal UNE ribbo
 | `basketTitle` | Basket heading | cart |
 | `categoryTabsLabel` | Category tabs accessibility label | cart |
 | `clearLabel` | Clear basket label | cart |
-| `contactSearchLabel` | Contact picker search label | conversation |
 | `descriptionExpression` | Supporting expression | item_grid |
 | `displayButtonLabel` | Customer display button | cart |
 | `emptyBasketText` | Empty basket message | cart |
-| `emptyConversationsText` | Empty inbox message | conversation |
 | `emptyText` | Empty state message | item_grid, lookup |
-| `emptyTitle` | Empty conversation title | conversation |
 | `helpText` | Input help text | input |
 | `label` | Button label | button, input, toggle, search, lookup |
-| `messageChannelValue` | Allowed channel value | conversation |
-| `messageMaxLength` | Maximum message length | conversation |
-| `messageRequireBody` | Exclude messages with empty body | conversation |
-| `messages` | Messages from authorised Flow/page state | conversation |
-| `messageStatusNamePrefixToIgnore` | Ignored status name prefix | conversation |
-| `messageStatusPrefixToIgnore` | Ignored status event prefix | conversation |
-| `newConversationLabel` | New conversation label | conversation |
 | `nextTransactionLabel` | Next customer button label | cart |
 | `openLabel` | Open button | modal |
 | `placeholder` | Placeholder | input, search, lookup, conversation |
-| `searchLabel` | Search input label | conversation |
-| `searchPlaceholder` | Search placeholder | conversation |
-| `sentNoticeText` | Flow submission notice | conversation |
 | `showDescription` | Show card description | item_grid |
 | `submitLabel` | Search button label | search |
 | `tabLabel` | Tab group accessibility label | tabs |
@@ -154,30 +105,18 @@ These are the property definitions actually collected by the universal UNE ribbo
 
 | Property key | Display label | Enabled for UNE components |
 |---|---|---|
-| `contactChoices` | Contact choices from authorised Flow | conversation |
 | `controlledOpen` | Control visibility from page state | modal |
 | `controlledSelection` | Control selected tab from page state | tabs, conversation |
 | `controlledValue` | Control search value from page state | search |
-| `conversationAccessMode` | Conversation permission source | conversation |
-| `conversationSourceMode` | Conversation record format | conversation |
 | `disabled` | Disabled | button, input, toggle, lookup |
-| `enableAssignment` | Enable assignment actions | conversation |
-| `enableNewConversation` | Enable new conversations | conversation |
 | `inputMode` | Virtual keyboard type | input |
-| `liveFlowRefreshEnabled` | Refresh Flow data while page is visible | conversation |
-| `liveRefreshEnabled` | Refresh live records | conversation |
 | `required` | Required | input |
 | `selectedIndex` | Selected tab index from page state | tabs |
-| `showAccountSelector` | Show account selector | conversation |
 | `showAddIcon` | Show Add button | item_grid |
 | `showCategoryTabs` | Show category tabs | cart |
 | `showCloseButton` | Show close button | modal |
-| `showComposer` | Show message composer | conversation |
-| `showConversationCount` | Show conversation count | conversation |
-| `showDeliveryStatus` | Show message status | conversation |
 | `showHeading` | Show gallery heading | item_grid |
 | `showPanel` | Show content | tabs |
-| `showSearch` | Show inbox search | conversation |
 | `showSubmitButton` | Show search button | search |
 | `showSuggestions` | Show record suggestions | search |
 | `showTrigger` | Show built-in open button | modal |
@@ -194,34 +133,21 @@ These are the property definitions actually collected by the universal UNE ribbo
 | `badgeExpression` | Badge expression | item_grid |
 | `basketPresentation` | Basket presentation | cart |
 | `cartTargetKey` | Optional shared basket | item_grid, cart |
-| `channelAccessPath` | Permission endpoint | conversation |
-| `channelAccounts` | Available authorised channel accounts | conversation |
 | `closeOnBackdrop` | Close on backdrop click | modal |
 | `closeOnEscape` | Close on Escape key | modal |
-| `conversationDefaultAccount` | Default communication channel | conversation |
-| `conversationIncomingValue` | Incoming direction value | conversation |
-| `conversationNameFromParticipant` | Show participant names from sender / recipient fields | conversation |
-| `conversationOutgoingValue` | Outgoing direction value | conversation |
-| `conversations` | Conversations from authorised Flow/page state | conversation |
 | `currencyCode` | Currency code (only for monetary values) | item_grid, cart |
 | `customerDisplayUrl` | Customer display URL | cart |
-| `eligibleAssignees` | Authorised conversation assignees | conversation |
 | `fields` | Line item fields | line_items |
 | `firstDayOfWeek` | First day of week | calendar |
 | `headingExpression` | Heading expression | item_grid |
 | `inactivityResetSeconds` | Reset abandoned customer session after seconds (0 = disabled, 30-3600) | cart |
 | `inputType` | Input type | input |
 | `isOpen` | Page state: dialog is open | modal |
-| `liveFlowRefreshEvents` | Comma-separated read Flow event names | conversation |
-| `liveFlowRefreshIntervalMs` | Flow refresh interval in milliseconds | conversation |
 | `maxLength` | Maximum text length | input |
 | `multiline` | Multiline | input |
-| `newConversationPresentation` | New conversation presentation | conversation |
 | `pattern` | Input validation pattern | input |
-| `requireChannelAccountForNew` | Require channel account for new conversation | conversation |
 | `resourceValue` | Selected staff/resource | calendar |
 | `searchValue` | Search query from page state | lookup |
-| `selectedConversationId` | Selected conversation ID from page state | conversation |
 | `selectedDate` | Selected date | calendar |
 | `selectionBehavior` | When someone selects a card | item_grid |
 | `selectionPayload` | Selection event value | lookup |
@@ -349,13 +275,11 @@ These are the property definitions actually collected by the universal UNE ribbo
 
 | Property key | Display label | Enabled for UNE components |
 |---|---|---|
-| `conversationDirectionFieldApiName` | Conversation direction field | conversation |
 | `detailRows` | Detail rows | item_grid |
 | `direction` | Direction | stack |
 | `featuredColumnSpan` | Featured tile width (columns) | item_grid |
 | `featuredRowSpan` | Featured tile height (rows) | item_grid |
 | `imageAspectRatio` | Image aspect ratio | item_grid |
-| `messageDirectionFieldApiName` | Message direction field | conversation |
 | `rows` | Rows | input |
 | `wrap` | Wrap | stack |
 
@@ -371,19 +295,11 @@ These are the property definitions actually collected by the universal UNE ribbo
 
 | Property key | Display label | Enabled for UNE components |
 |---|---|---|
-| `autoScrollOnNewMessage` | Follow latest thread messages | conversation |
-| `messageAutoScrollThreshold` | Bottom-follow distance in pixels | conversation |
-| `showNewMessageNotice` | Show newer-message notice when scrolled up | conversation |
 
 **Mobile behaviour**
 
 | Property key | Display label | Enabled for UNE components |
 |---|---|---|
-| `avoidKeyboardOverlap` | Keep mobile composer above keyboard | conversation |
-| `contactPhoneFieldApiName` | Contact phone field | conversation |
-| `contactPhoneFieldApiNames` | Contact phone fields (priority) | conversation |
-| `conversationNormalizePhoneNumbers` | Normalize participant phone numbers | conversation |
-| `conversationPhoneFieldApiName` | Conversation record phone field | conversation |
 | `fullScreenOnMobile` | Full-screen dialog on phones | modal |
 | `normaliseSelectedPhone` | Normalise selected phone digits | lookup |
 | `recordPhoneFieldApiNames` | Possible phone fields, first valid selected | lookup |
@@ -402,11 +318,7 @@ These are the property definitions actually collected by the universal UNE ribbo
 
 | Property key | Display label | Enabled for UNE components |
 |---|---|---|
-| `canSend` | Allow sending when authorised Flow is active | conversation |
 | `checkoutLabel` | Checkout button label | cart |
-| `enableSendPreparation` | Resolve Conversation record through configured Flows before send | conversation |
-| `requirePerRecordSendGrant` | Require per-record send grant | conversation |
-| `sendEnabled` | Enable composer (requires authorised send Flow) | conversation |
 
 **Flows**
 
@@ -967,99 +879,7 @@ These are the property definitions actually collected by the universal UNE ribbo
 | `gap` | Gap (px) | NUMBER |
 | `shadow` | Shadow | SELECT |
 | `glassBlur` | Glass blur (px) | NUMBER |
-| `placeholder` | Composer placeholder | TEXT |
-| `viewMode` | Conversation view | SELECT |
-| `enableNewConversation` | Enable new conversations | BOOLEAN |
-| `title` | Title | TEXT |
-| `searchPlaceholder` | Search placeholder | TEXT |
-| `recordPresenterApiName` | Record presentation | TEXT |
-| `restrictToAssigned` | Restrict to assigned conversations | BOOLEAN |
-| `enableAssignment` | Enable assignment actions | BOOLEAN |
-| `messageMaxLength` | Maximum message length | NUMBER |
-| `emptyTitle` | Empty conversation title | TEXT |
-| `recordViewAdapter` | Record view adapter | TEXT |
-| `conversationDirectionFieldApiName` | Conversation direction field | OBJECT_FIELD |
-| `conversationAccountFieldApiName` | Conversation account field | OBJECT_FIELD |
-| `conversationFromFieldApiName` | Conversation from field | OBJECT_FIELD |
-| `conversationToFieldApiName` | Conversation to field | OBJECT_FIELD |
-| `conversationOccurredFieldApiName` | Conversation occurred field | OBJECT_FIELD |
-| `conversationBodyFieldApiName` | Conversation body field | OBJECT_FIELD |
-| `conversationContactNameFieldApiName` | Conversation contactName field | OBJECT_FIELD |
-| `conversationAssignedUserFieldApiName` | Conversation assignedUser field | OBJECT_FIELD |
-| `conversationReadAtFieldApiName` | Conversation readAt field | OBJECT_FIELD |
-| `conversationStatusFieldApiName` | Conversation status field | OBJECT_FIELD |
-| `conversationMediaUrlFieldApiName` | Conversation mediaUrl field | OBJECT_FIELD |
-| `conversationMediaNameFieldApiName` | Conversation mediaName field | OBJECT_FIELD |
-| `conversationMediaTypeFieldApiName` | Conversation mediaType field | OBJECT_FIELD |
-| `conversationIncomingValue` | Incoming direction value | TEXT |
-| `conversationOutgoingValue` | Outgoing direction value | TEXT |
-| `channelAccessPath` | Permission endpoint | TEXT |
-| `contactNameFieldApiName` | Contact name field | OBJECT_FIELD |
-| `contactPhoneFieldApiName` | Contact phone field | OBJECT_FIELD |
-| `liveRefreshEnabled` | Refresh live records | BOOLEAN |
-| `conversationAccessMode` | Conversation permission source | SELECT |
-| `conversationDefaultAccount` | Default communication channel | TEXT |
-| `sendEnabled` | Enable composer (requires authorised send Flow) | BOOLEAN |
-| `enableSendPreparation` | Resolve Conversation record through configured Flows before send | BOOLEAN |
-| `conversationNormalizePhoneNumbers` | Normalize participant phone numbers | BOOLEAN |
-| `conversationNameFromParticipant` | Show participant names from sender / recipient fields | BOOLEAN |
-| `conversationOutgoingOccurredFieldApiName` | Outgoing message date field | OBJECT_FIELD |
 | `objectApiName` | Source Object | OBJECT |
-| `conversations` | Conversations from authorised Flow/page state | RECORD_LIST |
-| `messages` | Messages from authorised Flow/page state | RECORD_LIST |
-| `contactChoices` | Contact choices from authorised Flow | RECORD_LIST |
-| `channelAccounts` | Available authorised channel accounts | RECORD_LIST |
-| `eligibleAssignees` | Authorised conversation assignees | RECORD_LIST |
-| `showSearch` | Show inbox search | BOOLEAN |
-| `showFilterTabs` | Show conversation filters | BOOLEAN |
-| `showAccountSelector` | Show account selector | BOOLEAN |
-| `showConversationCount` | Show conversation count | BOOLEAN |
-| `showComposer` | Show message composer | BOOLEAN |
-| `showDeliveryStatus` | Show message status | BOOLEAN |
-| `searchMode` | Search behaviour | SELECT |
-| `newConversationPresentation` | New conversation presentation | SELECT |
-| `selectedConversationId` | Selected conversation ID from page state | TEXT |
-| `searchTerm` | Inbox search term from page state | TEXT |
-| `newConversationLabel` | New conversation label | TEXT |
-| `canSend` | Allow sending when authorised Flow is active | BOOLEAN |
-| `searchLabel` | Search input label | TEXT |
-| `filterLabel` | Filter group label | TEXT |
-| `contactSearchLabel` | Contact picker search label | TEXT |
-| `sentNoticeText` | Flow submission notice | TEXT |
-| `emptyConversationsText` | Empty inbox message | TEXT |
-| `controlledSelection` | Bind selected conversation to page state | BOOLEAN |
-| `requirePerRecordSendGrant` | Require per-record send grant | BOOLEAN |
-| `requireChannelAccountForNew` | Require channel account for new conversation | BOOLEAN |
-| `filterOptions` | Visible conversation filters | OPTIONS |
-| `conversationSourceMode` | Conversation record format | SELECT |
-| `conversationIdFieldApiName` | Conversation record ID field | OBJECT_FIELD |
-| `conversationNameFieldApiName` | Conversation record name field | OBJECT_FIELD |
-| `conversationPhoneFieldApiName` | Conversation record phone field | OBJECT_FIELD |
-| `messageIdFieldApiName` | Message record ID field | OBJECT_FIELD |
-| `messageDirectionFieldApiName` | Message direction field | OBJECT_FIELD |
-| `messageSenderFieldApiName` | Message sender field | OBJECT_FIELD |
-| `messageRecipientFieldApiName` | Message recipient field | OBJECT_FIELD |
-| `messageBodyFieldApiName` | Message body field | OBJECT_FIELD |
-| `messageSentAtFieldApiName` | Message sent timestamp field | OBJECT_FIELD |
-| `messageReceivedAtFieldApiName` | Message received timestamp field | OBJECT_FIELD |
-| `messageStatusFieldApiName` | Message delivery status field | OBJECT_FIELD |
-| `messageChannelFieldApiName` | Message channel field | OBJECT_FIELD |
-| `messageChannelValue` | Allowed channel value | TEXT |
-| `messageExternalIdFieldApiName` | Provider message ID field | OBJECT_FIELD |
-| `messageStatusPrefixToIgnore` | Ignored status event prefix | TEXT |
-| `messageStatusNamePrefixToIgnore` | Ignored status name prefix | TEXT |
-| `messageRequireBody` | Exclude messages with empty body | BOOLEAN |
-| `liveFlowRefreshEnabled` | Refresh Flow data while page is visible | BOOLEAN |
-| `liveFlowRefreshIntervalMs` | Flow refresh interval in milliseconds | NUMBER |
-| `liveFlowRefreshEvents` | Comma-separated read Flow event names | TEXT |
-| `autoScrollOnNewMessage` | Follow latest thread messages | BOOLEAN |
-| `showNewMessageNotice` | Show newer-message notice when scrolled up | BOOLEAN |
-| `contactDisplayNameFieldApiNames` | Contact display name fields (priority) | TEXT |
-| `contactPhoneFieldApiNames` | Contact phone fields (priority) | TEXT |
-| `contactSearchFieldApiName` | Contact search field | OBJECT_FIELD |
-| `messageAutoScrollThreshold` | Bottom-follow distance in pixels | NUMBER |
-| `filterInboxBusinessNumber` | Hide own business number as customer | BOOLEAN |
-| `avoidKeyboardOverlap` | Keep mobile composer above keyboard | BOOLEAN |
 
 ## une_form
 
