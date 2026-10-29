@@ -41,42 +41,6 @@
       ]
     },
     {
-      "propertyKey": "tone",
-      "label": "Colour palette",
-      "kind": "SELECT",
-      "displayOrder": 30,
-      "defaultValue": "blue",
-      "choices": [
-        {
-          "key": "blue",
-          "label": "iOS blue"
-        },
-        {
-          "key": "mint",
-          "label": "Mint"
-        },
-        {
-          "key": "purple",
-          "label": "Purple"
-        },
-        {
-          "key": "orange",
-          "label": "Orange"
-        },
-        {
-          "key": "neutral",
-          "label": "Neutral"
-        }
-      ]
-    },
-    {
-      "propertyKey": "accentColor",
-      "label": "Custom accent colour",
-      "kind": "COLOR",
-      "displayOrder": 40,
-      "defaultValue": ""
-    },
-    {
       "propertyKey": "backgroundColor",
       "label": "Surface colour",
       "kind": "COLOR",
@@ -186,32 +150,18 @@
       "defaultValue": "Overview, Details"
     },
     {
-      "propertyKey": "showPanel",
-      "label": "Show content",
-      "kind": "BOOLEAN",
-      "displayOrder": 320,
-      "defaultValue": true
+      "propertyKey": "tabColor",
+      "label": "Tab colour",
+      "kind": "COLOR",
+      "displayOrder": 66,
+      "defaultValue": ""
     },
     {
-      "propertyKey": "selectedIndex",
-      "label": "Selected tab index from page state",
-      "kind": "NUMBER",
-      "displayOrder": 810,
-      "defaultValue": 0
-    },
-    {
-      "propertyKey": "controlledSelection",
-      "label": "Control selected tab from page state",
-      "kind": "BOOLEAN",
-      "displayOrder": 820,
-      "defaultValue": false
-    },
-    {
-      "propertyKey": "tabLabel",
-      "label": "Tab group accessibility label",
-      "kind": "TEXT",
-      "displayOrder": 830,
-      "defaultValue": "Tabs"
+      "propertyKey": "selectedTabTextColor",
+      "label": "Selected tab text colour",
+      "kind": "COLOR",
+      "displayOrder": 67,
+      "defaultValue": ""
     }
   ],
   "eventDefinitions": [
