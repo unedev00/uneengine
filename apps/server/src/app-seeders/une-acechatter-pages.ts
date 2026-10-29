@@ -18,8 +18,8 @@ const layoutSpecs=[
 const sharedFlows=['AceChatterLoadConversations','AceChatterLoadCommunications',
  'AceChatterLoadContacts','AceChatterCreateConversation',
  'AceChatterFindConversationByPhone','AceChatterSendMessage'] as const;
-const requiredComponents=['une_conversation','une_modal','une_tabs','une_stack',
- 'une_lookup','une_input','une_button','une_search'] as const;
+const requiredComponents=['uneacechatter_conversation','uneacechatter_modal','uneacechatter_tabs','uneacechatter_stack',
+ 'uneacechatter_lookup','uneacechatter_input','uneacechatter_button','uneacechatter_search'] as const;
 
 function nodes(active:Set<string>,device:string):Node[]{
  const enabled=(name:string)=>active.has(name),isMobile=device==='phone';
@@ -54,10 +54,10 @@ function nodes(active:Set<string>,device:string):Node[]{
    message:'$event.body',recipientPhone:'$event.recipientPhone'})
  };
  const root:Node[]=[
-  {key:'workspaceHeading',type:'une_text',label:'UNE - Chats Workspace',region:'header',
+  {key:'workspaceHeading',type:'uneacechatter_input',label:'UNE - Chats Workspace',region:'header',
    props:{text:'UNE AceChatter',fontSize:isMobile?19:26,fontWeight:'700',textColor:'#075E54',
     actionFlows:{start:loadCommunications}}},
-  {key:'inbox',type:'une_conversation',label:'UNE - Chats List and Conversation',region:'main',
+  {key:'inbox',type:'uneacechatter_conversation',label:'UNE - Chats List and Conversation',region:'main',
    props:{viewMode:'inbox',title:'Chats',placeholder:'Type a message',searchPlaceholder:'Search chats',
     conversationSourceMode:'flowRecords',conversationAccessMode:'flowPermissions',
     controlledSelection:true,selectedConversationId:'',canSend:enabled('AceChatterSendMessage')
@@ -88,21 +88,21 @@ function nodes(active:Set<string>,device:string):Node[]{
      contactChoices:'chatContacts',selectedConversationId:'selectedConversation',
      contactSourceObjectApi:'chatContactObject'},
     actionFlows:actions}},
-  {key:'threadSearch',type:'une_search',label:'UNE - Search Messages',region:'header',
+  {key:'threadSearch',type:'uneacechatter_search',label:'UNE - Search Messages',region:'header',
    props:{label:'Find a conversation',placeholder:'Search name or number',
     showSubmitButton:true,submitLabel:'Search',searchKey:'chatSearch',
     actionFlows:{submit:flow('AceChatterLoadCommunications',
      {searchTerm:'$event.value'},{communications:'chatMessages'})}}},
-  {key:'newChatModal',type:'une_modal',label:'UNE - New Chat',region:'main',
+  {key:'newChatModal',type:'uneacechatter_modal',label:'UNE - New Chat',region:'main',
    props:{title:'New chat',openLabel:'New chat',layoutContainer:true,
     controlledOpen:true,isOpen:false,showTrigger:false,fullScreenOnMobile:isMobile,
     stateBindings:{isOpen:'chatNewOpen'},actionFlows:{close:state('chatNewOpen',false)}}},
-  {key:'newChatTabs',type:'une_tabs',label:'UNE - New Chat Methods',region:'main',
+  {key:'newChatTabs',type:'uneacechatter_tabs',label:'UNE - New Chat Methods',region:'main',
    props:{tabs:'Contacts, Phone number',tabLabel:'Start a new chat',
     layoutContainer:true,layoutParentId:'newChatModal'}},
-  {key:'contactPanel',type:'une_stack',label:'UNE - Contact Picker',region:'main',
+  {key:'contactPanel',type:'uneacechatter_stack',label:'UNE - Contact Picker',region:'main',
    props:{layoutContainer:true,layoutParentId:'newChatTabs',direction:'column',gap:12}},
-  {key:'contacts',type:'une_lookup',label:'UNE - Choose Contact',region:'main',
+  {key:'contacts',type:'uneacechatter_lookup',label:'UNE - Choose Contact',region:'main',
    props:{layoutParentId:'contactPanel',label:'Find contact',placeholder:'Search contacts',
     items:[],recordTitleFieldApiName:'Name',recordValueFieldApiName:'Id',
     recordSubtitleFieldApiName:'Phone',selectionPayload:'record',
@@ -113,24 +113,24 @@ function nodes(active:Set<string>,device:string):Node[]{
     actionFlows:{start:loadContacts,search:flow('AceChatterLoadContacts',
      {searchTerm:'$event.value'},{contacts:'chatContacts',sourceObjectApi:'chatContactObject'}),
      change:state('contactSelection','$event')}}},
-  {key:'createFromContact',type:'une_button',label:'UNE - Start Contact Chat',region:'main',
+  {key:'createFromContact',type:'uneacechatter_button',label:'UNE - Start Contact Chat',region:'main',
    props:{layoutParentId:'contactPanel',label:'Start chat with contact',variant:'primary',
     actionFlows:{click:{...contactConversation,
       inputRules:{phoneNumber:'E164',chatName:'NonEmpty',sourceObjectApi:'NonEmpty',sourceRecordId:'NonEmpty'},
       successState:{chatNewOpen:false}}}}},
-  {key:'phonePanel',type:'une_stack',label:'UNE - Phone Number',region:'main',
+  {key:'phonePanel',type:'uneacechatter_stack',label:'UNE - Phone Number',region:'main',
    props:{layoutContainer:true,layoutParentId:'newChatTabs',direction:'column',gap:12}},
-  {key:'name',type:'une_input',label:'UNE - Contact Name',region:'main',
+  {key:'name',type:'uneacechatter_input',label:'UNE - Contact Name',region:'main',
    props:{layoutParentId:'phonePanel',label:'Name',placeholder:'Optional contact name',
     value:'',actionFlows:{change:state('chatName','$event.value')},
     stateBindings:{value:'chatName'}}},
-  {key:'phone',type:'une_input',label:'UNE - Phone Number',region:'main',
+  {key:'phone',type:'uneacechatter_input',label:'UNE - Phone Number',region:'main',
    props:{layoutParentId:'phonePanel',label:'International phone number',inputType:'tel',
     inputMode:'tel',placeholder:'+44 7700 900123',required:true,maxLength:20,
     helpText:'Include country code.',value:'',
     actionFlows:{change:state('chatPhone','$event.value')},
     stateBindings:{value:'chatPhone'}}},
-  {key:'createFromPhone',type:'une_button',label:'UNE - Start Phone Chat',region:'main',
+  {key:'createFromPhone',type:'uneacechatter_button',label:'UNE - Start Phone Chat',region:'main',
    props:{layoutParentId:'phonePanel',label:'Create chat',variant:'primary',
     actionFlows:{click:{...newConversation,
       inputRules:{phoneNumber:'E164',chatName:'NonEmpty'},
@@ -156,6 +156,10 @@ export async function seedUneAceChatterInstalledPages(client:Client,tenantId:str
   WHERE i.tenant_id=$1 AND a.api_name='AceChatter'
     AND e.active=true AND (e.expires_at IS NULL OR e.expires_at>now()) LIMIT 1`,[tenantId]);
  if(!source.length)throw Error('UNE AceChatter requires an active AceChatter Flow-owner installation');
+  // Private renderers installed only with their owning app; no shared property catalog.
+  for(const apiName of ["uneacechatter_input","uneacechatter_conversation","uneacechatter_modal","uneacechatter_tabs","uneacechatter_stack","uneacechatter_lookup","uneacechatter_button","uneacechatter_search"])await client.query(
+    'INSERT INTO md_component_definitions(tenant_id,api_name,renderer_key,enabled) VALUES($1,$2,$3,true) ON CONFLICT(tenant_id,api_name) DO NOTHING',
+    [tenantId,apiName,'one-bundled:'+apiName]);
  const {rows:availableComponents}=await client.query<{api_name:string}>(`SELECT api_name
   FROM md_component_definitions WHERE tenant_id=$1 AND api_name=ANY($2::text[]) AND enabled=true`,
   [tenantId,requiredComponents]);

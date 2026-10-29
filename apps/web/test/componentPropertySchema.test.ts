@@ -18,7 +18,10 @@ import {loadComponentCatalog} from '../../../scripts/component-catalog.mjs';
 import {behaviorTabs,behaviorAction,behaviorRecordAction,behaviorAppearance,behaviorAppearanceLabel,behaviorField,behaviorInteractions} from '../src/core/pages/PageRuntime/pageBehaviorRuntime';
 test('all retained bundled descriptor definitions remain compatible',async()=>{
  const catalog=await loadComponentCatalog();
- assert.equal(catalog.components.length,37); // 34 UNE, one Acetill-owned Cart and two Core descriptors
+ // Keep system compatibility definitions and app-private renderer identities distinct.
+ assert.equal(catalog.components.filter(c=>c.apiName.startsWith('une_')).length,34);
+ assert.equal(catalog.components.filter(c=>/^(acetill|aceassist|onechatter|uneacechatter)_/.test(c.apiName)).length,17);
+ assert.equal(catalog.components.length,53); // 34 compatibility + 17 private + 2 Core
  for(const component of catalog.components)assert.deepEqual(validateComponentDefinitions(component.propertyDefinitions??[]),[],component.apiName);
 });
 const definitions:ComponentSettingDefinition[]=[{propertyKey:'layout',label:'Layout',kind:'GROUP',fields:[

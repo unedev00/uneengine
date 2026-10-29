@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
 import type { PoolClient } from 'pg';
 import { BUNDLED_COMPONENTS,seedFreshBundledComponents,deactivateUnavailableBundledComponents } from '../../src/app-seeders/bundled-components.js';
-import {UNE_COMPONENTS,UNE_INSERT_EXCLUDED,seedFreshUneComponents} from '../../src/app-seeders/une-components.js';
+import {UNE_COMPONENTS,seedFreshUneComponents} from '../../src/app-seeders/une-components.js';
 
 test('SQL component seed matches the UNE-only manifest without duplicates', async()=>{
   const catalog=JSON.parse(await readFile(new URL('../../../web/src/one/manifest.json',import.meta.url),'utf8')) as {components:string[]};
@@ -54,13 +54,7 @@ test('UNE seeding never overwrites tenant customisations',async()=>{
  const writes:Array<{sql:string;args:unknown[]}>=[];
  const client={query:async(sql:string,args:unknown[])=>{writes.push({sql,args});return {rows:[]};}} as unknown as PoolClient;
  await seedFreshUneComponents(client,'tenant-une');
- const seeded=UNE_COMPONENTS.filter(name=>!UNE_INSERT_EXCLUDED.has(name));
- assert.equal(writes.length,seeded.length);
- assert.deepEqual(writes.map(write=>write.args[1]),seeded);
- for(const write of writes){
-  assert.match(write.sql,/ON CONFLICT\(tenant_id,api_name\) DO NOTHING/);
-  assert.equal(write.args[0],'tenant-une');assert.equal(write.args[2],'one-bundled:'+write.args[1]);
- }
+ assert.equal(writes.length,0,'app-owned UNE components must never be globally seeded');
 });
 
 test('retired UNE Badge has no app placement, system manifest, or insert registration',async()=>{

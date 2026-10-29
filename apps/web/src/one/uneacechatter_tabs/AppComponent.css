@@ -1,0 +1,10 @@
+@import "../une/shared/une.css";
+.une-ui .une-tabs-root{box-sizing:border-box;border:1px solid var(--une-border);border-radius:var(--one-radius);background:var(--une-bg);box-shadow:var(--une-elevation);padding:var(--one-pad);color:var(--une-fg)}
+.une-ui[data-une-surface="glass"] .une-tabs-root{background:color-mix(in srgb,var(--une-bg) 82%,transparent);backdrop-filter:blur(var(--une-blur));-webkit-backdrop-filter:blur(var(--une-blur))}
+.une-ui[data-une-surface="plain"] .une-tabs-root{background:transparent;box-shadow:none}
+.une-ui .une-tabs-root>.one-tabs{gap:var(--one-gap);background:transparent;padding:0;border-radius:inherit}
+.une-ui .une-tabs-root .one-tab{background:var(--une-tab-bg,var(--une-bg));color:var(--une-fg);border:1px solid var(--une-border)}
+.une-ui .une-tabs-root .one-tab[aria-selected="true"]{color:var(--une-selected-text,var(--une-fg));background:var(--une-tab-bg,var(--une-bg));border-color:var(--une-accent)}
+.une-ui .une-tabs-root>.une-tabs-panel{padding-top:var(--one-gap)}
+.une-ui[data-une-density="compact"] .une-tabs-root .one-tab{min-height:32px;padding:5px 10px}
+.une-ui[data-une-density="spacious"] .une-tabs-root .one-tab{min-height:52px;padding:14px 20px}

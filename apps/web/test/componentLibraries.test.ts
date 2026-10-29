@@ -42,13 +42,13 @@ test('bundled alias is hidden from new placements while saved placements remain 
   const alias = definition('ChatterInbox', { trustedBundled: true });
   const canonical = definition('une_conversation', { trustedBundled: true });
   for (const surface of ['page', 'dashboard', 'flow'] as const) {
-    assert.deepEqual(uniqueLibraryComponents([alias, canonical], surface), [canonical]);
+    assert.deepEqual(uniqueLibraryComponents([alias, canonical], surface), []);
     assert.equal(findRegisteredComponent([alias, canonical], alias.apiName, surface), alias);
   }
-  assert.deepEqual(uniqueLibraryComponents([alias]), [alias]);
-  assert.equal(uniqueLibraryComponents([alias, { ...canonical, status: 'Draft' }]).length, 2);
-  assert.equal(uniqueLibraryComponents([{ ...alias, trustedBundled: false }, canonical]).length, 2);
-  assert.equal(uniqueLibraryComponents([alias, { ...canonical, surfaces: ['page'] }]).length, 2);
+  assert.deepEqual(uniqueLibraryComponents([alias]), []);
+  assert.equal(uniqueLibraryComponents([alias, { ...canonical, status: 'Draft' }]).length, 0);
+  assert.equal(uniqueLibraryComponents([{ ...alias, trustedBundled: false }, canonical]).length, 1);
+  assert.equal(uniqueLibraryComponents([alias, { ...canonical, surfaces: ['page'] }]).length, 0);
 });
 
 test('equal labels do not erase distinct custom components or mutate registry metadata', () => {
@@ -89,11 +89,11 @@ test('only UNE equivalents are offered for trusted retired One components',()=>{
   const old=definition(legacy,{trustedBundled:true});
   const replacement=definition(canonical,{trustedBundled:true});
   for(const surface of ['page','dashboard','flow'] as const){
-   assert.deepEqual(uniqueLibraryComponents([old,replacement],surface),[replacement]);
+   assert.deepEqual(uniqueLibraryComponents([old,replacement],surface),[]);
    assert.equal(findRegisteredComponent([replacement],legacy,surface),replacement);
    assert.equal(findRegisteredComponent([old,replacement],legacy,surface),['OneText','OneBadge'].includes(legacy)?replacement:old);
   }
-  assert.deepEqual(uniqueLibraryComponents([definition(legacy),replacement]),[definition(legacy),replacement],
+  assert.deepEqual(uniqueLibraryComponents([definition(legacy),replacement]),[definition(legacy)],
    'tenant-owned components are never retired by name alone');
  }
 });
@@ -114,4 +114,14 @@ test('UNE Conversation is AceChatter-only, hidden from new Page Builder placemen
  assert.ok(RETIRED_UNE_PAGE_BUILDER_COMPONENTS.has('une_conversation'));
  assert.deepEqual(publishedPageLibraryComponents([definition('une_conversation'),definition('une_button')]).map(x=>x.apiName),[]);
  assert.equal(findRegisteredComponent([definition('une_conversation')],'une_conversation','page')?.apiName,'une_conversation');
+});
+
+test('app-private bundled component identities are never offered for new placement',()=>{
+ const aliases=['acetill_item_grid','aceassist_calendar','onechatter_conversation','uneacechatter_modal'];
+ for(const alias of aliases){
+  const privateComponent=definition(alias,{trustedBundled:true});
+  assert.deepEqual(uniqueLibraryComponents([privateComponent]),[]);
+  assert.equal(findRegisteredComponent([privateComponent],alias,'page'),privateComponent);
+  assert.deepEqual(uniqueLibraryComponents([definition(alias)]),[definition(alias)],'tenant authors remain untouched');
+ }
 });

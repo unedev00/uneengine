@@ -1,0 +1,20 @@
+{
+  "apiName": "onechatter_conversation",
+  "label": "onechatter Conversation",
+  "category": "App Internal",
+  "description": "Private onechatter UI renderer, not a shared Page Builder component.",
+  "surfaces": [
+    "page"
+  ],
+  "version": 1,
+  "jsxFile": "one/onechatter_conversation/AppComponent.jsx",
+  "cssFile": "one/onechatter_conversation/AppComponent.css",
+  "resize": {
+    "defaultWidth": 320,
+    "defaultHeight": 80,
+    "minWidth": 100,
+    "minHeight": 40
+  },
+  "propertyDefinitions": [],
+  "eventDefinitions": []
+}

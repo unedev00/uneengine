@@ -1,0 +1,20 @@
+{
+  "apiName": "acetill_button",
+  "label": "acetill Button",
+  "category": "App Internal",
+  "description": "Private acetill UI renderer, not a shared Page Builder component.",
+  "surfaces": [
+    "page"
+  ],
+  "version": 1,
+  "jsxFile": "one/acetill_button/AppComponent.jsx",
+  "cssFile": "one/acetill_button/AppComponent.css",
+  "resize": {
+    "defaultWidth": 320,
+    "defaultHeight": 80,
+    "minWidth": 100,
+    "minHeight": 40
+  },
+  "propertyDefinitions": [],
+  "eventDefinitions": []
+}

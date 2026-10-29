@@ -14,6 +14,10 @@ export async function seedOneChatterInstalledPage(client:Pick<PoolClient,'query'
     [tenantId,ONECHATTER_APP.apiName]);
   const appId=apps[0]?.id;
   if(!appId)return false;
+  // Private renderers installed only with their owning app; no shared property catalog.
+  for(const apiName of ["onechatter_input","onechatter_conversation"])await client.query(
+    'INSERT INTO md_component_definitions(tenant_id,api_name,renderer_key,enabled) VALUES($1,$2,$3,true) ON CONFLICT(tenant_id,api_name) DO NOTHING',
+    [tenantId,apiName,'one-bundled:'+apiName]);
   const {rows:created}=await client.query<{id:string}>(`INSERT INTO md_page_definitions
     (tenant_id,api_name,title,enabled) VALUES($1,$2,'OneChatter Inbox',true)
     ON CONFLICT(tenant_id,api_name) DO NOTHING RETURNING id`,
@@ -44,9 +48,9 @@ export async function seedOneChatterInstalledPage(client:Pick<PoolClient,'query'
       'AceChatterSendMessage'].every(name=>available.has(name));
     const allowContacts=available.has('AceChatterLoadContacts');
     const nodes=[
-      {key:'brand',type:'Custom:une_input',label:'OneChatter title',region:'header',
+      {key:'brand',type:'Custom:onechatter_input',label:'OneChatter title',region:'header',
         props:{allowTyping:false,value:'OneChatter',fontSize:26,fontWeight:700,textColor:'#075E54'}},
-      {key:'inbox',type:'Custom:une_conversation',label:'Editable conversations',region:'main',
+      {key:'inbox',type:'Custom:onechatter_conversation',label:'Editable conversations',region:'main',
         props:{
           viewMode:'inbox',title:'Chats',searchPlaceholder:'Search chats',
           placeholder:'Type a message',accentColor:'#128C7E',

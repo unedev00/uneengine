@@ -1,0 +1,6 @@
+@import "../une/shared/une.css";
+.une-ui .une-stack-root{box-sizing:border-box;min-width:0;border:1px solid var(--une-border);border-radius:var(--one-radius);background:var(--une-bg);color:var(--une-fg);box-shadow:var(--une-elevation)}
+.une-ui[data-une-surface="glass"] .une-stack-root{background:color-mix(in srgb,var(--une-bg) 82%,transparent);backdrop-filter:blur(var(--une-blur));-webkit-backdrop-filter:blur(var(--une-blur))}
+.une-ui[data-une-surface="plain"] .une-stack-root{background:transparent;box-shadow:none}
+.une-ui[data-une-density="compact"] .une-stack-root{row-gap:calc(var(--one-gap) * .5)}
+.une-ui[data-une-density="spacious"] .une-stack-root{row-gap:calc(var(--one-gap) * 1.5)}
