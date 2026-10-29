@@ -45,3 +45,21 @@ test('Smart SQL library matches approved table and retains Home',()=>{
  assert.match(ui,/ribbonTab === 'Home' && ribbonCatalog/);
  assert.match(ui,/<SmartRibbon/);
 });
+
+test('Insert Ribbon exposes visible Smart components without requiring a selected canvas component',()=>{
+ const view=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const insert=read('../src/core/builders/PageBuilder/SmartInsertRibbon.tsx');
+ const css=read('../src/core/builders/PageBuilder/SmartInsertRibbon.css');
+ assert.match(view,/ribbonTab==='Add Block' && <SmartInsertRibbon/);
+ assert.doesNotMatch(view,/selectedNewUne && ribbonTab==='Add Block'/);
+ assert.match(view,/items=\{paletteComponents\}/);
+ assert.match(view,/onInsert=\{addPaletteComponent\}/);
+ assert.match(view,/setSelectedId\(id\)/);
+ assert.match(insert,/onClick=\{\(\)=>onInsert\(item.type\)\}/);
+ assert.match(insert,/filterSmartInsertItems\(items,scope,term\)/);
+ assert.match(insert,/aria-label="Search Insert components"/);
+ assert.match(insert,/Open full library/);
+ assert.match(insert,/No Smart components are installed for this tenant/);
+ assert.match(css,/grid-template-rows:repeat\(3,35px\)/);
+ assert.match(css,/office-builder-ribbon #page-builder-tab-content:has\(>\.smart-insert-ribbon\)/);
+});
