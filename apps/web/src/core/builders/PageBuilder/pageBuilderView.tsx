@@ -1,3 +1,4 @@
+import {conversationPartSlots,conversationRootDefinition,conversationPartDefinition,conversationPartEditorProperties,updateConversationPartProperties} from '../../../one/une_conversation/conversationParts.mjs';
 import {availableComponentSettings,resolveComponentSettings,validateComponentSettings} from '../../components/Properties/componentSettingDefinitions';
 import {pagePropertyIssues} from '../../components/Properties/pagePropertyContract';
 import {resolveMetadataProperties} from '../../metadata/Definitions/metadataReferences';
@@ -483,6 +484,8 @@ function PageBuilder({
     if(!element)return;
     setRibbonOverflow({left:element.scrollLeft>3,right:element.scrollLeft+element.clientWidth<element.scrollWidth-3});
   };
+  const [selectedConversationPart,setSelectedConversationPart]=useState('parent');
+  useEffect(()=>setSelectedConversationPart('parent'),[selectedId]);
   const [ribbonTab, setRibbonTab] = useState<'Home' | 'Add Block' | 'Component Content' | 'Component Properties' | 'Component Style' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Component Responsive' | 'Preview' | 'Filters' | 'Source'>('Home');
   useEffect(()=>{
     const element=ribbonStripRef.current;
@@ -575,6 +578,22 @@ function PageBuilder({
   const selectedCustomDefinition = selected?.type.startsWith('Custom:')
     ? findRegisteredComponent(libraryComponents, selected.type.slice('Custom:'.length), 'page')
     : undefined;
+  const editingConversation=selectedCustomDefinition?.apiName==='une_conversation';
+  // Child element selection affects the inspector only; runtime DOM is unchanged.
+  const conversationEditorDefinition=editingConversation
+    ? (selectedConversationPart==='parent'
+      ? conversationRootDefinition(selectedCustomDefinition)
+      : conversationPartDefinition(selectedConversationPart,selectedCustomDefinition,libraryComponents))
+    : undefined;
+  const conversationEditorProperties=editingConversation&&selectedConversationPart!=='parent'
+    ? conversationPartEditorProperties(selected?.properties??{},selectedConversationPart)
+    : selected?.properties??{};
+  const updateConversationEditorProperties=(properties:Record<string,unknown>)=>{
+    if(!selected)return;
+    updateComponent(selected.id,{properties:editingConversation&&selectedConversationPart!=='parent'
+      ?updateConversationPartProperties(selected.properties,selectedConversationPart,properties)
+      :properties});
+  };
   // Group positions stay fixed for every canvas selection. Metadata controls
   // availability; keys listed here are existing renderer-supported properties.
   // Disabled ribbon controls remain discoverable as icons, never blank panels.
@@ -2549,10 +2568,23 @@ function PageBuilder({
         </div>
         <div id="page-builder-tab-content" ref={ribbonStripRef} onScroll={measureRibbonOverflow} className="office-ribbon-content" role="tabpanel"
           aria-label={ribbonTab} aria-labelledby={`page-builder-tab-${Math.max(0,ribbonTabsVisible.indexOf(ribbonTab))}`}>
+          {selected && editingConversation && (['Component Data','Component Content','Component Properties','Component Layout','Component Responsive','Component Action'] as string[]).includes(ribbonTab) &&
+            <div className="office-ribbon-group office-ribbon-conversation-parts">
+              <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Edit conversation element</span>
+                <select aria-label="UNE Conversation element" value={selectedConversationPart}
+                  onChange={event=>setSelectedConversationPart(event.target.value)}>
+                  <option value="parent">UNE Conversation · parent</option>
+                  {conversationPartSlots.map(part=><option key={part.id} value={part.id}>{part.label} · {part.component}</option>)}
+                </select>
+              </label>
+              <span>Elements</span>
+            </div>}
           {selected && selectedCustomDefinition && (['Component Data','Component Content','Component Properties','Component Layout','Component Responsive','Component Action'] as string[]).includes(ribbonTab) &&
             <UniversalRibbonInventory tab={ribbonTab as 'Component Data'|'Component Content'|'Component Properties'|'Component Layout'|'Component Responsive'|'Component Action'}
-              definition={selectedCustomDefinition} componentId={selected.id} properties={selected.properties} objects={objects} flows={flows}
-              onChange={properties=>updateComponent(selected.id,{properties})}
+              definition={conversationEditorDefinition??selectedCustomDefinition}
+              componentId={selected.id+(editingConversation?':'+selectedConversationPart:'')}
+              properties={editingConversation?conversationEditorProperties:selected.properties} objects={objects} flows={flows}
+              onChange={properties=>updateConversationEditorProperties(properties)}
               builder={{
                 position:selected.position,
                 onPositionChange:position=>updateComponent(selected.id,{position}),
@@ -2631,7 +2663,7 @@ function PageBuilder({
               </label>)}
             </div><span>Content Source</span></div>}
           
-          {selected && ribbonTab === 'Component Content' && !['une_item_grid','une_calendar','une_image'].includes(selectedCustomDefinition?.apiName??'')
+          {selected && ribbonTab === 'Component Content' && !['une_item_grid','une_calendar','une_image','une_conversation'].includes(selectedCustomDefinition?.apiName??'')
             && selectedCustomDefinition && <div className="office-ribbon-inline-options">
               <ComponentPresentationProperties
                 definitions={availableComponentSettings(selectedCustomDefinition.propertyDefinitions??[],
