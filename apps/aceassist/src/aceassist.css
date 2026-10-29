@@ -721,3 +721,132 @@
 
 /* Readable appointment status typography across phone and desktop. */
 .custom-aceassist .assist-next small { font-size:12px; }
+
+
+/* ACE Assist contrast applies to dashboard, calendar, record lists, mobile
+ * navigation, lookup dropdowns and all CRUD/financial modal screens.
+ * One semantic palette follows MetaDrive's selected appearance. */
+.custom-aceassist{
+ --assist-ink:var(--md-text,#1d1d1f);
+ --assist-muted:var(--md-text-2,#5c5c63);
+ --assist-line:var(--md-separator,#d7dde5);
+ --assist-paper:var(--md-surface,#fff);
+ --assist-quiet:var(--md-surface-2,#fafafc);
+ --assist-action:color-mix(in srgb,var(--product-accent,#147d74) 68%,black);
+ --assist-link:color-mix(in srgb,var(--product-accent,#147d74) 62%,var(--assist-ink));
+ color:var(--assist-ink);background:var(--md-bg,#f5f5f7);
+}
+.custom-aceassist .custom-assist{
+ --assist-ink:var(--md-text,#1d1d1f);
+ --assist-muted:var(--md-text-2,#5c5c63);
+ --assist-surface:var(--assist-paper);
+ --assist-border:var(--assist-line);
+ --assist-bg:var(--md-bg,#f5f5f7);
+ color:var(--assist-ink);background:var(--assist-bg);
+}
+.custom-aceassist :is(.custom-calendar,.custom-visit-detail,.custom-day,
+ .custom-record-list button,.custom-tabs button,.assist-metric,.assist-home-panel,
+ .assist-next,.assist-quick-grid button,.assist-home-appointment,
+ .assist-home-invoice,.assist-phone-records,.assist-phone-record,
+ .assist-phone-date-actions button,.assist-phone-date-strip button,
+ .assist-phone-filter-row label,.assist-phone-search,.assist-more-links button,
+ .assist-more-signout,.assist-modal,.assist-lookup-menu,
+ .assist-notice-panel,.assist-notice-toast,.assist-document-line,
+ .assist-document-totals,.assist-date-navigation,.assist-service-choice,
+ .assist-phone-detail-card,.assist-mobile-nav){
+ background:var(--assist-paper);color:var(--assist-ink);
+ border-color:var(--assist-line);
+}
+.custom-aceassist :is(.custom-day,.assist-document-line,.assist-document-totals,
+ .assist-phone-detail-card,.assist-date-navigation,.assist-service-choice){
+ background:var(--assist-quiet);
+}
+.custom-aceassist :is(.assist-phone-hours,.assist-phone-time,
+ .assist-phone-record-icon,.assist-phone-customer-count,.assist-metric-icon,
+ .assist-next,.assist-mobile-nav button[aria-current="page"]){
+ background:color-mix(in srgb,var(--product-accent,#147d74) 13%,var(--assist-paper));
+ color:var(--assist-link);
+}
+.custom-aceassist :is(.assist-metric strong,.assist-home-panel h2,
+ .assist-quick-grid button strong,.assist-phone-titlebar h1,
+ .assist-phone-date-heading strong,.assist-phone-list-heading h2,
+ .assist-phone-detail-title h1,.assist-phone-empty strong,
+ .assist-phone-record,.assist-phone-record-right strong,
+ .custom-visit-detail dd,.assist-phone-detail-card dd){
+ color:var(--assist-ink);
+}
+.custom-aceassist :is(.custom-heading p,.custom-day small,.custom-visit small,
+ .custom-panel-title span,.custom-visit-detail dt,.assist-metric small,
+ .assist-home-appointment>time,.assist-next small,.assist-phone-titlebar p,
+ .assist-phone-date-heading>div:first-child span,.assist-phone-date-strip button small,
+ .assist-phone-list-heading p,.assist-phone-record-main small,
+ .assist-phone-record-main>span,.assist-phone-time span,
+ .assist-phone-detail-card dt,.assist-phone-empty p,
+ .assist-document-line-heading p,.assist-document-line-total span,
+ .assist-document-totals dt,.assist-related-item span,.assist-related-list small,
+ .assist-more-heading p,.assist-note p,.assist-notice-toast p){
+ color:var(--assist-muted);
+}
+.custom-aceassist :is(.assist-home-panel-heading button,.assist-related-list>button,
+ .assist-document-remove,.assist-document-line-heading button,
+ .assist-phone-record-heading button,.assist-detail-back,
+ .assist-add-customer,.assist-lookup-new){
+ color:var(--assist-link);
+}
+.custom-aceassist :is(.custom-heading input,.custom-date input,
+ .custom-inputs textarea,.custom-crud-form input,.custom-crud-form select,
+ .custom-crud-form textarea,.assist-lookup-menu button,.assist-date-slot input,
+ .assist-view-control select,.assist-calendar-filters select,
+ .assist-document-header-fields input,.assist-document-header-fields select,
+ .assist-document-line input,.assist-customer-modal input,
+ .assist-phone-filter-row select,.assist-phone-search input){
+ background:var(--assist-paper);color:var(--assist-ink);
+ border-color:var(--assist-line);
+}
+.custom-aceassist :is(input,textarea)::placeholder{color:var(--assist-muted);opacity:1}
+.custom-aceassist :is(.custom-crud-form label,.assist-document-header-fields label,
+ .assist-document-line label,.assist-service-selection legend,
+ .assist-calendar-filters label,.assist-view-control,.assist-lookup label){
+ color:var(--assist-ink);
+}
+.custom-aceassist :is(.assist-modal-footer button:not([type="submit"]),
+ .assist-line-actions button,.assist-phone-date-actions button,
+ .assist-bell,.assist-more-signout,.assist-add-customer){
+ background:var(--assist-quiet);color:var(--assist-ink);
+ border-color:var(--assist-line);
+}
+.custom-aceassist :is(.custom-action-buttons button,.assist-modal-footer button[type="submit"],
+ .assist-phone-primary,.assist-phone-empty button){
+ background:var(--assist-action);color:#fff;border-color:var(--assist-action);
+}
+.custom-aceassist .custom-tabs button[aria-current="page"],
+.custom-aceassist .assist-phone-date-strip button.selected{
+ background:var(--assist-action);color:#fff;border-color:var(--assist-action);
+}
+.custom-aceassist .assist-phone-date-strip button.selected small{color:#fff}
+.custom-aceassist .assist-mobile-nav button{color:var(--assist-muted);background:transparent}
+.custom-aceassist .assist-mobile-nav button[aria-current="page"]{
+ background:color-mix(in srgb,var(--product-accent,#147d74) 13%,var(--assist-paper));
+ color:var(--assist-link);
+}
+.custom-aceassist .assist-home-hello{
+ background:linear-gradient(115deg,#075869,#087a73);
+ color:#fff;border-color:#075869;
+}
+.custom-aceassist .assist-home-hello :is(h1,p,.custom-eyebrow){color:#fff}
+.custom-aceassist .assist-home-hello>button{background:#fff;color:#075869}
+.custom-aceassist .assist-phone-billing-summary{color:#fff}
+.custom-aceassist .assist-phone-billing-summary :is(p,span){color:#e9ffff}
+.custom-aceassist .assist-lookup-menu button:hover,
+.custom-aceassist .assist-lookup-menu button:focus-visible,
+.custom-aceassist .assist-quick-grid button:hover{
+ background:color-mix(in srgb,var(--product-accent,#147d74) 11%,var(--assist-paper));
+}
+.custom-aceassist :is(.assist-modal-heading,.assist-modal-footer,
+ .custom-actions,.assist-document-grand-total,.assist-related-item,
+ .custom-visit-detail dl div,.assist-phone-record,.assist-home-appointment){
+ border-color:var(--assist-line);
+}
+.custom-aceassist :is(.assist-modal,.assist-document-modal,.assist-customer-modal){
+ color-scheme:normal;
+}
