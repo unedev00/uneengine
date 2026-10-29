@@ -96,6 +96,46 @@ test('component interactions update declared bindable target properties only',()
  assert.deepEqual(behaviorInteractions(rules,'other',{value:'Selected'},{},targets,'Desktop'),[]);
 });
 
+test('component interactions validate event schemas, literal types, nulls and target versions',()=>{
+ const rules={pagePropertyContract:{version:1,interactions:[
+  {event:'select',targetComponentId:'target',targetProperty:'title',source:'Event',sourceKey:'selection.record.Name'},
+  {event:'select',targetComponentId:'target',targetProperty:'count',source:'Literal',valueType:'Number',value:'12.5'},
+  {event:'select',targetComponentId:'target',targetProperty:'enabled',source:'Literal',valueType:'Boolean',value:'false'},
+  {event:'select',targetComponentId:'target',targetProperty:'optional',source:'Literal',valueType:'Null'},
+  {event:'select',targetComponentId:'target',targetProperty:'required',source:'Literal',valueType:'Null'},
+  {event:'select',targetComponentId:'target',targetProperty:'title',source:'Event',sourceKey:'selection.record.Id'},
+  {event:'unlisted',targetComponentId:'target',targetProperty:'title',source:'Event',sourceKey:'Name'}
+ ]}};
+ const targets=[{id:'target',componentVersion:3,propertyDefinitions:[
+  {propertyKey:'title',label:'Title',kind:'TEXT' as const,isBindable:true,sinceVersion:2},
+  {propertyKey:'count',label:'Count',kind:'NUMBER' as const,isBindable:true},
+  {propertyKey:'enabled',label:'Enabled',kind:'BOOLEAN' as const,isBindable:true},
+  {propertyKey:'optional',label:'Optional',kind:'TEXT' as const,isBindable:true},
+  {propertyKey:'required',label:'Required',kind:'TEXT' as const,isBindable:true,required:true}
+ ]}];
+ const eventDefinitions=[{apiName:'select',label:'Select',payloadFields:[
+  {apiName:'selection',label:'Selection',kind:'OBJECT' as const,fields:[
+   {apiName:'record',label:'Record',kind:'OBJECT' as const,fields:[
+    {apiName:'Name',label:'Name',kind:'TEXT' as const}
+   ]}
+  ]}
+ ]}];
+ const payload={selection:{record:{Name:'Selected record',Id:'record-1'}}};
+ assert.deepEqual(behaviorInteractions(rules,'select',payload,{},targets,'Desktop',eventDefinitions),[
+  {targetComponentId:'target',targetProperty:'title',value:'Selected record'},
+  {targetComponentId:'target',targetProperty:'count',value:12.5},
+  {targetComponentId:'target',targetProperty:'enabled',value:false},
+  {targetComponentId:'target',targetProperty:'optional',value:null}
+ ]);
+ assert.deepEqual(behaviorInteractions(rules,'select',payload,{},[
+  {...targets[0],componentVersion:1}
+ ],'Desktop',eventDefinitions).filter(update=>update.targetProperty==='title'),[]);
+ assert.deepEqual(behaviorInteractions(rules,'select',payload,{},[
+  {id:'target',propertyDefinitions:targets[0].propertyDefinitions}
+ ],'Desktop',eventDefinitions).filter(update=>update.targetProperty==='title'),[]);
+ assert.deepEqual(behaviorInteractions(rules,'unlisted',{Name:'Unlisted event'}, {},targets,'Desktop',eventDefinitions),[]);
+});
+
 
 test('no-code property editor offers metadata reference pickers without authored JSON',()=>{
  const html=renderToStaticMarkup(React.createElement(CustomComponentPropertyEditor,{

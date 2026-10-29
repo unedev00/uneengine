@@ -119,32 +119,23 @@ test('login and MFA include landing bootstrap; session restore uses one authenti
 });
 
 
-test('authorised page responses prefetch ordinary component records through RecordEngine', () => {
+test('authorised page responses avoid broad record prefetch and use paged RecordEngine queries', () => {
   const server = readFileSync(new URL('../../server/src/system-support/server.ts', import.meta.url), 'utf8');
   const runtime = readFileSync(new URL('../src/core/pages/PageRuntime/pageRuntimeViews.tsx', import.meta.url), 'utf8');
-  assert.match(server, /const pageInitialRecords=async\(tenantId:string,userId:string,page:/);
-  assert.match(server, /records\.list\(tenantId,userId,api,50,0\)/);
-  assert.match(server, /typeof \(filter as Record<string,unknown>\)\.value==='object'[\s\S]*?\(filter as Record<string,unknown>\)\.value!==null/);
-  assert.match(server, /\[\.\.\.objectApis\]\.slice\(0,3\)/);
+  assert.doesNotMatch(server, /pageInitialRecords/);
+  assert.match(server, /res\.json\(\{page:page\.page\}\)/);
+  assert.match(server, /res\.json\(\{page\}\)/);
   const appPageRoute = server.slice(server.indexOf("app.get('/api/apps/:appId/pages/:pageApiName'"), server.indexOf("app.get('/api/metadata/objects'"));
   const appRbacAt = appPageRoute.indexOf("await rbac.require");
   const appResolutionAt = appPageRoute.indexOf("pages.resolveAppPage");
-  const appPrefetchAt = appPageRoute.indexOf("pageInitialRecords");
-  assert.ok(appRbacAt >= 0 && appRbacAt < appResolutionAt && appResolutionAt < appPrefetchAt);
+  assert.ok(appRbacAt >= 0 && appRbacAt < appResolutionAt);
   const homeRoute = server.slice(server.indexOf("app.get('/api/apps/:appId/home-page'"), server.indexOf("app.get('/api/apps/:appId/pages/:pageApiName'"));
   const homeResolutionAt = homeRoute.indexOf("apps.homePage");
-  const homePrefetchAt = homeRoute.indexOf("pageInitialRecords");
-  assert.ok(homeResolutionAt >= 0 && homeResolutionAt < homePrefetchAt);
-  assert.match(server, /res\.json\(\{page:page\.page,initialRecords\}\)/);
-  assert.match(server, /res\.json\(\{page,initialRecords\}\)/);
-  assert.match(server, /res\.setHeader\('Cache-Control','private, no-store'\);\s*res\.setHeader\('Vary','Authorization, Cookie'\);\s*res\.json\(\{page:page\.page,initialRecords\}\)/);
-  assert.match(runtime, /initialRecords\?: Record<string, Record<string, unknown>\[\]\>/);
-  assert.match(runtime, /initialRecordsByObject=\{pageLoad\.initialRecordsByObject\}/);
-  assert.match(runtime, /const initialRecords = !recordQuery\.filter[\s\S]*?if \(useInitialRecords\)/);
-  assert.match(runtime, /if \(!useInitialRecords\) \{\s*setDataLoading\(true\);\s*void refresh\(\);\s*\}/);
+  assert.ok(homeResolutionAt >= 0);
+  assert.match(server, /res\.setHeader\('Cache-Control','private, no-store'\);\s*res\.setHeader\('Vary','Authorization, Cookie'\);\s*res\.json\(\{page:page\.page\}\)/);
+  assert.match(runtime, /loadFlowScreenRecordPage\(objectApiName/);
+  assert.match(runtime, /recordPagination/);
   assert.match(runtime, /const interval = chatter \? window\.setInterval\(onVisible, 5000\) : undefined;/);
-  assert.match(runtime, /if \(!objectApiName \|\| recordQuery\.blocked\)/);
-  assert.match(runtime, /metadrive:page-flow-mutated', invalidateInitialRecords/);
 });
 
 

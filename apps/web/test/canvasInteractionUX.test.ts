@@ -20,7 +20,7 @@ async function readModularCss(url: URL): Promise<string> {
 
 import { pageAppearanceTarget, pageAppearanceStyleKeys, resolvePageComponentStyle, visualDefaults } from '../src/core/pages/TemplatePageRuntime/pageComponentLayout';
 import { snapCanvasPosition, snapCanvasSize, wrapCanvasComponent, ungroupCanvasComponent, alignCanvasComponents, distributeCanvasComponents } from '../src/core/builders/PageBuilder/canvasInteractions';
-import { copyComponentTree, cloneComponentTree, assignTabOnReparent } from '../src/core/builders/PageBuilder/pageComponentTree';
+import { copyComponentTree, cloneComponentTree, remapComponentInteractionTargets, assignTabOnReparent } from '../src/core/builders/PageBuilder/pageComponentTree';
 
 test('canvas movement aligns with adjacent element edges and returns visible guide flags', () => {
   const result = snapCanvasPosition(
@@ -102,7 +102,11 @@ test('dragging or adding a nested block preserves the selected tab identity',()=
 
 test('nested component clipboard duplicates every descendant with remapped IDs', () => {
   const original = [
-    {id:'root',type:'Tabs',label:'Tabs',visible:true,properties:{tabs:['Details','Related']}},
+    {id:'root',type:'Tabs',label:'Tabs',visible:true,properties:{tabs:['Details','Related'],
+      pagePropertyContract:{version:1,interactions:[
+        {event:'click',targetComponentId:'nested',targetProperty:'value',value:'updated'},
+        {event:'click',targetComponentId:'external',targetProperty:'value',value:'unchanged'}
+      ]}}},
     {id:'nested',type:'Accordion',label:'Accordion',visible:true,parentId:'root',
       properties:{layoutParentId:'root',tabLabel:'Details'}},
     {id:'inner',type:'Custom:Demo',label:'Data',visible:true,parentId:'nested',
@@ -117,7 +121,16 @@ test('nested component clipboard duplicates every descendant with remapped IDs',
   assert.equal(copy.components[2].parentId,'2');
   assert.equal(copy.components[2].properties.layoutParentId,'2');
   assert.equal(copy.components[2].properties.dataSource,'Customer');
+  assert.deepEqual(copy.components[0].properties.pagePropertyContract.interactions,[
+    {event:'click',targetComponentId:'2',targetProperty:'value',value:'updated'},
+    {event:'click',targetComponentId:'external',targetProperty:'value',value:'unchanged'}
+  ]);
   assert.equal(original[2].parentId,'nested');
+  const wholePageCopy=remapComponentInteractionTargets(original.map((item,index)=>({
+    ...item,id:copy.components[index].id
+  })),new Map(original.map((item,index)=>[item.id,copy.components[index].id])));
+  assert.equal(wholePageCopy[0].properties.pagePropertyContract.interactions[0].targetComponentId,'2');
+  assert.equal(wholePageCopy[0].properties.pagePropertyContract.interactions[1].targetComponentId,'external');
 });
 
 test('distribution uses selected bounds and ignores locked elements', () => {
@@ -527,14 +540,14 @@ test('Page Builder no longer offers redundant Show component controls', async ()
   assert.match(builder,/if \(!component\.visible\) return null;/, 'existing saved visibility remains respected');
 });
 
-test('Page Builder delegates conditional appearance to flows without exposing the legacy visibility rules editor', async () => {
+test('Page Builder authors shared visibility rules without replacing conditional appearance actions', async () => {
   const builder = await readFile(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
   const ribbon = await readFile(new URL('../src/core/builders/PageBuilder/PageBuilderRibbonStyle.tsx',import.meta.url),'utf8');
-  assert.doesNotMatch(builder,/RibbonVisibilityRules|ribbonVisibilityDraft|onVisibilityRules|Edit visibility rules/);
-  assert.doesNotMatch(ribbon,/onVisibilityRules|Edit visibility rules/);
-  assert.doesNotMatch(builder,/ribbonTab==='Visibility Rules'/);
-  // Published metadata is preserved for compatibility; the change only removes the editor.
+  assert.match(builder,/RibbonVisibilityRules/);
+  assert.match(builder,/Edit visibility rules/);
+  assert.match(builder,/allowRecordFields=\{page\.pageType==='Record Page'\}/);
+  assert.match(builder,/visibilityRules=|properties\.visibilityRules/);
+  assert.doesNotMatch(ribbon,/Edit visibility rules/);
   const runtime = await readFile(new URL('../src/core/components/Properties/componentVisibility.ts',import.meta.url),'utf8');
   assert.match(runtime,/visibilityRules|VisibilityRule/);
 });
-

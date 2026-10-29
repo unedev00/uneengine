@@ -1,24 +1,43 @@
 import type { FieldMetadata } from '../../metadata/Definitions/metadata';
 
-export type RecordFilterOperator = 'Equals' | 'Not Equals' | 'Contains' | 'Greater Than' | 'Less Than';
+export type RecordFilterOperator = 'Equals' | 'Not Equals' | 'Contains' | 'Greater Than'
+  | 'Greater Than or Equal' | 'Less Than' | 'Less Than or Equal' | 'Is Blank' | 'Is Not Blank'
+  | 'Includes' | 'Excludes';
 export type RecordFilterField = Pick<FieldMetadata, 'apiName' | 'label' | 'dataType' | 'picklistValues'>;
 export type RecordFilterValue = { field: string; operator: string; value: unknown };
-const operators: RecordFilterOperator[] = ['Equals', 'Not Equals', 'Contains', 'Greater Than', 'Less Than'];
+const operators: RecordFilterOperator[] = ['Equals', 'Not Equals', 'Contains', 'Greater Than',
+  'Greater Than or Equal', 'Less Than', 'Less Than or Equal', 'Is Blank', 'Is Not Blank',
+  'Includes','Excludes'];
+function formulaReturnType(dataType:string):string{
+  const formula=/^Formula\((.+)\)$/i.exec(dataType.trim());
+  return formula?.[1].trim()??dataType;
+}
 
 export function isNumericFilterField(field?: RecordFilterField): boolean {
-  return /^(Number|Currency|Percent|Integer|Decimal|Double)(\(|$)/i.test(field?.dataType ?? '');
+  return /^(Number|Currency|Percent|Integer|Decimal|Double)(\(|$)/i.test(formulaReturnType(field?.dataType ?? ''));
 }
 export function isBooleanFilterField(field?: RecordFilterField): boolean {
-  return /^(Checkbox|Boolean)$/i.test(field?.dataType ?? '');
+  return /^(Checkbox|Boolean)$/i.test(formulaReturnType(field?.dataType ?? ''));
 }
 /** Matches the operators currently implemented by the shared page-data runtime. */
 export function supportedFilterOperators(field?: RecordFilterField): RecordFilterOperator[] {
   if (!field) return [...operators];
-  if (isNumericFilterField(field)) return ['Equals', 'Not Equals', 'Greater Than', 'Less Than'];
-  if (isBooleanFilterField(field) || /^(Date|Date\/Time|DateTime|Time)(\(|$)/i.test(field.dataType)) {
+  if (isNumericFilterField(field)) return ['Equals', 'Not Equals', 'Greater Than',
+    'Greater Than or Equal', 'Less Than', 'Less Than or Equal', 'Is Blank', 'Is Not Blank'];
+  if (isBooleanFilterField(field)) {
     return ['Equals', 'Not Equals'];
   }
-  return ['Equals', 'Not Equals', 'Contains'];
+  const dataType=formulaReturnType(field.dataType);
+  if (/^(Date|Date\/Time|DateTime)(\(|$)/i.test(dataType)) {
+    return ['Equals', 'Not Equals', 'Greater Than', 'Greater Than or Equal',
+      'Less Than', 'Less Than or Equal', 'Is Blank', 'Is Not Blank'];
+  }
+  if (/^Time(\(|$)/i.test(dataType))
+    return ['Equals','Not Equals','Greater Than','Greater Than or Equal',
+      'Less Than','Less Than or Equal','Is Blank','Is Not Blank'];
+  if (/^(Multi-Select Picklist|Multipicklist)$/i.test(dataType))
+    return ['Equals','Not Equals','Includes','Excludes','Is Blank','Is Not Blank'];
+  return ['Equals', 'Not Equals', 'Contains', 'Is Blank', 'Is Not Blank'];
 }
 export function examineRecordFilter(raw: unknown, fields: ReadonlyArray<RecordFilterField>): string | null {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return 'Invalid saved filter. Remove and re-create it.';
@@ -29,6 +48,7 @@ export function examineRecordFilter(raw: unknown, fields: ReadonlyArray<RecordFi
   if (!supportedFilterOperators(field).includes(filter.operator as RecordFilterOperator)) {
     return 'This operator is not supported for the selected field type.';
   }
+  if (filter.operator === 'Is Blank' || filter.operator === 'Is Not Blank') return null;
   if (filter.value && typeof filter.value === 'object' && !Array.isArray(filter.value)) {
     const source = filter.value as Record<string,unknown>;
     if (source.source === 'PageState' && typeof source.key === 'string'

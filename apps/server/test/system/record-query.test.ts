@@ -28,6 +28,25 @@ test('record filters parameterize fields, values, typed comparisons and escaped 
   assert.deepEqual(result.parameters,['Amount','12.5','Name','%A\\%\\_B%']);
 });
 
+test('blank, not-equal and multi-select exclusion filters preserve value semantics',()=>{
+  const blank=compileRecordFilters([{field:'Name',operator:'isBlank',value:''}],
+    undefined,fields,1);
+  assert.match(blank.predicate,/NOT EXISTS/);
+  assert.match(blank.predicate,/COALESCE\(fv\.value_text,fv\.reference_record_id::text,''\)<>''/);
+  assert.deepEqual(blank.parameters,['Name']);
+
+  const notEqual=compileRecordFilters([{field:'Name',operator:'ne',value:'Ada'}],
+    undefined,fields,1);
+  assert.match(notEqual.predicate,/NOT EXISTS/);
+  assert.match(notEqual.predicate,/COALESCE\(fv\.value_text,fv\.reference_record_id::text\)=\$2/);
+
+
+  const multi=compileRecordFilters([{field:'Tags',operator:'excludes',value:'A'}],
+    undefined,new Map([['Tags',{api_name:'Tags',data_type:'multipicklist'}]]),1);
+  assert.doesNotMatch(multi.predicate,/cardinality/);
+  assert.match(multi.predicate,/NOT \(COALESCE/);
+});
+
 
 test('saved date filters resolve relative periods at query time and include whole days',()=>{
   const dateFields=new Map([
@@ -46,6 +65,7 @@ test('saved date filters resolve relative periods at query time and include whol
   ],undefined,dateFields,1);
   assert.deepEqual(lastWeek.parameters,['DueDate']);
   assert.match(lastWeek.predicate,/NOT EXISTS/);
+  assert.doesNotMatch(lastWeek.predicate,/IS NOT NULL/);
   assert.match(lastWeek.predicate,/date_trunc\('week'/);
   const explicit=compileRecordFilters([
     {field:'OccurredAt',operator:'eq',value:'2026-10-25'},
@@ -76,6 +96,12 @@ test('query inputs validate saved filter arrays and keyset cursors',()=>{
   assert.deepEqual(parseRecordFilters(JSON.stringify([
     {field:'Name',operator:'startsWith',value:'Ada'},
   ])),[{field:'Name',operator:'startsWith',value:'Ada'}]);
+  assert.deepEqual(parseRecordFilters(JSON.stringify([
+    {field:'Name',operator:'isBlank',value:''},
+  ])),[{field:'Name',operator:'isBlank',value:''}]);
+  assert.throws(()=>parseRecordFilters(JSON.stringify([
+    {field:'Name',operator:'isBlank',value:'not blank'},
+  ])),/Blank filters require an empty value/);
   assert.throws(()=>parseRecordFilters('{"field":"Name"}'),/Invalid record filters/);
   const encoded=Buffer.from(JSON.stringify({
     field:'Amount',direction:'desc',value:'12.50',id:'123e4567-e89b-42d3-a456-426614174000',

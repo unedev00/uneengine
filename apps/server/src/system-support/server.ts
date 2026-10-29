@@ -377,54 +377,6 @@ export function createSystemServer(db:SqlPersistence) {
       return {};
     }
   };
-  // Prefetch the first ordinary record page as part of the already-authorised
-  // page response. RecordEngine remains the sole data/permission path; dynamic
-  // filters stay context-aware and live presenters continue polling after hydration.
-  const pageInitialRecords=async(tenantId:string,userId:string,page:{components?:Array<{properties?:unknown}>})=>{
-    try{
-      const components=Array.isArray(page.components)?page.components:[];
-      const componentProperties=(component:{properties?:unknown}):Record<string,unknown>=>{
-        const value=component.properties;
-        return value&&typeof value==='object'&&!Array.isArray(value)?value as Record<string,unknown>:{};
-      };
-      const refs=components.map(component=>componentProperties(component).objectApiName)
-        .filter((value):value is string=>typeof value==='string'&&value.startsWith('metadata:'))
-        .map(value=>value.slice('metadata:'.length));
-      const apiById=new Map<string,string>();
-      const objectIds=[...new Set(refs)].filter(value=>/^[0-9a-f-]{36}$/i.test(value));
-      if(objectIds.length){
-        const {rows}=await db.query<{id:string;api_name:string}>(
-          'SELECT id,api_name FROM md_object_definitions WHERE tenant_id=$1 AND id=ANY($2::uuid[])',
-          [tenantId,objectIds]);
-        for(const row of rows)apiById.set(row.id,row.api_name);
-      }
-      const objectApis=new Set<string>();
-      for(const component of components){
-        const properties=componentProperties(component);
-        const filters=properties.filters;
-        if(filters!==undefined&&filters!==null
-          &&(!Array.isArray(filters)||filters.some((filter:unknown)=>!filter||typeof filter!=='object'
-            ||Array.isArray(filter)||typeof (filter as Record<string,unknown>).value==='object'
-            &&(filter as Record<string,unknown>).value!==null)))continue;
-        const raw=properties.objectApiName;
-        if(typeof raw!=='string'||!raw)continue;
-        const api=raw.startsWith('metadata:')?apiById.get(raw.slice('metadata:'.length)):raw;
-        if(api&&/^[A-Za-z][A-Za-z0-9_]*$/.test(api))objectApis.add(api);
-      }
-      const entries=await Promise.all([...objectApis].slice(0,3).map(async api=>{
-        try{
-          const result=await records.list(tenantId,userId,api,50,0);
-          return [api,result.records] as const;
-        }catch{
-          // The normal client query will show the authoritative permission/data error.
-          return null;
-        }
-      }));
-      return Object.fromEntries(entries.filter((entry):entry is readonly [string,Record<string,unknown>[]]=>entry!==null));
-    }catch{
-      return {};
-    }
-  };
   app.post('/api/auth/login',route(async(req,res)=>{
     const {tenantSlug,email,password}=req.body??{};
     if(typeof email!=='string'||typeof password!=='string'||!email.trim()) {
@@ -1286,10 +1238,9 @@ export function createSystemServer(db:SqlPersistence) {
       ?customPage:null;
     const page=targeted??(assigned?.apiName
       ?(await pages.load(actor.tenant_id,assigned.apiName,runtimeLayoutVariant(factor))).page:null);
-    const initialRecords=page?await pageInitialRecords(actor.tenant_id,actor.user_id,page):{};
     res.setHeader('Cache-Control','private, no-store');
     res.setHeader('Vary','Authorization, Cookie');
-    res.json({page,initialRecords});
+    res.json({page});
   }));
   app.get('/api/apps/:appId/pages/:pageApiName',route(async(req,res)=>{
     const actor=req.actor!;
@@ -1299,10 +1250,9 @@ export function createSystemServer(db:SqlPersistence) {
     const page=await pages.resolveAppPage(actor.tenant_id,req.params.appId,
       req.params.pageApiName,factor,viewportWidth);
     if(!page)throw new Error('Page not found');
-    const initialRecords=await pageInitialRecords(actor.tenant_id,actor.user_id,page.page);
     res.setHeader('Cache-Control','private, no-store');
     res.setHeader('Vary','Authorization, Cookie');
-    res.json({page:page.page,initialRecords});
+    res.json({page:page.page});
   }));
   app.get('/api/metadata/objects',route(async(req,res)=>{
     const actor=req.actor!;

@@ -1,6 +1,6 @@
 export type RecordFilterOperator =
   | 'eq' | 'ne' | 'lt' | 'lte' | 'gt' | 'gte'
-  | 'contains' | 'startsWith' | 'includes' | 'excludes' | 'in';
+  | 'contains' | 'startsWith' | 'includes' | 'excludes' | 'in' | 'isBlank' | 'isNotBlank';
 
 export type RecordFilter = {
   field: string;
@@ -23,7 +23,7 @@ export type RecordCursor = {
 
 const apiName = /^[A-Za-z][A-Za-z0-9_]*$/;
 const operators = new Set<RecordFilterOperator>([
-  'eq', 'ne', 'lt', 'lte', 'gt', 'gte', 'contains', 'startsWith', 'includes', 'excludes', 'in',
+  'eq', 'ne', 'lt', 'lte', 'gt', 'gte', 'contains', 'startsWith', 'includes', 'excludes', 'in', 'isBlank', 'isNotBlank',
 ]);
 const typedColumns: Record<string, { column: string; cast: string }> = {
   number: { column: 'value_number', cast: 'numeric' },
@@ -100,6 +100,8 @@ export function parseRecordFilters(raw: string | undefined): RecordFilter[] {
         (typeof filter.value !== 'string' && !Array.isArray(filter.value)) ||
         (Array.isArray(filter.value) && filter.value.some(value => typeof value !== 'string')))
       throw new Error('Invalid record filter');
+    if((filter.operator==='isBlank'||filter.operator==='isNotBlank')&&filter.value!=='')
+      throw new Error('Blank filters require an empty value');
     return {
       field: filter.field,
       operator: filter.operator as RecordFilterOperator,
@@ -169,6 +171,18 @@ export function compileRecordFilters(
     const typed = sourceType ? typedColumns[sourceType] : undefined;
     const fieldParameter = `$${firstParameter + parameters.length}`;
     parameters.push(filter.field);
+    if(filter.operator==='isBlank'||filter.operator==='isNotBlank'){
+      if(filter.value!=='')throw new Error('Blank filters require an empty value');
+      const hasValue=`COALESCE(fv.value_text,fv.reference_record_id::text,'')<>''`;
+      const valuePredicate=filter.operator==='isBlank'
+        ?`NOT EXISTS(SELECT 1 FROM md_record_values fv WHERE fv.tenant_id=r.tenant_id
+          AND fv.record_id=r.id AND fv.object_api=r.object_api AND fv.field_api=${fieldParameter}
+          AND ${hasValue})`
+        :`EXISTS(SELECT 1 FROM md_record_values fv WHERE fv.tenant_id=r.tenant_id
+          AND fv.record_id=r.id AND fv.object_api=r.object_api AND fv.field_api=${fieldParameter}
+          AND ${hasValue})`;
+      return valuePredicate;
+    }
     const valueParameter = `$${firstParameter + parameters.length}`;
     // A date-only selection (or a relative period) denotes a whole local-calendar
     // date in UTC, including records with a time component on Date/Time fields.

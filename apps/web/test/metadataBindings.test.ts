@@ -11,6 +11,8 @@ import type {ObjectMetadata,FlowDefinitionMetadata} from '../src/core/metadata/D
 import {pageLayoutForRecord} from '../src/core/records/RecordWorkspace/recordMetadataUtils';
 import {declaredFlowOutputs,resolveFlowOutputBindings,encodeInputSource,decodeInputSource} from '../src/core/automation/FlowScreen/flowInputBindings';
 import {pageComponentRecordQuery,filterPageComponentRecords,bindPageStateProperties} from '../src/core/pages/PageRuntime/pageComponentBindings';
+import {compareMetadataValue} from '../src/core/metadata/Definitions/metadataValueComparison';
+import {supportedFilterOperators,isNumericFilterField,isBooleanFilterField} from '../src/core/records/RecordWorkspace/recordFilterMetadata';
 
 const object={id:'object-id',apiName:'RenamedObject',fields:[{id:'field-id',apiName:'RenamedPrice'}]} as ObjectMetadata;
 const flow={id:'flow-id',apiName:'RenamedFlow'} as FlowDefinitionMetadata;
@@ -38,10 +40,52 @@ test('dynamic related-record filter isolates current parent and blocks missing p
  assert.deepEqual(filterPageComponentRecords([{Cart:'a'}],definitions,fields,{pageState:{}}),[]);
  const context={pageState:{CurrentCartId:'cart-1'}};
  assert.deepEqual(pageComponentRecordQuery(definitions,fields,context),
-   {blocked:false,filter:{field:'Cart',value:'cart-1',related:true}});
+   {blocked:false,filter:{field:'Cart',value:'cart-1',related:true},
+    filters:[{field:'Cart',operator:'eq',value:'cart-1'}],filterLogic:undefined,serverFilterable:true});
  assert.deepEqual(filterPageComponentRecords(
    [{Cart:'cart-1',Id:'line-1'},{Cart:'cart-2',Id:'line-2'}],definitions,fields,context),
    [{Cart:'cart-1',Id:'line-1'}]);
+});
+test('numeric and date filters support inclusive comparisons and blank checks',()=>{
+ const fields=[
+  {apiName:'Amount',label:'Amount',dataType:'Currency'},
+  {apiName:'DueDate',label:'Due Date',dataType:'Date'},
+  {apiName:'Summary',label:'Summary',dataType:'Text'}
+ ] as any;
+ const records=[
+  {Amount:10,DueDate:'2026-10-28',Summary:''},
+  {Amount:11,DueDate:'2026-10-29',Summary:'Ready'},
+  {Amount:12,DueDate:'2026-10-30',Summary:null}
+ ];
+ assert.deepEqual(filterPageComponentRecords(records,
+  [{field:'Amount',operator:'Greater Than or Equal',value:'11'}],fields),records.slice(1));
+ assert.deepEqual(filterPageComponentRecords(records,
+  [{field:'DueDate',operator:'Less Than or Equal',value:'2026-10-29'}],fields),records.slice(0,2));
+ assert.deepEqual(filterPageComponentRecords(records,
+  [{field:'Summary',operator:'Is Blank',value:''}],fields),[records[0],records[2]]);
+ assert.deepEqual(filterPageComponentRecords(records,
+  [{field:'Summary',operator:'Is Not Blank',value:''}],fields),[records[1]]);
+});
+test('existing empty-string Equals and Not Equals semantics are preserved',()=>{
+ assert.equal(compareMetadataValue('','Equals',''),true);
+ assert.equal(compareMetadataValue('','Not Equals','x'),true);
+ assert.equal(compareMetadataValue('','Contains',''),true);
+ assert.equal(compareMetadataValue(null,'Equals',''),false);
+ assert.equal(compareMetadataValue(null,'Is Blank',''),true);
+});
+test('filter operators unwrap formula return types and compare multi-select values as sets',()=>{
+ const currency={apiName:'Amount',label:'Amount',dataType:'Formula(Currency)'} as any;
+ const checkbox={apiName:'Active',label:'Active',dataType:'Formula(Checkbox)'} as any;
+ const multi={apiName:'Tags',label:'Tags',dataType:'Multi-Select Picklist'} as any;
+ assert.equal(isNumericFilterField(currency),true);
+ assert.equal(isBooleanFilterField(checkbox),true);
+ assert.ok(supportedFilterOperators(currency).includes('Greater Than or Equal'));
+ assert.ok(supportedFilterOperators(multi).includes('Includes'));
+ assert.equal(compareMetadataValue('Red;Blue','Includes','Blue'),true);
+ assert.equal(compareMetadataValue('Red;Blue','Includes','lu'),false);
+ assert.equal(compareMetadataValue('Red;Blue','Excludes','Green'),true);
+ assert.equal(compareMetadataValue('Red;Blue','Excludes','Red'),false);
+ assert.equal(compareMetadataValue('10:45','Greater Than','09:30'),true);
 });
 test('Flow outputs can supply state filters, display values and downstream Flow inputs',()=>{
  assert.equal(encodeInputSource('Page State','CurrentCartId',[]),'$state.CurrentCartId');
@@ -246,6 +290,41 @@ test('Page Builder record filters support AND or OR without unsafe server prefil
   {field:'Category',operator:'Equals',value:'Featured'}
  ];
  const context={pageState:{status:'Active'}};
- assert.equal(pageComponentRecordQuery(dynamic,fields,context,'OR').filter,undefined);
+ const query=pageComponentRecordQuery(dynamic,fields,context,'OR');
+ assert.equal(query.filter,undefined);
+ assert.deepEqual(query.filters,[
+  {field:'Status',operator:'eq',value:'Active'},
+  {field:'Category',operator:'eq',value:'Featured'}
+ ]);
+ assert.equal(query.filterLogic,'1 OR 2');
+ assert.equal(query.serverFilterable,true);
  assert.deepEqual(filterPageComponentRecords(records,dynamic,fields,context,'OR'),records.slice(0,3));
+});
+test('record component queries translate supported filters and disable unsafe formula paging',()=>{
+ const fields=[
+  {apiName:'Status',label:'Status',dataType:'Text'},
+  {apiName:'Amount',label:'Amount',dataType:'Currency'},
+  {apiName:'Summary',label:'Summary',dataType:'Text'},
+  {apiName:'Calculated',label:'Calculated',dataType:'Formula(Currency)'}
+ ] as any;
+ const query=pageComponentRecordQuery([
+  {field:'Status',operator:'Contains',value:'active'},
+  {field:'Amount',operator:'Greater Than or Equal',value:'10'},
+  {field:'Summary',operator:'Is Blank',value:''}
+ ],fields,{},'AND');
+ assert.equal(query.blocked,false);
+ assert.deepEqual(query.filters,[
+  {field:'Status',operator:'contains',value:'active'},
+  {field:'Amount',operator:'gte',value:'10'},
+  {field:'Summary',operator:'isBlank',value:''}
+ ]);
+ assert.equal(query.filterLogic,'1 AND 2 AND 3');
+ assert.equal(query.serverFilterable,true);
+
+ const formula=pageComponentRecordQuery([
+  {field:'Calculated',operator:'Greater Than',value:'10'}
+ ],fields);
+ assert.equal(formula.blocked,false);
+ assert.equal(formula.filters,undefined);
+ assert.equal(formula.serverFilterable,false);
 });

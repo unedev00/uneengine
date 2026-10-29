@@ -1,4 +1,5 @@
-import {validateComponentContract,writeComponentContract,readComponentContract,type ComponentContract} from './component-contract-store.js';
+import {validateComponentContract,writeComponentContract,readComponentContract,readComponentContracts,type ComponentContract} from './component-contract-store.js';
+import {compileTenantComponent} from './component-library-compiler.js';
 import {requireAvailableMetadataName} from './metadata-name-guard.js';
 import type {SqlPersistence} from '../system-files/sql-persistence.js';
 import type {RbacEngine} from '../system-files/rbac-engine.js';
@@ -7,8 +8,9 @@ const validSurfaces=new Set(['page','dashboard','flow','platform']);
 type Input={apiName:string;label:string;description:string;surfaces:string[];
  resize:{defaultWidth:number;defaultHeight:number;minWidth:number;minHeight:number};
  jsxSource:string;cssSource:string;publicationStatus:'Draft'|'Published'} & ComponentContract;
-type VersionRow={version:number;state:'Draft'|'Published';properties:Omit<Input,'publicationStatus'>;
- created_at:Date;published_version:number|null};
+type VersionRow={component_api:string;version:number;state:'Draft'|'Published';
+ properties:Omit<Input,'publicationStatus'>;created_at:Date;current_version:number;
+ published_version:number|null};
 export class ComponentLibraryService{
  constructor(private readonly db:SqlPersistence,private readonly rbac:RbacEngine){}
  private validate(value:unknown):Input{
@@ -39,27 +41,50 @@ export class ComponentLibraryService{
    jsxSource:p.jsxSource,cssSource:p.cssSource,
    publicationStatus:p.publicationStatus as Input['publicationStatus']};
  }
- private view(api:string,row:VersionRow){
-  return {...row.properties,apiName:api,version:row.version,
+ private async view(row:VersionRow){
+  return {...row.properties,apiName:row.component_api,version:row.version,
    status:row.state,publishedVersion:row.published_version,
    updatedAt:new Date(row.created_at).toISOString(),
-   compiledJs:'',scopedCss:''};
+   compiledJs:await compileTenantComponent(row.properties.jsxSource),
+   scopedCss:row.properties.cssSource};
  }
  async list(tenant:string,user:string){
   await this.rbac.require(tenant,user,'ComponentDefinition','read');
-  const {rows}=await this.db.query<VersionRow&{component_api:string}>(`
-   SELECT h.component_api,v.version,v.state,v.properties,v.created_at,h.published_version
+  const {rows}=await this.db.query<VersionRow>(`
+   SELECT h.component_api,h.current_version,h.published_version,
+    v.version,v.state,v.properties,v.created_at
    FROM md_component_library_heads h
    JOIN md_component_definitions d ON d.tenant_id=h.tenant_id AND d.api_name=h.component_api
    JOIN md_component_library_versions v ON v.tenant_id=h.tenant_id AND v.component_api=h.component_api
-    AND v.version=h.current_version
    WHERE h.tenant_id=$1 AND d.enabled=true ORDER BY h.component_api`,[tenant]);
-  return Promise.all(rows.map(async row=>({...this.view(row.component_api,row),
-   ...await readComponentContract(this.db,tenant,row.component_api,row.version)})));
+  const grouped=new Map<string,VersionRow[]>();
+  for(const row of rows)grouped.set(row.component_api,[...(grouped.get(row.component_api)??[]),row]);
+  return Promise.all([...grouped.values()].map(async versions=>{
+   const head=versions[0]!;
+   const current=versions.find(row=>row.version===head.current_version);
+   if(!current)throw Error(`Current component version ${head.component_api} was not found`);
+   const published=head.published_version===null?undefined:
+    versions.find(row=>row.version===head.published_version);
+   const primary=await this.view(published??current);
+   const contracts=await readComponentContracts(this.db,tenant,head.component_api,versions.map(row=>row.version));
+   const currentView=current===published?undefined:await this.view(current);
+   const currentContract=current===published?{}:contracts.get(current.version)??{};
+   const revisions=[...versions].sort((a,b)=>b.version-a.version).map(row=>({
+    ...row.properties,apiName:row.component_api,version:row.version,status:row.state,
+    publishedVersion:row.published_version,updatedAt:new Date(row.created_at).toISOString(),
+    compiledJs:'',scopedCss:row.properties.cssSource,...contracts.get(row.version)
+   }));
+   return {...primary,...contracts.get(primary.version),
+    revisions:revisions.map(({version,label,description,surfaces,resize,propertyDefinitions,jsxSource,
+      cssSource,compiledJs,scopedCss,updatedAt})=>({version,label,description,surfaces,resize,
+       propertyDefinitions,jsxSource,cssSource,compiledJs,scopedCss,updatedAt})),
+    ...(currentView?{pendingDraft:{...currentView,...currentContract}}:{})};
+  }));
  }
  async save(tenant:string,user:string,value:unknown,existing?:string){
   await this.rbac.require(tenant,user,'ComponentDefinition',existing?'manage':'create');
   const p=this.validate(value);
+  await compileTenantComponent(p.jsxSource);
   if(existing!==undefined&&(!apiName.test(existing)||existing!==p.apiName))
    throw Error('Component identity cannot change');
   const state=p.publicationStatus;
@@ -96,7 +121,7 @@ export class ComponentLibraryService{
    await writeComponentContract(client,tenant,p.apiName,next,contract,locked.rows[0].current_version);
    return next;
   });
-  return (await this.list(tenant,user)).find(x=>x.apiName===p.apiName&&x.version===row);
+  return (await this.list(tenant,user)).find(x=>x.apiName===p.apiName);
  }
  async publish(tenant:string,user:string,api:string,restoreVersion?:number){
   await this.rbac.require(tenant,user,'ComponentDefinition','manage');

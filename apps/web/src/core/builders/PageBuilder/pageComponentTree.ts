@@ -3,6 +3,26 @@ import { rawLayoutParentId } from '../../pages/TemplatePageRuntime/pageComponent
 
 export type ComponentClipboard = { rootId: string; components: PageComponentMetadata[] };
 
+export function remapComponentInteractionTargets<T extends PageComponentMetadata>(
+  components:readonly T[],ids:ReadonlyMap<string,string>
+):T[]{
+  return components.map(component=>{
+    const raw=component.properties.pagePropertyContract;
+    if(!raw||typeof raw!=='object'||Array.isArray(raw))return component;
+    const envelope=raw as Record<string,unknown>,interactions=envelope.interactions;
+    if(!Array.isArray(interactions))return component;
+    const next=interactions.map(interaction=>{
+      if(!interaction||typeof interaction!=='object'||Array.isArray(interaction))return interaction;
+      const targetId=(interaction as Record<string,unknown>).targetComponentId;
+      const replacement=typeof targetId==='string'?ids.get(targetId):undefined;
+      return replacement?{...interaction as Record<string,unknown>,targetComponentId:replacement}:interaction;
+    });
+    if(next.every((interaction,index)=>interaction===interactions[index]))return component;
+    return {...component,properties:{...component.properties,
+      pagePropertyContract:{...envelope,interactions:next}}};
+  });
+}
+
 /** Snapshot the selected component and every descendant, in existing render order. */
 export function copyComponentTree(
   components: readonly PageComponentMetadata[], rootId: string
@@ -51,7 +71,7 @@ export function cloneComponentTree(
         : undefined
     };
   });
-  return { rootId: ids.get(snapshot.rootId)!, components: cloned };
+  return { rootId: ids.get(snapshot.rootId)!, components: remapComponentInteractionTargets(cloned,ids) };
 }
 
 /** Dropping into a tab also establishes the selected tab, not just parentId. */

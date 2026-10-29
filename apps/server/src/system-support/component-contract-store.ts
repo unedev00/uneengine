@@ -1,7 +1,9 @@
 import type {PoolClient} from 'pg';
 import {encodeMetadataValue,decodeMetadataValues,type MetadataValueRow} from '../system-files/component-runtime.js';
 import {availableComponentSettings,type PropertyDevice,validateComponentDefinitions,validateComponentSettings,resolveComponentSettings,isPropertyRecord,type ComponentSettingDefinition} from './component-property-contract.js';
-export type ComponentContract={propertyDefinitions?:ComponentSettingDefinition[];eventDefinitions?:Array<{apiName:string;label:string}>};
+export type ComponentEventPayloadField={apiName:string;label:string;kind:'TEXT'|'NUMBER'|'BOOLEAN'|'OBJECT';fields?:ComponentEventPayloadField[]};
+export type ComponentEventDefinition={apiName:string;label:string;payloadFields?:ComponentEventPayloadField[]};
+export type ComponentContract={propertyDefinitions?:ComponentSettingDefinition[];eventDefinitions?:ComponentEventDefinition[]};
 export function validateComponentContract(value:Record<string,unknown>):ComponentContract{
  const contract:ComponentContract={};
  if(value.propertyDefinitions!==undefined){
@@ -11,11 +13,26 @@ export function validateComponentContract(value:Record<string,unknown>):Componen
  }
  if(value.eventDefinitions!==undefined){
   const events=value.eventDefinitions;
-  if(!Array.isArray(events)||events.length>100||events.some(e=>!e||typeof e!=='object'||
+  const validPayloadFields=(raw:unknown,depth=0):raw is ComponentEventPayloadField[]=>{
+   if(!Array.isArray(raw)||raw.length>20||depth>3)return false;
+   const names=new Set<string>();
+   return raw.every(field=>{
+    if(!field||typeof field!=='object'||Array.isArray(field))return false;
+    const item=field as Record<string,unknown>;
+    if(typeof item.apiName!=='string'||!/^[A-Za-z][A-Za-z0-9_]{0,127}$/.test(item.apiName)
+      ||names.has(item.apiName)||typeof item.label!=='string'||!item.label.trim()
+      ||item.label.length>200||!['TEXT','NUMBER','BOOLEAN','OBJECT'].includes(String(item.kind)))return false;
+    names.add(item.apiName);
+    if(item.kind==='OBJECT')return validPayloadFields(item.fields,depth+1);
+    return item.fields===undefined;
+   });
+  };
+  if(!Array.isArray(events)||events.length>100||events.some(e=>!e||typeof e!=='object'||Array.isArray(e)||
    typeof e.apiName!=='string'||!/^[A-Za-z][A-Za-z0-9_]{0,127}$/.test(e.apiName)||
-   typeof e.label!=='string'||!e.label.trim()||e.label.length>200)||new Set(events.map(e=>e.apiName)).size!==events.length)
+   typeof e.label!=='string'||!e.label.trim()||e.label.length>200||
+   e.payloadFields!==undefined&&!validPayloadFields(e.payloadFields))||new Set(events.map(e=>e.apiName)).size!==events.length)
    throw Error('Invalid component events');
-  contract.eventDefinitions=events;
+  contract.eventDefinitions=events as ComponentEventDefinition[];
  }
  return contract;
 }
@@ -23,6 +40,16 @@ export async function readComponentContract(client:Pick<PoolClient,'query'>,tena
  const {rows}=await client.query<MetadataValueRow>(`SELECT property_path,value_kind,value_text
   FROM md_component_library_contract_properties WHERE tenant_id=$1 AND component_api=$2 AND version=$3`,[tenant,api,version]);
  return decodeMetadataValues(rows) as ComponentContract;
+}
+export async function readComponentContracts(client:Pick<PoolClient,'query'>,tenant:string,api:string,
+ versions:readonly number[]):Promise<Map<number,ComponentContract>>{
+ if(!versions.length)return new Map();
+ const {rows}=await client.query<MetadataValueRow&{version:number}>(`SELECT version,property_path,value_kind,value_text
+  FROM md_component_library_contract_properties
+  WHERE tenant_id=$1 AND component_api=$2 AND version=ANY($3::int[])`,[tenant,api,[...versions]]);
+ const byVersion=new Map<number,MetadataValueRow[]>();
+ for(const row of rows)byVersion.set(row.version,[...(byVersion.get(row.version)??[]),row]);
+ return new Map(versions.map(version=>[version,decodeMetadataValues(byVersion.get(version)??[]) as ComponentContract]));
 }
 export async function writeComponentContract(client:Pick<PoolClient,'query'>,tenant:string,api:string,version:number,contract:ComponentContract,previous?:number){
  // Omitted keys mean retain; explicit [] means clear. Restore copies the original version.

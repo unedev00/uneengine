@@ -6,7 +6,9 @@ export const conditionSettings:ComponentSettingDefinition[]=[
  {...text('expression','Condition expression (e.g. 1 AND (2 OR 3))'),maxLength:160},
  {propertyKey:'conditions',label:'Conditions',kind:'COLLECTION',minItems:1,maxItems:20,fields:[
   {...choice('source','Source',['Device','Record Field','Record Type','User Profile','Record Permission']),required:true},
-  text('fieldApiName','Record field'),{...choice('operator','Comparison',['Equals','Not Equals','Contains','Greater Than','Less Than']),required:true},text('value','Value')
+ text('fieldApiName','Record field'),{...choice('operator','Comparison',['Equals','Not Equals','Contains',
+  'Greater Than','Greater Than or Equal','Less Than','Less Than or Equal','Is Blank','Is Not Blank',
+  'Includes','Excludes']),required:true},text('value','Value')
  ]}
 ];
 /** Reusable schema fragments; consumers opt in only when they implement the behaviour.
@@ -37,7 +39,9 @@ export const pageBehaviorSchemas:Record<string,ComponentSettingDefinition>={
  ]},
  interactions:{propertyKey:'interactions',label:'Component interactions',kind:'COLLECTION',maxItems:100,fields:[
   text('event','Source event',true),text('targetComponentId','Target component',true),text('targetProperty','Target property',true),
-  {...choice('source','Value source',['Event','PageState','Literal']),required:true},text('sourceKey','Source key'),text('value','Literal value')
+  {...choice('source','Value source',['Event','PageState','Literal']),required:true},
+  {...choice('valueType','Literal type',['Text','Number','Boolean','Null']),defaultValue:'Text'},
+  text('sourceKey','Source key'),text('value','Literal value')
  ]}
 };
 export const recordFieldSettings:ComponentSettingDefinition[]=[

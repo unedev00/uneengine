@@ -1,13 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
-import {fileURLToPath} from 'node:url';
+import {loadComponentCatalog} from '../../../scripts/component-catalog.mjs';
 import {
   groupedPresentationProperties, isPresentationProperty, presentationValue
 } from '../src/core/builders/ComponentProperties/presentationPropertyModel.mjs';
 
-const component = name => JSON.parse(readFileSync(
-  fileURLToPath(new URL('../src/one/'+name+'/component.json', import.meta.url)), 'utf8'));
+const catalog=await loadComponentCatalog();
+const component = name => catalog.components.find(component=>component.apiName===name);
 const fields = name => groupedPresentationProperties(component(name).propertyDefinitions)
   .flatMap(group => group.definitions.map(definition => definition.propertyKey));
 
@@ -19,9 +18,9 @@ test('new UNE Input can edit its declared Text default in the Editing panel with
   assert.ok(fields('une_input').includes('allowTyping'));
 });
 
-test('UNE Button label and visual variants are available without adding technical settings', () => {
+test('UNE Button label and shared appearance are available without adding technical settings', () => {
   const names = fields('une_button');
-  for (const name of ['label','variant','width','height','radius']) assert.ok(names.includes(name), name);
+  for (const name of ['label','backgroundColor','width','height','radius']) assert.ok(names.includes(name), name);
   assert.ok(!names.includes('actionFlowApiName'));
 });
 
@@ -32,7 +31,7 @@ test('data binding, object fields, record collections and action configuration s
       'priceFieldApiName','searchKey','cartTargetKey']) assert.ok(!names.includes(key), name+': '+key);
   }
   const cart = fields('une_cart');
-  for (const name of ['viewMode','basketTitle','currencyCode','emptyBasketText']) assert.ok(cart.includes(name), name);
+  for (const name of ['viewMode','basketTitle','currencyCode','emptyBasketText']) assert.ok(!cart.includes(name), name+' stays in the custom app');
 });
 
 test('reading defaults never mutates or binds the component', () => {

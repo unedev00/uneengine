@@ -4,7 +4,7 @@ import {resolveMetadataProperties} from '../../metadata/Definitions/metadataRefe
 import {useFlowStateChannel} from '../../automation/FlowScreen/useFlowStateChannel';
 import { presentPageRecords, type ChannelGrant } from '../../records/RecordWorkspace/recordPresentationAdapters';
 import TemplatePageRuntimeLayout from '../TemplatePageRuntime/TemplatePageRuntimeLayout';
-import { loadFlowScreenRecords } from '../../authentication/Client/authClient';
+import { loadFlowScreenRecordPage, loadFlowScreenRecords } from '../../authentication/Client/authClient';
 import { pageLayoutForRecord, compactLayoutForRecord, matchesLookupFilterGroup, relatedLookupFilterOperators, type RecordData } from '../../records/RecordWorkspace/recordMetadataUtils';
 import { formatRecordValue, parseCsvImport } from '../../records/RecordWorkspace/recordCsvUtils';
 import { initialScreenValues, screenFieldIsVisible } from '../../automation/FlowScreen/flowScreenRuntimeUtils';
@@ -82,10 +82,10 @@ import RegisteredComponent from '../../components/RegisteredComponent/Registered
 import { findRegisteredComponent } from '../../components/Registry/componentRegistryLookup';
 import PageRouteDirectory from '../PageRouteDirectory/PageRouteDirectory';
 import { isComponentVisible } from '../../components/Properties/componentVisibility';
-import {behaviorValidation,behaviorAction,behaviorAppearance,behaviorInteractions,behaviorTabs,pageBehaviors} from './pageBehaviorRuntime';
+import {behaviorValidation,behaviorAction,behaviorAppearance,behaviorInteractions,behaviorTabs,behaviorTabForChild,pageBehaviors} from './pageBehaviorRuntime';
 import { canNestComponent, componentVisualStyle, directChildren, isLayoutType, isDescendantOf, layoutTypes } from '../TemplatePageRuntime/pageComponentLayout';
 import { isCanvasLocked, wrapCanvasComponent, ungroupCanvasComponent } from '../../builders/PageBuilder/canvasInteractions';
-import { filterPageComponentRecords, pageComponentRecordQuery, bindPageStateProperties, needsMetadataComponentRuntime, resolvePageStatePath } from './pageComponentBindings';
+import { filterPageComponentRecords, pageComponentRecordQuery,pageComponentRelatedQuery, bindPageStateProperties, needsMetadataComponentRuntime, resolvePageStatePath } from './pageComponentBindings';
 import {filterRelatedRecords} from './filterRelatedRecords.mjs';
 import {resolveMentionProperties} from '../../../one/OneSmartFieldInput/smartFieldMentions';
 import { explicitMentionRecordId, useRelationshipMentionContext } from '../../records/RecordFormDialog/useRelationshipMentionContext';
@@ -244,7 +244,7 @@ function RuntimeReportChart({ report, objects, recordContext }: {
 }
 
 function MetadataBoundPageComponent({
-  definition, component, objects, apps, pages, currentAppId, pageSessionKey, reports, availableFlows, formFactor, onNavigate, onLaunchFlow, disableActions = false, defaultObjectApiName = '', recordId = '', initialRecordsByObject, children
+  definition, component, objects, apps, pages, currentAppId, pageSessionKey, reports, availableFlows, formFactor, onNavigate, onLaunchFlow, disableActions = false, defaultObjectApiName = '', recordId = '', children
 }: {
   definition: LibraryComponentMetadata;
   component: PageComponentMetadata;
@@ -262,7 +262,6 @@ function MetadataBoundPageComponent({
   disableActions?: boolean;
   defaultObjectApiName?: string;
   recordId?: string;
-  initialRecordsByObject?: Record<string, Record<string, unknown>[]>;
   children?: ReactNode;
 }) {
   const properties = resolveMetadataProperties({...component.properties,objectApiName:component.properties.objectApiName||defaultObjectApiName},objects,availableFlows);
@@ -286,10 +285,8 @@ function MetadataBoundPageComponent({
   // Never grants data permissions or persists cross-tenant information.
   const [pageState, setPageState] = useState<Record<string, unknown>>({});
   const pendingFlowOutputs=useRef(new Map<string,{flowApiName:string;mappings:Record<string,unknown>}>());
-  const initialRecordsConsumed=useRef(false);
   useEffect(() => {
     setPageState({});
-    initialRecordsConsumed.current=false;
     const sync = (event: Event) => {
       const detail=(event as CustomEvent<{pageSessionKey:string;key:string;value:unknown}>).detail;
       if(detail?.pageSessionKey !== pageSessionKey || !/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(detail.key))return;
@@ -336,6 +333,9 @@ function MetadataBoundPageComponent({
   const stateChannel = useFlowStateChannel(properties, sessionId, apiRequest, disableActions === true);
   const [records, setRecords] = useState<Record<string, unknown>[]>([]);
   const [recordsForQueryKey, setRecordsForQueryKey] = useState('');
+  const [recordTotal,setRecordTotal]=useState(0);
+  const [recordOffset,setRecordOffset]=useState(0);
+  const recordPageSize=100;
   const [contactRecords, setContactRecords] = useState<Record<string, unknown>[]>([]);
   const [dataError, setDataError] = useState('');
   const [dataErrorForQueryKey, setDataErrorForQueryKey] = useState('');
@@ -362,39 +362,38 @@ function MetadataBoundPageComponent({
   }, [pageSessionKey, sessionId]);
   const fields = objects.find((item) => item.apiName === objectApiName)?.fields ?? [];
   const recordQuery=pageComponentRecordQuery(properties.filters,fields,{pageState,recordId,sessionId},properties.filterLogic==='OR'?'OR':'AND');
-  const recordQueryKey=JSON.stringify(recordQuery);
+  const relatedKey=String(properties.relatedFilterKey??'');
+  const relatedField=String(properties.relatedFieldApiName??'');
+  const selectedId=relatedKey?pageState[relatedKey]:undefined;
+  const relatedQuery=pageComponentRelatedQuery(properties,fields,selectedId);
+  const recordQueryKey=JSON.stringify([recordQuery,relatedQuery]);
+  useEffect(()=>setRecordOffset(0),[objectApiName,recordQueryKey]);
   useEffect(() => {
     let active = true;
     let requestId = 0;
     let pending = false;
     setRecords([]);
     setRecordsForQueryKey('');
+    setRecordTotal(0);
     setDataError('');
     setDataErrorForQueryKey('');
-    if (!objectApiName || recordQuery.blocked) {
+    if (!objectApiName || recordQuery.blocked || relatedQuery.blocked) {
       setDataLoading(false);
       return () => { active = false; };
-    }
-    const initialRecords = !recordQuery.filter
-      ? initialRecordsByObject?.[objectApiName]
-      : undefined;
-    const useInitialRecords = initialRecords !== undefined && !initialRecordsConsumed.current;
-    if (useInitialRecords) {
-      initialRecordsConsumed.current=true;
-      setRecords(initialRecords);
-      setRecordsForQueryKey(recordQueryKey);
-      setDataError('');
-      setDataErrorForQueryKey('');
-      setDataLoading(false);
     }
     const refresh = async () => {
       if (pending || !active) return;
       pending = true;
       const request = ++requestId;
       try {
-        const rows = await loadFlowScreenRecords(objectApiName,recordQuery.filter);
+        const page=await loadFlowScreenRecordPage(objectApiName,{
+          limit:recordPageSize,offset:recordOffset,
+          filter:relatedQuery.filter??(recordQuery.serverFilterable?recordQuery.filter:undefined),
+          filters:recordQuery.filters,filterLogic:recordQuery.filterLogic
+        });
         if (active && request === requestId) {
-          setRecords(rows);
+          setRecords(page.records);
+          setRecordTotal(page.total);
           setRecordsForQueryKey(recordQueryKey);
           setDataError('');
           setDataErrorForQueryKey('');
@@ -409,10 +408,8 @@ function MetadataBoundPageComponent({
         if (active && request === requestId) setDataLoading(false);
       }
     };
-    if (!useInitialRecords) {
-      setDataLoading(true);
-      void refresh();
-    }
+    setDataLoading(true);
+    void refresh();
     // The shared Object API remains the RBAC-enforced read source. Poll only
     // live conversation presenters, and only while the document is visible.
     const chatter = Boolean(properties.liveRefreshEnabled) && !disableActions;
@@ -431,7 +428,7 @@ function MetadataBoundPageComponent({
         document.removeEventListener('visibilitychange', onVisible);
       }
     };
-  }, [objectApiName, recordQueryKey, revision, properties.recordPresenterApiName, properties.liveRefreshEnabled, disableActions, initialRecordsByObject]);
+  }, [objectApiName, recordQueryKey, recordOffset, revision, properties.recordPresenterApiName, properties.liveRefreshEnabled, disableActions]);
   useEffect(() => {
     setChannelAccess({userId:'',viewAll:false,grants:[],eligibleAssignees:[]});
     const accessPath=String(properties.channelAccessPath??'');
@@ -483,10 +480,8 @@ function MetadataBoundPageComponent({
   })).filter(contact => contact.id && contact.phone);
   // Data from the previous object/filter must not flash while the new query is pending.
   const currentQueryRecords = recordsForQueryKey === recordQueryKey ? records : [];
-  const filteredRecords=filterPageComponentRecords(currentQueryRecords,properties.filters,fields,{pageState,recordId,sessionId},properties.filterLogic==='OR'?'OR':'AND');
-  const relatedKey=String(properties.relatedFilterKey??'');
-  const relatedField=String(properties.relatedFieldApiName??'');
-  const selectedId=relatedKey?pageState[relatedKey]:undefined;
+  const filteredRecords=recordQuery.filters?currentQueryRecords:filterPageComponentRecords(
+    currentQueryRecords,properties.filters,fields,{pageState,recordId,sessionId},properties.filterLogic==='OR'?'OR':'AND');
   const visibleRecords=relatedKey?filterRelatedRecords(filteredRecords,selectedId,relatedField):filteredRecords;
   const mentionContext = useRelationshipMentionContext(objects, mentionRootObjectApiName,
     recordId || explicitMentionRecordId(properties), properties, apiRequest, revision);
@@ -735,9 +730,25 @@ function MetadataBoundPageComponent({
       // Multi-row components resolve their per-row values inside their own renderer.
       ...(visibleRecords.length===1 ? {record:visibleRecords[0]} : {}),
       ...(objectApiName ? { records: visibleRecords } : {}),
+      ...(objectApiName ? {recordPagination:{
+        limit:recordPageSize,offset:recordOffset,total:recordTotal,
+        hasPrevious:recordOffset>0,hasNext:recordOffset+recordPageSize<recordTotal,
+        available:recordQuery.serverFilterable
+      }} : {}),
       ...presented,
       ...(contactsObjectApiName ? {contactChoices} : {})
     }} />
+    {objectApiName&&recordQuery.serverFilterable&&recordTotal>recordPageSize&&<nav
+      className="records-pagination" aria-label={component.label+' record pages'}>
+      <button type="button" className="btn" disabled={dataLoading||recordOffset===0}
+        onClick={()=>setRecordOffset(offset=>Math.max(0,offset-recordPageSize))}>Previous</button>
+      <span>{recordOffset+1}–{Math.min(recordOffset+recordPageSize,recordTotal)} of {recordTotal}</span>
+      <button type="button" className="btn" disabled={dataLoading||recordOffset+recordPageSize>=recordTotal}
+        onClick={()=>setRecordOffset(offset=>offset+recordPageSize)}>Next</button>
+    </nav>}
+    {objectApiName&&!recordQuery.serverFilterable&&recordTotal>recordPageSize&&<p role="status">
+      Results are incomplete: this filter was applied only to the first 100 fetched records. Additional matches may exist; pagination is unavailable for this filter combination.
+    </p>}
   </div>;
 }
 
@@ -785,10 +796,9 @@ function LightningAppRuntime({
   const [pageLoad, setPageLoad] = useState<{
     routeKey: string;
     page: LightningPageMetadata | null;
-    initialRecordsByObject: Record<string, Record<string, unknown>[]>;
     error: string;
     loading: boolean;
-  }>({ routeKey: '', page: null, initialRecordsByObject: {}, error: '', loading: true });
+  }>({ routeKey: '', page: null, error: '', loading: true });
   // Never render a page/error produced for a different route. Effects run after
   // render, so the route-key check closes the stale-state frame before the
   // request effect has had a chance to reset state.
@@ -803,15 +813,20 @@ function LightningAppRuntime({
   useEffect(()=>{
     if(!page)return;
     const session=appId+':'+page.apiName;
-    const targets=page.components.map(item=>({id:item.id,propertyDefinitions:item.type.startsWith('Custom:')
-      ?findRegisteredComponent(libraryComponents,item.type.slice('Custom:'.length),'page')?.propertyDefinitions:undefined}));
+    const targets=page.components.map(item=>{
+      const definition=item.type.startsWith('Custom:')
+        ?findRegisteredComponent(libraryComponents,item.type.slice('Custom:'.length),'page'):undefined;
+      return {id:item.id,propertyDefinitions:definition?.propertyDefinitions,
+        componentVersion:definition?.version};
+    });
     const onInteraction=(event:Event)=>{
       const detail=(event as CustomEvent<{pageSessionKey:string;componentId:string;event:string;value:unknown}>).detail;
       if(detail?.pageSessionKey!==session||typeof detail.componentId!=='string'||typeof detail.event!=='string')return;
       const source=page.components.find(item=>item.id===detail.componentId);
       if(!source)return;
       const updates=behaviorInteractions(source.properties,detail.event,detail.value,layoutState,targets,
-        requestedLayout);
+        requestedLayout,source.type.startsWith('Custom:')
+          ?findRegisteredComponent(libraryComponents,source.type.slice('Custom:'.length),'page')?.eventDefinitions:undefined);
       if(!updates.length)return;
       setInteractionOverrides(previous=>{
         const next={...previous};
@@ -835,15 +850,14 @@ function LightningAppRuntime({
   },[appId,page?.apiName]);
   useEffect(() => {
     let active = true;
-    setPageLoad({ routeKey, page: null, initialRecordsByObject: {}, error: '', loading: true });
+    setPageLoad({ routeKey, page: null, error: '', loading: true });
     const endpoint = pageApiName
       ? `/apps/${encodeURIComponent(appId)}/pages/${encodeURIComponent(pageApiName)}?formFactor=${requestedLayout}&viewportWidth=${viewportWidth}`
       : `/apps/${encodeURIComponent(appId)}/home-page?formFactor=${requestedLayout}&viewportWidth=${viewportWidth}`;
-    void apiRequest<{ page: LightningPageMetadata | null; initialRecords?: Record<string, Record<string, unknown>[]> }>(endpoint).then((payload) => {
+    void apiRequest<{ page: LightningPageMetadata | null }>(endpoint).then((payload) => {
       if (active) setPageLoad({
         routeKey,
         page: payload.page,
-        initialRecordsByObject: payload.initialRecords ?? {},
         error: '',
         loading: false
       });
@@ -851,24 +865,12 @@ function LightningAppRuntime({
       if (active) setPageLoad({
         routeKey,
         page: null,
-        initialRecordsByObject: {},
         error: failure instanceof Error ? failure.message : 'Unable to load Lightning page',
         loading: false
       });
     });
     return () => { active = false; };
   }, [routeKey, appId, pageApiName, requestedLayout]);
-  useEffect(() => {
-    const invalidateInitialRecords = (event: Event) => {
-      const detail = (event as CustomEvent<{pageSessionKey:string}>).detail;
-      if (detail?.pageSessionKey !== appId + ':' + page?.apiName) return;
-      setPageLoad(current => current.routeKey === routeKey
-        ? { ...current, initialRecordsByObject: {} }
-        : current);
-    };
-    window.addEventListener('metadrive:page-flow-mutated', invalidateInitialRecords);
-    return () => window.removeEventListener('metadrive:page-flow-mutated', invalidateInitialRecords);
-  }, [appId, page?.apiName, routeKey]);
   useEffect(() => {
     setActiveTabs({});
   }, [page?.apiName]);
@@ -906,7 +908,7 @@ function LightningAppRuntime({
       const content = needsMetadataComponentRuntime(component.properties)
         ? <MetadataBoundPageComponent definition={definition} component={component} defaultObjectApiName={page.targetObject}
             objects={objects} apps={apps} pages={pages} currentAppId={appId} pageSessionKey={appId + ':' + page.apiName} reports={reports} availableFlows={availableFlows} formFactor={formFactor}
-            initialRecordsByObject={pageLoad.initialRecordsByObject} children={nestedChildren}
+            children={nestedChildren}
             onNavigate={onNavigate} onLaunchFlow={onLaunchFlow} />
         : <RegisteredComponent definition={definition} layoutTransparent props={{
             ...component.properties, ...componentLayoutProps(component.properties, layoutDevice),
@@ -970,15 +972,15 @@ function LightningAppRuntime({
       </section>;
     }
     if (component.type === 'Tabs') {
-      const tabs = behaviorTabs(component.properties,Array.isArray(component.properties.tabs)
+      const configuredTabs=Array.isArray(component.properties.tabs)
         ? component.properties.tabs.filter((tab): tab is string => typeof tab === 'string')
-        : [],appVisibilityContext);
+        : [];
+      const tabs = behaviorTabs(component.properties,configuredTabs,appVisibilityContext);
       if(!tabs.length)return null;
       const selected = tabs.includes(activeTabs[component.id]) ? activeTabs[component.id] : tabs[0];
       const nested=childrenOf(page.components,component.id);
       const selectedChildren=nested.filter(child=>
-        (typeof child.properties.tabLabel==='string'&&tabs.includes(child.properties.tabLabel)
-          ?child.properties.tabLabel:tabs[0])===selected);
+        behaviorTabForChild(child.properties.tabLabel,configuredTabs,tabs)===selected);
       // Legacy pages put a sibling with the same label under each tab.
       const legacy = nested.length===0 ? page.components.find((item) =>
         item.id !== component.id && isAppComponentVisible(item)
