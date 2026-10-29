@@ -44,6 +44,18 @@ trap rollback ERR
 bash "$SOURCE/scripts/oracle/backup-production-sql.sh"
 bash "$SOURCE/scripts/oracle/deploy-api.sh" "$SOURCE" "$SHA"
 API_ACTIVATED=1
+# Never publish the SQL-backed Page Builder frontend unless the API and
+# worker have been activated from this exact immutable release. A protected
+# endpoint returning HTTP 401 cannot prove that it exists, so do not mistake
+# unauthenticated HTTP responses for API readiness.
+api_release="$(systemctl show "$API" -p WorkingDirectory --value)"
+worker_release="$(systemctl show "$WORKER" -p WorkingDirectory --value)"
+[[ "$api_release" == "/opt/metadrive/releases/gh-$SHA" ]] ||
+  { echo "API release mismatch; frontend publication blocked" >&2; exit 1; }
+[[ "$worker_release" == "/opt/metadrive/releases/gh-$SHA" ]] ||
+  { echo "Worker release mismatch; frontend publication blocked" >&2; exit 1; }
+grep -q "api/metadata/builder-ribbon"   "$api_release/apps/server/dist-system/system-support/server.js" ||
+  { echo "SQL-backed builder ribbon API missing from active server release" >&2; exit 1; }
 FRONT_STARTED=1
 bash "$SOURCE/scripts/oracle/deploy-frontend.sh" "$SOURCE/apps/web/dist" "$SHA"
 systemctl is-active --quiet "$API"
