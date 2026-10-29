@@ -123,22 +123,7 @@ function ItemGrid({ p, rows }) {
     if (av!=null && bv!=null && Number.isFinite(na) && Number.isFinite(nb)) return na-nb;
     return String(av??"").localeCompare(String(bv??""));
   });
-  let formatter;
-  try {
-    if (p.showPrice !== false && priceField && p.currencyCode) {
-      formatter = new Intl.NumberFormat(undefined, {
-        style: "currency",
-        currency: p.currencyCode,
-      });
-    }
-  } catch {
-    return <div role="alert">Configure a valid display currency.</div>;
-  }
-  
-  const currency = (value) =>
-    Number.isFinite(Number(value))
-      ? formatter ? formatter.format(Number(value)) : view(value)
-      : view(value);
+  const currency = (value) => Number.isFinite(Number(value)) ? new Intl.NumberFormat().format(Number(value)) : view(value);
   // The universal density property and the card-specific override are both
   // supported; an explicitly authored card density wins for existing pages.
   const density = ["default", "compact", "comfortable", "image-focused", "spacious"].includes(p.cardDensity)
@@ -158,13 +143,13 @@ function ItemGrid({ p, rows }) {
     return Number.isFinite(number)&&number>=8&&number<=maximum?number:undefined;
   };
   const textStyleFor = (part) => {
-    const lineLimit = Number(p[part+"LineLimit"]);
+    const lineLimit = part==="value" ? 0 : Number(p[part+"LineLimit"]);
     const limit = Number.isInteger(lineLimit)&&lineLimit>0&&lineLimit<=12?lineLimit:0;
     const fontWeight = Number(p[part+"FontWeight"]);
-    const alignment = p[part+"TextAlign"];
+    const alignment = part==="value" ? undefined : p[part+"TextAlign"];
     return {
       fontSize:boundedSize(p[part+"FontSize"]),
-      color:typeof p[part+"Color"]==="string"&&p[part+"Color"]?p[part+"Color"]:undefined,
+      color:part==="value"?undefined:typeof p[part+"Color"]==="string"&&p[part+"Color"]?p[part+"Color"]:undefined,
       fontWeight:Number.isInteger(fontWeight)&&fontWeight>=100&&fontWeight<=900?fontWeight:undefined,
       textAlign:["left","center","right"].includes(alignment)?alignment:undefined,
       lineHeight:validLineHeight,
@@ -194,7 +179,7 @@ function ItemGrid({ p, rows }) {
     : undefined;
   return (
     <section style={{lineHeight:validLineHeight}}>
-      {p.showHeading !== false && <h3 className="one-heading" style={{ marginBottom: 12 }}>
+      {<h3 className="one-heading" style={{ marginBottom: 12 }}>
         {p.title || "Cards"}
       </h3>}
       <div
@@ -210,10 +195,10 @@ function ItemGrid({ p, rows }) {
           const image = p.imageExpression ? evaluateFieldExpression(p.imageExpression,r) : r?.[imageField],
             validImage =
               typeof image === "string" && (/^https:\/\//i.test(image) || /^asset:[0-9a-f-]{36}$/i.test(image));
-          const name = p.headingExpression ? evaluateFieldExpression(p.headingExpression,r) : view(r?.[titleField] ?? r?.Name ?? r?.name ?? "Record"),
+          const name = view(r?.[titleField] ?? r?.Name ?? r?.name ?? "Record"),
             price = r?.[priceField];
-          const badge = p.badgeExpression ? evaluateFieldExpression(p.badgeExpression,r) : badgeField ? String(r?.[badgeField] ?? "") : "";
-          const description = p.descriptionExpression ? evaluateFieldExpression(p.descriptionExpression,r) : descriptionField ? String(r?.[descriptionField] ?? "") : "";
+          const badge = badgeField ? String(r?.[badgeField] ?? "") : "";
+          const description = descriptionField ? String(r?.[descriptionField] ?? "") : "";
           const isFeatured = featuredField && (r?.[featuredField] === true || r?.[featuredField] === "true");
           const span = isFeatured ? Math.max(1, Math.min(count, Number(p.featuredColumnSpan) || 2)) : 1;
           const rowSpan = isFeatured ? Math.max(1, Math.min(6, Number(p.featuredRowSpan) || 1)) : 1;
@@ -259,7 +244,7 @@ function ItemGrid({ p, rows }) {
               : undefined,
             boxShadow: cardShadow,
           };
-          const hasSeparateAddButton=p.showAddIcon===true&&p.separateAddButton===true;
+          const hasSeparateAddButton=false;
           const addSelectedRecord=()=>{
             if(p.cartTargetKey&&p.pageSessionKey&&typeof window!=="undefined")
               window.dispatchEvent(new CustomEvent("metadrive:page-cart-add",{
@@ -331,18 +316,18 @@ function ItemGrid({ p, rows }) {
                   style={imageStyle}
                 />
               )}
-              {p.showImage !== false && !validImage && p.missingImageBehavior==="placeholder" && (
+              {false && p.showImage !== false && !validImage && (
                 <span className="md-product-image md-card-image-missing" style={imageStyle} role="img" aria-label="Image unavailable">No image</span>
               )}
               {badge && <span className="md-product-badge" style={{display:"inline-block",
-                padding:"3px 8px",borderRadius:999,background:p.badgeBackgroundColor||p.accentColor||"#E4002B",
+                padding:"3px 8px",borderRadius:999,background:p.badgeBackgroundColor||"#E4002B",
                 color:p.badgeTextColor||"#fff",
                 fontSize:boundedSize(p.badgeFontSize,48)??"0.75em",
                 fontWeight:[400,500,600,700].includes(Number(p.badgeFontWeight))?Number(p.badgeFontWeight):700}}>{badge.slice(0,120)}</span>}
               {p.showTitle !== false && (
                 <strong className="md-product-name" style={headingStyle}>{name}</strong>
               )}
-              {p.showDescription === true && description &&
+              {description &&
                 <small className="one-muted md-product-description" style={supportingStyle}>{description.slice(0,220)}</small>}
               {detailRows.length>0 && <dl className="md-card-detail-rows">
                 {detailRows.map((detail,index)=>{
@@ -358,7 +343,7 @@ function ItemGrid({ p, rows }) {
               {p.showPrice !== false && price != null && (
                 <span className="md-product-price" style={valueStyle}>{currency(price)}</span>
               )}
-              {p.showAddIcon === true && (hasSeparateAddButton
+              {false && (hasSeparateAddButton
                 ? <button type="button" className="md-card-add-icon" aria-label={"Add "+name}
                     onClick={event=>{event.stopPropagation();addSelectedRecord();}}>
                     ＋
