@@ -29,6 +29,7 @@ const isExcludedRibbonProperty=(key:string)=>
   ['fontFamily','fontStyle','textDecoration','theme'].includes(key)
   || /(?:ageRestriction|barcode)/i.test(key)
   || (/(?:ObjectApiName|SourceObjectApi|ObjectAPI)$/i.test(key) && key!=='objectApiName');
+const cardGridRetiredProperties=new Set(["accentColor","tone","descriptionExpression","emptyText","showDescription","valueTextAlign","missingImageBehavior","showAddIcon","showHeading","badgeExpression","cartTargetKey","currencyCode","headingExpression","separateAddButton","valueColor","valueLineLimit"]);
 const excluded=new Set(Array.from(definitionMap.keys()).filter(isExcludedRibbonProperty));
 const sections:Record<Tab,readonly string[]>={
   'Component Data':['Source','Fields','Filters','Records','Data integration'],
@@ -208,6 +209,7 @@ export default function UniversalRibbonInventory({tab,definition,componentId,pro
          Filter conditions
        </button>}
        {defs.map(def=>{
+         if(definition?.apiName==='une_item_grid'&&cardGridRetiredProperties.has(def.propertyKey))return null;
          // UNE Text no longer exposes the legacy palette; other UNE controls retain it.
          if(definition?.apiName==='une_text'&&def.propertyKey==='tone')return null;
          // Free-canvas geometry already has dedicated Width/Height controls.
