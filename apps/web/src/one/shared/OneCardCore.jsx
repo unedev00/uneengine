@@ -23,7 +23,8 @@ export default function OneCardCore({source,header,badge,props:p={},loadAsset,
  imageClassName="md-product-image",headerClassName="md-product-name",badgeClassName="md-product-badge"}){
  const showImage=p.showImage!==false;
  const valid=showImage&&imageUrl(source);
- const showHeader=p.headerBoxHeight===undefined||safeNum(p.headerBoxHeight,0,0,1200)>0;
+ const horizontal=p.imagePlacement==="left"||p.imagePlacement==="right";
+ const showHeader=horizontal||p.headerBoxHeight===undefined||safeNum(p.headerBoxHeight,0,0,1200)>0;
  const badgeEnabled=p.badgeVisible===undefined?Boolean(badge):p.badgeVisible===true&&(Boolean(badge)||designer);
  const placement=["top","left","right","bottom"].includes(p.imagePlacement)?p.imagePlacement:"top";
  const imageOrder=placement==="bottom"||placement==="right"?2:0;
@@ -43,7 +44,7 @@ export default function OneCardCore({source,header,badge,props:p={},loadAsset,
      }} role="img" aria-label="Image area">Image area</div>:null;
  const computedHeaderStyle={
    ...headerStyle,order:1,
-   ...(p.headerBoxHeight!==undefined?{height:safeNum(p.headerBoxHeight,0,0,1200),overflow:"hidden"}:{}),
+   ...(!horizontal&&p.headerBoxHeight!==undefined?{height:safeNum(p.headerBoxHeight,0,0,1200),overflow:"hidden"}:{}),
    ...(p.headerBorderColor?{border:"1px solid "+p.headerBorderColor}:{}),
    ...(p.headerAlignment?{textAlign:p.headerAlignment}:{}),
    ...(p.headerBold!==undefined?{fontWeight:p.headerBold?700:400}:{}),
@@ -51,7 +52,7 @@ export default function OneCardCore({source,header,badge,props:p={},loadAsset,
  };
  const badgeNode=badgeEnabled?<span className={badgeClassName} style={{
    display:"inline-block",padding:"3px 8px",borderRadius:999,
-   background:p.badgeBackgroundColor||p.accentColor||"#2563eb",
+   background:p.badgeBodyColor||p.badgeBackgroundColor||p.accentColor||"#2563eb",
    color:p.badgeTextColor||"#fff",
    fontWeight:p.badgeBold===false?400:700,
    fontSize:safeNum(p.badgeTextSize,12,0,60),
