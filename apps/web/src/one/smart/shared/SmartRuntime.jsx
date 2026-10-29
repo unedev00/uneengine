@@ -153,7 +153,7 @@ export default function SmartRuntime(p){
   <SmartCard p={p} record={r} key={r?.id??i}/>)}</div>;
  else if(name==="smart_calendar")content=<SmartCalendar p={p}/>;
  else if(name==="smart_tabs")content=<SmartTabs p={p} record={record} fire={fire}/>;
- }else if(name==="smart_navigation"){
+ else if(name==="smart_navigation"){
   const items=Array.isArray(p.items)&&p.items.length?p.items:p.textSource?[expression(p.textSource,record)]:[];
   content=<nav className="smart-navigation" style={{flexDirection:p.navigationDirection==="vertical"?"column":"row"}}>
    {items.map((item,i)=><button key={i} type="button" onClick={()=>{fire("click",item);if(p.onNavigate&&item?.target)p.onNavigate(item.target)}}>{text(item?.label??item)}</button>)}
