@@ -1,7 +1,7 @@
 import {createHash} from 'node:crypto';
 import type {PoolClient} from 'pg';
 import type {SqlPersistence} from '../system-files/sql-persistence.js';
-/** Canonical system component catalogue; legacy One references resolve through UNE compatibility. */
+/** Saved-instance compatibility keys only; the Core never seeds these globally. */
 export const UNE_COMPONENTS=[
   "une_image",
   "une_calendar",
@@ -38,7 +38,6 @@ export const UNE_COMPONENTS=[
   "une_chart",
   "une_option_groups"
 ] as const;
-export const UNE_INSERT_EXCLUDED=new Set(["une_alert","une_card","une_chart","une_choice","une_container","une_date_picker","une_document_viewer","une_drawer","une_form","une_grid","une_image","une_line_items","une_menu","une_metric","une_navigation","une_option_groups","une_progress","une_record_list","une_repeater","une_slot_picker","une_split_pane","une_table"]);
 export const UNE_SEED_VERSION='core-une-components-v6';
 /** Legacy compatibility identifiers; no new platform-wide registrations. */
 export async function seedFreshUneComponents(_client:Pick<PoolClient,'query'>,_tenantId:string){

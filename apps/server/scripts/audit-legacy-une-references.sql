@@ -19,9 +19,22 @@ WHERE d.api_name LIKE 'une\_%' ESCAPE '\'
   AND d.renderer_key='one-bundled:'||d.api_name
 ORDER BY d.tenant_id,d.api_name;
 
--- Replacements are audited by tenant/page/instance; these source identities
--- remain available for targeted rollback without rewriting old snapshots.
-SELECT tenant_id,surface,old_api,new_api,count(*) AS replaced_instances
-FROM md_legacy_une_component_replacements
-GROUP BY tenant_id,surface,old_api,new_api
-ORDER BY tenant_id,surface,old_api,new_api;
+-- Before the migration this table is absent. Use dynamic SQL so the same
+-- read-only audit can be run safely before and after deployment.
+DO $audit$
+DECLARE row_ record;
+BEGIN
+ IF to_regclass('md_legacy_une_component_replacements') IS NULL THEN
+   RAISE NOTICE 'No legacy UNE replacement log yet (migration not applied)';
+   RETURN;
+ END IF;
+ FOR row_ IN EXECUTE
+   'SELECT tenant_id,surface,old_api,new_api,count(*) AS replaced_instances
+    FROM md_legacy_une_component_replacements
+    GROUP BY tenant_id,surface,old_api,new_api
+    ORDER BY tenant_id,surface,old_api,new_api'
+ LOOP
+   RAISE NOTICE 'tenant=% surface=% old=% new=% instances=%',
+      row_.tenant_id,row_.surface,row_.old_api,row_.new_api,row_.replaced_instances;
+ END LOOP;
+END $audit$;
