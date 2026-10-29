@@ -92,6 +92,7 @@ export default function FlowInterviews({
           label="Pending Flow interviews" onOpen={item=>onOpenFlow(item.flowApiName)} openLabel="Open Flow"
           columns={[
             {apiName:'flow',label:'Flow',phoneRole:'title',render:item=>item.flowLabel},
+            {apiName:'version',label:'Version',render:item=>'Version '+item.versionNumber},
             {apiName:'state',label:'State',phoneRole:'badge',render:item=>interviewState(item)},
             {apiName:'user',label:'User',phoneRole:'subtitle',render:item=>item.userName},
             {apiName:'date',label:'Created',phoneRole:'trailing',render:item=>new Date(item.createdAt).toLocaleString()},
@@ -103,9 +104,9 @@ export default function FlowInterviews({
         {loading ? <div className="records-loading">Loading Flow interviews…</div>
           : interviews.length === 0 ? <div className="records-empty">There are no paused or waiting Flow interviews.</div>
             : <div className="records-table-wrap md-mobile-table-replaced"><table className="records-table">
-                <thead><tr><th>Flow</th><th>State</th><th>Running User</th><th>Record</th><th>Created</th><th>Resume / Expiry</th><th>Attempts</th><th>Actions</th></tr></thead>
+                <thead><tr><th>Flow</th><th>Version</th><th>State</th><th>Running User</th><th>Record</th><th>Created</th><th>Resume / Expiry</th><th>Attempts</th><th>Actions</th></tr></thead>
                 <tbody>{interviews.map((interview) => <tr key={interview.id}>
-                  <td><button className="text-action" type="button" onClick={() => onOpenFlow(interview.flowApiName)}>{interview.flowLabel}</button><small>Version {interview.versionNumber}</small></td>
+                  <td><button className="text-action" type="button" onClick={() => onOpenFlow(interview.flowApiName)}>{interview.flowLabel}</button></td><td>Version {interview.versionNumber}</td>
                   <td>{interviewState(interview)}</td>
                   <td>{interview.userName}</td>
                   <td>{interview.recordId ?? '—'}</td>

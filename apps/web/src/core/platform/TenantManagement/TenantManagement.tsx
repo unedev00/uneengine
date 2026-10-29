@@ -243,17 +243,18 @@ export default function TenantManagement({ request, permitted }: { request: Requ
           loading={loading}
           columns={[
             {apiName:'name',label:'Organisation',phoneRole:'title',render:item=>item.name},
+            {apiName:'tenantId',label:'Tenant ID',render:item=>item.tenantId},
             {apiName:'status',label:'Status',phoneRole:'badge',render:item=>item.status},
             {apiName:'users',label:'Users',phoneRole:'subtitle',render:item=>item.activeUserCount+' / '+item.userCount},
             {apiName:'created',label:'Created',phoneRole:'trailing',render:item=>shortDate(item.createdAt)}
           ]}/>
-        <div className="tenant-table-wrap md-mobile-table-replaced"><table className="tenant-table"><thead><tr><th>Organisation</th><th>Status</th><th>Users</th><th>Created</th></tr></thead>
+        <div className="tenant-table-wrap md-mobile-table-replaced"><table className="tenant-table"><thead><tr><th>Organisation</th><th>Tenant ID</th><th>Status</th><th>Users</th><th>Created</th></tr></thead>
           <tbody>{tenants.map((item) => <tr key={item.tenantId} className={selected?.tenantId === item.tenantId ? 'tenant-row-selected' : ''}>
-            <td><button className="tenant-name-link" onClick={() => void selectTenant(item.tenantId)}>{item.name}</button><small>{item.tenantId}</small></td>
+            <td><button className="tenant-name-link" onClick={() => void selectTenant(item.tenantId)}>{item.name}</button></td><td title={item.tenantId}><code>{item.tenantId}</code></td>
             <td><span className={item.status === 'ACTIVE' ? 'tenant-pill tenant-pill-active' : 'tenant-pill tenant-pill-suspended'}>{item.status === 'ACTIVE' ? 'Active' : item.status === 'ARCHIVED' ? 'Archived' : 'Suspended'}</span></td>
             <td>{item.activeUserCount} / {item.userCount}</td><td>{shortDate(item.createdAt)}</td></tr>)}
-            {!loading && tenants.length === 0 && <tr><td colSpan={4} className="tenant-empty">No tenants match this search.</td></tr>}
-            {loading && <tr><td colSpan={4} className="tenant-empty">Loading tenants…</td></tr>}
+            {!loading && tenants.length === 0 && <tr><td colSpan={5} className="tenant-empty">No tenants match this search.</td></tr>}
+            {loading && <tr><td colSpan={5} className="tenant-empty">Loading tenants…</td></tr>}
           </tbody></table></div>
         <footer className="tenant-pagination"><span>{total} tenant{total === 1 ? '' : 's'} · Page {page} of {Math.max(1, Math.ceil(total / pageSize))}</span><div>
           <button aria-label="Previous tenants" disabled={page === 1 || loading} onClick={() => setPage((n) => Math.max(1, n - 1))}><ChevronLeft size={16} /></button>
