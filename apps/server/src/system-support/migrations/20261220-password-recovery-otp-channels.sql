@@ -2,6 +2,7 @@
 -- Core verification is not an ordinary anonymous Flow: its issued secrets are server-owned.
 CREATE TABLE IF NOT EXISTS md_password_recovery_flow (
  tenant_id uuid PRIMARY KEY REFERENCES md_tenants(id),
+ method text NOT NULL DEFAULT 'OTP' CHECK(method IN ('OTP','LINK')),
  otp_length integer NOT NULL DEFAULT 6 CHECK(otp_length IN (4,6)),
  otp_expiry_minutes integer NOT NULL DEFAULT 10 CHECK(otp_expiry_minutes BETWEEN 5 AND 15),
  max_otp_attempts integer NOT NULL DEFAULT 5 CHECK(max_otp_attempts BETWEEN 3 AND 5),
@@ -10,6 +11,14 @@ CREATE TABLE IF NOT EXISTS md_password_recovery_flow (
  revision integer NOT NULL DEFAULT 1 CHECK(revision>0),
  updated_at timestamptz NOT NULL DEFAULT now()
 );
+-- Upgrade prior email-only settings without replacing a tenant's edited templates.
+INSERT INTO md_password_recovery_flow(tenant_id,method,email_subject,email_template)
+ SELECT tenant_id,
+  CASE WHEN policy->>'method'='LINK' THEN 'LINK' ELSE 'OTP' END,
+  COALESCE(NULLIF(policy#>>'{templates,email,subject}',''),'MetaDrive password recovery'),
+  COALESCE(NULLIF(policy#>>'{templates,email,body}',''),'Your verification code is {!Verification.Value}.')
+ FROM md_password_recovery_settings
+ON CONFLICT(tenant_id) DO NOTHING;
 CREATE TABLE IF NOT EXISTS md_password_recovery_channel_actions (
  tenant_id uuid NOT NULL REFERENCES md_tenants(id),
  channel text NOT NULL CHECK(channel IN ('sms','whatsapp')),
