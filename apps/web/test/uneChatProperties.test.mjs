@@ -77,7 +77,7 @@ test('UNE chat components expose editable metadata, flow events and mapped colle
  const keys=new Set(convo.propertyDefinitions.map(x=>x.propertyKey));
  for(const field of ['conversations','messages','contactChoices','selectedConversationId','conversationSourceMode',
   'contactSourceObjectApi','messageChannelValue','showFilterTabs','canSend'])
-  assert.ok(keys.has(field),field);
+  assert.ok(!keys.has(field),field+' must be internal AceChatter code');
  for(const key of ['showRefresh','refreshLabel','newMessageNoticeLabel'])assert.ok(!keys.has(key),key+' still public');
  for(const event of ['start','select','search','refresh','create','resolve','send','contactSelect','contactSearch','newConversationOpen'])
   assert.ok(convo.eventDefinitions.some(x=>x.apiName===event),event);
