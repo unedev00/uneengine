@@ -23,7 +23,8 @@ export function UneContainer(p){
    transform:onImage&&alignment.includes("center")?"translateX(-50%)":undefined,
    borderRadius:16,padding:"3px 8px",backgroundColor:"var(--une-accent,#2563eb)",
    color:colorValue(p.badgeTextColor)||"#fff",fontSize:clamp(p.badgeTextSize,12,0,60),
-   fontWeight:p.badgeBold===false?400:700
+   fontWeight:p.badgeBold===false?400:700,
+   ...(!onImage?{alignSelf:alignment==="text-center"?"center":alignment==="text-right"?"flex-end":"flex-start"}:{})
  }}>{badge}</span>:null;
  return <section className="one-ui one-surface une-container-root" style={{
    display:"flex",flexDirection:p.direction==="row"?"row":"column",gap:clamp(p.gap,12),
@@ -38,8 +39,9 @@ export function UneContainer(p){
        style={{display:"block",width:"100%",height:180,objectFit:objectFit(p)}}/>
      {onImage&&badgeNode}
    </div>}
-   {!onImage&&badgeNode}
+   {!onImage&&alignment!=="text-bottom"&&badgeNode}
    {p.children}
+   {!onImage&&alignment==="text-bottom"&&badgeNode}
  </section>;
 }
 export function UneStack(p){return <div className="one-ui une-stack-root" style={{display:"flex",
