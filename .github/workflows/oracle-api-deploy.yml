@@ -74,7 +74,7 @@ jobs:
           test "$GITHUB_REPOSITORY" = "unedev00/uneengine"
           test "$(uname -m)" = "aarch64"
           sudo -n true
-          sudo -n bash scripts/oracle/recover-systemd-bus.sh
+          sudo -n env GITHUB_REPOSITORY="$GITHUB_REPOSITORY" bash scripts/oracle/recover-systemd-bus.sh
       - name: Build release on the target architecture
         run: |
           npm ci
