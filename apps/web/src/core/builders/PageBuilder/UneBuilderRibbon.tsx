@@ -66,7 +66,7 @@ export default function UneBuilderRibbon({tab,api,definitions,properties,onChang
  const set=(id:string,value:unknown)=>onChange({...properties,[id]:value});
  const control=(property:UneRibbonProperty)=>{
   const supported=property.components.includes(api)&&!notApplicable.has(property.id);
-  const kind=property.kindOverrides?.[api]??property.kind;
+  const kind=api==='une_calendar'&&property.id==='shadow'?'shadow':property.kindOverrides?.[api]??property.kind;
   const sourceKey=property.valueKeys?.[api]??property.id;
   const enabled=supported&&(kind!=='position'||layoutMode==='free-canvas'&&Boolean(position&&onPositionChange));
   const v=properties[sourceKey]??property.defaultsOverrides?.[api]??property.default??'';
