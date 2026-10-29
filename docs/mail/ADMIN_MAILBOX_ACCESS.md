@@ -18,8 +18,11 @@ It opens the selected mailbox in a separate tab without resetting or revealing t
 ## Production prerequisite: Docker Mailserver master account
 
 Docker Mailserver supports Dovecot master accounts. The standard GitHub Actions
-Oracle API/frontend deployment now runs scripts/oracle/ensure-mail-admin-master.sh
-on the self-hosted Oracle runner before deploying the new release. This generates
+Oracle Mail Admin provisioning workflow (.github/workflows/oracle-mail-admin-master.yml)
+runs scripts/oracle/ensure-mail-admin-master.sh on the self-hosted Oracle runner,
+separately from the full-stack deployment. The workflows share the Oracle
+production deployment lock, so mail configuration cannot interrupt an active
+full-stack release. This generates
 a dedicated random master name and secret **on the VM**, writes a SHA512-CRYPT hash
 into the existing persistent Docker Mailserver master-account file, validates
 an actual IMAP login, and adds an API-only root-controlled systemd EnvironmentFile.
@@ -59,6 +62,6 @@ is not inherently read-only. Never share this credential or use it with unrelate
 6. Verify logs contain no mailbox secrets or message content.
 7. Test with disposable mailboxes before production rollout.
 
-GitHub Actions provisions the credential on the VM during the first successful
-production deployment of this change. The master account is privileged within
+GitHub Actions provisions the credential on the VM when the dedicated mail
+workflow runs after merge (or is explicitly dispatched). The master account is privileged within
 Dovecot; public MetaDrive admin sessions remain strictly read-only at the API.
