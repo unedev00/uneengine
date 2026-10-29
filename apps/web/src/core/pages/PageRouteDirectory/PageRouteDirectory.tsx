@@ -148,6 +148,7 @@ export default function PageRouteDirectory({
         columns={[
           {apiName:'target',label:'Destination',phoneRole:'title',render:route=>route.targetLabel},
           {apiName:'app',label:'Application',phoneRole:'subtitle',render:route=>route.appLabel},
+          {apiName:'targetApiName',label:'Destination API Name',render:route=>route.targetApiName},
           {apiName:'status',label:'Status',phoneRole:'badge',render:route=>route.available?'Ready':route.reason},
           {apiName:'kind',label:'Type',phoneRole:'trailing',render:route=>route.kind},
           {apiName:'path',label:'Canonical path',render:route=><code>{browserRoutePath(basePath,route.path)}</code>},
@@ -158,13 +159,14 @@ export default function PageRouteDirectory({
         ]}/>
       <div className="md-mobile-table-replaced">
       <table className="records-table" style={{ width: '100%' }} aria-label="Page route directory">
-        <thead><tr><th>Application</th><th>Destination</th><th>Status</th><th>Canonical route</th><th>Actions</th></tr></thead>
+        <thead><tr><th>Application</th><th>Destination</th><th>Type</th><th>Destination API Name</th><th>Status</th><th>Canonical route</th><th>Actions</th></tr></thead>
         <tbody>
           {visible.map(route => {
             const fullPath = browserRoutePath(basePath, route.path);
             return <tr key={route.key} data-route-key={route.key}>
               <td>{route.appLabel}</td>
-              <td><strong>{route.targetLabel}</strong><div className="properties-help">{route.kind} · {route.targetApiName}</div></td>
+              <td><strong>{route.targetLabel}</strong></td>
+              <td>{route.kind}</td><td title={route.targetApiName}>{route.targetApiName}</td>
               <td>{route.available ? 'Ready' : route.reason}</td>
               <td><code style={{ overflowWrap: 'anywhere' }}>{fullPath}</code></td>
               <td>
@@ -180,7 +182,7 @@ export default function PageRouteDirectory({
               </td>
             </tr>;
           })}
-          {!visible.length && <tr><td colSpan={5}>No matching routes.</td></tr>}
+          {!visible.length && <tr><td colSpan={7}>No matching routes.</td></tr>}
         </tbody>
       </table></div>
       <h3>Friendly route aliases</h3>
