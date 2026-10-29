@@ -80,7 +80,7 @@ test('UNE palette uses published descriptor category instead of a guessed label'
 
 test('only UNE equivalents are offered for trusted retired One components',()=>{
  const pairs: Array<[string,string]> = [
-  ['OneText','une_text'],['OneBadge','une_badge'],['OneButton','une_button'],
+  ['OneText','une_input'],['OneBadge','une_badge'],['OneButton','une_button'],
   ['OneSearch','une_search'],['OneCalendar','une_calendar'],
   ['OneItemGrid','une_item_grid'],['OneConversation','une_conversation'],
   ['OneShoppingCart','une_cart']
@@ -91,7 +91,7 @@ test('only UNE equivalents are offered for trusted retired One components',()=>{
   for(const surface of ['page','dashboard','flow'] as const){
    assert.deepEqual(uniqueLibraryComponents([old,replacement],surface),[replacement]);
    assert.equal(findRegisteredComponent([replacement],legacy,surface),replacement);
-   assert.equal(findRegisteredComponent([old,replacement],legacy,surface),old);
+   assert.equal(findRegisteredComponent([old,replacement],legacy,surface),legacy==='OneText'?replacement:old);
   }
   assert.deepEqual(uniqueLibraryComponents([definition(legacy),replacement]),[definition(legacy),replacement],
    'tenant-owned components are never retired by name alone');
@@ -100,7 +100,7 @@ test('only UNE equivalents are offered for trusted retired One components',()=>{
 
 test('retired UNE insert components are hidden but retained components remain',()=>{
  const names=['une_alert','une_chart','une_table','une_card','une_image','une_form','une_repeater','une_record_list','une_progress','une_navigation'];
- const retained=['une_button','une_text','une_calendar','une_item_grid'];
+ const retained=['une_button','une_input','une_calendar','une_item_grid'];
  const privatelyRegistered=['une_cart','une_search','une_modal'];
  const entries=[...names,...retained,...privatelyRegistered].map(name=>definition(name));
  assert.deepEqual(publishedPageLibraryComponents(entries).map(d=>d.apiName),retained);

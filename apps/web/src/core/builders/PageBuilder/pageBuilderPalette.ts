@@ -2,7 +2,7 @@ import { uniqueLibraryComponents } from '../../components/Registry/componentLibr
 import type { LibraryComponentMetadata } from '../../metadata/Definitions/metadata';
 
 /** Page Builder uses the published shared registry, never draft or unsupported definitions. */
-export const RETIRED_UNE_PAGE_BUILDER_COMPONENTS = new Set(["une_alert","une_card","une_chart","une_choice","une_container","une_date_picker","une_document_viewer","une_drawer","une_form","une_grid","une_image","une_line_items","une_menu","une_metric","une_navigation","une_option_groups","une_progress","une_record_list","une_repeater","une_slot_picker","une_split_pane","une_table","une_conversation","une_cart","une_search","une_modal"]);
+export const RETIRED_UNE_PAGE_BUILDER_COMPONENTS = new Set(["une_text","une_alert","une_card","une_chart","une_choice","une_container","une_date_picker","une_document_viewer","une_drawer","une_form","une_grid","une_image","une_line_items","une_menu","une_metric","une_navigation","une_option_groups","une_progress","une_record_list","une_repeater","une_slot_picker","une_split_pane","une_table","une_conversation","une_cart","une_search","une_modal"]);
 
 export function publishedPageLibraryComponents(components: readonly LibraryComponentMetadata[]): LibraryComponentMetadata[] {
   return uniqueLibraryComponents(components, 'page').filter(component=>!RETIRED_UNE_PAGE_BUILDER_COMPONENTS.has(component.apiName));

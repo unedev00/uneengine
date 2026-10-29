@@ -2,7 +2,7 @@ import type {PoolClient} from 'pg';
 
 /** Only built-in package registrations may be remapped; customer names stay exact. */
 const systemUneNames:Readonly<Record<string,string>>={
- OneText:'une_text',OneBadge:'une_badge',OneButton:'une_button',OneSearch:'une_search',
+ OneText:'une_input',OneBadge:'une_badge',OneButton:'une_button',OneSearch:'une_search',
  OneCalendar:'une_calendar',OneItemGrid:'une_item_grid',
  OneConversation:'une_conversation',OneShoppingCart:'une_cart'
 };

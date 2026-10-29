@@ -39,7 +39,7 @@ test('older package templates resolve trusted One identities to UNE and retain a
      {api_name:'OneBadge',renderer_key:'tenant-renderer'}
     ],rowCount:2};
    if(sql.includes('SELECT renderer_key,enabled FROM md_component_definitions'))
-    return {rows:[{renderer_key:'one-bundled:une_text',enabled:true}],rowCount:1};
+    return {rows:[{renderer_key:'one-bundled:une_input',enabled:true}],rowCount:1};
    if(sql.includes('FROM md_app_package_page_component_templates'))
     return {rows:[{page_api:'OldPage',component_api:'OneText',slot:'main',sort_order:1}],rowCount:1};
    if(sql.includes('FROM md_app_package_page_property_templates'))
@@ -63,15 +63,15 @@ test('older package templates resolve trusted One identities to UNE and retain a
   }
  };
  await seedPublishedAppPackage(client as never,'tenant-1','app-1',1);
- assert.ok(statements.some(x=>x.sql.includes('SELECT renderer_key,enabled')&&x.params[1]==='une_text'));
+ assert.ok(statements.some(x=>x.sql.includes('SELECT renderer_key,enabled')&&x.params[1]==='une_input'));
  assert.ok(!statements.some(x=>x.sql.includes('INSERT INTO md_component_definitions')
    &&x.params[1]==='OneText'));
  assert.ok(statements.some(x=>x.sql.includes('INSERT INTO md_component_definitions')
    &&x.params[1]==='OneBadge'&&x.params[2]==='tenant-renderer'));
  assert.ok(statements.some(x=>x.sql.includes('INSERT INTO md_page_components')
-   &&x.params[2]==='une_text'));
+   &&x.params[2]==='une_input'));
  assert.ok(statements.some(x=>x.sql.includes('SELECT part.id FROM md_page_components')
-   &&x.params[2]==='une_text'));
+   &&x.params[2]==='une_input'));
  assert.ok(statements.some(x=>x.sql.includes('INSERT INTO md_page_component_properties')
    &&x.params[3]==='Keep my text'));
 });

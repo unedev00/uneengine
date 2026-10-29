@@ -24,7 +24,7 @@ test('obsolete system-only OneAccordion is disabled without modifying tenant com
   const write=writes[0];
   assert.equal(write.args[0],'tenant-a');
   assert.ok(!(write.args[1] as string[]).includes('OneText'));
-  assert.ok((write.args[1] as string[]).includes('une_text'));
+  assert.ok(!(write.args[1] as string[]).includes('une_text'));
   assert.ok(!(write.args[1] as string[]).includes('OneAccordion'));
   assert.match(write.sql,/UPDATE md_component_definitions/);
   assert.match(write.sql,/d.renderer_key='one-bundled:'\|\|d.api_name/);

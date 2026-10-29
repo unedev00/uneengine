@@ -513,7 +513,6 @@
     }
   ],
   "components": [
-    "une_text/component.json",
     "une_image/component.json",
     "une_calendar/component.json",
     "une_button/component.json",

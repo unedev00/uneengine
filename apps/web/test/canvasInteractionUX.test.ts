@@ -275,7 +275,7 @@ test('builder and published runtime use the same appearance targeting and preser
 test('every bundled UNE Page component has an explicitly verified appearance target', async () => {
   const manifest = JSON.parse(await readFile(new URL('../src/one/manifest.json', import.meta.url), 'utf8'));
   const expected: Record<string,string> = {
-    une_text:'text',une_image:'image',une_calendar:'calendar',
+    une_image:'image',une_calendar:'calendar',
     une_button:'button',une_card:'surface',une_input:'input',une_toggle:'toggle',
     une_badge:'badge',une_stack:'layout',une_tabs:'tabs',
     une_container:'layout',une_grid:'layout',une_split_pane:'layout',

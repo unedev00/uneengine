@@ -2,7 +2,7 @@
   "apiName": "une_input",
   "label": "UNE Input",
   "category": "Inputs",
-  "description": "Reusable input component for metadata-driven pages; shares MetaDrive runtime, events and tenant permissions.",
+  "description": "One metadata-driven text box: free text or data-source values, optionally editable, with shared UNE design properties.",
   "surfaces": [
     "page",
     "dashboard",
@@ -37,35 +37,6 @@
         {
           "key": "plain",
           "label": "Transparent"
-        }
-      ]
-    },
-    {
-      "propertyKey": "tone",
-      "label": "Colour palette",
-      "kind": "SELECT",
-      "displayOrder": 30,
-      "defaultValue": "blue",
-      "choices": [
-        {
-          "key": "blue",
-          "label": "iOS blue"
-        },
-        {
-          "key": "mint",
-          "label": "Mint"
-        },
-        {
-          "key": "purple",
-          "label": "Purple"
-        },
-        {
-          "key": "orange",
-          "label": "Orange"
-        },
-        {
-          "key": "neutral",
-          "label": "Neutral"
         }
       ]
     },
@@ -260,10 +231,17 @@
     },
     {
       "propertyKey": "value",
-      "label": "Input value from page state",
+      "label": "Text / data source",
       "kind": "TEXT",
-      "displayOrder": 810,
+      "displayOrder": 300,
       "defaultValue": ""
+    },
+    {
+      "propertyKey": "allowTyping",
+      "label": "Allow user typing",
+      "kind": "BOOLEAN",
+      "displayOrder": 305,
+      "helpText": "Off shows the text or data-bound value without allowing edits; On permits typing and change events."
     },
     {
       "propertyKey": "maxLength",
