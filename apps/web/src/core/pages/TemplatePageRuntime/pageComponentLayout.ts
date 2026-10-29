@@ -89,7 +89,7 @@ const specificPageTargets: Record<string, PageAppearanceTarget> = {
   unetable:'table', unelineitems:'table', reportchart:'surface',
   onecalendar:'calendar', unecalendar:'calendar',
   oneconversation:'conversation', uneconversation:'conversation',
-  oneshoppingcart:'cart', unecart:'cart',
+  oneshoppingcart:'cart', unecart:'cart', acetillcart:'cart',
   unetoggle:'toggle',
   uneform:'form',
   unestack:'layout', unecontainer:'layout', unegrid:'layout', unesplitpane:'layout',

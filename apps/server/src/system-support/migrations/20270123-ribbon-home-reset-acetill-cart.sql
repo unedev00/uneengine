@@ -17,16 +17,22 @@ UPDATE md_page_components c SET component_api='acetill_cart'
 FROM md_page_definitions p, md_app_installations i, md_apps a
 WHERE c.tenant_id=p.tenant_id AND c.page_id=p.id
   AND i.tenant_id=p.tenant_id AND i.app_id=a.id AND a.api_name='Acetill'
-  AND p.api_name IN ('AcetillSale','AcetillCheckout') AND c.component_api='une_cart';
+  AND p.api_name IN ('AcetillSale','AcetillCheckout') AND c.component_api='une_cart'
+  AND EXISTS(SELECT 1 FROM md_component_definitions d WHERE d.tenant_id=c.tenant_id
+    AND d.api_name='acetill_cart' AND d.renderer_key='one-bundled:acetill_cart');
 
 UPDATE md_lightning_page_nodes n SET component_type='Custom:acetill_cart'
 FROM md_page_definitions p, md_app_installations i, md_apps a
 WHERE n.tenant_id=p.tenant_id AND n.page_id=p.id
   AND i.tenant_id=p.tenant_id AND i.app_id=a.id AND a.api_name='Acetill'
-  AND p.api_name IN ('AcetillSale','AcetillCheckout') AND n.component_type='Custom:une_cart';
+  AND p.api_name IN ('AcetillSale','AcetillCheckout') AND n.component_type='Custom:une_cart'
+  AND EXISTS(SELECT 1 FROM md_component_definitions d WHERE d.tenant_id=n.tenant_id
+    AND d.api_name='acetill_cart' AND d.renderer_key='one-bundled:acetill_cart');
 
 UPDATE md_page_layout_version_nodes n SET component_type='Custom:acetill_cart'
 FROM md_page_definitions p, md_app_installations i, md_apps a
 WHERE n.tenant_id=p.tenant_id AND n.page_id=p.id
   AND i.tenant_id=p.tenant_id AND i.app_id=a.id AND a.api_name='Acetill'
-  AND p.api_name IN ('AcetillSale','AcetillCheckout') AND n.component_type='Custom:une_cart';
+  AND p.api_name IN ('AcetillSale','AcetillCheckout') AND n.component_type='Custom:une_cart'
+  AND EXISTS(SELECT 1 FROM md_component_definitions d WHERE d.tenant_id=n.tenant_id
+    AND d.api_name='acetill_cart' AND d.renderer_key='one-bundled:acetill_cart');

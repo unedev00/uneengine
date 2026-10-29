@@ -60,7 +60,7 @@ test('conversation keeps its existing shell and authorised actions',()=>{
  assert.match(adapters,/return <button \{\.\.\.props\}\/>/);
  assert.match(adapters,/React\.forwardRef\(/);
  assert.match(adapters,/return <input \{\.\.\.props\} ref=\{ref\}\/>/);
- assert.match(builder,/Edit conversation element/);
+ assert.doesNotMatch(builder,/Edit conversation element/);
  assert.match(builder,/conversationPartDefinition\(/);
 });
 

@@ -18,7 +18,7 @@ import {loadComponentCatalog} from '../../../scripts/component-catalog.mjs';
 import {behaviorTabs,behaviorAction,behaviorRecordAction,behaviorAppearance,behaviorAppearanceLabel,behaviorField,behaviorInteractions} from '../src/core/pages/PageRuntime/pageBehaviorRuntime';
 test('all retained bundled descriptor definitions remain compatible',async()=>{
  const catalog=await loadComponentCatalog();
- assert.equal(catalog.components.length,36); // 34 UNE and two Core platform descriptors
+ assert.equal(catalog.components.length,37); // 34 UNE, one Acetill-owned Cart and two Core descriptors
  for(const component of catalog.components)assert.deepEqual(validateComponentDefinitions(component.propertyDefinitions??[]),[],component.apiName);
 });
 const definitions:ComponentSettingDefinition[]=[{propertyKey:'layout',label:'Layout',kind:'GROUP',fields:[
