@@ -18,7 +18,7 @@ const layoutSpecs=[
 const sharedFlows=['AceChatterLoadConversations','AceChatterLoadCommunications',
  'AceChatterLoadContacts','AceChatterCreateConversation',
  'AceChatterFindConversationByPhone','AceChatterSendMessage'] as const;
-const requiredComponents=['une_text','une_conversation','une_modal','une_tabs','une_stack',
+const requiredComponents=['une_conversation','une_modal','une_tabs','une_stack',
  'une_lookup','une_input','une_button','une_search'] as const;
 
 function nodes(active:Set<string>,device:string):Node[]{

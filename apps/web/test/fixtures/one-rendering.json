@@ -50,56 +50,6 @@
     "html": "<div class=\"one-ui one-ui--glass one-ui--medium\" style=\"--one-accent:#3176cc;--one-radius:16px;--one-pad:16px;--one-gap:12px;--one-blur:8px;width:100%;opacity:1;font-size:16px;white-space:pre-wrap\">Text</div>"
   },
   {
-    "apiName": "OneBadge",
-    "props": {
-      "theme": "glass",
-      "size": "medium",
-      "accentColor": "#3176cc",
-      "backgroundColor": "",
-      "textColor": "",
-      "borderColor": "",
-      "radius": 16,
-      "padding": 16,
-      "gap": 12,
-      "shadow": "medium",
-      "glassBlur": 8,
-      "opacity": 100,
-      "width": "100%",
-      "height": "auto",
-      "align": "start",
-      "desktopColumns": 3,
-      "tabletColumns": 2,
-      "mobileColumns": 1,
-      "hideOnPhone": false,
-      "objectApiName": "",
-      "fieldApiName": "",
-      "actionFlowApiName": "",
-      "kind": "Badge",
-      "text": "Status",
-      "tone": "neutral",
-      "label": "Example",
-      "title": "Example",
-      "children": "Example content",
-      "currencyCode": "EUR",
-      "vatRate": 0,
-      "records": [
-        {
-          "Id": "row-1",
-          "Name": "Example record",
-          "label": "Example record",
-          "value": 3,
-          "date": "2026-10-18",
-          "status": "Open",
-          "Amount": 100,
-          "body": "Example message"
-        }
-      ],
-      "nameFieldApiName": "Name",
-      "priceFieldApiName": "Amount"
-    },
-    "html": "<span class=\"one-ui one-ui--glass one-ui--medium\" style=\"--one-accent:#3176cc;--one-radius:16px;--one-pad:16px;--one-gap:12px;--one-blur:8px;width:auto;opacity:1;display:inline-flex\"><span class=\"one-badge\" role=\"status\">Status</span></span>"
-  },
-  {
     "apiName": "OneButton",
     "props": {
       "theme": "glass",

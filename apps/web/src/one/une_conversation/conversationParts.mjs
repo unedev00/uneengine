@@ -1,14 +1,14 @@
 /**
  * Logical children of UNE Conversation. The child's property names are taken
- * from the existing UNE Text, Search, Input and Button contracts.
+ * from the existing UNE Input, Search and Button contracts.
  * Bindings point to existing persisted properties to preserve published pages.
  */
 export const conversationPartSlots = Object.freeze([
- {id:'heading',label:'Conversation title',component:'une_text',bindings:{text:'title'}},
- {id:'emptyThread',label:'Empty thread title',component:'une_text',bindings:{text:'emptyTitle'}},
- {id:'emptyInbox',label:'Empty inbox message',component:'une_text',bindings:{text:'emptyConversationsText'}},
- {id:'submissionNotice',label:'Submission notice',component:'une_text',bindings:{text:'sentNoticeText'}},
- {id:'filterHeading',label:'Filter group label',component:'une_text',bindings:{text:'filterLabel'}},
+ {id:'heading',label:'Conversation title',component:'une_input',bindings:{value:'title'}},
+ {id:'emptyThread',label:'Empty thread title',component:'une_input',bindings:{value:'emptyTitle'}},
+ {id:'emptyInbox',label:'Empty inbox message',component:'une_input',bindings:{value:'emptyConversationsText'}},
+ {id:'submissionNotice',label:'Submission notice',component:'une_input',bindings:{value:'sentNoticeText'}},
+ {id:'filterHeading',label:'Filter group label',component:'une_input',bindings:{value:'filterLabel'}},
  {id:'newConversation',label:'New conversation button',component:'une_button',bindings:{label:'newConversationLabel'}},
  {id:'refresh',label:'Refresh button',component:'une_button',bindings:{label:'refreshLabel'}},
  {id:'newMessages',label:'New messages button',component:'une_button',bindings:{label:'newMessageNoticeLabel'}},
@@ -55,6 +55,10 @@ export function updateConversationPartProperties(parent,id,edited){
  return next;
 }
 export function readConversationPart(props,id,key){
- const oldKey=byId.get(id)?.bindings?.[key];
+ const part=byId.get(id);
+ // Existing Conversation renderer requests logical `text` slots, while the
+ // public component metadata now uses UNE Input's `value` property.
+ const childKey=part?.component==='une_input'&&key==='text'?'value':key;
+ const oldKey=part?.bindings?.[childKey];
  return oldKey?props?.[oldKey]:undefined;
 }

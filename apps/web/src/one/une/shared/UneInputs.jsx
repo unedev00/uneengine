@@ -6,39 +6,57 @@ const key=k=>typeof k==="string"&&/^[A-Za-z][A-Za-z0-9_]*$/.test(k);
 const field=(row,name,fallback)=>key(name)?row?.[name]??fallback:fallback;
 const n=(v,fallback,min=0,max=200)=>Number.isFinite(Number(v))?Math.max(min,Math.min(max,Number(v))):fallback;
 export function UneInput(p){
+ // Old Text instances may retain 'text' until their saved metadata is migrated.
  const generatedId=React.useId();
  const id=p.inputId||generatedId;
- const [local,setLocal]=React.useState(p.value??p.defaultValue??"");
- React.useEffect(()=>{if(p.value!==undefined)setLocal(p.value)},[p.value]);
+ const legacyText=p.text!==undefined&&p.text!==null;
+ const initial=p.value!==undefined&&(p.value!==""||!legacyText)?p.value:(legacyText?p.text:p.defaultValue??"");
+ const [local,setLocal]=React.useState(initial);
+ React.useEffect(()=>{
+  if(p.value!==undefined&&(p.value!==""||!legacyText))setLocal(p.value);
+  else if(legacyText)setLocal(p.text);
+ },[p.value,p.text]);
+ const value=local;
+ const editable=p.allowTyping===true||(p.allowTyping!==false&&!legacyText);
  const set=v=>{setLocal(v);fire(p,"change",v)};
  const type=["text","email","number","tel","date","time","search","password","url"].includes(p.inputType)?p.inputType:"text";
+ const inputMode=["text","tel","numeric","decimal","email","search","url","none"].includes(p.inputMode)?p.inputMode:undefined;
  const maxLength=Number(p.maxLength)>0?n(p.maxLength,4096,1,100000):undefined;
+ const attributes={id,className:"one-control",required:p.required===true,value:value??"",
+  placeholder:p.placeholder||"",disabled:p.disabled===true,maxLength,
+  "aria-describedby":p.helpText?id+"-help":undefined,
+  autoComplete:p.autoComplete||undefined,inputMode,
+  pattern:typeof p.pattern==="string"&&p.pattern.length>0&&p.pattern.length<=250?p.pattern:undefined};
  const gap=n(p.gap,12,0,120);
- const padding=n(p.padding,16,0,100);
- const density=["compact","comfortable","spacious"].includes(p.density)?p.density:"comfortable";
- const densityGap=density==="compact"?Math.max(2,gap/2):density==="spacious"?gap*1.5:gap;
- const surface=["glass","solid","plain"].includes(p.surface)?p.surface:"solid";
+ const densityGap=p.density==="compact"?Math.max(2,gap/2):p.density==="spacious"?gap*1.5:gap;
  const helpId=p.helpText?id+"-help":undefined;
- const attributes={id,className:"one-control",required:p.required===true,value:local??"",
-  placeholder:p.placeholder||"",maxLength,
-  "aria-describedby":helpId};
- return <div className="one-ui one-field une-input-field" data-surface={surface} data-density={density}
-   style={{display:"flex",flexDirection:"column",gap:densityGap,padding:0}}>
+ const display=String(value??"");
+ const visual=type==="password"?"•".repeat(display.length):display;
+ const lines=visual.split(/\r?\n/);
+ return <div className="one-ui one-field une-input-field" style={{display:"flex",flexDirection:"column",gap:densityGap}}>
   {p.label&&<label className="one-label" htmlFor={id}>{p.label}</label>}
-  <div className="une-input-surface" style={{padding}}>
-   {p.multiline?<textarea {...attributes} rows={Math.max(3,n(p.rows,3,1,16))} onChange={e=>set(e.target.value)}/>:
-    <input {...attributes} type={type}
-     onChange={e=>set(type==="number"?(e.target.value===""?"":Number(e.target.value)):e.target.value)}/>}
+  <div className="une-input-editor">
+  {!editable
+    ?<div className="une-input-display" role="text" aria-label={p.label||undefined}>
+       {lines.length>1
+         ?<span className="une-input-lines">{lines.map((line,i)=><span key={i}>{line||"\u00a0"}</span>)}</span>
+         :visual}
+     </div>
+    :p.multiline?<textarea {...attributes} rows={n(p.rows,3,1,16)} onChange={e=>set(e.target.value)}/>
+    :<input {...attributes} type={type}
+      onChange={e=>set(type==="number"?(e.target.value===""?"":Number(e.target.value)):e.target.value)}/>}
   </div>
-  {p.helpText&&<small id={helpId} className="one-muted une-input-help" title={String(p.helpText)}>{p.helpText}</small>}
+  {p.helpText&&<small className="one-muted" id={helpId} title={String(p.helpText)}>{p.helpText}</small>}
  </div>;
 }
 export function UneToggle(p){
- const [local,setLocal]=React.useState(p.value??p.defaultValue??false),checked=local;
+ const [local,setLocal]=React.useState(Boolean(p.value??p.defaultValue??false));
  React.useEffect(()=>setLocal(Boolean(p.value??p.defaultValue??false)),[p.value,p.defaultValue]);
- return <label className="one-ui one-row" style={{justifyContent:"space-between",gap:12}}>
-  <span>{p.label||"Setting"}</span><input role="switch" type="checkbox" checked={checked} disabled={p.disabled===true}
-    onChange={e=>{setLocal(e.target.checked);fire(p,"change",e.target.checked)}}/></label>;
+ return <label className="one-ui one-row une-toggle-control" data-une-surface={p.surface||"glass"} data-une-density={p.density||"comfortable"}
+   style={{justifyContent:"space-between",gap:n(p.gap,12,0,120),padding:n(p.padding,16,0,160)}}>
+  <span>{p.label??"Setting"}</span><input role="switch" type="checkbox" checked={local} disabled={p.disabled===true}
+    onChange={e=>{setLocal(e.target.checked);fire(p,"change",e.target.checked)}}/>
+ </label>;
 }
 const options=p=>{
  const rows=records(p);
@@ -81,7 +99,7 @@ export function UneLookup(p){
     ?{value,record:record??null,phoneNumber:phone,contactName:rawName||phone}
     :value);
  };
- return <div className="one-ui one-field" aria-busy={p.loading===true}>
+ return <div className="one-ui one-field une-lookup-control" data-une-surface={p.surface||"glass"} data-une-density={p.density||"comfortable"} aria-busy={p.loading===true} style={{display:"flex",flexDirection:"column",gap:n(p.gap,12,0,120),padding:n(p.padding,16,0,160)}}>
   <label className="one-label">{p.label||"Lookup"}
    <input className="one-control" placeholder={p.placeholder||"Search records"}
     value={query} disabled={p.disabled===true} onChange={e=>{setLocalQuery(e.target.value);fire(p,"search",e.target.value)}}/>

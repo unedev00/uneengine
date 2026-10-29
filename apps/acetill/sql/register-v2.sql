@@ -59,11 +59,11 @@ CROSS JOIN (VALUES ('Name'),('Price'),('Active')) f(api_name)
 WHERE a.api_name='Acetill'
 ON CONFLICT DO NOTHING;
 
--- Reuse only the six app-page components required by Acetill.
+-- Reuse only the five app-page components required by Acetill.
 -- The package installer resolves each required Component against tenant SQL.
 INSERT INTO md_app_package_resources(app_id,version,resource_type,api_name,parent_api)
 SELECT a.id,2,'Component',c.api_name,'' FROM md_apps a
-CROSS JOIN (VALUES ('une_text'),('une_search'),('une_item_grid'),('une_cart'),('une_button'),('une_badge')) c(api_name)
+CROSS JOIN (VALUES ('une_input'),('une_search'),('une_item_grid'),('une_cart'),('une_button')) c(api_name)
 WHERE a.api_name='Acetill'
 ON CONFLICT DO NOTHING;
 
@@ -72,20 +72,18 @@ INSERT INTO md_app_package_page_component_templates(app_id,version,page_api,comp
 SELECT a.id,2,p.page_api,p.component_api,p.slot,p.sort_order
 FROM md_apps a
 CROSS JOIN (VALUES
- ('AcetillRegister','une_badge','header',5),
- ('AcetillRegister','une_text','main',10),
- ('AcetillRegister','une_text','main',15),
+ ('AcetillRegister','une_input','main',10),
+ ('AcetillRegister','une_input','main',15),
  ('AcetillRegister','une_button','main',20),
- ('AcetillSale','une_text','header',5),
+ ('AcetillSale','une_input','header',5),
  ('AcetillSale','une_search','main',10),
  ('AcetillSale','une_item_grid','main',20),
  ('AcetillSale','une_cart','sidebar',30),
- ('AcetillCheckout','une_text','header',5),
+ ('AcetillCheckout','une_input','header',5),
  ('AcetillCheckout','une_cart','main',10),
  ('AcetillCheckout','une_button','main',20),
- ('AcetillReceipt','une_badge','header',5),
- ('AcetillReceipt','une_text','main',10),
- ('AcetillReceipt','une_text','main',20),
+ ('AcetillReceipt','une_input','main',10),
+ ('AcetillReceipt','une_input','main',20),
  ('AcetillReceipt','une_button','main',30)
 ) p(page_api,component_api,slot,sort_order)
 WHERE a.api_name='Acetill'
@@ -97,10 +95,11 @@ INSERT INTO md_app_package_page_property_templates
 SELECT a.id,2,p.page_api,p.component_api,p.slot,p.sort_order,p.property_path,p.data_type,p.value_text
 FROM md_apps a
 CROSS JOIN (VALUES
- ('AcetillRegister','une_badge','header',5,'text','string','ACETILL POS'),
- ('AcetillRegister','une_text','main',10,'text','string','Welcome to Acetill'),
- ('AcetillRegister','une_text','main',10,'fontSize','number','28'),
- ('AcetillRegister','une_text','main',15,'text','string','Your products, registers and transaction permissions are managed by UNE Solutions.'),
+ ('AcetillRegister','une_input','main',10,'value','string','Welcome to Acetill'),
+ ('AcetillRegister','une_input','main',10,'allowTyping','boolean','false'),
+ ('AcetillRegister','une_input','main',10,'fontSize','number','28'),
+ ('AcetillRegister','une_input','main',15,'value','string','Your products, registers and transaction permissions are managed by UNE Solutions.'),
+ ('AcetillRegister','une_input','main',15,'allowTyping','boolean','false'),
  ('AcetillRegister','une_button','main',20,'label','string','Start a sale'),
  ('AcetillRegister','une_button','main',20,'disabled','boolean','false'),
  ('AcetillRegister','une_button','main',20,'actionFlows','object',NULL),
@@ -108,7 +107,8 @@ CROSS JOIN (VALUES
  ('AcetillRegister','une_button','main',20,'actionFlows.click.actionType','string','Navigate'),
  ('AcetillRegister','une_button','main',20,'actionFlows.click.navigationTargetType','string','App Page'),
  ('AcetillRegister','une_button','main',20,'actionFlows.click.navigationPageApiName','string','AcetillSale'),
- ('AcetillSale','une_text','header',5,'text','string','New sale'),
+ ('AcetillSale','une_input','header',5,'value','string','New sale'),
+ ('AcetillSale','une_input','header',5,'allowTyping','boolean','false'),
  ('AcetillSale','une_search','main',10,'placeholder','string','Search products or scan a barcode'),
  ('AcetillSale','une_search','main',10,'searchKey','string','acetill-catalogue'),
  ('AcetillSale','une_item_grid','main',20,'title','string','Products'),
@@ -144,7 +144,8 @@ CROSS JOIN (VALUES
  ('AcetillSale','une_cart','sidebar',30,'actionFlows.checkout.outputs.message','string','checkoutMessage'),
  ('AcetillSale','une_cart','sidebar',30,'actionFlows.checkout.outputs.changeDueMinor','string','checkoutChangeDueMinor'),
  ('AcetillSale','une_cart','sidebar',30,'actionFlows.checkout.outputs.orderId','string','orderId'),
- ('AcetillCheckout','une_text','header',5,'text','string','Review your sale'),
+ ('AcetillCheckout','une_input','header',5,'value','string','Review your sale'),
+ ('AcetillCheckout','une_input','header',5,'allowTyping','boolean','false'),
  ('AcetillCheckout','une_cart','main',10,'title','string','Checkout'),
  ('AcetillCheckout','une_cart','main',10,'viewMode','string','basket'),
  ('AcetillCheckout','une_cart','main',10,'nameFieldApiName','string','Name'),
@@ -175,10 +176,11 @@ CROSS JOIN (VALUES
  ('AcetillCheckout','une_button','main',20,'actionFlows.click.actionType','string','Navigate'),
  ('AcetillCheckout','une_button','main',20,'actionFlows.click.navigationTargetType','string','App Page'),
  ('AcetillCheckout','une_button','main',20,'actionFlows.click.navigationPageApiName','string','AcetillSale'),
- ('AcetillReceipt','une_badge','header',5,'text','string','RECEIPT'),
- ('AcetillReceipt','une_text','main',10,'text','string','Receipt'),
- ('AcetillReceipt','une_text','main',10,'fontSize','number','28'),
- ('AcetillReceipt','une_text','main',20,'text','string','Only a confirmed Order can be printed. MetaDrive verifies the active receipt Flow and record permissions.'),
+ ('AcetillReceipt','une_input','main',10,'value','string','Receipt'),
+ ('AcetillReceipt','une_input','main',10,'allowTyping','boolean','false'),
+ ('AcetillReceipt','une_input','main',10,'fontSize','number','28'),
+ ('AcetillReceipt','une_input','main',20,'value','string','Only a confirmed Order can be printed. MetaDrive verifies the active receipt Flow and record permissions.'),
+ ('AcetillReceipt','une_input','main',20,'allowTyping','boolean','false'),
  ('AcetillReceipt','une_button','main',30,'label','string','Print receipt'),
  ('AcetillReceipt','une_button','main',30,'disabled','boolean','false'),
  ('AcetillReceipt','une_button','main',30,'actionFlows','object',NULL),

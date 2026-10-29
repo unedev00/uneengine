@@ -4,8 +4,8 @@ import {readFileSync,existsSync} from 'node:fs';
 
 const manifest=JSON.parse(readFileSync(new URL('../src/one/manifest.json',import.meta.url),'utf8')) as {components:string[]};
 
-test('all 36 registered UNE components own a separate valid lightweight SVG ribbon icon',()=>{
-  assert.equal(manifest.components.length,36);
+test('all 34 registered UNE components own a separate valid lightweight SVG ribbon icon',()=>{
+  assert.equal(manifest.components.length,34);
   const paths=new Set<string>();
   for(const component of manifest.components){
     const id=component.split('/')[0];
@@ -17,7 +17,7 @@ test('all 36 registered UNE components own a separate valid lightweight SVG ribb
     assert.doesNotMatch(svg,/<script|<foreignObject|<image|javascript:/i);
     paths.add(id);
   }
-  assert.equal(paths.size,36);
+  assert.equal(paths.size,34);
 });
 
 test('the Insert ribbon resolves registered UNE SVGs and keeps legacy icon fallback',()=>{

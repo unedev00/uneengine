@@ -612,7 +612,7 @@ function PageBuilder({
     : selectedCustomDefinition?.apiName==='une_calendar'
     ? ['Surface','Card','Heading','Event','Calendar']
     : ['Surface',...([
-      ['une_text','Text'],['une_button','Button'],['une_image','Image'],['une_chart','Chart'],
+['une_button','Button'],['une_image','Image'],['une_chart','Chart'],
       ['une_table','Table'],['une_navigation','Navigation'],['une_search','Input'],
       ['une_input','Input'],['une_container','Container'],['une_grid','Container'],
       ['une_stack','Container'],['une_split_pane','Container']
@@ -622,7 +622,7 @@ function PageBuilder({
   // Registry metadata remains authoritative. Legacy property declarations which omit
   // a presentation group are assigned only where the component already declares the key.
   const implicitParts:Record<string,Record<string,{group:string;section:'Design'|'Layout'}>> = {
-    une_text:{fontSize:{group:'Text',section:'Design'}},
+
     une_button:{variant:{group:'Button',section:'Design'}},
     une_item_grid:{cardDensity:{group:'Card',section:'Design'},cardHover:{group:'Card',section:'Design'},featuredColumnSpan:{group:'Component',section:'Layout'},featuredRowSpan:{group:'Component',section:'Layout'}},
     une_calendar:{view:{group:'Calendar',section:'Design'},firstDayOfWeek:{group:'Calendar',section:'Design'},showWeekends:{group:'Calendar',section:'Design'}},

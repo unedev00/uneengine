@@ -513,14 +513,12 @@
     }
   ],
   "components": [
-    "une_text/component.json",
     "une_image/component.json",
     "une_calendar/component.json",
     "une_button/component.json",
     "une_card/component.json",
     "une_input/component.json",
     "une_toggle/component.json",
-    "une_badge/component.json",
     "une_stack/component.json",
     "une_tabs/component.json",
     "une_container/component.json",

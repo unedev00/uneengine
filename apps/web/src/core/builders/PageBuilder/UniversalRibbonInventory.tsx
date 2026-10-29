@@ -62,6 +62,8 @@ function place(key:string):[Tab,string]{
   if(/(?:filter|searchKey|searchTerm|searchField|searchMode|selectedCategory|selectionFilter|restrictToAssigned)/i.test(key))return ['Component Data','Filters'];
   if(/(?:record|loading|items|pageSize|maxItems|sort|selectedValue)/i.test(key))return ['Component Data','Records'];
   if(/(?:src|imageSrc|imageExpression|alt|caption|missingImage)/i.test(key))return ['Component Content','Image'];
+  if(key==='value')return ['Component Content','Text'];
+  if(key==='allowTyping')return ['Component Content','Options'];
   if(/(?:placeholder|label|title|subtitle|description|text|empty|message|helpText|buttonLabel|notice)/i.test(key))return ['Component Content','Text'];
   if(/(?:options|choices|groups|selectedIndex|viewMode|mode|variant|severity|show|required|disabled|enable|controlled)/i.test(key))return ['Component Content','Options'];
   return ['Component Content','Component content'];

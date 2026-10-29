@@ -10,8 +10,8 @@ const { components } = await loadComponentCatalog();
 const publishedOne=components.filter(component=>component.apiName.startsWith('One'));
 assert.deepEqual(publishedOne,[], 'No legacy One components may be independently registered');
 const registered=components.filter(component=>component.apiName.startsWith('une_'));
-assert.equal(registered.length,36,'All 36 canonical UNE component descriptors must be registered');
-const retained=['OneText','OneBadge','OneButton','OneSearch','OneCalendar','OneItemGrid','OneConversation','OneShoppingCart'];
+assert.equal(registered.length,34,'All 34 canonical UNE component descriptors must be registered');
+const retained=['OneText','OneButton','OneSearch','OneCalendar','OneItemGrid','OneConversation','OneShoppingCart'];
 for(const name of retained){
   // UNE wrappers still reuse the old implementation code; it is not a public component.
   for(const extension of ['jsx','css'])

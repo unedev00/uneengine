@@ -41,35 +41,6 @@
       ]
     },
     {
-      "propertyKey": "tone",
-      "label": "Colour palette",
-      "kind": "SELECT",
-      "displayOrder": 30,
-      "defaultValue": "blue",
-      "choices": [
-        {
-          "key": "blue",
-          "label": "iOS blue"
-        },
-        {
-          "key": "mint",
-          "label": "Mint"
-        },
-        {
-          "key": "purple",
-          "label": "Purple"
-        },
-        {
-          "key": "orange",
-          "label": "Orange"
-        },
-        {
-          "key": "neutral",
-          "label": "Neutral"
-        }
-      ]
-    },
-    {
       "propertyKey": "accentColor",
       "label": "Custom accent colour",
       "kind": "COLOR",
@@ -201,6 +172,13 @@
       "kind": "BOOLEAN",
       "displayOrder": 320,
       "defaultValue": true
+    },
+    {
+      "propertyKey": "helpText",
+      "label": "Help text",
+      "kind": "TEXT",
+      "displayOrder": 860,
+      "defaultValue": ""
     }
   ]
 }

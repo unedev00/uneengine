@@ -3,14 +3,12 @@ import type {PoolClient} from 'pg';
 import type {SqlPersistence} from '../system-files/sql-persistence.js';
 /** Canonical system component catalogue; legacy One references resolve through UNE compatibility. */
 export const UNE_COMPONENTS=[
-  "une_text",
   "une_image",
   "une_calendar",
   "une_button",
   "une_card",
   "une_input",
   "une_toggle",
-  "une_badge",
   "une_stack",
   "une_tabs",
   "une_container",
@@ -41,7 +39,7 @@ export const UNE_COMPONENTS=[
   "une_option_groups"
 ] as const;
 export const UNE_INSERT_EXCLUDED=new Set(["une_alert","une_card","une_chart","une_choice","une_container","une_date_picker","une_document_viewer","une_drawer","une_form","une_grid","une_image","une_line_items","une_menu","une_metric","une_navigation","une_option_groups","une_progress","une_record_list","une_repeater","une_slot_picker","une_split_pane","une_table"]);
-export const UNE_SEED_VERSION='core-une-components-v3';
+export const UNE_SEED_VERSION='core-une-components-v5';
 export async function seedFreshUneComponents(client:Pick<PoolClient,'query'>,tenantId:string){
  for(const apiName of UNE_COMPONENTS.filter(name=>!UNE_INSERT_EXCLUDED.has(name)))await client.query(
  'INSERT INTO md_component_definitions(tenant_id,api_name,renderer_key,enabled) VALUES($1,$2,$3,true) ON CONFLICT(tenant_id,api_name) DO NOTHING',

@@ -13,8 +13,9 @@ export function oneComponentLabel(component: Pick<LibraryComponentMetadata, 'lab
 /** Old system API names are readable aliases, not additional new components.
  * Keep tenant-authored components with identical labels or unrelated API names. */
 export const legacyUneAliases: Readonly<Record<string,string>> = Object.freeze({
-  OneText: 'une_text',
-  OneBadge: 'une_badge',
+  OneText: 'une_input',
+  une_text: 'une_input',
+  OneBadge: 'une_input',
   OneButton: 'une_button',
   OneSearch: 'une_search',
   OneCalendar: 'une_calendar',

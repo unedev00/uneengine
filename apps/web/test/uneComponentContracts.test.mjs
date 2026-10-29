@@ -7,7 +7,7 @@ import {renderToStaticMarkup} from 'react-dom/server';
 import {loadComponentCatalog,buildBundledComponent} from '../../../scripts/component-catalog.mjs';
 import {propertyKinds} from '../src/core/components/Properties/componentSettingDefinitions.ts';
 const {components}=await loadComponentCatalog(),une=components.filter(x=>x.apiName.startsWith('une_'));
-const names=['text','image','calendar','button','card','input','toggle','badge','stack','tabs',
+const names=['image','calendar','button','card','input','toggle','stack','tabs',
  'container','grid','split_pane','navigation','menu','modal','drawer','item_grid','repeater','record_list',
  'search','lookup','choice','cart','conversation','form','table','line_items','date_picker','slot_picker',
  'metric','alert','progress','document_viewer','chart','option_groups'].map(s=>'une_'+s);
@@ -45,10 +45,10 @@ test('every UNE property has a supported visual editor contract',()=>{
  }
 });
 const fixtures={
- une_text:{text:'Hello UNE'},une_image:{src:'https://example.com/image.png',alt:'Picture'},
+une_image:{src:'https://example.com/image.png',alt:'Picture'},
  une_calendar:{records:[{Id:'1',BookedOn:'2026-10-24',Subject:'Meeting'}],dateFieldApiName:'BookedOn',titleFieldApiName:'Subject'},
- une_button:{label:'Continue'},une_card:{title:'Card'},une_input:{label:'Email'},
- une_toggle:{label:'Setting'},une_badge:{text:'New'},une_tabs:{tabs:'First, Second'},
+ une_button:{label:'Continue'},une_card:{title:'Card'},une_input:{value:'Hello UNE',allowTyping:false},
+ une_toggle:{label:'Setting'},une_tabs:{tabs:'First, Second'},
  une_item_grid:{currencyCode:'GBP',titleFieldApiName:'Name',priceFieldApiName:'Price'},
  une_cart:{currencyCode:'GBP'},une_conversation:{conversations:[],messages:[]},
  une_table:{items:[{Name:'Row'}],columns:[{key:'Name',label:'Name'}]},
@@ -70,7 +70,7 @@ for(const d of une)test(d.apiName+' bundles and renders with a scoped UNE surfac
  assert.match(html,/class="une-ui"/);
  assert.match(html,/data-une-theme="light"/);
  assert.doesNotMatch(html,/<script/i);
- if(d.apiName==='une_text')assert.match(html,/Hello UNE/);
+ if(d.apiName==='une_input')assert.match(html,/Hello UNE/);
  if(d.apiName==='une_metric')assert.match(html,/42/);
 });
 
@@ -120,7 +120,7 @@ test('AceChatter Conversation button controls are internal code defaults, not me
 test('only common shared settings remain in AceChatter Conversation metadata',async()=>{
  const conversation=une.find(item=>item.apiName==='une_conversation');
  const common=new Set(['surface','tone','accentColor','backgroundColor','textColor','borderColor',
-   'density','radius','padding','gap','shadow','glassBlur','objectApiName']);
+   'density','radius','padding','gap','shadow','glassBlur','objectApiName','helpText']);
  const raw=JSON.parse(await readFile(new URL('../src/one/une_conversation/component.json',import.meta.url),'utf8'));
  assert.deepEqual(new Set(raw.propertyDefinitions.map(item=>item.propertyKey)),common);
  const catalogShared=new Set(JSON.parse(await readFile(new URL('../src/one/manifest.json',import.meta.url),'utf8')).commonProperties.map(item=>item.propertyKey));
@@ -136,7 +136,7 @@ test('only common shared settings remain in AceChatter Conversation metadata',as
 
 test('Cart-specific settings are internal defaults while shared styling remains public',async()=>{
  const cart=une.find(component=>component.apiName==='une_cart');
- const common=new Set(['surface','tone','accentColor','backgroundColor','textColor','borderColor','density','radius','padding','gap','shadow','glassBlur','objectApiName']);
+ const common=new Set(['surface','tone','accentColor','backgroundColor','textColor','borderColor','density','radius','padding','gap','shadow','glassBlur','objectApiName','helpText']);
  const raw=JSON.parse(await readFile(new URL('../src/one/une_cart/component.json',import.meta.url),'utf8'));
  assert.deepEqual(new Set(raw.propertyDefinitions.map(p=>p.propertyKey)),common);
  const code=await readFile(new URL('../src/one/une_cart/UneCart.jsx',import.meta.url),'utf8');
@@ -147,7 +147,7 @@ test('Cart-specific settings are internal defaults while shared styling remains 
 });
 
 test('UNE Search and Modal expose only shared properties while retaining internal runtime defaults',async()=>{
- const shared=new Set(['surface','tone','accentColor','backgroundColor','textColor','borderColor','density','radius','padding','gap','shadow','glassBlur','objectApiName']);
+ const shared=new Set(['surface','tone','accentColor','backgroundColor','textColor','borderColor','density','radius','padding','gap','shadow','glassBlur','objectApiName','helpText']);
  for(const [name,internal] of [['search',['placeholder','searchKey','value','label','showSubmitButton','submitLabel','showSuggestions','controlledValue']],['modal',['layoutContainer','title','openLabel','startOpen','controlledOpen','isOpen','showTrigger','showCloseButton','closeOnBackdrop','closeOnEscape','fullScreenOnMobile']]]){
   const raw=JSON.parse(await readFile(new URL('../src/one/une_'+name+'/component.json',import.meta.url),'utf8'));
   assert.ok(raw.propertyDefinitions.every(item=>shared.has(item.propertyKey)),name+' exposes non-shared metadata');
