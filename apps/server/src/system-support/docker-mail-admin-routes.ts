@@ -1,6 +1,7 @@
 import type {Express,Request,Response,NextFunction} from 'express';
 import type {SqlPersistence} from '../system-files/sql-persistence.js';
 import type {RbacEngine} from '../system-files/rbac-engine.js';
+import type {MailAdminAccess} from './mail-admin-access.js';
 import {createConnection} from 'node:net';
 import {randomBytes} from 'node:crypto';
 import {resolveTxt} from 'node:dns/promises';
@@ -41,7 +42,7 @@ function problem(res:Response,error:unknown){
   /Invalid|must be|not available|not verified|not found|not supported|requires security approval/.test(message)?400:503;
  res.status(status).json({error:status===503?'Mail administration unavailable':message});
 }
-export function registerDockerMailAdminRoutes(app:Express,db:SqlPersistence,rbac:RbacEngine){
+export function registerDockerMailAdminRoutes(app:Express,db:SqlPersistence,rbac:RbacEngine,adminAccess?:MailAdminAccess){
  async function permission(req:MailRequest,access:'read'|'manage'){
   const actor=req.actor;
   if(!actor?.tenant_id||!actor.user_id)throw new Error('Permission denied');
@@ -152,6 +153,16 @@ export function registerDockerMailAdminRoutes(app:Express,db:SqlPersistence,rbac
    }
    await audit(actor,'mailbox_created',address);
    res.status(201).json({mailbox:{id:address,emailAddress:address}});
+  }catch(e){problem(res,e);}
+ }));
+ app.post('/api/mail/mailboxes/:id/open',handler(async(req,res)=>{
+  try{
+   if(!adminAccess){res.status(503).json({error:'Admin mailbox access unavailable'});return;}
+   const actor=await permission(req,'manage'),address=req.params.id;
+   await account(actor,address);
+   const ticket=await adminAccess.createTicket(actor,address);
+   res.setHeader('Cache-Control','no-store');
+   res.json(ticket);
   }catch(e){problem(res,e);}
  }));
  app.post('/api/mail/mailboxes/:id/reset-password',handler(async(req,res)=>{
