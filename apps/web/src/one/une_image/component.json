@@ -18,5 +18,11 @@
     "minWidth": 120,
     "minHeight": 44
   },
-  "propertyDefinitions": []
+  "propertyDefinitions": [],
+  "eventDefinitions": [
+    {
+      "apiName": "click",
+      "label": "When image is clicked"
+    }
+  ]
 }
