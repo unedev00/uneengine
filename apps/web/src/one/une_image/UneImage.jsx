@@ -21,6 +21,14 @@ export default function UneImage(props){
  const placement=['top','bottom','left','right'].includes(props.imagePlacement)?props.imagePlacement:'top';
  const badgePlace=String(props.badgeAlignment||'image-top-right');
  const onImage=badgePlace.startsWith('image-')&&Boolean(source);
+ // The page designer renders with previewOnly=true and must never execute
+ // a configured click Flow merely because the user selected the image.
+ const clickable=!props.previewOnly&&!props.builderPreview&&
+   Boolean(props.actionFlows?.click)&&typeof props.onAction==='function';
+ const activate=()=>{if(clickable)void Promise.resolve(props.onAction({
+   event:'click',value:{record,source,header,badge}
+ })).catch(()=>{});};
+
  const badgeNode=badgeEnabled?<span className="une-image-card-badge" style={{
    fontSize:numeric(props.badgeTextSize,12,60),
    fontWeight:props.badgeBold!==false?700:400,
@@ -45,7 +53,11 @@ export default function UneImage(props){
    whiteSpace:props.wrapText===false?'nowrap':'normal',overflowWrap:'anywhere',
    border:props.headerBorderColor?'1px solid '+props.headerBorderColor:undefined
  }}>{header}</div>:null;
- return <UneFrame p={props}><figure className="une-image-card" style={{
+ return <UneFrame p={props}><figure className="une-image-card"
+   role={clickable?'button':undefined} tabIndex={clickable?0:undefined}
+   onClick={clickable?activate:undefined}
+   onKeyDown={clickable?event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();activate();}}:undefined}
+   style={{
    margin:0,display:'flex',position:'relative',minWidth:0,
    flexDirection:placement==='left'||placement==='right'?'row':'column',gap:0
  }}>

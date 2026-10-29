@@ -2618,6 +2618,15 @@ function PageBuilder({
               objects={objects} pageObjectApiName={page.targetObject} position={selected.position}
               onPositionChange={position=>updateComponent(selected.id,{position})}
               layoutMode={page.layoutMode}/>}
+          {selectedNewUne && selected && ['Component Content','Component Responsive','Component Action'].includes(ribbonTab) &&
+            <div className="une-v2-tab-guide" role="group" aria-label="UNE property locations">
+              <div className="une-v2-tab-guide-title">{ribbonTab==='Component Action'?'Component actions':'UNE component properties'}</div>
+              <div className="une-v2-tab-guide-links">
+                <button type="button" onClick={()=>selectRibbonTab('Component Data')}>Data <small>Object · sources · @ fields</small></button>
+                <button type="button" onClick={()=>selectRibbonTab('Component Properties')}>Design <small>Colours · image · text · badge</small></button>
+                <button type="button" onClick={()=>selectRibbonTab('Component Layout')}>Layout <small>Size · position · structure</small></button>
+              </div>
+            </div>}
           {selectedAppOwnedUne && ribbonTab.startsWith('Component ') && <div className="une-app-owned-note" role="status">UNE component properties are maintained in application code, not in the Component Library or Page Builder ribbon.</div>}
           {selected && editingConversation && (['Component Data','Component Content','Component Properties','Component Layout','Component Responsive','Component Action'] as string[]).includes(ribbonTab) &&
             <div className="office-ribbon-group office-ribbon-conversation-parts">
@@ -2630,7 +2639,7 @@ function PageBuilder({
               </label>
               <span>Elements</span>
             </div>}
-          {selected && selectedCustomDefinition && (['Component Data','Component Content','Component Properties','Component Layout','Component Responsive','Component Action'] as string[]).includes(ribbonTab) &&
+          {selected && !selectedNewUne && selectedCustomDefinition && (['Component Data','Component Content','Component Properties','Component Layout','Component Responsive','Component Action'] as string[]).includes(ribbonTab) &&
             <UniversalRibbonInventory tab={ribbonTab as 'Component Data'|'Component Content'|'Component Properties'|'Component Layout'|'Component Responsive'|'Component Action'}
               definition={conversationEditorDefinition??selectedCustomDefinition}
               componentId={selected.id+(editingConversation?':'+selectedConversationPart:'')}
@@ -2706,12 +2715,12 @@ function PageBuilder({
             onChange={properties=>updateComponent(selected.id,{properties})}
             onOpenSource={()=>openExpandedEditor('source')}
             onOpenFilters={()=>openExpandedEditor('filters')}/>}
-          {selected && ribbonTab === 'Component Content' && selectedCustomDefinition?.apiName==='une_image' &&
+          {selected && !selectedNewUne && ribbonTab === 'Component Content' && selectedCustomDefinition?.apiName==='une_image' &&
             <RibbonImageContent
               properties={selected.properties}
               definitions={selectedCustomDefinition.propertyDefinitions??[]}
               onChange={properties=>updateComponent(selected.id,{properties})}/>}
-          {selected && ribbonTab === 'Component Content' && selectedCustomDefinition && !['une_item_grid','une_calendar','une_image'].includes(selectedCustomDefinition.apiName) &&
+          {selected && !selectedNewUne && ribbonTab === 'Component Content' && selectedCustomDefinition && !['une_item_grid','une_calendar','une_image'].includes(selectedCustomDefinition.apiName) &&
             selectedCustomDefinition.propertyDefinitions?.some(definition=>definition.kind==='OBJECT_FIELD') &&
             <div className="office-ribbon-group"><div className="office-ribbon-stack">
               {selectedCustomDefinition.propertyDefinitions.filter(definition=>definition.kind==='OBJECT_FIELD').slice(0,3).map(definition=><label key={definition.propertyKey} className="office-ribbon-inline-field">
@@ -2724,7 +2733,7 @@ function PageBuilder({
               </label>)}
             </div><span>Content Source</span></div>}
           
-          {selected && ribbonTab === 'Component Content' && !['une_item_grid','une_calendar','une_image','une_conversation'].includes(selectedCustomDefinition?.apiName??'')
+          {selected && !selectedNewUne && ribbonTab === 'Component Content' && !['une_item_grid','une_calendar','une_image','une_conversation'].includes(selectedCustomDefinition?.apiName??'')
             && selectedCustomDefinition && <div className="office-ribbon-inline-options">
               <ComponentPresentationProperties
                 definitions={availableComponentSettings(selectedCustomDefinition.propertyDefinitions??[],
@@ -2734,19 +2743,19 @@ function PageBuilder({
                 properties={selected.properties}
                 onChange={properties=>updateComponent(selected.id,{properties})}/>
             </div>}
-          {selected && ribbonTab==='Component Content' && selectedCustomDefinition
+          {selected && !selectedNewUne && ribbonTab==='Component Content' && selectedCustomDefinition
             && (selectedCustomDefinition.apiName==='une_item_grid'||selectedCustomDefinition.apiName==='une_calendar')
             && <PageBuilderRibbonContent key={selected.id}
               componentApiName={selectedCustomDefinition.apiName} properties={selected.properties}
               definition={selectedCustomDefinition} objects={objects}
               onChange={properties=>updateComponent(selected.id,{properties})}/>}
-          {ribbonTab==='Component Properties' && designRibbonGroups.map(group=>{
+          {ribbonTab==='Component Properties' && !selectedNewUne && designRibbonGroups.map(group=>{
             const definitions=selected?definitionsForPart(group,'Design'):[];
             return <div className="office-ribbon-group office-ribbon-part-group" data-ribbon-group={group} key={group}>
               <fieldset className="office-ribbon-part-fieldset" title={definitions.length?group:'Not supported by selected component'}><RibbonCapabilityControls group={group} device={page.layoutVariant??'Desktop'} definitions={definitions} properties={selected?.properties??{}} icon={ribbonPartIcons[group]??<Settings2 size={15}/>} onChange={properties=>{if(selected)updateComponent(selected.id,{properties});}}/></fieldset><span>{group}</span>
             </div>;
           })}
-          {selected && ribbonTab==='Component Layout' && layoutRibbonGroups.map(group=>{
+          {selected && !selectedNewUne && ribbonTab==='Component Layout' && layoutRibbonGroups.map(group=>{
             const definitions=definitionsForPart(group,'Layout');
             return <div className="office-ribbon-group office-ribbon-part-group" data-ribbon-group={group} key={group}>
               <fieldset className="office-ribbon-part-fieldset" title={definitions.length?group:'Not supported by selected component'}><RibbonCapabilityControls group={group} device={page.layoutVariant??'Desktop'} definitions={definitions} properties={selected?.properties??{}} icon={ribbonPartIcons[group]??<Settings2 size={15}/>} onChange={properties=>{if(selected)updateComponent(selected.id,{properties});}}/></fieldset><span>{group} layout</span>
@@ -2782,16 +2791,16 @@ function PageBuilder({
             <div className="office-ribbon-group office-ribbon-mapping-warning" role="alert">
               Some mapped fields are not available on this object. Choose replacement fields; existing mappings were preserved.
             </div>}
-          {selected && ribbonTab === 'Component Properties' && <PageBuilderAdvancedStyle
+          {selected && !selectedNewUne && ribbonTab === 'Component Properties' && <PageBuilderAdvancedStyle
             key={selected.id} properties={selected.properties} componentType={selected.type}
             definition={selectedCustomDefinition} device={page.layoutVariant??'Desktop'}
             excludeKeys={inferredGroupKeys} onChange={properties=>updateComponent(selected.id,{properties})}/>}
-          {selected && ribbonTab==='Component Responsive' && <RibbonResponsive
+          {selected && !selectedNewUne && ribbonTab==='Component Responsive' && <RibbonResponsive
             properties={selected.properties} componentType={selected.type}
             definition={selectedCustomDefinition} device={page.layoutVariant??'Desktop'}
 
             onChange={properties=>updateComponent(selected.id,{properties})}/>}
-          {selected && ribbonTab === 'Component Action' && selectedCustomDefinition?.apiName==='une_item_grid'
+          {selected && !selectedNewUne && ribbonTab === 'Component Action' && selectedCustomDefinition?.apiName==='une_item_grid'
             && <div className="office-ribbon-group"><div className="office-ribbon-stack">
               <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Add to cart</span>
                 <select aria-label="Choose a Cart component" value={page.components
@@ -2817,7 +2826,10 @@ function PageBuilder({
             </div><span>Cart connection</span></div>}
           {selected && ribbonTab === 'Component Action' && <PageBuilderActionRibbon key={selected.id}
             actions={selected.properties.actionFlows&&typeof selected.properties.actionFlows==='object'?selected.properties.actionFlows as Record<string,unknown>:{}}
-            eventDefinitions={selectedCustomDefinition?.eventDefinitions??[]} flows={flows}
+            eventDefinitions={selectedNewUne&&selected.type==='Custom:une_image'
+              ? [...(selectedCustomDefinition?.eventDefinitions??[]).filter(event=>event.apiName!=='click'),
+                 {apiName:'click',label:'When image is clicked'}]
+              : selectedCustomDefinition?.eventDefinitions??[]} flows={flows}
             onChange={actions=>updateComponent(selected.id,{properties:{...selected.properties,actionFlows:actions}})}
             advanced={<>
               <section aria-label="Advanced event action mappings"><strong>Event action bindings, inputs, outputs and destinations</strong>
@@ -2834,7 +2846,7 @@ function PageBuilder({
                 objects={objects} apps={apps} pages={pages} currentAppId={builderAppApiName||apps[0]?.apiName||'Records'} flows={flows} primaryObjectApiName={page.targetObject}/>
             </>}/>}
 
-          {selected && (ribbonTab==='Component Layout'||ribbonTab==='Component Responsive') && selectedCustomDefinition && <div className="office-ribbon-inline-options">
+          {selected && !selectedNewUne && (ribbonTab==='Component Layout'||ribbonTab==='Component Responsive') && selectedCustomDefinition && <div className="office-ribbon-inline-options">
             <PageBuilderRibbonMetadataPager key={selected.id}
               definitions={availableComponentSettings(selectedCustomDefinition.propertyDefinitions??[],
                 page.layoutVariant??'Desktop',selectedCustomDefinition.version)
@@ -2845,7 +2857,7 @@ function PageBuilder({
                     : !/(?:device|breakpoint|mobile|tablet|desktop|phone|responsive|hidden|visible|visibility|borderWidth|borderRadius|radius|margin|padding|gap|opacity|textAlign|lineHeight|density)/i.test(definition.propertyKey) && !/^(?:width|height|minWidth|maxWidth|minHeight|maxHeight)$/.test(definition.propertyKey)))}
               properties={selected.properties} onChange={properties=>updateComponent(selected.id,{properties})}/>
           </div>}
-          {selected && ribbonTab==='Component Layout' && page.layoutMode!=='free-canvas' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
+          {selected && !selectedNewUne && ribbonTab==='Component Layout' && page.layoutMode!=='free-canvas' && <div className="office-ribbon-group"><div className="office-ribbon-stack">
             {(['width','height'] as const).map(key=><label key={key} className="office-ribbon-inline-field">{key==='width'?'Width':'Height'} <input aria-label={'Layout '+key} value={String(selected.properties[key]??(key==='width'?'100%':'auto'))}
               onChange={event=>updateComponent(selected.id,{properties:{...selected.properties,[key]:event.target.value}})}/></label>)}
           </div><span>Dimensions</span></div>}
@@ -2855,7 +2867,7 @@ function PageBuilder({
                onChange={event=>updateComponent(selected.id,{properties:{...selected.properties,layoutContainer:event.target.checked}})}/> Allow child components</label></div>
              <span>Nesting</span>
            </div>}
-          {selected && ribbonTab === 'Component Layout' && <>
+          {selected && !selectedNewUne && ribbonTab === 'Component Layout' && <>
             <div className="office-ribbon-group office-ribbon-icon-group office-ribbon-layout-arrange" aria-label="Arrange component">
               <div className="office-ribbon-arrange-column">
 
@@ -2930,7 +2942,7 @@ function PageBuilder({
               </select>
             </label></div><span>Add record field</span>
           </div>}
-          {['Component Properties','Component Style'].includes(ribbonTab) && <div className="office-ribbon-inspector-host" ref={setRibbonPropertyHost} aria-label="Ribbon property controls" />}
+          {['Component Properties','Component Style'].includes(ribbonTab) && !selectedNewUne && <div className="office-ribbon-inspector-host" ref={setRibbonPropertyHost} aria-label="Ribbon property controls" />}
 
         </div>
         <div className="office-ribbon-group-navigation" aria-label="Ribbon group navigation">
