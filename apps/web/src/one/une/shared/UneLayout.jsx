@@ -56,10 +56,13 @@ const menuOptions=v=>Array.isArray(v)?v:parse(v).map(label=>({label,value:label}
 export function UneNavigation(p){
  const heading="";
  const sourceField=String(p.navigationLabelFieldApiName||p.optionLabelFieldApiName||"").trim();
+ const sourceExpression=typeof p.textSource==="string"?p.textSource.trim():"";
  const recordRows=Array.isArray(p.records)?p.records:[];
- const navigationItems=sourceField&&/^[A-Za-z][A-Za-z0-9_]*$/.test(sourceField)
-   ?recordRows.filter(row=>row&&typeof row==="object"&&row[sourceField]!=null&&String(row[sourceField]).trim())
-     .map(row=>({label:String(row[sourceField]),value:row.Id??row.id??row[sourceField],record:row}))
+ const labelFor=row=>sourceField&&/^[A-Za-z][A-Za-z0-9_]*$/.test(sourceField)
+   ?String(row[sourceField]??""):sourceExpression?String(evaluateFieldExpression(sourceExpression,row)??""):"";
+ const navigationItems=(sourceField||sourceExpression)&&recordRows.length
+   ?recordRows.map(row=>({label:labelFor(row),value:row.Id??row.id??labelFor(row),record:row}))
+     .filter(item=>item.label.trim())
    :menuOptions(p.items);
  const direction=p.navigationDirection==="vertical"?"column":p.navigationDirection==="horizontal"?"row":
    p.direction==="column"?"column":"row";
