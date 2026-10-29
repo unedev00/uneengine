@@ -252,7 +252,8 @@ export function createSystemServer(db:SqlPersistence) {
   registerFederationCallback(app,federation);
   const tenantDeveloper=new TenantDeveloperService(db,rbac,auth,mfa);
   const passwordReset=new PasswordResetService(db,auth,(tenant,credential,from,to,subject,body)=>
-    namedCredentials.sendRecoveryEmail(tenant,credential,from,to,subject,body));
+    namedCredentials.sendRecoveryEmail(tenant,credential,from,to,subject,body),
+    (tenant,user,config,variables,key)=>namedCredentials.callout(tenant,user,config,variables,key));
   const definitions=new ObjectDefinitionService(db,{
     encryptedValueVault:namedCredentials,
     evaluateFormula:(client,tenantId,userId,objectApi,fieldApi,recordId)=>
@@ -411,14 +412,28 @@ export function createSystemServer(db:SqlPersistence) {
       res.json({access_token:session.accessToken,expires_in:session.expiresIn,landingAppApi:await landingPreference(session.tenant_id,session.user_id),...(req.query.landing==='1'?await landingBootstrap(session.tenant_id,session.user_id):{})});
     } catch {res.status(401).json({error:'Invalid refresh session'});}
   }));
+  app.get('/api/auth/password-reset/options',route(async(req,res)=>{
+    const tenantId=await resolveTenant(db,req,req.query.tenantSlug);
+    if(!tenantId){res.status(400).json({error:'Tenant domain is required'});return;}
+    res.setHeader('Cache-Control','no-store');
+    res.json(await passwordReset.options(tenantId));
+  }));
   app.post('/api/auth/password-reset/request',route(async(req,res)=>{
     const tenantId=await resolveTenant(db,req,req.body?.tenantSlug);
     if(!tenantId){res.status(400).json({error:'Tenant domain is required'});return;}
-    res.status(202).json(await passwordReset.request(tenantId,req.body?.email));
+    res.setHeader('Cache-Control','no-store');
+    res.status(202).json(await passwordReset.request(tenantId,req.body?.email,req.body?.channel));
+  }));
+  app.post('/api/auth/password-reset/verify',route(async(req,res)=>{
+    const tenantId=await resolveTenant(db,req,req.body?.tenantSlug);
+    if(!tenantId){res.status(400).json({error:'Tenant domain is required'});return;}
+    res.setHeader('Cache-Control','no-store');
+    res.json(await passwordReset.verify(tenantId,req.body?.email,req.body?.code));
   }));
   app.post('/api/auth/password-reset/confirm',route(async(req,res)=>{
     const tenantId=await resolveTenant(db,req,req.body?.tenantSlug);
     if(!tenantId){res.status(400).json({error:'Tenant domain is required'});return;}
+    res.setHeader('Cache-Control','no-store');
     res.json(await passwordReset.confirm(tenantId,req.body?.email,req.body?.token,req.body?.newPassword));
   }));
   app.post('/api/auth/mfa/verify',route(async(req,res)=>{
