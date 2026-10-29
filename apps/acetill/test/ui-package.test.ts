@@ -28,7 +28,7 @@ test('checkout and receipt actions require named active Flows at runtime',()=>{
 test('catalogue and basket bind shared Product fields and same cart state',()=>{
  assert.match(sql,/une_item_grid','main',20,'objectApiName','string','Product'/);
  assert.match(sql,/une_item_grid','main',20,'cartTargetKey','string','acetill'/);
- assert.match(sql,/une_cart','sidebar',30,'cartTargetKey','string','acetill'/);
+ assert.match(sql,/acetill_cart','sidebar',30,'cartTargetKey','string','acetill'/);
 });
 
 test('standalone entrypoint uses the shared product-aware workspace shell',()=>{
