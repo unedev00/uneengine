@@ -49,3 +49,18 @@ test('SQL cleanup removes UNE property inventory only, retaining component ident
  assert.doesNotMatch(migration,/DELETE\s+FROM\s+md_component_definitions/i);
  assert.doesNotMatch(migration,/DELETE\s+FROM\s+md_page_definitions/i);
 });
+
+test('app-owned renderers and styles are code owned rather than UNE wrapper reexports',()=>{
+ const appTypes=['acetill','aceassist','onechatter','uneacechatter'];
+ const own=manifest.components.filter(path=>appTypes.some(app=>path.startsWith(app+'_')));
+ assert.equal(own.length,17);
+ for(const path of own){
+  const descriptor=JSON.parse(read(new URL(path,root)));
+  assert.deepEqual(descriptor.propertyDefinitions,[]);
+  assert.equal(descriptor.cssFile,descriptor.apiName==='acetill_cart'
+   ?'one/acetill_cart/AcetillCart.css':`one/${descriptor.apiName}/AppComponent.css`);
+  const jsx=read(new URL('../src/'+descriptor.jsxFile,import.meta.url));
+  assert.doesNotMatch(jsx,/from ['"]\.\.\/une_[a-z_]+\//,descriptor.apiName+' imports a deprecated wrapper');
+  assert.ok(read(new URL('../src/'+descriptor.cssFile,import.meta.url)).length>0);
+ }
+});
