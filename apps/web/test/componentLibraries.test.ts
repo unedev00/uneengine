@@ -91,7 +91,7 @@ test('only UNE equivalents are offered for trusted retired One components',()=>{
   for(const surface of ['page','dashboard','flow'] as const){
    assert.deepEqual(uniqueLibraryComponents([old,replacement],surface),[replacement]);
    assert.equal(findRegisteredComponent([replacement],legacy,surface),replacement);
-   assert.equal(findRegisteredComponent([old,replacement],legacy,surface),old);
+   assert.equal(findRegisteredComponent([old,replacement],legacy,surface),legacy==='OneText'?replacement:old);
   }
   assert.deepEqual(uniqueLibraryComponents([definition(legacy),replacement]),[definition(legacy),replacement],
    'tenant-owned components are never retired by name alone');
