@@ -80,3 +80,9 @@ test('Smart visual/property fixes are registered without changing historic SQL m
  assert.match(sql,/DELETE FROM md_builder_ribbon_component_rules/);
  assert.match(sql,/smart_lookup/);
 });
+
+test('Smart canvas positions remain the source of truth for rendered sizes',()=>{
+ const view=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ assert.ok(view.includes('component.position.width,height:component.position.height'));
+ assert.ok(view.includes("target.type==='Custom:smart_toggle'&&update.position"));
+});
