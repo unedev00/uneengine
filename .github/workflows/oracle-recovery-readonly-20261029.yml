@@ -134,4 +134,7 @@ jobs:
 
           echo '=== builder SQL supporting tables (names only) ==='
           sudo -n runuser -u postgres -- psql -X -Atq -v ON_ERROR_STOP=1 -d "$db" -c "SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND (table_name LIKE 'md_builder%' OR table_name LIKE 'md_ribbon%') ORDER BY table_name"
+
+          echo '=== normalized Ribbon metadata columns only ==='
+          sudo -n runuser -u postgres -- psql -X -Atq -v ON_ERROR_STOP=1 -d "$db" -c "SELECT table_name||'.'||column_name||' '||data_type||' nullable='||is_nullable FROM information_schema.columns WHERE table_schema='public' AND table_name IN ('md_builder_shared_property_defaults','md_builder_shared_property_default_items','md_builder_shared_property_choices','md_builder_ribbon_rule_defaults','md_builder_ribbon_rule_default_items','md_builder_ribbon_rule_choices') ORDER BY table_name,ordinal_position"
           echo 'Read-only Oracle audit complete.'
