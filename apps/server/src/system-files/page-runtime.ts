@@ -13,7 +13,22 @@ const decodePageValues=decodeMetadataValues;
 
 export class PageRuntime {
   private readonly layouts:PageLayoutVersionRuntime;
+  // Published metadata only. Legacy pages perform permission checks during load
+  // and must not be served from this cache.
+  private readonly publishedLoadCache=new Map<string,{
+    at:number;value:{page:Awaited<ReturnType<PageRuntime['metadata']>>}
+  }>();
+  private static readonly PUBLISHED_LOAD_TTL_MS=30_000;
+  private static readonly PUBLISHED_LOAD_CACHE_MAX=300;
   constructor(private readonly db:SqlPersistence) {this.layouts=new PageLayoutVersionRuntime(db);}
+  private publishedCacheKey(tenantId:string,pageApi:string,variant:PageLayoutVariant):string{
+    return JSON.stringify([tenantId,pageApi,variant]);
+  }
+  private invalidatePublishedCache(tenantId:string,pageApi:string):void{
+    const prefix=JSON.stringify([tenantId,pageApi]).slice(0,-1)+',';
+    for(const key of this.publishedLoadCache.keys())
+      if(key.startsWith(prefix))this.publishedLoadCache.delete(key);
+  }
   async list(tenantId:string) {
     const {rows}=await this.db.query<{api_name:string}>(`SELECT p.api_name FROM md_page_definitions p
       JOIN md_lightning_page_details d ON d.tenant_id=p.tenant_id AND d.page_id=p.id
@@ -96,6 +111,7 @@ export class PageRuntime {
   }
   async publishLayout(tenantId:string,pageApi:string,variant:PageLayoutVariant,expected?:number,actor?:string){
     await this.layouts.publish(tenantId,pageApi,variant,expected,actor);
+    this.invalidatePublishedCache(tenantId,pageApi);
     return this.metadata(tenantId,pageApi,variant);
   }
   async rollbackLayout(tenantId:string,pageApi:string,variant:PageLayoutVariant,version:number,actor?:string){
@@ -106,13 +122,21 @@ export class PageRuntime {
     return this.layouts.history(tenantId,pageApi,variant);
   }
   async load(tenantId:string,pageApi:string,variant:PageLayoutVariant='Desktop'){
-    // metadata() already checks the tenant-scoped Lightning page row. Reuse
-    // that result instead of issuing a separate EXISTS query before loading it.
+    const key=this.publishedCacheKey(tenantId,pageApi,variant);
+    const hit=this.publishedLoadCache.get(key);
+    if(hit&&Date.now()-hit.at<PageRuntime.PUBLISHED_LOAD_TTL_MS)return hit.value;
+    if(hit)this.publishedLoadCache.delete(key);
+    // metadata() already checks the tenant-scoped Lightning page row.
     const page=await this.metadata(tenantId,pageApi,variant).catch(error=>{
       if(error instanceof Error&&error.message==='Page not found')return null;
       throw error;
     });
-    return page?{page}:this.loadLegacy(tenantId,pageApi);
+    if(!page)return this.loadLegacy(tenantId,pageApi);
+    const value={page};
+    if(this.publishedLoadCache.size>=PageRuntime.PUBLISHED_LOAD_CACHE_MAX)
+      this.publishedLoadCache.delete(this.publishedLoadCache.keys().next().value!);
+    this.publishedLoadCache.set(key,{at:Date.now(),value});
+    return value;
   }
 
   /** Transactional draft publishing and component persistence; no JSON columns. */
@@ -220,6 +244,8 @@ export class PageRuntime {
           (a.formFactors as string[]).includes('Desktop'),(a.formFactors as string[]).includes('Phone'),
           (a.formFactors as string[]).includes('Tablet'),(a.formFactors as string[]).includes('Custom'),index]);
     });
+    this.invalidatePublishedCache(tenantId,previousApiName);
+    if(p.apiName!==previousApiName)this.invalidatePublishedCache(tenantId,String(p.apiName));
     return this.metadata(tenantId,p.apiName);
   }
 
