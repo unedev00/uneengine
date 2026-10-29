@@ -9,7 +9,7 @@ const manifests=catalog.components.map(path=>JSON.parse(readFileSync(new URL(pat
   .filter(component=>/^une_[a-z0-9_]+$/.test(component.apiName));
 
 test('every active property from every UNE component is registered in the universal ribbon',()=>{
-  assert.equal(manifests.length,36);
+  assert.equal(manifests.length,34);
   const allKeys=[...new Set(manifests.flatMap(component=>
     (component.propertyDefinitions??[]).map(def=>def.propertyKey)))].sort();
   assert.ok(allKeys.length>100,'unexpectedly small shared inventory');

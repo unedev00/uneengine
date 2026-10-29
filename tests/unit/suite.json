@@ -208,6 +208,7 @@
     "apps/web/test/uneTextPropertyRepair.test.ts",
     "apps/web/test/universalUneRibbonExhaustiveCoverage.test.ts",
     "apps/web/test/universalUneRibbonInventory.test.ts",
+    "apps/web/test/universalRibbonEveryProperty.test.mjs",
     "apps/web/test/universalUneRibbonReviewMode.test.ts",
     "apps/web/test/visibilityExpression.test.ts",
     "apps/web/test/visiblePolling.test.ts",
