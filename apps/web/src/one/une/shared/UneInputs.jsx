@@ -32,8 +32,9 @@ export function UneInput(p){
  const display=String(value??"");
  const visual=type==="password"?"•".repeat(display.length):display;
  const lines=visual.split(/\r?\n/);
- return <div className="one-ui one-field">
-  {p.label&&<label className="one-label" htmlFor={p.inputId}>{p.label}</label>}
+ return <div className="one-ui one-field une-input-field" style={{display:"flex",flexDirection:"column",gap:densityGap}}>
+  {p.label&&<label className="one-label" htmlFor={id}>{p.label}</label>}
+  <div className="une-input-surface" style={{padding:n(p.padding,16,0,100)}}>
   {!editable
     ?<div className="une-input-display" role="text" aria-label={p.label||undefined}>
        {lines.length>1
@@ -43,7 +44,8 @@ export function UneInput(p){
     :p.multiline?<textarea {...attributes} rows={n(p.rows,3,1,16)} onChange={e=>set(e.target.value)}/>
     :<input {...attributes} type={type}
       onChange={e=>set(type==="number"?(e.target.value===""?"":Number(e.target.value)):e.target.value)}/>}
-  </div>\n  {p.helpText&&<small className="one-muted" id={helpId} title={String(p.helpText)}>{p.helpText}</small>}
+  </div>
+  {p.helpText&&<small className="one-muted" id={helpId} title={String(p.helpText)}>{p.helpText}</small>}
  </div>;
 }
 export function UneToggle(p){
