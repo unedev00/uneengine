@@ -279,6 +279,24 @@ export const propertyDefinitions = [
     "defaultValue": true
   },
   {
+    "propertyKey": "defaultValue",
+    "label": "Default Value",
+    "kind": "SELECT",
+    "group": "Calendar",
+    "section": "Design",
+    "displayOrder": 820,
+    "defaultValue": "today",
+    "choices": [{"key":"today","label":"Today"},{"key":"","label":"None"}]
+  },
+  {
+    "propertyKey": "defaultValueColor",
+    "label": "Default Value Color",
+    "kind": "COLOR",
+    "group": "Calendar",
+    "section": "Design",
+    "displayOrder": 821
+  },
+  {
     "propertyKey": "helpText",
     "label": "Help text",
     "kind": "TEXT",
