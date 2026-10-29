@@ -88,7 +88,7 @@ test('Oracle D-Bus recovery is bounded and cannot mask failed service health',()
  const sh=readFileSync(busRecovery,'utf8');
  const yaml=readFileSync(workflow,'utf8');
  assert.match(yaml,/Recover Oracle systemd D-Bus control plane if unresponsive/);
- assert.match(yaml,/sudo -n bash scripts\/oracle\/recover-systemd-bus\.sh/);
+ assert.match(yaml,/sudo -n env GITHUB_REPOSITORY="\$GITHUB_REPOSITORY" bash scripts\/oracle\/recover-systemd-bus\.sh/);
  assert.match(yaml,/bash -n scripts\/oracle\/recover-systemd-bus\.sh/);
  assert.match(sh,/GITHUB_REPOSITORY/);
  assert.match(sh,/uname -m/);
