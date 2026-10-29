@@ -142,3 +142,34 @@ test('navigation and container preserve usable rendering with new text, image, b
  assert.match(container,/NEW/);
  assert.match(container,/object-fit:fill/);
 });
+
+test('new UNE selections never mount the retired ribbon next to the 43 Excel slots',()=>{
+ const page=src('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const inventory=src('../src/core/builders/PageBuilder/uneBuilderPropertyInventory.ts');
+ const css=src('../src/core/builders/PageBuilder/UneBuilderRibbon.css');
+ assert.match(page,/selectedNewUne && selected && \['Component Data','Component Properties','Component Layout'\]/);
+ assert.match(page,/selected && !selectedNewUne && selectedCustomDefinition && \(\['Component Data','Component Content'/);
+ assert.match(page,/ribbonTab==='Component Properties' && !selectedNewUne && designRibbonGroups\.map/);
+ assert.match(page,/selected && !selectedNewUne && ribbonTab==='Component Layout' && layoutRibbonGroups\.map/);
+ assert.match(page,/selected && !selectedNewUne && ribbonTab === 'Component Properties' && <PageBuilderAdvancedStyle/);
+ assert.match(page,/selectedNewUne && selected && \['Component Content','Component Responsive','Component Action'\]/);
+ assert.match(page,/className="une-v2-tab-guide"/);
+ assert.match(css,/data-une-v2="true"/);
+ assert.match(css,/\.une-v2-tab-guide-links button/);
+ assert.match(inventory,/UNE_RIBBON_PROPERTIES/);
+ for(const slot of UNE_RIBBON_PROPERTIES){
+   assert.ok(UNE_RIBBON_GROUPS[slot.tab].includes(slot.group),slot.label+' misplaced');
+ }
+});
+test('Image action tab offers a declared click event without triggering it in the designer',async()=>{
+ const registration=JSON.parse(src('../src/one/une_image/component.json'));
+ assert.deepEqual(registration.propertyDefinitions,[]);
+ assert.deepEqual(registration.eventDefinitions,[{apiName:'click',label:'When image is clicked'}]);
+ const props={src:'https://example.com/photo.png',
+   actionFlows:{click:{actionType:'Flow',flowApiName:'OpenPhoto'}}};
+ const preview=await renderUne('une_image',{...props,previewOnly:true,builderPreview:true});
+ assert.doesNotMatch(preview,/role="button"/);
+ const published=await renderUne('une_image',{...props,onAction:()=>{}});
+ assert.match(published,/role="button"/);
+ assert.match(published,/tabindex="0"/i);
+});
