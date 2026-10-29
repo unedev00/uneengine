@@ -27,9 +27,15 @@ test('Acetill owns its renderer identity and a separate version-3 package',()=>{
  const v3=src('../../acetill/sql/register-v3.sql');
  assert.equal(d.apiName,'acetill_cart');
  assert.deepEqual(d.propertyDefinitions,[]);
- assert.match(src('../src/one/acetill_cart/AcetillCart.jsx'),/une_cart\/UneCart/);
+ const privateRenderer=src('../src/one/acetill_cart/AcetillCart.jsx');
+ assert.match(privateRenderer,/OneShoppingCart\/OneShoppingCart/);
+ assert.doesNotMatch(privateRenderer,/une_cart\/UneCart/);
  assert.match(v3,/one-bundled:acetill_cart/);
  assert.match(v3,/AcetillSale','acetill_cart'/);
  assert.match(v3,/AcetillCheckout','acetill_cart'/);
  assert.doesNotMatch(v3,/'une_cart'/);
+ const v4=src('../../acetill/sql/register-v4.sql');
+ for(const name of ['acetill_input','acetill_search','acetill_item_grid','acetill_cart','acetill_button'])
+  assert.ok(v4.includes(name),name);
+ assert.doesNotMatch(v4,/'une_input'|'une_search'|'une_item_grid'|'une_cart'|'une_button'/);
 });
