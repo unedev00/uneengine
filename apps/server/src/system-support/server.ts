@@ -1234,13 +1234,23 @@ export function createSystemServer(db:SqlPersistence) {
       rbac.require(actor.tenant_id,actor.user_id,'App:'+req.params.appId,'read'),
       sessionMetadata(db,actor.tenant_id,actor.user_id)
     ]);
-    const assigned=await apps.homePage(actor.tenant_id,req.params.appId,
-      appHomeFormFactor(factor),session.user.profileId);
-    const customHome=factor==='Custom'||!Number.isInteger(viewportWidth)
-      ||viewportWidth<320||viewportWidth>10000?null
-      :await apps.homePage(actor.tenant_id,req.params.appId,appHomeFormFactor('Custom'),session.user.profileId);
-    const customPage=customHome?.apiName
-      ?(await pages.load(actor.tenant_id,customHome.apiName,'Custom')).page:null;
+    const probeCustom=factor!=='Custom'&&Number.isInteger(viewportWidth)
+      &&viewportWidth>=320&&viewportWidth<=10000;
+    const [assigned,customHome]=await Promise.all([
+      apps.homePage(actor.tenant_id,req.params.appId,
+        appHomeFormFactor(factor),session.user.profileId),
+      probeCustom
+        ?apps.homePage(actor.tenant_id,req.params.appId,appHomeFormFactor('Custom'),session.user.profileId)
+        :Promise.resolve(null)
+    ]);
+    const [customPage,assignedPage]=await Promise.all([
+      customHome?.apiName
+        ?pages.load(actor.tenant_id,customHome.apiName,'Custom').then(result=>result.page)
+        :Promise.resolve(null),
+      assigned?.apiName
+        ?pages.load(actor.tenant_id,assigned.apiName,runtimeLayoutVariant(factor)).then(result=>result.page)
+        :Promise.resolve(null)
+    ]);
     const customAssigned=customPage?.activationAssignments?.some(assignment=>
       Array.isArray(assignment.formFactors)&&assignment.formFactors.includes('Custom')
       &&(assignment.scope==='Org Default'
@@ -1250,8 +1260,7 @@ export function createSystemServer(db:SqlPersistence) {
       &&viewportWidth>=(customPage.customTargetMinWidth??320)
       &&viewportWidth<=(customPage.customTargetMaxWidth??10000)
       ?customPage:null;
-    const page=targeted??(assigned?.apiName
-      ?(await pages.load(actor.tenant_id,assigned.apiName,runtimeLayoutVariant(factor))).page:null);
+    const page=targeted??assignedPage;
     res.setHeader('Cache-Control','private, no-store');
     res.setHeader('Vary','Authorization, Cookie');
     res.json({page});
