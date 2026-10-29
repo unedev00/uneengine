@@ -2023,27 +2023,11 @@ function PageBuilder({
     const tabChildren=childrenOf(page.components,component.id).filter(child=>
       (typeof child.properties.tabLabel==='string'&&tabs.includes(child.properties.tabLabel)
         ?child.properties.tabLabel:tabs[0])===chosenTab);
-    return <div
-      key={component.id}
-      data-page-appearance={isLayoutType(component.type) ? 'layout' : pageAppearanceTarget(component.type)}
-      data-page-style={pageAppearanceStyleKeys(visualStyle)}
-      ref={libraryPreview && !interactivePreview ? (element) => { if (element) element.inert = true; } : undefined}
-      className={`record-component ${(!libraryPreview || interactivePreview) && page.layoutMode === 'free-canvas' ? 'free-canvas-component' : ''} ${isCanvasLocked(component) ? 'canvas-component-locked' : ''} ${nested ? 'nested-page-component' : ''} ${isLayoutContainer(component) ? 'layout-container-component' : ''} ${libraryPreview ? 'component-rendered-preview' : ''} ${selectedId === component.id && !previewMode && !libraryPreview ? 'selected' : ''} ${selectionIds.includes(component.id) && !previewMode && !libraryPreview ? 'multi-selected' : ''} ${dragOverId === component.id && !libraryPreview ? 'drop-target' : ''}`}
-      style={{
-        ...((!libraryPreview || interactivePreview) && page.layoutMode === 'free-canvas'
-          ? nested
-            ? { position: 'relative', left: 'auto', top: 'auto', width: '100%', height: 'auto', minHeight: 40 }
-            : {
-                left: component.position?.x ?? 0,
-                top: component.position?.y ?? 0,
-                width: component.position?.width ?? customDefinition?.resize?.defaultWidth ?? 320,
-                height: component.position?.height ?? customDefinition?.resize?.defaultHeight ?? 180
-              }
-          : {}),
-        ...(isLayoutType(component.type) ? {} : visualStyle),
-        ...(component.properties?.fillRegion===true && page.layoutMode==='template' ? {height:'100%',minHeight:0}: {})
-      } as React.CSSProperties}
-      onClick={!libraryPreview ? (event) => { event.stopPropagation(); if (!previewMode) {
+    // Canvas selection is a builder operation, never a component's runtime action.
+    // The same selection path is used for pointer hits and intercepted live controls.
+    const selectCanvasComponent = (event: React.MouseEvent<HTMLDivElement>) => {
+      event.stopPropagation();
+
         if (event.shiftKey && page.layoutMode === 'free-canvas') {
           const next = selectionIds.includes(component.id) && selectionIds.length > 1
             ? selectionIds.filter(id => id !== component.id) : [...new Set([...selectionIds, component.id])];
@@ -2065,14 +2049,51 @@ function PageBuilder({
         }else setFocusedCardMapping('');
         setPageSettingsOpen(false); setComponentMenuId('');
         if (!(event.shiftKey && page.layoutMode === 'free-canvas') && ['Home','Add Block','Preview'].includes(ribbonTab)) { setRibbonTab(componentNeedsData(component.type)?'Component Data':'Component Properties'); openComponentInspector(componentNeedsData(component.type)?'Data & Actions':'Design'); }
-      } } : undefined}
+
+    };
+    const selectOnlyInDesigner = !previewMode && !libraryPreview;
+    return <div
+      key={component.id}
+      data-page-appearance={isLayoutType(component.type) ? 'layout' : pageAppearanceTarget(component.type)}
+      data-page-style={pageAppearanceStyleKeys(visualStyle)}
+      ref={libraryPreview && !interactivePreview ? (element) => { if (element) element.inert = true; } : undefined}
+      className={`record-component ${(!libraryPreview || interactivePreview) && page.layoutMode === 'free-canvas' ? 'free-canvas-component' : ''} ${isCanvasLocked(component) ? 'canvas-component-locked' : ''} ${nested ? 'nested-page-component' : ''} ${isLayoutContainer(component) ? 'layout-container-component' : ''} ${libraryPreview ? 'component-rendered-preview' : ''} ${selectedId === component.id && !previewMode && !libraryPreview ? 'selected' : ''} ${selectionIds.includes(component.id) && !previewMode && !libraryPreview ? 'multi-selected' : ''} ${dragOverId === component.id && !libraryPreview ? 'drop-target' : ''}`}
+      style={{
+        ...((!libraryPreview || interactivePreview) && page.layoutMode === 'free-canvas'
+          ? nested
+            ? { position: 'relative', left: 'auto', top: 'auto', width: '100%', height: 'auto', minHeight: 40 }
+            : {
+                left: component.position?.x ?? 0,
+                top: component.position?.y ?? 0,
+                width: component.position?.width ?? customDefinition?.resize?.defaultWidth ?? 320,
+                height: component.position?.height ?? customDefinition?.resize?.defaultHeight ?? 180
+              }
+          : {}),
+        ...(isLayoutType(component.type) ? {} : visualStyle),
+        ...(component.properties?.fillRegion===true && page.layoutMode==='template' ? {height:'100%',minHeight:0}: {})
+      } as React.CSSProperties}
+      onClick={selectOnlyInDesigner ? selectCanvasComponent : undefined}
+      onClickCapture={libraryPreview && !interactivePreview
+        ? event => { event.preventDefault(); event.stopPropagation(); }
+        : selectOnlyInDesigner ? event => {
+            const hit=event.target as HTMLElement;
+            // Nested components select themselves. The builder's own toolbar,
+            // resize handles and drop zones must retain their editing controls.
+            if(hit.closest('[data-component-id]')!==event.currentTarget
+              ||hit===event.currentTarget
+              ||hit.closest('.canvas-design-interaction-shield,.canvas-element-actions,.canvas-drop-zone,.free-canvas-resize-handle,.template-component-resize-handle,.template-placement-handle'))return;
+            // Stop links, forms, tabs, delegated clicks and configured actions
+            // before React or browser handlers in the component can run.
+            event.preventDefault();
+            event.stopPropagation();
+            selectCanvasComponent(event);
+          } : undefined}
       onDoubleClick={!libraryPreview ? event => { event.stopPropagation(); if (!previewMode) { setSelectedRegion(null); setSelectedId(component.id); selectRibbonTab(componentNeedsData(component.type)?'Component Data':'Component Properties'); } } : undefined}
       onContextMenu={!libraryPreview && !previewMode ? event => { event.preventDefault(); event.stopPropagation(); setSelectedRegion(null); setSelectedId(component.id); setComponentMenuId(component.id); } : undefined}
       onPointerDown={!libraryPreview && page.layoutMode === 'free-canvas' && !nested ? event => startCanvasMove(event, component) : undefined}
       onPointerMove={!libraryPreview && page.layoutMode === 'free-canvas' && !nested ? moveCanvasPointer : undefined}
       onPointerUp={!libraryPreview && page.layoutMode === 'free-canvas' && !nested ? event => endCanvasMove(event) : undefined}
       onPointerCancel={!libraryPreview && page.layoutMode === 'free-canvas' && !nested ? event => endCanvasMove(event, true) : undefined}
-      onClickCapture={libraryPreview && !interactivePreview ? (event) => { event.preventDefault(); event.stopPropagation(); } : undefined}
       onKeyDown={!libraryPreview ? (event) => {
          if (event.currentTarget !== event.target || previewMode) return;
          if (event.key === 'Enter' || event.key === ' ') {
@@ -2232,7 +2253,7 @@ function PageBuilder({
                       label: component.label,
                       properties: component.properties,
                       object: page.pageType === 'Record Page' ? targetObject : undefined,
-                      device, previewOnly: true, pageSessionKey: (builderAppApiName || apps[0]?.apiName || 'Records') + ':' + page.apiName,
+                      device, previewOnly: true, builderPreview: !previewMode, pageSessionKey: (builderAppApiName || apps[0]?.apiName || 'Records') + ':' + page.apiName,
                        loadAsset:(id:string)=>request<{contentType:string;contentBase64:string}>('/media-assets/'+id),
                       children: nestedChildren
                     }} />
@@ -2243,6 +2264,12 @@ function PageBuilder({
         && <div className="metadata-nested-host">{nestedChildren}</div>}
       {!libraryPreview && !previewMode && isLayoutContainer(component) && !nestedChildren?.length
         && <div className="page-nested-empty">Drop components into this {component.label} or choose a child from the palette</div>}
+      {/* Editing is selection-only. A transparent hit target sits above the actual
+          control (including disabled buttons, iframes and action handlers) while
+          keeping its rendered appearance and free-canvas move gestures intact. */}
+      {selectOnlyInDesigner && !isLayoutContainer(component) && !isLayoutType(component.type)
+        && !['Tabs','Accordion'].includes(component.type)
+        && <div className="canvas-design-interaction-shield" aria-hidden="true" data-canvas-select-only="true"/>}
       {!libraryPreview && page.layoutMode === 'template' && selectedId === component.id && !previewMode && !isCanvasLocked(component)
         && (['move', 'rotate'] as const).map(mode => <button key={mode} type="button"
           className={`template-placement-handle template-placement-${mode}`}

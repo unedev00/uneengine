@@ -137,3 +137,22 @@ test('colour pickers share a single accessible, metadata-backed palette',()=>{
   assert.match(styles,/flex-wrap:nowrap!important/);
   assert.match(styles,/office-ribbon-colour-palette/);
 });
+
+test('design canvas selects Button and other live controls without firing actions',()=>{
+  const view=readFileSync(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+  const css=readFileSync(new URL('../src/core/builders/PageBuilder/sections/01-page-builder.css',import.meta.url),'utf8');
+  const button=readFileSync(new URL('../src/one/OneButton/OneButton.jsx',import.meta.url),'utf8');
+  assert.match(view,/const selectOnlyInDesigner = !previewMode && !libraryPreview/);
+  assert.match(view,/onClick=\{selectOnlyInDesigner \? selectCanvasComponent : undefined\}/);
+  assert.match(view,/onClickCapture=\{libraryPreview && !interactivePreview/);
+  assert.match(view,/event\.preventDefault\(\);[\s\S]*?event\.stopPropagation\(\);[\s\S]*?selectCanvasComponent\(event\)/);
+  assert.match(view,/hit\.closest\('\[data-component-id\]'\)!==event\.currentTarget/);
+  assert.match(view,/canvas-design-interaction-shield/);
+  assert.match(view,/selectOnlyInDesigner && !isLayoutContainer\(component\) && !isLayoutType\(component\.type\)/);
+  assert.match(view,/builderPreview: !previewMode/);
+  assert.match(css,/\.record-component > \.canvas-design-interaction-shield\{/);
+  assert.match(css,/position:absolute;inset:0;z-index:90/);
+  assert.match(button,/p\.builderPreview!==true/);
+  // Saved click and Flow behaviour must remain available outside the designer.
+  assert.match(button,/fire\(p,"click",p\.value\?\?true\)/);
+});

@@ -7,7 +7,9 @@ export default function OneButton(props) {
   const configured=typeof p.onClick==="function"
     || (typeof p.onAction==="function" && Boolean(p.actionFlows?.click));
   const hoverConfigured=typeof p.onAction==="function" && Boolean(p.actionFlows?.hover);
-  const disabled=p.disabled===true||p.loading===true||(!configured&&!hoverConfigured);
+  // In the design canvas the control should look like the published design.
+  // The canvas blocks interactions and selects the component instead.
+  const disabled=p.disabled===true||p.loading===true||(!configured&&!hoverConfigured&&p.builderPreview!==true);
   const visibleLabel=label||(p.builderPreview===true?"Continue":"");
   if (!visibleLabel) return null;
   return <div {...root}><button type="button"
