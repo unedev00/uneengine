@@ -251,7 +251,7 @@ function ItemGrid({ p, rows }) {
             width:Number.isFinite(Number(p.cardWidth))&&Number(p.cardWidth)>0
               ?Math.min(1200,Number(p.cardWidth)):undefined,
             maxWidth:"100%",
-            backgroundColor: typeof p.cardBackgroundColor === "string" && p.cardBackgroundColor.trim() ? p.cardBackgroundColor : undefined,
+            backgroundColor: typeof p.cardBackgroundColor === "string" ? p.cardBackgroundColor : undefined,
             "--md-card-background": typeof p.cardBackgroundColor === "string" && p.cardBackgroundColor.trim() ? p.cardBackgroundColor : "var(--une-bg,#fff)",
             borderColor: typeof p.cardBorderColor === "string" ? p.cardBorderColor : undefined,
             borderWidth: Number.isFinite(cardBorderWidth) && cardBorderWidth >= 0
