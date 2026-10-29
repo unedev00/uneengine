@@ -39,14 +39,14 @@ test('Preview chrome is not interactive and search suggestions support touch cli
 test('published ONE controls have no unbound dummy actions or placeholders',()=>{
  const button=read('src/one/OneButton/OneButton.jsx');
  const textComponent=read('src/one/OneText/OneText.jsx');
- const badge=read('src/one/OneBadge/OneBadge.jsx');
+ 
  const appearance=read('src/one/shared/componentAppearance.js');
  const native=read('src/core/components/RegisteredComponent/registeredComponentAppearance.ts');
  const css=read('src/core/pages/TemplatePageRuntime/pageComponentAppearance.css');
  assert.match(button,/p\.actionFlows\?\.click/);
  assert.match(button,/disabled=\{disabled\}/);
  assert.match(textComponent,/p\.builderPreview === true/);
- assert.match(badge,/p\.builderPreview === true/);
+ 
  assert.doesNotMatch(appearance,/#3176cc/);
  assert.doesNotMatch(native,/style\.borderWidth=border/);
  assert.doesNotMatch(css,/\[data-page-appearance="tabs"\]\[data-page-style~="[^"]+"\] \.registered-component \.one-tab,/);

@@ -59,11 +59,11 @@ CROSS JOIN (VALUES ('Name'),('Price'),('Active')) f(api_name)
 WHERE a.api_name='Acetill'
 ON CONFLICT DO NOTHING;
 
--- Reuse only the six app-page components required by Acetill.
+-- Reuse only the five app-page components required by Acetill.
 -- The package installer resolves each required Component against tenant SQL.
 INSERT INTO md_app_package_resources(app_id,version,resource_type,api_name,parent_api)
 SELECT a.id,2,'Component',c.api_name,'' FROM md_apps a
-CROSS JOIN (VALUES ('une_input'),('une_search'),('une_item_grid'),('une_cart'),('une_button'),('une_badge')) c(api_name)
+CROSS JOIN (VALUES ('une_input'),('une_search'),('une_item_grid'),('une_cart'),('une_button')) c(api_name)
 WHERE a.api_name='Acetill'
 ON CONFLICT DO NOTHING;
 
@@ -72,7 +72,6 @@ INSERT INTO md_app_package_page_component_templates(app_id,version,page_api,comp
 SELECT a.id,2,p.page_api,p.component_api,p.slot,p.sort_order
 FROM md_apps a
 CROSS JOIN (VALUES
- ('AcetillRegister','une_badge','header',5),
  ('AcetillRegister','une_input','main',10),
  ('AcetillRegister','une_input','main',15),
  ('AcetillRegister','une_button','main',20),
@@ -83,7 +82,6 @@ CROSS JOIN (VALUES
  ('AcetillCheckout','une_input','header',5),
  ('AcetillCheckout','une_cart','main',10),
  ('AcetillCheckout','une_button','main',20),
- ('AcetillReceipt','une_badge','header',5),
  ('AcetillReceipt','une_input','main',10),
  ('AcetillReceipt','une_input','main',20),
  ('AcetillReceipt','une_button','main',30)
@@ -97,7 +95,6 @@ INSERT INTO md_app_package_page_property_templates
 SELECT a.id,2,p.page_api,p.component_api,p.slot,p.sort_order,p.property_path,p.data_type,p.value_text
 FROM md_apps a
 CROSS JOIN (VALUES
- ('AcetillRegister','une_badge','header',5,'text','string','ACETILL POS'),
  ('AcetillRegister','une_input','main',10,'value','string','Welcome to Acetill'),
  ('AcetillRegister','une_input','main',10,'allowTyping','boolean','false'),
  ('AcetillRegister','une_input','main',10,'fontSize','number','28'),
@@ -179,7 +176,6 @@ CROSS JOIN (VALUES
  ('AcetillCheckout','une_button','main',20,'actionFlows.click.actionType','string','Navigate'),
  ('AcetillCheckout','une_button','main',20,'actionFlows.click.navigationTargetType','string','App Page'),
  ('AcetillCheckout','une_button','main',20,'actionFlows.click.navigationPageApiName','string','AcetillSale'),
- ('AcetillReceipt','une_badge','header',5,'text','string','RECEIPT'),
  ('AcetillReceipt','une_input','main',10,'value','string','Receipt'),
  ('AcetillReceipt','une_input','main',10,'allowTyping','boolean','false'),
  ('AcetillReceipt','une_input','main',10,'fontSize','number','28'),

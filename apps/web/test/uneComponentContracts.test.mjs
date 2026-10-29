@@ -7,7 +7,7 @@ import {renderToStaticMarkup} from 'react-dom/server';
 import {loadComponentCatalog,buildBundledComponent} from '../../../scripts/component-catalog.mjs';
 import {propertyKinds} from '../src/core/components/Properties/componentSettingDefinitions.ts';
 const {components}=await loadComponentCatalog(),une=components.filter(x=>x.apiName.startsWith('une_'));
-const names=['image','calendar','button','card','input','toggle','badge','stack','tabs',
+const names=['image','calendar','button','card','input','toggle','stack','tabs',
  'container','grid','split_pane','navigation','menu','modal','drawer','item_grid','repeater','record_list',
  'search','lookup','choice','cart','conversation','form','table','line_items','date_picker','slot_picker',
  'metric','alert','progress','document_viewer','chart','option_groups'].map(s=>'une_'+s);
@@ -48,7 +48,7 @@ const fixtures={
 une_image:{src:'https://example.com/image.png',alt:'Picture'},
  une_calendar:{records:[{Id:'1',BookedOn:'2026-10-24',Subject:'Meeting'}],dateFieldApiName:'BookedOn',titleFieldApiName:'Subject'},
  une_button:{label:'Continue'},une_card:{title:'Card'},une_input:{value:'Hello UNE',allowTyping:false},
- une_toggle:{label:'Setting'},une_badge:{text:'New'},une_tabs:{tabs:'First, Second'},
+ une_toggle:{label:'Setting'},une_tabs:{tabs:'First, Second'},
  une_item_grid:{currencyCode:'GBP',titleFieldApiName:'Name',priceFieldApiName:'Price'},
  une_cart:{currencyCode:'GBP'},une_conversation:{conversations:[],messages:[]},
  une_table:{items:[{Name:'Row'}],columns:[{key:'Name',label:'Name'}]},

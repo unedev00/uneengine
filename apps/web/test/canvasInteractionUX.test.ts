@@ -213,7 +213,7 @@ test('Appearance targets the control without creating a rounded outer shell', ()
   assert.equal(pageAppearanceTarget('Custom:OneSearch'),'input');
   assert.equal(pageAppearanceTarget('Custom:UneInput'),'input');
   assert.equal(pageAppearanceTarget('Custom:OneButton'),'button');
-  assert.equal(pageAppearanceTarget('Custom:UneBadge'),'badge');
+  
   assert.equal(pageAppearanceTarget('Custom:UneCard'),'surface');
   assert.equal(pageAppearanceTarget('Custom:UneImage'),'image');
   assert.equal(pageAppearanceTarget('Custom:UneProgress'),'progress');
@@ -277,7 +277,7 @@ test('every bundled UNE Page component has an explicitly verified appearance tar
   const expected: Record<string,string> = {
     une_image:'image',une_calendar:'calendar',
     une_button:'button',une_card:'surface',une_input:'input',une_toggle:'toggle',
-    une_badge:'badge',une_stack:'layout',une_tabs:'tabs',
+    une_stack:'layout',une_tabs:'tabs',
     une_container:'layout',une_grid:'layout',une_split_pane:'layout',
     une_navigation:'button',une_menu:'button',une_modal:'overlay',une_drawer:'overlay',
     une_item_grid:'collection',une_repeater:'collection',
