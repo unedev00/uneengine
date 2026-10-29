@@ -6,7 +6,7 @@ const parse=v=>Array.isArray(v)?v:String(v??"").split(",").map(s=>s.trim()).filt
 export function UneContainer(p){return <section className="one-ui one-surface" style={{
   display:"flex",flexDirection:p.direction==="row"?"row":"column",gap:clamp(p.gap,12),
   padding:clamp(p.padding,16),borderRadius:clamp(p.radius,20)}}>{p.children}</section>}
-export function UneStack(p){return <div className="one-ui" style={{display:"flex",
+export function UneStack(p){return <div className="one-ui une-stack-root" style={{display:"flex",
   flexDirection:p.direction==="row"?"row":"column",flexWrap:p.wrap===false?"nowrap":"wrap",
   gap:clamp(p.gap,12),padding:clamp(p.padding,16)}}>{p.children}</div>}
 export function UneGrid(p){return <div className="one-ui une-grid" style={{
@@ -27,13 +27,12 @@ export function UneCard(p){return <section className="one-ui one-surface" style=
 export function UneTabs(p){
  const tabs=parse(p.tabs||"Overview, Details"),children=React.Children.toArray(p.children);
  const [selected,setSelected]=React.useState(0);
- const active=Math.max(0,Math.min(p.controlledSelection===true?Number(p.selectedIndex)||0:selected,tabs.length-1)),uid=React.useId();
- return <section className="one-ui"><div className="one-tabs" role="tablist" aria-label={p.tabLabel||p.label||"Tabs"}>
+ const active=Math.max(0,Math.min(selected,tabs.length-1)),uid=React.useId();
+ return <section className="one-ui une-tabs-root" style={{"--une-tab-bg":p.tabColor||undefined,"--une-selected-text":p.selectedTabTextColor||undefined}}><div className="one-tabs" role="tablist" aria-label={p.label||"Tabs"}>
   {tabs.map((label,i)=><button className="one-tab" type="button" role="tab" key={label+i}
    id={uid+"-tab-"+i} aria-controls={uid+"-panel"} aria-selected={i===active}
-   onClick={()=>{if(p.controlledSelection!==true)setSelected(i);fire(p,"tabChange",{index:i,label,value:label})}}>{label}</button>)}</div>
-  {p.showPanel!==false&&<div id={uid+"-panel"} role="tabpanel" aria-labelledby={uid+"-tab-"+active}
-   style={{paddingTop:12}}>{children[active]??null}</div>}</section>;
+   onClick={()=>{setSelected(i);fire(p,"tabChange",{index:i,label,value:label})}}>{label}</button>)}</div>
+  {<div className="une-tabs-panel" id={uid+"-panel"} role="tabpanel" aria-labelledby={uid+"-tab-"+active}>{children[active]??null}</div>}</section>;
 }
 const menuOptions=v=>Array.isArray(v)?v:parse(v).map(label=>({label,value:label}));
 export function UneNavigation(p){
