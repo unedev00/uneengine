@@ -188,6 +188,7 @@
     "apps/web/test/recordCustomLinks.test.ts",
     "apps/web/test/recordPageConsolidation.test.ts",
     "apps/web/test/registeredFieldExpressionRuntime.test.ts",
+    "apps/web/test/recordInlineFieldRules.test.ts",
     "apps/web/test/relatedQuickLinks.test.ts",
     "apps/web/test/ribbonExpressionCaret.test.ts",
     "apps/web/test/safeRichText.test.ts",
