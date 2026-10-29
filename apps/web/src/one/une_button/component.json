@@ -41,35 +41,6 @@
       ]
     },
     {
-      "propertyKey": "tone",
-      "label": "Colour palette",
-      "kind": "SELECT",
-      "displayOrder": 30,
-      "defaultValue": "blue",
-      "choices": [
-        {
-          "key": "blue",
-          "label": "iOS blue"
-        },
-        {
-          "key": "mint",
-          "label": "Mint"
-        },
-        {
-          "key": "purple",
-          "label": "Purple"
-        },
-        {
-          "key": "orange",
-          "label": "Orange"
-        },
-        {
-          "key": "neutral",
-          "label": "Neutral"
-        }
-      ]
-    },
-    {
       "propertyKey": "accentColor",
       "label": "Custom accent colour",
       "kind": "COLOR",
@@ -173,42 +144,10 @@
     },
     {
       "propertyKey": "label",
-      "label": "Button label",
+      "label": "Component label",
       "kind": "TEXT",
       "displayOrder": 300,
       "defaultValue": "Continue"
-    },
-    {
-      "propertyKey": "variant",
-      "label": "Variant",
-      "kind": "SELECT",
-      "displayOrder": 310,
-      "defaultValue": "primary",
-      "choices": [
-        {
-          "key": "primary",
-          "label": "Primary"
-        },
-        {
-          "key": "secondary",
-          "label": "Secondary"
-        },
-        {
-          "key": "ghost",
-          "label": "Ghost"
-        },
-        {
-          "key": "danger",
-          "label": "Danger"
-        }
-      ]
-    },
-    {
-      "propertyKey": "disabled",
-      "label": "Disabled",
-      "kind": "BOOLEAN",
-      "displayOrder": 320,
-      "defaultValue": false
     },
     {
       "propertyKey": "helpText",
@@ -222,6 +161,10 @@
     {
       "apiName": "click",
       "label": "click"
+    },
+    {
+      "apiName": "hover",
+      "label": "hover"
     }
   ]
 }
