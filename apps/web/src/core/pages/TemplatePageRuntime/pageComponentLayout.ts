@@ -303,6 +303,7 @@ export const layoutContainerTypes = new Set(['Container', 'Row', 'Column', 'Card
 
 export function isLayoutContainer(component: PageComponentMetadata): boolean {
   return layoutContainerTypes.has(component.type)
+    || component.type==='Custom:une_container'
     || (component.type.startsWith('Custom:') && component.properties?.layoutContainer === true);
 }
 export function rawLayoutParentId(component: PageComponentMetadata): string | null {
