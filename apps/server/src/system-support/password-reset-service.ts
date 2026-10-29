@@ -47,6 +47,10 @@ export class PasswordResetService {
   const channel=requestedChannel as RecoveryChannel;
   const flow=await readRecoveryFlow(this.db,tenantId);
   if(flow.method==='LINK'&&channel!=='email')return {message:acknowledgement};
+  // A missing deployment signing key must not disclose which accounts exist.
+  if(flow.method==='OTP'&&(!process.env.METADRIVE_PASSWORD_RESET_OTP_SECRET
+    ||Buffer.byteLength(process.env.METADRIVE_PASSWORD_RESET_OTP_SECRET)<32))
+   return {message:acknowledgement};
   const action=channel==='email'?null:flow.channels[channel];
   if(action&&!recoveryActionReady(action))return {message:acknowledgement};
   const {rows:users}=await this.db.query<{id:string;name:string;phone_e164:string|null}>(`
@@ -57,8 +61,6 @@ export class PasswordResetService {
   const user=users[0];
   if(!user||channel!=='email'&&!user.phone_e164)return {message:acknowledgement};
   const isLink=flow.method==='LINK';
-  // No low-entropy OTP is issued without a deployment-owned HMAC secret.
-  if(!isLink)secret();
   const token=randomBytes(32).toString('base64url'),challengeId=randomUUID();
   const code=isLink?token:numericCode(flow.otpLength);
   const hash=isLink?null:otpDigest(tenantId,user.id,challengeId,code);
