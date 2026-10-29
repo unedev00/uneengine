@@ -9,6 +9,7 @@ const workflow=new URL('../../../../.github/workflows/oracle-api-deploy.yml',imp
 const diagnostic=new URL('../../../../scripts/oracle/check-communication-backlog.sh',import.meta.url);
 const startupDiagnostic=new URL('../../../../scripts/oracle/diagnose-api-startup.py',import.meta.url);
 const ownerRepair=new URL('../../../../scripts/oracle/repair-oauth-function-owner.py',import.meta.url);
+const managerRecovery=new URL('../../../../scripts/oracle/recover-systemd-manager.sh',import.meta.url);
 const busRecovery=new URL('../../../../scripts/oracle/recover-systemd-bus.sh',import.meta.url);
 const ownerTests=new URL('../../../../scripts/oracle/',import.meta.url);
 
@@ -103,5 +104,29 @@ test('Oracle D-Bus recovery is bounded and cannot mask failed service health',()
  if(process.platform!=='win32'){
   const parsed=spawnSync('bash',['-n',fileURLToPath(busRecovery)],{encoding:'utf8'});
   assert.equal(parsed.status,0,parsed.stderr);
+ }
+});
+
+test('One-time Oracle systemd manager reexecution requires a timed-out reload and retains all deployment safeguards',()=>{
+ const sh=readFileSync(managerRecovery,'utf8');
+ const yaml=readFileSync(workflow,'utf8');
+ assert.match(yaml,/Recover stalled systemd daemon-reload once per boot/);
+ assert.match(yaml,/bash -n scripts\/oracle\/recover-systemd-manager\.sh/);
+ assert.match(yaml,/env GITHUB_REPOSITORY="\$GITHUB_REPOSITORY" bash scripts\/oracle\/recover-systemd-manager\.sh/);
+ assert.match(sh,/GITHUB_REPOSITORY/);
+ assert.match(sh,/\/proc\/1\/comm/);
+ assert.match(sh,/version >= 239/);
+ assert.match(sh,/timeout 35 systemctl daemon-reload/);
+ assert.match(sh,/\$rc" != 124/);
+ assert.match(sh,/metadrive-systemd-manager-reexec-once/);
+ assert.match(sh,/set -C/);
+ assert.match(sh,/kill -s TERM 1/);
+ assert.doesNotMatch(sh,/^\s*(?:reboot|poweroff|shutdown|pkill|killall)\b/m);
+ assert.ok(yaml.indexOf('Recover stalled systemd daemon-reload')<yaml.indexOf('Build release on the target architecture'));
+ assert.ok(yaml.indexOf('Deploy existing API/worker and frontend with SQL backup and rollback')>
+  yaml.indexOf('Verify production runner and active services'));
+ if(process.platform!=='win32'){
+  const syntax=spawnSync('bash',['-n',fileURLToPath(managerRecovery)],{encoding:'utf8'});
+  assert.equal(syntax.status,0,syntax.stderr);
  }
 });
