@@ -51,6 +51,7 @@ jobs:
           bash -n scripts/oracle/backup-production-sql.sh
           bash -n scripts/oracle/deploy-full-stack.sh
           bash -n scripts/oracle/check-communication-backlog.sh
+          bash -n scripts/oracle/ensure-mail-admin-master.sh
 
   deploy:
     needs: validate
@@ -82,6 +83,11 @@ jobs:
           systemctl is-active --quiet nginx.service
           sudo -n test -e /etc/metadrive/production.env
           sudo -n test -d /opt/metadrive/releases
+      # The runner provisions a fresh root-only secret on the Oracle host.
+      # Never pass its value through Actions logs, repository variables or secrets.
+      - name: Ensure dedicated Docker Mailserver master IMAP account
+        shell: bash
+        run: sudo -n bash scripts/oracle/ensure-mail-admin-master.sh
       # deploy-api.sh activates both entrypoint.js and job-worker-entrypoint.js.
       - name: Deploy existing API/worker and frontend with SQL backup and rollback
         shell: bash
