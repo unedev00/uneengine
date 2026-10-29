@@ -145,3 +145,69 @@
 
 /* Badge text is operational content, not decorative microtype. */
 .ak-shell .ak-product-badge { font-size:12px; }
+
+
+/* ACE colour-contrast contract: menu, welcome, basket, modifier and payment
+ * screens all use matching semantic surfaces, including explicit dark theme.
+ * Preserve the tenant accent; only darken filled actions for white copy. */
+.ak-shell{
+  --ak-panel:var(--md-surface,#fff);
+  --ak-panel-subtle:var(--md-surface-2,#fafafc);
+  --ak-foreground:var(--md-text,#1d1d1f);
+  --ak-secondary:var(--md-text-2,#5c5c63);
+  --ak-outline:var(--md-separator,#d7d7db);
+  --ak-action:color-mix(in srgb,var(--ak-accent) 68%,black);
+  --ak-link:color-mix(in srgb,var(--ak-accent) 62%,var(--ak-foreground));
+  color:var(--ak-foreground);
+}
+.ak-shell :is(.ak-header,.ak-welcome,.ak-categories,.ak-product,.ak-order,
+ .ak-modal,.ak-modal-top,.ak-modal-footer,.ak-floating,.ak-paymethods button,
+ .ak-option,.ak-signout,.ak-subcategories button,.ak-card-confirm){
+  background:var(--ak-panel);color:var(--ak-foreground);
+  border-color:var(--ak-outline);
+}
+.ak-shell :is(.ak-header-label,.ak-welcome-copy>p:not(.ak-overline),
+ .ak-product-body p,.ak-orderline p,.ak-small,.ak-option small,.ak-back){
+  color:var(--ak-secondary);
+}
+.ak-shell :is(.ak-logo strong,.ak-product-body h2,.ak-product-body>div strong,
+ .ak-title h1,.ak-order h1,.ak-modal-body h2,.ak-subtotal strong){
+  color:var(--ak-foreground);
+}
+.ak-shell :is(.ak-image,.ak-counter button,.ak-kiosk-logo){
+  background:var(--ak-panel-subtle);color:var(--ak-secondary);
+}
+.ak-shell .ak-image span{color:var(--ak-secondary)}
+.ak-shell :is(.ak-search,.ak-tender input,.ak-subcategories button,.ak-paymethods button){
+  background:var(--ak-panel);color:var(--ak-foreground);
+  border-color:var(--ak-outline);
+}
+.ak-shell :is(.ak-search,.ak-tender input)::placeholder{color:var(--ak-secondary);opacity:1}
+.ak-shell :is(.ak-primary,.ak-categories button.active,.ak-product-body>div button,
+ .ak-floating .ak-place,.ak-product-badge){
+  background:var(--ak-action);color:#fff;
+}
+.ak-shell .ak-categories button:not(.active){
+  background:var(--ak-panel);color:var(--ak-foreground);
+}
+.ak-shell .ak-subcategories button.active{
+  background:color-mix(in srgb,var(--ak-accent) 15%,var(--ak-panel));
+  color:var(--ak-link);border-color:var(--ak-link);
+}
+.ak-shell .ak-floating .ak-basket-open{
+  background:var(--ak-panel);color:var(--ak-foreground);
+}
+.ak-shell .ak-basket-open span{
+  color:var(--ak-link);border-color:var(--ak-link);
+}
+.ak-shell .ak-option.selected,.ak-shell .ak-paymethods button.active{
+  background:color-mix(in srgb,var(--ak-accent) 12%,var(--ak-panel));
+  color:var(--ak-foreground);border-color:var(--ak-link);
+}
+.ak-shell .ak-option input,.ak-shell .ak-card-confirm input{
+  accent-color:var(--ak-link);
+}
+.ak-shell :is(.ak-orderline,.ak-modal-top,.ak-modal-footer){
+  border-color:var(--ak-outline);
+}
+.ak-shell .ak-header:after{pointer-events:none}
