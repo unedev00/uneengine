@@ -38,11 +38,11 @@ jobs:
           sudo -n bash -c '
             set -euo pipefail
             install -d -m 0700 /var/lib/metadrive
-            marker=/var/lib/metadrive/oracle-graceful-reboot-20261029.once
+            marker=/var/lib/metadrive/oracle-graceful-reboot-20261029-login1-dbus.once
             ( set -C; printf "Owner-authorized graceful restart 2026-10-29\n" > "$marker" ) ||
               { echo "Reboot already attempted; refusing another"; exit 1; }
           '
           echo 'Requesting graceful reboot through systemd-logind (never reboot --force)'
-          timeout 20 sudo -n loginctl reboot
+          timeout 25 sudo -n busctl --system call org.freedesktop.login1 /org/freedesktop/login1 org.freedesktop.login1.Manager Reboot b false
           echo 'Graceful reboot request accepted. Waiting for host to disconnect.'
           sleep 30
