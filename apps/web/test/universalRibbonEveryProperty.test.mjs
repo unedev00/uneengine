@@ -1,43 +1,51 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {auditUniversalRibbonCoverage} from '../src/core/builders/PageBuilder/universalRibbonCoverage.mjs';
+import {loadComponentCatalog} from '../../../scripts/component-catalog.mjs';
 
 const root=new URL('../src/one/',import.meta.url);
-const catalog=JSON.parse(readFileSync(new URL('manifest.json',root),'utf8'));
-const manifests=catalog.components.map(path=>JSON.parse(readFileSync(new URL(path,root),'utf8')))
-  .filter(component=>/^une_[a-z0-9_]+$/.test(component.apiName));
+const read=url=>readFileSync(url,'utf8');
+const manifest=JSON.parse(read(new URL('manifest.json',root)));
 
-test('every active property from every UNE component is registered in the universal ribbon',()=>{
-  assert.equal(manifests.length,34);
-  const allKeys=[...new Set(manifests.flatMap(component=>
-    (component.propertyDefinitions??[]).map(def=>def.propertyKey)))].sort();
-  assert.ok(allKeys.length>100,'unexpectedly small shared inventory');
-  const coverage=auditUniversalRibbonCoverage(manifests,allKeys);
-  assert.deepEqual(coverage.missing,[]);
-  assert.deepEqual(coverage.duplicates,[]);
-  assert.deepEqual(coverage.unexpected,[]);
-  assert.equal(coverage.displayedPropertyCount,coverage.declaredPropertyCount);
-  const code=readFileSync(new URL('../src/core/builders/PageBuilder/UniversalRibbonInventory.tsx',import.meta.url),'utf8');
-  assert.match(code,/const excluded=new Set<string>\(\)/);
-  assert.match(code,/for\(const component of validManifests\)/);
-  assert.match(code,/for\(const \[key,definition\] of definitionMap\)/);
-  assert.match(code,/definition=\{controlDefinition\}/);
-  assert.doesNotMatch(code,/retiredItemGridProps|retiredItemGridProperties|if\(definition\?\.apiName===.*return null/);
+test('all UNE component settings are owned by app source, not the Component Library manifest',async()=>{
+ assert.equal(manifest.components.length,34);
+ assert.deepEqual(manifest.commonProperties,[]);
+ const catalog=await loadComponentCatalog();
+ const keys=new Set();
+ for(const descriptor of manifest.components){
+  const registration=JSON.parse(read(new URL(descriptor,root)));
+  assert.deepEqual(registration.propertyDefinitions,[],registration.apiName+' leaked SQL property metadata');
+  const module=await import(new URL(descriptor.replace('component.json','app-properties.mjs'),root));
+  assert.ok(Array.isArray(module.propertyDefinitions),registration.apiName+' lost app properties');
+  const runtime=catalog.components.find(c=>c.apiName===registration.apiName);
+  assert.ok(runtime,registration.apiName+' renderer missing');
+  for(const setting of module.propertyDefinitions){
+   assert.ok(runtime.propertyDefinitions.some(p=>p.propertyKey===setting.propertyKey),
+    registration.apiName+' missing code-owned setting '+setting.propertyKey);
+   keys.add(setting.propertyKey);
+  }
+ }
+ assert.ok(keys.size>100,'Expected a complete code-owned settings catalog');
 });
 
-test('selected UNE component affects only whether a shared key is editable',()=>{
-  const source=readFileSync(new URL('../src/core/builders/PageBuilder/UniversalRibbonInventory.tsx',import.meta.url),'utf8');
-  assert.match(source,/const selectedDefinitions=new Map/);
-  assert.match(source,/const supported=enabled\.has\(def\.propertyKey\)/);
-  assert.match(source,/enabled=\{supported\}/);
-  assert.match(source,/const controlDefinition=supported&&selectedDefinition/);
-  assert.match(source,/\.\.\.def,choices:selectedDefinition\.choices\?\?def\.choices/);
-  assert.doesNotMatch(source,/if\(canEditCanvas&&\(def\.propertyKey==='width'/);
-  for(const component of manifests){
-    const declared=new Set((component.propertyDefinitions??[]).map(d=>d.propertyKey));
-    for(const key of declared)assert.ok(manifests.some(other=>
-      other.propertyDefinitions?.some(d=>d.propertyKey===key)),
-      component.apiName+' lost '+key);
-  }
+test('UNE settings stay out of public catalog, ribbon and registration UI',()=>{
+ const build=read(new URL('../build-component-library.mjs',import.meta.url));
+ const builder=read(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url));
+ const css=read(new URL('../src/core/builders/PageBuilder/PageBuilderRibbonPolish.css',import.meta.url));
+ const library=read(new URL('../src/core/components/ComponentLibrary/ComponentLibrary.tsx',import.meta.url));
+ const palette=read(new URL('../src/core/builders/PageBuilder/pageBuilderPalette.ts',import.meta.url));
+ assert.match(build,/propertyDefinitions: appOwned \? \[\] :/);
+ assert.match(build,/defaultProps/);
+ assert.match(builder,/data-app-owned-une=\{selectedAppOwnedUne/);
+ assert.match(css,/data-app-owned-une="true"/);
+ assert.match(library,/!component\.apiName\.startsWith\('une_'\)/);
+ assert.match(palette,/!component\.apiName\.startsWith\('une_'\)/);
+});
+
+test('SQL cleanup removes UNE property inventory only, retaining component identities and page instances',()=>{
+ const migration=read(new URL('../../../server/src/system-support/migrations/20270120-remove-une-sql-property-inventory.sql',import.meta.url));
+ assert.match(migration,/DELETE FROM md_component_library_contract_properties/);
+ assert.match(migration,/left\(component_api,4\)='une_'/);
+ assert.doesNotMatch(migration,/DELETE\s+FROM\s+md_component_definitions/i);
+ assert.doesNotMatch(migration,/DELETE\s+FROM\s+md_page_definitions/i);
 });
