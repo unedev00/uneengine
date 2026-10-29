@@ -26,10 +26,9 @@ test('parent inspector excludes child labels, but persists backward-compatible d
  const keys=new Set(root.propertyDefinitions.map(def=>def.propertyKey));
  for(const slot of conversationPartSlots)for(const oldKey of Object.values(slot.bindings)){
   assert.equal(keys.has(oldKey),false,oldKey);
-  if(!['refreshLabel','newMessageNoticeLabel'].includes(oldKey))
-   assert.ok(parent.propertyDefinitions.some(def=>def.propertyKey===oldKey));
+  assert.ok(!parent.propertyDefinitions.some(def=>def.propertyKey===oldKey),oldKey+' is an internal slot');
  }
- for(const key of ['canSend','conversationIdFieldApiName'])assert.ok(keys.has(key),key);
+ for(const key of ['canSend','conversationIdFieldApiName'])assert.ok(!keys.has(key),key);
  for(const key of ['showRefresh','refreshLabel','newMessageNoticeLabel'])assert.ok(!keys.has(key),key);
 });
 test('editing a child retains saved settings, permissions and Flow actions',()=>{
