@@ -428,7 +428,8 @@ export function evaluateFieldExpressionDetailed(expression,record){
  if(typeof expression!=='string')return {value:''};
  if(expression.length>2048)return {value:'',error:'Formula exceeds the 2048-character limit'};
  const input=expression.trim();if(!input)return {value:''};
- if(!/@[A-Za-z]/.test(input)&&!/^[A-Za-z]+\s*\(/.test(input)
+ if(!/@[A-Za-z]/.test(input)&&!input.startsWith('@')&&!/^[A-Za-z]+\s*\(/.test(input)
+  &&!/^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)+(?:\s*\(|$)/.test(input)
   &&!/^(?:["(]|[-+]?\d+(?:\.\d+)?\s*[+*\/-])/.test(input)
   &&!/\s(?:[&+*/%^<>=!]|AND\b|OR\b)\s/i.test(input))return {value:expression};
  try{
