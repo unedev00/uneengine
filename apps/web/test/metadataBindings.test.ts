@@ -190,8 +190,8 @@ test('ChatterInbox compatibility retains the shared conversation renderer and al
  assert.equal(alias.cssFile,'one/OneConversation/OneConversation.css');
  assert.deepEqual(alias.defaults.actionFlows,{});
  assert.equal(canonical.jsxFile,'one/une_conversation/UneConversation.jsx');
- assert.ok(canonical.propertyDefinitions.some((p:any)=>p.propertyKey==='conversationsObjectApiName'),
-  'UNE conversation remains metadata-driven');
+ assert.ok(!canonical.propertyDefinitions.some((p:any)=>p.propertyKey==='conversationsObjectApiName'),
+  'AceChatter source mapping is private runtime configuration');
  const wrapper=await readFile(new URL('../src/one/une_conversation/UneConversation.jsx',import.meta.url),'utf8');
  assert.ok(wrapper.includes('from "../OneConversation/OneConversation.jsx"') ||
   wrapper.includes("from '../OneConversation/OneConversation.jsx'"),
