@@ -218,7 +218,13 @@ export default function UniversalRibbonInventory({tab,definition,componentId,pro
      builder.onPositionChange?.({...builder.position,[key]:Math.round(value)});
  };
  const selectedDefinitions=new Map((definition?.propertyDefinitions??[]).map(item=>[item.propertyKey,item]));
- const enabled=new Set(selectedDefinitions.keys());
+ const unsupportedByComponent:Record<string,Set<string>>={
+  une_item_grid:new Set(['label','labelAlignment','defaultValueColor','textSize']),
+  une_container:new Set(['objectApiName','imageSource','badgeText','badgeAlignment','badgeTextSize','badgeBold','badgeTextColor','badgeVisible','badgeBodyColor','labelAlignment','textSize','label','textSource','labelColor','imageFill']),
+  une_calendar:new Set(['label','labelAlignment'])
+ };
+ const notApplicable=unsupportedByComponent[definition?.apiName??'']??new Set<string>();
+ const enabled=new Set([...selectedDefinitions.keys()].filter(key=>!notApplicable.has(key)));
  const canEditCanvas=builder?.layoutMode==='free-canvas'&&Boolean(builder.position)&&Boolean(builder.onPositionChange);
  const groups=useMemo(()=>mergeCatalogSlots(tab,catalog),[tab,catalog]);
  if(!groups)return null;
