@@ -55,6 +55,10 @@ export function updateConversationPartProperties(parent,id,edited){
  return next;
 }
 export function readConversationPart(props,id,key){
- const oldKey=byId.get(id)?.bindings?.[key];
+ const part=byId.get(id);
+ // Existing Conversation renderer requests logical `text` slots, while the
+ // public component metadata now uses UNE Input's `value` property.
+ const childKey=part?.component==='une_input'&&key==='text'?'value':key;
+ const oldKey=part?.bindings?.[childKey];
  return oldKey?props?.[oldKey]:undefined;
 }
