@@ -98,6 +98,48 @@
 }
 .lightning .records-page-heading { gap:12px; margin-bottom:14px; }
 .lightning .records-main-toolbar { row-gap:10px; }
+
+/* Builder/editor chrome, report/Flow setup and metadata lists share the
+ * platform palette too. The :where() specificity deliberately lets selected,
+ * error, primary, and tenant-authored component rules win. Preview canvas,
+ * published pages and app-authored visuals are intentionally excluded. */
+.lightning :where(
+  .metadata-card, .object-manager-menu, .object-list-panel,
+  .object-manager-picker-search, .object-manager-picker select,
+  .object-subnav-more, .builder-titlebar, .report-titlebar,
+  .builder-title-controls select, .builder-meta-bar > select,
+  .component-panel, .properties-panel, .component-category,
+  .component-option, .component-library-card, .device-picker,
+  .report-outline, .report-fields-panel, .report-type-modal,
+  .report-type-categories button:not(.active), .outline-field,
+  .report-type-select select, .report-summary, .report-run-filters,
+  .report-filter-editor select, .report-filter-editor input,
+  .flow-start-type, .flow-topbar, .flow-toolbox, .flow-settings,
+  .flow-element-option:not(.active):not(.selected),
+  .flow-node-inline-actions .icon-button, .flow-step,
+  .flow-end-node, .flow-zoom, .flow-zoom button,
+  .flow-bottom-bar, .flow-manager-item, .flow-validation,
+  .flow-route, .app-manager-assigned-page, .record-activity-list > li,
+  .record-chatter-posts > li, .connection-health-popover,
+  .profile-menu-panel, .profile-password-dialog
+) {
+  background-color:var(--md-surface);
+  color:var(--md-text);
+  border-color:var(--md-separator);
+}
+.lightning :where(.flow-toolbox,.flow-settings,.report-fields-panel,
+  .report-outline,.component-panel,.properties-panel)
+  :is(input,select,textarea)::placeholder {
+  color:var(--md-text-2);
+  opacity:1;
+}
+/* Preserve semantic accents on explicit active controls, not generic text. */
+.lightning :where(.report-type-categories button,.flow-element-option,
+  .object-list-item,.component-option):focus-visible {
+  outline:2px solid var(--md-focus-ring,var(--md-primary));
+  outline-offset:1px;
+}
+
 /* Accessible focus without changing tenant-authored components. */
 .lightning :is(
   .records-page,.object-manager,.permissions-page,.settings-page,
