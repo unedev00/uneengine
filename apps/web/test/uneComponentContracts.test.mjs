@@ -157,3 +157,17 @@ test('UNE Search and Modal expose only shared properties while retaining interna
   assert.match(code,/\.\.\.uneProps\(props,/);
  }
 });
+
+
+test('Card Grid retires only its 16 removed settings; original runtime remains backward compatible',async()=>{
+ const component=une.find(x=>x.apiName==='une_item_grid');
+ assert.ok(component);
+ const retired=["accentColor","tone","descriptionExpression","emptyText","showDescription","valueTextAlign","missingImageBehavior","showAddIcon","showHeading","badgeExpression","cartTargetKey","currencyCode","headingExpression","separateAddButton","valueColor","valueLineLimit"];
+ const declared=new Set(component.propertyDefinitions.map(x=>x.propertyKey));
+ for(const name of retired)assert.ok(!declared.has(name),name);
+ for(const name of ['title','helpText','imageFieldApiName','badgeFieldApiName','priceFieldApiName'])
+   assert.ok(declared.has(name),name);
+ const runtime=await readFile(new URL('../src/one/OneItemGrid/OneItemGrid.jsx',import.meta.url),'utf8');
+ assert.match(runtime,/p\\.cartTargetKey/);
+ assert.match(runtime,/p\\.showAddIcon/);
+});

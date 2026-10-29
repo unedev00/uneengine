@@ -4,6 +4,7 @@ import {createPortal} from 'react-dom';
 import RibbonColorPalette from './RibbonColorPalette';
 import type {LibraryComponentMetadata,ObjectMetadata,FlowDefinitionMetadata} from '../../metadata/Definitions/metadata';
 import CustomComponentPropertyEditor from '../ComponentProperties/CustomComponentPropertyEditor';
+import {metadataFieldObject,metadataSelection,metadataReference} from '../../metadata/Definitions/metadataReferences';
 import TenantMediaPicker from '../ComponentProperties/TenantMediaPicker';
 
 /**
@@ -29,7 +30,7 @@ const isExcludedRibbonProperty=(key:string)=>
   ['fontFamily','fontStyle','textDecoration','theme'].includes(key)
   || /(?:ageRestriction|barcode)/i.test(key)
   || (/(?:ObjectApiName|SourceObjectApi|ObjectAPI)$/i.test(key) && key!=='objectApiName');
-const cardGridRetiredProperties=new Set(["accentColor","tone","descriptionExpression","emptyText","showDescription","valueTextAlign","missingImageBehavior","showAddIcon","showHeading","badgeExpression","cartTargetKey","currencyCode","headingExpression","separateAddButton","valueColor","valueLineLimit"]);
+const retiredItemGridProps=new Set(["accentColor","tone","descriptionExpression","emptyText","showDescription","valueTextAlign","missingImageBehavior","showAddIcon","showHeading","badgeExpression","cartTargetKey","currencyCode","headingExpression","separateAddButton","valueColor","valueLineLimit"]);
 const excluded=new Set(Array.from(definitionMap.keys()).filter(isExcludedRibbonProperty));
 const sections:Record<Tab,readonly string[]>={
   'Component Data':['Source','Fields','Filters','Records','Data integration'],
@@ -130,10 +131,27 @@ function PropertyEditor({definition,enabled,reviewOnly=false,properties,onChange
       <div role="dialog" aria-modal="true" aria-label={label+' media library'}><button type="button" onClick={()=>setMediaOpen(false)}>Close</button>
         <TenantMediaPicker assetOnly initiallyOpen value={String(value)} onChange={next=>{update(next);setMediaOpen(false);}}/>
       </div></div>,document.body)}</>;
+ else if(definition.kind==='OBJECT'){
+   editor=<select {...props} value={metadataSelection(objects,value)?.apiName??String(value??'')}
+     onChange={e=>{const selected=objects.find(item=>item.apiName===e.target.value);update(selected?.id?metadataReference(selected.id):e.target.value);}}>
+     <option value="">Select object…</option>{objects.map(item=><option key={item.apiName} value={item.apiName}>{item.label}</option>)}
+   </select>;
+ }
+ else if(definition.kind==='OBJECT_FIELD'){
+   const source=metadataFieldObject(objects,{...properties,objectApiName:properties.objectApiName??''},key);
+   editor=<select {...props} value={String(value??'')} onChange={e=>update(e.target.value)}>
+     <option value="">Select field…</option>
+     {value!==undefined&&String(value)!==''&&!source?.fields?.some(f=>f.apiName===String(value))&&<option value={String(value)}>{String(value)} (saved)</option>}
+     {(source?.fields??[]).map(field=><option key={field.apiName} value={field.apiName}>{field.label}</option>)}
+   </select>;
+ }
  else if(!['BOOLEAN','SELECT','NUMBER','CURRENCY','IMAGE','COLOR','TEXT','LONG_TEXT','TEXTAREA','STRING'].includes(definition.kind)){
-   editor=<button type="button" disabled={!enabled} title={tip}
-     aria-expanded={Boolean(complexSelected)} aria-controls="une-ribbon-complex-editor"
-     onClick={()=>onOpenComplex?.(key)}>{complexSelected?'Editing':'Configure'}</button>;
+   // Inline native editor; no Configure/Editing state and no additional ribbon section.
+   editor=<div className="une-universal-inline-complex" onClick={e=>e.stopPropagation()}>
+     <CustomComponentPropertyEditor definitions={[definition]} properties={{[key]:value}}
+       objects={objects} flows={flows} primaryObjectApiName={String(properties.objectApiName??'')}
+       disabled={!enabled} onChange={next=>update(next[key])}/>
+   </div>;
  }
  else if(definition.kind==='COLOR'){
    const hex=/^#[0-9a-f]{6}$/i.test(String(value))?String(value):String(value).startsWith('#')||value==='transparent'?String(value):'';
@@ -166,7 +184,6 @@ export default function UniversalRibbonInventory({tab,definition,componentId,pro
  objects?:readonly ObjectMetadata[];flows?:readonly FlowDefinitionMetadata[];
  builder?:UniversalBuilderControls;
 }){
- const [expandedProperty,setExpandedProperty]=useState<string|null>(null);
  // Every component uses the same inventory, section order and control positions.
  const reviewPositionValue=(key:keyof CanvasPosition):number|string=>builder?.position?.[key]??'';
  const editCanvas=(key:keyof CanvasPosition,min:number,raw:string)=>{
@@ -177,9 +194,6 @@ export default function UniversalRibbonInventory({tab,definition,componentId,pro
  };
  const enabled=new Set((definition?.propertyDefinitions??[]).filter(item=>!isExcludedRibbonProperty(item.propertyKey)).map(item=>item.propertyKey));
  const canEditCanvas=builder?.layoutMode==='free-canvas'&&Boolean(builder.position)&&Boolean(builder.onPositionChange);
- const canOpenSource=Boolean(builder?.onOpenSource)&&(definition?.propertyDefinitions??[]).some(item=>/object|fieldApiName|mapping/i.test(item.propertyKey));
- const canOpenFilters=Boolean(builder?.onOpenFilters)&&(definition?.propertyDefinitions??[]).some(item=>/object|filter|searchField/i.test(item.propertyKey));
- const expandedDefinition=definition?.propertyDefinitions?.find(d=>d.propertyKey===expandedProperty);
  const groups=slots.get(tab);
  if(!groups)return null;
  return <div className="une-universal-ribbon" aria-label="Universal UNE property ribbon"
@@ -200,16 +214,9 @@ export default function UniversalRibbonInventory({tab,definition,componentId,pro
              value={reviewPositionValue(key)}
              onChange={event=>editCanvas(key,0,event.target.value)}/>
          </label>)}
-       {tab==='Component Data'&&section==='Source'&&<button type="button"
-         className="une-universal-builder-command" disabled={!canOpenSource} onClick={builder?.onOpenSource}>
-         Source mappings
-       </button>}
-       {tab==='Component Data'&&section==='Filters'&&<button type="button"
-         className="une-universal-builder-command" disabled={!canOpenFilters} onClick={builder?.onOpenFilters}>
-         Filter conditions
-       </button>}
        {defs.map(def=>{
-         if(definition?.apiName==='une_item_grid'&&cardGridRetiredProperties.has(def.propertyKey))return null;
+         // Removed Card Grid settings never appear as disabled legacy slots.
+         if(definition?.apiName==='une_item_grid'&&retiredItemGridProps.has(def.propertyKey))return null;
          // UNE Text no longer exposes the legacy palette; other UNE controls retain it.
          if(definition?.apiName==='une_text'&&def.propertyKey==='tone')return null;
          // Free-canvas geometry already has dedicated Width/Height controls.
@@ -222,18 +229,11 @@ export default function UniversalRibbonInventory({tab,definition,componentId,pro
              if(supported)onChange({...properties,[def.propertyKey]:next[def.propertyKey]});
            }}
            objects={objects} flows={flows}
-           complexSelected={expandedProperty===def.propertyKey}
-           onOpenComplex={key=>setExpandedProperty(previous=>previous===key?null:key)}/>;
+           />;
        })}
      </div>
      <span className="une-universal-ribbon-caption">{section}</span>
    </section>)}
-   {expandedDefinition&&<section id="une-ribbon-complex-editor" className="une-universal-ribbon-section une-universal-complex-section" aria-label={expandedDefinition.label+' settings'}>
-     <div className="une-universal-complex-header"><strong>{expandedDefinition.label}</strong><button type="button" onClick={()=>setExpandedProperty(null)}>Close section</button></div>
-     <div className="une-universal-complex-body"><CustomComponentPropertyEditor definitions={[expandedDefinition]} properties={properties}
-       objects={objects} flows={flows} primaryObjectApiName={String(properties.objectApiName??'')}
-       onChange={next=>onChange(next)}/></div>
-     <span className="une-universal-ribbon-caption">Settings</span>
-   </section>}
+
  </div>;
 }

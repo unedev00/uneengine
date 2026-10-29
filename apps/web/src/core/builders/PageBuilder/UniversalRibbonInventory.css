@@ -151,3 +151,23 @@
 .office-builder-ribbon .une-universal-complex-body :is(input,select,textarea){
   max-width:100%;box-sizing:border-box;
 }
+
+/* Data ribbon always remains compact. Every property appears in its section. */
+.office-builder-ribbon #page-builder-tab-content:has(>.une-universal-ribbon){
+ height:158px!important;min-height:158px!important;max-height:158px!important;
+ overflow-x:auto!important;overflow-y:hidden!important;direction:ltr!important;
+ scrollbar-width:thin!important;scrollbar-color:#9aaec8 transparent!important;
+ padding:3px 8px!important;
+}
+.office-builder-ribbon #page-builder-tab-content:has(>.une-universal-ribbon)::-webkit-scrollbar{display:block!important;height:9px!important}
+.office-builder-ribbon #page-builder-tab-content:has(>.une-universal-ribbon)::-webkit-scrollbar-thumb{background:#9aaec8;border-radius:8px}
+.office-builder-ribbon .une-universal-inline-complex{flex:0 0 180px;width:180px;max-width:180px;max-height:112px;overflow:auto;scrollbar-width:thin}
+.office-builder-ribbon .une-universal-inline-complex .metadata-component-properties{width:100%;min-width:160px;font-size:11px}
+.office-builder-ribbon .une-universal-inline-complex .component-optional-settings{display:block;margin:0;padding:0;border:0}
+.office-builder-ribbon .une-universal-inline-complex .component-optional-settings>summary,
+.office-builder-ribbon .une-universal-inline-complex .properties-section-title{display:none!important}
+/* Preserve functional metadata row controls and Add/Remove actions. */
+.office-builder-ribbon .une-universal-inline-complex .metadata-array-property{display:flex;align-items:center;margin:0;padding:0;min-height:25px;gap:3px}
+.office-builder-ribbon .une-universal-inline-complex .form-label{display:flex;align-items:center;gap:3px;margin:0}
+
+.office-builder-ribbon .une-universal-inline-complex :is(select,input){min-height:24px;max-width:170px}
