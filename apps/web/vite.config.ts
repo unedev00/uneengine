@@ -10,8 +10,18 @@ if (pagesBase !== '/' && pagesBase !== '/uneengine/') {
   throw new Error('Unsupported GitHub Pages base path');
 }
 
+// Embed the identity of the *built frontend*, rather than the latest GitHub commit.
+const frontendCommit = process.env.GITHUB_SHA ?? process.env.METADRIVE_RELEASE_SHA ?? null;
+const frontendBuild = {
+  commit: frontendCommit && /^[0-9a-f]{40}$/.test(frontendCommit) ? frontendCommit : null,
+  builtAt: new Date().toISOString()
+};
+
 export default defineConfig({
   plugins: [react()],
+  define: {
+    __METADRIVE_WEB_RELEASE__: JSON.stringify(frontendBuild)
+  },
   build: {
     // Multi-page build gives /acetill/ its own real document and JS entry,
     // independent of MetaDrive admin router and GitHub Pages SPA fallback.
