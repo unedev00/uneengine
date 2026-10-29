@@ -1,0 +1,48 @@
+name: Oracle one-time graceful host reboot (authorised)
+on:
+  push:
+    branches: [ops/oracle-graceful-reboot-20261029]
+permissions:
+  contents: read
+concurrency:
+  group: oracle-production-full-stack
+  cancel-in-progress: false
+jobs:
+  graceful-reboot:
+    if: github.repository == 'unedev00/uneengine' && github.ref == 'refs/heads/ops/oracle-graceful-reboot-20261029'
+    environment: oracle-production
+    runs-on: [self-hosted, linux, ARM64, metadrive-oracle]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Validate authorization, safeguard SQL, and request graceful restart once
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${GITHUB_REPOSITORY}" = 'unedev00/uneengine'
+          test "${GITHUB_REF}" = 'refs/heads/ops/oracle-graceful-reboot-20261029'
+          test "$(uname -m)" = 'aarch64'
+          test "$(cat /proc/1/comm)" = systemd
+          sudo -n true
+          echo 'Checking whether the host offers a safe systemd-logind reboot'
+          capability="$(timeout 12 busctl --system call org.freedesktop.login1 /org/freedesktop/login1 org.freedesktop.login1.Manager CanReboot || true)"
+          if [[ "$capability" != 's "yes"' && "$capability" != 's "challenge"' ]]; then
+            echo 'Safe OS restart not offered by login1. No reboot attempted.'
+            exit 1
+          fi
+          echo 'Backing up production SQL before attempting host restart'
+          sudo -n bash scripts/oracle/backup-production-sql.sh
+          echo 'Recording persistent once-only reboot intent'
+          sudo -n bash -c '
+            set -euo pipefail
+            install -d -m 0700 /var/lib/metadrive
+            marker=/var/lib/metadrive/oracle-graceful-reboot-20261029.once
+            ( set -C; printf "Owner-authorized graceful restart 2026-10-29\n" > "$marker" ) ||
+              { echo "Reboot already attempted; refusing another"; exit 1; }
+          '
+          echo 'Requesting graceful reboot through systemd-logind (never reboot --force)'
+          timeout 20 sudo -n loginctl reboot
+          echo 'Graceful reboot request accepted. Waiting for host to disconnect.'
+          sleep 30
