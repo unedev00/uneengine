@@ -83,6 +83,7 @@ test('tenant request retries reuse the same SQL tenant and reject changes to req
    if(sql.includes('pg_advisory_xact_lock'))return {rows:[]};
    if(sql.includes('SELECT p.request_digest'))return {rows:created?[{request_digest:digest,slug:request.slug,domain:request.domain}]:[]};
    if(sql.includes('SELECT id FROM md_tenants WHERE slug'))return {rows:[],rowCount:0};
+   if(sql.includes('SELECT 1 FROM md_users WHERE lower(email)'))return {rows:[],rowCount:0};
    if(sql.includes('INSERT INTO md_tenants'))return {rows:[{id:'new-tenant'}],rowCount:1};
    if(sql.includes('INSERT INTO md_users'))return {rows:[{id:'new-user'}],rowCount:1};
    if(sql.includes('INSERT INTO md_profiles'))return {rows:[{id:'new-profile'}],rowCount:1};

@@ -39,7 +39,8 @@ test('developer activation demands a fresh verified TOTP before changing user st
 });
 test('fresh provisioning seeds a distinct disabled developer identity',()=>{
  const code=readFileSync(new URL('../../src/system-files/tenant-provisioning.ts',import.meta.url),'utf8');
- for(const fragment of ["developerIdentityEmail='developer@'+domain",
+ for(const fragment of ["const tenantDeveloperEmail=request.tenantDeveloperEmail??'developer@'+domain;",
+  "const developerIdentityEmail=tenantDeveloperEmail.toLowerCase();",
   "randomBytes(48).toString('base64url')","'Tenant Developer',false",
   "INSERT INTO md_tenant_developer_accounts"])
   assert.ok(code.includes(fragment),fragment);

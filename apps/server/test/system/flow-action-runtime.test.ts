@@ -334,7 +334,13 @@ test('Record-Triggered Flow Custom Error supports page errors and fails closed f
  assert.ok(fieldError.errors.some(error=>error.includes('requires metadata validation')));
  const metadataQueries:Array<{sql:string;values:unknown[]}>=[];
  const db={query:async(sql:string,values:unknown[]=[])=>{
-  metadataQueries.push({sql,values});return {rows:[{api_name:'Status'}]};
+  metadataQueries.push({sql,values});
+  // Metadata validation checks the field itself, followed by the owning
+  // Object and its fields. Return all three only for this known fixture.
+  if(sql.includes('FROM md_object_definitions'))return {rows:[{api_name:'Account'}]};
+  if(sql.includes('FROM md_field_definitions'))
+   return {rows:sql.includes('SELECT 1')?[{api_name:'Status'}]:[{object_api:'Account',api_name:'Status'}]};
+  return {rows:[]};
  }} as unknown as SqlPersistence;
  const validatedFieldError=await validateFlowDraft(rbac,'tenant-id',recipient,
   'AccountSaveGuard',{...graph,elements:graph.elements.map(node=>node.id===2
