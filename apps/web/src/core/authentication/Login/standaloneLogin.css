@@ -1,6 +1,7 @@
 /* Product route styling only. Login/API/MFA controls remain those of MetaDrive. */
 .auth-screen--standalone {
-  --standalone-accent: #1769d2;
+  /* #0b57d0 ≈ 6.4:1 on white text — meets WCAG AA for normal-size labels */
+  --standalone-accent: #0b57d0;
   background: radial-gradient(ellipse at 18% 15%, color-mix(in srgb, var(--standalone-accent) 22%, transparent), transparent 46%),
               linear-gradient(140deg, #0b162b 0%, #132b46 52%, #07111e 100%);
   min-height: 100vh;
@@ -49,7 +50,7 @@
   opacity: 1;
 }
 .auth-screen .auth-card :is(input,textarea,select):focus-visible {
-  outline: 2px solid #1769d2;
+  outline: 2px solid #0b57d0;
   outline-offset: 2px;
 }
 .auth-screen .auth-card .auth-submit { color: #fff; -webkit-text-fill-color: #fff; }
@@ -57,11 +58,17 @@
   background: #0b57d0;
   border-color: #0b57d0;
 }
+.auth-screen--standalone .auth-card .auth-submit {
+  background: var(--standalone-accent);
+  border-color: var(--standalone-accent);
+}
+/* Deliberate gap so Show password / Forgot password never run together */
 .auth-inline-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 12px;
-  margin-top: 2px;
+  row-gap: 8px;
+  margin-top: 8px;
 }
 .auth-screen .auth-card .auth-error { color: #9b332c; }
