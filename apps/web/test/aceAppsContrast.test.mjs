@@ -67,7 +67,14 @@ test('ACE default filled actions reach WCAG AA text contrast',()=>{
  for(const [app,colour] of [['Kiosk','#e31b23'],['Till','#007aff'],
   ['Assist','#147d74'],['Chatter','#076c60']]){
   const rgb=hex(colour.slice(1));
-  const action=app==='Chatter'?rgb:blendBlack(rgb,.68);
+  const action=app==='Chatter'?rgb:blendBlack(rgb,.45);
   assert.ok(contrastOnWhite(action)>=4.5,app+' action contrast: '+contrastOnWhite(action));
+ }
+});
+
+test('arbitrarily bright tenant accents stay readable on white CTA text',()=>{
+ for(const accent of ['#ffffff','#ffff00','#00ffff','#ffb900','#ffefff']){
+  const actual=blendBlack(hex(accent.slice(1)),.45);
+  assert.ok(contrastOnWhite(actual)>=4.5,accent+' failed white CTA contrast');
  }
 });
