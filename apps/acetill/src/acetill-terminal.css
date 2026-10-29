@@ -279,3 +279,78 @@
 @media(max-width:480px) {
  .acetill-terminal .acetill-quick-actions button { font-size:12px; }
 }
+
+
+/* The POS catalogue, basket, payment, lock and receipt screens must not mix
+ * hardcoded light controls with a dark themed foreground. No Flow/UI changes. */
+.acetill-terminal{
+  --till-subtle:var(--md-surface-2,#f8f9fc);
+  --till-action:color-mix(in srgb,var(--till-accent) 68%,black);
+  --till-link:color-mix(in srgb,var(--till-accent) 62%,var(--till-ink));
+  color:var(--till-ink);
+}
+.acetill-terminal :is(.acetill-search input,.acetill-qty button,
+ .acetill-category-tabs button,.acetill-order-heading button){
+  color:var(--till-ink);
+}
+.acetill-terminal .acetill-search input::placeholder{color:var(--till-muted);opacity:1}
+.acetill-terminal :is(.acetill-category-tabs button,.acetill-order-heading button,
+ .acetill-product-meta span,.acetill-empty,.acetill-checkout p,
+ .acetill-subtotal,.acetill-state){color:var(--till-muted)}
+.acetill-terminal :is(.acetill-category-tabs button.selected,.acetill-quick-actions button){
+  color:var(--till-link);border-color:var(--till-line);
+}
+.acetill-terminal .acetill-category-tabs button.selected{border-bottom-color:var(--till-link)}
+.acetill-terminal :is(.acetill-product-art,.acetill-line-art,.acetill-state){
+  background:var(--till-subtle);
+}
+.acetill-terminal :is(.acetill-topline,.acetill-quick-actions,.acetill-current-order,
+ .acetill-line,.acetill-checkout){border-color:var(--till-line)}
+.acetill-terminal :is(.acetill-qty button,.acetill-search,.acetill-quick-actions button){
+  background:var(--till-surface);border-color:var(--till-line);
+}
+.acetill-terminal .acetill-charge{background:var(--till-action);color:#fff}
+.acetill-terminal .acetill-error{
+  background:color-mix(in srgb,#b42318 12%,var(--till-surface));
+  color:color-mix(in srgb,#dc4538 62%,var(--till-ink));
+}
+.standalone-product :is(.acetill-receipt-screen){background:var(--md-bg,#f5f5f7);color:var(--md-text,#1d1d1f)}
+.standalone-product .acetill-receipt-panel{
+  background:var(--md-surface,#fff);color:var(--md-text,#1d1d1f);
+  border-color:var(--md-separator,#d8dce4);
+}
+.standalone-product .acetill-receipt-panel dl{background:var(--md-surface-2,#fafafc)}
+.standalone-product :is(.acetill-receipt-panel p,.acetill-receipt-panel dt){
+  color:var(--md-text-2,#5c5c63);
+}
+.standalone-product .acetill-receipt-actions button:not(.acetill-charge){
+  background:var(--md-surface-2,#fafafc);
+  color:color-mix(in srgb,var(--product-accent,#007aff) 60%,var(--md-text,#1d1d1f));
+  border-color:var(--md-separator,#d8dce4);
+}
+.standalone-product .acetill-receipt-actions .acetill-charge{
+  background:color-mix(in srgb,var(--product-accent,#007aff) 68%,black);color:#fff;
+}
+.standalone-product :is(.acetill-payment-dialog,.acetill-pin-setup){
+  background:var(--md-surface,#fff);color:var(--md-text,#1d1d1f);
+}
+.standalone-product :is(.acetill-payment-dialog input,.acetill-pin-setup input){
+  background:var(--md-surface-2,#fafafc);color:var(--md-text,#1d1d1f);
+  border-color:var(--md-separator,#d8dce4);
+}
+.standalone-product :is(.acetill-payment-buttons button:not(.acetill-charge),.acetill-pin-setup button:not([type="submit"])){
+  background:var(--md-surface-2,#fafafc);color:var(--md-text,#1d1d1f);
+  border-color:var(--md-separator,#d8dce4);
+}
+.standalone-product :is(.acetill-payment-buttons .acetill-charge,.acetill-pin-setup button[type="submit"]){
+  background:color-mix(in srgb,var(--product-accent,#007aff) 68%,black);color:#fff;
+}
+.standalone-product .acetill-cashier-header>button{
+  background:var(--md-surface-2,#fafafc);color:var(--md-text,#1d1d1f);
+  border-color:var(--md-separator,#d8dce4);
+}
+.standalone-product :is(.acetill-display-button,.acetill-lock-button){
+  background:var(--md-surface-2,#fafafc);
+  color:color-mix(in srgb,var(--product-accent,#007aff) 62%,var(--md-text,#1d1d1f));
+  border-color:var(--md-separator,#d8dce4);
+}
