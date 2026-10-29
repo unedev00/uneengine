@@ -6,23 +6,31 @@ const key=k=>typeof k==="string"&&/^[A-Za-z][A-Za-z0-9_]*$/.test(k);
 const field=(row,name,fallback)=>key(name)?row?.[name]??fallback:fallback;
 const n=(v,fallback,min=0,max=200)=>Number.isFinite(Number(v))?Math.max(min,Math.min(max,Number(v))):fallback;
 export function UneInput(p){
+ const generatedId=React.useId();
+ const id=p.inputId||generatedId;
  const [local,setLocal]=React.useState(p.value??p.defaultValue??"");
  React.useEffect(()=>{if(p.value!==undefined)setLocal(p.value)},[p.value]);
- const value=local;
  const set=v=>{setLocal(v);fire(p,"change",v)};
  const type=["text","email","number","tel","date","time","search","password","url"].includes(p.inputType)?p.inputType:"text";
- const inputMode=["text","tel","numeric","decimal","email","search","url","none"].includes(p.inputMode)?p.inputMode:undefined;
  const maxLength=Number(p.maxLength)>0?n(p.maxLength,4096,1,100000):undefined;
- const attributes={id:p.inputId,className:"one-control",required:p.required===true,value:value??"",
-  placeholder:p.placeholder||"",disabled:p.disabled===true,maxLength,
-  autoComplete:p.autoComplete||undefined,inputMode,
-  pattern:typeof p.pattern==="string"&&p.pattern.length>0&&p.pattern.length<=250?p.pattern:undefined};
- return <div className="one-ui one-field">
-  {p.label&&<label className="one-label" htmlFor={p.inputId}>{p.label}</label>}
-  {p.multiline?<textarea {...attributes} rows={n(p.rows,3,1,16)} onChange={e=>set(e.target.value)}/>:
-   <input {...attributes} type={type}
-    onChange={e=>set(type==="number"?(e.target.value===""?"":Number(e.target.value)):e.target.value)}/>}
-  {p.helpText&&<small className="one-muted">{p.helpText}</small>}
+ const gap=n(p.gap,12,0,120);
+ const padding=n(p.padding,16,0,100);
+ const density=["compact","comfortable","spacious"].includes(p.density)?p.density:"comfortable";
+ const densityGap=density==="compact"?Math.max(2,gap/2):density==="spacious"?gap*1.5:gap;
+ const surface=["glass","solid","plain"].includes(p.surface)?p.surface:"solid";
+ const helpId=p.helpText?id+"-help":undefined;
+ const attributes={id,className:"one-control",required:p.required===true,value:local??"",
+  placeholder:p.placeholder||"",maxLength,
+  "aria-describedby":helpId};
+ return <div className="one-ui one-field une-input-field" data-surface={surface} data-density={density}
+   style={{display:"flex",flexDirection:"column",gap:densityGap,padding:0}}>
+  {p.label&&<label className="one-label" htmlFor={id}>{p.label}</label>}
+  <div className="une-input-surface" style={{padding}}>
+   {p.multiline?<textarea {...attributes} rows={Math.max(3,n(p.rows,3,1,16))} onChange={e=>set(e.target.value)}/>:
+    <input {...attributes} type={type}
+     onChange={e=>set(type==="number"?(e.target.value===""?"":Number(e.target.value)):e.target.value)}/>}
+  </div>
+  {p.helpText&&<small id={helpId} className="one-muted une-input-help" title={String(p.helpText)}>{p.helpText}</small>}
  </div>;
 }
 export function UneToggle(p){
