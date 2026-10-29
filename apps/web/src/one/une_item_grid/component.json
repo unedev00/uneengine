@@ -1013,6 +1013,13 @@
       "section": "Content",
       "defaultValue": "No matching records",
       "displayOrder": 813
+    },
+    {
+      "propertyKey": "helpText",
+      "label": "Help text",
+      "kind": "TEXT",
+      "displayOrder": 860,
+      "defaultValue": ""
     }
   ],
   "eventDefinitions": [
