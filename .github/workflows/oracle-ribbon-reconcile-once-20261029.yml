@@ -20,6 +20,6 @@ jobs:
       - name: Validate guarded SQL reconciliation script
         run: bash -n scripts/oracle/reconcile-builder-ribbon-once.sh
       - name: Validate in a rolled-back transaction (no production modifications)
-        run: sudo -n bash scripts/oracle/reconcile-builder-ribbon-once.sh dry-run
+        run: sudo -n env GITHUB_REPOSITORY="$GITHUB_REPOSITORY" GITHUB_REF="$GITHUB_REF" GITHUB_WORKSPACE="$GITHUB_WORKSPACE" GITHUB_SHA="$GITHUB_SHA" bash scripts/oracle/reconcile-builder-ribbon-once.sh dry-run
       - name: Apply authorised metadata-only reconciliation with SQL backup and audit
-        run: sudo -n bash scripts/oracle/reconcile-builder-ribbon-once.sh apply
+        run: sudo -n env GITHUB_REPOSITORY="$GITHUB_REPOSITORY" GITHUB_REF="$GITHUB_REF" GITHUB_WORKSPACE="$GITHUB_WORKSPACE" GITHUB_SHA="$GITHUB_SHA" bash scripts/oracle/reconcile-builder-ribbon-once.sh apply
