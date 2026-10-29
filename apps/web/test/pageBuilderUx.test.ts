@@ -108,12 +108,18 @@ test('Card Grid Add button remains compatible with saved values without exposing
   assert.match(runtime,/onKeyDown=\{event=>/);
 });
 
-test('Excel-style ribbon keeps nine permanent tabs, relocates page identity and removes duplicate Save',()=>{
+test('SQL-defined Home groups preserve page actions without duplicating Save',()=>{
   const source=readFileSync(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
   const content=source.slice(source.indexOf('className="office-ribbon-topbar"'),source.indexOf('id="page-builder-tab-content"'));
   assert.doesNotMatch(content,/aria-label="Page name"/);
   assert.doesNotMatch(content,/office-ribbon-quick-save/);
-  assert.match(source,/className="office-ribbon-group office-ribbon-page-identity"/);
+  assert.match(source,/data-shared-group=\{group\}/);
+  assert.match(source,/ribbonCatalog\.properties\.filter\(row=>row\.tab==='Home'\)/);
+  const sql=readFileSync(new URL('../../server/src/system-support/migrations/20270122-global-shared-builder-ribbon.sql',import.meta.url),'utf8');
+  assert.match(sql,/md_builder_shared_properties/);
+  for(const property of ['backIcon','pageName','deviceLayout','canvasMode','canvasWidth','canvasHeight',
+    'selectVersion','resetIcon','cut','copy','paste','undo','redo','save','activate'])
+    assert.ok(sql.includes("'"+property+"'"),'Missing SQL Home control '+property);
   assert.match(source,/aria-label="Page name"/);
   assert.match(source,/aria-label="Choose page layout"/);
   assert.match(source,/aria-label="Cut"/);

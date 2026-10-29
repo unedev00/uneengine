@@ -1,14 +1,9 @@
 name: Oracle frontend delivery
 
+# This workflow is for explicit frontend-only maintenance releases.
+# Automatic pushes must use oracle-api-deploy.yml, which deploys API, worker,
+# SQL migrations and frontend atomically, avoiding mismatched backend APIs.
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'apps/web/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'scripts/oracle/deploy-frontend.sh'
-      - '.github/workflows/oracle-frontend-delivery.yml'
   workflow_dispatch:
 
 permissions:

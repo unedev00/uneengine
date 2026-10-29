@@ -134,6 +134,7 @@
     "apps/server/test/system/user-account-lock-contract.test.ts",
     "apps/server/test/system/whatsapp-communication-status.test.ts",
     "apps/server/test/system/whatsapp-named-credential.test.ts",
+    "apps/web/test/aceAppsContrast.test.mjs",
     "apps/web/test/acekiosk/contract.test.ts",
     "apps/web/test/adaptiveUi.test.ts",
     "apps/web/test/authentication/business-calendar-no-fabricated-defaults.test.mjs",
@@ -196,6 +197,7 @@
     "apps/web/test/standardListColumns.test.ts",
     "apps/web/test/standardListQuery.test.ts",
     "apps/web/test/tabKeyboardNavigation.test.ts",
+    "apps/web/test/tableLayoutContract.test.mjs",
     "apps/web/test/uiAuditRegression.test.mjs",
     "apps/web/test/uneBindingRouting.test.ts",
     "apps/web/test/uneBuilderRibbonV2.test.mjs",
@@ -213,6 +215,7 @@
     "apps/web/test/universalUneRibbonReviewMode.test.ts",
     "apps/web/test/visibilityExpression.test.ts",
     "apps/web/test/visiblePolling.test.ts",
-    "apps/web/test/workspaceContrastRepair.test.mjs"
+    "apps/web/test/workspaceContrastRepair.test.mjs",
+    "apps/web/test/workspaceThemeContrast.test.mjs"
   ]
 }

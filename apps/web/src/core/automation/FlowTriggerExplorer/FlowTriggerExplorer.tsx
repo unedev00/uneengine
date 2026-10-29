@@ -103,14 +103,14 @@ export default function FlowTriggerExplorer({ flows, objects, loading, onEdit }:
       <div className="table-scroll" role="region" aria-label="Record-triggered Flow results" tabIndex={0}>
         <table className="slds-table scheduled-flows-table">
           <thead><tr>
-            <th scope="col">Object</th><th scope="col">Flow</th><th scope="col">Event</th>
+            <th scope="col">Object</th><th scope="col">Flow</th><th scope="col">API Name</th><th scope="col">Event</th>
             <th scope="col">Execution</th><th scope="col">Order</th><th scope="col">Versions</th>
             <th scope="col">Elements</th><th scope="col" aria-label="Actions"></th>
           </tr></thead>
           <tbody>
             {visible.map((row) => <tr key={row.apiName}>
               <td>{row.objectLabel}</td>
-              <td><strong>{row.label}</strong><div className="api-name">{row.apiName}</div></td>
+              <td><strong>{row.label}</strong></td><td title={row.apiName}><code>{row.apiName}</code></td>
               <td>{row.trigger}</td>
               <td>{row.runWhen}</td>
               <td>{row.triggerOrder ?? 'Default'}</td>
@@ -121,7 +121,7 @@ export default function FlowTriggerExplorer({ flows, objects, loading, onEdit }:
               <td><button className="row-menu" type="button" title={`Edit ${row.label}`}
                 aria-label={`Edit ${row.label}`} onClick={() => onEdit(row.apiName)}><Pencil size={14} /></button></td>
             </tr>)}
-            {!loading && visible.length === 0 && <tr><td colSpan={8} className="scheduled-flows-empty">
+            {!loading && visible.length === 0 && <tr><td colSpan={9} className="scheduled-flows-empty">
               No matching record-triggered flows. Configure a Record-Triggered Flow in the Flow Builder.
             </td></tr>}
           </tbody>

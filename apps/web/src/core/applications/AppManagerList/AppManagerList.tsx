@@ -33,6 +33,7 @@ export default function AppManagerList({apps, busy, onEdit, onClone}: Props) {
       columns={[
         {apiName:'name',label:'Application',phoneRole:'title',render:app=>app.label},
         {apiName:'apiName',label:'Developer name',phoneRole:'subtitle',render:app=>app.apiName},
+        {apiName:'description',label:'Description',render:app=>app.description || '—'},
         {apiName:'pages',label:'Pages',phoneRole:'badge',render:app=>app.navigationPageApiNames.length+' pages'},
         {apiName:'navigation',label:'Navigation',phoneRole:'trailing',render:app=>app.navigationItems.length+' items'},
         {apiName:'actions',label:'Actions',render:app=><div className="app-manager-list-actions">
@@ -45,6 +46,7 @@ export default function AppManagerList({apps, busy, onEdit, onClone}: Props) {
         <thead><tr>
           <th scope="col">App</th>
           <th scope="col">Developer Name</th>
+          <th scope="col">Description</th>
           <th scope="col">Navigation Items</th>
           <th scope="col">App Pages</th>
           <th scope="col">Actions</th>
@@ -52,11 +54,10 @@ export default function AppManagerList({apps, busy, onEdit, onClone}: Props) {
         <tbody>{filtered.map(app => <tr key={app.apiName}>
           <td><div className="app-manager-list-name">
             <span className="app-manager-list-color" style={{backgroundColor:app.brandColor}} aria-hidden="true"/>
-            <span><strong>{app.label}</strong>
-              {app.description && <small>{app.description}</small>}
-            </span>
+            <span><strong>{app.label}</strong></span>
           </div></td>
           <td><code>{app.apiName}</code></td>
+          <td title={app.description || ''}>{app.description || '—'}</td>
           <td>{app.navigationItems.length}</td>
           <td>{app.navigationPageApiNames.length}</td>
           <td><div className="app-manager-list-actions">
