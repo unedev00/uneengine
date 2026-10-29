@@ -354,3 +354,13 @@
   color:color-mix(in srgb,var(--product-accent,#007aff) 62%,var(--md-text,#1d1d1f));
   border-color:var(--md-separator,#d8dce4);
 }
+
+
+/* Explicit light selection must override an OS dark-media preference. */
+.acetill-terminal.acetill-terminal{
+ --till-surface:var(--md-surface,#fff);
+ --till-ink:var(--md-text,#1d1d1f);
+ --till-muted:var(--md-text-2,#5c5c63);
+ --till-line:var(--md-separator,#d7dde5);
+ background:var(--till-surface);color:var(--till-ink);
+}
