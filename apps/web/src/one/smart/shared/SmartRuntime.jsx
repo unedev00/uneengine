@@ -74,6 +74,7 @@ function SmartCalendar({p}){
  const offset=(monthStart-first+7)%7;
  const weeks=Math.ceil((days+offset)/7);
  return <div className="smart-calendar">
+  {p.label&&<strong>{expression(p.label,recordOf(p))}</strong>}
   <strong>{selected.toLocaleString("en-GB",{month:"long",year:"numeric",timeZone:"UTC"})}</strong>
   {indices.length===0?<p>No calendar days selected</p>:<div className="smart-calendar-grid"
    style={{gridTemplateColumns:"repeat("+indices.length+",minmax(0,1fr))"}}>
@@ -82,7 +83,8 @@ function SmartCalendar({p}){
     const relative=(i-first+7)%7;
     const date=week*7+relative-offset+1;
     return <span key={week+"-"+i} aria-label={date>=1&&date<=days?
-     dayNames[i]+" "+date:"Empty day"} className={date>=1&&date<=days?"":"smart-calendar-empty"}>
+     dayNames[i]+" "+date:"Empty day"} className={date>=1&&date<=days?"":"smart-calendar-empty"}
+     style={{color:p.defaultValueColor||undefined}}>
      {date>=1&&date<=days?date:""}
     </span>;
    }))}
@@ -90,7 +92,7 @@ function SmartCalendar({p}){
  </div>;
 }
 function SmartLookup({p,style,fire}){
- const [query,setQuery]=React.useState("");
+ const [query,setQuery]=React.useState(()=>expression(p.defaultValue??"",recordOf(p)));
  const [opened,setOpened]=React.useState(false);
  const candidates=recordsOf(p).slice(0,200).filter(item=>item&&typeof item==="object");
  const display=row=>expression(p.textSource??row.Name??row.name??row.label??row.title??row.id??"",row);
@@ -109,6 +111,21 @@ function SmartLookup({p,style,fire}){
      {display(record)}
    </button>)}
   </div>}
+ </div>;
+}
+function SmartTabs({p,record,fire}){
+ const [active,setActive]=React.useState(0);
+ const tabs=Array.isArray(p.tabs)?p.tabs:Array.from({length:number(p.tabCount,3,1,20)},(_,i)=>"Tab "+(i+1));
+ const heading=expression(p.textSource??p.label??"",record);
+ return <div className="smart-tabs-shell">
+  {heading&&<strong className="smart-tabs-heading">{heading}</strong>}
+  <nav className="smart-tabs" aria-label={heading||"Tabs"}>
+   {tabs.map((tab,index)=><button key={index} type="button" role="tab"
+    aria-selected={active===index} style={{height:number(p.tabHeight,44),
+     minWidth:number(p.tabWidth,120),color:p.tabColor||undefined,
+     background:active===index?p.selectedTabColor||"#eaf2ff":undefined}}
+    onClick={()=>{setActive(index);fire("change",index)}}>{text(tab?.label??tab)}</button>)}
+  </nav>
  </div>;
 }
 export default function SmartRuntime(p){
@@ -135,20 +152,18 @@ export default function SmartRuntime(p){
   {recordsOf(p).slice(0,number(p.cardsPerRow,3,1,12)*number(p.cardsPerColumn,1,1,12)).map((r,i)=>
   <SmartCard p={p} record={r} key={r?.id??i}/>)}</div>;
  else if(name==="smart_calendar")content=<SmartCalendar p={p}/>;
- else if(name==="smart_tabs"){
-  const tabs=Array.isArray(p.tabs)?p.tabs:Array.from({length:number(p.tabCount,3,1,20)},(_,i)=>"Tab "+(i+1));
-  content=<nav className="smart-tabs">{tabs.map((t,i)=><button key={i} style={{height:number(p.tabHeight,44),minWidth:number(p.tabWidth,120),
-    color:p.tabColor||undefined,background:i===0?p.selectedTabColor||"#eaf2ff":undefined}}
-   type="button" onClick={()=>fire("change",i)}>{text(t?.label??t)}</button>)}</nav>;
+ else if(name==="smart_tabs")content=<SmartTabs p={p} record={record} fire={fire}/>;
  }else if(name==="smart_navigation"){
   const items=Array.isArray(p.items)&&p.items.length?p.items:p.textSource?[expression(p.textSource,record)]:[];
   content=<nav className="smart-navigation" style={{flexDirection:p.navigationDirection==="vertical"?"column":"row"}}>
    {items.map((item,i)=><button key={i} type="button" onClick={()=>{fire("click",item);if(p.onNavigate&&item?.target)p.onNavigate(item.target)}}>{text(item?.label??item)}</button>)}
   </nav>;
  }else content=<div className="smart-container">
+  {p.label&&<strong>{label}</strong>}
   {(p.imageSource||p.textSource||p.badgeText)&&<SmartCard p={p} record={record}/>}
   {p.children||null}</div>;
- return <div className={"smart-runtime "+name} style={{...style,backgroundColor:p.backgroundColor||undefined,borderColor:p.borderColor||undefined,
+ return <div className={"smart-runtime "+name} style={{...style,backgroundColor:p.backgroundColor||undefined,
+   ...(p.borderColor?{border:"1px solid "+p.borderColor}:{}),
    ...(p.width!==undefined&&p.width!==''?{width:number(parseFloat(p.width),undefined,0,10000)}:{}),
    ...(p.height!==undefined&&p.height!==''?{height:number(parseFloat(p.height),undefined,0,10000)}:{})}}>{content}</div>;
 }
