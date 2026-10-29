@@ -172,67 +172,11 @@
       "defaultValue": 12
     },
     {
-      "propertyKey": "placeholder",
-      "label": "Search placeholder",
-      "kind": "TEXT",
-      "displayOrder": 300,
-      "defaultValue": "Search"
-    },
-    {
-      "propertyKey": "searchKey",
-      "label": "Shared search key",
-      "kind": "TEXT",
-      "defaultValue": "catalogue",
-      "displayOrder": 310
-    },
-    {
       "propertyKey": "objectApiName",
       "label": "Source Object",
       "kind": "OBJECT",
       "displayOrder": 300,
       "defaultValue": ""
-    },
-    {
-      "propertyKey": "value",
-      "label": "Search term from page state",
-      "kind": "TEXT",
-      "displayOrder": 810,
-      "defaultValue": ""
-    },
-    {
-      "propertyKey": "label",
-      "label": "Search label",
-      "kind": "TEXT",
-      "displayOrder": 820,
-      "defaultValue": "Search"
-    },
-    {
-      "propertyKey": "showSubmitButton",
-      "label": "Show search button",
-      "kind": "BOOLEAN",
-      "displayOrder": 830,
-      "defaultValue": false
-    },
-    {
-      "propertyKey": "submitLabel",
-      "label": "Search button label",
-      "kind": "TEXT",
-      "displayOrder": 840,
-      "defaultValue": "Search"
-    },
-    {
-      "propertyKey": "showSuggestions",
-      "label": "Show record suggestions",
-      "kind": "BOOLEAN",
-      "displayOrder": 850,
-      "defaultValue": false
-    },
-    {
-      "propertyKey": "controlledValue",
-      "label": "Control search value from page state",
-      "kind": "BOOLEAN",
-      "defaultValue": false,
-      "displayOrder": 950
     }
   ],
   "eventDefinitions": [
