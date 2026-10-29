@@ -163,117 +163,130 @@ function AutomationSettingsWorkspace({ canManage }: { canManage: boolean }) {
 
 type TenantMfaMode = 'Off' | 'Optional' | 'Required';
 
-function TenantEmailRecoverySettings({ canManage }: { canManage: boolean }) {
-  const defaultSubject = '{!Tenant.Name} — password recovery';
-  const defaultBody = 'Your verification code is {!Verification.Value}. Expires in {!Verification.ExpiryMinutes} minutes.';
-  const [method, setMethod] = useState<'OTP' | 'LINK'>('OTP');
-  const [subject, setSubject] = useState(defaultSubject);
-  const [body, setBody] = useState(defaultBody);
-  const [deliveryReady, setDeliveryReady] = useState(false);
-  const [linkReady, setLinkReady] = useState(false);
-  const [permitted, setPermitted] = useState(false);
-  const [editing, setEditing] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState('');
-  const original = useRef<{ method: 'OTP' | 'LINK'; subject: string; body: string } | null>(null);
-  useEffect(() => {
-    let active = true;
-    void apiRequest<{
-      deliveryReady: boolean;
-      linkReady: boolean;
-      policy?: { method: 'OTP' | 'LINK'; templates?: { email?: { subject: string; body: string } } };
-    }>('/auth/password-recovery/settings')
-      .then((value) => {
-        if (!active) return;
-        setPermitted(true);
-        setDeliveryReady(value.deliveryReady);
-        setLinkReady(value.linkReady);
-        setMethod(value.policy?.method ?? 'OTP');
-        setSubject(value.policy?.templates?.email?.subject ?? defaultSubject);
-        setBody(value.policy?.templates?.email?.body ?? defaultBody);
-      })
-      .catch(() => { if (active) setPermitted(false); });
-    return () => { active = false; };
-  }, []);
-  if (!permitted) return null;
-  const beginEdit = () => {
-    if (!canManage || busy) return;
-    original.current = { method, subject, body };
-    setEditing(true);
-    setMessage('');
-  };
-  const cancelEdit = () => {
-    if (busy) return;
-    if (original.current) {
-      setMethod(original.current.method);
-      setSubject(original.current.subject);
-      setBody(original.current.body);
-    }
-    original.current = null;
-    setEditing(false);
-    setMessage('');
-  };
-  const save = async () => {
-    if (!canManage || !editing || busy) return;
-    setBusy(true);
-    setMessage('');
-    try {
-      await apiRequest('/auth/password-recovery/settings', {
-        method: 'PUT',
-        body: JSON.stringify({
-          policy: { method, defaultChannel: 'email', allowedChannels: ['email'], templates: { email: { subject, body } } }
-        })
-      });
-      original.current = null;
-      setEditing(false);
-      setMessage('Password recovery configuration saved.');
-    } catch (reason) {
-      setMessage(reason instanceof Error ? reason.message : 'Unable to save recovery settings');
-    } finally {
-      setBusy(false);
-    }
-  };
-  return <section className="surface permission-section">
-    <TenantPasswordPolicy request={apiRequest} canManage={canManage} />
-    <h2>Tenant password recovery</h2>
-    <p>Email delivery is managed by the platform mail configuration. Tenant SMTP credentials and sender addresses are not used here.</p>
-    {!deliveryReady && <p role="alert" className="permission-help">
-      Platform email delivery is not configured. Ask a platform administrator to configure the server mail settings.
-    </p>}
-    {method === 'LINK' && !linkReady && <p role="alert" className="permission-help">
-      Configure a trusted HTTPS password-reset origin on the server before using reset links.
-    </p>}
-    <div className="settings-read-first-section">
-      {editing ? <div className="settings-edit-row">
-        <PlatformPageSlot slotKey="field-settings-05"><label className="form-label" htmlFor="recovery-method">Verification method
-          <select className="form-control" id="recovery-method" value={method}
-            onChange={(event) => setMethod(event.target.value as 'OTP' | 'LINK')}>
-            <option value="OTP">6-digit email OTP</option><option value="LINK">Email reset link</option>
-          </select>
-        </label></PlatformPageSlot>
-        <PlatformPageSlot slotKey="field-settings-06"><label className="form-label" htmlFor="recovery-subject">Email subject template
-          <input className="form-control" id="recovery-subject" value={subject}
-            onChange={(event) => setSubject(event.target.value)} />
-        </label></PlatformPageSlot>
-        <PlatformPageSlot slotKey="field-settings-07"><label className="form-label" htmlFor="recovery-body">Email body template
-          <textarea className="form-control" id="recovery-body" rows={5} value={body}
-            onChange={(event) => setBody(event.target.value)} />
-        </label></PlatformPageSlot>
-      </div> : <>
-        <SettingsViewRow label="Platform email delivery" value={deliveryReady ? 'Configured' : 'Not configured'}
-          canEdit={false} onEdit={() => undefined} />
-        <SettingsViewRow label="Verification method" value={method} canEdit={canManage} onEdit={beginEdit} />
-        <SettingsViewRow label="Email template" value={subject} canEdit={canManage} onEdit={beginEdit} />
-      </>}
-    </div>
-    {editing && canManage && <div className="settings-read-first-toolbar">
-      <button type="button" className="btn" disabled={busy} onClick={cancelEdit}>Cancel</button>
-      <button type="button" className="btn btn-brand" onClick={() => void save()} disabled={busy}>
-        <Save size={14} />{busy ? 'Saving…' : 'Save changes'}
-      </button>
-    </div>}
-    {message && <p role="status" className="settings-view-row-help">{message}</p>}
-  </section>;
+type RecoveryChannel='sms'|'whatsapp';
+type RecoveryAction={channel:RecoveryChannel;enabled:boolean;flowServiceUserId:string|null;
+ credentialId:string|null;calloutPath:string;calloutBody:string;messageTemplate:string};
+type RecoveryFlow={method:'OTP'|'LINK';otpLength:4|6;expiryMinutes:number;maxAttempts:number;
+ emailSubject:string;emailTemplate:string;channels:Record<RecoveryChannel,RecoveryAction>};
+type RecoverySettings={flow:RecoveryFlow;revision:number;fromEmail:string;deliveryReady:boolean;linkReady:boolean};
+function TenantEmailRecoverySettings({canManage}:{canManage:boolean}){
+ const [flow,setFlow]=useState<RecoveryFlow|null>(null);
+ const [revision,setRevision]=useState(0),[deliveryReady,setDeliveryReady]=useState(false);
+ const [linkReady,setLinkReady]=useState(false),[fromEmail,setFromEmail]=useState('');
+ const [credentials,setCredentials]=useState<Array<{id:string;name:string;protocol:string;enabled:boolean}>>([]);
+ const [serviceUsers,setServiceUsers]=useState<Array<{id:string;email:string;enabled:boolean}>>([]);
+ const [editing,setEditing]=useState(false),[busy,setBusy]=useState(false),[message,setMessage]=useState('');
+ const snapshot=useRef<RecoveryFlow|null>(null);
+ useEffect(()=>{
+  let active=true;
+  void apiRequest<RecoverySettings>('/auth/password-recovery/settings')
+   .then(r=>{if(active){setFlow(r.flow);setRevision(r.revision);setDeliveryReady(r.deliveryReady);
+    setLinkReady(r.linkReady);setFromEmail(r.fromEmail);}}).catch(()=>{});
+  void apiRequest<{credentials:typeof credentials}>('/named-credentials')
+   .then(r=>{if(active)setCredentials(r.credentials.filter(item=>item.protocol==='HTTPS'&&item.enabled));}).catch(()=>{});
+  void apiRequest<{users:typeof serviceUsers}>('/metadata/automation-service-users')
+   .then(r=>{if(active)setServiceUsers(r.users.filter(user=>user.enabled));}).catch(()=>{});
+  return()=>{active=false;};
+ },[]);
+ if(!flow)return null;
+ const change=(patch:Partial<RecoveryFlow>)=>setFlow(value=>value?{...value,...patch}:value);
+ const changeChannel=(channel:RecoveryChannel,patch:Partial<RecoveryAction>)=>
+  setFlow(value=>value?{...value,channels:{...value.channels,
+   [channel]:{...value.channels[channel],...patch}}}:value);
+ const begin=()=>{if(canManage&&!busy){snapshot.current=JSON.parse(JSON.stringify(flow)) as RecoveryFlow;
+  setEditing(true);setMessage('');}};
+ const cancel=()=>{if(busy)return;if(snapshot.current)setFlow(snapshot.current);
+  snapshot.current=null;setEditing(false);setMessage('');};
+ const save=async()=>{
+  if(!canManage||!editing||busy)return;
+  setBusy(true);setMessage('');
+  try{const result=await apiRequest<RecoverySettings>('/auth/password-recovery/settings',{
+   method:'PUT',body:JSON.stringify({flow,revision})
+  });setFlow(result.flow);setRevision(result.revision);setEditing(false);snapshot.current=null;
+   setMessage('Password recovery Flow saved.');
+  }catch(error){setMessage(error instanceof Error?error.message:'Unable to save recovery Flow');}
+  finally{setBusy(false);}
+ };
+ return <section className="surface permission-section">
+  <TenantPasswordPolicy request={apiRequest} canManage={canManage}/>
+  <h2>Password Recovery Flow</h2>
+  <p>Recovery button → Find tenant user → Generate OTP → Email / WhatsApp / SMS action → Verify → Reset password.</p>
+  <p>Security-critical verification is enforced by Core; templates and HTTP Callout actions are editable here without code.</p>
+  {!deliveryReady&&<p role="alert" className="permission-help">Platform recovery email is not configured.</p>}
+  {flow.method==='LINK'&&!linkReady&&<p role="alert">Configure a trusted HTTPS reset link origin.</p>}
+  {editing?<div className="settings-read-first-section">
+   <h3>Generate OTP</h3>
+   <label className="form-label">Recovery method<select className="form-control" value={flow.method}
+    onChange={event=>change({method:event.target.value as 'OTP'|'LINK'})}>
+    <option value="OTP">Numeric code</option><option value="LINK">Email reset link (legacy)</option>
+   </select></label>
+   <label className="form-label">Code length<select className="form-control" value={flow.otpLength}
+    onChange={event=>{const length=Number(event.target.value) as 4|6;
+     change({otpLength:length,expiryMinutes:length===4?5:10,maxAttempts:length===4?3:5});}}>
+    <option value={6}>6 digits (recommended)</option><option value={4}>4 digits</option>
+   </select></label>
+   <label className="form-label">Expiry (minutes)<input className="form-control" type="number"
+    min={5} max={flow.otpLength===4?5:15} value={flow.expiryMinutes}
+    onChange={event=>change({expiryMinutes:Number(event.target.value)})}/></label>
+   <label className="form-label">Maximum attempts<input className="form-control" type="number"
+    min={3} max={flow.otpLength===4?3:5} value={flow.maxAttempts}
+    onChange={event=>change({maxAttempts:Number(event.target.value)})}/></label>
+   <h3>Email action</h3>
+   <p>Sender: {fromEmail||'noreply@unesolutions.co.uk (configure platform mail transport)'}</p>
+   <label className="form-label">Subject template<input className="form-control"
+    value={flow.emailSubject} onChange={event=>change({emailSubject:event.target.value})}/></label>
+   <label className="form-label">Email template<textarea className="form-control" rows={4}
+    value={flow.emailTemplate} onChange={event=>change({emailTemplate:event.target.value})}/></label>
+   {(['whatsapp','sms'] as const).map(channel=>{
+    const action=flow.channels[channel];
+    return <div key={channel} className="settings-read-first-section">
+     <h3>{channel==='whatsapp'?'WhatsApp':'SMSGate'} HTTP Callout</h3>
+     <label className="checkbox-row"><input type="checkbox" checked={action.enabled}
+      disabled={flow.method==='LINK'}
+      onChange={event=>changeChannel(channel,{enabled:event.target.checked})}/>
+      Enable {channel==='whatsapp'?'WhatsApp':'SMS'} recovery</label>
+     <label className="form-label">Service user
+      <select className="form-control" value={action.flowServiceUserId??''}
+       onChange={event=>changeChannel(channel,{flowServiceUserId:event.target.value||null})}>
+       <option value="">Select later</option>
+       {serviceUsers.map(user=><option key={user.id} value={user.id}>{user.email}</option>)}
+      </select></label>
+     <label className="form-label">HTTPS Named Credential
+      <select className="form-control" value={action.credentialId??''}
+       onChange={event=>changeChannel(channel,{credentialId:event.target.value||null})}>
+       <option value="">Select later</option>
+       {credentials.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}
+      </select></label>
+     <label className="form-label">Message template<textarea className="form-control" rows={3}
+      value={action.messageTemplate}
+      onChange={event=>changeChannel(channel,{messageTemplate:event.target.value})}/></label>
+     <details><summary>HTTP Callout mapping (advanced)</summary>
+      <label className="form-label">Relative endpoint<input className="form-control"
+       value={action.calloutPath}
+       onChange={event=>changeChannel(channel,{calloutPath:event.target.value})}/></label>
+      <label className="form-label">JSON request template<textarea className="form-control" rows={5}
+       value={action.calloutBody}
+       onChange={event=>changeChannel(channel,{calloutBody:event.target.value})}/></label>
+     </details>
+     <p>Requires verified account phone, authorized service user and configured Named Credential.</p>
+    </div>;
+   })}
+  </div>:<div className="settings-read-first-section">
+   <SettingsViewRow label="Flow revision" value={String(revision)} canEdit={false} onEdit={()=>undefined}/>
+   <SettingsViewRow label="OTP length" value={flow.otpLength+' digits'} canEdit={canManage} onEdit={begin}/>
+   <SettingsViewRow label="Expiry" value={flow.expiryMinutes+' minutes'} canEdit={canManage} onEdit={begin}/>
+   <SettingsViewRow label="Platform email" value={deliveryReady?'Configured':'Not configured'} canEdit={canManage} onEdit={begin}/>
+   <SettingsViewRow label="WhatsApp HTTP Callout" value={flow.channels.whatsapp.enabled?'Enabled':'Not configured'} canEdit={canManage} onEdit={begin}/>
+   <SettingsViewRow label="SMSGate HTTP Callout" value={flow.channels.sms.enabled?'Enabled':'Not configured'} canEdit={canManage} onEdit={begin}/>
+  </div>}
+  {editing&&canManage&&<div className="settings-read-first-toolbar">
+   <button className="btn" type="button" disabled={busy} onClick={cancel}>Cancel</button>
+   <button className="btn btn-brand" type="button" disabled={busy} onClick={()=>void save()}>
+    <Save size={14}/>{busy?'Saving…':'Save Flow'}
+   </button>
+  </div>}
+  {message&&<p role="status">{message}</p>}
+ </section>;
 }
 
 function TenantUserLockSettings() {
