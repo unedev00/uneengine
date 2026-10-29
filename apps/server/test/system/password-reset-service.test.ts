@@ -50,8 +50,7 @@ function fixture(options:{digits?:4|6;phone?:string|null;sms?:boolean;failDelive
  const db={query:fakeQuery,
   transaction:async(callback:(client:{query:typeof fakeQuery})=>Promise<unknown>)=>
    callback({query:fakeQuery})} as unknown as SqlPersistence;
- const auth={hashPassword:async()=> 'new-hash',verifyPassword:async()=>false}
-  as unknown as AuthenticationService;
+ const auth={hashPassword:async()=> 'new-hash',verifyPassword:async()=>false} as unknown as AuthenticationService;
  const service=new PasswordResetService(db,auth,
   async(_tenant,_cred,from,to,_subject,body)=>{
    assert.equal(from,'');transports.push({channel:'email',code:body.split('Code: ')[1],body,to});
