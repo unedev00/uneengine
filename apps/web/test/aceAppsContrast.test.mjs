@@ -4,10 +4,10 @@ import {readFileSync} from 'node:fs';
 
 const read=path=>readFileSync(new URL(path,import.meta.url),'utf8');
 const shell=read('../src/core/workspace/Standalone/standaloneRuntime.css');
-const kiosk=read('../../../acekiosk/src/acekiosk.css');
-const till=read('../../../acetill/src/acetill-terminal.css');
-const assist=read('../../../aceassist/src/aceassist.css');
-const chat=read('../../../acechatter/src/aceChatter.css');
+const kiosk=read('../../acekiosk/src/acekiosk.css');
+const till=read('../../acetill/src/acetill-terminal.css');
+const assist=read('../../aceassist/src/aceassist.css');
+const chat=read('../../acechatter/src/aceChatter.css');
 
 test('ACE app chrome retains readable title and logout in either appearance',()=>{
  assert.match(shell,/\.standalone-product-header\s*\{[^}]*background:var\(--md-surface/);
