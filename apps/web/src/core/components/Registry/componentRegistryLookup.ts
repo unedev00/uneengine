@@ -14,7 +14,7 @@ export function findRegisteredComponent(
   // A tenant's real published identity wins; only absent retired system keys
   // fall back to the canonical UNE implementation for older saved metadata.
   return registered.find(definition => definition.apiName === apiName &&
-    !(apiName === 'une_text' && definition.trustedBundled === true) &&
+    !((apiName === 'une_text' || apiName === 'OneText') && definition.trustedBundled === true) &&
     definition.status !== 'Draft' && definition.surfaces.includes(surface))
     ?? (legacyUneAliases[apiName] ? registered.find(definition =>
       definition.apiName === legacyUneAliases[apiName] && definition.trustedBundled === true &&
