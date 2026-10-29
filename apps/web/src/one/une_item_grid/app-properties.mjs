@@ -780,6 +780,14 @@ export const propertyDefinitions = [
     "displayOrder": 809
   },
   {
+    "propertyKey": "badgeBodyColor",
+    "label": "Badge Body Color",
+    "kind": "COLOR",
+    "group": "Badge",
+    "section": "Design",
+    "displayOrder": 809.5
+  },
+  {
     "propertyKey": "badgeTextColor",
     "label": "Badge text colour",
     "kind": "COLOR",
