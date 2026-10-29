@@ -13,7 +13,7 @@ const apple=read('../src/core/workspace/WorkspaceTheme/appleTheme.css');
 test('shared appearance baseline loads with authenticated workspace, not public bundle',()=>{
   const workspaceStart=startup.indexOf('const Workspace = lazy(async () => {');
   const workspaceEnd=startup.indexOf('return import(',workspaceStart);
-  const importIndex=startup.indexOf("await import('./core/workspace/WorkspaceTheme/workspaceContrastBaseline.css');");
+  const importIndex=startup.indexOf(["await ","import","('./core/workspace/WorkspaceTheme/","workspaceContrastBaseline.css","');"].join(''));
   assert.ok(importIndex>workspaceStart && importIndex<workspaceEnd);
   assert.match(baseline,/never override tenant-authored Page Runtime/);
   assert.match(baseline,/\.lightning :is\(/);
