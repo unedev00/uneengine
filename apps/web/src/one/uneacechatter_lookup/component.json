@@ -8,7 +8,7 @@
   ],
   "version": 1,
   "jsxFile": "one/uneacechatter_lookup/AppComponent.jsx",
-  "cssFile": "one/une_lookup/UneLookup.css",
+  "cssFile": "one/uneacechatter_lookup/AppComponent.css",
   "resize": {
     "defaultWidth": 320,
     "defaultHeight": 80,

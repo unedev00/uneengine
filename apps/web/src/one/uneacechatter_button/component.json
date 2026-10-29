@@ -8,7 +8,7 @@
   ],
   "version": 1,
   "jsxFile": "one/uneacechatter_button/AppComponent.jsx",
-  "cssFile": "one/une_button/UneButton.css",
+  "cssFile": "one/uneacechatter_button/AppComponent.css",
   "resize": {
     "defaultWidth": 320,
     "defaultHeight": 80,

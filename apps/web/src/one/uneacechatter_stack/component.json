@@ -8,7 +8,7 @@
   ],
   "version": 1,
   "jsxFile": "one/uneacechatter_stack/AppComponent.jsx",
-  "cssFile": "one/une_stack/UneStack.css",
+  "cssFile": "one/uneacechatter_stack/AppComponent.css",
   "resize": {
     "defaultWidth": 320,
     "defaultHeight": 80,

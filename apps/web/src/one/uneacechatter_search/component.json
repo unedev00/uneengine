@@ -8,7 +8,7 @@
   ],
   "version": 1,
   "jsxFile": "one/uneacechatter_search/AppComponent.jsx",
-  "cssFile": "one/une_search/UneSearch.css",
+  "cssFile": "one/uneacechatter_search/AppComponent.css",
   "resize": {
     "defaultWidth": 320,
     "defaultHeight": 80,
