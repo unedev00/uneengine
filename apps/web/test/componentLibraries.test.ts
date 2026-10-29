@@ -105,3 +105,10 @@ test('retired UNE insert components are hidden but retained components remain',(
  assert.deepEqual(publishedPageLibraryComponents(entries).map(d=>d.apiName),retained);
  assert.ok(findRegisteredComponent(entries,'une_table','page'));
 });
+
+test('UNE Conversation is AceChatter-only, hidden from new Page Builder placements', async () => {
+ const { RETIRED_UNE_PAGE_BUILDER_COMPONENTS }=await import('../src/core/builders/PageBuilder/pageBuilderPalette');
+ assert.ok(RETIRED_UNE_PAGE_BUILDER_COMPONENTS.has('une_conversation'));
+ assert.deepEqual(publishedPageLibraryComponents([definition('une_conversation'),definition('une_button')]).map(x=>x.apiName),['une_button']);
+ assert.equal(findRegisteredComponent([definition('une_conversation')],'une_conversation','page')?.apiName,'une_conversation');
+});
