@@ -415,3 +415,16 @@
     flex-basis:32px;
   }
 }
+/* A designer hit-shield makes even disabled native buttons and iframe content
+   selectable. It exists only in edit mode, never in Preview or published apps. */
+.modern-canvas-builder .record-component:not(.free-canvas-component):has(> .canvas-design-interaction-shield){
+ position:relative;
+}
+.modern-canvas-builder .record-component > .canvas-design-interaction-shield{
+ position:absolute;inset:0;z-index:90;background:transparent;
+ cursor:inherit;touch-action:inherit;
+}
+.modern-canvas-builder .record-component > :is(.free-canvas-resize-handle,.template-component-resize-handle,.template-placement-handle){
+ z-index:160;
+}
+.modern-canvas-builder .record-component > .canvas-element-actions{z-index:180}
