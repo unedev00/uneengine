@@ -75,7 +75,7 @@ for(const d of une)test(d.apiName+' bundles and renders with a scoped UNE surfac
 });
 
 test('device show/hide properties are not available in UNE metadata or the Page Builder ribbon', async () => {
- const appearance=JSON.parse(await readFile(new URL('../src/one/une/shared/appearance-properties.json',import.meta.url),'utf8'));
+ const appearance=(await import('../src/one/une/shared/appearance-properties.mjs')).appearanceProperties;
  const manifest=JSON.parse(await readFile(new URL('../src/one/manifest.json',import.meta.url),'utf8'));
  const ribbon=await readFile(new URL('../src/core/builders/PageBuilder/PageBuilderRibbonStyle.tsx',import.meta.url),'utf8');
  for(const key of ['hideOnPhone','hideOnTablet','hideOnDesktop']){

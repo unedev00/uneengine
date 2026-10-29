@@ -43,7 +43,7 @@ test('UNE settings stay out of public catalog, ribbon and registration UI',()=>{
 });
 
 test('SQL cleanup removes UNE property inventory only, retaining component identities and page instances',()=>{
- const migration=read(new URL('../../../server/src/system-support/migrations/20270120-remove-une-sql-property-inventory.sql',import.meta.url));
+ const migration=read(new URL('../../server/src/system-support/migrations/20270120-remove-une-sql-property-inventory.sql',import.meta.url));
  assert.match(migration,/DELETE FROM md_component_library_contract_properties/);
  assert.match(migration,/left\(component_api,4\)='une_'/);
  assert.doesNotMatch(migration,/DELETE\s+FROM\s+md_component_definitions/i);
