@@ -50,6 +50,7 @@ jobs:
           bash -n scripts/oracle/ensure-frontend-api-proxy.sh
           bash -n scripts/oracle/backup-production-sql.sh
           bash -n scripts/oracle/deploy-full-stack.sh
+          bash -n scripts/oracle/recover-systemd-bus.sh
           bash -n scripts/oracle/check-communication-backlog.sh
 
   deploy:
@@ -66,6 +67,14 @@ jobs:
         with:
           node-version: '22'
           cache: npm
+      - name: Recover Oracle systemd D-Bus control plane if unresponsive
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = "unedev00/uneengine"
+          test "$(uname -m)" = "aarch64"
+          sudo -n true
+          sudo -n env GITHUB_REPOSITORY="$GITHUB_REPOSITORY" bash scripts/oracle/recover-systemd-bus.sh
       - name: Build release on the target architecture
         run: |
           npm ci
