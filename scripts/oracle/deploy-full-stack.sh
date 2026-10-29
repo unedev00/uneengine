@@ -44,6 +44,21 @@ trap rollback ERR
 bash "$SOURCE/scripts/oracle/backup-production-sql.sh"
 bash "$SOURCE/scripts/oracle/deploy-api.sh" "$SOURCE" "$SHA"
 API_ACTIVATED=1
+# The new Page Builder requires this SQL-backed API. Never publish an
+# incompatible frontend if the new backend is still serving the generic 404.
+# Use the same local API health endpoint as deploy-api.sh.
+api_health_url="${METADRIVE_API_HEALTH_URL:-http://127.0.0.1:3001/api/health}"
+api_base="${api_health_url%/api/health}"
+api_base="${api_base%/health}"
+catalog_probe="$(mktemp)"
+catalog_status="$(curl -sS -o "$catalog_probe" -w '%{http_code}' --max-time 15 "$api_base/api/metadata/builder-ribbon" || true)"
+if [[ "$catalog_status" == 404 || "$catalog_status" == 000 || "$catalog_status" == 500 || "$catalog_status" == 502 || "$catalog_status" == 503 ]] ||
+   grep -q 'API endpoint not implemented in SQL runtime' "$catalog_probe"; then
+  rm -f "$catalog_probe"
+  echo "SQL-backed Page Builder API is unavailable; frontend publication blocked." >&2
+  exit 1
+fi
+rm -f "$catalog_probe"
 FRONT_STARTED=1
 bash "$SOURCE/scripts/oracle/deploy-frontend.sh" "$SOURCE/apps/web/dist" "$SHA"
 systemctl is-active --quiet "$API"
