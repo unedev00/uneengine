@@ -105,7 +105,7 @@ export default function ComponentLibrary({
 
 
   const chooseFile = async (file: File, kind: 'jsx' | 'css') => {
-    const limit = kind === 'jsx' ? 200_000 : 100_000;
+    const limit = 100_000;
     if (file.size > limit) {
       setError(`${kind.toUpperCase()} file must be ${limit / 1000} KB or smaller`);
       return;

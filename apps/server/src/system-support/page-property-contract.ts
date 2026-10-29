@@ -6,7 +6,9 @@ export const conditionSettings:ComponentSettingDefinition[]=[
  {...text('expression','Condition expression (e.g. 1 AND (2 OR 3))'),maxLength:160},
  {propertyKey:'conditions',label:'Conditions',kind:'COLLECTION',minItems:1,maxItems:20,fields:[
   {...choice('source','Source',['Device','Record Field','Record Type','User Profile','Record Permission']),required:true},
-  text('fieldApiName','Record field'),{...choice('operator','Comparison',['Equals','Not Equals','Contains','Greater Than','Less Than']),required:true},text('value','Value')
+ text('fieldApiName','Record field'),{...choice('operator','Comparison',['Equals','Not Equals','Contains',
+  'Greater Than','Greater Than or Equal','Less Than','Less Than or Equal','Is Blank','Is Not Blank',
+  'Includes','Excludes']),required:true},text('value','Value')
  ]}
 ];
 /** Reusable schema fragments; consumers opt in only when they implement the behaviour.

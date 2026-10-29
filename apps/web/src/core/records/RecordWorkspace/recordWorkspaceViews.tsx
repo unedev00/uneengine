@@ -12,6 +12,7 @@ import { resolvePhoneColumns } from '../ResponsiveDataList/phoneColumns.mjs';
 import { RecordFormDialog } from '../RecordFormDialog/recordFormDialogView';
 import InlineRecordField from './InlineRecordField';
 import {recordEditPageLayout} from './recordEditPageLayout';
+import {recordInlineFieldRules,validateInlineFieldValue} from './recordInlineFieldRules';
 import {filterLayoutWritableValues,missingLayoutRequiredFields,applyRequiredLayoutDefaults} from './layoutWritableValues';
 import {behaviorAction,behaviorRecordAction,behaviorAppearance,behaviorField,behaviorTabs,behaviorTabForChild,behaviorInteractions} from '../../pages/PageRuntime/pageBehaviorRuntime';
 import {recordPagePresentationLayout} from './recordPageLayoutMigration';
@@ -2144,9 +2145,9 @@ function RecordWorkspace({
         ...(canCreate?['Create' as const]:[]),...(canEdit?['Edit' as const]:[]),
         ...(canDelete?['Delete' as const]:[])])};
     const renderPageField=(field:FieldMetadata,componentProperties?:Record<string,unknown>)=>{
-      const fieldBehavior=componentProperties
-        ?behaviorField(componentProperties,field.apiName,runtimeBehaviorContext):null;
-      const layoutReadOnly=componentProperties?.readOnlyOnLayout===true||fieldBehavior?.readOnly===true;
+      const layoutRules=recordInlineFieldRules(field.apiName,componentProperties,runtimeBehaviorContext);
+      if(!layoutRules.visible)return null;
+      const layoutReadOnly=layoutRules.readOnly;
       return <InlineRecordField
         field={field} value={record[field.apiName]} display={formatFieldValue(field,record[field.apiName])}
         editable={!layoutReadOnly&&canEdit&&fieldAccess[`${object.apiName}.${field.apiName}`]?.edit===true}
@@ -2154,9 +2155,7 @@ function RecordWorkspace({
         onSave={async(value)=>{
           if(!canEdit||!fieldAccess[`${object.apiName}.${field.apiName}`]?.edit||layoutReadOnly)
             throw new Error('Field editing is not permitted');
-          if((field.required||fieldBehavior?.required)
-            &&(value===null||value===undefined||typeof value==='string'&&!value.trim()))
-            throw new Error(`${field.label} is required`);
+          validateInlineFieldValue({...field,required:field.required||layoutRules.required},value,layoutReadOnly);
           await apiRequest(`/records/${encodeURIComponent(object.apiName)}/${encodeURIComponent(record.Id)}`,{
             method:'PUT',
             ...(typeof record.LastModifiedDate==='string'

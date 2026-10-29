@@ -24,6 +24,16 @@ export async function readComponentContract(client:Pick<PoolClient,'query'>,tena
   FROM md_component_library_contract_properties WHERE tenant_id=$1 AND component_api=$2 AND version=$3`,[tenant,api,version]);
  return decodeMetadataValues(rows) as ComponentContract;
 }
+export async function readComponentContracts(client:Pick<PoolClient,'query'>,tenant:string,api:string,
+ versions:readonly number[]):Promise<Map<number,ComponentContract>>{
+ if(!versions.length)return new Map();
+ const {rows}=await client.query<MetadataValueRow&{version:number}>(`SELECT version,property_path,value_kind,value_text
+  FROM md_component_library_contract_properties
+  WHERE tenant_id=$1 AND component_api=$2 AND version=ANY($3::int[])`,[tenant,api,[...versions]]);
+ const byVersion=new Map<number,MetadataValueRow[]>();
+ for(const row of rows)byVersion.set(row.version,[...(byVersion.get(row.version)??[]),row]);
+ return new Map(versions.map(version=>[version,decodeMetadataValues(byVersion.get(version)??[]) as ComponentContract]));
+}
 export async function writeComponentContract(client:Pick<PoolClient,'query'>,tenant:string,api:string,version:number,contract:ComponentContract,previous?:number){
  // Omitted keys mean retain; explicit [] means clear. Restore copies the original version.
  const inherited=previous?await readComponentContract(client,tenant,api,previous):{};

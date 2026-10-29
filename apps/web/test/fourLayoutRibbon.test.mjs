@@ -15,7 +15,9 @@ test('independent page layouts have no redundant per-device ribbon visibility sw
 });
 
 test('visibility rules and selected-layout component visibility remain editable',()=>{
- assert.match(responsive,/onVisibleChange\(event\.target\.checked\)/);
- assert.match(responsive,/onVisibilityRules/);
- assert.match(responsive,/Edit visibility rules/);
+ const builder=readFileSync(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+ assert.doesNotMatch(responsive,/onVisibleChange\(event\.target\.checked\)/);
+ assert.match(builder,/RibbonVisibilityRules/);
+ assert.match(builder,/Edit visibility rules/);
+ assert.match(builder,/onApply=\{applyVisibilityEditor\}/);
 });

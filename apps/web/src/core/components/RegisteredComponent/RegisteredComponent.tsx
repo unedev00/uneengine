@@ -9,6 +9,7 @@ import {registeredComponentAppearance, registeredComponentAppearanceClasses} fro
 import './registeredComponentAppearance.css';
 import {pagePropertyIssues} from '../Properties/pagePropertyContract';
 import {resolveRegisteredTextProperties} from './fieldExpressionRuntime';
+import {FieldExpressionEvaluationError} from '../../../one/shared/OneFieldExpression.js';
 import {validatePrimitiveMetadata, primitiveAccessibilityProps} from './sharedPrimitiveMetadata';
 
 type ComponentBoundaryState = { error?: string };
@@ -86,8 +87,6 @@ export default function RegisteredComponent({ definition, props, layoutTranspare
     return <div role="alert" className="registered-component-error">{assetError}</div>;
   if (definition.trustedBundled && !definition.compiledJs && (!asset || asset.apiName!==definition.apiName || asset.version!==definition.version))
     return <div role="status">Loading component…</div>;
-  const hydratedDefinition = definition.compiledJs ? definition : {...definition,
-    compiledJs:asset!.compiledJs,scopedCss:asset!.scopedCss};
   const schemaIssues=validateComponentDefinitions(definition.propertyDefinitions??[]);
   if(schemaIssues.length)return <div role="alert" className="registered-component-error">Invalid component schema: {schemaIssues.map(i=>i.path+' '+i.message).join('; ')}</div>;
   const device = props.device==='Phone'?'Mobile':props.device as PropertyDevice|undefined;
@@ -99,7 +98,14 @@ export default function RegisteredComponent({ definition, props, layoutTranspare
   const issues=[...validateComponentSettings(definitions.filter(d=>d.schemaVersion===1),configuredProps),
     ...pagePropertyIssues('Custom:'+definition.apiName,configuredProps)];
   if(issues.length)return <div role="alert" className="registered-component-error">Invalid component settings: {issues.map(i=>i.path+' '+i.message).join('; ')}</div>;
-  const effectiveProps = resolveRegisteredTextProperties(definitions,applyRecordViewAdapter(configuredProps));
+  let effectiveProps:Record<string,unknown>;
+  try{
+    effectiveProps=resolveRegisteredTextProperties(definitions,applyRecordViewAdapter(configuredProps));
+  }catch(error){
+    if(error instanceof FieldExpressionEvaluationError)
+      return <div className="registered-component-error" role="alert">Formula error: {error.message}</div>;
+    throw error;
+  }
   const primitive = definition.primitiveMetadata;
   const primitiveCheck = primitive ? validatePrimitiveMetadata(primitive) : null;
   if (primitiveCheck && !primitiveCheck.valid) return <div className="registered-component-error" role="alert">Invalid primitive metadata: {primitiveCheck.errors.join('; ')}</div>;
@@ -108,6 +114,10 @@ export default function RegisteredComponent({ definition, props, layoutTranspare
     style={effectiveProps.fillRegion === true ? {height:'100%',minHeight:0,minWidth:0} : undefined}>
     <ComponentSandbox definition={definition} props={effectiveProps} />
   </div>;
+  const hydratedDefinition = definition.compiledJs ? definition : asset
+    ? {...definition,compiledJs:asset.compiledJs,scopedCss:asset.scopedCss}
+    : null;
+  if(!hydratedDefinition)return <div role="alert" className="registered-component-error">Bundled renderer is unavailable.</div>;
   return <div {...accessibility} style={layoutTransparent?{display:'contents'}:undefined}><ComponentRenderBoundary key={`${definition.apiName}-${definition.version}`}>
     <RegisteredComponentBody definition={hydratedDefinition} props={effectiveProps} appearanceProps={props} layoutTransparent={layoutTransparent} />
   </ComponentRenderBoundary></div>;

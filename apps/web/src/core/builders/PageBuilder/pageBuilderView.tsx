@@ -140,7 +140,8 @@ import RichTextBlockEditor from '../ComponentProperties/RichTextBlockEditor';
 import PageRouteDirectory from '../../pages/PageRouteDirectory/PageRouteDirectory';
 import PageComponentVisualEditor from '../ComponentStyleEditor/PageComponentVisualEditor';
 import RibbonColorPalette from './RibbonColorPalette';
-import {RibbonFilters} from './PageBuilderRibbonEditors';
+import {RibbonFilters,RibbonVisibilityRules} from './PageBuilderRibbonEditors';
+import type {ComponentVisibilityRule} from '../../components/Properties/componentVisibility';
 import PageBuilderActionRibbon from './PageBuilderActionRibbon';
 import PageBuilderRibbonMetadataPager from './PageBuilderRibbonMetadataPager';
 import UniversalRibbonInventory from './UniversalRibbonInventory';
@@ -158,7 +159,7 @@ import PageBuilderRibbonContent from './PageBuilderRibbonContent';
 import { canNestComponent, pageAppearanceTarget, pageAppearanceStyleKeys, updateLayoutSettings, type LayoutSettingKey, directChildren, isLayoutType, isDescendantOf, layoutTypes } from '../../pages/TemplatePageRuntime/pageComponentLayout';
 import PageComponentStyleEditor from '../ComponentStyleEditor/PageComponentStyleEditor';
 import { isCanvasLocked, wrapCanvasComponent, groupCanvasComponents, ungroupCanvasComponent, snapCanvasPosition, alignCanvasComponents, distributeCanvasComponents } from './canvasInteractions';
-import { copyComponentTree, cloneComponentTree, assignTabOnReparent, type ComponentClipboard } from './pageComponentTree';
+import { copyComponentTree, cloneComponentTree, remapComponentInteractionTargets, assignTabOnReparent, type ComponentClipboard } from './pageComponentTree';
 import { filterPageComponentRecords, needsMetadataComponentRuntime } from '../../pages/PageRuntime/pageComponentBindings';
 import { childrenOf, canNest, componentLayoutProps, hasPageComponentAppearance, isLayoutContainer, rawLayoutParentId, reparentComponent, resolvePageComponentStyle, type LayoutDevice } from '../../pages/TemplatePageRuntime/pageComponentLayout';
 import AppExchange from '../../applications/AppExchange/AppExchange';
@@ -189,7 +190,7 @@ import {
 } from '../../pages/PageRuntime/pageCanvas';
 import {
   createComponentPreviewProps, getPageBuilderComponentCategories,
-  publishedPageLibraryComponents, pageBuilderPaletteCategories
+  publishedPageLibraryComponents, RETIRED_UNE_PAGE_BUILDER_COMPONENTS, pageBuilderPaletteCategories
 } from './pageBuilderPalette';
 import { addRecentPageBlock, describeBuilderFilters, loadRecentPageBlocks, pageBuilderCategoryLabels, pageBuilderStartOptions } from './pageBuilderUx';
 import {
@@ -540,6 +541,26 @@ function PageBuilder({
   const fields = targetObject?.fields ?? [];
   const pageLayouts = targetObject?.pageLayouts ?? [];
   const selected = page.components.find((component) => component.id === selectedId);
+  const [visibilityEditorOpen,setVisibilityEditorOpen]=useState(false);
+  const [visibilityDraft,setVisibilityDraft]=useState<ComponentVisibilityRule|undefined>();
+  useEffect(()=>{
+    setVisibilityEditorOpen(false);
+    setVisibilityDraft(selected?.properties.visibilityRules as ComponentVisibilityRule|undefined);
+  },[selectedId]);
+  const openVisibilityEditor=()=>{
+    const raw=selected?.properties.visibilityRules;
+    setVisibilityDraft(raw&&typeof raw==='object'&&!Array.isArray(raw)
+      ?structuredClone(raw as ComponentVisibilityRule):undefined);
+    setVisibilityEditorOpen(true);
+  };
+  const applyVisibilityEditor=()=>{
+    if(!selected)return;
+    const properties={...selected.properties};
+    if(visibilityDraft)properties.visibilityRules=visibilityDraft;
+    else delete properties.visibilityRules;
+    updateComponent(selected.id,{properties});
+    setVisibilityEditorOpen(false);
+  };
   const textStyle = selected?.properties.layoutStyle && typeof selected.properties.layoutStyle==='object'
     ? selected.properties.layoutStyle as Record<string,unknown> : {};
   const currentRibbonDevice = page.layoutVariant==='Mobile'?'Phone':page.layoutVariant==='Custom'?'Base':page.layoutVariant??'Desktop';
@@ -692,14 +713,15 @@ function PageBuilder({
         description: component.description,
         categories: getPageBuilderComponentCategories(component.apiName, component.label, component.description, true)
       })) : []),
-    ...(page.layoutMode === 'template' && dynamicFormsEnabled ? [{
+    ...(page.pageType==='Record Page' ? [{
       id: 'Field Section',
       type: 'Field Section',
       label: 'Field Section',
       description: 'Group selected record fields into a one- or two-column section.',
       categories: ['Layout'] as (typeof pageBuilderPaletteCategories)[number][]
     }] : []),
-    ...libraryComponents.filter(component=>isUneBuilderApi(component.apiName)&&component.status!=='Draft').map(component=>({
+    ...libraryComponents.filter(component=>isUneBuilderApi(component.apiName)&&component.status!=='Draft'
+      &&!RETIRED_UNE_PAGE_BUILDER_COMPONENTS.has(component.apiName)).map(component=>({
       id:'Custom:'+component.apiName,
       type:'Custom:'+component.apiName,
       label:component.apiName==='une_item_grid'?'Card Grid':component.apiName==='une_lookup'?'Lookup Record':
@@ -731,8 +753,8 @@ function PageBuilder({
     const priority = (id: string) => favouriteComponents.includes(id) ? -10 : recentComponents.includes(id) ? recentComponents.indexOf(id) : 100;
     return priority(a.id) - priority(b.id);
   });
-  // Show each eligible UNE registry component exactly once. Do not surface legacy
-  // layout shortcuts or platform component aliases as duplicate Insert commands.
+  // Show each eligible standard and registered component once; aliases are
+  // consolidated by registry discovery before reaching this gallery.
   const ribbonGroupRules = [
     {label:'Text',match:/text|image|photo|picture|paragraph|heading|label|media/i},
     {label:'Buttons',match:/button|link|action|menu/i},
@@ -749,8 +771,8 @@ function PageBuilder({
   const seenRibbonComponents=new Set<string>();
   for(const component of paletteComponents){
     const apiName=component.type.startsWith('Custom:')?component.type.slice('Custom:'.length):component.type;
-    if(!/^une_[a-z0-9_]+$/.test(apiName)||seenRibbonComponents.has(apiName))continue;
-    seenRibbonComponents.add(apiName);
+    if(seenRibbonComponents.has(component.type))continue;
+    seenRibbonComponents.add(component.type);
     const name=`${apiName} ${component.label}`;
     const category=ribbonGroupRules.find(group=>group.match.test(name))?.label??'Other';
     ribbonCategories.get(category)!.push({...component,label:component.label.replace(/^UNE[ _-]+/i,'')});
@@ -1165,7 +1187,7 @@ function PageBuilder({
   const addComponent = (type: string, position = page.components.length, region: 'header' | 'main' | 'sidebar' = 'main', canvasPosition?: PageComponentMetadata['position'], parentId: string | null = null) => {
     const customApiName = type.startsWith('Custom:') ? type.slice('Custom:'.length) : '';
     const custom = findRegisteredComponent(libraryComponents, customApiName, 'page');
-    const dynamicFormComponent = type === 'Field Section' && page.pageType === 'Record Page' && dynamicFormsEnabled;
+    const dynamicFormComponent = type === 'Field Section' && page.pageType === 'Record Page';
     if (!availableComponents.includes(type) && !custom && !dynamicFormComponent && !isLayoutType(type)) {
       onNotify(`Enable the matching object feature before adding the ${type} component`);
       return;
@@ -1638,16 +1660,17 @@ function PageBuilder({
       updatedAt: undefined,
       status: 'Draft',
       activationAssignments: [],
-      components: page.components.map((component) => ({
-        ...component,
-        id: clonedIds.get(component.id)!,
-        parentId: component.parentId ? clonedIds.get(component.parentId) ?? component.parentId : component.parentId,
-        properties: { ...component.properties,
+      components: page.components.map((component) => {
+        const properties={...component.properties,
           ...(typeof component.properties?.layoutParentId === 'string'
             ? { layoutParentId: clonedIds.get(component.properties.layoutParentId) ?? component.properties.layoutParentId }
-            : {}) }
-      }))
+            : {})};
+        return {...component,id:clonedIds.get(component.id)!,
+          parentId:component.parentId?clonedIds.get(component.parentId)??component.parentId:component.parentId,
+          properties};
+      })
     };
+    cloned.components=remapComponentInteractionTargets(cloned.components,clonedIds);
     setSaving(true);
     try {
       const saved = await onSave(cloned, apiName, 'Lightning page cloned as a new draft');
@@ -2790,6 +2813,20 @@ function PageBuilder({
             definition={selectedCustomDefinition} device={page.layoutVariant??'Desktop'}
 
             onChange={properties=>updateComponent(selected.id,{properties})}/>}
+          {selected&&ribbonTab==='Component Responsive'&&<div className="office-ribbon-group office-ribbon-visibility-rule">
+            <div className="office-ribbon-stack">
+              <button type="button" onClick={openVisibilityEditor}><Eye size={16}/> Edit visibility rules</button>
+              <span className="office-ribbon-stat">Control visibility by device and authorised record context.</span>
+            </div><span>Visibility</span>
+          </div>}
+          {selected&&ribbonTab==='Component Responsive'&&visibilityEditorOpen&&<RibbonVisibilityRules
+            draft={visibilityDraft} onChange={setVisibilityDraft} onApply={applyVisibilityEditor}
+            onCancel={()=>{
+              setVisibilityDraft(selected.properties.visibilityRules as ComponentVisibilityRule|undefined);
+              setVisibilityEditorOpen(false);
+            }} fields={fields} allowRecordFields={page.pageType==='Record Page'}
+            profiles={profiles.map(profile=>({id:profile.id,label:profile.label}))}
+            recordTypes={(targetObject?.recordTypes??[]).map(recordType=>({id:recordType.id,label:recordType.label}))}/>}
           {selected && ribbonTab === 'Component Action' && selectedCustomDefinition?.apiName==='une_item_grid'
             && <div className="office-ribbon-group"><div className="office-ribbon-stack">
               <label className="office-ribbon-inline-field"><span className="office-ribbon-field-name">Add to cart</span>
@@ -2901,28 +2938,30 @@ function PageBuilder({
             </div>;
           })()}
 
-          {ribbonTab==='Parity' && <div className="office-ribbon-compact-strip" aria-label="Salesforce parity coverage">
+          {ribbonTab==='Parity' && <div className="office-ribbon-compact-strip" aria-label="Page Builder parity status">
             <section className="office-ribbon-mini-group" aria-labelledby="page-builder-parity-complete">
               <div className="office-ribbon-stack">
                 <ul>
-                  <li>Text field bindings support whitespace and literal-first concatenation.</li>
-                  <li>Copying a component tree remaps interactions targeting cloned descendants.</li>
-                  <li>Page filters support inclusive numeric/date comparisons and blank checks.</li>
-                  <li>Content assigned to a hidden conditional tab stays hidden.</li>
-                  <li>Record-page inline editing respects page read-only and required-field rules.</li>
+                  <li>Shared text formulas support arithmetic, comparisons, lazy IF/CASE and supported pure functions.</li>
+                  <li>Tenant component source is compiled for the isolated renderer; published versions remain separate from drafts.</li>
+                  <li>Tree and page copies remap interaction targets that point to copied components.</li>
+                  <li>Page filters support inclusive comparisons, blank checks, multi-select sets and formula result types.</li>
+                  <li>Standard and published tenant blocks are discoverable; hidden-tab children stay hidden.</li>
+                  <li>Record inline editing applies layout-required and read-only rules.</li>
                 </ul>
               </div>
-              <span id="page-builder-parity-complete" className="office-ribbon-group-heading">Shared builder improvements</span>
+              <span id="page-builder-parity-complete" className="office-ribbon-group-heading">Implemented and verified</span>
             </section>
             <section className="office-ribbon-mini-group" aria-labelledby="page-builder-parity-remaining">
               <div className="office-ribbon-stack">
                 <ul>
-                  <li>Full arithmetic and function-based formula evaluation is still pending.</li>
-                  <li>Further record editing, data-loading, report, dashboard, Flow, and publishing gaps remain.</li>
-                  <li>UNE component work and Apex are outside this scope.</li>
+                  <li>Context-dependent formulas and complete Salesforce formula parity remain outstanding.</li>
+                  <li>Visibility authoring, full interaction contracts, record layouts and paged data loading need more work.</li>
+                  <li>Reports, dashboards, embedded Flow/activity, calendar, templates and reusable blocks need more parity work.</li>
+                  <li>UNE component implementations and Apex are excluded from this effort.</li>
                 </ul>
               </div>
-              <span id="page-builder-parity-remaining" className="office-ribbon-group-heading">Not included yet</span>
+              <span id="page-builder-parity-remaining" className="office-ribbon-group-heading">Remaining requested coverage</span>
             </section>
           </div>}
 

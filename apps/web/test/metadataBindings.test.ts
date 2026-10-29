@@ -11,6 +11,8 @@ import type {ObjectMetadata,FlowDefinitionMetadata} from '../src/core/metadata/D
 import {pageLayoutForRecord} from '../src/core/records/RecordWorkspace/recordMetadataUtils';
 import {declaredFlowOutputs,resolveFlowOutputBindings,encodeInputSource,decodeInputSource} from '../src/core/automation/FlowScreen/flowInputBindings';
 import {pageComponentRecordQuery,filterPageComponentRecords,bindPageStateProperties} from '../src/core/pages/PageRuntime/pageComponentBindings';
+import {compareMetadataValue} from '../src/core/metadata/Definitions/metadataValueComparison';
+import {supportedFilterOperators,isNumericFilterField,isBooleanFilterField} from '../src/core/records/RecordWorkspace/recordFilterMetadata';
 
 const object={id:'object-id',apiName:'RenamedObject',fields:[{id:'field-id',apiName:'RenamedPrice'}]} as ObjectMetadata;
 const flow={id:'flow-id',apiName:'RenamedFlow'} as FlowDefinitionMetadata;
@@ -62,6 +64,27 @@ test('numeric and date filters support inclusive comparisons and blank checks',(
   [{field:'Summary',operator:'Is Blank',value:''}],fields),[records[0],records[2]]);
  assert.deepEqual(filterPageComponentRecords(records,
   [{field:'Summary',operator:'Is Not Blank',value:''}],fields),[records[1]]);
+});
+test('existing empty-string Equals and Not Equals semantics are preserved',()=>{
+ assert.equal(compareMetadataValue('','Equals',''),true);
+ assert.equal(compareMetadataValue('','Not Equals','x'),true);
+ assert.equal(compareMetadataValue('','Contains',''),true);
+ assert.equal(compareMetadataValue(null,'Equals',''),false);
+ assert.equal(compareMetadataValue(null,'Is Blank',''),true);
+});
+test('filter operators unwrap formula return types and compare multi-select values as sets',()=>{
+ const currency={apiName:'Amount',label:'Amount',dataType:'Formula(Currency)'} as any;
+ const checkbox={apiName:'Active',label:'Active',dataType:'Formula(Checkbox)'} as any;
+ const multi={apiName:'Tags',label:'Tags',dataType:'Multi-Select Picklist'} as any;
+ assert.equal(isNumericFilterField(currency),true);
+ assert.equal(isBooleanFilterField(checkbox),true);
+ assert.ok(supportedFilterOperators(currency).includes('Greater Than or Equal'));
+ assert.ok(supportedFilterOperators(multi).includes('Includes'));
+ assert.equal(compareMetadataValue('Red;Blue','Includes','Blue'),true);
+ assert.equal(compareMetadataValue('Red;Blue','Includes','lu'),false);
+ assert.equal(compareMetadataValue('Red;Blue','Excludes','Green'),true);
+ assert.equal(compareMetadataValue('Red;Blue','Excludes','Red'),false);
+ assert.equal(compareMetadataValue('10:45','Greater Than','09:30'),true);
 });
 test('Flow outputs can supply state filters, display values and downstream Flow inputs',()=>{
  assert.equal(encodeInputSource('Page State','CurrentCartId',[]),'$state.CurrentCartId');
