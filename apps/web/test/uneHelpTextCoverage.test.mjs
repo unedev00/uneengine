@@ -1,24 +1,19 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync,readdirSync,existsSync} from 'node:fs';
-import {fileURLToPath} from 'node:url';
-import path from 'node:path';
-const root=fileURLToPath(new URL('../src/one/',import.meta.url));
-test('every installed UNE component declares Help text metadata',()=>{
- let count=0;
- for(const name of readdirSync(root).filter(s=>s.startsWith('une_'))){
-  const filename=path.join(root,name,'component.json');
-  if(!existsSync(filename))continue;
-  count++;
-  const defs=JSON.parse(readFileSync(filename,'utf8')).propertyDefinitions??[];
-  const matches=defs.filter(d=>d.propertyKey==='helpText');
-  assert.equal(matches.length,1,name);
-  assert.equal(matches[0].label,'Help text',name);
-  assert.equal(matches[0].kind,'TEXT',name);
+import {readFileSync} from 'node:fs';
+const read=p=>readFileSync(new URL(p,import.meta.url),'utf8');
+test('all 34 UNE components declare exactly one Help text property',()=>{
+ const manifest=JSON.parse(read('../src/one/manifest.json'));
+ assert.equal(manifest.components.length,34);
+ for(const source of manifest.components){
+  const component=JSON.parse(read('../src/one/'+source));
+  const matches=component.propertyDefinitions.filter(prop=>prop.propertyKey==='helpText');
+  assert.equal(matches.length,1,component.apiName);
+  assert.equal(matches[0].label,'Help text');
+  assert.equal(matches[0].kind,'TEXT');
  }
- assert.ok(count>=20);
+ assert.ok(!manifest.components.includes('une_badge/component.json'));
 });
-test('UNE frame exposes Help text as tooltip',()=>{
- const frame=readFileSync(new URL('../src/one/une/shared/UneFrame.jsx',import.meta.url),'utf8');
- assert.match(frame,/title=\{typeof p\.helpText/);
+test('UNE frame displays Help text as an optional native tooltip',()=>{
+ assert.match(read('../src/one/une/shared/UneFrame.jsx'),/title=\{typeof p\.helpText/);
 });

@@ -6,7 +6,8 @@ export default function OneButton(props) {
   // A published button without a configured Flow/navigation action must not look actionable.
   const configured=typeof p.onClick==="function"
     || (typeof p.onAction==="function" && Boolean(p.actionFlows?.click));
-  const disabled=p.disabled===true||p.loading===true||!configured;
+  const hoverConfigured=typeof p.onAction==="function" && Boolean(p.actionFlows?.hover);
+  const disabled=p.disabled===true||p.loading===true||(!configured&&!hoverConfigured);
   const visibleLabel=label||(p.builderPreview===true?"Continue":"");
   if (!visibleLabel) return null;
   return <div {...root}><button type="button"
