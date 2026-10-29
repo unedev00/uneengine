@@ -49,4 +49,26 @@ jobs:
           else
             echo 'OCI instance metadata unavailable; cannot use self-action'
           fi
+
+          echo '=== applied SQL migration checksum vs active release ==='
+          filename=20270122-global-shared-builder-ribbon.sql
+          db=metadrive_sql_20261022_production
+          actual="$(sudo -n runuser -u postgres -- psql -X -Atq -v ON_ERROR_STOP=1 -d "$db" -c "SELECT checksum FROM md_system_migrations WHERE version='$filename'")"
+          if [[ ! "$actual" =~ ^[a-f0-9]{64}$ ]]; then
+            echo 'Production migration checksum missing or invalid'; exit 1
+          fi
+          echo "Applied SQL sha256: $actual"
+          release="$(timeout 8 systemctl show metadrive-api.service -p WorkingDirectory --value)"
+          path="$release/apps/server/dist-system/system-support/migrations/$filename"
+          if [[ -f "$path" ]]; then
+            active="$(sha256sum "$path" | cut -d ' ' -f 1)"
+            echo "Active release SQL sha256: $active"
+            if [[ "$actual" == "$active" ]]; then echo 'DB checksum matches active release file'; else echo 'DB checksum differs from active release file'; fi
+          else
+            echo 'Active release does not contain this SQL file'
+          fi
+          if [[ -f "apps/server/src/system-support/migrations/$filename" ]]; then
+            checkout="$(sha256sum "apps/server/src/system-support/migrations/$filename" | cut -d ' ' -f 1)"
+            echo "Checked-out SQL sha256: $checkout"
+          fi
           echo 'Read-only Oracle audit complete.'
