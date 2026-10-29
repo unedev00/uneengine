@@ -121,6 +121,20 @@ export default function MailboxAdmin({onLogout}:Props){
   }catch(e){setError(e instanceof Error?e.message:'Password reset failed');}
   finally{setBusy(false);}
  };
+ const openMailbox=async(mailbox:Mailbox)=>{
+  const tab=window.open('about:blank','_blank');
+  if(!tab){setError('Allow popups for this site to open the mailbox.');return;}
+  tab.opener=null;
+  setBusy(true);setError('');setNotice('');
+  try{
+   const {ticket}=await apiRequest<{ticket:string}>('/mail/mailboxes/'+encodeURIComponent(mailbox.id)+'/open',{method:'POST'});
+   if(tab.closed)throw new Error('Mailbox tab was closed');
+   tab.location.replace(window.location.origin+'/mail#admin='+encodeURIComponent(ticket));
+  }catch(e){
+   if(!tab.closed)tab.close();
+   setError(e instanceof Error?e.message:'Unable to open mailbox');
+  }finally{setBusy(false);}
+ };
  const remove=async(mailbox:Mailbox)=>{
   if(!window.confirm('Permanently delete '+mailbox.emailAddress+' and its mailbox data from Docker Mailserver? This cannot be undone.'))return;
   setBusy(true);setError('');setNotice('');
@@ -197,6 +211,7 @@ export default function MailboxAdmin({onLogout}:Props){
        {apiName:'used',label:'Storage used',phoneRole:'badge',render:m=>fmtBytes(m.usedDiskQuota)},
        {apiName:'created',label:'Created',phoneRole:'trailing',render:m=>m.createdAt?new Date(m.createdAt).toLocaleDateString():'—'},
        {apiName:'actions',label:'Actions',render:m=><div style={{display:'flex',flexWrap:'wrap',gap:8}}>
+         <button style={primary} disabled={busy} onClick={()=>void openMailbox(m)}>Open Mailbox</button>
          <button style={button} disabled={busy} onClick={()=>{setEditId(m.id);setEditDescription(m.description);setResetId('');}}>Edit</button>
          <button style={button} disabled={busy} onClick={()=>{setResetId(m.id);setResetPassword('');setEditId('');}}>Reset password</button>
          <button style={{...button,color:'#a32222'}} disabled={busy} onClick={()=>void remove(m)}>Delete</button>
@@ -210,6 +225,7 @@ export default function MailboxAdmin({onLogout}:Props){
      <td style={{padding:'14px 10px',borderBottom:'1px solid #edf1f5'}}>{fmtBytes(m.usedDiskQuota)}</td>
      <td style={{padding:'14px 10px',borderBottom:'1px solid #edf1f5',color:'#52677b'}}>{m.createdAt?new Date(m.createdAt).toLocaleDateString():'—'}</td>
      <td style={{padding:'14px 10px',borderBottom:'1px solid #edf1f5'}}><div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+      <button style={primary} disabled={busy} onClick={()=>void openMailbox(m)}>Open Mailbox</button>
       <button style={button} disabled={busy} onClick={()=>{setEditId(m.id);setEditDescription(m.description);setResetId('');}}>Edit</button>
       <button style={button} disabled={busy} onClick={()=>{setResetId(m.id);setResetPassword('');setEditId('');}}>Reset password</button>
       <button style={{...button,color:'#a32222',borderColor:'#e4b5b5'}} disabled={busy} onClick={()=>void remove(m)}>Delete</button>
