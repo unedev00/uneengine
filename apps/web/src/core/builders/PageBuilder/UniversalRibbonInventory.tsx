@@ -30,14 +30,20 @@ for(const component of validManifests){
 // component still declares it. No component-specific filtering is permitted.
 const excluded=new Set<string>();
 const sections:Record<Tab,readonly string[]>={
-  'Component Data':['Source','Fields','Filters','Records','Data integration'],
+  'Component Data':['Source','Fields','Filters','Records','Data integration','Values'],
   'Component Content':['Text','Image','Options','Content fields','Component content'],
   'Component Properties':['Surface','Card','Heading','Supporting text','Badge','Image','Appearance','Additional styling'],
-  'Component Layout':['Size','Position','Spacing','Container','Nesting','Arrangement'],
+  'Component Layout':['Size','Position','Spacing','Container','Nesting','Arrangement','Tabs','Header','Image'],
   'Component Responsive':['Device','Responsive layout','Visibility','Mobile behaviour'],
   'Component Action':['Events','Actions','Flows','Navigation','Conditions','Mappings']
 };
 function place(key:string):[Tab,string]{
+  // Explicit Page Builder section destinations take precedence over generic rules.
+  if(key==='imagePlacement')return ['Component Properties','Image'];
+  if(key==='label'||key==='defaultValue')return ['Component Data','Values'];
+  if(key==='tabHeight'||key==='tabWidth')return ['Component Layout','Tabs'];
+  if(key==='headerBoxHeight')return ['Component Layout','Header'];
+  if(key==='imageHeight')return ['Component Layout','Image'];
   if(/(?:^|_)(?:event|flow|action|operation|checkout|send|stateSync|stateRead|stateWrite|stateKey|stateValue|stateVersion|stateRecord|statePoll|stateSession)|(?:Output|Input)$|^canSend$|^enableSendPreparation$|^requirePerRecordSendGrant$/i.test(key))
     return ['Component Action', /flow|state|output|input/i.test(key)?'Flows':/event/i.test(key)?'Events':/checkout|send|action|operation/i.test(key)?'Actions':'Conditions'];
   if(/(?:mobile|phone|tablet|desktop|responsive|keyboard|fullScreen|device|autoScroll|threshold|showNewMessageNotice|avoidKeyboard)/i.test(key))
@@ -220,6 +226,7 @@ export default function UniversalRibbonInventory({tab,definition,componentId,pro
    data-component={definition?.apiName??'none'} data-component-id={componentId??'none'} data-inventory-count={universalRibbonInventoryCount}
    data-review-mode="all-disabled">
    {Array.from(groups).map(([section,defs])=><section key={section} className="une-universal-ribbon-section" aria-label={section}>
+     <h3 className="une-universal-ribbon-section-heading" style={{display:"block",fontSize:12,fontWeight:700,margin:"0 0 8px",padding:"0 4px"}}>{section}</h3>
      <div className="une-universal-ribbon-controls">
        {tab==='Component Layout'&&section==='Size'&&(['width','height'] as const).map(key=>
          <label key={'canvas-'+key} className="une-universal-property" title={'Component '+key}>
@@ -254,7 +261,6 @@ export default function UniversalRibbonInventory({tab,definition,componentId,pro
            />;
        })}
      </div>
-     <span className="une-universal-ribbon-caption">{section}</span>
    </section>)}
 
  </div>;
