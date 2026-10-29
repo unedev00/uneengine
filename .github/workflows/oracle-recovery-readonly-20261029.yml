@@ -111,4 +111,21 @@ jobs:
           sudo -n runuser -u postgres -- psql -X -Atq -v ON_ERROR_STOP=1 -d "$db" -c "SELECT 'property_tab='||tab||';count='||count(*) FROM md_builder_shared_properties GROUP BY tab ORDER BY tab"
           sudo -n runuser -u postgres -- psql -X -Atq -v ON_ERROR_STOP=1 -d "$db" -c "SELECT component_api, count(*) FROM md_builder_ribbon_components GROUP BY component_api ORDER BY component_api" | awk -F'|' 'BEGIN{smart=0;legacy=0;other=0} {if($1 ~ /^smart_/)smart++; else if($1 ~ /^une_/)legacy++; else other++} END{printf "Ribbon component registry: smart=%d legacy=%d other=%d\\n",smart,legacy,other}'
           sudo -n runuser -u postgres -- psql -X -Atq -v ON_ERROR_STOP=1 -d "$db" -c "SELECT version FROM md_system_migrations WHERE version LIKE '202701%' ORDER BY version" | sed 's/^/Applied migration: /'
+
+          echo '=== migration checksum audit for all applied SQL files ==='
+          mismatches=0
+          scanned=0
+          missing=0
+          while IFS='|' read -r version applied; do
+            [[ "$version" == *.sql ]] || continue
+            file="apps/server/src/system-support/migrations/$version"
+            if [[ ! -f "$file" ]]; then missing=$((missing+1)); continue; fi
+            scanned=$((scanned+1))
+            canonical="$(sha256sum "$file" | cut -d ' ' -f 1)"
+            if [[ "$canonical" != "$applied" ]]; then
+              echo "SQL checksum mismatch: $version"
+              mismatches=$((mismatches+1))
+            fi
+          done < <(sudo -n runuser -u postgres -- psql -X -Atq -v ON_ERROR_STOP=1 -d "$db" -c "SELECT version,checksum FROM md_system_migrations WHERE version LIKE '%.sql' ORDER BY version")
+          echo "Applied SQL audit: scanned=$scanned mismatched=$mismatches missing_from_checkout=$missing"
           echo 'Read-only Oracle audit complete.'
