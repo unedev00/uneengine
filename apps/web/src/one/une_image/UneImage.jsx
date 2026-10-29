@@ -9,7 +9,8 @@ export default function UneImage(props){
  const p=uneProps(props,"Image");
  const record=p.record&&typeof p.record==="object"&&!Array.isArray(p.record)?p.record:
    Array.isArray(p.records)?p.records[0]:Array.isArray(p.items)?p.items[0]:{};
- const source=display(props.imageSource,record)||p.src||"";
+ const source=typeof props.imageSource==="string"&&record&&Object.prototype.hasOwnProperty.call(record,props.imageSource)
+   ?String(record[props.imageSource]??""):display(props.imageSource,record)||p.src||"";
  const header=props.textSource!==undefined?display(props.textSource,record):String(p.caption??p.title??"");
  const badge=props.badgeText!==undefined?display(props.badgeText,record):String(p.badge??"");
  const placement=["top","bottom","left","right"].includes(p.imagePlacement)?p.imagePlacement:"top";
