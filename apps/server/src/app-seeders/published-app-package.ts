@@ -64,12 +64,20 @@ export async function seedPublishedAppPackage(
     const apiName=systemAliases.get(item.api_name)??item.api_name;
     const rendererKey=systemAliases.has(item.api_name)?'one-bundled:'+apiName:item.renderer_key;
     if(rendererKey==='one-bundled:'+apiName){
-      // UNE is preinstalled as a shared system component, not owned by this App.
+      // Exact historical built-in registrations may have been safely disabled
+      // after their last page reference disappeared. An explicit app installation
+      // may reactivate that trusted key, but must never seize a tenant renderer.
       const {rows:existing}=await client.query<{renderer_key:string;enabled:boolean}>(`
         SELECT renderer_key,enabled FROM md_component_definitions
         WHERE tenant_id=$1 AND api_name=$2
       `,[tenantId,apiName]);
-      if(existing[0]?.renderer_key===rendererKey && existing[0]?.enabled)continue;
+      if(existing[0]?.renderer_key===rendererKey){
+        if(!existing[0].enabled)await client.query(`
+          UPDATE md_component_definitions SET enabled=true
+          WHERE tenant_id=$1 AND api_name=$2 AND renderer_key=$3 AND enabled=false
+        `,[tenantId,apiName,rendererKey]);
+        continue;
+      }
     }
     await created('Component','',apiName,`
       INSERT INTO md_component_definitions(tenant_id,api_name,renderer_key,enabled)
