@@ -1,0 +1,39 @@
+name: Verify deployed Smart Insert Ribbon (read-only)
+on:
+  push:
+    branches: [ops/verify-live-smart-insert-20261029]
+permissions:
+  contents: read
+jobs:
+  smoke:
+    if: github.repository == 'unedev00/uneengine' && github.ref == 'refs/heads/ops/verify-live-smart-insert-20261029'
+    environment: oracle-production
+    runs-on: [self-hosted, linux, ARM64, metadrive-oracle]
+    timeout-minutes: 5
+    steps:
+      - name: Verify published Insert controls, SQL, and web/API health without changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected=e0ef94f4f1c48607c0252a5683c2432a5d72e135
+          release="$(readlink -f /var/www/metadrive-frontend/current)"
+          [[ "$release" == "/var/www/metadrive-frontend/releases/$expected" ]] || {
+            echo 'Frontend release pointer mismatch'; exit 1;
+          }
+          shopt -s nullglob
+          chunks=("$release"/assets/pageBuilderView-*.js)
+          [[ "${#chunks[@]}" -gt 0 ]] || { echo 'Deployed Page Builder chunk missing'; exit 1; }
+          for pattern in 'Find a component' 'Open full library' 'smart-insert-ribbon' 'Search Insert components'; do
+            grep -Fl -- "$pattern" "${chunks[@]}" >/dev/null ||
+              { echo "Deployed Insert control missing: $pattern"; exit 1; }
+            echo "Deployed Insert control verified: $pattern"
+          done
+          [[ "$(sudo -n runuser -u postgres -- psql -X -Atq -d metadrive_sql_20261022_production -c "SELECT count(*) FROM md_builder_shared_properties WHERE tab='Home'")" == 15 ]] ||
+            { echo 'Home SQL Ribbon inventory mismatch'; exit 1; }
+          [[ "$(sudo -n runuser -u postgres -- psql -X -Atq -d metadrive_sql_20261022_production -c "SELECT count(*) FROM md_builder_ribbon_components WHERE left(component_api,6)='smart_'")" == 10 ]] ||
+            { echo 'Smart SQL registry mismatch'; exit 1; }
+          curl --fail --silent --max-time 8 -H 'Host: unesolutions.co.uk' http://127.0.0.1/ | grep -qi '<html' ||
+            { echo 'Frontend reverse-proxy health failed'; exit 1; }
+          curl --fail --silent --max-time 8 http://127.0.0.1:3001/api/health >/dev/null ||
+            { echo 'Backend health failed'; exit 1; }
+          echo 'PASS: deployed Insert gallery, 10 Smart registrations, Home SQL and frontend health verified'
