@@ -823,9 +823,9 @@ function LightningAppRuntime({
   }>({routeKey:'',appId:'',page:null,error:'',loading:true});
   const routePending=pageLoad.routeKey!==routeKey;
   const cached=routePending?readPageDefinitionCache(pageDefinitionCache,cacheKey):null;
-  // Keep the old page visible only within the same app while loading the next
-  // definition. Its controls are disabled until the replacement has arrived.
-  const page=routePending?(cached??(pageLoad.appId===appId?pageLoad.page:null)):pageLoad.page;
+  // Never run components from the previous route while navigating. Cached
+  // definitions render immediately; uncached routes show the loading state.
+  const page=routePending?cached:pageLoad.page;
   const error=routePending?'':pageLoad.error;
   const loading=routePending?!cached:pageLoad.loading;
   const [activeTabs, setActiveTabs] = useState<Record<string,string>>({});
@@ -877,10 +877,7 @@ function LightningAppRuntime({
       setPageLoad({routeKey,appId,page:cachedPage,error:'',loading:false});
       return ()=>{active=false;};
     }
-    setPageLoad(previous=>({
-      routeKey,appId,page:previous.appId===appId?previous.page:null,
-      error:'',loading:true
-    }));
+    setPageLoad({routeKey,appId,page:null,error:'',loading:true});
     const endpoint = pageApiName
       ? `/apps/${encodeURIComponent(appId)}/pages/${encodeURIComponent(pageApiName)}?formFactor=${requestedLayout}&viewportWidth=${viewportWidth}`
       : `/apps/${encodeURIComponent(appId)}/home-page?formFactor=${requestedLayout}&viewportWidth=${viewportWidth}`;
@@ -1067,12 +1064,9 @@ function LightningAppRuntime({
       {renderComponent(component)}
     </div>;
   };
-  if(page.layoutMode==='free-canvas'){
-    const canvas=<ResponsivePageCanvas page={page}>
-      {childrenOf(page.components,null).map(component=>renderCanvasComponent(component))}
-    </ResponsivePageCanvas>;
-    return loading?<div aria-busy="true" style={{pointerEvents:'none',opacity:0.8}}>{canvas}</div>:canvas;
-  }
+  if(page.layoutMode==='free-canvas')return <ResponsivePageCanvas page={page}>
+    {childrenOf(page.components,null).map(component=>renderCanvasComponent(component))}
+  </ResponsivePageCanvas>;
   const renderRegion = (region: 'header' | 'main' | 'sidebar') =>
     childrenOf(page.components, null).filter((component) => isAppComponentVisible(component) && (component.region ?? 'main') === region).map(component => {
       const content = renderComponent(component);
@@ -1081,12 +1075,11 @@ function LightningAppRuntime({
         ? <div key={component.id} data-page-appearance={pageAppearanceTarget(component.type)} data-page-style={pageAppearanceStyleKeys(resolvePageComponentStyle(component.properties, component.type, layoutDevice))} style={{...resolvePageComponentStyle(component.properties, component.type, layoutDevice),...behaviorAppearance(component.properties,appVisibilityContext)}}>{content}</div>
         : content;
     });
-  const template=<TemplatePageRuntimeLayout apiName={page.apiName} label={page.label}
+  return <TemplatePageRuntimeLayout apiName={page.apiName} label={page.label}
     pageType={page.pageType} template={page.template}
     fullscreen={isStandaloneRuntime && page.layoutMode === 'template'} phone={formFactor === 'Phone'} layoutVariant={page.components.find(component => component.properties?.standalonePresentation === true)?.properties?.presentationLayout as string | undefined}
     overlayOpen={layoutState.basketOpen===true}
     header={renderRegion('header')} main={renderRegion('main')} sidebar={renderRegion('sidebar')} />;
-  return loading?<div aria-busy="true" style={{pointerEvents:'none',opacity:0.8}}>{template}</div>:template;
 }
 
 
