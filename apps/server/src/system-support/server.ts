@@ -1415,6 +1415,52 @@ export function createSystemServer(db:SqlPersistence) {
     const configuration=await objectManagerMetadata.load(actor.tenant_id,actor.user_id,req.params.apiName);
     res.status(201).json({object:{...object,...configuration}});
   }));
+  // Read-only single source of truth for the Page Builder ribbon. Property
+  // definitions are global SQL records; applicability is one mapping per
+  // supported component/property pair, never a duplicated definition.
+  app.get('/api/metadata/builder-ribbon',route(async(req,res)=>{
+    const actor=req.actor!;
+    await rbac.require(actor.tenant_id,actor.user_id,'PageDefinition','read');
+    const [listed,registered]=await Promise.all([
+      db.query<{
+        id:string;label:string;tab:string;group_name:string;kind:string;sort_order:number;
+        default_value:unknown;choices:unknown;component_api:string|null;
+        control_kind_override:string|null;value_key:string|null;
+        default_value_override:unknown;choices_override:unknown;min_value:number|null;
+        max_value:number|null;field_select:boolean;
+      }>(`SELECT p.property_key AS id,p.label,p.tab,p.section_group AS group_name,
+          p.control_kind AS kind,p.sort_order,p.default_value,p.choices,
+          p.min_value,p.max_value,p.field_select,
+          r.component_api,r.control_kind_override,r.value_key,
+          r.default_value_override,r.choices_override
+        FROM md_builder_shared_properties p
+        LEFT JOIN md_builder_ribbon_component_rules r
+          ON r.property_key=p.property_key AND r.enabled=true
+        ORDER BY p.sort_order,r.component_api`),
+      db.query<{component_api:string}>(`SELECT component_api FROM md_builder_ribbon_components
+        ORDER BY component_api`)
+    ]);
+    const properties=new Map<string,Record<string,unknown>>();
+    for(const row of listed.rows){
+      let item=properties.get(row.id);
+      if(!item){
+        item={
+          id:row.id,label:row.label,tab:row.tab,group:row.group_name,kind:row.kind,
+          components:[] as string[],default:row.default_value??undefined,
+          choices:row.choices??[],min:row.min_value??undefined,max:row.max_value??undefined,
+          field:row.field_select,kindOverrides:{},defaultsOverrides:{},choicesOverrides:{},valueKeys:{}
+        };
+        properties.set(row.id,item);
+      }
+      if(!row.component_api)continue;
+      (item.components as string[]).push(row.component_api);
+      if(row.control_kind_override)(item.kindOverrides as Record<string,string>)[row.component_api]=row.control_kind_override;
+      if(row.value_key)(item.valueKeys as Record<string,string>)[row.component_api]=row.value_key;
+      if(row.default_value_override!==null)(item.defaultsOverrides as Record<string,unknown>)[row.component_api]=row.default_value_override;
+      if(row.choices_override!==null)(item.choicesOverrides as Record<string,unknown>)[row.component_api]=row.choices_override;
+    }
+    res.json({components:registered.rows.map(row=>row.component_api),properties:[...properties.values()]});
+  }));
   app.get('/api/component-library',route(async(req,res)=>{
     const actor=req.actor!;
     const [components,registered,canManage]=await Promise.all([
