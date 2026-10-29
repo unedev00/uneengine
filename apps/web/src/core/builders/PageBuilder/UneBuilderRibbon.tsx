@@ -10,6 +10,7 @@ const WEEKDAYS=[['sun','Sun'],['mon','Mon'],['tue','Tue'],['wed','Wed'],['thu','
 function WeekdaysPicker({value,onChange,disabled}:{value:readonly string[];onChange:(next:string[])=>void;disabled:boolean}){
  const [open,setOpen]=useState(false),[rect,setRect]=useState<{left:number;bottom:number}>({left:0,bottom:0});
  const button=useRef<HTMLButtonElement>(null);
+ const menu=useRef<HTMLDivElement>(null);
  useEffect(()=>{if(disabled)setOpen(false)},[disabled]);
  useEffect(()=>{
   if(!open)return;
@@ -17,7 +18,7 @@ function WeekdaysPicker({value,onChange,disabled}:{value:readonly string[];onCha
   const click=(event:PointerEvent)=>{
     const target=event.target;
     if(target instanceof Node&&!button.current?.contains(target)&&
-      !(target instanceof Element&&target.closest('.une-v2-weekday-menu')))setOpen(false);
+      !menu.current?.contains(target as Node))setOpen(false);
   };
   document.addEventListener('keydown',close);document.addEventListener('pointerdown',click);
   return ()=>{document.removeEventListener('keydown',close);document.removeEventListener('pointerdown',click)};
@@ -46,9 +47,25 @@ export default function UneBuilderRibbon({tab,api,definitions,properties,onChang
  position?:Position;onPositionChange?:(next:Position)=>void;layoutMode:string;
 }){
  const objectName=typeof properties.objectApiName==='string'&&properties.objectApiName?properties.objectApiName:pageObjectApiName;
+ const excluded:Record<string,readonly string[]>={
+  une_item_grid:['label','labelAlignment','defaultValueColor','textSize'],
+  une_container:['objectApiName','imageSource','badgeText','badgeAlignment','badgeTextSize','badgeBold','badgeTextColor','badgeVisible','badgeBodyColor','labelAlignment','textSize','label','textSource','labelColor','imageFill'],
+  une_calendar:['label','labelAlignment']
+ };
+ const notApplicable=new Set(excluded[api]??[]);
+ const relocated=(property:UneRibbonProperty):UneRibbonProperty=>{
+  const destinations:Record<string,[UneBuilderTab,string]>={
+   imagePlacement:['Design','Image'],label:['Data','Values'],defaultValue:['Data','Values'],
+   tabHeight:['Layout','Tabs'],tabWidth:['Layout','Tabs'],
+   headerBoxHeight:['Layout','Header'],imageHeight:['Layout','Image']
+  };
+  const destination=destinations[property.id];
+  return destination?{...property,tab:destination[0],group:destination[1]}:property;
+ };
+ const visibleDefinitions=definitions.map(relocated);
  const set=(id:string,value:unknown)=>onChange({...properties,[id]:value});
  const control=(property:UneRibbonProperty)=>{
-  const supported=property.components.includes(api);
+  const supported=property.components.includes(api)&&!notApplicable.has(property.id);
   const kind=property.kindOverrides?.[api]??property.kind;
   const sourceKey=property.valueKeys?.[api]??property.id;
   const enabled=supported&&(kind!=='position'||layoutMode==='free-canvas'&&Boolean(position&&onPositionChange));
@@ -112,11 +129,12 @@ export default function UneBuilderRibbon({tab,api,definitions,properties,onChang
  };
  return <div className="une-v2-ribbon" aria-label="UNE application property ribbon"
     data-component={api} data-tab={tab}>
-   {sharedPropertyGroups(definitions,tab).map(group=><section key={group} className="une-v2-group" aria-label={group}>
+   {sharedPropertyGroups(visibleDefinitions,tab).map(group=><section key={group} className="une-v2-group" aria-label={group}>
+     <strong className="une-v2-group-title" style={{display:"block",fontSize:12,marginBottom:8}}>{group}</strong>
      <div className="une-v2-controls">
-      {definitions.filter(prop=>prop.tab===tab&&prop.group===group).map(control)}
+      {visibleDefinitions.filter(prop=>prop.tab===tab&&prop.group===group).map(control)}
      </div>
-     <span className="une-v2-caption">{group}</span>
+
    </section>)}
  </div>;
 }
