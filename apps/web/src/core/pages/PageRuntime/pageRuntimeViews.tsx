@@ -752,6 +752,24 @@ function MetadataBoundPageComponent({
   </div>;
 }
 
+/** Scoped to the authenticated SetupApp instance, with bounded entries and TTL. */
+type PageDefinitionCache = Map<string,{page:LightningPageMetadata;fetchedAt:number}>;
+const PAGE_DEFINITION_CACHE_TTL_MS=30_000;
+const PAGE_DEFINITION_CACHE_MAX=100;
+function pageDefinitionCacheKey(appId:string,pageApiName:string|undefined,layout:string,viewportWidth:number,profileId:string|undefined):string{
+  // Even Desktop requests can resolve to a width-targeted Custom page.
+  return JSON.stringify([appId,pageApiName??'__home__',layout,viewportWidth,profileId??'']);
+}
+function readPageDefinitionCache(cache:PageDefinitionCache,key:string):LightningPageMetadata|null{
+  const hit=cache.get(key);
+  return hit&&Date.now()-hit.fetchedAt<PAGE_DEFINITION_CACHE_TTL_MS?hit.page:null;
+}
+function writePageDefinitionCache(cache:PageDefinitionCache,key:string,page:LightningPageMetadata|null):void{
+  if(!page)return;
+  cache.delete(key);
+  if(cache.size>=PAGE_DEFINITION_CACHE_MAX)cache.delete(cache.keys().next().value!);
+  cache.set(key,{page,fetchedAt:Date.now()});
+}
 function usePageLayoutDevice(): LayoutDevice {
   // Share the shell's phone/portrait/landscape breakpoints. Avoid the old
   // 640/1024 off-by-one boundaries when loading published Tablet variants.
@@ -769,6 +787,7 @@ function LightningAppRuntime({
   availableFlows,
   formFactor,
   profileId,
+  pageDefinitionCache,
   onNavigate,
   onLaunchFlow,
   onStandaloneModeChange
@@ -783,6 +802,7 @@ function LightningAppRuntime({
   availableFlows: Array<Pick<FlowDefinitionMetadata, 'id' | 'apiName' | 'label' | 'flowType' | 'status'>>;
   formFactor: 'Desktop' | 'Tablet' | 'Phone';
   profileId?: string;
+  pageDefinitionCache: PageDefinitionCache;
   onNavigate: (route: AppRoute) => void;
   onLaunchFlow: (flowApiName: string, inputs?: Record<string, unknown>, context?:{requestId?:string}) => void;
   onStandaloneModeChange: (enabled: boolean) => void;
@@ -792,20 +812,22 @@ function LightningAppRuntime({
   const requestedLayout = typeof window !== 'undefined'
     && new URLSearchParams(window.location.search).get('pageLayout') === 'Custom'
       ? 'Custom' : layoutDevice === 'Tablet' ? 'Tablet' : formFactor === 'Phone' ? 'Mobile' : 'Desktop';
-  const routeKey = JSON.stringify([appId, pageApiName ?? '', requestedLayout,viewportWidth]);
-  const [pageLoad, setPageLoad] = useState<{
-    routeKey: string;
-    page: LightningPageMetadata | null;
-    error: string;
-    loading: boolean;
-  }>({ routeKey: '', page: null, error: '', loading: true });
-  // Never render a page/error produced for a different route. Effects run after
-  // render, so the route-key check closes the stale-state frame before the
-  // request effect has had a chance to reset state.
-  const routePending = pageLoad.routeKey !== routeKey;
-  const page = routePending ? null : pageLoad.page;
-  const error = routePending ? '' : pageLoad.error;
-  const loading = routePending || pageLoad.loading;
+  const cacheKey=pageDefinitionCacheKey(appId,pageApiName,requestedLayout,viewportWidth,profileId);
+  const routeKey=cacheKey;
+  const [pageLoad,setPageLoad]=useState<{
+    routeKey:string;
+    appId:string;
+    page:LightningPageMetadata|null;
+    error:string;
+    loading:boolean;
+  }>({routeKey:'',appId:'',page:null,error:'',loading:true});
+  const routePending=pageLoad.routeKey!==routeKey;
+  const cached=routePending?readPageDefinitionCache(pageDefinitionCache,cacheKey):null;
+  // Keep the old page visible only within the same app while loading the next
+  // definition. Its controls are disabled until the replacement has arrived.
+  const page=routePending?(cached??(pageLoad.appId===appId?pageLoad.page:null)):pageLoad.page;
+  const error=routePending?'':pageLoad.error;
+  const loading=routePending?!cached:pageLoad.loading;
   const [activeTabs, setActiveTabs] = useState<Record<string,string>>({});
   const [layoutState,setLayoutState]=useState<Record<string,unknown>>({});
   const [interactionOverrides,setInteractionOverrides]=useState<Record<string,Record<string,unknown>>>({});
@@ -850,27 +872,32 @@ function LightningAppRuntime({
   },[appId,page?.apiName]);
   useEffect(() => {
     let active = true;
-    setPageLoad({ routeKey, page: null, error: '', loading: true });
+    const cachedPage=readPageDefinitionCache(pageDefinitionCache,cacheKey);
+    if(cachedPage){
+      setPageLoad({routeKey,appId,page:cachedPage,error:'',loading:false});
+      return ()=>{active=false;};
+    }
+    setPageLoad(previous=>({
+      routeKey,appId,page:previous.appId===appId?previous.page:null,
+      error:'',loading:true
+    }));
     const endpoint = pageApiName
       ? `/apps/${encodeURIComponent(appId)}/pages/${encodeURIComponent(pageApiName)}?formFactor=${requestedLayout}&viewportWidth=${viewportWidth}`
       : `/apps/${encodeURIComponent(appId)}/home-page?formFactor=${requestedLayout}&viewportWidth=${viewportWidth}`;
     void apiRequest<{ page: LightningPageMetadata | null }>(endpoint).then((payload) => {
-      if (active) setPageLoad({
-        routeKey,
-        page: payload.page,
-        error: '',
-        loading: false
-      });
+      if(active){
+        writePageDefinitionCache(pageDefinitionCache,cacheKey,payload.page);
+        setPageLoad({routeKey,appId,page:payload.page,error:'',loading:false});
+      }
     }).catch((failure: unknown) => {
-      if (active) setPageLoad({
-        routeKey,
-        page: null,
-        error: failure instanceof Error ? failure.message : 'Unable to load Lightning page',
-        loading: false
+      if(active)setPageLoad({
+        routeKey,appId,page:null,
+        error:failure instanceof Error?failure.message:'Unable to load Lightning page',
+        loading:false
       });
     });
-    return () => { active = false; };
-  }, [routeKey, appId, pageApiName, requestedLayout]);
+    return ()=>{active=false;};
+  },[routeKey,appId,pageApiName,requestedLayout,viewportWidth,pageDefinitionCache,cacheKey]);
   useEffect(() => {
     setActiveTabs({});
   }, [page?.apiName]);
@@ -878,8 +905,8 @@ function LightningAppRuntime({
     onStandaloneModeChange(isStandalonePagePresentation(page));
     return () => onStandaloneModeChange(false);
   }, [page?.layoutMode, onStandaloneModeChange]);
-  if (error) return <div className="records-page"><div className="records-message" role="alert">{error}</div></div>;
-  if (loading) return <div className="records-page"><div className="records-loading">Loading Lightning page…</div></div>;
+  if(error&&!page)return <div className="records-page"><div className="records-message" role="alert">{error}</div></div>;
+  if(loading&&!page)return <div className="records-page"><div className="records-loading">Loading Lightning page…</div></div>;
   if (!page) return <main className="records-page"><section className="records-empty records-home-unassigned" aria-labelledby="records-home-empty-heading"><h1 id="records-home-empty-heading">Home page is not configured</h1><p>This app has no active Home Page assigned for your current profile and device.</p><p>Ask an administrator to activate and assign a Home Page in the Lightning App Builder. Existing app pages and records remain available from navigation.</p></section></main>;
   const isStandaloneRuntime = isStandalonePagePresentation(page);
   const regions: Array<'header' | 'main' | 'sidebar'> = ['header', 'main', 'sidebar'];
@@ -1040,9 +1067,12 @@ function LightningAppRuntime({
       {renderComponent(component)}
     </div>;
   };
-  if (page.layoutMode === 'free-canvas') return <ResponsivePageCanvas page={page}>
-    {childrenOf(page.components,null).map(component=>renderCanvasComponent(component))}
-  </ResponsivePageCanvas>;
+  if(page.layoutMode==='free-canvas'){
+    const canvas=<ResponsivePageCanvas page={page}>
+      {childrenOf(page.components,null).map(component=>renderCanvasComponent(component))}
+    </ResponsivePageCanvas>;
+    return loading?<div aria-busy="true" style={{pointerEvents:'none',opacity:0.8}}>{canvas}</div>:canvas;
+  }
   const renderRegion = (region: 'header' | 'main' | 'sidebar') =>
     childrenOf(page.components, null).filter((component) => isAppComponentVisible(component) && (component.region ?? 'main') === region).map(component => {
       const content = renderComponent(component);
@@ -1051,11 +1081,12 @@ function LightningAppRuntime({
         ? <div key={component.id} data-page-appearance={pageAppearanceTarget(component.type)} data-page-style={pageAppearanceStyleKeys(resolvePageComponentStyle(component.properties, component.type, layoutDevice))} style={{...resolvePageComponentStyle(component.properties, component.type, layoutDevice),...behaviorAppearance(component.properties,appVisibilityContext)}}>{content}</div>
         : content;
     });
-  return <TemplatePageRuntimeLayout apiName={page.apiName} label={page.label}
+  const template=<TemplatePageRuntimeLayout apiName={page.apiName} label={page.label}
     pageType={page.pageType} template={page.template}
     fullscreen={isStandaloneRuntime && page.layoutMode === 'template'} phone={formFactor === 'Phone'} layoutVariant={page.components.find(component => component.properties?.standalonePresentation === true)?.properties?.presentationLayout as string | undefined}
     overlayOpen={layoutState.basketOpen===true}
     header={renderRegion('header')} main={renderRegion('main')} sidebar={renderRegion('sidebar')} />;
+  return loading?<div aria-busy="true" style={{pointerEvents:'none',opacity:0.8}}>{template}</div>:template;
 }
 
 
