@@ -2583,7 +2583,7 @@ function PageBuilder({
             <UniversalRibbonInventory tab={ribbonTab as 'Component Data'|'Component Content'|'Component Properties'|'Component Layout'|'Component Responsive'|'Component Action'}
               definition={conversationEditorDefinition??selectedCustomDefinition}
               componentId={selected.id+(editingConversation?':'+selectedConversationPart:'')}
-              properties={editingConversation?conversationEditorProperties:selected.properties} objects={objects} flows={flows}
+              properties={editingConversation?conversationEditorProperties:selected.properties} objects={objects} flows={flows} catalog={libraryComponents}
               onChange={properties=>updateConversationEditorProperties(properties)}
               builder={{
                 position:selected.position,
