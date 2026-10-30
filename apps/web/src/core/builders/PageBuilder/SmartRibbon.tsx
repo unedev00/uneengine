@@ -1,6 +1,7 @@
 import {useState,useRef,useEffect,useLayoutEffect,type ChangeEvent} from 'react';
 import {createPortal} from 'react-dom';
 import {AlignLeft,AlignCenter,AlignRight,Bold,WrapText,ArrowLeftRight,ArrowUpDown,ImagePlus,SlidersHorizontal} from 'lucide-react';
+import {RibbonTextSizeIcon,RibbonCornerRadiusIcon} from './SmartRibbonIcons';
 import type {ObjectMetadata} from '../../metadata/Definitions/metadata';
 import type {UneRibbonProperty,UneBuilderTab} from './uneBuilderPropertyInventory';
 import RibbonColorPalette from './RibbonColorPalette';
@@ -8,6 +9,7 @@ import {uploadTenantImageFile} from '../ComponentProperties/TenantMediaPicker';
 import RecordFilterEditor from '../../../component-libraries/shared/primitives/RecordFilterEditor/RecordFilterEditor';
 import SmartFormulaField from './SmartFormulaField';
 import './SmartRibbon.css';
+import './SmartRibbonCompact.css';
 type Position={x:number;y:number;width:number;height:number};
 type Props={tab:UneBuilderTab;api:string;definitions:readonly UneRibbonProperty[];properties:Record<string,unknown>;
  onChange:(next:Record<string,unknown>)=>void;objects:readonly ObjectMetadata[];pageObjectApiName?:string;
@@ -75,6 +77,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  const filterCount=Array.isArray(properties.filters)?properties.filters.length:0;
  // Keep the global property inventory visible for every selected component.
  // Unsupported controls are disabled by the per-property `supported` check below.
+ const compactDesign=tab==='Design';
  const visible=definitions.filter(p=>p.tab===tab);
  const sections=[...new Set(visible.map(p=>p.group))];
  const controls=(property:UneRibbonProperty)=>{
@@ -95,6 +98,19 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
     else if(kind!=='position')update(key,v);
    };
    const title=property.label;
+   // Presentation-only shortening: metadata keys, persisted values and full
+   // accessible names are retained. Unsupported properties stay disabled.
+   const labelOverrides:Record<string,string>={
+     badgeAlignment:'Position',imagePlacement:'Place',imageFill:'Fit',
+     navigationDirection:'Direction',tabCount:'Tabs',firstDay:'First day'
+   };
+   const shortLabel=compactDesign?(labelOverrides[property.id]??title):title;
+   const isTextSize=compactDesign&&/^(textSize|badgeTextSize|summary2?TextSize|placeholderSize)$/.test(property.id);
+   const isCorner=compactDesign&&/radius/i.test(property.id);
+   const isWidth=compactDesign&&/width/i.test(property.id);
+   const isHeight=compactDesign&&/height/i.test(property.id);
+   const hasNumericIcon=(kind==='number'||kind==='position')&&
+     (isTextSize||isCorner||isWidth||isHeight);
    let editor;
    if(property.id==='imageSource'&&supported){
      // The source is always editable: any direct or nested lookup reference
@@ -132,7 +148,11 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
      kind={/border/i.test(property.id)?'border':property.id==='iconFillColor'||/label|text|value/i.test(property.id)?'text':'fill'}
      label={title} value={String(value)} disabled={!enabled} onChange={write}/>;
    else if(kind==='number'||kind==='position')editor=<span className="smart-numeric">
-     {property.id==='width'?<ArrowLeftRight size={15}/>:property.id==='height'?<ArrowUpDown size={15}/>:null}
+     {isTextSize?<span className="smart-property-glyph" title={title}><RibbonTextSizeIcon/></span>:
+      isCorner?<span className="smart-property-glyph" title={title}><RibbonCornerRadiusIcon/></span>:
+      isWidth?<span className="smart-property-glyph" title={title}><ArrowLeftRight size={17} aria-hidden="true"/></span>:
+      isHeight?<span className="smart-property-glyph" title={title}><ArrowUpDown size={17} aria-hidden="true"/></span>:
+      property.id==='width'?<ArrowLeftRight size={15}/>:property.id==='height'?<ArrowUpDown size={15}/>:null}
      <input type="number" className="smart-office-number" aria-label={title} disabled={!enabled} min={property.min??0} max={property.max}
        value={kind==='position'&&useCanvasPosition?position?.[property.id as keyof Position]??'':
         typeof value==='string'?Number.parseFloat(value)||'':value as number}
@@ -172,13 +192,16 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
      onClick={()=>write(!(value===true||value==='true'))}>
      <span className="smart-default-check-thumb" aria-hidden="true"/>
    </button>;
-   else if(kind==='choice')editor=<select className="smart-select" aria-label={title} disabled={!enabled}
+   else if(kind==='choice')editor=<select className="smart-select" aria-label={title}
+     title={value?title+': '+String(value):title} disabled={!enabled}
      value={String(value)} onChange={e=>write(e.target.value)}><option value="">Select</option>
      {options.map(s=><option value={s} key={s}>{s.replaceAll('-',' ')}</option>)}</select>;
    return <div key={property.id} className={'smart-property'+(!enabled?' disabled':'')} data-property={property.id}
-       data-supported={supported} title={title}><span className="smart-label">{title}</span>{editor}</div>;
+       data-supported={supported} data-kind={kind} data-numeric-icon={hasNumericIcon?'true':'false'}
+       title={title}><span className="smart-label">{shortLabel}</span>{editor}</div>;
  };
- return <div className="smart-ribbon" data-smart-api={api} aria-label="Smart shared property ribbon">
+ return <div className="smart-ribbon" data-smart-api={api}
+  data-compact-design={compactDesign?'true':'false'} aria-label="Smart shared property ribbon">
   <input ref={uploadInput} className="smart-hidden-upload" type="file"
     accept="image/png,image/jpeg,image/gif,image/webp" aria-label="Select local image"
     onChange={event=>void selectLocalImage(event)} />
