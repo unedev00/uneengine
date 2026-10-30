@@ -973,9 +973,9 @@ export class ObjectDefinitionService {
               VALUES($1,$2,$3,$4,$5)`,[tenantId,objectApi,fieldApi,controllerValue,value]);
         }
       }
-      await client.query(`UPDATE md_record_values SET is_unique=$4,case_sensitive=$6
+      await client.query(`UPDATE md_record_values SET is_unique=$4,case_sensitive=$5
         WHERE tenant_id=$1 AND object_api=$2 AND field_api=$3`,
-      [tenantId,objectApi,fieldApi,unique,externalId,caseSensitive]);
+      [tenantId,objectApi,fieldApi,unique,caseSensitive]);
       if(typeDefinitionChanged&&field.dataType==='rollup'){
         if(!this.migrationRuntime.recalculateRollup)
           throw new Error('Roll-Up Summary migration requires the shared record runtime');
