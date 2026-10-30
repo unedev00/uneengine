@@ -43,7 +43,7 @@ test('standalone entrypoint uses the shared product-aware workspace shell',()=>{
 });
 
 test('standalone Flow actions use server authorization without requiring Flow Definition read',()=>{
- const standalone=readFileSync(fileURLToPath(new URL('../../web/src/core/workspace/Standalcomponent-libraries/StandaloneRuntime.tsx',import.meta.url)),'utf8');
+ const standalone=readFileSync(fileURLToPath(new URL('../../web/src/core/workspace/Standalone/StandaloneRuntime.tsx',import.meta.url)),'utf8');
  const pageRuntime=readFileSync(fileURLToPath(new URL('../../web/src/core/pages/PageRuntime/pageRuntimeViews.tsx',import.meta.url)),'utf8');
  assert.doesNotMatch(standalone,/\/metadata\/flows/);
  assert.match(pageRuntime,/binding\.flowType/);
