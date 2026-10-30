@@ -53,3 +53,14 @@ jobs:
           GITHUB_PAGES_BASE_PATH: '/'
           VITE_API_BASE_URL: /api
         run: npm run build --workspace apps/web
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Verify Object Manager relationship metadata through browser and SQL
+        env:
+          METADRIVE_BROWSER_PREBUILT: '1'
+          METADRIVE_BROWSER_TARGET: relationship-integrity
+        run: |
+          mkdir -p apps/server/artifacts
+          node apps/server/scripts/builder-browser-smoke.mjs
