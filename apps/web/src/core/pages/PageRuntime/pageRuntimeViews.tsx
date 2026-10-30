@@ -712,7 +712,9 @@ function MetadataBoundPageComponent({
     {actionError && <div className="records-message" role="alert">{actionError}</div>}
     <RegisteredComponent definition={definition} layoutTransparent props={{
       ...resolvedProperties, ...componentLayoutProps(properties, formFactor),
-      label: component.label, properties: resolvedProperties, objects, reports, flows: availableFlows, pageState, children,
+      label: component.type.startsWith('Custom:smart_') && typeof resolvedProperties.label === 'string'
+        ? resolvedProperties.label : component.label,
+      properties: resolvedProperties, objects, reports, flows: availableFlows, pageState, children,
        pageSessionKey, componentId: component.id,
       device: formFactor, onNavigate, onLaunchFlow, onAction, actionError,
       disabled:behaviorAction(properties,'click',{formFactor})!=='enabled',
@@ -945,7 +947,9 @@ function LightningAppRuntime({
               if(behaviorAction(component.properties,'change',appVisibilityContext)==='enabled')
                 emitInteraction(component,'change',value);
             },
-            label: component.label, properties: component.properties,
+            label: component.type.startsWith('Custom:smart_') && typeof component.properties.label === 'string'
+              ? component.properties.label : component.label,
+            properties: component.properties,
             pageSessionKey: appId + ':' + page.apiName, componentId: component.id,
             device: layoutDevice, children: nestedChildren
           }} />;
