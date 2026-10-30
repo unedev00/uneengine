@@ -329,9 +329,13 @@ export class FlowRecordTriggers {
     (tenant_id,run_id,api_name,value_text,data_type)
     VALUES($1,$2,'$Record__IsClone',$3,'boolean')`,
    [tenantId,runId,String(isClone)]);
-   await this.persistRecord(client,tenantId,runId,'$Record',objectApi,current??prior,
+   const readableCurrent=await this.readableRecord(tenantId,item.execution.actorUserId,
+    objectApi,current??prior);
+   const readablePrior=await this.readableRecord(tenantId,item.execution.actorUserId,
+    objectApi,prior);
+   await this.persistRecord(client,tenantId,runId,'$Record',objectApi,readableCurrent,
     operation==='deleted'?null:(current??prior)?.Id);
-   await this.persistRecord(client,tenantId,runId,'$Record__Prior',objectApi,prior,
+   await this.persistRecord(client,tenantId,runId,'$Record__Prior',objectApi,readablePrior,
     operation==='deleted'?null:prior?.Id);
    const result=await this.flowExecution.run(true,
     ()=>this.flows.advanceInterview(tenantId,item.execution.actorUserId,runId,{},client));
@@ -349,6 +353,26 @@ export class FlowRecordTriggers {
   }
   return phase==='before-save'?current??undefined:undefined;
  }
+
+  private async readableRecord(tenantId:string,userId:string,objectApi:string,
+   record:Snapshot|null):Promise<Snapshot|null>{
+   if(!record)return null;
+   const entries=Object.entries(record).filter(([field,value])=>
+    field!=='Id'&&field!=='RecordTypeId'&&field!=='CreatedAt'&&field!=='LastModifiedDate'
+     &&field!=='__isClone'&&/^[A-Za-z][A-Za-z0-9_]*$/.test(field)&&scalar(value));
+   const checks=entries.map(([field])=>({resource:objectApi+'.'+field,action:'read'}));
+   const access=await this.rbac.allowedMany(tenantId,userId,checks);
+   const result:Snapshot={};
+   for(const field of ['Id','CreatedAt','LastModifiedDate'])
+    if(Object.hasOwn(record,field))result[field]=record[field];
+   for(const [index,[field,value]] of entries.entries())
+    if(access[index])result[field]=value;
+   const recordTypeId=record.RecordTypeId;
+   if(typeof recordTypeId==='string'&&await this.rbac.allowed(
+    tenantId,userId,'RecordType:'+objectApi+'.'+recordTypeId,'read'))
+    result.RecordTypeId=recordTypeId;
+   return result;
+  }
 
  private async cancelScheduledPaths(client:PoolClient,tenantId:string,flowId:string,recordId:string) {
   await client.query(`

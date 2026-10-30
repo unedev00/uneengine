@@ -20,11 +20,48 @@ import type {Expression} from '../expression-engine/FormulaParser.js';
 
 type FormulaResolver=(name:string)=>unknown;
 export type FormulaEvaluationContext={
-  timeZone?:string;
-  now?:Date|string;
-  currencyRates?:Readonly<Record<string,number>>;
-  isClone?:boolean;
+  readonly timeZone?:string;
+  readonly locale?:string;
+  readonly currencyIsoCode?:string|null;
+  readonly now?:Date|string;
+  readonly currencyRates?:Readonly<Record<string,number>>;
+  readonly isClone?:boolean;
+  readonly transactionStage?:'create'|'update'|'clone'|'flow'|'formula-field'|'page-binding';
+  readonly currentRecord?:Readonly<Record<string,unknown>>|null;
+  readonly priorRecord?:Readonly<Record<string,unknown>>|null;
+  readonly actor?:Readonly<{Id:string;Name:string;Email:string;TimeZone:string;
+    Locale:string;CurrencyIsoCode:string|null}>;
+  readonly profile?:Readonly<{Id:string|null;Name:string|null;DeveloperName:string|null}>;
+  readonly organization?:Readonly<{Id:string;Name:string}>;
+  readonly recordType?:Readonly<{Id:string|null;Name:string|null;DeveloperName:string|null}>;
+  readonly permissionSnapshot?:Readonly<Record<string,boolean>>;
+  readonly fieldAccess?:Readonly<Record<string,boolean>>;
 };
+function freezeSnapshot(value:unknown,seen=new WeakSet<object>()):unknown {
+  if(value instanceof Date){
+    if(!Number.isFinite(value.getTime()))throw new Error('Invalid formula evaluation time');
+    return value.toISOString();
+  }
+  if(!value||typeof value!=='object')return value;
+  if(seen.has(value))throw new Error('Formula evaluation context cannot contain cycles');
+  seen.add(value);
+  if(Array.isArray(value)){
+    const result=value.map(item=>freezeSnapshot(item,seen));
+    seen.delete(value);
+    return Object.freeze(result);
+  }
+  const result:Record<string,unknown>=Object.create(null) as Record<string,unknown>;
+  for(const [key,item] of Object.entries(value))
+    Object.defineProperty(result,key,{value:freezeSnapshot(item,seen),enumerable:true});
+  seen.delete(value);
+  return Object.freeze(result);
+}
+/** Copies and deeply freezes the transaction inputs used during one formula pass. */
+export function createFormulaEvaluationContext(
+  input:FormulaEvaluationContext
+):FormulaEvaluationContext {
+  return freezeSnapshot(input) as FormulaEvaluationContext;
+}
 export type FormulaImageResult={
   __formulaImage:'MetaDriveFormulaImage';
   url:string;
@@ -56,7 +93,7 @@ function triggerFieldReference(node:Expression):string {
 }
 function requiresRecordTriggerContext(node:Expression):boolean {
   if(node.kind==='call'){
-    return ['ISCHANGED','ISNEW','PRIORVALUE'].includes(node.name)
+    return ['ISCHANGED','ISNEW','ISCLONE','PRIORVALUE'].includes(node.name)
       ||node.args.some(requiresRecordTriggerContext);
   }
   if(node.kind==='unary')return requiresRecordTriggerContext(node.value);
@@ -68,10 +105,11 @@ function triggerFieldValues(field:string,resolve:FormulaResolver) {
   const current=resolve('$Record'),prior=resolve('$Record__Prior');
   if(!current||typeof current!=='object'||Array.isArray(current))
     throw new Error('Record change functions require a Record-Triggered Flow');
-  if(!Object.hasOwn(current,field))throw new Error('Unknown Flow record field: '+field);
+  const currentValue=Object.hasOwn(current,field)
+    ?(current as Record<string,unknown>)[field]:null;
   const priorValue=prior&&typeof prior==='object'&&!Array.isArray(prior)
     &&Object.hasOwn(prior,field)?(prior as Record<string,unknown>)[field]:null;
-  return {current:(current as Record<string,unknown>)[field],prior:priorValue};
+  return {current:currentValue,prior:priorValue};
 }
 
 function evaluate(node:Expression,resolve:FormulaResolver,context:FormulaEvaluationContext):unknown {
@@ -682,9 +720,11 @@ export function validateFlowResources(resources:unknown,recordTriggered=false):s
       try{
         const expression=String(item.value??'');
         validateFlowFormula(expression,'flow_formula');
-        if(!recordTriggered&&requiresRecordTriggerContext(
-          new Parser(tokenize(expression)).parse()))
-          errors.push('Record change formula functions are only supported in Record-Triggered Flows');
+        const hasRecordGlobal=flowFormulaReferences(expression).some(reference=>
+          /^\$(?:Record(?:__Prior|__IsClone)?|RecordType)(?:\.|$)/.test(reference));
+        if(!recordTriggered&&(hasRecordGlobal||requiresRecordTriggerContext(
+          new Parser(tokenize(expression)).parse())))
+          errors.push('Record lifecycle formula functions and globals are only supported in Record-Triggered Flows');
         else formulaResources.set(String(item.name),expression);
       }
       catch(error){errors.push('Invalid Flow formula resource '+String(item.name)+': '

@@ -1,10 +1,17 @@
 import type {PoolClient} from 'pg';
-import {evaluateFlowFormula,flowFormulaReferences} from '../system-files/flow-formula-runtime.js';
+import {
+  evaluateFlowFormula,flowFormulaReferences,type FormulaEvaluationContext
+} from '../system-files/flow-formula-runtime.js';
 type Values=Record<string,unknown>;
-type FormulaContext={resolve:(name:string)=>unknown;timeZone:string};
+type FormulaContext={
+  resolve:(name:string)=>unknown;
+  timeZone:string;
+  evaluation:FormulaEvaluationContext
+};
 /** Resolve tenant SQL formula defaults, including dependency cycles, through the shared formula runtime. */
 export async function resolveDefaultValues(client:PoolClient,tenantId:string,userId:string,objectApi:string,values:Values,
-    literals:Values,context:(expression:string,values:Values)=>Promise<FormulaContext>) {
+    literals:Values,context:(expression:string,values:Values,now:Date|string)=>Promise<FormulaContext>,
+    evaluationNow?:Date|string) {
     const {rows}=await client.query<{field_api:string;expression:string}>(
       `SELECT d.field_api,d.expression FROM md_field_default_formulas d
        JOIN md_field_definitions f ON f.tenant_id=d.tenant_id AND f.object_api=d.object_api
@@ -12,7 +19,7 @@ export async function resolveDefaultValues(client:PoolClient,tenantId:string,use
        WHERE d.tenant_id=$1 AND d.object_api=$2 ORDER BY d.field_api`,[tenantId,objectApi]);
     const pending=new Map(rows.filter(row=>values[row.field_api]===undefined)
       .map(row=>[row.field_api,row.expression]));
-    const now=new Date();
+    const now=evaluationNow??new Date();
     for(const [field,value] of Object.entries(literals))
       if(values[field]===undefined&&!pending.has(field))values[field]=value;
     const visiting=new Set<string>();
@@ -26,8 +33,9 @@ export async function resolveDefaultValues(client:PoolClient,tenantId:string,use
           ref.startsWith(objectApi+'.')?ref.slice(objectApi.length+1):ref;
         if(pending.has(name))await resolveDefault(name);
       }
-      const ctx=await context(expression,values);
-      const result=evaluateFlowFormula(expression,ctx.resolve,{timeZone:ctx.timeZone,now},'formula_field');
+      const ctx=await context(expression,values,now);
+      const result=evaluateFlowFormula(expression,ctx.resolve,
+        {...ctx.evaluation,timeZone:ctx.timeZone,now},'formula_field');
       if(result!==undefined){
         if(result!==null&&typeof result!=='string'&&typeof result!=='number'&&typeof result!=='boolean')
           throw new Error('Invalid formula default result: '+field);

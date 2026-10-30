@@ -9,10 +9,11 @@ display formatting, not stored formula values.
 Server formula adapters use the executing user's configured IANA time zone.
 Each evaluation pass snapshots one `now` instant, so `NOW()`, `TODAY()`, and
 `TIMENOW()` remain consistent while formulas or rules in that pass execute.
-The browser binding evaluator accepts an explicit `{ timeZone, now }` context;
-when none is supplied it uses UTC and a single captured browser clock instant
-for that evaluation. Selecting and propagating the authenticated user's
-timezone to page runtimes remains part of the follow-up context-source work.
+The shared browser evaluator accepts an explicit `{ timeZone, now }` context
+and otherwise uses UTC. Registered page bindings receive the authenticated
+user's time zone from `/auth/me`; they capture one clock instant per property
+resolution pass and fail explicitly if a time-zone-sensitive expression has
+no authenticated time-zone context.
 
 | Function or behavior | Verified semantics |
 |---|---|

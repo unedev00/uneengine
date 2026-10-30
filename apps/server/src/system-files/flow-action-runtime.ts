@@ -2,7 +2,9 @@ import {randomInt} from 'node:crypto';
 import {executeCustomActionBridgeNode} from './nodes/CustomActionBridgeNode.js';
 import {template,uuid,scalar,type ActionContext} from './nodes/ActionNodeShared.js';
 import type {RbacEngine} from './rbac-engine.js';
-import type {FormulaEvaluationContext} from './flow-formula-runtime.js';
+import {
+ createFormulaEvaluationContext,type FormulaEvaluationContext
+} from './flow-formula-runtime.js';
 import type {RecordEngine} from './record-engine.js';
 import {executeQuickActionNode} from './nodes/QuickActionNode.js';
 import {executePlatformEventPublishNode} from './nodes/PlatformEventPublishNode.js';
@@ -10,18 +12,24 @@ import {executeActionEmailNode} from './nodes/ActionEmailNode.js';
 import type {SqlExecutor} from './sql-persistence.js';
 
 export async function loadFlowUserResource(client:SqlExecutor,tenantId:string,userId:string,
- graph:unknown,variables:Record<string,unknown>):Promise<FormulaEvaluationContext> {
- if(typeof graph!=='string'||!(/\$User\.(?:Name|Email|TimeZone|ManagerId|AncestorIds|DescendantIds|DirectReportIds)\b/.test(graph)
+ graph:unknown,variables:Record<string,unknown>,rbac?:RbacEngine):Promise<FormulaEvaluationContext> {
+ if(typeof graph!=='string'||!(/\$User(?:\.(?:Name|Email|TimeZone|Locale|CurrencyIsoCode|ManagerId|AncestorIds|DescendantIds|DirectReportIds))?\b|\$Profile(?:\.|\b)|\$Organization(?:\.|\b)|\$Permission\.[A-Za-z][A-Za-z0-9_]*|\$Record(?:__Prior|__IsClone|Type)?(?:\.|\b)/.test(graph)
    ||/\b(?:TODAY|NOW|TIMENOW|DAY|MONTH|YEAR|HOUR|MINUTE|SECOND|WEEKDAY|ISOWEEK|ISOYEAR|DATEVALUE|DATETIMEVALUE|TIMEVALUE|ADDDAYS|ADDMONTHS|TZOFFSET|CURRENCYRATE)\s*\(/i.test(graph)))
   return {};
  const now=new Date();
  const {rows}=await client.query<{
-  id:string;email:string;display_name:string;time_zone:string;reports_to_user_id:string|null;has_currency_settings:boolean;
+  id:string;email:string;display_name:string;time_zone:string;locale:string;
+  user_currency_iso_code:string|null;reports_to_user_id:string|null;profile_id:string|null;
+  profile_name:string|null;profile_api:string|null;has_currency_settings:boolean;
   currency_iso_code:string|null;conversion_rate:string|null
- }>(`SELECT u.id,u.email,u.display_name,u.time_zone,u.reports_to_user_id,s.tenant_id IS NOT NULL AS has_currency_settings,
+ }>(`SELECT u.id,u.email,u.display_name,u.time_zone,u.locale,u.currency_iso_code AS user_currency_iso_code,
+    u.reports_to_user_id,p.id AS profile_id,p.name AS profile_name,p.api_name AS profile_api,
+    s.tenant_id IS NOT NULL AS has_currency_settings,
     currency.value->>'currencyIsoCode' AS currency_iso_code,
     currency.value->>'conversionRate' AS conversion_rate
    FROM md_users u
+   LEFT JOIN md_user_profiles up ON up.tenant_id=u.tenant_id AND up.user_id=u.id
+   LEFT JOIN md_profiles p ON p.tenant_id=up.tenant_id AND p.id=up.profile_id
    LEFT JOIN md_tenant_settings s ON s.tenant_id=u.tenant_id AND s.setting_key='currencies'
    LEFT JOIN LATERAL jsonb_array_elements(
     COALESCE(s.properties->'currencies','{"currencies":[]}'::jsonb)->'currencies'
@@ -53,13 +61,44 @@ export async function loadFlowUserResource(client:SqlExecutor,tenantId:string,us
   directReportIds=descendants.rows.filter(row=>row.hierarchy_level===1).map(row=>row.user_id);
  }
  const resource:Record<string,unknown>={Id:actor.id,Name:actor.display_name.trim()||actor.email,
-  Email:actor.email,TimeZone:actor.time_zone};
+  Email:actor.email,TimeZone:actor.time_zone,Locale:actor.locale,
+  CurrencyIsoCode:actor.user_currency_iso_code};
  if(/\$User\.ManagerId\b/.test(graph))resource.ManagerId=actor.reports_to_user_id??null;
  if(/\$User\.AncestorIds\b/.test(graph))resource.AncestorIds=ancestorIds;
  if(/\$User\.DescendantIds\b/.test(graph))resource.DescendantIds=descendantIds;
  if(/\$User\.DirectReportIds\b/.test(graph))resource.DirectReportIds=directReportIds;
  variables.$User=resource;
- return {timeZone:actor.time_zone,currencyRates,now};
+ if(/\$Profile(?:\.|\b)/.test(graph))
+  variables.$Profile={Id:actor.profile_id,Name:actor.profile_name,DeveloperName:actor.profile_api};
+ let organization:FormulaEvaluationContext['organization'];
+ if(/\$Organization(?:\.|\b)/.test(graph)){
+  const {rows:organizations}=await client.query<{id:string;name:string}>(
+   'SELECT id,name FROM md_tenants WHERE id=$1',[tenantId]);
+  if(!organizations[0])throw new Error('Flow execution organization is unavailable');
+  organization={Id:organizations[0].id,Name:organizations[0].name};
+  variables.$Organization=organization;
+ }
+ const permissionNames=[...new Set([...graph.matchAll(/\$Permission\.([A-Za-z][A-Za-z0-9_]*)/g)]
+  .map(match=>match[1]))];
+ let permissionSnapshot:Record<string,boolean>|undefined;
+ if(permissionNames.length){
+  if(!rbac)throw new Error('Custom permission context is unavailable for this Flow');
+  const decisions=await rbac.allowedMany(tenantId,userId,permissionNames.map(name=>({
+   resource:'CustomPermission:'+name,action:'read'
+  })));
+  permissionSnapshot=Object.fromEntries(permissionNames.map((name,index)=>[name,decisions[index]]));
+  variables.$Permission=permissionSnapshot;
+ }
+ const profile=/\$Profile(?:\.|\b)/.test(graph)
+  ?{Id:actor.profile_id,Name:actor.profile_name,DeveloperName:actor.profile_api}:undefined;
+ return createFormulaEvaluationContext({
+  timeZone:actor.time_zone,locale:actor.locale,currencyIsoCode:actor.user_currency_iso_code,
+  currencyRates,now,transactionStage:'flow',
+  actor:{Id:actor.id,Name:actor.display_name.trim()||actor.email,Email:actor.email,
+   TimeZone:actor.time_zone,Locale:actor.locale,CurrencyIsoCode:actor.user_currency_iso_code},
+  ...(profile?{profile}:{}),...(organization?{organization}:{}),
+  ...(permissionSnapshot?{permissionSnapshot}:{})
+ });
 }
 
 async function sendCustomNotification(context:ActionContext) {
