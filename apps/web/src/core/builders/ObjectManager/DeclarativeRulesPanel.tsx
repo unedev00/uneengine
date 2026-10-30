@@ -2,7 +2,7 @@ import {useEffect,useState} from 'react';
 import {apiRequest} from '../../authentication/Client/authClient';
 import {generateMetadataApiName,metadataNameConflict,suggestMetadataApiName} from '../../metadata/Definitions/metadataApiNames';
 import type {ObjectMetadata} from '../../metadata/Definitions/metadata';
-import SmartFieldInput from '../../../component-libraries/OneSmartFieldInput/SmartFieldInput';
+import SmartFieldInput from '../../../component-libraries/shared/primitives/SmartFieldInput/SmartFieldInput';
 
 type Field={apiName:string;label:string;dataType:string};
 type Rule={apiName:string;label:string;expression:string;errorMessage:string;errorFieldApi:string|null;active:boolean;sortOrder:number;revision:number};
