@@ -1,4 +1,4 @@
-import OneComponent from "../OneSearch/OneSearch.jsx";
+import OneComponent from "../../core/components/SharedRuntime/OneSearch.jsx";
 import {UneFrame,uneProps} from "../une/shared/UneFrame.jsx";
 // Private application settings live in code; existing runtime values take precedence.
 const INTERNAL_DEFAULTS={
