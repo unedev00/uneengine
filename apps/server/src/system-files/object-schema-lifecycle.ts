@@ -13,7 +13,7 @@ type QueryClient=Pick<PoolClient,'query'>;
 const checks=[
   {kind:'Records (including recycle bin)',sql:`SELECT count(*)::int AS count FROM md_records WHERE tenant_id=$1 AND object_api=$2`},
   {kind:'Inbound relationships',sql:`SELECT count(*)::int AS count FROM md_field_definitions WHERE tenant_id=$1 AND related_object=$2 AND object_api<>$2 AND deleted_at IS NULL`},
-  {kind:'Record pages',sql:`SELECT count(*)::int AS count FROM md_lightning_page_details WHERE tenant_id=$1 AND target_object=$2`},
+  {kind:'Custom record pages',sql:`SELECT count(*)::int AS count FROM md_lightning_page_details d JOIN md_page_definitions p ON p.tenant_id=d.tenant_id AND p.id=d.page_id WHERE d.tenant_id=$1 AND d.target_object=$2 AND p.api_name NOT IN ('Record_'||substr(md5($1::text||':'||$2),1,20)||'_View','Record_'||substr(md5($1::text||':'||$2),1,20)||'_Edit')`},
   {kind:'App navigation',sql:`SELECT count(*)::int AS count FROM md_tenant_app_navigation WHERE tenant_id=$1 AND entry_type='Object' AND api_name=$2`},
   {kind:'Flow triggers',sql:`SELECT count(*)::int AS count FROM md_flow_trigger_subscriptions WHERE tenant_id=$1 AND trigger_key=$2`},
   {kind:'Metadata packages',sql:`SELECT count(*)::int AS count FROM md_metadata_package_components WHERE tenant_id=$1 AND component_type='object' AND component_api=$2 AND component_state<>'Disabled'`},
@@ -67,6 +67,19 @@ export class ObjectSchemaLifecycle {
    const dependencies=await blockers(client,tenantId,apiName);
    if(dependencies.length)throw new Error(
     'Object deletion blocked: '+dependencies.map(item=>item.kind+' ('+item.count+')').join(', '));
+   await client.query(`INSERT INTO md_object_lifecycle_page_states
+    (tenant_id,object_api,page_id,enabled)
+    SELECT p.tenant_id,$2,p.id,p.enabled FROM md_page_definitions p
+    JOIN md_lightning_page_details d ON d.tenant_id=p.tenant_id AND d.page_id=p.id
+    WHERE p.tenant_id=$1 AND d.target_object=$2 AND p.api_name IN
+      ('Record_'||substr(md5($1::text||':'||$2),1,20)||'_View',
+       'Record_'||substr(md5($1::text||':'||$2),1,20)||'_Edit')
+    ON CONFLICT (tenant_id,object_api,page_id) DO UPDATE SET enabled=EXCLUDED.enabled`,
+    [tenantId,apiName]);
+   await client.query(`UPDATE md_page_definitions p SET enabled=false
+    FROM md_object_lifecycle_page_states s
+    WHERE s.tenant_id=$1 AND s.object_api=$2 AND p.tenant_id=s.tenant_id AND p.id=s.page_id`,
+    [tenantId,apiName]);
    await client.query(
     'UPDATE md_object_definitions SET deleted_at=now() WHERE tenant_id=$1 AND api_name=$2 AND deleted_at IS NULL',
     [tenantId,apiName]);
@@ -85,6 +98,12 @@ export class ObjectSchemaLifecycle {
    // Restore never rebuilds metadata or changes the stable object identity.
    await client.query(
     'UPDATE md_object_definitions SET deleted_at=NULL WHERE tenant_id=$1 AND api_name=$2',
+    [tenantId,apiName]);
+   await client.query(`UPDATE md_page_definitions p SET enabled=s.enabled
+    FROM md_object_lifecycle_page_states s
+    WHERE s.tenant_id=$1 AND s.object_api=$2 AND p.tenant_id=s.tenant_id AND p.id=s.page_id`,
+    [tenantId,apiName]);
+   await client.query('DELETE FROM md_object_lifecycle_page_states WHERE tenant_id=$1 AND object_api=$2',
     [tenantId,apiName]);
    return {apiName,restored:true};
   });
