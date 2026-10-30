@@ -24,8 +24,8 @@ await assert.rejects(access(path.join(webSourceRoot,'component-libraries/shared/
 for (const name of ['OneSearch','OneText']) { await access(path.join(webSourceRoot,`core/components/SharedRuntime/${name}.jsx`)); await assert.rejects(access(path.join(webSourceRoot,`component-libraries/${name}/${name}.jsx`)), {code:'ENOENT'}); }
 for (const component of registered) {
   const prefix = `component-libraries/${component.apiName}/`;
-  assert.equal(component.jsxFile, prefix + component.apiName.split('_').slice(1).map(part=>part[0].toUpperCase()+part.slice(1)).join('').replace(/^/, 'Une') + '.jsx');
+  assert.equal(component.jsxFile, prefix + component.apiName.split('_').slice(1).map(part=>part[0].toUpperCase()+part.slice(1)).join('').replace(/^/, 'Ui') + '.jsx');
   for (const file of [component.jsxFile,component.cssFile,prefix+'component.json'])
     await access(path.join(webSourceRoot,file));
 }
-console.log(`Web layout verified: Core, UNE and ${registered.length} published components.`);
+console.log(`Web layout verified: Core, UI and ${registered.length} published components.`);
