@@ -1186,3 +1186,74 @@
 .office-builder-ribbon .office-ribbon-page-layout-groups [data-ribbon-property="selectVersion"]>.office-ribbon-stack>select{
  min-height:24px;height:24px;padding:2px 5px;max-width:175px;
 }
+
+/* One neutral ribbon surface across the entire Page Builder, including Smart
+   property tabs. Inputs/buttons retain their distinct interactive surfaces. */
+.office-builder-ribbon {
+ --page-ribbon-bg:#f4f5f7;
+ background:var(--page-ribbon-bg)!important;
+}
+.office-builder-ribbon>.office-ribbon-topbar,
+.office-builder-ribbon #page-builder-tab-content.office-ribbon-content,
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-page-layout-groups,
+.office-builder-ribbon #page-builder-tab-content>.smart-ribbon {
+ background:var(--page-ribbon-bg)!important;
+}
+.office-builder-ribbon #page-builder-tab-content .smart-ribbon-group,
+.office-builder-ribbon #page-builder-tab-content .une-sql-home-group {
+ background:transparent!important;
+}
+
+/* Device and Version live in the SQL-owned Page group, rather than occupying
+   two full ribbon sections. Three single-height rows fit inside the same ribbon. */
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-page-layout-groups
+  >.une-sql-home-group[data-shared-group="Page"] {
+ width:390px;min-width:390px;max-width:390px;
+}
+.office-builder-ribbon .office-ribbon-page-layout-groups
+  .une-sql-home-group[data-shared-group="Page"]>.office-ribbon-stack {
+ display:flex;flex-direction:column;align-items:stretch;gap:6px;
+}
+.office-builder-ribbon .office-ribbon-page-layout-groups
+  .une-sql-home-group[data-shared-group="Page"]>.office-ribbon-stack>.une-sql-home-control {
+ justify-content:flex-start;gap:9px;min-height:27px;height:27px;
+}
+.office-builder-ribbon .office-ribbon-page-layout-groups
+  .une-sql-home-group[data-shared-group="Page"]>.office-ribbon-stack>.une-sql-home-control>span {
+ flex:0 0 88px;width:88px;min-width:88px;
+}
+.office-builder-ribbon .office-ribbon-page-layout-groups
+  .une-sql-home-group[data-shared-group="Page"] [data-ribbon-property="pageName"]>input {
+ width:185px;max-width:185px;
+}
+.office-builder-ribbon .office-ribbon-page-layout-groups
+  .une-sql-home-group[data-shared-group="Page"] [data-ribbon-property="deviceLayout"]>select {
+ width:122px;max-width:122px;
+}
+.office-builder-ribbon .office-ribbon-page-layout-groups
+  .une-sql-home-group[data-shared-group="Page"] [data-ribbon-property="selectVersion"] {
+ align-items:center;
+}
+.office-builder-ribbon .office-ribbon-page-layout-groups
+  .une-sql-home-group[data-shared-group="Page"] [data-ribbon-property="selectVersion"]>.office-ribbon-version-controls {
+ display:flex;flex:0 0 auto;flex-direction:row;align-items:center;gap:5px;
+ width:257px;min-width:257px;height:27px;
+}
+.office-builder-ribbon .office-ribbon-page-layout-groups
+  .office-ribbon-version-controls>button {
+ display:inline-flex;align-items:center;justify-content:center;
+ box-sizing:border-box;height:27px;min-height:27px;padding:3px 7px;
+ border:1px solid #b7c8dc;border-radius:3px;background:transparent;
+}
+.office-builder-ribbon .office-ribbon-page-layout-groups
+  .office-ribbon-version-controls>button:first-child {
+ flex:0 0 29px;width:29px;padding:4px;
+}
+.office-builder-ribbon .office-ribbon-page-layout-groups
+  .office-ribbon-version-controls>select {
+ flex:0 0 149px;width:149px;min-width:149px;max-width:149px;height:27px;
+}
+.office-builder-ribbon .office-ribbon-page-layout-groups
+  .office-ribbon-version-controls>button:last-child {
+ flex:0 0 69px;min-width:69px;
+}

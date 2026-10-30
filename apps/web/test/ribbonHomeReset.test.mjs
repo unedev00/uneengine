@@ -45,3 +45,22 @@ test('Acetill owns its renderer identity and a separate version-3 package',()=>{
   assert.ok(v4.includes(name),name);
  assert.doesNotMatch(v4,/'ui_input'|'ui_search'|'ui_item_grid'|'ui_cart'|'ui_button'/);
 });
+
+test('Layout combines Device and Version in the SQL Page section without losing controls',()=>{
+ const sql=src('../../server/src/system-support/migrations/20270203-page-layout-ribbon-consolidation.sql');
+ const ui=src('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const css=src('../src/core/builders/PageBuilder/PageBuilderRibbonBlueprint.css');
+ assert.match(sql,/property_key IN \('deviceLayout','selectVersion'\)/);
+ assert.match(sql,/section_group='Page'/);
+ assert.match(sql,/section_group IN \('Device','Version'\)/);
+ assert.doesNotMatch(sql,/DELETE FROM md_builder_shared_properties|UPDATE md_page_components|DELETE FROM md_page_components/);
+ assert.match(ui,/case 'pageName'/);
+ assert.match(ui,/case 'deviceLayout'/);
+ assert.match(ui,/case 'selectVersion'/);
+ assert.match(ui,/aria-label=\{showLayoutHistory\?'Refresh versions':'Load versions'\}/);
+ assert.match(ui,/restoreLayoutVersion\(selectedHistoryVersion\)/);
+ assert.match(ui,/office-ribbon-version-controls/);
+ assert.match(css,/--page-ribbon-bg:#f4f5f7/);
+ assert.match(css,/>\.smart-ribbon\s*\{\s*background:var\(--page-ribbon-bg\)!important/);
+ assert.match(css,/une-sql-home-group\[data-shared-group="Page"\]/);
+});
