@@ -5,6 +5,17 @@ CREATE INDEX IF NOT EXISTS md_object_definitions_deleted
  ON md_object_definitions(tenant_id,deleted_at DESC)
  WHERE deleted_at IS NOT NULL;
 
+-- Preserve enabled/disabled choices of generated View/Edit Record pages over restore.
+CREATE TABLE IF NOT EXISTS md_object_lifecycle_page_states(
+ tenant_id uuid NOT NULL,
+ object_api text NOT NULL,
+ page_id uuid NOT NULL,
+ enabled boolean NOT NULL,
+ PRIMARY KEY(tenant_id,object_api,page_id),
+ FOREIGN KEY(tenant_id,object_api) REFERENCES md_object_definitions(tenant_id,api_name) ON DELETE CASCADE,
+ FOREIGN KEY(tenant_id,page_id) REFERENCES md_page_definitions(tenant_id,id) ON DELETE CASCADE
+);
+
 -- A stale record editor or direct API cannot insert into a deleted definition.
 -- The row lock serializes with ObjectSchemaLifecycle.delete's FOR UPDATE lock.
 CREATE OR REPLACE FUNCTION md_require_live_object_for_record_insert()
