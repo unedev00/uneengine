@@ -53,15 +53,18 @@ test('ribbon inline labels wrap and controls stay within their group dividers',(
   assert.match(styles,/input:not\(\[type=checkbox\]\),select,textarea\) \{[\s\S]*?min-width:0!important;max-width:116px!important/);
 });
 
-test('ribbon keeps the nine-step component journey with icon-led, accessible tabs',()=>{
+test('ribbon keeps accessible component tabs without Home and Parity',()=>{
   const source=readFileSync(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
-  for(const label of ['Home','Insert','Data','Content','Design','Layout','Responsive','Actions','Preview'])
+  for(const label of ['Insert','Data','Content','Design','Layout','Responsive','Actions','Preview'])
     assert.ok(source.includes(`'${label}'`),label+' tab label remains available');
-  for(const icon of ['PanelsTopLeft','Puzzle','Database','Type','SlidersHorizontal','Layers3','Smartphone','Workflow','Eye'])
+  for(const icon of ['Puzzle','Database','Type','SlidersHorizontal','Layers3','Smartphone','Workflow','Eye'])
     assert.ok(source.includes(icon),icon+' tab icon remains available');
   assert.match(source,/className="office-ribbon-topbar"/);
   assert.match(source,/role="tablist" aria-label="Page Builder tabs"/);
   assert.match(source,/aria-controls="page-builder-tab-content"/);
+  assert.doesNotMatch(source,/ribbonTabsVisible.push\('Parity'\)/);
+  assert.doesNotMatch(source,/\['Home','Add Block'/);
+  assert.match(source,/title=\{selected\?\.label\|\|selected\?\.type\|\|'Welcome'\}/);
 });
 
 test('card gallery properties live in application code and are consumed by runtime', async () => {
@@ -108,13 +111,17 @@ test('Card Grid Add button remains compatible with saved values without exposing
   assert.match(runtime,/onKeyDown=\{event=>/);
 });
 
-test('SQL-defined Home groups preserve page actions without duplicating Save',()=>{
+test('SQL-defined page controls move to Layout and all Quick Access commands stay on topbar',()=>{
   const source=readFileSync(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
   const content=source.slice(source.indexOf('className="office-ribbon-topbar"'),source.indexOf('id="page-builder-tab-content"'));
   assert.doesNotMatch(content,/aria-label="Page name"/);
-  assert.doesNotMatch(content,/office-ribbon-quick-save/);
+  assert.match(content,/office-ribbon-quick-access/);
+  assert.match(content,/office-ribbon-quick-save/);
+  for(const key of ['save','activate','resetIcon','undo','redo','cut','copy','paste'])
+    assert.match(source,new RegExp("case '"+key+"'"));
   assert.match(source,/data-shared-group=\{group\}/);
-  assert.match(source,/ribbonCatalog\.properties\.filter\(row=>row\.tab==='Home'\)/);
+  assert.match(source,/ribbonCatalog\.properties\.filter\(row=>row\.tab==='Home'&&/);
+  assert.match(source,/office-ribbon-page-layout-groups/);
   const sql=readFileSync(new URL('../../server/src/system-support/migrations/20270122-global-shared-builder-ribbon.sql',import.meta.url),'utf8');
   assert.match(sql,/md_builder_shared_properties/);
   for(const property of ['backIcon','pageName','deviceLayout','canvasMode','canvasWidth','canvasHeight',
@@ -129,7 +136,7 @@ test('SQL-defined Home groups preserve page actions without duplicating Save',()
   assert.doesNotMatch(source,/<PageBuilderAdvancedStyle/);
   assert.match(advanced,/office-ribbon-extra-grid/);
   assert.doesNotMatch(advanced,/createPortal/);
-  assert.match(source,/office-ribbon-quick-grid/);
+  assert.match(source,/office-ribbon-quick-access/);
   assert.doesNotMatch(source,/ribbonTab==='Component Responsive'/);
   assert.doesNotMatch(source,/<RibbonResponsive/);
 });
@@ -163,4 +170,24 @@ test('design canvas selects Button and other live controls without firing action
   assert.match(button,/p\.builderPreview!==true/);
   // Saved click and Flow behaviour must remain available outside the designer.
   assert.match(button,/fire\(p,"click",p\.value\?\?true\)/);
+});
+
+test('Quick Access commands are real buttons, remain on the top rail, and Layout includes page settings',()=>{
+ const view=readFileSync(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+ const css=readFileSync(new URL('../src/core/builders/PageBuilder/PageBuilderRibbonBlueprint.css',import.meta.url),'utf8');
+ for(const [key,label] of [['save','Save'],['activate','Activate'],['resetIcon','Reset component'],
+  ['undo','Undo'],['redo','Redo'],['cut','Cut'],['copy','Copy'],['paste','Paste']]){
+  assert.ok(view.includes("case '"+key+"':return <button"),key+' uses existing callbacks');
+  assert.match(view,new RegExp('aria-label="'+label+'"'));
+ }
+ assert.match(view,/quickAccessOrder\.map\(key=>/);
+ assert.match(view,/aria-label="Quick Access Toolbar"/);
+ assert.match(view,/ribbonTab==='Component Layout' && ribbonCatalog/);
+ for(const group of ['Page','Device','Canvas','Version'])
+  assert.ok(view.includes("'"+group+"'"),group+' remains in Layout');
+ assert.doesNotMatch(view,/Unsaved edits/);
+ assert.match(view,/selected \? \(selected\.label\|\|selected\.type\)\+' selected' : 'Welcome'/);
+ assert.match(css,/\.office-ribbon-topbar-back/);
+ assert.match(css,/\.office-ribbon-quick-access/);
+ assert.match(css,/\.office-ribbon-page-layout-groups/);
 });
