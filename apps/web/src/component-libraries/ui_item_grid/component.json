@@ -1,6 +1,6 @@
 {
   "apiName": "ui_item_grid",
-  "label": "UNE Card Grid",
+  "label": "UI Card Grid",
   "category": "Data",
   "description": "Universal metadata-driven card gallery for records from any object, with optional images, details, values and actions.",
   "surfaces": [

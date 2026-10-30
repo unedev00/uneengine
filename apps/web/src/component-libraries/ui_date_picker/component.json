@@ -1,6 +1,6 @@
 {
   "apiName": "ui_date_picker",
-  "label": "UNE Date Picker",
+  "label": "UI Date Picker",
   "category": "Inputs",
   "description": "Reusable date picker component for metadata-driven pages; shares MetaDrive runtime, events and tenant permissions.",
   "surfaces": [

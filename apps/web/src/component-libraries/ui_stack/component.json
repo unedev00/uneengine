@@ -1,6 +1,6 @@
 {
   "apiName": "ui_stack",
-  "label": "UNE Stack",
+  "label": "UI Stack",
   "category": "Layout",
   "description": "Reusable stack component for metadata-driven pages; shares MetaDrive runtime, events and tenant permissions.",
   "surfaces": [

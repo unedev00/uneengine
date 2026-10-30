@@ -1,6 +1,6 @@
 {
   "apiName": "ui_navigation",
-  "label": "UNE Navigation",
+  "label": "UI Navigation",
   "category": "Navigation",
   "description": "Reusable navigation component for metadata-driven pages; shares MetaDrive runtime, events and tenant permissions.",
   "surfaces": [

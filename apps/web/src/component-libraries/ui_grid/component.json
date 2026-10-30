@@ -1,6 +1,6 @@
 {
   "apiName": "ui_grid",
-  "label": "UNE Grid",
+  "label": "UI Grid",
   "category": "Layout",
   "description": "Reusable grid component for metadata-driven pages; shares MetaDrive runtime, events and tenant permissions.",
   "surfaces": [

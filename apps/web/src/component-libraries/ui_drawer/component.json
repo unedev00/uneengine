@@ -1,6 +1,6 @@
 {
   "apiName": "ui_drawer",
-  "label": "UNE Drawer",
+  "label": "UI Drawer",
   "category": "Layout",
   "description": "Reusable drawer component for metadata-driven pages; shares MetaDrive runtime, events and tenant permissions.",
   "surfaces": [

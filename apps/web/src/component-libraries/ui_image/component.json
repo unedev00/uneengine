@@ -1,6 +1,6 @@
 {
   "apiName": "ui_image",
-  "label": "UNE Image",
+  "label": "UI Image",
   "category": "Display",
   "description": "Reusable image component for metadata-driven pages; shares MetaDrive runtime, events and tenant permissions.",
   "surfaces": [

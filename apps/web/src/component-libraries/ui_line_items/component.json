@@ -1,6 +1,6 @@
 {
   "apiName": "ui_line_items",
-  "label": "UNE Line Items",
+  "label": "UI Line Items",
   "category": "Data",
   "description": "Reusable line items component for metadata-driven pages; shares MetaDrive runtime, events and tenant permissions.",
   "surfaces": [

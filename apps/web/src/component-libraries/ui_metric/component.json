@@ -1,6 +1,6 @@
 {
   "apiName": "ui_metric",
-  "label": "UNE Metric",
+  "label": "UI Metric",
   "category": "Display",
   "description": "Reusable metric component for metadata-driven pages; shares MetaDrive runtime, events and tenant permissions.",
   "surfaces": [

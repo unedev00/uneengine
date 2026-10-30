@@ -1,6 +1,6 @@
 {
   "apiName": "ui_chart",
-  "label": "UNE Chart",
+  "label": "UI Chart",
   "category": "Display",
   "description": "Reusable chart component for metadata-driven pages; shares MetaDrive runtime, events and tenant permissions.",
   "surfaces": [

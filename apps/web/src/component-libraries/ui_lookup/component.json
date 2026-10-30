@@ -1,6 +1,6 @@
 {
   "apiName": "ui_lookup",
-  "label": "UNE Lookup",
+  "label": "UI Lookup",
   "category": "Inputs",
   "description": "Reusable lookup component for metadata-driven pages; shares MetaDrive runtime, events and tenant permissions.",
   "surfaces": [

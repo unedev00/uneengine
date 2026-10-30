@@ -1,6 +1,6 @@
 {
   "apiName": "ui_slot_picker",
-  "label": "UNE Slot Picker",
+  "label": "UI Slot Picker",
   "category": "Inputs",
   "description": "Reusable slot picker component for metadata-driven pages; shares MetaDrive runtime, events and tenant permissions.",
   "surfaces": [

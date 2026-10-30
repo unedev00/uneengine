@@ -1,6 +1,6 @@
 {
   "apiName": "ui_document_viewer",
-  "label": "UNE Document Viewer",
+  "label": "UI Document Viewer",
   "category": "Display",
   "description": "Reusable document viewer component for metadata-driven pages; shares MetaDrive runtime, events and tenant permissions.",
   "surfaces": [

@@ -1,6 +1,6 @@
 {
   "apiName": "ui_form",
-  "label": "UNE Form",
+  "label": "UI Form",
   "category": "Inputs",
   "description": "Reusable form component for metadata-driven pages; shares MetaDrive runtime, events and tenant permissions.",
   "surfaces": [

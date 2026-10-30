@@ -1,6 +1,6 @@
 {
   "apiName": "ui_calendar",
-  "label": "UNE Calendar",
+  "label": "UI Calendar",
   "category": "Data",
   "description": "Reusable calendar component for metadata-driven pages; shares MetaDrive runtime, events and tenant permissions.",
   "surfaces": [

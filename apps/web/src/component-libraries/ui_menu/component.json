@@ -1,6 +1,6 @@
 {
   "apiName": "ui_menu",
-  "label": "UNE Menu",
+  "label": "UI Menu",
   "category": "Navigation",
   "description": "Reusable menu component for metadata-driven pages; shares MetaDrive runtime, events and tenant permissions.",
   "surfaces": [

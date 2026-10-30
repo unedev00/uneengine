@@ -1,6 +1,6 @@
 {
   "apiName": "ui_record_list",
-  "label": "UNE Record List",
+  "label": "UI Record List",
   "category": "Data",
   "description": "Reusable record list component for metadata-driven pages; shares MetaDrive runtime, events and tenant permissions.",
   "surfaces": [

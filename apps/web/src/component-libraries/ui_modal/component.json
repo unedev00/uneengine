@@ -1,6 +1,6 @@
 {
   "apiName": "ui_modal",
-  "label": "UNE Modal",
+  "label": "UI Modal",
   "category": "Layout",
   "description": "Reusable modal component for metadata-driven pages; shares MetaDrive runtime, events and tenant permissions.",
   "surfaces": [

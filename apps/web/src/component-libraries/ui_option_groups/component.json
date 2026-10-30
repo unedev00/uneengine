@@ -1,6 +1,6 @@
 {
   "apiName": "ui_option_groups",
-  "label": "UNE Option Groups",
+  "label": "UI Option Groups",
   "category": "Inputs",
   "description": "Render grouped required/optional selections from metadata-bound Flow records; emits typed selection actions.",
   "surfaces": [

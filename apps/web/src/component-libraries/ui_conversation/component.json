@@ -1,6 +1,6 @@
 {
   "apiName": "ui_conversation",
-  "label": "UNE Conversation",
+  "label": "UI Conversation",
   "category": "Data",
   "description": "Reusable conversation component for metadata-driven pages; shares MetaDrive runtime, events and tenant permissions.",
   "surfaces": [

@@ -1,6 +1,6 @@
 {
   "apiName": "ui_split_pane",
-  "label": "UNE Split Pane",
+  "label": "UI Split Pane",
   "category": "Layout",
   "description": "Reusable split pane component for metadata-driven pages; shares MetaDrive runtime, events and tenant permissions.",
   "surfaces": [

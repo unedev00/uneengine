@@ -1,6 +1,6 @@
 {
   "apiName": "ui_search",
-  "label": "UNE Search",
+  "label": "UI Search",
   "category": "Inputs",
   "description": "Reusable search component for metadata-driven pages; shares MetaDrive runtime, events and tenant permissions.",
   "surfaces": [

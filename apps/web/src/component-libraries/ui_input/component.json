@@ -1,6 +1,6 @@
 {
   "apiName": "ui_input",
-  "label": "UNE Input",
+  "label": "UI Input",
   "category": "Inputs",
   "description": "One metadata-driven text box: free text or data-source values, optionally editable, with shared UNE design properties.",
   "surfaces": [

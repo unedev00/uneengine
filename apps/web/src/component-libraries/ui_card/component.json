@@ -1,6 +1,6 @@
 {
   "apiName": "ui_card",
-  "label": "UNE Card",
+  "label": "UI Card",
   "category": "Layout",
   "description": "Reusable card component for metadata-driven pages; shares MetaDrive runtime, events and tenant permissions.",
   "surfaces": [

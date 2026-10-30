@@ -1,6 +1,6 @@
 {
   "apiName": "ui_container",
-  "label": "UNE Container",
+  "label": "UI Container",
   "category": "Layout",
   "description": "Reusable container component for metadata-driven pages; shares MetaDrive runtime, events and tenant permissions.",
   "surfaces": [

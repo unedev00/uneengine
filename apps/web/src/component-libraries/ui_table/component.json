@@ -1,6 +1,6 @@
 {
   "apiName": "ui_table",
-  "label": "UNE Table",
+  "label": "UI Table",
   "category": "Data",
   "description": "Reusable table component for metadata-driven pages; shares MetaDrive runtime, events and tenant permissions.",
   "surfaces": [

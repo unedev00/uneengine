@@ -1,6 +1,6 @@
 {
   "apiName": "ui_progress",
-  "label": "UNE Progress",
+  "label": "UI Progress",
   "category": "Display",
   "description": "Reusable progress component for metadata-driven pages; shares MetaDrive runtime, events and tenant permissions.",
   "surfaces": [

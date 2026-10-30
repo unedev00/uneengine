@@ -1,6 +1,6 @@
 {
   "apiName": "ui_choice",
-  "label": "UNE Choice",
+  "label": "UI Choice",
   "category": "Inputs",
   "description": "Reusable choice component for metadata-driven pages; shares MetaDrive runtime, events and tenant permissions.",
   "surfaces": [

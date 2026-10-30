@@ -1,6 +1,6 @@
 {
   "apiName": "ui_tabs",
-  "label": "UNE Tabs",
+  "label": "UI Tabs",
   "category": "Navigation",
   "description": "Reusable tabs component for metadata-driven pages; shares MetaDrive runtime, events and tenant permissions.",
   "surfaces": [

@@ -1,6 +1,6 @@
 {
   "apiName": "ui_toggle",
-  "label": "UNE Toggle",
+  "label": "UI Toggle",
   "category": "Inputs",
   "description": "Reusable toggle component for metadata-driven pages; shares MetaDrive runtime, events and tenant permissions.",
   "surfaces": [

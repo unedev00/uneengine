@@ -1,6 +1,6 @@
 {
   "apiName": "ui_cart",
-  "label": "UNE Cart",
+  "label": "UI Cart",
   "category": "Data",
   "description": "Reusable cart component for metadata-driven pages; shares MetaDrive runtime, events and tenant permissions.",
   "surfaces": [

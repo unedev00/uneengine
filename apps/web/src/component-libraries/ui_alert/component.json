@@ -1,6 +1,6 @@
 {
   "apiName": "ui_alert",
-  "label": "UNE Alert",
+  "label": "UI Alert",
   "category": "Display",
   "description": "Reusable alert component for metadata-driven pages; shares MetaDrive runtime, events and tenant permissions.",
   "surfaces": [

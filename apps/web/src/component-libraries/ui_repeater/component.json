@@ -1,6 +1,6 @@
 {
   "apiName": "ui_repeater",
-  "label": "UNE Repeater",
+  "label": "UI Repeater",
   "category": "Data",
   "description": "Reusable repeater component for metadata-driven pages; shares MetaDrive runtime, events and tenant permissions.",
   "surfaces": [
