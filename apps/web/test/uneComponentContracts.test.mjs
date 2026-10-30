@@ -6,12 +6,12 @@ import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {loadComponentCatalog,buildBundledComponent} from '../../../scripts/component-catalog.mjs';
 import {propertyKinds} from '../src/core/components/Properties/componentSettingDefinitions.ts';
-const {components}=await loadComponentCatalog(),une=components.filter(x=>x.apiName.startsWith('une_'));
+const {components}=await loadComponentCatalog(),une=components.filter(x=>x.apiName.startsWith('ui_'));
 const names=['image','calendar','button','card','input','toggle','stack','tabs',
  'container','grid','split_pane','navigation','menu','modal','drawer','item_grid','repeater','record_list',
  'search','lookup','choice','cart','conversation','form','table','line_items','date_picker','slot_picker',
- 'metric','alert','progress','document_viewer','chart','option_groups'].map(s=>'une_'+s);
-const updated=new Set(['une_conversation','une_search','une_lookup','une_repeater','une_modal','une_tabs','une_input']);
+ 'metric','alert','progress','document_viewer','chart','option_groups'].map(s=>'ui_'+s);
+const updated=new Set(['ui_conversation','ui_search','ui_lookup','ui_repeater','ui_modal','ui_tabs','ui_input']);
 const allowed=new Set(propertyKinds);
 class FixtureDate extends Date {
  constructor(...args){super(...(args.length?args:['2026-10-24T12:00:00Z']));}
@@ -45,18 +45,18 @@ test('every UNE property has a supported visual editor contract',()=>{
  }
 });
 const fixtures={
-une_image:{src:'https://example.com/image.png',alt:'Picture'},
- une_calendar:{records:[{Id:'1',BookedOn:'2026-10-24',Subject:'Meeting'}],dateFieldApiName:'BookedOn',titleFieldApiName:'Subject'},
- une_button:{label:'Continue'},une_card:{title:'Card'},une_input:{value:'Hello UNE',allowTyping:false},
- une_toggle:{label:'Setting'},une_tabs:{tabs:'First, Second'},
- une_item_grid:{currencyCode:'GBP',titleFieldApiName:'Name',priceFieldApiName:'Price'},
- une_cart:{currencyCode:'GBP'},une_conversation:{conversations:[],messages:[]},
- une_table:{items:[{Name:'Row'}],columns:[{key:'Name',label:'Name'}]},
- une_line_items:{fields:[{apiName:'Quantity',label:'Quantity',inputType:'number'}]},
- une_metric:{value:'42'},une_alert:{text:'Status'},une_progress:{value:50,max:100},
- une_slot_picker:{items:[{Id:'slot',Name:'10:00',Available:true}],optionAvailableFieldApiName:'Available'},
- une_chart:{items:[{Name:'Orders',Value:4}],chartLabelFieldApiName:'Name',chartValueFieldApiName:'Value'},
- une_option_groups:{groups:[{id:'g1',label:'Choose sauce',required:true,choices:[{id:'c1',label:'Mayo'}]}]}
+ui_image:{src:'https://example.com/image.png',alt:'Picture'},
+ ui_calendar:{records:[{Id:'1',BookedOn:'2026-10-24',Subject:'Meeting'}],dateFieldApiName:'BookedOn',titleFieldApiName:'Subject'},
+ ui_button:{label:'Continue'},ui_card:{title:'Card'},ui_input:{value:'Hello UNE',allowTyping:false},
+ ui_toggle:{label:'Setting'},ui_tabs:{tabs:'First, Second'},
+ ui_item_grid:{currencyCode:'GBP',titleFieldApiName:'Name',priceFieldApiName:'Price'},
+ ui_cart:{currencyCode:'GBP'},ui_conversation:{conversations:[],messages:[]},
+ ui_table:{items:[{Name:'Row'}],columns:[{key:'Name',label:'Name'}]},
+ ui_line_items:{fields:[{apiName:'Quantity',label:'Quantity',inputType:'number'}]},
+ ui_metric:{value:'42'},ui_alert:{text:'Status'},ui_progress:{value:50,max:100},
+ ui_slot_picker:{items:[{Id:'slot',Name:'10:00',Available:true}],optionAvailableFieldApiName:'Available'},
+ ui_chart:{items:[{Name:'Orders',Value:4}],chartLabelFieldApiName:'Name',chartValueFieldApiName:'Value'},
+ ui_option_groups:{groups:[{id:'g1',label:'Choose sauce',required:true,choices:[{id:'c1',label:'Mayo'}]}]}
 };
 for(const d of une)test(d.apiName+' bundles and renders with a scoped UNE surface',async()=>{
  const built=await buildBundledComponent(d);
@@ -70,12 +70,12 @@ for(const d of une)test(d.apiName+' bundles and renders with a scoped UNE surfac
  assert.match(html,/class="une-ui"/);
  assert.match(html,/data-une-theme="light"/);
  assert.doesNotMatch(html,/<script/i);
- if(d.apiName==='une_input')assert.match(html,/Hello UNE/);
- if(d.apiName==='une_metric')assert.match(html,/42/);
+ if(d.apiName==='ui_input')assert.match(html,/Hello UNE/);
+ if(d.apiName==='ui_metric')assert.match(html,/42/);
 });
 
 test('device show/hide properties are not available in UNE metadata or the Page Builder ribbon', async () => {
- const appearance=(await import('../src/component-libraries/une/shared/appearance-properties.mjs')).appearanceProperties;
+ const appearance=(await import('../src/component-libraries/ui-runtime/shared/appearance-properties.mjs')).appearanceProperties;
  const manifest=JSON.parse(await readFile(new URL('../src/component-libraries/manifest.json',import.meta.url),'utf8'));
  const ribbon=await readFile(new URL('../src/core/builders/PageBuilder/PageBuilderRibbonStyle.tsx',import.meta.url),'utf8');
  for(const key of ['hideOnPhone','hideOnTablet','hideOnDesktop']){
@@ -88,7 +88,7 @@ test('device show/hide properties are not available in UNE metadata or the Page 
 
 test('all 14 requested UNE components omit public Flow/Page State record collections',()=>{
  const targets=['calendar','item_grid','chart','choice','form','line_items','lookup','menu',
-  'navigation','record_list','repeater','search','slot_picker','table'].map(name=>'une_'+name);
+  'navigation','record_list','repeater','search','slot_picker','table'].map(name=>'ui_'+name);
  for(const name of targets){
   const component=une.find(item=>item.apiName===name);
   assert.ok(component,name+' exists');
@@ -107,28 +107,28 @@ test('Theme is absent from all UNE manifests and shared defaults after remarks c
 });
 
 test('AceChatter Conversation button controls are internal code defaults, not metadata',async()=>{
- const conversation=une.find(component=>component.apiName==='une_conversation');
+ const conversation=une.find(component=>component.apiName==='ui_conversation');
  assert.ok(conversation);
  for(const key of ['showRefresh','refreshLabel','newMessageNoticeLabel'])
   assert.ok(!conversation.propertyDefinitions.some(property=>property.propertyKey===key),key+' still in metadata');
- const code=await readFile(new URL('../src/component-libraries/une_conversation/UneConversation.jsx',import.meta.url),'utf8');
+ const code=await readFile(new URL('../src/component-libraries/ui_conversation/UiConversation.jsx',import.meta.url),'utf8');
  assert.match(code,/"showRefresh": false/);
  assert.match(code,/"refreshLabel": "Refresh conversations"/);
  assert.match(code,/"newMessageNoticeLabel": "New messages"/);
 });
 
 test('only common shared settings remain in AceChatter Conversation metadata',async()=>{
- const conversation=une.find(item=>item.apiName==='une_conversation');
+ const conversation=une.find(item=>item.apiName==='ui_conversation');
  const common=new Set(['surface','tone','accentColor','backgroundColor','textColor','borderColor',
    'density','radius','padding','gap','shadow','glassBlur','objectApiName','helpText']);
- const raw=JSON.parse(await readFile(new URL('../src/component-libraries/une_conversation/component.json',import.meta.url),'utf8'));
+ const raw=JSON.parse(await readFile(new URL('../src/component-libraries/ui_conversation/component.json',import.meta.url),'utf8'));
  assert.deepEqual(raw.propertyDefinitions,[]);
- const owned=(await import('../src/component-libraries/une_conversation/app-properties.mjs')).propertyDefinitions;
+ const owned=(await import('../src/component-libraries/ui_conversation/app-properties.mjs')).propertyDefinitions;
  assert.deepEqual(new Set(owned.map(item=>item.propertyKey)),common);
  const catalogShared=new Set((await import('../src/component-libraries/common-properties.mjs')).commonProperties.map(item=>item.propertyKey));
  for(const key of conversation.propertyDefinitions.map(item=>item.propertyKey))
   assert.ok(common.has(key)||catalogShared.has(key),key+' is not a shared property');
- const code=await readFile(new URL('../src/component-libraries/une_conversation/UneConversation.jsx',import.meta.url),'utf8');
+ const code=await readFile(new URL('../src/component-libraries/ui_conversation/UiConversation.jsx',import.meta.url),'utf8');
  for(const key of ['conversations','messages','contactChoices','channelAccounts','canSend',
   'showRefresh','refreshLabel','newMessageNoticeLabel','conversationSourceMode','messageMaxLength',
   'conversationIdFieldApiName','showComposer','filterOptions'])
@@ -137,13 +137,13 @@ test('only common shared settings remain in AceChatter Conversation metadata',as
 });
 
 test('Cart-specific settings are internal defaults while shared styling remains public',async()=>{
- const cart=une.find(component=>component.apiName==='une_cart');
+ const cart=une.find(component=>component.apiName==='ui_cart');
  const common=new Set(['surface','tone','accentColor','backgroundColor','textColor','borderColor','density','radius','padding','gap','shadow','glassBlur','objectApiName','helpText']);
- const raw=JSON.parse(await readFile(new URL('../src/component-libraries/une_cart/component.json',import.meta.url),'utf8'));
+ const raw=JSON.parse(await readFile(new URL('../src/component-libraries/ui_cart/component.json',import.meta.url),'utf8'));
  assert.deepEqual(raw.propertyDefinitions,[]);
- const owned=(await import('../src/component-libraries/une_cart/app-properties.mjs')).propertyDefinitions;
+ const owned=(await import('../src/component-libraries/ui_cart/app-properties.mjs')).propertyDefinitions;
  assert.deepEqual(new Set(owned.map(p=>p.propertyKey)),common);
- const code=await readFile(new URL('../src/component-libraries/une_cart/UneCart.jsx',import.meta.url),'utf8');
+ const code=await readFile(new URL('../src/component-libraries/ui_cart/UiCart.jsx',import.meta.url),'utf8');
  for(const key of ['viewMode','checkoutLabel','stateSyncEnabled','stateReadFlowApiName','stateWriteFlowApiName','showVatTotal','customerDisplayUrl','ageRestrictedFieldApiName'])
   assert.ok(code.includes('"'+key+'":'),key+' must be internal');
  assert.ok(!cart.propertyDefinitions.some(p=>p.propertyKey==='checkoutLabel'));
@@ -166,14 +166,14 @@ test('UNE Search and Modal expose only shared properties while retaining interna
 
 
 test('Card Grid retires only its 16 removed settings; original runtime remains backward compatible',async()=>{
- const component=une.find(x=>x.apiName==='une_item_grid');
+ const component=une.find(x=>x.apiName==='ui_item_grid');
  assert.ok(component);
  const retired=["accentColor","tone","descriptionExpression","emptyText","showDescription","valueTextAlign","missingImageBehavior","showAddIcon","showHeading","badgeExpression","cartTargetKey","currencyCode","headingExpression","separateAddButton","valueColor","valueLineLimit"];
  const declared=new Set(component.propertyDefinitions.map(x=>x.propertyKey));
  for(const name of retired)assert.ok(!declared.has(name),name);
  for(const name of ['title','helpText','imageFieldApiName','badgeFieldApiName','priceFieldApiName'])
    assert.ok(declared.has(name),name);
- const runtime=await readFile(new URL('../src/component-libraries/OneItemGrid/OneItemGrid.jsx',import.meta.url),'utf8');
+ const runtime=await readFile(new URL('../src/component-libraries/shared/primitives/ItemGrid/ItemGrid.jsx',import.meta.url),'utf8');
  assert.ok(runtime.includes('p.cartTargetKey'));
  assert.ok(runtime.includes('p.showAddIcon'));
 });

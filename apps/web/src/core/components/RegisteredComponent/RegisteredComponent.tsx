@@ -94,7 +94,7 @@ export default function RegisteredComponent({ definition, props, layoutTranspare
   const definitions=availableComponentSettings(definition.propertyDefinitions??[],device,definition.version);
   // Preserve existing page-authored values over source-controlled app defaults.
   // No SQL property inventory is required for trusted UNE component rendering.
-  const appDefaults=definition.trustedBundled&&definition.apiName.startsWith('une_')?(asset?.defaultProps??{}):{};
+  const appDefaults=definition.trustedBundled&&definition.apiName.startsWith('ui_')?(asset?.defaultProps??{}):{};
   const configuredProps = resolveComponentSettings(definitions,{...appDefaults,...props});
   const issues=[...validateComponentSettings(definitions.filter(d=>d.schemaVersion===1),configuredProps),
     ...pagePropertyIssues('Custom:'+definition.apiName,configuredProps)];

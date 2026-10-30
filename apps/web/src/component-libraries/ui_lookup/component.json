@@ -1,0 +1,32 @@
+{
+  "apiName": "ui_lookup",
+  "label": "UNE Lookup",
+  "category": "Inputs",
+  "description": "Reusable lookup component for metadata-driven pages; shares MetaDrive runtime, events and tenant permissions.",
+  "surfaces": [
+    "page",
+    "dashboard",
+    "flow"
+  ],
+  "version": 2,
+  "scope": "platform-core",
+  "jsxFile": "component-libraries/ui_lookup/UiLookup.jsx",
+  "cssFile": "component-libraries/ui_lookup/UiLookup.css",
+  "resize": {
+    "defaultWidth": 320,
+    "defaultHeight": 132,
+    "minWidth": 120,
+    "minHeight": 44
+  },
+  "propertyDefinitions": [],
+  "eventDefinitions": [
+    {
+      "apiName": "change",
+      "label": "change"
+    },
+    {
+      "apiName": "search",
+      "label": "search"
+    }
+  ]
+}

@@ -35,7 +35,7 @@ test('old app source paths only delegate to the shared presentation helper',asyn
   const script=await readFile(new URL('../../../web/src/component-libraries/'+part+'/flowConversationPresenter.js',import.meta.url),'utf8');
   assert.match(script,/export \{presentFlowConversationCollections\} from/);
  }
- const shared=await readFile(new URL('../../../web/src/component-libraries/une/shared/flowConversationPresenter.js',import.meta.url),'utf8');
+ const shared=await readFile(new URL('../../../web/src/component-libraries/ui-runtime/shared/flowConversationPresenter.js',import.meta.url),'utf8');
  assert.match(shared,/export function presentFlowConversationCollections/);
 });
 

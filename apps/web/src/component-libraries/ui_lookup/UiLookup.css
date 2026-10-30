@@ -1,0 +1,8 @@
+@import "../ui-runtime/shared/une.css";
+.une-ui .une-lookup-control{border:1px solid var(--une-border,#d9e0eb);border-radius:var(--one-radius,20px);background:var(--une-bg,#fff);box-shadow:var(--une-elevation);box-sizing:border-box;width:100%;max-width:100%;color:var(--une-fg,#182333)}
+.une-ui .une-lookup-control .one-control{width:100%;min-width:0;color:inherit;background:var(--une-bg,#fff);border-color:var(--une-border,#d9e0eb)}
+.une-ui[data-une-density="compact"] .une-lookup-control .one-control{min-height:34px}
+.une-ui[data-une-density="spacious"] .une-lookup-control .one-control{min-height:52px}
+.une-ui[data-une-surface="glass"] .une-lookup-control{background:color-mix(in srgb,var(--une-bg,#fff) 80%,transparent);backdrop-filter:blur(var(--une-blur,12px));-webkit-backdrop-filter:blur(var(--une-blur,12px))}
+.une-ui[data-une-surface="plain"] .une-lookup-control{background:transparent;border-color:transparent;box-shadow:none}
+

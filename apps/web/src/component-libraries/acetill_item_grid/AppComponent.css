@@ -1,5 +1,5 @@
-@import "../une/shared/une.css";
-@import "../OneItemGrid/OneItemGrid.css";
+@import "../ui-runtime/shared/une.css";
+@import "../shared/primitives/ItemGrid/ItemGrid.css";
 
 /* Per-card design settings must reach the actual cards in builder and runtime. */
 .une-ui .md-product-card {

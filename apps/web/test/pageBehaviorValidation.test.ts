@@ -8,7 +8,7 @@ const rejectOnPhone={logic:'All',conditions:[{source:'Device',operator:'Equals',
 const properties={pagePropertyContract:{version:1,validationRules:[{event:'click',message:'Unavailable on phone',when:rejectOnPhone}]}};
 
 test('validation rules remain legal versioned component metadata',()=>{
- assert.deepEqual(pagePropertyIssues('Custom:une_button',properties),[]);
+ assert.deepEqual(pagePropertyIssues('Custom:ui_button',properties),[]);
 });
 
 test('event validation evaluates declared conditions and does not block unrelated events',()=>{

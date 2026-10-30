@@ -1,0 +1,28 @@
+{
+  "apiName": "ui_slot_picker",
+  "label": "UNE Slot Picker",
+  "category": "Inputs",
+  "description": "Reusable slot picker component for metadata-driven pages; shares MetaDrive runtime, events and tenant permissions.",
+  "surfaces": [
+    "page",
+    "dashboard",
+    "flow"
+  ],
+  "version": 1,
+  "scope": "platform-core",
+  "jsxFile": "component-libraries/ui_slot_picker/UiSlotPicker.jsx",
+  "cssFile": "component-libraries/ui_slot_picker/UiSlotPicker.css",
+  "resize": {
+    "defaultWidth": 320,
+    "defaultHeight": 90,
+    "minWidth": 120,
+    "minHeight": 44
+  },
+  "propertyDefinitions": [],
+  "eventDefinitions": [
+    {
+      "apiName": "change",
+      "label": "change"
+    }
+  ]
+}

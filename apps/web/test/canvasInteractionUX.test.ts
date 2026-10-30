@@ -288,20 +288,20 @@ test('builder and published runtime use the same appearance targeting and preser
 test('every bundled UNE Page component has an explicitly verified appearance target', async () => {
   const manifest = JSON.parse(await readFile(new URL('../src/component-libraries/manifest.json', import.meta.url), 'utf8'));
   const expected: Record<string,string> = {
-    une_image:'image',une_calendar:'calendar',
-    une_button:'button',une_card:'surface',une_input:'input',une_toggle:'toggle',
-    une_stack:'layout',une_tabs:'tabs',
-    une_container:'layout',une_grid:'layout',une_split_pane:'layout',
-    une_navigation:'button',une_menu:'button',une_modal:'overlay',une_drawer:'overlay',
-    une_item_grid:'collection',une_repeater:'collection',
-    une_record_list:'collection',une_search:'input',une_lookup:'input',
-    une_choice:'input',une_cart:'cart',acetill_cart:'cart',une_conversation:'conversation',
-    une_form:'form',une_table:'table',une_line_items:'table',
-    une_date_picker:'input',une_slot_picker:'input',une_metric:'surface',
-    une_alert:'surface',une_progress:'progress',une_document_viewer:'surface',
-    une_chart:'table',une_option_groups:'collection'
+    ui_image:'image',ui_calendar:'calendar',
+    ui_button:'button',ui_card:'surface',ui_input:'input',ui_toggle:'toggle',
+    ui_stack:'layout',ui_tabs:'tabs',
+    ui_container:'layout',ui_grid:'layout',ui_split_pane:'layout',
+    ui_navigation:'button',ui_menu:'button',ui_modal:'overlay',ui_drawer:'overlay',
+    ui_item_grid:'collection',ui_repeater:'collection',
+    ui_record_list:'collection',ui_search:'input',ui_lookup:'input',
+    ui_choice:'input',ui_cart:'cart',acetill_cart:'cart',ui_conversation:'conversation',
+    ui_form:'form',ui_table:'table',ui_line_items:'table',
+    ui_date_picker:'input',ui_slot_picker:'input',ui_metric:'surface',
+    ui_alert:'surface',ui_progress:'progress',ui_document_viewer:'surface',
+    ui_chart:'table',ui_option_groups:'collection'
   };
-  const components: string[] = manifest.components.filter((name:string)=>name.startsWith('une_')||name.startsWith('acetill_cart/')).map((name:string)=>name.split('/')[0]);
+  const components: string[] = manifest.components.filter((name:string)=>name.startsWith('ui_')||name.startsWith('acetill_cart/')).map((name:string)=>name.split('/')[0]);
   assert.deepEqual([...components].sort(),Object.keys(expected).sort(),
     'every new bundled Page component must be audited for outer-shell styling');
   for(const name of components)
@@ -346,7 +346,7 @@ test('component surface CSS covers every target without styling collection frame
     'gap','align-items','justify-content','overflow'])
     assert.ok(css.includes('data-page-style~="'+property+'"'),property);
   assert.ok(css.includes('background:transparent!important'),'editor frames must remain unstyled');
-  assert.match(css,/data-page-appearance="collection"\]\[data-page-style~="background"\] \.registered-component:not\(\.metadrive-component-une_item_grid\) \.one-item/);
+  assert.match(css,/data-page-appearance="collection"\]\[data-page-style~="background"\] \.registered-component:not\(\.metadrive-component-ui_item_grid\) \.one-item/);
 });
 
 test('standard record components and layout primitives have real visual targets', async () => {
@@ -490,20 +490,20 @@ test('Page Builder contextual ribbon is generated from aligned three-row groups'
 test('Card Grid surface colour and individual card colour stay separate in builder and runtime',async()=>{
   const css=await readFile(new URL('../src/core/pages/TemplatePageRuntime/pageComponentAppearance.css',import.meta.url),'utf8');
   const ribbon=await readFile(new URL('../src/core/builders/PageBuilder/PageBuilderRibbonStyle.tsx',import.meta.url),'utf8');
-  const renderer=await readFile(new URL('../src/component-libraries/OneItemGrid/OneItemGrid.jsx',import.meta.url),'utf8');
+  const renderer=await readFile(new URL('../src/component-libraries/shared/primitives/ItemGrid/ItemGrid.jsx',import.meta.url),'utf8');
   // Native collection cards must not inherit the component-wide background or
   // border tokens; only the surrounding Card Grid surface uses those tokens.
   for(const flag of ['background','stroke','border']){
-    assert.match(css,new RegExp('data-page-style~="'+flag+'"\\] \\.registered-component:not\\(\\.metadrive-component-une_item_grid\\) \\.md-product-card'));
+    assert.match(css,new RegExp('data-page-style~="'+flag+'"\\] \\.registered-component:not\\(\\.metadrive-component-ui_item_grid\\) \\.md-product-card'));
     assert.doesNotMatch(css,new RegExp('data-page-style~="'+flag+'"\\] \\.registered-component \\.md-product-card'));
   }
-  assert.match(css,/\.registered-component\.metadrive-component-une_item_grid > section\s*\{\s*background-color: var\(--md-page-background\) !important;/);
-  assert.match(css,/\.registered-component\.metadrive-component-une_item_grid > section\s*\{\s*border-style: solid !important;/);
+  assert.match(css,/\.registered-component\.metadrive-component-ui_item_grid > section\s*\{\s*background-color: var\(--md-page-background\) !important;/);
+  assert.match(css,/\.registered-component\.metadrive-component-ui_item_grid > section\s*\{\s*border-style: solid !important;/);
   assert.match(renderer,/backgroundColor: typeof p\.cardBackgroundColor === "string" \? p\.cardBackgroundColor : undefined/);
   assert.match(renderer,/borderColor: typeof p\.cardBorderColor === "string" \? p\.cardBorderColor : undefined/);
   assert.match(ribbon,/isItemGrid\?'Component background':'Background \/ Fill'/);
   assert.match(ribbon,/responsive\[key\]\?\?base\[key\]\?\?visual\[key\]\?\?properties\[metadataKey\]/);
-  const result=resolvePageComponentStyle({backgroundColor:'#223344',cardBackgroundColor:'#cc4422',borderColor:'#776655',cardBorderColor:'#004488'},'Custom:une_item_grid');
+  const result=resolvePageComponentStyle({backgroundColor:'#223344',cardBackgroundColor:'#cc4422',borderColor:'#776655',cardBorderColor:'#004488'},'Custom:ui_item_grid');
   const vars=result as Record<string,unknown>;
   assert.equal(vars['--md-page-background'],'#223344');
   assert.equal(vars['--md-page-border-color'],'#776655');
@@ -513,16 +513,16 @@ test('Card Grid surface colour and individual card colour stay separate in build
 test('Card Grid keeps authored collection radius and padding separate from card properties',async()=>{
   const css=await readFile(new URL('../src/core/pages/TemplatePageRuntime/pageComponentAppearance.css',import.meta.url),'utf8');
   for(const property of ['radius','padding']){
-    const scoped='[data-page-appearance="collection"][data-page-style~="'+property+'"] .registered-component:not(.metadrive-component-une_item_grid) .one-item';
+    const scoped='[data-page-appearance="collection"][data-page-style~="'+property+'"] .registered-component:not(.metadrive-component-ui_item_grid) .one-item';
     assert.ok(css.includes(scoped),'generic collection '+property+' may not override item-grid cards');
-    assert.ok(css.includes('registered-component.metadrive-component-une_item_grid > section'),'surface styling must target the collection');
+    assert.ok(css.includes('registered-component.metadrive-component-ui_item_grid > section'),'surface styling must target the collection');
   }
-  const grid=await readFile(new URL('../src/component-libraries/OneItemGrid/OneItemGrid.jsx',import.meta.url),'utf8');
+  const grid=await readFile(new URL('../src/component-libraries/shared/primitives/ItemGrid/ItemGrid.jsx',import.meta.url),'utf8');
   assert.ok(grid.includes('borderRadius: Number.isFinite(cardRadius)'));
   assert.ok(grid.includes('padding: Number.isFinite(cardPadding)'));
 });
 test('Page Runtime produces typed native line-height and letter-spacing tokens',()=>{
-  const values=resolvePageComponentStyle({lineHeight:150,letterSpacing:2,fontFamily:'serif'},'Custom:une_item_grid') as Record<string,unknown>;
+  const values=resolvePageComponentStyle({lineHeight:150,letterSpacing:2,fontFamily:'serif'},'Custom:ui_item_grid') as Record<string,unknown>;
   assert.equal(values['--md-page-line-height'],'1.5');
   assert.equal(values['--md-page-letter-spacing'],'2px');
   assert.equal(values['--md-page-font-family'],'Georgia, serif');

@@ -7,7 +7,7 @@ const index = [];
 await mkdir('dist/component-library/components', { recursive: true });
 for (const component of catalog.components) {
   const built = { ...component, ...await buildBundledComponent(component) };
-  const appOwned=component.apiName.startsWith('une_');
+  const appOwned=component.apiName.startsWith('ui_');
   const defaultProps=appOwned?Object.fromEntries((component.propertyDefinitions??[])
     .filter(def=>Object.prototype.hasOwnProperty.call(def,'defaultValue'))
     .map(def=>[def.propertyKey,def.defaultValue])):{};

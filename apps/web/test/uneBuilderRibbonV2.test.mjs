@@ -11,7 +11,7 @@ import {evaluateFieldExpression} from '../src/component-libraries/shared/OneFiel
 
 const src=path=>readFileSync(new URL(path,import.meta.url),'utf8');
 const sql=readFileSync(new URL('../../server/src/system-support/migrations/20270122-global-shared-builder-ribbon.sql',import.meta.url),'utf8');
-const components=['une_button','une_toggle','une_lookup','une_tabs','une_input','une_item_grid','une_image','une_calendar','une_navigation','une_container'];
+const components=['ui_button','ui_toggle','ui_lookup','ui_tabs','ui_input','ui_item_grid','ui_image','ui_calendar','ui_navigation','ui_container'];
 const slots=[...sql.matchAll(/^\\s*\\('([a-z][A-Za-z0-9_]*)','([^']+)','(Home|Data|Design|Layout)','([^']+)','([^']+)',(\\d+),/gm)]
  .map(m=>({id:m[1],label:m[2],tab:m[3],group:m[4],kind:m[5],order:Number(m[6])}));
 const rules=[...sql.matchAll(/^\\s*\\('(une_[a-z_]+)','([A-Za-z0-9_]+)',true,/gm)]
@@ -56,8 +56,8 @@ test('existing UNE expression evaluator supports literal strings, field concaten
  assert.equal(evaluateFieldExpression('@__proto__',row),'');
 });
 test('Image renders ONE Card and Card Grid renders the same shared Card repeatedly',()=>{
- const image=src('../src/component-libraries/une_image/UneImage.jsx');
- const grid=src('../src/component-libraries/OneItemGrid/OneItemGrid.jsx');
+ const image=src('../src/component-libraries/ui_image/UiImage.jsx');
+ const grid=src('../src/component-libraries/shared/primitives/ItemGrid/ItemGrid.jsx');
  const card=src('../src/component-libraries/shared/OneCardCore.jsx');
  assert.match(image,/import OneCardCore/);
  assert.match(grid,/import OneCardCore/);
@@ -71,7 +71,7 @@ test('Image renders ONE Card and Card Grid renders the same shared Card repeated
  assert.match(builder,/selectedNewUne/);
  assert.match(builder,/<UneBuilderRibbon tab=/);
  const palette=src('../src/core/builders/PageBuilder/pageBuilderPalette.ts');
- assert.match(palette,/!component\\.apiName\\.startsWith\\('une_'\\)/);
+ assert.match(palette,/!component\\.apiName\\.startsWith\\('ui_'\\)/);
 });
 test('Excel property locations and component rules are globally shared',()=>{
  assert.deepEqual([slot('labelAlignment').tab,slot('labelAlignment').group],['Design','Typography']);
@@ -80,13 +80,13 @@ test('Excel property locations and component rules are globally shared',()=>{
  assert.deepEqual([slot('firstDay').tab,slot('firstDay').group],['Layout','Calendar']);
  assert.deepEqual([slot('navigationDirection').tab,slot('navigationDirection').group],['Layout','Navigation']);
  assert.deepEqual([slot('imageFill').tab,slot('imageFill').group],['Design','Image']);
- assert.equal(supported('labelAlignment','une_button'),true);
- assert.equal(supported('labelAlignment','une_image'),false);
- assert.equal(supported('labelAlignment','une_calendar'),true);
- assert.equal(supported('imageSource','une_image'),true);
- assert.equal(supported('imageSource','une_button'),false);
- assert.equal(supported('showDays','une_calendar'),true);
- assert.equal(supported('showDays','une_navigation'),false);
+ assert.equal(supported('labelAlignment','ui_button'),true);
+ assert.equal(supported('labelAlignment','ui_image'),false);
+ assert.equal(supported('labelAlignment','ui_calendar'),true);
+ assert.equal(supported('imageSource','ui_image'),true);
+ assert.equal(supported('imageSource','ui_button'),false);
+ assert.equal(supported('showDays','ui_calendar'),true);
+ assert.equal(supported('showDays','ui_navigation'),false);
  assert.match(sql,/calendarMonthTitleColor/);
  assert.match(sql,/calendarHeaderColor/);
  assert.match(sql,/calendarShadowColor/);
@@ -96,21 +96,21 @@ test('new Calendar Layout controls and navigation, container and image renderers
  assert.match(ribbon,/WeekdaysPicker/);
  assert.match(ribbon,/role="dialog"/);
  assert.match(ribbon,/kindOverrides/);
- const calendar=src('../src/component-libraries/une/shared/UneSchedule.jsx');
+ const calendar=src('../src/component-libraries/ui-runtime/shared/UneSchedule.jsx');
  for(const term of ['showDays','firstDay','defaultValue','defaultValueColor','dayEnabled','activeDayCount'])
   assert.ok(calendar.includes(term),'Calendar missing '+term);
- const layout=src('../src/component-libraries/une/shared/UneLayout.jsx');
+ const layout=src('../src/component-libraries/ui-runtime/shared/UneLayout.jsx');
  for(const term of ['navigationDirection','imageFill','badgeText','badgeVisible','textSource','imageSource','textFrom'])
   assert.ok(layout.includes(term),'Container/Navigation missing '+term);
- const grid=src('../src/component-libraries/OneItemGrid/OneItemGrid.jsx');
- const image=src('../src/component-libraries/une_image/UneImage.jsx');
+ const grid=src('../src/component-libraries/shared/primitives/ItemGrid/ItemGrid.jsx');
+ const image=src('../src/component-libraries/ui_image/UiImage.jsx');
  assert.ok(src('../src/component-libraries/shared/OneCardCore.jsx').includes("imageFill"),'shared Card image fit missing');
  for(const name of components){
   const registration=JSON.parse(src('../src/component-libraries/'+name+'/component.json'));
   assert.deepEqual(registration.propertyDefinitions,[],'SQL metadata leaked into '+name);
  }
  const builder=src('../src/core/builders/PageBuilder/pageBuilderView.tsx');
- assert.match(builder,/component.apiName==='une_navigation'\?'Navigation Bar'/);
+ assert.match(builder,/component.apiName==='ui_navigation'\?'Navigation Bar'/);
  assert.match(builder,/data-une-v2/);
 });
 
@@ -122,7 +122,7 @@ async function renderUne(apiName,props){
  return renderToStaticMarkup(React.createElement(sandbox.module.exports.default,props));
 }
 test('calendar week view renders only chosen days, respects selected first day and selected-date color',async()=>{
- const html=await renderUne('une_calendar',{
+ const html=await renderUne('ui_calendar',{
   view:'week',selectedDate:'2026-10-21',firstDay:'wed',showDays:['wed','fri'],
   defaultValueColor:'#123456',labelColor:'#abcdef',defaultValue:'today'
  });
@@ -133,7 +133,7 @@ test('calendar week view renders only chosen days, respects selected first day a
  assert.match(html,/#123456/i);
 });
 test('navigation and container preserve usable rendering with new text, image, badge and direction options',async()=>{
- const nav=await renderUne('une_navigation',{
+ const nav=await renderUne('ui_navigation',{
   navigationDirection:'vertical',record:{Heading:'Menu'},textSource:'@Heading',
   items:[{label:'Home',value:'home',imageSrc:'https://example.com/nav.png'}],imageFill:'fit'
  });
@@ -141,7 +141,7 @@ test('navigation and container preserve usable rendering with new text, image, b
  assert.match(nav,/Menu/);
  assert.match(nav,/Home/);
  assert.match(nav,/object-fit:contain/);
- const container=await renderUne('une_container',{
+ const container=await renderUne('ui_container',{
   imageSource:'@Image',textSource:'@Heading',badgeText:'@Badge',
   badgeVisible:true,imageFill:'stretch',
   record:{Image:'https://example.com/card.png',Heading:'Store',Badge:'NEW'}
@@ -165,14 +165,14 @@ test('Page Builder renders only the SQL-backed ribbon, without invented Content 
  assert.match(ribbon,/definitions\\.filter\\(prop=>prop.tab===tab/);
 });
 test('Image action tab offers a declared click event without triggering it in the designer',async()=>{
- const registration=JSON.parse(src('../src/component-libraries/une_image/component.json'));
+ const registration=JSON.parse(src('../src/component-libraries/ui_image/component.json'));
  assert.deepEqual(registration.propertyDefinitions,[]);
  assert.deepEqual(registration.eventDefinitions,[{apiName:'click',label:'When image is clicked'}]);
  const props={src:'https://example.com/photo.png',
    actionFlows:{click:{actionType:'Flow',flowApiName:'OpenPhoto'}}};
- const preview=await renderUne('une_image',{...props,previewOnly:true,builderPreview:true});
+ const preview=await renderUne('ui_image',{...props,previewOnly:true,builderPreview:true});
  assert.doesNotMatch(preview,/role="button"/);
- const published=await renderUne('une_image',{...props,onAction:()=>{}});
+ const published=await renderUne('ui_image',{...props,onAction:()=>{}});
  assert.match(published,/role="button"/);
  assert.match(published,/tabindex="0"/i);
 });

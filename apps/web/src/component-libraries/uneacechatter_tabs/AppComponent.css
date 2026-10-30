@@ -1,4 +1,4 @@
-@import "../une/shared/une.css";
+@import "../ui-runtime/shared/une.css";
 .une-ui .une-tabs-root{box-sizing:border-box;border:1px solid var(--une-border);border-radius:var(--one-radius);background:var(--une-bg);box-shadow:var(--une-elevation);padding:var(--one-pad);color:var(--une-fg)}
 .une-ui[data-une-surface="glass"] .une-tabs-root{background:color-mix(in srgb,var(--une-bg) 82%,transparent);backdrop-filter:blur(var(--une-blur));-webkit-backdrop-filter:blur(var(--une-blur))}
 .une-ui[data-une-surface="plain"] .une-tabs-root{background:transparent;box-shadow:none}

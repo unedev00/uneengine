@@ -4,7 +4,7 @@ import vm from 'node:vm';
 import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {loadComponentCatalog,buildBundledComponent} from '../../../scripts/component-catalog.mjs';
-import {presentFlowConversationCollections} from '../src/component-libraries/une_conversation/flowConversationPresenter.js';
+import {presentFlowConversationCollections} from '../src/component-libraries/ui_conversation/flowConversationPresenter.js';
 
 const p={
  conversationSourceMode:'flowRecords',conversationNormalizePhoneNumbers:true,
@@ -73,7 +73,7 @@ const build=async(apiName,props)=>{
 };
 
 test('UNE chat components expose editable metadata, flow events and mapped collections',async()=>{
- const convo=components.find(x=>x.apiName==='une_conversation');
+ const convo=components.find(x=>x.apiName==='ui_conversation');
  const keys=new Set(convo.propertyDefinitions.map(x=>x.propertyKey));
  for(const field of ['conversations','messages','contactChoices','selectedConversationId','conversationSourceMode',
   'contactSourceObjectApi','messageChannelValue','showFilterTabs','canSend'])
@@ -81,7 +81,7 @@ test('UNE chat components expose editable metadata, flow events and mapped colle
  for(const key of ['showRefresh','refreshLabel','newMessageNoticeLabel'])assert.ok(!keys.has(key),key+' still public');
  for(const event of ['start','select','search','refresh','create','resolve','send','contactSelect','contactSearch','newConversationOpen'])
   assert.ok(convo.eventDefinitions.some(x=>x.apiName===event),event);
- const html=await build('une_conversation',{...p,viewMode:'inbox',showFilterTabs:false,showAccountSelector:false,
+ const html=await build('ui_conversation',{...p,viewMode:'inbox',showFilterTabs:false,showAccountSelector:false,
   contactChoices:[{Id:'c1-contact',Name:'Alice',Mobile:'447700900123'}],
   conversations:[{Id:'c1',Name:'Alice',PhoneNumber:'447700900123'}],
   messages:[{Id:'m1',Direction:'Inbound',Channel:'WhatsApp',Sender:'447700900123',Body:'Hello'}]});
@@ -91,19 +91,19 @@ test('UNE chat components expose editable metadata, flow events and mapped colle
 });
 
 test('UNE search, modal, input, repeater, lookup respect configured properties',async()=>{
- const search=await build('une_search',{showSubmitButton:true,submitLabel:'Find contact'});
+ const search=await build('ui_search',{showSubmitButton:true,submitLabel:'Find contact'});
  assert.match(search,/Find contact/);
- const modal=await build('une_modal',{controlledOpen:true,isOpen:true,showTrigger:false,title:'New Chat'});
+ const modal=await build('ui_modal',{controlledOpen:true,isOpen:true,showTrigger:false,title:'New Chat'});
  assert.match(modal,/role="dialog"/);assert.match(modal,/New Chat/);assert.doesNotMatch(modal,/>Open</);
- const input=await build('une_input',{inputType:'tel',label:'Phone',maxLength:16,
+ const input=await build('ui_input',{inputType:'tel',label:'Phone',maxLength:16,
   pattern:'[+]?[0-9 ]+',inputMode:'tel',helpText:'Country code required'});
  assert.match(input,/maxLength="16"/i);assert.match(input,/Country code required/);
- const rows=await build('une_repeater',{items:[{Id:'1',Name:'Alice',Phone:'447700900123',Status:'New'}],
+ const rows=await build('ui_repeater',{items:[{Id:'1',Name:'Alice',Phone:'447700900123',Status:'New'}],
   recordSubtitleFieldApiName:'Phone',recordBadgeFieldApiName:'Status',selectedValue:'1'});
  assert.match(rows,/447700900123/);assert.match(rows,/New/);assert.match(rows,/aria-pressed="true"/);
- const loading=await build('une_repeater',{loading:true,loadingText:'Retrieving contacts'});
+ const loading=await build('ui_repeater',{loading:true,loadingText:'Retrieving contacts'});
  assert.match(loading,/Retrieving contacts/);
- const lookup=await build('une_lookup',{items:[{Id:'1',Name:'Alice',Phone:'447700900123'}],
+ const lookup=await build('ui_lookup',{items:[{Id:'1',Name:'Alice',Phone:'447700900123'}],
    recordSubtitleFieldApiName:'Phone',label:'Contacts'});
  assert.match(lookup,/Alice/);assert.match(lookup,/447700900123/);
 });

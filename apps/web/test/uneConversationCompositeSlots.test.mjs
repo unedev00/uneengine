@@ -7,7 +7,7 @@ import {renderToStaticMarkup} from 'react-dom/server';
 import {buildBundledComponent} from '../../../scripts/component-catalog.mjs';
 import {conversationPartSlots,conversationRootDefinition,conversationPartDefinition,
   conversationPartEditorProperties,updateConversationPartProperties,readConversationPart}
-  from '../src/component-libraries/une_conversation/conversationParts.mjs';
+  from '../src/component-libraries/ui_conversation/conversationParts.mjs';
 const read=path=>readFileSync(new URL(path,import.meta.url),'utf8');
 const manifest=async name=>{
  const registration=JSON.parse(read('../src/component-libraries/'+name+'/component.json'));
@@ -15,8 +15,8 @@ const manifest=async name=>{
  assert.deepEqual(registration.propertyDefinitions,[],'UNE registry must not expose app settings');
  return {...registration,propertyDefinitions};
 };
-const parent=await manifest('une_conversation');
-const children=await Promise.all(['une_input','une_button','une_search'].map(manifest));
+const parent=await manifest('ui_conversation');
+const children=await Promise.all(['ui_input','ui_button','ui_search'].map(manifest));
 test('conversation slot definitions reuse actual UNE child contracts',()=>{
  for(const part of conversationPartSlots){
   const definition=conversationPartDefinition(part.id,parent,children);
@@ -49,8 +49,8 @@ test('editing a child retains saved settings, permissions and Flow actions',()=>
  assert.equal(readConversationPart(edited,'composer','maxLength'),4096);
 });
 test('conversation keeps its existing shell and authorised actions',()=>{
- const jsx=read('../src/component-libraries/OneConversation/OneConversation.jsx');
- const adapters=read('../src/component-libraries/une_conversation/ConversationParts.jsx');
+ const jsx=read('../src/component-libraries/shared/primitives/Conversation/Conversation.jsx');
+ const adapters=read('../src/component-libraries/ui_conversation/ConversationParts.jsx');
  const builder=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
  for(const token of ['one-conversation-inbox','one-conversation-thread',
    'one-conversation-compose','one-conversation-messages',

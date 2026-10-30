@@ -1,4 +1,4 @@
-@import "../une/shared/une.css";
+@import "../ui-runtime/shared/une.css";
 /* One metadata-painted surface for display-only and editable text boxes. */
 .une-ui .une-input-surface{box-sizing:border-box;width:100%;min-width:0;color:var(--une-fg);background:var(--une-bg);border:var(--une-border-width,1px) solid var(--une-border);border-radius:var(--one-radius,20px);padding:var(--one-pad,16px);box-shadow:var(--une-elevation)}
 .une-ui[data-une-surface="glass"] .une-input-surface{background:color-mix(in srgb,var(--une-bg) 82%,transparent);-webkit-backdrop-filter:blur(var(--une-blur));backdrop-filter:blur(var(--une-blur))}

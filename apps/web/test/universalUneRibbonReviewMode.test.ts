@@ -24,7 +24,7 @@ test('every declared UNE property occupies one fixed slot regardless of selected
 });
 
 test('component unrelated source mappings are not declared on Card Grid',()=>{
- const component=JSON.parse(load('../src/component-libraries/une_item_grid/component.json')) as {propertyDefinitions:{propertyKey:string}[]};
+ const component=JSON.parse(load('../src/component-libraries/ui_item_grid/component.json')) as {propertyDefinitions:{propertyKey:string}[]};
  const keys=new Set(component.propertyDefinitions.map(item=>item.propertyKey));
  for(const forbidden of ['ageRestrictionFieldApiName','barcodeFieldApiName','channelAccountObjectApiName','stateObjectApiName'])
   assert.ok(!keys.has(forbidden),forbidden);

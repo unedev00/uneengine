@@ -1,5 +1,5 @@
-import OneComponent from "../OneShoppingCart/OneShoppingCart.jsx";
-import {UneFrame,uneProps} from "../une/shared/UneFrame.jsx";
+import OneComponent from "../shared/primitives/ShoppingCart/ShoppingCart.jsx";
+import {UneFrame,uneProps} from "../ui-runtime/shared/UneFrame.jsx";
 // Internal Cart configuration, not public ribbon metadata. Caller props preserve existing state/Flows.
 const CART_DEFAULTS={
   "viewMode": "till",

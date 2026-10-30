@@ -1,5 +1,5 @@
-import OneComponent from "../OneConversation/OneConversation.jsx";
-import {UneFrame,uneProps} from "../une/shared/UneFrame.jsx";
+import OneComponent from "../shared/primitives/Conversation/Conversation.jsx";
+import {UneFrame,uneProps} from "../ui-runtime/shared/UneFrame.jsx";
 import {presentFlowConversationCollections} from "./flowConversationPresenter.js";
 export default function UneAceChatterConversation(props){
  // AceChatter-specific defaults live in ordinary code, not public metadata/ribbon slots.

@@ -1,4 +1,4 @@
-@import "../une/shared/une.css";
+@import "../ui-runtime/shared/une.css";
 
 /* Shared opt-in mobile keyboard and safe-area layout; driven by UNE Property Engine. */
 @media(max-width:640px){

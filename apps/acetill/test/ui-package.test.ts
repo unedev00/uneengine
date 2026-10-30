@@ -8,9 +8,9 @@ const sql=readFileSync(fileURLToPath(new URL('../sql/register-v3.sql',import.met
 
 test('SQL template declares Acetill pages and shared components without retired Badge',()=>{
  for(const {apiName} of ACETILL.pages)assert.match(sql,new RegExp("'"+apiName+"'"));
- for(const component of ['une_input','une_search','une_item_grid','acetill_cart','une_button'])
+ for(const component of ['ui_input','ui_search','ui_item_grid','acetill_cart','ui_button'])
    assert.match(sql,new RegExp("'"+component+"'"));
- assert.doesNotMatch(sql,/une_badge/);
+ assert.doesNotMatch(sql,/ui_badge/);
  assert.match(sql,/md_app_package_page_component_templates/);
  assert.match(sql,/md_app_package_page_property_templates/);
 });
@@ -26,8 +26,8 @@ test('checkout and receipt actions require named active Flows at runtime',()=>{
  assert.doesNotMatch(sql,/disabled','boolean','true'/);
 });
 test('catalogue and basket bind shared Product fields and same cart state',()=>{
- assert.match(sql,/une_item_grid','main',20,'objectApiName','string','Product'/);
- assert.match(sql,/une_item_grid','main',20,'cartTargetKey','string','acetill'/);
+ assert.match(sql,/ui_item_grid','main',20,'objectApiName','string','Product'/);
+ assert.match(sql,/ui_item_grid','main',20,'cartTargetKey','string','acetill'/);
  assert.match(sql,/acetill_cart','sidebar',30,'cartTargetKey','string','acetill'/);
 });
 
@@ -56,7 +56,7 @@ test('custom Acetill terminal consumes only permitted Flows, not record or SQL A
  assert.match(ui,/AcetillGetProducts|find\('GetProducts'\)/);
  assert.match(ui,/\/flows\/available-actions/);
  assert.match(ui,/\/flows\//);
- assert.doesNotMatch(ui,/\/records\/|db\.query|md_records|une_cart|une_item_grid/);
+ assert.doesNotMatch(ui,/\/records\/|db\.query|md_records|ui_cart|ui_item_grid/);
  assert.match(ui,/acetill-product-art/);
 });
 
@@ -71,7 +71,7 @@ test('Flow-only terminal requires confirmed payment before showing receipt',()=>
  assert.match(ui,/find\('PrintReceipt'\)/);
  assert.match(ui,/find\('EmailReceipt'\)/);
  assert.match(ui,/if\(completed\)\{\s*setReceipt/);
- assert.doesNotMatch(ui,/\/records\/|db\.query|une_cart|une_item_grid/);
+ assert.doesNotMatch(ui,/\/records\/|db\.query|ui_cart|ui_item_grid/);
 });
 
 test('customer display mirrors cart, and payments use only permitted Cash/Card Flows',()=>{

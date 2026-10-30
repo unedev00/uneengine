@@ -7,11 +7,11 @@ import {UNE_COMPONENTS,seedFreshUneComponents} from '../../src/app-seeders/une-c
 
 test('SQL component seed matches the UNE-only manifest without duplicates', async()=>{
   const catalog=JSON.parse(await readFile(new URL('../../../web/src/component-libraries/manifest.json',import.meta.url),'utf8')) as {components:string[]};
-  assert.deepEqual([...BUNDLED_COMPONENTS,...UNE_COMPONENTS],catalog.components.filter(path=>path.startsWith('une_')).map(path=>path.split('/')[0]));
+  assert.deepEqual([...BUNDLED_COMPONENTS,...UNE_COMPONENTS],catalog.components.filter(path=>path.startsWith('ui_')).map(path=>path.split('/')[0]));
   assert.ok(catalog.components.includes('acetill_cart/component.json'));
   assert.deepEqual(BUNDLED_COMPONENTS,[]);
-  assert.ok(UNE_COMPONENTS.includes('une_cart'));
-  assert.ok(UNE_COMPONENTS.includes('une_item_grid'));
+  assert.ok(UNE_COMPONENTS.includes('ui_cart'));
+  assert.ok(UNE_COMPONENTS.includes('ui_item_grid'));
   assert.equal(catalog.components.filter(path=>path.startsWith('One')).length,0);
 });
 
@@ -25,7 +25,7 @@ test('obsolete system-only OneAccordion is disabled without modifying tenant com
   const write=writes[0];
   assert.equal(write.args[0],'tenant-a');
   assert.ok(!(write.args[1] as string[]).includes('OneText'));
-  assert.ok(!(write.args[1] as string[]).includes('une_text'));
+  assert.ok(!(write.args[1] as string[]).includes('ui_text'));
   assert.ok(!(write.args[1] as string[]).includes('OneAccordion'));
   assert.match(write.sql,/UPDATE md_component_definitions/);
   assert.match(write.sql,/d.renderer_key='one-bundled:'\|\|d.api_name/);
@@ -58,11 +58,11 @@ test('UNE seeding never overwrites tenant customisations',async()=>{
 });
 
 test('retired UNE Badge has no app placement, system manifest, or insert registration',async()=>{
-  assert.equal((UNE_COMPONENTS as readonly string[]).includes('une_badge'),false);
+  assert.equal((UNE_COMPONENTS as readonly string[]).includes('ui_badge'),false);
   const app=await readFile(new URL('../../../acetill/sql/register-v2.sql',import.meta.url),'utf8');
-  assert.doesNotMatch(app,/une_badge|OneBadge/);
+  assert.doesNotMatch(app,/ui_badge|OneBadge/);
   const catalog=JSON.parse(await readFile(new URL('../../../web/src/component-libraries/manifest.json',import.meta.url),'utf8')) as {components:string[]};
-  assert.ok(!catalog.components.includes('une_badge/component.json'));
+  assert.ok(!catalog.components.includes('ui_badge/component.json'));
   const migration=await readFile(new URL('../../src/system-support/migrations/20270118-retire-une-badge.sql',import.meta.url),'utf8');
   for(const clause of ['DELETE FROM md_lightning_page_nodes','DELETE FROM md_page_layout_version_nodes',
    'DELETE FROM md_page_components','DELETE FROM md_app_package_page_component_templates',

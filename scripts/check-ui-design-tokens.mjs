@@ -27,8 +27,8 @@ const web = path => {
   if (actual.startsWith('custom-components/component-libraries/')) {
     const file = actual.split('/').at(-1);
     actual = file === 'manifest.json' ? 'component-libraries/manifest.json'
-      : file === 'OneConversation.jsx' ? 'component-libraries/OneConversation/OneConversation.jsx'
-      : file === 'OneShoppingCart.jsx' ? 'component-libraries/OneShoppingCart/OneShoppingCart.jsx'
+      : file === 'OneConversation.jsx' ? 'component-libraries/shared/primitives/Conversation/Conversation.jsx'
+      : file === 'OneShoppingCart.jsx' ? 'component-libraries/shared/primitives/ShoppingCart/ShoppingCart.jsx'
       : 'component-libraries/shared/' + file;
   }
   return read('apps/web/src/' + actual);
@@ -173,7 +173,7 @@ const pageBuilderView = web('core/builders/PageBuilder/pageBuilderView.tsx');
 assert.match(pageBuilderView, /aria-label=\{\x60Add \$\{component\.label\} to canvas\x60\}/,
   'A discoverable click/tap-to-add action must accompany builder drag');
 
-const oneCalendar = web('component-libraries/OneCalendar/OneCalendar.jsx');
+const oneCalendar = web('component-libraries/shared/primitives/Calendar/Calendar.jsx');
 assert.match(oneCalendar, /aria-label="Previous month"/, 'Calendar navigation must have spoken labels');
 assert.match(oneCalendar, /overflowX: "auto"/, 'Seven touch-sized day cells must remain reachable on narrow displays');
 assert.match(oneCalendar, /minWidth: "var\(--md-control-touch,44px\)"/, 'Calendar day cells must expose a 44px touch target');

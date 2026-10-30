@@ -1,0 +1,32 @@
+{
+  "apiName": "ui_button",
+  "label": "UNE Button",
+  "category": "Inputs",
+  "description": "Reusable button component for metadata-driven pages; shares MetaDrive runtime, events and tenant permissions.",
+  "surfaces": [
+    "page",
+    "dashboard",
+    "flow"
+  ],
+  "version": 1,
+  "scope": "platform-core",
+  "jsxFile": "component-libraries/ui_button/UiButton.jsx",
+  "cssFile": "component-libraries/ui_button/UiButton.css",
+  "resize": {
+    "defaultWidth": 180,
+    "defaultHeight": 48,
+    "minWidth": 120,
+    "minHeight": 44
+  },
+  "propertyDefinitions": [],
+  "eventDefinitions": [
+    {
+      "apiName": "click",
+      "label": "click"
+    },
+    {
+      "apiName": "hover",
+      "label": "hover"
+    }
+  ]
+}

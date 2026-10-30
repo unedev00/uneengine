@@ -1,3 +1,3 @@
-import UneSchedule from "../une/shared/UneSchedule.jsx";
-import {UneFrame,uneProps} from "../une/shared/UneFrame.jsx";
+import UneSchedule from "../ui-runtime/shared/UneSchedule.jsx";
+import {UneFrame,uneProps} from "../ui-runtime/shared/UneFrame.jsx";
 export default function AceassistCalendar(props){return <UneFrame p={props}><UneSchedule {...uneProps(props,"Calendar")}/></UneFrame>}

@@ -29,7 +29,7 @@ export function analyzePagePerformance(page:Pick<LightningPageMetadata,'componen
     if(typeof properties.refreshInterval==='number'&&properties.refreshInterval>0&&properties.refreshInterval<30)
       add('data','Refresh interval: '+properties.refreshInterval,
         'Review polling frequency and avoid overlapping requests.');
-    if(component.type==='Image'||component.type==='une_image'){
+    if(component.type==='Image'||component.type==='ui_image'){
       const source=properties.src??properties.imageUrl??properties.url;
       if(typeof source==='string'&&source.startsWith('data:')&&source.length>50000)
         add('render','Large inline image payload ('+source.length+' characters)',

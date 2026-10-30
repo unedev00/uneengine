@@ -1,0 +1,32 @@
+{
+  "apiName": "ui_modal",
+  "label": "UNE Modal",
+  "category": "Layout",
+  "description": "Reusable modal component for metadata-driven pages; shares MetaDrive runtime, events and tenant permissions.",
+  "surfaces": [
+    "page",
+    "dashboard",
+    "flow"
+  ],
+  "version": 2,
+  "scope": "platform-core",
+  "jsxFile": "component-libraries/ui_modal/UiModal.jsx",
+  "cssFile": "component-libraries/ui_modal/UiModal.css",
+  "resize": {
+    "defaultWidth": 180,
+    "defaultHeight": 48,
+    "minWidth": 120,
+    "minHeight": 44
+  },
+  "propertyDefinitions": [],
+  "eventDefinitions": [
+    {
+      "apiName": "open",
+      "label": "open"
+    },
+    {
+      "apiName": "close",
+      "label": "close"
+    }
+  ]
+}

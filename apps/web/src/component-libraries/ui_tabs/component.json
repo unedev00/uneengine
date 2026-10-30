@@ -1,0 +1,28 @@
+{
+  "apiName": "ui_tabs",
+  "label": "UNE Tabs",
+  "category": "Navigation",
+  "description": "Reusable tabs component for metadata-driven pages; shares MetaDrive runtime, events and tenant permissions.",
+  "surfaces": [
+    "page",
+    "dashboard",
+    "flow"
+  ],
+  "version": 2,
+  "scope": "platform-core",
+  "jsxFile": "component-libraries/ui_tabs/UiTabs.jsx",
+  "cssFile": "component-libraries/ui_tabs/UiTabs.css",
+  "resize": {
+    "defaultWidth": 320,
+    "defaultHeight": 180,
+    "minWidth": 120,
+    "minHeight": 44
+  },
+  "propertyDefinitions": [],
+  "eventDefinitions": [
+    {
+      "apiName": "tabChange",
+      "label": "tab Change"
+    }
+  ]
+}

@@ -16,7 +16,7 @@ export class ComponentLibraryService{
  private validate(value:unknown):Input{
   if(!value||typeof value!=='object'||Array.isArray(value))throw Error('Invalid component');
   const p=value as Record<string,unknown>,resize=p.resize as Record<string,unknown>|undefined;
-  if(typeof p.apiName==='string'&&p.apiName.startsWith('une_'))
+  if(typeof p.apiName==='string'&&p.apiName.startsWith('ui_'))
     throw Error('UNE components are managed in application code, not the tenant Component Library');
   if(typeof p.apiName!=='string'||!apiName.test(p.apiName)||
    typeof p.label!=='string'||!p.label.trim()||p.label.length>200||

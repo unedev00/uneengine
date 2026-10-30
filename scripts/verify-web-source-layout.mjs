@@ -9,7 +9,7 @@ assert.deepEqual(entries.filter(entry => entry.isFile()).map(entry => entry.name
 const { components } = await loadComponentCatalog();
 const publishedOne=components.filter(component=>component.apiName.startsWith('One'));
 assert.deepEqual(publishedOne,[], 'No legacy One components may be independently registered');
-const registered=components.filter(component=>component.apiName.startsWith('une_'));
+const registered=components.filter(component=>component.apiName.startsWith('ui_'));
 assert.equal(registered.length,34,'All 34 canonical UNE component descriptors must be registered');
 const retained=['OneCalendar','OneItemGrid','OneConversation','OneShoppingCart'];
 for(const name of retained){
@@ -20,7 +20,7 @@ for(const name of retained){
     {code:'ENOENT'},name+' must not retain a standalone descriptor');
 }
 await access(path.join(webSourceRoot,'core/components/SharedRuntime/SharedButton.jsx'));
-await assert.rejects(access(path.join(webSourceRoot,'component-libraries/OneButton/OneButton.jsx')), {code:'ENOENT'});
+await assert.rejects(access(path.join(webSourceRoot,'component-libraries/shared/primitives/Button/Button.jsx')), {code:'ENOENT'});
 for (const name of ['OneSearch','OneText']) { await access(path.join(webSourceRoot,`core/components/SharedRuntime/${name}.jsx`)); await assert.rejects(access(path.join(webSourceRoot,`component-libraries/${name}/${name}.jsx`)), {code:'ENOENT'}); }
 for (const component of registered) {
   const prefix = `component-libraries/${component.apiName}/`;

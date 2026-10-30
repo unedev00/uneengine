@@ -1,5 +1,5 @@
-import {UneModal as Primitive} from "../une/shared/UneLayout.jsx";
-import {UneFrame,uneProps} from "../une/shared/UneFrame.jsx";
+import {UneModal as Primitive} from "../ui-runtime/shared/UneLayout.jsx";
+import {UneFrame,uneProps} from "../ui-runtime/shared/UneFrame.jsx";
 // Private application settings live in code; existing runtime values take precedence.
 const INTERNAL_DEFAULTS={
   "layoutContainer": true,

@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const file=(path)=>readFileSync(new URL(path,import.meta.url),'utf8');
 const components=[
- ['une_conversation',{channelAccountObjectApiName:'Source Object — Account',contactsObjectApiName:'Source Object — Contact',contactSourceObjectApi:'Source Object — Contact (Flow)',conversationsObjectApiName:'Source Object — Conversation',messagesObjectApiName:'Source Object — Message'}],
- ['une_repeater',{sourceObjectApiName:'Source Object — Flow Records'}],
- ['une_cart',{stateObjectApiName:'Source Object — State'}]
+ ['ui_conversation',{channelAccountObjectApiName:'Source Object — Account',contactsObjectApiName:'Source Object — Contact',contactSourceObjectApi:'Source Object — Contact (Flow)',conversationsObjectApiName:'Source Object — Conversation',messagesObjectApiName:'Source Object — Message'}],
+ ['ui_repeater',{sourceObjectApiName:'Source Object — Flow Records'}],
+ ['ui_cart',{stateObjectApiName:'Source Object — State'}]
 ];
 test('UNE component labels identify source objects without changing property API keys',()=>{
  for(const [name,mapping] of components){

@@ -1,4 +1,4 @@
-@import "../une/shared/une.css";
+@import "../ui-runtime/shared/une.css";
 /* The UNE button owns its visual box; the outer frame is not a second button. */
 .une-button-control{display:inline-flex;max-width:100%;min-width:0}
 .une-button-control>.one-ui{width:100%;max-width:100%}

@@ -1,4 +1,4 @@
-import {conversationPartSlots,conversationRootDefinition,conversationPartDefinition,conversationPartEditorProperties,updateConversationPartProperties} from '../../../component-libraries/une_conversation/conversationParts.mjs';
+import {conversationPartSlots,conversationRootDefinition,conversationPartDefinition,conversationPartEditorProperties,updateConversationPartProperties} from '../../../component-libraries/ui_conversation/conversationParts.mjs';
 import {availableComponentSettings,resolveComponentSettings,validateComponentSettings} from '../../components/Properties/componentSettingDefinitions';
 import {pagePropertyIssues} from '../../components/Properties/pagePropertyContract';
 import {resolveMetadataProperties} from '../../metadata/Definitions/metadataReferences';
@@ -621,7 +621,7 @@ function PageBuilder({
     : undefined;
   const selectedNewUne=Boolean(selected?.type.startsWith('Custom:')&&isUneBuilderApi(selected.type.slice(7),ribbonCatalog?.components??[]));
   const selectedAppOwnedUne=Boolean(selected?.type.startsWith('Custom:une_'))&&!selectedNewUne;
-  const editingConversation=selectedCustomDefinition?.apiName==='une_conversation';
+  const editingConversation=selectedCustomDefinition?.apiName==='ui_conversation';
   // Child element selection affects the inspector only; runtime DOM is unchanged.
   const conversationEditorDefinition=editingConversation
     ? (selectedConversationPart==='parent'
@@ -650,15 +650,15 @@ function PageBuilder({
   };
   // Visible slots follow the selected component, as in the accepted blueprint.
   // Within each slot, the registry determines which commands are actually enabled.
-  const designRibbonGroups:readonly string[] = selectedCustomDefinition?.apiName==='une_item_grid'
+  const designRibbonGroups:readonly string[] = selectedCustomDefinition?.apiName==='ui_item_grid'
     ? ['Surface','Card','Heading','Supporting text','Badge','Image']
-    : selectedCustomDefinition?.apiName==='une_calendar'
+    : selectedCustomDefinition?.apiName==='ui_calendar'
     ? ['Surface','Card','Heading','Event','Calendar']
     : ['Surface',...([
-['une_button','Button'],['une_image','Image'],['une_chart','Chart'],
-      ['une_table','Table'],['une_navigation','Navigation'],['une_search','Input'],
-      ['une_input','Input'],['une_container','Container'],['une_grid','Container'],
-      ['une_stack','Container'],['une_split_pane','Container']
+['ui_button','Button'],['ui_image','Image'],['ui_chart','Chart'],
+      ['ui_table','Table'],['ui_navigation','Navigation'],['ui_search','Input'],
+      ['ui_input','Input'],['ui_container','Container'],['ui_grid','Container'],
+      ['ui_stack','Container'],['ui_split_pane','Container']
     ] as const).filter(([api])=>api===selectedCustomDefinition?.apiName).map(([,group])=>group)];
   const layoutRibbonGroups:readonly string[] = selected?.position ? ['Spacing','Component'] : ['Size','Position','Spacing','Component'];
   const appearanceDefinitions = availableComponentSettings(selectedCustomDefinition?.propertyDefinitions??[],page.layoutVariant??'Desktop',selectedCustomDefinition?.version);
@@ -666,18 +666,18 @@ function PageBuilder({
   // a presentation group are assigned only where the component already declares the key.
   const implicitParts:Record<string,Record<string,{group:string;section:'Design'|'Layout'}>> = {
 
-    une_button:{variant:{group:'Button',section:'Design'}},
-    une_item_grid:{cardDensity:{group:'Card',section:'Design'},cardHover:{group:'Card',section:'Design'},featuredColumnSpan:{group:'Component',section:'Layout'},featuredRowSpan:{group:'Component',section:'Layout'}},
-    une_calendar:{view:{group:'Calendar',section:'Design'},firstDayOfWeek:{group:'Calendar',section:'Design'},showWeekends:{group:'Calendar',section:'Design'}},
-    une_chart:{chartType:{group:'Chart',section:'Design'}},
-    une_image:{imageFit:{group:'Image',section:'Design'},imageHeight:{group:'Image',section:'Layout'}},
-    une_grid:{desktopColumns:{group:'Container',section:'Layout'},tabletColumns:{group:'Container',section:'Layout'},mobileColumns:{group:'Container',section:'Layout'}},
-    une_container:{direction:{group:'Container',section:'Layout'}},
-    une_stack:{direction:{group:'Container',section:'Layout'},wrap:{group:'Container',section:'Layout'}},
-    une_split_pane:{splitRatio:{group:'Container',section:'Layout'}},
-    une_navigation:{direction:{group:'Navigation',section:'Design'}},
-    une_table:{phoneLayout:{group:'Table',section:'Layout'}},
-    une_input:{inputType:{group:'Input',section:'Design'},multiline:{group:'Input',section:'Layout'},rows:{group:'Input',section:'Layout'}}
+    ui_button:{variant:{group:'Button',section:'Design'}},
+    ui_item_grid:{cardDensity:{group:'Card',section:'Design'},cardHover:{group:'Card',section:'Design'},featuredColumnSpan:{group:'Component',section:'Layout'},featuredRowSpan:{group:'Component',section:'Layout'}},
+    ui_calendar:{view:{group:'Calendar',section:'Design'},firstDayOfWeek:{group:'Calendar',section:'Design'},showWeekends:{group:'Calendar',section:'Design'}},
+    ui_chart:{chartType:{group:'Chart',section:'Design'}},
+    ui_image:{imageFit:{group:'Image',section:'Design'},imageHeight:{group:'Image',section:'Layout'}},
+    ui_grid:{desktopColumns:{group:'Container',section:'Layout'},tabletColumns:{group:'Container',section:'Layout'},mobileColumns:{group:'Container',section:'Layout'}},
+    ui_container:{direction:{group:'Container',section:'Layout'}},
+    ui_stack:{direction:{group:'Container',section:'Layout'},wrap:{group:'Container',section:'Layout'}},
+    ui_split_pane:{splitRatio:{group:'Container',section:'Layout'}},
+    ui_navigation:{direction:{group:'Navigation',section:'Design'}},
+    ui_table:{phoneLayout:{group:'Table',section:'Layout'}},
+    ui_input:{inputType:{group:'Input',section:'Design'},multiline:{group:'Input',section:'Layout'},rows:{group:'Input',section:'Layout'}}
   };
   const inferredAppearanceGroup=(key:string)=>implicitParts[selectedCustomDefinition?.apiName??'']?.[key];
   const baseSurfaceKeys=new Set(['theme','surface','tone','accentColor','backgroundColor',
@@ -697,11 +697,11 @@ function PageBuilder({
     const part=section==='Layout'
       ? (mapped?.section==='Layout'?mapped.group:inferredRibbonGroup(definition.propertyKey,section))
       : ((definition as {group?:string}).group??mapped?.group??inferredRibbonGroup(definition.propertyKey,section));
-    const mirroredImageDesign=section==='Design'&&selectedCustomDefinition?.apiName==='une_item_grid'
+    const mirroredImageDesign=section==='Design'&&selectedCustomDefinition?.apiName==='ui_item_grid'
       &&group==='Image'&&['imageAspectRatio','imagePosition'].includes(definition.propertyKey);
-    const isDuplicateImageLayout=section==='Layout'&&selectedCustomDefinition?.apiName==='une_item_grid'
+    const isDuplicateImageLayout=section==='Layout'&&selectedCustomDefinition?.apiName==='ui_item_grid'
       &&['imageAspectRatio','imagePosition'].includes(definition.propertyKey);
-    const isInactiveFeaturedLayout=section==='Layout'&&selectedCustomDefinition?.apiName==='une_item_grid'
+    const isInactiveFeaturedLayout=section==='Layout'&&selectedCustomDefinition?.apiName==='ui_item_grid'
       &&['featuredColumnSpan','featuredRowSpan'].includes(definition.propertyKey)
       &&!selected?.properties.featuredFieldApiName;
     return part===group&&!/(?:FieldApiName|ObjectApiName)$/.test(definition.propertyKey)
@@ -746,7 +746,7 @@ function PageBuilder({
         component.apiName.startsWith('smart_')?component.apiName.slice(6).split('_').map(word=>word[0].toUpperCase()+word.slice(1)).join(' '):component.label,
       description:component.description,
       categories:getPageBuilderComponentCategories(component.apiName,component.label,component.description,false,
-        component.apiName==='une_item_grid'?'Data':component.apiName==='une_image'?'Display':undefined)
+        component.apiName==='ui_item_grid'?'Data':component.apiName==='ui_image'?'Display':undefined)
     })),
     ...publishedPageLibraryComponents(libraryComponents).filter(component=>!isUneBuilderApi(component.apiName,ribbonCatalog?.components??[])).map((component) => ({
       id: `Custom:${component.apiName}`,
@@ -2100,7 +2100,7 @@ function PageBuilder({
           setSelectedRegion(null);
           setSelectedId(component.id);
         }
-        if(component.type==='Custom:une_item_grid'){
+        if(component.type==='Custom:ui_item_grid'){
           const target=event.target as HTMLElement;
           const mapping=target.closest('.md-product-image')?'imageFieldApiName'
             :target.closest('.md-product-name')?'titleFieldApiName'
@@ -2296,7 +2296,7 @@ function PageBuilder({
           : component.type === 'Chatter'
             ? <div className="record-fields-card surface"><strong>{component.label}</strong>
                 <p>Posts and comments for the current record load when this page is opened.</p></div>
-                  : customDefinition?.apiName === 'une_item_grid' && !previewMode && !libraryPreview && !component.properties.titleFieldApiName
+                  : customDefinition?.apiName === 'ui_item_grid' && !previewMode && !libraryPreview && !component.properties.titleFieldApiName
                     ? <div className="une-card-grid-editor-preview" aria-label="Card Grid example layout" style={{padding:12,display:'grid',gridTemplateColumns:'repeat(3,minmax(0,1fr))',gap:10,height:'100%',alignContent:'start',pointerEvents:'none'}}>
                         {[1,2,3].map(n=><div key={n} style={{border:'1px solid #cbd5e1',borderRadius:8,background:'#fff',overflow:'hidden',minWidth:0}}><div style={{height:72,background:'#e2e8f0',display:'grid',placeItems:'center',color:'#475569'}}>Image</div><div style={{padding:8,color:'#273449',fontWeight:600}}>Card {n}</div><div style={{padding:'0 8px 10px',fontSize:12,color:'#64748b'}}>Choose fields to show records</div></div>)}
                       </div>

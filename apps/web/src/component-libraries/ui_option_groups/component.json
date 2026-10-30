@@ -1,0 +1,32 @@
+{
+  "apiName": "ui_option_groups",
+  "label": "UNE Option Groups",
+  "category": "Inputs",
+  "description": "Render grouped required/optional selections from metadata-bound Flow records; emits typed selection actions.",
+  "surfaces": [
+    "page",
+    "dashboard",
+    "flow"
+  ],
+  "version": 1,
+  "scope": "platform-core",
+  "jsxFile": "component-libraries/ui_option_groups/UiOptionGroups.jsx",
+  "cssFile": "component-libraries/ui_option_groups/UiOptionGroups.css",
+  "resize": {
+    "defaultWidth": 480,
+    "defaultHeight": 330,
+    "minWidth": 200,
+    "minHeight": 100
+  },
+  "propertyDefinitions": [],
+  "eventDefinitions": [
+    {
+      "apiName": "change",
+      "label": "Selection changed"
+    },
+    {
+      "apiName": "confirm",
+      "label": "Confirm choices"
+    }
+  ]
+}

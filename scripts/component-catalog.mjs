@@ -31,7 +31,7 @@ export async function loadComponentCatalog() {
   // Shared appearance is a declarative UNE mixin, not a second rendering engine.
   const {appearanceProperties:uneAppearance}=await import(pathToFileURL(path.join(oneRoot,'une/shared/appearance-properties.mjs')).href);
   const merged=one.map(definition=>{
-    if(!definition.apiName.startsWith('une_'))return definition;
+    if(!definition.apiName.startsWith('ui_'))return definition;
     const own=definition.propertyDefinitions??[],keys=new Set(own.map(p=>p.propertyKey));
     return {...definition,propertyDefinitions:[...uneAppearance.filter(p=>!keys.has(p.propertyKey)),...own]};
   });

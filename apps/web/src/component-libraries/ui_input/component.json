@@ -1,0 +1,28 @@
+{
+  "apiName": "ui_input",
+  "label": "UNE Input",
+  "category": "Inputs",
+  "description": "One metadata-driven text box: free text or data-source values, optionally editable, with shared UNE design properties.",
+  "surfaces": [
+    "page",
+    "dashboard",
+    "flow"
+  ],
+  "version": 2,
+  "scope": "platform-core",
+  "jsxFile": "component-libraries/ui_input/UiInput.jsx",
+  "cssFile": "component-libraries/ui_input/UiInput.css",
+  "resize": {
+    "defaultWidth": 320,
+    "defaultHeight": 70,
+    "minWidth": 120,
+    "minHeight": 44
+  },
+  "propertyDefinitions": [],
+  "eventDefinitions": [
+    {
+      "apiName": "change",
+      "label": "change"
+    }
+  ]
+}

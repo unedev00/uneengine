@@ -16,7 +16,7 @@ const has=(definition:LibraryComponentMetadata|undefined,key:string)=>Boolean(de
 export function RibbonDesign({properties,componentType,definition,device,onChange}:Props){
   const visual=object(properties.visualStyle);
   const responsive=object(object(properties.layoutResponsive)[mode(device)]);
-  const isItemGrid=definition?.apiName==='une_item_grid';
+  const isItemGrid=definition?.apiName==='ui_item_grid';
   const write=(key:'color'|'backgroundColor'|'borderColor'|'accentColor',value:string)=>{
     const metadataKey=key==='color'?'textColor':key;
     // Older Page Builder versions could persist the same Grid surface colour
