@@ -1073,7 +1073,7 @@ function PageBuilder({
   const startCanvasMove = (event: React.PointerEvent<HTMLElement>, component: PageComponentMetadata) => {
     if (previewMode || !component.position || isCanvasLocked(component)
       || event.button !== 0 || event.shiftKey || canvasMoveStart.current) return;
-    if (!(event.target as HTMLElement).closest('.free-canvas-move-handle') &&
+    if (!(event.target as HTMLElement).closest('.free-canvas-move-edge') &&
       (event.target as HTMLElement).closest('button,input,select,textarea,a,[contenteditable="true"],.free-canvas-resize-handle,.canvas-element-actions')) return;
     const element = event.currentTarget.closest<HTMLElement>('.free-canvas-component');
     if (!element) return;
@@ -2384,13 +2384,15 @@ function PageBuilder({
             onPointerCancel={event => finishTemplateResize(event, true)}
             onClick={event => event.stopPropagation()} />)}
       {!libraryPreview && page.layoutMode === 'free-canvas' && !nested && selectedId === component.id && !previewMode && !isCanvasLocked(component)
-        && <button type="button" className="free-canvas-move-handle"
-          aria-label={`Move ${component.label}`} title="Drag to move (four-way)"
+        && (['n','e','s','w'] as const).map(edge=><span key={edge}
+          className={`free-canvas-move-edge move-edge-${edge}`}
+          role="button" tabIndex={0} aria-label={`Move ${component.label} from ${edge} edge`}
+          title="Drag border to move (four-direction cursor)"
           onPointerDown={event=>startCanvasMove(event,component)}
           onPointerMove={moveCanvasPointer}
           onPointerUp={event=>endCanvasMove(event)}
           onPointerCancel={event=>endCanvasMove(event,true)}
-          onClick={event=>event.stopPropagation()}><Move size={17}/></button>}
+          onClick={event=>event.stopPropagation()}/>)}
       {!libraryPreview && page.layoutMode === 'free-canvas' && !nested && selectedId === component.id && !previewMode && !isCanvasLocked(component)
         && (['n','ne','e','se','s','sw','w','nw'] as const).map(edge =>
           <button key={edge} type="button" className={`free-canvas-resize-handle resize-${edge}`}
