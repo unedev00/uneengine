@@ -279,6 +279,19 @@ export function createSetupObjectActions(ctx: any) {
     return payload.object;
   };
 
+  const restoreObject = async (apiName: string): Promise<ObjectMetadata> => {
+    const payload = await apiRequest<{ object: ObjectMetadata }>(
+      `/metadata/objects/${encodeURIComponent(apiName)}/restore`, {method: 'POST'});
+    setObjects((current: ObjectMetadata[]) => current.some((item) => item.apiName === apiName)
+      ? current.map((item) => item.apiName === apiName ? payload.object : item)
+      : [...current, payload.object]);
+    setObject(payload.object);
+    setObjectSetting('Details');
+    navigateRoute({kind:'setup',workspace:'object-manager',objectApiName:apiName,setting:'Details'});
+    notify(`${payload.object.label} restored`);
+    return payload.object;
+  };
+
   const deleteObject = async (apiName: string) => {
     await apiRequest<void>(`/metadata/objects/${encodeURIComponent(apiName)}`, {
       method: 'DELETE', headers: { 'If-Match': `"${object.revision ?? 0}"` }
@@ -413,5 +426,5 @@ export function createSetupObjectActions(ctx: any) {
   };
 
 
- return { validateNewFieldFormula, insertFormulaText, resetNewFieldDraft, newFieldApiName, newFieldPicklistOptions, newFieldController, newFieldControllerValues, newFieldDefaultError, newFieldConfigurationError, addField, saveObject, refreshObject, deleteObject, saveField, deleteField, createObject, saveCustomTab };
+ return { validateNewFieldFormula, insertFormulaText, resetNewFieldDraft, newFieldApiName, newFieldPicklistOptions, newFieldController, newFieldControllerValues, newFieldDefaultError, newFieldConfigurationError, addField, saveObject, refreshObject, deleteObject, restoreObject, saveField, deleteField, createObject, saveCustomTab };
 }
