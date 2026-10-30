@@ -1,4 +1,4 @@
-import OneComponent from "../OneButton/OneButton.jsx";
+import OneComponent from "../../core/components/SharedRuntime/SharedButton.jsx";
 import {UneFrame,uneProps} from "../une/shared/UneFrame.jsx";
 export default function UneButton(props){
  const p=uneProps(props,"Button");
