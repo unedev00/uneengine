@@ -1,6 +1,6 @@
 import type { WorkspaceId } from '../../metadata/Definitions/metadata';
 import {shortAppEntry} from './shortAppEntry';
-import {standaloneEntryForAppId} from '../Standalcomponent-libraries/standaloneEntries';
+import {standaloneEntryForAppId} from '../Standalone/standaloneEntries';
 
 
 export const objectSettings = [
