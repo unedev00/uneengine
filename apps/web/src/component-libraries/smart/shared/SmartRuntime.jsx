@@ -206,8 +206,9 @@ export default function SmartRuntime(p){
  else if(name==="smart_card_grid")content=<div className="smart-grid" style={{
   width:"100%",height:"100%",minHeight:0,gridTemplateColumns:"repeat("+number(p.cardsPerRow,3,1,12)+",minmax(0,1fr))",
   gridTemplateRows:"repeat("+number(p.cardsPerColumn,1,1,12)+",minmax(0,1fr))"}}>
-  {recordsOf(p).slice(0,number(p.cardsPerRow,3,1,12)*number(p.cardsPerColumn,1,1,12)).map((r,i)=>
-  <SmartCard p={p} record={r} key={r?.id??i}/>)}</div>;
+  {recordsOf(p).filter(r=>!p.imageSource||Boolean(boundImage(p,r)))
+   .slice(0,number(p.cardsPerRow,3,1,12)*number(p.cardsPerColumn,1,1,12)).map((r,i)=>
+  <SmartCard p={p} record={r} key={r?.Id??r?.id??i}/>)}</div>;
  else if(name==="smart_cart")content=<SmartCart p={p} records={recordsOf(p)} Picture={SmartPicture} expression={expression}/>;
  else if(name==="smart_calendar")content=<SmartCalendar p={p} fire={fire}/>;
  else if(name==="smart_tabs")content=<SmartTabs p={p} record={record} fire={fire}/>;
