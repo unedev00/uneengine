@@ -624,9 +624,9 @@ test('Smart Cart ribbon packs Header Supporting, Table and Row without hidden ed
  for(const [section,key,area] of slots)
   assert.ok(scoped.includes('.smart-ribbon-group[aria-label="'+section+'"] .smart-property[data-property="'+key+'"]{grid-area:'+area+'}'),
    section+'.'+key+' missing compact position');
- assert.match(scoped,/input\\.smart-office-number\\{[\\s\\S]*?width:75px!important/);
- assert.doesNotMatch(scoped,/\\.smart-property\\s*\\{[^}]*display:none/);
+ assert.match(scoped,/input\.smart-office-number\{[\s\S]*?width:75px!important/);
+ assert.doesNotMatch(scoped,/\.smart-property\s*\{[^}]*display:none/);
  const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
- assert.match(ribbon,/aria-label=\\{title\\}/);
- assert.match(ribbon,/data-property=\\{property\\.id\\}/);
+ assert.match(ribbon,/aria-label=\{title\}/);
+ assert.match(ribbon,/data-property=\{property\.id\}/);
 });
