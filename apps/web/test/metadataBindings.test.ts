@@ -233,7 +233,7 @@ test('ChatterInbox compatibility retains the shared conversation renderer and al
  assert.equal(alias.jsxFile,'component-libraries/shared/primitives/Conversation/Conversation.jsx');
  assert.equal(alias.cssFile,'component-libraries/shared/primitives/Conversation/Conversation.css');
  assert.deepEqual(alias.defaults.actionFlows,{});
- assert.equal(canonical.jsxFile,'component-libraries/ui_conversation/UneConversation.jsx');
+ assert.equal(canonical.jsxFile,'component-libraries/ui_conversation/UiConversation.jsx');
  assert.ok(!canonical.propertyDefinitions.some((p:any)=>p.propertyKey==='conversationsObjectApiName'),
   'AceChatter source mapping is private runtime configuration');
  const wrapper=await readFile(new URL('../src/component-libraries/ui_conversation/UiConversation.jsx',import.meta.url),'utf8');
