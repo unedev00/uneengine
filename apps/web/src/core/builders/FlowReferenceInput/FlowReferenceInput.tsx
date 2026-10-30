@@ -3,7 +3,7 @@ import { AtSign } from 'lucide-react';
 import type { FieldMetadata, FlowDefinitionMetadata, ObjectMetadata } from '../../metadata/Definitions/metadata';
 import { compatibleFlowValue, flowReferenceChoices, referenceName } from '../FlowBuilder/flowReferenceCatalog';
 import { flowReferenceBrowserGroups } from '../FlowBuilder/flowReferenceBrowserModel';
-import ReferenceBrowser from '../../../component-libraries/OneReferenceBrowser/ReferenceBrowser';
+import ReferenceBrowser from '../../../component-libraries/shared/primitives/ReferenceBrowser/ReferenceBrowser';
 import {useDismissOnOutside} from '../../accessibility/Dismiss/useDismissOnOutside';
 import './FlowReferenceInput.css';
 
