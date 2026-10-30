@@ -21,8 +21,8 @@ for (const fixture of fixtures) {
     // Keep these snapshot tests to protect the shared UNE renderer dependencies.
     const definition = {
       apiName: fixture.apiName,
-      jsxFile: ['OneButton','OneSearch','OneText'].includes(fixture.apiName) ? `core/components/SharedRuntime/${fixture.apiName === 'OneButton' ? 'SharedButton' : fixture.apiName}.jsx` : `component-libraries/${fixture.apiName}/${fixture.apiName}.jsx`,
-      cssFile: ['OneButton','OneSearch','OneText'].includes(fixture.apiName) ? 'component-libraries/shared/one.css' : `component-libraries/${fixture.apiName}/${fixture.apiName}.css`
+      jsxFile: ['OneButton','OneSearch','OneText'].includes(fixture.apiName) ? `core/components/SharedRuntime/${fixture.apiName === 'OneButton' ? 'SharedButton' : fixture.apiName}.jsx` : `component-libraries/shared/primitives/${fixture.apiName.slice(3)}/${fixture.apiName.slice(3)}.jsx`,
+      cssFile: ['OneButton','OneSearch','OneText'].includes(fixture.apiName) ? 'component-libraries/shared/one.css' : `component-libraries/shared/primitives/${fixture.apiName.slice(3)}/${fixture.apiName.slice(3)}.css`
     };
     const built = await buildBundledComponent(definition);
     const context = { React, module: { exports: {} }, Date: FixtureDate, Intl, URL, crypto: globalThis.crypto };
