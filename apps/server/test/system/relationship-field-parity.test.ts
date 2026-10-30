@@ -33,6 +33,7 @@ test('Master-Detail definitions reject cycles and a third master relationship',a
     const client={query:async(sql:string)=>{
     if(sql.includes('SELECT 1 FROM md_field_definitions WHERE tenant_id=$1 AND lower(api_name)'))return {rows:[],rowCount:0};
       if(sql.includes('SELECT TRUE AS metadata_name_exists'))return {rows:[],rowCount:0};
+      if(sql.includes('pg_advisory_xact_lock'))return {rows:[],rowCount:1};
       if(sql.includes('WITH RECURSIVE parent_chain'))return {rows:cycle?[{exists:1}]:[],rowCount:cycle?1:0};
       if(sql.includes('count(*)::integer AS total'))return {rows:[{total:masters}],rowCount:1};
       throw new Error('Unexpected query '+sql);

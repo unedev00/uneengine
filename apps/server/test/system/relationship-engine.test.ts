@@ -19,6 +19,10 @@ test('lookup resolver scopes SQL to caller tenant and rejects missing targets',a
  await assert.rejects(()=>assertLookupTargetExists(fake as never,'tenant-a','Account','record-a','Parent'),/Invalid relationship target/);
  assert.ok(queries[0].sql.includes('tenant_id=$1'));
  assert.deepEqual(queries[0].params,['tenant-a','Account','record-a']);
+ await assert.rejects(()=>assertLookupTargetExists(fake as never,'tenant-a','Account','record-a','Parent','actor-a'),
+  /Invalid relationship target/);
+ assert.match(queries[1].sql,/md_record_access\(\$1,\$4,id,'read'\)/);
+ assert.deepEqual(queries[1].params,['tenant-a','Account','record-a','actor-a']);
 });
 test('related record queries delegate to the RBAC-enforced shared Record Engine',async()=>{
  const calls:unknown[][]=[];

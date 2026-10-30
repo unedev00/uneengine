@@ -23,7 +23,7 @@ export async function loadFlowUserResource(client:SqlExecutor,tenantId:string,us
   profile_name:string|null;profile_api:string|null;has_currency_settings:boolean;
   currency_iso_code:string|null;conversion_rate:string|null
  }>(`SELECT u.id,u.email,u.display_name,u.time_zone,u.locale,u.currency_iso_code AS user_currency_iso_code,
-    u.reports_to_user_id,p.id AS profile_id,p.name AS profile_name,p.api_name AS profile_api,
+    u.reports_to_user_id,p.id AS profile_id,p.label AS profile_name,p.api_name AS profile_api,
     s.tenant_id IS NOT NULL AS has_currency_settings,
     currency.value->>'currencyIsoCode' AS currency_iso_code,
     currency.value->>'conversionRate' AS conversion_rate

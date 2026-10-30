@@ -63,10 +63,14 @@ export async function persistObjectLookupFilters(
   [tenantId,objectApi]);
  const source=new Map(fields.rows.map(f=>[f.api_name,f]));
  const destinations=[...new Set(fields.rows.filter(f=>f.data_type==='reference'&&f.related_object).map(f=>f.related_object as string))];
- const targetFields=destinations.length?await client.query<{object_api:string;api_name:string}>(
-  'SELECT object_api,api_name FROM md_field_definitions WHERE tenant_id=$1 AND object_api=ANY($2::text[]) AND deleted_at IS NULL',
+ const targetFields=destinations.length?await client.query<{object_api:string;api_name:string;data_type:string}>(
+  'SELECT object_api,api_name,data_type FROM md_field_definitions WHERE tenant_id=$1 AND object_api=ANY($2::text[]) AND deleted_at IS NULL',
   [tenantId,destinations]):{rows:[]};
- const targets=new Set(targetFields.rows.map(r=>r.object_api+'.'+r.api_name));
+ const targets=new Map(targetFields.rows.map(r=>[r.object_api+'.'+r.api_name,r.data_type]));
+ const family=(type:string)=>['number','currency','percent'].includes(type)?'number':
+   ['text','textarea','longtext','richtext','email','phone','url','picklist','autonumber'].includes(type)?'text':
+   type==='reference'?'reference':type;
+
  const seen=new Set<string>();
  for(const row of filters){
   if(!row||typeof row!=='object'||Array.isArray(row)
@@ -84,6 +88,21 @@ export async function persistObjectLookupFilters(
   if((row.operator==='Is Null'||row.operator==='Is Not Null')
     &&(row.value!==''||row.valueFieldApiName!==undefined))
     throw Error('Invalid null lookup filter comparison');
+  // Field-vs-field criteria must compare compatible value families. A text
+  // literal remains supported by the existing canonical comparator.
+  if(row.valueFieldApiName){
+    const sourceType=source.get(row.valueFieldApiName)?.data_type;
+    const targetType=row.relatedFieldApiName==='Id'?'reference':
+      targets.get(row.relatedObject+'.'+row.relatedFieldApiName);
+    if(!sourceType||!targetType||family(sourceType)!==family(targetType))
+      throw Error('Lookup filter source and target field types are incompatible');
+  }
+  if(['Contains','Starts With'].includes(String(row.operator))){
+    const targetType=row.relatedFieldApiName==='Id'?'reference':
+      targets.get(row.relatedObject+'.'+row.relatedFieldApiName);
+    if(!targetType||family(targetType)!=='text')
+      throw Error('Text lookup operators require a text target field');
+  }
   seen.add(row.id);
  }
  for(const [fieldApi,operator] of Object.entries(logic)){

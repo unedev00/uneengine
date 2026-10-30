@@ -188,6 +188,9 @@ try{
  }else if(process.env.METADRIVE_BROWSER_TARGET==='field-catalogue'){
   const {runFieldCatalogueBrowserCheck}=await import('./field-catalogue-browser-check.mjs');
   await runFieldCatalogueBrowserCheck({page,origin,db,tenantId});
+ }else if(process.env.METADRIVE_BROWSER_TARGET==='relationship-integrity'){
+  const {runRelationshipGraphBrowserCheck}=await import('./relationship-graph-browser-check.mjs');
+  await runRelationshipGraphBrowserCheck({page,origin,db,tenantId,token:tokens.accessToken});
  }else{
  await page.goto(origin+'/une/setup/flow-builder',{waitUntil:'domcontentloaded'});
  await page.getByText('Existing flows',{exact:true}).waitFor({state:'visible',timeout:20000});

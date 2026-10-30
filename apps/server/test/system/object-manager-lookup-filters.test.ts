@@ -38,7 +38,7 @@ test('lookup filters are relational, referentially validated and replace atomica
    return {rows:[{api_name:'AccountId',data_type:'reference',related_object:'Account'},
     {api_name:'Status',data_type:'picklist',related_object:null}],rowCount:2};
   if(sql.includes('FROM md_field_definitions WHERE tenant_id=$1 AND object_api=ANY'))
-   return {rows:[{object_api:'Account',api_name:'Status'}],rowCount:1};
+   return {rows:[{object_api:'Account',api_name:'Status',data_type:'picklist'}],rowCount:1};
   return {rows:[],rowCount:1};
  }} as unknown as PoolClient;
  await persistObjectLookupFilters(client,'tenant','Contact',{
@@ -57,6 +57,16 @@ test('lookup filters are relational, referentially validated and replace atomica
  }),/Invalid lookup filter field reference/);
  assert.ok(calls.slice(before).every(x=>!x.sql.includes('DELETE FROM md_object_lookup_')),
   'invalid lookup filter must never erase persisted definitions');
+ // Typed comparison and operator checks are enforced by metadata, not picker alone.
+ await assert.rejects(()=>persistObjectLookupFilters(client,'tenant','Contact',{
+  relatedLookupFilters:[{...valid,operator:'Contains',relatedFieldApiName:'Id'}],
+  relatedLookupFilterLogic:{}
+ }),/Text lookup operators/);
+ await assert.rejects(()=>persistObjectLookupFilters(client,'tenant','Contact',{
+  relatedLookupFilters:[{...valid,valueFieldApiName:'AccountId'}],
+  relatedLookupFilterLogic:{}
+ }),/incompatible/);
+
 });
 
 test('required filter comparator handles null, numeric and case-insensitive search',()=>{

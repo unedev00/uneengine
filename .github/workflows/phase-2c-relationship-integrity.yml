@@ -1,0 +1,66 @@
+name: Phase 2C relationship integrity
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/server/src/relationship-engine/**'
+      - 'apps/server/src/system-files/object-definition.ts'
+      - 'apps/server/src/system-files/object-manager-lookup-filters.ts'
+      - 'apps/server/src/system-support/server.ts'
+      - 'apps/server/test/system/relationship-*.test.ts'
+      - 'apps/server/test/system/object-manager-lookup-filters.test.ts'
+      - 'apps/server/scripts/relationship-integrity-sql-smoke.mjs'
+      - '.github/workflows/phase-2c-relationship-integrity.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  relationship-integrity:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: metadrive_2c
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d metadrive_2c"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      METADRIVE_SQL_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/metadrive_2c
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Build relationship engine and API
+        run: npm run build:system --workspace apps/server
+      - name: Verify metadata, lookup filters, and CRUD integrity
+        run: node --import tsx --test apps/server/test/system/relationship-engine.test.ts apps/server/test/system/relationship-field-parity.test.ts apps/server/test/system/relationship-graph-phase2c.test.ts apps/server/test/system/object-manager-lookup-filters.test.ts
+      - name: PostgreSQL parent-child-grandchild lifecycle and permissions
+        run: node apps/server/scripts/relationship-integrity-sql-smoke.mjs
+      - name: Build Object Manager and related-list frontend
+        env:
+          GITHUB_PAGES: 'true'
+          GITHUB_PAGES_BASE_PATH: '/'
+          VITE_API_BASE_URL: /api
+        run: npm run build --workspace apps/web
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Verify Object Manager relationship metadata through browser and SQL
+        env:
+          METADRIVE_BROWSER_PREBUILT: '1'
+          METADRIVE_BROWSER_TARGET: relationship-integrity
+        run: |
+          mkdir -p apps/server/artifacts
+          node apps/server/scripts/builder-browser-smoke.mjs

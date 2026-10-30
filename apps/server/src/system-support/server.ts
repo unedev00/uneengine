@@ -60,6 +60,7 @@ import {ObjectSchemaLifecycle} from '../system-files/object-schema-lifecycle.js'
 import {fieldTypeConversionSupported} from '../system-files/field-type-migration.js';
 import {ObjectManagerMetadataService} from '../system-files/object-manager-metadata.js';
 import {persistObjectLookupFilters} from '../system-files/object-manager-lookup-filters.js';
+import {listRelationshipDefinitions} from '../relationship-engine/RelationshipRegistry.js';
 import {ObjectMetadataHistory,restorableObjectLayoutSnapshot} from '../system-files/object-metadata-history.js';
 import {CustomMetadataService} from '../system-files/custom-metadata-service.js';
 import { RbacEngine } from '../system-files/rbac-engine.js';
@@ -1346,6 +1347,19 @@ export function createSystemServer(db:SqlPersistence) {
     res.setHeader('Cache-Control','private, no-store');
     res.setHeader('Vary','Authorization, Cookie');
     res.json({page:page.page});
+  }));
+  app.get('/api/metadata/relationships',route(async(req,res)=>{
+    const actor=req.actor!;
+    await rbac.require(actor.tenant_id,actor.user_id,'ObjectDefinition','read');
+    const requested=req.query.objectApi;
+    if(requested!==undefined&&(typeof requested!=='string'
+      ||!/^[A-Za-z][A-Za-z0-9_]*$/.test(requested)))
+      throw new Error('Invalid relationship object');
+    const relationships=await listRelationshipDefinitions(db,actor.tenant_id,
+      requested as string|undefined);
+    res.setHeader('Cache-Control','private, no-store');
+    res.setHeader('Vary','Authorization, Cookie');
+    res.json({relationships});
   }));
   app.get('/api/metadata/objects',route(async(req,res)=>{
     const actor=req.actor!;

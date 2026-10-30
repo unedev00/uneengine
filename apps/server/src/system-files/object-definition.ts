@@ -451,10 +451,18 @@ export class ObjectDefinitionService {
     });
     if(new Set(normalized.map(x=>x.apiName.toLowerCase())).size!==normalized.length)
       throw new Error('Duplicate field API name');
+    if(normalized.filter(field=>field.relationshipType==='Master-Detail').length>2)
+      throw new Error('An object cannot have more than two Master-Detail relationships');
+    if(normalized.some(field=>field.relationshipType==='Master-Detail'&&field.relatedObject===apiName))
+      throw new Error('Master-Detail relationships cannot create a cycle');
     if(normalized.some(field=>field.relationshipType==='Hierarchical'
       &&(apiName!=='User'||field.relatedObject!=='User')))
       throw new Error('Hierarchical relationships are supported only as User self-lookups');
     await this.db.transaction(async client=>{
+      // A tenant-scoped schema lock serializes simultaneous edge creation and prevents
+      // concurrent A->B / B->A master-detail cycles from both passing validation.
+      if(normalized.some(field=>field.relationshipType==='Master-Detail'))
+        await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1,21102))',[tenantId]);
       await requireAvailableMetadataName(client,tenantId,'object',apiName);
       const inserted=await client.query(
         'INSERT INTO md_object_definitions (tenant_id,api_name,label,is_system) VALUES ($1,$2,$3,false) ON CONFLICT (tenant_id,api_name) DO NOTHING RETURNING id',
@@ -577,6 +585,7 @@ export class ObjectDefinitionService {
       }
       if(field.rollup)await validateRollupWithin(client,tenantId,objectApi,field.rollup);
       if(field.relationshipType==='Master-Detail'){
+        await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1,21102))',[tenantId]);
         const cycle=await client.query(`WITH RECURSIVE parent_chain(object_api,path) AS (
           SELECT $3::text,ARRAY[$3::text]
           UNION ALL
@@ -802,6 +811,7 @@ export class ObjectDefinitionService {
         if(field.controllerFieldApiName||current.controllerFieldApiName)
           throw new Error('Dependent picklist fields must be unlinked before changing their type');
         if(field.relationshipType==='Master-Detail'){
+          await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1,21102))',[tenantId]);
           const cycle=await client.query(`WITH RECURSIVE parent_chain(object_api,path) AS (
             SELECT $3::text,ARRAY[$3::text]
             UNION ALL
