@@ -21,10 +21,6 @@
   "propertyDefinitions": [],
   "eventDefinitions": [
     {
-      "apiName": "click",
-      "label": "Click"
-    },
-    {
       "apiName": "change",
       "label": "Change"
     }
