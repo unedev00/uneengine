@@ -121,3 +121,25 @@ test('Smart ribbon keeps all shared properties and renders the approved compact 
  assert.match(metadata,/WHEN property_key IN \('label','defaultValue'\) THEN 'Data'/);
  assert.match(metadata,/WHEN property_key IN \('tabHeight','tabWidth','headerBoxHeight','imageHeight'\) THEN 'Layout'/);
 });
+
+test('Smart ribbon compact corrections preserve visibility and size controls correctly',()=>{
+ const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
+ const css=read('../src/core/builders/PageBuilder/SmartRibbon.css');
+ assert.match(ribbon,/const visible=definitions\.filter\(p=>p\.tab===tab\)/);
+ assert.match(ribbon,/const supported=property\.components\.includes\(api\)/);
+ assert.doesNotMatch(ribbon,/p\.tab===tab&&p\.components\.includes\(api\)/);
+ assert.match(css,/padding:4px 26px 4px 0!important/);
+ assert.match(css,/flex:0 0 52px!important/);
+ assert.match(css,/width:52px!important;min-width:52px!important;max-width:52px!important/);
+ assert.match(css,/grid-template-rows:repeat\(3,30px\)/);
+});
+
+test('shared SQL ribbon moves Default Check into Data Values and shortens Header labels',()=>{
+ const sql=read('../../server/src/system-support/migrations/20270127-smart-ribbon-compact-property-placement.sql');
+ assert.match(sql,/SET tab='Data', section_group='Values'\s+WHERE property_key='defaultCheck'/);
+ assert.match(sql,/WHEN 'headerBorderColor' THEN 'Border'/);
+ assert.match(sql,/WHEN 'headerAlignment' THEN 'Alignment'/);
+ assert.match(sql,/tab='Design' AND section_group='Header'/);
+ assert.doesNotMatch(sql,/DELETE\s+FROM\s+md_builder_shared_properties/i);
+ assert.doesNotMatch(sql,/UPDATE\s+md_builder_ribbon_component_rules/i);
+});
