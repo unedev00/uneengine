@@ -345,3 +345,23 @@ test('Smart Cart ribbon is SQL-driven and visual preview defers cart data and ac
  const bundled=await buildBundledComponent(catalog.components.find(c=>c.apiName==='smart_cart'));
  assert.ok(bundled.compiledJs.length>0);
 });
+
+test('Smart Cart renders configured ribbon styles in the actual component output',async()=>{
+ const html=await renderSmart('smart_cart',{
+  headerTextColor:'#123abc',supportingBorderColor:'#aa2211',
+  supportingAlignment:'right',supportingBold:true,tableBackgroundColor:'#ddeecc',
+  rowLabelColor:'#119944',rowBorderColor:'#118899',rowHeight:88,rowRadius:7,
+  imageHeight:34,imagePlacement:'right',imageBorderColor:'#ff00bb',
+  summaryTextSize:22,summaryTextColor:'#234567',
+  summary2TextSize:27,summary2TextWeight:false,summary2TextColor:'#123321',
+  summaryWidth:222,summaryHeight:150,
+  textSource:'@Name',records:[{id:'row-1',Name:'Bound sample product'}]
+ });
+ for(const fragment of ['Bound sample product','#123abc','#aa2211','#ddeecc',
+  '#119944','#118899','#ff00bb','#234567','#123321',
+  'min-height:88px','width:222px','image-right','font-size:27px']){
+  assert.ok(html.includes(fragment),'Actual Smart Cart output missing '+fragment);
+ }
+ assert.match(html,/Total/);
+ assert.match(html,/not bound/);
+});
