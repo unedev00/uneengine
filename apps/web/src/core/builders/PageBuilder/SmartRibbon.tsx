@@ -1,4 +1,4 @@
-import {useState} from 'react';
+import {useState,useRef,useEffect,useLayoutEffect} from 'react';
 import {createPortal} from 'react-dom';
 import {AlignLeft,AlignCenter,AlignRight,Bold,WrapText,ArrowLeftRight,ArrowUpDown,ImagePlus,SlidersHorizontal} from 'lucide-react';
 import type {ObjectMetadata} from '../../metadata/Definitions/metadata';
@@ -18,6 +18,35 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  const [mediaOpen,setMediaOpen]=useState(false);
  const [filtersOpen,setFiltersOpen]=useState(false);
  const [daysOpen,setDaysOpen]=useState(false);
+ const daysButton=useRef<HTMLButtonElement>(null);
+ const daysMenu=useRef<HTMLDivElement>(null);
+ const [daysPosition,setDaysPosition]=useState({top:0,left:0});
+ useEffect(()=>{setDaysOpen(false);},[tab,api]);
+ useLayoutEffect(()=>{
+   if(!daysOpen)return;
+   const position=()=>{
+     const rect=daysButton.current?.getBoundingClientRect();
+     if(!rect){setDaysOpen(false);return;}
+     setDaysPosition({top:Math.max(6,Math.min(rect.bottom+3,window.innerHeight-242)),
+       left:Math.max(6,Math.min(rect.left,window.innerWidth-180))});
+   };
+   const outside=(event:PointerEvent)=>{
+     const target=event.target as Node;
+     if(!daysButton.current?.contains(target)&&!daysMenu.current?.contains(target))setDaysOpen(false);
+   };
+   const escape=(event:KeyboardEvent)=>{if(event.key==='Escape')setDaysOpen(false);};
+   position();
+   window.addEventListener('resize',position);
+   window.addEventListener('scroll',position,true);
+   document.addEventListener('pointerdown',outside);
+   document.addEventListener('keydown',escape);
+   return()=>{
+     window.removeEventListener('resize',position);
+     window.removeEventListener('scroll',position,true);
+     document.removeEventListener('pointerdown',outside);
+     document.removeEventListener('keydown',escape);
+   };
+ },[daysOpen]);
  const objectName=fallback(properties.objectApiName)||pageObjectApiName;
  const object=objects.find(o=>o.apiName===objectName);
  const update=(key:string,value:unknown)=>onChange({...properties,[key]:value});
@@ -90,12 +119,15 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
      }else editor=<input type="checkbox" aria-label={title} disabled={!enabled}
        checked={value===true} onChange={e=>write(e.target.checked)}/>;
    }else if(kind==='weekdays')editor=<div className="smart-weekdays">
-     <button type="button" disabled={!enabled} onClick={()=>setDaysOpen(v=>!v)}
+     <button ref={daysButton} type="button" disabled={!enabled} onClick={()=>setDaysOpen(v=>!v)}
        aria-label={title} aria-expanded={daysOpen}>Days ▾</button>
-     {daysOpen&&<div className="smart-weekday-popup">{weekdays.map(([day,label])=><label key={day}>
-       <input type="checkbox" checked={Array.isArray(value)&&value.includes(day)}
-         onChange={e=>write(e.target.checked?[...(Array.isArray(value)?value:[]),day]:
-           (Array.isArray(value)?value:[]).filter(x=>x!==day))}/>{label}</label>)}</div>}
+     {daysOpen&&createPortal(<div ref={daysMenu} className="smart-weekday-popup" role="dialog"
+       aria-label="Choose calendar days" style={{top:daysPosition.top,left:daysPosition.left}}>
+       {weekdays.map(([day,label])=><label key={day}>
+         <input type="checkbox" checked={Array.isArray(value)&&value.includes(day)}
+           onChange={e=>write(e.target.checked?[...(Array.isArray(value)?value:[]),day]:
+             (Array.isArray(value)?value:[]).filter(x=>x!==day))}/>{label}</label>)}
+     </div>,document.body)}
    </div>;
    else if(property.id==='defaultCheck')editor=<button type="button" role="switch"
      className="smart-default-check-switch" aria-label={title}
