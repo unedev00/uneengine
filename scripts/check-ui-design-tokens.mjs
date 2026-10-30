@@ -50,7 +50,27 @@ assert.ok(runtime.includes('const Workspace = lazy('),
   'Workspace must remain lazily loaded');
 assert.ok(!runtime.includes("WorkspaceTheme/styles-part2.css") && !runtime.includes("WorkspaceTheme/styles-audit.css"),
   'Workspace must load one consolidated stylesheet, not a conflicting three-file cascade');
-const workspaceCss = web('styles.css');
+const stylesheetWithImports = (relative, visited = new Set()) => {
+  if (visited.has(relative)) return '';
+  visited.add(relative);
+  const css = web(relative);
+  const imports = [...css.matchAll(/@import\s+["']([^"']+\.css)["'];?/g)]
+    .map(match => match[1])
+    .filter(path => path.startsWith('./'))
+    .map(path => {
+      // All imports of the consolidated workspace CSS live beneath WorkspaceTheme.
+      const prefix = relative.includes('/') ? relative.slice(0, relative.lastIndexOf('/') + 1) : 'core/workspace/WorkspaceTheme/';
+      const segments = (prefix + path).split('/');
+      const resolved = [];
+      for (const segment of segments) {
+        if (segment === '..') resolved.pop();
+        else if (segment !== '.') resolved.push(segment);
+      }
+      return resolved.join('/');
+    });
+  return css + '\\n' + imports.map(path => stylesheetWithImports(path, visited)).join('\\n');
+};
+const workspaceCss = stylesheetWithImports('styles.css');
 for (const selector of ['.palette-backdrop', '.profile-menu-panel', '.flow-workarea.flow-toolbox-collapsed']) {
   assert.ok(workspaceCss.includes(selector), 'Consolidated workspace stylesheet is missing ' + selector);
 }
