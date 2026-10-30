@@ -189,7 +189,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
      <header><div><strong>Filter Records</strong><span>{object?.label??'Object'} · {filterTarget}</span></div>
        <button type="button" autoFocus onClick={()=>setFiltersOpen(false)}>Done</button></header>
      <div className="smart-filter-dialog-body">
-       {object?<RecordFilterEditor title={object.label+' records'} fields={object.fields??[]}
+       {object?<RecordFilterEditor title={object.label+' records'} fields={object.fields??[]} objects={objects} rootObjectApiName={objectName}
          filters={Array.isArray(properties.filters)?properties.filters:[]}
          logic={properties.filterLogic==='OR'?'OR':'AND'}
          onLogicChange={filterLogic=>onChange({...properties,filterLogic})}
