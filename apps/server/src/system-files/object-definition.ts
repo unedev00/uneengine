@@ -847,9 +847,14 @@ export class ObjectDefinitionService {
         }))throw new Error('Global Value Set does not contain existing record values');
       }
       if(required&&!current.required){
+        const valueIsPresent=field.dataType==='reference'?'v.reference_record_id IS NOT NULL':
+          field.dataType==='geolocation'?'v.geo_latitude IS NOT NULL AND v.geo_longitude IS NOT NULL':
+          field.dataType==='address'?'COALESCE(v.address_street,v.address_city,v.address_state,v.address_postal_code,v.address_country) IS NOT NULL':
+          'v.value_text IS NOT NULL';
         const missing=await client.query(`SELECT 1 FROM md_records r
           WHERE r.tenant_id=$1 AND r.object_api=$2 AND NOT EXISTS(
-            SELECT 1 FROM md_record_values v WHERE v.tenant_id=r.tenant_id AND v.record_id=r.id AND v.field_api=$3)
+            SELECT 1 FROM md_record_values v WHERE v.tenant_id=r.tenant_id
+              AND v.record_id=r.id AND v.field_api=$3 AND (${valueIsPresent}))
           LIMIT 1`,[tenantId,objectApi,fieldApi]);
         if(missing.rowCount)throw new Error('Required field cannot be enabled while records have no value');
       }
