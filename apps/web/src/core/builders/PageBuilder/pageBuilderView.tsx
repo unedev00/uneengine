@@ -151,6 +151,7 @@ import PageBuilderRibbonMetadataPager from './PageBuilderRibbonMetadataPager';
 import UniversalRibbonInventory from './UniversalRibbonInventory';
 import UneBuilderRibbon from './UneBuilderRibbon';
 import SmartRibbon from './SmartRibbon';
+import SmartEventActionsRibbon from './SmartEventActionsRibbon';
 import SmartInsertRibbon from './SmartInsertRibbon';
 import SmartIconGallery from './SmartIconGallery';
 import {isUneBuilderApi,uneBuilderDefaults,type SharedRibbonCatalog,type UneBuilderApi} from './uneBuilderPropertyInventory';
@@ -2800,6 +2801,15 @@ function PageBuilder({
           {selected?.type==='Custom:smart_icon' && ribbonTab==='Icons' &&
             <SmartIconGallery value={String(selected.properties.iconId??'house')}
               onChange={iconId=>updateComponent(selected.id,{properties:{...selected.properties,iconId}})}/>}
+          {selectedNewUne && selected && ribbonTab==='Component Action' &&
+            <SmartEventActionsRibbon api={selected.type.slice(7)}
+              actions={selected.properties.actionFlows&&typeof selected.properties.actionFlows==='object'
+                &&!Array.isArray(selected.properties.actionFlows)
+                ? selected.properties.actionFlows as Record<string,unknown>:{}}
+              flows={flows}
+              onChange={actionFlows=>updateComponent(selected.id,{
+                properties:{...selected.properties,actionFlows}
+              })}/>}
           {selectedNewUne && selected && ribbonCatalog &&
             (ribbonTab==='Component Data'||ribbonTab==='Component Properties'||ribbonTab==='Component Layout') &&
             <SmartRibbon
