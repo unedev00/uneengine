@@ -1815,7 +1815,8 @@ function PageBuilder({
       layoutMode: newPageLayoutMode, template: newPageTemplate,
       canvasWidth: newPageCanvasWidth,
       canvasHeight: newPageCanvasHeight,
-      status: 'Draft', devices: [...newPageDevices], components: [],
+       canvasFillColor:'#ffffff',
+       status: 'Draft', devices: [...newPageDevices], components: [],
       // App Pages belong to app navigation; only Record/Home pages use activation assignments.
       activationAssignments: newPageAppId
         ? [{
@@ -2447,7 +2448,10 @@ function PageBuilder({
       case 'canvasWidth':return <input aria-label="Page width" type="number" min={320} max={10000}
         disabled={page.layoutVariant!=='Custom'} value={page.canvasWidth}
         onChange={e=>{const n=Number(e.target.value);if(Number.isInteger(n)&&n>=320&&n<=10000)applyPage({...page,canvasWidth:n});}}/>;
-      case 'canvasHeight':return <input aria-label="Page height" type="number" min={320} max={10000}
+      case 'canvasFillColor':return <input aria-label="Canvas Fill Color" type="color"
+         value={/^#[0-9a-fA-F]{6}$/.test(page.canvasFillColor??'')?page.canvasFillColor:'#ffffff'}
+         onChange={e=>applyPage({...page,canvasFillColor:e.target.value})}/>;
+       case 'canvasHeight':return <input aria-label="Page height" type="number" min={320} max={10000}
         disabled={page.layoutVariant!=='Custom'} value={page.canvasHeight}
         onChange={e=>{const n=Number(e.target.value);if(Number.isInteger(n)&&n>=320&&n<=10000)applyPage({...page,canvasHeight:n});}}/>;
       case 'selectVersion':return <div className="office-ribbon-stack">
@@ -2827,19 +2831,20 @@ function PageBuilder({
           }} onDragOver={(event) => event.preventDefault()} onDrop={(event) => handleDrop(event)}>
             <div
               className={`record-preview ${page.layoutMode === 'free-canvas' ? 'free-canvas-preview' : page.pageType === 'Record Page' ? 'record-page-preview' : page.pageType === 'App Page' ? 'app-page-preview' : 'home-page-preview'} ${device === 'Phone' ? 'phone-preview' : device === 'Tablet' ? 'tablet-preview' : ''}`}
-              style={page.layoutMode === 'free-canvas' && fitCanvas ? {
+              style={{...(page.layoutMode === 'free-canvas' && fitCanvas ? {
                 width: page.canvasWidth * fitScale,
                 height: page.canvasHeight * fitScale,
                 minHeight: 0,
                 overflow: previewMode ? 'hidden' : 'visible'
-              } : page.layoutMode === 'template' && page.components.some(c => c.visible && c.properties?.standalonePresentation === true) ? standaloneTemplateCanvasStyle(page.canvasWidth, page.canvasHeight) : undefined}
+              } : page.layoutMode === 'template' && page.components.some(c => c.visible && c.properties?.standalonePresentation === true) ? standaloneTemplateCanvasStyle(page.canvasWidth, page.canvasHeight) : {}),backgroundColor:page.canvasFillColor??'#ffffff'}}
             >
               {page.layoutMode === 'free-canvas' ? <div
                 className={`free-canvas-stage ${canvasSnap && !previewMode ? 'canvas-grid-on' : ''}`}
                 style={{
                   width: page.canvasWidth,
                   height: page.canvasHeight,
-                  transform: fitCanvas ? `scale(${fitScale})` : undefined,
+                   backgroundColor:page.canvasFillColor??'#ffffff',
+                   transform: fitCanvas ? `scale(${fitScale})` : undefined,
                   transformOrigin: 'top left'
                 }}
               >
