@@ -4,6 +4,22 @@ import {apiRequest} from '../../authentication/Client/authClient';
 type Asset={id:string;name:string;contentType:string;size:number;assetRef:string};
 const safe=/^asset:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const maxBytes=5*1024*1024;
+/** Shared tenant-safe upload service for ribbon direct file selection and library UI. */
+export async function uploadTenantImageFile(file:File):Promise<string>{
+  if(!['image/png','image/jpeg','image/webp','image/gif'].includes(file.type)
+    ||!file.size||file.size>maxBytes)
+    throw new Error('Choose a JPG, PNG, GIF or WebP image up to 5 MB.');
+  const contentBase64=await new Promise<string>((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onerror=()=>reject(new Error('Image could not be read'));
+    reader.onload=()=>resolve(String(reader.result).split(',')[1]??'');
+    reader.readAsDataURL(file);
+  });
+  const item=await apiRequest<Asset>('/media-assets',{method:'POST',body:JSON.stringify({
+    name:file.name,contentType:file.type,contentBase64
+  })});
+  return item.assetRef;
+}
 export default function TenantMediaPicker({value,onChange,disabled=false,assetOnly=false,initiallyOpen=false}:{
   value:string;onChange:(value:string)=>void;disabled?:boolean;assetOnly?:boolean;initiallyOpen?:boolean
 }) {
@@ -27,23 +43,11 @@ export default function TenantMediaPicker({value,onChange,disabled=false,assetOn
     const file=event.target.files?.[0];
     event.target.value='';
     if(!file)return;
-    if(!['image/png','image/jpeg','image/webp','image/gif'].includes(file.type)
-      ||!file.size||file.size>maxBytes){
-      setError('Choose a JPG, PNG, GIF or WebP image up to 5 MB.');return;
-    }
     setBusy(true);setError('');
     try{
-      const contentBase64=await new Promise<string>((resolve,reject)=>{
-        const reader=new FileReader();
-        reader.onerror=()=>reject(new Error('Image could not be read'));
-        reader.onload=()=>resolve(String(reader.result).split(',')[1]??'');
-        reader.readAsDataURL(file);
-      });
-      const item=await apiRequest<Asset>('/media-assets',{method:'POST',body:JSON.stringify({
-        name:file.name,contentType:file.type,contentBase64
-      })});
+      const assetRef=await uploadTenantImageFile(file);
       await refresh();
-      onChange(item.assetRef);
+      onChange(assetRef);
     }catch(reason){setError(reason instanceof Error?reason.message:'Image upload failed');}
     finally{setBusy(false);}
   };

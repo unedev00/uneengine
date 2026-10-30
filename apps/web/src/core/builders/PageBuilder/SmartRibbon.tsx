@@ -1,10 +1,10 @@
-import {useState,useRef,useEffect,useLayoutEffect} from 'react';
+import {useState,useRef,useEffect,useLayoutEffect,type ChangeEvent} from 'react';
 import {createPortal} from 'react-dom';
 import {AlignLeft,AlignCenter,AlignRight,Bold,WrapText,ArrowLeftRight,ArrowUpDown,ImagePlus,SlidersHorizontal} from 'lucide-react';
 import type {ObjectMetadata} from '../../metadata/Definitions/metadata';
 import type {UneRibbonProperty,UneBuilderTab} from './uneBuilderPropertyInventory';
 import RibbonColorPalette from './RibbonColorPalette';
-import TenantMediaPicker from '../ComponentProperties/TenantMediaPicker';
+import TenantMediaPicker,{uploadTenantImageFile} from '../ComponentProperties/TenantMediaPicker';
 import RecordFilterEditor from '../../../component-libraries/shared/primitives/RecordFilterEditor/RecordFilterEditor';
 import SmartFormulaField from './SmartFormulaField';
 import './SmartRibbon.css';
@@ -15,7 +15,22 @@ type Props={tab:UneBuilderTab;api:string;definitions:readonly UneRibbonProperty[
 const weekdays=[['sun','Sun'],['mon','Mon'],['tue','Tue'],['wed','Wed'],['thu','Thu'],['fri','Fri'],['sat','Sat']] as const;
 const fallback=(value:unknown)=>typeof value==='string'?value:'';
 export default function SmartRibbon({tab,api,definitions,properties,onChange,objects,pageObjectApiName='',position,onPositionChange,layoutMode}:Props){
- const [mediaOpen,setMediaOpen]=useState(false);
+ const uploadInput=useRef<HTMLInputElement>(null);
+ const [libraryOpen,setLibraryOpen]=useState(false);
+ const [uploadBusy,setUploadBusy]=useState(false);
+ const [uploadError,setUploadError]=useState('');
+ const selectLocalImage=async(event:ChangeEvent<HTMLInputElement>)=>{
+   const file=event.target.files?.[0];
+   event.target.value='';
+   if(!file)return;
+   setUploadBusy(true);setUploadError('');
+   try{
+     const imageSource=await uploadTenantImageFile(file);
+     onChange({...properties,imageSourceMode:'upload',imageSource});
+   }catch(reason){
+     setUploadError(reason instanceof Error?reason.message:'Image upload failed');
+   }finally{setUploadBusy(false);}
+ };
  const [filtersOpen,setFiltersOpen]=useState(false);
  const [filterTarget,setFilterTarget]=useState('Record');
  const [daysOpen,setDaysOpen]=useState(false);
@@ -87,8 +102,12 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
        <select aria-label="Image source type" value={mode} onChange={e=>onChange({...properties,imageSourceMode:e.target.value,imageSource:''})}>
          <option value="upload">Upload image</option><option value="field">Object field</option>
        </select>
-       {mode==='upload'?<button type="button" title="Choose or upload tenant image" aria-label="Choose or upload tenant image"
-         onClick={()=>setMediaOpen(true)}><ImagePlus size={16}/> Choose</button>:
+       {mode==='upload'?<>
+         <button type="button" title="Choose an image from this computer" aria-label="Choose or upload tenant image"
+          disabled={uploadBusy} onClick={()=>uploadInput.current?.click()}><ImagePlus size={16}/> {uploadBusy?'Uploading…':'Choose'}</button>
+         <button type="button" title="Select an existing uploaded image" aria-label="Open media library"
+          disabled={uploadBusy} onClick={()=>setLibraryOpen(true)}>Library</button>
+        </>:
         <><select aria-label="Image field" value={fallback(value).replace(/^@/,'')}
            onChange={e=>write(e.target.value?'@'+e.target.value:'')}>
           <option value="">Choose field</option>{(object?.fields??[]).map(f=><option key={f.apiName} value={f.apiName}>{f.label}</option>)}
@@ -158,15 +177,19 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
        data-supported={supported} title={title}><span className="smart-label">{title}</span>{editor}</div>;
  };
  return <div className="smart-ribbon" data-smart-api={api} aria-label="Smart shared property ribbon">
+  <input ref={uploadInput} className="smart-hidden-upload" type="file"
+    accept="image/png,image/jpeg,image/gif,image/webp" aria-label="Select local image"
+    onChange={event=>void selectLocalImage(event)} />
+  {uploadError&&<div className="smart-upload-error" role="alert" title={uploadError}>{uploadError}</div>}
   {sections.map(section=><section className="smart-ribbon-group" key={section} aria-label={section}>
    <div className="smart-ribbon-items">{visible.filter(p=>p.group===section).map(controls)}</div>
    <span className="smart-ribbon-caption">{section}</span>
   </section>)}
-  {mediaOpen&&createPortal(<div className="smart-dialog-backdrop" role="presentation">
-    <section className="smart-dialog" role="dialog" aria-modal="true" aria-label="Image source">
-     <header><strong>Choose Image</strong><button type="button" onClick={()=>setMediaOpen(false)}>Close</button></header>
-     <TenantMediaPicker value={fallback(properties.imageSource)} initiallyOpen
-       onChange={value=>onChange({...properties,imageSourceMode:'upload',imageSource:value})}/>
+  {libraryOpen&&createPortal(<div className="smart-dialog-backdrop" role="presentation">
+    <section className="smart-dialog" role="dialog" aria-modal="true" aria-label="Media library">
+     <header><strong>Media Library</strong><button type="button" onClick={()=>setLibraryOpen(false)}>Close</button></header>
+     <TenantMediaPicker value={fallback(properties.imageSource)} assetOnly initiallyOpen
+       onChange={value=>{onChange({...properties,imageSourceMode:'upload',imageSource:value});setLibraryOpen(false);}}/>
     </section></div>,document.body)}
   {filtersOpen&&createPortal(<div className="smart-dialog-backdrop smart-filter-backdrop"
        role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)setFiltersOpen(false);}}>

@@ -437,6 +437,66 @@ test('Smart Icon SQL enables only approved appearance and layout properties',()=
  assert.match(seeder,/core-smart-components-v3/);
 });
 
+
+test('Smart Button and Input Box own visible configured dimensions, not outer canvas boxes',async()=>{
+ const button=await renderSmart('smart_button',{label:'Save',width:180,height:90});
+ assert.match(button,/height:90px/);
+ assert.match(button,/width:180px/);
+ const input=await renderSmart('smart_text',{
+   label:'Search products',labelAlignment:'center',textSize:21,
+   backgroundColor:'#ffe500',width:260,height:90
+ });
+ assert.match(input,/placeholder="Search products"/);
+ assert.match(input,/font-size:21px/);
+ assert.match(input,/text-align:center/);
+ assert.match(input,/height:90px/);
+ assert.doesNotMatch(input,/<span>Search products<\/span>/);
+ assert.doesNotMatch(input,/<label[^>]*>Search products/);
+ const css=read('../src/component-libraries/smart/shared/smart.css');
+ assert.match(css,/smart_text>\.smart-input-box/);
+ assert.match(css,/smart_image>\.smart-card/);
+ const canvas=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const dataRuntime=read('../src/core/pages/MetadataBoundPageComponent/MetadataBoundPageComponent.tsx');
+ assert.match(canvas,/customDefinition\.apiName\.startsWith\('smart_'\) && component\.position/);
+ assert.match(canvas,/width:component\.position\.width,height:component\.position\.height/);
+ assert.match(dataRuntime,/smartCanvas\?\{width:component\.position!\.width,height:component\.position!\.height\}/);
+});
+test('Smart Image and Card Grid bind URL from each Product record independently',async()=>{
+ const records=[{id:'a',ImageURL:'https://example.com/first.png'},
+  {id:'b',ImageURL:'https://example.com/second.png'}];
+ const props={objectApiName:'Product',imageSource:'@ImageURL',records,
+   cardsPerRow:2,cardsPerColumn:1,width:600,height:350};
+ const one=await renderSmart('smart_image',props);
+ assert.match(one,/src="https:\/\/example.com\/first.png"/);
+ assert.doesNotMatch(one,/second.png/);
+ const grid=await renderSmart('smart_card_grid',props);
+ assert.match(grid,/src="https:\/\/example.com\/first.png"/);
+ assert.match(grid,/src="https:\/\/example.com\/second.png"/);
+ assert.equal((grid.match(/<img /g)||[]).length,2);
+});
+test('Smart Image upload opens native file chooser directly and reuses tenant upload',()=>{
+ const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
+ const picker=read('../src/core/builders/ComponentProperties/TenantMediaPicker.tsx');
+ assert.match(ribbon,/uploadInput\.current\?\.click\(\)/);
+ assert.match(ribbon,/type="file"/);
+ assert.match(ribbon,/uploadTenantImageFile\(file\)/);
+ assert.doesNotMatch(ribbon,/mediaOpen&&createPortal/);
+ assert.match(picker,/export async function uploadTenantImageFile/);
+ assert.match(picker,/apiRequest<Asset>\('\/media-assets'/);
+});
+test('Independent components avoid automatic overlap and have Office-style shape gestures',()=>{
+ const builder=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const css=read('../src/core/builders/PageBuilder/SmartCanvasHandles.css');
+ assert.match(builder,/usedBounds\.every\(other=>/);
+ assert.match(builder,/free-canvas-move-handle/);
+ assert.match(builder,/onPointerMove=\{moveCanvasPointer\}/);
+ assert.match(builder,/<MoveVertical size=\{15\}\/>/);
+ assert.match(builder,/<MoveHorizontal size=\{15\}\/>/);
+ assert.match(css,/\.free-canvas-move-handle/);
+ assert.match(css,/\.free-canvas-component \.smart-runtime/);
+});
+
+
 test('Smart Tabs renders only bounded matching record labels from a filtered Object source',async()=>{
  const records=Array.from({length:50},(_,i)=>({id:String(i),Name:'Product '+i}));
  const html=await renderSmart('smart_tabs',{objectApiName:'Product',textSource:'@Name',tabCount:4,records,builderPreview:true});

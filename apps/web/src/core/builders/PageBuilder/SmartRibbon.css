@@ -409,6 +409,12 @@
   justify-content:flex-start;
 }
 
+/* File chooser is invoked directly by the Upload Image action, never a modal. */
+.office-builder-ribbon .smart-ribbon>.smart-hidden-upload{display:none!important}
+.office-builder-ribbon .smart-upload-error{flex:0 0 200px;align-self:flex-start;overflow:hidden;
+  max-width:200px;white-space:nowrap;text-overflow:ellipsis;color:#b42318;font-size:11px}
+
+
 /* Formula field and source filter share one readable compact ribbon control. */
 .office-builder-ribbon .smart-formula-filter{display:inline-flex;align-items:center;gap:5px;min-width:0}
 .office-builder-ribbon .smart-formula-filter .smart-formula{flex:0 0 155px;width:155px;min-width:155px;height:28px}
