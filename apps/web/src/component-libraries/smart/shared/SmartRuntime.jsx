@@ -201,7 +201,7 @@ export default function SmartRuntime(p){
    style={{...style,backgroundColor:p.backgroundColor||undefined,borderColor:p.borderColor||undefined,
     width:"100%",height:"100%",minHeight:0,color:p.labelColor||undefined,fontSize:number(p.textSize,16)}}/>;
  else if(name==="smart_image")content=<SmartCard p={p} record={
-   p.imageSourceMode==="field"&&Array.isArray(p.records)
+   (p.imageSourceMode==="field"||typeof p.imageSource==="string"&&p.imageSource.startsWith("@"))&&Array.isArray(p.records)
    ?(p.records.find(r=>boundImage(p,r))??record):record
  }/>;
  else if(name==="smart_card_grid")content=<div className="smart-grid" style={{
