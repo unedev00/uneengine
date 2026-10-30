@@ -2,9 +2,9 @@ import type {PoolClient} from 'pg';
 
 /** Only built-in package registrations may be remapped; customer names stay exact. */
 const systemUneNames:Readonly<Record<string,string>>={
- OneText:'une_input',OneBadge:'une_input',OneButton:'une_button',OneSearch:'une_search',
- OneCalendar:'une_calendar',OneItemGrid:'une_item_grid',
- OneConversation:'une_conversation',OneShoppingCart:'une_cart'
+ OneText:'ui_input',OneBadge:'ui_input',OneButton:'ui_button',OneSearch:'ui_search',
+ OneCalendar:'ui_calendar',OneItemGrid:'ui_item_grid',
+ OneConversation:'ui_conversation',OneShoppingCart:'ui_cart'
 };
 
 /** Transactional, non-destructive materialisation of published SQL application templates.

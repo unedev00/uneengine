@@ -1,6 +1,6 @@
 import * as React from 'react';
 import type { RefObject } from 'react';
-import { useModalAccessibility as sharedModalAccessibility } from '../../../one/shared/accessibilityHooks';
+import { useModalAccessibility as sharedModalAccessibility } from '../../../component-libraries/shared/accessibilityHooks';
 
 /** Shared keyboard and scroll containment for ordinary workspace and One dialogs. */
 export function useModalAccessibility<T extends HTMLElement>(

@@ -18,7 +18,7 @@ import { flowCanvasBounds, moveFlowPosition, storedFlowPosition } from './flowCa
 import FlowTestsPanel from './FlowTestsPanel';
 import FlowSubflowMappingEditor from './FlowSubflowMappingEditor';
 import CustomComponentPropertyEditor from '../ComponentProperties/CustomComponentPropertyEditor';
-import SmartFieldInput from '../../../one/OneSmartFieldInput/SmartFieldInput';
+import SmartFieldInput from '../../../component-libraries/shared/primitives/SmartFieldInput/SmartFieldInput';
 import FlowReferenceInput from '../FlowReferenceInput/FlowReferenceInput';
 import { FlowConditionRows, FlowFieldAssignments } from './FlowValueEditors';
 import PageComponentStyleEditor from '../ComponentStyleEditor/PageComponentStyleEditor';

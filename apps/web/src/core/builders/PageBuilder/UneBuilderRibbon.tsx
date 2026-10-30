@@ -48,9 +48,9 @@ export default function UneBuilderRibbon({tab,api,definitions,properties,onChang
 }){
  const objectName=typeof properties.objectApiName==='string'&&properties.objectApiName?properties.objectApiName:pageObjectApiName;
  const excluded:Record<string,readonly string[]>={
-  une_item_grid:['label','labelAlignment','defaultValueColor','textSize'],
-  une_container:['objectApiName','imageSource','badgeText','badgeAlignment','badgeTextSize','badgeBold','badgeTextColor','badgeVisible','badgeBodyColor','labelAlignment','textSize','label','textSource','labelColor','imageFill'],
-  une_calendar:['label','labelAlignment']
+  ui_item_grid:['label','labelAlignment','defaultValueColor','textSize'],
+  ui_container:['objectApiName','imageSource','badgeText','badgeAlignment','badgeTextSize','badgeBold','badgeTextColor','badgeVisible','badgeBodyColor','labelAlignment','textSize','label','textSource','labelColor','imageFill'],
+  ui_calendar:['label','labelAlignment']
  };
  const notApplicable=new Set(excluded[api]??[]);
  const relocated=(property:UneRibbonProperty):UneRibbonProperty=>{
@@ -66,7 +66,7 @@ export default function UneBuilderRibbon({tab,api,definitions,properties,onChang
  const set=(id:string,value:unknown)=>onChange({...properties,[id]:value});
  const control=(property:UneRibbonProperty)=>{
   const supported=property.components.includes(api)&&!notApplicable.has(property.id);
-  const kind=api==='une_calendar'&&property.id==='shadow'?'shadow':property.kindOverrides?.[api]??property.kind;
+  const kind=api==='ui_calendar'&&property.id==='shadow'?'shadow':property.kindOverrides?.[api]??property.kind;
   const sourceKey=property.valueKeys?.[api]??property.id;
   const enabled=supported&&(kind!=='position'||layoutMode==='free-canvas'&&Boolean(position&&onPositionChange));
   const v=properties[sourceKey]??property.defaultsOverrides?.[api]??property.default??'';

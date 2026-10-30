@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {projectRecordChoices,toggleChoiceSelection}
-  from '../src/one/shared/recordChoices.mjs';
+  from '../src/component-libraries/shared/recordChoices.mjs';
 
 test('Record-bound choices use safe metadata field mappings and preserve option identity',()=>{
   const records=[

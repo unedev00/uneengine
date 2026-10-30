@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 import {auditUniversalRibbonCoverage} from '../src/core/builders/PageBuilder/universalRibbonCoverage.mjs';
 
 const read=(url:URL)=>JSON.parse(readFileSync(url,'utf8'));
-const root=new URL('../src/one/',import.meta.url);
+const root=new URL('../src/component-libraries/',import.meta.url);
 const manifest=read(new URL('manifest.json',root)) as {components:string[]};
 const components=manifest.components.map(path=>read(new URL(path,root))) as
   {apiName:string;propertyDefinitions:{propertyKey:string}[]}[];

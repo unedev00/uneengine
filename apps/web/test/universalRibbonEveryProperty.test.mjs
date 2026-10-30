@@ -3,12 +3,12 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {loadComponentCatalog} from '../../../scripts/component-catalog.mjs';
 
-const root=new URL('../src/one/',import.meta.url);
+const root=new URL('../src/component-libraries/',import.meta.url);
 const read=url=>readFileSync(url,'utf8');
 const manifest=JSON.parse(read(new URL('manifest.json',root)));
 
 test('all UNE component settings are owned by app source, not the Component Library manifest',async()=>{
- assert.equal(manifest.components.filter(path=>path.startsWith('une_')||path.startsWith('acetill_cart/')).length,35);
+ assert.equal(manifest.components.filter(path=>path.startsWith('ui_')||path.startsWith('acetill_cart/')).length,35);
  assert.deepEqual(manifest.commonProperties,[]);
  const catalog=await loadComponentCatalog();
  const keys=new Set();
@@ -38,8 +38,8 @@ test('UNE settings stay out of public catalog, ribbon and registration UI',()=>{
  assert.match(build,/defaultProps/);
  assert.doesNotMatch(builder,/data-app-owned-une=\{selectedAppOwnedUne/);
  assert.match(css,/data-app-owned-une="true"/);
- assert.match(library,/!component\.apiName\.startsWith\('une_'\)/);
- assert.match(palette,/!component\.apiName\.startsWith\('une_'\)/);
+ assert.match(library,/!component\.apiName\.startsWith\('ui_'\)/);
+ assert.match(palette,/!component\.apiName\.startsWith\('ui_'\)/);
 });
 
 test('SQL cleanup removes UNE property inventory only, retaining component identities and page instances',()=>{
@@ -58,7 +58,7 @@ test('app-owned renderers and styles are code owned rather than UNE wrapper reex
   const descriptor=JSON.parse(read(new URL(path,root)));
   assert.deepEqual(descriptor.propertyDefinitions,[]);
   assert.equal(descriptor.cssFile,descriptor.apiName==='acetill_cart'
-   ?'one/acetill_cart/AcetillCart.css':`one/${descriptor.apiName}/AppComponent.css`);
+   ?'component-libraries/acetill_cart/AcetillCart.css':`component-libraries/${descriptor.apiName}/AppComponent.css`);
   const jsx=read(new URL('../src/'+descriptor.jsxFile,import.meta.url));
   assert.doesNotMatch(jsx,/from ['"]\.\.\/une_[a-z_]+\//,descriptor.apiName+' imports a deprecated wrapper');
   assert.ok(read(new URL('../src/'+descriptor.cssFile,import.meta.url)).length>0);

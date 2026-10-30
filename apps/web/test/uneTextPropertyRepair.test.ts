@@ -9,20 +9,20 @@ const load=p=>readFileSync(new URL(p,import.meta.url),'utf8');
 
 test('UNE Input replaces public UNE Text and keeps shared styling and data binding',async()=>{
  const catalog=await loadComponentCatalog();
- assert.ok(!catalog.components.some(c=>c.apiName==='une_text'));
- const component=catalog.components.find(c=>c.apiName==='une_input');
+ assert.ok(!catalog.components.some(c=>c.apiName==='ui_text'));
+ const component=catalog.components.find(c=>c.apiName==='ui_input');
  assert.ok(component);
  const keys=new Set(component.propertyDefinitions.map(p=>p.propertyKey));
  for(const key of ['value','allowTyping','label','disabled','radius','padding','shadow','glassBlur',
                    'backgroundColor','textColor','borderColor','fontSize'])assert.ok(keys.has(key),key);
  assert.ok(!keys.has('text'));
- const manifest=JSON.parse(load('../src/one/manifest.json'));
- assert.ok(!manifest.components.includes('une_text/component.json'));
+ const manifest=JSON.parse(load('../src/component-libraries/manifest.json'));
+ assert.ok(!manifest.components.includes('ui_text/component.json'));
 });
 
 test('same UNE Input renders display-only text and an editable text box',async()=>{
  const catalog=await loadComponentCatalog();
- const component=catalog.components.find(c=>c.apiName==='une_input');
+ const component=catalog.components.find(c=>c.apiName==='ui_input');
  const built=await buildBundledComponent(component);
  const context={React,module:{exports:{}},Intl,Date,URL,crypto:globalThis.crypto};
  vm.runInNewContext(built.compiledJs,context);

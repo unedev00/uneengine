@@ -28,7 +28,7 @@ try {
       value: { effectiveType: '4g', downlink: 12, rtt: 45, saveData: false }
     });
   });
-  await fast.goto(site + '/login?une_brand_smoke=1', { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await fast.goto(site + '/login?ui_brand_smoke=1', { waitUntil: 'domcontentloaded', timeout: 30000 });
   const logo = fast.locator('.auth-card .une-brand-logo').first();
   await logo.waitFor({ state: 'visible', timeout: 20000 });
   let loaded = true;
@@ -76,7 +76,7 @@ try {
   await slow.addInitScript(() => Object.defineProperty(navigator, 'connection', {
     configurable: true, value: { effectiveType: '2g', downlink: .2, rtt: 900, saveData: true }
   }));
-  await slow.goto(site + '/login?une_brand_smoke=slow', { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await slow.goto(site + '/login?ui_brand_smoke=slow', { waitUntil: 'domcontentloaded', timeout: 30000 });
   const slowLogo = slow.locator('.auth-card .une-brand-logo').first();
   await slowLogo.waitFor({ state: 'visible', timeout: 20000 });
   await slow.waitForTimeout(700);

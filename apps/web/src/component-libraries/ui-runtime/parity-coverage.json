@@ -1,0 +1,72 @@
+{
+  "baseline": "2026-10-24-current-main",
+  "migration": false,
+  "apps": {
+    "AceKiosk": {
+      "components": [
+        "ui_item_grid",
+        "ui_choice",
+        "ui_option_groups",
+        "ui_modal",
+        "ui_cart",
+        "ui_input",
+        "ui_button"
+      ],
+      "unverified": [
+        "modifier groups",
+        "checkout state sequence",
+        "server order confirmation"
+      ]
+    },
+    "Acetill": {
+      "components": [
+        "ui_item_grid",
+        "ui_search",
+        "ui_cart",
+        "ui_modal",
+        "ui_line_items",
+        "ui_table",
+        "ui_document_viewer"
+      ],
+      "unverified": [
+        "PIN lock",
+        "barcode",
+        "held sales",
+        "SRN",
+        "customer display"
+      ]
+    },
+    "AceChatter": {
+      "components": [
+        "ui_conversation",
+        "ui_search",
+        "ui_lookup",
+        "ui_modal",
+        "ui_repeater"
+      ],
+      "unverified": [
+        "thread refresh",
+        "contacts",
+        "message delivery status",
+        "mobile keyboard"
+      ]
+    },
+    "AceAssist": {
+      "components": [
+        "ui_calendar",
+        "ui_slot_picker",
+        "ui_form",
+        "ui_line_items",
+        "ui_table",
+        "ui_metric",
+        "ui_lookup"
+      ],
+      "unverified": [
+        "all calendar views",
+        "business hours and timezones",
+        "quotation to invoice",
+        "document line totals"
+      ]
+    }
+  }
+}

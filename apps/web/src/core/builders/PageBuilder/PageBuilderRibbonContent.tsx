@@ -38,7 +38,7 @@ export default function PageBuilderRibbonContent({componentApiName,properties,de
    <div className="office-ribbon-content-heading">{icon}<strong>{title}</strong></div>
    <div className="office-ribbon-content-fields">{content}</div><span className="office-ribbon-group-heading">{title}</span>
  </div>;
- if(componentApiName==='une_item_grid')return <>
+ if(componentApiName==='ui_item_grid')return <>
    {section('Image',<ImageIcon size={18}/>,<>
      {toggle('Show image','showImage')}
      {expr('Image field','imageExpression','imageFieldApiName')}
@@ -63,7 +63,7 @@ export default function PageBuilderRibbonContent({componentApiName,properties,de
 
 
  </>;
- if(componentApiName==='une_calendar')return <>
+ if(componentApiName==='ui_calendar')return <>
    {section('Event Title',<CalendarDays size={18}/>,<>{select('Title field','titleFieldApiName')}{select('Date field','dateFieldApiName')}</>)}
    {section('Event Time',<Clock size={18}/>,<>{select('Start','eventStartFieldApiName')}{select('End','eventEndFieldApiName')}{input('Time zone','timeZone')}</>)}
    {section('Description',<AlignLeft size={18}/>,<>{select('Service','serviceFieldApiName')}{input('Service value','serviceValue')}</>)}

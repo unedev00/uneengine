@@ -1,5 +1,5 @@
 import type { FlowElementMetadata } from '../../metadata/Definitions/metadata';
-import { resolveMentionValue } from '../../../one/OneSmartFieldInput/smartFieldMentions';
+import { resolveMentionValue } from '../../../component-libraries/shared/primitives/SmartFieldInput/smartFieldMentions';
 
 export function initialScreenValues(screen: FlowElementMetadata): Record<string, unknown> {
   const fields = Array.isArray(screen.config.fields)

@@ -26,7 +26,7 @@ export default function PageBuilderRibbonData({properties,definition,objects,fal
  const changeObject=(apiName:string)=>{
    const sourceFields=objects.find(object=>object.apiName===apiName)?.fields??[];
    const pick=(pattern:RegExp)=>sourceFields.find(field=>pattern.test(field.apiName+' '+field.label))?.apiName??'';
-   const suggestions=definition?.apiName==='une_item_grid'&&objectKey==='objectApiName'?{
+   const suggestions=definition?.apiName==='ui_item_grid'&&objectKey==='objectApiName'?{
      imageFieldApiName:properties.imageFieldApiName||pick(/image|photo|picture|thumbnail/i),
      titleFieldApiName:properties.titleFieldApiName||pick(/^(name|title|product_name)$/i)||pick(/name|title/i),
      descriptionFieldApiName:properties.descriptionFieldApiName||pick(/description|summary|detail/i),

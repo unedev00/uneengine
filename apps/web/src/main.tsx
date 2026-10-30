@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client';
 import './core/workspace/WorkspaceTheme/design-system.css';
 import MarketingSite from './core/public/MarketingSite/MarketingSite';
 import { registerUniversalShell } from './core/workspace/Bootstrap/universalShell';
-import { installPopoverDismissal } from './one/shared/popoverDismissal';
+import { installPopoverDismissal } from './component-libraries/shared/popoverDismissal';
 import { isMissingDynamicChunk, recoverMissingDynamicChunk, reloadLatestWorkspace } from './core/workspace/Bootstrap/dynamicChunkRecovery';
 
 registerUniversalShell();

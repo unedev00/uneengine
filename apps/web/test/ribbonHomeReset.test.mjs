@@ -27,19 +27,19 @@ test('additive SQL migration removes only non-Home shared entries and migrates A
  assert.match(sql,/p.api_name IN \('AcetillSale','AcetillCheckout'\)/);
 });
 test('Acetill owns its renderer identity and a separate version-3 package',()=>{
- const d=JSON.parse(src('../src/one/acetill_cart/component.json'));
+ const d=JSON.parse(src('../src/component-libraries/acetill_cart/component.json'));
  const v3=src('../../acetill/sql/register-v3.sql');
  assert.equal(d.apiName,'acetill_cart');
  assert.deepEqual(d.propertyDefinitions,[]);
- const privateRenderer=src('../src/one/acetill_cart/AcetillCart.jsx');
- assert.match(privateRenderer,/OneShoppingCart\/OneShoppingCart/);
- assert.doesNotMatch(privateRenderer,/une_cart\/UneCart/);
+ const privateRenderer=src('../src/component-libraries/acetill_cart/AcetillCart.jsx');
+ assert.match(privateRenderer,/shared\/primitives\/ShoppingCart\/ShoppingCart/);
+ assert.doesNotMatch(privateRenderer,/ui_cart\/UneCart/);
  assert.match(v3,/one-bundled:acetill_cart/);
  assert.match(v3,/AcetillSale','acetill_cart'/);
  assert.match(v3,/AcetillCheckout','acetill_cart'/);
- assert.doesNotMatch(v3,/'une_cart'/);
+ assert.doesNotMatch(v3,/'ui_cart'/);
  const v4=src('../../acetill/sql/register-v4.sql');
  for(const name of ['acetill_input','acetill_search','acetill_item_grid','acetill_cart','acetill_button'])
   assert.ok(v4.includes(name),name);
- assert.doesNotMatch(v4,/'une_input'|'une_search'|'une_item_grid'|'une_cart'|'une_button'/);
+ assert.doesNotMatch(v4,/'ui_input'|'ui_search'|'ui_item_grid'|'ui_cart'|'ui_button'/);
 });

@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useDismissOnOutside as sharedDismissOnOutside } from '../../../one/shared/accessibilityHooks';
+import { useDismissOnOutside as sharedDismissOnOutside } from '../../../component-libraries/shared/accessibilityHooks';
 
 export function useDismissOnOutside<T extends HTMLElement>(
   container: React.RefObject<T>, expanded: boolean, dismiss: () => void

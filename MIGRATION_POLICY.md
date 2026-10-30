@@ -80,18 +80,18 @@ Internal component code may implement generic rendering behaviour, but each inde
 Only if composition or property extension cannot reasonably satisfy the need:
 
 - Create a **genuinely reusable** new component in the `UNE_*` component family; register it through the **one shared Component Registry** so it can be used in Page Builder and supported runtimes.
-- Preserve the repository's existing canonical API-name convention: current UNE catalog entries use `une_*` identifiers (for example `une_calendar`) and user-facing `UNE …` labels. Treat this as the `UNE_*` namespace; **do not rename existing registered components** merely to change case or punctuation.
+- Preserve the repository's existing canonical API-name convention: current UNE catalog entries use `une_*` identifiers (for example `ui_calendar`) and user-facing `UNE …` labels. Treat this as the `UNE_*` namespace; **do not rename existing registered components** merely to change case or punctuation.
 - Use the **same MetaDrive Property Engine and Renderer**; add declared property and event metadata rather than bespoke app-specific component configuration.
 - Make layout, style, dimensions, responsiveness, visibility, validation, bindings and events configurable where relevant. Keep components granular enough for Page Builder editing.
 - Verify registration, Builder property editing, persisted metadata, runtime rendering, Flow/event wiring and reuse across applications.
 
 ### Component directory structure is mandatory
 
-Preserve the existing **per-component folder tree**, currently rooted at `apps/web/src/one/` (rather than recreating the historical `custom-components/` tree). Keep the JavaScript/JSX, CSS and component descriptor within the component's folder.
+Preserve the existing **per-component folder tree**, currently rooted at `apps/web/src/component-libraries/` (rather than recreating the historical `custom-components/` tree). Keep the JavaScript/JSX, CSS and component descriptor within the component's folder.
 
 ```text
-apps/web/src/one/
-  une_calendar/
+apps/web/src/component-libraries/
+  ui_calendar/
     UneCalendar.jsx
     UneCalendar.css
     component.json

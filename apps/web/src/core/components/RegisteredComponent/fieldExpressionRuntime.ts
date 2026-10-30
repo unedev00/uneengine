@@ -1,4 +1,4 @@
-import {evaluateFieldExpressionDetailed,FieldExpressionEvaluationError} from '../../../one/shared/OneFieldExpression.js';
+import {evaluateFieldExpressionDetailed,FieldExpressionEvaluationError} from '../../../component-libraries/shared/FieldExpression.js';
 
 function isFieldExpression(value:string):boolean{
   const input=value.trim();

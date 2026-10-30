@@ -50,10 +50,10 @@ test('component schema override, version and device selection do not rewrite sav
 });
 test('behaviour fragments share bounded shapes and legacy fields remain intact',()=>{
  for(const d of [...Object.values(pageBehaviorSchemas),pagePropertyContract])assert.deepEqual(validateComponentDefinitions([d]),[]);
- assert.deepEqual(pagePropertyIssues('Custom:une_card',{arbitraryLegacy:{x:1}}),[]);
+ assert.deepEqual(pagePropertyIssues('Custom:ui_card',{arbitraryLegacy:{x:1}}),[]);
  assert.ok(pagePropertyIssues('Record Field',{requiredOnLayout:'true'}).length);
  assert.ok(pagePropertyIssues('Field Section',{readOnlyFieldApiNames:[{}]}).length);
- assert.ok(pagePropertyIssues('Custom:une_card',{pagePropertyContract:{version:2}}).length);
+ assert.ok(pagePropertyIssues('Custom:ui_card',{pagePropertyContract:{version:2}}).length);
  const value={pagePropertyContract:{version:1,tabVisibility:[{tabId:'details',when:{logic:'All',conditions:[{source:'Device',operator:'Equals',value:'Phone'}]}}]}};
  assert.deepEqual(pagePropertyIssues('Tabs',value),[]);
  const rows:Array<{path:string;kind:string;text:string|null}>=[];

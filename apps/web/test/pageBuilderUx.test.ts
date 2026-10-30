@@ -65,10 +65,10 @@ test('ribbon keeps the nine-step component journey with icon-led, accessible tab
 });
 
 test('card gallery properties live in application code and are consumed by runtime', async () => {
-  const component={propertyDefinitions:(await import('../src/one/une_item_grid/app-properties.mjs')).propertyDefinitions};
-  const registration=JSON.parse(readFileSync(new URL('../src/one/une_item_grid/component.json',import.meta.url),'utf8'));
+  const component={propertyDefinitions:(await import('../src/component-libraries/ui_item_grid/app-properties.mjs')).propertyDefinitions};
+  const registration=JSON.parse(readFileSync(new URL('../src/component-libraries/ui_item_grid/component.json',import.meta.url),'utf8'));
   assert.deepEqual(registration.propertyDefinitions,[]);
-  const runtime=readFileSync(new URL('../src/one/OneItemGrid/OneItemGrid.jsx',import.meta.url),'utf8');
+  const runtime=readFileSync(new URL('../src/component-libraries/shared/primitives/ItemGrid/ItemGrid.jsx',import.meta.url),'utf8');
   const keys=new Set(component.propertyDefinitions.map((definition:{propertyKey:string})=>definition.propertyKey));
   for(const key of ['imageWidth','imageHeight','imageFit','imageAspectRatio','imageShape',
     'headingFontSize','headingColor','descriptionFontSize','descriptionColor','valueFontSize']) {
@@ -97,8 +97,8 @@ test('Data ribbon uses friendly field labels, readable values and safe missing-f
 });
 
 test('Card Grid Add button remains compatible with saved values without exposing retired settings',()=>{
-  const component=JSON.parse(readFileSync(new URL('../src/one/une_item_grid/component.json',import.meta.url),'utf8'));
-  const runtime=readFileSync(new URL('../src/one/OneItemGrid/OneItemGrid.jsx',import.meta.url),'utf8');
+  const component=JSON.parse(readFileSync(new URL('../src/component-libraries/ui_item_grid/component.json',import.meta.url),'utf8'));
+  const runtime=readFileSync(new URL('../src/component-libraries/shared/primitives/ItemGrid/ItemGrid.jsx',import.meta.url),'utf8');
   assert.ok(component.eventDefinitions.some((event:{apiName:string})=>event.apiName==='itemAdd'));
   assert.ok(!component.propertyDefinitions.some((property:{propertyKey:string})=>property.propertyKey==='separateAddButton'));
   assert.ok(!component.propertyDefinitions.some((property:{propertyKey:string})=>property.propertyKey==='showAddIcon'));
@@ -149,7 +149,7 @@ test('colour pickers share a single accessible, metadata-backed palette',()=>{
 test('design canvas selects Button and other live controls without firing actions',()=>{
   const view=readFileSync(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
   const css=readFileSync(new URL('../src/core/builders/PageBuilder/sections/01-page-builder.css',import.meta.url),'utf8');
-  const button=readFileSync(new URL('../src/one/OneButton/OneButton.jsx',import.meta.url),'utf8');
+  const button=readFileSync(new URL('../src/core/components/SharedRuntime/SharedButton.jsx',import.meta.url),'utf8');
   assert.match(view,/const selectOnlyInDesigner = !previewMode && !libraryPreview/);
   assert.match(view,/onClick=\{selectOnlyInDesigner \? selectCanvasComponent : undefined\}/);
   assert.match(view,/onClickCapture=\{libraryPreview && !interactivePreview/);
