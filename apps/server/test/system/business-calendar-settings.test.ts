@@ -66,7 +66,7 @@ test('business calendar rejects invalid timezone, hours and holiday dates before
  const service=new PlatformTenantService(db,{require:async()=>undefined} as unknown as RbacEngine);
  await assert.rejects(()=>service.saveSetting('tenant','user','business-calendar',{
   ...calendar,timezone:'Not/AZone'
- }),/time zcomponent-libraries/);
+ }),/time zone/);
  await assert.rejects(()=>service.saveSetting('tenant','user','business-calendar',{
   ...calendar,weeklyHours:{...calendar.weeklyHours,monday:{closed:false,open:'18:00',close:'09:00'}}
  }),/business hours/);
