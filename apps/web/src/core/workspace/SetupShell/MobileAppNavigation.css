@@ -21,7 +21,7 @@
     justify-content: center; align-items: center; gap: 2px; padding: 2px 4px;
     font: inherit; cursor: pointer; touch-action: manipulation;
   }
-  .md-mobile-app-tabs button span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; line-height: 1.2; }
+  .md-mobile-app-tabs button span { max-width: 100%; overflow-wrap: anywhere; white-space: normal; text-align: center; font-size: 11px; line-height: 1.2; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
   .md-mobile-app-tabs button.active { color: var(--md-ios-accent, #007aff); }
   .md-mobile-app-tabs button:active { background: var(--md-ios-pressed, #e5e5ea); border-radius: 10px; }
   .lightning .setup-layout:has(~ .md-mobile-app-tabs), .lightning:has(.md-mobile-app-tabs) .setup-layout {
