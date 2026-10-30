@@ -277,9 +277,9 @@ test('Smart Design Body, Header, Badge and Image match approved three-row positi
  area('Badge','badgeBold','3 / 1');
  area('Badge','badgeTextColor','3 / 2');
  area('Badge','badgeBodyColor','3 / 3');
- assert.match(rule('Image','imagePlacement'),/grid-row:1;grid-column:1/);
- assert.match(rule('Image','imageBorderColor'),/grid-row:2;grid-column:1/);
- assert.match(rule('Image','imageFill'),/grid-row:3;grid-column:1/);
+ area('Image','imagePlacement','1 / 1 / 2 / -1');
+ area('Image','imageBorderColor','2 / 1 / 3 / -1');
+ area('Image','imageFill','3 / 1 / 4 / -1');
  for(const section of ['Body','Header','Badge','Image'])
    assert.ok(css.includes('[aria-label="'+section+'"]'),'Missing scoped '+section+' CSS');
  assert.match(css,/grid-template-rows:repeat\(3,32px\)/);
@@ -289,20 +289,35 @@ test('Smart Design Body, Header, Badge and Image match approved three-row positi
  assert.match(ribbon,/data-property=\{property\.id\}/);
 });
 
-test('Smart section widths and label visibility preserve accessible property controls',()=>{
+test('Smart compact rows share measured tracks and align related controls, without shrinking other sections',()=>{
  const css=read('../src/core/builders/PageBuilder/SmartRibbon.css');
- assert.match(css,/flex:0 0 258px/);
- assert.match(css,/flex:0 0 265px/);
- assert.match(css,/flex:0 0 512px/);
- assert.match(css,/flex:0 0 282px/);
+ assert.match(css,/width:max-content/);
+ assert.match(css,/grid-template-columns:repeat\(3,52px\)/);
+ assert.match(css,/grid-template-columns:repeat\(3,60px\)/);
+ assert.match(css,/grid-template-columns:64px 64px 116px 100px/);
+ assert.match(css,/grid-template-columns:82px 166px/);
+ assert.match(css,/grid-template-columns:54px 34px/);
+ assert.match(css,/grid-template-columns:72px 144px/);
+ assert.match(css,/justify-self:end/);
  assert.match(css,/flex:0 0 75px!important/);
  assert.match(css,/flex:0 0 116px!important/);
- assert.match(css,/\.smart-ribbon-group\[aria-label="Badge"\] \.smart-property:is\([\s\S]*?\[data-property="badgeBodyColor"\]\)>.smart-label\{\s*display:none;/);
- assert.match(css,/\.smart-ribbon-group\[aria-label="Header"\] \.smart-property:is\([\s\S]*?\[data-property="headerBorderColor"\]\)>.smart-label\{\s*display:none;/);
- assert.match(css,/\.smart-ribbon-group\[aria-label="Body"\] \.smart-property:is\([\s\S]*?\[data-property="labelColor"\]\)>.smart-label\{\s*display:none;/);
+ const imageGrid=css.slice(css.indexOf('/* IMAGE:'));
+ assert.match(imageGrid,/grid-template-columns:72px 144px/);
+ assert.match(imageGrid,/imageBorderColor"\] \.office-ribbon-colour-property\{\s*justify-self:end/);
+ const badgeGrid=css.slice(css.indexOf('/* BADGE:'),css.indexOf('/* IMAGE:'));
+ assert.match(badgeGrid,/badgeTextSize"\] \.smart-numeric\{\s*justify-self:end/);
+ assert.match(badgeGrid,/badgeVisible"\]>input\[type=checkbox\]\{\s*justify-self:start/);
+ assert.match(badgeGrid,/grid-area:3 \/ 1/);
+ assert.match(badgeGrid,/grid-area:3 \/ 2/);
+ assert.match(badgeGrid,/grid-area:3 \/ 3/);
+ for(const property of ['backgroundColor','borderColor','labelColor','wrapText','headerBold','headerBorderColor','badgeBold','badgeTextColor','badgeBodyColor'])
+   assert.ok(css.includes('[data-property="'+property+'"]'),'Hidden icon label mapping missing '+property);
  assert.match(css,/grid-template-rows:repeat\(3,30px\)/);
  assert.match(css,/height:146px!important/);
  assert.match(css,/\.smart-ribbon-caption/);
+ // The two already-approved sections must stay on their original shared tracks.
+ assert.doesNotMatch(css,/\[aria-label="Typography"\]/);
+ assert.doesNotMatch(css,/\[aria-label="Tabs"\]/);
 });
 
 test('Smart Badge and Image short names come only from forward-only SQL metadata',()=>{
