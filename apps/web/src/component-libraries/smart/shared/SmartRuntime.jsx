@@ -7,7 +7,7 @@ const expression=(v,record)=>{
  // Each list row receives only resolved, authorised metadata relation values.
  const related=record&&typeof record.__mentionValues==="object"&&!Array.isArray(record.__mentionValues)
    ?record.__mentionValues:null;
- const reference=/@[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*){2,4}/g;
+ const reference=/@[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*){1,4}/g;
  if(related&&reference.test(v)){
    reference.lastIndex=0;
    if(Object.prototype.hasOwnProperty.call(related,v))return text(related[v]);
