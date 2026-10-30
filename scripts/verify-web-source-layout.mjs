@@ -6,6 +6,16 @@ import { loadComponentCatalog, webSourceRoot } from './component-catalog.mjs';
 const entries = await readdir(webSourceRoot, { withFileTypes: true });
 assert.deepEqual(entries.filter(entry => entry.isDirectory()).map(entry => entry.name).sort(), ['component-libraries', 'core']);
 assert.deepEqual(entries.filter(entry => entry.isFile()).map(entry => entry.name).sort(), ['README.md', 'main.tsx']);
+// A renamed library is not enough: fail if any retired source component filename remains.
+for (const relative of ['component-libraries','component-libraries/shared',
+  'component-libraries/ui-runtime/shared','core/components/SharedRuntime']) {
+ const contents=await readdir(path.join(webSourceRoot,relative),{withFileTypes:true});
+ const obsolete=contents.filter(entry =>
+   /^One[A-Z]/.test(entry.name)||/^Une[A-Z]/.test(entry.name)||
+   (entry.isDirectory()&&/^une_[a-z]/.test(entry.name)));
+ assert.deepEqual(obsolete.map(entry=>entry.name),[],
+   'No retired One/UNE renderer filenames may remain in '+relative);
+}
 const { components } = await loadComponentCatalog();
 const publishedOne=components.filter(component=>component.apiName.startsWith('One'));
 assert.deepEqual(publishedOne,[], 'No legacy One components may be independently registered');
