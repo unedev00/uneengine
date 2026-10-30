@@ -54,8 +54,8 @@ const DashboardBuilder = React.lazy(() => import('../../builders/DashboardBuilde
 const AppExchange = React.lazy(() => import('../../applications/AppExchange/AppExchange'));
 const AppManager = React.lazy(() => import('../../applications/AppManager/AppManager'));
 import PlatformWorkspaceSurface from '../../platform/Workspace/PlatformWorkspaceSurface'; import { PlatformPageSlot } from '../../platform/Workspace/PlatformPageSlot';
-import {GlobalRecordSearch} from '../../../component-libraries/OneGlobalRecordSearch/GlobalRecordSearch';
-import {RecordObjectPicker} from '../../../component-libraries/OneRecordObjectPicker/RecordObjectPicker';
+import {GlobalRecordSearch} from '../../../component-libraries/shared/primitives/GlobalRecordSearch/GlobalRecordSearch';
+import {RecordObjectPicker} from '../../../component-libraries/shared/primitives/RecordObjectPicker/RecordObjectPicker';
 import {useDismissOnOutside} from '../../accessibility/Dismiss/useDismissOnOutside';
 
 const NamedCredentials = React.lazy(() => import('../../integrations/NamedCredentials/NamedCredentials'));
