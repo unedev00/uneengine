@@ -15,8 +15,8 @@ const dateInputType = (field?: FieldMetadata): 'date'|'datetime-local'|'time'|'t
   return /^(Date\/Time|DateTime)$/i.test(type) ? 'datetime-local'
     : /^Date$/i.test(type) ? 'date' : /^Time$/i.test(type) ? 'time' : 'text';
 };
-const hasPicklistOptions = (field?: FieldMetadata) =>
-  Boolean(field?.picklistValues?.length && /^(Picklist|Multi-Select Picklist|Multipicklist)$/i.test(field.dataType));
+const isPicklist = (field?: FieldMetadata) =>
+  /^(Picklist|Multi-Select Picklist|Multipicklist)$/i.test(field?.dataType ?? '');
 
 /** Shared no-code filter editor: all types and choices come from accessible Field metadata. */
 export default function RecordFilterEditor({
@@ -89,7 +89,7 @@ export default function RecordFilterEditor({
               <option value="">Choose value…</option>
               <option value="true">True</option><option value="false">False</option>
             </select>
-          : hasPicklistOptions(field)
+          : isPicklist(field)
             ? <select aria-label={title + ' value ' + (index + 1)} value={value}
                 onChange={e => set(index, {value: e.target.value})}>
                 <option value="">Choose value…</option>
