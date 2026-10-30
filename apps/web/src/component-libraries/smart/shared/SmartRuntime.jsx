@@ -48,7 +48,7 @@ function SmartCard({p,record}){
   </div>
   <div className="smart-card-content" style={{
     order:1,flex:horizontal?"1 1 50%":undefined,display:"flex",alignItems:"center",
-    height:number(p.headerBoxHeight,44),fontWeight:p.headerBold===false?400:700,
+    height:horizontal?number(p.imageHeight,220):number(p.headerBoxHeight,44),fontWeight:p.headerBold===false?400:700,
     textAlign:p.headerAlignment||"left",justifyContent:p.headerAlignment==="right"?"flex-end":p.headerAlignment==="center"?"center":"flex-start",
     border:p.headerBorderColor?"1px solid "+p.headerBorderColor:undefined,color:p.defaultValueColor||p.labelColor||undefined,
     whiteSpace:p.wrapText===false?"nowrap":"normal",
@@ -132,7 +132,7 @@ function SmartTabs({p,record,fire}){
    {tabs.map((tab,index)=><button key={index} type="button" role="tab"
     aria-selected={active===index} style={{height:number(p.tabHeight,44),
      minWidth:number(p.tabWidth,120),borderRadius:number(p.radius,10),fontSize:number(p.textSize,16),textAlign:p.labelAlignment||"center",boxShadow:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none",color:p.labelColor||undefined,
-     background:active===index?p.selectedTabColor||"#eaf2ff":undefined}}
+     background:active===index?p.selectedTabColor||"#eaf2ff":p.tabColor||"#fff"}}
     onClick={()=>{setActive(index);fire("change",index)}}>{text(tab?.label??tab)}</button>)}
   </nav>
  </div>;
@@ -159,9 +159,10 @@ export default function SmartRuntime(p){
  if(name==="smart_button")content=<button type="button" className="smart-button"
    onClick={()=>fire("click",record)} style={{...style,...shadowStyle,background:p.backgroundColor||"#2267bc",color:p.labelColor||"#fff",borderColor:p.borderColor}}>{label||"Button"}</button>;
  else if(name==="smart_toggle")content=<SmartToggle p={p} fire={fire}/>;
- else if(name==="smart_text")content=<label className="smart-field" style={{...style,background:p.backgroundColor||undefined}}>
+ else if(name==="smart_text")content=<label className="smart-field" style={style}>
   {label&&<span>{label}</span>}<input type="text" placeholder={text(p.placeholder||"")} defaultValue={expression(p.textSource??p.defaultValue??p.value??"",record)}
-  style={{color:p.defaultValueColor||p.labelColor||undefined,borderColor:p.borderColor||undefined}}
+  style={{color:p.defaultValueColor||p.labelColor||undefined,borderColor:p.borderColor||undefined,
+    background:p.backgroundColor||"#fff",textAlign:p.labelAlignment||"left"}}
   onChange={e=>fire("change",e.target.value)}/></label>;
  else if(name==="smart_lookup")content=<SmartLookup p={p} fire={fire}
    style={{...style,backgroundColor:p.backgroundColor||undefined,borderColor:p.borderColor||undefined,
@@ -195,7 +196,7 @@ export default function SmartRuntime(p){
     })}
   </nav>;
  }else content=<div className="smart-container">{p.children||null}</div>;
- return <div className={"smart-runtime "+name} style={{...style,...(!["smart_button","smart_toggle","smart_tabs"].includes(name)?shadowStyle:{}),backgroundColor:["smart_button","smart_toggle","smart_tabs"].includes(name)?undefined:p.backgroundColor||undefined,
+ return <div className={"smart-runtime "+name} style={{...style,...(!["smart_button","smart_toggle","smart_tabs"].includes(name)?shadowStyle:{}),backgroundColor:["smart_button","smart_toggle","smart_tabs","smart_text"].includes(name)?undefined:p.backgroundColor||undefined,
    ...(p.borderColor?{border:"1px solid "+p.borderColor}:{}),
    ...(p.width!==undefined&&p.width!==''?{width:number(parseFloat(p.width),undefined,0,10000)}:{}),
    ...(p.height!==undefined&&p.height!==''?{height:number(parseFloat(p.height),undefined,0,10000)}:{})}}>{content}</div>;
