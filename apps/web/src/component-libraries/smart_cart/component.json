@@ -19,5 +19,14 @@
     "minHeight": 220
   },
   "propertyDefinitions": [],
-  "eventDefinitions": []
+  "eventDefinitions": [
+    {
+      "apiName": "click",
+      "label": "On Click"
+    },
+    {
+      "apiName": "qtyIcon",
+      "label": "Qty Icon"
+    }
+  ]
 }
