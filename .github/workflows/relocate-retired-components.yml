@@ -6,6 +6,7 @@ on:
     paths:
       - scripts/relocate-retired-component-source.mjs
       - scripts/retire-one-une-component-identities.mjs
+      - scripts/normalize-ui-component-labels.mjs
       - .github/workflows/relocate-retired-components.yml
   workflow_dispatch:
 permissions:
@@ -26,6 +27,7 @@ jobs:
         run: |
           node scripts/relocate-retired-component-source.mjs
           node scripts/retire-one-une-component-identities.mjs
+          node scripts/normalize-ui-component-labels.mjs
       - name: Commit full relocation to existing PR branch
         run: |
           git config user.name "github-actions[bot]"
