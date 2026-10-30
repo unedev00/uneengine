@@ -464,6 +464,8 @@ export type LightningPageMetadata = {
   template?: LightningPageTemplate;
   canvasWidth: number;
   canvasHeight: number;
+  /** Whole page background, independent of component and container fill. */
+  canvasFillColor?: string;
   /** Custom variant: auto-select when viewport matches a published, assigned target. */
   customTargetEnabled?: boolean;
   customTargetMinWidth?: number;
@@ -1239,6 +1241,7 @@ export const defaultLightningPage: LightningPageMetadata = {
   template: 'header-main-sidebar',
   canvasWidth: 1920,
   canvasHeight: 1080,
+  canvasFillColor: '#ffffff',
   status: 'Draft',
   devices: ['Desktop', 'Phone'],
   components: [
