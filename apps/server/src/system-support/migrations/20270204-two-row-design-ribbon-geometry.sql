@@ -1,76 +1,76 @@
--- Approved Page Builder Design ribbon geometry, 2 rows at 26px per control.
--- Global reusable metadata; no application, user layout, permission or business data changes.
--- A 3-button align/shadow group consumes 3x28=84px; inline SVG is INCLUDED
--- in the 70px numbered field, not added to its width.
+-- Approved Design two-row control geometry. SQL-owned, global, idempotent.
+-- Dimensions include the icon INSIDE the shared 70px numbered border.
+-- Multi-button align/shadow controls use 3 x 28px = 84px; no label added.
+-- No changes to saved layouts, tenant data, component applicability or RBAC.
 ALTER TABLE md_builder_shared_properties
  ADD COLUMN IF NOT EXISTS design_row smallint,
  ADD COLUMN IF NOT EXISTS design_width smallint,
- ADD COLUMN IF NOT EXISTS design_height smallint;
+ ADD COLUMN IF NOT EXISTS design_height smallint,
+ ADD COLUMN IF NOT EXISTS design_order smallint;
 
--- A global SQL property appears even for an unsupported component. Only
--- applicability rules determine whether the existing control is disabled.
-WITH placement(property_key, row_no, width_px) AS (
+WITH approved(property_key,row_no,width_px,order_no) AS (
  VALUES
- ('backgroundColor',1,40),
- ('borderColor',1,40),
- ('labelColor',1,40),
- ('shadow',2,84),
- ('radius',2,70),
- ('labelAlignment',1,84),
- ('defaultValueColor',2,40),
- ('textSize',2,70),
- ('tabCount',1,58),
- ('selectedTabColor',2,40),
- ('tabColor',2,40),
- ('wrapText',1,28),
- ('headerBorderColor',1,40),
- ('headerTextColor',1,40),
- ('headerAlignment',2,84),
- ('headerBold',2,28),
- ('imagePlacement',1,99),
- ('imageBorderColor',2,40),
- ('imageFill',2,70),
- ('badgeAlignment',1,90),
- ('badgeTextSize',1,70),
- ('badgeBold',2,28),
- ('badgeTextColor',2,40),
- ('badgeBodyColor',2,40),
- ('badgeVisible',2,40),
- ('supportingBorderColor',1,40),
- ('supportingTextColor',1,40),
- ('supportingBold',1,28),
- ('supportingAlignment',2,84),
- ('tableBackgroundColor',1,40),
- ('tableBorderColor',1,40),
- ('tableRadius',1,70),
- ('tableShadow',2,84),
- ('rowBorderColor',1,40),
- ('rowRadius',1,70),
- ('rowLabelColor',2,40),
- ('rowHeight',2,70),
- ('summaryBackgroundColor',1,40),
- ('summaryBorderColor',1,40),
- ('summaryTextColor',1,40),
- ('summaryRadius',1,70),
- ('summaryHeight',1,70),
- ('summaryShadow',2,84),
- ('summaryWidth',2,70),
- ('summaryTextSize',2,70),
- ('summaryTextWeight',2,28),
- ('summary2TextSize',1,70),
- ('summary2TextWeight',2,28),
- ('summary2TextColor',2,40),
- ('iconFillColor',1,40)
+ ('backgroundColor',1,40,1),
+ ('borderColor',1,40,2),
+ ('labelColor',1,40,3),
+ ('shadow',2,84,1),
+ ('radius',2,70,2),
+ ('labelAlignment',1,84,1),
+ ('defaultValueColor',2,40,1),
+ ('textSize',2,70,2),
+ ('tabCount',1,58,1),
+ ('selectedTabColor',2,40,1),
+ ('tabColor',2,40,2),
+ ('wrapText',1,28,1),
+ ('headerBorderColor',1,40,2),
+ ('headerTextColor',1,40,3),
+ ('headerAlignment',2,84,1),
+ ('headerBold',2,28,2),
+ ('imagePlacement',1,99,1),
+ ('imageBorderColor',2,40,1),
+ ('imageFill',2,70,2),
+ ('badgeAlignment',1,90,1),
+ ('badgeTextSize',1,70,2),
+ ('badgeBold',2,28,1),
+ ('badgeTextColor',2,40,2),
+ ('badgeBodyColor',2,40,3),
+ ('badgeVisible',2,40,4),
+ ('supportingBorderColor',1,40,1),
+ ('supportingTextColor',1,40,2),
+ ('supportingBold',1,28,3),
+ ('supportingAlignment',2,84,1),
+ ('tableBackgroundColor',1,40,1),
+ ('tableBorderColor',1,40,2),
+ ('tableRadius',1,70,3),
+ ('tableShadow',2,84,1),
+ ('rowBorderColor',1,40,1),
+ ('rowRadius',1,70,2),
+ ('rowLabelColor',2,40,1),
+ ('rowHeight',2,70,2),
+ ('summaryBackgroundColor',1,40,1),
+ ('summaryBorderColor',1,40,2),
+ ('summaryTextColor',1,40,3),
+ ('summaryRadius',1,70,4),
+ ('summaryHeight',1,70,5),
+ ('summaryShadow',2,84,1),
+ ('summaryWidth',2,70,2),
+ ('summaryTextSize',2,70,3),
+ ('summaryTextWeight',2,28,4),
+ ('summary2TextSize',1,70,1),
+ ('summary2TextWeight',2,28,1),
+ ('summary2TextColor',2,40,2),
+ ('iconFillColor',1,40,1)
 )
 UPDATE md_builder_shared_properties AS p SET
- design_row=placement.row_no,
- design_width=placement.width_px,
- design_height=26
-FROM placement
-WHERE p.property_key=placement.property_key
- AND p.tab='Design'
- AND (p.design_row IS DISTINCT FROM placement.row_no
-   OR p.design_width IS DISTINCT FROM placement.width_px
-   OR p.design_height IS DISTINCT FROM 26);
-
--- Any future Design property remains visible with a safe row 2 fallback.
+ design_row=approved.row_no,
+ design_width=approved.width_px,
+ design_height=26,
+ design_order=approved.order_no
+FROM approved
+WHERE p.property_key=approved.property_key AND p.tab='Design'
+ AND (p.design_row IS DISTINCT FROM approved.row_no OR
+      p.design_width IS DISTINCT FROM approved.width_px OR
+      p.design_height IS DISTINCT FROM 26 OR
+      p.design_order IS DISTINCT FROM approved.order_no);
+-- Unmapped future Design controls remain visible; runtime places them
+-- in a final row with safe fallback sizing, without losing editability.
