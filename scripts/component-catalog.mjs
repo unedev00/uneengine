@@ -48,7 +48,7 @@ export async function loadComponentCatalog() {
 /** Bundle local source imports before registration. Runtime and sandbox still
  * receive self-contained code and styles, with React supplied by the host. */
 export async function buildBundledComponent(definition) {
-  const allowed = [path.join(webSourceRoot, 'one'), path.join(webSourceRoot, 'core/components/SystemPanel')];
+  const allowed = [path.join(webSourceRoot, 'one'), path.join(webSourceRoot, 'core/components/SystemPanel'), path.join(webSourceRoot, 'core/components/SharedRuntime')];
   const boundary = {
     name: 'local-component-sources',
     setup(builder) {
