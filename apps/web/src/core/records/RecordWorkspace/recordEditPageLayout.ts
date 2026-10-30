@@ -1,7 +1,7 @@
 import type {LightningPageMetadata,PageLayoutMetadata,PageLayoutSectionMetadata} from '../../metadata/Definitions/metadata';
 import {recordPagePresentationLayout} from './recordPageLayoutMigration';
 import {behaviorField} from '../../pages/PageRuntime/pageBehaviorRuntime';
-import {isComponentVisible} from '../../components/Properties/componentVisibility';
+import {recordComponentVisible} from './recordComponentVisibility';
 import type {ComponentVisibilityContext} from '../../components/Properties/componentVisibility';
 
 /** Resolve published Record Edit Field Sections into the existing generic CRUD form.
@@ -36,8 +36,7 @@ export function recordEditPageLayout(
   for (const component of page.components) {
     // Apply the same component-level visibility contract as the record renderer.
     // A page-level field/section condition must not be ignored by the edit form.
-    if (!isComponentVisible(component,context,
-      Boolean(context.fields||context.record||context.recordPermissions||context.profileId))) continue;
+    if (!recordComponentVisible(component,page.components,context)) continue;
     if (component.type === 'Record Detail') {
       // Keep the standard Object Page Layout as fallback, but never let a
       // starter Record Detail block override subsequently authored dynamic fields.

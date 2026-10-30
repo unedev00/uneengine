@@ -34,3 +34,14 @@ test('strict settings validation rejects unknown lists and unsafe/invalid proper
     JSON.stringify(settings));
  }
 });
+
+test('related-list grouped conditions persist and reject malformed expressions',()=>{
+ const settings={Invoices:{filters:[{field:'Status',operator:'Equals',value:'Open'},
+  {field:'Amount',operator:'Greater Than',value:'100'}],filterLogic:'1 OR 2'}};
+ assert.deepEqual(validateRelatedListSettings(['Invoices'],settings),settings);
+ for(const filterLogic of ['1 OR 3','1 OR 1','1; DROP TABLE','']){
+  if(!filterLogic)continue;
+  assert.throws(()=>validateRelatedListSettings(['Invoices'],{Invoices:{...settings.Invoices,filterLogic}}));
+ }
+ assert.throws(()=>validateRelatedListSettings(['Invoices'],{Invoices:{filters:[{field:'Name',operator:'Equals',value:{source:'PageState'}}]}}));
+});

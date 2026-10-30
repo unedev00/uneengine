@@ -53,3 +53,39 @@ jobs:
         run: npm run test:metadata
       - name: Build production web application
         run: npm run build --workspace apps/web
+
+  record-parity:
+    name: Records / SQL and browser regression
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: metadrive_test
+          POSTGRES_PASSWORD: disposable-test-password
+          POSTGRES_DB: metadrive_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U metadrive_test"
+          --health-interval 10s --health-timeout 5s --health-retries 5
+    env:
+      METADRIVE_SQL_TEST_DATABASE_URL: postgres://metadrive_test:disposable-test-password@127.0.0.1:5432/metadrive_test
+      METADRIVE_RECORD_PARITY_ONLY: '1'
+      METADRIVE_BROWSER_PREBUILT: '1'
+      GITHUB_PAGES: 'true'
+      GITHUB_PAGES_BASE_PATH: '/'
+      VITE_API_BASE_URL: '/api'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: node apps/server/scripts/sql-smoke.mjs
+      - run: npm install --no-save --package-lock=false playwright@1.56.1
+      - run: npx playwright install --with-deps chromium
+      - run: mkdir -p apps/server/artifacts && node apps/server/scripts/builder-browser-smoke.mjs

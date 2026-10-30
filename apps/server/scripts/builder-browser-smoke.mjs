@@ -1,3 +1,4 @@
+import {createRecordParityFixture,runRecordParityBrowser} from './record-parity-browser.mjs';
 import assert from 'node:assert/strict';
 import {spawn} from 'node:child_process';
 import {once} from 'node:events';
@@ -49,6 +50,8 @@ try{
   VALUES($1,'ReviewCase',$2) RETURNING id
  `,[tenantId,userId]);
  const caseId=reviewCase.rows[0].id;
+
+ const parityFixture=process.env.METADRIVE_RECORD_PARITY_ONLY==='1'?await createRecordParityFixture(db,tenantId,userId):null;
 
  // Create lifecycle fixture before the browser authenticates and caches landing metadata.
  const {ObjectDefinitionService:EarlyObjectDefinition}=await import(new URL('object-definition.js',built).href);
@@ -182,6 +185,9 @@ try{
   await page.getByRole('button',{name:'User profile'}).waitFor({timeout:15000});
   console.info('Production frontend login form authenticated into CI SQL tenant');
  }
+ if(parityFixture){
+  await runRecordParityBrowser(page,origin,parityFixture);
+ }else{
  await page.goto(origin+'/une/setup/flow-builder',{waitUntil:'domcontentloaded'});
  await page.getByText('Existing flows',{exact:true}).waitFor({state:'visible',timeout:20000});
  await page.screenshot({path:new URL('../artifacts/flow-builder.png',import.meta.url).pathname});
@@ -869,6 +875,7 @@ try{
  assert.equal((await db.query('SELECT count(*)::int AS n FROM md_lightning_page_details d JOIN md_page_definitions p ON p.id=d.page_id AND p.tenant_id=d.tenant_id WHERE p.tenant_id=$1 AND p.api_name=$2',
    [tenantId,'Browser_Verified_Record'])).rows[0]?.n,1,'Page archive removed saved SQL metadata');
  console.info('Page Builder Delete UI archived the Page without losing SQL metadata');
+ }
  if(publishedSite)assert.ok(await page.evaluate(()=>
   location.origin==='https://unesolutions.co.uk'),'Live smoke did not use production frontend');
  const severe=failures.filter(message=>/TypeError|Cannot read properties|ReferenceError/i.test(message));

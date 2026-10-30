@@ -3064,6 +3064,17 @@ function PageBuilder({
                         onChange={event=>setSetting('filterValue',event.target.value)}/>
                     </label>
                   </>}
+                  <RecordFilterEditor title="Related-list conditions" fixedRecordContext
+                    fields={eligible.filter(field=>!field.formula&&!field.rollup&&!['Text (Encrypted)','Address','Geolocation','File'].includes(field.dataType))}
+                    filters={Array.isArray(config.filters)?config.filters:[]}
+                    onChange={next=>setSetting('filters',next)}/>
+                  {Array.isArray(config.filters)&&config.filters.length>0&&<>
+                    <p className="properties-help">These conditions replace the single filter above. The parent relationship always applies.</p>
+                    <label className="form-label">Condition logic
+                      <input className="form-control" placeholder="1 AND (2 OR 3)" value={String(config.filterLogic??'')}
+                        onChange={event=>setSetting('filterLogic',event.target.value)}/>
+                    </label>
+                  </>}
                   <label className="checkbox-row"><input type="checkbox"
                     checked={config.showNewAction!==false}
                     onChange={event=>setSetting('showNewAction',event.target.checked)}/>Show New action</label>

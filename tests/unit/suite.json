@@ -222,6 +222,7 @@
     "apps/web/test/visiblePolling.test.ts",
     "apps/web/test/workspaceContrastRepair.test.mjs",
     "apps/web/test/workspaceThemeContrast.test.mjs",
-    "apps/web/test/smartLibrary.test.mjs"
+    "apps/web/test/smartLibrary.test.mjs",
+    "apps/web/test/recordParity.test.ts"
   ]
 }

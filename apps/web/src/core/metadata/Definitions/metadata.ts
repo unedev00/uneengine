@@ -86,6 +86,8 @@ export type PageLayoutCustomLinkMetadata = {
 };
 
 export type RelatedListSettingsMetadata = {
+  filters?: Array<{field:string;operator:string;value:unknown}>;
+  filterLogic?: string;
   columns?: string[];
   sortField?: string;
   sortDirection?: 'asc' | 'desc';

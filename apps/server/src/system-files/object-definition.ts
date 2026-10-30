@@ -1,3 +1,4 @@
+import {parseRecordFilters,parseFilterLogic} from '../object-engine/QueryBuilder.js';
 import {requireAvailableMetadataName} from '../system-support/metadata-name-guard.js';
 import type {PoolClient} from 'pg';
 import type {SqlPersistence} from './sql-persistence.js';
@@ -335,6 +336,7 @@ const formulaTypeForField=(dataType:string,returnType:string|null,rollupSourceTy
   return null;
 };
 type RelatedListSettings={
+  filters?:Array<{field:string;operator:string;value:unknown}>;filterLogic?:string;
   columns?:string[];sortField?:string;sortDirection?:'asc'|'desc';
   filterField?:string;filterValue?:string;filterOperator?:'Equals'|'Includes'|'Excludes';
   pageSize?:10|25|50;showNewAction?:boolean;showRowActions?:boolean
@@ -351,7 +353,7 @@ export function validateRelatedListSettings(names:string[],input:unknown):Record
       throw new Error('Unknown related list configuration');
     const v=raw as Record<string,unknown>;
     const allowed=['columns','sortField','sortDirection','filterField','filterValue',
-      'filterOperator','pageSize','showNewAction','showRowActions'];
+      'filterOperator','pageSize','showNewAction','showRowActions','filters','filterLogic'];
     if(Object.keys(v).some(key=>!allowed.includes(key)))throw new Error('Invalid related list property');
     if(v.columns!==undefined&&(!Array.isArray(v.columns)||v.columns.length>12
       ||new Set(v.columns).size!==v.columns.length
@@ -374,6 +376,25 @@ export function validateRelatedListSettings(names:string[],input:unknown):Record
     if((v.showNewAction!==undefined&&typeof v.showNewAction!=='boolean')
       ||(v.showRowActions!==undefined&&typeof v.showRowActions!=='boolean'))
       throw new Error('Invalid related list action visibility');
+    if(v.filters!==undefined){
+      if(!Array.isArray(v.filters))throw new Error('Invalid related list conditions');
+      const operators:Record<string,string>={'Equals':'eq','Not Equals':'ne','Contains':'contains',
+        'Greater Than':'gt','Greater Than or Equal':'gte','Less Than':'lt','Less Than or Equal':'lte',
+        'Includes':'includes','Excludes':'excludes','Is Blank':'isBlank','Is Not Blank':'isNotBlank'};
+      const filters=v.filters.map(raw=>{
+        if(!raw||typeof raw!=='object'||Array.isArray(raw))throw new Error('Invalid related list condition');
+        const row=raw as Record<string,unknown>;
+        let value=row.value;
+        if(value&&typeof value==='object'&&!Array.isArray(value)){
+          if((value as {source?:string}).source!=='CurrentRecord')throw new Error('Invalid related list value source');
+          value='current-record';
+        }
+        return {field:row.field,operator:operators[String(row.operator)],value};
+      });
+      parseRecordFilters(JSON.stringify(filters));
+      if(v.filterLogic!==undefined&&typeof v.filterLogic!=='string')throw new Error('Invalid related list filter logic');
+      parseFilterLogic(v.filterLogic as string|undefined,filters.length);
+    }else if(v.filterLogic)throw new Error('Related list logic requires conditions');
     result[name]=v as RelatedListSettings;
   }
   return result;

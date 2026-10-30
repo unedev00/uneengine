@@ -5,9 +5,10 @@ import {
 } from '../../core/records/RecordWorkspace/recordFilterMetadata';
 
 export default function RecordFilterEditor({
-  title, fields, filters, onChange
+  title, fields, filters, onChange, fixedRecordContext = false
 }: {
   title: string;
+  fixedRecordContext?: boolean;
   fields: FieldMetadata[];
   filters: unknown[];
   onChange: (next: unknown[]) => void;
@@ -78,9 +79,9 @@ export default function RecordFilterEditor({
               :e.target.value==='PageState'?{source:'PageState',key:''}
               :{source:e.target.value}})}>
             <option value="Fixed">Fixed value</option>
-            <option value="PageState">Page state / Flow output</option>
+            {!fixedRecordContext&&<option value="PageState">Page state / Flow output</option>}
             <option value="CurrentRecord">Current record ID</option>
-            <option value="Session">Current session ID</option>
+            {!fixedRecordContext&&<option value="Session">Current session ID</option>}
           </select>
         </label>
         {source==='PageState' ? <label className="form-label">Page state key

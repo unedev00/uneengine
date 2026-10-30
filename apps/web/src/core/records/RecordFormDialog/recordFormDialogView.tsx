@@ -1,3 +1,6 @@
+import {recordDateTimeInput,recordDateTimeValue} from './recordInputValues';
+import RecordFormLayout from './RecordFormLayout';
+import type {ComponentVisibilityContext} from '../../components/Properties/componentVisibility';
 import { useRuntimeFormFactor } from '../../workspace/Responsive/useFormFactor';
 import { createPageBuilder } from '../../builders/PageBuilder/pageBuilderView';
 import { ReportBuilder } from '../../builders/ReportBuilder/reportBuilderView';
@@ -219,6 +222,10 @@ export function RecordFormDialog({
   profileId,
   selectedLayout,
   authoredDynamicFields = false,
+  fieldApiNames,
+  dynamicPage,
+  visibilityContext,
+  layoutDevice = 'Desktop',
   fieldAccess,
   userRoles,
   formValues,
@@ -242,6 +249,10 @@ export function RecordFormDialog({
   profileId: string;
   selectedLayout: PageLayoutMetadata | undefined;
   authoredDynamicFields?: boolean;
+  fieldApiNames?: string[];
+  dynamicPage?: LightningPageMetadata|null;
+  visibilityContext?: ComponentVisibilityContext;
+  layoutDevice?: LayoutDevice;
   fieldAccess: Record<string, { read: boolean; edit: boolean }>;
   userRoles: Array<{id:string;name:string}>;
   formValues: Record<string, unknown>;
@@ -296,7 +307,7 @@ export function RecordFormDialog({
     section=>section.requiredFieldApiNames??[])??[]);
   const readOnlyOnLayout=new Set(selectedLayout?.sections.flatMap(
     section=>section.readOnlyFieldApiNames??[])??[]);
-  const visibleFields = object.fields.filter((field) => !field.formula
+  const visibleFields = object.fields.filter((field) => (!fieldApiNames||fieldApiNames.includes(field.apiName)) && !field.formula
     && !field.dataType.toLocaleLowerCase().startsWith('auto number')
     && fieldAccess[`${object.apiName}.${field.apiName}`]?.read
     && (!selectedLayout || layoutFieldNames.includes(field.apiName) || (!authoredDynamicFields&&field.required)))
@@ -502,7 +513,7 @@ export function RecordFormDialog({
       return <div className="form-label" key={field.apiName}><span>{displayFieldLabel(field)}{field.required && <b aria-hidden="true"> *</b>}</span>
         <div className="lookup-picker-control">
           <input className="form-control" id={common.id} name={common.name} aria-label={displayFieldLabel(field)}
-            value={selectedRecord ? lookupRecordLabel(field, selectedRecord) : ''}
+            value={selectedRecord ? lookupRecordLabel(field, selectedRecord) : value}
             placeholder={targetObject ? `Search ${targetObject.label}…` : 'Related object unavailable'}
             readOnly aria-readonly="true" required={common.required && !value} disabled={common.disabled}
             onClick={() => { if (!common.disabled && targetObject) openLookupDialog(field); }} />
@@ -596,7 +607,7 @@ export function RecordFormDialog({
       {helpText}
     </div>;
     const type = dataType === 'date' ? 'date'
-      : dataType.includes('datetime') ? 'datetime-local'
+      : ['date/time','datetime'].includes(dataType) ? 'datetime-local'
         : dataType === 'time' ? 'time'
         : dataType === 'email' ? 'email'
           : dataType === 'url' ? 'url'
@@ -613,10 +624,10 @@ export function RecordFormDialog({
       <input className="form-control" {...common} type={type}
         min={numericMaximum === undefined ? undefined : -numericMaximum}
         max={numericMaximum}
-        step={numericFormat ? (Number(numericFormat[2]) ? 10 ** -Number(numericFormat[2]) : 1) : type === 'number' ? 'any' : type === 'time' ? 1 : undefined}
+        step={type==='datetime-local'?1:numericFormat ? (Number(numericFormat[2]) ? 10 ** -Number(numericFormat[2]) : 1) : type === 'number' ? 'any' : type === 'time' ? 1 : undefined}
         maxLength={textMaximum ? Number(textMaximum) : field.dataType === 'Text' ? 255 : undefined}
-        value={value}
-        onChange={(event) => onChange(field.apiName, type === 'number' ? (event.target.value === '' ? '' : Number(event.target.value)) : event.target.value)} />
+        value={type==='datetime-local'?recordDateTimeInput(rawValue):value}
+        onChange={(event) => onChange(field.apiName, type==='datetime-local'?recordDateTimeValue(event.target.value):type === 'number' ? (event.target.value === '' ? '' : Number(event.target.value)) : event.target.value)} />
       {type==='text' && <details className="component-optional-settings">
         <summary className="properties-help">Use tenant image asset</summary>
         <TenantMediaPicker value={typeof value==='string'?value:''}
@@ -656,7 +667,10 @@ export function RecordFormDialog({
             {activeRecordTypes.map((recordType) => <option key={recordType.id} value={recordType.id}>{recordType.label}</option>)}
           </select>
         </label>}
-        {selectedLayout?.sections.length ? <>
+        {dynamicPage&&authoredDynamicFields?<RecordFormLayout page={dynamicPage} layout={selectedLayout}
+          context={visibilityContext??{formFactor:'Desktop'}} device={layoutDevice}
+          renderField={name=>{const field=visibleFields.find(item=>item.apiName===name);return field?renderField(field):null;}}/>
+          :selectedLayout?.sections.length ? <>
           {selectedLayout.sections.map((section) => {
           const sectionFields = section.fieldApiNames.map((name) => visibleFields.find((field) => field.apiName === name)).filter((field): field is FieldMetadata => Boolean(field));
           return <section className="record-form-section" key={section.id}><h3>{section.label}</h3><div className={`record-form-grid columns-${section.columns}`}>{sectionFields.map(renderField)}</div></section>;
