@@ -12,6 +12,11 @@ import type {SqlPersistence} from '../../src/system-files/sql-persistence.js';
 const tenant='00000000-0000-4000-8000-000000000001';
 const user='00000000-0000-4000-8000-000000000002';
 const recordId='00000000-0000-4000-8000-000000000003';
+// Test actor has field-read grants; real RBAC remains mandatory in production.
+const readGrants={
+ allowed:async()=>true,
+ allowedMany:async(_tenant:string,_user:string,items:readonly unknown[])=>items.map(()=>true)
+};
 const flowRows=[
  {id:'00000000-0000-4000-8000-000000000011',api_name:'LaterFlow'},
  {id:'00000000-0000-4000-8000-000000000012',api_name:'FirstFlow'},
@@ -55,7 +60,7 @@ test('record-triggered Flows honor trigger conditions and trigger order transact
    return {rows:[]};
   }
  } as unknown as PoolClient;
- const rbac={require:async()=>{}} as unknown as RbacEngine;
+ const rbac={...readGrants,require:async()=>{}} as unknown as RbacEngine;
  const flows={advanceInterview:async(_tenant:string,_user:string,runId:string)=>{
   calls.push({tenant:_tenant,user:_user,runId});return {status:'completed'};
  }} as never;
@@ -89,7 +94,7 @@ test('record-trigger dependencies reorder actual transactional execution',async(
   }
   return {rows:[]};
  }} as unknown as PoolClient;
- const engine=new FlowRecordTriggers({require:async()=>undefined} as never,
+ const engine=new FlowRecordTriggers({...readGrants,require:async()=>undefined} as never,
   {advanceInterview:async()=>({status:'completed'})} as never);
  await engine.execute(client,tenant,user,'Account','created',{Id:recordId},null);
  assert.deepEqual(actual,[flowRows[1].id,flowRows[0].id]);
@@ -147,7 +152,7 @@ test('after-save Record-Triggered Flow schedules a durable path with its record 
  } as unknown as SqlPersistence;
  const permissions:string[]=[];
  const scheduled:Array<{runId:string;at:Date;version:number;app?:string}>=[];
- const runtime=new FlowRecordTriggers({require:async(_tenant,_user,resource)=>{
+ const runtime=new FlowRecordTriggers({...readGrants,require:async(_tenant,_user,resource)=>{
   permissions.push(resource);
  }} as unknown as RbacEngine,{advanceInterview:async()=>({status:'completed'})} as never,
  undefined,db,async(_client,_tenant,_user,_api,version,runId,at,_step,app)=>{
@@ -195,7 +200,7 @@ test('after-save Record-Triggered Flow may durably pause at a Wait element',asyn
   if(sql.includes('INSERT INTO md_flow_runs'))return {rows:[{id:'waiting-run'}]};
   return {rows:[]};
  }} as unknown as PoolClient;
- const runtime=new FlowRecordTriggers({require:async()=>undefined} as unknown as RbacEngine,{
+ const runtime=new FlowRecordTriggers({...readGrants,require:async()=>undefined} as unknown as RbacEngine,{
   advanceInterview:async()=>{advanced++;return {status:'waiting'};}
  } as never);
  await runtime.execute(client,tenant,user,'Account','created',{Id:recordId},null,'after-save');
@@ -223,7 +228,7 @@ test('Flow activation validates Scheduled Path context, source field type, and o
   if(sql.includes('FROM md_object_definitions'))return {rows:[{api_name:'Account'}]};
   return {rows:dataType?[{data_type:dataType}]:[]};
  }} as never;
- const rbac={require:async()=>undefined} as unknown as RbacEngine;
+ const rbac={...readGrants,require:async()=>undefined} as unknown as RbacEngine;
  const draft=(runWhen='after-save',offsetAmount=1)=>({
   apiName:'ScheduledPathFlow',flowType:'Record-Triggered Flow',resources:[],
   elements:[
@@ -297,7 +302,7 @@ test('Platform Event delivery persists typed $Record and completes a waiting int
   transaction:async<T>(run:(transaction:PoolClient)=>Promise<T>)=>run(client)
  } as unknown as SqlPersistence;
  const permissions:string[]=[];
- const rbac={require:async(_tenant:string,_user:string,resource:string,action:string)=>{
+ const rbac={...readGrants,require:async(_tenant:string,_user:string,resource:string,action:string)=>{
   permissions.push(resource+':'+action);
  }} as unknown as RbacEngine;
  const flows={advanceInterview:async(_tenant:string,_user:string,runId:string)=>{
@@ -339,7 +344,7 @@ test('Platform Event delivery marks rejected entry-condition access failed and r
    return {rows:[]};
   }
  } as unknown as SqlPersistence;
- const rbac={require:async(_tenant:string,_user:string,resource:string)=>{
+ const rbac={...readGrants,require:async(_tenant:string,_user:string,resource:string)=>{
   if(resource==='PlatformEvent:Order_Updated__e.Status__c')throw new Error('Permission denied');
  }} as unknown as RbacEngine;
  const runtime=new FlowRecordTriggers(rbac,{} as never,undefined,db);
@@ -382,7 +387,7 @@ test('scheduled Flow reads tenant records, filters entry conditions and persists
   transaction:async<T>(callback:(tx:PoolClient)=>Promise<T>)=>callback(client)
  } as unknown as SqlPersistence;
  const permissionChecks:string[]=[];
- const rbac={require:async(_tenant:string,_user:string,resource:string)=>{
+ const rbac={...readGrants,require:async(_tenant:string,_user:string,resource:string)=>{
   permissionChecks.push(resource);
  }} as unknown as RbacEngine;
  const records={list:async(_tenant:string,_user:string,_object:string,_size:number,offset:number)=>{
@@ -416,7 +421,7 @@ test('transition entry conditions compare the prior snapshot and detect field ch
    return {rows:[]};
   }
  } as unknown as PoolClient;
- const runtime=new FlowRecordTriggers({require:async()=>{}} as unknown as RbacEngine,{
+ const runtime=new FlowRecordTriggers({...readGrants,require:async()=>{}} as unknown as RbacEngine,{
   advanceInterview:async()=>{calls.push('run');return {status:'completed'};}
  } as never);
  await runtime.execute(client,tenant,user,'Account','updated',
@@ -441,7 +446,7 @@ test('Was Set entry conditions match only when an update populates a previously 
    return {rows:[]};
   }
  } as unknown as PoolClient;
- const runtime=new FlowRecordTriggers({require:async()=>{}} as unknown as RbacEngine,{
+ const runtime=new FlowRecordTriggers({...readGrants,require:async()=>{}} as unknown as RbacEngine,{
   advanceInterview:async()=>{executions++;return {status:'completed'};}
  } as never);
  await runtime.execute(client,tenant,user,'Account','updated',
@@ -464,7 +469,7 @@ test('transition entry conditions run only when an update first satisfies criter
    return {rows:[]};
   }
  } as unknown as PoolClient;
- const runtime=new FlowRecordTriggers({require:async()=>{}} as unknown as RbacEngine,{
+ const runtime=new FlowRecordTriggers({...readGrants,require:async()=>{}} as unknown as RbacEngine,{
   advanceInterview:async()=>{executions++;return {status:'completed'};}
  } as never);
  await runtime.execute(client,tenant,user,'Account','updated',
@@ -488,7 +493,7 @@ test('CRUD invoked inside a triggered Flow does not recursively dispatch record 
   }
  } as unknown as PoolClient;
  let runtime:FlowRecordTriggers;
- runtime=new FlowRecordTriggers({require:async()=>{}} as unknown as RbacEngine,{
+ runtime=new FlowRecordTriggers({...readGrants,require:async()=>{}} as unknown as RbacEngine,{
   advanceInterview:async()=>{
    executions++;
    await runtime.execute(client,tenant,user,'Account','created',{Id:recordId},null);
@@ -514,7 +519,7 @@ test('record-triggered Flow executions are capped per record operation',async()=
    return {rows:[]};
   }
  } as unknown as PoolClient;
- const runtime=new FlowRecordTriggers({require:async()=>{}} as unknown as RbacEngine,{
+ const runtime=new FlowRecordTriggers({...readGrants,require:async()=>{}} as unknown as RbacEngine,{
   advanceInterview:async()=>({status:'completed'})
  } as never);
  await assert.rejects(()=>runtime.execute(client,tenant,user,'Account','created',{Id:recordId},null),
@@ -523,7 +528,7 @@ test('record-triggered Flow executions are capped per record operation',async()=
 });
 
 test('Flow validation accepts supported before-save and after-save trigger paths',async()=>{
- const runtime=new FlowRuntime(withFlowCapabilities({} as SqlPersistence),{require:async()=>{}} as unknown as RbacEngine);
+ const runtime=new FlowRuntime(withFlowCapabilities({} as SqlPersistence),{...readGrants,require:async()=>{}} as unknown as RbacEngine);
  const draft={apiName:'AccountTrigger',flowType:'Record-Triggered Flow',
   elements:[
    {id:1,type:'Start',label:'Start',config:{
@@ -552,7 +557,7 @@ test('Flow validation accepts supported before-save and after-save trigger paths
 });
 
 test('Flow validation accepts bounded record mutation sources supported by runtime',async()=>{
- const runtime=new FlowRuntime(withFlowCapabilities({} as SqlPersistence),{require:async()=>{}} as unknown as RbacEngine);
+ const runtime=new FlowRuntime(withFlowCapabilities({} as SqlPersistence),{...readGrants,require:async()=>{}} as unknown as RbacEngine);
  const createDraft=(type:string,config:Record<string,unknown>)=>({
   apiName:'MutationFlow',flowType:'Autolaunched Flow',
   elements:[
@@ -616,7 +621,7 @@ test('Flow validation accepts bounded record mutation sources supported by runti
 });
 
 test('Flow validation constrains fault connectors to supported elements and policies',async()=>{
- const runtime=new FlowRuntime(withFlowCapabilities({} as SqlPersistence),{require:async()=>{}} as unknown as RbacEngine);
+ const runtime=new FlowRuntime(withFlowCapabilities({} as SqlPersistence),{...readGrants,require:async()=>{}} as unknown as RbacEngine);
  const graph=(type:string,config:Record<string,unknown>,faultConnectors:unknown[]=[],
   resources:unknown[]=[])=>( {
    apiName:'FaultFlow',flowType:'Autolaunched Flow',resources,
@@ -647,7 +652,7 @@ test('Flow validation constrains fault connectors to supported elements and poli
 });
 
 test('Flow validation type-checks collection Assignment sources against the target Object',async()=>{
- const runtime=new FlowRuntime(withFlowCapabilities({} as SqlPersistence),{require:async()=>{}} as unknown as RbacEngine);
+ const runtime=new FlowRuntime(withFlowCapabilities({} as SqlPersistence),{...readGrants,require:async()=>{}} as unknown as RbacEngine);
  const draft=(value:string)=>({
   apiName:'CollectionAssignmentFlow',flowType:'Autolaunched Flow',resources:[
    {name:'accounts',type:'Record Collection',dataType:'Account'}
@@ -699,7 +704,7 @@ test('Flow data validation rejects missing tenant Objects and fields',async()=>{
 });
 
 test('Flow validation accepts durable Wait elements and rejects unsafe configurations',async()=>{
- const runtime=new FlowRuntime(withFlowCapabilities({} as SqlPersistence),{require:async()=>{}} as unknown as RbacEngine);
+ const runtime=new FlowRuntime(withFlowCapabilities({} as SqlPersistence),{...readGrants,require:async()=>{}} as unknown as RbacEngine);
  const draft=(config:Record<string,unknown>)=>({
   apiName:'WaitFlow',flowType:'Autolaunched Flow',
   elements:[
@@ -738,7 +743,7 @@ test('before-save dispatch returns $Record updates from ordered Flow interviews'
    return {rows:[]};
   }
  } as unknown as PoolClient;
- const runtime=new FlowRecordTriggers({require:async()=>{}} as unknown as RbacEngine,{
+ const runtime=new FlowRecordTriggers({...readGrants,require:async()=>{}} as unknown as RbacEngine,{
   advanceInterview:async()=>({status:'completed',record:{Name:'Updated before save'}})
  } as never);
  const result=await runtime.execute(client,tenant,user,'Account','created',
@@ -768,6 +773,13 @@ test('FlowRuntime applies before-save Assignment to the persisted $Record resour
     flow_id:flowRows[0].id,api_name:'BeforeSaveFlow',flow_type:'Record-Triggered Flow',
     started_by:user,status:'pending'
    }]};
+   if(sql.includes('FROM md_users u'))return {rows:[{
+    id:user,email:'flow.user@example.invalid',display_name:'Flow User',
+    time_zone:'Europe/London',locale:'en-GB',user_currency_iso_code:'GBP',
+    has_currency_settings:false,profile_id:null,profile_name:null,profile_api:null
+   }]};
+   if(sql.includes('SELECT api_name FROM md_field_definitions'))
+    return {rows:[{api_name:'Name'}]};
    if(sql.includes('FROM md_flow_editor_values'))return {rows:editorRows};
    if(sql.includes('FROM md_flow_interview_state'))return {rows:[{
     current_element:1,history_elements:[],step_count:0
@@ -785,7 +797,7 @@ test('FlowRuntime applies before-save Assignment to the persisted $Record resour
   }
  } as unknown as PoolClient;
  const runtime=new FlowRuntime({} as SqlPersistence,
-  {require:async()=>{}} as unknown as RbacEngine,{} as never);
+  {...readGrants,require:async()=>{}} as unknown as RbacEngine,{} as never);
  const result=await runtime.advanceInterview(tenant,user,flowRows[0].id,
   {},client);
  assert.equal(result.status,'completed');
@@ -821,6 +833,13 @@ test('record-triggered Decision resolves current and prior record change referen
     flow_id:flowRows[0].id,api_name:'ChangeFlow',flow_type:'Record-Triggered Flow',
     started_by:user,status:'pending'
    }]};
+   if(sql.includes('FROM md_users u'))return {rows:[{
+    id:user,email:'flow.user@example.invalid',display_name:'Flow User',
+    time_zone:'Europe/London',locale:'en-GB',user_currency_iso_code:'GBP',
+    has_currency_settings:false,profile_id:null,profile_name:null,profile_api:null
+   }]};
+   if(sql.includes('SELECT api_name FROM md_field_definitions'))
+    return {rows:[{api_name:'Name'}]};
    if(sql.includes('FROM md_flow_editor_values'))return {rows:editorRows};
    if(sql.includes('FROM md_flow_interview_state'))return {rows:[{
     current_element:1,history_elements:[],step_count:0
@@ -840,7 +859,7 @@ test('record-triggered Decision resolves current and prior record change referen
    return {rows:[]};
   }
  } as unknown as PoolClient;
- const rbac={require:async()=>{}} as unknown as RbacEngine;
+ const rbac={...readGrants,require:async()=>{}} as unknown as RbacEngine;
  const runtime=new FlowRuntime({} as SqlPersistence,rbac,{} as never);
  const result=await runtime.advanceInterview(tenant,user,'00000000-0000-4000-8000-000000000014',{},client);
  assert.equal(result.status,'completed');
