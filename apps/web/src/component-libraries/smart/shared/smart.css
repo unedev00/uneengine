@@ -61,3 +61,55 @@
   width:auto;height:100%;max-height:none;aspect-ratio:1;flex:none}
 .smart-runtime.smart_toggle .smart-switch>input:checked+.smart-switch-track{justify-content:flex-end}
 .smart-runtime.smart_toggle .smart-switch>input:checked+.smart-switch-track .smart-switch-thumb{left:auto}
+
+/* Universal visible-surface sizing contract.
+   The shared SmartRuntime host is geometry only; the first (real) control
+   fills it without a second box. Applies in Builder, published pages, Flow
+   screens and cards alike, independent of SQL property applicability. */
+.smart-runtime{
+  display:flex;flex-direction:column;
+  box-sizing:border-box;min-width:0;min-height:0;
+  margin:0;padding:0;border:0;background:transparent;box-shadow:none;
+}
+.smart-runtime > :first-child{
+  box-sizing:border-box;display:flex;
+  flex:1 1 auto;width:100%;height:100%;
+  min-width:0;min-height:0;max-width:100%;
+  margin:0;
+}
+.smart-runtime.smart_button > .smart-button,
+.smart-runtime.smart_text > .smart-input-box,
+.smart-runtime.smart_lookup .smart-search{
+  box-sizing:border-box;display:block;
+  width:100%;height:100%;min-width:0;min-height:0;
+  max-height:none;flex:1 1 auto;
+}
+.smart-runtime.smart_lookup > .smart-lookup{
+  display:flex;flex-direction:column;position:relative;min-height:0;
+}
+.smart-runtime.smart_lookup .smart-lookup-menu{
+  height:auto;flex:none;max-height:220px;
+}
+.smart-runtime.smart_image > .smart-card,
+.smart-runtime.smart_card_grid > .smart-grid,
+.smart-runtime.smart_calendar > .smart-calendar,
+.smart-runtime.smart_navigation > .smart-navigation,
+.smart-runtime.smart_tabs > .smart-tabs-shell,
+.smart-runtime.smart_cart > .smart-cart-root,
+.smart-runtime.smart_container > .smart-container{
+  width:100%;height:100%;min-width:0;min-height:0;max-width:100%;flex:1 1 auto;
+}
+.smart-runtime.smart_image > .smart-card > div:first-child{
+  flex:1 1 auto;min-height:0;
+}
+.smart-runtime.smart_image > .smart-card > div:first-child > :first-child{
+  width:100%;height:100%;
+}
+.smart-runtime.smart_tabs .smart-tabs{
+  flex:1 1 auto;min-height:0;align-content:stretch;
+}
+.smart-runtime.smart_card_grid > .smart-grid{align-content:stretch}
+.smart-runtime.smart_calendar > .smart-calendar,
+.smart-runtime.smart_cart > .smart-cart-root{overflow:auto}
+.smart-runtime.smart_navigation > .smart-navigation{align-content:stretch;align-items:stretch}
+.smart-runtime.smart_navigation .smart-navigation-item{flex:1 1 auto;min-height:0}
