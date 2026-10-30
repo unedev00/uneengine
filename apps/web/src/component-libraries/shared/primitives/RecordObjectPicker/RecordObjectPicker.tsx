@@ -1,7 +1,7 @@
 import {useMemo,useRef,useState} from 'react';
 import {ChevronDown} from 'lucide-react';
-import {useDismissOnOutside} from '../../core/accessibility/Dismiss/useDismissOnOutside';
-import type {NavigableObject} from '../shared/recordTypes';
+import {useDismissOnOutside} from '../../../../core/accessibility/Dismiss/useDismissOnOutside';
+import type {NavigableObject} from '../../recordTypes';
 
 export function RecordObjectPicker({
   objects, selected, onSelect
