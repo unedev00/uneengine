@@ -34,20 +34,31 @@
  right:-9px!important;left:auto!important;bottom:-9px!important;top:auto!important;cursor:nwse-resize!important}
 .builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .resize-sw{
  left:-9px!important;right:auto!important;bottom:-9px!important;top:auto!important;cursor:nesw-resize!important}
-.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .free-canvas-move-handle{
- position:absolute;top:calc(50% - 12px);left:calc(50% - 12px);
- z-index:170!important;display:flex;align-items:center;justify-content:center;
- width:24px;height:24px;min-width:24px;min-height:24px;
- padding:0;border:1px solid #94a3b8;border-radius:4px;
- color:#2563eb;background:#fff;box-shadow:0 1px 3px #0002;
- cursor:move;touch-action:none;user-select:none;opacity:0;
- transition:opacity .1s ease;
+/* A narrow border hit area gives the same four-direction drag affordance
+   as a selected spreadsheet shape. Corners remain reserved for resize handles. */
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .free-canvas-move-edge{
+ position:absolute;z-index:162!important;display:block;
+ box-sizing:border-box;background:transparent;border:0;
+ margin:0;padding:0;cursor:move!important;touch-action:none;
+ user-select:none;
 }
-.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .free-canvas-move-handle:is(:hover,:focus-visible,:active){
- opacity:1;outline:1px solid #2563eb;
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .move-edge-n{
+ top:-5px;left:18px;right:18px;height:10px;
+}
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .move-edge-s{
+ bottom:-5px;left:18px;right:18px;height:10px;
+}
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .move-edge-e{
+ top:18px;bottom:18px;right:-5px;width:10px;
+}
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .move-edge-w{
+ top:18px;bottom:18px;left:-5px;width:10px;
+}
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .free-canvas-move-edge:focus-visible{
+ outline:2px solid #2563eb;outline-offset:1px;
 }
 @media(pointer:coarse){
- .builder-editor-mode .modern-canvas-builder .free-canvas-component.selected :is(.free-canvas-resize-handle,.free-canvas-move-handle){
+ .builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .free-canvas-resize-handle{
   opacity:1;
  }
 }
