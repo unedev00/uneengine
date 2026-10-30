@@ -185,6 +185,9 @@ try{
  if(process.env.METADRIVE_BROWSER_TARGET==='object-lifecycle'){
   const {runObjectSchemaLifecycleBrowserCheck}=await import('./object-schema-lifecycle-browser-check.mjs');
   await runObjectSchemaLifecycleBrowserCheck({page,origin,db,tenantId});
+ }else if(process.env.METADRIVE_BROWSER_TARGET==='field-catalogue'){
+  const {runFieldCatalogueBrowserCheck}=await import('./field-catalogue-browser-check.mjs');
+  await runFieldCatalogueBrowserCheck({page,origin,db,tenantId});
  }else{
  await page.goto(origin+'/une/setup/flow-builder',{waitUntil:'domcontentloaded'});
  await page.getByText('Existing flows',{exact:true}).waitFor({state:'visible',timeout:20000});

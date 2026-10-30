@@ -836,6 +836,13 @@ CREATE UNIQUE INDEX IF NOT EXISTS md_record_values_unique_ci
 CREATE UNIQUE INDEX IF NOT EXISTS md_record_values_unique_cs
   ON md_record_values(tenant_id,object_api,field_api,value_text)
   WHERE is_unique AND case_sensitive AND value_text IS NOT NULL AND record_is_deleted=false;
+-- Field lookups remain indexed even when External ID is not Unique.
+CREATE INDEX IF NOT EXISTS md_record_values_lookup_ci
+ ON md_record_values(tenant_id,object_api,field_api,lower(value_text))
+ WHERE value_text IS NOT NULL AND record_is_deleted=false;
+CREATE INDEX IF NOT EXISTS md_record_values_lookup_cs
+ ON md_record_values(tenant_id,object_api,field_api,value_text)
+ WHERE value_text IS NOT NULL AND record_is_deleted=false;
 CREATE TABLE IF NOT EXISTS md_record_multi_values (
   tenant_id uuid NOT NULL,
   record_id uuid NOT NULL,

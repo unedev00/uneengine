@@ -207,7 +207,9 @@ export function createSetupObjectActions(ctx: any) {
           ? newFieldDefaultValue === 'true'
           : ['Number', 'Currency', 'Percent'].includes(newFieldType)
             ? Number(newFieldDefaultValue)
-            : newFieldDefaultValue
+            : newFieldType === 'Date/Time'
+              ? new Date(newFieldDefaultValue).toISOString()
+              : newFieldDefaultValue
       } : {}),
       ...(relationshipType ? { relationship: {
         type: relationshipType,

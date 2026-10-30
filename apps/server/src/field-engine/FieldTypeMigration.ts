@@ -590,7 +590,7 @@ export async function applyFieldTypeMigration(
         &&target.picklistValues&&(converted.value_text??'').split(';')
           .some(item=>!target.picklistValues!.includes(item)))
         throw new Error('Existing value is not in the target picklist');
-      if(converted.value_text!==null&&(target.unique||target.externalId)){
+      if(converted.value_text!==null&&(target.unique)){
         const key=target.caseSensitive?converted.value_text:converted.value_text.toLowerCase();
         if(duplicateValues.has(key))throw new Error('Converted values conflict with the target unique setting');
         duplicateValues.add(key);
@@ -627,6 +627,14 @@ export async function applyFieldTypeMigration(
       count++;
     }
   }
+  // Switch field metadata only after validating/snapshotting the old values, but
+  // before updating value_text: the typed projection trigger consults the live
+  // field type and would otherwise erase migrated numeric/date projections.
+  await client.query(`UPDATE md_field_definitions SET data_type=$4,max_length=$5,precision=$6,scale=$7,
+      required=$8,is_unique=$9,external_id=$10,case_sensitive=$11,default_value=$12
+    WHERE tenant_id=$1 AND object_api=$2 AND api_name=$3`,
+  [tenantId,objectApi,fieldApi,target.dataType,target.maxLength,target.precision,target.scale,
+    target.required,target.unique,target.externalId,target.caseSensitive,target.defaultValue]);
   if(target.dataType!=='formula')await client.query(`UPDATE md_record_values v SET value_text=m.after_value_text,
       value_number=m.after_value_number,value_boolean=m.after_value_boolean,
       value_date=m.after_value_date,value_datetime=m.after_value_datetime,
@@ -634,11 +642,11 @@ export async function applyFieldTypeMigration(
       geo_longitude=m.after_geo_longitude,address_street=m.after_address_street,
       address_city=m.after_address_city,address_state=m.after_address_state,
       address_postal_code=m.after_address_postal_code,address_country=m.after_address_country,
-      is_unique=$3 OR $4,case_sensitive=$5
+      is_unique=$3,case_sensitive=$4
     FROM md_field_type_migration_values m WHERE m.tenant_id=$1 AND m.migration_id=$2
       AND v.tenant_id=m.tenant_id AND v.record_id=m.record_id AND v.object_api=m.object_api
-      AND v.field_api=$6`,
-  [tenantId,migrationId,target.unique,target.externalId,target.caseSensitive,fieldApi]);
+      AND v.field_api=$5`,
+  [tenantId,migrationId,target.unique,target.caseSensitive,fieldApi]);
   if(target.dataType!=='formula')await client.query(`INSERT INTO md_record_values
       (tenant_id,record_id,object_api,field_api,value_text,value_number,value_boolean,value_date,
        value_datetime,reference_record_id,geo_latitude,geo_longitude,address_street,address_city,
@@ -646,13 +654,13 @@ export async function applyFieldTypeMigration(
     SELECT m.tenant_id,m.record_id,m.object_api,$3,m.after_value_text,m.after_value_number,
       m.after_value_boolean,m.after_value_date,m.after_value_datetime,m.after_reference_record_id,
       m.after_geo_latitude,m.after_geo_longitude,m.after_address_street,m.after_address_city,
-      m.after_address_state,m.after_address_postal_code,m.after_address_country,$4 OR $5,$6
+      m.after_address_state,m.after_address_postal_code,m.after_address_country,$4,$5
     FROM md_field_type_migration_values m
     WHERE m.tenant_id=$1 AND m.migration_id=$2 AND m.after_value_exists
       AND NOT EXISTS(SELECT 1 FROM md_record_values v WHERE v.tenant_id=m.tenant_id
         AND v.record_id=m.record_id AND v.object_api=m.object_api AND v.field_api=$3)
     ON CONFLICT(tenant_id,record_id,field_api) DO NOTHING`,
-  [tenantId,migrationId,fieldApi,target.unique,target.externalId,target.caseSensitive]);
+  [tenantId,migrationId,fieldApi,target.unique,target.caseSensitive]);
   await client.query(`DELETE FROM md_record_multi_values
     WHERE tenant_id=$1 AND object_api=$2 AND field_api=$3`,[tenantId,objectApi,fieldApi]);
   if(target.dataType==='multipicklist')await client.query(`INSERT INTO md_record_multi_values
@@ -678,11 +686,6 @@ export async function applyFieldTypeMigration(
     await client.query(`DELETE FROM md_auto_number_counters
       WHERE tenant_id=$1 AND object_api=$2 AND field_api=$3`,[tenantId,objectApi,fieldApi]);
   }
-  await client.query(`UPDATE md_field_definitions SET data_type=$4,max_length=$5,precision=$6,scale=$7,
-      required=$8,is_unique=$9,external_id=$10,case_sensitive=$11,default_value=$12
-    WHERE tenant_id=$1 AND object_api=$2 AND api_name=$3`,
-  [tenantId,objectApi,fieldApi,target.dataType,target.maxLength,target.precision,target.scale,
-    target.required,target.unique,target.externalId,target.caseSensitive,target.defaultValue]);
   await client.query('UPDATE md_field_type_migrations SET records_migrated=$3 WHERE tenant_id=$1 AND id=$2',
     [tenantId,migrationId,count]);
   return migrationId;
@@ -843,14 +846,14 @@ export async function rollbackFieldTypeMigration(
       OR v.address_state IS DISTINCT FROM m.after_address_state
       OR v.address_postal_code IS DISTINCT FROM m.after_address_postal_code
       OR v.address_country IS DISTINCT FROM m.after_address_country
-      OR ($8 AND COALESCE((SELECT array_agg(mv.value ORDER BY mv.sort_order)
+      OR ($7 AND COALESCE((SELECT array_agg(mv.value ORDER BY mv.sort_order)
         FROM md_record_multi_values mv WHERE mv.tenant_id=v.tenant_id
           AND mv.record_id=v.record_id AND mv.object_api=v.object_api AND mv.field_api=v.field_api),'{}')
         IS DISTINCT FROM COALESCE(string_to_array(v.value_text,';'),'{}'))
-      OR v.is_unique IS DISTINCT FROM ($5 OR $6)
-      OR v.case_sensitive IS DISTINCT FROM $7))
+      OR v.is_unique IS DISTINCT FROM $5
+      OR v.case_sensitive IS DISTINCT FROM $6))
     LIMIT 1`,[tenantId,objectApi,fieldApi,migrationId,migration.to_unique,
-      migration.to_external_id,migration.to_case_sensitive,migration.to_data_type==='multipicklist']);
+      migration.to_case_sensitive,migration.to_data_type==='multipicklist']);
   if(changedValues.rowCount)throw new Error('Field values changed after migration; rollback requires a new migration');
   await client.query(`UPDATE md_field_definitions SET data_type=$4,max_length=$5,precision=$6,scale=$7,
       required=$8,is_unique=$9,external_id=$10,case_sensitive=$11,default_value=$12,

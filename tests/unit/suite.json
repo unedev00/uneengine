@@ -45,6 +45,7 @@
     "apps/server/test/system/encrypted-field.test.ts",
     "apps/server/test/system/external-http-transport.test.ts",
     "apps/server/test/system/federation-named-credentials.test.ts",
+    "apps/server/test/system/field-definition-attributes.test.ts",
     "apps/server/test/system/field-engine-registry.test.ts",
     "apps/server/test/system/field-exact-index-routes.test.ts",
     "apps/server/test/system/field-recycle-bin.test.ts",

@@ -1,0 +1,67 @@
+name: Phase 2B field catalogue and storage
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/server/src/system-files/object-definition.ts'
+      - 'apps/server/src/system-files/field-definition-attributes.ts'
+      - 'apps/server/src/field-engine/FieldTypeMigration.ts'
+      - 'apps/server/src/business-rule-engine/UniqueConstraintManager.ts'
+      - 'apps/server/src/system-files/external-id-upsert.ts'
+      - 'apps/web/src/core/builders/ObjectManager/setupObjectActions.ts'
+      - 'apps/server/test/system/field-definition-attributes.test.ts'
+      - 'apps/server/scripts/field-catalogue-sql-smoke.mjs'
+      - '.github/workflows/phase-2b-field-catalogue.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  field-catalogue:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: metadrive_2b
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d metadrive_2b"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      METADRIVE_SQL_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/metadrive_2b
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Build shared server field/runtime
+        run: npm run build:system --workspace apps/server
+      - name: Test field attributes and migrations
+        run: node --import tsx --test apps/server/test/system/field-definition-attributes.test.ts apps/server/test/system/field-type-migration.test.ts
+      - name: Verify persisted field semantics in PostgreSQL
+        run: node apps/server/scripts/field-catalogue-sql-smoke.mjs
+      - name: Build Object Manager frontend
+        env:
+          GITHUB_PAGES: 'true'
+          GITHUB_PAGES_BASE_PATH: '/'
+          VITE_API_BASE_URL: /api
+        run: npm run build --workspace apps/web
+      - name: Install Chromium for real UI E2E
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Verify field creation in browser through PostgreSQL
+        env:
+          METADRIVE_BROWSER_PREBUILT: '1'
+          METADRIVE_BROWSER_TARGET: field-catalogue
+        run: |
+          mkdir -p apps/server/artifacts
+          node apps/server/scripts/builder-browser-smoke.mjs
