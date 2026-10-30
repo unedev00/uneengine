@@ -196,3 +196,173 @@
 .smart-dialog{background:#fff;color:#243448;border:1px solid #c5d1df;border-radius:9px;box-shadow:0 15px 40px #0003;max-height:80vh;overflow:auto;min-width:380px;max-width:min(650px,95vw);padding:18px}
 .smart-dialog header{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}
 .smart-dialog header button{background:white;border:1px solid #b8c5d8;border-radius:4px;padding:5px 12px}
+/* Approved compact section composition (Body, Header, Badge, Image).
+   The SQL catalog still owns property names, tabs, and applicability;
+   only the existing controls' visual positions change here. Other sections
+   retain the shared three-row layout. Hidden labels stay accessible through
+   each control's aria-label and the property's title. */
+.office-builder-ribbon .smart-ribbon-group:is(
+  [aria-label="Body"],[aria-label="Header"],[aria-label="Badge"],[aria-label="Image"]){
+  padding-inline:10px;
+}
+.office-builder-ribbon .smart-ribbon-group:is(
+  [aria-label="Body"],[aria-label="Header"],[aria-label="Badge"],[aria-label="Image"]) .smart-ribbon-items{
+  display:grid;
+  grid-auto-flow:row;
+  grid-auto-columns:auto;
+  grid-template-rows:repeat(3,32px);
+  align-items:center;
+  row-gap:4px;
+  column-gap:8px;
+}
+.office-builder-ribbon .smart-ribbon-group:is(
+  [aria-label="Body"],[aria-label="Header"],[aria-label="Badge"],[aria-label="Image"]) .smart-property{
+  height:32px;
+  width:100%;
+}
+
+/* BODY: three colour tools / Corner Radius / Shadow. */
+.office-builder-ribbon .smart-ribbon-group[aria-label="Body"]{
+  flex:0 0 258px;
+  width:258px;
+}
+.office-builder-ribbon .smart-ribbon-group[aria-label="Body"] .smart-ribbon-items{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+}
+.office-builder-ribbon .smart-ribbon-group[aria-label="Body"] .smart-property[data-property="backgroundColor"]{grid-area:1 / 1;justify-self:center}
+.office-builder-ribbon .smart-ribbon-group[aria-label="Body"] .smart-property[data-property="borderColor"]{grid-area:1 / 2;justify-self:center}
+.office-builder-ribbon .smart-ribbon-group[aria-label="Body"] .smart-property[data-property="labelColor"]{grid-area:1 / 3;justify-self:center}
+.office-builder-ribbon .smart-ribbon-group[aria-label="Body"] .smart-property[data-property="radius"]{grid-area:2 / 1 / 3 / -1}
+.office-builder-ribbon .smart-ribbon-group[aria-label="Body"] .smart-property[data-property="shadow"]{grid-area:3 / 1 / 4 / -1}
+.office-builder-ribbon .smart-ribbon-group[aria-label="Body"] .smart-property:is(
+  [data-property="backgroundColor"],[data-property="borderColor"],[data-property="labelColor"])>.smart-label{
+  display:none;
+}
+.office-builder-ribbon #page-builder-tab-content .smart-ribbon-group[aria-label="Body"]
+  .smart-property:is([data-property="backgroundColor"],[data-property="borderColor"],[data-property="labelColor"])
+  .office-ribbon-colour-property{
+  flex:0 0 52px!important;
+  width:52px!important;min-width:52px!important;max-width:52px!important;
+  height:32px!important;min-height:32px!important;max-height:32px!important;
+}
+.office-builder-ribbon #page-builder-tab-content .smart-ribbon-group[aria-label="Body"]
+  .smart-property[data-property="radius"] input.smart-office-number{
+  flex:0 0 75px!important;
+  width:75px!important;min-width:75px!important;max-width:75px!important;
+  height:30px!important;min-height:30px!important;max-height:30px!important;
+}
+.office-builder-ribbon .smart-ribbon-group[aria-label="Body"] .smart-property[data-property="shadow"] .smart-icons{
+  gap:4px;
+}
+.office-builder-ribbon .smart-ribbon-group[aria-label="Body"] .smart-property[data-property="shadow"] .smart-icons button{
+  flex:0 0 34px;
+  width:34px;min-width:34px;height:32px;
+}
+
+/* HEADER: Wrap / Bold / Border icons on row 1, empty row 2,
+   then Alignment with its three original buttons on row 3. */
+.office-builder-ribbon .smart-ribbon-group[aria-label="Header"]{
+  flex:0 0 265px;
+  width:265px;
+}
+.office-builder-ribbon .smart-ribbon-group[aria-label="Header"] .smart-ribbon-items{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+}
+.office-builder-ribbon .smart-ribbon-group[aria-label="Header"] .smart-property[data-property="wrapText"]{grid-area:1 / 1;justify-content:center}
+.office-builder-ribbon .smart-ribbon-group[aria-label="Header"] .smart-property[data-property="headerBold"]{grid-area:1 / 2;justify-content:center}
+.office-builder-ribbon .smart-ribbon-group[aria-label="Header"] .smart-property[data-property="headerBorderColor"]{grid-area:1 / 3;justify-content:center}
+.office-builder-ribbon .smart-ribbon-group[aria-label="Header"] .smart-property[data-property="headerAlignment"]{
+  grid-area:3 / 1 / 4 / -1;
+}
+.office-builder-ribbon .smart-ribbon-group[aria-label="Header"] .smart-property:is(
+  [data-property="wrapText"],[data-property="headerBold"],[data-property="headerBorderColor"])>.smart-label{
+  display:none;
+}
+.office-builder-ribbon .smart-ribbon-group[aria-label="Header"] .smart-property:is(
+  [data-property="wrapText"],[data-property="headerBold"]) .smart-icon-toggle{
+  flex:0 0 40px;width:40px;height:36px;
+}
+.office-builder-ribbon #page-builder-tab-content .smart-ribbon-group[aria-label="Header"]
+  .smart-property[data-property="headerBorderColor"] .office-ribbon-colour-property{
+  flex:0 0 60px!important;
+  width:60px!important;min-width:60px!important;max-width:60px!important;
+  height:36px!important;min-height:36px!important;max-height:36px!important;
+}
+.office-builder-ribbon .smart-ribbon-group[aria-label="Header"] .smart-property[data-property="headerAlignment"] .smart-icons{
+  gap:4px;
+}
+.office-builder-ribbon .smart-ribbon-group[aria-label="Header"] .smart-property[data-property="headerAlignment"] .smart-icons button{
+  flex:0 0 34px;width:34px;min-width:34px;height:32px;
+}
+
+/* BADGE: Alignment and Visible on row 1, Text Size on row 2,
+   Bold / Text Colour / Body Colour tools grouped at the start of row 3. */
+.office-builder-ribbon .smart-ribbon-group[aria-label="Badge"]{
+  flex:0 0 512px;
+  width:512px;
+}
+.office-builder-ribbon .smart-ribbon-group[aria-label="Badge"] .smart-ribbon-items{
+  grid-template-columns:52px 60px 130px minmax(0,1fr);
+}
+.office-builder-ribbon .smart-ribbon-group[aria-label="Badge"] .smart-property[data-property="badgeAlignment"]{
+  grid-area:1 / 1 / 2 / 4;
+}
+.office-builder-ribbon .smart-ribbon-group[aria-label="Badge"] .smart-property[data-property="badgeVisible"]{
+  grid-area:1 / 4;
+}
+.office-builder-ribbon .smart-ribbon-group[aria-label="Badge"] .smart-property[data-property="badgeTextSize"]{
+  grid-area:2 / 1 / 3 / 4;
+}
+.office-builder-ribbon .smart-ribbon-group[aria-label="Badge"] .smart-property[data-property="badgeBold"]{
+  grid-area:3 / 1;justify-content:center;
+}
+.office-builder-ribbon .smart-ribbon-group[aria-label="Badge"] .smart-property[data-property="badgeTextColor"]{
+  grid-area:3 / 2;justify-content:center;
+}
+.office-builder-ribbon .smart-ribbon-group[aria-label="Badge"] .smart-property[data-property="badgeBodyColor"]{
+  grid-area:3 / 3;justify-content:start;
+}
+.office-builder-ribbon .smart-ribbon-group[aria-label="Badge"] .smart-property:is(
+  [data-property="badgeBold"],[data-property="badgeTextColor"],[data-property="badgeBodyColor"])>.smart-label{
+  display:none;
+}
+.office-builder-ribbon #page-builder-tab-content .smart-ribbon-group[aria-label="Badge"]
+  .smart-property[data-property="badgeAlignment"] .smart-select{
+  flex:0 0 144px;width:144px;min-width:144px;max-width:144px;
+}
+.office-builder-ribbon #page-builder-tab-content .smart-ribbon-group[aria-label="Badge"]
+  .smart-property[data-property="badgeTextSize"] input.smart-office-number{
+  flex:0 0 116px!important;
+  width:116px!important;min-width:116px!important;max-width:116px!important;
+}
+.office-builder-ribbon .smart-ribbon-group[aria-label="Badge"] .smart-property[data-property="badgeBold"] .smart-icon-toggle{
+  flex:0 0 42px;width:42px;height:36px;
+}
+.office-builder-ribbon #page-builder-tab-content .smart-ribbon-group[aria-label="Badge"]
+  .smart-property:is([data-property="badgeTextColor"],[data-property="badgeBodyColor"]) .office-ribbon-colour-property{
+  flex:0 0 56px!important;
+  width:56px!important;min-width:56px!important;max-width:56px!important;
+  height:36px!important;min-height:36px!important;max-height:36px!important;
+}
+
+/* IMAGE: three short, consistently aligned labels, controls on the right. */
+.office-builder-ribbon .smart-ribbon-group[aria-label="Image"]{
+  flex:0 0 282px;
+  width:282px;
+}
+.office-builder-ribbon .smart-ribbon-group[aria-label="Image"] .smart-ribbon-items{
+  grid-template-columns:minmax(0,1fr);
+}
+.office-builder-ribbon .smart-ribbon-group[aria-label="Image"] .smart-property[data-property="imagePlacement"]{grid-row:1;grid-column:1}
+.office-builder-ribbon .smart-ribbon-group[aria-label="Image"] .smart-property[data-property="imageBorderColor"]{grid-row:2;grid-column:1}
+.office-builder-ribbon .smart-ribbon-group[aria-label="Image"] .smart-property[data-property="imageFill"]{grid-row:3;grid-column:1}
+.office-builder-ribbon #page-builder-tab-content .smart-ribbon-group[aria-label="Image"]
+  .smart-property:is([data-property="imagePlacement"],[data-property="imageFill"]) .smart-select{
+  flex:0 0 144px;width:144px;min-width:144px;max-width:144px;
+}
+.office-builder-ribbon #page-builder-tab-content .smart-ribbon-group[aria-label="Image"]
+  .smart-property[data-property="imageBorderColor"] .office-ribbon-colour-property{
+  flex:0 0 56px!important;
+  width:56px!important;min-width:56px!important;max-width:56px!important;
+  height:32px!important;min-height:32px!important;max-height:32px!important;
+}
