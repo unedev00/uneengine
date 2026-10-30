@@ -11,7 +11,7 @@ import { relatedLookupFilterOperators } from '../../records/RecordWorkspace/reco
 
 
 import { objectSettings, parseAppRoute, appRoutePath, type AppRoute } from '../Navigation/appRouting';
-import {standaloneEntryForAppId} from '../Standalcomponent-libraries/standaloneEntries';
+import {standaloneEntryForAppId} from '../Standalone/standaloneEntries';
 import { NavigationLoadTime, resolveCurrentAppNavigation } from '../Navigation/appNavigationView';
 import { isStandalonePagePresentation } from '../../pages/PageRuntime/pageRuntimePresentation';
 import { insertFlowElementAtPath } from '../../builders/FlowBuilder/flowInsertElement.mjs';
