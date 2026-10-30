@@ -79,6 +79,7 @@
     "apps/server/test/system/global-value-set-service.test.ts",
     "apps/server/test/system/image-field.test.ts",
     "apps/server/test/system/integration-api-log.test.ts",
+    "apps/server/test/system/legacy-ui-component-cutover.test.ts",
     "apps/server/test/system/legacy-une-tenant-retirement.test.ts",
     "apps/server/test/system/login-password-policy.test.ts",
     "apps/server/test/system/mail-inbox-communication-sync.test.ts",
@@ -198,6 +199,7 @@
     "apps/web/test/schemaBuilder.test.ts",
     "apps/web/test/setupMetadataDependencies.test.ts",
     "apps/web/test/setupObjectActions.test.ts",
+    "apps/web/test/smartLibrary.test.mjs",
     "apps/web/test/sourceObjectPropertyLabels.test.mjs",
     "apps/web/test/standardListColumns.test.ts",
     "apps/web/test/standardListQuery.test.ts",
@@ -221,7 +223,6 @@
     "apps/web/test/visibilityExpression.test.ts",
     "apps/web/test/visiblePolling.test.ts",
     "apps/web/test/workspaceContrastRepair.test.mjs",
-    "apps/web/test/workspaceThemeContrast.test.mjs",
-    "apps/web/test/smartLibrary.test.mjs"
+    "apps/web/test/workspaceThemeContrast.test.mjs"
   ]
 }
