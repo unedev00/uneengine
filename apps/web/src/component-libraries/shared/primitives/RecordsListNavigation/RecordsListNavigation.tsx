@@ -1,6 +1,6 @@
 import { Database, RefreshCw, Search } from 'lucide-react';
-import {RecordObjectPicker} from '../OneRecordObjectPicker/RecordObjectPicker';
-import type { ObjectMetadata } from '../../core/metadata/Definitions/metadata';
+import {RecordObjectPicker} from '../RecordObjectPicker/RecordObjectPicker';
+import type { ObjectMetadata } from '../../../../core/metadata/Definitions/metadata';
 
 /** Shared Records heading; no tenant-specific or app-specific routing. */
 export function RecordsListPageHeading({label,onRefresh,objects,selected,onObjectSelect}:{
