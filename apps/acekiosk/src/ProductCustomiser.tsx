@@ -14,12 +14,14 @@ export default function ProductCustomiser({name,image,groups,onCancel,onAdd}:{
  const [selected,setSelected]=useState<Record<string,string>>({});
  const dialogRef=useRef<HTMLElement>(null);
  const cancelRef=useRef<HTMLButtonElement>(null);
+ const onCancelRef=useRef(onCancel);
+ onCancelRef.current=onCancel;
  useEffect(()=>{
    const previous=document.activeElement instanceof HTMLElement?document.activeElement:null;
    const dialog=dialogRef.current;
    cancelRef.current?.focus();
    const handleKey=(event:KeyboardEvent)=>{
-     if(event.key==='Escape'){event.preventDefault();onCancel();return;}
+     if(event.key==='Escape'){event.preventDefault();onCancelRef.current();return;}
      if(event.key!=='Tab'||!dialog)return;
      const controls=Array.from(dialog.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')).filter(el=>el.getClientRects().length>0);
      if(!controls.length){event.preventDefault();return;}
@@ -29,7 +31,7 @@ export default function ProductCustomiser({name,image,groups,onCancel,onAdd}:{
    };
    document.addEventListener('keydown',handleKey);
    return()=>{document.removeEventListener('keydown',handleKey);previous?.focus();};
- },[onCancel]);
+ },[]);
  const valid=groups.every(group=>!group.required||Boolean(selected[group.id]));
  return <div className="ak-modal-backdrop" role="presentation">
    <section ref={dialogRef} className="ak-modal" role="dialog" aria-modal="true" aria-labelledby="ak-custom-title">
