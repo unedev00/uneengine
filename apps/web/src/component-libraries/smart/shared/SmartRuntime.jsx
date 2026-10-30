@@ -110,7 +110,8 @@ function SmartLookup({p,style,fire}){
    aria-label={text(p.placeholder||p.label||"Search records")}
    aria-expanded={opened&&matches.length>0} aria-controls="smart-lookup-suggestions"
    placeholder={text(p.placeholder||p.label||"Search records…")}
-   style={{textAlign:p.labelAlignment||"left",fontSize:number(p.textSize,16),color:p.labelColor||undefined}}
+   style={{textAlign:p.labelAlignment||"left",fontSize:number(p.textSize,16),color:p.labelColor||undefined,
+    background:p.backgroundColor||"#fff",borderColor:p.borderColor||undefined}}
    value={query} onFocus={()=>setOpened(true)}
    onChange={event=>{setQuery(event.target.value);setOpened(true);fire("change",event.target.value)}}/>
   {opened&&query&&matches.length>0&&<div id="smart-lookup-suggestions" className="smart-lookup-menu" role="listbox" style={{textAlign:p.labelAlignment||"left",fontSize:number(p.textSize,16)}}>
@@ -132,7 +133,8 @@ function SmartTabs({p,record,fire}){
    {tabs.map((tab,index)=><button key={index} type="button" role="tab"
     aria-selected={active===index} style={{height:number(p.tabHeight,44),
      minWidth:number(p.tabWidth,120),borderRadius:number(p.radius,10),fontSize:number(p.textSize,16),textAlign:p.labelAlignment||"center",boxShadow:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none",color:p.labelColor||undefined,
-     background:active===index?p.selectedTabColor||"#eaf2ff":p.tabColor||"#fff"}}
+     background:active===index?p.selectedTabColor||"#eaf2ff":p.tabColor||"#fff",
+    borderColor:p.borderColor||undefined}}
     onClick={()=>{setActive(index);fire("change",index)}}>{text(tab?.label??tab)}</button>)}
   </nav>
  </div>;
@@ -190,6 +192,8 @@ export default function SmartRuntime(p){
       const src=item&&typeof item==="object"?item.imageSrc??item.imageUrl:null;
       const safeSrc=typeof src==="string"&&/^https:\/\//i.test(src)?src:null;
       return <button key={item?.id??i} type="button" className="smart-navigation-item"
+        style={{color:p.labelColor||undefined,background:p.backgroundColor||"#fff",
+          borderColor:p.borderColor||undefined,borderRadius:number(p.radius,4),fontSize:number(p.textSize,16)}}
         onClick={()=>{fire("click",item);if(p.onNavigate&&item?.target)p.onNavigate(item.target)}}>
         {safeSrc&&<img src={safeSrc} alt="" style={{width:22,height:22,objectFit:fit}}/>}{label}
       </button>;
