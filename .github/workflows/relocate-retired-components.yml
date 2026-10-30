@@ -5,6 +5,7 @@ on:
       - cleanup/retired-one-button-runtime-20261030
     paths:
       - scripts/relocate-retired-component-source.mjs
+      - scripts/retire-one-une-component-identities.mjs
       - .github/workflows/relocate-retired-components.yml
   workflow_dispatch:
 permissions:
@@ -22,7 +23,9 @@ jobs:
           node-version: '22'
           cache: npm
       - name: Relocate every remaining component and its references
-        run: node scripts/relocate-retired-component-source.mjs
+        run: |
+          node scripts/relocate-retired-component-source.mjs
+          node scripts/retire-one-une-component-identities.mjs
       - name: Commit full relocation to existing PR branch
         run: |
           git config user.name "github-actions[bot]"
