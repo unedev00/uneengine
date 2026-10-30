@@ -158,6 +158,7 @@ import {isUneBuilderApi,uneBuilderDefaults,type SharedRibbonCatalog,type UneBuil
 import './UniversalRibbonInventory.css';
 import './PageBuilderNumericControls.css';
 import './PageBuilderRibbonPolish.css';
+import './SmartCanvasHandles.css';
 import RibbonFieldExpressionInput from './RibbonFieldExpressionInput';
 import {RibbonResponsive} from './PageBuilderRibbonStyle';
 import PageBuilderAdvancedStyle from './PageBuilderAdvancedStyle';
