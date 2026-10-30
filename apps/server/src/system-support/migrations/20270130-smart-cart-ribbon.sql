@@ -40,9 +40,12 @@ FROM missing CROSS JOIN last_order
 ON CONFLICT(property_key) DO NOTHING;
 
 -- Explicit applicability. Properties marked No remain disabled for Smart Cart.
+-- DISTINCT is intentional: duplicate source keys with ON CONFLICT DO UPDATE
+-- trigger PostgreSQL SQLSTATE 21000 and abort API startup. Keep the key list
+-- unique as well; the DISTINCT is a defensive safeguard for future additions.
 INSERT INTO md_builder_ribbon_component_rules
  (component_api,property_key,enabled,control_kind_override,value_key,default_value_override,choices_override)
-SELECT 'smart_cart', keys.property_key,true,NULL,NULL,
+SELECT DISTINCT 'smart_cart', keys.property_key,true,NULL,NULL,
  CASE keys.property_key WHEN 'imageHeight' THEN '44'::jsonb
   WHEN 'headerBoxHeight' THEN '52'::jsonb
   WHEN 'imagePlacement' THEN '"left"'::jsonb ELSE NULL END,
@@ -68,7 +71,6 @@ FROM (VALUES
  ('height'),
  ('x'),
  ('y'),
- ('headerTextColor'),
  ('supportingBoxHeight'),
  ('supportingBorderColor'),
  ('supportingAlignment'),
