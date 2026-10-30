@@ -5,7 +5,7 @@ import {fileURLToPath} from 'node:url';
 const file=(path:string)=>fileURLToPath(new URL(path, import.meta.url));
 test('Acetill is a separate document, not the UNE workspace router',()=>{
  const html=readFileSync(file('../../web/acetill/index.html'),'utf8');
- const entry=readFileSync(file('../../web/src/core/workspace/Standalcomponent-libraries/acetillEntry.tsx'),'utf8');
+ const entry=readFileSync(file('../../web/src/core/workspace/Standalone/acetillEntry.tsx'),'utf8');
  const vite=readFileSync(file('../../web/vite.config.ts'),'utf8');
  assert.match(html,/Acetill \| Point of Sale/);
  assert.match(html,/src="\/src\/core\/workspace\/Standalone\/acetillEntry\.tsx"/);
