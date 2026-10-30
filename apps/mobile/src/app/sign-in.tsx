@@ -5,6 +5,7 @@ import {useRouter} from 'expo-router';
 import {useMobileSession} from '../lib/MobileSessionProvider';
 import {useMobileTheme} from '../lib/mobileTheme';
 import {MobileButton,MobileMessages} from '../lib/MobileUI';
+import {resolveTenantDisplay} from '../lib/mobileApi';
 
 const defaultUrl=process.env.EXPO_PUBLIC_API_URL??'';
 export default function SignInScreen(){
@@ -12,6 +13,21 @@ export default function SignInScreen(){
  const {session,initializing,busy,signIn,verifyMfa,error,notice}=useMobileSession();
  const [apiUrl,setApiUrl]=useState(defaultUrl),[tenantSlug,setTenantSlug]=useState('');
  const [email,setEmail]=useState(''),[password,setPassword]=useState('');
+ const [tenantDisplay,setTenantDisplay]=useState('');
+ const [tenantIdentityError,setTenantIdentityError]=useState('');
+ const [resolvingTenant,setResolvingTenant]=useState(false);
+ useEffect(()=>{
+   setTenantDisplay('');setTenantIdentityError('');
+   if(!tenantSlug.trim()||!apiUrl.trim())return;
+   let live=true;
+   setResolvingTenant(true);
+   void resolveTenantDisplay(apiUrl,tenantSlug).then(name=>{
+     if(live)setTenantDisplay(name);
+   }).catch(()=>{
+     if(live)setTenantIdentityError('Tenant identity could not be verified on this API domain.');
+   }).finally(()=>{if(live)setResolvingTenant(false);});
+   return()=>{live=false;};
+ },[apiUrl,tenantSlug]);
  const [challenge,setChallenge]=useState(''),[mfa,setMfa]=useState(''),[showPassword,setShowPassword]=useState(false);
  const tenantRef=useRef<React.ElementRef<typeof TextInput>>(null),emailRef=useRef<React.ElementRef<typeof TextInput>>(null),passwordRef=useRef<React.ElementRef<typeof TextInput>>(null);
  useEffect(()=>{if(session)router.replace('/(tabs)');},[session,router]);
@@ -33,6 +49,9 @@ export default function SignInScreen(){
      <Text style={{fontSize:15,color:t.secondary,textAlign:'center'}}>Secure access to your offline briefcase</Text>
     </View>
     <View style={{borderRadius:14,padding:18,gap:15,backgroundColor:t.surface}}>
+     {tenantDisplay?<Text accessibilityRole="text" style={{fontSize:19,fontWeight:'700',color:t.text}} numberOfLines={3}>Organisation: {tenantDisplay}</Text>:
+      tenantIdentityError?<Text style={{fontSize:14,color:t.secondary}}>{tenantIdentityError}</Text>:
+      resolvingTenant?<Text style={{fontSize:14,color:t.secondary}}>Verifying organisation…</Text>:null}
      <Text style={{fontSize:22,fontWeight:'700',color:t.text}}>{challenge?'Verify your identity':'Sign in'}</Text>
      {challenge?<View style={{gap:8}}>
        <Text style={{fontSize:15,color:t.secondary}}>Enter the code from your authenticator.</Text>
