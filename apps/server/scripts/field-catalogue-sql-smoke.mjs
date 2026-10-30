@@ -51,6 +51,15 @@ try{
  await assert.rejects(()=>insert(primary,'D','some-key','ONE'),/duplicate key|unique constraint/i);
  const count=await db.query("SELECT count(*)::int AS total FROM md_records WHERE tenant_id=$1 AND object_api='Phase2B__c'",[primary]);
  assert.equal(count.rows[0].total,2,'Failed unique insert must roll back the entire record');
+ // Enabling Unique on an External ID with existing duplicate values must be atomic.
+ await assert.rejects(()=>defs.updateField(primary,'Phase2B__c','ExtKey',
+  {label:'External Key',unique:true}),/duplicate key|unique/i);
+ assert.equal((await defs.get(primary,'Phase2B__c')).fields.find(f=>f.apiName==='ExtKey').unique,false);
+ // A value row missing entirely (or present with NULL) must block Required.
+ await assert.rejects(()=>defs.updateField(primary,'Phase2B__c','Amount',
+  {label:'Amount',required:true}),/Required field cannot be enabled/);
+ assert.equal((await defs.get(primary,'Phase2B__c')).fields.find(f=>f.apiName==='Amount').required,false);
+
  for(const [apiName,invalid] of [
   ['BadDate__c',{apiName:'Invalid',dataType:'Date',defaultValue:'2025-02-29'}],
   ['BadEmail__c',{apiName:'Invalid',dataType:'Email',defaultValue:'not-an-email'}],
