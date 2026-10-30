@@ -12,7 +12,7 @@ import path from 'node:path';
 const root=process.cwd();
 const oldRoot=path.join(root,'apps/web/src/one');
 const newRoot=path.join(root,'apps/web/src/component-libraries');
-const oldPrefix='apps/web/src/component-libraries/';
+const oldPrefix='apps/web/src/one/';
 const newPrefix='apps/web/src/component-libraries/';
 const supported=new Set(['.js','.jsx','.ts','.tsx','.mjs','.cjs','.json','.css','.scss','.md','.yaml','.yml','.html']);
 const skip=new Set(['node_modules','.git','dist','dist-system','coverage','.next','.turbo','build','.cache']);
@@ -46,8 +46,8 @@ for(const file of files){
  let next=original;
  // Absolute repository paths, followed by paths relative to apps/web and src.
  next=next.replaceAll(oldPrefix,newPrefix)
-          .replaceAll('src/component-libraries/','src/component-libraries/')
-          .replaceAll('component-libraries/','component-libraries/');
+          .replaceAll('src/one/','src/component-libraries/')
+          .replace(/(^|[\\/\"'`])one\\//gm, '$1component-libraries/');
  // Identifiers for the source root in build and layout-check scripts.
  next=next.replace(/(path\.join\(webSourceRoot,\s*['"])one(['"]\))/g,'$1component-libraries$2')
           .replace(/(path\.join\(webSourceRoot,\s*['"])one(['"],)/g,'$1component-libraries$2')
