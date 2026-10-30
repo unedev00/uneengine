@@ -8,8 +8,8 @@ export function isStandalonePagePresentation(page: Pick<LightningPageMetadata,'l
 }
 
 /** Layout sizing is a page concern; components remain interchangeable. */
-export function pageCanvasPresentationStyle(page: Pick<LightningPageMetadata,'canvasWidth'|'canvasHeight'|'layoutMode'|'components'>) {
+export function pageCanvasPresentationStyle(page: Pick<LightningPageMetadata,'canvasWidth'|'canvasHeight'|'canvasFillColor'|'layoutMode'|'components'>) {
   return isStandalonePagePresentation(page)
-    ? {width:'100%',height:'100dvh',maxWidth:'none'}
-    : {width:page.canvasWidth,height:page.canvasHeight};
+    ? {width:'100%',height:'100dvh',maxWidth:'none',backgroundColor:page.canvasFillColor??'#ffffff'}
+    : {width:page.canvasWidth,height:page.canvasHeight,backgroundColor:page.canvasFillColor??'#ffffff'};
 }
