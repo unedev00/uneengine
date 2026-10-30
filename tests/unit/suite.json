@@ -134,6 +134,7 @@
     "apps/server/test/system/system-definition-service.test.ts",
     "apps/server/test/system/system-migrations.test.ts",
     "apps/server/test/system/system.test.ts",
+    "apps/server/test/system/formula-phase1d.test.ts",
     "apps/server/test/system/tenant-document-field.test.ts",
     "apps/server/test/system/typed-runtime-contract.test.ts",
     "apps/server/test/system/une-acechatter-app.test.ts",

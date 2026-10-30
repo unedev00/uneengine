@@ -12,8 +12,9 @@ import type {SqlExecutor} from './sql-persistence.js';
 export async function loadFlowUserResource(client:SqlExecutor,tenantId:string,userId:string,
  graph:unknown,variables:Record<string,unknown>):Promise<FormulaEvaluationContext> {
  if(typeof graph!=='string'||!(/\$User\.(?:Name|Email|TimeZone|ManagerId|AncestorIds|DescendantIds|DirectReportIds)\b/.test(graph)
-   ||/\b(?:TODAY|TIMENOW|DAY|MONTH|YEAR|HOUR|MINUTE|SECOND|WEEKDAY|ISOWEEK|ISOYEAR|DATEVALUE|DATETIMEVALUE|TIMEVALUE|ADDMONTHS|TZOFFSET|CURRENCYRATE)\s*\(/i.test(graph)))
+   ||/\b(?:TODAY|NOW|TIMENOW|DAY|MONTH|YEAR|HOUR|MINUTE|SECOND|WEEKDAY|ISOWEEK|ISOYEAR|DATEVALUE|DATETIMEVALUE|TIMEVALUE|ADDDAYS|ADDMONTHS|TZOFFSET|CURRENCYRATE)\s*\(/i.test(graph)))
   return {};
+ const now=new Date();
  const {rows}=await client.query<{
   id:string;email:string;display_name:string;time_zone:string;reports_to_user_id:string|null;has_currency_settings:boolean;
   currency_iso_code:string|null;conversion_rate:string|null
@@ -58,7 +59,7 @@ export async function loadFlowUserResource(client:SqlExecutor,tenantId:string,us
  if(/\$User\.DescendantIds\b/.test(graph))resource.DescendantIds=descendantIds;
  if(/\$User\.DirectReportIds\b/.test(graph))resource.DirectReportIds=directReportIds;
  variables.$User=resource;
- return {timeZone:actor.time_zone,currencyRates};
+ return {timeZone:actor.time_zone,currencyRates,now};
 }
 
 async function sendCustomNotification(context:ActionContext) {

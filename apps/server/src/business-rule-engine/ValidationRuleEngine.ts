@@ -74,9 +74,10 @@ export class DeclarativeRules {
     if(!rows.length)return;
     const currentValues=typeof current==='function'?await current():current;
     const priorValues=typeof prior==='function'?await prior():prior;
+    const now=new Date();
     for(const rule of rows){
       const ctx=await this.context(client,tenantId,userId,objectApi,currentValues,priorValues,rule.expression);
-      const invalid=evaluateFlowFormula(rule.expression,ctx.resolve,{timeZone:ctx.timeZone},'validation_rule');
+      const invalid=evaluateFlowFormula(rule.expression,ctx.resolve,{timeZone:ctx.timeZone,now},'validation_rule');
       if(typeof invalid!=='boolean')throw new Error('Validation rule must return Checkbox: '+rule.api_name);
       if(invalid)throw new DeclarativeRuleError(rule);
     }
