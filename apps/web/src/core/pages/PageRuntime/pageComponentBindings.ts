@@ -107,7 +107,7 @@ const serverFilterOperators:Record<string,string>={
 function isServerFilterable(field:FieldMetadata,operator:string):boolean{
  const dataType=field.dataType.trim();
  // Legacy SQL exclusions include absent values; page rules deliberately fail closed.
- if(operator==='Not Equals'||operator==='Excludes')return false;
+ if(field.apiName.startsWith('@')||operator==='Not Equals'||operator==='Excludes')return false;
  if(/^Formula\(/i.test(dataType)||/^(Geolocation|Address|EncryptedText|Text\s*\(Encrypted\))/i.test(dataType))return false;
  if(operator==='Contains')return /^(Text|Email|Phone|Url|Picklist)(\(|$)/i.test(dataType);
  if(operator==='Includes'||operator==='Excludes')
@@ -151,12 +151,13 @@ export function pageComponentRecordQuery(
   for(const value of definitions){
     if(examineRecordFilter(value,fields)!==null)return {blocked:true,serverFilterable:false};
     const filter=value as PageFilter;
-    const resolved=resolvePageFilterValue(filter.value,context);
-    if(isDynamic(filter.value)&&(resolved===undefined||resolved===null||resolved===''))
+    const expressionValue=isDynamic(filter.value)&&filter.value.source==='FieldExpression';
+    const resolved=expressionValue?undefined:resolvePageFilterValue(filter.value,context);
+    if(!expressionValue&&isDynamic(filter.value)&&(resolved===undefined||resolved===null||resolved===''))
       return {blocked:true,serverFilterable:false};
     const field=fields.find(candidate=>candidate.apiName===filter.field);
     const operator=serverFilterOperators[filter.operator];
-    if(!field||!operator||!isServerFilterable(field,filter.operator)){
+    if(!field||!operator||expressionValue||!isServerFilterable(field,filter.operator)){
       serverFilterable=false;
       continue;
     }
@@ -211,9 +212,21 @@ export function filterPageComponentRecords<T extends Record<string, unknown>>(
   if (pageComponentRecordQuery(definitions,fields,context,logic).blocked)return [];
   return records.filter(record => definitions[logic==='OR'?'some':'every'](item => {
     const filter = item as PageFilter;
-    const resolved=resolvePageFilterValue(filter.value,context);
-    if (!Object.prototype.hasOwnProperty.call(record, filter.field)) return false;
-    return comparePageFilterValue(record[filter.field], filter.operator, resolved, fields.find(field=>field.apiName===filter.field));
+    const mentions=record.__mentionValues&&typeof record.__mentionValues==='object'&&!Array.isArray(record.__mentionValues)
+      ?record.__mentionValues as Record<string,unknown>:{};
+    const field=fields.find(candidate=>candidate.apiName===filter.field);
+    const actual=filter.field.startsWith('@')?mentions[filter.field]:record[filter.field];
+    if(filter.field.startsWith('@')
+      ?!Object.prototype.hasOwnProperty.call(mentions,filter.field)
+      :!Object.prototype.hasOwnProperty.call(record,filter.field))return false;
+    let resolved=resolvePageFilterValue(filter.value,context);
+    if(isDynamic(filter.value)&&filter.value.source==='FieldExpression'){
+      const path=String(filter.value.key??'');
+      resolved=path.startsWith('@')&&path.includes('.')?mentions[path]:
+        /^@[A-Za-z][A-Za-z0-9_]*$/.test(path)?record[path.slice(1)]:undefined;
+      if(resolved===undefined)return false;
+    }
+    return comparePageFilterValue(actual,filter.operator,resolved,field);
   }));
 }
 
