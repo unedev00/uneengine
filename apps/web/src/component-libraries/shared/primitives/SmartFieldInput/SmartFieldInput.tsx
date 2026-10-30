@@ -1,8 +1,8 @@
 import { useId, useMemo, useRef, useState, type ChangeEvent, type FocusEvent, type KeyboardEvent, type Ref, type UIEvent } from 'react';
 import { AtSign } from 'lucide-react';
-import type { ObjectMetadata } from '../../core/metadata/Definitions/metadata';
+import type { ObjectMetadata } from '../../../../core/metadata/Definitions/metadata';
 import { mentionGroups, mentionSegments, type MentionKind } from './smartFieldMentions';
-import ReferenceBrowser, { type ReferenceGroup } from '../OneReferenceBrowser/ReferenceBrowser';
+import ReferenceBrowser, { type ReferenceGroup } from '../ReferenceBrowser/ReferenceBrowser';
 import './SmartFieldInput.css';
 
 type InputElement = HTMLInputElement | HTMLTextAreaElement;
