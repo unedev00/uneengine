@@ -418,7 +418,7 @@ try{
  await page.getByRole('button',{name:'Create Flow',exact:true}).click();
  await page.locator('.flow-element-option').filter({hasText:'Get Records'}).waitFor();
 
- // Capture the real authenticated Flow Builder at the audit's phcomponent-libraries/tablet widths.
+ // Capture the real authenticated Flow Builder at the audit's phone/tablet widths.
  // Resize the same mounted React screen so this exercises the actual builder markup,
  // responsive CSS and Setup shell rather than a hand-built visual fixture.
  await (await import('node:fs/promises')).mkdir(new URL('../artifacts/',import.meta.url),{recursive:true});
