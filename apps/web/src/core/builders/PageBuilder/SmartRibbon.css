@@ -1,10 +1,10 @@
 /* Compact Office-style control strip. Only Smart non-Home tabs use these styles. */
-.office-builder-ribbon .office-ribbon-content:has(.smart-ribbon){height:154px;min-height:154px;max-height:154px;overflow-x:auto;overflow-y:visible;padding:3px 5px}
+.office-builder-ribbon .office-ribbon-content:has(.smart-ribbon){height:154px;min-height:154px;max-height:154px;overflow-x:auto;overflow-y:hidden;padding:3px 5px;scrollbar-width:auto;scrollbar-color:#8fa8c6 #e8eef6}
 .smart-ribbon{height:142px;display:flex;width:max-content;min-width:100%;background:var(--panel-background,#fff);gap:0;align-items:stretch}
 .smart-ribbon-group{display:flex;flex:0 0 auto;flex-direction:column;border-right:1px solid #d9e1ec;padding:3px 7px 0;min-width:85px}
 .smart-ribbon-items{display:grid;grid-template-rows:repeat(3,34px);grid-auto-flow:column;grid-auto-columns:max-content;gap:3px 6px;flex:1}
 .smart-property{display:flex;align-items:center;gap:4px;min-width:120px;max-width:240px;height:31px;white-space:nowrap;font:11px "Segoe UI",Arial,sans-serif}
-.smart-property.disabled{opacity:.28;pointer-events:none;filter:grayscale(1)}.smart-label{max-width:95px;overflow:hidden;text-overflow:ellipsis}
+.smart-property.disabled{opacity:.65;filter:grayscale(1);color:#68788b}.smart-property.disabled input,.smart-property.disabled select,.smart-property.disabled button{cursor:not-allowed}.smart-label{max-width:95px;overflow:hidden;text-overflow:ellipsis}
 .smart-property input[type=checkbox]{accent-color:#226cc3;width:15px;height:15px}
 .smart-ribbon-caption{margin-top:auto;text-align:center;font:11px/19px "Segoe UI",Arial,sans-serif;border-top:1px solid #e5e9f1;color:#4b5870}
 .smart-property .smart-numeric{display:flex;align-items:center;gap:3px}.smart-property input[type=number]{width:56px;height:25px;padding:2px 4px}
