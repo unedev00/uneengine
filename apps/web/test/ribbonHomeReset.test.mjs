@@ -3,19 +3,21 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const src=path=>readFileSync(new URL(path,import.meta.url),'utf8');
 
-test('Home handlers remain unchanged and old UNE Ribbon controls stay retired while Smart Insert is functional',()=>{
+test('page-level handlers remain intact in topbar and Layout while Smart Insert stays functional',()=>{
  const page=src('../src/core/builders/PageBuilder/pageBuilderView.tsx');
  const marker=page.indexOf('id="page-builder-tab-content"');
  const end=page.indexOf('className="office-ribbon-group-navigation"',marker);
  const body=page.slice(marker,end);
  assert.ok(marker>0&&end>marker);
  for(const name of ["case 'backIcon'","case 'pageName'","case 'save'","case 'activate'","case 'resetIcon'"])
-  assert.ok(body.includes(name),name);
+  assert.ok(page.includes(name),name);
  assert.doesNotMatch(body,/<UneBuilderRibbon|<UniversalRibbonInventory|<PageBuilderActionRibbon|<PageBuilderRibbonData|ribbonTab==='Preview'|ribbonTab==='Parity'/);
  assert.match(body,/ribbonTab==='Add Block' && <SmartInsertRibbon/);
  assert.match(body,/onInsert=\{addPaletteComponent\}/);
  assert.match(body,/onOpenLibrary=\{\(\)=>openAddBlocks\(\)\}/);
- assert.match(body,/ribbonTab === 'Home' && ribbonCatalog/);
+ assert.match(body,/ribbonTab==='Component Layout' && ribbonCatalog/);
+ assert.match(page,/office-ribbon-quick-access/);
+ assert.match(page,/const quickAccessOrder=\['save','activate','resetIcon','undo','redo','cut','copy','paste'\]/);
 });
 test('additive SQL migration removes only non-Home shared entries and migrates Acetill Cart without deleting values',()=>{
  const sql=src('../../server/src/system-support/migrations/20270123-ribbon-home-reset-acetill-cart.sql');
