@@ -1593,8 +1593,10 @@ function PageBuilder({
         event.preventDefault(); removeSelected();
       }
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    // Capture first: embedded Smart controls may stop bubbling. Preserve
+    // native copy/cut/paste for focused text inputs via the guard above.
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
   });
   const savePage = async (status?: 'Active' | 'Draft', candidate: LightningPageMetadata = page, returnToList = false) => {
     const propertyIssues=candidate.components.flatMap(c=>{
