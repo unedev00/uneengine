@@ -12,7 +12,7 @@ import {pageLayoutForRecord} from '../src/core/records/RecordWorkspace/recordMet
 import {declaredFlowOutputs,resolveFlowOutputBindings,encodeInputSource,decodeInputSource} from '../src/core/automation/FlowScreen/flowInputBindings';
 import {pageComponentRecordQuery,filterPageComponentRecords,bindPageStateProperties} from '../src/core/pages/PageRuntime/pageComponentBindings';
 import {compareMetadataValue} from '../src/core/metadata/Definitions/metadataValueComparison';
-import {supportedFilterOperators,isNumericFilterField,isBooleanFilterField} from '../src/core/records/RecordWorkspace/recordFilterMetadata';
+import {supportedFilterOperators,isNumericFilterField,isBooleanFilterField,examineRecordFilter} from '../src/core/records/RecordWorkspace/recordFilterMetadata';
 
 const object={id:'object-id',apiName:'RenamedObject',fields:[{id:'field-id',apiName:'RenamedPrice'}]} as ObjectMetadata;
 const flow={id:'flow-id',apiName:'RenamedFlow'} as FlowDefinitionMetadata;
@@ -327,4 +327,51 @@ test('record component queries translate supported filters and disable unsafe fo
  assert.equal(formula.blocked,false);
  assert.equal(formula.filters,undefined);
  assert.equal(formula.serverFilterable,false);
+});
+
+test('picklist record filters use metadata choices and preserve Contains with AND/OR',()=>{
+ const fields=[
+  {apiName:'Active',label:'Active',dataType:'Picklist',picklistValues:['true','false']},
+  {apiName:'Group',label:'Group',dataType:'Picklist',picklistValues:['Drink','Food']},
+  {apiName:'Enabled',label:'Enabled',dataType:'Checkbox'}
+ ] as any;
+ const records=[
+  {Active:'true',Group:'Drink',Enabled:true},
+  {Active:'true',Group:'Food',Enabled:false},
+  {Active:'false',Group:'Drink',Enabled:false}
+ ];
+ const active={field:'Active',operator:'Contains',value:'true'};
+ const drink={field:'Group',operator:'Equals',value:'Drink'};
+ assert.equal(examineRecordFilter(active,fields),null);
+ assert.equal(examineRecordFilter({...active,value:'free text'},fields),'Choose a value from the field picklist.');
+ assert.equal(examineRecordFilter({...active,value:''},fields),'Choose a value from the field picklist.');
+ assert.equal(examineRecordFilter({...active,value:{source:'PageState',key:'FilterValue'}},fields),null);
+ assert.equal(examineRecordFilter({field:'Enabled',operator:'Contains',value:'true'},fields),
+  'This operator is not supported for the selected field type.');
+ assert.equal(examineRecordFilter({field:'Enabled',operator:'Equals',value:'maybe'},fields),
+  'Choose True or False.');
+ assert.deepEqual(filterPageComponentRecords(records,[active,drink],fields,{},'AND'),records.slice(0,1));
+ assert.deepEqual(filterPageComponentRecords(records,[active,drink],fields,{},'OR'),records);
+ assert.deepEqual(pageComponentRecordQuery([active,drink],fields,{},'AND').filters,[
+  {field:'Active',operator:'contains',value:'true'},
+  {field:'Group',operator:'eq',value:'Drink'}
+ ]);
+ assert.equal(pageComponentRecordQuery([active,drink],fields,{},'OR').filterLogic,'1 OR 2');
+});
+test('filter editor and smart ribbon expose typed popup without narrow legacy form styles',async()=>{
+ const fs=await import('node:fs');
+ const read=(file:string)=>fs.readFileSync(new URL(file,import.meta.url),'utf8');
+ const editor=read('../src/component-libraries/shared/primitives/RecordFilterEditor/RecordFilterEditor.tsx');
+ const css=read('../src/component-libraries/shared/primitives/RecordFilterEditor/RecordFilterEditor.css');
+ const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
+ const popup=read('../src/core/builders/PageBuilder/SmartRibbon.css');
+ assert.match(editor,/isPicklist\(field\)/);
+ assert.match(editor,/isBooleanFilterField\(field\)/);
+ assert.match(editor,/onLogicChange/);
+ assert.match(editor,/type=\{isNumericFilterField\(field\) \? 'number' : valueType\}/);
+ assert.match(ribbon,/className="smart-formula-filter"/);
+ assert.match(ribbon,/aria-haspopup="dialog"/);
+ assert.match(ribbon,/onLogicChange=\{filterLogic/);
+ assert.match(css,/min-height:40px/);
+ assert.match(popup,/width:min\(760px,calc\(100vw - 32px\)\)/);
 });

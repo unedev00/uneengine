@@ -495,3 +495,14 @@ test('Independent components avoid automatic overlap and have Office-style shape
  assert.match(css,/\.free-canvas-move-handle/);
  assert.match(css,/\.free-canvas-component \.smart-runtime/);
 });
+
+
+test('Smart Tabs renders only bounded matching record labels from a filtered Object source',async()=>{
+ const records=Array.from({length:50},(_,i)=>({id:String(i),Name:'Product '+i}));
+ const html=await renderSmart('smart_tabs',{objectApiName:'Product',textSource:'@Name',tabCount:4,records,builderPreview:true});
+ for(let i=0;i<4;i++)assert.match(html,new RegExp('Product '+i));
+ assert.doesNotMatch(html,/Product 4/);
+ assert.doesNotMatch(html,/Tab 1/);
+ const empty=await renderSmart('smart_tabs',{objectApiName:'Product',textSource:'@Name',records:[]});
+ assert.match(empty,/No matching records/);
+});

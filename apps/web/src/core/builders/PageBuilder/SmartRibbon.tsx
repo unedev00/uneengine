@@ -32,11 +32,18 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    }finally{setUploadBusy(false);}
  };
  const [filtersOpen,setFiltersOpen]=useState(false);
+ const [filterTarget,setFilterTarget]=useState('Record');
  const [daysOpen,setDaysOpen]=useState(false);
  const daysButton=useRef<HTMLButtonElement>(null);
  const daysMenu=useRef<HTMLDivElement>(null);
  const [daysPosition,setDaysPosition]=useState({top:0,left:0});
- useEffect(()=>{setDaysOpen(false);},[tab,api]);
+ useEffect(()=>{setDaysOpen(false);setFiltersOpen(false);},[tab,api]);
+ useEffect(()=>{
+   if(!filtersOpen)return;
+   const close=(event:globalThis.KeyboardEvent)=>{if(event.key==='Escape')setFiltersOpen(false);};
+   document.addEventListener('keydown',close);
+   return()=>document.removeEventListener('keydown',close);
+ },[filtersOpen]);
  useLayoutEffect(()=>{
    if(!daysOpen)return;
    const position=()=>{
@@ -65,6 +72,8 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  const objectName=fallback(properties.objectApiName)||pageObjectApiName;
  const object=objects.find(o=>o.apiName===objectName);
  const update=(key:string,value:unknown)=>onChange({...properties,[key]:value});
+ const openFilters=(target:string)=>{setFilterTarget(target);setFiltersOpen(true);};
+ const filterCount=Array.isArray(properties.filters)?properties.filters.length:0;
  // Keep the global property inventory visible for every selected component.
  // Unsupported controls are disabled by the per-property `supported` check below.
  const visible=definitions.filter(p=>p.tab===tab);
@@ -103,10 +112,17 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
            onChange={e=>write(e.target.value?'@'+e.target.value:'')}>
           <option value="">Choose field</option>{(object?.fields??[]).map(f=><option key={f.apiName} value={f.apiName}>{f.label}</option>)}
          </select><button type="button" title="Image filters and conditions" aria-label="Image filters and conditions"
-           onClick={()=>setFiltersOpen(true)}><SlidersHorizontal size={16}/></button></>}
+           onClick={()=>openFilters('Image source')} disabled={!object} aria-haspopup="dialog"><SlidersHorizontal size={16}/></button></>}
      </div>;
-   }else if(kind==='expression')editor=<SmartFormulaField value={String(value)} onChange={write}
-       label={title} disabled={!enabled} fields={object?.fields??[]} />;
+   }else if(kind==='expression')editor=<div className="smart-formula-filter">
+     <SmartFormulaField value={String(value)} onChange={write}
+       label={title} disabled={!enabled} fields={object?.fields??[]} />
+     <button type="button" className="smart-filter-trigger" disabled={!enabled||!object}
+       title={!object?'Choose an Object to configure record filters':'Filter '+object.label+' records'}
+       aria-label={'Filter records for '+title} aria-haspopup="dialog"
+       onClick={()=>openFilters(title)}><SlidersHorizontal size={16} aria-hidden="true"/>
+       {filterCount>0&&<span className="smart-filter-count">{filterCount}</span>}</button>
+   </div>;
    else if(kind==='object')editor=<select className="smart-select" aria-label={title} disabled={!enabled} value={String(value)}
      onChange={e=>write(e.target.value)}><option value="">Select Object</option>
      {objects.map(o=><option key={o.apiName} value={o.apiName}>{o.label}</option>)}</select>;
@@ -175,13 +191,20 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
      <TenantMediaPicker value={fallback(properties.imageSource)} assetOnly initiallyOpen
        onChange={value=>{onChange({...properties,imageSourceMode:'upload',imageSource:value});setLibraryOpen(false);}}/>
     </section></div>,document.body)}
-  {filtersOpen&&createPortal(<div className="smart-dialog-backdrop" role="presentation">
-    <section className="smart-dialog" role="dialog" aria-modal="true" aria-label="Image filters">
-     <header><strong>Image source filters and conditions</strong><button type="button" onClick={()=>setFiltersOpen(false)}>Done</button></header>
-     {object?<RecordFilterEditor title="Image record" fields={object.fields??[]}
-       filters={Array.isArray(properties.filters)?properties.filters:[]}
-       onChange={filters=>onChange({...properties,filters})}/>:
-       <p>Choose an Object first.</p>}
+  {filtersOpen&&createPortal(<div className="smart-dialog-backdrop smart-filter-backdrop"
+       role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)setFiltersOpen(false);}}>
+    <section className="smart-dialog smart-filter-dialog" role="dialog" aria-modal="true"
+      aria-label="Record filters" onKeyDown={e=>{if(e.key==='Escape')setFiltersOpen(false);}}>
+     <header><div><strong>Filter Records</strong><span>{object?.label??'Object'} · {filterTarget}</span></div>
+       <button type="button" autoFocus onClick={()=>setFiltersOpen(false)}>Done</button></header>
+     <div className="smart-filter-dialog-body">
+       {object?<RecordFilterEditor title={object.label+' records'} fields={object.fields??[]}
+         filters={Array.isArray(properties.filters)?properties.filters:[]}
+         logic={properties.filterLogic==='OR'?'OR':'AND'}
+         onLogicChange={filterLogic=>onChange({...properties,filterLogic})}
+         onChange={filters=>onChange({...properties,filters})}/>:
+         <p>Choose an Object first to configure the record conditions.</p>}
+     </div>
     </section></div>,document.body)}
  </div>;
 }
