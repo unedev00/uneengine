@@ -37,7 +37,7 @@ import {seedAceAssistCrudFlows} from '../app-seeders/aceassist-crud-flows.js';
 import {seedMailAdminPermissions} from '../app-seeders/mail-admin-permissions.js';
 import {reconcileCoreObjectDefaults} from '../app-seeders/core-object-defaults.js';
 import {seedBundledComponentsForExistingTenants} from '../app-seeders/bundled-components.js';
-import {seedUneComponentsForExistingTenants} from '../app-seeders/une-components.js';
+import {seedUiComponentsForExistingTenants} from '../app-seeders/ui-components.js';
 import {seedSmartComponentsForExistingTenants} from '../app-seeders/smart-components.js';
 import {seedProductImageFieldForExistingTenants} from '../app-seeders/product-image-field.js';
 import { AuthenticationService } from '../system-files/authentication.js';
@@ -2669,7 +2669,7 @@ export async function startSystemServer() {
     console.info('Core metadata seeder: existing tenants backfilled:',seededTenants);
     await bootstrapFreshTenant(db);
     const bundledTenants=await seedBundledComponentsForExistingTenants(db);
-    const uneTenants=await seedUneComponentsForExistingTenants(db);
+    const uneTenants=await seedUiComponentsForExistingTenants(db);
     await seedSmartComponentsForExistingTenants(db);
     console.info('UNE tenant component registrations checked:',uneTenants);
     console.info('Bundled component registrations checked for tenants:',bundledTenants);
