@@ -168,14 +168,14 @@ test('edited Smart Button label renders instead of metadata component name',asyn
 test('Smart calendar chooses selected day, limits weekdays and exposes change controls',async()=>{
  const html=await renderSmart('smart_calendar',{
    defaultValue:'2026-10-21',showDays:['wed','fri'],firstDay:'wed',
-   defaultValueColor:'#123456',calendarShadowColor:'#abcdef'
+   defaultValueColor:'#123456',shadow:'medium'
  });
  assert.match(html,/Select 2026-10-21/);
  assert.match(html,/Select 2026-10-23/);
  assert.doesNotMatch(html,/Select 2026-10-22/);
  assert.match(html,/aria-pressed="true"/);
  assert.match(html,/#123456/i);
- assert.match(html,/#abcdef/i);
+ assert.match(html,/0 3px 9px/);
  const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
  assert.match(ribbon,/className="smart-weekday-popup" role="dialog"/);
  assert.match(ribbon,/document\.addEventListener\('pointerdown',outside\)/);
@@ -490,8 +490,8 @@ test('Independent components avoid automatic overlap and have Office-style shape
  assert.match(builder,/usedBounds\.every\(other=>/);
  assert.match(builder,/free-canvas-move-handle/);
  assert.match(builder,/onPointerMove=\{moveCanvasPointer\}/);
- assert.match(builder,/<MoveVertical size=\{15\}\/>/);
- assert.match(builder,/<MoveHorizontal size=\{15\}\/>/);
+ assert.doesNotMatch(builder,/<MoveVertical size=\{15\}\/>/);
+ assert.doesNotMatch(builder,/<MoveHorizontal size=\{15\}\/>/);
  assert.match(css,/\.free-canvas-move-handle/);
  assert.match(css,/\.free-canvas-component \.smart-runtime/);
 });
