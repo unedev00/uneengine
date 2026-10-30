@@ -87,12 +87,12 @@ import { canNestComponent, componentVisualStyle, directChildren, isLayoutType, i
 import { isCanvasLocked, wrapCanvasComponent, ungroupCanvasComponent } from '../../builders/PageBuilder/canvasInteractions';
 import { filterPageComponentRecords, pageComponentRecordQuery,pageComponentRelatedQuery, bindPageStateProperties, needsMetadataComponentRuntime, resolvePageStatePath } from './pageComponentBindings';
 import {filterRelatedRecords} from './filterRelatedRecords.mjs';
-import {resolveMentionProperties} from '../../../component-libraries/OneSmartFieldInput/smartFieldMentions';
+import {resolveMentionProperties} from '../../../component-libraries/shared/primitives/SmartFieldInput/smartFieldMentions';
 import { explicitMentionRecordId, useRelationshipMentionContext } from '../../records/RecordFormDialog/useRelationshipMentionContext';
 import { childrenOf, canNest, componentLayoutProps, hasPageComponentAppearance, pageAppearanceTarget, pageAppearanceStyleKeys, isLayoutContainer, rawLayoutParentId, reparentComponent, resolvePageComponentStyle, type LayoutDevice } from '../TemplatePageRuntime/pageComponentLayout';
-import {GlobalRecordSearch} from '../../../component-libraries/OneGlobalRecordSearch/GlobalRecordSearch';
+import {GlobalRecordSearch} from '../../../component-libraries/shared/primitives/GlobalRecordSearch/GlobalRecordSearch';
 import '../TemplatePageRuntime/pageComponentAppearance.css';
-import {RecordObjectPicker} from '../../../component-libraries/OneRecordObjectPicker/RecordObjectPicker';
+import {RecordObjectPicker} from '../../../component-libraries/shared/primitives/RecordObjectPicker/RecordObjectPicker';
 import {useDismissOnOutside} from '../../accessibility/Dismiss/useDismissOnOutside';
 import { pageIsAvailableInApp } from './pageActionRouting';
 import {executeOpenPageActionNode} from './OpenPageActionNode';
