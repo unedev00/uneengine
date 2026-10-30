@@ -4,19 +4,24 @@ import {
   validateFormulaFunctions,
   type FormulaExpressionContext
 } from '../expression-engine/FormulaFunctionRegistry.js';
-import {resolveFlowLocalDateTime} from './flow-wait-runtime.js';
 import {flowChoiceValues} from './flow-screen-choice-runtime.js';
 
 import {tokenize} from '../expression-engine/FormulaTokenizer.js';
 import {
   evaluateFormulaBinary,evaluateFormulaUnary,formulaTruth,Parser
 } from '../expression-engine/FormulaParser.js';
+import {
+  evaluateFormulaDateBinary,formulaAddDays,formulaAddMonths,formulaDateParts,formulaDateText,
+  formulaDateTimeParts,formulaIsoDateTime,formulaTimeText,formulaTimezoneOffset,
+  formulaWeekday,formulaIsoParts,isFormulaDate,parseFormulaDateTime
+} from '../expression-engine/FormulaDate.js';
 import {roundFormulaNumber} from '../expression-engine/FormulaNumeric.js';
 import type {Expression} from '../expression-engine/FormulaParser.js';
 
 type FormulaResolver=(name:string)=>unknown;
 export type FormulaEvaluationContext={
   timeZone?:string;
+  now?:Date|string;
   currencyRates?:Readonly<Record<string,number>>;
   isClone?:boolean;
 };
@@ -32,66 +37,7 @@ const numeric=(value:unknown):number=>{
   if(!Number.isFinite(result))throw new Error('Flow formula expected a finite number');
   return result;
 };
-const dateFormatters=new Map<string,Intl.DateTimeFormat>();
-function dateParts(date:Date,timeZone:string) {
-  let formatter=dateFormatters.get(timeZone);
-  if(!formatter){
-    formatter=new Intl.DateTimeFormat('en-GB',{
-      timeZone,year:'numeric',month:'2-digit',day:'2-digit',
-      hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'
-    });
-    if(dateFormatters.size>=32)dateFormatters.delete(dateFormatters.keys().next().value!);
-    dateFormatters.set(timeZone,formatter);
-  }
-  const parts=Object.fromEntries(formatter.formatToParts(date)
-    .filter(part=>part.type!=='literal').map(part=>[part.type,Number(part.value)]));
-  return {
-    year:parts.year!,month:parts.month!,day:parts.day!,
-    hour:parts.hour!,minute:parts.minute!,second:parts.second!
-  };
-}
-const dateText=(parts:{year:number;month:number;day:number})=>
-  `${String(parts.year).padStart(4,'0')}-${String(parts.month).padStart(2,'0')}-${String(parts.day).padStart(2,'0')}`;
-function validISODate(value:string) {
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(value))return false;
-  const date=new Date(value+'T00:00:00Z');
-  return Number.isFinite(date.getTime())&&date.toISOString().slice(0,10)===value;
-}
-function dateTimeValue(value:string,timeZone:string):Date {
-  if(validISODate(value)){
-    return resolveFlowLocalDateTime(value,'00:00',timeZone);
-  }
-  const zoned=/^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?(Z|[+-]\d{2}:\d{2})$/.exec(value);
-  if(zoned){
-    if(!validISODate(zoned[1])||Number(zoned[2])>23||Number(zoned[3])>59
-      ||Number(zoned[4]??0)>59)throw new Error('Invalid formula date/time value');
-    const parsed=new Date(value);
-    if(!Number.isFinite(parsed.getTime()))throw new Error('Invalid formula date/time value');
-    return parsed;
-  }
-  const local=/^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?$/.exec(value);
-  if(local){
-    if(!validISODate(local[1])||Number(local[2])>23||Number(local[3])>59
-      ||Number(local[4]??0)>59)throw new Error('Invalid formula date/time value');
-    const result=resolveFlowLocalDateTime(local[1],`${local[2]}:${local[3]}`,timeZone);
-    result.setUTCSeconds(Number(local[4]??0),Number((local[5]??'').padEnd(3,'0')));
-    return result;
-  }
-  throw new Error('Invalid formula date/time value');
-}
-function formulaDateParts(value:unknown,timeZone:string) {
-  const input=text(value);
-  if(validISODate(input)){
-    const [year,month,day]=input.split('-').map(Number);
-    return {year,month,day,hour:0,minute:0,second:0};
-  }
-  if(/^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d{1,3})?)?$/.test(input)){
-    const match=/^(\d{2}):(\d{2})(?::(\d{2}))?/.exec(input)!;
-    return {year:1970,month:1,day:1,hour:Number(match[1]),minute:Number(match[2]),second:Number(match[3]??0)};
-  }
-  const dateTime=dateTimeValue(input,timeZone);
-  return dateParts(dateTime,timeZone);
-}
+const validISODate=isFormulaDate;
 export function isFormulaImageResult(value:unknown):value is FormulaImageResult {
   return Boolean(value&&typeof value==='object'&&!Array.isArray(value)
     &&(value as FormulaImageResult).__formulaImage==='MetaDriveFormulaImage'
@@ -147,6 +93,8 @@ function evaluateNode(node:Expression,resolve:FormulaResolver,context:FormulaEva
     if(node.operator==='AND'&&!truth(left))return false;
     if(node.operator==='OR'&&truth(left))return true;
     const right=evaluate(node.right,resolve,context);
+    const temporal=evaluateFormulaDateBinary(node.operator,left,right,context.timeZone??'UTC');
+    if(temporal.handled)return temporal.value;
     return evaluateFormulaBinary(node.operator,left,right);
   }
   const argument=(index:number):unknown=>{
@@ -428,57 +376,42 @@ function evaluateNode(node:Expression,resolve:FormulaResolver,context:FormulaEva
         day=Math.trunc(numeric(argument(2)));
       if(year<1||year>9999||month<1||month>12||day<1||day>31)
         throw new Error('Invalid DATE arguments');
-      const date=new Date(Date.UTC(year,month-1,day));
-      if(date.getUTCFullYear()!==year||date.getUTCMonth()!==month-1||date.getUTCDate()!==day)
-        throw new Error('Invalid DATE arguments');
-      return date.toISOString().slice(0,10);
+      const value=`${String(year).padStart(4,'0')}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      if(!validISODate(value))throw new Error('Invalid DATE arguments');
+      return value;
     }
     case 'ADDDAYS':arity(2);{
-      const input=text(argument(0)),amount=numeric(argument(1));
-      if(!validISODate(input)||!Number.isSafeInteger(amount)||Math.abs(amount)>36500)
-        throw new Error('ADDDAYS requires a valid Date and at most 36500 whole days');
-      const date=new Date(input+'T00:00:00Z');
-      date.setUTCDate(date.getUTCDate()+amount);
-      if(!Number.isFinite(date.getTime())||date.getUTCFullYear()<1||date.getUTCFullYear()>9999)
-        throw new Error('ADDDAYS date is out of range');
-      return date.toISOString().slice(0,10);
+      return formulaAddDays(text(argument(0)),numeric(argument(1)),context.timeZone??'UTC');
     }
     case 'DATEVALUE':arity(1);{
       const input=text(argument(0));
       if(validISODate(input))return input;
-      return dateText(dateParts(dateTimeValue(input,context.timeZone??'UTC'),context.timeZone??'UTC'));
+      return formulaDateText(formulaDateParts(
+        parseFormulaDateTime(input,context.timeZone??'UTC'),context.timeZone??'UTC'));
     }
     case 'DATETIMEVALUE':arity(1);{
       const input=text(argument(0));
-      return dateTimeValue(input,context.timeZone??'UTC').toISOString();
+      return formulaIsoDateTime(parseFormulaDateTime(input,context.timeZone??'UTC'));
     }
     case 'TIMEVALUE':arity(1);{
       const input=text(argument(0));
       const match=/^([01]\d|2[0-3]):([0-5]\d)(?::([0-5]\d)(?:\.(\d{1,3}))?)?$/.exec(input);
       if(match)return `${match[1]}:${match[2]}:${match[3]??'00'}.${(match[4]??'').padEnd(3,'0')}`;
-      const date=dateTimeValue(input,context.timeZone??'UTC');
-      const parts=dateParts(date,context.timeZone??'UTC');
-      return `${String(parts.hour).padStart(2,'0')}:${String(parts.minute).padStart(2,'0')}:${String(parts.second).padStart(2,'0')}.${String(date.getUTCMilliseconds()).padStart(3,'0')}`;
+      return formulaTimeText(parseFormulaDateTime(input,context.timeZone??'UTC'),context.timeZone??'UTC');
     }
     case 'TIMENOW':arity(0);{
-      const date=new Date(),parts=dateParts(date,context.timeZone??'UTC');
-      return `${String(parts.hour).padStart(2,'0')}:${String(parts.minute).padStart(2,'0')}:${String(parts.second).padStart(2,'0')}.${String(date.getUTCMilliseconds()).padStart(3,'0')}`;
+      return formulaTimeText(context.now as Date,context.timeZone??'UTC');
     }
     case 'TODAY':arity(0);{
-      const parts=dateParts(new Date(),context.timeZone??'UTC');
-      return `${String(parts.year).padStart(4,'0')}-${String(parts.month).padStart(2,'0')}-${String(parts.day).padStart(2,'0')}`;
+      return formulaDateText(formulaDateParts(context.now as Date,context.timeZone??'UTC'));
     }
-    case 'NOW':arity(0);return new Date().toISOString();
+    case 'NOW':arity(0);return formulaIsoDateTime(context.now as Date);
     case 'TZOFFSET':arity(1);{
       const timeZone=context.timeZone??'UTC';
-      const date=dateTimeValue(text(argument(0)),timeZone);
-      const parts=dateParts(date,timeZone),wholeSecond=new Date(date);
-      wholeSecond.setUTCMilliseconds(0);
-      return Date.UTC(parts.year,parts.month-1,parts.day,parts.hour,parts.minute,parts.second)
-        -wholeSecond.getTime();
+      return formulaTimezoneOffset(parseFormulaDateTime(text(argument(0)),timeZone),timeZone);
     }
     case 'DAY':case 'MONTH':case 'YEAR':case 'HOUR':case 'MINUTE':case 'SECOND':case 'WEEKDAY':arity(1);{
-      const parts=formulaDateParts(argument(0),context.timeZone??'UTC');
+      const parts=formulaDateTimeParts(text(argument(0)),context.timeZone??'UTC');
       switch(node.name){
         case 'DAY':return parts.day;
         case 'MONTH':return parts.month;
@@ -486,33 +419,16 @@ function evaluateNode(node:Expression,resolve:FormulaResolver,context:FormulaEva
         case 'HOUR':return parts.hour;
         case 'MINUTE':return parts.minute;
         case 'SECOND':return parts.second;
-        default:return new Date(Date.UTC(parts.year,parts.month-1,parts.day)).getUTCDay()+1;
+        default:return formulaWeekday(parts);
       }
     }
     case 'ISOWEEK':case 'ISOYEAR':arity(1);{
-      const parts=formulaDateParts(argument(0),context.timeZone??'UTC');
-      const date=new Date(Date.UTC(parts.year,parts.month-1,parts.day));
-      const day=date.getUTCDay()||7;
-      date.setUTCDate(date.getUTCDate()+4-day);
-      if(node.name==='ISOYEAR')return date.getUTCFullYear();
-      const yearStart=new Date(Date.UTC(date.getUTCFullYear(),0,1));
-      return Math.ceil((((date.getTime()-yearStart.getTime())/86400000)+1)/7);
+      const parts=formulaDateTimeParts(text(argument(0)),context.timeZone??'UTC');
+      const iso=formulaIsoParts(parts);
+      return node.name==='ISOYEAR'?iso.year:iso.week;
     }
     case 'ADDMONTHS':arity(2);{
-      const input=text(argument(0)),months=Math.trunc(numeric(argument(1)));
-      const dateOnly=validISODate(input);
-      const original=dateOnly
-        ?{...formulaDateParts(input,context.timeZone??'UTC'),millisecond:0}
-        :{...formulaDateParts(input,context.timeZone??'UTC'),
-          millisecond:dateTimeValue(input,context.timeZone??'UTC').getUTCMilliseconds()};
-      const targetMonth=new Date(Date.UTC(original.year,original.month-1+months,1));
-      const year=targetMonth.getUTCFullYear(),month=targetMonth.getUTCMonth()+1;
-      const day=Math.min(original.day,new Date(Date.UTC(year,month,0)).getUTCDate());
-      if(dateOnly)return `${String(year).padStart(4,'0')}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-      const date=resolveFlowLocalDateTime(`${String(year).padStart(4,'0')}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`,
-        `${String(original.hour).padStart(2,'0')}:${String(original.minute).padStart(2,'0')}`,context.timeZone??'UTC');
-      date.setUTCSeconds(original.second,original.millisecond);
-      return date.toISOString();
+      return formulaAddMonths(text(argument(0)),numeric(argument(1)),context.timeZone??'UTC');
     }
     case 'GEOLOCATION':arity(2);{
       const latitude=numeric(argument(0)),longitude=numeric(argument(1));
@@ -551,7 +467,10 @@ export function evaluateFlowFormula(expression:string,resolve:FormulaResolver,
   if(typeof expression!=='string'||!expression.trim())throw new Error('Flow formula is empty');
   const ast=new Parser(tokenize(expression)).parse();
   validateFormulaFunctions(ast,expressionContext);
-  return evaluate(ast,resolve,context);
+  const now=context.now===undefined?new Date():context.now instanceof Date
+    ?new Date(context.now):parseFormulaDateTime(context.now,'UTC');
+  if(!Number.isFinite(now.getTime()))throw new Error('Invalid formula evaluation time');
+  return evaluate(ast,resolve,{...context,now});
 }
 
 export function validateFlowFormula(expression:string,
@@ -611,6 +530,11 @@ export function inferFlowFormulaType(expression:string,resolve:FormulaTypeResolv
           throw new Error('Ordered formula comparisons require matching numbers, text, or temporal values');
         return 'Checkbox';
       }
+      if(operator==='-'&&left===right&&(left==='Date'||left==='DateTime'))return 'Number';
+      if((operator==='+'||operator==='-')&&left==='Date'&&formulaNumeric(right))return 'Date';
+      if(operator==='+'&&formulaNumeric(left)&&right==='Date')return 'Date';
+      if((operator==='+'||operator==='-')&&left==='DateTime'&&formulaNumeric(right))return 'DateTime';
+      if(operator==='+'&&formulaNumeric(left)&&right==='DateTime')return 'DateTime';
       if(!formulaNumeric(left)||!formulaNumeric(right))
         throw new Error('Arithmetic formula operators require numeric values');
       return 'Number';
@@ -714,7 +638,7 @@ export function inferFlowFormulaType(expression:string,resolve:FormulaTypeResolv
         return compatible;
       }
       case 'DATE':arity(3);args.forEach((_,index)=>requireNumber(index));return 'Date';
-      case 'ADDDAYS':arity(2);requireType(0,['Date']);requireNumber(1);return 'Date';
+      case 'ADDDAYS':arity(2);requireType(0,['Date','DateTime']);requireNumber(1);return args[0];
       case 'DATEVALUE':arity(1);requireType(0,['Text','Date','DateTime']);return 'Date';
       case 'DATETIMEVALUE':arity(1);requireType(0,['Text','Date','DateTime']);return 'DateTime';
       case 'TIMEVALUE':arity(1);requireType(0,['Text','DateTime','Time']);return 'Time';

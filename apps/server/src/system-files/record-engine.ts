@@ -138,7 +138,7 @@ export class RecordEngine {
         currencyRates[row.currency_iso_code]=rate;
       }
     }
-    return {timeZone:rows[0].time_zone,currencyRates};
+    return {timeZone:rows[0].time_zone,currencyRates,now:new Date()};
   }
   private async picklistValues(tenantId:string,objectApi:string,fieldApi:string,client?:PoolClient) {
     const {rows}=await (client??this.db).query<{value:string}>(`

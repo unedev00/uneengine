@@ -12,6 +12,7 @@ export async function resolveDefaultValues(client:PoolClient,tenantId:string,use
        WHERE d.tenant_id=$1 AND d.object_api=$2 ORDER BY d.field_api`,[tenantId,objectApi]);
     const pending=new Map(rows.filter(row=>values[row.field_api]===undefined)
       .map(row=>[row.field_api,row.expression]));
+    const now=new Date();
     for(const [field,value] of Object.entries(literals))
       if(values[field]===undefined&&!pending.has(field))values[field]=value;
     const visiting=new Set<string>();
@@ -26,7 +27,7 @@ export async function resolveDefaultValues(client:PoolClient,tenantId:string,use
         if(pending.has(name))await resolveDefault(name);
       }
       const ctx=await context(expression,values);
-      const result=evaluateFlowFormula(expression,ctx.resolve,{timeZone:ctx.timeZone},'formula_field');
+      const result=evaluateFlowFormula(expression,ctx.resolve,{timeZone:ctx.timeZone,now},'formula_field');
       if(result!==undefined){
         if(result!==null&&typeof result!=='string'&&typeof result!=='number'&&typeof result!=='boolean')
           throw new Error('Invalid formula default result: '+field);

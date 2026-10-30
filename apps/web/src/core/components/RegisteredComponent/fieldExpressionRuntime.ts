@@ -1,4 +1,7 @@
-import {evaluateFieldExpressionDetailed,FieldExpressionEvaluationError} from '../../../component-libraries/shared/FieldExpression.js';
+import {
+ evaluateFieldExpressionDetailed,FieldExpressionEvaluationError,
+ type FormulaBindingContext
+} from '../../../component-libraries/shared/FieldExpression.js';
 
 function isFieldExpression(value:string):boolean{
   const input=value.trim();
@@ -10,16 +13,22 @@ function isFieldExpression(value:string):boolean{
 
 /** Resolve text-property bindings against the already authorised record supplied to the component.
  * Never eval expressions, traverse dotted paths or fetch fields outside the runtime record. */
-export function resolveFieldText(expression:unknown,record:unknown):unknown {
+export function resolveFieldText(
+  expression:unknown,record:unknown,context?:FormulaBindingContext
+):unknown {
   if(typeof expression!=='string')return expression;
   if(!isFieldExpression(expression))return expression;
   const source=record&&typeof record==='object'&&!Array.isArray(record)?record as Record<string,unknown>:{};
-  const result=evaluateFieldExpressionDetailed(expression,source);
+  const result=evaluateFieldExpressionDetailed(expression,source,context);
   if(result.error)throw new FieldExpressionEvaluationError(result.error);
   return result.value;
 }
 
-export function resolveRegisteredTextProperties(definitions:ReadonlyArray<{propertyKey:string;kind:string}>,properties:Record<string,unknown>):Record<string,unknown>{
+export function resolveRegisteredTextProperties(
+ definitions:ReadonlyArray<{propertyKey:string;kind:string}>,properties:Record<string,unknown>,
+ context?:FormulaBindingContext
+):Record<string,unknown>{
+  const formulaContext=context??{timeZone:'UTC',now:new Date()};
   const record=properties.record??properties.currentRecord??properties.recordData;
   const hasRecord=Boolean(record&&typeof record==='object'&&!Array.isArray(record));
   let next=properties;
@@ -29,7 +38,7 @@ export function resolveRegisteredTextProperties(definitions:ReadonlyArray<{prope
     if(typeof value!=='string'||!isFieldExpression(value))continue;
     if(!hasRecord&&/@[A-Za-z]/.test(value))continue;
     if(next===properties)next={...properties};
-    next[definition.propertyKey]=resolveFieldText(value,record);
+    next[definition.propertyKey]=resolveFieldText(value,record,formulaContext);
   }
   return next;
 }

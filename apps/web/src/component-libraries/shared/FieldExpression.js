@@ -7,6 +7,11 @@ import {
 import {tokenize} from '../../../../server/src/expression-engine/FormulaTokenizer.js';
 import {validateFormulaFunctions} from '../../../../server/src/expression-engine/FormulaFunctionRegistry.js';
 import {roundFormulaNumber} from '../../../../server/src/expression-engine/FormulaNumeric.js';
+import {
+ evaluateFormulaDateBinary,formulaAddDays,formulaAddMonths,formulaDateParts,formulaDateText,
+ formulaDateTimeParts,formulaIsoDateTime,formulaIsoParts,formulaTimeText,formulaTimezoneOffset,
+ formulaWeekday,isFormulaDate,parseFormulaDateTime
+} from '../../../../server/src/expression-engine/FormulaDate.js';
 
 const text=value=>value==null?'':String(value);
 const formulaText=value=>typeof value==='boolean'?value?'TRUE':'FALSE':text(value);
@@ -28,8 +33,7 @@ const compare=(left,right)=>{
  }
  return null;
 };
-const dateText=date=>`${String(date.getUTCFullYear()).padStart(4,'0')}-${String(date.getUTCMonth()+1).padStart(2,'0')}-${String(date.getUTCDate()).padStart(2,'0')}`;
-const evaluateCall=(name,args)=>{
+const evaluateCall=(name,args,context)=>{
  const arity=(minimum,maximum=minimum)=>{
   if(args.length<minimum||args.length>maximum)throw Error(`Invalid ${name} argument count`);
  };
@@ -195,15 +199,15 @@ const evaluateCall=(name,args)=>{
   case 'PI':arity(0);return Math.PI;
   case 'DATE':arity(3);{
    const year=Math.trunc(numeric(args[0])),month=Math.trunc(numeric(args[1])),day=Math.trunc(numeric(args[2]));
-   if(year<1||year>9999||month<1||month>12||day<1||day>31)throw Error('Invalid DATE value');
-   const value=new Date(0);value.setUTCFullYear(year,month-1,day);
-   if(!Number.isFinite(value.getTime())||value.getUTCFullYear()!==year||value.getUTCMonth()!==month-1||value.getUTCDate()!==day)throw Error('Invalid DATE value');
-   return dateText(value);
+   if(year<1||year>9999||month<1||month>12||day<1||day>31)throw Error('Invalid DATE arguments');
+   const value=`${String(year).padStart(4,'0')}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+   if(!isFormulaDate(value))throw Error('Invalid DATE arguments');
+   return value;
   }
   case 'DATEVALUE':arity(1);{
-   const value=text(args[0]),date=new Date(value);
-   if(!/^\d{4}-\d{2}-\d{2}$/.test(value)||!Number.isFinite(date.getTime())||dateText(date)!==value)throw Error('Invalid DATEVALUE');
-   return value;
+   const value=text(args[0]);
+   if(isFormulaDate(value))return value;
+   return formulaDateText(formulaDateParts(parseFormulaDateTime(value,context.timeZone),context.timeZone));
   }
   case 'GEOLOCATION':arity(2);{
    const latitude=numeric(args[0]),longitude=numeric(args[1]);
@@ -226,65 +230,42 @@ const evaluateCall=(name,args)=>{
    throw Error('DISTANCE unit must be km or mi');
   }
   case 'DATETIMEVALUE':arity(1);{
-   const date=new Date(text(args[0]));if(!Number.isFinite(date.getTime()))throw Error('Invalid DATETIMEVALUE');
-   return date.toISOString();
+   return formulaIsoDateTime(parseFormulaDateTime(text(args[0]),context.timeZone));
   }
-  case 'TODAY':arity(0);return dateText(new Date());
-  case 'NOW':arity(0);return new Date().toISOString();
+  case 'TODAY':arity(0);return formulaDateText(formulaDateParts(context.now,context.timeZone));
+  case 'NOW':arity(0);return formulaIsoDateTime(context.now);
+  case 'TIMENOW':arity(0);return formulaTimeText(context.now,context.timeZone);
   case 'DAY':case 'MONTH':case 'YEAR':{
-   arity(1);const value=new Date(text(args[0]));if(!Number.isFinite(value.getTime()))throw Error('Invalid date');
-   return name==='DAY'?value.getUTCDate():name==='MONTH'?value.getUTCMonth()+1:value.getUTCFullYear();
+   arity(1);const parts=formulaDateTimeParts(text(args[0]),context.timeZone);
+   return name==='DAY'?parts.day:name==='MONTH'?parts.month:parts.year;
   }
   case 'HOUR':case 'MINUTE':case 'SECOND':arity(1);{
-   const value=new Date(text(args[0]));if(!Number.isFinite(value.getTime()))throw Error('Invalid date');
-   return name==='HOUR'?value.getUTCHours():name==='MINUTE'?value.getUTCMinutes():value.getUTCSeconds();
+   const parts=formulaDateTimeParts(text(args[0]),context.timeZone);
+   return name==='HOUR'?parts.hour:name==='MINUTE'?parts.minute:parts.second;
   }
   case 'TIMEVALUE':arity(1);{
    const value=text(args[0]);
-   const time=/^(?:(?:\d{4}-\d\d-\d\d)T)?(\d\d):(\d\d)(?::(\d\d)(?:\.(\d{1,3}))?)?(?:Z|[+-]\d\d:\d\d)?$/.exec(value);
+   const time=/^([01]\d|2[0-3]):([0-5]\d)(?::([0-5]\d)(?:\.(\d{1,3}))?)?$/.exec(value);
    if(time){
-    if(Number(time[1])>23||Number(time[2])>59||Number(time[3]??0)>59)throw Error('Invalid TIMEVALUE');
     return `${time[1]}:${time[2]}:${time[3]??'00'}.${(time[4]??'').padEnd(3,'0')}`;
    }
-   const date=new Date(value);if(!Number.isFinite(date.getTime()))throw Error('Invalid TIMEVALUE');
-   return `${String(date.getUTCHours()).padStart(2,'0')}:${String(date.getUTCMinutes()).padStart(2,'0')}:${String(date.getUTCSeconds()).padStart(2,'0')}.${String(date.getUTCMilliseconds()).padStart(3,'0')}`;
+   return formulaTimeText(parseFormulaDateTime(value,context.timeZone),context.timeZone);
   }
   case 'WEEKDAY':arity(1);{
-   const value=new Date(text(args[0]));if(!Number.isFinite(value.getTime()))throw Error('Invalid date');
-   return value.getUTCDay()+1;
+   return formulaWeekday(formulaDateTimeParts(text(args[0]),context.timeZone));
   }
   case 'ADDDAYS':arity(2);{
-   const source=text(args[0]),amount=numeric(args[1]);
-   if(!/^\d{4}-\d\d-\d\d$/.test(source)||!Number.isSafeInteger(amount)||Math.abs(amount)>36500)throw Error('Invalid ADDDAYS arguments');
-   const date=new Date(`${source}T00:00:00Z`);
-   if(dateText(date)!==source)throw Error('Invalid ADDDAYS date');
-   date.setUTCDate(date.getUTCDate()+amount);return dateText(date);
+   return formulaAddDays(text(args[0]),numeric(args[1]),context.timeZone);
   }
   case 'ADDMONTHS':arity(2);{
-   const source=text(args[0]),amount=numeric(args[1]);
-   if(!/^\d{4}-\d\d-\d\d$/.test(source)||!Number.isSafeInteger(amount)||Math.abs(amount)>1200)throw Error('Invalid ADDMONTHS arguments');
-   const date=new Date(`${source}T00:00:00Z`);
-   if(dateText(date)!==source)throw Error('Invalid ADDMONTHS date');
-   const day=date.getUTCDate();date.setUTCDate(1);date.setUTCMonth(date.getUTCMonth()+amount);
-   const lastDay=new Date(Date.UTC(date.getUTCFullYear(),date.getUTCMonth()+1,0)).getUTCDate();
-   date.setUTCDate(Math.min(day,lastDay));return dateText(date);
+   return formulaAddMonths(text(args[0]),numeric(args[1]),context.timeZone);
   }
   case 'ISOYEAR':case 'ISOWEEK':arity(1);{
-   const source=text(args[0]),date=new Date(`${source}T00:00:00Z`);
-   if(!/^\d{4}-\d\d-\d\d$/.test(source)||dateText(date)!==source)throw Error('Invalid ISO date');
-   date.setUTCDate(date.getUTCDate()+4-(date.getUTCDay()||7));
-   const year=date.getUTCFullYear();
-   if(name==='ISOYEAR')return year;
-   const firstThursday=new Date(Date.UTC(year,0,4));firstThursday.setUTCDate(firstThursday.getUTCDate()+4-(firstThursday.getUTCDay()||7));
-   return 1+Math.round((date.getTime()-firstThursday.getTime())/(7*86400000));
+   const iso=formulaIsoParts(formulaDateTimeParts(text(args[0]),context.timeZone));
+   return name==='ISOYEAR'?iso.year:iso.week;
   }
-  case 'TIMENOW':arity(0);return new Date().toISOString().slice(11,23);
   case 'TZOFFSET':arity(1);{
-   const date=new Date(text(args[0]));if(!Number.isFinite(date.getTime()))throw Error('Invalid TZOFFSET date');
-   const parts=new Intl.DateTimeFormat('en-CA',{timeZoneName:'longOffset'}).formatToParts(date);
-   const offset=parts.find(part=>part.type==='timeZoneName')?.value;
-   const match=/^GMT([+-])(\d\d):(\d\d)$/.exec(offset??'');
-   return match?(match[1]==='-'?-1:1)*(Number(match[2])*60+Number(match[3]))*60000:0;
+   return formulaTimezoneOffset(parseFormulaDateTime(text(args[0]),context.timeZone),context.timeZone);
   }
   case 'CASE':{
    if(args.length<4||args.length%2!==0)throw Error('Invalid CASE argument count');
@@ -294,7 +275,7 @@ const evaluateCall=(name,args)=>{
   default:throw Error(`Unsupported formula function: ${name}`);
  }
 };
-function parse(source,record){
+function parse(source,record,formulaContext){
  const expression=new Parser(tokenize(source)).parse();
  validateFormulaFunctions(expression,'ribbon_binding');
  const resolveReference=reference=>{
@@ -324,7 +305,9 @@ function parse(source,record){
    const left=evaluate(node.left);
    if(node.operator==='AND'&&!truth(left))return false;
    if(node.operator==='OR'&&truth(left))return true;
-   result=evaluateFormulaBinary(node.operator,left,evaluate(node.right));
+   const right=evaluate(node.right);
+   const temporal=evaluateFormulaDateBinary(node.operator,left,right,formulaContext.timeZone);
+   result=temporal.handled?temporal.value:evaluateFormulaBinary(node.operator,left,right);
   }else if(node.name==='IF'){
    result=truth(evaluate(node.args[0]))?evaluate(node.args[1]):evaluate(node.args[2]);
   }else if(node.name==='NOT'){
@@ -352,7 +335,7 @@ function parse(source,record){
    }
    if(!matched)result=evaluate(node.args[node.args.length-1]);
   }else if(node.kind==='call'){
-   result=evaluateCall(node.name,node.args.map(evaluate));
+   result=evaluateCall(node.name,node.args.map(evaluate),formulaContext);
   }else throw Error('Invalid formula syntax');
   if(typeof result==='number'&&!Number.isFinite(result))
    throw Error('Formula result must be finite');
@@ -363,7 +346,7 @@ function parse(source,record){
 export class FieldExpressionEvaluationError extends Error {
  constructor(message){super(message);this.name='FieldExpressionEvaluationError';}
 }
-export function evaluateFieldExpressionDetailed(expression,record){
+export function evaluateFieldExpressionDetailed(expression,record,options={}){
  if(typeof expression!=='string')return {value:''};
  if(expression.length>4000)return {value:'',error:'Formula exceeds the 4000-character limit'};
  const input=expression.trim();if(!input)return {value:''};
@@ -372,14 +355,23 @@ export function evaluateFieldExpressionDetailed(expression,record){
   &&!/^(?:["(]|[-+]?\d+(?:\.\d+)?\s*[+*\/%^<>=!-])/.test(input)
   &&!/\s(?:[&+*/%^<>=!]|AND\b|OR\b)\s/i.test(input))return {value:expression};
  try{
-  const result=parse(input,record);
+  if(!options||typeof options!=='object'||Array.isArray(options))
+   throw Error('Invalid formula evaluation context');
+  const timeZone=options.timeZone??'UTC';
+  if(typeof timeZone!=='string'||timeZone.length>100)throw Error('Invalid formula time zone');
+  new Intl.DateTimeFormat('en',{timeZone});
+  const now=options.now===undefined?new Date():options.now instanceof Date
+   ?new Date(options.now):typeof options.now==='string'
+    ?parseFormulaDateTime(options.now,'UTC'):new Date(NaN);
+  if(!Number.isFinite(now.getTime()))throw Error('Invalid formula evaluation time');
+  const result=parse(input,record,{timeZone,now});
   if(typeof result==='number'&&!Number.isFinite(result))return {value:'',error:'Formula result is not finite'};
   return {value:text(result)};
  }catch(failure){
   return {value:'',error:failure instanceof Error?failure.message:'Formula evaluation failed'};
  }
 }
-export function evaluateFieldExpression(expression,record){
- const result=evaluateFieldExpressionDetailed(expression,record);
+export function evaluateFieldExpression(expression,record,options){
+ const result=evaluateFieldExpressionDetailed(expression,record,options);
  return result.error?'':result.value;
 }
