@@ -26,7 +26,7 @@ export async function resolveDefaultValues(client:PoolClient,tenantId:string,use
         if(pending.has(name))await resolveDefault(name);
       }
       const ctx=await context(expression,values);
-      const result=evaluateFlowFormula(expression,ctx.resolve,{timeZone:ctx.timeZone});
+      const result=evaluateFlowFormula(expression,ctx.resolve,{timeZone:ctx.timeZone},'formula_field');
       if(result!==undefined){
         if(result!==null&&typeof result!=='string'&&typeof result!=='number'&&typeof result!=='boolean')
           throw new Error('Invalid formula default result: '+field);

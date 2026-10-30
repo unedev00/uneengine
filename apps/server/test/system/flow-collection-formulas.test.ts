@@ -13,7 +13,7 @@ test('Record Collection formula aggregates support visual meal rules and totals'
   assert.equal(evaluateFlowFormula('COLLECTIONCOUNT({!Empty})',name=>name==='Empty'?[]:undefined),0);
   for(const formula of ['COLLECTIONCOUNT({!Lines})','COLLECTIONSUM({!Lines}, "PriceMinor")']){
     assert.doesNotThrow(()=>validateFlowFormula(formula));
-    assert.equal(inferFlowFormulaType(formula,()=>undefined),'Number');
+    assert.equal(inferFlowFormulaType(formula,()=>undefined,'flow_formula'),'Number');
   }
 });
 test('Collection aggregation fails closed for non-records and untrusted field access',()=>{
@@ -25,5 +25,6 @@ test('Collection aggregation fails closed for non-records and untrusted field ac
     ()=>[{PriceMinor:Infinity}]),/finite numeric/);
   assert.throws(()=>evaluateFlowFormula('COLLECTIONCOUNT({!Lines})',
     ()=>Array.from({length:201},()=>({}))),/maximum 200/);
-  assert.throws(()=>inferFlowFormulaType('COLLECTIONSUM({!Lines}, {!Field})',()=>undefined),/literal numeric field/);
+  assert.throws(()=>inferFlowFormulaType('COLLECTIONSUM({!Lines}, {!Field})',()=>undefined,'flow_formula'),
+    /literal numeric field/);
 });

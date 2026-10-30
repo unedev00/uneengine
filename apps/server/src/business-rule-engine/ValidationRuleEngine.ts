@@ -21,7 +21,7 @@ export class DeclarativeRules {
   constructor(private readonly rbac:RbacEngine){}
   async context(client:PoolClient,tenantId:string,userId:string,objectApi:string,
     current:Values,prior:Values|null,expression:string) {
-    validateFlowFormula(expression);
+    validateFlowFormula(expression,'validation_rule');
     const references=flowFormulaReferences(expression);
     const {rows}=await client.query<{id:string;email:string;display_name:string;time_zone:string;profile_name:string|null}>(
       `SELECT u.id,u.email,u.display_name,u.time_zone,p.api_name AS profile_name
@@ -76,7 +76,7 @@ export class DeclarativeRules {
     const priorValues=typeof prior==='function'?await prior():prior;
     for(const rule of rows){
       const ctx=await this.context(client,tenantId,userId,objectApi,currentValues,priorValues,rule.expression);
-      const invalid=evaluateFlowFormula(rule.expression,ctx.resolve,{timeZone:ctx.timeZone});
+      const invalid=evaluateFlowFormula(rule.expression,ctx.resolve,{timeZone:ctx.timeZone},'validation_rule');
       if(typeof invalid!=='boolean')throw new Error('Validation rule must return Checkbox: '+rule.api_name);
       if(invalid)throw new DeclarativeRuleError(rule);
     }

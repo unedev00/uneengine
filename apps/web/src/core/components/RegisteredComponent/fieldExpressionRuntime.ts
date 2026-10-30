@@ -2,7 +2,8 @@ import {evaluateFieldExpressionDetailed,FieldExpressionEvaluationError} from '..
 
 function isFieldExpression(value:string):boolean{
   const input=value.trim();
-  return input.startsWith('(')||/^[+-]\d/.test(input)||input.startsWith('@')||/^"(?:[^"]|"")*"\s*&/.test(input)
+  return /^(?:TRUE|FALSE|NULL|PI)$/i.test(input)||input.startsWith('(')||/^[+-]\d/.test(input)
+    ||input.startsWith('@')||/^"(?:[^"]|"")*"\s*&/.test(input)
     ||/^(?:\d+(?:\.\d+)?\s*[+\-*/%^<>]|"(?:[^"]|"")*"\s*(?:&|=|<>|!=|<=|>=|<|>))/.test(input)
     ||/^(?:IF|IFERROR|CASE|AND|OR|NOT|XOR|ISBLANK|ISNULL|ISNUMBER|BLANKVALUE|NULLVALUE|TEXT|VALUE|ASCII|LOWER|UPPER|PROPER|INITCAP|LEN|TRIM|LEFT|RIGHT|MID|FIND|BEGINS|CONTAINS|EXACT|ISPICKVAL|INCLUDES|CONCATENATE|SUBSTITUTE|REPT|REVERSE|ENCODEURL|URLENCODE|URLDECODE|LPAD|RPAD|REPLACE|CHAR|CASESAFEID|T|COLLECTIONCOUNT|COLLECTIONSUM|VLOOKUP|ABS|ROUND|ROUNDUP|ROUNDDOWN|TRUNC|SIGN|MIN|MAX|MOD|SQRT|POWER|CEILING|FLOOR|MCEILING|MFLOOR|EXP|LN|LOG|SIN|COS|TAN|ASIN|ACOS|ATAN|ATAN2|SINH|COSH|TANH|DEGREES|RADIANS|DATE|DATEVALUE|DATETIMEVALUE|TODAY|NOW|DAY|MONTH|YEAR|HOUR|MINUTE|SECOND|TIMEVALUE|TIMENOW|TZOFFSET|WEEKDAY|ISOWEEK|ISOYEAR|ADDDAYS|ADDMONTHS|GEOLOCATION|DISTANCE)\s*\(/i.test(input);
 }
@@ -12,7 +13,6 @@ function isFieldExpression(value:string):boolean{
 export function resolveFieldText(expression:unknown,record:unknown):unknown {
   if(typeof expression!=='string')return expression;
   if(!isFieldExpression(expression))return expression;
-  if(expression.length>2048)return '';
   const source=record&&typeof record==='object'&&!Array.isArray(record)?record as Record<string,unknown>:{};
   const result=evaluateFieldExpressionDetailed(expression,source);
   if(result.error)throw new FieldExpressionEvaluationError(result.error);

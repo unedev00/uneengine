@@ -1,15 +1,4 @@
-export const formulaFunctions = [
-  'IF', 'AND', 'OR', 'NOT', 'XOR', 'ISBLANK', 'ISNULL', 'ISNUMBER', 'ISCHANGED',
-  'ISNEW', 'ISCLONE', 'PRIORVALUE', 'IFERROR', 'BLANKVALUE',
-  'NULLVALUE', 'TEXT', 'VALUE', 'LEN', 'ASCII', 'LOWER', 'UPPER', 'PROPER', 'TRIM',
-  'COLLECTIONCOUNT', 'COLLECTIONSUM', 'LEFT', 'RIGHT', 'MID', 'FIND', 'SUBSTITUTE', 'CONCATENATE', 'EXACT', 'CONTAINS',
-  'BEGINS', 'ISPICKVAL', 'INCLUDES', 'REPT', 'REVERSE', 'ENCODEURL', 'URLENCODE',
-  'URLDECODE', 'T', 'IMAGE', 'CURRENCYRATE', 'CHAR', 'INITCAP', 'LPAD', 'RPAD', 'REPLACE', 'CASESAFEID', 'ABS',
-  'ROUND', 'ROUNDUP', 'ROUNDDOWN', 'TRUNC', 'SIGN', 'MIN', 'MAX', 'MOD', 'SQRT',
-  'POWER', 'CEILING', 'FLOOR', 'MCEILING', 'MFLOOR', 'EXP', 'LN', 'LOG', 'CASE',
-  'DATE', 'DATEVALUE', 'DATETIMEVALUE', 'TODAY', 'NOW', 'DAY', 'MONTH', 'YEAR',
-  'HOUR', 'MINUTE', 'SECOND', 'WEEKDAY', 'ISOWEEK', 'ISOYEAR', 'ADDDAYS','ADDMONTHS', 'TIMEVALUE', 'TIMENOW', 'PI',
-  'SIN', 'COS', 'TAN', 'ASIN', 'ACOS', 'ATAN', 'ATAN2', 'SINH', 'COSH', 'TANH',
-  'DEGREES', 'RADIANS', 'TZOFFSET', 'GEOLOCATION', 'DISTANCE', 'VLOOKUP'
-];
+import {getFormulaFunctionNames} from '../../../../../server/src/expression-engine/FormulaFunctionRegistry.js';
+
+export const formulaFunctions=getFormulaFunctionNames('flow_formula');
 export const formulaOperators = ['+', '-', '*', '/', '^', '&', '=', '<>', '!=', '<', '<=', '>', '>=', 'AND', 'OR'];

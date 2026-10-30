@@ -45,8 +45,8 @@ test('record-triggered Flow formulas expose change, prior-value, and new-record 
   assert.equal(evaluateFlowFormula('ISCHANGED({!$Record.Description})',resolve),true);
   assert.equal(evaluateFlowFormula('PRIORVALUE({!$Record.Status})',resolve),'Draft');
   assert.equal(evaluateFlowFormula('ISNEW()',resolve),false);
-  assert.equal(inferFlowFormulaType('ISCHANGED({!$Record.Status})',()=> 'Text'),'Checkbox');
-  assert.equal(inferFlowFormulaType('PRIORVALUE({!$Record.Status})',()=> 'Text'),'Text');
+  assert.equal(inferFlowFormulaType('ISCHANGED({!$Record.Status})',()=> 'Text','flow_formula'),'Checkbox');
+  assert.equal(inferFlowFormulaType('PRIORVALUE({!$Record.Status})',()=> 'Text','flow_formula'),'Text');
   assert.throws(()=>evaluateFlowFormula('PRIORVALUE("Status")',resolve),/field reference/);
   assert.throws(()=>evaluateFlowFormula('ISNEW()',()=>undefined),/Record-Triggered Flow/);
 });
@@ -55,7 +55,7 @@ test('Flow formulas reject unsupported functions, malformed syntax and division 
   const resolve=()=>null;
   assert.throws(()=>evaluateFlowFormula('RUN_CODE("x")',resolve),/Unsupported Flow formula function/);
   assert.throws(()=>evaluateFlowFormula('1 + (2 * 3',resolve),/parenthesis/);
-  assert.throws(()=>evaluateFlowFormula('4 / 0',resolve),/division by zero/);
+  assert.throws(()=>evaluateFlowFormula('4 / 0',resolve),/division by zero/i);
   assert.throws(()=>evaluateFlowFormula('1 @ 2',resolve),/Unsupported Flow formula character/);
 });
 

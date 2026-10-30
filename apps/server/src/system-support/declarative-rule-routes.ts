@@ -26,7 +26,8 @@ const typeOfField=(dataType:string,formulaReturnType:string|null):FormulaValueTy
     default:return 'Text';
   }
 };
-async function inferRuleType(db:SqlPersistence,tenantId:string,objectApi:string,expression:string){
+async function inferRuleType(db:SqlPersistence,tenantId:string,objectApi:string,expression:string,
+  context:'validation_rule'|'formula_field'='validation_rule'){
   const {rows}=await db.query<{api_name:string;data_type:string;formula_return_type:string|null}>(
     `SELECT api_name,data_type,formula_return_type FROM md_field_definitions
       WHERE tenant_id=$1 AND object_api=$2 AND deleted_at IS NULL`,[tenantId,objectApi]);
@@ -39,7 +40,7 @@ async function inferRuleType(db:SqlPersistence,tenantId:string,objectApi:string,
       reference.startsWith(objectApi+'.')?reference.slice(objectApi.length+1):reference;
     return fieldTypes.get(field)??null;
   };
-  return inferFlowFormulaType(expression,resolve);
+  return inferFlowFormulaType(expression,resolve,context);
 }
 export function registerDeclarativeRuleRoutes(app:Express,db:SqlPersistence,rbac:RbacEngine){
   const base='/api/metadata/objects/:objectApi';
@@ -71,8 +72,8 @@ export function registerDeclarativeRuleRoutes(app:Express,db:SqlPersistence,rbac
       ||(rule.active!==undefined&&typeof rule.active!=='boolean')
       ||(rule.sortOrder!==undefined&&(!Number.isSafeInteger(rule.sortOrder)||Math.abs(rule.sortOrder)>1000000)))
       throw new Error('Invalid validation rule');
-    validateFlowFormula(rule.expression);
-    if(await inferRuleType(db,a.tenant_id,req.params.objectApi,rule.expression)!=='Checkbox')
+    validateFlowFormula(rule.expression,'validation_rule');
+    if(await inferRuleType(db,a.tenant_id,req.params.objectApi,rule.expression,'validation_rule')!=='Checkbox')
       throw new Error('Invalid validation rule: formula must return Checkbox');
     const fields=flowFormulaReferences(rule.expression)
       .filter(ref=>ref.startsWith('$Record.')||ref.startsWith('$Record__Prior.'))
@@ -165,13 +166,13 @@ export function registerDeclarativeRuleRoutes(app:Express,db:SqlPersistence,rbac
     const a=await requireManage(req),field=req.params.fieldApi,expression=req.body?.expression;
     if(!api.test(field)||typeof expression!=='string'||!expression.trim()||expression.length>4000)
       throw new Error('Invalid default formula');
-    validateFlowFormula(expression);
+    validateFlowFormula(expression,'formula_field');
     const {rows}=await db.query<{data_type:string}>(
       `SELECT data_type FROM md_field_definitions WHERE tenant_id=$1 AND object_api=$2
         AND api_name=$3 AND deleted_at IS NULL`,[a.tenant_id,req.params.objectApi,field]);
     if(!rows.length||['autonumber','formula','rollup','encryptedtext','reference'].includes(rows[0].data_type))
       throw new Error('Invalid default formula target');
-    const inferred=await inferRuleType(db,a.tenant_id,req.params.objectApi,expression);
+    const inferred=await inferRuleType(db,a.tenant_id,req.params.objectApi,expression,'formula_field');
     const expected=typeOfField(rows[0].data_type,null);
     if(inferred!==expected&&inferred!=='Null'
       &&!(expected==='Text'&&['Text','Picklist'].includes(inferred))

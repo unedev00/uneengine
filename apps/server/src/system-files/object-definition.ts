@@ -112,7 +112,7 @@ const parseFieldDefinition=(field:Record<string,unknown>,objectApi?:string):Pars
   const formulaExpression=formulaMetadata?.expression;
   if(type==='formula'&&(typeof formulaExpression!=='string'||!formulaExpression.trim()||formulaExpression.length>4000))
     throw new Error('Formula expression is required');
-  if(type==='formula')validateFlowFormula(String(formulaExpression));
+  if(type==='formula')validateFlowFormula(String(formulaExpression),'formula_field');
   let rollup:ParsedField['rollup']=null;
   if(type==='rollup'){
     const config=field.rollup&&typeof field.rollup==='object'&&!Array.isArray(field.rollup)
@@ -392,7 +392,7 @@ export class ObjectDefinitionService {
     const normalizedReturnType=returnType.toLowerCase();
     if(!['number','currency','percent','text','date','datetime','time','checkbox'].includes(normalizedReturnType))
       throw new Error('Unsupported formula return type');
-    validateFlowFormula(expression);
+    validateFlowFormula(expression,'formula_field');
     const references=flowFormulaReferences(expression);
     const referenceTypes=new Map<string,FormulaValueType>();
     const publicReferences:Array<{objectApi:string;fieldApi:string}>=[];

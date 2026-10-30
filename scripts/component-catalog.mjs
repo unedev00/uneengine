@@ -49,6 +49,11 @@ export async function loadComponentCatalog() {
  * receive self-contained code and styles, with React supplied by the host. */
 export async function buildBundledComponent(definition) {
   const allowed = [path.join(webSourceRoot, 'component-libraries'), path.join(webSourceRoot, 'core/components/SystemPanel'), path.join(webSourceRoot, 'core/components/SharedRuntime')];
+  const formulaEngineRoot=path.resolve(path.dirname(fileURLToPath(import.meta.url)),
+    '../apps/server/src/expression-engine');
+  const sharedFormulaModules=new Set([
+    'FormulaFunctionRegistry.ts','FormulaParser.ts','FormulaTokenizer.ts'
+  ]);
   const boundary = {
     name: 'local-component-sources',
     setup(builder) {
@@ -58,7 +63,10 @@ export async function buildBundledComponent(definition) {
       });
       builder.onLoad({ filter: /\.(?:jsx?|tsx?|css)$/ }, async args => {
         const file = await realpath(args.path);
-        if (!allowed.some(root => within(root, file))) throw Error('Component import escapes its source library: ' + args.path);
+        const sharedFormulaModule=within(formulaEngineRoot,file)
+          &&sharedFormulaModules.has(path.basename(file));
+        if (!sharedFormulaModule&&!allowed.some(root => within(root, file)))
+          throw Error('Component import escapes its source library: ' + args.path);
         const extension = path.extname(file).slice(1);
         return { contents: await readFile(file, 'utf8'), loader: extension };
       });

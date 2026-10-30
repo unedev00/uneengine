@@ -249,14 +249,14 @@ export class RecordEngine {
           await fetchCrossReference(targetObject,fieldApi);
         }
       }
-      validateFlowFormula(field.formula_expression!);
+      validateFlowFormula(field.formula_expression!,'formula_field');
       const result=evaluateFlowFormula(field.formula_expression!,name=>{
         const parts=/^([A-Za-z][A-Za-z0-9_]*)\.([A-Za-z][A-Za-z0-9_]*)$/.exec(name);
         if(!parts)return record[name]??null;
         if(parts[1]===objectApi)
           return calculated.has(parts[2])?calculated.get(parts[2]):record[parts[2]]??null;
         return referenceCache.get(parts[1]+'.'+parts[2])??null;
-      },{...formulaContext,isClone:record.__isClone===true});
+      },{...formulaContext,isClone:record.__isClone===true},'formula_field');
       calculating.delete(field.api_name);
       calculated.set(field.api_name,result);
       return result;

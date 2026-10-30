@@ -72,6 +72,7 @@
     "apps/server/test/system/flow-screen-record-selection.test.ts",
     "apps/server/test/system/flow-subflow-runtime.test.ts",
     "apps/server/test/system/flow-wait-runtime.test.ts",
+    "apps/server/test/system/formula-phase1a.test.ts",
     "apps/server/test/system/formula-typecheck.test.ts",
     "apps/server/test/system/fresh-core-objects.test.ts",
     "apps/server/test/system/global-quick-actions.test.ts",
