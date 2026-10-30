@@ -11,7 +11,7 @@ const publishedOne=components.filter(component=>component.apiName.startsWith('On
 assert.deepEqual(publishedOne,[], 'No legacy One components may be independently registered');
 const registered=components.filter(component=>component.apiName.startsWith('une_'));
 assert.equal(registered.length,34,'All 34 canonical UNE component descriptors must be registered');
-const retained=['OneText','OneButton','OneSearch','OneCalendar','OneItemGrid','OneConversation','OneShoppingCart'];
+const retained=['OneText','OneSearch','OneCalendar','OneItemGrid','OneConversation','OneShoppingCart'];
 for(const name of retained){
   // UNE wrappers still reuse the old implementation code; it is not a public component.
   for(const extension of ['jsx','css'])
@@ -19,6 +19,8 @@ for(const name of retained){
   await assert.rejects(access(path.join(webSourceRoot,`one/${name}/component.json`)),
     {code:'ENOENT'},name+' must not retain a standalone descriptor');
 }
+await access(path.join(webSourceRoot,'core/components/SharedRuntime/SharedButton.jsx'));
+await assert.rejects(access(path.join(webSourceRoot,'one/OneButton/OneButton.jsx')), {code:'ENOENT'});
 for (const component of registered) {
   const prefix = `one/${component.apiName}/`;
   assert.equal(component.jsxFile, prefix + component.apiName.split('_').slice(1).map(part=>part[0].toUpperCase()+part.slice(1)).join('').replace(/^/, 'Une') + '.jsx');
