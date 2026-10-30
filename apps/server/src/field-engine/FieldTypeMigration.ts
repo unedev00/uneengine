@@ -847,7 +847,7 @@ export async function rollbackFieldTypeMigration(
         FROM md_record_multi_values mv WHERE mv.tenant_id=v.tenant_id
           AND mv.record_id=v.record_id AND mv.object_api=v.object_api AND mv.field_api=v.field_api),'{}')
         IS DISTINCT FROM COALESCE(string_to_array(v.value_text,';'),'{}'))
-      OR v.is_unique IS DISTINCT FROM ($5 OR $6)
+      OR v.is_unique IS DISTINCT FROM $5
       OR v.case_sensitive IS DISTINCT FROM $7))
     LIMIT 1`,[tenantId,objectApi,fieldApi,migrationId,migration.to_unique,
       migration.to_external_id,migration.to_case_sensitive,migration.to_data_type==='multipicklist']);
