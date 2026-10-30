@@ -68,7 +68,9 @@ try{
  const converted=await defs.updateField(primary,'Phase2B__c','Conversion',
   {label:'Conversion',dataType:'Number(8,2)'});
  assert.ok(converted.fields.some(f=>f.apiName==='Conversion'&&f.dataType==='Number(8, 2)'));
- const migrated=(await db.query("SELECT value_number::text AS value FROM md_record_values WHERE tenant_id=$1 AND object_api='Phase2B__c' AND field_api='Conversion' ORDER BY record_id",[primary])).rows;
+ const migrated=(await db.query("SELECT value_text,value_number::text AS value FROM md_record_values WHERE tenant_id=$1 AND object_api='Phase2B__c' AND field_api='Conversion' ORDER BY record_id",[primary])).rows;
+ const migrationSnapshots=(await db.query("SELECT m.after_value_text,m.after_value_number FROM md_field_type_migration_values m JOIN md_field_type_migrations x ON x.id=m.migration_id AND x.tenant_id=m.tenant_id WHERE x.tenant_id=$1 AND x.object_api='Phase2B__c' AND x.field_api='Conversion' ORDER BY m.record_id",[primary])).rows;
+ console.info('2B conversion typed rows and migration snapshots:',JSON.stringify({migrated,migrationSnapshots}));
  assert.deepEqual(migrated.map(r=>Number(r.value)),[1.25,2.25]);
 
 
