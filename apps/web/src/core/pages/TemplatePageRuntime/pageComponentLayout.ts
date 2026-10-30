@@ -106,9 +106,10 @@ export function pageAppearanceTarget(type: string): PageAppearanceTarget {
   const name = type.replace(/^Custom:/i, '').replace(/[^a-z0-9]/gi, '').toLowerCase();
   // Private application identities keep the same native appearance targets as their
   // former UNE renderers; only the app owns the component, not its styling engine.
-  const legacyName = name.replace(/^(?:acetill|aceassist|onechatter|uneacechatter)/,'une');
-  if (specificPageTargets[name] || specificPageTargets[legacyName])
-    return specificPageTargets[name] ?? specificPageTargets[legacyName];
+  const canonicalLegacy = name.startsWith('ui') ? 'une'+name.slice(2) : name;
+  const legacyName = canonicalLegacy.replace(/^(?:acetill|aceassist|onechatter|uneacechatter)/,'une');
+  if (specificPageTargets[name] || specificPageTargets[canonicalLegacy] || specificPageTargets[legacyName])
+    return specificPageTargets[name] ?? specificPageTargets[canonicalLegacy] ?? specificPageTargets[legacyName];
   if (/search|input|lookup|date.?picker|select|dropdown|choice|checkbox|radio|slider|slot.?picker/.test(name)) return 'input';
   if (/button|navigation|menu|link|action/.test(name)) return 'button';
   if (/badge|chip|tag/.test(name)) return 'badge';
