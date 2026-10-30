@@ -209,7 +209,7 @@ test('Ace Assist phone calendar and billing render as dedicated screens, not des
  assert.match(phone,/onOpen\(row\)/);
  assert.doesNotMatch(phone,/\/records\/|mockAppointments|demoInvoice|fakeCustomers/);
  assert.match(styles,/\.assist-phone-workspace\{display:block/);
- assert.match(styles,/\.custom-assist-layout>\.custom-calendar\{display:ncomponent-libraries/);
+ assert.match(styles,/\.custom-assist-layout>\.custom-calendar\{display:none/);
  assert.match(styles,/\.custom-visit-detail:not\(\.custom-detail-empty\)/);
  assert.match(styles,/\.assist-mobile-nav button\[aria-current=page\]/);
 });
