@@ -47,6 +47,23 @@ export function normalizeApiBase(value: string): string {
   return `${url.origin}${apiPath}`;
 }
 
+/** Only a tenant-owned API domain may provide a public, server-resolved display name. */
+export async function resolveTenantDisplay(apiUrl:string,tenantSlug:string):Promise<string> {
+  const base=normalizeApiBase(apiUrl);
+  const origin=new URL(base).origin;
+  const slug=tenantSlug.trim().toLowerCase();
+  if(!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug))
+    throw new MobileApiError('Enter a valid tenant slug.');
+  const response=await fetch(base+'/auth/tenant-display?tenantSlug='+encodeURIComponent(slug),{
+    headers:{Origin:origin,Accept:'application/json'}
+  });
+  if(!response.ok)throw new MobileApiError('Tenant identity could not be verified on this API domain.');
+  const result=await response.json() as {name?:unknown};
+  if(typeof result.name!=='string'||!result.name.trim())
+    throw new MobileApiError('Tenant identity is not available.');
+  return result.name.trim().slice(0,120);
+}
+
 export async function loadStoredSession(): Promise<MobileSession | null> {
   const serialized = await SecureStore.getItemAsync(sessionStorageKey);
   if (!serialized) return null;
