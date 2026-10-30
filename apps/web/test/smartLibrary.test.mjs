@@ -547,7 +547,7 @@ test('Calendar selected value colour fills date and Shadow uses shared three pre
  const ui=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
  const migration=read('../../server/src/system-support/migrations/20270131-smart-calendar-shadow-control.sql');
  assert.match(ui,/api==='smart_calendar'&&property.id==='shadow'/);
- assert.match(migration,/value_key_override=NULL/);
+ assert.match(migration,/value_key=NULL/);
 });
 test('Page Builder supports Ctrl X C V Z Y and shows resize cursor handles only when hovered',()=>{
  const builder=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
