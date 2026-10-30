@@ -346,9 +346,9 @@ function PageBuilder({
     && (component !== 'Chatter' || targetObject?.settings?.allowInChatter)
     && (component !== 'Report Chart' || targetObject?.settings?.allowReports));
   const stringList = pageStringList;
-  const [selectedId, setSelectedId] = useState(page.components[0]?.id ?? '');
+  const [selectedId, setSelectedId] = useState('');
   const [selectedRegion, setSelectedRegion] = useState<'header' | 'main' | 'sidebar' | null>(null);
-  const [selectionIds, setSelectionIds] = useState<string[]>(page.components[0] ? [page.components[0].id] : []);
+  const [selectionIds, setSelectionIds] = useState<string[]>([]);
   const [openBuilderTabs,setOpenBuilderTabs]=useState<Record<string,string>>({});
   const [previewRecords,setPreviewRecords]=useState<RecordData[]>([]);
   const [previewRecordId,setPreviewRecordId]=useState('');
@@ -506,7 +506,7 @@ function PageBuilder({
   };
   const [selectedConversationPart,setSelectedConversationPart]=useState('parent');
   useEffect(()=>setSelectedConversationPart('parent'),[selectedId]);
-  const [ribbonTab, setRibbonTab] = useState<'Home' | 'Add Block' | 'Component Content' | 'Component Properties' | 'Component Style' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Component Responsive' | 'Preview' | 'Filters' | 'Source' | 'Icons' | 'Parity'>('Home');
+  const [ribbonTab, setRibbonTab] = useState<'Home' | 'Add Block' | 'Component Content' | 'Component Properties' | 'Component Style' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Component Responsive' | 'Preview' | 'Filters' | 'Source' | 'Icons' | 'Parity'>('Add Block');
   useEffect(()=>{
     if(ribbonTab==='Icons'&&page.components.find(component=>component.id===selectedId)?.type!=='Custom:smart_icon')
       setRibbonTab('Component Properties');
@@ -533,7 +533,7 @@ function PageBuilder({
     setRibbonTab(tab);
     setPageSettingsDialogOpen(false);
     if (tab === 'Add Block') { setPageSettingsOpen(false); openPalette('Components', 'All Components'); }
-    if (tab === 'Home') { setPageSettingsOpen(false); }
+    if (tab === 'Component Layout') { setPageSettingsOpen(false); }
     const inspector = { 'Component Properties': 'Design', 'Component Style': 'Design', 'Component Data': 'Data & Actions', 'Component Content': 'Data & Actions', 'Component Action': 'Visibility', 'Component Layout': 'Position', 'Component Responsive': 'Position' } as const;
     if (tab in inspector) { setPageSettingsOpen(false); openComponentInspector(inspector[tab as keyof typeof inspector]); }
   };
@@ -605,16 +605,10 @@ function PageBuilder({
     else if(key!=='accentColor')writeRibbonVisual(key,value);
   };
   useEffect(() => {
-    if (!selected && (ribbonTab.startsWith('Component ')||['Filters','Source'].includes(ribbonTab))) setRibbonTab('Home');
+    if (!selected && ((ribbonTab.startsWith('Component ')&&ribbonTab!=='Component Layout')||['Filters','Source','Icons'].includes(ribbonTab))) setRibbonTab('Add Block');
   }, [selectedId, page.components, ribbonTab]);
-  // Metadata pages may hydrate after PageBuilder mounts; select their first
-  // component when records arrive so the inspector is immediately usable.
-  useEffect(() => {
-    if (pageSettingsOpen || page.components.length === 0) return;
-    if (!page.components.some(component => component.id === selectedId)) {
-      setSelectedId(page.components[0].id);
-    }
-  }, [page.apiName, page.components.length]);
+  // Keep the builder unselected on entry; the persistent topbar shows Welcome.
+  // Canvas clicks establish the component selection explicitly.
   const openExpandedEditor = (kind:'source'|'filters') => {
     if(!selected)return;
     if(kind==='filters'){setRibbonFilterDraft({...selected.properties});setRibbonTab('Filters');return;}
@@ -2399,15 +2393,80 @@ function PageBuilder({
   const openAddBlocks = (region: 'header' | 'main' | 'sidebar' | null = null) => {
     setPaletteInsertRegion(region); setPaletteTab('Components'); setPaletteCategory('All Components'); setActivePanel('palette');
   };
+  // Page-level controls remain SQL-owned; present them on the top bar or Layout,
+  // without changing their saved values, action callbacks or the global Smart inventory.
+  const homeValue=(key:string):React.ReactNode=>{
+    switch(key){
+      case 'backIcon':return <button type="button" title="Back to pages" aria-label="Back to pages"
+        onClick={safeBackToPages}><ArrowLeft size={21}/></button>;
+      case 'pageName':return <input aria-label="Page name" value={page.label} readOnly/>;
+      case 'deviceLayout':return <select aria-label="Choose page layout" value={page.layoutVariant??'Desktop'}
+        disabled={switchingLayout||saving}
+        onChange={e=>void switchLayoutVariant(e.target.value as 'Desktop'|'Tablet'|'Mobile'|'Custom')}>
+        {(['Desktop','Tablet','Mobile','Custom'] as const).map(v=><option key={v}>{v}</option>)}
+      </select>;
+      case 'canvasMode':return <select aria-label="Design mode" value={page.layoutMode}
+        onChange={e=>setPageLayoutMode(e.target.value as LightningPageMetadata['layoutMode'])}>
+        <option value="template">Responsive sections</option><option value="free-canvas">Free canvas</option>
+      </select>;
+      case 'canvasWidth':return <input aria-label="Page width" type="number" min={320} max={10000}
+        disabled={page.layoutVariant!=='Custom'} value={page.canvasWidth}
+        onChange={e=>{const n=Number(e.target.value);if(Number.isInteger(n)&&n>=320&&n<=10000)applyPage({...page,canvasWidth:n});}}/>;
+      case 'canvasHeight':return <input aria-label="Page height" type="number" min={320} max={10000}
+        disabled={page.layoutVariant!=='Custom'} value={page.canvasHeight}
+        onChange={e=>{const n=Number(e.target.value);if(Number.isInteger(n)&&n>=320&&n<=10000)applyPage({...page,canvasHeight:n});}}/>;
+      case 'selectVersion':return <div className="office-ribbon-stack">
+        <button type="button" onClick={()=>void loadLayoutHistory()}>
+          <Undo2 size={15}/>{showLayoutHistory?'Refresh versions':'Load versions'}</button>
+        <select aria-label="Select Version" disabled={!showLayoutHistory||!layoutVersions.length}
+          value={selectedHistoryVersion??''} onChange={e=>setSelectedHistoryVersion(Number(e.target.value))}>
+          <option value="">Choose version…</option>
+          {layoutVersions.map(item=><option key={item.version} value={item.version}>
+            v{item.version}{item.published?' · Published':''}{item.draft?' · Draft':''}
+          </option>)}
+        </select>
+        <button type="button" disabled={saving||selectedHistoryVersion===null||
+          layoutVersions.find(v=>v.version===selectedHistoryVersion)?.draft===true}
+          onClick={()=>{if(selectedHistoryVersion!==null)void restoreLayoutVersion(selectedHistoryVersion);}}>
+          Restore</button>
+      </div>;
+      case 'resetIcon':return <button type="button" aria-label="Reset component" title="Reset component"
+        disabled={!selectedNewUne||!selected} onClick={()=>{
+          if(!selected||!ribbonCatalog||!isUneBuilderApi(selected.type.slice(7),ribbonCatalog.components))return;
+          const keys=new Set(ribbonCatalog.properties.flatMap(row=>
+            [row.id,...Object.values(row.valueKeys??{})]));
+          const retained=Object.fromEntries(Object.entries(selected.properties).filter(([k])=>!keys.has(k)));
+          updateComponent(selected.id,{properties:{...retained,
+            ...uneBuilderDefaults(selected.type.slice(7),ribbonCatalog.properties)}});
+        }}><RefreshCw size={18}/></button>;
+      case 'cut':return <button className="office-ribbon-icon-button" aria-label="Cut" title="Cut"
+        disabled={!selected||isCanvasLocked(selected)} onClick={cutSelected}><Scissors size={17}/></button>;
+      case 'copy':return <button className="office-ribbon-icon-button" aria-label="Copy" title="Copy"
+        disabled={!selected} onClick={copySelected}><Copy size={17}/></button>;
+      case 'paste':return <button className="office-ribbon-icon-button" aria-label="Paste" title="Paste"
+        disabled={!componentClipboard} onClick={pasteComponent}><ClipboardPaste size={17}/></button>;
+      case 'undo':return <button className="office-ribbon-icon-button" aria-label="Undo" title="Undo"
+        disabled={!undoStack.length} onClick={undo}><Undo2 size={17}/></button>;
+      case 'redo':return <button className="office-ribbon-icon-button" aria-label="Redo" title="Redo"
+        disabled={!redoStack.length} onClick={redo}><Redo2 size={17}/></button>;
+      case 'save':return <button className="office-ribbon-icon-button" aria-label="Save" title="Save page"
+        disabled={saving} onClick={()=>void savePage()}><Save size={17}/></button>;
+      case 'activate':return <button className="office-ribbon-icon-button" aria-label="Activate" title="Activate"
+        disabled={saving||switchingLayout||(page.status==='Active'&&!undoStack.length&&page.draftRevision===page.publishedRevision)}
+        onClick={()=>void publishCurrentLayout()}><Check size={17}/></button>;
+      default:return null;
+    }
+  };
+  const quickAccessOrder=['save','activate','resetIcon','undo','redo','cut','copy','paste'] as const;
   const journeyTabs: Array<typeof ribbonTab> = selectedNewUne
-    ? ['Home','Add Block',...(selected?.type==='Custom:smart_icon'?(['Icons'] as const):[]),
+    ? ['Add Block',...(selected?.type==='Custom:smart_icon'?(['Icons'] as const):[]),
        'Component Data','Component Properties','Component Layout','Component Action','Preview']
-    : ['Home','Add Block','Component Data','Component Content','Component Properties','Component Layout','Component Responsive','Component Action','Preview'];
+    : ['Add Block','Component Data','Component Content','Component Properties','Component Layout','Component Responsive','Component Action','Preview'];
   const journeyIndex=journeyTabs.indexOf(ribbonTab as typeof journeyTabs[number]);
   const ribbonTabsVisible: Array<typeof ribbonTab> = [...journeyTabs];
   if(ribbonTab==='Filters')ribbonTabsVisible.splice(journeyTabs.indexOf('Component Data')+1,0,'Filters');
   if(ribbonTab==='Source')ribbonTabsVisible.splice(journeyTabs.indexOf('Component Data')+1,0,'Source');
-  ribbonTabsVisible.push('Parity');
+
 
   const addPaletteComponent = (type: string) => {
     const selectedIndex = page.components.findIndex((component) => component.id === selectedId);
@@ -2615,10 +2674,10 @@ function PageBuilder({
       {editorMode && <>
       <section className="office-builder-ribbon" aria-label="Page Builder ribbon">
         <div className="office-ribbon-topbar">
-          {selected && !['Home','Add Block','Preview'].includes(ribbonTab) &&
-            <div className="office-ribbon-selection-context" title={selected.label||selected.type}>
-              {selected.label||selected.type} selected
-            </div>}
+          <div className="office-ribbon-topbar-back">{homeValue('backIcon')}</div>
+          <div className="office-ribbon-selection-context" title={selected?.label||selected?.type||'Welcome'}>
+            {selected ? (selected.label||selected.type)+' selected' : 'Welcome'}
+          </div>
           <div className="office-ribbon-navigation">
             <nav className="office-ribbon-tabs" role="tablist" aria-label="Page Builder tabs">
               {ribbonTabsVisible.map((tab,index) => {
@@ -2651,7 +2710,7 @@ function PageBuilder({
                 return <button key={tab} id={`page-builder-tab-${index}`} type="button"
                   role="tab" tabIndex={ribbonTab===tab?0:-1} aria-selected={ribbonTab === tab}
                   aria-controls="page-builder-tab-content"
-                  className={ribbonTab===tab?'active':''} disabled={!selected && tab.startsWith('Component ')} title={!selected && tab.startsWith('Component ')?'Select a component to edit its settings':label} onClick={() => selectRibbonTab(tab)}>
+                  className={ribbonTab===tab?'active':''} disabled={!selected && tab.startsWith('Component ') && tab!=='Component Layout'} title={!selected && tab.startsWith('Component ') && tab!=='Component Layout'?'Select a component to edit its settings':label} onClick={() => selectRibbonTab(tab)}>
                   <Icon size={16} aria-hidden="true"/><span>{label}</span>
                 </button>;
               })}
@@ -2661,95 +2720,35 @@ function PageBuilder({
               <button type="button" aria-label="Next Page Builder step" title="Next step" disabled={journeyIndex<0||journeyIndex===journeyTabs.length-1} onClick={()=>selectRibbonTab(journeyTabs[journeyIndex+1])}><ChevronRight size={16}/></button>
             </div>
           </div>
-          <div className="office-ribbon-header-tools">
-            <span className="office-ribbon-header-status" role="status">
-              {saving?'Saving…':undoStack.length?'Unsaved edits':savedFeedback?'Saved':page.draftRevision&&page.draftRevision!==page.publishedRevision?'Saved draft · unpublished':'Draft'}
-            </span>
+          <div className="office-ribbon-quick-access" role="group" aria-label="Quick Access Toolbar">
+            {quickAccessOrder.map(key=><span key={key} className={'office-ribbon-quick-action office-ribbon-quick-'+key}>
+              {homeValue(key)}
+            </span>)}
           </div>
         </div>
         <div id="page-builder-tab-content" ref={ribbonStripRef} onScroll={measureRibbonOverflow}
           className="office-ribbon-content" role="tabpanel" aria-label={ribbonTab}
           aria-labelledby={`page-builder-tab-${Math.max(0,ribbonTabsVisible.indexOf(ribbonTab))}`}>
-          {ribbonTab === 'Home' && !ribbonCatalog && <div role="status" className="une-ribbon-catalog-status">
-            {ribbonCatalogError?'Shared SQL property library unavailable: '+ribbonCatalogError:'Loading shared property library…'}
-          </div>}
-          {ribbonTab === 'Home' && ribbonCatalog && (()=>{
-            // Only the SQL global catalog determines Home control names, order
-            // and section grouping. Callbacks remain native Page Builder actions.
-            const home=ribbonCatalog.properties.filter(row=>row.tab==='Home');
-            const homeValue=(key:string):React.ReactNode=>{
-              switch(key){
-                case 'backIcon':return <button type="button" title="Back to pages" aria-label="Back to pages"
-                  onClick={safeBackToPages}><ArrowLeft size={21}/></button>;
-                case 'pageName':return <input aria-label="Page name" value={page.label} readOnly/>;
-                case 'deviceLayout':return <select aria-label="Choose page layout" value={page.layoutVariant??'Desktop'}
-                  disabled={switchingLayout||saving}
-                  onChange={e=>void switchLayoutVariant(e.target.value as 'Desktop'|'Tablet'|'Mobile'|'Custom')}>
-                  {(['Desktop','Tablet','Mobile','Custom'] as const).map(v=><option key={v}>{v}</option>)}
-                </select>;
-                case 'canvasMode':return <select aria-label="Design mode" value={page.layoutMode}
-                  onChange={e=>setPageLayoutMode(e.target.value as LightningPageMetadata['layoutMode'])}>
-                  <option value="template">Responsive sections</option><option value="free-canvas">Free canvas</option>
-                </select>;
-                case 'canvasWidth':return <input aria-label="Page width" type="number" min={320} max={10000}
-                  disabled={page.layoutVariant!=='Custom'} value={page.canvasWidth}
-                  onChange={e=>{const n=Number(e.target.value);if(Number.isInteger(n)&&n>=320&&n<=10000)applyPage({...page,canvasWidth:n});}}/>;
-                case 'canvasHeight':return <input aria-label="Page height" type="number" min={320} max={10000}
-                  disabled={page.layoutVariant!=='Custom'} value={page.canvasHeight}
-                  onChange={e=>{const n=Number(e.target.value);if(Number.isInteger(n)&&n>=320&&n<=10000)applyPage({...page,canvasHeight:n});}}/>;
-                case 'selectVersion':return <div className="office-ribbon-stack">
-                  <button type="button" onClick={()=>void loadLayoutHistory()}>
-                    <Undo2 size={15}/>{showLayoutHistory?'Refresh versions':'Load versions'}</button>
-                  <select aria-label="Select Version" disabled={!showLayoutHistory||!layoutVersions.length}
-                    value={selectedHistoryVersion??''} onChange={e=>setSelectedHistoryVersion(Number(e.target.value))}>
-                    <option value="">Choose version…</option>
-                    {layoutVersions.map(item=><option key={item.version} value={item.version}>
-                      v{item.version}{item.published?' · Published':''}{item.draft?' · Draft':''}
-                    </option>)}
-                  </select>
-                  <button type="button" disabled={saving||selectedHistoryVersion===null||
-                    layoutVersions.find(v=>v.version===selectedHistoryVersion)?.draft===true}
-                    onClick={()=>{if(selectedHistoryVersion!==null)void restoreLayoutVersion(selectedHistoryVersion);}}>
-                    Restore</button>
-                </div>;
-                case 'resetIcon':return <button type="button" aria-label="Reset component" title="Reset component"
-                  disabled={!selectedNewUne||!selected} onClick={()=>{
-                    if(!selected||!isUneBuilderApi(selected.type.slice(7),ribbonCatalog.components))return;
-                    const keys=new Set(ribbonCatalog.properties.flatMap(row=>
-                      [row.id,...Object.values(row.valueKeys??{})]));
-                    const retained=Object.fromEntries(Object.entries(selected.properties).filter(([k])=>!keys.has(k)));
-                    updateComponent(selected.id,{properties:{...retained,
-                      ...uneBuilderDefaults(selected.type.slice(7),ribbonCatalog.properties)}});
-                  }}><RefreshCw size={18}/></button>;
-                case 'cut':return <button className="office-ribbon-icon-button" aria-label="Cut" title="Cut"
-                  disabled={!selected||isCanvasLocked(selected)} onClick={cutSelected}><Scissors size={17}/></button>;
-                case 'copy':return <button className="office-ribbon-icon-button" aria-label="Copy" title="Copy"
-                  disabled={!selected} onClick={copySelected}><Copy size={17}/></button>;
-                case 'paste':return <button className="office-ribbon-icon-button" aria-label="Paste" title="Paste"
-                  disabled={!componentClipboard} onClick={pasteComponent}><ClipboardPaste size={17}/></button>;
-                case 'undo':return <button className="office-ribbon-icon-button" aria-label="Undo" title="Undo"
-                  disabled={!undoStack.length} onClick={undo}><Undo2 size={17}/></button>;
-                case 'redo':return <button className="office-ribbon-icon-button" aria-label="Redo" title="Redo"
-                  disabled={!redoStack.length} onClick={redo}><Redo2 size={17}/></button>;
-                case 'save':return <button className="office-ribbon-icon-button" aria-label="Save" title="Save page"
-                  disabled={saving} onClick={()=>void savePage()}><Save size={17}/></button>;
-                case 'activate':return <button className="office-ribbon-icon-button" aria-label="Activate" title="Activate"
-                  disabled={saving||switchingLayout||(page.status==='Active'&&!undoStack.length&&page.draftRevision===page.publishedRevision)}
-                  onClick={()=>void publishCurrentLayout()}><Check size={17}/></button>;
-                default:return null;
-              }
-            };
-            const groups=[...new Set(home.map(row=>row.group))];
-            return <>{groups.map(group=><div key={group} className="office-ribbon-group une-sql-home-group"
-               data-shared-group={group}>
-               <div className={group==='Quick Access'?'office-ribbon-quick-grid':'office-ribbon-stack'}>
-                 {home.filter(row=>row.group===group).map(row=><label key={row.id}
-                   data-ribbon-property={row.id} className="une-sql-home-control">
-                   {row.kind!=='command'&&<span>{row.label}</span>}
-                   {homeValue(row.id)}
-                 </label>)}
-               </div><span>{group}</span>
-            </div>)}</>;
+          {ribbonTab==='Component Layout' && !ribbonCatalog &&
+            <div role="status" className="une-ribbon-catalog-status">
+              {ribbonCatalogError?'Shared SQL property library unavailable: '+ribbonCatalogError:'Loading shared property library…'}
+            </div>}
+          {ribbonTab==='Component Layout' && ribbonCatalog && (()=>{
+            const pageRows=ribbonCatalog.properties.filter(row=>row.tab==='Home'&&
+              ['Page','Device','Canvas','Version'].includes(row.group));
+            const groups=[...new Set(pageRows.map(row=>row.group))];
+            return <div className="office-ribbon-page-layout-groups" aria-label="Page, device, canvas and version settings">
+              {groups.map(group=><div key={group} className="office-ribbon-group une-sql-home-group"
+                data-shared-group={group}>
+                <div className="office-ribbon-stack">
+                  {pageRows.filter(row=>row.group===group).map(row=><label key={row.id}
+                    data-ribbon-property={row.id} className="une-sql-home-control">
+                    {row.kind!=='command'&&<span>{row.label}</span>}
+                    {homeValue(row.id)}
+                  </label>)}
+                </div><span>{group}</span>
+              </div>)}
+            </div>;
           })()}
           {ribbonTab==='Add Block' && <SmartInsertRibbon
             items={paletteComponents}
@@ -2777,7 +2776,7 @@ function PageBuilder({
         </div>
       </section>
 
-      {ribbonTab==='Home' && pageSettingsDialogOpen && <div className="modal-backdrop office-ribbon-modal-backdrop" role="presentation">
+      {ribbonTab==='Component Layout' && pageSettingsDialogOpen && <div className="modal-backdrop office-ribbon-modal-backdrop" role="presentation">
         <section className="modal office-ribbon-config-modal office-ribbon-page-settings-modal" role="dialog" aria-modal="true" aria-label="Page settings">
           <div className="modal-header"><h2>Page settings</h2><button type="button" className="icon-button" aria-label="Close page settings" onClick={()=>setPageSettingsDialogOpen(false)}><X size={16}/></button></div>
           <div className="office-ribbon-modal-content"><div className="office-ribbon-inspector-host" ref={setRibbonPropertyHost} aria-label="Page settings editor"/></div>
@@ -2791,7 +2790,7 @@ function PageBuilder({
         <div className="page-preview-area" ref={pagePreviewAreaRef}>
           <div className="page-stage" key={canvasRefreshKey} onClick={(event) => {
             if ((event.target as HTMLElement).closest('.record-component,.canvas-drop-zone,button,input,select,textarea')) return;
-            setSelectedId(''); setSelectionIds([]); setSelectedRegion(null); setRibbonTab('Home'); setPageSettingsOpen(false); setActivePanel(null);
+            setSelectedId(''); setSelectionIds([]); setSelectedRegion(null); setRibbonTab('Add Block'); setPageSettingsOpen(false); setActivePanel(null);
           }} onDragOver={(event) => event.preventDefault()} onDrop={(event) => handleDrop(event)}>
             <div
               className={`record-preview ${page.layoutMode === 'free-canvas' ? 'free-canvas-preview' : page.pageType === 'Record Page' ? 'record-page-preview' : page.pageType === 'App Page' ? 'app-page-preview' : 'home-page-preview'} ${device === 'Phone' ? 'phone-preview' : device === 'Tablet' ? 'tablet-preview' : ''}`}
