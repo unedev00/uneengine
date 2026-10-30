@@ -15,10 +15,10 @@ const moved = {
   'TenantManagement.css':'core/platform/TenantManagement/TenantManagement.css',
   'TenantDomains.css':'core/platform/TenantDomains/TenantDomains.css',
   'registeredComponentAppearance.css':'core/components/RegisteredComponent/registeredComponentAppearance.css',
-  'ChecklistMultiSelect.css':'component-libraries/OneChecklistMultiSelect/ChecklistMultiSelect.css',
-  'SmartFieldInput.css':'component-libraries/OneSmartFieldInput/SmartFieldInput.css',
+  'ChecklistMultiSelect.css':'component-libraries/shared/primitives/ChecklistMultiSelect/ChecklistMultiSelect.css',
+  'SmartFieldInput.css':'component-libraries/shared/primitives/SmartFieldInput/SmartFieldInput.css',
   'FlowReferenceInput.css':'core/builders/FlowReferenceInput/FlowReferenceInput.css',
-  'ReferenceBrowser.css':'component-libraries/OneReferenceBrowser/ReferenceBrowser.css',
+  'ReferenceBrowser.css':'component-libraries/shared/primitives/ReferenceBrowser/ReferenceBrowser.css',
   'AppManagerList.css':'core/applications/AppManagerList/AppManagerList.css',
   'CompanySettingsWorkspace.css':'core/settings/CompanySettingsWorkspace/CompanySettingsWorkspace.css'
 };
