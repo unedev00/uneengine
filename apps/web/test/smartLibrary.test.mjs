@@ -30,7 +30,7 @@ test('Smart component catalog is independent, ten components and SQL-owned',asyn
 test('Smart registry remains enabled through Core bundled-component cleanup',()=>{
  const content=read('../../server/src/app-seeders/bundled-components.ts');
  assert.match(content,/SMART_COMPONENTS/);
- assert.match(content,/\.\.\.UNE_COMPONENTS,\.\.\.SMART_COMPONENTS/);
+ assert.match(content,/\.\.\.UI_COMPONENTS,\.\.\.SMART_COMPONENTS/);
 });
 test('Smart SQL library matches approved table and retains Home',()=>{
  const migration=read('../../server/src/system-support/migrations/20270124-smart-component-library.sql');
