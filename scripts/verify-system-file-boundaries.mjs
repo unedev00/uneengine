@@ -14,7 +14,7 @@ const expected=['sql-persistence.ts','object-definition.ts','authentication.ts',
  'flow-execution-context.ts','flow-assignment-runtime.ts','flow-execution-requests.ts','tenant-media-service.ts',
  'flow-screen-choice-runtime.ts','flow-screen-record-selection.ts','flow-http-mapping.ts','flow-integration-connection.ts',
  'auto-number-format.ts','platform-event-runtime.ts','record-file-service.ts','rich-text.ts',
- 'record-query.ts','field-type-migration.ts','encrypted-field.ts','object-metadata-history.ts','object-schema-lifecycle.ts',
+ 'record-query.ts','field-type-migration.ts','encrypted-field.ts','object-metadata-history.ts','object-schema-lifecycle.ts','field-definition-attributes.ts',
  'declarative-rules.ts','record-matching.ts','external-id-upsert.ts'];
 const allowed=new Set(expected);
 const nodeModules=new Set(['AssignmentNode.ts','DecisionNode.ts','WaitPauseNode.ts','LoopNode.ts','DataActionNodes.ts','NodeContext.ts','RecordNodeValidation.ts','GetRecordsNode.ts','CreateRecordsNode.ts','RecordMutationTargets.ts','RecordOverlapGuard.ts','RecordAvailabilityGuard.ts','AvailableSlotsNode.ts','DocumentFinancialGuard.ts','RecordPaymentGuard.ts','UpdateRecordsNode.ts','DeleteRecordsNode.ts','FilterCollectionNode.ts','SortCollectionNode.ts','TransformNode.ts','RollbackRecordsNode.ts','CustomErrorNode.ts','SubflowNode.ts','ScreenElementNode.ts','ActionNodeShared.ts','QuickActionNode.ts','PlatformEventPublishNode.ts','ActionEmailNode.ts','HttpCalloutNode.ts','CountCollectionNode.ts','ParseJsonNode.ts','ResumeEventNode.ts','ActionButtonNode.ts','CustomActionBridgeNode.ts']);
