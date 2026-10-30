@@ -442,7 +442,7 @@ export class ObjectDefinitionService {
     return rows[0];
   }
   // Atomic tenant-scoped creation: no partially created Objects when a field is invalid.
-  async create(tenantId:string,apiName:string,label:string,fields:unknown=[],
+  async create(tenantId:string,apiName:string,label:string,fields:unknown[],
     persistSupplemental?:(client:PoolClient)=>Promise<void>) {
     if(!/^[A-Za-z][A-Za-z0-9_]*$/.test(apiName)||!label.trim())throw new Error('Invalid object definition');
     if(!Array.isArray(fields))throw new Error('Invalid object fields');
@@ -1155,7 +1155,7 @@ export class ObjectDefinitionService {
   }
   async list(tenantId:string) {
     const {rows:objects}=await this.db.query<SqlObject>(
-      'SELECT id,api_name,label,is_system FROM md_object_definitions WHERE tenant_id=$1 ORDER BY api_name',[tenantId]);
+      'SELECT id,api_name,label,is_system FROM md_object_definitions WHERE tenant_id=$1 AND deleted_at IS NULL ORDER BY api_name',[tenantId]);
     const {rows:fields}=await this.db.query<SqlField>(
       `SELECT f.id,f.object_api,f.api_name,f.label,f.data_type,f.related_object,f.relationship_type,f.required,f.max_length,
         f.precision,f.scale,f.is_unique,f.external_id,f.case_sensitive,f.default_value,f.help_text,f.description,

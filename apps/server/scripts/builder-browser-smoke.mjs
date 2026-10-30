@@ -182,6 +182,10 @@ try{
   await page.getByRole('button',{name:'User profile'}).waitFor({timeout:15000});
   console.info('Production frontend login form authenticated into CI SQL tenant');
  }
+ if(process.env.METADRIVE_BROWSER_TARGET==='object-lifecycle'){
+  const {runObjectSchemaLifecycleBrowserCheck}=await import('./object-schema-lifecycle-browser-check.mjs');
+  await runObjectSchemaLifecycleBrowserCheck({page,origin,db,tenantId});
+ }else{
  await page.goto(origin+'/une/setup/flow-builder',{waitUntil:'domcontentloaded'});
  await page.getByText('Existing flows',{exact:true}).waitFor({state:'visible',timeout:20000});
  await page.screenshot({path:new URL('../artifacts/flow-builder.png',import.meta.url).pathname});
@@ -869,11 +873,16 @@ try{
  assert.equal((await db.query('SELECT count(*)::int AS n FROM md_lightning_page_details d JOIN md_page_definitions p ON p.id=d.page_id AND p.tenant_id=d.tenant_id WHERE p.tenant_id=$1 AND p.api_name=$2',
    [tenantId,'Browser_Verified_Record'])).rows[0]?.n,1,'Page archive removed saved SQL metadata');
  console.info('Page Builder Delete UI archived the Page without losing SQL metadata');
+ if(!publishedSite){
+  const {runObjectSchemaLifecycleBrowserCheck}=await import('./object-schema-lifecycle-browser-check.mjs');
+  await runObjectSchemaLifecycleBrowserCheck({page,origin,db,tenantId});
+ }
  if(publishedSite)assert.ok(await page.evaluate(()=>
   location.origin==='https://unesolutions.co.uk'),'Live smoke did not use production frontend');
  const severe=failures.filter(message=>/TypeError|Cannot read properties|ReferenceError/i.test(message));
  assert.deepEqual(severe,[],'Browser runtime exceptions: '+severe.join(' | '));
  console.info('Browser UI loaded: Page save/load/archive and Flow save/start/submit/complete/archive passed');
+ }
 }catch(error){
  if(page){
   console.error('Browser failure URL:',page.url());

@@ -56,6 +56,7 @@ import {TenantRecoveryContacts} from './tenant-recovery-contacts.js';
 import {TenantRecoveryCases} from './tenant-recovery-cases.js';
 import {sessionMetadata} from '../system-files/session-metadata.js';
 import { ObjectDefinitionService } from '../system-files/object-definition.js';
+import {ObjectSchemaLifecycle} from '../system-files/object-schema-lifecycle.js';
 import {fieldTypeConversionSupported} from '../system-files/field-type-migration.js';
 import {ObjectManagerMetadataService} from '../system-files/object-manager-metadata.js';
 import {persistObjectLookupFilters} from '../system-files/object-manager-lookup-filters.js';
@@ -263,6 +264,7 @@ export function createSystemServer(db:SqlPersistence) {
   });
   const objectManagerMetadata=new ObjectManagerMetadataService(db,rbac);
   const objectHistory=new ObjectMetadataHistory(db);
+  const objectLifecycle=new ObjectSchemaLifecycle(db);
   const customMetadata=new CustomMetadataService(db,rbac);
   const globalValueSets=new GlobalValueSetService(db,rbac);
   const components=new ComponentRuntime(db);
@@ -1241,6 +1243,42 @@ export function createSystemServer(db:SqlPersistence) {
       input,expected,actor.user_id);
     res.setHeader('Cache-Control','private, no-store');
     res.json({object,restoredFrom:revision});
+  }));
+  // Object Definition lifecycle is separate from field and layout edits.
+  // Deleted definitions retain their SQL identity and are visible only to admins.
+  app.get('/api/metadata/objects/deleted',route(async(req,res)=>{
+    const actor=req.actor!;
+    await rbac.require(actor.tenant_id,actor.user_id,'ObjectDefinition','manage');
+    res.setHeader('Cache-Control','private, no-store');
+    res.json({objects:await objectLifecycle.listDeleted(actor.tenant_id)});
+  }));
+  app.get('/api/metadata/objects/:apiName/impact',route(async(req,res)=>{
+    const actor=req.actor!;
+    await rbac.require(actor.tenant_id,actor.user_id,'ObjectDefinition','manage');
+    await rbac.require(actor.tenant_id,actor.user_id,req.params.apiName,'edit');
+    res.setHeader('Cache-Control','private, no-store');
+    res.json(await objectLifecycle.impact(actor.tenant_id,req.params.apiName));
+  }));
+  app.delete('/api/metadata/objects/:apiName',route(async(req,res)=>{
+    const actor=req.actor!;
+    await assertMetadataPackageEditable(db,actor.tenant_id,'object',req.params.apiName);
+    await assertMetadataPackageEditable(db,actor.tenant_id,'object-config',req.params.apiName);
+    await rbac.require(actor.tenant_id,actor.user_id,'ObjectDefinition','manage');
+    await rbac.require(actor.tenant_id,actor.user_id,req.params.apiName,'edit');
+    const revision=req.get('if-match')??'';
+    if(!/^"(0|[1-9][0-9]*)"$/.test(revision))
+      throw new Error('Invalid object revision precondition');
+    res.json(await objectLifecycle.delete(actor.tenant_id,req.params.apiName,Number(revision.slice(1,-1))));
+  }));
+  app.post('/api/metadata/objects/:apiName/restore',route(async(req,res)=>{
+    const actor=req.actor!;
+    await rbac.require(actor.tenant_id,actor.user_id,'ObjectDefinition','manage');
+    await rbac.require(actor.tenant_id,actor.user_id,req.params.apiName,'edit');
+    const restored=await objectLifecycle.restore(actor.tenant_id,req.params.apiName);
+    const object=await definitions.get(actor.tenant_id,req.params.apiName);
+    const configuration=await objectManagerMetadata.load(actor.tenant_id,actor.user_id,req.params.apiName);
+    res.setHeader('Cache-Control','private, no-store');
+    res.json({...restored,object:{...object,...configuration}});
   }));
   app.get('/api/metadata/objects/:apiName',route(async(req,res)=>{
     const actor=req.actor!;
