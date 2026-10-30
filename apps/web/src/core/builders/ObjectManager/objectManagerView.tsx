@@ -1824,7 +1824,7 @@ function ObjectManager({
         <span>{label}</span><strong>{value}</strong></div>)}
     </section>;
     return <section className="surface object-setting-surface">
-      <div className="section-toolbar"><div><h2>{selectedSetting}</h2><p>{selectedSetting === 'Lightning Record Pages' ? 'Record View and Record Edit are owned by Object Manager. Each page has independent Mobile, Desktop, Tablet and Custom drafts, publishing and assignments.' : 'Select an item to view its configuration.'}</p></div>
+      <div className="section-toolbar"><div><h2>{selectedSetting}</h2><p>{selectedSetting === 'Lightning Record Pages' ? 'Record View and Record Edit are owned by Object Manager. Select a page or choose its Mobile, Desktop, Tablet or Custom layout. Each page has independent Mobile, Desktop, Tablet and Custom drafts, publishing and assignments.' : 'Select an item to view its configuration.'}</p></div>
         {selectedSetting !== 'Lightning Record Pages' && <button className="btn btn-brand" type="button"
           onClick={() => {setSelectedMetadataId('');setSectionMode('edit');}}><Plus size={14}/>New / Configure</button>}
       </div>
@@ -1841,7 +1841,7 @@ function ObjectManager({
                 return <button key={variant} type="button" className="btn btn-small"
                   aria-label={`Edit ${variant} layout for ${item.label}`} title={`Edit ${variant} layout`}
                   onClick={() => onOpenRecordPage(item.id, variant)}>
-                  <DeviceIcon size={16} aria-hidden="true"/><span className="visually-hidden">{variant}</span>
+                  <DeviceIcon size={16} aria-hidden="true"/><span>{variant}</span>
                 </button>;
               })}
               <button type="button" className="btn btn-small"

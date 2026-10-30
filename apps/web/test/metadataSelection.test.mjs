@@ -92,6 +92,7 @@ test('Object Manager Record Page links target a specific device without duplicat
   }
   assert.match(router,/segments\[5\]/,'device target must round-trip through the parser');
   assert.match(manager,/onOpenRecordPage\(item\.id, variant\)/);
+  assert.match(manager,/<DeviceIcon size=\{16\} aria-hidden="true"\/><span>\{variant\}<\/span>/, 'device layout controls must have visible labels');
   assert.match(manager,/onOpenRecordPage\(item\.id, 'Desktop'\)/);
   assert.match(manager,/selectedSetting !== 'Lightning Record Pages'/);
   assert.match(editor,/initialLayoutVariant\?\?page\.layoutVariant\?\?'Desktop'/);
