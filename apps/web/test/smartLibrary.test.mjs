@@ -810,8 +810,8 @@ test('Approved SQL Design ribbon layout retains exact two rows, widths, heights 
   ['wrapText',1,28,1],['headerBorderColor',1,40,2],['headerTextColor',1,40,3],
   ['headerAlignment',2,84,1],['headerBold',2,28,2],
   ['imagePlacement',1,99,1],['imageBorderColor',2,40,1],['imageFill',2,70,2],
-  ['badgeAlignment',1,90,1],['badgeTextSize',1,70,2],
-  ['badgeBold',2,28,1],['badgeTextColor',2,40,2],
+  ['badgeAlignment',1,90,1],['badgeBold',1,28,2],
+  ['badgeTextSize',2,70,1],['badgeTextColor',2,40,2],
   ['badgeBodyColor',2,40,3],['badgeVisible',2,40,4],
   ['supportingBorderColor',1,40,1],['supportingTextColor',1,40,2],
   ['supportingBold',1,28,3],['supportingAlignment',2,84,1],
@@ -830,15 +830,52 @@ test('Approved SQL Design ribbon layout retains exact two rows, widths, heights 
   assert.ok(sql.includes("('"+key+"',"+row+","+width+","+order+")"),
    'Wrong row/width/order for '+key);
  }
+ // Explicit inline captions must be declared, sized and returned from SQL.
+ for(const [key,caption,width] of [
+  ['badgeAlignment','Position',60],['imagePlacement','Place',35],
+  ['imageFill','Fit',35],['tabCount','Tabs',35]
+ ]){
+  assert.ok(sql.includes("('"+key+"','"+caption+"',"+width+")"),
+   'Missing inline caption on '+key);
+ }
+ assert.match(sql,/design_caption_width smallint/);
  assert.match(sql,/design_height=26/);
  assert.match(ribbon,/sectionRow\(section,row\)\.map\(controls\)/);
  assert.match(ribbon,/const supported=property\.components\.includes\(api\)/);
  assert.match(ribbon,/designOrder\?\?999/);
  assert.match(ribbon,/className="smart-visible-toggle"/);
+ assert.match(ribbon,/data-design-caption=/);
+ assert.match(ribbon,/property\.designCaptionWidth/);
+ const server=read('../../server/src/system-support/server.ts');
+ assert.match(server,/p\.design_caption,p\.design_caption_width/);
+ // Exact sum of maximum row widths per section, including inline captions.
+ const sectionWidths={
+  Badge:[[60,90,28],[70,40,40,40]],Body:[[40,40,40],[28,28,28,70]],
+  Header:[[28,40,40],[28,28,28,28]],
+  'Header Supporting':[[40,40,28],[28,28,28]],Icon:[[40],[]],
+  Image:[[35,99],[40,35,70]],Row:[[40,70],[40,70]],
+  Summary:[[40,40,40,70,70],[28,28,28,70,70,28]],
+  'Summary 2':[[70],[28,40]],Table:[[40,40,70],[28,28,28]],
+  Tabs:[[35,58],[40,40]],Typography:[[28,28,28],[40,70]]
+ };
+ let controls=0,gaps=0;
+ for(const rows of Object.values(sectionWidths)){
+  const widest=rows.reduce((best,row)=>row.reduce((sum,w)=>sum+w,0)>
+   best.reduce((sum,w)=>sum+w,0)?row:best,[]);
+  controls+=widest.reduce((sum,w)=>sum+w,0);
+  gaps+=Math.max(0,widest.length-1);
+ }
+ assert.equal(controls,1542);
+ assert.equal(gaps,22);
+ assert.ok(controls+gaps+11<=1581,'All 12 sections must fit within 1581px');
+
  assert.match(css,/flex-flow:row nowrap!important/);
  assert.match(css,/height:90px!important;min-height:90px!important;max-height:90px!important/);
  assert.match(css,/height:26px!important;min-height:26px!important;max-height:26px!important/);
  assert.match(css,/border:1px solid #b7c9df!important/);
+ assert.match(css,/gap:1px!important/);
+ assert.match(css,/padding:3px 0 1px!important/);
+ assert.match(css,/calc\(var\(--smart-control-width\) \+ var\(--smart-caption-width,0px\)\)/);
  assert.match(css,/gap:0!important/);
  assert.doesNotMatch(css,/flex-flow:row wrap/);
 });
