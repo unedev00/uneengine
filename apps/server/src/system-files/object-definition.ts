@@ -1,4 +1,5 @@
 import {requireAvailableMetadataName} from '../system-support/metadata-name-guard.js';
+import {validateFieldDefinitionAttributes} from './field-definition-attributes.js';
 import type {PoolClient} from 'pg';
 import type {SqlPersistence} from './sql-persistence.js';
 import {
@@ -167,14 +168,12 @@ const parseFieldDefinition=(field:Record<string,unknown>,objectApi?:string):Pars
     throw new Error('Dependent picklist controller and value settings are required together');
   if(controllerFieldApiName&&(type!=='picklist'||parsedValueSettings===null))
     throw new Error('Dependent picklists require a single-select picklist field');
-  const rawDefault=field.defaultValue;
-  if(rawDefault!==undefined&&rawDefault!==null&&!['string','number','boolean'].includes(typeof rawDefault))
-    throw new Error('Invalid field default value');
-  if(type==='encryptedtext'&&rawDefault!==undefined&&rawDefault!==null)
-    throw new Error('Encrypted Text fields cannot have defaults');
-  if(type==='time'&&rawDefault!==undefined&&rawDefault!==null
-    &&(typeof rawDefault!=='string'||!/^([01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d{1,3})?)?$/.test(rawDefault)))
-    throw new Error('Invalid time field default');
+  const normalizedDefault=validateFieldDefinitionAttributes({
+    dataType:type,unique:type==='autonumber'||field.unique===true,
+    externalId:field.externalId===true,caseSensitive:field.caseSensitive===true,
+    maxLength,precision,scale,defaultValue:field.defaultValue,
+    picklistValues,globalValueSetApiName
+  });
   const autoNumberFormat=field.autoNumberFormat;
   if(type==='autonumber'&&autoNumberFormat!==undefined&&
     (typeof autoNumberFormat!=='string'||autoNumberFormat.length>80
@@ -195,7 +194,7 @@ const parseFieldDefinition=(field:Record<string,unknown>,objectApi?:string):Pars
     required:relationshipType==='Master-Detail'||type==='autonumber'||field.required===true,maxLength,precision,scale,
     unique:type==='autonumber'||field.unique===true,externalId:field.externalId===true,
     caseSensitive:field.caseSensitive===true,trackHistory:field.trackHistory===true,
-    defaultValue:rawDefault===undefined||rawDefault===null?null:String(rawDefault),
+    defaultValue:normalizedDefault,
     helpText:typeof field.helpText==='string'&&field.helpText.trim()?field.helpText.trim():null,
     description:typeof field.description==='string'&&field.description.trim()?field.description.trim():null,
     formulaExpression:type==='formula'?(formulaExpression as string).trim():null,
@@ -496,7 +495,7 @@ export class ObjectDefinitionService {
            relationship_name,child_relationship_name,delete_behavior,allow_reparenting)
           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29)`,
           [tenantId,apiName,field.apiName,field.dataType,field.relatedObject,field.required,field.maxLength,
-            field.label,field.restricted,field.relationshipType,field.unique||field.externalId,field.externalId,
+            field.label,field.restricted,field.relationshipType,field.unique,field.externalId,
             field.caseSensitive,field.defaultValue,field.helpText,field.description,field.precision,field.scale,
             field.formulaExpression,field.formulaReturnType,field.autoNumberFormat,
             null,null,null,null,
@@ -617,7 +616,7 @@ export class ObjectDefinitionService {
         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30)
         ON CONFLICT (tenant_id,object_api,api_name) DO NOTHING RETURNING id
       `,[tenantId,objectApi,field.apiName,field.dataType,field.relatedObject,field.maxLength,field.label,
-         field.restricted,field.required,field.relationshipType,field.unique||field.externalId,field.externalId,
+         field.restricted,field.required,field.relationshipType,field.unique,field.externalId,
          field.caseSensitive,field.defaultValue,field.helpText,field.description,field.precision,field.scale,
          field.formulaExpression,field.formulaReturnType,field.autoNumberFormat,
          field.rollup?.childObject??null,field.rollup?.relationshipField??null,field.rollup?.operation??null,
@@ -748,9 +747,7 @@ export class ObjectDefinitionService {
     const typeDefinitionChanged=field.dataType!==oldType.dataType||field.maxLength!==oldType.maxLength
       ||field.precision!==oldType.precision||field.scale!==oldType.scale
       ||relationshipDefinitionChanged||formulaReturnTypeChanged||rollupDefinitionChanged;
-    const defaultValue=proposal.defaultValue===undefined
-      ?current.defaultValue==null?null:String(current.defaultValue)
-      :proposal.defaultValue===null?null:String(proposal.defaultValue);
+    const defaultValue=field.defaultValue;
     const migrationTarget:FieldTypeTarget={
       dataType:field.dataType,maxLength:field.maxLength,precision:field.precision,scale:field.scale,
       required:effectiveRequired,unique,externalId,caseSensitive,defaultValue,
@@ -908,7 +905,7 @@ export class ObjectDefinitionService {
       }
       const changed=await client.query(`UPDATE md_field_definitions SET
         label=$4,data_type=$5,max_length=$6,precision=$7,scale=$8,required=$9,
-        is_unique=$10 OR $11,external_id=$11,case_sensitive=$12,
+        is_unique=$10,external_id=$11,case_sensitive=$12,
         default_value=$13,help_text=$14,description=$15,picklist_restricted=$16,
         relationship_name=$17,child_relationship_name=$18,delete_behavior=$19,allow_reparenting=$20,
         related_object=$21,relationship_type=$22,rollup_child_object=$23,
@@ -968,7 +965,7 @@ export class ObjectDefinitionService {
               VALUES($1,$2,$3,$4,$5)`,[tenantId,objectApi,fieldApi,controllerValue,value]);
         }
       }
-      await client.query(`UPDATE md_record_values SET is_unique=$4 OR $5,case_sensitive=$6
+      await client.query(`UPDATE md_record_values SET is_unique=$4,case_sensitive=$6
         WHERE tenant_id=$1 AND object_api=$2 AND field_api=$3`,
       [tenantId,objectApi,fieldApi,unique,externalId,caseSensitive]);
       if(typeDefinitionChanged&&field.dataType==='rollup'){
