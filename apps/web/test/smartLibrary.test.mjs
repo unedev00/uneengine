@@ -653,7 +653,7 @@ test('Smart Cart Summary and Summary 2 use compact separate icon-first rows',()=
   ['Summary 2','summary2TextWeight','2 / 3']
  ])assert.ok(section.includes('.smart-ribbon-group[aria-label="'+group+'"] .smart-property[data-property="'+property+'"]{grid-area:'+area),
   group+' '+property+' should have a compact slot');
- assert.match(section,/summary2TextWeight"\]>.smart-label\{[\s\S]*?display:none/);
+ assert.match(section,/\[data-property="summary2TextWeight"\]\)>.smart-label\{\s*display:none/);
  assert.match(sql,/SET section_group='Summary 2'/);
  for(const key of ['summary2TextSize','summary2TextWeight','summary2TextColor'])
   assert.match(sql,new RegExp("'"+key+"'"));
