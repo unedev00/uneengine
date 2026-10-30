@@ -6,7 +6,7 @@
   width:20px!important;height:20px!important;min-width:20px;min-height:20px;
   padding:0!important;margin:0;border:0!important;background:#fff!important;
   color:#205fcd;border-radius:50%!important;box-shadow:0 0 0 1px #80a8ef;
-  z-index:30;touch-action:none;user-select:none;
+  z-index:165!important;touch-action:none;user-select:none;
 }
 .builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .free-canvas-resize-handle:hover,
 .builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .free-canvas-resize-handle:focus-visible{
@@ -29,7 +29,7 @@
 .builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .resize-sw{
   left:0!important;right:auto!important;bottom:0!important;top:auto!important;cursor:nesw-resize!important}
 .builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .free-canvas-move-handle{
-  position:absolute;top:3px;left:3px;z-index:35;display:flex;align-items:center;justify-content:center;
+  position:absolute;top:3px;left:3px;z-index:170!important;display:flex;align-items:center;justify-content:center;
   width:23px;height:23px;min-width:23px;min-height:23px;
   padding:0;border:1px solid #79a9f3;border-radius:4px;
   color:#205fcd;background:#fff;box-shadow:0 1px 4px #0002;
