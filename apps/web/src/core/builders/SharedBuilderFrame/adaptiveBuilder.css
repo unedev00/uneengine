@@ -252,3 +252,13 @@
 @media(prefers-reduced-transparency:reduce){
  .lightning :is(.dashboard-builder-sidebar,.dashboard-properties,.report-outline,.report-fields-panel){backdrop-filter:none}
 }
+
+/* Keep the tablet Flow toolbox discoverable while its overlay is collapsed. */
+.flow-tablet-top-actions { display: none; }
+@media (min-width: 600px) and (max-width: 1023px) {
+  .lightning .flow-builder .flow-tablet-top-actions {
+    display: flex;
+    padding: 8px 12px;
+    justify-content: flex-start;
+  }
+}

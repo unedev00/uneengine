@@ -15,14 +15,15 @@ const capabilities:readonly (PermissionCheck&{capability:string})[]=[
 ];
 export async function sessionMetadata(db:SqlPersistence,tenantId:string,userId:string) {
   const rbac=new RbacEngine(db);
-  const [profile,fields,types,landing]=await Promise.all([
+  const [profile,fields,types,landing,tenant]=await Promise.all([
     db.query<{profile_id:string}>(`SELECT profile_id FROM md_user_profiles
       WHERE tenant_id=$1 AND user_id=$2`,[tenantId,userId]),
     db.query<{object_api:string;api_name:string}>(`SELECT object_api,api_name
       FROM md_field_definitions WHERE tenant_id=$1 ORDER BY object_api,api_name`,[tenantId]),
     db.query<{object_api:string;record_type_id:string;active:boolean}>(`SELECT object_api,record_type_id,active
       FROM md_object_record_types WHERE tenant_id=$1`,[tenantId]),
-    db.query<{landing_app_api:string}>('SELECT landing_app_api FROM md_users WHERE tenant_id=$1 AND id=$2',[tenantId,userId])
+    db.query<{landing_app_api:string}>('SELECT landing_app_api FROM md_users WHERE tenant_id=$1 AND id=$2',[tenantId,userId]),
+    db.query<{name:string}>('SELECT name FROM md_tenants WHERE id=$1',[tenantId])
   ]);
   const checks:PermissionCheck[]=[
     ...capabilities,
@@ -46,7 +47,7 @@ export async function sessionMetadata(db:SqlPersistence,tenantId:string,userId:s
   for(const type of types.rows)recordTypeAccess[type.object_api+'.'+type.record_type_id]=
     rights[cursor++]&&type.active&&objectRights.get(type.object_api)===true;
   return {user:{
-    id:userId,userId,tenantId,profileId:profile.rows[0]?.profile_id??'',
+    id:userId,userId,tenantId,tenantName:tenant.rows[0]?.name??'',profileId:profile.rows[0]?.profile_id??'',
     landingAppApi:landing.rows[0]?.landing_app_api??'Setup',permissions,fieldAccess,recordTypeAccess
   }};
 }

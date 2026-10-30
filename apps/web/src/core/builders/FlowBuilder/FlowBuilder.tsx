@@ -1753,6 +1753,13 @@ export default function FlowBuilder({
         <button className="icon-button subtle" title="Flow Builder help" onClick={() => onNotify('Configure the Start node, build element paths, check, then save or activate.')}><CircleHelp size={16} /></button>
       </div>
     </div>
+    <div className="flow-tablet-top-actions">
+      <button type="button" className="btn" aria-controls="flow-element-toolbox"
+        aria-expanded={toolboxExpanded}
+        onClick={() => { setToolTab('Elements'); onToolTab('Elements'); setToolboxExpanded(value => !value); }}>
+        {toolboxExpanded ? 'Close elements' : 'Add step'}
+      </button>
+    </div>
     {phoneFlow && <div className="flow-phone-top-actions">
       <p>Full editor works best on a tablet or larger. Tap a step to inspect its properties.</p>
       <button type="button" className="btn" aria-expanded={toolboxExpanded} onClick={()=>setToolboxExpanded(current=>!current)}>
@@ -1761,7 +1768,7 @@ export default function FlowBuilder({
     </div>}
 <div className={`flow-workarea ${toolboxExpanded ? 'flow-toolbox-expanded' : 'flow-toolbox-collapsed'} ${phoneFlow&&phoneInspectorOpen&&flow.elements.some(element=>element.id===selectedId)?'flow-mobile-inspector-open':''}`}
       ref={workareaRef} style={{ gridTemplateColumns:phoneFlow?'minmax(0, 1fr)':`240px minmax(0, 1fr) 8px ${clampPropertiesWidth(propertiesWidth)}px` }}>
-      <aside className="flow-toolbox">
+      <aside id="flow-element-toolbox" className="flow-toolbox">
         <div className="toolbox-heading"><h2>Toolbox</h2><button className="icon-button subtle" aria-label={toolboxExpanded ? 'Collapse toolbox' : 'Expand toolbox'} aria-expanded={toolboxExpanded} title={toolboxExpanded ? 'Collapse toolbox' : 'Expand toolbox'} onClick={() => setToolboxExpanded((expanded) => !expanded)}><MoreHorizontal size={16} /></button></div>
         <div className="toolbox-tabs"><button className={toolTab === 'Elements' ? 'active' : ''} onClick={() => { setToolTab('Elements'); onToolTab('Elements'); }}>Elements</button><button className={toolTab === 'Manager' ? 'active' : ''} onClick={() => { setToolTab('Manager'); onToolTab('Manager'); }}>Manager</button></div>
         {toolTab === 'Elements' ? <>
@@ -2034,7 +2041,7 @@ export default function FlowBuilder({
               style={{left:x,top:y}}
               aria-label={`Choose insertion path ${connector.label||connector.kind} from ${flow.elements.find(item=>item.id===connector.from)?.label??connector.from}`}
               title="Choose this branch path; drag an element here or select one in the toolbox"
-              onClick={()=>selectGraphPath(connector)}
+              onClick={()=>{selectGraphPath(connector);setToolboxExpanded(true);}}
               onDragOver={event=>event.preventDefault()}
               onDrop={event=>dropElement(event,connector.from,connector.id)}>
               <Plus size={13}/>
@@ -2092,7 +2099,7 @@ export default function FlowBuilder({
                 style={{ left: position.x + graphNodeWidth + 8, top: position.y + 8 }}>
                 <button type="button" className="icon-button" aria-label={`Add element after ${element.label}`}
                   title="Choose an element from the toolbox to insert on this path"
-                  onClick={() => { setInsertionConnectorId(''); onToolTab('Elements'); }}>
+                  onClick={() => { setInsertionConnectorId(''); onToolTab('Elements'); setToolboxExpanded(true); }}>
                   <Plus size={16} />
                 </button>
                 <button type="button" className="icon-button" aria-label={`Remove ${element.label}`}

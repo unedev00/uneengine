@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
 export type OptionGroup={
  id:string;
  label:string;
@@ -12,10 +12,30 @@ export default function ProductCustomiser({name,image,groups,onCancel,onAdd}:{
  onCancel:()=>void;onAdd:(selections:Selection[])=>void;
 }){
  const [selected,setSelected]=useState<Record<string,string>>({});
+ const dialogRef=useRef<HTMLElement>(null);
+ const cancelRef=useRef<HTMLButtonElement>(null);
+ const onCancelRef=useRef(onCancel);
+ onCancelRef.current=onCancel;
+ useEffect(()=>{
+   const previous=document.activeElement instanceof HTMLElement?document.activeElement:null;
+   const dialog=dialogRef.current;
+   cancelRef.current?.focus();
+   const handleKey=(event:KeyboardEvent)=>{
+     if(event.key==='Escape'){event.preventDefault();onCancelRef.current();return;}
+     if(event.key!=='Tab'||!dialog)return;
+     const controls=Array.from(dialog.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')).filter(el=>el.getClientRects().length>0);
+     if(!controls.length){event.preventDefault();return;}
+     const first=controls[0],last=controls[controls.length-1];
+     if(event.shiftKey&&(document.activeElement===first||!dialog.contains(document.activeElement))){event.preventDefault();last.focus();}
+     else if(!event.shiftKey&&(document.activeElement===last||!dialog.contains(document.activeElement))){event.preventDefault();first.focus();}
+   };
+   document.addEventListener('keydown',handleKey);
+   return()=>{document.removeEventListener('keydown',handleKey);previous?.focus();};
+ },[]);
  const valid=groups.every(group=>!group.required||Boolean(selected[group.id]));
  return <div className="ak-modal-backdrop" role="presentation">
-   <section className="ak-modal" role="dialog" aria-modal="true" aria-labelledby="ak-custom-title">
-     <div className="ak-modal-top"><button type="button" onClick={onCancel}>← Menu</button><span>CUSTOMISE YOUR ORDER</span></div>
+   <section ref={dialogRef} className="ak-modal" role="dialog" aria-modal="true" aria-labelledby="ak-custom-title">
+     <div className="ak-modal-top"><button ref={cancelRef} type="button" onClick={onCancel}>← Menu</button><span>CUSTOMISE YOUR ORDER</span></div>
      <div className="ak-modal-body">{image&&<img className="ak-modal-image" src={image} alt=""/>}
        <h2 id="ak-custom-title">{name}</h2>
        {groups.map(group=><fieldset key={group.id} className="ak-options"><legend>{group.label}{group.required?' *':''}</legend>

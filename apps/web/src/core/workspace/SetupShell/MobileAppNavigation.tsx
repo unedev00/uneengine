@@ -15,8 +15,8 @@ export function MobileAppNavigation({ pages, appId, activePageApiName, actions, 
   onAction: (action: PageAction) => void;
 }) {
   const [moreOpen, setMoreOpen] = React.useState(false);
-  const visiblePages = pages.slice(0, 4);
-  const overflowPages = pages.slice(4);
+  const visiblePages = pages.slice(0, 2);
+  const overflowPages = pages.slice(2);
   const showMore = overflowPages.length > 0 || actions.length > 0;
   const icons = [House, Grid2X2, List, Grid2X2];
   if (!pages.length && !actions.length) return null;
@@ -26,13 +26,13 @@ export function MobileAppNavigation({ pages, appId, activePageApiName, actions, 
       {visiblePages.map((page, index) => {
         const Icon = icons[index];
         return <button type="button" key={page.apiName} className={activePageApiName === page.apiName ? 'active' : ''}
-          aria-current={activePageApiName === page.apiName ? 'page' : undefined} onClick={() => openPage(page.apiName)}>
+          aria-label={page.label} title={page.label} aria-current={activePageApiName === page.apiName ? 'page' : undefined} onClick={() => openPage(page.apiName)}>
           <Icon size={23} aria-hidden="true" />
           <span>{page.label}</span>
         </button>;
       })}
       {showMore && <button type="button" className={overflowPages.some(page => page.apiName === activePageApiName) ? 'active' : ''}
-        aria-haspopup="dialog" aria-expanded={moreOpen} onClick={() => setMoreOpen(true)}>
+        aria-label="More pages and actions" aria-haspopup="dialog" aria-expanded={moreOpen} onClick={() => setMoreOpen(true)}>
         <MoreHorizontal size={24} aria-hidden="true" /><span>More</span>
       </button>}
     </nav>

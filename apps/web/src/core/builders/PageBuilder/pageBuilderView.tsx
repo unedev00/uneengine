@@ -1815,6 +1815,7 @@ function PageBuilder({
       pageType: newPageType,
       ...(newPageType === 'Record Page' ? { recordMode: newRecordMode } : {}),
       layoutMode: newPageLayoutMode, template: newPageTemplate,
+      layoutVariant: newPageDeviceChoice === 'Phone' ? 'Mobile' : newPageDeviceChoice,
       canvasWidth: newPageCanvasWidth,
       canvasHeight: newPageCanvasHeight,
        canvasFillColor:'#ffffff',
@@ -3654,7 +3655,7 @@ function PageBuilder({
               onClick={() => { const size = canvasDimensionsForOrientation(newPageCanvasWidth,newPageCanvasHeight,value); setNewPageCanvasWidth(size.width);setNewPageCanvasHeight(size.height); }}>{value}</button>)}
           </div>
           </details>
-          {newPageDeviceChoice === 'Tablet' && <p className="properties-help">This tablet-sized page uses the current desktop layout rules.</p>}
+          {newPageDeviceChoice === 'Tablet' && <p className="properties-help">This creates a separate Tablet layout draft. Device activation still uses the Desktop/Phone form-factor assignment.</p>}
           <div className="modal-actions">
             <button className="btn" onClick={() => setCreatePageOpen(false)}>Cancel</button>
             <button className="btn btn-brand"
