@@ -21,7 +21,7 @@ for(const name of retained){
 }
 await access(path.join(webSourceRoot,'core/components/SharedRuntime/SharedButton.jsx'));
 await assert.rejects(access(path.join(webSourceRoot,'component-libraries/shared/primitives/Button/Button.jsx')), {code:'ENOENT'});
-for (const name of ['OneSearch','OneText']) { await access(path.join(webSourceRoot,`core/components/SharedRuntime/${name}.jsx`)); await assert.rejects(access(path.join(webSourceRoot,`component-libraries/${name}/${name}.jsx`)), {code:'ENOENT'}); }
+for (const name of ['OneSearch','OneText']) { await access(path.join(webSourceRoot,`core/components/SharedRuntime/${name.slice(3)}.jsx`)); await assert.rejects(access(path.join(webSourceRoot,`component-libraries/${name}/${name}.jsx`)), {code:'ENOENT'}); }
 for (const component of registered) {
   const prefix = `component-libraries/${component.apiName}/`;
   assert.equal(component.jsxFile, prefix + component.apiName.split('_').slice(1).map(part=>part[0].toUpperCase()+part.slice(1)).join('').replace(/^/, 'Ui') + '.jsx');
