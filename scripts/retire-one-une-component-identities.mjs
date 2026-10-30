@@ -37,8 +37,10 @@ for(const old of original){
  after=after.replace(/component-libraries\/une_([a-z0-9_]+)\//g,'component-libraries/ui_$1/')
             .replace(/component-libraries\/une\/shared\//g,'component-libraries/ui-runtime/shared/')
             .replace(/component-libraries\/One([A-Z][A-Za-z0-9]*)\/One\1\./g,(_,n)=>'component-libraries/shared/primitives/'+n+'/'+n+'.');
- if(!dest.includes('/src/system-support/migrations/'))
+ if(!dest.endsWith('.sql')&&!dest.includes('legacy-une-tenant-retirement.test.ts')){
    after=after.replace(/\bune_([a-z][a-z0-9_]*)\b/g,'ui_$1');
+   if(!dest.endsWith('/bundledRegistryClient.ts'))after=after.replace(/(['\"])une_\1/g,'$1ui_$1');
+ }
  if(dest.endsWith('/component.json'))
    after=after.replace(/\/Une([A-Z][A-Za-z0-9]*)\.(jsx|css)/g,'/Ui$1.$2');
  if(dest.includes('/component-libraries/ui_')&&dest.endsWith('.jsx'))
