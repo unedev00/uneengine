@@ -126,17 +126,25 @@ function SmartLookup({p,style,fire}){
 }
 function SmartTabs({p,record,fire}){
  const [active,setActive]=React.useState(0);
- const tabs=Array.isArray(p.tabs)?p.tabs:Array.from({length:number(p.tabCount,3,1,20)},(_,i)=>"Tab "+(i+1));
- const heading=expression(p.textSource??p.label??"",record);
+ const count=number(p.tabCount,3,1,20);
+ // When bound to an Object, the shared Page Runtime supplies only filtered,
+ // permission-checked records. Never generate unlimited tabs from raw records.
+ const dynamic=Boolean(p.objectApiName&&p.textSource&&!Array.isArray(p.tabs));
+ const tabs=dynamic?recordsOf(p).slice(0,count).map(row=>({
+   label:expression(p.textSource,row),id:row?.id
+ })):Array.isArray(p.tabs)?p.tabs:Array.from({length:count},(_,i)=>"Tab "+(i+1));
+ React.useEffect(()=>{if(active>=tabs.length)setActive(0)},[active,tabs.length]);
+ const heading=expression(dynamic?p.label??"":p.textSource??p.label??"",record);
  return <div className="smart-tabs-shell" style={{background:p.backgroundColor||undefined}}>
   {heading&&<strong className="smart-tabs-heading">{heading}</strong>}
   <nav className="smart-tabs" aria-label={heading||"Tabs"}>
-   {tabs.map((tab,index)=><button key={index} type="button" role="tab"
+   {tabs.map((tab,index)=><button key={tab?.id??index} type="button" role="tab"
     aria-selected={active===index} style={{height:number(p.tabHeight,44),
      minWidth:number(p.tabWidth,120),borderRadius:number(p.radius,10),fontSize:number(p.textSize,16),textAlign:p.labelAlignment||"center",boxShadow:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none",color:p.labelColor||undefined,
      background:active===index?p.selectedTabColor||"#eaf2ff":p.tabColor||"#fff",
     borderColor:p.borderColor||undefined}}
-    onClick={()=>{setActive(index);fire("change",index)}}>{text(tab?.label??tab)}</button>)}
+    onClick={()=>{setActive(index);fire("change",dynamic?{index,record:recordsOf(p)[index]}:index)}}>{text(tab?.label??tab)}</button>)}
+   {dynamic&&tabs.length===0&&<span className="smart-tabs-empty">No matching records</span>}
   </nav>
  </div>;
 }
