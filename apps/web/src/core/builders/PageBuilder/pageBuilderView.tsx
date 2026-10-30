@@ -54,7 +54,6 @@ import {
   ChevronLeft,
   ChevronRight,
   CircleHelp,
-  ClipboardList,
   ClipboardPaste,
   Command,
   Copy,
@@ -506,7 +505,7 @@ function PageBuilder({
   };
   const [selectedConversationPart,setSelectedConversationPart]=useState('parent');
   useEffect(()=>setSelectedConversationPart('parent'),[selectedId]);
-  const [ribbonTab, setRibbonTab] = useState<'Home' | 'Add Block' | 'Component Content' | 'Component Properties' | 'Component Style' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Component Responsive' | 'Preview' | 'Filters' | 'Source' | 'Icons' | 'Parity'>('Add Block');
+  const [ribbonTab, setRibbonTab] = useState<'Add Block' | 'Component Content' | 'Component Properties' | 'Component Style' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Component Responsive' | 'Preview' | 'Filters' | 'Source' | 'Icons'>('Add Block');
   useEffect(()=>{
     if(ribbonTab==='Icons'&&page.components.find(component=>component.id===selectedId)?.type!=='Custom:smart_icon')
       setRibbonTab('Component Properties');
@@ -2109,7 +2108,7 @@ function PageBuilder({
           setFocusedCardMapping(mapping);
         }else setFocusedCardMapping('');
         setPageSettingsOpen(false); setComponentMenuId('');
-        if (!(event.shiftKey && page.layoutMode === 'free-canvas') && ['Home','Add Block','Preview'].includes(ribbonTab)) { setRibbonTab(componentNeedsData(component.type)?'Component Data':'Component Properties'); openComponentInspector(componentNeedsData(component.type)?'Data & Actions':'Design'); }
+        if (!(event.shiftKey && page.layoutMode === 'free-canvas') && ['Add Block','Preview'].includes(ribbonTab)) { setRibbonTab(componentNeedsData(component.type)?'Component Data':'Component Properties'); openComponentInspector(componentNeedsData(component.type)?'Data & Actions':'Design'); }
 
     };
     const selectOnlyInDesigner = !previewMode && !libraryPreview;
@@ -2682,7 +2681,6 @@ function PageBuilder({
             <nav className="office-ribbon-tabs" role="tablist" aria-label="Page Builder tabs">
               {ribbonTabsVisible.map((tab,index) => {
                 const Icon = {
-                  Home: PanelsTopLeft,
                   'Add Block': Puzzle,
                   'Component Data': Database,
                   'Component Content': Type,
@@ -2692,10 +2690,9 @@ function PageBuilder({
                   'Component Responsive': Smartphone,
                   'Component Layout': Layers3,
                   'Component Action': Workflow,
-                  Preview: Eye, Filters: Filter, Source: Database, Parity: ClipboardList
+                  Preview: Eye, Filters: Filter, Source: Database
                 }[tab];
                 const label = {
-                  Home: 'Home',
                   'Add Block': 'Insert',
                   'Component Data': 'Data',
                   'Component Content': 'Content',
@@ -2705,7 +2702,7 @@ function PageBuilder({
                   'Component Responsive': 'Responsive',
                   'Component Layout': 'Layout',
                   'Component Action': 'Actions',
-                  Preview: 'Preview', Filters: 'Filters', Source: 'Source', Parity: 'Parity'
+                  Preview: 'Preview', Filters: 'Filters', Source: 'Source'
                 }[tab];
                 return <button key={tab} id={`page-builder-tab-${index}`} type="button"
                   role="tab" tabIndex={ribbonTab===tab?0:-1} aria-selected={ribbonTab === tab}
@@ -2843,7 +2840,7 @@ function PageBuilder({
             </div>
           </div>
         </div>
-        {ribbonPropertyHost && createPortal(<aside id="lightning-page-properties" style={ribbonTab !== 'Home' && !ribbonTab.startsWith('Component ') ? { display: 'none' } : undefined}
+        {ribbonPropertyHost && createPortal(<aside id="lightning-page-properties" style={ribbonTab !== 'Component Layout' && !ribbonTab.startsWith('Component ') ? { display: 'none' } : undefined}
           className={`properties-panel reference-properties-panel ${pageSettingsOpen || selected ? 'responsive-open' : ''}`}>
           {selectedRegion && !pageSettingsOpen && activePanel !== 'page' ? <div className="properties-section">
             <div className="properties-section-title">Section configuration</div>
