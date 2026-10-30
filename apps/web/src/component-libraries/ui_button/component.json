@@ -1,6 +1,6 @@
 {
   "apiName": "ui_button",
-  "label": "UNE Button",
+  "label": "UI Button",
   "category": "Inputs",
   "description": "Reusable button component for metadata-driven pages; shares MetaDrive runtime, events and tenant permissions.",
   "surfaces": [
