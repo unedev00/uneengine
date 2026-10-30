@@ -237,9 +237,9 @@ test('ChatterInbox compatibility retains the shared conversation renderer and al
  assert.ok(!canonical.propertyDefinitions.some((p:any)=>p.propertyKey==='conversationsObjectApiName'),
   'AceChatter source mapping is private runtime configuration');
  const wrapper=await readFile(new URL('../src/component-libraries/ui_conversation/UiConversation.jsx',import.meta.url),'utf8');
- assert.ok(wrapper.includes('from "../OneConversation/OneConversation.jsx"') ||
-  wrapper.includes("from '../OneConversation/OneConversation.jsx'"),
-  'UNE conversation imports the shared legacy renderer');
+ assert.ok(wrapper.includes('from "../shared/primitives/Conversation/Conversation.jsx"') ||
+  wrapper.includes("from '../shared/primitives/Conversation/Conversation.jsx'"),
+  'UI conversation imports the shared renderer');
  assert.ok(wrapper.includes('<OneComponent '),'UNE wrapper actually renders the shared component');
  for(const definition of components){
   const built=await buildBundledComponent(definition);
