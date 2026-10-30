@@ -216,3 +216,37 @@ test('SQL Smart applicability is disabled without hiding global slots or erasing
  assert.match(ribbon,/const visible=definitions\.filter\(p=>p\.tab===tab\)/);
  assert.match(ribbon,/const supported=property\.components\.includes\(api\)/);
 });
+
+test('Smart Tabs, Input Box, Lookup and Toggle edit visible control styles',async()=>{
+ const tabs=await renderSmart('smart_tabs',{
+   tabs:['First','Second'],tabColor:'#123456',selectedTabColor:'#abcdef',
+   borderColor:'#112233',radius:8,tabWidth:140,tabHeight:48
+ });
+ assert.match(tabs,/#abcdef/i,'selected tab colour');
+ assert.match(tabs,/#123456/i,'inactive tab colour');
+ assert.match(tabs,/#112233/i,'tab border colour');
+ assert.match(tabs,/min-width:140px/);
+ assert.match(tabs,/height:48px/);
+ const input=await renderSmart('smart_text',{
+   label:'Description',textSource:'@Title',record:{Title:'Hello'},
+   backgroundColor:'#abc123',labelAlignment:'right',defaultValueColor:'#123abc'
+ });
+ assert.match(input,/Description/);
+ assert.match(input,/value="Hello"/);
+ assert.match(input,/background:#abc123/i);
+ assert.match(input,/text-align:right/);
+ assert.match(input,/#123abc/i);
+ const lookup=await renderSmart('smart_lookup',{
+   placeholder:'Find a record',backgroundColor:'#abcdef',borderColor:'#123456',
+   labelAlignment:'center',textSize:18
+ });
+ assert.match(lookup,/placeholder="Find a record"/);
+ assert.match(lookup,/background:#abcdef/i);
+ assert.match(lookup,/border-color:#123456/i);
+ assert.match(lookup,/text-align:center/);
+ const toggle=await renderSmart('smart_toggle',{defaultCheck:true,backgroundColor:'#224466'});
+ assert.match(toggle,/#224466/i);
+ assert.match(toggle,/role="switch"/);
+ const css=read('../src/core/builders/PageBuilder/SmartRibbon.css');
+ assert.match(css,/\.smart-formula input/);
+});
