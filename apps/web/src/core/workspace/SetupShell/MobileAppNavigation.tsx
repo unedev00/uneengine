@@ -15,8 +15,8 @@ export function MobileAppNavigation({ pages, appId, activePageApiName, actions, 
   onAction: (action: PageAction) => void;
 }) {
   const [moreOpen, setMoreOpen] = React.useState(false);
-  const visiblePages = pages.slice(0, 4);
-  const overflowPages = pages.slice(4);
+  const visiblePages = pages.slice(0, 2);
+  const overflowPages = pages.slice(2);
   const showMore = overflowPages.length > 0 || actions.length > 0;
   const icons = [House, Grid2X2, List, Grid2X2];
   if (!pages.length && !actions.length) return null;
