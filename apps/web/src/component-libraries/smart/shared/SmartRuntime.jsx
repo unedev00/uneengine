@@ -13,6 +13,8 @@ const assetPattern=/^asset:([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a
 const mime=new Set(["image/png","image/jpeg","image/webp","image/gif"]);
 function SmartPicture({src,alt,loadAsset,style}){
  const [data,setData]=React.useState("");
+ const [failed,setFailed]=React.useState(false);
+ React.useEffect(()=>setFailed(false),[src]);
  React.useEffect(()=>{
    let live=true;setData("");
    const match=typeof src==="string"?src.match(assetPattern):null;
@@ -24,7 +26,7 @@ function SmartPicture({src,alt,loadAsset,style}){
    return()=>{live=false};
  },[src,loadAsset]);
  const safeSrc=typeof src==="string"&&/^https:\/\//i.test(src.trim())?src.trim():data;
- return safeSrc?<img src={safeSrc} alt={alt} style={style}/>:<span role="img" aria-label="Image area" className="smart-image-empty" style={style}>Image area</span>;
+ return safeSrc&&!failed?<img src={safeSrc} alt={alt} style={style} onError={()=>setFailed(true)}/>:null;
 }
 const recordOf=p=>p.objectApiName&&Array.isArray(p.records)
  ?(p.records[0]??{}):p.record&&typeof p.record==="object"&&!Array.isArray(p.record)?p.record:
@@ -205,10 +207,10 @@ export default function SmartRuntime(p){
    ?(p.records.find(r=>boundImage(p,r))??record):record
  }/>;
  else if(name==="smart_card_grid")content=<div className="smart-grid" style={{
-  width:"100%",height:"100%",minHeight:0,gridTemplateColumns:"repeat("+number(p.cardsPerRow,3,1,12)+",minmax(0,1fr))",
-  gridTemplateRows:"repeat("+number(p.cardsPerColumn,1,1,12)+",minmax(0,1fr))"}}>
-  {recordsOf(p).filter(r=>!p.imageSource||Boolean(boundImage(p,r)))
-   .slice(0,number(p.cardsPerRow,3,1,12)*number(p.cardsPerColumn,1,1,12)).map((r,i)=>
+  width:"100%",height:"100%",minHeight:0,minWidth:0,overflow:"auto",
+   gridTemplateColumns:"repeat("+number(p.cardsPerRow,3,1,12)+",minmax(160px,1fr))",
+   gridAutoRows:"minmax(160px,auto)",alignContent:"start"
+  {recordsOf(p).slice(0,200).map((r,i)=>
   <SmartCard p={p} record={r} key={r?.Id??r?.id??i}/>)}</div>;
  else if(name==="smart_cart")content=<SmartCart p={p} records={recordsOf(p)} Picture={SmartPicture} expression={expression}/>;
  else if(name==="smart_calendar")content=<SmartCalendar p={p} fire={fire}/>;
@@ -225,13 +227,13 @@ export default function SmartRuntime(p){
   };
   const fit=p.imageFill==="fit"?"contain":p.imageFill==="stretch"?"fill":"cover";
   content=<nav className="smart-navigation" style={{width:"100%",height:"100%",
-   minHeight:0,alignItems:"stretch",flexDirection:p.navigationDirection==="vertical"?"column":"row"}}>
+   minWidth:0,minHeight:0,overflow:"auto",flexWrap:"nowrap",alignItems:"flex-start",flexDirection:p.navigationDirection==="vertical"?"column":"row"}}>
     {entries.map((item,i)=>{
       const label=labelOf(item);
       const src=item&&typeof item==="object"?item.imageSrc??item.imageUrl:null;
       const safeSrc=typeof src==="string"&&/^https:\/\//i.test(src)?src:null;
       return <button key={item?.id??i} type="button" className="smart-navigation-item"
-        style={{flex:"1 1 auto",minHeight:0,color:p.labelColor||undefined,background:p.backgroundColor||"#fff",
+        style={{flex:"0 0 auto",minHeight:32,color:p.labelColor||undefined,background:p.backgroundColor||"#fff",
           boxShadow:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none",
           borderColor:p.borderColor||undefined,borderRadius:number(p.radius,4),fontSize:number(p.textSize,16)}}
         onClick={()=>{fire("click",item);if(p.onNavigate&&item?.target)p.onNavigate(item.target)}}>
