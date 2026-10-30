@@ -40,7 +40,7 @@ export class DeclarativeRules {
       client.query<{id:string;email:string;display_name:string;time_zone:string;locale:string;
         currency_iso_code:string|null;profile_id:string|null;profile_name:string|null;profile_api:string|null}>(
       `SELECT u.id,u.email,u.display_name,u.time_zone,u.locale,u.currency_iso_code,
-        p.id AS profile_id,p.name AS profile_name,p.api_name AS profile_api
+        p.id AS profile_id,p.label AS profile_name,p.api_name AS profile_api
        FROM md_users u LEFT JOIN md_user_profiles up ON up.tenant_id=u.tenant_id AND up.user_id=u.id
        LEFT JOIN md_profiles p ON p.tenant_id=up.tenant_id AND p.id=up.profile_id
        WHERE u.tenant_id=$1 AND u.id=$2 AND u.enabled=true LIMIT 1`,[tenantId,userId]),
