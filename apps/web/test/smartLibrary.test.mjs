@@ -630,3 +630,33 @@ test('Smart Cart ribbon packs Header Supporting, Table and Row without hidden ed
  assert.match(ribbon,/aria-label=\{title\}/);
  assert.match(ribbon,/data-property=\{property\.id\}/);
 });
+
+test('Smart Cart Summary and Summary 2 use compact separate icon-first rows',()=>{
+ const css=read('../src/core/builders/PageBuilder/SmartRibbon.css');
+ const sql=read('../../server/src/system-support/migrations/20270201-smart-cart-summary2-ribbon.sql');
+ const section=css.slice(css.indexOf('/* Smart Cart Summary:'));
+ assert.match(section,/data-smart-api="smart_cart"/);
+ assert.match(section,/grid-template-columns:repeat\(3,78px\) 10px 126px 80px/);
+ assert.match(section,/grid-template-columns:repeat\(3,76px\)/);
+ for(const [group,property,area] of [
+  ['Summary','summaryBackgroundColor','1 / 1'],
+  ['Summary','summaryBorderColor','1 / 2'],
+  ['Summary','summaryTextColor','1 / 3'],
+  ['Summary','summaryTextSize','2 / 1 / 3 / 3'],
+  ['Summary','summaryTextWeight','2 / 3'],
+  ['Summary','summaryShadow','3 / 1 / 4 / 4'],
+  ['Summary','summaryRadius','1 / 5 / 2 / 7'],
+  ['Summary','summaryHeight','2 / 5 / 3 / 7'],
+  ['Summary','summaryWidth','3 / 5 / 4 / 7'],
+  ['Summary 2','summary2TextSize','1 / 1 / 2 / -1'],
+  ['Summary 2','summary2TextColor','2 / 2'],
+  ['Summary 2','summary2TextWeight','2 / 3']
+ ])assert.ok(section.includes('.smart-ribbon-group[aria-label="'+group+'"] .smart-property[data-property="'+property+'"]{grid-area:'+area),
+  group+' '+property+' should have a compact slot');
+ assert.match(section,/summary2TextWeight"\]>.smart-label\{[\s\S]*?display:none/);
+ assert.match(sql,/SET section_group='Summary 2'/);
+ for(const key of ['summary2TextSize','summary2TextWeight','summary2TextColor'])
+  assert.match(sql,new RegExp("'"+key+"'"));
+ assert.match(sql,/WHEN 'summary2TextSize' THEN 'Text Size'/);
+ assert.doesNotMatch(sql,/UPDATE\s+md_page_|DELETE\s+FROM/i);
+});
