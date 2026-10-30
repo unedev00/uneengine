@@ -26,7 +26,10 @@ function harness(deny=false,forbidRecord=false) {
   transactions++;
   return fn(client);
  },query:async()=>{throw Error('Out-of-transaction SQL is forbidden for importing');}} as unknown as SqlPersistence;
- const rbac={require:async(t:string,u:string,resource:string,permission:string)=>{
+ const rbac={
+  allowedMany:async(_tenant:string,_user:string,checks:readonly unknown[])=>checks.map(()=>true),
+  allowed:async()=>true,
+  require:async(t:string,u:string,resource:string,permission:string)=>{
   assert.equal(t,'tenant-a');assert.equal(u,'actor');
   permissions.push(resource+'.'+permission);
   if(deny)throw Error('Permission denied');
