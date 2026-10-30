@@ -60,6 +60,7 @@ jobs:
       - name: Verify Object Manager browser UI through SQL
         env:
           METADRIVE_BROWSER_PREBUILT: '1'
+          METADRIVE_BROWSER_TARGET: object-lifecycle
         run: |
           mkdir -p apps/server/artifacts
           node apps/server/scripts/builder-browser-smoke.mjs
