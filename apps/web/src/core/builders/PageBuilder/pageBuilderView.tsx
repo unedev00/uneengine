@@ -2460,9 +2460,11 @@ function PageBuilder({
        case 'canvasHeight':return <input aria-label="Page height" type="number" min={320} max={10000}
         disabled={page.layoutVariant!=='Custom'} value={page.canvasHeight}
         onChange={e=>{const n=Number(e.target.value);if(Number.isInteger(n)&&n>=320&&n<=10000)applyPage({...page,canvasHeight:n});}}/>;
-      case 'selectVersion':return <div className="office-ribbon-stack">
-        <button type="button" onClick={()=>void loadLayoutHistory()}>
-          <Undo2 size={15}/>{showLayoutHistory?'Refresh versions':'Load versions'}</button>
+      case 'selectVersion':return <div className="office-ribbon-stack office-ribbon-version-controls">
+        <button type="button" aria-label={showLayoutHistory?'Refresh versions':'Load versions'}
+          title={showLayoutHistory?'Refresh versions':'Load versions'}
+          onClick={()=>void loadLayoutHistory()}>
+          <Undo2 size={15}/></button>
         <select aria-label="Select Version" disabled={!showLayoutHistory||!layoutVersions.length}
           value={selectedHistoryVersion??''} onChange={e=>setSelectedHistoryVersion(Number(e.target.value))}>
           <option value="">Choose version…</option>
@@ -2784,7 +2786,7 @@ function PageBuilder({
             const pageRows=ribbonCatalog.properties.filter(row=>row.tab==='Home'&&
               ['Page','Device','Canvas','Version'].includes(row.group));
             const groups=[...new Set(pageRows.map(row=>row.group))];
-            return <div className="office-ribbon-page-layout-groups" aria-label="Page, device, canvas and version settings">
+            return <div className="office-ribbon-page-layout-groups" aria-label="Page and canvas settings">
               {groups.map(group=><div key={group} className="office-ribbon-group une-sql-home-group"
                 data-shared-group={group}>
                 <div className="office-ribbon-stack">
