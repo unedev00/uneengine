@@ -96,3 +96,28 @@ test('Default Check SQL uses globally unique order allocation',()=>{
  assert.match(sql,/COALESCE\(MAX\(sort_order\),0\)\+1 FROM md_builder_shared_properties/);
  assert.doesNotMatch(sql,/Default Check[^\n]*'choice',44,/);
 });
+
+test('Smart ribbon keeps all shared properties and renders the approved compact Office layout',()=>{
+ const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
+ const css=read('../src/core/builders/PageBuilder/SmartRibbon.css');
+ assert.match(ribbon,/const visible=definitions\.filter\(p=>p\.tab===tab\)/);
+ assert.doesNotMatch(ribbon,/p\.tab===tab&&p\.components\.includes\(api\)/);
+ assert.match(ribbon,/const supported=property\.components\.includes\(api\)/);
+ assert.match(ribbon,/role="switch"/);
+ assert.match(ribbon,/className="smart-default-check-switch"/);
+ assert.match(ribbon,/aria-checked=\{value===true\|\|value==='true'\}/);
+ assert.match(css,/grid-template-rows:repeat\(3,30px\)/);
+ assert.match(css,/grid-auto-flow:column/);
+ assert.match(css,/max-width:none/);
+ assert.match(css,/overflow:visible;text-overflow:clip/);
+ assert.match(css,/\.smart-ribbon-caption/);
+ assert.match(css,/\.smart-property\.disabled/);
+ assert.match(css,/\.smart-icons button>svg/);
+ assert.match(css,/\.smart-default-check-switch/);
+ assert.match(css,/#page-builder-tab-content\.office-ribbon-content:has\(>\.smart-ribbon\)/);
+ assert.match(css,/height:146px!important/);
+ assert.match(css,/input\.smart-office-number/);
+ const metadata=read('../../server/src/system-support/migrations/20270126-une-ribbon-requirements.sql');
+ assert.match(metadata,/WHEN property_key IN \('label','defaultValue'\) THEN 'Data'/);
+ assert.match(metadata,/WHEN property_key IN \('tabHeight','tabWidth','headerBoxHeight','imageHeight'\) THEN 'Layout'/);
+});
