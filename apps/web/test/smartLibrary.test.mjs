@@ -380,3 +380,58 @@ test('Smart Cart renders configured ribbon styles in the actual component output
  assert.match(html,/Total/);
  assert.match(html,/not bound/);
 });
+
+test('Smart Icon has 50 local monochrome SVG assets and a safe persisted icon selector',async()=>{
+ const icons=JSON.parse(read('../src/component-libraries/smart_icon/iconCatalog.json'));
+ assert.equal(icons.length,50);
+ assert.equal(new Set(icons.map(icon=>icon.id)).size,50);
+ assert.deepEqual([...new Set(icons.map(icon=>icon.category))],[
+  'Navigation & interface','Security & accounts','Commerce & analytics',
+  'Communication','Productivity & files']);
+ for(const icon of icons){
+  assert.match(icon.id,/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
+  const svg=read('../public/smart-icons/'+icon.id+'.svg');
+  assert.match(svg,/<svg\s/);
+  assert.match(svg,/stroke="currentColor"/);
+  assert.doesNotMatch(svg,/<script|onload=|<foreignObject/i);
+ }
+ for(const name of ['lock','settings','shopping-cart','message-circle','house'])
+  assert.ok(icons.some(icon=>icon.id===name),name);
+ const manifest=JSON.parse(read('../src/component-libraries/smart_icon/component.json'));
+ assert.equal(manifest.apiName,'smart_icon');
+ assert.deepEqual(manifest.propertyDefinitions,[]);
+ assert.deepEqual(manifest.eventDefinitions,[]);
+ const catalog=await loadComponentCatalog();
+ const bundled=await buildBundledComponent(catalog.components.find(c=>c.apiName==='smart_icon'));
+ assert.ok(bundled.compiledJs.length>0);
+});
+test('Smart Icon uses black default recolourable SVG and existing ribbon colour glyphs',()=>{
+ const component=read('../src/component-libraries/smart_icon/SmartComponent.jsx');
+ const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
+ const view=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const gallery=read('../src/core/builders/PageBuilder/SmartIconGallery.tsx');
+ assert.match(component,/#000000/);
+ assert.match(component,/iconFillColor/);
+ assert.match(component,/backgroundColor/);
+ assert.match(component,/WebkitMaskImage/);
+ assert.match(component,/icons.find\(icon=>icon.id===p.iconId\)/);
+ assert.doesNotMatch(component,/onClick=|fetch\(/);
+ assert.match(ribbon,/property.id==='iconFillColor'/);
+ assert.match(ribbon,/kind=\{\/border\/i.test/);
+ assert.match(view,/selected\?\.type==='Custom:smart_icon'/);
+ assert.match(view,/<SmartIconGallery/);
+ assert.match(gallery,/aria-pressed=\{icon.id===current.id\}/);
+ assert.match(gallery,/onClick=\{\(\)=>onChange\(icon.id\)\}/);
+ assert.match(gallery,/aria-label="Search icons"/);
+});
+test('Smart Icon SQL enables only approved appearance and layout properties',()=>{
+ const sql=read('../../server/src/system-support/migrations/20270130-smart-icon-library.sql');
+ for(const name of ['backgroundColor','borderColor','shadow','radius','x','y','width','height','iconFillColor'])
+  assert.match(sql,new RegExp("'"+name+"'"));
+ assert.match(sql,/'iconFillColor','Icon Fill Color','Design','Icon','color'/);
+ assert.match(sql,/'"#000000"'::jsonb/);
+ assert.doesNotMatch(sql,/UPDATE\s+md_page_|DELETE\s+FROM\s+md_builder_shared_properties/i);
+ const seeder=read('../../server/src/app-seeders/smart-components.ts');
+ assert.match(seeder,/"smart_icon"/);
+ assert.match(seeder,/core-smart-components-v3/);
+});
