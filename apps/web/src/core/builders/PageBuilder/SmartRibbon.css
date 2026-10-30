@@ -5,7 +5,8 @@
 .office-builder-ribbon #page-builder-tab-content.office-ribbon-content:has(>.smart-ribbon){
   box-sizing:border-box!important;
   height:146px!important;min-height:146px!important;max-height:146px!important;
-  padding:4px 26px!important;
+  /* The first section begins at the left edge; keep clearance for right scroll arrow. */
+  padding:4px 26px 4px 0!important;
   display:flex!important;align-items:stretch!important;flex-wrap:nowrap!important;
   overflow-x:auto!important;overflow-y:hidden!important;
   scrollbar-width:none!important;
@@ -134,8 +135,9 @@
   display:inline-flex;align-items:center;gap:3px;flex:0 0 auto;
 }
 .office-builder-ribbon #page-builder-tab-content .smart-property input.smart-office-number{
-  box-sizing:border-box!important;flex:0 0 60px!important;
-  width:60px!important;min-width:60px!important;max-width:60px!important;
+  /* Shorter number fields (Text Size, Corner Radius and all Smart numeric slots). */
+  box-sizing:border-box!important;flex:0 0 52px!important;
+  width:52px!important;min-width:52px!important;max-width:52px!important;
   height:28px!important;min-height:28px!important;max-height:28px!important;
   padding:2px 3px!important;text-align:center;
   border:1px solid #b7c9e0;border-radius:3px;
