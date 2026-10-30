@@ -92,7 +92,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
      onChange={e=>write(e.target.value)}><option value="">Select Object</option>
      {objects.map(o=><option key={o.apiName} value={o.apiName}>{o.label}</option>)}</select>;
    else if(kind==='color')editor=<RibbonColorPalette variant="property"
-     kind={/border/i.test(property.id)?'border':/label|text|value/i.test(property.id)?'text':'fill'}
+     kind={/border/i.test(property.id)?'border':property.id==='iconFillColor'||/label|text|value/i.test(property.id)?'text':'fill'}
      label={title} value={String(value)} disabled={!enabled} onChange={write}/>;
    else if(kind==='number'||kind==='position')editor=<span className="smart-numeric">
      {property.id==='width'?<ArrowLeftRight size={15}/>:property.id==='height'?<ArrowUpDown size={15}/>:null}
