@@ -1,11 +1,16 @@
 import {flowFormulaReferences} from '../expression-engine/FormulaDependencyGraph.js';
 export {flowFormulaReferences} from '../expression-engine/FormulaDependencyGraph.js';
-import {supportedFunctions} from '../expression-engine/FormulaFunctionRegistry.js';
+import {
+  validateFormulaFunctions,
+  type FormulaExpressionContext
+} from '../expression-engine/FormulaFunctionRegistry.js';
 import {resolveFlowLocalDateTime} from './flow-wait-runtime.js';
 import {flowChoiceValues} from './flow-screen-choice-runtime.js';
 
 import {tokenize} from '../expression-engine/FormulaTokenizer.js';
-import {Parser} from '../expression-engine/FormulaParser.js';
+import {
+  evaluateFormulaBinary,evaluateFormulaUnary,formulaTruth,Parser
+} from '../expression-engine/FormulaParser.js';
 import type {Expression} from '../expression-engine/FormulaParser.js';
 
 type FormulaResolver=(name:string)=>unknown;
@@ -93,7 +98,7 @@ export function isFormulaImageResult(value:unknown):value is FormulaImageResult 
 }
 const text=(value:unknown):string=>value===null||value===undefined?''
   :isFormulaImageResult(value)?value.url:String(value);
-const truth=(value:unknown):boolean=>value===true||value===1||value==='true';
+const truth=formulaTruth;
 function triggerFieldReference(node:Expression):string {
   if(node.kind!=='reference')throw new Error('Record change functions require a $Record field reference');
   const match=/^\$Record\.([A-Za-z][A-Za-z0-9_]*)$/.exec(node.value);
@@ -121,49 +126,25 @@ function triggerFieldValues(field:string,resolve:FormulaResolver) {
 }
 
 function evaluate(node:Expression,resolve:FormulaResolver,context:FormulaEvaluationContext):unknown {
+  const value=evaluateNode(node,resolve,context);
+  if(typeof value==='number'&&!Number.isFinite(value))
+    throw new Error('Formula result must be finite');
+  return value;
+}
+
+function evaluateNode(node:Expression,resolve:FormulaResolver,context:FormulaEvaluationContext):unknown {
   if(node.kind==='literal')return node.value;
   if(node.kind==='reference')return resolve(node.value);
   if(node.kind==='unary'){
     const value=evaluate(node.value,resolve,context);
-    if(node.operator==='NOT')return !truth(value);
-    if(node.operator==='+')return numeric(value);
-    return -numeric(value);
+    return evaluateFormulaUnary(node.operator,value);
   }
   if(node.kind==='binary'){
     const left=evaluate(node.left,resolve,context);
     if(node.operator==='AND'&&!truth(left))return false;
     if(node.operator==='OR'&&truth(left))return true;
     const right=evaluate(node.right,resolve,context);
-    switch(node.operator){
-      case 'AND':return truth(left)&&truth(right);
-      case 'OR':return truth(left)||truth(right);
-      case '&':return text(left)+text(right);
-      case '=':case '==':return left===right;
-      case '!=':case '<>':return left!==right;
-      case '>':return typeof left==='number'&&typeof right==='number'
-        ?left>right:typeof left==='string'&&typeof right==='string'
-         &&validISODate(left)&&validISODate(right)?left>right:false;
-      case '>=':return typeof left==='number'&&typeof right==='number'
-        ?left>=right:typeof left==='string'&&typeof right==='string'
-         &&validISODate(left)&&validISODate(right)?left>=right:false;
-      case '<':return typeof left==='number'&&typeof right==='number'
-        ?left<right:typeof left==='string'&&typeof right==='string'
-         &&validISODate(left)&&validISODate(right)?left<right:false;
-      case '<=':return typeof left==='number'&&typeof right==='number'
-        ?left<=right:typeof left==='string'&&typeof right==='string'
-         &&validISODate(left)&&validISODate(right)?left<=right:false;
-      case '+':return numeric(left)+numeric(right);
-      case '-':return numeric(left)-numeric(right);
-      case '*':return numeric(left)*numeric(right);
-      case '/':{
-        const divisor=numeric(right);
-        if(divisor===0)throw new Error('Flow formula division by zero');
-        return numeric(left)/divisor;
-      }
-      case '%':return numeric(left)%numeric(right);
-      case '^':return Math.pow(numeric(left),numeric(right));
-      default:throw new Error('Unsupported Flow formula operator');
-    }
+    return evaluateFormulaBinary(node.operator,left,right);
   }
   const argument=(index:number):unknown=>{
     if(!node.args[index])throw new Error(node.name+' has too few arguments');
@@ -562,21 +543,18 @@ function evaluate(node:Expression,resolve:FormulaResolver,context:FormulaEvaluat
 }
 
 export function evaluateFlowFormula(expression:string,resolve:FormulaResolver,
-  context:FormulaEvaluationContext={}):unknown {
+  context:FormulaEvaluationContext={},expressionContext:FormulaExpressionContext='flow_formula'):unknown {
   if(typeof expression!=='string'||!expression.trim())throw new Error('Flow formula is empty');
-  return evaluate(new Parser(tokenize(expression)).parse(),resolve,context);
+  const ast=new Parser(tokenize(expression)).parse();
+  validateFormulaFunctions(ast,expressionContext);
+  return evaluate(ast,resolve,context);
 }
 
-export function validateFlowFormula(expression:string):void {
+export function validateFlowFormula(expression:string,
+  context:FormulaExpressionContext='flow_formula'):void {
   if(typeof expression!=='string'||!expression.trim())throw new Error('Flow formula is empty');
-  const inspect=(node:Expression)=>{
-    if(node.kind==='call'){
-      if(!supportedFunctions.has(node.name))throw new Error('Unsupported Flow formula function: '+node.name);
-      node.args.forEach(inspect);
-    }else if(node.kind==='unary')inspect(node.value);
-    else if(node.kind==='binary'){inspect(node.left);inspect(node.right);}
-  };
-  inspect(new Parser(tokenize(expression)).parse());
+  const ast=new Parser(tokenize(expression)).parse();
+  validateFormulaFunctions(ast,context);
 }
 
 export type FormulaValueType='Number'|'Text'|'Checkbox'|'Date'|'DateTime'|'Time'
@@ -591,8 +569,9 @@ const compatibleFormulaTypes=(left:FormulaValueType,right:FormulaValueType):Form
   if(formulaTextTypes.has(left)&&formulaTextTypes.has(right))return 'Text';
   return null;
 };
-export function inferFlowFormulaType(expression:string,resolve:FormulaTypeResolver):FormulaValueType {
-  validateFlowFormula(expression);
+export function inferFlowFormulaType(expression:string,resolve:FormulaTypeResolver,
+  context:FormulaExpressionContext='formula_field'):FormulaValueType {
+  validateFlowFormula(expression,context);
   const infer=(node:Expression):FormulaValueType=>{
     if(node.kind==='literal')return node.value===null?'Null':typeof node.value==='number'?'Number':
       typeof node.value==='boolean'?'Checkbox':'Text';
@@ -622,8 +601,10 @@ export function inferFlowFormulaType(expression:string,resolve:FormulaTypeResolv
         return 'Checkbox';
       }
       if(['>','>=','<','<='].includes(operator)){
-        if(!(formulaNumeric(left)&&formulaNumeric(right)||left==='Date'&&right==='Date'))
-          throw new Error('Ordered formula comparisons require matching numbers or dates');
+        const orderedTypes=compatibleFormulaTypes(left,right);
+        if(!(formulaNumeric(left)&&formulaNumeric(right)
+          ||orderedTypes==='Text'||['Date','DateTime','Time'].includes(left)&&left===right))
+          throw new Error('Ordered formula comparisons require matching numbers, text, or temporal values');
         return 'Checkbox';
       }
       if(!formulaNumeric(left)||!formulaNumeric(right))
@@ -755,6 +736,7 @@ export function validateFlowResources(resources:unknown,recordTriggered=false):s
   if(!Array.isArray(resources))return ['Flow resources must be an array'];
   const errors:string[]=[];
   const names=new Set<string>();
+  const formulaResources=new Map<string,string>();
   for(const resource of resources){
     if(!resource||typeof resource!=='object'||Array.isArray(resource)){
       errors.push('Invalid Flow resource');continue;
@@ -771,14 +753,36 @@ export function validateFlowResources(resources:unknown,recordTriggered=false):s
     if(item.type==='Formula'){
       try{
         const expression=String(item.value??'');
-        validateFlowFormula(expression);
+        validateFlowFormula(expression,'flow_formula');
         if(!recordTriggered&&requiresRecordTriggerContext(
           new Parser(tokenize(expression)).parse()))
           errors.push('Record change formula functions are only supported in Record-Triggered Flows');
+        else formulaResources.set(String(item.name),expression);
       }
       catch(error){errors.push('Invalid Flow formula resource '+String(item.name)+': '
         +(error instanceof Error?error.message:'Invalid formula'));}
     }
   }
+  const visiting:string[]=[],states=new Map<string,'visiting'|'visited'>(),cycles=new Set<string>();
+  const visit=(name:string):void=>{
+    if(states.get(name)==='visited')return;
+    if(states.get(name)==='visiting'){
+      const start=visiting.indexOf(name);
+      const cycle=[...visiting.slice(start),name];
+      const key=cycle.join(' -> ');
+      if(!cycles.has(key)){
+        cycles.add(key);
+        errors.push('Cyclic Flow formula resource dependency: '+key);
+      }
+      return;
+    }
+    states.set(name,'visiting');
+    visiting.push(name);
+    for(const reference of flowFormulaReferences(formulaResources.get(name)!))
+      if(formulaResources.has(reference))visit(reference);
+    visiting.pop();
+    states.set(name,'visited');
+  };
+  for(const name of formulaResources.keys())visit(name);
   return errors;
 }

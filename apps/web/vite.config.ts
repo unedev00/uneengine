@@ -1,6 +1,21 @@
-import { resolve } from 'node:path';
+import { dirname, resolve, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+
+const webRoot = dirname(fileURLToPath(import.meta.url));
+const repositoryRoot = resolve(webRoot, '../..');
+const formulaEngineRoot = resolve(repositoryRoot, 'apps/server/src/expression-engine');
+const formulaEngineSourcePlugin = {
+  name: 'formula-engine-source',
+  enforce: 'pre' as const,
+  resolveId(source: string, importer?: string) {
+    if (!importer || !source.startsWith('.')) return null;
+    const resolved = resolve(dirname(importer.split('?')[0]), source);
+    if (!resolved.startsWith(formulaEngineRoot + sep) || !resolved.endsWith('.js')) return null;
+    return resolved.slice(0, -3) + '.ts';
+  }
+};
 
 const apiProxyTarget = process.env.METADRIVE_API_PROXY_TARGET ?? 'http://127.0.0.1:10000';
 // The custom-domain Pages deployment is rooted at /, not /metadrive/.
@@ -18,7 +33,7 @@ const frontendBuild = {
 };
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [formulaEngineSourcePlugin, react()],
   define: {
     __METADRIVE_WEB_RELEASE__: JSON.stringify(frontendBuild)
   },
@@ -37,6 +52,9 @@ export default defineConfig({
   server: {
     port: 5173,
     host: '0.0.0.0',
+    fs: {
+      allow: [webRoot, formulaEngineRoot]
+    },
     proxy: {
       '/health': { target: apiProxyTarget },
       '/api': {

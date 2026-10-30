@@ -6,6 +6,7 @@ import {evaluateFlowFormula,validateFlowFormula} from '../../src/system-files/fl
 import {readFileSync} from 'node:fs';
 import {flowChoiceValues,hydrateFlowScreenChoices} from '../../src/system-files/flow-screen-choice-runtime.js';
 import {subflowScalarTypeMatches} from '../../src/system-files/flow-subflow-runtime.js';
+import {formulaFunctions} from '../../../web/src/core/builders/FlowBuilder/flowEditorCatalog.js';
 
 test('Monthly schedules anchor to calendar day and clamp short months without drift',()=>{
  const schedule={apiName:'Invoice',object:'Invoice',startDate:'2026-01-31',
@@ -36,9 +37,8 @@ test('End With and Does Not Contain are shared decision operators',()=>{
 });
 
 test('Visual formula picker now includes runtime-supported IMAGE and time functions',()=>{
- const catalog=readFileSync(new URL('../../../web/src/core/builders/FlowBuilder/flowEditorCatalog.ts',import.meta.url),'utf8');
  for(const name of ['IMAGE','IFERROR','ISCLONE','CURRENCYRATE','TZOFFSET','ISOWEEK','ISOYEAR'])
-  assert.ok(catalog.includes("'"+name+"'"),name+' absent from no-code formula picker');
+  assert.ok(formulaFunctions.includes(name),name+' absent from no-code formula picker');
  validateFlowFormula('IMAGE("https://example.com/image.png","Description")');
  const image=evaluateFlowFormula('IMAGE("https://example.com/image.png","Description")',()=>null) as {url:string};
  assert.equal(image.url,'https://example.com/image.png');

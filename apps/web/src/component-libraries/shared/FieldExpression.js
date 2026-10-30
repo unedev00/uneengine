@@ -1,51 +1,19 @@
 /** Bounded browser formula evaluator shared by page bindings and UNE renderers.
  * It reads only own properties of the already-authorised record and never evals code.
  */
+import {
+ evaluateFormulaBinary,evaluateFormulaUnary,formulaTruth,Parser
+} from '../../../../server/src/expression-engine/FormulaParser.js';
+import {tokenize} from '../../../../server/src/expression-engine/FormulaTokenizer.js';
+import {validateFormulaFunctions} from '../../../../server/src/expression-engine/FormulaFunctionRegistry.js';
+
 const text=value=>value==null?'':String(value);
 const numeric=value=>{
  const result=typeof value==='number'?value:typeof value==='string'&&value.trim()?Number(value):NaN;
  if(!Number.isFinite(result))throw Error('Expected a finite number');
  return result;
 };
-const truth=value=>value===true||value===1||value==='true';
-const tokenize=source=>{
- if(source.length>2048)throw Error('Formula exceeds the 2048-character limit');
- const tokens=[];let index=0;
- while(index<source.length){
-  if(/\s/.test(source[index])){index++;continue;}
-  const field=/^@([A-Za-z][A-Za-z0-9_]*)/.exec(source.slice(index));
-  if(field){tokens.push({kind:'field',value:field[1]});index+=field[0].length;continue;}
-  if(source[index]==='"'){
-   index++;let value='',closed=false;
-   while(index<source.length){
-    const character=source[index++];
-    if(character==='"'){
-     if(source[index]==='"'){value+='"';index++;}
-     else{closed=true;break;}
-    }else value+=character;
-   }
-   if(!closed)throw Error('Unterminated formula string');
-   tokens.push({kind:'string',value});continue;
-  }
-  const number=/^(?:\d+(?:\.\d*)?|\.\d+)/.exec(source.slice(index));
-  if(number){tokens.push({kind:'number',value:Number(number[0])});index+=number[0].length;continue;}
-  const name=/^[A-Za-z][A-Za-z0-9_]*/.exec(source.slice(index));
-  if(name){
-   const value=name[0],upper=value.toUpperCase();
-   tokens.push({kind:['AND','OR','NOT'].includes(upper)&&!/^\s*\(/.test(source.slice(index+value.length))
-    ?'operator':'name',value:upper});
-   index+=value.length;continue;
-  }
-  const operator=/^(?:>=|<=|<>|!=|==|[+\-*/%^&=<>])/.exec(source.slice(index));
-  if(operator){tokens.push({kind:'operator',value:operator[0]});index+=operator[0].length;continue;}
-  if('(),'.includes(source[index])){tokens.push({kind:'punctuation',value:source[index++]});continue;}
-  throw Error('Invalid formula token');
- }
- if(tokens.length>256)throw Error('Formula exceeds the 256-token limit');
- return tokens;
-};
-const precedence={OR:1,AND:2,'=':3,'==':3,'!=':3,'<>':3,'<':3,'<=':3,'>':3,'>=':3,
- '&':4,'+':5,'-':5,'*':6,'/':6,'%':6,'^':7};
+const truth=formulaTruth;
 const compare=(left,right)=>{
  if(typeof left==='number'&&typeof right==='number')return left===right?0:left<right?-1:1;
  if(typeof left==='boolean'&&typeof right==='boolean')return left===right?0:left?1:-1;
@@ -307,133 +275,81 @@ const evaluateCall=(name,args)=>{
   default:throw Error(`Unsupported formula function: ${name}`);
  }
 };
-function parse(tokens,record){
- let position=0,nodes=0;
- const primary=()=>{
-  if(++nodes>512)throw Error('Formula complexity exceeded');
-  const token=tokens[position++];
-  if(!token)throw Error('Missing operand');
-  if(token.kind==='punctuation'&&token.value==='('){
-   const value=expression(0);
-   if(tokens[position++]?.value!==')')throw Error('Unclosed parenthesis');
-   return value;
+function parse(source,record){
+ const expression=new Parser(tokenize(source)).parse();
+ validateFormulaFunctions(expression,'ribbon_binding');
+ const resolveReference=reference=>{
+  if(!record||typeof record!=='object'||Array.isArray(record))return '';
+  const parts=reference.split('.');
+ if(parts.some(part=>!part||['__proto__','prototype','constructor'].includes(part)))throw Error('Invalid formula token');
+  const ownValue=(source,key)=>{
+   const descriptor=Object.getOwnPropertyDescriptor(source,key);
+   return descriptor&&Object.prototype.hasOwnProperty.call(descriptor,'value')
+    ?descriptor.value:undefined;
+  };
+  if(Object.prototype.hasOwnProperty.call(record,reference))return ownValue(record,reference)??'';
+  let value=record;
+  for(const part of parts){
+   if(!value||typeof value!=='object'||Array.isArray(value)
+    ||!Object.prototype.hasOwnProperty.call(value,part))return '';
+   value=ownValue(value,part);
   }
-  if(token.kind==='string'||token.kind==='number')return ()=>token.value;
-  if(token.kind==='field')return ()=>record&&Object.prototype.hasOwnProperty.call(record,token.value)?record[token.value]??'':'';
-  if(token.kind==='name'){
-   const name=token.value;
-   if(name==='TRUE')return ()=>true;
-   if(name==='FALSE')return ()=>false;
-   if(name==='NULL')return ()=>null;
-   if(name==='PI')return ()=>Math.PI;
-   if(tokens[position]?.value==='('){
-    position++;const argumentsList=[];
-    if(tokens[position]?.value!==')'){
-     do{argumentsList.push(expression(0));if(tokens[position]?.value!==',')break;position++;}
-     while(argumentsList.length<16);
+  return value??'';
+ };
+ const evaluate=node=>{
+  let result;
+  if(node.kind==='literal')result=node.value;
+  else if(node.kind==='reference')result=resolveReference(node.value);
+  else if(node.kind==='unary')result=evaluateFormulaUnary(node.operator,evaluate(node.value));
+  else if(node.kind==='binary'){
+   const left=evaluate(node.left);
+   if(node.operator==='AND'&&!truth(left))return false;
+   if(node.operator==='OR'&&truth(left))return true;
+   result=evaluateFormulaBinary(node.operator,left,evaluate(node.right));
+  }else if(node.name==='IF'){
+   result=truth(evaluate(node.args[0]))?evaluate(node.args[1]):evaluate(node.args[2]);
+  }else if(node.name==='NOT'){
+   result=!truth(evaluate(node.args[0]));
+  }else if(node.name==='IFERROR'){
+   try{result=evaluate(node.args[0]);}catch{result=evaluate(node.args[1]);}
+  }else if(node.name==='AND'){
+   result=true;
+   for(const argument of node.args)if(!truth(evaluate(argument))){result=false;break;}
+  }else if(node.name==='OR'){
+   result=false;
+   for(const argument of node.args)if(truth(evaluate(argument))){result=true;break;}
+  }else if(node.name==='CASE'){
+   if(node.args.length%2!==0)throw Error('CASE requires a comparison value and a default result');
+   const sourceValue=evaluate(node.args[0]);
+   let matched=false;
+   for(let index=1;index<node.args.length-1;index+=2){
+    if(sourceValue===evaluate(node.args[index])){
+     result=evaluate(node.args[index+1]);matched=true;break;
     }
-    if(tokens[position++]?.value!==')')throw Error('Invalid formula function');
-    if(name==='IF'){
-     if(argumentsList.length!==3)throw Error('Invalid IF argument count');
-     return ()=>truth(argumentsList[0]())?argumentsList[1]():argumentsList[2]();
-    }
-    if(name==='AND'){
-     if(argumentsList.length<1||argumentsList.length>20)throw Error('Invalid AND argument count');
-     return ()=>argumentsList.every(argument=>truth(argument()));
-    }
-    if(name==='OR'){
-     if(argumentsList.length<1||argumentsList.length>20)throw Error('Invalid OR argument count');
-     return ()=>argumentsList.some(argument=>truth(argument()));
-    }
-    if(name==='NOT'){
-     if(argumentsList.length!==1)throw Error('Invalid NOT argument count');
-     return ()=>!truth(argumentsList[0]());
-    }
-    if(name==='IFERROR'){
-     if(argumentsList.length!==2)throw Error('Invalid IFERROR argument count');
-     return ()=>{try{return argumentsList[0]();}catch{return argumentsList[1]();}};
-    }
-    if(name==='XOR'){
-     if(argumentsList.length<2||argumentsList.length>20)throw Error('Invalid XOR argument count');
-     return ()=>argumentsList.reduce((result,argument)=>result!==truth(argument()),false);
-    }
-    if(name==='CASE'){
-     if(argumentsList.length<4||argumentsList.length>12||argumentsList.length%2!==0)
-      throw Error('Invalid CASE argument count');
-     return ()=>{
-      const expression=argumentsList[0]();
-      for(let index=1;index<argumentsList.length-1;index+=2)
-       if(expression===argumentsList[index]())return argumentsList[index+1]();
-      return argumentsList[argumentsList.length-1]();
-     };
-    }
-    return ()=>evaluateCall(name,argumentsList.map(argument=>argument()));
    }
-   return ()=>name;
-  }
-  throw Error('Invalid formula syntax');
+   if(!matched)result=evaluate(node.args[node.args.length-1]);
+  }else if(node.kind==='call'){
+   result=evaluateCall(node.name,node.args.map(evaluate));
+  }else throw Error('Invalid formula syntax');
+  if(typeof result==='number'&&!Number.isFinite(result))
+   throw Error('Formula result must be finite');
+  return result;
  };
- const unaryPrimary=()=>{
-  const token=tokens[position];
-  if(token?.kind==='operator'&&['+','-','NOT'].includes(token.value)){
-   position++;const operand=unaryPrimary();
-   return ()=>token.value==='NOT'?!truth(operand()):token.value==='-'?-numeric(operand()):numeric(operand());
-  }
-  return primary();
- };
- const expression=minimum=>{
-  let left=unaryPrimary();
-  while(true){
-   const token=tokens[position],level=token?.kind==='operator'?precedence[token.value]:undefined;
-   if(level===undefined||level<minimum)break;
-   position++;const right=expression(level+(token.value==='^'?0:1)),operator=token.value;
-   const previous=left;
-   left=()=>{
-    const a=previous();
-    if(operator==='AND'&&!truth(a))return false;
-    if(operator==='OR'&&truth(a))return true;
-    const b=right();
-    if(operator==='AND')return truth(b);
-    if(operator==='OR')return truth(b);
-    if(operator==='&')return text(a)+text(b);
-    if(['=','==','!=','<>','<','<=','>','>='].includes(operator)){
-     const ordering=compare(a,b);
-     if(operator==='='||operator==='==')return ordering===0;
-     if(operator==='!='||operator==='<>')return ordering!==0;
-     if(ordering===null)return false;
-     if(operator==='<')return ordering<0;
-     if(operator==='<=')return ordering<=0;
-     if(operator==='>')return ordering>0;
-     return ordering>=0;
-    }
-    if(operator==='+')return numeric(a)+numeric(b);
-    if(operator==='-')return numeric(a)-numeric(b);
-    if(operator==='*')return numeric(a)*numeric(b);
-    if(operator==='/'){const divisor=numeric(b);if(!divisor)throw Error('Division by zero');return numeric(a)/divisor;}
-    if(operator==='%')return numeric(a)%numeric(b);
-    if(operator==='^')return numeric(a)**numeric(b);
-    throw Error('Unsupported formula operator');
-   };
-  }
-  return left;
- };
- const result=expression(0);
- if(position!==tokens.length)throw Error('Unexpected formula token');
- return result();
+ return evaluate(expression);
 }
 export class FieldExpressionEvaluationError extends Error {
  constructor(message){super(message);this.name='FieldExpressionEvaluationError';}
 }
 export function evaluateFieldExpressionDetailed(expression,record){
  if(typeof expression!=='string')return {value:''};
- if(expression.length>2048)return {value:'',error:'Formula exceeds the 2048-character limit'};
+ if(expression.length>4000)return {value:'',error:'Formula exceeds the 4000-character limit'};
  const input=expression.trim();if(!input)return {value:''};
- if(!/@[A-Za-z]/.test(input)&&!input.startsWith('@')&&!/^[A-Za-z]+\s*\(/.test(input)
+ if(!/^(?:TRUE|FALSE|NULL|PI)$/i.test(input)&&!/@[A-Za-z]/.test(input)&&!input.startsWith('@')&&!/^[A-Za-z]+\s*\(/.test(input)
   &&!/^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)+(?:\s*\(|$)/.test(input)
   &&!/^(?:["(]|[-+]?\d+(?:\.\d+)?\s*[+*\/%^<>=!-])/.test(input)
   &&!/\s(?:[&+*/%^<>=!]|AND\b|OR\b)\s/i.test(input))return {value:expression};
  try{
-  const result=parse(tokenize(input),record);
+  const result=parse(input,record);
   if(typeof result==='number'&&!Number.isFinite(result))return {value:'',error:'Formula result is not finite'};
   return {value:text(result)};
  }catch(failure){
