@@ -78,7 +78,23 @@ try{
  const c2=await records.create(tenant,user,'PhaseChild__c',
   {Name:'Child B',ParentId:p2});
  const g1=await records.create(tenant,user,'PhaseGrand__c',
-  {Name:'Grand',ChildId:c1,BlockingParentId:p1});
+  {Name:'Grand',ChildId:c1,BlockingParentId:p1}); 
+ // Required lookup filters reject invalid targets at the shared Record Engine;
+ // optional filters are advisory and must not block otherwise valid writes.
+ const {persistObjectLookupFilters}=await import(new URL('object-manager-lookup-filters.js',built).href);
+ await db.transaction(async client=>persistObjectLookupFilters(client,tenant,'PhaseChild__c',{
+  relatedLookupFilters:[
+   {id:'review-parent-check',fieldApiName:'ReviewParentId',relatedObject:'PhaseParent__c',
+    relatedFieldApiName:'Name',operator:'Equals',value:'Parent A',required:true},
+   {id:'secondary-parent-hint',fieldApiName:'SecondaryParentId',relatedObject:'PhaseParent__c',
+    relatedFieldApiName:'Name',operator:'Equals',value:'Never Matching',required:false}
+  ],
+  relatedLookupFilterLogic:{ReviewParentId:'All'}
+ }));
+ await assert.rejects(()=>records.update(tenant,user,'PhaseChild__c',c1,
+  {ReviewParentId:p2}),/Invalid required lookup filter/);
+ await records.update(tenant,user,'PhaseChild__c',c1,{SecondaryParentId:p2});
+
  await assert.rejects(()=>records.update(tenant,user,'PhaseChild__c',c1,{ParentId:p2}),/does not allow reparenting/);
  await records.update(tenant,user,'PhaseGrand__c',g1,{ChildId:c2});
  await records.update(tenant,user,'PhaseGrand__c',g1,{ChildId:c1});
