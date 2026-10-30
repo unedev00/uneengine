@@ -1,0 +1,46 @@
+/* Office-style Page Builder shape controls. Metadata frame still owns geometry;
+   these arrows only appear while selected and are not part of published content. */
+.modern-canvas-builder .builder-editor-mode .free-canvas-component.selected .free-canvas-resize-handle,
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .free-canvas-resize-handle{
+  display:flex;align-items:center;justify-content:center;position:absolute;
+  width:20px!important;height:20px!important;min-width:20px;min-height:20px;
+  padding:0!important;margin:0;border:0!important;background:#fff!important;
+  color:#205fcd;border-radius:50%!important;box-shadow:0 0 0 1px #80a8ef;
+  z-index:165!important;touch-action:none;user-select:none;
+}
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .free-canvas-resize-handle:hover,
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .free-canvas-resize-handle:focus-visible{
+  background:#eaf2ff!important;box-shadow:0 0 0 2px #2563eb;
+}
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .resize-n{
+  top:0!important;bottom:auto!important;left:calc(50% - 10px)!important;right:auto!important;cursor:ns-resize!important}
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .resize-s{
+  bottom:0!important;top:auto!important;left:calc(50% - 10px)!important;right:auto!important;cursor:ns-resize!important}
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .resize-e{
+  right:0!important;left:auto!important;top:calc(50% - 10px)!important;bottom:auto!important;cursor:ew-resize!important}
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .resize-w{
+  left:0!important;right:auto!important;top:calc(50% - 10px)!important;bottom:auto!important;cursor:ew-resize!important}
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .resize-ne{
+  right:0!important;left:auto!important;top:0!important;bottom:auto!important;cursor:nesw-resize!important}
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .resize-nw{
+  left:0!important;right:auto!important;top:0!important;bottom:auto!important;cursor:nwse-resize!important}
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .resize-se{
+  right:0!important;left:auto!important;bottom:0!important;top:auto!important;cursor:nwse-resize!important}
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .resize-sw{
+  left:0!important;right:auto!important;bottom:0!important;top:auto!important;cursor:nesw-resize!important}
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .free-canvas-move-handle{
+  position:absolute;top:calc(50% - 12px);left:calc(50% - 12px);z-index:170!important;display:flex;align-items:center;justify-content:center;
+  width:23px;height:23px;min-width:23px;min-height:23px;
+  padding:0;border:1px solid #79a9f3;border-radius:4px;
+  color:#205fcd;background:#fff;box-shadow:0 1px 4px #0002;
+  cursor:move;touch-action:none;user-select:none;
+}
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .free-canvas-move-handle:hover,
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .free-canvas-move-handle:focus-visible{
+  background:#eaf2ff;outline:2px solid #205fcd;
+}
+/* During pointer drag the native Smart body follows the editable geometry
+   rather than keeping its original explicit px style until pointer release. */
+.builder-editor-mode .modern-canvas-builder .free-canvas-component .smart-runtime{
+  width:100%!important;height:100%!important;min-width:0;min-height:0;
+}

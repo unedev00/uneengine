@@ -30,31 +30,45 @@ const recordOf=p=>p.objectApiName&&Array.isArray(p.records)
  ?(p.records[0]??{}):p.record&&typeof p.record==="object"&&!Array.isArray(p.record)?p.record:
  Array.isArray(p.records)&&p.records.length?p.records[0]:Array.isArray(p.items)&&p.items.length?p.items[0]:{};
 const recordsOf=p=>Array.isArray(p.records)?p.records:Array.isArray(p.items)?p.items:[];
+// Image bindings must resolve once per authorised record, not once for the grid.
+// Plain API names and @Field expressions both use the same record values.
+const boundImage=(p,record)=>{
+ const source=p.imageSource??p.src??'';
+ const key=typeof source==='string'?source.replace(/^@/,''):'';
+ if(key && record && Object.prototype.hasOwnProperty.call(record,key))return text(record[key]);
+ return expression(source,record);
+};
 function SmartCard({p,record}){
  const rawImage=p.imageSource;
- const image=expression(rawImage??p.src??"",record);
+ const image=boundImage(p,record);
  const header=expression(p.textSource??p.title??"",record);
  const badge=expression(p.badgeText??"",record);
  const horizontal=["left","right"].includes(p.imagePlacement);
+ const single=p.kind==="smart_image";
+ const imageHeight=number(p.imageHeight,220);
  return <article className="smart-card" style={{
   display:"flex",flexDirection:horizontal?"row":"column",
   background:p.backgroundColor||"#fff",border:p.borderColor?"1px solid "+p.borderColor:"1px solid #e2e8f0",
-  borderRadius:number(p.radius,12),overflow:"hidden",position:"relative",minWidth:0
+  borderRadius:number(p.radius,12),overflow:"hidden",position:"relative",minWidth:0,
+  ...(single?{height:"100%",minHeight:0}:{}),
+  ...(p.kind==="smart_card_grid"?{height:"100%"}:{})
  }}>
-  <div style={{order:["right","bottom"].includes(p.imagePlacement)?2:0,flex:horizontal?"1 1 50%":undefined,minWidth:0}}>
+  <div style={{order:["right","bottom"].includes(p.imagePlacement)?2:0,
+    flex:horizontal?"1 1 50%":single?"1 1 auto":undefined,minWidth:0,minHeight:0,
+    ...(single?{display:"flex"}:{})}}>
    <SmartPicture src={image} alt={header} loadAsset={p.loadAsset}
-      style={{height:number(p.imageHeight,220),width:"100%",display:"block",
+      style={{height:single?"100%":imageHeight,width:"100%",display:"block",
        objectFit:p.imageFill==="fit"?"contain":p.imageFill==="stretch"?"fill":"cover",
        border:p.imageBorderColor?"1px solid "+p.imageBorderColor:undefined}}/>
   </div>
-  <div className="smart-card-content" style={{
+  {header&&<div className="smart-card-content" style={{
     order:1,flex:horizontal?"1 1 50%":undefined,display:"flex",alignItems:"center",
-    height:horizontal?number(p.imageHeight,220):number(p.headerBoxHeight,44),fontWeight:p.headerBold===false?400:700,
+    height:horizontal?imageHeight:number(p.headerBoxHeight,44),fontWeight:p.headerBold===false?400:700,
     textAlign:p.headerAlignment||"left",justifyContent:p.headerAlignment==="right"?"flex-end":p.headerAlignment==="center"?"center":"flex-start",
     border:p.headerBorderColor?"1px solid "+p.headerBorderColor:undefined,color:p.defaultValueColor||p.labelColor||undefined,
     whiteSpace:p.wrapText===false?"nowrap":"normal",
     overflow:"hidden",overflowWrap:"anywhere",padding:"4px 10px"
-  }}>{header}</div>
+  }}>{header}</div>}
   {p.badgeVisible===true&&<span className={"smart-badge "+(p.badgeAlignment||"image-top-right")}
    style={{fontWeight:p.badgeBold===false?400:700,fontSize:number(p.badgeTextSize,12),
    color:p.badgeTextColor||"#fff",background:p.badgeBodyColor||"#2563eb"}}>{badge}</span>}
@@ -162,16 +176,21 @@ export default function SmartRuntime(p){
  if(name==="smart_button")content=<button type="button" className="smart-button"
    onClick={()=>fire("click",record)} style={{...style,...shadowStyle,background:p.backgroundColor||"#2267bc",color:p.labelColor||"#fff",borderColor:p.borderColor}}>{label||"Button"}</button>;
  else if(name==="smart_toggle")content=<SmartToggle p={p} fire={fire}/>;
- else if(name==="smart_text")content=<label className="smart-field" style={style}>
-  {label&&<span>{label}</span>}<input type="text" placeholder={text(p.placeholder||"")} defaultValue={expression(p.textSource??p.defaultValue??p.value??"",record)}
-  style={{color:p.defaultValueColor||p.labelColor||undefined,borderColor:p.borderColor||undefined,
-    background:p.backgroundColor||"#fff",textAlign:p.labelAlignment||"left"}}
-  onChange={e=>fire("change",e.target.value)}/></label>;
+ else if(name==="smart_text")content=<input className="smart-input-box" type="text"
+  aria-label={label||text(p.placeholder||"Input")}
+  placeholder={label||text(p.placeholder||"")}
+  defaultValue={expression(p.textSource??p.defaultValue??p.value??"",record)}
+  style={{...style,fontSize:number(p.textSize,16),color:p.defaultValueColor||p.labelColor||undefined,
+    borderColor:p.borderColor||undefined,background:p.backgroundColor||"#fff",
+    textAlign:p.labelAlignment||"left","--smart-placeholder-color":p.labelColor||"#64748b"}}
+  onChange={e=>fire("change",e.target.value)}/>;
  else if(name==="smart_lookup")content=<SmartLookup p={p} fire={fire}
    style={{...style,backgroundColor:p.backgroundColor||undefined,borderColor:p.borderColor||undefined,
     color:p.labelColor||undefined,fontSize:number(p.textSize,16)}}/>;
  else if(name==="smart_image")content=<SmartCard p={p} record={record}/>;
- else if(name==="smart_card_grid")content=<div className="smart-grid" style={{gridTemplateColumns:"repeat("+number(p.cardsPerRow,3,1,12)+",minmax(0,1fr))"}}>
+ else if(name==="smart_card_grid")content=<div className="smart-grid" style={{
+  gridTemplateColumns:"repeat("+number(p.cardsPerRow,3,1,12)+",minmax(0,1fr))",
+  gridTemplateRows:"repeat("+number(p.cardsPerColumn,1,1,12)+",minmax(0,1fr))"}}>
   {recordsOf(p).slice(0,number(p.cardsPerRow,3,1,12)*number(p.cardsPerColumn,1,1,12)).map((r,i)=>
   <SmartCard p={p} record={r} key={r?.id??i}/>)}</div>;
  else if(name==="smart_cart")content=<SmartCart p={p} records={recordsOf(p)} Picture={SmartPicture} expression={expression}/>;
