@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {readdirSync} from 'node:fs';
+import {readdirSync,readFileSync} from 'node:fs';
 import {test} from 'node:test';
 import type {SqlPersistence} from '../../src/system-files/sql-persistence.js';
 import {applySystemMigrations} from '../../src/system-support/system-migrations.js';
@@ -34,4 +34,20 @@ test('system migrations are additive, recorded, and idempotent',async()=>{
  await applySystemMigrations(db);
  assert.equal(queries.filter(q=>q.includes('CREATE TABLE IF NOT EXISTS md_named_credentials')).length,numberOfDDL);
  assert.equal(versions.size,expected);
+});
+
+
+test('Smart Cart migration cannot upsert the same property twice during API startup',()=>{
+ const sql=readFileSync(new URL(
+  '../../src/system-support/migrations/20270130-smart-cart-ribbon.sql',import.meta.url
+ ),'utf8');
+ const input=sql.match(/FROM \(VALUES([\s\S]*?)\) AS keys\(property_key\)/);
+ assert.ok(input,'Smart Cart key inventory must remain inspectable');
+ const keys=[...input[1].matchAll(/\('([A-Za-z][A-Za-z0-9_]*)'\)/g)].map(match=>match[1]);
+ assert.ok(keys.length>=40,'Expected Smart Cart property coverage');
+ assert.equal(new Set(keys).size,keys.length,
+  'Duplicate ribbon keys can crash PostgreSQL ON CONFLICT DO UPDATE with SQLSTATE 21000');
+ assert.equal(keys.filter(key=>key==='headerTextColor').length,1);
+ assert.match(sql,/SELECT DISTINCT 'smart_cart', keys\.property_key/);
+ assert.match(sql,/ON CONFLICT\(component_api,property_key\) DO UPDATE/);
 });
