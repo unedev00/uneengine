@@ -32,7 +32,7 @@ test('Acetill owns its renderer identity and a separate version-3 package',()=>{
  assert.equal(d.apiName,'acetill_cart');
  assert.deepEqual(d.propertyDefinitions,[]);
  const privateRenderer=src('../src/component-libraries/acetill_cart/AcetillCart.jsx');
- assert.match(privateRenderer,/OneShoppingCart\/OneShoppingCart/);
+ assert.match(privateRenderer,/shared\/primitives\/ShoppingCart\/ShoppingCart/);
  assert.doesNotMatch(privateRenderer,/ui_cart\/UneCart/);
  assert.match(v3,/one-bundled:acetill_cart/);
  assert.match(v3,/AcetillSale','acetill_cart'/);
