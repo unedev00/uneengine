@@ -129,6 +129,7 @@ function SmartLookup({p,style,fire}){
    aria-expanded={opened&&matches.length>0} aria-controls="smart-lookup-suggestions"
    placeholder={text(p.placeholder||p.label||"Search records…")}
    style={{textAlign:p.labelAlignment||"left",fontSize:number(p.textSize,16),color:p.labelColor||undefined,
+    boxShadow:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none",
     background:p.backgroundColor||"#fff",borderColor:p.borderColor||undefined}}
    value={query} onFocus={()=>setOpened(true)}
    onChange={event=>{setQuery(event.target.value);setOpened(true);fire("change",event.target.value)}}/>
@@ -191,7 +192,7 @@ export default function SmartRuntime(p){
   aria-label={label||text(p.placeholder||"Input")}
   placeholder={label||text(p.placeholder||"")}
   defaultValue={expression(p.textSource??p.defaultValue??p.value??"",record)}
-  style={{...style,width:"100%",height:"100%",minWidth:0,minHeight:0,
+  style={{...style,...shadowStyle,width:"100%",height:"100%",minWidth:0,minHeight:0,
     fontSize:number(p.textSize,16),color:p.defaultValueColor||p.labelColor||undefined,
     borderColor:p.borderColor||undefined,background:p.backgroundColor||"#fff",
     textAlign:p.labelAlignment||"left","--smart-placeholder-color":p.labelColor||"#64748b"}}
@@ -231,13 +232,18 @@ export default function SmartRuntime(p){
       const safeSrc=typeof src==="string"&&/^https:\/\//i.test(src)?src:null;
       return <button key={item?.id??i} type="button" className="smart-navigation-item"
         style={{flex:"1 1 auto",minHeight:0,color:p.labelColor||undefined,background:p.backgroundColor||"#fff",
+          boxShadow:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none",
           borderColor:p.borderColor||undefined,borderRadius:number(p.radius,4),fontSize:number(p.textSize,16)}}
         onClick={()=>{fire("click",item);if(p.onNavigate&&item?.target)p.onNavigate(item.target)}}>
         {safeSrc&&<img src={safeSrc} alt="" style={{width:22,height:22,objectFit:fit}}/>}{label}
       </button>;
     })}
   </nav>;
- }else content=<div className="smart-container">{p.children||null}</div>;
+ }else content=<div className="smart-container" style={{
+    background:p.backgroundColor||"transparent",
+    border:p.borderColor?"1px solid "+p.borderColor:0,
+    borderRadius:number(p.radius,12),...shadowStyle
+ }}>{p.children||null}</div>;
  // Geometry-only technical host; the native Smart surface owns all visible styling.
  return <div className={"smart-runtime "+name} style={{
    display:"flex",flexDirection:"column",boxSizing:"border-box",border:0,
