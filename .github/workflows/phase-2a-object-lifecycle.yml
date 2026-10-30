@@ -47,3 +47,19 @@ jobs:
         run: npm run build:system --workspace apps/server
       - name: Verify 2A lifecycle through migrated PostgreSQL
         run: node apps/server/scripts/object-schema-lifecycle-sql-smoke.mjs
+      - name: Build the same production frontend used in browser E2E
+        env:
+          GITHUB_PAGES: 'true'
+          GITHUB_PAGES_BASE_PATH: '/'
+          VITE_API_BASE_URL: /api
+        run: npm run build --workspace apps/web
+      - name: Install isolated Chromium browser
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Verify Object Manager browser UI through SQL
+        env:
+          METADRIVE_BROWSER_PREBUILT: '1'
+        run: |
+          mkdir -p apps/server/artifacts
+          node apps/server/scripts/builder-browser-smoke.mjs
