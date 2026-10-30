@@ -6,7 +6,7 @@ import {buildBundledComponent} from '../../../scripts/component-catalog.mjs';
 
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {evaluateFieldExpression} from '../src/component-libraries/shared/OneFieldExpression.js';
+import {evaluateFieldExpression} from '../src/component-libraries/shared/FieldExpression.js';
 
 
 const src=path=>readFileSync(new URL(path,import.meta.url),'utf8');
@@ -58,7 +58,7 @@ test('existing UNE expression evaluator supports literal strings, field concaten
 test('Image renders ONE Card and Card Grid renders the same shared Card repeatedly',()=>{
  const image=src('../src/component-libraries/ui_image/UiImage.jsx');
  const grid=src('../src/component-libraries/shared/primitives/ItemGrid/ItemGrid.jsx');
- const card=src('../src/component-libraries/shared/OneCardCore.jsx');
+ const card=src('../src/component-libraries/shared/CardCore.jsx');
  assert.match(image,/import OneCardCore/);
  assert.match(grid,/import OneCardCore/);
  assert.match(image,/<OneCardCore /);
@@ -96,15 +96,15 @@ test('new Calendar Layout controls and navigation, container and image renderers
  assert.match(ribbon,/WeekdaysPicker/);
  assert.match(ribbon,/role="dialog"/);
  assert.match(ribbon,/kindOverrides/);
- const calendar=src('../src/component-libraries/ui-runtime/shared/UneSchedule.jsx');
+ const calendar=src('../src/component-libraries/ui-runtime/shared/Schedule.jsx');
  for(const term of ['showDays','firstDay','defaultValue','defaultValueColor','dayEnabled','activeDayCount'])
   assert.ok(calendar.includes(term),'Calendar missing '+term);
- const layout=src('../src/component-libraries/ui-runtime/shared/UneLayout.jsx');
+ const layout=src('../src/component-libraries/ui-runtime/shared/Layout.jsx');
  for(const term of ['navigationDirection','imageFill','badgeText','badgeVisible','textSource','imageSource','textFrom'])
   assert.ok(layout.includes(term),'Container/Navigation missing '+term);
  const grid=src('../src/component-libraries/shared/primitives/ItemGrid/ItemGrid.jsx');
  const image=src('../src/component-libraries/ui_image/UiImage.jsx');
- assert.ok(src('../src/component-libraries/shared/OneCardCore.jsx').includes("imageFill"),'shared Card image fit missing');
+ assert.ok(src('../src/component-libraries/shared/CardCore.jsx').includes("imageFill"),'shared Card image fit missing');
  for(const name of components){
   const registration=JSON.parse(src('../src/component-libraries/'+name+'/component.json'));
   assert.deepEqual(registration.propertyDefinitions,[],'SQL metadata leaked into '+name);

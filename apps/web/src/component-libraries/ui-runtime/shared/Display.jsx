@@ -1,4 +1,4 @@
-import OneTenantImage from "../../shared/OneTenantImage.jsx";
+import OneTenantImage from "../../shared/TenantImage.jsx";
 const fire=(p,event,value)=>{if(event==='change'&&typeof p.onChange==='function'&&!p.actionFlows?.change)p.onChange(value);
   if(p.actionFlows?.[event]&&typeof p.onAction==='function')return Promise.resolve(p.onAction({event,value})).catch(()=>{});
 };

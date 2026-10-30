@@ -1,4 +1,4 @@
-import {records as sourceRecords,title as recordTitle} from "../../shared/OneData.jsx";
+import {records as sourceRecords,title as recordTitle} from "../../shared/Data.jsx";
 const dateOnly=value=>typeof value==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(value);
 const parseDate=value=>dateOnly(value)?new Date(value+"T12:00:00"):new Date(value);
 const iso=date=>[date.getFullYear(),String(date.getMonth()+1).padStart(2,"0"),String(date.getDate()).padStart(2,"0")].join("-");

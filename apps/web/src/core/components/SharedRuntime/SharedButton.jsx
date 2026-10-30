@@ -1,4 +1,4 @@
-import {useOneActions, fire} from "../../../component-libraries/shared/OneActions.jsx";
+import {useOneActions, fire} from "../../../component-libraries/shared/Actions.jsx";
 export default function SharedButton(props) {
   const p={...props,kind:props.kind||"Button"};
   const {root}=useOneActions(p);

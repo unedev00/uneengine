@@ -30,7 +30,7 @@ test('Setup resources have working controls and security events have honest stat
 
 test('Preview chrome is not interactive and search suggestions support touch clicks',()=>{
  const builder=read('src/core/builders/PageBuilder/pageBuilderView.tsx');
- const search=read('src/core/components/SharedRuntime/OneSearch.jsx');
+ const search=read('src/core/components/SharedRuntime/Search.jsx');
  assert.doesNotMatch(builder,/<button className="btn">Follow<\/button>/);
  assert.doesNotMatch(builder,/aria-label="More record actions"/);
  assert.match(search,/onClick=\{\(\)=>choose\(option\)\}/);
@@ -38,7 +38,7 @@ test('Preview chrome is not interactive and search suggestions support touch cli
 
 test('published ONE controls have no unbound dummy actions or placeholders',()=>{
  const button=read('src/core/components/SharedRuntime/SharedButton.jsx');
- const textComponent=read('src/core/components/SharedRuntime/OneText.jsx');
+ const textComponent=read('src/core/components/SharedRuntime/Text.jsx');
  
  const appearance=read('src/component-libraries/shared/componentAppearance.js');
  const native=read('src/core/components/RegisteredComponent/registeredComponentAppearance.ts');

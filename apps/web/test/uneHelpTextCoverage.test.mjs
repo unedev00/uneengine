@@ -20,6 +20,6 @@ test('every installed UNE component keeps help text in app code, not SQL registr
  assert.ok(count>=20);
 });
 test('UNE wrapper provides metadata-driven help text tooltip',()=>{
- const frame=readFileSync(new URL('../src/component-libraries/ui-runtime/shared/UneFrame.jsx',import.meta.url),'utf8');
+ const frame=readFileSync(new URL('../src/component-libraries/ui-runtime/shared/Frame.jsx',import.meta.url),'utf8');
  assert.match(frame,/title=\{typeof p\.helpText/);
 });

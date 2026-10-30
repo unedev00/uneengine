@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {resolveFieldText,resolveRegisteredTextProperties} from '../src/core/components/RegisteredComponent/fieldExpressionRuntime';
-import {evaluateFieldExpression} from '../src/component-libraries/shared/OneFieldExpression.js';
+import {evaluateFieldExpression} from '../src/component-libraries/shared/FieldExpression.js';
 
 test('registered components resolve authorised record fields without executing code',()=>{
   const record={Name:'Tea',Price:2.5,Currency:'£'};

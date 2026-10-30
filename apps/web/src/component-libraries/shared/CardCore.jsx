@@ -1,4 +1,4 @@
-import OneTenantImage from "./OneTenantImage.jsx";
+import OneTenantImage from "./TenantImage.jsx";
 
 /** One shared image, header and badge card visual for both UNE Image and
  * UNE Card Grid. The parent supplies the number of cards and action behaviour;

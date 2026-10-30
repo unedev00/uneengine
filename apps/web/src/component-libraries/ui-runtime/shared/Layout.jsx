@@ -1,5 +1,5 @@
-import OneTenantImage from "../../shared/OneTenantImage.jsx";
-import {evaluateFieldExpression} from "../../shared/OneFieldExpression.js";
+import OneTenantImage from "../../shared/TenantImage.jsx";
+import {evaluateFieldExpression} from "../../shared/FieldExpression.js";
 const fire=(p,event,value)=>p.actionFlows?.[event]&&typeof p.onAction==="function"
   ?Promise.resolve(p.onAction({event,value})).catch(()=>{}):undefined;
 const clamp=(value,fallback,min=0,max=100)=>Number.isFinite(Number(value))?Math.max(min,Math.min(max,Number(value))):fallback;

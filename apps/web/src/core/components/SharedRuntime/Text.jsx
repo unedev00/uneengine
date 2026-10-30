@@ -1,4 +1,4 @@
-import { useOneDisplay, css, text } from "../../../component-libraries/shared/OneDisplay.jsx";
+import { useOneDisplay, css, text } from "../../../component-libraries/shared/Display.jsx";
 
 export default function OneText(props) {
   const p = { ...props, kind: props.kind || "Text" };

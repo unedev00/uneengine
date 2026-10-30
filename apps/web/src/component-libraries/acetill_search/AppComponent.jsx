@@ -1,5 +1,5 @@
-import OneComponent from "../../core/components/SharedRuntime/OneSearch.jsx";
-import {UneFrame,uneProps} from "../ui-runtime/shared/UneFrame.jsx";
+import OneComponent from "../../core/components/SharedRuntime/Search.jsx";
+import {UneFrame,uneProps} from "../ui-runtime/shared/Frame.jsx";
 // Private application settings live in code; existing runtime values take precedence.
 const INTERNAL_DEFAULTS={
   "placeholder": "Search",

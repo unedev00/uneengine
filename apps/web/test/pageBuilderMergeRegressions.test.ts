@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {resolveFieldText,resolveRegisteredTextProperties} from '../src/core/components/RegisteredComponent/fieldExpressionRuntime';
-import {evaluateFieldExpression} from '../src/component-libraries/shared/OneFieldExpression.js';
+import {evaluateFieldExpression} from '../src/component-libraries/shared/FieldExpression.js';
 import {pageComponentRecordQuery,pageComponentRelatedQuery,filterPageComponentRecords} from '../src/core/pages/PageRuntime/pageComponentBindings';
 import type {FieldMetadata} from '../src/core/metadata/Definitions/metadata';
 const field=(apiName:string,dataType:string)=>({apiName,label:apiName,dataType}) as FieldMetadata;

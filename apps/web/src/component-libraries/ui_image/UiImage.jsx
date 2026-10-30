@@ -1,6 +1,6 @@
-import OneCardCore from "../shared/OneCardCore.jsx";
-import {evaluateFieldExpression} from "../shared/OneFieldExpression.js";
-import {UneFrame,uneProps} from "../ui-runtime/shared/UneFrame.jsx";
+import OneCardCore from "../shared/CardCore.jsx";
+import {evaluateFieldExpression} from "../shared/FieldExpression.js";
+import {UneFrame,uneProps} from "../ui-runtime/shared/Frame.jsx";
 const safe=(v,f)=>Number.isFinite(Number(v))&&Number(v)>=0?Number(v):f;
 const display=(expr,row)=>typeof expr==="string"&&expr.trim()&&(/@[A-Za-z]/.test(expr)||/\s[&+*/]\s/.test(expr)||/^\s*"/.test(expr))
  ?evaluateFieldExpression(expr,row??{}):typeof expr==="string"?expr:"";

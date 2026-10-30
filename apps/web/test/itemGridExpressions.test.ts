@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {evaluateFieldExpression} from '../src/component-libraries/shared/OneFieldExpression.js';
+import {evaluateFieldExpression} from '../src/component-libraries/shared/FieldExpression.js';
 
 test('Card Grid expressions concatenate fields and quoted literals without executing code',()=>{
   const record={CurrencySymbol:'£',Price:1.25,Name:'Cola',Category:'Drinks'};

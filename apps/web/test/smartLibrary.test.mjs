@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {evaluateFieldExpression} from '../src/component-libraries/shared/OneFieldExpression.js';
+import {evaluateFieldExpression} from '../src/component-libraries/shared/FieldExpression.js';
 import {loadComponentCatalog} from '../../../scripts/component-catalog.mjs';
 const read=path=>readFileSync(new URL(path,import.meta.url),'utf8');
 test('Smart Formula uses Excel semantics for maths, literals, fields and &',()=>{

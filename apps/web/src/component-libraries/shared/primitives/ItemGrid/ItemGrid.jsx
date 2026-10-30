@@ -1,5 +1,5 @@
-import OneCardCore from "../../OneCardCore.jsx";
-import { evaluateFieldExpression } from "../../OneFieldExpression.js";
+import OneCardCore from "../../CardCore.jsx";
+import { evaluateFieldExpression } from "../../FieldExpression.js";
 import {
   css,
   records,
@@ -7,7 +7,7 @@ import {
   title,
   fire,
   columns,
-} from "../../OneData.jsx";
+} from "../../Data.jsx";
 
 function ItemGrid({ p, rows }) {
   const [sharedFilters, setSharedFilters] = React.useState({});

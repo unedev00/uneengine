@@ -9,7 +9,7 @@ import {registeredComponentAppearance, registeredComponentAppearanceClasses} fro
 import './registeredComponentAppearance.css';
 import {pagePropertyIssues} from '../Properties/pagePropertyContract';
 import {resolveRegisteredTextProperties} from './fieldExpressionRuntime';
-import {FieldExpressionEvaluationError} from '../../../component-libraries/shared/OneFieldExpression.js';
+import {FieldExpressionEvaluationError} from '../../../component-libraries/shared/FieldExpression.js';
 import {validatePrimitiveMetadata, primitiveAccessibilityProps} from './sharedPrimitiveMetadata';
 
 type ComponentBoundaryState = { error?: string };

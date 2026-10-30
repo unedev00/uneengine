@@ -271,7 +271,7 @@ test('builder and published runtime use the same appearance targeting and preser
   const runtime = await readFile(new URL('pages/PageRuntime/pageRuntimeViews.tsx',root),'utf8');
   const css = await readFile(new URL('pages/TemplatePageRuntime/pageComponentAppearance.css',root),'utf8');
   const editor = await readFile(new URL('builders/ComponentStyleEditor/PageComponentVisualEditor.tsx',root),'utf8');
-  const search = await readFile(new URL('../src/core/components/SharedRuntime/OneSearch.jsx',import.meta.url),'utf8');
+  const search = await readFile(new URL('../src/core/components/SharedRuntime/Search.jsx',import.meta.url),'utf8');
   for (const code of [builder,runtime]) {
     assert.match(code,/data-page-appearance=\{/);
     assert.match(code,/data-page-style=\{pageAppearanceStyleKeys\(/);

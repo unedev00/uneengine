@@ -5,7 +5,7 @@ import {
   title,
   fire,
   columns,
-} from "../../OneData.jsx";
+} from "../../Data.jsx";
 
 function Calendar({ p, rows }) {
   const [date, setDate] = React.useState(() => new Date());

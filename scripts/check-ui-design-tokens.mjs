@@ -78,8 +78,8 @@ for (const path of ['ChecklistMultiSelect.css', 'SmartFieldInput.css', 'FlowRefe
 const one = web('custom-components/component-libraries/one.css');
 assert.match(one, /--md-primary/, 'One CSS should consume shared primary');
 for (const file of [
-  'OneLayout.jsx','OneData.jsx','OneDisplay.jsx','OneInputs.jsx',
-  'OneActions.jsx','OneShoppingCart.jsx','OneConversation.jsx'
+  'Layout.jsx','Data.jsx','Display.jsx','Inputs.jsx',
+  'Actions.jsx','OneShoppingCart.jsx','OneConversation.jsx'
 ]) {
   const source = web('custom-components/component-libraries/' + file);
   assert.ok(!source.includes("'#3176cc'"), 'Old default blue in One ' + file);
