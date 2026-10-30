@@ -771,7 +771,7 @@ function writePageDefinitionCache(cache:PageDefinitionCache,key:string,page:Ligh
   cache.set(key,{page,fetchedAt:Date.now()});
 }
 function usePageLayoutDevice(): LayoutDevice {
-  // Share the shell's phcomponent-libraries/portrait/landscape breakpoints. Avoid the old
+  // Share the shell's phone/portrait/landscape breakpoints. Avoid the old
   // 640/1024 off-by-one boundaries when loading published Tablet variants.
   return useFormFactor();
 }
