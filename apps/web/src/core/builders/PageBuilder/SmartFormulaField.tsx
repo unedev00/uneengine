@@ -73,6 +73,7 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
     <span key={i} className={'smart-formula-'+part.kind}>{part.value}</span>)}</div>
   <input ref={input} type="text" aria-label={label} value={value} spellCheck={false} autoComplete="off"
    placeholder={singleFieldOnly?'@BooleanField':'@Field & "text"'} disabled={disabled} onKeyDown={keyDown}
+   onBlur={()=>setMatches(null)}
    onChange={e=>update(e.currentTarget.value,e.currentTarget.selectionStart??e.currentTarget.value.length)}/>
   {matches&&filtered.length>0&&popup&&createPortal(<div className="smart-formula-list" role="listbox"
     style={{position:'fixed',left:popup.left,top:popup.top,minWidth:popup.width,maxHeight:200,zIndex:6000}}>
