@@ -35,7 +35,8 @@ export function validateFieldDefinitionAttributes(field:{
      (typeof raw!=='string'||!raw.trim()||!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(raw)))invalid();
    const value=Number(raw);
    if(!Number.isFinite(value))invalid();
-   return normalizeNumberField(value,'default',field.precision,field.scale);
+   normalizeNumberField(value,'default',field.precision,field.scale);
+   return String(raw);
  }
  if(typeof raw!=='string')invalid();
  if(['text','textarea','longtext','richtext','email','phone','url','picklist','multipicklist'].includes(type)){
@@ -53,7 +54,7 @@ export function validateFieldDefinitionAttributes(field:{
    return raw;
  }
  if(type==='date')return normalizeDateField(raw,'default');
- if(type==='datetime')return normalizeDateTimeField(raw,'default');
- if(type==='time')return normalizeTimeField(raw,'default');
+ if(type==='datetime'){normalizeDateTimeField(raw,'default');return raw;}
+ if(type==='time'){normalizeTimeField(raw,'default');return raw;}
  return invalid();
 }
