@@ -39,6 +39,9 @@ const validChatPhone=(value:unknown)=>/^[1-9][0-9]{6,14}$/.test(normalizeChatNum
 
 export default function AceChatterRuntime({onLogout}:{onLogout:()=>void}) {
   const chatRootRef=React.useRef<HTMLDivElement>(null);
+  const newChatDialogRef=React.useRef<HTMLElement>(null);
+  const newChatCloseRef=React.useRef<HTMLButtonElement>(null);
+  const newChatOpenerRef=React.useRef<HTMLElement|null>(null);
   const threadRef=React.useRef<HTMLElement>(null);
   const followLatestRef=React.useRef(true);
   const previousThreadRef=React.useRef('');
@@ -50,6 +53,23 @@ export default function AceChatterRuntime({onLogout}:{onLogout:()=>void}) {
   const [submittedSearch,setSubmittedSearch]=useState('');
   const [draft,setDraft]=useState('');
   const [showNewChat,setShowNewChat]=useState(false);
+  useEffect(()=>{
+    if(!showNewChat)return;
+    const dialog=newChatDialogRef.current;
+    newChatOpenerRef.current=document.activeElement instanceof HTMLElement?document.activeElement:null;
+    newChatCloseRef.current?.focus();
+    const onKey=(event:KeyboardEvent)=>{
+      if(event.key==='Escape'){event.preventDefault();setShowNewChat(false);return;}
+      if(event.key!=='Tab'||!dialog)return;
+      const controls=Array.from(dialog.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])')).filter(el=>el.getClientRects().length>0);
+      if(!controls.length){event.preventDefault();return;}
+      const first=controls[0],last=controls[controls.length-1];
+      if(event.shiftKey&&(document.activeElement===first||!dialog.contains(document.activeElement))){event.preventDefault();last.focus();}
+      else if(!event.shiftKey&&(document.activeElement===last||!dialog.contains(document.activeElement))){event.preventDefault();first.focus();}
+    };
+    document.addEventListener('keydown',onKey);
+    return()=>{document.removeEventListener('keydown',onKey);newChatOpenerRef.current?.focus();};
+  },[showNewChat]);
   const [newChatMode,setNewChatMode]=useState<'contacts'|'number'>('contacts');
   const [contacts,setContacts]=useState<Row[]>([]);
   const [inboxContacts,setInboxContacts]=useState<Row[]>([]);
@@ -388,8 +408,8 @@ export default function AceChatterRuntime({onLogout}:{onLogout:()=>void}) {
       </section>}
     </main>
     {showNewChat&&<div className="ace-chat-modal-backdrop" role="presentation">
-      <section className="ace-chat-modal ace-chat-new-chat-modal" role="dialog" aria-modal="true" aria-label="New chat">
-        <header className="ace-chat-modal-header"><button type="button" className="ace-chat-modal-back" aria-label="Close new chat" onClick={()=>setShowNewChat(false)}>‹</button><div><h2>New chat</h2><p>Choose a contact or enter a number</p></div></header>
+      <section ref={newChatDialogRef} className="ace-chat-modal ace-chat-new-chat-modal" role="dialog" aria-modal="true" aria-label="New chat">
+        <header className="ace-chat-modal-header"><button ref={newChatCloseRef} type="button" className="ace-chat-modal-back" aria-label="Close new chat" onClick={()=>setShowNewChat(false)}>‹</button><div><h2>New chat</h2><p>Choose a contact or enter a number</p></div></header>
         <div className="ace-chat-new-chat-tabs" role="tablist" aria-label="New chat method">
           <button type="button" role="tab" aria-selected={newChatMode==='contacts'} className={newChatMode==='contacts'?'active':''} onClick={()=>setNewChatMode('contacts')}>Contacts</button>
           <button type="button" role="tab" aria-selected={newChatMode==='number'} className={newChatMode==='number'?'active':''} onClick={()=>setNewChatMode('number')}>Phone number</button>
