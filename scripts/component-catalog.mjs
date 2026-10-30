@@ -29,7 +29,7 @@ export async function loadComponentCatalog() {
   }));
   const core = await readJson(path.join(webSourceRoot, 'core/components/BundledCatalog/manifest.json'));
   // Shared appearance is a declarative UNE mixin, not a second rendering engine.
-  const {appearanceProperties:uneAppearance}=await import(pathToFileURL(path.join(oneRoot,'une/shared/appearance-properties.mjs')).href);
+  const {appearanceProperties:uneAppearance}=await import(pathToFileURL(path.join(oneRoot,'ui-runtime/shared/appearance-properties.mjs')).href);
   const merged=one.map(definition=>{
     if(!definition.apiName.startsWith('ui_'))return definition;
     const own=definition.propertyDefinitions??[],keys=new Set(own.map(p=>p.propertyKey));
