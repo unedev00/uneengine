@@ -1083,3 +1083,106 @@
 .office-builder-ribbon #page-builder-tab-content .office-ribbon-component-tile:has(>.office-ribbon-une-svg){
   color:#1475dd!important;
 }
+
+
+/* 2026 Page Builder ribbon: Back + persistent Welcome/selection + complete Quick Access
+   live on the top rail. Home is no longer a navigable tab. */
+.office-builder-ribbon>.office-ribbon-topbar{padding-left:0!important;gap:7px!important}
+.office-builder-ribbon .office-ribbon-topbar-back{
+ display:flex;align-items:center;justify-content:center;
+ flex:0 0 34px;height:33px;border-right:1px solid #d4deeb;
+}
+.office-builder-ribbon .office-ribbon-topbar-back>button{
+ display:flex;align-items:center;justify-content:center;
+ box-sizing:border-box;width:32px;height:30px;
+ padding:4px;margin:0;border:0;border-radius:3px;
+ background:transparent;color:#254968;cursor:pointer;
+}
+.office-builder-ribbon .office-ribbon-topbar-back>button:hover{background:#e4effd}
+.office-builder-ribbon .office-ribbon-selection-context{
+ flex:0 0 auto!important;max-width:174px!important;min-width:78px;
+ border-radius:3px!important;white-space:nowrap!important;
+}
+.office-builder-ribbon .office-ribbon-quick-access{
+ display:flex;align-items:center;justify-content:flex-end;gap:3px;
+ flex:0 0 auto;margin-left:auto;min-height:30px;white-space:nowrap;
+}
+.office-builder-ribbon .office-ribbon-quick-action{
+ display:inline-flex;align-items:center;justify-content:center;
+ flex:0 0 28px;width:28px;height:29px;
+}
+.office-builder-ribbon .office-ribbon-quick-action>button{
+ display:inline-flex;align-items:center;justify-content:center;
+ box-sizing:border-box;width:28px;height:28px;min-width:28px;
+ padding:4px;border:1px solid transparent;border-radius:3px;
+ color:#24456c;background:transparent;cursor:pointer;
+}
+.office-builder-ribbon .office-ribbon-quick-action>button svg{width:16px;height:16px;stroke-width:1.8}
+.office-builder-ribbon .office-ribbon-quick-action>button:hover:not(:disabled){
+ background:#e7f1ff;border-color:#b6cbe7;
+}
+.office-builder-ribbon .office-ribbon-quick-action>button:disabled{
+ opacity:.36;cursor:not-allowed;
+}
+.office-builder-ribbon .office-ribbon-quick-action>button:focus-visible,
+.office-builder-ribbon .office-ribbon-topbar-back>button:focus-visible{
+ outline:2px solid #2472cd;outline-offset:-2px;
+}
+.office-builder-ribbon .office-ribbon-quick-undo,
+.office-builder-ribbon .office-ribbon-quick-cut{
+ margin-left:7px;padding-left:7px;
+ border-left:1px solid #d3dfec;width:35px;flex-basis:35px;
+}
+/* Layout contains the page-scoped Page / Device / Canvas / Version groups,
+   alongside component-scoped layout controls. Keep all groups in one strip. */
+.office-builder-ribbon #page-builder-tab-content.office-ribbon-content:has(>.office-ribbon-page-layout-groups){
+ height:146px!important;min-height:146px!important;max-height:146px!important;
+ align-items:stretch!important;overflow-x:auto!important;overflow-y:hidden!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-page-layout-groups{
+ display:flex;flex-flow:row nowrap;align-items:stretch;flex:0 0 auto;
+ height:136px;min-height:136px;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-page-layout-groups>.office-ribbon-group{
+ position:relative;display:flex;flex-direction:column;justify-content:flex-start;
+ box-sizing:border-box;flex:0 0 auto;min-width:140px;max-width:none;
+ height:136px;min-height:136px;max-height:136px;
+ padding:5px 9px 22px;border-right:1px solid #d4deeb;
+}
+.office-builder-ribbon .office-ribbon-page-layout-groups .office-ribbon-stack{
+ display:flex;flex-direction:column;align-items:stretch;gap:4px;
+ min-height:0;flex:1 1 auto;
+}
+.office-builder-ribbon .office-ribbon-page-layout-groups .une-sql-home-control{
+ display:flex;align-items:center;justify-content:space-between;
+ gap:7px;margin:0;min-height:27px;white-space:nowrap;
+ font:11px/16px "Segoe UI",Arial,sans-serif;color:#2c405a;
+}
+.office-builder-ribbon .office-ribbon-page-layout-groups .une-sql-home-control>span{
+ flex:0 0 auto;white-space:nowrap;
+}
+.office-builder-ribbon .office-ribbon-page-layout-groups .une-sql-home-control>input,
+.office-builder-ribbon .office-ribbon-page-layout-groups .une-sql-home-control>select{
+ box-sizing:border-box;max-width:145px;min-width:70px;height:27px;
+ border:1px solid #b7c8dc;border-radius:3px;background:#fff;padding:3px 5px;
+}
+.office-builder-ribbon .office-ribbon-page-layout-groups .office-ribbon-group>span:last-child{
+ position:absolute;bottom:3px;left:9px;right:9px;
+ border-top:1px solid #e3ebf4;padding-top:2px;
+ text-align:center;font:600 11px/16px "Segoe UI",Arial,sans-serif;color:#335782;
+}
+.office-builder-ribbon .office-ribbon-page-layout-groups .office-ribbon-stack .office-ribbon-stack{
+ gap:2px;
+}
+.office-builder-ribbon .office-ribbon-page-layout-groups [data-ribbon-property="selectVersion"]{
+ align-items:flex-start;
+}
+.office-builder-ribbon .office-ribbon-page-layout-groups [data-ribbon-property="selectVersion"]>.office-ribbon-stack{
+ width:175px;
+}
+.office-builder-ribbon .office-ribbon-page-layout-groups [data-ribbon-property="selectVersion"]>.office-ribbon-stack>button{
+ min-height:23px;height:23px;padding:2px 6px;
+}
+.office-builder-ribbon .office-ribbon-page-layout-groups [data-ribbon-property="selectVersion"]>.office-ribbon-stack>select{
+ min-height:24px;height:24px;padding:2px 5px;max-width:175px;
+}

@@ -45,7 +45,8 @@ test('Smart SQL library matches approved table and retains Home',()=>{
  assert.doesNotMatch(migration,/DELETE\s+FROM\s+md_page_(?:definitions|components)/i);
  assert.doesNotMatch(migration,/DELETE\s+FROM\s+md_builder_shared_properties\s+WHERE\s+tab='Home'/i);
  const ui=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
- assert.match(ui,/ribbonTab === 'Home' && ribbonCatalog/);
+ assert.match(ui,/ribbonTab==='Component Layout' && ribbonCatalog/);
+ assert.match(ui,/office-ribbon-quick-access/);
  assert.match(ui,/<SmartRibbon/);
 });
 
