@@ -28,9 +28,16 @@ export async function runObjectSchemaLifecycleBrowserCheck({page,origin,db,tenan
  assert.equal((await db.query('SELECT label FROM md_object_definitions WHERE tenant_id=$1 AND api_name=$2',
    [tenantId,objectApi])).rows[0]?.label,'Browser Lifecycle Updated');
  await page.getByRole('button',{name:'Object actions'}).click();
+ const impactResponse=page.waitForResponse(response=>response.url().endsWith('/api/metadata/objects/'+objectApi+'/impact')
+   &&response.request().method()==='GET',{timeout:12000});
  await page.getByRole('button',{name:'Delete Object',exact:true}).click();
+ const impact=await impactResponse;
+ const impactJson=await impact.json().catch(()=>({}));
+ console.info('2A Object Manager impact response:',impact.status(),JSON.stringify(impactJson));
+ assert.equal(impact.status(),200,'Object Manager deletion impact API rejected request');
  const dialog=page.getByRole('dialog',{name:/Delete Browser Lifecycle Updated/});
- await dialog.getByText(/No blocking references found/).waitFor({timeout:15000});
+ await dialog.waitFor({timeout:10000});
+ assert.deepEqual(impactJson.blockers,[],'Unexpected deletion blockers for new object');
  const deletion=page.waitForResponse(response=>response.url().endsWith('/api/metadata/objects/'+objectApi)
    &&response.request().method()==='DELETE');
  await dialog.getByRole('button',{name:'Delete Object'}).click();
