@@ -1,6 +1,6 @@
-import {useState,useRef,useEffect,useLayoutEffect,type ChangeEvent} from 'react';
+import {useState,useRef,useEffect,useLayoutEffect,type ChangeEvent,type CSSProperties} from 'react';
 import {createPortal} from 'react-dom';
-import {AlignLeft,AlignCenter,AlignRight,Bold,WrapText,ArrowLeftRight,ArrowUpDown,ImagePlus,SlidersHorizontal} from 'lucide-react';
+import {AlignLeft,AlignCenter,AlignRight,Bold,WrapText,ArrowLeftRight,ArrowUpDown,ImagePlus,SlidersHorizontal,Eye,EyeOff} from 'lucide-react';
 import {RibbonTextSizeIcon,RibbonCornerRadiusIcon} from './SmartRibbonIcons';
 import type {ObjectMetadata} from '../../metadata/Definitions/metadata';
 import type {UneRibbonProperty,UneBuilderTab} from './uneBuilderPropertyInventory';
@@ -10,6 +10,7 @@ import RecordFilterEditor from '../../../component-libraries/shared/primitives/R
 import SmartFormulaField from './SmartFormulaField';
 import './SmartRibbon.css';
 import './SmartRibbonCompact.css';
+import './SmartRibbonApprovedTwoRow.css';
 type Position={x:number;y:number;width:number;height:number};
 type Props={tab:UneBuilderTab;api:string;definitions:readonly UneRibbonProperty[];properties:Record<string,unknown>;
  onChange:(next:Record<string,unknown>)=>void;objects:readonly ObjectMetadata[];pageObjectApiName?:string;
@@ -80,6 +81,18 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  const compactDesign=tab==='Design';
  const visible=definitions.filter(p=>p.tab===tab);
  const sections=[...new Set(visible.map(p=>p.group))];
+ const sectionRow=(group:string,row:number)=>visible
+   .filter(p=>p.group===group&&(p.designRow??2)===row)
+   .sort((a,b)=>(a.designOrder??999)-(b.designOrder??999));
+ const controlWidth=(p:UneRibbonProperty)=>{
+   if(p.designWidth)return p.designWidth;
+   // Unconfigured future SQL properties remain present without overlapping.
+   if(p.kind==='shadow'||p.kind==='align')return 84;
+   if(p.kind==='color')return 40;
+   if(p.kind==='number'||p.kind==='position')return 70;
+   if(p.kind==='boolean')return 28;
+   return 99;
+ };
  const controls=(property:UneRibbonProperty)=>{
    const supported=property.components.includes(api);
    const kind=api==='smart_calendar'&&property.id==='shadow'
@@ -104,7 +117,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
      badgeAlignment:'Position',imagePlacement:'Place',imageFill:'Fit',
      navigationDirection:'Direction',tabCount:'Tabs',firstDay:'First day'
    };
-   const shortLabel=compactDesign?(labelOverrides[property.id]??title):title;
+   const shortLabel=compactDesign?(property.designCaption??labelOverrides[property.id]??title):title;
    const isTextSize=compactDesign&&/^(textSize|badgeTextSize|summary2?TextSize|placeholderSize)$/.test(property.id);
    const isCorner=compactDesign&&/radius/i.test(property.id);
    const isWidth=compactDesign&&/width/i.test(property.id);
@@ -169,7 +182,12 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
         aria-label={title+' '+opt} aria-pressed={value===opt} onClick={()=>write(opt)}><Icon size={15}/></button>)}
    </div>;
    else if(kind==='boolean'){
-     if(['headerBold','badgeBold','supportingBold','summaryTextWeight','summary2TextWeight','wrapText'].includes(property.id)){
+     if(compactDesign&&property.id==='badgeVisible'){
+       const Icon=value===true?Eye:EyeOff;
+       editor=<button type="button" className="smart-visible-toggle" disabled={!enabled}
+         role="switch" aria-label={title} title={title} aria-checked={value===true}
+         onClick={()=>write(value!==true)}><Icon size={16} aria-hidden="true"/></button>;
+     }else if(['headerBold','badgeBold','supportingBold','summaryTextWeight','summary2TextWeight','wrapText'].includes(property.id)){
        const Icon=property.id==='wrapText'?WrapText:Bold;
        editor=<button className="smart-icon-toggle" type="button" disabled={!enabled}
          aria-label={title} title={title} aria-pressed={value===true} onClick={()=>write(value!==true)}><Icon size={17}/></button>;
@@ -198,16 +216,26 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
      {options.map(s=><option value={s} key={s}>{s.replaceAll('-',' ')}</option>)}</select>;
    return <div key={property.id} className={'smart-property'+(!enabled?' disabled':'')} data-property={property.id}
        data-supported={supported} data-kind={kind} data-numeric-icon={hasNumericIcon?'true':'false'}
+       data-design-caption={compactDesign&&Boolean(property.designCaptionWidth)?'true':'false'}
+       style={compactDesign?{'--smart-control-width':controlWidth(property)+'px',
+         '--smart-caption-width':(property.designCaptionWidth??0)+'px',
+         '--smart-control-height':(property.designHeight??26)+'px'} as CSSProperties:undefined}
        title={title}><span className="smart-label">{shortLabel}</span>{editor}</div>;
  };
  return <div className="smart-ribbon" data-smart-api={api}
-  data-compact-design={compactDesign?'true':'false'} aria-label="Smart shared property ribbon">
+  data-compact-design={compactDesign?'true':'false'}
+  data-two-row={compactDesign?'true':'false'} aria-label="Smart shared property ribbon">
   <input ref={uploadInput} className="smart-hidden-upload" type="file"
     accept="image/png,image/jpeg,image/gif,image/webp" aria-label="Select local image"
     onChange={event=>void selectLocalImage(event)} />
   {uploadError&&<div className="smart-upload-error" role="alert" title={uploadError}>{uploadError}</div>}
-  {sections.map(section=><section className="smart-ribbon-group" key={section} aria-label={section}>
-   <div className="smart-ribbon-items">{visible.filter(p=>p.group===section).map(controls)}</div>
+  {sections.map(section=><section className="smart-ribbon-group" key={section}
+     data-design-two-row={compactDesign?'true':undefined} aria-label={section}>
+   <div className="smart-ribbon-items">
+     {compactDesign?<>{[1,2].map(row=><div className="smart-ribbon-row" key={row}
+       data-design-row={row}>{sectionRow(section,row).map(controls)}</div>)}</>:
+       visible.filter(p=>p.group===section).map(controls)}
+   </div>
    <span className="smart-ribbon-caption">{section}</span>
   </section>)}
   {filtersOpen&&createPortal(<div className="smart-dialog-backdrop smart-filter-backdrop"
