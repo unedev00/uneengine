@@ -366,3 +366,11 @@
   width:56px!important;min-width:56px!important;max-width:56px!important;
   height:32px!important;min-height:32px!important;max-height:32px!important;
 }
+
+/* Smart Cart-only header text colour: reuse the open second row of the
+   existing Header controls, without changing other Smart component layouts. */
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group[aria-label="Header"] .smart-property[data-property="headerTextColor"]{
+  grid-area:2 / 1 / 3 / -1;
+  justify-content:flex-start;
+}
