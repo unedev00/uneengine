@@ -1,5 +1,5 @@
 import React,{useMemo,useState} from 'react';
-import {FlatList,Text,TextInput,View} from 'react-native';
+import {FlatList,Pressable,Text,TextInput,View} from 'react-native';
 import {Tabs,Redirect} from 'expo-router';
 import {useMobileSession} from '../../lib/MobileSessionProvider';
 import {useMobileTheme,displayValue,recordTitle} from '../../lib/mobileTheme';
@@ -24,10 +24,12 @@ export default function SearchScreen(){
       paddingHorizontal:14,fontSize:17,color:t.text}}/>
    <FlatList data={['',...objects]} horizontal keyExtractor={x=>x||'all'}
      showsHorizontalScrollIndicator={false}
-     renderItem={({item})=><Text onPress={()=>setObjectFilter(item)} accessibilityRole="button"
-      style={{paddingVertical:10,paddingHorizontal:13,marginRight:7,borderRadius:15,overflow:'hidden',
-       backgroundColor:objectFilter===item?t.accent:t.surface,
-       color:objectFilter===item?'#fff':t.text,fontSize:14}}>{item||'All'}</Text>}/>
+     renderItem={({item})=><Pressable onPress={()=>setObjectFilter(item)} accessibilityRole="button"
+      accessibilityLabel={item||'All objects'} accessibilityState={{selected:objectFilter===item}}
+      style={{minHeight:44,justifyContent:'center',paddingVertical:10,paddingHorizontal:13,marginRight:7,borderRadius:15,
+       backgroundColor:objectFilter===item?t.accent:t.surface}}>
+       <Text style={{color:objectFilter===item?'#fff':t.text,fontSize:14}}>{item||'All'}</Text>
+      </Pressable>}/>
   </View>
   <FlatList style={{flex:1,backgroundColor:t.background}}
     contentContainerStyle={{padding:14,paddingBottom:24}}
