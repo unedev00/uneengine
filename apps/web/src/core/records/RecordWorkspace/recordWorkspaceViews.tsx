@@ -695,8 +695,9 @@ function RecordWorkspace({
   const [fieldHistory, setFieldHistory] = useState<Array<Record<string, unknown>>>([]);
   const [relatedRecords, setRelatedRecords] = useState<Record<string, { objectApiName: string; fieldApiName: string; records: RecordData[]; total: number; relationshipName:string; pageSize:number }>>({});
   const [relatedError, setRelatedError] = useState('');
+  const [relatedSorts,setRelatedSorts]=useState<Record<string,{field:string;direction:'asc'|'desc'}>>({});
   const [relatedOffsets, setRelatedOffsets] = useState<Record<string, number>>({});
-  useEffect(()=>setRelatedOffsets({}),[route.objectApiName,route.kind==='record-detail'?route.recordId:'',activeLightningPage]);
+  useEffect(()=>{setRelatedOffsets({});setRelatedSorts({});},[route.objectApiName,route.kind==='record-detail'?route.recordId:'',activeLightningPage]);
   const changeRelatedPage = (name: string, offset: number) =>
     setRelatedOffsets((current) => ({ ...current, [name]: Math.max(0, offset) }));
   const renderRelatedPagination = (name: string, total: number, loaded: number) => {
@@ -1186,6 +1187,7 @@ function RecordWorkspace({
       const results = await Promise.allSettled(relations.map(async (instance) => {
           const {childObject,fieldApiName,relationshipName,key,settings}=instance;
           const params=relatedListQuery(instance,record.Id,relatedOffsets[key]??0);
+          if(relatedSorts[key]){params.set('sortField',relatedSorts[key].field);params.set('sortDirection',relatedSorts[key].direction);}
           const payload = await apiRequest<{ records: RecordData[]; total: number }>(
             `/records/${encodeURIComponent(childObject.apiName)}?${params.toString()}`);
           return [key, {
@@ -1202,7 +1204,7 @@ function RecordWorkspace({
     };
     void loadRelatedRecords();
     return () => { active = false; };
-  }, [route.kind, route.objectApiName, route.kind === 'record-detail' ? route.recordId : '', object?.apiName, objects, record?.Id, record?.RecordTypeId, activeLightningPage, refreshKey, relatedOffsets]);
+  }, [route.kind, route.objectApiName, route.kind === 'record-detail' ? route.recordId : '', object?.apiName, objects, record?.Id, record?.RecordTypeId, activeLightningPage, refreshKey, relatedOffsets,relatedSorts]);
   useEffect(() => {
     const pageComponents = activeLightningPage?.components ?? [];
     const needsActivities = pageComponents.some((component) => component.visible && component.type === 'Activities');
@@ -2037,8 +2039,7 @@ function RecordWorkspace({
     const canShowStandard=(name:'Edit'|'Clone'|'Delete')=>
       !recordLayout?.actionOverrides?.[name]||Boolean(standardOverride(name));
     const detailFieldNames = recordLayout?.sections.flatMap((section) => section.fieldApiNames);
-    const readableRecordFields = object.fields.filter((field) => fieldAccess[`${object.apiName}.${field.apiName}`]?.read
-      && field.apiName in (record ?? {}));
+    const readableRecordFields = object.fields.filter((field) => fieldAccess[`${object.apiName}.${field.apiName}`]?.read);
     const fields = readableRecordFields.filter((field) => !detailFieldNames || detailFieldNames.includes(field.apiName));
     const activeFieldSet = object.fieldSets?.find((fieldSet) => fieldSet.apiName === selectedFieldSetApiName)
       ?? object.fieldSets?.[0];
@@ -2090,7 +2091,11 @@ function RecordWorkspace({
             userRoles={userRoles} recordTypeAccess={recordTypeAccess} onSaved={()=>setRefreshKey(current=>current+1)}/>}
         </div>
         {related.records.length === 0 ? <div className="records-empty">No related {childObject?.pluralLabel.toLocaleLowerCase() ?? 'records'}.</div>
-          : <div className="records-table-wrap" style={{ maxHeight: "65vh", overflow: "auto" }}><table className="slds-table records-table"><thead><tr>{displayFields.map((field) => <th key={field.apiName}>{field.label}</th>)}{settings?.showRowActions&&<th>Actions</th>}</tr></thead>
+          : <div className="records-table-wrap" style={{ maxHeight: "65vh", overflow: "auto" }}><table className="slds-table records-table"><thead><tr>{displayFields.map((field) => <th key={field.apiName} aria-sort={relatedSorts[relatedEntry![0]]?.field===field.apiName?(relatedSorts[relatedEntry![0]].direction==='asc'?'ascending':'descending'):undefined}>
+              <button type="button" className="text-action" disabled={Boolean(field.formula||field.rollup||['Text (Encrypted)','Address','Geolocation','File','Rich Text Area'].includes(field.dataType))}
+                onClick={()=>{const key=relatedEntry![0];setRelatedOffsets(previous=>({...previous,[key]:0}));
+                  setRelatedSorts(previous=>({...previous,[key]:{field:field.apiName,direction:previous[key]?.field===field.apiName&&previous[key].direction==='asc'?'desc':'asc'}}));}}>{field.label}</button>
+            </th>)}{settings?.showRowActions&&<th>Actions</th>}</tr></thead>
             <tbody>{related.records.map((child) => <tr key={child.Id}>{displayFields.map((field, index) => <td key={field.apiName}>
               {index === 0 && childObject
                 ? <a href={appRoutePath({ kind: 'record-detail', objectApiName: childObject.apiName, recordId: child.Id, appId: route.appId })} onClick={(event) => navigateLink(event, { kind: 'record-detail', objectApiName: childObject.apiName, recordId: child.Id, appId: route.appId })}>{formatRecordValue(child[field.apiName] ?? child.Id)}</a>
@@ -2117,7 +2122,7 @@ function RecordWorkspace({
       const layoutReadOnly=layoutRules.readOnly;
       return <RecordInlineEditor key={record.Id+':'+field.apiName}
         field={{...field,required:field.required||layoutRules.required}} object={object} objects={objects}
-        record={record} fieldAccess={fieldAccess} userRoles={userRoles} lookupRecords={lookupRecords}
+        record={record} fieldAccess={fieldAccess} profileId={profileId} userRoles={userRoles} lookupRecords={lookupRecords}
         searchLookupRecords={searchLookupRecords} display={formatFieldValue(field,record[field.apiName])}
         editable={!layoutReadOnly&&canEdit&&recordGrants?.objectApi===object.apiName&&recordGrants.Edit&&fieldAccess[`${object.apiName}.${field.apiName}`]?.edit===true}
         onSave={async(patch)=>{
@@ -2331,8 +2336,8 @@ function RecordWorkspace({
               const field=readableRecordFields.find(item=>item.apiName===name);
               return field?[<div className="record-field" key={name}><dt>{field.label}</dt><dd>
                 {renderPageField(field,{...component.properties,
-                  requiredFieldApiNames:section.requiredFieldApiNames,
-                  readOnlyFieldApiNames:section.readOnlyFieldApiNames})}
+                  requiredFieldApiNames:[...(Array.isArray(component.properties.requiredFieldApiNames)?component.properties.requiredFieldApiNames:[]),...(section.requiredFieldApiNames??[])],
+                  readOnlyFieldApiNames:[...(Array.isArray(component.properties.readOnlyFieldApiNames)?component.properties.readOnlyFieldApiNames:[]),...(section.readOnlyFieldApiNames??[])]})}
               </dd></div>]:[];
             })}
           </dl>

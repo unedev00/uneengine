@@ -18,7 +18,7 @@ export async function componentContractSqlSmoke(db,tenant,user,permissionSet){
  ]}];
  const eventDefinitions=[{apiName:'select',label:'Select'}];
  const input={apiName:'ContractSmokeCard',label:'Contract smoke card',description:'',surfaces:['page'],
-  resize:{defaultWidth:320,defaultHeight:180,minWidth:10,minHeight:10},jsxSource:'',cssSource:'',publicationStatus:'Draft'};
+  resize:{defaultWidth:320,defaultHeight:180,minWidth:10,minHeight:10},jsxSource:'export default function ContractSmokeCard(){ return <div>Contract smoke</div>; }',cssSource:'',publicationStatus:'Draft'};
  const created=await service.save(tenant,user,{...input,propertyDefinitions,eventDefinitions});
  assert.deepEqual(created.propertyDefinitions,propertyDefinitions);
  const published=await service.publish(tenant,user,input.apiName);

@@ -270,6 +270,7 @@ export function RecordFormDialog({
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
   const isPhoneViewport = useRuntimeFormFactor() === 'Phone';
+  const formInstanceId=React.useId();
   const [lookupDialogField, setLookupDialogField] = useState<FieldMetadata | null>(null);
   const [lookupQuery, setLookupQuery] = useState('');
   const [lookupSearchResults,setLookupSearchResults]=useState<RecordData[]|null>(null);
@@ -327,7 +328,9 @@ export function RecordFormDialog({
   const changeFieldValue = (apiName: string, value: unknown) => {
     onChange(apiName, value);
     const nextValues = { ...formValues, [apiName]: value };
-    object.fields.filter((field) => field.controllerFieldApiName === apiName).forEach((field) => {
+    object.fields.filter((field) => field.controllerFieldApiName === apiName
+      &&!readOnlyOnLayout.has(field.apiName)&&fieldAccess[`${object.apiName}.${field.apiName}`]?.edit
+      &&(!fieldApiNames||fieldApiNames.includes(field.apiName))).forEach((field) => {
       const currentValue = formValues[field.apiName];
       if (currentValue !== undefined && currentValue !== null && currentValue !== '') {
         const allowedValues = allowedPicklistValues(field, selectedRecordTypeId, nextValues);
@@ -419,8 +422,8 @@ export function RecordFormDialog({
     const rawValue = formValues[field.apiName] ?? (editing ? '' : field.defaultValue);
     const value = rawValue === undefined || rawValue === null ? '' : String(rawValue);
     const dataType = field.dataType.toLocaleLowerCase();
-    const helpTextId = `record-field-help-${field.apiName}`;
-    const common = { id: `record-field-${field.apiName}`, name: field.apiName, required: field.required && !readOnlyOnLayout.has(field.apiName), disabled: saving || !fieldAccess[`${object.apiName}.${field.apiName}`]?.edit
+    const helpTextId = `${formInstanceId}-help-${field.apiName}`;
+    const common = { id: `${formInstanceId}-field-${field.apiName}`, name: field.apiName, required: field.required && !readOnlyOnLayout.has(field.apiName), disabled: saving || !fieldAccess[`${object.apiName}.${field.apiName}`]?.edit
       || readOnlyOnLayout.has(field.apiName), 'aria-describedby': field.helpText ? helpTextId : undefined };
     const helpText = field.helpText ? <small className="field-help-text" id={helpTextId}>{field.helpText}</small> : null;
     if(dataType==='file')return <div className="form-label" key={field.apiName}>
@@ -637,8 +640,8 @@ export function RecordFormDialog({
     </div>;
   };
   return <div className={embedded ? "record-form-inline" : "record-form-backdrop"} role="presentation" onMouseDown={(event) => { if (!embedded && event.target === event.currentTarget && !saving) onClose(); }}>
-    <section className="record-form-dialog surface" role={embedded ? "region" : "dialog"} aria-modal={embedded ? undefined : true} aria-labelledby="record-form-title" onKeyDown={(event) => { if (event.key === 'Escape' && !saving && !lookupDialogField) onClose(); }}>
-      <header><div><div className="eyebrow">{object.label}</div><h2 id="record-form-title">{editing ? 'Edit Record' : `New ${object.label}`}</h2></div>
+    <section className="record-form-dialog surface" role={embedded ? "region" : "dialog"} aria-modal={embedded ? undefined : true} aria-labelledby={formInstanceId+'-title'} onKeyDown={(event) => { if (event.key === 'Escape' && !saving && !lookupDialogField) onClose(); }}>
+      <header><div><div className="eyebrow">{object.label}</div><h2 id={formInstanceId+'-title'}>{editing ? 'Edit Record' : `New ${object.label}`}</h2></div>
         <button className="icon-button" aria-label="Close" onClick={onClose} disabled={saving}><X size={16} /></button></header>
       <form onSubmit={onSubmit}>
         {activeRecordTypes.length > 1 && <label className="form-label">Record Type

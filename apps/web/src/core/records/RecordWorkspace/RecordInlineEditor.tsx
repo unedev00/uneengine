@@ -4,9 +4,9 @@ import type {FieldMetadata,ObjectMetadata} from '../../metadata/Definitions/meta
 import type {RecordData} from './recordMetadataUtils';
 
 /** Use the same compound, lookup, dependent-picklist and rich-text controls as CRUD. */
-export default function RecordInlineEditor({field,object,objects,record,fieldAccess,userRoles,
+export default function RecordInlineEditor({field,object,objects,record,fieldAccess,profileId,userRoles,
   lookupRecords,searchLookupRecords,display,editable,onSave}: {
-  field:FieldMetadata;object:ObjectMetadata;objects:ObjectMetadata[];record:RecordData;
+  profileId:string;field:FieldMetadata;object:ObjectMetadata;objects:ObjectMetadata[];record:RecordData;
   fieldAccess:Record<string,{read:boolean;edit:boolean}>;userRoles:Array<{id:string;name:string}>;
   lookupRecords:Record<string,RecordData[]>;searchLookupRecords:(object:string,term:string)=>Promise<RecordData[]>;
   display:ReactNode;editable:boolean;onSave:(patch:Record<string,unknown>)=>Promise<void>;
@@ -22,7 +22,7 @@ export default function RecordInlineEditor({field,object,objects,record,fieldAcc
     <button type="button" className="text-action" aria-label={'Edit '+field.label}
       onClick={()=>{setPatch({});setError('');setEditing(true);}}>Edit</button>}</div>;
   return <RecordFormDialog embedded object={object} objects={objects} activeRecordTypes={[]}
-    selectedRecordTypeId={String(record.RecordTypeId??'')} profileId=""
+    selectedRecordTypeId={String(record.RecordTypeId??'')} profileId={profileId}
     selectedLayout={{id:'inline',label:field.label,actions:['Edit'],relatedLists:[],sections:[{
       id:'inline',label:field.label,columns:1,fieldApiNames:[...names],
       requiredFieldApiNames:field.required?[field.apiName]:[]}]}}
