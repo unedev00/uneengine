@@ -1902,7 +1902,7 @@ function ObjectManager({
     </section>;
   };
   const renderSetting = () => {
-    if (selectedSetting === 'Details' && sectionMode !== 'edit') return renderBrowseSetting();
+    if (selectedSetting === 'Details' && sectionMode !== 'edit' && !showDeleteObjectConfirmation) return renderBrowseSetting();
     if (collectionSettings.includes(selectedSetting) && sectionMode !== 'edit') return renderBrowseSetting();
     if (selectedSetting === 'Schema Builder') return <SchemaBuilder objects={objects} selectedObjectApiName={object.apiName} onOpenObject={onObjectSelect} onOpenField={(target,fieldApiName)=>onOpenDependency({objectApiName:target.apiName,setting:'Fields & Relationships',resourceApiName:fieldApiName})} onCreateObject={onCreateObject} onNewField={onNewField} />;
     if (selectedSetting === 'Global Value Sets') return <GlobalValueSetManager />;
