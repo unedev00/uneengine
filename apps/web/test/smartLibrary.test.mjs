@@ -73,7 +73,11 @@ test('Smart visual/property fixes are registered without changing historic SQL m
  assert.match(runtime,/p.defaultCheck/);
  assert.match(runtime,/textAlign:p.labelAlignment/);
  assert.match(runtime,/borderRadius:number\(p.radius,10\)/);
- assert.match(ribbon,/p.components.includes\(api\)/);
+ assert.match(ribbon,/const visible=definitions\.filter\(p=>p\.tab===tab\)/);
+ assert.doesNotMatch(ribbon,/p\.tab===tab&&p\.components\.includes\(api\)/);
+ assert.match(ribbon,/const supported=property\.components\.includes\(api\)/);
+ const calendar=read('../src/one/une_calendar/app-properties.mjs');
+ assert.match(calendar,/"propertyKey": "defaultValue",[\s\S]*?"group": "Values",\s*"section": "Data"/);
  assert.match(ribbon,/property.id==='defaultCheck'/);
  assert.match(formula,/createPortal/);
  assert.match(formula,/window.addEventListener\('scroll',recalc,true\)/);

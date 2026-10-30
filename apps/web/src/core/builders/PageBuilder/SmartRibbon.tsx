@@ -21,7 +21,9 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  const objectName=fallback(properties.objectApiName)||pageObjectApiName;
  const object=objects.find(o=>o.apiName===objectName);
  const update=(key:string,value:unknown)=>onChange({...properties,[key]:value});
- const visible=definitions.filter(p=>p.tab===tab&&p.components.includes(api));
+ // Keep the global property inventory visible for every selected component.
+ // Unsupported controls are disabled by the per-property `supported` check below.
+ const visible=definitions.filter(p=>p.tab===tab);
  const sections=[...new Set(visible.map(p=>p.group))];
  const controls=(property:UneRibbonProperty)=>{
    const supported=property.components.includes(api);
@@ -95,7 +97,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
          onChange={e=>write(e.target.checked?[...(Array.isArray(value)?value:[]),day]:
            (Array.isArray(value)?value:[]).filter(x=>x!==day))}/>{label}</label>)}</div>}
    </div>;
-   else if(property.id==='defaultCheck')editor=<select className="smart-select" aria-label={title}
+   else if(property.id==='defaultCheck')editor=<select className="smart-select" aria-label={title} disabled={!enabled}
      value={value===true||value==='true'?'true':'false'} onChange={e=>write(e.target.value==='true')}>
      <option value="false">False</option><option value="true">True</option></select>;
    else if(kind==='choice')editor=<select className="smart-select" aria-label={title} disabled={!enabled}
