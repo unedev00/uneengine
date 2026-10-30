@@ -1,6 +1,6 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import OneButton from '../src/one/OneButton/OneButton.jsx';
+import OneButton from '../src/core/components/SharedRuntime/SharedButton.jsx';
 import OneSearch from '../src/one/OneSearch/OneSearch.jsx';
 import '../src/core/workspace/WorkspaceTheme/design-system.css';
 import '../src/one/shared/one.css';
