@@ -8,13 +8,13 @@ export const PAGE_LAYOUT_VARIANTS=['Mobile','Desktop','Tablet','Custom'] as cons
 export type PageLayoutVariant=typeof PAGE_LAYOUT_VARIANTS[number];
 type PageSnapshot={
  apiName:string;label:string;pageType:string;targetObject:string;layoutMode:string;template?:string;
- canvasWidth:number;canvasHeight:number;status:string;revision?:number;
+ canvasWidth:number;canvasHeight:number;canvasFillColor?:string;status:string;revision?:number;
  customTargetEnabled?:boolean;customTargetMinWidth?:number;customTargetMaxWidth?:number;
  components:Array<Record<string,unknown>>;
  activationAssignments?:Array<Record<string,unknown>>;
 };
 type VersionRow={
- version:number;page_label:string;layout_mode:string;template:string|null;canvas_width:number;canvas_height:number;
+ version:number;page_label:string;layout_mode:string;template:string|null;canvas_width:number;canvas_height:number;canvas_fill_color:string;
  custom_target_enabled:boolean;custom_target_min_width:number;custom_target_max_width:number;
 };
 type HeadRow={draft_version:number|null;published_version:number|null};
@@ -133,6 +133,7 @@ export class PageLayoutVersionRuntime{
   if(page.apiName!==name||!validKey(page.label)||!['template','free-canvas'].includes(page.layoutMode)
    ||!Number.isInteger(page.canvasWidth)||page.canvasWidth<320||page.canvasWidth>10000
    ||!Number.isInteger(page.canvasHeight)||page.canvasHeight<320||page.canvasHeight>10000
+    ||(page.canvasFillColor!==undefined&&!/^#[0-9a-fA-F]{6}$/.test(page.canvasFillColor))
    ||!Array.isArray(page.components)||page.components.length>400
    ||!Array.isArray(page.activationAssignments??[])||(page.activationAssignments??[]).length>200
    ||(page.customTargetEnabled!==undefined&&typeof page.customTargetEnabled!=='boolean')
@@ -164,7 +165,7 @@ export class PageLayoutVersionRuntime{
  }
  private async snapshot(tenant:string,id:string,variant:PageLayoutVariant,version:number){
   const [versionRows,nodeRows,properties,assignments]=await Promise.all([
-   this.db.query<VersionRow>(`SELECT version,page_label,layout_mode,template,canvas_width,canvas_height,
+   this.db.query<VersionRow>(`SELECT version,page_label,layout_mode,template,canvas_width,canvas_height,canvas_fill_color,
       custom_target_enabled,custom_target_min_width,custom_target_max_width
     FROM md_page_layout_versions WHERE tenant_id=$1 AND page_id=$2 AND variant=$3 AND version=$4`,[tenant,id,variant,version]),
    this.db.query<NodeRow>(`SELECT component_key,component_type,label,region,visible FROM md_page_layout_version_nodes
@@ -176,7 +177,7 @@ export class PageLayoutVersionRuntime{
   ]);
   const row=versionRows.rows[0];if(!row)throw new Error('Page layout revision not found');
   return {label:row.page_label,layoutMode:row.layout_mode,template:row.template??undefined,
-   canvasWidth:row.canvas_width,canvasHeight:row.canvas_height,
+   canvasWidth:row.canvas_width,canvasHeight:row.canvas_height,canvasFillColor:row.canvas_fill_color,
    customTargetEnabled:row.custom_target_enabled,
    customTargetMinWidth:row.custom_target_min_width,customTargetMaxWidth:row.custom_target_max_width,
    components:nodeRows.rows.map(n=>{
@@ -200,6 +201,7 @@ export class PageLayoutVersionRuntime{
   const layout=revision?await this.snapshot(tenant,id,variant,revision):null;
   const legacy=layout??{label:base.label,layoutMode:base.layoutMode,template:base.template,
    canvasWidth:widthFor(variant,base),canvasHeight:heightFor(variant,base),
+    canvasFillColor:base.canvasFillColor??'#ffffff',
    components:base.components,activationAssignments:base.activationAssignments,
    customTargetEnabled:false,customTargetMinWidth:320,customTargetMaxWidth:10000};
   return {...base,...legacy,layoutVariant:variant,draftRevision:head?.draft_version??0,
@@ -228,11 +230,11 @@ export class PageLayoutVersionRuntime{
    const version=(latest.rows[0]?.version??0)+1;
    await client.query(`INSERT INTO md_page_layout_versions
     (tenant_id,page_id,variant,version,page_label,layout_mode,template,canvas_width,canvas_height,
-      custom_target_enabled,custom_target_min_width,custom_target_max_width)
-    VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,[tenant,found.id,variant,version,
+      custom_target_enabled,custom_target_min_width,custom_target_max_width,canvas_fill_color)
+    VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,[tenant,found.id,variant,version,
       page.label,page.layoutMode,page.template??null,page.canvasWidth,page.canvasHeight,
       variant==='Custom'&&page.customTargetEnabled===true,
-      page.customTargetMinWidth??320,page.customTargetMaxWidth??10000]);
+      page.customTargetMinWidth??320,page.customTargetMaxWidth??10000,page.canvasFillColor??'#ffffff']);
    for(const [index,c] of page.components.entries()){
     await client.query(`INSERT INTO md_page_layout_version_nodes
      (tenant_id,page_id,variant,version,component_key,component_type,label,region,visible,sort_order)
