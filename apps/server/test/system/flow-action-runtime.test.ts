@@ -41,7 +41,7 @@ test('Generate Random OTP rejects an invalid output variable',async()=>{
 test('Flow formula context uses the execution user time zone and tenant currency rates',async()=>{
   const vars:Record<string,unknown>={};
   const context=await loadFlowUserResource({query:async(sql:string)=>{
-   assert.match(sql,/time_zcomponent-libraries/);
+   assert.match(sql,/time_zone/);
    return {rows:[
     {id:recipient,email:'flow@example.invalid',display_name:'Flow User',time_zone:'Europe/London',
      has_currency_settings:true,currency_iso_code:'GBP',conversion_rate:'1'},
