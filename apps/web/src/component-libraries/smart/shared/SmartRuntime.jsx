@@ -129,7 +129,7 @@ function SmartCalendar({p,fire}){
        key={week+"-"+i} aria-label={"Select "+iso} aria-pressed={isSelected}
        style={isSelected?{color:"#fff",
          borderColor:p.defaultValueColor||"#60a5fa",background:p.defaultValueColor||"#2563eb",fontWeight:700}:undefined}
-       onClick={()=>{setSelected(new Date(year,month,date,12));fire("change",iso)}}>{date}</button>;
+       onClick={()=>{setSelected(new Date(year,month,date,12));fire("change",iso);if(p.actionFlows?.click)fire("click",iso)}}>{date}</button>;
    }))}
   </div>}
  </div>;
@@ -192,11 +192,11 @@ function SmartToggle({p,fire}){
  const disabled=bound&&(p.toggleFieldReady!==true||saving);
  const change=e=>{
   const next=e.target.checked;
-  if(!bound){setChecked(next);fire("change",next);return;}
+  if(!bound){setChecked(next);fire("change",next);if(p.actionFlows?.click)fire("click",next);return;}
   if(disabled||typeof p.onBoundToggleChange!=="function")return;
   setChecked(next);setSaving(true);
   void Promise.resolve().then(()=>p.onBoundToggleChange(next))
-   .then(()=>fire("change",next))
+   .then(()=>{fire("change",next);if(p.actionFlows?.click)fire("click",next);})
    .catch(()=>setChecked(asBoolean(p.value??false)))
    .finally(()=>setSaving(false));
  };
@@ -241,7 +241,7 @@ export default function SmartRuntime(p){
    gridAutoRows:"minmax(160px,auto)",alignContent:"start"}}>
    {recordsOf(p).slice(0,200).map((r,i)=>
   <SmartCard p={p} record={r} key={r?.Id??r?.id??i}/>)}</div>;
- else if(name==="smart_cart")content=<SmartCart p={p} records={recordsOf(p)} Picture={SmartPicture} expression={expression}/>;
+ else if(name==="smart_cart")content=<SmartCart p={p} records={recordsOf(p)} Picture={SmartPicture} expression={expression} fire={fire}/>;
  else if(name==="smart_calendar")content=<SmartCalendar p={p} fire={fire}/>;
  else if(name==="smart_tabs")content=<SmartTabs p={p} record={record} fire={fire}/>;
  else if(name==="smart_navigation"){
