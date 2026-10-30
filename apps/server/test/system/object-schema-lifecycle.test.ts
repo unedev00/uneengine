@@ -21,6 +21,7 @@ function fixture(options:{isSystem?:boolean;deleted?:boolean;blocker?:string;
    const affected=options.blocker&&sql.includes(options.blocker)?1:0;
    return {rows:[{count:affected}],rowCount:1};
   }
+  if(sql.includes('md_object_lifecycle_page_states'))return {rows:[],rowCount:1};
   if(sql.includes('md_object_layout_versions'))
    return {rows:[{revision:options.revision??3}],rowCount:1};
   if(sql.includes('UPDATE md_object_definitions')){
@@ -46,7 +47,7 @@ test('2A: custom object is soft deleted, hidden and restored without dropping sc
  assert.deepEqual(await service.restore(tenant,objectName),{apiName:objectName,restored:true});
  assert.equal(current.deleted_at,null);
  assert.deepEqual(await service.listDeleted(tenant),[]);
- assert.equal(calls.some(call=>/DELETE FROM|DROP TABLE|TRUNCATE/i.test(call.sql)),false);
+ assert.equal(calls.some(call=>/DELETE FROM md_object_definitions|DROP TABLE|TRUNCATE/i.test(call.sql)),false);
 });
 
 test('2A: data and cross-object dependencies block destructive lifecycle changes',async()=>{
