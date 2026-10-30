@@ -5,7 +5,7 @@ import type {ObjectMetadata} from '../../metadata/Definitions/metadata';
 import type {UneRibbonProperty,UneBuilderTab} from './uneBuilderPropertyInventory';
 import RibbonColorPalette from './RibbonColorPalette';
 import TenantMediaPicker from '../ComponentProperties/TenantMediaPicker';
-import RecordFilterEditor from '../../../component-libraries/OneRecordFilterEditor/RecordFilterEditor';
+import RecordFilterEditor from '../../../component-libraries/shared/primitives/RecordFilterEditor/RecordFilterEditor';
 import SmartFormulaField from './SmartFormulaField';
 import './SmartRibbon.css';
 type Position={x:number;y:number;width:number;height:number};
