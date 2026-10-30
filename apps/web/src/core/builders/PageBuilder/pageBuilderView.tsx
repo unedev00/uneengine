@@ -75,6 +75,11 @@ import {
   List,
   ListFilter,
   Maximize2,
+  Move,
+  MoveHorizontal,
+  MoveVertical,
+  MoveDiagonal,
+  MoveDiagonal2,
   Monitor,
   MoreHorizontal,
   Pencil,
@@ -1071,10 +1076,11 @@ function PageBuilder({
   };
   // Move only the selected DOM element while dragging. Commit metadata and
   // a single undo step on release, avoiding a page-wide render per pointer frame.
-  const startCanvasMove = (event: React.PointerEvent<HTMLDivElement>, component: PageComponentMetadata) => {
+  const startCanvasMove = (event: React.PointerEvent<HTMLElement>, component: PageComponentMetadata) => {
     if (previewMode || !component.position || isCanvasLocked(component)
       || event.button !== 0 || event.shiftKey || canvasMoveStart.current) return;
-    if ((event.target as HTMLElement).closest('button,input,select,textarea,a,[contenteditable="true"],.free-canvas-resize-handle,.canvas-element-actions')) return;
+    if (!(event.target as HTMLElement).closest('.free-canvas-move-handle') &&
+      (event.target as HTMLElement).closest('button,input,select,textarea,a,[contenteditable="true"],.free-canvas-resize-handle,.canvas-element-actions')) return;
     const element = event.currentTarget.closest<HTMLElement>('.free-canvas-component');
     if (!element) return;
     event.preventDefault();
@@ -1100,7 +1106,7 @@ function PageBuilder({
     if (!selectionIds.includes(component.id)) setSelectionIds([component.id]);
     setPageSettingsOpen(false);
   };
-  const moveCanvasPointer = (event: React.PointerEvent<HTMLDivElement>) => {
+  const moveCanvasPointer = (event: React.PointerEvent<HTMLElement>) => {
     const start = canvasMoveStart.current;
     if (!start || start.pointerId !== event.pointerId) return;
     const scale = fitCanvas ? fitScale : 1;
@@ -1133,7 +1139,7 @@ function PageBuilder({
     start.element.style.transform =
       `translate(${deltaX}px, ${deltaY}px)`;
   };
-  const endCanvasMove = (event: React.PointerEvent<HTMLDivElement>, cancelled = false) => {
+  const endCanvasMove = (event: React.PointerEvent<HTMLElement>, cancelled = false) => {
     const start = canvasMoveStart.current;
     if (!start || start.pointerId !== event.pointerId) return;
     canvasMoveStart.current = null;
@@ -1222,13 +1228,27 @@ function PageBuilder({
     const components = [...page.components];
     const defaultWidth = Math.min(page.canvasWidth, custom?.resize?.defaultWidth ?? 320);
     const defaultHeight = Math.min(page.canvasHeight, custom?.resize?.defaultHeight ?? 180);
-    const freeCanvasPosition = page.layoutMode === 'free-canvas'
-      ? {
-        x: Math.min(canvasPosition?.x ?? 24 + (page.components.length * 24) % Math.max(1, page.canvasWidth - defaultWidth), page.canvasWidth - defaultWidth),
-        y: Math.min(canvasPosition?.y ?? 24 + (page.components.length * 24) % Math.max(1, page.canvasHeight - defaultHeight), page.canvasHeight - defaultHeight),
-        width: defaultWidth,
-        height: defaultHeight
+    // An inserted component is an independent sibling, not an invisible child
+    // of the previous one. Find free canvas space instead of stacking every
+    // 24px-offset component on top of its neighbours.
+    const usedBounds = page.components.filter(item=>item.position && !rawLayoutParentId(item))
+      .map(item=>item.position!);
+    const vacancy = () => {
+      const maxX=Math.max(0,page.canvasWidth-defaultWidth);
+      const maxY=Math.max(0,page.canvasHeight-defaultHeight);
+      const coordinates=(max:number)=>[...new Set([Math.min(24,max),
+        ...Array.from({length:Math.ceil(max/24)+1},(_,i)=>Math.min(i*24,max))])];
+      for(const y of coordinates(maxY))for(const x of coordinates(maxX)){
+        if(usedBounds.every(other=>x+defaultWidth<=other.x || other.x+other.width<=x
+          || y+defaultHeight<=other.y || other.y+other.height<=y))return {x,y};
       }
+      return {x:Math.min(24,maxX),y:Math.min(24,maxY)};
+    };
+    const origin=canvasPosition??vacancy();
+    const freeCanvasPosition = page.layoutMode === 'free-canvas'
+      ? {x:Math.max(0,Math.min(origin.x,page.canvasWidth-defaultWidth)),
+         y:Math.max(0,Math.min(origin.y,page.canvasHeight-defaultHeight)),
+         width:defaultWidth,height:defaultHeight}
       : undefined;
     components.splice(Math.max(0, Math.min(position, components.length)), 0, {
       id, type, label: custom ? libraryComponentLabel(custom) : type,
@@ -2317,6 +2337,8 @@ function PageBuilder({
                     ? <RegisteredComponent definition={customDefinition} layoutTransparent props={libraryPreview ? customPreviewProps : {
                       ...component.properties,
                       ...componentLayoutProps(component.properties, device),
+                      ...(customDefinition.apiName.startsWith('smart_') && component.position && page.layoutMode==='free-canvas'
+                        ? {width:component.position.width,height:component.position.height}:{}),
                       label: component.type.startsWith('Custom:smart_') && typeof component.properties.label === 'string'
                         ? component.properties.label : component.label,
                       properties: component.properties,
@@ -2362,12 +2384,22 @@ function PageBuilder({
             onPointerCancel={event => finishTemplateResize(event, true)}
             onClick={event => event.stopPropagation()} />)}
       {!libraryPreview && page.layoutMode === 'free-canvas' && !nested && selectedId === component.id && !previewMode && !isCanvasLocked(component)
+        && <button type="button" className="free-canvas-move-handle"
+          aria-label={`Move ${component.label}`} title="Drag to move (four-way)"
+          onPointerDown={event=>startCanvasMove(event,component)}
+          onPointerMove={moveCanvasPointer}
+          onPointerUp={event=>endCanvasMove(event)}
+          onPointerCancel={event=>endCanvasMove(event,true)}
+          onClick={event=>event.stopPropagation()}><Move size={17}/></button>}
+      {!libraryPreview && page.layoutMode === 'free-canvas' && !nested && selectedId === component.id && !previewMode && !isCanvasLocked(component)
         && (['n','ne','e','se','s','sw','w','nw'] as const).map(edge =>
           <button key={edge} type="button" className={`free-canvas-resize-handle resize-${edge}`}
             aria-label={`Resize ${component.label} ${edge}`} title="Drag edge or corner to resize"
             onPointerDown={event => startCanvasResize(event, component, edge)}
             onPointerMove={moveCanvasResize} onPointerUp={endCanvasResize} onPointerCancel={endCanvasResize}
-            onClick={event => event.stopPropagation()}/>)}
+            onClick={event => event.stopPropagation()}>{edge==='n'||edge==='s'?<MoveVertical size={15}/>
+             :edge==='e'||edge==='w'?<MoveHorizontal size={15}/>
+             :edge==='ne'||edge==='sw'?<MoveDiagonal2 size={15}/>:<MoveDiagonal size={15}/>}</button>)}
     </div>;
   };
   const renderRegion = (region: 'header' | 'main' | 'sidebar') => {
