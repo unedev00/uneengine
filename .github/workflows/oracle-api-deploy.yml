@@ -25,8 +25,10 @@ permissions:
   contents: read
   statuses: write
 
+# PR validation runs on hosted runners and must not replace a queued main-branch
+# production deployment. Keep all production deployments serialized separately.
 concurrency:
-  group: oracle-production-full-stack
+  group: ${{ github.event_name == 'pull_request' && format('oracle-ci-{0}', github.head_ref) || 'oracle-production-full-stack' }}
   cancel-in-progress: false
 
 jobs:
