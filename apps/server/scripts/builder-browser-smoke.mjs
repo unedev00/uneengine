@@ -182,6 +182,10 @@ try{
   await page.getByRole('button',{name:'User profile'}).waitFor({timeout:15000});
   console.info('Production frontend login form authenticated into CI SQL tenant');
  }
+ if(process.env.METADRIVE_BROWSER_TARGET==='object-lifecycle'){
+  const {runObjectSchemaLifecycleBrowserCheck}=await import('./object-schema-lifecycle-browser-check.mjs');
+  await runObjectSchemaLifecycleBrowserCheck({page,origin,db,tenantId});
+ }else{
  await page.goto(origin+'/une/setup/flow-builder',{waitUntil:'domcontentloaded'});
  await page.getByText('Existing flows',{exact:true}).waitFor({state:'visible',timeout:20000});
  await page.screenshot({path:new URL('../artifacts/flow-builder.png',import.meta.url).pathname});
@@ -878,6 +882,7 @@ try{
  const severe=failures.filter(message=>/TypeError|Cannot read properties|ReferenceError/i.test(message));
  assert.deepEqual(severe,[],'Browser runtime exceptions: '+severe.join(' | '));
  console.info('Browser UI loaded: Page save/load/archive and Flow save/start/submit/complete/archive passed');
+ }
 }catch(error){
  if(page){
   console.error('Browser failure URL:',page.url());
