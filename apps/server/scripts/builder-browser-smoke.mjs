@@ -869,6 +869,10 @@ try{
  assert.equal((await db.query('SELECT count(*)::int AS n FROM md_lightning_page_details d JOIN md_page_definitions p ON p.id=d.page_id AND p.tenant_id=d.tenant_id WHERE p.tenant_id=$1 AND p.api_name=$2',
    [tenantId,'Browser_Verified_Record'])).rows[0]?.n,1,'Page archive removed saved SQL metadata');
  console.info('Page Builder Delete UI archived the Page without losing SQL metadata');
+ if(!publishedSite){
+  const {runObjectSchemaLifecycleBrowserCheck}=await import('./object-schema-lifecycle-browser-check.mjs');
+  await runObjectSchemaLifecycleBrowserCheck({page,origin,db,tenantId});
+ }
  if(publishedSite)assert.ok(await page.evaluate(()=>
   location.origin==='https://unesolutions.co.uk'),'Live smoke did not use production frontend');
  const severe=failures.filter(message=>/TypeError|Cannot read properties|ReferenceError/i.test(message));
