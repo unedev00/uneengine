@@ -94,3 +94,41 @@
 .smart-runtime.smart_navigation > .smart-navigation {align-content:stretch;align-items:stretch}
 .smart-runtime.smart_navigation .smart-navigation-item{flex:1 1 auto;min-height:0}
 .smart-runtime.smart_cart > .smart-cart-root{overflow:auto}
+
+/* Scrollbars are derived from content overflow, never component metadata.
+   Keep each scroller inside its own resized Page Builder surface. */
+.smart-runtime.smart_navigation>.smart-navigation,
+.smart-runtime.smart_card_grid>.smart-grid,
+.smart-runtime.smart_tabs>.smart-tabs-shell{
+ overflow:auto!important;
+ overscroll-behavior:contain;
+ min-width:0;min-height:0;
+ scrollbar-width:thin;
+}
+.smart-runtime.smart_navigation>.smart-navigation{
+ flex-wrap:nowrap!important;
+ align-content:flex-start!important;
+ align-items:flex-start!important;
+}
+.smart-runtime.smart_navigation .smart-navigation-item{
+ flex:0 0 auto!important;
+ min-height:34px;
+ max-width:none;
+ white-space:nowrap;
+}
+.smart-runtime.smart_tabs>.smart-tabs-shell .smart-tabs{
+ width:max-content;min-width:100%;
+ height:max-content;min-height:100%;
+ flex-wrap:nowrap!important;align-content:flex-start!important;
+}
+.smart-runtime.smart_tabs>.smart-tabs-shell .smart-tabs>button{
+ flex:0 0 auto!important;
+ white-space:nowrap;
+}
+.smart-runtime.smart_card_grid>.smart-grid{
+ grid-auto-rows:minmax(160px,auto)!important;
+ align-content:start!important;
+}
+.smart-runtime.smart_card_grid>.smart-grid .smart-card{
+ height:auto!important;min-height:160px!important;
+}
