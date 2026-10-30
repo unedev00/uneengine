@@ -30,7 +30,7 @@ test('legacy SQL registry is deactivated, not erased, only without references',a
  assert.match(sql,/ON CONFLICT DO NOTHING/);
 });
 test('old app source paths only delegate to the shared presentation helper',async()=>{
- const files=['une_conversation','onechatter_conversation','uneacechatter_conversation'];
+ const files=['ui_conversation','onechatter_conversation','uneacechatter_conversation'];
  for(const part of files){
   const script=await readFile(new URL('../../../web/src/component-libraries/'+part+'/flowConversationPresenter.js',import.meta.url),'utf8');
   assert.match(script,/export \{presentFlowConversationCollections\} from/);
