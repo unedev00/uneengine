@@ -250,3 +250,71 @@ test('Smart Tabs, Input Box, Lookup and Toggle edit visible control styles',asyn
  const css=read('../src/core/builders/PageBuilder/SmartRibbon.css');
  assert.match(css,/\.smart-formula input/);
 });
+test('Smart Design Body, Header, Badge and Image match approved three-row positions',()=>{
+ const css=read('../src/core/builders/PageBuilder/SmartRibbon.css');
+ const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
+ const rule=(section,property)=>{
+   const pattern=new RegExp('\\.smart-ribbon-group\\[aria-label="'+section+'"\\]\\s+\\.smart-property\\[data-property="'+property+'"\\]\\s*\\{([^}]*)\\}');
+   const match=css.match(pattern);
+   assert.ok(match,'Missing positioned '+section+'.'+property);
+   return match[1];
+ };
+ const area=(section,property,expected)=>{
+   assert.match(rule(section,property),new RegExp('grid-area:\\s*'+expected.replaceAll('/','\\s*/\\s*')));
+ };
+ area('Body','backgroundColor','1 / 1');
+ area('Body','borderColor','1 / 2');
+ area('Body','labelColor','1 / 3');
+ area('Body','radius','2 / 1 / 3 / -1');
+ area('Body','shadow','3 / 1 / 4 / -1');
+ area('Header','wrapText','1 / 1');
+ area('Header','headerBold','1 / 2');
+ area('Header','headerBorderColor','1 / 3');
+ area('Header','headerAlignment','3 / 1 / 4 / -1');
+ area('Badge','badgeAlignment','1 / 1 / 2 / 4');
+ area('Badge','badgeVisible','1 / 4');
+ area('Badge','badgeTextSize','2 / 1 / 3 / 4');
+ area('Badge','badgeBold','3 / 1');
+ area('Badge','badgeTextColor','3 / 2');
+ area('Badge','badgeBodyColor','3 / 3');
+ assert.match(rule('Image','imagePlacement'),/grid-row:1;grid-column:1/);
+ assert.match(rule('Image','imageBorderColor'),/grid-row:2;grid-column:1/);
+ assert.match(rule('Image','imageFill'),/grid-row:3;grid-column:1/);
+ for(const section of ['Body','Header','Badge','Image'])
+   assert.ok(css.includes('[aria-label="'+section+'"]'),'Missing scoped '+section+' CSS');
+ assert.match(css,/grid-template-rows:repeat\(3,32px\)/);
+ assert.match(css,/grid-auto-flow:row/);
+ assert.match(ribbon,/const supported=property\.components\.includes\(api\)/);
+ assert.match(ribbon,/aria-label=\{title\}/);
+ assert.match(ribbon,/data-property=\{property\.id\}/);
+});
+
+test('Smart section widths and label visibility preserve accessible property controls',()=>{
+ const css=read('../src/core/builders/PageBuilder/SmartRibbon.css');
+ assert.match(css,/flex:0 0 258px/);
+ assert.match(css,/flex:0 0 265px/);
+ assert.match(css,/flex:0 0 512px/);
+ assert.match(css,/flex:0 0 282px/);
+ assert.match(css,/flex:0 0 75px!important/);
+ assert.match(css,/flex:0 0 116px!important/);
+ assert.match(css,/\.smart-ribbon-group\[aria-label="Badge"\] \.smart-property:is\([\s\S]*?\[data-property="badgeBodyColor"\]\)>.smart-label\{\s*display:none;/);
+ assert.match(css,/\.smart-ribbon-group\[aria-label="Header"\] \.smart-property:is\([\s\S]*?\[data-property="headerBorderColor"\]\)>.smart-label\{\s*display:none;/);
+ assert.match(css,/\.smart-ribbon-group\[aria-label="Body"\] \.smart-property:is\([\s\S]*?\[data-property="labelColor"\]\)>.smart-label\{\s*display:none;/);
+ assert.match(css,/grid-template-rows:repeat\(3,30px\)/);
+ assert.match(css,/height:146px!important/);
+ assert.match(css,/\.smart-ribbon-caption/);
+});
+
+test('Smart Badge and Image short names come only from forward-only SQL metadata',()=>{
+ const sql=read('../../server/src/system-support/migrations/20270129-smart-ribbon-short-section-labels.sql');
+ for(const [key,label] of Object.entries({
+   badgeAlignment:'Alignment',badgeVisible:'Visible',badgeTextSize:'Text Size',
+   imagePlacement:'Placement',imageBorderColor:'Border',imageFill:'Fill'
+ })) assert.ok(sql.includes("WHEN '"+key+"' THEN '"+label+"'"),key+' label missing');
+ assert.match(sql,/WHERE tab='Design' AND scope='component'/);
+ assert.match(sql,/section_group='Badge'/);
+ assert.match(sql,/section_group='Image'/);
+ assert.doesNotMatch(sql,/DELETE\s+FROM|UPDATE\s+md_page_|UPDATE\s+md_builder_ribbon_component_rules/i);
+ const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
+ assert.match(ribbon,/const title=property\.label/);
+});
