@@ -6,8 +6,11 @@ import {
 } from '../../../../server/src/expression-engine/FormulaParser.js';
 import {tokenize} from '../../../../server/src/expression-engine/FormulaTokenizer.js';
 import {validateFormulaFunctions} from '../../../../server/src/expression-engine/FormulaFunctionRegistry.js';
+import {roundFormulaNumber} from '../../../../server/src/expression-engine/FormulaNumeric.js';
 
 const text=value=>value==null?'':String(value);
+const formulaText=value=>typeof value==='boolean'?value?'TRUE':'FALSE':text(value);
+const textPoints=value=>Array.from(text(value));
 const numeric=value=>{
  const result=typeof value==='number'?value:typeof value==='string'&&value.trim()?Number(value):NaN;
  if(!Number.isFinite(result))throw Error('Expected a finite number');
@@ -31,21 +34,31 @@ const evaluateCall=(name,args)=>{
   if(args.length<minimum||args.length>maximum)throw Error(`Invalid ${name} argument count`);
  };
  switch(name){
-  case 'TEXT':arity(1);return text(args[0]);
+  case 'TEXT':arity(1);return formulaText(args[0]);
   case 'VALUE':arity(1);return numeric(args[0]);
   case 'UPPER':arity(1);return text(args[0]).toUpperCase();
   case 'LOWER':arity(1);return text(args[0]).toLowerCase();
-  case 'PROPER':case 'INITCAP':arity(1);return text(args[0]).toLowerCase().replace(/(^|[\s-])\p{L}/gu,part=>part.toUpperCase());
-  case 'LEN':arity(1);return text(args[0]).length;
+  case 'PROPER':case 'INITCAP':arity(1);return text(args[0]).toLowerCase()
+   .replace(/(^|[^\p{L}\p{N}])(\p{L})/gu,(_match,prefix,letter)=>prefix+letter.toUpperCase());
+  case 'LEN':arity(1);return textPoints(args[0]).length;
   case 'TRIM':arity(1);return text(args[0]).trim();
-  case 'LEFT':arity(1,2);return text(args[0]).slice(0,Math.max(0,Math.trunc(numeric(args[1]??1))));
+  case 'LEFT':arity(1,2);return textPoints(args[0])
+   .slice(0,Math.max(0,Math.trunc(numeric(args.length===1?1:args[1])))).join('');
   case 'RIGHT':arity(1,2);{
-   const value=text(args[0]),length=Math.max(0,Math.trunc(numeric(args[1]??1)));
-   return length===0?'':value.slice(-length);
+   const value=textPoints(args[0]),length=Math.max(0,Math.trunc(numeric(args.length===1?1:args[1])));
+   return length===0?'':value.slice(-length).join('');
   }
-  case 'MID':arity(3);return text(args[0]).slice(Math.max(0,Math.trunc(numeric(args[1]))-1),Math.max(0,Math.trunc(numeric(args[1]))-1)+Math.max(0,Math.trunc(numeric(args[2]))));
+  case 'MID':arity(3);{
+   const value=textPoints(args[0]),start=Math.max(0,Math.trunc(numeric(args[1]))-1);
+   return value.slice(start,start+Math.max(0,Math.trunc(numeric(args[2])))).join('');
+  }
   case 'FIND':arity(2,3);{
-   const found=text(args[1]).indexOf(text(args[0]),Math.max(0,Math.trunc(numeric(args[2]??1))-1));
+   const haystack=textPoints(args[1]),needle=textPoints(args[0]);
+   const start=Math.max(0,Math.trunc(numeric(args.length===2?1:args[2]))-1);
+   let found=-1;
+   for(let index=start;index<=haystack.length-needle.length;index++){
+    if(needle.every((point,offset)=>haystack[index+offset]===point)){found=index;break;}
+   }
    return found<0?0:found+1;
   }
   case 'BEGINS':case 'CONTAINS':case 'EXACT':arity(2);
@@ -63,27 +76,28 @@ const evaluateCall=(name,args)=>{
   }
   case 'REPT':arity(2);{
    const value=text(args[0]),count=Math.trunc(numeric(args[1]));
-   if(count<0||value.length*count>4000)throw Error('REPT result exceeds the 4000-character limit');
+   if(count<0||textPoints(value).length*count>4000)throw Error('REPT result exceeds the 4000-character limit');
    return value.repeat(count);
   }
   case 'ASCII':arity(1);return text(args[0]).codePointAt(0)??0;
   case 'ISPICKVAL':arity(2);return text(args[0])===text(args[1]);
   case 'INCLUDES':arity(2);return text(args[0]).split(';').filter(Boolean).includes(text(args[1]));
-  case 'ISNUMBER':arity(1);return args[0]!==''&&args[0]!==null&&Number.isFinite(Number(args[0]));
+  case 'ISNUMBER':arity(1);return typeof args[0]==='number'&&Number.isFinite(args[0])
+   ||typeof args[0]==='string'&&args[0].trim()!==''&&Number.isFinite(Number(args[0]));
   case 'REVERSE':arity(1);return [...text(args[0])].reverse().join('');
   case 'ENCODEURL':case 'URLENCODE':arity(1);return encodeURIComponent(text(args[0]));
   case 'URLDECODE':arity(1);return decodeURIComponent(text(args[0]));
   case 'LPAD':case 'RPAD':arity(2,3);{
-   const source=text(args[0]),length=Math.trunc(numeric(args[1])),pad=args[2]===undefined?' ':text(args[2]);
-   if(length<0||length>4000||!pad)throw Error(`Invalid ${name} arguments`);
-   if(source.length>=length)return source.slice(0,length);
-   const fill=pad.repeat(Math.ceil((length-source.length)/pad.length)).slice(0,length-source.length);
-   return name==='LPAD'?fill+source:source+fill;
+   const source=textPoints(args[0]),length=Math.trunc(numeric(args[1])),pad=textPoints(args[2]===undefined?' ':args[2]);
+   if(length<0||length>4000||pad.length===0)throw Error(`Invalid ${name} arguments`);
+   if(source.length>=length)return source.slice(0,length).join('');
+   const fill=Array.from({length:length-source.length},(_,index)=>pad[index%pad.length]);
+   return name==='LPAD'?[...fill,...source].join(''):[...source,...fill].join('');
   }
   case 'REPLACE':arity(4);{
-   const source=text(args[0]),start=Math.trunc(numeric(args[1]))-1,length=Math.trunc(numeric(args[2]));
+   const source=textPoints(args[0]),start=Math.trunc(numeric(args[1]))-1,length=Math.trunc(numeric(args[2]));
    if(start<0||length<0)throw Error('Invalid REPLACE position or length');
-   return source.slice(0,start)+text(args[3])+source.slice(start+length);
+   return source.slice(0,start).join('')+text(args[3])+source.slice(start+length).join('');
   }
   case 'CHAR':arity(1);{
    const code=Math.trunc(numeric(args[0]));
@@ -127,24 +141,28 @@ const evaluateCall=(name,args)=>{
    if(result!==null&&!['string','number','boolean'].includes(typeof result))throw Error('Invalid VLOOKUP result');
    return result;
   }
-  case 'ISBLANK':case 'ISNULL':arity(1);return args[0]===null||args[0]===undefined||args[0]==='';
-  case 'BLANKVALUE':case 'NULLVALUE':arity(2);return args[0]===null||args[0]===undefined||args[0]===''?args[1]:args[0];
+  case 'ISBLANK':arity(1);return args[0]===null||args[0]===undefined||args[0]==='';
+  case 'ISNULL':arity(1);return args[0]===null||args[0]===undefined;
+  case 'BLANKVALUE':arity(2);return args[0]===null||args[0]===undefined||args[0]===''?args[1]:args[0];
+  case 'NULLVALUE':arity(2);return args[0]===null||args[0]===undefined?args[1]:args[0];
   case 'ABS':arity(1);return Math.abs(numeric(args[0]));
   case 'ROUND':case 'ROUNDUP':case 'ROUNDDOWN':case 'TRUNC':{
-   arity(1,2);const value=numeric(args[0]),places=Math.max(-10,Math.min(10,Math.trunc(numeric(args[1]??0))));
-   const factor=10**places,scaled=value*factor;
-   const rounded=name==='ROUND'?Math.sign(value)*Math.round((Math.abs(value)+Number.EPSILON*Math.abs(value))*factor):name==='ROUNDUP'?Math.sign(scaled)*Math.ceil(Math.abs(scaled))
-    :name==='ROUNDDOWN'?Math.sign(scaled)*Math.floor(Math.abs(scaled)):Math.trunc(scaled);
-   return rounded/factor;
+   arity(1,2);
+   const precision=args.length===1?0:numeric(args[1]);
+   return roundFormulaNumber(numeric(args[0]),precision,name);
   }
   case 'MIN':arity(1,20);return Math.min(...args.map(numeric));
   case 'MAX':arity(1,20);return Math.max(...args.map(numeric));
   case 'SIGN':arity(1);return Math.sign(numeric(args[0]));
   case 'MOD':arity(2);{
-   const divisor=numeric(args[1]);if(!divisor)throw Error('MOD divisor must not be zero');
+   const divisor=numeric(args[1]);if(divisor===0)throw Error('MOD divisor must not be zero');
    return numeric(args[0])%divisor;
   }
-  case 'SQRT':arity(1);return Math.sqrt(numeric(args[0]));
+  case 'SQRT':arity(1);{
+   const value=numeric(args[0]);
+   if(value<0)throw Error('SQRT requires a non-negative value');
+   return Math.sqrt(value);
+  }
   case 'POWER':arity(2);return numeric(args[0])**numeric(args[1]);
   case 'CEILING':arity(1);return Math.ceil(numeric(args[0]));
   case 'FLOOR':arity(1);return Math.floor(numeric(args[0]));
@@ -155,7 +173,7 @@ const evaluateCall=(name,args)=>{
    const value=numeric(args[0]);if(value<=0)throw Error('LN requires a positive value');return Math.log(value);
   }
   case 'LOG':arity(1,2);{
-   const value=numeric(args[0]),base=args[1]===undefined?10:numeric(args[1]);
+   const value=numeric(args[0]),base=args.length===1?10:numeric(args[1]);
    if(value<=0||base<=0||base===1)throw Error('Invalid LOG arguments');
    return Math.log(value)/Math.log(base);
   }
@@ -164,7 +182,7 @@ const evaluateCall=(name,args)=>{
   case 'TAN':arity(1);return Math.tan(numeric(args[0]));
   case 'ASIN':case 'ACOS':{
    arity(1);const value=numeric(args[0]);
-   if(value< -1||value>1)throw Error(`Invalid ${name} argument`);
+   if(value< -1||value>1)throw Error(`${name} argument must be between -1 and 1`);
    return name==='ASIN'?Math.asin(value):Math.acos(value);
   }
   case 'ATAN':arity(1);return Math.atan(numeric(args[0]));
@@ -174,6 +192,7 @@ const evaluateCall=(name,args)=>{
   case 'TANH':arity(1);return Math.tanh(numeric(args[0]));
   case 'DEGREES':arity(1);return numeric(args[0])*180/Math.PI;
   case 'RADIANS':arity(1);return numeric(args[0])*Math.PI/180;
+  case 'PI':arity(0);return Math.PI;
   case 'DATE':arity(3);{
    const year=Math.trunc(numeric(args[0])),month=Math.trunc(numeric(args[1])),day=Math.trunc(numeric(args[2]));
    if(year<1||year>9999||month<1||month>12||day<1||day>31)throw Error('Invalid DATE value');
@@ -312,6 +331,10 @@ function parse(source,record){
    result=!truth(evaluate(node.args[0]));
   }else if(node.name==='IFERROR'){
    try{result=evaluate(node.args[0]);}catch{result=evaluate(node.args[1]);}
+  }else if(node.name==='BLANKVALUE'||node.name==='NULLVALUE'){
+   const value=evaluate(node.args[0]);
+   result=value===null||value===undefined||node.name==='BLANKVALUE'&&value===''?
+    evaluate(node.args[1]):value;
   }else if(node.name==='AND'){
    result=true;
    for(const argument of node.args)if(!truth(evaluate(argument))){result=false;break;}
@@ -344,7 +367,7 @@ export function evaluateFieldExpressionDetailed(expression,record){
  if(typeof expression!=='string')return {value:''};
  if(expression.length>4000)return {value:'',error:'Formula exceeds the 4000-character limit'};
  const input=expression.trim();if(!input)return {value:''};
- if(!/^(?:TRUE|FALSE|NULL|PI)$/i.test(input)&&!/@[A-Za-z]/.test(input)&&!input.startsWith('@')&&!/^[A-Za-z]+\s*\(/.test(input)
+ if(!/^(?:TRUE|FALSE|NULL|PI)$/i.test(input)&&!/@[A-Za-z]/.test(input)&&!input.startsWith('@')&&!/^[A-Za-z][A-Za-z0-9_]*\s*\(/.test(input)
   &&!/^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)+(?:\s*\(|$)/.test(input)
   &&!/^(?:["(]|[-+]?\d+(?:\.\d+)?\s*[+*\/%^<>=!-])/.test(input)
   &&!/\s(?:[&+*/%^<>=!]|AND\b|OR\b)\s/i.test(input))return {value:expression};

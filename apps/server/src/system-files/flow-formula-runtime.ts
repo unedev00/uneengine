@@ -11,6 +11,7 @@ import {tokenize} from '../expression-engine/FormulaTokenizer.js';
 import {
   evaluateFormulaBinary,evaluateFormulaUnary,formulaTruth,Parser
 } from '../expression-engine/FormulaParser.js';
+import {roundFormulaNumber} from '../expression-engine/FormulaNumeric.js';
 import type {Expression} from '../expression-engine/FormulaParser.js';
 
 type FormulaResolver=(name:string)=>unknown;
@@ -98,6 +99,8 @@ export function isFormulaImageResult(value:unknown):value is FormulaImageResult 
 }
 const text=(value:unknown):string=>value===null||value===undefined?''
   :isFormulaImageResult(value)?value.url:String(value);
+const formulaText=(value:unknown):string=>typeof value==='boolean'?value?'TRUE':'FALSE':text(value);
+const textPoints=(value:unknown):string[]=>Array.from(text(value));
 const truth=formulaTruth;
 function triggerFieldReference(node:Expression):string {
   if(node.kind!=='reference')throw new Error('Record change functions require a $Record field reference');
@@ -181,7 +184,8 @@ function evaluateNode(node:Expression,resolve:FormulaResolver,context:FormulaEva
     case 'NOT':arity(1);return !truth(argument(0));
     case 'XOR':arity(2,20);return node.args.reduce((value,item)=>
       value!==truth(evaluate(item,resolve,context)),false);
-    case 'ISBLANK':case 'ISNULL':arity(1);return argument(0)===null||argument(0)===undefined||argument(0)==='';
+    case 'ISBLANK':arity(1);return argument(0)===null||argument(0)===undefined||argument(0)==='';
+    case 'ISNULL':arity(1);return argument(0)===null||argument(0)===undefined;
     case 'ISNUMBER':arity(1);{
       const value=argument(0);
       return typeof value==='number'&&Number.isFinite(value)
@@ -194,12 +198,15 @@ function evaluateNode(node:Expression,resolve:FormulaResolver,context:FormulaEva
         if(expression===evaluate(node.args[index],resolve,context))return evaluate(node.args[index+1],resolve,context);
       return evaluate(node.args[node.args.length-1],resolve,context);
     }
-    case 'BLANKVALUE':case 'NULLVALUE':arity(2);{
+    case 'BLANKVALUE':arity(2);{
       const value=argument(0);return value===null||value===undefined||value===''?argument(1):value;
     }
-    case 'TEXT':arity(1);return text(argument(0));
+    case 'NULLVALUE':arity(2);{
+      const value=argument(0);return value===null||value===undefined?argument(1):value;
+    }
+    case 'TEXT':arity(1);return formulaText(argument(0));
     case 'VALUE':arity(1);return numeric(argument(0));
-    case 'LEN':arity(1);return text(argument(0)).length;
+    case 'LEN':arity(1);return textPoints(argument(0)).length;
     case 'COLLECTIONCOUNT':case 'COLLECTIONSUM':{
       arity(node.name==='COLLECTIONCOUNT'?1:2);
       const source=argument(0);
@@ -224,21 +231,26 @@ function evaluateNode(node:Expression,resolve:FormulaResolver,context:FormulaEva
     case 'LOWER':arity(1);return text(argument(0)).toLowerCase();
     case 'UPPER':arity(1);return text(argument(0)).toUpperCase();
     case 'PROPER':case 'INITCAP':arity(1);return text(argument(0)).toLowerCase()
-      .replace(/(^|[^A-Za-z])([A-Za-z])/g,(_match,prefix:string,letter:string)=>prefix+letter.toUpperCase());
+      .replace(/(^|[^\p{L}\p{N}])(\p{L})/gu,
+        (_match,prefix:string,letter:string)=>prefix+letter.toUpperCase());
     case 'TRIM':arity(1);return text(argument(0)).trim();
-    case 'LEFT':arity(1,2);return text(argument(0)).slice(0,argument(1)===undefined?1:Math.max(0,Math.trunc(numeric(argument(1)))));
+    case 'LEFT':arity(1,2);return textPoints(argument(0))
+      .slice(0,argument(1)===undefined?1:Math.max(0,Math.trunc(numeric(argument(1))))).join('');
     case 'RIGHT':arity(1,2);{
-      const value=text(argument(0)),length=argument(1)===undefined?1:Math.max(0,Math.trunc(numeric(argument(1))));
-      return value.slice(Math.max(0,value.length-length));
+      const value=textPoints(argument(0)),length=argument(1)===undefined?1:Math.max(0,Math.trunc(numeric(argument(1))));
+      return value.slice(Math.max(0,value.length-length)).join('');
     }
     case 'MID':arity(3);{
-      const value=text(argument(0)),start=Math.max(0,Math.trunc(numeric(argument(1)))-1);
-      return value.slice(start,start+Math.max(0,Math.trunc(numeric(argument(2)))));
+      const value=textPoints(argument(0)),start=Math.max(0,Math.trunc(numeric(argument(1)))-1);
+      return value.slice(start,start+Math.max(0,Math.trunc(numeric(argument(2))))).join('');
     }
     case 'FIND':arity(2,3);{
-      const haystack=text(argument(1)),needle=text(argument(0));
+      const haystack=textPoints(argument(1)),needle=textPoints(argument(0));
       const start=node.args[2]?Math.max(0,Math.trunc(numeric(argument(2)))-1):0;
-      const found=haystack.indexOf(needle,start);
+      let found=-1;
+      for(let index=start;index<=haystack.length-needle.length;index++){
+        if(needle.every((point,offset)=>haystack[index+offset]===point)){found=index;break;}
+      }
       return found<0?0:found+1;
     }
     case 'SUBSTITUTE':arity(3,4);{
@@ -310,22 +322,22 @@ function evaluateNode(node:Expression,resolve:FormulaResolver,context:FormulaEva
     }
     case 'REPT':arity(2);{
       const value=text(argument(0)),count=Math.trunc(numeric(argument(1)));
-      if(count<0||value.length*count>4000)throw new Error('REPT result exceeds the 4000-character limit');
+      if(count<0||textPoints(value).length*count>4000)throw new Error('REPT result exceeds the 4000-character limit');
       return value.repeat(count);
     }
     case 'LPAD':case 'RPAD':arity(2,3);{
-      const source=text(argument(0)),length=Math.trunc(numeric(argument(1))),
-        pad=node.args[2]?text(argument(2)):' ';
-      if(length<0||length>4000||!pad)throw new Error('Invalid '+node.name+' arguments');
-      if(source.length>=length)return source.slice(0,length);
-      const fill=pad.repeat(Math.ceil((length-source.length)/pad.length)).slice(0,length-source.length);
-      return node.name==='LPAD'?fill+source:source+fill;
+      const source=textPoints(argument(0)),length=Math.trunc(numeric(argument(1))),
+        pad=textPoints(node.args[2]?argument(2):' ');
+      if(length<0||length>4000||pad.length===0)throw new Error('Invalid '+node.name+' arguments');
+      if(source.length>=length)return source.slice(0,length).join('');
+      const fill=Array.from({length:length-source.length},(_,index)=>pad[index%pad.length]);
+      return node.name==='LPAD'?[...fill,...source].join(''):[...source,...fill].join('');
     }
     case 'REPLACE':arity(4);{
-      const source=text(argument(0)),start=Math.trunc(numeric(argument(1)))-1,
+      const source=textPoints(argument(0)),start=Math.trunc(numeric(argument(1)))-1,
         length=Math.trunc(numeric(argument(2))),replacement=text(argument(3));
       if(start<0||length<0)throw new Error('Invalid REPLACE position or length');
-      return source.slice(0,start)+replacement+source.slice(start+length);
+      return source.slice(0,start).join('')+replacement+source.slice(start+length).join('');
     }
     case 'CHAR':arity(1);{
       const code=Math.trunc(numeric(argument(0)));
@@ -360,19 +372,11 @@ function evaluateNode(node:Expression,resolve:FormulaResolver,context:FormulaEva
     case 'ABS':arity(1);return Math.abs(numeric(argument(0)));
     case 'ROUND':arity(1,2);{
       const scale=node.args[1]?Math.trunc(numeric(argument(1))):0;
-      if(Math.abs(scale)>10)throw new Error('Invalid formula rounding precision');
-      const value=numeric(argument(0)),factor=10**scale;
-      const magnitude=Math.abs(value);
-      return Math.sign(value)*Math.round((magnitude+Number.EPSILON*magnitude)*factor)/factor;
+      return roundFormulaNumber(numeric(argument(0)),scale,'ROUND');
     }
     case 'ROUNDUP':case 'ROUNDDOWN':case 'TRUNC':arity(1,2);{
       const scale=node.args[1]?Math.trunc(numeric(argument(1))):0;
-      if(Math.abs(scale)>10)throw new Error('Invalid formula rounding precision');
-      const factor=10**scale,value=numeric(argument(0))*factor;
-      const rounded=node.name==='ROUNDUP'
-        ?Math.sign(value)*Math.ceil(Math.abs(value))
-        :Math.trunc(value);
-      return rounded/factor;
+      return roundFormulaNumber(numeric(argument(0)),scale,node.name);
     }
     case 'SIGN':arity(1);return Math.sign(numeric(argument(0)));
     case 'MIN':arity(1,20);return Math.min(...node.args.map(item=>numeric(evaluate(item,resolve,context))));
