@@ -53,6 +53,14 @@ export function examineRecordFilter(raw: unknown, fields: ReadonlyArray<RecordFi
     const source = filter.value as Record<string,unknown>;
     if (source.source === 'PageState' && typeof source.key === 'string'
       && /^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(source.key)) return null;
+    if(source.source==='FieldExpression' && typeof source.key==='string'){
+      const ref=source.key;
+      const direct=/^@[A-Za-z][A-Za-z0-9_]*$/.test(ref)
+        && fields.some(item=>item.apiName===ref.slice(1));
+      const related=/^@[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*){2,4}$/.test(ref)
+        && fields.some(item=>item.apiName===ref);
+      return direct||related?null:'Choose an accessible field or related-field reference.';
+    }
     if (source.source === 'CurrentRecord' || source.source === 'Session') return null;
     return 'Choose a valid dynamic filter source.';
   }

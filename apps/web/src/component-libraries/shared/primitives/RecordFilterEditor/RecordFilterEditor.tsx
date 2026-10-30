@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Plus, Search, Trash2 } from 'lucide-react';
-import type { FieldMetadata } from '../../../../core/metadata/Definitions/metadata';
+import type { FieldMetadata,ObjectMetadata } from '../../../../core/metadata/Definitions/metadata';
+import SmartFieldInput from '../SmartFieldInput/SmartFieldInput';
+import {mentionGroups} from '../SmartFieldInput/smartFieldMentions';
 import {
   examineRecordFilter, isBooleanFilterField, isNumericFilterField, supportedFilterOperators
 } from '../../../../core/records/RecordWorkspace/recordFilterMetadata';
@@ -20,16 +22,25 @@ const isPicklist = (field?: FieldMetadata) =>
 
 /** Shared no-code filter editor: all types and choices come from accessible Field metadata. */
 export default function RecordFilterEditor({
-  title, fields, filters, onChange, logic = 'AND', onLogicChange
+  title, fields, filters, onChange, logic = 'AND', onLogicChange, objects = [], rootObjectApiName = ''
 }: {
   title: string;
   fields: FieldMetadata[];
+  objects?:readonly ObjectMetadata[];
+  rootObjectApiName?:string;
   filters: unknown[];
   onChange: (next: unknown[]) => void;
   logic?: 'AND'|'OR';
   onLogicChange?: (next: 'AND'|'OR') => void;
 }) {
   const [fieldSearch, setFieldSearch] = useState('');
+  const related=mentionGroups(objects,rootObjectApiName,[],'','text')
+    .filter(group=>!group.primary).flatMap(group=>group.fields.flatMap(item=>{
+      const field=objects.find(object=>object.apiName===item.objectApiName)
+        ?.fields.find(candidate=>candidate.apiName===item.fieldApiName);
+      return field?[{...field,apiName:item.reference,label:group.via+' → '+item.fieldLabel}]:[];
+    }));
+  const allFields=[...fields,...related];
   const set = (index: number, patch: Partial<Filter>) =>
     onChange(filters.map((entry, i) => i === index ? { ...(isFilter(entry) ? entry : {}), ...patch } : entry));
   const remove = (index: number) => onChange(filters.filter((_, i) => i !== index));
@@ -40,7 +51,7 @@ export default function RecordFilterEditor({
   };
   const query = fieldSearch.trim().toLocaleLowerCase();
   const matchingFields = query
-    ? fields.filter(item => (item.label + ' ' + item.apiName).toLocaleLowerCase().includes(query)).slice(0, 20)
+    ? allFields.filter(item => (item.label + ' ' + item.apiName).toLocaleLowerCase().includes(query)).slice(0, 20)
     : [];
   return <section className="metadata-record-filter-editor" aria-label={title + ' filter editor'}>
     <div className="metadata-filter-intro">
@@ -74,14 +85,14 @@ export default function RecordFilterEditor({
       {filters.map((entry, index) => {
         const raw: Partial<Filter> = isFilter(entry) ? entry : {};
         const fieldName = typeof raw.field === 'string' ? raw.field : '';
-        const field = fields.find(candidate => candidate.apiName === fieldName);
+        const field = allFields.find(candidate => candidate.apiName === fieldName);
         const operator = typeof raw.operator === 'string' ? raw.operator : 'Equals';
         const dynamic = raw.value && typeof raw.value === 'object' && !Array.isArray(raw.value)
           ? raw.value as {source?: string; key?: string} : undefined;
         const source = dynamic?.source ?? 'Fixed';
         const value = dynamic ? '' : String(raw.value ?? '');
         const operators = supportedFilterOperators(field);
-        const error = examineRecordFilter(entry, fields);
+        const error = examineRecordFilter(entry, allFields);
         const valueType = dateInputType(field);
         const valueControl = isBooleanFilterField(field)
           ? <select aria-label={title + ' value ' + (index + 1)} value={value}
@@ -114,7 +125,12 @@ export default function RecordFilterEditor({
                 onChange={e => set(index, {field: e.target.value, operator: 'Equals', value: ''})}>
                 <option value="">Choose field…</option>
                 {fieldName && !field && <option value={fieldName} disabled>Missing: {fieldName}</option>}
-                {fields.map(item => <option key={item.apiName} value={item.apiName}>{item.label}</option>)}
+                <optgroup label="Current Object">
+                  {fields.map(item => <option key={item.apiName} value={item.apiName}>{item.label}</option>)}
+                </optgroup>
+                {related.length>0&&<optgroup label="Related Lookup Fields">
+                  {related.map(item=><option key={item.apiName} value={item.apiName}>{item.label}</option>)}
+                </optgroup>}
               </select>
             </label>
             <label><span>Operator</span>
@@ -132,11 +148,20 @@ export default function RecordFilterEditor({
                   : {source: e.target.value}})}>
                 <option value="Fixed">Fixed value</option>
                 <option value="PageState">Page state / Flow output</option>
+                <option value="FieldExpression">@ Field or related lookup</option>
                 <option value="CurrentRecord">Current record ID</option>
                 <option value="Session">Current session ID</option>
               </select>
             </label>}
-            {!isBlank(operator) && (source === 'PageState'
+            {!isBlank(operator) && (source === 'FieldExpression'
+              ? <label><span>Related field expression</span>
+                  <SmartFieldInput value={dynamic?.key??''}
+                    onChange={key=>set(index,{value:{source:'FieldExpression',key}})}
+                    objects={objects} primaryObjectApiName={rootObjectApiName}
+                    ariaLabel={title+' comparison field '+(index+1)} kind="text"
+                    placeholder="@Field or @Object.Relationship.Field"/>
+                </label>
+              : source === 'PageState'
               ? <label><span>Page state key</span>
                   <input aria-label={title + ' page state key ' + (index + 1)}
                     value={dynamic?.key ?? ''} placeholder="e.g. CurrentCartId"
@@ -149,9 +174,9 @@ export default function RecordFilterEditor({
       })}
     </div>
     <div className="metadata-filter-footer">
-      <button type="button" className="metadata-filter-add" disabled={!fields.length || filters.length >= 20}
+      <button type="button" className="metadata-filter-add" disabled={!allFields.length || filters.length >= 20}
         onClick={() => add()}><Plus size={16} aria-hidden="true"/> Add condition</button>
-      {!fields.length && <span>Select an Object with accessible fields first.</span>}
+      {!allFields.length && <span>Select an Object with accessible fields first.</span>}
       {filters.length >= 20 && <span>Maximum 20 conditions per source.</span>}
     </div>
   </section>;

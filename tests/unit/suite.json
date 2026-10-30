@@ -200,6 +200,7 @@
     "apps/web/test/setupMetadataDependencies.test.ts",
     "apps/web/test/setupObjectActions.test.ts",
     "apps/web/test/smartLibrary.test.mjs",
+    "apps/web/test/smartRelationshipBindings.test.ts",
     "apps/web/test/sourceObjectPropertyLabels.test.mjs",
     "apps/web/test/standardListColumns.test.ts",
     "apps/web/test/standardListQuery.test.ts",

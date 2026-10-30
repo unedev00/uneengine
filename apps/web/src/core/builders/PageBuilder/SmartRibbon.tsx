@@ -97,31 +97,23 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    const title=property.label;
    let editor;
    if(property.id==='imageSource'&&supported){
-     const mode=api==='smart_card_grid'||properties.imageSourceMode==='field'?'field':'upload';
-    // Metadata offers two Product fields with the same display label. Show API
-    // names when duplicates exist so a non-developer can choose correctly.
-    const allImageFields=(object?.fields??[]).filter(f=>
-      /url|image|photo|picture|asset/i.test(f.apiName+' '+f.label));
-     editor=<div className="smart-source-inline">
-       {api!=='smart_card_grid'&&<select aria-label="Image source type" value={mode}
-         onChange={e=>onChange({...properties,imageSourceMode:e.target.value,imageSource:''})}>
-         <option value="upload">Upload image</option><option value="field">Object field</option>
-       </select>}
-       {mode==='upload'?<>
-         <button type="button" title="Choose an image from this computer" aria-label="Choose or upload tenant image"
-          disabled={uploadBusy} onClick={()=>uploadInput.current?.click()}><ImagePlus size={16}/> {uploadBusy?'Uploading…':'Choose'}</button>
-        </>:
-        <><select aria-label="Image field" value={fallback(value).replace(/^@/,'')}
-           onChange={e=>write(e.target.value?'@'+e.target.value:'')}>
-          <option value="">Choose field</option>{allImageFields.map(f=><option key={f.apiName} value={f.apiName}>
-            {f.label}{allImageFields.filter(other=>other.label===f.label).length>1?' ('+f.apiName+')':''}
-          </option>)}
-         </select><button type="button" title="Image filters and conditions" aria-label="Image filters and conditions"
-           onClick={()=>openFilters('Image source')} disabled={!object} aria-haspopup="dialog"><SlidersHorizontal size={16}/></button></>}
+     // The source is always editable: any direct or nested lookup reference
+     // is resolved by the shared metadata engine, never by an image-name list.
+     editor=<div className="smart-formula-filter smart-image-source-editor">
+       <SmartFormulaField value={String(value)} label={title} disabled={!enabled}
+         fields={object?.fields??[]} objects={objects} rootObjectApiName={objectName}
+         onChange={source=>{if(enabled)onChange({...properties,imageSource:source,imageSourceMode:'field'});}}/>
+       {api==='smart_image'&&<button type="button" className="smart-filter-trigger"
+         title="Upload image from this computer" aria-label="Upload image" disabled={uploadBusy||!enabled}
+         onClick={()=>uploadInput.current?.click()}><ImagePlus size={16}/></button>}
+       <button type="button" className="smart-filter-trigger" aria-label="Image filters and conditions"
+         title="Image filters and conditions" onClick={()=>openFilters('Image source')}
+         disabled={!object} aria-haspopup="dialog"><SlidersHorizontal size={16}/></button>
      </div>;
    }else if(kind==='expression')editor=<div className="smart-formula-filter">
      <SmartFormulaField value={String(value)} onChange={write}
-       label={title} disabled={!enabled} fields={object?.fields??[]} />
+       label={title} disabled={!enabled} fields={object?.fields??[]}
+        objects={objects} rootObjectApiName={objectName} />
      <button type="button" className="smart-filter-trigger" disabled={!enabled||!object}
        title={!object?'Choose an Object to configure record filters':'Filter '+object.label+' records'}
        aria-label={'Filter records for '+title} aria-haspopup="dialog"
@@ -197,7 +189,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
      <header><div><strong>Filter Records</strong><span>{object?.label??'Object'} · {filterTarget}</span></div>
        <button type="button" autoFocus onClick={()=>setFiltersOpen(false)}>Done</button></header>
      <div className="smart-filter-dialog-body">
-       {object?<RecordFilterEditor title={object.label+' records'} fields={object.fields??[]}
+       {object?<RecordFilterEditor title={object.label+' records'} fields={object.fields??[]} objects={objects} rootObjectApiName={objectName}
          filters={Array.isArray(properties.filters)?properties.filters:[]}
          logic={properties.filterLogic==='OR'?'OR':'AND'}
          onLogicChange={filterLogic=>onChange({...properties,filterLogic})}

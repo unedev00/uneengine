@@ -69,10 +69,10 @@ export class PageRuntime {
   async metadata(tenantId:string,pageApi:string,variant:PageLayoutVariant='Desktop'){
     const {rows}=await this.db.query<{
       id:string;api_name:string;title:string;page_type:string;target_object:string;record_mode:string;layout_mode:string;
-      template:string|null;canvas_width:number;canvas_height:number;status:string;
+      template:string|null;canvas_width:number;canvas_height:number;canvas_fill_color:string;status:string;
       devices:string[];revision:number;updated_at:Date
     }>(`SELECT p.id,p.api_name,p.title,d.page_type,d.target_object,d.record_mode,d.layout_mode,d.template,
-      d.canvas_width,d.canvas_height,d.status,d.devices,d.revision,d.updated_at
+      d.canvas_width,d.canvas_height,d.canvas_fill_color,d.status,d.devices,d.revision,d.updated_at
       FROM md_page_definitions p JOIN md_lightning_page_details d
         ON d.tenant_id=p.tenant_id AND d.page_id=p.id
       WHERE p.tenant_id=$1 AND p.api_name=$2 AND p.enabled=true`,[tenantId,pageApi]);
@@ -92,7 +92,8 @@ export class PageRuntime {
     });
     const base={apiName:page.api_name,label:page.title,targetObject:page.target_object,
       pageType:page.page_type,recordMode:page.record_mode,layoutMode:page.layout_mode,template:page.template??undefined,
-      canvasWidth:page.canvas_width,canvasHeight:page.canvas_height,status:page.status,
+      canvasWidth:page.canvas_width,canvasHeight:page.canvas_height,
+       canvasFillColor:page.canvas_fill_color??'#ffffff',status:page.status,
       devices:page.devices,revision:page.revision,updatedAt:page.updated_at,
       components,activationAssignments:assignments.rows.map(a=>({
         id:a.assignment_id,scope:a.scope,appId:a.app_api,profileId:a.profile_id,recordTypeId:a.record_type_id,
@@ -151,6 +152,7 @@ export class PageRuntime {
       ||!Number.isInteger(p.canvasWidth)||!Number.isInteger(p.canvasHeight)
       ||Number(p.canvasWidth)<320||Number(p.canvasWidth)>10000
       ||Number(p.canvasHeight)<320||Number(p.canvasHeight)>10000
+       ||(p.canvasFillColor!==undefined&&(typeof p.canvasFillColor!=='string'||!/^#[0-9a-fA-F]{6}$/.test(p.canvasFillColor)))
       ||!Array.isArray(p.devices)||!p.devices.length||p.devices.length>2
       ||p.devices.some(v=>v!=='Desktop'&&v!=='Phone')
       ||!Array.isArray(p.components)||p.components.length>400
@@ -209,15 +211,16 @@ export class PageRuntime {
       const rev=before.rows[0]?.revision??0;
       if(p.revision!==undefined&&p.revision!==rev)throw new Error('Page revision conflict');
       await client.query(`INSERT INTO md_lightning_page_details
-        (tenant_id,page_id,page_type,target_object,record_mode,layout_mode,template,canvas_width,canvas_height,status,devices,revision)
-        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+        (tenant_id,page_id,page_type,target_object,record_mode,layout_mode,template,canvas_width,canvas_height,canvas_fill_color,status,devices,revision)
+        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
         ON CONFLICT(tenant_id,page_id) DO UPDATE SET
           page_type=EXCLUDED.page_type,target_object=EXCLUDED.target_object,
           record_mode=EXCLUDED.record_mode,layout_mode=EXCLUDED.layout_mode,template=EXCLUDED.template,
           canvas_width=EXCLUDED.canvas_width,canvas_height=EXCLUDED.canvas_height,
+           canvas_fill_color=EXCLUDED.canvas_fill_color,
           status=EXCLUDED.status,devices=EXCLUDED.devices,revision=EXCLUDED.revision,updated_at=now()`,
         [tenantId,pageId,p.pageType,p.targetObject,p.recordMode??'View',p.layoutMode,p.template??null,
-          p.canvasWidth,p.canvasHeight,p.status,p.devices,rev+1]);
+          p.canvasWidth,p.canvasHeight,p.canvasFillColor??'#ffffff',p.status,p.devices,rev+1]);
       await client.query('DELETE FROM md_lightning_page_nodes WHERE tenant_id=$1 AND page_id=$2',[tenantId,pageId]);
       await client.query('DELETE FROM md_lightning_page_activation WHERE tenant_id=$1 AND page_id=$2',[tenantId,pageId]);
       for(const [index,c] of components.entries()){

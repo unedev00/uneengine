@@ -1073,7 +1073,7 @@ function PageBuilder({
   const startCanvasMove = (event: React.PointerEvent<HTMLElement>, component: PageComponentMetadata) => {
     if (previewMode || !component.position || isCanvasLocked(component)
       || event.button !== 0 || event.shiftKey || canvasMoveStart.current) return;
-    if (!(event.target as HTMLElement).closest('.free-canvas-move-handle') &&
+    if (!(event.target as HTMLElement).closest('.free-canvas-move-edge') &&
       (event.target as HTMLElement).closest('button,input,select,textarea,a,[contenteditable="true"],.free-canvas-resize-handle,.canvas-element-actions')) return;
     const element = event.currentTarget.closest<HTMLElement>('.free-canvas-component');
     if (!element) return;
@@ -1593,8 +1593,10 @@ function PageBuilder({
         event.preventDefault(); removeSelected();
       }
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    // Capture first: embedded Smart controls may stop bubbling. Preserve
+    // native copy/cut/paste for focused text inputs via the guard above.
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
   });
   const savePage = async (status?: 'Active' | 'Draft', candidate: LightningPageMetadata = page, returnToList = false) => {
     const propertyIssues=candidate.components.flatMap(c=>{
@@ -1815,7 +1817,8 @@ function PageBuilder({
       layoutMode: newPageLayoutMode, template: newPageTemplate,
       canvasWidth: newPageCanvasWidth,
       canvasHeight: newPageCanvasHeight,
-      status: 'Draft', devices: [...newPageDevices], components: [],
+       canvasFillColor:'#ffffff',
+       status: 'Draft', devices: [...newPageDevices], components: [],
       // App Pages belong to app navigation; only Record/Home pages use activation assignments.
       activationAssignments: newPageAppId
         ? [{
@@ -2383,13 +2386,15 @@ function PageBuilder({
             onPointerCancel={event => finishTemplateResize(event, true)}
             onClick={event => event.stopPropagation()} />)}
       {!libraryPreview && page.layoutMode === 'free-canvas' && !nested && selectedId === component.id && !previewMode && !isCanvasLocked(component)
-        && <button type="button" className="free-canvas-move-handle"
-          aria-label={`Move ${component.label}`} title="Drag to move (four-way)"
+        && (['n','e','s','w'] as const).map(edge=><span key={edge}
+          className={`free-canvas-move-edge move-edge-${edge}`}
+          role="button" tabIndex={0} aria-label={`Move ${component.label} from ${edge} edge`}
+          title="Drag border to move (four-direction cursor)"
           onPointerDown={event=>startCanvasMove(event,component)}
           onPointerMove={moveCanvasPointer}
           onPointerUp={event=>endCanvasMove(event)}
           onPointerCancel={event=>endCanvasMove(event,true)}
-          onClick={event=>event.stopPropagation()}><Move size={17}/></button>}
+          onClick={event=>event.stopPropagation()}/>)}
       {!libraryPreview && page.layoutMode === 'free-canvas' && !nested && selectedId === component.id && !previewMode && !isCanvasLocked(component)
         && (['n','ne','e','se','s','sw','w','nw'] as const).map(edge =>
           <button key={edge} type="button" className={`free-canvas-resize-handle resize-${edge}`}
@@ -2447,7 +2452,10 @@ function PageBuilder({
       case 'canvasWidth':return <input aria-label="Page width" type="number" min={320} max={10000}
         disabled={page.layoutVariant!=='Custom'} value={page.canvasWidth}
         onChange={e=>{const n=Number(e.target.value);if(Number.isInteger(n)&&n>=320&&n<=10000)applyPage({...page,canvasWidth:n});}}/>;
-      case 'canvasHeight':return <input aria-label="Page height" type="number" min={320} max={10000}
+      case 'canvasFillColor':return <input aria-label="Canvas Fill Color" type="color"
+         value={/^#[0-9a-fA-F]{6}$/.test(page.canvasFillColor??'')?page.canvasFillColor:'#ffffff'}
+         onChange={e=>applyPage({...page,canvasFillColor:e.target.value})}/>;
+       case 'canvasHeight':return <input aria-label="Page height" type="number" min={320} max={10000}
         disabled={page.layoutVariant!=='Custom'} value={page.canvasHeight}
         onChange={e=>{const n=Number(e.target.value);if(Number.isInteger(n)&&n>=320&&n<=10000)applyPage({...page,canvasHeight:n});}}/>;
       case 'selectVersion':return <div className="office-ribbon-stack">
@@ -2827,19 +2835,20 @@ function PageBuilder({
           }} onDragOver={(event) => event.preventDefault()} onDrop={(event) => handleDrop(event)}>
             <div
               className={`record-preview ${page.layoutMode === 'free-canvas' ? 'free-canvas-preview' : page.pageType === 'Record Page' ? 'record-page-preview' : page.pageType === 'App Page' ? 'app-page-preview' : 'home-page-preview'} ${device === 'Phone' ? 'phone-preview' : device === 'Tablet' ? 'tablet-preview' : ''}`}
-              style={page.layoutMode === 'free-canvas' && fitCanvas ? {
+              style={{...(page.layoutMode === 'free-canvas' && fitCanvas ? {
                 width: page.canvasWidth * fitScale,
                 height: page.canvasHeight * fitScale,
                 minHeight: 0,
                 overflow: previewMode ? 'hidden' : 'visible'
-              } : page.layoutMode === 'template' && page.components.some(c => c.visible && c.properties?.standalonePresentation === true) ? standaloneTemplateCanvasStyle(page.canvasWidth, page.canvasHeight) : undefined}
+              } : page.layoutMode === 'template' && page.components.some(c => c.visible && c.properties?.standalonePresentation === true) ? standaloneTemplateCanvasStyle(page.canvasWidth, page.canvasHeight) : {}),backgroundColor:page.canvasFillColor??'#ffffff'}}
             >
               {page.layoutMode === 'free-canvas' ? <div
                 className={`free-canvas-stage ${canvasSnap && !previewMode ? 'canvas-grid-on' : ''}`}
                 style={{
                   width: page.canvasWidth,
                   height: page.canvasHeight,
-                  transform: fitCanvas ? `scale(${fitScale})` : undefined,
+                   backgroundColor:page.canvasFillColor??'#ffffff',
+                   transform: fitCanvas ? `scale(${fitScale})` : undefined,
                   transformOrigin: 'top left'
                 }}
               >

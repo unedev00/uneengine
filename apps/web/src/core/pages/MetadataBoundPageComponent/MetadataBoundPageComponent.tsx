@@ -6,14 +6,14 @@ import {loadFlowScreenRecordPage} from '../../authentication/Client/authClient';
 import {presentPageRecords,type ChannelGrant} from '../../records/RecordWorkspace/recordPresentationAdapters';
 import {filterPageComponentRecords,pageComponentRecordQuery,pageComponentRelatedQuery,bindPageStateProperties} from '../PageRuntime/pageComponentBindings';
 import {filterRelatedRecords} from '../PageRuntime/filterRelatedRecords.mjs';
-import {resolveMentionProperties} from '../../../component-libraries/shared/primitives/SmartFieldInput/smartFieldMentions';
+import {resolveMentionProperties,mentionGroups,referencedMentionPaths,resolveCollectionMentionRows} from '../../../component-libraries/shared/primitives/SmartFieldInput/smartFieldMentions';
 import { explicitMentionRecordId, useRelationshipMentionContext } from '../../records/RecordFormDialog/useRelationshipMentionContext';
 import {resolvePageActionRoute} from '../PageRuntime/pageActionRouting';
 import {resolveFlowOutputBindings} from '../../automation/FlowScreen/flowInputBindings';
 import {componentLayoutProps} from '../TemplatePageRuntime/pageComponentLayout';
 import RegisteredComponent from '../../components/RegisteredComponent/RegisteredComponent';
 import {behaviorValidation,behaviorAction,pageBehaviors,type BehaviorContext} from '../PageRuntime/pageBehaviorRuntime';
-import type {LibraryComponentMetadata,PageComponentMetadata,ObjectMetadata,LightningAppMetadata,LightningPageMetadata,ReportMetadata,FlowDefinitionMetadata} from '../../metadata/Definitions/metadata';
+import type {LibraryComponentMetadata,PageComponentMetadata,ObjectMetadata,FieldMetadata,LightningAppMetadata,LightningPageMetadata,ReportMetadata,FlowDefinitionMetadata} from '../../metadata/Definitions/metadata';
 import type {AppRoute} from '../../workspace/Navigation/appRouting';
 
 export default function MetadataBoundPageComponent({
@@ -66,6 +66,15 @@ export default function MetadataBoundPageComponent({
     return ()=>window.removeEventListener('metadrive:page-local-state',receive);
   },[pageSessionKey]);
   const fields = objects.find((item) => item.apiName === objectApiName)?.fields ?? [];
+  // Related filter targets retain the exact relationship path; type information
+  // comes from the destination's permission-scoped metadata, not a name guess.
+  const relatedFilterFields:FieldMetadata[]=mentionGroups(objects,objectApiName,[],'','text')
+    .filter(group=>!group.primary).flatMap(group=>group.fields.flatMap(item=>{
+      const source=objects.find(object=>object.apiName===item.objectApiName)
+        ?.fields.find(field=>field.apiName===item.fieldApiName);
+      return source?[{...source,apiName:item.reference,label:group.via+' → '+item.fieldLabel}]:[];
+    }));
+  const filterFields=[...fields,...relatedFilterFields];
   const [records, setRecords] = useState<Record<string, unknown>[]>([]);
   const [recordTotal,setRecordTotal]=useState(0);
   const [recordOffset,setRecordOffset]=useState(0);
@@ -80,7 +89,7 @@ export default function MetadataBoundPageComponent({
   const relatedField=String(properties.relatedFieldApiName??'');
   const parentId=relatedKey?selectedFilterRecords[relatedKey]?.recordId||pageState[relatedKey]:undefined;
   const relatedQuery=pageComponentRelatedQuery(properties,fields,parentId);
-  const recordQuery=pageComponentRecordQuery(properties.filters,fields,{pageState,recordId,sessionId},
+  const recordQuery=pageComponentRecordQuery(properties.filters,filterFields,{pageState,recordId,sessionId},
     properties.filterLogic==='OR'?'OR':'AND');
   const recordQueryKey=JSON.stringify([recordQuery,relatedQuery]);
 
@@ -190,12 +199,45 @@ export default function MetadataBoundPageComponent({
       .catch(() => {if(active) setChannelAccess({userId:'',viewAll:false,grants:[],eligibleAssignees:[]});});
     return () => {active = false;};
   }, [properties.channelAccessPath, properties.recordPresenterApiName, revision]);
-  const filteredRecords=recordQuery.filters?records:filterPageComponentRecords(
-    records,properties.filters,fields,{pageState,recordId,sessionId},properties.filterLogic==='OR'?'OR':'AND');
+  // Hydrate only referenced parent fields per row. Duplicate lookup IDs share
+  // authorised requests and a concurrency limit; no cross-object first-row fallback.
+  const mentionInputs:Record<string,unknown>={...properties};
+  if(Array.isArray(properties.filters))properties.filters.forEach((filter,index)=>{
+    if(!filter||typeof filter!=='object'||Array.isArray(filter))return;
+    const entry=filter as {field?:unknown;value?:unknown};
+    mentionInputs['filterField'+index]=entry.field;
+    mentionInputs['filterValue'+index]=entry.value&&typeof entry.value==='object'
+      ?(entry.value as {key?:unknown}).key:entry.value;
+  });
+  const mentionKey=JSON.stringify(Object.entries(mentionInputs)
+    .filter(([,value])=>typeof value==='string'&&value.includes('@')));
+  const collectionKey=JSON.stringify([objectApiName,records.map(row=>row.Id),mentionKey,revision]);
+  const [collectionMentions,setCollectionMentions]=useState<{key:string;rows:Record<string,unknown>[]} | null>(null);
+  useEffect(()=>{
+    let active=true;
+    setCollectionMentions(null);
+    if(!objectApiName||!records.length||
+      !referencedMentionPaths(mentionInputs,objects,objectApiName).length)return()=>{active=false;};
+    const getRecord=async(target:string,id:string)=>{
+      const result=await apiRequest<{record:Record<string,unknown>}>(
+        '/records/'+encodeURIComponent(target)+'/'+encodeURIComponent(id));
+      return result.record?.Id===id?result.record:undefined;
+    };
+    void resolveCollectionMentionRows(objects,objectApiName,records,mentionInputs,getRecord)
+      .then(rows=>{if(active)setCollectionMentions({key:collectionKey,rows});})
+      .catch(()=>{if(active)setCollectionMentions(null);});
+    return()=>{active=false;};
+  },[collectionKey,records,objects,objectApiName,apiRequest]);
+  const sourceRecords=collectionMentions?.key===collectionKey?collectionMentions.rows:records;
+  const filteredRecords=recordQuery.filters?sourceRecords:filterPageComponentRecords(
+    sourceRecords,properties.filters,filterFields,{pageState,recordId,sessionId},properties.filterLogic==='OR'?'OR':'AND');
   const visibleRecords=relatedKey?filterRelatedRecords(filteredRecords,parentId,relatedField):filteredRecords;
   const mentionContext = useRelationshipMentionContext(objects, mentionRootObjectApiName,
     recordId || explicitMentionRecordId(properties), properties, apiRequest, revision);
   const resolvedProperties = bindPageStateProperties(resolveMentionProperties(properties, mentionContext.records, mentionContext.fields, objects, mentionRootObjectApiName),pageState);
+  const rowResolvedProperties={...resolvedProperties,...Object.fromEntries(
+    Object.entries(properties).filter(([,value])=>typeof value==='string'&&
+      /@[A-Za-z][A-Za-z0-9_]*\.[A-Za-z]/.test(value)))};
   const categoryFilterKey = typeof properties.filterKey === 'string' ? properties.filterKey : 'category';
   const categorySource = selectedFilterRecords[categoryFilterKey];
   const configuredCategoryField = String(properties.categoryFieldApiName??'').trim();
@@ -350,7 +392,7 @@ export default function MetadataBoundPageComponent({
     {!objectApiName && <div className="records-message" role="alert">Select a bound object to load records for this component.</div>}
     {dataError && <div className="records-message" role="alert">{dataError}</div>}
     <RegisteredComponent definition={definition} layoutTransparent={smartCanvas} props={{
-      ...resolvedProperties, ...componentLayoutProps(properties, formFactor),
+      ...rowResolvedProperties, ...componentLayoutProps(properties, formFactor),
       ...(smartCanvas?{width:component.position!.width,height:component.position!.height}:{}),
       ...(categoryFilterKey ? {
         selectedCategory:selectedCategories[categoryFilterKey] ?? String(properties.selectedCategory ?? ''),
@@ -358,7 +400,7 @@ export default function MetadataBoundPageComponent({
         categoryFieldApiName:configuredCategoryField||inferredCategoryField||''
       } : {}),
       ...(typeof properties.searchKey === 'string' && properties.searchKey ? {searchQuery:selectedCategories[properties.searchKey] ?? ''} : {}),
-      label: component.label, properties: resolvedProperties, pageState, objects, reports, flows: availableFlows,
+      label: component.label, properties: rowResolvedProperties, pageState, objects, reports, flows: availableFlows,
        pageSessionKey, componentId: component.id,
       device: formFactor, onNavigate, onLaunchFlow, onAction, actionError,
       disabled:behaviorAction(properties,'click',behaviorContext??{formFactor})!=='enabled',
