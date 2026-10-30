@@ -590,7 +590,7 @@ export async function applyFieldTypeMigration(
         &&target.picklistValues&&(converted.value_text??'').split(';')
           .some(item=>!target.picklistValues!.includes(item)))
         throw new Error('Existing value is not in the target picklist');
-      if(converted.value_text!==null&&(target.unique||target.externalId)){
+      if(converted.value_text!==null&&(target.unique)){
         const key=target.caseSensitive?converted.value_text:converted.value_text.toLowerCase();
         if(duplicateValues.has(key))throw new Error('Converted values conflict with the target unique setting');
         duplicateValues.add(key);
@@ -634,7 +634,7 @@ export async function applyFieldTypeMigration(
       geo_longitude=m.after_geo_longitude,address_street=m.after_address_street,
       address_city=m.after_address_city,address_state=m.after_address_state,
       address_postal_code=m.after_address_postal_code,address_country=m.after_address_country,
-      is_unique=$3 OR $4,case_sensitive=$5
+      is_unique=$3,case_sensitive=$5
     FROM md_field_type_migration_values m WHERE m.tenant_id=$1 AND m.migration_id=$2
       AND v.tenant_id=m.tenant_id AND v.record_id=m.record_id AND v.object_api=m.object_api
       AND v.field_api=$6`,
@@ -646,7 +646,7 @@ export async function applyFieldTypeMigration(
     SELECT m.tenant_id,m.record_id,m.object_api,$3,m.after_value_text,m.after_value_number,
       m.after_value_boolean,m.after_value_date,m.after_value_datetime,m.after_reference_record_id,
       m.after_geo_latitude,m.after_geo_longitude,m.after_address_street,m.after_address_city,
-      m.after_address_state,m.after_address_postal_code,m.after_address_country,$4 OR $5,$6
+      m.after_address_state,m.after_address_postal_code,m.after_address_country,$4,$6
     FROM md_field_type_migration_values m
     WHERE m.tenant_id=$1 AND m.migration_id=$2 AND m.after_value_exists
       AND NOT EXISTS(SELECT 1 FROM md_record_values v WHERE v.tenant_id=m.tenant_id
