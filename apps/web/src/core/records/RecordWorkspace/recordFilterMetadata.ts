@@ -58,6 +58,10 @@ export function examineRecordFilter(raw: unknown, fields: ReadonlyArray<RecordFi
   }
   const value = String(filter.value ?? '');
   if (isBooleanFilterField(field) && !['true', 'false'].includes(value)) return 'Choose True or False.';
+  if (/^(Picklist|Multi-Select Picklist|Multipicklist)$/i.test(field.dataType)) {
+    if (!field.picklistValues?.length) return 'This picklist has no available options.';
+    if (!field.picklistValues.includes(value)) return 'Choose a value from the field picklist.';
+  }
   if (isNumericFilterField(field) && (value.trim() === '' || !Number.isFinite(Number(value)))) {
     return 'Enter a finite numeric filter value.';
   }
