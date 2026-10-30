@@ -29,7 +29,7 @@
  position:relative!important;
  width:max-content!important;min-width:0!important;max-width:none!important;
  height:86px!important;min-height:86px!important;max-height:86px!important;
- padding:3px 6px 1px!important;margin:0!important;
+ padding:3px 0 1px!important;margin:0!important;
  border:0!important;border-right:1px solid #cbd6e2!important;
  border-radius:0!important;background:transparent!important;overflow:visible!important;
 }
@@ -53,16 +53,16 @@
  flex-flow:row nowrap!important;align-items:center!important;justify-content:flex-start!important;
  width:max-content!important;min-width:0!important;max-width:none!important;
  height:26px!important;min-height:26px!important;max-height:26px!important;
- gap:4px!important;padding:0!important;margin:0!important;white-space:nowrap!important;
+ gap:1px!important;padding:0!important;margin:0!important;white-space:nowrap!important;
 }
 .office-builder-ribbon #page-builder-tab-content>.smart-ribbon[data-two-row="true"]
  .smart-ribbon-group .smart-ribbon-row>.smart-property{
  box-sizing:border-box!important;display:inline-flex!important;
  position:relative!important;grid-area:auto!important;
- flex:0 0 var(--smart-control-width)!important;
- width:var(--smart-control-width)!important;
- min-width:var(--smart-control-width)!important;
- max-width:var(--smart-control-width)!important;
+ flex:0 0 calc(var(--smart-control-width) + var(--smart-caption-width,0px))!important;
+ width:calc(var(--smart-control-width) + var(--smart-caption-width,0px))!important;
+ min-width:calc(var(--smart-control-width) + var(--smart-caption-width,0px))!important;
+ max-width:calc(var(--smart-control-width) + var(--smart-caption-width,0px))!important;
  height:var(--smart-control-height,26px)!important;
  min-height:var(--smart-control-height,26px)!important;
  max-height:var(--smart-control-height,26px)!important;
@@ -184,3 +184,32 @@
  .smart-property :is(button,input,select):focus-visible{
  outline:2px solid #2377c9!important;outline-offset:1px!important;
 }
+
+/* Caption metadata is an inline editor prefix, not a new independent property.
+ * Caption + editor together take the specified widths (60+90, 35+99, etc).
+ * All other properties use an invisible (zero-width) caption. */
+.office-builder-ribbon #page-builder-tab-content>.smart-ribbon[data-two-row="true"]
+ .smart-ribbon-group .smart-ribbon-row>.smart-property[data-design-caption="true"]>.smart-label{
+ box-sizing:border-box!important;display:inline-flex!important;
+ flex:0 0 var(--smart-caption-width)!important;
+ width:var(--smart-caption-width)!important;min-width:var(--smart-caption-width)!important;
+ max-width:var(--smart-caption-width)!important;
+ height:26px!important;min-height:26px!important;max-height:26px!important;
+ padding:0 1px!important;margin:0!important;
+ align-items:center!important;justify-content:flex-start!important;
+ font-size:10px!important;line-height:26px!important;
+ white-space:nowrap!important;overflow:hidden!important;text-overflow:clip!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.smart-ribbon[data-two-row="true"]
+ .smart-ribbon-group .smart-ribbon-row>.smart-property .smart-numeric{
+ flex:0 0 var(--smart-control-width)!important;
+ width:var(--smart-control-width)!important;min-width:0!important;
+ max-width:var(--smart-control-width)!important;
+}
+.office-builder-ribbon #page-builder-tab-content .smart-ribbon[data-two-row="true"][data-smart-api]
+ .smart-ribbon-group .smart-ribbon-row>.smart-property .smart-select{
+ flex:0 0 var(--smart-control-width)!important;
+ width:var(--smart-control-width)!important;min-width:0!important;
+ max-width:var(--smart-control-width)!important;
+}
+/* Fixed two-row sections are flush: no hidden side margins or vertical wraps. */
