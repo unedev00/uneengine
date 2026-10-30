@@ -22,7 +22,13 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  const daysButton=useRef<HTMLButtonElement>(null);
  const daysMenu=useRef<HTMLDivElement>(null);
  const [daysPosition,setDaysPosition]=useState({top:0,left:0});
- useEffect(()=>{setDaysOpen(false);},[tab,api]);
+ useEffect(()=>{setDaysOpen(false);setFiltersOpen(false);},[tab,api]);
+ useEffect(()=>{
+   if(!filtersOpen)return;
+   const close=(event:globalThis.KeyboardEvent)=>{if(event.key==='Escape')setFiltersOpen(false);};
+   document.addEventListener('keydown',close);
+   return()=>document.removeEventListener('keydown',close);
+ },[filtersOpen]);
  useLayoutEffect(()=>{
    if(!daysOpen)return;
    const position=()=>{
@@ -167,7 +173,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
     <section className="smart-dialog smart-filter-dialog" role="dialog" aria-modal="true"
       aria-label="Record filters" onKeyDown={e=>{if(e.key==='Escape')setFiltersOpen(false);}}>
      <header><div><strong>Filter Records</strong><span>{object?.label??'Object'} · {filterTarget}</span></div>
-       <button type="button" onClick={()=>setFiltersOpen(false)}>Done</button></header>
+       <button type="button" autoFocus onClick={()=>setFiltersOpen(false)}>Done</button></header>
      <div className="smart-filter-dialog-body">
        {object?<RecordFilterEditor title={object.label+' records'} fields={object.fields??[]}
          filters={Array.isArray(properties.filters)?properties.filters:[]}
