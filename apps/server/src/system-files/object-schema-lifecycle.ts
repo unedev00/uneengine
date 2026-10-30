@@ -18,7 +18,7 @@ const checks=[
   {kind:'Flow triggers',sql:`SELECT count(*)::int AS count FROM md_flow_trigger_subscriptions WHERE tenant_id=$1 AND trigger_key=$2`},
   {kind:'Metadata packages',sql:`SELECT count(*)::int AS count FROM md_metadata_package_components WHERE tenant_id=$1 AND component_type='object' AND component_api=$2 AND component_state<>'Disabled'`},
   {kind:'Cross-object quick actions',sql:`SELECT count(*)::int AS count FROM md_object_actions WHERE tenant_id=$1 AND target_object_api=$2 AND object_api<>$2`},
-  {kind:'Object package installations',sql:`SELECT count(*)::int AS count FROM md_app_package_resources WHERE tenant_id=$1 AND resource_type='Object' AND resource_api=$2`}
+  {kind:'Installed application objects',sql:`SELECT count(*)::int AS count FROM md_app_package_resources r JOIN md_tenant_app_installed_versions i ON i.app_id=r.app_id AND i.version=r.version WHERE i.tenant_id=$1 AND r.resource_type='Object' AND r.api_name=$2`}
 ] as const;
 
 async function blockers(client:QueryClient,tenantId:string,apiName:string):Promise<Blocker[]>{
