@@ -22,7 +22,7 @@ test('One- names have one prefix while platform names and API references stay st
   const custom = definition('Calendar', { label: 'Calendar' });
   assert.equal(libraryComponentLabel(custom), 'One-Calendar');
   assert.equal(custom.apiName, 'Calendar');
-  assert.equal(libraryComponentLabel(definition('une_calendar',{label:'UNE Calendar'})),'Calendar');
+  assert.equal(libraryComponentLabel(definition('ui_calendar',{label:'UNE Calendar'})),'Calendar');
 });
 
 test('each builder offers one published definition per identity and supported surface', () => {
@@ -40,7 +40,7 @@ test('each builder offers one published definition per identity and supported su
 
 test('bundled alias is hidden from new placements while saved placements remain resolvable', () => {
   const alias = definition('ChatterInbox', { trustedBundled: true });
-  const canonical = definition('une_conversation', { trustedBundled: true });
+  const canonical = definition('ui_conversation', { trustedBundled: true });
   for (const surface of ['page', 'dashboard', 'flow'] as const) {
     assert.deepEqual(uniqueLibraryComponents([alias, canonical], surface), []);
     assert.equal(findRegisteredComponent([alias, canonical], alias.apiName, surface), alias);
@@ -72,18 +72,18 @@ test('library starts in Core with two library choices and no custom registration
 
 
 test('UNE palette uses published descriptor category instead of a guessed label',()=>{
-  assert.deepEqual(getPageBuilderComponentCategories('une_option_groups','UNE Option Groups','Dynamic options',false,'Inputs'),['Inputs']);
-  assert.deepEqual(getPageBuilderComponentCategories('une_cart','UNE Cart','Shopping',false,'Data'),['Data']);
-  assert.deepEqual(getPageBuilderComponentCategories('une_calendar','Calendar','Appointments',false,'Data'),['Data']);
+  assert.deepEqual(getPageBuilderComponentCategories('ui_option_groups','UNE Option Groups','Dynamic options',false,'Inputs'),['Inputs']);
+  assert.deepEqual(getPageBuilderComponentCategories('ui_cart','UNE Cart','Shopping',false,'Data'),['Data']);
+  assert.deepEqual(getPageBuilderComponentCategories('ui_calendar','Calendar','Appointments',false,'Data'),['Data']);
 });
 
 
 test('only UNE equivalents are offered for trusted retired One components',()=>{
  const pairs: Array<[string,string]> = [
-  ['OneText','une_input'],['OneBadge','une_input'],['OneButton','une_button'],
-  ['OneSearch','une_search'],['OneCalendar','une_calendar'],
-  ['OneItemGrid','une_item_grid'],['OneConversation','une_conversation'],
-  ['OneShoppingCart','une_cart']
+  ['OneText','ui_input'],['OneBadge','ui_input'],['OneButton','ui_button'],
+  ['OneSearch','ui_search'],['OneCalendar','ui_calendar'],
+  ['OneItemGrid','ui_item_grid'],['OneConversation','ui_conversation'],
+  ['OneShoppingCart','ui_cart']
  ];
  for(const [legacy,canonical] of pairs){
   const old=definition(legacy,{trustedBundled:true});
@@ -99,21 +99,21 @@ test('only UNE equivalents are offered for trusted retired One components',()=>{
 });
 
 test('retired UNE insert components are hidden but retained components remain',()=>{
- const names=['une_alert','une_chart','une_table','une_card','une_image','une_form','une_repeater','une_record_list','une_progress','une_navigation'];
- const retained=['une_button','une_input','une_calendar','une_item_grid'];
- const privatelyRegistered=['une_cart','une_search','une_modal'];
+ const names=['ui_alert','ui_chart','ui_table','ui_card','ui_image','ui_form','ui_repeater','ui_record_list','ui_progress','ui_navigation'];
+ const retained=['ui_button','ui_input','ui_calendar','ui_item_grid'];
+ const privatelyRegistered=['ui_cart','ui_search','ui_modal'];
  const entries=[...names,...retained,...privatelyRegistered].map(name=>definition(name));
  assert.deepEqual(publishedPageLibraryComponents(entries).map(d=>d.apiName),[]);
- assert.ok(findRegisteredComponent(entries,'une_table','page'));
- assert.ok(findRegisteredComponent(entries,'une_cart','page'));
- assert.ok(!publishedPageLibraryComponents(entries).some(d=>d.apiName==='une_cart'));
+ assert.ok(findRegisteredComponent(entries,'ui_table','page'));
+ assert.ok(findRegisteredComponent(entries,'ui_cart','page'));
+ assert.ok(!publishedPageLibraryComponents(entries).some(d=>d.apiName==='ui_cart'));
 });
 
 test('UNE Conversation is AceChatter-only, hidden from new Page Builder placements', async () => {
  const { RETIRED_UNE_PAGE_BUILDER_COMPONENTS }=await import('../src/core/builders/PageBuilder/pageBuilderPalette');
- assert.ok(RETIRED_UNE_PAGE_BUILDER_COMPONENTS.has('une_conversation'));
- assert.deepEqual(publishedPageLibraryComponents([definition('une_conversation'),definition('une_button')]).map(x=>x.apiName),[]);
- assert.equal(findRegisteredComponent([definition('une_conversation')],'une_conversation','page')?.apiName,'une_conversation');
+ assert.ok(RETIRED_UNE_PAGE_BUILDER_COMPONENTS.has('ui_conversation'));
+ assert.deepEqual(publishedPageLibraryComponents([definition('ui_conversation'),definition('ui_button')]).map(x=>x.apiName),[]);
+ assert.equal(findRegisteredComponent([definition('ui_conversation')],'ui_conversation','page')?.apiName,'ui_conversation');
 });
 
 test('app-private bundled component identities are never offered for new placement',()=>{

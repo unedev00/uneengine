@@ -1,5 +1,5 @@
 import type { FieldMetadata, FlowDefinitionMetadata, ObjectMetadata } from '../../metadata/Definitions/metadata';
-import type { ReferenceGroup, ReferenceOption } from '../../../one/OneReferenceBrowser/ReferenceBrowser';
+import type { ReferenceGroup, ReferenceOption } from '../../../component-libraries/shared/primitives/ReferenceBrowser/ReferenceBrowser';
 import { compatibleFlowValue, flowReferenceChoices, referenceName } from './flowReferenceCatalog';
 
 /** One metadata-backed catalog for Flow's @ picker, not a POS-specific field list. */

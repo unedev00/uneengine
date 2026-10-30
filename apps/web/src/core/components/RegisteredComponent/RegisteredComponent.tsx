@@ -9,7 +9,7 @@ import {registeredComponentAppearance, registeredComponentAppearanceClasses} fro
 import './registeredComponentAppearance.css';
 import {pagePropertyIssues} from '../Properties/pagePropertyContract';
 import {resolveRegisteredTextProperties} from './fieldExpressionRuntime';
-import {FieldExpressionEvaluationError} from '../../../one/shared/OneFieldExpression.js';
+import {FieldExpressionEvaluationError} from '../../../component-libraries/shared/FieldExpression.js';
 import {validatePrimitiveMetadata, primitiveAccessibilityProps} from './sharedPrimitiveMetadata';
 
 type ComponentBoundaryState = { error?: string };
@@ -57,12 +57,13 @@ function RegisteredComponentBody({ definition, props, appearanceProps, layoutTra
 export default function RegisteredComponent({ definition, props, layoutTransparent=false }: { definition: LibraryComponentMetadata; props: Record<string, unknown>; layoutTransparent?:boolean }) {
   const [asset, setAsset] = useState<{apiName:string;version:number;compiledJs:string;scopedCss:string;defaultProps?:Record<string,unknown>}|null>(null);
   const [assetError, setAssetError] = useState('');
+  const assetApiName=(definition as LibraryComponentMetadata & {legacyAssetApiName?:string}).legacyAssetApiName ?? definition.apiName;
   useEffect(() => {
     if (!definition.trustedBundled || definition.compiledJs) { setAsset(null); setAssetError(''); return; }
     const controller = new AbortController();
     setAsset(null);
     setAssetError('');
-    void fetch(`${import.meta.env.BASE_URL}component-library/components/${encodeURIComponent(definition.apiName)}.json`,
+    void fetch(`${import.meta.env.BASE_URL}component-library/components/${encodeURIComponent(assetApiName)}.json`,
       { signal:controller.signal, cache:'no-cache' })
       .then(async response => {
         if (!response.ok) throw Error('Bundled renderer is unavailable');
@@ -71,7 +72,7 @@ export default function RegisteredComponent({ definition, props, layoutTranspare
       .then((value:unknown) => {
         if (!value || typeof value!=='object') throw Error('Invalid bundled renderer');
         const entry=value as Record<string,unknown>;
-        if (entry.apiName!==definition.apiName || entry.version!==definition.version ||
+        if (entry.apiName!==assetApiName || entry.version!==definition.version ||
           typeof entry.compiledJs!=='string'||!entry.compiledJs||
           typeof entry.scopedCss!=='string')
           throw Error('Bundled renderer revision mismatch');
@@ -81,11 +82,11 @@ export default function RegisteredComponent({ definition, props, layoutTranspare
         if (!controller.signal.aborted) setAssetError(error instanceof Error?error.message:'Renderer load failed');
       });
     return () => controller.abort();
-  }, [definition.apiName,definition.version,definition.trustedBundled,definition.compiledJs]);
+  }, [definition.apiName,assetApiName,definition.version,definition.trustedBundled,definition.compiledJs]);
   if (definition.status === 'Draft') return <div role="status" className="registered-component-error">Component is a draft. Publish it before use.</div>;
   if (definition.trustedBundled && !definition.compiledJs && assetError)
     return <div role="alert" className="registered-component-error">{assetError}</div>;
-  if (definition.trustedBundled && !definition.compiledJs && (!asset || asset.apiName!==definition.apiName || asset.version!==definition.version))
+  if (definition.trustedBundled && !definition.compiledJs && (!asset || asset.apiName!==assetApiName || asset.version!==definition.version))
     return <div role="status">Loading component…</div>;
   const schemaIssues=validateComponentDefinitions(definition.propertyDefinitions??[]);
   if(schemaIssues.length)return <div role="alert" className="registered-component-error">Invalid component schema: {schemaIssues.map(i=>i.path+' '+i.message).join('; ')}</div>;
@@ -93,7 +94,7 @@ export default function RegisteredComponent({ definition, props, layoutTranspare
   const definitions=availableComponentSettings(definition.propertyDefinitions??[],device,definition.version);
   // Preserve existing page-authored values over source-controlled app defaults.
   // No SQL property inventory is required for trusted UNE component rendering.
-  const appDefaults=definition.trustedBundled&&definition.apiName.startsWith('une_')?(asset?.defaultProps??{}):{};
+  const appDefaults=definition.trustedBundled&&definition.apiName.startsWith('ui_')?(asset?.defaultProps??{}):{};
   const configuredProps = resolveComponentSettings(definitions,{...appDefaults,...props});
   const issues=[...validateComponentSettings(definitions.filter(d=>d.schemaVersion===1),configuredProps),
     ...pagePropertyIssues('Custom:'+definition.apiName,configuredProps)];

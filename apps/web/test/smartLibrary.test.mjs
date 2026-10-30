@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {evaluateFieldExpression} from '../src/one/shared/OneFieldExpression.js';
+import {evaluateFieldExpression} from '../src/component-libraries/shared/FieldExpression.js';
 import {loadComponentCatalog} from '../../../scripts/component-catalog.mjs';
 const read=path=>readFileSync(new URL(path,import.meta.url),'utf8');
 test('Smart Formula uses Excel semantics for maths, literals, fields and &',()=>{
@@ -15,7 +15,7 @@ test('Smart Formula uses Excel semantics for maths, literals, fields and &',()=>
    assert.equal(evaluateFieldExpression('"'+operator+'"',row),operator);
 });
 test('Smart component catalog is independent, ten components and SQL-owned',async()=>{
- const source=JSON.parse(read('../src/one/manifest.json'));
+ const source=JSON.parse(read('../src/component-libraries/manifest.json'));
  const names=source.components.map(p=>p.split('/')[0]).filter(name=>name.startsWith('smart_'));
  assert.deepEqual(names.sort(),['smart_button','smart_toggle','smart_lookup','smart_tabs',
   'smart_text','smart_card_grid','smart_image','smart_calendar','smart_navigation',
@@ -30,7 +30,7 @@ test('Smart component catalog is independent, ten components and SQL-owned',asyn
 test('Smart registry remains enabled through Core bundled-component cleanup',()=>{
  const content=read('../../server/src/app-seeders/bundled-components.ts');
  assert.match(content,/SMART_COMPONENTS/);
- assert.match(content,/\.\.\.UNE_COMPONENTS,\.\.\.SMART_COMPONENTS/);
+ assert.match(content,/\.\.\.UI_COMPONENTS,\.\.\.SMART_COMPONENTS/);
 });
 test('Smart SQL library matches approved table and retains Home',()=>{
  const migration=read('../../server/src/system-support/migrations/20270124-smart-component-library.sql');
@@ -65,7 +65,7 @@ test('Insert Ribbon exposes visible Smart components without requiring a selecte
 });
 
 test('Smart visual/property fixes are registered without changing historic SQL migrations',()=>{
- const runtime=read('../src/one/smart/shared/SmartRuntime.jsx');
+ const runtime=read('../src/component-libraries/smart/shared/SmartRuntime.jsx');
  const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
  const formula=read('../src/core/builders/PageBuilder/SmartFormulaField.tsx');
  const sql=read('../../server/src/system-support/migrations/20270125-smart-ribbon-property-corrections.sql');
@@ -76,7 +76,7 @@ test('Smart visual/property fixes are registered without changing historic SQL m
  assert.match(ribbon,/const visible=definitions\.filter\(p=>p\.tab===tab\)/);
  assert.doesNotMatch(ribbon,/p\.tab===tab&&p\.components\.includes\(api\)/);
  assert.match(ribbon,/const supported=property\.components\.includes\(api\)/);
- const calendar=read('../src/one/une_calendar/app-properties.mjs');
+ const calendar=read('../src/component-libraries/ui_calendar/app-properties.mjs');
  assert.match(calendar,/"propertyKey": "defaultValue",[\s\S]*?"group": "Values",\s*"section": "Data"/);
  assert.match(ribbon,/property.id==='defaultCheck'/);
  assert.match(formula,/createPortal/);
@@ -95,4 +95,51 @@ test('Default Check SQL uses globally unique order allocation',()=>{
  const sql=read('../../server/src/system-support/migrations/20270125-smart-ribbon-property-corrections.sql');
  assert.match(sql,/COALESCE\(MAX\(sort_order\),0\)\+1 FROM md_builder_shared_properties/);
  assert.doesNotMatch(sql,/Default Check[^\n]*'choice',44,/);
+});
+
+test('Smart ribbon keeps all shared properties and renders the approved compact Office layout',()=>{
+ const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
+ const css=read('../src/core/builders/PageBuilder/SmartRibbon.css');
+ assert.match(ribbon,/const visible=definitions\.filter\(p=>p\.tab===tab\)/);
+ assert.doesNotMatch(ribbon,/p\.tab===tab&&p\.components\.includes\(api\)/);
+ assert.match(ribbon,/const supported=property\.components\.includes\(api\)/);
+ assert.match(ribbon,/role="switch"/);
+ assert.match(ribbon,/className="smart-default-check-switch"/);
+ assert.match(ribbon,/aria-checked=\{value===true\|\|value==='true'\}/);
+ assert.match(css,/grid-template-rows:repeat\(3,30px\)/);
+ assert.match(css,/grid-auto-flow:column/);
+ assert.match(css,/max-width:none/);
+ assert.match(css,/overflow:visible;text-overflow:clip/);
+ assert.match(css,/\.smart-ribbon-caption/);
+ assert.match(css,/\.smart-property\.disabled/);
+ assert.match(css,/\.smart-icons button>svg/);
+ assert.match(css,/\.smart-default-check-switch/);
+ assert.match(css,/#page-builder-tab-content\.office-ribbon-content:has\(>\.smart-ribbon\)/);
+ assert.match(css,/height:146px!important/);
+ assert.match(css,/input\.smart-office-number/);
+ const metadata=read('../../server/src/system-support/migrations/20270126-une-ribbon-requirements.sql');
+ assert.match(metadata,/WHEN property_key IN \('label','defaultValue'\) THEN 'Data'/);
+ assert.match(metadata,/WHEN property_key IN \('tabHeight','tabWidth','headerBoxHeight','imageHeight'\) THEN 'Layout'/);
+});
+
+test('Smart ribbon compact corrections preserve visibility and size controls correctly',()=>{
+ const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
+ const css=read('../src/core/builders/PageBuilder/SmartRibbon.css');
+ assert.match(ribbon,/const visible=definitions\.filter\(p=>p\.tab===tab\)/);
+ assert.match(ribbon,/const supported=property\.components\.includes\(api\)/);
+ assert.doesNotMatch(ribbon,/p\.tab===tab&&p\.components\.includes\(api\)/);
+ assert.match(css,/padding:4px 26px 4px 0!important/);
+ assert.match(css,/flex:0 0 52px!important/);
+ assert.match(css,/width:52px!important;min-width:52px!important;max-width:52px!important/);
+ assert.match(css,/grid-template-rows:repeat\(3,30px\)/);
+});
+
+test('shared SQL ribbon moves Default Check into Data Values and shortens Header labels',()=>{
+ const sql=read('../../server/src/system-support/migrations/20270127-smart-ribbon-compact-property-placement.sql');
+ assert.match(sql,/SET tab='Data', section_group='Values'\s+WHERE property_key='defaultCheck'/);
+ assert.match(sql,/WHEN 'headerBorderColor' THEN 'Border'/);
+ assert.match(sql,/WHEN 'headerAlignment' THEN 'Alignment'/);
+ assert.match(sql,/tab='Design' AND section_group='Header'/);
+ assert.doesNotMatch(sql,/DELETE\s+FROM\s+md_builder_shared_properties/i);
+ assert.doesNotMatch(sql,/UPDATE\s+md_builder_ribbon_component_rules/i);
 });

@@ -34,9 +34,15 @@ export async function resolveSqlComponentLibrary(
   const resolved: LibraryComponentMetadata[] = [];
   let unavailable = 0;
   for (const item of authorised) {
-    const definition = indexed.get(item.apiName);
+    // Historical published tenant layouts may still carry the old renderer API.
+    // Only an existing, SQL-authorised legacy registration may resolve this
+    // immutable compatibility alias. Do not expose it as a new public component.
+    const assetApiName = item.apiName.startsWith('une_')
+      ? 'ui_' + item.apiName.slice(4) : item.apiName;
+    const definition = indexed.get(assetApiName);
     if (!definition) { unavailable++; continue; }
-    resolved.push(definition);
+    resolved.push(assetApiName===item.apiName ? definition
+      : {...definition,apiName:item.apiName,legacyAssetApiName:assetApiName} as LibraryComponentMetadata);
   }
   if (unavailable) console.warn('Ignoring unavailable legacy bundled component registrations:',unavailable);
   return resolved;

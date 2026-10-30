@@ -2,10 +2,10 @@ import { uniqueLibraryComponents } from '../../components/Registry/componentLibr
 import type { LibraryComponentMetadata } from '../../metadata/Definitions/metadata';
 
 /** Page Builder uses the published shared registry, never draft or unsupported definitions. */
-export const RETIRED_UNE_PAGE_BUILDER_COMPONENTS = new Set(["une_badge","une_text","une_alert","une_card","une_chart","une_choice","une_container","une_date_picker","une_document_viewer","une_drawer","une_form","une_grid","une_image","une_line_items","une_menu","une_metric","une_navigation","une_option_groups","une_progress","une_record_list","une_repeater","une_slot_picker","une_split_pane","une_table","une_conversation","une_cart","une_search","une_modal"]);
+export const RETIRED_UNE_PAGE_BUILDER_COMPONENTS = new Set(["ui_badge","ui_text","ui_alert","ui_card","ui_chart","ui_choice","ui_container","ui_date_picker","ui_document_viewer","ui_drawer","ui_form","ui_grid","ui_image","ui_line_items","ui_menu","ui_metric","ui_navigation","ui_option_groups","ui_progress","ui_record_list","ui_repeater","ui_slot_picker","ui_split_pane","ui_table","ui_conversation","ui_cart","ui_search","ui_modal"]);
 
 export function publishedPageLibraryComponents(components: readonly LibraryComponentMetadata[]): LibraryComponentMetadata[] {
-  return uniqueLibraryComponents(components, 'page').filter(component=>!component.apiName.startsWith('une_'));
+  return uniqueLibraryComponents(components, 'page').filter(component=>!component.apiName.startsWith('ui_'));
 }
 
 /** Platform palette groups are generic. Application-specific categories belong

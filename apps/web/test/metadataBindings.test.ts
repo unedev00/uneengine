@@ -137,14 +137,14 @@ test('conversation presentation cannot expose another channel or grant send/assi
 });
 
 async function cartModule(React:unknown,window:unknown={}) {
- const source=await readFile(new URL('../src/one/OneShoppingCart/OneShoppingCart.jsx',import.meta.url),'utf8');
+ const source=await readFile(new URL('../src/component-libraries/shared/primitives/ShoppingCart/ShoppingCart.jsx',import.meta.url),'utf8');
  const built=await transform(source+'\nexport {currency,makeSnapshot,ShoppingCartTill};',{loader:'jsx',format:'cjs'});
  const sandbox={module:{exports:{} as any},React,window,document:{querySelector:()=>null},
   crypto:globalThis.crypto,Intl,URL,BroadcastChannel:undefined};
  vm.runInNewContext(built.code,sandbox);return sandbox.module.exports;
 }
 test('VAT-enabled cart rejects products without an explicit boolean tax classification',async()=>{
- const source=await readFile(new URL('../src/one/OneShoppingCart/OneShoppingCart.jsx',import.meta.url),'utf8');
+ const source=await readFile(new URL('../src/component-libraries/shared/primitives/ShoppingCart/ShoppingCart.jsx',import.meta.url),'utf8');
  assert.match(source,/vatRate > 0 && typeof vatValue !== "boolean"/);
  assert.match(source,/This product has no verified VAT applicability value/);
  assert.match(source,/vatApplicable: vatValue === true/);
@@ -225,21 +225,21 @@ test('secondary object field bindings resolve only within their selected object'
 test('ChatterInbox compatibility retains the shared conversation renderer and all registered JSX compiles',async()=>{
  const {components}=await loadComponentCatalog();
  const alias=components.find((c:any)=>c.apiName==='ChatterInbox');
- const canonical=components.find((c:any)=>c.apiName==='une_conversation');
+ const canonical=components.find((c:any)=>c.apiName==='ui_conversation');
  assert.ok(alias,'existing ChatterInbox pages retain their compatibility registration');
  assert.ok(canonical,'UNE conversation is the canonical registration');
  assert.equal(components.some((c:any)=>c.apiName==='OneConversation'),false,
   'retired OneConversation is not registered as a separate component');
- assert.equal(alias.jsxFile,'one/OneConversation/OneConversation.jsx');
- assert.equal(alias.cssFile,'one/OneConversation/OneConversation.css');
+ assert.equal(alias.jsxFile,'component-libraries/shared/primitives/Conversation/Conversation.jsx');
+ assert.equal(alias.cssFile,'component-libraries/shared/primitives/Conversation/Conversation.css');
  assert.deepEqual(alias.defaults.actionFlows,{});
- assert.equal(canonical.jsxFile,'one/une_conversation/UneConversation.jsx');
+ assert.equal(canonical.jsxFile,'component-libraries/ui_conversation/UiConversation.jsx');
  assert.ok(!canonical.propertyDefinitions.some((p:any)=>p.propertyKey==='conversationsObjectApiName'),
   'AceChatter source mapping is private runtime configuration');
- const wrapper=await readFile(new URL('../src/one/une_conversation/UneConversation.jsx',import.meta.url),'utf8');
- assert.ok(wrapper.includes('from "../OneConversation/OneConversation.jsx"') ||
-  wrapper.includes("from '../OneConversation/OneConversation.jsx'"),
-  'UNE conversation imports the shared legacy renderer');
+ const wrapper=await readFile(new URL('../src/component-libraries/ui_conversation/UiConversation.jsx',import.meta.url),'utf8');
+ assert.ok(wrapper.includes('from "../shared/primitives/Conversation/Conversation.jsx"') ||
+  wrapper.includes("from '../shared/primitives/Conversation/Conversation.jsx'"),
+  'UI conversation imports the shared renderer');
  assert.ok(wrapper.includes('<OneComponent '),'UNE wrapper actually renders the shared component');
  for(const definition of components){
   const built=await buildBundledComponent(definition);

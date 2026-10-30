@@ -11,33 +11,33 @@ const fields = name => groupedPresentationProperties(component(name).propertyDef
   .flatMap(group => group.definitions.map(definition => definition.propertyKey));
 
 test('new UNE Input can edit its declared Text default in the Editing panel with no binding', () => {
-  const text = component('une_input').propertyDefinitions.find(p => p.propertyKey === 'value');
+  const text = component('ui_input').propertyDefinitions.find(p => p.propertyKey === 'value');
   assert.ok(isPresentationProperty(text));
-  assert.equal(presentationValue({libraryComponentId:'une_input'}, text), text.defaultValue);
-  assert.ok(fields('une_input').includes('value'));
-  assert.ok(fields('une_input').includes('allowTyping'));
+  assert.equal(presentationValue({libraryComponentId:'ui_input'}, text), text.defaultValue);
+  assert.ok(fields('ui_input').includes('value'));
+  assert.ok(fields('ui_input').includes('allowTyping'));
 });
 
 test('UNE Button label and shared appearance are available without adding technical settings', () => {
-  const names = fields('une_button');
+  const names = fields('ui_button');
   for (const name of ['label','backgroundColor','width','height','radius']) assert.ok(names.includes(name), name);
   assert.ok(!names.includes('actionFlowApiName'));
 });
 
 test('data binding, object fields, record collections and action configuration stay out of Editing', () => {
-  for (const name of ['une_item_grid', 'une_cart', 'une_repeater', 'une_search']) {
+  for (const name of ['ui_item_grid', 'ui_cart', 'ui_repeater', 'ui_search']) {
     const names = fields(name);
     for (const key of ['objectApiName', 'items', 'actionFlowApiName','stateReadFlowApiName','titleFieldApiName',
       'priceFieldApiName','searchKey','cartTargetKey']) assert.ok(!names.includes(key), name+': '+key);
   }
-  const cart = fields('une_cart');
+  const cart = fields('ui_cart');
   for (const name of ['viewMode','basketTitle','currencyCode','emptyBasketText']) assert.ok(!cart.includes(name), name+' stays in the custom app');
 });
 
 test('reading defaults never mutates or binds the component', () => {
-  const original = {libraryComponentId:'une_input'};
-  const definition = component('une_input').propertyDefinitions.find(p => p.propertyKey === 'value');
+  const original = {libraryComponentId:'ui_input'};
+  const definition = component('ui_input').propertyDefinitions.find(p => p.propertyKey === 'value');
   presentationValue(original, definition);
-  assert.deepEqual(original,{libraryComponentId:'une_input'});
+  assert.deepEqual(original,{libraryComponentId:'ui_input'});
   assert.equal(presentationValue({...original,value:'Acetill'},definition),'Acetill');
 });

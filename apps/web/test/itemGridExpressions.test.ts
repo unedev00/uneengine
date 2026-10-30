@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {evaluateFieldExpression} from '../src/one/shared/OneFieldExpression.js';
+import {evaluateFieldExpression} from '../src/component-libraries/shared/FieldExpression.js';
 
 test('Card Grid expressions concatenate fields and quoted literals without executing code',()=>{
   const record={CurrencySymbol:'£',Price:1.25,Name:'Cola',Category:'Drinks'};
@@ -13,7 +13,7 @@ test('Card Grid expressions concatenate fields and quoted literals without execu
   assert.equal(evaluateFieldExpression('@__proto__',record),'');
 });
 test('Card Grid expression slots preserve legacy field mappings',()=>{
-  const src=readFileSync(new URL('../src/one/OneItemGrid/OneItemGrid.jsx',import.meta.url),'utf8');
+  const src=readFileSync(new URL('../src/component-libraries/shared/primitives/ItemGrid/ItemGrid.jsx',import.meta.url),'utf8');
   assert.match(src,/p\.headingExpression \? evaluateFieldExpression/);
   assert.match(src,/p\.badgeExpression \? evaluateFieldExpression/);
   assert.match(src,/p\.descriptionExpression \? evaluateFieldExpression/);

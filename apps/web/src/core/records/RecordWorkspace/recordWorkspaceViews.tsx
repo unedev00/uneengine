@@ -12,7 +12,7 @@ import { useFormFactor, useRuntimeFormFactor } from '../../workspace/Responsive/
 import {useViewportWidth} from '../../workspace/Responsive/useViewportWidth';
 import './recordsListToolbar.css';
 import './recordSplit.css';
-import ContextMenu from '../../../one/shared/ContextMenu';
+import ContextMenu from '../../../component-libraries/shared/ContextMenu';
 import { resolvePhoneColumns } from '../ResponsiveDataList/phoneColumns.mjs';
 import { RecordFormDialog } from '../RecordFormDialog/recordFormDialogView';
 import InlineRecordField from './InlineRecordField';
@@ -99,14 +99,14 @@ import {
 } from 'lucide-react';
 import FlowScreenContent from '../../automation/FlowScreen/FlowScreenContent';
 import RegisteredComponent from '../../components/RegisteredComponent/RegisteredComponent';
-import { RecordsListPageHeading, RecordsListSearchControls } from '../../../one/OneRecordsListNavigation/RecordsListNavigation';
+import { RecordsListPageHeading, RecordsListSearchControls } from '../../../component-libraries/shared/primitives/RecordsListNavigation/RecordsListNavigation';
 import PageRouteDirectory from '../../pages/PageRouteDirectory/PageRouteDirectory';
 import { isComponentVisible } from '../../components/Properties/componentVisibility';
 import { canNestComponent, componentVisualStyle, directChildren, isLayoutType, isDescendantOf, layoutTypes } from '../../pages/TemplatePageRuntime/pageComponentLayout';
 import { isCanvasLocked, wrapCanvasComponent, ungroupCanvasComponent } from '../../builders/PageBuilder/canvasInteractions';
 import { filterPageComponentRecords, needsMetadataComponentRuntime } from '../../pages/PageRuntime/pageComponentBindings';
 import { childrenOf, canNest, componentLayoutProps, hasPageComponentAppearance, isLayoutContainer, rawLayoutParentId, reparentComponent, resolvePageComponentStyle, type LayoutDevice } from '../../pages/TemplatePageRuntime/pageComponentLayout';
-import {GlobalRecordSearch} from '../../../one/OneGlobalRecordSearch/GlobalRecordSearch';
+import {GlobalRecordSearch} from '../../../component-libraries/shared/primitives/GlobalRecordSearch/GlobalRecordSearch';
 import {useDismissOnOutside} from '../../accessibility/Dismiss/useDismissOnOutside';
 
 import { pageIsAvailableInApp, resolvePageActionRoute } from '../../pages/PageRuntime/pageActionRouting';

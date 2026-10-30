@@ -13,17 +13,17 @@ export function oneComponentLabel(component: Pick<LibraryComponentMetadata, 'lab
 /** Old system API names are readable aliases, not additional new components.
  * Keep tenant-authored components with identical labels or unrelated API names. */
 export const legacyUneAliases: Readonly<Record<string,string>> = Object.freeze({
-  OneText: 'une_input',
-  une_text: 'une_input',
-  OneBadge: 'une_input',
-  OneButton: 'une_button',
-  OneSearch: 'une_search',
-  OneCalendar: 'une_calendar',
-  OneItemGrid: 'une_item_grid',
-  OneConversation: 'une_conversation',
-  OneShoppingCart: 'une_cart',
+  OneText: 'ui_input',
+  ui_text: 'ui_input',
+  OneBadge: 'ui_input',
+  OneButton: 'ui_button',
+  OneSearch: 'ui_search',
+  OneCalendar: 'ui_calendar',
+  OneItemGrid: 'ui_item_grid',
+  OneConversation: 'ui_conversation',
+  OneShoppingCart: 'ui_cart',
 });
-const bundledAliases: Readonly<Record<string, string>> = { ChatterInbox: 'une_conversation' };
+const bundledAliases: Readonly<Record<string, string>> = { ChatterInbox: 'ui_conversation' };
 
 export function registeredComponentDefinitions(
   components: readonly LibraryComponentMetadata[],
@@ -50,7 +50,7 @@ export function uniqueLibraryComponents(
   const catalog = registeredComponentDefinitions(components, surface);
   const definitions = new Map(catalog.map(component => [component.apiName, component]));
   return catalog.filter(component => {
-    if (component.trustedBundled && (component.apiName.startsWith('une_') || component.apiName === 'ChatterInbox' || /^(acetill|aceassist|onechatter|uneacechatter)_/.test(component.apiName))) return false;
+    if (component.trustedBundled && (component.apiName.startsWith('ui_') || component.apiName === 'ChatterInbox' || /^(acetill|aceassist|onechatter|uneacechatter)_/.test(component.apiName))) return false;
     // The original eight One registrations are internal compatibility identities.
     if (component.trustedBundled && legacyUneAliases[component.apiName]) return false;
     const canonical = definitions.get(bundledAliases[component.apiName]);
@@ -62,7 +62,7 @@ export function uniqueLibraryComponents(
 /** Friendly names are presentation-only. Never change stable component API names in saved pages. */
 export function libraryComponentLabel(component: LibraryComponentMetadata): string {
   if (component.apiName.startsWith('smart_')) return component.label.replace(/^Smart\s+/, '');
-  if (component.apiName.startsWith('une_')) {
+  if (component.apiName.startsWith('ui_')) {
     const raw = component.label.replace(/^\s*(?:UNE|One)[\s_-]*/i, '').trim();
     return raw || component.apiName.slice(4).split('_').map(part => part.charAt(0).toUpperCase() + part.slice(1)).join(' ');
   }

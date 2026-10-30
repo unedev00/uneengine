@@ -190,7 +190,7 @@ for(const [engine,browserType] of [['chromium',chromium],['webkit',webkit]].filt
    </body></html>`);
    // Load independent runtime stylesheets exactly as production does. Combining
    // them can invalidate later rule blocks when imported CSS contains directives.
-   await native.addStyleTag({content:file('apps/web/src/one/shared/one.css')});
+   await native.addStyleTag({content:file('apps/web/src/component-libraries/shared/one.css')});
    await native.addStyleTag({content:file('apps/web/src/core/components/RegisteredComponent/registeredComponentAppearance.css')});
    await native.addStyleTag({content:file('apps/web/src/core/pages/TemplatePageRuntime/pageComponentAppearance.css')});
    // OneButton transitions background for 150ms. Read the settled state rather

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {evaluateFieldExpression} from '../src/one/shared/OneFieldExpression.js';
+import {evaluateFieldExpression} from '../src/component-libraries/shared/FieldExpression.js';
 
 test('record expressions combine fields and quoted text without JavaScript evaluation',()=>{
   const record={CurrencySymbol:'£',Price:1.25,Name:'Tea',Description:null};

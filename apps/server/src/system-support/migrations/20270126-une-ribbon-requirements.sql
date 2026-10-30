@@ -9,11 +9,13 @@ ON CONFLICT(property_key) DO UPDATE SET
  label=EXCLUDED.label,tab=EXCLUDED.tab,section_group=EXCLUDED.section_group,
  control_kind=EXCLUDED.control_kind;
 
+-- Smart components are the current ribbon catalog; older UNE component rows may
+-- still exist in upgraded environments. Only reference registered components.
 INSERT INTO md_builder_ribbon_component_rules
  (component_api,property_key,enabled,control_kind_override,value_key,default_value_override,choices_override)
-VALUES
- ('une_item_grid','badgeBodyColor',true,NULL,NULL,NULL,NULL),
- ('une_image','badgeBodyColor',true,NULL,NULL,NULL,NULL)
+SELECT c.component_api, 'badgeBodyColor', true, NULL, NULL, NULL, NULL
+FROM md_builder_ribbon_components c
+WHERE c.component_api IN ('smart_card_grid','smart_image','une_item_grid','une_image')
 ON CONFLICT(component_api,property_key) DO UPDATE SET enabled=true;
 
 UPDATE md_builder_ribbon_component_rules SET enabled=false

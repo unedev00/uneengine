@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { ObjectMetadata } from '../../metadata/Definitions/metadata';
-import { loadMentionContext, type MentionContext } from '../../../one/OneSmartFieldInput/smartFieldMentions';
+import { loadMentionContext, type MentionContext } from '../../../component-libraries/shared/primitives/SmartFieldInput/smartFieldMentions';
 
 type DataRecord = Record<string, unknown>;
 type Request = <T>(path: string, init?: RequestInit) => Promise<T>;

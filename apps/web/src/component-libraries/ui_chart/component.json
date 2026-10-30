@@ -1,0 +1,28 @@
+{
+  "apiName": "ui_chart",
+  "label": "UI Chart",
+  "category": "Display",
+  "description": "Reusable chart component for metadata-driven pages; shares MetaDrive runtime, events and tenant permissions.",
+  "surfaces": [
+    "page",
+    "dashboard",
+    "flow"
+  ],
+  "version": 1,
+  "scope": "platform-core",
+  "jsxFile": "component-libraries/ui_chart/UiChart.jsx",
+  "cssFile": "component-libraries/ui_chart/UiChart.css",
+  "resize": {
+    "defaultWidth": 500,
+    "defaultHeight": 300,
+    "minWidth": 120,
+    "minHeight": 44
+  },
+  "propertyDefinitions": [],
+  "eventDefinitions": [
+    {
+      "apiName": "itemSelect",
+      "label": "item Select"
+    }
+  ]
+}

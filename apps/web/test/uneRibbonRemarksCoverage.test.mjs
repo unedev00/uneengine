@@ -6,11 +6,11 @@ const root=new URL('../../../',import.meta.url);
 const remarks=readFileSync(new URL('docs/page-builder-ribbon-remarks-source-20261028.md',root),'utf8');
 const rows=remarks.split(/\r?\n/).map(line=>line.split('|').slice(1,4).map(part=>part?.trim()))
  .filter(row=>row.length===3&&row[0]&&row[0]!=='Component'&&!row[0].startsWith('--'));
-const manifest=JSON.parse(readFileSync(new URL('../src/one/manifest.json',import.meta.url),'utf8'));
-const aliases={'UNE Card Grid':'une_item_grid'};
+const manifest=JSON.parse(readFileSync(new URL('../src/component-libraries/manifest.json',import.meta.url),'utf8'));
+const aliases={'UNE Card Grid':'ui_item_grid'};
 const apiName=label=>aliases[label]??label.toLowerCase().replaceAll(' ','_');
 const components=new Map(manifest.components.map(path=>{
- const component=JSON.parse(readFileSync(new URL('../src/one/'+path,import.meta.url),'utf8'));
+ const component=JSON.parse(readFileSync(new URL('../src/component-libraries/'+path,import.meta.url),'utf8'));
  return [component.apiName,component];
 }));
 
@@ -28,7 +28,7 @@ test('the complete approved remarks inventory is checked rather than screenshot 
     api+' still declares explicitly deleted property '+label);
    checked.add(api+'|'+label);
   }
-  if(remark==='Source Object' && api!=='une_conversation'){
+  if(remark==='Source Object' && api!=='ui_conversation'){
    assert.ok(component.propertyDefinitions.some(property=>property.label==='Source Object'||
     property.label.startsWith('Source Object — ')),
     api+' has no consolidated Source Object metadata');

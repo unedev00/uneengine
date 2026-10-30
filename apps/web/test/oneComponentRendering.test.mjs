@@ -5,7 +5,7 @@ import vm from 'node:vm';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { loadComponentCatalog, buildBundledComponent } from '../../../scripts/component-catalog.mjs';
-import { componentAppearance } from '../src/one/shared/componentAppearance.js';
+import { componentAppearance } from '../src/component-libraries/shared/componentAppearance.js';
 
 // These snapshots were captured from the original grouped renderers before
 // extraction. Verify every named component still produces the same markup.
@@ -21,8 +21,8 @@ for (const fixture of fixtures) {
     // Keep these snapshot tests to protect the shared UNE renderer dependencies.
     const definition = {
       apiName: fixture.apiName,
-      jsxFile: `one/${fixture.apiName}/${fixture.apiName}.jsx`,
-      cssFile: `one/${fixture.apiName}/${fixture.apiName}.css`
+      jsxFile: ['OneButton','OneSearch','OneText'].includes(fixture.apiName) ? `core/components/SharedRuntime/${fixture.apiName === 'OneButton' ? 'SharedButton' : fixture.apiName.slice(3)}.jsx` : `component-libraries/shared/primitives/${fixture.apiName.slice(3)}/${fixture.apiName.slice(3)}.jsx`,
+      cssFile: ['OneButton','OneSearch','OneText'].includes(fixture.apiName) ? 'component-libraries/shared/one.css' : `component-libraries/shared/primitives/${fixture.apiName.slice(3)}/${fixture.apiName.slice(3)}.css`
     };
     const built = await buildBundledComponent(definition);
     const context = { React, module: { exports: {} }, Date: FixtureDate, Intl, URL, crypto: globalThis.crypto };
@@ -47,7 +47,7 @@ for (const fixture of fixtures) {
 }
 
 test('component packaging rejects sources outside the component libraries', async () => {
-  await assert.rejects(buildBundledComponent({ jsxFile: 'main.tsx', cssFile: 'one/shared/one.css' }), /escapes its source library/);
+  await assert.rejects(buildBundledComponent({ jsxFile: 'main.tsx', cssFile: 'component-libraries/shared/one.css' }), /escapes its source library/);
 });
 
 test('shared appearance preserves each original family, including numeric and theme edge cases', async () => {
@@ -58,5 +58,5 @@ test('shared appearance preserves each original family, including numeric and th
 
 test('retired One renderers remain usable by UNE without being independently registered', () => {
   assert.deepEqual(components.map(c => c.apiName).filter(n => n.startsWith('One')), []);
-  assert.equal(components.filter(c => c.apiName.startsWith('une_')).length,34);
+  assert.equal(components.filter(c => c.apiName.startsWith('ui_')).length,34);
 });

@@ -1,0 +1,28 @@
+{
+  "apiName": "ui_table",
+  "label": "UI Table",
+  "category": "Data",
+  "description": "Reusable table component for metadata-driven pages; shares MetaDrive runtime, events and tenant permissions.",
+  "surfaces": [
+    "page",
+    "dashboard",
+    "flow"
+  ],
+  "version": 1,
+  "scope": "platform-core",
+  "jsxFile": "component-libraries/ui_table/UiTable.jsx",
+  "cssFile": "component-libraries/ui_table/UiTable.css",
+  "resize": {
+    "defaultWidth": 500,
+    "defaultHeight": 320,
+    "minWidth": 120,
+    "minHeight": 44
+  },
+  "propertyDefinitions": [],
+  "eventDefinitions": [
+    {
+      "apiName": "rowSelect",
+      "label": "row Select"
+    }
+  ]
+}

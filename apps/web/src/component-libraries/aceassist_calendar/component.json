@@ -1,0 +1,20 @@
+{
+  "apiName": "aceassist_calendar",
+  "label": "aceassist Calendar",
+  "category": "App Internal",
+  "description": "Private aceassist UI renderer, not a shared Page Builder component.",
+  "surfaces": [
+    "page"
+  ],
+  "version": 1,
+  "jsxFile": "component-libraries/aceassist_calendar/AppComponent.jsx",
+  "cssFile": "component-libraries/aceassist_calendar/AppComponent.css",
+  "resize": {
+    "defaultWidth": 320,
+    "defaultHeight": 80,
+    "minWidth": 100,
+    "minHeight": 40
+  },
+  "propertyDefinitions": [],
+  "eventDefinitions": []
+}

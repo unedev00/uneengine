@@ -40,14 +40,15 @@ p.write_text(s.replace(needle,location+needle,1))
 PY
   nginx -t
   systemctl reload nginx
-  code=""
-  for attempt in 1 2 3 4 5 6 7 8 9 10; do
-    code="$(curl --noproxy '*' --silent --max-time 8 --resolve unesolutions.co.uk:443:127.0.0.1 -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' --data '{}' https://unesolutions.co.uk/api/auth/federation/complete)" || code="000"
-    [[ "$code" == "204" ]] && break
-    sleep 1
-  done
-  [[ "$code" == "204" ]] || { echo "Unexpected main-domain federation status: $code" >&2; false; }
   trap - ERR
   rm -f "$backup"
 fi
+# Check routing on every run, including already-configured proxies.
+code=""
+for attempt in 1 2 3 4 5 6 7 8 9 10; do
+  code="$(curl --noproxy '*' --silent --max-time 8 --resolve unesolutions.co.uk:443:127.0.0.1 -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' --data '{}' https://unesolutions.co.uk/api/auth/federation/complete)" || code="000"
+  [[ "$code" == "204" ]] && break
+  sleep 1
+done
+[[ "$code" == "204" ]] || { echo "Unexpected main-domain federation status: $code" >&2; false; }
 echo "Frontend API reverse proxy verified."

@@ -25,7 +25,7 @@ export default function PageBuilderAdvancedStyle({properties,componentType,defin
  properties:Values;componentType:string;definition?:LibraryComponentMetadata;
  device:PropertyDevice;excludeKeys:string[];onChange:(properties:Values)=>void;
 }){
- const isItemGrid=definition?.apiName==='une_item_grid';
+ const isItemGrid=definition?.apiName==='ui_item_grid';
  const all=availableComponentSettings(definition?.propertyDefinitions??[],device,definition?.version)
    .filter(d=>(!isItemGrid||itemGridDesignKeys.has(d.propertyKey))&&
      isPresentationProperty(d)&&(cardExtras.has(d.propertyKey)||!excludeKeys.includes(d.propertyKey))&&

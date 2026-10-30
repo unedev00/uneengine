@@ -16,7 +16,7 @@ type Definition=NonNullable<LibraryComponentMetadata['propertyDefinitions']>[num
 type Properties=Record<string,unknown>;
 type CatalogComponent={apiName:string;propertyDefinitions?:Definition[]};
 type Tab='Component Data'|'Component Content'|'Component Properties'|'Component Layout'|'Component Responsive'|'Component Action';
-const manifests=Object.values(import.meta.glob('../../../one/*/component.json',{eager:true,import:'default'})) as CatalogComponent[];
+const manifests=Object.values(import.meta.glob('../../../component-libraries/*/component.json',{eager:true,import:'default'})) as CatalogComponent[];
 const validManifests=manifests.filter(item=>/^une_[a-z0-9_]+$/.test(item.apiName));
 const definitionMap=new Map<string,Definition>();
 for(const component of validManifests){
@@ -219,9 +219,9 @@ export default function UniversalRibbonInventory({tab,definition,componentId,pro
  };
  const selectedDefinitions=new Map((definition?.propertyDefinitions??[]).map(item=>[item.propertyKey,item]));
  const unsupportedByComponent:Record<string,Set<string>>={
-  une_item_grid:new Set(['label','labelAlignment','defaultValueColor','textSize']),
-  une_container:new Set(['objectApiName','imageSource','badgeText','badgeAlignment','badgeTextSize','badgeBold','badgeTextColor','badgeVisible','badgeBodyColor','labelAlignment','textSize','label','textSource','labelColor','imageFill']),
-  une_calendar:new Set(['label','labelAlignment'])
+  ui_item_grid:new Set(['label','labelAlignment','defaultValueColor','textSize']),
+  ui_container:new Set(['objectApiName','imageSource','badgeText','badgeAlignment','badgeTextSize','badgeBold','badgeTextColor','badgeVisible','badgeBodyColor','labelAlignment','textSize','label','textSource','labelColor','imageFill']),
+  ui_calendar:new Set(['label','labelAlignment'])
  };
  const notApplicable=unsupportedByComponent[definition?.apiName??'']??new Set<string>();
  const enabled=new Set([...selectedDefinitions.keys()].filter(key=>!notApplicable.has(key)));

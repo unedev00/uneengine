@@ -7,7 +7,7 @@ import {seedQuotationObjects} from '../app-seeders/core-quotation-objects.js';
 import {seedLocationSrnMetadata} from '../app-seeders/core-location-srn.js';
 import {seedAppointmentObjects} from '../app-seeders/core-appointment-objects.js';
 import {seedFreshBundledComponents} from '../app-seeders/bundled-components.js';
-import {seedFreshUneComponents} from '../app-seeders/une-components.js';
+import {seedFreshUiComponents} from '../app-seeders/ui-components.js';
 import {seedFreshSmartComponents} from '../app-seeders/smart-components.js';
 import {seedFreshProductImageField} from '../app-seeders/product-image-field.js';
 import {seedCommunicationObjects} from '../app-seeders/core-communication-objects.js';
@@ -117,7 +117,7 @@ export class TenantProvisioning {
       await seedAppointmentObjects(client,tenantId);
       await seedCartObjects(client,tenantId);
       await seedFreshBundledComponents(client,tenantId);
-      await seedFreshUneComponents(client,tenantId);
+      await seedFreshUiComponents(client,tenantId);
       await seedFreshSmartComponents(client,tenantId);
       await seedFreshProductImageField(client,tenantId);
       if(authority){

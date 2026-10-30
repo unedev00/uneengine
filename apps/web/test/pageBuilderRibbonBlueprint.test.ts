@@ -99,7 +99,7 @@ test('Batch 2 keeps all styling accessible without the old advanced dialog',()=>
  assert.doesNotMatch(responsive,/office-ribbon-responsive-overrides/);
 });
 test('Batch 2 grid runtime reads density, line-height, radius and image position',()=>{
- const runtime=readFileSync(new URL('../src/one/OneItemGrid/OneItemGrid.jsx',import.meta.url),'utf8');
+ const runtime=readFileSync(new URL('../src/component-libraries/shared/primitives/ItemGrid/ItemGrid.jsx',import.meta.url),'utf8');
  const page=readFileSync(new URL('../src/core/pages/TemplatePageRuntime/pageComponentLayout.ts',import.meta.url),'utf8');
  for(const key of ['p.density','p.lineHeight','p.cardRadius','p.imagePosition','p.headingExpression','p[part+"LineLimit"]'])
    assert.ok(runtime.includes(key),key);
@@ -116,7 +116,7 @@ test('Batch 2 fixes shared palette contrast and Layout numeric input widths',()=
 test('Card Grid Design keeps exactly two Appearance choices and two Card extras',()=>{
  const source=readFileSync(new URL('../src/core/builders/PageBuilder/PageBuilderAdvancedStyle.tsx',import.meta.url),'utf8');
  assert.match(source,/const itemGridDesignKeys=new Set\(\['theme','surface','cardDensity','cardHover'\]\)/);
- assert.match(source,/const isItemGrid=definition\?\.apiName==='une_item_grid'/);
+ assert.match(source,/const isItemGrid=definition\?\.apiName==='ui_item_grid'/);
  assert.match(source,/name:'Appearance',defs:all\.filter\(d=>d\.propertyKey==='theme'\|\|d\.propertyKey==='surface'\)/);
  assert.match(source,/name:'Card extras',defs:all\.filter\(d=>cardExtras\.has\(d\.propertyKey\)\)/);
  assert.match(source,/\(!isItemGrid\|\|itemGridDesignKeys\.has\(d\.propertyKey\)\)/);
