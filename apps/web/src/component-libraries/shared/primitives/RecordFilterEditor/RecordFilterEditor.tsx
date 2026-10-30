@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import type { FieldMetadata } from '../../core/metadata/Definitions/metadata';
+import type { FieldMetadata } from '../../../../core/metadata/Definitions/metadata';
 import {
   examineRecordFilter, isBooleanFilterField, isNumericFilterField, supportedFilterOperators
-} from '../../core/records/RecordWorkspace/recordFilterMetadata';
+} from '../../../../core/records/RecordWorkspace/recordFilterMetadata';
 
 export default function RecordFilterEditor({
   title, fields, filters, onChange
