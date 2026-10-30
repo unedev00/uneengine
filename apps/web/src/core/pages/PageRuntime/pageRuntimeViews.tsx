@@ -488,8 +488,14 @@ function MetadataBoundPageComponent({
     recordId || explicitMentionRecordId(properties), properties, apiRequest, revision);
   const resolvedProperties = bindPageStateProperties(resolveMentionProperties(properties, mentionContext.records, mentionContext.fields, objects, mentionRootObjectApiName),pageState);
   const presented = presentPageRecords(properties.recordPresenterApiName, visibleRecords, channelAccess, properties);
+  // A record page already fetched its exact authorised record by ID. Use it
+  // even when the record is beyond the first page of the Object list.
+  const boundRecordId=recordId||explicitMentionRecordId(properties);
+  const currentBoundRecord=mentionContext.records[objectApiName];
+  const boundRows=boundRecordId&&currentBoundRecord?.Id===boundRecordId
+    ?[currentBoundRecord]:visibleRecords;
   const toggleBinding=resolveSmartToggleFieldBinding(definition.apiName,properties,objectApiName,fields,
-    visibleRecords,recordTotal,recordId||explicitMentionRecordId(properties));
+    boundRows,recordTotal,boundRecordId);
   const toggleCanWrite=Boolean(toggleBinding?.ready&&!disableActions&&
     behaviorAction(properties,'change',{formFactor})==='enabled');
   const changeBoundToggle=async(next:boolean)=>{

@@ -247,8 +247,14 @@ export default function MetadataBoundPageComponent({
       || field.dataType==='Lookup('+categorySource.sourceObjectApiName+')')?.apiName
     : undefined;
   const presented = presentPageRecords(properties.recordPresenterApiName, visibleRecords, channelAccess, properties);
+  // A record page already fetched its exact authorised record by ID. Use it
+  // even when the record is beyond the first page of the Object list.
+  const boundRecordId=recordId||explicitMentionRecordId(properties);
+  const currentBoundRecord=mentionContext.records[objectApiName];
+  const boundRows=boundRecordId&&currentBoundRecord?.Id===boundRecordId
+    ?[currentBoundRecord]:visibleRecords;
   const toggleBinding=resolveSmartToggleFieldBinding(definition.apiName,properties,objectApiName,fields,
-    visibleRecords,recordTotal,recordId||explicitMentionRecordId(properties));
+    boundRows,recordTotal,boundRecordId);
   const toggleCanWrite=Boolean(toggleBinding?.ready&&!disableActions&&
     behaviorAction(properties,'change',behaviorContext??{formFactor})==='enabled');
   const changeBoundToggle=async(next:boolean)=>{
