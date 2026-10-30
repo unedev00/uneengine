@@ -2041,7 +2041,7 @@ export default function FlowBuilder({
               style={{left:x,top:y}}
               aria-label={`Choose insertion path ${connector.label||connector.kind} from ${flow.elements.find(item=>item.id===connector.from)?.label??connector.from}`}
               title="Choose this branch path; drag an element here or select one in the toolbox"
-              onClick={()=>selectGraphPath(connector)}
+              onClick={()=>{selectGraphPath(connector);setToolboxExpanded(true);}}
               onDragOver={event=>event.preventDefault()}
               onDrop={event=>dropElement(event,connector.from,connector.id)}>
               <Plus size={13}/>
@@ -2099,7 +2099,7 @@ export default function FlowBuilder({
                 style={{ left: position.x + graphNodeWidth + 8, top: position.y + 8 }}>
                 <button type="button" className="icon-button" aria-label={`Add element after ${element.label}`}
                   title="Choose an element from the toolbox to insert on this path"
-                  onClick={() => { setInsertionConnectorId(''); onToolTab('Elements'); }}>
+                  onClick={() => { setInsertionConnectorId(''); onToolTab('Elements'); setToolboxExpanded(true); }}>
                   <Plus size={16} />
                 </button>
                 <button type="button" className="icon-button" aria-label={`Remove ${element.label}`}
