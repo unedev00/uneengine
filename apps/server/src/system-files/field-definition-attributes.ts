@@ -54,7 +54,7 @@ export function validateFieldDefinitionAttributes(field:{
    return raw;
  }
  if(type==='date')return normalizeDateField(raw,'default');
- if(type==='datetime'){normalizeDateTimeField(raw,'default');return raw;}
- if(type==='time'){normalizeTimeField(raw,'default');return raw;}
+ if(type==='datetime'){normalizeDateTimeField(raw,'default');return raw as string;}
+ if(type==='time'){normalizeTimeField(raw,'default');return raw as string;}
  return invalid();
 }
