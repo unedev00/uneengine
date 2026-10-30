@@ -95,6 +95,9 @@ try{
   {ReviewParentId:p2}),/Invalid required lookup filter/);
  await records.update(tenant,user,'PhaseChild__c',c1,{SecondaryParentId:p2});
 
+ // SQL must never admit a valid-tenant ID from the wrong target object.
+ await assert.rejects(()=>db.query("UPDATE md_record_values SET reference_record_id=$4 WHERE tenant_id=$1 AND record_id=$2 AND field_api=$3",
+  [tenant,c1,'SecondaryParentId',c1]),/Invalid relationship target/);
  await assert.rejects(()=>records.update(tenant,user,'PhaseChild__c',c1,{ParentId:p2}),/does not allow reparenting/);
  await records.update(tenant,user,'PhaseGrand__c',g1,{ChildId:c2});
  await records.update(tenant,user,'PhaseGrand__c',g1,{ChildId:c1});
@@ -112,6 +115,9 @@ try{
  assert.ok(gone.rows.every(row=>row.is_deleted),'Master-detail cascade must reach grandchild');
  assert.equal((await db.query('SELECT is_deleted FROM md_records WHERE tenant_id=$1 AND id=$2',[tenant,p2])).rows[0].is_deleted,false);
  assert.equal((await db.query('SELECT is_deleted FROM md_records WHERE tenant_id=$1 AND id=$2',[tenant,c2])).rows[0].is_deleted,false);
+ await assert.rejects(()=>db.query("INSERT INTO md_record_values(tenant_id,record_id,object_api,field_api,reference_record_id) VALUES($1,$2,'PhaseChild__c','ReviewParentId',$3)",
+  [tenant,c2,p1]),/Invalid relationship target/);
+
  // A record author can have Child create rights but must not reference a parent
  // that their record-sharing policy forbids them to read.
  const restrictedUser=(await db.query("INSERT INTO md_users(tenant_id,email,password_hash) VALUES($1,'blocked@example.invalid','fixture') RETURNING id",[tenant])).rows[0].id;
