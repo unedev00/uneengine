@@ -17,7 +17,7 @@ test('page-level handlers remain intact in topbar and Layout while Smart Insert 
  assert.match(body,/onOpenLibrary=\{\(\)=>openAddBlocks\(\)\}/);
  assert.match(body,/ribbonTab==='Component Layout' && ribbonCatalog/);
  assert.match(page,/office-ribbon-quick-access/);
- assert.match(page,/const quickAccessOrder=\['save','activate','resetIcon','undo','redo','cut','copy','paste'\]/);
+ assert.match(page,/const quickAccessOrder=\['save','activate','resetIcon','undo','redo','cut','copy','paste','delete'\]/);
 });
 test('additive SQL migration removes only non-Home shared entries and migrates Acetill Cart without deleting values',()=>{
  const sql=src('../../server/src/system-support/migrations/20270123-ribbon-home-reset-acetill-cart.sql');
