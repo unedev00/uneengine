@@ -148,6 +148,7 @@ import UniversalRibbonInventory from './UniversalRibbonInventory';
 import UneBuilderRibbon from './UneBuilderRibbon';
 import SmartRibbon from './SmartRibbon';
 import SmartInsertRibbon from './SmartInsertRibbon';
+import SmartIconGallery from './SmartIconGallery';
 import {isUneBuilderApi,uneBuilderDefaults,type SharedRibbonCatalog,type UneBuilderApi} from './uneBuilderPropertyInventory';
 import './UniversalRibbonInventory.css';
 import './PageBuilderNumericControls.css';
@@ -505,7 +506,11 @@ function PageBuilder({
   };
   const [selectedConversationPart,setSelectedConversationPart]=useState('parent');
   useEffect(()=>setSelectedConversationPart('parent'),[selectedId]);
-  const [ribbonTab, setRibbonTab] = useState<'Home' | 'Add Block' | 'Component Content' | 'Component Properties' | 'Component Style' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Component Responsive' | 'Preview' | 'Filters' | 'Source' | 'Parity'>('Home');
+  const [ribbonTab, setRibbonTab] = useState<'Home' | 'Add Block' | 'Component Content' | 'Component Properties' | 'Component Style' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Component Responsive' | 'Preview' | 'Filters' | 'Source' | 'Icons' | 'Parity'>('Home');
+  useEffect(()=>{
+    if(ribbonTab==='Icons'&&page.components.find(component=>component.id===selectedId)?.type!=='Custom:smart_icon')
+      setRibbonTab('Component Properties');
+  },[ribbonTab,selectedId,page.components]);
   useEffect(()=>{
     const element=ribbonStripRef.current;
     if(!element)return;
@@ -2395,7 +2400,8 @@ function PageBuilder({
     setPaletteInsertRegion(region); setPaletteTab('Components'); setPaletteCategory('All Components'); setActivePanel('palette');
   };
   const journeyTabs: Array<typeof ribbonTab> = selectedNewUne
-    ? ['Home','Add Block','Component Data','Component Properties','Component Layout','Component Action','Preview']
+    ? ['Home','Add Block',...(selected?.type==='Custom:smart_icon'?(['Icons'] as const):[]),
+       'Component Data','Component Properties','Component Layout','Component Action','Preview']
     : ['Home','Add Block','Component Data','Component Content','Component Properties','Component Layout','Component Responsive','Component Action','Preview'];
   const journeyIndex=journeyTabs.indexOf(ribbonTab as typeof journeyTabs[number]);
   const ribbonTabsVisible: Array<typeof ribbonTab> = [...journeyTabs];
@@ -2622,6 +2628,7 @@ function PageBuilder({
                   'Component Data': Database,
                   'Component Content': Type,
                   'Component Properties': SlidersHorizontal,
+                  Icons: ImageIcon,
                   'Component Style': Type,
                   'Component Responsive': Smartphone,
                   'Component Layout': Layers3,
@@ -2634,6 +2641,7 @@ function PageBuilder({
                   'Component Data': 'Data',
                   'Component Content': 'Content',
                   'Component Properties': 'Design',
+                  Icons: 'Icons',
                   'Component Style': 'Format',
                   'Component Responsive': 'Responsive',
                   'Component Layout': 'Layout',
@@ -2748,6 +2756,9 @@ function PageBuilder({
             onInsert={addPaletteComponent}
             renderIcon={renderPaletteIcon}
             onOpenLibrary={()=>openAddBlocks()}/>}
+          {selected?.type==='Custom:smart_icon' && ribbonTab==='Icons' &&
+            <SmartIconGallery value={String(selected.properties.iconId??'house')}
+              onChange={iconId=>updateComponent(selected.id,{properties:{...selected.properties,iconId}})}/>}
           {selectedNewUne && selected && ribbonCatalog &&
             (ribbonTab==='Component Data'||ribbonTab==='Component Properties'||ribbonTab==='Component Layout') &&
             <SmartRibbon

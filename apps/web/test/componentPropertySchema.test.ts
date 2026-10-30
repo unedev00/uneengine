@@ -21,8 +21,8 @@ test('all retained bundled descriptor definitions remain compatible',async()=>{
  // Keep system compatibility definitions and app-private renderer identities distinct.
  assert.equal(catalog.components.filter(c=>c.apiName.startsWith('ui_')).length,34);
  assert.equal(catalog.components.filter(c=>/^(acetill|aceassist|onechatter|uneacechatter)_/.test(c.apiName)).length,17);
- assert.equal(catalog.components.length,64); // 34 UI + 17 app-owned + 11 Smart + 2 Core
- assert.equal(catalog.components.filter(c=>c.apiName.startsWith('smart_')).length,11); // Smart Cart joins the shared Smart family
+ assert.equal(catalog.components.length,65); // 34 UI + 17 app-owned + 12 Smart + 2 Core
+ assert.equal(catalog.components.filter(c=>c.apiName.startsWith('smart_')).length,12); // Includes Smart Icon
  for(const component of catalog.components)assert.deepEqual(validateComponentDefinitions(component.propertyDefinitions??[]),[],component.apiName);
 });
 const definitions:ComponentSettingDefinition[]=[{propertyKey:'layout',label:'Layout',kind:'GROUP',fields:[
