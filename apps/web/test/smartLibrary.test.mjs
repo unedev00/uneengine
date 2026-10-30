@@ -368,19 +368,19 @@ test('Quick Access Delete uses existing guarded draft-component removal',()=>{
  const builder=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
  assert.match(builder,/case 'delete':return <button/);
  assert.match(builder,/aria-label="Delete selected component"/);
- assert.match(builder,/disabled=\\{!selected\\|\\|previewMode\\|\\|isCanvasLocked\\(selected\\)\\}/);
- assert.match(builder,/onClick=\\{removeSelected\\}/);
- assert.match(builder,/quickAccessOrder=\\['save','activate','resetIcon','undo','redo','cut','copy','paste','delete'\\]/);
- assert.match(builder,/confirmDestructiveAction\\('Delete', 'Page component/);
+ assert.match(builder,/disabled=\{!selected\|\|previewMode\|\|isCanvasLocked\(selected\)\}/);
+ assert.match(builder,/onClick=\{removeSelected\}/);
+ assert.match(builder,/quickAccessOrder=\['save','activate','resetIcon','undo','redo','cut','copy','paste','delete'\]/);
+ assert.match(builder,/confirmDestructiveAction\('Delete', 'Page component/);
 });
 test('Clicking canvas releases any focused ribbon formula editor and closes field suggestions',()=>{
  const builder=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
  const formula=read('../src/core/builders/PageBuilder/SmartFormulaField.tsx');
- assert.match(builder,/className="page-stage" key=\\{canvasRefreshKey\\}\\s*onPointerDownCapture=/);
- assert.match(builder,/active\\.closest\\('\\.office-builder-ribbon'\\)/);
- assert.match(builder,/active\\.matches\\('input,textarea,select,\\[contenteditable="true"\\]'\\)/);
- assert.match(builder,/active\\.blur\\(\\)/);
- assert.match(formula,/onBlur=\\{\\(\\)=>setMatches\\(null\\)\\}/);
+ assert.match(builder,/className="page-stage" key=\{canvasRefreshKey\}\s*onPointerDownCapture=/);
+ assert.match(builder,/active\.closest\('\.office-builder-ribbon'\)/);
+ assert.match(builder,/active\.matches\('input,textarea,select,\[contenteditable="true"\]'\)/);
+ assert.match(builder,/active\.blur\(\)/);
+ assert.match(formula,/onBlur=\{\(\)=>setMatches\(null\)\}/);
 });
 test('Smart Event ribbon matches On Click and Qty Icon component support',()=>{
  const ribbon=read('../src/core/builders/PageBuilder/SmartEventActionsRibbon.tsx');
