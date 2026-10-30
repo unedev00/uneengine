@@ -250,3 +250,48 @@ export function resolveMentionProperties(
   return Object.fromEntries(Object.entries(properties).map(([key, value]) =>
     [key, resolveMentionValue(value, recordsByPath, fieldsByPath, objects, root)]));
 }
+
+/**
+ * Resolve metadata-declared parent lookups for each row of a bounded record
+ * collection. The authenticated caller supplies an exact-ID record loader.
+ * Reuse requests by object/Id, limit concurrent rows and never infer a parent
+ * from an unrelated list or return an unverified record.
+ */
+export async function resolveCollectionMentionRows(
+  objects: readonly ObjectMetadata[], root: string,
+  rows: readonly DataRecord[], properties: Readonly<Record<string, unknown>>,
+  getRecord: (objectApiName: string, id: string) => Promise<DataRecord | undefined>
+): Promise<DataRecord[]> {
+  const paths=referencedMentionPaths(properties,objects,root);
+  if(!paths.length)return [...rows];
+  const work=rows.slice(0,100);
+  const cache=new Map<string,Promise<DataRecord|undefined>>();
+  const cached=async(objectApiName:string,id:string):Promise<DataRecord|undefined>=>{
+    if(id.length>256)return undefined;
+    const key=JSON.stringify([objectApiName,id]);
+    let pending=cache.get(key);
+    if(!pending){
+      if(cache.size>=300)return undefined;
+      pending=getRecord(objectApiName,id).then(record=>
+        record?.Id===id?record:undefined).catch(()=>undefined);
+      cache.set(key,pending);
+    }
+    return pending;
+  };
+  const resolved:DataRecord[]=new Array(work.length);
+  let cursor=0;
+  await Promise.all(Array.from({length:Math.min(8,work.length)},async()=>{
+    while(cursor<work.length){
+      const index=cursor++;
+      const record=work[index];
+      const context=await loadMentionContext(objects,root,record,properties,cached);
+      const values:Record<string,unknown>={};
+      for(const path of paths){
+        const ref='@'+path.path+'.'+path.field.apiName;
+        values[ref]=resolveMentionValue(ref,context.records,context.fields,objects,root);
+      }
+      resolved[index]={...record,__mentionValues:values};
+    }
+  }));
+  return resolved;
+}
