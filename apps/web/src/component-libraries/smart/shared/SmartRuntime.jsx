@@ -80,7 +80,7 @@ function SmartCalendar({p,fire}){
  const days=new Date(year,month+1,0).getDate();
  const offset=(monthStart-first+7)%7;
  const weeks=Math.ceil((days+offset)/7);
- return <div className="smart-calendar">
+ return <div className="smart-calendar" style={{borderRadius:number(p.radius,12),borderColor:p.borderColor||undefined,background:p.backgroundColor||undefined}}>
   <strong>{selected.toLocaleString("en-GB",{month:"long",year:"numeric"})}</strong>
   {indices.length===0?<p>No days selected for display</p>:<div className="smart-calendar-grid" style={{gridTemplateColumns:"repeat("+indices.length+",minmax(0,1fr))"}}>
    {indices.map(i=><b key={"day"+i}>{dayNames[i]}</b>)}
