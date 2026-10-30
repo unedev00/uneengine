@@ -3,7 +3,8 @@
 -- Additive upgrade: preserve authored page values, published pages, tenant data and Home.
 UPDATE md_builder_ribbon_component_rules
 SET enabled=false
-WHERE (component_api='smart_card_grid' AND property_key IN
+WHERE (component_api='smart_toggle' AND property_key='radius')
+   OR (component_api='smart_card_grid' AND property_key IN
   ('label','labelAlignment','defaultValueColor','textSize'))
    OR (component_api='smart_calendar' AND property_key IN
   ('label','labelAlignment'))
