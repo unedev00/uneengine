@@ -37,7 +37,7 @@ test('Preview chrome is not interactive and search suggestions support touch cli
 });
 
 test('published ONE controls have no unbound dummy actions or placeholders',()=>{
- const button=read('src/one/OneButton/OneButton.jsx');
+ const button=read('src/core/components/SharedRuntime/SharedButton.jsx');
  const textComponent=read('src/one/OneText/OneText.jsx');
  
  const appearance=read('src/one/shared/componentAppearance.js');
