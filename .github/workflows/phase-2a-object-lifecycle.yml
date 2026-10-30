@@ -1,0 +1,49 @@
+name: Phase 2A object lifecycle SQL smoke
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/server/src/system-files/object-definition.ts'
+      - 'apps/server/src/system-files/object-schema-lifecycle.ts'
+      - 'apps/server/src/system-files/schema.sql'
+      - 'apps/server/src/system-support/server.ts'
+      - 'apps/server/src/system-support/migrations/20270118-object-schema-lifecycle.sql'
+      - 'apps/server/scripts/object-schema-lifecycle-sql-smoke.mjs'
+      - '.github/workflows/phase-2a-object-lifecycle.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  object-lifecycle-sql:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: metadrive_2a
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d metadrive_2a"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      METADRIVE_SQL_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/metadrive_2a
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Build authoritative server SQL and lifecycle runtime
+        run: npm run build:system --workspace apps/server
+      - name: Verify 2A lifecycle through migrated PostgreSQL
+        run: node apps/server/scripts/object-schema-lifecycle-sql-smoke.mjs
