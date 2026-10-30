@@ -10,6 +10,7 @@ export type UneRibbonProperty={
  id:string;label:string;tab:RibbonTab;group:string;
  /** SQL-owned visual placement for the compact two-row Design toolbar. */
  designRow?:number;designWidth?:number;designHeight?:number;designOrder?:number;
+ designCaption?:string;designCaptionWidth?:number;
  kind:RibbonControlKind;components:readonly string[];
  default?:string|number|boolean|readonly string[];
  min?:number;max?:number;choices?:readonly string[];field?:boolean;
