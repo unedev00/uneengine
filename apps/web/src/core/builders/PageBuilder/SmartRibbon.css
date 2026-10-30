@@ -408,3 +408,44 @@
   grid-area:2 / 1 / 3 / -1;
   justify-content:flex-start;
 }
+
+/* Formula field and source filter share one readable compact ribbon control. */
+.office-builder-ribbon .smart-formula-filter{display:inline-flex;align-items:center;gap:5px;min-width:0}
+.office-builder-ribbon .smart-formula-filter .smart-formula{flex:0 0 155px;width:155px;min-width:155px;height:28px}
+.office-builder-ribbon #page-builder-tab-content .smart-property .smart-formula-filter .smart-formula input{
+ width:100%!important;min-width:0!important;max-width:100%!important;
+ border:0!important;background:transparent!important;color:transparent!important;
+ caret-color:#193f73!important;font-family:Consolas,monospace!important;letter-spacing:0;
+}
+.office-builder-ribbon .smart-formula-filter .smart-formula-highlight{line-height:27px;font-size:12px}
+.office-builder-ribbon .smart-filter-trigger{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;position:relative;
+ width:30px;min-width:30px;height:28px;border:1px solid #b7c9e0;border-radius:4px;background:#fff;
+ color:#244a78;cursor:pointer;padding:4px}
+.office-builder-ribbon .smart-filter-trigger:hover:not(:disabled){background:#e7f1ff;border-color:#6199d7}
+.office-builder-ribbon .smart-filter-trigger:disabled{opacity:.55;cursor:not-allowed}
+.office-builder-ribbon .smart-filter-count{position:absolute;right:-6px;top:-7px;min-width:16px;height:16px;
+ border-radius:8px;background:#155d9f;color:#fff;font:bold 10px/16px "Segoe UI",Arial,sans-serif;text-align:center;padding:0 2px}
+
+/* Modal lives in document.body, not under the constrained 146px ribbon. */
+.smart-filter-backdrop{z-index:6200;padding:16px;background:rgba(19,36,58,.58)}
+.smart-dialog.smart-filter-dialog{display:flex;flex-direction:column;box-sizing:border-box;
+ width:min(760px,calc(100vw - 32px));min-width:0;max-width:760px;max-height:calc(100dvh - 32px);
+ overflow:hidden;padding:0;border:1px solid #b4c3d5;border-radius:12px;
+ background:#fff;color:#1e293b;box-shadow:0 24px 70px rgba(3,18,38,.32)}
+.smart-filter-dialog header{flex:none;box-sizing:border-box;display:flex;align-items:center;
+ justify-content:space-between;gap:16px;margin:0;padding:18px 24px;border-bottom:1px solid #d8e1ec;
+ background:#f7fafe}
+.smart-filter-dialog header>div{display:flex;flex-direction:column;min-width:0;gap:3px}
+.smart-filter-dialog header strong{font-size:19px;line-height:1.25;color:#163552}
+.smart-filter-dialog header span{color:#526980;font-size:13px;white-space:normal;overflow-wrap:anywhere}
+.smart-filter-dialog header button{flex:none;min-width:88px;min-height:38px;border:1px solid #1d61a5;
+ border-radius:6px;background:#1d61a5;color:white;font:600 14px "Segoe UI",Arial,sans-serif;cursor:pointer}
+.smart-filter-dialog header button:hover{background:#144e88}
+.smart-filter-dialog header button:focus-visible{outline:2px solid #1d61a5;outline-offset:3px}
+.smart-filter-dialog .smart-filter-dialog-body{padding:22px 24px 26px;overflow-y:auto;min-height:0}
+@media(max-width:600px){
+ .smart-filter-backdrop{padding:8px}
+ .smart-dialog.smart-filter-dialog{width:100%;max-height:calc(100dvh - 16px)}
+ .smart-filter-dialog header{padding:14px 16px}
+ .smart-filter-dialog .smart-filter-dialog-body{padding:16px}
+}
