@@ -508,8 +508,9 @@ function PageBuilder({
   useEffect(()=>setSelectedConversationPart('parent'),[selectedId]);
   const [ribbonTab, setRibbonTab] = useState<'Home' | 'Add Block' | 'Component Content' | 'Component Properties' | 'Component Style' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Component Responsive' | 'Preview' | 'Filters' | 'Source' | 'Icons' | 'Parity'>('Home');
   useEffect(()=>{
-    if(ribbonTab==='Icons'&&selected?.type!=='Custom:smart_icon')setRibbonTab('Component Properties');
-  },[ribbonTab,selected?.type]);
+    if(ribbonTab==='Icons'&&page.components.find(component=>component.id===selectedId)?.type!=='Custom:smart_icon')
+      setRibbonTab('Component Properties');
+  },[ribbonTab,selectedId,page.components]);
   useEffect(()=>{
     const element=ribbonStripRef.current;
     if(!element)return;
