@@ -695,6 +695,9 @@ export class ObjectDefinitionService {
       throw new Error('Invalid picklist restriction');
     const field=parseFieldDefinition({
       ...proposal,apiName:fieldApi,dataType:proposal.dataType??current.dataType,label,
+      unique:proposal.unique??current.unique,
+      externalId:proposal.externalId??current.externalId,
+      caseSensitive:proposal.caseSensitive??current.caseSensitive,
       picklistValues:proposal.picklistValues??current.picklistValues,
       picklistRestricted:proposal.picklistRestricted??current.picklistRestricted,
       valueSettings:proposedController?proposedSettings:undefined,
