@@ -796,3 +796,49 @@ test('Option 2 Design sections have bounded compact widths rather than legacy wi
  assert.match(css,/align-content:flex-start!important/);
  assert.match(css,/max-width:100%!important/);
 });
+
+
+test('Approved SQL Design ribbon layout retains exact two rows, widths, heights and order',()=>{
+ const sql=read('../../server/src/system-support/migrations/20270204-two-row-design-ribbon-geometry.sql');
+ const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
+ const css=read('../src/core/builders/PageBuilder/SmartRibbonApprovedTwoRow.css');
+ for(const [key,row,width,order] of [
+  ['backgroundColor',1,40,1],['borderColor',1,40,2],['labelColor',1,40,3],
+  ['shadow',2,84,1],['radius',2,70,2],
+  ['labelAlignment',1,84,1],['defaultValueColor',2,40,1],['textSize',2,70,2],
+  ['tabCount',1,58,1],['selectedTabColor',2,40,1],['tabColor',2,40,2],
+  ['wrapText',1,28,1],['headerBorderColor',1,40,2],['headerTextColor',1,40,3],
+  ['headerAlignment',2,84,1],['headerBold',2,28,2],
+  ['imagePlacement',1,99,1],['imageBorderColor',2,40,1],['imageFill',2,70,2],
+  ['badgeAlignment',1,90,1],['badgeTextSize',1,70,2],
+  ['badgeBold',2,28,1],['badgeTextColor',2,40,2],
+  ['badgeBodyColor',2,40,3],['badgeVisible',2,40,4],
+  ['supportingBorderColor',1,40,1],['supportingTextColor',1,40,2],
+  ['supportingBold',1,28,3],['supportingAlignment',2,84,1],
+  ['tableBackgroundColor',1,40,1],['tableBorderColor',1,40,2],
+  ['tableRadius',1,70,3],['tableShadow',2,84,1],
+  ['rowBorderColor',1,40,1],['rowRadius',1,70,2],
+  ['rowLabelColor',2,40,1],['rowHeight',2,70,2],
+  ['summaryBackgroundColor',1,40,1],['summaryBorderColor',1,40,2],
+  ['summaryTextColor',1,40,3],['summaryRadius',1,70,4],
+  ['summaryHeight',1,70,5],['summaryShadow',2,84,1],
+  ['summaryWidth',2,70,2],['summaryTextSize',2,70,3],
+  ['summaryTextWeight',2,28,4],['summary2TextSize',1,70,1],
+  ['summary2TextWeight',2,28,1],['summary2TextColor',2,40,2],
+  ['iconFillColor',1,40,1]
+ ]){
+  assert.ok(sql.includes("('"+key+"',"+row+","+width+","+order+")"),
+   'Wrong row/width/order for '+key);
+ }
+ assert.match(sql,/design_height=26/);
+ assert.match(ribbon,/sectionRow\(section,row\)\.map\(controls\)/);
+ assert.match(ribbon,/const supported=property\.components\.includes\(api\)/);
+ assert.match(ribbon,/designOrder\?\?999/);
+ assert.match(ribbon,/className="smart-visible-toggle"/);
+ assert.match(css,/flex-flow:row nowrap!important/);
+ assert.match(css,/height:90px!important;min-height:90px!important;max-height:90px!important/);
+ assert.match(css,/height:26px!important;min-height:26px!important;max-height:26px!important/);
+ assert.match(css,/border:1px solid #b7c9df!important/);
+ assert.match(css,/gap:0!important/);
+ assert.doesNotMatch(css,/flex-flow:row wrap/);
+});
