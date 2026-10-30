@@ -96,5 +96,14 @@ try{
  assert.ok(gone.rows.every(row=>row.is_deleted),'Master-detail cascade must reach grandchild');
  assert.equal((await db.query('SELECT is_deleted FROM md_records WHERE tenant_id=$1 AND id=$2',[tenant,p2])).rows[0].is_deleted,false);
  assert.equal((await db.query('SELECT is_deleted FROM md_records WHERE tenant_id=$1 AND id=$2',[tenant,c2])).rows[0].is_deleted,false);
+ // A record author can have Child create rights but must not reference a parent
+ // that their record-sharing policy forbids them to read.
+ const restrictedUser=(await db.query("INSERT INTO md_users(tenant_id,email,password_hash) VALUES($1,'blocked@example.invalid','fixture') RETURNING id",[tenant])).rows[0].id;
+ const restrictedSet=(await db.query("INSERT INTO md_permission_sets(tenant_id,api_name) VALUES($1,'BlockedParent') RETURNING id",[tenant])).rows[0].id;
+ await db.query("INSERT INTO md_permission_assignments(tenant_id,user_id,permission_set_id) VALUES($1,$2,$3)",[tenant,restrictedUser,restrictedSet]);
+ await db.query("INSERT INTO md_permission_rules(tenant_id,permission_set_id,resource,action,effect) VALUES($1,$2,'*','*','allow'),($1,$2,'PhaseParent__c','read','deny')",[tenant,restrictedSet]);
+ await assert.rejects(()=>records.create(tenant,restrictedUser,'PhaseChild__c',
+  {Name:'Hidden parent attempt',ParentId:p2}),/Invalid relationship target/);
+
  console.info('Phase 2C SQL: 3-level cascade, distinct lookup edges, self-reference, reparenting, Restrict, tenant isolation, discovery passed');
 }finally{await db.close();}
