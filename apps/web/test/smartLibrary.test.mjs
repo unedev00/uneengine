@@ -1,8 +1,11 @@
 import test from 'node:test';
+import vm from 'node:vm';
+import React from 'react';
+import {renderToStaticMarkup} from 'react-dom/server';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {evaluateFieldExpression} from '../src/component-libraries/shared/FieldExpression.js';
-import {loadComponentCatalog} from '../../../scripts/component-catalog.mjs';
+import {loadComponentCatalog,buildBundledComponent} from '../../../scripts/component-catalog.mjs';
 const read=path=>readFileSync(new URL(path,import.meta.url),'utf8');
 test('Smart Formula uses Excel semantics for maths, literals, fields and &',()=>{
  const row={Price:12,Qty:3,FirstName:'Ada',LastName:'Lovelace'};
@@ -142,4 +145,108 @@ test('shared SQL ribbon moves Default Check into Data Values and shortens Header
  assert.match(sql,/tab='Design' AND section_group='Header'/);
  assert.doesNotMatch(sql,/DELETE\s+FROM\s+md_builder_shared_properties/i);
  assert.doesNotMatch(sql,/UPDATE\s+md_builder_ribbon_component_rules/i);
+});
+
+async function renderSmart(apiName, props) {
+ const descriptor=JSON.parse(read('../src/component-libraries/'+apiName+'/component.json'));
+ const built=await buildBundledComponent(descriptor);
+ const sandbox={React,module:{exports:{}},Date,Intl,URL,crypto:globalThis.crypto};
+ vm.runInNewContext(built.compiledJs,sandbox);
+ return renderToStaticMarkup(React.createElement(sandbox.module.exports.default,props));
+}
+test('edited Smart Button label renders instead of metadata component name',async()=>{
+ const html=await renderSmart('smart_button',{label:'Pay now',builderPreview:true});
+ assert.match(html,/Pay now/);
+ assert.doesNotMatch(html,/>Button<\/button>/);
+ const canvas=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const runtime=read('../src/core/pages/PageRuntime/pageRuntimeViews.tsx');
+ assert.match(canvas,/component\.type\.startsWith\('Custom:smart_'\) && typeof component\.properties\.label/);
+ assert.match(runtime,/component\.type\.startsWith\('Custom:smart_'\) && typeof resolvedProperties\.label/);
+ assert.match(runtime,/component\.type\.startsWith\('Custom:smart_'\) && typeof component\.properties\.label/);
+});
+test('Smart calendar chooses selected day, limits weekdays and exposes change controls',async()=>{
+ const html=await renderSmart('smart_calendar',{
+   defaultValue:'2026-10-21',showDays:['wed','fri'],firstDay:'wed',
+   defaultValueColor:'#123456',calendarShadowColor:'#abcdef'
+ });
+ assert.match(html,/Select 2026-10-21/);
+ assert.match(html,/Select 2026-10-23/);
+ assert.doesNotMatch(html,/Select 2026-10-22/);
+ assert.match(html,/aria-pressed="true"/);
+ assert.match(html,/#123456/i);
+ assert.match(html,/#abcdef/i);
+ const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
+ assert.match(ribbon,/className="smart-weekday-popup" role="dialog"/);
+ assert.match(ribbon,/document\.addEventListener\('pointerdown',outside\)/);
+ assert.match(ribbon,/createPortal\(<div ref=\{daysMenu\}/);
+});
+test('Smart navigation uses metadata Text Source for each record and direction',async()=>{
+ const html=await renderSmart('smart_navigation',{
+   records:[{id:'1',Name:'Alpha'},{id:'2',Name:'Beta'}],
+   textSource:'@Name',navigationDirection:'vertical'
+ });
+ assert.match(html,/>Alpha<\/button>/);
+ assert.match(html,/>Beta<\/button>/);
+ assert.match(html,/flex-direction:column/);
+});
+test('Smart Container displays children only and Card Grid uses Badge Body Color',async()=>{
+ const container=await renderSmart('smart_container',{
+   label:'Do not show',textSource:'Do not show',badgeVisible:true,badgeText:'Do not show',
+   children:React.createElement('span',null,'Nested content')
+ });
+ assert.match(container,/Nested content/);
+ assert.doesNotMatch(container,/Do not show/);
+ const grid=await renderSmart('smart_card_grid',{
+   records:[{id:'1',Name:'Desk',Badge:'New'}],textSource:'@Name',
+   badgeVisible:true,badgeText:'@Badge',badgeBodyColor:'#123456'
+ });
+ assert.match(grid,/Desk/);
+ assert.match(grid,/New/);
+ assert.match(grid,/#123456/i);
+});
+test('SQL Smart applicability is disabled without hiding global slots or erasing values',()=>{
+ const sql=read('../../server/src/system-support/migrations/20270128-smart-renderer-property-alignment.sql');
+ assert.match(sql,/UPDATE md_builder_ribbon_component_rules/);
+ assert.match(sql,/SET enabled=false/);
+ for(const name of ['smart_card_grid','smart_calendar','smart_container'])
+   assert.match(sql,new RegExp("component_api='"+name+"'"));
+ assert.doesNotMatch(sql,/DELETE\\s+FROM/i);
+ assert.doesNotMatch(sql,/UPDATE\\s+md_page_/i);
+ const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
+ assert.match(ribbon,/const visible=definitions\.filter\(p=>p\.tab===tab\)/);
+ assert.match(ribbon,/const supported=property\.components\.includes\(api\)/);
+});
+
+test('Smart Tabs, Input Box, Lookup and Toggle edit visible control styles',async()=>{
+ const tabs=await renderSmart('smart_tabs',{
+   tabs:['First','Second'],tabColor:'#123456',selectedTabColor:'#abcdef',
+   borderColor:'#112233',radius:8,tabWidth:140,tabHeight:48
+ });
+ assert.match(tabs,/#abcdef/i,'selected tab colour');
+ assert.match(tabs,/#123456/i,'inactive tab colour');
+ assert.match(tabs,/#112233/i,'tab border colour');
+ assert.match(tabs,/min-width:140px/);
+ assert.match(tabs,/height:48px/);
+ const input=await renderSmart('smart_text',{
+   label:'Description',textSource:'@Title',record:{Title:'Hello'},
+   backgroundColor:'#abc123',labelAlignment:'right',defaultValueColor:'#123abc'
+ });
+ assert.match(input,/Description/);
+ assert.match(input,/value="Hello"/);
+ assert.match(input,/background:#abc123/i);
+ assert.match(input,/text-align:right/);
+ assert.match(input,/#123abc/i);
+ const lookup=await renderSmart('smart_lookup',{
+   placeholder:'Find a record',backgroundColor:'#abcdef',borderColor:'#123456',
+   labelAlignment:'center',textSize:18
+ });
+ assert.match(lookup,/placeholder="Find a record"/);
+ assert.match(lookup,/background:#abcdef/i);
+ assert.match(lookup,/border-color:#123456/i);
+ assert.match(lookup,/text-align:center/);
+ const toggle=await renderSmart('smart_toggle',{defaultCheck:true,backgroundColor:'#224466'});
+ assert.match(toggle,/#224466/i);
+ assert.match(toggle,/role="switch"/);
+ const css=read('../src/core/builders/PageBuilder/SmartRibbon.css');
+ assert.match(css,/\.smart-formula input/);
 });

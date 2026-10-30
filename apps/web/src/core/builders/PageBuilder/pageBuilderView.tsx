@@ -2312,7 +2312,8 @@ function PageBuilder({
                     ? <RegisteredComponent definition={customDefinition} layoutTransparent props={libraryPreview ? customPreviewProps : {
                       ...component.properties,
                       ...componentLayoutProps(component.properties, device),
-                      label: component.label,
+                      label: component.type.startsWith('Custom:smart_') && typeof component.properties.label === 'string'
+                        ? component.properties.label : component.label,
                       properties: component.properties,
                       object: page.pageType === 'Record Page' ? targetObject : undefined,
                       device, previewOnly: true, builderPreview: !previewMode, pageSessionKey: (builderAppApiName || apps[0]?.apiName || 'Records') + ':' + page.apiName,

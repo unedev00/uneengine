@@ -32,7 +32,7 @@ const recordsOf=p=>Array.isArray(p.records)?p.records:Array.isArray(p.items)?p.i
 function SmartCard({p,record}){
  const rawImage=p.imageSource;
  const image=expression(rawImage??p.src??"",record);
- const header=expression(p.textSource??p.label??p.title??"",record);
+ const header=expression(p.textSource??p.title??"",record);
  const badge=expression(p.badgeText??"",record);
  const horizontal=["left","right"].includes(p.imagePlacement);
  return <article className="smart-card" style={{
@@ -48,7 +48,7 @@ function SmartCard({p,record}){
   </div>
   <div className="smart-card-content" style={{
     order:1,flex:horizontal?"1 1 50%":undefined,display:"flex",alignItems:"center",
-    height:number(p.headerBoxHeight,44),fontWeight:p.headerBold===false?400:700,
+    height:horizontal?number(p.imageHeight,220):number(p.headerBoxHeight,44),fontWeight:p.headerBold===false?400:700,
     textAlign:p.headerAlignment||"left",justifyContent:p.headerAlignment==="right"?"flex-end":p.headerAlignment==="center"?"center":"flex-start",
     border:p.headerBorderColor?"1px solid "+p.headerBorderColor:undefined,color:p.defaultValueColor||p.labelColor||undefined,
     whiteSpace:p.wrapText===false?"nowrap":"normal",
@@ -56,37 +56,45 @@ function SmartCard({p,record}){
   }}>{header}</div>
   {p.badgeVisible===true&&<span className={"smart-badge "+(p.badgeAlignment||"image-top-right")}
    style={{fontWeight:p.badgeBold===false?400:700,fontSize:number(p.badgeTextSize,12),
-   color:p.badgeTextColor||"#fff"}}>{badge}</span>}
+   color:p.badgeTextColor||"#fff",background:p.badgeBodyColor||"#2563eb"}}>{badge}</span>}
  </article>;
 }
-function SmartCalendar({p}){
- const now=new Date();
- const selected=typeof p.defaultValue==="string"&&/^\\d{4}-\\d{2}-\\d{2}$/.test(p.defaultValue)?
-  new Date(p.defaultValue+"T12:00:00Z"):now;
- const year=selected.getUTCFullYear(),month=selected.getUTCMonth();
+function SmartCalendar({p,fire}){
+ const resolveDate=value=>{
+   if(typeof value==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(value)){
+     const [year,month,day]=value.split("-").map(Number);
+     const date=new Date(year,month-1,day,12);
+     if(date.getFullYear()===year&&date.getMonth()===month-1&&date.getDate()===day)return date;
+   }
+   return new Date();
+ };
+ const [selected,setSelected]=React.useState(()=>resolveDate(p.selectedDate??p.defaultValue));
+ React.useEffect(()=>setSelected(resolveDate(p.selectedDate??p.defaultValue)),[p.selectedDate,p.defaultValue]);
+ const year=selected.getFullYear(),month=selected.getMonth();
  const dayNames=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
  const first=Math.max(0,["sun","mon","tue","wed","thu","fri","sat"].indexOf(p.firstDay||"mon"));
  const allowed=Array.isArray(p.showDays)?p.showDays:["sun","mon","tue","wed","thu","fri","sat"];
  const indices=Array.from({length:7},(_,n)=>(n+first)%7)
-  .filter(i=>allowed.includes(dayNames[i].toLowerCase().slice(0,3)));
- const monthStart=new Date(Date.UTC(year,month,1)).getUTCDay();
- const days=new Date(Date.UTC(year,month+1,0)).getUTCDate();
+   .filter(i=>allowed.includes(dayNames[i].toLowerCase().slice(0,3)));
+ const monthStart=new Date(year,month,1).getDay();
+ const days=new Date(year,month+1,0).getDate();
  const offset=(monthStart-first+7)%7;
  const weeks=Math.ceil((days+offset)/7);
- return <div className="smart-calendar">
-  {p.label&&<strong>{expression(p.label,recordOf(p))}</strong>}
-  <strong>{selected.toLocaleString("en-GB",{month:"long",year:"numeric",timeZone:"UTC"})}</strong>
-  {indices.length===0?<p>No calendar days selected</p>:<div className="smart-calendar-grid"
-   style={{gridTemplateColumns:"repeat("+indices.length+",minmax(0,1fr))"}}>
+ return <div className="smart-calendar" style={{borderRadius:number(p.radius,12),borderColor:p.borderColor||undefined,background:p.backgroundColor||undefined}}>
+  <strong>{selected.toLocaleString("en-GB",{month:"long",year:"numeric"})}</strong>
+  {indices.length===0?<p>No days selected for display</p>:<div className="smart-calendar-grid" style={{gridTemplateColumns:"repeat("+indices.length+",minmax(0,1fr))"}}>
    {indices.map(i=><b key={"day"+i}>{dayNames[i]}</b>)}
    {Array.from({length:weeks},(_,week)=>indices.map(i=>{
-    const relative=(i-first+7)%7;
-    const date=week*7+relative-offset+1;
-    return <span key={week+"-"+i} aria-label={date>=1&&date<=days?
-     dayNames[i]+" "+date:"Empty day"} className={date>=1&&date<=days?"":"smart-calendar-empty"}
-     style={{color:p.defaultValueColor||undefined}}>
-     {date>=1&&date<=days?date:""}
-    </span>;
+     const relative=(i-first+7)%7;
+     const date=week*7+relative-offset+1;
+     if(date<1||date>days)return <span className="smart-calendar-empty" key={week+"-"+i}/>;
+     const isSelected=date===selected.getDate();
+     const iso=[year,String(month+1).padStart(2,"0"),String(date).padStart(2,"0")].join("-");
+     return <button type="button" className={isSelected?"smart-calendar-selected-day":""}
+       key={week+"-"+i} aria-label={"Select "+iso} aria-pressed={isSelected}
+       style={isSelected?{color:p.defaultValueColor||"#1d4ed8",
+         borderColor:p.defaultValueColor||"#60a5fa",background:"#dbeafe",fontWeight:700}:undefined}
+       onClick={()=>{setSelected(new Date(year,month,date,12));fire("change",iso)}}>{date}</button>;
    }))}
   </div>}
  </div>;
@@ -102,7 +110,8 @@ function SmartLookup({p,style,fire}){
    aria-label={text(p.placeholder||p.label||"Search records")}
    aria-expanded={opened&&matches.length>0} aria-controls="smart-lookup-suggestions"
    placeholder={text(p.placeholder||p.label||"Search records…")}
-   style={{textAlign:p.labelAlignment||"left",fontSize:number(p.textSize,16),color:p.labelColor||undefined}}
+   style={{textAlign:p.labelAlignment||"left",fontSize:number(p.textSize,16),color:p.labelColor||undefined,
+    background:p.backgroundColor||"#fff",borderColor:p.borderColor||undefined}}
    value={query} onFocus={()=>setOpened(true)}
    onChange={event=>{setQuery(event.target.value);setOpened(true);fire("change",event.target.value)}}/>
   {opened&&query&&matches.length>0&&<div id="smart-lookup-suggestions" className="smart-lookup-menu" role="listbox" style={{textAlign:p.labelAlignment||"left",fontSize:number(p.textSize,16)}}>
@@ -124,7 +133,8 @@ function SmartTabs({p,record,fire}){
    {tabs.map((tab,index)=><button key={index} type="button" role="tab"
     aria-selected={active===index} style={{height:number(p.tabHeight,44),
      minWidth:number(p.tabWidth,120),borderRadius:number(p.radius,10),fontSize:number(p.textSize,16),textAlign:p.labelAlignment||"center",boxShadow:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none",color:p.labelColor||undefined,
-     background:active===index?p.selectedTabColor||"#eaf2ff":undefined}}
+     background:active===index?p.selectedTabColor||"#eaf2ff":p.tabColor||"#fff",
+    borderColor:p.borderColor||undefined}}
     onClick={()=>{setActive(index);fire("change",index)}}>{text(tab?.label??tab)}</button>)}
   </nav>
  </div>;
@@ -143,7 +153,7 @@ function SmartToggle({p,fire}){
 export default function SmartRuntime(p){
  const name=p.kind||"smart_text",record=recordOf(p),label=expression(p.label||"",record);
  const style={fontSize:number(p.textSize,16),color:p.labelColor||undefined,textAlign:p.labelAlignment||"left",borderRadius:number(p.radius,12)};
- const shadowStyle={boxShadow:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none",borderRadius:number(p.radius,12)};
+ const shadowStyle={boxShadow:p.calendarShadowColor?"0 4px 10px "+p.calendarShadowColor:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none",borderRadius:number(p.radius,12)};
  const fire=(event,value)=>{if(p.previewOnly||p.builderPreview)return;
   if(typeof p.onAction==="function")void Promise.resolve(p.onAction({event,value})).catch(()=>{});
  };
@@ -151,9 +161,10 @@ export default function SmartRuntime(p){
  if(name==="smart_button")content=<button type="button" className="smart-button"
    onClick={()=>fire("click",record)} style={{...style,...shadowStyle,background:p.backgroundColor||"#2267bc",color:p.labelColor||"#fff",borderColor:p.borderColor}}>{label||"Button"}</button>;
  else if(name==="smart_toggle")content=<SmartToggle p={p} fire={fire}/>;
- else if(name==="smart_text")content=<label className="smart-field" style={{...style,background:p.backgroundColor||undefined}}>
+ else if(name==="smart_text")content=<label className="smart-field" style={style}>
   {label&&<span>{label}</span>}<input type="text" placeholder={text(p.placeholder||"")} defaultValue={expression(p.textSource??p.defaultValue??p.value??"",record)}
-  style={{color:p.defaultValueColor||p.labelColor||undefined,borderColor:p.borderColor||undefined}}
+  style={{color:p.defaultValueColor||p.labelColor||undefined,borderColor:p.borderColor||undefined,
+    background:p.backgroundColor||"#fff",textAlign:p.labelAlignment||"left"}}
   onChange={e=>fire("change",e.target.value)}/></label>;
  else if(name==="smart_lookup")content=<SmartLookup p={p} fire={fire}
    style={{...style,backgroundColor:p.backgroundColor||undefined,borderColor:p.borderColor||undefined,
@@ -162,18 +173,34 @@ export default function SmartRuntime(p){
  else if(name==="smart_card_grid")content=<div className="smart-grid" style={{gridTemplateColumns:"repeat("+number(p.cardsPerRow,3,1,12)+",minmax(0,1fr))"}}>
   {recordsOf(p).slice(0,number(p.cardsPerRow,3,1,12)*number(p.cardsPerColumn,1,1,12)).map((r,i)=>
   <SmartCard p={p} record={r} key={r?.id??i}/>)}</div>;
- else if(name==="smart_calendar")content=<SmartCalendar p={p}/>;
+ else if(name==="smart_calendar")content=<SmartCalendar p={p} fire={fire}/>;
  else if(name==="smart_tabs")content=<SmartTabs p={p} record={record} fire={fire}/>;
  else if(name==="smart_navigation"){
-  const items=Array.isArray(p.items)&&p.items.length?p.items:p.textSource?[expression(p.textSource,record)]:[];
+  const items=Array.isArray(p.items)&&p.items.length?p.items:recordsOf(p);
+  const entries=items.length?items:p.textSource?[record]:[];
+  const labelOf=item=>{
+    if(item&&typeof item==="object"){
+      if(typeof item.label==="string"&&item.label)return item.label;
+      return expression(p.textSource??item.Name??item.name??item.title??item.id??"",item);
+    }
+    return text(item);
+  };
+  const fit=p.imageFill==="fit"?"contain":p.imageFill==="stretch"?"fill":"cover";
   content=<nav className="smart-navigation" style={{flexDirection:p.navigationDirection==="vertical"?"column":"row"}}>
-   {items.map((item,i)=><button key={i} type="button" onClick={()=>{fire("click",item);if(p.onNavigate&&item?.target)p.onNavigate(item.target)}}>{text(item?.label??item)}</button>)}
+    {entries.map((item,i)=>{
+      const label=labelOf(item);
+      const src=item&&typeof item==="object"?item.imageSrc??item.imageUrl:null;
+      const safeSrc=typeof src==="string"&&/^https:\/\//i.test(src)?src:null;
+      return <button key={item?.id??i} type="button" className="smart-navigation-item"
+        style={{color:p.labelColor||undefined,background:p.backgroundColor||"#fff",
+          borderColor:p.borderColor||undefined,borderRadius:number(p.radius,4),fontSize:number(p.textSize,16)}}
+        onClick={()=>{fire("click",item);if(p.onNavigate&&item?.target)p.onNavigate(item.target)}}>
+        {safeSrc&&<img src={safeSrc} alt="" style={{width:22,height:22,objectFit:fit}}/>}{label}
+      </button>;
+    })}
   </nav>;
- }else content=<div className="smart-container">
-  {p.label&&<strong>{label}</strong>}
-  {(p.imageSource||p.textSource||p.badgeText)&&<SmartCard p={p} record={record}/>}
-  {p.children||null}</div>;
- return <div className={"smart-runtime "+name} style={{...style,...(!["smart_button","smart_toggle","smart_tabs"].includes(name)?shadowStyle:{}),backgroundColor:["smart_button","smart_toggle","smart_tabs"].includes(name)?undefined:p.backgroundColor||undefined,
+ }else content=<div className="smart-container">{p.children||null}</div>;
+ return <div className={"smart-runtime "+name} style={{...style,...(!["smart_button","smart_toggle","smart_tabs"].includes(name)?shadowStyle:{}),backgroundColor:["smart_button","smart_toggle","smart_tabs","smart_text"].includes(name)?undefined:p.backgroundColor||undefined,
    ...(p.borderColor?{border:"1px solid "+p.borderColor}:{}),
    ...(p.width!==undefined&&p.width!==''?{width:number(parseFloat(p.width),undefined,0,10000)}:{}),
    ...(p.height!==undefined&&p.height!==''?{height:number(parseFloat(p.height),undefined,0,10000)}:{})}}>{content}</div>;
