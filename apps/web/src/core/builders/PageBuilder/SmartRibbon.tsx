@@ -4,7 +4,7 @@ import {AlignLeft,AlignCenter,AlignRight,Bold,WrapText,ArrowLeftRight,ArrowUpDow
 import type {ObjectMetadata} from '../../metadata/Definitions/metadata';
 import type {UneRibbonProperty,UneBuilderTab} from './uneBuilderPropertyInventory';
 import RibbonColorPalette from './RibbonColorPalette';
-import TenantMediaPicker,{uploadTenantImageFile} from '../ComponentProperties/TenantMediaPicker';
+import {uploadTenantImageFile} from '../ComponentProperties/TenantMediaPicker';
 import RecordFilterEditor from '../../../component-libraries/shared/primitives/RecordFilterEditor/RecordFilterEditor';
 import SmartFormulaField from './SmartFormulaField';
 import './SmartRibbon.css';
@@ -16,7 +16,6 @@ const weekdays=[['sun','Sun'],['mon','Mon'],['tue','Tue'],['wed','Wed'],['thu','
 const fallback=(value:unknown)=>typeof value==='string'?value:'';
 export default function SmartRibbon({tab,api,definitions,properties,onChange,objects,pageObjectApiName='',position,onPositionChange,layoutMode}:Props){
  const uploadInput=useRef<HTMLInputElement>(null);
- const [libraryOpen,setLibraryOpen]=useState(false);
  const [uploadBusy,setUploadBusy]=useState(false);
  const [uploadError,setUploadError]=useState('');
  const selectLocalImage=async(event:ChangeEvent<HTMLInputElement>)=>{
@@ -80,7 +79,8 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  const sections=[...new Set(visible.map(p=>p.group))];
  const controls=(property:UneRibbonProperty)=>{
    const supported=property.components.includes(api);
-   const kind=property.kindOverrides?.[api]??property.kind;
+   const kind=api==='smart_calendar'&&property.id==='shadow'
+     ? 'shadow' : property.kindOverrides?.[api]??property.kind;
    const key=property.valueKeys?.[api]??property.id;
    const isSize=property.id==='width'||property.id==='height';
    const useCanvasPosition=layoutMode==='free-canvas'&&Boolean(position&&onPositionChange);
@@ -97,20 +97,25 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    const title=property.label;
    let editor;
    if(property.id==='imageSource'&&supported){
-     const mode=properties.imageSourceMode==='field'?'field':'upload';
+     const mode=api==='smart_card_grid'||properties.imageSourceMode==='field'?'field':'upload';
+    // Metadata offers two Product fields with the same display label. Show API
+    // names when duplicates exist so a non-developer can choose correctly.
+    const allImageFields=(object?.fields??[]).filter(f=>
+      /url|image|photo|picture|asset/i.test(f.apiName+' '+f.label));
      editor=<div className="smart-source-inline">
-       <select aria-label="Image source type" value={mode} onChange={e=>onChange({...properties,imageSourceMode:e.target.value,imageSource:''})}>
+       {api!=='smart_card_grid'&&<select aria-label="Image source type" value={mode}
+         onChange={e=>onChange({...properties,imageSourceMode:e.target.value,imageSource:''})}>
          <option value="upload">Upload image</option><option value="field">Object field</option>
-       </select>
+       </select>}
        {mode==='upload'?<>
          <button type="button" title="Choose an image from this computer" aria-label="Choose or upload tenant image"
           disabled={uploadBusy} onClick={()=>uploadInput.current?.click()}><ImagePlus size={16}/> {uploadBusy?'Uploading…':'Choose'}</button>
-         <button type="button" title="Select an existing uploaded image" aria-label="Open media library"
-          disabled={uploadBusy} onClick={()=>setLibraryOpen(true)}>Library</button>
         </>:
         <><select aria-label="Image field" value={fallback(value).replace(/^@/,'')}
            onChange={e=>write(e.target.value?'@'+e.target.value:'')}>
-          <option value="">Choose field</option>{(object?.fields??[]).map(f=><option key={f.apiName} value={f.apiName}>{f.label}</option>)}
+          <option value="">Choose field</option>{allImageFields.map(f=><option key={f.apiName} value={f.apiName}>
+            {f.label}{allImageFields.filter(other=>other.label===f.label).length>1?' ('+f.apiName+')':''}
+          </option>)}
          </select><button type="button" title="Image filters and conditions" aria-label="Image filters and conditions"
            onClick={()=>openFilters('Image source')} disabled={!object} aria-haspopup="dialog"><SlidersHorizontal size={16}/></button></>}
      </div>;
@@ -185,12 +190,6 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    <div className="smart-ribbon-items">{visible.filter(p=>p.group===section).map(controls)}</div>
    <span className="smart-ribbon-caption">{section}</span>
   </section>)}
-  {libraryOpen&&createPortal(<div className="smart-dialog-backdrop" role="presentation">
-    <section className="smart-dialog" role="dialog" aria-modal="true" aria-label="Media library">
-     <header><strong>Media Library</strong><button type="button" onClick={()=>setLibraryOpen(false)}>Close</button></header>
-     <TenantMediaPicker value={fallback(properties.imageSource)} assetOnly initiallyOpen
-       onChange={value=>{onChange({...properties,imageSourceMode:'upload',imageSource:value});setLibraryOpen(false);}}/>
-    </section></div>,document.body)}
   {filtersOpen&&createPortal(<div className="smart-dialog-backdrop smart-filter-backdrop"
        role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)setFiltersOpen(false);}}>
     <section className="smart-dialog smart-filter-dialog" role="dialog" aria-modal="true"
