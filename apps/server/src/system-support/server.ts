@@ -475,6 +475,18 @@ export function createSystemServer(db:SqlPersistence) {
     res.setHeader('Cache-Control','no-store');
     res.json(await recoveryCases.proof(req.params.id,req.body,true));
   }));
+  // Public tenant identity discovery is restricted to a verified tenant-owned origin.
+  // Do not enumerate tenant names from the shared API host via a user-supplied slug.
+  app.get('/api/auth/tenant-display',route(async(req,res)=>{
+    res.setHeader('Cache-Control','no-store');
+    const origin=req.get('origin');
+    if(!origin){res.status(404).json({error:'Tenant identity unavailable'});return;}
+    const tenantId=await resolveTenant(db,req,req.query.tenantSlug);
+    if(!tenantId){res.status(404).json({error:'Tenant identity unavailable'});return;}
+    const {rows}=await db.query<{name:string}>('SELECT name FROM md_tenants WHERE id=$1',[tenantId]);
+    if(!rows[0]){res.status(404).json({error:'Tenant identity unavailable'});return;}
+    res.json({name:rows[0].name});
+  }));
   registerIdentityPublicRoutes(app,{federation,auth,mfa,passkeys,resolveTenant:req=>resolveTenant(db,req),
     setSession:(req,res,session)=>{
       const previous=res.getHeader('Set-Cookie');
@@ -734,18 +746,6 @@ export function createSystemServer(db:SqlPersistence) {
       await client.query("INSERT INTO md_security_events(tenant_id,actor_user_id,subject_user_id,action) VALUES($1,$2,$3,'user.unlock')",[actor.tenant_id,actor.user_id,id]);
     });
     res.status(204).end();
-  }));
-  // Public tenant identity discovery is restricted to a verified tenant-owned origin.
-  // Do not enumerate tenant names from the shared API host via a user-supplied slug.
-  app.get('/api/auth/tenant-display',route(async(req,res)=>{
-    res.setHeader('Cache-Control','no-store');
-    const origin=req.get('origin');
-    if(!origin){res.status(404).json({error:'Tenant identity unavailable'});return;}
-    const tenantId=await resolveTenant(db,req,req.query.tenantSlug);
-    if(!tenantId){res.status(404).json({error:'Tenant identity unavailable'});return;}
-    const {rows}=await db.query<{name:string}>('SELECT name FROM md_tenants WHERE id=$1',[tenantId]);
-    if(!rows[0]){res.status(404).json({error:'Tenant identity unavailable'});return;}
-    res.json({name:rows[0].name});
   }));
   app.get('/api/auth/me',route(async(req,res)=>{
     res.json(await sessionMetadata(db,req.actor!.tenant_id,req.actor!.user_id));
