@@ -1,4 +1,4 @@
-import type { FieldMetadata, ObjectMetadata } from '../../core/metadata/Definitions/metadata';
+import type { FieldMetadata, ObjectMetadata } from '../../../../core/metadata/Definitions/metadata';
 
 export type MentionKind = 'text' | 'image' | 'url' | 'number' | 'formula';
 export type MentionField = {
