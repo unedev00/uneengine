@@ -21,12 +21,12 @@ export default function SignInScreen(){
    if(!tenantSlug.trim()||!apiUrl.trim())return;
    let live=true;
    setResolvingTenant(true);
-   void resolveTenantDisplay(apiUrl,tenantSlug).then(name=>{
+   const timer=setTimeout(()=>{void resolveTenantDisplay(apiUrl,tenantSlug).then(name=>{
      if(live)setTenantDisplay(name);
    }).catch(()=>{
      if(live)setTenantIdentityError('Tenant identity could not be verified on this API domain.');
-   }).finally(()=>{if(live)setResolvingTenant(false);});
-   return()=>{live=false;};
+   }).finally(()=>{if(live)setResolvingTenant(false);});},350);
+   return()=>{live=false;clearTimeout(timer);};
  },[apiUrl,tenantSlug]);
  const [challenge,setChallenge]=useState(''),[mfa,setMfa]=useState(''),[showPassword,setShowPassword]=useState(false);
  const tenantRef=useRef<React.ElementRef<typeof TextInput>>(null),emailRef=useRef<React.ElementRef<typeof TextInput>>(null),passwordRef=useRef<React.ElementRef<typeof TextInput>>(null);
