@@ -17,12 +17,14 @@ if(dirs.includes('une'))moves.push({old:path.join(lib,'une'),next:path.join(lib,
 for(const n of dirs.filter(x=>/^One[A-Z]/.test(x)))moves.push({old:path.join(lib,n),next:path.join(lib,'shared/primitives',n.slice(3)),type:'primitive',name:n});
 const original=await walk(root),known=new Set(original);
 const mapped=p=>{for(const m of moves){if(p!==m.old&&!p.startsWith(m.old+path.sep))continue;let tail=path.relative(m.old,p);if(m.type==='ui'&&/^Une[A-Z].*\.(jsx|css)$/.test(tail))tail='Ui'+tail.slice(3);if(m.type==='primitive'&&tail.startsWith(m.name+'.'))tail=m.name.slice(3)+tail.slice(m.name.length);return path.join(m.next,tail);}return p;};
+const folderMapped=p=>{for(const m of moves)if(p===m.old||p.startsWith(m.old+path.sep))return path.join(m.next,path.relative(m.old,p));return p;};
 for(const m of moves){if(fs.existsSync(m.next))throw Error('Collision '+m.next);await mkdir(path.dirname(m.next),{recursive:true});await rename(m.old,m.next);}
 let changed=0;
 for(const old of original){
  const dest=mapped(old);
  if(dest.endsWith('/scripts/retire-one-une-component-identities.mjs'))continue;
- let before=await readFile(mapped(old),'utf8'),after=before;
+ const physical=folderMapped(old);
+ let before=await readFile(physical,'utf8'),after=before;
  after=after.replace(/(["'])(\.\.?\/[^"'\s]+)\1/g,(full,q,relative)=>{
   const target=path.resolve(path.dirname(old),relative);
   if(!known.has(target)&&!original.some(f=>f.startsWith(target+path.sep)))return full;
@@ -41,7 +43,7 @@ for(const old of original){
    after=after.replace(/\/Une([A-Z][A-Za-z0-9]*)\.(jsx|css)/g,'/Ui$1.$2');
  if(dest.includes('/component-libraries/ui_')&&dest.endsWith('.jsx'))
    after=after.replace(/\bfunction Une([A-Z][A-Za-z0-9]*)\b/g,'function Ui$1');
- if(after!==before){await writeFile(dest,after);changed++;}
+ if(after!==before){await writeFile(physical,after);changed++;}
 }
 for(const m of moves){
  if(!['ui','primitive'].includes(m.type))continue;
