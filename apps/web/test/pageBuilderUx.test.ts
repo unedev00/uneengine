@@ -116,7 +116,7 @@ test('SQL-defined page controls move to Layout and all Quick Access commands sta
   const content=source.slice(source.indexOf('className="office-ribbon-topbar"'),source.indexOf('id="page-builder-tab-content"'));
   assert.doesNotMatch(content,/aria-label="Page name"/);
   assert.match(content,/office-ribbon-quick-access/);
-  assert.match(content,/office-ribbon-quick-save/);
+  assert.match(content,/quickAccessOrder\.map\(key=>/);
   for(const key of ['save','activate','resetIcon','undo','redo','cut','copy','paste'])
     assert.match(source,new RegExp("case '"+key+"'"));
   assert.match(source,/data-shared-group=\{group\}/);
