@@ -627,6 +627,14 @@ export async function applyFieldTypeMigration(
       count++;
     }
   }
+  // Switch field metadata only after validating/snapshotting the old values, but
+  // before updating value_text: the typed projection trigger consults the live
+  // field type and would otherwise erase migrated numeric/date projections.
+  await client.query(`UPDATE md_field_definitions SET data_type=$4,max_length=$5,precision=$6,scale=$7,
+      required=$8,is_unique=$9,external_id=$10,case_sensitive=$11,default_value=$12
+    WHERE tenant_id=$1 AND object_api=$2 AND api_name=$3`,
+  [tenantId,objectApi,fieldApi,target.dataType,target.maxLength,target.precision,target.scale,
+    target.required,target.unique,target.externalId,target.caseSensitive,target.defaultValue]);
   if(target.dataType!=='formula')await client.query(`UPDATE md_record_values v SET value_text=m.after_value_text,
       value_number=m.after_value_number,value_boolean=m.after_value_boolean,
       value_date=m.after_value_date,value_datetime=m.after_value_datetime,
@@ -678,11 +686,6 @@ export async function applyFieldTypeMigration(
     await client.query(`DELETE FROM md_auto_number_counters
       WHERE tenant_id=$1 AND object_api=$2 AND field_api=$3`,[tenantId,objectApi,fieldApi]);
   }
-  await client.query(`UPDATE md_field_definitions SET data_type=$4,max_length=$5,precision=$6,scale=$7,
-      required=$8,is_unique=$9,external_id=$10,case_sensitive=$11,default_value=$12
-    WHERE tenant_id=$1 AND object_api=$2 AND api_name=$3`,
-  [tenantId,objectApi,fieldApi,target.dataType,target.maxLength,target.precision,target.scale,
-    target.required,target.unique,target.externalId,target.caseSensitive,target.defaultValue]);
   await client.query('UPDATE md_field_type_migrations SET records_migrated=$3 WHERE tenant_id=$1 AND id=$2',
     [tenantId,migrationId,count]);
   return migrationId;
