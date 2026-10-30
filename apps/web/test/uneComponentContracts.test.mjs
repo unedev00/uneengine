@@ -153,12 +153,12 @@ test('Cart-specific settings are internal defaults while shared styling remains 
 test('UNE Search and Modal expose only shared properties while retaining internal runtime defaults',async()=>{
  const shared=new Set(['surface','tone','accentColor','backgroundColor','textColor','borderColor','density','radius','padding','gap','shadow','glassBlur','objectApiName','helpText']);
  for(const [name,internal] of [['search',['placeholder','searchKey','value','label','showSubmitButton','submitLabel','showSuggestions','controlledValue']],['modal',['layoutContainer','title','openLabel','startOpen','controlledOpen','isOpen','showTrigger','showCloseButton','closeOnBackdrop','closeOnEscape','fullScreenOnMobile']]]){
-  const raw=JSON.parse(await readFile(new URL('../src/component-libraries/une_'+name+'/component.json',import.meta.url),'utf8'));
+  const raw=JSON.parse(await readFile(new URL('../src/component-libraries/ui_'+name+'/component.json',import.meta.url),'utf8'));
   assert.deepEqual(raw.propertyDefinitions,[],name+' must have no SQL/UI settings');
-  const owned=(await import('../src/component-libraries/une_'+name+'/app-properties.mjs')).propertyDefinitions;
+  const owned=(await import('../src/component-libraries/ui_'+name+'/app-properties.mjs')).propertyDefinitions;
   assert.ok(owned.every(item=>shared.has(item.propertyKey)),name+' owns only existing common defaults');
   assert.ok(owned.length>=12,name+' lost app-owned shared defaults');
-  const code=await readFile(new URL('../src/component-libraries/une_'+name+'/Une'+name[0].toUpperCase()+name.slice(1)+'.jsx',import.meta.url),'utf8');
+  const code=await readFile(new URL('../src/component-libraries/ui_'+name+'/Ui'+name[0].toUpperCase()+name.slice(1)+'.jsx',import.meta.url),'utf8');
   for(const key of internal){assert.ok(!raw.propertyDefinitions.some(item=>item.propertyKey===key),key+' remains public');assert.ok(code.includes('"'+key+'":'),key+' missing from code defaults');}
   assert.match(code,/\.\.\.uneProps\(props,/);
  }
