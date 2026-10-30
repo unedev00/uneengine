@@ -54,3 +54,14 @@ jobs:
           GITHUB_PAGES_BASE_PATH: '/'
           VITE_API_BASE_URL: /api
         run: npm run build --workspace apps/web
+      - name: Install Chromium for real UI E2E
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Verify field creation in browser through PostgreSQL
+        env:
+          METADRIVE_BROWSER_PREBUILT: '1'
+          METADRIVE_BROWSER_TARGET: field-catalogue
+        run: |
+          mkdir -p apps/server/artifacts
+          node apps/server/scripts/builder-browser-smoke.mjs
