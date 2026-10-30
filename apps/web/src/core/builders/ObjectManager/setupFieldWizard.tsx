@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import type { RelatedLookupFilterMetadata } from '../../metadata/Definitions/metadata';
 import { apiRequest } from '../../authentication/Client/authClient';
 import { Plus } from 'lucide-react';
-import SmartFieldInput from '../../../component-libraries/OneSmartFieldInput/SmartFieldInput';
+import SmartFieldInput from '../../../component-libraries/shared/primitives/SmartFieldInput/SmartFieldInput';
 type NewFieldLookupFilterDraft = {
   id: string;
   relatedFieldApiName: string;
