@@ -11,7 +11,7 @@ Page Builder, Dashboard Builder, Flow Builder, Report Builder, Object Manager an
 - Every drag-to-add task has a click/tap-to-add alternative.
 - Tablet inspectors are accessible in portrait and landscape.
 - Phone usage supports inspect, preview and simple property updates rather than forcing precision drag.
-- Preview controls clearly identify phcomponent-libraries/tablet/desktop and do not imply changes are published.
+- Preview controls clearly identify phone/tablet/desktop and do not imply changes are published.
 - Save states distinguish unsaved, saving, saved, published and failed.
 - Undo/redo has explicit enabled/disabled states; shortcuts are documented where available.
 - Property inspectors group common settings and expose relevant field help.
@@ -20,7 +20,7 @@ Page Builder, Dashboard Builder, Flow Builder, Report Builder, Object Manager an
 
 ## UX journeys for acceptance
 1. Add and configure a page component without dragging.
-2. Select, move, preview and save a component in phcomponent-libraries/tablet/desktop previews.
+2. Select, move, preview and save a component in phone/tablet/desktop previews.
 3. Edit a flow step and return to the canvas without losing selection.
 4. Build a dashboard with aligned metrics and understandable arrangement controls.
 5. Create an object and field using descriptive forms without knowing technical terms.
