@@ -54,3 +54,4 @@ export default function SmartEventActionsRibbon({api,actions,flows,onChange}:{
     </section>;
    })}
  </div>;
+}
