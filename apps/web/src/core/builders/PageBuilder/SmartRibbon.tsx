@@ -112,7 +112,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
         aria-label={title+' '+opt} aria-pressed={value===opt} onClick={()=>write(opt)}><Icon size={15}/></button>)}
    </div>;
    else if(kind==='boolean'){
-     if(property.id==='headerBold'||property.id==='badgeBold'||property.id==='wrapText'){
+     if(['headerBold','badgeBold','supportingBold','summaryTextWeight','summary2TextWeight','wrapText'].includes(property.id)){
        const Icon=property.id==='wrapText'?WrapText:Bold;
        editor=<button className="smart-icon-toggle" type="button" disabled={!enabled}
          aria-label={title} title={title} aria-pressed={value===true} onClick={()=>write(value!==true)}><Icon size={17}/></button>;
