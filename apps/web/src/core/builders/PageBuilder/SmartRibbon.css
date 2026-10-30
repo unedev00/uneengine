@@ -1,28 +1,196 @@
-/* Compact Office-style control strip. Only Smart non-Home tabs use these styles. */
-.office-builder-ribbon .office-ribbon-content:has(.smart-ribbon){height:154px;min-height:154px;max-height:154px;overflow-x:auto;overflow-y:hidden;padding:3px 5px;scrollbar-width:auto;scrollbar-color:#8fa8c6 #e8eef6}
-.smart-ribbon{height:142px;display:flex;width:max-content;min-width:100%;background:var(--panel-background,#fff);gap:0;align-items:stretch}
-.smart-ribbon-group{display:flex;flex:0 0 auto;flex-direction:column;border-right:1px solid #d9e1ec;padding:3px 7px 0;min-width:85px}
-.smart-ribbon-items{display:grid;grid-template-rows:repeat(3,34px);grid-auto-flow:column;grid-auto-columns:max-content;gap:3px 6px;flex:1}
-.smart-property{display:flex;align-items:center;gap:4px;min-width:120px;max-width:240px;height:31px;white-space:nowrap;font:11px "Segoe UI",Arial,sans-serif}
-.smart-property.disabled{opacity:.65;filter:grayscale(1);color:#68788b}.smart-property.disabled input,.smart-property.disabled select,.smart-property.disabled button{cursor:not-allowed}.smart-label{max-width:95px;overflow:hidden;text-overflow:ellipsis}
-.smart-property input[type=checkbox]{accent-color:#226cc3;width:15px;height:15px}
-.smart-ribbon-caption{margin-top:auto;text-align:center;font:11px/19px "Segoe UI",Arial,sans-serif;border-top:1px solid #e5e9f1;color:#4b5870}
-.smart-property .smart-numeric{display:flex;align-items:center;gap:3px}.smart-property input[type=number]{width:56px;height:25px;padding:2px 4px}
-.smart-property .smart-select,.smart-property select{max-width:110px;height:26px;border:1px solid #b9c6d6;border-radius:3px;background:white;font-size:11px;padding:1px 3px}
-.smart-icons{display:flex;align-items:center;gap:2px}.smart-icons button,.smart-icon-toggle,.smart-source-inline button,.smart-weekdays>button{height:26px;min-width:26px;padding:3px;border-radius:3px;border:1px solid #c7d3e0;background:white;color:#384e69;display:inline-flex;justify-content:center;align-items:center;cursor:pointer}
-.smart-icons button[aria-pressed=true],.smart-icon-toggle[aria-pressed=true]{background:#d9eafa;border-color:#72a3de;color:#12569c}
-.smart-icons button span{display:block;width:12px;height:12px;background:#f2f5f9;border:1px solid #98abc1}
-.smart-source-inline{display:flex;align-items:center;gap:3px}.smart-source-inline select{width:100px}
-.smart-weekdays{position:relative}.smart-weekday-popup{position:absolute;top:28px;left:0;z-index:100;background:white;border:1px solid #b9c6d6;box-shadow:0 5px 16px #22334433;padding:8px;border-radius:4px}
+/* Smart ribbon: scoped Office-style presentation for SQL-backed Data, Design and Layout.
+   Keep every property slot visible; applicability is handled by SmartRibbon.tsx.
+   Intentionally stronger than PageBuilderRibbonBlueprint.css's global 120px
+   #page-builder-tab-content rule and the global numeric control rule. */
+.office-builder-ribbon #page-builder-tab-content.office-ribbon-content:has(>.smart-ribbon){
+  box-sizing:border-box!important;
+  height:146px!important;min-height:146px!important;max-height:146px!important;
+  padding:4px 26px!important;
+  display:flex!important;align-items:stretch!important;flex-wrap:nowrap!important;
+  overflow-x:auto!important;overflow-y:hidden!important;
+  scrollbar-width:none!important;
+  scroll-behavior:smooth;
+}
+.office-builder-ribbon #page-builder-tab-content.office-ribbon-content:has(>.smart-ribbon)::-webkit-scrollbar{display:none!important}
+.office-builder-ribbon #page-builder-tab-content>.smart-ribbon{
+  display:flex;flex:0 0 auto;align-items:stretch;gap:0;
+  width:max-content;min-width:100%;height:136px;
+  background:var(--panel-background,#fff);color:#263b56;
+  font-family:"Segoe UI",Arial,sans-serif;
+}
+.office-builder-ribbon .smart-ribbon-group{
+  box-sizing:border-box;display:flex;flex:0 0 auto;flex-direction:column;
+  min-width:0;height:136px;padding:4px 9px 0;
+  border-right:1px solid #cfdaea;
+}
+.office-builder-ribbon .smart-ribbon-group:last-child{border-right:0}
+.office-builder-ribbon .smart-ribbon-items{
+  display:grid;flex:1 1 auto;min-height:0;
+  grid-template-rows:repeat(3,30px);
+  grid-auto-flow:column;grid-auto-columns:max-content;
+  align-content:start;column-gap:11px;row-gap:3px;
+}
+.office-builder-ribbon .smart-property{
+  box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;
+  gap:7px;min-width:0;max-width:none;width:auto;height:30px;
+  margin:0;padding:0;white-space:nowrap;
+  font:400 11px/16px "Segoe UI",Arial,sans-serif;color:#263b56;
+}
+.office-builder-ribbon .smart-label{
+  flex:1 0 auto;min-width:0;max-width:none;
+  overflow:visible;text-overflow:clip;white-space:nowrap;
+}
+.office-builder-ribbon .smart-ribbon-caption{
+  box-sizing:border-box;flex:0 0 20px;display:block;margin-top:auto;
+  border-top:1px solid #e5ebf3;text-align:center;
+  font:600 11px/19px "Segoe UI",Arial,sans-serif;color:#35557f;
+}
+.office-builder-ribbon .smart-property.disabled{
+  opacity:.52;filter:grayscale(1);
+}
+.office-builder-ribbon .smart-property.disabled :is(button,input,select){cursor:not-allowed}
+.office-builder-ribbon .smart-property :is(button,input,select):focus-visible{
+  outline:2px solid #2877d1;outline-offset:1px;
+}
+
+/* One visual system for icons: 16px glyphs in 28px controls.
+   Preserve existing Office colour glyph + swatch + chevron functionality. */
+.office-builder-ribbon #page-builder-tab-content .smart-property .office-ribbon-colour-property{
+  box-sizing:border-box;display:inline-flex;flex:0 0 44px;
+  align-items:center;justify-content:center;gap:3px;
+  width:44px!important;min-width:44px!important;max-width:44px!important;
+  height:28px!important;min-height:28px!important;max-height:28px!important;
+  margin:0;padding:2px 4px!important;border:1px solid #b7c9e0;
+  border-radius:3px;background:#fff;color:#284568;cursor:pointer;
+}
+.office-builder-ribbon .smart-property .office-ribbon-colour-property:hover:not(:disabled),
+.office-builder-ribbon .smart-property .office-ribbon-colour-property[aria-expanded=true]{
+  background:#e7f1ff;border-color:#7eabe4;
+}
+.office-builder-ribbon .smart-property .office-ribbon-command-glyph{
+  position:relative;display:inline-flex;align-items:center;justify-content:center;
+  width:19px;height:21px;flex:0 0 19px;
+}
+.office-builder-ribbon .smart-property .office-ribbon-command-glyph>svg{
+  width:16px;height:16px;flex:0 0 16px;stroke-width:1.8;
+}
+.office-builder-ribbon .smart-property .office-ribbon-colour-property>svg{
+  width:11px;height:11px;flex:0 0 11px;
+}
+.office-builder-ribbon .smart-property .office-ribbon-colour-underline{
+  position:absolute;left:2px;right:2px;bottom:0;height:3px;border-radius:1px;
+}
+.office-builder-ribbon .smart-property .office-ribbon-colour-underline.is-unset{
+  background:repeating-linear-gradient(135deg,#fff 0 2px,#9aa8bd 2px 4px);
+}
+.office-builder-ribbon .smart-icons{
+  display:inline-flex;flex:0 0 auto;align-items:center;gap:2px;
+}
+.office-builder-ribbon .smart-icons button,
+.office-builder-ribbon .smart-icon-toggle,
+.office-builder-ribbon .smart-source-inline button,
+.office-builder-ribbon .smart-weekdays>button{
+  box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;
+  flex:0 0 28px;height:28px;min-width:28px;width:28px;
+  border:1px solid #bdcce0;border-radius:3px;
+  background:#fff;color:#284568;padding:4px;cursor:pointer;
+}
+.office-builder-ribbon .smart-icons button>svg,
+.office-builder-ribbon .smart-icon-toggle>svg,
+.office-builder-ribbon .smart-source-inline button>svg{
+  width:16px;height:16px;flex:0 0 16px;stroke-width:1.8;
+}
+.office-builder-ribbon .smart-icons button[aria-pressed=true],
+.office-builder-ribbon .smart-icon-toggle[aria-pressed=true]{
+  background:#d6e9ff;border-color:#73a7e6;color:#125ba7;
+}
+.office-builder-ribbon .smart-icons button span{
+  box-sizing:border-box;display:block;width:15px;height:15px;
+  background:#f4f7fc;border:1px solid #95abc5;
+}
+.office-builder-ribbon .smart-icon-toggle{width:28px}
+.office-builder-ribbon .smart-source-inline{display:flex;align-items:center;gap:5px}
+.office-builder-ribbon .smart-source-inline button{width:auto;flex:0 0 auto;padding:3px 6px;gap:5px}
+
+/* Labels and editors occupy the same baseline; never truncate property names. */
+.office-builder-ribbon #page-builder-tab-content .smart-property :is(.smart-select,select),
+.office-builder-ribbon #page-builder-tab-content .smart-property .smart-formula-field input{
+  box-sizing:border-box;height:28px!important;min-height:28px!important;max-height:28px!important;
+  border:1px solid #b7c9e0;border-radius:3px;
+  background:#fff;color:#284061;
+  font:11px/20px "Segoe UI",Arial,sans-serif;
+}
+.office-builder-ribbon #page-builder-tab-content .smart-property .smart-select{
+  width:96px;min-width:76px;max-width:118px;
+  padding:2px 5px;text-overflow:ellipsis;
+}
+.office-builder-ribbon #page-builder-tab-content .smart-property .smart-formula-field input{
+  width:155px;min-width:120px;max-width:155px;padding:2px 6px;
+}
+.office-builder-ribbon #page-builder-tab-content .smart-property .smart-source-inline select{
+  width:110px;min-width:100px;max-width:155px;padding:2px 4px;
+}
+.office-builder-ribbon .smart-property .smart-numeric{
+  display:inline-flex;align-items:center;gap:3px;flex:0 0 auto;
+}
+.office-builder-ribbon #page-builder-tab-content .smart-property input.smart-office-number{
+  box-sizing:border-box!important;flex:0 0 60px!important;
+  width:60px!important;min-width:60px!important;max-width:60px!important;
+  height:28px!important;min-height:28px!important;max-height:28px!important;
+  padding:2px 3px!important;text-align:center;
+  border:1px solid #b7c9e0;border-radius:3px;
+  background:#fff;color:#284061;
+  font:12px/20px "Segoe UI",Arial,sans-serif!important;
+  font-variant-numeric:tabular-nums;
+  appearance:auto;-moz-appearance:auto;
+}
+.office-builder-ribbon #page-builder-tab-content .smart-property input.smart-office-number::-webkit-inner-spin-button,
+.office-builder-ribbon #page-builder-tab-content .smart-property input.smart-office-number::-webkit-outer-spin-button{
+  -webkit-appearance:auto;opacity:1;margin:0;
+}
+
+/* Compact accessible switches for Boolean properties and Default Check.
+   The browser checkbox remains a real checkbox; Default Check is a switch button. */
+.office-builder-ribbon #page-builder-tab-content .smart-property>input[type=checkbox]{
+  box-sizing:border-box!important;appearance:none;-webkit-appearance:none;
+  display:inline-flex;flex:0 0 30px!important;
+  width:30px!important;min-width:30px!important;max-width:30px!important;
+  height:18px!important;min-height:18px!important;max-height:18px!important;
+  padding:2px!important;margin:0!important;border:1px solid #a8b7c9;
+  border-radius:999px;background:#cbd4df;cursor:pointer;transition:background .12s;
+}
+.office-builder-ribbon .smart-property>input[type=checkbox]::before{
+  content:"";display:block;width:12px;height:12px;border-radius:50%;
+  background:#fff;box-shadow:0 1px 2px #15365b35;transition:transform .12s;
+}
+.office-builder-ribbon .smart-property>input[type=checkbox]:checked{
+  background:#287de1;border-color:#287de1;
+}
+.office-builder-ribbon .smart-property>input[type=checkbox]:checked::before{transform:translateX(12px)}
+.office-builder-ribbon .smart-default-check-switch{
+  box-sizing:border-box;display:inline-flex;align-items:center;
+  flex:0 0 30px;width:30px;height:18px;
+  margin:0;padding:2px;border:1px solid #a8b7c9;
+  border-radius:999px;background:#cbd4df;cursor:pointer;
+}
+.office-builder-ribbon .smart-default-check-switch[aria-checked=true]{
+  background:#287de1;border-color:#287de1;
+}
+.office-builder-ribbon .smart-default-check-thumb{
+  display:block;width:12px;height:12px;border-radius:50%;
+  background:white;box-shadow:0 1px 2px #15365b35;transition:transform .12s;
+}
+.office-builder-ribbon .smart-default-check-switch[aria-checked=true] .smart-default-check-thumb{
+  transform:translateX(12px);
+}
+.office-builder-ribbon .smart-default-check-switch:disabled{cursor:not-allowed}
+
+/* Keep dropdowns usable; avoid touching the colour-picker and media portals. */
+.smart-weekdays{position:relative}
+.smart-weekdays>button{width:auto!important;min-width:48px!important;padding:3px 6px!important}
+.smart-weekday-popup{position:absolute;top:30px;left:0;z-index:100;background:white;border:1px solid #b9c6d6;box-shadow:0 5px 16px #22334433;padding:8px;border-radius:4px}
 .smart-weekday-popup label{display:flex;gap:6px;align-items:center}
 .smart-dialog-backdrop{position:fixed;inset:0;z-index:5100;background:#0006;display:flex;align-items:center;justify-content:center}
 .smart-dialog{background:#fff;color:#243448;border:1px solid #c5d1df;border-radius:9px;box-shadow:0 15px 40px #0003;max-height:80vh;overflow:auto;min-width:380px;max-width:min(650px,95vw);padding:18px}
 .smart-dialog header{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}
-.smart-dialog header button{background:white;border:1px solid #b8c5d8;border-radius:4px;padding:5px 12px;cursor:pointer}
-
-/* Compact Office sizing without native spinner arrows. */
-.smart-property input.smart-office-number{-moz-appearance:textfield;appearance:textfield;width:58px;max-width:58px;text-align:center}
-.smart-property input.smart-office-number::-webkit-outer-spin-button,
-.smart-property input.smart-office-number::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
-.smart-ribbon-group{min-width:0}
-.smart-property{min-width:0}
+.smart-dialog header button{background:white;border:1px solid #b8c5d8;border-radius:4px;padding:5px 12px}
