@@ -6,7 +6,9 @@ ALTER TABLE md_builder_shared_properties
  ADD COLUMN IF NOT EXISTS design_row smallint,
  ADD COLUMN IF NOT EXISTS design_width smallint,
  ADD COLUMN IF NOT EXISTS design_height smallint,
- ADD COLUMN IF NOT EXISTS design_order smallint;
+ ADD COLUMN IF NOT EXISTS design_order smallint,
+ ADD COLUMN IF NOT EXISTS design_caption text,
+ ADD COLUMN IF NOT EXISTS design_caption_width smallint;
 
 WITH approved(property_key,row_no,width_px,order_no) AS (
  VALUES
@@ -30,8 +32,8 @@ WITH approved(property_key,row_no,width_px,order_no) AS (
  ('imageBorderColor',2,40,1),
  ('imageFill',2,70,2),
  ('badgeAlignment',1,90,1),
- ('badgeTextSize',1,70,2),
- ('badgeBold',2,28,1),
+ ('badgeBold',1,28,2),
+ ('badgeTextSize',2,70,1),
  ('badgeTextColor',2,40,2),
  ('badgeBodyColor',2,40,3),
  ('badgeVisible',2,40,4),
@@ -72,5 +74,21 @@ WHERE p.property_key=approved.property_key AND p.tab='Design'
       p.design_width IS DISTINCT FROM approved.width_px OR
       p.design_height IS DISTINCT FROM 26 OR
       p.design_order IS DISTINCT FROM approved.order_no);
--- Unmapped future Design controls remain visible; runtime places them
--- in a final row with safe fallback sizing, without losing editability.
+-- Unmapped future Design controls remain visible in row 2 with safe fallback sizing.
+-- Explicit caption width is zero for every property without a caption.
+
+-- Small inline captions belong to their reusable property definitions.
+-- Their widths count in ADDITION to design_width (the actual editor width).
+WITH captions(property_key,caption,caption_width) AS (
+ VALUES ('badgeAlignment','Position',60),
+        ('imagePlacement','Place',35),
+        ('imageFill','Fit',35),
+        ('tabCount','Tabs',35)
+)
+UPDATE md_builder_shared_properties AS p SET
+ design_caption=captions.caption,
+ design_caption_width=captions.caption_width
+FROM captions
+WHERE p.property_key=captions.property_key AND p.tab='Design'
+ AND (p.design_caption IS DISTINCT FROM captions.caption OR
+      p.design_caption_width IS DISTINCT FROM captions.caption_width);
