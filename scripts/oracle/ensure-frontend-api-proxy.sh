@@ -43,6 +43,47 @@ PY
   trap - ERR
   rm -f "$backup"
 fi
+# Preserve the existing API route while admitting the platform's validated 5 MiB
+# image uploads (base64 JSON can reach ~6.7 MiB). Nginx defaults to 1 MiB;
+# setting a bounded 8 MiB limit avoids an HTML 413 response to /api/media-assets.
+# Apply idempotently to an existing vhost, with rollback on invalid Nginx config.
+if ! grep -Eq 'client_max_body_size[[:space:]]+8[mM]' "$site"; then
+  backup="$(mktemp /etc/nginx/sites-available/.metadrive-frontend.XXXXXXXX)"
+  cp -p "$site" "$backup"
+  restore_upload_limit() {
+    cp -p "$backup" "$site"
+    nginx -t >/dev/null 2>&1 && systemctl reload nginx || true
+    rm -f "$backup"
+  }
+  trap restore_upload_limit ERR
+  python3 - "$site" <<'PY'
+from pathlib import Path
+import re
+import sys
+p=Path(sys.argv[1])
+s=p.read_text()
+match=re.search(r'location\s+(?:\^~\s+)?/api/\s*\{',s)
+if match is None:
+    raise SystemExit('API proxy location not found; cannot set safe upload size')
+start=match.end()
+depth=1
+end=start
+while end<len(s) and depth:
+    if s[end]=='{': depth+=1
+    elif s[end]=='}': depth-=1
+    end+=1
+if depth or 'proxy_pass' not in s[start:end-1]:
+    raise SystemExit('API proxy configuration unexpected; abort upload change')
+body=s[start:end-1]
+if not re.search(r'\bclient_max_body_size\s+',body):
+    s=s[:start]+'\n        client_max_body_size 8m;'+s[start:]
+p.write_text(s)
+PY
+  nginx -t
+  systemctl reload nginx
+  trap - ERR
+  rm -f "$backup"
+fi
 # Check routing on every run, including already-configured proxies.
 code=""
 for attempt in 1 2 3 4 5 6 7 8 9 10; do

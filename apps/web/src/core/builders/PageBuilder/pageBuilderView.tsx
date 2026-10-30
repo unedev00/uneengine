@@ -1496,8 +1496,8 @@ function PageBuilder({
     const root=cloned.components.find(item=>item.id===cloned.rootId)!;
     const position=root.position ? {
       ...root.position,
-      x:Math.max(0,Math.min(page.canvasWidth-root.position.width,root.position.x)),
-      y:Math.max(0,Math.min(page.canvasHeight-root.position.height,root.position.y))
+      x:Math.max(0,Math.min(page.canvasWidth-root.position.width,root.position.x+24)),
+      y:Math.max(0,Math.min(page.canvasHeight-root.position.height,root.position.y+24))
     }:undefined;
     const inserted=cloned.components.map(item=>item.id===root.id?{...item,position,region:selected?.region??item.region}:item);
     const originalIndex=selected?page.components.findIndex(item=>item.id===selected.id):-1;
@@ -1569,6 +1569,7 @@ function PageBuilder({
   };
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
+      if(!editorMode)return;
       const target = event.target;
       if (event.defaultPrevented || (target instanceof HTMLElement &&
         (['INPUT','TEXTAREA','SELECT'].includes(target.tagName) || target.isContentEditable))) return;
@@ -1577,8 +1578,12 @@ function PageBuilder({
       if (command && key === 'z') {
         event.preventDefault();
         if (event.shiftKey) redo(); else undo();
+      } else if (command && key === 'y') {
+        event.preventDefault(); redo();
       } else if (command && key === 'c' && selected && !previewMode) {
         event.preventDefault(); copySelected();
+      } else if (command && key === 'x' && selected && !previewMode && !isCanvasLocked(selected)) {
+        event.preventDefault(); cutSelected();
       } else if (command && key === 'v' && componentClipboard && !previewMode) {
         event.preventDefault(); pasteComponent();
       } else if (command && key === 'd' && selected && !previewMode) {
@@ -2391,9 +2396,7 @@ function PageBuilder({
             aria-label={`Resize ${component.label} ${edge}`} title="Drag edge or corner to resize"
             onPointerDown={event => startCanvasResize(event, component, edge)}
             onPointerMove={moveCanvasResize} onPointerUp={endCanvasResize} onPointerCancel={endCanvasResize}
-            onClick={event => event.stopPropagation()}>{edge==='n'||edge==='s'?<MoveVertical size={15}/>
-             :edge==='e'||edge==='w'?<MoveHorizontal size={15}/>
-             :edge==='ne'||edge==='sw'?<MoveDiagonal2 size={15}/>:<MoveDiagonal size={15}/>}</button>)}
+            onClick={event => event.stopPropagation()}/>)}
     </div>;
   };
   const renderRegion = (region: 'header' | 'main' | 'sidebar') => {

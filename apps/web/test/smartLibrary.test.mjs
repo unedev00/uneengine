@@ -168,14 +168,14 @@ test('edited Smart Button label renders instead of metadata component name',asyn
 test('Smart calendar chooses selected day, limits weekdays and exposes change controls',async()=>{
  const html=await renderSmart('smart_calendar',{
    defaultValue:'2026-10-21',showDays:['wed','fri'],firstDay:'wed',
-   defaultValueColor:'#123456',calendarShadowColor:'#abcdef'
+   defaultValueColor:'#123456',shadow:'medium'
  });
  assert.match(html,/Select 2026-10-21/);
  assert.match(html,/Select 2026-10-23/);
  assert.doesNotMatch(html,/Select 2026-10-22/);
  assert.match(html,/aria-pressed="true"/);
  assert.match(html,/#123456/i);
- assert.match(html,/#abcdef/i);
+ assert.match(html,/0 3px 9px/);
  const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
  assert.match(ribbon,/className="smart-weekday-popup" role="dialog"/);
  assert.match(ribbon,/document\.addEventListener\('pointerdown',outside\)/);
@@ -490,8 +490,8 @@ test('Independent components avoid automatic overlap and have Office-style shape
  assert.match(builder,/usedBounds\.every\(other=>/);
  assert.match(builder,/free-canvas-move-handle/);
  assert.match(builder,/onPointerMove=\{moveCanvasPointer\}/);
- assert.match(builder,/<MoveVertical size=\{15\}\/>/);
- assert.match(builder,/<MoveHorizontal size=\{15\}\/>/);
+ assert.doesNotMatch(builder,/<MoveVertical size=\{15\}\/>/);
+ assert.doesNotMatch(builder,/<MoveHorizontal size=\{15\}\/>/);
  assert.match(css,/\.free-canvas-move-handle/);
  assert.match(css,/\.free-canvas-component \.smart-runtime/);
 });
@@ -505,4 +505,92 @@ test('Smart Tabs renders only bounded matching record labels from a filtered Obj
  assert.doesNotMatch(html,/Tab 1/);
  const empty=await renderSmart('smart_tabs',{objectApiName:'Product',textSource:'@Name',records:[]});
  assert.match(empty,/No matching records/);
+});
+
+
+test('Dynamic Tabs use Object text values inside tabs even when old static tabs were saved',async()=>{
+ const records=[{Id:'a',Barcode:'DEMO10001',Name:'First'},
+  {Id:'b',Barcode:'DEMO10002',Name:'Second'},
+  {Id:'c',Barcode:'DEMO10003',Name:'Third'}];
+ const markup=await renderSmart('smart_tabs',{objectApiName:'Product',
+   textSource:'@Barcode',label:'@Name',tabs:['Tab 1','Tab 2'],records,tabCount:2,
+   height:125,width:330});
+ assert.match(markup,/DEMO10001/);
+ assert.match(markup,/DEMO10002/);
+ assert.doesNotMatch(markup,/DEMO10003|Tab 1|Tab 2/);
+ assert.doesNotMatch(markup,/smart-tabs-heading/);
+ assert.match(markup,/height:125px/);
+ assert.match(markup,/min-height:0/);
+});
+test('Smart Image and Card Grid display real record ImageUrl even when earlier records have none',async()=>{
+ const records=[{Id:'empty1',Name:'Empty'},{Id:'filled1',Name:'Image record 1',
+   ImageUrl:'https://images.pexels.com/photos/12178045/pexels-photo-12178045.jpeg?auto=compress&cs=tinysrgb&w=800'},
+  {Id:'empty2',Name:'Another empty'},{Id:'filled2',Name:'Image record 2',
+   ImageUrl:'https://images.pexels.com/photos/14686449/pexels-photo-14686449.jpeg'}];
+ const props={imageSource:'@ImageUrl',imageSourceMode:'field',objectApiName:'Product',
+   records,cardsPerRow:2,cardsPerColumn:1,width:600,height:350};
+ const image=await renderSmart('smart_image',props);
+ assert.match(image,/photos\/12178045/);
+ const grid=await renderSmart('smart_card_grid',props);
+ assert.match(grid,/photos\/12178045/);
+ assert.match(grid,/photos\/14686449/);
+ assert.doesNotMatch(grid,/aria-label="Image area"/);
+ assert.equal((grid.match(/<img /g)||[]).length,2);
+});
+test('Calendar selected value colour fills date and Shadow uses shared three presets',async()=>{
+ const markup=await renderSmart('smart_calendar',{
+   defaultValue:'2026-10-30',defaultValueColor:'#ff0000',shadow:'medium',
+   width:440,height:480});
+ assert.match(markup,/background:#ff0000/);
+ assert.match(markup,/color:#fff/);
+ assert.match(markup,/0 3px 9px/);
+ const ui=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
+ const migration=read('../../server/src/system-support/migrations/20270131-smart-calendar-shadow-control.sql');
+ assert.match(ui,/api==='smart_calendar'&&property.id==='shadow'/);
+ assert.match(migration,/value_key=NULL/);
+});
+test('Page Builder supports Ctrl X C V Z Y and shows resize cursor handles only when hovered',()=>{
+ const builder=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const css=read('../src/core/builders/PageBuilder/SmartCanvasHandles.css');
+ assert.match(builder,/command && key === 'x'/);
+ assert.match(builder,/command && key === 'c'/);
+ assert.match(builder,/command && key === 'v'/);
+ assert.match(builder,/command && key === 'y'/);
+ assert.match(builder,/command && key === 'z'/);
+ assert.match(builder,/if\(!editorMode\)return/);
+ assert.match(builder,/cutSelected\(\)/);
+ assert.match(builder,/root.position.x\+24/);
+ assert.doesNotMatch(builder,/<MoveVertical size=\{15\}/);
+ assert.match(css,/\.free-canvas-resize-handle:is\(:hover,:focus-visible,:active\)/);
+ assert.match(css,/\.free-canvas-move-handle:is\(:hover,:focus-visible,:active\)/);
+ assert.match(css,/opacity:0/);
+ assert.match(builder,/selected \? \(selected.label\|\|selected.type\)/);
+});
+test('Card Grid uses only Object image fields; Image upload opens native chooser without Library',()=>{
+ const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
+ assert.match(ribbon,/api==='smart_card_grid'\|\|properties.imageSourceMode==='field'/);
+ assert.match(ribbon,/api!=='smart_card_grid'/);
+ assert.match(ribbon,/allImageFields.filter\(other=>other.label===f.label\)/);
+ assert.match(ribbon,/uploadInput.current\?\.click\(\)/);
+ assert.doesNotMatch(ribbon,/>Library<\/button>/);
+ assert.doesNotMatch(ribbon,/setLibraryOpen/);
+ const proxy=read('../../../scripts/oracle/ensure-frontend-api-proxy.sh');
+ assert.match(proxy,/client_max_body_size 8m/);
+});
+test('Shared Smart runtime leaves no decorative surrounding selection container',async()=>{
+ const names=['smart_button','smart_text','smart_lookup','smart_tabs',
+  'smart_toggle','smart_image','smart_card_grid','smart_calendar',
+  'smart_navigation','smart_cart','smart_container'];
+ const props={width:260,height:120,label:'Example',tabs:['A','B']};
+ for(const name of names){
+  const html=await renderSmart(name,props);
+  assert.match(html,/class="smart-runtime smart_/);
+  assert.match(html,/width:260px/);
+  assert.match(html,/height:120px/);
+  assert.match(html,/background:transparent/);
+  assert.match(html,/box-shadow:none/);
+ }
+ const css=read('../src/component-libraries/smart/shared/smart.css');
+ assert.match(css,/smart-runtime > :first-child/);
+ assert.match(css,/smart-calendar-grid/);
 });

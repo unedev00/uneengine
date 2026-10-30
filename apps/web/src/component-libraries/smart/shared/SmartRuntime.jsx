@@ -23,7 +23,7 @@ function SmartPicture({src,alt,loadAsset,style}){
    }).catch(()=>{});
    return()=>{live=false};
  },[src,loadAsset]);
- const safeSrc=typeof src==="string"&&/^https:\/\//i.test(src)?src:data;
+ const safeSrc=typeof src==="string"&&/^https:\/\//i.test(src.trim())?src.trim():data;
  return safeSrc?<img src={safeSrc} alt={alt} style={style}/>:<span role="img" aria-label="Image area" className="smart-image-empty" style={style}>Image area</span>;
 }
 const recordOf=p=>p.objectApiName&&Array.isArray(p.records)
@@ -50,6 +50,7 @@ function SmartCard({p,record}){
   display:"flex",flexDirection:horizontal?"row":"column",
   background:p.backgroundColor||"#fff",border:p.borderColor?"1px solid "+p.borderColor:"1px solid #e2e8f0",
   borderRadius:number(p.radius,12),overflow:"hidden",position:"relative",minWidth:0,
+  boxShadow:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none",
   ...(single?{height:"100%",minHeight:0}:{}),
   ...(p.kind==="smart_card_grid"?{height:"100%"}:{})
  }}>
@@ -95,7 +96,9 @@ function SmartCalendar({p,fire}){
  const days=new Date(year,month+1,0).getDate();
  const offset=(monthStart-first+7)%7;
  const weeks=Math.ceil((days+offset)/7);
- return <div className="smart-calendar" style={{borderRadius:number(p.radius,12),borderColor:p.borderColor||undefined,background:p.backgroundColor||undefined}}>
+ return <div className="smart-calendar" style={{borderRadius:number(p.radius,12),
+  borderColor:p.borderColor||undefined,background:p.backgroundColor||undefined,
+  boxShadow:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none"}}>
   <strong>{selected.toLocaleString("en-GB",{month:"long",year:"numeric"})}</strong>
   {indices.length===0?<p>No days selected for display</p>:<div className="smart-calendar-grid" style={{gridTemplateColumns:"repeat("+indices.length+",minmax(0,1fr))"}}>
    {indices.map(i=><b key={"day"+i}>{dayNames[i]}</b>)}
@@ -107,8 +110,8 @@ function SmartCalendar({p,fire}){
      const iso=[year,String(month+1).padStart(2,"0"),String(date).padStart(2,"0")].join("-");
      return <button type="button" className={isSelected?"smart-calendar-selected-day":""}
        key={week+"-"+i} aria-label={"Select "+iso} aria-pressed={isSelected}
-       style={isSelected?{color:p.defaultValueColor||"#1d4ed8",
-         borderColor:p.defaultValueColor||"#60a5fa",background:"#dbeafe",fontWeight:700}:undefined}
+       style={isSelected?{color:"#fff",
+         borderColor:p.defaultValueColor||"#60a5fa",background:p.defaultValueColor||"#2563eb",fontWeight:700}:undefined}
        onClick={()=>{setSelected(new Date(year,month,date,12));fire("change",iso)}}>{date}</button>;
    }))}
   </div>}
@@ -126,6 +129,7 @@ function SmartLookup({p,style,fire}){
    aria-expanded={opened&&matches.length>0} aria-controls="smart-lookup-suggestions"
    placeholder={text(p.placeholder||p.label||"Search records…")}
    style={{textAlign:p.labelAlignment||"left",fontSize:number(p.textSize,16),color:p.labelColor||undefined,
+    boxShadow:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none",
     background:p.backgroundColor||"#fff",borderColor:p.borderColor||undefined}}
    value={query} onFocus={()=>setOpened(true)}
    onChange={event=>{setQuery(event.target.value);setOpened(true);fire("change",event.target.value)}}/>
@@ -143,17 +147,17 @@ function SmartTabs({p,record,fire}){
  const count=number(p.tabCount,3,1,20);
  // When bound to an Object, the shared Page Runtime supplies only filtered,
  // permission-checked records. Never generate unlimited tabs from raw records.
- const dynamic=Boolean(p.objectApiName&&p.textSource&&!Array.isArray(p.tabs));
+ const dynamic=Boolean(p.objectApiName&&p.textSource);
  const tabs=dynamic?recordsOf(p).slice(0,count).map(row=>({
-   label:expression(p.textSource,row),id:row?.id
- })):Array.isArray(p.tabs)?p.tabs:Array.from({length:count},(_,i)=>"Tab "+(i+1));
+   label:expression(p.textSource,row),id:row?.Id??row?.id
+ })):Array.isArray(p.tabs)?p.tabs:Array.from({length:count},(_,i)=>i===0&&typeof p.label==="string"&&p.label&&!p.label.startsWith("@")?p.label:"Tab "+(i+1));
  React.useEffect(()=>{if(active>=tabs.length)setActive(0)},[active,tabs.length]);
- const heading=expression(dynamic?p.label??"":p.textSource??p.label??"",record);
- return <div className="smart-tabs-shell" style={{background:p.backgroundColor||undefined}}>
-  {heading&&<strong className="smart-tabs-heading">{heading}</strong>}
-  <nav className="smart-tabs" aria-label={heading||"Tabs"}>
+ return <div className="smart-tabs-shell" style={{background:p.backgroundColor||undefined,
+   display:"flex",flexDirection:"column",height:"100%",minHeight:0,width:"100%"}}>
+  <nav className="smart-tabs" aria-label="Tabs" style={{
+    width:"100%",height:"100%",flex:"1 1 auto",minHeight:0,alignContent:"stretch"}}>
    {tabs.map((tab,index)=><button key={tab?.id??index} type="button" role="tab"
-    aria-selected={active===index} style={{height:number(p.tabHeight,44),
+    aria-selected={active===index} style={{minHeight:number(p.tabHeight,44),flex:"1 1 auto",
      minWidth:number(p.tabWidth,120),borderRadius:number(p.radius,10),fontSize:number(p.textSize,16),textAlign:p.labelAlignment||"center",boxShadow:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none",color:p.labelColor||undefined,
      background:active===index?p.selectedTabColor||"#eaf2ff":p.tabColor||"#fff",
     borderColor:p.borderColor||undefined}}
@@ -188,19 +192,24 @@ export default function SmartRuntime(p){
   aria-label={label||text(p.placeholder||"Input")}
   placeholder={label||text(p.placeholder||"")}
   defaultValue={expression(p.textSource??p.defaultValue??p.value??"",record)}
-  style={{...style,fontSize:number(p.textSize,16),color:p.defaultValueColor||p.labelColor||undefined,
+  style={{...style,...shadowStyle,width:"100%",height:"100%",minWidth:0,minHeight:0,
+    fontSize:number(p.textSize,16),color:p.defaultValueColor||p.labelColor||undefined,
     borderColor:p.borderColor||undefined,background:p.backgroundColor||"#fff",
     textAlign:p.labelAlignment||"left","--smart-placeholder-color":p.labelColor||"#64748b"}}
   onChange={e=>fire("change",e.target.value)}/>;
  else if(name==="smart_lookup")content=<SmartLookup p={p} fire={fire}
    style={{...style,backgroundColor:p.backgroundColor||undefined,borderColor:p.borderColor||undefined,
-    color:p.labelColor||undefined,fontSize:number(p.textSize,16)}}/>;
- else if(name==="smart_image")content=<SmartCard p={p} record={record}/>;
+    width:"100%",height:"100%",minHeight:0,color:p.labelColor||undefined,fontSize:number(p.textSize,16)}}/>;
+ else if(name==="smart_image")content=<SmartCard p={p} record={
+   (p.imageSourceMode==="field"||typeof p.imageSource==="string"&&p.imageSource.startsWith("@"))&&Array.isArray(p.records)
+   ?(p.records.find(r=>boundImage(p,r))??record):record
+ }/>;
  else if(name==="smart_card_grid")content=<div className="smart-grid" style={{
-  gridTemplateColumns:"repeat("+number(p.cardsPerRow,3,1,12)+",minmax(0,1fr))",
+  width:"100%",height:"100%",minHeight:0,gridTemplateColumns:"repeat("+number(p.cardsPerRow,3,1,12)+",minmax(0,1fr))",
   gridTemplateRows:"repeat("+number(p.cardsPerColumn,1,1,12)+",minmax(0,1fr))"}}>
-  {recordsOf(p).slice(0,number(p.cardsPerRow,3,1,12)*number(p.cardsPerColumn,1,1,12)).map((r,i)=>
-  <SmartCard p={p} record={r} key={r?.id??i}/>)}</div>;
+  {recordsOf(p).filter(r=>!p.imageSource||Boolean(boundImage(p,r)))
+   .slice(0,number(p.cardsPerRow,3,1,12)*number(p.cardsPerColumn,1,1,12)).map((r,i)=>
+  <SmartCard p={p} record={r} key={r?.Id??r?.id??i}/>)}</div>;
  else if(name==="smart_cart")content=<SmartCart p={p} records={recordsOf(p)} Picture={SmartPicture} expression={expression}/>;
  else if(name==="smart_calendar")content=<SmartCalendar p={p} fire={fire}/>;
  else if(name==="smart_tabs")content=<SmartTabs p={p} record={record} fire={fire}/>;
@@ -215,22 +224,31 @@ export default function SmartRuntime(p){
     return text(item);
   };
   const fit=p.imageFill==="fit"?"contain":p.imageFill==="stretch"?"fill":"cover";
-  content=<nav className="smart-navigation" style={{flexDirection:p.navigationDirection==="vertical"?"column":"row"}}>
+  content=<nav className="smart-navigation" style={{width:"100%",height:"100%",
+   minHeight:0,alignItems:"stretch",flexDirection:p.navigationDirection==="vertical"?"column":"row"}}>
     {entries.map((item,i)=>{
       const label=labelOf(item);
       const src=item&&typeof item==="object"?item.imageSrc??item.imageUrl:null;
       const safeSrc=typeof src==="string"&&/^https:\/\//i.test(src)?src:null;
       return <button key={item?.id??i} type="button" className="smart-navigation-item"
-        style={{color:p.labelColor||undefined,background:p.backgroundColor||"#fff",
+        style={{flex:"1 1 auto",minHeight:0,color:p.labelColor||undefined,background:p.backgroundColor||"#fff",
+          boxShadow:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none",
           borderColor:p.borderColor||undefined,borderRadius:number(p.radius,4),fontSize:number(p.textSize,16)}}
         onClick={()=>{fire("click",item);if(p.onNavigate&&item?.target)p.onNavigate(item.target)}}>
         {safeSrc&&<img src={safeSrc} alt="" style={{width:22,height:22,objectFit:fit}}/>}{label}
       </button>;
     })}
   </nav>;
- }else content=<div className="smart-container">{p.children||null}</div>;
- return <div className={"smart-runtime "+name} style={{...style,...(!["smart_button","smart_toggle","smart_tabs","smart_cart"].includes(name)?shadowStyle:{}),backgroundColor:["smart_button","smart_toggle","smart_tabs","smart_text","smart_cart"].includes(name)?undefined:p.backgroundColor||undefined,
-   ...(p.borderColor&&name!=="smart_cart"?{border:"1px solid "+p.borderColor}:{}),
-   ...(p.width!==undefined&&p.width!==''?{width:number(parseFloat(p.width),undefined,0,10000)}:{}),
-   ...(p.height!==undefined&&p.height!==''?{height:number(parseFloat(p.height),undefined,0,10000)}:{})}}>{content}</div>;
+ }else content=<div className="smart-container" style={{
+    background:p.backgroundColor||"transparent",
+    border:p.borderColor?"1px solid "+p.borderColor:0,
+    borderRadius:number(p.radius,12),...shadowStyle
+ }}>{p.children||null}</div>;
+ // Geometry-only technical host; the native Smart surface owns all visible styling.
+ return <div className={"smart-runtime "+name} style={{
+   display:"flex",flexDirection:"column",boxSizing:"border-box",border:0,
+   background:"transparent",boxShadow:"none",padding:0,margin:0,
+   minWidth:0,minHeight:0,width:p.width!==undefined&&p.width!==''?number(parseFloat(p.width),undefined,0,10000):"100%",
+   height:p.height!==undefined&&p.height!==''?number(parseFloat(p.height),undefined,0,10000):"100%"
+ }}>{content}</div>;
 }
