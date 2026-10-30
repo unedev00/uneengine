@@ -371,7 +371,8 @@ test('Smart Cart renders configured ribbon styles in the actual component output
   summaryTextSize:22,summaryTextColor:'#234567',
   summary2TextSize:27,summary2TextWeight:false,summary2TextColor:'#123321',
   summaryWidth:222,summaryHeight:150,
-  textSource:'@Name',records:[{id:'row-1',Name:'Bound sample product'}]
+  textSource:'@Name',imageSource:'@ImageUrl',records:[{id:'row-1',Name:'Bound sample product',
+     ImageUrl:'https://example.com/product-image.png'}]
  });
  for(const fragment of ['Bound sample product','#123abc','#aa2211','#ddeecc',
   '#119944','#118899','#ff00bb','#234567','#123321',
