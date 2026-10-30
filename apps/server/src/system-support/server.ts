@@ -1488,9 +1488,11 @@ export function createSystemServer(db:SqlPersistence) {
         control_kind_override:string|null;value_key:string|null;
         default_value_override:unknown;choices_override:unknown;min_value:number|null;
         max_value:number|null;field_select:boolean;
+        design_row:number|null;design_width:number|null;design_height:number|null;
       }>(`SELECT p.property_key AS id,p.label,p.tab,p.section_group AS group_name,
           p.control_kind AS kind,p.sort_order,p.default_value,p.choices,
           p.min_value,p.max_value,p.field_select,
+          p.design_row,p.design_width,p.design_height,
           r.component_api,r.control_kind_override,r.value_key,
           r.default_value_override,r.choices_override
         FROM md_builder_shared_properties p
@@ -1508,7 +1510,9 @@ export function createSystemServer(db:SqlPersistence) {
           id:row.id,label:row.label,tab:row.tab,group:row.group_name,kind:row.kind,
           components:[] as string[],default:row.default_value??undefined,
           choices:row.choices??[],min:row.min_value??undefined,max:row.max_value??undefined,
-          field:row.field_select,kindOverrides:{},defaultsOverrides:{},choicesOverrides:{},valueKeys:{}
+          field:row.field_select,designRow:row.design_row??undefined,
+          designWidth:row.design_width??undefined,designHeight:row.design_height??undefined,
+          kindOverrides:{},defaultsOverrides:{},choicesOverrides:{},valueKeys:{}
         };
         properties.set(row.id,item);
       }
