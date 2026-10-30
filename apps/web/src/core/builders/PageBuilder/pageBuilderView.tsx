@@ -151,6 +151,7 @@ import PageBuilderRibbonMetadataPager from './PageBuilderRibbonMetadataPager';
 import UniversalRibbonInventory from './UniversalRibbonInventory';
 import UneBuilderRibbon from './UneBuilderRibbon';
 import SmartRibbon from './SmartRibbon';
+import SmartEventActionsRibbon from './SmartEventActionsRibbon';
 import SmartInsertRibbon from './SmartInsertRibbon';
 import SmartIconGallery from './SmartIconGallery';
 import {isUneBuilderApi,uneBuilderDefaults,type SharedRibbonCatalog,type UneBuilderApi} from './uneBuilderPropertyInventory';
@@ -2489,6 +2490,10 @@ function PageBuilder({
         disabled={!selected} onClick={copySelected}><Copy size={17}/></button>;
       case 'paste':return <button className="office-ribbon-icon-button" aria-label="Paste" title="Paste"
         disabled={!componentClipboard} onClick={pasteComponent}><ClipboardPaste size={17}/></button>;
+      case 'delete':return <button type="button" className="office-ribbon-icon-button"
+        aria-label="Delete selected component" title="Delete selected component"
+        disabled={!selected||previewMode||isCanvasLocked(selected)}
+        onClick={removeSelected}><Trash2 size={17}/></button>;
       case 'undo':return <button className="office-ribbon-icon-button" aria-label="Undo" title="Undo"
         disabled={!undoStack.length} onClick={undo}><Undo2 size={17}/></button>;
       case 'redo':return <button className="office-ribbon-icon-button" aria-label="Redo" title="Redo"
@@ -2501,7 +2506,7 @@ function PageBuilder({
       default:return null;
     }
   };
-  const quickAccessOrder=['save','activate','resetIcon','undo','redo','cut','copy','paste'] as const;
+  const quickAccessOrder=['save','activate','resetIcon','undo','redo','cut','copy','paste','delete'] as const;
   const journeyTabs: Array<typeof ribbonTab> = selectedNewUne
     ? ['Add Block',...(selected?.type==='Custom:smart_icon'?(['Icons'] as const):[]),
        'Component Data','Component Properties','Component Layout','Component Action','Preview']
@@ -2800,6 +2805,15 @@ function PageBuilder({
           {selected?.type==='Custom:smart_icon' && ribbonTab==='Icons' &&
             <SmartIconGallery value={String(selected.properties.iconId??'house')}
               onChange={iconId=>updateComponent(selected.id,{properties:{...selected.properties,iconId}})}/>}
+          {selectedNewUne && selected && ribbonTab==='Component Action' &&
+            <SmartEventActionsRibbon api={selected.type.slice(7)}
+              actions={selected.properties.actionFlows&&typeof selected.properties.actionFlows==='object'
+                &&!Array.isArray(selected.properties.actionFlows)
+                ? selected.properties.actionFlows as Record<string,unknown>:{}}
+              flows={flows}
+              onChange={actionFlows=>updateComponent(selected.id,{
+                properties:{...selected.properties,actionFlows}
+              })}/>}
           {selectedNewUne && selected && ribbonCatalog &&
             (ribbonTab==='Component Data'||ribbonTab==='Component Properties'||ribbonTab==='Component Layout') &&
             <SmartRibbon
@@ -2830,7 +2844,20 @@ function PageBuilder({
       <div className={`page-builder-layout canvas-unified-builder reference-builder-layout ${page.layoutMode === 'free-canvas' ? 'modern-canvas-builder' : ''} ${activePanel === null ? 'unified-panel-collapsed' : ''}`}
         style={{ '--component-panel-width': `${componentPanelWidth}px` } as React.CSSProperties}>
         <div className="page-preview-area" ref={pagePreviewAreaRef}>
-          <div className="page-stage" key={canvasRefreshKey} onClick={(event) => {
+          <div className="page-stage" key={canvasRefreshKey}
+            onPointerDownCapture={() => {
+              if (previewMode) return;
+              // Canvas drag/select calls preventDefault, which otherwise leaves the
+              // previous ribbon input focused with a visible editing caret.
+              // Blur only ribbon editors, never controls inside the canvas.
+              const active = document.activeElement;
+              if (active instanceof HTMLElement &&
+                  active.closest('.office-builder-ribbon') &&
+                  active.matches('input,textarea,select,[contenteditable="true"]')) {
+                active.blur();
+              }
+            }}
+            onClick={(event) => {
             if ((event.target as HTMLElement).closest('.record-component,.canvas-drop-zone,button,input,select,textarea')) return;
             setSelectedId(''); setSelectionIds([]); setSelectedRegion(null); setRibbonTab('Add Block'); setPageSettingsOpen(false); setActivePanel(null);
           }} onDragOver={(event) => event.preventDefault()} onDrop={(event) => handleDrop(event)}>

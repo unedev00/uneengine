@@ -354,12 +354,66 @@ test('Smart Cart ribbon is SQL-driven and visual preview defers cart data and ac
  const renderer=read('../src/component-libraries/smart_cart/SmartCart.jsx');
  for(const k of ['headerTextColor','supportingBorderColor','tableBackgroundColor','rowLabelColor',
  'rowHeight','summaryTextSize','summary2TextWeight','summaryWidth'])assert.ok(renderer.includes('p.'+k),k);
- assert.doesNotMatch(renderer,/onClick=|fetch\(|createRecord|checkoutAction/);
+ assert.doesNotMatch(renderer,/fetch\(|createRecord|checkoutAction/);
+ assert.match(renderer,/smart-cart-qty-controls/);
+ assert.match(renderer,/fire\?\.\("qtyIcon"/);
  assert.match(read('../src/component-libraries/smart/shared/SmartRuntime.jsx'),/name==="smart_cart"/);
  assert.match(read('../src/core/builders/PageBuilder/SmartRibbon.tsx'),/summary2TextWeight/);
  const catalog=await loadComponentCatalog();
  const bundled=await buildBundledComponent(catalog.components.find(c=>c.apiName==='smart_cart'));
  assert.ok(bundled.compiledJs.length>0);
+});
+
+test('Quick Access Delete uses existing guarded draft-component removal',()=>{
+ const builder=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ assert.match(builder,/case 'delete':return <button/);
+ assert.match(builder,/aria-label="Delete selected component"/);
+ assert.match(builder,/disabled=\{!selected\|\|previewMode\|\|isCanvasLocked\(selected\)\}/);
+ assert.match(builder,/onClick=\{removeSelected\}/);
+ assert.match(builder,/quickAccessOrder=\['save','activate','resetIcon','undo','redo','cut','copy','paste','delete'\]/);
+ assert.match(builder,/confirmDestructiveAction\('Delete', 'Page component/);
+});
+test('Clicking canvas releases any focused ribbon formula editor and closes field suggestions',()=>{
+ const builder=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const formula=read('../src/core/builders/PageBuilder/SmartFormulaField.tsx');
+ assert.match(builder,/className="page-stage" key=\{canvasRefreshKey\}\s*onPointerDownCapture=/);
+ assert.match(builder,/active\.closest\('\.office-builder-ribbon'\)/);
+ assert.match(builder,/active\.matches\('input,textarea,select,\[contenteditable="true"\]'\)/);
+ assert.match(builder,/active\.blur\(\)/);
+ assert.match(formula,/onBlur=\{\(\)=>setMatches\(null\)\}/);
+});
+test('Smart Event ribbon matches On Click and Qty Icon component support',()=>{
+ const ribbon=read('../src/core/builders/PageBuilder/SmartEventActionsRibbon.tsx');
+ const view=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const runtime=read('../src/component-libraries/smart/shared/SmartRuntime.jsx');
+ assert.match(ribbon,/clickComponents=new Set/);
+ assert.match(ribbon,/key:'qtyIcon',label:'Qty Icon',group:'Component Custom',enabled:api==='smart_cart'/);
+ assert.match(ribbon,/Autolaunched Flow/);
+ assert.match(ribbon,/Screen Flow/);
+ assert.match(view,/ribbonTab==='Component Action' &&\s*<SmartEventActionsRibbon/);
+ assert.match(runtime,/fire=\{fire\}/);
+ for(const name of ['smart_button','smart_toggle','smart_calendar','smart_cart']){
+  const descriptor=JSON.parse(read('../src/component-libraries/'+name+'/component.json'));
+  assert.ok(descriptor.eventDefinitions.some(e=>e.apiName==='click'),name);
+ }
+ const cart=JSON.parse(read('../src/component-libraries/smart_cart/component.json'));
+ assert.ok(cart.eventDefinitions.some(e=>e.apiName==='qtyIcon'));
+ for(const name of ['smart_lookup','smart_tabs','smart_text','smart_card_grid',
+  'smart_image','smart_navigation','smart_container','smart_icon']){
+  const descriptor=JSON.parse(read('../src/component-libraries/'+name+'/component.json'));
+  assert.ok(!descriptor.eventDefinitions.some(e=>e.apiName==='click'),name);
+ }
+});
+test('Smart Cart renders Flow-backed plus and minus controls',async()=>{
+ const preview=await renderSmart('smart_cart',{});
+ assert.match(preview,/Decrease quantity for Sample item 1/);
+ assert.match(preview,/Increase quantity for Sample item 1/);
+ assert.match(preview,/disabled=""/);
+ const bound=await renderSmart('smart_cart',{records:[{id:'line-123',Name:'Pepsi',Quantity:2}],
+  textSource:'@Name',actionFlows:{qtyIcon:{actionType:'Flow',flowApiName:'AdjustQuantity'}}});
+ assert.match(bound,/Decrease quantity for Pepsi/);
+ assert.match(bound,/Increase quantity for Pepsi/);
+ assert.match(bound,/Quantity 2/);
 });
 
 test('Smart Cart renders configured ribbon styles in the actual component output',async()=>{

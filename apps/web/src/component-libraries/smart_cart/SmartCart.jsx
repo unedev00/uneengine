@@ -3,8 +3,11 @@ const n=(v,f,min=0,max=2000)=>v!==null&&v!==undefined&&v!==""&&Number.isFinite(N
 const shadow=v=>v==="large"?"0 8px 20px #0003":v==="medium"?"0 3px 9px #0003":"none";
 const border=v=>v?"1px solid "+v:"1px solid transparent";
 const align=v=>["left","center","right"].includes(v)?v:"left";
-export default function SmartCart({p,records,Picture,expression}){
+export default function SmartCart({p,records,Picture,expression,fire}){
  const demo=!records.length;
+ const actions=p.actionFlows&&typeof p.actionFlows==="object"&&!Array.isArray(p.actionFlows)?p.actionFlows:{};
+ const canClick=Boolean(actions.click)&&!p.previewOnly&&!p.builderPreview;
+ const canChangeQty=Boolean(actions.qtyIcon)&&!p.previewOnly&&!p.builderPreview;
  const rows=demo?Array.from({length:3},(_,i)=>({id:"preview-"+i,__preview:true})):records.slice(0,20);
  return <section className="smart-cart-root" aria-label="Smart Cart" style={{
    backgroundColor:p.backgroundColor||"#fff",border:border(p.borderColor),
@@ -29,6 +32,10 @@ export default function SmartCart({p,records,Picture,expression}){
     {rows.map((record,i)=>{
       const name=demo?"Sample item "+(i+1):(p.textSource?expression(p.textSource,record):"Product "+(i+1));
       const src=p.imageSource?expression(p.imageSource,record):"";
+      const itemId=record?.Id??record?.id??null;
+      const payload={record,recordId:itemId};
+      const rawQty=record?.Quantity??record?.quantity??record?.Qty??record?.qty;
+      const qty=rawQty!==undefined&&rawQty!==null&&rawQty!==""&&Number.isFinite(Number(rawQty))&&Number(rawQty)>=0?String(rawQty):"—";
       return <div key={record?.id??i} className="smart-cart-row" style={{
        minHeight:n(p.rowHeight,64,24),border:border(p.rowBorderColor),
        borderRadius:n(p.rowRadius,4),color:p.rowLabelColor||"#263b56"}}>
@@ -38,10 +45,24 @@ export default function SmartCart({p,records,Picture,expression}){
            border:border(p.imageBorderColor),borderRadius:4,
            objectFit:p.imageFill==="fit"?"contain":p.imageFill==="stretch"?"fill":"cover",
            flex:"0 0 auto",overflow:"hidden"}}/>
-        <span className="smart-cart-product-name">{name||"Product"}</span>
+        {canClick&&!demo&&itemId!==null?
+          <button type="button" className="smart-cart-product-name smart-cart-product-click"
+            aria-label={"Select "+String(name||"Product")} onClick={()=>fire?.("click",payload)}>
+            {name||"Product"}</button>:
+          <span className="smart-cart-product-name">{name||"Product"}</span>}
        </div>
        <span aria-label="Unit price not bound">—</span>
-       <span aria-label="Quantity not bound">—</span>
+       <div className="smart-cart-qty-controls" aria-label={"Quantity controls for "+String(name||"Product")}>
+        <button type="button" className="smart-cart-qty-button"
+          aria-label={"Decrease quantity for "+String(name||"Product")}
+          disabled={demo||!canChangeQty||itemId===null||qty==="0"}
+          onClick={()=>fire?.("qtyIcon",{...payload,delta:-1,operation:"decrement",quantity:qty==="—"?null:Number(qty)})}>−</button>
+        <span className="smart-cart-qty-value" aria-label={qty==="—"?"Quantity not bound":"Quantity "+qty}>{qty}</span>
+        <button type="button" className="smart-cart-qty-button"
+          aria-label={"Increase quantity for "+String(name||"Product")}
+          disabled={demo||!canChangeQty||itemId===null}
+          onClick={()=>fire?.("qtyIcon",{...payload,delta:1,operation:"increment",quantity:qty==="—"?null:Number(qty)})}>+</button>
+       </div>
        <span aria-label="Line total not bound">—</span>
       </div>;
     })}
@@ -62,6 +83,6 @@ export default function SmartCart({p,records,Picture,expression}){
      <span>Total</span><span aria-label="Total not bound">—</span>
    </div>
   </section>
-  <div className="smart-cart-preview-note">Visual preview — totals and actions not yet connected</div>
+  <div className="smart-cart-preview-note">Visual preview — totals and actions are configured separately</div>
  </section>;
 }
