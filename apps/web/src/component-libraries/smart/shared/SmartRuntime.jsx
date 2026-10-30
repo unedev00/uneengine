@@ -4,6 +4,21 @@ const number=(v,f,min=0,max=2000)=>Number.isFinite(Number(v))?Math.max(min,Math.
 const text=(v)=>v===null||v===undefined?"":String(v);
 const expression=(v,record)=>{
  if(typeof v!=="string")return text(v);
+ // Each list row receives only resolved, authorised metadata relation values.
+ const related=record&&typeof record.__mentionValues==="object"&&!Array.isArray(record.__mentionValues)
+   ?record.__mentionValues:null;
+ const reference=/@[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*){2,4}/g;
+ if(related&&reference.test(v)){
+   reference.lastIndex=0;
+   if(Object.prototype.hasOwnProperty.call(related,v))return text(related[v]);
+   v=v.replace(reference,ref=>{
+     if(!Object.prototype.hasOwnProperty.call(related,ref))return '""';
+     const value=related[ref];
+     return typeof value==="number"&&Number.isFinite(value)?String(value)
+       :typeof value==="boolean"?(value?"TRUE":"FALSE")
+       :'"'+text(value).replaceAll('"','""')+'"';
+   });
+ }
  if(/^(?:https:\/\/|asset:)/i.test(v.trim()))return v;
  if(!/@[A-Za-z]/.test(v)&&!/^\s*"/.test(v)&&
    !/^\s*-?(?:\d+(?:\.\d*)?|\.\d+)\s*[+\-*/&]/.test(v))return v;
