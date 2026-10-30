@@ -41,6 +41,7 @@ await rename(oldRoot,newRoot);
 const files=await walk(root);
 let changed=0;
 for(const file of files){
+ if(file===path.join(root,'scripts/relocate-retired-component-source.mjs'))continue;
  const original=await readFile(file,'utf8');
  let next=original;
  // Absolute repository paths, followed by paths relative to apps/web and src.
