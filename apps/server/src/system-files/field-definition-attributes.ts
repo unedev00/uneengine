@@ -1,0 +1,59 @@
+import {normalizeNumberField} from '../field-engine/types/NumberField.js';
+import {normalizeDateField} from '../field-engine/types/DateField.js';
+import {normalizeDateTimeField} from '../field-engine/types/DateTimeField.js';
+import {normalizeTimeField} from '../field-engine/types/TimeField.js';
+import {validateTextField} from '../field-engine/types/TextField.js';
+import {validateEmailField} from '../field-engine/types/EmailField.js';
+import {validatePhoneField} from '../field-engine/types/PhoneField.js';
+import {validateUrlField} from '../field-engine/types/UrlField.js';
+
+/** The same constraints apply to Object Manager, API-created fields and field edits. */
+export function validateFieldDefinitionAttributes(field:{
+ dataType:string;unique:boolean;externalId:boolean;caseSensitive:boolean;
+ maxLength:number|null;precision:number|null;scale:number|null;
+ defaultValue:unknown;picklistValues:string[];globalValueSetApiName:string|null;
+}):string|null {
+ const type=field.dataType;
+ if(field.externalId&&!['text','number','email','phone'].includes(type))
+   throw new Error('External ID is supported only for Text, Number, Email and Phone fields');
+ if(field.unique&&['textarea','longtext','richtext','encryptedtext','formula','rollup',
+   'reference','address','geolocation','multipicklist','image','file'].includes(type))
+   throw new Error('Unique is not available for this field type');
+ if(field.caseSensitive&&(!field.unique||!['text','email','phone'].includes(type)))
+   throw new Error('Case sensitivity requires a unique Text, Email or Phone field');
+ if(field.defaultValue===undefined||field.defaultValue===null)return null;
+ if(['autonumber','formula','rollup','reference','address','geolocation','encryptedtext',
+   'image','file'].includes(type))throw new Error('This field type cannot have a default value');
+ const raw=field.defaultValue;
+ const invalid=()=>{throw new Error('Invalid '+type+' field default value');};
+ if(type==='boolean'){
+   if(raw!==true&&raw!==false&&raw!=='true'&&raw!=='false')invalid();
+   return String(raw);
+ }
+ if(['number','currency','percent'].includes(type)){
+   if(typeof raw!=='number'&&
+     (typeof raw!=='string'||!raw.trim()||!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(raw)))invalid();
+   const value=Number(raw);
+   if(!Number.isFinite(value))invalid();
+   return normalizeNumberField(value,'default',field.precision,field.scale);
+ }
+ if(typeof raw!=='string')invalid();
+ if(['text','textarea','longtext','richtext','email','phone','url','picklist','multipicklist'].includes(type)){
+   validateTextField(raw,'default',field.maxLength);
+   if(type==='email'&&raw)validateEmailField(raw,'default');
+   if(type==='phone'&&raw)validatePhoneField(raw,'default');
+   if(type==='url'&&raw)validateUrlField(raw,'default');
+   if(type==='picklist'||type==='multipicklist'){
+     const values=type==='multipicklist'?raw.split(';'):[raw];
+     if(type==='multipicklist'&&new Set(values).size!==values.length)
+       throw new Error('Duplicate multi-select default');
+     if(values.some(v=>!v||(!field.globalValueSetApiName&&!field.picklistValues.includes(v))))
+       throw new Error('Default value is not in the field picklist');
+   }
+   return raw;
+ }
+ if(type==='date')return normalizeDateField(raw,'default');
+ if(type==='datetime')return normalizeDateTimeField(raw,'default');
+ if(type==='time')return normalizeTimeField(raw,'default');
+ invalid();
+}
