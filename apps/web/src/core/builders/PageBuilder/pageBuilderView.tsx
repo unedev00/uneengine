@@ -2844,7 +2844,20 @@ function PageBuilder({
       <div className={`page-builder-layout canvas-unified-builder reference-builder-layout ${page.layoutMode === 'free-canvas' ? 'modern-canvas-builder' : ''} ${activePanel === null ? 'unified-panel-collapsed' : ''}`}
         style={{ '--component-panel-width': `${componentPanelWidth}px` } as React.CSSProperties}>
         <div className="page-preview-area" ref={pagePreviewAreaRef}>
-          <div className="page-stage" key={canvasRefreshKey} onClick={(event) => {
+          <div className="page-stage" key={canvasRefreshKey}
+            onPointerDownCapture={() => {
+              if (previewMode) return;
+              // Canvas drag/select calls preventDefault, which otherwise leaves the
+              // previous ribbon input focused with a visible editing caret.
+              // Blur only ribbon editors, never controls inside the canvas.
+              const active = document.activeElement;
+              if (active instanceof HTMLElement &&
+                  active.closest('.office-builder-ribbon') &&
+                  active.matches('input,textarea,select,[contenteditable="true"]')) {
+                active.blur();
+              }
+            }}
+            onClick={(event) => {
             if ((event.target as HTMLElement).closest('.record-component,.canvas-drop-zone,button,input,select,textarea')) return;
             setSelectedId(''); setSelectionIds([]); setSelectedRegion(null); setRibbonTab('Add Block'); setPageSettingsOpen(false); setActivePanel(null);
           }} onDragOver={(event) => event.preventDefault()} onDrop={(event) => handleDrop(event)}>
