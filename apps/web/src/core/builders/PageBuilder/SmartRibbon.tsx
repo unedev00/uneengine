@@ -117,7 +117,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
      badgeAlignment:'Position',imagePlacement:'Place',imageFill:'Fit',
      navigationDirection:'Direction',tabCount:'Tabs',firstDay:'First day'
    };
-   const shortLabel=compactDesign?(labelOverrides[property.id]??title):title;
+   const shortLabel=compactDesign?(property.designCaption??labelOverrides[property.id]??title):title;
    const isTextSize=compactDesign&&/^(textSize|badgeTextSize|summary2?TextSize|placeholderSize)$/.test(property.id);
    const isCorner=compactDesign&&/radius/i.test(property.id);
    const isWidth=compactDesign&&/width/i.test(property.id);
@@ -185,7 +185,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
      if(compactDesign&&property.id==='badgeVisible'){
        const Icon=value===true?Eye:EyeOff;
        editor=<button type="button" className="smart-visible-toggle" disabled={!enabled}
-         aria-label={title} title={title} aria-pressed={value===true}
+         role="switch" aria-label={title} title={title} aria-checked={value===true}
          onClick={()=>write(value!==true)}><Icon size={16} aria-hidden="true"/></button>;
      }else if(['headerBold','badgeBold','supportingBold','summaryTextWeight','summary2TextWeight','wrapText'].includes(property.id)){
        const Icon=property.id==='wrapText'?WrapText:Bold;
@@ -216,7 +216,9 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
      {options.map(s=><option value={s} key={s}>{s.replaceAll('-',' ')}</option>)}</select>;
    return <div key={property.id} className={'smart-property'+(!enabled?' disabled':'')} data-property={property.id}
        data-supported={supported} data-kind={kind} data-numeric-icon={hasNumericIcon?'true':'false'}
+       data-design-caption={compactDesign&&Boolean(property.designCaptionWidth)?'true':'false'}
        style={compactDesign?{'--smart-control-width':controlWidth(property)+'px',
+         '--smart-caption-width':(property.designCaptionWidth??0)+'px',
          '--smart-control-height':(property.designHeight??26)+'px'} as CSSProperties:undefined}
        title={title}><span className="smart-label">{shortLabel}</span>{editor}</div>;
  };
