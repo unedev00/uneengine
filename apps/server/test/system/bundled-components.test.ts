@@ -3,15 +3,15 @@ import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
 import type { PoolClient } from 'pg';
 import { BUNDLED_COMPONENTS,seedFreshBundledComponents,deactivateUnavailableBundledComponents } from '../../src/app-seeders/bundled-components.js';
-import {UNE_COMPONENTS,seedFreshUneComponents} from '../../src/app-seeders/une-components.js';
+import {UI_COMPONENTS,seedFreshUiComponents} from '../../src/app-seeders/ui-components.js';
 
 test('SQL component seed matches the UNE-only manifest without duplicates', async()=>{
   const catalog=JSON.parse(await readFile(new URL('../../../web/src/component-libraries/manifest.json',import.meta.url),'utf8')) as {components:string[]};
-  assert.deepEqual([...BUNDLED_COMPONENTS,...UNE_COMPONENTS],catalog.components.filter(path=>path.startsWith('ui_')).map(path=>path.split('/')[0]));
+  assert.deepEqual([...BUNDLED_COMPONENTS,...UI_COMPONENTS],catalog.components.filter(path=>path.startsWith('ui_')).map(path=>path.split('/')[0]));
   assert.ok(catalog.components.includes('acetill_cart/component.json'));
   assert.deepEqual(BUNDLED_COMPONENTS,[]);
-  assert.ok(UNE_COMPONENTS.includes('ui_cart'));
-  assert.ok(UNE_COMPONENTS.includes('ui_item_grid'));
+  assert.ok(UI_COMPONENTS.includes('ui_cart'));
+  assert.ok(UI_COMPONENTS.includes('ui_item_grid'));
   assert.equal(catalog.components.filter(path=>path.startsWith('One')).length,0);
 });
 
@@ -53,12 +53,12 @@ test('bundled component seed never overwrites tenant customisations and is tenan
 test('UNE seeding never overwrites tenant customisations',async()=>{
  const writes:Array<{sql:string;args:unknown[]}>=[];
  const client={query:async(sql:string,args:unknown[])=>{writes.push({sql,args});return {rows:[]};}} as unknown as PoolClient;
- await seedFreshUneComponents(client,'tenant-une');
+ await seedFreshUiComponents(client,'tenant-une');
  assert.equal(writes.length,0,'app-owned UNE components must never be globally seeded');
 });
 
 test('retired UNE Badge has no app placement, system manifest, or insert registration',async()=>{
-  assert.equal((UNE_COMPONENTS as readonly string[]).includes('ui_badge'),false);
+  assert.equal((UI_COMPONENTS as readonly string[]).includes('ui_badge'),false);
   const app=await readFile(new URL('../../../acetill/sql/register-v2.sql',import.meta.url),'utf8');
   assert.doesNotMatch(app,/ui_badge|OneBadge/);
   const catalog=JSON.parse(await readFile(new URL('../../../web/src/component-libraries/manifest.json',import.meta.url),'utf8')) as {components:string[]};
