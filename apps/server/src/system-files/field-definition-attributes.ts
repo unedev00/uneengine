@@ -25,7 +25,7 @@ export function validateFieldDefinitionAttributes(field:{
  if(['autonumber','formula','rollup','reference','address','geolocation','encryptedtext',
    'image','file'].includes(type))throw new Error('This field type cannot have a default value');
  const raw=field.defaultValue;
- const invalid=()=>{throw new Error('Invalid '+type+' field default value');};
+ const invalid=():never=>{throw new Error('Invalid '+type+' field default value');};
  if(type==='boolean'){
    if(raw!==true&&raw!==false&&raw!=='true'&&raw!=='false')invalid();
    return String(raw);
@@ -55,5 +55,5 @@ export function validateFieldDefinitionAttributes(field:{
  if(type==='date')return normalizeDateField(raw,'default');
  if(type==='datetime')return normalizeDateTimeField(raw,'default');
  if(type==='time')return normalizeTimeField(raw,'default');
- invalid();
+ return invalid();
 }
