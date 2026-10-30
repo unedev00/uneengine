@@ -14,13 +14,13 @@ export function validateFieldDefinitionAttributes(field:{
  defaultValue:unknown;picklistValues:string[];globalValueSetApiName:string|null;
 }):string|null {
  const type=field.dataType;
- if(field.externalId&&!['text','number','email','phone'].includes(type))
-   throw new Error('External ID is supported only for Text, Number, Email and Phone fields');
+ if(field.externalId&&!['text','number','email','phone','url','currency','percent','autonumber'].includes(type))
+   throw new Error('External ID is unavailable for this field type');
  if(field.unique&&['textarea','longtext','richtext','encryptedtext','formula','rollup',
    'reference','address','geolocation','multipicklist','image','file'].includes(type))
    throw new Error('Unique is not available for this field type');
- if(field.caseSensitive&&(!field.unique||!['text','email','phone'].includes(type)))
-   throw new Error('Case sensitivity requires a unique Text, Email or Phone field');
+ if(field.caseSensitive&&(!(field.unique||field.externalId)||!['text','email','phone','url','currency','percent','number'].includes(type)))
+   throw new Error('Case sensitivity requires a supported Unique or External ID field');
  if(field.defaultValue===undefined||field.defaultValue===null)return null;
  if(['autonumber','formula','rollup','reference','address','geolocation','encryptedtext',
    'image','file'].includes(type))throw new Error('This field type cannot have a default value');
