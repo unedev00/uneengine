@@ -2846,3 +2846,11 @@ CREATE TRIGGER md_validate_relationship_target_record
  BEFORE INSERT OR UPDATE OF reference_record_id,object_api,field_api
  ON md_record_values FOR EACH ROW
  EXECUTE FUNCTION md_validate_relationship_record_target();
+
+-- Inbound deletes, inverse related lists and relationship metadata traversal stay indexed.
+CREATE INDEX IF NOT EXISTS md_record_values_relationship_inbound
+ ON md_record_values(tenant_id,reference_record_id,object_api,field_api,record_id)
+ WHERE reference_record_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS md_field_definitions_relationship_inbound
+ ON md_field_definitions(tenant_id,related_object,object_api,api_name)
+ WHERE data_type='reference' AND deleted_at IS NULL;
