@@ -1,3 +1,4 @@
+import SmartCart from "../../smart_cart/SmartCart.jsx";
 import {evaluateFieldExpression} from "../../shared/FieldExpression.js";
 const number=(v,f,min=0,max=2000)=>Number.isFinite(Number(v))?Math.max(min,Math.min(max,Number(v))):f;
 const text=(v)=>v===null||v===undefined?"":String(v);
@@ -173,6 +174,7 @@ export default function SmartRuntime(p){
  else if(name==="smart_card_grid")content=<div className="smart-grid" style={{gridTemplateColumns:"repeat("+number(p.cardsPerRow,3,1,12)+",minmax(0,1fr))"}}>
   {recordsOf(p).slice(0,number(p.cardsPerRow,3,1,12)*number(p.cardsPerColumn,1,1,12)).map((r,i)=>
   <SmartCard p={p} record={r} key={r?.id??i}/>)}</div>;
+ else if(name==="smart_cart")content=<SmartCart p={p} records={recordsOf(p)} Picture={SmartPicture} expression={expression}/>;
  else if(name==="smart_calendar")content=<SmartCalendar p={p} fire={fire}/>;
  else if(name==="smart_tabs")content=<SmartTabs p={p} record={record} fire={fire}/>;
  else if(name==="smart_navigation"){
@@ -200,8 +202,8 @@ export default function SmartRuntime(p){
     })}
   </nav>;
  }else content=<div className="smart-container">{p.children||null}</div>;
- return <div className={"smart-runtime "+name} style={{...style,...(!["smart_button","smart_toggle","smart_tabs"].includes(name)?shadowStyle:{}),backgroundColor:["smart_button","smart_toggle","smart_tabs","smart_text"].includes(name)?undefined:p.backgroundColor||undefined,
-   ...(p.borderColor?{border:"1px solid "+p.borderColor}:{}),
+ return <div className={"smart-runtime "+name} style={{...style,...(!["smart_button","smart_toggle","smart_tabs","smart_cart"].includes(name)?shadowStyle:{}),backgroundColor:["smart_button","smart_toggle","smart_tabs","smart_text","smart_cart"].includes(name)?undefined:p.backgroundColor||undefined,
+   ...(p.borderColor&&name!=="smart_cart"?{border:"1px solid "+p.borderColor}:{}),
    ...(p.width!==undefined&&p.width!==''?{width:number(parseFloat(p.width),undefined,0,10000)}:{}),
    ...(p.height!==undefined&&p.height!==''?{height:number(parseFloat(p.height),undefined,0,10000)}:{})}}>{content}</div>;
 }

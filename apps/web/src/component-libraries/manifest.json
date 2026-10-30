@@ -62,6 +62,7 @@
     "smart_image/component.json",
     "smart_calendar/component.json",
     "smart_navigation/component.json",
-    "smart_container/component.json"
+    "smart_container/component.json",
+    "smart_cart/component.json"
   ]
 }

@@ -17,12 +17,12 @@ test('Smart Formula uses Excel semantics for maths, literals, fields and &',()=>
  for(const operator of ['+','-','*','/','&'])
    assert.equal(evaluateFieldExpression('"'+operator+'"',row),operator);
 });
-test('Smart component catalog is independent, ten components and SQL-owned',async()=>{
+test('Smart component catalog is independent, eleven components and SQL-owned',async()=>{
  const source=JSON.parse(read('../src/component-libraries/manifest.json'));
  const names=source.components.map(p=>p.split('/')[0]).filter(name=>name.startsWith('smart_'));
  assert.deepEqual(names.sort(),['smart_button','smart_toggle','smart_lookup','smart_tabs',
   'smart_text','smart_card_grid','smart_image','smart_calendar','smart_navigation',
-  'smart_container'].sort());
+  'smart_container','smart_cart'].sort());
  const catalog=await loadComponentCatalog();
  for(const name of names){
   const c=catalog.components.find(c=>c.apiName===name);
@@ -317,4 +317,31 @@ test('Smart Badge and Image short names come only from forward-only SQL metadata
  assert.doesNotMatch(sql,/DELETE\s+FROM|UPDATE\s+md_page_|UPDATE\s+md_builder_ribbon_component_rules/i);
  const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
  assert.match(ribbon,/const title=property\.label/);
+});
+
+test('Smart Cart ribbon is SQL-driven and visual preview defers cart data and actions',async()=>{
+ const manifest=JSON.parse(read('../src/component-libraries/manifest.json'));
+ assert.ok(manifest.components.includes('smart_cart/component.json'));
+ const descriptor=JSON.parse(read('../src/component-libraries/smart_cart/component.json'));
+ assert.deepEqual(descriptor.propertyDefinitions,[]);
+ const sql=read('../../server/src/system-support/migrations/20270130-smart-cart-ribbon.sql');
+ for(const k of ['headerTextColor','supportingBoxHeight','supportingBorderColor','supportingAlignment',
+ 'supportingBold','supportingTextColor','tableBackgroundColor','tableBorderColor','tableShadow',
+ 'tableRadius','rowBorderColor','rowLabelColor','rowRadius','rowHeight','summaryBackgroundColor',
+ 'summaryBorderColor','summaryShadow','summaryRadius','summaryHeight','summaryWidth',
+ 'summaryTextSize','summaryTextWeight','summaryTextColor','summary2TextSize',
+ 'summary2TextWeight','summary2TextColor'])assert.ok(sql.includes("'"+k+"'"),k);
+ for(const k of ['objectApiName','imageSource','textSource','imagePlacement','imageHeight',
+ 'imageBorderColor','imageFill','headerBoxHeight','headerBorderColor','headerAlignment',
+ 'headerBold','width','height','x','y'])assert.ok(sql.includes("('"+k+"')"),k);
+ assert.doesNotMatch(sql,/DELETE FROM md_page_|UPDATE md_page_|UPDATE md_builder_shared_properties/i);
+ const renderer=read('../src/component-libraries/smart_cart/SmartCart.jsx');
+ for(const k of ['headerTextColor','supportingBorderColor','tableBackgroundColor','rowLabelColor',
+ 'rowHeight','summaryTextSize','summary2TextWeight','summaryWidth'])assert.ok(renderer.includes('p.'+k),k);
+ assert.doesNotMatch(renderer,/onClick=|fetch\(|createRecord|checkoutAction/);
+ assert.match(read('../src/component-libraries/smart/shared/SmartRuntime.jsx'),/name==="smart_cart"/);
+ assert.match(read('../src/core/builders/PageBuilder/SmartRibbon.tsx'),/summary2TextWeight/);
+ const catalog=await loadComponentCatalog();
+ const bundled=await buildBundledComponent(catalog.components.find(c=>c.apiName==='smart_cart'));
+ assert.ok(bundled.compiledJs.length>0);
 });
