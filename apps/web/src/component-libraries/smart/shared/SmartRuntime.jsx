@@ -186,9 +186,23 @@ function SmartTabs({p,record,fire}){
 function SmartToggle({p,fire}){
  const asBoolean=v=>v===true||v==="true"||v==="True";
  const [checked,setChecked]=React.useState(()=>asBoolean(p.value??p.defaultCheck??false));
+ const [saving,setSaving]=React.useState(false);
  React.useEffect(()=>setChecked(asBoolean(p.value??p.defaultCheck??false)),[p.value,p.defaultCheck]);
- return <label className="smart-switch"><input type="checkbox" role="switch" aria-label="Toggle" checked={checked}
-  onChange={e=>{setChecked(e.target.checked);fire("change",e.target.checked)}}/>
+ const bound=p.toggleFieldBound===true;
+ const disabled=bound&&(p.toggleFieldReady!==true||saving);
+ const change=e=>{
+  const next=e.target.checked;
+  if(!bound){setChecked(next);fire("change",next);return;}
+  if(disabled||typeof p.onBoundToggleChange!=="function")return;
+  setChecked(next);setSaving(true);
+  void Promise.resolve().then(()=>p.onBoundToggleChange(next))
+   .then(()=>fire("change",next))
+   .catch(()=>setChecked(asBoolean(p.value??false)))
+   .finally(()=>setSaving(false));
+ };
+ return <label className="smart-switch" title={p.toggleFieldError||undefined}>
+  <input type="checkbox" role="switch" aria-label={p.toggleFieldError||"Toggle"}
+   aria-busy={saving} checked={checked} disabled={disabled} onChange={change}/>
   <span className="smart-switch-track" style={{background:checked?(p.backgroundColor||"#34c759"):"#e5e5ea",
    border:p.borderColor?"1px solid "+p.borderColor:undefined,
    boxShadow:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none"}}>

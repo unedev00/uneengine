@@ -5,6 +5,7 @@ import {loadFlowScreenRecordPage} from '../../authentication/Client/authClient';
 // Load the browser API client only during the mounted effect, not on SSR import.
 import {presentPageRecords,type ChannelGrant} from '../../records/RecordWorkspace/recordPresentationAdapters';
 import {filterPageComponentRecords,pageComponentRecordQuery,pageComponentRelatedQuery,bindPageStateProperties} from '../PageRuntime/pageComponentBindings';
+import {resolveSmartToggleFieldBinding,updateSmartToggleField} from '../PageRuntime/smartToggleFieldBinding';
 import {filterRelatedRecords} from '../PageRuntime/filterRelatedRecords.mjs';
 import {resolveMentionProperties,mentionGroups,referencedMentionPaths,resolveCollectionMentionRows} from '../../../component-libraries/shared/primitives/SmartFieldInput/smartFieldMentions';
 import { explicitMentionRecordId, useRelationshipMentionContext } from '../../records/RecordFormDialog/useRelationshipMentionContext';
@@ -246,6 +247,26 @@ export default function MetadataBoundPageComponent({
       || field.dataType==='Lookup('+categorySource.sourceObjectApiName+')')?.apiName
     : undefined;
   const presented = presentPageRecords(properties.recordPresenterApiName, visibleRecords, channelAccess, properties);
+  // A record page already fetched its exact authorised record by ID. Use it
+  // even when the record is beyond the first page of the Object list.
+  const boundRecordId=recordId||explicitMentionRecordId(properties);
+  const currentBoundRecord=mentionContext.records[objectApiName];
+  const boundRows=boundRecordId&&currentBoundRecord?.Id===boundRecordId
+    ?[currentBoundRecord]:visibleRecords;
+  const toggleBinding=resolveSmartToggleFieldBinding(definition.apiName,properties,objectApiName,fields,
+    boundRows,recordTotal,boundRecordId);
+  const toggleCanWrite=Boolean(toggleBinding?.ready&&!disableActions&&
+    behaviorAction(properties,'change',behaviorContext??{formFactor})==='enabled');
+  const changeBoundToggle=async(next:boolean)=>{
+    if(!toggleBinding||!toggleCanWrite)throw new Error('Toggle field is not editable.');
+    try{
+      await updateSmartToggleField(apiRequest,objectApiName,toggleBinding,next);
+      setActionError('');setRevision(value=>value+1);
+      window.dispatchEvent(new CustomEvent('metadrive:page-flow-mutated',{
+        detail:{pageSessionKey,sessionId}
+      }));
+    }catch(error){setActionError(error instanceof Error?error.message:'Toggle update failed');throw error;}
+  };
   const rawActions = properties.actionFlows;
   const actionFlows = rawActions && typeof rawActions === 'object' && !Array.isArray(rawActions)
     ? rawActions as Record<string, unknown> : {};
@@ -388,7 +409,9 @@ export default function MetadataBoundPageComponent({
   // When the component is placed on a free canvas, its frame owns geometry.
   // The record-binding layer must not introduce another auto-sized visual box.
   const smartCanvas=definition.apiName.startsWith('smart_')&&Boolean(component.position);
-  return <div style={smartCanvas?{width:'100%',height:'100%',minHeight:0,minWidth:0}:undefined}>
+  // Preserve Toggle geometry when selecting an Object routes it through the bound runtime.
+  return <div style={smartCanvas||definition.apiName==='smart_toggle'
+    ?{width:'100%',height:'100%',minHeight:0,minWidth:0}:undefined}>
     {!objectApiName && <div className="records-message" role="alert">Select a bound object to load records for this component.</div>}
     {dataError && <div className="records-message" role="alert">{dataError}</div>}
     <RegisteredComponent definition={definition} layoutTransparent={smartCanvas} props={{
@@ -423,7 +446,11 @@ export default function MetadataBoundPageComponent({
         hasPrevious:recordOffset>0,hasNext:recordOffset+recordPageSize<recordTotal,
         available:recordQuery.serverFilterable
       }} : {}),
-      ...presented
+      ...presented,
+      ...(toggleBinding?{toggleFieldBound:true,toggleFieldReady:toggleCanWrite,
+        toggleFieldError:toggleBinding.error??'',
+        value:toggleBinding.ready?toggleBinding.value:false,
+        onBoundToggleChange:changeBoundToggle}:{})
     }} />
     {objectApiName&&recordQuery.serverFilterable&&recordTotal>recordPageSize&&<nav
       className="records-pagination" aria-label={component.label+' record pages'}>
