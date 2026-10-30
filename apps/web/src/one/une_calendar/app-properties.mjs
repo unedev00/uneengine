@@ -282,8 +282,8 @@ export const propertyDefinitions = [
     "propertyKey": "defaultValue",
     "label": "Default Value",
     "kind": "SELECT",
-    "group": "Calendar",
-    "section": "Design",
+    "group": "Values",
+    "section": "Data",
     "displayOrder": 820,
     "defaultValue": "today",
     "choices": [{"key":"today","label":"Today"},{"key":"","label":"None"}]
