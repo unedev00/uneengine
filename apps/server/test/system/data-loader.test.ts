@@ -14,9 +14,11 @@ function harness(deny=false,forbidRecord=false) {
   if(sql.trimStart().startsWith('SELECT')&&sql.includes('FROM md_field_definitions'))return {rows:[
    {api_name:'VAT_Applicable__c',data_type:'boolean',related_object:null,required:false,max_length:null}
   ],rowCount:1};
-  if(sql.includes('FROM md_records WHERE'))return forbidRecord
+  if(sql.includes('FROM md_records WHERE')||sql.includes('FROM md_records r'))return forbidRecord
    ?{rows:[],rowCount:0}
-   :{rows:[{updated_at:new Date('2026-10-01T00:00:00Z')}],rowCount:1};
+   :{rows:[{id:a,created_at:new Date('2026-10-01T00:00:00Z'),
+      updated_at:new Date('2026-10-01T00:00:00Z'),owner_id:null,
+      record_type_id:null,is_clone:false,field_api:null}],rowCount:1};
   if(sql.includes('SELECT value_text,reference_record_id FROM md_record_values'))
    return {rows:[{value_text:null,reference_record_id:null}],rowCount:1};
   if(sql.startsWith('INSERT')||sql.startsWith('UPDATE'))writes.push(sql);
@@ -26,7 +28,10 @@ function harness(deny=false,forbidRecord=false) {
   transactions++;
   return fn(client);
  },query:async()=>{throw Error('Out-of-transaction SQL is forbidden for importing');}} as unknown as SqlPersistence;
- const rbac={require:async(t:string,u:string,resource:string,permission:string)=>{
+ const rbac={
+  allowedMany:async(_tenant:string,_user:string,checks:readonly unknown[])=>checks.map(()=>true),
+  allowed:async()=>true,
+  require:async(t:string,u:string,resource:string,permission:string)=>{
   assert.equal(t,'tenant-a');assert.equal(u,'actor');
   permissions.push(resource+'.'+permission);
   if(deny)throw Error('Permission denied');
@@ -43,8 +48,8 @@ test('Existing-product CSV import uses shared tenant-scoped update and history',
  assert.equal(h.writes.filter(sql=>sql.includes('md_record_history')).length,2);
  assert.ok(h.writes.every(sql=>!sql.includes('DROP TABLE')));
  assert.deepEqual(h.permissions,[
-  'Product.edit','Product.VAT_Applicable__c.edit',
-  'Product.edit','Product.VAT_Applicable__c.edit']);
+  'Product.edit','Product.VAT_Applicable__c.edit','Product.read',
+  'Product.edit','Product.VAT_Applicable__c.edit','Product.read']);
 });
 
 test('Import checks record visibility before business data writes',async()=>{

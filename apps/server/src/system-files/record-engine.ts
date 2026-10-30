@@ -26,7 +26,8 @@ import type {RbacEngine} from './rbac-engine.js';
 import {formatAutoNumberValue} from './auto-number-format.js';
 import {DeclarativeRules} from './declarative-rules.js';
 import {RecordMatching} from './record-matching.js';
-import {evaluateFlowFormula,isFormulaImageResult,validateFlowFormula,
+import {evaluateFlowFormula,flowFormulaReferences,isFormulaImageResult,validateFlowFormula,
+  createFormulaEvaluationContext,
   type FormulaEvaluationContext} from './flow-formula-runtime.js';
 import {decryptFieldValue,encryptFieldValue,maskEncryptedFieldValue} from './encrypted-field.js';
 import {sanitizeRichText} from './rich-text.js';
@@ -44,6 +45,13 @@ type RecordTriggerHandler=(
   phase?:'before-save'|'after-save',isClone?:boolean
 )=>Promise<Record<string,unknown>|void>;
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const api=/^[A-Za-z][A-Za-z0-9_]{0,79}$/;
+const contextValue=(source:object|null|undefined,key:string):unknown=>{
+  if(!source)return null;
+  const descriptor=Object.getOwnPropertyDescriptor(source,key);
+  return descriptor&&Object.prototype.hasOwnProperty.call(descriptor,'value')
+    ?descriptor.value??null:null;
+};
 
 export class RecordEngine {
   private recordTrigger?:RecordTriggerHandler;
@@ -114,19 +122,39 @@ export class RecordEngine {
     }
     return rows;
   }
-  private async formulaContext(tenantId:string,userId:string,client?:PoolClient):Promise<FormulaEvaluationContext>{
-    const {rows}=await (client??this.db).query<{
-      time_zone:string;has_currency_settings:boolean;currency_iso_code:string|null;conversion_rate:string|null
-    }>(`SELECT u.time_zone,(s.tenant_id IS NOT NULL) AS has_currency_settings,
+  private async formulaContext(tenantId:string,userId:string,objectApi:string,
+    record:Record<string,unknown>,definitions:readonly FieldDefinition[],
+    client?:PoolClient,now:Date|string=new Date()):Promise<FormulaEvaluationContext>{
+    const executor=client??this.db;
+    const formulas=definitions.filter(field=>field.data_type==='formula'
+      &&typeof field.formula_expression==='string');
+    const references=[...new Set(formulas.flatMap(field=>
+      flowFormulaReferences(field.formula_expression!)))];
+    const [{rows},{rows:tenants}]=await Promise.all([
+      executor.query<{
+      id:string;email:string;display_name:string;time_zone:string;locale:string;
+      user_currency_iso_code:string|null;profile_id:string|null;profile_name:string|null;
+      profile_api:string|null;has_currency_settings:boolean;
+      currency_iso_code:string|null;conversion_rate:string|null
+    }>(`SELECT u.id,u.email,u.display_name,u.time_zone,u.locale,
+        u.currency_iso_code AS user_currency_iso_code,p.id AS profile_id,
+        p.name AS profile_name,p.api_name AS profile_api,
+        (s.tenant_id IS NOT NULL) AS has_currency_settings,
         currency.value->>'currencyIsoCode' AS currency_iso_code,
         currency.value->>'conversionRate' AS conversion_rate
       FROM md_users u
+      LEFT JOIN md_user_profiles up ON up.tenant_id=u.tenant_id AND up.user_id=u.id
+      LEFT JOIN md_profiles p ON p.tenant_id=up.tenant_id AND p.id=up.profile_id
       LEFT JOIN md_tenant_settings s ON s.tenant_id=u.tenant_id AND s.setting_key='currencies'
       LEFT JOIN LATERAL jsonb_array_elements(
         COALESCE(s.properties->'currencies','{"currencies":[]}'::jsonb)->'currencies'
       ) currency(value) ON true
       WHERE u.tenant_id=$1 AND u.id=$2 AND u.enabled=true`,
-    [tenantId,userId]);
+      [tenantId,userId]),
+      references.some(reference=>reference.startsWith('$Organization.'))
+        ?executor.query<{id:string;name:string}>('SELECT id,name FROM md_tenants WHERE id=$1',[tenantId])
+        :Promise.resolve({rows:[] as Array<{id:string;name:string}>})
+    ]);
     if(!rows.length)throw new Error('Formula evaluation user is unavailable in this tenant');
     const currencyRates:Record<string,number>={};
     if(!rows[0].has_currency_settings)currencyRates.USD=1;
@@ -138,7 +166,59 @@ export class RecordEngine {
         currencyRates[row.currency_iso_code]=rate;
       }
     }
-    return {timeZone:rows[0].time_zone,currencyRates,now:new Date()};
+    const actor=rows[0];
+    const fields:Record<string,boolean>=Object.create(null) as Record<string,boolean>;
+    const permissions:Record<string,boolean>=Object.create(null) as Record<string,boolean>;
+    for(const reference of references){
+      let field:string|null=null;
+      if(reference.startsWith('$Record.'))field=reference.slice(8);
+      else if(reference.startsWith(objectApi+'.'))field=reference.slice(objectApi.length+1);
+      else if(api.test(reference)&&definitions.some(item=>item.api_name===reference))field=reference;
+      else if(reference.startsWith('$Permission.')){
+        const name=reference.slice('$Permission.'.length);
+        if(!api.test(name))throw new Error('Invalid formula custom permission reference');
+        permissions[name]=await this.rbac.allowed(
+          tenantId,userId,'CustomPermission:'+name,'read');
+      }else if(reference.startsWith('$')&&!reference.startsWith('$User.')
+        &&!reference.startsWith('$Profile.')&&!reference.startsWith('$Organization.')
+        &&!reference.startsWith('$RecordType.')&&reference!=='$Record')
+        throw new Error('Unsupported formula global reference: '+reference);
+      if(field){
+        if(!api.test(field))throw new Error('Invalid formula field reference');
+        fields[field]=await this.rbac.allowed(tenantId,userId,objectApi+'.'+field,'read');
+      }
+    }
+    let organization:FormulaEvaluationContext['organization'];
+    if(references.some(reference=>reference.startsWith('$Organization.'))){
+      if(!tenants[0])throw new Error('Formula organization context is unavailable');
+      organization={Id:tenants[0].id,Name:tenants[0].name};
+    }
+    let recordType:FormulaEvaluationContext['recordType'];
+    if(references.some(reference=>reference.startsWith('$RecordType.'))){
+      const recordTypeId=typeof record.RecordTypeId==='string'?record.RecordTypeId:null;
+      if(!recordTypeId)recordType={Id:null,Name:null,DeveloperName:null};
+      else{
+        const {rows:types}=await executor.query<{record_type_id:string;label:string;
+          developer_name:string}>(`SELECT record_type_id,label,developer_name
+          FROM md_object_record_types WHERE tenant_id=$1 AND object_api=$2
+            AND record_type_id=$3 AND active=true`,[tenantId,objectApi,recordTypeId]);
+        if(!types[0])throw new Error('Formula record type is unavailable');
+        await this.rbac.require(tenantId,userId,'RecordType:'+objectApi+'.'+recordTypeId,'read');
+        recordType={Id:types[0].record_type_id,Name:types[0].label,
+          DeveloperName:types[0].developer_name};
+      }
+    }
+    return createFormulaEvaluationContext({
+      timeZone:actor.time_zone,locale:actor.locale,
+      currencyIsoCode:actor.user_currency_iso_code,currencyRates,now,
+      transactionStage:'formula-field',isClone:record.__isClone===true,
+      currentRecord:record,
+      actor:{Id:actor.id,Name:actor.display_name,Email:actor.email,TimeZone:actor.time_zone,
+        Locale:actor.locale,CurrencyIsoCode:actor.user_currency_iso_code},
+      profile:{Id:actor.profile_id,Name:actor.profile_name,DeveloperName:actor.profile_api},
+      ...(organization?{organization}:{}),...(recordType?{recordType}:{}),
+      permissionSnapshot:permissions,fieldAccess:fields
+    });
   }
   private async picklistValues(tenantId:string,objectApi:string,fieldApi:string,client?:PoolClient) {
     const {rows}=await (client??this.db).query<{value:string}>(`
@@ -233,27 +313,78 @@ export class RecordEngine {
       if(calculated.has(field.api_name))return calculated.get(field.api_name);
       if(calculating.has(field.api_name))throw new Error('Cyclic formula dependency: '+field.api_name);
       calculating.add(field.api_name);
-      const refs=[...field.formula_expression!.matchAll(/@([A-Za-z][A-Za-z0-9_]*)\.([A-Za-z][A-Za-z0-9_]*)/g)];
-      for(const [,targetObject,fieldApi] of refs){
-        if(targetObject===objectApi){
+      for(const reference of flowFormulaReferences(field.formula_expression!)){
+        if(reference==='$Record')continue;
+        const globalField=(prefix:string)=>reference.startsWith(prefix)
+          ?reference.slice(prefix.length):null;
+        const userField=globalField('$User.');
+        if(userField!==null){
+          if(!['Id','Name','Email','TimeZone','Locale','CurrencyIsoCode'].includes(userField))
+            throw new Error('Unsupported formula global reference: '+reference);
+          continue;
+        }
+        const profileField=globalField('$Profile.');
+        if(profileField!==null){
+          if(!['Id','Name','DeveloperName'].includes(profileField))
+            throw new Error('Unsupported formula global reference: '+reference);
+          continue;
+        }
+        const organizationField=globalField('$Organization.');
+        if(organizationField!==null){
+          if(!['Id','Name'].includes(organizationField))
+            throw new Error('Unsupported formula global reference: '+reference);
+          continue;
+        }
+        const recordTypeField=globalField('$RecordType.');
+        if(recordTypeField!==null){
+          if(!['Id','Name','DeveloperName'].includes(recordTypeField))
+            throw new Error('Unsupported formula global reference: '+reference);
+          continue;
+        }
+        if(reference.startsWith('$Permission.'))continue;
+        if(reference.startsWith('$Record__Prior'))
+          throw new Error('$Record__Prior is unavailable in formula fields');
+        if(reference.startsWith('$')&&!reference.startsWith('$Record.'))
+          throw new Error('Unsupported formula global reference: '+reference);
+        const [referenceObject,referenceField]=reference.split('.');
+        const targetObject=reference.startsWith('$Record.')?objectApi:
+          referenceField?referenceObject:objectApi;
+        const fieldApi=reference.startsWith('$Record.')?reference.slice(8):
+          referenceField??reference;
+        if(!api.test(fieldApi))throw new Error('Invalid formula field reference');
+        if(targetObject==='Record'&&!referenceField)continue;
+        const resolvedObject=targetObject==='Record'?objectApi:targetObject;
+        if(resolvedObject===objectApi){
           if(!await canRead(objectApi,fieldApi)){calculating.delete(field.api_name);return null;}
           const dependency=formulas.get(fieldApi);
           if(dependency)await calculate(dependency);
         }
-        if(targetObject!==objectApi){
-          const relationship=definitions.find(item=>item.data_type==='reference'&&item.related_object===targetObject);
+        if(resolvedObject!==objectApi){
+          const relationship=definitions.find(item=>item.data_type==='reference'&&item.related_object===resolvedObject);
           if(!relationship||!await canRead(objectApi,relationship.api_name)
-            ||!await canRead(targetObject,fieldApi)){
+            ||!await canRead(resolvedObject,fieldApi)){
             calculating.delete(field.api_name);return null;
           }
-          await fetchCrossReference(targetObject,fieldApi);
+          await fetchCrossReference(resolvedObject,fieldApi);
         }
       }
       validateFlowFormula(field.formula_expression!,'formula_field');
       const result=evaluateFlowFormula(field.formula_expression!,name=>{
+        if(name==='$Record')return formulaContext.currentRecord;
+        if(name.startsWith('$Record.'))
+          return formulaContext.currentRecord?.[name.slice(8)]??null;
+        if(name.startsWith('$User.'))return contextValue(formulaContext.actor,name.slice(6));
+        if(name.startsWith('$Profile.'))return contextValue(formulaContext.profile,name.slice(9));
+        if(name.startsWith('$Organization.'))
+          return contextValue(formulaContext.organization,name.slice(14));
+        if(name.startsWith('$RecordType.'))
+          return contextValue(formulaContext.recordType,name.slice(12));
+        if(name.startsWith('$Permission.'))
+          return formulaContext.permissionSnapshot?.[name.slice(12)]===true;
+        if(name.startsWith('$'))throw new Error('Unsupported formula global reference: '+name);
         const parts=/^([A-Za-z][A-Za-z0-9_]*)\.([A-Za-z][A-Za-z0-9_]*)$/.exec(name);
         if(!parts)return record[name]??null;
-        if(parts[1]===objectApi)
+        if(parts[1]===objectApi||parts[1]==='Record')
           return calculated.has(parts[2])?calculated.get(parts[2]):record[parts[2]]??null;
         return referenceCache.get(parts[1]+'.'+parts[2])??null;
       },{...formulaContext,isClone:record.__isClone===true},'formula_field');
@@ -342,7 +473,8 @@ export class RecordEngine {
           {latitude:row.geo_latitude,longitude:row.geo_longitude};
       else record[field.api_name]=row.value_text;
     }
-    const formulaContext=await this.formulaContext(tenantId,userId,client);
+    const formulaContext=await this.formulaContext(
+      tenantId,userId,objectApi,record,definitions,client);
     await this.applyFormulaFields(tenantId,userId,objectApi,record,definitions,client,true,formulaContext);
     return record[fieldApi]??null;
   }
@@ -666,7 +798,8 @@ export class RecordEngine {
     values:Record<string,unknown>,isClone:boolean,existingClient?:PoolClient) {
     await this.rbac.require(tenantId,userId,objectApi,'create');
     // External-ID upserts reuse the same before/after Flow contract inside their lock.
-    await this.prepare(tenantId,userId,objectApi,values,true,existingClient,undefined,true);
+    const initialPrepared=await this.prepare(
+      tenantId,userId,objectApi,values,true,existingClient,undefined,true);
     const save=async(client:PoolClient)=>{
       await this.lockObjectForWrite(client,tenantId,objectApi);
       const defaults=await this.fields(tenantId,objectApi,client);
@@ -674,14 +807,21 @@ export class RecordEngine {
         .map(field=>[field.api_name,['number','currency','percent'].includes(field.data_type)
           ?Number(field.default_value):field.data_type==='boolean'
             ?field.default_value==='true':field.default_value]));
-      let rowValues=await this.declarativeRules.defaults(client,tenantId,userId,objectApi,{...values},literals);
+      const lifecycle={stage:isClone?'clone' as const:'create' as const,isClone,
+        recordTypeId:initialPrepared.get('__RecordTypeId__')?.value_text??null,now:new Date()};
+      let rowValues=await this.declarativeRules.defaults(client,tenantId,userId,objectApi,
+        {...values,...(lifecycle.recordTypeId?{RecordTypeId:lifecycle.recordTypeId}:{})},
+        literals,lifecycle);
       if(this.recordTrigger){
-        rowValues=await this.recordTrigger(client,tenantId,userId,objectApi,'created',
-          rowValues,null,'before-save',isClone)??rowValues;
+        const proposed=await this.recordTrigger(client,tenantId,userId,objectApi,'created',
+          rowValues,null,'before-save',isClone);
+        if(proposed)rowValues={...rowValues,...proposed};
       }
       const finalValues=await this.prepare(tenantId,userId,objectApi,rowValues,true,client);
       const matches=await validateAndMatchRecord(this.declarativeRules,this.recordMatching,
-        client,tenantId,userId,objectApi,rowValues,null);
+        client,tenantId,userId,objectApi,rowValues,null,undefined,{
+          ...lifecycle,recordTypeId:finalValues.get('__RecordTypeId__')?.value_text??null
+        });
       const id=await this.insertPrepared(client,tenantId,userId,objectApi,finalValues,isClone);
       await this.recordMatching.save(client,tenantId,objectApi,id,matches);
       if(this.recordTrigger){
@@ -708,21 +848,30 @@ export class RecordEngine {
         ||!await this.rbac.allowed(tenantId,userId,objectApi+'.'+field.api_name,'create'))continue;
       values[field.api_name]=source[field.api_name];
     }
+    if(typeof source.RecordTypeId==='string')values.RecordTypeId=source.RecordTypeId;
     return this.createRecord(tenantId,userId,objectApi,values,true);
   }
   /** All Flow record mutations share one transaction, including relationship checks. */
   async createInTransaction(client:PoolClient,tenantId:string,userId:string,objectApi:string,values:Record<string,unknown>) {
     await this.rbac.require(tenantId,userId,objectApi,'create');
     await this.lockObjectForWrite(client,tenantId,objectApi);
+    const initialPrepared=await this.prepare(
+      tenantId,userId,objectApi,values,true,client,undefined,true);
     const definitions=await this.fields(tenantId,objectApi,client);
     const literals=Object.fromEntries(definitions.filter(field=>field.default_value!==null)
       .map(field=>[field.api_name,['number','currency','percent'].includes(field.data_type)
         ?Number(field.default_value):field.data_type==='boolean'
           ?field.default_value==='true':field.default_value]));
-    const supplied=await this.declarativeRules.defaults(client,tenantId,userId,objectApi,{...values},literals);
+    const lifecycle={stage:'create' as const,
+      recordTypeId:initialPrepared.get('__RecordTypeId__')?.value_text??null,now:new Date()};
+    const supplied=await this.declarativeRules.defaults(client,tenantId,userId,objectApi,
+      {...values,...(lifecycle.recordTypeId?{RecordTypeId:lifecycle.recordTypeId}:{})},
+      literals,lifecycle);
     const prepared=await this.prepare(tenantId,userId,objectApi,supplied,true,client);
     const matches=await validateAndMatchRecord(this.declarativeRules,this.recordMatching,
-      client,tenantId,userId,objectApi,supplied,null);
+      client,tenantId,userId,objectApi,supplied,null,undefined,{
+        ...lifecycle,recordTypeId:prepared.get('__RecordTypeId__')?.value_text??null
+      });
     const id=await this.insertPrepared(client,tenantId,userId,objectApi,prepared);
     await this.recordMatching.save(client,tenantId,objectApi,id,matches);
     return id;
@@ -1122,9 +1271,12 @@ export class RecordEngine {
     }
     const records=[...collected.values()];
     if(definitions.some(field=>field.data_type==='formula')){
-      const formulaContext=await this.formulaContext(tenantId,userId);
-      for(const record of records)
+      const formulaNow=new Date();
+      for(const record of records){
+        const formulaContext=await this.formulaContext(
+          tenantId,userId,objectApi,record,definitions,undefined,formulaNow);
         await this.applyFormulaFields(tenantId,userId,objectApi,record,definitions,undefined,false,formulaContext);
+      }
     }
     for(const record of records)delete record.__isClone;
     const nextCursor=records.length&&lastCursor
@@ -1247,7 +1399,8 @@ export class RecordEngine {
     }
     const definitions=await this.fields(tenantId,objectApi,client);
     if(definitions.some(field=>field.data_type==='formula')){
-      const formulaContext=await this.formulaContext(tenantId,userId,client);
+      const formulaContext=await this.formulaContext(
+        tenantId,userId,objectApi,record,definitions,client);
       await this.applyFormulaFields(tenantId,userId,objectApi,record,definitions,client,false,formulaContext);
     }
     delete record.__isClone;
@@ -1363,7 +1516,7 @@ export class RecordEngine {
     if(client){
       let previous:Record<string,unknown>|undefined;
       const loadPrior=async()=>previous??(previous=await this.get(tenantId,userId,objectApi,id,client));
-      const prior=runTriggers?await loadPrior():null;
+      const prior=await loadPrior();
       let writeValues=prepared;
       if(runTriggers&&this.recordTrigger){
         const proposed=await this.recordTrigger(client,tenantId,userId,objectApi,'updated',
@@ -1391,8 +1544,12 @@ export class RecordEngine {
         }
       }
       const snapshot=async()=>({...await loadPrior(),...proposedValues});
+      const lifecycle={stage:'update' as const,
+        now:new Date(),
+        recordTypeId:writeValues.get('__RecordTypeId__')?.value_text
+          ??(typeof prior.RecordTypeId==='string'?prior.RecordTypeId:null)};
       const matches=await validateAndMatchRecord(this.declarativeRules,this.recordMatching,
-        client,tenantId,userId,objectApi,snapshot,loadPrior,id);
+        client,tenantId,userId,objectApi,snapshot,loadPrior,id,lifecycle);
       await write(client,writeValues);
       await this.recordMatching.save(client,tenantId,objectApi,id,matches);
       if(runTriggers&&this.recordTrigger){
@@ -1433,7 +1590,10 @@ export class RecordEngine {
             :value.value_text);
       }
       const matches=await validateAndMatchRecord(this.declarativeRules,this.recordMatching,
-        transactionClient,tenantId,userId,objectApi,proposedValues,prior,id);
+        transactionClient,tenantId,userId,objectApi,proposedValues,prior,id,{
+          stage:'update',now:new Date(),recordTypeId:finalPrepared.get('__RecordTypeId__')?.value_text
+            ??(typeof prior.RecordTypeId==='string'?prior.RecordTypeId:null)
+        });
       await write(transactionClient,finalPrepared);
       await this.recordMatching.save(transactionClient,tenantId,objectApi,id,matches);
       if(this.recordTrigger){

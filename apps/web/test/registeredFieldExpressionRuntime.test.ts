@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {resolveFieldText,resolveRegisteredTextProperties} from '../src/core/components/RegisteredComponent/fieldExpressionRuntime';
+import {
+  resolveFieldText,resolveRegisteredTextProperties,setAuthenticatedFormulaBindingContext
+} from '../src/core/components/RegisteredComponent/fieldExpressionRuntime';
 import {evaluateFieldExpression} from '../src/component-libraries/shared/FieldExpression.js';
 
 test('registered components resolve authorised record fields without executing code',()=>{
@@ -63,4 +65,26 @@ test('text-only metadata substitution leaves layouts and original properties unc
   assert.equal(input.text,'"Hello " & @Name');
   assert.strictEqual(resolved.record,input.record);
   assert.strictEqual(resolveRegisteredTextProperties(definitions,{text:'"Hello " & @Name'}).text,'"Hello " & @Name');
+});
+
+test('registered bindings use authenticated global context and reject unsupported permissions or time zones',()=>{
+  const definitions=[{propertyKey:'text',kind:'TEXT'}];
+  const properties={record:{Name:'Tea',RecordTypeId:'record-type'},text:
+    '@$User.Locale & " " & @$Profile.Name & " " & @$Organization.Name & " " & @Record.Name'};
+  setAuthenticatedFormulaBindingContext({
+    id:'user',displayName:'Tester',email:'test@example.invalid',timeZone:'Europe/London',
+    locale:'en-GB',currencyIsoCode:'GBP',profileId:'profile',profileName:'Developer',
+    profileApi:'Developer',tenantId:'tenant',tenantName:'Tenant'
+  });
+  assert.equal(resolveRegisteredTextProperties(definitions,properties).text,
+    'en-GB Developer Tenant Tea');
+  assert.equal(resolveRegisteredTextProperties(definitions,{
+    record:{RecordTypeId:'record-type'},text:'@$RecordType.Id'
+  }).text,'record-type');
+  assert.throws(()=>resolveRegisteredTextProperties(definitions,{
+    record:{},text:'@$Permission.CanApprove'
+  }),/Custom permission snapshot is unavailable/);
+  setAuthenticatedFormulaBindingContext(null);
+  assert.throws(()=>resolveRegisteredTextProperties(definitions,{text:'TODAY()'}),
+    /Authenticated formula time zone is unavailable/);
 });

@@ -396,6 +396,9 @@ test('Setup session metadata reuses OneEngine SQL policy, with explicit deny ove
     if(sql.includes('FROM md_object_record_types'))return {rows:[]};
     if(sql.includes('SELECT landing_app_api FROM md_users'))return {rows:[{landing_app_api:'Setup'}]};
     if(sql.includes('SELECT name FROM md_tenants'))return {rows:[{name:'Verified Test Tenant'}]};
+    if(sql.includes('FROM md_users WHERE tenant_id=$1 AND id=$2 AND enabled=true'))
+      return {rows:[{id:'developer',email:'developer@example.invalid',display_name:'Developer',
+        time_zone:'Europe/London',locale:'en-GB',currency_iso_code:'GBP'}]};
     if(sql.includes('INSERT INTO md_tenant_api_usage_daily'))return {rows:[],rowCount:1};
     assert.ok(sql.includes('md_rbac_decision'));
     assert.ok(sql.includes('md_rbac_decision'));
@@ -411,6 +414,9 @@ test('Setup session metadata reuses OneEngine SQL policy, with explicit deny ove
   const result=await sessionMetadata(db,'tenant','developer');
   assert.equal(result.user.id,'developer');
   assert.equal(result.user.tenantId,'tenant');
+  assert.equal(result.user.timeZone,'Europe/London');
+  assert.equal(result.user.locale,'en-GB');
+  assert.equal(result.user.currencyIsoCode,'GBP');
   assert.deepEqual(result.user.permissions,['metadata:read','metadata:write','flows:system-context']);
   assert.deepEqual(result.user.fieldAccess,{});
 });
@@ -429,6 +435,9 @@ test('Setup /auth/me returns the authenticated SQL policy, not an empty permissi
     if(sql.includes('FROM md_object_record_types'))return {rows:[]};
     if(sql.includes('SELECT landing_app_api FROM md_users'))return {rows:[{landing_app_api:'Acetill'}]};
     if(sql.includes('SELECT name FROM md_tenants'))return {rows:[{name:'Verified Test Tenant'}]};
+    if(sql.includes('FROM md_users WHERE tenant_id=$1 AND id=$2 AND enabled=true'))
+      return {rows:[{id:'developer',email:'developer@example.invalid',display_name:'Developer',
+        time_zone:'Europe/London',locale:'en-GB',currency_iso_code:'GBP'}]};
     if(sql.includes('md_rbac_decision'))
       return {rows:[{ordinal:1,allow_granted:true,deny_granted:false},
         {ordinal:2,allow_granted:true,deny_granted:false}]};
@@ -839,11 +848,12 @@ test('Record update in Flow transaction applies tenant, record, and field permis
  }};
  const db={query:async()=>{throw Error('Transaction must use its own SQL client')},
   transaction:async()=>{throw Error('Must not open a nested transaction')}} as unknown as SqlPersistence;
- const rbac={require:async(t:string,u:string,resource:string,action:string)=>{
+ const rbac=({require:async(t:string,u:string,resource:string,action:string)=>{
   assert.equal(t,tenant);assert.equal(u,user);checks.push(resource+'.'+action);
- }} as unknown as RbacEngine;
+ },allowedMany:async(_t:string,_u:string,items:unknown[])=>items.map(()=>true)}
+ ) as unknown as RbacEngine;
  await new RecordEngine(db,rbac).updateInTransaction(client as any,tenant,user,'Product',recordId,{Taxable:true});
- assert.deepEqual(checks,['Product.edit','Product.Taxable.edit']);
+ assert.deepEqual(checks,['Product.edit','Product.Taxable.edit','Product.read']);
  assert.ok(calls.some(call=>call.sql.includes('md_record_access')&&call.args[0]===tenant&&call.args[3]===user));
  assert.ok(calls.some(call=>call.sql.includes('INSERT INTO md_record_history')&&call.args[0]===tenant));
  assert.ok(calls.some(call=>call.sql.includes('INSERT INTO md_record_values')&&call.args[0]===tenant));

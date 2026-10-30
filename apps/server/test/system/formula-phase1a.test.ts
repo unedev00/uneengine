@@ -94,6 +94,18 @@ test('Flow formula resource dependencies reject cycles during authoring',()=>{
   ]),[]);
 });
 
+test('record lifecycle functions and globals are rejected outside record-triggered flows',()=>{
+  assert.deepEqual(validateFlowResources([
+    {name:'CloneFlag',type:'Formula',dataType:'Boolean',value:'ISCLONE()'}
+  ]),['Record lifecycle formula functions and globals are only supported in Record-Triggered Flows']);
+  assert.deepEqual(validateFlowResources([
+    {name:'TypeName',type:'Formula',dataType:'Text',value:'$RecordType.Name'}
+  ]),['Record lifecycle formula functions and globals are only supported in Record-Triggered Flows']);
+  assert.deepEqual(validateFlowResources([
+    {name:'CloneFlag',type:'Formula',dataType:'Boolean',value:'ISCLONE()'}
+  ],true),[]);
+});
+
 test('function calls use declared arity and contexts at authoring time',()=>{
   assert.throws(()=>validateFlowFormula('ROUND()'),/Invalid argument count for ROUND/);
   assert.throws(()=>validateFlowFormula('LEFT("text", 1, 2)'),/Invalid argument count for LEFT/);

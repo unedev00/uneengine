@@ -44,15 +44,39 @@ test('Flow formula context uses the execution user time zone and tenant currency
    assert.match(sql,/time_zone/);
    return {rows:[
     {id:recipient,email:'flow@example.invalid',display_name:'Flow User',time_zone:'Europe/London',
+     locale:'en-GB',user_currency_iso_code:'GBP',
      has_currency_settings:true,currency_iso_code:'GBP',conversion_rate:'1'},
     {id:recipient,email:'flow@example.invalid',display_name:'Flow User',time_zone:'Europe/London',
+     locale:'en-GB',user_currency_iso_code:'GBP',
      has_currency_settings:true,currency_iso_code:'USD',conversion_rate:'1.27'}
    ]};
   }} as unknown as PoolClient,'tenant-id',recipient,'TODAY() + TZOFFSET(NOW()) + CURRENCYRATE("USD")',vars);
   assert.equal(context.timeZone,'Europe/London');
-  assert.deepEqual(context.currencyRates,{GBP:1,USD:1.27});
+  assert.deepEqual({...context.currencyRates},{GBP:1,USD:1.27});
   assert.deepEqual(vars.$User,{Id:recipient,Name:'Flow User',Email:'flow@example.invalid',
-   TimeZone:'Europe/London'});
+   TimeZone:'Europe/London',Locale:'en-GB',CurrencyIsoCode:'GBP'});
+});
+
+test('Flow context resolves profile, organization, locale, currency, and explicit custom permissions',async()=>{
+  const vars:Record<string,unknown>={};
+  const rbac={allowedMany:async(_tenant:string,_user:string,checks:Array<{resource:string;action:string}>)=>{
+    assert.deepEqual(checks,[{resource:'CustomPermission:CanApprove',action:'read'}]);
+    return [true];
+  }};
+  const graph='$User.Locale $User.CurrencyIsoCode $Profile.Name $Organization.Name $Permission.CanApprove';
+  const context=await loadFlowUserResource({query:async(sql:string)=>{
+    if(sql.includes('FROM md_tenants'))return {rows:[{id:'tenant-id',name:'Tenant'}]};
+    return {rows:[{id:recipient,email:'flow@example.invalid',display_name:'Flow User',
+      time_zone:'Europe/London',locale:'en-GB',user_currency_iso_code:'GBP',
+      reports_to_user_id:null,profile_id:'profile-id',profile_name:'Developer',
+      profile_api:'Developer',has_currency_settings:true,currency_iso_code:'GBP',
+      conversion_rate:'1'}]};
+  }} as unknown as PoolClient,'tenant-id',recipient,graph,vars,rbac as never);
+  assert.equal(context.locale,'en-GB');
+  assert.equal(context.currencyIsoCode,'GBP');
+  assert.deepEqual(vars.$Profile,{Id:'profile-id',Name:'Developer',DeveloperName:'Developer'});
+  assert.deepEqual(vars.$Organization,{Id:'tenant-id',Name:'Tenant'});
+  assert.deepEqual(vars.$Permission,{CanApprove:true});
 });
 
 test('Flow formula context does not issue a user query when no user or contextual formula is used',async()=>{

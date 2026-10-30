@@ -2,6 +2,7 @@
 // Tenant-scoped bootstrap: core metadata first, optional admin metadata afterwards.
 import { useEffect, useRef } from 'react';
 import { resolveSqlComponentLibrary } from '../../components/Registry/bundledRegistryClient';
+import { setAuthenticatedFormulaBindingContext } from '../../components/RegisteredComponent/fieldExpressionRuntime';
 import { saveVerifiedMetadata, type MetadataPublicationResponse } from '../../metadata/Cache/verifiedMetadataCache';
 import { reconcileCurrentAppId, reconcileSelectedObject, reconcileSelectedPage } from './metadataSelection';
 import type { ObjectMetadata, LightningPageMetadata, LightningAppMetadata, FlowDefinitionMetadata, PlatformEventMetadata, EmailAlertMetadata, ApprovalProcessMetadata, ConnectorProviderMetadata, IntegrationConnectionMetadata, LibraryComponentMetadata, DashboardMetadata, DashboardFolderMetadata, DashboardTerritoryMetadata, ReportFolderMetadata, ReportMetadata, AccessControlMetadata } from '../../metadata/Definitions/metadata';
@@ -209,6 +210,7 @@ export function useSetupMetadata(ctx: any) {
           const displayObjects = firstObjects.objects;
           const displayPages = firstPages.pages;
           const displayApps = firstApps.apps;
+          setAuthenticatedFormulaBindingContext(firstSession.user);
           setObjects(displayObjects);
           if(displayObjects.length)setObject(current=>reconcileSelectedObject(current,displayObjects));
           setPages(displayPages);
@@ -236,6 +238,7 @@ export function useSetupMetadata(ctx: any) {
         // waiting for unrelated component-library, page and app metadata.
         const sessionRequest = recover<{ user: { id?: string; tenantId?: string; profileId: string; permissions: string[]; fieldAccess: Record<string, { read: boolean; edit: boolean }>; recordTypeAccess: Record<string, boolean> } }>('/auth/me', { user: { profileId: '', permissions: [], fieldAccess: {}, recordTypeAccess: {} } });
         void sessionRequest.then(({user}) => {
+          setAuthenticatedFormulaBindingContext(user);
           setCurrentProfileId(user.profileId);
           setCanManageUserIdentities(user.permissions.includes('security:manage'));
           setCanReadSecurity(user.permissions.includes('security:read') || user.permissions.includes('security:manage'));
@@ -299,6 +302,7 @@ export function useSetupMetadata(ctx: any) {
         setCanManageReportFolders(reportFolderPayload.canManageAll);
         setDashboardUserId(dashboardPayload.userId);
         setDashboardRunningUserIds(dashboardPayload.runningUserIds);
+        setAuthenticatedFormulaBindingContext(sessionPayload.user);
         setCurrentProfileId(sessionPayload.user.profileId);
         setCanManageUserIdentities(sessionPayload.user.permissions.includes('security:manage'));
         setCanManageApprovalProcesses(sessionPayload.user.permissions.includes('security:manage')

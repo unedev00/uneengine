@@ -20,7 +20,10 @@ import {executeHttpCalloutNode} from '../system-files/nodes/HttpCalloutNode.js';
 import {executeFlowAssignment} from '../system-files/flow-assignment-runtime.js';
 import {hydrateFlowScreenChoices} from '../system-files/flow-screen-choice-runtime.js';
 import {screenRecordPayload,acceptScreenRecordSelection,ScreenSelectionError} from '../system-files/flow-screen-record-selection.js';
-import {evaluateFlowFormula,isFormulaImageResult} from '../system-files/flow-formula-runtime.js';
+import {
+  createFormulaEvaluationContext,evaluateFlowFormula,isFormulaImageResult,
+  type FormulaEvaluationContext
+} from '../system-files/flow-formula-runtime.js';
 import {flowAppIsEntitled,validateFlowDraft} from '../system-files/flow-validation.js';
 import {loadFlowCapabilityCatalog} from '../system-files/flow-capability-catalog.js';
 import {executeFlowSubflow} from '../system-files/flow-subflow-runtime.js';
@@ -617,8 +620,8 @@ export class FlowRuntime {
       const vars:Record<string,unknown>=Object.create(null) as Record<string,unknown>;
       for(const row of [...prior.rows,...stored.rows])
         vars[row.api_name]=scalarFrom(row.value_text,row.data_type);
-      const formulaContext=await loadFlowUserResource(
-        client,tenantId,userId,JSON.stringify([graph.resources,graph.elements]),vars);
+      let formulaContext=await loadFlowUserResource(
+        client,tenantId,userId,JSON.stringify([graph.resources,graph.elements]),vars,this.rbac);
       const persistedRecords=await client.query<{
         api_name:string;object_api:string;record_id:string|null;is_collection:boolean;sort_order:number
       }>(`SELECT api_name,object_api,record_id,is_collection,sort_order
@@ -659,6 +662,58 @@ export class FlowRuntime {
         }));
         vars[name]=group.collection?found:found[0]??null;
       }
+      const readableRecordFields=new Set(['Id','CreatedAt','LastModifiedDate']);
+      const triggerObjectApi=recordGroups.get('$Record')?.objectApi;
+      if(active.flow_type==='Record-Triggered Flow'&&triggerObjectApi){
+        const {rows:fields}=await client.query<{api_name:string}>(
+          `SELECT api_name FROM md_field_definitions
+           WHERE tenant_id=$1 AND object_api=$2 AND deleted_at IS NULL ORDER BY api_name`,
+          [tenantId,triggerObjectApi]);
+        const decisions=await this.rbac!.allowedMany(tenantId,actor.actorUserId,
+          fields.map(field=>({resource:triggerObjectApi+'.'+field.api_name,action:'read'})));
+        fields.forEach((field,index)=>{if(decisions[index])readableRecordFields.add(field.api_name);});
+        const currentRecord=vars.$Record;
+        const recordTypeId=currentRecord&&typeof currentRecord==='object'
+          ?(currentRecord as Record<string,unknown>).RecordTypeId:null;
+        if(typeof recordTypeId==='string'&&await this.rbac!.allowed(tenantId,actor.actorUserId,
+          'RecordType:'+triggerObjectApi+'.'+recordTypeId,'read'))
+          readableRecordFields.add('RecordTypeId');
+      }
+      if(/\$RecordType(?:\.|\b)/.test(JSON.stringify([graph.resources,graph.elements]))){
+        if(active.flow_type!=='Record-Triggered Flow'||!triggerObjectApi)
+          throw new Error('$RecordType is only available in Record-Triggered Flows');
+        const currentRecord=vars.$Record;
+        const recordTypeId=currentRecord&&typeof currentRecord==='object'
+          ?(currentRecord as Record<string,unknown>).RecordTypeId:null;
+        if(typeof recordTypeId!=='string'){
+          vars.$RecordType={Id:null,Name:null,DeveloperName:null};
+        }else{
+          const {rows:types}=await client.query<{record_type_id:string;label:string;
+            developer_name:string}>(`SELECT record_type_id,label,developer_name
+            FROM md_object_record_types WHERE tenant_id=$1 AND object_api=$2
+              AND record_type_id=$3 AND active=true`,
+          [tenantId,triggerObjectApi,recordTypeId]);
+          if(!types[0])throw new Error('Flow record type is unavailable');
+          await this.rbac!.require(tenantId,actor.actorUserId,
+            'RecordType:'+triggerObjectApi+'.'+recordTypeId,'read');
+          vars.$RecordType={Id:types[0].record_type_id,Name:types[0].label,
+            DeveloperName:types[0].developer_name};
+        }
+      }
+      const currentFormulaRecord=vars.$Record&&typeof vars.$Record==='object'
+        &&!Array.isArray(vars.$Record)?vars.$Record as Record<string,unknown>:null;
+      const priorFormulaRecord=vars.$Record__Prior&&typeof vars.$Record__Prior==='object'
+        &&!Array.isArray(vars.$Record__Prior)
+        ?vars.$Record__Prior as Record<string,unknown>:null;
+      const formulaRecordType=vars.$RecordType&&typeof vars.$RecordType==='object'
+        &&!Array.isArray(vars.$RecordType)
+        ?vars.$RecordType as FormulaEvaluationContext['recordType']:undefined;
+      formulaContext=createFormulaEvaluationContext({
+        ...formulaContext,transactionStage:'flow',isClone:vars.$Record__IsClone===true,
+        ...(currentFormulaRecord?{currentRecord:currentFormulaRecord}:{}),
+        ...(priorFormulaRecord?{priorRecord:priorFormulaRecord}:{}),
+        ...(formulaRecordType?{recordType:formulaRecordType}:{})
+      });
       const resources=Array.isArray(graph.resources)
         ?graph.resources as Array<{name:string;type:string;dataType:string;value?:unknown}>:[];
       const persistenceResources=[...resources];
@@ -751,6 +806,10 @@ export class FlowRuntime {
         if(field===undefined)return value;
         if(!value||typeof value!=='object'||Array.isArray(value))
           throw new Error('Flow field reference needs a single record');
+        if(['$Record','$Record__Prior'].includes(name)){
+          if(!readableRecordFields.has(field))throw new Error('Permission denied');
+          if(!Object.hasOwn(value,field))return null;
+        }
         if(!Object.hasOwn(value,field)){
           if(name==='$Record__Prior')return null;
           throw new Error('Unknown Flow record field: '+field);
@@ -1087,7 +1146,7 @@ export class FlowRuntime {
     }
     const userResource:Record<string,unknown>={};
     const formulaContext=await loadFlowUserResource(this.db,tenantId,userId,
-      JSON.stringify([doc.resources,doc.elements]),userResource);
+      JSON.stringify([doc.resources,doc.elements]),userResource,this.rbac);
     return simulateFlowGraph({
       apiName,version:version.version,flowType:String(doc.flowType??'Autolaunched Flow'),
       nodes:doc.elements as Array<{id:number;type:string;label:string;config:Record<string,unknown>}>,
