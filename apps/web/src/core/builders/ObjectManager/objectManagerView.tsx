@@ -262,7 +262,7 @@ function fieldTypeMigrationChoices(currentType: string, objects: ObjectMetadata[
 }
 export function createObjectManager(apiRequest: <T>(path: string, init?: RequestInit) => Promise<T>) {
 function ObjectManager({
-  object, objects, flows, pages, reports, dashboards, profiles, activationAppIds, selectedSetting, selectedFieldApiName, search, onSearch, onObjectSelect, onSettingSelect, onOpenDependency, onNewField, onCreateObject, onSaveObject, onRefreshObject, onDeleteObject, onSaveField, onDeleteField, onSavePage, onDeleteRecordPage, onOpenRecordPage, onOpenPageBuilder, onOpenRecords, page, onNotify
+  object, objects, flows, pages, reports, dashboards, profiles, activationAppIds, selectedSetting, selectedFieldApiName, search, onSearch, onObjectSelect, onSettingSelect, onOpenDependency, onNewField, onCreateObject, onSaveObject, onRefreshObject, onDeleteObject, onRestoreObject, onSaveField, onDeleteField, onSavePage, onDeleteRecordPage, onOpenRecordPage, onOpenPageBuilder, onOpenRecords, page, onNotify
 }: {
   object: ObjectMetadata;
   objects: ObjectMetadata[];
@@ -289,6 +289,7 @@ function ObjectManager({
   onSaveObject: (object: ObjectMetadata) => Promise<void>;
   onRefreshObject: (apiName: string) => Promise<ObjectMetadata>;
   onDeleteObject: (apiName: string) => Promise<void>;
+  onRestoreObject: (apiName: string) => Promise<ObjectMetadata>;
   onSaveField: (field: FieldMetadata) => Promise<ObjectMetadata>;
   onDeleteField: (apiName: string) => Promise<ObjectMetadata>;
   onSavePage: (page: LightningPageMetadata) => Promise<void>;
@@ -413,6 +414,28 @@ function ObjectManager({
   const [activationProfileId, setActivationProfileId] = useState('');
   const [activationFormFactors, setActivationFormFactors] = useState<Array<'Desktop' | 'Phone' | 'Tablet' | 'Custom'>>(['Desktop']);
   const [showDeleteObjectConfirmation, setShowDeleteObjectConfirmation] = useState(false);
+  const [deleteImpact,setDeleteImpact]=useState<Array<{kind:string;count:number}>|null>(null);
+  const [deletedObjects,setDeletedObjects]=useState<Array<{apiName:string;label:string;deletedAt:string}>>([]);
+  const [deletedObjectsOpen,setDeletedObjectsOpen]=useState(false);
+  const [deletedObjectsBusy,setDeletedObjectsBusy]=useState(false);
+  const showDeletedObjects=async()=>{
+    if(deletedObjectsOpen){setDeletedObjectsOpen(false);return;}
+    setDeletedObjectsBusy(true);
+    try{
+      const result=await apiRequest<{objects:typeof deletedObjects}>('/metadata/objects/deleted');
+      setDeletedObjects(result.objects);
+      setDeletedObjectsOpen(true);
+    }catch(error){onNotify(error instanceof Error?error.message:'Unable to list deleted objects');}
+    finally{setDeletedObjectsBusy(false);}
+  };
+  const openDeleteObject=async()=>{
+    try{
+      const impact=await apiRequest<{blockers:Array<{kind:string;count:number}>}>(
+        `/metadata/objects/${encodeURIComponent(draft.apiName)}/impact`);
+      setDeleteImpact(impact.blockers);
+      setShowDeleteObjectConfirmation(true);
+    }catch(error){onNotify(error instanceof Error?error.message:'Unable to inspect object deletion impact');}
+  };
   const [showDeleteFieldConfirmation, setShowDeleteFieldConfirmation] = useState(false);
   const validateDraft = async () => {
     try {
@@ -779,6 +802,7 @@ function ObjectManager({
     }
   };
   const confirmDeleteObject = async () => {
+    if(deleteImpact===null||deleteImpact.length>0)return;
     try {
       await onDeleteObject(draft.apiName);
       setShowDeleteObjectConfirmation(false);
@@ -932,7 +956,7 @@ function ObjectManager({
     <section className="surface object-setting-surface">
       <div className="section-toolbar"><div><h2>Edit Details</h2><p>Update the object definition.</p></div><div className="toolbar-actions">
         <button className="btn" type="button" onClick={() => {setDraft(object);setSectionMode('view');}}>Cancel</button>
-        {draft.kind === 'Custom Object' && <button className="btn" onClick={() => setShowDeleteObjectConfirmation(true)}><Trash2 size={14} />Delete</button>}
+        {draft.kind === 'Custom Object' && <button className="btn" onClick={() => void openDeleteObject()}><Trash2 size={14} />Delete</button>}
         <button className="btn btn-brand" onClick={persistDraft}><Save size={14} />Save</button></div></div>
       <div className="object-edit-form">
         <PlatformPageSlot slotKey="field-object-01"><label className="form-label">Label<input className="form-control" value={draft.label} onChange={(event) => updateDraft({ label: event.target.value })} /></label></PlatformPageSlot>
@@ -972,8 +996,12 @@ function ObjectManager({
       {showDeleteObjectConfirmation && <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setShowDeleteObjectConfirmation(false); }}>
         <section className="modal" role="dialog" aria-modal="true" aria-labelledby="delete-object-title">
           <div className="modal-header"><h2 id="delete-object-title">Delete {draft.label}?</h2><button className="icon-button dark" onClick={() => setShowDeleteObjectConfirmation(false)} aria-label="Close"><X size={18} /></button></div>
-          <p className="modal-copy">This permanently deletes the custom object metadata. Objects with records or dependencies cannot be deleted.</p>
-          <div className="modal-actions"><button className="btn" onClick={() => setShowDeleteObjectConfirmation(false)}>Cancel</button><button className="btn btn-brand" onClick={() => void confirmDeleteObject()}>Delete Object</button></div>
+          <p className="modal-copy">The object will be hidden but its metadata preserved for restoration. Existing records and dependent metadata block deletion.</p>
+          {deleteImpact===null?<p>Checking dependencies…</p>:deleteImpact.length>0
+            ?<div role="alert"><strong>Deletion blocked by dependencies:</strong><ul>{deleteImpact.map(item=>
+              <li key={item.kind}>{item.kind}: {item.count}</li>)}</ul></div>
+            :<p>No blocking references found. This object can be restored later from Object Manager.</p>}
+          <div className="modal-actions"><button className="btn" onClick={() => setShowDeleteObjectConfirmation(false)}>Cancel</button><button className="btn btn-brand" disabled={deleteImpact===null||deleteImpact.length>0} onClick={() => void confirmDeleteObject()}>Delete Object</button></div>
         </section>
       </div>}
     </section>
@@ -1946,7 +1974,23 @@ function ObjectManager({
   if (selectedSetting === 'Objects') return (
     <PlatformPageSlot slotKey="object-workspace"><section className="object-manager surface object-setting-surface" aria-label="Object Manager">
       <div className="section-toolbar"><div><h1>Object Manager</h1><p>Browse object definitions. Select an object to view its details.</p></div>
-        <button className="btn btn-brand" type="button" onClick={onCreateObject}><Plus size={14}/>New Object</button></div>
+        <div className="toolbar-actions">
+          <button className="btn" type="button" onClick={()=>void showDeletedObjects()} disabled={deletedObjectsBusy}>
+            {deletedObjectsOpen?'Hide Deleted Objects':'Deleted Objects'}</button>
+          <button className="btn btn-brand" type="button" onClick={onCreateObject}><Plus size={14}/>New Object</button>
+        </div></div>
+      {deletedObjectsOpen&&<section className="metadata-card" aria-label="Deleted objects">
+        <h2>Deleted Objects</h2>
+        {!deletedObjects.length?<p>No deleted custom objects.</p>:<div className="table-scroll"><table className="slds-table">
+          <thead><tr><th>Label</th><th>API name</th><th>Deleted</th><th>Action</th></tr></thead>
+          <tbody>{deletedObjects.map(item=><tr key={item.apiName}>
+            <td>{item.label}</td><td className="api-name">{item.apiName}</td>
+            <td>{new Date(item.deletedAt).toLocaleString()}</td>
+            <td><button className="btn" type="button" onClick={()=>void onRestoreObject(item.apiName).then(()=>
+              setDeletedObjects(current=>current.filter(row=>row.apiName!==item.apiName))).catch(error=>
+              onNotify(error instanceof Error?error.message:'Unable to restore object'))}>Restore</button></td>
+          </tr>)}</tbody></table></div>}
+      </section>}
       <div className="field-list-toolbar">
         <div className="results-count">{visibleObjects.length} objects</div>
         <div className="field-list-actions"><div className="mini-search"><Search size={14}/>
@@ -1972,7 +2016,7 @@ function ObjectManager({
         {showObjectActionsMenu && <div className="object-manager-menu">
           <button type="button" onClick={() => { setShowObjectActionsMenu(false); refreshObject(); }}>Refresh Metadata</button>
           <button type="button" onClick={() => { setShowObjectActionsMenu(false); onNewField(); }}>New Field</button>
-          {draft.kind === 'Custom Object' && <button type="button" className="danger-action" onClick={() => { setShowObjectActionsMenu(false); setShowDeleteObjectConfirmation(true); }}>Delete Object</button>}
+          {draft.kind === 'Custom Object' && <button type="button" className="danger-action" onClick={() => { setShowObjectActionsMenu(false); void openDeleteObject(); }}>Delete Object</button>}
         </div>}
       </div>
       <div className="object-manager-layout">
