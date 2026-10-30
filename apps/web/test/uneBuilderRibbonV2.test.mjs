@@ -6,7 +6,7 @@ import {buildBundledComponent} from '../../../scripts/component-catalog.mjs';
 
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {evaluateFieldExpression} from '../src/one/shared/OneFieldExpression.js';
+import {evaluateFieldExpression} from '../src/component-libraries/shared/OneFieldExpression.js';
 
 
 const src=path=>readFileSync(new URL(path,import.meta.url),'utf8');
@@ -29,7 +29,7 @@ test('one SQL global inventory: 58 unique slots, ten components, default-disable
  assert.match(sql,/enabled boolean NOT NULL DEFAULT false/);
  for(const name of components){
   assert.match(sql,new RegExp("'"+name+"'"));
-  const manifest=JSON.parse(src('../src/one/'+name+'/component.json'));
+  const manifest=JSON.parse(src('../src/component-libraries/'+name+'/component.json'));
   assert.deepEqual(manifest.propertyDefinitions,[],'App renderer must not duplicate SQL property definitions');
  }
  for(const rule of rules){assert.ok(components.includes(rule.component),rule.component);assert.ok(slot(rule.id),rule.id)}
@@ -56,9 +56,9 @@ test('existing UNE expression evaluator supports literal strings, field concaten
  assert.equal(evaluateFieldExpression('@__proto__',row),'');
 });
 test('Image renders ONE Card and Card Grid renders the same shared Card repeatedly',()=>{
- const image=src('../src/one/une_image/UneImage.jsx');
- const grid=src('../src/one/OneItemGrid/OneItemGrid.jsx');
- const card=src('../src/one/shared/OneCardCore.jsx');
+ const image=src('../src/component-libraries/une_image/UneImage.jsx');
+ const grid=src('../src/component-libraries/OneItemGrid/OneItemGrid.jsx');
+ const card=src('../src/component-libraries/shared/OneCardCore.jsx');
  assert.match(image,/import OneCardCore/);
  assert.match(grid,/import OneCardCore/);
  assert.match(image,/<OneCardCore /);
@@ -96,17 +96,17 @@ test('new Calendar Layout controls and navigation, container and image renderers
  assert.match(ribbon,/WeekdaysPicker/);
  assert.match(ribbon,/role="dialog"/);
  assert.match(ribbon,/kindOverrides/);
- const calendar=src('../src/one/une/shared/UneSchedule.jsx');
+ const calendar=src('../src/component-libraries/une/shared/UneSchedule.jsx');
  for(const term of ['showDays','firstDay','defaultValue','defaultValueColor','dayEnabled','activeDayCount'])
   assert.ok(calendar.includes(term),'Calendar missing '+term);
- const layout=src('../src/one/une/shared/UneLayout.jsx');
+ const layout=src('../src/component-libraries/une/shared/UneLayout.jsx');
  for(const term of ['navigationDirection','imageFill','badgeText','badgeVisible','textSource','imageSource','textFrom'])
   assert.ok(layout.includes(term),'Container/Navigation missing '+term);
- const grid=src('../src/one/OneItemGrid/OneItemGrid.jsx');
- const image=src('../src/one/une_image/UneImage.jsx');
- assert.ok(src('../src/one/shared/OneCardCore.jsx').includes("imageFill"),'shared Card image fit missing');
+ const grid=src('../src/component-libraries/OneItemGrid/OneItemGrid.jsx');
+ const image=src('../src/component-libraries/une_image/UneImage.jsx');
+ assert.ok(src('../src/component-libraries/shared/OneCardCore.jsx').includes("imageFill"),'shared Card image fit missing');
  for(const name of components){
-  const registration=JSON.parse(src('../src/one/'+name+'/component.json'));
+  const registration=JSON.parse(src('../src/component-libraries/'+name+'/component.json'));
   assert.deepEqual(registration.propertyDefinitions,[],'SQL metadata leaked into '+name);
  }
  const builder=src('../src/core/builders/PageBuilder/pageBuilderView.tsx');
@@ -115,7 +115,7 @@ test('new Calendar Layout controls and navigation, container and image renderers
 });
 
 async function renderUne(apiName,props){
- const descriptor=JSON.parse(src('../src/one/'+apiName+'/component.json'));
+ const descriptor=JSON.parse(src('../src/component-libraries/'+apiName+'/component.json'));
  const built=await buildBundledComponent(descriptor);
  const sandbox={React,module:{exports:{}},Date,Intl,URL,crypto:globalThis.crypto};
  vm.runInNewContext(built.compiledJs,sandbox);
@@ -165,7 +165,7 @@ test('Page Builder renders only the SQL-backed ribbon, without invented Content 
  assert.match(ribbon,/definitions\\.filter\\(prop=>prop.tab===tab/);
 });
 test('Image action tab offers a declared click event without triggering it in the designer',async()=>{
- const registration=JSON.parse(src('../src/one/une_image/component.json'));
+ const registration=JSON.parse(src('../src/component-libraries/une_image/component.json'));
  assert.deepEqual(registration.propertyDefinitions,[]);
  assert.deepEqual(registration.eventDefinitions,[{apiName:'click',label:'When image is clicked'}]);
  const props={src:'https://example.com/photo.png',

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {ACETILL} from '../src/manifest.js';
 import {shortAppEntry} from '../../web/src/core/workspace/Navigation/shortAppEntry.js';
-import {resolveStandaloneEntry} from '../../web/src/core/workspace/Standalone/standaloneEntries.js';
+import {resolveStandaloneEntry} from '../../web/src/core/workspace/Standalcomponent-libraries/standaloneEntries.js';
 import {buildAcetillNavigation,canOpenAcetill,isAcetillPage} from '../src/contract.js';
 
 test('Acetill keeps administration and shared platform outside its package',()=>{

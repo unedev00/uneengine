@@ -20,8 +20,8 @@
       "actionFlows": {},
       "viewMode": "inbox"
     },
-    "jsx": "one/OneConversation/OneConversation.jsx",
-    "css": "one/OneConversation/OneConversation.css",
+    "jsx": "component-libraries/OneConversation/OneConversation.jsx",
+    "css": "component-libraries/OneConversation/OneConversation.css",
     "version": 5,
     "resize": {
       "defaultWidth": 900,

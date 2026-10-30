@@ -1,4 +1,4 @@
-import { useOneActions, css, arr, label, value, fire } from "../../../one/shared/OneActions.jsx";
+import { useOneActions, css, arr, label, value, fire } from "../../../component-libraries/shared/OneActions.jsx";
 export default function OneSearch(props) {
   const p={...props,kind:props.kind||"Search"};
   const {kind,root,query,setQuery,selected,setSelected,open,setOpen,localPage,setPage,options}=useOneActions(p);

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {evaluateFieldExpression} from '../src/one/shared/OneFieldExpression.js';
+import {evaluateFieldExpression} from '../src/component-libraries/shared/OneFieldExpression.js';
 import {loadComponentCatalog} from '../../../scripts/component-catalog.mjs';
 const read=path=>readFileSync(new URL(path,import.meta.url),'utf8');
 test('Smart Formula uses Excel semantics for maths, literals, fields and &',()=>{
@@ -15,7 +15,7 @@ test('Smart Formula uses Excel semantics for maths, literals, fields and &',()=>
    assert.equal(evaluateFieldExpression('"'+operator+'"',row),operator);
 });
 test('Smart component catalog is independent, ten components and SQL-owned',async()=>{
- const source=JSON.parse(read('../src/one/manifest.json'));
+ const source=JSON.parse(read('../src/component-libraries/manifest.json'));
  const names=source.components.map(p=>p.split('/')[0]).filter(name=>name.startsWith('smart_'));
  assert.deepEqual(names.sort(),['smart_button','smart_toggle','smart_lookup','smart_tabs',
   'smart_text','smart_card_grid','smart_image','smart_calendar','smart_navigation',
@@ -65,7 +65,7 @@ test('Insert Ribbon exposes visible Smart components without requiring a selecte
 });
 
 test('Smart visual/property fixes are registered without changing historic SQL migrations',()=>{
- const runtime=read('../src/one/smart/shared/SmartRuntime.jsx');
+ const runtime=read('../src/component-libraries/smart/shared/SmartRuntime.jsx');
  const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
  const formula=read('../src/core/builders/PageBuilder/SmartFormulaField.tsx');
  const sql=read('../../server/src/system-support/migrations/20270125-smart-ribbon-property-corrections.sql');
@@ -76,7 +76,7 @@ test('Smart visual/property fixes are registered without changing historic SQL m
  assert.match(ribbon,/const visible=definitions\.filter\(p=>p\.tab===tab\)/);
  assert.doesNotMatch(ribbon,/p\.tab===tab&&p\.components\.includes\(api\)/);
  assert.match(ribbon,/const supported=property\.components\.includes\(api\)/);
- const calendar=read('../src/one/une_calendar/app-properties.mjs');
+ const calendar=read('../src/component-libraries/une_calendar/app-properties.mjs');
  assert.match(calendar,/"propertyKey": "defaultValue",[\s\S]*?"group": "Values",\s*"section": "Data"/);
  assert.match(ribbon,/property.id==='defaultCheck'/);
  assert.match(formula,/createPortal/);

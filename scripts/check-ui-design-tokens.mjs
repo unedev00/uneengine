@@ -15,21 +15,21 @@ const moved = {
   'TenantManagement.css':'core/platform/TenantManagement/TenantManagement.css',
   'TenantDomains.css':'core/platform/TenantDomains/TenantDomains.css',
   'registeredComponentAppearance.css':'core/components/RegisteredComponent/registeredComponentAppearance.css',
-  'ChecklistMultiSelect.css':'one/OneChecklistMultiSelect/ChecklistMultiSelect.css',
-  'SmartFieldInput.css':'one/OneSmartFieldInput/SmartFieldInput.css',
+  'ChecklistMultiSelect.css':'component-libraries/OneChecklistMultiSelect/ChecklistMultiSelect.css',
+  'SmartFieldInput.css':'component-libraries/OneSmartFieldInput/SmartFieldInput.css',
   'FlowReferenceInput.css':'core/builders/FlowReferenceInput/FlowReferenceInput.css',
-  'ReferenceBrowser.css':'one/OneReferenceBrowser/ReferenceBrowser.css',
+  'ReferenceBrowser.css':'component-libraries/OneReferenceBrowser/ReferenceBrowser.css',
   'AppManagerList.css':'core/applications/AppManagerList/AppManagerList.css',
   'CompanySettingsWorkspace.css':'core/settings/CompanySettingsWorkspace/CompanySettingsWorkspace.css'
 };
 const web = path => {
   let actual = moved[path] || path;
-  if (actual.startsWith('custom-components/one/')) {
+  if (actual.startsWith('custom-components/component-libraries/')) {
     const file = actual.split('/').at(-1);
-    actual = file === 'manifest.json' ? 'one/manifest.json'
-      : file === 'OneConversation.jsx' ? 'one/OneConversation/OneConversation.jsx'
-      : file === 'OneShoppingCart.jsx' ? 'one/OneShoppingCart/OneShoppingCart.jsx'
-      : 'one/shared/' + file;
+    actual = file === 'manifest.json' ? 'component-libraries/manifest.json'
+      : file === 'OneConversation.jsx' ? 'component-libraries/OneConversation/OneConversation.jsx'
+      : file === 'OneShoppingCart.jsx' ? 'component-libraries/OneShoppingCart/OneShoppingCart.jsx'
+      : 'component-libraries/shared/' + file;
   }
   return read('apps/web/src/' + actual);
 };
@@ -75,17 +75,17 @@ for (const path of ['ChecklistMultiSelect.css', 'SmartFieldInput.css', 'FlowRefe
   assert.doesNotMatch(css, /font-size:\s*(?:[7-9]|10)px\b/,
     'No operational microtype below 11px: ' + path);
 }
-const one = web('custom-components/one/one.css');
+const one = web('custom-components/component-libraries/one.css');
 assert.match(one, /--md-primary/, 'One CSS should consume shared primary');
 for (const file of [
   'OneLayout.jsx','OneData.jsx','OneDisplay.jsx','OneInputs.jsx',
   'OneActions.jsx','OneShoppingCart.jsx','OneConversation.jsx'
 ]) {
-  const source = web('custom-components/one/' + file);
+  const source = web('custom-components/component-libraries/' + file);
   assert.ok(!source.includes("'#3176cc'"), 'Old default blue in One ' + file);
 }
 
-const manifest = JSON.parse(web('custom-components/one/manifest.json'));
+const manifest = JSON.parse(web('custom-components/component-libraries/manifest.json'));
 const accent = manifest.commonProperties.find(p => p.propertyKey === 'accentColor');
 assert.equal(accent?.defaultValue, '#1d4ed8',
   'Metadata property default must match shared design primary');
@@ -129,7 +129,7 @@ for (const [foreground, background, label] of [
 // Device/tenant acceptance still requires authenticated browser verification.
 const recordCss = web('core/records/RecordWorkspace/recordsListToolbar.css');
 const recordView = web('core/records/RecordWorkspace/recordWorkspaceViews.tsx');
-const oneCss = web('custom-components/one/one.css');
+const oneCss = web('custom-components/component-libraries/one.css');
 const builderCss = web('styles-md227.css');
 const installedAppsCss = web('core/workspace/SetupShell/InstalledAppMenu.css');
 assert.match(workspaceCss, /html, body, #root\s*\{\s*min-width:\s*320px/,
@@ -173,7 +173,7 @@ const pageBuilderView = web('core/builders/PageBuilder/pageBuilderView.tsx');
 assert.match(pageBuilderView, /aria-label=\{\x60Add \$\{component\.label\} to canvas\x60\}/,
   'A discoverable click/tap-to-add action must accompany builder drag');
 
-const oneCalendar = web('one/OneCalendar/OneCalendar.jsx');
+const oneCalendar = web('component-libraries/OneCalendar/OneCalendar.jsx');
 assert.match(oneCalendar, /aria-label="Previous month"/, 'Calendar navigation must have spoken labels');
 assert.match(oneCalendar, /overflowX: "auto"/, 'Seven touch-sized day cells must remain reachable on narrow displays');
 assert.match(oneCalendar, /minWidth: "var\(--md-control-touch,44px\)"/, 'Calendar day cells must expose a 44px touch target');

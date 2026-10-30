@@ -9,7 +9,7 @@ const components=[
 ];
 test('UNE component labels identify source objects without changing property API keys',()=>{
  for(const [name,mapping] of components){
-  const manifest=JSON.parse(file('../src/one/'+name+'/component.json'));
+  const manifest=JSON.parse(file('../src/component-libraries/'+name+'/component.json'));
   for(const [key,label] of Object.entries(mapping)){
    const definition=manifest.propertyDefinitions.find(item=>item.propertyKey===key);
    assert.equal(definition?.label,label,name+'.'+key);

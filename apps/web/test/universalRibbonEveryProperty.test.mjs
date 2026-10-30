@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {loadComponentCatalog} from '../../../scripts/component-catalog.mjs';
 
-const root=new URL('../src/one/',import.meta.url);
+const root=new URL('../src/component-libraries/',import.meta.url);
 const read=url=>readFileSync(url,'utf8');
 const manifest=JSON.parse(read(new URL('manifest.json',root)));
 
@@ -58,7 +58,7 @@ test('app-owned renderers and styles are code owned rather than UNE wrapper reex
   const descriptor=JSON.parse(read(new URL(path,root)));
   assert.deepEqual(descriptor.propertyDefinitions,[]);
   assert.equal(descriptor.cssFile,descriptor.apiName==='acetill_cart'
-   ?'one/acetill_cart/AcetillCart.css':`one/${descriptor.apiName}/AppComponent.css`);
+   ?'component-libraries/acetill_cart/AcetillCart.css':`component-libraries/${descriptor.apiName}/AppComponent.css`);
   const jsx=read(new URL('../src/'+descriptor.jsxFile,import.meta.url));
   assert.doesNotMatch(jsx,/from ['"]\.\.\/une_[a-z_]+\//,descriptor.apiName+' imports a deprecated wrapper');
   assert.ok(read(new URL('../src/'+descriptor.cssFile,import.meta.url)).length>0);

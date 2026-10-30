@@ -16,7 +16,7 @@ test('UNE Input replaces public UNE Text and keeps shared styling and data bindi
  for(const key of ['value','allowTyping','label','disabled','radius','padding','shadow','glassBlur',
                    'backgroundColor','textColor','borderColor','fontSize'])assert.ok(keys.has(key),key);
  assert.ok(!keys.has('text'));
- const manifest=JSON.parse(load('../src/one/manifest.json'));
+ const manifest=JSON.parse(load('../src/component-libraries/manifest.json'));
  assert.ok(!manifest.components.includes('une_text/component.json'));
 });
 

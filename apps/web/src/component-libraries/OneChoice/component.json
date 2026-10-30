@@ -1,0 +1,208 @@
+{
+  "apiName": "OneChoice",
+  "label": "One-Choice",
+  "category": "Inputs",
+  "description": "Universal Choice component; metadata-configured presentation, data and events.",
+  "surfaces": [
+    "page",
+    "dashboard",
+    "flow"
+  ],
+  "version": 6,
+  "scope": "platform-core",
+  "jsxFile": "component-libraries/OneChoice/OneChoice.jsx",
+  "cssFile": "component-libraries/OneChoice/OneChoice.css",
+  "resize": {
+    "defaultWidth": 360,
+    "defaultHeight": 100,
+    "minWidth": 90,
+    "minHeight": 40
+  },
+  "propertyDefinitions": [
+    {
+      "propertyKey": "kind",
+      "label": "Component kind",
+      "kind": "SELECT",
+      "required": true,
+      "defaultValue": "Choice",
+      "displayOrder": 0,
+      "choices": [
+        {
+          "key": "Choice",
+          "label": "One-Choice"
+        }
+      ]
+    },
+    {
+      "propertyKey": "label",
+      "label": "Field label",
+      "kind": "TEXT",
+      "displayOrder": 300,
+      "defaultValue": "Choose"
+    },
+    {
+      "propertyKey": "mode",
+      "label": "Mode",
+      "kind": "SELECT",
+      "displayOrder": 310,
+      "defaultValue": "select",
+      "choices": [
+        {
+          "key": "select",
+          "label": "Select"
+        },
+        {
+          "key": "multiple",
+          "label": "Multiple"
+        },
+        {
+          "key": "radio",
+          "label": "Radio"
+        },
+        {
+          "key": "checkbox",
+          "label": "Checkbox"
+        },
+        {
+          "key": "segmented",
+          "label": "Segmented"
+        }
+      ]
+    },
+    {
+      "propertyKey": "optionLabelFieldApiName",
+      "label": "Record option label field",
+      "kind": "OBJECT_FIELD",
+      "displayOrder": 410,
+      "defaultValue": ""
+    },
+    {
+      "propertyKey": "optionValueFieldApiName",
+      "label": "Record option value field",
+      "kind": "OBJECT_FIELD",
+      "displayOrder": 420,
+      "defaultValue": "Id"
+    },
+    {
+      "propertyKey": "optionPriceFieldApiName",
+      "label": "Optional numeric option price field",
+      "kind": "OBJECT_FIELD",
+      "displayOrder": 430,
+      "defaultValue": ""
+    },
+    {
+      "propertyKey": "optionImageFieldApiName",
+      "label": "Optional option image field",
+      "kind": "OBJECT_FIELD",
+      "displayOrder": 435,
+      "defaultValue": ""
+    },
+    {
+      "propertyKey": "maxSelections",
+      "label": "Maximum selected options (0 = unlimited)",
+      "kind": "NUMBER",
+      "displayOrder": 440,
+      "defaultValue": 0
+    },
+    {
+      "propertyKey": "minSelections",
+      "label": "Minimum selected options",
+      "kind": "NUMBER",
+      "displayOrder": 450,
+      "defaultValue": 0
+    },
+    {
+      "propertyKey": "required",
+      "label": "Selection required",
+      "kind": "BOOLEAN",
+      "displayOrder": 460,
+      "defaultValue": false
+    },
+    {
+      "propertyKey": "choices",
+      "label": "Static choices (comma-separated)",
+      "kind": "TEXT",
+      "displayOrder": 470,
+      "defaultValue": ""
+    },
+    {
+      "propertyKey": "currencyCode",
+      "label": "Optional price display currency",
+      "kind": "TEXT",
+      "defaultValue": "",
+      "displayOrder": 480
+    },
+    {
+      "propertyKey": "optionLayout",
+      "label": "Option layout",
+      "kind": "SELECT",
+      "displayOrder": 490,
+      "defaultValue": "inline",
+      "choices": [
+        { "key": "inline", "label": "Inline" },
+        { "key": "stacked", "label": "Stacked" },
+        { "key": "cards", "label": "Cards" }
+      ]
+    },
+    {
+      "propertyKey": "optionColumns",
+      "label": "Option card columns",
+      "kind": "NUMBER",
+      "displayOrder": 500,
+      "defaultValue": 2
+    },
+    {
+      "propertyKey": "optionMinHeight",
+      "label": "Option touch target height (px)",
+      "kind": "NUMBER",
+      "displayOrder": 510,
+      "defaultValue": 64
+    },
+    {
+      "propertyKey": "optionImageHeight",
+      "label": "Option image height (px)",
+      "kind": "NUMBER",
+      "displayOrder": 520,
+      "defaultValue": 64
+    },
+    {
+      "propertyKey": "optionImageFit",
+      "label": "Option image fit",
+      "kind": "SELECT",
+      "displayOrder": 530,
+      "defaultValue": "cover",
+      "choices": [
+        { "key": "contain", "label": "Contain" },
+        { "key": "cover", "label": "Cover" },
+        { "key": "fill", "label": "Fill" },
+        { "key": "scale-down", "label": "Scale down" }
+      ]
+    },
+    {
+      "propertyKey": "selectedOptionBackgroundColor",
+      "label": "Selected option background",
+      "kind": "COLOR",
+      "displayOrder": 540
+    },
+    {
+      "propertyKey": "selectedOptionTextColor",
+      "label": "Selected option text colour",
+      "kind": "COLOR",
+      "displayOrder": 550
+    },
+    {
+      "propertyKey": "relatedFilterKey",
+      "label": "Selected parent shared key",
+      "kind": "TEXT",
+      "defaultValue": "",
+      "displayOrder": 720
+    },
+    {
+      "propertyKey": "relatedFieldApiName",
+      "label": "Lookup field linking record to selected parent",
+      "kind": "OBJECT_FIELD",
+      "defaultValue": "",
+      "displayOrder": 730
+    }
+  ]
+}

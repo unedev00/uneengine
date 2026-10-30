@@ -53,7 +53,7 @@ export function registerFieldExactIndexRoutes(app:Express,db:SqlPersistence,rbac
    const definition=await client.query(`SELECT 1 FROM md_field_definitions
     WHERE tenant_id=$1 AND object_api=$2 AND api_name=$3 AND deleted_at IS NULL
     AND data_type=ANY($4::text[])`,[tenant,obj,field,supported]);
-   if(!definition.rowCount)throw Error('Only active scalar Text/Email/Phone/URL/Picklist fields can be indexed');
+   if(!definition.rowCount)throw Error('Only active scalar Text/Email/Phcomponent-libraries/URL/Picklist fields can be indexed');
    const current=await client.query<{revision:number;enabled:boolean}>(`
     SELECT revision,enabled FROM md_field_exact_indexes
     WHERE tenant_id=$1 AND object_api=$2 AND field_api=$3 FOR UPDATE`,[tenant,obj,field]);

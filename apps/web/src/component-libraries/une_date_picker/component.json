@@ -1,0 +1,28 @@
+{
+  "apiName": "une_date_picker",
+  "label": "UNE Date Picker",
+  "category": "Inputs",
+  "description": "Reusable date picker component for metadata-driven pages; shares MetaDrive runtime, events and tenant permissions.",
+  "surfaces": [
+    "page",
+    "dashboard",
+    "flow"
+  ],
+  "version": 1,
+  "scope": "platform-core",
+  "jsxFile": "component-libraries/une_date_picker/UneDatePicker.jsx",
+  "cssFile": "component-libraries/une_date_picker/UneDatePicker.css",
+  "resize": {
+    "defaultWidth": 320,
+    "defaultHeight": 70,
+    "minWidth": 120,
+    "minHeight": 44
+  },
+  "propertyDefinitions": [],
+  "eventDefinitions": [
+    {
+      "apiName": "change",
+      "label": "change"
+    }
+  ]
+}

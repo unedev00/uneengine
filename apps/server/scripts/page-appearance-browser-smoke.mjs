@@ -6,7 +6,7 @@ import {chromium,webkit} from 'playwright';
 
 const engine=process.env.METADRIVE_BROWSER_ENGINE==='webkit'?'webkit':'chromium';
 const css=readFileSync(new URL('../../web/src/core/pages/TemplatePageRuntime/pageComponentAppearance.css',import.meta.url),'utf8');
-const one=readFileSync(new URL('../../web/src/one/shared/one.css',import.meta.url),'utf8');
+const one=readFileSync(new URL('../../web/src/component-libraries/shared/one.css',import.meta.url),'utf8');
 const fixtures=[
  ['input','<div class="one-ui"><input class="one-control" aria-label="Search" placeholder="Search"></div>','.one-control'],
  ['toggle','<label class="one-ui one-row">Setting<input type="checkbox" role="switch"></label>','label.one-row'],

@@ -52,7 +52,7 @@ test('new appointment hides post-booking controls and retains tenant calendar de
  assert.match(src,/editingObject!=='Appointment'\|\|editing!=='Create'\|\|\s*!\['CompletedAt','ExternalBookingId','Resource','Status','TimeZone','ReminderAt','Name','EndDateTime','Service','ServiceProduct'\]/);
  assert.match(src,/values\.Status='Scheduled'/);
  assert.match(src,/payload\.Status='Scheduled'/);
- assert.match(src,/payload\.TimeZone=hours\?\.timezone/);
+ assert.match(src,/payload\.TimeZone=hours\?\.timezcomponent-libraries/);
  assert.match(src,/payload\.Name=/);
  assert.match(src,/Appointment date and time/);
  assert.match(src,/Contact person \(optional\)/);

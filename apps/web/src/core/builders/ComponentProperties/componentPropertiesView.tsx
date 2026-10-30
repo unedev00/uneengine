@@ -94,9 +94,9 @@ import ComponentLibrary from '../../components/ComponentLibrary/ComponentLibrary
 import RegisteredComponent from '../../components/RegisteredComponent/RegisteredComponent';
 import CustomComponentPropertyEditor from './CustomComponentPropertyEditor';
 import {pagePropertyContract} from '../../components/Properties/pagePropertyContract';
-import SmartFieldInput from '../../../one/OneSmartFieldInput/SmartFieldInput';
+import SmartFieldInput from '../../../component-libraries/OneSmartFieldInput/SmartFieldInput';
 import FlowInputBindingEditor from '../FlowInputBindingEditor/FlowInputBindingEditor';
-import RecordFilterEditor from '../../../one/OneRecordFilterEditor/RecordFilterEditor';
+import RecordFilterEditor from '../../../component-libraries/OneRecordFilterEditor/RecordFilterEditor';
 import TableRowConfigurationEditor from './TableRowConfigurationEditor';
 import PageStatePropertyBindingsEditor from './PageStatePropertyBindingsEditor';
 import ComponentVisibilityEditor from './ComponentVisibilityEditor';
@@ -111,8 +111,8 @@ import { childrenOf, canNest, componentLayoutProps, hasPageComponentAppearance, 
 import AppExchange from '../../applications/AppExchange/AppExchange';
 import AppManager from '../../applications/AppManager/AppManager';
 import PlatformWorkspaceSurface from '../../platform/Workspace/PlatformWorkspaceSurface';
-import {GlobalRecordSearch} from '../../../one/OneGlobalRecordSearch/GlobalRecordSearch';
-import {RecordObjectPicker} from '../../../one/OneRecordObjectPicker/RecordObjectPicker';
+import {GlobalRecordSearch} from '../../../component-libraries/OneGlobalRecordSearch/GlobalRecordSearch';
+import {RecordObjectPicker} from '../../../component-libraries/OneRecordObjectPicker/RecordObjectPicker';
 import {useDismissOnOutside} from '../../accessibility/Dismiss/useDismissOnOutside';
 import { pageIsAvailableInApp, resolvePageActionRoute } from '../../pages/PageRuntime/pageActionRouting';
 import NamedCredentials from '../../integrations/NamedCredentials/NamedCredentials';

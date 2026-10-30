@@ -27,11 +27,11 @@ test('additive SQL migration removes only non-Home shared entries and migrates A
  assert.match(sql,/p.api_name IN \('AcetillSale','AcetillCheckout'\)/);
 });
 test('Acetill owns its renderer identity and a separate version-3 package',()=>{
- const d=JSON.parse(src('../src/one/acetill_cart/component.json'));
+ const d=JSON.parse(src('../src/component-libraries/acetill_cart/component.json'));
  const v3=src('../../acetill/sql/register-v3.sql');
  assert.equal(d.apiName,'acetill_cart');
  assert.deepEqual(d.propertyDefinitions,[]);
- const privateRenderer=src('../src/one/acetill_cart/AcetillCart.jsx');
+ const privateRenderer=src('../src/component-libraries/acetill_cart/AcetillCart.jsx');
  assert.match(privateRenderer,/OneShoppingCart\/OneShoppingCart/);
  assert.doesNotMatch(privateRenderer,/une_cart\/UneCart/);
  assert.match(v3,/one-bundled:acetill_cart/);

@@ -62,11 +62,11 @@ test('retired OneAccordion in tenant SQL never blocks valid metadata hydration',
 
 test('all shipped One components have a reviewed catalog entry and lazy asset source',async()=>{
   const {readFile}=await import('node:fs/promises');
-  const manifest=JSON.parse(await readFile(new URL('../src/one/manifest.json',import.meta.url),'utf8')) as {components:string[]};
+  const manifest=JSON.parse(await readFile(new URL('../src/component-libraries/manifest.json',import.meta.url),'utf8')) as {components:string[]};
   const apiNames=manifest.components.map(path=>path.split('/')[0]);
   assert.equal(new Set(apiNames).size,apiNames.length);
   for(const path of manifest.components){
-    const descriptor=JSON.parse(await readFile(new URL('../src/one/'+path,import.meta.url),'utf8')) as {
+    const descriptor=JSON.parse(await readFile(new URL('../src/component-libraries/'+path,import.meta.url),'utf8')) as {
       apiName:string;jsxFile:string;surfaces:string[];
     };
     assert.equal(descriptor.apiName,path.split('/')[0]);

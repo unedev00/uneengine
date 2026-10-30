@@ -1,0 +1,28 @@
+{
+  "apiName": "une_document_viewer",
+  "label": "UNE Document Viewer",
+  "category": "Display",
+  "description": "Reusable document viewer component for metadata-driven pages; shares MetaDrive runtime, events and tenant permissions.",
+  "surfaces": [
+    "page",
+    "dashboard",
+    "flow"
+  ],
+  "version": 1,
+  "scope": "platform-core",
+  "jsxFile": "component-libraries/une_document_viewer/UneDocumentViewer.jsx",
+  "cssFile": "component-libraries/une_document_viewer/UneDocumentViewer.css",
+  "resize": {
+    "defaultWidth": 320,
+    "defaultHeight": 90,
+    "minWidth": 120,
+    "minHeight": 44
+  },
+  "propertyDefinitions": [],
+  "eventDefinitions": [
+    {
+      "apiName": "print",
+      "label": "print"
+    }
+  ]
+}

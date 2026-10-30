@@ -99,7 +99,7 @@ test('Batch 2 keeps all styling accessible without the old advanced dialog',()=>
  assert.doesNotMatch(responsive,/office-ribbon-responsive-overrides/);
 });
 test('Batch 2 grid runtime reads density, line-height, radius and image position',()=>{
- const runtime=readFileSync(new URL('../src/one/OneItemGrid/OneItemGrid.jsx',import.meta.url),'utf8');
+ const runtime=readFileSync(new URL('../src/component-libraries/OneItemGrid/OneItemGrid.jsx',import.meta.url),'utf8');
  const page=readFileSync(new URL('../src/core/pages/TemplatePageRuntime/pageComponentLayout.ts',import.meta.url),'utf8');
  for(const key of ['p.density','p.lineHeight','p.cardRadius','p.imagePosition','p.headingExpression','p[part+"LineLimit"]'])
    assert.ok(runtime.includes(key),key);

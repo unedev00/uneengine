@@ -12,7 +12,7 @@ import path from 'node:path';
 const root=process.cwd();
 const oldRoot=path.join(root,'apps/web/src/one');
 const newRoot=path.join(root,'apps/web/src/component-libraries');
-const oldPrefix='apps/web/src/one/';
+const oldPrefix='apps/web/src/component-libraries/';
 const newPrefix='apps/web/src/component-libraries/';
 const supported=new Set(['.js','.jsx','.ts','.tsx','.mjs','.cjs','.json','.css','.scss','.md','.yaml','.yml','.html']);
 const skip=new Set(['node_modules','.git','dist','dist-system','coverage','.next','.turbo','build','.cache']);
@@ -45,8 +45,8 @@ for(const file of files){
  let next=original;
  // Absolute repository paths, followed by paths relative to apps/web and src.
  next=next.replaceAll(oldPrefix,newPrefix)
-          .replaceAll('src/one/','src/component-libraries/')
-          .replaceAll('one/','component-libraries/');
+          .replaceAll('src/component-libraries/','src/component-libraries/')
+          .replaceAll('component-libraries/','component-libraries/');
  // Identifiers for the source root in build and layout-check scripts.
  next=next.replace(/(path\.join\(webSourceRoot,\s*['"])one(['"]\))/g,'$1component-libraries$2')
           .replace(/(path\.join\(webSourceRoot,\s*['"])one(['"],)/g,'$1component-libraries$2')
@@ -58,5 +58,5 @@ for(const file of files){
 }
 if(existsSync(oldRoot))throw Error('Legacy source directory still exists');
 const catalog=await readFile(path.join(root,'scripts/component-catalog.mjs'),'utf8');
-if(catalog.includes("path.join(webSourceRoot, 'one')"))throw Error('Catalog still points at retired source root');
+if(catalog.includes("path.join(webSourceRoot, 'component-libraries')"))throw Error('Catalog still points at retired source root');
 console.log('Relocated component source; rewritten files:',changed);

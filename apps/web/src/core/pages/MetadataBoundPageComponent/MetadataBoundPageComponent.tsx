@@ -6,7 +6,7 @@ import {loadFlowScreenRecordPage} from '../../authentication/Client/authClient';
 import {presentPageRecords,type ChannelGrant} from '../../records/RecordWorkspace/recordPresentationAdapters';
 import {filterPageComponentRecords,pageComponentRecordQuery,pageComponentRelatedQuery,bindPageStateProperties} from '../PageRuntime/pageComponentBindings';
 import {filterRelatedRecords} from '../PageRuntime/filterRelatedRecords.mjs';
-import {resolveMentionProperties} from '../../../one/OneSmartFieldInput/smartFieldMentions';
+import {resolveMentionProperties} from '../../../component-libraries/OneSmartFieldInput/smartFieldMentions';
 import { explicitMentionRecordId, useRelationshipMentionContext } from '../../records/RecordFormDialog/useRelationshipMentionContext';
 import {resolvePageActionRoute} from '../PageRuntime/pageActionRouting';
 import {resolveFlowOutputBindings} from '../../automation/FlowScreen/flowInputBindings';

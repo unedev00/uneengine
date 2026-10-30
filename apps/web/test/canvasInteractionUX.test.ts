@@ -286,7 +286,7 @@ test('builder and published runtime use the same appearance targeting and preser
 });
 
 test('every bundled UNE Page component has an explicitly verified appearance target', async () => {
-  const manifest = JSON.parse(await readFile(new URL('../src/one/manifest.json', import.meta.url), 'utf8'));
+  const manifest = JSON.parse(await readFile(new URL('../src/component-libraries/manifest.json', import.meta.url), 'utf8'));
   const expected: Record<string,string> = {
     une_image:'image',une_calendar:'calendar',
     une_button:'button',une_card:'surface',une_input:'input',une_toggle:'toggle',
@@ -490,7 +490,7 @@ test('Page Builder contextual ribbon is generated from aligned three-row groups'
 test('Card Grid surface colour and individual card colour stay separate in builder and runtime',async()=>{
   const css=await readFile(new URL('../src/core/pages/TemplatePageRuntime/pageComponentAppearance.css',import.meta.url),'utf8');
   const ribbon=await readFile(new URL('../src/core/builders/PageBuilder/PageBuilderRibbonStyle.tsx',import.meta.url),'utf8');
-  const renderer=await readFile(new URL('../src/one/OneItemGrid/OneItemGrid.jsx',import.meta.url),'utf8');
+  const renderer=await readFile(new URL('../src/component-libraries/OneItemGrid/OneItemGrid.jsx',import.meta.url),'utf8');
   // Native collection cards must not inherit the component-wide background or
   // border tokens; only the surrounding Card Grid surface uses those tokens.
   for(const flag of ['background','stroke','border']){
@@ -517,7 +517,7 @@ test('Card Grid keeps authored collection radius and padding separate from card 
     assert.ok(css.includes(scoped),'generic collection '+property+' may not override item-grid cards');
     assert.ok(css.includes('registered-component.metadrive-component-une_item_grid > section'),'surface styling must target the collection');
   }
-  const grid=await readFile(new URL('../src/one/OneItemGrid/OneItemGrid.jsx',import.meta.url),'utf8');
+  const grid=await readFile(new URL('../src/component-libraries/OneItemGrid/OneItemGrid.jsx',import.meta.url),'utf8');
   assert.ok(grid.includes('borderRadius: Number.isFinite(cardRadius)'));
   assert.ok(grid.includes('padding: Number.isFinite(cardPadding)'));
 });

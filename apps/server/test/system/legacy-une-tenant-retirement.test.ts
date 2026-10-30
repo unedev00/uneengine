@@ -32,10 +32,10 @@ test('legacy SQL registry is deactivated, not erased, only without references',a
 test('old app source paths only delegate to the shared presentation helper',async()=>{
  const files=['une_conversation','onechatter_conversation','uneacechatter_conversation'];
  for(const part of files){
-  const script=await readFile(new URL('../../../web/src/one/'+part+'/flowConversationPresenter.js',import.meta.url),'utf8');
+  const script=await readFile(new URL('../../../web/src/component-libraries/'+part+'/flowConversationPresenter.js',import.meta.url),'utf8');
   assert.match(script,/export \{presentFlowConversationCollections\} from/);
  }
- const shared=await readFile(new URL('../../../web/src/one/une/shared/flowConversationPresenter.js',import.meta.url),'utf8');
+ const shared=await readFile(new URL('../../../web/src/component-libraries/une/shared/flowConversationPresenter.js',import.meta.url),'utf8');
  assert.match(shared,/export function presentFlowConversationCollections/);
 });
 
@@ -43,7 +43,7 @@ test('old app source paths only delegate to the shared presentation helper',asyn
 test('unused One component source directories are fully retired',async()=>{
  const {access}=await import('node:fs/promises');
  for(const name of ["OneAccordion","OneAvatar","OneBoard","OneDashboardEmbed","OneDivider","OneFileUpload","OneIcon","OneOverlay","OnePagination","OneRecordForm","OneSlider","OneTimeline","OneTree"]){
-  await assert.rejects(access(new URL('../../../web/src/one/'+name+'/',import.meta.url)),
+  await assert.rejects(access(new URL('../../../web/src/component-libraries/'+name+'/',import.meta.url)),
    {code:'ENOENT'},name+' must not ship as a stale standalone component');
  }
 });

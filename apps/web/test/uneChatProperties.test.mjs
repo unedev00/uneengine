@@ -4,7 +4,7 @@ import vm from 'node:vm';
 import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {loadComponentCatalog,buildBundledComponent} from '../../../scripts/component-catalog.mjs';
-import {presentFlowConversationCollections} from '../src/one/une_conversation/flowConversationPresenter.js';
+import {presentFlowConversationCollections} from '../src/component-libraries/une_conversation/flowConversationPresenter.js';
 
 const p={
  conversationSourceMode:'flowRecords',conversationNormalizePhoneNumbers:true,

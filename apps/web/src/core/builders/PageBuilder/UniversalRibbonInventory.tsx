@@ -16,7 +16,7 @@ type Definition=NonNullable<LibraryComponentMetadata['propertyDefinitions']>[num
 type Properties=Record<string,unknown>;
 type CatalogComponent={apiName:string;propertyDefinitions?:Definition[]};
 type Tab='Component Data'|'Component Content'|'Component Properties'|'Component Layout'|'Component Responsive'|'Component Action';
-const manifests=Object.values(import.meta.glob('../../../one/*/component.json',{eager:true,import:'default'})) as CatalogComponent[];
+const manifests=Object.values(import.meta.glob('../../../component-libraries/*/component.json',{eager:true,import:'default'})) as CatalogComponent[];
 const validManifests=manifests.filter(item=>/^une_[a-z0-9_]+$/.test(item.apiName));
 const definitionMap=new Map<string,Definition>();
 for(const component of validManifests){

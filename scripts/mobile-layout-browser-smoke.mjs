@@ -1,4 +1,4 @@
-// Phone/tablet UI contract screenshot evidence for public CSS, independent of tenant credentials.
+// Phcomponent-libraries/tablet UI contract screenshot evidence for public CSS, independent of tenant credentials.
 // Runs inside the existing Frontend visual contract workflow (Chromium + Playwright).
 import assert from 'node:assert/strict';
 import {mkdirSync,readFileSync} from 'node:fs';

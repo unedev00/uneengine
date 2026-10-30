@@ -1,0 +1,68 @@
+{
+  "apiName": "une_conversation",
+  "label": "UNE Conversation",
+  "category": "Data",
+  "description": "Reusable conversation component for metadata-driven pages; shares MetaDrive runtime, events and tenant permissions.",
+  "surfaces": [
+    "page",
+    "dashboard",
+    "flow"
+  ],
+  "version": 2,
+  "scope": "platform-core",
+  "jsxFile": "component-libraries/une_conversation/UneConversation.jsx",
+  "cssFile": "component-libraries/une_conversation/UneConversation.css",
+  "resize": {
+    "defaultWidth": 500,
+    "defaultHeight": 320,
+    "minWidth": 120,
+    "minHeight": 44
+  },
+  "propertyDefinitions": [],
+  "eventDefinitions": [
+    {
+      "apiName": "start",
+      "label": "start"
+    },
+    {
+      "apiName": "select",
+      "label": "select"
+    },
+    {
+      "apiName": "search",
+      "label": "search"
+    },
+    {
+      "apiName": "refresh",
+      "label": "refresh"
+    },
+    {
+      "apiName": "create",
+      "label": "create"
+    },
+    {
+      "apiName": "resolve",
+      "label": "resolve"
+    },
+    {
+      "apiName": "send",
+      "label": "send"
+    },
+    {
+      "apiName": "assign",
+      "label": "assign"
+    },
+    {
+      "apiName": "contactSelect",
+      "label": "contact Select"
+    },
+    {
+      "apiName": "contactSearch",
+      "label": "contact Search"
+    },
+    {
+      "apiName": "newConversationOpen",
+      "label": "new Conversation Open"
+    }
+  ]
+}

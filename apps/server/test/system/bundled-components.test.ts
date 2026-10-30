@@ -6,7 +6,7 @@ import { BUNDLED_COMPONENTS,seedFreshBundledComponents,deactivateUnavailableBund
 import {UNE_COMPONENTS,seedFreshUneComponents} from '../../src/app-seeders/une-components.js';
 
 test('SQL component seed matches the UNE-only manifest without duplicates', async()=>{
-  const catalog=JSON.parse(await readFile(new URL('../../../web/src/one/manifest.json',import.meta.url),'utf8')) as {components:string[]};
+  const catalog=JSON.parse(await readFile(new URL('../../../web/src/component-libraries/manifest.json',import.meta.url),'utf8')) as {components:string[]};
   assert.deepEqual([...BUNDLED_COMPONENTS,...UNE_COMPONENTS],catalog.components.filter(path=>path.startsWith('une_')).map(path=>path.split('/')[0]));
   assert.ok(catalog.components.includes('acetill_cart/component.json'));
   assert.deepEqual(BUNDLED_COMPONENTS,[]);
@@ -61,7 +61,7 @@ test('retired UNE Badge has no app placement, system manifest, or insert registr
   assert.equal((UNE_COMPONENTS as readonly string[]).includes('une_badge'),false);
   const app=await readFile(new URL('../../../acetill/sql/register-v2.sql',import.meta.url),'utf8');
   assert.doesNotMatch(app,/une_badge|OneBadge/);
-  const catalog=JSON.parse(await readFile(new URL('../../../web/src/one/manifest.json',import.meta.url),'utf8')) as {components:string[]};
+  const catalog=JSON.parse(await readFile(new URL('../../../web/src/component-libraries/manifest.json',import.meta.url),'utf8')) as {components:string[]};
   assert.ok(!catalog.components.includes('une_badge/component.json'));
   const migration=await readFile(new URL('../../src/system-support/migrations/20270118-retire-une-badge.sql',import.meta.url),'utf8');
   for(const clause of ['DELETE FROM md_lightning_page_nodes','DELETE FROM md_page_layout_version_nodes',

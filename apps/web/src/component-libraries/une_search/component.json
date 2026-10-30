@@ -1,0 +1,36 @@
+{
+  "apiName": "une_search",
+  "label": "UNE Search",
+  "category": "Inputs",
+  "description": "Reusable search component for metadata-driven pages; shares MetaDrive runtime, events and tenant permissions.",
+  "surfaces": [
+    "page",
+    "dashboard",
+    "flow"
+  ],
+  "version": 2,
+  "scope": "platform-core",
+  "jsxFile": "component-libraries/une_search/UneSearch.jsx",
+  "cssFile": "component-libraries/une_search/UneSearch.css",
+  "resize": {
+    "defaultWidth": 320,
+    "defaultHeight": 70,
+    "minWidth": 120,
+    "minHeight": 44
+  },
+  "propertyDefinitions": [],
+  "eventDefinitions": [
+    {
+      "apiName": "change",
+      "label": "change"
+    },
+    {
+      "apiName": "submit",
+      "label": "submit"
+    },
+    {
+      "apiName": "select",
+      "label": "select"
+    }
+  ]
+}

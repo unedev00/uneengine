@@ -13,7 +13,7 @@ function within(root, file) {
 
 /** Static source descriptors, never tenant runtime metadata or a trust grant. */
 export async function loadComponentCatalog() {
-  const oneRoot = path.join(webSourceRoot, 'one');
+  const oneRoot = path.join(webSourceRoot, 'component-libraries');
   const manifest = await readJson(path.join(oneRoot, 'manifest.json'));
   const one = await Promise.all(manifest.components.map(async reference => {
     if (typeof reference !== 'string') throw Error('Expected a component descriptor path');
@@ -48,7 +48,7 @@ export async function loadComponentCatalog() {
 /** Bundle local source imports before registration. Runtime and sandbox still
  * receive self-contained code and styles, with React supplied by the host. */
 export async function buildBundledComponent(definition) {
-  const allowed = [path.join(webSourceRoot, 'one'), path.join(webSourceRoot, 'core/components/SystemPanel'), path.join(webSourceRoot, 'core/components/SharedRuntime')];
+  const allowed = [path.join(webSourceRoot, 'component-libraries'), path.join(webSourceRoot, 'core/components/SystemPanel'), path.join(webSourceRoot, 'core/components/SharedRuntime')];
   const boundary = {
     name: 'local-component-sources',
     setup(builder) {

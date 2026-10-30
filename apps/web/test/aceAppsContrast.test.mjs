@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
 const read=path=>readFileSync(new URL(path,import.meta.url),'utf8');
-const shell=read('../src/core/workspace/Standalone/standaloneRuntime.css');
+const shell=read('../src/core/workspace/Standalcomponent-libraries/standaloneRuntime.css');
 const kiosk=read('../../acekiosk/src/acekiosk.css');
 const till=read('../../acetill/src/acetill-terminal.css');
 const assist=read('../../aceassist/src/aceassist.css');

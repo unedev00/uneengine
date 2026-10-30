@@ -34,8 +34,8 @@ import {
 } from 'lucide-react';
 import RegisteredComponent from '../../components/RegisteredComponent/RegisteredComponent';
 import CustomComponentPropertyEditor from '../ComponentProperties/CustomComponentPropertyEditor';
-import SmartFieldInput from '../../../one/OneSmartFieldInput/SmartFieldInput';
-import { resolveMentionValue, resolveMentionProperties } from '../../../one/OneSmartFieldInput/smartFieldMentions';
+import SmartFieldInput from '../../../component-libraries/OneSmartFieldInput/SmartFieldInput';
+import { resolveMentionValue, resolveMentionProperties } from '../../../component-libraries/OneSmartFieldInput/smartFieldMentions';
 import { dashboardMentionContext, htmlSafeMentionContext } from './dashboardMentionContext';
 import PageComponentStyleEditor from '../ComponentStyleEditor/PageComponentStyleEditor';
 import { componentLayoutProps, resolveLayoutStyle, type LayoutDevice } from '../../pages/TemplatePageRuntime/pageComponentLayout';

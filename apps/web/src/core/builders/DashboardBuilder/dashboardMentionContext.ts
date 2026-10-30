@@ -1,5 +1,5 @@
 import type { ObjectMetadata } from '../../metadata/Definitions/metadata';
-import { loadedMentionContext, type MentionContext } from '../../../one/OneSmartFieldInput/smartFieldMentions';
+import { loadedMentionContext, type MentionContext } from '../../../component-libraries/OneSmartFieldInput/smartFieldMentions';
 
 type DataRecord = Record<string, unknown>;
 

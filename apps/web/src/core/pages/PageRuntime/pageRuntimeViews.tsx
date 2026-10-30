@@ -87,12 +87,12 @@ import { canNestComponent, componentVisualStyle, directChildren, isLayoutType, i
 import { isCanvasLocked, wrapCanvasComponent, ungroupCanvasComponent } from '../../builders/PageBuilder/canvasInteractions';
 import { filterPageComponentRecords, pageComponentRecordQuery,pageComponentRelatedQuery, bindPageStateProperties, needsMetadataComponentRuntime, resolvePageStatePath } from './pageComponentBindings';
 import {filterRelatedRecords} from './filterRelatedRecords.mjs';
-import {resolveMentionProperties} from '../../../one/OneSmartFieldInput/smartFieldMentions';
+import {resolveMentionProperties} from '../../../component-libraries/OneSmartFieldInput/smartFieldMentions';
 import { explicitMentionRecordId, useRelationshipMentionContext } from '../../records/RecordFormDialog/useRelationshipMentionContext';
 import { childrenOf, canNest, componentLayoutProps, hasPageComponentAppearance, pageAppearanceTarget, pageAppearanceStyleKeys, isLayoutContainer, rawLayoutParentId, reparentComponent, resolvePageComponentStyle, type LayoutDevice } from '../TemplatePageRuntime/pageComponentLayout';
-import {GlobalRecordSearch} from '../../../one/OneGlobalRecordSearch/GlobalRecordSearch';
+import {GlobalRecordSearch} from '../../../component-libraries/OneGlobalRecordSearch/GlobalRecordSearch';
 import '../TemplatePageRuntime/pageComponentAppearance.css';
-import {RecordObjectPicker} from '../../../one/OneRecordObjectPicker/RecordObjectPicker';
+import {RecordObjectPicker} from '../../../component-libraries/OneRecordObjectPicker/RecordObjectPicker';
 import {useDismissOnOutside} from '../../accessibility/Dismiss/useDismissOnOutside';
 import { pageIsAvailableInApp } from './pageActionRouting';
 import {executeOpenPageActionNode} from './OpenPageActionNode';
@@ -771,7 +771,7 @@ function writePageDefinitionCache(cache:PageDefinitionCache,key:string,page:Ligh
   cache.set(key,{page,fetchedAt:Date.now()});
 }
 function usePageLayoutDevice(): LayoutDevice {
-  // Share the shell's phone/portrait/landscape breakpoints. Avoid the old
+  // Share the shell's phcomponent-libraries/portrait/landscape breakpoints. Avoid the old
   // 640/1024 off-by-one boundaries when loading published Tablet variants.
   return useFormFactor();
 }

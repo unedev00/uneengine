@@ -3,7 +3,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { ArrowDown, ArrowLeft, ArrowUp, Plus, Save, Trash2 } from 'lucide-react';
 import AppManagerList from '../AppManagerList/AppManagerList';
 import { cloneAppConfiguration } from './appCloneConfiguration';
-import ChecklistMultiSelect, { type ChecklistChoice } from '../../../one/OneChecklistMultiSelect/ChecklistMultiSelect';
+import ChecklistMultiSelect, { type ChecklistChoice } from '../../../component-libraries/OneChecklistMultiSelect/ChecklistMultiSelect';
 import './AppManagerLayout.css';
 import AppSetupGuide from '../AppSetupGuide/AppSetupGuide';
 import { suggestAppApiName, type SetupDestination } from '../AppSetupGuide/appSetupReadiness';

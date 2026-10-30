@@ -87,10 +87,10 @@ Only if composition or property extension cannot reasonably satisfy the need:
 
 ### Component directory structure is mandatory
 
-Preserve the existing **per-component folder tree**, currently rooted at `apps/web/src/one/` (rather than recreating the historical `custom-components/` tree). Keep the JavaScript/JSX, CSS and component descriptor within the component's folder.
+Preserve the existing **per-component folder tree**, currently rooted at `apps/web/src/component-libraries/` (rather than recreating the historical `custom-components/` tree). Keep the JavaScript/JSX, CSS and component descriptor within the component's folder.
 
 ```text
-apps/web/src/one/
+apps/web/src/component-libraries/
   une_calendar/
     UneCalendar.jsx
     UneCalendar.css

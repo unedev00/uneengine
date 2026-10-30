@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
 
-const manifest=JSON.parse(readFileSync(new URL('../src/one/manifest.json',import.meta.url),'utf8')) as {components:string[]};
+const manifest=JSON.parse(readFileSync(new URL('../src/component-libraries/manifest.json',import.meta.url),'utf8')) as {components:string[]};
 
 test('all 34 registered UNE components own a separate valid lightweight SVG ribbon icon',()=>{
   const une=manifest.components.filter(path=>path.startsWith('une_'));

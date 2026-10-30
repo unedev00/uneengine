@@ -1,0 +1,22 @@
+{
+  "apiName": "une_container",
+  "label": "UNE Container",
+  "category": "Layout",
+  "description": "Reusable container component for metadata-driven pages; shares MetaDrive runtime, events and tenant permissions.",
+  "surfaces": [
+    "page",
+    "dashboard",
+    "flow"
+  ],
+  "version": 1,
+  "scope": "platform-core",
+  "jsxFile": "component-libraries/une_container/UneContainer.jsx",
+  "cssFile": "component-libraries/une_container/UneContainer.css",
+  "resize": {
+    "defaultWidth": 480,
+    "defaultHeight": 180,
+    "minWidth": 120,
+    "minHeight": 44
+  },
+  "propertyDefinitions": []
+}

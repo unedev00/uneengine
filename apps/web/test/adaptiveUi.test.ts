@@ -152,7 +152,7 @@ test('desktop record preview reuses existing guarded detail runtime and mobile u
 });
 
 test('reused UNE modal and drawer trap keyboard focus rather than making duplicate engines',()=>{
-  const layout=file('src/one/une/shared/UneLayout.jsx');
+  const layout=file('src/component-libraries/une/shared/UneLayout.jsx');
   assert.match(layout,/export function UneModal/);
   assert.match(layout,/export function UneDrawer/);
   assert.match(layout,/e\.key!=="Tab"/);

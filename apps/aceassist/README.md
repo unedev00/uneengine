@@ -213,7 +213,7 @@ provides Home, Calendar, Billing, Customers and More navigation.
 
 **Still to validate before deployment:** tenant-installed Flow discovery and field
 permissions for representative doctors, salons and barbers; mobile browser
-layouts on physical devices; legitimate timezone/DST boundaries; and cash
+layouts on physical devices; legitimate timezcomponent-libraries/DST boundaries; and cash
 settlement. Card payments and outbound message delivery are not simulated:
 they require their existing provider/credential and verification workflows.
 The mobile app is intentionally a generic service-business UI; industry-specific

@@ -78,7 +78,7 @@ import {
   PanelRight
 } from 'lucide-react';
 import FlowInputBindingEditor from '../FlowInputBindingEditor/FlowInputBindingEditor';
-import RecordFilterEditor from '../../../one/OneRecordFilterEditor/RecordFilterEditor';
+import RecordFilterEditor from '../../../component-libraries/OneRecordFilterEditor/RecordFilterEditor';
 import ComponentVisibilityEditor from '../ComponentProperties/ComponentVisibilityEditor';
 import PageRouteDirectory from '../../pages/PageRouteDirectory/PageRouteDirectory';
 import { isComponentVisible } from '../../components/Properties/componentVisibility';
@@ -89,8 +89,8 @@ import { childrenOf, canNest, componentLayoutProps, hasPageComponentAppearance, 
 import AppExchange from '../../applications/AppExchange/AppExchange';
 import AppManager from '../../applications/AppManager/AppManager';
 import PlatformWorkspaceSurface from '../../platform/Workspace/PlatformWorkspaceSurface';
-import {GlobalRecordSearch} from '../../../one/OneGlobalRecordSearch/GlobalRecordSearch';
-import {RecordObjectPicker} from '../../../one/OneRecordObjectPicker/RecordObjectPicker';
+import {GlobalRecordSearch} from '../../../component-libraries/OneGlobalRecordSearch/GlobalRecordSearch';
+import {RecordObjectPicker} from '../../../component-libraries/OneRecordObjectPicker/RecordObjectPicker';
 import {useDismissOnOutside} from '../../accessibility/Dismiss/useDismissOnOutside';
 import { pageIsAvailableInApp, resolvePageActionRoute } from '../../pages/PageRuntime/pageActionRouting';
 import NamedCredentials from '../../integrations/NamedCredentials/NamedCredentials';

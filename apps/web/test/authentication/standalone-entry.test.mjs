@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {readFileSync} from 'node:fs';
-import {resolveStandaloneEntry,standaloneEntryForAppId,standaloneCanonicalPath} from '../../src/core/workspace/Standalone/standaloneEntries.ts';
+import {resolveStandaloneEntry,standaloneEntryForAppId,standaloneCanonicalPath} from '../../src/core/workspace/Standalcomponent-libraries/standaloneEntries.ts';
 import {appRoutePathWithoutBase} from '../../src/core/workspace/Navigation/appRouting.ts';
 
 test('direct Acetill and Ace Assist routes have separate product identities',()=>{
@@ -30,7 +30,7 @@ test('product login keeps shared MetaDrive session, MFA and password recovery',(
 
 test('Ace Assist owns its own UI and uses authorised OneEngine CRUD Flows',()=>{
   const runtime=readFileSync(new URL('../../../aceassist/src/AceAssistRuntime.tsx',import.meta.url),'utf8');
-  const shell=readFileSync(new URL('../../src/core/workspace/Standalone/StandaloneRuntime.tsx',import.meta.url),'utf8');
+  const shell=readFileSync(new URL('../../src/core/workspace/Standalcomponent-libraries/StandaloneRuntime.tsx',import.meta.url),'utf8');
   assert.match(runtime,/\/metadata\/objects/);
   assert.doesNotMatch(runtime,/\/records\//);
   assert.match(runtime,/\/flows\//);
@@ -47,7 +47,7 @@ test('Ace Assist owns its own UI and uses authorised OneEngine CRUD Flows',()=>{
 });
 
 test('standalone web router lazy-loads app-owned UIs, not business-specific JSX',()=>{
-  const shell=readFileSync(new URL('../../src/core/workspace/Standalone/StandaloneRuntime.tsx',import.meta.url),'utf8');
+  const shell=readFileSync(new URL('../../src/core/workspace/Standalcomponent-libraries/StandaloneRuntime.tsx',import.meta.url),'utf8');
   const assist=readFileSync(new URL('../../../aceassist/src/AceAssistRuntime.tsx',import.meta.url),'utf8');
   const chatter=readFileSync(new URL('../../../acechatter/src/AceChatterRuntime.tsx',import.meta.url),'utf8');
   const chatterCss=readFileSync(new URL('../../../acechatter/src/aceChatter.css',import.meta.url),'utf8');
@@ -209,7 +209,7 @@ test('Ace Assist phone calendar and billing render as dedicated screens, not des
  assert.match(phone,/onOpen\(row\)/);
  assert.doesNotMatch(phone,/\/records\/|mockAppointments|demoInvoice|fakeCustomers/);
  assert.match(styles,/\.assist-phone-workspace\{display:block/);
- assert.match(styles,/\.custom-assist-layout>\.custom-calendar\{display:none/);
+ assert.match(styles,/\.custom-assist-layout>\.custom-calendar\{display:ncomponent-libraries/);
  assert.match(styles,/\.custom-visit-detail:not\(\.custom-detail-empty\)/);
  assert.match(styles,/\.assist-mobile-nav button\[aria-current=page\]/);
 });

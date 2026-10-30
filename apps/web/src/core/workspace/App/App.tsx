@@ -6,7 +6,7 @@ import { apiBase, getAccessToken, setAccessToken, apiRequest, ApiRequestError, i
 
 
 import { parseAppRoute, appRoutePath } from '../Navigation/appRouting';
-import {resolveStandaloneEntry,standaloneCanonicalPath,standaloneEntryForAppId} from '../Standalone/standaloneEntries';
+import {resolveStandaloneEntry,standaloneCanonicalPath,standaloneEntryForAppId} from '../Standalcomponent-libraries/standaloneEntries';
 
 
 
@@ -71,7 +71,7 @@ type NewFieldLookupFilterDraft = {
 
 
 const LazyOAuthConsent=React.lazy(()=>import('../../authentication/Login/OAuthConsent'));
-const LazyStandaloneRuntime=React.lazy(()=>import('../Standalone/StandaloneRuntime'));
+const LazyStandaloneRuntime=React.lazy(()=>import('../Standalcomponent-libraries/StandaloneRuntime'));
 const LazyAceKiosk=React.lazy(()=>import('../../../../../acekiosk/src/AceKiosk'));
 const LazyMailboxAdmin=React.lazy(()=>import('../../mail/MailboxAdmin'));
 function AceKioskAccessGate({onLogout}:{onLogout:()=>void}){

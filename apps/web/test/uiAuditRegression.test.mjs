@@ -40,7 +40,7 @@ test('published ONE controls have no unbound dummy actions or placeholders',()=>
  const button=read('src/core/components/SharedRuntime/SharedButton.jsx');
  const textComponent=read('src/core/components/SharedRuntime/OneText.jsx');
  
- const appearance=read('src/one/shared/componentAppearance.js');
+ const appearance=read('src/component-libraries/shared/componentAppearance.js');
  const native=read('src/core/components/RegisteredComponent/registeredComponentAppearance.ts');
  const css=read('src/core/pages/TemplatePageRuntime/pageComponentAppearance.css');
  assert.match(button,/p\.actionFlows\?\.click/);

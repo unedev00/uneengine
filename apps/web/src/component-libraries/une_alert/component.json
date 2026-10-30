@@ -1,0 +1,22 @@
+{
+  "apiName": "une_alert",
+  "label": "UNE Alert",
+  "category": "Display",
+  "description": "Reusable alert component for metadata-driven pages; shares MetaDrive runtime, events and tenant permissions.",
+  "surfaces": [
+    "page",
+    "dashboard",
+    "flow"
+  ],
+  "version": 1,
+  "scope": "platform-core",
+  "jsxFile": "component-libraries/une_alert/UneAlert.jsx",
+  "cssFile": "component-libraries/une_alert/UneAlert.css",
+  "resize": {
+    "defaultWidth": 320,
+    "defaultHeight": 64,
+    "minWidth": 120,
+    "minHeight": 44
+  },
+  "propertyDefinitions": []
+}

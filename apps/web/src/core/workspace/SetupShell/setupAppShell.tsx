@@ -11,7 +11,7 @@ import { relatedLookupFilterOperators } from '../../records/RecordWorkspace/reco
 
 
 import { objectSettings, parseAppRoute, appRoutePath, type AppRoute } from '../Navigation/appRouting';
-import {standaloneEntryForAppId} from '../Standalone/standaloneEntries';
+import {standaloneEntryForAppId} from '../Standalcomponent-libraries/standaloneEntries';
 import { NavigationLoadTime, resolveCurrentAppNavigation } from '../Navigation/appNavigationView';
 import { isStandalonePagePresentation } from '../../pages/PageRuntime/pageRuntimePresentation';
 import { insertFlowElementAtPath } from '../../builders/FlowBuilder/flowInsertElement.mjs';
@@ -54,8 +54,8 @@ const DashboardBuilder = React.lazy(() => import('../../builders/DashboardBuilde
 const AppExchange = React.lazy(() => import('../../applications/AppExchange/AppExchange'));
 const AppManager = React.lazy(() => import('../../applications/AppManager/AppManager'));
 import PlatformWorkspaceSurface from '../../platform/Workspace/PlatformWorkspaceSurface'; import { PlatformPageSlot } from '../../platform/Workspace/PlatformPageSlot';
-import {GlobalRecordSearch} from '../../../one/OneGlobalRecordSearch/GlobalRecordSearch';
-import {RecordObjectPicker} from '../../../one/OneRecordObjectPicker/RecordObjectPicker';
+import {GlobalRecordSearch} from '../../../component-libraries/OneGlobalRecordSearch/GlobalRecordSearch';
+import {RecordObjectPicker} from '../../../component-libraries/OneRecordObjectPicker/RecordObjectPicker';
 import {useDismissOnOutside} from '../../accessibility/Dismiss/useDismissOnOutside';
 
 const NamedCredentials = React.lazy(() => import('../../integrations/NamedCredentials/NamedCredentials'));
