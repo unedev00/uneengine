@@ -21,7 +21,9 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  const objectName=fallback(properties.objectApiName)||pageObjectApiName;
  const object=objects.find(o=>o.apiName===objectName);
  const update=(key:string,value:unknown)=>onChange({...properties,[key]:value});
- const visible=definitions.filter(p=>p.tab===tab&&p.components.includes(api));
+ // Keep the global property inventory visible for every selected component.
+ // Unsupported controls are disabled by the per-property `supported` check below.
+ const visible=definitions.filter(p=>p.tab===tab);
  const sections=[...new Set(visible.map(p=>p.group))];
  const controls=(property:UneRibbonProperty)=>{
    const supported=property.components.includes(api);
