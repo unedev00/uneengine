@@ -1,0 +1,41 @@
+name: Relocate retired One/UNE source
+on:
+  push:
+    branches:
+      - cleanup/retired-one-button-runtime-20261030
+    paths:
+      - scripts/relocate-retired-component-source.mjs
+      - .github/workflows/relocate-retired-components.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  relocate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: cleanup/retired-one-button-runtime-20261030
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Relocate every remaining component and its references
+        run: node scripts/relocate-retired-component-source.mjs
+      - name: Commit full relocation to existing PR branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "Relocate remaining One and UNE library source"
+            git push origin HEAD:cleanup/retired-one-button-runtime-20261030
+          fi
+      - name: Install dependencies
+        run: npm ci
+      - name: Validate source layout, components and builds
+        run: |
+          npm run audit:architecture
+          npm run test:components
+          npm run build
