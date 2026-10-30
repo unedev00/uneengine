@@ -2490,6 +2490,10 @@ function PageBuilder({
         disabled={!selected} onClick={copySelected}><Copy size={17}/></button>;
       case 'paste':return <button className="office-ribbon-icon-button" aria-label="Paste" title="Paste"
         disabled={!componentClipboard} onClick={pasteComponent}><ClipboardPaste size={17}/></button>;
+      case 'delete':return <button type="button" className="office-ribbon-icon-button"
+        aria-label="Delete selected component" title="Delete selected component"
+        disabled={!selected||previewMode||isCanvasLocked(selected)}
+        onClick={removeSelected}><Trash2 size={17}/></button>;
       case 'undo':return <button className="office-ribbon-icon-button" aria-label="Undo" title="Undo"
         disabled={!undoStack.length} onClick={undo}><Undo2 size={17}/></button>;
       case 'redo':return <button className="office-ribbon-icon-button" aria-label="Redo" title="Redo"
@@ -2502,7 +2506,7 @@ function PageBuilder({
       default:return null;
     }
   };
-  const quickAccessOrder=['save','activate','resetIcon','undo','redo','cut','copy','paste'] as const;
+  const quickAccessOrder=['save','activate','resetIcon','undo','redo','cut','copy','paste','delete'] as const;
   const journeyTabs: Array<typeof ribbonTab> = selectedNewUne
     ? ['Add Block',...(selected?.type==='Custom:smart_icon'?(['Icons'] as const):[]),
        'Component Data','Component Properties','Component Layout','Component Action','Preview']
