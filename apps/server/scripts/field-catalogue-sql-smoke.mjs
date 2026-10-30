@@ -59,6 +59,18 @@ try{
  await assert.rejects(()=>defs.updateField(primary,'Phase2B__c','Amount',
   {label:'Amount',required:true}),/Required field cannot be enabled/);
  assert.equal((await defs.get(primary,'Phase2B__c')).fields.find(f=>f.apiName==='Amount').required,false);
+ // Real field conversion is transactional across the record set, not a metadata-only edit.
+ await defs.addField(primary,'Phase2B__c','Conversion','Text(80)',undefined,'Conversion');
+ const recordIds=(await db.query("SELECT id FROM md_records WHERE tenant_id=$1 AND object_api='Phase2B__c' ORDER BY id",[primary])).rows;
+ for(const [index,row] of recordIds.entries()){
+  await db.query("INSERT INTO md_record_values(tenant_id,record_id,object_api,field_api,value_text) VALUES($1,$2,'Phase2B__c','Conversion',$3)",[primary,row.id,String(index+1)+'.25']);
+ }
+ const converted=await defs.updateField(primary,'Phase2B__c','Conversion',
+  {label:'Conversion',dataType:'Number(8,2)'});
+ assert.ok(converted.fields.some(f=>f.apiName==='Conversion'&&f.dataType==='Number(8, 2)'));
+ const migrated=(await db.query("SELECT value_number::text AS value FROM md_record_values WHERE tenant_id=$1 AND object_api='Phase2B__c' AND field_api='Conversion' ORDER BY record_id",[primary])).rows;
+ assert.deepEqual(migrated.map(r=>Number(r.value)),[1.25,2.25]);
+
 
  for(const [apiName,invalid] of [
   ['BadDate__c',{apiName:'Invalid',dataType:'Date',defaultValue:'2025-02-29'}],
