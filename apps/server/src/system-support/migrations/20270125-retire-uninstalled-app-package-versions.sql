@@ -41,22 +41,19 @@ BEGIN
     SELECT to_jsonb(p) INTO package_data FROM md_app_package_versions p
     WHERE p.app_id=candidate.app_id AND p.version=candidate.version;
     children:='{}'::jsonb;
-    -- The catalogue's package template tables have composite FKs to
-    -- md_app_package_versions. Discover and archive them, not tenant records.
+    -- Archive every versioned package-template table, including nested FK
+    -- children such as home-page templates. Exclude tenant-owned rows.
     FOR child IN
       SELECT n.nspname AS schema_name,c.relname AS table_name
-      FROM pg_constraint fk
-      JOIN pg_class c ON c.oid=fk.conrelid
+      FROM pg_class c
       JOIN pg_namespace n ON n.oid=c.relnamespace
-      WHERE fk.contype='f' AND fk.confrelid='md_app_package_versions'::regclass
-        AND fk.conkey IS NOT NULL
+      WHERE c.relkind IN ('r','p') AND n.nspname=current_schema()
+        AND c.relname LIKE 'md_app_package_%'
+        AND c.relname NOT IN ('md_app_package_versions')
         AND EXISTS (SELECT 1 FROM pg_attribute att
-          WHERE att.attrelid=c.oid AND att.attnum=ANY(fk.conkey)
-            AND att.attname='app_id')
+          WHERE att.attrelid=c.oid AND att.attname='app_id' AND NOT att.attisdropped)
         AND EXISTS (SELECT 1 FROM pg_attribute att
-          WHERE att.attrelid=c.oid AND att.attnum=ANY(fk.conkey)
-            AND att.attname='version')
-        AND c.relname <> 'md_tenant_app_installed_versions'
+          WHERE att.attrelid=c.oid AND att.attname='version' AND NOT att.attisdropped)
     LOOP
       EXECUTE format('SELECT COALESCE(jsonb_agg(to_jsonb(t)),''[]''::jsonb) FROM %I.%I t WHERE t.app_id=$1 AND t.version=$2',
         child.schema_name,child.table_name)
