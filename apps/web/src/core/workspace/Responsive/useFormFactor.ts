@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
 /** The four layout widths describe available space, not a device or operating system.
- * Keep Phcomponent-libraries/Tablet/Desktop as compatibility identities for published page metadata.
+ * Keep Phone/Tablet/Desktop as compatibility identities for published page metadata.
  */
 export type SizeClass = 'Compact' | 'RegularNarrow' | 'Regular' | 'Wide';
 export type FormFactor = 'Phone' | 'Tablet' | 'Desktop';
