@@ -2,8 +2,8 @@ import type * as React from 'react';
 import {useEffect,useRef,useState,useCallback} from 'react';
 import {Search,X} from 'lucide-react';
 import {createPortal} from 'react-dom';
-import {useModalAccessibility} from '../../core/accessibility/Modal/useModalAccessibility';
-import type {NavigableObject,SearchableRecord} from '../shared/recordTypes';
+import {useModalAccessibility} from '../../../../core/accessibility/Modal/useModalAccessibility';
+import type {NavigableObject,SearchableRecord} from '../../recordTypes';
 
 export function GlobalRecordSearch({
   objects, searchObject, onSelect, navigationItems = [], onNavigateItem, onOpenObject
