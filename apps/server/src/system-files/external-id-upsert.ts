@@ -17,10 +17,10 @@ export class ExternalIdUpsert {
     `SELECT case_sensitive,data_type,precision,scale FROM md_field_definitions WHERE tenant_id=$1
      AND object_api=$2 AND api_name=$3 AND external_id=true AND deleted_at IS NULL`,
     [tenantId,objectApi,fieldApi]);
-   if(!field.rows.length||!['text','email','phone','number'].includes(field.rows[0].data_type))
+   if(!field.rows.length||!['text','email','phone','url','number','currency','percent'].includes(field.rows[0].data_type))
      throw new Error('Invalid external ID field');
    const definition=field.rows[0];
-   const numeric=definition.data_type==='number';
+   const numeric=['number','currency','percent'].includes(definition.data_type);
    const normalizedKey=numeric
      ?normalizeNumberField(Number(key),fieldApi,definition.precision,definition.scale):key;
    const caseSensitive=numeric||definition.case_sensitive;
