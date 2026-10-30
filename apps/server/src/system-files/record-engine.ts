@@ -664,7 +664,7 @@ export class RecordEngine {
               [tenantId,recordId,key]);
             enforceMasterDetailReparenting(previous.rows[0]?.reference_record_id,value,key,field.allow_reparenting);
           }
-          await assertLookupTargetExists(client??this.db,tenantId,field.related_object,value,key);
+          await assertLookupTargetExists(client??this.db,tenantId,field.related_object,value,key,userId);
           text='';reference=value;break;
         case 'geolocation': {
           if(!value||typeof value!=='object'||Array.isArray(value))
