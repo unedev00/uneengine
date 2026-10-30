@@ -17,7 +17,7 @@ export async function sessionMetadata(db:SqlPersistence,tenantId:string,userId:s
   const rbac=new RbacEngine(db);
   const [profile,fields,types,landing,tenant,identity]=await Promise.all([
     db.query<{profile_id:string;profile_name:string|null;profile_api:string|null}>(`
-      SELECT up.profile_id,p.name AS profile_name,p.api_name AS profile_api
+      SELECT up.profile_id,p.label AS profile_name,p.api_name AS profile_api
       FROM md_user_profiles up LEFT JOIN md_profiles p
         ON p.tenant_id=up.tenant_id AND p.id=up.profile_id
       WHERE up.tenant_id=$1 AND up.user_id=$2`,[tenantId,userId]),
