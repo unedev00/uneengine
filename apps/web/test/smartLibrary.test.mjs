@@ -594,3 +594,73 @@ test('Shared Smart runtime leaves no decorative surrounding selection container'
  assert.match(css,/smart-runtime > :first-child/);
  assert.match(css,/smart-calendar-grid/);
 });
+
+test('Smart Cart ribbon packs Header Supporting, Table and Row without hidden editors',()=>{
+ const css=read('../src/core/builders/PageBuilder/SmartRibbon.css');
+ const scoped=css.slice(css.indexOf('/* SMART CART compact Design:'));
+ assert.ok(scoped.startsWith('/* SMART CART compact Design:'),'Smart Cart-only rules missing');
+ assert.match(scoped,/data-smart-api="smart_cart"/);
+ assert.match(scoped,/grid-auto-flow:row/);
+ for(const [group,columns] of [
+  ['Header Supporting','88px 148px'],['Table','116px 152px'],['Row','124px 88px']
+ ]){
+  const block=new RegExp('\\.smart-ribbon-group\\[aria-label="'+group+'"\\] \\.smart-ribbon-items\\{\\s*grid-template-columns:'+columns.replace(' ','\\s+')+';');
+  assert.match(scoped,block,group+' compact tracks missing');
+ }
+ const slots=[
+  ['Header Supporting','supportingBorderColor','1 / 1'],
+  ['Header Supporting','supportingTextColor','1 / 2'],
+  ['Header Supporting','supportingAlignment','2 / 1 / 3 / -1'],
+  ['Header Supporting','supportingBold','3 / 1 / 4 / -1'],
+  ['Table','tableBackgroundColor','1 / 1'],
+  ['Table','tableBorderColor','1 / 2'],
+  ['Table','tableRadius','2 / 1 / 3 / -1'],
+  ['Table','tableShadow','3 / 1 / 4 / -1'],
+  ['Row','rowBorderColor','1 / 1'],
+  ['Row','rowLabelColor','1 / 2'],
+  ['Row','rowHeight','2 / 1 / 3 / -1'],
+  ['Row','rowRadius','3 / 1 / 4 / -1']
+ ];
+ for(const [section,key,area] of slots)
+  assert.ok(scoped.includes('.smart-ribbon-group[aria-label="'+section+'"] .smart-property[data-property="'+key+'"]{grid-area:'+area+'}'),
+   section+'.'+key+' missing compact position');
+ assert.match(scoped,/input\.smart-office-number\{[\s\S]*?width:75px!important/);
+ assert.doesNotMatch(scoped,/\.smart-property\s*\{[^}]*display:none/);
+ const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
+ assert.match(ribbon,/aria-label=\{title\}/);
+ assert.match(ribbon,/data-property=\{property\.id\}/);
+});
+
+test('Smart Cart Summary and Summary 2 use compact separate icon-first rows',()=>{
+ const css=read('../src/core/builders/PageBuilder/SmartRibbon.css');
+ const sql=read('../../server/src/system-support/migrations/20270201-smart-cart-summary2-ribbon.sql');
+ const section=css.slice(css.indexOf('/* Smart Cart Summary:'));
+ assert.match(section,/data-smart-api="smart_cart"/);
+ assert.match(section,/grid-template-columns:repeat\(3,78px\) 10px 126px 80px/);
+ assert.match(section,/grid-template-columns:repeat\(3,76px\)/);
+ for(const [group,property,area] of [
+  ['Summary','summaryBackgroundColor','1 / 1'],
+  ['Summary','summaryBorderColor','1 / 2'],
+  ['Summary','summaryTextColor','1 / 3'],
+  ['Summary','summaryTextSize','2 / 1 / 3 / 3'],
+  ['Summary','summaryTextWeight','2 / 3'],
+  ['Summary','summaryShadow','3 / 1 / 4 / 4'],
+  ['Summary','summaryRadius','1 / 5 / 2 / 7'],
+  ['Summary','summaryHeight','2 / 5 / 3 / 7'],
+  ['Summary','summaryWidth','3 / 5 / 4 / 7'],
+  ['Summary 2','summary2TextSize','1 / 1 / 2 / -1'],
+  ['Summary 2','summary2TextColor','2 / 2'],
+  ['Summary 2','summary2TextWeight','2 / 3']
+ ]) {
+  const positioned='.smart-ribbon-group[aria-label="'+group+'"] .smart-property[data-property="'+property+'"]';
+  assert.ok(section.includes(positioned+'{grid-area:'+area) ||
+    section.includes(positioned+'{\n  grid-area:'+area),
+    group+' '+property+' should have a compact slot');
+ }
+ assert.match(section,/\[data-property="summary2TextWeight"\]\)>.smart-label\{\s*display:none/);
+ assert.match(sql,/SET section_group='Summary 2'/);
+ for(const key of ['summary2TextSize','summary2TextWeight','summary2TextColor'])
+  assert.match(sql,new RegExp("'"+key+"'"));
+ assert.match(sql,/WHEN 'summary2TextSize' THEN 'Text Size'/);
+ assert.doesNotMatch(sql,/UPDATE\s+md_page_|DELETE\s+FROM/i);
+});

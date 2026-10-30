@@ -455,3 +455,228 @@
  .smart-filter-dialog header{padding:14px 16px}
  .smart-filter-dialog .smart-filter-dialog-body{padding:16px}
 }
+
+/* SMART CART compact Design: preserve the three-row Office ribbon, but place
+   each control on deliberate short tracks instead of letting auto-flow reserve
+   a full label-and-editor column for every palette button.  Scope everything
+   to Smart Cart so other components and SQL-driven properties are unchanged. */
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group:is([aria-label="Header Supporting"],[aria-label="Table"],[aria-label="Row"]){
+  flex:0 0 auto;
+  width:max-content;
+  padding-inline:8px;
+}
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group:is([aria-label="Header Supporting"],[aria-label="Table"],[aria-label="Row"]) .smart-ribbon-items{
+  display:grid;
+  grid-auto-flow:row;
+  grid-auto-columns:auto;
+  grid-template-rows:repeat(3,32px);
+  align-items:center;
+  column-gap:8px;
+  row-gap:4px;
+}
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group:is([aria-label="Header Supporting"],[aria-label="Table"],[aria-label="Row"]) .smart-property{
+  width:100%;
+  height:32px;
+  justify-content:flex-start;
+  gap:8px;
+}
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group:is([aria-label="Header Supporting"],[aria-label="Table"],[aria-label="Row"]) .smart-property>.smart-label{
+  flex:0 0 auto;
+}
+/* The two colour glyphs form the first row; their accessible name/title is
+   already supplied by RibbonColorPalette, so no visible label is lost from
+   alignment, number, or shadow controls. */
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-property:is(
+    [data-property="supportingBorderColor"],[data-property="supportingTextColor"],
+    [data-property="tableBackgroundColor"],[data-property="tableBorderColor"],
+    [data-property="rowBorderColor"],[data-property="rowLabelColor"])>.smart-label{
+  display:none;
+}
+
+/* Header Supporting: palettes / alignment / bold. */
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group[aria-label="Header Supporting"] .smart-ribbon-items{
+  grid-template-columns:88px 148px;
+}
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group[aria-label="Header Supporting"] .smart-property[data-property="supportingBorderColor"]{grid-area:1 / 1}
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group[aria-label="Header Supporting"] .smart-property[data-property="supportingTextColor"]{grid-area:1 / 2}
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group[aria-label="Header Supporting"] .smart-property[data-property="supportingAlignment"]{grid-area:2 / 1 / 3 / -1}
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group[aria-label="Header Supporting"] .smart-property[data-property="supportingBold"]{grid-area:3 / 1 / 4 / -1}
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group[aria-label="Header Supporting"] .smart-property:is(
+    [data-property="supportingAlignment"],[data-property="supportingBold"])>.smart-label{
+  flex:0 0 84px;
+}
+
+/* Table: two colours / radius / three shadow presets. */
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group[aria-label="Table"] .smart-ribbon-items{
+  grid-template-columns:116px 152px;
+}
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group[aria-label="Table"] .smart-property[data-property="tableBackgroundColor"]{grid-area:1 / 1}
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group[aria-label="Table"] .smart-property[data-property="tableBorderColor"]{grid-area:1 / 2}
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group[aria-label="Table"] .smart-property[data-property="tableRadius"]{grid-area:2 / 1 / 3 / -1}
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group[aria-label="Table"] .smart-property[data-property="tableShadow"]{grid-area:3 / 1 / 4 / -1}
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group[aria-label="Table"] .smart-property[data-property="tableRadius"]>.smart-label{flex:0 0 130px}
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group[aria-label="Table"] .smart-property[data-property="tableShadow"]>.smart-label{flex:0 0 72px}
+
+/* Row: two colours / height / radius (rather than a wide second column). */
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group[aria-label="Row"]{
+  padding-inline:12px;
+}
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group[aria-label="Row"] .smart-ribbon-items{
+  grid-template-columns:124px 88px;
+}
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group[aria-label="Row"] .smart-property[data-property="rowBorderColor"]{grid-area:1 / 1}
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group[aria-label="Row"] .smart-property[data-property="rowLabelColor"]{grid-area:1 / 2}
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group[aria-label="Row"] .smart-property[data-property="rowHeight"]{grid-area:2 / 1 / 3 / -1}
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group[aria-label="Row"] .smart-property[data-property="rowRadius"]{grid-area:3 / 1 / 4 / -1}
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group[aria-label="Row"] .smart-property[data-property="rowHeight"]>.smart-label{flex:0 0 110px}
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group[aria-label="Row"] .smart-property[data-property="rowRadius"]>.smart-label{flex:0 0 98px}
+
+/* Keep native number spinners legible without recreating the former huge tracks. */
+.office-builder-ribbon #page-builder-tab-content .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group:is([aria-label="Table"],[aria-label="Row"])
+  .smart-property input.smart-office-number{
+  flex:0 0 75px!important;
+  width:75px!important;min-width:75px!important;max-width:75px!important;
+}
+
+/* Smart Cart Summary: three fill/border/text colours on the first row, one
+   text-size control plus bold on the second, shadow choices on the third.
+   Radius/height/width share the right-hand label and number columns. */
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group:is([aria-label="Summary"],[aria-label="Summary 2"]){
+  flex:0 0 auto;
+  width:max-content;
+  padding-inline:8px;
+}
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group:is([aria-label="Summary"],[aria-label="Summary 2"]) .smart-ribbon-items{
+  display:grid;
+  grid-auto-flow:row;
+  grid-auto-columns:auto;
+  grid-template-rows:repeat(3,32px);
+  align-items:center;
+  column-gap:6px;
+  row-gap:4px;
+}
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group:is([aria-label="Summary"],[aria-label="Summary 2"]) .smart-property{
+  width:100%;
+  height:32px;
+  justify-content:flex-start;
+  gap:6px;
+  min-width:0;
+}
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group:is([aria-label="Summary"],[aria-label="Summary 2"]) .smart-property>.smart-label{flex:0 0 auto}
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-property:is(
+    [data-property="summaryBackgroundColor"],[data-property="summaryBorderColor"],
+    [data-property="summaryTextColor"],[data-property="summaryTextWeight"],
+    [data-property="summary2TextColor"],[data-property="summary2TextWeight"])>.smart-label{
+  display:none;
+}
+
+/* Fixed tracks match the reference without letting long metadata labels
+   enlarge the group. The 10px spacer separates colours from dimensions. */
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group[aria-label="Summary"] .smart-ribbon-items{
+  grid-template-columns:repeat(3,78px) 10px 126px 80px;
+}
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group[aria-label="Summary"] .smart-property[data-property="summaryBackgroundColor"]{grid-area:1 / 1;justify-content:center}
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group[aria-label="Summary"] .smart-property[data-property="summaryBorderColor"]{grid-area:1 / 2;justify-content:center}
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group[aria-label="Summary"] .smart-property[data-property="summaryTextColor"]{grid-area:1 / 3;justify-content:center}
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group[aria-label="Summary"] .smart-property[data-property="summaryTextSize"]{grid-area:2 / 1 / 3 / 3}
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group[aria-label="Summary"] .smart-property[data-property="summaryTextWeight"]{grid-area:2 / 3;justify-content:center}
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group[aria-label="Summary"] .smart-property[data-property="summaryShadow"]{grid-area:3 / 1 / 4 / 4}
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group[aria-label="Summary"] .smart-property[data-property="summaryRadius"]{grid-area:1 / 5 / 2 / 7}
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group[aria-label="Summary"] .smart-property[data-property="summaryHeight"]{grid-area:2 / 5 / 3 / 7}
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group[aria-label="Summary"] .smart-property[data-property="summaryWidth"]{grid-area:3 / 5 / 4 / 7}
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group[aria-label="Summary"] .smart-property[data-property="summaryTextSize"]>.smart-label{flex:0 0 70px}
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group[aria-label="Summary"] .smart-property[data-property="summaryShadow"]>.smart-label{flex:0 0 70px}
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group[aria-label="Summary"] .smart-property:is(
+    [data-property="summaryRadius"],[data-property="summaryHeight"],[data-property="summaryWidth"])>.smart-label{flex:0 0 126px}
+.office-builder-ribbon #page-builder-tab-content .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group[aria-label="Summary"] .smart-property input.smart-office-number{
+  flex:0 0 80px!important;
+  width:80px!important;min-width:80px!important;max-width:80px!important;
+}
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group[aria-label="Summary"] .smart-property[data-property="summaryShadow"] .smart-icons{gap:4px}
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group[aria-label="Summary"] .smart-property[data-property="summaryShadow"] .smart-icons button{
+  flex:0 0 38px;width:38px;min-width:38px;height:32px;
+}
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group[aria-label="Summary"] .smart-property[data-property="summaryTextWeight"] .smart-icon-toggle{
+  flex:0 0 42px;width:42px;height:36px;
+}
+
+/* Summary 2 is its own narrow section: size across the top, then ONLY the
+   text colour palette and bold buttons, with no redundant on-screen labels. */
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group[aria-label="Summary 2"] .smart-ribbon-items{
+  grid-template-columns:repeat(3,76px);
+}
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group[aria-label="Summary 2"] .smart-property[data-property="summary2TextSize"]{
+  grid-area:1 / 1 / 2 / -1;
+  justify-content:flex-end;
+  gap:10px;
+}
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group[aria-label="Summary 2"] .smart-property[data-property="summary2TextColor"]{grid-area:2 / 2;justify-content:center}
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group[aria-label="Summary 2"] .smart-property[data-property="summary2TextWeight"]{grid-area:2 / 3;justify-content:center}
+.office-builder-ribbon #page-builder-tab-content .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group[aria-label="Summary 2"] .smart-property[data-property="summary2TextSize"] input.smart-office-number{
+  flex:0 0 114px!important;
+  width:114px!important;min-width:114px!important;max-width:114px!important;
+}
+.office-builder-ribbon .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group[aria-label="Summary 2"] .smart-property[data-property="summary2TextWeight"] .smart-icon-toggle{
+  flex:0 0 42px;width:42px;height:36px;
+}
+.office-builder-ribbon #page-builder-tab-content .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group[aria-label="Summary 2"] .smart-property[data-property="summary2TextColor"] .office-ribbon-colour-property{
+  flex:0 0 52px!important;
+  width:52px!important;min-width:52px!important;max-width:52px!important;
+  height:36px!important;min-height:36px!important;max-height:36px!important;
+}
