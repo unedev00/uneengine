@@ -1,3 +1,5 @@
+import './recordsRelated.css';
+import {recordComponentVisible} from './recordComponentVisibility';
 import RelatedRecordCreate from './RelatedRecordCreate';
 import RelatedRecordActions from './RelatedRecordActions';
 import RelatedQuickLink from './RelatedQuickLink';
@@ -2205,6 +2207,7 @@ function RecordWorkspace({
               (key.toLowerCase()===name.toLowerCase()||objects.find(item=>item.apiName===value.objectApiName)?.pluralLabel.toLowerCase()===name.toLowerCase()));
             if(!entry)return null;
             const target=assignedPage?.components.find(item=>item.type==='Related List'
+              &&recordComponentVisible(item,assignedPage.components,runtimeBehaviorContext)
               &&Array.isArray(item.properties.relatedLists)&&item.properties.relatedLists.some(value=>
                 typeof value==='string'&&[name,entry[1].relationshipName].some(candidate=>candidate.toLowerCase()===value.toLowerCase())));
             const targetId=target?'related-'+relatedListInstanceKey(entry[1].relationshipName,target.id):undefined;
@@ -2350,12 +2353,14 @@ function RecordWorkspace({
         const visibleFields = sectionFieldNames.map((name) => readableRecordFields.find((field) => field.apiName === name))
           .filter((field): field is FieldMetadata => Boolean(field))
           .filter(field=>behaviorField(component.properties,field.apiName,runtimeBehaviorContext)?.visible!==false);
-        return <section className="record-fields-card surface" key={component.id}>
-          <div className="record-fields-heading"><h2>{component.label}</h2></div>
-          {visibleFields.length
+        const fieldContent=visibleFields.length
             ? <dl className={`record-fields-grid columns-${component.properties.columns === 1 ? 1 : 2}`}>{visibleFields.map((field) =>
               <div className="record-field" key={field.apiName} style={behaviorAppearance(component.properties,runtimeBehaviorContext,field.apiName)}><dt>{field.label}</dt><dd>{renderPageField(field,component.properties)}</dd></div>)}</dl>
-            : <div className="records-empty">No readable fields are configured in this section.</div>}
+            : <div className="records-empty">No readable fields are configured in this section.</div>;
+        return <section className="record-fields-card surface" key={component.id}>
+          {component.properties.collapsible===true?<details open={component.properties.collapsed!==true}>
+            <summary>{component.label}</summary>{fieldContent}</details>
+            :<><div className="record-fields-heading"><h2>{component.label}</h2></div>{fieldContent}</>}
         </section>;
       }
       if (component.type === 'Record Field' &&

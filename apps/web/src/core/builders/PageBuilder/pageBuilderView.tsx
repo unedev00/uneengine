@@ -3027,6 +3027,13 @@ function PageBuilder({
                       onChange={event=>setSetting('columns',event.target.checked
                         ?[...configuredColumns,field.apiName]:configuredColumns.filter(value=>value!==field.apiName))}/>
                     {field.label}</label>)}
+                  {configuredColumns.map((name,index)=><div className="property-position-actions" key={name}>
+                    <span>{eligible.find(field=>field.apiName===name)?.label??name}</span>
+                    {([-1,1] as const).map(direction=><button type="button" className="icon-button subtle" key={direction}
+                      aria-label={`Move ${name} ${direction<0?'left':'right'}`} disabled={index+direction<0||index+direction>=configuredColumns.length}
+                      onClick={()=>{const next=[...configuredColumns];[next[index],next[index+direction]]=[next[index+direction],next[index]];setSetting('columns',next);}}>
+                      {direction<0?<ArrowLeft size={13}/>:<ArrowRight size={13}/>}</button>)}
+                  </div>)}
                   <label className="form-label">Records per page
                     <input type="number" className="form-control" min={1} max={100}
                       value={typeof config.pageSize==='number'?config.pageSize:50}
@@ -3167,6 +3174,10 @@ function PageBuilder({
             </>}
             {selected.type === 'Field Section' && <>
               <div className="properties-section-title">Section Fields</div>
+              <label className="checkbox-row"><input type="checkbox" checked={selected.properties.collapsible===true}
+                onChange={event=>updateComponent(selected.id,{properties:{...selected.properties,collapsible:event.target.checked}})}/>Allow section collapse in view mode</label>
+              {selected.properties.collapsible===true&&<label className="checkbox-row"><input type="checkbox" checked={selected.properties.collapsed===true}
+                onChange={event=>updateComponent(selected.id,{properties:{...selected.properties,collapsed:event.target.checked}})}/>Start collapsed</label>}
               <label className="form-label" htmlFor="field-section-columns">Columns
                 <select id="field-section-columns" className="form-control" value={selected.properties.columns === 1 ? 1 : 2} onChange={(event) => updateComponent(selected.id, { properties: { ...selected.properties, columns: Number(event.target.value) } })}>
                   <option value={1}>1</option><option value={2}>2</option>

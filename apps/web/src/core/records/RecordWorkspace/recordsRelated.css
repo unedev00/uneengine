@@ -1,0 +1,6 @@
+.related-quick-link{position:relative;display:inline-flex;align-items:center;gap:.5rem;margin:.25rem .75rem .25rem 0}
+.related-quick-link>[role="region"]{position:absolute;inset-block-start:100%;inset-inline-start:0;z-index:30;width:min(48rem,calc(100vw - 3rem));max-height:70vh;overflow:auto;background:var(--surface,#fff);color:var(--text,#172b4d);border:1px solid var(--border,#c9d1db);border-radius:.5rem;box-shadow:0 .5rem 1.5rem #0003;padding:.75rem}
+.related-quick-link>[role="region"]>.text-action{display:block;margin-inline-start:auto}
+.related-records-card th>.text-action{font:inherit;text-align:inherit}
+.record-fields-card>details>summary{cursor:pointer;padding:.75rem;font-weight:600}
+@media(max-width:640px){.related-quick-link>[role="region"]{position:fixed;inset:15vh 1rem auto;width:auto;max-height:70vh}}

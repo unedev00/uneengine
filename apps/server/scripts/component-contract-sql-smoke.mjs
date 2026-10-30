@@ -28,7 +28,8 @@ export async function componentContractSqlSmoke(db,tenant,user,permissionSet){
  const draft=await service.save(tenant,user,input,input.apiName);
  assert.deepEqual(draft.propertyDefinitions,propertyDefinitions);
  const cleared=await service.save(tenant,user,{...input,propertyDefinitions:[]},input.apiName);
- assert.deepEqual(cleared.propertyDefinitions,[]);
+ assert.deepEqual(cleared.propertyDefinitions,propertyDefinitions);
+ assert.deepEqual(cleared.pendingDraft.propertyDefinitions,[]);
  assert.deepEqual(cleared.eventDefinitions,eventDefinitions);
  await assert.rejects(()=>validatePageComponentContracts(db,tenant,[{
   type:'Custom:'+input.apiName,properties:{settings:{count:11}}
