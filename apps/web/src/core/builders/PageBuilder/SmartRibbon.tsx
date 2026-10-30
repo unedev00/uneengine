@@ -97,9 +97,12 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
          onChange={e=>write(e.target.checked?[...(Array.isArray(value)?value:[]),day]:
            (Array.isArray(value)?value:[]).filter(x=>x!==day))}/>{label}</label>)}</div>}
    </div>;
-   else if(property.id==='defaultCheck')editor=<select className="smart-select" aria-label={title} disabled={!enabled}
-     value={value===true||value==='true'?'true':'false'} onChange={e=>write(e.target.value==='true')}>
-     <option value="false">False</option><option value="true">True</option></select>;
+   else if(property.id==='defaultCheck')editor=<button type="button" role="switch"
+     className="smart-default-check-switch" aria-label={title}
+     aria-checked={value===true||value==='true'} disabled={!enabled}
+     onClick={()=>write(!(value===true||value==='true'))}>
+     <span className="smart-default-check-thumb" aria-hidden="true"/>
+   </button>;
    else if(kind==='choice')editor=<select className="smart-select" aria-label={title} disabled={!enabled}
      value={String(value)} onChange={e=>write(e.target.value)}><option value="">Select</option>
      {options.map(s=><option value={s} key={s}>{s.replaceAll('-',' ')}</option>)}</select>;
