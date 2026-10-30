@@ -488,11 +488,12 @@ test('Independent components avoid automatic overlap and have Office-style shape
  const builder=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
  const css=read('../src/core/builders/PageBuilder/SmartCanvasHandles.css');
  assert.match(builder,/usedBounds\.every\(other=>/);
- assert.match(builder,/free-canvas-move-handle/);
+ assert.match(builder,/free-canvas-move-edge/);
+ assert.doesNotMatch(builder,/className="free-canvas-move-handle"/);
  assert.match(builder,/onPointerMove=\{moveCanvasPointer\}/);
  assert.doesNotMatch(builder,/<MoveVertical size=\{15\}\/>/);
  assert.doesNotMatch(builder,/<MoveHorizontal size=\{15\}\/>/);
- assert.match(css,/\.free-canvas-move-handle/);
+ assert.match(css,/\.free-canvas-move-edge/);
  assert.match(css,/\.free-canvas-component \.smart-runtime/);
 });
 
@@ -562,15 +563,16 @@ test('Page Builder supports Ctrl X C V Z Y and shows resize cursor handles only 
  assert.match(builder,/root.position.x\+24/);
  assert.doesNotMatch(builder,/<MoveVertical size=\{15\}/);
  assert.match(css,/\.free-canvas-resize-handle:is\(:hover,:focus-visible,:active\)/);
- assert.match(css,/\.free-canvas-move-handle:is\(:hover,:focus-visible,:active\)/);
+ assert.match(css,/\.free-canvas-move-edge:focus-visible/);
  assert.match(css,/opacity:0/);
  assert.match(builder,/selected \? \(selected.label\|\|selected.type\)/);
 });
-test('Card Grid uses only Object image fields; Image upload opens native chooser without Library',()=>{
+test('Image source is editable @ text, with upload only for the Image component',()=>{
  const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
- assert.match(ribbon,/api==='smart_card_grid'\|\|properties.imageSourceMode==='field'/);
- assert.match(ribbon,/api!=='smart_card_grid'/);
- assert.match(ribbon,/allImageFields.filter\(other=>other.label===f.label\)/);
+ assert.match(ribbon,/className="smart-formula-filter smart-image-source-editor"/);
+ assert.match(ribbon,/rootObjectApiName=\{objectName\}/);
+ assert.match(ribbon,/api==='smart_image'/);
+ assert.doesNotMatch(ribbon,/Image source type|Choose field|allImageFields/);
  assert.match(ribbon,/uploadInput.current\?\.click\(\)/);
  assert.doesNotMatch(ribbon,/>Library<\/button>/);
  assert.doesNotMatch(ribbon,/setLibraryOpen/);
@@ -663,4 +665,34 @@ test('Smart Cart Summary and Summary 2 use compact separate icon-first rows',()=
   assert.match(sql,new RegExp("'"+key+"'"));
  assert.match(sql,/WHEN 'summary2TextSize' THEN 'Text Size'/);
  assert.doesNotMatch(sql,/UPDATE\s+md_page_|DELETE\s+FROM/i);
+});
+
+test('Shared @ binding and canvas fill are metadata-driven for arbitrary objects',()=>{
+ const formula=read('../src/core/builders/PageBuilder/SmartFormulaField.tsx');
+ const mentions=read('../src/component-libraries/shared/primitives/SmartFieldInput/smartFieldMentions.ts');
+ const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
+ const filter=read('../src/component-libraries/shared/primitives/RecordFilterEditor/RecordFilterEditor.tsx');
+ const runtime=read('../src/component-libraries/smart/shared/SmartRuntime.jsx');
+ const view=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const sql=read('../../server/src/system-support/migrations/20270202-canvas-fill-color.sql');
+ assert.match(formula,/mentionGroups\(objects,rootObjectApiName/);
+ assert.match(mentions,/resolveCollectionMentionRows/);
+ assert.match(mentions,/MAX_HOPS = 3/);
+ assert.match(ribbon,/rootObjectApiName=\{objectName\}/);
+ assert.match(filter,/FieldExpression/);
+ assert.match(filter,/Related Lookup Fields/);
+ assert.match(runtime,/__mentionValues/);
+ assert.match(runtime,/onError=\{\(\)=>setFailed\(true\)\}/);
+ assert.match(view,/case 'canvasFillColor'/);
+ assert.match(sql,/md_page_layout_versions/);
+});
+test('Smart dynamic content scrolls only when the rendered component overflows',()=>{
+ const runtime=read('../src/component-libraries/smart/shared/SmartRuntime.jsx');
+ const css=read('../src/component-libraries/smart/shared/smart.css');
+ assert.match(runtime,/gridAutoRows:"minmax\(160px,auto\)"/);
+ assert.match(runtime,/recordsOf\(p\)\.slice\(0,200\)\.map/);
+ assert.match(css,/\.smart-runtime\.smart_navigation>\.smart-navigation/);
+ assert.match(css,/\.smart-runtime\.smart_card_grid>\.smart-grid/);
+ assert.match(css,/\.smart-runtime\.smart_tabs>\.smart-tabs-shell/);
+ assert.match(css,/overscroll-behavior:contain/);
 });
