@@ -3,18 +3,6 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 const apiProxyTarget = process.env.METADRIVE_API_PROXY_TARGET ?? 'http://127.0.0.1:10000';
-// For local development against an existing tenant-aware API, use an explicitly
-// configured registered tenant origin. Never infer tenant identity from localhost.
-const configuredTenantOrigin = process.env.METADRIVE_LOCAL_TENANT_ORIGIN?.trim();
-const localTenantOrigin = (() => {
-  if (!configuredTenantOrigin) return null;
-  const url = new URL(configuredTenantOrigin);
-  if (url.protocol !== 'https:' || url.username || url.password || url.port ||
-      url.pathname !== '/' || url.search || url.hash) {
-    throw new Error('METADRIVE_LOCAL_TENANT_ORIGIN must be an HTTPS origin');
-  }
-  return url.origin;
-})();
 // The custom-domain Pages deployment is rooted at /, not /metadrive/.
 // Keep the project-path default for repositories without a custom domain; this repository is uneengine.
 const pagesBase = process.env.GITHUB_PAGES_BASE_PATH ?? '/uneengine/';
@@ -54,10 +42,7 @@ export default defineConfig({
       '/api': {
         target: apiProxyTarget,
         configure(proxy) {
-          proxy.on('proxyReq', (proxyRequest) => {
-            if (localTenantOrigin) proxyRequest.setHeader('origin', localTenantOrigin);
-            else proxyRequest.removeHeader('origin');
-          });
+          proxy.on('proxyReq', (proxyRequest) => proxyRequest.removeHeader('origin'));
         }
       }
     }
