@@ -1,0 +1,36 @@
+/* Contextual Office-style icon gallery. Does not alter Data, Design or Layout tabs. */
+.office-builder-ribbon #page-builder-tab-content.office-ribbon-content:has(>.smart-icon-gallery){
+ display:block!important;box-sizing:border-box!important;
+ height:146px!important;min-height:146px!important;max-height:146px!important;
+ padding:5px 26px 5px 5px!important;overflow:hidden!important;
+}
+.office-builder-ribbon .smart-icon-gallery{
+ display:flex;flex-direction:column;gap:5px;height:136px;width:100%;
+ font:11px/16px "Segoe UI",Arial,sans-serif;color:#284367;
+}
+.smart-icon-gallery-filters{display:flex;align-items:center;gap:8px;height:30px;flex:0 0 30px}
+.smart-icon-gallery-search{display:flex;align-items:center;gap:5px;flex:0 0 auto}
+.smart-icon-gallery-search input{box-sizing:border-box;width:180px;height:28px;padding:4px 6px;border:1px solid #b7c9e0;border-radius:4px}
+.smart-icon-gallery-filters select{box-sizing:border-box;max-width:185px;height:28px;border:1px solid #b7c9e0;border-radius:4px;background:#fff}
+.smart-icon-gallery-current{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;color:#35557f}
+.smart-icon-gallery-items{
+ display:grid;grid-template-rows:repeat(2,47px);grid-auto-flow:column;grid-auto-columns:60px;
+ align-content:start;gap:4px;min-width:0;max-width:100%;min-height:0;
+ overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;scrollbar-color:#9fb4d0 transparent;
+}
+.smart-icon-gallery-item{
+ box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;
+ height:47px;width:60px;padding:3px 2px;gap:2px;cursor:pointer;background:#fff;
+ border:1px solid #d7e1ee;border-radius:4px;color:#304962;
+}
+.smart-icon-gallery-item[aria-pressed=true]{background:#e1efff;border:1px solid #3681dc;color:#114e99}
+.smart-icon-gallery-item:hover{background:#f1f7ff;border-color:#8ab4e9}
+.smart-icon-gallery-item:focus-visible{outline:2px solid #256fc6;outline-offset:-2px}
+.smart-icon-gallery-glyph{
+ display:inline-block;flex:0 0 19px;height:19px;width:19px;background-color:currentColor;
+ -webkit-mask-position:center;mask-position:center;
+ -webkit-mask-size:contain;mask-size:contain;
+ -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
+}
+.smart-icon-gallery-name{font:10px/12px "Segoe UI",Arial,sans-serif;white-space:nowrap;max-width:56px;overflow:hidden;text-overflow:ellipsis}
+.smart-icon-gallery-empty{grid-column:1;align-self:center;white-space:nowrap}
