@@ -112,8 +112,13 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
      </div>;
    }else if(kind==='expression')editor=<div className="smart-formula-filter">
      <SmartFormulaField value={String(value)} onChange={write}
-       label={title} disabled={!enabled} fields={object?.fields??[]}
-        objects={objects} rootObjectApiName={objectName} />
+       label={title} disabled={!enabled}
+       singleFieldOnly={api==='smart_toggle'&&property.id==='textSource'}
+       fields={api==='smart_toggle'&&property.id==='textSource'
+         ?(object?.fields??[]).filter(field=>['Checkbox','Boolean'].includes(field.dataType))
+         :object?.fields??[]}
+       objects={api==='smart_toggle'&&property.id==='textSource'?[]:objects}
+       rootObjectApiName={objectName} />
      <button type="button" className="smart-filter-trigger" disabled={!enabled||!object}
        title={!object?'Choose an Object to configure record filters':'Filter '+object.label+' records'}
        aria-label={'Filter records for '+title} aria-haspopup="dialog"

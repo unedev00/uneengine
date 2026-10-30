@@ -19,9 +19,9 @@ export function splitSmartFormula(value:string){
  if(cursor<value.length)parts.push({value:value.slice(cursor),kind:'text'});
  return parts;
 }
-export default function SmartFormulaField({value,onChange,fields,disabled,label,objects=[],rootObjectApiName=''}:{
+export default function SmartFormulaField({value,onChange,fields,disabled,label,objects=[],rootObjectApiName='',singleFieldOnly=false}:{
  value:string;onChange:(next:string)=>void;fields:readonly FieldMetadata[];disabled:boolean;label:string;
- objects?:readonly ObjectMetadata[];rootObjectApiName?:string
+ objects?:readonly ObjectMetadata[];rootObjectApiName?:string;singleFieldOnly?:boolean
 }){
  const input=useRef<HTMLInputElement>(null);
  const [matches,setMatches]=useState<{start:number;end:number;query:string}|null>(null);
@@ -68,11 +68,11 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
   if(event.key==='Escape')setMatches(null);
   if(event.key==='Enter'&&filtered.length&&matches){event.preventDefault();insert(filtered[0].reference);}
  };
- return <div className="smart-formula" title={'Formula: @Field, + - * / and &; quoted symbols are text'}>
+ return <div className="smart-formula" title={singleFieldOnly?'Select a Boolean field, e.g. @IsActive':'Formula: @Field, + - * / and &; quoted symbols are text'}>
   <div className="smart-formula-highlight" aria-hidden="true">{splitSmartFormula(value).map((part,i)=>
     <span key={i} className={'smart-formula-'+part.kind}>{part.value}</span>)}</div>
   <input ref={input} type="text" aria-label={label} value={value} spellCheck={false} autoComplete="off"
-   placeholder='@Field & "text"' disabled={disabled} onKeyDown={keyDown}
+   placeholder={singleFieldOnly?'@BooleanField':'@Field & "text"'} disabled={disabled} onKeyDown={keyDown}
    onChange={e=>update(e.currentTarget.value,e.currentTarget.selectionStart??e.currentTarget.value.length)}/>
   {matches&&filtered.length>0&&popup&&createPortal(<div className="smart-formula-list" role="listbox"
     style={{position:'fixed',left:popup.left,top:popup.top,minWidth:popup.width,maxHeight:200,zIndex:6000}}>

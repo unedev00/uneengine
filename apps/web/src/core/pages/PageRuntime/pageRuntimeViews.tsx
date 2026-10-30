@@ -86,6 +86,7 @@ import {behaviorValidation,behaviorAction,behaviorAppearance,behaviorInteraction
 import { canNestComponent, componentVisualStyle, directChildren, isLayoutType, isDescendantOf, layoutTypes } from '../TemplatePageRuntime/pageComponentLayout';
 import { isCanvasLocked, wrapCanvasComponent, ungroupCanvasComponent } from '../../builders/PageBuilder/canvasInteractions';
 import { filterPageComponentRecords, pageComponentRecordQuery,pageComponentRelatedQuery, bindPageStateProperties, needsMetadataComponentRuntime, resolvePageStatePath } from './pageComponentBindings';
+import {resolveSmartToggleFieldBinding,updateSmartToggleField} from './smartToggleFieldBinding';
 import {filterRelatedRecords} from './filterRelatedRecords.mjs';
 import {resolveMentionProperties} from '../../../component-libraries/shared/primitives/SmartFieldInput/smartFieldMentions';
 import { explicitMentionRecordId, useRelationshipMentionContext } from '../../records/RecordFormDialog/useRelationshipMentionContext';
@@ -487,6 +488,20 @@ function MetadataBoundPageComponent({
     recordId || explicitMentionRecordId(properties), properties, apiRequest, revision);
   const resolvedProperties = bindPageStateProperties(resolveMentionProperties(properties, mentionContext.records, mentionContext.fields, objects, mentionRootObjectApiName),pageState);
   const presented = presentPageRecords(properties.recordPresenterApiName, visibleRecords, channelAccess, properties);
+  const toggleBinding=resolveSmartToggleFieldBinding(definition.apiName,properties,objectApiName,fields,
+    visibleRecords,recordTotal,recordId||explicitMentionRecordId(properties));
+  const toggleCanWrite=Boolean(toggleBinding?.ready&&!disableActions&&
+    behaviorAction(properties,'change',{formFactor})==='enabled');
+  const changeBoundToggle=async(next:boolean)=>{
+    if(!toggleBinding||!toggleCanWrite)throw new Error('Toggle field is not editable.');
+    try{
+      await updateSmartToggleField(apiRequest,objectApiName,toggleBinding,next);
+      setActionError('');setRevision(value=>value+1);
+      window.dispatchEvent(new CustomEvent('metadrive:page-flow-mutated',{
+        detail:{pageSessionKey,sessionId}
+      }));
+    }catch(error){setActionError(error instanceof Error?error.message:'Toggle update failed');throw error;}
+  };
   const rawActions = properties.actionFlows;
   const actionFlows = rawActions && typeof rawActions === 'object' && !Array.isArray(rawActions)
     ? rawActions as Record<string, unknown> : {};
@@ -707,7 +722,9 @@ function MetadataBoundPageComponent({
       initializedSessions.current.delete(sessionId);
     });
   }, [sessionId, disableActions]);
-  return <div style={properties.fillRegion === true ? {height:'100%',minHeight:0,minWidth:0,display:'flex',flexDirection:'column'} : undefined}>
+  return <div style={definition.apiName==='smart_toggle'
+    ?{width:'100%',height:'100%',minHeight:0,minWidth:0}
+    :properties.fillRegion===true?{height:'100%',minHeight:0,minWidth:0,display:'flex',flexDirection:'column'}:undefined}>
     {dataError && dataErrorForQueryKey === recordQueryKey && <div className="records-message" role="alert">{dataError}</div>}
     {actionError && <div className="records-message" role="alert">{actionError}</div>}
     <RegisteredComponent definition={definition} layoutTransparent props={{
@@ -740,7 +757,11 @@ function MetadataBoundPageComponent({
         available:recordQuery.serverFilterable
       }} : {}),
       ...presented,
-      ...(contactsObjectApiName ? {contactChoices} : {})
+      ...(contactsObjectApiName ? {contactChoices} : {}),
+      ...(toggleBinding?{toggleFieldBound:true,toggleFieldReady:toggleCanWrite,
+        toggleFieldError:toggleBinding.error??'',
+        value:toggleBinding.ready?toggleBinding.value:false,
+        onBoundToggleChange:changeBoundToggle}:{})
     }} />
     {objectApiName&&recordQuery.serverFilterable&&recordTotal>recordPageSize&&<nav
       className="records-pagination" aria-label={component.label+' record pages'}>
