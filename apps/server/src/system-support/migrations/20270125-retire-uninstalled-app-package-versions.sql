@@ -34,6 +34,17 @@ BEGIN
       SELECT 1 FROM md_tenant_app_installed_versions installed
       WHERE installed.app_id=p.app_id AND installed.version=p.version
     )
+    -- Legacy installations lacking a version receipt retain their full
+    -- published package history until version backfill explicitly resolves it.
+    AND NOT EXISTS (
+      SELECT 1 FROM md_app_installations installation
+      WHERE installation.app_id=p.app_id
+        AND NOT EXISTS (
+          SELECT 1 FROM md_tenant_app_installed_versions receipt
+          WHERE receipt.tenant_id=installation.tenant_id
+            AND receipt.app_id=installation.app_id
+        )
+    )
     ORDER BY p.app_id,p.version
     FOR UPDATE OF p
   LOOP
