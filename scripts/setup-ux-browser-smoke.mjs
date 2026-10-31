@@ -49,7 +49,7 @@ try {
  await page.getByRole('button',{name:'View Sample credential',exact:true}).click();
  await page.getByRole('dialog').waitFor();
  await open('history');
- assert.equal(await page.locator('.flow-logs-table th').count(),6);
+ assert.equal(await page.locator('.flow-logs-table th').count(),7,'Flow history includes the Duration column');
  await page.locator('.flow-logs-table summary').click();
  await page.locator('.flow-logs-table').getByText('run-id-with-a-very-long-identifier',{exact:true}).waitFor();
  await open('flows');
