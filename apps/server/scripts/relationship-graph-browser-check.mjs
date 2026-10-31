@@ -20,6 +20,14 @@ export async function runRelationshipGraphBrowserCheck({page,origin,db,tenantId,
  await page.getByRole('button',{name:'Fields & Relationships'}).click();
  await page.getByText('PrimaryParentId',{exact:true}).waitFor({timeout:15000});
  await page.getByText('ReviewParentId',{exact:true}).waitFor({timeout:15000});
+ await page.getByRole('button',{name:'Object actions'}).click();
+ await page.getByRole('button',{name:'New Field',exact:true}).click();
+ const wizard=page.getByRole('dialog',{name:'New Field'});
+ await wizard.getByLabel('Data Type').selectOption({label:'Lookup Relationship'});
+ await wizard.getByRole('button',{name:'Next'}).click();
+ const selfOption=wizard.getByLabel('Related Object').locator('option[value="BrowserRelChild__c"]');
+ assert.equal(await selfOption.count(),1,'Object Manager must offer an object as its own lookup target');
+
  const graph=await page.evaluate(async token=>{
   const response=await fetch('/api/metadata/relationships?objectApi=BrowserRelParent__c',{
    headers:{Authorization:'Bearer '+token}
