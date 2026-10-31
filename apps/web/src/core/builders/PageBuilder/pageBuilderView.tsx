@@ -1302,8 +1302,9 @@ function PageBuilder({
     const authored = inserted.properties.visualStyle && typeof inserted.properties.visualStyle === 'object'
       && !Array.isArray(inserted.properties.visualStyle)
       ? inserted.properties.visualStyle as Record<string,unknown> : {};
-    inserted.properties = {...inserted.properties,borderWidth:1,borderColor:'#000000',
-      visualStyle:{...authored,borderWidth:1,borderColor:'#000000'}};
+    inserted.properties = isLayoutType(type)
+      ? {...inserted.properties,visualStyle:{...authored,borderWidth:1,borderColor:'#000000'}}
+      : {...inserted.properties,borderWidth:1,borderColor:'#000000'};
     applyPage({ ...page, components: assignTabOnReparent(
       components,id,parentId,parentId ? openBuilderTabs[parentId] : undefined) });
     setRecentComponents(current => addRecentPageBlock(current, type));
