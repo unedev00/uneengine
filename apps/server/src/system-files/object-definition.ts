@@ -92,7 +92,7 @@ const parseFieldDefinition=(field:Record<string,unknown>,objectApi?:string):Pars
       relation?.relationshipName===undefined?name.replace(/Id$/,''):null;
   const childRelationshipName: string|null=relationshipType===null?null:
     typeof relation?.childRelationshipName==='string'?relation.childRelationshipName:
-      relation?.childRelationshipName===undefined?`${(objectApi??'Record').replace(/__c$/,'')}Records`:null;
+      relation?.childRelationshipName===undefined?`${(objectApi??'Record').replace(/__c$/,'')}${name.replace(/Id$|__c$/,'')}Records`:null;
   const deleteBehavior: string|null=relationshipType==='Lookup'
     ?relation?.deleteBehavior===undefined?'Clear':
       typeof relation.deleteBehavior==='string'?relation.deleteBehavior:null
