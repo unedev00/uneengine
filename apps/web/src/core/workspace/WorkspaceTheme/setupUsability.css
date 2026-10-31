@@ -192,3 +192,59 @@
   font-weight: 600;
   padding: 0 4px;
 }
+
+/* grok PR2: remaining Settings form density + read-first sections */
+.lightning .settings-read-first-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 4px;
+}
+.lightning .settings-read-first-section .form-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--md-text, #192230);
+}
+.lightning .settings-read-first-section .form-control {
+  min-height: var(--md-control-height, 40px);
+  border-radius: var(--md-radius-md, 8px);
+  border: 1px solid var(--md-border, #e0e5eb);
+  padding: 8px 12px;
+  font: inherit;
+  font-weight: 400;
+}
+.lightning .settings-read-first-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--md-border, #e0e5eb);
+}
+.lightning .settings-read-first-toolbar .btn {
+  min-height: var(--md-control-height, 40px);
+  border-radius: var(--md-radius-md, 8px);
+}
+.lightning .surface.permission-section .settings-view-row,
+.lightning .settings-view-row {
+  display: grid;
+  grid-template-columns: minmax(140px, 1fr) minmax(0, 1.4fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 4px;
+  border-bottom: 1px solid var(--md-border, #e0e5eb);
+  font-size: 13px;
+}
+.lightning .settings-view-row:last-child {
+  border-bottom: 0;
+}
+@media (max-width: 600px) {
+  .lightning .surface.permission-section .settings-view-row,
+  .lightning .settings-view-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}

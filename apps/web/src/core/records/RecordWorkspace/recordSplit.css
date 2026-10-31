@@ -67,17 +67,17 @@
 .lightning .records-data-table{border-collapse:separate;border-spacing:0;font-variant-numeric:tabular-nums}
 .lightning .records-data-table thead th{
  position:sticky;top:0;z-index:1;min-height:28px;
- background:var(--md-surface-2,var(--md-surface));color:var(--md-text-2,var(--md-muted));
- border-bottom:.5px solid var(--md-separator,var(--md-border));
- font-size:12px;font-weight:600;
+ background:var(--md-surface,#fff);color:var(--md-text,#192230);
+ border-bottom:1px solid var(--md-border-strong,#aebacc);
+ font-size:12px;font-weight:600;letter-spacing:0.01em;
 }
 .lightning .records-data-table tbody td{
  border-bottom:.5px solid var(--md-separator,var(--md-border));
  border-left:0;border-right:0;min-height:32px;
 }
-.lightning .records-data-table tbody tr:focus-within{background:color-mix(in srgb,var(--md-primary) 10%,var(--md-surface))}
+.lightning .records-data-table tbody tr:focus-within{background:color-mix(in srgb,var(--md-primary) 7%,var(--md-surface))}
 .lightning .records-data-table :is(button,a):focus-visible{outline:3px solid var(--md-focus-ring)}
-@media(hover:hover){.lightning .records-data-table tbody tr:hover{background:var(--md-fill)}}
+@media(hover:hover){.lightning .records-data-table tbody tr:hover{background:color-mix(in srgb,var(--md-primary,#1d4ed8) 4%,var(--md-surface,#fff))}}
 @media(pointer:coarse){.lightning .records-data-table tbody td{min-height:44px;padding-block:12px}}
 @media(prefers-reduced-motion:reduce){.md-records-split-open>*{transition:none!important}}
 
@@ -85,11 +85,46 @@
 .records-data-table th[draggable="true"]{position:relative;padding-right:17px}
 .md-record-column-resize{
  display:block;position:absolute;right:0;top:0;bottom:0;width:12px;z-index:3;
- cursor:col-resize;touch-action:none;border-right:1px solid var(--md-separator);
+ cursor:col-resize;touch-action:none;border-right:1px solid transparent;
+ transition:background .12s ease,border-color .12s ease;
 }
-.md-record-column-resize:hover{background:color-mix(in srgb,var(--md-primary) 12%,transparent)}
+.md-record-column-resize:hover,.md-record-column-resize:focus-visible{
+ border-right-color:var(--md-primary,#1d4ed8);
+ background:color-mix(in srgb,var(--md-primary) 16%,transparent);
+}
 .md-record-column-resize:focus-visible{
  outline:3px solid var(--md-focus-ring,var(--md-primary));outline-offset:-2px;
- background:color-mix(in srgb,var(--md-primary) 15%,transparent);
 }
 @media(pointer:coarse){.md-record-column-resize{width:18px}}
+
+/* grok: empty detail pane + list empty states */
+.md-records-detail-pane .tenant-placeholder,
+.md-records-detail-pane .records-detail-empty,
+.md-records-split .records-detail-empty,
+.records-list-empty,
+.records-table-wrap .records-empty,
+.records-responsive-list .records-empty {
+  margin: 24px;
+  padding: 40px 24px;
+  text-align: center;
+  border-radius: var(--md-radius-lg, 12px);
+  border: 1px dashed var(--md-border, #e0e5eb);
+  background: var(--md-canvas, #f8fafc);
+  color: var(--md-muted, #596579);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* grok: toolbar control radius consistency */
+.records-main-toolbar .records-list-actions .btn,
+.records-layout-switcher {
+  border-radius: var(--md-radius-md, 8px);
+}
+.records-main-toolbar ~ .records-table-wrap .records-table thead th,
+.records-main-toolbar ~ .records-table-wrap .records-data-table thead th {
+  background: var(--md-surface, #fff);
+  color: var(--md-text, #192230);
+  font-weight: 600;
+  font-size: 12px;
+  border-bottom: 1px solid var(--md-border-strong, #aebacc);
+}
