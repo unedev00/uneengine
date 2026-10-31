@@ -75,8 +75,8 @@
   border-radius: 8px;
 }
 .company-settings-page .settings-view-row {
-  min-height: 58px;
-  padding: 10px var(--company-space);
+  min-height: 44px;
+  padding: 7px var(--company-space);
   box-sizing: border-box;
 }
 .company-settings-page .settings-view-row-content { gap: 2px; }
