@@ -2,16 +2,15 @@ import type {PoolClient} from 'pg';
 import type {SqlPersistence} from './sql-persistence.js';
 
 /**
- * Recoverable object definitions: metadata and records remain intact. A delete
- * is refused while the object has live or recycled records, inbound relationships,
- * or a known declarative consumer. Never cascade foreign keys or drop tables.
+ * Recoverable custom object definitions: keep live and recycled records,
+ * preserving record IDs while the object is hidden. Declarative consumers
+ * still block deletion. Never cascade foreign keys or drop schema tables.
  */
 type ObjectRow={api_name:string;label:string;is_system:boolean;deleted_at:Date|null};
 type Blocker={kind:string;count:number};
 type QueryClient=Pick<PoolClient,'query'>;
 
 const checks=[
-  {kind:'Records (including recycle bin)',sql:`SELECT count(*)::int AS count FROM md_records WHERE tenant_id=$1 AND object_api=$2`},
   {kind:'Inbound relationships',sql:`SELECT count(*)::int AS count FROM md_field_definitions WHERE tenant_id=$1 AND related_object=$2 AND object_api<>$2 AND deleted_at IS NULL`},
   {kind:'Custom record pages',sql:`SELECT count(*)::int AS count FROM md_lightning_page_details d JOIN md_page_definitions p ON p.tenant_id=d.tenant_id AND p.id=d.page_id WHERE d.tenant_id=$1 AND d.target_object=$2 AND p.api_name NOT IN ('Record_'||substr(md5($1::text||':'||$2),1,20)||'_View','Record_'||substr(md5($1::text||':'||$2),1,20)||'_Edit')`},
   {kind:'App navigation',sql:`SELECT count(*)::int AS count FROM md_tenant_app_navigation WHERE tenant_id=$1 AND entry_type='Object' AND api_name=$2`},
@@ -39,8 +38,13 @@ export class ObjectSchemaLifecycle {
    [tenantId,apiName]);
   const object=rows[0];
   if(!object)throw new Error('Object not found');
+  const records=await this.db.query<{count:number}>(
+   'SELECT count(*)::int AS count FROM md_records WHERE tenant_id=$1 AND object_api=$2',
+   [tenantId,apiName]);
   return {apiName:object.api_name,label:object.label,isSystem:object.is_system,
-   deleted:object.deleted_at!==null,blockers:await blockers(this.db,tenantId,apiName)};
+   deleted:object.deleted_at!==null,
+   preservedRecordCount:Number(records.rows[0]?.count??0),
+   blockers:await blockers(this.db,tenantId,apiName)};
  }
  async listDeleted(tenantId:string){
   const {rows}=await this.db.query<{api_name:string;label:string;deleted_at:Date}>(
@@ -53,6 +57,10 @@ export class ObjectSchemaLifecycle {
   if(!Number.isSafeInteger(expectedRevision)||expectedRevision<0)
    throw new Error('Invalid object revision precondition');
   return this.db.transaction(async client=>{
+   // Serialize with Record Engine's create/update shared advisory lock so
+   // records cannot be written after an object becomes inactive.
+   await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',
+     [tenantId+':'+apiName]);
    const {rows}=await client.query<ObjectRow>(
     'SELECT api_name,label,is_system,deleted_at FROM md_object_definitions WHERE tenant_id=$1 AND api_name=$2 FOR UPDATE',
     [tenantId,apiName]);
