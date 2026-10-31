@@ -239,13 +239,13 @@ RETURNS boolean LANGUAGE sql STABLE AS $$
   JOIN md_oauth_scope_catalogue cat ON cat.scope=s.scope AND cat.assignable=true
   WHERE b.token_hash=h AND b.kind='access' AND b.tenant_id=t AND c.user_id=u AND md_rbac_allowed(t,u,'API','execute')
   AND (
-    (s.scope='mcp:access' AND path='/api/mcp' AND md_oauth_token_allowed.verb IN ('POST','GET','DELETE'))
+    (s.scope='mcp:access' AND path='/api/mcp' AND $5 IN ('POST','GET','DELETE'))
     OR EXISTS(SELECT 1 FROM md_oauth_scope_routes r
-      WHERE r.scope=s.scope AND r.verb=md_oauth_token_allowed.verb AND path ~ r.path_regex)
+      WHERE r.scope=s.scope AND r.verb=$5 AND path ~ r.path_regex)
     -- Retain the pre-existing Salesforce-compatible data API permissions.
-    OR (s.scope='records:read' AND md_oauth_token_allowed.verb='GET'
+    OR (s.scope='records:read' AND $5='GET'
        AND path ~ '^/services/data/v[0-9.]+/(query|queryAll|search|sobjects)(/|$)')
-    OR (s.scope='records:write' AND md_oauth_token_allowed.verb IN ('POST','PUT','PATCH','DELETE')
+    OR (s.scope='records:write' AND $5 IN ('POST','PUT','PATCH','DELETE')
        AND path ~ '^/services/data/v[0-9.]+/sobjects/')
   ))
 $$;
