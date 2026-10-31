@@ -99,5 +99,5 @@ test('No Builder chrome changes enter the published Page Runtime',()=>{
  const main=read('../src/main.tsx');
  assert.doesNotMatch(main,/adaptiveBuilder\.css|schemaBuilderUsability\.css/);
  const builderEntry=read('../src/core/builders/ObjectManager/objectManagerView.tsx');
- assert.match(builderEntry,/schemaBuilderUsability\\.css/);
+ assert.match(builderEntry,/schemaBuilderUsability\.css/);
 });
