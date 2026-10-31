@@ -53,7 +53,7 @@
  flex-flow:row nowrap!important;align-items:center!important;justify-content:flex-start!important;
  width:max-content!important;min-width:0!important;max-width:none!important;
  height:26px!important;min-height:26px!important;max-height:26px!important;
- gap:2px!important;padding:0!important;margin:0!important;white-space:nowrap!important;
+ gap:4px!important;padding:0!important;margin:0!important;white-space:nowrap!important;
 }
 .office-builder-ribbon #page-builder-tab-content>.smart-ribbon[data-three-row="true"]
  .smart-ribbon-group .smart-ribbon-row>.smart-property{
@@ -184,6 +184,12 @@
  .smart-property :is(button,input,select):focus-visible{
  outline:2px solid #2377c9!important;outline-offset:1px!important;
 }
+.office-builder-ribbon #page-builder-tab-content .smart-property[data-numeric-icon="true"] input.smart-office-number:focus-visible{
+ outline:none!important;box-shadow:none!important;caret-color:transparent!important;
+}
+.office-builder-ribbon #page-builder-tab-content .smart-property[data-numeric-icon="true"] .smart-numeric:focus-within{
+ outline:2px solid #2377c9!important;outline-offset:0!important;
+}
 
 /* Caption metadata is an inline editor prefix, not a new independent property.
  * Caption + editor together take the specified widths (60+90, 35+99, etc).
@@ -235,4 +241,23 @@
 .office-builder-ribbon #page-builder-tab-content .smart-ribbon[data-three-row="true"]
  .smart-property .office-ribbon-colour-property .office-ribbon-colour-underline.is-unset{
  background:linear-gradient(90deg,#ec2c88 0%,#a51d56 48%,#ffe153 52%,#ff8c2d 100%)!important;
+}
+
+/* Data and Layout reuse the same 26px three-row grid as Design. */
+.office-builder-ribbon #page-builder-tab-content>.smart-ribbon[data-three-row="true"] .smart-ribbon-group[data-smart-tab="Data"] .smart-property[data-property^="objectApiName"] .smart-label{
+ display:inline-flex!important;flex:0 0 52px!important;width:52px!important;font-size:11px!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.smart-ribbon[data-three-row="true"] .smart-ribbon-group[data-smart-tab="Data"] .smart-property[data-property^="objectApiName"]{gap:5px!important;}
+.office-builder-ribbon #page-builder-tab-content>.smart-ribbon[data-three-row="true"] .smart-ribbon-group[data-smart-tab="Data"] .smart-property[data-property^="objectApiName"] .smart-select{
+ width:145px!important;flex:0 0 145px!important;max-width:145px!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.smart-ribbon[data-three-row="true"] .smart-property .smart-formula-filter{
+ width:100%!important;min-width:0!important;display:flex;align-items:center;
+}
+.office-builder-ribbon #page-builder-tab-content>.smart-ribbon[data-three-row="true"] .smart-property .smart-formula{flex:1 1 auto;min-width:0;}
+.office-builder-ribbon #page-builder-tab-content>.smart-ribbon[data-three-row="true"] .smart-property .smart-formula input{
+ width:100%!important;max-width:100%!important;min-width:0!important;height:26px!important;min-height:26px!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.smart-ribbon[data-three-row="true"] .smart-property .smart-filter-trigger{
+ flex:0 0 26px!important;width:26px!important;min-width:26px!important;height:26px!important;
 }

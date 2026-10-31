@@ -71,16 +71,24 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
      document.removeEventListener('keydown',escape);
    };
  },[daysOpen]);
- const objectName=fallback(properties.objectApiName)||pageObjectApiName;
+ // Explicit selections only: the page object must not silently supply field suggestions.
+ const sourceObjectNames=['objectApiName','objectApiName2','objectApiName3']
+  .map(key=>fallback(properties[key])).filter((name,index,all)=>name&&all.indexOf(name)===index);
+ const sourceObjects=objects.filter(item=>sourceObjectNames.includes(item.apiName))
+  .sort((a,b)=>sourceObjectNames.indexOf(a.apiName)-sourceObjectNames.indexOf(b.apiName));
+ const objectName=sourceObjectNames[0]??'';
  const object=objects.find(o=>o.apiName===objectName);
  const update=(key:string,value:unknown)=>onChange({...properties,[key]:value});
  const openFilters=(target:string)=>{setFilterTarget(target);setFiltersOpen(true);};
  const filterCount=Array.isArray(properties.filters)?properties.filters.length:0;
  // Keep the global property inventory visible for every selected component.
  // Unsupported controls are disabled by the per-property `supported` check below.
- const compactDesign=tab==='Design'||tab==='Shapes';
+ const compactDesign=true;
  const visible=definitions.filter(p=>p.tab===tab);
- const sections=[...new Set(visible.map(p=>p.group))];
+ const groups=[...new Set(visible.map(p=>p.group))];
+ const sections=tab==='Data'
+  ?['Source','Values',...groups.filter(item=>item!=='Source'&&item!=='Values')].filter(item=>groups.includes(item))
+  :groups;
  const sectionRow=(group:string,row:number)=>visible
    .filter(p=>p.group===group&&(p.designRow??2)===row)
    .sort((a,b)=>(a.designOrder??999)-(b.designOrder??999));
@@ -104,7 +112,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    Math.max(0,...[1,2,3].map(row=>{
      const properties=sectionRow(group,row);
      return properties.reduce((total,p)=>total+controlWidth(p)+(p.designCaptionWidth??0),0)
-       +Math.max(0,properties.length-1)*2;
+       +Math.max(0,properties.length-1)*4;
    }))+17,
    group.length*6+24
  );
@@ -145,7 +153,8 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
      // is resolved by the shared metadata engine, never by an image-name list.
      editor=<div className="smart-formula-filter smart-image-source-editor">
        <SmartFormulaField value={String(value)} label={title} disabled={!enabled}
-         fields={object?.fields??[]} objects={objects} rootObjectApiName={objectName}
+         fields={object?.fields??[]} objects={sourceObjects} rootObjectApiName={objectName}
+         selectedSourceObjects={sourceObjects}
          onChange={source=>{if(enabled)onChange({...properties,imageSource:source,imageSourceMode:'field'});}}/>
        {api==='smart_image'&&<button type="button" className="smart-filter-trigger"
          title="Upload image from this computer" aria-label="Upload image" disabled={uploadBusy||!enabled}
@@ -161,8 +170,8 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
        fields={api==='smart_toggle'&&property.id==='textSource'
          ?(object?.fields??[]).filter(field=>['Checkbox','Boolean'].includes(field.dataType))
          :object?.fields??[]}
-       objects={api==='smart_toggle'&&property.id==='textSource'?[]:objects}
-       rootObjectApiName={objectName} />
+       objects={sourceObjects} rootObjectApiName={objectName}
+        selectedSourceObjects={sourceObjects} />
      <button type="button" className="smart-filter-trigger" disabled={!enabled||!object}
        title={!object?'Choose an Object to configure record filters':'Filter '+object.label+' records'}
        aria-label={'Filter records for '+title} aria-haspopup="dialog"
@@ -247,7 +256,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
     onChange={event=>void selectLocalImage(event)} />
   {uploadError&&<div className="smart-upload-error" role="alert" title={uploadError}>{uploadError}</div>}
   {sections.map(section=><section className="smart-ribbon-group" key={section}
-     data-design-three-row={compactDesign?'true':undefined} aria-label={section}
+     data-design-three-row={compactDesign?'true':undefined} data-smart-tab={tab} aria-label={section}
      style={compactDesign?{'--smart-section-width':sectionWidth(section)+'px'} as CSSProperties:undefined}>
    <div className="smart-ribbon-items">
      {compactDesign?<>{[1,2,3].map(row=><div className="smart-ribbon-row" key={row}
