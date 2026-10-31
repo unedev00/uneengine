@@ -2857,6 +2857,118 @@ function PageBuilder({
         </div>
       </section>
 
+      {advancedEditor && <div className="modal-backdrop office-ribbon-modal-backdrop" role="presentation"
+        onMouseDown={event=>{if(event.currentTarget===event.target)setAdvancedEditor(null);}}>
+        <section className="modal page-builder-advanced-dialog" role="dialog" aria-modal="true"
+          aria-label={advancedFeatureLabels[advancedEditor]}>
+          <div className="modal-header"><h2>{advancedFeatureLabels[advancedEditor]}</h2>
+            <button type="button" className="icon-button" aria-label="Close advanced editor"
+              onClick={()=>setAdvancedEditor(null)}><X size={16}/></button></div>
+          <div className="page-builder-advanced-body">
+            {advancedEditor==='visibility' && selected && <>
+              <label className="checkbox-row"><input type="checkbox" checked={selected.visible}
+                onChange={event=>updateComponent(selected.id,{visible:event.target.checked})}/>
+                Component visible on this page</label>
+              <RibbonVisibilityRules draft={visibilityDraft} onChange={setVisibilityDraft}
+                onApply={()=>{applyVisibilityEditor();setAdvancedEditor(null);}}
+                onCancel={()=>setAdvancedEditor(null)} fields={fields}
+                allowRecordFields={page.pageType==='Record Page'}
+                profiles={profiles.map(profile=>({id:profile.id,label:profile.label}))}
+                recordTypes={(targetObject?.recordTypes??[]).map(type=>({id:type.id,label:type.label}))}/>
+            </>}
+            {advancedEditor==='actions' && selected && <MetadataComponentProperties
+              key={selected.id} mode="actions-editor" properties={selected.properties}
+              onChange={properties=>updateComponent(selected.id,{properties})}
+              pageComponents={page.components} componentCatalog={libraryComponents}
+              definitions={selectedCustomDefinition?.propertyDefinitions}
+              eventDefinitions={selectedCustomDefinition?.eventDefinitions}
+              device={page.layoutVariant??'Desktop'}
+              componentVersion={selectedCustomDefinition?.version}
+              objects={objects} apps={apps} pages={pages}
+              currentAppId={builderAppApiName||apps[0]?.apiName||'Records'}
+              primaryObjectApiName={page.targetObject} flows={flows}/>}
+            {advancedEditor==='responsive' && <>
+              <label className="form-label">Current page device layout {homeValue('deviceLayout')}</label>
+              {selected && <>
+                <p className="properties-help">Each device layout has an independent draft. Switch the layout above before editing this component.</p>
+                <MetadataComponentProperties key={selected.id+':'+page.layoutVariant} mode="details"
+                  properties={selected.properties}
+                  onChange={properties=>updateComponent(selected.id,{properties})}
+                  pageComponents={page.components} componentCatalog={libraryComponents}
+                  definitions={selectedCustomDefinition?.propertyDefinitions}
+                  device={page.layoutVariant??'Desktop'} componentVersion={selectedCustomDefinition?.version}
+                  objects={objects} apps={apps} pages={pages}
+                  currentAppId={builderAppApiName||apps[0]?.apiName||'Records'}
+                  primaryObjectApiName={page.targetObject} flows={flows}/>
+              </>}
+            </>}
+            {advancedEditor==='nesting' && selected && <>
+              <label className="checkbox-row"><input type="checkbox"
+                checked={isLayoutContainer(selected)} disabled={!selectedCustomDefinition&&!isLayoutContainer(selected)}
+                onChange={event=>{
+                  if(!event.target.checked&&childrenOf(page.components,selected.id).length){
+                    onNotify('Move children out before disabling nesting.');return;
+                  }
+                  updateComponent(selected.id,{properties:{...selected.properties,layoutContainer:event.target.checked}});
+                }}/>Accept nested components (requires a component that renders children)</label>
+              <label className="form-label">Parent container
+                <select className="form-control" aria-label="Advanced parent container"
+                  value={rawLayoutParentId(selected)??''}
+                  onChange={event=>{
+                    const parent=event.target.value||null;
+                    if(!canNest(page.components,selected.id,parent)){
+                      onNotify('A component cannot be nested inside itself or a descendant.');return;
+                    }
+                    applyPage({...page,components:reparentComponent(page.components,selected.id,parent)});
+                  }}>
+                  <option value="">Canvas / page root</option>
+                  {page.components.filter(item=>canNest(page.components,selected.id,item.id))
+                    .map(item=><option key={item.id} value={item.id}>{item.label}</option>)}
+                </select></label>
+              {isLayoutContainer(selected)&&<div>
+                <div className="properties-section-title">Nested components</div>
+                {childrenOf(page.components,selected.id).map(item=><button key={item.id}
+                  type="button" className="btn btn-small" onClick={()=>setSelectedId(item.id)}>
+                  {item.label}</button>)}
+              </div>}
+            </>}
+            {advancedEditor==='canvas' && selected && <div className="page-builder-advanced-canvas-buttons">
+              <button type="button" className="btn" disabled={selectionIds.length<2||!selected.position}
+                onClick={wrapSelectedInContainer}>Group</button>
+              <button type="button" className="btn" disabled={selected.type!=='Container'||isCanvasLocked(selected)}
+                onClick={ungroupSelected}>Ungroup</button>
+              {(['start','center','end'] as const).map(anchor=><React.Fragment key={anchor}>
+                <button type="button" className="btn" disabled={!selected.position||isCanvasLocked(selected)}
+                  onClick={()=>alignSelected('x',anchor)}>Align horizontal {anchor}</button>
+                <button type="button" className="btn" disabled={!selected.position||isCanvasLocked(selected)}
+                  onClick={()=>alignSelected('y',anchor)}>Align vertical {anchor}</button>
+              </React.Fragment>)}
+              <button type="button" className="btn" disabled={selectionIds.length<3}
+                onClick={()=>distributeSelected('x')}>Distribute horizontally</button>
+              <button type="button" className="btn" disabled={selectionIds.length<3}
+                onClick={()=>distributeSelected('y')}>Distribute vertically</button>
+              <button type="button" className="btn" disabled={isCanvasLocked(selected)}
+                onClick={()=>moveSelected(-1)}>Bring forward</button>
+              <button type="button" className="btn" disabled={isCanvasLocked(selected)}
+                onClick={()=>moveSelected(1)}>Send backward</button>
+              <button type="button" className="btn"
+                onClick={()=>updateComponent(selected.id,{properties:{
+                  ...selected.properties,editorLocked:!isCanvasLocked(selected)}})}>
+                {isCanvasLocked(selected)?'Unlock component':'Lock component'}</button>
+            </div>}
+            {advancedEditor==='recordPage'&&selected&&
+              <button type="button" className="btn btn-small"
+                onClick={()=>{setInspectorTab('Data & Actions');setActivePanel('properties');setAdvancedEditor('properties');}}>
+                Configure selected {selected.type} block</button>}
+            {(['recordPage','assignments','properties'] as AdvancedFeature[]).includes(advancedEditor) &&
+              <div className="office-ribbon-inspector-host" ref={setRibbonPropertyHost}
+                aria-label={advancedFeatureLabels[advancedEditor]}/>}
+          </div>
+          <div className="office-ribbon-modal-actions"><button type="button" className="btn btn-brand"
+            onClick={()=>setAdvancedEditor(null)}>Close</button></div>
+        </section>
+      </div>}
+
       {ribbonTab==='Component Layout' && pageSettingsDialogOpen && <div className="modal-backdrop office-ribbon-modal-backdrop" role="presentation">
         <section className="modal office-ribbon-config-modal office-ribbon-page-settings-modal" role="dialog" aria-modal="true" aria-label="Page settings">
           <div className="modal-header"><h2>Page settings</h2><button type="button" className="icon-button" aria-label="Close page settings" onClick={()=>setPageSettingsDialogOpen(false)}><X size={16}/></button></div>
