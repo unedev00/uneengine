@@ -9,11 +9,14 @@ if(!url||!url.includes('/metadrive_2a'))
  throw new Error('Object lifecycle SQL smoke requires a disposable metadrive_2a database');
 const built=new URL('../dist-system/system-files/',import.meta.url);
 const support=new URL('../dist-system/system-support/',import.meta.url);
-const [{SqlPersistence},{applySystemMigrations},{ObjectDefinitionService},{ObjectSchemaLifecycle}]=await Promise.all([
+const [{SqlPersistence},{applySystemMigrations},{ObjectDefinitionService},{ObjectSchemaLifecycle},
+ {RecordEngine},{RbacEngine}]=await Promise.all([
  import(new URL('sql-persistence.js',built).href),
  import(new URL('system-migrations.js',support).href),
  import(new URL('object-definition.js',built).href),
- import(new URL('object-schema-lifecycle.js',built).href)
+ import(new URL('object-schema-lifecycle.js',built).href),
+ import(new URL('record-engine.js',built).href),
+ import(new URL('rbac-engine.js',built).href)
 ]);
 const db=new SqlPersistence(url);
 try{
@@ -77,6 +80,11 @@ try{
  assert.equal(deleted.deleted,true);
  assert.equal(await visibility(record.rows[0].id),false,
   'Archived object records must not leak through Record API authorization');
+ const recordEngine=new RecordEngine(db,new RbacEngine(db));
+ await assert.rejects(()=>recordEngine.get(primary,actor,'Milestone__c',
+  record.rows[0].id),/Record not found/);
+ await assert.rejects(()=>recordEngine.update(primary,actor,'Milestone__c',
+  record.rows[0].id,{Name:'Blocked Edit'}),/Record not found|Object is unavailable/);
  await assert.rejects(()=>defs.get(primary,'Milestone__c'),/Object not found/);
  assert.equal((await lifecycle.listDeleted(primary)).length,1);
  await assert.rejects(()=>defs.create(primary,'Milestone__c','Duplicate',fields),/API Name already exists|already exists/);
@@ -85,6 +93,9 @@ try{
  await lifecycle.restore(primary,'Milestone__c');
  assert.equal(await visibility(record.rows[0].id),true,
   'Restored object record read access must return without modifying the record');
+ await recordEngine.update(primary,actor,'Milestone__c',record.rows[0].id,{Name:'Preserved Record'});
+ assert.equal((await recordEngine.get(primary,actor,'Milestone__c',record.rows[0].id)).Name,
+  'Preserved Record','Record updates must work again after object restore');
  const preserved=await db.query('SELECT id,is_deleted FROM md_records WHERE tenant_id=$1 AND id=ANY($2::uuid[]) ORDER BY id',
   [primary,[record.rows[0].id,recycled.rows[0].id]]);
  assert.equal(preserved.rows.length,2);
