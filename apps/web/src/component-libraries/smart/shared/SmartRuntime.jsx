@@ -242,7 +242,7 @@ export default function SmartRuntime(p){
    boxSizing:"border-box",width:"100%",height:"100%",minHeight:0,minWidth:0,
    overflowY:"auto",overflowX:"auto",overscrollBehavior:"contain",
    gridTemplateColumns:"repeat("+columns+",minmax(0,1fr))",
-   gridAutoRows:"calc((100% - "+(rows-1)*12+"px) / "+rows+")",alignContent:"start"
+   gridAutoRows:"max(180px, calc((100% - "+(rows-1)*12+"px) / "+rows+"))",alignContent:"start"
   }}>
    {recordsOf(p).map((r,i)=>{
     const card=<SmartCard p={p} record={r}/>;
