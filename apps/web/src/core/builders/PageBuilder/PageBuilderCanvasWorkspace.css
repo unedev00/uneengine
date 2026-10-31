@@ -93,3 +93,24 @@
 .office-builder-ribbon .preview-visibility-group{padding-inline:10px!important}
 .office-builder-ribbon .preview-visibility-controls{gap:10px!important;align-items:center!important}
 .office-builder-ribbon .canvas-placement-group{min-width:245px}
+
+/* The group frame is not a click shield. Only its handles capture pointers;
+   underlying image, tab, container and card controls remain selectable. */
+.builder-editor-mode .modern-canvas-builder .canvas-group-outline{
+ pointer-events:none;
+}
+.builder-editor-mode .modern-canvas-builder .canvas-group-outline .canvas-group-handle,
+.builder-editor-mode .modern-canvas-builder .canvas-group-outline .canvas-group-move-handle{
+ pointer-events:auto;
+}
+.builder-editor-mode .modern-canvas-builder .canvas-group-move-handle{
+ box-sizing:border-box;position:absolute;z-index:3;
+ left:50%;top:-14px;transform:translateX(-50%);
+ display:flex;align-items:center;justify-content:center;
+ width:26px;height:26px;min-width:26px;min-height:26px;
+ padding:0;border:1px solid #2457d6;border-radius:4px;
+ background:white;color:#2457d6;cursor:move;touch-action:none;
+}
+.builder-editor-mode .modern-canvas-builder .canvas-group-move-handle:focus-visible{
+ outline:2px solid #2457d6;outline-offset:2px;
+}

@@ -8,17 +8,19 @@ const asObject=(value:unknown):Binding=>
  value&&typeof value==='object'&&!Array.isArray(value)?value as Binding:{};
 
 /** Shared Actions slots: unsupported component properties remain visible and disabled. */
-export default function SmartEventActionsRibbon({api,actions,flows,onChange}:{
+export default function SmartEventActionsRibbon({api,actions,flows,onChange,selectedApis,mixedSlots}:{
  api:string;actions:Actions;flows:FlowDefinitionMetadata[];onChange:(value:Actions)=>void;
+ selectedApis?:readonly string[];mixedSlots?:readonly string[];
 }){
+ const members=selectedApis?.length?selectedApis:[api];
  const slots=[
-  {key:'click',label:'On Click',enabled:clickComponents.has(api)},
-  {key:'change',label:'On Change',enabled:changeComponents.has(api)},
+  {key:'click',label:'On Click',enabled:members.every(member=>clickComponents.has(member))},
+  {key:'change',label:'On Change',enabled:members.every(member=>changeComponents.has(member))},
   // Page Runtime invokes the metadata start action once per page session.
   // It is not a Smart JSX event and remains disabled in read-only Builder previews.
-  {key:'start',label:'On Session Start',enabled:api.startsWith('smart_')}
+  {key:'start',label:'On Session Start',enabled:members.every(member=>member.startsWith('smart_'))}
  ];
- const qtySlot={key:'qtyIcon',label:'Qty icon',enabled:api==='smart_cart'};
+ const qtySlot={key:'qtyIcon',label:'Qty icon',enabled:members.every(member=>member==='smart_cart')};
  const customSlots=[{key:'customButton1',label:'Custom Button 1',enabled:api==='smart_cart'},
   {key:'customButton2',label:'Custom Button 2',enabled:api==='smart_cart'}];
  const active=flows.filter(flow=>flow.status==='Active'&&
@@ -35,7 +37,8 @@ export default function SmartEventActionsRibbon({api,actions,flows,onChange}:{
  };
  const picker=(slot:{key:string;label:string;enabled:boolean})=>{
   const saved=asObject(actions[slot.key]);
-  const selected=slot.enabled&&!['Navigate','PageState','SetFilter'].includes(String(saved.actionType))
+  const selected=slot.enabled&&!mixedSlots?.includes(slot.key)&&
+    !['Navigate','PageState','SetFilter'].includes(String(saved.actionType))
     ?String(saved.flowApiName??''):'';
   return <label key={slot.key} className="smart-event-picker">
     <span>{slot.label}</span>

@@ -106,13 +106,19 @@
 .builder-editor-mode .modern-canvas-builder .free-canvas-component.selected>.resize-sw{left:-12px!important;bottom:-12px!important}
 .builder-editor-mode .modern-canvas-builder .free-canvas-component.selected>.resize-se{right:-12px!important;bottom:-12px!important}
 
-/* The authored z-order is untouched; a selected editor shape is temporarily
-   hit-tested above overlapping Tabs/bars, so clicks cannot fall through it. */
+/* Hit testing must follow the SAME sibling order as the rendered canvas.
+   Selection never changes stacking order: Arrange commands own it. */
+.builder-editor-mode .modern-canvas-builder .free-canvas-stage .free-canvas-component,
 .builder-editor-mode .modern-canvas-builder .free-canvas-component.selected{
- z-index:1000!important;
+ z-index:var(--canvas-layer-order,0)!important;
 }
+/* The group frame cannot intercept clicks on members or overlapping images.
+   Its explicit move/resize handles remain interactive. */
 .builder-editor-mode .modern-canvas-builder .canvas-group-outline{
- z-index:1100;
+ pointer-events:none;
+}
+.builder-editor-mode .modern-canvas-builder .canvas-group-outline :is(.canvas-group-handle,.canvas-group-move-handle){
+ pointer-events:auto;
 }
 /* Corners on the canvas boundary must remain accessible, not be clipped. */
 .builder-editor-mode .modern-canvas-builder .free-canvas-stage.canvas-editing{

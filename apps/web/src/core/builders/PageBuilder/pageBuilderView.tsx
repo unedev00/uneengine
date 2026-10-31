@@ -173,7 +173,8 @@ import PageBuilderRibbonContent from './PageBuilderRibbonContent';
 import { canNestComponent, pageAppearanceTarget, pageAppearanceStyleKeys, updateLayoutSettings, type LayoutSettingKey, directChildren, isLayoutType, isDescendantOf, layoutTypes } from '../../pages/TemplatePageRuntime/pageComponentLayout';
 import PageComponentStyleEditor from '../ComponentStyleEditor/PageComponentStyleEditor';
 import { isCanvasLocked, ungroupCanvasComponent, snapCanvasPosition, alignCanvasComponents, distributeCanvasComponents } from './canvasInteractions';
-import {canvasGroupKey, canvasGroupMembers, groupCanvasSelection, ungroupCanvasSelection, moveCanvasLayer, canvasGroupBounds} from './canvasLayerGroups';
+import {canvasGroupKey, canvasGroupMembers, groupCanvasSelection, ungroupCanvasSelection, moveCanvasLayer, shiftCanvasLayer, canvasGroupBounds} from './canvasLayerGroups';
+import {isSharedCanvasProperty,mixedCanvasPropertyIds,updateSharedCanvasProperties,updateSharedCanvasPositions} from './canvasSharedRibbonProperties';
 import {useCanvasGroupGestures} from './useCanvasGroupGestures';
 import { copyComponentTree, cloneComponentTree, remapComponentInteractionTargets, assignTabOnReparent, type ComponentClipboard } from './pageComponentTree';
 import { filterPageComponentRecords, needsMetadataComponentRuntime } from '../../pages/PageRuntime/pageComponentBindings';
@@ -576,6 +577,27 @@ function PageBuilder({
   const selected = page.components.find((component) => component.id === selectedId);
   const selectedGroupMembers = selected && page.layoutMode === 'free-canvas' ? canvasGroupMembers(page.components,selected) : [];
   const selectedGroupBounds = canvasGroupBounds(selectedGroupMembers);
+  // Shift selection and persisted canvas groups use one shared-property context.
+  const ribbonSelectedMembers = selected
+    ? page.components.filter(item=>(selectionIds.length>1
+      ? selectionIds.includes(item.id)
+      : selectedGroupMembers.length>1
+        ? selectedGroupMembers.some(member=>member.id===item.id)
+        : item.id===selected.id))
+    : [];
+  const ribbonSharedPropertyIds = ribbonSelectedMembers.length>1&&ribbonCatalog
+    ? ribbonCatalog.properties.filter(property=>isSharedCanvasProperty(property,ribbonSelectedMembers))
+      .map(property=>property.id)
+    : undefined;
+  const ribbonMixedPropertyIds = ribbonSelectedMembers.length>1&&ribbonCatalog
+    ? mixedCanvasPropertyIds(ribbonCatalog.properties,
+      ribbonTab==='Component Layout'?'Layout':ribbonTab==='Component Data'?'Data':'Design',
+      ribbonSelectedMembers)
+    : undefined;
+  const groupCandidates=page.components.filter(item=>selectionIds.includes(item.id));
+  const canGroupSelected=groupCandidates.length>1&&groupCandidates.every(item=>
+    !!item.position&&!isCanvasLocked(item)&&!canvasGroupKey(item)&&
+    rawLayoutParentId(item)===rawLayoutParentId(groupCandidates[0]));
   const [visibilityEditorOpen,setVisibilityEditorOpen]=useState(false);
   const [visibilityDraft,setVisibilityDraft]=useState<ComponentVisibilityRule|undefined>();
   useEffect(()=>{
@@ -1014,16 +1036,7 @@ function PageBuilder({
     applyPage({ ...page, components: page.components.map((component) => component.id === id ? { ...component, ...nextUpdate } : component) });
   };
   const moveLayer = (id: string, offset: -1 | 1) => {
-    const chosen = page.components.find(item => item.id === id);
-    if (!chosen || isCanvasLocked(chosen)) return;
-    const siblings = page.components.filter(item => rawLayoutParentId(item) === rawLayoutParentId(chosen));
-    const from = siblings.findIndex(item => item.id === id), to = from + offset;
-    if (from < 0 || to < 0 || to >= siblings.length) return;
-    const ordered = [...siblings];
-    [ordered[from], ordered[to]] = [ordered[to], ordered[from]];
-    let index = 0;
-    applyPage({...page,components:page.components.map(item =>
-      rawLayoutParentId(item) === rawLayoutParentId(chosen) ? ordered[index++] : item)});
+    applyPage({...page,components:shiftCanvasLayer(page.components,id,offset)});
   };
   const placeSelectedLayer = (edge: 'front'|'back') => {
     if (selected && !isCanvasLocked(selected))
@@ -1041,6 +1054,7 @@ function PageBuilder({
   const ungroupSelected = () => {
     if (!selected || isCanvasLocked(selected)) return;
     if (canvasGroupKey(selected)) {
+      if(selectedGroupMembers.some(isCanvasLocked))return;
       applyPage({...page,components:ungroupCanvasSelection(page.components,selected.id)});
       setSelectionIds([selected.id]);
       return;
@@ -2195,6 +2209,9 @@ function PageBuilder({
               }
           : {}),
         ...(isLayoutType(component.type) ? {} : visualStyle),
+        // The rendered and hit-tested stack follows the saved sibling order,
+        // never the temporary .selected state or an authored visual override.
+        ...(page.layoutMode==='free-canvas' ? {'--canvas-layer-order':index+1,zIndex:index+1} : {}),
         ...(component.properties?.fillRegion===true && page.layoutMode==='template' ? {height:'100%',minHeight:0}: {})
       } as React.CSSProperties}
       onClick={selectOnlyInDesigner ? selectCanvasComponent : undefined}
@@ -2278,8 +2295,8 @@ function PageBuilder({
           <button type="button" role="menuitem" disabled={!componentClipboard} onClick={() => {pasteComponent();setComponentMenuId('');}}>Paste <kbd>Ctrl+V</kbd></button>
           <button type="button" role="menuitem" disabled={isCanvasLocked(component)} onClick={duplicateSelected}>Duplicate <kbd>Ctrl+D</kbd></button>
           <button type="button" role="menuitem" onClick={() => openComponentInspector('Position')}>Align and position</button>
-          <button type="button" role="menuitem" onClick={() => {moveSelected(-1);setComponentMenuId('');}}>Bring forward</button>
-          <button type="button" role="menuitem" onClick={() => {moveSelected(1);setComponentMenuId('');}}>Send backward</button>
+          <button type="button" role="menuitem" onClick={() => {moveSelected(1);setComponentMenuId('');}}>Bring forward</button>
+          <button type="button" role="menuitem" onClick={() => {moveSelected(-1);setComponentMenuId('');}}>Send backward</button>
           <button type="button" role="menuitem" onClick={() => openComponentInspector('Data & Actions')}>Data, links and actions</button>
 
           <button type="button" role="menuitem" disabled={isCanvasLocked(component)} onClick={() => {removeSelected();setComponentMenuId('');}}>Delete <kbd>Delete</kbd></button>
@@ -2962,14 +2979,24 @@ function PageBuilder({
           })()}
           {ribbonTab==='Arrange' && <ArrangeRibbon
             freeCanvas={page.layoutMode==='free-canvas'} hasSelection={!!selected}
-            locked={selected?isCanvasLocked(selected):false} selectedCount={selectionIds.length}
-            canUngroup={!!selected&&(!!canvasGroupKey(selected)
-              ||(selected.type==='Container'&&childrenOf(page.components,selected.id).length>0))}
+            locked={ribbonSelectedMembers.some(isCanvasLocked)} selectedCount={selectionIds.length}
+            canGroup={canGroupSelected}
+            canUngroup={!!selected&&!isCanvasLocked(selected)&&
+              (canvasGroupKey(selected)
+                ? selectedGroupMembers.every(item=>!isCanvasLocked(item))
+                : selected.type==='Container'&&childrenOf(page.components,selected.id).length>0
+                  &&childrenOf(page.components,selected.id).every(item=>!isCanvasLocked(item)))}
             onAlign={alignSelected} onDistribute={distributeSelected}
             onMove={moveSelected} onPlace={placeSelectedLayer}
             onGroup={wrapSelectedInContainer} onUngroup={ungroupSelected}
-            onLock={()=>selected&&updateComponent(selected.id,{properties:{
-              ...selected.properties,editorLocked:!isCanvasLocked(selected)}})}
+            onLock={()=>{
+              if(!selected)return;
+              const members=ribbonSelectedMembers.length?ribbonSelectedMembers:[selected];
+              const nextLocked=!members.some(isCanvasLocked);
+              const ids=new Set(members.map(item=>item.id));
+              applyPage({...page,components:page.components.map(item=>ids.has(item.id)
+                ?{...item,properties:{...item.properties,editorLocked:nextLocked}}:item)});
+            }}
             onNesting={()=>openAdvanced('nesting')}/>}
           {ribbonTab==='Logic' && <div className="office-ribbon-group ribbon-logic-rules" aria-label="Rules">
             <div className="office-ribbon-stack">
@@ -2990,25 +3017,78 @@ function PageBuilder({
             renderIcon={renderPaletteIcon}/>}
           {selectedNewUne && selected && ribbonTab==='Component Action' &&
             <SmartEventActionsRibbon api={selected.type.slice(7)}
+              selectedApis={ribbonSelectedMembers.length>1?ribbonSelectedMembers.map(item=>
+                item.type.startsWith('Custom:')&&!isCanvasLocked(item)?item.type.slice(7):''):undefined}
+              mixedSlots={ribbonSelectedMembers.length>1
+                ? [...new Set(ribbonSelectedMembers.flatMap(item=>{
+                    const actions=item.properties.actionFlows;
+                    return actions&&typeof actions==='object'&&!Array.isArray(actions)
+                      ?Object.keys(actions):[];
+                  }))].filter(key=>{
+                    const values=ribbonSelectedMembers.map(item=>{
+                      const actions=item.properties.actionFlows;
+                      return actions&&typeof actions==='object'&&!Array.isArray(actions)
+                        ?(actions as Record<string,unknown>)[key]:undefined;
+                    });
+                    return values.some(value=>JSON.stringify(value)!==JSON.stringify(values[0]));
+                  }):undefined}
               actions={selected.properties.actionFlows&&typeof selected.properties.actionFlows==='object'
                 &&!Array.isArray(selected.properties.actionFlows)
                 ? selected.properties.actionFlows as Record<string,unknown>:{}}
               flows={flows}
-              onChange={actionFlows=>updateComponent(selected.id,{
-                properties:{...selected.properties,actionFlows}
-              })}/>}
+              onChange={actionFlows=>{
+                if(ribbonSelectedMembers.length>1){
+                  const previous=selected.properties.actionFlows&&typeof selected.properties.actionFlows==='object'
+                    &&!Array.isArray(selected.properties.actionFlows)
+                    ?selected.properties.actionFlows as Record<string,unknown>:{};
+                  const changed=[...new Set([...Object.keys(previous),...Object.keys(actionFlows)])]
+                    .filter(key=>JSON.stringify(previous[key])!==JSON.stringify(actionFlows[key]));
+                  const ids=new Set(ribbonSelectedMembers.map(item=>item.id));
+                  applyPage({...page,components:page.components.map(item=>{
+                    if(!ids.has(item.id))return item;
+                    const stored=item.properties.actionFlows&&typeof item.properties.actionFlows==='object'
+                      &&!Array.isArray(item.properties.actionFlows)
+                      ?item.properties.actionFlows as Record<string,unknown>:{};
+                    const next={...stored};
+                    for(const key of changed){
+                      if(key in actionFlows)next[key]=actionFlows[key];
+                      else delete next[key];
+                    }
+                    return {...item,properties:{...item.properties,actionFlows:next}};
+                  })});
+                }else updateComponent(selected.id,{properties:{...selected.properties,actionFlows}});
+              }}/>}
           {selected?.type==='Custom:smart_icon' && ribbonTab==='Component Layout' &&
             <SmartIconGallery value={String(selected.properties.iconId??'house')}
-              onChange={iconId=>updateComponent(selected.id,{properties:{...selected.properties,iconId}})}/>}
+              disabled={ribbonSelectedMembers.some(item=>item.type!=='Custom:smart_icon'||isCanvasLocked(item))}
+              onChange={iconId=>{
+                if(ribbonSelectedMembers.length>1){
+                  const ids=new Set(ribbonSelectedMembers.map(item=>item.id));
+                  applyPage({...page,components:page.components.map(item=>ids.has(item.id)
+                    ?{...item,properties:{...item.properties,iconId}}:item)});
+                }else updateComponent(selected.id,{properties:{...selected.properties,iconId}});
+              }}/>}
           {selectedNewUne && selected && ribbonCatalog &&
             (ribbonTab==='Component Data'||ribbonTab==='Component Properties'||ribbonTab==='Component Layout') &&
             <SmartRibbon
               tab={ribbonTab==='Component Data'?'Data':ribbonTab==='Component Layout'?'Layout':'Design'}
               api={selected.type.slice(7)} definitions={ribbonCatalog.properties}
               properties={selected.properties} objects={objects} pageObjectApiName={page.targetObject}
-              onChange={(properties:Record<string,unknown>)=>updateComponent(selected.id,{properties})}
+              sharedPropertyIds={ribbonSharedPropertyIds} mixedPropertyIds={ribbonMixedPropertyIds}
+              onChange={(properties:Record<string,unknown>)=>{
+                if(ribbonSelectedMembers.length>1){
+                  const tab=ribbonTab==='Component Data'?'Data':ribbonTab==='Component Layout'?'Layout':'Design';
+                  applyPage({...page,components:updateSharedCanvasProperties(
+                    page.components,selected.id,ribbonSelectedMembers,ribbonCatalog.properties,tab,properties)});
+                }else updateComponent(selected.id,{properties});
+              }}
               position={selected.position} layoutMode={page.layoutMode}
-              onPositionChange={position=>updateComponent(selected.id,{position})}/>}
+              onPositionChange={position=>{
+                if(ribbonSelectedMembers.length>1)
+                  applyPage({...page,components:updateSharedCanvasPositions(
+                    page.components,selected.id,ribbonSelectedMembers,ribbonCatalog.properties,position)});
+                else updateComponent(selected.id,{position});
+              }}/>}
         </div>
       </section>
 
@@ -3145,11 +3225,14 @@ function PageBuilder({
                     left:selectedGroupBounds.x,top:selectedGroupBounds.y,
                     width:selectedGroupBounds.width,height:selectedGroupBounds.height
                   }}
-                  onPointerDown={event=>startCanvasGroupGesture(event,'move')}
                   onPointerMove={moveCanvasGroupGesture}
                   onPointerUp={endCanvasGroupGesture}
                   onPointerCancel={event=>endCanvasGroupGesture(event,true)}
                   onClick={event=>event.stopPropagation()}>
+                  <button type="button" className="canvas-group-move-handle"
+                    aria-label="Move grouped components" title="Drag to move grouped components"
+                    onPointerDown={event=>startCanvasGroupGesture(event,'move')}
+                    onClick={event=>event.stopPropagation()}><Move size={16}/></button>
                   {(['n','ne','e','se','s','sw','w','nw'] as const).map(edge=><button key={edge}
                     type="button" aria-label={`Resize grouped components ${edge}`}
                     className={`canvas-group-handle resize-${edge}`}
