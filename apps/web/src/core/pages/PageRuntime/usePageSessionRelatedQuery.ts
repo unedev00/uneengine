@@ -1,6 +1,8 @@
 import {useEffect,useState} from 'react';
 import type {FieldMetadata,ObjectMetadata} from '../../metadata/Definitions/metadata';
-import {pageComponentSessionRelatedQuery,type PageQueryFilter} from './pageComponentBindings';
+import {pageComponentSessionRelatedQuery,pageComponentRelatedQuery,
+ pageComponentActiveRecordQuery,hasPageActiveRecordSelection,
+ type PageQueryFilter} from './pageComponentBindings';
 
 type RelatedScope={blocked:boolean;filter?:PageQueryFilter};
 type RecordPage={records:Record<string,unknown>[];total:number};
@@ -28,4 +30,33 @@ export function usePageSessionRelatedQuery(
   return()=>{active=false;};
  },[key]);
  return enabled&&result?.key===key?result.query:{blocked:true};
+}
+
+/**
+ * One shared resolution contract for the app Page Runtime and standalone
+ * metadata-bound components. A configured parent picker always has precedence;
+ * otherwise active record Flow state wins, followed by session discovery.
+ */
+export function usePageComponentRelatedScope(
+ properties:Readonly<Record<string,unknown>>,componentType:string,
+ fields:ReadonlyArray<FieldMetadata>,objects:ReadonlyArray<ObjectMetadata>,
+ pageState:Readonly<Record<string,unknown>>,sessionId:string,revision:number,
+ load:RecordLoader,manualParentId:unknown,disableActions:boolean
+):{relatedQuery:RelatedScope;relatedField:string;parentId:unknown}{
+ const relatedKey=String(properties.relatedFilterKey??'');
+ const auto=properties.autoRecordScope===true||
+  (properties.autoRecordScope!==false && ['smart_cart','Custom:smart_cart'].includes(componentType));
+ const selected=hasPageActiveRecordSelection(fields,pageState);
+ const direct=pageComponentActiveRecordQuery(fields,pageState);
+ const session=usePageSessionRelatedQuery(auto&&!relatedKey&&!selected&&!disableActions,
+  fields,objects,sessionId,revision,load);
+ const relatedQuery=relatedKey
+  ?pageComponentRelatedQuery(properties as Record<string,unknown>,fields,manualParentId)
+  :auto?(selected?direct:session)
+   :pageComponentRelatedQuery(properties as Record<string,unknown>,fields,undefined);
+ return {
+  relatedQuery,
+  relatedField:relatedKey?String(properties.relatedFieldApiName??''):relatedQuery.filter?.field??'',
+  parentId:relatedKey?manualParentId:relatedQuery.filter?.value
+ };
 }
