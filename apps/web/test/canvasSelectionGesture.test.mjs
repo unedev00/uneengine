@@ -15,7 +15,7 @@ test('a design-time image or shield click selects its own component, not the tab
 });
 
 test('selected shape exposes four-way movement and eight independent resize arrows',()=>{
-  assert.match(source,/className=`free-canvas-resize-handle resize-\$\{edge\}`/);
+  assert.match(source,/className=\{`free-canvas-resize-handle resize-\$\{edge\}`\}/);
   assert.match(source,/\['n','ne','e','se','s','sw','w','nw'\]/);
   assert.match(source,/onPointerDown=\{event => startCanvasResize\(event, component, edge\)\}/);
   assert.match(source,/onPointerMove=\{moveCanvasResize\} onPointerUp=\{endCanvasResize\}/);
