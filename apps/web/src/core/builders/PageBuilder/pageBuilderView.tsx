@@ -169,7 +169,8 @@ import PageBuilderRibbonContent from './PageBuilderRibbonContent';
 
 import { canNestComponent, pageAppearanceTarget, pageAppearanceStyleKeys, updateLayoutSettings, type LayoutSettingKey, directChildren, isLayoutType, isDescendantOf, layoutTypes } from '../../pages/TemplatePageRuntime/pageComponentLayout';
 import PageComponentStyleEditor from '../ComponentStyleEditor/PageComponentStyleEditor';
-import { isCanvasLocked, wrapCanvasComponent, groupCanvasComponents, ungroupCanvasComponent, snapCanvasPosition, alignCanvasComponents, distributeCanvasComponents } from './canvasInteractions';
+import { isCanvasLocked, ungroupCanvasComponent, snapCanvasPosition, alignCanvasComponents, distributeCanvasComponents } from './canvasInteractions';
+import {canvasGroupKey, canvasGroupMembers, groupCanvasSelection, ungroupCanvasSelection, moveCanvasLayer, canvasGroupBounds, scaleCanvasGroup} from './canvasLayerGroups';
 import { copyComponentTree, cloneComponentTree, remapComponentInteractionTargets, assignTabOnReparent, type ComponentClipboard } from './pageComponentTree';
 import { filterPageComponentRecords, needsMetadataComponentRuntime } from '../../pages/PageRuntime/pageComponentBindings';
 import { childrenOf, canNest, componentLayoutProps, hasPageComponentAppearance, isLayoutContainer, rawLayoutParentId, reparentComponent, resolvePageComponentStyle, type LayoutDevice } from '../../pages/TemplatePageRuntime/pageComponentLayout';
@@ -574,6 +575,8 @@ function PageBuilder({
   const fields = targetObject?.fields ?? [];
   const pageLayouts = targetObject?.pageLayouts ?? [];
   const selected = page.components.find((component) => component.id === selectedId);
+  const selectedGroupMembers = selected && page.layoutMode === 'free-canvas' ? canvasGroupMembers(page.components,selected) : [];
+  const selectedGroupBounds = canvasGroupBounds(selectedGroupMembers);
   const [visibilityEditorOpen,setVisibilityEditorOpen]=useState(false);
   const [visibilityDraft,setVisibilityDraft]=useState<ComponentVisibilityRule|undefined>();
   useEffect(()=>{
@@ -899,7 +902,7 @@ function PageBuilder({
       return;
     }
     const updateScale = () => {
-      const availableWidth = Math.max(1, previewArea.clientWidth - 72);
+      const availableWidth = Math.max(1, previewArea.clientWidth - 8);
       setFitScale(canvasScaleToFitWidth(page.canvasWidth, availableWidth));
     };
     updateScale();
@@ -1010,35 +1013,41 @@ function PageBuilder({
     applyPage({ ...page, components: page.components.map((component) => component.id === id ? { ...component, ...nextUpdate } : component) });
   };
   const moveLayer = (id: string, offset: -1 | 1) => {
-    const index = page.components.findIndex(component => component.id === id);
-    const target = index + offset;
-    if (index < 0 || target < 0 || target >= page.components.length ||
-      isCanvasLocked(page.components[index]) || isCanvasLocked(page.components[target])) return;
-    const components = [...page.components];
-    [components[index], components[target]] = [components[target], components[index]];
-    applyPage({ ...page, components });
+    const chosen = page.components.find(item => item.id === id);
+    if (!chosen || isCanvasLocked(chosen)) return;
+    const siblings = page.components.filter(item => rawLayoutParentId(item) === rawLayoutParentId(chosen));
+    const from = siblings.findIndex(item => item.id === id), to = from + offset;
+    if (from < 0 || to < 0 || to >= siblings.length) return;
+    const ordered = [...siblings];
+    [ordered[from], ordered[to]] = [ordered[to], ordered[from]];
+    let index = 0;
+    applyPage({...page,components:page.components.map(item =>
+      rawLayoutParentId(item) === rawLayoutParentId(chosen) ? ordered[index++] : item)});
+  };
+  const placeSelectedLayer = (edge: 'front'|'back') => {
+    if (selected && !isCanvasLocked(selected))
+      applyPage({...page,components:moveCanvasLayer(page.components,selected.id,edge)});
   };
   const wrapSelectedInContainer = () => {
-    if (!selected || !selected.position || isCanvasLocked(selected) || rawLayoutParentId(selected)) return;
-    if (selectionIds.length<2 || selectionIds.some(id=>{
-      const item=page.components.find(component=>component.id===id);
-      return !item?.position||Boolean(rawLayoutParentId(item))||isCanvasLocked(item);
-    }))return;
-    const groupId = 'group-' + crypto.randomUUID();
-    const eligible=page.components.filter(item=>selectionIds.includes(item.id)&&item.position&&!rawLayoutParentId(item)&&!isCanvasLocked(item));
-    const next=eligible.length>1
-      ?groupCanvasComponents(page.components,eligible.map(item=>item.id),groupId)
-      :wrapCanvasComponent(page.components,selected.id,groupId);
-    applyPage({ ...page, components: next });
-    setSelectionIds([groupId]);
-    setSelectedId(groupId);
-    setPaletteTab('Layers');
+    if (page.layoutMode !== 'free-canvas' || selectionIds.length < 2) return;
+    const next = groupCanvasSelection(page.components,selectionIds,'group-' + crypto.randomUUID());
+    if (next.every((item,index) => item === page.components[index])) {
+      onNotify('Select two or more unlocked components in the same parent to group.');
+      return;
+    }
+    applyPage({...page,components:next});
   };
   const ungroupSelected = () => {
-    if (!selected || selected.type !== 'Container' || isCanvasLocked(selected)) return;
-    const children = childrenOf(page.components, selected.id);
+    if (!selected || isCanvasLocked(selected)) return;
+    if (canvasGroupKey(selected)) {
+      applyPage({...page,components:ungroupCanvasSelection(page.components,selected.id)});
+      setSelectionIds([selected.id]);
+      return;
+    }
+    if (selected.type !== 'Container') return;
+    const children = childrenOf(page.components,selected.id);
     if (!children.length || children.some(isCanvasLocked)) return;
-    applyPage({ ...page, components: ungroupCanvasComponent(page.components, selected.id) });
+    applyPage({...page,components:ungroupCanvasComponent(page.components,selected.id)});
     setSelectedId(children[0].id);
   };
   const startComponentPanelResize = (event: React.PointerEvent<HTMLButtonElement>) => {
@@ -1087,8 +1096,10 @@ function PageBuilder({
     event.stopPropagation();
     event.currentTarget.setPointerCapture(event.pointerId);
     const stage = element.closest('.free-canvas-stage');
-    const group = page.components.filter(item => item.id !== component.id && selectionIds.includes(item.id)
-      && item.position && !rawLayoutParentId(item) && !isCanvasLocked(item))
+    // Only persistent groups move as a unit; old selections cannot drag unrelated blocks.
+    const activeGroup = canvasGroupKey(component);
+    const group = page.components.filter(item => item.id !== component.id && activeGroup && canvasGroupKey(item) === activeGroup
+      && item.position && rawLayoutParentId(item) === rawLayoutParentId(component) && !isCanvasLocked(item))
       .flatMap(item => {
         const node = Array.from(stage?.querySelectorAll<HTMLElement>('.free-canvas-component') ?? [])
           .find(candidate => candidate.dataset.componentId === item.id);
@@ -1103,7 +1114,7 @@ function PageBuilder({
     };
     setSelectedRegion(null);
     setSelectedId(component.id);
-    if (!selectionIds.includes(component.id)) setSelectionIds([component.id]);
+    setSelectionIds(activeGroup ? [component.id,...group.map(item=>item.id)] : [component.id]);
     setPageSettingsOpen(false);
   };
   const moveCanvasPointer = (event: React.PointerEvent<HTMLElement>) => {
@@ -2078,7 +2089,8 @@ function PageBuilder({
     }
   };
   const renderPageComponent = (component: LightningPageMetadata['components'][number], index: number, libraryPreview = false, interactivePreview = false) => {
-    if (!component.visible) return null;
+    const showHiddenSelection = ribbonTab === 'Preview' && selectedId === component.id && !libraryPreview;
+    if (!component.visible && !showHiddenSelection) return null;
     const customDefinition = component.type.startsWith('Custom:')
       ? findRegisteredComponent(libraryComponents, component.type.slice('Custom:'.length), 'page')
       : undefined;
@@ -2122,15 +2134,16 @@ function PageBuilder({
     // Canvas selection is a builder operation, never a component's runtime action.
     // The same selection path is used for pointer hits and intercepted live controls.
     const selectCanvasComponent = (event: React.MouseEvent<HTMLDivElement>) => {
+      const linkedIds = canvasGroupMembers(page.components,component).map(item=>item.id);
       event.stopPropagation();
 
         if (event.shiftKey && page.layoutMode === 'free-canvas') {
-          const next = selectionIds.includes(component.id) && selectionIds.length > 1
-            ? selectionIds.filter(id => id !== component.id) : [...new Set([...selectionIds, component.id])];
+          const next = selectionIds.includes(component.id) && selectionIds.length > linkedIds.length
+            ? selectionIds.filter(id => !linkedIds.includes(id)) : [...new Set([...selectionIds, ...linkedIds])];
           setSelectionIds(next);
           setSelectedId(next.includes(component.id) ? component.id : next[0]);
         } else {
-          setSelectionIds([component.id]);
+          setSelectionIds(linkedIds);
           setSelectedRegion(null);
           setSelectedId(component.id);
         }
@@ -2153,7 +2166,7 @@ function PageBuilder({
       data-page-appearance={isLayoutType(component.type) ? 'layout' : pageAppearanceTarget(component.type)}
       data-page-style={pageAppearanceStyleKeys(visualStyle)}
       ref={libraryPreview && !interactivePreview ? (element) => { if (element) element.inert = true; } : undefined}
-      className={`record-component ${(!libraryPreview || interactivePreview) && page.layoutMode === 'free-canvas' ? 'free-canvas-component' : ''} ${isCanvasLocked(component) ? 'canvas-component-locked' : ''} ${nested ? 'nested-page-component' : ''} ${isLayoutContainer(component) ? 'layout-container-component' : ''} ${libraryPreview ? 'component-rendered-preview' : ''} ${selectedId === component.id && !previewMode && !libraryPreview ? 'selected' : ''} ${selectionIds.includes(component.id) && !previewMode && !libraryPreview ? 'multi-selected' : ''} ${dragOverId === component.id && !libraryPreview ? 'drop-target' : ''}`}
+      className={`record-component ${(!libraryPreview || interactivePreview) && page.layoutMode === 'free-canvas' ? 'free-canvas-component' : ''} ${isCanvasLocked(component) ? 'canvas-component-locked' : ''} ${nested ? 'nested-page-component' : ''} ${isLayoutContainer(component) ? 'layout-container-component' : ''} ${libraryPreview ? 'component-rendered-preview' : ''} ${selectedId === component.id && (!previewMode || ribbonTab === 'Preview') && !libraryPreview ? 'selected' : ''} ${selectionIds.includes(component.id) && (!previewMode || ribbonTab === 'Preview') && !libraryPreview ? 'multi-selected' : ''} ${showHiddenSelection ? 'canvas-hidden-selection' : ''} ${dragOverId === component.id && !libraryPreview ? 'drop-target' : ''}`}
       style={{
         ...((!libraryPreview || interactivePreview) && page.layoutMode === 'free-canvas'
           ? nested
@@ -2237,7 +2250,9 @@ function PageBuilder({
           <button type="button" role="menuitem" disabled={isCanvasLocked(component)} onClick={() => {removeSelected();setComponentMenuId('');}}>Delete <kbd>Delete</kbd></button>
         </div>}
       </div>}
-      {isLayoutType(component.type)
+      {showHiddenSelection && !component.visible
+        ? <span className="canvas-hidden-marker">Hidden: {component.label}</span>
+        : isLayoutType(component.type)
         ? <div className="page-nested-layout" style={visualStyle}>
           {directChildren(page.components, component.id).map((child) => renderPageComponent(child, page.components.indexOf(child), libraryPreview, interactivePreview))}
           {!libraryPreview && !previewMode && <div className="canvas-drop-zone" onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.stopPropagation(); const draggedId = event.dataTransfer.getData('application/x-metadrive-component-id'); if (draggedId && canNestComponent(page.components, draggedId, component.id)) { applyPage({ ...page, components: page.components.map((item) => item.id === draggedId ? { ...item, parentId: component.id } : item) }); } else if (!draggedId) { const type = event.dataTransfer.getData('text/plain').replace(/^component:/, ''); if (type) addComponent(type, page.components.length, component.region ?? 'main', undefined, component.id); } }}>Drop components inside {component.label}</div>}
