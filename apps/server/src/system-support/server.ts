@@ -1489,12 +1489,12 @@ export function createSystemServer(db:SqlPersistence) {
         default_value_override:unknown;choices_override:unknown;min_value:number|null;
         max_value:number|null;field_select:boolean;
         design_row:number|null;design_width:number|null;design_height:number|null;design_order:number|null;
-        design_caption:string|null;design_caption_width:number|null;
+        design_caption:string|null;design_caption_width:number|null;design_display:string|null;
       }>(`SELECT p.property_key AS id,p.label,p.tab,p.section_group AS group_name,
           p.control_kind AS kind,p.sort_order,p.default_value,p.choices,
           p.min_value,p.max_value,p.field_select,
           p.design_row,p.design_width,p.design_height,p.design_order,
-          p.design_caption,p.design_caption_width,
+          p.design_caption,p.design_caption_width,p.design_display,
           r.component_api,r.control_kind_override,r.value_key,
           r.default_value_override,r.choices_override
         FROM md_builder_shared_properties p
@@ -1517,6 +1517,7 @@ export function createSystemServer(db:SqlPersistence) {
           designOrder:row.design_order??undefined,
           designCaption:row.design_caption??undefined,
           designCaptionWidth:row.design_caption_width??undefined,
+           designDisplay:row.design_display??'buttons',
           kindOverrides:{},defaultsOverrides:{},choicesOverrides:{},valueKeys:{}
         };
         properties.set(row.id,item);
