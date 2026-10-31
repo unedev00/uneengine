@@ -29,9 +29,10 @@ const box=(id:string,type:string,label:string,region:string,
 });
 /** Every control is a shared Smart Component with ordinary ribbon properties. */
 export const copilotTillLayout=[
- box('products','smart_card_grid','Products','main',16,104,810,540,{
+ box('products','smart_card_grid','Products','main',16,160,810,484,{
   objectApiName:'Product',
-  filters:[{field:'Active',operator:'Equals',value:true}],
+  filters:[{field:'Active',operator:'Equals',value:true},
+   {field:'MenuCategory',operator:'Equals',value:{source:'PageState',key:'categoryId'}}],
   textSource:'@Name',imageSource:'@ImageUrl',badgeText:'@Price',
   badgeVisible:true,badgeTextSize:13,badgeTextColor:'#FFFFFF',
   cardsPerRow:4,cardsPerColumn:3,imageHeight:122,imagePlacement:'top',
@@ -52,6 +53,15 @@ export const copilotTillLayout=[
   backgroundColor:'#FFFFFF',tableBackgroundColor:'#FFFFFF',
   headerTextColor:'#1E3551',rowLabelColor:'#23384D',
   actionFlows:{qtyIcon:qty,start:read}
+ }),
+ box('categories','smart_tabs','POS categories','main',16,96,810,54,{
+  objectApiName:'MenuCategory',textSource:'@Name',
+  tabCount:8,tabWidth:110,tabHeight:46,selectedTabColor:'#DCEBFE',
+  tabColor:'#FFFFFF',labelColor:'#28435F',borderColor:'#DCE4EC',radius:8,
+  actionFlows:{
+   start:flow('AcetillCopilotDefaultCategory',{}, {categoryId:'categoryId'}),
+   change:{actionType:'PageState',stateKey:'categoryId',value:'$event.record.Id'}
+  }
  }),
  box('search','smart_lookup','Search products','main',16,28,580,56,{
   objectApiName:'Product',textSource:'@Name',
@@ -106,7 +116,11 @@ const responsive=(block:Block,variant:string):Block=>{
  if(variant==='Desktop'||variant==='Custom')return block;
  const width=variant==='Mobile'?390:1024;
  const usable=width-24;
- const index=copilotTillLayout.findIndex(x=>x.id===block.id);
+ const order=['new','lock','pin','search','categories','products','cart',
+  'cash','pay','hold','held','receipt'];
+ const key=block.id.replace('copilot-pos-','');
+ const size=(name:string)=>name==='products'?430:name==='cart'?490:56;
+ const y=12+order.slice(0,order.indexOf(key)).reduce((sum,name)=>sum+size(name)+12,0);
  if(variant==='Tablet'){
   const scale=usable/1382;
   return {...block,position:{
@@ -115,9 +129,7 @@ const responsive=(block:Block,variant:string):Block=>{
    height:block.position.height}};
  }
  // Intentionally one single column, compact mobile controls, no clipped checkout.
- return {...block,position:{x:12,y:12+index*82,width:usable,
-  height:block.type==='Custom:smart_card_grid'?420:
-   block.type==='Custom:smart_cart'?440:56}};
+ return {...block,position:{x:12,y,width:usable,height:size(key)}};
 };
 const stableTypes:Record<string,string[]>={
  'copilot-pos-products':['smart_card_grid','acetill_item_grid','ui_item_grid','une_item_grid'],
@@ -177,7 +189,7 @@ export async function seedAcetillCopilotPosPage(db:SqlPersistence,tenant:string)
    canvasWidth:variant==='Mobile'?390:variant==='Tablet'?1024:
     Math.max(current.canvasWidth,1440),
    canvasHeight:Math.max(current.canvasHeight,
-    variant==='Mobile'?1550:variant==='Tablet'?1100:900)};
+    variant==='Mobile'?2400:variant==='Tablet'?1100:900)};
   await pages.saveLayoutDraft(tenant,PAGE,variant,draft);
   // Publishing remains a separate, audited Owner decision after checkout
   // and payment attestation, never a silent tenant metadata seeder side effect.
