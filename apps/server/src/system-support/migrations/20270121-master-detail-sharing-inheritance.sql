@@ -116,6 +116,9 @@ RETURNS boolean LANGUAGE sql STABLE AS $$
     )
     AND md_master_detail_parent_access(t,u,rid,act)
    END
-  FROM md_records rec WHERE rec.tenant_id=t AND rec.id=rid
+  FROM md_records rec
+  JOIN md_object_definitions active_object ON active_object.tenant_id=rec.tenant_id
+    AND active_object.api_name=rec.object_api AND active_object.deleted_at IS NULL
+  WHERE rec.tenant_id=t AND rec.id=rid
  ),false)
-$$;
+$;
