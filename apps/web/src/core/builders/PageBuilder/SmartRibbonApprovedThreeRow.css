@@ -8,7 +8,7 @@
  box-sizing:border-box!important;
  display:flex!important;flex-flow:row nowrap!important;
  height:118px!important;min-height:118px!important;max-height:118px!important;
- padding:2px 26px 2px 0!important;
+ padding:2px 32px 2px 6px!important;
  overflow-x:auto!important;overflow-y:hidden!important;
  scrollbar-width:none!important;background:var(--page-ribbon-bg,#f3f5f7)!important;
 }
@@ -29,7 +29,7 @@
  position:relative!important;
  width:var(--smart-section-width,auto)!important;min-width:var(--smart-section-width,auto)!important;max-width:var(--smart-section-width,auto)!important;
  height:114px!important;min-height:114px!important;max-height:114px!important;
- padding:3px 8px 1px!important;margin:0!important;
+ padding:3px 14px 1px!important;margin:0!important;
  border:0!important;border-right:1px solid #cbd6e2!important;
  border-radius:0!important;background:transparent!important;overflow:visible!important;
 }
@@ -265,7 +265,7 @@
 /* Page and Canvas: one 114px content strip, matching the three-row Design ribbon. */
 .office-builder-ribbon #page-builder-tab-content.office-ribbon-content:has(>.office-ribbon-page-layout-groups){
  height:118px!important;min-height:118px!important;max-height:118px!important;
- padding:2px 26px 2px 0!important;overflow-x:auto!important;overflow-y:hidden!important;
+ padding:2px 32px 2px 6px!important;overflow-x:auto!important;overflow-y:hidden!important;
 }
 .office-builder-ribbon #page-builder-tab-content>.office-ribbon-page-layout-groups{
  height:114px!important;min-height:114px!important;max-height:114px!important;

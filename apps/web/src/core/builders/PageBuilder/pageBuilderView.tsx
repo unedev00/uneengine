@@ -449,7 +449,7 @@ function PageBuilder({
   const [migrationLayoutId, setMigrationLayoutId] = useState('');
   const [newRecordLinkLabel,setNewRecordLinkLabel]=useState('');
   const [newRecordLinkUrl,setNewRecordLinkUrl]=useState('');
-  const [fitCanvas, setFitCanvas] = useState(true);
+  const [fitCanvas, setFitCanvas] = useState(false);
   const [fitFullPage, setFitFullPage] = useState(false);
   const [fitScale, setFitScale] = useState(1);
   const pagePreviewAreaRef = useRef<HTMLDivElement | null>(null);
@@ -3205,9 +3205,9 @@ function PageBuilder({
           }} onDragOver={(event) => event.preventDefault()} onDrop={(event) => handleDrop(event)}>
             <div
               className={`record-preview ${page.layoutMode === 'free-canvas' ? 'free-canvas-preview' : page.pageType === 'Record Page' ? 'record-page-preview' : page.pageType === 'App Page' ? 'app-page-preview' : 'home-page-preview'} ${device === 'Phone' ? 'phone-preview' : device === 'Tablet' ? 'tablet-preview' : ''}`}
-              style={{...(page.layoutMode === 'free-canvas' && fitCanvas ? {
-                width: page.canvasWidth * fitScale,
-                height: page.canvasHeight * fitScale,
+              style={{...(page.layoutMode === 'free-canvas' ? {
+                width: page.canvasWidth * (fitCanvas ? fitScale : 1),
+                height: page.canvasHeight * (fitCanvas ? fitScale : 1),
                 minHeight: 0,
                 overflow: previewMode ? 'hidden' : 'visible'
               } : page.layoutMode === 'template' && page.components.some(c => c.visible && c.properties?.standalonePresentation === true) ? standaloneTemplateCanvasStyle(page.canvasWidth, page.canvasHeight) : {}),backgroundColor:page.canvasFillColor??'#ffffff'}}
