@@ -1687,11 +1687,12 @@ export class RecordEngine {
       if(root)throw new Error('Record not found');
       return;
     }
-    // Master-Detail cascade does not grant the actor privileges they do not hold.
-    if(!root){
-      await this.rbac.require(tenantId,userId,objectApi,'delete');
-      await this.rbac.requireRecord(tenantId,userId,objectApi,id,'delete');
-    }
+    // A configured Master-Detail or Lookup Cascade is a platform-owned
+    // consequence of deleting the parent. The actor must be authorised to
+    // delete the root, but does not need separate visibility or delete grants
+    // on every descendant. A direct child deletion still enters as root=true
+    // and enforces the child record's normal permission/restriction policy.
+    // This intentionally matches Salesforce cascade-delete behaviour.
     const affectedParents=await rollupParents(client,tenantId,objectApi,id);
     visiting.add(recordKey);
     const references=await registeredRelationships(client,tenantId,{recordId:id,objectApi});
