@@ -16,6 +16,9 @@ export async function runObjectSchemaLifecycleBrowserCheck({page,origin,db,tenan
  await wizard.getByRole('button',{name:'Save',exact:true}).click();
  assert.equal((await create).status(),201,'Object Manager object creation failed');
  await page.getByText('Object definition · Read only').waitFor({timeout:15000});
+ const sourceRecord=(await db.query('INSERT INTO md_records(tenant_id,object_api) VALUES($1,$2) RETURNING id',
+  [tenantId,objectApi])).rows[0].id;
+
  assert.equal((await db.query('SELECT label FROM md_object_definitions WHERE tenant_id=$1 AND api_name=$2',
    [tenantId,objectApi])).rows[0]?.label,'Browser Lifecycle');
  await page.getByRole('button',{name:'Edit',exact:true}).click();
@@ -35,6 +38,7 @@ export async function runObjectSchemaLifecycleBrowserCheck({page,origin,db,tenan
  const impactJson=await impact.json().catch(()=>({}));
  console.info('2A Object Manager impact response:',impact.status(),JSON.stringify(impactJson));
  assert.equal(impact.status(),200,'Object Manager deletion impact API rejected request');
+ assert.equal(impactJson.recordCount,1,'Object deletion impact must disclose retained records');
  const dialog=page.getByRole('dialog',{name:/Delete Browser Lifecycle Updated/});
  await dialog.waitFor({timeout:10000});
  assert.deepEqual(impactJson.blockers,[],'Unexpected deletion blockers for new object');
@@ -55,5 +59,8 @@ export async function runObjectSchemaLifecycleBrowserCheck({page,origin,db,tenan
  assert.equal((await restore).status(),200,'Object Manager restore failed');
  assert.equal((await db.query('SELECT deleted_at FROM md_object_definitions WHERE tenant_id=$1 AND api_name=$2',
    [tenantId,objectApi])).rows[0]?.deleted_at,null);
+ assert.equal((await db.query('SELECT id FROM md_records WHERE tenant_id=$1 AND id=$2',
+   [tenantId,sourceRecord])).rows[0]?.id,sourceRecord,
+   'Object Manager restore must preserve original records');
  console.info('Phase 2A browser Object Manager create/edit/delete/restore SQL E2E passed');
 }
