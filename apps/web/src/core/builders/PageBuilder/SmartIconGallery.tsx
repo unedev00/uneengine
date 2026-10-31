@@ -7,12 +7,13 @@ import './SmartIconGallery.css';
 
 const shapeGroups=[...new Set(smartShapes.map(item=>item.category))];
 const iconGroups=[...new Set(icons.map(icon=>icon.category))];
-export default function SmartIconGallery({value,onChange}:{value:string;onChange:(iconId:string)=>void}){
+export default function SmartIconGallery({value,onChange,disabled=false}:{value:string;onChange:(iconId:string)=>void;disabled?:boolean}){
  const [open,setOpen]=useState(false);
  const button=useRef<HTMLButtonElement>(null);
  const panel=useRef<HTMLDivElement>(null);
  const [position,setPosition]=useState({top:0,left:0});
- const select=(id:string)=>{onChange(id);setOpen(false);button.current?.focus();};
+ const select=(id:string)=>{if(disabled)return;onChange(id);setOpen(false);button.current?.focus();};
+ useEffect(()=>{if(disabled)setOpen(false);},[disabled]);
  useEffect(()=>{
   if(!open)return;
   const update=()=>{const rect=button.current?.getBoundingClientRect();if(rect)setPosition({
@@ -33,7 +34,8 @@ export default function SmartIconGallery({value,onChange}:{value:string;onChange
       maskImage:'url(/smart-icons/'+item.id+'.svg)'}}/>;
  return <div className="smart-icon-gallery" aria-label="Shapes and icons">
   <button ref={button} type="button" className="smart-shapes-trigger"
-    aria-haspopup="dialog" aria-expanded={open} title="Choose shape or icon"
+    aria-haspopup="dialog" aria-expanded={open} disabled={disabled}
+    title={disabled?'Not shared by every selected component':'Choose shape or icon'}
     onClick={()=>setOpen(!open)}><Shapes size={18}/><span>Shapes</span><ChevronDown size={13}/></button>
   {open&&createPortal(<div ref={panel} className="smart-shapes-popup" role="dialog"
     aria-label="Choose shape or icon" style={{position:'fixed',top:position.top,left:position.left}}>
