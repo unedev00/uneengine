@@ -89,9 +89,9 @@ export default function AcetillTerminal({editorStyles}: {editorStyles?:AcetillVi
   const [setupStatus,setSetupStatus]=React.useState('');
   const [paymentMode,setPaymentMode]=React.useState<'cash'|'card'|null>(null);
   const paymentDialogRef=useModalFocus(Boolean(paymentMode),()=>{setPaymentMode(null);setCashReceived('');});
-  const pinSetupDialogRef=useModalFocus(pinSetup&&!tillLocked,()=>{setPinSetup(false);setSetupPassword('');setNewPin('');});
-  const lockedDialogRef=useModalFocus(tillLocked);
-  const ageDialogRef=useModalFocus(Boolean(pendingAgeItem),()=>setPendingAgeItem(null));
+  const pinSetupDialogRef=useModalFocus<HTMLDivElement>(pinSetup&&!tillLocked,()=>{setPinSetup(false);setSetupPassword('');setNewPin('');});
+  const lockedDialogRef=useModalFocus<HTMLDivElement>(tillLocked);
+  const ageDialogRef=useModalFocus<HTMLDivElement>(Boolean(pendingAgeItem),()=>setPendingAgeItem(null));
   const [cashReceived,setCashReceived]=React.useState('');
   const [customerWindow,setCustomerWindow]=React.useState<Window|null>(null);
   const customerWindowRef=React.useRef<Window|null>(null);
