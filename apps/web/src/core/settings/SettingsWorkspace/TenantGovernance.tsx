@@ -1,12 +1,14 @@
-import {useEffect,useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
 import TenantConnectedApps from './TenantConnectedApps';
 import TenantLicenses from './TenantLicenses';
 type Request=<T>(path:string,init?:RequestInit)=>Promise<T>;
 type Audit={id:string;actor_user_id:string|null;table_name:string;operation:string;row_identifier:string;changed_fields:string[];created_at:string};
-export default function TenantGovernance({request,canManage,initialTab='audit'}:{request:Request;canManage:boolean;initialTab?:string}){
+export default function TenantGovernance({request,canManage,initialTab='audit',focusOnMount=false}:{request:Request;canManage:boolean;initialTab?:string;focusOnMount?:boolean}){
  const [tab,setTab]=useState(initialTab);
+ const rootRef=useRef<HTMLElement>(null);
  useEffect(()=>setTab(initialTab),[initialTab]);
- return <section className="surface permission-section"><h2>Security governance</h2><div className="permission-tabs">{['audit','monitoring','licences','connected apps'].map(t=><button className={tab===t?'active':''} key={t} onClick={()=>setTab(t)}>{t}</button>)}</div>
+ useEffect(()=>{if(focusOnMount)rootRef.current?.scrollIntoView({block:'start',behavior:'auto'});},[focusOnMount,initialTab]);
+ return <section ref={rootRef} className="surface permission-section md-security-governance"><h2>Security governance</h2><div className="permission-tabs">{['audit','monitoring','licences','connected apps'].map(t=><button className={tab===t?'active':''} key={t} onClick={()=>setTab(t)}>{t}</button>)}</div>
  {tab==='audit'&&<AuditTrail request={request}/>}{tab==='monitoring'&&<Monitoring request={request}/>}{tab==='licences'&&<TenantLicenses request={request} canManage={canManage}/>}{tab==='connected apps'&&<TenantConnectedApps request={request}/>}
  </section>;
 }
