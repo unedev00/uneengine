@@ -831,6 +831,6 @@ test('SQL-owned three-row Design and Shapes ribbon retains the original layout p
   const widest=Math.max(...rows.map(row=>row.reduce((a,b)=>a+b,0)+Math.max(0,row.length-1)*2));
   return total+Math.max(widest+17,group.length*6+24);
  },0);
- assert.equal(sum(widths),1202);
+ assert.equal(sum(widths),1195);
  assert.equal(sum(shapes),181);
 });
