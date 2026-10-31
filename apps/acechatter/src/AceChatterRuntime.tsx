@@ -366,7 +366,7 @@ export default function AceChatterRuntime({onLogout}:{onLogout:()=>void}) {
         const rowId=identify(row);
         const preview=String(pick(row,'__lastMessageBody','Body')??'No messages yet');
         const stamp=String(pick(row,'__lastMessageAt','SentAt','ReceivedAt')??'');
-        return <button key={rowId} className={'ace-chat-conversation'+(selected===rowId?' selected':'')} onClick={()=>{setSelected(rowId);setNotice('');setError('');}}>
+        return <button key={rowId} className={'ace-chat-conversation'+(selected===rowId?' selected':'')} aria-current={selected===rowId?'true':undefined} onClick={()=>{setSelected(rowId);setNotice('');setError('');}}>
           <span className="ace-chat-avatar">{label(row).slice(0,1).toUpperCase()}</span>
           <span className="ace-chat-conversation-copy"><strong>{label(row)}</strong><small>{preview}</small></span>
           <span className="ace-chat-conversation-meta">{stamp&&<small>{formatChatTimestamp(stamp)}</small>}</span>
