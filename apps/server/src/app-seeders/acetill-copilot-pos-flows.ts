@@ -128,7 +128,29 @@ export const copilotDefaultCategory=graph('AcetillCopilotDefaultCategory','Till:
 ],[e(1,2),e(2,3),e(3,4,'Found'),e(3,5,'Default'),e(4,5)],
  [{name:'firstCategory',type:'Record',dataType:'MenuCategory'},
   variable('categoryId','Text',false,true)]);
-export const copilotPosGraphs=[copilotAddProduct,copilotReadCart,copilotChangeQuantity,copilotDefaultCategory];
+export const copilotVerifyPin={
+ apiName:'AcetillCopilotVerifyPin',label:'Verify cashier PIN securely',
+ appApiName:'Acetill',flowType:'Screen Flow',status:'Active',version:1,
+ startConfig:{executionContext:'User'},
+ elements:[
+  n(1,'Start','Start'),
+  n(2,'Screen','Verify cashier PIN',{fields:[{
+   name:'pin',apiName:'pin',label:'Enter till PIN',type:'Password',
+   required:true,minLength:4,maxLength:12}]}),
+  n(3,'Subflow','Verify with existing cashier policy',{
+   flowApiName:'AcetillVerifyUserPin',
+   inputValues:'pin={!pin}',outputValues:'verified=verified'}),
+  n(4,'Decision','Correct PIN?',{outcomes:[{
+   name:'Verified',label:'Verified',conditionLogic:'All',
+   conditions:[{field:'{!verified}',operator:'Equals',value:true}]}]}),
+  n(5,'End','PIN verified'),
+  n(6,'Custom Error','Invalid cashier PIN',{
+   errorLocation:'Page',errorMessage:'Incorrect till PIN.'})
+ ],
+ connectors:[e(1,2),e(2,3),e(3,4),e(4,5,'Verified'),e(4,6,'Default')],
+ resources:[variable('pin'),variable('verified','Boolean',false,true)],tests:[]
+};
+export const copilotPosGraphs=[copilotAddProduct,copilotReadCart,copilotChangeQuantity,copilotDefaultCategory,copilotVerifyPin];
 
 /** Only Acetill's independent seeder writes graphs; skip existing versions. */
 export async function seedAcetillCopilotPosFlows(client:Pick<PoolClient,'query'>,tenant:string){
@@ -146,8 +168,8 @@ export async function seedAcetillCopilotPosFlows(client:Pick<PoolClient,'query'>
    [tenant,flow.apiName]);
   if(found.rowCount)continue;
   const result=await client.query<{id:string}>(
-   "INSERT INTO md_flow_definitions(tenant_id,api_name,label,flow_type,version,active) VALUES($1,$2,$3,'Autolaunched Flow',1,true) RETURNING id",
-   [tenant,flow.apiName,flow.label]);
+   "INSERT INTO md_flow_definitions(tenant_id,api_name,label,flow_type,version,active) VALUES($1,$2,$3,$4,1,true) RETURNING id",
+   [tenant,flow.apiName,flow.label,flow.flowType]);
   const encoded:Array<{path:string;kind:string;text:string|null}>=[];
   encodeMetadataValue(flow,'/builder',encoded);
   for(const prop of encoded)
