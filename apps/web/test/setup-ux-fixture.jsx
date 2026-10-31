@@ -7,6 +7,10 @@ import NamedCredentials from '../src/core/integrations/NamedCredentials/NamedCre
 import FlowLogs from '../src/core/automation/FlowLogs/FlowLogs';
 import FlowBuilder from '../src/core/builders/FlowBuilder/FlowBuilder';
 import { defaultFlow } from '../src/core/metadata/Definitions/metadata';
+import TenantMfaControls from '../src/core/settings/SettingsWorkspace/TenantMfaControls';
+import TenantConnectedApps from '../src/core/settings/SettingsWorkspace/TenantConnectedApps';
+import TenantGovernance from '../src/core/settings/SettingsWorkspace/TenantGovernance';
+import CompanySettingsWorkspace from '../src/core/settings/CompanySettingsWorkspace/CompanySettingsWorkspace';
 import '../src/core/workspace/WorkspaceTheme/design-system.css';
 import '../src/core/workspace/WorkspaceTheme/styles.css';
 import '../src/core/workspace/WorkspaceTheme/appleTheme.css';
@@ -16,6 +20,7 @@ import '../src/core/workspace/WorkspaceTheme/settingsAppearance.css';
 import '../src/core/workspace/WorkspaceTheme/desktopDense.css';
 import '../src/core/workspace/WorkspaceTheme/contrastRepair.css';
 import '../src/core/workspace/WorkspaceTheme/setupUsability.css';
+import '../src/core/workspace/WorkspaceTheme/grokUiPolish.css';
 const params = new URLSearchParams(location.search);
 const view=params.get('view');
 const noop=()=>{};
@@ -28,11 +33,34 @@ const request=async(path,init)=>{
  if(init?.method==='PUT'){window.savedSelections=JSON.parse(init.body);return {briefcase:JSON.parse(init.body)};}
  return {briefcase:{selections:[]}};
 };
+const uxRequest=async path=>{
+ if(path==='/auth/mfa/status')return {mode:'Off',enrolled:false};
+ if(path==='/auth/passkeys')return {credentials:[]};
+ if(path==='/auth/user-locks')return {users:[]};
+ if(path==='/security/connected-apps')return {clients:[],
+  users:Array.from({length:9},(_,i)=>({id:'user-'+i,email:'operator'+(i+1)+'@example.com'})),
+  scopes:['records:read','records:write','metadata:read','metadata:write','records:import','mcp:access'],
+  scopeGroups:[{key:'sample',label:'Records and metadata',scopes:
+   ['records:read','records:write','metadata:read','metadata:write','records:import','mcp:access']
+    .map(scope=>({scope,label:scope,description:'Controlled permission '+scope,risk:'standard',assignable:true}))}]};
+ if(path==='/security/audit/coverage')return {tables:[{table_name:'md_flow_editor_values'}]};
+ if(path.startsWith('/security/audit'))return {events:[{id:'audit-1',actor_user_id:null,table_name:'md_flow_editor_values',
+  operation:'INSERT',row_identifier:'8e4f5288-3284-444c-93e6-f3665943afd5',
+  changed_fields:['flow_id','property_path','tenant_id','value'],created_at:'2026-10-21T22:46:11Z'}],nextCursor:null};
+ return {};
+};
 const credentials=[{id:'sample',name:'Sample_Credential',label:'Sample credential',baseUrl:'https://example.com/long/integration/path',authType:'Bearer',hasSecret:true,protocol:'HTTPS',enabled:true,updatedAt:'2026-10-28T09:00:00Z',configuration:{}}];
 function RecordImportCheck(){ const [ready,setReady]=React.useState(false); React.useEffect(()=>{import('../src/core/records/RecordWorkspace/recordWorkspaceViews').then(module=>setReady(typeof module.createRecordWorkspaceViews === 'function'));},[]);return <p>{ready ? 'Record workspace import passed' : 'Loading record workspace'}</p>; }
 function Fixture(){
  let content;
- if(view==='tenants')content=<TenantManagement request={request} permitted/>;
+ if(view==='mfa')content=<TenantMfaControls request={uxRequest} canManage onReauthenticate={noop}/>;
+  else if(view==='oauth')content=<TenantConnectedApps request={uxRequest}/>;
+  else if(view==='governance')content=<TenantGovernance request={uxRequest} canManage/>;
+  else if(view==='company')content=<CompanySettingsWorkspace initialSection="security" company={<p>Company</p>}
+   domains={<p>Domains</p>} developer={<p>Developer</p>} usage={<p>Usage</p>} recovery={<p>Recovery</p>}
+   mfa={<p>Security controls available</p>} emailRecovery={<p>Email recovery</p>} locks={<p>Locks</p>}
+   sessions={<p>Sessions</p>} audit={<p>Audit</p>}/>;
+  else if(view==='tenants')content=<TenantManagement request={request} permitted/>;
  else if(view==='records-import')content=<RecordImportCheck/>;
  else if(view==='offline')content=<OfflineBriefcaseSettings request={request} permitted objects={[object]}/>;
  else if(view==='dashboard')content=<DashboardBuilder {...arrays} {...callbacks} userId="test" canCreate={params.get('allowed')==='true'} canManageAll={false} />;
