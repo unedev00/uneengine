@@ -6,6 +6,7 @@ import DashboardBuilder from '../src/core/builders/DashboardBuilder/DashboardBui
 import SchemaBuilder from '../src/core/builders/SchemaBuilder/SchemaBuilder';
 import AceKiosk from '../../acekiosk/src/AceKiosk';
 import AcetillTerminal from '../../acetill/src/AcetillTerminal';
+import {FinancialDocumentEditor} from '../../aceassist/src/FinancialDocumentEditor';
 import NamedCredentials from '../src/core/integrations/NamedCredentials/NamedCredentials';
 import FlowLogs from '../src/core/automation/FlowLogs/FlowLogs';
 import FlowBuilder from '../src/core/builders/FlowBuilder/FlowBuilder';
@@ -84,6 +85,7 @@ function Fixture(){
   else if(view==='oauth')content=<TenantConnectedApps request={uxRequest}/>;
    else if(view==='oauth-directory')content=<TenantConnectedApps request={directoryRequest}/>;
    else if(view==='security-history')content=<securityViews.TenantSecurityAudit/>;
+   else if(view==='assist-document')content=<FinancialDocumentEditor type="Invoice" operation="Create" document={null} storedLines={[]} metadataFields={[{apiName:'Customer',label:'Customer',type:'Lookup'}]} customers={[]} products={[]} busy={false} error="" onCancel={noop} onSave={async()=>{}} onCreateCustomer={async customer=>({Id:'test-customer',...customer})}/>;
   else if(view==='governance')content=<TenantGovernance request={uxRequest} canManage/>;
    else if(view==='monitoring')content=<TenantGovernance request={uxRequest} canManage initialTab="monitoring"/>;
    else if(view==='licenses')content=<TenantGovernance request={uxRequest} canManage initialTab="licences"/>;
