@@ -125,6 +125,42 @@ export function pageComponentRelatedQuery(properties:Record<string,unknown>,fiel
  if(!field||typeof parentId!=='string'||!parentId||!isServerFilterable(field,'Equals'))return {blocked:true};
  return {blocked:false,filter:{field:field.apiName,value:parentId,related:Boolean(field.relationship)}};
 }
+/**
+ * Reuse an authorised Flow's active parent record from the page state to scope
+ * child records. Field metadata supplies the relationship, never an app name.
+ * The generated browser session token is NOT a database record ID.
+ *
+ * No matching active parent, invalid state or ambiguous parents fail closed.
+ * The containing component opts in; a normal list still lists all records.
+ */
+export function pageComponentActiveRecordQuery(
+ fields:ReadonlyArray<FieldMetadata>,pageState:Readonly<Record<string,unknown>>
+):{blocked:boolean;filter?:PageQueryFilter}{
+ const matches:Array<{field:FieldMetadata;value:string;priority:number}>=[];
+ for(const field of fields){
+  if(!field.relationship||!isServerFilterable(field,'Equals'))continue;
+  const names=[field.apiName,field.relationship.targetObject]
+    .filter((name):name is string=>typeof name==='string'&&/^[A-Za-z][A-Za-z0-9_]*$/.test(name));
+  for(const [priority,prefix] of ['active','current',''].entries()){
+   for(const name of names){
+    const base=name.charAt(0).toLowerCase()+name.slice(1);
+    const key=prefix?prefix+name+'Id':base+'Id';
+    if(!Object.prototype.hasOwnProperty.call(pageState,key))continue;
+    const value=pageState[key];
+    if(typeof value!=='string'||!value.trim())return {blocked:true};
+    if(!matches.some(candidate=>candidate.field.apiName===field.apiName&&candidate.priority===priority))
+     matches.push({field,value,priority});
+   }
+  }
+ }
+ if(matches.length===0)return {blocked:true};
+ const priority=Math.min(...matches.map(candidate=>candidate.priority));
+ const nearest=matches.filter(candidate=>candidate.priority===priority);
+ // Never accidentally choose between two unrelated active records.
+ if(nearest.length!==1)return {blocked:true};
+ const match=nearest[0];
+ return {blocked:false,filter:{field:match.field.apiName,value:match.value,related:true}};
+}
 const isDynamic=(value:unknown):value is {source:string;key?:string}=>
   Boolean(value&&typeof value==='object'&&!Array.isArray(value));
 /** Resolve only declared, typed page context sources; never evaluate expressions. */
