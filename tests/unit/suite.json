@@ -157,6 +157,7 @@
     "apps/web/test/canvasInteractionUX.test.ts",
     "apps/web/test/componentLibraries.test.ts",
     "apps/web/test/componentPropertySchema.test.ts",
+    "apps/web/test/connectedAppsScopes.test.mjs",
     "apps/web/test/desktopDensity.test.mjs",
     "apps/web/test/destructiveConfirmation.test.ts",
     "apps/web/test/dynamicChunkRecovery.test.ts",
