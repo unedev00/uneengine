@@ -831,6 +831,8 @@ test('SQL-owned three-row Design and Shapes ribbon preserves the exact requested
  assert.match(css,/height:26px!important/);
  assert.match(css,/background:#fff!important/);
  assert.match(css,/padding:3px 3px 1px!important/);
+ assert.match(css,/--smart-section-width/);
+ assert.match(ribbon,/const sectionWidth=\\(group:string\\)/);
  const widths={
   Badge:[[48,85],[70,28],[40,40,40]],Body:[[40,40],[40,28],[70]],
   Header:[[28,40],[40,28],[28]],'Header Supporting':[[40,40],[28,28],[]],
