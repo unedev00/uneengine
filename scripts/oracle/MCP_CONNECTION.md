@@ -38,6 +38,27 @@ superuser access or arbitrary root shell commands.
 5. Verify `initialize`, `tools/list`, `list_objects`, and service `status` using the
    real connection. Do not use a write or restart as the connection smoke test.
 
+## Per-application OAuth capability catalogue
+
+The Connected Apps settings screen reads the **global SQL** catalogue
+`md_oauth_scope_catalogue`, grouped by capability (Records, Metadata, Builders,
+Applications, Automation, Integrations, Security, Tenants and Operations).
+Each connected app can receive a unique selection; group Select/Clear is only an
+administrative convenience. Assignments remain SQL records in
+`md_oauth_client_scopes`, and consented scopes in `md_oauth_consent_scopes`.
+
+Scopes marked **Reserved** are visible but cannot be selected or consented until
+the existing API/MCP runtime actually implements the operation. Available HTTP
+permissions are constrained by verb and anchored route patterns in
+`md_oauth_scope_routes`. Existing OneEngine RBAC, record/field checks and tenant
+isolation still apply: an OAuth scope cannot bypass them. MCP access additionally
+requires `mcp:access`. Existing seven-scope clients are preserved and not
+automatically upgraded or reauthorised.
+
+Changing a connected app's scope selection invalidates previous OAuth consents.
+The owner must explicitly reauthorise. Never add a broad "admin" alias that
+implicitly grants all scopes or arbitrary PostgreSQL/root access.
+
 ## Available tools
 
 - List/describe objects; list/get/create/update/delete business records.
