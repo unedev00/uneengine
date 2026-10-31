@@ -47,4 +47,13 @@ jobs:
           cat /tmp/metadrive-phase1-vite.log
           exit 1
       - name: Verify UI layouts and actions in Chromium
+        env:
+          PHASE1_SCREENSHOT_DIR: artifacts/phase1-ui
         run: node scripts/setup-ux-browser-smoke.mjs
+      - name: Upload before-review responsive evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase1-ui-browser-screenshots
+          path: artifacts/phase1-ui/*.png
+          if-no-files-found: ignore
