@@ -415,6 +415,7 @@ function ObjectManager({
   const [activationFormFactors, setActivationFormFactors] = useState<Array<'Desktop' | 'Phone' | 'Tablet' | 'Custom'>>(['Desktop']);
   const [showDeleteObjectConfirmation, setShowDeleteObjectConfirmation] = useState(false);
   const [deleteImpact,setDeleteImpact]=useState<Array<{kind:string;count:number}>|null>(null);
+  const [deleteRecordCount,setDeleteRecordCount]=useState(0);
   const [deletedObjects,setDeletedObjects]=useState<Array<{apiName:string;label:string;deletedAt:string}>>([]);
   const [deletedObjectsOpen,setDeletedObjectsOpen]=useState(false);
   const [deletedObjectsBusy,setDeletedObjectsBusy]=useState(false);
@@ -430,9 +431,10 @@ function ObjectManager({
   };
   const openDeleteObject=async()=>{
     try{
-      const impact=await apiRequest<{blockers:Array<{kind:string;count:number}>}>(
+      const impact=await apiRequest<{blockers:Array<{kind:string;count:number}>;recordCount:number}>(
         `/metadata/objects/${encodeURIComponent(draft.apiName)}/impact`);
       setDeleteImpact(impact.blockers);
+      setDeleteRecordCount(impact.recordCount);
       setShowDeleteObjectConfirmation(true);
     }catch(error){onNotify(error instanceof Error?error.message:'Unable to inspect object deletion impact');}
   };
@@ -996,11 +998,11 @@ function ObjectManager({
       {showDeleteObjectConfirmation && <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setShowDeleteObjectConfirmation(false); }}>
         <section className="modal" role="dialog" aria-modal="true" aria-labelledby="delete-object-title">
           <div className="modal-header"><h2 id="delete-object-title">Delete {draft.label}?</h2><button className="icon-button dark" onClick={() => setShowDeleteObjectConfirmation(false)} aria-label="Close"><X size={18} /></button></div>
-          <p className="modal-copy">The object will be hidden but its metadata preserved for restoration. Existing records and dependent metadata block deletion.</p>
+          <p className="modal-copy">The object will be hidden but its metadata and records preserved for restoration. Cross-object dependencies still block deletion.</p>
           {deleteImpact===null?<p>Checking dependencies…</p>:deleteImpact.length>0
             ?<div role="alert"><strong>Deletion blocked by dependencies:</strong><ul>{deleteImpact.map(item=>
               <li key={item.kind}>{item.kind}: {item.count}</li>)}</ul></div>
-            :<p>No blocking references found. This object can be restored later from Object Manager.</p>}
+            :<p>No blocking references found. {deleteRecordCount} existing record(s) will remain stored and will be accessible again when the object is restored.</p>}
           <div className="modal-actions"><button className="btn" onClick={() => setShowDeleteObjectConfirmation(false)}>Cancel</button><button className="btn btn-brand" disabled={deleteImpact===null||deleteImpact.length>0} onClick={() => void confirmDeleteObject()}>Delete Object</button></div>
         </section>
       </div>}
