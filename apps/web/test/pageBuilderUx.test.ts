@@ -55,7 +55,7 @@ test('ribbon inline labels wrap and controls stay within their group dividers',(
 
 test('ribbon keeps accessible component tabs without Home and Parity',()=>{
   const source=readFileSync(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
-  for(const label of ['Insert','Data','Content','Design','Layout','Responsive','Actions','Preview'])
+  for(const label of ['Insert','Data','Design','Layout','Arrange','Actions','Logic','View'])
     assert.ok(source.includes(`'${label}'`),label+' tab label remains available');
   for(const icon of ['Puzzle','Database','Type','SlidersHorizontal','Layers3','Smartphone','Workflow','Eye'])
     assert.ok(source.includes(icon),icon+' tab icon remains available');
