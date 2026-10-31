@@ -9,11 +9,11 @@ import type {ObjectMetadata} from '../src/core/metadata/Definitions/metadata';
 const read=(path:string)=>readFileSync(new URL(path,import.meta.url),'utf8');
 const builder=read('../src/core/builders/SharedBuilderFrame/adaptiveBuilder.css');
 const schemaCss=read('../src/core/builders/SchemaBuilder/schemaBuilderUsability.css');
-const till=read('../../../acetill/src/acetill-terminal.css');
-const kiosk=read('../../../acekiosk/src/acekiosk.css');
-const assist=read('../../../aceassist/src/aceassist.css');
-const chat=read('../../../acechatter/src/aceChatter.css');
-const visual=read('../../../acetill/src/acetill-visual-editor.css');
+const till=read('../../acetill/src/acetill-terminal.css');
+const kiosk=read('../../acekiosk/src/acekiosk.css');
+const assist=read('../../aceassist/src/aceassist.css');
+const chat=read('../../acechatter/src/aceChatter.css');
+const visual=read('../../acetill/src/acetill-visual-editor.css');
 
 test('shared Builder layout is editor-only and loaded from optional modules',()=>{
  for(const name of ['PageBuilder/pageBuilderView.tsx','FlowBuilder/FlowBuilder.tsx',
@@ -67,7 +67,7 @@ test('ACE apps retain independent brand tokens, real navigation and bounded moda
 });
 
 test('Kiosk category/payment controls and quantity affordances expose selection state',()=>{
- const source=read('../../../acekiosk/src/AceKiosk.tsx');
+ const source=read('../../acekiosk/src/AceKiosk.tsx');
  assert.match(source,/aria-pressed=\{c===category\}/);
  assert.match(source,/aria-pressed=\{subcategory===c\}/);
  assert.match(source,/aria-pressed=\{paymentMethod==='Cash'\}/);
@@ -75,19 +75,19 @@ test('Kiosk category/payment controls and quantity affordances expose selection 
  assert.match(source,/aria-label=\{'Remove one '\+l\.product\.name\}/);
  assert.match(source,/aria-label="Basket and checkout actions"/);
  assert.match(source,/aria-label="Menu products"/);
- const modal=read('../../../acekiosk/src/ProductCustomiser.tsx');
+ const modal=read('../../acekiosk/src/ProductCustomiser.tsx');
  assert.match(modal,/aria-modal="true"/);
  assert.match(modal,/event\.key==='Escape'/);
 });
 
 test('Till payment, cart and Chatter selection have keyboard and screen-reader semantics',()=>{
- const terminal=read('../../../acetill/src/AcetillTerminal.tsx');
+ const terminal=read('../../acetill/src/AcetillTerminal.tsx');
  assert.match(terminal,/paymentDialogRef/);
  assert.match(terminal,/event\.key==='Escape'/);
  assert.match(terminal,/document\.addEventListener\('keydown',onKey\)/);
  assert.match(terminal,/aria-label="Current order items"/);
  assert.match(terminal,/aria-label="Payment method"/);
- const chatter=read('../../../acechatter/src/AceChatterRuntime.tsx');
+ const chatter=read('../../acechatter/src/AceChatterRuntime.tsx');
  assert.match(chatter,/aria-current=\{selected===rowId\?'true':undefined\}/);
  assert.match(chatter,/newChatDialogRef/);
  assert.match(chatter,/event\.key==='Escape'/);
