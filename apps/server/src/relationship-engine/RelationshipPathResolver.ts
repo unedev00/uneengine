@@ -76,9 +76,11 @@ export async function resolveRelationshipFieldPath(
   currentObject=nextObject;
  }
  const final=path.at(-1)!;
- if(!await readable(currentObject,final))return null;
  if(!currentId)return null;
+ // Record Id is governed by the record's read permission checked at each hop,
+ // rather than by a fictitious Object.Id field permission.
  if(final==='Id')return currentId;
+ if(!await readable(currentObject,final))return null;
  const result=await db.query<OutputRow>(`SELECT f.data_type,v.value_text,
    v.reference_record_id,v.value_number::text AS value_number,v.value_boolean,
    v.value_date::text AS value_date,v.value_datetime
