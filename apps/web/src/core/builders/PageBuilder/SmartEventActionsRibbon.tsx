@@ -19,6 +19,8 @@ export default function SmartEventActionsRibbon({api,actions,flows,onChange}:{
   {key:'start',label:'On Session Start',enabled:api.startsWith('smart_')}
  ];
  const qtySlot={key:'qtyIcon',label:'Qty icon',enabled:api==='smart_cart'};
+ const customSlots=[{key:'customButton1',label:'Custom Button 1',enabled:api==='smart_cart'},
+  {key:'customButton2',label:'Custom Button 2',enabled:api==='smart_cart'}];
  const active=flows.filter(flow=>flow.status==='Active'&&
   (flow.flowType==='Autolaunched Flow'||flow.flowType==='Screen Flow'));
  const update=(event:string,flowName:string)=>{
@@ -61,5 +63,9 @@ export default function SmartEventActionsRibbon({api,actions,flows,onChange}:{
      <div className="smart-event-rows">{picker(qtySlot)}</div>
      <span className="office-ribbon-group-heading">Cart</span>
    </section>
+   {api==='smart_cart'&&<section className="office-ribbon-mini-group smart-event-group" aria-label="Component Custom">
+     <div className="smart-event-rows">{customSlots.map(picker)}</div>
+     <span className="office-ribbon-group-heading">Component Custom</span>
+   </section>}
  </div>;
 }
