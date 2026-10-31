@@ -49,6 +49,8 @@ const schemas={
  describe_object:z.object({object:identifier}).strict(),
  run_flow:z.object({flow:identifier,inputs:values.default({})}).strict(),
  get_page_layout:z.object({page:identifier,variant:layout.default('Desktop'),view:z.enum(['draft','published']).default('draft')}).strict(),
+ get_flow_definition:z.object({flow:identifier}).strict(),
+ create_flow_draft:z.object({flow:identifier,definition:values}).strict(),
  save_page_draft:z.object({page:identifier,variant:layout.default('Desktop'),definition:values}).strict(),
  publish_page_draft:z.object({page:identifier,variant:layout.default('Desktop'),expectedRevision:z.number().int().min(1)}).strict(),
  server_operation:z.object({action:z.enum(['status','logs','restart','activate_release','mail_diagnostic']),service:z.enum(['api','worker']).default('api'),release:z.string().regex(/^[a-f0-9]{40}$/).optional()}).strict()
@@ -63,18 +65,20 @@ const descriptions:Record<keyof typeof schemas,string>={
  list_objects:'List objects the signed-in user can read.',
  run_flow:'Execute a published MetaDrive flow with the signed-in user permissions.',
  get_page_layout:'Read a tenant Page Builder draft or published layout through the shared SQL runtime and Page permissions.',
+ get_flow_definition:'Read a tenant Flow graph through the existing versioned SQL Flow Editor and central RBAC.',
+ create_flow_draft:'Create a missing Flow as a draft through the existing SQL Flow Editor; reject existing names and never activate implicitly.',
  save_page_draft:'Save a versioned tenant Page Builder draft using its existing revision, validating component contracts and preserving the published page.',
  publish_page_draft:'Publish the named Page Builder draft only if its revision still matches. Requires Page manage permission.',
  server_operation:'Platform administrators: inspect service status or logs, restart API/worker, or activate an already built immutable API release. Requires the installed operations helper. Does not build or fetch code.'
 };
 // JSON schemas are derived from the same Zod validators used for execution.
 import {zodToJsonSchema} from 'zod-to-json-schema';
-export const mcpTools=Object.entries(schemas).map(([name,schema])=>({name,description:descriptions[name as keyof typeof schemas],inputSchema:zodToJsonSchema(schema,{$refStrategy:'none'}),annotations:{readOnlyHint:['list_records','get_record','list_objects','describe_object','get_page_layout'].includes(name),destructiveHint:!['list_records','get_record','list_objects','describe_object','get_page_layout','create_record','save_page_draft'].includes(name),openWorldHint:name==='run_flow'}}));
+export const mcpTools=Object.entries(schemas).map(([name,schema])=>({name,description:descriptions[name as keyof typeof schemas],inputSchema:zodToJsonSchema(schema,{$refStrategy:'none'}),annotations:{readOnlyHint:['list_records','get_record','list_objects','describe_object','get_page_layout','get_flow_definition'].includes(name),destructiveHint:!['list_records','get_record','list_objects','describe_object','get_page_layout','get_flow_definition','create_record','save_page_draft','create_flow_draft'].includes(name),openWorldHint:name==='run_flow'}}));
 export function mcpToolScope(name:string){
  if(['list_records','get_record'].includes(name))return 'records:read';
  if(['create_record','update_record','delete_record'].includes(name))return 'records:write';
- if(name==='list_objects'||name==='describe_object'||name==='get_page_layout')return 'metadata:read';
- if(name==='save_page_draft'||name==='publish_page_draft')return 'metadata:write';
+ if(name==='list_objects'||name==='describe_object'||name==='get_page_layout'||name==='get_flow_definition')return 'metadata:read';
+ if(name==='save_page_draft'||name==='publish_page_draft'||name==='create_flow_draft')return 'metadata:write';
  if(name==='run_flow')return 'flows:execute';
  if(name==='server_operation')return 'operations:manage';
  throw Error('Unknown MCP tool');
@@ -98,6 +102,18 @@ export async function callMcpTool(s:McpServices,a:McpActor,name:string,input:unk
   return {apiName:object.apiName,label:object.label,fields};
  }
  if(name==='run_flow'){const p=schemas.run_flow.parse(input);return s.flows.execute(t,p.flow,u,p.inputs);}
+ if(name==='get_flow_definition'){
+  const p=schemas.get_flow_definition.parse(input);
+  await s.rbac.require(t,u,'FlowDefinition','read');
+  return s.flows.loadEditor(t,p.flow);
+ }
+ if(name==='create_flow_draft'){
+  const p=schemas.create_flow_draft.parse(input);
+  await s.rbac.require(t,u,'FlowDefinition','manage');
+  if(p.definition.apiName!==p.flow||p.definition.status!=='Draft')
+   throw Error('New Flows must be named draft definitions');
+  return s.flows.saveEditor(t,u,p.flow,p.definition,true);
+ }
  if(name==='get_page_layout'){
   const p=schemas.get_page_layout.parse(input);
   await s.rbac.require(t,u,'PageDefinition','read');
