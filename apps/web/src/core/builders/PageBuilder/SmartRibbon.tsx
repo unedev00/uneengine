@@ -85,21 +85,29 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    .filter(p=>p.group===group&&(p.designRow??2)===row)
    .sort((a,b)=>(a.designOrder??999)-(b.designOrder??999));
  const controlWidth=(p:UneRibbonProperty)=>{
+   // The Shadow and Alignment dropdowns must remain 35px even before a tenant
+   // receives the additive SQL geometry migration.
+   if(p.designDisplay==='dropdown'&&(p.kind==='shadow'||p.kind==='align'))
+     return Math.max(35,p.designWidth??0);
    if(p.designWidth)return p.designWidth;
    // Unconfigured future SQL properties remain present without overlapping.
-   if(p.kind==='shadow'||p.kind==='align')return p.designDisplay==='dropdown'?28:84;
+   if(p.kind==='shadow'||p.kind==='align')return p.designDisplay==='dropdown'?35:84;
    if(p.kind==='color')return 40;
    if(p.kind==='number'||p.kind==='position')return 70;
    if(p.kind==='boolean')return 28;
    return 99;
  };
- // Exactly one SQL-derived width per section: max of its rows plus 3px gutters
- // and the 1px divider. Caption labels cannot inflate a section.
- const sectionWidth=(group:string)=>Math.max(0,...[1,2,3].map(row=>{
-   const properties=sectionRow(group,row);
-   return properties.reduce((total,p)=>total+controlWidth(p)+(p.designCaptionWidth??0),0)
-     +Math.max(0,properties.length-1);
- })) + 7;
+ // Size each section from its widest row, including 2px between controls,
+ // 8px inner gutters on both sides and the 1px divider.
+ // Leave enough room to display the full group caption as well.
+ const sectionWidth=(group:string)=>Math.max(
+   Math.max(0,...[1,2,3].map(row=>{
+     const properties=sectionRow(group,row);
+     return properties.reduce((total,p)=>total+controlWidth(p)+(p.designCaptionWidth??0),0)
+       +Math.max(0,properties.length-1)*2;
+   }))+17,
+   group.length*6+24
+ );
  const controls=(property:UneRibbonProperty)=>{
    const supported=property.components.includes(api);
    const kind=api==='smart_calendar'&&property.id==='shadow'

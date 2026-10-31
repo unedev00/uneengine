@@ -772,7 +772,7 @@ test('Current three-row renderer keeps disabled metadata slots and numerical SVG
  assert.doesNotMatch(ribbon,/tab==='Colors'/);
 });
 
-test('SQL-owned three-row Design and Shapes ribbon preserves the exact requested geometry',()=>{
+test('SQL-owned three-row Design and Shapes ribbon retains the original layout plus the spacing upgrade',()=>{
  const sql=read('../../server/src/system-support/migrations/20270205-three-row-design-shapes.sql');
  const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
  const css=read('../src/core/builders/PageBuilder/SmartRibbonApprovedThreeRow.css');
@@ -801,24 +801,36 @@ test('SQL-owned three-row Design and Shapes ribbon preserves the exact requested
  assert.match(dropdown,/role="menuitemradio"/);
  assert.match(view,/Shapes: 'Shapes'/);
  assert.match(view,/ribbonTab==='Shapes'\?'Shapes':'Design'/);
- assert.match(css,/height:112px!important/);
+ assert.match(css,/height:118px!important/);
+ assert.match(css,/height:114px!important/);
  assert.match(css,/height:26px!important/);
  assert.match(css,/background:#fff!important/);
- assert.match(css,/padding:3px 3px 1px!important/);
+ assert.match(css,/padding:3px 8px 1px!important/);
+ assert.match(css,/gap:2px!important;padding:0!important;margin:0!important/);
+ assert.match(css,/gap:4px!important/);
+ assert.match(css,/width:35px!important/);
+ assert.match(css,/linear-gradient\(90deg,#ec2c88 0%,#a51d56 48%,#ffe153 52%,#ff8c2d 100%\)/);
+ assert.match(ribbon,/return Math\.max\(35,p\.designWidth\?\?0\)/);
+ const spacingSql=read('../../server/src/system-support/migrations/20270206-three-row-ribbon-spacing.sql');
+ assert.match(spacingSql,/SET design_width = 35/);
+ assert.match(spacingSql,/design_display = 'dropdown'/);
+ assert.match(spacingSql,/design_width = 28/);
+ for(const key of ['shadow','labelAlignment','headerAlignment','supportingAlignment'])
+   assert.ok(spacingSql.includes("'"+key+"'"),'Missing 35px dropdown '+key);
  assert.match(css,/--smart-section-width/);
  assert.match(ribbon,/const sectionWidth=\(group:string\)/);
  const widths={
-  Badge:[[48,85],[70,28],[40,40,40]],Body:[[40,40],[40,28],[70]],
-  Header:[[28,40],[40,28],[28]],'Header Supporting':[[40,40],[28,28],[]],
+  Badge:[[48,85],[70,28],[40,40,40]],Body:[[40,40],[40,35],[70]],
+  Header:[[28,40],[40,28],[35]],'Header Supporting':[[40,40],[28,35],[]],
   Row:[[40,40],[70],[70]],Summary:[[40,40,70],[40,70,70],[84,70,28]],
   'Summary 2':[[70],[28],[40]],Table:[[40,40],[70],[84]],
-  Tabs:[[35,58],[40,40],[]],Typography:[[28],[40,70],[]]
+  Tabs:[[35,58],[40,40],[]],Typography:[[35],[40,70],[]]
  };
  const shapes={Icon:[[40],[],[]],Image:[[35,70],[35,70],[40]]};
- const sum=sections=>Object.values(sections).reduce((total,rows)=>{
-  const widest=Math.max(...rows.map(row=>row.reduce((a,b)=>a+b,0)+Math.max(0,row.length-1)));
-  return total+widest+6+1;
+ const sum=sections=>Object.entries(sections).reduce((total,[group,rows])=>{
+  const widest=Math.max(...rows.map(row=>row.reduce((a,b)=>a+b,0)+Math.max(0,row.length-1)*2));
+  return total+Math.max(widest+17,group.length*6+24);
  },0);
- assert.equal(sum(widths),1059);
- assert.equal(sum(shapes),160);
+ assert.equal(sum(widths),1195);
+ assert.equal(sum(shapes),181);
 });

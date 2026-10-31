@@ -7,7 +7,7 @@
 .office-builder-ribbon #page-builder-tab-content.office-ribbon-content:has(>.smart-ribbon[data-three-row="true"]){
  box-sizing:border-box!important;
  display:flex!important;flex-flow:row nowrap!important;
- height:112px!important;min-height:112px!important;max-height:112px!important;
+ height:118px!important;min-height:118px!important;max-height:118px!important;
  padding:2px 26px 2px 0!important;
  overflow-x:auto!important;overflow-y:hidden!important;
  scrollbar-width:none!important;background:var(--page-ribbon-bg,#f3f5f7)!important;
@@ -20,7 +20,7 @@
  flex:0 0 auto!important;flex-flow:row nowrap!important;
  align-items:stretch!important;align-content:stretch!important;
  gap:0!important;min-width:100%!important;width:max-content!important;
- height:108px!important;min-height:108px!important;max-height:108px!important;
+ height:114px!important;min-height:114px!important;max-height:114px!important;
  background:transparent!important;
 }
 .office-builder-ribbon #page-builder-tab-content>.smart-ribbon[data-three-row="true"]>.smart-ribbon-group[data-design-three-row="true"]{
@@ -28,8 +28,8 @@
  flex-direction:column!important;
  position:relative!important;
  width:var(--smart-section-width,auto)!important;min-width:var(--smart-section-width,auto)!important;max-width:var(--smart-section-width,auto)!important;
- height:108px!important;min-height:108px!important;max-height:108px!important;
- padding:3px 3px 1px!important;margin:0!important;
+ height:114px!important;min-height:114px!important;max-height:114px!important;
+ padding:3px 8px 1px!important;margin:0!important;
  border:0!important;border-right:1px solid #cbd6e2!important;
  border-radius:0!important;background:transparent!important;overflow:visible!important;
 }
@@ -41,9 +41,9 @@
  box-sizing:border-box!important;display:flex!important;flex:0 0 auto!important;
  flex-direction:column!important;align-items:flex-start!important;
  justify-content:flex-start!important;align-content:flex-start!important;
- gap:3px!important;
+ gap:4px!important;
  width:max-content!important;min-width:0!important;max-width:none!important;
- height:84px!important;min-height:84px!important;max-height:84px!important;
+ height:86px!important;min-height:86px!important;max-height:86px!important;
  grid-template-columns:none!important;grid-template-rows:none!important;
  padding:0!important;margin:0!important;overflow:visible!important;
 }
@@ -53,7 +53,7 @@
  flex-flow:row nowrap!important;align-items:center!important;justify-content:flex-start!important;
  width:max-content!important;min-width:0!important;max-width:none!important;
  height:26px!important;min-height:26px!important;max-height:26px!important;
- gap:1px!important;padding:0!important;margin:0!important;white-space:nowrap!important;
+ gap:2px!important;padding:0!important;margin:0!important;white-space:nowrap!important;
 }
 .office-builder-ribbon #page-builder-tab-content>.smart-ribbon[data-three-row="true"]
  .smart-ribbon-group .smart-ribbon-row>.smart-property{
@@ -133,7 +133,7 @@
  flex:0 0 100%!important;width:100%!important;
  min-width:0!important;max-width:100%!important;
  height:26px!important;min-height:26px!important;max-height:26px!important;
- padding:2px 2px!important;gap:2px!important;
+ padding:2px 2px!important;gap:3px!important;
  background:transparent!important;
 }
 .office-builder-ribbon #page-builder-tab-content .smart-ribbon[data-three-row="true"][data-smart-api]
@@ -212,15 +212,15 @@
  width:var(--smart-control-width)!important;min-width:0!important;
  max-width:var(--smart-control-width)!important;
 }
-/* Fixed three-row sections are flush: no hidden side margins or vertical wraps. */
+/* Three-row sections keep deliberate 8px side gutters and 2px icon gaps. */
 
-/* Three rows, 26px controls; section gutters are 3px each side. */
+/* Three rows, 26px controls; section gutters are 8px each side. */
 .office-builder-ribbon #page-builder-tab-content .smart-ribbon[data-three-row="true"] .smart-icon-dropdown-trigger {
- box-sizing:border-box!important;width:28px!important;min-width:28px!important;max-width:28px!important;
+ box-sizing:border-box!important;width:35px!important;min-width:35px!important;max-width:35px!important;
  height:26px!important;min-height:26px!important;max-height:26px!important;
- display:flex!important;align-items:center!important;justify-content:center!important;gap:0!important;
+ display:flex!important;align-items:center!important;justify-content:center!important;gap:1px!important;
  background:#fff!important;color:#263b56!important;border:1px solid #b7c9df!important;border-radius:3px!important;
- padding:0!important;cursor:pointer;
+ padding:0 2px!important;cursor:pointer;
 }
 .smart-icon-dropdown-popup{position:fixed;z-index:10000;display:flex;gap:2px;padding:4px;background:#fff;
  border:1px solid #b7c9df;border-radius:5px;box-shadow:0 7px 20px #20314e35;}
@@ -229,3 +229,10 @@
 .smart-icon-dropdown-popup button[aria-checked="true"]{background:#e6f0ff;border-color:#80a9e2;}
 .smart-icon-dropdown-popup button:focus-visible{outline:2px solid #2377c9;outline-offset:1px;}
 .smart-shadow-swatch{width:15px;height:15px;display:inline-block;border:1px solid #8595aa;border-radius:2px;background:#fff;}
+
+/* Unset Text, Border and Fill swatches use the pink/yellow tones from the
+ * Text Size SVG. Selected swatches still show the actual persisted colour. */
+.office-builder-ribbon #page-builder-tab-content .smart-ribbon[data-three-row="true"]
+ .smart-property .office-ribbon-colour-property .office-ribbon-colour-underline.is-unset{
+ background:linear-gradient(90deg,#ec2c88 0%,#a51d56 48%,#ffe153 52%,#ff8c2d 100%)!important;
+}
