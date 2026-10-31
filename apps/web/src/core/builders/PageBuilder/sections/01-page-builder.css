@@ -291,7 +291,14 @@
 /* The rail is the category navigation: no second tab bar or duplicate category list. */
 .canvas-unified-builder .builder-tabs,
 .canvas-unified-builder .component-category-list {display:none;}
-/* Multi-selection uses the shared canvas group bounds instead of framing each native component again. */
+/* Separate Shift-selected items need a visible indicator, but not an extra
+   rectangular stroke over their configured native border and radius.
+   Grouped items continue using the shared group bounds and resize handles. */
+.builder-editor-mode .canvas-unified-builder .free-canvas-component.multi-selected:not(.selected)::before{
+  content:"";position:absolute;top:3px;right:3px;z-index:160;
+  width:8px;height:8px;border-radius:50%;background:var(--md-primary,#1d4ed8);
+  box-shadow:0 0 0 2px #fff;pointer-events:none;
+}
 .canvas-unified-builder .visual-advanced-properties:focus-within,
 .canvas-unified-builder .canvas-action-menu:focus-within {border-color:var(--md-primary,#6553ec);}
 
