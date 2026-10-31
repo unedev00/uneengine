@@ -426,7 +426,7 @@ test('Smart Cart only renders amounts supplied by metadata/Flow and shows no fab
   subtotalValue:12.5,discountValue:1,taxValue:2.3,totalValue:13.8,currencyCode:'GBP'});
  assert.match(bound,/Current sale/);
  for(const amount of ['£12.50','£1.00','£2.30','£13.80'])assert.ok(bound.includes(amount),amount);
- assert.doesNotMatch(bound,/Total not bound/);
+ assert.ok(bound.includes('<span>Total</span><span>£13.80</span>'),'bound summary total');
  const formula=await renderSmart('smart_cart',{
   records:[{Id:'line1',Quantity:2,UnitPrice:5}],
   totalValue:'@Quantity * @UnitPrice',currencyCode:'GBP'
