@@ -14,9 +14,9 @@ export default function SmartEventActionsRibbon({api,actions,flows,onChange}:{
  const slots=[
   {key:'click',label:'On Click',enabled:clickComponents.has(api)},
   {key:'change',label:'On Change',enabled:changeComponents.has(api)},
-  // The smart runtime currently does not emit a published on-load event.
-  // Keep its slot visible but disabled instead of saving an inert flow.
-  {key:'load',label:'On Load',enabled:false}
+  // Page Runtime invokes the metadata start action once per page session.
+  // It is not a Smart JSX event and remains disabled in read-only Builder previews.
+  {key:'start',label:'On Session Start',enabled:api.startsWith('smart_')}
  ];
  const qtySlot={key:'qtyIcon',label:'Qty icon',enabled:api==='smart_cart'};
  const active=flows.filter(flow=>flow.status==='Active'&&

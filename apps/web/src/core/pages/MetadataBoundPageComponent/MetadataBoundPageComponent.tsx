@@ -10,7 +10,7 @@ import {filterRelatedRecords} from '../PageRuntime/filterRelatedRecords.mjs';
 import {resolveMentionProperties,mentionGroups,referencedMentionPaths,resolveCollectionMentionRows} from '../../../component-libraries/shared/primitives/SmartFieldInput/smartFieldMentions';
 import { explicitMentionRecordId, useRelationshipMentionContext } from '../../records/RecordFormDialog/useRelationshipMentionContext';
 import {resolvePageActionRoute} from '../PageRuntime/pageActionRouting';
-import {resolveFlowOutputBindings} from '../../automation/FlowScreen/flowInputBindings';
+import {resolveFlowOutputBindings,resolveStructuredFlowInput} from '../../automation/FlowScreen/flowInputBindings';
 import {componentLayoutProps} from '../TemplatePageRuntime/pageComponentLayout';
 import RegisteredComponent from '../../components/RegisteredComponent/RegisteredComponent';
 import {behaviorValidation,behaviorAction,pageBehaviors,type BehaviorContext} from '../PageRuntime/pageBehaviorRuntime';
@@ -271,6 +271,9 @@ export default function MetadataBoundPageComponent({
   const actionFlows = rawActions && typeof rawActions === 'object' && !Array.isArray(rawActions)
     ? rawActions as Record<string, unknown> : {};
   const resolveInput = (source: unknown, eventPayload: Record<string, unknown>): unknown => {
+    if(source&&typeof source==='object'&&!Array.isArray(source))
+      return resolveStructuredFlowInput(source as Record<string,unknown>,
+       candidate=>resolveInput(candidate,eventPayload));
     if (source === '$session') return sessionId;
     if (typeof source === 'string' && source.startsWith('$state.')) {
       const key=source.slice(7);

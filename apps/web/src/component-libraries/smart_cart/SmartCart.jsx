@@ -10,7 +10,7 @@ const numericType=/^(Number|Currency|Percent|Integer|Decimal|Double|Float|Long|S
 const directField=source=>/^@([A-Za-z][A-Za-z0-9_]*)$/.exec(typeof source==="string"?source.trim():"")?.[1]??null;
 const display=value=>value===null||value===undefined||value===""?"—":String(value);
 export default function SmartCart({p,records,Picture,expression,fire}){
- const demo=!records.length;
+ const demo=Boolean(p.previewOnly||p.builderPreview)&&!records.length;
  const actions=p.actionFlows&&typeof p.actionFlows==="object"&&!Array.isArray(p.actionFlows)?p.actionFlows:{};
  const canClick=Boolean(actions.click)&&!p.previewOnly&&!p.builderPreview;
  const canChangeQty=Boolean(actions.qtyIcon)&&!p.previewOnly&&!p.builderPreview;
@@ -28,10 +28,18 @@ export default function SmartCart({p,records,Picture,expression,fire}){
  // The same existing ribbon expression evaluator resolves @Field, formulas,
  // literals and Flow-bound Page State values; all fields come from authorised rows.
  const summaryRecord=records[0]??{};
- const summaryAmounts={Subtotal:money(expression(p.subtotalValue,summaryRecord)),
-  Discount:money(expression(p.discountValue,summaryRecord)),
-  Tax:money(expression(p.taxValue,summaryRecord)),
-  Total:money(expression(p.totalValue,summaryRecord))};
+ const summarySource=source=>{
+  if(typeof source==='string'&&/^\$state\.[A-Za-z][A-Za-z0-9_]{0,63}$/.test(source)){
+   const key=source.slice(7);
+   return p.pageState&&Object.prototype.hasOwnProperty.call(p.pageState,key)
+    ?p.pageState[key]:null;
+  }
+  return expression(source,summaryRecord);
+ };
+ const summaryAmounts={Subtotal:money(summarySource(p.subtotalValue)),
+  Discount:money(summarySource(p.discountValue)),
+  Tax:money(summarySource(p.taxValue)),
+  Total:money(summarySource(p.totalValue))};
  const rowHeight=n(p.rowHeight,64,24);
  const rowLimit=Math.floor(n(p.cardsPerRow,5,1,50));
  const visible=Array.isArray(p.columnVisibility)

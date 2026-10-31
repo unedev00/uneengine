@@ -24,6 +24,8 @@ const installers:Readonly<Record<string,(client:PoolClient,tenantId:string)=>Pro
     await seedAcetillCashierPolicy(client,tenantId);
     const {seedAcetillScanFlow}=await import('./acetill-scan-flow.js');
     await seedAcetillScanFlow(client,tenantId);
+    const {seedAcetillCopilotPosFlows}=await import('./acetill-copilot-pos-flows.js');
+    await seedAcetillCopilotPosFlows(client,tenantId);
     const {requireAcetillPaymentAttestation}=await import('./acetill-payment-attestation.js');
     await requireAcetillPaymentAttestation(client,tenantId);
   },

@@ -389,7 +389,7 @@ test('Smart Event ribbon matches On Click and Qty Icon component support',()=>{
  assert.ok(ribbon.includes("'smart_card_grid'"));
  assert.match(ribbon,/key:'qtyIcon',label:'Qty icon',enabled:api==='smart_cart'/);
  assert.match(ribbon,/key:'change',label:'On Change'/);
- assert.match(ribbon,/key:'load',label:'On Load',enabled:false/);
+ assert.match(ribbon,/key:'start',label:'On Session Start',enabled:api.startsWith\('smart_'\)/);
  assert.match(ribbon,/Autolaunched Flow/);
  assert.match(ribbon,/Screen Flow/);
  assert.match(view,/ribbonTab==='Component Action' &&\s*<SmartEventActionsRibbon/);
@@ -441,7 +441,7 @@ test('Smart Cart only renders amounts supplied by metadata/Flow and shows no fab
 });
 
 test('Smart Cart renders Flow-backed plus and minus controls',async()=>{
- const preview=await renderSmart('smart_cart',{});
+ const preview=await renderSmart('smart_cart',{builderPreview:true});
  assert.match(preview,/Decrease quantity for Sample item 1/);
  assert.match(preview,/Increase quantity for Sample item 1/);
  assert.match(preview,/disabled=""/);

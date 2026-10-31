@@ -17,6 +17,7 @@
     "apps/server/test/system/acetill-app-catalog.test.ts",
     "apps/server/test/system/acetill-editable-page.test.ts",
     "apps/server/test/system/acetill-operational-flows.test.ts",
+    "apps/server/test/system/acetill-copilot-pos-metadata.test.ts",
     "apps/server/test/system/acetill-payment-flow-metadata.test.ts",
     "apps/server/test/system/acetill-visual-style.test.ts",
     "apps/server/test/system/builder-contracts.test.ts",

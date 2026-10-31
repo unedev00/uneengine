@@ -62,7 +62,7 @@ export default function FlowInputBindingEditor({
               else setErrors(current => ({ ...current, [name]: 'Select a component data object first.' }));
               return;
             }
-            if (kind === 'Event Field' || kind === 'Literal' || kind === 'Page State') {
+            if (kind === 'Event Field' || kind === 'Literal' || kind === 'Page State' || kind === 'Numeric Page State' || kind === 'Record Collection') {
               // Only persist a valid mapping after the developer chooses a source.
               setPendingKinds(current => ({ ...current, [name]: kind }));
               setErrors(current => ({ ...current, [name]: '' }));
@@ -75,6 +75,8 @@ export default function FlowInputBindingEditor({
             <option value="Event">Entire event payload</option>
             <option value="Record Field">Record field</option>
             <option value="Page State">Page state / Flow output</option>
+            <option value="Numeric Page State">Numeric page state (e.g. cash received)</option>
+            <option value="Record Collection">Record collection from Page State</option>
             <option value="Session">Current session</option>
             <option value="Literal">Fixed value</option>
             {source.kind === 'Legacy' && <option value="Legacy">Existing unsupported value</option>}
@@ -90,6 +92,18 @@ export default function FlowInputBindingEditor({
           <input className="form-control" aria-label={name+' page state key'}
             placeholder="CurrentCartId" value={source.kind==='Page State'?source.detail:''}
             onChange={event=>update(name,'Page State',event.target.value)} />
+        </label>}
+        {selectedKind === 'Numeric Page State' && <label className="form-label">Numeric Page State key
+          <input className="form-control" aria-label={name+' numeric page state key'}
+            placeholder="cashReceived" value={source.kind==='Numeric Page State'?source.detail:''}
+            onChange={event=>update(name,'Numeric Page State',event.target.value)} />
+        </label>}
+        {selectedKind === 'Record Collection' && <label className="form-label">Collection state and permitted Fields
+          <input className="form-control" aria-label={name+' collection fields'}
+            placeholder="cartItems:Product,Quantity"
+            value={source.kind==='Record Collection'?source.detail:''}
+            onChange={event=>update(name,'Record Collection',event.target.value)} />
+          <small>Choose Page State and the Fields passed to the Flow. Record Id and undeclared fields are excluded.</small>
         </label>}
         {selectedKind === 'Record Field' && <label className="form-label">Record field
           <select className="form-control" aria-label={name + ' record field'} value={source.detail}

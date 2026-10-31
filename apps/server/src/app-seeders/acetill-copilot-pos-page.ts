@@ -1,0 +1,200 @@
+import type {SqlPersistence} from '../system-files/sql-persistence.js';
+import {PageRuntime} from '../system-files/page-runtime.js';
+
+const PAGE='COPILOTTILL_POS';
+type Block=Record<string,unknown> & {
+ id:string;type:string;label:string;region:string;visible:boolean;
+ position:{x:number;y:number;width:number;height:number};
+ properties:Record<string,unknown>;
+};
+const flow=(name:string,inputs:Record<string,unknown>={},outputs:Record<string,string>={})=>({
+ actionType:'Flow',flowType:'Autolaunched Flow',flowApiName:name,inputs,outputs
+});
+const totals={cartSessionId:'cartSessionId',cartItems:'cartItems',subtotal:'subtotal',total:'total'};
+const read=flow('AcetillCopilotReadCart',{sessionKey:'$session'},totals);
+const add=flow('AcetillCopilotAddProduct',{
+ sessionKey:'$session',productId:'$event.recordId'
+},totals);
+const qty=flow('AcetillCopilotChangeQuantity',{
+ sessionKey:'$session',cartLineId:'$event.recordId',delta:'$event.delta'
+},totals);
+const cash=flow('AcetillPaymentCash',{
+ cartItems:{source:'ProjectRecords',value:'$state.cartItems',fields:['Product','Quantity']},
+ cartTotal:'$state.total',requestId:'$session',
+ cashReceived:{source:'ToNumber',value:'$state.cashReceived'}
+},{status:'checkoutStatus',invoiceId:'invoiceId',total:'checkoutTotal'});
+const box=(id:string,type:string,label:string,region:string,
+ x:number,y:number,width:number,height:number,properties:Record<string,unknown>):Block=>({
+ id:'copilot-pos-'+id,type:'Custom:'+type,label,region,visible:true,
+ position:{x,y,width,height},properties
+});
+/** Every control is a shared Smart Component with ordinary ribbon properties. */
+export const copilotTillLayout=[
+ box('products','smart_card_grid','Products','main',16,160,810,484,{
+  objectApiName:'Product',
+  filters:[{field:'Active',operator:'Equals',value:true},
+   {field:'MenuCategory',operator:'Equals',value:{source:'PageState',key:'categoryId'}}],
+  textSource:'@Name',imageSource:'@ImageUrl',badgeText:'@Price',
+  badgeVisible:true,badgeTextSize:13,badgeTextColor:'#FFFFFF',
+  cardsPerRow:4,cardsPerColumn:3,imageHeight:122,imagePlacement:'top',
+  headerBoxHeight:36,headerBold:true,wrapText:true,
+  backgroundColor:'#FFFFFF',borderColor:'#DEE5ED',radius:8,shadow:'small',
+  actionFlows:{click:add,start:read}
+ }),
+ box('cart','smart_cart','Current sale','sidebar',846,104,536,550,{
+  objectApiName:'CartLine',relatedFilterKey:'cartSessionId',
+  relatedFieldApiName:'CartSession',
+  textSource:'@Name',column2Source:'@UnitPrice',column3Source:'@Quantity',
+  column4Source:'@Quantity * @UnitPrice',column5Source:'@DiscountAmount',
+  columnVisibility:['Column 1','Column 2','Column 3','Column 4'],
+  column3SourceType:'Number',currencyCode:'GBP',
+  subtotalValue:'$state.subtotal',totalValue:'$state.total',
+  cardsPerRow:6,rowHeight:44,imageHeight:24,headerBoxHeight:46,
+  supportingBoxHeight:28,summaryHeight:140,
+  backgroundColor:'#FFFFFF',tableBackgroundColor:'#FFFFFF',
+  headerTextColor:'#1E3551',rowLabelColor:'#23384D',
+  actionFlows:{qtyIcon:qty,start:read}
+ }),
+ box('categories','smart_tabs','POS categories','main',16,96,810,54,{
+  objectApiName:'MenuCategory',textSource:'@Name',
+  tabCount:8,tabWidth:110,tabHeight:46,selectedTabColor:'#DCEBFE',
+  tabColor:'#FFFFFF',labelColor:'#28435F',borderColor:'#DCE4EC',radius:8,
+  actionFlows:{
+   start:flow('AcetillCopilotDefaultCategory',{}, {categoryId:'categoryId'}),
+   change:{actionType:'PageState',stateKey:'categoryId',value:'$event.record.Id'}
+  }
+ }),
+ box('search','smart_lookup','Search products','main',16,28,580,56,{
+  objectApiName:'Product',textSource:'@Name',
+  placeholder:'Find a product or scan barcode',
+  backgroundColor:'#FFFFFF',borderColor:'#D6E1EE',radius:8,
+  actionFlows:{select:flow('AcetillCopilotAddProduct',{
+   sessionKey:'$session',productId:'$event.record.Id'
+  },totals)}
+ }),
+ box('new','smart_button','New sale','header',606,28,158,52,{
+  label:'New sale',backgroundColor:'#1A6AD2',labelColor:'#FFFFFF',
+  textSize:14,radius:8,actionFlows:{click:{
+   ...read,resetSessionOnSuccess:true,mutatesData:false
+  }}
+ }),
+ box('lock','smart_button','Verify till PIN','header',1214,28,168,52,{
+  label:'🔒 Verify PIN',backgroundColor:'#E9EEF6',labelColor:'#233A54',
+  textSize:14,radius:8,actionFlows:{click:{
+   actionType:'Flow',flowType:'Screen Flow',flowApiName:'AcetillCopilotVerifyPin',
+   inputs:{},outputs:{verified:'pinVerified'}
+  }}
+ }),
+ box('cash','smart_text','Cash received','sidebar',846,686,246,50,{
+  placeholder:'Cash received',textSize:14,
+  radius:8,backgroundColor:'#FFFFFF',
+  actionFlows:{change:{actionType:'PageState',stateKey:'cashReceived',value:'$event'}}
+ }),
+ box('pay','smart_button','Complete cash sale','sidebar',1104,686,278,50,{
+  label:'Complete cash sale',backgroundColor:'#166A51',labelColor:'#FFFFFF',
+  textSize:14,radius:8,actionFlows:{click:cash}
+ }),
+ box('hold','smart_button','Hold sale','sidebar',846,750,164,48,{
+  label:'Hold sale',backgroundColor:'#334E72',labelColor:'#FFFFFF',radius:8,
+  actionFlows:{click:{
+   ...flow('AcetillHoldCart',{requestId:'$session',label:'Till held sale',
+    cartItems:{source:'ProjectRecords',value:'$state.cartItems',
+     fields:['Product','Quantity','OriginalUnitPrice']}},
+    {holdReference:'holdReference',cartId:'heldCartId'}),
+   resetSessionOnSuccess:true
+  }}
+ }),
+ box('held','smart_button','List held sales','sidebar',1022,750,176,48,{
+  label:'Held sales',backgroundColor:'#334E72',labelColor:'#FFFFFF',radius:8,
+  actionFlows:{click:flow('AcetillListHeldCarts',{}, {records:'heldCarts'})}
+ }),
+ box('receipt','smart_button','Print receipt','sidebar',1210,750,172,48,{
+  label:'Print receipt',backgroundColor:'#334E72',labelColor:'#FFFFFF',radius:8,
+  actionFlows:{click:flow('AcetillPrintReceipt',{invoiceId:'$state.invoiceId'})}
+ })
+];
+const responsive=(block:Block,variant:string):Block=>{
+ if(variant==='Desktop'||variant==='Custom')return block;
+ const width=variant==='Mobile'?390:1024;
+ const usable=width-24;
+ const order=['new','lock','search','categories','products','cart',
+  'cash','pay','hold','held','receipt'];
+ const key=block.id.replace('copilot-pos-','');
+ const size=(name:string)=>name==='products'?430:name==='cart'?490:56;
+ const y=12+order.slice(0,order.indexOf(key)).reduce((sum,name)=>sum+size(name)+12,0);
+ if(variant==='Tablet'){
+  const scale=usable/1382;
+  return {...block,position:{
+   x:Math.round(block.position.x*scale),y:Math.round(block.position.y*scale),
+   width:Math.max(110,Math.floor(block.position.width*scale)),
+   height:block.position.height}};
+ }
+ // Intentionally one single column, compact mobile controls, no clipped checkout.
+ return {...block,position:{x:12,y,width:usable,height:size(key)}};
+};
+const stableTypes:Record<string,string[]>={
+ 'copilot-pos-products':['smart_card_grid','acetill_item_grid','ui_item_grid','une_item_grid'],
+ 'copilot-pos-cart':['smart_cart','acetill_cart','ui_cart','une_cart']
+};
+const sameKind=(component:Record<string,unknown>,requested:Block)=>(
+ component.id===requested.id || component.type===requested.type && (
+ requested.id==='copilot-pos-products'||requested.id==='copilot-pos-cart') ||
+ (stableTypes[requested.id]??[]).some(type=>
+ component.type===type||component.type==='Custom:'+type)
+);
+/**
+ * Only modifies an existing user-created COPILOTTILL_POS. Never invents a
+ * replacement page, replaces components, changes authored properties, or
+ * updates the original Acetill pages. Creates a new immutable draft revision.
+ */
+export async function seedAcetillCopilotPosPage(db:SqlPersistence,tenant:string){
+ const found=await db.query<{id:string}>(
+  "SELECT p.id FROM md_page_definitions p JOIN md_lightning_page_details d ON d.tenant_id=p.tenant_id AND d.page_id=p.id WHERE p.tenant_id=$1 AND p.api_name=$2 AND p.enabled=true",
+  [tenant,PAGE]);
+ if(!found.rows[0])return 0;
+ const managed=await db.query(
+  "SELECT 1 FROM md_app_seed_pages WHERE tenant_id=$1 AND page_id=$2",
+  [tenant,found.rows[0].id]);
+ if(managed.rowCount)return 0;
+ const pages=new PageRuntime(db);
+ let variants=0;
+ for(const variant of ['Desktop','Tablet','Mobile','Custom'] as const){
+  const current=await pages.editor(tenant,PAGE,variant);
+  const needed=copilotTillLayout.filter(block=>
+   !current.components.some(existing=>sameKind(existing,block)));
+  // Supply only missing bindings/properties on an existing Smart component.
+  // Its user-edited values, event actions, dimensions and identity always win.
+  let filled=0;
+  const inherited=current.components.map(component=>{
+   const model=copilotTillLayout.find(block=>sameKind(component,block)
+     &&component.type===block.type);
+   if(!model)return component;
+   const actual=component.properties&&typeof component.properties==='object'
+     &&!Array.isArray(component.properties)
+     ?component.properties as Record<string,unknown>:{};
+   const defaults=model.properties;
+   const actions=actual.actionFlows&&typeof actual.actionFlows==='object'
+     &&!Array.isArray(actual.actionFlows)
+     ?actual.actionFlows as Record<string,unknown>:{};
+   const defaultActions=defaults.actionFlows&&typeof defaults.actionFlows==='object'
+     &&!Array.isArray(defaults.actionFlows)
+     ?defaults.actionFlows as Record<string,unknown>:{};
+   const merged={...defaults,...actual,actionFlows:{...defaultActions,...actions}};
+   if(JSON.stringify(merged)===JSON.stringify(actual))return component;
+   filled++;
+   return {...component,properties:merged};
+  });
+  if(!needed.length&&!filled)continue;
+  const components=[...inherited,...needed.map(block=>responsive(block,variant))];
+  const draft={...current,components,
+   canvasWidth:variant==='Mobile'?390:variant==='Tablet'?1024:
+    Math.max(current.canvasWidth,1440),
+   canvasHeight:Math.max(current.canvasHeight,
+    variant==='Mobile'?2400:variant==='Tablet'?1100:900)};
+  await pages.saveLayoutDraft(tenant,PAGE,variant,draft);
+  // Publishing remains a separate, audited Owner decision after checkout
+  // and payment attestation, never a silent tenant metadata seeder side effect.
+  variants++;
+ }
+ return variants;
+}
