@@ -2340,7 +2340,7 @@ function PageBuilder({
                         pageSessionKey={(builderAppApiName || apps[0]?.apiName || 'Records') + ':' + page.apiName}
                         reports={reports} formFactor={device === 'Phone' ? 'Phone' : 'Desktop'}
                         availableFlows={flows.filter((flow) => ['Screen Flow', 'Autolaunched Flow'].includes(flow.flowType))}
-                        onNavigate={() => {}} onLaunchFlow={(flowApiName: string, inputs: Record<string, unknown>) => { onLaunchFlow(flowApiName, inputs); externalPreviewWindowRef.current?.opener?.focus?.(); }} disableActions />
+                        onNavigate={() => {}} onLaunchFlow={(flowApiName: string, inputs: Record<string, unknown>) => { onLaunchFlow(flowApiName, inputs); externalPreviewWindowRef.current?.opener?.focus?.(); }} disableActions={!previewMode} />
                   : customDefinition
                     ? <RegisteredComponent definition={customDefinition} layoutTransparent props={libraryPreview ? customPreviewProps : {
                       ...component.properties,
@@ -2512,6 +2512,7 @@ function PageBuilder({
       default:return null;
     }
   };
+  const saveAdvancedVisibility=()=>{applyVisibilityEditor();setAdvancedEditor(null);};
   const openAdvanced = (feature:AdvancedFeature) => {
     if(feature==='preview'){setAdvancedEditor(null);setPreviewMode(value=>!value);return;}
     if(['visibility','actions','responsive','nesting','properties','canvas'].includes(feature)&&!selected)return;
@@ -2870,7 +2871,7 @@ function PageBuilder({
                 onChange={event=>updateComponent(selected.id,{visible:event.target.checked})}/>
                 Component visible on this page</label>
               <RibbonVisibilityRules draft={visibilityDraft} onChange={setVisibilityDraft}
-                onApply={()=>{applyVisibilityEditor();setAdvancedEditor(null);}}
+                onApply={saveAdvancedVisibility}
                 onCancel={()=>setAdvancedEditor(null)} fields={fields}
                 allowRecordFields={page.pageType==='Record Page'}
                 profiles={profiles.map(profile=>({id:profile.id,label:profile.label}))}
