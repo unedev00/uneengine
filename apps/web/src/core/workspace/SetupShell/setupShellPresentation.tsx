@@ -214,14 +214,15 @@ export function renderSetupShell(ctx: any) {
               </button>
             </div>
             <div className="quick-find">
-              <div className="quick-find-title">Quick Find</div>
+              <label className="quick-find-title" htmlFor="md-setup-quickfind">Quick Find</label>
               <div className="quick-find-input">
                 <Search size={14} />
-                <input value={quickFind} onChange={(event) => setQuickFind(event.target.value)} placeholder="Quick Find" aria-label="Quick Find" />
+                <input id="md-setup-quickfind" type="search" value={quickFind} onChange={(event) => setQuickFind(event.target.value)} placeholder="Search setup and settings" aria-label="Search setup and settings" aria-controls="md-setup-navigation" />
                 {quickFind && <button onClick={() => setQuickFind('')} aria-label="Clear search"><X size={13} /></button>}
               </div>
+              {quickFind.trim() && <div className="quick-find-result-count" role="status">{filteredSetupGroups.reduce((count,group)=>count+group.items.length,0)} matching settings</div>}
             </div>
-            <div className="setup-tree">
+            <nav id="md-setup-navigation" className="setup-tree" aria-label="Setup sections">
               {filteredSetupGroups.map((group) => (
                 <div className="setup-tree-group" key={group.group}>
                   <div className="tree-group-label">{group.group}</div>
@@ -251,8 +252,8 @@ export function renderSetupShell(ctx: any) {
                   ))}
                 </div>
               ))}
-              {filteredSetupGroups.length === 0 && <div className="empty-tree">No setup items found</div>}
-            </div>
+              {filteredSetupGroups.length === 0 && <div className="empty-tree" role="status">No matching setup items. <button type="button" className="text-action" onClick={()=>setQuickFind('')}>Clear search</button></div>}
+            </nav>
             <div className="sidebar-footer"><span className="online-dot" /> Setup menu</div>
           </aside>
         )}
@@ -676,7 +677,7 @@ export function renderSetupShell(ctx: any) {
               onNotify={notify}
             />
           )}
-          {route.kind === 'setup' && workspace === 'company-settings' && <PlatformWorkspaceSurface workspace="company-settings" componentRuntime={protectedPageRuntime} permitted={canReadMetadata} resolving={!sessionPermissionsLoaded} pages={pages} libraryComponents={libraryComponents} device={runtimeFormFactor} canEditSystemPage={canManagePlatformTenants} onEditSystemPage={(apiName: string)=>{const selected=pages.find(p=>p.apiName===apiName);if(selected)setPage(selected);navigateRoute({kind:'setup',workspace:'page-builder',resourceApiName:apiName});}} ><CompanySettingsWorkspace objects={readableRecordObjects} mobile={runtimeFormFactor === 'Phone'} onNavigateDeveloper={(target: string) => navigateRoute({kind:'setup',workspace:target})} developerAccess={{metadata:canReadMetadata,apps:canManageApps,flows:canManageFlows,dashboards:canManageDashboards,reports:canReadMetadata,approvals:canManageApprovalProcesses,security:canReadSecurity}} company={<CompanySettings canManage={canManageUserIdentities} />} domains={<PlatformPageSlot slotKey="domains"><TenantDomains request={apiRequest} permitted={canManageUserIdentities} /></PlatformPageSlot>} developer={<PlatformPageSlot slotKey="developer-accounts"><DeveloperAccountSettings request={apiRequest} permitted={canManageUserIdentities} /></PlatformPageSlot>} usage={<PlatformPageSlot slotKey="usage"><TenantUsagePanel request={apiRequest} permitted={canManageUserIdentities} /></PlatformPageSlot>} recovery={<PlatformPageSlot slotKey="recovery"><TenantRecoveryPanel request={apiRequest} operator={false} permitted={canManageUserIdentities} /></PlatformPageSlot>} mfa={<PlatformPageSlot slotKey="mfa"><TenantMfaSettings onReauthenticate={onLogout} canManage={canManageUserIdentities} /></PlatformPageSlot>} emailRecovery={<PlatformPageSlot slotKey="email-recovery"><TenantEmailRecoverySettings canManage={canManageUserIdentities} /></PlatformPageSlot>} locks={<PlatformPageSlot slotKey="locks"><TenantUserLockSettings /></PlatformPageSlot>} sessions={<PlatformPageSlot slotKey="sessions"><AccountSessionSecurity onReauthenticate={onLogout} /></PlatformPageSlot>} audit={<PlatformPageSlot slotKey="audit"><TenantSecurityAudit /></PlatformPageSlot>} /></PlatformWorkspaceSurface>}
+          {route.kind === 'setup' && workspace === 'company-settings' && <PlatformWorkspaceSurface workspace="company-settings" componentRuntime={protectedPageRuntime} permitted={canReadMetadata} resolving={!sessionPermissionsLoaded} pages={pages} libraryComponents={libraryComponents} device={runtimeFormFactor} canEditSystemPage={canManagePlatformTenants} onEditSystemPage={(apiName: string)=>{const selected=pages.find(p=>p.apiName===apiName);if(selected)setPage(selected);navigateRoute({kind:'setup',workspace:'page-builder',resourceApiName:apiName});}} ><CompanySettingsWorkspace objects={readableRecordObjects} mobile={runtimeFormFactor === 'Phone'} initialSection={route.resourceApiName === 'security' ? 'security' : undefined} onNavigateDeveloper={(target: string) => navigateRoute({kind:'setup',workspace:target})} developerAccess={{metadata:canReadMetadata,apps:canManageApps,flows:canManageFlows,dashboards:canManageDashboards,reports:canReadMetadata,approvals:canManageApprovalProcesses,security:canReadSecurity}} company={<CompanySettings canManage={canManageUserIdentities} />} domains={<PlatformPageSlot slotKey="domains"><TenantDomains request={apiRequest} permitted={canManageUserIdentities} /></PlatformPageSlot>} developer={<PlatformPageSlot slotKey="developer-accounts"><DeveloperAccountSettings request={apiRequest} permitted={canManageUserIdentities} /></PlatformPageSlot>} usage={<PlatformPageSlot slotKey="usage"><TenantUsagePanel request={apiRequest} permitted={canManageUserIdentities} /></PlatformPageSlot>} recovery={<PlatformPageSlot slotKey="recovery"><TenantRecoveryPanel request={apiRequest} operator={false} permitted={canManageUserIdentities} /></PlatformPageSlot>} mfa={<PlatformPageSlot slotKey="mfa"><TenantMfaSettings onReauthenticate={onLogout} canManage={canManageUserIdentities} governanceTab={route.resourceId === 'connected-apps' ? 'connected apps' : 'audit'} /></PlatformPageSlot>} emailRecovery={<PlatformPageSlot slotKey="email-recovery"><TenantEmailRecoverySettings canManage={canManageUserIdentities} /></PlatformPageSlot>} locks={<PlatformPageSlot slotKey="locks"><TenantUserLockSettings /></PlatformPageSlot>} sessions={<PlatformPageSlot slotKey="sessions"><AccountSessionSecurity onReauthenticate={onLogout} /></PlatformPageSlot>} audit={<PlatformPageSlot slotKey="audit"><TenantSecurityAudit /></PlatformPageSlot>} /></PlatformWorkspaceSurface>}
           {route.kind === 'setup' && workspace === 'tenant-management' && !sessionPermissionsLoaded && <section className="setup-card" role="status">Checking access…</section>}
           {route.kind === 'setup' && workspace === 'tenant-management' && sessionPermissionsLoaded && !canManagePlatformTenants && <PlatformWorkspaceSurface
             workspace="company-settings" componentRuntime={protectedPageRuntime}
