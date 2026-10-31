@@ -7,29 +7,41 @@ import type {RbacEngine} from '../system-files/rbac-engine.js';
 import type {LoginContext} from './session-policy-service.js';
 const hash=(v:string)=>createHash('sha256').update(v).digest('hex');
 const mint=()=>randomBytes(32).toString('base64url');
-export const connectedScopes=['records:read','records:write','metadata:read','metadata:write','flows:execute','mcp:access','operations:manage'] as const;
-const uuid=z.string().uuid(),scope=z.enum(connectedScopes);
+// Scope definitions and assignment status live in SQL (md_oauth_scope_catalogue).
+// Never accept unknown scope strings just because an OAuth client requests them.
+const uuid=z.string().uuid(),scope=z.string().regex(/^[a-z][a-z0-9]*:[a-z][a-z0-9-]*$/).max(64);
 const config=z.object({id:uuid.optional(),label:z.string().trim().min(1).max(100),enabled:z.boolean(),client_type:z.enum(['public','confidential']),require_mfa:z.boolean(),
  redirects:z.array(z.string().max(2000).refine(v=>{try{const u=new URL(v);return u.protocol==='https:'&&!u.username&&!u.password&&!u.hash;}catch{return false;}})).min(1).max(20),
- scopes:z.array(scope).min(1).max(7),users:z.array(uuid).max(2000)}).strict();
+ scopes:z.array(scope).min(1).max(96),users:z.array(uuid).max(2000)}).strict();
 const authorize=z.object({client_id:uuid,redirect_uri:z.string().max(2000),response_type:z.literal('code'),code_challenge:z.string().regex(/^[A-Za-z0-9_-]{43}$/),
- code_challenge_method:z.literal('S256'),state:z.string().min(16).max(512),scope:z.string().max(200),resource:z.string().max(2000).optional()}).strip();
+ code_challenge_method:z.literal('S256'),state:z.string().min(16).max(512),scope:z.string().max(4096),resource:z.string().max(2000).optional()}).strip();
 type Client={tenant_id:string;id:string;label:string;enabled:boolean;client_type:'public'|'confidential';secret_hash:string|null;require_mfa:boolean};
 export class ConnectedAppService{
  constructor(private readonly db:SqlPersistence,private readonly auth:AuthenticationService,private readonly rbac:RbacEngine){}
  async describe(tenant:string,user:string){
   await this.rbac.require(tenant,user,'ConnectedApp','manage');
-  const [c,r,s,u,users]=await Promise.all([
+  const [c,r,s,u,users,catalogue]=await Promise.all([
    this.db.query('SELECT id,label,enabled,client_type,require_mfa FROM md_oauth_clients WHERE tenant_id=$1 ORDER BY label',[tenant]),
    this.db.query('SELECT client_id,uri FROM md_oauth_redirects WHERE tenant_id=$1',[tenant]),
    this.db.query('SELECT client_id,scope FROM md_oauth_client_scopes WHERE tenant_id=$1',[tenant]),
    this.db.query('SELECT client_id,user_id FROM md_oauth_client_users WHERE tenant_id=$1',[tenant]),
-   this.db.query('SELECT id,email FROM md_users WHERE tenant_id=$1 ORDER BY email',[tenant])]);
-  return {clients:c.rows.map(p=>({...p,redirects:r.rows.filter(v=>v.client_id===p.id).map(v=>v.uri),scopes:s.rows.filter(v=>v.client_id===p.id).map(v=>v.scope),users:u.rows.filter(v=>v.client_id===p.id).map(v=>v.user_id)})),users:users.rows,scopes:connectedScopes};
+   this.db.query('SELECT id,email FROM md_users WHERE tenant_id=$1 ORDER BY email',[tenant]),
+   this.db.query<{scope:string;group_key:string;group_label:string;label:string;description:string;risk:string;assignable:boolean}>(
+    'SELECT scope,group_key,group_label,label,description,risk,assignable FROM md_oauth_scope_catalogue ORDER BY group_order,sort_order')
+  ]);
+  return {clients:c.rows.map(p=>({...p,redirects:r.rows.filter(v=>v.client_id===p.id).map(v=>v.uri),scopes:s.rows.filter(v=>v.client_id===p.id).map(v=>v.scope),users:u.rows.filter(v=>v.client_id===p.id).map(v=>v.user_id)})),users:users.rows,scopes:catalogue.rows.filter(s=>s.assignable).map(s=>s.scope),
+   scopeGroups:[...new Set(catalogue.rows.map(s=>s.group_key))].map(key=>{
+    const items=catalogue.rows.filter(row=>row.group_key===key);
+    return {key,label:items[0].group_label,scopes:items.map(({scope,label,description,risk,assignable})=>({scope,label,description,risk,assignable}))};
+   })};
  }
  async save(tenant:string,user:string,input:unknown){
   await this.rbac.require(tenant,user,'ConnectedApp','manage');
   const parsed=config.safeParse(input);if(!parsed.success)throw Error('Invalid connected app');const p=parsed.data;
+  const active=await this.db.query<{scope:string}>(
+   'SELECT scope FROM md_oauth_scope_catalogue WHERE assignable=true AND scope=ANY($1::text[])',[p.scopes]);
+  if(new Set(active.rows.map(row=>row.scope)).size!==new Set(p.scopes).size)
+   throw Error('Invalid or unavailable OAuth scope');
   const secret=!p.id&&p.client_type==='confidential'?mint():null;
   const id=await this.db.transaction(async c=>{
    let id=p.id;
@@ -74,6 +86,9 @@ export class ConnectedAppService{
    this.db.query<{scope:string}>('SELECT scope FROM md_oauth_client_scopes WHERE tenant_id=$1 AND client_id=$2',[tenant,p.id])]);
   if(!redirect.rows[0]||!member.rows[0])throw Error('Invalid OAuth client authorization');
   const selected=[...new Set(v.scope.split(' '))];if(!selected.length||selected.some(s=>!scopes.rows.some(v=>v.scope===s)))throw Error('Invalid OAuth scope');
+  const enabled=await this.db.query<{scope:string}>(
+   'SELECT scope FROM md_oauth_scope_catalogue WHERE assignable=true AND scope=ANY($1::text[])',[selected]);
+  if(selected.some(s=>!enabled.rows.some(row=>row.scope===s)))throw Error('Invalid OAuth scope');
   if(selected.includes('mcp:access')?(!v.resource||!validMcpResource(v.resource)):v.resource!==undefined)throw Error('Invalid OAuth resource');
   await this.rbac.require(tenant,user,'API','execute');return {clientId:p.id,label:p.label,scopes:selected,requireMfa:p.require_mfa,request:v};
  }

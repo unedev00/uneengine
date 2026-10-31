@@ -74,15 +74,32 @@ const descriptions:Record<keyof typeof schemas,string>={
 // JSON schemas are derived from the same Zod validators used for execution.
 import {zodToJsonSchema} from 'zod-to-json-schema';
 export const mcpTools=Object.entries(schemas).map(([name,schema])=>({name,description:descriptions[name as keyof typeof schemas],inputSchema:zodToJsonSchema(schema,{$refStrategy:'none'}),annotations:{readOnlyHint:['list_records','get_record','list_objects','describe_object','get_page_layout','get_flow_definition'].includes(name),destructiveHint:!['list_records','get_record','list_objects','describe_object','get_page_layout','get_flow_definition','create_record','save_page_draft','create_flow_draft'].includes(name),openWorldHint:name==='run_flow'}}));
-export function mcpToolScope(name:string){
- if(['list_records','get_record'].includes(name))return 'records:read';
- if(['create_record','update_record','delete_record'].includes(name))return 'records:write';
- if(name==='list_objects'||name==='describe_object'||name==='get_page_layout'||name==='get_flow_definition')return 'metadata:read';
- if(name==='save_page_draft'||name==='publish_page_draft'||name==='create_flow_draft')return 'metadata:write';
- if(name==='run_flow')return 'flows:execute';
- if(name==='server_operation')return 'operations:manage';
+/** Scope choices are permission alternatives, not implicit RBAC grants.
+ * All tools still run under the caller's tenant, user and OneEngine rules. */
+export function mcpToolScopes(name:string):readonly string[]{
+ if(['list_records','get_record'].includes(name))return ['records:read'];
+ if(['create_record','update_record','delete_record'].includes(name))return ['records:write'];
+ if(['list_objects','describe_object'].includes(name))return ['metadata:read','objects:read','fields:read'];
+ if(name==='get_page_layout')return ['metadata:read','pages:read'];
+ if(name==='get_flow_definition')return ['metadata:read','flows:read'];
+ if(name==='save_page_draft'||name==='publish_page_draft')return ['metadata:write','pages:manage'];
+ if(name==='create_flow_draft')return ['metadata:write','flows:manage'];
+ if(name==='run_flow')return ['flows:execute'];
+ if(name==='server_operation')return ['operations:manage','operations:read'];
  throw Error('Unknown MCP tool');
 }
+/** Retain the legacy mapping contract for callers relying on the original scope. */
+export function mcpToolScope(name:string):string{return mcpToolScopes(name)[0];}
+export function mcpToolAllowed(name:string,scopes:ReadonlySet<string>,input?:unknown):boolean{
+ if(!mcpToolScopes(name).some(scope=>scopes.has(scope)))return false;
+ if(name==='server_operation'&&!scopes.has('operations:manage')){
+  const action=input&&typeof input==='object'&&!Array.isArray(input)
+   ?(input as Record<string,unknown>).action:undefined;
+  return ['status','logs','mail_diagnostic'].includes(String(action));
+ }
+ return true;
+}
+
 export async function callMcpTool(s:McpServices,a:McpActor,name:string,input:unknown){
  const t=a.tenant_id,u=a.user_id;
  if(name==='list_records'){const p=schemas.list_records.parse(input);return s.records.list(t,u,p.object,p.limit,p.offset,{search:p.search});}

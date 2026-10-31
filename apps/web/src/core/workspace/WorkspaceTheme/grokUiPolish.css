@@ -1,0 +1,303 @@
+/* grok complete UI polish (excludes Page Builder).
+ * Loaded last among workspace polish sheets so tokens win consistently.
+ */
+
+/* ----- Surfaces & cards ----- */
+.lightning :is(
+  .surface,
+  .permission-section,
+  .company-workspace-card,
+  .company-workspace-stack > *,
+  .app-manager-form-card,
+  .app-manager-side-card,
+  .exchange-app-card,
+  .exchange-detail,
+  .shortcut-card,
+  .tenant-panel,
+  .tenant-overview > div,
+  .records-list-card,
+  .records-record-card,
+  .info-callout,
+  .welcome-banner
+) {
+  border-radius: var(--md-radius-lg, 12px);
+  border-color: var(--md-border, #e0e5eb);
+}
+
+.lightning :is(
+  .surface.permission-section,
+  .company-workspace-card,
+  .tenant-panel,
+  .app-manager-form-card,
+  .exchange-app-card,
+  .records-list-card
+) {
+  box-shadow: 0 2px 8px rgba(20, 43, 78, 0.05);
+  background: var(--md-surface, #fff);
+}
+
+/* ----- Typography hierarchy ----- */
+.lightning :is(.page-heading h1, .tenant-heading h1, .company-workspace-heading h1) {
+  letter-spacing: -0.02em;
+  color: var(--md-text, #192230);
+}
+.lightning :is(.page-heading p, .tenant-heading p, .company-workspace-heading p, .surface.permission-section > p) {
+  color: var(--md-muted, #596579);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.lightning .surface.permission-section h2 {
+  margin: 0 0 6px;
+  font-size: var(--md-fs-lg, 16px);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--md-text, #192230);
+}
+
+/* ----- Forms (all admin, not builder) ----- */
+.lightning :is(.form-control, .form-display, select.form-control, textarea.form-control) {
+  min-height: var(--md-control-height, 40px);
+  border-radius: var(--md-radius-md, 8px);
+  border: 1px solid var(--md-border, #e0e5eb);
+  background: var(--md-surface, #fff);
+  color: var(--md-text, #192230);
+  font: inherit;
+}
+.lightning textarea.form-control {
+  min-height: 72px;
+  padding: 10px 12px;
+}
+.lightning .form-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--md-text, #192230);
+  margin-bottom: 10px;
+}
+.lightning .checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  font-size: 13px;
+  font-weight: 400;
+  margin: 0 0 4px;
+}
+.lightning .checkbox-row input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--md-primary, #1d4ed8);
+  flex-shrink: 0;
+}
+.lightning fieldset {
+  border: 1px solid var(--md-border, #e0e5eb);
+  border-radius: var(--md-radius-lg, 12px);
+  padding: 12px 14px;
+  margin: 0 0 12px;
+  background: var(--md-surface, #fff);
+}
+.lightning fieldset legend {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0 4px;
+  color: var(--md-text, #192230);
+}
+.lightning :is(.btn, .btn-small, .btn-brand, .tenant-button) {
+  border-radius: var(--md-radius-md, 8px);
+  min-height: var(--md-control-height, 40px);
+  font-weight: 600;
+}
+.lightning .btn-brand {
+  background: var(--md-primary, #1d4ed8);
+  border-color: var(--md-primary, #1d4ed8);
+  color: #fff;
+}
+
+/* Settings read-first */
+.lightning .settings-read-first-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 4px;
+}
+.lightning .settings-read-first-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--md-border, #e0e5eb);
+}
+.lightning .settings-view-row {
+  display: grid;
+  grid-template-columns: minmax(140px, 1fr) minmax(0, 1.4fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 4px;
+  border-bottom: 1px solid var(--md-border, #e0e5eb);
+  font-size: 13px;
+}
+.lightning .settings-view-row:last-child { border-bottom: 0; }
+@media (max-width: 600px) {
+  .lightning .settings-view-row { grid-template-columns: 1fr; gap: 4px; }
+}
+
+/* ----- Tables (admin + records; not builder canvas tables) ----- */
+.lightning :is(
+  .tenant-table,
+  .records-table,
+  .records-data-table,
+  .app-manager-list-table,
+  .flow-existing-table,
+  .flow-logs-table,
+  .slds-table
+) thead th {
+  background: var(--md-surface, #fff) !important;
+  color: var(--md-text, #192230) !important;
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.01em;
+  border-bottom: 1px solid var(--md-border-strong, #aebacc) !important;
+}
+.lightning :is(
+  .tenant-table,
+  .records-table,
+  .records-data-table,
+  .app-manager-list-table,
+  .flow-existing-table,
+  .flow-logs-table
+) tbody tr:hover {
+  background: color-mix(in srgb, var(--md-primary, #1d4ed8) 4%, var(--md-surface, #fff));
+}
+.lightning :is(.tenant-table, .records-data-table) tbody tr:focus-within {
+  background: color-mix(in srgb, var(--md-primary, #1d4ed8) 7%, var(--md-surface, #fff));
+}
+
+/* Resize handles */
+.lightning :is(.md-table-column-handle, .md-record-column-resize) {
+  border-right: 1px solid transparent;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+.lightning :is(.md-table-column-handle, .md-record-column-resize):hover,
+.lightning :is(.md-table-column-handle, .md-record-column-resize):focus-visible {
+  border-right-color: var(--md-primary, #1d4ed8);
+  background: color-mix(in srgb, var(--md-primary, #1d4ed8) 16%, transparent);
+}
+
+/* ----- Empty states ----- */
+.lightning :is(
+  .empty-tree,
+  .records-list-empty,
+  .records-empty,
+  .records-detail-empty,
+  .tenant-placeholder,
+  .md-responsive-empty
+) {
+  margin: 12px;
+  padding: 28px 18px;
+  text-align: center;
+  border-radius: var(--md-radius-lg, 12px);
+  border: 1px dashed var(--md-border, #e0e5eb);
+  background: var(--md-canvas, #f8fafc);
+  color: var(--md-muted, #596579);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* ----- Setup sidebar ----- */
+.lightning .setup-sidebar .quick-find-input {
+  min-width: 0;
+  border-radius: var(--md-radius-md, 8px);
+}
+.lightning .setup-sidebar .quick-find-input input {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lightning .setup-sidebar .tree-item {
+  border-radius: var(--md-radius-md, 8px);
+}
+.lightning .setup-sidebar .tree-item.selected {
+  background: color-mix(in srgb, var(--md-primary, #1d4ed8) 10%, var(--md-surface, #fff));
+  color: var(--md-primary, #1d4ed8);
+  font-weight: 600;
+}
+
+/* ----- Connected apps groups ----- */
+.lightning .connected-apps-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 720px;
+}
+.lightning .connected-apps-group {
+  border: 1px solid var(--md-border, #e0e5eb);
+  border-radius: var(--md-radius-lg, 12px);
+  background: var(--md-surface, #fff);
+  padding: 12px 14px;
+}
+.lightning .connected-apps-group-title {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.lightning .connected-apps-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 220px;
+  overflow: auto;
+  scrollbar-width: thin;
+}
+.lightning .connected-apps-email {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ----- Automation surfaces ----- */
+.lightning :is(.flow-logs, .flow-interviews, .scheduled-flows, .approval-process-manager, .automation-settings-page) {
+  min-width: 0;
+}
+.lightning :is(.flow-logs, .flow-interviews, .scheduled-flows) .surface,
+.lightning :is(.flow-logs, .flow-interviews, .scheduled-flows) [class*="panel"] {
+  border-radius: var(--md-radius-lg, 12px);
+}
+
+/* ----- Contrast ----- */
+.lightning :is(.md-muted, .one-muted, [class*="helper"], .tenant-help) {
+  color: var(--md-muted, #596579);
+}
+.lightning :is(th, .table-header, .records-data-table thead th) {
+  color: var(--md-text, #192230);
+}
+
+/* ----- Focus ----- */
+.lightning :is(button, a, input, select, textarea, summary):focus-visible {
+  outline: 3px solid var(--md-focus-ring, var(--md-primary, #1d4ed8));
+  outline-offset: 2px;
+}
+
+/* ----- Status / alerts ----- */
+.lightning :is([role="status"], .connected-apps-status, .info-callout) {
+  border-radius: var(--md-radius-md, 8px);
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+/* ----- Mail / misc platform ----- */
+.lightning .mail-webmail,
+.lightning [class*="webmail"] {
+  min-width: 0;
+}
+
+/* ----- Loading fallback already in main; soft skeleton hint ----- */
+.lightning .records-phone-skeleton i,
+.lightning .md-responsive-skeleton i {
+  background: var(--md-canvas, #f0f2f5);
+  border-radius: 8px;
+}

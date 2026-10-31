@@ -244,7 +244,7 @@ export default function SmartRuntime(p){
    gridTemplateColumns:"repeat("+columns+",minmax(0,1fr))",
    gridAutoRows:"calc((100% - "+(rows-1)*12+"px) / "+rows+")",alignContent:"start"
   }}>
-   {recordsOf(p).slice(0,200).map((r,i)=>{
+   {recordsOf(p).map((r,i)=>{
     const card=<SmartCard p={p} record={r}/>;
     // Published metadata decides if the card is actionable. Never fabricate
     // an Add To Cart operation: the bound Flow owns persistence and RBAC.

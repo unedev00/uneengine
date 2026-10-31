@@ -1,0 +1,128 @@
+/* Eight-tab Page Builder layout, keeping every existing icon/control asset. */
+.office-builder-ribbon #page-builder-tab-content.office-ribbon-content{
+ box-sizing:border-box!important;height:118px!important;min-height:118px!important;
+ max-height:118px!important;padding:2px 6px!important;
+ overflow-x:hidden!important;overflow-y:hidden!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-group{
+ height:114px!important;min-height:114px!important;max-height:114px!important;
+}
+.office-builder-ribbon .office-ribbon-selection-context{
+ max-width:250px!important;white-space:nowrap!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.ribbon-logic-rules,
+.office-builder-ribbon #page-builder-tab-content>.ribbon-advanced-actions{
+ width:max-content!important;min-width:0!important;padding:4px 12px 17px!important;
+}
+.office-builder-ribbon .ribbon-logic-rules .office-ribbon-stack,
+.office-builder-ribbon .ribbon-advanced-actions .office-ribbon-stack{
+ display:flex!important;flex-direction:column!important;gap:4px!important;
+}
+.office-builder-ribbon .ribbon-logic-rules button,
+.office-builder-ribbon .ribbon-advanced-actions button{
+ box-sizing:border-box;font:11px "Segoe UI",Arial,sans-serif;
+ height:26px!important;max-height:26px!important;border:1px solid #c3cad4;
+ border-radius:5px;background:#fff;color:#29476a;padding:3px 8px;
+}
+.office-builder-ribbon .ribbon-logic-rules button:disabled,
+.office-builder-ribbon .ribbon-advanced-actions button:disabled{opacity:.45}
+.office-builder-ribbon .preview-visibility-group{
+ max-width:min(760px,calc(100vw - 430px))!important;min-width:240px!important;
+ overflow:visible!important;
+}
+.office-builder-ribbon .preview-visibility-controls{
+ display:flex!important;flex-direction:column!important;gap:2px!important;
+ min-width:0!important;max-height:90px!important;
+}
+.office-builder-ribbon .preview-visibility-controls .office-ribbon-compact-strip{
+ max-height:67px!important;max-width:100%!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.canvas-preview-selector-group{
+ width:206px!important;min-width:206px!important;max-width:206px!important;
+ padding:3px 8px 17px!important;overflow:visible!important;
+}
+.office-builder-ribbon .ribbon-view-find{position:relative;overflow:visible!important;min-width:0!important}
+.office-builder-ribbon .ribbon-view-search{
+ box-sizing:border-box;display:flex;align-items:center;gap:5px;
+ border:1px solid #c3cad4;border-radius:5px;background:white;
+ height:26px;padding:0 6px;width:190px;
+}
+.office-builder-ribbon .ribbon-view-search input{
+ border:0!important;outline:0!important;height:24px!important;min-width:0;
+ width:100%!important;padding:0!important;font:11px "Segoe UI",Arial,sans-serif!important;
+}
+.office-builder-ribbon .ribbon-view-find-results{
+ position:absolute;z-index:6500;top:29px;left:0;
+ display:flex;flex-direction:column;min-width:260px;max-width:360px;
+ max-height:208px;overflow-y:auto;background:#fff;
+ border:1px solid #b7c9df;border-radius:5px;box-shadow:0 10px 20px #15253b27;
+}
+.office-builder-ribbon .ribbon-view-find-results button{
+ border:0;border-bottom:1px solid #e5ebf3!important;border-radius:0!important;
+ display:flex;align-items:center;justify-content:space-between;
+ width:100%;min-height:26px;gap:5px;padding:3px 7px;
+ background:#fff;text-align:left;font:11px "Segoe UI",Arial,sans-serif;cursor:pointer;
+}
+.office-builder-ribbon .ribbon-view-find-results button:hover{background:#edf5ff}
+.office-builder-ribbon .ribbon-view-find-results small{font-size:10px;color:#59718a}
+.office-builder-ribbon #page-builder-tab-content>.ribbon-view-zoom{
+ width:316px!important;min-width:316px!important;max-width:316px!important;
+ padding:3px 8px 17px!important;
+}
+.office-builder-ribbon .ribbon-view-zoom .office-ribbon-stack{gap:4px!important}
+.office-builder-ribbon .ribbon-view-zoom-buttons{display:flex;flex-flow:row nowrap;gap:4px}
+.office-builder-ribbon .ribbon-view-zoom-buttons button{
+ box-sizing:border-box;height:26px!important;min-height:26px!important;
+ padding:0 8px!important;font-size:11px!important;white-space:nowrap;
+}
+.office-builder-ribbon .ribbon-view-zoom-number{
+ display:flex;align-items:center;box-sizing:border-box;
+ border:1px solid #b7c9df;border-radius:5px;background:white;
+ gap:2px;width:78px;height:26px;padding:0 3px;font-size:11px;color:#29476a;
+}
+.office-builder-ribbon .ribbon-view-zoom-number input{
+ width:47px!important;min-width:0!important;max-width:47px!important;
+ height:24px!important;border:0!important;background:transparent;
+ text-align:center!important;padding:0!important;font-size:11px!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.ribbon-view-canvas{
+ width:105px!important;min-width:105px!important;max-width:105px!important;
+ padding:3px 8px 17px!important;
+}
+
+/* Results portal is in document.body, outside the clipped ribbon container. */
+.ribbon-view-find-results{
+ z-index:6500;display:flex;flex-direction:column;
+ min-width:260px;max-width:360px;max-height:208px;overflow-y:auto;
+ background:#fff;border:1px solid #b7c9df;border-radius:5px;
+ box-shadow:0 10px 20px #15253b27;
+}
+.ribbon-view-find-results button{
+ box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;
+ min-height:26px;width:100%;gap:5px;padding:3px 7px;
+ border:0;border-bottom:1px solid #e5ebf3;background:#fff;
+ text-align:left;font:11px "Segoe UI",Arial,sans-serif;cursor:pointer;
+}
+.ribbon-view-find-results button:hover{background:#edf5ff}
+.ribbon-view-find-results small{font-size:10px;color:#59718a}
+
+/* Smart Actions stays inside the existing 26px controls and flow data contract. */
+.office-builder-ribbon #page-builder-tab-content>.smart-event-actions-ribbon{
+ flex:0 0 auto!important;height:114px!important;min-height:114px!important;
+ display:flex!important;gap:0!important;
+}
+.office-builder-ribbon .smart-event-actions-ribbon>.smart-event-group{
+ display:flex!important;flex-direction:column!important;
+ justify-content:space-between!important;padding:3px 12px 1px!important;
+ height:114px!important;min-width:160px!important;
+ border-right:1px solid #cbd6e2!important;
+}
+.office-builder-ribbon .smart-event-rows{display:flex;flex-direction:column;gap:4px}
+.office-builder-ribbon .smart-event-picker{display:flex;align-items:center;gap:4px;height:26px;
+ font:11px "Segoe UI",Arial,sans-serif;white-space:nowrap}
+.office-builder-ribbon .smart-event-picker>span{min-width:57px}
+.office-builder-ribbon .smart-event-picker>select{
+ box-sizing:border-box;width:150px;height:26px;border:1px solid #c3cad4;
+ border-radius:5px;background:#fff;color:#29476a;font:11px "Segoe UI",Arial,sans-serif;
+}
+.office-builder-ribbon .smart-event-picker>select:disabled{opacity:.45}

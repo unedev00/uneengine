@@ -41,10 +41,12 @@ test('Page and Canvas widths are content-sized and their numeric icons share an 
 });
 
 test('Header Supporting width follows controls instead of allocating an empty fixed column',()=>{
- assert.match(ribbon,/tab==='Layout'&&group==='Header Supporting'\?110/);
+ assert.match(ribbon,/group==='Header Supporting'\?0/);
+ const newSql=file('../../server/src/system-support/migrations/20270211-eight-tab-ribbon-geometry.sql');
+ assert.match(newSql,/supportingBoxHeight','Cards'/);
  assert.match(ribbon,/\[1,2,3\]\.map\(row/);
  assert.match(ribbon,/sectionRow\(section,row\)\.map\(controls\)/);
  assert.match(css,/\.smart-property\.disabled\[data-numeric-icon="true"\] \.smart-numeric/);
- assert.match(css,/\.smart-property\.disabled\s*\{\s*opacity:\.66!important;filter:none!important/);
+ assert.match(css,/\.smart-property\.disabled\{opacity:\.45!important\}/);
  assert.match(ribbon,/const enabled=supported&&/);
 });

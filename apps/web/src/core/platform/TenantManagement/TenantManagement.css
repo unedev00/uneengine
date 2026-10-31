@@ -38,3 +38,60 @@
 .tenant-create-dialog .setup-draft-footer{position:sticky;bottom:-1px;display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;padding:14px 0 0;background:#fff;border-top:1px solid var(--md-border,#e0e5eb)}
 .tenant-create-dialog .setup-draft-footer span{margin-right:auto;color:var(--md-muted,#64748b);font-size:13px}
 @media(max-width:600px){.tenant-create-dialog{padding:16px}.tenant-create-dialog .setup-draft-footer span{flex-basis:100%}}
+
+/* UI polish: modern table headers, consistent surfaces, better contrast */
+.tenant-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+.tenant-table thead th {
+  background: var(--md-surface, #fff);
+  color: var(--md-text, #192230);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  border-bottom: 1px solid var(--md-border-strong, #aebacc);
+  padding: 12px 14px;
+  white-space: nowrap;
+}
+.tenant-table tbody td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--md-border, #e0e5eb);
+  vertical-align: middle;
+}
+.tenant-table tbody tr:hover {
+  background: color-mix(in srgb, var(--md-primary, #1d4ed8) 4%, var(--md-surface, #fff));
+}
+.tenant-table tbody .tenant-row-selected {
+  background: color-mix(in srgb, var(--md-primary, #1d4ed8) 9%, var(--md-surface, #fff));
+}
+.tenant-panel,
+.tenant-overview > div {
+  border-radius: var(--md-radius-lg, 12px);
+  box-shadow: 0 2px 8px rgba(20, 43, 78, 0.06);
+  border: 1px solid var(--md-border, #e0e5eb);
+}
+.tenant-button {
+  border-radius: var(--md-radius-md, 8px);
+}
+.tenant-search,
+.tenant-filter select {
+  border-radius: var(--md-radius-md, 8px);
+}
+.tenant-placeholder {
+  padding: 48px 24px;
+  border-radius: var(--md-radius-lg, 12px);
+  background: var(--md-canvas, #f8fafc);
+  border: 1px dashed var(--md-border, #e0e5eb);
+}
+.tenant-placeholder h2 {
+  font-size: var(--md-fs-h3, 20px);
+  margin: 8px 0 4px;
+}
+.tenant-placeholder p {
+  color: var(--md-muted, #596579);
+  max-width: 320px;
+  margin: 0 auto;
+}

@@ -6,7 +6,7 @@ const src=path=>readFileSync(new URL(path,import.meta.url),'utf8');
 test('page-level handlers remain intact in topbar and Layout while Smart Insert stays functional',()=>{
  const page=src('../src/core/builders/PageBuilder/pageBuilderView.tsx');
  const marker=page.indexOf('id="page-builder-tab-content"');
- const end=page.indexOf('className="office-ribbon-group-navigation"',marker);
+ const end=page.indexOf('{advancedEditor && <div className="modal-backdrop',marker);
  const body=page.slice(marker,end);
  assert.ok(marker>0&&end>marker);
  for(const name of ["case 'backIcon'","case 'restoreVersion'","case 'save'","case 'activate'","case 'resetIcon'"])
@@ -81,7 +81,9 @@ test('Conditional Visibility and Canvas Tools are direct ribbon sections',()=>{
  const advanced=src('../src/core/builders/PageBuilder/PageBuilderAdvancedRibbon.tsx');
  assert.ok(ui.includes('preview-visibility-group'));
  assert.ok(ui.includes('onApply={savePreviewVisibility} onCancel={cancelPreviewVisibility}'));
- assert.ok(ui.includes("canvasTools={page.layoutMode==='free-canvas'"));
+ assert.ok(ui.includes("ribbonTab==='Arrange' && <ArrangeRibbon"));
+ assert.ok(ui.includes('onAlign={alignSelected} onDistribute={distributeSelected}'));
+ assert.ok(ui.includes('onGroup={wrapSelectedInContainer} onUngroup={ungroupSelected}'));
  assert.ok(advanced.includes('page-builder-canvas-ribbon-group'));
  for(const feature of ["key:'visibility'","key:'canvas'","key:'preview'"])assert.ok(!advanced.includes(feature),feature);
  assert.ok(!ui.includes("advancedEditor==='visibility'"));
