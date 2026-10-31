@@ -4,9 +4,9 @@ import {useState,useEffect,useRef} from 'react';
 import {loadFlowScreenRecordPage} from '../../authentication/Client/authClient';
 // Load the browser API client only during the mounted effect, not on SSR import.
 import {presentPageRecords,type ChannelGrant} from '../../records/RecordWorkspace/recordPresentationAdapters';
-import {filterPageComponentRecords,pageComponentRecordQuery,pageComponentRelatedQuery,pageComponentActiveRecordQuery,hasPageActiveRecordSelection,bindPageStateProperties} from '../PageRuntime/pageComponentBindings';
+import {filterPageComponentRecords,pageComponentRecordQuery,bindPageStateProperties} from '../PageRuntime/pageComponentBindings';
 import {resolveSmartToggleFieldBinding,updateSmartToggleField} from '../PageRuntime/smartToggleFieldBinding';
-import {usePageSessionRelatedQuery} from '../PageRuntime/usePageSessionRelatedQuery';
+import {usePageComponentRelatedScope} from '../PageRuntime/usePageSessionRelatedQuery';
 import {filterRelatedRecords} from '../PageRuntime/filterRelatedRecords.mjs';
 import {resolveMentionProperties,mentionGroups,referencedMentionPaths,resolveCollectionMentionRows} from '../../../component-libraries/shared/primitives/SmartFieldInput/smartFieldMentions';
 import { explicitMentionRecordId, useRelationshipMentionContext } from '../../records/RecordFormDialog/useRelationshipMentionContext';
@@ -90,21 +90,11 @@ export default function MetadataBoundPageComponent({
     recordId:string;label:string;sourceObjectApiName:string
   }>>({});
   const relatedKey=String(properties.relatedFilterKey??'');
-  const usesActiveRecordScope=properties.autoRecordScope===true||
-    (properties.autoRecordScope!==false && ['smart_cart','Custom:smart_cart'].includes(component.type));
-  const manualRelatedField=String(properties.relatedFieldApiName??'');
-  const manualParentId=relatedKey?selectedFilterRecords[relatedKey]?.recordId||pageState[relatedKey]:undefined;
-  const hasActiveSelection=hasPageActiveRecordSelection(fields,pageState);
-  const directActiveQuery=pageComponentActiveRecordQuery(fields,pageState);
-  const sessionRelatedQuery=usePageSessionRelatedQuery(
-    usesActiveRecordScope&&!relatedKey&&!hasActiveSelection&&!disableActions,
-    fields,objects,sessionId,revision,loadFlowScreenRecordPage);
-  const relatedQuery=relatedKey
-    ?pageComponentRelatedQuery(properties,fields,manualParentId)
-    :usesActiveRecordScope?(hasActiveSelection?directActiveQuery:sessionRelatedQuery)
-      :pageComponentRelatedQuery(properties,fields,undefined);
-  const relatedField=relatedKey?manualRelatedField:relatedQuery.filter?.field??'';
-  const parentId=relatedKey?manualParentId:relatedQuery.filter?.value;
+  const {relatedQuery,relatedField,parentId}=usePageComponentRelatedScope(
+    properties,component.type,fields,objects,pageState,sessionId,revision,
+    loadFlowScreenRecordPage,
+    relatedKey?selectedFilterRecords[relatedKey]?.recordId||pageState[relatedKey]:undefined,
+    disableActions);
   const recordQuery=pageComponentRecordQuery(properties.filters,filterFields,{pageState,recordId,sessionId},
     properties.filterLogic==='OR'?'OR':'AND');
   const recordQueryKey=JSON.stringify([recordQuery,relatedQuery]);
