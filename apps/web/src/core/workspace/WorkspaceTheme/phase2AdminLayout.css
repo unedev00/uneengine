@@ -80,7 +80,7 @@
 .lightning .named-credentials-page .slds-table :is(th,td) {font-size:var(--md-table-size,13px);padding:8px 10px}
 .lightning .named-credentials-page .slds-table :is(th,td):first-child {min-width:175px}
 .lightning .named-credential-modal {width:min(1040px,calc(100vw - 32px));max-height:min(90dvh,900px);margin:5dvh auto;overflow-y:auto;overscroll-behavior:contain}
-.lightning .named-credential-modal .named-credential-form-grid {grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 16px}
+.lightning .named-credential-modal .named-credential-form-grid {display:grid;align-items:start;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 16px}
 .lightning .named-credential-modal .named-credential-form-grid>.named-credential-span-full {grid-column:1/-1}
 .lightning .permissions-page .permission-form-grid {gap:12px 16px}
 .lightning .permissions-page .permission-check-grid {display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,240px),1fr));gap:4px 12px}
@@ -115,3 +115,23 @@
 @media(pointer:coarse) {
  .lightning .md-admin-tabstrip>button,.lightning .md-admin-entity-row>.btn {min-height:44px}
 }
+
+/* Content-size and mobile overflow fixes across remaining administrative views. */
+.lightning .named-credential-modal {position:relative;box-sizing:border-box;max-width:calc(100vw - 16px)}
+.lightning .named-credential-modal .modal-header {position:sticky;top:0;z-index:3;background:var(--md-surface,#fff)}
+.lightning .named-credentials-page .md-admin-pagination {margin-top:14px;gap:10px;flex-wrap:wrap}
+.lightning .permissions-page .permission-table-wrap {border:1px solid var(--md-border,#e0e5eb);border-radius:8px;scrollbar-width:thin}
+.lightning .permissions-page .permission-matrix :is(th,td) {font-size:var(--md-table-size,13px)}
+.lightning .permissions-page .permission-matrix tbody tr:hover {background:color-mix(in srgb,var(--md-primary,#1d4ed8) 5%,var(--md-surface,#fff))}
+.lightning .permissions-page .permission-matrix :is(button,input,select) {accent-color:var(--md-primary,#1d4ed8)}
+.lightning .permissions-page .permission-check-grid label {min-height:32px;align-self:start}
+.lightning .company-workspace :is(.permission-tabs,.company-workspace-tabs) button {font-size:var(--md-label-size,13px)}
+.lightning .tenant-domains .tenant-domain-item {min-width:0;overflow-wrap:anywhere}
+.lightning .tenant-domains .tenant-domain-add-edit .form-label {max-width:min(100%,470px)}
+.lightning .tenant-usage :is(.tenant-usage-grid,.tenant-usage-targets) {min-width:0}
+.lightning .tenant-usage .tenant-usage-stat {min-width:0;overflow-wrap:anywhere}
+.lightning .flow-interviews .records-table-wrap,.lightning .workspace .records-table-wrap[aria-label="Failed durable Flow jobs"],.lightning .workspace .records-table-wrap[aria-label="Paused and waiting Flow interviews"] {max-width:100%;overflow-x:auto;scrollbar-width:thin}
+.lightning .app-manager-workspace .app-manager-advanced summary {font-size:var(--md-label-size,13px)}
+.lightning .app-manager-workspace .app-manager-step {gap:8px}
+.lightning .app-manager-workspace .app-manager-top {min-width:0}
+@media(max-width:720px){.lightning .md-admin-settings-block {padding:10px}.lightning .md-admin-table-wrap {margin:10px 0}.lightning .company-workspace .md-admin-tabstrip {position:relative}}
