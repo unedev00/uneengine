@@ -52,7 +52,6 @@ export default function SmartInsertRibbon({items,onInsert,renderIcon}:{
       <option value="other">App &amp; standard</option>
     </select>
    </label>
-   </div>
   </div>
   <div className="smart-insert-gallery">
    <div className="smart-insert-gallery-row">
