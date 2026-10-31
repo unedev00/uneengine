@@ -51,3 +51,29 @@ test('Layout groups plus Page and Canvas fit desktop and keep narrow-screen navi
   assert.match(eight,/overflow-x:auto!important/);
   assert.match(eight,/direction:ltr!important/);
 });
+
+test('edited Design and Layout placements are applied through SQL without recolouring',()=>{
+  const placement=readFileSync(new URL('../../server/src/system-support/migrations/20270213-compact-page-builder-ribbon-placements.sql',import.meta.url),'utf8');
+  const required=[
+    ['Design','labelAlignment','Typography',1],['Design','defaultValueColor','Typography',2],
+    ['Design','textSize','Typography',3],['Design','selectedTabColor','Tabs',1],
+    ['Design','tabColor','Tabs',2],['Design','tableRadius','Table',2],
+    ['Design','tableShadow','Table',3],['Design','rowRadius','Row',2],
+    ['Design','rowHeight','Row',3],['Layout','tabWidth','Tabs',1],
+    ['Layout','tabCount','Tabs',2],['Layout','tabHeight','Tabs',3],
+    ['Layout','showDays','Calendar',1],['Layout','firstDay','Calendar',2]
+  ];
+  for(const [tab,key,group,row] of required)
+    assert.ok(placement.includes("('"+tab+"','"+key+"','"+group+"',"+row+","),
+      'Missing placement '+tab+' / '+key);
+  assert.match(placement,/SET design_row=placement\.row_no,design_order=placement\.order_no/);
+  assert.doesNotMatch(placement,/\b(?:background_color|text_color|default_value|UPDATE md_page_components)\b/i);
+  const view=source('pageBuilderView.tsx');
+  const pageGroup=view.slice(view.indexOf("group==='Page'?<>"),view.indexOf("</>:group==='Canvas'?"));
+  assert.ok(pageGroup.indexOf('data-ribbon-property="deviceLayout"') <
+    pageGroup.indexOf('data-ribbon-property="selectVersion"'));
+  assert.ok(pageGroup.indexOf('data-ribbon-property="selectVersion"') <
+    pageGroup.indexOf('data-ribbon-property="restoreVersion"'));
+  const css=source('SmartRibbonApprovedThreeRow.css');
+  assert.match(css,/\.une-ribbon-restore-only>button/);
+});
