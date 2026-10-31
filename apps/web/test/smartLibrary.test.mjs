@@ -370,7 +370,7 @@ test('Quick Access Delete uses existing guarded draft-component removal',()=>{
  assert.match(builder,/aria-label="Delete selected component"/);
  assert.match(builder,/disabled=\{!selected\|\|previewMode\|\|isCanvasLocked\(selected\)\}/);
  assert.match(builder,/onClick=\{removeSelected\}/);
- assert.match(builder,/quickAccessOrder=\['save','activate','resetIcon','undo','redo','cut','copy','paste','delete'\]/);
+ assert.match(builder,/quickAccessOrder=\['save','activate','preview','exitPreview','resetIcon','undo','redo','cut','copy','paste','delete'\]/);
  assert.match(builder,/confirmDestructiveAction\('Delete', 'Page component/);
 });
 test('Clicking canvas releases any focused ribbon formula editor and closes field suggestions',()=>{
