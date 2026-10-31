@@ -62,9 +62,9 @@ test('Insert Ribbon exposes visible Smart components without requiring a selecte
  assert.match(insert,/onClick=\{\(\)=>onInsert\(item.type\)\}/);
  assert.match(insert,/filterSmartInsertItems\(items,scope,term\)/);
  assert.match(insert,/aria-label="Search Insert components"/);
- assert.match(insert,/Open full library/);
+ assert.doesNotMatch(insert,/Open full library/);
  assert.match(insert,/No Smart components are installed for this tenant/);
- assert.match(css,/grid-template-rows:repeat\(3,35px\)/);
+ assert.match(css,/grid-template-rows:repeat\(3,27px\)/);
  assert.match(css,/office-builder-ribbon #page-builder-tab-content:has\(>\.smart-insert-ribbon\)/);
 });
 
@@ -476,9 +476,11 @@ test('Smart Icon uses black default recolourable SVG and existing ribbon colour 
  assert.match(ribbon,/kind=\{\/border\/i.test/);
  assert.match(view,/selected\?\.type==='Custom:smart_icon'/);
  assert.match(view,/<SmartIconGallery/);
- assert.match(gallery,/aria-pressed=\{icon.id===current.id\}/);
- assert.match(gallery,/onClick=\{\(\)=>onChange\(icon.id\)\}/);
- assert.match(gallery,/aria-label="Search icons"/);
+ assert.match(gallery,/aria-pressed=\{value===item.id\}/);
+ assert.match(gallery,/onClick=\{\(\)=>select\(item.id\)\}/);
+ assert.doesNotMatch(gallery,/Search icons|Search 50 icons|Home selected/);
+ assert.match(gallery,/smart-shapes-popup/);
+ assert.match(gallery,/shapeGroups/);
 });
 test('Smart Icon SQL enables only approved appearance and layout properties',()=>{
  const sql=read('../../server/src/system-support/migrations/20270130-smart-icon-library.sql');
@@ -605,7 +607,7 @@ test('Calendar selected value colour fills date and Shadow uses shared three pre
  assert.match(ui,/api==='smart_calendar'&&property.id==='shadow'/);
  assert.match(migration,/value_key=NULL/);
 });
-test('Page Builder supports Ctrl X C V Z Y and shows resize cursor handles only when hovered',()=>{
+test('Page Builder keyboard shortcuts and visible PowerPoint-style resize cursor handles',()=>{
  const builder=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
  const css=read('../src/core/builders/PageBuilder/SmartCanvasHandles.css');
  assert.match(builder,/command && key === 'x'/);
@@ -619,7 +621,7 @@ test('Page Builder supports Ctrl X C V Z Y and shows resize cursor handles only 
  assert.doesNotMatch(builder,/<MoveVertical size=\{15\}/);
  assert.match(css,/\.free-canvas-resize-handle:is\(:hover,:focus-visible,:active\)/);
  assert.match(css,/\.free-canvas-move-edge:focus-visible/);
- assert.match(css,/opacity:0/);
+ assert.match(css,/opacity:1/);
  assert.match(builder,/selected \? \(selected.label\|\|selected.type\)/);
 });
 test('Image source is editable @ text, with upload only for the Image component',()=>{
@@ -794,7 +796,7 @@ test('SQL-owned three-row Design and Shapes ribbon retains the original layout p
  assert.match(sql,/design_display='dropdown'/);
  assert.match(server,/designDisplay:row.design_display/);
  assert.match(ribbon,/\[1,2,3\]\.map\(row/);
- assert.match(ribbon,/tab==='Design'\|\|tab==='Shapes'/);
+ assert.match(ribbon,/const compactDesign=true/);
  assert.match(ribbon,/SmartIconDropdown kind="align"/);
  assert.match(ribbon,/SmartIconDropdown kind="shadow"/);
  assert.match(dropdown,/createPortal/);
@@ -806,7 +808,7 @@ test('SQL-owned three-row Design and Shapes ribbon retains the original layout p
  assert.match(css,/height:26px!important/);
  assert.match(css,/background:#fff!important/);
  assert.match(css,/padding:3px 8px 1px!important/);
- assert.match(css,/gap:2px!important;padding:0!important;margin:0!important/);
+ assert.match(css,/gap:4px!important;padding:0!important;margin:0!important/);
  assert.match(css,/gap:4px!important/);
  assert.match(css,/width:35px!important/);
  assert.match(css,/linear-gradient\(90deg,#ec2c88 0%,#a51d56 48%,#ffe153 52%,#ff8c2d 100%\)/);
@@ -904,4 +906,28 @@ test('Cart visible-row setting constrains item region, not header and summary',a
  assert.match(html,/Cart summary/);
  assert.match(html,/Cart columns/);
  assert.match(html,/Total not bound/);
+});
+
+test('31 October ribbon consolidation scopes @ fields to three explicit objects and is SQL owned',()=>{
+ const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
+ const formula=read('../src/core/builders/PageBuilder/SmartFormulaField.tsx');
+ const page=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const sql=read('../../server/src/system-support/migrations/20270207-page-builder-ribbon-sources-layout.sql');
+ const styles=read('../src/core/builders/PageBuilder/SmartRibbonApprovedThreeRow.css');
+ for(const key of ['objectApiName','objectApiName2','objectApiName3'])assert.ok(ribbon.includes("'"+key+"'"));
+ assert.match(ribbon,/const objectName=sourceObjectNames\[0\]\?\?''/);
+ assert.doesNotMatch(ribbon,/fallback\(properties\.objectApiName\)\|\|pageObjectApiName/);
+ assert.match(formula,/selectedSourceObjects\.flatMap/);
+ assert.match(formula,/selectedSourceObjects!==undefined/);
+ assert.match(formula,/source\.apiName\+'\.'\+field\.apiName/);
+ assert.match(sql,/section_group='Others'/);
+ assert.match(sql,/Navigation Placement/);
+ assert.match(sql,/section_group='Component'/);
+ assert.match(sql,/objectApiName3/);
+ assert.match(styles,/height:118px!important/);
+ assert.match(styles,/gap:4px!important/);
+ assert.match(page,/homeValue\('restoreVersion'\)/);
+ assert.doesNotMatch(page,/case 'canvasMode'/);
+ assert.doesNotMatch(page,/ribbonTab==='Icons'/);
+ assert.doesNotMatch(page,/office-ribbon-stepper/);
 });

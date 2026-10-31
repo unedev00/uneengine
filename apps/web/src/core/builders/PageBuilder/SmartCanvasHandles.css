@@ -1,12 +1,11 @@
-/* One Office-like selection overlay for every canvas shape.
-   Invisible 18px hit targets become compact 8px resize squares on hover.
-   The direction is conveyed by the native resize cursor, not permanent arrows. */
+/* Office/PowerPoint-like selection: eight visible resize squares with larger
+   invisible pointer targets and a four-direction move cursor on the edges. */
 .builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .free-canvas-resize-handle{
  position:absolute;display:flex;align-items:center;justify-content:center;
  width:18px!important;height:18px!important;min-width:18px!important;min-height:18px!important;
  padding:0!important;margin:0;border:0!important;border-radius:0!important;
  background:transparent!important;box-shadow:none!important;
- z-index:165!important;opacity:0;pointer-events:auto;
+ z-index:165!important;opacity:1;pointer-events:auto;
  touch-action:none;user-select:none;transition:opacity .1s ease;
 }
 .builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .free-canvas-resize-handle::before{
@@ -34,6 +33,12 @@
  right:-9px!important;left:auto!important;bottom:-9px!important;top:auto!important;cursor:nwse-resize!important}
 .builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .resize-sw{
  left:-9px!important;right:auto!important;bottom:-9px!important;top:auto!important;cursor:nesw-resize!important}
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .canvas-move-grip{
+ cursor:move!important;touch-action:none;user-select:none;
+}
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .canvas-move-grip:active{
+ cursor:grabbing!important;
+}
 /* A narrow border hit area gives the same four-direction drag affordance
    as a selected spreadsheet shape. Corners remain reserved for resize handles. */
 .builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .free-canvas-move-edge{

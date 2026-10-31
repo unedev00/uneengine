@@ -127,7 +127,8 @@ test('SQL-defined page controls move to Layout and all Quick Access commands sta
   for(const property of ['backIcon','pageName','deviceLayout','canvasMode','canvasWidth','canvasHeight',
     'selectVersion','resetIcon','cut','copy','paste','undo','redo','save','activate'])
     assert.ok(sql.includes("'"+property+"'"),'Missing SQL Home control '+property);
-  assert.match(source,/aria-label="Page name"/);
+  assert.doesNotMatch(source,/case 'pageName':/);
+ assert.match(source,/id="new-lightning-page-label"/);
   assert.match(source,/aria-label="Choose page layout"/);
   assert.match(source,/aria-label="Cut"/);
   assert.match(source,/aria-label="Copy"/);
