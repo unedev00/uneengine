@@ -1,6 +1,7 @@
 import {validateAndMatchRecord} from '../business-rule-engine/RuleExecutionCoordinator.js';
 import {requiresUniqueValue} from '../business-rule-engine/UniqueConstraintManager.js';
 import {registeredRelationships} from '../relationship-engine/RelationshipRegistry.js';
+import {resolveRelationshipFieldPath} from '../relationship-engine/RelationshipPathResolver.js';
 import {assertDeletionAllowed,shouldCascadeReference} from '../relationship-engine/ReferentialIntegrityGuard.js';
 import {assertLookupTargetExists} from '../relationship-engine/LookupResolver.js';
 import {enforceMasterDetailReparenting} from '../relationship-engine/MasterDetailManager.js';
@@ -346,6 +347,20 @@ export class RecordEngine {
           throw new Error('$Record__Prior is unavailable in formula fields');
         if(reference.startsWith('$')&&!reference.startsWith('$Record.'))
           throw new Error('Unsupported formula global reference: '+reference);
+        // Related-field aliases and multi-hop paths use the canonical metadata
+        // graph. Legacy Object.Field remains valid when exactly one lookup
+        // points to that object; ambiguous lookups must be named explicitly.
+        const segments=(reference.startsWith('$Record.')?reference.slice(8):reference).split('.');
+        const steps=segments[0]===objectApi||segments[0]==='Record'
+          ?segments.slice(1):segments;
+        const sameTarget=steps.length===2?definitions.filter(item=>
+          item.data_type==='reference'&&item.related_object===steps[0]).length:0;
+        if(steps.length>=2&&(steps.length>2||sameTarget!==1)){
+          const resolved=await resolveRelationshipFieldPath(client??this.db,tenantId,userId,
+            objectApi,record,steps,migrationMode);
+          referenceCache.set(reference,resolved);
+          continue;
+        }
         const [referenceObject,referenceField]=reference.split('.');
         const targetObject=reference.startsWith('$Record.')?objectApi:
           referenceField?referenceObject:objectApi;
@@ -372,7 +387,8 @@ export class RecordEngine {
       const result=evaluateFlowFormula(field.formula_expression!,name=>{
         if(name==='$Record')return formulaContext.currentRecord;
         if(name.startsWith('$Record.'))
-          return formulaContext.currentRecord?.[name.slice(8)]??null;
+          return referenceCache.has(name)?referenceCache.get(name):
+            formulaContext.currentRecord?.[name.slice(8)]??null;
         if(name.startsWith('$User.'))return contextValue(formulaContext.actor,name.slice(6));
         if(name.startsWith('$Profile.'))return contextValue(formulaContext.profile,name.slice(9));
         if(name.startsWith('$Organization.'))
@@ -382,6 +398,7 @@ export class RecordEngine {
         if(name.startsWith('$Permission.'))
           return formulaContext.permissionSnapshot?.[name.slice(12)]===true;
         if(name.startsWith('$'))throw new Error('Unsupported formula global reference: '+name);
+        if(referenceCache.has(name))return referenceCache.get(name);
         const parts=/^([A-Za-z][A-Za-z0-9_]*)\.([A-Za-z][A-Za-z0-9_]*)$/.exec(name);
         if(!parts)return record[name]??null;
         if(parts[1]===objectApi||parts[1]==='Record')
