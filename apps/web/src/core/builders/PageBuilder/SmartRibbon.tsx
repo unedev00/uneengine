@@ -194,6 +194,13 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    else if(kind==='color')editor=<RibbonColorPalette variant="property"
      kind={/border/i.test(property.id)?'border':property.id==='iconFillColor'||/label|text|value/i.test(property.id)?'text':'fill'}
      label={title} value={String(value)} disabled={!enabled} onChange={write}/>;
+   else if(tab==='Layout'&&['cardsPerRow','cardsPerColumn'].includes(property.id))
+     editor=<select className="smart-select" aria-label={title} disabled={!enabled}
+       value={String(Number(value)||1)} onChange={event=>write(Number(event.target.value))}>
+       {Array.from({length:6},(_,i)=>i+1).map(n=><option key={n} value={n}>
+         {property.id==='cardsPerRow'?'Columns ':'Rows '}{n}
+       </option>)}
+     </select>;
    else if(kind==='number'||kind==='position')editor=<span className="smart-numeric">
      {isTextSize?<span className="smart-property-glyph" title={title}><RibbonTextSizeIcon/></span>:
       isCorner?<span className="smart-property-glyph" title={title}><RibbonCornerRadiusIcon/></span>:
