@@ -419,7 +419,7 @@ export default function MetadataBoundPageComponent({
   // so the card list, not the page canvas, owns vertical scrolling.
   const boundedCardGrid=definition.apiName==='ui_item_grid'&&Boolean(component.position);
   return <div className={boundedCardGrid?'md-card-grid-bound':undefined}
-    style={smartCanvas||imageCanvas||boundedCardGrid||definition.apiName==='smart_toggle'
+    style={smartCanvas||imageCanvas||definition.apiName==='smart_toggle'||boundedCardGrid
     ?{width:'100%',height:'100%',minHeight:0,minWidth:0}:undefined}>
     {!objectApiName && <div className="records-message" role="alert">Select a bound object to load records for this component.</div>}
     {dataError && <div className="records-message" role="alert">{dataError}</div>}
