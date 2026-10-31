@@ -186,7 +186,7 @@ export default function FieldWizardModal({ context }: { context: any }) {
                   onChange={(event) => setNewFieldRelationshipName(event.target.value)} />
               </label>
               <label className="form-label">Child Relationship Name
-                <input className="form-control" value={newFieldChildRelationshipName || `${object.apiName.replace(/__c$/, '')}Records`}
+                <input className="form-control" value={newFieldChildRelationshipName || `${object.apiName.replace(/__c$/, '')}${newFieldApiName.replace(/Id$/, '')}Records`.slice(0,80)}
                   onChange={(event) => setNewFieldChildRelationshipName(event.target.value)} />
               </label>
               {newFieldType === 'Lookup Relationship' && <label className="form-label">When a referenced record is deleted
