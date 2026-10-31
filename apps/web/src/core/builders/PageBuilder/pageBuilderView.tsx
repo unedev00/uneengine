@@ -2767,7 +2767,7 @@ function PageBuilder({
                   <label data-ribbon-property="deviceLayout" className="une-sql-home-control une-ribbon-page-layout">
                     <span>Layout</span>{homeValue('deviceLayout')}{homeValue('restoreVersion')}
                   </label>
-                  <div className="une-sql-home-control une-ribbon-version-only">
+                  <div data-ribbon-property="selectVersion" className="une-sql-home-control une-ribbon-version-only">
                     {homeValue('selectVersion')}
                   </div>
                 </>:group==='Canvas'?<>
@@ -2802,7 +2802,8 @@ function PageBuilder({
               flows={flows}
               onChange={actionFlows=>updateComponent(selected.id,{
                 properties:{...selected.properties,actionFlows}
-              })}/>}          {selected?.type==='Custom:smart_icon' && ribbonTab==='Shapes' &&
+              })}/>}
+          {selected?.type==='Custom:smart_icon' && ribbonTab==='Shapes' &&
             <SmartIconGallery value={String(selected.properties.iconId??'house')}
               onChange={iconId=>updateComponent(selected.id,{properties:{...selected.properties,iconId}})}/>}
           {selectedNewUne && selected && ribbonCatalog &&

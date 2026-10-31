@@ -261,3 +261,77 @@
 .office-builder-ribbon #page-builder-tab-content>.smart-ribbon[data-three-row="true"] .smart-property .smart-filter-trigger{
  flex:0 0 26px!important;width:26px!important;min-width:26px!important;height:26px!important;
 }
+
+/* Page and Canvas: one 114px content strip, matching the three-row Design ribbon. */
+.office-builder-ribbon #page-builder-tab-content.office-ribbon-content:has(>.office-ribbon-page-layout-groups){
+ height:118px!important;min-height:118px!important;max-height:118px!important;
+ padding:2px 26px 2px 0!important;overflow-x:auto!important;overflow-y:hidden!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-page-layout-groups{
+ height:114px!important;min-height:114px!important;max-height:114px!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-page-layout-groups>.une-sql-home-group{
+ height:114px!important;min-height:114px!important;max-height:114px!important;
+ padding:3px 8px 20px!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-page-layout-groups>.une-sql-home-group[data-shared-group="Page"]{
+ width:333px!important;min-width:333px!important;max-width:333px!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.office-ribbon-page-layout-groups>.une-sql-home-group[data-shared-group="Canvas"]{
+ width:120px!important;min-width:120px!important;max-width:120px!important;
+}
+.office-builder-ribbon .office-ribbon-page-layout-groups .une-sql-home-control{
+ min-height:26px!important;max-height:26px!important;height:26px!important;gap:5px!important;
+}
+.office-builder-ribbon .office-ribbon-page-layout-groups .une-sql-home-control:has(>span){
+ justify-content:flex-start!important;
+}
+.office-builder-ribbon .office-ribbon-page-layout-groups .une-ribbon-page-layout>span:first-child{
+ flex:0 0 44px!important;width:44px!important;min-width:44px!important;
+}
+.office-builder-ribbon .office-ribbon-page-layout-groups .une-ribbon-page-layout>select{
+ height:26px!important;min-height:26px!important;max-height:26px!important;width:124px!important;
+}
+.office-builder-ribbon .office-ribbon-page-layout-groups .une-ribbon-page-layout>button{
+ height:26px!important;min-height:26px!important;border:1px solid #b7c9df!important;
+ border-radius:3px!important;background:#fff!important;color:#29466b!important;
+ cursor:pointer;
+}
+.office-builder-ribbon .office-ribbon-page-layout-groups .une-ribbon-version-only>.office-ribbon-version-controls{
+ display:flex!important;flex-direction:row!important;align-items:center!important;gap:4px!important;
+ width:198px!important;min-width:198px!important;height:26px!important;
+}
+.office-builder-ribbon .office-ribbon-page-layout-groups .une-ribbon-version-only .office-ribbon-version-controls>button:first-child,
+.office-builder-ribbon .office-ribbon-page-layout-groups .une-ribbon-version-only .office-ribbon-version-controls>button:last-child{
+ box-sizing:border-box!important;width:29px!important;min-width:29px!important;max-width:29px!important;
+ flex:0 0 29px!important;height:26px!important;min-height:26px!important;
+}
+.office-builder-ribbon .office-ribbon-page-layout-groups .une-ribbon-version-only .office-ribbon-version-controls>select{
+ height:26px!important;min-height:26px!important;max-height:26px!important;
+ width:154px!important;min-width:154px!important;max-width:154px!important;flex:0 0 154px!important;
+ border:1px solid #b7c9df!important;border-radius:3px!important;background:#fff!important;
+}
+.office-builder-ribbon .office-ribbon-page-layout-groups .une-ribbon-size-with-icon{
+ box-sizing:border-box!important;position:relative!important;width:96px!important;min-width:96px!important;
+ display:flex!important;justify-content:flex-start!important;align-items:center!important;gap:0!important;
+ border:1px solid #b7c9df!important;border-radius:3px!important;background:#fff!important;
+}
+.office-builder-ribbon .office-ribbon-page-layout-groups .une-ribbon-size-with-icon .une-ribbon-embedded-icon{
+ display:flex!important;justify-content:center!important;align-items:center!important;
+ width:21px!important;min-width:21px!important;flex:0 0 21px!important;height:24px!important;color:#527091!important;
+}
+.office-builder-ribbon .office-ribbon-page-layout-groups .une-ribbon-size-with-icon input{
+ width:72px!important;max-width:72px!important;min-width:72px!important;flex:0 0 72px!important;
+ height:24px!important;min-height:24px!important;max-height:24px!important;
+ padding:1px 2px!important;border:0!important;outline:0!important;
+ background:#fff!important;box-shadow:none!important;
+}
+.office-builder-ribbon .office-ribbon-page-layout-groups .une-ribbon-size-with-icon input:focus-visible{
+ outline:0!important;box-shadow:none!important;caret-color:transparent!important;
+}
+.office-builder-ribbon .office-ribbon-page-layout-groups .une-ribbon-size-with-icon:focus-within{
+ outline:2px solid #2377c9!important;outline-offset:0!important;
+}
+.office-builder-ribbon .office-ribbon-page-layout-groups .une-ribbon-canvas-colour .office-ribbon-colour-property{
+ height:26px!important;min-height:26px!important;padding:2px 3px!important;
+}
