@@ -100,8 +100,14 @@ try {
  assert.equal(await page.locator('.md-admin-settings-block .md-admin-form-grid').first().evaluate(el=>getComputedStyle(el).display),'grid');
  await screenshot('phase2-monitoring');
  await open('licenses');
- await page.getByRole('tab',{name:'Licences'}).waitFor();
- await page.getByLabel('User',{exact:true}).selectOption('user-1');
+ const licencesTab=page.getByRole('tab',{name:'Licences'});
+ await licencesTab.waitFor();
+ await licencesTab.click();
+ await page.getByRole('heading',{name:'User and permission-set licences'}).waitFor();
+ const licenceUserSelect=page.locator('.md-admin-licence-assignments select').first();
+ try { await licenceUserSelect.waitFor({timeout:10000}); }
+ catch(error) { console.log('Licence panel:',(await page.locator('.md-admin-tabpanel').innerText()).slice(0,800)); console.log('Browser errors:',errors); throw error; }
+ await licenceUserSelect.selectOption('user-1');
  const licenceGrid=page.locator('.md-admin-licence-assignments .md-admin-checkbox-grid').first();
  await licenceGrid.waitFor();
  assert.ok(await licenceGrid.evaluate(el=>getComputedStyle(el).gridTemplateColumns.split(' ').length)>=2,'Licence assignments must use columns at desktop width');
