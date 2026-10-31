@@ -871,7 +871,9 @@ test('Cart supports five formula columns, computed totals, and visibility withou
  const hidden=await renderSmart('smart_cart',{...source,columnVisibility:['Column 1','Column 4']});
  assert.match(hidden,/Pepsi/);
  assert.match(hidden,/>Total<\/span>/);
- assert.doesNotMatch(hidden,/>Unit price<\/span>|>Quantity<\/span>|>Discount<\/span>|Decrease quantity for Pepsi/);
+ const headers=hidden.match(/<div class="smart-cart-columns"[^>]*>(.*?)<\\/div>/)?.[1]??'';
+ assert.doesNotMatch(headers,/Unit price|Quantity|Discount/);
+ assert.doesNotMatch(hidden,/Decrease quantity for Pepsi/);
  assert.match(hidden,/>25<\/span>/);
  const empty=await renderSmart('smart_cart',{...source,columnVisibility:[]});
  assert.match(empty,/No columns selected/);

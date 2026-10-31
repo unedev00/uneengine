@@ -71,7 +71,7 @@ export default function SmartCart({p,records,Picture,expression,fire}){
     <div className="smart-cart-columns" aria-label="Cart columns">
      {visible.map(index=><span key={index}>{headings[index]}</span>)}
     </div>
-    <div className="smart-cart-rows" role="region" aria-label="Cart item rows"
+    <div className="smart-cart-rows" role="region" tabIndex={0} aria-label="Cart item rows"
      style={{maxHeight:rowLimit*(rowHeight+6)}}>
      {rows.map((record,i)=>{
       const name=demo?"Sample item "+(i+1):(p.textSource?expression(p.textSource,record):"Product "+(i+1));
