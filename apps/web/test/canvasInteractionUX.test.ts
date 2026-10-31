@@ -21,8 +21,10 @@ async function readModularCss(url: URL): Promise<string> {
 import { pageAppearanceTarget, pageAppearanceStyleKeys, resolvePageComponentStyle, visualDefaults } from '../src/core/pages/TemplatePageRuntime/pageComponentLayout';
 import { snapCanvasPosition, snapCanvasSize, wrapCanvasComponent, ungroupCanvasComponent, alignCanvasComponents, distributeCanvasComponents } from '../src/core/builders/PageBuilder/canvasInteractions';
 import { copyComponentTree, cloneComponentTree, remapComponentInteractionTargets, assignTabOnReparent } from '../src/core/builders/PageBuilder/pageComponentTree';
-import {canvasGroupKey, canvasGroupBounds, canvasGroupMembers, groupCanvasSelection, ungroupCanvasSelection, moveCanvasLayer, scaleCanvasGroup} from '../src/core/builders/PageBuilder/canvasLayerGroups';
+import {canvasGroupKey, canvasGroupBounds, canvasGroupMembers, groupCanvasSelection, ungroupCanvasSelection, moveCanvasLayer, shiftCanvasLayer, scaleCanvasGroup} from '../src/core/builders/PageBuilder/canvasLayerGroups';
 import type {PageComponentMetadata} from '../src/core/metadata/Definitions/metadata';
+import type {UneRibbonProperty} from '../src/core/builders/PageBuilder/uneBuilderPropertyInventory';
+import {isSharedCanvasProperty,mixedCanvasPropertyIds,updateSharedCanvasProperties,updateSharedCanvasPositions} from '../src/core/builders/PageBuilder/canvasSharedRibbonProperties';
 
 test('canvas movement aligns with adjacent element edges and returns visible guide flags', () => {
   const result = snapCanvasPosition(
@@ -657,8 +659,8 @@ test('Free Canvas image clicks select the image instead of the overlapping tab',
   assert.match(click,/event\.preventDefault\(\);\s*event\.stopPropagation\(\);\s*selectCanvasComponent\(event\)/);
   assert.doesNotMatch(click,/hit\.closest\('\.canvas-design-interaction-shield/,'design-time shield must route clicks to the component');
   assert.match(source,/onDragStartCapture=\{selectOnlyInDesigner && page\.layoutMode === 'free-canvas'/);
-  assert.match(handles,/\.free-canvas-component\.selected\{\s*z-index:1000!important/);
-  assert.match(handles,/\.canvas-group-outline\{\s*z-index:1100/);
+  assert.match(handles,/\.free-canvas-component\.selected\{\s*z-index:var\(--canvas-layer-order,0\)!important/);
+  assert.match(handles,/\.canvas-group-outline\{\s*pointer-events:none/);
 });
 
 test('Free Canvas move cursor and directional resize handles remain usable',async()=>{
@@ -695,4 +697,88 @@ test('UI Image obeys free-canvas frame resizing in edit and published runtime wi
   assert.match(bound,/smartCanvas\|\|imageCanvas\|\|definition\.apiName==='smart_toggle'/);
   assert.match(runtime,/definition\.apiName==='ui_image'&&Boolean\(component\.position\)/,
     'published record-bound UI Image must fill its saved canvas box');
+});
+
+test('Arrange respects topmost DOM order and directional single-step commands',async()=>{
+ const ribbon=await readFile(new URL('../src/core/builders/PageBuilder/ArrangeRibbon.tsx',import.meta.url),'utf8');
+ const view=await readFile(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+ const css=await readFile(new URL('../src/core/builders/PageBuilder/SmartCanvasHandles.css',import.meta.url),'utf8');
+ assert.match(ribbon,/Bring forward'[^\n]*onMove\(1\)/);
+ assert.match(ribbon,/Send backward'[^\n]*onMove\(-1\)/);
+ assert.match(view,/\{'--canvas-layer-order':index\+1,zIndex:index\+1\}/);
+ assert.match(css,/z-index:var\(--canvas-layer-order,0\)!important/);
+ assert.doesNotMatch(css,/z-index:1000!important/);
+ const a=canvasFixture('a',0),b=canvasFixture('b',10),c=canvasFixture('c',20);
+ assert.deepEqual(shiftCanvasLayer([a,b,c],'a',1).map(item=>item.id),['b','a','c']);
+ assert.deepEqual(shiftCanvasLayer([a,b,c],'c',-1).map(item=>item.id),['a','c','b']);
+ assert.deepEqual(moveCanvasLayer([a,b,c],'a','front').map(item=>item.id),['b','c','a']);
+ assert.deepEqual(moveCanvasLayer([a,b,c],'c','back').map(item=>item.id),['c','a','b']);
+ assert.deepEqual(shiftCanvasLayer([a,b,c],'c',1).map(item=>item.id),['a','b','c']);
+});
+
+test('Grouped components move together in both layer directions and obey locks',()=>{
+ const a=canvasFixture('a',0),b=canvasFixture('b',10),c=canvasFixture('c',20);
+ const grouped=groupCanvasSelection([a,b,c],['a','b'],'shared-g');
+ assert.deepEqual(shiftCanvasLayer(grouped,'a',1).map(item=>item.id),['c','a','b']);
+ assert.deepEqual(moveCanvasLayer(grouped,'b','front').map(item=>item.id),['c','a','b']);
+ const locked=grouped.map(item=>item.id==='b'
+   ?{...item,properties:{...item.properties,editorLocked:true}}:item);
+ assert.deepEqual(moveCanvasLayer(locked,'a','front').map(item=>item.id),['a','b','c']);
+ assert.deepEqual(shiftCanvasLayer(locked,'a',1).map(item=>item.id),['a','b','c']);
+ const ungrouped=ungroupCanvasSelection(grouped,'a');
+ assert.deepEqual(ungrouped.map(canvasGroupKey),[null,null,null]);
+});
+
+test('Group outline passes clicks through; only move and resize handles accept pointer events',async()=>{
+ const view=await readFile(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+ const css=await readFile(new URL('../src/core/builders/PageBuilder/PageBuilderCanvasWorkspace.css',import.meta.url),'utf8');
+ assert.match(view,/className="canvas-group-move-handle"/);
+ assert.match(view,/onPointerDown=\{event=>startCanvasGroupGesture\(event,'move'\)\}/);
+ assert.match(css,/\.canvas-group-outline\{\s*pointer-events:none/);
+ assert.match(css,/\.canvas-group-outline \.canvas-group-move-handle\{\s*pointer-events:auto/);
+ const click=view.slice(view.indexOf('onClickCapture={libraryPreview'),view.indexOf('onDoubleClick={!libraryPreview'));
+ assert.match(click,/selectCanvasComponent\(event\)/);
+});
+
+test('Grouped ribbon enables intersection, disables incompatible fields, and edits every member',()=>{
+ const one=canvasFixture('a',0),two=canvasFixture('b',40);
+ one.type='Custom:smart_image';
+ two.type='Custom:smart_container';
+ one.properties={...one.properties,backgroundColor:'#ffffff',imagePlacement:'center'};
+ two.properties={...two.properties,backgroundColor:'#000000',imagePlacement:'left'};
+ const common:UneRibbonProperty={
+   id:'backgroundColor',label:'Fill',tab:'Design',group:'Body',kind:'color',
+   components:['smart_image','smart_container']
+ };
+ const imageOnly:UneRibbonProperty={
+   id:'imagePlacement',label:'Place',tab:'Layout',group:'Image',kind:'choice',
+   components:['smart_image']
+ };
+ assert.equal(isSharedCanvasProperty(common,[one,two]),true);
+ assert.equal(isSharedCanvasProperty(imageOnly,[one,two]),false);
+ assert.deepEqual(mixedCanvasPropertyIds([common,imageOnly],'Design',[one,two]),['backgroundColor']);
+ const next=updateSharedCanvasProperties([one,two],one.id,[one,two],[common,imageOnly],
+   'Design',{...one.properties,backgroundColor:'#123456',imagePlacement:'left'});
+ assert.equal(next[0].properties.backgroundColor,'#123456');
+ assert.equal(next[1].properties.backgroundColor,'#123456');
+ assert.equal(next[1].properties.imagePlacement,'left');
+ assert.equal(one.properties.backgroundColor,'#ffffff');
+ const noShared=updateSharedCanvasProperties([one,two],one.id,[one,two],[imageOnly],
+   'Layout',{...one.properties,imagePlacement:'right'});
+ assert.deepEqual(noShared.map(item=>item.properties.imagePlacement),['center','left']);
+ const incompatible={...two,properties:{...two.properties,editorLocked:true}};
+ assert.equal(isSharedCanvasProperty(common,[one,incompatible]),false);
+});
+
+test('Shared group position changes preserve individual unrelated fields and third-party components',()=>{
+ const a=canvasFixture('a',0),b=canvasFixture('b',40),other=canvasFixture('other',80);
+ a.type='Custom:smart_image'; b.type='Custom:smart_container';
+ const width:UneRibbonProperty={id:'width',label:'Width',tab:'Layout',group:'Size & Position',
+   kind:'position',components:['smart_image','smart_container']};
+ const result=updateSharedCanvasPositions([a,b,other],a.id,[a,b],[width],
+   {...a.position!,width:123,height:99});
+ assert.equal(result[0].position?.width,123);
+ assert.equal(result[1].position?.width,123);
+ assert.equal(result[1].position?.height,b.position?.height);
+ assert.deepEqual(result[2],other);
 });
