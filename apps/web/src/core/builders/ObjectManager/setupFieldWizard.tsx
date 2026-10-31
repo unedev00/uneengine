@@ -178,7 +178,7 @@ export default function FieldWizardModal({ context }: { context: any }) {
                     setNewFieldLookupFilters([]);
                     setNewFieldLookupFilterLogic('All');
                   }}>
-                    <option value="">Select an object</option>{objects.filter((item) => item.apiName !== object.apiName).map((item) => <option key={item.apiName} value={item.apiName}>{item.label}</option>)}
+                    <option value="">Select an object</option>{objects.filter((item) => newFieldType === 'Lookup Relationship' || item.apiName !== object.apiName).map((item) => <option key={item.apiName} value={item.apiName}>{item.label}</option>)}
                   </select>
                 </label>}
               <label className="form-label">Relationship Name
