@@ -65,9 +65,12 @@ export function UneFrame({p,children}){
    ...(Number.isFinite(Number(p.lineHeight))&&Number(p.lineHeight)>=1&&Number(p.lineHeight)<=3?{lineHeight:Number(p.lineHeight)}:{}),
    ...(Number.isFinite(Number(p.letterSpacing))&&Math.abs(Number(p.letterSpacing))<=15?{letterSpacing:Number(p.letterSpacing)+"px"}:{}),
    ...(p.textAlign&&["left","center","right"].includes(p.textAlign)?{textAlign:p.textAlign}:{}),
-   width:cssLength(p.width,"100%"),height:cssLength(p.height,"auto"),
+   width:cssLength(p.width,"100%"),
+   height:p.boundedViewport===true?"100%":cssLength(p.height,"auto"),
    minWidth:cssLength(p.minWidth,undefined),maxWidth:cssLength(p.maxWidth,undefined),
-   minHeight:cssLength(p.minHeight,undefined),maxHeight:cssLength(p.maxHeight,undefined),
+   minHeight:p.boundedViewport===true?0:cssLength(p.minHeight,undefined),
+   maxHeight:cssLength(p.maxHeight,undefined),
+   ...(p.boundedViewport===true?{display:"flex",flexDirection:"column",overflow:"hidden"}:{}),
    ...(p.margin!==undefined?{margin:px(p.margin,0,160)+"px"}:{}),
    opacity:px(p.opacity,100,100)/100
   };

@@ -278,6 +278,40 @@ try {
  assert.equal(await customerDialog.count(),0,'Escape closes nested Add customer dialog');
  assert.equal(await documentDialog.evaluate(el=>el.contains(document.activeElement)),true,'Focus returns inside financial editor');
  await screenshot('audit-verified-assist-document-modal');
+ await open('card-grid-scroll');
+ const cardGrid=page.getByRole('region',{name:'Card Grid items'});
+ await cardGrid.waitFor();
+ const initialGrid=await cardGrid.evaluate(el=>({
+   scrollHeight:el.scrollHeight,clientHeight:el.clientHeight,
+   scrollWidth:el.scrollWidth,clientWidth:el.clientWidth,
+   overflowY:getComputedStyle(el).overflowY
+ }));
+ assert.equal(initialGrid.overflowY,'scroll','Card Grid must own a vertical scrollbar');
+ assert.ok(initialGrid.scrollHeight>initialGrid.clientHeight+200,
+   'Card Grid content must exceed its visible viewport height');
+ assert.ok(initialGrid.clientHeight<=320&&initialGrid.clientHeight>100,
+   'Card Grid scroll area must remain inside the selected component');
+ assert.ok(initialGrid.scrollWidth<=initialGrid.clientWidth+1,
+   'Card Grid must not create horizontal overflow');
+ await cardGrid.hover();
+ await page.mouse.wheel(0,420);
+ await page.waitForFunction(()=>document.querySelector('.md-product-grid--scroll')?.scrollTop>0);
+ await cardGrid.focus();
+ await page.keyboard.press('End');
+ await page.waitForFunction(()=>{const el=document.querySelector('.md-product-grid--scroll');return el&&el.scrollTop>400});
+ await screenshot('card-grid-internal-scroll-desktop');
+ assert.equal(await page.getByLabel('Unbounded card grid').locator('.md-product-grid--scroll').count(),0,
+   'Non-bounded Card Grid must retain natural content height');
+ await page.setViewportSize({width:390,height:844});
+ await open('card-grid-scroll');
+ const mobileGrid=page.getByRole('region',{name:'Card Grid items'});
+ await mobileGrid.waitFor();
+ assert.ok(await mobileGrid.evaluate(el=>el.scrollHeight>el.clientHeight),
+   'Card Grid must remain vertically scrollable at 390px');
+ assert.ok(await mobileGrid.evaluate(el=>el.scrollWidth<=el.clientWidth+1),
+   'Card Grid must not overflow horizontally on mobile');
+ await screenshot('card-grid-internal-scroll-mobile');
+ await page.setViewportSize({width:1365,height:768});
  assert.deepEqual(errors,[]);
  console.log('PASS: dashboard permission/create, offline object/record/save, tenant draft/footer/discard, credential width/details, history details, flow dialog/create, record route chunk import, MFA policy control, OAuth grids, audit table, deep-linked company settings, monitoring, licences, SSO, password, sessions, credential modal, real Schema Builder and real Kiosk and Till product/cart/checkout/payment (1365px/390px)');
 } finally { await browser.close(); }

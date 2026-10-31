@@ -415,13 +415,18 @@ export default function MetadataBoundPageComponent({
   // Data-bound Images need the same full-height wrapper as the unbound image
   // so the selected canvas dimensions also resize the picture itself.
   const imageCanvas=definition.apiName==='ui_image'&&Boolean(component.position);
-  return <div style={smartCanvas||imageCanvas||definition.apiName==='smart_toggle'
+  // A free-canvas Card Grid has an authored, bounded frame. Fill that frame
+  // so the card list, not the page canvas, owns vertical scrolling.
+  const boundedCardGrid=definition.apiName==='ui_item_grid'&&Boolean(component.position);
+  return <div className={boundedCardGrid?'md-card-grid-bound':undefined}
+    style={smartCanvas||imageCanvas||definition.apiName==='smart_toggle'||boundedCardGrid
     ?{width:'100%',height:'100%',minHeight:0,minWidth:0}:undefined}>
     {!objectApiName && <div className="records-message" role="alert">Select a bound object to load records for this component.</div>}
     {dataError && <div className="records-message" role="alert">{dataError}</div>}
     <RegisteredComponent definition={definition} layoutTransparent={smartCanvas} props={{
       ...rowResolvedProperties, ...componentLayoutProps(properties, formFactor),
       ...(smartCanvas?{width:component.position!.width,height:component.position!.height}:{}),
+      ...(boundedCardGrid?{boundedViewport:true}:{}),
       ...(categoryFilterKey ? {
         selectedCategory:selectedCategories[categoryFilterKey] ?? String(properties.selectedCategory ?? ''),
         selectedCategoryLabel:categorySource?.label ?? '',selectedCategoryRecordId:categorySource?.recordId ?? '',

@@ -196,16 +196,28 @@ function ItemGrid({ p, rows }) {
     ? p.imageAspectRatio
     : undefined;
   return (
-    <section style={{lineHeight:validLineHeight}}>
+    <section className={p.boundedViewport===true?"md-card-grid-viewport":undefined}
+      style={{lineHeight:validLineHeight}}> 
       {p.showHeading !== false && <h3 className="one-heading" style={{ marginBottom: 12 }}>
         {p.title || "Cards"}
       </h3>}
       <div
-        className="one-grid md-product-grid"
+        className={"one-grid md-product-grid"+(p.boundedViewport===true?" md-product-grid--scroll":"")}
+        role={p.boundedViewport===true?"region":undefined}
+        aria-label={p.boundedViewport===true?(p.title||"Card Grid")+" items":undefined}
+        tabIndex={p.boundedViewport===true?0:undefined}
+        onPointerDown={p.boundedViewport===true?event=>{
+          // Touch pans the records, not the parent Page Builder shape.
+          if(event.pointerType==="touch")event.stopPropagation();
+        }:undefined}
         style={{
           "--one-grid-desktop": count,
           "--one-grid-tablet": tabletCount,
           "--one-grid-mobile": phoneCount,
+          ...(p.boundedViewport===true?{
+            flex:"1 1 auto",minHeight:0,overflowY:"scroll",overflowX:"hidden",
+            alignContent:"start",scrollbarGutter:"stable"
+          }:{}),
           ...(Number.isFinite(Number(p.gap)) && p.gap!==undefined && Number(p.gap)>=0 && Number(p.gap)<=160 ? {gap:Number(p.gap)} : {}),
         }}
       >
@@ -390,7 +402,9 @@ export default function OneItemGrid(p) {
   const root = css(p),
     rows = records(p);
   return (
-    <div {...root}>
+    <div {...root} className={root.className+(p.boundedViewport===true?" md-card-grid-root":"")}
+      style={p.boundedViewport===true?{...root.style,height:"100%",minHeight:0,
+        display:"flex",flexDirection:"column",overflow:"hidden"}:root.style}>
       <ItemGrid p={p} rows={rows} />
     </div>
   );

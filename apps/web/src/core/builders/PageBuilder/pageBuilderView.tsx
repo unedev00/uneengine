@@ -2215,7 +2215,13 @@ function PageBuilder({
           } : undefined}
       onDoubleClick={!libraryPreview ? event => { event.stopPropagation(); if (!previewMode) { setSelectedRegion(null); setSelectedId(component.id); selectRibbonTab(componentNeedsData(component.type)?'Component Data':'Component Properties'); } } : undefined}
       onContextMenu={!libraryPreview && !previewMode ? event => { event.preventDefault(); event.stopPropagation(); setSelectedRegion(null); setSelectedId(component.id); setComponentMenuId(component.id); } : undefined}
-      onPointerDown={!libraryPreview && page.layoutMode === 'free-canvas' && !nested ? event => startCanvasMove(event, component) : undefined}
+      onPointerDown={!libraryPreview && page.layoutMode === 'free-canvas' && !nested ? event => {
+        // Native Card Grid scrolling must not trigger free-canvas dragging.
+        // The component's dedicated move grips and resize handles still work.
+        if(component.type==='Custom:ui_item_grid' &&
+          (event.target as HTMLElement).closest('.md-product-grid--scroll'))return;
+        startCanvasMove(event, component);
+      } : undefined}
       onPointerMove={!libraryPreview && page.layoutMode === 'free-canvas' && !nested ? moveCanvasPointer : undefined}
       onPointerUp={!libraryPreview && page.layoutMode === 'free-canvas' && !nested ? event => endCanvasMove(event) : undefined}
       onPointerCancel={!libraryPreview && page.layoutMode === 'free-canvas' && !nested ? event => endCanvasMove(event, true) : undefined}

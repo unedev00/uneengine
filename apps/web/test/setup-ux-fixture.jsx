@@ -6,6 +6,8 @@ import DashboardBuilder from '../src/core/builders/DashboardBuilder/DashboardBui
 import SchemaBuilder from '../src/core/builders/SchemaBuilder/SchemaBuilder';
 import AceKiosk from '../../acekiosk/src/AceKiosk';
 import AcetillTerminal from '../../acetill/src/AcetillTerminal';
+import UiItemGrid from '../src/component-libraries/ui_item_grid/UiItemGrid';
+import '../src/component-libraries/ui_item_grid/UiItemGrid.css';
 import {FinancialDocumentEditor} from '../../aceassist/src/FinancialDocumentEditor';
 import NamedCredentials from '../src/core/integrations/NamedCredentials/NamedCredentials';
 import FlowLogs from '../src/core/automation/FlowLogs/FlowLogs';
@@ -34,6 +36,8 @@ import '../src/core/builders/SchemaBuilder/schemaBuilderUsability.css';
 const params = new URLSearchParams(location.search);
 const view=params.get('view');
 const noop=()=>{};
+// Component-library primitives receive React from their hosted renderer.
+globalThis.React=React;
 const arrays={dashboards:[],dashboardFolders:[],objects:[],libraryComponents:[],reports:[],shareUsers:[],shareGroups:[],folderPublicGroups:[],folderPermissionSetGroups:[],folderRoles:[],dashboardTerritories:[],subscriptionUsers:[],runningUserIds:[],smtpCredentials:[]};
 const callbacks=Object.fromEntries(['Select','OpenViewer','ExitViewer','Notify','Save','Delete','LoadRecords','RunReport','LoadSnapshots','LoadSubscriptions'].map(key=>['on'+key,noop]));
 const object={apiName:'Account',label:'Account',pluralLabel:'Accounts',kind:'Standard Object',fields:[],compactLayout:{fieldApiNames:['Name']}};
@@ -77,6 +81,24 @@ const securityViews=createSettingsViews(uxRequest,()=>null);
 const credentials=[{id:'sample',name:'Sample_Credential',label:'Sample credential',baseUrl:'https://example.com/long/integration/path',authType:'Bearer',hasSecret:true,protocol:'HTTPS',enabled:true,updatedAt:'2026-10-28T09:00:00Z',configuration:{}}];
 function RecordImportCheck(){ const [ready,setReady]=React.useState(false); React.useEffect(()=>{import('../src/core/records/RecordWorkspace/recordWorkspaceViews').then(module=>setReady(typeof module.createRecordWorkspaceViews === 'function'));},[]);return <p>{ready ? 'Record workspace import passed' : 'Loading record workspace'}</p>; }
 function Fixture(){
+ if(view==='card-grid-scroll'){
+   const sampleCards=Array.from({length:42},(_,i)=>({Id:'product-'+i,Name:'Product '+String(i+1),Price:i+1}));
+   const base={records:sampleCards,cardsPerRow:3,desktopColumns:3,tabletColumns:2,mobileColumns:2,
+    showHeading:false,showImage:false,showPrice:true,titleFieldApiName:'Name',priceFieldApiName:'Price',
+    cardPadding:10,gap:8};
+   return <div className="lightning">
+    <div className="free-canvas-component" aria-label="Selected Card Grid" style={{position:'relative',height:320,width:530,maxWidth:'100%',outline:'2px solid #2563eb'}}>
+     <div className="md-card-grid-bound" style={{height:'100%',width:'100%'}}>
+      <div><div className="registered-component metadrive-component-ui_item_grid">
+       <UiItemGrid {...base} boundedViewport/>
+      </div></div>
+     </div>
+    </div>
+    <div aria-label="Unbounded card grid" style={{marginTop:20,width:530,maxWidth:'100%'}}>
+     <UiItemGrid {...base} records={sampleCards.slice(0,6)}/>
+    </div>
+   </div>;
+ }
  if(view==='kiosk')return <AceKiosk onLogout={noop}/>;
  if(view==='till')return <AcetillTerminal/>;
  let content;
