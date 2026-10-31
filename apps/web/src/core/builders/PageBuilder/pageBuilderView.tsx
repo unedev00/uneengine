@@ -478,7 +478,6 @@ function PageBuilder({
     id: string; pointerId: number; pointerX: number; pointerY: number;
     original: { x: number; y: number; width: number; height: number };
     element: HTMLElement; x: number; y: number;
-    group: Array<{ id: string; element: HTMLElement; original: { x: number; y: number; width: number; height: number }; x: number; y: number }>;
   } | null>(null);
   const [showLayers, setShowLayers] = useState(false);
   const [inspectorTab, setInspectorTab] = useState<'Design' | 'Data & Actions' | 'Visibility' | 'Position'>('Design');
@@ -1069,37 +1068,32 @@ function PageBuilder({
       setCustomPropertiesError(failure instanceof Error ? failure.message : 'Enter valid JSON properties.');
     }
   };
-  // Move only the selected DOM element while dragging. Commit metadata and
-  // a single undo step on release, avoiding a page-wide render per pointer frame.
+  // Pointer capture and direct CSS translation keep moves fluid without
+  // re-rendering the entire page on each frame. A normal drag always targets
+  // exactly the hit component; multi-selection is for explicit Group/Align.
   const startCanvasMove = (event: React.PointerEvent<HTMLElement>, component: PageComponentMetadata) => {
     if (previewMode || !component.position || isCanvasLocked(component)
-      || event.button !== 0 || event.shiftKey || canvasMoveStart.current) return;
-    if (!(event.target as HTMLElement).closest('.free-canvas-move-edge') &&
-      (event.target as HTMLElement).closest('button,input,select,textarea,a,[contenteditable="true"],.free-canvas-resize-handle,.canvas-element-actions')) return;
+      || event.button !== 0 || event.shiftKey || canvasMoveStart.current || canvasResizeStart.current) return;
     const element = event.currentTarget.closest<HTMLElement>('.free-canvas-component');
-    if (!element) return;
+    const hit = event.target as Element;
+    // Avoid starting a parent move from a nested component's pointer event.
+    if (!element || hit.closest('[data-component-id]') !== element) return;
+    if (!hit.closest('.free-canvas-move-edge,.canvas-move-grip') &&
+      hit.closest('button,input,select,textarea,a,[contenteditable="true"],.free-canvas-resize-handle,.canvas-element-actions')) return;
     event.preventDefault();
     event.stopPropagation();
     event.currentTarget.setPointerCapture(event.pointerId);
-    const stage = element.closest('.free-canvas-stage');
-    const group = page.components.filter(item => item.id !== component.id && selectionIds.includes(item.id)
-      && item.position && !rawLayoutParentId(item) && !isCanvasLocked(item))
-      .flatMap(item => {
-        const node = Array.from(stage?.querySelectorAll<HTMLElement>('.free-canvas-component') ?? [])
-          .find(candidate => candidate.dataset.componentId === item.id);
-        return node && item.position ? [{ id: item.id, element: node, original: { ...item.position },
-          x: item.position.x, y: item.position.y }] : [];
-      });
     canvasMoveStart.current = {
-      id: component.id, pointerId: event.pointerId, group,
+      id: component.id, pointerId: event.pointerId,
       pointerX: event.clientX, pointerY: event.clientY,
       original: { ...component.position }, element,
       x: component.position.x, y: component.position.y
     };
     setSelectedRegion(null);
     setSelectedId(component.id);
-    if (!selectionIds.includes(component.id)) setSelectionIds([component.id]);
+    setSelectionIds([component.id]);
     setPageSettingsOpen(false);
+    element.style.willChange = 'translate';
   };
   const moveCanvasPointer = (event: React.PointerEvent<HTMLElement>) => {
     const start = canvasMoveStart.current;
@@ -1113,16 +1107,9 @@ function PageBuilder({
           page.components.filter(item => item.id !== start.id && !rawLayoutParentId(item) && item.position).map(item => item.position!), true)
       : { position: canvasBoundPosition({ ...start.original, x, y }, { width: page.canvasWidth, height: page.canvasHeight }, false),
           guides: { x: false, y: false } };
-    const positions = [start.original, ...start.group.map(item => item.original)];
-    const deltaX = Math.max(-Math.min(...positions.map(item => item.x)),
-      Math.min(Math.min(...positions.map(item => page.canvasWidth - item.x - item.width)), next.position.x - start.original.x));
-    const deltaY = Math.max(-Math.min(...positions.map(item => item.y)),
-      Math.min(Math.min(...positions.map(item => page.canvasHeight - item.y - item.height)), next.position.y - start.original.y));
-    start.x = start.original.x + deltaX; start.y = start.original.y + deltaY;
-    for (const other of start.group) {
-      other.x = other.original.x + deltaX; other.y = other.original.y + deltaY;
-      other.element.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
-    }
+    start.x = next.position.x; start.y = next.position.y;
+    // CSS translate is independent of the component's authored transform/rotation.
+    start.element.style.translate = `${start.x - start.original.x}px ${start.y - start.original.y}px`;
     if (canvasGuideXRef.current) {
       canvasGuideXRef.current.style.display = next.guides.x ? 'block' : 'none';
       canvasGuideXRef.current.style.left = `${start.x}px`;
@@ -1131,26 +1118,25 @@ function PageBuilder({
       canvasGuideYRef.current.style.display = next.guides.y ? 'block' : 'none';
       canvasGuideYRef.current.style.top = `${start.y}px`;
     }
-    start.element.style.transform =
-      `translate(${deltaX}px, ${deltaY}px)`;
   };
   const endCanvasMove = (event: React.PointerEvent<HTMLElement>, cancelled = false) => {
     const start = canvasMoveStart.current;
     if (!start || start.pointerId !== event.pointerId) return;
     canvasMoveStart.current = null;
-    start.element.style.transform = '';
-    for (const other of start.group) other.element.style.transform = '';
+    const changed = !cancelled && (start.x !== start.original.x || start.y !== start.original.y);
+    if (changed) {
+      // Update the element's box before clearing the preview to avoid a
+      // one-frame jump back to its old position while React commits metadata.
+      start.element.style.left = `${start.x}px`;
+      start.element.style.top = `${start.y}px`;
+    }
+    start.element.style.translate = '';
+    start.element.style.willChange = '';
     if (canvasGuideXRef.current) canvasGuideXRef.current.style.display = 'none';
     if (canvasGuideYRef.current) canvasGuideYRef.current.style.display = 'none';
-    if (!cancelled && (start.x !== start.original.x || start.y !== start.original.y)) {
-      const positions = new Map<string, { x: number; y: number; width: number; height: number }>([
-        [start.id, { ...start.original, x: start.x, y: start.y }],
-        ...start.group.map(other => [other.id, { ...other.original, x: other.x, y: other.y }] as const)
-      ]);
-      applyPage({ ...page, components: page.components.map(item => {
-        const position = positions.get(item.id);
-        return position ? { ...item, position } : item;
-      }) });
+    if (changed) {
+      applyPage({ ...page, components: page.components.map(item =>
+        item.id === start.id ? { ...item, position: { ...start.original, x: start.x, y: start.y } } : item) });
     }
   };
   const reorderLayer = (id: string, direction: -1 | 1) => {
@@ -1166,7 +1152,8 @@ function PageBuilder({
     applyPage({ ...page, components: items });
   };
   const startCanvasResize = (event: React.PointerEvent<HTMLButtonElement>, component: PageComponentMetadata, edge: ResizeEdge) => {
-    if (!component.position || isCanvasLocked(component)) return;
+    if (!component.position || isCanvasLocked(component) || event.button !== 0
+      || canvasMoveStart.current || canvasResizeStart.current) return;
     const element = event.currentTarget.closest<HTMLElement>('.free-canvas-component');
     if (!element) return;
     event.preventDefault(); event.stopPropagation(); event.currentTarget.setPointerCapture(event.pointerId);
@@ -1183,8 +1170,8 @@ function PageBuilder({
     const definition = component.type.startsWith('Custom:') ? findRegisteredComponent(libraryComponents, component.type.slice('Custom:'.length), 'page') : undefined;
     const minWidth = Math.min(start.width, definition?.resize?.minWidth ?? 20);
     const minHeight = Math.min(start.height, definition?.resize?.minHeight ?? 20);
-    const dx = Math.round(canvasUnitsFromScreenDelta(event.clientX - start.pointerX, fitCanvas ? fitScale : 1));
-    const dy = Math.round(canvasUnitsFromScreenDelta(event.clientY - start.pointerY, fitCanvas ? fitScale : 1));
+    const dx = canvasUnitsFromScreenDelta(event.clientX - start.pointerX, fitCanvas ? fitScale : 1);
+    const dy = canvasUnitsFromScreenDelta(event.clientY - start.pointerY, fitCanvas ? fitScale : 1);
     const west = start.edge.includes('w'), east = start.edge.includes('e'), north = start.edge.includes('n'), south = start.edge.includes('s');
     let x = start.x, y = start.y, width = start.width, height = start.height;
     if (east) width = Math.max(minWidth, Math.min(page.canvasWidth - start.x, start.width + dx));
@@ -1194,15 +1181,23 @@ function PageBuilder({
     start.current = { x, y, width, height };
     Object.assign(start.element.style, { left: `${x}px`, top: `${y}px`, width: `${width}px`, height: `${height}px` });
   };
-  const endCanvasResize = (event: React.PointerEvent<HTMLButtonElement>) => {
+  const endCanvasResize = (event: React.PointerEvent<HTMLButtonElement>, cancelled = false) => {
     const start = canvasResizeStart.current;
     if (!start || start.pointerId !== event.pointerId) return;
-    const size = start.current;
-    Object.assign(start.element.style, { left: `${start.x}px`, top: `${start.y}px`, width: `${start.width}px`, height: `${start.height}px` });
     canvasResizeStart.current = null;
-    const component = page.components.find(item => item.id === start.id);
-    if (component?.position && (size.x !== start.x || size.y !== start.y || size.width !== start.width || size.height !== start.height))
-      updateComponent(start.id, { position: size });
+    const size = start.current;
+    const changed = !cancelled && (size.x !== start.x || size.y !== start.y || size.width !== start.width || size.height !== start.height);
+    if (changed) {
+      // Commit integer dimensions without flashing the original box on release.
+      const position = { x: Math.round(size.x), y: Math.round(size.y),
+        width: Math.round(size.width), height: Math.round(size.height) };
+      Object.assign(start.element.style, { left: `${position.x}px`, top: `${position.y}px`,
+        width: `${position.width}px`, height: `${position.height}px` });
+      updateComponent(start.id, { position });
+    } else {
+      Object.assign(start.element.style, { left: `${start.x}px`, top: `${start.y}px`,
+        width: `${start.width}px`, height: `${start.height}px` });
+    }
   };
   const hasOverlappingPageAssignment = (assignment: PageActivationAssignmentMetadata) =>
     (page.activationAssignments ?? []).some((existing) =>
@@ -2162,6 +2157,7 @@ function PageBuilder({
       onPointerMove={!libraryPreview && page.layoutMode === 'free-canvas' && !nested ? moveCanvasPointer : undefined}
       onPointerUp={!libraryPreview && page.layoutMode === 'free-canvas' && !nested ? event => endCanvasMove(event) : undefined}
       onPointerCancel={!libraryPreview && page.layoutMode === 'free-canvas' && !nested ? event => endCanvasMove(event, true) : undefined}
+      onLostPointerCapture={!libraryPreview && page.layoutMode === 'free-canvas' && !nested ? event => endCanvasMove(event, true) : undefined}
       onKeyDown={!libraryPreview ? (event) => {
          if (event.currentTarget !== event.target || previewMode) return;
          if (event.key === 'Enter' || event.key === ' ') {
@@ -2184,7 +2180,7 @@ function PageBuilder({
       onDrop={!libraryPreview && !isPhoneBuilder ? (event) => handleDrop(event, index, component.region ?? 'main', isLayoutContainer(component) ? component.id : rawLayoutParentId(component)) : undefined}
       draggable={!isPhoneBuilder && !previewMode && !libraryPreview && page.layoutMode !== 'free-canvas' && !isCanvasLocked(component)}
       data-component-id={libraryPreview ? undefined : component.id}
-      onDragStart={!libraryPreview && !isPhoneBuilder ? (event) => { if (canvasMoveStart.current?.id === component.id) { event.preventDefault(); return; } event.stopPropagation(); event.dataTransfer.setData('text/plain', `component:${component.type}`); event.dataTransfer.setData('application/x-metadrive-component-id', component.id); } : undefined}
+      onDragStart={!libraryPreview && !isPhoneBuilder ? (event) => { if (page.layoutMode === 'free-canvas' || canvasMoveStart.current?.id === component.id) { event.preventDefault(); return; } event.stopPropagation(); event.dataTransfer.setData('text/plain', `component:${component.type}`); event.dataTransfer.setData('application/x-metadrive-component-id', component.id); } : undefined}
       role={libraryPreview ? undefined : page.layoutMode === 'free-canvas' ? 'group' : 'button'} tabIndex={previewMode || libraryPreview ? -1 : 0} aria-label={libraryPreview ? undefined : `${component.label} component`}
       aria-hidden={libraryPreview && !interactivePreview || undefined}
     >
@@ -2192,6 +2188,15 @@ function PageBuilder({
         className="canvas-element-actions" role="toolbar" aria-label={`Actions for ${component.label}`}
         style={component.position && component.position.y < 60 ? {bottom:'auto',top:'calc(100% + 12px)'} : undefined}
         onPointerDown={event => event.stopPropagation()} onClick={event => event.stopPropagation()}>
+        {page.layoutMode === 'free-canvas' && !isCanvasLocked(component) && <button type="button"
+          className="canvas-move-grip" aria-label={`Drag to move ${component.label}`}
+          title="Drag to move only this component" draggable={false}
+          onPointerDown={event => startCanvasMove(event, component)}
+          onPointerMove={moveCanvasPointer}
+          onPointerUp={event => endCanvasMove(event)}
+          onPointerCancel={event => endCanvasMove(event, true)}
+          onLostPointerCapture={event => endCanvasMove(event, true)}
+          onClick={event => event.stopPropagation()}><Move size={15}/></button>}
         <button type="button" onClick={() => openComponentInspector('Design')} title="Edit block"><Pencil size={15}/> Edit</button>
         {page.layoutMode === 'free-canvas' && <button type="button" onClick={() => openComponentInspector('Position')} title="Position and size"><Maximize2 size={15}/> Position</button>}
         <button type="button" onClick={duplicateSelected} disabled={isCanvasLocked(component)} title="Duplicate"><Copy size={16}/></button>
@@ -2373,13 +2378,16 @@ function PageBuilder({
           onPointerMove={moveCanvasPointer}
           onPointerUp={event=>endCanvasMove(event)}
           onPointerCancel={event=>endCanvasMove(event,true)}
+          onLostPointerCapture={event=>endCanvasMove(event,true)}
           onClick={event=>event.stopPropagation()}/>)}
       {!libraryPreview && page.layoutMode === 'free-canvas' && !nested && selectedId === component.id && !previewMode && !isCanvasLocked(component)
         && (['n','ne','e','se','s','sw','w','nw'] as const).map(edge =>
           <button key={edge} type="button" className={`free-canvas-resize-handle resize-${edge}`}
             aria-label={`Resize ${component.label} ${edge}`} title="Drag edge or corner to resize"
             onPointerDown={event => startCanvasResize(event, component, edge)}
-            onPointerMove={moveCanvasResize} onPointerUp={endCanvasResize} onPointerCancel={endCanvasResize}
+            onPointerMove={moveCanvasResize} onPointerUp={endCanvasResize}
+            onPointerCancel={event => endCanvasResize(event, true)}
+            onLostPointerCapture={event => endCanvasResize(event, true)}
             onClick={event => event.stopPropagation()}/>)}
     </div>;
   };
