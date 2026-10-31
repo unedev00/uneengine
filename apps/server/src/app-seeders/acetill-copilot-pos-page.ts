@@ -123,7 +123,7 @@ const stableTypes:Record<string,string[]>={
  'copilot-pos-products':['smart_card_grid','acetill_item_grid','ui_item_grid','une_item_grid'],
  'copilot-pos-cart':['smart_cart','acetill_cart','ui_cart','une_cart']
 };
-const sameKind=(component:{id?:string;type?:string},requested:Block)=>(
+const sameKind=(component:Record<string,unknown>,requested:Block)=>(
  component.id===requested.id || component.type===requested.type && (
  requested.id==='copilot-pos-products'||requested.id==='copilot-pos-cart') ||
  (stableTypes[requested.id]??[]).some(type=>
