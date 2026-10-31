@@ -53,3 +53,31 @@ export async function listRelationshipDefinitions(
   allowReparenting:row.allow_reparenting
  }));
 }
+
+/** Deterministically traverse two-hop+ metadata paths. Consumers must use
+ * relationship names or field API names when multiple edges share a target;
+ * target-object shortcuts are accepted only when uniquely resolvable.
+ */
+export function resolveRelationshipMetadataPath(
+ relationships:readonly RelationshipDefinition[],sourceObject:string,path:readonly string[]
+):{targetObject:string;steps:RelationshipDefinition[]}{
+ if(!/^[A-Za-z][A-Za-z0-9_]*$/.test(sourceObject)||path.length===0||path.length>10
+   ||path.some(segment=>!/^[A-Za-z][A-Za-z0-9_]*$/.test(segment)))
+   throw new Error('Invalid relationship path');
+ const steps:RelationshipDefinition[]=[];
+ let current=sourceObject;
+ for(const segment of path){
+   const candidates=relationships.filter(edge=>edge.sourceObject===current);
+   const explicit=candidates.filter(edge=>
+     edge.fieldApiName===segment||edge.relationshipName===segment);
+   const matches=explicit.length?explicit:
+     candidates.filter(edge=>edge.targetObject===segment);
+   if(matches.length!==1)
+     throw new Error(matches.length?'Ambiguous relationship path: '+segment:
+       'Relationship path not found: '+segment);
+   const step=matches[0];
+   steps.push(step);
+   current=step.targetObject;
+ }
+ return {targetObject:current,steps};
+}
