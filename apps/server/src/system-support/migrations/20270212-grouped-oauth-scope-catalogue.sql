@@ -97,7 +97,7 @@ INSERT INTO md_oauth_scope_catalogue(scope,group_key,group_label,label,descripti
  ('operations:manage','Operations','OCI operations & recovery','Manage OCI services','Restart API/worker and activate an immutable built release.','critical',10,76,true),
  ('deployments:read','Operations','OCI operations & recovery','Read deployments','Inspect deployment and CI status through existing GitHub integration.','elevated',10,77,false),
  ('deployments:manage','Operations','OCI operations & recovery','Manage deployments','Activate and roll back existing approved builds.','critical',10,78,false),
- ('sql:diagnostics','Operations','OCI operations & recovery','Read SQL diagnostics','Read approved database schema and migration health (no arbitrary SQL).','elevated',10,79,true),
+ ('sql:diagnostics','Operations','OCI operations & recovery','Read SQL diagnostics','Read approved database schema and migration health (no arbitrary SQL).','elevated',10,79,false),
  ('migrations:manage','Operations','OCI operations & recovery','Manage SQL migrations','Execute approved versioned migrations; never arbitrary statements.','critical',10,80,false),
  ('backups:read','Operations','OCI operations & recovery','Inspect backups','Inspect protected SQL backups and restore readiness.','critical',10,81,false),
  ('backups:manage','Operations','OCI operations & recovery','Manage backup recovery','Initiate approved restore after separate authorisation.','critical',10,82,false) ON CONFLICT(scope) DO NOTHING;
@@ -242,5 +242,10 @@ RETURNS boolean LANGUAGE sql STABLE AS $$
     (s.scope='mcp:access' AND path='/api/mcp' AND verb IN ('POST','GET','DELETE'))
     OR EXISTS(SELECT 1 FROM md_oauth_scope_routes r
       WHERE r.scope=s.scope AND r.verb=verb AND path ~ r.path_regex)
+    -- Retain the pre-existing Salesforce-compatible data API permissions.
+    OR (s.scope='records:read' AND verb='GET'
+       AND path ~ '^/services/data/v[0-9.]+/(query|queryAll|search|sobjects)(/|$)')
+    OR (s.scope='records:write' AND verb IN ('POST','PUT','PATCH','DELETE')
+       AND path ~ '^/services/data/v[0-9.]+/sobjects/')
   ))
 $$;
