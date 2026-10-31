@@ -29,6 +29,7 @@ test('shared Builder layout is editor-only and loaded from optional modules',()=
  assert.match(builder,/\.report-builder-layout \.report-fields-panel/);
  assert.match(builder,/\.md-object-editor-split/);
  assert.doesNotMatch(builder,/\.free-canvas-component|\.page-runtime-component/);
+ assert.doesNotMatch(builder,/\:is\(button,summary\)\{color:inherit\}/,'Primary button text must retain its own contrasting colour');
 });
 
 test('Schema Builder renders accessible scrollable canvas and responsive search/editor',()=>{
