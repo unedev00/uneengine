@@ -184,9 +184,10 @@ try{
   [tenant])).rows[0].id;
  await db.query("INSERT INTO md_permission_assignments(tenant_id,user_id,permission_set_id) VALUES($1,$2,$3)",
   [tenant,cascadeActor,cascadeSet]);
- for(const resource of ['PhaseParent__c','RecordType:PhaseParent__c.master'])
-  await db.query("INSERT INTO md_permission_rules(tenant_id,permission_set_id,resource,action,effect) VALUES($1,$2,$3,'delete','allow')",
-   [tenant,cascadeSet,resource]);
+ await db.query("INSERT INTO md_permission_rules(tenant_id,permission_set_id,resource,action,effect) VALUES($1,$2,'PhaseParent__c','delete','allow')",
+  [tenant,cascadeSet]);
+ await db.query("INSERT INTO md_permission_rules(tenant_id,permission_set_id,resource,action,effect) VALUES($1,$2,'RecordType:PhaseParent__c.master','read','allow')",
+  [tenant,cascadeSet]);
  for(const target of ['PhaseChild__c','PhaseGrand__c'])
   await db.query("INSERT INTO md_permission_rules(tenant_id,permission_set_id,resource,action,effect) VALUES($1,$2,$3,'delete','deny')",
    [tenant,cascadeSet,target]);
