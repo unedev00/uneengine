@@ -23,6 +23,10 @@
     {
       "apiName": "change",
       "label": "Change"
+    },
+    {
+      "apiName": "click",
+      "label": "When a card is selected"
     }
   ]
 }
