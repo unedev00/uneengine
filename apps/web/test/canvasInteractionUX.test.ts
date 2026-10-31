@@ -669,7 +669,7 @@ test('Free Canvas move cursor and directional resize handles remain usable',asyn
   assert.match(source,/onPointerMove=\{moveCanvasResize\} onPointerUp=\{endCanvasResize\}/);
   assert.match(source,/setSelectionIds\(\[component\.id\]\);\s*setSelectedRegion\(null\);\s*\};\s*const moveCanvasResize/);
   for(const [edge,cursor] of Object.entries({n:'ns',ne:'nesw',e:'ew',se:'nwse',s:'ns',sw:'nesw',w:'ew',nw:'nwse'})){
-    assert.match(handles,new RegExp('\\\\.resize-'+edge+'(?:,|\\\\{|[^}]*\\\\{)[^}]*cursor:'+cursor+'-resize!important'),'resize direction '+edge);
+    assert.match(handles,new RegExp('\\.resize-'+edge+'(?:,|\\{|[^}]*\\{)[^}]*cursor:'+cursor+'-resize!important'),'resize direction '+edge);
   }
   assert.match(handles,/\.free-canvas-component:not\(\.canvas-component-locked\) > :not\(\.canvas-element-actions\)/);
   assert.doesNotMatch(handles,/cursor:grabbing!important/);
