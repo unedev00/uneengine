@@ -29,7 +29,7 @@
  position:relative!important;
  width:var(--smart-section-width,auto)!important;min-width:var(--smart-section-width,auto)!important;max-width:var(--smart-section-width,auto)!important;
  height:114px!important;min-height:114px!important;max-height:114px!important;
- padding:3px 12px 1px!important;margin:0!important;
+ padding:6px 7px 1px!important;margin:0!important;
  border:0!important;border-right:1px solid #cbd6e2!important;
  border-radius:0!important;background:transparent!important;overflow:visible!important;
 }
@@ -53,7 +53,7 @@
  flex-flow:row nowrap!important;align-items:center!important;justify-content:flex-start!important;
  width:max-content!important;min-width:0!important;max-width:none!important;
  height:26px!important;min-height:26px!important;max-height:26px!important;
- gap:4px!important;padding:0!important;margin:0!important;white-space:nowrap!important;
+ gap:2px!important;padding:0!important;margin:0!important;white-space:nowrap!important;
 }
 .office-builder-ribbon #page-builder-tab-content>.smart-ribbon[data-three-row="true"]
  .smart-ribbon-group .smart-ribbon-row>.smart-property{
@@ -272,7 +272,7 @@
 }
 .office-builder-ribbon #page-builder-tab-content>.office-ribbon-page-layout-groups>.une-sql-home-group{
  height:114px!important;min-height:114px!important;max-height:114px!important;
- padding:3px 8px 20px!important;
+ padding:6px 8px 17px!important;
 }
 .office-builder-ribbon #page-builder-tab-content>.office-ribbon-page-layout-groups>.une-sql-home-group[data-shared-group="Page"]{
  width:260px!important;min-width:260px!important;max-width:260px!important;
@@ -432,4 +432,44 @@
 }
 .office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content:has(>.smart-ribbon[data-three-row="true"])::-webkit-scrollbar-thumb{
  background:#91a7c5!important;border-radius:8px!important;
+}
+
+/* Compact Layout's SQL-backed Page controls as well as the shared Design rows.
+ * Geometry only: do not change background, fill, border or disabled colours.
+ * Keep overflow scrollable on smaller viewports; at desktop width the actual
+ * content fits without a horizontal scrollbar.
+ */
+.office-builder-ribbon #page-builder-tab-content.office-ribbon-content
+ >.office-ribbon-page-layout-groups>.une-sql-home-group[data-shared-group="Page"]{
+ box-sizing:border-box!important;flex:0 0 260px!important;
+ width:260px!important;min-width:260px!important;max-width:260px!important;
+}
+.office-builder-ribbon #page-builder-tab-content.office-ribbon-content
+ >.office-ribbon-page-layout-groups>.une-sql-home-group[data-shared-group="Canvas"]{
+ box-sizing:border-box!important;flex:0 0 114px!important;
+ width:114px!important;min-width:114px!important;max-width:114px!important;
+}
+.office-builder-ribbon #page-builder-tab-content.office-ribbon-content
+ .office-ribbon-page-layout-groups .une-ribbon-page-layout{
+ box-sizing:border-box!important;gap:5px!important;min-width:0!important;
+}
+.office-builder-ribbon #page-builder-tab-content.office-ribbon-content
+ .office-ribbon-page-layout-groups .une-ribbon-page-layout>select{
+ box-sizing:border-box!important;flex:0 0 115px!important;
+ width:115px!important;min-width:115px!important;max-width:115px!important;
+}
+.office-builder-ribbon #page-builder-tab-content.office-ribbon-content
+ .office-ribbon-page-layout-groups .une-ribbon-page-layout>button{
+ box-sizing:border-box!important;flex:0 0 66px!important;
+ width:66px!important;min-width:66px!important;max-width:66px!important;
+ padding-inline:3px!important;
+}
+.office-builder-ribbon #page-builder-tab-content.office-ribbon-content
+ .office-ribbon-page-layout-groups .une-ribbon-version-only>.office-ribbon-version-controls{
+ box-sizing:border-box!important;width:214px!important;min-width:214px!important;max-width:214px!important;
+}
+.office-builder-ribbon #page-builder-tab-content.office-ribbon-content
+ .office-ribbon-page-layout-groups .une-ribbon-version-only .office-ribbon-version-controls>select{
+ box-sizing:border-box!important;flex:0 0 148px!important;
+ width:148px!important;min-width:148px!important;max-width:148px!important;
 }
