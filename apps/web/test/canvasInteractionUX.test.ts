@@ -1,4 +1,7 @@
 import assert from 'node:assert/strict';
+import React from 'react';
+import {renderToStaticMarkup} from 'react-dom/server';
+import SmartEventActionsRibbon from '../src/core/builders/PageBuilder/SmartEventActionsRibbon';
 import test from 'node:test';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -781,4 +784,29 @@ test('Shared group position changes preserve individual unrelated fields and thi
  assert.equal(result[1].position?.width,123);
  assert.equal(result[1].position?.height,b.position?.height);
  assert.deepEqual(result[2],other);
+});
+
+test('Actions group enables common Flow slots but disables event slots unsupported by a member',()=>{
+ const common=renderToStaticMarkup(React.createElement(SmartEventActionsRibbon,{
+   api:'smart_cart',selectedApis:['smart_cart','smart_button'],actions:{},flows:[],onChange:()=>{}
+ }));
+ assert.match(common,/aria-label="On Click flow"/);
+ assert.doesNotMatch(common,/aria-label="On Click flow" disabled/);
+ assert.match(common,/aria-label="On Change flow" disabled/);
+ assert.match(common,/aria-label="Qty icon flow" disabled/);
+ const unsupported=renderToStaticMarkup(React.createElement(SmartEventActionsRibbon,{
+   api:'smart_cart',selectedApis:['smart_cart',''],actions:{},flows:[],onChange:()=>{}
+ }));
+ assert.match(unsupported,/aria-label="On Click flow" disabled/);
+ assert.match(unsupported,/aria-label="On Session Start flow" disabled/);
+});
+test('Group icon picker and group locking share edits instead of updating only the primary',async()=>{
+ const view=await readFile(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+ const gallery=await readFile(new URL('../src/core/builders/PageBuilder/SmartIconGallery.tsx',import.meta.url),'utf8');
+ assert.match(view,/disabled=\{ribbonSelectedMembers\.some\(item=>item\.type!=='Custom:smart_icon'/);
+ assert.match(gallery,/disabled=\{disabled\}/);
+ assert.match(view,/const nextLocked=!members\.some\(isCanvasLocked\)/);
+ assert.match(view,/editorLocked:nextLocked/);
+ assert.match(view,/const changed=\[\.\.\.new Set\(\[\.\.\.Object\.keys\(previous\)/);
+ assert.match(view,/selectedApis=\{ribbonSelectedMembers\.length>1/);
 });
