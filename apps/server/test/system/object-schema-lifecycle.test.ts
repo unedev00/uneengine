@@ -14,7 +14,12 @@ function fixture(options:{isSystem?:boolean;deleted?:boolean;blocker?:string;
  const calls:Array<{sql:string;args:unknown[]}>= [];
  const query=async(sql:string,args:unknown[]=[])=>{
   calls.push({sql,args});
-  // Every schema read and write is tenant scoped; test doubles reject unsafe SQL.
+  // Advisory metadata locks are tenant+object keyed; ordinary reads and
+  // mutations must include an explicit tenant predicate.
+  if(sql.includes('pg_advisory_xact_lock')){
+   assert.deepEqual(args,[tenant+':'+objectName]);
+   return {rows:[],rowCount:1};
+  }
   assert.match(sql,/tenant_id=\$1/);
   assert.equal(args[0],tenant);
   if(sql.includes('SELECT count(*)')){
