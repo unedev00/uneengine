@@ -85,9 +85,9 @@ import { isComponentVisible } from '../../components/Properties/componentVisibil
 import {behaviorValidation,behaviorAction,behaviorAppearance,behaviorInteractions,behaviorTabs,behaviorTabForChild,pageBehaviors} from './pageBehaviorRuntime';
 import { canNestComponent, componentVisualStyle, directChildren, isLayoutType, isDescendantOf, layoutTypes } from '../TemplatePageRuntime/pageComponentLayout';
 import { isCanvasLocked, wrapCanvasComponent, ungroupCanvasComponent } from '../../builders/PageBuilder/canvasInteractions';
-import { filterPageComponentRecords, pageComponentRecordQuery,pageComponentRelatedQuery,pageComponentActiveRecordQuery,hasPageActiveRecordSelection, bindPageStateProperties, needsMetadataComponentRuntime, resolvePageStatePath } from './pageComponentBindings';
+import { filterPageComponentRecords, pageComponentRecordQuery, bindPageStateProperties, needsMetadataComponentRuntime, resolvePageStatePath } from './pageComponentBindings';
 import {resolveSmartToggleFieldBinding,updateSmartToggleField} from './smartToggleFieldBinding';
-import {usePageSessionRelatedQuery} from '../PageRuntime/usePageSessionRelatedQuery';
+import {usePageComponentRelatedScope} from '../PageRuntime/usePageSessionRelatedQuery';
 import {filterRelatedRecords} from './filterRelatedRecords.mjs';
 import {resolveMentionProperties} from '../../../component-libraries/shared/primitives/SmartFieldInput/smartFieldMentions';
 import { explicitMentionRecordId, useRelationshipMentionContext } from '../../records/RecordFormDialog/useRelationshipMentionContext';
@@ -365,21 +365,9 @@ function MetadataBoundPageComponent({
   const fields = objects.find((item) => item.apiName === objectApiName)?.fields ?? [];
   const recordQuery=pageComponentRecordQuery(properties.filters,fields,{pageState,recordId,sessionId},properties.filterLogic==='OR'?'OR':'AND');
   const relatedKey=String(properties.relatedFilterKey??'');
-  const usesActiveRecordScope=properties.autoRecordScope===true||
-    (properties.autoRecordScope!==false && ['smart_cart','Custom:smart_cart'].includes(component.type));
-  const manualRelatedField=String(properties.relatedFieldApiName??'');
-  const manualSelectedId=relatedKey?pageState[relatedKey]:undefined;
-  const hasActiveSelection=hasPageActiveRecordSelection(fields,pageState);
-  const directActiveQuery=pageComponentActiveRecordQuery(fields,pageState);
-  const sessionRelatedQuery=usePageSessionRelatedQuery(
-    usesActiveRecordScope&&!relatedKey&&!hasActiveSelection&&!disableActions,
-    fields,objects,sessionId,revision,loadFlowScreenRecordPage);
-  const relatedQuery=relatedKey
-    ?pageComponentRelatedQuery(properties,fields,manualSelectedId)
-    :usesActiveRecordScope?(hasActiveSelection?directActiveQuery:sessionRelatedQuery)
-      :pageComponentRelatedQuery(properties,fields,undefined);
-  const relatedField=relatedKey?manualRelatedField:relatedQuery.filter?.field??'';
-  const selectedId=relatedKey?manualSelectedId:relatedQuery.filter?.value;
+  const {relatedQuery,relatedField,parentId:selectedId}=usePageComponentRelatedScope(
+    properties,component.type,fields,objects,pageState,sessionId,revision,
+    loadFlowScreenRecordPage,relatedKey?pageState[relatedKey]:undefined,disableActions);
   const recordQueryKey=JSON.stringify([recordQuery,relatedQuery]);
   useEffect(()=>setRecordOffset(0),[objectApiName,recordQueryKey]);
   useEffect(() => {
