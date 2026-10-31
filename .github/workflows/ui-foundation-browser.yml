@@ -39,7 +39,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          npm run dev:web -- --host 127.0.0.1 > /tmp/metadrive-phase1-vite.log 2>&1 &
+          npm run dev --workspace apps/web > /tmp/metadrive-phase1-vite.log 2>&1 &
           for attempt in $(seq 1 60); do
             if curl -fsS http://127.0.0.1:5173/test/setup-ux-fixture.html >/dev/null; then exit 0; fi
             sleep 2
