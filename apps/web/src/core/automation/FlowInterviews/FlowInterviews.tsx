@@ -103,8 +103,8 @@ export default function FlowInterviews({
           ]}/>}
         {loading ? <div className="records-loading">Loading Flow interviews…</div>
           : interviews.length === 0 ? <div className="records-empty">There are no paused or waiting Flow interviews.</div>
-            : <div className="records-table-wrap md-mobile-table-replaced"><table className="records-table">
-                <thead><tr><th>Flow</th><th>Version</th><th>State</th><th>Running User</th><th>Record</th><th>Created</th><th>Resume / Expiry</th><th>Attempts</th><th>Actions</th></tr></thead>
+            : <div className="records-table-wrap md-mobile-table-replaced" role="region" aria-label="Paused and waiting Flow interviews" tabIndex={0}><table className="records-table">
+                <thead><tr><th scope="col">Flow</th><th scope="col">Version</th><th scope="col">State</th><th scope="col">Running User</th><th scope="col">Record</th><th scope="col">Created</th><th scope="col">Resume / Expiry</th><th scope="col">Attempts</th><th scope="col">Actions</th></tr></thead>
                 <tbody>{interviews.map((interview) => <tr key={interview.id}>
                   <td><button className="text-action" type="button" onClick={() => onOpenFlow(interview.flowApiName)}>{interview.flowLabel}</button></td><td>Version {interview.versionNumber}</td>
                   <td>{interviewState(interview)}</td>
@@ -145,8 +145,8 @@ export default function FlowInterviews({
           ]}/>}
         {failedLoading?<p>Loading failed work…</p>
           :failedJobs.length===0?<p>No failed Flow jobs are awaiting reconciliation.</p>
-          :<div className="records-table-wrap md-mobile-table-replaced"><table className="records-table">
-            <thead><tr><th>Job type</th><th>Resource</th><th>Error</th><th>Attempts</th><th>Updated</th><th>Recovery</th></tr></thead>
+          :<div className="records-table-wrap md-mobile-table-replaced" role="region" aria-label="Failed durable Flow jobs" tabIndex={0}><table className="records-table">
+            <thead><tr><th scope="col">Job type</th><th scope="col">Resource</th><th scope="col">Error</th><th scope="col">Attempts</th><th scope="col">Updated</th><th scope="col">Recovery</th></tr></thead>
             <tbody>{failedJobs.map(job=><tr key={job.id}>
               <td>{job.jobType}</td>
               <td>{job.resourceId??'—'}{job.versionNumber?' · v'+job.versionNumber:''}</td>
