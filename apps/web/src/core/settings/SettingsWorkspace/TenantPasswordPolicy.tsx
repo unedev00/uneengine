@@ -33,14 +33,13 @@ export default function TenantPasswordPolicy({request,canManage}:{request:Reques
  return <section className="surface permission-section">
   <h2>Password and login policy</h2>
   <p>Tenant-wide rules apply to password changes and recovery. Configure recovery delivery before enabling expiry.</p>
-  {policy?<div className="settings-read-first-section">{fields.map(field=>{
+  {policy?<div className={draft?'settings-read-first-section md-admin-password-grid':'settings-read-first-section'}>{fields.map(field=>{
    const value=(draft??policy)[field.key];
-   return draft?<label key={field.key} className="form-label">{field.label}
-    {typeof value==='boolean'?<input type="checkbox" checked={value} disabled={busy}
-     onChange={e=>setDraft({...draft,[field.key]:e.target.checked})}/>
-     :<input className="form-control" type="number" min={field.min} max={field.max} step={1}
-      value={value} disabled={busy} onChange={e=>setDraft({...draft,[field.key]:Number(e.target.value)})}/>}
-   </label>:<SettingsViewRow key={field.key} label={field.label} value={typeof value==='boolean'?(value?'Yes':'No'):value}
+   return draft?(typeof value==='boolean'?<label key={field.key} className="checkbox-row md-admin-boolean-option"><input type="checkbox" checked={value} disabled={busy}
+     onChange={e=>setDraft({...draft,[field.key]:e.target.checked})}/>{field.label}</label>
+     :<label key={field.key} className="form-label md-admin-field-short">{field.label}
+      <input className="form-control" type="number" min={field.min} max={field.max} step={1}
+       value={value} disabled={busy} onChange={e=>setDraft({...draft,[field.key]:Number(e.target.value)})}/></label>):<SettingsViewRow key={field.key} label={field.label} value={typeof value==='boolean'?(value?'Yes':'No'):value}
     canEdit={canManage} onEdit={()=>{setDraft({...policy});setMessage('');}}/>;
   })}</div>:<p>Loading policy…</p>}
   {draft&&<div className="settings-read-first-toolbar">
