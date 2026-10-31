@@ -98,6 +98,6 @@ test('No Builder chrome changes enter the published Page Runtime',()=>{
  assert.match(entry,/Published pages, flows and dashboards must continue/);
  const main=read('../src/main.tsx');
  assert.doesNotMatch(main,/adaptiveBuilder\.css|schemaBuilderUsability\.css/);
- const schema=read('../src/core/builders/SchemaBuilder/SchemaBuilder.tsx');
- assert.match(schema,/import '\.\/schemaBuilderUsability\.css'/);
+ const builderEntry=read('../src/core/builders/ObjectManager/objectManagerView.tsx');
+ assert.match(builderEntry,/schemaBuilderUsability\\.css/);
 });
