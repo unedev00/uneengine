@@ -1,0 +1,50 @@
+name: Phase 1 shared UI browser checks
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/web/**'
+      - 'scripts/setup-ux-browser-smoke.mjs'
+      - '.github/workflows/ui-foundation-browser.yml'
+      - 'package.json'
+      - 'package-lock.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phase1-ui-browser-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  admin-ui-browser:
+    name: Responsive admin UI / browser smoke
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install locked platform dependencies
+        run: npm ci
+      - name: Install test-only browser dependency
+        run: npm install --no-save --no-package-lock playwright
+      - name: Install Chromium and OS dependencies
+        run: npx playwright install --with-deps chromium
+      - name: Start isolated Vite fixture server
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run dev:web -- --host 127.0.0.1 > /tmp/metadrive-phase1-vite.log 2>&1 &
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:5173/test/setup-ux-fixture.html >/dev/null; then exit 0; fi
+            sleep 2
+          done
+          cat /tmp/metadrive-phase1-vite.log
+          exit 1
+      - name: Verify UI layouts and actions in Chromium
+        run: node scripts/setup-ux-browser-smoke.mjs
