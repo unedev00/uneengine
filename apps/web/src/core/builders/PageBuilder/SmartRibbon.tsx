@@ -10,7 +10,6 @@ import RecordFilterEditor from '../../../component-libraries/shared/primitives/R
 import SmartFormulaField from './SmartFormulaField';
 import SmartIconDropdown from './SmartIconDropdown';
 import './SmartRibbon.css';
-import './SmartRibbonCompact.css';
 import './SmartRibbonApprovedThreeRow.css';
 type Position={x:number;y:number;width:number;height:number};
 type Props={tab:UneBuilderTab;api:string;definitions:readonly UneRibbonProperty[];properties:Record<string,unknown>;
