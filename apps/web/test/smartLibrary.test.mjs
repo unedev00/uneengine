@@ -810,8 +810,8 @@ test('SQL-owned three-row Design and Shapes ribbon preserves the exact requested
   assert.ok(sql.includes("('"+key+"',"+row+","+width+","+order+")"),
    'Incorrect geometry '+key);
  }
- assert.match(sql,/section_group IN \\('Image','Icon'\\)/);
- assert.match(sql,/CHECK\\(tab IN \\('Home','Data','Design','Shapes','Layout'\\)\\)/);
+ assert.match(sql,/section_group IN \('Image','Icon'\)/);
+ assert.match(sql,/CHECK\(tab IN \('Home','Data','Design','Shapes','Layout'\)\)/);
  assert.match(sql,/IS DISTINCT FROM/);
  for(const [key,caption,width] of [['badgeAlignment','Position',48],
   ['imagePlacement','Place',35],['imageFill','Fit',35],['tabCount','Tabs',35]]){
@@ -819,20 +819,20 @@ test('SQL-owned three-row Design and Shapes ribbon preserves the exact requested
  }
  assert.match(sql,/design_display='dropdown'/);
  assert.match(server,/designDisplay:row.design_display/);
- assert.match(ribbon,/\\[1,2,3\\]\\.map\\(row/);
- assert.match(ribbon,/tab==='Design'\\|\\|tab==='Shapes'/);
+ assert.match(ribbon,/\[1,2,3\]\.map\(row/);
+ assert.match(ribbon,/tab==='Design'\|\|tab==='Shapes'/);
  assert.match(ribbon,/SmartIconDropdown kind="align"/);
  assert.match(ribbon,/SmartIconDropdown kind="shadow"/);
  assert.match(dropdown,/createPortal/);
  assert.match(dropdown,/role="menuitemradio"/);
  assert.match(view,/Shapes: 'Shapes'/);
- assert.match(view,/ribbonTab==='Shapes'\\?'Shapes':'Design'/);
+ assert.match(view,/ribbonTab==='Shapes'\?'Shapes':'Design'/);
  assert.match(css,/height:112px!important/);
  assert.match(css,/height:26px!important/);
  assert.match(css,/background:#fff!important/);
  assert.match(css,/padding:3px 3px 1px!important/);
  assert.match(css,/--smart-section-width/);
- assert.match(ribbon,/const sectionWidth=\\(group:string\\)/);
+ assert.match(ribbon,/const sectionWidth=\(group:string\)/);
  const widths={
   Badge:[[48,85],[70,28],[40,40,40]],Body:[[40,40],[40,28],[70]],
   Header:[[28,40],[40,28],[28]],'Header Supporting':[[40,40],[28,28],[]],
