@@ -24,3 +24,9 @@
 .page-builder-advanced-dialog .page-builder-advanced-canvas-buttons{display:flex;flex-wrap:wrap;gap:8px}
 .page-builder-advanced-dialog .page-builder-advanced-canvas-buttons button{min-width:90px}
 .page-builder-advanced-dialog .form-label{margin-bottom:10px}
+
+.page-builder-advanced-responsive-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(245px,1fr));gap:12px 18px}
+.page-builder-advanced-responsive-field{display:flex;align-items:center;gap:6px}
+.page-builder-advanced-responsive-field .form-control{flex:1;min-width:0}
+.page-builder-advanced-responsive-field .btn{flex-shrink:0}
+.page-builder-advanced-responsive .properties-help{margin:0 0 12px}
