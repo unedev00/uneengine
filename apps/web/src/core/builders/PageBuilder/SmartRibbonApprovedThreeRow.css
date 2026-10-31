@@ -459,9 +459,10 @@
  width:115px!important;min-width:115px!important;max-width:115px!important;
 }
 .office-builder-ribbon #page-builder-tab-content.office-ribbon-content
- .office-ribbon-page-layout-groups .une-ribbon-page-layout>button{
- box-sizing:border-box!important;flex:0 0 66px!important;
- width:66px!important;min-width:66px!important;max-width:66px!important;
+ .office-ribbon-page-layout-groups .une-ribbon-restore-only>button{
+ box-sizing:border-box!important;flex:0 0 80px!important;
+ width:80px!important;min-width:80px!important;max-width:80px!important;
+ height:26px!important;min-height:26px!important;max-height:26px!important;
  padding-inline:3px!important;
 }
 .office-builder-ribbon #page-builder-tab-content.office-ribbon-content
