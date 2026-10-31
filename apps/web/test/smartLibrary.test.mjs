@@ -64,7 +64,7 @@ test('Insert Ribbon exposes visible Smart components without requiring a selecte
  assert.match(insert,/aria-label="Search Insert components"/);
  assert.doesNotMatch(insert,/Open full library/);
  assert.match(insert,/No Smart components are installed for this tenant/);
- assert.match(css,/grid-template-rows:repeat\(3,27px\)/);
+ assert.match(css,/grid-template-rows:repeat\\(2,56px\\)/);
  assert.match(css,/office-builder-ribbon #page-builder-tab-content:has\(>\.smart-insert-ribbon\)/);
 });
 
@@ -810,67 +810,38 @@ test('Current three-row renderer keeps disabled metadata slots and numerical SVG
  assert.doesNotMatch(ribbon,/tab==='Colors'/);
 });
 
-test('SQL-owned three-row Design and Shapes ribbon retains the original layout plus the spacing upgrade',()=>{
- const sql=read('../../server/src/system-support/migrations/20270205-three-row-design-shapes.sql');
+test('SQL-backed eight-tab ribbon retains existing controls and correct geometry',()=>{
+ const sql=read('../../server/src/system-support/migrations/20270211-eight-tab-ribbon-geometry.sql');
  const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
  const css=read('../src/core/builders/PageBuilder/SmartRibbonApprovedThreeRow.css');
  const view=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
- const dropdown=read('../src/core/builders/PageBuilder/SmartIconDropdown.tsx');
- const server=read('../../server/src/system-support/server.ts');
- const expected=[["badgeAlignment",1,85,1],["badgeTextSize",2,70,1],["badgeBold",2,28,2],["badgeTextColor",3,40,1],["badgeBodyColor",3,40,2],["badgeVisible",3,40,3],["backgroundColor",1,40,1],["borderColor",1,40,2],["labelColor",2,40,1],["shadow",2,28,2],["radius",3,70,1],["wrapText",1,28,1],["headerBorderColor",1,40,2],["headerTextColor",2,40,1],["headerAlignment",3,28,1],["headerBold",2,28,2],["supportingBorderColor",1,40,1],["supportingTextColor",1,40,2],["supportingBold",2,28,1],["supportingAlignment",2,28,2],["iconFillColor",1,40,1],["imagePlacement",1,70,1],["imageFill",2,70,1],["imageBorderColor",3,40,1],["rowBorderColor",1,40,1],["rowLabelColor",1,40,2],["rowRadius",2,70,1],["rowHeight",3,70,1],["summaryBackgroundColor",1,40,1],["summaryBorderColor",1,40,2],["summaryRadius",1,70,3],["summaryTextColor",2,40,1],["summaryHeight",2,70,2],["summaryWidth",2,70,3],["summaryShadow",3,84,1],["summaryTextSize",3,70,2],["summaryTextWeight",3,28,3],["summary2TextSize",1,70,1],["summary2TextWeight",2,28,1],["summary2TextColor",3,40,1],["tableBackgroundColor",1,40,1],["tableBorderColor",1,40,2],["tableRadius",2,70,1],["tableShadow",3,84,1],["tabCount",1,58,1],["selectedTabColor",2,40,1],["tabColor",2,40,2],["labelAlignment",1,28,1],["defaultValueColor",2,40,1],["textSize",2,70,2]];
- for(const [key,row,width,order] of expected){
-  assert.ok(sql.includes("('"+key+"',"+row+","+width+","+order+")"),
-   'Incorrect geometry '+key);
- }
- assert.match(sql,/section_group IN \('Image','Icon'\)/);
- assert.match(sql,/CHECK\(tab IN \('Home','Data','Design','Shapes','Layout'\)\)/);
- assert.match(sql,/IS DISTINCT FROM/);
- for(const [key,caption,width] of [['badgeAlignment','Position',48],
-  ['imagePlacement','Place',35],['imageFill','Fit',35],['tabCount','Tabs',35]]){
-  assert.ok(sql.includes("('"+key+"','"+caption+"',"+width+")"));
- }
- assert.match(sql,/design_display='dropdown'/);
- assert.match(server,/designDisplay:row.design_display/);
- assert.match(ribbon,/\[1,2,3\]\.map\(row/);
- assert.match(ribbon,/const compactDesign=true/);
+ const insert=read('../src/core/builders/PageBuilder/SmartInsertRibbon.tsx');
+ const arrange=read('../src/core/builders/PageBuilder/ArrangeRibbon.tsx');
+ const visual=read('../src/core/builders/PageBuilder/PageBuilderEightTabRibbon.css');
+ assert.match(view,/'Component Layout','Arrange','Component Action','Logic','Preview'/);
+ assert.match(view,/Preview: 'View'/);
+ assert.doesNotMatch(view,/Shapes: 'Shapes'/);
+ assert.doesNotMatch(view,/Grok: 'Grok'/);
+ assert.match(view,/ribbonTab === 'Logic'/);
+ assert.match(view,/RibbonVisibilityRules/);
+ assert.match(view,/<ArrangeRibbon/);
+ assert.match(arrange,/onAlign/);
+ assert.match(arrange,/onNesting/);
+ assert.match(insert,/onClick=\\{\\(\\)=>onInsert\\(item.type\\)\\}/);
+ assert.match(ribbon,/RibbonColorPalette variant="property"/);
+ assert.match(ribbon,/RibbonTextSizeIcon/);
+ assert.match(ribbon,/RibbonCornerRadiusIcon/);
  assert.match(ribbon,/SmartIconDropdown kind="align"/);
  assert.match(ribbon,/SmartIconDropdown kind="shadow"/);
- assert.match(dropdown,/createPortal/);
- assert.match(dropdown,/role="menuitemradio"/);
- assert.match(view,/Shapes: 'Shapes'/);
- assert.match(view,/ribbonTab==='Shapes'\?'Shapes':'Design'/);
- assert.match(css,/height:118px!important/);
- assert.match(css,/height:114px!important/);
- assert.match(css,/height:26px!important/);
- assert.match(css,/background:#fff!important/);
- assert.match(css,/padding:3px 14px 1px!important/);
- assert.match(css,/gap:4px!important;padding:0!important;margin:0!important/);
- assert.match(css,/gap:4px!important/);
- assert.match(css,/width:35px!important/);
- assert.match(css,/linear-gradient\(90deg,#ec2c88 0%,#a51d56 48%,#ffe153 52%,#ff8c2d 100%\)/);
- assert.match(ribbon,/return Math\.max\(35,p\.designWidth\?\?0\)/);
- const spacingSql=read('../../server/src/system-support/migrations/20270206-three-row-ribbon-spacing.sql');
- assert.match(spacingSql,/SET design_width = 35/);
- assert.match(spacingSql,/design_display = 'dropdown'/);
- assert.match(spacingSql,/design_width = 28/);
- for(const key of ['shadow','labelAlignment','headerAlignment','supportingAlignment'])
-   assert.ok(spacingSql.includes("'"+key+"'"),'Missing 35px dropdown '+key);
- assert.match(css,/--smart-section-width/);
- assert.match(ribbon,/const sectionWidth=\(group:string\)/);
- const widths={
-  Badge:[[48,85],[70,28],[40,40,40]],Body:[[40,40],[40,35],[70]],
-  Header:[[28,40],[40,28],[35]],'Header Supporting':[[40,40],[28,35],[]],
-  Row:[[40,40],[70],[70]],Summary:[[40,40,70],[40,70,70],[84,70,28]],
-  'Summary 2':[[70],[28],[40]],Table:[[40,40],[70],[84]],
-  Tabs:[[35,58],[40,40],[]],Typography:[[35],[40,70],[]]
- };
- const shapes={Icon:[[40],[],[]],Image:[[35,70],[35,70],[40]]};
- const sum=sections=>Object.entries(sections).reduce((total,[group,rows])=>{
-  const widest=Math.max(...rows.map(row=>row.reduce((a,b)=>a+b,0)+Math.max(0,row.length-1)*2));
-  return total+Math.max(widest+17,group.length*6+24);
- },0);
- assert.equal(sum(widths),1195);
- assert.equal(sum(shapes),181);
+ assert.match(ribbon,/smart-default-check-switch/);
+ assert.match(ribbon,/property.id===firstFilterPropertyId/);
+ assert.match(ribbon,/smart-formula-prefix/);
+ assert.match(css,/padding:3px 12px 1px!important/);
+ assert.match(visual,/overflow-x:hidden!important/);
+ for(const id of ['badgeAlignment','summaryTextSize','summary2TextSize',
+  'cardsPerRow','cardsPerColumn','column2Source','columnVisibility','iconFillColor'])
+   assert.ok(sql.includes("'"+id+"'"),'Missing SQL placement '+id);
+ assert.doesNotMatch(sql,/DELETE FROM md_page_|UPDATE md_page_|DELETE FROM md_builder_ribbon_component_rules/i);
 });
 
 test('Cart Data group reuses SQL property registry; only Smart Cart has the five new enabled controls',()=>{
