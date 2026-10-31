@@ -9,6 +9,8 @@ RETURNS boolean LANGUAGE sql STABLE AS $$
  SELECT
  -- Object/record denies and restrictions also narrow ownership and broad grants.
  (NOT rec.is_deleted OR act='delete')
+ AND EXISTS(SELECT 1 FROM md_object_definitions obj
+   WHERE obj.tenant_id=t AND obj.api_name=rec.object_api AND obj.deleted_at IS NULL)
  AND NOT (SELECT deny_granted FROM md_rbac_decision(t,u,'Record:'||rec.id::text,act))
  AND md_rbac_allowed(t,u,rec.object_api,act)
  AND (rec.record_type_id IS NULL OR md_rbac_allowed(t,u,'RecordType:'||rec.object_api||'.'||rec.record_type_id,'read'))
