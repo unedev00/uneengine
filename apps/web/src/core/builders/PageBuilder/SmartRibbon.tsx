@@ -107,8 +107,10 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    const width=p.designWidth??(p.kind==='shadow'||p.kind==='align'?84:
      p.kind==='color'?40:p.kind==='number'||p.kind==='position'?64:
      p.kind==='boolean'?28:99);
-   // Data formulas and source pickers need their full SQL-defined widths.
+   // Data retains its previous 64px numeric controls and full SQL formula widths.
    // Only the Design/Layout icon and spinner tracks get more compact.
+   if(tab!=='Design'&&tab!=='Layout'&&p.designWidth&&
+     (p.kind==='number'||p.kind==='position'))return 64;
    if(tab==='Design'||tab==='Layout'){
      if(p.kind==='number'||p.kind==='position')return Math.max(54,Math.min(width,58));
      if(p.kind==='choice'&&width>=80&&width<=110)return width-8;
