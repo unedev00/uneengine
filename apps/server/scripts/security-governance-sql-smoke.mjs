@@ -145,6 +145,36 @@ export async function verifySecurityGovernanceSql(db){
   const secretClient=await connected.save(tenant,admin,{label:'Confidential test',enabled:true,client_type:'confidential',require_mfa:false,redirects:[request.redirect_uri],scopes:['records:read'],users:[admin]});
   assert.equal(secretClient.clientSecret.length,43);assert.equal((await connected.describe(tenant,admin)).clients.some(c=>'secret_hash' in c),false);
   assert.notEqual((await db.query('SELECT secret_hash FROM md_oauth_clients WHERE id=$1',[secretClient.id])).rows[0].secret_hash,secretClient.clientSecret);
+  // Granular OAuth scopes are platform-owned SQL metadata, scoped per client.
+  const catalogue=await connected.describe(tenant,admin);
+  assert.ok(catalogue.scopeGroups.length>=10);
+  assert.ok(catalogue.scopeGroups.flatMap(group=>group.scopes).length>=80);
+  assert.ok(catalogue.scopeGroups.some(group=>group.label.includes('Builders')));
+  const sqlDiagnostic=catalogue.scopeGroups.flatMap(group=>group.scopes)
+   .find(item=>item.scope==='sql:diagnostics');
+  assert.equal(sqlDiagnostic?.assignable,false,'unsupported diagnostics cannot be granted');
+  const scopeConfig={label:'Builder read-only client',enabled:true,client_type:'public',
+   require_mfa:true,redirects:['https://client.example.test/builder-callback'],
+   scopes:['pages:read','flows:read'],users:[admin]};
+  const builderClient=await connected.save(tenant,admin,scopeConfig);
+  await assert.rejects(()=>connected.save(tenant,admin,{...scopeConfig,
+   id:builderClient.id,scopes:['sql:diagnostics']}),/Invalid or unavailable OAuth scope/);
+  const requested={client_id:builderClient.id,redirect_uri:scopeConfig.redirects[0],
+   response_type:'code',code_challenge:createHash('sha256').update(verifier).digest('base64url'),
+   code_challenge_method:'S256',state:'builder-state-'.repeat(4),scope:'pages:read flows:read'};
+  const allowedSession=await auth.issueMfaSession(tenant,admin);
+  const grantBuilder=await connected.grant(tenant,admin,allowedSession.accessToken,requested,true);
+  const builderToken=await connected.exchange({grant_type:'authorization_code',
+   client_id:builderClient.id,code:new URL(grantBuilder.redirect).searchParams.get('code'),
+   redirect_uri:scopeConfig.redirects[0],code_verifier:verifier});
+  await auth.authenticate(builderToken.access_token,{path:'/api/metadata/pages',method:'GET'});
+  await auth.authenticate(builderToken.access_token,{path:'/api/metadata/flows',method:'GET'});
+  await assert.rejects(()=>auth.authenticate(builderToken.access_token,
+   {path:'/api/metadata/pages',method:'POST'}),/Invalid session/);
+  await assert.rejects(()=>auth.authenticate(builderToken.access_token,
+   {path:'/api/records/User',method:'GET'}),/Invalid session/);
+  await assert.rejects(()=>auth.authenticate(builderToken.access_token,
+   {path:'/api/security/connected-apps',method:'GET'}),/Invalid session/);
   await verifyMcpSql(db,{tenant,admin,auth,connected,verifier});
   await verifyHttpBoundary(db,{tenant,admin,auth,connected,request,exchange,verifier});
   console.log('Governance SQL: full schema, migrations/replay, licensing/seats/denies, audit redaction/rollback, monitoring and OAuth PKCE/consent/scope/refresh replay passed');

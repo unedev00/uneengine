@@ -1,13 +1,32 @@
 import {useEffect,useState} from 'react';
+import './TenantConnectedApps.css';
 type Request=<T>(path:string,init?:RequestInit)=>Promise<T>;
 type Client={id?:string;label:string;enabled:boolean;client_type:'public'|'confidential';require_mfa:boolean;redirects:string[];scopes:string[];users:string[]};
-type Data={clients:Client[];users:{id:string;email:string}[];scopes:string[]};
+type Scope={scope:string;label:string;description:string;risk:string;assignable:boolean};
+type ScopeGroup={key:string;label:string;scopes:Scope[]};
+type Data={clients:Client[];users:{id:string;email:string}[];scopes:string[];scopeGroups?:ScopeGroup[]};
 const fresh=():Client=>({label:'',enabled:false,client_type:'public',require_mfa:true,redirects:[],scopes:['records:read'],users:[]});
 export default function TenantConnectedApps({request}:{request:Request}){
- const [data,setData]=useState<Data|null>(null),[draft,setDraft]=useState<Client>(fresh),[message,setMessage]=useState(''),[secret,setSecret]=useState(''),[busy,setBusy]=useState(false);
+ const [data,setData]=useState<Data|null>(null),[draft,setDraft]=useState<Client>(fresh),[message,setMessage]=useState(''),[secret,setSecret]=useState(''),[busy,setBusy]=useState(false),[scopeSearch,setScopeSearch]=useState('');
  const load=()=>request<Data>('/security/connected-apps').then(setData);
  useEffect(()=>{void load().catch(e=>setMessage(String(e)));},[]);
- const toggle=(key:'scopes'|'users',v:string)=>setDraft({...draft,[key]:draft[key].includes(v)?draft[key].filter(x=>x!==v):[...draft[key],v]});
+ const toggle=(key:'scopes'|'users',v:string)=>setDraft(prev=>({...prev,
+  [key]:prev[key].includes(v)?prev[key].filter(x=>x!==v):[...prev[key],v]}));
+ const groups:ScopeGroup[]=data?.scopeGroups??[{key:'legacy',label:'Connection permissions',
+  scopes:(data?.scopes??[]).map(scope=>({scope,label:scope,description:'Legacy OAuth scope',risk:'standard',assignable:true}))}];
+ const setGroup=(group:ScopeGroup,enable:boolean)=>{
+  const allowed=(groups.find(item=>item.key===group.key)??group).scopes
+   .filter(s=>s.assignable).map(s=>s.scope);
+  setDraft(prev=>({...prev,scopes:enable
+   ?[...new Set([...prev.scopes,...allowed])]
+   :prev.scopes.filter(s=>!allowed.includes(s))}));
+ };
+ const search=scopeSearch.trim().toLocaleLowerCase();
+ const visibleGroups=groups.map(group=>({...group,
+  scopes:group.scopes.filter(s=>!search||[s.scope,s.label,s.description,group.label]
+   .some(v=>v.toLocaleLowerCase().includes(search)))
+ })).filter(group=>group.scopes.length>0);
+ const selectedTotal=draft.scopes.length;
  return <section className="surface permission-section connected-apps-section">
   <h2>Connected Apps</h2>
   <p className="connected-apps-help">OAuth authorization code with PKCE (S256), explicit user consent and rotating refresh tokens. Editing an app revokes existing consents. Secret values are shown once.</p>
@@ -42,12 +61,42 @@ export default function TenantConnectedApps({request}:{request:Request}){
     <label className="checkbox-row"><input type="checkbox" checked={draft.enabled} onChange={e=>setDraft({...draft,enabled:e.target.checked})}/>Enabled</label>
     <label className="checkbox-row"><input type="checkbox" checked={draft.require_mfa} onChange={e=>setDraft({...draft,require_mfa:e.target.checked})}/>Require MFA at consent</label>
   </div>
-  <div className="connected-apps-group" role="group" aria-labelledby="connected-apps-scopes-label">
-    <div id="connected-apps-scopes-label" className="connected-apps-group-title">Allowed scopes</div>
-    <div className="connected-apps-checklist">
-      {data.scopes.map(s=><label className="checkbox-row" key={s}><input type="checkbox" checked={draft.scopes.includes(s)} onChange={()=>toggle('scopes',s)}/>{s}</label>)}
-    </div>
-  </div>
+  <section className="oauth-scope-selector" aria-label="Allowed OAuth scopes">
+   <div className="oauth-scope-heading">
+    <div><h3>Allowed OAuth scopes</h3><p>Choose the smallest permissions this application needs. OneEngine RBAC is enforced separately.</p></div>
+    <span className="oauth-scope-count">{selectedTotal} selected</span>
+   </div>
+   <label className="form-label">Find a permission
+    <input className="form-control" type="search" placeholder="Search groups, capabilities or scope names"
+     value={scopeSearch} onChange={event=>setScopeSearch(event.target.value)}/>
+   </label>
+   <div className="oauth-scope-groups">
+    {visibleGroups.map(group=>{
+     const enabled=(groups.find(item=>item.key===group.key)??group).scopes.filter(s=>s.assignable);
+     const totalSelected=enabled.filter(s=>draft.scopes.includes(s.scope)).length;
+     return <details key={group.key} className="oauth-scope-group" open={scopeSearch?true:undefined}>
+      <summary><strong>{group.label}</strong><span>{totalSelected}/{enabled.length} selected</span></summary>
+      <div className="oauth-scope-group-body">
+       <div className="oauth-scope-group-actions">
+        <button type="button" className="btn" disabled={enabled.length===0||totalSelected===enabled.length}
+         onClick={()=>setGroup(group,true)}>Select entire group</button>
+        <button type="button" className="btn" disabled={totalSelected===0}
+         onClick={()=>setGroup(group,false)}>Clear group</button>
+       </div>
+       {group.scopes.map(item=><label className={'oauth-scope-option'+(!item.assignable?' oauth-scope-reserved':'')} key={item.scope}>
+        <input type="checkbox" checked={draft.scopes.includes(item.scope)} disabled={!item.assignable}
+         onChange={()=>toggle('scopes',item.scope)}/>
+        <span><strong>{item.label}</strong><code>{item.scope}</code>
+         <small>{item.description}</small></span>
+        <em>{!item.assignable?'Reserved':item.risk==='critical'?'Sensitive':item.risk==='elevated'?'Elevated':''}</em>
+       </label>)}
+      </div>
+     </details>;
+    })}
+   </div>
+   {visibleGroups.length===0&&<p role="status">No matching permissions.</p>}
+   <p className="oauth-scope-help">Reserved entries are visible for future applications but cannot be granted until supported by an authorised API or MCP operation. Saving changes revokes existing consent; connected users must reauthorise.</p>
+  </section>
   <div className="connected-apps-group" role="group" aria-labelledby="connected-apps-users-label">
     <div id="connected-apps-users-label" className="connected-apps-group-title">Allowed users</div>
     <div className="connected-apps-checklist">
