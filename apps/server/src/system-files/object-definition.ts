@@ -406,8 +406,8 @@ export class ObjectDefinitionService {
         if(targetObject!==objectApi){
           const relationship=await client.query(`SELECT 1 FROM md_field_definitions
             WHERE tenant_id=$1 AND object_api=$2 AND related_object=$3 AND data_type='reference'
-              AND deleted_at IS NULL LIMIT 1`,[tenantId,objectApi,targetObject]);
-          if(!relationship.rowCount){
+              AND deleted_at IS NULL`,[tenantId,objectApi,targetObject]);
+          if(relationship.rowCount!==1){
             const aliases=await client.query<{related_object:string}>(`
               SELECT related_object FROM md_field_definitions
               WHERE tenant_id=$1 AND object_api=$2 AND data_type='reference'
