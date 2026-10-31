@@ -28,6 +28,12 @@ try{
   tenants.push(result.rows[0].id);
  }
  const [primary,secondary]=tenants;
+ // A user with full permissions must still lose record access while the object
+ // is in the object recycle bin, and regain access after object restoration.
+ const actor=(await db.query("INSERT INTO md_users(tenant_id,email,password_hash) VALUES($1,'object-lifecycle@example.invalid','fixture') RETURNING id",[primary])).rows[0].id;
+ const set=(await db.query("INSERT INTO md_permission_sets(tenant_id,api_name) VALUES($1,'ObjectLifecycle') RETURNING id",[primary])).rows[0].id;
+ await db.query("INSERT INTO md_permission_assignments(tenant_id,user_id,permission_set_id) VALUES($1,$2,$3)",[primary,actor,set]);
+ await db.query("INSERT INTO md_permission_rules(tenant_id,permission_set_id,resource,action,effect) VALUES($1,$2,'*','*','allow')",[primary,set]);
  const fields=[{apiName:'Name',label:'Name',dataType:'Text(80)',required:true}];
  for(const name of ['Milestone__c','Invoice__c']){
   const object=await defs.create(primary,name,name.replace('__c',''),fields);
@@ -58,6 +64,9 @@ try{
  // Recoverable deletion preserves all definitions and reserves the API name.
  const deleted=await lifecycle.delete(primary,'Milestone__c',0);
  assert.equal(deleted.deleted,true);
+ const invisible=await db.query("SELECT md_record_access($1,$2,$3,'read') AS visible",
+  [primary,actor,record.rows[0].id]);
+ assert.equal(invisible.rows[0].visible,false,'Deleted object must hide every preserved record');
  await assert.rejects(()=>defs.get(primary,'Milestone__c'),/Object not found/);
  assert.equal((await lifecycle.listDeleted(primary)).length,1);
  await assert.rejects(()=>defs.create(primary,'Milestone__c','Duplicate',fields),/API Name already exists|already exists/);
@@ -70,6 +79,9 @@ try{
  assert.equal(preserved.rows[0]?.id,record.rows[0].id,
   'Restore must recover the original record identity');
  assert.equal(preserved.rows[0]?.is_deleted,false);
+ const restoredVisibility=await db.query("SELECT md_record_access($1,$2,$3,'read') AS visible",
+  [primary,actor,record.rows[0].id]);
+ assert.equal(restoredVisibility.rows[0].visible,true,'Restore must recover record visibility');
  assert.equal((await lifecycle.listDeleted(primary)).length,0);
  // A separate tenant can independently delete/recover the same API name.
  const first=await lifecycle.delete(primary,'Invoice__c',1);
