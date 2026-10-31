@@ -21,3 +21,48 @@
   .une-ui .md-product-card {transition:none}
   .une-ui .md-product-card--hover-lift:hover {transform:none}
 }
+
+/* The selected free-canvas card frame has a fixed authored height. Build a
+ * shrinkable height chain through the generic record binder and registry.
+ * Do not apply it to auto-height template grids or unrelated components. */
+.md-card-grid-bound{
+  display:flex;flex-direction:column;
+  height:100%;min-height:0;min-width:0;max-width:100%;overflow:hidden;
+}
+.md-card-grid-bound > div:not(.records-pagination){
+  display:flex;flex:1 1 auto;flex-direction:column;
+  min-height:0;min-width:0;overflow:hidden;
+}
+.md-card-grid-bound .registered-component.metadrive-component-ui_item_grid{
+  display:flex;flex:1 1 auto;flex-direction:column;
+  min-height:0;min-width:0;overflow:hidden;
+}
+.md-card-grid-bound .metadrive-component-ui_item_grid > .une-ui{
+  flex:1 1 auto;min-height:0;min-width:0;overflow:hidden;
+}
+.md-card-grid-root,.md-card-grid-viewport{
+  display:flex;flex:1 1 auto;flex-direction:column;
+  height:100%;min-height:0;min-width:0;overflow:hidden;
+}
+.md-card-grid-bound > .records-pagination{flex:0 0 auto;min-height:0}
+.md-product-grid--scroll{
+  flex:1 1 auto;min-height:0;min-width:0;max-height:100%;
+  overflow-x:hidden;overflow-y:scroll;align-content:start;
+  scrollbar-width:auto;scrollbar-gutter:stable;
+  scrollbar-color:var(--md-card-scroll-thumb,#8499b5) var(--md-card-scroll-track,#e7edf5);
+  overscroll-behavior-y:contain;
+  touch-action:pan-y;
+}
+.md-product-grid--scroll::-webkit-scrollbar{width:10px}
+.md-product-grid--scroll::-webkit-scrollbar-track{background:var(--md-card-scroll-track,#e7edf5);border-radius:6px}
+.md-product-grid--scroll::-webkit-scrollbar-thumb{
+  background:var(--md-card-scroll-thumb,#8499b5);border:2px solid var(--md-card-scroll-track,#e7edf5);border-radius:6px;
+}
+.md-product-grid--scroll:focus-visible{
+  outline:2px solid var(--une-accent,#007aff);outline-offset:-2px;
+}
+/* Page Builder leaves resize handles outside the content box. Only grid rows
+ * scroll; don't clip selection handles or trigger canvas horizontal scrolling. */
+.builder-editor-mode .modern-canvas-builder .md-product-grid--scroll{
+  touch-action:pan-y!important;
+}
