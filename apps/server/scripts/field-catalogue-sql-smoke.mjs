@@ -5,10 +5,12 @@ const url=process.env.METADRIVE_SQL_TEST_DATABASE_URL;
 if(!url||!url.includes('/metadrive_2b'))throw new Error('2B smoke requires disposable metadrive_2b database');
 const built=new URL('../dist-system/system-files/',import.meta.url);
 const support=new URL('../dist-system/system-support/',import.meta.url);
-const [{SqlPersistence},{applySystemMigrations},{ObjectDefinitionService}]=await Promise.all([
+const [{SqlPersistence},{applySystemMigrations},{ObjectDefinitionService},{RecordEngine},{RbacEngine}]=await Promise.all([
  import(new URL('sql-persistence.js',built).href),
  import(new URL('system-migrations.js',support).href),
- import(new URL('object-definition.js',built).href)
+ import(new URL('object-definition.js',built).href),
+ import(new URL('record-engine.js',built).href),
+ import(new URL('rbac-engine.js',built).href)
 ]);
 const db=new SqlPersistence(url);
 try{
@@ -115,5 +117,59 @@ try{
   const missing=await db.query('SELECT 1 FROM md_object_definitions WHERE tenant_id=$1 AND api_name=$2',[primary,apiName]);
   assert.equal(missing.rowCount,0,'Invalid field must not partially create an object');
  }
- console.info('2B SQL: defaults, tenant isolation, external IDs, unique storage and rollback passed');
+ // Run actual shared API read/write/filter paths for typed fields (not just
+ // metadata). The actor is a tenant user with explicit test permissions.
+ const actor=(await db.query(
+  "INSERT INTO md_users(tenant_id,email,password_hash) VALUES($1,'field-actor@example.invalid','test') RETURNING id",
+  [primary])).rows[0].id;
+ const permissionSet=(await db.query(
+  "INSERT INTO md_permission_sets(tenant_id,api_name) VALUES($1,'FieldCatalogueQA') RETURNING id",
+  [primary])).rows[0].id;
+ await db.query("INSERT INTO md_permission_assignments(tenant_id,user_id,permission_set_id) VALUES($1,$2,$3)",
+  [primary,actor,permissionSet]);
+ await db.query("INSERT INTO md_permission_rules(tenant_id,permission_set_id,resource,action,effect) VALUES($1,$2,'*','*','allow')",
+  [primary,permissionSet]);
+ const engine=new RecordEngine(db,new RbacEngine(db));
+ const createdId=await engine.create(primary,actor,'Phase2B__c',{
+  Name:'Typed API Record',ExtKey:'api-typed-1',UniqueCode:'API-001',
+  Quantity:5.125,Ratio:25.125,Contact:'tester@example.com',Site:'https://example.org',
+  Effective:'2024-02-29',Timestamp:'2026-10-30T14:30:00Z',Clock:'13:45',
+  Choice:'B',Choices:'A;B'
+ });
+ const typed=await engine.get(primary,actor,'Phase2B__c',createdId);
+ assert.equal(typed.Name,'Typed API Record');
+ assert.equal(typed.Quantity,5.125);
+ assert.equal(typed.Ratio,25.125);
+ assert.equal(typed.Choice,'B');
+ assert.equal(typed.Contact,'tester@example.com');
+ const filtered=await engine.list(primary,actor,'Phase2B__c',50,0,
+  {filterField:'Quantity',filterValue:'5.125'});
+ assert.ok(filtered.records.some(record=>record.Id===createdId),
+  'Numeric precision/filter must match the stored record across the entire authorized set');
+ const byChoice=await engine.list(primary,actor,'Phase2B__c',50,0,
+  {filterField:'Choices',filterOperator:'Includes',filterValue:'A'});
+ assert.ok(byChoice.records.some(record=>record.Id===createdId),
+  'Multi-select option filter must match the stored API values');
+ await assert.rejects(()=>engine.update(primary,actor,'Phase2B__c',createdId,
+  {Contact:'invalid-email'}),/Invalid email/);
+ assert.equal((await engine.get(primary,actor,'Phase2B__c',createdId)).Contact,
+  'tester@example.com','Rejected updates must not damage valid stored values');
+ await db.query("INSERT INTO md_permission_rules(tenant_id,permission_set_id,resource,action,effect) VALUES($1,$2,'Phase2B__c.Site','edit','deny')",
+  [primary,permissionSet]);
+ await assert.rejects(()=>engine.update(primary,actor,'Phase2B__c',createdId,
+  {Site:'https://new-site.example'}),/Permission denied|Field is not editable/);
+ const afterDenied=await engine.get(primary,actor,'Phase2B__c',createdId);
+ assert.equal(afterDenied.Site,'https://example.org');
+ // Concurrent creation with a default (including decimal defaults) must not
+ // share auto-number state or produce unstable field values.
+ const concurrent=await Promise.all(Array.from({length:4},(_,i)=>engine.create(primary,actor,'Phase2B__c',
+  {Name:'Concurrent '+i,UniqueCode:'CONC-'+i,ExtKey:'conc-'+i})));
+ assert.equal(new Set(concurrent).size,4);
+ for(const id of concurrent){
+  const row=await engine.get(primary,actor,'Phase2B__c',id);
+  assert.equal(row.Quantity,4.125);
+  assert.equal(row.Ratio,12.125);
+  assert.equal(row.IsActive,true);
+ }
+ console.info('2B SQL: full catalogue, record API write/read/filter/FLS, defaults, concurrency and rollback passed');
 }finally{await db.close();}
