@@ -2831,42 +2831,52 @@ function PageBuilder({
         <div id="page-builder-tab-content" ref={ribbonStripRef}
           className="office-ribbon-content" role="tabpanel" aria-hidden={previewMode} aria-label={ribbonTab}
           aria-labelledby={`page-builder-tab-${Math.max(0,ribbonTabsVisible.indexOf(ribbonTab))}`}>
-          {ribbonTab==='Preview' && <div className="office-ribbon-group canvas-preview-selector-group" aria-label="Preview component selector">
-            <div className="office-ribbon-stack">
-              <label htmlFor="page-preview-component-select">Find component
-                <select id="page-preview-component-select" aria-label="Select page component in preview"
-                  value={selectedId} onChange={event=>{
-                    const id=event.target.value;
-                    setSelectedId(id);
-                    setSelectionIds(id?[id]:[]);
-                    setSelectedRegion(null);
-                    window.requestAnimationFrame(()=>{
-                      const nodes=pagePreviewAreaRef.current?.querySelectorAll<HTMLElement>('[data-component-id]');
-                      const node=Array.from(nodes??[]).find(item=>item.dataset.componentId===id);
-                      node?.scrollIntoView({block:'nearest',inline:'nearest',behavior:'smooth'});
-                    });
-                  }}>
-                  <option value="">Select component…</option>
-                  {page.components.map((item,index)=><option key={item.id} value={item.id}>
-                    {index+1}. {item.label} ({item.type}){item.visible?'':' — Hidden'}
-                    {rawLayoutParentId(item)?' — Nested':''}
-                  </option>)}
-                </select>
+          {ribbonTab==='Preview' && <div className="office-ribbon-group canvas-preview-selector-group" aria-label="Find">
+            <div className="office-ribbon-stack ribbon-view-find">
+              <label className="ribbon-view-search"><Search size={14} aria-hidden="true"/>
+                <input type="search" aria-label="Find a component" placeholder="Find a component"
+                  value={viewFind} onFocus={()=>setViewFindOpen(true)}
+                  onChange={event=>{setViewFind(event.target.value);setViewFindOpen(true);}}/>
               </label>
-            </div><span>Components</span>
+              {viewFindOpen && viewFind.trim() && <div className="ribbon-view-find-results" role="listbox" aria-label="Matching components">
+                {page.components.filter(item=>(item.label+' '+item.type).toLowerCase().includes(viewFind.trim().toLowerCase()))
+                  .slice(0,50).map(item=><button key={item.id} type="button" role="option"
+                    aria-selected={selectedId===item.id} onMouseDown={event=>event.preventDefault()}
+                    onClick={()=>{
+                      setSelectedId(item.id);setSelectionIds([item.id]);setSelectedRegion(null);
+                      setViewFind(item.label);setViewFindOpen(false);
+                      window.requestAnimationFrame(()=>{
+                        const nodes=pagePreviewAreaRef.current?.querySelectorAll<HTMLElement>('[data-component-id]');
+                        Array.from(nodes??[]).find(node=>node.dataset.componentId===item.id)
+                          ?.scrollIntoView({block:'nearest',inline:'nearest',behavior:'smooth'});
+                      });
+                    }}>{item.label} <small>{item.type}{item.visible?'':' · Hidden'}
+                    {rawLayoutParentId(item)?' · Nested':''}</small></button>)}
+              </div>}
+            </div><span>Find</span>
           </div>}
-          {ribbonTab==='Preview' && <div className="office-ribbon-group canvas-preview-tools" aria-label="Canvas display">
+          {ribbonTab==='Preview' && <div className="office-ribbon-group canvas-preview-tools ribbon-view-zoom" aria-label="Zoom">
             <div className="office-ribbon-stack">
-              
-              <button type="button" onClick={()=>{setFitCanvas(true);setFitFullPage(true);}}
-                aria-pressed={fitCanvas&&fitFullPage}>Fit to Screen</button>
-              <button type="button" onClick={()=>{setFitCanvas(true);setFitFullPage(false);}}
-                aria-pressed={fitCanvas&&!fitFullPage}>Fit Width</button>
-              <button type="button" onClick={()=>{setFitCanvas(false);setCanvasZoom(100)}}
-                aria-pressed={!fitCanvas}>100% actual size</button>
-              <label className="canvas-zoom-control">Canvas zoom <input type="range" min="20" max="200" step="5" value={fitCanvas?Math.round(fitScale*100):canvasZoom} onChange={event=>{setFitCanvas(false);setCanvasZoom(Number(event.target.value));}}/><output>{fitCanvas?Math.round(fitScale*100):canvasZoom}%</output></label>
-              <span aria-live="polite">{page.canvasWidth} × {page.canvasHeight}</span>
-            </div><span>View</span>
+              <div className="ribbon-view-zoom-buttons">
+                <button type="button" onClick={()=>{setFitCanvas(true);setFitFullPage(true);}}
+                  aria-pressed={fitCanvas&&fitFullPage}>Fit to Screen</button>
+                <button type="button" onClick={()=>{setFitCanvas(true);setFitFullPage(false);}}
+                  aria-pressed={fitCanvas&&!fitFullPage}>Fit Width</button>
+                <button type="button" onClick={()=>{setFitCanvas(false);setCanvasZoom(100);}}
+                  aria-pressed={!fitCanvas&&canvasZoom===100}>100%</button>
+              </div>
+              <label className="ribbon-view-zoom-number"><MoveHorizontal size={16} aria-hidden="true"/>
+                <input type="number" min={20} max={200} step={5} aria-label="Canvas zoom percentage"
+                  value={fitCanvas?Math.round(fitScale*100):canvasZoom}
+                  onChange={event=>{const value=Number(event.target.value);
+                    if(Number.isFinite(value)){setFitCanvas(false);setCanvasZoom(Math.min(200,Math.max(20,value)));}}}/>%
+              </label>
+            </div><span>Zoom</span>
+          </div>}
+          {ribbonTab==='Preview' && <div className="office-ribbon-group ribbon-view-canvas" aria-label="Canvas">
+            <div className="office-ribbon-stack"><span aria-live="polite">
+              {page.canvasWidth} × {page.canvasHeight}</span>
+            </div><span>Canvas</span>
           </div>}
           {ribbonTab==='Logic' && <div className="office-ribbon-group preview-visibility-group" aria-label="Conditional visibility">
             {selected ? <div className="preview-visibility-controls">
