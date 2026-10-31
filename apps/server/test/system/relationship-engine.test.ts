@@ -1,3 +1,5 @@
+import {createHash} from 'node:crypto';
+import {readFileSync} from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {assertDeletionAllowed,shouldCascadeReference} from '../../src/relationship-engine/ReferentialIntegrityGuard.js';
@@ -45,4 +47,16 @@ test('lookup cascade is explicit and still forbids restrictive or unsafe deletio
   /restricted/);
  assert.throws(()=>assertDeletionAllowed([{relationship_type:'Lookup',delete_behavior:null,required:true}]),
   /restricted/);
+});
+
+
+test('already-applied relationship SQL is immutable and row lock is an additive migration',()=>{
+ const immutable=readFileSync(new URL('../../src/system-support/migrations/20270120-relationship-target-integrity.sql',import.meta.url),'utf8');
+ const forward=readFileSync(new URL('../../src/system-support/migrations/20270209-relationship-target-row-lock.sql',import.meta.url),'utf8');
+ const gitHash=createHash('sha1').update('blob '+Buffer.byteLength(immutable)+'\0'+immutable).digest('hex');
+ assert.equal(gitHash,'3120c886437d0aa2a4d42a038e9daf2d9905549d','previously applied migration was modified; use a new migration');
+ assert.doesNotMatch(immutable,/FOR SHARE/);
+ assert.match(forward,/CREATE OR REPLACE FUNCTION md_validate_relationship_record_target\(\)/);
+ assert.match(forward,/FOR SHARE/);
+ assert.doesNotMatch(forward,/UPDATE md_system_migrations|DELETE FROM md_system_migrations|DROP TRIGGER/);
 });
