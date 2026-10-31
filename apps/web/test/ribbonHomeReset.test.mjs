@@ -11,13 +11,14 @@ test('page-level handlers remain intact in topbar and Layout while Smart Insert 
  assert.ok(marker>0&&end>marker);
  for(const name of ["case 'backIcon'","case 'restoreVersion'","case 'save'","case 'activate'","case 'resetIcon'"])
   assert.ok(page.includes(name),name);
- assert.doesNotMatch(body,/<UneBuilderRibbon|<UniversalRibbonInventory|<PageBuilderActionRibbon|<PageBuilderRibbonData|ribbonTab==='Preview'|ribbonTab==='Parity'/);
+ assert.doesNotMatch(body,/<UneBuilderRibbon|<UniversalRibbonInventory|<PageBuilderActionRibbon|<PageBuilderRibbonData|ribbonTab==='Parity'/);
+ assert.match(body,/ribbonTab==='Preview' && <div className="office-ribbon-group canvas-preview-selector-group"/, 'Preview selector is a first-class ribbon group');
  assert.match(body,/ribbonTab==='Add Block' && <SmartInsertRibbon/);
  assert.match(body,/onInsert=\{addPaletteComponent\}/);
  assert.doesNotMatch(body,/onOpenLibrary=\{\(\)=>openAddBlocks\(\)\}/);
  assert.match(body,/ribbonTab==='Component Layout' && ribbonCatalog/);
  assert.match(page,/office-ribbon-quick-access/);
- assert.match(page,/const quickAccessOrder=\['save','activate','resetIcon','undo','redo','cut','copy','paste','delete'\]/);
+ assert.match(page,/const quickAccessOrder=\['save','activate','preview','exitPreview','resetIcon','undo','redo','cut','copy','paste','delete'\]/);
 });
 test('additive SQL migration removes only non-Home shared entries and migrates Acetill Cart without deleting values',()=>{
  const sql=src('../../server/src/system-support/migrations/20270123-ribbon-home-reset-acetill-cart.sql');
@@ -63,4 +64,26 @@ test('Layout combines Device and Version in the SQL Page section without losing 
  assert.match(css,/--page-ribbon-bg:#f4f5f7/);
  assert.match(css,/>\.smart-ribbon\s*\{\s*background:var\(--page-ribbon-bg\)!important/);
  assert.match(css,/une-sql-home-group\[data-shared-group="Page"\]/);
+});
+
+test('Quick Access keeps Preview and Exit while collapsing the interactive ribbon',()=>{
+ const ui=src('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const polish=src('../src/core/builders/PageBuilder/PageBuilderRibbonPolish.css');
+ assert.ok(ui.includes("case 'preview':return <button"));
+ assert.ok(ui.includes("case 'exitPreview':return <button"));
+ assert.ok(ui.includes("setRibbonTab('Preview');setPreviewMode(true)"));
+ assert.ok(ui.includes('is-interactive-preview'));
+ assert.ok(polish.includes('.office-builder-ribbon.is-interactive-preview #page-builder-tab-content'));
+ assert.ok(polish.includes('.builder-page.builder-interactive-preview .record-component-head'));
+});
+test('Conditional Visibility and Canvas Tools are direct ribbon sections',()=>{
+ const ui=src('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const advanced=src('../src/core/builders/PageBuilder/PageBuilderAdvancedRibbon.tsx');
+ assert.ok(ui.includes('preview-visibility-group'));
+ assert.ok(ui.includes('onApply={savePreviewVisibility} onCancel={cancelPreviewVisibility}'));
+ assert.ok(ui.includes("canvasTools={page.layoutMode==='free-canvas'"));
+ assert.ok(advanced.includes('page-builder-canvas-ribbon-group'));
+ for(const feature of ["key:'visibility'","key:'canvas'","key:'preview'"])assert.ok(!advanced.includes(feature),feature);
+ assert.ok(!ui.includes("advancedEditor==='visibility'"));
+ assert.ok(!ui.includes("advancedEditor==='canvas'"));
 });

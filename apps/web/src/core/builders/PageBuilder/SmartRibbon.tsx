@@ -115,7 +115,9 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
      return properties.reduce((total,p)=>total+controlWidth(p)+(p.designCaptionWidth??0),0)
        +Math.max(0,properties.length-1)*4;
    }))+17,
-   group.length*6+24
+   // Only the Layout Header Supporting caption needs a smaller minimum; its
+   // single icon/number control should not reserve an empty full-width column.
+   tab==='Layout'&&group==='Header Supporting'?110:group.length*6+24
  );
  const controls=(property:UneRibbonProperty)=>{
    const supported=property.components.includes(api);
