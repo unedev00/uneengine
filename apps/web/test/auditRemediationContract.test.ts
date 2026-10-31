@@ -20,7 +20,7 @@ test('Connected Apps includes searchable directory, user picker and consent warn
 });
 test('security history is server-paged, permission checked and filterable',()=>{
  const view=read('../src/core/settings/SettingsWorkspace/settingsWorkspaceViews.tsx');
- const backend=read('../../../server/src/system-support/server.ts');
+ const backend=read('../../server/src/system-support/server.ts');
  assert.match(view,/\/auth\/security-events\?\x27\+query\.toString\(\)/);
  for(const field of ["'action'","'identifier'","'ip'","'from'","'to'"])assert.ok(view.includes(field));
  assert.match(view,/nextOffset!==null/);
