@@ -15,10 +15,12 @@ import './SmartRibbonApprovedThreeRow.css';
 type Position={x:number;y:number;width:number;height:number};
 type Props={tab:UneBuilderTab;api:string;definitions:readonly UneRibbonProperty[];properties:Record<string,unknown>;
  onChange:(next:Record<string,unknown>)=>void;objects:readonly ObjectMetadata[];pageObjectApiName?:string;
- position?:Position;onPositionChange?:(next:Position)=>void;layoutMode:string};
+ position?:Position;onPositionChange?:(next:Position)=>void;layoutMode:string;
+ /** For grouped/multiple components, expose only the intersection of SQL properties. */
+ sharedPropertyIds?:readonly string[];mixedPropertyIds?:readonly string[]};
 const weekdays=[['sun','Sun'],['mon','Mon'],['tue','Tue'],['wed','Wed'],['thu','Thu'],['fri','Fri'],['sat','Sat']] as const;
 const fallback=(value:unknown)=>typeof value==='string'?value:'';
-export default function SmartRibbon({tab,api,definitions,properties,onChange,objects,pageObjectApiName='',position,onPositionChange,layoutMode}:Props){
+export default function SmartRibbon({tab,api,definitions,properties,onChange,objects,pageObjectApiName='',position,onPositionChange,layoutMode,sharedPropertyIds,mixedPropertyIds}:Props){
  const uploadInput=useRef<HTMLInputElement>(null);
  const [uploadBusy,setUploadBusy]=useState(false);
  const [uploadError,setUploadError]=useState('');
@@ -128,14 +130,14 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    group.length*5.5+16
  ));
  const controls=(property:UneRibbonProperty)=>{
-   const supported=property.components.includes(api);
+   const supported=property.components.includes(api)&&(!sharedPropertyIds||sharedPropertyIds.includes(property.id));
    const kind=api==='smart_calendar'&&property.id==='shadow'
      ? 'shadow' : property.kindOverrides?.[api]??property.kind;
    const key=api==='smart_calendar'&&property.id==='shadow'?'shadow':property.valueKeys?.[api]??property.id;
    const isSize=property.id==='width'||property.id==='height';
    const useCanvasPosition=layoutMode==='free-canvas'&&Boolean(position&&onPositionChange);
    const enabled=supported&&(kind!=='position'||isSize||useCanvasPosition);
-   const value=properties[key]??property.defaultsOverrides?.[api]??property.default??'';
+   const value=mixedPropertyIds?.includes(property.id)?'':properties[key]??property.defaultsOverrides?.[api]??property.default??'';
    const options=property.choicesOverrides?.[api]??property.choices??[];
    const write=(v:unknown)=>{
     if(!enabled)return;
