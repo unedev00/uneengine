@@ -53,6 +53,12 @@ try{
   'Secondary Parent',lookup('PhaseParent__c','SecondaryParent'));
  await defs.addField(tenant,'PhaseChild__c','ReviewParentId','Lookup(PhaseParent__c)',undefined,
   'Review Parent',lookup('PhaseParent__c','ReviewParent'));
+ await assert.rejects(()=>defs.addField(tenant,'PhaseChild__c','CollidingParentId',
+  'Lookup(PhaseParent__c)',undefined,'Colliding Parent',{
+    relationship:{type:'Lookup',targetObject:'PhaseParent__c',
+      relationshipName:'CollidingParent',childRelationshipName:'SecondaryParentRecords'}
+  }),/Duplicate child relationship name/);
+
  await defs.addField(tenant,'PhaseGrand__c','ChildId','Master-Detail(PhaseChild__c)',undefined,'Child',
   master('PhaseChild__c','PrimaryChild',true));
  await defs.addField(tenant,'PhaseGrand__c','BlockingParentId','Lookup(PhaseParent__c)',undefined,
@@ -126,6 +132,12 @@ try{
  await db.query("INSERT INTO md_permission_rules(tenant_id,permission_set_id,resource,action,effect) VALUES($1,$2,'*','*','allow'),($1,$2,'PhaseParent__c','read','deny')",[tenant,restrictedSet]);
  await assert.rejects(()=>records.create(tenant,restrictedUser,'PhaseChild__c',
   {Name:'Hidden parent attempt',ParentId:p2}),/Invalid relationship target/);
+ const inherited=await db.query("SELECT md_record_access($1,$2,$3,'read') AS visible",[tenant,restrictedUser,c2]);
+ assert.equal(inherited.rows[0].visible,false,
+  'Master-detail child must never disclose a parent inaccessible to the actor');
+ const visible=await db.query("SELECT md_record_access($1,$2,$3,'read') AS visible",[tenant,user,c2]);
+ assert.equal(visible.rows[0].visible,true,'Parent grants must carry through to the child');
+
 
  console.info('Phase 2C SQL: 3-level cascade, distinct lookup edges, self-reference, reparenting, Restrict, tenant isolation, discovery passed');
 }finally{await db.close();}

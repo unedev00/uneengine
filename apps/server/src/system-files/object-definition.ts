@@ -92,7 +92,7 @@ const parseFieldDefinition=(field:Record<string,unknown>,objectApi?:string):Pars
       relation?.relationshipName===undefined?name.replace(/Id$/,''):null;
   const childRelationshipName: string|null=relationshipType===null?null:
     typeof relation?.childRelationshipName==='string'?relation.childRelationshipName:
-      relation?.childRelationshipName===undefined?`${(objectApi??'Record').replace(/__c$/,'')}Records`:null;
+      relation?.childRelationshipName===undefined?`${(objectApi??'Record').replace(/__c$/,'')}${name.replace(/Id$/,'')}Records`.slice(0,80):null;
   const deleteBehavior: string|null=relationshipType==='Lookup'
     ?relation?.deleteBehavior===undefined?'Clear':
       typeof relation.deleteBehavior==='string'?relation.deleteBehavior:null
@@ -451,6 +451,10 @@ export class ObjectDefinitionService {
     });
     if(new Set(normalized.map(x=>x.apiName.toLowerCase())).size!==normalized.length)
       throw new Error('Duplicate field API name');
+    if(new Set(normalized.filter(f=>f.relationshipType!==null)
+      .map(f=>String(f.relatedObject).toLowerCase()+':'+String(f.childRelationshipName).toLowerCase())).size
+      !==normalized.filter(f=>f.relationshipType!==null).length)
+      throw new Error('Duplicate child relationship name for target object');
     if(normalized.filter(field=>field.relationshipType==='Master-Detail').length>2)
       throw new Error('An object cannot have more than two Master-Detail relationships');
     if(normalized.some(field=>field.relationshipType==='Master-Detail'&&field.relatedObject===apiName))

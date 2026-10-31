@@ -149,7 +149,7 @@ export function createSetupObjectActions(ctx: any) {
                               ? 'Enter a valid relationship name using letters, numbers, and underscores.'
                               : ['Lookup Relationship', 'Master-Detail Relationship', 'Hierarchical Relationship'].includes(newFieldType)
                                 && !/^[A-Za-z][A-Za-z0-9_]*$/.test(newFieldChildRelationshipName.trim()
-                                  || `${object.apiName.replace(/__c$/, '')}Records`)
+                                  || `${object.apiName.replace(/__c$/, '')}${newFieldApiName.replace(/Id$/, '')}Records`.slice(0,80))
                                 ? 'Enter a valid child relationship name using letters, numbers, and underscores.'
                             : newFieldLookupFilters.some((filter) =>
                               !filter.relatedFieldApiName
@@ -185,7 +185,7 @@ export function createSetupObjectActions(ctx: any) {
       unique: !['Formula', 'Roll-Up Summary', 'Auto Number', 'Text Area', 'Text (Encrypted)', 'Long Text Area', 'Rich Text Area', 'Geolocation', 'Address'].includes(newFieldType)
         && !relationshipType && newFieldUnique,
       ...(newFieldExternalId && newFieldType !== 'Roll-Up Summary' ? { externalId: true } : {}),
-      ...(newFieldUnique && ['Text', 'Email', 'Phone'].includes(newFieldType)
+      ...((newFieldUnique || newFieldExternalId) && ['Text', 'Email', 'Phone'].includes(newFieldType)
         ? { caseSensitive: newFieldCaseSensitive }
         : {}),
       ...(newFieldDescription.trim() ? { description: newFieldDescription.trim() } : {}),
@@ -215,7 +215,7 @@ export function createSetupObjectActions(ctx: any) {
         type: relationshipType,
         targetObject: relationshipTarget,
         relationshipName: newFieldRelationshipName.trim() || relationshipName,
-        childRelationshipName: newFieldChildRelationshipName.trim() || `${object.apiName.replace(/__c$/, '')}Records`,
+        childRelationshipName: newFieldChildRelationshipName.trim() || `${object.apiName.replace(/__c$/, '')}${newFieldApiName.replace(/Id$/, '')}Records`.slice(0,80),
         ...(relationshipType === 'Lookup' ? {
           deleteBehavior: newFieldRequired ? 'Restrict' : newFieldDeleteBehavior
         } : {}),

@@ -1357,9 +1357,17 @@ export function createSystemServer(db:SqlPersistence) {
       throw new Error('Invalid relationship object');
     const relationships=await listRelationshipDefinitions(db,actor.tenant_id,
       requested as string|undefined);
+    const checks=relationships.flatMap(edge=>[
+      {resource:edge.sourceObject,action:'read'},
+      {resource:edge.targetObject,action:'read'},
+      {resource:edge.sourceObject+'.'+edge.fieldApiName,action:'read'}
+    ]);
+    const allowed=await rbac.allowedMany(actor.tenant_id,actor.user_id,checks);
+    const visible=relationships.filter((_,index)=>allowed[index*3]===true
+      &&allowed[index*3+1]===true&&allowed[index*3+2]===true);
     res.setHeader('Cache-Control','private, no-store');
     res.setHeader('Vary','Authorization, Cookie');
-    res.json({relationships});
+    res.json({relationships:visible});
   }));
   app.get('/api/metadata/objects',route(async(req,res)=>{
     const actor=req.actor!;

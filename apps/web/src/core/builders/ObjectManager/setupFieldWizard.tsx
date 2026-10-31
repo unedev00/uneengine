@@ -178,7 +178,7 @@ export default function FieldWizardModal({ context }: { context: any }) {
                     setNewFieldLookupFilters([]);
                     setNewFieldLookupFilterLogic('All');
                   }}>
-                    <option value="">Select an object</option>{objects.filter((item) => item.apiName !== object.apiName).map((item) => <option key={item.apiName} value={item.apiName}>{item.label}</option>)}
+                    <option value="">Select an object</option>{objects.filter((item) => newFieldType === 'Lookup Relationship' || item.apiName !== object.apiName).map((item) => <option key={item.apiName} value={item.apiName}>{item.label}</option>)}
                   </select>
                 </label>}
               <label className="form-label">Relationship Name
@@ -186,7 +186,7 @@ export default function FieldWizardModal({ context }: { context: any }) {
                   onChange={(event) => setNewFieldRelationshipName(event.target.value)} />
               </label>
               <label className="form-label">Child Relationship Name
-                <input className="form-control" value={newFieldChildRelationshipName || `${object.apiName.replace(/__c$/, '')}Records`}
+                <input className="form-control" value={newFieldChildRelationshipName || `${object.apiName.replace(/__c$/, '')}${newFieldApiName.replace(/Id$/, '')}Records`.slice(0,80)}
                   onChange={(event) => setNewFieldChildRelationshipName(event.target.value)} />
               </label>
               {newFieldType === 'Lookup Relationship' && <label className="form-label">When a referenced record is deleted
@@ -420,7 +420,7 @@ export default function FieldWizardModal({ context }: { context: any }) {
               {['Text', 'Number', 'Email', 'Phone'].includes(newFieldType) && <label className="checkbox-row">
                 <input type="checkbox" checked={newFieldExternalId} onChange={(event) => setNewFieldExternalId(event.target.checked)} /> External ID
               </label>}
-              {newFieldUnique && ['Text', 'Email', 'Phone'].includes(newFieldType) && <label className="checkbox-row">
+              {(newFieldUnique || newFieldExternalId) && ['Text', 'Email', 'Phone'].includes(newFieldType) && <label className="checkbox-row">
                 <input type="checkbox" checked={newFieldCaseSensitive} onChange={(event) => setNewFieldCaseSensitive(event.target.checked)} /> Treat uppercase and lowercase values as different
               </label>}
             </div>}
@@ -444,7 +444,7 @@ export default function FieldWizardModal({ context }: { context: any }) {
                 <dt>Field Name</dt><dd>{newFieldApiName}</dd>
                 <dt>Required / Unique</dt><dd>{newFieldType === 'Master-Detail Relationship' || newFieldType === 'Auto Number' || newFieldRequired ? 'Required' : 'Optional'} / {newFieldType === 'Auto Number' || newFieldUnique ? 'Unique' : 'Not unique'}</dd>
                 {['Text', 'Number', 'Email', 'Phone'].includes(newFieldType) && <><dt>External ID</dt><dd>{newFieldExternalId ? 'Yes' : 'No'}</dd></>}
-                {newFieldUnique && ['Text', 'Email', 'Phone'].includes(newFieldType) && <><dt>Case sensitivity</dt><dd>{newFieldCaseSensitive ? 'Case sensitive' : 'Case insensitive'}</dd></>}
+                {(newFieldUnique || newFieldExternalId) && ['Text', 'Email', 'Phone'].includes(newFieldType) && <><dt>Case sensitivity</dt><dd>{newFieldCaseSensitive ? 'Case sensitive' : 'Case insensitive'}</dd></>}
                 {newFieldDescription.trim() && <><dt>Description</dt><dd>{newFieldDescription.trim()}</dd></>}
                 {newFieldHelpText.trim() && <><dt>Help Text</dt><dd>{newFieldHelpText.trim()}</dd></>}
                 {globalValueSetApiName && <><dt>Global Value Set</dt><dd>{globalValueSetApiName}</dd></>}
