@@ -1,6 +1,6 @@
 import type { FieldMetadata, FlowDefinitionMetadata, FlowResourceMetadata } from '../../metadata/Definitions/metadata';
 
-export type InputSourceKind = 'Unmapped' | 'Literal' | 'Event' | 'Event Field' | 'Record Field' | 'Page State' | 'Session' | 'Legacy';
+export type InputSourceKind = 'Unmapped' | 'Literal' | 'Event' | 'Event Field' | 'Record Field' | 'Page State' | 'Numeric Page State' | 'Record Collection' | 'Session' | 'Legacy';
 export type InputSource = { kind: InputSourceKind; detail: string; value: unknown };
 const identifier = /^[A-Za-z][A-Za-z0-9_]*$/;
 const eventPath = /^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)*$/;
@@ -39,6 +39,41 @@ export function resolveFlowOutputBindings(
   });
 }
 
+/** Reusable declarative Flow input transforms; no runtime POS-specific code. */
+export function resolveStructuredFlowInput(
+ option:Record<string,unknown>,resolve:(source:unknown)=>unknown
+):unknown {
+ if(option.source==='ToNumber'){
+  const raw=resolve(option.value);
+  if(typeof raw==='number')return Number.isFinite(raw)?raw:undefined;
+  if(typeof raw!=='string'||!/^-?(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+)$/.test(raw.trim()))return undefined;
+  const amount=Number(raw.trim());
+  return Number.isFinite(amount)?amount:undefined;
+ }
+ if(option.source==='ProjectRecords'){
+  const raw=resolve(option.value),fields=option.fields;
+  if(!Array.isArray(raw)||raw.length>200||!Array.isArray(fields)
+   ||fields.length<1||fields.length>20||new Set(fields).size!==fields.length
+   ||fields.some(field=>typeof field!=='string'||!identifier.test(field)
+    ||field==='Id'||['__proto__','prototype','constructor'].includes(field)))return undefined;
+  const result:Array<Record<string,string|number|boolean|null>>=[];
+  for(const item of raw){
+   if(!item||typeof item!=='object'||Array.isArray(item))return undefined;
+   const row=item as Record<string,unknown>,selected:Record<string,string|number|boolean|null>={};
+   for(const field of fields as string[]){
+    if(!Object.prototype.hasOwnProperty.call(row,field))return undefined;
+    const value=row[field];
+    if(value!==null&&typeof value!=='string'&&typeof value!=='boolean'
+     &&(typeof value!=='number'||!Number.isFinite(value)))return undefined;
+    selected[field]=value as string|number|boolean|null;
+   }
+   result.push(selected);
+  }
+  return result;
+ }
+ return undefined;
+}
+
 export function decodeInputSource(value: unknown, hasMapping = true): InputSource {
   if (!hasMapping) return { kind: 'Unmapped', detail: '', value: undefined };
   if (value === '$session') return { kind: 'Session', detail: '', value };
@@ -61,7 +96,15 @@ export function decodeInputSource(value: unknown, hasMapping = true): InputSourc
       ? { kind: 'Record Field', detail: field, value }
       : { kind: 'Legacy', detail: '', value };
   }
-  if (value && typeof value === 'object') return { kind: 'Legacy', detail: '', value };
+  if(value&&typeof value==='object'&&!Array.isArray(value)){
+    const o=value as Record<string,unknown>;
+    if(o.source==='ToNumber'&&typeof o.value==='string'&&/^\$state\.[A-Za-z][A-Za-z0-9_]*$/.test(o.value))
+     return {kind:'Numeric Page State',detail:o.value.slice(7),value};
+    if(o.source==='ProjectRecords'&&typeof o.value==='string'
+     &&/^\$state\.[A-Za-z][A-Za-z0-9_]*$/.test(o.value)&&Array.isArray(o.fields))
+     return {kind:'Record Collection',detail:o.value.slice(7)+':'+o.fields.join(','),value};
+    return {kind:'Legacy',detail:'',value};
+  }
   return { kind: 'Literal', detail: String(value ?? ''), value };
 }
 
@@ -76,6 +119,19 @@ export function encodeInputSource(
   if (kind === 'Page State') {
     if(!identifier.test(detail)||detail.length>64)throw new Error('Choose a valid page state key.');
     return '$state.'+detail;
+  }
+  if(kind==='Numeric Page State'){
+    if(!identifier.test(detail)||detail.length>64)throw Error('Enter a Page State key.');
+    return {source:'ToNumber',value:'$state.'+detail};
+  }
+  if(kind==='Record Collection'){
+    const [key,...tail]=detail.split(':');
+    const items=tail.join(':').split(',').map(s=>s.trim()).filter(Boolean);
+    if(!identifier.test(key)||key.length>64||items.length<1||items.length>20
+     ||new Set(items).size!==items.length
+     ||items.some(item=>!identifier.test(item)||item==='Id'))
+      throw Error('Enter state key and field names, excluding Id.');
+    return {source:'ProjectRecords',value:'$state.'+key,fields:items};
   }
   if (kind === 'Event') return '$event';
   if (kind === 'Event Field') {
