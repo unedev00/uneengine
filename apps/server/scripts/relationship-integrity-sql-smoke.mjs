@@ -57,6 +57,8 @@ try{
   master('PhaseChild__c','PrimaryChild',true));
  await defs.addField(tenant,'PhaseGrand__c','BlockingParentId','Lookup(PhaseParent__c)',undefined,
   'Blocking Parent',lookup('PhaseParent__c','BlockingParent','Restrict'));
+ await defs.addField(tenant,'PhaseGrand__c','SecondaryMasterId','Master-Detail(PhaseParent__c)',
+  undefined,'Secondary Master',master('PhaseParent__c','SecondaryMaster',true));
  const edges=await listRelationshipDefinitions(db,tenant);
  assert.equal(edges.filter(e=>e.sourceObject==='PhaseChild__c'&&e.targetObject==='PhaseParent__c').length,3);
  assert.ok(edges.some(e=>e.fieldApiName==='ParentId'&&e.relationshipType==='Master-Detail'
@@ -78,7 +80,34 @@ try{
  const c2=await records.create(tenant,user,'PhaseChild__c',
   {Name:'Child B',ParentId:p2});
  const g1=await records.create(tenant,user,'PhaseGrand__c',
-  {Name:'Grand',ChildId:c1,BlockingParentId:p1}); 
+  {Name:'Grand',ChildId:c1,BlockingParentId:p1,SecondaryMasterId:p2}); 
+ // Controlled-by-parent sharing uses both masters and propagates through
+ // Parent -> Child -> Grandchild. The child/grandchild owners are deliberately
+ // different from the parent owner; independent sharing must not grant access.
+ const inheritedReader=(await db.query(
+  "INSERT INTO md_users(tenant_id,email,password_hash) VALUES($1,'parentreader@example.invalid','fixture') RETURNING id",
+  [tenant])).rows[0].id;
+ const inheritedSet=(await db.query(
+  "INSERT INTO md_permission_sets(tenant_id,api_name) VALUES($1,'InheritedParentReader') RETURNING id",
+  [tenant])).rows[0].id;
+ await db.query('INSERT INTO md_permission_assignments(tenant_id,user_id,permission_set_id) VALUES($1,$2,$3)',
+  [tenant,inheritedReader,inheritedSet]);
+ for(const objectApi of ['PhaseParent__c','PhaseChild__c','PhaseGrand__c'])
+  await db.query("INSERT INTO md_permission_rules(tenant_id,permission_set_id,resource,action,effect) VALUES($1,$2,$3,'read','allow')",
+   [tenant,inheritedSet,objectApi]);
+ await db.query("UPDATE md_records SET owner_id=$3 WHERE tenant_id=$1 AND id=$2",
+  [tenant,p1,inheritedReader]);
+ const read=async id=>(await db.query("SELECT md_record_access($1,$2,$3,'read') AS permitted",
+  [tenant,inheritedReader,id])).rows[0].permitted;
+ assert.equal(await read(p1),true);
+ assert.equal(await read(c1),true,'A nonowned child must inherit sharing from its master');
+ assert.equal(await read(g1),false,'A junction detail must require both master parents');
+ await db.query("UPDATE md_records SET owner_id=$3 WHERE tenant_id=$1 AND id=$2",
+  [tenant,p2,inheritedReader]);
+ assert.equal(await read(g1),true,'Grandchild must inherit multi-hop, multi-master sharing');
+ assert.equal((await db.query("SELECT md_record_access_direct($1,$2,$3,'read') AS permitted",
+  [tenant,inheritedReader,c1])).rows[0].permitted,false,
+  'Parent-granted access must not silently become independent child ownership');
  // Required lookup filters reject invalid targets at the shared Record Engine;
  // optional filters are advisory and must not block otherwise valid writes.
  const {persistObjectLookupFilters}=await import(new URL('object-manager-lookup-filters.js',built).href);
