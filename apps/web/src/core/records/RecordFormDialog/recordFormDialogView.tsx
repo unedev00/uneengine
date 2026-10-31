@@ -231,7 +231,7 @@ export function RecordFormDialog({
   actionAllowed,
   embedded = false,
   extraFields,
-  onChange,
+  onChange: onFieldChange,
   onClose,
   onSubmit
 }: {
@@ -259,6 +259,22 @@ export function RecordFormDialog({
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
   const isPhoneViewport = useRuntimeFormFactor() === 'Phone';
+  // Only user edits mark the form dirty, so defaults loaded after mount never trigger the warning.
+  const dirtyRef = useRef(false);
+  const onChange = useCallback((apiName: string, value: unknown) => {
+    dirtyRef.current = true;
+    onFieldChange(apiName, value);
+  }, [onFieldChange]);
+  const requestClose = useCallback(() => {
+    if (dirtyRef.current && !window.confirm('Discard unsaved changes?')) return;
+    onClose();
+  }, [onClose]);
+  // A save that finishes without an error leaves nothing unsaved (matters when the form stays open).
+  const wasSavingRef = useRef(false);
+  useEffect(() => {
+    if (wasSavingRef.current && !saving && !formError) dirtyRef.current = false;
+    wasSavingRef.current = saving;
+  }, [saving, formError]);
   const [lookupDialogField, setLookupDialogField] = useState<FieldMetadata | null>(null);
   const [lookupQuery, setLookupQuery] = useState('');
   const [lookupSearchResults,setLookupSearchResults]=useState<RecordData[]|null>(null);
@@ -625,10 +641,10 @@ export function RecordFormDialog({
       {helpText}
     </div>;
   };
-  return <div className={embedded ? "record-form-inline" : "record-form-backdrop"} role="presentation" onMouseDown={(event) => { if (!embedded && event.target === event.currentTarget && !saving) onClose(); }}>
-    <section className="record-form-dialog surface" role={embedded ? "region" : "dialog"} aria-modal={embedded ? undefined : true} aria-labelledby="record-form-title" onKeyDown={(event) => { if (event.key === 'Escape' && !saving && !lookupDialogField) onClose(); }}>
+  return <div className={embedded ? "record-form-inline" : "record-form-backdrop"} role="presentation" onMouseDown={(event) => { if (!embedded && event.target === event.currentTarget && !saving) requestClose(); }}>
+    <section className="record-form-dialog surface" role={embedded ? "region" : "dialog"} aria-modal={embedded ? undefined : true} aria-labelledby="record-form-title" onKeyDown={(event) => { if (event.key === 'Escape' && !saving && !lookupDialogField) requestClose(); }}>
       <header><div><div className="eyebrow">{object.label}</div><h2 id="record-form-title">{editing ? 'Edit Record' : `New ${object.label}`}</h2></div>
-        <button className="icon-button" aria-label="Close" onClick={onClose} disabled={saving}><X size={16} /></button></header>
+        <button className="icon-button" aria-label="Close" onClick={requestClose} disabled={saving}><X size={16} /></button></header>
       <form onSubmit={onSubmit}>
         {activeRecordTypes.length > 1 && <label className="form-label">Record Type
           <select className="form-control" value={selectedRecordTypeId} disabled={saving} onChange={(event) => {
@@ -671,7 +687,7 @@ export function RecordFormDialog({
         </label>}
         {formError && <div className="records-message" role="alert">{formError}</div>}
         {!actionAllowed && <div className="records-message" role="alert">This action is not enabled for the selected page layout.</div>}
-        <footer><button type="button" className="btn" onClick={onClose} disabled={saving}>Cancel</button><button type="submit" className="btn btn-brand" disabled={saving || !actionAllowed}>{saving ? 'Saving…' : 'Save'}</button></footer>
+        <footer><button type="button" className="btn" onClick={requestClose} disabled={saving}>Cancel</button><button type="submit" className="btn btn-brand" disabled={saving || !actionAllowed}>{saving ? 'Saving…' : 'Save'}</button></footer>
       </form>
     </section>
     {lookupDialogField && (() => {

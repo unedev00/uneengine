@@ -4,10 +4,12 @@ import './core/workspace/WorkspaceTheme/design-system.css';
 import MarketingSite from './core/public/MarketingSite/MarketingSite';
 import { registerUniversalShell } from './core/workspace/Bootstrap/universalShell';
 import { installPopoverDismissal } from './component-libraries/shared/popoverDismissal';
+import { installKeyboardInset } from './core/workspace/Responsive/keyboardInset';
 import { isMissingDynamicChunk, recoverMissingDynamicChunk, reloadLatestWorkspace } from './core/workspace/Bootstrap/dynamicChunkRecovery';
 
 registerUniversalShell();
 installPopoverDismissal();
+installKeyboardInset();
 // Normalise the dedicated login document's trailing-slash path.
 if (window.location.pathname === '/login/') window.history.replaceState(window.history.state, '', '/login' + window.location.search + window.location.hash);
 

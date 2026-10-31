@@ -3,7 +3,7 @@ import {FlatList,RefreshControl,Text,View,Pressable,ScrollView,useWindowDimensio
 import {Tabs,Redirect,useRouter} from 'expo-router';
 import {useMobileSession} from '../../lib/MobileSessionProvider';
 import {useMobileTheme} from '../../lib/mobileTheme';
-import {ConnectionBadge,MobileMessages} from '../../lib/MobileUI';
+import {ConnectionBadge,MobileMessages,OfflineBanner} from '../../lib/MobileUI';
 import {RecordRow} from '../../lib/RecordRow';
 import {RecordDetailPanel} from '../../lib/RecordDetailPanel';
 
@@ -35,6 +35,7 @@ export default function RecordsScreen(){
      ListHeaderComponent={<View style={{gap:8,marginBottom:12,paddingHorizontal:isTablet?8:0}}>
        <Text style={{color:t.text,fontSize:isTablet?24:34,fontWeight:'700'}}>Records</Text>
        <Text style={{color:t.secondary,fontSize:15}}>{records.length} cached records</Text>
+       {connection==='offline'&&<OfflineBanner syncedAt={records[0]?.syncedAt}/>}
        <MobileMessages error={error} notice={notice}/>
      </View>}
      renderItem={({item,index})=><View style={{

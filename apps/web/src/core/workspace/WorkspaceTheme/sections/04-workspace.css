@@ -235,7 +235,7 @@ body, .workspace, .object-manager, .analytics-page, .home-content { background-c
 .lookup-selected-card strong { color: var(--text); font-size: var(--md-fs-sm,12px); font-weight: 500; }
 .lookup-filter-warning { display: block; margin-top: 5px; color: #ba0517; }
 .lookup-dialog-backdrop { position: fixed; z-index: 40; inset: 0; display: grid; place-items: center; padding: 20px; background: rgb(24 24 24 / 58%); }
-.lookup-dialog { width: min(720px, 100%); max-height: min(680px, calc(100vh - 40px)); display: flex; flex-direction: column; overflow: hidden; border-radius: 8px; box-shadow: 0 18px 50px rgb(0 0 0 / 32%); }
+.lookup-dialog { width: min(720px, 100%); max-height: min(680px, calc(100vh - 40px)); max-height: min(680px, calc(100dvh - 40px)); display: flex; flex-direction: column; overflow: hidden; border-radius: 8px; box-shadow: 0 18px 50px rgb(0 0 0 / 32%); }
 .lookup-dialog > header { min-height: 64px; display: flex; align-items: center; justify-content: space-between; padding: 12px 18px; border-bottom: 1px solid var(--border); }
 .lookup-dialog header h2 { margin: 3px 0 0; font-size: 16px; }
 .lookup-dialog-search { min-height: 42px; display: flex; align-items: center; gap: 9px; padding: 0 14px; border-bottom: 1px solid var(--border); color: var(--muted); }
@@ -257,8 +257,8 @@ body, .workspace, .object-manager, .analytics-page, .home-content { background-c
   .surface { box-shadow: none; break-inside: avoid; }
   .records-table { min-width: 0; }
 }
-.auth-screen { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: radial-gradient(ellipse at top right, #e9e4dc 0, transparent 42%), var(--canvas); }
-.auth-loading { min-height: 100vh; display: grid; place-items: center; color: var(--muted); background: var(--canvas); }
+.auth-screen { min-height: 100vh; min-height: 100dvh; display: grid; place-items: center; padding: 24px; background: radial-gradient(ellipse at top right, #e9e4dc 0, transparent 42%), var(--canvas); }
+.auth-loading { min-height: 100vh; min-height: 100dvh; display: grid; place-items: center; color: var(--muted); background: var(--canvas); }
 .auth-card { width: min(420px,100%); padding: 34px; border: 1px solid var(--border); border-radius: 13px; background: #fff; box-shadow: 0 14px 38px rgb(46 38 30 / 10%); }
 .auth-brand-mark { width: 39px; height: 39px; display: grid; place-items: center; margin-bottom: 19px; border-radius: 10px; background: var(--brand); color: white; font-size: 18px; font-weight: 700; }
 .auth-card h1 { margin: 2px 0 8px; font-size: 25px; letter-spacing: -.02em; }

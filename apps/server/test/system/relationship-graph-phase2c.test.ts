@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import type {SqlPersistence} from '../../src/system-files/sql-persistence.js';
-import {listRelationshipDefinitions,registeredRelationships} from '../../src/relationship-engine/RelationshipRegistry.js';
+import {listRelationshipDefinitions,registeredRelationships,resolveRelationshipMetadataPath} from '../../src/relationship-engine/RelationshipRegistry.js';
 import {assertDeletionAllowed} from '../../src/relationship-engine/ReferentialIntegrityGuard.js';
 
 test('relationship metadata returns distinct inverse lookup edges with stable names and tenant scope',async()=>{
@@ -45,4 +45,23 @@ test('incoming relationship deletion graph excludes retired non-reference fields
   {recordId:'parent-id',objectApi:'Parent__c'});
  assert.equal(edges.length,1);
  assert.throws(()=>assertDeletionAllowed(edges),/restricted/);
+});
+
+test('2C: multi-hop paths follow source and field metadata and reject ambiguous target aliases',()=>{
+ const parent={sourceObject:'Child__c',targetObject:'Parent__c',fieldApiName:'PrimaryParentId',
+   relationshipName:'PrimaryParent',childRelationshipName:'PrimaryChildren',
+   relationshipType:'Master-Detail',deleteBehavior:'Cascade',required:true,allowReparenting:false} as const;
+ const review={...parent,fieldApiName:'ReviewParentId',relationshipName:'ReviewParent',
+   childRelationshipName:'ReviewChildren',relationshipType:'Lookup',deleteBehavior:'Clear',required:false} as const;
+ const region={...review,sourceObject:'Parent__c',targetObject:'Region__c',
+   fieldApiName:'RegionId',relationshipName:'Region',
+   childRelationshipName:'RegionParents'} as const;
+ const edges=[parent,review,region];
+ const resolved=resolveRelationshipMetadataPath(edges,'Child__c',['PrimaryParent','Region']);
+ assert.equal(resolved.targetObject,'Region__c');
+ assert.deepEqual(resolved.steps.map(edge=>edge.fieldApiName),['PrimaryParentId','RegionId']);
+ assert.equal(resolveRelationshipMetadataPath(edges,'Child__c',['ReviewParentId']).steps[0],review);
+ assert.throws(()=>resolveRelationshipMetadataPath(edges,'Child__c',['Parent__c']),/Ambiguous/);
+ assert.throws(()=>resolveRelationshipMetadataPath(edges,'Child__c',['Unknown']),/not found/);
+ assert.throws(()=>resolveRelationshipMetadataPath(edges,'Child__c',['bad.path']),/Invalid/);
 });

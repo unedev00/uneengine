@@ -1,4 +1,4 @@
-.standalone-product{--product-accent:var(--md-primary,#1d4ed8);min-height:100vh;background:var(--md-canvas,#f8fafc);color:var(--md-text,#192230)}
+.standalone-product{--product-accent:var(--md-primary,#1d4ed8);min-height:100vh;min-height:100dvh;background:var(--md-canvas,#f8fafc);color:var(--md-text,#192230)}
 .standalone-product-header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:13px clamp(16px,3vw,38px);background:#fff;border-bottom:1px solid #e3e9f1}
 .standalone-product-brand{display:flex;align-items:center;gap:12px;background:none;border:0;text-align:left;cursor:pointer;padding:2px}
 .standalone-product-brand strong{display:block;font-size:21px;letter-spacing:-.04em}

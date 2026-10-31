@@ -680,3 +680,22 @@
   width:52px!important;min-width:52px!important;max-width:52px!important;
   height:36px!important;min-height:36px!important;max-height:36px!important;
 }
+
+/* SQL choice defaults that are arrays render as reusable checkbox dropdowns. */
+.office-builder-ribbon .smart-property .smart-multiselect{flex:0 0 155px;min-width:155px;max-width:155px;height:28px}
+.office-builder-ribbon .smart-property .smart-multiselect-trigger{
+ display:flex;align-items:center;justify-content:space-between;gap:5px;
+ width:155px;min-width:155px;height:28px;box-sizing:border-box;
+ padding:2px 5px;background:#fff;border:1px solid #b7c9df;border-radius:3px;
+ color:#263b56;font:11px "Segoe UI",Arial,sans-serif;cursor:pointer}
+.office-builder-ribbon .smart-property .smart-multiselect-trigger:disabled{opacity:.55;cursor:not-allowed}
+.smart-multiselect-popup{position:fixed;z-index:10020;box-sizing:border-box;
+ max-height:235px;overflow:auto;display:flex;flex-direction:column;gap:5px;
+ padding:7px;border:1px solid #b7c9df;border-radius:5px;background:#fff;
+ box-shadow:0 10px 25px #20314e35;color:#263b56;font:12px "Segoe UI",Arial,sans-serif}
+.smart-multiselect-option{display:flex;align-items:center;gap:8px;padding:4px 6px;
+ cursor:pointer;white-space:nowrap}
+.smart-multiselect-option:hover{background:#edf5ff}
+.smart-multiselect-option input{accent-color:#2563eb}
+.smart-multiselect-done{align-self:flex-end;padding:3px 8px;border:1px solid #b7c9df;
+ border-radius:3px;background:#fff;cursor:pointer}

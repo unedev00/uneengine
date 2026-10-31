@@ -36,6 +36,7 @@ export async function runFieldCatalogueBrowserCheck({page,origin,db,tenantId}){
  };
  await add('Text','ERP External',async wizard=>{
   await wizard.getByLabel('External ID').check();
+  await wizard.getByLabel('Treat uppercase and lowercase values as different').check();
   await wizard.getByLabel('Default Value').fill('EXT-1');
  });
  await add('Text','Ticket Code',async wizard=>{
@@ -44,13 +45,14 @@ export async function runFieldCatalogueBrowserCheck({page,origin,db,tenantId}){
  await add('Date/Time','Start At',async wizard=>{
   await wizard.getByLabel('Default Value').fill('2026-10-30T15:30');
  });
- const {rows}=await db.query("SELECT api_name,data_type,is_unique,external_id,default_value FROM md_field_definitions WHERE tenant_id=$1 AND object_api=$2 ORDER BY api_name",[tenantId,objectApi]);
+ const {rows}=await db.query("SELECT api_name,data_type,is_unique,external_id,case_sensitive,default_value FROM md_field_definitions WHERE tenant_id=$1 AND object_api=$2 ORDER BY api_name",[tenantId,objectApi]);
  const ext=rows.find(f=>f.api_name==='ERP_External__c');
  const unique=rows.find(f=>f.api_name==='Ticket_Code__c');
  const datetime=rows.find(f=>f.api_name==='Start_At__c');
  assert.ok(ext,'External ID field was not persisted via UI');
  assert.equal(ext.external_id,true);
  assert.equal(ext.is_unique,false,'External ID must not silently enforce Unique');
+ assert.equal(ext.case_sensitive,true,'Nonunique External ID case sensitivity must persist');
  assert.equal(ext.default_value,'EXT-1');
  assert.ok(unique&&unique.is_unique,'Unique attribute not persisted');
  assert.ok(datetime&&datetime.data_type==='datetime'&&datetime.default_value.endsWith('Z'),

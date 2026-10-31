@@ -361,10 +361,14 @@ export function renderSetupShell(ctx: any) {
               dashboards={dashboards}
               profiles={accessControlError ? [] : accessControl.profiles}
               activationAppIds={activationAppIds}
-              selectedSetting={objectSetting}
+              selectedSetting={route.kind === 'setup' && route.workspace === 'object-manager'
+                ? (route.objectApiName ? route.setting ?? 'Details' : 'Objects') : objectSetting}
               search={objectSearch}
               onSearch={setObjectSearch}
-              onObjectSelect={(nextObject: ObjectMetadata) => navigateRoute({ kind: 'setup', workspace: 'object-manager', objectApiName: nextObject.apiName, setting: 'Details' })}
+              onObjectSelect={(nextObject: ObjectMetadata) => {
+                setObject(nextObject);
+                navigateRoute({ kind: 'setup', workspace: 'object-manager', objectApiName: nextObject.apiName, setting: 'Details' });
+              }}
               selectedFieldApiName={route.kind === 'setup' ? route.resourceApiName : undefined}
               onSettingSelect={(setting: string) => navigateRoute(setting === 'Objects'
                 ? { kind: 'setup', workspace: 'object-manager' }

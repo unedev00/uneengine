@@ -4,5 +4,6 @@
 .md-mobile-sheet-footer>button{min-height:44px;flex:1}
 @media(max-width:599px),(max-height:500px) and (pointer:coarse){
  .md-mobile-sheet-backdrop{overscroll-behavior:contain}
- .md-mobile-sheet{max-height:min(calc(100dvh - env(safe-area-inset-top,0px) - 8px),calc(100% - var(--keyboard-inset,0px)));overscroll-behavior:contain}
+ .md-mobile-sheet{max-height:min(calc(100dvh - env(safe-area-inset-top,0px) - 8px),calc(100% - var(--keyboard-inset,0px)));margin-bottom:var(--keyboard-inset,0px);overscroll-behavior:contain}
+ :root.md-keyboard-open .md-mobile-sheet{padding-bottom:0}
 }

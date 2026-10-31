@@ -32,7 +32,7 @@
 @media(max-width:700px){.tenant-detail-tabs{mask-image:linear-gradient(to right,#000 0%,#000 calc(100% - 20px),transparent 100%)}.tenant-detail-tabs:focus-within{mask-image:none}}
 @media(pointer:coarse){.tenant-button,.tenant-filter select,.tenant-detail-tabs button{min-height:var(--md-control-touch,44px)}}
 .tenant-create-backdrop{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:16px;background:#10203399}
-.tenant-create-dialog{width:min(720px,100%);max-height:calc(100vh - 32px);overflow-y:auto;padding:clamp(18px,3vw,30px);border:1px solid var(--md-border,#d7e0e8);border-radius:14px;background:#fff;box-shadow:0 24px 80px #07111e55}
+.tenant-create-dialog{width:min(720px,100%);max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);overflow-y:auto;padding:clamp(18px,3vw,30px);border:1px solid var(--md-border,#d7e0e8);border-radius:14px;background:#fff;box-shadow:0 24px 80px #07111e55}
 .tenant-create-dialog form{display:grid;gap:14px}
 .tenant-create-dialog h2{margin:0;font-size:22px}
 .tenant-create-dialog .setup-draft-footer{position:sticky;bottom:-1px;display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;padding:14px 0 0;background:#fff;border-top:1px solid var(--md-border,#e0e5eb)}

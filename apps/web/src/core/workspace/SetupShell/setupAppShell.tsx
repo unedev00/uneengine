@@ -174,7 +174,8 @@ function SetupApp({ onLogout, entryTiming }: { onLogout: () => void; entryTiming
       ?? objectMetadata.find((item) => item.apiName === 'Account')
       ?? objectMetadata[0]
   );
-  const [objectSetting, setObjectSetting] = useState(() => route.kind === 'setup' ? route.setting ?? 'Fields & Relationships' : 'Fields & Relationships');
+  const [objectSetting, setObjectSetting] = useState(() => route.kind === 'setup' && route.workspace === 'object-manager'
+    ? (route.objectApiName ? route.setting ?? 'Details' : 'Objects') : 'Fields & Relationships');
   const [flow, setFlow] = useState<FlowDefinitionMetadata>(defaultFlow);
   const [flows, setFlows] = useState<FlowDefinitionMetadata[]>([]);
   const [platformEvents, setPlatformEvents] = useState<PlatformEventMetadata[]>([]);

@@ -310,7 +310,6 @@ function ObjectManager({
     setPreviewFieldApiName(selectedSetting === 'Fields & Relationships' && object.fields.some(field=>field.apiName===selectedFieldApiName) ? selectedFieldApiName! : '');
     setEditingField(null);
   }, [object.apiName, selectedSetting, selectedFieldApiName]);
-  const [showObjectFilterMenu, setShowObjectFilterMenu] = useState(false);
   const [showObjectActionsMenu, setShowObjectActionsMenu] = useState(false);
   const [fieldSearch, setFieldSearch] = useState('');
   const [draft, setDraft] = useState(object);
@@ -415,6 +414,7 @@ function ObjectManager({
   const [activationFormFactors, setActivationFormFactors] = useState<Array<'Desktop' | 'Phone' | 'Tablet' | 'Custom'>>(['Desktop']);
   const [showDeleteObjectConfirmation, setShowDeleteObjectConfirmation] = useState(false);
   const [deleteImpact,setDeleteImpact]=useState<Array<{kind:string;count:number}>|null>(null);
+  const [deleteRecordCount,setDeleteRecordCount]=useState(0);
   const [deletedObjects,setDeletedObjects]=useState<Array<{apiName:string;label:string;deletedAt:string}>>([]);
   const [deletedObjectsOpen,setDeletedObjectsOpen]=useState(false);
   const [deletedObjectsBusy,setDeletedObjectsBusy]=useState(false);
@@ -430,9 +430,10 @@ function ObjectManager({
   };
   const openDeleteObject=async()=>{
     try{
-      const impact=await apiRequest<{blockers:Array<{kind:string;count:number}>}>(
+      const impact=await apiRequest<{blockers:Array<{kind:string;count:number}>;recordCount:number}>(
         `/metadata/objects/${encodeURIComponent(draft.apiName)}/impact`);
       setDeleteImpact(impact.blockers);
+      setDeleteRecordCount(impact.recordCount);
       setShowDeleteObjectConfirmation(true);
     }catch(error){onNotify(error instanceof Error?error.message:'Unable to inspect object deletion impact');}
   };
@@ -515,6 +516,7 @@ function ObjectManager({
   const visibleObjects = objects.filter((item) => (viewMode === 'All Objects'
     || (viewMode === 'Custom Objects' ? item.kind === 'Custom Object' : item.kind === 'Standard Object'))
     && `${item.label} ${item.apiName}`.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()));
+  const sortedVisibleObjects = [...visibleObjects].sort((a, b) => a.label.localeCompare(b.label));
   const loadDeletedFields = async () => {
     setDeletedFieldsLoading(true);
     try {
@@ -996,11 +998,11 @@ function ObjectManager({
       {showDeleteObjectConfirmation && <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setShowDeleteObjectConfirmation(false); }}>
         <section className="modal" role="dialog" aria-modal="true" aria-labelledby="delete-object-title">
           <div className="modal-header"><h2 id="delete-object-title">Delete {draft.label}?</h2><button className="icon-button dark" onClick={() => setShowDeleteObjectConfirmation(false)} aria-label="Close"><X size={18} /></button></div>
-          <p className="modal-copy">The object will be hidden but its metadata preserved for restoration. Existing records and dependent metadata block deletion.</p>
+          <p className="modal-copy">The object will be hidden but its metadata and records preserved for restoration. Cross-object dependencies still block deletion.</p>
           {deleteImpact===null?<p>Checking dependencies…</p>:deleteImpact.length>0
             ?<div role="alert"><strong>Deletion blocked by dependencies:</strong><ul>{deleteImpact.map(item=>
               <li key={item.kind}>{item.kind}: {item.count}</li>)}</ul></div>
-            :<p>No blocking references found. This object can be restored later from Object Manager.</p>}
+            :<p>No blocking references found. {deleteRecordCount} existing record(s) will remain stored and will be accessible again when the object is restored.</p>}
           <div className="modal-actions"><button className="btn" onClick={() => setShowDeleteObjectConfirmation(false)}>Cancel</button><button className="btn btn-brand" disabled={deleteImpact===null||deleteImpact.length>0} onClick={() => void confirmDeleteObject()}>Delete Object</button></div>
         </section>
       </div>}
@@ -2000,13 +2002,21 @@ function ObjectManager({
           <option>All Objects</option><option>Standard Objects</option><option>Custom Objects</option>
         </select></div>
       </div>
-      <div className="table-scroll"><table className="slds-table">
+      <div className="table-scroll object-manager-desktop-list"><table className="slds-table">
         <thead><tr><th>Object label</th><th>API name</th><th>Type</th><th>Description</th><th>Deployment</th><th>Fields</th><th>Action</th></tr></thead>
-        <tbody>{[...visibleObjects].sort((a,b)=>a.label.localeCompare(b.label)).map(item => <tr key={item.apiName}>
+        <tbody>{sortedVisibleObjects.map(item => <tr key={item.apiName}>
           <td><button type="button" className="field-link" onClick={()=>onObjectSelect(item)}>{item.label}</button></td>
           <td className="api-name">{item.apiName}</td><td>{item.kind}</td><td>{item.description || "—"}</td><td>{item.settings?.deploymentStatus ?? "Deployed"}</td><td>{item.fields.length}</td>
           <td><button className="btn" type="button" onClick={()=>onObjectSelect(item)}>View</button></td>
         </tr>)}</tbody></table></div>
+      <div className="object-manager-mobile-list" role="list" aria-label="Objects">
+        {sortedVisibleObjects.map(item => <div role="listitem" key={item.apiName}>
+          <button type="button" className="object-manager-mobile-row" onClick={() => onObjectSelect(item)}>
+            <span className="object-manager-mobile-row-labels"><strong>{item.label}</strong><small>{item.apiName}</small></span>
+            <ChevronRight size={20} aria-hidden="true" />
+          </button>
+        </div>)}
+      </div>
       {!visibleObjects.length && <div className="empty-state">No objects match this search.</div>}
     </section></PlatformPageSlot>
   );
@@ -2022,21 +2032,7 @@ function ObjectManager({
       <div className="object-manager-layout">
         <div className="object-details">
           <PlatformPageSlot slotKey="object-heading"><div className="object-titlebar"><div className="object-title-icon">{object.label.charAt(0)}</div><div><div className="eyebrow">{object.kind}</div><h1>{object.label}</h1></div>
-            <div className="object-manager-picker">
-              <label htmlFor="object-manager-quick-search">Switch object</label>
-              <div className="object-manager-picker-search"><Search size={14}/><input id="object-manager-quick-search" aria-label="Search objects" placeholder="Search objects…" value={search} onChange={(event) => onSearch(event.target.value)} /></div>
-              <select aria-label="Object type filter" value={viewMode} onChange={(event) => setViewMode(event.target.value as typeof viewMode)}>
-                <option>All Objects</option><option>Standard Objects</option><option>Custom Objects</option>
-              </select>
-              <select aria-label="Select object" value={visibleObjects.some((item) => item.apiName === object.apiName) ? object.apiName : ''} onChange={(event) => {
-                const next = visibleObjects.find((item) => item.apiName === event.target.value);
-                if (next) { onObjectSelect(next); onSearch(''); setViewMode('All Objects'); }
-              }}>
-                {!visibleObjects.some((item) => item.apiName === object.apiName) && <option value="">Select object…</option>}
-                {visibleObjects.map((item) => <option key={item.apiName} value={item.apiName}>{item.label} ({item.kind === 'Custom Object' ? 'Custom' : 'Standard'})</option>)}
-              </select>
-              <button type="button" className="btn" onClick={onCreateObject}><Plus size={14}/>New Object</button>
-            </div><div className="object-title-actions"><button type="button" className="btn" onClick={() => void validateDraft()}>Validate Draft</button><button type="button" className="btn" onClick={onOpenRecords}><Database size={14} />View Records</button></div></div></PlatformPageSlot>
+            <div className="object-title-actions"><button type="button" className="btn" onClick={() => void validateDraft()}>Validate Draft</button><button type="button" className="btn" onClick={onOpenRecords}><Database size={14} />View Records</button></div></div></PlatformPageSlot>
           <div className="md-object-editor-split md-builder-frame">
             <PlatformPageSlot slotKey="object-subnav"><nav className="object-subnav" aria-label="Object settings">
               {objectSettings.map((setting) => <button type="button" key={setting}
