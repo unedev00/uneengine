@@ -326,3 +326,8 @@
 .lightning .setup-layout .btn:disabled{opacity:.68}
 @media(max-width:1023px){.lightning .md-admin-form-grid--3{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:720px){.lightning .md-admin-form-grid,.lightning .md-admin-form-grid--3{grid-template-columns:minmax(0,1fr)}.lightning .md-admin-table :is(th,td){padding:8px 10px}}
+
+.lightning .md-audit-table{min-width:940px}
+.lightning .quick-find-result-count{margin:7px 2px 0;font-size:var(--md-helper-size,12px);color:var(--md-muted,#596579)}
+.lightning .setup-tree .tree-item:focus-visible{outline:2px solid var(--md-primary,#1d4ed8);outline-offset:-2px}
+.lightning .setup-sidebar .empty-tree .text-action{display:inline-flex;margin-top:8px}
