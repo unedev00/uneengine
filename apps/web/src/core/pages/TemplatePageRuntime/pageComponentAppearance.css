@@ -11,10 +11,12 @@
   padding:0!important;
 }
 .record-component[data-page-appearance]:not([data-page-appearance="layout"]) {min-height:0;}
-.modern-canvas-builder .record-component[data-page-appearance].selected {
-  outline:2px solid var(--md-primary,#1d4ed8);
+/* Selection must not paint a square frame over authored native border/radius.
+ * Pointer selection is conveyed by the existing resize handles and ribbon. */
+.builder-editor-mode .modern-canvas-builder .record-component[data-page-appearance].selected {
+  outline:0!important;
   outline-offset:0;
-  box-shadow:0 0 0 4px rgba(71,115,239,.12)!important;
+  box-shadow:none!important;
 }
 .free-canvas-runtime-component[data-page-appearance] {
   background:transparent!important;
@@ -788,15 +790,9 @@
 }
 
 
-/* Layout containers expose their own configured rounded border. The editor's
-   selection highlight must not draw a second square border over that shape.
-   Resize handles remain mounted and keyboard focus is still visible. */
-.builder-editor-mode .modern-canvas-builder .record-component[data-page-appearance="layout"].selected,
-.builder-editor-mode .modern-canvas-builder .free-canvas-component[data-page-appearance="layout"].selected{
- outline:0!important;box-shadow:none!important;
-}
-.builder-editor-mode .modern-canvas-builder .record-component[data-page-appearance="layout"].selected:focus-visible,
-.builder-editor-mode .modern-canvas-builder .free-canvas-component[data-page-appearance="layout"].selected:focus-visible{
+/* All component categories, including nested layout containers and Images,
+ * retain a keyboard-only focus affordance. It is never a pointer-selection border. */
+.builder-editor-mode .modern-canvas-builder .record-component[data-page-appearance].selected:focus-visible{
  outline:2px dashed var(--md-primary,#1d4ed8)!important;
  outline-offset:3px!important;
  border-radius:var(--md-page-radius,8px)!important;

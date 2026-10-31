@@ -16,7 +16,7 @@
   background-size:8px 8px; background-position:-1px -1px;
 }
 .modern-canvas-builder .free-canvas-component { border-radius:8px; transition:box-shadow .12s ease,border-color .12s ease; }
-.modern-canvas-builder .free-canvas-component.selected { outline:2px solid var(--md-primary,#1d4ed8); outline-offset:0; border-color:transparent; box-shadow:0 0 0 4px rgba(71,115,239,.12); }
+/* Selection is shown by resize handles/group handles, not a second visible border. */
 .modern-canvas-builder .free-canvas-component .record-component-head {
   min-height:var(--md-control-height,40px); cursor:grab; touch-action:none; user-select:none; background:rgba(248,250,255,.95);
   border-bottom:1px solid #e7ebf5;
@@ -291,9 +291,13 @@
 /* The rail is the category navigation: no second tab bar or duplicate category list. */
 .canvas-unified-builder .builder-tabs,
 .canvas-unified-builder .component-category-list {display:none;}
-.canvas-unified-builder .free-canvas-component.multi-selected:not(.selected) {
-  outline:2px dashed var(--md-primary,#6553ec);
-  outline-offset:2px;
+/* Separate Shift-selected items need a visible indicator, but not an extra
+   rectangular stroke over their configured native border and radius.
+   Grouped items continue using the shared group bounds and resize handles. */
+.builder-editor-mode .canvas-unified-builder .free-canvas-component.multi-selected:not(.selected)::before{
+  content:"";position:absolute;top:3px;right:3px;z-index:160;
+  width:8px;height:8px;border-radius:50%;background:var(--md-primary,#1d4ed8);
+  box-shadow:0 0 0 2px #fff;pointer-events:none;
 }
 .canvas-unified-builder .visual-advanced-properties:focus-within,
 .canvas-unified-builder .canvas-action-menu:focus-within {border-color:var(--md-primary,#6553ec);}
