@@ -37,7 +37,7 @@ test('Schema Builder renders accessible scrollable canvas and responsive search/
   objects,selectedObjectApiName:'Account',
   onOpenObject:()=>{},onOpenField:()=>{},onCreateObject:()=>{},onNewField:()=>{}
  }));
- assert.match(html,/aria-label="Scrollable object relationship diagram" tabIndex="0"/);
+ assert.match(html,/aria-label="Scrollable object relationship diagram" tabindex="0"/);
  assert.match(html,/md-schema-toolbar/);
  assert.match(html,/md-schema-relation-grid/);
  assert.match(html,/aria-label="Schema diagram zoom controls"/);
