@@ -221,3 +221,55 @@
  --ak-border:var(--md-separator,#d7dde5);
  background:var(--ak-bg);
 }
+
+/* Phase 3 — kiosk hit targets, reading order and bounded responsive cart/modal.
+ * Keep the independent kiosk branding, menu and payment flows intact. */
+.ak-shell{max-width:100%;overflow-x:clip}
+.ak-shell :is(.ak-main,.ak-menu-content,.ak-products,.ak-product,.ak-product-body,.ak-order){min-width:0}
+.ak-shell :is(button,input,select,textarea):focus-visible{outline:3px solid var(--md-focus-ring,var(--ak-red,#e4002b));outline-offset:3px}
+.ak-shell .ak-title{flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:18px}
+.ak-shell .ak-cartbutton{min-height:48px}
+.ak-shell .ak-categories{scrollbar-width:thin;overscroll-behavior:contain}
+.ak-shell .ak-categories button{min-height:48px;line-height:1.35}
+.ak-shell .ak-search{font-size:16px;min-height:46px;box-sizing:border-box;max-width:100%}
+.ak-shell .ak-subcategories{gap:7px}
+.ak-shell .ak-subcategories button{min-height:42px;font-size:13px!important}
+.ak-shell .ak-products{gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr))}
+.ak-shell .ak-product-body{gap:7px}
+.ak-shell .ak-product-body h2{font-size:16px;line-height:1.4;overflow-wrap:anywhere}
+.ak-shell .ak-product-body p{font-size:13px;line-height:1.45;color:var(--ak-muted,#595959)}
+.ak-shell .ak-product-body>div{flex-wrap:wrap}
+.ak-shell .ak-product-body>div button{min-height:44px;padding:10px 13px}
+.ak-shell .ak-floating{max-width:calc(100vw - 20px);box-sizing:border-box;flex-wrap:wrap;gap:8px}
+.ak-shell .ak-floating>button{min-width:0;min-height:52px;overflow-wrap:anywhere}
+.ak-shell .ak-order{max-width:calc(100vw - 24px);margin:clamp(12px,3vw,40px) auto;box-sizing:border-box;padding:clamp(14px,3vw,34px)}
+.ak-shell .ak-orderline{gap:12px;flex-wrap:wrap;padding:14px 0}
+.ak-shell .ak-orderline>div:first-child{min-width:0;flex:1 1 190px;overflow-wrap:anywhere}
+.ak-shell .ak-counter{gap:10px;margin-left:auto}
+.ak-shell .ak-counter button{min-height:44px;min-width:44px}
+.ak-shell .ak-subtotal{flex-wrap:wrap;gap:8px;line-height:1.35}
+.ak-shell .ak-modal-backdrop{box-sizing:border-box;overflow-y:auto;overscroll-behavior:contain;padding:12px}
+.ak-shell .ak-modal{max-height:calc(100dvh - 24px);max-width:100%;min-width:0}
+.ak-shell .ak-modal-top,.ak-shell .ak-modal-footer{gap:10px;padding:14px 18px;flex-wrap:wrap}
+.ak-shell .ak-modal-body{padding:16px 18px;min-height:0}
+.ak-shell .ak-modal-body h2{font-size:clamp(24px,4vw,36px);line-height:1.2}
+.ak-shell .ak-option{gap:12px;padding:12px;line-height:1.4}
+.ak-shell .ak-option small,.ak-shell .ak-small{font-size:13px;line-height:1.45}
+.ak-shell .ak-paymethods{display:flex;flex-wrap:wrap;gap:10px}
+.ak-shell .ak-paymethods button{min-height:48px;flex:1 1 140px}
+.ak-shell .ak-tender input{max-width:100%;box-sizing:border-box}
+@media(max-width:650px){
+ .ak-shell .ak-header{padding:0 12px}
+ .ak-shell .ak-title h1{font-size:clamp(29px,8vw,44px)}
+ .ak-shell .ak-products{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+ .ak-shell .ak-product-body{padding:10px}
+ .ak-shell .ak-product-body h2{font-size:14px}
+ .ak-shell .ak-product-body>div button{width:100%;min-height:42px}
+ .ak-shell .ak-floating{bottom:max(8px,env(safe-area-inset-bottom));width:calc(100vw - 16px);padding:8px}
+ .ak-shell .ak-floating>button{font-size:13px;min-height:48px;flex:1 1 40%}
+ .ak-shell .ak-order{margin:12px auto}
+ .ak-shell .ak-modal-top,.ak-shell .ak-modal-footer{padding:12px}
+ .ak-shell .ak-modal-body{padding:12px}
+}
+@media(max-width:350px){.ak-shell .ak-products{grid-template-columns:1fr}.ak-shell .ak-floating{position:sticky;bottom:0;left:auto;transform:none;width:100%;max-width:100%}}
+@media(prefers-reduced-motion:reduce){.ak-shell *{scroll-behavior:auto!important;transition:none!important;animation:none!important}}

@@ -330,3 +330,23 @@
 @media(max-width:760px){
  .ace-chat .ace-chat-top{background:var(--chat-subtle)}
 }
+
+/* Phase 3: chat legibility, keyboard target discovery, narrow-screen dialogs. */
+.ace-chat{min-width:0;max-width:100%}
+.ace-chat-sidebar{flex-basis:clamp(285px,28vw,370px)}
+.ace-chat :is(.ace-chat-sidebar,.ace-chat-main,.ace-chat-conversation,.ace-chat-contact-row,.ace-chat-compose-row){min-width:0}
+.ace-chat .ace-chat-conversation{min-height:66px;padding:10px 14px;gap:10px}
+.ace-chat .ace-chat-conversation-copy{min-width:0;gap:4px}
+.ace-chat .ace-chat-conversation-meta{font-size:12px;line-height:1.4}
+.ace-chat .ace-chat-bubble small{font-size:12px;line-height:1.4}
+.ace-chat .ace-chat-compose>small{font-size:12px;line-height:1.4}
+.ace-chat .ace-chat-bubble{max-width:min(85%,680px);overflow-wrap:anywhere}
+.ace-chat .ace-chat-new-chat-tabs button{font-size:13px;min-height:44px}
+.ace-chat .ace-chat-modal{max-width:calc(100vw - 20px)}
+.ace-chat .ace-chat-contacts-list{overscroll-behavior:contain}
+.ace-chat :is(.ace-chat-conversation.selected,.ace-chat-conversation[aria-current="true"]){border-inline-start:3px solid var(--chat-link,#087d70);padding-inline-start:11px}
+.ace-chat :is(.ace-chat-icon-button,.ace-chat-send-button,.ace-chat-modal-back){min-width:42px;min-height:42px}
+.ace-chat :is(.ace-chat-number-form input,.ace-chat-compose textarea){max-width:100%;box-sizing:border-box}
+.ace-chat :is(button,input,select,textarea):focus-visible{outline:3px solid var(--md-focus-ring,#419d96);outline-offset:2px}
+@media(max-width:760px){.ace-chat-sidebar{flex:1 1 100%;max-width:100%}.ace-chat .ace-chat-modal{width:100%;max-width:100%;height:100dvh;max-height:100dvh}.ace-chat .ace-chat-bubble{max-width:92%}.ace-chat .ace-chat-top{padding:8px 12px}}
+@media(prefers-reduced-motion:reduce){.ace-chat *{scroll-behavior:auto!important;transition:none!important;animation:none!important}}

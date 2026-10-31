@@ -137,6 +137,96 @@ try {
  assert.equal(await page.locator('.md-admin-password-grid').evaluate(el=>getComputedStyle(el).gridTemplateColumns.split(' ').length),1,'Password editing must collapse to one column on mobile');
  await screenshot('phase2-password-mobile');
  await page.setViewportSize({width:1365,height:768});
+ await open('schema');
+ const schemaViewport=page.getByRole('region',{name:'Scrollable object relationship diagram'});
+ await schemaViewport.waitFor();
+ assert.equal(await schemaViewport.getAttribute('tabindex'),'0');
+ await page.getByRole('button',{name:'Zoom in schema'}).click();
+ await screenshot('phase3-schema-desktop');
+ await page.setViewportSize({width:390,height:844});
+ await open('schema');
+ assert.equal(await page.locator('.md-schema-relation-grid').evaluate(el=>getComputedStyle(el).gridTemplateColumns.split(' ').length),1,
+   'Schema relationship editor must collapse to one column on mobile');
+ await screenshot('phase3-schema-mobile');
+ await page.setViewportSize({width:1365,height:768});
+ await page.route('**/api/flows/**',async route=>{
+   const url=new URL(route.request().url());
+   const path=url.pathname;
+   let data={};
+   if(path.endsWith('/available-actions'))data={actions:[{apiName:'AceKioskLoadMenu',label:'Load menu'},{apiName:'AceKioskPaymentCash',label:'Cash payment'}]};
+   else if(path.endsWith('/AceKioskLoadMenu/execute'))data={outputs:{products:[{Id:'product-1',Name:'Classic Burger',Price:7.5,Active:true,Category:'Burgers',Description:'Freshly prepared burger'}],categories:[{Id:'category-1',Name:'Burgers',Active:true,DisplayOrder:1}]}};
+   else if(path.endsWith('/AceKioskPaymentCash/execute'))data={completed:true,outputs:{status:'completed',orderId:'order-1'}};
+   else data={outputs:{}};
+   await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(data)});
+ });
+ await open('kiosk');
+ await page.getByRole('button',{name:/TAKEAWAY/}).click();
+ await page.getByRole('region',{name:'Menu products'}).waitFor();
+ const categories=page.getByRole('navigation',{name:'Menu categories'});
+ await categories.getByRole('button',{name:'Burgers'}).click();
+ assert.equal(await categories.getByRole('button',{name:'Burgers'}).getAttribute('aria-pressed'),'true');
+ await page.getByRole('button',{name:'Add Classic Burger'}).click();
+ await page.getByRole('dialog',{name:'Classic Burger'}).waitFor();
+ await page.getByRole('button',{name:/Add to basket/}).click();
+ await screenshot('phase3-kiosk-menu-desktop');
+ await page.getByRole('button',{name:/SHOW BASKET/}).click();
+ await page.getByRole('button',{name:'Add one Classic Burger'}).click();
+ await page.getByRole('button',{name:/Continue to checkout/}).click();
+ await page.getByRole('button',{name:'CASH'}).click();
+ assert.equal(await page.getByRole('button',{name:'CASH'}).getAttribute('aria-pressed'),'true');
+ await page.getByLabel('Cash received (£)').fill('20');
+ await page.getByRole('button',{name:/CONFIRM ORDER/}).click();
+ await page.getByRole('heading',{name:'Thank you!'}).waitFor();
+ await screenshot('phase3-kiosk-checkout-desktop');
+ await page.setViewportSize({width:390,height:844});
+ await open('kiosk');
+ await page.getByRole('button',{name:/TAKEAWAY/}).click();
+ await page.getByRole('region',{name:'Menu products'}).waitFor();
+ assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1),
+    'Kiosk must have no horizontal overflow at 390px');
+ await screenshot('phase3-kiosk-menu-mobile');
+ await page.setViewportSize({width:1365,height:768});
+ await page.route('**/api/acetill/**',async route=>{
+   const path=new URL(route.request().url()).pathname;
+   const response=path.endsWith('action-access')?{access:{}}:{styles:{}};
+   await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(response)});
+ });
+ await page.route('**/api/flows/**',async route=>{
+   const path=new URL(route.request().url()).pathname;
+   let data={outputs:{}};
+   if(path.endsWith('/available-actions'))data={actions:[
+    {apiName:'AcetillGetProducts',label:'Get products'},
+    {apiName:'AcetillGetCategories',label:'Get categories'},
+    {apiName:'AcetillPaymentCash',label:'Cash payment'}
+   ]};
+   if(path.endsWith('/AcetillGetProducts/execute'))data={outputs:{products:[{Id:'product-1',Name:'Classic Burger',Price:7.5,Category:'Burgers',CategoryId:'category-1',Active:true}]}};
+   if(path.endsWith('/AcetillGetCategories/execute'))data={outputs:{categories:[{Id:'category-1',Name:'Burgers',Active:true,POSSortOrder:1}]}};
+   if(path.endsWith('/AcetillPaymentCash/execute'))data={completed:true,outputs:{status:'completed',invoiceId:'invoice-1',total:7.5}};
+   await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(data)});
+ });
+ await open('till');
+ await page.getByRole('button',{name:/Classic Burger/}).waitFor();
+ await page.getByRole('button',{name:/Classic Burger/}).click();
+ await page.getByRole('region',{name:'Current order items'}).waitFor();
+ await page.getByRole('button',{name:'Cash',exact:true}).click();
+ const cashDialog=page.getByRole('dialog',{name:'Cash payment'});
+ await cashDialog.waitFor();
+ assert.equal(await cashDialog.evaluate(el=>el.contains(document.activeElement)),true,'Till payment dialog should own keyboard focus');
+ await page.keyboard.press('Escape');
+ assert.equal(await cashDialog.count(),0,'Escape must close payment without confirming');
+ await page.getByRole('button',{name:'Cash',exact:true}).click();
+ await page.getByLabel('Cash received (£)').fill('10');
+ await screenshot('phase3-till-cash-payment');
+ await page.getByRole('button',{name:'Tender cash'}).click();
+ await page.getByRole('heading',{name:'Payment complete'}).waitFor();
+ await screenshot('phase3-till-receipt');
+ await page.setViewportSize({width:390,height:844});
+ await open('till');
+ await page.getByRole('button',{name:/Classic Burger/}).waitFor();
+ assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1),
+  'Till should not create horizontal page overflow at 390px');
+ await screenshot('phase3-till-mobile');
+ await page.setViewportSize({width:1365,height:768});
  assert.deepEqual(errors,[]);
- console.log('PASS: dashboard permission/create, offline object/record/save, tenant draft/footer/discard, credential width/details, history details, flow dialog/create, record route chunk import, MFA policy control, OAuth grids, audit table, deep-linked company settings, monitoring, licences, SSO, password, sessions and credential modal (1365px/390px)');
+ console.log('PASS: dashboard permission/create, offline object/record/save, tenant draft/footer/discard, credential width/details, history details, flow dialog/create, record route chunk import, MFA policy control, OAuth grids, audit table, deep-linked company settings, monitoring, licences, SSO, password, sessions, credential modal, real Schema Builder and real Kiosk and Till product/cart/checkout/payment (1365px/390px)');
 } finally { await browser.close(); }

@@ -87,6 +87,35 @@ export default function AcetillTerminal({editorStyles}: {editorStyles?:AcetillVi
   const [newPin,setNewPin]=React.useState('');
   const [setupStatus,setSetupStatus]=React.useState('');
   const [paymentMode,setPaymentMode]=React.useState<'cash'|'card'|null>(null);
+  const paymentDialogRef=React.useRef<HTMLElement>(null);
+  React.useEffect(()=>{
+    if(!paymentMode)return;
+    const dialog=paymentDialogRef.current;
+    if(!dialog)return;
+    const previous=document.activeElement instanceof HTMLElement?document.activeElement:null;
+    const controls=()=>Array.from(dialog.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled),select:not(:disabled),textarea:not(:disabled)'))
+      .filter(element=>element.getClientRects().length>0);
+    const first=controls()[0];
+    first?.focus();
+    const onKey=(event:KeyboardEvent)=>{
+      if(event.key==='Escape'){
+        const cancel=dialog.querySelector<HTMLButtonElement>('.acetill-payment-buttons button:first-child');
+        if(cancel&&!cancel.disabled){event.preventDefault();cancel.click();}
+        return;
+      }
+      if(event.key!=='Tab')return;
+      const available=controls();
+      if(!available.length){event.preventDefault();return;}
+      const start=available[0],end=available[available.length-1];
+      if(event.shiftKey&&(document.activeElement===start||!dialog.contains(document.activeElement))){
+        event.preventDefault();end.focus();
+      }else if(!event.shiftKey&&(document.activeElement===end||!dialog.contains(document.activeElement))){
+        event.preventDefault();start.focus();
+      }
+    };
+    document.addEventListener('keydown',onKey);
+    return()=>{document.removeEventListener('keydown',onKey);previous?.focus();};
+  },[paymentMode]);
   const [cashReceived,setCashReceived]=React.useState('');
   const [customerWindow,setCustomerWindow]=React.useState<Window|null>(null);
   const customerWindowRef=React.useRef<Window|null>(null);
@@ -357,7 +386,7 @@ export default function AcetillTerminal({editorStyles}: {editorStyles?:AcetillVi
   </div>;
   const cashierToolbarSlot=typeof document==='undefined'?null:document.querySelector('[data-acetill-toolbar-slot]');
   const paymentDialog=paymentMode?<div className="acetill-payment-backdrop" role="presentation">
-    <section className="acetill-payment-dialog" role="dialog" aria-modal="true" aria-labelledby="acetill-payment-title">
+    <section ref={paymentDialogRef} className="acetill-payment-dialog" role="dialog" aria-modal="true" aria-labelledby="acetill-payment-title">
       <h2 id="acetill-payment-title">{paymentMode==='cash'?'Cash payment':'Card Payment Done?'}</h2>
       {paymentMode==='cash'?<>
         <p>Amount due: <strong>{amount(subtotal)}</strong></p>
@@ -472,16 +501,16 @@ export default function AcetillTerminal({editorStyles}: {editorStyles?:AcetillVi
       <div className="acetill-mobile-cart-grabber" aria-hidden="true" />
       <button type="button" className="acetill-mobile-cart-close" onClick={() => setCartOpen(false)} aria-label="Close cart">Done</button>
       <div className="acetill-order-heading" data-acetill-element="orderHeading"><strong>Current order ({count})</strong><button type="button" aria-label="Clear order" disabled={!count||busy} onClick={()=>{paymentRequestId.current=crypto.randomUUID();setAgeApproved(false);setCart([]);}}>⌫</button></div>
-      <div className="acetill-lines">{cart.length?cart.map(p=><div className="acetill-line" key={p.id}>
+      <div className="acetill-lines" role="region" tabIndex={0} aria-label="Current order items">{cart.length?cart.map(p=><div className="acetill-line" key={p.id}>
         <div className="acetill-line-art">{p.image?<img src={p.image} alt=""/>:<span aria-hidden="true">◻</span>}</div>
         <div className="acetill-line-details"><strong>{p.name}</strong><div className="acetill-qty">
-          <button type="button" aria-label={'Remove '+p.name} onClick={()=>change(p.id,-1)}>−</button><span>{p.quantity}</span>
-          <button type="button" aria-label={'Add '+p.name} onClick={()=>{if(p.ageRestricted)setPendingAgeItem(p);else change(p.id,1);}}>+</button>
+          <button type="button" aria-label={'Decrease quantity of '+p.name} onClick={()=>change(p.id,-1)}>−</button><span>{p.quantity}</span>
+          <button type="button" aria-label={'Increase quantity of '+p.name} onClick={()=>{if(p.ageRestricted)setPendingAgeItem(p);else change(p.id,1);}}>+</button>
         </div></div><span className="acetill-line-price">{amount(p.price*p.quantity)}</span>
       </div>):<div className="acetill-empty">Select a product to start an order.</div>}</div>
       <div className="acetill-checkout" data-acetill-element="checkout"><div className="acetill-subtotal"><span>Estimated subtotal</span><span>{amount(subtotal)}</span></div>
         <div className="acetill-total"><strong>Subtotal</strong><strong>{amount(subtotal)}</strong></div>
-        <div className="acetill-payment-choices" data-acetill-element="paymentChoices">
+        <div className="acetill-payment-choices" role="group" aria-label="Payment method" data-acetill-element="paymentChoices">
           <button type="button" className="acetill-charge" data-acetill-element="cash" disabled={!cart.length||busy}
             onClick={()=>{setCartOpen(false);setError('');setCashReceived('');setPaymentMode('cash');}}>Cash</button>
           <button type="button" className="acetill-charge" data-acetill-element="card" disabled={!cart.length||busy}
