@@ -58,7 +58,7 @@ function Fixture(){
   else if(view==='governance')content=<TenantGovernance request={uxRequest} canManage/>;
   else if(view==='company')content=<CompanySettingsWorkspace initialSection="security" company={<p>Company</p>}
    domains={<p>Domains</p>} developer={<p>Developer</p>} usage={<p>Usage</p>} recovery={<p>Recovery</p>}
-   mfa={<p>Security controls available</p>} emailRecovery={<p>Email recovery</p>} locks={<p>Locks</p>}
+   mfa={<TenantGovernance request={uxRequest} canManage initialTab="connected apps" focusOnMount/>} emailRecovery={<p>Email recovery</p>} locks={<p>Locks</p>}
    sessions={<p>Sessions</p>} audit={<p>Audit</p>}/>;
   else if(view==='tenants')content=<TenantManagement request={request} permitted/>;
  else if(view==='records-import')content=<RecordImportCheck/>;
