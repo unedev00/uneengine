@@ -125,6 +125,93 @@ export function pageComponentRelatedQuery(properties:Record<string,unknown>,fiel
  if(!field||typeof parentId!=='string'||!parentId||!isServerFilterable(field,'Equals'))return {blocked:true};
  return {blocked:false,filter:{field:field.apiName,value:parentId,related:Boolean(field.relationship)}};
 }
+/**
+ * Reuse an authorised Flow's active parent record from the page state to scope
+ * child records. Field metadata supplies the relationship, never an app name.
+ * The generated browser session token is NOT a database record ID.
+ *
+ * No matching active parent, invalid state or ambiguous parents fail closed.
+ * The containing component opts in; a normal list still lists all records.
+ */
+export function pageComponentActiveRecordQuery(
+ fields:ReadonlyArray<FieldMetadata>,pageState:Readonly<Record<string,unknown>>
+):{blocked:boolean;filter?:PageQueryFilter}{
+ const matches:Array<{field:FieldMetadata;value:string;priority:number}>=[];
+ for(const field of fields){
+  if(!field.relationship||!isServerFilterable(field,'Equals'))continue;
+  const names=[field.apiName,field.relationship.targetObject]
+    .filter((name):name is string=>typeof name==='string'&&/^[A-Za-z][A-Za-z0-9_]*$/.test(name));
+  for(const [priority,prefix] of ['active','current',''].entries()){
+   for(const name of names){
+    const base=name.charAt(0).toLowerCase()+name.slice(1);
+    const key=prefix?prefix+name+'Id':base+'Id';
+    if(!Object.prototype.hasOwnProperty.call(pageState,key))continue;
+    const value=pageState[key];
+    if(typeof value!=='string'||!value.trim())return {blocked:true};
+    if(!matches.some(candidate=>candidate.field.apiName===field.apiName&&candidate.priority===priority))
+     matches.push({field,value,priority});
+   }
+  }
+ }
+ if(matches.length===0)return {blocked:true};
+ const priority=Math.min(...matches.map(candidate=>candidate.priority));
+ const nearest=matches.filter(candidate=>candidate.priority===priority);
+ // Never accidentally choose between two unrelated active records.
+ if(nearest.length!==1)return {blocked:true};
+ const match=nearest[0];
+ return {blocked:false,filter:{field:match.field.apiName,value:match.value,related:true}};
+}
+/** An explicitly published active ID always wins over session discovery.
+ * A malformed or ambiguous active ID must never trigger a wider query. */
+export function hasPageActiveRecordSelection(
+ fields:ReadonlyArray<FieldMetadata>,pageState:Readonly<Record<string,unknown>>
+):boolean {
+ return fields.some(field=>{
+  if(!field.relationship)return false;
+  return [field.apiName,field.relationship.targetObject].some(name=>{
+   if(typeof name!=='string'||!/^[A-Za-z][A-Za-z0-9_]*$/.test(name))return false;
+   const key=name.charAt(0).toLowerCase()+name.slice(1)+'Id';
+   return [key,'active'+name+'Id','current'+name+'Id']
+    .some(candidate=>Object.prototype.hasOwnProperty.call(pageState,candidate));
+  });
+ });
+}
+
+/**
+ * Resolve a page session to a related record using only relationship metadata.
+ * No POS/Cart-specific path is embedded in the shared runtime. Candidate parents
+ * must themselves expose a readable SessionKey field. All reads use the normal
+ * tenant- and OneEngine-permission-checked Record API.
+ */
+export async function pageComponentSessionRelatedQuery(
+ fields:ReadonlyArray<FieldMetadata>,
+ objects:ReadonlyArray<{apiName:string;fields:ReadonlyArray<FieldMetadata>}>,
+ sessionId:string,
+ load:(target:string,sessionKey:string)=>Promise<{records:Record<string,unknown>[];total:number}>
+):Promise<{blocked:boolean;filter?:PageQueryFilter}>{
+ if(typeof sessionId!=='string'||!sessionId.trim()||sessionId.length>128)return {blocked:true};
+ const eligible=fields.flatMap(field=>{
+  if(!field.relationship||!isServerFilterable(field,'Equals'))return [];
+  const parent=objects.find(object=>object.apiName===field.relationship?.targetObject);
+  if(!parent||!parent.fields.some(candidate=>candidate.apiName==='SessionKey'
+    &&isServerFilterable(candidate,'Equals')))return [];
+  return [{field,target:parent.apiName}];
+ });
+ if(eligible.length===0||eligible.length>8)return {blocked:true};
+ const matches:PageQueryFilter[]=[];
+ for(const {field,target} of eligible){
+  try{
+   const page=await load(target,sessionId);
+   if(!page||!Array.isArray(page.records)||!Number.isSafeInteger(page.total)
+     ||page.total<0||page.total>1||page.records.length>1)return {blocked:true};
+   if(page.total===0)continue;
+   const row=page.records[0];
+   if(!row||typeof row.Id!=='string'||!row.Id)return {blocked:true};
+   matches.push({field:field.apiName,value:row.Id,related:true});
+  }catch{return {blocked:true};}
+ }
+ return matches.length===1?{blocked:false,filter:matches[0]}:{blocked:true};
+}
 const isDynamic=(value:unknown):value is {source:string;key?:string}=>
   Boolean(value&&typeof value==='object'&&!Array.isArray(value));
 /** Resolve only declared, typed page context sources; never evaluate expressions. */

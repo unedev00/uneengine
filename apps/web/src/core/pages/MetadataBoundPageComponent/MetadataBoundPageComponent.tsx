@@ -4,8 +4,9 @@ import {useState,useEffect,useRef} from 'react';
 import {loadFlowScreenRecordPage} from '../../authentication/Client/authClient';
 // Load the browser API client only during the mounted effect, not on SSR import.
 import {presentPageRecords,type ChannelGrant} from '../../records/RecordWorkspace/recordPresentationAdapters';
-import {filterPageComponentRecords,pageComponentRecordQuery,pageComponentRelatedQuery,bindPageStateProperties} from '../PageRuntime/pageComponentBindings';
+import {filterPageComponentRecords,pageComponentRecordQuery,bindPageStateProperties} from '../PageRuntime/pageComponentBindings';
 import {resolveSmartToggleFieldBinding,updateSmartToggleField} from '../PageRuntime/smartToggleFieldBinding';
+import {usePageComponentRelatedScope} from '../PageRuntime/usePageSessionRelatedQuery';
 import {filterRelatedRecords} from '../PageRuntime/filterRelatedRecords.mjs';
 import {resolveMentionProperties,mentionGroups,referencedMentionPaths,resolveCollectionMentionRows} from '../../../component-libraries/shared/primitives/SmartFieldInput/smartFieldMentions';
 import { explicitMentionRecordId, useRelationshipMentionContext } from '../../records/RecordFormDialog/useRelationshipMentionContext';
@@ -56,6 +57,7 @@ export default function MetadataBoundPageComponent({
     }
   });
   const [pageState,setPageState]=useState<Record<string,unknown>>({});
+  const [revision, setRevision] = useState(0);
   useEffect(()=>{
     const receive=(event:Event)=>{
       const data=(event as CustomEvent<{pageSessionKey:string;key:string;value:unknown}>).detail;
@@ -77,6 +79,7 @@ export default function MetadataBoundPageComponent({
     }));
   const filterFields=[...fields,...relatedFilterFields];
   const [records, setRecords] = useState<Record<string, unknown>[]>([]);
+  const [recordsForRequest,setRecordsForRequest]=useState('');
   const [recordTotal,setRecordTotal]=useState(0);
   const [recordOffset,setRecordOffset]=useState(0);
   const recordPageSize=100;
@@ -87,9 +90,11 @@ export default function MetadataBoundPageComponent({
     recordId:string;label:string;sourceObjectApiName:string
   }>>({});
   const relatedKey=String(properties.relatedFilterKey??'');
-  const relatedField=String(properties.relatedFieldApiName??'');
-  const parentId=relatedKey?selectedFilterRecords[relatedKey]?.recordId||pageState[relatedKey]:undefined;
-  const relatedQuery=pageComponentRelatedQuery(properties,fields,parentId);
+  const {relatedQuery,relatedField,parentId}=usePageComponentRelatedScope(
+    properties,component.type,fields,objects,pageState,sessionId,revision,
+    loadFlowScreenRecordPage,
+    relatedKey?selectedFilterRecords[relatedKey]?.recordId||pageState[relatedKey]:undefined,
+    disableActions);
   const recordQuery=pageComponentRecordQuery(properties.filters,filterFields,{pageState,recordId,sessionId},
     properties.filterLogic==='OR'?'OR':'AND');
   const recordQueryKey=JSON.stringify([recordQuery,relatedQuery]);
@@ -109,7 +114,8 @@ export default function MetadataBoundPageComponent({
     return () => window.removeEventListener('metadrive:page-filter-selected',listener);
   },[pageSessionKey]);
   const [dataLoading, setDataLoading] = useState(false);
-  const [revision, setRevision] = useState(0);
+
+  const recordRequestKey=JSON.stringify([objectApiName,recordQueryKey,recordOffset,revision]);
   const [channelAccess, setChannelAccess] = useState<{userId: string;viewAll: boolean;grants: ChannelGrant[];eligibleAssignees: {id: string;name: string;channelAccountId: string}[]}>({
     userId: '', viewAll: false, grants: [], eligibleAssignees: []
   });
@@ -169,6 +175,7 @@ export default function MetadataBoundPageComponent({
   useEffect(() => {
     let active = true;
     setRecords([]);
+    setRecordsForRequest('');
     setRecordTotal(0);
     setDataError('');
     if (!objectApiName || recordQuery.blocked || relatedQuery.blocked) {
@@ -182,7 +189,7 @@ export default function MetadataBoundPageComponent({
       filter:relatedQuery.filter??(recordQuery.serverFilterable?recordQuery.filter:undefined),
       filters:recordQuery.filters,filterLogic:recordQuery.filterLogic
     })
-      .then((page) => { if (active) {setRecords(page.records);setRecordTotal(page.total);} })
+      .then((page) => { if (active) {setRecords(page.records);setRecordsForRequest(recordRequestKey);setRecordTotal(page.total);} })
       .catch((reason: unknown) => {
         if (active) setDataError(reason instanceof Error ? reason.message : 'Unable to load records');
       })
@@ -212,27 +219,28 @@ export default function MetadataBoundPageComponent({
   });
   const mentionKey=JSON.stringify(Object.entries(mentionInputs)
     .filter(([,value])=>typeof value==='string'&&value.includes('@')));
-  const collectionKey=JSON.stringify([objectApiName,records.map(row=>row.Id),mentionKey,revision]);
+  const currentRecords=recordsForRequest===recordRequestKey?records:[];
+  const collectionKey=JSON.stringify([objectApiName,recordRequestKey,currentRecords.map(row=>row.Id),mentionKey]);
   const [collectionMentions,setCollectionMentions]=useState<{key:string;rows:Record<string,unknown>[]} | null>(null);
   useEffect(()=>{
     let active=true;
     setCollectionMentions(null);
-    if(!objectApiName||!records.length||
+    if(!objectApiName||!currentRecords.length||
       !referencedMentionPaths(mentionInputs,objects,objectApiName).length)return()=>{active=false;};
     const getRecord=async(target:string,id:string)=>{
       const result=await apiRequest<{record:Record<string,unknown>}>(
         '/records/'+encodeURIComponent(target)+'/'+encodeURIComponent(id));
       return result.record?.Id===id?result.record:undefined;
     };
-    void resolveCollectionMentionRows(objects,objectApiName,records,mentionInputs,getRecord)
+    void resolveCollectionMentionRows(objects,objectApiName,currentRecords,mentionInputs,getRecord)
       .then(rows=>{if(active)setCollectionMentions({key:collectionKey,rows});})
       .catch(()=>{if(active)setCollectionMentions(null);});
     return()=>{active=false;};
-  },[collectionKey,records,objects,objectApiName,apiRequest]);
-  const sourceRecords=collectionMentions?.key===collectionKey?collectionMentions.rows:records;
+  },[collectionKey,currentRecords,objects,objectApiName,apiRequest]);
+  const sourceRecords=collectionMentions?.key===collectionKey?collectionMentions.rows:currentRecords;
   const filteredRecords=recordQuery.filters?sourceRecords:filterPageComponentRecords(
     sourceRecords,properties.filters,filterFields,{pageState,recordId,sessionId},properties.filterLogic==='OR'?'OR':'AND');
-  const visibleRecords=relatedKey?filterRelatedRecords(filteredRecords,parentId,relatedField):filteredRecords;
+  const visibleRecords=relatedField?filterRelatedRecords(filteredRecords,parentId,relatedField):filteredRecords;
   const mentionContext = useRelationshipMentionContext(objects, mentionRootObjectApiName,
     recordId || explicitMentionRecordId(properties), properties, apiRequest, revision);
   const resolvedProperties = bindPageStateProperties(resolveMentionProperties(properties, mentionContext.records, mentionContext.fields, objects, mentionRootObjectApiName),pageState);

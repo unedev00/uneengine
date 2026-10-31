@@ -85,8 +85,9 @@ import { isComponentVisible } from '../../components/Properties/componentVisibil
 import {behaviorValidation,behaviorAction,behaviorAppearance,behaviorInteractions,behaviorTabs,behaviorTabForChild,pageBehaviors} from './pageBehaviorRuntime';
 import { canNestComponent, componentVisualStyle, directChildren, isLayoutType, isDescendantOf, layoutTypes } from '../TemplatePageRuntime/pageComponentLayout';
 import { isCanvasLocked, wrapCanvasComponent, ungroupCanvasComponent } from '../../builders/PageBuilder/canvasInteractions';
-import { filterPageComponentRecords, pageComponentRecordQuery,pageComponentRelatedQuery, bindPageStateProperties, needsMetadataComponentRuntime, resolvePageStatePath } from './pageComponentBindings';
+import { filterPageComponentRecords, pageComponentRecordQuery, bindPageStateProperties, needsMetadataComponentRuntime, resolvePageStatePath } from './pageComponentBindings';
 import {resolveSmartToggleFieldBinding,updateSmartToggleField} from './smartToggleFieldBinding';
+import {usePageComponentRelatedScope} from '../PageRuntime/usePageSessionRelatedQuery';
 import {filterRelatedRecords} from './filterRelatedRecords.mjs';
 import {resolveMentionProperties} from '../../../component-libraries/shared/primitives/SmartFieldInput/smartFieldMentions';
 import { explicitMentionRecordId, useRelationshipMentionContext } from '../../records/RecordFormDialog/useRelationshipMentionContext';
@@ -364,9 +365,9 @@ function MetadataBoundPageComponent({
   const fields = objects.find((item) => item.apiName === objectApiName)?.fields ?? [];
   const recordQuery=pageComponentRecordQuery(properties.filters,fields,{pageState,recordId,sessionId},properties.filterLogic==='OR'?'OR':'AND');
   const relatedKey=String(properties.relatedFilterKey??'');
-  const relatedField=String(properties.relatedFieldApiName??'');
-  const selectedId=relatedKey?pageState[relatedKey]:undefined;
-  const relatedQuery=pageComponentRelatedQuery(properties,fields,selectedId);
+  const {relatedQuery,relatedField,parentId:selectedId}=usePageComponentRelatedScope(
+    properties,component.type,fields,objects,pageState,sessionId,revision,
+    loadFlowScreenRecordPage,relatedKey?pageState[relatedKey]:undefined,disableActions);
   const recordQueryKey=JSON.stringify([recordQuery,relatedQuery]);
   useEffect(()=>setRecordOffset(0),[objectApiName,recordQueryKey]);
   useEffect(() => {
@@ -483,7 +484,7 @@ function MetadataBoundPageComponent({
   const currentQueryRecords = recordsForQueryKey === recordQueryKey ? records : [];
   const filteredRecords=recordQuery.filters?currentQueryRecords:filterPageComponentRecords(
     currentQueryRecords,properties.filters,fields,{pageState,recordId,sessionId},properties.filterLogic==='OR'?'OR':'AND');
-  const visibleRecords=relatedKey?filterRelatedRecords(filteredRecords,selectedId,relatedField):filteredRecords;
+  const visibleRecords=relatedField?filterRelatedRecords(filteredRecords,selectedId,relatedField):filteredRecords;
   const mentionContext = useRelationshipMentionContext(objects, mentionRootObjectApiName,
     recordId || explicitMentionRecordId(properties), properties, apiRequest, revision);
   const resolvedProperties = bindPageStateProperties(resolveMentionProperties(properties, mentionContext.records, mentionContext.fields, objects, mentionRootObjectApiName),pageState);
