@@ -153,6 +153,7 @@ import UneBuilderRibbon from './UneBuilderRibbon';
 import SmartRibbon from './SmartRibbon';
 import SmartEventActionsRibbon from './SmartEventActionsRibbon';
 import SmartInsertRibbon from './SmartInsertRibbon';
+import PageBuilderAdvancedRibbon, {advancedFeatureLabels, type AdvancedFeature} from './PageBuilderAdvancedRibbon';
 import SmartIconGallery from './SmartIconGallery';
 import {isUneBuilderApi,uneBuilderDefaults,type SharedRibbonCatalog,type UneBuilderApi} from './uneBuilderPropertyInventory';
 import './UniversalRibbonInventory.css';
@@ -502,6 +503,7 @@ function PageBuilder({
   const [ribbonSourceOffset,setRibbonSourceOffset] = useState(0);
   const [additionalPropertyDialogOpen,setAdditionalPropertyDialogOpen] = useState(false);
   const [pageSettingsDialogOpen,setPageSettingsDialogOpen] = useState(false);
+  const [advancedEditor,setAdvancedEditor] = useState<AdvancedFeature|null>(null);
   const [focusedCardMapping,setFocusedCardMapping] = useState('');
   const ribbonStripRef=useRef<HTMLDivElement|null>(null);
   const [ribbonOverflow,setRibbonOverflow]=useState({left:false,right:false});
@@ -512,7 +514,7 @@ function PageBuilder({
   };
   const [selectedConversationPart,setSelectedConversationPart]=useState('parent');
   useEffect(()=>setSelectedConversationPart('parent'),[selectedId]);
-  const [ribbonTab, setRibbonTab] = useState<'Add Block' | 'Component Content' | 'Component Properties' | 'Component Style' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Component Responsive' | 'Preview' | 'Filters' | 'Source' | 'Icons' | 'Shapes'>('Add Block');
+  const [ribbonTab, setRibbonTab] = useState<'Add Block' | 'Component Content' | 'Component Properties' | 'Component Style' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Component Responsive' | 'Preview' | 'Filters' | 'Source' | 'Icons' | 'Shapes' | 'Advanced'>('Add Block');
   useEffect(()=>{
     if(ribbonTab==='Icons'&&page.components.find(component=>component.id===selectedId)?.type!=='Custom:smart_icon')
       setRibbonTab('Component Properties');
@@ -541,7 +543,7 @@ function PageBuilder({
     setRibbonTab(tab);
     setPageSettingsDialogOpen(false);
     if (tab === 'Add Block') { setPageSettingsOpen(false); openPalette('Components', 'All Components'); }
-    if (tab === 'Component Layout') { setPageSettingsOpen(false); }
+    if (tab === 'Component Layout' || tab === 'Advanced') { setPageSettingsOpen(false); }
     const inspector = { 'Component Properties': 'Design', 'Shapes': 'Design', 'Component Style': 'Design', 'Component Data': 'Data & Actions', 'Component Content': 'Data & Actions', 'Component Action': 'Visibility', 'Component Layout': 'Position', 'Component Responsive': 'Position' } as const;
     if (tab in inspector) { setPageSettingsOpen(false); openComponentInspector(inspector[tab as keyof typeof inspector]); }
   };
@@ -2510,11 +2512,24 @@ function PageBuilder({
       default:return null;
     }
   };
+  const openAdvanced = (feature:AdvancedFeature) => {
+    if(feature==='preview'){setAdvancedEditor(null);setPreviewMode(value=>!value);return;}
+    if(['visibility','actions','responsive','nesting','properties','canvas'].includes(feature)&&!selected)return;
+    if(feature==='recordPage'&&page.pageType!=='Record Page')return;
+    if(feature==='canvas'&&page.layoutMode!=='free-canvas')return;
+    if(feature==='visibility'){
+      const raw=selected?.properties.visibilityRules;
+      setVisibilityDraft(raw&&typeof raw==='object'&&!Array.isArray(raw)
+        ?structuredClone(raw as ComponentVisibilityRule):undefined);
+    }
+    if(feature==='properties'){setInspectorTab('Data & Actions');setActivePanel('properties');}
+    setAdvancedEditor(feature);
+  };
   const quickAccessOrder=['save','activate','resetIcon','undo','redo','cut','copy','paste','delete'] as const;
   const journeyTabs: Array<typeof ribbonTab> = selectedNewUne
     ? ['Add Block',...(selected?.type==='Custom:smart_icon'?(['Icons'] as const):[]),
-       'Component Data','Component Properties','Shapes','Component Layout','Component Action','Preview']
-    : ['Add Block','Component Data','Component Content','Component Properties','Shapes','Component Layout','Component Responsive','Component Action','Preview'];
+       'Component Data','Component Properties','Shapes','Component Layout','Component Action','Advanced','Preview']
+    : ['Add Block','Component Data','Component Content','Component Properties','Shapes','Component Layout','Component Responsive','Component Action','Advanced','Preview'];
   const journeyIndex=journeyTabs.indexOf(ribbonTab as typeof journeyTabs[number]);
   const ribbonTabsVisible: Array<typeof ribbonTab> = [...journeyTabs];
   if(ribbonTab==='Filters')ribbonTabsVisible.splice(journeyTabs.indexOf('Component Data')+1,0,'Filters');
@@ -2745,7 +2760,7 @@ function PageBuilder({
                   'Component Responsive': Smartphone,
                   'Component Layout': Layers3,
                   'Component Action': Workflow,
-                  Preview: Eye, Filters: Filter, Source: Database
+                  Preview: Eye, Advanced: Settings2, Filters: Filter, Source: Database
                 }[tab];
                 const label = {
                   'Add Block': 'Insert',
@@ -2758,7 +2773,7 @@ function PageBuilder({
                   'Component Responsive': 'Responsive',
                   'Component Layout': 'Layout',
                   'Component Action': 'Actions',
-                  Preview: 'Preview', Filters: 'Filters', Source: 'Source'
+                  Preview: 'Preview', Advanced: 'Advanced', Filters: 'Filters', Source: 'Source'
                 }[tab];
                 return <button key={tab} id={`page-builder-tab-${index}`} type="button"
                   role="tab" tabIndex={ribbonTab===tab?0:-1} aria-selected={ribbonTab === tab}
@@ -2803,6 +2818,10 @@ function PageBuilder({
               </div>)}
             </div>;
           })()}
+          {ribbonTab==='Advanced' && <PageBuilderAdvancedRibbon
+            selected={!!selected} recordPage={page.pageType==='Record Page'}
+            freeCanvas={page.layoutMode==='free-canvas'} preview={previewMode}
+            onOpen={openAdvanced}/>}
           {ribbonTab==='Add Block' && <SmartInsertRibbon
             items={paletteComponents}
             onInsert={addPaletteComponent}
