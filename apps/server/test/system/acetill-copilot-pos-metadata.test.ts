@@ -4,11 +4,11 @@ import type {PoolClient} from 'pg';
 import {copilotPosGraphs,seedAcetillCopilotPosFlows} from '../../src/app-seeders/acetill-copilot-pos-flows.js';
 import {copilotTillLayout} from '../../src/app-seeders/acetill-copilot-pos-page.js';
 
-const required=['AcetillCopilotAddProduct','AcetillCopilotReadCart','AcetillCopilotChangeQuantity','AcetillCopilotDefaultCategory'];
+const required=['AcetillCopilotAddProduct','AcetillCopilotReadCart','AcetillCopilotChangeQuantity','AcetillCopilotDefaultCategory','AcetillCopilotVerifyPin'];
 test('Copilot POS installs only metadata-driven reuse of existing shared runtimes',()=>{
  assert.deepEqual(copilotPosGraphs.map(g=>g.apiName),required);
  for(const g of copilotPosGraphs){
-  assert.equal(g.flowType,'Autolaunched Flow');
+  assert.equal(g.flowType,g.apiName==='AcetillCopilotVerifyPin'?'Screen Flow':'Autolaunched Flow');
   assert.equal(g.appApiName,'Acetill');
   assert.equal(g.startConfig.executionContext,'User');
   const ids=new Set(g.elements.map(n=>n.id));
@@ -41,6 +41,10 @@ test('Page Blueprint uses only shared Smart Components and Flow actions, not har
    if(rule.actionType==='Flow')assert.match(String(rule.flowApiName),/^Acetill[A-Za-z0-9]+$/);
   }
  }
+ const pin=copilotPosGraphs.find(g=>g.apiName==='AcetillCopilotVerifyPin');
+ assert.equal(pin?.elements.find(x=>x.type==='Screen')?.config.fields[0].type,'Password');
+ assert.equal(pin?.elements.find(x=>x.type==='Subflow')?.config.flowApiName,'AcetillVerifyUserPin');
+ assert.ok(!copilotTillLayout.some(x=>x.id==='copilot-pos-pin'));
  const products=copilotTillLayout.find(x=>x.id==='copilot-pos-products');
  const cart=copilotTillLayout.find(x=>x.id==='copilot-pos-cart');
  assert.equal(products?.properties.objectApiName,'Product');
@@ -73,8 +77,8 @@ test('Copilot till Flow seeder is idempotent and never replaces authored metadat
   }
   return {rows:[],rowCount:1};
  }} as unknown as PoolClient;
- assert.equal(await seedAcetillCopilotPosFlows(client,'tenant-1'),4);
+ assert.equal(await seedAcetillCopilotPosFlows(client,'tenant-1'),5);
  assert.equal(await seedAcetillCopilotPosFlows(client,'tenant-1'),0);
- assert.equal(queries.filter(q=>q.includes('INSERT INTO md_flow_definitions')).length,4);
+ assert.equal(queries.filter(q=>q.includes('INSERT INTO md_flow_definitions')).length,5);
  assert.equal(queries.some(q=>q.includes('DELETE FROM md_flow')||q.includes('UPDATE md_flow')),false);
 });
