@@ -402,9 +402,22 @@ function TenantSecurityAudit() {
 }
 
 function TenantMfaSettings({ onReauthenticate, canManage, governanceTab, governanceFocus }: { onReauthenticate: () => void; canManage: boolean; governanceTab?: string; governanceFocus?: boolean }) {
-  return <><TenantMfaControls request={apiRequest} canManage={canManage} onReauthenticate={onReauthenticate}/>
-    <TenantSessionControls request={apiRequest} canManage={canManage}/>
-    <TenantFederationControls request={apiRequest} canManage={canManage}/><TenantGovernance request={apiRequest} canManage={canManage} initialTab={governanceTab} focusOnMount={governanceFocus}/></>;
+ const [view,setView]=useState<'mfa'|'sessions'|'federation'|'governance'>(governanceFocus?'governance':'mfa');
+ useEffect(()=>{if(governanceFocus)setView('governance');},[governanceFocus,governanceTab]);
+ const views=[{id:'mfa',label:'Multi-factor authentication'},{id:'sessions',label:'Session restrictions'},
+  {id:'federation',label:'Identity federation'},{id:'governance',label:'Security governance'}] as const;
+ return <section className="md-security-access-tabs" aria-label="Sign-in and access controls">
+  <div role="tablist" className="md-admin-tabstrip" aria-label="Security configuration">{views.map(item=>
+   <button type="button" role="tab" key={item.id} aria-selected={view===item.id}
+    aria-controls={'security-panel-'+item.id} id={'security-tab-'+item.id}
+    onClick={()=>setView(item.id)}>{item.label}</button>)}</div>
+  <div role="tabpanel" id={'security-panel-'+view} aria-labelledby={'security-tab-'+view} className="md-admin-tabpanel">
+   {view==='mfa'&&<TenantMfaControls request={apiRequest} canManage={canManage} onReauthenticate={onReauthenticate}/>}
+   {view==='sessions'&&<TenantSessionControls request={apiRequest} canManage={canManage}/>}
+   {view==='federation'&&<TenantFederationControls request={apiRequest} canManage={canManage}/>}
+   {view==='governance'&&<TenantGovernance request={apiRequest} canManage={canManage} initialTab={governanceTab} focusOnMount={governanceFocus}/>}
+  </div>
+ </section>;
 }
 
 type CompanyProfile = {logoUrl?:string;legalName:string;tradingName:string;website:string;phone:string;email:string;addressLine1:string;addressLine2:string;city:string;postcode:string;country:string;timezone:string;locale:string;description:string};
