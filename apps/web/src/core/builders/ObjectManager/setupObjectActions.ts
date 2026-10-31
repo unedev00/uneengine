@@ -185,7 +185,7 @@ export function createSetupObjectActions(ctx: any) {
       unique: !['Formula', 'Roll-Up Summary', 'Auto Number', 'Text Area', 'Text (Encrypted)', 'Long Text Area', 'Rich Text Area', 'Geolocation', 'Address'].includes(newFieldType)
         && !relationshipType && newFieldUnique,
       ...(newFieldExternalId && newFieldType !== 'Roll-Up Summary' ? { externalId: true } : {}),
-      ...(newFieldUnique && ['Text', 'Email', 'Phone'].includes(newFieldType)
+      ...((newFieldUnique || newFieldExternalId) && ['Text', 'Email', 'Phone'].includes(newFieldType)
         ? { caseSensitive: newFieldCaseSensitive }
         : {}),
       ...(newFieldDescription.trim() ? { description: newFieldDescription.trim() } : {}),
