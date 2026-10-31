@@ -8,6 +8,7 @@ type Data={clients:Client[];users:{id:string;email:string}[];scopes:string[];sco
 const fresh=():Client=>({label:'',enabled:false,client_type:'public',require_mfa:true,redirects:[],scopes:['records:read'],users:[]});
 export default function TenantConnectedApps({request}:{request:Request}){
  const [data,setData]=useState<Data|null>(null),[draft,setDraft]=useState<Client>(fresh),[message,setMessage]=useState(''),[secret,setSecret]=useState(''),[busy,setBusy]=useState(false),[scopeSearch,setScopeSearch]=useState('');
+ const [directoryOpen,setDirectoryOpen]=useState(true),[appSearch,setAppSearch]=useState(''),[userSearch,setUserSearch]=useState('');
  const load=()=>request<Data>('/security/connected-apps').then(setData);
  useEffect(()=>{void load().catch(e=>setMessage(String(e)));},[]);
  const toggle=(key:'scopes'|'users',v:string)=>setDraft(prev=>({...prev,
@@ -27,21 +28,34 @@ export default function TenantConnectedApps({request}:{request:Request}){
    .some(v=>v.toLocaleLowerCase().includes(search)))
  })).filter(group=>group.scopes.length>0);
  const selectedTotal=draft.scopes.length;
+ const matchingClients=(data?.clients??[]).filter(c=>[c.label,c.id,c.client_type].some(v=>v?.toLowerCase().includes(appSearch.trim().toLowerCase())));
+ const matchingUsers=(data?.users??[]).filter(u=>u.email.toLowerCase().includes(userSearch.trim().toLowerCase()));
+ const selectApp=(client:Client)=>{setDraft({...client});setDirectoryOpen(false);setSecret('');setMessage('');};
  return <section className="surface permission-section connected-apps-section">
   <h2>Connected Apps</h2>
   <p className="connected-apps-help">OAuth authorization code with PKCE (S256), explicit user consent and rotating refresh tokens. Editing an app revokes existing consents. Secret values are shown once.</p>
   {message&&<p role="status" className="connected-apps-status">{message}</p>}
   {secret&&<p role="status" className="connected-apps-status connected-apps-secret">Save this client secret now: <code>{secret}</code> <button type="button" className="btn" onClick={()=>setSecret('')}>Dismiss</button></p>}
   {data&&<>
+  {data.clients.length>0&&<div className="connected-apps-directory" aria-label="Existing OAuth applications">
+   <div className="md-admin-actions"><button type="button" className="btn btn-brand" onClick={()=>{setDraft(fresh());setDirectoryOpen(false);setSecret('');}}>New connected app</button>
+    {!directoryOpen&&<button type="button" className="btn" onClick={()=>setDirectoryOpen(true)}>Browse applications</button>}</div>
+   {directoryOpen&&<><label className="form-label">Find connected app
+    <input className="form-control" type="search" value={appSearch} onChange={e=>setAppSearch(e.target.value)} placeholder="Search by app name or client ID"/>
+   </label><div className="connected-apps-directory-grid">{matchingClients.map(client=><button type="button" className="connected-apps-directory-item" key={client.id} onClick={()=>selectApp(client)}>
+    <strong>{client.label}</strong><small>{client.client_type} · {client.enabled?'Enabled':'Disabled'}</small><code>{client.id}</code>
+   </button>)}</div>{!matchingClients.length&&<p role="status">No matching applications.</p>}</>}
+  </div>}
+  {(!directoryOpen||data.clients.length===0)&&<>
   <label className="form-label">Application
-    <select className="form-control" value={draft.id??''} onChange={e=>{setDraft(data.clients.find(c=>c.id===e.target.value)??fresh());setSecret('');}}>
+    <select className="form-control" value={draft.id??''} onChange={e=>{const selected=data.clients.find(c=>c.id===e.target.value);if(selected)selectApp(selected);else {setDraft(fresh());setSecret('');}}}>
       <option value="">New connected app</option>
       {data.clients.map(c=><option key={c.id} value={c.id}>{c.label}</option>)}
     </select>
   </label>
   {draft.id&&<p className="connected-apps-meta">Client ID: <code>{draft.id}</code></p>}
   {draft.id&&draft.client_type==='confidential'&&(
-    <button type="button" className="btn" disabled={busy} onClick={()=>{setBusy(true);void request<{clientSecret:string}>('/security/connected-apps/rotate-secret',{method:'POST',body:JSON.stringify({id:draft.id})}).then(r=>{setSecret(r.clientSecret);setMessage('Secret rotated; existing consents revoked.');}).catch(e=>setMessage(String(e))).finally(()=>setBusy(false));}}>
+    <button type="button" className="btn" disabled={busy} onClick={()=>{if(!window.confirm('Rotate this client secret? Existing user consents will be revoked.'))return;setBusy(true);void request<{clientSecret:string}>('/security/connected-apps/rotate-secret',{method:'POST',body:JSON.stringify({id:draft.id})}).then(r=>{setSecret(r.clientSecret);setMessage('Secret rotated; existing consents revoked.');}).catch(e=>setMessage(String(e))).finally(()=>setBusy(false));}}>
       Rotate client secret and revoke consents
     </button>
   )}
@@ -98,16 +112,18 @@ export default function TenantConnectedApps({request}:{request:Request}){
    <p className="oauth-scope-help">Reserved entries are visible for future applications but cannot be granted until supported by an authorised API or MCP operation. Saving changes revokes existing consent; connected users must reauthorise.</p>
   </section>
   <div className="connected-apps-group" role="group" aria-labelledby="connected-apps-users-label">
-    <div id="connected-apps-users-label" className="connected-apps-group-title">Allowed users</div>
+    <div id="connected-apps-users-label" className="connected-apps-group-title">Allowed users ({draft.users.length} selected)</div>
+    <label className="form-label">Find user<input type="search" className="form-control" value={userSearch} onChange={e=>setUserSearch(e.target.value)} placeholder="Search allowed users by email"/></label>
     <div className="connected-apps-checklist">
-      {data.users.map(u=><label className="checkbox-row" key={u.id} title={u.email}><input type="checkbox" checked={draft.users.includes(u.id)} onChange={()=>toggle('users',u.id)}/><span className="connected-apps-email">{u.email}</span></label>)}
-    </div>
+      {matchingUsers.map(u=><label className="checkbox-row" key={u.id} title={u.email}><input type="checkbox" checked={draft.users.includes(u.id)} onChange={()=>toggle('users',u.id)}/><span className="connected-apps-email">{u.email}</span></label>)}
+    </div>{matchingUsers.length===0&&<p role="status">No matching users.</p>}
   </div>
   <div className="connected-apps-actions">
-    <button type="button" className="btn btn-brand" disabled={busy} onClick={()=>{setBusy(true);setMessage('');void request<{id:string;clientSecret?:string}>('/security/connected-apps',{method:'PUT',body:JSON.stringify(draft)}).then(async r=>{setDraft({...draft,id:r.id});setSecret(r.clientSecret??'');setMessage('Saved');await load();}).catch(e=>setMessage(String(e))).finally(()=>setBusy(false));}}>
+    <button type="button" className="btn btn-brand" disabled={busy} onClick={()=>{if(draft.id&&data.clients.some(client=>client.id===draft.id)&&JSON.stringify(data.clients.find(client=>client.id===draft.id))!==JSON.stringify(draft)&&!window.confirm('Save changes to this app? Existing user consents will be revoked and users must reauthorise.'))return;setBusy(true);setMessage('');void request<{id:string;clientSecret?:string}>('/security/connected-apps',{method:'PUT',body:JSON.stringify(draft)}).then(async r=>{setDraft({...draft,id:r.id});setSecret(r.clientSecret??'');setMessage('Saved');await load();}).catch(e=>setMessage(String(e))).finally(()=>setBusy(false));}}>
       Save connected app
     </button>
   </div>
+  </>}
   </>}
  </section>;
 }

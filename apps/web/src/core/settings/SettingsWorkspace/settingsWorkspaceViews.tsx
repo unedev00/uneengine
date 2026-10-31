@@ -345,34 +345,79 @@ function AccountSessionSecurity({ onReauthenticate }: { onReauthenticate: () => 
   </section>;
 }
 
+type SecurityEvent={id:string;at:string;actorUserId:string|null;action:string;loginIdentifier?:string;sourceIp?:string;details?:Record<string,string>};
+type SecurityEventFilters={action:string;identifier:string;ip:string;from:string;to:string};
+const emptySecurityEventFilters=():SecurityEventFilters=>({action:'',identifier:'',ip:'',from:'',to:''});
 function TenantSecurityAudit() {
-  const [events, setEvents] = useState<Array<{ id: string; at: string; actorUserId: string | null; action: string; loginIdentifier?: string; sourceIp?: string; details?: Record<string, string> }>>([]);
-  const [permitted, setPermitted] = useState(false);
-  useEffect(() => {
-    let active = true;
-    void apiRequest<{ events: Array<{ id: string; at: string; actorUserId: string | null; action: string; loginIdentifier?: string; sourceIp?: string; details?: Record<string, string> }> }>('/auth/security-events?limit=50')
-      .then((response) => { if (active) { setEvents(response.events); setPermitted(true); } })
-      .catch(() => { if (active) setPermitted(false); });
-    return () => { active = false; };
-  }, []);
-  if (!permitted) return null;
-  return <section className="surface permission-section">
-    <h2>Login history and security activity</h2>
-    <p>Recent tenant security events. Only authorized security administrators can view this history.</p>
-    {!events.length ? <p>No security activity recorded.</p> :
-      <ul>{events.map((event) => <li key={event.id}>
-        <strong>{event.action}</strong> · {new Date(event.at).toLocaleString()}
-        {event.loginIdentifier ? ` · ${event.loginIdentifier}` : ''}
-        {event.sourceIp ? ` · ${event.sourceIp}` : ''}
-        {event.details?.from && event.details?.to ? ' · ' + event.details.from + ' → ' + event.details.to : ''}
-      </li>)}</ul>}
-  </section>;
+ const [events,setEvents]=useState<SecurityEvent[]>([]);
+ const [draft,setDraft]=useState<SecurityEventFilters>(emptySecurityEventFilters);
+ const [filters,setFilters]=useState<SecurityEventFilters>(emptySecurityEventFilters);
+ const [page,setPage]=useState(0);
+ const [hasNext,setHasNext]=useState(false);
+ const [permitted,setPermitted]=useState(false);
+ const [busy,setBusy]=useState(true);
+ const [error,setError]=useState('');
+ useEffect(()=>{
+  let active=true;
+  setBusy(true);
+  const query=new URLSearchParams({limit:'25',offset:String(page*25)});
+  for(const [key,value] of Object.entries(filters))if(value.trim())query.set(key,value.trim());
+  void apiRequest<{events:SecurityEvent[];nextOffset:number|null}>('/auth/security-events?'+query.toString())
+   .then(response=>{if(active){setEvents(response.events);setHasNext(response.nextOffset!==null);setPermitted(true);setError('');}})
+   .catch(cause=>{if(active){setError(cause instanceof Error?cause.message:String(cause));setEvents([]);setHasNext(false);}})
+   .finally(()=>{if(active)setBusy(false);});
+  return()=>{active=false;};
+ },[filters,page]);
+ const field=(key:keyof SecurityEventFilters,label:string,type='search')=><label className="form-label" key={key}>{label}
+  <input className="form-control" type={type} value={draft[key]} onChange={event=>setDraft(previous=>({...previous,[key]:event.target.value}))}/>
+ </label>;
+ return <section className="surface permission-section">
+  <h2>Login history and security activity</h2>
+  <p>Tenant security events. Access requires the server-enforced Security read permission.</p>
+  <form className="md-admin-form-grid md-security-history-filters" onSubmit={event=>{event.preventDefault();setPage(0);setFilters({...draft});}}>
+   {field('action','Event action')}{field('identifier','Account / login identifier')}{field('ip','Source IP address')}
+   {field('from','From date','date')}{field('to','Before date','date')}
+   <div className="md-admin-actions"><button type="submit" className="btn btn-brand" disabled={busy}>Apply filters</button>
+    <button type="button" className="btn" disabled={busy} onClick={()=>{setDraft(emptySecurityEventFilters());setFilters(emptySecurityEventFilters());setPage(0);}}>Clear</button></div>
+  </form>
+  {busy&&<p role="status">Loading security history…</p>}
+  {error&&<p role="alert">Unable to load security events: {error}</p>}
+  {!busy&&!error&&permitted&&<div className="md-admin-table-wrap" role="region" aria-label="Login security history" tabIndex={0}>
+   <table className="md-admin-table md-audit-table md-security-history-table">
+    <thead><tr><th scope="col">Time</th><th scope="col">Action</th><th scope="col">Login</th><th scope="col">IP address</th><th scope="col">Changes</th></tr></thead>
+    <tbody>{events.map(event=><tr key={event.id}>
+     <td data-label="Time">{new Date(event.at).toLocaleString()}</td>
+     <td data-label="Action">{event.action}</td><td data-label="Login">{event.loginIdentifier||event.actorUserId||'—'}</td>
+     <td data-label="IP address">{event.sourceIp||'—'}</td>
+     <td data-label="Changes">{event.details?.from&&event.details?.to?event.details.from+' → '+event.details.to:'—'}</td>
+    </tr>)}{!events.length&&<tr><td colSpan={5}>No matching security activity.</td></tr>}</tbody>
+   </table>
+  </div>}
+  {!busy&&!error&&<div className="md-admin-actions" role="navigation" aria-label="Security event pages">
+   <button type="button" className="btn" disabled={page===0} onClick={()=>setPage(page-1)}>Previous</button>
+   <span aria-live="polite">Page {page+1}</span>
+   <button type="button" className="btn" disabled={!hasNext} onClick={()=>setPage(page+1)}>Next</button>
+  </div>}
+ </section>;
 }
 
 function TenantMfaSettings({ onReauthenticate, canManage, governanceTab, governanceFocus }: { onReauthenticate: () => void; canManage: boolean; governanceTab?: string; governanceFocus?: boolean }) {
-  return <><TenantMfaControls request={apiRequest} canManage={canManage} onReauthenticate={onReauthenticate}/>
-    <TenantSessionControls request={apiRequest} canManage={canManage}/>
-    <TenantFederationControls request={apiRequest} canManage={canManage}/><TenantGovernance request={apiRequest} canManage={canManage} initialTab={governanceTab} focusOnMount={governanceFocus}/></>;
+ const [view,setView]=useState<'mfa'|'sessions'|'federation'|'governance'>(governanceFocus?'governance':'mfa');
+ useEffect(()=>{if(governanceFocus)setView('governance');},[governanceFocus,governanceTab]);
+ const views=[{id:'mfa',label:'Multi-factor authentication'},{id:'sessions',label:'Session restrictions'},
+  {id:'federation',label:'Identity federation'},{id:'governance',label:'Security governance'}] as const;
+ return <section className="md-security-access-tabs" aria-label="Sign-in and access controls">
+  <div role="tablist" className="md-admin-tabstrip" aria-label="Security configuration">{views.map(item=>
+   <button type="button" role="tab" key={item.id} aria-selected={view===item.id}
+    aria-controls={'security-panel-'+item.id} id={'security-tab-'+item.id}
+    onClick={()=>setView(item.id)}>{item.label}</button>)}</div>
+  <div role="tabpanel" id={'security-panel-'+view} aria-labelledby={'security-tab-'+view} className="md-admin-tabpanel">
+   {view==='mfa'&&<TenantMfaControls request={apiRequest} canManage={canManage} onReauthenticate={onReauthenticate}/>}
+   {view==='sessions'&&<TenantSessionControls request={apiRequest} canManage={canManage}/>}
+   {view==='federation'&&<TenantFederationControls request={apiRequest} canManage={canManage}/>}
+   {view==='governance'&&<TenantGovernance request={apiRequest} canManage={canManage} initialTab={governanceTab} focusOnMount={governanceFocus}/>}
+  </div>
+ </section>;
 }
 
 type CompanyProfile = {logoUrl?:string;legalName:string;tradingName:string;website:string;phone:string;email:string;addressLine1:string;addressLine2:string;city:string;postcode:string;country:string;timezone:string;locale:string;description:string};

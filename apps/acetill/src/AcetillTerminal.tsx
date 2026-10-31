@@ -3,6 +3,7 @@ import {createPortal} from 'react-dom';
 import {apiRequest} from '../../web/src/core/authentication/Client/authClient';
 import './acetill-terminal.css';
 import {acetillStyleCss,type AcetillVisualStyles} from './visual-styles';
+import {useModalFocus} from '../../web/src/core/accessibility/useModalFocus';
 
 type Row=Record<string,unknown>;
 type Action={apiName:string;label:string};
@@ -87,35 +88,10 @@ export default function AcetillTerminal({editorStyles}: {editorStyles?:AcetillVi
   const [newPin,setNewPin]=React.useState('');
   const [setupStatus,setSetupStatus]=React.useState('');
   const [paymentMode,setPaymentMode]=React.useState<'cash'|'card'|null>(null);
-  const paymentDialogRef=React.useRef<HTMLElement>(null);
-  React.useEffect(()=>{
-    if(!paymentMode)return;
-    const dialog=paymentDialogRef.current;
-    if(!dialog)return;
-    const previous=document.activeElement instanceof HTMLElement?document.activeElement:null;
-    const controls=()=>Array.from(dialog.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled),select:not(:disabled),textarea:not(:disabled)'))
-      .filter(element=>element.getClientRects().length>0);
-    const first=controls()[0];
-    first?.focus();
-    const onKey=(event:KeyboardEvent)=>{
-      if(event.key==='Escape'){
-        const cancel=dialog.querySelector<HTMLButtonElement>('.acetill-payment-buttons button:first-child');
-        if(cancel&&!cancel.disabled){event.preventDefault();cancel.click();}
-        return;
-      }
-      if(event.key!=='Tab')return;
-      const available=controls();
-      if(!available.length){event.preventDefault();return;}
-      const start=available[0],end=available[available.length-1];
-      if(event.shiftKey&&(document.activeElement===start||!dialog.contains(document.activeElement))){
-        event.preventDefault();end.focus();
-      }else if(!event.shiftKey&&(document.activeElement===end||!dialog.contains(document.activeElement))){
-        event.preventDefault();start.focus();
-      }
-    };
-    document.addEventListener('keydown',onKey);
-    return()=>{document.removeEventListener('keydown',onKey);previous?.focus();};
-  },[paymentMode]);
+  const paymentDialogRef=useModalFocus(Boolean(paymentMode),()=>{setPaymentMode(null);setCashReceived('');});
+  const pinSetupDialogRef=useModalFocus<HTMLDivElement>(pinSetup&&!tillLocked,()=>{setPinSetup(false);setSetupPassword('');setNewPin('');});
+  const lockedDialogRef=useModalFocus<HTMLDivElement>(tillLocked);
+  const ageDialogRef=useModalFocus<HTMLDivElement>(Boolean(pendingAgeItem),()=>setPendingAgeItem(null));
   const [cashReceived,setCashReceived]=React.useState('');
   const [customerWindow,setCustomerWindow]=React.useState<Window|null>(null);
   const customerWindowRef=React.useRef<Window|null>(null);
@@ -130,7 +106,19 @@ export default function AcetillTerminal({editorStyles}: {editorStyles?:AcetillVi
     popup.document.title='Acetill • Customer display';
     popup.document.body.innerHTML='';
     const style=popup.document.createElement('style');
-    style.textContent='body{margin:0;background:#f6f9fe;color:#1c293b;font-family:Inter,system-ui,sans-serif} .customer-screen{min-height:100vh;box-sizing:border-box;display:flex;flex-direction:column;padding:clamp(20px,4vw,50px);gap:20px}.customer-screen h1{font-size:clamp(30px,5vw,58px);margin:0;color:#1267e5}.customer-items{flex:1;overflow-y:auto}.customer-item{display:flex;justify-content:space-between;padding:18px 0;border-bottom:1px solid #dfe7f1;font-size:clamp(18px,2.5vw,30px)}.customer-total{display:flex;justify-content:space-between;border-top:3px solid #cbd7e8;padding-top:24px;font-size:clamp(24px,4vw,48px);font-weight:800}.customer-thankyou{margin:auto;text-align:center;font-size:clamp(28px,5vw,60px)}';
+    // Preserve the active tenant's appearance instead of injecting a separate light theme.
+    const hostTheme=getComputedStyle(document.documentElement);
+    const parentTheme=getComputedStyle(document.querySelector('.standalone-product')??document.body);
+    const themeValue=(name:string,fallback:string)=>parentTheme.getPropertyValue(name).trim()||hostTheme.getPropertyValue(name).trim()||fallback;
+    const colorTokens={
+      '--display-bg':themeValue('--md-surface','#ffffff'),
+      '--display-ink':themeValue('--md-text','#192230'),
+      '--display-muted':themeValue('--md-text-2','#596579'),
+      '--display-accent':themeValue('--md-action-ink','#0054aa'),
+      '--display-border':themeValue('--md-separator','#d8dde6')
+    };
+    Object.entries(colorTokens).forEach(([name,value])=>popup.document.documentElement.style.setProperty(name,value));
+    style.textContent='body{margin:0;background:var(--display-bg);color:var(--display-ink);font-family:Inter,system-ui,sans-serif}.customer-screen{min-height:100dvh;box-sizing:border-box;display:flex;flex-direction:column;padding:clamp(20px,4vw,50px);gap:20px}.customer-screen h1{font-size:clamp(30px,5vw,58px);margin:0;color:var(--display-accent)}.customer-screen p{color:var(--display-muted)}.customer-items{flex:1;overflow-y:auto}.customer-item{display:flex;justify-content:space-between;gap:16px;overflow-wrap:anywhere;padding:18px 0;border-bottom:1px solid var(--display-border);font-size:clamp(18px,2.5vw,30px)}.customer-total{display:flex;justify-content:space-between;gap:16px;border-top:3px solid var(--display-border);padding-top:24px;font-size:clamp(24px,4vw,48px);font-weight:800}.customer-thankyou{margin:auto;text-align:center;font-size:clamp(28px,5vw,60px)}';
     popup.document.head.appendChild(style);
     customerWindowRef.current=popup;
     setCustomerWindow(popup);
@@ -359,7 +347,7 @@ export default function AcetillTerminal({editorStyles}: {editorStyles?:AcetillVi
       setSetupPassword('');setNewPin('');setPinSetup(false);setSetupStatus('Till PIN saved securely.');
     }catch(e){setSetupStatus(e instanceof Error?e.message:'Unable to save PIN. Check your current password and try again.');}
   };
-  const pinSetupDialog=pinSetup&&!tillLocked?<div className="acetill-pin-setup-backdrop" role="dialog" aria-modal="true" aria-label="Set till PIN">
+  const pinSetupDialog=pinSetup&&!tillLocked?<div ref={pinSetupDialogRef} className="acetill-pin-setup-backdrop" role="dialog" aria-modal="true" aria-label="Set till PIN">
     <form className="acetill-pin-setup" onSubmit={e=>void saveTillPin(e)}>
     <h2>Set your till PIN</h2><p>Your PIN protects this till screen without logging you out.</p>
     <label>Current login password<input type="password" autoComplete="current-password" required value={setupPassword} onChange={e=>setSetupPassword(e.target.value)}/></label>
@@ -369,7 +357,7 @@ export default function AcetillTerminal({editorStyles}: {editorStyles?:AcetillVi
     </form></div>:null;
   const settingsButton=<button type="button" className="acetill-lock-button" data-acetill-element="settings" title="Set till PIN" aria-label="Set till PIN" onClick={()=>{setPinSetup(true);setSetupStatus('');}}>⚙</button>;
   const lockButton=<button type="button" className="acetill-lock-button" data-acetill-element="lock" title="Lock till" aria-label="Lock till" onClick={()=>{setTillLocked(true);setUnlockPin('');setUnlockError('');}}>🔒</button>;
-  const lockedOverlay=tillLocked?<div className="acetill-lock-screen" role="dialog" aria-modal="true" aria-label="Till locked">
+  const lockedOverlay=tillLocked?<div ref={lockedDialogRef} className="acetill-lock-screen" role="dialog" aria-modal="true" aria-label="Till locked">
     <div className="acetill-lock-panel"><div className="acetill-lock-symbol">🔒</div><h1>Till locked</h1><p>Enter your user PIN to resume this till.</p>
     <form onSubmit={e=>void unlockTillScreen(e)}><label htmlFor="acetill-unlock-pin">User PIN</label>
     <input id="acetill-unlock-pin" type="password" inputMode="numeric" autoComplete="off" pattern="[0-9]{4,8}" minLength={4} maxLength={8} required value={unlockPin} onChange={e=>setUnlockPin(e.target.value.replace(/\\D/g,'').slice(0,8))} autoFocus />
@@ -474,7 +462,7 @@ export default function AcetillTerminal({editorStyles}: {editorStyles?:AcetillVi
       </div>
       {getProducts&&!catalogueLoading&&!shown.length&&<p className="acetill-state">No matching products found.</p>}
       </div>
-      {pendingAgeItem&&<div className="acetill-pin-setup-backdrop" role="dialog" aria-modal="true" aria-label="Age verification">
+      {pendingAgeItem&&<div ref={ageDialogRef} className="acetill-pin-setup-backdrop" role="dialog" aria-modal="true" aria-label="Age verification">
         <div className="acetill-pin-setup"><h2>Check customer ID</h2><p>This item is age-restricted. Please check the customer's ID before continuing.</p>
           <div><button type="button" onClick={()=>setPendingAgeItem(null)}>Remove item</button>
           <button type="button" onClick={()=>{add(pendingAgeItem);setAgeApproved(true);setPendingAgeItem(null);}}>OK — ID checked</button></div>

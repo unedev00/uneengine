@@ -6,7 +6,7 @@
 .custom-heading h1{font-size:34px;letter-spacing:-.045em;margin:3px 0}
 .custom-heading p{color:#66758b;margin:0}
 .custom-heading input,.custom-date input{border:1px solid #d8e0ea;border-radius:12px;padding:13px;font:inherit;background:white;color:#18273c}
-.custom-eyebrow{font-size:11px;font-weight:800;letter-spacing:.15em;color:var(--product-accent)}
+.custom-eyebrow{font-size:12px;font-weight:800;letter-spacing:.15em;color:var(--product-accent)}
 .custom-tabs{display:flex;flex-wrap:wrap;gap:9px;margin-bottom:25px}
 .custom-tabs button{border:1px solid #dbe3ec;padding:11px 16px;border-radius:12px;background:#fff;font-weight:650;color:#43536a;cursor:pointer}
 .custom-tabs button[aria-current=page]{border-color:var(--product-accent);background:var(--product-accent);color:#fff}
@@ -31,7 +31,7 @@
 .custom-week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;margin-top:20px}.custom-day{min-height:320px;border:1px solid #e1e7ef;border-radius:12px;padding:10px;background:#fbfcfe;display:flex;flex-direction:column;gap:6px;min-width:0}
 .custom-day>small{color:#778499}.custom-visit{border:0;border-left:3px solid var(--product-accent);background:#e9f5f3;border-radius:6px;padding:8px;text-align:left;font-size:12px;overflow-wrap:anywhere;cursor:pointer}.custom-visit small{display:block;color:#65758b}
 .custom-record-list{display:grid;gap:10px;margin-top:18px}.custom-record-list button{display:flex;justify-content:space-between;border:1px solid #e4eaf1;background:white;padding:15px;border-radius:12px;cursor:pointer;text-align:left}
-.custom-visit-detail dl div{border-bottom:1px solid #ecf0f5;padding:10px 0}.custom-visit-detail dt{font-size:11px;color:#758399}.custom-visit-detail dd{margin:4px 0;overflow-wrap:anywhere}
+.custom-visit-detail dl div{border-bottom:1px solid #ecf0f5;padding:10px 0}.custom-visit-detail dt{font-size:12px;color:#758399}.custom-visit-detail dd{margin:4px 0;overflow-wrap:anywhere}
 @media(max-width:1000px){.custom-assist-layout{grid-template-columns:1fr}.custom-week{overflow-x:auto}.custom-day{min-width:105px}}
 @media(max-width:650px){.custom-heading{flex-direction:column;align-items:stretch}.custom-week{grid-template-columns:repeat(7,105px);overflow-x:auto}.custom-connected{display:none}}
 
@@ -49,7 +49,7 @@
 .custom-assist .custom-crud-form .custom-action-buttons{display:flex;flex-wrap:wrap;gap:8px}
 .custom-assist .custom-calendar-hours{margin:8px 0;color:#547084;font-size:13px}
 .custom-assist .custom-day{min-height:170px}
-.custom-assist .custom-day small{display:block;font-size:11px;line-height:1.5}
+.custom-assist .custom-day small{display:block;font-size:12px;line-height:1.5}
 .custom-assist .custom-panel-title>div{display:flex;align-items:center;gap:8px}
 @media(max-width:900px){.custom-assist .custom-panel-title>div{flex-wrap:wrap}
  .custom-assist .custom-crud-form{max-width:100%}}
@@ -98,7 +98,7 @@
 .assist-modal .record-field-toggle{grid-column:1/-1;display:flex;flex-direction:row;align-items:center;
  gap:10px;cursor:pointer}
 .assist-modal .record-field-toggle input{width:19px;height:19px;accent-color:var(--product-accent)}
-.assist-modal .custom-crud-form small{font-size:11px;color:#8a5c38}
+.assist-modal .custom-crud-form small{font-size:12px;color:#8a5c38}
 .assist-view-control{font-size:12px;color:#43536a;display:flex;align-items:center;gap:6px}
 .assist-view-control select{padding:7px;border:1px solid #dbe3ec;border-radius:8px;background:#fff}
 .assist-view-day{grid-template-columns:1fr}
@@ -108,7 +108,7 @@
 .assist-bell{background:transparent;border:1px solid #dbe3ec;border-radius:10px;padding:8px;
  cursor:pointer;position:relative}
 .assist-bell b{position:absolute;top:-7px;right:-7px;background:#b9353a;color:#fff;
- border-radius:50%;font-size:11px;padding:2px 5px}
+ border-radius:50%;font-size:12px;padding:2px 5px}
 .assist-notice-panel,.assist-notice-toast{position:absolute;right:0;top:calc(100% + 10px);z-index:50;
  width:min(350px,88vw);max-height:440px;overflow:auto;padding:16px;background:#fff;
  border:1px solid #d7e2eb;border-radius:12px;box-shadow:0 12px 40px #0002}
@@ -250,7 +250,7 @@
  border-radius:14px;padding:14px;margin-bottom:14px;cursor:pointer}
 .assist-next-time{font-weight:800;color:var(--product-accent);white-space:nowrap}
 .assist-next>span:nth-child(2){display:flex;flex-direction:column;gap:4px;flex:1;min-width:0}
-.assist-next strong{font-size:15px}.assist-next small{font-size:10px;color:#007a83;font-weight:800;letter-spacing:.09em}
+.assist-next strong{font-size:15px}.assist-next small{font-size:12px;color:#007a83;font-weight:800;letter-spacing:.09em}
 .assist-next>span:nth-child(2)>span{font-size:12px;color:var(--assist-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .assist-home-list{display:grid;gap:5px}
 .assist-home-appointment,.assist-home-invoice{width:100%;display:flex;align-items:center;
@@ -259,15 +259,15 @@
 .assist-home-appointment>time{font-size:12px;color:#36546d;font-weight:750;white-space:nowrap;min-width:46px}
 .assist-home-appointment>span,.assist-home-invoice>span:first-child{display:flex;min-width:0;flex:1;flex-direction:column;gap:4px}
 .assist-home-appointment strong,.assist-home-invoice strong{font-size:13px}
-.assist-home-appointment small,.assist-home-invoice small{color:var(--assist-muted);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.assist-status{font-size:10px;font-weight:750;font-style:normal;padding:5px 8px;border-radius:30px;
+.assist-home-appointment small,.assist-home-invoice small{color:var(--assist-muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.assist-status{font-size:12px;font-weight:750;font-style:normal;padding:5px 8px;border-radius:30px;
  white-space:nowrap;color:#865d03;background:#fff1d3}
 .assist-status.complete{background:#e3f6e9;color:#186a44}
 .assist-status.confirmed{background:#e3f0ff;color:#2565a0}
 .assist-status.cancelled{background:#ffe6e8;color:#a73e4c}
 .assist-home-invoice>strong{white-space:nowrap;color:#263e53}
 .assist-home-empty{padding:22px 6px;color:var(--assist-muted);font-size:13px;margin:0}
-.assist-home-note{font-size:11px;line-height:1.45;color:var(--assist-muted);margin:16px 0 0}
+.assist-home-note{font-size:12px;line-height:1.45;color:var(--assist-muted);margin:16px 0 0}
 .assist-home-quick h2{margin-bottom:16px}
 .assist-quick-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
 .assist-quick-grid button{min-width:0;display:flex;align-items:center;gap:10px;
@@ -315,7 +315,7 @@
  .assist-metric{padding:10px 8px;gap:7px;border-radius:13px}
  .assist-metric-icon{width:30px;height:30px;font-size:17px;border-radius:9px}
  .assist-metric strong{font-size:clamp(14px,4.4vw,21px);letter-spacing:-.025em}
- .assist-metric small{font-size:10px;line-height:1.3}
+ .assist-metric small{font-size:12px;line-height:1.3}
  .assist-home-panel{padding:15px;border-radius:16px}
  .assist-home-panel h2{font-size:16px}
  .assist-home-appointment,.assist-home-invoice{gap:8px}
@@ -323,16 +323,16 @@
  .assist-quick-grid button{flex-direction:column;align-items:center;gap:9px;text-align:center;
   min-height:88px;padding:10px 7px}
  .assist-quick-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
- .assist-quick-grid button strong{font-size:10px}
+ .assist-quick-grid button strong{font-size:12px}
  .assist-quick-grid button span{width:35px;height:35px}
- .assist-home-appointment .assist-status{font-size:9px;padding:5px 6px}
+ .assist-home-appointment .assist-status{font-size:12px;padding:5px 6px}
  .assist-mobile-nav{position:fixed;bottom:0;left:0;right:0;z-index:100;
   display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;
   padding:6px 5px calc(8px + env(safe-area-inset-bottom));background:#fff;
   border-top:1px solid #dce6ed;box-shadow:0 -5px 20px rgba(15,42,60,.09)}
  .assist-mobile-nav button{border:0;background:transparent;color:#526679;display:flex;
   align-items:center;justify-content:center;flex-direction:column;gap:3px;
-  font-size:10px;padding:5px 1px;min-height:49px;font-weight:650;cursor:pointer}
+  font-size:12px;padding:5px 1px;min-height:49px;font-weight:650;cursor:pointer}
  .assist-mobile-nav button span{font-size:21px;line-height:1.1}
  .assist-mobile-nav button[aria-current=page]{color:var(--product-accent);font-weight:850}
  .custom-aceassist .custom-calendar,.custom-aceassist .custom-visit-detail{border-radius:16px}
@@ -348,7 +348,7 @@
 }
 @media(max-width:380px){
  .assist-metric strong{font-size:14px}
- .assist-quick-grid button strong{font-size:9px}
+ .assist-quick-grid button strong{font-size:12px}
  .assist-home-appointment .assist-status{max-width:68px;overflow:hidden;text-overflow:ellipsis}
 }
 
@@ -376,7 +376,7 @@
    Reuses OneEngine Flow data, permission gates, and the atomic document editor. */
 .assist-phone-workspace,.assist-detail-back{display:none}
 .custom-aceassist .assist-home,.custom-aceassist .assist-phone-workspace{font-family:inherit}
-.assist-phone-eyebrow{font-size:10px;letter-spacing:.135em;font-weight:800;color:#11839a}
+.assist-phone-eyebrow{font-size:12px;letter-spacing:.135em;font-weight:800;color:#11839a}
 @media(max-width:700px){
  .custom-aceassist{background:#f5f9fb;min-height:100dvh;color:#162b40}
  .custom-aceassist *{box-sizing:border-box}
@@ -386,7 +386,7 @@
   border-radius:13px;font-size:20px;background:#0f8290}
  .custom-aceassist .standalone-product-brand{gap:9px;min-width:0}
  .custom-aceassist .standalone-product-brand strong{font-size:19px;font-weight:800;letter-spacing:-.045em}
- .custom-aceassist .standalone-product-brand small{display:block;font-size:10px;color:#8a9ba9;margin-top:1px}
+ .custom-aceassist .standalone-product-brand small{display:block;font-size:12px;color:#8a9ba9;margin-top:1px}
  .custom-aceassist .custom-connected,.custom-aceassist .standalone-product-logout{display:none}
  .custom-aceassist .assist-notifications{margin-left:auto}
  .custom-aceassist .assist-bell{width:38px;height:38px;display:grid;place-items:center;border-radius:12px;
@@ -398,7 +398,7 @@
  .custom-aceassist .assist-home-hello{background:linear-gradient(125deg,#086f81 0%,#169ba2 100%);
   color:#fff;border:none;border-radius:23px;padding:23px 21px;gap:19px;
   box-shadow:0 10px 24px #06778c24}
- .custom-aceassist .assist-home-hello .custom-eyebrow{color:#c8f7ee;font-size:10px}
+ .custom-aceassist .assist-home-hello .custom-eyebrow{color:#c8f7ee;font-size:12px}
  .custom-aceassist .assist-home-hello h1{font-size:29px;color:#fff;font-weight:800;line-height:1.15;margin:7px 0 9px}
  .custom-aceassist .assist-home-hello p{font-size:12px;line-height:1.6;color:#e9fcfc}
  .custom-aceassist .assist-home-hello>button{display:flex;align-items:center;gap:12px;background:#fff;
@@ -411,7 +411,7 @@
  .custom-aceassist .assist-metric-icon{grid-row:1/3;width:37px;height:37px;border-radius:12px;
   background:#e9f7f8;color:#138698}
  .custom-aceassist .assist-metric strong{font-size:22px;line-height:1.15;color:#183348;font-weight:800;min-width:0}
- .custom-aceassist .assist-metric small{font-size:10px;color:#728697;line-height:1.4;font-weight:600}
+ .custom-aceassist .assist-metric small{font-size:12px;color:#728697;line-height:1.4;font-weight:600}
  .custom-aceassist .assist-metric:last-child{grid-column:1/-1;grid-template-columns:37px minmax(0,1fr);
   padding:13px 15px}
  .custom-aceassist .assist-metric:last-child strong{font-size:22px}
@@ -428,7 +428,7 @@
  .custom-aceassist .assist-home-appointment{gap:11px;border-bottom:1px solid #f0f4f5;padding:13px 1px}
  .custom-aceassist .assist-home-appointment>time{font-size:12px;min-width:41px;color:#607c8e}
  .custom-aceassist .assist-home-appointment strong{font-size:13px}
- .custom-aceassist .assist-home-appointment small{font-size:11px}
+ .custom-aceassist .assist-home-appointment small{font-size:12px}
  .custom-aceassist .assist-home-invoice{padding:14px 1px}
  .custom-aceassist .assist-home-invoice>strong{font-size:12px}
  .custom-aceassist .assist-home-quick h2{margin:0 0 15px}
@@ -437,7 +437,7 @@
   align-items:center;text-align:left;gap:9px;min-height:68px;padding:11px;
   border:1px solid #e6eff3;border-radius:13px;background:#fafdfd}
  .custom-aceassist .assist-quick-grid button span{width:34px;height:34px;flex:none}
- .custom-aceassist .assist-quick-grid button strong{font-size:11px;line-height:1.35;color:#253f55}
+ .custom-aceassist .assist-quick-grid button strong{font-size:12px;line-height:1.35;color:#253f55}
  .custom-aceassist .assist-home-empty{font-size:12px;padding:19px 4px;line-height:1.5}
  /* Phone screens replace the old column/timeline layout, leaving its Flow-backed
     record-detail pane accessible as a full-height drilldown. */
@@ -454,7 +454,7 @@
   color:#08788d;font-weight:800;padding:8px 0;margin:0 0 22px;cursor:pointer}
  .custom-aceassist .custom-assist-layout>.custom-visit-detail dl{margin:17px 0}
  .custom-aceassist .custom-assist-layout>.custom-visit-detail dl div{padding:13px 0}
- .custom-aceassist .custom-assist-layout>.custom-visit-detail dt{font-size:11px}
+ .custom-aceassist .custom-assist-layout>.custom-visit-detail dt{font-size:12px}
  .custom-aceassist .custom-assist-layout>.custom-visit-detail dd{font-size:14px;color:#263b4e}
  .custom-aceassist .custom-action-buttons{grid-template-columns:1fr;gap:9px}
  .custom-aceassist .custom-action-buttons button{padding:14px 12px;border-radius:12px}
@@ -463,25 +463,25 @@
  .assist-phone-titlebar>div{flex:1;min-width:0}
  .assist-phone-titlebar h1{font-size:29px;font-weight:830;letter-spacing:-.05em;
   color:#152e45;margin:5px 0 4px;line-height:1.2}
- .assist-phone-titlebar p{margin:0;font-size:11px;color:#718697;line-height:1.5}
+ .assist-phone-titlebar p{margin:0;font-size:12px;color:#718697;line-height:1.5}
  .assist-phone-primary{display:flex;align-items:center;justify-content:center;flex:none;gap:5px;
   min-width:43px;min-height:43px;padding:10px 12px;border:0;border-radius:12px;
-  background:#087f91;color:#fff;box-shadow:0 5px 14px #0a7e9322;cursor:pointer;font-weight:750;font-size:11px}
+  background:#087f91;color:#fff;box-shadow:0 5px 14px #0a7e9322;cursor:pointer;font-weight:750;font-size:12px}
  .assist-phone-primary svg{flex:none}
  .assist-phone-date-heading{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 0 13px}
  .assist-phone-date-heading>div:first-child{display:grid;gap:3px}
- .assist-phone-date-heading>div:first-child span{font-size:10px;font-weight:800;color:#8da1ae;letter-spacing:.14em}
+ .assist-phone-date-heading>div:first-child span{font-size:12px;font-weight:800;color:#8da1ae;letter-spacing:.14em}
  .assist-phone-date-heading strong{font-size:19px;letter-spacing:-.03em;color:#173449}
  .assist-phone-date-actions{display:flex;align-items:center;gap:2px}
  .assist-phone-date-actions button{display:grid;place-items:center;min-height:32px;min-width:32px;
-  padding:5px;border-radius:9px;background:#fff;border:1px solid #e6edf2;color:#3e6678;cursor:pointer;font-size:11px;font-weight:800}
+  padding:5px;border-radius:9px;background:#fff;border:1px solid #e6edf2;color:#3e6678;cursor:pointer;font-size:12px;font-weight:800}
  .assist-phone-date-actions button:nth-child(2){padding:6px 10px}
  .assist-phone-date-strip{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;
   margin-bottom:14px}
  .assist-phone-date-strip button{position:relative;display:flex;align-items:center;justify-content:center;
   flex-direction:column;gap:7px;background:#fff;border:1px solid #e6edf1;
   border-radius:13px;min-height:73px;color:#243c50;cursor:pointer;padding:8px 0}
- .assist-phone-date-strip button small{font-size:10px;color:#7d90a0}
+ .assist-phone-date-strip button small{font-size:12px;color:#7d90a0}
  .assist-phone-date-strip button strong{font-size:17px;line-height:1.1}
  .assist-phone-date-strip button i{position:absolute;bottom:4px;border-radius:50%;
   background:#0c8898;width:4px;height:4px}
@@ -490,7 +490,7 @@
  .assist-phone-date-strip button.selected small{color:#d5f5f7}
  .assist-phone-date-strip button.selected i{background:#fff}
  .assist-phone-hours{display:flex;align-items:center;gap:8px;color:#37717f;
-  padding:11px 13px;background:#eaf7f8;border-radius:11px;font-size:11px;line-height:1.45;
+  padding:11px 13px;background:#eaf7f8;border-radius:11px;font-size:12px;line-height:1.45;
   margin:3px 0 13px}
  .assist-phone-hours svg{flex:none}
  .assist-phone-filter-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:23px}
@@ -500,10 +500,10 @@
   padding:12px 2px;background:transparent;border:0;outline-offset:2px;color:#274254}
  .assist-phone-list-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 1px 11px}
  .assist-phone-list-heading h2{font-size:17px;font-weight:800;letter-spacing:-.03em;color:#1b3549;margin:0}
- .assist-phone-list-heading p{font-size:11px;color:#8a9ba9;margin:4px 0 0}
+ .assist-phone-list-heading p{font-size:12px;color:#8a9ba9;margin:4px 0 0}
  .assist-phone-list-heading>svg{color:#0f8696}
  .assist-phone-record-heading{margin:20px 1px 10px}
- .assist-phone-record-heading button{font-size:11px;font-weight:750;color:#168698;background:none;border:0;cursor:pointer}
+ .assist-phone-record-heading button{font-size:12px;font-weight:750;color:#168698;background:none;border:0;cursor:pointer}
  .assist-phone-records{background:#fff;border:1px solid #e7eef3;border-radius:19px;
   padding:4px 14px;box-shadow:0 2px 12px #143d5609}
  .assist-phone-record{display:flex;align-items:center;text-align:left;gap:11px;min-width:0;
@@ -514,12 +514,12 @@
   align-items:center;justify-content:center;background:#e9f7f8;color:#0d7b89;
   min-width:61px;min-height:57px;border-radius:12px}
  .assist-phone-time strong{font-size:13px;font-weight:850}
- .assist-phone-time span{font-size:10px;color:#6194a0}
+ .assist-phone-time span{font-size:12px;color:#6194a0}
  .assist-phone-record-main{min-width:0;display:grid;gap:4px;flex:1}
  .assist-phone-record-main strong{font-size:13px;line-height:1.35;overflow-wrap:anywhere}
- .assist-phone-record-main small{color:#8395a1;font-size:11px;line-height:1.35;overflow-wrap:anywhere}
+ .assist-phone-record-main small{color:#8395a1;font-size:12px;line-height:1.35;overflow-wrap:anywhere}
  .assist-phone-status-line{display:block;padding-top:3px}
- .assist-phone-status{display:inline-block;max-width:100%;font-size:9px;font-style:normal;
+ .assist-phone-status{display:inline-block;max-width:100%;font-size:12px;font-style:normal;
   font-weight:800;line-height:1.3;white-space:nowrap;padding:5px 8px;border-radius:9px;
   background:#fff2df;color:#a66d1d}
  .assist-phone-status.confirmed{background:#e5f1fc;color:#356b9c}
@@ -539,7 +539,7 @@
  .assist-phone-billing-summary{position:relative;overflow:hidden;color:#fff;
   background:linear-gradient(125deg,#077484,#159ea6);border-radius:21px;
   padding:22px;margin:0 0 18px;box-shadow:0 7px 23px #117d8925}
- .assist-phone-billing-summary>span{font-size:10px;font-weight:800;letter-spacing:.13em;color:#d5f5f4}
+ .assist-phone-billing-summary>span{font-size:12px;font-weight:800;letter-spacing:.13em;color:#d5f5f4}
  .assist-phone-billing-summary>strong{display:block;font-size:36px;margin:7px 0 1px;font-weight:850}
  .assist-phone-billing-summary p{font-size:12px;color:#d9f4f2;margin:0;max-width:80%}
  .assist-phone-summary-decoration{position:absolute;right:-6px;top:19px;opacity:.16}
@@ -567,8 +567,8 @@
   padding:7px 8px calc(8px + env(safe-area-inset-bottom))}
  .assist-mobile-nav button{min-width:0;min-height:49px;padding:5px 1px;gap:5px;
   display:flex;align-items:center;justify-content:center;flex-direction:column;
-  color:#8496a5;font-size:10px;font-weight:700;border-radius:12px}
- .assist-mobile-nav button span{font-size:10px}
+  color:#8496a5;font-size:12px;font-weight:700;border-radius:12px}
+ .assist-mobile-nav button span{font-size:12px}
  .assist-mobile-nav button[aria-current=page]{color:#087f91;background:#edf9f9}
  .assist-mobile-nav button svg{flex:none}
  .custom-aceassist .assist-modal-backdrop{padding:8px;align-items:flex-end}
@@ -870,3 +870,7 @@
  .custom-aceassist :is(.assist-calendar-filters,.assist-phone-filter-row){gap:8px}
 }
 @media(prefers-reduced-motion:reduce){.custom-aceassist :is(button,.assist-modal,.assist-document-modal,.assist-customer-modal){transition:none;animation:none}}
+
+/* Handheld accessibility floor for dense appointment navigation. */
+@media(max-width:700px){.custom-aceassist :is(.assist-mobile-nav button,.assist-phone-record-heading button,.assist-phone-date-strip button,.assist-phone-list-heading button){min-height:44px}.custom-aceassist :is(.assist-mobile-nav button span,.assist-phone-status,.assist-phone-time span,.assist-metric small,.assist-quick-grid button strong){font-size:12px;line-height:1.4}}
+/* Replaced 35 unreadable 9–11px text declarations with a 12px floor. */

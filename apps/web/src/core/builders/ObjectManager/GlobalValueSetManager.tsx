@@ -104,7 +104,7 @@ export default function GlobalValueSetManager(){
       {mode==='list'&&<button className="btn btn-brand" type="button" onClick={reset}>New Value Set</button>}</div>
     {error&&<p className="form-error" role="alert">{error}</p>}
     {mode==='list'&&(loading?<div className="empty-state">Loading Global Value Sets…</div>:<div className="metadata-card">
-      <div className="table-scroll"><table className="slds-table"><thead><tr><th>Label</th><th>API Name</th><th>Values</th></tr></thead>
+      <div className="table-scroll" role="region" aria-label="Global value sets" tabIndex={0}><table className="slds-table"><thead><tr><th scope="col">Label</th><th scope="col">API Name</th><th scope="col">Values</th></tr></thead>
         <tbody>{valueSets.map(valueSet=><tr key={valueSet.id}>
           <td><button className="btn" type="button" onClick={()=>choose(valueSet)}>{valueSet.label}</button></td>
           <td className="api-name">{valueSet.apiName}</td><td>{valueSet.values.length}</td>

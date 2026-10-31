@@ -22,6 +22,7 @@ recovery:ReactNode;mfa:ReactNode;emailRecovery:ReactNode;locks:ReactNode;session
  mobile?:boolean; initialSection?:Section;
 }){
  const [active,setActive]=useState<Section>(initialSection??'general');
+ const [securityView,setSecurityView]=useState<'access'|'recovery'|'history'>('access');
  const [mobileSection,setMobileSection]=useState<Section|null>(mobile&&initialSection?initialSection:null);
  useEffect(()=>{if(initialSection){setActive(initialSection);if(mobile)setMobileSection(initialSection);}},[initialSection,mobile]);
  const currentSection=mobile ? mobileSection : active;
@@ -67,7 +68,20 @@ recovery:ReactNode;mfa:ReactNode;emailRecovery:ReactNode;locks:ReactNode;session
          Render it once, avoiding duplicate state and network requests. */}
      {(currentSection==='general'||currentSection==='currency'||currentSection==='contacts'||currentSection==='branding')&&(typeof company === 'object' && company !== null && 'props' in company ? cloneElement(company as ReactElement, {section:currentSection}) : company)}
      {currentSection==='integrations'&&<section className="company-workspace-stack">{domains}{developer}</section>}
-     {currentSection==='security'&&<section className="company-workspace-stack">{mfa}{emailRecovery}{locks}{sessions}{recovery}{audit}</section>}
+     {currentSection==='security'&&<section className="company-workspace-stack">
+      <nav role="tablist" className="md-admin-tabstrip" aria-label="Security settings areas">
+       {([{id:'access',label:'Sign-in and access'},{id:'recovery',label:'Account recovery'},{id:'history',label:'Login activity'}] as const).map(item=>
+        <button key={item.id} type="button" role="tab" id={'company-security-tab-'+item.id}
+         aria-controls={'company-security-panel-'+item.id} aria-selected={securityView===item.id}
+         onClick={()=>setSecurityView(item.id)}>{item.label}</button>)}
+      </nav>
+      <div role="tabpanel" id={'company-security-panel-'+securityView}
+       aria-labelledby={'company-security-tab-'+securityView} className="md-security-content">
+       {securityView==='access'&&mfa}
+       {securityView==='recovery'&&<>{emailRecovery}{locks}{sessions}{recovery}</>}
+       {securityView==='history'&&audit}
+      </div>
+     </section>}
      {currentSection==='business'&&<div className="company-workspace-secondary">
        {calendar??<BusinessCalendarSettings request={apiRequest} permitted />}
        {usage}

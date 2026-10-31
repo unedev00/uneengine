@@ -1418,17 +1418,17 @@ export function ReportBuilder({
             </div>}
             {result.subtotalRows.length > 0 && <section className="report-subtotals">
               <h3>Group Subtotals</h3>
-              <div className="permission-table-wrap"><table className="slds-table report-results">
+              <div className="permission-table-wrap" role="region" aria-label="Report results table" tabIndex={0}><table className="slds-table report-results">
                 <thead><tr>
                   {result.report.groupByFieldApiNames.map((fieldApiName) => (
-                    <th key={fieldApiName}>{reportFieldLabel(fieldApiName)}</th>
+                    <th scope="col" key={fieldApiName}>{reportFieldLabel(fieldApiName)}</th>
                   ))}
                   {result.report.format === 'Matrix' && result.report.columnGroupByFieldApiName && (
-                    <th>{reportObject?.fields.find((field) => field.apiName === result.report.columnGroupByFieldApiName)?.label ?? result.report.columnGroupByFieldApiName}</th>
+                    <th scope="col">{reportObject?.fields.find((field) => field.apiName === result.report.columnGroupByFieldApiName)?.label ?? result.report.columnGroupByFieldApiName}</th>
                   )}
-                  <th>Record Count</th>
+                  <th scope="col">Record Count</th>
                   {summarySpecs.map(({ fieldApiName, operation }) => (
-                    <th key={`${fieldApiName}-${operation}`}>{operation} of {reportFieldLabel(fieldApiName)}</th>
+                    <th scope="col" key={`${fieldApiName}-${operation}`}>{operation} of {reportFieldLabel(fieldApiName)}</th>
                   ))}
                 </tr></thead>
                 <tbody>{result.subtotalRows.map((subtotal) => <tr key={`${subtotal.groupLevel}-${JSON.stringify(subtotal.groupValues)}`}>
@@ -1450,12 +1450,12 @@ export function ReportBuilder({
               </table></div>
             </section>}
             {result.report.format === 'Matrix' && matrixColumnField
-              ? <div className="permission-table-wrap"><table className="slds-table report-results">
+              ? <div className="permission-table-wrap" role="region" aria-label="Report results table" tabIndex={0}><table className="slds-table report-results">
                 <thead><tr>
-                  {result.report.groupByFieldApiNames.map((fieldApiName) => <th key={fieldApiName}>{reportFieldLabel(fieldApiName)}</th>)}
+                  {result.report.groupByFieldApiNames.map((fieldApiName) => <th scope="col" key={fieldApiName}>{reportFieldLabel(fieldApiName)}</th>)}
                   {matrixColumns.flatMap((columnValue) => [
-                    <th key={`${String(columnValue)}-count`}>{groupedValueLabel(matrixColumnField, columnValue)} · Count</th>,
-                    ...summarySpecs.map(({ fieldApiName, operation }) => <th key={`${String(columnValue)}-${fieldApiName}-${operation}`}>
+                    <th scope="col" key={`${String(columnValue)}-count`}>{groupedValueLabel(matrixColumnField, columnValue)} · Count</th>,
+                    ...summarySpecs.map(({ fieldApiName, operation }) => <th scope="col" key={`${String(columnValue)}-${fieldApiName}-${operation}`}>
                       {groupedValueLabel(matrixColumnField, columnValue)} · {operation} {reportFieldLabel(fieldApiName)}
                     </th>)
                   ])}
@@ -1485,12 +1485,12 @@ export function ReportBuilder({
                   })}
                 </tr></tfoot>
               </table></div>
-              : <div className="permission-table-wrap"><table className="slds-table report-results">
+              : <div className="permission-table-wrap" role="region" aria-label="Report results table" tabIndex={0}><table className="slds-table report-results">
               <thead><tr>
-                {result.report.groupByFieldApiNames.map((fieldApiName) => <th key={fieldApiName}>{reportFieldLabel(fieldApiName)}</th>)}
-                <th>Record Count</th>
+                {result.report.groupByFieldApiNames.map((fieldApiName) => <th scope="col" key={fieldApiName}>{reportFieldLabel(fieldApiName)}</th>)}
+                <th scope="col">Record Count</th>
                 {summarySpecs.map(({ fieldApiName, operation }) => (
-                  <th key={`${fieldApiName}-${operation}`}>{operation} of {reportFieldLabel(fieldApiName)}</th>
+                  <th scope="col" key={`${fieldApiName}-${operation}`}>{operation} of {reportFieldLabel(fieldApiName)}</th>
                 ))}
               </tr></thead>
               <tbody>{result.summaryRows.map((group) => <tr key={JSON.stringify(group.groupValues)}>
@@ -1509,7 +1509,7 @@ export function ReportBuilder({
               </tr></tfoot>
             </table></div>}
           </section>}
-          {result && result.report.showDetails && <div className="permission-table-wrap"><table className="slds-table report-results"><thead><tr>{result.report.fieldApiNames.map((fieldApiName) => <th key={fieldApiName}>{reportFieldLabel(fieldApiName)}</th>)}</tr></thead>
+          {result && result.report.showDetails && <div className="permission-table-wrap" role="region" aria-label="Report results table" tabIndex={0}><table className="slds-table report-results"><thead><tr>{result.report.fieldApiNames.map((fieldApiName) => <th scope="col" key={fieldApiName}>{reportFieldLabel(fieldApiName)}</th>)}</tr></thead>
             <tbody>{result.rows.map((row, index) => <tr key={String(row.Id ?? index)}>{result.report.fieldApiNames.map((fieldApiName) => <td key={fieldApiName}>{row[fieldApiName] === null || row[fieldApiName] === undefined ? '—' : String(row[fieldApiName])}</td>)}</tr>)}</tbody>
           </table>{!result.rows.length && <p className="dashboard-no-data">No records match this report.</p>}
             <div className="report-footer"><span>Showing {result.totalRows ? result.offset + 1 : 0}–{result.offset + result.rows.length} of {result.totalRows.toLocaleString()} records</span><span><button className="icon-button subtle" aria-label="Previous report page" disabled={busy || previewBusy || result.offset === 0} onClick={() => void (runPage ? run(Math.max(0, pageOffset - result.pageSize)) : refreshPreview(Math.max(0, pageOffset - result.pageSize)))}><ChevronLeft size={14} /></button><button className="icon-button subtle" aria-label="Next report page" disabled={busy || previewBusy || !result.truncated} onClick={() => void (runPage ? run(pageOffset + result.pageSize) : refreshPreview(pageOffset + result.pageSize))}><ChevronRight size={14} /></button></span></div>

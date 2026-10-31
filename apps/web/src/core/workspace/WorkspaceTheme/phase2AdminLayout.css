@@ -135,3 +135,20 @@
 .lightning .app-manager-workspace .app-manager-step {gap:8px}
 .lightning .app-manager-workspace .app-manager-top {min-width:0}
 @media(max-width:720px){.lightning .md-admin-settings-block {padding:10px}.lightning .md-admin-table-wrap {margin:10px 0}.lightning .company-workspace .md-admin-tabstrip {position:relative}}
+
+/* Do not force 940px audit tables on a phone: accessible row cards retain headers in the DOM. */
+.lightning .md-security-history-filters{margin:14px 0;gap:10px 14px}
+.lightning .md-security-history-filters>.md-admin-actions{align-self:end;margin:0;gap:8px}
+@media(max-width:700px){
+ .lightning .md-admin-table-wrap:has(.md-audit-table){overflow:visible}
+ .lightning .md-audit-table{min-width:0;width:100%;border-spacing:0}
+ .lightning .md-audit-table thead{display:none}
+ .lightning .md-audit-table,.lightning .md-audit-table tbody,.lightning .md-audit-table tr{display:block;min-width:0}
+ .lightning .md-audit-table tbody tr{padding:8px 12px;margin:10px 0;border:1px solid var(--md-border,#e0e5eb);border-radius:9px}
+ .lightning .md-audit-table td{display:grid;grid-template-columns:minmax(95px,35%) minmax(0,1fr);gap:8px;max-width:none;min-width:0;overflow-wrap:anywhere;padding:6px 0;border-bottom:1px solid var(--md-border,#e0e5eb)}
+ .lightning .md-audit-table td:last-child{border-bottom:0}
+ .lightning .md-audit-table td::before{content:attr(data-label);font-weight:600;color:var(--md-muted,#596579)}
+ .lightning .md-audit-table td[colspan]{display:block;text-align:center}
+ .lightning .md-audit-table td[colspan]::before{content:none}
+ .lightning .md-audit-table [data-long-id]{max-width:100%;white-space:normal;overflow-wrap:anywhere}
+}

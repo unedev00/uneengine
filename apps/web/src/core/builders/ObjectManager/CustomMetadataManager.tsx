@@ -153,8 +153,8 @@ export default function CustomMetadataManager({setting}:{setting:string}) {
       </div></div>
     {error&&<p className="formula-validation-error" role="alert">{error}</p>}
     {notice&&<p className="formula-validation-success" role="status">{notice}</p>}
-    {mode==='list'&&<div className="table-scroll"><table className="slds-table">
-      <thead><tr><th>Name</th><th>API name</th><th>Details</th><th>Action</th></tr></thead>
+    {mode==='list'&&<div className="table-scroll" role="region" aria-label="Custom metadata records" tabIndex={0}><table className="slds-table">
+      <thead><tr><th scope="col">Name</th><th scope="col">API name</th><th scope="col">Details</th><th scope="col">Action</th></tr></thead>
       <tbody>{setting==='Custom Labels'
         ?labels.map(item=><tr key={item.apiName+':'+item.language}>
           <td><button type="button" className="field-link" onClick={()=>{
