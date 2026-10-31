@@ -65,7 +65,7 @@ function SmartCard({p,record}){
  const imageHeight=number(p.imageHeight,220);
  return <article className="smart-card" style={{
   display:"flex",flexDirection:horizontal?"row":"column",
-  background:p.backgroundColor||"#fff",border:p.borderColor?"1px solid "+p.borderColor:"1px solid #e2e8f0",
+  background:single?(p.imageBackgroundColor??p.backgroundColor??"transparent"):(p.backgroundColor||"#fff"),border:p.borderColor?"1px solid "+p.borderColor:"1px solid #e2e8f0",
   borderRadius:number(p.radius,12),overflow:"hidden",position:"relative",minWidth:0,
   boxShadow:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none",
   ...(single?{height:"100%",minHeight:0}:{}),
@@ -286,7 +286,7 @@ export default function SmartRuntime(p){
     })}
   </nav>;
  }else content=<div className="smart-container" style={{
-    background:p.backgroundColor||"transparent",
+    background:p.imageBackgroundColor??p.backgroundColor??"transparent",
     border:p.borderColor?"1px solid "+p.borderColor:0,
     borderRadius:number(p.radius,12),...shadowStyle
  }}>{p.children||null}</div>;
