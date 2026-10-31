@@ -76,3 +76,17 @@
  flex:0 1 225px;min-width:0;max-width:225px;white-space:nowrap;
  overflow:hidden;text-overflow:ellipsis;user-select:none;
 }
+
+/* The editor uses an Office-style move cursor, not the browser's grab hand.
+   Resize handles retain directional cursors even when descendants are hovered. */
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected:not(.canvas-component-locked){cursor:move!important}
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .free-canvas-resize-handle,
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .free-canvas-resize-handle *{pointer-events:auto}
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .resize-n, .builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .resize-n *{cursor:ns-resize!important}
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .resize-s, .builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .resize-s *{cursor:ns-resize!important}
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .resize-e, .builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .resize-e *{cursor:ew-resize!important}
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .resize-w, .builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .resize-w *{cursor:ew-resize!important}
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .resize-ne, .builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .resize-ne *{cursor:nesw-resize!important}
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .resize-sw, .builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .resize-sw *{cursor:nesw-resize!important}
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .resize-nw, .builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .resize-nw *{cursor:nwse-resize!important}
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .resize-se, .builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .resize-se *{cursor:nwse-resize!important}
