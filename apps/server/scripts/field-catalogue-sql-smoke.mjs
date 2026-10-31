@@ -65,7 +65,10 @@ try{
  for(const [name,type] of Object.entries(expectedTypes))
   assert.equal(catalogue.find(row=>row.api_name===name)?.data_type,type,
    'Stored field type catalogue mismatch: '+name);
- for(const name of ['Ratio','Quantity','Timestamp','Clock','Contact','Phone','Site','Choices'])
+ for(const name of ['Ratio','Quantity'])
+  assert.equal(typeof created.fields.find(field=>field.apiName===name)?.defaultValue,'number',
+   'Numeric default must retain its typed value: '+name);
+ for(const name of ['Timestamp','Clock','Contact','Phone','Site','Choices'])
   assert.equal(typeof created.fields.find(field=>field.apiName===name)?.defaultValue,'string',
    'Default did not survive metadata round-trip: '+name);
  const stored=await db.query("SELECT api_name,is_unique,external_id FROM md_field_definitions WHERE tenant_id=$1 AND object_api='Phase2B__c' AND api_name IN ('ExtKey','UniqueCode') ORDER BY api_name",[primary]);
