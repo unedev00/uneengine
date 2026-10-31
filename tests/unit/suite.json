@@ -220,6 +220,7 @@
     "apps/web/test/schemaBuilder.test.ts",
     "apps/web/test/setupMetadataDependencies.test.ts",
     "apps/web/test/setupObjectActions.test.ts",
+    "apps/web/test/smartImageSingleBorder.test.mjs",
     "apps/web/test/smartLibrary.test.mjs",
     "apps/web/test/smartRelationshipBindings.test.ts",
     "apps/web/test/smartToggleFieldBinding.test.ts",
