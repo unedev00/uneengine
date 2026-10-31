@@ -2546,20 +2546,15 @@ function PageBuilder({
       default:return null;
     }
   };
-  const saveAdvancedVisibility=()=>{applyVisibilityEditor();setAdvancedEditor(null);};
-  const openAdvanced = (feature:AdvancedFeature) => {
-    if(feature==='preview'){
-      if(!previewMode&&!window.confirm('Interactive preview can execute configured Flows and update records. Continue?'))return;
-      setAdvancedEditor(null);setPreviewMode(value=>!value);return;
-    }
-    if(['visibility','actions','responsive','nesting','properties','canvas'].includes(feature)&&!selected)return;
+  const savePreviewVisibility=()=>applyVisibilityEditor();
+  const cancelPreviewVisibility=()=>{
+    const raw=selected?.properties.visibilityRules;
+    setVisibilityDraft(raw&&typeof raw==='object'&&!Array.isArray(raw)
+      ?structuredClone(raw as ComponentVisibilityRule):undefined);
+  };
+  const openAdvanced=(feature:AdvancedFeature)=>{
+    if(['actions','responsive','nesting','properties'].includes(feature)&&!selected)return;
     if(feature==='recordPage'&&page.pageType!=='Record Page')return;
-    if(feature==='canvas'&&page.layoutMode!=='free-canvas')return;
-    if(feature==='visibility'){
-      const raw=selected?.properties.visibilityRules;
-      setVisibilityDraft(raw&&typeof raw==='object'&&!Array.isArray(raw)
-        ?structuredClone(raw as ComponentVisibilityRule):undefined);
-    }
     if(feature==='properties'){setInspectorTab('Data & Actions');setActivePanel('properties');}
     setAdvancedEditor(feature);
   };
@@ -2866,6 +2861,19 @@ function PageBuilder({
               <span aria-live="polite">{page.canvasWidth} × {page.canvasHeight} · {fitCanvas?Math.round(fitScale*100):100}%</span>
             </div><span>View</span>
           </div>}
+          {ribbonTab==='Preview' && <div className="office-ribbon-group preview-visibility-group" aria-label="Conditional visibility">
+            {selected ? <div className="preview-visibility-controls">
+              <label className="ribbon-small-checkbox"><input type="checkbox" checked={selected.visible}
+                onChange={event=>updateComponent(selected.id,{visible:event.target.checked})}/>
+                Component visible on this page</label>
+              <RibbonVisibilityRules draft={visibilityDraft} onChange={setVisibilityDraft}
+                onApply={savePreviewVisibility} onCancel={cancelPreviewVisibility} fields={fields}
+                allowRecordFields={Boolean(targetObject&&page.pageType==='Record Page')}
+                profiles={profiles.map(profile=>({id:profile.id,label:profile.label}))}
+                recordTypes={(targetObject?.recordTypes??[]).map(type=>({id:type.id,label:type.label}))}/>
+            </div> : <div className="preview-visibility-unselected">Select a component to set its visibility.</div>}
+            <span>Conditional visibility</span>
+          </div>}
           {ribbonTab==='Component Layout' && <div className="office-ribbon-group canvas-placement-group" aria-label="Placement">
             <div className="office-ribbon-stack canvas-placement-actions">
               <button type="button" disabled={!selected||isCanvasLocked(selected)} title="Bring to Front"
@@ -2921,8 +2929,26 @@ function PageBuilder({
           })()}
           {ribbonTab==='Advanced' && <PageBuilderAdvancedRibbon
             selected={!!selected} recordPage={page.pageType==='Record Page'}
-            freeCanvas={page.layoutMode==='free-canvas'} preview={previewMode}
-            onOpen={openAdvanced}/>}
+            onOpen={openAdvanced}
+            canvasTools={page.layoutMode==='free-canvas' ? <>
+              <button type="button" disabled={selectionIds.length<2||!selected?.position}
+                onClick={wrapSelectedInContainer}><Group size={15}/> Group</button>
+              <button type="button" disabled={!selected||(!canvasGroupKey(selected)&&!(selected.type==='Container'&&childrenOf(page.components,selected.id).length>0))}
+                onClick={ungroupSelected}><Ungroup size={15}/> Ungroup</button>
+              {(['start','center','end'] as const).map(anchor=><React.Fragment key={anchor}>
+                <button type="button" disabled={!selected||!selected.position||isCanvasLocked(selected)}
+                  onClick={()=>alignSelected('x',anchor)}>Align horizontal {anchor}</button>
+                <button type="button" disabled={!selected||!selected.position||isCanvasLocked(selected)}
+                  onClick={()=>alignSelected('y',anchor)}>Align vertical {anchor}</button>
+              </React.Fragment>)}
+              <button type="button" disabled={selectionIds.length<3} onClick={()=>distributeSelected('x')}>Distribute horizontally</button>
+              <button type="button" disabled={selectionIds.length<3} onClick={()=>distributeSelected('y')}>Distribute vertically</button>
+              <button type="button" disabled={!selected||isCanvasLocked(selected)} onClick={()=>moveSelected(-1)}>Bring forward</button>
+              <button type="button" disabled={!selected||isCanvasLocked(selected)} onClick={()=>moveSelected(1)}>Send backward</button>
+              <button type="button" disabled={!selected} onClick={()=>selected&&updateComponent(selected.id,{properties:{
+                ...selected.properties,editorLocked:!isCanvasLocked(selected)}})}>
+                {selected&&isCanvasLocked(selected)?'Unlock component':'Lock component'}</button>
+            </> : null}/>}
           {ribbonTab==='Add Block' && <SmartInsertRibbon
             items={paletteComponents}
             onInsert={addPaletteComponent}
@@ -2965,17 +2991,6 @@ function PageBuilder({
             <button type="button" className="icon-button" aria-label="Close advanced editor"
               onClick={()=>setAdvancedEditor(null)}><X size={16}/></button></div>
           <div className="page-builder-advanced-body">
-            {advancedEditor==='visibility' && selected && <>
-              <label className="checkbox-row"><input type="checkbox" checked={selected.visible}
-                onChange={event=>updateComponent(selected.id,{visible:event.target.checked})}/>
-                Component visible on this page</label>
-              <RibbonVisibilityRules draft={visibilityDraft} onChange={setVisibilityDraft}
-                onApply={saveAdvancedVisibility}
-                onCancel={()=>setAdvancedEditor(null)} fields={fields}
-                allowRecordFields={Boolean(targetObject&&page.pageType==='Record Page')}
-                profiles={profiles.map(profile=>({id:profile.id,label:profile.label}))}
-                recordTypes={(targetObject?.recordTypes??[]).map(type=>({id:type.id,label:type.label}))}/>
-            </>}
             {advancedEditor==='actions' && selected && <MetadataComponentProperties
               key={selected.id} mode="actions-editor" properties={selected.properties}
               onChange={(properties:Record<string,unknown>)=>updateComponent(selected.id,{properties})}
@@ -3034,30 +3049,6 @@ function PageBuilder({
                   {item.label}</button>)}
               </div>}
             </>}
-            {advancedEditor==='canvas' && selected && <div className="page-builder-advanced-canvas-buttons">
-              <button type="button" className="btn" disabled={selectionIds.length<2||!selected.position}
-                onClick={wrapSelectedInContainer}>Group</button>
-              <button type="button" className="btn" disabled={selected.type!=='Container'||isCanvasLocked(selected)}
-                onClick={ungroupSelected}>Ungroup</button>
-              {(['start','center','end'] as const).map(anchor=><React.Fragment key={anchor}>
-                <button type="button" className="btn" disabled={!selected.position||isCanvasLocked(selected)}
-                  onClick={()=>alignSelected('x',anchor)}>Align horizontal {anchor}</button>
-                <button type="button" className="btn" disabled={!selected.position||isCanvasLocked(selected)}
-                  onClick={()=>alignSelected('y',anchor)}>Align vertical {anchor}</button>
-              </React.Fragment>)}
-              <button type="button" className="btn" disabled={selectionIds.length<3}
-                onClick={()=>distributeSelected('x')}>Distribute horizontally</button>
-              <button type="button" className="btn" disabled={selectionIds.length<3}
-                onClick={()=>distributeSelected('y')}>Distribute vertically</button>
-              <button type="button" className="btn" disabled={isCanvasLocked(selected)}
-                onClick={()=>moveSelected(-1)}>Bring forward</button>
-              <button type="button" className="btn" disabled={isCanvasLocked(selected)}
-                onClick={()=>moveSelected(1)}>Send backward</button>
-              <button type="button" className="btn"
-                onClick={()=>updateComponent(selected.id,{properties:{
-                  ...selected.properties,editorLocked:!isCanvasLocked(selected)}})}>
-                {isCanvasLocked(selected)?'Unlock component':'Lock component'}</button>
-            </div>}
             {advancedEditor==='recordPage'&&selected&&
               <button type="button" className="btn btn-small"
                 onClick={()=>{setInspectorTab('Data & Actions');setActivePanel('properties');setAdvancedEditor('properties');}}>
