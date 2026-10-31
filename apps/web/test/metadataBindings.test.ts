@@ -9,7 +9,7 @@ import {buildChatterView} from '../src/core/records/RecordWorkspace/chatterRecor
 import {presentPageRecords} from '../src/core/records/RecordWorkspace/recordPresentationAdapters';
 import type {ObjectMetadata,FlowDefinitionMetadata} from '../src/core/metadata/Definitions/metadata';
 import {pageLayoutForRecord} from '../src/core/records/RecordWorkspace/recordMetadataUtils';
-import {declaredFlowOutputs,resolveFlowOutputBindings,encodeInputSource,decodeInputSource} from '../src/core/automation/FlowScreen/flowInputBindings';
+import {declaredFlowOutputs,resolveFlowOutputBindings,encodeInputSource,decodeInputSource,resolveStructuredFlowInput} from '../src/core/automation/FlowScreen/flowInputBindings';
 import {pageComponentRecordQuery,filterPageComponentRecords,bindPageStateProperties} from '../src/core/pages/PageRuntime/pageComponentBindings';
 import {compareMetadataValue} from '../src/core/metadata/Definitions/metadataValueComparison';
 import {supportedFilterOperators,isNumericFilterField,isBooleanFilterField,examineRecordFilter} from '../src/core/records/RecordWorkspace/recordFilterMetadata';
@@ -374,4 +374,26 @@ test('filter editor and smart ribbon expose typed popup without narrow legacy fo
  assert.match(ribbon,/onLogicChange=\{filterLogic/);
  assert.match(css,/min-height:40px/);
  assert.match(popup,/width:min\(760px,calc\(100vw - 32px\)\)/);
+});
+
+test('Metadata-only POS Flow inputs project authorised fields and parse numeric Page State',()=>{
+ const pageState:{[key:string]:unknown}={cashReceived:' 15.25 ',cartItems:[
+  {Id:'private-id',Product:'product-1',Quantity:2,OriginalUnitPrice:5,Secret:'not transmitted'}
+ ]};
+ const resolve=(value:unknown)=>typeof value==='string'&&value.startsWith('$state.')
+   ?pageState[value.slice(7)]:value;
+ const money=encodeInputSource('Numeric Page State','cashReceived',[]);
+ const items=encodeInputSource('Record Collection','cartItems:Product,Quantity',[]);
+ assert.deepEqual(decodeInputSource(money).kind,'Numeric Page State');
+ assert.equal(decodeInputSource(items).kind,'Record Collection');
+ assert.equal(resolveStructuredFlowInput(money as Record<string,unknown>,resolve),15.25);
+ assert.deepEqual(resolveStructuredFlowInput(items as Record<string,unknown>,resolve),[
+  {Product:'product-1',Quantity:2}
+ ]);
+ assert.equal(resolveStructuredFlowInput({source:'ToNumber',value:'bad'},()=> '£20'),undefined);
+ assert.equal(resolveStructuredFlowInput({source:'ProjectRecords',value:'$state.cartItems',
+  fields:['Id']},resolve),undefined);
+ assert.equal(resolveStructuredFlowInput({source:'ProjectRecords',value:'$state.cartItems',
+  fields:['NotPresent']},resolve),undefined);
+ assert.throws(()=>encodeInputSource('Record Collection','cartItems:Id',[]),/excluding Id/);
 });
