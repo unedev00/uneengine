@@ -132,17 +132,17 @@
 }
 .lightning .settings-view-row {
   display: grid;
-  grid-template-columns: minmax(140px, 1fr) minmax(0, 1.4fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 12px;
   align-items: center;
   padding: 12px 4px;
   border-bottom: 1px solid var(--md-border, #e0e5eb);
   font-size: 13px;
 }
-.lightning .settings-view-row:last-child { border-bottom: 0; }
-@media (max-width: 600px) {
-  .lightning .settings-view-row { grid-template-columns: 1fr; gap: 4px; }
-}
+.lightning .settings-view-row-content{display:grid;grid-template-columns:minmax(170px,.9fr) minmax(0,1.5fr);align-items:center;gap:4px 12px}
+.lightning .settings-view-row-content>:nth-child(n+3){grid-column:1/-1}
+.lightning .settings-view-row:last-child{border-bottom:0}
+@media(max-width:720px){.lightning .settings-view-row-content{grid-template-columns:minmax(0,1fr);gap:2px}.lightning .settings-view-row{gap:8px}}
 
 /* ----- Tables (admin + records; not builder canvas tables) ----- */
 .lightning :is(
@@ -231,7 +231,7 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
-  max-width: 720px;
+  max-width: min(100%, 1100px);
 }
 .lightning .connected-apps-group {
   border: 1px solid var(--md-border, #e0e5eb);
@@ -245,10 +245,10 @@
   margin-bottom: 10px;
 }
 .lightning .connected-apps-checklist {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  max-height: 220px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(min(100%,220px),1fr));
+  gap: 4px 16px;
+  max-height: 260px;
   overflow: auto;
   scrollbar-width: thin;
 }
@@ -301,3 +301,35 @@
   background: var(--md-canvas, #f0f2f5);
   border-radius: 8px;
 }
+
+/* Shared admin layout primitives; never target tenant-authored Page Runtime components. */
+.lightning .md-admin-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 16px;align-items:start}
+.lightning .md-admin-form-grid--3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.lightning .md-admin-form-grid>.form-label{min-width:0;margin:0}
+.lightning .md-admin-form-grid>.md-admin-span-all{grid-column:1/-1}
+.lightning .md-admin-field-short{width:min(100%,var(--md-form-short-width,220px));min-width:0}
+.lightning .md-admin-field-medium{width:min(100%,var(--md-form-medium-width,360px));min-width:0}
+.lightning .md-admin-checkbox-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:4px 16px;align-items:start;min-width:0}
+.lightning .md-admin-checkbox-grid>.checkbox-row{min-width:0;margin:0;overflow-wrap:anywhere}
+.lightning .md-admin-actions{display:flex;align-items:center;justify-content:flex-start;gap:8px;flex-wrap:wrap;margin:12px 0 0}
+.lightning .md-admin-actions>:is(.btn,button){margin:0}
+.lightning .md-admin-table-wrap{min-width:0;max-width:100%;overflow-x:auto;overscroll-behavior-inline:contain;scrollbar-width:thin}
+.lightning .md-admin-table{width:100%;border-collapse:separate;border-spacing:0;font-size:var(--md-table-size,13px);line-height:1.4}
+.lightning .md-admin-table :is(th,td){padding:8px 12px;text-align:left;vertical-align:middle;border-bottom:1px solid var(--md-border,#e0e5eb)}
+.lightning .md-admin-table th{position:sticky;top:0;background:var(--md-surface,#fff);font-weight:600;white-space:nowrap;z-index:1}
+.lightning .md-admin-table td{max-width:320px;overflow-wrap:anywhere}
+.lightning .md-admin-table [data-long-id]{max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lightning .md-admin-table :is(td,th):first-child{font-variant-numeric:tabular-nums}
+.lightning .surface.permission-section .form-label{font-size:var(--md-label-size,13px)}
+.lightning .surface.permission-section .permission-help{font-size:var(--md-helper-size,12px);line-height:1.5}
+.lightning .surface.permission-section>p{max-width:var(--md-reading-width,76ch)}
+.lightning .setup-layout .btn:disabled{opacity:.68}
+@media(max-width:1023px){.lightning .md-admin-form-grid--3{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:720px){.lightning .md-admin-form-grid,.lightning .md-admin-form-grid--3{grid-template-columns:minmax(0,1fr)}.lightning .md-admin-table :is(th,td){padding:8px 10px}}
+
+.lightning .md-audit-table{min-width:940px}
+.lightning .quick-find-result-count{margin:7px 2px 0;font-size:var(--md-helper-size,12px);color:var(--md-muted,#596579)}
+.lightning .setup-tree .tree-item:focus-visible{outline:2px solid var(--md-primary,#1d4ed8);outline-offset:-2px}
+.lightning .setup-sidebar .empty-tree .text-action{display:inline-flex;margin-top:8px}
+
+.lightning .md-security-governance{scroll-margin-top:72px}

@@ -742,6 +742,12 @@ function SetupApp({ onLogout, entryTiming }: { onLogout: () => void; entryTiming
       openSetupWorkspace('named-credentials');
       return;
     }
+    if (item === 'Security & Recovery' || item === 'Connected Apps' || item === 'Audit Trail') {
+      navigateRoute({kind:'setup',workspace:'company-settings',resourceApiName:'security',
+        ...(item === 'Connected Apps' ? {resourceId:'connected-apps'} :
+          item === 'Audit Trail' ? {resourceId:'audit-trail'} : {})});
+      return;
+    }
     if (item === 'Company Settings' || item === 'Company Information' || item === 'Currencies') {
       openSetupWorkspace('company-settings');
       return;

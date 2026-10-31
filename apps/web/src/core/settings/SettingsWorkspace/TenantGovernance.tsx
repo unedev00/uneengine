@@ -1,11 +1,14 @@
-import {useEffect,useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
 import TenantConnectedApps from './TenantConnectedApps';
 import TenantLicenses from './TenantLicenses';
 type Request=<T>(path:string,init?:RequestInit)=>Promise<T>;
 type Audit={id:string;actor_user_id:string|null;table_name:string;operation:string;row_identifier:string;changed_fields:string[];created_at:string};
-export default function TenantGovernance({request,canManage}:{request:Request;canManage:boolean}){
- const [tab,setTab]=useState('audit');
- return <section className="surface permission-section"><h2>Security governance</h2><div className="permission-tabs">{['audit','monitoring','licences','connected apps'].map(t=><button className={tab===t?'active':''} key={t} onClick={()=>setTab(t)}>{t}</button>)}</div>
+export default function TenantGovernance({request,canManage,initialTab='audit',focusOnMount=false}:{request:Request;canManage:boolean;initialTab?:string;focusOnMount?:boolean}){
+ const [tab,setTab]=useState(initialTab);
+ const rootRef=useRef<HTMLElement>(null);
+ useEffect(()=>setTab(initialTab),[initialTab]);
+ useEffect(()=>{if(focusOnMount)rootRef.current?.scrollIntoView({block:'start',behavior:'auto'});},[focusOnMount,initialTab]);
+ return <section ref={rootRef} className="surface permission-section md-security-governance"><h2>Security governance</h2><div className="permission-tabs">{['audit','monitoring','licences','connected apps'].map(t=><button className={tab===t?'active':''} key={t} onClick={()=>setTab(t)}>{t}</button>)}</div>
  {tab==='audit'&&<AuditTrail request={request}/>}{tab==='monitoring'&&<Monitoring request={request}/>}{tab==='licences'&&<TenantLicenses request={request} canManage={canManage}/>}{tab==='connected apps'&&<TenantConnectedApps request={request}/>}
  </section>;
 }
@@ -20,7 +23,7 @@ function AuditTrail({request}:{request:Request}){
  <label className="form-label">Setup table<select className="form-control" value={table} onChange={e=>setTable(e.target.value)}><option value="">All setup tables</option>{tables.map(t=><option key={t.table_name}>{t.table_name}</option>)}</select></label>
  <label className="checkbox-row"><input type="checkbox" checked={global} onChange={e=>setGlobal(e.target.checked)}/>Global setup (platform permission required)</label>
  <button className="btn" onClick={()=>void download().catch(e=>setMessage(String(e)))}>{exportCursor?'Download next 5,000 CSV rows':'Export CSV (up to 5,000 rows)'}</button>
- {message&&<p role="status">{message}</p>}<table className="data-table"><thead><tr><th>Time</th><th>Actor</th><th>Setup table</th><th>Operation</th><th>Row</th><th>Changed fields</th></tr></thead><tbody>{events.map(e=><tr key={e.id}><td>{new Date(e.created_at).toLocaleString()}</td><td>{e.actor_user_id??'System'}</td><td>{e.table_name}</td><td>{e.operation}</td><td>{e.row_identifier}</td><td>{e.changed_fields.join(', ')}</td></tr>)}</tbody></table>
+ {message&&<p role="status">{message}</p>}<div className="md-admin-table-wrap" role="region" aria-label="Setup audit events" tabIndex={0}><table className="data-table md-admin-table md-audit-table"><thead><tr><th>Time</th><th>Actor</th><th>Setup table</th><th>Operation</th><th>Row</th><th>Changed fields</th></tr></thead><tbody>{events.map(e=><tr key={e.id}><td>{new Date(e.created_at).toLocaleString()}</td><td>{e.actor_user_id??'System'}</td><td>{e.table_name}</td><td>{e.operation}</td><td data-long-id title={e.row_identifier}>{e.row_identifier}</td><td>{e.changed_fields.join(', ')}</td></tr>)}</tbody></table></div>
  {next&&<button className="btn" onClick={()=>void load(next).catch(e=>setMessage(String(e)))}>Load older changes</button>}</>;
 }
 type Rule={id?:string;label:string;enabled:boolean;event_type:string;method:string;path_prefix:string;threshold:number;window_seconds:number;response:string;flow_api:string|null;service_user_id:string|null};
@@ -44,7 +47,7 @@ function Monitoring({request}:{request:Request}){
  {(['threshold','window_seconds'] as const).map((key,i)=><label className="form-label" key={key}>{['Request threshold','Window in seconds'][i]}<input className="form-control" type="number" min="1" value={draft[key]} onChange={e=>setDraft({...draft,[key]:Number(e.target.value)})}/></label>)}
  {draft.response==='Flow'&&<><label className="form-label">Published Flow<select className="form-control" value={draft.flow_api??''} onChange={e=>setDraft({...draft,flow_api:e.target.value||null})}><option value="">Select Flow</option>{flows.map(f=><option key={f.apiName} value={f.apiName}>{f.label||f.apiName}</option>)}</select></label><label className="form-label">Service user<select className="form-control" value={draft.service_user_id??''} onChange={e=>setDraft({...draft,service_user_id:e.target.value||null})}><option value="">Select user</option>{users.map(u=><option key={u.id} value={u.id}>{u.email}</option>)}</select></label></>}
  <button className="btn btn-brand" onClick={()=>save('/security/monitoring/rules',draft)}>Save rule</button>
- <table className="data-table"><thead><tr><th>Time</th><th>Event</th><th>Request</th><th>Status</th><th>Milliseconds</th></tr></thead><tbody>{data.events.map(e=><tr key={e.id}><td>{new Date(e.created_at).toLocaleString()}</td><td>{e.event_type}</td><td>{e.method} {e.resource}</td><td>{e.status_code||'In progress'}</td><td>{e.elapsed_ms}</td></tr>)}</tbody></table>
+ <div className="md-admin-table-wrap" role="region" aria-label="Security monitoring events" tabIndex={0}><table className="data-table md-admin-table md-audit-table"><thead><tr><th>Time</th><th>Event</th><th>Request</th><th>Status</th><th>Milliseconds</th></tr></thead><tbody>{data.events.map(e=><tr key={e.id}><td>{new Date(e.created_at).toLocaleString()}</td><td>{e.event_type}</td><td>{e.method} {e.resource}</td><td>{e.status_code||'In progress'}</td><td>{e.elapsed_ms}</td></tr>)}</tbody></table></div>
  {data.nextCursor&&<button className="btn" onClick={()=>void load(data.nextCursor!).catch(e=>setMessage(String(e)))}>Load older events</button>}</>}
  </>;
 }

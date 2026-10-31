@@ -198,6 +198,7 @@
     "apps/web/test/pageBuilderTypographySpacing.test.ts",
     "apps/web/test/pageBuilderUx.test.ts",
     "apps/web/test/pagePerformanceAnalysis.test.ts",
+    "apps/web/test/phase1UiFoundation.test.ts",
     "apps/web/test/phoneColumns.test.mjs",
     "apps/web/test/recordActionPlacement.test.ts",
     "apps/web/test/recordChoices.test.ts",

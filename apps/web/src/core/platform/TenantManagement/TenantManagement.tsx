@@ -232,7 +232,7 @@ export default function TenantManagement({ request, permitted }: { request: Requ
     {error && <div className="tenant-alert tenant-alert-error" role="alert"><CircleAlert size={17} /> {error}</div>}
     {notice && <div className="tenant-alert" role="status">{notice}</div>}
     <section className="tenant-overview" aria-label="Tenant overview"><div><strong>{total}</strong><span>Matching tenants</span></div><div><strong>{activeOnPage}</strong><span>Active on this page</span></div><div><strong>{suspendedOnPage}</strong><span>Suspended on this page</span></div><div><strong>{archivedOnPage}</strong><span>Archived on this page</span></div></section>
-    <div className="tenant-columns">
+    <div className="tenant-columns" aria-hidden={showCreate || undefined}>
       <PlatformPageSlot slotKey="directory"><section className="tenant-panel" aria-label="Tenants">
         <div className="tenant-toolbar">
           <label className="tenant-search"><Search size={16} /><input type="search" aria-label="Search tenants" placeholder="Search name or tenant ID" value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} /></label>

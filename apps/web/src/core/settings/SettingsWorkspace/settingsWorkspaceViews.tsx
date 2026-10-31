@@ -369,10 +369,10 @@ function TenantSecurityAudit() {
   </section>;
 }
 
-function TenantMfaSettings({ onReauthenticate, canManage }: { onReauthenticate: () => void; canManage: boolean }) {
+function TenantMfaSettings({ onReauthenticate, canManage, governanceTab, governanceFocus }: { onReauthenticate: () => void; canManage: boolean; governanceTab?: string; governanceFocus?: boolean }) {
   return <><TenantMfaControls request={apiRequest} canManage={canManage} onReauthenticate={onReauthenticate}/>
     <TenantSessionControls request={apiRequest} canManage={canManage}/>
-    <TenantFederationControls request={apiRequest} canManage={canManage}/><TenantGovernance request={apiRequest} canManage={canManage}/></>;
+    <TenantFederationControls request={apiRequest} canManage={canManage}/><TenantGovernance request={apiRequest} canManage={canManage} initialTab={governanceTab} focusOnMount={governanceFocus}/></>;
 }
 
 type CompanyProfile = {logoUrl?:string;legalName:string;tradingName:string;website:string;phone:string;email:string;addressLine1:string;addressLine2:string;city:string;postcode:string;country:string;timezone:string;locale:string;description:string};

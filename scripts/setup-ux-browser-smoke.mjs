@@ -1,8 +1,12 @@
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright';
+import {mkdir} from 'node:fs/promises';
+import {join} from 'node:path';
 const browser = await chromium.launch({headless:true,...(process.env.CHROME_EXECUTABLE ? {executablePath:process.env.CHROME_EXECUTABLE,args:['--no-sandbox','--disable-dev-shm-usage']} : {})});
 const page = await browser.newPage({viewport:{width:1365,height:768}});
 const errors=[];
+const screenshotDir=process.env.PHASE1_SCREENSHOT_DIR;
+async function screenshot(name){if(!screenshotDir)return;await mkdir(screenshotDir,{recursive:true});await page.screenshot({path:join(screenshotDir,name+'.png')});}
 page.on('pageerror',error=>errors.push(error.message));
 const base=process.env.SETUP_UX_BASE_URL || 'http://127.0.0.1:5173';
 async function open(view,extra='') { console.log('Checking',view,extra); await page.goto(`${base}/test/setup-ux-fixture.html?view=${view}${extra}`); }
@@ -45,7 +49,7 @@ try {
  await page.getByRole('button',{name:'View Sample credential',exact:true}).click();
  await page.getByRole('dialog').waitFor();
  await open('history');
- assert.equal(await page.locator('.flow-logs-table th').count(),6);
+ assert.equal(await page.locator('.flow-logs-table th').count(),7,'Flow history includes the Duration column');
  await page.locator('.flow-logs-table summary').click();
  await page.locator('.flow-logs-table').getByText('run-id-with-a-very-long-identifier',{exact:true}).waitFor();
  await open('flows');
@@ -58,6 +62,40 @@ try {
  assert.equal(await page.getByRole('dialog').count(),0);
  await open('records-import');
  await page.getByText('Record workspace import passed',{exact:true}).waitFor();
+ await open('mfa');
+ await page.getByRole('button',{name:'Save policy'}).waitFor();
+ assert.equal(await page.getByRole('button',{name:'Save policy'}).evaluate(el=>el.closest('label')===null),true,
+  'MFA save button must never be nested inside the policy label');
+ assert.equal(await page.locator('.md-admin-form-grid').first().evaluate(el=>getComputedStyle(el).display),'grid');
+ await screenshot('mfa-desktop');
+ await open('oauth');
+ await page.getByRole('heading',{name:'Connected Apps'}).waitFor();
+ await page.getByText('operator9@example.com').waitFor();
+ const userGrid=page.locator('.connected-apps-checklist');
+ assert.equal(await userGrid.evaluate(el=>getComputedStyle(el).display),'grid','OAuth user picker must use grid');
+ assert.ok((await userGrid.evaluate(el=>getComputedStyle(el).gridTemplateColumns.split(' ').filter(Boolean).length))>=2,
+  'OAuth user picker must occupy multiple columns at desktop width');
+ await page.locator('.oauth-scope-group summary').click();
+ assert.equal(await page.locator('.oauth-scope-group-body').evaluate(el=>getComputedStyle(el).display),'grid');
+ await screenshot('oauth-desktop');
+ await open('governance');
+ const auditRegion=page.getByRole('region',{name:'Setup audit events'});
+ await auditRegion.waitFor();
+ assert.equal(await auditRegion.locator('th').count(),6);
+ assert.equal(await auditRegion.locator('[data-long-id]').count(),1);
+ assert.ok((await auditRegion.locator('table').evaluate(el=>el.getBoundingClientRect().width))>=940);
+ await screenshot('governance-desktop');
+ await open('company');
+ assert.equal(await page.getByRole('button',{name:'Security & Recovery'}).getAttribute('aria-current'),'page',
+  'Deep-linked company security settings must open directly');
+ await screenshot('company-security-deeplink');
+ await page.setViewportSize({width:390,height:844});
+ await open('oauth');
+ await page.getByText('operator9@example.com').waitFor();
+ assert.equal(await page.locator('.connected-apps-checklist').evaluate(el=>getComputedStyle(el).gridTemplateColumns.split(' ').filter(Boolean).length),1,
+  'OAuth user picker must reduce to one column on narrow screens');
+ await screenshot('oauth-mobile');
+ await page.setViewportSize({width:1365,height:768});
  assert.deepEqual(errors,[]);
- console.log('PASS: dashboard permission/create, offline object/record/save, tenant draft/footer/discard, credential width/details, history details, flow dialog/create, record route chunk import (1365×768)');
+ console.log('PASS: dashboard permission/create, offline object/record/save, tenant draft/footer/discard, credential width/details, history details, flow dialog/create, record route chunk import, MFA policy control, OAuth grids, audit table, deep-linked company settings (1365px/390px)');
 } finally { await browser.close(); }

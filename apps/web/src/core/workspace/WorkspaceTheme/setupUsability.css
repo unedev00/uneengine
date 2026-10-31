@@ -42,7 +42,7 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
-  max-width: 720px;
+  max-width: min(100%, 1100px);
 }
 .lightning .connected-apps-help {
   margin: 0;
@@ -85,10 +85,10 @@
   margin-bottom: 10px;
 }
 .lightning .connected-apps-checklist {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  max-height: 220px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(min(100%,220px),1fr));
+  gap: 4px 16px;
+  max-height: 260px;
   overflow: auto;
   scrollbar-width: thin;
 }
@@ -228,23 +228,4 @@
   min-height: var(--md-control-height, 40px);
   border-radius: var(--md-radius-md, 8px);
 }
-.lightning .surface.permission-section .settings-view-row,
-.lightning .settings-view-row {
-  display: grid;
-  grid-template-columns: minmax(140px, 1fr) minmax(0, 1.4fr) auto;
-  gap: 12px;
-  align-items: center;
-  padding: 12px 4px;
-  border-bottom: 1px solid var(--md-border, #e0e5eb);
-  font-size: 13px;
-}
-.lightning .settings-view-row:last-child {
-  border-bottom: 0;
-}
-@media (max-width: 600px) {
-  .lightning .surface.permission-section .settings-view-row,
-  .lightning .settings-view-row {
-    grid-template-columns: 1fr;
-    gap: 4px;
-  }
-}
+/* Shared SettingsViewRow geometry is owned by grokUiPolish.css. */

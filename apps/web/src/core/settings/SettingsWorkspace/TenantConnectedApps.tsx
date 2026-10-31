@@ -45,7 +45,7 @@ export default function TenantConnectedApps({request}:{request:Request}){
       Rotate client secret and revoke consents
     </button>
   )}
-  <label className="form-label">Name
+  <div className="md-admin-form-grid"><label className="form-label">Name
     <input className="form-control" value={draft.label} onChange={e=>setDraft({...draft,label:e.target.value})}/>
   </label>
   <label className="form-label">Client type
@@ -53,7 +53,7 @@ export default function TenantConnectedApps({request}:{request:Request}){
       <option value="public">Public (browser or native app)</option>
       <option value="confidential">Confidential (server stores a secret)</option>
     </select>
-  </label>
+  </label></div>
   <label className="form-label">Exact HTTPS redirect URLs, one per line
     <textarea className="form-control" value={draft.redirects.join('\n')} onChange={e=>setDraft({...draft,redirects:e.target.value.split('\n')})} rows={3}/>
   </label>
