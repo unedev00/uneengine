@@ -2873,7 +2873,7 @@ function PageBuilder({
               <RibbonVisibilityRules draft={visibilityDraft} onChange={setVisibilityDraft}
                 onApply={saveAdvancedVisibility}
                 onCancel={()=>setAdvancedEditor(null)} fields={fields}
-                allowRecordFields={page.pageType==='Record Page'}
+                allowRecordFields={Boolean(targetObject&&page.pageType==='Record Page')}
                 profiles={profiles.map(profile=>({id:profile.id,label:profile.label}))}
                 recordTypes={(targetObject?.recordTypes??[]).map(type=>({id:type.id,label:type.label}))}/>
             </>}
