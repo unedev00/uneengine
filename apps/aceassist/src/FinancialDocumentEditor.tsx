@@ -1,5 +1,6 @@
 import * as React from 'react';
 import {useState} from 'react';
+import {useModalFocus} from '../../web/src/core/accessibility/useModalFocus';
 import {SearchRecord} from './AppointmentFields';
 import {RecordFieldInput,fieldKind,type RecordField} from '../../web/src/core/metadata/Fields/RecordFieldInput';
 
@@ -83,6 +84,8 @@ export function FinancialDocumentEditor({
  const [customerDraft,setCustomerDraft]=useState({Name:'',Email:'',Phone:''});
  const [customerError,setCustomerError]=useState('');
  const [creatingCustomer,setCreatingCustomer]=useState(false);
+ const documentDialogRef=useModalFocus(!customerDialog,()=>{if(!busy)onCancel();});
+ const customerDialogRef=useModalFocus(customerDialog,()=>{if(!creatingCustomer)setCustomerDialog(false);});
  const addCustomer=async(event:React.FormEvent)=>{
   event.preventDefault();
   if(!onCreateCustomer||!customerDraft.Name.trim()||creatingCustomer)return;
@@ -165,7 +168,7 @@ export function FinancialDocumentEditor({
  const saveIssue=!header.Customer?'Select a customer before saving.':
   !namedCustomerSelected?'Choose a customer with a name before saving.':lineIssue;
  return <div className="assist-modal-backdrop" role="presentation">
-  <section className="assist-modal assist-document-modal" role="dialog" aria-modal="true"
+  <section ref={documentDialogRef} className="assist-modal assist-document-modal" role="dialog" aria-modal="true"
    aria-label={(operation==='Create'?'New ':'Edit ')+type}>
    <header className="assist-modal-heading">
     <div><small>{operation==='Create'?'Create document':'Edit document'}</small>
@@ -260,7 +263,7 @@ export function FinancialDocumentEditor({
    </form>
   </section>
   {customerDialog&&<div className="assist-modal-backdrop assist-customer-overlay" role="presentation">
-   <section className="assist-modal assist-customer-modal" role="dialog" aria-modal="true" aria-label="Add customer">
+   <section ref={customerDialogRef} className="assist-modal assist-customer-modal" role="dialog" aria-modal="true" aria-label="Add customer">
     <header className="assist-modal-heading"><h2>Add customer</h2>
      <button type="button" disabled={creatingCustomer} aria-label="Close customer form"
       onClick={()=>setCustomerDialog(false)}>✕</button></header>
