@@ -88,9 +88,13 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  const compactDesign=true;
  const visible=definitions.filter(p=>p.tab===tab);
  const groups=[...new Set(visible.map(p=>p.group))];
- const sections=tab==='Data'
-  ?['Source','Values',...groups.filter(item=>item!=='Source'&&item!=='Values')].filter(item=>groups.includes(item))
-  :groups;
+ const groupOrder=tab==='Data'?['Source','Values','Cart columns','Cart totals']
+  :tab==='Design'?['Body','Typography','Tabs','Header','Badge','Header Supporting',
+    'Table','Row','Summary','Summary 2']
+  :tab==='Layout'?['Size & Position','Tabs','Cards','Navigation','Calendar','Image','Icon']
+  :[];
+ const sections=[...groupOrder.filter(group=>groups.includes(group)),
+  ...groups.filter(group=>!groupOrder.includes(group))];
  const sectionRow=(group:string,row:number)=>visible
    .filter(p=>p.group===group&&(p.designRow??2)===row)
    .sort((a,b)=>(a.designOrder??999)-(b.designOrder??999));
