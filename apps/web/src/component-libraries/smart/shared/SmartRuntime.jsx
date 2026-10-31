@@ -63,9 +63,17 @@ function SmartCard({p,record}){
  const horizontal=["left","right"].includes(p.imagePlacement);
  const single=p.kind==="smart_image";
  const imageHeight=number(p.imageHeight,220);
+ // Standalone Image has exactly ONE decorative stroke, on the native image.
+ // A card-grid item remains a separate card with an optional image stroke.
+ // Never paint an implicit card border around an independently bordered Image.
+ const strokeWidth=p.borderWidth===undefined?1:number(p.borderWidth,1,0,24);
+ const imageStroke=p.imageBorderColor||(single?p.borderColor:undefined);
+ const nativeImageBorder=imageStroke&&strokeWidth>0?strokeWidth+"px solid "+imageStroke:undefined;
+ const cardBorder=single?"none":strokeWidth===0?"none":
+  (strokeWidth+"px solid "+(p.borderColor||"#e2e8f0"));
  return <article className="smart-card" style={{
   display:"flex",flexDirection:horizontal?"row":"column",
-  background:single?(p.imageBackgroundColor??p.backgroundColor??"transparent"):(p.backgroundColor||"#fff"),border:p.borderColor?"1px solid "+p.borderColor:"1px solid #e2e8f0",
+  background:single?(p.imageBackgroundColor??p.backgroundColor??"transparent"):(p.backgroundColor||"#fff"),border:cardBorder,
   borderRadius:number(p.radius,12),overflow:"hidden",position:"relative",minWidth:0,
   boxShadow:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none",
   ...(single?{height:"100%",minHeight:0}:{}),
@@ -77,7 +85,8 @@ function SmartCard({p,record}){
    <SmartPicture src={image} alt={header} loadAsset={p.loadAsset}
       style={{height:single?"100%":imageHeight,width:"100%",display:"block",
        objectFit:p.imageFill==="fit"?"contain":p.imageFill==="stretch"?"fill":"cover",
-       border:p.imageBorderColor?"1px solid "+p.imageBorderColor:undefined}}/>
+       boxSizing:"border-box",borderRadius:single?number(p.radius,12):undefined,
+       border:nativeImageBorder}}/>
   </div>
   {header&&<div className="smart-card-content" style={{
     order:1,flex:horizontal?"1 1 50%":undefined,display:"flex",alignItems:"center",
