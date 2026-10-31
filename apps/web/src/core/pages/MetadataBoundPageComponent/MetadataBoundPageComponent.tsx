@@ -4,8 +4,9 @@ import {useState,useEffect,useRef} from 'react';
 import {loadFlowScreenRecordPage} from '../../authentication/Client/authClient';
 // Load the browser API client only during the mounted effect, not on SSR import.
 import {presentPageRecords,type ChannelGrant} from '../../records/RecordWorkspace/recordPresentationAdapters';
-import {filterPageComponentRecords,pageComponentRecordQuery,pageComponentRelatedQuery,pageComponentActiveRecordQuery,bindPageStateProperties} from '../PageRuntime/pageComponentBindings';
+import {filterPageComponentRecords,pageComponentRecordQuery,pageComponentRelatedQuery,pageComponentActiveRecordQuery,hasPageActiveRecordSelection,bindPageStateProperties} from '../PageRuntime/pageComponentBindings';
 import {resolveSmartToggleFieldBinding,updateSmartToggleField} from '../PageRuntime/smartToggleFieldBinding';
+import {usePageSessionRelatedQuery} from '../PageRuntime/usePageSessionRelatedQuery';
 import {filterRelatedRecords} from '../PageRuntime/filterRelatedRecords.mjs';
 import {resolveMentionProperties,mentionGroups,referencedMentionPaths,resolveCollectionMentionRows} from '../../../component-libraries/shared/primitives/SmartFieldInput/smartFieldMentions';
 import { explicitMentionRecordId, useRelationshipMentionContext } from '../../records/RecordFormDialog/useRelationshipMentionContext';
@@ -56,6 +57,7 @@ export default function MetadataBoundPageComponent({
     }
   });
   const [pageState,setPageState]=useState<Record<string,unknown>>({});
+  const [revision, setRevision] = useState(0);
   useEffect(()=>{
     const receive=(event:Event)=>{
       const data=(event as CustomEvent<{pageSessionKey:string;key:string;value:unknown}>).detail;
@@ -92,9 +94,14 @@ export default function MetadataBoundPageComponent({
     (properties.autoRecordScope!==false && ['smart_cart','Custom:smart_cart'].includes(component.type));
   const manualRelatedField=String(properties.relatedFieldApiName??'');
   const manualParentId=relatedKey?selectedFilterRecords[relatedKey]?.recordId||pageState[relatedKey]:undefined;
+  const hasActiveSelection=hasPageActiveRecordSelection(fields,pageState);
+  const directActiveQuery=pageComponentActiveRecordQuery(fields,pageState);
+  const sessionRelatedQuery=usePageSessionRelatedQuery(
+    usesActiveRecordScope&&!relatedKey&&!hasActiveSelection&&!disableActions,
+    fields,objects,sessionId,revision,loadFlowScreenRecordPage);
   const relatedQuery=relatedKey
     ?pageComponentRelatedQuery(properties,fields,manualParentId)
-    :usesActiveRecordScope?pageComponentActiveRecordQuery(fields,pageState)
+    :usesActiveRecordScope?(hasActiveSelection?directActiveQuery:sessionRelatedQuery)
       :pageComponentRelatedQuery(properties,fields,undefined);
   const relatedField=relatedKey?manualRelatedField:relatedQuery.filter?.field??'';
   const parentId=relatedKey?manualParentId:relatedQuery.filter?.value;
@@ -117,7 +124,7 @@ export default function MetadataBoundPageComponent({
     return () => window.removeEventListener('metadrive:page-filter-selected',listener);
   },[pageSessionKey]);
   const [dataLoading, setDataLoading] = useState(false);
-  const [revision, setRevision] = useState(0);
+
   const recordRequestKey=JSON.stringify([objectApiName,recordQueryKey,recordOffset,revision]);
   const [channelAccess, setChannelAccess] = useState<{userId: string;viewAll: boolean;grants: ChannelGrant[];eligibleAssignees: {id: string;name: string;channelAccountId: string}[]}>({
     userId: '', viewAll: false, grants: [], eligibleAssignees: []
