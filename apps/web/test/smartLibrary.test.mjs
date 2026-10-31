@@ -834,3 +834,74 @@ test('SQL-owned three-row Design and Shapes ribbon retains the original layout p
  assert.equal(sum(widths),1195);
  assert.equal(sum(shapes),181);
 });
+
+test('Cart Data group reuses SQL property registry; only Smart Cart has the five new enabled controls',()=>{
+ const sql=read('../../server/src/system-support/migrations/20270207-smart-cart-column-bindings.sql');
+ const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
+ const multi=read('../src/core/builders/PageBuilder/SmartMultiSelect.tsx');
+ const css=read('../src/component-libraries/smart_cart/SmartComponent.css');
+ for(const name of ['column2Source','column3Source','column4Source','column5Source','columnVisibility'])
+   assert.ok(sql.includes("'"+name+"'"),name);
+ assert.match(sql,/SELECT 'smart_cart',p.property_key,true/);
+ assert.match(sql,/section_group/);
+ assert.match(sql,/'Data','Cart'/);
+ assert.match(sql,/'cardsPerRow',true/);
+ assert.doesNotMatch(sql,/DELETE FROM md_page_|UPDATE md_page_|DELETE FROM md_builder_ribbon_component_rules/i);
+ assert.match(ribbon,/Array.isArray\(value\)\)editor=<SmartMultiSelect/);
+ assert.match(multi,/aria-haspopup="dialog"/);
+ assert.match(multi,/choices\.map\(choice=>/);
+ assert.match(css,/overflow-y:auto/);
+ assert.match(css,/--smart-cart-columns/);
+});
+test('Cart supports five formula columns, computed totals, and visibility without recomputing summary',async()=>{
+ const source={
+  records:[{Id:'line-1',Name:'Pepsi',UnitPrice:12.5,Quantity:2,Discount:3,Description:'Cola'}],
+  textSource:'@Name',column2Source:'@Description',column3Source:'@Quantity',
+  column4Source:'@Quantity * @UnitPrice',column5Source:'@Discount',
+  objectApiName:'CartLine',
+  objects:[{apiName:'CartLine',fields:[{apiName:'Quantity',dataType:'Number'}]}],
+  actionFlows:{qtyIcon:{actionType:'Flow',flowApiName:'AdjustQty'}}
+ };
+ const html=await renderSmart('smart_cart',source);
+ for(const expected of ['Unit price','Quantity','Discount','Cola','25','Decrease quantity for Pepsi','Increase quantity for Pepsi'])
+  assert.ok(html.includes(expected),expected);
+ assert.match(html,/Quantity 2/);
+ assert.match(html,/Cart summary/);
+ assert.match(html,/Total not bound/); // Cell formula is not an invented summary total.
+ const hidden=await renderSmart('smart_cart',{...source,columnVisibility:['Column 1','Column 4']});
+ assert.match(hidden,/Pepsi/);
+ assert.match(hidden,/>Total<\/span>/);
+ const headers=hidden.split('class="smart-cart-columns"')[1]?.split('</div>')[0]??'';
+ assert.doesNotMatch(headers,/Unit price|Quantity|Discount/);
+ assert.doesNotMatch(hidden,/Decrease quantity for Pepsi/);
+ assert.match(hidden,/>25<\/span>/);
+ const empty=await renderSmart('smart_cart',{...source,columnVisibility:[]});
+ assert.match(empty,/No columns selected/);
+});
+test('Cart quantity icons are displayed only for direct numeric fields, not text fields or computed values',async()=>{
+ const base={objectApiName:'Item',
+  records:[{id:'a',Name:'Alpha',Quantity:2,Description:'2',UnitPrice:5}],
+  textSource:'@Name',actionFlows:{qtyIcon:{actionType:'Flow',flowApiName:'QuantityFlow'}}};
+ const numeric=await renderSmart('smart_cart',{...base,column3Source:'@Quantity',
+  objects:[{apiName:'Item',fields:[{apiName:'Quantity',dataType:'Currency'}]}]});
+ assert.match(numeric,/Increase quantity for Alpha/);
+ const text=await renderSmart('smart_cart',{...base,column3Source:'@Description',
+  objects:[{apiName:'Item',fields:[{apiName:'Description',dataType:'Text'}]}]});
+ assert.doesNotMatch(text,/Increase quantity for Alpha|Decrease quantity for Alpha/);
+ const formula=await renderSmart('smart_cart',{...base,column3Source:'@Quantity * 2',
+  objects:[{apiName:'Item',fields:[{apiName:'Quantity',dataType:'Number'}]}]});
+ assert.doesNotMatch(formula,/Increase quantity for Alpha|Decrease quantity for Alpha/);
+ assert.match(formula,/>4<\/span>/);
+});
+test('Cart visible-row setting constrains item region, not header and summary',async()=>{
+ const html=await renderSmart('smart_cart',{
+  cardsPerRow:2,rowHeight:40,records:Array.from({length:8},(_,i)=>({id:'item-'+i,Name:'Item '+i,Quantity:i+1})),
+  textSource:'@Name'
+ });
+ assert.match(html,/aria-label="Cart item rows"/);
+ assert.match(html,/max-height:128px/);
+ assert.match(html,/Item 7/);
+ assert.match(html,/Cart summary/);
+ assert.match(html,/Cart columns/);
+ assert.match(html,/Total not bound/);
+});
