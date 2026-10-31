@@ -512,7 +512,7 @@ function PageBuilder({
   };
   const [selectedConversationPart,setSelectedConversationPart]=useState('parent');
   useEffect(()=>setSelectedConversationPart('parent'),[selectedId]);
-  const [ribbonTab, setRibbonTab] = useState<'Add Block' | 'Component Content' | 'Component Properties' | 'Component Style' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Component Responsive' | 'Preview' | 'Filters' | 'Source' | 'Icons'>('Add Block');
+  const [ribbonTab, setRibbonTab] = useState<'Add Block' | 'Component Content' | 'Component Properties' | 'Component Style' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Component Responsive' | 'Preview' | 'Filters' | 'Source' | 'Icons' | 'Shapes'>('Add Block');
   useEffect(()=>{
     if(ribbonTab==='Icons'&&page.components.find(component=>component.id===selectedId)?.type!=='Custom:smart_icon')
       setRibbonTab('Component Properties');
@@ -540,7 +540,7 @@ function PageBuilder({
     setPageSettingsDialogOpen(false);
     if (tab === 'Add Block') { setPageSettingsOpen(false); openPalette('Components', 'All Components'); }
     if (tab === 'Component Layout') { setPageSettingsOpen(false); }
-    const inspector = { 'Component Properties': 'Design', 'Component Style': 'Design', 'Component Data': 'Data & Actions', 'Component Content': 'Data & Actions', 'Component Action': 'Visibility', 'Component Layout': 'Position', 'Component Responsive': 'Position' } as const;
+    const inspector = { 'Component Properties': 'Design', 'Shapes': 'Design', 'Component Style': 'Design', 'Component Data': 'Data & Actions', 'Component Content': 'Data & Actions', 'Component Action': 'Visibility', 'Component Layout': 'Position', 'Component Responsive': 'Position' } as const;
     if (tab in inspector) { setPageSettingsOpen(false); openComponentInspector(inspector[tab as keyof typeof inspector]); }
   };
   useEffect(()=>{
@@ -611,7 +611,7 @@ function PageBuilder({
     else if(key!=='accentColor')writeRibbonVisual(key,value);
   };
   useEffect(() => {
-    if (!selected && ((ribbonTab.startsWith('Component ')&&ribbonTab!=='Component Layout')||['Filters','Source','Icons'].includes(ribbonTab))) setRibbonTab('Add Block');
+    if (!selected && ((ribbonTab.startsWith('Component ')&&ribbonTab!=='Component Layout')||['Filters','Source','Icons','Shapes'].includes(ribbonTab))) setRibbonTab('Add Block');
   }, [selectedId, page.components, ribbonTab]);
   // Keep the builder unselected on entry; the persistent topbar shows Welcome.
   // Canvas clicks establish the component selection explicitly.
@@ -2511,8 +2511,8 @@ function PageBuilder({
   const quickAccessOrder=['save','activate','resetIcon','undo','redo','cut','copy','paste','delete'] as const;
   const journeyTabs: Array<typeof ribbonTab> = selectedNewUne
     ? ['Add Block',...(selected?.type==='Custom:smart_icon'?(['Icons'] as const):[]),
-       'Component Data','Component Properties','Component Layout','Component Action','Preview']
-    : ['Add Block','Component Data','Component Content','Component Properties','Component Layout','Component Responsive','Component Action','Preview'];
+       'Component Data','Component Properties','Shapes','Component Layout','Component Action','Preview']
+    : ['Add Block','Component Data','Component Content','Component Properties','Shapes','Component Layout','Component Responsive','Component Action','Preview'];
   const journeyIndex=journeyTabs.indexOf(ribbonTab as typeof journeyTabs[number]);
   const ribbonTabsVisible: Array<typeof ribbonTab> = [...journeyTabs];
   if(ribbonTab==='Filters')ribbonTabsVisible.splice(journeyTabs.indexOf('Component Data')+1,0,'Filters');
@@ -2738,6 +2738,7 @@ function PageBuilder({
                   'Component Content': Type,
                   'Component Properties': SlidersHorizontal,
                   Icons: ImageIcon,
+                  Shapes: ImageIcon,
                   'Component Style': Type,
                   'Component Responsive': Smartphone,
                   'Component Layout': Layers3,
@@ -2750,6 +2751,7 @@ function PageBuilder({
                   'Component Content': 'Content',
                   'Component Properties': 'Design',
                   Icons: 'Icons',
+                  Shapes: 'Shapes',
                   'Component Style': 'Format',
                   'Component Responsive': 'Responsive',
                   'Component Layout': 'Layout',
@@ -2759,7 +2761,7 @@ function PageBuilder({
                 return <button key={tab} id={`page-builder-tab-${index}`} type="button"
                   role="tab" tabIndex={ribbonTab===tab?0:-1} aria-selected={ribbonTab === tab}
                   aria-controls="page-builder-tab-content"
-                  className={ribbonTab===tab?'active':''} disabled={!selected && tab.startsWith('Component ') && tab!=='Component Layout'} title={!selected && tab.startsWith('Component ') && tab!=='Component Layout'?'Select a component to edit its settings':label} onClick={() => selectRibbonTab(tab)}>
+                  className={ribbonTab===tab?'active':''} disabled={!selected && (tab.startsWith('Component ') && tab!=='Component Layout' || tab==='Shapes')} title={!selected && (tab.startsWith('Component ') && tab!=='Component Layout' || tab==='Shapes')?'Select a component to edit its settings':label} onClick={() => selectRibbonTab(tab)}>
                   <Icon size={16} aria-hidden="true"/><span>{label}</span>
                 </button>;
               })}
@@ -2817,9 +2819,9 @@ function PageBuilder({
                 properties:{...selected.properties,actionFlows}
               })}/>}
           {selectedNewUne && selected && ribbonCatalog &&
-            (ribbonTab==='Component Data'||ribbonTab==='Component Properties'||ribbonTab==='Component Layout') &&
+            (ribbonTab==='Component Data'||ribbonTab==='Component Properties'||ribbonTab==='Component Layout'||ribbonTab==='Shapes') &&
             <SmartRibbon
-              tab={ribbonTab==='Component Data'?'Data':ribbonTab==='Component Layout'?'Layout':'Design'}
+              tab={ribbonTab==='Component Data'?'Data':ribbonTab==='Component Layout'?'Layout':ribbonTab==='Shapes'?'Shapes':'Design'}
               api={selected.type.slice(7)} definitions={ribbonCatalog.properties}
               properties={selected.properties} objects={objects} pageObjectApiName={page.targetObject}
               onChange={properties=>updateComponent(selected.id,{properties})}
