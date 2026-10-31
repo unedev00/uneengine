@@ -15,6 +15,8 @@
   --md-space-12:48px; --md-radius-sm:6px; --md-radius-md:8px;
   --md-radius-lg:12px; --md-radius-xl:16px; --md-radius-pill:999px;
   --md-control-height:40px; --md-control-touch:44px;
+  --md-label-size:13px; --md-helper-size:12px; --md-table-size:13px;
+  --md-admin-row-height:38px; --md-form-short-width:220px; --md-form-medium-width:360px; --md-reading-width:76ch;
   --md-scroll-thumb:#abb8c8; --md-scroll-track:transparent;
 }
 /* Native scrollbars remain accessible; scrollable panels opt in using the class. */
