@@ -23,7 +23,7 @@ superuser access or arbitrary root shell commands.
    using the operations helper. Installation does not assign anyone permissions.
 3. In MetaDrive's Connected Apps setup, prepare a **public** OAuth client, require
    MFA, and permit only the intended administrator. Grant `mcp:access` plus the
-   desired `records:read`, `records:write`, `metadata:read`, `flows:execute` and
+   desired `records:read`, `records:write`, `metadata:read`, `metadata:write`, `flows:execute` and
    `operations:manage` scopes. Register the exact callback URL provided by the
    plugin connection setup; no wildcard or guessed callback. If a client ID is
    needed before that callback is available, keep the client disabled with your
@@ -42,6 +42,7 @@ superuser access or arbitrary root shell commands.
 
 - List/describe objects; list/get/create/update/delete business records.
 - Execute existing published flows (including configured integrations).
+- Read tenant Page Builder draft/published metadata and save/publish versioned drafts using the shared SQL Page Runtime, central PageDefinition RBAC and a separate `metadata:write` OAuth scope. An explicit OAuth scope update and renewed consent are required for writes.
 - Platform service status, last 100 journal lines, scheduled API/worker restart.
 - Activate a **previously built** `/opt/metadrive/releases/gh-<40 hex SHA>` API
   release, with a health check and rollback. This is not a build/upload facility.
