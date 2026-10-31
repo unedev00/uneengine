@@ -412,8 +412,10 @@ export default function MetadataBoundPageComponent({
   // When the component is placed on a free canvas, its frame owns geometry.
   // The record-binding layer must not introduce another auto-sized visual box.
   const smartCanvas=definition.apiName.startsWith('smart_')&&Boolean(component.position);
-  // Preserve Toggle geometry when selecting an Object routes it through the bound runtime.
-  return <div style={smartCanvas||definition.apiName==='smart_toggle'
+  // Data-bound Images need the same full-height wrapper as the unbound image
+  // so the selected canvas dimensions also resize the picture itself.
+  const imageCanvas=definition.apiName==='ui_image'&&Boolean(component.position);
+  return <div style={smartCanvas||imageCanvas||definition.apiName==='smart_toggle'
     ?{width:'100%',height:'100%',minHeight:0,minWidth:0}:undefined}>
     {!objectApiName && <div className="records-message" role="alert">Select a bound object to load records for this component.</div>}
     {dataError && <div className="records-message" role="alert">{dataError}</div>}

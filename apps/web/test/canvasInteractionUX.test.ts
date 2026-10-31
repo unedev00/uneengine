@@ -676,3 +676,23 @@ test('Free Canvas move cursor and directional resize handles remain usable',asyn
   assert.match(source,/canvas-editing/);
   assert.match(handles,/\.free-canvas-stage\.canvas-editing\{\s*overflow:visible/);
 });
+
+test('UI Image obeys free-canvas frame resizing in edit and published runtime without affecting templates',async()=>{
+  const image=await readFile(new URL('../src/component-libraries/ui_image/UiImage.jsx',import.meta.url),'utf8');
+  const css=await readFile(new URL('../src/component-libraries/ui_image/UiImage.css',import.meta.url),'utf8');
+  const bound=await readFile(new URL('../src/core/pages/MetadataBoundPageComponent/MetadataBoundPageComponent.tsx',import.meta.url),'utf8');
+  const runtime=await readFile(new URL('../src/core/pages/PageRuntime/pageRuntimeViews.tsx',import.meta.url),'utf8');
+  assert.match(image,/data-image-placement=\{placement\}/,'horizontal and vertical image variants identify their geometry');
+  assert.match(css,/:is\(\.free-canvas-component,\.free-canvas-runtime-component\)\[data-page-appearance="image"\]/,
+    'size overrides are scoped to editable and published free canvas Image instances');
+  assert.match(css,/\.metadrive-component-ui_image \.une-ui/,'full-height image frame');
+  assert.match(css,/\.metadrive-component-ui_image \.une-image-card/,'full-height visual frame');
+  assert.match(css,/\.une-image-card-picture\{\s*height:auto!important;min-height:0!important;flex:1 1 0%!important/,
+    'vertical images grow and shrink with the canvas frame, rather than fixed imageHeight');
+  assert.match(css,/\.une-image-card:is\(\[data-image-placement="left"\],\[data-image-placement="right"\]\) \.une-image-card-picture\{\s*height:100%!important/,
+    'side-by-side images follow the canvas frame height');
+  assert.match(bound,/const imageCanvas=definition\.apiName==='ui_image'&&Boolean\(component\.position\)/);
+  assert.match(bound,/smartCanvas\|\|imageCanvas\|\|definition\.apiName==='smart_toggle'/);
+  assert.match(runtime,/definition\.apiName==='ui_image'&&Boolean\(component\.position\)/,
+    'published record-bound UI Image must fill its saved canvas box');
+});

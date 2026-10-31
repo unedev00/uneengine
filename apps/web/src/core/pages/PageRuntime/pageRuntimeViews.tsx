@@ -730,7 +730,7 @@ function MetadataBoundPageComponent({
       initializedSessions.current.delete(sessionId);
     });
   }, [sessionId, disableActions]);
-  return <div style={definition.apiName==='smart_toggle'
+  return <div style={definition.apiName==='smart_toggle'||(definition.apiName==='ui_image'&&Boolean(component.position))
     ?{width:'100%',height:'100%',minHeight:0,minWidth:0}
     :properties.fillRegion===true?{height:'100%',minHeight:0,minWidth:0,display:'flex',flexDirection:'column'}:undefined}>
     {dataError && dataErrorForQueryKey === recordQueryKey && <div className="records-message" role="alert">{dataError}</div>}

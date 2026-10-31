@@ -1,1 +1,20 @@
 @import "../ui-runtime/shared/une.css";
+
+/* The Free Canvas frame, not the Image Height field, owns the dimensions of
+   a positioned Image. Keep the authored image-height setting in template,
+   Record and Card Grid layouts where there is no free-canvas frame. */
+:is(.free-canvas-component,.free-canvas-runtime-component)[data-page-appearance="image"] .metadrive-component-ui_image,
+:is(.free-canvas-component,.free-canvas-runtime-component)[data-page-appearance="image"] .metadrive-component-ui_image .une-ui,
+:is(.free-canvas-component,.free-canvas-runtime-component)[data-page-appearance="image"] .metadrive-component-ui_image .une-image-card {
+ width:100%!important;height:100%!important;min-width:0;min-height:0;
+ box-sizing:border-box;
+}
+:is(.free-canvas-component,.free-canvas-runtime-component)[data-page-appearance="image"] .metadrive-component-ui_image .une-image-card{
+ overflow:hidden;
+}
+:is(.free-canvas-component,.free-canvas-runtime-component)[data-page-appearance="image"] .une-image-card:not([data-image-placement="left"]):not([data-image-placement="right"]) .une-image-card-picture{
+ height:auto!important;min-height:0!important;flex:1 1 0%!important;object-position:center;
+}
+:is(.free-canvas-component,.free-canvas-runtime-component)[data-page-appearance="image"] .une-image-card:is([data-image-placement="left"],[data-image-placement="right"]) .une-image-card-picture{
+ height:100%!important;min-height:0!important;object-position:center;
+}
