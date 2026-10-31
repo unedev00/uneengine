@@ -1,8 +1,8 @@
 import {useEffect,useRef} from 'react';
 
 /** Shared runtime dialog focus containment. Business actions stay with the calling app. */
-export function useModalFocus(active:boolean,onEscape?:()=>void){
- const ref=useRef<HTMLElement>(null);
+export function useModalFocus<T extends HTMLElement=HTMLElement>(active:boolean,onEscape?:()=>void){
+ const ref=useRef<T>(null);
  const escapeRef=useRef(onEscape);
  escapeRef.current=onEscape;
  useEffect(()=>{
