@@ -15,7 +15,13 @@ function services(scopes=['mcp:access','records:read']){
   db:{query:async(sql:string,args:unknown[])=>{calls.push([sql,...args]);return {rows:sql.startsWith('SELECT s.scope')?scopes.map(scope=>({scope})):[]};}},
   records:{list:async(...args:unknown[])=>{calls.push(['records',...args]);return {records:[{Id:'one'}]};}},
   rbac:{require:async()=>{},allowed:async()=>true},
-  platform:{requirePlatform:async()=>{}},definitions:{list:async()=>[]},flows:{execute:async()=>({})}
+  platform:{requirePlatform:async()=>{}},definitions:{list:async()=>[]},flows:{execute:async()=>({})},
+  pages:{
+   editor:async(...args:unknown[])=>{calls.push(['page-draft',...args]);return {apiName:'COPILOTTILL_POS',draftRevision:3,components:[]};},
+   metadata:async(...args:unknown[])=>{calls.push(['page-published',...args]);return {apiName:'COPILOTTILL_POS',components:[]};},
+   saveLayoutDraft:async(...args:unknown[])=>{calls.push(['page-save',...args]);return {draftRevision:4};},
+   publishLayout:async(...args:unknown[])=>{calls.push(['page-publish',...args]);return {publishedRevision:4};}
+  }
  } as unknown as McpServices;
  return {s,calls};
 }
@@ -69,6 +75,57 @@ test('record calls use authenticated tenant and user, reject injected tenant arg
   assert.equal(bad.result.isError,true);assert.equal(x.calls.filter(c=>c[0]==='records').length,before);
  }finally{await x.close();}
 });
+test('Page Builder MCP reads require metadata scope and use the authenticated tenant',async()=>{
+ const x=await server(['mcp:access','metadata:read']);try{
+  const listed=await (await x.rpc('tools/list')).json();
+  assert.ok(listed.result.tools.some((v:{name:string})=>v.name==='get_page_layout'));
+  assert.ok(!listed.result.tools.some((v:{name:string})=>v.name==='save_page_draft'));
+  const draft=await (await x.rpc('tools/call',{name:'get_page_layout',
+   arguments:{page:'COPILOTTILL_POS',variant:'Desktop',view:'draft'}})).json();
+  assert.equal(draft.result.isError,undefined);
+  assert.ok(x.calls.some(row=>row[0]==='page-draft'&&row[1]==='tenant-a'));
+  const denied=await (await x.rpc('tools/call',{name:'save_page_draft',arguments:{
+   page:'COPILOTTILL_POS',definition:{draftRevision:3}
+  }})).json();
+  assert.equal(denied.result.isError,true);
+  assert.ok(!x.calls.some(row=>row[0]==='page-save'));
+ }finally{await x.close();}
+});
+
+test('Page Builder MCP draft/publish requires versioned metadata write consent and Page RBAC',async()=>{
+ const x=await server(['mcp:access','metadata:write']);try{
+  const listed=await (await x.rpc('tools/list')).json();
+  assert.ok(listed.result.tools.some((v:{name:string})=>v.name==='save_page_draft'));
+  assert.ok(listed.result.tools.some((v:{name:string})=>v.name==='publish_page_draft'));
+  const bad=await (await x.rpc('tools/call',{name:'save_page_draft',arguments:{
+   page:'COPILOTTILL_POS',definition:{components:[]}
+  }})).json();
+  assert.equal(bad.result.isError,true);
+  assert.ok(!x.calls.some(row=>row[0]==='page-save'));
+  const saved=await (await x.rpc('tools/call',{name:'save_page_draft',arguments:{
+   page:'COPILOTTILL_POS',variant:'Desktop',definition:{apiName:'COPILOTTILL_POS',draftRevision:3,components:[]}
+  }})).json();
+  assert.equal(saved.result.isError,undefined);
+  assert.deepEqual(x.calls.find(row=>row[0]==='page-save')?.slice(1,4),
+   ['tenant-a','COPILOTTILL_POS','Desktop']);
+  const invalid=await (await x.rpc('tools/call',{name:'publish_page_draft',arguments:{
+   page:'COPILOTTILL_POS',expectedRevision:0
+  }})).json();
+  assert.equal(invalid.result.isError,true);
+  assert.ok(!x.calls.some(row=>row[0]==='page-publish'));
+  const good=await (await x.rpc('tools/call',{name:'publish_page_draft',arguments:{
+   page:'COPILOTTILL_POS',variant:'Desktop',expectedRevision:4
+  }})).json();
+  assert.equal(good.result.isError,undefined);
+  assert.ok(x.calls.some(row=>row[0]==='page-publish'&&row[1]==='tenant-a'&&row[4]===4));
+ }finally{await x.close();}
+ const {s,calls}=services();
+ s.rbac.require=async()=>{throw Error('Page permission denied');};
+ await assert.rejects(callMcpTool(s,actor,'save_page_draft',{
+  page:'COPILOTTILL_POS',definition:{draftRevision:3}}),/Page permission denied/);
+ assert.ok(!calls.some(row=>row[0]==='page-save'));
+});
+
 test('stateless transport negotiates version, acknowledges notifications and rejects GET streams',async()=>{
  const x=await server();try{
   const result=await (await x.rpc('initialize',{protocolVersion:'future',clientInfo:{name:'test',version:'1'},capabilities:{}})).json();
