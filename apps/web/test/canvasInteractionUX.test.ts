@@ -561,3 +561,31 @@ test('each Smart component is explicitly mapped for Page Runtime appearance',()=
  for(const [api,target] of Object.entries(targets))
   assert.equal(pageAppearanceTarget('Custom:'+api),target,api);
 });
+
+test('PowerPoint-style canvas gestures move one component and show eight visible resize grips', async () => {
+  const builder = await readFile(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx', import.meta.url), 'utf8');
+  const handles = await readFile(new URL('../src/core/builders/PageBuilder/SmartCanvasHandles.css', import.meta.url), 'utf8');
+  const move = builder.slice(builder.indexOf('  const startCanvasMove = '), builder.indexOf('  const reorderLayer = '));
+  const resize = builder.slice(builder.indexOf('  const startCanvasResize = '), builder.indexOf('  const hasOverlappingPageAssignment = '));
+  assert.match(move, /setSelectionIds\\(\\[component\\.id\\]\\)/,
+    'pointerdown must select only the component being moved');
+  assert.doesNotMatch(move, /selectionIds\\.includes\\(item\\.id\\)|start\\.group/,
+    'the drag must never include previously selected siblings');
+  assert.match(move, /hit\\.closest\\('\\[data-component-id\\]'\\) !== element/,
+    'nested targets must not move a parent');
+  assert.match(move, /start\\.element\\.style\\.translate =/,
+    'independent translation preserves author-defined shape transforms');
+  assert.match(move, /start\\.element\\.style\\.left =/,
+    'committing a drag must not visibly jump to its starting point');
+  assert.match(builder, /className="canvas-move-grip"/);
+  assert.match(builder, /onLostPointerCapture=\\{!libraryPreview/,
+    'a lost pointer must not leave movement stuck');
+  for (const edge of ['n','ne','e','se','s','sw','w','nw']) {
+    assert.ok(handles.includes('.resize-' + edge), edge + ' must have a resize cursor and grip');
+  }
+  assert.match(handles, /z-index:165!important;opacity:1;pointer-events:auto;/,
+    'selected resize squares should be visible without hovering');
+  assert.match(resize, /const changed = !cancelled/,
+    'cancelled resize gestures must roll back rather than persisting');
+  assert.match(builder, /onPointerCancel=\\{event => endCanvasResize\\(event, true\\)\\}/);
+});
