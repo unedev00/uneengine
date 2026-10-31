@@ -19,7 +19,7 @@ export default function UiImage(props){
  const activate=()=>{if(clickable)void Promise.resolve(props.onAction({
    event:"click",value:{record,source,header,badge}
  })).catch(()=>{});};
- return <UneFrame p={props}><figure className="une-image-card" style={{
+ return <UneFrame p={props}><figure className="une-image-card" data-image-placement={placement} style={{
    margin:0,display:"flex",position:"relative",minWidth:0,
    flexDirection:placement==="left"||placement==="right"?"row":"column",gap:0
  }} role={clickable?"button":undefined} tabIndex={clickable?0:undefined}
