@@ -21,6 +21,7 @@ function fixture(options:{isSystem?:boolean;deleted?:boolean;blocker?:string;
    const affected=options.blocker&&sql.includes(options.blocker)?1:0;
    return {rows:[{count:affected}],rowCount:1};
   }
+  if(sql.includes('pg_advisory_xact_lock'))return {rows:[],rowCount:1};
   if(sql.includes('md_object_lifecycle_page_states'))return {rows:[],rowCount:1};
   if(sql.includes('md_object_layout_versions'))
    return {rows:[{revision:options.revision??3}],rowCount:1};
@@ -50,8 +51,8 @@ test('2A: custom object is soft deleted, hidden and restored without dropping sc
  assert.equal(calls.some(call=>/DELETE FROM md_object_definitions|DROP TABLE|TRUNCATE/i.test(call.sql)),false);
 });
 
-test('2A: data and cross-object dependencies block destructive lifecycle changes',async()=>{
- for(const table of ['md_records','md_field_definitions','md_lightning_page_details',
+test('2A: cross-object dependencies block destructive lifecycle changes',async()=>{
+ for(const table of ['md_field_definitions','md_lightning_page_details',
   'md_tenant_app_navigation','md_flow_trigger_subscriptions',
   'md_metadata_package_components','md_object_actions','md_app_package_resources']){
   const {service,current}=fixture({blocker:table});
@@ -60,6 +61,19 @@ test('2A: data and cross-object dependencies block destructive lifecycle changes
   await assert.rejects(()=>service.delete(tenant,objectName,3),/Object deletion blocked/);
   assert.equal(current.deleted_at,null,table);
  }
+});
+
+test('2A: existing live and recycled records survive object soft-delete and restore',async()=>{
+ const {service,calls,current}=fixture({blocker:'md_records'});
+ const impact=await service.impact(tenant,objectName);
+ assert.equal(impact.preservedRecordCount,1);
+ assert.deepEqual(impact.blockers,[]);
+ await service.delete(tenant,objectName,3);
+ assert.ok(current.deleted_at);
+ assert.ok(calls.some(call=>call.sql.includes('pg_advisory_xact_lock')));
+ assert.equal(calls.filter(call=>call.sql.includes('DELETE FROM md_records')).length,0);
+ await service.restore(tenant,objectName);
+ assert.equal(current.deleted_at,null);
 });
 
 test('2A: system objects and stale revision cannot be deleted',async()=>{
