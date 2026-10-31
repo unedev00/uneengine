@@ -54,7 +54,9 @@ try{
  assert.equal(modified.fields[0].apiName,'Name');
  // Recoverable object deletion retains both live and recycled records.
  const record=await db.query("INSERT INTO md_records(tenant_id,object_api) VALUES($1,'Milestone__c') RETURNING id",[primary]);
- assert.equal((await lifecycle.impact(primary,'Milestone__c')).recordCount,1);
+ const recycled=await db.query("INSERT INTO md_records(tenant_id,object_api,is_deleted) VALUES($1,'Milestone__c',true) RETURNING id",[primary]);
+ const recordEngine=new RecordEngine(db,new RbacEngine(db));
+ assert.equal((await lifecycle.impact(primary,'Milestone__c')).recordCount,2);
  // Declarative cross-object relationship on a different object blocks deletion.
  await db.query(`INSERT INTO md_field_definitions
   (tenant_id,object_api,api_name,label,data_type,related_object,relationship_type)
@@ -91,11 +93,11 @@ try{
  assert.equal(preserved.rows.length,2);
  assert.equal(preserved.rows.filter(row=>row.is_deleted).length,1);
  assert.equal((await defs.get(primary,'Milestone__c')).fields[0].apiName,'Name');
- const preserved=await db.query('SELECT id,is_deleted FROM md_records WHERE tenant_id=$1 AND id=$2',
+ const singlePreserved=await db.query('SELECT id,is_deleted FROM md_records WHERE tenant_id=$1 AND id=$2',
   [primary,record.rows[0].id]);
- assert.equal(preserved.rows[0]?.id,record.rows[0].id,
+ assert.equal(singlePreserved.rows[0]?.id,record.rows[0].id,
   'Restore must recover the original record identity');
- assert.equal(preserved.rows[0]?.is_deleted,false);
+ assert.equal(singlePreserved.rows[0]?.is_deleted,false);
  const restoredVisibility=await db.query("SELECT md_record_access($1,$2,$3,'read') AS visible",
   [primary,actor,record.rows[0].id]);
  assert.equal(restoredVisibility.rows[0].visible,true,'Restore must recover record visibility');
