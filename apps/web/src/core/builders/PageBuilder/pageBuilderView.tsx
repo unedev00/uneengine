@@ -3017,13 +3017,34 @@ function PageBuilder({
             renderIcon={renderPaletteIcon}/>}
           {selectedNewUne && selected && ribbonTab==='Component Action' &&
             <SmartEventActionsRibbon api={selected.type.slice(7)}
+              selectedApis={ribbonSelectedMembers.length>1?ribbonSelectedMembers.map(item=>
+                item.type.startsWith('Custom:')&&!isCanvasLocked(item)?item.type.slice(7):''):undefined}
               actions={selected.properties.actionFlows&&typeof selected.properties.actionFlows==='object'
                 &&!Array.isArray(selected.properties.actionFlows)
                 ? selected.properties.actionFlows as Record<string,unknown>:{}}
               flows={flows}
-              onChange={actionFlows=>updateComponent(selected.id,{
-                properties:{...selected.properties,actionFlows}
-              })}/>}
+              onChange={actionFlows=>{
+                if(ribbonSelectedMembers.length>1){
+                  const previous=selected.properties.actionFlows&&typeof selected.properties.actionFlows==='object'
+                    &&!Array.isArray(selected.properties.actionFlows)
+                    ?selected.properties.actionFlows as Record<string,unknown>:{};
+                  const changed=[...new Set([...Object.keys(previous),...Object.keys(actionFlows)])]
+                    .filter(key=>JSON.stringify(previous[key])!==JSON.stringify(actionFlows[key]));
+                  const ids=new Set(ribbonSelectedMembers.map(item=>item.id));
+                  applyPage({...page,components:page.components.map(item=>{
+                    if(!ids.has(item.id))return item;
+                    const stored=item.properties.actionFlows&&typeof item.properties.actionFlows==='object'
+                      &&!Array.isArray(item.properties.actionFlows)
+                      ?item.properties.actionFlows as Record<string,unknown>:{};
+                    const next={...stored};
+                    for(const key of changed){
+                      if(key in actionFlows)next[key]=actionFlows[key];
+                      else delete next[key];
+                    }
+                    return {...item,properties:{...item.properties,actionFlows:next}};
+                  })});
+                }else updateComponent(selected.id,{properties:{...selected.properties,actionFlows}});
+              }}/>}
           {selected?.type==='Custom:smart_icon' && ribbonTab==='Component Layout' &&
             <SmartIconGallery value={String(selected.properties.iconId??'house')}
               disabled={ribbonSelectedMembers.some(item=>item.type!=='Custom:smart_icon'||isCanvasLocked(item))}
