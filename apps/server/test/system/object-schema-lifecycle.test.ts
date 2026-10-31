@@ -50,8 +50,8 @@ test('2A: custom object is soft deleted, hidden and restored without dropping sc
  assert.equal(calls.some(call=>/DELETE FROM md_object_definitions|DROP TABLE|TRUNCATE/i.test(call.sql)),false);
 });
 
-test('2A: data and cross-object dependencies block destructive lifecycle changes',async()=>{
- for(const table of ['md_records','md_field_definitions','md_lightning_page_details',
+test('2A: cross-object dependencies block deletion while records are preserved',async()=>{
+ for(const table of ['md_field_definitions','md_lightning_page_details',
   'md_tenant_app_navigation','md_flow_trigger_subscriptions',
   'md_metadata_package_components','md_object_actions','md_app_package_resources']){
   const {service,current}=fixture({blocker:table});
@@ -60,6 +60,18 @@ test('2A: data and cross-object dependencies block destructive lifecycle changes
   await assert.rejects(()=>service.delete(tenant,objectName,3),/Object deletion blocked/);
   assert.equal(current.deleted_at,null,table);
  }
+});
+
+test('2A: an object with records may be archived and restored without deleting its data',async()=>{
+ const {service,calls,current}=fixture({blocker:'md_records'});
+ const impact=await service.impact(tenant,objectName);
+ assert.equal(impact.recordCount,1);
+ assert.deepEqual(impact.blockers,[]);
+ await service.delete(tenant,objectName,3);
+ assert.ok(current.deleted_at);
+ assert.equal(calls.some(item=>/DELETE FROM md_records|TRUNCATE md_records/.test(item.sql)),false);
+ await service.restore(tenant,objectName);
+ assert.equal(current.deleted_at,null);
 });
 
 test('2A: system objects and stale revision cannot be deleted',async()=>{
