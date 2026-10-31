@@ -31,7 +31,7 @@ test('independent values have independent labelled table columns', () => {
   assert.doesNotMatch(tenants, /<small>\{item\.tenantId\}/);
 
   const interviews = source('core/automation/FlowInterviews/FlowInterviews.tsx');
-  assert.match(interviews, /<th>Flow<\/th><th>Version<\/th>/);
+  assert.match(interviews, /<th scope="col">Flow<\/th><th scope="col">Version<\/th>/);
   const routes = source('core/pages/PageRouteDirectory/PageRouteDirectory.tsx');
   assert.match(routes, /<th>Destination<\/th><th>Type<\/th><th>Destination API Name<\/th>/);
   const logs = source('core/automation/FlowLogs/FlowLogs.tsx');
@@ -39,7 +39,7 @@ test('independent values have independent labelled table columns', () => {
   const triggers = source('core/automation/FlowTriggerExplorer/FlowTriggerExplorer.tsx');
   assert.match(triggers, /<th scope="col">Flow<\/th><th scope="col">API Name<\/th>/);
   const permissions = source('core/security/Permissions/permissionsView.tsx');
-  assert.match(permissions, /<th>Object<\/th><th>API Name<\/th><th>Policy status<\/th>/);
-  assert.match(permissions, /<th>Field<\/th><th>API Name<\/th>/);
+  assert.match(permissions, /<th scope="col">Object<\/th><th scope="col">API Name<\/th><th scope="col">Policy status<\/th>/);
+  assert.match(permissions, /<th scope="col">Field<\/th><th scope="col">API Name<\/th>/);
   assert.doesNotMatch(permissions, /<td><strong>\{field\.label\}<\/strong><small>\{field\.apiName\}<\/small>/);
 });
