@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import express from 'express';
+import {readFileSync} from 'node:fs';
 import {registerMcpRoutes} from '../../src/system-support/mcp-routes.js';
 import {callMcpTool,mcpTools,type McpServices} from '../../src/system-support/mcp-tools.js';
 import {validMcpResource} from '../../src/system-support/mcp-resource.js';
@@ -15,7 +16,9 @@ function services(scopes=['mcp:access','records:read']){
   db:{query:async(sql:string,args:unknown[])=>{calls.push([sql,...args]);return {rows:sql.startsWith('SELECT s.scope')?scopes.map(scope=>({scope})):[]};}},
   records:{list:async(...args:unknown[])=>{calls.push(['records',...args]);return {records:[{Id:'one'}]};}},
   rbac:{require:async()=>{},allowed:async()=>true},
-  platform:{requirePlatform:async()=>{}},definitions:{list:async()=>[]},flows:{execute:async()=>({})},
+  platform:{requirePlatform:async()=>{}},definitions:{list:async()=>[]},flows:{execute:async()=>({}),
+   loadEditor:async(...args:unknown[])=>{calls.push(['flow-read',...args]);return {apiName:'MyFlow',version:1};},
+   saveEditor:async(...args:unknown[])=>{calls.push(['flow-create',...args]);return {apiName:'MyFlow',version:1};}},
   pages:{
    editor:async(...args:unknown[])=>{calls.push(['page-draft',...args]);return {apiName:'COPILOTTILL_POS',draftRevision:3,components:[]};},
    metadata:async(...args:unknown[])=>{calls.push(['page-published',...args]);return {apiName:'COPILOTTILL_POS',components:[]};},
@@ -75,6 +78,27 @@ test('record calls use authenticated tenant and user, reject injected tenant arg
   assert.equal(bad.result.isError,true);assert.equal(x.calls.filter(c=>c[0]==='records').length,before);
  }finally{await x.close();}
 });
+test('MCP can inspect existing Flow metadata and create only draft flows with explicit consent',async()=>{
+ const x=await server(['mcp:access','metadata:read','metadata:write']);try{
+  const read=await (await x.rpc('tools/call',{name:'get_flow_definition',
+   arguments:{flow:'MyFlow'}})).json();
+  assert.equal(read.result.isError,undefined);
+  assert.ok(x.calls.some(row=>row[0]==='flow-read'&&row[1]==='tenant-a'));
+  const rejected=await (await x.rpc('tools/call',{name:'create_flow_draft',arguments:{
+   flow:'MyFlow',definition:{apiName:'MyFlow',status:'Active'}
+  }})).json();
+  assert.equal(rejected.result.isError,true);
+  assert.ok(!x.calls.some(row=>row[0]==='flow-create'));
+  const created=await (await x.rpc('tools/call',{name:'create_flow_draft',arguments:{
+   flow:'MyFlow',definition:{apiName:'MyFlow',status:'Draft'}
+  }})).json();
+  assert.equal(created.result.isError,undefined);
+  assert.ok(x.calls.some(row=>row[0]==='flow-create'&&row[1]==='tenant-a'&&row[5]===true));
+ }finally{await x.close();}
+ const source=readFileSync(new URL('../../src/flow-engine/FlowEngineCore.ts',import.meta.url),'utf8');
+ assert.match(source,/if\(createOnly&&last\)throw new Error\('Flow already exists'\)/);
+});
+
 test('Page Builder MCP reads require metadata scope and use the authenticated tenant',async()=>{
  const x=await server(['mcp:access','metadata:read']);try{
   const listed=await (await x.rpc('tools/list')).json();
