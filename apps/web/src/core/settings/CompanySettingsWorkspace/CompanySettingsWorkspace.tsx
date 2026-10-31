@@ -1,5 +1,5 @@
 import type { ObjectMetadata } from '../../metadata/Definitions/metadata';
-import { cloneElement, useState, type ReactElement, type ReactNode } from 'react';
+import { cloneElement, useEffect, useState, type ReactElement, type ReactNode } from 'react';
 import { ChevronLeft, ChevronRight, Settings2 } from 'lucide-react';
 import BusinessCalendarSettings from '../../platform/BusinessCalendarSettings/BusinessCalendarSettings';
 import OfflineBriefcaseSettings from '../../platform/OfflineBriefcaseSettings/OfflineBriefcaseSettings';
@@ -14,15 +14,16 @@ const sections:ReadonlyArray<{id:Section;label:string}>=[
 {id:'contacts',label:'Contacts'},{id:'mobile',label:'Mobile & Offline'},{id:'integrations',label:'Integrations'},
 {id:'security',label:'Security & Recovery'},{id:'developer',label:'Developer'}];
 /** Presentation only: retains existing OneEngine-protected runtime controls and slots. */
-export default function CompanySettingsWorkspace({company,domains,developer,usage,calendar,recovery,mfa,emailRecovery,locks,sessions,audit,onNavigateDeveloper,developerAccess,objects=[],mobile=false}:{
+export default function CompanySettingsWorkspace({company,domains,developer,usage,calendar,recovery,mfa,emailRecovery,locks,sessions,audit,onNavigateDeveloper,developerAccess,objects=[],mobile=false,initialSection}:{
 objects?:ObjectMetadata[];company:ReactNode;domains:ReactNode;developer:ReactNode;usage:ReactNode;calendar?:ReactNode;
 recovery:ReactNode;mfa:ReactNode;emailRecovery:ReactNode;locks:ReactNode;sessions:ReactNode;audit:ReactNode;
  onNavigateDeveloper?:(workspace:string)=>void;
  developerAccess?:{metadata:boolean;apps:boolean;packages?:boolean;flows:boolean;dashboards:boolean;reports:boolean;approvals:boolean;security:boolean};
- mobile?:boolean;
+ mobile?:boolean; initialSection?:Section;
 }){
- const [active,setActive]=useState<Section>('general');
- const [mobileSection,setMobileSection]=useState<Section|null>(null);
+ const [active,setActive]=useState<Section>(initialSection??'general');
+ const [mobileSection,setMobileSection]=useState<Section|null>(mobile&&initialSection?initialSection:null);
+ useEffect(()=>{if(initialSection){setActive(initialSection);if(mobile)setMobileSection(initialSection);}},[initialSection,mobile]);
  const currentSection=mobile ? mobileSection : active;
  const rights=developerAccess;
  const destinations:DeveloperDestination[]=[
