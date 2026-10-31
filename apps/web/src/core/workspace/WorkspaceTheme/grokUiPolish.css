@@ -331,3 +331,5 @@
 .lightning .quick-find-result-count{margin:7px 2px 0;font-size:var(--md-helper-size,12px);color:var(--md-muted,#596579)}
 .lightning .setup-tree .tree-item:focus-visible{outline:2px solid var(--md-primary,#1d4ed8);outline-offset:-2px}
 .lightning .setup-sidebar .empty-tree .text-action{display:inline-flex;margin-top:8px}
+
+.lightning .md-security-governance{scroll-margin-top:72px}
