@@ -427,6 +427,11 @@ test('Smart Cart only renders amounts supplied by metadata/Flow and shows no fab
  assert.match(bound,/Current sale/);
  for(const amount of ['£12.50','£1.00','£2.30','£13.80'])assert.ok(bound.includes(amount),amount);
  assert.doesNotMatch(bound,/Total not bound/);
+ const formula=await renderSmart('smart_cart',{
+  records:[{Id:'line1',Quantity:2,UnitPrice:5}],
+  totalValue:'@Quantity * @UnitPrice',currencyCode:'GBP'
+ });
+ assert.match(formula,/£10\\.00/,'ribbon formula should calculate from the authorised row');
  const sql=read('../../server/src/system-support/migrations/20270210-smart-cart-summary-bindings.sql');
  for(const field of ['subtotalValue','discountValue','taxValue','totalValue'])
   assert.ok(sql.includes("'"+field+"'"));
