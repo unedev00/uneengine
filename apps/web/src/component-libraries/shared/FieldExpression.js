@@ -287,6 +287,18 @@ function parse(source,record,formulaContext){
    return descriptor&&Object.prototype.hasOwnProperty.call(descriptor,'value')
     ?descriptor.value:undefined;
   };
+  // Related values have been hydrated against Object Manager metadata and
+  // read permissions by the Page Runtime; they are not arbitrary JS traversal.
+  if(reference.includes('.')){
+   const mentions=ownValue(record,'__mentionValues');
+   if(mentions&&typeof mentions==='object'&&!Array.isArray(mentions)
+    &&Object.getPrototypeOf(mentions)===Object.prototype){
+    const resolved=ownValue(mentions,'@'+reference);
+    if(resolved!==undefined)return resolved===null?'':resolved;
+    // A missing hydrated path must not fall through into unverified nested data.
+    return '';
+   }
+  }
   if(Object.prototype.hasOwnProperty.call(record,reference))return ownValue(record,reference)??'';
   let value=record;
   for(const part of parts){

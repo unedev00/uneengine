@@ -1,17 +1,16 @@
 import type {ReactNode} from 'react';
 import {Image as ImageIcon,Type,AlignLeft,CalendarDays,Clock,Ellipsis} from 'lucide-react';
-import type {FieldMetadata,LibraryComponentMetadata} from '../../metadata/Definitions/metadata';
+import type {FieldMetadata,LibraryComponentMetadata,ObjectMetadata} from '../../metadata/Definitions/metadata';
 import RibbonFieldExpressionInput from './RibbonFieldExpressionInput';
 
 type Properties=Record<string,unknown>;
-type DataObject={apiName:string;label:string;fields?:FieldMetadata[]};
 const fieldOptions=(fields:FieldMetadata[])=>fields.map(field=><option key={field.apiName} value={field.apiName}>{field.label}</option>);
 
 /** Compact Content layout for the two reference components, backed only by
  * existing persisted keys. No presentation-only mock switches. */
 export default function PageBuilderRibbonContent({componentApiName,properties,definition,objects,onChange}:{
  componentApiName:string;properties:Properties;definition?:LibraryComponentMetadata;
- objects:DataObject[];onChange:(next:Properties)=>void;
+ objects:ObjectMetadata[];onChange:(next:Properties)=>void;
 }){
  const fields=objects.find(o=>o.apiName===String(properties.objectApiName??''))?.fields??[];
  const has=(key:string)=>Boolean(definition?.propertyDefinitions?.some(d=>d.propertyKey===key));
@@ -31,7 +30,7 @@ export default function PageBuilderRibbonContent({componentApiName,properties,de
    <span>{label}</span><input type="number" aria-label={label} disabled={!enabled} min={0}
      value={Number(properties[key]??2)} onChange={event=>{const value=Number(event.target.value);if(Number.isFinite(value)&&value>=0)update(key,value);}}/></label>;
  const expr=(label:string,key:string,legacyKey:string)=><RibbonFieldExpressionInput
-   label={label} fields={fields}
+   label={label} fields={fields} objects={objects} objectApiName={String(properties.objectApiName??'')}
    value={String(properties[key]??(properties[legacyKey]?'@'+properties[legacyKey]:''))}
    onChange={value=>update(key,value)}/>;
  const section=(title:string,icon:ReactNode,content:ReactNode)=><div key={title} className="office-ribbon-group office-ribbon-content-card">

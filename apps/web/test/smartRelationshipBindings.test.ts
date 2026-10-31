@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import type {ObjectMetadata} from '../src/core/metadata/Definitions/metadata';
+import {relationshipFormulaFields} from '../src/core/builders/PageBuilder/relationshipFormulaFields';
+import {evaluateFieldExpression} from '../src/component-libraries/shared/FieldExpression.js';
 import {
  mentionGroups,resolveCollectionMentionRows
 } from '../src/component-libraries/shared/primitives/SmartFieldInput/smartFieldMentions';
@@ -59,4 +61,37 @@ test('lookup suggestions are based on metadata, not special Product/User names',
  ] as unknown as ObjectMetadata[];
  const groups=mentionGroups(objects,'Transaction',[],'','image');
  assert.ok(groups.flatMap(g=>g.fields).some(f=>f.reference==='@Transaction.Member.Avatar'));
+});
+
+test('all formula pickers can traverse metadata lookups without business-object names',()=>{
+ const objects=[
+  {apiName:'Activity',label:'Activity',fields:[
+   {apiName:'Duration',label:'Duration',dataType:'Number'},
+   {apiName:'TicketId',label:'Ticket',dataType:'Lookup(Ticket)',
+    relationship:{type:'Lookup',targetObject:'Ticket',relationshipName:'Ticket',childRelationshipName:'Activities'}}
+  ]},
+  {apiName:'Ticket',label:'Ticket',fields:[
+   {apiName:'Banner',label:'Banner',dataType:'URL'},
+   {apiName:'Priority',label:'Priority',dataType:'Number'}
+  ]}
+ ] as unknown as ObjectMetadata[];
+ const fields=relationshipFormulaFields(objects,['Activity'],'Activity.Ticket');
+ assert.ok(fields.some(f=>f.reference==='@Activity.Ticket.Banner'));
+ assert.ok(fields.some(f=>f.reference==='@Activity.Ticket.Priority'));
+ assert.ok(relationshipFormulaFields(objects,['Activity'],'Ticket.Banner','image')
+  .some(f=>f.reference==='@Activity.Ticket.Banner'));
+ assert.ok(!relationshipFormulaFields(objects,['Activity'],'','text',true)
+  .some(f=>f.reference.includes('.')));
+});
+test('universal evaluator preserves typed lookup values and quoted formula text',()=>{
+ const row={Quantity:3,__mentionValues:{
+  '@Activity.Ticket.Priority':5,
+  '@Activity.Ticket.Banner':'https://example.com/banner.png',
+  '@Activity.Ticket.Enabled':true
+ }};
+ assert.equal(evaluateFieldExpression('@Quantity * @Activity.Ticket.Priority',row),'15');
+ assert.equal(evaluateFieldExpression('@Activity.Ticket.Banner',row),'https://example.com/banner.png');
+ assert.equal(evaluateFieldExpression('IF(@Activity.Ticket.Enabled, "Yes", "No")',row),'Yes');
+ assert.equal(evaluateFieldExpression('"@Activity.Ticket.Priority" & @Quantity',row),'@Activity.Ticket.Priority3');
+ assert.equal(evaluateFieldExpression('@Activity.Ticket.Secret',row),'');
 });
