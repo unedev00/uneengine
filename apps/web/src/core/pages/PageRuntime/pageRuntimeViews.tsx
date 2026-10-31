@@ -85,8 +85,9 @@ import { isComponentVisible } from '../../components/Properties/componentVisibil
 import {behaviorValidation,behaviorAction,behaviorAppearance,behaviorInteractions,behaviorTabs,behaviorTabForChild,pageBehaviors} from './pageBehaviorRuntime';
 import { canNestComponent, componentVisualStyle, directChildren, isLayoutType, isDescendantOf, layoutTypes } from '../TemplatePageRuntime/pageComponentLayout';
 import { isCanvasLocked, wrapCanvasComponent, ungroupCanvasComponent } from '../../builders/PageBuilder/canvasInteractions';
-import { filterPageComponentRecords, pageComponentRecordQuery,pageComponentRelatedQuery,pageComponentActiveRecordQuery, bindPageStateProperties, needsMetadataComponentRuntime, resolvePageStatePath } from './pageComponentBindings';
+import { filterPageComponentRecords, pageComponentRecordQuery,pageComponentRelatedQuery,pageComponentActiveRecordQuery,hasPageActiveRecordSelection, bindPageStateProperties, needsMetadataComponentRuntime, resolvePageStatePath } from './pageComponentBindings';
 import {resolveSmartToggleFieldBinding,updateSmartToggleField} from './smartToggleFieldBinding';
+import {usePageSessionRelatedQuery} from '../PageRuntime/usePageSessionRelatedQuery';
 import {filterRelatedRecords} from './filterRelatedRecords.mjs';
 import {resolveMentionProperties} from '../../../component-libraries/shared/primitives/SmartFieldInput/smartFieldMentions';
 import { explicitMentionRecordId, useRelationshipMentionContext } from '../../records/RecordFormDialog/useRelationshipMentionContext';
@@ -368,9 +369,14 @@ function MetadataBoundPageComponent({
     (properties.autoRecordScope!==false && ['smart_cart','Custom:smart_cart'].includes(component.type));
   const manualRelatedField=String(properties.relatedFieldApiName??'');
   const manualSelectedId=relatedKey?pageState[relatedKey]:undefined;
+  const hasActiveSelection=hasPageActiveRecordSelection(fields,pageState);
+  const directActiveQuery=pageComponentActiveRecordQuery(fields,pageState);
+  const sessionRelatedQuery=usePageSessionRelatedQuery(
+    usesActiveRecordScope&&!relatedKey&&!hasActiveSelection&&!disableActions,
+    fields,objects,sessionId,revision,loadFlowScreenRecordPage);
   const relatedQuery=relatedKey
     ?pageComponentRelatedQuery(properties,fields,manualSelectedId)
-    :usesActiveRecordScope?pageComponentActiveRecordQuery(fields,pageState)
+    :usesActiveRecordScope?(hasActiveSelection?directActiveQuery:sessionRelatedQuery)
       :pageComponentRelatedQuery(properties,fields,undefined);
   const relatedField=relatedKey?manualRelatedField:relatedQuery.filter?.field??'';
   const selectedId=relatedKey?manualSelectedId:relatedQuery.filter?.value;
