@@ -8,7 +8,7 @@ import { loadFlowScreenRecordPage, loadFlowScreenRecords } from '../../authentic
 import { pageLayoutForRecord, compactLayoutForRecord, matchesLookupFilterGroup, relatedLookupFilterOperators, type RecordData } from '../../records/RecordWorkspace/recordMetadataUtils';
 import { formatRecordValue, parseCsvImport } from '../../records/RecordWorkspace/recordCsvUtils';
 import { initialScreenValues, screenFieldIsVisible } from '../../automation/FlowScreen/flowScreenRuntimeUtils';
-import {resolveFlowOutputBindings} from '../../automation/FlowScreen/flowInputBindings';
+import {resolveFlowOutputBindings,resolveStructuredFlowInput} from '../../automation/FlowScreen/flowInputBindings';
 import { objectSettings, parseAppRoute, appRoutePath, type AppRoute } from '../../workspace/Navigation/appRouting';
 import { NavigationLoadTime, resolveCurrentAppNavigation } from '../../workspace/Navigation/appNavigationView';
 import { isStandalonePagePresentation, pageCanvasPresentationStyle } from './pageRuntimePresentation';
@@ -515,6 +515,8 @@ function MetadataBoundPageComponent({
     // Reusable, declarative input formatting. No arbitrary expressions or scripts.
     if (source && typeof source==='object' && !Array.isArray(source)) {
       const option=source as Record<string,unknown>;
+      if(option.source==='ToNumber'||option.source==='ProjectRecords')
+        return resolveStructuredFlowInput(option,candidate=>resolveInput(candidate,eventPayload));
       if(option.source==='FirstNonEmpty' && Array.isArray(option.values)
         && option.values.length>0 && option.values.length<=5){
         for(const candidate of option.values){
