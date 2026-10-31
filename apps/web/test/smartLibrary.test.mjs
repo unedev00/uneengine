@@ -753,50 +753,24 @@ test('Smart dynamic content scrolls only when the rendered component overflows',
 });
 
 
-test('Option 2 compact Design keeps all SQL properties, disabled controls and coloured TSize SVG',()=>{
+test('Current three-row renderer keeps disabled metadata slots and numerical SVGs',()=>{
  const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
  const icons=read('../src/core/builders/PageBuilder/SmartRibbonIcons.tsx');
- const compact=read('../src/core/builders/PageBuilder/SmartRibbonCompact.css');
+ const css=read('../src/core/builders/PageBuilder/SmartRibbonApprovedThreeRow.css');
  assert.match(ribbon,/const visible=definitions\.filter\(p=>p\.tab===tab\)/);
  assert.match(ribbon,/const supported=property\.components\.includes\(api\)/);
  assert.match(ribbon,/data-supported=\{supported\}/);
- assert.match(ribbon,/data-compact-design=\{compactDesign\?'true':'false'\}/);
+ assert.match(ribbon,/data-numeric-icon=\{hasNumericIcon/);
  assert.match(ribbon,/RibbonTextSizeIcon/);
  assert.match(ribbon,/RibbonCornerRadiusIcon/);
- assert.match(ribbon,/data-numeric-icon=\{hasNumericIcon/);
  assert.match(icons,/stopColor="#ec2c88"/);
  assert.match(icons,/stopColor="#ffe153"/);
  assert.match(icons,/useId\(\)/);
- assert.match(compact,/\.smart-ribbon\[data-compact-design="true"\]/);
- assert.match(compact,/flex-flow:row wrap!important/);
- assert.match(compact,/height:auto!important;min-height:146px!important;max-height:none!important/);
- assert.match(compact,/grid-area:auto!important/);
- assert.match(compact,/\.smart-property\.disabled/);
- assert.match(compact,/data-numeric-icon="true"/);
- assert.match(compact,/width:58px!important;min-width:58px!important;max-width:58px!important/);
- assert.match(compact,/width:99px!important/);
- assert.match(compact,/width:43px!important/);
- assert.doesNotMatch(compact,/\.smart-property\s*\{[^}]*display:none/);
+ assert.match(css,/\.smart-property\.disabled/);
+ assert.match(css,/grid-template-columns:none!important/);
+ assert.doesNotMatch(ribbon,/SmartRibbonCompact\.css/);
  assert.doesNotMatch(ribbon,/tab==='Colors'/);
 });
-
-test('Option 2 Design sections have bounded compact widths rather than legacy wide fixed tracks',()=>{
- const css=read('../src/core/builders/PageBuilder/SmartRibbonCompact.css');
- for(const [section,max] of [
-   ['Body',195],['Typography',225],['Header',183],['Header Supporting',205],
-   ['Badge',268],['Image',218],['Table',193],['Row',183],
-   ['Summary',268],['Summary 2',178],['Tabs',185]
- ]){
-   const re=new RegExp('smart-ribbon-group\\[aria-label="'+section.replaceAll(' ','\\s+')+'"\\]\\{width:('+max+')px!important\\}');
-   assert.match(css,re,section);
- }
- // A grid-area property from the old layout cannot force a field into a
- // column: all property containers are flex items and may wrap.
- assert.match(css,/grid-template-columns:none!important/);
- assert.match(css,/align-content:flex-start!important/);
- assert.match(css,/max-width:100%!important/);
-});
-
 
 test('SQL-owned three-row Design and Shapes ribbon preserves the exact requested geometry',()=>{
  const sql=read('../../server/src/system-support/migrations/20270205-three-row-design-shapes.sql');
