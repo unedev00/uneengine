@@ -946,3 +946,18 @@ test('31 October ribbon consolidation scopes @ fields to three explicit objects 
  assert.doesNotMatch(page,/ribbonTab==='Icons'/);
  assert.doesNotMatch(page,/office-ribbon-stepper/);
 });
+
+
+test('Layout Image Background uses SQL fill palette for only Image and Container',()=>{
+ const sql=read('../../server/src/system-support/migrations/20270212-image-container-background-fill.sql');
+ const runtime=read('../src/component-libraries/smart/shared/SmartRuntime.jsx');
+ const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
+ const palette=read('../src/core/builders/PageBuilder/RibbonColorPalette.tsx');
+ assert.match(sql,/imageBackgroundColor','Background','Layout','Image','color'/);
+ assert.match(sql,/\('smart_image'\),\('smart_container'\)/);
+ assert.match(sql,/NULL::jsonb,'\[\]'::jsonb,'component'/);
+ assert.match(runtime,/single\?\(p\.imageBackgroundColor\?\?p\.backgroundColor\?\?"transparent"\)/);
+ assert.match(runtime,/background:p\.imageBackgroundColor\?\?p\.backgroundColor\?\?"transparent"/);
+ assert.match(ribbon,/kind==='color'/);
+ assert.match(palette,/kind==='fill'\?'No fill'/);
+});
