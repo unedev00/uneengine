@@ -65,7 +65,7 @@ try{
    &&e.childRelationshipName==='PrimaryParentRecords'));
  assert.ok(edges.some(e=>e.fieldApiName==='BlockingParentId'&&e.deleteBehavior==='Restrict'));
  assert.equal((await listRelationshipDefinitions(db,otherTenant)).length,0,'No tenant metadata leakage');
- assert.equal((await listRelationshipDefinitions(db,tenant,'PhaseParent__c')).length,5);
+ assert.equal((await listRelationshipDefinitions(db,tenant,'PhaseParent__c')).length,6);
  await assert.rejects(()=>defs.addField(tenant,'PhaseParent__c','BadMasterId',
    'Master-Detail(PhaseGrand__c)'),/cycle/);
  const p1=await records.create(tenant,user,'PhaseParent__c',{Name:'Parent A'});
