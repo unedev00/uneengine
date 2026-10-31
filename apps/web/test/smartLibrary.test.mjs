@@ -746,7 +746,9 @@ test('Shared @ binding and canvas fill are metadata-driven for arbitrary objects
 test('Smart dynamic content scrolls only when the rendered component overflows',()=>{
  const runtime=read('../src/component-libraries/smart/shared/SmartRuntime.jsx');
  const css=read('../src/component-libraries/smart/shared/smart.css');
- assert.match(runtime,/gridAutoRows:"minmax\(160px,auto\)"/);
+ assert.match(runtime,/gridAutoRows:"calc\(/);
+ assert.match(runtime,/p\.cardsPerColumn/);
+ assert.match(runtime,/overflowY:"auto"/);
  assert.match(runtime,/recordsOf\(p\)\.slice\(0,200\)\.map/);
  assert.match(css,/\.smart-runtime\.smart_navigation>\.smart-navigation/);
  assert.match(css,/\.smart-runtime\.smart_card_grid>\.smart-grid/);

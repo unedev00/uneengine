@@ -451,6 +451,7 @@ function PageBuilder({
   const [newRecordLinkUrl,setNewRecordLinkUrl]=useState('');
   const [fitCanvas, setFitCanvas] = useState(false);
   const [fitFullPage, setFitFullPage] = useState(false);
+  const [canvasZoom,setCanvasZoom] = useState(100);
   const [fitScale, setFitScale] = useState(1);
   const pagePreviewAreaRef = useRef<HTMLDivElement | null>(null);
   const [canvasRefreshKey, setCanvasRefreshKey] = useState(0);
@@ -1115,7 +1116,7 @@ function PageBuilder({
   const moveCanvasPointer = (event: React.PointerEvent<HTMLElement>) => {
     const start = canvasMoveStart.current;
     if (!start || start.pointerId !== event.pointerId) return;
-    const scale = fitCanvas ? fitScale : 1;
+    const scale = fitCanvas ? fitScale : canvasZoom/100;
     const x = start.original.x + canvasUnitsFromScreenDelta(event.clientX - start.pointerX, scale);
     const y = start.original.y + canvasUnitsFromScreenDelta(event.clientY - start.pointerY, scale);
     const next = canvasSnap
@@ -1196,8 +1197,8 @@ function PageBuilder({
     const definition = component.type.startsWith('Custom:') ? findRegisteredComponent(libraryComponents, component.type.slice('Custom:'.length), 'page') : undefined;
     const minWidth = Math.min(start.width, definition?.resize?.minWidth ?? 20);
     const minHeight = Math.min(start.height, definition?.resize?.minHeight ?? 20);
-    const dx = canvasUnitsFromScreenDelta(event.clientX - start.pointerX, fitCanvas ? fitScale : 1);
-    const dy = canvasUnitsFromScreenDelta(event.clientY - start.pointerY, fitCanvas ? fitScale : 1);
+    const dx = canvasUnitsFromScreenDelta(event.clientX - start.pointerX, fitCanvas ? fitScale : canvasZoom/100);
+    const dy = canvasUnitsFromScreenDelta(event.clientY - start.pointerY, fitCanvas ? fitScale : canvasZoom/100);
     const west = start.edge.includes('w'), east = start.edge.includes('e'), north = start.edge.includes('n'), south = start.edge.includes('s');
     let x = start.x, y = start.y, width = start.width, height = start.height;
     if (east) width = Math.max(minWidth, Math.min(page.canvasWidth - start.x, start.width + dx));
@@ -2585,8 +2586,8 @@ function PageBuilder({
   };
   const quickAccessOrder=['save','activate','preview','exitPreview','resetIcon','undo','redo','cut','copy','paste','delete'] as const;
   const journeyTabs: Array<typeof ribbonTab> = selectedNewUne
-    ? ['Add Block','Component Data','Component Properties','Shapes','Component Layout','Component Action',...(page.layoutMode==='free-canvas'?['Grok' as const]:[]),'Advanced','Preview']
-    : ['Add Block','Component Data','Component Content','Component Properties','Shapes','Component Layout','Component Action',...(page.layoutMode==='free-canvas'?['Grok' as const]:[]),'Advanced','Preview'];
+    ? ['Add Block','Component Data','Component Properties','Shapes','Component Layout','Component Action','Advanced','Preview']
+    : ['Add Block','Component Data','Component Content','Component Properties','Shapes','Component Layout','Component Action','Advanced','Preview'];
   const ribbonTabsVisible: Array<typeof ribbonTab> = [...journeyTabs];
   if(ribbonTab==='Filters')ribbonTabsVisible.splice(journeyTabs.indexOf('Component Data')+1,0,'Filters');
   if(ribbonTab==='Source')ribbonTabsVisible.splice(journeyTabs.indexOf('Component Data')+1,0,'Source');
@@ -2871,7 +2872,6 @@ function PageBuilder({
                   </option>)}
                 </select>
               </label>
-              {selected && <small role="status">{selected.visible?'Selected component highlighted on canvas.':'Hidden component: shown as an editor outline only.'}</small>}
             </div><span>Components</span>
           </div>}
           {ribbonTab==='Preview' && <div className="office-ribbon-group canvas-preview-tools" aria-label="Canvas display">
@@ -2881,9 +2881,10 @@ function PageBuilder({
                 aria-pressed={fitCanvas&&fitFullPage}>Fit to Screen</button>
               <button type="button" onClick={()=>{setFitCanvas(true);setFitFullPage(false);}}
                 aria-pressed={fitCanvas&&!fitFullPage}>Fit Width</button>
-              <button type="button" onClick={()=>setFitCanvas(false)}
+              <button type="button" onClick={()=>{setFitCanvas(false);setCanvasZoom(100)}}
                 aria-pressed={!fitCanvas}>100% actual size</button>
-              <span aria-live="polite">{page.canvasWidth} × {page.canvasHeight} · {fitCanvas?Math.round(fitScale*100):100}%</span>
+              <label className="canvas-zoom-control">Canvas zoom <input type="range" min="20" max="200" step="5" value={fitCanvas?Math.round(fitScale*100):canvasZoom} onChange={event=>{setFitCanvas(false);setCanvasZoom(Number(event.target.value));}}/><output>{fitCanvas?Math.round(fitScale*100):canvasZoom}%</output></label>
+              <span aria-live="polite">{page.canvasWidth} × {page.canvasHeight}</span>
             </div><span>View</span>
           </div>}
           {ribbonTab==='Preview' && <div className="office-ribbon-group preview-visibility-group" aria-label="Conditional visibility">
@@ -2899,7 +2900,7 @@ function PageBuilder({
             </div> : <div className="preview-visibility-unselected">Select a component to set its visibility.</div>}
             <span>Conditional visibility</span>
           </div>}
-          {ribbonTab==='Component Layout' && <div className="office-ribbon-group canvas-placement-group" aria-label="Placement">
+          {ribbonTab==='Preview' && <div className="office-ribbon-group canvas-placement-group" aria-label="Placement">
             <div className="office-ribbon-stack canvas-placement-actions">
               <button type="button" disabled={!selected||isCanvasLocked(selected)} title="Bring to Front"
                 onClick={()=>placeSelectedLayer('front')}><Layers3 size={15}/> Bring to Front</button>
@@ -2912,93 +2913,10 @@ function PageBuilder({
                 onClick={ungroupSelected}><Ungroup size={15}/> Ungroup</button>
             </div><span>Placement</span>
           </div>}
-          {ribbonTab==='Grok' && page.layoutMode==='free-canvas' && (
-            <div className="office-ribbon-section-row grok-canvas-ribbon" role="group" aria-label="Grok canvas tools">
-              <div className="office-ribbon-group">
-                <div className="office-ribbon-stack">
-                  <button type="button" className="office-ribbon-icon-button" title="Group selected components (Ctrl+G)"
-                    disabled={selectionIds.length<2||!selected?.position}
-                    onClick={wrapSelectedInContainer}>
-                    <Group size={17}/><span>Group</span>
-                  </button>
-                  <button type="button" className="office-ribbon-icon-button" title="Ungroup (Ctrl+Shift+G)"
-                    disabled={!selected||(!canvasGroupKey(selected)&&!(selected.type==='Container'&&childrenOf(page.components,selected.id).length>0))}
-                    onClick={ungroupSelected}>
-                    <Ungroup size={17}/><span>Ungroup</span>
-                  </button>
-                </div>
-                <span>Group</span>
-              </div>
-              <div className="office-ribbon-group">
-                <div className="office-ribbon-stack">
-                  {(['start','center','end'] as const).map(anchor=>(
-                    <button key={'hx-'+anchor} type="button" className="office-ribbon-icon-button"
-                      title={'Align horizontal '+anchor}
-                      disabled={!selected?.position||isCanvasLocked(selected!)}
-                      onClick={()=>alignSelected('x',anchor)}>
-                      <span>H {anchor}</span>
-                    </button>
-                  ))}
-                  {(['start','center','end'] as const).map(anchor=>(
-                    <button key={'vy-'+anchor} type="button" className="office-ribbon-icon-button"
-                      title={'Align vertical '+anchor}
-                      disabled={!selected?.position||isCanvasLocked(selected!)}
-                      onClick={()=>alignSelected('y',anchor)}>
-                      <span>V {anchor}</span>
-                    </button>
-                  ))}
-                </div>
-                <span>Align</span>
-              </div>
-              <div className="office-ribbon-group">
-                <div className="office-ribbon-stack">
-                  <button type="button" className="office-ribbon-icon-button" title="Distribute horizontally"
-                    disabled={selectionIds.length<3}
-                    onClick={()=>distributeSelected('x')}>
-                    <MoveHorizontal size={17}/><span>Horizontal</span>
-                  </button>
-                  <button type="button" className="office-ribbon-icon-button" title="Distribute vertically"
-                    disabled={selectionIds.length<3}
-                    onClick={()=>distributeSelected('y')}>
-                    <MoveVertical size={17}/><span>Vertical</span>
-                  </button>
-                </div>
-                <span>Distribute</span>
-              </div>
-              <div className="office-ribbon-group">
-                <div className="office-ribbon-stack">
-                  <button type="button" className="office-ribbon-icon-button" title="Bring forward"
-                    disabled={!selected||isCanvasLocked(selected)}
-                    onClick={()=>moveSelected(-1)}>
-                    <span>Bring forward</span>
-                  </button>
-                  <button type="button" className="office-ribbon-icon-button" title="Send backward"
-                    disabled={!selected||isCanvasLocked(selected)}
-                    onClick={()=>moveSelected(1)}>
-                    <span>Send backward</span>
-                  </button>
-                  <button type="button" className="office-ribbon-icon-button"
-                    title={selected&&isCanvasLocked(selected)?'Unlock':'Lock'}
-                    disabled={!selected}
-                    onClick={()=>selected&&updateComponent(selected.id,{properties:{
-                      ...selected.properties,editorLocked:!isCanvasLocked(selected)}})}>
-                    <span>{selected&&isCanvasLocked(selected)?'Unlock':'Lock'}</span>
-                  </button>
-                </div>
-                <span>Order & Lock</span>
-              </div>
-              <div className="office-ribbon-group">
-                <div className="office-ribbon-stack" style={{fontSize:12,opacity:0.85,maxWidth:220,lineHeight:1.45}}>
-                  <div>↑↓←→ nudge selection</div>
-                  <div>Ctrl+arrows = 1 px</div>
-                  <div>Ctrl+G group · Ctrl+Shift+G ungroup</div>
-                  <div>Ctrl+D duplicate · Del delete</div>
-                </div>
-                <span>Keyboard</span>
-              </div>
-            </div>
-          )}
 
+          {ribbonTab==='Component Layout' && page.layoutMode==='free-canvas' && <div className="office-ribbon-group canvas-distribution-group" aria-label="Distribute components">
+            <div className="office-ribbon-stack"><button type="button" disabled={selectionIds.length<3} onClick={()=>distributeSelected('x')}>Distribute horizontally</button><button type="button" disabled={selectionIds.length<3} onClick={()=>distributeSelected('y')}>Distribute vertically</button></div><span>Distribute</span>
+          </div>}
           {ribbonTab==='Component Layout' && !ribbonCatalog &&
             <div role="status" className="une-ribbon-catalog-status">
               {ribbonCatalogError?'Shared SQL property library unavailable: '+ribbonCatalogError:'Loading shared property library…'}
@@ -3206,8 +3124,8 @@ function PageBuilder({
             <div
               className={`record-preview ${page.layoutMode === 'free-canvas' ? 'free-canvas-preview' : page.pageType === 'Record Page' ? 'record-page-preview' : page.pageType === 'App Page' ? 'app-page-preview' : 'home-page-preview'} ${device === 'Phone' ? 'phone-preview' : device === 'Tablet' ? 'tablet-preview' : ''}`}
               style={{...(page.layoutMode === 'free-canvas' ? {
-                width: page.canvasWidth * (fitCanvas ? fitScale : 1),
-                height: page.canvasHeight * (fitCanvas ? fitScale : 1),
+                width: page.canvasWidth * (fitCanvas ? fitScale : canvasZoom/100),
+                height: page.canvasHeight * (fitCanvas ? fitScale : canvasZoom/100),
                 minHeight: 0,
                 overflow: previewMode ? 'hidden' : 'visible'
               } : page.layoutMode === 'template' && page.components.some(c => c.visible && c.properties?.standalonePresentation === true) ? standaloneTemplateCanvasStyle(page.canvasWidth, page.canvasHeight) : {}),backgroundColor:page.canvasFillColor??'#ffffff'}}
@@ -3218,7 +3136,7 @@ function PageBuilder({
                   width: page.canvasWidth,
                   height: page.canvasHeight,
                    backgroundColor:page.canvasFillColor??'#ffffff',
-                   transform: fitCanvas ? `scale(${fitScale})` : undefined,
+                   transform: (fitCanvas || canvasZoom!==100) ? `scale(${fitCanvas?fitScale:canvasZoom/100})` : undefined,
                   transformOrigin: 'top left'
                 }}
               >

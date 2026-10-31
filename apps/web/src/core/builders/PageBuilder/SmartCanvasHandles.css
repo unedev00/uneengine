@@ -90,3 +90,18 @@
 .builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .resize-sw, .builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .resize-sw *{cursor:nesw-resize!important}
 .builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .resize-nw, .builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .resize-nw *{cursor:nwse-resize!important}
 .builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .resize-se, .builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .resize-se *{cursor:nwse-resize!important}
+
+/* A selected component behaves like an Office shape: four-arrow move, with
+   eight independent directional resize hit targets above inner app content. */
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected:not(.canvas-component-locked),
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .record-component-head,
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .record-component-head[data-canvas-move-handle],
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .canvas-move-grip,
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .canvas-move-grip:active{cursor:move!important}
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected{overflow:visible!important}
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected>.free-canvas-resize-handle{z-index:999!important;pointer-events:auto!important}
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected>.free-canvas-resize-handle:is(.resize-nw,.resize-ne,.resize-sw,.resize-se){width:24px!important;height:24px!important;min-width:24px!important;min-height:24px!important}
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected>.resize-nw{left:-12px!important;top:-12px!important}
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected>.resize-ne{right:-12px!important;top:-12px!important}
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected>.resize-sw{left:-12px!important;bottom:-12px!important}
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected>.resize-se{right:-12px!important;bottom:-12px!important}
