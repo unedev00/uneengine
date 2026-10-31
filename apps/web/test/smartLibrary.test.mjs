@@ -607,7 +607,7 @@ test('Calendar selected value colour fills date and Shadow uses shared three pre
  assert.match(ui,/api==='smart_calendar'&&property.id==='shadow'/);
  assert.match(migration,/value_key=NULL/);
 });
-test('Page Builder supports Ctrl X C V Z Y and shows resize cursor handles only when hovered',()=>{
+test('Page Builder keyboard shortcuts and visible PowerPoint-style resize cursor handles',()=>{
  const builder=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
  const css=read('../src/core/builders/PageBuilder/SmartCanvasHandles.css');
  assert.match(builder,/command && key === 'x'/);
@@ -621,7 +621,7 @@ test('Page Builder supports Ctrl X C V Z Y and shows resize cursor handles only 
  assert.doesNotMatch(builder,/<MoveVertical size=\{15\}/);
  assert.match(css,/\.free-canvas-resize-handle:is\(:hover,:focus-visible,:active\)/);
  assert.match(css,/\.free-canvas-move-edge:focus-visible/);
- assert.match(css,/opacity:0/);
+ assert.match(css,/opacity:1/);
  assert.match(builder,/selected \? \(selected.label\|\|selected.type\)/);
 });
 test('Image source is editable @ text, with upload only for the Image component',()=>{
