@@ -786,3 +786,18 @@
 .registered-component.metadrive-component-ui_item_grid > section {
   padding:var(--md-page-padding)!important;
 }
+
+
+/* Layout containers expose their own configured rounded border. The editor's
+   selection highlight must not draw a second square border over that shape.
+   Resize handles remain mounted and keyboard focus is still visible. */
+.builder-editor-mode .modern-canvas-builder .record-component[data-page-appearance="layout"].selected,
+.builder-editor-mode .modern-canvas-builder .free-canvas-component[data-page-appearance="layout"].selected{
+ outline:0!important;box-shadow:none!important;
+}
+.builder-editor-mode .modern-canvas-builder .record-component[data-page-appearance="layout"].selected:focus-visible,
+.builder-editor-mode .modern-canvas-builder .free-canvas-component[data-page-appearance="layout"].selected:focus-visible{
+ outline:2px dashed var(--md-primary,#1d4ed8)!important;
+ outline-offset:3px!important;
+ border-radius:var(--md-page-radius,8px)!important;
+}
