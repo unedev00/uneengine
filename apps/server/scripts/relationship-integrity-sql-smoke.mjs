@@ -80,7 +80,24 @@ try{
  const c2=await records.create(tenant,user,'PhaseChild__c',
   {Name:'Child B',ParentId:p2});
  const g1=await records.create(tenant,user,'PhaseGrand__c',
-  {Name:'Grand',ChildId:c1,BlockingParentId:p1,SecondaryMasterId:p2}); 
+  {Name:'Grand',ChildId:c1,BlockingParentId:p1,SecondaryMasterId:p2});
+ // Field paths are resolved by configured relationship aliases, not by a
+ // hardcoded target object. A three-level formula must remain fresh on update.
+ await defs.addField(tenant,'PhaseGrand__c','AncestorLabel','Formula(Text)',
+   undefined,'Ancestor Label',{formula:{
+    expression:'PrimaryChild.PrimaryParent.Name',returnType:'Text'
+   }});
+ await defs.addField(tenant,'PhaseGrand__c','OtherMasterLabel','Formula(Text)',
+   undefined,'Other Master Label',{formula:{
+    expression:'SecondaryMaster.Name',returnType:'Text'
+   }});
+ const labeled=await records.get(tenant,user,'PhaseGrand__c',g1);
+ assert.equal(labeled.AncestorLabel,'Parent A');
+ assert.equal(labeled.OtherMasterLabel,'Parent B');
+ await records.update(tenant,user,'PhaseParent__c',p1,{Name:'Parent A Updated'});
+ assert.equal((await records.get(tenant,user,'PhaseGrand__c',g1)).AncestorLabel,
+  'Parent A Updated','Related formula values must invalidate when an ancestor changes');
+ await records.update(tenant,user,'PhaseParent__c',p1,{Name:'Parent A'}); 
  // Controlled-by-parent sharing uses both masters and propagates through
  // Parent -> Child -> Grandchild. The child/grandchild owners are deliberately
  // different from the parent owner; independent sharing must not grant access.
