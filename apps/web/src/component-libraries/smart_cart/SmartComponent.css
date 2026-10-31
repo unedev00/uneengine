@@ -37,3 +37,22 @@
 .smart-cart-qty-button:disabled{opacity:.45;cursor:default}
 .smart-cart-qty-button:not(:disabled):hover{background:#eaf2fb}
 .smart-cart-qty-button:focus-visible,.smart-cart-product-click:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+
+
+/* The cart is resized by the Page Builder, not necessarily the browser window.
+   Keep the visible column set inside the cart instead of forcing horizontal
+   scroll through a minimum-content-width row. */
+.smart-cart-table{container-type:inline-size;overflow-x:hidden}
+.smart-cart-columns,.smart-cart-row{box-sizing:border-box;width:100%;min-width:0}
+.smart-cart-rows{min-width:0;width:100%;overflow-x:hidden}
+.smart-cart-columns>span,.smart-cart-row>span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.smart-cart-cell-qty{min-width:0}
+.smart-cart-product{min-width:0;overflow:hidden}
+@container (max-width:480px){
+ .smart-cart-columns,.smart-cart-row{gap:4px;padding-left:3px;padding-right:3px}
+ .smart-cart-product{gap:4px}
+ .smart-cart-product>img,.smart-cart-product>.smart-image-empty{max-width:32px;max-height:32px}
+ .smart-cart-qty-controls{gap:2px}
+ .smart-cart-qty-button{width:20px;height:24px}
+ .smart-cart-qty-value{min-width:10px}
+}
