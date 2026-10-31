@@ -37,7 +37,7 @@
  cursor:move!important;touch-action:none;user-select:none;
 }
 .builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .canvas-move-grip:active{
- cursor:grabbing!important;
+ cursor:move!important;
 }
 /* A narrow border hit area gives the same four-direction drag affordance
    as a selected spreadsheet shape. Corners remain reserved for resize handles. */
@@ -105,3 +105,26 @@
 .builder-editor-mode .modern-canvas-builder .free-canvas-component.selected>.resize-ne{right:-12px!important;top:-12px!important}
 .builder-editor-mode .modern-canvas-builder .free-canvas-component.selected>.resize-sw{left:-12px!important;bottom:-12px!important}
 .builder-editor-mode .modern-canvas-builder .free-canvas-component.selected>.resize-se{right:-12px!important;bottom:-12px!important}
+
+/* The authored z-order is untouched; a selected editor shape is temporarily
+   hit-tested above overlapping Tabs/bars, so clicks cannot fall through it. */
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected{
+ z-index:1000!important;
+}
+.builder-editor-mode .modern-canvas-builder .canvas-group-outline{
+ z-index:1100;
+}
+/* Corners on the canvas boundary must remain accessible, not be clipped. */
+.builder-editor-mode .modern-canvas-builder .free-canvas-stage.canvas-editing{
+ overflow:visible;
+}
+/* Native images and runtime wrappers otherwise advertise grab/pointer cursors.
+   In the designer all non-toolbar component content is a four-way move surface.
+   Resize handles remain independent and retain their eight directional cursors. */
+.builder-editor-mode .modern-canvas-builder .free-canvas-component:not(.canvas-component-locked),
+.builder-editor-mode .modern-canvas-builder .free-canvas-component:not(.canvas-component-locked) > :not(.canvas-element-actions):not(.free-canvas-resize-handle):not(.free-canvas-move-edge),
+.builder-editor-mode .modern-canvas-builder .free-canvas-component:not(.canvas-component-locked) > :not(.canvas-element-actions):not(.free-canvas-resize-handle):not(.free-canvas-move-edge) *,
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .canvas-move-grip,
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .canvas-move-grip *{
+ cursor:move!important;
+}

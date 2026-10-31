@@ -648,3 +648,31 @@ test('placement controls, component finder and full-width workspace are builder-
   assert.match(css,/\.page-stage/);
   assert.match(css,/canvas-group-outline/);
 });
+
+
+test('Free Canvas image clicks select the image instead of the overlapping tab',async()=>{
+  const source=await readFile(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+  const handles=await readFile(new URL('../src/core/builders/PageBuilder/SmartCanvasHandles.css',import.meta.url),'utf8');
+  const click=source.slice(source.indexOf('onClickCapture={libraryPreview'),source.indexOf('onDoubleClick={!libraryPreview'));
+  assert.match(click,/event\.preventDefault\(\);\s*event\.stopPropagation\(\);\s*selectCanvasComponent\(event\)/);
+  assert.doesNotMatch(click,/hit\.closest\('\.canvas-design-interaction-shield/,'design-time shield must route clicks to the component');
+  assert.match(source,/onDragStartCapture=\{selectOnlyInDesigner && page\.layoutMode === 'free-canvas'/);
+  assert.match(handles,/\.free-canvas-component\.selected\{\s*z-index:1000!important/);
+  assert.match(handles,/\.canvas-group-outline\{\s*z-index:1100/);
+});
+
+test('Free Canvas move cursor and directional resize handles remain usable',async()=>{
+  const source=await readFile(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+  const handles=await readFile(new URL('../src/core/builders/PageBuilder/SmartCanvasHandles.css',import.meta.url),'utf8');
+  assert.match(source,/className=\{`free-canvas-resize-handle resize-\$\{edge\}`\}/);
+  assert.match(source,/onPointerDown=\{event => startCanvasResize\(event, component, edge\)\}/);
+  assert.match(source,/onPointerMove=\{moveCanvasResize\} onPointerUp=\{endCanvasResize\}/);
+  assert.match(source,/setSelectionIds\(\[component\.id\]\);\s*setSelectedRegion\(null\);\s*\};\s*const moveCanvasResize/);
+  for(const [edge,cursor] of Object.entries({n:'ns',ne:'nesw',e:'ew',se:'nwse',s:'ns',sw:'nesw',w:'ew',nw:'nwse'})){
+    assert.match(handles,new RegExp('\\.resize-'+edge+'(?:,|\\{|[^}]*\\{)[^}]*cursor:'+cursor+'-resize!important'),'resize direction '+edge);
+  }
+  assert.match(handles,/\.free-canvas-component:not\(\.canvas-component-locked\) > :not\(\.canvas-element-actions\)/);
+  assert.doesNotMatch(handles,/cursor:grabbing!important/);
+  assert.match(source,/canvas-editing/);
+  assert.match(handles,/\.free-canvas-stage\.canvas-editing\{\s*overflow:visible/);
+});
