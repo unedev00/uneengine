@@ -92,7 +92,7 @@ try{
  const c2=await records.create(tenant,user,'PhaseChild__c',
   {Name:'Child B',ParentId:p2});
  const g1=await records.create(tenant,user,'PhaseGrand__c',
-  {Name:'Grand',ChildId:c1,BlockingParentId:p1,SecondaryMasterId:p2});
+  {Name:'Grand',ChildId:c1,BlockingParentId:p1,ASecondaryMasterId:p2});
  // Field paths are resolved by configured relationship aliases, not by a
  // hardcoded target object. A three-level formula must remain fresh on update.
  await defs.addField(tenant,'PhaseGrand__c','AncestorLabel','Formula(Text)',
