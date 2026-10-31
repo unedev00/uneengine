@@ -8,7 +8,7 @@ const sql=readFileSync(new URL('../../server/src/system-support/migrations/20270
 // The checked shared SQL geometry is the input for every selected Smart component.
 // A group uses its widest of three rows, not the sum of the rows.
 function ribbonWidth(section){
-  const rows=[...section.matchAll(/\('([^']+)','([^']+)',(\d+),(\d+),(\d+)\)/g)]
+  const rows=[...section.matchAll(/\('([^']+)','([^']+)',(\d+),(\d+),(\d+)(?:,(?:NULL|'[^']*'),(\d+))?\)/g)]
     .map(match=>({key:match[1],group:match[2],row:Number(match[3]),width:Number(match[5])}));
   const groups=[...new Set(rows.map(row=>row.group))];
   return {groups,rows,total:groups.reduce((sum,group)=>{
