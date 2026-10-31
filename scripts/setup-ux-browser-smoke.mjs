@@ -58,6 +58,35 @@ try {
  assert.equal(await page.getByRole('dialog').count(),0);
  await open('records-import');
  await page.getByText('Record workspace import passed',{exact:true}).waitFor();
+ await open('mfa');
+ await page.getByRole('button',{name:'Save policy'}).waitFor();
+ assert.equal(await page.getByRole('button',{name:'Save policy'}).evaluate(el=>el.closest('label')===null),true,
+  'MFA save button must never be nested inside the policy label');
+ assert.equal(await page.locator('.md-admin-form-grid').first().evaluate(el=>getComputedStyle(el).display),'grid');
+ await open('oauth');
+ await page.getByRole('heading',{name:'Connected Apps'}).waitFor();
+ await page.getByText('operator9@example.com').waitFor();
+ const userGrid=page.locator('.connected-apps-checklist');
+ assert.equal(await userGrid.evaluate(el=>getComputedStyle(el).display),'grid','OAuth user picker must use grid');
+ assert.ok((await userGrid.evaluate(el=>getComputedStyle(el).gridTemplateColumns.split(' ').filter(Boolean).length))>=2,
+  'OAuth user picker must occupy multiple columns at desktop width');
+ await page.locator('.oauth-scope-group summary').click();
+ assert.equal(await page.locator('.oauth-scope-group-body').evaluate(el=>getComputedStyle(el).display),'grid');
+ await open('governance');
+ const auditRegion=page.getByRole('region',{name:'Setup audit events'});
+ await auditRegion.waitFor();
+ assert.equal(await auditRegion.locator('th').count(),6);
+ assert.equal(await auditRegion.locator('[data-long-id]').count(),1);
+ assert.ok((await auditRegion.locator('table').evaluate(el=>el.getBoundingClientRect().width))>=940);
+ await open('company');
+ assert.equal(await page.getByRole('button',{name:'Security & Recovery'}).getAttribute('aria-current'),'page',
+  'Deep-linked company security settings must open directly');
+ await page.setViewportSize({width:390,height:844});
+ await open('oauth');
+ await page.getByText('operator9@example.com').waitFor();
+ assert.equal(await page.locator('.connected-apps-checklist').evaluate(el=>getComputedStyle(el).gridTemplateColumns.split(' ').filter(Boolean).length),1,
+  'OAuth user picker must reduce to one column on narrow screens');
+ await page.setViewportSize({width:1365,height:768});
  assert.deepEqual(errors,[]);
- console.log('PASS: dashboard permission/create, offline object/record/save, tenant draft/footer/discard, credential width/details, history details, flow dialog/create, record route chunk import (1365×768)');
+ console.log('PASS: dashboard permission/create, offline object/record/save, tenant draft/footer/discard, credential width/details, history details, flow dialog/create, record route chunk import, MFA policy control, OAuth grids, audit table, deep-linked company settings (1365px/390px)');
 } finally { await browser.close(); }
