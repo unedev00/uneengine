@@ -98,32 +98,33 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  const sectionRow=(group:string,row:number)=>visible
    .filter(p=>p.group===group&&((p.designRow??2)>=1&&(p.designRow??2)<=3?p.designRow??2:2)===row)
    .sort((a,b)=>(a.designOrder??999)-(b.designOrder??999));
+ // Geometry only. Keep every property, icon, dropdown and persisted value;
+ // fit their existing three rows without reserving space for empty columns.
  const controlWidth=(p:UneRibbonProperty)=>{
-   // The Shadow and Alignment dropdowns must remain 35px even before a tenant
-   // receives the additive SQL geometry migration.
+   // Shadow/Alignment icon dropdowns must remain at least 35px wide.
    if(p.designDisplay==='dropdown'&&(p.kind==='shadow'||p.kind==='align'))
      return Math.max(35,p.designWidth??0);
-   if(p.designWidth)return (p.kind==='number'||p.kind==='position')?64:p.designWidth;
-   // Unconfigured future SQL properties remain present without overlapping.
-   if(p.kind==='shadow'||p.kind==='align')return p.designDisplay==='dropdown'?35:84;
-   if(p.kind==='color')return 40;
-   if(p.kind==='number'||p.kind==='position')return 64;
-   if(p.kind==='boolean')return 28;
-   return 99;
+   const width=p.designWidth??(p.kind==='shadow'||p.kind==='align'?84:
+     p.kind==='color'?40:p.kind==='number'||p.kind==='position'?64:
+     p.kind==='boolean'?28:99);
+   // Data formulas and source pickers need their full SQL-defined widths.
+   // Only the Design/Layout icon and spinner tracks get more compact.
+   if(tab==='Design'||tab==='Layout'){
+     if(p.kind==='number'||p.kind==='position')return Math.max(54,Math.min(width,58));
+     if(p.kind==='choice'&&width>=80&&width<=110)return width-8;
+   }
+   return width;
  };
- // Size each section from its widest row, including 2px between controls,
- // 14px inner gutters on both sides and the 1px divider.
- // Leave enough room to display the full group caption as well.
- const sectionWidth=(group:string)=>Math.max(
+ // Reserve exactly the rendered track widths, 2px between icons and 7px
+ // side gutters. The caption minimum avoids clipping long section names.
+ const sectionWidth=(group:string)=>Math.ceil(Math.max(
    Math.max(0,...[1,2,3].map(row=>{
      const properties=sectionRow(group,row);
      return properties.reduce((total,p)=>total+controlWidth(p)+(p.designCaptionWidth??0),0)
-       +Math.max(0,properties.length-1)*4;
-   }))+25,
-   // Only the Layout Header Supporting caption needs a smaller minimum; its
-   // single icon/number control should not reserve an empty full-width column.
-   group==='Header Supporting'?0:group.length*6+24
- );
+       +Math.max(0,properties.length-1)*2;
+   }))+15,
+   group.length*5.5+16
+ ));
  const controls=(property:UneRibbonProperty)=>{
    const supported=property.components.includes(api);
    const kind=api==='smart_calendar'&&property.id==='shadow'
