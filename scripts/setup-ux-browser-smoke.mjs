@@ -266,6 +266,18 @@ try {
  await page.keyboard.press('Escape');
  assert.equal(await pinDialog.count(),0);
  await screenshot('audit-verified-till-pin-dialog');
+ await open('assist-document');
+ const documentDialog=page.getByRole('dialog',{name:/New Invoice/});
+ await documentDialog.waitFor();
+ assert.equal(await documentDialog.evaluate(el=>el.contains(document.activeElement)),true);
+ await page.getByRole('button',{name:'Add customer'}).last().click();
+ const customerDialog=page.getByRole('dialog',{name:'Add customer'});
+ await customerDialog.waitFor();
+ assert.equal(await customerDialog.evaluate(el=>el.contains(document.activeElement)),true);
+ await page.keyboard.press('Escape');
+ assert.equal(await customerDialog.count(),0,'Escape closes nested Add customer dialog');
+ assert.equal(await documentDialog.evaluate(el=>el.contains(document.activeElement)),true,'Focus returns inside financial editor');
+ await screenshot('audit-verified-assist-document-modal');
  assert.deepEqual(errors,[]);
  console.log('PASS: dashboard permission/create, offline object/record/save, tenant draft/footer/discard, credential width/details, history details, flow dialog/create, record route chunk import, MFA policy control, OAuth grids, audit table, deep-linked company settings, monitoring, licences, SSO, password, sessions, credential modal, real Schema Builder and real Kiosk and Till product/cart/checkout/payment (1365px/390px)');
 } finally { await browser.close(); }
