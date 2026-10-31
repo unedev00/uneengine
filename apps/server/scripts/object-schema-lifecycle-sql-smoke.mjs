@@ -28,6 +28,16 @@ try{
   tenants.push(result.rows[0].id);
  }
  const [primary,secondary]=tenants;
+ const actor=(await db.query(
+  "INSERT INTO md_users(tenant_id,email,password_hash) VALUES($1,'2a-access@example.invalid','fixture') RETURNING id",
+  [primary])).rows[0].id;
+ const granted=(await db.query(
+  "INSERT INTO md_permission_sets(tenant_id,api_name) VALUES($1,'Phase2A') RETURNING id",
+  [primary])).rows[0].id;
+ await db.query('INSERT INTO md_permission_assignments(tenant_id,user_id,permission_set_id) VALUES($1,$2,$3)',
+  [primary,actor,granted]);
+ await db.query("INSERT INTO md_permission_rules(tenant_id,permission_set_id,resource,action,effect) VALUES($1,$2,'*','*','allow')",
+  [primary,granted]);
  const fields=[{apiName:'Name',label:'Name',dataType:'Text(80)',required:true}];
  for(const name of ['Milestone__c','Invoice__c']){
   const object=await defs.create(primary,name,name.replace('__c',''),fields);
@@ -58,14 +68,23 @@ try{
  await db.query(`DELETE FROM md_field_definitions WHERE tenant_id=$1
   AND object_api='Invoice__c' AND api_name='MilestoneRef'`,[primary]);
  // Recoverable deletion preserves all definitions and reserves the API name.
+ const visibility=async id=>(await db.query(
+  "SELECT md_record_access($1,$2,$3,'read') AS allowed",
+  [primary,actor,id])).rows[0].allowed;
+ assert.equal(await visibility(record.rows[0].id),true,
+  'Active object records must remain accessible with proper grants');
  const deleted=await lifecycle.delete(primary,'Milestone__c',0);
  assert.equal(deleted.deleted,true);
+ assert.equal(await visibility(record.rows[0].id),false,
+  'Archived object records must not leak through Record API authorization');
  await assert.rejects(()=>defs.get(primary,'Milestone__c'),/Object not found/);
  assert.equal((await lifecycle.listDeleted(primary)).length,1);
  await assert.rejects(()=>defs.create(primary,'Milestone__c','Duplicate',fields),/API Name already exists|already exists/);
  await assert.rejects(()=>db.query("INSERT INTO md_records(tenant_id,object_api) VALUES($1,'Milestone__c')",[primary]),
   /Object is unavailable/);
  await lifecycle.restore(primary,'Milestone__c');
+ assert.equal(await visibility(record.rows[0].id),true,
+  'Restored object record read access must return without modifying the record');
  const preserved=await db.query('SELECT id,is_deleted FROM md_records WHERE tenant_id=$1 AND id=ANY($2::uuid[]) ORDER BY id',
   [primary,[record.rows[0].id,recycled.rows[0].id]]);
  assert.equal(preserved.rows.length,2);
