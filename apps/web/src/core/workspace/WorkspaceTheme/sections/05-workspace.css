@@ -150,9 +150,9 @@
 .free-canvas-component-properties .properties-section-title { grid-column: 1 / -1; }
 .free-canvas-runtime { position: relative; max-width: none; min-height: 0; margin: 0; padding: 0; overflow: hidden; background: white; }
 .free-canvas-runtime-component { position: absolute; overflow: auto; }
-.lightning.standalone-page-mode { width: 100vw; min-height: 100vh; overflow: auto; background: white; }
+.lightning.standalone-page-mode { width: 100vw; min-height: 100vh; min-height: 100dvh; overflow: auto; background: white; }
 .lightning.standalone-page-mode > .salesforce-header, .lightning.standalone-page-mode > .app-strip { display: none; }
-.lightning.standalone-page-mode > .setup-layout { height: 100vh; min-height: 100vh; }
+.lightning.standalone-page-mode > .setup-layout { height: 100vh; height: 100dvh; min-height: 100vh; min-height: 100dvh; }
 .lightning.standalone-page-mode .workspace { overflow: auto; background: white; }
 .record-preview-nav { min-height: 66px; padding-inline: 17px; }
 .record-preview-nav > div:nth-child(2) strong { color: var(--brand-dark); }

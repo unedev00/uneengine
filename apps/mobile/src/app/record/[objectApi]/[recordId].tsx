@@ -10,13 +10,14 @@ export default function RecordDetailScreen(){
  const {objectApi,recordId}=useLocalSearchParams<{objectApi:string;recordId:string}>();
  const {session,initializing,records,connection}=useMobileSession(),t=useMobileTheme(),router=useRouter();
  const [live,setLive]=useState<NativeRecord|null>(null);
- const [canEdit,setCanEdit]=useState(false),[loading,setLoading]=useState(false),[error,setError]=useState('');
+ const [labels,setLabels]=useState<Record<string,string>>({}),[canEdit,setCanEdit]=useState(false),[loading,setLoading]=useState(false),[error,setError]=useState('');
  useEffect(()=>{
   if(!session||connection!=='online'||!objectApi||!recordId)return;
   let active=true;setLoading(true);
   void Promise.all([loadLiveRecord(session,objectApi,recordId),loadRecordForm(session,objectApi)])
-   .then(([record,form])=>{if(active){setLive(record);setCanEdit(form.canEdit);setError('');}})
-   .catch(e=>{if(active){setLive(null);setCanEdit(false);setError(e instanceof Error?e.message:String(e));}})
+   .then(([record,form])=>{if(active){setLive(record);setCanEdit(form.canEdit);
+     setLabels(Object.fromEntries(form.fields.map(field=>[field.apiName,field.label])));setError('');}})
+   .catch(e=>{if(active){setLive(null);setCanEdit(false);setLabels({});setError(e instanceof Error?e.message:String(e));}})
    .finally(()=>{if(active)setLoading(false);});
   return()=>{active=false;};
  },[session,connection,objectApi,recordId]);
@@ -31,7 +32,7 @@ export default function RecordDetailScreen(){
    {error?<Text accessibilityRole="alert" style={{color:t.negative}}>{error}</Text>:null}
    {!record?<View style={{backgroundColor:t.surface,borderRadius:13,padding:20}}>
     <Text style={{fontSize:16,color:t.secondary}}>Record not found in the offline cache. Sync to refresh your briefcase.</Text>
-   </View>:<RecordDetailPanel objectApi={objectApi??''} record={record}
+   </View>:<RecordDetailPanel objectApi={objectApi??''} record={record} labels={labels}
       syncedAt={item?.syncedAt} live={Boolean(live)} online={connection==='online'} canEdit={canEdit}
       onEdit={()=>router.push({pathname:'/record/edit/[objectApi]/[recordId]',params:{objectApi:objectApi||'',recordId:recordId||''}})} />}
   </ScrollView>

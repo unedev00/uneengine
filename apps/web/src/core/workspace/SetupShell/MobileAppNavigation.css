@@ -50,6 +50,7 @@
 .md-mobile-app-grid > button { border: 0; background: transparent; color: inherit; display: grid; justify-items: center; gap: 8px; font-size: 13px; min-height: 84px; overflow-wrap: anywhere; }
 .md-mobile-app-symbol { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 13px; color: #fff; background: var(--md-ios-accent, #007aff); }
 @media (prefers-reduced-motion: no-preference) { .md-mobile-sheet { animation: md-mobile-rise .24s ease-out; } @keyframes md-mobile-rise { from { transform: translateY(24px); opacity: .8; } to { transform: translateY(0); opacity: 1; } } }
+:root.md-keyboard-open .lightning .md-mobile-app-tabs { display: none; }
 @media print { .md-mobile-app-tabs, .md-mobile-launcher, .md-mobile-sheet-backdrop { display: none !important; } }
 
 /* Some published runtimes hide workspace chrome. Keep the ORIGINAL launcher

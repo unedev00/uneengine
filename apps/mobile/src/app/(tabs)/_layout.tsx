@@ -10,7 +10,7 @@ export default function TabsLayout(){
  return <Tabs screenOptions={{
   headerStyle:{backgroundColor:theme.surface},headerTintColor:theme.accent,
   headerTitleStyle:{color:theme.text,fontWeight:'600'},
-  tabBarActiveTintColor:theme.accent,tabBarInactiveTintColor:theme.secondary,
+  tabBarHideOnKeyboard:true,tabBarActiveTintColor:theme.accent,tabBarInactiveTintColor:theme.secondary,
   tabBarStyle:{backgroundColor:theme.surface,borderTopColor:theme.separator,minHeight:55},
   sceneStyle:{backgroundColor:theme.background}
  }}>

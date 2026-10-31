@@ -5,9 +5,11 @@ import {useMobileTheme,displayValue} from './mobileTheme';
 /** Read-only record presentation reused by phone navigation and iPad split view.
  * Authorisation and live edit permissions remain with the owning route.
  */
-export function RecordDetailPanel({objectApi,record,syncedAt,live=false,online=true,canEdit=false,onEdit,onOpen}:{
+export function RecordDetailPanel({objectApi,record,labels,syncedAt,live=false,online=true,canEdit=false,onEdit,onOpen}:{
  objectApi:string;
  record:Record<string,unknown>|null;
+ /** Optional apiName → display label map; falls back to the API name (e.g. offline cache). */
+ labels?:Record<string,string>;
  syncedAt?:string;
  live?:boolean;online?:boolean;canEdit?:boolean;
  onEdit?:()=>void;
@@ -42,7 +44,7 @@ export function RecordDetailPanel({objectApi,record,syncedAt,live=false,online=t
    {fields.map(([name,value])=><View key={name} style={{flexDirection:'row',
       justifyContent:'space-between',gap:12,paddingVertical:13,paddingHorizontal:15,
       borderBottomWidth:.5,borderBottomColor:t.separator,minHeight:48}}>
-    <Text style={{color:t.secondary,fontSize:14,maxWidth:'40%'}}>{name}</Text>
+    <Text style={{color:t.secondary,fontSize:14,maxWidth:'40%'}}>{labels?.[name]??name}</Text>
     <Text selectable style={{color:t.text,fontSize:15,maxWidth:'58%',textAlign:'right'}}>
      {displayValue(value)}
     </Text>
