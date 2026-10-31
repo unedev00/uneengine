@@ -496,7 +496,7 @@ export function createSystemServer(db:SqlPersistence) {
       res.setHeader('Set-Cookie',[...(Array.isArray(previous)?previous:previous?[String(previous)]:[]),`${tokenCookie}=${session.refreshToken}; ${cookieOptions(req)}`]);
       res.json({access_token:session.accessToken,expires_in:session.expiresIn});
     }});
-  registerMcpRoutes(app,{db,rbac,records,definitions,flows,platform:platformTenants},authorize);
+  registerMcpRoutes(app,{db,rbac,records,definitions,flows,pages,platform:platformTenants},authorize);
   registerConnectedPublicRoutes(app,connected);
   registerInboundWebhookPublicRoutes(app,db,namedCredentials,flows,rbac,records,integrationActivityWriter);
   app.use('/api',authorize);
