@@ -753,129 +753,72 @@ test('Smart dynamic content scrolls only when the rendered component overflows',
 });
 
 
-test('Option 2 compact Design keeps all SQL properties, disabled controls and coloured TSize SVG',()=>{
+test('Current three-row renderer keeps disabled metadata slots and numerical SVGs',()=>{
  const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
  const icons=read('../src/core/builders/PageBuilder/SmartRibbonIcons.tsx');
- const compact=read('../src/core/builders/PageBuilder/SmartRibbonCompact.css');
+ const css=read('../src/core/builders/PageBuilder/SmartRibbonApprovedThreeRow.css');
  assert.match(ribbon,/const visible=definitions\.filter\(p=>p\.tab===tab\)/);
  assert.match(ribbon,/const supported=property\.components\.includes\(api\)/);
  assert.match(ribbon,/data-supported=\{supported\}/);
- assert.match(ribbon,/data-compact-design=\{compactDesign\?'true':'false'\}/);
+ assert.match(ribbon,/data-numeric-icon=\{hasNumericIcon/);
  assert.match(ribbon,/RibbonTextSizeIcon/);
  assert.match(ribbon,/RibbonCornerRadiusIcon/);
- assert.match(ribbon,/data-numeric-icon=\{hasNumericIcon/);
  assert.match(icons,/stopColor="#ec2c88"/);
  assert.match(icons,/stopColor="#ffe153"/);
  assert.match(icons,/useId\(\)/);
- assert.match(compact,/\.smart-ribbon\[data-compact-design="true"\]/);
- assert.match(compact,/flex-flow:row wrap!important/);
- assert.match(compact,/height:auto!important;min-height:146px!important;max-height:none!important/);
- assert.match(compact,/grid-area:auto!important/);
- assert.match(compact,/\.smart-property\.disabled/);
- assert.match(compact,/data-numeric-icon="true"/);
- assert.match(compact,/width:58px!important;min-width:58px!important;max-width:58px!important/);
- assert.match(compact,/width:99px!important/);
- assert.match(compact,/width:43px!important/);
- assert.doesNotMatch(compact,/\.smart-property\s*\{[^}]*display:none/);
+ assert.match(css,/\.smart-property\.disabled/);
+ assert.match(css,/grid-template-columns:none!important/);
+ assert.doesNotMatch(ribbon,/SmartRibbonCompact\.css/);
  assert.doesNotMatch(ribbon,/tab==='Colors'/);
 });
 
-test('Option 2 Design sections have bounded compact widths rather than legacy wide fixed tracks',()=>{
- const css=read('../src/core/builders/PageBuilder/SmartRibbonCompact.css');
- for(const [section,max] of [
-   ['Body',195],['Typography',225],['Header',183],['Header Supporting',205],
-   ['Badge',268],['Image',218],['Table',193],['Row',183],
-   ['Summary',268],['Summary 2',178],['Tabs',185]
- ]){
-   const re=new RegExp('smart-ribbon-group\\[aria-label="'+section.replaceAll(' ','\\s+')+'"\\]\\{width:('+max+')px!important\\}');
-   assert.match(css,re,section);
- }
- // A grid-area property from the old layout cannot force a field into a
- // column: all property containers are flex items and may wrap.
- assert.match(css,/grid-template-columns:none!important/);
- assert.match(css,/align-content:flex-start!important/);
- assert.match(css,/max-width:100%!important/);
-});
-
-
-test('Approved SQL Design ribbon layout retains exact two rows, widths, heights and order',()=>{
- const sql=read('../../server/src/system-support/migrations/20270204-two-row-design-ribbon-geometry.sql');
+test('SQL-owned three-row Design and Shapes ribbon preserves the exact requested geometry',()=>{
+ const sql=read('../../server/src/system-support/migrations/20270205-three-row-design-shapes.sql');
  const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
- const css=read('../src/core/builders/PageBuilder/SmartRibbonApprovedTwoRow.css');
- for(const [key,row,width,order] of [
-  ['backgroundColor',1,40,1],['borderColor',1,40,2],['labelColor',1,40,3],
-  ['shadow',2,84,1],['radius',2,70,2],
-  ['labelAlignment',1,84,1],['defaultValueColor',2,40,1],['textSize',2,70,2],
-  ['tabCount',1,58,1],['selectedTabColor',2,40,1],['tabColor',2,40,2],
-  ['wrapText',1,28,1],['headerBorderColor',1,40,2],['headerTextColor',1,40,3],
-  ['headerAlignment',2,84,1],['headerBold',2,28,2],
-  ['imagePlacement',1,99,1],['imageBorderColor',2,40,1],['imageFill',2,70,2],
-  ['badgeAlignment',1,90,1],['badgeBold',1,28,2],
-  ['badgeTextSize',2,70,1],['badgeTextColor',2,40,2],
-  ['badgeBodyColor',2,40,3],['badgeVisible',2,40,4],
-  ['supportingBorderColor',1,40,1],['supportingTextColor',1,40,2],
-  ['supportingBold',1,28,3],['supportingAlignment',2,84,1],
-  ['tableBackgroundColor',1,40,1],['tableBorderColor',1,40,2],
-  ['tableRadius',1,70,3],['tableShadow',2,84,1],
-  ['rowBorderColor',1,40,1],['rowRadius',1,70,2],
-  ['rowLabelColor',2,40,1],['rowHeight',2,70,2],
-  ['summaryBackgroundColor',1,40,1],['summaryBorderColor',1,40,2],
-  ['summaryTextColor',1,40,3],['summaryRadius',1,70,4],
-  ['summaryHeight',1,70,5],['summaryShadow',2,84,1],
-  ['summaryWidth',2,70,2],['summaryTextSize',2,70,3],
-  ['summaryTextWeight',2,28,4],['summary2TextSize',1,70,1],
-  ['summary2TextWeight',2,28,1],['summary2TextColor',2,40,2],
-  ['iconFillColor',1,40,1]
- ]){
-  assert.ok(sql.includes("('"+key+"',"+row+","+width+","+order+")"),
-   'Wrong row/width/order for '+key);
- }
- // Explicit inline captions must be declared, sized and returned from SQL.
- for(const [key,caption,width] of [
-  ['badgeAlignment','Position',60],['imagePlacement','Place',35],
-  ['imageFill','Fit',35],['tabCount','Tabs',35]
- ]){
-  assert.ok(sql.includes("('"+key+"','"+caption+"',"+width+")"),
-   'Missing inline caption on '+key);
- }
- assert.match(sql,/design_caption_width smallint/);
- assert.match(sql,/design_height=26/);
- assert.match(ribbon,/sectionRow\(section,row\)\.map\(controls\)/);
- assert.match(ribbon,/const supported=property\.components\.includes\(api\)/);
- assert.match(ribbon,/designOrder\?\?999/);
- assert.match(ribbon,/className="smart-visible-toggle"/);
- assert.match(ribbon,/data-design-caption=/);
- assert.match(ribbon,/property\.designCaptionWidth/);
+ const css=read('../src/core/builders/PageBuilder/SmartRibbonApprovedThreeRow.css');
+ const view=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const dropdown=read('../src/core/builders/PageBuilder/SmartIconDropdown.tsx');
  const server=read('../../server/src/system-support/server.ts');
- assert.match(server,/p\.design_caption,p\.design_caption_width/);
- // Exact sum of maximum row widths per section, including inline captions.
- const sectionWidths={
-  Badge:[[60,90,28],[70,40,40,40]],Body:[[40,40,40],[28,28,28,70]],
-  Header:[[28,40,40],[28,28,28,28]],
-  'Header Supporting':[[40,40,28],[28,28,28]],Icon:[[40],[]],
-  Image:[[35,99],[40,35,70]],Row:[[40,70],[40,70]],
-  Summary:[[40,40,40,70,70],[28,28,28,70,70,28]],
-  'Summary 2':[[70],[28,40]],Table:[[40,40,70],[28,28,28]],
-  Tabs:[[35,58],[40,40]],Typography:[[28,28,28],[40,70]]
- };
- let controls=0,gaps=0;
- for(const rows of Object.values(sectionWidths)){
-  const widest=rows.reduce((best,row)=>row.reduce((sum,w)=>sum+w,0)>
-   best.reduce((sum,w)=>sum+w,0)?row:best,[]);
-  controls+=widest.reduce((sum,w)=>sum+w,0);
-  gaps+=Math.max(0,widest.length-1);
+ const expected=[["badgeAlignment",1,85,1],["badgeTextSize",2,70,1],["badgeBold",2,28,2],["badgeTextColor",3,40,1],["badgeBodyColor",3,40,2],["badgeVisible",3,40,3],["backgroundColor",1,40,1],["borderColor",1,40,2],["labelColor",2,40,1],["shadow",2,28,2],["radius",3,70,1],["wrapText",1,28,1],["headerBorderColor",1,40,2],["headerTextColor",2,40,1],["headerAlignment",3,28,1],["headerBold",2,28,2],["supportingBorderColor",1,40,1],["supportingTextColor",1,40,2],["supportingBold",2,28,1],["supportingAlignment",2,28,2],["iconFillColor",1,40,1],["imagePlacement",1,70,1],["imageFill",2,70,1],["imageBorderColor",3,40,1],["rowBorderColor",1,40,1],["rowLabelColor",1,40,2],["rowRadius",2,70,1],["rowHeight",3,70,1],["summaryBackgroundColor",1,40,1],["summaryBorderColor",1,40,2],["summaryRadius",1,70,3],["summaryTextColor",2,40,1],["summaryHeight",2,70,2],["summaryWidth",2,70,3],["summaryShadow",3,84,1],["summaryTextSize",3,70,2],["summaryTextWeight",3,28,3],["summary2TextSize",1,70,1],["summary2TextWeight",2,28,1],["summary2TextColor",3,40,1],["tableBackgroundColor",1,40,1],["tableBorderColor",1,40,2],["tableRadius",2,70,1],["tableShadow",3,84,1],["tabCount",1,58,1],["selectedTabColor",2,40,1],["tabColor",2,40,2],["labelAlignment",1,28,1],["defaultValueColor",2,40,1],["textSize",2,70,2]];
+ for(const [key,row,width,order] of expected){
+  assert.ok(sql.includes("('"+key+"',"+row+","+width+","+order+")"),
+   'Incorrect geometry '+key);
  }
- assert.equal(controls,1542);
- assert.equal(gaps,22);
- assert.ok(controls+gaps+11<=1581,'All 12 sections must fit within 1581px');
-
- assert.match(css,/flex-flow:row nowrap!important/);
- assert.match(css,/height:90px!important;min-height:90px!important;max-height:90px!important/);
- assert.match(css,/height:26px!important;min-height:26px!important;max-height:26px!important/);
- assert.match(css,/border:1px solid #b7c9df!important/);
- assert.match(css,/gap:1px!important/);
- assert.match(css,/padding:3px 0 1px!important/);
- assert.match(css,/calc\(var\(--smart-control-width\) \+ var\(--smart-caption-width,0px\)\)/);
- assert.match(css,/gap:0!important/);
- assert.doesNotMatch(css,/flex-flow:row wrap/);
+ assert.match(sql,/section_group IN \('Image','Icon'\)/);
+ assert.match(sql,/CHECK\(tab IN \('Home','Data','Design','Shapes','Layout'\)\)/);
+ assert.match(sql,/IS DISTINCT FROM/);
+ for(const [key,caption,width] of [['badgeAlignment','Position',48],
+  ['imagePlacement','Place',35],['imageFill','Fit',35],['tabCount','Tabs',35]]){
+  assert.ok(sql.includes("('"+key+"','"+caption+"',"+width+")"));
+ }
+ assert.match(sql,/design_display='dropdown'/);
+ assert.match(server,/designDisplay:row.design_display/);
+ assert.match(ribbon,/\[1,2,3\]\.map\(row/);
+ assert.match(ribbon,/tab==='Design'\|\|tab==='Shapes'/);
+ assert.match(ribbon,/SmartIconDropdown kind="align"/);
+ assert.match(ribbon,/SmartIconDropdown kind="shadow"/);
+ assert.match(dropdown,/createPortal/);
+ assert.match(dropdown,/role="menuitemradio"/);
+ assert.match(view,/Shapes: 'Shapes'/);
+ assert.match(view,/ribbonTab==='Shapes'\?'Shapes':'Design'/);
+ assert.match(css,/height:112px!important/);
+ assert.match(css,/height:26px!important/);
+ assert.match(css,/background:#fff!important/);
+ assert.match(css,/padding:3px 3px 1px!important/);
+ assert.match(css,/--smart-section-width/);
+ assert.match(ribbon,/const sectionWidth=\(group:string\)/);
+ const widths={
+  Badge:[[48,85],[70,28],[40,40,40]],Body:[[40,40],[40,28],[70]],
+  Header:[[28,40],[40,28],[28]],'Header Supporting':[[40,40],[28,28],[]],
+  Row:[[40,40],[70],[70]],Summary:[[40,40,70],[40,70,70],[84,70,28]],
+  'Summary 2':[[70],[28],[40]],Table:[[40,40],[70],[84]],
+  Tabs:[[35,58],[40,40],[]],Typography:[[28],[40,70],[]]
+ };
+ const shapes={Icon:[[40],[],[]],Image:[[35,70],[35,70],[40]]};
+ const sum=sections=>Object.values(sections).reduce((total,rows)=>{
+  const widest=Math.max(...rows.map(row=>row.reduce((a,b)=>a+b,0)+Math.max(0,row.length-1)));
+  return total+widest+6+1;
+ },0);
+ assert.equal(sum(widths),1059);
+ assert.equal(sum(shapes),160);
 });
