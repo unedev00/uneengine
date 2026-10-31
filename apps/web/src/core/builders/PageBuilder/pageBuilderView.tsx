@@ -518,7 +518,7 @@ function PageBuilder({
   };
   const [selectedConversationPart,setSelectedConversationPart]=useState('parent');
   useEffect(()=>setSelectedConversationPart('parent'),[selectedId]);
-  const [ribbonTab, setRibbonTab] = useState<'Add Block' | 'Component Content' | 'Component Properties' | 'Component Style' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Component Responsive' | 'Preview' | 'Filters' | 'Source' | 'Shapes' | 'Advanced'>('Add Block');
+  const [ribbonTab, setRibbonTab] = useState<'Add Block' | 'Component Content' | 'Component Properties' | 'Component Style' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Component Responsive' | 'Preview' | 'Filters' | 'Source' | 'Shapes' | 'Advanced' | 'Grok'>('Add Block');
   useEffect(()=>{
     if(ribbonTab==='Shapes'&&!page.components.find(component=>component.id===selectedId)?.type.startsWith('Custom:'))
       setRibbonTab('Component Properties');
@@ -1621,6 +1621,31 @@ function PageBuilder({
       } else if (!command && (event.key === 'Delete' || event.key === 'Backspace')
         && selected && !previewMode && !isCanvasLocked(selected)) {
         event.preventDefault(); removeSelected();
+      } else if (command && key === 'g' && !previewMode && page.layoutMode === 'free-canvas') {
+        event.preventDefault();
+        if (event.shiftKey) ungroupSelected();
+        else wrapSelectedInContainer();
+      } else if (!previewMode && page.layoutMode === 'free-canvas'
+        && !event.altKey && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) {
+        const ids = selectionIds.length ? selectionIds : (selectedId ? [selectedId] : []);
+        if (!ids.length) return;
+        if (event.target instanceof HTMLElement && event.target.closest('.office-builder-ribbon,button,[role="tab"]')) return;
+        event.preventDefault();
+        const step = command ? 1 : 8;
+        const dx = event.key === 'ArrowLeft' ? -step : event.key === 'ArrowRight' ? step : 0;
+        const dy = event.key === 'ArrowUp' ? -step : event.key === 'ArrowDown' ? step : 0;
+        const next = page.components.map(c => {
+          if (!ids.includes(c.id) || !c.position || isCanvasLocked(c) || rawLayoutParentId(c)) return c;
+          return {
+            ...c,
+            position: {
+              ...c.position,
+              x: Math.max(0, Math.min(page.canvasWidth - c.position.width, c.position.x + dx)),
+              y: Math.max(0, Math.min(page.canvasHeight - c.position.height, c.position.y + dy))
+            }
+          };
+        });
+        applyPage({ ...page, components: next });
       }
     };
     // Capture first: embedded Smart controls may stop bubbling. Preserve
@@ -2560,8 +2585,8 @@ function PageBuilder({
   };
   const quickAccessOrder=['save','activate','preview','exitPreview','resetIcon','undo','redo','cut','copy','paste','delete'] as const;
   const journeyTabs: Array<typeof ribbonTab> = selectedNewUne
-    ? ['Add Block','Component Data','Component Properties','Shapes','Component Layout','Component Action','Advanced','Preview']
-    : ['Add Block','Component Data','Component Content','Component Properties','Shapes','Component Layout','Component Action','Advanced','Preview'];
+    ? ['Add Block','Component Data','Component Properties','Shapes','Component Layout','Component Action',...(page.layoutMode==='free-canvas'?['Grok' as const]:[]),'Advanced','Preview']
+    : ['Add Block','Component Data','Component Content','Component Properties','Shapes','Component Layout','Component Action',...(page.layoutMode==='free-canvas'?['Grok' as const]:[]),'Advanced','Preview'];
   const ribbonTabsVisible: Array<typeof ribbonTab> = [...journeyTabs];
   if(ribbonTab==='Filters')ribbonTabsVisible.splice(journeyTabs.indexOf('Component Data')+1,0,'Filters');
   if(ribbonTab==='Source')ribbonTabsVisible.splice(journeyTabs.indexOf('Component Data')+1,0,'Source');
@@ -2791,7 +2816,7 @@ function PageBuilder({
                   'Component Responsive': Smartphone,
                   'Component Layout': Layers3,
                   'Component Action': Workflow,
-                  Preview: Eye, Advanced: Settings2, Filters: Filter, Source: Database
+                  Preview: Eye, Advanced: Settings2, Filters: Filter, Source: Database, Grok: Group
                 }[tab];
                 const label = {
                   'Add Block': 'Insert',
@@ -2804,7 +2829,7 @@ function PageBuilder({
                   'Component Responsive': 'Responsive',
                   'Component Layout': 'Layout',
                   'Component Action': 'Actions',
-                  Preview: 'Preview', Advanced: 'Advanced', Filters: 'Filters', Source: 'Source'
+                  Preview: 'Preview', Advanced: 'Advanced', Filters: 'Filters', Source: 'Source', Grok: 'Grok'
                 }[tab];
                 return <button key={tab} id={`page-builder-tab-${index}`} type="button"
                   role="tab" tabIndex={ribbonTab===tab?0:-1} aria-selected={ribbonTab === tab}
@@ -2887,6 +2912,93 @@ function PageBuilder({
                 onClick={ungroupSelected}><Ungroup size={15}/> Ungroup</button>
             </div><span>Placement</span>
           </div>}
+          {ribbonTab==='Grok' && page.layoutMode==='free-canvas' && (
+            <div className="office-ribbon-section-row grok-canvas-ribbon" role="group" aria-label="Grok canvas tools">
+              <div className="office-ribbon-group">
+                <div className="office-ribbon-stack">
+                  <button type="button" className="office-ribbon-icon-button" title="Group selected components (Ctrl+G)"
+                    disabled={selectionIds.length<2||!selected?.position}
+                    onClick={wrapSelectedInContainer}>
+                    <Group size={17}/><span>Group</span>
+                  </button>
+                  <button type="button" className="office-ribbon-icon-button" title="Ungroup (Ctrl+Shift+G)"
+                    disabled={!selected||(!canvasGroupKey(selected)&&!(selected.type==='Container'&&childrenOf(page.components,selected.id).length>0))}
+                    onClick={ungroupSelected}>
+                    <Ungroup size={17}/><span>Ungroup</span>
+                  </button>
+                </div>
+                <span>Group</span>
+              </div>
+              <div className="office-ribbon-group">
+                <div className="office-ribbon-stack">
+                  {(['start','center','end'] as const).map(anchor=>(
+                    <button key={'hx-'+anchor} type="button" className="office-ribbon-icon-button"
+                      title={'Align horizontal '+anchor}
+                      disabled={!selected?.position||isCanvasLocked(selected!)}
+                      onClick={()=>alignSelected('x',anchor)}>
+                      <span>H {anchor}</span>
+                    </button>
+                  ))}
+                  {(['start','center','end'] as const).map(anchor=>(
+                    <button key={'vy-'+anchor} type="button" className="office-ribbon-icon-button"
+                      title={'Align vertical '+anchor}
+                      disabled={!selected?.position||isCanvasLocked(selected!)}
+                      onClick={()=>alignSelected('y',anchor)}>
+                      <span>V {anchor}</span>
+                    </button>
+                  ))}
+                </div>
+                <span>Align</span>
+              </div>
+              <div className="office-ribbon-group">
+                <div className="office-ribbon-stack">
+                  <button type="button" className="office-ribbon-icon-button" title="Distribute horizontally"
+                    disabled={selectionIds.length<3}
+                    onClick={()=>distributeSelected('x')}>
+                    <MoveHorizontal size={17}/><span>Horizontal</span>
+                  </button>
+                  <button type="button" className="office-ribbon-icon-button" title="Distribute vertically"
+                    disabled={selectionIds.length<3}
+                    onClick={()=>distributeSelected('y')}>
+                    <MoveVertical size={17}/><span>Vertical</span>
+                  </button>
+                </div>
+                <span>Distribute</span>
+              </div>
+              <div className="office-ribbon-group">
+                <div className="office-ribbon-stack">
+                  <button type="button" className="office-ribbon-icon-button" title="Bring forward"
+                    disabled={!selected||isCanvasLocked(selected)}
+                    onClick={()=>moveSelected(-1)}>
+                    <span>Bring forward</span>
+                  </button>
+                  <button type="button" className="office-ribbon-icon-button" title="Send backward"
+                    disabled={!selected||isCanvasLocked(selected)}
+                    onClick={()=>moveSelected(1)}>
+                    <span>Send backward</span>
+                  </button>
+                  <button type="button" className="office-ribbon-icon-button"
+                    title={selected&&isCanvasLocked(selected)?'Unlock':'Lock'}
+                    disabled={!selected}
+                    onClick={()=>selected&&updateComponent(selected.id,{properties:{
+                      ...selected.properties,editorLocked:!isCanvasLocked(selected)}})}>
+                    <span>{selected&&isCanvasLocked(selected)?'Unlock':'Lock'}</span>
+                  </button>
+                </div>
+                <span>Order & Lock</span>
+              </div>
+              <div className="office-ribbon-group">
+                <div className="office-ribbon-stack" style={{fontSize:12,opacity:0.85,maxWidth:220,lineHeight:1.45}}>
+                  <div>↑↓←→ nudge selection</div>
+                  <div>Ctrl+arrows = 1 px</div>
+                  <div>Ctrl+G group · Ctrl+Shift+G ungroup</div>
+                  <div>Ctrl+D duplicate · Del delete</div>
+                </div>
+                <span>Keyboard</span>
+              </div>
+            </div>
+          )}
+
           {ribbonTab==='Component Layout' && !ribbonCatalog &&
             <div role="status" className="une-ribbon-catalog-status">
               {ribbonCatalogError?'Shared SQL property library unavailable: '+ribbonCatalogError:'Loading shared property library…'}
