@@ -712,11 +712,39 @@ export function createSystemServer(db:SqlPersistence) {
   app.get('/api/auth/security-events',route(async(req,res)=>{
     const actor=req.actor!;
     await rbac.require(actor.tenant_id,actor.user_id,'Security','read');
-    const limit=Number(req.query.limit??50);
-    if(!Number.isSafeInteger(limit)||limit<1||limit>100)throw new Error('Invalid pagination');
+    const limit=Number(req.query.limit??25),offset=Number(req.query.offset??0);
+    if(!Number.isSafeInteger(limit)||limit<1||limit>100||
+       !Number.isSafeInteger(offset)||offset<0||offset>100000)
+      throw new Error('Invalid pagination');
+    const filters:string[]=['tenant_id=$1'];
+    const params:unknown[]=[actor.tenant_id];
+    const add=(sql:string,value:unknown)=>{
+      params.push(value);filters.push(sql.replace('?', '$'+params.length));
+    };
+    for(const [key,column] of [
+      ['action','action'],['identifier','login_identifier'],['ip','source_ip']
+    ] as const){
+      const value=typeof req.query[key]==='string'?req.query[key].trim():'';
+      if(value.length>120)throw new Error('Invalid security event filter');
+      if(value)add(column+' ILIKE ? ESCAPE \'\\\'', '%'+value.replace(/[\\%_]/g,'\\$&')+'%');
+    }
+    for(const [key,operator] of [['from','>='],['to','<']] as const){
+      const value=typeof req.query[key]==='string'?req.query[key]:'';
+      if(!value)continue;
+      if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(value)||
+         !Number.isFinite(new Date(value+'T00:00:00Z').getTime()))
+        throw new Error('Invalid event date');
+      add('created_at '+operator+' ?::timestamptz',
+        value+'T00:00:00Z');
+    }
+    const where=' WHERE '+filters.join(' AND ');
     const {rows}=await db.query<{id:string;actor_user_id:string|null;action:string;login_identifier:string|null;source_ip:string|null;details:Record<string,string>;created_at:Date}>(
-      'SELECT id,actor_user_id,action,details,created_at,login_identifier,source_ip FROM md_security_events WHERE tenant_id=$1 ORDER BY created_at DESC,id DESC LIMIT $2',[actor.tenant_id,limit]);
-    res.json({events:rows.map(r=>({id:r.id,actorUserId:r.actor_user_id,at:new Date(r.created_at).toISOString(),action:r.action,details:r.details,loginIdentifier:r.login_identifier,sourceIp:r.source_ip}))});
+      'SELECT id,actor_user_id,action,details,created_at,login_identifier,source_ip FROM md_security_events'
+      +where+' ORDER BY created_at DESC,id DESC LIMIT $'+(params.length+1)+' OFFSET $'+(params.length+2),
+      [...params,limit+1,offset]);
+    const page=rows.slice(0,limit);
+    res.json({events:page.map(r=>({id:r.id,actorUserId:r.actor_user_id,at:new Date(r.created_at).toISOString(),action:r.action,details:r.details,loginIdentifier:r.login_identifier,sourceIp:r.source_ip})),
+      nextOffset:rows.length>limit?offset+limit:null});
   }));
   app.post('/api/auth/users/:id/lock',route(async(req,res)=>{
     const actor=req.actor!;
