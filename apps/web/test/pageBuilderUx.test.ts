@@ -37,7 +37,9 @@ test('journey mounts record filters inline and saves draft separately from publi
   const engine=readFileSync(new URL('../src/core/builders/ComponentProperties/componentPropertiesView.tsx',import.meta.url),'utf8');
   assert.match(source,/Component Content/);
   assert.doesNotMatch(source,/page-ribbon-expanded-editor/);
-  assert.match(source,/ribbonTab==='Source'/);
+  assert.match(source,/ribbonTab==='Component Data'/);
+  assert.match(source,/<SmartRibbon/);
+  assert.match(source,/ribbonTab==='Logic'/);
   assert.match(source,/ribbonFilterDraft/);
   assert.doesNotMatch(source,/onApply=\{\(\)=>\{/);
   assert.doesNotMatch(source,/onCancel=\{\(\)=>selectRibbonTab\('Component Data'\)\}/);
