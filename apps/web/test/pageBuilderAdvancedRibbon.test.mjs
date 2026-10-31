@@ -5,6 +5,7 @@ import {readFileSync} from 'node:fs';
 const read=path=>readFileSync(new URL(path,import.meta.url),'utf8');
 const page=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
 const advanced=read('../src/core/builders/PageBuilder/PageBuilderAdvancedRibbon.tsx');
+const responsive=read('../src/core/builders/PageBuilder/PageBuilderAdvancedResponsive.tsx');
 
 test('Advanced is accessible for both Smart and standard components without replacing other ribbon tabs',()=>{
   assert.match(page,/'Component Layout','Component Action','Advanced','Preview'/);
@@ -45,4 +46,13 @@ test('Advanced leaves metadata migrations and published data untouched, with sco
   assert.match(css,/page-builder-advanced-ribbon/);
   assert.match(css,/page-builder-advanced-dialog/);
   assert.doesNotMatch(advanced,/fetch\(|request\(|localStorage|SQL|INSERT INTO/);
+});
+
+test('responsive editor uses published layout schema for per-device persisted settings',()=>{
+  assert.match(page,/<PageBuilderAdvancedResponsive properties=\{selected.properties\} device=\{currentRibbonDevice\}/);
+  for(const name of ['responsiveNumberFields','responsiveOptionFields','responsiveColorFields',
+    'layoutSettings','updateLayoutSettings'])assert.ok(responsive.includes(name),name);
+  assert.match(responsive,/onChange\(updateLayoutSettings\(properties,device,key,value\)\)/);
+  assert.match(responsive,/set\('hidden',event.target.checked\)/);
+  assert.match(responsive,/Reset/);
 });
