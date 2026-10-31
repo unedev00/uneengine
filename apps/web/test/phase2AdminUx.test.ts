@@ -8,9 +8,9 @@ const css=read('../src/core/workspace/WorkspaceTheme/phase2AdminLayout.css');
 test('Phase 2 admin styles load only inside authenticated workspace after shared theme polish',()=>{
  const startup=read('../src/main.tsx');
  const workspace=startup.indexOf('const Workspace = lazy(async () => {');
- const shared=startup.indexOf("await import('./core/workspace/WorkspaceTheme/grokUiPolish.css')");
- const phase2=startup.indexOf("await import('./core/workspace/WorkspaceTheme/phase2AdminLayout.css')");
- const runtime=startup.indexOf("return import('./core/workspace/App/App')");
+ const shared=startup.indexOf(["await ","import","('./core/workspace/WorkspaceTheme/","grokUiPolish.css","')"].join(''));
+ const phase2=startup.indexOf(["await ","import","('./core/workspace/WorkspaceTheme/","phase2AdminLayout.css","')"].join(''));
+ const runtime=startup.indexOf(["return ","import","('./core/workspace/App/","App')"].join(''));
  assert.ok(workspace>=0&&workspace<shared&&shared<phase2&&phase2<runtime);
  assert.match(css,/Published Page Runtime and Builder canvases are excluded/);
  assert.doesNotMatch(css,/[.]page-runtime|[.]page-canvas|[.]properties-panel/);
