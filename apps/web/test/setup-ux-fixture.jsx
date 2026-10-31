@@ -3,6 +3,8 @@ import { createRoot } from 'react-dom/client';
 import TenantManagement from '../src/core/platform/TenantManagement/TenantManagement';
 import OfflineBriefcaseSettings from '../src/core/platform/OfflineBriefcaseSettings/OfflineBriefcaseSettings';
 import DashboardBuilder from '../src/core/builders/DashboardBuilder/DashboardBuilder';
+import SchemaBuilder from '../src/core/builders/SchemaBuilder/SchemaBuilder';
+import AceKiosk from '../../acekiosk/src/AceKiosk';
 import NamedCredentials from '../src/core/integrations/NamedCredentials/NamedCredentials';
 import FlowLogs from '../src/core/automation/FlowLogs/FlowLogs';
 import FlowBuilder from '../src/core/builders/FlowBuilder/FlowBuilder';
@@ -30,7 +32,7 @@ const view=params.get('view');
 const noop=()=>{};
 const arrays={dashboards:[],dashboardFolders:[],objects:[],libraryComponents:[],reports:[],shareUsers:[],shareGroups:[],folderPublicGroups:[],folderPermissionSetGroups:[],folderRoles:[],dashboardTerritories:[],subscriptionUsers:[],runningUserIds:[],smtpCredentials:[]};
 const callbacks=Object.fromEntries(['Select','OpenViewer','ExitViewer','Notify','Save','Delete','LoadRecords','RunReport','LoadSnapshots','LoadSubscriptions'].map(key=>['on'+key,noop]));
-const object={apiName:'Account',label:'Account',pluralLabel:'Accounts',fields:[],compactLayout:{fieldApiNames:['Name']}};
+const object={apiName:'Account',label:'Account',pluralLabel:'Accounts',kind:'Standard Object',fields:[],compactLayout:{fieldApiNames:['Name']}};
 const request=async(path,init)=>{
  if(path.startsWith('/platform/tenants'))return {tenants:[],total:0};
  if(path.startsWith('/records/'))return {records:[{Id:'00000000-0000-0000-0000-000000000001',Name:'Acme Corporation'}]};
@@ -64,8 +66,10 @@ const uxRequest=async path=>{
 const credentials=[{id:'sample',name:'Sample_Credential',label:'Sample credential',baseUrl:'https://example.com/long/integration/path',authType:'Bearer',hasSecret:true,protocol:'HTTPS',enabled:true,updatedAt:'2026-10-28T09:00:00Z',configuration:{}}];
 function RecordImportCheck(){ const [ready,setReady]=React.useState(false); React.useEffect(()=>{import('../src/core/records/RecordWorkspace/recordWorkspaceViews').then(module=>setReady(typeof module.createRecordWorkspaceViews === 'function'));},[]);return <p>{ready ? 'Record workspace import passed' : 'Loading record workspace'}</p>; }
 function Fixture(){
+ if(view==='kiosk')return <AceKiosk onLogout={noop}/>;
  let content;
- if(view==='mfa')content=<TenantMfaControls request={uxRequest} canManage onReauthenticate={noop}/>;
+ if(view==='schema')content=<SchemaBuilder objects={[object,{...object,apiName:'Invoice',label:'Invoice',kind:'Custom Object'}]} selectedObjectApiName="Account" onOpenObject={noop} onOpenField={noop} onCreateObject={noop} onNewField={noop}/>;
+ else if(view==='mfa')content=<TenantMfaControls request={uxRequest} canManage onReauthenticate={noop}/>;
   else if(view==='oauth')content=<TenantConnectedApps request={uxRequest}/>;
   else if(view==='governance')content=<TenantGovernance request={uxRequest} canManage/>;
    else if(view==='monitoring')content=<TenantGovernance request={uxRequest} canManage initialTab="monitoring"/>;
