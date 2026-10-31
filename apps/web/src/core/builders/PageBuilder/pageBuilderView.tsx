@@ -1292,6 +1292,13 @@ function PageBuilder({
       visible: true, parentId: parentId ?? undefined, region,
       ...(freeCanvasPosition ? { position: freeCanvasPosition } : {})
     });
+    // Author a visible, editable border only for new components.
+    const inserted = components.find(item => item.id === id)!;
+    const authored = inserted.properties.visualStyle && typeof inserted.properties.visualStyle === 'object'
+      && !Array.isArray(inserted.properties.visualStyle)
+      ? inserted.properties.visualStyle as Record<string,unknown> : {};
+    inserted.properties = {...inserted.properties,borderWidth:1,borderColor:'#000000',
+      visualStyle:{...authored,borderWidth:1,borderColor:'#000000'}};
     applyPage({ ...page, components: assignTabOnReparent(
       components,id,parentId,parentId ? openBuilderTabs[parentId] : undefined) });
     setRecentComponents(current => addRecentPageBlock(current, type));
@@ -2090,6 +2097,10 @@ function PageBuilder({
   };
   const renderPageComponent = (component: LightningPageMetadata['components'][number], index: number, libraryPreview = false, interactivePreview = false) => {
     const showHiddenSelection = ribbonTab === 'Preview' && selectedId === component.id && !libraryPreview;
+    const visualBorder = component.properties.visualStyle && typeof component.properties.visualStyle === 'object'
+      ? component.properties.visualStyle as Record<string,unknown> : {};
+    const editorBlackBorder = (visualBorder.borderWidth ?? component.properties.borderWidth) === 1
+      && (visualBorder.borderColor ?? component.properties.borderColor) === '#000000';
     if (!component.visible && !showHiddenSelection) return null;
     const customDefinition = component.type.startsWith('Custom:')
       ? findRegisteredComponent(libraryComponents, component.type.slice('Custom:'.length), 'page')
@@ -2166,7 +2177,7 @@ function PageBuilder({
       data-page-appearance={isLayoutType(component.type) ? 'layout' : pageAppearanceTarget(component.type)}
       data-page-style={pageAppearanceStyleKeys(visualStyle)}
       ref={libraryPreview && !interactivePreview ? (element) => { if (element) element.inert = true; } : undefined}
-      className={`record-component ${(!libraryPreview || interactivePreview) && page.layoutMode === 'free-canvas' ? 'free-canvas-component' : ''} ${isCanvasLocked(component) ? 'canvas-component-locked' : ''} ${nested ? 'nested-page-component' : ''} ${isLayoutContainer(component) ? 'layout-container-component' : ''} ${libraryPreview ? 'component-rendered-preview' : ''} ${selectedId === component.id && (!previewMode || ribbonTab === 'Preview') && !libraryPreview ? 'selected' : ''} ${selectionIds.includes(component.id) && (!previewMode || ribbonTab === 'Preview') && !libraryPreview ? 'multi-selected' : ''} ${showHiddenSelection ? 'canvas-hidden-selection' : ''} ${dragOverId === component.id && !libraryPreview ? 'drop-target' : ''}`}
+      className={`record-component ${(!libraryPreview || interactivePreview) && page.layoutMode === 'free-canvas' ? 'free-canvas-component' : ''} ${isCanvasLocked(component) ? 'canvas-component-locked' : ''} ${nested ? 'nested-page-component' : ''} ${isLayoutContainer(component) ? 'layout-container-component' : ''} ${libraryPreview ? 'component-rendered-preview' : ''} ${selectedId === component.id && (!previewMode || ribbonTab === 'Preview') && !libraryPreview ? 'selected' : ''} ${selectionIds.includes(component.id) && (!previewMode || ribbonTab === 'Preview') && !libraryPreview ? 'multi-selected' : ''} ${showHiddenSelection ? 'canvas-hidden-selection' : ''} ${editorBlackBorder ? 'canvas-authored-black-border' : ''} ${dragOverId === component.id && !libraryPreview ? 'drop-target' : ''}`}
       style={{
         ...((!libraryPreview || interactivePreview) && page.layoutMode === 'free-canvas'
           ? nested
@@ -2818,6 +2829,53 @@ function PageBuilder({
         <div id="page-builder-tab-content" ref={ribbonStripRef} onScroll={measureRibbonOverflow}
           className="office-ribbon-content" role="tabpanel" aria-label={ribbonTab}
           aria-labelledby={`page-builder-tab-${Math.max(0,ribbonTabsVisible.indexOf(ribbonTab))}`}>
+          {ribbonTab==='Preview' && <div className="office-ribbon-group canvas-preview-selector-group" aria-label="Preview component selector">
+            <div className="office-ribbon-stack">
+              <label htmlFor="page-preview-component-select">Find component
+                <select id="page-preview-component-select" aria-label="Select page component in preview"
+                  value={selectedId} onChange={event=>{
+                    const id=event.target.value;
+                    setSelectedId(id);
+                    setSelectionIds(id?[id]:[]);
+                    setSelectedRegion(null);
+                    window.requestAnimationFrame(()=>{
+                      const nodes=pagePreviewAreaRef.current?.querySelectorAll<HTMLElement>('[data-component-id]');
+                      const node=Array.from(nodes??[]).find(item=>item.dataset.componentId===id);
+                      node?.scrollIntoView({block:'nearest',inline:'nearest',behavior:'smooth'});
+                    });
+                  }}>
+                  <option value="">Select component…</option>
+                  {page.components.map((item,index)=><option key={item.id} value={item.id}>
+                    {index+1}. {item.label} ({item.type}){item.visible?'':' — Hidden'}
+                    {rawLayoutParentId(item)?' — Nested':''}
+                  </option>)}
+                </select>
+              </label>
+              {selected && <small role="status">{selected.visible?'Selected component highlighted on canvas.':'Hidden component: shown as an editor outline only.'}</small>}
+            </div><span>Components</span>
+          </div>}
+          {ribbonTab==='Preview' && <div className="office-ribbon-group canvas-preview-tools" aria-label="Canvas display">
+            <div className="office-ribbon-stack">
+              <button type="button" onClick={()=>setPreviewMode(value=>!value)}>
+                {previewMode?'Edit canvas':'Preview page'}</button>
+              <button type="button" onClick={()=>setFitCanvas(value=>!value)}
+                aria-pressed={fitCanvas}>{fitCanvas?'Actual size (100%)':'Fit to screen'}</button>
+              <span aria-live="polite">{page.canvasWidth} × {page.canvasHeight} · {fitCanvas?Math.round(fitScale*100):100}%</span>
+            </div><span>View</span>
+          </div>}
+          {ribbonTab==='Component Layout' && <div className="office-ribbon-group canvas-placement-group" aria-label="Placement">
+            <div className="office-ribbon-stack canvas-placement-actions">
+              <button type="button" disabled={!selected||isCanvasLocked(selected)} title="Bring to Front"
+                onClick={()=>placeSelectedLayer('front')}><Layers3 size={15}/> Bring to Front</button>
+              <button type="button" disabled={!selected||isCanvasLocked(selected)} title="Send to Back"
+                onClick={()=>placeSelectedLayer('back')}><Layers3 size={15}/> Send to Back</button>
+              <button type="button" disabled={page.layoutMode!=='free-canvas'||selectionIds.length<2}
+                onClick={wrapSelectedInContainer}><Group size={15}/> Group</button>
+              <button type="button" disabled={!selected||(!canvasGroupKey(selected)
+                &&!(selected.type==='Container'&&childrenOf(page.components,selected.id).length>0))}
+                onClick={ungroupSelected}><Ungroup size={15}/> Ungroup</button>
+            </div><span>Placement</span>
+          </div>}
           {ribbonTab==='Component Layout' && !ribbonCatalog &&
             <div role="status" className="une-ribbon-catalog-status">
               {ribbonCatalogError?'Shared SQL property library unavailable: '+ribbonCatalogError:'Loading shared property library…'}
