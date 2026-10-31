@@ -14,7 +14,7 @@ export default function SmartCart({p,records,Picture,expression,fire}){
  const actions=p.actionFlows&&typeof p.actionFlows==="object"&&!Array.isArray(p.actionFlows)?p.actionFlows:{};
  const canClick=Boolean(actions.click)&&!p.previewOnly&&!p.builderPreview;
  const canChangeQty=Boolean(actions.qtyIcon)&&!p.previewOnly&&!p.builderPreview;
- const rows=demo?Array.from({length:3},(_,i)=>({id:"preview-"+i,__preview:true})):records.slice(0,200);
+ const rows=demo?Array.from({length:3},(_,i)=>({id:"preview-"+i,Quantity:1,__preview:true})):records.slice(0,200);
  const rowHeight=n(p.rowHeight,64,24);
  const rowLimit=Math.floor(n(p.cardsPerRow,5,1,50));
  const visible=Array.isArray(p.columnVisibility)
