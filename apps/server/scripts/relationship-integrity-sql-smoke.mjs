@@ -131,8 +131,7 @@ try{
   [tenant,inheritedReader,id])).rows[0].permitted;
  const context=(await db.query(`SELECT r.owner_id,r.record_type_id,
    md_rbac_allowed($1,$2,'PhaseParent__c','read') AS object_grant,
-   md_rbac_allowed($1,$2,'RecordType:PhaseParent__c.master','read') AS type_grant,
-   md_record_access_direct($1,$2,r.id,'read') AS direct_access
+   md_rbac_allowed($1,$2,'RecordType:PhaseParent__c.master','read') AS type_grant
    FROM md_records r WHERE r.tenant_id=$1 AND r.id=$3`,[tenant,inheritedReader,p1])).rows[0];
  console.info('2C parent owner permission context:',JSON.stringify(context));
  assert.equal(await read(p1),true);
