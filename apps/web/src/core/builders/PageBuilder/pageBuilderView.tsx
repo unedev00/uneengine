@@ -450,6 +450,7 @@ function PageBuilder({
   const [newRecordLinkLabel,setNewRecordLinkLabel]=useState('');
   const [newRecordLinkUrl,setNewRecordLinkUrl]=useState('');
   const [fitCanvas, setFitCanvas] = useState(true);
+  const [fitFullPage, setFitFullPage] = useState(false);
   const [fitScale, setFitScale] = useState(1);
   const pagePreviewAreaRef = useRef<HTMLDivElement | null>(null);
   const [canvasRefreshKey, setCanvasRefreshKey] = useState(0);
@@ -905,13 +906,15 @@ function PageBuilder({
     }
     const updateScale = () => {
       const availableWidth = Math.max(1, previewArea.clientWidth - 8);
-      setFitScale(canvasScaleToFitWidth(page.canvasWidth, availableWidth));
+      const widthScale = canvasScaleToFitWidth(page.canvasWidth,availableWidth);
+      const heightScale = Math.min(1,Math.max(0.01,(previewArea.clientHeight-8)/page.canvasHeight));
+      setFitScale(fitFullPage ? Math.min(widthScale,heightScale) : widthScale);
     };
     updateScale();
     const observer = new ResizeObserver(updateScale);
     observer.observe(previewArea);
     return () => observer.disconnect();
-  }, [fitCanvas, page.layoutMode, page.canvasWidth, page.canvasHeight]);
+  }, [fitCanvas, fitFullPage, page.layoutMode, page.canvasWidth, page.canvasHeight]);
   useEffect(() => {
     if (page.pageType !== 'Record Page') setPaletteTab('Components');
   }, [page.pageType]);
@@ -2869,8 +2872,12 @@ function PageBuilder({
             <div className="office-ribbon-stack">
               <button type="button" onClick={()=>setPreviewMode(value=>!value)}>
                 {previewMode?'Edit canvas':'Preview page'}</button>
-              <button type="button" onClick={()=>setFitCanvas(value=>!value)}
-                aria-pressed={fitCanvas}>{fitCanvas?'Actual size (100%)':'Fit to screen'}</button>
+              <button type="button" onClick={()=>{setFitCanvas(true);setFitFullPage(true);}}
+                aria-pressed={fitCanvas&&fitFullPage}>Fit to Screen</button>
+              <button type="button" onClick={()=>{setFitCanvas(true);setFitFullPage(false);}}
+                aria-pressed={fitCanvas&&!fitFullPage}>Fit Width</button>
+              <button type="button" onClick={()=>setFitCanvas(false)}
+                aria-pressed={!fitCanvas}>100% actual size</button>
               <span aria-live="polite">{page.canvasWidth} × {page.canvasHeight} · {fitCanvas?Math.round(fitScale*100):100}%</span>
             </div><span>View</span>
           </div>}
