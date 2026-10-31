@@ -28,6 +28,7 @@ import '../src/core/workspace/WorkspaceTheme/contrastRepair.css';
 import '../src/core/workspace/WorkspaceTheme/setupUsability.css';
 import '../src/core/workspace/WorkspaceTheme/grokUiPolish.css';
 import '../src/core/workspace/WorkspaceTheme/phase2AdminLayout.css';
+import '../src/core/builders/SchemaBuilder/schemaBuilderUsability.css';
 const params = new URLSearchParams(location.search);
 const view=params.get('view');
 const noop=()=>{};
