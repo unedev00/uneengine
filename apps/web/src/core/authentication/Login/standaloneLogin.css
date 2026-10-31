@@ -66,3 +66,17 @@
   margin-top: 2px;
 }
 .auth-screen .auth-card .auth-error { color: #9b332c; }
+
+/* grok: muted text contrast on auth card */
+.auth-screen .auth-card :is(p, .eyebrow, .form-label, .auth-product-subline, .auth-product-powered) {
+  color: #475569;
+}
+.auth-screen .auth-card :is(.form-control, input:not([type="checkbox"]), textarea, select) {
+  border-radius: 10px;
+  min-height: 44px;
+}
+.auth-screen .auth-card .btn-brand {
+  border-radius: 10px;
+  min-height: 44px;
+  font-weight: 600;
+}
