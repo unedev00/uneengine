@@ -45,7 +45,7 @@ export default function TenantConnectedApps({request}:{request:Request}){
      value={scopeSearch} onChange={event=>setScopeSearch(event.target.value)}/>
    </label>
    <div className="oauth-scope-groups">
-    {visibleGroups.map((group,index)=>{
+    {visibleGroups.map(group=>{
      const enabled=group.scopes.filter(s=>s.assignable);
      const totalSelected=enabled.filter(s=>draft.scopes.includes(s.scope)).length;
      return <details key={group.key} className="oauth-scope-group" open={scopeSearch?true:undefined}>
