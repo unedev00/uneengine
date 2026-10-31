@@ -2847,7 +2847,7 @@ function PageBuilder({
               tab={ribbonTab==='Component Data'?'Data':ribbonTab==='Component Layout'?'Layout':ribbonTab==='Shapes'?'Shapes':'Design'}
               api={selected.type.slice(7)} definitions={ribbonCatalog.properties}
               properties={selected.properties} objects={objects} pageObjectApiName={page.targetObject}
-              onChange={properties=>updateComponent(selected.id,{properties})}
+              onChange={(properties:Record<string,unknown>)=>updateComponent(selected.id,{properties})}
               position={selected.position} layoutMode={page.layoutMode}
               onPositionChange={position=>updateComponent(selected.id,{position})}/>}
         </div>
@@ -2880,7 +2880,7 @@ function PageBuilder({
             </>}
             {advancedEditor==='actions' && selected && <MetadataComponentProperties
               key={selected.id} mode="actions-editor" properties={selected.properties}
-              onChange={properties=>updateComponent(selected.id,{properties})}
+              onChange={(properties:Record<string,unknown>)=>updateComponent(selected.id,{properties})}
               pageComponents={page.components} componentCatalog={libraryComponents}
               definitions={selectedCustomDefinition?.propertyDefinitions}
               eventDefinitions={selectedCustomDefinition?.eventDefinitions}
@@ -2894,10 +2894,10 @@ function PageBuilder({
               {selected && <>
                 <p className="properties-help">Each device layout has an independent draft. Switch the layout above before editing this component.</p>
                 <PageBuilderAdvancedResponsive properties={selected.properties} device={currentRibbonDevice}
-                  onChange={properties=>updateComponent(selected.id,{properties})}/>
+                  onChange={(properties:Record<string,unknown>)=>updateComponent(selected.id,{properties})}/>
                 <MetadataComponentProperties key={selected.id+':'+page.layoutVariant} mode="details"
                   properties={selected.properties}
-                  onChange={properties=>updateComponent(selected.id,{properties})}
+                  onChange={(properties:Record<string,unknown>)=>updateComponent(selected.id,{properties})}
                   pageComponents={page.components} componentCatalog={libraryComponents}
                   definitions={selectedCustomDefinition?.propertyDefinitions}
                   device={page.layoutVariant??'Desktop'} componentVersion={selectedCustomDefinition?.version}
