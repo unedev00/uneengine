@@ -2802,7 +2802,9 @@ function PageBuilder({
               flows={flows}
               onChange={actionFlows=>updateComponent(selected.id,{
                 properties:{...selected.properties,actionFlows}
-              })}/>}
+              })}/>}          {selected?.type==='Custom:smart_icon' && ribbonTab==='Shapes' &&
+            <SmartIconGallery value={String(selected.properties.iconId??'house')}
+              onChange={iconId=>updateComponent(selected.id,{properties:{...selected.properties,iconId}})}/>}
           {selectedNewUne && selected && ribbonCatalog &&
             (ribbonTab==='Component Data'||ribbonTab==='Component Properties'||ribbonTab==='Component Layout'||ribbonTab==='Shapes') &&
             <SmartRibbon
