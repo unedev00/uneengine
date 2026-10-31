@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {resolveFieldText,resolveRegisteredTextProperties} from '../src/core/components/RegisteredComponent/fieldExpressionRuntime';
 import {evaluateFieldExpression} from '../src/component-libraries/shared/FieldExpression.js';
-import {pageComponentRecordQuery,pageComponentRelatedQuery,pageComponentActiveRecordQuery,filterPageComponentRecords} from '../src/core/pages/PageRuntime/pageComponentBindings';
+import {pageComponentRecordQuery,pageComponentRelatedQuery,pageComponentActiveRecordQuery,pageComponentSessionRelatedQuery,hasPageActiveRecordSelection,filterPageComponentRecords} from '../src/core/pages/PageRuntime/pageComponentBindings';
 import type {FieldMetadata} from '../src/core/metadata/Definitions/metadata';
 const field=(apiName:string,dataType:string)=>({apiName,label:apiName,dataType}) as FieldMetadata;
 test('leap dates validate the requested year including years below 100',()=>{
@@ -74,4 +74,41 @@ test('held-sale resume chooses active cart over stale session and rejects compet
   cartSessionId:'prior-session',activeCartId:'cart-a',activeCartSessionId:'cart-session-b'}),{blocked:true});
  assert.deepEqual(pageComponentActiveRecordQuery(fields,{
   heldCartId:'historical-cart'}),{blocked:true});
+});
+
+test('session discovery scopes authorised parent and never treats session token as a Cart Id',async()=>{
+ const fields=[{...field('CartSession','Lookup(CartSession)'),relationship:{targetObject:'CartSession'}}] as FieldMetadata[];
+ const objects=[{apiName:'CartSession',fields:[field('SessionKey','Text')]}];
+ const calls:string[]=[];
+ const load=async(object:string,session:string)=>{
+  calls.push(object+':'+session);
+  return {records:[{Id:'authorised-parent'}],total:1};
+ };
+ assert.deepEqual(await pageComponentSessionRelatedQuery(fields,objects,'browser-session',load),{
+  blocked:false,filter:{field:'CartSession',value:'authorised-parent',related:true}
+ });
+ assert.deepEqual(calls,['CartSession:browser-session']);
+ assert.equal(hasPageActiveRecordSelection(fields,{}),false);
+ assert.equal(hasPageActiveRecordSelection(fields,{cartSessionId:''}),true);
+ assert.deepEqual(await pageComponentSessionRelatedQuery(fields,objects,'',load),{blocked:true});
+ assert.deepEqual(await pageComponentSessionRelatedQuery(fields,objects,'browser-session',
+  async()=>({records:[],total:0})),{blocked:true});
+ assert.deepEqual(await pageComponentSessionRelatedQuery(fields,objects,'browser-session',
+  async()=>({records:[{Id:'a'},{Id:'b'}],total:2})),{blocked:true});
+});
+
+test('session parent resolver blocks ambiguous and permission-denied lookups',async()=>{
+ const fields=[
+  {...field('Cart','Lookup(Cart)'),relationship:{targetObject:'Cart'}},
+  {...field('CartSession','Lookup(CartSession)'),relationship:{targetObject:'CartSession'}}
+ ] as FieldMetadata[];
+ const objects=[
+  {apiName:'Cart',fields:[field('SessionKey','Text')]},
+  {apiName:'CartSession',fields:[field('SessionKey','Text')]}
+ ];
+ const both=async(name:string)=>({records:[{Id:name}],total:1});
+ assert.deepEqual(await pageComponentSessionRelatedQuery(fields,objects,'same-session',both),{blocked:true});
+ const denied=async()=>{throw new Error('403: no Object access')};
+ assert.deepEqual(await pageComponentSessionRelatedQuery(fields,objects,'same-session',denied),{blocked:true});
+ assert.deepEqual(await pageComponentSessionRelatedQuery(fields,[], 'same-session',both),{blocked:true});
 });
