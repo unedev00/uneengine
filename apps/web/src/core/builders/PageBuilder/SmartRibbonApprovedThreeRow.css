@@ -416,3 +416,20 @@
  border:1px solid #9db9dd!important;border-radius:5px!important;
  padding-right:4px!important;justify-content:space-between!important;
 }
+
+
+/* Horizontal overflow is intentional across all three-row tabs. This selector
+   matches the original :has() specificity; the scrollbar cannot be suppressed
+   by the earlier Design geometry rule. */
+.office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content:has(>.smart-ribbon[data-three-row="true"]){
+ overflow-x:auto!important;overflow-y:hidden!important;
+ scrollbar-width:thin!important;scrollbar-color:#91a7c5 #edf2f8!important;
+ height:127px!important;min-height:127px!important;max-height:127px!important;
+ padding:2px 6px 11px!important;direction:ltr!important;
+}
+.office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content:has(>.smart-ribbon[data-three-row="true"])::-webkit-scrollbar{
+ display:block!important;height:9px!important;
+}
+.office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content:has(>.smart-ribbon[data-three-row="true"])::-webkit-scrollbar-thumb{
+ background:#91a7c5!important;border-radius:8px!important;
+}

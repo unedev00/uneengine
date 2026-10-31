@@ -96,7 +96,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  const sections=[...groupOrder.filter(group=>groups.includes(group)),
   ...groups.filter(group=>!groupOrder.includes(group))];
  const sectionRow=(group:string,row:number)=>visible
-   .filter(p=>p.group===group&&(p.designRow??2)===row)
+   .filter(p=>p.group===group&&((p.designRow??2)>=1&&(p.designRow??2)<=3?p.designRow??2:2)===row)
    .sort((a,b)=>(a.designOrder??999)-(b.designOrder??999));
  const controlWidth=(p:UneRibbonProperty)=>{
    // The Shadow and Alignment dropdowns must remain 35px even before a tenant
