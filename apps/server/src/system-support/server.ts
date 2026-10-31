@@ -726,12 +726,12 @@ export function createSystemServer(db:SqlPersistence) {
     ] as const){
       const value=typeof req.query[key]==='string'?req.query[key].trim():'';
       if(value.length>120)throw new Error('Invalid security event filter');
-      if(value)add(column+' ILIKE ? ESCAPE \'\\\'', '%'+value.replace(/[\\%_]/g,'\\$&')+'%');
+      if(value)add(column+' ILIKE ?', '%'+value+'%');
     }
     for(const [key,operator] of [['from','>='],['to','<']] as const){
       const value=typeof req.query[key]==='string'?req.query[key]:'';
       if(!value)continue;
-      if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(value)||
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(value)||
          !Number.isFinite(new Date(value+'T00:00:00Z').getTime()))
         throw new Error('Invalid event date');
       add('created_at '+operator+' ?::timestamptz',
