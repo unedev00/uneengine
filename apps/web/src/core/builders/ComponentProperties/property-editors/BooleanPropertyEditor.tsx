@@ -1,1 +1,0 @@
-export default function BooleanPropertyEditor({label,value,disabled,onChange}:{label:string;value:unknown;disabled:boolean;onChange:(value:boolean)=>void}){return <label className="checkbox-row"><input type="checkbox" disabled={disabled} checked={value===true} onChange={event=>onChange(event.target.checked)}/>{label}</label>}
