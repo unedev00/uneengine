@@ -285,12 +285,12 @@
  .flow-builder .flow-toolbox,.flow-builder .flow-settings,
  .dashboard-builder-layout .dashboard-builder-sidebar,.dashboard-builder-layout .dashboard-properties,
  .report-builder-layout .report-outline,.report-builder-layout .report-fields-panel)
- :is(small,[class*="helper"],[class*="hint"]){font-size:var(--md-helper-size,12px);line-height:1.45;color:var(--md-text-2,#596579)}
+ :is([class*="helper"],[class*="hint"],.form-help,.field-help){font-size:var(--md-helper-size,12px);line-height:1.45;color:var(--md-text-2,#596579)}
 .lightning :is(.builder-page .component-panel,.builder-page .properties-panel,
  .flow-builder .flow-toolbox,.flow-builder .flow-settings,
  .dashboard-builder-layout .dashboard-builder-sidebar,.dashboard-builder-layout .dashboard-properties,
  .report-builder-layout .report-outline,.report-builder-layout .report-fields-panel)
- :is(button,summary){color:inherit}
+ summary{color:var(--md-text)}
 .lightning :is(.builder-page .component-panel,.builder-page .properties-panel,
  .flow-builder .flow-toolbox,.flow-builder .flow-settings,
  .dashboard-builder-layout .dashboard-builder-sidebar,.dashboard-builder-layout .dashboard-properties,
