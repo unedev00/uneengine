@@ -7,7 +7,7 @@ type Axis='x'|'y';
 type Anchor='start'|'center'|'end';
 type Props={
  freeCanvas:boolean;hasSelection:boolean;locked:boolean;selectedCount:number;
- canUngroup:boolean;
+ canGroup:boolean;canUngroup:boolean;
  onAlign:(axis:Axis,anchor:Anchor)=>void;onDistribute:(axis:Axis)=>void;
  onMove:(offset:-1|1)=>void;onPlace:(edge:'front'|'back')=>void;
  onGroup:()=>void;onUngroup:()=>void;onLock:()=>void;onNesting:()=>void;
@@ -32,7 +32,7 @@ export default function ArrangeRibbon(props:Props){
    [{label:'Send backward',icon:ArrowDown,disabled:!allowed,run:()=>props.onMove(-1)},
     {label:'Send to back',icon:Layers3,disabled:!allowed,run:()=>props.onPlace('back')}]]},
   {name:'Group',rows:[
-   [{label:'Group',icon:Group,disabled:!props.freeCanvas||props.selectedCount<2,run:props.onGroup},
+   [{label:'Group',icon:Group,disabled:!props.freeCanvas||!props.canGroup,run:props.onGroup},
     {label:'Ungroup',icon:Ungroup,disabled:!props.freeCanvas||!props.canUngroup,run:props.onUngroup}],
    [{label:props.locked?'Unlock component':'Lock component',icon:props.locked?Unlock:Lock,
      disabled:!props.freeCanvas||!props.hasSelection,run:props.onLock},
