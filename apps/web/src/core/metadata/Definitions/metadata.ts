@@ -1052,7 +1052,7 @@ export const workspaces: WorkspaceMetadata[] = [
 
 export const setupNavigation = [
   { group: 'Platform Administration', items: ['Tenant Management'] },
-  { group: 'Company Settings', items: ['Company Settings'] },
+  { group: 'Company Settings', items: ['Company Settings', 'Security & Recovery', 'Connected Apps', 'Audit Trail'] },
   { group: 'Platform Tools', items: ['Setup Home', 'Object Manager', 'Page Builder', 'App Manager', 'AppExchange'] },
   { group: 'Integrations', items: ['Named Credentials', 'Webhook Endpoints', 'Named Devices'] },
   { group: 'Automation', items: ['Flows', 'Paused and Waiting Interviews', 'Scheduled Flows', 'Flow History', 'Process Automation Settings'] },
