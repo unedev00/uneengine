@@ -170,7 +170,8 @@ import PageBuilderRibbonContent from './PageBuilderRibbonContent';
 import { canNestComponent, pageAppearanceTarget, pageAppearanceStyleKeys, updateLayoutSettings, type LayoutSettingKey, directChildren, isLayoutType, isDescendantOf, layoutTypes } from '../../pages/TemplatePageRuntime/pageComponentLayout';
 import PageComponentStyleEditor from '../ComponentStyleEditor/PageComponentStyleEditor';
 import { isCanvasLocked, ungroupCanvasComponent, snapCanvasPosition, alignCanvasComponents, distributeCanvasComponents } from './canvasInteractions';
-import {canvasGroupKey, canvasGroupMembers, groupCanvasSelection, ungroupCanvasSelection, moveCanvasLayer, canvasGroupBounds, scaleCanvasGroup} from './canvasLayerGroups';
+import {canvasGroupKey, canvasGroupMembers, groupCanvasSelection, ungroupCanvasSelection, moveCanvasLayer, canvasGroupBounds} from './canvasLayerGroups';
+import {useCanvasGroupGestures} from './useCanvasGroupGestures';
 import { copyComponentTree, cloneComponentTree, remapComponentInteractionTargets, assignTabOnReparent, type ComponentClipboard } from './pageComponentTree';
 import { filterPageComponentRecords, needsMetadataComponentRuntime } from '../../pages/PageRuntime/pageComponentBindings';
 import { childrenOf, canNest, componentLayoutProps, hasPageComponentAppearance, isLayoutContainer, rawLayoutParentId, reparentComponent, resolvePageComponentStyle, type LayoutDevice } from '../../pages/TemplatePageRuntime/pageComponentLayout';
@@ -473,15 +474,6 @@ function PageBuilder({
   const [selectionRedoStack, setSelectionRedoStack] = useState<CanvasSelectionSnapshot[]>([]);
   type ResizeEdge = 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'nw';
   const canvasResizeStart = useRef<{ id: string; pointerId: number; pointerX: number; pointerY: number; x: number; y: number; width: number; height: number; edge: ResizeEdge; element: HTMLElement; current: { x: number; y: number; width: number; height: number } } | null>(null);
-  type GroupGesture = {
-    pointerId: number; clientX: number; clientY: number; mode: 'move'|'resize'; edge: ResizeEdge;
-    bounds: NonNullable<PageComponentMetadata['position']>;
-    members: PageComponentMetadata[];
-    nodes: Map<string,HTMLElement>;
-    outline: HTMLElement;
-    current: Map<string,NonNullable<PageComponentMetadata['position']>>;
-  };
-  const canvasGroupGesture = useRef<GroupGesture|null>(null);
   const canvasGuideXRef = useRef<HTMLDivElement | null>(null);
   const canvasGuideYRef = useRef<HTMLDivElement | null>(null);
   const canvasSnap = false;
@@ -1190,74 +1182,15 @@ function PageBuilder({
     [items[index], items[target]] = [items[target], items[index]];
     applyPage({ ...page, components: items });
   };
-  // One selection frame for a persistent group. Preview DOM geometry changes on
-  // pointer frames, with a single metadata/undo commit on release.
-  const startCanvasGroupGesture = (event: React.PointerEvent<HTMLElement>, mode: 'move'|'resize', edge: ResizeEdge = 'se') => {
-    if (!selectedGroupBounds || !selected || previewMode || event.button !== 0
-      || selectedGroupMembers.some(item=>isCanvasLocked(item)) || canvasGroupGesture.current) return;
-    const stage = event.currentTarget.closest<HTMLElement>('.free-canvas-stage');
-    const outline = event.currentTarget.closest<HTMLElement>('.canvas-group-outline');
-    if (!stage || !outline) return;
-    const nodes = new Map<string,HTMLElement>();
-    const candidates = Array.from(stage.querySelectorAll<HTMLElement>('.free-canvas-component[data-component-id]'));
-    for (const member of selectedGroupMembers) {
-      const node = candidates.find(item=>item.dataset.componentId===member.id);
-      if (!node || !member.position) return;
-      nodes.set(member.id,node);
-    }
-    event.preventDefault(); event.stopPropagation();
-    event.currentTarget.setPointerCapture(event.pointerId);
-    canvasGroupGesture.current = {pointerId:event.pointerId,clientX:event.clientX,clientY:event.clientY,
-      mode,edge,bounds:{...selectedGroupBounds},members:selectedGroupMembers,nodes,outline,
-      current:new Map(selectedGroupMembers.map(item=>[item.id,{...item.position!}]))};
-  };
-  const moveCanvasGroupGesture = (event: React.PointerEvent<HTMLElement>) => {
-    const start=canvasGroupGesture.current;
-    if (!start || start.pointerId!==event.pointerId) return;
-    const scale=fitCanvas?fitScale:1;
-    const dx=Math.round(canvasUnitsFromScreenDelta(event.clientX-start.clientX,scale));
-    const dy=Math.round(canvasUnitsFromScreenDelta(event.clientY-start.clientY,scale));
-    const {x,y,width,height}=start.bounds;
-    let next={...start.bounds};
-    if(start.mode==='move'){
-      next.x=Math.max(0,Math.min(page.canvasWidth-width,x+dx));
-      next.y=Math.max(0,Math.min(page.canvasHeight-height,y+dy));
-    }else{
-      const west=start.edge.includes('w'),east=start.edge.includes('e');
-      const north=start.edge.includes('n'),south=start.edge.includes('s');
-      const minWidth=Math.min(width,24),minHeight=Math.min(height,24);
-      if(east)next.width=Math.max(minWidth,Math.min(page.canvasWidth-x,width+dx));
-      if(south)next.height=Math.max(minHeight,Math.min(page.canvasHeight-y,height+dy));
-      if(west){next.x=Math.max(0,Math.min(x+width-minWidth,x+dx));next.width=x+width-next.x;}
-      if(north){next.y=Math.max(0,Math.min(y+height-minHeight,y+dy));next.height=y+height-next.y;}
-    }
-    start.current=scaleCanvasGroup(start.members,next);
-    for(const [id,position] of start.current){
-      const node=start.nodes.get(id);
-      if(node)Object.assign(node.style,{left:position.x+'px',top:position.y+'px',
-        width:position.width+'px',height:position.height+'px'});
-    }
-    Object.assign(start.outline.style,{left:next.x+'px',top:next.y+'px',
-      width:next.width+'px',height:next.height+'px'});
-  };
-  const endCanvasGroupGesture = (event: React.PointerEvent<HTMLElement>, cancelled=false) => {
-    const start=canvasGroupGesture.current;
-    if(!start || start.pointerId!==event.pointerId)return;
-    canvasGroupGesture.current=null;
-    for(const member of start.members){
-      const node=start.nodes.get(member.id),position=member.position;
-      if(node&&position)Object.assign(node.style,{left:position.x+'px',top:position.y+'px',
-        width:position.width+'px',height:position.height+'px'});
-    }
-    if(!cancelled&&[...start.current].some(([id,position])=>{
-      const original=start.members.find(item=>item.id===id)?.position;
-      return original && (position.x!==original.x||position.y!==original.y
-        ||position.width!==original.width||position.height!==original.height);
-    }))applyPage({...page,components:page.components.map(item=>{
-      const position=start.current.get(item.id);
-      return position?{...item,position}:item;
-    })});
-  };
+  const {start:startCanvasGroupGesture,move:moveCanvasGroupGesture,end:endCanvasGroupGesture}
+    = useCanvasGroupGestures({
+      members:selectedGroupMembers,bounds:selectedGroupBounds,width:page.canvasWidth,height:page.canvasHeight,
+      scale:fitCanvas?fitScale:1,enabled:!previewMode,
+      onCommit:positions=>applyPage({...page,components:page.components.map(item=>{
+        const position=positions.get(item.id);
+        return position?{...item,position}:item;
+      })})
+    });
   const startCanvasResize = (event: React.PointerEvent<HTMLButtonElement>, component: PageComponentMetadata, edge: ResizeEdge) => {
     if (!component.position || isCanvasLocked(component)) return;
     const element = event.currentTarget.closest<HTMLElement>('.free-canvas-component');
