@@ -41,7 +41,7 @@ test('Page and Canvas widths are content-sized and their numeric icons share an 
 });
 
 test('Header Supporting width follows controls instead of allocating an empty fixed column',()=>{
- assert.match(ribbon,/group==='Header Supporting'\?0/);
+ assert.match(ribbon,/group\.length\*5\.5\+16/);
  const newSql=file('../../server/src/system-support/migrations/20270211-eight-tab-ribbon-geometry.sql');
  assert.match(newSql,/supportingBoxHeight','Cards'/);
  assert.match(ribbon,/\[1,2,3\]\.map\(row/);
