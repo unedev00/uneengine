@@ -5,6 +5,8 @@ import {seedAcetillReturnLookup,seedAcetillCreateSalesReturn} from './acetill-re
 import {seedAcetillCashierPolicy} from './acetill-cashier-policy.js';
 import {seedAcetillScanFlow} from './acetill-scan-flow.js';
 import {seedAcetillLockFlowForTenant} from './acetill-lock-flow.js';
+import {seedAcetillCopilotPosFlows} from './acetill-copilot-pos-flows.js';
+import {seedAcetillCopilotPosPage} from './acetill-copilot-pos-page.js';
 import {requireAcetillPaymentAttestation} from './acetill-payment-attestation.js';
 
 /** Upgrade installed and entitled tenants, without app auto-installs or overwriting edited Flows. */
@@ -26,8 +28,10 @@ export async function backfillAcetillOperationalFlows(db:SqlPersistence):Promise
    await seedAcetillCreateSalesReturn(client,row.tenant_id);
    await seedAcetillCashierPolicy(client,row.tenant_id);
    await seedAcetillScanFlow(client,row.tenant_id);
+   await seedAcetillCopilotPosFlows(client,row.tenant_id);
    await requireAcetillPaymentAttestation(client,row.tenant_id);
   });
+  await seedAcetillCopilotPosPage(db,row.tenant_id);
   count++;
  }
  return count;
