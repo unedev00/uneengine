@@ -90,3 +90,14 @@
 .builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .resize-sw, .builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .resize-sw *{cursor:nesw-resize!important}
 .builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .resize-nw, .builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .resize-nw *{cursor:nwse-resize!important}
 .builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .resize-se, .builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .resize-se *{cursor:nwse-resize!important}
+
+/* Office selection handles must win hit-testing over embedded app content.
+   The 18px hit target is independent from its 8px painted square. */
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected:not(.canvas-component-locked){overflow:visible!important;cursor:move!important}
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .free-canvas-resize-handle{z-index:9999!important;pointer-events:auto!important;cursor:inherit;isolation:isolate}
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .free-canvas-resize-handle::before{pointer-events:none!important}
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .free-canvas-move-edge{z-index:9990!important}
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .record-component-head[data-canvas-move-handle],
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .canvas-move-grip{cursor:move!important}
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .record-component-head[data-canvas-move-handle]:active,
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected .canvas-move-grip:active{cursor:move!important}
