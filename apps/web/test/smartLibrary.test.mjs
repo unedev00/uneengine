@@ -844,7 +844,7 @@ test('SQL-backed eight-tab ribbon retains existing controls and correct geometry
  assert.match(ribbon,/smart-default-check-switch/);
  assert.match(ribbon,/property.id===firstFilterPropertyId/);
  assert.match(ribbon,/smart-formula-prefix/);
- assert.match(css,/padding:3px 12px 1px!important/);
+ assert.match(css,/padding:6px 7px 1px!important/);
  assert.match(visual,/overflow-x:hidden!important/);
  for(const id of ['badgeAlignment','summaryTextSize','summary2TextSize',
   'cardsPerRow','cardsPerColumn','column2Source','columnVisibility','iconFillColor'])
