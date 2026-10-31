@@ -1,6 +1,7 @@
 import {z} from 'zod';
 import type {RecordEngine} from '../system-files/record-engine.js';
 import type {FlowRuntime} from '../system-files/flow-runtime.js';
+import type {PageRuntime} from '../system-files/page-runtime.js';
 import type {RbacEngine} from '../system-files/rbac-engine.js';
 import type {ObjectDefinitionService} from '../system-files/object-definition.js';
 import type {SqlPersistence} from '../system-files/sql-persistence.js';
@@ -34,9 +35,10 @@ async function brokerOperation(request:{action:string;service:string;release?:st
  });
 }
 export type McpActor={tenant_id:string;user_id:string};
-export type McpServices={records:RecordEngine;flows:FlowRuntime;rbac:RbacEngine;definitions:ObjectDefinitionService;db:SqlPersistence;platform:PlatformTenantService};
+export type McpServices={records:RecordEngine;flows:FlowRuntime;pages:PageRuntime;rbac:RbacEngine;definitions:ObjectDefinitionService;db:SqlPersistence;platform:PlatformTenantService};
 const identifier=z.string().regex(/^[A-Za-z][A-Za-z0-9_]{0,199}$/);
 const values=z.record(z.unknown());
+const layout=z.enum(['Mobile','Desktop','Tablet','Custom']);
 const schemas={
  list_records:z.object({object:identifier,limit:z.number().int().min(1).max(100).default(50),offset:z.number().int().min(0).max(1000000).default(0),search:z.string().max(256).optional()}).strict(),
  get_record:z.object({object:identifier,id:z.string().uuid()}).strict(),
@@ -46,6 +48,9 @@ const schemas={
  list_objects:z.object({}).strict(),
  describe_object:z.object({object:identifier}).strict(),
  run_flow:z.object({flow:identifier,inputs:values.default({})}).strict(),
+ get_page_layout:z.object({page:identifier,variant:layout.default('Desktop'),view:z.enum(['draft','published']).default('draft')}).strict(),
+ save_page_draft:z.object({page:identifier,variant:layout.default('Desktop'),definition:values}).strict(),
+ publish_page_draft:z.object({page:identifier,variant:layout.default('Desktop'),expectedRevision:z.number().int().min(1)}).strict(),
  server_operation:z.object({action:z.enum(['status','logs','restart','activate_release','mail_diagnostic']),service:z.enum(['api','worker']).default('api'),release:z.string().regex(/^[a-f0-9]{40}$/).optional()}).strict()
 };
 const descriptions:Record<keyof typeof schemas,string>={
@@ -57,15 +62,19 @@ const descriptions:Record<keyof typeof schemas,string>={
  describe_object:'Describe readable fields on a database object before querying or editing records.',
  list_objects:'List objects the signed-in user can read.',
  run_flow:'Execute a published MetaDrive flow with the signed-in user permissions.',
+ get_page_layout:'Read a tenant Page Builder draft or published layout through the shared SQL runtime and Page permissions.',
+ save_page_draft:'Save a versioned tenant Page Builder draft using its existing revision, validating component contracts and preserving the published page.',
+ publish_page_draft:'Publish the named Page Builder draft only if its revision still matches. Requires Page manage permission.',
  server_operation:'Platform administrators: inspect service status or logs, restart API/worker, or activate an already built immutable API release. Requires the installed operations helper. Does not build or fetch code.'
 };
 // JSON schemas are derived from the same Zod validators used for execution.
 import {zodToJsonSchema} from 'zod-to-json-schema';
-export const mcpTools=Object.entries(schemas).map(([name,schema])=>({name,description:descriptions[name as keyof typeof schemas],inputSchema:zodToJsonSchema(schema,{$refStrategy:'none'}),annotations:{readOnlyHint:['list_records','get_record','list_objects','describe_object'].includes(name),destructiveHint:!['list_records','get_record','list_objects','describe_object','create_record'].includes(name),openWorldHint:name==='run_flow'}}));
+export const mcpTools=Object.entries(schemas).map(([name,schema])=>({name,description:descriptions[name as keyof typeof schemas],inputSchema:zodToJsonSchema(schema,{$refStrategy:'none'}),annotations:{readOnlyHint:['list_records','get_record','list_objects','describe_object','get_page_layout'].includes(name),destructiveHint:!['list_records','get_record','list_objects','describe_object','get_page_layout','create_record','save_page_draft'].includes(name),openWorldHint:name==='run_flow'}}));
 export function mcpToolScope(name:string){
  if(['list_records','get_record'].includes(name))return 'records:read';
  if(['create_record','update_record','delete_record'].includes(name))return 'records:write';
- if(name==='list_objects'||name==='describe_object')return 'metadata:read';
+ if(name==='list_objects'||name==='describe_object'||name==='get_page_layout')return 'metadata:read';
+ if(name==='save_page_draft'||name==='publish_page_draft')return 'metadata:write';
  if(name==='run_flow')return 'flows:execute';
  if(name==='server_operation')return 'operations:manage';
  throw Error('Unknown MCP tool');
@@ -89,6 +98,24 @@ export async function callMcpTool(s:McpServices,a:McpActor,name:string,input:unk
   return {apiName:object.apiName,label:object.label,fields};
  }
  if(name==='run_flow'){const p=schemas.run_flow.parse(input);return s.flows.execute(t,p.flow,u,p.inputs);}
+ if(name==='get_page_layout'){
+  const p=schemas.get_page_layout.parse(input);
+  await s.rbac.require(t,u,'PageDefinition','read');
+  return p.view==='draft'?s.pages.editor(t,p.page,p.variant):s.pages.metadata(t,p.page,p.variant);
+ }
+ if(name==='save_page_draft'){
+  const p=schemas.save_page_draft.parse(input);
+  await s.rbac.require(t,u,'PageDefinition','manage');
+  // Never accept an unversioned blind overwrite of tenant-authored content.
+  if(!Number.isInteger(p.definition.draftRevision)||Number(p.definition.draftRevision)<0)
+   throw Error('A current draftRevision is required');
+  return s.pages.saveLayoutDraft(t,p.page,p.variant,p.definition,u);
+ }
+ if(name==='publish_page_draft'){
+  const p=schemas.publish_page_draft.parse(input);
+  await s.rbac.require(t,u,'PageDefinition','manage');
+  return s.pages.publishLayout(t,p.page,p.variant,p.expectedRevision,u);
+ }
  if(name==='server_operation'){
   const p=schemas.server_operation.parse(input);
   if((p.action==='activate_release')!==!!p.release)throw Error('Release SHA is required only for activate_release');
