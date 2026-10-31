@@ -56,3 +56,16 @@
  .smart-cart-qty-button{width:20px;height:24px}
  .smart-cart-qty-value{min-width:10px}
 }
+
+/* Selected item expands underneath its own row, without hiding other columns. */
+.smart-cart-row-wrap{min-width:0;margin:3px 0;border:1px solid transparent;border-radius:7px}
+.smart-cart-row-wrap.is-selected{border-color:#8badde;background:#f2f7ff}
+.smart-cart-row-wrap .smart-cart-row{margin:0}
+.smart-cart-row[role="button"]{cursor:pointer}
+.smart-cart-row[role="button"]:focus-visible{outline:2px solid #2563eb;outline-offset:-2px}
+.smart-cart-expanded-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:5px 8px 10px}
+.smart-cart-custom-action{box-sizing:border-box;max-width:100%;min-height:30px;padding:5px 12px;
+ border:1px solid #8badd8;border-radius:6px;background:#fff;color:#245d9f;
+ font:600 12px/18px "Segoe UI",Arial,sans-serif;cursor:pointer}
+.smart-cart-custom-action:disabled{opacity:.5;cursor:default}
+.smart-cart-custom-action:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
