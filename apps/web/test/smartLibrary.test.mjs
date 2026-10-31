@@ -899,7 +899,7 @@ test('Cart visible-row setting constrains item region, not header and summary',a
   textSource:'@Name'
  });
  assert.match(html,/aria-label="Cart item rows"/);
- assert.match(html,/max-height:92px/);
+ assert.match(html,/max-height:128px/);
  assert.match(html,/Item 7/);
  assert.match(html,/Cart summary/);
  assert.match(html,/Cart columns/);

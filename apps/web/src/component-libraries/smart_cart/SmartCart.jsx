@@ -21,6 +21,9 @@ export default function SmartCart({p,records,Picture,expression,fire}){
    ?names.flatMap((name,index)=>p.columnVisibility.includes(name)?[index]:[])
    :[0,1,2,3,4];
  const columns=visible.length?visible.map(index=>tracks[index]).join(' '):'1fr';
+ // The visible row count measures actual cell content, not just the configured min-height.
+ const effectiveRowHeight=Math.max(rowHeight,visible.includes(0)?n(p.imageHeight,44,16)+14:0,
+   visible.includes(2)?40:0);
  const sources=[null,p.column2Source,p.column3Source,p.column4Source,p.column5Source];
  const object=Array.isArray(p.objects)?p.objects.find(item=>item.apiName===p.objectApiName):null;
  const quantityField=directField(p.column3Source);
@@ -72,7 +75,7 @@ export default function SmartCart({p,records,Picture,expression,fire}){
      {visible.map(index=><span key={index}>{headings[index]}</span>)}
     </div>
     <div className="smart-cart-rows" role="region" tabIndex={0} aria-label="Cart item rows"
-     style={{maxHeight:rowLimit*(rowHeight+6)}}>
+     style={{maxHeight:rowLimit*(effectiveRowHeight+6)}}>
      {rows.map((record,i)=>{
       const name=demo?"Sample item "+(i+1):(p.textSource?expression(p.textSource,record):"Product "+(i+1));
       const src=p.imageSource?expression(p.imageSource,record):"";
