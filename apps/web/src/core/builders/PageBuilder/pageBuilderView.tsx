@@ -154,6 +154,7 @@ import SmartRibbon from './SmartRibbon';
 import SmartEventActionsRibbon from './SmartEventActionsRibbon';
 import SmartInsertRibbon from './SmartInsertRibbon';
 import PageBuilderAdvancedRibbon, {advancedFeatureLabels, type AdvancedFeature} from './PageBuilderAdvancedRibbon';
+import PageBuilderAdvancedResponsive from './PageBuilderAdvancedResponsive';
 import SmartIconGallery from './SmartIconGallery';
 import {isUneBuilderApi,uneBuilderDefaults,type SharedRibbonCatalog,type UneBuilderApi} from './uneBuilderPropertyInventory';
 import './UniversalRibbonInventory.css';
@@ -2892,6 +2893,8 @@ function PageBuilder({
               <label className="form-label">Current page device layout {homeValue('deviceLayout')}</label>
               {selected && <>
                 <p className="properties-help">Each device layout has an independent draft. Switch the layout above before editing this component.</p>
+                <PageBuilderAdvancedResponsive properties={selected.properties} device={currentRibbonDevice}
+                  onChange={properties=>updateComponent(selected.id,{properties})}/>
                 <MetadataComponentProperties key={selected.id+':'+page.layoutVariant} mode="details"
                   properties={selected.properties}
                   onChange={properties=>updateComponent(selected.id,{properties})}
