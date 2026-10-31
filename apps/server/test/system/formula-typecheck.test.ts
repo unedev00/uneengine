@@ -10,6 +10,8 @@ const createDefinitions=(fields:Record<string,{dataType:string;returnType?:strin
       const key=String(args[1])+'->'+String(args[2]);
       return {rows:relationships.includes(key)?[{'?column?':1}]:[],rowCount:relationships.includes(key)?1:0};
     }
+    if(sql.includes('SELECT related_object FROM md_field_definitions'))
+      return {rows:[],rowCount:0};
     if(sql.includes('SELECT f.data_type,f.formula_return_type')){
       const key=String(args[1])+'.'+String(args[2]);
       const field=fields[key];
