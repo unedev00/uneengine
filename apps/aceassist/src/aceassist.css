@@ -850,3 +850,23 @@
 .custom-aceassist :is(.assist-modal,.assist-document-modal,.assist-customer-modal){
  color-scheme:normal;
 }
+
+/* Phase 3: independent appointments/document editor density without changing Flow logic. */
+.custom-aceassist :is(.custom-assist,.assist-home,.custom-assist-layout,.custom-panel,.assist-modal,.assist-document-modal,.assist-customer-modal){min-width:0;max-width:100%;box-sizing:border-box}
+.custom-aceassist :is(.custom-heading,.custom-actions,.assist-calendar-filters,.assist-view-control,.assist-modal-heading){gap:10px;flex-wrap:wrap;min-width:0}
+.custom-aceassist :is(.custom-crud-form,.assist-document-header-fields,.assist-document-line,.assist-calendar-filters){min-width:0}
+.custom-aceassist :is(.custom-crud-form label,.assist-document-header-fields label,.assist-document-line label,.assist-calendar-filters label,.assist-service-selection legend){font-size:13px;line-height:1.45}
+.custom-aceassist :is(.assist-phone-status,.assist-phone-time,.assist-phone-record-main small,.assist-document-line-heading p,.assist-document-line-total span,.assist-document-totals dt){font-size:max(12px,1em);line-height:1.45}
+.custom-aceassist :is(.custom-crud-form input,.custom-crud-form select,.custom-crud-form textarea,.assist-document-header-fields input,.assist-document-header-fields select,.assist-document-line input,.assist-calendar-filters select){max-width:100%;box-sizing:border-box;min-width:0}
+.custom-aceassist :is(.assist-modal,.assist-document-modal,.assist-customer-modal){max-height:calc(100dvh - 24px);overscroll-behavior:contain}
+.custom-aceassist :is(.assist-modal-footer,.assist-document-line-actions,.custom-action-buttons){display:flex;gap:8px;flex-wrap:wrap}
+.custom-aceassist :is(.assist-modal-footer,.custom-action-buttons) button{min-height:40px}
+.custom-aceassist :is(.assist-document-line,.assist-related-item,.assist-phone-record){overflow-wrap:anywhere}
+.custom-aceassist :is(button,input,select,textarea,summary):focus-visible{outline:3px solid var(--md-focus-ring,var(--product-accent,#147d74));outline-offset:2px}
+@media(max-width:700px){
+ .custom-aceassist :is(.assist-modal,.assist-document-modal,.assist-customer-modal){max-height:calc(100dvh - 12px)}
+ .custom-aceassist :is(.assist-modal-footer,.custom-action-buttons) button{min-height:44px}
+ .custom-aceassist :is(.assist-document-header-fields,.assist-document-line-numbers){grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr))}
+ .custom-aceassist :is(.assist-calendar-filters,.assist-phone-filter-row){gap:8px}
+}
+@media(prefers-reduced-motion:reduce){.custom-aceassist :is(button,.assist-modal,.assist-document-modal,.assist-customer-modal){transition:none;animation:none}}
