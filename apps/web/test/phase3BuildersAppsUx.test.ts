@@ -84,7 +84,7 @@ test('Kiosk category/payment controls and quantity affordances expose selection 
 test('Till payment, cart and Chatter selection have keyboard and screen-reader semantics',()=>{
  const terminal=read('../../acetill/src/AcetillTerminal.tsx');
  assert.match(terminal,/paymentDialogRef/);
- assert.match(terminal,/event\.key==='Escape'/);
+ assert.match(terminal,/useModalFocus\(Boolean\(paymentMode\)/);\n const focus=read('../src/core/accessibility/useModalFocus.ts');\n assert.match(focus,/event\.key==='Escape'/);
  assert.match(terminal,/document\.addEventListener\('keydown',onKey\)/);
  assert.match(terminal,/aria-label="Current order items"/);
  assert.match(terminal,/aria-label="Payment method"/);
