@@ -13,7 +13,6 @@ BEGIN
    SELECT 1 FROM md_records r
    WHERE r.tenant_id=NEW.tenant_id AND r.object_api=target_object
      AND r.id=NEW.reference_record_id AND r.is_deleted=false
-   FOR SHARE
  ) THEN RAISE EXCEPTION 'Invalid relationship target for field %',NEW.field_api
    USING ERRCODE='23503';
  END IF;
