@@ -441,7 +441,7 @@ test('Smart Cart only renders amounts supplied by metadata/Flow and shows no fab
 });
 
 test('Smart Cart renders Flow-backed plus and minus controls',async()=>{
- const preview=await renderSmart('smart_cart',{});
+ const preview=await renderSmart('smart_cart',{builderPreview:true});
  assert.match(preview,/Decrease quantity for Sample item 1/);
  assert.match(preview,/Increase quantity for Sample item 1/);
  assert.match(preview,/disabled=""/);
