@@ -188,6 +188,7 @@
     "apps/web/test/pageBuilderMergeRegressions.test.ts",
     "apps/web/test/pageBuilderNonDesignRibbonRequirements.test.ts",
     "apps/web/test/pageBuilderNumericControlStandard.test.ts",
+    "apps/web/test/pageBuilderLayoutRibbonDensity.test.mjs",
     "apps/web/test/pageBuilderPresentationProperties.test.mjs",
     "apps/web/test/pageBuilderRibbonBlueprint.test.ts",
     "apps/web/test/pageBuilderStandardComponents.test.ts",
