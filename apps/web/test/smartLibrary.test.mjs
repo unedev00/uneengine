@@ -431,7 +431,7 @@ test('Smart Cart only renders amounts supplied by metadata/Flow and shows no fab
   records:[{Id:'line1',Quantity:2,UnitPrice:5}],
   totalValue:'@Quantity * @UnitPrice',currencyCode:'GBP'
  });
- assert.match(formula,/£10\\.00/,'ribbon formula should calculate from the authorised row');
+ assert.ok(formula.includes('£10.00'),'ribbon formula should calculate from the authorised row');
  const sql=read('../../server/src/system-support/migrations/20270210-smart-cart-summary-bindings.sql');
  for(const field of ['subtotalValue','discountValue','taxValue','totalValue'])
   assert.ok(sql.includes("'"+field+"'"));
