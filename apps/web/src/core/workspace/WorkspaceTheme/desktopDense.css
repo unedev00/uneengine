@@ -3,19 +3,19 @@
    Browser zoom and CSS transforms are intentionally not used.
 
    Readable defaults (Comfortable):
-   - Body ≥ 13px, meta/helper ≥ 12px — never 10px for interactive or tabular content.
+   - Body ≥ 14px, labels/tables ≥ 13px, helper text ≥ 12px.
    - Compact mode (further shrink) should be an explicit user preference, not the global default.
 */
 @media (min-width: 900px) and (pointer: fine) {
   .lightning {
-    --md-fs-xs: 11px;
-    --md-fs-sm: 12px;
-    --md-fs-md: 12px;
-    --md-fs-body: 13px;
-    --md-fs-lg: 14px;
-    --md-fs-h3: 16px;
-    --md-fs-h2: 19px;
-    --md-fs-h1: 24px;
+    --md-fs-xs: 12px;
+    --md-fs-sm: 13px;
+    --md-fs-md: 14px;
+    --md-fs-body: 14px;
+    --md-fs-lg: 16px;
+    --md-fs-h3: 18px;
+    --md-fs-h2: 22px;
+    --md-fs-h1: 26px;
     --md-fs-display: 32px;
     --md-space-1: 3px;
     --md-space-2: 6px;
@@ -49,7 +49,7 @@
   .lightning .tree-item { min-height: 28px; padding: 5px 9px 5px 13px; }
   .lightning .setup-tree { padding-block: 6px 9px; }
   .lightning .setup-tree-group { margin-top: 5px; }
-  .lightning .quick-find-title { font-size: 11px; margin-bottom: 6px; }
+  .lightning .quick-find-title { font-size: 13px; margin-bottom: 6px; }
   .lightning .global-search kbd { padding: 1px 4px; }
   .lightning .notification-count { min-width: 14px; height: 14px; }
   .lightning .notification-panel-heading { padding: 9px 11px; }
@@ -58,7 +58,7 @@
 
   /* Tables and metadata lists: keep cells scannable */
   .lightning :is(.one-table-wrapper, .records-list, .setup-table, [class*="table"]) {
-    font-size: max(12px, var(--md-fs-sm));
+    font-size: max(var(--md-table-size, 13px), var(--md-fs-sm));
   }
 }
 
