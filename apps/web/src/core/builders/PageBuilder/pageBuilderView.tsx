@@ -3019,6 +3019,19 @@ function PageBuilder({
             <SmartEventActionsRibbon api={selected.type.slice(7)}
               selectedApis={ribbonSelectedMembers.length>1?ribbonSelectedMembers.map(item=>
                 item.type.startsWith('Custom:')&&!isCanvasLocked(item)?item.type.slice(7):''):undefined}
+              mixedSlots={ribbonSelectedMembers.length>1
+                ? [...new Set(ribbonSelectedMembers.flatMap(item=>{
+                    const actions=item.properties.actionFlows;
+                    return actions&&typeof actions==='object'&&!Array.isArray(actions)
+                      ?Object.keys(actions):[];
+                  }))].filter(key=>{
+                    const values=ribbonSelectedMembers.map(item=>{
+                      const actions=item.properties.actionFlows;
+                      return actions&&typeof actions==='object'&&!Array.isArray(actions)
+                        ?(actions as Record<string,unknown>)[key]:undefined;
+                    });
+                    return values.some(value=>JSON.stringify(value)!==JSON.stringify(values[0]));
+                  }):undefined}
               actions={selected.properties.actionFlows&&typeof selected.properties.actionFlows==='object'
                 &&!Array.isArray(selected.properties.actionFlows)
                 ? selected.properties.actionFlows as Record<string,unknown>:{}}
