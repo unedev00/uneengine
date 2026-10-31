@@ -15,6 +15,18 @@ export default function SmartCart({p,records,Picture,expression,fire}){
  const canClick=Boolean(actions.click)&&!p.previewOnly&&!p.builderPreview;
  const canChangeQty=Boolean(actions.qtyIcon)&&!p.previewOnly&&!p.builderPreview;
  const rows=demo?Array.from({length:3},(_,i)=>({id:"preview-"+i,Quantity:1,__preview:true})):records.slice(0,200);
+ // Financial amounts come from explicit permission-checked Page State/Flow
+ // bindings. Do not infer VAT, discounts or a payable total from line prices.
+ const money=value=>{
+  if(value===null||value===undefined||value==="")return null;
+  const amount=Number(value);
+  if(!Number.isFinite(amount))return null;
+  try{return new Intl.NumberFormat("en-GB",{style:"currency",currency:
+   /^[A-Z]{3}$/.test(p.currencyCode||"")?p.currencyCode:"GBP"}).format(amount);}
+  catch{return new Intl.NumberFormat("en-GB",{style:"currency",currency:"GBP"}).format(amount);}
+ };
+ const summaryAmounts={Subtotal:money(p.subtotalValue),Discount:money(p.discountValue),
+  Tax:money(p.taxValue),Total:money(p.totalValue)};
  const rowHeight=n(p.rowHeight,64,24);
  const rowLimit=Math.floor(n(p.cardsPerRow,5,1,50));
  const visible=Array.isArray(p.columnVisibility)
@@ -60,7 +72,7 @@ export default function SmartCart({p,records,Picture,expression,fire}){
   <header className="smart-cart-header" style={{
    height:n(p.headerBoxHeight,52,24),minHeight:n(p.headerBoxHeight,52,24),
    border:border(p.headerBorderColor),textAlign:align(p.headerAlignment),
-   fontWeight:p.headerBold===false?400:700,color:p.headerTextColor||"#fff"}}>Smart Cart</header>
+   fontWeight:p.headerBold===false?400:700,color:p.headerTextColor||"#fff"}}>{p.label||"Smart Cart"}</header>
   <div className="smart-cart-supporting" style={{
    height:n(p.supportingBoxHeight,36,18),minHeight:n(p.supportingBoxHeight,36,18),
    border:border(p.supportingBorderColor),textAlign:align(p.supportingAlignment),
@@ -115,13 +127,13 @@ export default function SmartCart({p,records,Picture,expression,fire}){
    {["Subtotal","Discount","Tax"].map(label=><div key={label} className="smart-cart-summary-line"
     style={{fontSize:n(p.summaryTextSize,14,8,96),
      fontWeight:p.summaryTextWeight===true?700:400,color:p.summaryTextColor||"#52657d"}}>
-    <span>{label}</span><span aria-label={label+" not bound"}>—</span></div>)}
+    <span>{label}</span><span aria-label={summaryAmounts[label]===null?label+" not bound":undefined}>{summaryAmounts[label]??"—"}</span></div>)}
    <div className="smart-cart-summary-line smart-cart-total" style={{
     fontSize:n(p.summary2TextSize,18,8,96),fontWeight:p.summary2TextWeight===false?400:700,
     color:p.summary2TextColor||"#1c3558"}}>
-    <span>Total</span><span aria-label="Total not bound">—</span>
+    <span>Total</span><span aria-label={summaryAmounts.Total===null?"Total not bound":undefined}>{summaryAmounts.Total??"—"}</span>
    </div>
   </section>
-  <div className="smart-cart-preview-note">Visual preview — totals and actions are configured separately</div>
+  {(p.builderPreview||p.previewOnly)&&<div className="smart-cart-preview-note">Visual preview — totals and actions are configured separately</div>}
  </section>;
 }
