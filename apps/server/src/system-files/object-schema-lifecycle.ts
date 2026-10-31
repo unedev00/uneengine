@@ -40,6 +40,9 @@ export class ObjectSchemaLifecycle {
    [tenantId,apiName]);
   const object=rows[0];
   if(!object)throw new Error('Object not found');
+  const records=await this.db.query<{count:number}>(
+   'SELECT count(*)::int AS count FROM md_records WHERE tenant_id=$1 AND object_api=$2',
+   [tenantId,apiName]);
   return {apiName:object.api_name,label:object.label,isSystem:object.is_system,
    deleted:object.deleted_at!==null,blockers:await blockers(this.db,tenantId,apiName),
    recordCount:Number((await this.db.query<{count:number}>(
@@ -57,6 +60,10 @@ export class ObjectSchemaLifecycle {
   if(!Number.isSafeInteger(expectedRevision)||expectedRevision<0)
    throw new Error('Invalid object revision precondition');
   return this.db.transaction(async client=>{
+   // Serialize with Record Engine's create/update shared advisory lock so
+   // records cannot be written after an object becomes inactive.
+   await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',
+     [tenantId+':'+apiName]);
    const {rows}=await client.query<ObjectRow>(
     'SELECT api_name,label,is_system,deleted_at FROM md_object_definitions WHERE tenant_id=$1 AND api_name=$2 FOR UPDATE',
     [tenantId,apiName]);

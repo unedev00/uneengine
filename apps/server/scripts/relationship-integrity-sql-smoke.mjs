@@ -63,13 +63,21 @@ try{
   master('PhaseChild__c','PrimaryChild',true));
  await defs.addField(tenant,'PhaseGrand__c','BlockingParentId','Lookup(PhaseParent__c)',undefined,
   'Blocking Parent',lookup('PhaseParent__c','BlockingParent','Restrict'));
+ await defs.addField(tenant,'PhaseGrand__c','ASecondaryMasterId','Master-Detail(PhaseParent__c)',
+  undefined,'Secondary Master',master('PhaseParent__c','SecondaryMaster',true));
+ const primaryMetadata=(await db.query(
+  `SELECT api_name,is_primary_master FROM md_field_definitions
+   WHERE tenant_id=$1 AND object_api='PhaseGrand__c' AND relationship_type='Master-Detail'`,
+  [tenant])).rows;
+ assert.deepEqual(primaryMetadata.filter(row=>row.is_primary_master).map(row=>row.api_name),
+  ['ChildId'],'The first-created master, not alphabetical API order, owns the detail');
  const edges=await listRelationshipDefinitions(db,tenant);
  assert.equal(edges.filter(e=>e.sourceObject==='PhaseChild__c'&&e.targetObject==='PhaseParent__c').length,3);
  assert.ok(edges.some(e=>e.fieldApiName==='ParentId'&&e.relationshipType==='Master-Detail'
    &&e.childRelationshipName==='PrimaryParentRecords'));
  assert.ok(edges.some(e=>e.fieldApiName==='BlockingParentId'&&e.deleteBehavior==='Restrict'));
  assert.equal((await listRelationshipDefinitions(db,otherTenant)).length,0,'No tenant metadata leakage');
- assert.equal((await listRelationshipDefinitions(db,tenant,'PhaseParent__c')).length,5);
+ assert.equal((await listRelationshipDefinitions(db,tenant,'PhaseParent__c')).length,6);
  await assert.rejects(()=>defs.addField(tenant,'PhaseParent__c','BadMasterId',
    'Master-Detail(PhaseGrand__c)'),/cycle/);
  const p1=await records.create(tenant,user,'PhaseParent__c',{Name:'Parent A'});
@@ -84,7 +92,64 @@ try{
  const c2=await records.create(tenant,user,'PhaseChild__c',
   {Name:'Child B',ParentId:p2});
  const g1=await records.create(tenant,user,'PhaseGrand__c',
-  {Name:'Grand',ChildId:c1,BlockingParentId:p1}); 
+  {Name:'Grand',ChildId:c1,BlockingParentId:p1,SecondaryMasterId:p2});
+ // Field paths are resolved by configured relationship aliases, not by a
+ // hardcoded target object. A three-level formula must remain fresh on update.
+ await defs.addField(tenant,'PhaseGrand__c','AncestorLabel','Formula(Text)',
+   undefined,'Ancestor Label',{formula:{
+    expression:'PrimaryChild.PrimaryParent.Name',returnType:'Text'
+   }});
+ await defs.addField(tenant,'PhaseGrand__c','OtherMasterLabel','Formula(Text)',
+   undefined,'Other Master Label',{formula:{
+    expression:'SecondaryMaster.Name',returnType:'Text'
+   }});
+ const labeled=await records.get(tenant,user,'PhaseGrand__c',g1);
+ assert.equal(labeled.AncestorLabel,'Parent A');
+ assert.equal(labeled.OtherMasterLabel,'Parent B');
+ await records.update(tenant,user,'PhaseParent__c',p1,{Name:'Parent A Updated'});
+ assert.equal((await records.get(tenant,user,'PhaseGrand__c',g1)).AncestorLabel,
+  'Parent A Updated','Related formula values must invalidate when an ancestor changes');
+ await records.update(tenant,user,'PhaseParent__c',p1,{Name:'Parent A'}); 
+ // Controlled-by-parent sharing uses both masters and propagates through
+ // Parent -> Child -> Grandchild. The child/grandchild owners are deliberately
+ // different from the parent owner; independent sharing must not grant access.
+ const inheritedReader=(await db.query(
+  "INSERT INTO md_users(tenant_id,email,password_hash) VALUES($1,'parentreader@example.invalid','fixture') RETURNING id",
+  [tenant])).rows[0].id;
+ const inheritedSet=(await db.query(
+  "INSERT INTO md_permission_sets(tenant_id,api_name) VALUES($1,'InheritedParentReader') RETURNING id",
+  [tenant])).rows[0].id;
+ await db.query('INSERT INTO md_permission_assignments(tenant_id,user_id,permission_set_id) VALUES($1,$2,$3)',
+  [tenant,inheritedReader,inheritedSet]);
+ for(const objectApi of ['PhaseParent__c','PhaseChild__c','PhaseGrand__c'])
+  for(const resource of [objectApi,'RecordType:'+objectApi+'.master'])
+   await db.query("INSERT INTO md_permission_rules(tenant_id,permission_set_id,resource,action,effect) VALUES($1,$2,$3,'read','allow')",
+    [tenant,inheritedSet,resource]);
+ await db.query("UPDATE md_records SET owner_id=$3 WHERE tenant_id=$1 AND id=$2",
+  [tenant,p1,inheritedReader]);
+ const read=async id=>(await db.query("SELECT md_record_access($1,$2,$3,'read') AS permitted",
+  [tenant,inheritedReader,id])).rows[0].permitted;
+ const context=(await db.query(`SELECT r.owner_id,r.record_type_id,
+   md_rbac_allowed($1,$2,'PhaseParent__c','read') AS object_grant,
+   md_rbac_allowed($1,$2,'RecordType:PhaseParent__c.master','read') AS type_grant,
+   md_record_access_direct($1,$2,r.id,'read') AS direct_access
+   FROM md_records r WHERE r.tenant_id=$1 AND r.id=$3`,[tenant,inheritedReader,p1])).rows[0];
+ console.info('2C parent owner permission context:',JSON.stringify(context));
+ assert.equal(await read(p1),true);
+ assert.equal(await read(c1),true,'A nonowned child must inherit sharing from its master');
+ assert.equal(await read(g1),false,'A junction detail must require both master parents');
+ await db.query("UPDATE md_records SET owner_id=$3 WHERE tenant_id=$1 AND id=$2",
+  [tenant,p2,inheritedReader]);
+ assert.equal(await read(g1),true,'Grandchild must inherit multi-hop, multi-master sharing');
+ const owners=(await db.query(
+  'SELECT id,owner_id FROM md_records WHERE tenant_id=$1 AND id=ANY($2::uuid[])',
+  [tenant,[p1,p2,c1,c2,g1]])).rows;
+ assert.equal(owners.find(row=>row.id===c1)?.owner_id,inheritedReader,
+  'Detail owner should track the primary master owner');
+ assert.equal(owners.find(row=>row.id===g1)?.owner_id,inheritedReader,
+  'A two-hop detail owner should track its primary master owner');
+ assert.equal(owners.find(row=>row.id===c2)?.owner_id,inheritedReader,
+  'Master ownership changes should propagate to sibling detail records');
  // Required lookup filters reject invalid targets at the shared Record Engine;
  // optional filters are advisory and must not block otherwise valid writes.
  const {persistObjectLookupFilters}=await import(new URL('object-manager-lookup-filters.js',built).href);
@@ -114,7 +179,29 @@ try{
  await assert.rejects(()=>records.remove(tenant,user,'PhaseParent__c',p1),/restricted/);
  assert.equal((await db.query('SELECT is_deleted FROM md_records WHERE tenant_id=$1 AND id=$2',[tenant,p1])).rows[0].is_deleted,false);
  await records.update(tenant,user,'PhaseGrand__c',g1,{BlockingParentId:null});
- await records.remove(tenant,user,'PhaseParent__c',p1);
+ // Salesforce cascade deletes are platform-owned: a user authorised to delete
+ // the parent can delete its descendants even when the detail object has an
+ // explicit independent delete deny. Direct detail deletion still checks RBAC.
+ const cascadeActor=(await db.query(
+  "INSERT INTO md_users(tenant_id,email,password_hash) VALUES($1,'cascade@example.invalid','fixture') RETURNING id",
+  [tenant])).rows[0].id;
+ const cascadeSet=(await db.query(
+  "INSERT INTO md_permission_sets(tenant_id,api_name) VALUES($1,'ParentCascadeOnly') RETURNING id",
+  [tenant])).rows[0].id;
+ await db.query("INSERT INTO md_permission_assignments(tenant_id,user_id,permission_set_id) VALUES($1,$2,$3)",
+  [tenant,cascadeActor,cascadeSet]);
+ await db.query("INSERT INTO md_permission_rules(tenant_id,permission_set_id,resource,action,effect) VALUES($1,$2,'PhaseParent__c','delete','allow')",
+  [tenant,cascadeSet]);
+ await db.query("INSERT INTO md_permission_rules(tenant_id,permission_set_id,resource,action,effect) VALUES($1,$2,'RecordType:PhaseParent__c.master','read','allow')",
+  [tenant,cascadeSet]);
+ for(const target of ['PhaseChild__c','PhaseGrand__c'])
+  await db.query("INSERT INTO md_permission_rules(tenant_id,permission_set_id,resource,action,effect) VALUES($1,$2,$3,'delete','deny')",
+   [tenant,cascadeSet,target]);
+ await assert.rejects(()=>records.remove(tenant,cascadeActor,'PhaseChild__c',c1),
+  /Permission denied/);
+ await db.query("UPDATE md_records SET owner_id=$3 WHERE tenant_id=$1 AND id=$2",
+  [tenant,p1,cascadeActor]);
+ await records.remove(tenant,cascadeActor,'PhaseParent__c',p1);
  const gone=await db.query('SELECT id,is_deleted FROM md_records WHERE tenant_id=$1 AND id=ANY($2::uuid[])',
   [tenant,[p1,c1,g1]]);
  assert.equal(gone.rows.length,3);

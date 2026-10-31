@@ -9,11 +9,14 @@ if(!url||!url.includes('/metadrive_2a'))
  throw new Error('Object lifecycle SQL smoke requires a disposable metadrive_2a database');
 const built=new URL('../dist-system/system-files/',import.meta.url);
 const support=new URL('../dist-system/system-support/',import.meta.url);
-const [{SqlPersistence},{applySystemMigrations},{ObjectDefinitionService},{ObjectSchemaLifecycle}]=await Promise.all([
+const [{SqlPersistence},{applySystemMigrations},{ObjectDefinitionService},{ObjectSchemaLifecycle},
+ {RecordEngine},{RbacEngine}]=await Promise.all([
  import(new URL('sql-persistence.js',built).href),
  import(new URL('system-migrations.js',support).href),
  import(new URL('object-definition.js',built).href),
- import(new URL('object-schema-lifecycle.js',built).href)
+ import(new URL('object-schema-lifecycle.js',built).href),
+ import(new URL('record-engine.js',built).href),
+ import(new URL('rbac-engine.js',built).href)
 ]);
 const db=new SqlPersistence(url);
 try{
@@ -62,6 +65,11 @@ try{
  await db.query(`DELETE FROM md_field_definitions WHERE tenant_id=$1
   AND object_api='Invoice__c' AND api_name='MilestoneRef'`,[primary]);
  // Recoverable deletion preserves all definitions and reserves the API name.
+ const visibility=async id=>(await db.query(
+  "SELECT md_record_access($1,$2,$3,'read') AS allowed",
+  [primary,actor,id])).rows[0].allowed;
+ assert.equal(await visibility(record.rows[0].id),true,
+  'Active object records must remain accessible with proper grants');
  const deleted=await lifecycle.delete(primary,'Milestone__c',0);
  assert.equal(deleted.deleted,true);
  const invisible=await db.query("SELECT md_record_access($1,$2,$3,'read') AS visible",
@@ -73,6 +81,15 @@ try{
  await assert.rejects(()=>db.query("INSERT INTO md_records(tenant_id,object_api) VALUES($1,'Milestone__c')",[primary]),
   /Object is unavailable/);
  await lifecycle.restore(primary,'Milestone__c');
+ assert.equal(await visibility(record.rows[0].id),true,
+  'Restored object record read access must return without modifying the record');
+ await recordEngine.update(primary,actor,'Milestone__c',record.rows[0].id,{Name:'Preserved Record'});
+ assert.equal((await recordEngine.get(primary,actor,'Milestone__c',record.rows[0].id)).Name,
+  'Preserved Record','Record updates must work again after object restore');
+ const preserved=await db.query('SELECT id,is_deleted FROM md_records WHERE tenant_id=$1 AND id=ANY($2::uuid[]) ORDER BY id',
+  [primary,[record.rows[0].id,recycled.rows[0].id]]);
+ assert.equal(preserved.rows.length,2);
+ assert.equal(preserved.rows.filter(row=>row.is_deleted).length,1);
  assert.equal((await defs.get(primary,'Milestone__c')).fields[0].apiName,'Name');
  const preserved=await db.query('SELECT id,is_deleted FROM md_records WHERE tenant_id=$1 AND id=$2',
   [primary,record.rows[0].id]);

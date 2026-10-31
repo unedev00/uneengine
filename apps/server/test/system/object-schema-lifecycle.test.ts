@@ -14,13 +14,19 @@ function fixture(options:{isSystem?:boolean;deleted?:boolean;blocker?:string;
  const calls:Array<{sql:string;args:unknown[]}>= [];
  const query=async(sql:string,args:unknown[]=[])=>{
   calls.push({sql,args});
-  // Every schema read and write is tenant scoped; test doubles reject unsafe SQL.
+  // Advisory metadata locks are tenant+object keyed; ordinary reads and
+  // mutations must include an explicit tenant predicate.
+  if(sql.includes('pg_advisory_xact_lock')){
+   assert.deepEqual(args,[tenant+':'+objectName]);
+   return {rows:[],rowCount:1};
+  }
   assert.match(sql,/tenant_id=\$1/);
   assert.equal(args[0],tenant);
   if(sql.includes('SELECT count(*)')){
    const affected=options.blocker&&sql.includes(options.blocker)?1:0;
    return {rows:[{count:affected}],rowCount:1};
   }
+  if(sql.includes('pg_advisory_xact_lock'))return {rows:[],rowCount:1};
   if(sql.includes('md_object_lifecycle_page_states'))return {rows:[],rowCount:1};
   if(sql.includes('md_object_layout_versions'))
    return {rows:[{revision:options.revision??3}],rowCount:1};
