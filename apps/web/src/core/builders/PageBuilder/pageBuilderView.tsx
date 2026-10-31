@@ -516,6 +516,8 @@ function PageBuilder({
   useEffect(()=>{
     if(ribbonTab==='Icons'&&page.components.find(component=>component.id===selectedId)?.type!=='Custom:smart_icon')
       setRibbonTab('Component Properties');
+    if(ribbonTab==='Shapes'&&!page.components.find(component=>component.id===selectedId)?.type.startsWith('Custom:'))
+      setRibbonTab('Component Properties');
   },[ribbonTab,selectedId,page.components]);
   useEffect(()=>{
     const element=ribbonStripRef.current;
