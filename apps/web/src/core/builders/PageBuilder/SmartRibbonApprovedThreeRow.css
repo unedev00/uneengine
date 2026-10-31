@@ -275,10 +275,10 @@
  padding:3px 8px 20px!important;
 }
 .office-builder-ribbon #page-builder-tab-content>.office-ribbon-page-layout-groups>.une-sql-home-group[data-shared-group="Page"]{
- width:333px!important;min-width:333px!important;max-width:333px!important;
+ width:260px!important;min-width:260px!important;max-width:260px!important;
 }
 .office-builder-ribbon #page-builder-tab-content>.office-ribbon-page-layout-groups>.une-sql-home-group[data-shared-group="Canvas"]{
- width:120px!important;min-width:120px!important;max-width:120px!important;
+ width:114px!important;min-width:114px!important;max-width:114px!important;
 }
 .office-builder-ribbon .office-ribbon-page-layout-groups .une-sql-home-control{
  min-height:26px!important;max-height:26px!important;height:26px!important;gap:5px!important;
@@ -334,4 +334,44 @@
 }
 .office-builder-ribbon .office-ribbon-page-layout-groups .une-ribbon-canvas-colour .office-ribbon-colour-property{
  height:26px!important;min-height:26px!important;padding:2px 3px!important;
+}
+
+/* Layout density: Home Page and Canvas boxes now take only their actual
+ * content width. Keep the Canvas icon and spinner in one enclosed control,
+ * matching the selected component's numeric boxes on the Design ribbon. */
+.office-builder-ribbon .office-ribbon-page-layout-groups .une-ribbon-size-with-icon{
+ height:26px!important;padding:0!important;overflow:hidden!important;
+ background:#fff!important;border:1px solid #b7c9df!important;
+}
+.office-builder-ribbon .office-ribbon-page-layout-groups .une-ribbon-size-with-icon .une-ribbon-embedded-icon{
+ box-sizing:border-box!important;height:24px!important;
+ background:transparent!important;pointer-events:none!important;
+}
+.office-builder-ribbon .office-ribbon-page-layout-groups .une-ribbon-size-with-icon input{
+ box-sizing:border-box!important;flex:1 1 auto!important;
+ width:auto!important;min-width:0!important;max-width:none!important;
+ height:24px!important;border:0!important;border-radius:0!important;
+ background:transparent!important;box-shadow:none!important;
+}
+.office-builder-ribbon .office-ribbon-page-layout-groups .une-ribbon-size-with-icon input:focus-visible{
+ caret-color:auto!important;
+}
+/* Unsupported property controls retain the exact same complete borders,
+ * heights, embedded icons and alignment as enabled properties. Only their
+ * colours fade, never their geometry or control affordance. */
+.office-builder-ribbon #page-builder-tab-content>.smart-ribbon[data-three-row="true"]
+ .smart-property.disabled{
+ opacity:.66!important;filter:none!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.smart-ribbon[data-three-row="true"]
+ .smart-property.disabled[data-numeric-icon="true"] .smart-numeric{
+ background:#f4f6f9!important;border-color:#c7d2e0!important;
+}
+.office-builder-ribbon #page-builder-tab-content .smart-ribbon[data-three-row="true"][data-smart-api]
+ .smart-ribbon-group .smart-property.disabled[data-numeric-icon="true"] input.smart-office-number{
+ background:transparent!important;color:#64758b!important;
+}
+.office-builder-ribbon #page-builder-tab-content .smart-ribbon[data-three-row="true"][data-smart-api]
+ .smart-ribbon-group .smart-property.disabled :is(.smart-select,.smart-icon-toggle,.smart-visible-toggle,.smart-icon-dropdown-trigger){
+ background:#f4f6f9!important;border-color:#c7d2e0!important;
 }
