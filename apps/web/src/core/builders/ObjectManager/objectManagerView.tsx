@@ -2,6 +2,7 @@ import {generateMetadataApiName} from '../../metadata/Definitions/metadataApiNam
 import { PicklistValueRows } from './PicklistValueRows';
 import {confirmDestructiveAction} from '../../components/ConfirmAction/confirmDestructiveAction';
 import '../SharedBuilderFrame/adaptiveBuilder.css';
+import '../SchemaBuilder/schemaBuilderUsability.css';
 import { createSetupHome } from '../../settings/SetupHome/setupHomeView';
 import { relatedListRelationships } from '../PageBuilder/relatedListRelationships';
 import { createSettingsViews } from '../../settings/SettingsWorkspace/settingsWorkspaceViews';
