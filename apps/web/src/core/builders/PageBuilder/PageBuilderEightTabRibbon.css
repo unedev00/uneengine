@@ -89,3 +89,19 @@
  width:105px!important;min-width:105px!important;max-width:105px!important;
  padding:3px 8px 17px!important;
 }
+
+/* Results portal is in document.body, outside the clipped ribbon container. */
+.ribbon-view-find-results{
+ z-index:6500;display:flex;flex-direction:column;
+ min-width:260px;max-width:360px;max-height:208px;overflow-y:auto;
+ background:#fff;border:1px solid #b7c9df;border-radius:5px;
+ box-shadow:0 10px 20px #15253b27;
+}
+.ribbon-view-find-results button{
+ box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;
+ min-height:26px;width:100%;gap:5px;padding:3px 7px;
+ border:0;border-bottom:1px solid #e5ebf3;background:#fff;
+ text-align:left;font:11px "Segoe UI",Arial,sans-serif;cursor:pointer;
+}
+.ribbon-view-find-results button:hover{background:#edf5ff}
+.ribbon-view-find-results small{font-size:10px;color:#59718a}
