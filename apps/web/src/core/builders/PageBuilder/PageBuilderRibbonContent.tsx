@@ -4,7 +4,6 @@ import type {FieldMetadata,LibraryComponentMetadata,ObjectMetadata} from '../../
 import RibbonFieldExpressionInput from './RibbonFieldExpressionInput';
 
 type Properties=Record<string,unknown>;
-type DataObject={apiName:string;label:string;fields?:FieldMetadata[]};
 const fieldOptions=(fields:FieldMetadata[])=>fields.map(field=><option key={field.apiName} value={field.apiName}>{field.label}</option>);
 
 /** Compact Content layout for the two reference components, backed only by
