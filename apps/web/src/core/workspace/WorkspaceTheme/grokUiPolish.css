@@ -110,9 +110,13 @@
   font-weight: 600;
 }
 .lightning .btn-brand {
-  background: var(--md-primary, #1d4ed8);
-  border-color: var(--md-primary, #1d4ed8);
+  background: var(--md-action-fill, #0054aa);
+  border-color: var(--md-action-fill, #0054aa);
   color: #fff;
+}
+.lightning .btn-brand:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--md-action-fill, #0054aa) 85%, black);
+  border-color: color-mix(in srgb, var(--md-action-fill, #0054aa) 85%, black);
 }
 
 /* Settings read-first */
