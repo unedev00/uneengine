@@ -15,6 +15,23 @@ export default function SmartCart({p,records,Picture,expression,fire}){
  const canClick=Boolean(actions.click)&&!p.previewOnly&&!p.builderPreview;
  const canChangeQty=Boolean(actions.qtyIcon)&&!p.previewOnly&&!p.builderPreview;
  const rows=demo?Array.from({length:3},(_,i)=>({id:"preview-"+i,Quantity:1,__preview:true})):records.slice(0,200);
+ // Select the most recently appended item by default. Preserve a manually
+ // selected row until it is removed, and automatically follow newly added rows.
+ const rowKeys=rows.map((row,i)=>String(row?.Id??row?.id??i));
+ const rowSignature=rowKeys.join("\\u001f");
+ const [selectedKey,setSelectedKey]=React.useState(()=>rowKeys.at(-1)??null);
+ const previousKeys=React.useRef(rowKeys);
+ React.useEffect(()=>{
+   const before=previousKeys.current;
+   const added=rowKeys.filter(key=>!before.includes(key));
+   setSelectedKey(current=>added.length?added.at(-1):
+     current&&rowKeys.includes(current)?current:rowKeys.at(-1)??null);
+   previousKeys.current=rowKeys;
+ },[rowSignature]);
+ const expandedActions=[
+  {key:"customButton1",label:String(p.customButton1Label||"Custom Button 1")},
+  {key:"customButton2",label:String(p.customButton2Label||"Custom Button 2")}
+ ];
  // Financial amounts come from explicit permission-checked Page State/Flow
  // bindings. Do not infer VAT, discounts or a payable total from line prices.
  const money=value=>{
@@ -106,7 +123,18 @@ export default function SmartCart({p,records,Picture,expression,fire}){
       const src=p.imageSource?expression(p.imageSource,record):"";
       const itemId=record?.Id??record?.id??null;
       const payload={record,recordId:itemId};
-      return <div key={record?.Id??record?.id??i} className="smart-cart-row" style={{
+      const rowKey=rowKeys[i];
+      const selected=selectedKey===rowKey;
+      const selectRow=()=>setSelectedKey(rowKey);
+      return <div key={rowKey} className={"smart-cart-row-wrap"+(selected?" is-selected":"")}>
+       <div className="smart-cart-row" role="button" tabIndex={0}
+        aria-selected={selected} aria-expanded={selected}
+        aria-label={"Select cart row "+String(name||i+1)}
+        onClick={event=>{if(event.target.closest("button"))return;selectRow();}}
+        onKeyDown={event=>{
+         if(event.target!==event.currentTarget)return;
+         if(event.key==="Enter"||event.key===" "){event.preventDefault();selectRow();}
+        }} style={{
         minHeight:rowHeight,border:border(p.rowBorderColor),
         borderRadius:n(p.rowRadius,4),color:p.rowLabelColor||"#263b56"}}>
        {visible.map(index=>{
@@ -127,6 +155,17 @@ export default function SmartCart({p,records,Picture,expression,fire}){
         return <span key={index} className="smart-cart-cell" aria-label={value==="—"?headings[index]+" not bound":undefined}>
          {display(value)}</span>;
        })}
+       </div>
+       {selected&&<div className="smart-cart-expanded-actions" role="group"
+         aria-label={"Actions for "+String(name||"selected item")}>
+         {expandedActions.map(action=><button type="button" key={action.key}
+          className="smart-cart-custom-action"
+          disabled={demo||!actions[action.key]||itemId===null}
+          aria-label={action.label}
+          onClick={()=>fire?.(action.key,{...payload,selectedRowIndex:i})}>
+          {action.label}
+         </button>)}
+       </div>}
       </div>;
      })}
     </div>
