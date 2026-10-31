@@ -27,6 +27,14 @@
     {
       "apiName": "qtyIcon",
       "label": "Qty Icon"
+    },
+    {
+      "apiName": "customButton1",
+      "label": "Custom Button 1"
+    },
+    {
+      "apiName": "customButton2",
+      "label": "Custom Button 2"
     }
   ]
 }
