@@ -87,7 +87,7 @@ test('Till payment, cart and Chatter selection have keyboard and screen-reader s
  assert.match(terminal,/useModalFocus\(Boolean\(paymentMode\)/);
  const focus=read('../src/core/accessibility/useModalFocus.ts');
  assert.match(focus,/event\.key==='Escape'/);
- assert.match(terminal,/document\.addEventListener\('keydown',onKey\)/);
+ assert.match(focus,/document\.addEventListener\('keydown',onKey,true\)/);
  assert.match(terminal,/aria-label="Current order items"/);
  assert.match(terminal,/aria-label="Payment method"/);
  const chatter=read('../../acechatter/src/AceChatterRuntime.tsx');
