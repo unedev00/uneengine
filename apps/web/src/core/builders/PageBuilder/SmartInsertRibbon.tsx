@@ -20,10 +20,10 @@ export function filterSmartInsertItems(items:readonly SmartInsertItem[],scope:Sm
  return items.filter(item=>(scope==='all'||(scope==='smart')===isSmartInsertItem(item))
    &&(!query||[item.type,item.label,item.description??''].some(text=>text.toLowerCase().includes(query))));
 }
-export default function SmartInsertRibbon({items,onInsert,onOpenLibrary,renderIcon}:{
+export default function SmartInsertRibbon({items,onInsert,renderIcon}:{
  items:readonly SmartInsertItem[];
  onInsert:(type:string)=>void;
- onOpenLibrary:()=>void;
+
  renderIcon:(item:SmartInsertItem)=>ReactNode;
 }){
  const [scope,setScope]=useState<SmartInsertScope>('smart');
@@ -74,7 +74,6 @@ export default function SmartInsertRibbon({items,onInsert,onOpenLibrary,renderIc
       onClick={()=>move(500)}><ChevronRight size={16}/></button>
    </div>
    <div className="smart-insert-footer"><span>{visible.length} component{visible.length===1?'':'s'} available</span>
-    <button type="button" onClick={onOpenLibrary}><Grid2X2 size={12}/> Open full library</button>
    </div>
   </div>
  </div>;
