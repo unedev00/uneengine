@@ -42,7 +42,8 @@ test('Page Blueprint uses only shared Smart Components and Flow actions, not har
   }
  }
  const pin=copilotPosGraphs.find(g=>g.apiName==='AcetillCopilotVerifyPin');
- assert.equal(pin?.elements.find(x=>x.type==='Screen')?.config.fields[0].type,'Password');
+ const pinFields=pin?.elements.find(x=>x.type==='Screen')?.config.fields as Array<{type:string}>|undefined;
+ assert.equal(pinFields?.[0]?.type,'Password');
  assert.equal(pin?.elements.find(x=>x.type==='Subflow')?.config.flowApiName,'AcetillVerifyUserPin');
  assert.ok(!copilotTillLayout.some(x=>x.id==='copilot-pos-pin'));
  const products=copilotTillLayout.find(x=>x.id==='copilot-pos-products');
