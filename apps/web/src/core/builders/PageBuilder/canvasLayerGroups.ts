@@ -44,6 +44,7 @@ export function moveCanvasLayer(
   if (!selected || selected.properties.editorLocked === true) return [...components];
   const siblings = components.filter(item => parentId(item) === parentId(selected));
   const moving = canvasGroupMembers(siblings, selected);
+  if (moving.some(item => item.properties.editorLocked === true)) return [...components];
   const groupIds = new Set(moving.map(item => item.id));
   const others = siblings.filter(item => !groupIds.has(item.id));
   const ordered = edge === 'front' ? [...others, ...moving] : [...moving, ...others];
