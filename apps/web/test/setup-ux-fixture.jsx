@@ -10,6 +10,9 @@ import { defaultFlow } from '../src/core/metadata/Definitions/metadata';
 import TenantMfaControls from '../src/core/settings/SettingsWorkspace/TenantMfaControls';
 import TenantConnectedApps from '../src/core/settings/SettingsWorkspace/TenantConnectedApps';
 import TenantGovernance from '../src/core/settings/SettingsWorkspace/TenantGovernance';
+import TenantPasswordPolicy from '../src/core/settings/SettingsWorkspace/TenantPasswordPolicy';
+import TenantSessionControls from '../src/core/settings/SettingsWorkspace/TenantSessionControls';
+import TenantFederationControls from '../src/core/settings/SettingsWorkspace/TenantFederationControls';
 import CompanySettingsWorkspace from '../src/core/settings/CompanySettingsWorkspace/CompanySettingsWorkspace';
 import '../src/core/workspace/WorkspaceTheme/design-system.css';
 import '../src/core/workspace/WorkspaceTheme/styles.css';
@@ -21,6 +24,7 @@ import '../src/core/workspace/WorkspaceTheme/desktopDense.css';
 import '../src/core/workspace/WorkspaceTheme/contrastRepair.css';
 import '../src/core/workspace/WorkspaceTheme/setupUsability.css';
 import '../src/core/workspace/WorkspaceTheme/grokUiPolish.css';
+import '../src/core/workspace/WorkspaceTheme/phase2AdminLayout.css';
 const params = new URLSearchParams(location.search);
 const view=params.get('view');
 const noop=()=>{};
@@ -36,7 +40,15 @@ const request=async(path,init)=>{
 const uxRequest=async path=>{
  if(path==='/auth/mfa/status')return {mode:'Off',enrolled:false};
  if(path==='/auth/passkeys')return {credentials:[]};
- if(path==='/auth/user-locks')return {users:[]};
+ if(path==='/auth/user-locks')return {users:[{id:'user-1',name:'Test operator',email:'test.operator@example.com'}]};
+ if(path==='/auth/password-policy')return {min_length:12,require_uppercase:false,require_lowercase:false,require_number:false,require_symbol:false,max_age_days:0,history_count:0,max_failed_attempts:5,lockout_minutes:30};
+ if(path==='/auth/session-policy')return {policy:{access_minutes:60,refresh_minutes:43200,idle_minutes:60,require_mfa:false,frame_policy:'DENY',csp_enabled:true},ranges:[],hours:[],profiles:[]};
+ if(path==='/auth/identity-providers')return {providers:[{id:'provider-1',label:'Example SSO',protocol:'oidc',enabled:true,issuer:'https://id.example.com',authorization_url:'https://id.example.com/auth',token_url:'https://id.example.com/token',jwks_url:'https://id.example.com/keys',client_id:'example-client',certificate:''}],deployment:{callbackUrl:'https://example.com/callback',configured:true}};
+ if(path==='/auth/federated-identities')return {identities:[{provider_id:'provider-1',subject:'test-subject',user_id:'user-1'}]};
+ if(path==='/security/licenses/tenants')return {tenants:[]};
+ if(path==='/security/licenses')return {entitlements:Array.from({length:8},(_,i)=>({id:'lic-'+i,label:'Licence '+(i+1),kind:i<4?'User':'PermissionSet',enabled:true,used_seats:2,seat_limit:10,expires_at:null})),users:[{id:'user-1',email:'test.operator@example.com'}],permissionSets:[{id:'set-1',api_name:'OneEngine'}],assignments:[],requirements:[]};
+ if(path==='/metadata/flows/list?page=1&search=')return {flows:[]};
+ if(path.startsWith('/security/monitoring'))return {events:[],rules:[],settings:{enabled:true,retention_days:365},summary:{requests:180,errors:5,average_ms:62},nextCursor:null};
  if(path==='/security/connected-apps')return {clients:[],
   users:Array.from({length:9},(_,i)=>({id:'user-'+i,email:'operator'+(i+1)+'@example.com'})),
   scopes:['records:read','records:write','metadata:read','metadata:write','records:import','mcp:access'],
@@ -56,6 +68,11 @@ function Fixture(){
  if(view==='mfa')content=<TenantMfaControls request={uxRequest} canManage onReauthenticate={noop}/>;
   else if(view==='oauth')content=<TenantConnectedApps request={uxRequest}/>;
   else if(view==='governance')content=<TenantGovernance request={uxRequest} canManage/>;
+   else if(view==='monitoring')content=<TenantGovernance request={uxRequest} canManage initialTab="monitoring"/>;
+   else if(view==='licenses')content=<TenantGovernance request={uxRequest} canManage initialTab="licences"/>;
+   else if(view==='federation')content=<TenantFederationControls request={uxRequest} canManage/>;
+   else if(view==='password')content=<TenantPasswordPolicy request={uxRequest} canManage/>;
+   else if(view==='sessions')content=<TenantSessionControls request={uxRequest} canManage/>;
   else if(view==='company')content=<CompanySettingsWorkspace initialSection="security" company={<p>Company</p>}
    domains={<p>Domains</p>} developer={<p>Developer</p>} usage={<p>Usage</p>} recovery={<p>Recovery</p>}
    mfa={<TenantGovernance request={uxRequest} canManage initialTab="connected apps" focusOnMount/>} emailRecovery={<p>Email recovery</p>} locks={<p>Locks</p>}
