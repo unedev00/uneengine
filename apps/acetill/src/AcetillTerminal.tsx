@@ -501,7 +501,7 @@ export default function AcetillTerminal({editorStyles}: {editorStyles?:AcetillVi
       <div className="acetill-mobile-cart-grabber" aria-hidden="true" />
       <button type="button" className="acetill-mobile-cart-close" onClick={() => setCartOpen(false)} aria-label="Close cart">Done</button>
       <div className="acetill-order-heading" data-acetill-element="orderHeading"><strong>Current order ({count})</strong><button type="button" aria-label="Clear order" disabled={!count||busy} onClick={()=>{paymentRequestId.current=crypto.randomUUID();setAgeApproved(false);setCart([]);}}>⌫</button></div>
-      <div className="acetill-lines" tabIndex={0} aria-label="Current order items">{cart.length?cart.map(p=><div className="acetill-line" key={p.id}>
+      <div className="acetill-lines" role="region" tabIndex={0} aria-label="Current order items">{cart.length?cart.map(p=><div className="acetill-line" key={p.id}>
         <div className="acetill-line-art">{p.image?<img src={p.image} alt=""/>:<span aria-hidden="true">◻</span>}</div>
         <div className="acetill-line-details"><strong>{p.name}</strong><div className="acetill-qty">
           <button type="button" aria-label={'Decrease quantity of '+p.name} onClick={()=>change(p.id,-1)}>−</button><span>{p.quantity}</span>
