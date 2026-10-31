@@ -90,7 +90,13 @@ RETURNS boolean LANGUAGE sql STABLE AS $$
    ) THEN md_record_access_direct(t,u,rid,act)
    ELSE
     NOT rec.is_deleted
-    AND EXISTS(SELECT 1 FROM md_users usr WHERE usr.tenant_id=t AND usr.id=u AND usr.enabled)
+    AND EXISTS(SELECT 1 FROM md_users usr WHERE usr.tenant_id=t AND usr.id=u
+      AND usr.enabled AND
+      (usr.user_type='external'
+       OR md_effective_reporting_scope(t,u,rec.object_api) IS NULL
+       OR md_effective_reporting_scope(t,u,rec.object_api)='all'
+       OR (rec.owner_id IS NOT NULL AND md_reporting_scope(t,u,rec.owner_id,
+            md_effective_reporting_scope(t,u,rec.object_api)))))
     AND md_rbac_allowed(t,u,rec.object_api,act)
     AND NOT (SELECT deny_granted FROM md_rbac_decision(t,u,'Record:'||rid::text,act))
     AND (rec.record_type_id IS NULL
