@@ -200,6 +200,7 @@
     "apps/web/test/pagePerformanceAnalysis.test.ts",
     "apps/web/test/phase1UiFoundation.test.ts",
     "apps/web/test/phase2AdminUx.test.ts",
+    "apps/web/test/phase3BuildersAppsUx.test.ts",
     "apps/web/test/phoneColumns.test.mjs",
     "apps/web/test/recordActionPlacement.test.ts",
     "apps/web/test/recordChoices.test.ts",
