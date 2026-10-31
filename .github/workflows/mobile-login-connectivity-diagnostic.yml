@@ -38,3 +38,36 @@ jobs:
             echo "exit=$?"
           done
           echo "=== Done (diagnostic does not change production) ==="
+      - name: Verify live login API in real emulated mobile browsers
+        shell: bash
+        run: |
+          npm install --no-save --ignore-scripts playwright@1.56.1
+          npx playwright install chromium webkit
+          node --input-type=module <<'JS'
+          import {chromium,webkit,devices} from 'playwright';
+          let failures=0;
+          for (const [name,type,device] of [
+            ['Android Chrome',chromium,devices['Pixel 7']],
+            ['iPhone Safari WebKit',webkit,devices['iPhone 13']]
+          ]) {
+            let browser;
+            try {
+              browser=await type.launch({headless:true});
+              const context=await browser.newContext({...device,serviceWorkers:'block'});
+              const page=await context.newPage();
+              const errors=[];
+              page.on('requestfailed',r=>errors.push(r.url().replace(/\?.*/, '')+' '+r.failure()?.errorText));
+              const response=await page.goto('https://unesolutions.co.uk/login/',{waitUntil:'domcontentloaded',timeout:20000});
+              const result=await page.evaluate(async()=>{
+                const r=await fetch('/api/auth/federation/complete',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json','X-MetaDrive-Request-Source':'web-app'},body:'{}'});
+                const health=await fetch('/api/health',{cache:'no-store'});
+                return {api:r.status,health:health.status,origin:location.origin};
+              });
+              console.log(JSON.stringify({name,pageStatus:response?.status(),result,errors}));
+              if(response?.status()!==200||result.api!==204||result.health!==200||errors.length)failures++;
+              await context.close();
+            }catch(error){console.error(name,error);failures++;}
+            finally{await browser?.close();}
+          }
+          if(failures)process.exitCode=1;
+          JS
