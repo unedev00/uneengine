@@ -169,6 +169,7 @@
     "apps/web/test/fourLayoutRibbon.test.mjs",
     "apps/web/test/highlightFieldSelection.test.ts",
     "apps/web/test/itemGridExpressions.test.ts",
+    "apps/web/test/keyboardInset.test.ts",
     "apps/web/test/layoutWritableValues.test.ts",
     "apps/web/test/metadataApiNames.test.ts",
     "apps/web/test/metadataBindings.test.ts",

@@ -4,6 +4,7 @@
   background: radial-gradient(ellipse at 18% 15%, color-mix(in srgb, var(--standalone-accent) 22%, transparent), transparent 46%),
               linear-gradient(140deg, #0b162b 0%, #132b46 52%, #07111e 100%);
   min-height: 100vh;
+  min-height: 100dvh;
 }
 .auth-screen--standalone .auth-card {
   background: #fff;

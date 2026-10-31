@@ -18,13 +18,13 @@
 
 * { box-sizing: border-box; }
 html, body, #root { min-width: 320px; min-height: 100%; margin: 0; }
-body { min-height: 100vh; background: var(--canvas); font-size: var(--md-fs-body,14px); line-height:var(--md-leading-body,1.5); }
+body { min-height: 100vh; min-height: 100dvh; background: var(--canvas); font-size: var(--md-fs-body,14px); line-height:var(--md-leading-body,1.5); }
 button, input, select { font: inherit; }
 button { color: inherit; cursor: pointer; }
 input, select { color: var(--text); }
 button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
 
-.lightning { min-height: 100vh; }
+.lightning { min-height: 100vh; min-height: 100dvh; }
 .salesforce-header {
   height: 50px; display: flex; align-items: center; gap: 14px; padding: 0 18px;
   background: #fff; border-top: 3px solid var(--md-primary,#1d4ed8); box-shadow: 0 1px 2px rgb(0 0 0 / 10%);

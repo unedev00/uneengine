@@ -11,6 +11,7 @@
  background:var(--mail-bg);
  min-height:100vh;
  min-height:100dvh;
+ min-height:100dvh;
  font:14px/1.5 Inter,Arial,system-ui,sans-serif;
  box-sizing:border-box;
 }

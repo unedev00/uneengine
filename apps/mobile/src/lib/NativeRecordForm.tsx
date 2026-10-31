@@ -1,4 +1,4 @@
-import React,{useCallback,useEffect,useMemo,useState} from 'react';
+import React,{useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {ActivityIndicator,Alert,KeyboardAvoidingView,Modal,Platform,Pressable,
  ScrollView,Switch,Text,TextInput,View} from 'react-native';
 import {useRouter} from 'expo-router';
@@ -27,6 +27,7 @@ export default function NativeRecordForm({objectApi,mode,recordId}:{
  const [error,setError]=useState(''),[notice,setNotice]=useState('');
  const [picker,setPicker]=useState<RecordFormField|null>(null);
  const [query,setQuery]=useState('');
+ const scrollRef=useRef<ScrollView>(null),searchSeq=useRef(0);
  const [choices,setChoices]=useState<NativeRecord[]>([]);
  const [choiceLoading,setChoiceLoading]=useState(false);
  const editable=useMemo(()=>schema?.fields.filter(field=>safeField(field,mode))??[],[schema,mode]);
@@ -51,6 +52,14 @@ export default function NativeRecordForm({objectApi,mode,recordId}:{
   finally{setLoading(false);}
  },[session,connection,objectApi,recordId,mode]);
  useEffect(()=>{void fetchForm();},[fetchForm]);
+ // Errors render above the fields while Save sits below them; bring the message into view.
+ useEffect(()=>{if(error)scrollRef.current?.scrollTo({y:0,animated:true});},[error]);
+ const confirmCancel=()=>{
+  if(changed.size===0){router.back();return;}
+  Alert.alert('Discard changes?','Your edits to this record have not been saved.',[
+   {text:'Keep editing',style:'cancel'},
+   {text:'Discard',style:'destructive',onPress:()=>router.back()}]);
+ };
  const patch=(name:string,value:unknown)=>{
   const dependents=editable.filter(field=>field.controllerFieldApiName===name);
   setValues(current=>{
@@ -71,7 +80,7 @@ export default function NativeRecordForm({objectApi,mode,recordId}:{
   try{
    const id=await saveLiveRecord(session,objectApi,mode,
      mode==='create'&&recordTypeId?{...payload,RecordTypeId:recordTypeId}:payload,recordId,modified);
-   Alert.alert('Saved','The record was saved on the server. Sync your offline briefcase to refresh its cached copy.',[
+   Alert.alert('Saved','The record was saved. Pull down on Records to refresh your offline copy.',[
     {text:'View record',onPress:()=>router.replace({pathname:'/record/[objectApi]/[recordId]',
       params:{objectApi,recordId:id}})}
    ]);
@@ -84,11 +93,22 @@ export default function NativeRecordForm({objectApi,mode,recordId}:{
  };
  const searchLookup=async()=>{
   if(!session||!picker?.relationship?.targetObject||connection!=='online')return;
+  const seq=++searchSeq.current; // ignore responses that arrive after a newer search
   setChoiceLoading(true);setError('');
-  try{setChoices(await findLookupRecords(session,picker.relationship.targetObject,query));}
-  catch(cause){setError(cause instanceof Error?cause.message:String(cause));}
-  finally{setChoiceLoading(false);}
+  try{
+   const rows=await findLookupRecords(session,picker.relationship.targetObject,query);
+   if(seq===searchSeq.current)setChoices(rows);
+  }
+  catch(cause){if(seq===searchSeq.current)setError(cause instanceof Error?cause.message:String(cause));}
+  finally{if(seq===searchSeq.current)setChoiceLoading(false);}
  };
+ // Search as the user types (debounced); the Search button remains for short or empty terms.
+ useEffect(()=>{
+  if(!picker||fieldType(picker)!=='reference'||query.trim().length<2)return;
+  const timer=setTimeout(()=>{void searchLookup();},350);
+  return()=>clearTimeout(timer);
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+ },[query,picker]);
  const optionsFor=(field:RecordFormField)=>{
   const all=Array.isArray(field.picklistValues)?field.picklistValues.map(String).filter(Boolean):[];
   const controller=field.controllerFieldApiName;
@@ -151,7 +171,7 @@ export default function NativeRecordForm({objectApi,mode,recordId}:{
   <ActivityIndicator color={t.accent}/><Text style={{color:t.secondary,marginTop:12}}>Loading record form…</Text></View>;
  return <KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':undefined}
    style={{flex:1,backgroundColor:t.background}}>
-  <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{padding:16,paddingBottom:110,gap:14}}>
+  <ScrollView ref={scrollRef} keyboardShouldPersistTaps="handled" contentContainerStyle={{padding:16,paddingBottom:110,gap:14}}>
    <View style={{gap:5}}>
     <Text style={{fontSize:28,fontWeight:'700',color:t.text}}>{mode==='create'?'New':'Edit'} {schema?.label??objectApi}</Text>
     <Text style={{color:t.secondary,fontSize:14}}>Live server form · Changes are not queued offline</Text>
@@ -180,7 +200,7 @@ export default function NativeRecordForm({objectApi,mode,recordId}:{
    <MobileButton title={busy?'Saving…':mode==='create'?'Create record':'Save changes'}
      disabled={!schema||busy||connection!=='online'||editable.length===0||mode==='edit'&&changed.size===0}
      onPress={()=>void save()}/>
-   <MobileButton title="Cancel" secondary onPress={()=>router.back()} disabled={busy}/>
+   <MobileButton title="Cancel" secondary onPress={confirmCancel} disabled={busy}/>
   </ScrollView>
   <Modal visible={picker!==null} transparent animationType="slide" onRequestClose={()=>setPicker(null)}>
    <View style={{flex:1,justifyContent:'flex-end',backgroundColor:'rgba(0,0,0,.45)'}}>
@@ -203,7 +223,6 @@ export default function NativeRecordForm({objectApi,mode,recordId}:{
         accessibilityRole="button" onPress={()=>{patch(picker.apiName,row.Id);setPicker(null);}}
         style={{paddingVertical:15,borderBottomWidth:.5,borderColor:t.separator}}>
        <Text style={{color:t.text,fontSize:16}}>{labelFor(row)}</Text>
-       <Text style={{color:t.secondary,fontSize:12}}>{row.Id}</Text>
       </Pressable>):
        picker?optionsFor(picker).map(value=>{
         const multi=fieldType(picker)==='multipicklist';

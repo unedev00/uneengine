@@ -523,8 +523,9 @@
   .lightning .palette-backdrop > .palette-dialog {
     position: relative;
     width: 100%; max-width: 100vw;
-    max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 8px);
-    margin: 0; border-radius: 14px 14px 0 0;
+    /* --keyboard-inset is maintained by installKeyboardInset(); 0px when no keyboard. */
+    max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 8px - var(--keyboard-inset, 0px));
+    margin: 0 0 var(--keyboard-inset, 0px); border-radius: 14px 14px 0 0;
     padding-bottom: env(safe-area-inset-bottom, 0px);
     background: var(--md-ios-surface, #fff);
     color: var(--md-ios-text, #1c1c1e);
@@ -546,6 +547,11 @@
     padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
     z-index: 2;
   }
+  /* The keyboard covers the home indicator, so drop the safe-area gap while it is open. */
+  :root.md-keyboard-open .lightning .record-form-dialog > form > footer { padding-bottom: 12px; }
+  :root.md-keyboard-open .lightning .record-form-backdrop > .record-form-dialog,
+  :root.md-keyboard-open .lightning .lookup-dialog-backdrop > .lookup-dialog,
+  :root.md-keyboard-open .lightning .palette-backdrop > .palette-dialog { padding-bottom: 0; }
   .lightning .record-form-inline .record-form-dialog::before { display: none; }
   .lightning .record-form-inline .record-form-dialog { border-radius: 0; padding-bottom: 0; }
   .lightning .records-main-toolbar:has(.records-phone-title-line) {
