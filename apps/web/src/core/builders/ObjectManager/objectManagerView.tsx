@@ -415,6 +415,7 @@ function ObjectManager({
   const [activationFormFactors, setActivationFormFactors] = useState<Array<'Desktop' | 'Phone' | 'Tablet' | 'Custom'>>(['Desktop']);
   const [showDeleteObjectConfirmation, setShowDeleteObjectConfirmation] = useState(false);
   const [deleteImpact,setDeleteImpact]=useState<Array<{kind:string;count:number}>|null>(null);
+  const [preservedRecordCount,setPreservedRecordCount]=useState(0);
   const [deletedObjects,setDeletedObjects]=useState<Array<{apiName:string;label:string;deletedAt:string}>>([]);
   const [deletedObjectsOpen,setDeletedObjectsOpen]=useState(false);
   const [deletedObjectsBusy,setDeletedObjectsBusy]=useState(false);
@@ -430,9 +431,10 @@ function ObjectManager({
   };
   const openDeleteObject=async()=>{
     try{
-      const impact=await apiRequest<{blockers:Array<{kind:string;count:number}>}>(
+      const impact=await apiRequest<{blockers:Array<{kind:string;count:number}>;preservedRecordCount:number}>(
         `/metadata/objects/${encodeURIComponent(draft.apiName)}/impact`);
       setDeleteImpact(impact.blockers);
+      setPreservedRecordCount(impact.preservedRecordCount??0);
       setShowDeleteObjectConfirmation(true);
     }catch(error){onNotify(error instanceof Error?error.message:'Unable to inspect object deletion impact');}
   };
@@ -996,7 +998,8 @@ function ObjectManager({
       {showDeleteObjectConfirmation && <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setShowDeleteObjectConfirmation(false); }}>
         <section className="modal" role="dialog" aria-modal="true" aria-labelledby="delete-object-title">
           <div className="modal-header"><h2 id="delete-object-title">Delete {draft.label}?</h2><button className="icon-button dark" onClick={() => setShowDeleteObjectConfirmation(false)} aria-label="Close"><X size={18} /></button></div>
-          <p className="modal-copy">The object will be hidden but its metadata preserved for restoration. Existing records and dependent metadata block deletion.</p>
+          <p className="modal-copy">The object will be hidden but its metadata preserved for restoration. Existing records are retained for restoration. References from other objects and dependent metadata may block deletion.</p>
+          {deleteImpact!==null && preservedRecordCount>0 && <p>{preservedRecordCount} existing records (including recycled records) will be preserved and restored with this object.</p>}
           {deleteImpact===null?<p>Checking dependencies…</p>:deleteImpact.length>0
             ?<div role="alert"><strong>Deletion blocked by dependencies:</strong><ul>{deleteImpact.map(item=>
               <li key={item.kind}>{item.kind}: {item.count}</li>)}</ul></div>
