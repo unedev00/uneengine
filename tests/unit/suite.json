@@ -194,6 +194,7 @@
     "apps/web/test/pageBuilderNumericControlStandard.test.ts",
     "apps/web/test/pageBuilderPresentationProperties.test.mjs",
     "apps/web/test/pageBuilderRibbonBlueprint.test.ts",
+    "apps/web/test/pageBuilderSessionOverflowRegression.test.mjs",
     "apps/web/test/pageBuilderStandardComponents.test.ts",
     "apps/web/test/pageBuilderTypographySpacing.test.ts",
     "apps/web/test/pageBuilderUx.test.ts",
