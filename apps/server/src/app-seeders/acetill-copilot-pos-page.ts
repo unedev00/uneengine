@@ -79,12 +79,10 @@ export const copilotTillLayout=[
  }),
  box('lock','smart_button','Verify till PIN','header',1214,28,168,52,{
   label:'🔒 Verify PIN',backgroundColor:'#E9EEF6',labelColor:'#233A54',
-  textSize:14,radius:8,actionFlows:{click:flow('AcetillVerifyUserPin',
-   {pin:'$state.tillPin'},{verified:'pinVerified'})}
- }),
- box('pin','smart_text','Till PIN','sidebar',1030,28,172,52,{
-  placeholder:'Till PIN',textSize:14,radius:8,
-  actionFlows:{change:{actionType:'PageState',stateKey:'tillPin',value:'$event'}}
+  textSize:14,radius:8,actionFlows:{click:{
+   actionType:'Flow',flowType:'Screen Flow',flowApiName:'AcetillCopilotVerifyPin',
+   inputs:{},outputs:{verified:'pinVerified'}
+  }}
  }),
  box('cash','smart_text','Cash received','sidebar',846,686,246,50,{
   placeholder:'Cash received',textSize:14,
@@ -116,7 +114,7 @@ const responsive=(block:Block,variant:string):Block=>{
  if(variant==='Desktop'||variant==='Custom')return block;
  const width=variant==='Mobile'?390:1024;
  const usable=width-24;
- const order=['new','lock','pin','search','categories','products','cart',
+ const order=['new','lock','search','categories','products','cart',
   'cash','pay','hold','held','receipt'];
  const key=block.id.replace('copilot-pos-','');
  const size=(name:string)=>name==='products'?430:name==='cart'?490:56;
