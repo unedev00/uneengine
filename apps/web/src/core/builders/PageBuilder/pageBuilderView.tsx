@@ -2341,7 +2341,8 @@ function PageBuilder({
                         pageSessionKey={(builderAppApiName || apps[0]?.apiName || 'Records') + ':' + page.apiName}
                         reports={reports} formFactor={device === 'Phone' ? 'Phone' : 'Desktop'}
                         availableFlows={flows.filter((flow) => ['Screen Flow', 'Autolaunched Flow'].includes(flow.flowType))}
-                        onNavigate={() => {}} onLaunchFlow={(flowApiName: string, inputs: Record<string, unknown>) => { onLaunchFlow(flowApiName, inputs); externalPreviewWindowRef.current?.opener?.focus?.(); }} disableActions={!previewMode} />
+                        onNavigate={(route:AppRoute)=>{if(previewMode)window.open(appRoutePath(route),'_blank','noopener,noreferrer');}}
+                         onLaunchFlow={(flowApiName: string, inputs: Record<string, unknown>) => { onLaunchFlow(flowApiName, inputs); externalPreviewWindowRef.current?.opener?.focus?.(); }} disableActions={!previewMode} />
                   : customDefinition
                     ? <RegisteredComponent definition={customDefinition} layoutTransparent props={libraryPreview ? customPreviewProps : {
                       ...component.properties,
@@ -2515,7 +2516,10 @@ function PageBuilder({
   };
   const saveAdvancedVisibility=()=>{applyVisibilityEditor();setAdvancedEditor(null);};
   const openAdvanced = (feature:AdvancedFeature) => {
-    if(feature==='preview'){setAdvancedEditor(null);setPreviewMode(value=>!value);return;}
+    if(feature==='preview'){
+      if(!previewMode&&!window.confirm('Interactive preview can execute configured Flows and update records. Continue?'))return;
+      setAdvancedEditor(null);setPreviewMode(value=>!value);return;
+    }
     if(['visibility','actions','responsive','nesting','properties','canvas'].includes(feature)&&!selected)return;
     if(feature==='recordPage'&&page.pageType!=='Record Page')return;
     if(feature==='canvas'&&page.layoutMode!=='free-canvas')return;
