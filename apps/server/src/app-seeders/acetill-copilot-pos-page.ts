@@ -19,8 +19,9 @@ const qty=flow('AcetillCopilotChangeQuantity',{
  sessionKey:'$session',cartLineId:'$event.recordId',delta:'$event.delta'
 },totals);
 const cash=flow('AcetillPaymentCash',{
- cartItems:'$state.cartItems',cartTotal:'$state.total',requestId:'$session',
- cashReceived:'$state.cashReceived'
+ cartItems:{source:'ProjectRecords',value:'$state.cartItems',fields:['Product','Quantity']},
+ cartTotal:'$state.total',requestId:'$session',
+ cashReceived:{source:'ToNumber',value:'$state.cashReceived'}
 },{status:'checkoutStatus',invoiceId:'invoiceId',total:'checkoutTotal'});
 const box=(id:string,type:string,label:string,region:string,
  x:number,y:number,width:number,height:number,properties:Record<string,unknown>):Block=>({
@@ -97,7 +98,9 @@ export const copilotTillLayout=[
   label:'Hold sale',backgroundColor:'#334E72',labelColor:'#FFFFFF',radius:8,
   actionFlows:{click:{
    ...flow('AcetillHoldCart',{requestId:'$session',label:'Till held sale',
-    cartItems:'$state.cartItems'},{holdReference:'holdReference',cartId:'heldCartId'}),
+    cartItems:{source:'ProjectRecords',value:'$state.cartItems',
+     fields:['Product','Quantity','OriginalUnitPrice']}},
+    {holdReference:'holdReference',cartId:'heldCartId'}),
    resetSessionOnSuccess:true
   }}
  }),
