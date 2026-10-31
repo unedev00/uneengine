@@ -90,11 +90,14 @@ export const copilotChangeQuantity=graph('AcetillCopilotChangeQuantity','Till: c
   object:'CartLine',recordLimit:'1',outputVariable:'selectedLine',
   conditions:[{field:'Id',operator:'Equals',value:'{!cartLineId}'},
    {field:'CartSession',operator:'Equals',value:'{!cartSessionId}'}]}),
- n(6,'Decision','Line and delta authorised?',{outcomes:[{
-  name:'Valid',label:'Valid',conditionLogic:'All',conditions:[
+ n(6,'Decision','Only one-item increment/decrement?',{outcomes:[
+  {name:'Increment',label:'Increment',conditionLogic:'All',conditions:[
    {field:'{!selectedLine}',operator:'IsNotNull'},
-   {field:'{!delta}',operator:'GreaterThanOrEqualTo',value:-1},
-   {field:'{!delta}',operator:'LessThanOrEqualTo',value:1}]}]}),
+   {field:'{!delta}',operator:'Equals',value:1}]},
+  {name:'Decrement',label:'Decrement',conditionLogic:'All',conditions:[
+   {field:'{!selectedLine}',operator:'IsNotNull'},
+   {field:'{!delta}',operator:'Equals',value:-1}]}
+ ]}),
  n(7,'Decision','Positive remaining quantity?',{outcomes:[{
   name:'Keep',label:'Keep',conditionLogic:'All',
   conditions:[{field:'{!nextQuantity}',operator:'GreaterThan',value:0}]}]}),
@@ -107,7 +110,7 @@ export const copilotChangeQuantity=graph('AcetillCopilotChangeQuantity','Till: c
   errorMessage:'Quantity change was not authorised.'}),
  n(16,'End','Quantity updated')
 ],[e(1,2),e(2,3),e(3,4,'Found'),e(3,15,'Default'),e(4,5),e(5,6),
- e(6,7,'Valid'),e(6,15,'Default'),e(7,8,'Keep'),e(7,9,'Default'),
+ e(6,7,'Increment'),e(6,7,'Decrement'),e(6,15,'Default'),e(7,8,'Keep'),e(7,9,'Default'),
  e(8,10),e(9,10),e(10,11),...qtyTotal.links,e(14,16)
 ],[variable('cartLineId','Text',true),variable('delta','Number',true),
  {name:'selectedLine',type:'Record',dataType:'CartLine'},
