@@ -9,6 +9,7 @@ import {uploadTenantImageFile} from '../ComponentProperties/TenantMediaPicker';
 import RecordFilterEditor from '../../../component-libraries/shared/primitives/RecordFilterEditor/RecordFilterEditor';
 import SmartFormulaField from './SmartFormulaField';
 import SmartIconDropdown from './SmartIconDropdown';
+import SmartMultiSelect from './SmartMultiSelect';
 import './SmartRibbon.css';
 import './SmartRibbonApprovedThreeRow.css';
 type Position={x:number;y:number;width:number;height:number};
@@ -227,7 +228,10 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
      onClick={()=>write(!(value===true||value==='true'))}>
      <span className="smart-default-check-thumb" aria-hidden="true"/>
    </button>;
-   else if(kind==='choice')editor=<select className="smart-select" aria-label={title}
+   else if(kind==='choice'&&Array.isArray(value))editor=<SmartMultiSelect
+      label={title} choices={options} value={value.filter((item):item is string=>typeof item==='string')}
+      disabled={!enabled} onChange={write}/>;
+    else if(kind==='choice')editor=<select className="smart-select" aria-label={title}
      title={value?title+': '+String(value):title} disabled={!enabled}
      value={String(value)} onChange={e=>write(e.target.value)}><option value="">Select</option>
      {options.map(s=><option value={s} key={s}>{s.replaceAll('-',' ')}</option>)}</select>;
