@@ -99,7 +99,7 @@ try{
  await assert.rejects(()=>defs.updateField(primary,'Phase2B__c','UniqueCode',
   {label:'Unique Code',dataType:'Date'}),/Unsupported|conversion|Cannot|Invalid/i);
  assert.equal((await defs.get(primary,'Phase2B__c')).fields.find(f=>f.apiName==='UniqueCode').dataType,
-  'Text (80)');
+  'Text(80)');
  // A value row missing entirely (or present with NULL) must block Required.
  await assert.rejects(()=>defs.updateField(primary,'Phase2B__c','Amount',
   {label:'Amount',required:true}),/Required field cannot be enabled/);
