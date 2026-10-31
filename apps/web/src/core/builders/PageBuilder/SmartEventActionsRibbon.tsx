@@ -2,7 +2,7 @@ import type {FlowDefinitionMetadata} from '../../metadata/Definitions/metadata';
 
 type Binding=Record<string,unknown>;
 type Actions=Record<string,unknown>;
-const clickComponents=new Set(['smart_button','smart_toggle','smart_calendar','smart_cart']);
+const clickComponents=new Set(['smart_button','smart_toggle','smart_calendar','smart_cart','smart_card_grid']);
 const asObject=(value:unknown):Binding=>
  value&&typeof value==='object'&&!Array.isArray(value)?value as Binding:{};
 
