@@ -455,7 +455,7 @@ function PageBuilder({
   const [newPageType, setNewPageType] = useState<LightningPageMetadata['pageType']>(recordPageContext ? 'Record Page' : 'App Page');
   const [newRecordMode,setNewRecordMode]=useState<'View'|'Edit'>('View');
   const [newPageTemplate, setNewPageTemplate] = useState<LightningPageTemplate>('header-main-sidebar');
-  const [newPageLayoutMode, setNewPageLayoutMode] = useState<LightningPageMetadata['layoutMode']>('template');
+  const [newPageLayoutMode, setNewPageLayoutMode] = useState<LightningPageMetadata['layoutMode']>('free-canvas');
   const [newPageTargetObject, setNewPageTargetObject] = useState(page.targetObject || objects[0]?.apiName || '');
   const [newPageAppId, setNewPageAppId] = useState('');
   const [newPageDevices, setNewPageDevices] = useState<Array<'Desktop' | 'Phone'>>(['Desktop']);
@@ -512,10 +512,8 @@ function PageBuilder({
   };
   const [selectedConversationPart,setSelectedConversationPart]=useState('parent');
   useEffect(()=>setSelectedConversationPart('parent'),[selectedId]);
-  const [ribbonTab, setRibbonTab] = useState<'Add Block' | 'Component Content' | 'Component Properties' | 'Component Style' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Component Responsive' | 'Preview' | 'Filters' | 'Source' | 'Icons' | 'Shapes'>('Add Block');
+  const [ribbonTab, setRibbonTab] = useState<'Add Block' | 'Component Content' | 'Component Properties' | 'Component Style' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Component Responsive' | 'Preview' | 'Filters' | 'Source' | 'Shapes'>('Add Block');
   useEffect(()=>{
-    if(ribbonTab==='Icons'&&page.components.find(component=>component.id===selectedId)?.type!=='Custom:smart_icon')
-      setRibbonTab('Component Properties');
     if(ribbonTab==='Shapes'&&!page.components.find(component=>component.id===selectedId)?.type.startsWith('Custom:'))
       setRibbonTab('Component Properties');
   },[ribbonTab,selectedId,page.components]);
@@ -1865,29 +1863,6 @@ function PageBuilder({
       }))
     });
   };
-  const setPageLayoutMode = (layoutMode: LightningPageMetadata['layoutMode']) => {
-    if (layoutMode === 'free-canvas') {
-      if (page.components.some((component) => !component.type.startsWith('Custom:'))) {
-        onNotify('Remove standard components before switching this page to Free Canvas');
-        return;
-      }
-      applyPage({
-        ...page,
-        layoutMode,
-        components: page.components.map((component, index) => ({
-          ...component,
-          position: component.position ?? {
-            x: Math.min(24 + index * 24, page.canvasWidth - 320),
-            y: Math.min(24 + index * 24, page.canvasHeight - 180),
-            width: 320,
-            height: 180
-          }
-        }))
-      });
-    } else {
-      applyPage({ ...page, layoutMode });
-    }
-  };
   const canvasPositionFromEvent = (event: React.DragEvent<HTMLElement>, width = 320, height = 180) => {
     const canvas = event.currentTarget.closest('.page-stage')?.querySelector<HTMLElement>('.free-canvas-stage');
     if (!canvas) return undefined;
@@ -2443,16 +2418,13 @@ function PageBuilder({
     switch(key){
       case 'backIcon':return <button type="button" title="Back to pages" aria-label="Back to pages"
         onClick={safeBackToPages}><ArrowLeft size={21}/></button>;
-      case 'pageName':return <input aria-label="Page name" value={page.label} readOnly/>;
+      
       case 'deviceLayout':return <select aria-label="Choose page layout" value={page.layoutVariant??'Desktop'}
         disabled={switchingLayout||saving}
         onChange={e=>void switchLayoutVariant(e.target.value as 'Desktop'|'Tablet'|'Mobile'|'Custom')}>
         {(['Desktop','Tablet','Mobile','Custom'] as const).map(v=><option key={v}>{v}</option>)}
       </select>;
-      case 'canvasMode':return <select aria-label="Design mode" value={page.layoutMode}
-        onChange={e=>setPageLayoutMode(e.target.value as LightningPageMetadata['layoutMode'])}>
-        <option value="template">Responsive sections</option><option value="free-canvas">Free canvas</option>
-      </select>;
+      
       case 'canvasWidth':return <input aria-label="Page width" type="number" min={320} max={10000}
         disabled={page.layoutVariant!=='Custom'} value={page.canvasWidth}
         onChange={e=>{const n=Number(e.target.value);if(Number.isInteger(n)&&n>=320&&n<=10000)applyPage({...page,canvasWidth:n});}}/>;
@@ -2462,6 +2434,11 @@ function PageBuilder({
        case 'canvasHeight':return <input aria-label="Page height" type="number" min={320} max={10000}
         disabled={page.layoutVariant!=='Custom'} value={page.canvasHeight}
         onChange={e=>{const n=Number(e.target.value);if(Number.isInteger(n)&&n>=320&&n<=10000)applyPage({...page,canvasHeight:n});}}/>;
+      case 'restoreVersion':return <button type="button" aria-label="Restore version" title="Restore selected version"
+        disabled={saving||selectedHistoryVersion===null||
+         layoutVersions.find(v=>v.version===selectedHistoryVersion)?.draft===true}
+        onClick={()=>{if(selectedHistoryVersion!==null)void restoreLayoutVersion(selectedHistoryVersion);}}>
+        Restore</button>;
       case 'selectVersion':return <div className="office-ribbon-stack office-ribbon-version-controls">
         <button type="button" aria-label={showLayoutHistory?'Refresh versions':'Load versions'}
           title={showLayoutHistory?'Refresh versions':'Load versions'}
@@ -2474,10 +2451,6 @@ function PageBuilder({
             v{item.version}{item.published?' · Published':''}{item.draft?' · Draft':''}
           </option>)}
         </select>
-        <button type="button" disabled={saving||selectedHistoryVersion===null||
-          layoutVersions.find(v=>v.version===selectedHistoryVersion)?.draft===true}
-          onClick={()=>{if(selectedHistoryVersion!==null)void restoreLayoutVersion(selectedHistoryVersion);}}>
-          Restore</button>
       </div>;
       case 'resetIcon':return <button type="button" aria-label="Reset component" title="Reset component"
         disabled={!selectedNewUne||!selected} onClick={()=>{
@@ -2512,10 +2485,9 @@ function PageBuilder({
   };
   const quickAccessOrder=['save','activate','resetIcon','undo','redo','cut','copy','paste','delete'] as const;
   const journeyTabs: Array<typeof ribbonTab> = selectedNewUne
-    ? ['Add Block',...(selected?.type==='Custom:smart_icon'?(['Icons'] as const):[]),
-       'Component Data','Component Properties','Shapes','Component Layout','Component Action','Preview']
-    : ['Add Block','Component Data','Component Content','Component Properties','Shapes','Component Layout','Component Responsive','Component Action','Preview'];
-  const journeyIndex=journeyTabs.indexOf(ribbonTab as typeof journeyTabs[number]);
+    
+    ? ['Add Block','Component Data','Component Properties','Shapes','Component Layout','Component Action','Preview']
+    : ['Add Block','Component Data','Component Content','Component Properties','Shapes','Component Layout', 'Component Action','Preview'];
   const ribbonTabsVisible: Array<typeof ribbonTab> = [...journeyTabs];
   if(ribbonTab==='Filters')ribbonTabsVisible.splice(journeyTabs.indexOf('Component Data')+1,0,'Filters');
   if(ribbonTab==='Source')ribbonTabsVisible.splice(journeyTabs.indexOf('Component Data')+1,0,'Source');
@@ -2739,7 +2711,7 @@ function PageBuilder({
                   'Component Data': Database,
                   'Component Content': Type,
                   'Component Properties': SlidersHorizontal,
-                  Icons: ImageIcon,
+
                   Shapes: ImageIcon,
                   'Component Style': Type,
                   'Component Responsive': Smartphone,
@@ -2752,7 +2724,7 @@ function PageBuilder({
                   'Component Data': 'Data',
                   'Component Content': 'Content',
                   'Component Properties': 'Design',
-                  Icons: 'Icons',
+
                   Shapes: 'Shapes',
                   'Component Style': 'Format',
                   'Component Responsive': 'Responsive',
@@ -2768,11 +2740,7 @@ function PageBuilder({
                 </button>;
               })}
             </nav>
-            <div className="office-ribbon-stepper" aria-label="Page Builder journey navigation">
-              <button type="button" aria-label="Previous Page Builder step" title="Previous step" disabled={journeyIndex<=0} onClick={()=>selectRibbonTab(journeyTabs[journeyIndex-1])}><ChevronLeft size={16}/></button>
-              <button type="button" aria-label="Next Page Builder step" title="Next step" disabled={journeyIndex<0||journeyIndex===journeyTabs.length-1} onClick={()=>selectRibbonTab(journeyTabs[journeyIndex+1])}><ChevronRight size={16}/></button>
-            </div>
-          </div>
+</div>
           <div className="office-ribbon-quick-access" role="group" aria-label="Quick Access Toolbar">
             {quickAccessOrder.map(key=><span key={key} className={'office-ribbon-quick-action office-ribbon-quick-'+key}>
               {homeValue(key)}
@@ -2788,17 +2756,36 @@ function PageBuilder({
             </div>}
           {ribbonTab==='Component Layout' && ribbonCatalog && (()=>{
             const pageRows=ribbonCatalog.properties.filter(row=>row.tab==='Home'&&
-              ['Page','Device','Canvas','Version'].includes(row.group));
+              ['Page','Device','Canvas','Version'].includes(row.group)&&
+              !['pageName','canvasMode'].includes(row.id));
             const groups=[...new Set(pageRows.map(row=>row.group))];
             return <div className="office-ribbon-page-layout-groups" aria-label="Page and canvas settings">
               {groups.map(group=><div key={group} className="office-ribbon-group une-sql-home-group"
                 data-shared-group={group}>
                 <div className="office-ribbon-stack">
-                  {pageRows.filter(row=>row.group===group).map(row=><label key={row.id}
-                    data-ribbon-property={row.id} className="une-sql-home-control">
-                    {row.kind!=='command'&&<span>{row.label}</span>}
-                    {homeValue(row.id)}
-                  </label>)}
+                  {group==='Page'?<>
+                  <label data-ribbon-property="deviceLayout" className="une-sql-home-control une-ribbon-page-layout">
+                    <span>Layout</span>{homeValue('deviceLayout')}{homeValue('restoreVersion')}
+                  </label>
+                  <div className="une-sql-home-control une-ribbon-version-only">
+                    {homeValue('selectVersion')}
+                  </div>
+                </>:group==='Canvas'?<>
+                  <label data-ribbon-property="canvasWidth" className="une-sql-home-control une-ribbon-size-with-icon"
+                    title="Canvas Width"><span className="une-ribbon-embedded-icon"><MoveHorizontal size={17}/></span>
+                    {homeValue('canvasWidth')}</label>
+                  <label data-ribbon-property="canvasHeight" className="une-sql-home-control une-ribbon-size-with-icon"
+                    title="Canvas Height"><span className="une-ribbon-embedded-icon"><MoveVertical size={17}/></span>
+                    {homeValue('canvasHeight')}</label>
+                  <div data-ribbon-property="canvasFillColor" className="une-sql-home-control une-ribbon-canvas-colour">
+                    <RibbonColorPalette variant="property" kind="fill" label="Canvas Fill Color"
+                      value={page.canvasFillColor??'#ffffff'}
+                      onChange={colour=>applyPage({...page,canvasFillColor:colour})}/>
+                  </div>
+                </>:pageRows.filter(row=>row.group===group).map(row=><label key={row.id}
+                  data-ribbon-property={row.id} className="une-sql-home-control">
+                  {row.kind!=='command'&&<span>{row.label}</span>}{homeValue(row.id)}
+                </label>)}
                 </div><span>{group}</span>
               </div>)}
             </div>;
@@ -2806,11 +2793,7 @@ function PageBuilder({
           {ribbonTab==='Add Block' && <SmartInsertRibbon
             items={paletteComponents}
             onInsert={addPaletteComponent}
-            renderIcon={renderPaletteIcon}
-            onOpenLibrary={()=>openAddBlocks()}/>}
-          {selected?.type==='Custom:smart_icon' && ribbonTab==='Icons' &&
-            <SmartIconGallery value={String(selected.properties.iconId??'house')}
-              onChange={iconId=>updateComponent(selected.id,{properties:{...selected.properties,iconId}})}/>}
+            renderIcon={renderPaletteIcon}/>}
           {selectedNewUne && selected && ribbonTab==='Component Action' &&
             <SmartEventActionsRibbon api={selected.type.slice(7)}
               actions={selected.properties.actionFlows&&typeof selected.properties.actionFlows==='object'
@@ -3612,17 +3595,8 @@ function PageBuilder({
               onKeyDown={event => { if (event.key === 'Enter') void createPage(); }}
               placeholder="For example, Inventory Management" />
           </label>
-          <label className="form-label" htmlFor="new-lightning-page-layout-mode">Choose a layout
-            <select id="new-lightning-page-layout-mode" className="form-control" value={newPageLayoutMode}
-              onChange={event => {
-                const mode = event.target.value as LightningPageMetadata['layoutMode'];
-                setNewPageLayoutMode(mode);
-                // Page type and canvas layout are independently configurable.
-              }}>
-              <option value="template">Ready-made sections</option><option value="free-canvas">Blank canvas</option>
-            </select>
-          </label>
-          <fieldset className="builder-start-choices">
+
+<fieldset className="builder-start-choices">
             <legend>What do you want to build?</legend>
             <div role="radiogroup" aria-label="Choose page type" className="builder-choice-grid">
               {pageBuilderStartOptions.filter(choice => recordPageContext ? choice.type === 'Record Page' : choice.type !== 'Record Page').map(choice => <label key={choice.type} className={newPageType === choice.type ? 'builder-choice active' : 'builder-choice'}>
@@ -3656,14 +3630,8 @@ function PageBuilder({
               ? "When you Activate this page, it will automatically be added to the chosen application's navigation."
               : 'For Home and Record pages, choosing an application prepares an App Default assignment. You can change it before activation.'}
           </p>
-          {newPageLayoutMode === 'template' && <label className="form-label" htmlFor="new-lightning-page-template">
-            Starter layout
-            <select id="new-lightning-page-template" className="form-control" value={newPageTemplate}
-              onChange={event => setNewPageTemplate(event.target.value as LightningPageTemplate)}>
-              {pageTemplates.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
-            </select>
-          </label>}
-          <label className="form-label">Design for
+
+<label className="form-label">Design for
             <select className="form-control" aria-label="Target device" value={newPageDeviceChoice} onChange={event => {
               const target = event.target.value as 'Desktop' | 'Tablet' | 'Phone';
               setNewPageDeviceChoice(target);
