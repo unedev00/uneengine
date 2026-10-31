@@ -5,6 +5,7 @@ import OfflineBriefcaseSettings from '../src/core/platform/OfflineBriefcaseSetti
 import DashboardBuilder from '../src/core/builders/DashboardBuilder/DashboardBuilder';
 import SchemaBuilder from '../src/core/builders/SchemaBuilder/SchemaBuilder';
 import AceKiosk from '../../acekiosk/src/AceKiosk';
+import AcetillTerminal from '../../acetill/src/AcetillTerminal';
 import NamedCredentials from '../src/core/integrations/NamedCredentials/NamedCredentials';
 import FlowLogs from '../src/core/automation/FlowLogs/FlowLogs';
 import FlowBuilder from '../src/core/builders/FlowBuilder/FlowBuilder';
@@ -67,6 +68,7 @@ const credentials=[{id:'sample',name:'Sample_Credential',label:'Sample credentia
 function RecordImportCheck(){ const [ready,setReady]=React.useState(false); React.useEffect(()=>{import('../src/core/records/RecordWorkspace/recordWorkspaceViews').then(module=>setReady(typeof module.createRecordWorkspaceViews === 'function'));},[]);return <p>{ready ? 'Record workspace import passed' : 'Loading record workspace'}</p>; }
 function Fixture(){
  if(view==='kiosk')return <AceKiosk onLogout={noop}/>;
+ if(view==='till')return <AcetillTerminal/>;
  let content;
  if(view==='schema')content=<SchemaBuilder objects={[object,{...object,apiName:'Invoice',label:'Invoice',kind:'Custom Object'}]} selectedObjectApiName="Account" onOpenObject={noop} onOpenField={noop} onCreateObject={noop} onNewField={noop}/>;
  else if(view==='mfa')content=<TenantMfaControls request={uxRequest} canManage onReauthenticate={noop}/>;
