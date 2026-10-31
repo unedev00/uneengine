@@ -46,7 +46,9 @@ try{
   {apiName:'Address',label:'Address',dataType:'Address'},
   {apiName:'Confidential',label:'Confidential',dataType:'Text (Encrypted)'},
   {apiName:'Attachment',label:'Attachment',dataType:'File'},
-  {apiName:'Photo',label:'Photo',dataType:'Image'}
+  {apiName:'Photo',label:'Photo',dataType:'Image'},
+  {apiName:'TicketNumber',label:'Ticket Number',dataType:'Auto Number',
+   autoNumberFormat:'TN-{0000}'}
  ];
  const created=await defs.create(primary,'Phase2B__c','Phase 2B',fields);
  assert.equal(created.fields.length,fields.length);
@@ -57,7 +59,8 @@ try{
   Notes:'textarea',Memo:'longtext',RichMemo:'richtext',Ratio:'percent',
   Quantity:'number',Timestamp:'datetime',Clock:'time',Contact:'email',
   Phone:'phone',Site:'url',Choices:'multipicklist',Location:'geolocation',
-  Address:'address',Confidential:'encryptedtext',Attachment:'file',Photo:'image'
+  Address:'address',Confidential:'encryptedtext',Attachment:'file',Photo:'image',
+  TicketNumber:'autonumber'
  };
  const catalogue=(await db.query(
   "SELECT api_name,data_type FROM md_field_definitions WHERE tenant_id=$1 AND object_api='Phase2B__c'",
@@ -91,6 +94,12 @@ try{
  await assert.rejects(()=>defs.updateField(primary,'Phase2B__c','ExtKey',
   {label:'External Key',unique:true}),/duplicate key|unique/i);
  assert.equal((await defs.get(primary,'Phase2B__c')).fields.find(f=>f.apiName==='ExtKey').unique,false);
+ // Conversion must reject incompatible stored values, leaving metadata
+ // and the record projections unchanged atomically.
+ await assert.rejects(()=>defs.updateField(primary,'Phase2B__c','UniqueCode',
+  {label:'Unique Code',dataType:'Date'}),/Unsupported|conversion|Cannot|Invalid/i);
+ assert.equal((await defs.get(primary,'Phase2B__c')).fields.find(f=>f.apiName==='UniqueCode').dataType,
+  'Text (80)');
  // A value row missing entirely (or present with NULL) must block Required.
  await assert.rejects(()=>defs.updateField(primary,'Phase2B__c','Amount',
   {label:'Amount',required:true}),/Required field cannot be enabled/);
@@ -168,11 +177,16 @@ try{
  const concurrent=await Promise.all(Array.from({length:4},(_,i)=>engine.create(primary,actor,'Phase2B__c',
   {Name:'Concurrent '+i,UniqueCode:'CONC-'+i,ExtKey:'conc-'+i})));
  assert.equal(new Set(concurrent).size,4);
+ const issuedNumbers=new Set();
  for(const id of concurrent){
   const row=await engine.get(primary,actor,'Phase2B__c',id);
   assert.equal(row.Quantity,4.125);
   assert.equal(row.Ratio,12.125);
   assert.equal(row.IsActive,true);
+  assert.match(String(row.TicketNumber),/^TN-[0-9]{4}$/);
+  assert.ok(!issuedNumbers.has(row.TicketNumber),
+   'Concurrent Auto Number values must not collide');
+  issuedNumbers.add(row.TicketNumber);
  }
  console.info('2B SQL: full catalogue, record API write/read/filter/FLS, defaults, concurrency and rollback passed');
 }finally{await db.close();}
