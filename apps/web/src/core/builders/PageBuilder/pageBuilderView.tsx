@@ -2079,7 +2079,7 @@ function PageBuilder({
     }
   };
   const renderPageComponent = (component: LightningPageMetadata['components'][number], index: number, libraryPreview = false, interactivePreview = false) => {
-    const showHiddenSelection = ribbonTab === 'Preview' && selectedId === component.id && !libraryPreview;
+    const showHiddenSelection = ribbonTab === 'Preview' && !previewMode && selectedId === component.id && !libraryPreview;
     const visualBorder = component.properties.visualStyle && typeof component.properties.visualStyle === 'object'
       ? component.properties.visualStyle as Record<string,unknown> : {};
     const editorBlackBorder = (visualBorder.borderWidth ?? component.properties.borderWidth) === 1
@@ -2151,7 +2151,7 @@ function PageBuilder({
           setFocusedCardMapping(mapping);
         }else setFocusedCardMapping('');
         setPageSettingsOpen(false); setComponentMenuId('');
-        if (!(event.shiftKey && page.layoutMode === 'free-canvas') && ['Add Block','Preview'].includes(ribbonTab)) { setRibbonTab(componentNeedsData(component.type)?'Component Data':'Component Properties'); openComponentInspector(componentNeedsData(component.type)?'Data & Actions':'Design'); }
+        if (!(event.shiftKey && page.layoutMode === 'free-canvas') && ribbonTab==='Add Block') { setRibbonTab(componentNeedsData(component.type)?'Component Data':'Component Properties'); openComponentInspector(componentNeedsData(component.type)?'Data & Actions':'Design'); }
 
     };
     const selectOnlyInDesigner = !previewMode && !libraryPreview;
@@ -2160,7 +2160,7 @@ function PageBuilder({
       data-page-appearance={isLayoutType(component.type) ? 'layout' : pageAppearanceTarget(component.type)}
       data-page-style={pageAppearanceStyleKeys(visualStyle)}
       ref={libraryPreview && !interactivePreview ? (element) => { if (element) element.inert = true; } : undefined}
-      className={`record-component ${(!libraryPreview || interactivePreview) && page.layoutMode === 'free-canvas' ? 'free-canvas-component' : ''} ${isCanvasLocked(component) ? 'canvas-component-locked' : ''} ${nested ? 'nested-page-component' : ''} ${isLayoutContainer(component) ? 'layout-container-component' : ''} ${libraryPreview ? 'component-rendered-preview' : ''} ${selectedId === component.id && (!previewMode || ribbonTab === 'Preview') && !libraryPreview ? 'selected' : ''} ${selectionIds.includes(component.id) && (!previewMode || ribbonTab === 'Preview') && !libraryPreview ? 'multi-selected' : ''} ${showHiddenSelection ? 'canvas-hidden-selection' : ''} ${editorBlackBorder ? 'canvas-authored-black-border' : ''} ${dragOverId === component.id && !libraryPreview ? 'drop-target' : ''}`}
+      className={`record-component ${(!libraryPreview || interactivePreview) && page.layoutMode === 'free-canvas' ? 'free-canvas-component' : ''} ${isCanvasLocked(component) ? 'canvas-component-locked' : ''} ${nested ? 'nested-page-component' : ''} ${isLayoutContainer(component) ? 'layout-container-component' : ''} ${libraryPreview ? 'component-rendered-preview' : ''} ${selectedId === component.id && !previewMode && !libraryPreview ? 'selected' : ''} ${selectionIds.includes(component.id) && !previewMode && !libraryPreview ? 'multi-selected' : ''} ${showHiddenSelection ? 'canvas-hidden-selection' : ''} ${editorBlackBorder ? 'canvas-authored-black-border' : ''} ${dragOverId === component.id && !libraryPreview ? 'drop-target' : ''}`}
       style={{
         ...((!libraryPreview || interactivePreview) && page.layoutMode === 'free-canvas'
           ? nested
@@ -2463,6 +2463,12 @@ function PageBuilder({
   const openAddBlocks = (region: 'header' | 'main' | 'sidebar' | null = null) => {
     setPaletteInsertRegion(region); setPaletteTab('Components'); setPaletteCategory('All Components'); setActivePanel('palette');
   };
+  const enterInteractivePreview=()=>{
+    if(previewMode)return;
+    if(!window.confirm('Interactive preview can execute configured Flows and update records. Continue?'))return;
+    setAdvancedEditor(null);setRibbonTab('Preview');setPreviewMode(true);
+  };
+  const exitInteractivePreview=()=>setPreviewMode(false);
   // Page-level controls remain SQL-owned; present them on the top bar or Layout,
   // without changing their saved values, action callbacks or the global Smart inventory.
   const homeValue=(key:string):React.ReactNode=>{
@@ -2503,6 +2509,12 @@ function PageBuilder({
           </option>)}
         </select>
       </div>;
+      case 'preview':return <button type="button" className="office-ribbon-icon-button"
+        aria-label="Preview page" title="Preview page" disabled={previewMode}
+        onClick={enterInteractivePreview}><Eye size={17}/></button>;
+      case 'exitPreview':return <button type="button" className="office-ribbon-icon-button"
+        aria-label="Exit preview" title="Exit preview" disabled={!previewMode}
+        onClick={exitInteractivePreview}><EyeOff size={17}/></button>;
       case 'resetIcon':return <button type="button" aria-label="Reset component" title="Reset component"
         disabled={!selectedNewUne||!selected} onClick={()=>{
           if(!selected||!ribbonCatalog||!isUneBuilderApi(selected.type.slice(7),ribbonCatalog.components))return;
@@ -2534,24 +2546,19 @@ function PageBuilder({
       default:return null;
     }
   };
-  const saveAdvancedVisibility=()=>{applyVisibilityEditor();setAdvancedEditor(null);};
-  const openAdvanced = (feature:AdvancedFeature) => {
-    if(feature==='preview'){
-      if(!previewMode&&!window.confirm('Interactive preview can execute configured Flows and update records. Continue?'))return;
-      setAdvancedEditor(null);setPreviewMode(value=>!value);return;
-    }
-    if(['visibility','actions','responsive','nesting','properties','canvas'].includes(feature)&&!selected)return;
+  const savePreviewVisibility=()=>applyVisibilityEditor();
+  const cancelPreviewVisibility=()=>{
+    const raw=selected?.properties.visibilityRules;
+    setVisibilityDraft(raw&&typeof raw==='object'&&!Array.isArray(raw)
+      ?structuredClone(raw as ComponentVisibilityRule):undefined);
+  };
+  const openAdvanced=(feature:AdvancedFeature)=>{
+    if(['actions','responsive','nesting','properties'].includes(feature)&&!selected)return;
     if(feature==='recordPage'&&page.pageType!=='Record Page')return;
-    if(feature==='canvas'&&page.layoutMode!=='free-canvas')return;
-    if(feature==='visibility'){
-      const raw=selected?.properties.visibilityRules;
-      setVisibilityDraft(raw&&typeof raw==='object'&&!Array.isArray(raw)
-        ?structuredClone(raw as ComponentVisibilityRule):undefined);
-    }
     if(feature==='properties'){setInspectorTab('Data & Actions');setActivePanel('properties');}
     setAdvancedEditor(feature);
   };
-  const quickAccessOrder=['save','activate','resetIcon','undo','redo','cut','copy','paste','delete'] as const;
+  const quickAccessOrder=['save','activate','preview','exitPreview','resetIcon','undo','redo','cut','copy','paste','delete'] as const;
   const journeyTabs: Array<typeof ribbonTab> = selectedNewUne
     ? ['Add Block','Component Data','Component Properties','Shapes','Component Layout','Component Action','Advanced','Preview']
     : ['Add Block','Component Data','Component Content','Component Properties','Shapes','Component Layout','Component Action','Advanced','Preview'];
@@ -2568,7 +2575,7 @@ function PageBuilder({
     setPaletteInsertRegion(null);
   };
   return (
-    <div className={`builder-page ${editorMode ? "builder-editor-mode" : "builder-list-mode"} ${isPhoneBuilder ? 'builder-phone-read-mode' : ''}`}>
+    <div className={`builder-page ${editorMode ? "builder-editor-mode" : "builder-list-mode"} ${isPhoneBuilder ? 'builder-phone-read-mode' : ''} ${previewMode ? 'builder-interactive-preview' : ''}`}>
       {editorMode&&selected?.type==='Related List'&&(()=>{
         const names=Array.isArray(selected.properties.relatedLists)
           ?selected.properties.relatedLists.filter((name):name is string=>typeof name==='string'):[];
@@ -2764,7 +2771,7 @@ function PageBuilder({
         </tr>)}</tbody></table>{!visiblePages.length && <div className="records-empty">No pages match the selected filter. Create a new page to begin.</div>}</div>
       </section>}
       {editorMode && <>
-      <section className="office-builder-ribbon" aria-label="Page Builder ribbon">
+      <section className={`office-builder-ribbon ${previewMode ? 'is-interactive-preview' : ''}`} aria-label="Page Builder ribbon">
         <div className="office-ribbon-topbar">
           <div className="office-ribbon-topbar-back">{homeValue('backIcon')}</div>
           <div className="office-ribbon-selection-context" title={selected?.label||selected?.type||'Welcome'}>
@@ -2815,7 +2822,7 @@ function PageBuilder({
           </div>
         </div>
         <div id="page-builder-tab-content" ref={ribbonStripRef} onScroll={measureRibbonOverflow}
-          className="office-ribbon-content" role="tabpanel" aria-label={ribbonTab}
+          className="office-ribbon-content" role="tabpanel" aria-hidden={previewMode} aria-label={ribbonTab}
           aria-labelledby={`page-builder-tab-${Math.max(0,ribbonTabsVisible.indexOf(ribbonTab))}`}>
           {ribbonTab==='Preview' && <div className="office-ribbon-group canvas-preview-selector-group" aria-label="Preview component selector">
             <div className="office-ribbon-stack">
@@ -2844,8 +2851,7 @@ function PageBuilder({
           </div>}
           {ribbonTab==='Preview' && <div className="office-ribbon-group canvas-preview-tools" aria-label="Canvas display">
             <div className="office-ribbon-stack">
-              <button type="button" onClick={()=>setPreviewMode(value=>!value)}>
-                {previewMode?'Edit canvas':'Preview page'}</button>
+              
               <button type="button" onClick={()=>{setFitCanvas(true);setFitFullPage(true);}}
                 aria-pressed={fitCanvas&&fitFullPage}>Fit to Screen</button>
               <button type="button" onClick={()=>{setFitCanvas(true);setFitFullPage(false);}}
@@ -2854,6 +2860,19 @@ function PageBuilder({
                 aria-pressed={!fitCanvas}>100% actual size</button>
               <span aria-live="polite">{page.canvasWidth} × {page.canvasHeight} · {fitCanvas?Math.round(fitScale*100):100}%</span>
             </div><span>View</span>
+          </div>}
+          {ribbonTab==='Preview' && <div className="office-ribbon-group preview-visibility-group" aria-label="Conditional visibility">
+            {selected ? <div className="preview-visibility-controls">
+              <label className="ribbon-small-checkbox"><input type="checkbox" checked={selected.visible}
+                onChange={event=>updateComponent(selected.id,{visible:event.target.checked})}/>
+                Component visible on this page</label>
+              <RibbonVisibilityRules draft={visibilityDraft} onChange={setVisibilityDraft}
+                onApply={savePreviewVisibility} onCancel={cancelPreviewVisibility} fields={fields}
+                allowRecordFields={Boolean(targetObject&&page.pageType==='Record Page')}
+                profiles={profiles.map(profile=>({id:profile.id,label:profile.label}))}
+                recordTypes={(targetObject?.recordTypes??[]).map(type=>({id:type.id,label:type.label}))}/>
+            </div> : <div className="preview-visibility-unselected">Select a component to set its visibility.</div>}
+            <span>Conditional visibility</span>
           </div>}
           {ribbonTab==='Component Layout' && <div className="office-ribbon-group canvas-placement-group" aria-label="Placement">
             <div className="office-ribbon-stack canvas-placement-actions">
@@ -2910,8 +2929,26 @@ function PageBuilder({
           })()}
           {ribbonTab==='Advanced' && <PageBuilderAdvancedRibbon
             selected={!!selected} recordPage={page.pageType==='Record Page'}
-            freeCanvas={page.layoutMode==='free-canvas'} preview={previewMode}
-            onOpen={openAdvanced}/>}
+            onOpen={openAdvanced}
+            canvasTools={page.layoutMode==='free-canvas' ? <>
+              <button type="button" disabled={selectionIds.length<2||!selected?.position}
+                onClick={wrapSelectedInContainer}><Group size={15}/> Group</button>
+              <button type="button" disabled={!selected||(!canvasGroupKey(selected)&&!(selected.type==='Container'&&childrenOf(page.components,selected.id).length>0))}
+                onClick={ungroupSelected}><Ungroup size={15}/> Ungroup</button>
+              {(['start','center','end'] as const).map(anchor=><React.Fragment key={anchor}>
+                <button type="button" disabled={!selected||!selected.position||isCanvasLocked(selected)}
+                  onClick={()=>alignSelected('x',anchor)}>Align horizontal {anchor}</button>
+                <button type="button" disabled={!selected||!selected.position||isCanvasLocked(selected)}
+                  onClick={()=>alignSelected('y',anchor)}>Align vertical {anchor}</button>
+              </React.Fragment>)}
+              <button type="button" disabled={selectionIds.length<3} onClick={()=>distributeSelected('x')}>Distribute horizontally</button>
+              <button type="button" disabled={selectionIds.length<3} onClick={()=>distributeSelected('y')}>Distribute vertically</button>
+              <button type="button" disabled={!selected||isCanvasLocked(selected)} onClick={()=>moveSelected(-1)}>Bring forward</button>
+              <button type="button" disabled={!selected||isCanvasLocked(selected)} onClick={()=>moveSelected(1)}>Send backward</button>
+              <button type="button" disabled={!selected} onClick={()=>selected&&updateComponent(selected.id,{properties:{
+                ...selected.properties,editorLocked:!isCanvasLocked(selected)}})}>
+                {selected&&isCanvasLocked(selected)?'Unlock component':'Lock component'}</button>
+            </> : null}/>}
           {ribbonTab==='Add Block' && <SmartInsertRibbon
             items={paletteComponents}
             onInsert={addPaletteComponent}
@@ -2954,17 +2991,6 @@ function PageBuilder({
             <button type="button" className="icon-button" aria-label="Close advanced editor"
               onClick={()=>setAdvancedEditor(null)}><X size={16}/></button></div>
           <div className="page-builder-advanced-body">
-            {advancedEditor==='visibility' && selected && <>
-              <label className="checkbox-row"><input type="checkbox" checked={selected.visible}
-                onChange={event=>updateComponent(selected.id,{visible:event.target.checked})}/>
-                Component visible on this page</label>
-              <RibbonVisibilityRules draft={visibilityDraft} onChange={setVisibilityDraft}
-                onApply={saveAdvancedVisibility}
-                onCancel={()=>setAdvancedEditor(null)} fields={fields}
-                allowRecordFields={Boolean(targetObject&&page.pageType==='Record Page')}
-                profiles={profiles.map(profile=>({id:profile.id,label:profile.label}))}
-                recordTypes={(targetObject?.recordTypes??[]).map(type=>({id:type.id,label:type.label}))}/>
-            </>}
             {advancedEditor==='actions' && selected && <MetadataComponentProperties
               key={selected.id} mode="actions-editor" properties={selected.properties}
               onChange={(properties:Record<string,unknown>)=>updateComponent(selected.id,{properties})}
@@ -3023,30 +3049,6 @@ function PageBuilder({
                   {item.label}</button>)}
               </div>}
             </>}
-            {advancedEditor==='canvas' && selected && <div className="page-builder-advanced-canvas-buttons">
-              <button type="button" className="btn" disabled={selectionIds.length<2||!selected.position}
-                onClick={wrapSelectedInContainer}>Group</button>
-              <button type="button" className="btn" disabled={selected.type!=='Container'||isCanvasLocked(selected)}
-                onClick={ungroupSelected}>Ungroup</button>
-              {(['start','center','end'] as const).map(anchor=><React.Fragment key={anchor}>
-                <button type="button" className="btn" disabled={!selected.position||isCanvasLocked(selected)}
-                  onClick={()=>alignSelected('x',anchor)}>Align horizontal {anchor}</button>
-                <button type="button" className="btn" disabled={!selected.position||isCanvasLocked(selected)}
-                  onClick={()=>alignSelected('y',anchor)}>Align vertical {anchor}</button>
-              </React.Fragment>)}
-              <button type="button" className="btn" disabled={selectionIds.length<3}
-                onClick={()=>distributeSelected('x')}>Distribute horizontally</button>
-              <button type="button" className="btn" disabled={selectionIds.length<3}
-                onClick={()=>distributeSelected('y')}>Distribute vertically</button>
-              <button type="button" className="btn" disabled={isCanvasLocked(selected)}
-                onClick={()=>moveSelected(-1)}>Bring forward</button>
-              <button type="button" className="btn" disabled={isCanvasLocked(selected)}
-                onClick={()=>moveSelected(1)}>Send backward</button>
-              <button type="button" className="btn"
-                onClick={()=>updateComponent(selected.id,{properties:{
-                  ...selected.properties,editorLocked:!isCanvasLocked(selected)}})}>
-                {isCanvasLocked(selected)?'Unlock component':'Lock component'}</button>
-            </div>}
             {advancedEditor==='recordPage'&&selected&&
               <button type="button" className="btn btn-small"
                 onClick={()=>{setInspectorTab('Data & Actions');setActivePanel('properties');setAdvancedEditor('properties');}}>
@@ -3086,7 +3088,7 @@ function PageBuilder({
               }
             }}
             onClick={(event) => {
-            if ((event.target as HTMLElement).closest('.record-component,.canvas-drop-zone,button,input,select,textarea')) return;
+            if (previewMode || (event.target as HTMLElement).closest('.record-component,.canvas-drop-zone,button,input,select,textarea')) return;
             setSelectedId(''); setSelectionIds([]); setSelectedRegion(null); setRibbonTab('Add Block'); setPageSettingsOpen(false); setActivePanel(null);
           }} onDragOver={(event) => event.preventDefault()} onDrop={(event) => handleDrop(event)}>
             <div
