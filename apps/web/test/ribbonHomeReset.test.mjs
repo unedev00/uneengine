@@ -11,7 +11,8 @@ test('page-level handlers remain intact in topbar and Layout while Smart Insert 
  assert.ok(marker>0&&end>marker);
  for(const name of ["case 'backIcon'","case 'restoreVersion'","case 'save'","case 'activate'","case 'resetIcon'"])
   assert.ok(page.includes(name),name);
- assert.doesNotMatch(body,/<UneBuilderRibbon|<UniversalRibbonInventory|<PageBuilderActionRibbon|<PageBuilderRibbonData|ribbonTab==='Preview'|ribbonTab==='Parity'/);
+ assert.doesNotMatch(body,/<UneBuilderRibbon|<UniversalRibbonInventory|<PageBuilderActionRibbon|<PageBuilderRibbonData|ribbonTab==='Parity'/);
+ assert.match(body,/ribbonTab==='Preview' && <div className="office-ribbon-group canvas-preview-selector-group"/, 'Preview selector is a first-class ribbon group');
  assert.match(body,/ribbonTab==='Add Block' && <SmartInsertRibbon/);
  assert.match(body,/onInsert=\{addPaletteComponent\}/);
  assert.doesNotMatch(body,/onOpenLibrary=\{\(\)=>openAddBlocks\(\)\}/);

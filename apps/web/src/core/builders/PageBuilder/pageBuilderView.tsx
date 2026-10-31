@@ -160,6 +160,7 @@ import {isUneBuilderApi,uneBuilderDefaults,type SharedRibbonCatalog,type UneBuil
 import './UniversalRibbonInventory.css';
 import './PageBuilderNumericControls.css';
 import './PageBuilderRibbonPolish.css';
+import './PageBuilderCanvasWorkspace.css';
 import './SmartCanvasHandles.css';
 import RibbonFieldExpressionInput from './RibbonFieldExpressionInput';
 import {RibbonResponsive} from './PageBuilderRibbonStyle';
@@ -169,7 +170,9 @@ import PageBuilderRibbonContent from './PageBuilderRibbonContent';
 
 import { canNestComponent, pageAppearanceTarget, pageAppearanceStyleKeys, updateLayoutSettings, type LayoutSettingKey, directChildren, isLayoutType, isDescendantOf, layoutTypes } from '../../pages/TemplatePageRuntime/pageComponentLayout';
 import PageComponentStyleEditor from '../ComponentStyleEditor/PageComponentStyleEditor';
-import { isCanvasLocked, wrapCanvasComponent, groupCanvasComponents, ungroupCanvasComponent, snapCanvasPosition, alignCanvasComponents, distributeCanvasComponents } from './canvasInteractions';
+import { isCanvasLocked, ungroupCanvasComponent, snapCanvasPosition, alignCanvasComponents, distributeCanvasComponents } from './canvasInteractions';
+import {canvasGroupKey, canvasGroupMembers, groupCanvasSelection, ungroupCanvasSelection, moveCanvasLayer, canvasGroupBounds} from './canvasLayerGroups';
+import {useCanvasGroupGestures} from './useCanvasGroupGestures';
 import { copyComponentTree, cloneComponentTree, remapComponentInteractionTargets, assignTabOnReparent, type ComponentClipboard } from './pageComponentTree';
 import { filterPageComponentRecords, needsMetadataComponentRuntime } from '../../pages/PageRuntime/pageComponentBindings';
 import { childrenOf, canNest, componentLayoutProps, hasPageComponentAppearance, isLayoutContainer, rawLayoutParentId, reparentComponent, resolvePageComponentStyle, type LayoutDevice } from '../../pages/TemplatePageRuntime/pageComponentLayout';
@@ -447,6 +450,7 @@ function PageBuilder({
   const [newRecordLinkLabel,setNewRecordLinkLabel]=useState('');
   const [newRecordLinkUrl,setNewRecordLinkUrl]=useState('');
   const [fitCanvas, setFitCanvas] = useState(true);
+  const [fitFullPage, setFitFullPage] = useState(false);
   const [fitScale, setFitScale] = useState(1);
   const pagePreviewAreaRef = useRef<HTMLDivElement | null>(null);
   const [canvasRefreshKey, setCanvasRefreshKey] = useState(0);
@@ -571,6 +575,8 @@ function PageBuilder({
   const fields = targetObject?.fields ?? [];
   const pageLayouts = targetObject?.pageLayouts ?? [];
   const selected = page.components.find((component) => component.id === selectedId);
+  const selectedGroupMembers = selected && page.layoutMode === 'free-canvas' ? canvasGroupMembers(page.components,selected) : [];
+  const selectedGroupBounds = canvasGroupBounds(selectedGroupMembers);
   const [visibilityEditorOpen,setVisibilityEditorOpen]=useState(false);
   const [visibilityDraft,setVisibilityDraft]=useState<ComponentVisibilityRule|undefined>();
   useEffect(()=>{
@@ -896,14 +902,16 @@ function PageBuilder({
       return;
     }
     const updateScale = () => {
-      const availableWidth = Math.max(1, previewArea.clientWidth - 72);
-      setFitScale(canvasScaleToFitWidth(page.canvasWidth, availableWidth));
+      const availableWidth = Math.max(1, previewArea.clientWidth - 8);
+      const widthScale = canvasScaleToFitWidth(page.canvasWidth,availableWidth);
+      const heightScale = Math.min(1,Math.max(0.01,(previewArea.clientHeight-8)/page.canvasHeight));
+      setFitScale(fitFullPage ? Math.min(widthScale,heightScale) : widthScale);
     };
     updateScale();
     const observer = new ResizeObserver(updateScale);
     observer.observe(previewArea);
     return () => observer.disconnect();
-  }, [fitCanvas, page.layoutMode, page.canvasWidth, page.canvasHeight]);
+  }, [fitCanvas, fitFullPage, page.layoutMode, page.canvasWidth, page.canvasHeight]);
   useEffect(() => {
     if (page.pageType !== 'Record Page') setPaletteTab('Components');
   }, [page.pageType]);
@@ -1007,35 +1015,41 @@ function PageBuilder({
     applyPage({ ...page, components: page.components.map((component) => component.id === id ? { ...component, ...nextUpdate } : component) });
   };
   const moveLayer = (id: string, offset: -1 | 1) => {
-    const index = page.components.findIndex(component => component.id === id);
-    const target = index + offset;
-    if (index < 0 || target < 0 || target >= page.components.length ||
-      isCanvasLocked(page.components[index]) || isCanvasLocked(page.components[target])) return;
-    const components = [...page.components];
-    [components[index], components[target]] = [components[target], components[index]];
-    applyPage({ ...page, components });
+    const chosen = page.components.find(item => item.id === id);
+    if (!chosen || isCanvasLocked(chosen)) return;
+    const siblings = page.components.filter(item => rawLayoutParentId(item) === rawLayoutParentId(chosen));
+    const from = siblings.findIndex(item => item.id === id), to = from + offset;
+    if (from < 0 || to < 0 || to >= siblings.length) return;
+    const ordered = [...siblings];
+    [ordered[from], ordered[to]] = [ordered[to], ordered[from]];
+    let index = 0;
+    applyPage({...page,components:page.components.map(item =>
+      rawLayoutParentId(item) === rawLayoutParentId(chosen) ? ordered[index++] : item)});
+  };
+  const placeSelectedLayer = (edge: 'front'|'back') => {
+    if (selected && !isCanvasLocked(selected))
+      applyPage({...page,components:moveCanvasLayer(page.components,selected.id,edge)});
   };
   const wrapSelectedInContainer = () => {
-    if (!selected || !selected.position || isCanvasLocked(selected) || rawLayoutParentId(selected)) return;
-    if (selectionIds.length<2 || selectionIds.some(id=>{
-      const item=page.components.find(component=>component.id===id);
-      return !item?.position||Boolean(rawLayoutParentId(item))||isCanvasLocked(item);
-    }))return;
-    const groupId = 'group-' + crypto.randomUUID();
-    const eligible=page.components.filter(item=>selectionIds.includes(item.id)&&item.position&&!rawLayoutParentId(item)&&!isCanvasLocked(item));
-    const next=eligible.length>1
-      ?groupCanvasComponents(page.components,eligible.map(item=>item.id),groupId)
-      :wrapCanvasComponent(page.components,selected.id,groupId);
-    applyPage({ ...page, components: next });
-    setSelectionIds([groupId]);
-    setSelectedId(groupId);
-    setPaletteTab('Layers');
+    if (page.layoutMode !== 'free-canvas' || selectionIds.length < 2) return;
+    const next = groupCanvasSelection(page.components,selectionIds,'group-' + crypto.randomUUID());
+    if (next.every((item,index) => item === page.components[index])) {
+      onNotify('Select two or more unlocked components in the same parent to group.');
+      return;
+    }
+    applyPage({...page,components:next});
   };
   const ungroupSelected = () => {
-    if (!selected || selected.type !== 'Container' || isCanvasLocked(selected)) return;
-    const children = childrenOf(page.components, selected.id);
+    if (!selected || isCanvasLocked(selected)) return;
+    if (canvasGroupKey(selected)) {
+      applyPage({...page,components:ungroupCanvasSelection(page.components,selected.id)});
+      setSelectionIds([selected.id]);
+      return;
+    }
+    if (selected.type !== 'Container') return;
+    const children = childrenOf(page.components,selected.id);
     if (!children.length || children.some(isCanvasLocked)) return;
-    applyPage({ ...page, components: ungroupCanvasComponent(page.components, selected.id) });
+    applyPage({...page,components:ungroupCanvasComponent(page.components,selected.id)});
     setSelectedId(children[0].id);
   };
   const startComponentPanelResize = (event: React.PointerEvent<HTMLButtonElement>) => {
@@ -1075,7 +1089,7 @@ function PageBuilder({
   // re-rendering the entire page on each frame. A normal drag always targets
   // exactly the hit component; multi-selection is for explicit Group/Align.
   const startCanvasMove = (event: React.PointerEvent<HTMLElement>, component: PageComponentMetadata) => {
-    if (previewMode || !component.position || isCanvasLocked(component)
+    if (canvasGroupKey(component) || previewMode || !component.position || isCanvasLocked(component)
       || event.button !== 0 || event.shiftKey || canvasMoveStart.current || canvasResizeStart.current) return;
     const element = event.currentTarget.closest<HTMLElement>('.free-canvas-component');
     const hit = event.target as Element;
@@ -1154,6 +1168,15 @@ function PageBuilder({
     [items[index], items[target]] = [items[target], items[index]];
     applyPage({ ...page, components: items });
   };
+  const {start:startCanvasGroupGesture,move:moveCanvasGroupGesture,end:endCanvasGroupGesture}
+    = useCanvasGroupGestures({
+      members:selectedGroupMembers,bounds:selectedGroupBounds,width:page.canvasWidth,height:page.canvasHeight,
+      scale:fitCanvas?fitScale:1,enabled:!previewMode,
+      onCommit:positions=>applyPage({...page,components:page.components.map(item=>{
+        const position=positions.get(item.id);
+        return position?{...item,position}:item;
+      })})
+    });
   const startCanvasResize = (event: React.PointerEvent<HTMLButtonElement>, component: PageComponentMetadata, edge: ResizeEdge) => {
     if (!component.position || isCanvasLocked(component) || event.button !== 0
       || canvasMoveStart.current || canvasResizeStart.current) return;
@@ -1274,6 +1297,14 @@ function PageBuilder({
       visible: true, parentId: parentId ?? undefined, region,
       ...(freeCanvasPosition ? { position: freeCanvasPosition } : {})
     });
+    // Author a visible, editable border only for new components.
+    const inserted = components.find(item => item.id === id)!;
+    const authored = inserted.properties.visualStyle && typeof inserted.properties.visualStyle === 'object'
+      && !Array.isArray(inserted.properties.visualStyle)
+      ? inserted.properties.visualStyle as Record<string,unknown> : {};
+    inserted.properties = isLayoutType(type)
+      ? {...inserted.properties,visualStyle:{...authored,borderWidth:1,borderColor:'#000000'}}
+      : {...inserted.properties,borderWidth:1,borderColor:'#000000'};
     applyPage({ ...page, components: assignTabOnReparent(
       components,id,parentId,parentId ? openBuilderTabs[parentId] : undefined) });
     setRecentComponents(current => addRecentPageBlock(current, type));
@@ -2048,7 +2079,12 @@ function PageBuilder({
     }
   };
   const renderPageComponent = (component: LightningPageMetadata['components'][number], index: number, libraryPreview = false, interactivePreview = false) => {
-    if (!component.visible) return null;
+    const showHiddenSelection = ribbonTab === 'Preview' && selectedId === component.id && !libraryPreview;
+    const visualBorder = component.properties.visualStyle && typeof component.properties.visualStyle === 'object'
+      ? component.properties.visualStyle as Record<string,unknown> : {};
+    const editorBlackBorder = (visualBorder.borderWidth ?? component.properties.borderWidth) === 1
+      && (visualBorder.borderColor ?? component.properties.borderColor) === '#000000';
+    if (!component.visible && !showHiddenSelection) return null;
     const customDefinition = component.type.startsWith('Custom:')
       ? findRegisteredComponent(libraryComponents, component.type.slice('Custom:'.length), 'page')
       : undefined;
@@ -2092,15 +2128,16 @@ function PageBuilder({
     // Canvas selection is a builder operation, never a component's runtime action.
     // The same selection path is used for pointer hits and intercepted live controls.
     const selectCanvasComponent = (event: React.MouseEvent<HTMLDivElement>) => {
+      const linkedIds = canvasGroupMembers(page.components,component).map(item=>item.id);
       event.stopPropagation();
 
         if (event.shiftKey && page.layoutMode === 'free-canvas') {
-          const next = selectionIds.includes(component.id) && selectionIds.length > 1
-            ? selectionIds.filter(id => id !== component.id) : [...new Set([...selectionIds, component.id])];
+          const next = selectionIds.includes(component.id) && selectionIds.length > linkedIds.length
+            ? selectionIds.filter(id => !linkedIds.includes(id)) : [...new Set([...selectionIds, ...linkedIds])];
           setSelectionIds(next);
           setSelectedId(next.includes(component.id) ? component.id : next[0]);
         } else {
-          setSelectionIds([component.id]);
+          setSelectionIds(linkedIds);
           setSelectedRegion(null);
           setSelectedId(component.id);
         }
@@ -2123,7 +2160,7 @@ function PageBuilder({
       data-page-appearance={isLayoutType(component.type) ? 'layout' : pageAppearanceTarget(component.type)}
       data-page-style={pageAppearanceStyleKeys(visualStyle)}
       ref={libraryPreview && !interactivePreview ? (element) => { if (element) element.inert = true; } : undefined}
-      className={`record-component ${(!libraryPreview || interactivePreview) && page.layoutMode === 'free-canvas' ? 'free-canvas-component' : ''} ${isCanvasLocked(component) ? 'canvas-component-locked' : ''} ${nested ? 'nested-page-component' : ''} ${isLayoutContainer(component) ? 'layout-container-component' : ''} ${libraryPreview ? 'component-rendered-preview' : ''} ${selectedId === component.id && !previewMode && !libraryPreview ? 'selected' : ''} ${selectionIds.includes(component.id) && !previewMode && !libraryPreview ? 'multi-selected' : ''} ${dragOverId === component.id && !libraryPreview ? 'drop-target' : ''}`}
+      className={`record-component ${(!libraryPreview || interactivePreview) && page.layoutMode === 'free-canvas' ? 'free-canvas-component' : ''} ${isCanvasLocked(component) ? 'canvas-component-locked' : ''} ${nested ? 'nested-page-component' : ''} ${isLayoutContainer(component) ? 'layout-container-component' : ''} ${libraryPreview ? 'component-rendered-preview' : ''} ${selectedId === component.id && (!previewMode || ribbonTab === 'Preview') && !libraryPreview ? 'selected' : ''} ${selectionIds.includes(component.id) && (!previewMode || ribbonTab === 'Preview') && !libraryPreview ? 'multi-selected' : ''} ${showHiddenSelection ? 'canvas-hidden-selection' : ''} ${editorBlackBorder ? 'canvas-authored-black-border' : ''} ${dragOverId === component.id && !libraryPreview ? 'drop-target' : ''}`}
       style={{
         ...((!libraryPreview || interactivePreview) && page.layoutMode === 'free-canvas'
           ? nested
@@ -2217,7 +2254,9 @@ function PageBuilder({
           <button type="button" role="menuitem" disabled={isCanvasLocked(component)} onClick={() => {removeSelected();setComponentMenuId('');}}>Delete <kbd>Delete</kbd></button>
         </div>}
       </div>}
-      {isLayoutType(component.type)
+      {showHiddenSelection && !component.visible
+        ? <span className="canvas-hidden-marker">Hidden: {component.label}</span>
+        : isLayoutType(component.type)
         ? <div className="page-nested-layout" style={visualStyle}>
           {directChildren(page.components, component.id).map((child) => renderPageComponent(child, page.components.indexOf(child), libraryPreview, interactivePreview))}
           {!libraryPreview && !previewMode && <div className="canvas-drop-zone" onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.stopPropagation(); const draggedId = event.dataTransfer.getData('application/x-metadrive-component-id'); if (draggedId && canNestComponent(page.components, draggedId, component.id)) { applyPage({ ...page, components: page.components.map((item) => item.id === draggedId ? { ...item, parentId: component.id } : item) }); } else if (!draggedId) { const type = event.dataTransfer.getData('text/plain').replace(/^component:/, ''); if (type) addComponent(type, page.components.length, component.region ?? 'main', undefined, component.id); } }}>Drop components inside {component.label}</div>}
@@ -2384,7 +2423,7 @@ function PageBuilder({
           onPointerCancel={event=>endCanvasMove(event,true)}
           onLostPointerCapture={event=>endCanvasMove(event,true)}
           onClick={event=>event.stopPropagation()}/>)}
-      {!libraryPreview && page.layoutMode === 'free-canvas' && !nested && selectedId === component.id && !previewMode && !isCanvasLocked(component)
+      {!libraryPreview && page.layoutMode === 'free-canvas' && !nested && selectedId === component.id && !previewMode && !isCanvasLocked(component) && !canvasGroupKey(component)
         && (['n','ne','e','se','s','sw','w','nw'] as const).map(edge =>
           <button key={edge} type="button" className={`free-canvas-resize-handle resize-${edge}`}
             aria-label={`Resize ${component.label} ${edge}`} title="Drag edge or corner to resize"
@@ -2778,6 +2817,57 @@ function PageBuilder({
         <div id="page-builder-tab-content" ref={ribbonStripRef} onScroll={measureRibbonOverflow}
           className="office-ribbon-content" role="tabpanel" aria-label={ribbonTab}
           aria-labelledby={`page-builder-tab-${Math.max(0,ribbonTabsVisible.indexOf(ribbonTab))}`}>
+          {ribbonTab==='Preview' && <div className="office-ribbon-group canvas-preview-selector-group" aria-label="Preview component selector">
+            <div className="office-ribbon-stack">
+              <label htmlFor="page-preview-component-select">Find component
+                <select id="page-preview-component-select" aria-label="Select page component in preview"
+                  value={selectedId} onChange={event=>{
+                    const id=event.target.value;
+                    setSelectedId(id);
+                    setSelectionIds(id?[id]:[]);
+                    setSelectedRegion(null);
+                    window.requestAnimationFrame(()=>{
+                      const nodes=pagePreviewAreaRef.current?.querySelectorAll<HTMLElement>('[data-component-id]');
+                      const node=Array.from(nodes??[]).find(item=>item.dataset.componentId===id);
+                      node?.scrollIntoView({block:'nearest',inline:'nearest',behavior:'smooth'});
+                    });
+                  }}>
+                  <option value="">Select component…</option>
+                  {page.components.map((item,index)=><option key={item.id} value={item.id}>
+                    {index+1}. {item.label} ({item.type}){item.visible?'':' — Hidden'}
+                    {rawLayoutParentId(item)?' — Nested':''}
+                  </option>)}
+                </select>
+              </label>
+              {selected && <small role="status">{selected.visible?'Selected component highlighted on canvas.':'Hidden component: shown as an editor outline only.'}</small>}
+            </div><span>Components</span>
+          </div>}
+          {ribbonTab==='Preview' && <div className="office-ribbon-group canvas-preview-tools" aria-label="Canvas display">
+            <div className="office-ribbon-stack">
+              <button type="button" onClick={()=>setPreviewMode(value=>!value)}>
+                {previewMode?'Edit canvas':'Preview page'}</button>
+              <button type="button" onClick={()=>{setFitCanvas(true);setFitFullPage(true);}}
+                aria-pressed={fitCanvas&&fitFullPage}>Fit to Screen</button>
+              <button type="button" onClick={()=>{setFitCanvas(true);setFitFullPage(false);}}
+                aria-pressed={fitCanvas&&!fitFullPage}>Fit Width</button>
+              <button type="button" onClick={()=>setFitCanvas(false)}
+                aria-pressed={!fitCanvas}>100% actual size</button>
+              <span aria-live="polite">{page.canvasWidth} × {page.canvasHeight} · {fitCanvas?Math.round(fitScale*100):100}%</span>
+            </div><span>View</span>
+          </div>}
+          {ribbonTab==='Component Layout' && <div className="office-ribbon-group canvas-placement-group" aria-label="Placement">
+            <div className="office-ribbon-stack canvas-placement-actions">
+              <button type="button" disabled={!selected||isCanvasLocked(selected)} title="Bring to Front"
+                onClick={()=>placeSelectedLayer('front')}><Layers3 size={15}/> Bring to Front</button>
+              <button type="button" disabled={!selected||isCanvasLocked(selected)} title="Send to Back"
+                onClick={()=>placeSelectedLayer('back')}><Layers3 size={15}/> Send to Back</button>
+              <button type="button" disabled={page.layoutMode!=='free-canvas'||selectionIds.length<2}
+                onClick={wrapSelectedInContainer}><Group size={15}/> Group</button>
+              <button type="button" disabled={!selected||(!canvasGroupKey(selected)
+                &&!(selected.type==='Container'&&childrenOf(page.components,selected.id).length>0))}
+                onClick={ungroupSelected}><Ungroup size={15}/> Ungroup</button>
+            </div><span>Placement</span>
+          </div>}
           {ribbonTab==='Component Layout' && !ribbonCatalog &&
             <div role="status" className="une-ribbon-catalog-status">
               {ribbonCatalogError?'Shared SQL property library unavailable: '+ribbonCatalogError:'Loading shared property library…'}
@@ -3019,6 +3109,25 @@ function PageBuilder({
                 }}
               >
                 {childrenOf(page.components, null).map((component) => renderPageComponent(component, page.components.findIndex((item) => item.id === component.id)))}
+                {!previewMode && selectedGroupBounds && selected && <div className="canvas-group-outline"
+                  role="group" aria-label="Move or resize selected group" style={{
+                    left:selectedGroupBounds.x,top:selectedGroupBounds.y,
+                    width:selectedGroupBounds.width,height:selectedGroupBounds.height
+                  }}
+                  onPointerDown={event=>startCanvasGroupGesture(event,'move')}
+                  onPointerMove={moveCanvasGroupGesture}
+                  onPointerUp={endCanvasGroupGesture}
+                  onPointerCancel={event=>endCanvasGroupGesture(event,true)}
+                  onClick={event=>event.stopPropagation()}>
+                  {(['n','ne','e','se','s','sw','w','nw'] as const).map(edge=><button key={edge}
+                    type="button" aria-label={`Resize grouped components ${edge}`}
+                    className={`canvas-group-handle resize-${edge}`}
+                    onPointerDown={event=>startCanvasGroupGesture(event,'resize',edge)}
+                    onPointerMove={moveCanvasGroupGesture}
+                    onPointerUp={endCanvasGroupGesture}
+                    onPointerCancel={event=>endCanvasGroupGesture(event,true)}
+                    onClick={event=>event.stopPropagation()}/>)}
+                </div>}
                 {!page.components.length && <div className="free-canvas-empty builder-empty-start"><strong>Your page is ready to design</strong><span>Choose a block or drag one from the library.</span><button type="button" className="btn btn-brand" onClick={() => openAddBlocks()}><Plus size={15}/> Add a block</button></div>}
                 {!previewMode && <><div ref={canvasGuideXRef} className="canvas-magnet-guide canvas-magnet-guide-x" aria-hidden="true" />
                   <div ref={canvasGuideYRef} className="canvas-magnet-guide canvas-magnet-guide-y" aria-hidden="true" /></>}

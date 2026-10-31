@@ -21,6 +21,8 @@ async function readModularCss(url: URL): Promise<string> {
 import { pageAppearanceTarget, pageAppearanceStyleKeys, resolvePageComponentStyle, visualDefaults } from '../src/core/pages/TemplatePageRuntime/pageComponentLayout';
 import { snapCanvasPosition, snapCanvasSize, wrapCanvasComponent, ungroupCanvasComponent, alignCanvasComponents, distributeCanvasComponents } from '../src/core/builders/PageBuilder/canvasInteractions';
 import { copyComponentTree, cloneComponentTree, remapComponentInteractionTargets, assignTabOnReparent } from '../src/core/builders/PageBuilder/pageComponentTree';
+import {canvasGroupKey, canvasGroupBounds, canvasGroupMembers, groupCanvasSelection, ungroupCanvasSelection, moveCanvasLayer, scaleCanvasGroup} from '../src/core/builders/PageBuilder/canvasLayerGroups';
+import type {PageComponentMetadata} from '../src/core/metadata/Definitions/metadata';
 
 test('canvas movement aligns with adjacent element edges and returns visible guide flags', () => {
   const result = snapCanvasPosition(
@@ -537,7 +539,7 @@ test('Page Builder no longer offers redundant Show component controls', async ()
 
   assert.doesNotMatch(ribbon,/Show component|onVisibleChange/);
   assert.doesNotMatch(builder,/\{component\.visible \? 'Hide' : 'Show'\} element/);
-  assert.match(builder,/if \(!component\.visible\) return null;/, 'existing saved visibility remains respected');
+  assert.match(builder,/if \(!component\.visible && !showHiddenSelection\) return null;/, 'visibility stays unchanged except for a preview-only outline');
 });
 
 test('Page Builder authors shared visibility rules without replacing conditional appearance actions', async () => {
@@ -588,4 +590,56 @@ test('PowerPoint-style canvas gestures target one component and keep resize grip
   assert.ok(resize.includes('const changed = !cancelled'),
     'cancelled resize gestures must roll back rather than persisting');
   assert.ok(builder.includes('onPointerCancel={event => endCanvasResize(event, true)}'));
+});
+
+function canvasFixture(id:string,x:number,y=10,parentId?:string):PageComponentMetadata {
+  return {id,type:'Custom:smart_button',label:id,visible:true,
+    parentId,region:'main',properties:{},position:{x,y,width:30,height:20}};
+}
+test('grouping is persistent and does not change published component positions',()=>{
+  const items=[canvasFixture('a',0),canvasFixture('b',40),canvasFixture('c',90)];
+  const grouped=groupCanvasSelection(items,['a','b'],'g-1');
+  assert.equal(canvasGroupKey(grouped[0]),'g-1');
+  assert.equal(canvasGroupKey(grouped[1]),'g-1');
+  assert.equal(canvasGroupKey(grouped[2]),null);
+  assert.deepEqual(grouped.map(item=>item.position),items.map(item=>item.position));
+  assert.deepEqual(canvasGroupMembers(grouped,grouped[0]).map(item=>item.id),['a','b']);
+  const ungrouped=ungroupCanvasSelection(grouped,'a');
+  assert.deepEqual(ungrouped.map(canvasGroupKey),[null,null,null]);
+  assert.deepEqual(ungrouped.map(item=>item.position),items.map(item=>item.position));
+});
+test('different parent groups and locked blocks cannot be grouped',()=>{
+  const a=canvasFixture('a',0),b=canvasFixture('b',40,10,'container');
+  assert.equal(canvasGroupKey(groupCanvasSelection([a,b],['a','b'],'invalid')[0]),null);
+  b.parentId=undefined;b.properties.editorLocked=true;
+  assert.equal(canvasGroupKey(groupCanvasSelection([a,b],['a','b'],'invalid')[0]),null);
+});
+test('bring to front and send to back affect only sibling stack and group members',()=>{
+  const items=[canvasFixture('a',0),canvasFixture('nested',5,5,'container'),
+    canvasFixture('c',80),canvasFixture('b',40)];
+  const grouped=groupCanvasSelection(items,['a','b'],'g-2');
+  const front=moveCanvasLayer(grouped,'a','front');
+  assert.deepEqual(front.map(item=>item.id),['c','nested','a','b']);
+  const back=moveCanvasLayer(grouped,'a','back');
+  assert.deepEqual(back.map(item=>item.id),['a','nested','b','c']);
+  assert.deepEqual(front.find(item=>item.id==='nested')?.position,items[1].position);
+});
+test('group resize scales geometry proportionally while leaving unrelated components unchanged',()=>{
+  const items=[canvasFixture('a',10,20),canvasFixture('b',50,20)];
+  const original=canvasGroupBounds(items)!;
+  assert.deepEqual(original,{x:10,y:20,width:70,height:20});
+  const resized=scaleCanvasGroup(items,{x:20,y:30,width:140,height:40});
+  assert.deepEqual(resized.get('a'),{x:20,y:30,width:60,height:40});
+  assert.deepEqual(resized.get('b'),{x:100,y:30,width:60,height:40});
+  assert.deepEqual(items[0].position,{x:10,y:20,width:30,height:20});
+});
+test('placement controls, component finder and full-width workspace are builder-only',async()=>{
+  const builder=await readFile(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+  const css=await readFile(new URL('../src/core/builders/PageBuilder/PageBuilderCanvasWorkspace.css',import.meta.url),'utf8');
+  for(const action of ['Bring to Front','Send to Back','Group','Ungroup','Select page component in preview','Fit to Screen'])
+    assert.ok(builder.includes(action),action);
+  assert.match(builder,/borderWidth:1,borderColor:'#000000'/);
+  assert.match(builder,/canvasGroupKey\(component\) \|\| previewMode/, 'grouped components move through the shared group gesture');
+  assert.match(css,/\.page-stage/);
+  assert.match(css,/canvas-group-outline/);
 });
