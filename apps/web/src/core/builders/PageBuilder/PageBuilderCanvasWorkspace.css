@@ -81,3 +81,17 @@
 .builder-editor-mode .modern-canvas-builder .canvas-group-handle.resize-sw{left:0;top:100%;cursor:nesw-resize}
 .builder-editor-mode .modern-canvas-builder .canvas-group-handle.resize-w{left:0;top:50%;cursor:ew-resize}
 .builder-editor-mode .modern-canvas-builder .canvas-group-handle.resize-nw{left:0;top:0;cursor:nwse-resize}
+
+/* Preview ribbon: compact stacked controls with captions kept on their own baseline. */
+.office-builder-ribbon .canvas-preview-selector-group{min-width:250px!important}
+.office-builder-ribbon .canvas-preview-selector-group .office-ribbon-stack>label{display:flex!important;flex-direction:column!important;align-items:flex-start!important;gap:7px!important}
+.office-builder-ribbon .canvas-preview-selector-group select{width:230px!important;max-width:230px!important}
+.office-builder-ribbon .canvas-preview-tools{min-width:210px!important}
+.office-builder-ribbon .canvas-preview-tools .office-ribbon-stack{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px!important}
+.office-builder-ribbon .canvas-preview-tools .office-ribbon-stack button{min-height:23px!important;padding:2px 5px!important}
+.office-builder-ribbon .canvas-preview-tools .canvas-zoom-control{grid-column:1 / -1;display:flex;align-items:center;gap:5px;white-space:nowrap;font-size:11px}
+.office-builder-ribbon .canvas-preview-tools .canvas-zoom-control input{min-width:45px;flex:1}
+.office-builder-ribbon .canvas-preview-tools .canvas-zoom-control output{min-width:34px;text-align:right}
+.office-builder-ribbon .preview-visibility-group{padding-inline:10px!important}
+.office-builder-ribbon .preview-visibility-controls{gap:10px!important;align-items:center!important}
+.office-builder-ribbon .canvas-placement-group{min-width:245px}
