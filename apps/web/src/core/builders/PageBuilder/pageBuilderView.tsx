@@ -594,6 +594,10 @@ function PageBuilder({
       ribbonTab==='Component Layout'?'Layout':ribbonTab==='Component Data'?'Data':'Design',
       ribbonSelectedMembers)
     : undefined;
+  const groupCandidates=page.components.filter(item=>selectionIds.includes(item.id));
+  const canGroupSelected=groupCandidates.length>1&&groupCandidates.every(item=>
+    !!item.position&&!isCanvasLocked(item)&&!canvasGroupKey(item)&&
+    rawLayoutParentId(item)===rawLayoutParentId(groupCandidates[0]));
   const [visibilityEditorOpen,setVisibilityEditorOpen]=useState(false);
   const [visibilityDraft,setVisibilityDraft]=useState<ComponentVisibilityRule|undefined>();
   useEffect(()=>{
@@ -1050,6 +1054,7 @@ function PageBuilder({
   const ungroupSelected = () => {
     if (!selected || isCanvasLocked(selected)) return;
     if (canvasGroupKey(selected)) {
+      if(selectedGroupMembers.some(isCanvasLocked))return;
       applyPage({...page,components:ungroupCanvasSelection(page.components,selected.id)});
       setSelectionIds([selected.id]);
       return;
@@ -2974,14 +2979,24 @@ function PageBuilder({
           })()}
           {ribbonTab==='Arrange' && <ArrangeRibbon
             freeCanvas={page.layoutMode==='free-canvas'} hasSelection={!!selected}
-            locked={selected?isCanvasLocked(selected):false} selectedCount={selectionIds.length}
-            canUngroup={!!selected&&(!!canvasGroupKey(selected)
-              ||(selected.type==='Container'&&childrenOf(page.components,selected.id).length>0))}
+            locked={ribbonSelectedMembers.some(isCanvasLocked)} selectedCount={selectionIds.length}
+            canGroup={canGroupSelected}
+            canUngroup={!!selected&&!isCanvasLocked(selected)&&
+              (canvasGroupKey(selected)
+                ? selectedGroupMembers.every(item=>!isCanvasLocked(item))
+                : selected.type==='Container'&&childrenOf(page.components,selected.id).length>0
+                  &&childrenOf(page.components,selected.id).every(item=>!isCanvasLocked(item)))}
             onAlign={alignSelected} onDistribute={distributeSelected}
             onMove={moveSelected} onPlace={placeSelectedLayer}
             onGroup={wrapSelectedInContainer} onUngroup={ungroupSelected}
-            onLock={()=>selected&&updateComponent(selected.id,{properties:{
-              ...selected.properties,editorLocked:!isCanvasLocked(selected)}})}
+            onLock={()=>{
+              if(!selected)return;
+              const members=ribbonSelectedMembers.length?ribbonSelectedMembers:[selected];
+              const nextLocked=!members.some(isCanvasLocked);
+              const ids=new Set(members.map(item=>item.id));
+              applyPage({...page,components:page.components.map(item=>ids.has(item.id)
+                ?{...item,properties:{...item.properties,editorLocked:nextLocked}}:item)});
+            }}
             onNesting={()=>openAdvanced('nesting')}/>}
           {ribbonTab==='Logic' && <div className="office-ribbon-group ribbon-logic-rules" aria-label="Rules">
             <div className="office-ribbon-stack">
