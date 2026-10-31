@@ -807,7 +807,7 @@ test('SQL-owned three-row Design and Shapes ribbon retains the original layout p
  assert.match(css,/height:114px!important/);
  assert.match(css,/height:26px!important/);
  assert.match(css,/background:#fff!important/);
- assert.match(css,/padding:3px 8px 1px!important/);
+ assert.match(css,/padding:3px 14px 1px!important/);
  assert.match(css,/gap:4px!important;padding:0!important;margin:0!important/);
  assert.match(css,/gap:4px!important/);
  assert.match(css,/width:35px!important/);
