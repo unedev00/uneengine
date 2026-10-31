@@ -78,3 +78,31 @@ export function scaleCanvasGroup(
   }
   return result;
 }
+
+/** One-step arrangement across sibling layer blocks. A visual group moves as
+ * one block and never crosses into another container's stacking context. */
+export function shiftCanvasLayer(
+  components: readonly PageComponentMetadata[], id: string, offset: -1 | 1
+): PageComponentMetadata[] {
+  const selected=components.find(item=>item.id===id);
+  if(!selected||selected.properties.editorLocked===true)return [...components];
+  const siblings=components.filter(item=>parentId(item)===parentId(selected));
+  const moving=canvasGroupMembers(siblings,selected);
+  if(moving.some(item=>item.properties.editorLocked===true))return [...components];
+  const movingIds=new Set(moving.map(item=>item.id));
+  const blocks:PageComponentMetadata[][]=[];
+  const seen=new Set<string>();
+  for(const sibling of siblings){
+    if(seen.has(sibling.id))continue;
+    const members=canvasGroupMembers(siblings,sibling);
+    for(const member of members)seen.add(member.id);
+    blocks.push(members);
+  }
+  const from=blocks.findIndex(block=>block.some(item=>movingIds.has(item.id)));
+  const to=from+offset;
+  if(from<0||to<0||to>=blocks.length)return [...components];
+  [blocks[from],blocks[to]]=[blocks[to],blocks[from]];
+  const ordered=blocks.flat();
+  let cursor=0;
+  return components.map(item=>parentId(item)===parentId(selected)?ordered[cursor++]:item);
+}
