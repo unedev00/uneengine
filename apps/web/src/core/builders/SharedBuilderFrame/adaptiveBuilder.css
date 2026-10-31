@@ -262,3 +262,50 @@
     justify-content: flex-start;
   }
 }
+
+/* Phase 3 — Builder EDITOR chrome only. Do not touch rendered component
+ * instances in the Page canvas or published app runtimes. */
+.lightning :is(.builder-page,.flow-builder,.dashboard-builder,.report-builder-layout,.md-object-editor-split){min-width:0}
+.lightning :is(.builder-page .component-panel,.builder-page .properties-panel,
+ .flow-builder .flow-toolbox,.flow-builder .flow-settings,
+ .dashboard-builder-layout .dashboard-builder-sidebar,.dashboard-builder-layout .dashboard-properties,
+ .report-builder-layout .report-outline,.report-builder-layout .report-fields-panel,
+ .md-object-editor-split .object-subnav){min-width:0;overflow-wrap:anywhere;scrollbar-width:thin}
+.lightning :is(.builder-page .component-panel,.builder-page .properties-panel,
+ .flow-builder .flow-toolbox,.flow-builder .flow-settings,
+ .dashboard-builder-layout .dashboard-builder-sidebar,.dashboard-builder-layout .dashboard-properties,
+ .report-builder-layout .report-outline,.report-builder-layout .report-fields-panel)
+ :is(label,legend){font-size:var(--md-label-size,13px);line-height:1.45;color:var(--md-text);font-weight:600}
+.lightning :is(.builder-page .component-panel,.builder-page .properties-panel,
+ .flow-builder .flow-toolbox,.flow-builder .flow-settings,
+ .dashboard-builder-layout .dashboard-builder-sidebar,.dashboard-builder-layout .dashboard-properties,
+ .report-builder-layout .report-outline,.report-builder-layout .report-fields-panel)
+ :is(input:not([type="checkbox"]):not([type="radio"]),select,textarea){max-width:100%;min-width:0;box-sizing:border-box;color:var(--md-text);background:var(--md-surface);border-color:var(--md-separator);font-size:var(--md-fs-body,14px)}
+.lightning :is(.builder-page .component-panel,.builder-page .properties-panel,
+ .flow-builder .flow-toolbox,.flow-builder .flow-settings,
+ .dashboard-builder-layout .dashboard-builder-sidebar,.dashboard-builder-layout .dashboard-properties,
+ .report-builder-layout .report-outline,.report-builder-layout .report-fields-panel)
+ :is(small,[class*="helper"],[class*="hint"]){font-size:var(--md-helper-size,12px);line-height:1.45;color:var(--md-text-2,#596579)}
+.lightning :is(.builder-page .component-panel,.builder-page .properties-panel,
+ .flow-builder .flow-toolbox,.flow-builder .flow-settings,
+ .dashboard-builder-layout .dashboard-builder-sidebar,.dashboard-builder-layout .dashboard-properties,
+ .report-builder-layout .report-outline,.report-builder-layout .report-fields-panel)
+ :is(button,summary){color:inherit}
+.lightning :is(.builder-page .component-panel,.builder-page .properties-panel,
+ .flow-builder .flow-toolbox,.flow-builder .flow-settings,
+ .dashboard-builder-layout .dashboard-builder-sidebar,.dashboard-builder-layout .dashboard-properties,
+ .report-builder-layout .report-outline,.report-builder-layout .report-fields-panel)
+ :is(button,summary,input,select,textarea):focus-visible{outline:3px solid var(--md-focus-ring,var(--md-primary,#1d4ed8));outline-offset:2px}
+.lightning :is(.dashboard-builder-layout,.report-builder-layout) :is(.table-scroll,.records-table-wrap){max-width:100%;overflow-x:auto;scrollbar-width:thin}
+.lightning .dashboard-builder-layout :is(.dashboard-builder-toolbar,.dashboard-builder-sidebar-header),
+.lightning .report-builder-layout :is(.report-toolbar,.report-outline-tabs){gap:8px;min-width:0}
+.lightning .md-object-editor-split .object-subnav button{line-height:1.4;overflow-wrap:anywhere}
+@media(max-width:720px){
+ .lightning :is(.builder-page .component-panel,.builder-page .properties-panel,
+ .flow-builder .flow-toolbox,.flow-builder .flow-settings,
+ .dashboard-builder-layout .dashboard-builder-sidebar,.dashboard-builder-layout .dashboard-properties,
+ .report-builder-layout .report-outline,.report-builder-layout .report-fields-panel){max-width:100%;overscroll-behavior:contain}
+}
+@media(prefers-reduced-motion:reduce){
+ .lightning :is(.builder-page,.flow-builder,.dashboard-builder-layout,.report-builder-layout) :is(button,.component-panel,.properties-panel,.flow-settings,.flow-toolbox){scroll-behavior:auto;transition-duration:0s}
+}
