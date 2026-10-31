@@ -37,6 +37,162 @@
   .lightning .flow-logs-table :is(th,td):nth-child(3) { white-space:normal; min-width:140px; }
 }
 
+/* UI polish: Connected Apps form groups, email truncation, empty states, table headers */
+.lightning .connected-apps-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 720px;
+}
+.lightning .connected-apps-help {
+  margin: 0;
+  color: var(--md-muted, #596579);
+  font-size: var(--md-fs-md, 13px);
+  line-height: 1.5;
+}
+.lightning .connected-apps-status {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--md-radius-md, 8px);
+  background: var(--md-canvas, #f8fafc);
+  border: 1px solid var(--md-border, #e0e5eb);
+  font-size: 13px;
+}
+.lightning .connected-apps-secret code {
+  word-break: break-all;
+}
+.lightning .connected-apps-meta {
+  margin: 0;
+  font-size: 13px;
+  color: var(--md-muted, #596579);
+}
+.lightning .connected-apps-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+}
+.lightning .connected-apps-group {
+  border: 1px solid var(--md-border, #e0e5eb);
+  border-radius: var(--md-radius-lg, 12px);
+  background: var(--md-surface, #fff);
+  padding: 12px 14px;
+  box-shadow: 0 1px 4px rgba(20, 43, 78, 0.04);
+}
+.lightning .connected-apps-group-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--md-text, #192230);
+  margin-bottom: 10px;
+}
+.lightning .connected-apps-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 220px;
+  overflow: auto;
+  scrollbar-width: thin;
+}
+.lightning .connected-apps-checklist .checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  margin: 0;
+  font-size: 13px;
+}
+.lightning .connected-apps-email {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lightning .connected-apps-actions {
+  display: flex;
+  justify-content: flex-start;
+  padding-top: 4px;
+}
+.lightning .connected-apps-actions .btn-brand {
+  min-height: var(--md-control-height, 40px);
+  border-radius: var(--md-radius-md, 8px);
+}
+
+/* Quick Find: prevent ugly truncation without feedback */
+.lightning .setup-sidebar .quick-find-input {
+  min-width: 0;
+}
+.lightning .setup-sidebar .quick-find-input input {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lightning .setup-sidebar .empty-tree {
+  padding: 16px 12px;
+  margin: 8px;
+  border-radius: var(--md-radius-md, 8px);
+  background: var(--md-canvas, #f8fafc);
+  border: 1px dashed var(--md-border, #e0e5eb);
+  color: var(--md-muted, #596579);
+  font-size: 13px;
+  text-align: center;
+}
+
+/* Shared modern table header treatment for admin surfaces */
+.lightning :is(
+  .tenant-table,
+  .app-manager-list-table,
+  .flow-existing-table,
+  .flow-logs-table,
+  .permissions-page .slds-table,
+  .object-manager .slds-table,
+  .named-credentials-page .slds-table
+) thead th {
+  background: var(--md-surface, #fff);
+  color: var(--md-text, #192230);
+  font-weight: 600;
+  font-size: 12px;
+  border-bottom: 1px solid var(--md-border-strong, #aebacc);
+}
+.lightning :is(
+  .tenant-table,
+  .app-manager-list-table,
+  .flow-existing-table,
+  .flow-logs-table
+) tbody tr:hover {
+  background: color-mix(in srgb, var(--md-primary, #1d4ed8) 4%, var(--md-surface, #fff));
+}
+
+/* Consistent card radius on permission / settings sections */
+.lightning .surface.permission-section {
+  border-radius: var(--md-radius-lg, 12px);
+  border: 1px solid var(--md-border, #e0e5eb);
+  box-shadow: 0 2px 8px rgba(20, 43, 78, 0.05);
+  padding: 16px 18px;
+}
+.lightning .surface.permission-section h2 {
+  margin: 0 0 6px;
+  font-size: var(--md-fs-lg, 16px);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.lightning .surface.permission-section > p {
+  margin: 0 0 12px;
+  color: var(--md-muted, #596579);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.lightning .surface.permission-section fieldset {
+  border: 1px solid var(--md-border, #e0e5eb);
+  border-radius: var(--md-radius-lg, 12px);
+  padding: 12px 14px;
+  margin: 0 0 12px;
+}
+.lightning .surface.permission-section fieldset legend {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0 4px;
+}
+
 /* grok PR2: remaining Settings form density + read-first sections */
 .lightning .settings-read-first-section {
   display: flex;
