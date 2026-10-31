@@ -386,24 +386,58 @@ test('Smart Event ribbon matches On Click and Qty Icon component support',()=>{
  const ribbon=read('../src/core/builders/PageBuilder/SmartEventActionsRibbon.tsx');
  const view=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
  const runtime=read('../src/component-libraries/smart/shared/SmartRuntime.jsx');
- assert.match(ribbon,/clickComponents=new Set/);
+ assert.ok(ribbon.includes("'smart_card_grid'"));
  assert.match(ribbon,/key:'qtyIcon',label:'Qty Icon',group:'Component Custom',enabled:api==='smart_cart'/);
  assert.match(ribbon,/Autolaunched Flow/);
  assert.match(ribbon,/Screen Flow/);
  assert.match(view,/ribbonTab==='Component Action' &&\s*<SmartEventActionsRibbon/);
  assert.match(runtime,/fire=\{fire\}/);
- for(const name of ['smart_button','smart_toggle','smart_calendar','smart_cart']){
+ for(const name of ['smart_button','smart_toggle','smart_calendar','smart_cart','smart_card_grid']){
   const descriptor=JSON.parse(read('../src/component-libraries/'+name+'/component.json'));
   assert.ok(descriptor.eventDefinitions.some(e=>e.apiName==='click'),name);
  }
  const cart=JSON.parse(read('../src/component-libraries/smart_cart/component.json'));
  assert.ok(cart.eventDefinitions.some(e=>e.apiName==='qtyIcon'));
- for(const name of ['smart_lookup','smart_tabs','smart_text','smart_card_grid',
+ for(const name of ['smart_lookup','smart_tabs','smart_text',
   'smart_image','smart_navigation','smart_container','smart_icon']){
   const descriptor=JSON.parse(read('../src/component-libraries/'+name+'/component.json'));
   assert.ok(!descriptor.eventDefinitions.some(e=>e.apiName==='click'),name);
  }
 });
+test('Smart Card Grid has accessible metadata-bound product selection and does not invent actions',async()=>{
+ const regular=await renderSmart('smart_card_grid',{records:[{Id:'p1',Name:'Cola'}],textSource:'@Name'});
+ assert.doesNotMatch(regular,/smart-grid-action/);
+ const actionable=await renderSmart('smart_card_grid',{records:[{Id:'p1',Name:'Cola'}],
+  textSource:'@Name',actionFlows:{click:{actionType:'Flow',flowApiName:'ConfiguredProductFlow'}}});
+ assert.match(actionable,/class="smart-grid-action"/);
+ assert.match(actionable,/aria-label="Select Cola"/);
+ const preview=await renderSmart('smart_card_grid',{records:[{Id:'p1',Name:'Cola'}],
+  actionFlows:{click:{actionType:'Flow',flowApiName:'ConfiguredProductFlow'}},builderPreview:true});
+ assert.doesNotMatch(preview,/smart-grid-action/);
+ const ribbon=read('../src/core/builders/PageBuilder/SmartEventActionsRibbon.tsx');
+ assert.ok(ribbon.includes("'smart_card_grid'"));
+});
+
+test('Smart Cart only renders amounts supplied by metadata/Flow and shows no fabricated totals',async()=>{
+ const empty=await renderSmart('smart_cart',{records:[{Id:'r1',Name:'Cola',Quantity:2}]});
+ assert.match(empty,/Total not bound/);
+ assert.doesNotMatch(empty,/Visual preview/);
+ const bound=await renderSmart('smart_cart',{label:'Current sale',records:[{Id:'r1',Quantity:2}],
+  subtotalValue:12.5,discountValue:1,taxValue:2.3,totalValue:13.8,currencyCode:'GBP'});
+ assert.match(bound,/Current sale/);
+ for(const amount of ['£12.50','£1.00','£2.30','£13.80'])assert.ok(bound.includes(amount),amount);
+ assert.ok(bound.includes('<span>Total</span><span>£13.80</span>'),'bound summary total');
+ const formula=await renderSmart('smart_cart',{
+  records:[{Id:'line1',Quantity:2,UnitPrice:5}],
+  totalValue:'@Quantity * @UnitPrice',currencyCode:'GBP'
+ });
+ assert.ok(formula.includes('£10.00'),'ribbon formula should calculate from the authorised row');
+ const sql=read('../../server/src/system-support/migrations/20270210-smart-cart-summary-bindings.sql');
+ for(const field of ['subtotalValue','discountValue','taxValue','totalValue'])
+  assert.ok(sql.includes("'"+field+"'"));
+ assert.doesNotMatch(sql,/DELETE FROM md_page_|UPDATE md_page_/i);
+});
+
 test('Smart Cart renders Flow-backed plus and minus controls',async()=>{
  const preview=await renderSmart('smart_cart',{});
  assert.match(preview,/Decrease quantity for Sample item 1/);

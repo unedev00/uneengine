@@ -2659,7 +2659,7 @@ CREATE TRIGGER md_protect_setup_audit_truncate BEFORE TRUNCATE ON md_setup_audit
 ALTER TABLE md_oauth_consents ADD COLUMN IF NOT EXISTS resource text;
 ALTER TABLE md_oauth_client_scopes DROP CONSTRAINT IF EXISTS md_oauth_client_scopes_scope_check;
 ALTER TABLE md_oauth_client_scopes ADD CONSTRAINT md_oauth_client_scopes_scope_check
- CHECK(scope IN ('records:read','records:write','metadata:read','flows:execute','mcp:access','operations:manage'));
+ CHECK(scope IN ('records:read','records:write','metadata:read','metadata:write','flows:execute','mcp:access','operations:manage'));
 INSERT INTO md_system_permission_catalogue(permission_key,label,description,resource,action) VALUES
  ('platformOperations:read','Read server operations','Inspect server service status and logs','PlatformOperations','read'),
  ('platformOperations:manage','Manage server operations','Restart services and activate staged releases','PlatformOperations','manage')

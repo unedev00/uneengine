@@ -185,7 +185,7 @@ export class FlowRuntime {
         OR label ILIKE $2 ESCAPE '\\')`,[tenantId,query])).rows[0]?.total??'0';
     return {flows,total:Number(total),page:index,pageSize:50};
   }
-  async saveEditor(tenantId:string,userId:string,apiName:string,raw:unknown) {
+  async saveEditor(tenantId:string,userId:string,apiName:string,raw:unknown,createOnly=false) {
     if(!this.rbac)throw new Error('Flow permissions not configured');
     await this.rbac.require(tenantId,userId,'FlowDefinition','manage');
     if(!/^[A-Za-z][A-Za-z0-9_]*$/.test(apiName)||!raw||typeof raw!=='object'||Array.isArray(raw))
@@ -239,6 +239,9 @@ export class FlowRuntime {
         WHERE tenant_id=$1 AND api_name=$2 AND archived=false ORDER BY version DESC LIMIT 1 FOR UPDATE
       `,[tenantId,apiName]);
       const last=latest.rows[0];
+      // MCP may author only a missing Flow; never replace a tenant Flow by
+      // guessing its identity or racing a parallel Builder save.
+      if(createOnly&&last)throw new Error('Flow already exists');
       if(!last)await requireAvailableMetadataName(client,tenantId,'flow',apiName);
       if(input.status==='Active'){
         await client.query(`

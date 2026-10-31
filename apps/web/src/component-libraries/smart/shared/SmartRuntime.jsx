@@ -244,8 +244,16 @@ export default function SmartRuntime(p){
    gridTemplateColumns:"repeat("+columns+",minmax(0,1fr))",
    gridAutoRows:"calc((100% - "+(rows-1)*12+"px) / "+rows+")",alignContent:"start"
   }}>
-   {recordsOf(p).slice(0,200).map((r,i)=>
-    <SmartCard p={p} record={r} key={r?.Id??r?.id??i}/>)}
+   {recordsOf(p).slice(0,200).map((r,i)=>{
+    const card=<SmartCard p={p} record={r}/>;
+    // Published metadata decides if the card is actionable. Never fabricate
+    // an Add To Cart operation: the bound Flow owns persistence and RBAC.
+    return p.actionFlows?.click&&!p.previewOnly&&!p.builderPreview
+      ?<button key={r?.Id??r?.id??i} type="button" className="smart-grid-action"
+        aria-label={"Select "+text(r?.Name??r?.name??r?.label??"product")}
+        onClick={()=>fire("click",{record:r,recordId:r?.Id??r?.id??null})}>{card}</button>
+      :<React.Fragment key={r?.Id??r?.id??i}>{card}</React.Fragment>;
+   })}
   </div>;
  }
  else if(name==="smart_cart")content=<SmartCart p={p} records={recordsOf(p)} Picture={SmartPicture} expression={expression} fire={fire}/>;
