@@ -561,3 +561,31 @@ test('each Smart component is explicitly mapped for Page Runtime appearance',()=
  for(const [api,target] of Object.entries(targets))
   assert.equal(pageAppearanceTarget('Custom:'+api),target,api);
 });
+
+test('PowerPoint-style canvas gestures target one component and keep resize grips visible', async () => {
+  const builder = await readFile(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx', import.meta.url), 'utf8');
+  const handles = await readFile(new URL('../src/core/builders/PageBuilder/SmartCanvasHandles.css', import.meta.url), 'utf8');
+  const move = builder.slice(builder.indexOf('  const startCanvasMove = '), builder.indexOf('  const reorderLayer = '));
+  const resize = builder.slice(builder.indexOf('  const startCanvasResize = '), builder.indexOf('  const hasOverlappingPageAssignment = '));
+  assert.ok(move.includes('setSelectionIds([component.id])'), 'pointerdown must select only the dragged component');
+  assert.ok(!move.includes('selectionIds.includes(item.id)') && !move.includes('start.group'),
+    'the drag must not include previously selected siblings');
+  assert.ok(move.includes("hit.closest('[data-component-id]') !== element"),
+    'nested targets must not move a parent');
+  assert.ok(move.includes('start.element.style.translate ='),
+    'independent translation preserves author-defined component transforms');
+  assert.ok(move.includes('start.element.style.left ='), 'release must not jump to the original position');
+  assert.ok(builder.includes('className="canvas-move-grip"'), 'the selection toolbar needs a move icon');
+  assert.ok(builder.includes('onLostPointerCapture={!libraryPreview'),
+    'a lost pointer must not leave movement stuck');
+  assert.ok(builder.includes("page.layoutMode === 'free-canvas' || canvasMoveStart.current?.id"),
+    'native child HTML drags must not interrupt pointer dragging');
+  for (const edge of ['n','ne','e','se','s','sw','w','nw']) {
+    assert.ok(handles.includes('.resize-' + edge), edge + ' must have a resize cursor and grip');
+  }
+  assert.ok(handles.includes('z-index:165!important;opacity:1;pointer-events:auto;'),
+    'selected resize squares must be visible without hovering');
+  assert.ok(resize.includes('const changed = !cancelled'),
+    'cancelled resize gestures must roll back rather than persisting');
+  assert.ok(builder.includes('onPointerCancel={event => endCanvasResize(event, true)}'));
+});

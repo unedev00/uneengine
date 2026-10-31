@@ -1,40 +1,54 @@
-import {useMemo,useState} from 'react';
-import {Search} from 'lucide-react';
+import {useEffect,useRef,useState} from 'react';
+import {createPortal} from 'react-dom';
+import {Shapes,ChevronDown} from 'lucide-react';
 import icons from '../../../component-libraries/smart_icon/iconCatalog.json';
+import {smartShapes,SmartShapeGlyph} from '../../../component-libraries/smart_icon/SmartShapes';
 import './SmartIconGallery.css';
 
-type IconItem=(typeof icons)[number];
-const categories=['All',...new Set(icons.map(icon=>icon.category))];
-
+const shapeGroups=[...new Set(smartShapes.map(item=>item.category))];
+const iconGroups=[...new Set(icons.map(icon=>icon.category))];
 export default function SmartIconGallery({value,onChange}:{value:string;onChange:(iconId:string)=>void}){
- const [query,setQuery]=useState('');
- const [category,setCategory]=useState('All');
- const visible=useMemo(()=>icons.filter(icon=>
-   (category==='All'||icon.category===category)&&
-   (icon.label.toLowerCase().includes(query.trim().toLowerCase())||
-    icon.id.includes(query.trim().toLowerCase()))),[query,category]);
- const current=icons.find(icon=>icon.id===value)??icons[0];
- const glyph=(icon:IconItem)=><span className="smart-icon-gallery-glyph" aria-hidden="true"
-   style={{WebkitMaskImage:'url(/smart-icons/'+icon.id+'.svg)',maskImage:'url(/smart-icons/'+icon.id+'.svg)'}}/>;
- return <div className="smart-icon-gallery" aria-label="Smart Icon SVG selector">
-   <div className="smart-icon-gallery-filters">
-     <label className="smart-icon-gallery-search"><Search size={15} aria-hidden="true"/>
-       <input type="search" aria-label="Search icons" placeholder="Search 50 icons"
-         value={query} onChange={event=>setQuery(event.target.value)}/></label>
-     <select aria-label="Icon category" value={category} onChange={event=>setCategory(event.target.value)}>
-       {categories.map(item=><option key={item} value={item}>{item}</option>)}
-     </select>
-     <span className="smart-icon-gallery-current" aria-live="polite">
-       {glyph(current)} {current.label} selected
-     </span>
-   </div>
-   <div className="smart-icon-gallery-items" role="group" aria-label="Choose an icon">
-    {visible.map(icon=><button type="button" key={icon.id} className="smart-icon-gallery-item"
-      title={icon.label} aria-label={'Select '+icon.label+' icon'} aria-pressed={icon.id===current.id}
-      onClick={()=>onChange(icon.id)}>
-       {glyph(icon)}<span className="smart-icon-gallery-name">{icon.label}</span>
-    </button>)}
-    {visible.length===0&&<p role="status" className="smart-icon-gallery-empty">No matching icons</p>}
-   </div>
+ const [open,setOpen]=useState(false);
+ const button=useRef<HTMLButtonElement>(null);
+ const panel=useRef<HTMLDivElement>(null);
+ const [position,setPosition]=useState({top:0,left:0});
+ const select=(id:string)=>{onChange(id);setOpen(false);button.current?.focus();};
+ useEffect(()=>{
+  if(!open)return;
+  const update=()=>{const rect=button.current?.getBoundingClientRect();if(rect)setPosition({
+   top:Math.max(4,Math.min(rect.bottom+4,window.innerHeight-380)),
+   left:Math.max(4,Math.min(rect.left,window.innerWidth-410))});};
+  const outside=(event:PointerEvent)=>{if(!button.current?.contains(event.target as Node)
+    &&!panel.current?.contains(event.target as Node))setOpen(false);};
+  const escape=(event:KeyboardEvent)=>{if(event.key==='Escape'){setOpen(false);button.current?.focus();}};
+  update();window.addEventListener('resize',update);window.addEventListener('scroll',update,true);
+  document.addEventListener('pointerdown',outside);document.addEventListener('keydown',escape);
+  return()=>{window.removeEventListener('resize',update);window.removeEventListener('scroll',update,true);
+   document.removeEventListener('pointerdown',outside);document.removeEventListener('keydown',escape);};
+ },[open]);
+ const icon=(item:{id:string;label:string})=>item.id.startsWith('shape:')
+  ?<SmartShapeGlyph id={item.id} size={21}/>
+  :<span className="smart-icon-gallery-glyph" aria-hidden="true"
+     style={{WebkitMaskImage:'url(/smart-icons/'+item.id+'.svg)',
+      maskImage:'url(/smart-icons/'+item.id+'.svg)'}}/>;
+ return <div className="smart-icon-gallery" aria-label="Shapes and icons">
+  <button ref={button} type="button" className="smart-shapes-trigger"
+    aria-haspopup="dialog" aria-expanded={open} title="Choose shape or icon"
+    onClick={()=>setOpen(!open)}><Shapes size={18}/><span>Shapes</span><ChevronDown size={13}/></button>
+  {open&&createPortal(<div ref={panel} className="smart-shapes-popup" role="dialog"
+    aria-label="Choose shape or icon" style={{position:'fixed',top:position.top,left:position.left}}>
+    {shapeGroups.map(group=><section key={group}><strong>{group}</strong>
+     <div className="smart-shapes-grid">{smartShapes.filter(item=>item.category===group).map(item=>
+      <button type="button" key={item.id} title={item.label} aria-label={item.label}
+       aria-pressed={value===item.id} onClick={()=>select(item.id)}>{icon(item)}</button>)}</div>
+    </section>)}
+    <section><strong>Icons</strong>{iconGroups.map(group=><div key={group}>
+      <small>{group}</small><div className="smart-shapes-grid">
+       {icons.filter(item=>item.category===group).map(item=>
+        <button type="button" key={item.id} title={item.label} aria-label={item.label}
+         aria-pressed={value===item.id} onClick={()=>select(item.id)}>{icon(item)}</button>)}
+      </div></div>)}
+    </section>
+  </div>,document.body)}
  </div>;
 }

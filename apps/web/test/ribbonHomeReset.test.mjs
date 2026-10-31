@@ -9,12 +9,12 @@ test('page-level handlers remain intact in topbar and Layout while Smart Insert 
  const end=page.indexOf('className="office-ribbon-group-navigation"',marker);
  const body=page.slice(marker,end);
  assert.ok(marker>0&&end>marker);
- for(const name of ["case 'backIcon'","case 'pageName'","case 'save'","case 'activate'","case 'resetIcon'"])
+ for(const name of ["case 'backIcon'","case 'restoreVersion'","case 'save'","case 'activate'","case 'resetIcon'"])
   assert.ok(page.includes(name),name);
  assert.doesNotMatch(body,/<UneBuilderRibbon|<UniversalRibbonInventory|<PageBuilderActionRibbon|<PageBuilderRibbonData|ribbonTab==='Preview'|ribbonTab==='Parity'/);
  assert.match(body,/ribbonTab==='Add Block' && <SmartInsertRibbon/);
  assert.match(body,/onInsert=\{addPaletteComponent\}/);
- assert.match(body,/onOpenLibrary=\{\(\)=>openAddBlocks\(\)\}/);
+ assert.doesNotMatch(body,/onOpenLibrary=\{\(\)=>openAddBlocks\(\)\}/);
  assert.match(body,/ribbonTab==='Component Layout' && ribbonCatalog/);
  assert.match(page,/office-ribbon-quick-access/);
  assert.match(page,/const quickAccessOrder=\['save','activate','resetIcon','undo','redo','cut','copy','paste','delete'\]/);
@@ -54,7 +54,7 @@ test('Layout combines Device and Version in the SQL Page section without losing 
  assert.match(sql,/section_group='Page'/);
  assert.match(sql,/section_group IN \('Device','Version'\)/);
  assert.doesNotMatch(sql,/DELETE FROM md_builder_shared_properties|UPDATE md_page_components|DELETE FROM md_page_components/);
- assert.match(ui,/case 'pageName'/);
+ assert.doesNotMatch(ui,/case 'pageName'/);
  assert.match(ui,/case 'deviceLayout'/);
  assert.match(ui,/case 'selectVersion'/);
  assert.match(ui,/aria-label=\{showLayoutHistory\?'Refresh versions':'Load versions'\}/);
