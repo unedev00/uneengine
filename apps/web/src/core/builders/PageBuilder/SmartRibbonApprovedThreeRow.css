@@ -8,8 +8,8 @@
  box-sizing:border-box!important;
  display:flex!important;flex-flow:row nowrap!important;
  height:118px!important;min-height:118px!important;max-height:118px!important;
- padding:2px 32px 2px 6px!important;
- overflow-x:auto!important;overflow-y:hidden!important;
+ padding:2px 6px!important;
+ overflow-x:hidden!important;overflow-y:hidden!important;
  scrollbar-width:none!important;background:var(--page-ribbon-bg,#f3f5f7)!important;
 }
 .office-builder-ribbon #page-builder-tab-content.office-ribbon-content:has(>.smart-ribbon[data-three-row="true"])::-webkit-scrollbar{
@@ -29,7 +29,7 @@
  position:relative!important;
  width:var(--smart-section-width,auto)!important;min-width:var(--smart-section-width,auto)!important;max-width:var(--smart-section-width,auto)!important;
  height:114px!important;min-height:114px!important;max-height:114px!important;
- padding:3px 14px 1px!important;margin:0!important;
+ padding:3px 12px 1px!important;margin:0!important;
  border:0!important;border-right:1px solid #cbd6e2!important;
  border-radius:0!important;background:transparent!important;overflow:visible!important;
 }
@@ -265,7 +265,7 @@
 /* Page and Canvas: one 114px content strip, matching the three-row Design ribbon. */
 .office-builder-ribbon #page-builder-tab-content.office-ribbon-content:has(>.office-ribbon-page-layout-groups){
  height:118px!important;min-height:118px!important;max-height:118px!important;
- padding:2px 32px 2px 6px!important;overflow-x:auto!important;overflow-y:hidden!important;
+ padding:2px 32px 2px 6px!important;overflow-x:hidden!important;overflow-y:hidden!important;
 }
 .office-builder-ribbon #page-builder-tab-content>.office-ribbon-page-layout-groups{
  height:114px!important;min-height:114px!important;max-height:114px!important;
@@ -374,4 +374,45 @@
 .office-builder-ribbon #page-builder-tab-content .smart-ribbon[data-three-row="true"][data-smart-api]
  .smart-ribbon-group .smart-property.disabled :is(.smart-select,.smart-icon-toggle,.smart-visible-toggle,.smart-icon-dropdown-trigger){
  background:#f4f6f9!important;border-color:#c7d2e0!important;
+}
+
+/* Eight-tab approved ribbon: keep the original icons/controls, only change geometry. */
+.office-builder-ribbon #page-builder-tab-content>.smart-ribbon[data-three-row="true"]
+ .smart-ribbon-group[aria-label="Header Supporting"]>.smart-ribbon-caption{
+ white-space:normal!important;overflow:visible!important;text-overflow:clip!important;
+ line-height:9px!important;font-size:10px!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.smart-ribbon[data-three-row="true"]
+ .smart-property.disabled{opacity:.45!important}
+.office-builder-ribbon #page-builder-tab-content>.smart-ribbon[data-three-row="true"]
+ .smart-property:has(>.smart-formula-filter)>.smart-label{display:none!important}
+.office-builder-ribbon #page-builder-tab-content>.smart-ribbon[data-three-row="true"]
+ .smart-property .smart-formula-filter{
+ position:relative!important;gap:5px!important;height:26px!important;
+ width:100%!important;min-width:0!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.smart-ribbon[data-three-row="true"]
+ .smart-property .smart-formula-filter .smart-formula-prefix{
+ position:absolute!important;z-index:2;left:1px;top:1px;bottom:1px;
+ box-sizing:border-box;display:flex;align-items:center;justify-content:center;
+ flex:0 0 74px;width:74px;max-width:74px;padding:0 3px;
+ font:600 11px/1 "Segoe UI",Arial,sans-serif;color:#1f5fa8;
+ border-right:1px solid #c9d6ea;background:#fff;
+ white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;
+}
+.office-builder-ribbon #page-builder-tab-content>.smart-ribbon[data-three-row="true"]
+ .smart-property .smart-formula-filter .smart-formula{
+ box-sizing:border-box;flex:1 1 auto!important;width:0!important;min-width:0!important;
+ height:26px!important;border:1px solid #9db9dd!important;border-radius:5px!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.smart-ribbon[data-three-row="true"]
+ .smart-property .smart-formula-filter .smart-formula input,
+.office-builder-ribbon #page-builder-tab-content>.smart-ribbon[data-three-row="true"]
+ .smart-property .smart-formula-filter .smart-formula-highlight{
+ box-sizing:border-box!important;padding-left:82px!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.smart-ribbon[data-three-row="true"]
+ .smart-property[data-property="defaultCheck"]{
+ border:1px solid #9db9dd!important;border-radius:5px!important;
+ padding-right:4px!important;justify-content:space-between!important;
 }

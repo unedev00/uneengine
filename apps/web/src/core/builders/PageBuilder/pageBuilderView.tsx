@@ -153,6 +153,7 @@ import UneBuilderRibbon from './UneBuilderRibbon';
 import SmartRibbon from './SmartRibbon';
 import SmartEventActionsRibbon from './SmartEventActionsRibbon';
 import SmartInsertRibbon from './SmartInsertRibbon';
+import ArrangeRibbon from './ArrangeRibbon';
 import PageBuilderAdvancedRibbon, {advancedFeatureLabels, type AdvancedFeature} from './PageBuilderAdvancedRibbon';
 import PageBuilderAdvancedResponsive from './PageBuilderAdvancedResponsive';
 import SmartIconGallery from './SmartIconGallery';
@@ -160,6 +161,7 @@ import {isUneBuilderApi,uneBuilderDefaults,type SharedRibbonCatalog,type UneBuil
 import './UniversalRibbonInventory.css';
 import './PageBuilderNumericControls.css';
 import './PageBuilderRibbonPolish.css';
+import './PageBuilderEightTabRibbon.css';
 import './PageBuilderCanvasWorkspace.css';
 import './SmartCanvasHandles.css';
 import RibbonFieldExpressionInput from './RibbonFieldExpressionInput';
@@ -511,30 +513,26 @@ function PageBuilder({
   const [advancedEditor,setAdvancedEditor] = useState<AdvancedFeature|null>(null);
   const [focusedCardMapping,setFocusedCardMapping] = useState('');
   const ribbonStripRef=useRef<HTMLDivElement|null>(null);
-  const [ribbonOverflow,setRibbonOverflow]=useState({left:false,right:false});
-  const measureRibbonOverflow=()=>{
-    const element=ribbonStripRef.current;
-    if(!element)return;
-    setRibbonOverflow({left:element.scrollLeft>3,right:element.scrollLeft+element.clientWidth<element.scrollWidth-3});
-  };
+  const [viewFind,setViewFind]=useState('');
+  const [viewFindOpen,setViewFindOpen]=useState(false);
+  const viewFindInputRef=useRef<HTMLInputElement|null>(null);
+  const [viewFindPosition,setViewFindPosition]=useState({top:0,left:0});
+  useEffect(()=>{
+    if(!viewFindOpen)return;
+    const update=()=>{
+      const rect=viewFindInputRef.current?.getBoundingClientRect();
+      if(rect)setViewFindPosition({
+        top:Math.min(rect.bottom+4,window.innerHeight-218),
+        left:Math.max(6,Math.min(rect.left,window.innerWidth-366))
+      });
+    };
+    update();window.addEventListener('resize',update);
+    window.addEventListener('scroll',update,true);
+    return()=>{window.removeEventListener('resize',update);window.removeEventListener('scroll',update,true);};
+  },[viewFindOpen]);
   const [selectedConversationPart,setSelectedConversationPart]=useState('parent');
   useEffect(()=>setSelectedConversationPart('parent'),[selectedId]);
-  const [ribbonTab, setRibbonTab] = useState<'Add Block' | 'Component Content' | 'Component Properties' | 'Component Style' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Component Responsive' | 'Preview' | 'Filters' | 'Source' | 'Shapes' | 'Advanced' | 'Grok'>('Add Block');
-  useEffect(()=>{
-    if(ribbonTab==='Shapes'&&!page.components.find(component=>component.id===selectedId)?.type.startsWith('Custom:'))
-      setRibbonTab('Component Properties');
-  },[ribbonTab,selectedId,page.components]);
-  useEffect(()=>{
-    const element=ribbonStripRef.current;
-    if(!element)return;
-    element.scrollLeft=0;
-    const update=()=>measureRibbonOverflow();
-    const frame=window.requestAnimationFrame(update);
-    const observer=typeof ResizeObserver!=='undefined'?new ResizeObserver(update):null;
-    observer?.observe(element);
-    window.addEventListener('resize',update);
-    return ()=>{window.cancelAnimationFrame(frame);observer?.disconnect();window.removeEventListener('resize',update);};
-  },[ribbonTab,selectedId,page.layoutVariant,page.components.length]);
+  const [ribbonTab, setRibbonTab] = useState<'Add Block' | 'Component Content' | 'Component Properties' | 'Component Style' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Component Responsive' | 'Preview' | 'Filters' | 'Source' | 'Arrange' | 'Logic'>('Add Block');
   const componentNeedsData = (type: string) => {
     const metadata = type.startsWith('Custom:') ? findRegisteredComponent(libraryComponents,type.slice('Custom:'.length),'page') : undefined;
     return Boolean(type.startsWith('Custom:')&&isUneBuilderApi(type.slice(7),ribbonCatalog?.components??[])
@@ -546,8 +544,8 @@ function PageBuilder({
     setRibbonTab(tab);
     setPageSettingsDialogOpen(false);
     if (tab === 'Add Block') { setPageSettingsOpen(false); openPalette('Components', 'All Components'); }
-    if (tab === 'Component Layout' || tab === 'Advanced') { setPageSettingsOpen(false); }
-    const inspector = { 'Component Properties': 'Design', 'Shapes': 'Design', 'Component Style': 'Design', 'Component Data': 'Data & Actions', 'Component Content': 'Data & Actions', 'Component Action': 'Visibility', 'Component Layout': 'Position', 'Component Responsive': 'Position' } as const;
+    if (tab === 'Component Layout' || tab === 'Arrange' || tab === 'Logic') { setPageSettingsOpen(false); }
+    const inspector = { 'Component Properties': 'Design', 'Arrange': 'Position', 'Logic': 'Visibility', 'Component Style': 'Design', 'Component Data': 'Data & Actions', 'Component Content': 'Data & Actions', 'Component Action': 'Visibility', 'Component Layout': 'Position', 'Component Responsive': 'Position' } as const;
     if (tab in inspector) { setPageSettingsOpen(false); openComponentInspector(inspector[tab as keyof typeof inspector]); }
   };
   useEffect(()=>{
@@ -620,7 +618,7 @@ function PageBuilder({
     else if(key!=='accentColor')writeRibbonVisual(key,value);
   };
   useEffect(() => {
-    if (!selected && ((ribbonTab.startsWith('Component ')&&ribbonTab!=='Component Layout')||['Filters','Source','Icons','Shapes'].includes(ribbonTab))) setRibbonTab('Add Block');
+    if (!selected && ((ribbonTab.startsWith('Component ')&&ribbonTab!=='Component Layout')||['Filters','Source'].includes(ribbonTab))) setRibbonTab('Add Block');
   }, [selectedId, page.components, ribbonTab]);
   // Keep the builder unselected on entry; the persistent topbar shows Welcome.
   // Canvas clicks establish the component selection explicitly.
@@ -2105,7 +2103,7 @@ function PageBuilder({
     }
   };
   const renderPageComponent = (component: LightningPageMetadata['components'][number], index: number, libraryPreview = false, interactivePreview = false) => {
-    const showHiddenSelection = ribbonTab === 'Preview' && !previewMode && selectedId === component.id && !libraryPreview;
+    const showHiddenSelection = (ribbonTab === 'Preview' || ribbonTab === 'Logic') && !previewMode && selectedId === component.id && !libraryPreview;
     const visualBorder = component.properties.visualStyle && typeof component.properties.visualStyle === 'object'
       ? component.properties.visualStyle as Record<string,unknown> : {};
     const editorBlackBorder = (visualBorder.borderWidth ?? component.properties.borderWidth) === 1
@@ -2585,12 +2583,9 @@ function PageBuilder({
     setAdvancedEditor(feature);
   };
   const quickAccessOrder=['save','activate','preview','exitPreview','resetIcon','undo','redo','cut','copy','paste','delete'] as const;
-  const journeyTabs: Array<typeof ribbonTab> = selectedNewUne
-    ? ['Add Block','Component Data','Component Properties','Shapes','Component Layout','Component Action','Advanced','Preview']
-    : ['Add Block','Component Data','Component Content','Component Properties','Shapes','Component Layout','Component Action','Advanced','Preview'];
+  const journeyTabs: Array<typeof ribbonTab> = ['Add Block','Component Data','Component Properties',
+    'Component Layout','Arrange','Component Action','Logic','Preview'];
   const ribbonTabsVisible: Array<typeof ribbonTab> = [...journeyTabs];
-  if(ribbonTab==='Filters')ribbonTabsVisible.splice(journeyTabs.indexOf('Component Data')+1,0,'Filters');
-  if(ribbonTab==='Source')ribbonTabsVisible.splice(journeyTabs.indexOf('Component Data')+1,0,'Source');
 
 
   const addPaletteComponent = (type: string) => {
@@ -2801,7 +2796,9 @@ function PageBuilder({
         <div className="office-ribbon-topbar">
           <div className="office-ribbon-topbar-back">{homeValue('backIcon')}</div>
           <div className="office-ribbon-selection-context" title={selected?.label||selected?.type||'Welcome'}>
-            {selected ? (selected.label||selected.type)+' selected' : 'Welcome'}
+            {selected ? 'Page › '+(rawLayoutParentId(selected)
+               ? (page.components.find(component=>component.id===rawLayoutParentId(selected))?.label??'Container')+' › '
+               : '')+(selected.label||selected.type) : 'Welcome'}
           </div>
           <div className="office-ribbon-navigation">
             <nav className="office-ribbon-tabs" role="tablist" aria-label="Page Builder tabs">
@@ -2812,12 +2809,12 @@ function PageBuilder({
                   'Component Content': Type,
                   'Component Properties': SlidersHorizontal,
 
-                  Shapes: ImageIcon,
+                  Arrange: Layers3, Logic: Eye,
                   'Component Style': Type,
                   'Component Responsive': Smartphone,
                   'Component Layout': Layers3,
                   'Component Action': Workflow,
-                  Preview: Eye, Advanced: Settings2, Filters: Filter, Source: Database, Grok: Group
+                  Preview: Eye, Filters: Filter, Source: Database
                 }[tab];
                 const label = {
                   'Add Block': 'Insert',
@@ -2825,17 +2822,17 @@ function PageBuilder({
                   'Component Content': 'Content',
                   'Component Properties': 'Design',
 
-                  Shapes: 'Shapes',
+                  Arrange: 'Arrange', Logic: 'Logic',
                   'Component Style': 'Format',
                   'Component Responsive': 'Responsive',
                   'Component Layout': 'Layout',
                   'Component Action': 'Actions',
-                  Preview: 'Preview', Advanced: 'Advanced', Filters: 'Filters', Source: 'Source', Grok: 'Grok'
+                  Preview: 'View', Filters: 'Filters', Source: 'Source'
                 }[tab];
                 return <button key={tab} id={`page-builder-tab-${index}`} type="button"
                   role="tab" tabIndex={ribbonTab===tab?0:-1} aria-selected={ribbonTab === tab}
                   aria-controls="page-builder-tab-content"
-                  className={ribbonTab===tab?'active':''} disabled={!selected && (tab.startsWith('Component ') && tab!=='Component Layout' || tab==='Shapes')} title={!selected && (tab.startsWith('Component ') && tab!=='Component Layout' || tab==='Shapes')?'Select a component to edit its settings':label} onClick={() => selectRibbonTab(tab)}>
+                  className={ribbonTab===tab?'active':''} disabled={!selected && (tab.startsWith('Component ') && tab!=='Component Layout')} title={!selected && (tab.startsWith('Component ') && tab!=='Component Layout' )?'Select a component to edit its settings':label} onClick={() => selectRibbonTab(tab)}>
                   <Icon size={16} aria-hidden="true"/><span>{label}</span>
                 </button>;
               })}
@@ -2847,51 +2844,64 @@ function PageBuilder({
             </span>)}
           </div>
         </div>
-        <div id="page-builder-tab-content" ref={ribbonStripRef} onScroll={measureRibbonOverflow}
+        <div id="page-builder-tab-content" ref={ribbonStripRef}
           className="office-ribbon-content" role="tabpanel" aria-hidden={previewMode} aria-label={ribbonTab}
           aria-labelledby={`page-builder-tab-${Math.max(0,ribbonTabsVisible.indexOf(ribbonTab))}`}>
-          {ribbonTab==='Preview' && <div className="office-ribbon-group canvas-preview-selector-group" aria-label="Preview component selector">
-            <div className="office-ribbon-stack">
-              <label htmlFor="page-preview-component-select">Find component
-                <select id="page-preview-component-select" aria-label="Select page component in preview"
-                  value={selectedId} onChange={event=>{
-                    const id=event.target.value;
-                    setSelectedId(id);
-                    setSelectionIds(id?[id]:[]);
-                    setSelectedRegion(null);
-                    window.requestAnimationFrame(()=>{
-                      const nodes=pagePreviewAreaRef.current?.querySelectorAll<HTMLElement>('[data-component-id]');
-                      const node=Array.from(nodes??[]).find(item=>item.dataset.componentId===id);
-                      node?.scrollIntoView({block:'nearest',inline:'nearest',behavior:'smooth'});
-                    });
-                  }}>
-                  <option value="">Select component…</option>
-                  {page.components.map((item,index)=><option key={item.id} value={item.id}>
-                    {index+1}. {item.label} ({item.type}){item.visible?'':' — Hidden'}
-                    {rawLayoutParentId(item)?' — Nested':''}
-                  </option>)}
-                </select>
+          {ribbonTab==='Preview' && <div className="office-ribbon-group canvas-preview-selector-group" aria-label="Find">
+            <div className="office-ribbon-stack ribbon-view-find">
+              <label className="ribbon-view-search"><Search size={14} aria-hidden="true"/>
+                <input type="search" ref={viewFindInputRef} aria-label="Find a component" placeholder="Find a component"
+                  value={viewFind} onFocus={()=>setViewFindOpen(true)}
+                  onKeyDown={event=>{if(event.key==='Escape')setViewFindOpen(false);}}
+                  onChange={event=>{setViewFind(event.target.value);setViewFindOpen(true);}}/>
               </label>
-            </div><span>Components</span>
+              {viewFindOpen && viewFind.trim() && createPortal(<div className="ribbon-view-find-results" role="listbox"
+                style={{position:'fixed',top:viewFindPosition.top,left:viewFindPosition.left}}
+                aria-label="Matching components">
+                {page.components.filter(item=>(item.label+' '+item.type).toLowerCase().includes(viewFind.trim().toLowerCase()))
+                  .slice(0,50).map(item=><button key={item.id} type="button" role="option"
+                    aria-selected={selectedId===item.id} onMouseDown={event=>event.preventDefault()}
+                    onClick={()=>{
+                      setSelectedId(item.id);setSelectionIds([item.id]);setSelectedRegion(null);
+                      setViewFind(item.label);setViewFindOpen(false);
+                      window.requestAnimationFrame(()=>{
+                        const nodes=pagePreviewAreaRef.current?.querySelectorAll<HTMLElement>('[data-component-id]');
+                        Array.from(nodes??[]).find(node=>node.dataset.componentId===item.id)
+                          ?.scrollIntoView({block:'nearest',inline:'nearest',behavior:'smooth'});
+                      });
+                    }}>{item.label} <small>{item.type}{item.visible?'':' · Hidden'}
+                    {rawLayoutParentId(item)?' · Nested':''}</small></button>)}
+              </div>,document.body)}
+            </div><span>Find</span>
           </div>}
-          {ribbonTab==='Preview' && <div className="office-ribbon-group canvas-preview-tools" aria-label="Canvas display">
+          {ribbonTab==='Preview' && <div className="office-ribbon-group canvas-preview-tools ribbon-view-zoom" aria-label="Zoom">
             <div className="office-ribbon-stack">
-              
-              <button type="button" onClick={()=>{setFitCanvas(true);setFitFullPage(true);}}
-                aria-pressed={fitCanvas&&fitFullPage}>Fit to Screen</button>
-              <button type="button" onClick={()=>{setFitCanvas(true);setFitFullPage(false);}}
-                aria-pressed={fitCanvas&&!fitFullPage}>Fit Width</button>
-              <button type="button" onClick={()=>{setFitCanvas(false);setCanvasZoom(100)}}
-                aria-pressed={!fitCanvas}>100% actual size</button>
-              <label className="canvas-zoom-control">Canvas zoom <input type="range" min="20" max="200" step="5" value={fitCanvas?Math.round(fitScale*100):canvasZoom} onChange={event=>{setFitCanvas(false);setCanvasZoom(Number(event.target.value));}}/><output>{fitCanvas?Math.round(fitScale*100):canvasZoom}%</output></label>
-              <span aria-live="polite">{page.canvasWidth} × {page.canvasHeight}</span>
-            </div><span>View</span>
+              <div className="ribbon-view-zoom-buttons">
+                <button type="button" onClick={()=>{setFitCanvas(true);setFitFullPage(true);}}
+                  aria-pressed={fitCanvas&&fitFullPage}>Fit to Screen</button>
+                <button type="button" onClick={()=>{setFitCanvas(true);setFitFullPage(false);}}
+                  aria-pressed={fitCanvas&&!fitFullPage}>Fit Width</button>
+                <button type="button" onClick={()=>{setFitCanvas(false);setCanvasZoom(100);}}
+                  aria-pressed={!fitCanvas&&canvasZoom===100}>100%</button>
+              </div>
+              <label className="ribbon-view-zoom-number"><MoveHorizontal size={16} aria-hidden="true"/>
+                <input type="number" min={20} max={200} step={5} aria-label="Canvas zoom percentage"
+                  value={fitCanvas?Math.round(fitScale*100):canvasZoom}
+                  onChange={event=>{const value=Number(event.target.value);
+                    if(Number.isFinite(value)){setFitCanvas(false);setCanvasZoom(Math.min(200,Math.max(20,value)));}}}/>%
+              </label>
+            </div><span>Zoom</span>
           </div>}
-          {ribbonTab==='Preview' && <div className="office-ribbon-group preview-visibility-group" aria-label="Conditional visibility">
+          {ribbonTab==='Preview' && <div className="office-ribbon-group ribbon-view-canvas" aria-label="Canvas">
+            <div className="office-ribbon-stack"><span aria-live="polite">
+              {page.canvasWidth} × {page.canvasHeight}</span>
+            </div><span>Canvas</span>
+          </div>}
+          {ribbonTab==='Logic' && <div className="office-ribbon-group preview-visibility-group" aria-label="Conditional visibility">
             {selected ? <div className="preview-visibility-controls">
               <label className="ribbon-small-checkbox"><input type="checkbox" checked={selected.visible}
                 onChange={event=>updateComponent(selected.id,{visible:event.target.checked})}/>
-                Component visible on this page</label>
+                Visible on this page</label>
               <RibbonVisibilityRules draft={visibilityDraft} onChange={setVisibilityDraft}
                 onApply={savePreviewVisibility} onCancel={cancelPreviewVisibility} fields={fields}
                 allowRecordFields={Boolean(targetObject&&page.pageType==='Record Page')}
@@ -2899,23 +2909,6 @@ function PageBuilder({
                 recordTypes={(targetObject?.recordTypes??[]).map(type=>({id:type.id,label:type.label}))}/>
             </div> : <div className="preview-visibility-unselected">Select a component to set its visibility.</div>}
             <span>Conditional visibility</span>
-          </div>}
-          {ribbonTab==='Preview' && <div className="office-ribbon-group canvas-placement-group" aria-label="Placement">
-            <div className="office-ribbon-stack canvas-placement-actions">
-              <button type="button" disabled={!selected||isCanvasLocked(selected)} title="Bring to Front"
-                onClick={()=>placeSelectedLayer('front')}><Layers3 size={15}/> Bring to Front</button>
-              <button type="button" disabled={!selected||isCanvasLocked(selected)} title="Send to Back"
-                onClick={()=>placeSelectedLayer('back')}><Layers3 size={15}/> Send to Back</button>
-              <button type="button" disabled={page.layoutMode!=='free-canvas'||selectionIds.length<2}
-                onClick={wrapSelectedInContainer}><Group size={15}/> Group</button>
-              <button type="button" disabled={!selected||(!canvasGroupKey(selected)
-                &&!(selected.type==='Container'&&childrenOf(page.components,selected.id).length>0))}
-                onClick={ungroupSelected}><Ungroup size={15}/> Ungroup</button>
-            </div><span>Placement</span>
-          </div>}
-
-          {ribbonTab==='Component Layout' && page.layoutMode==='free-canvas' && <div className="office-ribbon-group canvas-distribution-group" aria-label="Distribute components">
-            <div className="office-ribbon-stack"><button type="button" disabled={selectionIds.length<3} onClick={()=>distributeSelected('x')}>Distribute horizontally</button><button type="button" disabled={selectionIds.length<3} onClick={()=>distributeSelected('y')}>Distribute vertically</button></div><span>Distribute</span>
           </div>}
           {ribbonTab==='Component Layout' && !ribbonCatalog &&
             <div role="status" className="une-ribbon-catalog-status">
@@ -2957,28 +2950,30 @@ function PageBuilder({
               </div>)}
             </div>;
           })()}
-          {ribbonTab==='Advanced' && <PageBuilderAdvancedRibbon
-            selected={!!selected} recordPage={page.pageType==='Record Page'}
-            onOpen={openAdvanced}
-            canvasTools={page.layoutMode==='free-canvas' ? <>
-              <button type="button" disabled={selectionIds.length<2||!selected?.position}
-                onClick={wrapSelectedInContainer}><Group size={15}/> Group</button>
-              <button type="button" disabled={!selected||(!canvasGroupKey(selected)&&!(selected.type==='Container'&&childrenOf(page.components,selected.id).length>0))}
-                onClick={ungroupSelected}><Ungroup size={15}/> Ungroup</button>
-              {(['start','center','end'] as const).map(anchor=><React.Fragment key={anchor}>
-                <button type="button" disabled={!selected||!selected.position||isCanvasLocked(selected)}
-                  onClick={()=>alignSelected('x',anchor)}>Align horizontal {anchor}</button>
-                <button type="button" disabled={!selected||!selected.position||isCanvasLocked(selected)}
-                  onClick={()=>alignSelected('y',anchor)}>Align vertical {anchor}</button>
-              </React.Fragment>)}
-              <button type="button" disabled={selectionIds.length<3} onClick={()=>distributeSelected('x')}>Distribute horizontally</button>
-              <button type="button" disabled={selectionIds.length<3} onClick={()=>distributeSelected('y')}>Distribute vertically</button>
-              <button type="button" disabled={!selected||isCanvasLocked(selected)} onClick={()=>moveSelected(-1)}>Bring forward</button>
-              <button type="button" disabled={!selected||isCanvasLocked(selected)} onClick={()=>moveSelected(1)}>Send backward</button>
-              <button type="button" disabled={!selected} onClick={()=>selected&&updateComponent(selected.id,{properties:{
-                ...selected.properties,editorLocked:!isCanvasLocked(selected)}})}>
-                {selected&&isCanvasLocked(selected)?'Unlock component':'Lock component'}</button>
-            </> : null}/>}
+          {ribbonTab==='Arrange' && <ArrangeRibbon
+            freeCanvas={page.layoutMode==='free-canvas'} hasSelection={!!selected}
+            locked={selected?isCanvasLocked(selected):false} selectedCount={selectionIds.length}
+            canUngroup={!!selected&&(!!canvasGroupKey(selected)
+              ||(selected.type==='Container'&&childrenOf(page.components,selected.id).length>0))}
+            onAlign={alignSelected} onDistribute={distributeSelected}
+            onMove={moveSelected} onPlace={placeSelectedLayer}
+            onGroup={wrapSelectedInContainer} onUngroup={ungroupSelected}
+            onLock={()=>selected&&updateComponent(selected.id,{properties:{
+              ...selected.properties,editorLocked:!isCanvasLocked(selected)}})}
+            onNesting={()=>openAdvanced('nesting')}/>}
+          {ribbonTab==='Logic' && <div className="office-ribbon-group ribbon-logic-rules" aria-label="Rules">
+            <div className="office-ribbon-stack">
+              <button type="button" onClick={()=>openAdvanced('assignments')}>Activation assignments</button>
+              <button type="button" disabled={!selected} onClick={()=>openAdvanced('properties')}>Advanced properties</button>
+              <button type="button" disabled={page.pageType!=='Record Page'} onClick={()=>openAdvanced('recordPage')}>Record page settings</button>
+              <button type="button" disabled={!selected} onClick={()=>openAdvanced('responsive')}>Responsive settings</button>
+            </div><span>Rules</span>
+          </div>}
+          {ribbonTab==='Component Action' && <div className="office-ribbon-group ribbon-advanced-actions" aria-label="Advanced actions">
+            <div className="office-ribbon-stack">
+              <button type="button" disabled={!selected} onClick={()=>openAdvanced('actions')}>Advanced actions</button>
+            </div><span>Advanced</span>
+          </div>}
           {ribbonTab==='Add Block' && <SmartInsertRibbon
             items={paletteComponents}
             onInsert={addPaletteComponent}
@@ -2992,24 +2987,18 @@ function PageBuilder({
               onChange={actionFlows=>updateComponent(selected.id,{
                 properties:{...selected.properties,actionFlows}
               })}/>}
-          {selected?.type==='Custom:smart_icon' && ribbonTab==='Shapes' &&
+          {selected?.type==='Custom:smart_icon' && ribbonTab==='Component Layout' &&
             <SmartIconGallery value={String(selected.properties.iconId??'house')}
               onChange={iconId=>updateComponent(selected.id,{properties:{...selected.properties,iconId}})}/>}
           {selectedNewUne && selected && ribbonCatalog &&
-            (ribbonTab==='Component Data'||ribbonTab==='Component Properties'||ribbonTab==='Component Layout'||ribbonTab==='Shapes') &&
+            (ribbonTab==='Component Data'||ribbonTab==='Component Properties'||ribbonTab==='Component Layout') &&
             <SmartRibbon
-              tab={ribbonTab==='Component Data'?'Data':ribbonTab==='Component Layout'?'Layout':ribbonTab==='Shapes'?'Shapes':'Design'}
+              tab={ribbonTab==='Component Data'?'Data':ribbonTab==='Component Layout'?'Layout':'Design'}
               api={selected.type.slice(7)} definitions={ribbonCatalog.properties}
               properties={selected.properties} objects={objects} pageObjectApiName={page.targetObject}
               onChange={(properties:Record<string,unknown>)=>updateComponent(selected.id,{properties})}
               position={selected.position} layoutMode={page.layoutMode}
               onPositionChange={position=>updateComponent(selected.id,{position})}/>}
-        </div>
-        <div className="office-ribbon-group-navigation" aria-label="Ribbon group navigation">
-          <button type="button" title="Previous ribbon groups" aria-label="Previous ribbon groups" disabled={!ribbonOverflow.left}
-            onClick={()=>ribbonStripRef.current?.scrollBy({left:-Math.max(260,(ribbonStripRef.current?.clientWidth??500)-160),behavior:'smooth'})}><ChevronLeft size={17}/></button>
-          <button type="button" title="Next ribbon groups" aria-label="Next ribbon groups" disabled={!ribbonOverflow.right}
-            onClick={()=>ribbonStripRef.current?.scrollBy({left:Math.max(260,(ribbonStripRef.current?.clientWidth??500)-160),behavior:'smooth'})}><ChevronRight size={17}/></button>
         </div>
       </section>
 

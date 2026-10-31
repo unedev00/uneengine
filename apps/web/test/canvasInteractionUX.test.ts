@@ -457,7 +457,9 @@ test('Page Builder contextual ribbon respects the fixed-height no-scroll contrac
   const actions=await readFile(new URL('PageBuilder/PageBuilderActionRibbon.tsx',root),'utf8');
   assert.doesNotMatch(builder,/ribbonTab==='Filters' && <RibbonFilters/);
   assert.doesNotMatch(builder,/ribbonTab==='Visibility Rules' && <RibbonVisibilityRules/);
-  assert.match(builder,/ribbonTab==='Source'/);
+  assert.match(builder,/ribbonTab==='Logic'/);
+  assert.match(builder,/ribbonTab==='Preview'/);
+  assert.match(builder,/<SmartRibbon/);
   assert.doesNotMatch(builder,/ribbonTab === 'Component Content'/);
   const advancedStyle=await readFile(new URL('PageBuilder/PageBuilderAdvancedStyle.tsx',root),'utf8');
   const blueprint=await readFile(new URL('PageBuilder/PageBuilderRibbonBlueprint.css',root),'utf8');
@@ -636,7 +638,10 @@ test('group resize scales geometry proportionally while leaving unrelated compon
 test('placement controls, component finder and full-width workspace are builder-only',async()=>{
   const builder=await readFile(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
   const css=await readFile(new URL('../src/core/builders/PageBuilder/PageBuilderCanvasWorkspace.css',import.meta.url),'utf8');
-  for(const action of ['Bring to Front','Send to Back','Group','Ungroup','Select page component in preview','Fit to Screen'])
+  const arrange=await readFile(new URL('../src/core/builders/PageBuilder/ArrangeRibbon.tsx',import.meta.url),'utf8');
+  for(const action of ['Bring to front','Send to back','Group','Ungroup'])
+    assert.ok(arrange.includes(action),action);
+  for(const action of ['aria-label="Find a component"','Fit to Screen','ribbonTab===\'Arrange\''])
     assert.ok(builder.includes(action),action);
   assert.match(builder,/borderWidth:1,borderColor:'#000000'/);
   assert.match(builder,/canvasGroupKey\(component\) \|\| previewMode/, 'grouped components move through the shared group gesture');

@@ -72,3 +72,42 @@
 @media(max-width:700px){.office-builder-ribbon .smart-insert-ribbon{grid-template-columns:115px minmax(0,1fr)!important}
 .office-builder-ribbon .smart-insert-tiles{grid-auto-columns:126px}
 .office-builder-ribbon .smart-insert-tile{width:126px}}
+
+/* Eight-tab Insert geometry. Render the current registered icons, not mockup drawings. */
+.office-builder-ribbon #page-builder-tab-content:has(>.smart-insert-ribbon){
+ height:118px!important;min-height:118px!important;max-height:118px!important;
+ padding:1px 6px!important;overflow-x:hidden!important;
+}
+.office-builder-ribbon .smart-insert-ribbon{
+ grid-template-columns:170px minmax(0,1fr)!important;
+ height:116px!important;gap:8px!important;
+}
+.office-builder-ribbon .smart-insert-browser{padding:1px 8px 1px 0!important;gap:4px!important}
+.office-builder-ribbon .smart-insert-categories{
+ overflow:visible!important;display:block!important;height:26px!important;
+}
+.office-builder-ribbon .smart-insert-categories>select{
+ box-sizing:border-box;width:100%;height:26px;border:1px solid #c3cad4;
+ border-radius:5px;background:#fff;color:#29476a;font:11px "Segoe UI",Arial,sans-serif;
+}
+.office-builder-ribbon .smart-insert-gallery{height:116px!important;min-height:116px!important}
+.office-builder-ribbon .smart-insert-gallery-row{height:116px!important;min-height:116px!important}
+.office-builder-ribbon .smart-insert-tiles{
+ grid-template-rows:repeat(2,56px)!important;grid-auto-columns:76px!important;
+ gap:4px!important;max-height:116px!important;height:116px!important;
+ overflow-x:auto!important;overflow-y:hidden!important;scrollbar-width:none!important;
+}
+.office-builder-ribbon .smart-insert-tiles::-webkit-scrollbar{display:none}
+.office-builder-ribbon .smart-insert-tile{
+ box-sizing:border-box;flex-direction:column!important;align-items:center!important;
+ justify-content:center!important;gap:4px!important;
+ width:76px!important;height:56px!important;padding:3px!important;
+ border:1px solid #c3cad4!important;border-radius:5px!important;
+ background:#fff!important;text-align:center!important;
+}
+.office-builder-ribbon .smart-insert-tile-icon{flex:0 0 24px!important;color:#1f5fa8!important}
+.office-builder-ribbon .smart-insert-tile-icon :is(svg,img){width:24px!important;height:24px!important}
+.office-builder-ribbon .smart-insert-tile-label{
+ flex:0 0 auto!important;width:100%;font-size:11px!important;line-height:13px!important;
+ text-align:center!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;
+}

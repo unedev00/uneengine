@@ -37,7 +37,9 @@ test('journey mounts record filters inline and saves draft separately from publi
   const engine=readFileSync(new URL('../src/core/builders/ComponentProperties/componentPropertiesView.tsx',import.meta.url),'utf8');
   assert.match(source,/Component Content/);
   assert.doesNotMatch(source,/page-ribbon-expanded-editor/);
-  assert.match(source,/ribbonTab==='Source'/);
+  assert.match(source,/ribbonTab==='Component Data'/);
+  assert.match(source,/<SmartRibbon/);
+  assert.match(source,/ribbonTab==='Logic'/);
   assert.match(source,/ribbonFilterDraft/);
   assert.doesNotMatch(source,/onApply=\{\(\)=>\{/);
   assert.doesNotMatch(source,/onCancel=\{\(\)=>selectRibbonTab\('Component Data'\)\}/);
@@ -55,7 +57,7 @@ test('ribbon inline labels wrap and controls stay within their group dividers',(
 
 test('ribbon keeps accessible component tabs without Home and Parity',()=>{
   const source=readFileSync(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
-  for(const label of ['Insert','Data','Content','Design','Layout','Responsive','Actions','Preview'])
+  for(const label of ['Insert','Data','Design','Layout','Arrange','Actions','Logic','View'])
     assert.ok(source.includes(`'${label}'`),label+' tab label remains available');
   for(const icon of ['Puzzle','Database','Type','SlidersHorizontal','Layers3','Smartphone','Workflow','Eye'])
     assert.ok(source.includes(icon),icon+' tab icon remains available');
@@ -187,7 +189,8 @@ test('Quick Access commands are real buttons, remain on the top rail, and Layout
  for(const group of ['Page','Device','Canvas','Version'])
   assert.ok(view.includes("'"+group+"'"),group+' remains in Layout');
  assert.doesNotMatch(view,/Unsaved edits/);
- assert.match(view,/selected \? \(selected\.label\|\|selected\.type\)\+' selected' : 'Welcome'/);
+ assert.match(view,/rawLayoutParentId\(selected\)/);
+ assert.match(view,/Page › /);
  assert.match(css,/\.office-ribbon-topbar-back/);
  assert.match(css,/\.office-ribbon-quick-access/);
  assert.match(css,/\.office-ribbon-page-layout-groups/);
