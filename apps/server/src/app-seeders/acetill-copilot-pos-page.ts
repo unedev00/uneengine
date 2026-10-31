@@ -149,8 +149,30 @@ export async function seedAcetillCopilotPosPage(db:SqlPersistence,tenant:string)
   const current=await pages.editor(tenant,PAGE,variant);
   const needed=copilotTillLayout.filter(block=>
    !current.components.some(existing=>sameKind(existing,block)));
-  if(!needed.length)continue;
-  const components=[...current.components,...needed.map(block=>responsive(block,variant))];
+  // Supply only missing bindings/properties on an existing Smart component.
+  // Its user-edited values, event actions, dimensions and identity always win.
+  let filled=0;
+  const inherited=current.components.map(component=>{
+   const model=copilotTillLayout.find(block=>sameKind(component,block)
+     &&component.type===block.type);
+   if(!model)return component;
+   const actual=component.properties&&typeof component.properties==='object'
+     &&!Array.isArray(component.properties)
+     ?component.properties as Record<string,unknown>:{};
+   const defaults=model.properties;
+   const actions=actual.actionFlows&&typeof actual.actionFlows==='object'
+     &&!Array.isArray(actual.actionFlows)
+     ?actual.actionFlows as Record<string,unknown>:{};
+   const defaultActions=defaults.actionFlows&&typeof defaults.actionFlows==='object'
+     &&!Array.isArray(defaults.actionFlows)
+     ?defaults.actionFlows as Record<string,unknown>:{};
+   const merged={...defaults,...actual,actionFlows:{...defaultActions,...actions}};
+   if(JSON.stringify(merged)===JSON.stringify(actual))return component;
+   filled++;
+   return {...component,properties:merged};
+  });
+  if(!needed.length&&!filled)continue;
+  const components=[...inherited,...needed.map(block=>responsive(block,variant))];
   const draft={...current,components,
    canvasWidth:variant==='Mobile'?390:variant==='Tablet'?1024:
     Math.max(current.canvasWidth,1440),
