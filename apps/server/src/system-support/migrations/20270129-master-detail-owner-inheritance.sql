@@ -72,7 +72,7 @@ BEGIN
   );
  END IF;
  RETURN NULL;
-END $;
+END $$;
 DROP TRIGGER IF EXISTS md_reassign_primary_master_after ON md_field_definitions;
 CREATE TRIGGER md_reassign_primary_master_after
  AFTER UPDATE OF data_type,relationship_type,deleted_at OR DELETE
