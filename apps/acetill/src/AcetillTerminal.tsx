@@ -87,6 +87,35 @@ export default function AcetillTerminal({editorStyles}: {editorStyles?:AcetillVi
   const [newPin,setNewPin]=React.useState('');
   const [setupStatus,setSetupStatus]=React.useState('');
   const [paymentMode,setPaymentMode]=React.useState<'cash'|'card'|null>(null);
+  const paymentDialogRef=React.useRef<HTMLElement>(null);
+  React.useEffect(()=>{
+    if(!paymentMode)return;
+    const dialog=paymentDialogRef.current;
+    if(!dialog)return;
+    const previous=document.activeElement instanceof HTMLElement?document.activeElement:null;
+    const controls=()=>Array.from(dialog.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled),select:not(:disabled),textarea:not(:disabled)'))
+      .filter(element=>element.getClientRects().length>0);
+    const first=controls()[0];
+    first?.focus();
+    const onKey=(event:KeyboardEvent)=>{
+      if(event.key==='Escape'){
+        const cancel=dialog.querySelector<HTMLButtonElement>('.acetill-payment-buttons button:first-child');
+        if(cancel&&!cancel.disabled){event.preventDefault();cancel.click();}
+        return;
+      }
+      if(event.key!=='Tab')return;
+      const available=controls();
+      if(!available.length){event.preventDefault();return;}
+      const start=available[0],end=available[available.length-1];
+      if(event.shiftKey&&(document.activeElement===start||!dialog.contains(document.activeElement))){
+        event.preventDefault();end.focus();
+      }else if(!event.shiftKey&&(document.activeElement===end||!dialog.contains(document.activeElement))){
+        event.preventDefault();start.focus();
+      }
+    };
+    document.addEventListener('keydown',onKey);
+    return()=>{document.removeEventListener('keydown',onKey);previous?.focus();};
+  },[paymentMode]);
   const [cashReceived,setCashReceived]=React.useState('');
   const [customerWindow,setCustomerWindow]=React.useState<Window|null>(null);
   const customerWindowRef=React.useRef<Window|null>(null);
@@ -357,7 +386,7 @@ export default function AcetillTerminal({editorStyles}: {editorStyles?:AcetillVi
   </div>;
   const cashierToolbarSlot=typeof document==='undefined'?null:document.querySelector('[data-acetill-toolbar-slot]');
   const paymentDialog=paymentMode?<div className="acetill-payment-backdrop" role="presentation">
-    <section className="acetill-payment-dialog" role="dialog" aria-modal="true" aria-labelledby="acetill-payment-title">
+    <section ref={paymentDialogRef} className="acetill-payment-dialog" role="dialog" aria-modal="true" aria-labelledby="acetill-payment-title">
       <h2 id="acetill-payment-title">{paymentMode==='cash'?'Cash payment':'Card Payment Done?'}</h2>
       {paymentMode==='cash'?<>
         <p>Amount due: <strong>{amount(subtotal)}</strong></p>
