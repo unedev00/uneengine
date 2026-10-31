@@ -158,6 +158,7 @@
     "apps/web/test/authentication/une-brand-logo.test.mjs",
     "apps/web/test/bundledRegistryClient.test.ts",
     "apps/web/test/canvasInteractionUX.test.ts",
+    "apps/web/test/cardGridScrollContract.test.ts",
     "apps/web/test/componentLibraries.test.ts",
     "apps/web/test/componentPropertySchema.test.ts",
     "apps/web/test/connectedAppsScopes.test.mjs",
