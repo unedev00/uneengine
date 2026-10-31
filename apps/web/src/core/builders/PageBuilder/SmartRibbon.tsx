@@ -8,9 +8,10 @@ import RibbonColorPalette from './RibbonColorPalette';
 import {uploadTenantImageFile} from '../ComponentProperties/TenantMediaPicker';
 import RecordFilterEditor from '../../../component-libraries/shared/primitives/RecordFilterEditor/RecordFilterEditor';
 import SmartFormulaField from './SmartFormulaField';
+import SmartIconDropdown from './SmartIconDropdown';
 import './SmartRibbon.css';
 import './SmartRibbonCompact.css';
-import './SmartRibbonApprovedTwoRow.css';
+import './SmartRibbonApprovedThreeRow.css';
 type Position={x:number;y:number;width:number;height:number};
 type Props={tab:UneBuilderTab;api:string;definitions:readonly UneRibbonProperty[];properties:Record<string,unknown>;
  onChange:(next:Record<string,unknown>)=>void;objects:readonly ObjectMetadata[];pageObjectApiName?:string;
@@ -78,7 +79,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  const filterCount=Array.isArray(properties.filters)?properties.filters.length:0;
  // Keep the global property inventory visible for every selected component.
  // Unsupported controls are disabled by the per-property `supported` check below.
- const compactDesign=tab==='Design';
+ const compactDesign=tab==='Design'||tab==='Shapes';
  const visible=definitions.filter(p=>p.tab===tab);
  const sections=[...new Set(visible.map(p=>p.group))];
  const sectionRow=(group:string,row:number)=>visible
@@ -87,7 +88,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  const controlWidth=(p:UneRibbonProperty)=>{
    if(p.designWidth)return p.designWidth;
    // Unconfigured future SQL properties remain present without overlapping.
-   if(p.kind==='shadow'||p.kind==='align')return 84;
+   if(p.kind==='shadow'||p.kind==='align')return p.designDisplay==='dropdown'?28:84;
    if(p.kind==='color')return 40;
    if(p.kind==='number'||p.kind==='position')return 70;
    if(p.kind==='boolean')return 28;
@@ -171,11 +172,13 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
         typeof value==='string'?Number.parseFloat(value)||'':value as number}
        onChange={e=>{if(e.target.value!==''){const n=Number(e.target.value);if(Number.isFinite(n))write(n);}}}/>
    </span>;
+   else if(kind==='shadow'&&compactDesign&&property.designDisplay==='dropdown')editor=<SmartIconDropdown kind="shadow" value={String(value)} label={title} disabled={!enabled} onChange={write}/>;
    else if(kind==='shadow')editor=<div className="smart-icons" role="group" aria-label={title}>
      {['none','medium','large'].map((opt,i)=><button key={opt} type="button" disabled={!enabled} title={opt}
        aria-label={title+' '+opt} aria-pressed={value===opt} onClick={()=>write(opt)}><span
          style={{boxShadow:i===0?'none':i===1?'1px 2px 3px #64748b':'2px 4px 8px #64748b'}}/></button>)}
    </div>;
+   else if(kind==='align'&&compactDesign&&property.designDisplay==='dropdown')editor=<SmartIconDropdown kind="align" value={String(value)} label={title} disabled={!enabled} onChange={write}/>;
    else if(kind==='align')editor=<div className="smart-icons" role="group" aria-label={title}>
      {([['left',AlignLeft],['center',AlignCenter],['right',AlignRight]] as const).map(([opt,Icon])=>
        <button type="button" key={opt} disabled={!enabled} title={opt}
@@ -224,15 +227,15 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  };
  return <div className="smart-ribbon" data-smart-api={api}
   data-compact-design={compactDesign?'true':'false'}
-  data-two-row={compactDesign?'true':'false'} aria-label="Smart shared property ribbon">
+  data-three-row={compactDesign?'true':'false'} aria-label="Smart shared property ribbon">
   <input ref={uploadInput} className="smart-hidden-upload" type="file"
     accept="image/png,image/jpeg,image/gif,image/webp" aria-label="Select local image"
     onChange={event=>void selectLocalImage(event)} />
   {uploadError&&<div className="smart-upload-error" role="alert" title={uploadError}>{uploadError}</div>}
   {sections.map(section=><section className="smart-ribbon-group" key={section}
-     data-design-two-row={compactDesign?'true':undefined} aria-label={section}>
+     data-design-three-row={compactDesign?'true':undefined} aria-label={section}>
    <div className="smart-ribbon-items">
-     {compactDesign?<>{[1,2].map(row=><div className="smart-ribbon-row" key={row}
+     {compactDesign?<>{[1,2,3].map(row=><div className="smart-ribbon-row" key={row}
        data-design-row={row}>{sectionRow(section,row).map(controls)}</div>)}</>:
        visible.filter(p=>p.group===section).map(controls)}
    </div>
