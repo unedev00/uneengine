@@ -3,7 +3,7 @@ import {test} from 'node:test';
 import express from 'express';
 import {readFileSync} from 'node:fs';
 import {registerMcpRoutes} from '../../src/system-support/mcp-routes.js';
-import {callMcpTool,mcpTools,type McpServices} from '../../src/system-support/mcp-tools.js';
+import {callMcpTool,mcpTools,mcpToolScopes,mcpToolAllowed,type McpServices} from '../../src/system-support/mcp-tools.js';
 import {validMcpResource} from '../../src/system-support/mcp-resource.js';
 import {ConnectedAppService} from '../../src/system-support/connected-app-service.js';
 import type {SqlPersistence} from '../../src/system-files/sql-persistence.js';
@@ -13,7 +13,12 @@ const actor={tenant_id:'tenant-a',user_id:'user-a'};
 function services(scopes=['mcp:access','records:read']){
  const calls:unknown[][]=[];
  const s={
-  db:{query:async(sql:string,args:unknown[])=>{calls.push([sql,...args]);return {rows:sql.startsWith('SELECT s.scope')?scopes.map(scope=>({scope})):[]};}},
+  db:{query:async(sql:string,args:unknown[])=>{
+   calls.push([sql,...args]);
+   if(sql.startsWith('SELECT s.scope'))return {rows:scopes.map(scope=>({scope}))};
+   if(sql.includes('FROM md_oauth_scope_catalogue'))return {rows:scopes.map(scope=>({scope}))};
+   return {rows:[]};
+  }},
   records:{list:async(...args:unknown[])=>{calls.push(['records',...args]);return {records:[{Id:'one'}]};}},
   rbac:{require:async()=>{},allowed:async()=>true},
   platform:{requirePlatform:async()=>{}},definitions:{list:async()=>[]},flows:{execute:async()=>({}),
@@ -66,6 +71,34 @@ test('tools are scope-filtered and attempted write without scope never reaches r
   assert.equal(rejected.result.isError,true);assert.equal(x.calls.some(c=>c[0]==='records'),false);
  }finally{await x.close();}
 });
+test('new grouped OAuth scopes expose only their corresponding MCP tools and never bypass RBAC',async()=>{
+ assert.deepEqual(mcpToolScopes('get_page_layout'),['metadata:read','pages:read']);
+ assert.deepEqual(mcpToolScopes('create_flow_draft'),['metadata:write','flows:manage']);
+ assert.equal(mcpToolAllowed('server_operation',new Set(['operations:read']),{action:'restart'}),false);
+ assert.equal(mcpToolAllowed('server_operation',new Set(['operations:read']),{action:'status'}),true);
+ const x=await server(['mcp:access','pages:read','flows:read']);try{
+  const list=await (await x.rpc('tools/list')).json();
+  const tools=list.result.tools.map((t:{name:string})=>t.name);
+  assert.ok(tools.includes('get_page_layout'));
+  assert.ok(tools.includes('get_flow_definition'));
+  assert.ok(!tools.includes('save_page_draft'));
+  assert.ok(!tools.includes('create_flow_draft'));
+  assert.ok(!tools.includes('list_records'));
+  const denied=await (await x.rpc('tools/call',{name:'save_page_draft',arguments:{
+   page:'COPILOTTILL_POS',definition:{draftRevision:1}}})).json();
+  assert.equal(denied.result.isError,true);
+  assert.equal(x.calls.some(row=>row[0]==='page-save'),false);
+ }finally{await x.close();}
+ const readOnly=await server(['mcp:access','operations:read']);try{
+  const list=await (await readOnly.rpc('tools/list')).json();
+  assert.ok(list.result.tools.some((t:{name:string})=>t.name==='server_operation'));
+  const denied=await (await readOnly.rpc('tools/call',{name:'server_operation',
+   arguments:{action:'activate_release',release:'0'.repeat(40)}})).json();
+  assert.equal(denied.result.isError,true);
+  assert.ok(!readOnly.calls.some(row=>row.includes('McpServerOperationRequested')));
+ }finally{await readOnly.close();}
+});
+
 test('record calls use authenticated tenant and user, reject injected tenant arguments, and audit',async()=>{
  const x=await server();try{
   const ok=await (await x.rpc('tools/call',{name:'list_records',arguments:{object:'Contact',limit:10}})).json();
