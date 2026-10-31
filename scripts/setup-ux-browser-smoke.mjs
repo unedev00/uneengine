@@ -48,6 +48,10 @@ try {
  if(process.env.SETUP_UX_SCREENSHOT) await page.screenshot({path:process.env.SETUP_UX_SCREENSHOT});
  await page.getByRole('button',{name:'View Sample credential',exact:true}).click();
  await page.getByRole('dialog').waitFor();
+ const credentialDialog=page.locator('.named-credential-modal');
+ assert.ok(await credentialDialog.evaluate(el=>el.getBoundingClientRect().width<=window.innerWidth-8), 'Credential dialog must fit desktop viewport');
+ assert.equal(await page.locator('.named-credential-form-grid').evaluate(el=>getComputedStyle(el).display),'grid');
+ await screenshot('phase2-credential-modal');
  await open('history');
  assert.equal(await page.locator('.flow-logs-table th').count(),7,'Flow history includes the Duration column');
  await page.locator('.flow-logs-table summary').click();
@@ -89,13 +93,50 @@ try {
  assert.equal(await page.getByRole('button',{name:'Security & Recovery'}).getAttribute('aria-current'),'page',
   'Deep-linked company security settings must open directly');
  await screenshot('company-security-deeplink');
+ await open('monitoring');
+ await page.getByRole('tab',{name:'Monitoring'}).waitFor();
+ assert.equal(await page.getByRole('tab',{name:'Monitoring'}).getAttribute('aria-selected'),'true');
+ await page.getByText('180 requests',{exact:false}).waitFor();
+ assert.equal(await page.locator('.md-admin-settings-block .md-admin-form-grid').first().evaluate(el=>getComputedStyle(el).display),'grid');
+ await screenshot('phase2-monitoring');
+ await open('licenses');
+ const licencesTab=page.getByRole('tab',{name:'Licences'});
+ await licencesTab.waitFor();
+ await licencesTab.click();
+ await page.getByRole('heading',{name:'User and permission-set licences'}).waitFor();
+ const licenceUserSelect=page.locator('.md-admin-licence-assignments select').first();
+ try { await licenceUserSelect.waitFor({timeout:10000}); }
+ catch(error) { console.log('Licence panel:',(await page.locator('.md-admin-tabpanel').innerText()).slice(0,800)); console.log('Browser errors:',errors); throw error; }
+ await licenceUserSelect.selectOption('user-1');
+ const licenceGrid=page.locator('.md-admin-licence-assignments .md-admin-checkbox-grid').first();
+ await licenceGrid.waitFor();
+ assert.ok(await licenceGrid.evaluate(el=>getComputedStyle(el).gridTemplateColumns.split(' ').length)>=2,'Licence assignments must use columns at desktop width');
+ await screenshot('phase2-licenses');
+ await open('federation');
+ await page.getByRole('button',{name:'Add identity provider'}).click();
+ assert.equal(await page.locator('.md-admin-settings-block>.md-admin-form-grid').first().evaluate(el=>getComputedStyle(el).display),'grid');
+ await screenshot('phase2-federation');
+ await open('password');
+ await page.getByRole('button',{name:'Edit Minimum password length'}).click();
+ await page.locator('.md-admin-password-grid').waitFor();
+ await page.getByRole('checkbox',{name:'Require uppercase letter'}).check();
+ await screenshot('phase2-password');
+ await open('sessions');
+ await page.getByRole('button',{name:'Edit restrictions'}).click();
+ await page.getByRole('button',{name:'Add IP range'}).click();
+ assert.equal(await page.locator('.md-admin-restriction-grid').count(),1);
+ await screenshot('phase2-session-ranges');
  await page.setViewportSize({width:390,height:844});
  await open('oauth');
  await page.getByText('operator9@example.com').waitFor();
  assert.equal(await page.locator('.connected-apps-checklist').evaluate(el=>getComputedStyle(el).gridTemplateColumns.split(' ').filter(Boolean).length),1,
   'OAuth user picker must reduce to one column on narrow screens');
  await screenshot('oauth-mobile');
+ await open('password');
+ await page.getByRole('button',{name:'Edit Minimum password length'}).click();
+ assert.equal(await page.locator('.md-admin-password-grid').evaluate(el=>getComputedStyle(el).gridTemplateColumns.split(' ').length),1,'Password editing must collapse to one column on mobile');
+ await screenshot('phase2-password-mobile');
  await page.setViewportSize({width:1365,height:768});
  assert.deepEqual(errors,[]);
- console.log('PASS: dashboard permission/create, offline object/record/save, tenant draft/footer/discard, credential width/details, history details, flow dialog/create, record route chunk import, MFA policy control, OAuth grids, audit table, deep-linked company settings (1365px/390px)');
+ console.log('PASS: dashboard permission/create, offline object/record/save, tenant draft/footer/discard, credential width/details, history details, flow dialog/create, record route chunk import, MFA policy control, OAuth grids, audit table, deep-linked company settings, monitoring, licences, SSO, password, sessions and credential modal (1365px/390px)');
 } finally { await browser.close(); }

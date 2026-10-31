@@ -17,27 +17,27 @@ export default function TenantFederationControls({request,canManage}:{request:Re
   <p>Configure an OIDC or SAML identity provider, then explicitly link its subject to a tenant user. Email matches never create accounts or permissions.</p>
   <p>OIDC token and JWKS requests use tenant-linked HTTPS Named Credentials. Saving OIDC settings requires Named Credential management and HTTP Callout execution permissions.</p>
   <p>{deployment.configured?<>Callback URL: <code>{deployment.callbackUrl}</code></>:'The deployment administrator must configure the public HTTPS authentication origin before SSO can run.'}</p>
-  {providers.map(p=><div key={p.id}>{p.label} · {p.protocol.toUpperCase()} · {p.enabled?'Enabled':'Disabled'} {canManage&&<button type="button" className="btn" onClick={()=>setDraft({...p})}>Edit provider</button>}
-   {p.protocol==='saml'&&deployment.configured&&<p>Service-provider Entity ID: <code>{deployment.callbackUrl}/{p.id}</code></p>}</div>)}
+  <div className="md-admin-entity-list" aria-label="Configured identity providers">{providers.map(p=><div className="md-admin-entity-row" key={p.id}><div><strong>{p.label}</strong><span>{p.protocol.toUpperCase()} · {p.enabled?'Enabled':'Disabled'}</span></div>{canManage&&<button type="button" className="btn" onClick={()=>setDraft({...p})}>Edit provider</button>}
+   {p.protocol==='saml'&&deployment.configured&&<p>Service-provider Entity ID: <code>{deployment.callbackUrl}/{p.id}</code></p>}</div>)}</div>
   {canManage&&!draft&&<button type="button" className="btn" onClick={()=>setDraft({...blank})}>Add identity provider</button>}
-  {draft&&<div className="settings-edit-row">
+  {draft&&<div className="md-admin-settings-block"><div className="md-admin-form-grid">
    <label className="form-label">Protocol<select className="form-control" value={draft.protocol} onChange={e=>setDraft({...draft,protocol:e.target.value as Provider['protocol']})}><option value="oidc">OpenID Connect (including social providers)</option><option value="saml">SAML 2.0</option></select></label>
    {(['label','issuer','authorization_url',...(draft.protocol==='oidc'?['token_url','jwks_url','client_id','secret']:['certificate'])] as (keyof Provider)[]).map(key=><label className="form-label" key={key}>
     {{label:'Display name',issuer:'Identity provider issuer',authorization_url:'Authorization / SSO URL',token_url:'Token URL',jwks_url:'JWKS URL',client_id:'Client ID',secret:'Client secret (blank preserves saved secret)',certificate:'IdP signing certificate (PEM)'}[key as string]??key}
     {key==='certificate'?<textarea className="form-control" value={String(draft[key]??'')} onChange={e=>setDraft({...draft,[key]:e.target.value})}/>:<input className="form-control" type={key==='secret'?'password':'text'} autoComplete="off" value={String(draft[key]??'')} onChange={e=>setDraft({...draft,[key]:e.target.value})}/>}
    </label>)}
-   <label className="checkbox-row"><input type="checkbox" checked={draft.enabled} onChange={e=>setDraft({...draft,enabled:e.target.checked})}/>Enable provider</label>
-   <button type="button" className="btn" disabled={busy} onClick={()=>setDraft(null)}>Cancel</button>
-   <button type="button" className="btn btn-brand" disabled={busy} onClick={()=>void run(async()=>{await request('/auth/identity-providers',{method:'PUT',body:JSON.stringify(draft)});setDraft(null);setMessage('Identity provider saved.');})}>Save provider</button>
+   <label className="checkbox-row md-admin-span-all"><input type="checkbox" checked={draft.enabled} onChange={e=>setDraft({...draft,enabled:e.target.checked})}/>Enable provider</label></div>
+   <div className="md-admin-actions"><button type="button" className="btn" disabled={busy} onClick={()=>setDraft(null)}>Cancel</button>
+   <button type="button" className="btn btn-brand" disabled={busy} onClick={()=>void run(async()=>{await request('/auth/identity-providers',{method:'PUT',body:JSON.stringify(draft)});setDraft(null);setMessage('Identity provider saved.');})}>Save provider</button></div>
   </div>}
   <h3>Identity links</h3>
-  {links.map(l=><div key={l.provider_id+l.subject}>{providers.find(p=>p.id===l.provider_id)?.label} · {l.subject} → {users.find(u=>u.id===l.user_id)?.email??l.user_id}
-   {canManage&&<button className="btn" type="button" disabled={busy} onClick={()=>void saveLink(l,true)}>Remove link</button>}</div>)}
-  {canManage&&<div className="settings-edit-row">
+  <div className="md-admin-entity-list" aria-label="Linked identities">{links.map(l=><div className="md-admin-entity-row" key={l.provider_id+l.subject}><div><strong>{providers.find(p=>p.id===l.provider_id)?.label}</strong><span>{l.subject} → {users.find(u=>u.id===l.user_id)?.email??l.user_id}</span></div>
+   {canManage&&<button className="btn" type="button" disabled={busy} onClick={()=>void saveLink(l,true)}>Remove link</button>}</div>)}</div>
+  {canManage&&<div className="md-admin-settings-block"><div className="md-admin-form-grid">
    <label className="form-label">Provider<select className="form-control" value={link.provider_id} onChange={e=>setLink({...link,provider_id:e.target.value})}><option value="">Choose provider</option>{providers.map(p=><option key={p.id} value={p.id}>{p.label}</option>)}</select></label>
    <label className="form-label">User<select className="form-control" value={link.user_id} onChange={e=>setLink({...link,user_id:e.target.value})}><option value="">Choose user</option>{users.map(u=><option key={u.id} value={u.id}>{u.name} ({u.email})</option>)}</select></label>
    <label className="form-label">Provider subject (OIDC sub or SAML NameID)<input className="form-control" value={link.subject} onChange={e=>setLink({...link,subject:e.target.value})}/></label>
-   <button className="btn" type="button" disabled={busy||!link.provider_id||!link.user_id||!link.subject} onClick={()=>void saveLink(link)}>Link identity</button>
+   </div><div className="md-admin-actions"><button className="btn btn-brand" type="button" disabled={busy||!link.provider_id||!link.user_id||!link.subject} onClick={()=>void saveLink(link)}>Link identity</button></div>
   </div>}
   {message&&<p role="status">{message}</p>}
  </section>;
