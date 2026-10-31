@@ -2106,10 +2106,6 @@ function PageBuilder({
   };
   const renderPageComponent = (component: LightningPageMetadata['components'][number], index: number, libraryPreview = false, interactivePreview = false) => {
     const showHiddenSelection = (ribbonTab === 'Preview' || ribbonTab === 'Logic') && !previewMode && selectedId === component.id && !libraryPreview;
-    const visualBorder = component.properties.visualStyle && typeof component.properties.visualStyle === 'object'
-      ? component.properties.visualStyle as Record<string,unknown> : {};
-    const editorBlackBorder = (visualBorder.borderWidth ?? component.properties.borderWidth) === 1
-      && (visualBorder.borderColor ?? component.properties.borderColor) === '#000000';
     if (!component.visible && !showHiddenSelection) return null;
     const customDefinition = component.type.startsWith('Custom:')
       ? findRegisteredComponent(libraryComponents, component.type.slice('Custom:'.length), 'page')
@@ -2186,7 +2182,7 @@ function PageBuilder({
       data-page-appearance={isLayoutType(component.type) ? 'layout' : pageAppearanceTarget(component.type)}
       data-page-style={pageAppearanceStyleKeys(visualStyle)}
       ref={libraryPreview && !interactivePreview ? (element) => { if (element) element.inert = true; } : undefined}
-      className={`record-component ${(!libraryPreview || interactivePreview) && page.layoutMode === 'free-canvas' ? 'free-canvas-component' : ''} ${isCanvasLocked(component) ? 'canvas-component-locked' : ''} ${nested ? 'nested-page-component' : ''} ${isLayoutContainer(component) ? 'layout-container-component' : ''} ${libraryPreview ? 'component-rendered-preview' : ''} ${selectedId === component.id && !previewMode && !libraryPreview ? 'selected' : ''} ${selectionIds.includes(component.id) && !previewMode && !libraryPreview ? 'multi-selected' : ''} ${showHiddenSelection ? 'canvas-hidden-selection' : ''} ${editorBlackBorder ? 'canvas-authored-black-border' : ''} ${dragOverId === component.id && !libraryPreview ? 'drop-target' : ''}`}
+      className={`record-component ${(!libraryPreview || interactivePreview) && page.layoutMode === 'free-canvas' ? 'free-canvas-component' : ''} ${isCanvasLocked(component) ? 'canvas-component-locked' : ''} ${nested ? 'nested-page-component' : ''} ${isLayoutContainer(component) ? 'layout-container-component' : ''} ${libraryPreview ? 'component-rendered-preview' : ''} ${selectedId === component.id && !previewMode && !libraryPreview ? 'selected' : ''} ${selectionIds.includes(component.id) && !previewMode && !libraryPreview ? 'multi-selected' : ''} ${showHiddenSelection ? 'canvas-hidden-selection' : ''} ${dragOverId === component.id && !libraryPreview ? 'drop-target' : ''}`}
       style={{
         ...((!libraryPreview || interactivePreview) && page.layoutMode === 'free-canvas'
           ? nested
