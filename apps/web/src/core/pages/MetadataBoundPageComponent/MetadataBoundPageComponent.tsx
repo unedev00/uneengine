@@ -4,7 +4,7 @@ import {useState,useEffect,useRef} from 'react';
 import {loadFlowScreenRecordPage} from '../../authentication/Client/authClient';
 // Load the browser API client only during the mounted effect, not on SSR import.
 import {presentPageRecords,type ChannelGrant} from '../../records/RecordWorkspace/recordPresentationAdapters';
-import {filterPageComponentRecords,pageComponentRecordQuery,pageComponentRelatedQuery,bindPageStateProperties} from '../PageRuntime/pageComponentBindings';
+import {filterPageComponentRecords,pageComponentRecordQuery,pageComponentRelatedQuery,pageComponentActiveRecordQuery,bindPageStateProperties} from '../PageRuntime/pageComponentBindings';
 import {resolveSmartToggleFieldBinding,updateSmartToggleField} from '../PageRuntime/smartToggleFieldBinding';
 import {filterRelatedRecords} from '../PageRuntime/filterRelatedRecords.mjs';
 import {resolveMentionProperties,mentionGroups,referencedMentionPaths,resolveCollectionMentionRows} from '../../../component-libraries/shared/primitives/SmartFieldInput/smartFieldMentions';
@@ -87,9 +87,16 @@ export default function MetadataBoundPageComponent({
     recordId:string;label:string;sourceObjectApiName:string
   }>>({});
   const relatedKey=String(properties.relatedFilterKey??'');
-  const relatedField=String(properties.relatedFieldApiName??'');
-  const parentId=relatedKey?selectedFilterRecords[relatedKey]?.recordId||pageState[relatedKey]:undefined;
-  const relatedQuery=pageComponentRelatedQuery(properties,fields,parentId);
+  const usesActiveRecordScope=properties.autoRecordScope===true||
+    (properties.autoRecordScope!==false && ['smart_cart','Custom:smart_cart'].includes(component.type));
+  const manualRelatedField=String(properties.relatedFieldApiName??'');
+  const manualParentId=relatedKey?selectedFilterRecords[relatedKey]?.recordId||pageState[relatedKey]:undefined;
+  const relatedQuery=relatedKey
+    ?pageComponentRelatedQuery(properties,fields,manualParentId)
+    :usesActiveRecordScope?pageComponentActiveRecordQuery(fields,pageState)
+      :pageComponentRelatedQuery(properties,fields,undefined);
+  const relatedField=relatedKey?manualRelatedField:relatedQuery.filter?.field??'';
+  const parentId=relatedKey?manualParentId:relatedQuery.filter?.value;
   const recordQuery=pageComponentRecordQuery(properties.filters,filterFields,{pageState,recordId,sessionId},
     properties.filterLogic==='OR'?'OR':'AND');
   const recordQueryKey=JSON.stringify([recordQuery,relatedQuery]);
@@ -232,7 +239,7 @@ export default function MetadataBoundPageComponent({
   const sourceRecords=collectionMentions?.key===collectionKey?collectionMentions.rows:records;
   const filteredRecords=recordQuery.filters?sourceRecords:filterPageComponentRecords(
     sourceRecords,properties.filters,filterFields,{pageState,recordId,sessionId},properties.filterLogic==='OR'?'OR':'AND');
-  const visibleRecords=relatedKey?filterRelatedRecords(filteredRecords,parentId,relatedField):filteredRecords;
+  const visibleRecords=relatedField?filterRelatedRecords(filteredRecords,parentId,relatedField):filteredRecords;
   const mentionContext = useRelationshipMentionContext(objects, mentionRootObjectApiName,
     recordId || explicitMentionRecordId(properties), properties, apiRequest, revision);
   const resolvedProperties = bindPageStateProperties(resolveMentionProperties(properties, mentionContext.records, mentionContext.fields, objects, mentionRootObjectApiName),pageState);
