@@ -1,0 +1,40 @@
+name: Mobile login connectivity diagnostic
+on:
+  push:
+    branches:
+      - diagnostic/mobile-login-connectivity-20261031
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    steps:
+      - name: Public DNS, HTTPS, and mobile user agent checks (no credentials)
+        shell: bash
+        run: |
+          set +e
+          echo "=== DNS IPv4 ==="
+          getent ahostsv4 unesolutions.co.uk | head -6
+          getent ahostsv4 www.unesolutions.co.uk | head -6
+          echo "=== DNS IPv6 ==="
+          getent ahostsv6 unesolutions.co.uk | head -6
+          getent ahostsv6 www.unesolutions.co.uk | head -6
+          echo "=== HTTPS public endpoints ==="
+          for host in unesolutions.co.uk www.unesolutions.co.uk; do
+            for path in /login /api/health; do
+              echo "=== $host$path via IPv4 ==="
+              curl -4 -LsS --max-time 12 -o /dev/null -w "status=%{http_code} ip=%{remote_ip} effective=%{url_effective} tls=%{ssl_verify_result}\\n" "https://$host$path"
+              echo "exit=$?"
+              echo "=== $host$path via IPv6 ==="
+              curl -6 -LsS --max-time 12 -o /dev/null -w "status=%{http_code} ip=%{remote_ip} effective=%{url_effective} tls=%{ssl_verify_result}\\n" "https://$host$path"
+              echo "exit=$?"
+            done
+            echo "=== $host same-origin login bootstrap with iPhone Safari user-agent ==="
+            curl -4 -sS --max-time 15 -o /dev/null -w "status=%{http_code} ip=%{remote_ip} tls=%{ssl_verify_result}\\n" \
+              -A 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1' \
+              -H 'Content-Type: application/json' -X POST -d '{}' \
+              "https://$host/api/auth/federation/complete"
+            echo "exit=$?"
+          done
+          echo "=== Done (diagnostic does not change production) ==="
