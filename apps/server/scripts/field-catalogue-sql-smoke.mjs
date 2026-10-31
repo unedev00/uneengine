@@ -28,13 +28,44 @@ try{
   {apiName:'Amount',label:'Amount',dataType:'Currency(12,2)',defaultValue:12.34},
   {apiName:'IsActive',label:'Active',dataType:'Checkbox',defaultValue:true},
   {apiName:'Effective',label:'Effective',dataType:'Date',defaultValue:'2024-02-29'},
-  {apiName:'Choice',label:'Choice',dataType:'Picklist',picklistValues:['A','B'],defaultValue:'A'}
+  {apiName:'Choice',label:'Choice',dataType:'Picklist',picklistValues:['A','B'],defaultValue:'A'},
+  {apiName:'Notes',label:'Notes',dataType:'Text Area'},
+  {apiName:'Memo',label:'Memo',dataType:'Long Text Area'},
+  {apiName:'RichMemo',label:'Rich Memo',dataType:'Rich Text Area'},
+  {apiName:'Ratio',label:'Ratio',dataType:'Percent(8,3)',defaultValue:12.125},
+  {apiName:'Quantity',label:'Quantity',dataType:'Number(8,3)',defaultValue:4.125},
+  {apiName:'Timestamp',label:'Timestamp',dataType:'Date/Time',defaultValue:'2026-10-30T14:30:00Z'},
+  {apiName:'Clock',label:'Clock',dataType:'Time',defaultValue:'13:45'},
+  {apiName:'Contact',label:'Contact',dataType:'Email',defaultValue:'example@example.com'},
+  {apiName:'Phone',label:'Phone',dataType:'Phone',defaultValue:'+44 20 7123 4567'},
+  {apiName:'Site',label:'Site',dataType:'URL',defaultValue:'https://example.com'},
+  {apiName:'Choices',label:'Choices',dataType:'Multi-Select Picklist',picklistValues:['A','B'],defaultValue:'A;B'},
+  {apiName:'Location',label:'Location',dataType:'Geolocation'},
+  {apiName:'Address',label:'Address',dataType:'Address'},
+  {apiName:'Confidential',label:'Confidential',dataType:'Text (Encrypted)'},
+  {apiName:'Attachment',label:'Attachment',dataType:'File'},
+  {apiName:'Photo',label:'Photo',dataType:'Image'}
  ];
  const created=await defs.create(primary,'Phase2B__c','Phase 2B',fields);
  assert.equal(created.fields.length,fields.length);
  await defs.create(secondary,'Phase2B__c','Other Tenant Phase 2B',fields);
  assert.deepEqual(created.fields.filter(f=>f.externalId).map(f=>[f.apiName,f.unique]),[['ExtKey',false]]);
  assert.equal(created.fields.find(f=>f.apiName==='Amount').defaultValue,12.34);
+ const expectedTypes={
+  Notes:'textarea',Memo:'longtext',RichMemo:'richtext',Ratio:'percent',
+  Quantity:'number',Timestamp:'datetime',Clock:'time',Contact:'email',
+  Phone:'phone',Site:'url',Choices:'multipicklist',Location:'geolocation',
+  Address:'address',Confidential:'encryptedtext',Attachment:'file',Photo:'image'
+ };
+ const catalogue=(await db.query(
+  "SELECT api_name,data_type FROM md_field_definitions WHERE tenant_id=$1 AND object_api='Phase2B__c'",
+  [primary])).rows;
+ for(const [name,type] of Object.entries(expectedTypes))
+  assert.equal(catalogue.find(row=>row.api_name===name)?.data_type,type,
+   'Stored field type catalogue mismatch: '+name);
+ for(const name of ['Ratio','Quantity','Timestamp','Clock','Contact','Phone','Site','Choices'])
+  assert.equal(typeof created.fields.find(field=>field.apiName===name)?.defaultValue,'string',
+   'Default did not survive metadata round-trip: '+name);
  const stored=await db.query("SELECT api_name,is_unique,external_id FROM md_field_definitions WHERE tenant_id=$1 AND object_api='Phase2B__c' AND api_name IN ('ExtKey','UniqueCode') ORDER BY api_name",[primary]);
  assert.deepEqual(stored.rows.map(f=>[f.api_name,f.is_unique,f.external_id]),[['ExtKey',false,true],['UniqueCode',true,false]]);
  const insert=async(tenant,name,ext,code)=>db.transaction(async client=>{
