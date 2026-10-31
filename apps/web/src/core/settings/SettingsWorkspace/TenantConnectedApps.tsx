@@ -15,7 +15,8 @@ export default function TenantConnectedApps({request}:{request:Request}){
  const groups:ScopeGroup[]=data?.scopeGroups??[{key:'legacy',label:'Connection permissions',
   scopes:(data?.scopes??[]).map(scope=>({scope,label:scope,description:'Legacy OAuth scope',risk:'standard',assignable:true}))}];
  const setGroup=(group:ScopeGroup,enable:boolean)=>{
-  const allowed=group.scopes.filter(s=>s.assignable).map(s=>s.scope);
+  const allowed=(groups.find(item=>item.key===group.key)??group).scopes
+   .filter(s=>s.assignable).map(s=>s.scope);
   setDraft(prev=>({...prev,scopes:enable
    ?[...new Set([...prev.scopes,...allowed])]
    :prev.scopes.filter(s=>!allowed.includes(s))}));
@@ -47,7 +48,7 @@ export default function TenantConnectedApps({request}:{request:Request}){
    </label>
    <div className="oauth-scope-groups">
     {visibleGroups.map(group=>{
-     const enabled=group.scopes.filter(s=>s.assignable);
+     const enabled=(groups.find(item=>item.key===group.key)??group).scopes.filter(s=>s.assignable);
      const totalSelected=enabled.filter(s=>draft.scopes.includes(s.scope)).length;
      return <details key={group.key} className="oauth-scope-group" open={scopeSearch?true:undefined}>
       <summary><strong>{group.label}</strong><span>{totalSelected}/{enabled.length} selected</span></summary>
