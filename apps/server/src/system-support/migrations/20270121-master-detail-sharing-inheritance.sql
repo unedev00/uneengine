@@ -121,4 +121,4 @@ RETURNS boolean LANGUAGE sql STABLE AS $$
     AND active_object.api_name=rec.object_api AND active_object.deleted_at IS NULL
   WHERE rec.tenant_id=t AND rec.id=rid
  ),false)
-$;
+$$;
