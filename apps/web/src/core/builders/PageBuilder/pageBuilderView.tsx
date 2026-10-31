@@ -2932,10 +2932,13 @@ function PageBuilder({
                 <div className="office-ribbon-stack">
                   {group==='Page'?<>
                   <label data-ribbon-property="deviceLayout" className="une-sql-home-control une-ribbon-page-layout">
-                    <span>Layout</span>{homeValue('deviceLayout')}{homeValue('restoreVersion')}
+                    <span>Layout</span>{homeValue('deviceLayout')}
                   </label>
                   <div data-ribbon-property="selectVersion" className="une-sql-home-control une-ribbon-version-only">
                     {homeValue('selectVersion')}
+                  </div>
+                  <div data-ribbon-property="restoreVersion" className="une-sql-home-control une-ribbon-restore-only">
+                    {homeValue('restoreVersion')}
                   </div>
                 </>:group==='Canvas'?<>
                   <label data-ribbon-property="canvasWidth" className="une-sql-home-control une-ribbon-size-with-icon"
