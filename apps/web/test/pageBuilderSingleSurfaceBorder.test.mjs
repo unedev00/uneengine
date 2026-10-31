@@ -29,6 +29,8 @@ test('pointer selection and multi-selection never add a second square outline', 
   // Keyboard users still see a focus indicator, without an always-on frame.
   assert.match(appearance,
     /\.record-component\[data-page-appearance\]\.selected:focus-visible\s*\{[^}]*outline:2px dashed/s);
+  assert.match(selection, /\.free-canvas-component\.multi-selected:not\(\.selected\)::before\s*\{[^}]*border-radius:50%/s,
+    'separately Shift-selected components retain a small corner marker, not a duplicate frame');
   assert.match(canvas, /\.canvas-group-outline/);
   for (const edge of ['n','s','e','w','ne','nw','se','sw'])
     assert.ok(handles.includes('.resize-' + edge), edge + ' resize handle must remain');
