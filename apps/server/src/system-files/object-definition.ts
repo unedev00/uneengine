@@ -396,17 +396,52 @@ export class ObjectDefinitionService {
     const referenceTypes=new Map<string,FormulaValueType>();
     const publicReferences:Array<{objectApi:string;fieldApi:string}>=[];
     for(const reference of references){
+      // Keep legacy Object.Field syntax, but resolve relationship field APIs and
+      // configured aliases at every hop. Never guess between multiple edges.
       const match=/^([A-Za-z][A-Za-z0-9_]*)\.([A-Za-z][A-Za-z0-9_]*)$/.exec(reference);
-      if(!match)throw new Error('Formula references must use Object.Field names');
-      const [,targetObject,targetField]=match;
+      let targetObject=objectApi;
+      let targetField='';
+      if(match){
+        targetObject=match[1];targetField=match[2];
+        if(targetObject!==objectApi){
+          const relationship=await client.query(`SELECT 1 FROM md_field_definitions
+            WHERE tenant_id=$1 AND object_api=$2 AND related_object=$3 AND data_type='reference'
+              AND deleted_at IS NULL LIMIT 1`,[tenantId,objectApi,targetObject]);
+          if(!relationship.rowCount){
+            const aliases=await client.query<{related_object:string}>(`
+              SELECT related_object FROM md_field_definitions
+              WHERE tenant_id=$1 AND object_api=$2 AND data_type='reference'
+                AND deleted_at IS NULL AND (api_name=$3 OR relationship_name=$3)`,
+            [tenantId,objectApi,targetObject]);
+            if(aliases.rows.length!==1)throw new Error(
+              'Formula cross-object reference requires an unambiguous relationship');
+            targetObject=aliases.rows[0].related_object;
+          }
+        }
+      }else{
+        const raw=reference.startsWith('$Record.')?reference.slice(8):reference;
+        const parts=raw.split('.');
+        if(parts.length<1||parts.length>7||parts.some(part=>!/^[A-Za-z][A-Za-z0-9_]*$/.test(part)))
+          throw new Error('Invalid formula relationship field path');
+        const steps=parts[0]===objectApi||parts[0]==='Record'?parts.slice(1):parts;
+        targetField=steps.pop()??'';
+        if(!targetField)throw new Error('Invalid formula relationship field path');
+        for(const hop of steps){
+          const result=await client.query<{api_name:string;related_object:string;relationship_name:string|null}>(`
+            SELECT api_name,related_object,relationship_name
+            FROM md_field_definitions WHERE tenant_id=$1 AND object_api=$2
+              AND data_type='reference' AND deleted_at IS NULL
+              AND (api_name=$3 OR relationship_name=$3 OR related_object=$3)`,
+            [tenantId,targetObject,hop]);
+          const named=result.rows.filter(row=>row.api_name===hop||row.relationship_name===hop);
+          const candidates=named.length?named:result.rows;
+          if(candidates.length!==1)throw new Error(
+            'Formula requires one unambiguous metadata relationship: '+hop);
+          targetObject=candidates[0].related_object;
+        }
+      }
       if(targetObject===objectApi&&targetField===formulaFieldApi)
         throw new Error('Formula fields cannot reference themselves');
-      if(targetObject!==objectApi){
-        const relationship=await client.query(`SELECT 1 FROM md_field_definitions
-          WHERE tenant_id=$1 AND object_api=$2 AND related_object=$3 AND data_type='reference'
-            AND deleted_at IS NULL LIMIT 1`,[tenantId,objectApi,targetObject]);
-        if(!relationship.rowCount)throw new Error('Formula cross-object reference requires a lookup relationship');
-      }
       const field=await client.query<{data_type:string;formula_return_type:string|null;rollup_source_type:string|null}>(`
         SELECT f.data_type,f.formula_return_type,
           (SELECT s.data_type FROM md_field_definitions s
