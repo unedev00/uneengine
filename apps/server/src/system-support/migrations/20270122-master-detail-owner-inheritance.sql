@@ -11,7 +11,10 @@ FROM (
 ) ranked
 WHERE f.tenant_id=ranked.tenant_id AND f.object_api=ranked.object_api
  AND f.api_name=ranked.api_name AND ranked.position=1
- AND f.is_primary_master=false;
+ AND f.is_primary_master=false
+ AND NOT EXISTS(SELECT 1 FROM md_field_definitions designated
+  WHERE designated.tenant_id=f.tenant_id AND designated.object_api=f.object_api
+   AND designated.is_primary_master=true);
 CREATE UNIQUE INDEX IF NOT EXISTS md_master_detail_one_primary
  ON md_field_definitions(tenant_id,object_api)
  WHERE is_primary_master=true;
@@ -44,9 +47,20 @@ CREATE TRIGGER md_assign_primary_master_before
 CREATE OR REPLACE FUNCTION md_reassign_primary_master()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
- IF OLD.is_primary_master=true AND (
-  TG_OP='DELETE' OR NEW.is_primary_master=false
- ) THEN
+ IF OLD.is_primary_master IS NOT TRUE THEN RETURN NULL; END IF;
+ IF TG_OP='DELETE' THEN
+  UPDATE md_field_definitions f SET is_primary_master=true
+  WHERE f.id=(
+   SELECT candidate.id FROM md_field_definitions candidate
+   WHERE candidate.tenant_id=OLD.tenant_id AND candidate.object_api=OLD.object_api
+     AND candidate.data_type='reference'
+     AND candidate.relationship_type='Master-Detail'
+     AND candidate.deleted_at IS NULL AND candidate.is_primary_master=false
+   ORDER BY candidate.api_name LIMIT 1
+  );
+  RETURN NULL;
+ END IF;
+ IF NEW.is_primary_master IS FALSE THEN
   UPDATE md_field_definitions f SET is_primary_master=true
   WHERE f.id=(
    SELECT candidate.id FROM md_field_definitions candidate
@@ -58,7 +72,7 @@ BEGIN
   );
  END IF;
  RETURN NULL;
-END $$;
+END $;
 DROP TRIGGER IF EXISTS md_reassign_primary_master_after ON md_field_definitions;
 CREATE TRIGGER md_reassign_primary_master_after
  AFTER UPDATE OF data_type,relationship_type,deleted_at OR DELETE
