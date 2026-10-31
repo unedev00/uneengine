@@ -41,7 +41,9 @@ test('advanced controls reuse existing metadata editors and shared canvas and ne
 
 test('Advanced leaves metadata migrations and published data untouched, with scoped UI styling',()=>{
   assert.match(advanced,/aria-pressed=\{feature\.key==='preview'\?preview:undefined\}/);
-  assert.match(page,/if\(feature==='preview'\)\{setAdvancedEditor\(null\);setPreviewMode\(value=>!value\);return;\}/);
+  assert.match(page,/if\(feature==='preview'\)\{/);
+  assert.match(page,/Interactive preview can execute configured Flows/);
+  assert.match(page,/onNavigate=\{\(route:AppRoute\)=>\{/);
   const css=read('../src/core/builders/PageBuilder/PageBuilderAdvancedRibbon.css');
   assert.match(css,/page-builder-advanced-ribbon/);
   assert.match(css,/page-builder-advanced-dialog/);
