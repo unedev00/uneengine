@@ -101,7 +101,6 @@ export default function MetadataBoundPageComponent({
   const recordQuery=pageComponentRecordQuery(properties.filters,filterFields,{pageState,recordId,sessionId},
     properties.filterLogic==='OR'?'OR':'AND');
   const recordQueryKey=JSON.stringify([recordQuery,relatedQuery]);
-  const recordRequestKey=JSON.stringify([objectApiName,recordQueryKey,recordOffset,revision]);
 
   useEffect(() => {
     const listener = (event: Event) => {
@@ -119,6 +118,7 @@ export default function MetadataBoundPageComponent({
   },[pageSessionKey]);
   const [dataLoading, setDataLoading] = useState(false);
   const [revision, setRevision] = useState(0);
+  const recordRequestKey=JSON.stringify([objectApiName,recordQueryKey,recordOffset,revision]);
   const [channelAccess, setChannelAccess] = useState<{userId: string;viewAll: boolean;grants: ChannelGrant[];eligibleAssignees: {id: string;name: string;channelAccountId: string}[]}>({
     userId: '', viewAll: false, grants: [], eligibleAssignees: []
   });
