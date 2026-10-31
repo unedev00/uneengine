@@ -27,9 +27,9 @@ export default function ArrangeRibbon(props:Props){
    [{label:'Distribute horizontally',icon:ArrowLeftRight,disabled:!props.freeCanvas||props.selectedCount<3,run:()=>props.onDistribute('x')}],
    [{label:'Distribute vertically',icon:ArrowUpDown,disabled:!props.freeCanvas||props.selectedCount<3,run:()=>props.onDistribute('y')}]]},
   {name:'Order',rows:[
-   [{label:'Bring forward',icon:ArrowUp,disabled:!allowed,run:()=>props.onMove(-1)},
+   [{label:'Bring forward',icon:ArrowUp,disabled:!allowed,run:()=>props.onMove(1)},
     {label:'Bring to front',icon:Layers3,disabled:!allowed,run:()=>props.onPlace('front')}],
-   [{label:'Send backward',icon:ArrowDown,disabled:!allowed,run:()=>props.onMove(1)},
+   [{label:'Send backward',icon:ArrowDown,disabled:!allowed,run:()=>props.onMove(-1)},
     {label:'Send to back',icon:Layers3,disabled:!allowed,run:()=>props.onPlace('back')}]]},
   {name:'Group',rows:[
    [{label:'Group',icon:Group,disabled:!props.freeCanvas||props.selectedCount<2,run:props.onGroup},
