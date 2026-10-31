@@ -28,8 +28,10 @@ test('Card Grid record rows have a native, keyboard accessible and independently
 test('Card Grid scrolling does not replace move/resize or enable nested scrolling on auto-height templates',()=>{
  const grid=read('../src/component-libraries/shared/primitives/ItemGrid/ItemGrid.jsx');
  const handles=read('../src/core/builders/PageBuilder/SmartCanvasHandles.css');
+ const builder=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
  assert.match(grid,/p\.boundedViewport===true\?/);
  assert.match(handles,/\.free-canvas-resize-handle/);
  assert.match(handles,/overflow:visible!important/);
  assert.match(grid,/event\.pointerType==="touch"\)event\.stopPropagation\(\)/);
+ assert.match(builder,/closest\('\.md-product-grid--scroll'\)/);
 });
