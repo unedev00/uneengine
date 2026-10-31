@@ -21,9 +21,10 @@ export default function TenantConnectedApps({request}:{request:Request}){
    :prev.scopes.filter(s=>!allowed.includes(s))}));
  };
  const search=scopeSearch.trim().toLocaleLowerCase();
- const visibleGroups=groups.map(group=>({...group,scopes:group.scopes.filter(s=>!search
-   ||[s.scope,s.label,s.description,group.label].some(v=>v.toLocaleLowerCase().includes(search)))}))
- ).filter(group=>group.scopes.length>0);
+ const visibleGroups=groups.map(group=>({...group,
+  scopes:group.scopes.filter(s=>!search||[s.scope,s.label,s.description,group.label]
+   .some(v=>v.toLocaleLowerCase().includes(search)))
+ })).filter(group=>group.scopes.length>0);
  const selectedTotal=draft.scopes.length;
  return <section className="surface permission-section"><h2>Connected Apps</h2><p>OAuth authorization code with PKCE (S256), explicit user consent and rotating refresh tokens. Editing an app revokes existing consents. Secret values are shown once.</p>
   {message&&<p role="status">{message}</p>}{secret&&<p role="status">Save this client secret now: <code>{secret}</code> <button className="btn" onClick={()=>setSecret('')}>Dismiss</button></p>}
