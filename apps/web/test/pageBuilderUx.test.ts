@@ -189,7 +189,8 @@ test('Quick Access commands are real buttons, remain on the top rail, and Layout
  for(const group of ['Page','Device','Canvas','Version'])
   assert.ok(view.includes("'"+group+"'"),group+' remains in Layout');
  assert.doesNotMatch(view,/Unsaved edits/);
- assert.match(view,/selected \? \(selected\.label\|\|selected\.type\)\+' selected' : 'Welcome'/);
+ assert.match(view,/rawLayoutParentId\(selected\)/);
+ assert.match(view,/Page › /);
  assert.match(css,/\.office-ribbon-topbar-back/);
  assert.match(css,/\.office-ribbon-quick-access/);
  assert.match(css,/\.office-ribbon-page-layout-groups/);
