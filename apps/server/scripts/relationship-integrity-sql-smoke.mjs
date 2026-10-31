@@ -57,8 +57,14 @@ try{
   master('PhaseChild__c','PrimaryChild',true));
  await defs.addField(tenant,'PhaseGrand__c','BlockingParentId','Lookup(PhaseParent__c)',undefined,
   'Blocking Parent',lookup('PhaseParent__c','BlockingParent','Restrict'));
- await defs.addField(tenant,'PhaseGrand__c','SecondaryMasterId','Master-Detail(PhaseParent__c)',
+ await defs.addField(tenant,'PhaseGrand__c','ASecondaryMasterId','Master-Detail(PhaseParent__c)',
   undefined,'Secondary Master',master('PhaseParent__c','SecondaryMaster',true));
+ const primaryMetadata=(await db.query(
+  `SELECT api_name,is_primary_master FROM md_field_definitions
+   WHERE tenant_id=$1 AND object_api='PhaseGrand__c' AND relationship_type='Master-Detail'`,
+  [tenant])).rows;
+ assert.deepEqual(primaryMetadata.filter(row=>row.is_primary_master).map(row=>row.api_name),
+  ['ChildId'],'The first-created master, not alphabetical API order, owns the detail');
  const edges=await listRelationshipDefinitions(db,tenant);
  assert.equal(edges.filter(e=>e.sourceObject==='PhaseChild__c'&&e.targetObject==='PhaseParent__c').length,3);
  assert.ok(edges.some(e=>e.fieldApiName==='ParentId'&&e.relationshipType==='Master-Detail'
