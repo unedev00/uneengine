@@ -639,7 +639,7 @@ test('placement controls, component finder and full-width workspace are builder-
   for(const action of ['Bring to Front','Send to Back','Group','Ungroup','Select page component in preview','Fit to Screen'])
     assert.ok(builder.includes(action),action);
   assert.match(builder,/borderWidth:1,borderColor:'#000000'/);
-  assert.match(builder,/Only persistent groups move as a unit/);
+  assert.match(builder,/canvasGroupKey\(component\) \|\| previewMode/, 'grouped components move through the shared group gesture');
   assert.match(css,/\.page-stage/);
   assert.match(css,/canvas-group-outline/);
 });
