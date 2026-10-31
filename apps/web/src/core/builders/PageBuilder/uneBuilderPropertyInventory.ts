@@ -1,16 +1,16 @@
 /** Types only. Global shared property definitions and enablement are read from
  * SQL via /api/metadata/builder-ribbon. Never duplicate the inventory in TS.
  */
-export type UneBuilderTab='Data'|'Design'|'Layout';
+export type UneBuilderTab='Data'|'Design'|'Shapes'|'Layout';
 export type RibbonTab=UneBuilderTab|'Home';
 export type RibbonControlKind='color'|'shadow'|'expression'|'align'|'number'|'position'|
  'boolean'|'choice'|'object'|'weekdays'|'command'|'readonly';
 export type UneBuilderApi=string;
 export type UneRibbonProperty={
  id:string;label:string;tab:RibbonTab;group:string;
- /** SQL-owned visual placement for the compact two-row Design toolbar. */
+ /** SQL-owned visual placement for the compact three-row Design and Shapes toolbars. */
  designRow?:number;designWidth?:number;designHeight?:number;designOrder?:number;
- designCaption?:string;designCaptionWidth?:number;
+ designCaption?:string;designCaptionWidth?:number;designDisplay?:'buttons'|'dropdown';
  kind:RibbonControlKind;components:readonly string[];
  default?:string|number|boolean|readonly string[];
  min?:number;max?:number;choices?:readonly string[];field?:boolean;
