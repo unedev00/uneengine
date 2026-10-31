@@ -17,6 +17,7 @@ import TenantPasswordPolicy from '../src/core/settings/SettingsWorkspace/TenantP
 import TenantSessionControls from '../src/core/settings/SettingsWorkspace/TenantSessionControls';
 import TenantFederationControls from '../src/core/settings/SettingsWorkspace/TenantFederationControls';
 import CompanySettingsWorkspace from '../src/core/settings/CompanySettingsWorkspace/CompanySettingsWorkspace';
+import {createSettingsViews} from '../src/core/settings/SettingsWorkspace/settingsWorkspaceViews';
 import '../src/core/workspace/WorkspaceTheme/design-system.css';
 import '../src/core/workspace/WorkspaceTheme/styles.css';
 import '../src/core/workspace/WorkspaceTheme/appleTheme.css';
@@ -41,7 +42,8 @@ const request=async(path,init)=>{
  if(init?.method==='PUT'){window.savedSelections=JSON.parse(init.body);return {briefcase:JSON.parse(init.body)};}
  return {briefcase:{selections:[]}};
 };
-const uxRequest=async path=>{
+const uxRequest=async (path,init)=>{
+ if(path.startsWith('/auth/security-events?')){window.securityEventQuery=path;const offset=Number(new URLSearchParams(path.split('?')[1]).get('offset')||0);return {events:[{id:'event-'+offset,at:'2026-10-30T10:00:00Z',actorUserId:'user-1',loginIdentifier:'operator@example.com',sourceIp:'192.0.2.4',action:'login.success',details:{}}],nextOffset:offset===0?25:null};}
  if(path==='/auth/mfa/status')return {mode:'Off',enrolled:false};
  if(path==='/auth/passkeys')return {credentials:[]};
  if(path==='/auth/user-locks')return {users:[{id:'user-1',name:'Test operator',email:'test.operator@example.com'}]};
@@ -65,6 +67,12 @@ const uxRequest=async path=>{
   changed_fields:['flow_id','property_path','tenant_id','value'],created_at:'2026-10-21T22:46:11Z'}],nextCursor:null};
  return {};
 };
+const directoryRequest=async(path,init)=>{
+ if(path==='/security/connected-apps'&&!init){const data=await uxRequest(path);return {...data,clients:[{id:'app-1',label:'Payroll connector',enabled:true,client_type:'public',require_mfa:true,redirects:['https://example.com/callback'],scopes:['records:read'],users:['user-0']}]};}
+ if(path==='/security/connected-apps'&&init?.method==='PUT'){window.oauthSaved=JSON.parse(init.body);return {id:'app-1'};}
+ return uxRequest(path,init);
+};
+const securityViews=createSettingsViews(uxRequest,()=>null);
 const credentials=[{id:'sample',name:'Sample_Credential',label:'Sample credential',baseUrl:'https://example.com/long/integration/path',authType:'Bearer',hasSecret:true,protocol:'HTTPS',enabled:true,updatedAt:'2026-10-28T09:00:00Z',configuration:{}}];
 function RecordImportCheck(){ const [ready,setReady]=React.useState(false); React.useEffect(()=>{import('../src/core/records/RecordWorkspace/recordWorkspaceViews').then(module=>setReady(typeof module.createRecordWorkspaceViews === 'function'));},[]);return <p>{ready ? 'Record workspace import passed' : 'Loading record workspace'}</p>; }
 function Fixture(){
@@ -74,6 +82,8 @@ function Fixture(){
  if(view==='schema')content=<SchemaBuilder objects={[object,{...object,apiName:'Invoice',label:'Invoice',kind:'Custom Object'}]} selectedObjectApiName="Account" onOpenObject={noop} onOpenField={noop} onCreateObject={noop} onNewField={noop}/>;
  else if(view==='mfa')content=<TenantMfaControls request={uxRequest} canManage onReauthenticate={noop}/>;
   else if(view==='oauth')content=<TenantConnectedApps request={uxRequest}/>;
+   else if(view==='oauth-directory')content=<TenantConnectedApps request={directoryRequest}/>;
+   else if(view==='security-history')content=<securityViews.TenantSecurityAudit/>;
   else if(view==='governance')content=<TenantGovernance request={uxRequest} canManage/>;
    else if(view==='monitoring')content=<TenantGovernance request={uxRequest} canManage initialTab="monitoring"/>;
    else if(view==='licenses')content=<TenantGovernance request={uxRequest} canManage initialTab="licences"/>;
