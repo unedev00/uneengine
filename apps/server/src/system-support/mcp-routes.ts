@@ -1,7 +1,7 @@
 import {createHash} from 'node:crypto';
 import type {Express,Request,Response,NextFunction,RequestHandler} from 'express';
 import {mcpOrigin} from './mcp-resource.js';
-import {callMcpTool,mcpTools,mcpToolScope,type McpServices,type McpActor} from './mcp-tools.js';
+import {callMcpTool,mcpTools,mcpToolScopes,mcpToolAllowed,type McpServices,type McpActor} from './mcp-tools.js';
 import {auditContext} from './audit-context.js';
 const versions=['2025-06-18','2025-03-26','2024-11-05'];
 type Req=Request&{actor?:McpActor};
@@ -9,8 +9,19 @@ export function registerMcpRoutes(app:Express,s:McpServices,authorize:RequestHan
  const origin=mcpOrigin();
  if(!origin)return; // Explicit installation: no listener or discovery until configured.
  const resource=origin+'/api/mcp';
- app.get(['/.well-known/oauth-protected-resource','/.well-known/oauth-protected-resource/api/mcp'],(_req,res)=>res.json({resource,authorization_servers:[origin],scopes_supported:['mcp:access','records:read','records:write','metadata:read','metadata:write','flows:execute','operations:manage'],bearer_methods_supported:['header']}));
- app.get('/.well-known/oauth-authorization-server',(_req,res)=>res.json({issuer:origin,authorization_endpoint:origin+'/api/oauth/authorize',token_endpoint:origin+'/api/oauth/token',revocation_endpoint:origin+'/api/oauth/revoke',response_types_supported:['code'],grant_types_supported:['authorization_code','refresh_token'],code_challenge_methods_supported:['S256'],token_endpoint_auth_methods_supported:['none','client_secret_post'],scopes_supported:['mcp:access','records:read','records:write','metadata:read','metadata:write','flows:execute','operations:manage']}));
+ const supportedScopes=async()=>(
+  await s.db.query<{scope:string}>(
+   'SELECT scope FROM md_oauth_scope_catalogue WHERE assignable=true ORDER BY group_order,sort_order')
+ ).rows.map(row=>row.scope);
+ app.get(['/.well-known/oauth-protected-resource','/.well-known/oauth-protected-resource/api/mcp'],
+  (_req,res,next)=>{void supportedScopes().then(scopes=>res.json({resource,authorization_servers:[origin],
+   scopes_supported:scopes,bearer_methods_supported:['header']})).catch(next);});
+ app.get('/.well-known/oauth-authorization-server',
+  (_req,res,next)=>{void supportedScopes().then(scopes=>res.json({issuer:origin,
+   authorization_endpoint:origin+'/api/oauth/authorize',token_endpoint:origin+'/api/oauth/token',
+   revocation_endpoint:origin+'/api/oauth/revoke',response_types_supported:['code'],
+   grant_types_supported:['authorization_code','refresh_token'],code_challenge_methods_supported:['S256'],
+   token_endpoint_auth_methods_supported:['none','client_secret_post'],scopes_supported:scopes})).catch(next);});
  app.all('/api/mcp',(req,res,next)=>{
   res.setHeader('Cache-Control','no-store');
   res.setHeader('WWW-Authenticate',`Bearer resource_metadata="${origin}/.well-known/oauth-protected-resource/api/mcp"`);
@@ -41,11 +52,11 @@ export function registerMcpRoutes(app:Express,s:McpServices,authorize:RequestHan
    result({protocolVersion:versions.includes(b.params.protocolVersion)?b.params.protocolVersion:versions[0],capabilities:{tools:{}},serverInfo:{name:'metadrive',version:'1.0.0'}});return;
   }
   if(b.method==='ping'){result({});return;}
-  if(b.method==='tools/list'){result({tools:mcpTools.filter(t=>scopes.has(mcpToolScope(t.name)))});return;}
+  if(b.method==='tools/list'){result({tools:mcpTools.filter(t=>mcpToolScopes(t.name).some(scope=>scopes.has(scope)))});return;}
   if(b.method!=='tools/call'){error(-32601,'Method not found');return;}
   const name=b.params?.name;
   if(typeof name!=='string'||!mcpTools.some(t=>t.name===name)){error(-32602,'Unknown tool');return;}
-  if(!scopes.has(mcpToolScope(name))){result({isError:true,content:[{type:'text',text:'OAuth scope does not permit this tool'}]});return;}
+  if(!mcpToolAllowed(name,scopes,b.params?.arguments)){result({isError:true,content:[{type:'text',text:'OAuth scope does not permit this tool or operation'}]});return;}
   const audit=async(action:string)=>s.db.query('INSERT INTO md_security_events(tenant_id,actor_user_id,action,details) VALUES($1,$2,$3,$4::jsonb)',[a.tenant_id,a.user_id,action,JSON.stringify({tool:name,correlationId:auditContext()?.correlationId})]);
   await audit('McpToolRequested');
   try{
