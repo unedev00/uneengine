@@ -1,7 +1,6 @@
 import * as React from 'react';
 const { useMemo, useState } = React;
 import type { ObjectMetadata } from '../../metadata/Definitions/metadata';
-import './schemaBuilderUsability.css';
 
 type Props = {
   objects: ObjectMetadata[];
