@@ -94,6 +94,13 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    if(p.kind==='boolean')return 28;
    return 99;
  };
+ // Exactly one SQL-derived width per section: max of its rows plus 3px gutters
+ // and the 1px divider. Caption labels cannot inflate a section.
+ const sectionWidth=(group:string)=>Math.max(0,...[1,2,3].map(row=>{
+   const properties=sectionRow(group,row);
+   return properties.reduce((total,p)=>total+controlWidth(p)+(p.designCaptionWidth??0),0)
+     +Math.max(0,properties.length-1);
+ })) + 7;
  const controls=(property:UneRibbonProperty)=>{
    const supported=property.components.includes(api);
    const kind=api==='smart_calendar'&&property.id==='shadow'
@@ -233,7 +240,8 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
     onChange={event=>void selectLocalImage(event)} />
   {uploadError&&<div className="smart-upload-error" role="alert" title={uploadError}>{uploadError}</div>}
   {sections.map(section=><section className="smart-ribbon-group" key={section}
-     data-design-three-row={compactDesign?'true':undefined} aria-label={section}>
+     data-design-three-row={compactDesign?'true':undefined} aria-label={section}
+     style={compactDesign?{'--smart-section-width':sectionWidth(section)+'px'} as CSSProperties:undefined}>
    <div className="smart-ribbon-items">
      {compactDesign?<>{[1,2,3].map(row=><div className="smart-ribbon-row" key={row}
        data-design-row={row}>{sectionRow(section,row).map(controls)}</div>)}</>:
