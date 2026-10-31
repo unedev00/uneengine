@@ -161,6 +161,22 @@ export function pageComponentActiveRecordQuery(
  const match=nearest[0];
  return {blocked:false,filter:{field:match.field.apiName,value:match.value,related:true}};
 }
+/** An explicitly published active ID always wins over session discovery.
+ * A malformed or ambiguous active ID must never trigger a wider query. */
+export function hasPageActiveRecordSelection(
+ fields:ReadonlyArray<FieldMetadata>,pageState:Readonly<Record<string,unknown>>
+):boolean {
+ return fields.some(field=>{
+  if(!field.relationship)return false;
+  return [field.apiName,field.relationship.targetObject].some(name=>{
+   if(typeof name!=='string'||!/^[A-Za-z][A-Za-z0-9_]*$/.test(name))return false;
+   const key=name.charAt(0).toLowerCase()+name.slice(1)+'Id';
+   return [key,'active'+name+'Id','current'+name+'Id']
+    .some(candidate=>Object.prototype.hasOwnProperty.call(pageState,candidate));
+  });
+ });
+}
+
 /**
  * Resolve a page session to a related record using only relationship metadata.
  * No POS/Cart-specific path is embedded in the shared runtime. Candidate parents
