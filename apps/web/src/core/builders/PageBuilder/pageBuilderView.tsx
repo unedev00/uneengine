@@ -2514,7 +2514,6 @@ function PageBuilder({
   };
   const quickAccessOrder=['save','activate','resetIcon','undo','redo','cut','copy','paste','delete'] as const;
   const journeyTabs: Array<typeof ribbonTab> = selectedNewUne
-  const journeyTabs: Array<typeof ribbonTab> = selectedNewUne
     ? ['Add Block','Component Data','Component Properties','Shapes','Component Layout','Component Action','Advanced','Preview']
     : ['Add Block','Component Data','Component Content','Component Properties','Shapes','Component Layout','Component Action','Advanced','Preview'];
   const ribbonTabsVisible: Array<typeof ribbonTab> = [...journeyTabs];
