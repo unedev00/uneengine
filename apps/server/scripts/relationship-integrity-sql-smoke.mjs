@@ -173,7 +173,28 @@ try{
  await assert.rejects(()=>records.remove(tenant,user,'PhaseParent__c',p1),/restricted/);
  assert.equal((await db.query('SELECT is_deleted FROM md_records WHERE tenant_id=$1 AND id=$2',[tenant,p1])).rows[0].is_deleted,false);
  await records.update(tenant,user,'PhaseGrand__c',g1,{BlockingParentId:null});
- await records.remove(tenant,user,'PhaseParent__c',p1);
+ // Salesforce cascade deletes are platform-owned: a user authorised to delete
+ // the parent can delete its descendants even when the detail object has an
+ // explicit independent delete deny. Direct detail deletion still checks RBAC.
+ const cascadeActor=(await db.query(
+  "INSERT INTO md_users(tenant_id,email,password_hash) VALUES($1,'cascade@example.invalid','fixture') RETURNING id",
+  [tenant])).rows[0].id;
+ const cascadeSet=(await db.query(
+  "INSERT INTO md_permission_sets(tenant_id,api_name) VALUES($1,'ParentCascadeOnly') RETURNING id",
+  [tenant])).rows[0].id;
+ await db.query("INSERT INTO md_permission_assignments(tenant_id,user_id,permission_set_id) VALUES($1,$2,$3)",
+  [tenant,cascadeActor,cascadeSet]);
+ for(const resource of ['PhaseParent__c','RecordType:PhaseParent__c.master'])
+  await db.query("INSERT INTO md_permission_rules(tenant_id,permission_set_id,resource,action,effect) VALUES($1,$2,$3,'delete','allow')",
+   [tenant,cascadeSet,resource]);
+ for(const target of ['PhaseChild__c','PhaseGrand__c'])
+  await db.query("INSERT INTO md_permission_rules(tenant_id,permission_set_id,resource,action,effect) VALUES($1,$2,$3,'delete','deny')",
+   [tenant,cascadeSet,target]);
+ await assert.rejects(()=>records.remove(tenant,cascadeActor,'PhaseChild__c',c1),
+  /Permission denied/);
+ await db.query("UPDATE md_records SET owner_id=$3 WHERE tenant_id=$1 AND id=$2",
+  [tenant,p1,cascadeActor]);
+ await records.remove(tenant,cascadeActor,'PhaseParent__c',p1);
  const gone=await db.query('SELECT id,is_deleted FROM md_records WHERE tenant_id=$1 AND id=ANY($2::uuid[])',
   [tenant,[p1,c1,g1]]);
  assert.equal(gone.rows.length,3);
