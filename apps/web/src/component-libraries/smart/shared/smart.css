@@ -127,12 +127,12 @@
  flex:0 0 auto!important;
  white-space:nowrap;
 }
+/* Configured cardsPerColumn determines visible rows. Overflow scrolls inside. */
 .smart-runtime.smart_card_grid>.smart-grid{
- grid-auto-rows:minmax(160px,auto)!important;
  align-content:start!important;
 }
 .smart-runtime.smart_card_grid>.smart-grid .smart-card{
- height:auto!important;min-height:160px!important;
+ min-height:0;
 }
 
 /* Actionable cards reuse the shared Grid renderer and its metadata event contract. */

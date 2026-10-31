@@ -783,7 +783,13 @@ test('Smart dynamic content scrolls only when the rendered component overflows',
  assert.match(runtime,/gridAutoRows:"calc\(/);
  assert.match(runtime,/p\.cardsPerColumn/);
  assert.match(runtime,/overflowY:"auto"/);
- assert.match(runtime,/recordsOf\(p\)\.slice\(0,200\)\.map/);
+ assert.match(runtime,/recordsOf\(p\)\.map\(\(r,i\)=>/);
+ assert.doesNotMatch(runtime,/recordsOf\(p\)\.slice\(0,200\)\.map/);
+ assert.match(runtime,/p\.cardsPerRow/);
+ assert.match(runtime,/p\.actionFlows\?\.click/);
+ assert.match(runtime,/onClick=\{\(\)=>fire\("click",\{record:r,recordId:/);
+ assert.doesNotMatch(css,/grid-auto-rows:minmax\(160px,auto\)!important/);
+ assert.doesNotMatch(css,/min-height:160px!important/);
  assert.match(css,/\.smart-runtime\.smart_navigation>\.smart-navigation/);
  assert.match(css,/\.smart-runtime\.smart_card_grid>\.smart-grid/);
  assert.match(css,/\.smart-runtime\.smart_tabs>\.smart-tabs-shell/);
