@@ -15,12 +15,12 @@ export default function TenantSessionControls({request,canManage}:{request:Reque
   <option value="">Whole tenant</option>{value.profiles.map(p=><option key={p.id} value={p.id}>{p.label}</option>)}</select></label>;
  return <section className="surface permission-section"><h2>Session and login restrictions</h2>
   <p>Tenant and profile restrictions both apply. A scope with no rules allows all IPs or hours; trusted ranges never override a restriction or MFA.</p>
-  {(['access_minutes','refresh_minutes','idle_minutes'] as const).map((key,i)=><label className="form-label" key={key}>
+  <div className="md-admin-form-grid md-admin-form-grid--3">{(['access_minutes','refresh_minutes','idle_minutes'] as const).map((key,i)=><label className="form-label" key={key}>
    {['Access token lifetime (minutes)','Maximum sign-in lifetime (minutes)','Inactivity timeout (minutes)'][i]}
    <input className="form-control" type="number" min={5} max={key==='refresh_minutes'?43200:1440} disabled={!editing||busy} value={value.policy[key]}
-    onChange={e=>setValue({...value,policy:{...value.policy,[key]:Number(e.target.value)}})}/></label>)}
+    onChange={e=>setValue({...value,policy:{...value.policy,[key]:Number(e.target.value)}})}/></label>)}</div>
   <label className="checkbox-row"><input type="checkbox" disabled={!editing||busy} checked={value.policy.require_mfa} onChange={e=>setValue({...value,policy:{...value.policy,require_mfa:e.target.checked}})}/>Require MFA assurance for every session</label>
-  <label className="form-label">Page framing<select className="form-control" disabled={!editing||busy} value={value.policy.frame_policy} onChange={e=>setValue({...value,policy:{...value.policy,frame_policy:e.target.value as Policy['frame_policy']}})}>
+  <label className="form-label md-admin-field-medium">Page framing<select className="form-control" disabled={!editing||busy} value={value.policy.frame_policy} onChange={e=>setValue({...value,policy:{...value.policy,frame_policy:e.target.value as Policy['frame_policy']}})}>
    <option value="DENY">Deny framing</option><option value="SAMEORIGIN">Same origin only</option></select></label>
   <label className="checkbox-row"><input type="checkbox" disabled={!editing||busy} checked={value.policy.csp_enabled} onChange={e=>setValue({...value,policy:{...value.policy,csp_enabled:e.target.checked}})}/>Enable Content Security Policy</label>
   <h3>Login and trusted IP ranges</h3>
