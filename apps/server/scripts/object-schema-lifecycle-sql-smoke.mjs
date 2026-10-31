@@ -43,10 +43,11 @@ try{
  assert.equal(modified.apiName,'Invoice__c');
  assert.equal(modified.id,invoice.id);
  assert.equal(modified.fields[0].apiName,'Name');
- // Deletion is forbidden while a tenant-owned record exists.
+ // A soft-deleted object retains both live and recycled records. No hard SQL
+ // delete is needed to make the object recoverable.
  const record=await db.query("INSERT INTO md_records(tenant_id,object_api) VALUES($1,'Milestone__c') RETURNING id",[primary]);
- await assert.rejects(()=>lifecycle.delete(primary,'Milestone__c',0),/Records/);
- await db.query('DELETE FROM md_records WHERE tenant_id=$1 AND id=$2',[primary,record.rows[0].id]);
+ const recycled=await db.query("INSERT INTO md_records(tenant_id,object_api,is_deleted) VALUES($1,'Milestone__c',true) RETURNING id",[primary]);
+ assert.equal((await lifecycle.impact(primary,'Milestone__c')).preservedRecordCount,2);
  // Declarative cross-object relationship on a different object blocks deletion.
  await db.query(`INSERT INTO md_field_definitions
   (tenant_id,object_api,api_name,label,data_type,related_object,relationship_type)
@@ -65,6 +66,10 @@ try{
  await assert.rejects(()=>db.query("INSERT INTO md_records(tenant_id,object_api) VALUES($1,'Milestone__c')",[primary]),
   /Object is unavailable/);
  await lifecycle.restore(primary,'Milestone__c');
+ const preserved=await db.query('SELECT id,is_deleted FROM md_records WHERE tenant_id=$1 AND id=ANY($2::uuid[]) ORDER BY id',
+  [primary,[record.rows[0].id,recycled.rows[0].id]]);
+ assert.equal(preserved.rows.length,2);
+ assert.equal(preserved.rows.filter(row=>row.is_deleted).length,1);
  assert.equal((await defs.get(primary,'Milestone__c')).fields[0].apiName,'Name');
  assert.equal((await lifecycle.listDeleted(primary)).length,0);
  // A separate tenant can independently delete/recover the same API name.
@@ -74,5 +79,5 @@ try{
  await lifecycle.restore(primary,'Invoice__c');
  await assert.rejects(()=>lifecycle.impact(secondary,'Milestone__c'),/Object not found/);
  assert.equal((await defs.get(primary,'Invoice__c')).label,'Customer Invoice');
- console.info('Phase 2A disposable SQL lifecycle smoke: passed (2 objects, 2 tenants, record/relationship blocks, label revision, restore)');
+ console.info('Phase 2A disposable SQL lifecycle smoke: passed (2 objects, 2 tenants, populated object restore, relationship blocks, label revision)');
 }finally{await db.close();}
