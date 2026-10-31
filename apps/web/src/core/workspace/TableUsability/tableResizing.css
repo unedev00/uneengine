@@ -57,3 +57,17 @@ table.md-resizable-table th.md-table-resize-header {
 @media (pointer: coarse) {
   .md-table-column-handle { width: 18px; }
 }
+
+/* grok: make column resize handles more discoverable */
+.md-table-column-handle {
+  border-right: 1px solid transparent;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+.md-table-column-handle:hover,
+.md-table-column-handle:focus-visible {
+  border-right-color: var(--md-primary, #1d4ed8);
+  background: color-mix(in srgb, var(--md-primary, #1d4ed8) 16%, transparent);
+}
+table.md-resizable-table th.md-table-resize-header:hover .md-table-column-handle {
+  border-right-color: color-mix(in srgb, var(--md-primary, #1d4ed8) 40%, var(--md-border, #e0e5eb));
+}
