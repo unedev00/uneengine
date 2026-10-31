@@ -110,7 +110,7 @@ test('Smart ribbon keeps all shared properties and renders the approved compact 
  assert.match(ribbon,/role="switch"/);
  assert.match(ribbon,/className="smart-default-check-switch"/);
  assert.match(ribbon,/aria-checked=\{value===true\|\|value==='true'\}/);
- assert.match(css,/grid-template-rows:repeat\(2,56px\)/);
+  assert.match(css,/grid-template-rows:repeat\(3,30px\)/);
  assert.match(css,/grid-auto-flow:column/);
  assert.match(css,/max-width:none/);
  assert.match(css,/overflow:visible;text-overflow:clip/);
@@ -135,7 +135,7 @@ test('Smart ribbon compact corrections preserve visibility and size controls cor
  assert.match(css,/padding:4px 26px 4px 0!important/);
  assert.match(css,/flex:0 0 52px!important/);
  assert.match(css,/width:52px!important;min-width:52px!important;max-width:52px!important/);
- assert.match(css,/grid-template-rows:repeat\(2,56px\)/);
+  assert.match(css,/grid-template-rows:repeat\(3,30px\)/);
 });
 
 test('shared SQL ribbon moves Default Check into Data Values and shortens Header labels',()=>{
@@ -283,7 +283,7 @@ test('Smart Design Body, Header, Badge and Image match approved three-row positi
  area('Image','imageFill','3 / 1 / 4 / -1');
  for(const section of ['Body','Header','Badge','Image'])
    assert.ok(css.includes('[aria-label="'+section+'"]'),'Missing scoped '+section+' CSS');
- assert.match(css,/grid-template-rows:repeat\(2,56px\)/);
+  assert.match(css,/grid-template-rows:repeat\(3,32px\)/);
  assert.match(css,/grid-auto-flow:row/);
  assert.match(ribbon,/const supported=property\.components\.includes\(api\)/);
  assert.match(ribbon,/aria-label=\{title\}/);
@@ -313,7 +313,7 @@ test('Smart compact rows share measured tracks and align related controls, witho
  assert.match(badgeGrid,/grid-area:3 \/ 3/);
  for(const property of ['backgroundColor','borderColor','labelColor','wrapText','headerBold','headerBorderColor','badgeBold','badgeTextColor','badgeBodyColor'])
    assert.ok(css.includes('[data-property="'+property+'"]'),'Hidden icon label mapping missing '+property);
- assert.match(css,/grid-template-rows:repeat\(2,56px\)/);
+  assert.match(css,/grid-template-rows:repeat\(3,30px\)/);
  assert.match(css,/height:146px!important/);
  assert.match(css,/\.smart-ribbon-caption/);
  // The two already-approved sections must stay on their original shared tracks.
