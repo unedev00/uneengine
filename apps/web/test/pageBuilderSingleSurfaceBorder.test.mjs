@@ -49,6 +49,10 @@ test('every native appearance category preserves its own authored border and rad
   assert.match(appearance, /\[data-page-appearance="image"\]\[data-page-style~="radius"\] \.registered-component img/);
   assert.match(smart, /<article className="smart-card" style=\{\{/);
   assert.match(smart, /borderRadius:number\(p\.radius,12\)/);
-  assert.match(smart, /border:p\.borderColor\?"1px solid "\+p\.borderColor:/);
-  assert.match(smart, /border:p\.imageBorderColor\?"1px solid "\+p\.imageBorderColor:undefined/);
+  assert.match(smart, /const cardBorder=single\?"none"/,
+    'standalone Image must not paint a second outer card stroke');
+  assert.match(smart, /const imageStroke=p\.imageBorderColor\|\|\(single\?p\.borderColor:undefined\)/,
+    'standalone Image chooses one native image border colour');
+  assert.match(smart, /border:nativeImageBorder/,
+    'the native image receives the sole authored stroke');
 });
