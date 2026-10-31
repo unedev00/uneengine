@@ -235,12 +235,19 @@ export default function SmartRuntime(p){
    (p.imageSourceMode==="field"||typeof p.imageSource==="string"&&p.imageSource.startsWith("@"))&&Array.isArray(p.records)
    ?(p.records.find(r=>boundImage(p,r))??record):record
  }/>;
- else if(name==="smart_card_grid")content=<div className="smart-grid" style={{
-  width:"100%",height:"100%",minHeight:0,minWidth:0,overflow:"auto",
-   gridTemplateColumns:"repeat("+number(p.cardsPerRow,3,1,12)+",minmax(160px,1fr))",
-   gridAutoRows:"minmax(160px,auto)",alignContent:"start"}}>
+ else if(name==="smart_card_grid"){
+  const rows=Math.max(1,Math.floor(number(p.cardsPerColumn,3,1,40)));
+  const columns=Math.max(1,Math.floor(number(p.cardsPerRow,3,1,12)));
+  content=<div className="smart-grid" role="region" aria-label="Product cards" tabIndex={0} style={{
+   boxSizing:"border-box",width:"100%",height:"100%",minHeight:0,minWidth:0,
+   overflowY:"auto",overflowX:"auto",overscrollBehavior:"contain",
+   gridTemplateColumns:"repeat("+columns+",minmax(0,1fr))",
+   gridAutoRows:"calc((100% - "+(rows-1)*12+"px) / "+rows+")",alignContent:"start"
+  }}>
    {recordsOf(p).slice(0,200).map((r,i)=>
-  <SmartCard p={p} record={r} key={r?.Id??r?.id??i}/>)}</div>;
+    <SmartCard p={p} record={r} key={r?.Id??r?.id??i}/>)}
+  </div>;
+ }
  else if(name==="smart_cart")content=<SmartCart p={p} records={recordsOf(p)} Picture={SmartPicture} expression={expression} fire={fire}/>;
  else if(name==="smart_calendar")content=<SmartCalendar p={p} fire={fire}/>;
  else if(name==="smart_tabs")content=<SmartTabs p={p} record={record} fire={fire}/>;
