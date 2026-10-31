@@ -149,7 +149,7 @@ export function createSetupObjectActions(ctx: any) {
                               ? 'Enter a valid relationship name using letters, numbers, and underscores.'
                               : ['Lookup Relationship', 'Master-Detail Relationship', 'Hierarchical Relationship'].includes(newFieldType)
                                 && !/^[A-Za-z][A-Za-z0-9_]*$/.test(newFieldChildRelationshipName.trim()
-                                  || `${object.apiName.replace(/__c$/, '')}Records`)
+                                  || `${object.apiName.replace(/__c$/, '')}${(newFieldApiName || newFieldLabel.trim().replace(/[^A-Za-z0-9_]/g,'_')).replace(/Id$|__c$/,'')}Records`)
                                 ? 'Enter a valid child relationship name using letters, numbers, and underscores.'
                             : newFieldLookupFilters.some((filter) =>
                               !filter.relatedFieldApiName
@@ -215,7 +215,7 @@ export function createSetupObjectActions(ctx: any) {
         type: relationshipType,
         targetObject: relationshipTarget,
         relationshipName: newFieldRelationshipName.trim() || relationshipName,
-        childRelationshipName: newFieldChildRelationshipName.trim() || `${object.apiName.replace(/__c$/, '')}Records`,
+        childRelationshipName: newFieldChildRelationshipName.trim() || `${object.apiName.replace(/__c$/, '')}${(newFieldApiName || newFieldLabel.trim().replace(/[^A-Za-z0-9_]/g,'_')).replace(/Id$|__c$/,'')}Records`,
         ...(relationshipType === 'Lookup' ? {
           deleteBehavior: newFieldRequired ? 'Restrict' : newFieldDeleteBehavior
         } : {}),
