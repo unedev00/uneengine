@@ -1,6 +1,7 @@
 import * as React from 'react';
 const { useMemo, useState } = React;
 import type { ObjectMetadata } from '../../metadata/Definitions/metadata';
+import './schemaBuilderUsability.css';
 
 type Props = {
   objects: ObjectMetadata[];
@@ -72,16 +73,16 @@ export default function SchemaBuilder({ objects, selectedObjectApiName, onOpenOb
   }, [objects, search, kind, onlyRelated, focused?.apiName]);
 
   const active = focused ? objects.find(object => object.apiName === focused.apiName) : undefined;
-  return <section className="surface object-setting-surface" aria-label="Visual Schema Builder">
+  return <section className="surface object-setting-surface md-schema-builder" aria-label="Visual Schema Builder">
     <div className="section-toolbar">
       <div><h2>Schema Builder</h2><p>Select an object to create fields and relationships through the shared metadata wizard. Changes are validated and saved to SQL.</p></div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+      <div className="md-schema-actions">
         <button type="button" className="btn" onClick={onCreateObject}>Create Object</button>
         <button type="button" className="btn btn-brand" disabled={!active} onClick={() => active && onNewField(active)}>New Field on Selected Object</button>
       </div>
     </div>
-    <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-      <label className="form-label" style={{ flex: '1 1 180px' }}>Find object
+    <div className="md-schema-toolbar">
+      <label className="form-label md-schema-search">Find object
         <input className="form-control" value={search} onChange={event => setSearch(event.target.value)}
           placeholder="Object name or API name" aria-label="Find schema object" />
       </label>
@@ -92,20 +93,20 @@ export default function SchemaBuilder({ objects, selectedObjectApiName, onOpenOb
           <option value="Standard">Standard objects</option>
         </select>
       </label>
-      <label className="checkbox-row" style={{ alignSelf: 'end', paddingBottom: 12 }}>
+      <label className="checkbox-row md-schema-filter">
         <input type="checkbox" checked={onlyRelated} onChange={event => setOnlyRelated(event.target.checked)} />
         Connected to selected object
       </label>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, alignSelf: 'end', paddingBottom: 7 }}>
+      <div className="md-schema-zoom" role="group" aria-label="Schema diagram zoom controls">
         <button className="btn" type="button" aria-label="Zoom out schema" disabled={zoom <= minZoom}
           onClick={() => setZoom(value => Math.max(minZoom, Math.round((value - .15) * 100) / 100))}>−</button>
-        <output aria-label="Schema zoom" style={{ minWidth: 48, textAlign: 'center' }}>{Math.round(zoom * 100)}%</output>
+        <output aria-label="Schema zoom">{Math.round(zoom * 100)}%</output>
         <button className="btn" type="button" aria-label="Zoom in schema" disabled={zoom >= maxZoom}
           onClick={() => setZoom(value => Math.min(maxZoom, Math.round((value + .15) * 100) / 100))}>+</button>
         <button className="btn" type="button" onClick={() => setZoom(1)}>Reset</button>
       </div>
     </div>
-    <div style={{ overflow: 'auto', maxHeight: '60vh', minHeight: 290, border: '1px solid var(--slds-g-color-border-base-1, #d8dde6)', borderRadius: 8, background: 'var(--slds-g-color-neutral-base-100, #fff)' }}>
+    <div className="md-schema-viewport" role="region" aria-label="Scrollable object relationship diagram" tabIndex={0}>
       <svg role="img" aria-label="Object relationship schema diagram" width={Math.ceil(graph.width * zoom)}
         height={Math.ceil(Math.max(graph.height, 290) * zoom)}
         viewBox={'0 0 ' + graph.width + ' ' + Math.max(graph.height, 290)}
@@ -149,14 +150,14 @@ export default function SchemaBuilder({ objects, selectedObjectApiName, onOpenOb
       </svg>
     </div>
     <p className="permission-help">Solid purple arrows: master-detail. Dashed arrows: lookups. The shared Field Wizard enforces tenant-aware validation and RBAC on save.</p>
-    {active && <div className="metadata-card" style={{ marginTop: 14 }}>
+    {active && <div className="metadata-card md-schema-details">
       <div className="section-toolbar"><div><h3>{active.label}</h3><p>{active.apiName} · {active.fields.length} fields</p></div>
         <button type="button" className="btn" onClick={() => onOpenObject(active)}>Open Object Manager</button>
       </div>
-      <div className="metadata-card" aria-label="Create relationship" style={{ marginTop: 8 }}>
+      <div className="metadata-card md-schema-relation" aria-label="Create relationship">
         <h4>Add relationship from {active.label}</h4>
         <p>Choose the target object. The existing field wizard controls names, required fields, deletion behaviour, and page placement.</p>
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'end' }}>
+        <div className="md-schema-relation-grid">
           <label className="form-label">Related object
             <select className="form-control" value={relationshipTarget}
               onChange={event => setRelationshipTarget(event.target.value)}>
@@ -179,9 +180,9 @@ export default function SchemaBuilder({ objects, selectedObjectApiName, onOpenOb
           </button>
         </div>
       </div>
-      <div className="metadata-card" aria-label="Object fields" style={{ marginTop: 10 }}>
+      <div className="metadata-card md-schema-fields-card" aria-label="Object fields">
         <h4>Fields and relationships</h4>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(210px,1fr))', gap: 8 }}>
+        <div className="md-schema-field-grid">
           {active.fields.map(field =>
             <button key={field.apiName} className="metadata-row" type="button"
               aria-label={`View ${field.label} field configuration`}
