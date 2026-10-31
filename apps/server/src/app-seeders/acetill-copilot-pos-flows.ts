@@ -113,13 +113,28 @@ export const copilotChangeQuantity=graph('AcetillCopilotChangeQuantity','Till: c
  {name:'selectedLine',type:'Record',dataType:'CartLine'},
  {name:'nextQuantity',type:'Formula',dataType:'Number',value:'selectedLine.Quantity + delta'},
  {name:'nextLineTotal',type:'Formula',dataType:'Number',value:'nextQuantity * selectedLine.UnitPrice'}]);
-export const copilotPosGraphs=[copilotAddProduct,copilotReadCart,copilotChangeQuantity];
+export const copilotDefaultCategory=graph('AcetillCopilotDefaultCategory','Till: choose available POS category',[
+ n(1,'Start','Start'),
+ n(2,'Get Records','Read active POS category',{
+  object:'MenuCategory',recordLimit:'1',outputVariable:'firstCategory',
+  conditions:[{field:'Active',operator:'Equals',value:true},
+   {field:'IsVisiblePOS',operator:'Equals',value:true}]}),
+ n(3,'Decision','POS category exists?',{outcomes:[{
+  name:'Found',label:'Found',conditionLogic:'All',
+  conditions:[{field:'{!firstCategory}',operator:'IsNotNull'}]}]}),
+ n(4,'Assignment','Set first category',{
+  variable:'categoryId',operator:'Assign',value:'{!firstCategory.Id}'}),
+ n(5,'End','Category ready')
+],[e(1,2),e(2,3),e(3,4,'Found'),e(3,5,'Default'),e(4,5)],
+ [{name:'firstCategory',type:'Record',dataType:'MenuCategory'},
+  variable('categoryId','Text',false,true)]);
+export const copilotPosGraphs=[copilotAddProduct,copilotReadCart,copilotChangeQuantity,copilotDefaultCategory];
 
 /** Only Acetill's independent seeder writes graphs; skip existing versions. */
 export async function seedAcetillCopilotPosFlows(client:Pick<PoolClient,'query'>,tenant:string){
  const prerequisites=await client.query<{object_api:string;api_name:string}>(
-  "SELECT object_api,api_name FROM md_field_definitions WHERE tenant_id=$1 AND object_api IN ('Product','CartSession','CartLine')",[tenant]);
- const required=['Product.Name','Product.Price','Product.Active','CartSession.SessionKey',
+  "SELECT object_api,api_name FROM md_field_definitions WHERE tenant_id=$1 AND object_api IN ('Product','CartSession','CartLine','MenuCategory')",[tenant]);
+ const required=['MenuCategory.Active','MenuCategory.IsVisiblePOS','Product.Name','Product.Price','Product.Active','CartSession.SessionKey',
   'CartSession.Name','CartSession.Status','CartLine.CartSession','CartLine.Product',
   'CartLine.Name','CartLine.Quantity','CartLine.UnitPrice',
   'CartLine.OriginalUnitPrice','CartLine.LineTotal'];
