@@ -126,3 +126,34 @@
  border-radius:5px;background:#fff;color:#29476a;font:11px "Segoe UI",Arial,sans-serif;
 }
 .office-builder-ribbon .smart-event-picker>select:disabled{opacity:.45}
+
+
+/* Keep every ribbon tab navigable when the property inventory is wider than
+   the viewport. Earlier ribbon styles deliberately hid native scrollbars. */
+.office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content {
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+  direction:ltr!important;
+  scrollbar-width:thin!important;
+  scrollbar-color:#91a7c5 #edf2f8!important;
+  scroll-behavior:auto!important;
+  padding-bottom:11px!important;
+}
+.office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content::-webkit-scrollbar {
+  display:block!important;height:9px!important;
+}
+.office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content::-webkit-scrollbar-thumb {
+  background:#91a7c5!important;border-radius:8px!important;
+}
+.office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content::-webkit-scrollbar-track {
+  background:#edf2f8!important;
+}
+/* Preserve the entire third property row and group label above the scroller. */
+.office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content:has(>.smart-ribbon[data-three-row="true"]) {
+  height:127px!important;min-height:127px!important;max-height:127px!important;
+  padding:2px 6px 11px!important;
+}
+.office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content:has(>.office-ribbon-page-layout-groups) {
+  height:127px!important;min-height:127px!important;max-height:127px!important;
+  padding-bottom:11px!important;
+}

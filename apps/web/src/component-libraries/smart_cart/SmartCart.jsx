@@ -5,7 +5,7 @@ const border=v=>v?"1px solid "+v:"1px solid transparent";
 const align=v=>["left","center","right"].includes(v)?v:"left";
 const names=['Column 1','Column 2','Column 3','Column 4','Column 5'];
 const headings=['Product','Unit price','Quantity','Total','Discount'];
-const tracks=['minmax(100px,2.2fr)','minmax(65px,1fr)','minmax(115px,1.35fr)','minmax(65px,1fr)','minmax(65px,1fr)'];
+const tracks=['minmax(0,2.2fr)','minmax(0,1fr)','minmax(78px,1.35fr)','minmax(0,1fr)','minmax(0,1fr)'];
 const numericType=/^(Number|Currency|Percent|Integer|Decimal|Double|Float|Long|Short|Int)$/i;
 const directField=source=>/^@([A-Za-z][A-Za-z0-9_]*)$/.exec(typeof source==="string"?source.trim():"")?.[1]??null;
 const display=value=>value===null||value===undefined||value===""?"—":String(value);
