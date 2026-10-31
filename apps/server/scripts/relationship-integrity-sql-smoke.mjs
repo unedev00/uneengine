@@ -110,12 +110,19 @@ try{
  await db.query('INSERT INTO md_permission_assignments(tenant_id,user_id,permission_set_id) VALUES($1,$2,$3)',
   [tenant,inheritedReader,inheritedSet]);
  for(const objectApi of ['PhaseParent__c','PhaseChild__c','PhaseGrand__c'])
-  await db.query("INSERT INTO md_permission_rules(tenant_id,permission_set_id,resource,action,effect) VALUES($1,$2,$3,'read','allow')",
-   [tenant,inheritedSet,objectApi]);
+  for(const resource of [objectApi,'RecordType:'+objectApi+'.master'])
+   await db.query("INSERT INTO md_permission_rules(tenant_id,permission_set_id,resource,action,effect) VALUES($1,$2,$3,'read','allow')",
+    [tenant,inheritedSet,resource]);
  await db.query("UPDATE md_records SET owner_id=$3 WHERE tenant_id=$1 AND id=$2",
   [tenant,p1,inheritedReader]);
  const read=async id=>(await db.query("SELECT md_record_access($1,$2,$3,'read') AS permitted",
   [tenant,inheritedReader,id])).rows[0].permitted;
+ const context=(await db.query(`SELECT r.owner_id,r.record_type_id,
+   md_rbac_allowed($1,$2,'PhaseParent__c','read') AS object_grant,
+   md_rbac_allowed($1,$2,'RecordType:PhaseParent__c.master','read') AS type_grant,
+   md_record_access_direct($1,$2,r.id,'read') AS direct_access
+   FROM md_records r WHERE r.tenant_id=$1 AND r.id=$3`,[tenant,inheritedReader,p1])).rows[0];
+ console.info('2C parent owner permission context:',JSON.stringify(context));
  assert.equal(await read(p1),true);
  assert.equal(await read(c1),true,'A nonowned child must inherit sharing from its master');
  assert.equal(await read(g1),false,'A junction detail must require both master parents');
