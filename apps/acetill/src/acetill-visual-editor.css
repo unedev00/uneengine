@@ -15,3 +15,18 @@
 .acetill-visual-help{font-size:12px;line-height:1.5;margin:0}
 .acetill-visual-notice{padding:8px;border:1px solid var(--md-border,#d1d5db);border-radius:6px}
 @media(max-width:900px){.acetill-visual-layout{grid-template-columns:1fr}.acetill-visual-inspector{grid-row:1}.acetill-visual-field-list{grid-template-columns:repeat(auto-fit,minmax(130px,1fr))}}
+
+/* Phase 3: visual editor chrome only; never override the live tenant-rendered till. */
+.acetill-visual-editor{min-width:0;max-width:100%}
+.acetill-visual-toolbar{gap:10px;flex-wrap:wrap}
+.acetill-visual-actions{display:flex;flex-wrap:wrap;gap:8px}
+.acetill-visual-actions button{min-height:40px}
+.acetill-visual-layout{min-width:0}
+.acetill-visual-inspector{min-width:0;max-height:min(78dvh,900px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.acetill-visual-inspector h2{font-size:16px;line-height:1.4}
+.acetill-visual-field-list{grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr));gap:10px}
+.acetill-visual-inspector :is(label,small,.acetill-visual-help){font-size:13px;line-height:1.45}
+.acetill-visual-inspector :is(input,select,textarea){max-width:100%;min-width:0;box-sizing:border-box}
+.acetill-visual-inspector :is(button,input,select,textarea):focus-visible{outline:3px solid var(--md-focus-ring,#307fe8);outline-offset:2px}
+@media(max-width:900px){.acetill-visual-inspector{max-height:none;overflow:visible}.acetill-visual-layout{grid-template-columns:minmax(0,1fr)}}
+@media(pointer:coarse){.acetill-visual-inspector :is(button,input,select,textarea){min-height:44px}}
