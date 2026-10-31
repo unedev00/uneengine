@@ -82,6 +82,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  const update=(key:string,value:unknown)=>onChange({...properties,[key]:value});
  const openFilters=(target:string)=>{setFilterTarget(target);setFiltersOpen(true);};
  const filterCount=Array.isArray(properties.filters)?properties.filters.length:0;
+ const firstFilterPropertyId=definitions.find(p=>p.tab==='Data'&&p.kind==='expression')?.id;
  // Keep the global property inventory visible for every selected component.
  // Unsupported controls are disabled by the per-property `supported` check below.
  const compactDesign=true;
@@ -98,11 +99,11 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    // receives the additive SQL geometry migration.
    if(p.designDisplay==='dropdown'&&(p.kind==='shadow'||p.kind==='align'))
      return Math.max(35,p.designWidth??0);
-   if(p.designWidth)return p.designWidth;
+   if(p.designWidth)return (p.kind==='number'||p.kind==='position')?64:p.designWidth;
    // Unconfigured future SQL properties remain present without overlapping.
    if(p.kind==='shadow'||p.kind==='align')return p.designDisplay==='dropdown'?35:84;
    if(p.kind==='color')return 40;
-   if(p.kind==='number'||p.kind==='position')return 70;
+   if(p.kind==='number'||p.kind==='position')return 64;
    if(p.kind==='boolean')return 28;
    return 99;
  };
@@ -114,10 +115,10 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
      const properties=sectionRow(group,row);
      return properties.reduce((total,p)=>total+controlWidth(p)+(p.designCaptionWidth??0),0)
        +Math.max(0,properties.length-1)*4;
-   }))+29,
+   }))+25,
    // Only the Layout Header Supporting caption needs a smaller minimum; its
    // single icon/number control should not reserve an empty full-width column.
-   tab==='Layout'&&group==='Header Supporting'?110:group.length*6+24
+   group==='Header Supporting'?0:group.length*6+24
  );
  const controls=(property:UneRibbonProperty)=>{
    const supported=property.components.includes(api);
@@ -155,6 +156,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
      // The source is always editable: any direct or nested lookup reference
      // is resolved by the shared metadata engine, never by an image-name list.
      editor=<div className="smart-formula-filter smart-image-source-editor">
+       <span className="smart-formula-prefix" title={title}>{shortLabel}</span>
        <SmartFormulaField value={String(value)} label={title} disabled={!enabled}
          fields={object?.fields??[]} objects={sourceObjects} rootObjectApiName={objectName}
          selectedSourceObjects={sourceObjects}
@@ -163,10 +165,11 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
          title="Upload image from this computer" aria-label="Upload image" disabled={uploadBusy||!enabled}
          onClick={()=>uploadInput.current?.click()}><ImagePlus size={16}/></button>}
        <button type="button" className="smart-filter-trigger" aria-label="Image filters and conditions"
-         title="Image filters and conditions" onClick={()=>openFilters('Image source')}
+         title="Image filters and conditions" onClick={()=>openFilters('Record')}
          disabled={!object} aria-haspopup="dialog"><SlidersHorizontal size={16}/></button>
      </div>;
    }else if(kind==='expression')editor=<div className="smart-formula-filter">
+     <span className="smart-formula-prefix" title={title}>{shortLabel}</span>
      <SmartFormulaField value={String(value)} onChange={write}
        label={title} disabled={!enabled}
        singleFieldOnly={api==='smart_toggle'&&property.id==='textSource'}
@@ -176,10 +179,10 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
        objects={sourceObjects} rootObjectApiName={objectName}
         selectedSourceObjects={sourceObjects} />
      <button type="button" className="smart-filter-trigger" disabled={!enabled||!object}
-       title={!object?'Choose an Object to configure record filters':'Filter '+object.label+' records'}
-       aria-label={'Filter records for '+title} aria-haspopup="dialog"
-       onClick={()=>openFilters(title)}><SlidersHorizontal size={16} aria-hidden="true"/>
-       {filterCount>0&&<span className="smart-filter-count">{filterCount}</span>}</button>
+       title={!object?'Choose an Object to configure record filters':'Shared record filters for '+object.label}
+       aria-label={'Shared record filters from '+title} aria-haspopup="dialog"
+       onClick={()=>openFilters('Record')}><SlidersHorizontal size={16} aria-hidden="true"/>
+       {filterCount>0&&property.id===firstFilterPropertyId&&<span className="smart-filter-count">{filterCount}</span>}</button>
    </div>;
    else if(kind==='object')editor=<select className="smart-select" aria-label={title} disabled={!enabled} value={String(value)}
      onChange={e=>write(e.target.value)}><option value="">Select Object</option>
@@ -252,7 +255,8 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
        style={compactDesign?{'--smart-control-width':controlWidth(property)+'px',
          '--smart-caption-width':(property.designCaptionWidth??0)+'px',
          '--smart-control-height':(property.designHeight??26)+'px'} as CSSProperties:undefined}
-       title={title}><span className="smart-label">{shortLabel}</span>{editor}</div>;
+       title={!enabled?'Applies to: '+property.components.map(api=>api.replace(/^smart_/,'' )).join(', '):title}>
+       <span className="smart-label">{shortLabel}</span>{editor}</div>;
  };
  return <div className="smart-ribbon" data-smart-api={api}
   data-compact-design={compactDesign?'true':'false'}
