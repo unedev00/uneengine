@@ -6,11 +6,13 @@
   width:100%!important;max-width:none!important;
 }
 .builder-editor-mode .reference-builder-layout.page-builder-layout .page-preview-area{
-  display:block!important;width:100%!important;max-width:none!important;
-  padding:2px 4px!important;margin:0!important;overflow:auto!important;
+  display:flex!important;flex-direction:column!important;align-items:safe center!important;
+  width:100%!important;max-width:none!important;
+  padding:6px!important;margin:0!important;overflow:auto!important;
 }
 .builder-editor-mode .reference-builder-layout.page-builder-layout .page-stage{
-  width:100%!important;max-width:none!important;min-width:0!important;
+  width:max-content!important;max-width:none!important;min-width:0!important;
+  flex:0 0 auto!important;align-self:safe center!important;
   margin:0!important;padding:0!important;border:0!important;border-radius:0!important;
   box-shadow:none!important;
 }
