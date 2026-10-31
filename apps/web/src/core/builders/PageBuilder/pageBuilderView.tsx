@@ -2206,7 +2206,7 @@ function PageBuilder({
         ...(isLayoutType(component.type) ? {} : visualStyle),
         // The rendered and hit-tested stack follows the saved sibling order,
         // never the temporary .selected state or an authored visual override.
-        ...(page.layoutMode==='free-canvas' ? {zIndex:index+1} : {}),
+        ...(page.layoutMode==='free-canvas' ? {'--canvas-layer-order':index+1,zIndex:index+1} : {}),
         ...(component.properties?.fillRegion===true && page.layoutMode==='template' ? {height:'100%',minHeight:0}: {})
       } as React.CSSProperties}
       onClick={selectOnlyInDesigner ? selectCanvasComponent : undefined}
