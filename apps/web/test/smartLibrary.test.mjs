@@ -64,7 +64,7 @@ test('Insert Ribbon exposes visible Smart components without requiring a selecte
  assert.match(insert,/aria-label="Search Insert components"/);
  assert.doesNotMatch(insert,/Open full library/);
  assert.match(insert,/No Smart components are installed for this tenant/);
- assert.match(css,/grid-template-rows:repeat\\(2,56px\\)/);
+ assert.match(css,/grid-template-rows:repeat\(2,56px\)/);
  assert.match(css,/office-builder-ribbon #page-builder-tab-content:has\(>\.smart-insert-ribbon\)/);
 });
 
@@ -110,7 +110,7 @@ test('Smart ribbon keeps all shared properties and renders the approved compact 
  assert.match(ribbon,/role="switch"/);
  assert.match(ribbon,/className="smart-default-check-switch"/);
  assert.match(ribbon,/aria-checked=\{value===true\|\|value==='true'\}/);
- assert.match(css,/grid-template-rows:repeat\(3,30px\)/);
+ assert.match(css,/grid-template-rows:repeat\(2,56px\)/);
  assert.match(css,/grid-auto-flow:column/);
  assert.match(css,/max-width:none/);
  assert.match(css,/overflow:visible;text-overflow:clip/);
@@ -135,7 +135,7 @@ test('Smart ribbon compact corrections preserve visibility and size controls cor
  assert.match(css,/padding:4px 26px 4px 0!important/);
  assert.match(css,/flex:0 0 52px!important/);
  assert.match(css,/width:52px!important;min-width:52px!important;max-width:52px!important/);
- assert.match(css,/grid-template-rows:repeat\(3,30px\)/);
+ assert.match(css,/grid-template-rows:repeat\(2,56px\)/);
 });
 
 test('shared SQL ribbon moves Default Check into Data Values and shortens Header labels',()=>{
@@ -283,7 +283,7 @@ test('Smart Design Body, Header, Badge and Image match approved three-row positi
  area('Image','imageFill','3 / 1 / 4 / -1');
  for(const section of ['Body','Header','Badge','Image'])
    assert.ok(css.includes('[aria-label="'+section+'"]'),'Missing scoped '+section+' CSS');
- assert.match(css,/grid-template-rows:repeat\(3,32px\)/);
+ assert.match(css,/grid-template-rows:repeat\(2,56px\)/);
  assert.match(css,/grid-auto-flow:row/);
  assert.match(ribbon,/const supported=property\.components\.includes\(api\)/);
  assert.match(ribbon,/aria-label=\{title\}/);
@@ -313,7 +313,7 @@ test('Smart compact rows share measured tracks and align related controls, witho
  assert.match(badgeGrid,/grid-area:3 \/ 3/);
  for(const property of ['backgroundColor','borderColor','labelColor','wrapText','headerBold','headerBorderColor','badgeBold','badgeTextColor','badgeBodyColor'])
    assert.ok(css.includes('[data-property="'+property+'"]'),'Hidden icon label mapping missing '+property);
- assert.match(css,/grid-template-rows:repeat\(3,30px\)/);
+ assert.match(css,/grid-template-rows:repeat\(2,56px\)/);
  assert.match(css,/height:146px!important/);
  assert.match(css,/\.smart-ribbon-caption/);
  // The two already-approved sections must stay on their original shared tracks.
@@ -658,7 +658,7 @@ test('Page Builder keyboard shortcuts and visible PowerPoint-style resize cursor
  assert.match(css,/\.free-canvas-resize-handle:is\(:hover,:focus-visible,:active\)/);
  assert.match(css,/\.free-canvas-move-edge:focus-visible/);
  assert.match(css,/opacity:1/);
- assert.match(builder,/selected \? \(selected.label\|\|selected.type\)/);
+ assert.match(builder,/rawLayoutParentId\(selected\)/);
 });
 test('Image source is editable @ text, with upload only for the Image component',()=>{
  const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
@@ -829,7 +829,7 @@ test('SQL-backed eight-tab ribbon retains existing controls and correct geometry
  assert.match(view,/<ArrangeRibbon/);
  assert.match(arrange,/onAlign/);
  assert.match(arrange,/onNesting/);
- assert.match(insert,/onClick=\\{\\(\\)=>onInsert\\(item.type\\)\\}/);
+ assert.match(insert,/onClick=\{\(\)=>onInsert\(item.type\)\}/);
  assert.match(ribbon,/RibbonColorPalette variant="property"/);
  assert.match(ribbon,/RibbonTextSizeIcon/);
  assert.match(ribbon,/RibbonCornerRadiusIcon/);
