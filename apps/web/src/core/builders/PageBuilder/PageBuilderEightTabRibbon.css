@@ -105,3 +105,24 @@
 }
 .ribbon-view-find-results button:hover{background:#edf5ff}
 .ribbon-view-find-results small{font-size:10px;color:#59718a}
+
+/* Smart Actions stays inside the existing 26px controls and flow data contract. */
+.office-builder-ribbon #page-builder-tab-content>.smart-event-actions-ribbon{
+ flex:0 0 auto!important;height:114px!important;min-height:114px!important;
+ display:flex!important;gap:0!important;
+}
+.office-builder-ribbon .smart-event-actions-ribbon>.smart-event-group{
+ display:flex!important;flex-direction:column!important;
+ justify-content:space-between!important;padding:3px 12px 1px!important;
+ height:114px!important;min-width:160px!important;
+ border-right:1px solid #cbd6e2!important;
+}
+.office-builder-ribbon .smart-event-rows{display:flex;flex-direction:column;gap:4px}
+.office-builder-ribbon .smart-event-picker{display:flex;align-items:center;gap:4px;height:26px;
+ font:11px "Segoe UI",Arial,sans-serif;white-space:nowrap}
+.office-builder-ribbon .smart-event-picker>span{min-width:57px}
+.office-builder-ribbon .smart-event-picker>select{
+ box-sizing:border-box;width:150px;height:26px;border:1px solid #c3cad4;
+ border-radius:5px;background:#fff;color:#29476a;font:11px "Segoe UI",Arial,sans-serif;
+}
+.office-builder-ribbon .smart-event-picker>select:disabled{opacity:.45}
