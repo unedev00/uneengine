@@ -53,6 +53,12 @@ try{
   'Secondary Parent',lookup('PhaseParent__c','SecondaryParent'));
  await defs.addField(tenant,'PhaseChild__c','ReviewParentId','Lookup(PhaseParent__c)',undefined,
   'Review Parent',lookup('PhaseParent__c','ReviewParent'));
+ await assert.rejects(()=>defs.addField(tenant,'PhaseChild__c','CollidingParentId',
+  'Lookup(PhaseParent__c)',undefined,'Colliding Parent',{
+    relationship:{type:'Lookup',targetObject:'PhaseParent__c',
+      relationshipName:'CollidingParent',childRelationshipName:'SecondaryParentRecords'}
+  }),/Duplicate child relationship name/);
+
  await defs.addField(tenant,'PhaseGrand__c','ChildId','Master-Detail(PhaseChild__c)',undefined,'Child',
   master('PhaseChild__c','PrimaryChild',true));
  await defs.addField(tenant,'PhaseGrand__c','BlockingParentId','Lookup(PhaseParent__c)',undefined,
