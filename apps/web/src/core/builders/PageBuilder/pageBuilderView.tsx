@@ -3052,7 +3052,7 @@ function PageBuilder({
         </div>
         {ribbonPropertyHost && createPortal(<aside id="lightning-page-properties" style={ribbonTab !== 'Component Layout' && !ribbonTab.startsWith('Component ') ? { display: 'none' } : undefined}
           className={`properties-panel reference-properties-panel ${pageSettingsOpen || selected ? 'responsive-open' : ''}`}>
-          {selectedRegion && !pageSettingsOpen && activePanel !== 'page' ? <div className="properties-section">
+          {selectedRegion && !pageSettingsOpen && activePanel !== 'page' && !advancedEditor ? <div className="properties-section">
             <div className="properties-section-title">Section configuration</div>
             <p className="properties-help">Sections are responsive layout regions. Change the arrangement without deleting any blocks.</p>
             <label className="form-label">Section arrangement<select className="form-control" value={page.template ?? 'main-sidebar'} onChange={event => setPageTemplate(event.target.value as LightningPageTemplate)}>{pageTemplates.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>
@@ -3062,7 +3062,7 @@ function PageBuilder({
               setPageTemplate(next.id); setSelectedRegion(null);
             }}><Trash2 size={15}/> Remove section</button>}
             {selectedRegion === 'main' && <p className="properties-help">The Main section is required and cannot be deleted. Change the section arrangement to remove optional regions.</p>}
-          </div> : selected && !pageSettingsOpen && activePanel !== 'page' ? <>
+          </div> : selected && !pageSettingsOpen && activePanel !== 'page' && advancedEditor!=='recordPage' && advancedEditor!=='assignments' ? <>
             {inspectorTab === 'Position' ? <div className="office-ribbon-layout-responsive" /> : <>
             {inspectorTab === 'Data & Actions' && <details className="builder-advanced-panel"><summary>Technical details</summary>
               <label className="form-label" htmlFor="page-component-type">Component type</label><div className="form-display" id="page-component-type">{selected.type}</div>
@@ -3441,6 +3441,7 @@ function PageBuilder({
             </>}
             </>}
           </> : <>
+            {advancedEditor!=='assignments' && <>
             <div className="properties-section-title">Page configuration</div>
             {page.layoutMode==='template'&&<label className="form-label">Section arrangement
               <select className="form-control" value={page.template??'main-sidebar'}
@@ -3626,7 +3627,8 @@ function PageBuilder({
                 })}
               </details>
             </>}
-            {page.pageType === 'Record Page' && <div className="home-page-assignments">
+            </>}
+            {advancedEditor!=='recordPage' && page.pageType === 'Record Page' && <div className="home-page-assignments">
               <div className="properties-section-title">Where this page appears</div>
               <p className="properties-help">Set the apps, profiles, record types, and form factors that use this Record Page. More specific assignments take precedence over broader defaults.</p>
               {(page.activationAssignments ?? []).map((assignment) => <div className="home-page-assignment" key={assignment.id}>
@@ -3659,7 +3661,7 @@ function PageBuilder({
               </label>)}</div>
               <button className="btn btn-full" type="button" onClick={addRecordAssignment}>Add Record Page Assignment</button>
             </div>}
-            {page.pageType === 'Home Page' && <div className="home-page-assignments">
+            {advancedEditor!=='recordPage' && page.pageType === 'Home Page' && <div className="home-page-assignments">
               <div className="properties-section-title">Where this page appears</div>
               <p className="properties-help">Assign this Home Page to an app, or to an app and profile.</p>
               {(page.activationAssignments ?? []).map((assignment) => <div className="home-page-assignment" key={assignment.id}>
@@ -3684,7 +3686,7 @@ function PageBuilder({
               </label>)}</div>
               <button className="btn btn-full" type="button" onClick={addHomeAssignment}>Add Home Page Assignment</button>
             </div>}
-            <p className="properties-help">Device, dimensions and orientation are selected when creating a page. Create another page for a different layout size.</p>
+            {advancedEditor!=='assignments' && <p className="properties-help">Device, dimensions and orientation are selected when creating a page. Create another page for a different layout size.</p>}
             
           </>}
         </aside>, ribbonPropertyHost)}
