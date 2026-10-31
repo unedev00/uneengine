@@ -105,9 +105,15 @@ try{
  await db.query("UPDATE md_records SET owner_id=$3 WHERE tenant_id=$1 AND id=$2",
   [tenant,p2,inheritedReader]);
  assert.equal(await read(g1),true,'Grandchild must inherit multi-hop, multi-master sharing');
- assert.equal((await db.query("SELECT md_record_access_direct($1,$2,$3,'read') AS permitted",
-  [tenant,inheritedReader,c1])).rows[0].permitted,false,
-  'Parent-granted access must not silently become independent child ownership');
+ const owners=(await db.query(
+  'SELECT id,owner_id FROM md_records WHERE tenant_id=$1 AND id=ANY($2::uuid[])',
+  [tenant,[p1,p2,c1,c2,g1]])).rows;
+ assert.equal(owners.find(row=>row.id===c1)?.owner_id,inheritedReader,
+  'Detail owner should track the primary master owner');
+ assert.equal(owners.find(row=>row.id===g1)?.owner_id,inheritedReader,
+  'A two-hop detail owner should track its primary master owner');
+ assert.equal(owners.find(row=>row.id===c2)?.owner_id,inheritedReader,
+  'Master ownership changes should propagate to sibling detail records');
  // Required lookup filters reject invalid targets at the shared Record Engine;
  // optional filters are advisory and must not block otherwise valid writes.
  const {persistObjectLookupFilters}=await import(new URL('object-manager-lookup-filters.js',built).href);
