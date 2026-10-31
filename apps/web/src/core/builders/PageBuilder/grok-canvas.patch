@@ -1,0 +1,11 @@
+--- a/apps/web/src/core/builders/PageBuilder/pageBuilderView.tsx
++++ b/apps/web/src/core/builders/PageBuilder/pageBuilderView.tsx
+@@ -518,7 +518,7 @@
+   };
+   const [selectedConversationPart,setSelectedConversationPart]=useState('parent');
+   useEffect(()=>setSelectedConversationPart('parent'),[selectedId]);
+-  const [ribbonTab, setRibbonTab] = useState<'Add Block' | 'Component Content' | 'Component Properties' | 'Component Style' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Component Responsive' | 'Preview' | 'Filters' | 'Source' | 'Shapes' | 'Advanced'>('Add Block');
++  const [ribbonTab, setRibbonTab] = useState<'Add Block' | 'Component Content' | 'Component Properties' | 'Component Style' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Component Responsive' | 'Preview' | 'Filters' | 'Source' | 'Shapes' | 'Advanced' | 'Grok'>('Add Block');
+   useEffect(()=>{
+     if(ribbonTab==='Shapes'&&!page.components.find(component=>component.id===selectedId)?.type.startsWith('Custom:'))
+       setRibbonTab('Component Properties');
