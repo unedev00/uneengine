@@ -414,7 +414,7 @@ export class ObjectDefinitionService {
                 AND deleted_at IS NULL AND (api_name=$3 OR relationship_name=$3)`,
             [tenantId,objectApi,targetObject]);
             if(aliases.rows.length!==1)throw new Error(
-              'Formula cross-object reference requires an unambiguous relationship');
+              'Formula cross-object reference requires a lookup relationship with an unambiguous name');
             targetObject=aliases.rows[0].related_object;
           }
         }
