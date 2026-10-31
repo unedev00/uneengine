@@ -206,6 +206,10 @@ function ItemGrid({ p, rows }) {
         role={p.boundedViewport===true?"region":undefined}
         aria-label={p.boundedViewport===true?(p.title||"Card Grid")+" items":undefined}
         tabIndex={p.boundedViewport===true?0:undefined}
+        onPointerDown={p.boundedViewport===true?event=>{
+          // Touch pans the records, not the parent Page Builder shape.
+          if(event.pointerType==="touch")event.stopPropagation();
+        }:undefined}
         style={{
           "--one-grid-desktop": count,
           "--one-grid-tablet": tabletCount,
