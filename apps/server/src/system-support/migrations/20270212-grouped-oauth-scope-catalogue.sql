@@ -227,7 +227,7 @@ ALTER TABLE md_oauth_client_scopes ADD CONSTRAINT md_oauth_client_scopes_scope_f
  FOREIGN KEY(scope) REFERENCES md_oauth_scope_catalogue(scope);
 
 -- Existing checks stay intact; new route scopes use the same consent/RBAC chain.
-CREATE OR REPLACE FUNCTION md_oauth_token_allowed(t uuid,u uuid,h text,path text,request_method text)
+CREATE OR REPLACE FUNCTION md_oauth_token_allowed(t uuid,u uuid,h text,path text,verb text)
 RETURNS boolean LANGUAGE sql STABLE AS $$
  SELECT NOT EXISTS(SELECT 1 FROM md_oauth_tokens WHERE token_hash=h)
  OR EXISTS(SELECT 1 FROM md_oauth_tokens b
@@ -239,13 +239,13 @@ RETURNS boolean LANGUAGE sql STABLE AS $$
   JOIN md_oauth_scope_catalogue cat ON cat.scope=s.scope AND cat.assignable=true
   WHERE b.token_hash=h AND b.kind='access' AND b.tenant_id=t AND c.user_id=u AND md_rbac_allowed(t,u,'API','execute')
   AND (
-    (s.scope='mcp:access' AND path='/api/mcp' AND request_method IN ('POST','GET','DELETE'))
+    (s.scope='mcp:access' AND path='/api/mcp' AND md_oauth_token_allowed.verb IN ('POST','GET','DELETE'))
     OR EXISTS(SELECT 1 FROM md_oauth_scope_routes r
-      WHERE r.scope=s.scope AND r.verb=request_method AND path ~ r.path_regex)
+      WHERE r.scope=s.scope AND r.verb=md_oauth_token_allowed.verb AND path ~ r.path_regex)
     -- Retain the pre-existing Salesforce-compatible data API permissions.
-    OR (s.scope='records:read' AND request_method='GET'
+    OR (s.scope='records:read' AND md_oauth_token_allowed.verb='GET'
        AND path ~ '^/services/data/v[0-9.]+/(query|queryAll|search|sobjects)(/|$)')
-    OR (s.scope='records:write' AND request_method IN ('POST','PUT','PATCH','DELETE')
+    OR (s.scope='records:write' AND md_oauth_token_allowed.verb IN ('POST','PUT','PATCH','DELETE')
        AND path ~ '^/services/data/v[0-9.]+/sobjects/')
   ))
 $$;
