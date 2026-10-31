@@ -768,7 +768,7 @@ test('Shared @ binding and canvas fill are metadata-driven for arbitrary objects
  const runtime=read('../src/component-libraries/smart/shared/SmartRuntime.jsx');
  const view=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
  const sql=read('../../server/src/system-support/migrations/20270202-canvas-fill-color.sql');
- assert.match(formula,/mentionGroups\(objects,rootObjectApiName/);
+ assert.match(read('../src/core/builders/PageBuilder/relationshipFormulaFields.ts'),/mentionGroups\(objects,root/);
  assert.match(mentions,/resolveCollectionMentionRows/);
  assert.match(mentions,/MAX_HOPS = 3/);
  assert.match(ribbon,/rootObjectApiName=\{objectName\}/);
@@ -932,9 +932,9 @@ test('31 October ribbon consolidation scopes @ fields to three explicit objects 
  for(const key of ['objectApiName','objectApiName2','objectApiName3'])assert.ok(ribbon.includes("'"+key+"'"));
  assert.match(ribbon,/const objectName=sourceObjectNames\[0\]\?\?''/);
  assert.doesNotMatch(ribbon,/fallback\(properties\.objectApiName\)\|\|pageObjectApiName/);
- assert.match(formula,/selectedSourceObjects\.flatMap/);
+ assert.match(formula,/relationshipFormulaFields/);
  assert.match(formula,/selectedSourceObjects!==undefined/);
- assert.match(formula,/source\.apiName\+'\.'\+field\.apiName/);
+ assert.match(read('../src/core/builders/PageBuilder/relationshipFormulaFields.ts'),/field.reference/);
  assert.match(sql,/section_group='Others'/);
  assert.match(sql,/Navigation Placement/);
  assert.match(sql,/section_group='Component'/);

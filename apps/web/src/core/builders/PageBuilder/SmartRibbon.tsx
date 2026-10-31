@@ -162,8 +162,8 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
      editor=<div className="smart-formula-filter smart-image-source-editor">
        <span className="smart-formula-prefix" title={title}>{shortLabel}</span>
        <SmartFormulaField value={String(value)} label={title} disabled={!enabled}
-         fields={object?.fields??[]} objects={sourceObjects} rootObjectApiName={objectName}
-         selectedSourceObjects={sourceObjects}
+         fields={object?.fields??[]} objects={objects} rootObjectApiName={objectName}
+         selectedSourceObjects={sourceObjects} mentionKind="image"
          onChange={source=>{if(enabled)onChange({...properties,imageSource:source,imageSourceMode:'field'});}}/>
        {api==='smart_image'&&<button type="button" className="smart-filter-trigger"
          title="Upload image from this computer" aria-label="Upload image" disabled={uploadBusy||!enabled}
@@ -180,7 +180,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
        fields={api==='smart_toggle'&&property.id==='textSource'
          ?(object?.fields??[]).filter(field=>['Checkbox','Boolean'].includes(field.dataType))
          :object?.fields??[]}
-       objects={sourceObjects} rootObjectApiName={objectName}
+       objects={objects} rootObjectApiName={objectName}
         selectedSourceObjects={sourceObjects} />
      <button type="button" className="smart-filter-trigger" disabled={!enabled||!object}
        title={!object?'Choose an Object to configure record filters':'Shared record filters for '+object.label}

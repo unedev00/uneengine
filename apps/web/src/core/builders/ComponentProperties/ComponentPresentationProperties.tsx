@@ -1,4 +1,4 @@
-import type {FieldMetadata} from '../../metadata/Definitions/metadata';
+import type {FieldMetadata,ObjectMetadata} from '../../metadata/Definitions/metadata';
 import RibbonFieldExpressionInput from '../PageBuilder/RibbonFieldExpressionInput';
 import type {LibraryComponentMetadata} from '../../metadata/Definitions/metadata';
 import TenantMediaPicker from './TenantMediaPicker';
@@ -10,12 +10,13 @@ type Definitions = LibraryComponentMetadata['propertyDefinitions'];
 
 /** Editing tab: render declared text, layout and appearance defaults before any data binding exists. */
 export default function ComponentPresentationProperties({
-  definitions, properties, onChange, expressionFields
+  definitions, properties, onChange, expressionFields, objects=[], objectApiName=''
 }: {
   definitions?: Definitions;
   properties: Properties;
   onChange: (next: Properties) => void;
   expressionFields?: FieldMetadata[];
+  objects?: readonly ObjectMetadata[];objectApiName?:string;
 }) {
   const groups = groupedPresentationProperties(definitions ?? []);
   const update = (key: string, value: unknown) => onChange({...properties, [key]: value});
@@ -80,7 +81,7 @@ export default function ComponentPresentationProperties({
         </label>;
         if(expressionFields && ['TEXT','LONG_TEXT','TEXTAREA','STRING'].includes(definition.kind))
           return <div key={key} className="office-ribbon-text-expression">
-            <RibbonFieldExpressionInput label={label} value={String(value??'')} fields={expressionFields} onChange={text=>update(key,text)}/>
+            <RibbonFieldExpressionInput label={label} value={String(value??'')} fields={expressionFields} objects={objects} objectApiName={objectApiName} onChange={text=>update(key,text)}/>
           </div>;
         return <label key={key} className="form-label">
           {label}

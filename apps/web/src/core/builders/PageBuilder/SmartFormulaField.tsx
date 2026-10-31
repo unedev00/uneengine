@@ -1,7 +1,8 @@
 import {useState,useRef,useLayoutEffect,type KeyboardEvent} from 'react';
 import {createPortal} from 'react-dom';
 import type {FieldMetadata,ObjectMetadata} from '../../metadata/Definitions/metadata';
-import {mentionGroups} from '../../../component-libraries/shared/primitives/SmartFieldInput/smartFieldMentions';
+import {relationshipFormulaFields} from './relationshipFormulaFields';
+import type {MentionKind} from '../../../component-libraries/shared/primitives/SmartFieldInput/smartFieldMentions';
 import './SmartFormulaField.css';
 /** Presentation tokenizer; the shared bounded expression evaluator owns semantics.
  * Quoted operators (+ - * / &) and @names are literal strings, never formulas.
@@ -19,9 +20,9 @@ export function splitSmartFormula(value:string){
  if(cursor<value.length)parts.push({value:value.slice(cursor),kind:'text'});
  return parts;
 }
-export default function SmartFormulaField({value,onChange,fields,disabled,label,objects=[],rootObjectApiName='',singleFieldOnly=false,selectedSourceObjects}:{
+export default function SmartFormulaField({value,onChange,fields,disabled,label,objects=[],rootObjectApiName='',singleFieldOnly=false,selectedSourceObjects,mentionKind='text'}:{
  value:string;onChange:(next:string)=>void;fields:readonly FieldMetadata[];disabled:boolean;label:string;
- objects?:readonly ObjectMetadata[];rootObjectApiName?:string;singleFieldOnly?:boolean;selectedSourceObjects?:readonly ObjectMetadata[]
+ objects?:readonly ObjectMetadata[];rootObjectApiName?:string;singleFieldOnly?:boolean;selectedSourceObjects?:readonly ObjectMetadata[];mentionKind?:MentionKind
 }){
  const input=useRef<HTMLInputElement>(null);
  const [matches,setMatches]=useState<{start:number;end:number;query:string}|null>(null);
@@ -40,22 +41,14 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
   window.addEventListener('scroll',recalc,true);
   return()=>{window.removeEventListener('resize',recalc);window.removeEventListener('scroll',recalc,true)};
  },[matches]);
- const filtered=matches?(selectedSourceObjects!==undefined
-  ?selectedSourceObjects.flatMap((source,index)=>source.fields
-   .filter(field=>(!singleFieldOnly||['Checkbox','Boolean'].includes(field.dataType))&&
-     (field.apiName.toLowerCase().includes(matches.query.toLowerCase())||
-      field.label.toLowerCase().includes(matches.query.toLowerCase())||
-      source.apiName.toLowerCase().includes(matches.query.toLowerCase())))
-   .map(field=>({reference:index===0?'@'+field.apiName:'@'+source.apiName+'.'+field.apiName,
-     label:source.label+' → '+field.label}))).slice(0,20)
-  :objects.length&&rootObjectApiName
-   ?mentionGroups(objects,rootObjectApiName,[],matches.query,'text')
-    .flatMap(group=>group.fields.map(field=>({
-     reference:group.primary?'@'+field.fieldApiName:field.reference,
-     label:(group.primary?'':group.path+' → ')+field.fieldLabel
-    }))).slice(0,20)
-   :fields.filter(field=>field.apiName.toLowerCase().includes(matches.query.toLowerCase())||
-     field.label.toLowerCase().includes(matches.query.toLowerCase())).slice(0,20)
+ const sourceRoots=selectedSourceObjects!==undefined
+  ?selectedSourceObjects.map(source=>source.apiName)
+  :rootObjectApiName?[rootObjectApiName]:[];
+ const filtered=matches?(objects.length&&sourceRoots.length
+  ?relationshipFormulaFields(objects,sourceRoots,matches.query,mentionKind,singleFieldOnly).slice(0,200)
+  :fields.filter(field=>(!singleFieldOnly||/^(Checkbox|Boolean)$/i.test(field.dataType))&&
+    (field.apiName.toLowerCase().includes(matches.query.toLowerCase())||
+     field.label.toLowerCase().includes(matches.query.toLowerCase()))).slice(0,200)
     .map(field=>({reference:'@'+field.apiName,label:field.label}))) : [];
  const update=(next:string,caret:number)=>{
   onChange(next);
