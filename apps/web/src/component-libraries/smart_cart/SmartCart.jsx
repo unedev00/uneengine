@@ -25,8 +25,13 @@ export default function SmartCart({p,records,Picture,expression,fire}){
    /^[A-Z]{3}$/.test(p.currencyCode||"")?p.currencyCode:"GBP"}).format(amount);}
   catch{return new Intl.NumberFormat("en-GB",{style:"currency",currency:"GBP"}).format(amount);}
  };
- const summaryAmounts={Subtotal:money(p.subtotalValue),Discount:money(p.discountValue),
-  Tax:money(p.taxValue),Total:money(p.totalValue)};
+ // The same existing ribbon expression evaluator resolves @Field, formulas,
+ // literals and Flow-bound Page State values; all fields come from authorised rows.
+ const summaryRecord=records[0]??{};
+ const summaryAmounts={Subtotal:money(expression(p.subtotalValue,summaryRecord)),
+  Discount:money(expression(p.discountValue,summaryRecord)),
+  Tax:money(expression(p.taxValue,summaryRecord)),
+  Total:money(expression(p.totalValue,summaryRecord))};
  const rowHeight=n(p.rowHeight,64,24);
  const rowLimit=Math.floor(n(p.cardsPerRow,5,1,50));
  const visible=Array.isArray(p.columnVisibility)
