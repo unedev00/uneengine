@@ -25,6 +25,9 @@ const groups: Record<string, NavigationAppearance> = {
 const items: Record<string, NavigationAppearance> = {
   'Tenant Management': {icon: Building2, tone: 'indigo'},
   'Company Settings': {icon: Building2, tone: 'sky'},
+  'Security & Recovery': {icon: ShieldCheck, tone: 'blue'},
+  'Connected Apps': {icon: Plug, tone: 'teal'},
+  'Audit Trail': {icon: History, tone: 'coral'},
   'Setup Home': {icon: LayoutDashboard, tone: 'blue'},
   'Object Manager': {icon: Database, tone: 'cobalt'},
   'Page Builder': {icon: LayoutTemplate, tone: 'violet'},
