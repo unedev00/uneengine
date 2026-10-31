@@ -3026,7 +3026,14 @@ function PageBuilder({
               })}/>}
           {selected?.type==='Custom:smart_icon' && ribbonTab==='Component Layout' &&
             <SmartIconGallery value={String(selected.properties.iconId??'house')}
-              onChange={iconId=>updateComponent(selected.id,{properties:{...selected.properties,iconId}})}/>}
+              disabled={ribbonSelectedMembers.some(item=>item.type!=='Custom:smart_icon'||isCanvasLocked(item))}
+              onChange={iconId=>{
+                if(ribbonSelectedMembers.length>1){
+                  const ids=new Set(ribbonSelectedMembers.map(item=>item.id));
+                  applyPage({...page,components:page.components.map(item=>ids.has(item.id)
+                    ?{...item,properties:{...item.properties,iconId}}:item)});
+                }else updateComponent(selected.id,{properties:{...selected.properties,iconId}});
+              }}/>}
           {selectedNewUne && selected && ribbonCatalog &&
             (ribbonTab==='Component Data'||ribbonTab==='Component Properties'||ribbonTab==='Component Layout') &&
             <SmartRibbon
