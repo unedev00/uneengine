@@ -19,9 +19,7 @@
 .builder-editor-mode .reference-builder-layout.page-builder-layout .record-preview.free-canvas-preview{
   margin:0!important;max-width:none!important;
 }
-.builder-editor-mode .modern-canvas-builder .free-canvas-component.canvas-authored-black-border:not(.selected){
-  border:1px solid #000!important;box-sizing:border-box;
-}
+/* The canvas frame is geometry-only. Authored borders belong to the component's native surface. */
 .builder-editor-mode .modern-canvas-builder .free-canvas-component.canvas-hidden-selection{
   outline:2px dashed #ca6b0d!important;outline-offset:-2px;
   background:repeating-linear-gradient(45deg,#fff7ed,#fff7ed 7px,#ffedd5 7px,#ffedd5 14px);
