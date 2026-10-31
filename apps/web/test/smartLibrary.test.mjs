@@ -386,7 +386,7 @@ test('Smart Event ribbon matches On Click and Qty Icon component support',()=>{
  const ribbon=read('../src/core/builders/PageBuilder/SmartEventActionsRibbon.tsx');
  const view=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
  const runtime=read('../src/component-libraries/smart/shared/SmartRuntime.jsx');
- assert.match(ribbon,/clickComponents=new Set/);
+ assert.ok(ribbon.includes("'smart_card_grid'"));
  assert.match(ribbon,/key:'qtyIcon',label:'Qty Icon',group:'Component Custom',enabled:api==='smart_cart'/);
  assert.match(ribbon,/Autolaunched Flow/);
  assert.match(ribbon,/Screen Flow/);
