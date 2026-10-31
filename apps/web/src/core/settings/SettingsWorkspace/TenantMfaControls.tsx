@@ -14,12 +14,12 @@ export default function TenantMfaControls({request,canManage,onReauthenticate}:{
  const post=<T,>(path:string,body:unknown)=>request<T>(path,{method:'POST',body:JSON.stringify(body)});
  return <section className="surface permission-section"><h2>Multi-factor authentication</h2>
   <p>Policy: {status?.mode??'Loading…'} · {status?.enrolled?'A factor is enrolled':'No factor enrolled'}</p>
-  {canManage&&<label className="form-label">Tenant MFA policy<select className="form-control" value={mode} onChange={e=>setMode(e.target.value)}>
-   {['Off','Optional','Required'].map(m=><option key={m}>{m}</option>)}</select>
-   <button className="btn" type="button" disabled={busy||!status} onClick={()=>void run(async()=>{await request('/auth/mfa/policy',{method:'PUT',body:JSON.stringify({mode})});if(mode==='Required'){onReauthenticate();return;}await load();setMessage('MFA policy saved.');})}>Save policy</button>
-  </label>}
-  <label className="form-label">Current password<input className="form-control" autoComplete="current-password" type="password" value={password} onChange={e=>setPassword(e.target.value)}/></label>
-  <label className="form-label">Fresh authenticator code<input className="form-control" autoComplete="one-time-code" value={code} onChange={e=>setCode(e.target.value)} maxLength={6}/></label>
+  {canManage&&<div className="md-admin-form-grid"><label className="form-label md-admin-field-medium">Tenant MFA policy<select className="form-control" value={mode} onChange={e=>setMode(e.target.value)}>
+   {['Off','Optional','Required'].map(m=><option key={m}>{m}</option>)}</select></label>
+   <div className="md-admin-actions"><button className="btn btn-brand" type="button" disabled={busy||!status} onClick={()=>void run(async()=>{await request('/auth/mfa/policy',{method:'PUT',body:JSON.stringify({mode})});if(mode==='Required'){onReauthenticate();return;}await load();setMessage('MFA policy saved.');})}>Save policy</button></div>
+  </div>}
+  <div className="md-admin-form-grid"><label className="form-label">Current password<input className="form-control" autoComplete="current-password" type="password" value={password} onChange={e=>setPassword(e.target.value)}/></label>
+  <label className="form-label">Fresh authenticator code<input className="form-control" autoComplete="one-time-code" value={code} onChange={e=>setCode(e.target.value)} maxLength={6}/></label></div>
   <button className="btn" type="button" disabled={busy||!password} onClick={()=>void run(async()=>setSetup(await post('/auth/mfa/enroll',{password})))}>Set up authenticator</button>
   {setup&&<div><p>Enter this key in your authenticator: <code>{setup.setup_secret}</code></p>
    <button className="btn" type="button" disabled={busy||!code} onClick={()=>void run(async()=>{await post('/auth/mfa/enroll/confirm',{enrollment_token:setup.enrollment_token,code});setSetup(null);setCode('');setPassword('');onReauthenticate();})}>Confirm enrollment and sign out</button></div>}
