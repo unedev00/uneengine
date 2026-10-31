@@ -160,3 +160,14 @@
 .page-builder-advanced-ribbon .page-builder-canvas-ribbon-buttons button{
   display:flex;align-items:center;gap:6px;white-space:nowrap;
 }
+
+
+/* Explicit LTR scroll for the universal inventory; do not suppress property
+   controls when their SQL groups exceed the available ribbon width. */
+.office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content:has(>.une-universal-ribbon){
+ direction:ltr!important;overflow-x:auto!important;overflow-y:hidden!important;
+ scrollbar-width:thin!important;scrollbar-color:#91a7c5 #edf2f8!important;
+}
+.office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content:has(>.une-universal-ribbon)::-webkit-scrollbar{
+ display:block!important;height:9px!important;
+}
