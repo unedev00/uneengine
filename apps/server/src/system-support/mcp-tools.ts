@@ -107,7 +107,7 @@ export async function callMcpTool(s:McpServices,a:McpActor,name:string,input:unk
   const p=schemas.save_page_draft.parse(input);
   await s.rbac.require(t,u,'PageDefinition','manage');
   // Never accept an unversioned blind overwrite of tenant-authored content.
-  if(!Number.isInteger(p.definition.draftRevision)||Number(p.definition.draftRevision)<0)
+  if(typeof p.definition.draftRevision!=='number'||!Number.isInteger(p.definition.draftRevision)||p.definition.draftRevision<0)
    throw Error('A current draftRevision is required');
   return s.pages.saveLayoutDraft(t,p.page,p.variant,p.definition,u);
  }
