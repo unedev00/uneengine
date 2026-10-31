@@ -1186,6 +1186,8 @@ function PageBuilder({
       x: component.position.x, y: component.position.y, width: component.position.width, height: component.position.height, edge,
       element, current: { ...component.position } };
     setSelectedId(component.id);
+    setSelectionIds([component.id]);
+    setSelectedRegion(null);
   };
   const moveCanvasResize = (event: React.PointerEvent<HTMLButtonElement>) => {
     const start = canvasResizeStart.current;
@@ -2208,7 +2210,7 @@ function PageBuilder({
             // resize handles and drop zones must retain their editing controls.
             if(hit.closest('[data-component-id]')!==event.currentTarget
               ||hit===event.currentTarget
-              ||hit.closest('.canvas-design-interaction-shield,.canvas-element-actions,.canvas-drop-zone,.free-canvas-resize-handle,.template-component-resize-handle,.template-placement-handle'))return;
+              ||hit.closest('.canvas-element-actions,.canvas-drop-zone,.free-canvas-resize-handle,.template-component-resize-handle,.template-placement-handle'))return;
             // Stop links, forms, tabs, delegated clicks and configured actions
             // before React or browser handlers in the component can run.
             event.preventDefault();
@@ -2244,6 +2246,9 @@ function PageBuilder({
       onDrop={!libraryPreview && !isPhoneBuilder ? (event) => handleDrop(event, index, component.region ?? 'main', isLayoutContainer(component) ? component.id : rawLayoutParentId(component)) : undefined}
       draggable={!isPhoneBuilder && !previewMode && !libraryPreview && page.layoutMode !== 'free-canvas' && !isCanvasLocked(component)}
       data-component-id={libraryPreview ? undefined : component.id}
+      onDragStartCapture={selectOnlyInDesigner && page.layoutMode === 'free-canvas'
+        ? event => { event.preventDefault(); event.stopPropagation(); }
+        : undefined}
       onDragStart={!libraryPreview && !isPhoneBuilder ? (event) => { if (page.layoutMode === 'free-canvas' || canvasMoveStart.current?.id === component.id) { event.preventDefault(); return; } event.stopPropagation(); event.dataTransfer.setData('text/plain', `component:${component.type}`); event.dataTransfer.setData('application/x-metadrive-component-id', component.id); } : undefined}
       role={libraryPreview ? undefined : page.layoutMode === 'free-canvas' ? 'group' : 'button'} tabIndex={previewMode || libraryPreview ? -1 : 0} aria-label={libraryPreview ? undefined : `${component.label} component`}
       aria-hidden={libraryPreview && !interactivePreview || undefined}
@@ -3120,7 +3125,7 @@ function PageBuilder({
               } : page.layoutMode === 'template' && page.components.some(c => c.visible && c.properties?.standalonePresentation === true) ? standaloneTemplateCanvasStyle(page.canvasWidth, page.canvasHeight) : {}),backgroundColor:page.canvasFillColor??'#ffffff'}}
             >
               {page.layoutMode === 'free-canvas' ? <div
-                className={`free-canvas-stage ${canvasSnap && !previewMode ? 'canvas-grid-on' : ''}`}
+                className={`free-canvas-stage ${canvasSnap && !previewMode ? 'canvas-grid-on' : ''} ${!previewMode ? 'canvas-editing' : ''}`}
                 style={{
                   width: page.canvasWidth,
                   height: page.canvasHeight,
