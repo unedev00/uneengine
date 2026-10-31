@@ -107,14 +107,14 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    return 99;
  };
  // Size each section from its widest row, including 2px between controls,
- // 8px inner gutters on both sides and the 1px divider.
+ // 14px inner gutters on both sides and the 1px divider.
  // Leave enough room to display the full group caption as well.
  const sectionWidth=(group:string)=>Math.max(
    Math.max(0,...[1,2,3].map(row=>{
      const properties=sectionRow(group,row);
      return properties.reduce((total,p)=>total+controlWidth(p)+(p.designCaptionWidth??0),0)
        +Math.max(0,properties.length-1)*4;
-   }))+17,
+   }))+29,
    group.length*6+24
  );
  const controls=(property:UneRibbonProperty)=>{
