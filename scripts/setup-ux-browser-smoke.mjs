@@ -318,7 +318,7 @@ try {
  },undefined,{timeout:3000});
  const preview=page.getByLabel('Empty Smart Card Grid preview');
  assert.equal(await preview.locator('article.smart-card').count(),3);
- assert.equal(await preview.getByText('Image here').count(),3);
+ assert.equal(await preview.getByText('Image Here').count(),3);
  assert.equal(await preview.getByText('Text here').count(),3);
  await screenshot('smart-card-grid-height-rows-desktop');
  await page.setViewportSize({width:390,height:844});
