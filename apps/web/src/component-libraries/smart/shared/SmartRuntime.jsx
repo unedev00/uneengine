@@ -21,6 +21,17 @@ function SmartPicture({src,alt,loadAsset,style}){
  React.useEffect(()=>setFailed(false),[src]);
  return source&&!failed?<img src={source} alt={alt} style={style} onError={()=>setFailed(true)}/>:null;
 }
+// Reuse the normal authorised record-filter matcher for independent value
+// visibility. Global object filtering/paging remains untouched.
+const fieldAllows=(p,key,record)=>{
+ if(typeof p.fieldAllowed==='function')return p.fieldAllowed(key,record??{});
+ // Outside the authorised page runtime, reject configured scoped rules rather
+ // than silently exposing an unverified value.
+ return !p.dataFieldFilters||typeof p.dataFieldFilters!=='object'
+   ||!Object.prototype.hasOwnProperty.call(p.dataFieldFilters,key);
+};
+const scopedExpression=(p,key,source,record)=>fieldAllows(p,key,record)
+ ?expression(source,record):"";
 const recordOf=p=>p.objectApiName&&Array.isArray(p.records)
  ?(p.records[0]??{}):p.record&&typeof p.record==="object"&&!Array.isArray(p.record)?p.record:
  Array.isArray(p.records)&&p.records.length?p.records[0]:Array.isArray(p.items)&&p.items.length?p.items[0]:{};
@@ -38,7 +49,8 @@ const isBuilderEmpty=p=>p.builderPreview===true&&!p.loading&&recordsOf(p).length
 // Image bindings must resolve once per authorised record, not once for the grid.
 // Plain API names and @Field expressions both use the same record values.
 const boundImage=(p,record)=>{
- const source=p.imageSource??p.src??'';
+ if(!fieldAllows(p,'imageSource',record))return '';
+  const source=p.imageSource??p.src??'';
  const key=typeof source==='string'?source.replace(/^@/,''):'';
  if(key && record && Object.prototype.hasOwnProperty.call(record,key))return text(record[key]);
  return expression(source,record);
@@ -47,8 +59,8 @@ function SmartCard({p,record}){
  const image=boundImage(p,record);
  const preview=p.previewOnly===true||p.builderPreview===true||p.preview===true;
  const sample=Boolean(p.builderPreview===true&&record?.__builderSample===true);
- const header=expression(p.textSource??p.title??p.label??"",record)||(sample?"Product Name":p.kind==="smart_card_grid"&&preview?"Text here":"");
- const badge=expression(p.badgeText??"",record)||(sample?"Price":preview&&p.badgeVisible===true?"Badge":"");
+ const header=scopedExpression(p,"textSource",p.textSource??p.title??p.label??"",record)||(sample?"Product Name":p.kind==="smart_card_grid"&&preview?"Text here":"");
+ const badge=scopedExpression(p,"badgeText",p.badgeText??"",record)||(sample?"Price":preview&&p.badgeVisible===true?"Badge":"");
  const horizontal=["left","right"].includes(p.imagePlacement);
  const single=p.kind==="smart_image";
  const grid=p.kind==="smart_card_grid";
@@ -154,7 +166,7 @@ function SmartLookup({p,style,fire}){
  const [query,setQuery]=React.useState("");
  const [opened,setOpened]=React.useState(false);
  const candidates=recordsOf(p).slice(0,200).filter(item=>item&&typeof item==="object");
- const display=row=>expression(p.textSource??row.Name??row.name??row.label??row.title??row.id??"",row);
+ const display=row=>scopedExpression(p,"textSource",p.textSource??row.Name??row.name??row.label??row.title??row.id??"",row);
  const matches=candidates.filter(row=>display(row).toLowerCase().includes(query.toLowerCase())).slice(0,20);
  return <div className="smart-lookup" style={{...style,"--smart-placeholder-color":p.labelColor||"#64748b"}}>
   <input className="smart-search" type="search" role="combobox"
@@ -185,7 +197,7 @@ function SmartTabs({p,record,fire}){
  const tabs=dynamic?(isBuilderEmpty(p)?Array.from({length:Math.min(count,5)},(_,i)=>({
    label:"Tab "+(i+1),id:"editor-tab-"+i
   })):recordsOf(p).slice(0,count).map(row=>({
-   label:expression(p.textSource,row),id:row?.Id??row?.id
+   label:scopedExpression(p,"textSource",p.textSource,row),id:row?.Id??row?.id
   }))):Array.isArray(p.tabs)?p.tabs:Array.from({length:count},(_,i)=>i===0&&typeof p.label==="string"&&p.label&&!p.label.startsWith("@")?p.label:"Tab "+(i+1));
  React.useEffect(()=>{if(active>=tabs.length)setActive(0)},[active,tabs.length]);
  return <div className="smart-tabs-shell" style={{background:p.backgroundColor||undefined,
@@ -229,7 +241,7 @@ function SmartToggle({p,fire}){
    <span className="smart-switch-thumb"/></span></label>;
 }
 export default function SmartRuntime(p){
- const name=p.kind||"smart_text",record=recordOf(p),label=expression(p.label||"",record);
+ const name=p.kind||"smart_text",record=recordOf(p),label=scopedExpression(p,"label",p.label||"",record);
  const style={fontSize:number(p.textSize,16),color:p.labelColor||undefined,textAlign:p.labelAlignment||"left",borderRadius:number(p.radius,12)};
  const buttonIcon=name==="smart_button"?icons.find(icon=>icon.id===p.shapeId):null;
  const shadowStyle={boxShadow:p.calendarShadowColor?"0 4px 10px "+p.calendarShadowColor:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none",borderRadius:number(p.radius,12)};
@@ -257,7 +269,7 @@ export default function SmartRuntime(p){
   placeholder={p.builderPreview===true&&![p.placeholder,p.textSource,p.defaultValue,p.value].some(v=>v!==undefined&&v!==null&&v!=="")
     &&!(p.properties&&Object.prototype.hasOwnProperty.call(p.properties,"label"))
     ?"Text Here":label||text(p.placeholder||"")}
-  defaultValue={expression(p.textSource??p.defaultValue??p.value??"",record)}
+  defaultValue={scopedExpression(p,p.textSource?"textSource":"defaultValue",p.textSource??p.defaultValue??p.value??"",record)}
   style={{...style,...shadowStyle,...smartShapeAppearance(p.shapeId,number(p.radius,12)),width:"100%",height:"100%",minWidth:0,minHeight:0,
     fontSize:number(p.textSize,16),color:p.defaultValueColor||p.labelColor||undefined,
     borderColor:p.borderColor||undefined,background:p.backgroundColor||"#fff",
@@ -312,7 +324,8 @@ export default function SmartRuntime(p){
    })}
   </div>;
  }
- else if(name==="smart_cart")content=<SmartCart p={p} records={recordsOf(p)} Picture={SmartPicture} expression={expression} fire={fire}/>;
+ else if(name==="smart_cart")content=<SmartCart p={p} records={recordsOf(p)} Picture={SmartPicture} expression={expression}
+    fieldAllowed={(key,row)=>fieldAllows(p,key,row)} fire={fire}/>;
  else if(name==="smart_calendar")content=<SmartCalendar p={p} fire={fire}/>;
  else if(name==="smart_tabs")content=<SmartTabs p={p} record={record} fire={fire}/>;
  else if(name==="smart_navigation"){
@@ -321,7 +334,7 @@ export default function SmartRuntime(p){
   const labelOf=item=>{
     if(item&&typeof item==="object"){
       if(typeof item.label==="string"&&item.label)return item.label;
-      return expression(p.textSource??item.Name??item.name??item.title??item.id??"",item);
+      return scopedExpression(p,"textSource",p.textSource??item.Name??item.name??item.title??item.id??"",item);
     }
     return text(item);
   };

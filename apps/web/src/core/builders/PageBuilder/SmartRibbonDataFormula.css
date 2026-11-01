@@ -122,3 +122,21 @@
 .office-builder-ribbon #page-builder-tab-content .smart-data-field.disabled .smart-data-field-fx{
   background:#f4f6f9;cursor:not-allowed;color:#97a5b6;
 }
+
+/* Density follows the same SQL design width: do not hide overflow or scrollbars. */
+.office-builder-ribbon #page-builder-tab-content .smart-data-sections
+ .smart-property[data-property="defaultCheck"]{
+  box-sizing:border-box!important;justify-content:space-between!important;
+  padding:0 5px!important;border:1px solid #b7c9df!important;border-radius:5px!important;
+  background:#fff!important;
+}
+.office-builder-ribbon #page-builder-tab-content .smart-data-sections
+ .smart-property[data-property="defaultCheck"]>.smart-label{
+  box-sizing:border-box!important;display:block!important;flex:1 1 auto!important;
+  min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;
+  white-space:nowrap!important;font-size:11px!important;
+}
+.office-builder-ribbon #page-builder-tab-content .smart-data-sections
+ .smart-property[data-property="defaultCheck"] .smart-default-check-switch{
+  flex:0 0 auto!important;margin-left:auto!important;
+}

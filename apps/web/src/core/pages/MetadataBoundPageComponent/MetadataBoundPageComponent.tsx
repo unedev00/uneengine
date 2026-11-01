@@ -6,6 +6,7 @@ import {loadFlowScreenRecordPage} from '../../authentication/Client/authClient';
 // Load the browser API client only during the mounted effect, not on SSR import.
 import {presentPageRecords,type ChannelGrant} from '../../records/RecordWorkspace/recordPresentationAdapters';
 import {filterPageComponentRecords,pageComponentRecordQuery,bindPageStateProperties} from '../PageRuntime/pageComponentBindings';
+import {scopedFieldAllows} from '../PageRuntime/fieldScopedRecordFilters';
 import {resolveSmartToggleFieldBinding,updateSmartToggleField} from '../PageRuntime/smartToggleFieldBinding';
 import {usePageComponentRelatedScope} from '../PageRuntime/usePageSessionRelatedQuery';
 import {filterRelatedRecords} from '../PageRuntime/filterRelatedRecords.mjs';
@@ -482,6 +483,8 @@ export default function MetadataBoundPageComponent({
       } : {}),
       ...(typeof properties.searchKey === 'string' && properties.searchKey ? {searchQuery:selectedCategories[properties.searchKey] ?? ''} : {}),
       label: component.label, properties: rowResolvedProperties, pageState, objects, reports, flows: availableFlows,
+      fieldAllowed:(key:string,row:Record<string,unknown>)=>scopedFieldAllows(
+        properties.dataFieldFilters,key,row,filterFields,{pageState,recordId,sessionId}),
        pageSessionKey, componentId: component.id,
       device: formFactor, onNavigate, onLaunchFlow, onAction, actionError,
       disabled:behaviorAction(properties,'click',behaviorContext??{formFactor})!=='enabled',
