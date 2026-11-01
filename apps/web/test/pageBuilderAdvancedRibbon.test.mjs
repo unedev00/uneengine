@@ -4,59 +4,49 @@ import {readFileSync} from 'node:fs';
 
 const read=path=>readFileSync(new URL(path,import.meta.url),'utf8');
 const page=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
-const advanced=read('../src/core/builders/PageBuilder/PageBuilderAdvancedRibbon.tsx');
+const advanced=read('../src/core/builders/PageBuilder/PageBuilderAdvancedSections.tsx');
+const dialog=read('../src/core/builders/PageBuilder/PageBuilderVisibilityDialog.tsx');
 const responsive=read('../src/core/builders/PageBuilder/PageBuilderAdvancedResponsive.tsx');
+const css=read('../src/core/builders/PageBuilder/PageBuilderAdvancedRibbon.css');
 
-test('Advanced is accessible for both Smart and standard components without replacing other ribbon tabs',()=>{
-  assert.match(page,/'Component Layout','Component Action','Advanced','Preview'/);
-  assert.match(page,/'Component Responsive','Component Action','Advanced','Preview'/);
-  assert.match(page,/Advanced: 'Advanced'/);
-  assert.match(page,/ribbonTab==='Advanced' && <PageBuilderAdvancedRibbon/);
-  assert.match(page,/onOpen=\{openAdvanced\}/);
+test('View owns visibility conditions and reuses the record filter dialog shell',()=>{
+ assert.match(page,/'Component Layout','Arrange','Component Action','Advanced','Preview'/);
+ assert.doesNotMatch(page,/ribbonTab==='Logic'/);
+ assert.match(page,/ribbonTab==='Preview' && <div className="office-ribbon-group preview-visibility-group"/);
+ assert.match(page,/aria-label="Edit conditional visibility"/);
+ assert.match(page,/onClick=\{openVisibilityEditor\}/);
+ assert.match(page,/<PageBuilderVisibilityDialog/);
+ assert.match(dialog,/smart-dialog smart-filter-dialog/);
+ assert.match(dialog,/<ComponentVisibilityEditor rules=\{rules\}/);
+ assert.match(dialog,/validateVisibilityRule\(rules/);
+ assert.match(page,/onApply=\{applyVisibilityEditor\}/);
 });
 
-test('all nine previous functions have one discoverable advanced command',()=>{
-  const expected=['visibility','actions','responsive','nesting','properties','canvas','recordPage','assignments','preview'];
-  const keys=[...advanced.matchAll(/\{key:'([^']+)',label:/g)].map(match=>match[1]);
-  assert.deepEqual([...keys].sort(),[...expected].sort());
-  for(const key of expected)assert.match(page,new RegExp("advancedEditor==='"+key+"'"+"|feature==='"+key+"'"));
-  assert.match(advanced,/scope==='component'&&!selected/);
-  assert.match(advanced,/scope==='record'&&!recordPage/);
-  assert.match(advanced,/scope==='canvas'&&\(!selected\|\|!freeCanvas\)/);
+test('Activation and advanced property editors render inline without a popup',()=>{
+ assert.match(page,/ribbonTab==='Advanced' && <PageBuilderAdvancedSections/);
+ assert.match(advanced,/Activation assignments/);
+ assert.match(advanced,/Advanced properties/);
+ assert.match(advanced,/page-builder-advanced-inline-host/);
+ assert.match(advanced,/ref=\{onInspectorHost\}/);
+ assert.match(page,/!\['assignments','properties','responsive'\]\.includes\(advancedEditor\)/);
+ assert.match(page,/advancedEditor!=='assignments' && <>/);
+ assert.match(page,/activationAssignments/);
+ assert.match(css,/page-builder-advanced-inline-body/);
 });
 
-test('advanced controls reuse existing metadata editors and shared canvas and nesting functions',()=>{
-  assert.match(page,/<RibbonVisibilityRules draft=\{visibilityDraft\}/);
-  assert.match(page,/onApply=\{saveAdvancedVisibility\}/);
-  assert.match(page,/mode="actions-inline"/);
-   assert.doesNotMatch(page,/advancedEditor==='actions'/);
-   assert.doesNotMatch(advanced,/key:'actions',label:'Advanced actions'/);
-  assert.match(page,/mode="details"/);
-  assert.match(page,/reparentComponent\(page\.components,selected\.id,parent\)/);
-  for(const fn of ['wrapSelectedInContainer','ungroupSelected','alignSelected','distributeSelected','moveSelected'])
-    assert.ok(page.includes('onClick={'+fn) || page.includes('onClick={()=>'+fn+'('),fn);
-  assert.match(page,/advancedEditor!=='recordPage' && page\.pageType === 'Record Page'/);
-  assert.match(page,/advancedEditor!=='assignments' && <>/);
-  assert.match(page,/office-ribbon-inspector-host" ref=\{setRibbonPropertyHost\}/);
-  assert.match(page,/disableActions=\{!previewMode\}/);
+test('Distinct responsive overrides and flow-bound details stay accessible',()=>{
+ assert.match(advanced,/Responsive settings/);
+ assert.match(page,/<PageBuilderAdvancedResponsive properties=\{selected.properties\} device=\{currentRibbonDevice\}/);
+ assert.match(page,/advancedEditor==='properties' && selected && <MetadataComponentProperties/);
+ assert.match(page,/mode="details"/);
+ for(const symbol of ['responsiveNumberFields','responsiveOptionFields','responsiveColorFields',
+  'layoutSettings','updateLayoutSettings'])assert.ok(responsive.includes(symbol),symbol);
+ assert.match(responsive,/onChange\(updateLayoutSettings\(properties,device,key,value\)\)/);
+ assert.doesNotMatch(advanced,/fetch\(|request\(|localStorage|INSERT INTO/);
 });
 
-test('Advanced leaves metadata migrations and published data untouched, with scoped UI styling',()=>{
-  assert.match(advanced,/aria-pressed=\{feature\.key==='preview'\?preview:undefined\}/);
-  assert.match(page,/if\(feature==='preview'\)\{/);
-  assert.match(page,/Interactive preview can execute configured Flows/);
-  assert.match(page,/onNavigate=\{\(route:AppRoute\)=>\{/);
-  const css=read('../src/core/builders/PageBuilder/PageBuilderAdvancedRibbon.css');
-  assert.match(css,/page-builder-advanced-ribbon/);
-  assert.match(css,/page-builder-advanced-dialog/);
-  assert.doesNotMatch(advanced,/fetch\(|request\(|localStorage|SQL|INSERT INTO/);
-});
-
-test('responsive editor uses published layout schema for per-device persisted settings',()=>{
-  assert.match(page,/<PageBuilderAdvancedResponsive properties=\{selected.properties\} device=\{currentRibbonDevice\}/);
-  for(const name of ['responsiveNumberFields','responsiveOptionFields','responsiveColorFields',
-    'layoutSettings','updateLayoutSettings'])assert.ok(responsive.includes(name),name);
-  assert.match(responsive,/onChange\(updateLayoutSettings\(properties,device,key,value\)\)/);
-  assert.match(responsive,/set\('hidden',event.target.checked\)/);
-  assert.match(responsive,/Reset/);
+test('Preserves global Actions and record-page metadata editing',()=>{
+ assert.match(page,/<PageBuilderActionRibbon/);
+ assert.match(page,/advancedEditor==='recordPage'/);
+ assert.match(page,/reparentComponent\(page\.components,selected\.id,parent\)/);
 });
