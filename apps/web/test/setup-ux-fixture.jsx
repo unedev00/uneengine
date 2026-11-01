@@ -82,8 +82,30 @@ const directoryRequest=async(path,init)=>{
 };
 const securityViews=createSettingsViews(uxRequest,()=>null);
 const credentials=[{id:'sample',name:'Sample_Credential',label:'Sample credential',baseUrl:'https://example.com/long/integration/path',authType:'Bearer',hasSecret:true,protocol:'HTTPS',enabled:true,updatedAt:'2026-10-28T09:00:00Z',configuration:{}}];
+
+const mediaAsset='asset:123e4567-e89b-42d3-a456-426614174000';
+const mediaPixel='iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aI1sAAAAASUVORK5CYII=';
+function MediaStabilityFixture(){
+ const [renderCount,setRenderCount]=React.useState(0);
+ const loadAsset=async()=>{
+  window.assetFetchCount=(window.assetFetchCount||0)+1;
+  return {contentType:'image/png',contentBase64:mediaPixel};
+ };
+ return <main style={{padding:24}}>
+  <button type="button" onClick={()=>setRenderCount(count=>count+1)}>Rerender parent</button>
+  <output aria-label="Parent render count">{renderCount}</output>
+  <section aria-label="UI Image stability">
+   <OneTenantImage src={mediaAsset} alt="UI image stable" loadAsset={loadAsset}/>
+  </section>
+  <section aria-label="Smart Image stability" style={{width:180,height:120}}>
+   <SmartRuntime kind="smart_image" imageSource={mediaAsset} headerBoxHeight={0}
+    imageHeight={90} builderPreview loadAsset={loadAsset}/>
+  </section>
+ </main>;
+}
 function RecordImportCheck(){ const [ready,setReady]=React.useState(false); React.useEffect(()=>{import('../src/core/records/RecordWorkspace/recordWorkspaceViews').then(module=>setReady(typeof module.createRecordWorkspaceViews === 'function'));},[]);return <p>{ready ? 'Record workspace import passed' : 'Loading record workspace'}</p>; }
 function Fixture(){
+ if(view==='image-render-stability')return <MediaStabilityFixture/>;
  if(view==='card-grid-scroll'){
    const sampleCards=Array.from({length:42},(_,i)=>({Id:'product-'+i,Name:'Product '+String(i+1),Price:i+1}));
    const base={records:sampleCards,cardsPerRow:3,desktopColumns:3,tabletColumns:2,mobileColumns:2,
