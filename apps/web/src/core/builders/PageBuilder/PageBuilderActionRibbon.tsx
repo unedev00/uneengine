@@ -235,6 +235,33 @@ export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,
           aria-label="Delete row when number reaches zero"
           checked={selected.deleteOnZero===true}
           onChange={e=>patch({deleteOnZero:e.target.checked,minValue:0})}/> Remove row at zero</label>
+        <label>Related record field
+          <select aria-label="Optional relation guard field" disabled={disabled}
+            value={String(selected.relatedFieldApiName??'')}
+            onChange={e=>patch({relatedFieldApiName:e.target.value})}>
+            <option value="">No relation guard</option>
+            {dataFields.filter(field=>/^(Lookup|Reference)(\\(|$)/i.test(field.dataType))
+              .map(field=><option key={field.apiName} value={field.apiName}>{field.label}</option>)}
+          </select>
+        </label>
+        <label>Related page state key
+          <input aria-label="Related page state key for permission-scoped row"
+            disabled={disabled} placeholder="e.g. currentCartId"
+            value={String(selected.relatedStateKey??'')}
+            onChange={e=>patch({relatedStateKey:e.target.value})}/>
+        </label>
+        <label>Page collection key
+          <input aria-label="Optional Page State collection to refresh"
+            disabled={disabled} placeholder="e.g. cartItems"
+            value={String(selected.stateCollectionKey??'')}
+            onChange={e=>patch({stateCollectionKey:e.target.value})}/>
+        </label>
+        <label>Total page state key
+          <input aria-label="Optional Page State total to recalculate"
+            disabled={disabled} placeholder="e.g. total"
+            value={String(selected.totalStateKey??'')}
+            onChange={e=>patch({totalStateKey:e.target.value})}/>
+        </label>
         <label>Unit price field
           <select aria-label="Optional unit price field" disabled={disabled}
             value={String(selected.unitPriceFieldApiName??'')}
