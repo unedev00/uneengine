@@ -158,6 +158,11 @@
   padding-bottom:11px!important;
 }
 
+/* Prevent Logic and Actions groups from wrapping into clipped second rows. */
+.office-builder-ribbon #page-builder-tab-content.office-ribbon-content:has(>.preview-visibility-group),
+.office-builder-ribbon #page-builder-tab-content.office-ribbon-content:has(>.smart-event-actions-ribbon) {
+  flex-wrap:nowrap!important;
+}
 /* Audit regression: Logic is a single horizontal ribbon, not a vertical
    133px editor inside a 90px slot. Keep the page-visibility checkbox
    independent of the rule enable switch and let the ribbon scroll sideways. */
@@ -186,13 +191,13 @@
   max-height:90px!important;padding:2px 12px 19px 5px!important;gap:2px!important;
 }
 .office-builder-ribbon .preview-visibility-controls .office-ribbon-mini-group>label {
-  height:22px!important;min-height:22px!important;
+  height:20px!important;min-height:20px!important;
 }
 .office-builder-ribbon .preview-visibility-controls .office-ribbon-mini-group :is(input:not([type=checkbox]),select) {
-  height:22px!important;max-height:22px!important;
+  height:20px!important;max-height:20px!important;
 }
 .office-builder-ribbon .preview-visibility-controls .ribbon-condition-value {
-  height:22px!important;
+  height:20px!important;
 }
 .office-builder-ribbon .preview-visibility-controls .office-ribbon-commit-group {
   height:90px!important;
