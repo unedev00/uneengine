@@ -336,7 +336,10 @@
 .free-canvas-component.nested-page-component { min-width: 0; max-width: 100%; overflow: visible; }
 .record-component.layout-container-component > .md-widget,
 .record-component.layout-container-component > .registered-component,
-.record-component.layout-container-component > .registered-component > .md-widget {
+.record-component.layout-container-component > .registered-component > .md-widget,
+.record-component.layout-container-component > .free-canvas-content-viewport > .md-widget,
+.record-component.layout-container-component > .free-canvas-content-viewport > .registered-component,
+.record-component.layout-container-component > .free-canvas-content-viewport > .registered-component > .md-widget {
   min-width: 0; max-width: 100%; width: 100%; box-sizing: border-box;
 }
 .record-component.layout-container-component .nested-page-component {
