@@ -3124,6 +3124,10 @@ function PageBuilder({
               <button type="button" disabled={!selected} onClick={()=>openAdvanced('responsive')}>Responsive settings</button>
             </div><span>Rules</span>
           </div>}
+          {ribbonTab==='Add Block' && <SmartInsertRibbon
+            items={paletteComponents}
+            onInsert={addPaletteComponent}
+            renderIcon={renderPaletteIcon}/>}
           {ribbonTab==='Component Action' && selected &&
             <PageBuilderActionRibbon
               actions={selectedActions} eventDefinitions={actionOptions} flows={flows}
