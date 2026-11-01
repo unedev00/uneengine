@@ -170,7 +170,8 @@ test('design canvas selects Button and other live controls without firing action
   assert.match(view,/canvas-design-interaction-shield/);
   assert.match(view,/selectOnlyInDesigner && !isLayoutContainer\(component\) && !isLayoutType\(component\.type\)/);
   assert.match(view,/builderPreview: !previewMode/);
-  assert.match(css,/\.record-component > \.canvas-design-interaction-shield\{/);
+  assert.match(css,/\.record-component > \.canvas-design-interaction-shield,/);
+  assert.match(css,/\.free-canvas-content-viewport > \.canvas-design-interaction-shield\{/);
   assert.match(css,/position:absolute;inset:0;z-index:90/);
   assert.match(button,/p\.builderPreview!==true/);
   // Saved click and Flow behaviour must remain available outside the designer.
