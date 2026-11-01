@@ -57,14 +57,14 @@ if ! nginx -t; then
   exit 1
 fi
 nginx -s reload
-if ! curl --fail --silent --show-error --max-time 10 -H 'Host: unesolutions.co.uk' http://127.0.0.1/ | grep -qi '<html'; then
+if ! curl --noproxy '*' --fail --silent --show-error --max-time 10 --resolve unesolutions.co.uk:443:127.0.0.1 https://unesolutions.co.uk/ | grep -qi '<html'; then
   if [ -n "$PREVIOUS" ]; then ln -sfn "$PREVIOUS" "$BASE/.next"; mv -Tf "$BASE/.next" "$BASE/current"; nginx -s reload; fi
   echo "Local frontend verification failed; reverted where possible" >&2
   exit 1
 fi
 # Verify the newly served build identity, not merely an HTML document.
 # A stale Nginx root or cached release must fail the deployment.
-served_release="$(curl --noproxy '*' -fsS --max-time 10 -H 'Host: unesolutions.co.uk' -H 'Cache-Control: no-cache' http://127.0.0.1/frontend-release.json)" || served_release=""
+served_release="$(curl --noproxy '*' -fsS --max-time 10 --resolve unesolutions.co.uk:443:127.0.0.1 -H 'Cache-Control: no-cache' https://unesolutions.co.uk/frontend-release.json)" || served_release=""
 if [[ "$served_release" != *"\"commit\":\"$SHA\""* ]]; then
   if [ -n "$PREVIOUS" ]; then
     ln -sfn "$PREVIOUS" "$BASE/.next"
