@@ -40,7 +40,7 @@ test('journey mounts record filters inline and saves draft separately from publi
   assert.doesNotMatch(source,/ribbonTab==='Component Data' &&.*page-ribbon-expanded-editor/);
   assert.match(source,/ribbonTab==='Component Data'/);
   assert.match(source,/<SmartRibbon/);
-  assert.match(source,/ribbonTab==='Logic'/);
+  assert.match(source,/ribbonTab==='Advanced'/);
   assert.match(source,/ribbonFilterDraft/);
   assert.doesNotMatch(source,/onApply=\{\(\)=>\{/);
   assert.doesNotMatch(source,/onCancel=\{\(\)=>selectRibbonTab\('Component Data'\)\}/);
@@ -58,7 +58,7 @@ test('ribbon inline labels wrap and controls stay within their group dividers',(
 
 test('ribbon keeps accessible component tabs without Home and Parity',()=>{
   const source=readFileSync(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
-  for(const label of ['Insert','Data','Design','Layout','Arrange','Actions','Logic','View'])
+  for(const label of ['Insert','Data','Design','Layout','Arrange','Actions','Advanced','View'])
     assert.ok(source.includes(`'${label}'`),label+' tab label remains available');
   for(const icon of ['Puzzle','Database','Type','SlidersHorizontal','Layers3','Smartphone','Workflow','Eye'])
     assert.ok(source.includes(icon),icon+' tab icon remains available');
