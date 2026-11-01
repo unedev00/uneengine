@@ -911,12 +911,29 @@ function SetupApp({ onLogout, entryTiming }: { onLogout: () => void; entryTiming
         // identity in the list so a failed revision save can be retried safely.
         setPages(current=>[...current.filter(item=>item.apiName!==created.page.apiName),created.page]);
       }
-      const payload = await apiRequest<{page:LightningPageMetadata}>(
-        `/metadata/pages/${encodeURIComponent(previousApiName)}/layouts/${variant}/draft`,{
-          method:'PUT',
-          body:JSON.stringify(existing?nextPage:{...nextPage,status:'Draft',
-            draftRevision:0,revision:undefined})
+      const draftUrl=`/metadata/pages/${encodeURIComponent(previousApiName)}/layouts/${variant}/draft`;
+      const draftBody=existing?nextPage:{...nextPage,status:'Draft',draftRevision:0,revision:undefined};
+      let payload:{page:LightningPageMetadata};
+      try {
+        payload=await apiRequest<{page:LightningPageMetadata}>(draftUrl,{
+          method:'PUT',body:JSON.stringify(draftBody)
         });
+      } catch (error) {
+        // Never silently drop local edits or bypass optimistic concurrency. An
+        // explicit recovery preserves the previous SQL revision in history.
+        if (!existing || !(error instanceof Error) ||
+            !/Page layout draft revision conflict/i.test(error.message)) throw error;
+        const latest=await apiRequest<{page:LightningPageMetadata}>(
+          `/metadata/pages/${encodeURIComponent(previousApiName)}/layouts/${variant}/editor`);
+        const revision=latest.page.draftRevision;
+        if (typeof revision!=='number' || !Number.isInteger(revision))
+          throw new Error('Cannot verify current draft revision. Your unsaved edits remain in the builder.');
+        if (!window.confirm('This page was saved in another revision. Your current edits are still here. Save your edits as a new draft revision? The previous revision remains in version history. Cancel keeps your edits unsaved.'))
+          return false;
+        payload=await apiRequest<{page:LightningPageMetadata}>(draftUrl,{
+          method:'PUT',body:JSON.stringify({...nextPage,draftRevision:revision})
+        });
+      }
       setPage(payload.page);
       if (!existing) setPages(current => [...current.filter(item =>
         item.apiName !== previousApiName && item.apiName !== payload.page.apiName), payload.page]);
