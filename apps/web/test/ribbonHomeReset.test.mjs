@@ -6,7 +6,7 @@ const src=path=>readFileSync(new URL(path,import.meta.url),'utf8');
 test('page-level handlers remain intact in topbar and Layout while Smart Insert stays functional',()=>{
  const page=src('../src/core/builders/PageBuilder/pageBuilderView.tsx');
  const marker=page.indexOf('id="page-builder-tab-content"');
- const end=page.indexOf('{advancedEditor && <div className="modal-backdrop',marker);
+ const end=page.indexOf('{visibilityEditorOpen && selected && <PageBuilderVisibilityDialog',marker);
  const body=page.slice(marker,end);
  assert.ok(marker>0&&end>marker);
  for(const name of ["case 'backIcon'","case 'restoreVersion'","case 'save'","case 'activate'","case 'resetIcon'"])
@@ -80,7 +80,7 @@ test('Conditional Visibility and Canvas Tools are direct ribbon sections',()=>{
  const ui=src('../src/core/builders/PageBuilder/pageBuilderView.tsx');
  const advanced=src('../src/core/builders/PageBuilder/PageBuilderAdvancedRibbon.tsx');
  assert.ok(ui.includes('preview-visibility-group'));
- assert.ok(ui.includes('onApply={savePreviewVisibility} onCancel={cancelPreviewVisibility}'));
+ assert.ok(ui.includes('onClick={openVisibilityEditor}'));
  assert.ok(ui.includes("ribbonTab==='Arrange' && <ArrangeRibbon"));
  assert.ok(ui.includes('onAlign={alignSelected} onDistribute={distributeSelected}'));
  assert.ok(ui.includes('onGroup={wrapSelectedInContainer} onUngroup={ungroupSelected}'));
