@@ -649,7 +649,9 @@ test('Smart Image upload opens native file chooser directly and reuses tenant up
 test('Independent components avoid automatic overlap and have Office-style shape gestures',()=>{
  const builder=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
  const css=read('../src/core/builders/PageBuilder/SmartCanvasHandles.css');
- assert.match(builder,/usedBounds\.every\(other=>/);
+ const placement=read('../src/core/builders/PageBuilder/canvasInsertPlacement.ts');
+ assert.match(builder,/placeNewCanvasComponent\(\{/);
+ assert.match(placement,/used\.every\(item=>/);
  assert.match(builder,/free-canvas-move-edge/);
  assert.doesNotMatch(builder,/className="free-canvas-move-handle"/);
  assert.match(builder,/onPointerMove=\{moveCanvasPointer\}/);
