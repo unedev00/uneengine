@@ -116,7 +116,7 @@ export default function PageComponentNavigator({
       {query && <button type="button" className="page-navigator-clear"
         aria-label="Clear component search" onClick={()=>{setQuery('');setOpen(true);inputRef.current?.focus();}}><X size={12}/></button>}
       <button type="button" className="page-navigator-toggle" aria-label="Browse page components"
-        aria-expanded={open} onClick={()=>{setOpen(current=>!current);inputRef.current?.focus();}}>
+        aria-expanded={open} onClick={()=>{if(!open)inputRef.current?.focus();setOpen(!open);}}>
         <ChevronDown size={14} aria-hidden="true"/>
       </button>
     </div>
@@ -126,7 +126,7 @@ export default function PageComponentNavigator({
       role="dialog" aria-label="Components on this page">
       <div className="page-navigator-heading">
         <strong>Components on this page</strong>
-        <button type="button" aria-label="Close component navigator" onClick={()=>{setOpen(false);inputRef.current?.focus();}}><X size={15}/></button>
+        <button type="button" aria-label="Close component navigator" onClick={()=>setOpen(false)}><X size={15}/></button>
       </div>
       <div className="page-navigator-filters">
         <label>Type <select aria-label="Filter components by type" value={typeFilter}
