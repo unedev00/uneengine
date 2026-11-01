@@ -212,6 +212,7 @@
     "apps/web/test/pageBuilderUnifiedActions.test.ts",
     "apps/web/test/pageBuilderPublishedRuntimePreview.test.mjs",
     "apps/web/test/pageBuilderUx.test.ts",
+    "apps/web/test/pageManagerTabHierarchy.test.mjs",
     "apps/web/test/pageBuilderVisibilityRepair.test.ts",
     "apps/web/test/pageComponentNavigator.test.mjs",
     "apps/web/test/pagePerformanceAnalysis.test.ts",
