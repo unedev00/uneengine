@@ -21,6 +21,7 @@ test('empty Actions tab shows the complete, disabled, stable five-group design s
     assert.match(html,new RegExp('aria-label="'+slot+' action"[^>]*disabled'));
   assert.match(html,/aria-label="Selected action trigger"[^>]*disabled/);
   assert.match(html,/aria-label="Flow for selected action"[^>]*disabled/);
+  assert.match(html,/aria-label="Editable quantity action formulas"/);
   assert.match(html,/data-inactive="true"/);
 });
 
