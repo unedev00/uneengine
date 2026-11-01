@@ -623,6 +623,14 @@ test('Smart Button and Input Box own visible configured dimensions, not outer ca
  assert.match(canvas,/canvasFrameSized:true/);
  assert.match(dataRuntime,/smartCanvas\?\{canvasFrameSized:true\}/);
 });
+test('Smart Cart follows the canvas frame during resizing, not its previous pixel height',async()=>{
+ const fixed=await renderSmart('smart_cart',{width:440,height:700,canvasFrameSized:true,
+  records:[],previewOnly:true});
+ assert.match(fixed,/class="smart-runtime smart_cart"/);
+ assert.match(fixed,/width:100%;height:100%/);
+ const standalone=await renderSmart('smart_cart',{width:440,height:700,records:[]});
+ assert.match(standalone,/width:440px;height:700px/);
+});
 test('Smart Image and Card Grid bind URL from each Product record independently',async()=>{
  const records=[{id:'a',ImageURL:'https://example.com/first.png'},
   {id:'b',ImageURL:'https://example.com/second.png'}];
