@@ -4,6 +4,13 @@ type Binding=Record<string,unknown>;
 type Actions=Record<string,unknown>;
 const clickComponents=new Set(['smart_button','smart_toggle','smart_calendar','smart_cart','smart_card_grid']);
 const changeComponents=new Set(['smart_calendar','smart_lookup','smart_tabs','smart_toggle','smart_text']);
+/** Component event applicability is shared by the old property contract and unified catalog. */
+export const supportsSmartActionEvent=(api:string,event:string):boolean=>
+ event==='click'?clickComponents.has(api):
+ event==='change'?changeComponents.has(api):
+ event==='start'?api.startsWith('smart_'):
+ event==='qtyIcon'||event==='customButton1'||event==='customButton2'?api==='smart_cart':false;
+
 const asObject=(value:unknown):Binding=>
  value&&typeof value==='object'&&!Array.isArray(value)?value as Binding:{};
 
