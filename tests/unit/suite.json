@@ -188,6 +188,7 @@
     "apps/web/test/oneComponentRendering.test.mjs",
     "apps/web/test/openPageActionNode.test.ts",
     "apps/web/test/pageBehaviorValidation.test.ts",
+    "apps/web/test/pageBuilderAuditFixes.test.mjs",
     "apps/web/test/pageBuilderActionDependencies.test.ts",
     "apps/web/test/pageBuilderAdvancedRibbon.test.mjs",
     "apps/web/test/pageBuilderDesignReference.test.ts",

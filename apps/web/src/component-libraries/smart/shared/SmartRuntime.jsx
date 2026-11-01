@@ -232,7 +232,7 @@ export default function SmartRuntime(p){
  };
  let content;
  if(name==="smart_button")content=<button type="button" className="smart-button"
-   onClick={()=>fire("click",record)} style={{...style,...shadowStyle,background:p.backgroundColor||"#2267bc",color:p.labelColor||"#fff",borderColor:p.borderColor}}>{label||"Button"}</button>;
+   title={label||"Button"} onClick={()=>fire("click",record)} style={{...style,...shadowStyle,background:p.backgroundColor||"#2267bc",color:p.labelColor||"#fff",borderColor:p.borderColor}}>{label||"Button"}</button>;
  else if(name==="smart_toggle")content=<SmartToggle p={p} fire={fire}/>;
  else if(name==="smart_text")content=<input className="smart-input-box" type="text"
   aria-label={label||text(p.placeholder||"Input")}
