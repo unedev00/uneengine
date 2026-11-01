@@ -457,7 +457,7 @@ export type LightningPageMetadata = {
   label: string;
   updatedAt?: string;
   targetObject: string;
-  pageType: 'Record Page' | 'App Page' | 'Home Page';
+  pageType: 'Record Page' | 'App Page' | 'Home Page' | 'In-Screen Page';
   /** Object-owned record pages: independent View and Edit templates. */
   recordMode?: 'View' | 'Edit';
   layoutMode: 'template' | 'free-canvas';

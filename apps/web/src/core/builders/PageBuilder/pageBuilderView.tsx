@@ -289,6 +289,7 @@ import {
   type WorkspaceId
 } from '../../metadata/Definitions/metadata';
 import SavedListViewPicker from './SavedListViewPicker';
+import {pageAppMembership,pageIsUnassigned} from './pageAppMembership';
 import {uneRibbonIcon} from './uneRibbonIcon';
 import RibbonImageContent from './RibbonImageContent';
 export function createPageBuilder(MetadataComponentProperties: React.ComponentType<any>, MetadataBoundPageComponent: React.ComponentType<any>) {
@@ -421,6 +422,10 @@ function PageBuilder({
   }, [activePanel]);
   const [pageListObject, setPageListObject] = useState('');
   const [pageListSearch, setPageListSearch] = useState('');
+  const [pageListAppTab,setPageListAppTab]=useState('All');
+  const [pageListTypeTab,setPageListTypeTab]=useState('All');
+  const [pageListDeviceTab,setPageListDeviceTab]=useState('All');
+  const [pageListPage,setPageListPage]=useState(1);
   const paletteResizeStart = useRef<{ pointerId: number; pointerX: number; width: number } | null>(null);
   const [customPropertiesDraft, setCustomPropertiesDraft] = useState('');
   const [customPropertiesError, setCustomPropertiesError] = useState('');
@@ -1984,10 +1989,28 @@ function PageBuilder({
       setPendingArchivePageApiName('');
     }
   };
+  const pageAppLinks=pageAppMembership(apps,pages);
+  const activeAppTab=pageListAppTab==='All'||pageListAppTab==='Other'
+    ||apps.some(app=>app.apiName===pageListAppTab)?pageListAppTab:'All';
   const visiblePages = pages.filter(item => (recordPageContext
     ? item.pageType === 'Record Page' && item.targetObject === recordPageContext
-    : item.pageType !== 'Record Page') && (!pageListObject || item.targetObject === pageListObject) && `${item.label} ${item.apiName}`.toLowerCase().includes(pageListSearch.trim().toLowerCase())).sort((a,b) => (Date.parse(b.updatedAt ?? '') || 0) - (Date.parse(a.updatedAt ?? '') || 0));
-  const openCreatePage = () => { setNewPageTargetObject(pageListObject || page.targetObject || objects[0]?.apiName || ''); setNewPageLayoutMode('free-canvas'); setNewPageType(recordPageContext ? 'Record Page' : 'Home Page'); setNewPageDeviceChoice('Desktop'); setNewPageDevices(['Desktop']); setNewPageCanvasWidth(1440); setNewPageCanvasHeight(900); setCreatePageOpen(true); };
+    : item.pageType !== 'Record Page')
+    && (activeAppTab==='All'||(activeAppTab==='Other'
+      ?pageIsUnassigned(item.apiName,pageAppLinks)
+      :pageAppLinks.get(activeAppTab)?.has(item.apiName)===true))
+    && (pageListTypeTab==='All'||item.pageType===pageListTypeTab)
+    && (pageListDeviceTab==='All'
+      ||(pageListDeviceTab==='Custom'?item.layoutVariant==='Custom'
+      :pageListDeviceTab==='Mobile'?item.layoutVariant==='Mobile'||item.devices.includes('Phone')
+      :pageListDeviceTab==='Tablet'?item.layoutVariant==='Tablet'
+      :item.layoutVariant==='Desktop'||!item.layoutVariant))
+    && (!pageListObject||item.targetObject===pageListObject)
+    && `${item.label} ${item.apiName}`.toLowerCase().includes(pageListSearch.trim().toLowerCase()))
+    .sort((a,b) => (Date.parse(b.updatedAt??'')||0)-(Date.parse(a.updatedAt??'')||0));
+  const pageListPageCount=Math.max(1,Math.ceil(visiblePages.length/50));
+  const safePageListPage=Math.min(pageListPage,pageListPageCount);
+  const paginatedPages=visiblePages.slice((safePageListPage-1)*50,safePageListPage*50);
+  const openCreatePage = () => { setNewPageAppId(activeAppTab!=='All'&&activeAppTab!=='Other'?activeAppTab:''); setNewPageTargetObject(pageListObject || ''); setNewPageLayoutMode('free-canvas'); setNewPageType(recordPageContext ? 'Record Page' : 'Home Page'); setNewPageDeviceChoice('Desktop'); setNewPageDevices(['Desktop']); setNewPageCanvasWidth(1440); setNewPageCanvasHeight(900); setCreatePageOpen(true); };
   const createPage = async () => {
     if (saving) return;
     const label = newPageLabel.trim();
@@ -2033,7 +2056,7 @@ function PageBuilder({
     try {
       // Persist first: the route resolver must never replace a new unsaved page
       // with the previously selected page on its next metadata refresh.
-      if (newPageAppId) onPrepareApp(apiName, newPageAppId);
+      if (newPageAppId&&newPageType!=='In-Screen Page') onPrepareApp(apiName,newPageAppId);
       const saved = await onSave(nextPage, apiName, 'Lightning page draft created');
       if (!saved) { onAppLinked(apiName); return; }
       savedPageApiName.current = apiName;
@@ -2955,12 +2978,35 @@ function PageBuilder({
           <div className="page-manager-header-actions">
             <button className="btn btn-brand" type="button" onClick={openCreatePage}><Plus size={16}/> New Page</button>
           </div></header>
+        <nav className="page-manager-app-tabs" role="tablist" aria-label="Pages by application"
+          style={{display:'flex',gap:6,overflowX:'auto',padding:'8px 0'}}>
+          {([{apiName:'All',label:'All Pages'},...apps.map(app=>({apiName:app.apiName,label:app.label})),
+            {apiName:'Other',label:'Other'}]).map(tab=>
+            <button key={tab.apiName} type="button" role="tab" className="btn btn-small"
+              aria-selected={activeAppTab===tab.apiName}
+              style={{flex:'0 0 auto',fontWeight:activeAppTab===tab.apiName?700:400}}
+              onClick={()=>{setPageListAppTab(tab.apiName);setPageListPage(1);}}>{tab.label}</button>)}
+        </nav>
         <div className="page-manager-filters">
-          <label className="form-label">Related Record / Object<select className="form-control" value={pageListObject} aria-label="Related Record or Object" onChange={event=>setPageListObject(event.target.value)}><option value="">All objects</option>{objects.map(item=><option key={item.apiName} value={item.apiName}>{item.label}</option>)}</select></label>
-          <label className="form-label">Search pages<input className="form-control" type="search" value={pageListSearch} onChange={event=>setPageListSearch(event.target.value)} placeholder="Search page name…"/></label>
+          <label className="form-label">Page type
+            <select className="form-control" aria-label="Page type filter" value={pageListTypeTab}
+              onChange={event=>{setPageListTypeTab(event.target.value);setPageListPage(1);}}>
+              {['All',...(recordPageContext?['Record Page']:['Home Page','App Page','In-Screen Page'])].map(type=>
+                <option key={type} value={type}>{type==='All'?'All types':type}</option>)}
+            </select>
+          </label>
+          <label className="form-label">Device
+            <select className="form-control" aria-label="Page device filter" value={pageListDeviceTab}
+              onChange={event=>{setPageListDeviceTab(event.target.value);setPageListPage(1);}}>
+              {['All','Desktop','Tablet','Mobile','Custom'].map(device=><option key={device} value={device}>
+                {device==='All'?'All devices':device}</option>)}
+            </select>
+          </label>
+          <label className="form-label">Related Record / Object<select className="form-control" value={pageListObject} aria-label="Related Record or Object" onChange={event=>{setPageListObject(event.target.value);setPageListPage(1);}}><option value="">All objects</option>{objects.map(item=><option key={item.apiName} value={item.apiName}>{item.label}</option>)}</select></label>
+          <label className="form-label">Search pages<input className="form-control" type="search" value={pageListSearch} onChange={event=>{setPageListSearch(event.target.value);setPageListPage(1);}} placeholder="Search page name…"/></label>
         </div>
         <div className="page-manager-table-scroll"><table className="records-table page-manager-table"><thead><tr><th>Page name</th><th>API Name</th><th>Type</th><th>Related object</th><th>Device</th><th>Dimensions</th><th>Orientation</th><th>Last modified</th><th>Status</th><th>Actions</th></tr></thead>
-        <tbody>{visiblePages.map(item=><tr key={item.apiName}>
+        <tbody>{paginatedPages.map(item=><tr key={item.apiName}>
           <td><button type="button" className="page-manager-page-link" onClick={()=>selectSavedPage(item.apiName)}>{item.label}</button></td><td title={item.apiName}><code>{item.apiName}</code></td>
           <td>{item.pageType}</td><td>{item.targetObject ? objects.find(object=>object.apiName===item.targetObject)?.label ?? item.targetObject : 'Not object-specific'}</td><td>{pageDeviceLabel(item)}</td><td>{item.canvasWidth} × {item.canvasHeight} px</td><td>{canvasOrientation(item.canvasWidth,item.canvasHeight)}</td>
           <td>{item.updatedAt ? new Date(item.updatedAt).toLocaleDateString() : '—'}</td>
@@ -2972,6 +3018,11 @@ function PageBuilder({
             <Trash2 size={14}/>{archivingPageApiName===item.apiName?'Deleting…':'Delete'}
           </button></td>
         </tr>)}</tbody></table>{!visiblePages.length && <div className="records-empty">No pages match the selected filter. Create a new page to begin.</div>}</div>
+        <nav className="flow-existing-pagination" aria-label="Page list pagination">
+          <span>{visiblePages.length} pages · Page {safePageListPage} of {pageListPageCount}</span>
+          <button className="btn" disabled={safePageListPage<=1} onClick={()=>setPageListPage(safePageListPage-1)}>Previous</button>
+          <button className="btn" disabled={safePageListPage>=pageListPageCount} onClick={()=>setPageListPage(safePageListPage+1)}>Next</button>
+        </nav>
       </section>}
       {editorMode && <>
       <section className={`office-builder-ribbon ${previewMode ? 'is-interactive-preview' : ''}`} aria-label="Page Builder ribbon">
@@ -4119,7 +4170,8 @@ function PageBuilder({
           <p className="properties-help">
             {newPageType === 'App Page'
               ? "When you Activate this page, it will automatically be added to the chosen application's navigation."
-              : 'For Home and Record pages, choosing an application prepares an App Default assignment. You can change it before activation.'}
+              :newPageType==='In-Screen Page'?'In-screen windows are reusable and not added to navigation. Their application association controls ownership and filtering.'
+              :'For Home and Record pages, choosing an application prepares an App Default assignment. You can change it before activation.'}
           </p>
 
 <label className="form-label">Design for

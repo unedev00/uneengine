@@ -146,7 +146,7 @@ export class PageRuntime {
     const p=raw as Record<string,unknown>;
     const id=(v:unknown):v is string=>typeof v==='string'&&v.length>0&&v.length<=128;
     if(!id(p.apiName)||!/^[A-Za-z][A-Za-z0-9_]*$/.test(p.apiName)
-      ||!id(p.label)||!['Record Page','App Page','Home Page'].includes(String(p.pageType))
+      ||!id(p.label)||!['Record Page','App Page','Home Page','In-Screen Page'].includes(String(p.pageType))
       ||!['template','free-canvas'].includes(String(p.layoutMode))
       ||!['Active','Draft'].includes(String(p.status))||typeof p.targetObject!=='string'
       ||!Number.isInteger(p.canvasWidth)||!Number.isInteger(p.canvasHeight)
@@ -174,7 +174,7 @@ export class PageRuntime {
     }
     await validatePageComponentContracts(this.db,tenantId,components);
     const assignments=p.activationAssignments as Array<Record<string,unknown>>|undefined ?? [];
-    if(p.status==='Active'&&p.pageType!=='App Page'&&!assignments.length)
+    if(p.status==='Active'&&!['App Page','In-Screen Page'].includes(String(p.pageType))&&!assignments.length)
       throw new Error('Invalid Page activation');
     const assignmentIds=new Set<string>();
     for(const a of assignments){
