@@ -1,17 +1,17 @@
 /* Outer ribbon height/overflow/scrollbar geometry is owned by PageBuilderRibbonLayout.css. */
 /* Smart ribbon: scoped Office-style presentation for SQL-backed Data, Design and Layout.
    Keep every property slot visible; applicability is handled by SmartRibbon.tsx.
-   Intentionally stronger than PageBuilderRibbonBlueprint.css's global 120px
-   #page-builder-tab-content rule and the global numeric control rule. */
+   Parent strip geometry comes exclusively from PageBuilderRibbonLayout.css;
+   this stylesheet defines only Smart editor control presentation. */
 .office-builder-ribbon #page-builder-tab-content>.smart-ribbon{
   display:flex;flex:0 0 auto;align-items:stretch;gap:0;
-  width:max-content;min-width:100%;height:136px;
+  width:max-content;min-width:100%;
   background:var(--panel-background,#fff);color:#263b56;
   font-family:"Segoe UI",Arial,sans-serif;
 }
 .office-builder-ribbon .smart-ribbon-group{
   box-sizing:border-box;display:flex;flex:0 0 auto;flex-direction:column;
-  min-width:0;height:136px;padding:4px 9px 0;
+  min-width:0;padding:4px 9px 0;
   border-right:1px solid #cfdaea;
 }
 .office-builder-ribbon .smart-ribbon-group:last-child{border-right:0}
