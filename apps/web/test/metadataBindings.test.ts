@@ -398,34 +398,55 @@ test('Metadata-only POS Flow inputs project authorised fields and parse numeric 
  assert.throws(()=>encodeInputSource('Record Collection','cartItems:Id',[]),/excluding Id/);
 });
 
-test('Optional PageState filter retains other server filters and shows all when unselected',()=>{
+test('user-authored formula compiles to server filters without an empty-category regression',()=>{
  const fields=[
   {apiName:'Active',label:'Active',dataType:'Boolean'},
   {apiName:'MenuCategory',label:'Category',dataType:'Lookup(MenuCategory)',
    relationship:{targetObject:'MenuCategory',type:'Lookup',relationshipName:'MenuCategory'}},
   {apiName:'ImageUrl',label:'Image',dataType:'Text'}
  ] as any;
- const rules=[
-  {field:'Active',operator:'Equals',value:true},
-  {field:'ImageUrl',operator:'Is Not Blank',value:''},
-  {field:'MenuCategory',operator:'Equals',value:{source:'PageState',key:'categoryId'},skipWhenEmpty:true}
- ];
- const all=pageComponentRecordQuery(rules,fields,{pageState:{}});
- assert.equal(all.blocked,false);
+ const rules=[{field:'Active',operator:'Equals',value:true},
+  {field:'ImageUrl',operator:'Is Not Blank',value:''}];
+ const formula='IF(ISBLANK($state.categoryId), TRUE, @MenuCategory = $state.categoryId)';
+ const all=pageComponentRecordQuery(rules,fields,{pageState:{}},'AND',formula);
+ assert.equal(all.blocked,false,all.error);
  assert.equal(all.filters?.length,2);
  assert.equal(all.filters?.some(item=>item.field==='MenuCategory'),false);
- const selected=pageComponentRecordQuery(rules,fields,{pageState:{categoryId:'cat1'}});
- assert.equal(selected.blocked,false);
+ const selected=pageComponentRecordQuery(rules,fields,{pageState:{categoryId:'cat1'}},'AND',formula);
+ assert.equal(selected.blocked,false,selected.error);
  assert.equal(selected.filters?.length,3);
  assert.equal(selected.filters?.find(item=>item.field==='MenuCategory')?.value,'cat1');
- const rows=[{Active:true,ImageUrl:'a',MenuCategory:'cat1'},
-  {Active:true,ImageUrl:'b',MenuCategory:'cat2'},
-  {Active:false,ImageUrl:'c',MenuCategory:'cat1'}];
- assert.equal(filterPageComponentRecords(rows,rules,fields,{pageState:{}}).length,2);
- assert.equal(filterPageComponentRecords(rows,rules,fields,{pageState:{categoryId:'cat1'}}).length,1);
- const required=rules.map(item=>({...item,skipWhenEmpty:false}));
- assert.equal(pageComponentRecordQuery(required,fields,{pageState:{}}).blocked,true);
- const invalid=[...rules.slice(0,2),{field:'DeletedField',operator:'Equals',
-  value:{source:'PageState',key:'categoryId'},skipWhenEmpty:true}];
- assert.equal(pageComponentRecordQuery(invalid,fields,{pageState:{}}).blocked,true);
+ assert.equal(selected.filterLogic,'(1 AND 2) AND (3)');
+ assert.equal(pageComponentRecordQuery(rules,fields,{pageState:{categoryId:null}},'AND',formula).blocked,false);
+ assert.equal(pageComponentRecordQuery(rules,fields,{pageState:{categoryId:'cat2'}},'AND',formula)
+  .filters?.find(item=>item.field==='MenuCategory')?.value,'cat2');
+ const incorrect=pageComponentRecordQuery(rules,fields,{pageState:{}},'AND',
+  'IF(ISBLANK($state.categoryId), TRUE, @DeletedField = $state.categoryId)');
+ // The optional branch is not used; the editor checks all branches at save time.
+ assert.equal(incorrect.blocked,false);
+ const invalid=pageComponentRecordQuery(rules,fields,{},'AND',
+  '@MenuCategory & "something"');
+ assert.equal(invalid.blocked,true);
+ assert.match(invalid.error??'',/Filter formula/);
+ const required=pageComponentRecordQuery([
+  ...rules,{field:'MenuCategory',operator:'Equals',value:{source:'PageState',key:'categoryId'}}
+ ],fields,{pageState:{}});
+ assert.equal(required.blocked,true);
+});
+test('server filter formula handles AND/OR and rejects unserverable expressions',async()=>{
+ const {compileRecordFilterFormula,validateRecordFilterFormula}=
+  await import('../src/core/pages/PageRuntime/recordFilterFormula');
+ const fields=[
+  {apiName:'Category',label:'Category',dataType:'Text'},
+  {apiName:'Active',label:'Active',dataType:'Boolean'}
+ ] as any;
+ const nested='IF(ISBLANK($state.pick), TRUE, AND(@Active = TRUE, OR(@Category = $state.pick, @Category = "Offers")))';
+ assert.equal(validateRecordFilterFormula(nested,fields),null);
+ const valid=compileRecordFilterFormula(nested,fields,{pick:'c1'});
+ assert.equal(valid.blocked,false,valid.error);
+ assert.equal(valid.filters.length,3);
+ assert.equal(valid.filterLogic,'(1 AND (2 OR 3))');
+ assert.match(validateRecordFilterFormula('IF(TRUE, TRUE, @Unknown = 1)',fields)??'',/readable @Field/);
+ assert.equal(compileRecordFilterFormula('@Category = $state.pick',fields,{}).blocked,true);
+ assert.equal(compileRecordFilterFormula('IF(ISBLANK($state.pick), FALSE, TRUE)',fields,{}).blocked,true);
 });
