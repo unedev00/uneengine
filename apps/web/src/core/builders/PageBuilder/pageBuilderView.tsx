@@ -5,6 +5,8 @@ import {resolveMetadataProperties} from '../../metadata/Definitions/metadataRefe
 import {generateMetadataApiName,suggestMetadataApiName} from '../../metadata/Definitions/metadataApiNames';
 import { useFormFactor } from '../../workspace/Responsive/useFormFactor';
 import './MobileBuilderReadMode.css';
+import CanvasFloatingActions from './CanvasFloatingActions';
+import {placeNewCanvasComponent,visibleCanvasBounds} from './canvasInsertPlacement';
 import {confirmDestructiveAction} from '../../components/ConfirmAction/confirmDestructiveAction';
 import './PageBuilderNoCode.css';
 import './PageBuilderRibbonGallery.css';
@@ -38,7 +40,7 @@ import { queueOfflineRecord, listOfflineRecords, markOfflineRecord, removeOfflin
 import SchemaBuilder from '../SchemaBuilder/SchemaBuilder';
 import * as React from 'react';
 import { createPortal } from 'react-dom';
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import {
   Activity,
   ArrowDown,
@@ -458,7 +460,30 @@ function PageBuilder({
   const [canvasZoom,setCanvasZoom] = useState(100);
   const [fitScale, setFitScale] = useState(1);
   const pagePreviewAreaRef = useRef<HTMLDivElement | null>(null);
+  const pendingInsertedRef=useRef<string|null>(null);
   const [canvasRefreshKey, setCanvasRefreshKey] = useState(0);
+  // After inserting at any canvas zoom/scroll offset, reveal the selected block.
+  // No page-level scrolling, camera metadata mutation, or global DOM query.
+  useLayoutEffect(()=>{
+    const id=pendingInsertedRef.current;
+    const viewport=pagePreviewAreaRef.current;
+    if(!id||!viewport)return;
+    const frame=window.requestAnimationFrame(()=>{
+      const target=Array.from(viewport.querySelectorAll<HTMLElement>('[data-component-id]'))
+        .find(element=>element.dataset.componentId===id);
+      if(!target)return;
+      pendingInsertedRef.current=null;
+      const visible=viewport.getBoundingClientRect();
+      const bounds=target.getBoundingClientRect();
+      const gap=20;
+      const dx=bounds.left<visible.left+gap?bounds.left-visible.left-gap:
+        bounds.right>visible.right-gap?bounds.left-visible.left-gap:0;
+      const dy=bounds.top<visible.top+gap?bounds.top-visible.top-gap:
+        bounds.bottom>visible.bottom-gap?bounds.top-visible.top-gap:0;
+      if(dx||dy)viewport.scrollTo({left:viewport.scrollLeft+dx,top:viewport.scrollTop+dy,behavior:'auto'});
+    });
+    return()=>window.cancelAnimationFrame(frame);
+  },[page.components,page.layoutMode]);
   const [createPageOpen, setCreatePageOpen] = useState(false);
   const [routeDirectoryOpen, setRouteDirectoryOpen] = useState(false);
   const [dependenciesOpen, setDependenciesOpen] = useState(false);
@@ -1105,10 +1130,19 @@ function PageBuilder({
   const startCanvasMove = (event: React.PointerEvent<HTMLElement>, component: PageComponentMetadata) => {
     if (canvasGroupKey(component) || previewMode || !component.position || isCanvasLocked(component)
       || event.button !== 0 || event.shiftKey || canvasMoveStart.current || canvasResizeStart.current) return;
-    const element = event.currentTarget.closest<HTMLElement>('.free-canvas-component');
     const hit = event.target as Element;
+    // The action grip lives in a top-level portal so it cannot be obscured.
+    // Resolve its authored canvas element explicitly; do not use document-wide
+    // selection or change the component's persisted z-order.
+    const floating=event.currentTarget.closest<HTMLElement>('.canvas-floating-actions-host');
+    const portalGrip=floating?.dataset.canvasActionsFor===component.id
+      && Boolean(hit.closest('.canvas-move-grip'));
+    const element = event.currentTarget.closest<HTMLElement>('.free-canvas-component')
+      ?? (portalGrip?Array.from(pagePreviewAreaRef.current?.querySelectorAll<HTMLElement>(
+        '.free-canvas-component[data-component-id]')??[])
+        .find(candidate=>candidate.dataset.componentId===component.id)??null:null);
     // Avoid starting a parent move from a nested component's pointer event.
-    if (!element || hit.closest('[data-component-id]') !== element) return;
+    if (!element || (!portalGrip && hit.closest('[data-component-id]') !== element)) return;
     if (!hit.closest('.free-canvas-move-edge,.canvas-move-grip') &&
       hit.closest('button,input,select,textarea,a,[contenteditable="true"],.free-canvas-resize-handle,.canvas-element-actions')) return;
     event.preventDefault();
@@ -1265,18 +1299,14 @@ function PageBuilder({
     // 24px-offset component on top of its neighbours.
     const usedBounds = page.components.filter(item=>item.position && !rawLayoutParentId(item))
       .map(item=>item.position!);
-    const vacancy = () => {
-      const maxX=Math.max(0,page.canvasWidth-defaultWidth);
-      const maxY=Math.max(0,page.canvasHeight-defaultHeight);
-      const coordinates=(max:number)=>[...new Set([Math.min(24,max),
-        ...Array.from({length:Math.ceil(max/24)+1},(_,i)=>Math.min(i*24,max))])];
-      for(const y of coordinates(maxY))for(const x of coordinates(maxX)){
-        if(usedBounds.every(other=>x+defaultWidth<=other.x || other.x+other.width<=x
-          || y+defaultHeight<=other.y || other.y+other.height<=y))return {x,y};
-      }
-      return {x:Math.min(24,maxX),y:Math.min(24,maxY)};
-    };
-    const origin=canvasPosition??vacancy();
+    const viewport=pagePreviewAreaRef.current;
+    const stage=viewport?.querySelector<HTMLElement>('.free-canvas-stage');
+    const visible=viewport&&stage?visibleCanvasBounds(stage.getBoundingClientRect(),
+      viewport.getBoundingClientRect(),page.canvasWidth,page.canvasHeight):undefined;
+    const origin=canvasPosition??placeNewCanvasComponent({
+      canvasWidth:page.canvasWidth,canvasHeight:page.canvasHeight,
+      width:defaultWidth,height:defaultHeight,used:usedBounds,visible
+    });
     const freeCanvasPosition = page.layoutMode === 'free-canvas'
       ? {x:Math.max(0,Math.min(origin.x,page.canvasWidth-defaultWidth)),
          y:Math.max(0,Math.min(origin.y,page.canvasHeight-defaultHeight)),
@@ -1321,6 +1351,7 @@ function PageBuilder({
     inserted.properties = isLayoutType(type)
       ? {...inserted.properties,visualStyle:{...authored,borderWidth:1,borderColor:'#000000'}}
       : {...inserted.properties,borderWidth:1,borderColor:'#000000'};
+    pendingInsertedRef.current=page.layoutMode==='free-canvas'?id:null;
     applyPage({ ...page, components: assignTabOnReparent(
       components,id,parentId,parentId ? openBuilderTabs[parentId] : undefined) });
     setRecentComponents(current => addRecentPageBlock(current, type));
@@ -1329,6 +1360,7 @@ function PageBuilder({
     setActivePanel('properties');
     setInspectorTab(componentNeedsData(type)?'Data & Actions':'Design');
     setRibbonTab(componentNeedsData(type)?'Component Data':'Component Properties');
+    onNotify(`${custom?libraryComponentLabel(custom):type} added and selected`);
   };
   const addField = (fieldApiName: string) => {
     if (dynamicFormsEnabled) {
@@ -2284,9 +2316,8 @@ function PageBuilder({
       role={libraryPreview ? undefined : page.layoutMode === 'free-canvas' ? 'group' : 'button'} tabIndex={previewMode || libraryPreview ? -1 : 0} aria-label={libraryPreview ? undefined : `${component.label} component`}
       aria-hidden={libraryPreview && !interactivePreview || undefined}
     >
-      {!previewMode && !libraryPreview && selectedId === component.id && !nested && <div
+      {!previewMode && !libraryPreview && selectedId === component.id && !nested && <CanvasFloatingActions componentId={component.id} viewportRef={pagePreviewAreaRef} enabled={page.layoutMode === 'free-canvas'}><div
         className="canvas-element-actions" role="toolbar" aria-label={`Actions for ${component.label}`}
-        style={component.position && component.position.y < 60 ? {bottom:'auto',top:'calc(100% + 12px)'} : undefined}
         onPointerDown={event => event.stopPropagation()} onClick={event => event.stopPropagation()}>
         {page.layoutMode === 'free-canvas' && !isCanvasLocked(component) && <button type="button"
           className="canvas-move-grip" aria-label={`Drag to move ${component.label}`}
@@ -2313,7 +2344,7 @@ function PageBuilder({
 
           <button type="button" role="menuitem" disabled={isCanvasLocked(component)} onClick={() => {removeSelected();setComponentMenuId('');}}>Delete <kbd>Delete</kbd></button>
         </div>}
-      </div>}
+      </div></CanvasFloatingActions>}
       {editorGenericHint&&<span className="page-editor-generic-hint" aria-hidden="true">{editorGenericHint}</span>}
       {showHiddenSelection && !component.visible
         ? <span className="canvas-hidden-marker">Hidden: {component.label}</span>

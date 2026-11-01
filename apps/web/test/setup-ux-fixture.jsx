@@ -7,7 +7,9 @@ import SchemaBuilder from '../src/core/builders/SchemaBuilder/SchemaBuilder';
 import AceKiosk from '../../acekiosk/src/AceKiosk';
 import AcetillTerminal from '../../acetill/src/AcetillTerminal';
 import UiItemGrid from '../src/component-libraries/ui_item_grid/UiItemGrid';
+import OneTenantImage from '../src/component-libraries/shared/TenantImage.jsx';
 import SmartRuntime from '../src/component-libraries/smart/shared/SmartRuntime.jsx';
+import CanvasFloatingActions from '../src/core/builders/PageBuilder/CanvasFloatingActions';
 import '../src/component-libraries/smart/shared/smart.css';
 import '../src/component-libraries/ui_item_grid/UiItemGrid.css';
 import {FinancialDocumentEditor} from '../../aceassist/src/FinancialDocumentEditor';
@@ -81,8 +83,56 @@ const directoryRequest=async(path,init)=>{
 };
 const securityViews=createSettingsViews(uxRequest,()=>null);
 const credentials=[{id:'sample',name:'Sample_Credential',label:'Sample credential',baseUrl:'https://example.com/long/integration/path',authType:'Bearer',hasSecret:true,protocol:'HTTPS',enabled:true,updatedAt:'2026-10-28T09:00:00Z',configuration:{}}];
+const mediaAsset='asset:123e4567-e89b-42d3-a456-426614174000';
+const mediaPixel='iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aI1sAAAAASUVORK5CYII=';
+function MediaStabilityFixture(){
+ const [renderCount,setRenderCount]=React.useState(0);
+ const loadAsset=async()=>{
+  window.assetFetchCount=(window.assetFetchCount||0)+1;
+  return {contentType:'image/png',contentBase64:mediaPixel};
+ };
+ return <main style={{padding:24}}>
+  <button type="button" onClick={()=>setRenderCount(count=>count+1)}>Rerender parent</button>
+  <output aria-label="Parent render count">{renderCount}</output>
+  <section aria-label="UI Image stability">
+   <OneTenantImage src={mediaAsset} alt="UI image stable" loadAsset={loadAsset}/>
+  </section>
+  <section aria-label="Smart Image stability" style={{width:180,height:120}}>
+   <SmartRuntime kind="smart_image" imageSource={mediaAsset} headerBoxHeight={0}
+    imageHeight={90} builderPreview loadAsset={loadAsset}/>
+  </section>
+ </main>;
+}
+
+function CanvasActionLayerFixture(){
+ const viewport=React.useRef(null);
+ const [opened,setOpened]=React.useState(false);
+ return <main ref={viewport} style={{height:550,overflow:'auto',position:'relative'}}>
+  <div className="canvas-unified-builder modern-canvas-builder free-canvas-stage"
+   style={{position:'relative',height:750,width:900}}>
+   <div className="free-canvas-component selected" data-component-id="selected-test"
+    style={{position:'absolute',left:80,top:190,width:340,height:170,zIndex:0,background:'#dbeafe'}}>
+    <CanvasFloatingActions componentId="selected-test" viewportRef={viewport}>
+     <div className="canvas-element-actions" role="toolbar" aria-label="Selected canvas tools"
+      onPointerDown={event=>event.stopPropagation()} onClick={event=>event.stopPropagation()}>
+      <button type="button" title="Edit selected item" onClick={()=>setOpened(true)}>Edit selected item</button>
+      {opened&&<button type="button">Canvas menu action</button>}
+     </div>
+    </CanvasFloatingActions>
+    This selected item stays behind the overlapping authored layer.
+   </div>
+   <div className="free-canvas-component" aria-label="Overlapping item"
+    style={{position:'absolute',left:65,top:115,width:480,height:170,zIndex:10,background:'#fecaca'}}>
+    Higher authored component layer
+   </div>
+  </div>
+ </main>;
+}
+
 function RecordImportCheck(){ const [ready,setReady]=React.useState(false); React.useEffect(()=>{import('../src/core/records/RecordWorkspace/recordWorkspaceViews').then(module=>setReady(typeof module.createRecordWorkspaceViews === 'function'));},[]);return <p>{ready ? 'Record workspace import passed' : 'Loading record workspace'}</p>; }
 function Fixture(){
+ if(view==='image-render-stability')return <MediaStabilityFixture/>;
+ if(view==='floating-canvas-actions')return <CanvasActionLayerFixture/>;
  if(view==='smart-card-grid-scroll'){
    const sampleCards=Array.from({length:23},(_,i)=>({
      Id:'product-'+i,Name:'Product '+String(i+1),ImageUrl:''
