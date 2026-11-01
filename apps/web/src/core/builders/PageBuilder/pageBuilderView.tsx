@@ -2246,8 +2246,9 @@ function PageBuilder({
       onPointerDown={!libraryPreview && page.layoutMode === 'free-canvas' && !nested ? event => {
         // Native Card Grid scrolling must not trigger free-canvas dragging.
         // The component's dedicated move grips and resize handles still work.
-        if(component.type==='Custom:ui_item_grid' &&
-          (event.target as HTMLElement).closest('.md-product-grid--scroll'))return;
+        const target=event.target as HTMLElement;
+        if((component.type==='Custom:ui_item_grid'&&target.closest('.md-product-grid--scroll'))
+          ||(component.type==='Custom:smart_card_grid'&&target.closest('.smart-grid')))return;
         startCanvasMove(event, component);
       } : undefined}
       onPointerMove={!libraryPreview && page.layoutMode === 'free-canvas' && !nested ? moveCanvasPointer : undefined}
