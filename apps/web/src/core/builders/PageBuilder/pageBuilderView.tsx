@@ -4143,7 +4143,9 @@ function PageBuilder({
             <div role="radiogroup" aria-label="Choose page type" className="builder-choice-grid">
               {pageBuilderStartOptions.filter(choice => recordPageContext ? choice.type === 'Record Page' : choice.type !== 'Record Page').map(choice => <label key={choice.type} className={newPageType === choice.type ? 'builder-choice active' : 'builder-choice'}>
                 <input type="radio" name="builder-new-page-type" value={choice.type} checked={newPageType === choice.type}
-                  onChange={() => {setNewPageType(choice.type);setNewPageTemplate(choice.type === 'Record Page' ? 'header-main-sidebar' : 'main-sidebar');}}/>
+                  onChange={() => {setNewPageType(choice.type);setNewPageTemplate(choice.type === 'Record Page' ? 'header-main-sidebar' : 'main-sidebar');
+                    if(choice.type==='In-Screen Page'){setNewPageLayoutMode('free-canvas');setNewPageCanvasWidth(480);setNewPageCanvasHeight(420);}
+                    else {setNewPageCanvasWidth(1440);setNewPageCanvasHeight(900);}}}/>
                 <strong>{choice.title}</strong><span>{choice.description}</span>
               </label>)}
             </div>
