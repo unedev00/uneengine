@@ -7,7 +7,7 @@ import './SmartIconGallery.css';
 
 const shapeGroups=[...new Set(smartShapes.map(item=>item.category))];
 const iconGroups=[...new Set(icons.map(icon=>icon.category))];
-export default function SmartIconGallery({value,onChange,disabled=false}:{value:string;onChange:(iconId:string)=>void;disabled?:boolean}){
+export default function SmartIconGallery({value,onChange,disabled=false,allowIcons=true}:{value:string;onChange:(iconId:string)=>void;disabled?:boolean;allowIcons?:boolean}){
  const [open,setOpen]=useState(false);
  const button=useRef<HTMLButtonElement>(null);
  const panel=useRef<HTMLDivElement>(null);
@@ -35,7 +35,7 @@ export default function SmartIconGallery({value,onChange,disabled=false}:{value:
  return <div className="smart-icon-gallery" aria-label="Shapes and icons">
   <button ref={button} type="button" className="smart-shapes-trigger"
     aria-haspopup="dialog" aria-expanded={open} disabled={disabled}
-    title={disabled?'Not shared by every selected component':'Choose shape or icon'}
+    title={disabled?'Not shared by every selected component':allowIcons?'Choose shape or icon':'Choose shape'}
     onClick={()=>setOpen(!open)}><Shapes size={18}/><span>Shapes</span><ChevronDown size={13}/></button>
   {open&&createPortal(<div ref={panel} className="smart-shapes-popup" role="dialog"
     aria-label="Choose shape or icon" style={{position:'fixed',top:position.top,left:position.left}}>
@@ -44,13 +44,13 @@ export default function SmartIconGallery({value,onChange,disabled=false}:{value:
       <button type="button" key={item.id} title={item.label} aria-label={item.label}
        aria-pressed={value===item.id} onClick={()=>select(item.id)}>{icon(item)}</button>)}</div>
     </section>)}
-    <section><strong>Icons</strong>{iconGroups.map(group=><div key={group}>
+    {allowIcons&&<section><strong>Icons</strong>{iconGroups.map(group=><div key={group}>
       <small>{group}</small><div className="smart-shapes-grid">
        {icons.filter(item=>item.category===group).map(item=>
         <button type="button" key={item.id} title={item.label} aria-label={item.label}
          aria-pressed={value===item.id} onClick={()=>select(item.id)}>{icon(item)}</button>)}
       </div></div>)}
-    </section>
+    </section>}
   </div>,document.body)}
  </div>;
 }
