@@ -851,6 +851,7 @@ function PageBuilder({
       categories: ['Layout'] as (typeof pageBuilderPaletteCategories)[number][]
     }] : []),
     ...libraryComponents.filter(component=>isUneBuilderApi(component.apiName,ribbonCatalog?.components??[])
+      &&component.apiName!=='smart_icon' // Legacy instances stay registered; new pages use Button + Shape.
       &&component.status!=='Draft'&&!RETIRED_UNE_PAGE_BUILDER_COMPONENTS.has(component.apiName)).map(component=>({
       id:'Custom:'+component.apiName,
       type:'Custom:'+component.apiName,
