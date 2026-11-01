@@ -2147,7 +2147,7 @@ function PageBuilder({
       properties: component.properties,
       object: page.pageType === 'Record Page' ? targetObject : undefined,
       device,
-      preview: true, previewOnly: true, pageSessionKey: (builderAppApiName || apps[0]?.apiName || 'Records') + ':' + page.apiName,
+      preview: true, previewOnly: true, builderPreview: !previewMode, pageSessionKey: (builderAppApiName || apps[0]?.apiName || 'Records') + ':' + page.apiName,
        loadAsset:(id:string)=>request<{contentType:string;contentBase64:string}>('/media-assets/'+id),
       disabled: !interactivePreview,
       onAction: previewProperties.onAction,
