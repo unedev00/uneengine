@@ -41,7 +41,8 @@ export function evaluateNumberActionFormula(
  for(const name of new Set(references))values[name]=valueNumber(row[name]);
  const result=evaluateFieldExpressionDetailed(formula,values);
  if(result.error)throw Error('Invalid quantity formula: '+result.error);
- if(!result.value.trim()||!Number.isFinite(Number(result.value)))
+ if(typeof result.value!=='string'||!result.value.trim()||
+    !Number.isFinite(Number(result.value)))
   throw Error('Quantity formula must return a finite number.');
  return Number(result.value);
 }
