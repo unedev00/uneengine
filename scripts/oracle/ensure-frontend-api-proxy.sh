@@ -13,7 +13,7 @@ else
   cp -p "$site" "$backup"
   restore() {
     cp -p "$backup" "$site"
-    nginx -t >/dev/null 2>&1 && systemctl reload nginx || true
+    nginx -t >/dev/null 2>&1 && nginx -s reload || true
     rm -f "$backup"
   }
   trap restore ERR
@@ -39,7 +39,7 @@ location='''    location ^~ /api/ {
 p.write_text(s.replace(needle,location+needle,1))
 PY
   nginx -t
-  systemctl reload nginx
+  nginx -s reload
   trap - ERR
   rm -f "$backup"
 fi
@@ -52,7 +52,7 @@ if ! grep -Eq 'client_max_body_size[[:space:]]+8[mM]' "$site"; then
   cp -p "$site" "$backup"
   restore_upload_limit() {
     cp -p "$backup" "$site"
-    nginx -t >/dev/null 2>&1 && systemctl reload nginx || true
+    nginx -t >/dev/null 2>&1 && nginx -s reload || true
     rm -f "$backup"
   }
   trap restore_upload_limit ERR
@@ -80,7 +80,7 @@ if not re.search(r'\bclient_max_body_size\s+',body):
 p.write_text(s)
 PY
   nginx -t
-  systemctl reload nginx
+  nginx -s reload
   trap - ERR
   rm -f "$backup"
 fi
