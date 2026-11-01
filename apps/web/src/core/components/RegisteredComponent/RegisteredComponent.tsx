@@ -54,7 +54,7 @@ function RegisteredComponentBody({ definition, props, appearanceProps, layoutTra
   </div>;
 }
 
-export default function RegisteredComponent({ definition, props, layoutTransparent=false }: { definition: LibraryComponentMetadata; props: Record<string, unknown>; layoutTransparent?:boolean }) {
+export default function RegisteredComponent({ definition, props, layoutTransparent=false, editorPreview=false }: { definition: LibraryComponentMetadata; props: Record<string, unknown>; layoutTransparent?:boolean; editorPreview?:boolean }) {
   const [asset, setAsset] = useState<{apiName:string;version:number;compiledJs:string;scopedCss:string;defaultProps?:Record<string,unknown>}|null>(null);
   const [assetError, setAssetError] = useState('');
   const assetApiName=(definition as LibraryComponentMetadata & {legacyAssetApiName?:string}).legacyAssetApiName ?? definition.apiName;
@@ -95,7 +95,8 @@ export default function RegisteredComponent({ definition, props, layoutTranspare
   // Preserve existing page-authored values over source-controlled app defaults.
   // No SQL property inventory is required for trusted UNE component rendering.
   const appDefaults=definition.trustedBundled&&definition.apiName.startsWith('ui_')?(asset?.defaultProps??{}):{};
-  const configuredProps = resolveComponentSettings(definitions,{...appDefaults,...props});
+  // This flag comes from the builder host, never from saved component metadata.
+  const configuredProps = resolveComponentSettings(definitions,{...appDefaults,...props,builderPreview:editorPreview===true});
   const issues=[...validateComponentSettings(definitions.filter(d=>d.schemaVersion===1),configuredProps),
     ...pagePropertyIssues('Custom:'+definition.apiName,configuredProps)];
   if(issues.length)return <div role="alert" className="registered-component-error">Invalid component settings: {issues.map(i=>i.path+' '+i.message).join('; ')}</div>;
