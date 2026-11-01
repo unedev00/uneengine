@@ -9,7 +9,7 @@ export const supportsSmartActionEvent=(api:string,event:string):boolean=>
  event==='click'?clickComponents.has(api):
  event==='change'?changeComponents.has(api):
  event==='start'?api.startsWith('smart_'):
- event==='qtyIcon'||event==='customButton1'||event==='customButton2'?api==='smart_cart':false;
+ ['qtyIcon','qtyIncrease','qtyDecrease','customButton1','customButton2'].includes(event)?api==='smart_cart':false;
 
 const asObject=(value:unknown):Binding=>
  value&&typeof value==='object'&&!Array.isArray(value)?value as Binding:{};
