@@ -141,7 +141,7 @@ export class PageRuntime {
   }
 
   /** Transactional draft publishing and component persistence; no JSON columns. */
-  async save(tenantId:string,previousApiName:string,raw:unknown){
+  async save(tenantId:string,previousApiName:string,raw:unknown,createOnly=false){
     if(!raw||typeof raw!=='object'||Array.isArray(raw))throw new Error('Invalid Page metadata');
     const p=raw as Record<string,unknown>;
     const id=(v:unknown):v is string=>typeof v==='string'&&v.length>0&&v.length<=128;
@@ -192,6 +192,9 @@ export class PageRuntime {
       const existing=await client.query<{id:string}>(
         'SELECT id FROM md_page_definitions WHERE tenant_id=$1 AND api_name=$2 FOR UPDATE',[tenantId,previousApiName]);
       let pageId=existing.rows[0]?.id;
+      // MCP create_page must never overwrite an existing tenant-authored Page.
+      // Enforce this inside the transaction to avoid a separate check/write race.
+      if(pageId&&createOnly)throw new Error('Page already exists');
       if(pageId){
         const managed=await client.query(
           'SELECT 1 FROM md_app_seed_pages WHERE tenant_id=$1 AND page_id=$2 LIMIT 1',[tenantId,pageId]);
