@@ -245,6 +245,7 @@ export function createSetupFlowActions(ctx: any) {
         if (interviewId && screen) {
           setFlowRun({
             interviewId, flowApiName: flowDebug.flow.apiName, screen,
+            launchInputs:flowDebug.inputs,
             values: { ...initialScreenValues(screen), ...(result.values as Record<string, unknown> | undefined) }, screenResources: (result.screenResources as Record<string, unknown> | undefined) ?? {},
             outcomes: (result.outcomes as Array<{ name: string; label: string }> | undefined)
               ?? [{ name: 'Default', label: 'Next' }],
@@ -349,7 +350,7 @@ export function createSetupFlowActions(ctx: any) {
       });
       if (result.interviewId && result.screen) {
         setFlowRunnerError('');
-        setFlowRun({ requestId:context.requestId,interviewId: result.interviewId, flowApiName: selectedFlow.apiName, screen: result.screen, values: { ...initialScreenValues(result.screen), ...(result.values ?? {}) },
+        setFlowRun({ requestId:context.requestId,launchInputs:inputs,interviewId: result.interviewId, flowApiName: selectedFlow.apiName, screen: result.screen, values: { ...initialScreenValues(result.screen), ...(result.values ?? {}) },
           screenResources: result.screenResources ?? {}, outcomes: result.outcomes ?? [{ name: 'Default', label: 'Next' }], canGoBack: false });
         return;
       }
@@ -380,7 +381,7 @@ export function createSetupFlowActions(ctx: any) {
       if (result.interviewId && result.screen) {
         setFlowRunnerError('');
         setFlowRun({
-          requestId:flowRun.requestId,interviewId: result.interviewId, flowApiName: flowRun.flowApiName,
+          requestId:flowRun.requestId,launchInputs:flowRun.launchInputs,interviewId: result.interviewId, flowApiName: flowRun.flowApiName,
           screen: result.screen,
           values: { ...initialScreenValues(result.screen), ...(result.values ?? {}) },
           screenResources: result.screenResources ?? {},
@@ -418,7 +419,7 @@ export function createSetupFlowActions(ctx: any) {
         { method: 'POST', body: JSON.stringify({ action: 'back' }) }
       );
       setFlowRun({
-        requestId:flowRun.requestId,interviewId: result.interviewId, flowApiName: flowRun.flowApiName,
+        requestId:flowRun.requestId,launchInputs:flowRun.launchInputs,interviewId: result.interviewId, flowApiName: flowRun.flowApiName,
         screen: result.screen,
         values: { ...initialScreenValues(result.screen), ...(result.values ?? {}) },
           screenResources: result.screenResources ?? {},

@@ -16,6 +16,12 @@ export default function SetupFlowDialogs({ context }: { context: any }) {
  const windowPage=pages?.find(page=>page.pageType==='In-Screen Page'
    &&page.apiName===settings.windowPageApiName&&page.status==='Active');
  const windowAppId=settings.targetAppApiName||activeAppId;
+ const pageBindings=Array.isArray(settings.windowPageBindings)?settings.windowPageBindings:[];
+ const exposedPageInputs=Object.fromEntries(pageBindings.filter((name:unknown)=>typeof name==='string')
+   .map((name:string)=>[name,flowRun?.launchInputs?.[name]]).filter(([,value])=>value!==undefined));
+ const sourceSessionBinding=Object.entries(settings.inputBindings??{}).find(([,source])=>source==='page.sessionKey')?.[0]??'sessionKey';
+ const sourceSessionId=typeof flowRun?.launchInputs?.[sourceSessionBinding]==='string'
+   ?String(flowRun.launchInputs[sourceSessionBinding]).slice(0,128):'';
  const mode=['modal','drawer','floating','fullscreen'].includes(settings.windowMode)?settings.windowMode:'modal';
  const position=settings.windowPlacement||'center';
  const width=Number.isInteger(settings.windowWidth)?Math.max(320,Math.min(1600,settings.windowWidth)):480;
@@ -38,6 +44,7 @@ export default function SetupFlowDialogs({ context }: { context: any }) {
             {flowRunnerError && <div className="flow-screen-error" role="alert" aria-live="assertive">{flowRunnerError}</div>}
             {windowPage&&windowAppId&&LightningAppRuntime&&<div className="in-screen-page-host" style={{maxHeight:'65vh',overflow:'auto'}}>
               <LightningAppRuntime appId={windowAppId} pageApiName={windowPage.apiName} inScreenPage
+                inScreenContext={{sessionId:sourceSessionId,values:exposedPageInputs}}
                 objects={objects} apps={apps} pages={pages} reports={reports}
                 libraryComponents={libraryComponents} availableFlows={flows.filter(item=>['Screen Flow','In-Screen Flow','Autolaunched Flow'].includes(item.flowType))}
                 formFactor={formFactor} pageDefinitionCache={pageDefinitionCache}
