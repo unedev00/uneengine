@@ -305,6 +305,9 @@ export const layoutContainerTypes = new Set(['Container', 'Row', 'Column', 'Card
 export function isLayoutContainer(component: PageComponentMetadata): boolean {
   return layoutContainerTypes.has(component.type)
     || component.type==='Custom:ui_container'
+    // Smart Container is a shared layout primitive. Older saved instances have no
+    // layoutContainer flag, so recognise them without rewriting tenant metadata.
+    || (component.type==='Custom:smart_container' && component.properties?.layoutContainer !== false)
     || (component.type.startsWith('Custom:') && component.properties?.layoutContainer === true);
 }
 export function rawLayoutParentId(component: PageComponentMetadata): string | null {
