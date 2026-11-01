@@ -132,7 +132,7 @@ test('Smart ribbon compact corrections preserve visibility and size controls cor
  assert.match(ribbon,/const visible=definitions\.filter\(p=>p\.tab===tab\)/);
  assert.match(ribbon,/const supported=property\.components\.includes\(api\)/);
  assert.doesNotMatch(ribbon,/p\.tab===tab&&p\.components\.includes\(api\)/);
- assert.match(css,/padding:4px 26px 4px 0!important/);
+ assert.match(read('../src/core/builders/PageBuilder/PageBuilderRibbonLayout.css'),/padding: 2px 6px !important/);
  assert.match(css,/flex:0 0 52px!important/);
  assert.match(css,/width:52px!important;min-width:52px!important;max-width:52px!important/);
   assert.match(css,/grid-template-rows:repeat\(3,30px\)/);
@@ -918,7 +918,7 @@ test('SQL-backed eight-tab ribbon retains existing controls and correct geometry
  assert.match(ribbon,/property.id===firstFilterPropertyId/);
  assert.match(ribbon,/smart-formula-prefix/);
  assert.match(css,/padding:6px 7px 1px!important/);
- assert.match(visual,/overflow-x:hidden!important/);
+ assert.match(read('../src/core/builders/PageBuilder/PageBuilderRibbonLayout.css'),/overflow-x: auto !important/);
  for(const id of ['badgeAlignment','summaryTextSize','summary2TextSize',
   'cardsPerRow','cardsPerColumn','column2Source','columnVisibility','iconFillColor'])
    assert.ok(sql.includes("'"+id+"'"),'Missing SQL placement '+id);
