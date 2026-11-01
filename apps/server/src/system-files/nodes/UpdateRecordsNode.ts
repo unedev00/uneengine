@@ -49,7 +49,7 @@ export async function executeUpdateRecordsNode(context:FlowNodeContext):Promise<
   await enforceRecordOverlap(client,tenantId,objectApi,config.overlapGuard,{...values,Id:record.Id});
         await enforceRecordAvailability(client,tenantId,config.availabilityGuard,{...values,Id:record.Id});
   await enforceDocumentIssue(context,config.documentIssue,record.Id,values);
-  await records.update(tenantId,userId,objectApi,record.Id,values,undefined,client);
+  await records.updateWithTriggersInTransaction(client,tenantId,userId,objectApi,record.Id,values);
   if(lineMutation){
    if(lineMutation.oldParent)await recalculateDocumentLineTotals(context,lineTotalsConfig,lineMutation.oldParent);
    if(lineMutation.newParent!==lineMutation.oldParent)await recalculateDocumentLineTotals(context,lineTotalsConfig,lineMutation.newParent);

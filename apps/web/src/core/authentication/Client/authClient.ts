@@ -124,6 +124,25 @@ async function performApiRequest<T>(path: string, init?: RequestInit): Promise<T
   return payload;
 }
 
+
+/** Streaming uses the same short-lived Bearer token and refresh policy as normal API calls. */
+export async function apiStream(path:string,signal:AbortSignal):Promise<Response> {
+ const send=(token:string|undefined)=>fetch(apiBase+path,{
+  method:'GET',signal,credentials:'include',
+  headers:{Accept:'text/event-stream',...(token?{Authorization:'Bearer '+token}:{}),
+   'X-MetaDrive-Request-Source':'web-app'}
+ });
+ const original=accessToken;
+ let response=await send(original);
+ if(response.status===401){
+  const next=accessToken&&accessToken!==original?accessToken:await refreshAccessToken();
+  if(next&&next!==original)response=await send(next);
+ }
+ if(!response.ok||!(response.headers.get('content-type')??'').includes('text/event-stream'))
+  throw new ApiRequestError('Event stream unavailable (HTTP '+response.status+')',{path},response.status);
+ return response;
+}
+
 export async function apiDownload(path: string, init?: RequestInit): Promise<Blob> {
   const send = (token: string | undefined) => fetch(`${apiBase}${path}`, {
     ...init,

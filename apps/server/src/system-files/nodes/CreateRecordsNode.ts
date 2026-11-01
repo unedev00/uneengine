@@ -41,7 +41,7 @@ export async function executeCreateRecordsNode(context:FlowNodeContext):Promise<
       await enforceDocumentSourceLink(context,config.sourceLinkGuard,fields);
       await enforceManualPaymentGuard(context,config.manualPaymentGuard,fields);
       await enforceCashLedgerReversalIfConfigured(context,config.cashReversalGuard,fields);
-      const id=await records.createInTransaction(client,tenantId,userId,objectApi,fields);
+      const id=await records.createWithTriggersInTransaction(client,tenantId,userId,objectApi,fields);
       if(lineMutation)await recalculateDocumentLineTotals(context,lineTotalsConfig,lineMutation.newParent);
       created.push({...fields,Id:id});
       }
@@ -69,7 +69,7 @@ export async function executeCreateRecordsNode(context:FlowNodeContext):Promise<
       await enforceDocumentSourceLink(context,config.sourceLinkGuard,fields);
       await enforceManualPaymentGuard(context,config.manualPaymentGuard,fields);
       await enforceCashLedgerReversalIfConfigured(context,config.cashReversalGuard,fields);
-      const id=await records.createInTransaction(client,tenantId,userId,objectApi,fields);
+      const id=await records.createWithTriggersInTransaction(client,tenantId,userId,objectApi,fields);
       if(lineMutation)await recalculateDocumentLineTotals(context,config.documentLineTotals,lineMutation.newParent);
       // Make the newly created record available to subsequent steps as {!record<stepId>.Id}.
       // The optional scalar resultVariable retains its existing Id-only contract.

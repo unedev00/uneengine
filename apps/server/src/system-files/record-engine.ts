@@ -868,30 +868,9 @@ export class RecordEngine {
     if(typeof source.RecordTypeId==='string')values.RecordTypeId=source.RecordTypeId;
     return this.createRecord(tenantId,userId,objectApi,values,true);
   }
-  /** All Flow record mutations share one transaction, including relationship checks. */
+  /** Reuse the same before-save/after-save trigger contract for Flows, imports and API writes. */
   async createInTransaction(client:PoolClient,tenantId:string,userId:string,objectApi:string,values:Record<string,unknown>) {
-    await this.rbac.require(tenantId,userId,objectApi,'create');
-    await this.lockObjectForWrite(client,tenantId,objectApi);
-    const initialPrepared=await this.prepare(
-      tenantId,userId,objectApi,values,true,client,undefined,true);
-    const definitions=await this.fields(tenantId,objectApi,client);
-    const literals=Object.fromEntries(definitions.filter(field=>field.default_value!==null)
-      .map(field=>[field.api_name,['number','currency','percent'].includes(field.data_type)
-        ?Number(field.default_value):field.data_type==='boolean'
-          ?field.default_value==='true':field.default_value]));
-    const lifecycle={stage:'create' as const,
-      recordTypeId:initialPrepared.get('__RecordTypeId__')?.value_text??null,now:new Date()};
-    const supplied=await this.declarativeRules.defaults(client,tenantId,userId,objectApi,
-      {...values,...(lifecycle.recordTypeId?{RecordTypeId:lifecycle.recordTypeId}:{})},
-      literals,lifecycle);
-    const prepared=await this.prepare(tenantId,userId,objectApi,supplied,true,client);
-    const matches=await validateAndMatchRecord(this.declarativeRules,this.recordMatching,
-      client,tenantId,userId,objectApi,supplied,null,undefined,{
-        ...lifecycle,recordTypeId:prepared.get('__RecordTypeId__')?.value_text??null
-      });
-    const id=await this.insertPrepared(client,tenantId,userId,objectApi,prepared);
-    await this.recordMatching.save(client,tenantId,objectApi,id,matches);
-    return id;
+    return this.createWithTriggersInTransaction(client,tenantId,userId,objectApi,values);
   }
   /** Shared, atomic CSV/Data Loader import: new records or explicitly selected existing IDs. */
   async importRecords(tenantId:string,userId:string,objectApi:string,records:unknown) {
@@ -1425,7 +1404,7 @@ export class RecordEngine {
   }
   async updateInTransaction(client:PoolClient,tenantId:string,userId:string,objectApi:string,id:string,
     values:Record<string,unknown>,ifUnmodifiedSince?:string) {
-    return this.update(tenantId,userId,objectApi,id,values,ifUnmodifiedSince,client);
+    return this.update(tenantId,userId,objectApi,id,values,ifUnmodifiedSince,client,true);
   }
   async updateWithTriggersInTransaction(client:PoolClient,tenantId:string,userId:string,
     objectApi:string,id:string,values:Record<string,unknown>) {

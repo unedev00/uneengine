@@ -153,7 +153,7 @@ export async function validateFlowDraft(rbac:RbacEngine|undefined,tenantId:strin
   // Production activate/validate always passes db and fails closed against SQL capabilities.
   const legacyElementAllowed=['Start','Assignment','Decision','Create Records','CreateRecord',
     'HTTP Callout','Action','End','Get Records','Get Available Slots','Update Records','Delete Records','Loop',
-    'Collection Filter','Collection Sort','Transform','Parse JSON','Subflow','Wait','Roll Back Records',
+    'Collection Filter','Collection Sort','Transform','Parse JSON','Get Context','Set Context','Clear Context','Subflow','Wait','Roll Back Records',
     'Custom Error','Publish Platform Event','Orchestration Stage',
     ...(['Screen Flow','In-Screen Flow'].includes(String(data.flowType))?['Screen']:[])].includes(type);
   if(capabilities?!capability?.allowedFlowTypes.includes(String(data.flowType)):!legacyElementAllowed)
@@ -170,6 +170,49 @@ export async function validateFlowDraft(rbac:RbacEngine|undefined,tenantId:strin
    continue;
   }
   const properties=config as Record<string,unknown>;
+  if(['Get Context','Set Context','Clear Context'].includes(type)){
+   if(typeof properties.contextApiName!=='string'
+    ||!/^[A-Za-z][A-Za-z0-9_]*$/.test(properties.contextApiName))
+    errors.push('Choose a valid Context definition');
+   if(type==='Get Context'&&(typeof properties.outputVariable!=='string'
+    ||!Array.isArray(data.resources)||!data.resources.some(resource=>{
+     if(!resource||typeof resource!=='object'||Array.isArray(resource))return false;
+     const candidate=resource as {name?:unknown;type?:unknown;dataType?:unknown};
+     return candidate.name===properties.outputVariable&&candidate.type==='Variable'
+      &&candidate.dataType==='Text';
+    })))errors.push('Get Context requires a declared Text Variable');
+   if(type==='Set Context'&&(typeof properties.recordId!=='string'||!properties.recordId.trim()))
+    errors.push('Set Context requires a Record Id resource');
+  }
+  if(type==='Parse JSON'){
+   const mappings=properties.assignments;
+   const vars=new Set(Array.isArray(data.resources)
+    ?data.resources.filter((r):r is {name:string;type:string;dataType:string;isCollection?:boolean}=>
+      Boolean(r&&typeof r==='object'&&!Array.isArray(r)&&typeof (r as {name?:unknown}).name==='string'))
+      .filter(r=>r.type==='Variable'&&!r.isCollection
+       &&['Text','Number','Checkbox','Boolean','Date','DateTime'].includes(r.dataType)).map(r=>r.name):[]);
+   if(typeof properties.source!=='string'||!/^@[A-Za-z][A-Za-z0-9_]*$/.test(properties.source))
+    errors.push('Parse JSON needs a Text resource as source');
+   if(!Array.isArray(mappings)||mappings.length<1||mappings.length>50)
+    errors.push('Parse JSON requires 1 to 50 field mappings');
+   else{
+    const targets=new Set<string>();
+    for(const item of mappings){
+     if(!item||typeof item!=='object'||Array.isArray(item)){
+      errors.push('Parse JSON has an invalid field mapping');continue;
+     }
+     const mapping=item as {path?:unknown;outputVariable?:unknown};
+     if(typeof mapping.path!=='string'||mapping.path.length>256
+       || !/^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*|\[(?:0|[1-9][0-9]{0,2})\])*$/.test(mapping.path))
+      errors.push('Parse JSON mapping must select a safe field path');
+     if(typeof mapping.outputVariable!=='string'||!vars.has(mapping.outputVariable))
+      errors.push('Parse JSON output must be a declared writable scalar Flow variable');
+     else if(targets.has(mapping.outputVariable))
+      errors.push('Parse JSON cannot assign the same Flow variable twice');
+     else targets.add(mapping.outputVariable);
+    }
+   }
+  }
   if(type==='Screen'&&Array.isArray(properties.fields)){
     try{
       const choices=Array.isArray(data.resources)?data.resources.filter(item=>item

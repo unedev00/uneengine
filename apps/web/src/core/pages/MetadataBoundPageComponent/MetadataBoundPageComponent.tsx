@@ -62,6 +62,21 @@ export default function MetadataBoundPageComponent({
   });
   const [pageState,setPageState]=useState<Record<string,unknown>>(initialPageState??{});
   const [revision, setRevision] = useState(0);
+  const contextApiName=typeof properties.contextApiName==='string'?properties.contextApiName:'';
+  const [currentContextRecord,setCurrentContextRecord]=useState<Record<string,unknown>|null>(null);
+  useEffect(()=>{
+   let active=true;
+   setCurrentContextRecord(null);
+   if(!contextApiName||disableActions)return()=>{active=false;};
+   void apiRequest<{objectApiName:string;record:Record<string,unknown>|null}>(
+    '/contexts/current/'+encodeURIComponent(contextApiName))
+     .then(result=>{if(active)setCurrentContextRecord(
+      result.objectApiName===objectApiName?result.record:null
+     );})
+     .catch(()=>{if(active)setCurrentContextRecord(null);});
+   return()=>{active=false;};
+  },[contextApiName,objectApiName,disableActions,revision]);
+
   useEffect(()=>{
     const receive=(event:Event)=>{
       const data=(event as CustomEvent<{pageSessionKey:string;key:string;value:unknown}>).detail;
@@ -245,6 +260,8 @@ export default function MetadataBoundPageComponent({
   const filteredRecords=recordQuery.filters?sourceRecords:filterPageComponentRecords(
     sourceRecords,properties.filters,filterFields,{pageState,recordId,sessionId},properties.filterLogic==='OR'?'OR':'AND');
   const visibleRecords=relatedField?filterRelatedRecords(filteredRecords,parentId,relatedField):filteredRecords;
+  const contextRecords=contextApiName
+   ?currentContextRecord?[currentContextRecord]:[]:visibleRecords;
   const mentionContext = useRelationshipMentionContext(objects, mentionRootObjectApiName,
     recordId || explicitMentionRecordId(properties), properties, apiRequest, revision);
   const resolvedProperties = bindPageStateProperties(resolveMentionProperties(properties, mentionContext.records, mentionContext.fields, objects, mentionRootObjectApiName),pageState);
@@ -258,13 +275,13 @@ export default function MetadataBoundPageComponent({
     ? fields.find(field=>field.relationship?.targetObject===categorySource.sourceObjectApiName
       || field.dataType==='Lookup('+categorySource.sourceObjectApiName+')')?.apiName
     : undefined;
-  const presented = presentPageRecords(properties.recordPresenterApiName, visibleRecords, channelAccess, properties);
+  const presented = presentPageRecords(properties.recordPresenterApiName, contextRecords, channelAccess, properties);
   // A record page already fetched its exact authorised record by ID. Use it
   // even when the record is beyond the first page of the Object list.
-  const boundRecordId=recordId||explicitMentionRecordId(properties);
+  const boundRecordId=recordId||String(currentContextRecord?.Id??'')||explicitMentionRecordId(properties);
   const currentBoundRecord=mentionContext.records[objectApiName];
   const boundRows=boundRecordId&&currentBoundRecord?.Id===boundRecordId
-    ?[currentBoundRecord]:visibleRecords;
+    ?[currentBoundRecord]:contextRecords;
   const toggleBinding=resolveSmartToggleFieldBinding(definition.apiName,properties,objectApiName,fields,
     boundRows,recordTotal,boundRecordId);
   const toggleCanWrite=Boolean(toggleBinding?.ready&&!disableActions&&
@@ -437,7 +454,7 @@ export default function MetadataBoundPageComponent({
     style={smartCanvas||imageCanvas||definition.apiName==='smart_toggle'||boundedCardGrid
     ?{width:'100%',height:'100%',minHeight:0,minWidth:0}:undefined}>
     {!objectApiName && <div className="records-message" role="alert">Select a bound object to load records for this component.</div>}
-    {dataError && <div className="records-message" role="alert">{dataError}</div>}
+    {dataError && !contextApiName && <div className="records-message" role="alert">{dataError}</div>}
     <RegisteredComponent definition={definition} layoutTransparent={smartCanvas} editorPreview={builderPreview===true&&disableActions} props={{
       ...rowResolvedProperties, ...componentLayoutProps(properties, formFactor),
       ...(smartCanvas?{width:component.position!.width,height:component.position!.height}:{}),
@@ -464,8 +481,8 @@ export default function MetadataBoundPageComponent({
       loading: dataLoading, sessionId, previewOnly: disableActions, builderPreview: builderPreview===true&&disableActions,
       // Only bind scalar expressions when one authorised record is in scope.
       // Multi-row components resolve their per-row values inside their own renderer.
-      ...(visibleRecords.length===1 ? {record:visibleRecords[0]} : {}),
-      ...(objectApiName ? { records: visibleRecords } : {}),
+      ...(contextRecords.length===1 ? {record:contextRecords[0]} : {}),
+      ...(objectApiName ? { records: contextRecords } : {}),
       ...(objectApiName ? {recordPagination:{
         limit:recordPageSize,offset:recordOffset,total:recordTotal,
         hasPrevious:recordOffset>0,hasNext:recordOffset+recordPageSize<recordTotal,
@@ -477,7 +494,7 @@ export default function MetadataBoundPageComponent({
         value:toggleBinding.ready?toggleBinding.value:false,
         onBoundToggleChange:changeBoundToggle}:{})
     }} />
-    {objectApiName&&recordQuery.serverFilterable&&recordTotal>recordPageSize&&<nav
+    {objectApiName&&!contextApiName&&recordQuery.serverFilterable&&recordTotal>recordPageSize&&<nav
       className="records-pagination" aria-label={component.label+' record pages'}>
       <button type="button" className="btn" disabled={dataLoading||recordOffset===0}
         onClick={()=>setRecordOffset(offset=>Math.max(0,offset-recordPageSize))}>Previous</button>
@@ -485,7 +502,7 @@ export default function MetadataBoundPageComponent({
       <button type="button" className="btn" disabled={dataLoading||recordOffset+recordPageSize>=recordTotal}
         onClick={()=>setRecordOffset(offset=>offset+recordPageSize)}>Next</button>
     </nav>}
-    {objectApiName&&!recordQuery.serverFilterable&&recordTotal>recordPageSize&&<p role="status">
+    {objectApiName&&!contextApiName&&!recordQuery.serverFilterable&&recordTotal>recordPageSize&&<p role="status">
       Results are incomplete: this filter was applied only to the first 100 fetched records. Additional matches may exist; pagination is unavailable for this filter combination.
     </p>}
   </div>;

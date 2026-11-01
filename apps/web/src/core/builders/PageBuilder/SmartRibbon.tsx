@@ -6,6 +6,7 @@ import type {ObjectMetadata} from '../../metadata/Definitions/metadata';
 import type {UneRibbonProperty,UneBuilderTab} from './uneBuilderPropertyInventory';
 import RibbonColorPalette from './RibbonColorPalette';
 import {uploadTenantImageFile} from '../ComponentProperties/TenantMediaPicker';
+import {apiRequest} from '../../authentication/Client/authClient';
 import RecordFilterEditor from '../../../component-libraries/shared/primitives/RecordFilterEditor/RecordFilterEditor';
 import SmartFormulaField from './SmartFormulaField';
 import SmartIconDropdown from './SmartIconDropdown';
@@ -43,6 +44,15 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
      setUploadError(reason instanceof Error?reason.message:'Image upload failed');
    }finally{setUploadBusy(false);}
  };
+ const [contextChoices,setContextChoices]=useState<Array<{apiName:string;label:string}>>([]);
+ useEffect(()=>{
+  let alive=true;
+  if(tab!=='Data'||!definitions.some(property=>property.id==='contextApiName'))return;
+  void apiRequest<{contexts:Array<{apiName:string;label:string}>}>('/contexts/definitions')
+   .then(result=>{if(alive)setContextChoices(result.contexts);})
+   .catch(()=>{if(alive)setContextChoices([]);});
+  return()=>{alive=false;};
+ },[tab,definitions]);
  const [filtersOpen,setFiltersOpen]=useState(false);
  const [filterTarget,setFilterTarget]=useState('Record');
  const [daysOpen,setDaysOpen]=useState(false);
@@ -292,6 +302,12 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
      onClick={()=>write(!(value===true||value==='true'))}>
      <span className="smart-default-check-thumb" aria-hidden="true"/>
    </button>;
+   else if(kind==='choice'&&property.id==='contextApiName')editor=
+    <select className="smart-select" aria-label={title} disabled={!enabled}
+      value={String(value)} onChange={event=>write(event.target.value)}>
+      <option value="">No business Context</option>
+      {contextChoices.map(item=><option key={item.apiName} value={item.apiName}>{item.label}</option>)}
+    </select>;
    else if(kind==='choice'&&Array.isArray(value))editor=<SmartMultiSelect
       label={title} choices={options} value={value.filter((item):item is string=>typeof item==='string')}
       disabled={!enabled} onChange={write}/>;

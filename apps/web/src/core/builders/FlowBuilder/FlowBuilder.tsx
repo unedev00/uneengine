@@ -14,6 +14,8 @@ import { precedingFlowSteps } from './flowReferenceCatalog';
 import { flowCreateOptions, flowElementAvailable, flowElementInToolbox, type FlowCapabilityCatalog } from './flowCapabilityCatalog';
 import { rowsFrom, outcomesFrom, screenOutcomesFrom, displayValue, type ConfigRow, type DecisionOutcome } from './flowEditorData';
 import HttpCalloutFieldEditor from './HttpCalloutFieldEditor';
+import {apiRequest} from '../../authentication/Client/authClient';
+import ParseJsonConfigEditor from './ParseJsonConfigEditor';
 import { flowCanvasBounds, moveFlowPosition, storedFlowPosition } from './flowCanvasLayout.mjs';
 import FlowTestsPanel from './FlowTestsPanel';
 import FlowSubflowMappingEditor from './FlowSubflowMappingEditor';
@@ -146,6 +148,21 @@ export default function FlowBuilder({
   const [externalServiceError, setExternalServiceError] = useState('');
   const [newExternalServiceApiName, setNewExternalServiceApiName] = useState('');
   const [newExternalServiceLabel, setNewExternalServiceLabel] = useState('');
+  const [contextDefinitions,setContextDefinitions]=useState<Array<{apiName:string;label:string;objectApiName:string}>>([]);
+  const [newContextLabel,setNewContextLabel]=useState('');
+  const [newContextObject,setNewContextObject]=useState('');
+  const loadContexts=async()=>{
+   const result=await apiRequest<{contexts:Array<{apiName:string;label:string;objectApiName:string}>}>('/contexts/definitions');
+   setContextDefinitions(result.contexts);
+  };
+  useEffect(()=>{
+   let active=true;
+   void apiRequest<{contexts:Array<{apiName:string;label:string;objectApiName:string}>}>('/contexts/definitions')
+    .then(result=>{if(active)setContextDefinitions(result.contexts);})
+    .catch(()=>{if(active)setContextDefinitions([]);});
+   return()=>{active=false;};
+  },[landing]);
+
   useEffect(() => {
     // The Builder mounts only when opened; never load this catalogue for app runtime.
     // Refetch when switching between the Flow list and editor; do not reuse tenant state.
@@ -657,6 +674,33 @@ export default function FlowBuilder({
             {platformEvents.map(event=><option key={event.apiName} value={event.apiName}>{event.label}</option>)}
           </select>
         </label>}
+        {flow.startConfig.launchTrigger==='platform-event' && <>
+          <label className="form-label">Deliver to
+            <select className="form-control" value={displayValue(flow.startConfig.matchEventTo)}
+             onChange={event=>setStartConfig('matchEventTo',event.target.value)}>
+              <option value="">All permitted subscribers</option>
+              <option value="page-session">Current page session</option>
+              <option value="record">Current page record</option>
+              <option value="user">Current signed-in user</option>
+              <option value="context">Selected business Context record</option>
+            </select>
+          </label>
+          {flow.startConfig.matchEventTo==='context'&&<label className="form-label">Business Context
+             <select className="form-control" value={displayValue(flow.startConfig.matchContextApiName)}
+              onChange={event=>setStartConfig('matchContextApiName',event.target.value)}>
+              <option value="">Choose Context</option>
+              {contextDefinitions.map(item=><option key={item.apiName} value={item.apiName}>{item.label}</option>)}
+             </select>
+            </label>}
+          {Boolean(flow.startConfig.matchEventTo)&&<label className="form-label">Match event field
+            <select className="form-control" value={displayValue(flow.startConfig.matchEventField)}
+              onChange={event=>setStartConfig('matchEventField',event.target.value)}>
+              <option value="">Select an event field</option>
+              {platformEvents.find(item=>item.apiName===flow.startConfig.platformEventApiName)?.fields?.map(field=>
+                <option key={field.apiName} value={field.apiName}>{field.label}</option>)}
+            </select>
+          </label>}
+        </>}
         {flow.startConfig.launchTrigger==='component-event' && <label className="form-label">
           Component event<input className="form-control" value={displayValue(flow.startConfig.launchEventName)}
             onChange={event=>setStartConfig('launchEventName',event.target.value)}
@@ -711,6 +755,7 @@ export default function FlowBuilder({
                 <option value="event.componentId">Triggering component</option>
                 <option value="event.name">Triggering event name</option>
                 <option value="event.value">Triggering event value</option>
+                {contextDefinitions.map(item=><option key={item.apiName} value={'context.'+item.apiName+'.recordId'}>Current {item.label} Record Id</option>)}
               </select>
             </label>)}
         </fieldset>
@@ -1774,6 +1819,36 @@ export default function FlowBuilder({
         </details>
       </>;
     }
+    if (['Get Context','Set Context','Clear Context'].includes(selected.type)) return <>
+      <label className="form-label">Business Context
+       <select className="form-control" value={displayValue(selected.config.contextApiName)}
+        onChange={event=>setConfig('contextApiName',event.target.value)}>
+        <option value="">Choose a Context definition</option>
+        {contextDefinitions.map(item=><option key={item.apiName} value={item.apiName}>
+          {item.label} ({item.objectApiName})</option>)}
+       </select>
+      </label>
+      {selected.type==='Get Context'&&<label className="form-label">Store current Record Id in
+       <select className="form-control" value={displayValue(selected.config.outputVariable)}
+        onChange={event=>setConfig('outputVariable',event.target.value)}>
+        <option value="">Choose Text Variable</option>
+        {flow.resources.filter(resource=>resource.type==='Variable'&&resource.dataType==='Text')
+         .map(resource=><option key={resource.name} value={resource.name}>{resource.label}</option>)}
+       </select>
+      </label>}
+      {selected.type==='Set Context'&&<label className="form-label">Record Id from
+       <select className="form-control" value={displayValue(selected.config.recordId)}
+        onChange={event=>setConfig('recordId',event.target.value)}>
+        <option value="">Choose source</option>
+        <option value="{!$Record.Id}">Triggering Record Id</option>
+        {flow.resources.filter(resource=>resource.type==='Variable'&&resource.dataType==='Text')
+         .map(resource=><option key={resource.name} value={'@'+resource.name}>{resource.label}</option>)}
+       </select>
+      </label>}
+      <p className="settings-panel-copy">Context selections are stored for the signed-in user and tenant. Record permissions apply.</p>
+    </>;
+    if (selected.type === 'Parse JSON') return <ParseJsonConfigEditor
+      config={selected.config} resources={flow.resources} onChange={setConfig} />;
     if (selected.type === 'Subflow') return <>
       <label className="form-label">Flow<select className="form-control" value={displayValue(selected.config.flowApiName)} onChange={(event) => setConfig('flowApiName', event.target.value)}><option value="">Select an active autolaunched flow</option>{flows.filter((candidate) => candidate.apiName !== flow.apiName && candidate.flowType === 'Autolaunched Flow' && candidate.status === 'Active').map((candidate) => <option key={candidate.apiName} value={candidate.apiName}>{candidate.label}</option>)}</select></label>
       <FlowSubflowMappingEditor
@@ -1938,6 +2013,34 @@ export default function FlowBuilder({
           })}
           {flowElementMetadata.filter((item) => item.type.toLowerCase().includes(elementSearch.trim().toLowerCase()) && isToolboxElement(item.type)).length === 0 && <p className="empty-list">No elements found.</p>}
         </> : <div className="resource-list">
+          <div className="toolbox-group"><h3>Business Contexts</h3>
+           {contextDefinitions.map(item=><div className="flow-manager-row" key={item.apiName}>
+             {item.label} · {item.objectApiName}</div>)}
+           <label className="form-label">Context label
+             <input className="form-control" value={newContextLabel}
+              onChange={event=>setNewContextLabel(event.target.value)}
+              placeholder="Current Cart, Current Conversation..." />
+           </label>
+           <label className="form-label">Linked Object
+             <select className="form-control" value={newContextObject}
+              onChange={event=>setNewContextObject(event.target.value)}>
+              <option value="">Choose an Object</option>
+              {objects.map(item=><option key={item.apiName} value={item.apiName}>{item.label}</option>)}
+             </select>
+           </label>
+           <button className="btn" type="button" disabled={!newContextLabel.trim()||!newContextObject}
+            onClick={()=>{
+             const label=newContextLabel.trim(),apiName=label.replace(/[^A-Za-z0-9_]+/g,'_').replace(/^_+|_+$/g,'');
+             if(!/^[A-Za-z][A-Za-z0-9_]*$/.test(apiName)){
+              onNotify('Context name must begin with a letter');return;
+             }
+             void apiRequest('/contexts/definitions',{method:'POST',body:JSON.stringify({
+              apiName,label,objectApiName:newContextObject
+             })}).then(()=>loadContexts()).then(()=>{
+              setNewContextLabel('');setNewContextObject('');
+             }).catch(error=>onNotify(error instanceof Error?error.message:'Unable to create Context'));
+            }}>Create Context</button>
+          </div>
           <div className="toolbox-group"><h3>Flows</h3>{flows.map((candidate) => <div className="flow-manager-row" key={candidate.apiName}><button className={`flow-manager-item ${flow.apiName === candidate.apiName ? 'active' : ''}`} onClick={() => onSelectFlow(candidate.apiName)}><span>{candidate.flowType}</span><strong>{candidate.label}</strong><small>{candidate.status} · v{candidate.versionNumber}</small></button><div className="flow-manager-actions"><button className="btn btn-small" aria-label={`Clone ${candidate.label}`} title="Clone flow" onClick={() => onCloneFlow(candidate)}><Copy size={13} />Clone</button>{candidate.status === 'Active' && <button className="btn btn-small" aria-label={`Deactivate ${candidate.label}`} onClick={() => onDeactivateFlow(candidate.apiName)}>Deactivate</button>}<button className="btn btn-small" aria-label={`Delete ${candidate.label}`} onClick={() => { if (window.confirm(`Delete the ENTIRE flow "${candidate.label}" including ALL versions? This is not a version-only delete. To edit v1, use Version History → Restore as Draft.`)) onDeleteFlow(candidate.apiName); }}>Delete Entire Flow</button></div></div>)}</div>
           <div className="toolbox-group"><h3>Version History</h3>{flow.versions.length
             ? [...flow.versions].sort((left, right) => right.versionNumber - left.versionNumber).map((version, index) =>
