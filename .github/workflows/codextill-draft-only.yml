@@ -1,4 +1,4 @@
-name: Repair CODEXTILL free-canvas geometry (one time)
+name: Apply CODEXTILL supported visual and Product metadata (one time)
 on:
   push:
     branches: [main]
@@ -31,8 +31,9 @@ jobs:
           npm ci
           npm run build:system --workspace apps/server
           bash -n scripts/oracle/apply-codextill-draft-only.sh
-          node apps/server/scripts/fix-codextill-free-canvas.mjs --preflight
-      - name: Fix and independently verify CODEXTILL free-canvas positions
+          node scripts/codextill/apply-supported-metadata.mjs --preflight
+          node --import tsx scripts/codextill/verify-price-formula.mjs
+      - name: Save and read back CODEXTILL supported Smart metadata
         shell: bash
         run: |
           set -euo pipefail
@@ -40,4 +41,14 @@ jobs:
           test "$(uname -m)" = "aarch64"
           sudo -n true
           curl -fsS --max-time 10 https://api.unesolutions.co.uk/api/health | grep -q '"status":"ok"'
-          sudo -n env GITHUB_REPOSITORY="$GITHUB_REPOSITORY" bash scripts/oracle/apply-codextill-draft-only.sh "$GITHUB_WORKSPACE"
+          sudo -n env GITHUB_REPOSITORY="$GITHUB_REPOSITORY" GITHUB_WORKSPACE="$GITHUB_WORKSPACE" bash -c '
+            set -Eeuo pipefail
+            test "$GITHUB_REPOSITORY" = "unedev00/uneengine"
+            test -r /etc/metadrive/production.env
+            set -a
+            source /etc/metadrive/production.env
+            set +a
+            test -n "${DATABASE_URL:-}"
+            cd "$GITHUB_WORKSPACE"
+            node scripts/codextill/apply-supported-metadata.mjs
+          '
