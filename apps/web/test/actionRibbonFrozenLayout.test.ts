@@ -29,14 +29,14 @@ test('Actions formula is a nonfunctional, readonly preview regardless of selecti
   for(const html of [render({}),render({qtyIcon:{actionType:'AdjustNumber',fieldApiName:'Quantity'}},'qtyIcon','smart_cart')]){
     assert.match(html,/aria-label="Actions formula bar preview"/);
     assert.match(html,/aria-label="Actions formula preview"[^>]*(?:readOnly|readonly)/);
-    assert.match(html,/<button[^>]*disabled[^>]*aria-label="Formula options \\(coming soon\\)"/);
+    assert.match(html,/<button[^>]*disabled[^>]*aria-label="Formula options \(coming soon\\)"/);
     assert.doesNotMatch(html,/oninput=|onchange=/i);
   }
   const source=read('../src/core/builders/PageBuilder/PageBuilderActionRibbon.tsx');
   const start=source.indexOf('aria-label="Actions formula bar preview"');
   const end=source.indexOf('className="office-ribbon-compact-strip page-unified-actions-ribbon"',start);
   assert.ok(start>=0&&end>start,'visual placeholder must remain separate from real numeric action formulas');
-  assert.doesNotMatch(source.slice(start,end),/onChange=|onClick=|patch\\(/);
+  assert.doesNotMatch(source.slice(start,end),/onChange=|onClick=|patch\(/);
 });
 
 test('selected action and number configuration mount without hiding longer options',()=>{
