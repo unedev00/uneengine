@@ -3146,6 +3146,36 @@ function PageBuilder({
               <PageBuilderAdvancedResponsive properties={selected.properties} device={currentRibbonDevice}
                 onChange={(properties:Record<string,unknown>)=>updateComponent(selected.id,{properties})}/>
             </>}
+            {advancedEditor==='nesting' && selected && <section className="page-builder-advanced-nesting" aria-label="Component nesting">
+              <label className="checkbox-row"><input type="checkbox"
+                checked={isLayoutContainer(selected)} disabled={!selectedCustomDefinition&&!isLayoutContainer(selected)}
+                onChange={event=>{
+                  if(!event.target.checked&&childrenOf(page.components,selected.id).length){
+                    onNotify('Move children out before disabling nesting.');return;
+                  }
+                  updateComponent(selected.id,{properties:{...selected.properties,layoutContainer:event.target.checked}});
+                }}/>Accept nested components</label>
+              <label className="form-label">Parent container
+                <select className="form-control" aria-label="Advanced parent container"
+                  value={rawLayoutParentId(selected)??''}
+                  onChange={event=>{
+                    const parent=event.target.value||null;
+                    if(!canNest(page.components,selected.id,parent)){
+                      onNotify('A component cannot be nested inside itself or a descendant.');return;
+                    }
+                    applyPage({...page,components:reparentComponent(page.components,selected.id,parent)});
+                  }}>
+                  <option value="">Canvas / page root</option>
+                  {page.components.filter(item=>canNest(page.components,selected.id,item.id))
+                    .map(item=><option key={item.id} value={item.id}>{item.label}</option>)}
+                </select></label>
+              {isLayoutContainer(selected)&&<div className="page-builder-advanced-children">
+                <strong>Nested components</strong>
+                {childrenOf(page.components,selected.id).map(item=><button key={item.id}
+                  type="button" className="btn btn-small" onClick={()=>setSelectedId(item.id)}>
+                  {item.label}</button>)}
+              </div>}
+            </section>}
             {advancedEditor==='properties' && selected && <MetadataComponentProperties
               key={selected.id+':'+page.layoutVariant} mode="details" properties={selected.properties}
               onChange={(properties:Record<string,unknown>)=>updateComponent(selected.id,{properties})}
@@ -3236,57 +3266,6 @@ function PageBuilder({
         profiles={profiles.map(profile=>({id:profile.id,label:profile.label}))}
         recordTypes={(targetObject?.recordTypes??[]).map(type=>({id:type.id,label:type.label}))}
         onApply={applyVisibilityEditor} onClose={()=>setVisibilityEditorOpen(false)}/>}
-      {advancedEditor && !['assignments','properties','responsive'].includes(advancedEditor) && <div className="modal-backdrop office-ribbon-modal-backdrop" role="presentation"
-        onMouseDown={event=>{if(event.currentTarget===event.target)setAdvancedEditor(null);}}>
-        <section className="modal page-builder-advanced-dialog" role="dialog" aria-modal="true"
-          aria-label={advancedFeatureLabels[advancedEditor]}>
-          <div className="modal-header"><h2>{advancedFeatureLabels[advancedEditor]}</h2>
-            <button type="button" className="icon-button" aria-label="Close advanced editor"
-              onClick={()=>setAdvancedEditor(null)}><X size={16}/></button></div>
-          <div className="page-builder-advanced-body">
-            {advancedEditor==='nesting' && selected && <>
-              <label className="checkbox-row"><input type="checkbox"
-                checked={isLayoutContainer(selected)} disabled={!selectedCustomDefinition&&!isLayoutContainer(selected)}
-                onChange={event=>{
-                  if(!event.target.checked&&childrenOf(page.components,selected.id).length){
-                    onNotify('Move children out before disabling nesting.');return;
-                  }
-                  updateComponent(selected.id,{properties:{...selected.properties,layoutContainer:event.target.checked}});
-                }}/>Accept nested components (requires a component that renders children)</label>
-              <label className="form-label">Parent container
-                <select className="form-control" aria-label="Advanced parent container"
-                  value={rawLayoutParentId(selected)??''}
-                  onChange={event=>{
-                    const parent=event.target.value||null;
-                    if(!canNest(page.components,selected.id,parent)){
-                      onNotify('A component cannot be nested inside itself or a descendant.');return;
-                    }
-                    applyPage({...page,components:reparentComponent(page.components,selected.id,parent)});
-                  }}>
-                  <option value="">Canvas / page root</option>
-                  {page.components.filter(item=>canNest(page.components,selected.id,item.id))
-                    .map(item=><option key={item.id} value={item.id}>{item.label}</option>)}
-                </select></label>
-              {isLayoutContainer(selected)&&<div>
-                <div className="properties-section-title">Nested components</div>
-                {childrenOf(page.components,selected.id).map(item=><button key={item.id}
-                  type="button" className="btn btn-small" onClick={()=>setSelectedId(item.id)}>
-                  {item.label}</button>)}
-              </div>}
-            </>}
-            {advancedEditor==='recordPage'&&selected&&
-              <button type="button" className="btn btn-small"
-                onClick={()=>{setInspectorTab('Data & Actions');setActivePanel('properties');setAdvancedEditor('properties');}}>
-                Configure selected {selected.type} block</button>}
-            {advancedEditor==='recordPage' &&
-              <div className="office-ribbon-inspector-host" ref={setRibbonPropertyHost}
-                aria-label={advancedFeatureLabels[advancedEditor]}/>}
-          </div>
-          <div className="office-ribbon-modal-actions"><button type="button" className="btn btn-brand"
-            onClick={()=>setAdvancedEditor(null)}>Close</button></div>
-        </section>
-      </div>}
-
       {ribbonTab==='Component Layout' && pageSettingsDialogOpen && <div className="modal-backdrop office-ribbon-modal-backdrop" role="presentation">
         <section className="modal office-ribbon-config-modal office-ribbon-page-settings-modal" role="dialog" aria-modal="true" aria-label="Page settings">
           <div className="modal-header"><h2>Page settings</h2><button type="button" className="icon-button" aria-label="Close page settings" onClick={()=>setPageSettingsDialogOpen(false)}><X size={16}/></button></div>
