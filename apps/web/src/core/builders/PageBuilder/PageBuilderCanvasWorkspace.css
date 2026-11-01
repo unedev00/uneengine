@@ -116,7 +116,7 @@
 }
 
 /* Live preview hosts the published responsive runtime, not the editor's max-content stage. */
-.builder-page.builder-interactive-preview .reference-builder-layout.page-builder-layout .page-stage{
+.builder-page.builder-interactive-preview .reference-builder-layout.page-builder-layout .page-stage:has(> .page-builder-live-runtime){
   width:100%!important;max-width:100%!important;align-self:stretch!important;
 }
 .builder-page.builder-interactive-preview .page-builder-live-runtime{
