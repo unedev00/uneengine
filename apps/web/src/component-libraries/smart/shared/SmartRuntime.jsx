@@ -91,11 +91,11 @@ function SmartCard({p,record}){
         style={{height:"100%",width:"100%",border:nativeImageBorder}}>
         <span>Image Here</span>
       </div>
-     :grid&&preview&&!image
+     :grid&&preview&&!image&&(sample||p.builderPreview!==true)
     ?<div className="smart-card-image-placeholder" aria-hidden="true" style={{
        height:"100%",minHeight:0,display:"grid",placeItems:"center",
        background:"var(--md-card-placeholder,#edf2f7)",color:"#526276",fontSize:12
-     }}>Image here</div>
+     }}>Image Here</div>
     :<SmartPicture src={image} alt={header} loadAsset={p.loadAsset}
       style={{height:single||grid?"100%":imageHeight,width:"100%",display:"block",
        maxHeight:grid?"100%":undefined,
