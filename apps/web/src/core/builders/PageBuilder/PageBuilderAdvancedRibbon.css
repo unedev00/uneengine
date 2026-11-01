@@ -92,6 +92,13 @@
 .smart-filter-dialog .component-visibility-editor>.form-label{max-width:390px}
 .smart-filter-dialog .component-visibility-editor .metadata-array-property{padding:12px;
   border:1px solid #d8e1ec;border-radius:6px;margin:10px 0}
+/* Keep moved nesting and record settings in Advanced's scrollable inline
+   editor; never open an independent settings popup over the page canvas. */
+.page-builder-advanced-nesting{display:flex;flex-wrap:wrap;align-items:flex-start;gap:10px 18px;padding:4px 8px}
+.page-builder-advanced-nesting>.form-label{min-width:230px;max-width:340px}
+.page-builder-advanced-nesting .form-control{width:100%;max-width:100%}
+.page-builder-advanced-children{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.page-builder-advanced-children>strong{width:100%;font-size:12px}
 @media(max-width:700px){
   .office-builder-ribbon #page-builder-tab-content.office-ribbon-content:has(>.page-builder-advanced-inline){
     height:300px!important;min-height:300px!important;max-height:300px!important}
