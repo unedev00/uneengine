@@ -165,6 +165,7 @@ import './PageBuilderNumericControls.css';
 import './PageBuilderRibbonPolish.css';
 import './PageBuilderEightTabRibbon.css';
 import './PageBuilderCanvasWorkspace.css';
+import './PageBuilderEditorPreview.css';
 import './SmartCanvasHandles.css';
 import RibbonFieldExpressionInput from './RibbonFieldExpressionInput';
 import {RibbonResponsive} from './PageBuilderRibbonStyle';
@@ -2163,6 +2164,15 @@ function PageBuilder({
           renderPageComponent(child, page.components.findIndex((item) => item.id === child.id), libraryPreview, interactivePreview))
       : undefined;
     const visualStyle = resolvePageComponentStyle(component.properties, component.type, device);
+    // Unconfigured registered components remain discoverable without authoring
+    // any placeholder text, border, or data in SQL.
+    const editorGenericHint=!previewMode&&!libraryPreview&&customDefinition
+      &&!customDefinition.apiName.startsWith('smart_')&&!nestedChildren?.length
+      &&!Object.entries(component.properties).some(([key,value])=>
+        /^(?:content|items|records|src|imageSource|textSource|objectApiName|fieldApiName|titleFieldApiName|label|tabs|value|flowApiName)$/i.test(key)
+        &&value!==null&&value!==undefined&&value!==''&&(!Array.isArray(value)||value.length>0))
+      ? component.label:'';
+
     const previewProperties = createComponentPreviewProps(
       customDefinition?.apiName ?? component.type,
       component.label,
@@ -2179,7 +2189,7 @@ function PageBuilder({
       properties: component.properties,
       object: page.pageType === 'Record Page' ? targetObject : undefined,
       device,
-      preview: true, previewOnly: true, pageSessionKey: (builderAppApiName || apps[0]?.apiName || 'Records') + ':' + page.apiName,
+      preview: true, previewOnly: true, builderPreview: !previewMode, pageSessionKey: (builderAppApiName || apps[0]?.apiName || 'Records') + ':' + page.apiName,
        loadAsset:(id:string)=>request<{contentType:string;contentBase64:string}>('/media-assets/'+id),
       disabled: !interactivePreview,
       onAction: previewProperties.onAction,
@@ -2225,6 +2235,7 @@ function PageBuilder({
     const selectOnlyInDesigner = !previewMode && !libraryPreview;
     return <div
       key={component.id}
+      data-builder-editor={!previewMode&&!libraryPreview?'true':undefined}
       data-page-appearance={isLayoutType(component.type) ? 'layout' : pageAppearanceTarget(component.type)}
       data-page-style={pageAppearanceStyleKeys(visualStyle)}
       ref={libraryPreview && !interactivePreview ? (element) => { if (element) element.inert = true; } : undefined}
@@ -2267,8 +2278,9 @@ function PageBuilder({
       onPointerDown={!libraryPreview && page.layoutMode === 'free-canvas' && !nested ? event => {
         // Native Card Grid scrolling must not trigger free-canvas dragging.
         // The component's dedicated move grips and resize handles still work.
-        if(component.type==='Custom:ui_item_grid' &&
-          (event.target as HTMLElement).closest('.md-product-grid--scroll'))return;
+        const target=event.target as HTMLElement;
+        if((component.type==='Custom:ui_item_grid'&&target.closest('.md-product-grid--scroll'))
+          ||(component.type==='Custom:smart_card_grid'&&target.closest('.smart-grid')))return;
         startCanvasMove(event, component);
       } : undefined}
       onPointerMove={!libraryPreview && page.layoutMode === 'free-canvas' && !nested ? moveCanvasPointer : undefined}
@@ -2333,6 +2345,7 @@ function PageBuilder({
           <button type="button" role="menuitem" disabled={isCanvasLocked(component)} onClick={() => {removeSelected();setComponentMenuId('');}}>Delete <kbd>Delete</kbd></button>
         </div>}
       </div></CanvasFloatingActions>}
+      {editorGenericHint&&<span className="page-editor-generic-hint" aria-hidden="true">{editorGenericHint}</span>}
       {showHiddenSelection && !component.visible
         ? <span className="canvas-hidden-marker">Hidden: {component.label}</span>
         : isLayoutType(component.type)
@@ -2341,9 +2354,11 @@ function PageBuilder({
           {!libraryPreview && !previewMode && <div className="canvas-drop-zone" onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.stopPropagation(); const draggedId = event.dataTransfer.getData('application/x-metadrive-component-id'); if (draggedId && canNestComponent(page.components, draggedId, component.id)) { applyPage({ ...page, components: page.components.map((item) => item.id === draggedId ? { ...item, parentId: component.id } : item) }); } else if (!draggedId) { const type = event.dataTransfer.getData('text/plain').replace(/^component:/, ''); if (type) addComponent(type, page.components.length, component.region ?? 'main', undefined, component.id); } }}>Drop components inside {component.label}</div>}
         </div>
         : component.type === 'Record Detail'
-        ? <div className="record-detail-grid">{(Array.isArray(component.properties.fields) ? component.properties.fields : fields.slice(0, 6).map((field) => field.apiName)).map((apiName) => { const field = fields.find((item) => item.apiName === apiName); return field ? <div className="record-detail-field" key={apiName}><small>{field.label}</small><span>{previewFieldValue(field.apiName)}</span></div> : null; })}</div>
+        ? <div className="record-detail-grid">{(Array.isArray(component.properties.fields) ? component.properties.fields : fields.slice(0, 6).map((field) => field.apiName)).map((apiName) => { const field = fields.find((item) => item.apiName === apiName); return field ? <div className="record-detail-field" key={apiName}><small>{field.label}</small><span>{previewFieldValue(field.apiName)}</span></div> : null; })}
+          {!previewMode&&!(Array.isArray(component.properties.fields)?component.properties.fields:fields.slice(0,6)).length&&<div className="record-detail-field"><small>Field Name</small><span>Field value</span></div>}</div>
         : component.type === 'Field Section'
-          ? <div className={`record-detail-grid columns-${component.properties.columns === 1 ? 1 : 2}`}>{stringList(component.properties.fieldApiNames, []).map((apiName) => fields.find((field) => field.apiName === apiName)).filter((field): field is FieldMetadata => Boolean(field)).map((field) => <div className="record-detail-field" key={field.apiName}><small>{field.label}</small><span>{previewFieldValue(field.apiName)}</span></div>)}</div>
+          ? <div className={`record-detail-grid columns-${component.properties.columns === 1 ? 1 : 2}`}>{stringList(component.properties.fieldApiNames, []).map((apiName) => fields.find((field) => field.apiName === apiName)).filter((field): field is FieldMetadata => Boolean(field)).map((field) => <div className="record-detail-field" key={field.apiName}><small>{field.label}</small><span>{previewFieldValue(field.apiName)}</span></div>)}
+            {!previewMode&&!stringList(component.properties.fieldApiNames, []).length&&<div className="record-detail-field"><small>Field Name</small><span>Field value</span></div>}</div>
           : component.type === 'Record Field'
             ? (() => {
               const field = fields.find((item) => item.apiName === component.properties.fieldApiName);
@@ -2379,6 +2394,7 @@ function PageBuilder({
                   .map(name=>fields.find(field=>field.apiName===name))
                   .filter((field):field is FieldMetadata=>Boolean(field))
                   .map(field=><div key={field.apiName}><span>{field.label}</span><strong>{previewFieldValue(field.apiName)}</strong></div>)}
+                {!previewMode&&(!targetObject||!fields.length)&&<div><span>Field Name</span><strong>Field value</strong></div>}
               </div>
           : component.type === 'Dashboard'
             ? <div className="record-fields-card surface">
@@ -2409,15 +2425,18 @@ function PageBuilder({
             ? <nav className="record-fields-card surface" aria-label={component.label}>
                 {stringList(component.properties.relatedLists,defaultRelatedLists).map(name=>
                   <a key={name} href={'#related-'+name}>{name}</a>)}
+                {!previewMode&&!stringList(component.properties.relatedLists,defaultRelatedLists).length&&<span>Related List</span>}
               </nav>
           : component.type === 'Rich Text'
-            ? <div className="record-fields-card surface" style={{whiteSpace:'pre-wrap'}}>{String(component.properties.content??'')}</div>
+            ? <div className="record-fields-card surface" style={{whiteSpace:'pre-wrap'}}>{(String(component.properties.content??'').trim()?String(component.properties.content):(!previewMode?'Text Here':''))}</div>
           : component.type === 'List View'
             ? <div className="record-fields-card surface"><strong>{objects.find(item=>item.apiName===component.properties.listObjectApiName)?.pluralLabel??'Select an Object'}</strong>
                 <p>Authorised records, sorting, search and pagination load when this page runs.</p></div>
           : component.type === 'Path'
             ? <div className="record-fields-card surface"><strong>{component.label}</strong>
-                <ol className="record-path">{(fields.find(field=>field.apiName===component.properties.stageFieldApiName)?.picklistValues??[]).map(value=>
+                <ol className="record-path">{((fields.find(field=>field.apiName===component.properties.stageFieldApiName)?.picklistValues?.length
+                  ?fields.find(field=>field.apiName===component.properties.stageFieldApiName)?.picklistValues
+                  :(!previewMode?['Stage 1','Stage 2','Stage 3']:[]))??[]).map(value=>
                   <li key={value}>{value}</li>)}</ol></div>
           : component.type === 'Screen Flow'
             ? <div className="record-fields-card surface"><strong>{component.label}</strong>
@@ -2440,7 +2459,7 @@ function PageBuilder({
                         reports={reports} formFactor={device === 'Phone' ? 'Phone' : 'Desktop'}
                         availableFlows={flows.filter((flow) => ['Screen Flow', 'Autolaunched Flow'].includes(flow.flowType))}
                         onNavigate={(route:AppRoute)=>{if(previewMode)window.open(appRoutePath(route),'_blank','noopener,noreferrer');}}
-                         onLaunchFlow={(flowApiName: string, inputs: Record<string, unknown>) => { onLaunchFlow(flowApiName, inputs); externalPreviewWindowRef.current?.opener?.focus?.(); }} disableActions={!previewMode} />
+                         onLaunchFlow={(flowApiName: string, inputs: Record<string, unknown>) => { onLaunchFlow(flowApiName, inputs); externalPreviewWindowRef.current?.opener?.focus?.(); }} disableActions={!previewMode} builderPreview={!previewMode} />
                   : customDefinition
                     ? <RegisteredComponent definition={customDefinition} layoutTransparent props={libraryPreview ? customPreviewProps : {
                       ...component.properties,
@@ -2454,7 +2473,7 @@ function PageBuilder({
                       device, previewOnly: true, builderPreview: !previewMode, pageSessionKey: (builderAppApiName || apps[0]?.apiName || 'Records') + ':' + page.apiName,
                        loadAsset:(id:string)=>request<{contentType:string;contentBase64:string}>('/media-assets/'+id),
                       children: nestedChildren
-                    }} />
+                    }} editorPreview={!previewMode} />
                     : libraryPreview
                       ? <div className="component-demo-fallback"><strong>{component.label}</strong><span>{selectedComponentDescription || 'Preview of a reusable page component.'}</span><div><i /><i /><i /></div></div>
                       : <div className="component-demo-fallback"><strong>{component.label}</strong><span>This component is no longer registered. Re-register it to restore its live preview.</span><div><i /><i /><i /></div></div>}

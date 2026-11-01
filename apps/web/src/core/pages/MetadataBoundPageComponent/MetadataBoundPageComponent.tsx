@@ -19,7 +19,7 @@ import type {LibraryComponentMetadata,PageComponentMetadata,ObjectMetadata,Field
 import type {AppRoute} from '../../workspace/Navigation/appRouting';
 
 export default function MetadataBoundPageComponent({
-  apiRequest, definition, component, objects, apps, pages, currentAppId, pageSessionKey, reports, availableFlows, formFactor, onNavigate, onLaunchFlow, disableActions = false, defaultObjectApiName = '', recordId = '', behaviorContext
+  apiRequest, definition, component, objects, apps, pages, currentAppId, pageSessionKey, reports, availableFlows, formFactor, onNavigate, onLaunchFlow, disableActions = false, builderPreview = false, defaultObjectApiName = '', recordId = '', behaviorContext
 }: {
   apiRequest:<T>(path:string,init?:RequestInit)=>Promise<T>;
   definition: LibraryComponentMetadata;
@@ -35,6 +35,7 @@ export default function MetadataBoundPageComponent({
   onNavigate: (route: AppRoute) => void;
   onLaunchFlow: (flowApiName: string, inputs?: Record<string, unknown>, context?:{requestId?:string}) => void;
   disableActions?: boolean;
+  builderPreview?: boolean;
   defaultObjectApiName?: string;
   recordId?: string;
   behaviorContext?:BehaviorContext;
@@ -431,7 +432,7 @@ export default function MetadataBoundPageComponent({
     ?{width:'100%',height:'100%',minHeight:0,minWidth:0}:undefined}>
     {!objectApiName && <div className="records-message" role="alert">Select a bound object to load records for this component.</div>}
     {dataError && <div className="records-message" role="alert">{dataError}</div>}
-    <RegisteredComponent definition={definition} layoutTransparent={smartCanvas} props={{
+    <RegisteredComponent definition={definition} layoutTransparent={smartCanvas} editorPreview={builderPreview===true&&disableActions} props={{
       ...rowResolvedProperties, ...componentLayoutProps(properties, formFactor),
       ...(smartCanvas?{width:component.position!.width,height:component.position!.height}:{}),
       ...(boundedCardGrid?{boundedViewport:true}:{}),
@@ -454,7 +455,7 @@ export default function MetadataBoundPageComponent({
           &&(pageBehaviors(properties)!.interactions as Array<{event?:unknown}>).some(item=>item?.event==='change')))
           void onAction({ event: 'change', value }).catch(() => {});
       },
-      loading: dataLoading, sessionId, previewOnly: disableActions,
+      loading: dataLoading, sessionId, previewOnly: disableActions, builderPreview: builderPreview===true&&disableActions,
       // Only bind scalar expressions when one authorised record is in scope.
       // Multi-row components resolve their per-row values inside their own renderer.
       ...(visibleRecords.length===1 ? {record:visibleRecords[0]} : {}),

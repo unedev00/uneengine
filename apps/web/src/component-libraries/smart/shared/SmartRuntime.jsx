@@ -22,7 +22,17 @@ function SmartPicture({src,alt,loadAsset,style}){
 const recordOf=p=>p.objectApiName&&Array.isArray(p.records)
  ?(p.records[0]??{}):p.record&&typeof p.record==="object"&&!Array.isArray(p.record)?p.record:
  Array.isArray(p.records)&&p.records.length?p.records[0]:Array.isArray(p.items)&&p.items.length?p.items[0]:{};
-const recordsOf=p=>Array.isArray(p.records)?p.records:Array.isArray(p.items)?p.items:[];
+// Editor-only examples are derived from the existing shared record source.
+// They never have a database Id and never invoke a Flow action.
+const editorCardRows=(count)=>Array.from({length:Math.min(36,Math.max(1,count))},(_,i)=>({
+ __builderSample:true,Name:"Product Name "+(i+1),Price:"Price",Quantity:1
+}));
+const recordsOf=p=>{
+ const records=Array.isArray(p.records)?p.records:Array.isArray(p.items)?p.items:[];
+ return p.kind==="smart_card_grid"&&p.builderPreview===true&&!p.loading&&!records.length
+  ?editorCardRows(number(p.cardsPerRow,3)*number(p.cardsPerColumn,3)):records;
+};
+const isBuilderEmpty=p=>p.builderPreview===true&&!p.loading&&recordsOf(p).length===0;
 // Image bindings must resolve once per authorised record, not once for the grid.
 // Plain API names and @Field expressions both use the same record values.
 const boundImage=(p,record)=>{
@@ -32,13 +42,16 @@ const boundImage=(p,record)=>{
  return expression(source,record);
 };
 function SmartCard({p,record}){
- const rawImage=p.imageSource;
  const image=boundImage(p,record);
- const header=expression(p.textSource??p.title??"",record);
- const badge=expression(p.badgeText??"",record);
+ const preview=p.previewOnly===true||p.builderPreview===true||p.preview===true;
+ const sample=Boolean(p.builderPreview===true&&record?.__builderSample===true);
+ const header=expression(p.textSource??p.title??p.label??"",record)||(sample?"Product Name":p.kind==="smart_card_grid"&&preview?"Text here":"");
+ const badge=expression(p.badgeText??"",record)||(sample?"Price":preview&&p.badgeVisible===true?"Badge":"");
  const horizontal=["left","right"].includes(p.imagePlacement);
  const single=p.kind==="smart_image";
- const imageHeight=number(p.imageHeight,220);
+ const grid=p.kind==="smart_card_grid";
+ const imageHeight=number(p.imageHeight,220,0,1200);
+ const headerHeight=number(p.headerBoxHeight,44,0,1200);
  // Standalone Image has exactly ONE decorative stroke, on the native image.
  // A card-grid item remains a separate card with an optional image stroke.
  // Never paint an implicit card border around an independently bordered Image.
@@ -51,28 +64,43 @@ function SmartCard({p,record}){
   display:"flex",flexDirection:horizontal?"row":"column",
   background:single?(p.imageBackgroundColor??p.backgroundColor??"transparent"):(p.backgroundColor||"#fff"),border:cardBorder,
   borderRadius:number(p.radius,12),overflow:"hidden",position:"relative",minWidth:0,
+  fontSize:number(p.textSize,16,8,96),
   boxShadow:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none",
   ...(single?{height:"100%",minHeight:0}:{}),
-  ...(p.kind==="smart_card_grid"?{height:"100%"}:{})
+  ...(grid?{height:"100%",minHeight:0}:{}),
  }}>
-  <div style={{order:["right","bottom"].includes(p.imagePlacement)?2:0,
-    flex:horizontal?"1 1 50%":single?"1 1 auto":undefined,minWidth:0,minHeight:0,
-    ...(single?{display:"flex"}:{})}}>
-   <SmartPicture src={image} alt={header} loadAsset={p.loadAsset}
-      style={{height:single?"100%":imageHeight,width:"100%",display:"block",
+  {(!grid||imageHeight>0)&&<div style={{order:["right","bottom"].includes(p.imagePlacement)?2:0,
+    flex:horizontal?"1 1 50%":single?"1 1 auto":grid?"1 1 "+imageHeight+"px":undefined,
+    minWidth:0,minHeight:0,
+    ...(single?{display:"flex"}:{}),
+    ...(grid?{overflow:"hidden",maxHeight:horizontal?undefined:imageHeight}:{} )}}>
+   {single&&p.builderPreview&&!image
+     ?<div className="smart-image-empty smart-editor-image-placeholder" aria-label="Image Here"
+        style={{height:"100%",width:"100%",border:nativeImageBorder}}>
+        <span>Image Here</span>
+      </div>
+     :grid&&preview&&!image&&(sample||p.builderPreview!==true)
+    ?<div className="smart-card-image-placeholder" aria-hidden="true" style={{
+       height:"100%",minHeight:0,display:"grid",placeItems:"center",
+       background:"var(--md-card-placeholder,#edf2f7)",color:"#526276",fontSize:12
+     }}>Image Here</div>
+    :<SmartPicture src={image} alt={header} loadAsset={p.loadAsset}
+      style={{height:single||grid?"100%":imageHeight,width:"100%",display:"block",
+       maxHeight:grid?"100%":undefined,
        objectFit:p.imageFill==="fit"?"contain":p.imageFill==="stretch"?"fill":"cover",
        boxSizing:"border-box",borderRadius:single?number(p.radius,12):undefined,
-       border:nativeImageBorder}}/>
-  </div>
-  {header&&<div className="smart-card-content" style={{
+       border:nativeImageBorder}}/>}
+  </div>}
+  {header&&headerHeight>0&&<div className="smart-card-content" style={{
     order:1,flex:horizontal?"1 1 50%":undefined,display:"flex",alignItems:"center",
-    height:horizontal?imageHeight:number(p.headerBoxHeight,44),fontWeight:p.headerBold===false?400:700,
-    textAlign:p.headerAlignment||"left",justifyContent:p.headerAlignment==="right"?"flex-end":p.headerAlignment==="center"?"center":"flex-start",
+    height:headerHeight,alignSelf:horizontal?"center":undefined,flexShrink:0,
+    fontWeight:p.headerBold===false?400:700,
+    textAlign:p.headerAlignment||p.labelAlignment||"left",justifyContent:(p.headerAlignment||p.labelAlignment)==="right"?"flex-end":(p.headerAlignment||p.labelAlignment)==="center"?"center":"flex-start",
     border:p.headerBorderColor?"1px solid "+p.headerBorderColor:undefined,color:p.defaultValueColor||p.labelColor||undefined,
     whiteSpace:p.wrapText===false?"nowrap":"normal",
     overflow:"hidden",overflowWrap:"anywhere",padding:"4px 10px"
   }}>{header}</div>}
-  {p.badgeVisible===true&&<span className={"smart-badge "+(p.badgeAlignment||"image-top-right")}
+  {p.badgeVisible===true&&Boolean(badge)&&<span className={"smart-badge "+(p.badgeAlignment||"image-top-right")}
    style={{fontWeight:p.badgeBold===false?400:700,fontSize:number(p.badgeTextSize,12),
    color:p.badgeTextColor||"#fff",background:p.badgeBodyColor||"#2563eb"}}>{badge}</span>}
  </article>;
@@ -150,9 +178,11 @@ function SmartTabs({p,record,fire}){
  // When bound to an Object, the shared Page Runtime supplies only filtered,
  // permission-checked records. Never generate unlimited tabs from raw records.
  const dynamic=Boolean(p.objectApiName&&p.textSource);
- const tabs=dynamic?recordsOf(p).slice(0,count).map(row=>({
+ const tabs=dynamic?(isBuilderEmpty(p)?Array.from({length:Math.min(count,5)},(_,i)=>({
+   label:"Tab "+(i+1),id:"editor-tab-"+i
+  })):recordsOf(p).slice(0,count).map(row=>({
    label:expression(p.textSource,row),id:row?.Id??row?.id
- })):Array.isArray(p.tabs)?p.tabs:Array.from({length:count},(_,i)=>i===0&&typeof p.label==="string"&&p.label&&!p.label.startsWith("@")?p.label:"Tab "+(i+1));
+  }))):Array.isArray(p.tabs)?p.tabs:Array.from({length:count},(_,i)=>i===0&&typeof p.label==="string"&&p.label&&!p.label.startsWith("@")?p.label:"Tab "+(i+1));
  React.useEffect(()=>{if(active>=tabs.length)setActive(0)},[active,tabs.length]);
  return <div className="smart-tabs-shell" style={{background:p.backgroundColor||undefined,
    display:"flex",flexDirection:"column",height:"100%",minHeight:0,width:"100%"}}>
@@ -206,7 +236,9 @@ export default function SmartRuntime(p){
  else if(name==="smart_toggle")content=<SmartToggle p={p} fire={fire}/>;
  else if(name==="smart_text")content=<input className="smart-input-box" type="text"
   aria-label={label||text(p.placeholder||"Input")}
-  placeholder={label||text(p.placeholder||"")}
+  placeholder={p.builderPreview===true&&![p.placeholder,p.textSource,p.defaultValue,p.value].some(v=>v!==undefined&&v!==null&&v!=="")
+    &&!(p.properties&&Object.prototype.hasOwnProperty.call(p.properties,"label"))
+    ?"Text Here":label||text(p.placeholder||"")}
   defaultValue={expression(p.textSource??p.defaultValue??p.value??"",record)}
   style={{...style,...shadowStyle,width:"100%",height:"100%",minWidth:0,minHeight:0,
     fontSize:number(p.textSize,16),color:p.defaultValueColor||p.labelColor||undefined,
@@ -223,13 +255,34 @@ export default function SmartRuntime(p){
  else if(name==="smart_card_grid"){
   const rows=Math.max(1,Math.floor(number(p.cardsPerColumn,3,1,40)));
   const columns=Math.max(1,Math.floor(number(p.cardsPerRow,3,1,12)));
-  content=<div className="smart-grid" role="region" aria-label="Product cards" tabIndex={0} style={{
+  const gap=number(p.gap,12,0,160);
+  const minimumCardHeight=number(p.cardMinHeight,96,96,1200);
+  const boundRows=recordsOf(p);
+  const previewRows=(p.previewOnly===true||p.builderPreview===true||p.preview===true)&&boundRows.length===0
+    ?Array.from({length:columns*rows},(_,i)=>({Id:"card-preview-"+i,Name:"Sample item "+(i+1)}))
+    :boundRows;
+  content=<div className="smart-grid" role="region" aria-label="Product cards" tabIndex={0}
+   onKeyDown={event=>{
+     // The inner grid is an independent keyboard scroller. Never steal
+     // arrow/action keys from a focused card or from the Page Builder.
+     if(event.target!==event.currentTarget)return;
+     const scroller=event.currentTarget;
+     if(event.key==="End"){event.preventDefault();scroller.scrollTop=scroller.scrollHeight;}
+     else if(event.key==="Home"){event.preventDefault();scroller.scrollTop=0;}
+     else if(event.key==="PageDown"){event.preventDefault();scroller.scrollTop+=scroller.clientHeight;}
+     else if(event.key==="PageUp"){event.preventDefault();scroller.scrollTop-=scroller.clientHeight;}
+   }}
+   style={{
    boxSizing:"border-box",width:"100%",height:"100%",minHeight:0,minWidth:0,
-   overflowY:"auto",overflowX:"auto",overscrollBehavior:"contain",
+   overflowY:"auto",overflowX:"hidden",overscrollBehavior:"contain",
+   gap,
    gridTemplateColumns:"repeat("+columns+",minmax(0,1fr))",
-   gridAutoRows:"max(180px, calc((100% - "+(rows-1)*12+"px) / "+rows+"))",alignContent:"start"
+   // Cards per column specifies the number of visible rows, never a record limit.
+   // The authored canvas height owns the viewport; additional rows scroll inside it.
+   gridAutoRows:"max("+minimumCardHeight+"px, calc((100% - "+(rows-1)*gap+"px) / "+rows+"))",
+   alignContent:"start"
   }}>
-   {recordsOf(p).map((r,i)=>{
+   {previewRows.map((r,i)=>{
     const card=<SmartCard p={p} record={r}/>;
     // Published metadata decides if the card is actionable. Never fabricate
     // an Add To Cart operation: the bound Flow owns persistence and RBAC.
@@ -246,7 +299,7 @@ export default function SmartRuntime(p){
  else if(name==="smart_tabs")content=<SmartTabs p={p} record={record} fire={fire}/>;
  else if(name==="smart_navigation"){
   const items=Array.isArray(p.items)&&p.items.length?p.items:recordsOf(p);
-  const entries=items.length?items:p.textSource?[record]:[];
+  const entries=items.length?items:isBuilderEmpty(p)?["Home","Products","Settings"]:p.textSource?[record]:[];
   const labelOf=item=>{
     if(item&&typeof item==="object"){
       if(typeof item.label==="string"&&item.label)return item.label;
@@ -274,7 +327,7 @@ export default function SmartRuntime(p){
     background:p.imageBackgroundColor??p.backgroundColor??"transparent",
     border:p.borderColor?"1px solid "+p.borderColor:0,
     borderRadius:number(p.radius,12),...shadowStyle
- }}>{p.children||null}</div>;
+ }}>{p.children||(p.builderPreview?<span className="smart-editor-container-placeholder">Drop components here</span>:null)}</div>;
  // Geometry-only technical host; the native Smart surface owns all visible styling.
  return <div className={"smart-runtime "+name} style={{
    display:"flex",flexDirection:"column",boxSizing:"border-box",border:0,

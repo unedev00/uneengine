@@ -10,6 +10,7 @@ import UiItemGrid from '../src/component-libraries/ui_item_grid/UiItemGrid';
 import OneTenantImage from '../src/component-libraries/shared/TenantImage.jsx';
 import SmartRuntime from '../src/component-libraries/smart/shared/SmartRuntime.jsx';
 import CanvasFloatingActions from '../src/core/builders/PageBuilder/CanvasFloatingActions';
+import '../src/component-libraries/smart/shared/smart.css';
 import '../src/component-libraries/ui_item_grid/UiItemGrid.css';
 import {FinancialDocumentEditor} from '../../aceassist/src/FinancialDocumentEditor';
 import NamedCredentials from '../src/core/integrations/NamedCredentials/NamedCredentials';
@@ -82,7 +83,6 @@ const directoryRequest=async(path,init)=>{
 };
 const securityViews=createSettingsViews(uxRequest,()=>null);
 const credentials=[{id:'sample',name:'Sample_Credential',label:'Sample credential',baseUrl:'https://example.com/long/integration/path',authType:'Bearer',hasSecret:true,protocol:'HTTPS',enabled:true,updatedAt:'2026-10-28T09:00:00Z',configuration:{}}];
-
 const mediaAsset='asset:123e4567-e89b-42d3-a456-426614174000';
 const mediaPixel='iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aI1sAAAAASUVORK5CYII=';
 function MediaStabilityFixture(){
@@ -128,10 +128,29 @@ function CanvasActionLayerFixture(){
   </div>
  </main>;
 }
+
 function RecordImportCheck(){ const [ready,setReady]=React.useState(false); React.useEffect(()=>{import('../src/core/records/RecordWorkspace/recordWorkspaceViews').then(module=>setReady(typeof module.createRecordWorkspaceViews === 'function'));},[]);return <p>{ready ? 'Record workspace import passed' : 'Loading record workspace'}</p>; }
 function Fixture(){
  if(view==='image-render-stability')return <MediaStabilityFixture/>;
  if(view==='floating-canvas-actions')return <CanvasActionLayerFixture/>;
+ if(view==='smart-card-grid-scroll'){
+   const sampleCards=Array.from({length:23},(_,i)=>({
+     Id:'product-'+i,Name:'Product '+String(i+1),ImageUrl:''
+   }));
+   const props={kind:'smart_card_grid',cardsPerRow:3,cardsPerColumn:2,
+     imageSource:'@ImageUrl',textSource:'@Name',imageHeight:220,headerBoxHeight:44,
+     gap:12,records:sampleCards};
+   return <div className="lightning">
+     <div className="free-canvas-component" aria-label="Selected Smart Card Grid"
+       style={{position:'relative',height:394,width:675,maxWidth:'100%',outline:'2px solid #2563eb'}}>
+       <SmartRuntime {...props}/>
+     </div>
+     <div aria-label="Empty Smart Card Grid preview" style={{marginTop:20,height:240,width:500,maxWidth:'100%'}}>
+       <SmartRuntime kind="smart_card_grid" cardsPerRow={3} cardsPerColumn={1}
+         previewOnly badgeVisible/>
+     </div>
+   </div>;
+ }
  if(view==='card-grid-scroll'){
    const sampleCards=Array.from({length:42},(_,i)=>({Id:'product-'+i,Name:'Product '+String(i+1),Price:i+1}));
    const base={records:sampleCards,cardsPerRow:3,desktopColumns:3,tabletColumns:2,mobileColumns:2,
