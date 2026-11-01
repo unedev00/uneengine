@@ -164,14 +164,15 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    }
    return width;
  };
- // Reserve exactly the rendered track widths, 4px between controls and 7px
- // side gutters. The caption minimum avoids clipping long section names.
+ // Match the actual Data chip spacing (2px), while preserving the 4px
+ // spacing used by the other tabs and the three-row Source selectors.
+ // SQL supplies each control width, including Column Visibility's native dropdown.
  const sectionWidth=(group:string)=>Math.ceil(Math.max(
    Math.max(0,...(tab==='Data'&&group!=='Source'?[1,2]:[1,2,3]).map(row=>{
      const properties=dataSectionRow(group,row);
      return properties.reduce((sum,p)=>sum+controlWidth(p)+
        (tab==='Data'&&isDataFormula(p)?0:(p.designCaptionWidth??0)),0)
-       +Math.max(0,properties.length-1)*4;
+       +Math.max(0,properties.length-1)*(tab==='Data'&&group!=='Source'?2:4);
    }))+15,
    group.length*5.5+16
  ));
