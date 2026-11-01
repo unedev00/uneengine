@@ -39,7 +39,7 @@ export default function EmbeddedScreenFlow({
   const [message,setMessage]=useState('');
   const [error,setError]=useState('');
   const flow=flows.find(item=>item.apiName===flowApiName);
-  const available=flow?.status==='Active'&&flow.flowType==='Screen Flow';
+  const available=flow?.status==='Active'&&['Screen Flow','In-Screen Flow'].includes(flow.flowType);
   const process=(result:Response)=>{
     const next=fromResponse(result);
     setInterview(next);

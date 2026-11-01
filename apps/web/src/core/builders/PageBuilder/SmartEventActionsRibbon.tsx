@@ -31,7 +31,7 @@ export default function SmartEventActionsRibbon({api,actions,flows,onChange,sele
  const customSlots=[{key:'customButton1',label:'Custom Button 1',enabled:api==='smart_cart'},
   {key:'customButton2',label:'Custom Button 2',enabled:api==='smart_cart'}];
  const active=flows.filter(flow=>flow.status==='Active'&&
-  (flow.flowType==='Autolaunched Flow'||flow.flowType==='Screen Flow'));
+  (flow.flowType==='Autolaunched Flow'||flow.flowType==='Screen Flow'||flow.flowType==='In-Screen Flow'));
  const update=(event:string,flowName:string)=>{
   const next={...actions};
   if(!flowName){delete next[event];onChange(next);return;}
@@ -55,7 +55,7 @@ export default function SmartEventActionsRibbon({api,actions,flows,onChange,sele
       <option value="">Select Flow…</option>
       {selected&&!active.some(flow=>flow.apiName===selected)&&
         <option value={selected}>{selected} (saved/inactive)</option>}
-      {(['Autolaunched Flow','Screen Flow'] as const).map(kind=>
+      {(['Autolaunched Flow','Screen Flow','In-Screen Flow'] as const).map(kind=>
         <optgroup key={kind} label={kind}>
           {active.filter(flow=>flow.flowType===kind).map(flow=>
             <option key={flow.apiName} value={flow.apiName}>{flow.label}</option>)}

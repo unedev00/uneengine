@@ -366,7 +366,7 @@ export default function MetadataBoundPageComponent({
     if(binding.outputs!==undefined)Object.assign(outputMappings,binding.outputs);
     resolveFlowOutputBindings({},outputMappings);
     setActionError('');
-    if (selected.flowType === 'Screen Flow') {
+    if (['Screen Flow','In-Screen Flow'].includes(selected.flowType)) {
       const requestId=crypto.randomUUID();
       if(pendingFlowOutputs.current.size>=10)throw new Error('Too many pending Flow output mappings.');
       pendingFlowOutputs.current.set(requestId,{flowApiName,mappings:outputMappings});

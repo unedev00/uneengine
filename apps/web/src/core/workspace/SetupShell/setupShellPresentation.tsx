@@ -266,7 +266,7 @@ export function renderSetupShell(ctx: any) {
               <strong>{workspaces.find(item => item.id === workspace)?.label ?? 'Settings'}</strong>
             </nav>}
           {(route.kind === 'record-list' || route.kind === 'record-detail') && (metadataLoadError && !objects.length ? <section className="setup-card" role="alert"><h1>Unable to load record metadata</h1><p>{metadataLoadError}</p><button className="btn" onClick={() => window.location.reload()}>Retry</button><button className="btn" onClick={() => navigateRoute({kind:'setup',workspace:'rbac',resourceApiName:'Users'})}>Back to Users</button></section> : <RecordWorkspace route={route} objects={objects} apps={apps} pages={pages}
-            availableFlows={flows.filter(item => ['Screen Flow', 'Autolaunched Flow'].includes(item.flowType))
+            availableFlows={flows.filter(item => ['Screen Flow', 'In-Screen Flow', 'Autolaunched Flow'].includes(item.flowType))
               .map(({ id, apiName, label, flowType, status }) => ({ id, apiName, label, flowType, status }))}
             onLaunchFlow={(apiName: string, inputs?: Record<string, unknown>,context?:{requestId?:string}) => void runFlow(apiName, inputs,context)}
             reports={reports} metadataLoaded={metadataLoaded} profileId={currentProfileId} canManageUserIdentities={canManageUserIdentities} userRoles={accessControl.roles}
@@ -276,12 +276,12 @@ export function renderSetupShell(ctx: any) {
             {routeAliasError ? <p role="alert">{routeAliasError}</p> : <p>Resolving route alias…</p>}
           </section>}
           {route.kind === 'app-home' && <LightningAppRuntime appId={route.appId} objects={objects} apps={apps} pages={pages} reports={reports}
-            libraryComponents={libraryComponents} availableFlows={flows.filter((item) => ['Screen Flow', 'Autolaunched Flow'].includes(item.flowType))
+            libraryComponents={libraryComponents} availableFlows={flows.filter((item) => ['Screen Flow', 'In-Screen Flow', 'Autolaunched Flow'].includes(item.flowType))
               .map(({ id, apiName, label, flowType, status }) => ({ id, apiName, label, flowType, status }))}
             formFactor={runtimeFormFactor} profileId={currentProfileId} pageDefinitionCache={pageDefinitionCache.current} onNavigate={navigateRoute}
             onLaunchFlow={(apiName: string, inputs: Record<string, unknown>,context?:{requestId?:string}) => void runFlow(apiName, inputs,context)} onStandaloneModeChange={setStandalonePageMode} />}
           {route.kind === 'app-page' && <LightningAppRuntime appId={route.appId} pageApiName={route.pageApiName} objects={objects} apps={apps} pages={pages} reports={reports}
-            libraryComponents={libraryComponents} availableFlows={flows.filter((item) => ['Screen Flow', 'Autolaunched Flow'].includes(item.flowType))
+            libraryComponents={libraryComponents} availableFlows={flows.filter((item) => ['Screen Flow', 'In-Screen Flow', 'Autolaunched Flow'].includes(item.flowType))
               .map(({ id, apiName, label, flowType, status }) => ({ id, apiName, label, flowType, status }))}
             formFactor={runtimeFormFactor} profileId={currentProfileId} pageDefinitionCache={pageDefinitionCache.current} onNavigate={navigateRoute}
             onLaunchFlow={(apiName: string, inputs: Record<string, unknown>,context?:{requestId?:string}) => void runFlow(apiName, inputs,context)} onStandaloneModeChange={setStandalonePageMode} />}

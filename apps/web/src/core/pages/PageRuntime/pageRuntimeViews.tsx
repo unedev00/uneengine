@@ -601,7 +601,7 @@ function MetadataBoundPageComponent({
     if (selected && selected.status !== 'Active') {
       throw new Error('Choose an active Flow for the "' + action.event + '" action in Page Builder.');
     }
-    if (flowType !== 'Screen Flow' && flowType !== 'Autolaunched Flow') {
+    if (flowType !== 'Screen Flow' && flowType !== 'In-Screen Flow' && flowType !== 'Autolaunched Flow') {
       throw new Error('Configure an Autolaunched Flow for this standalone app action.');
     }
     const payload = action.value && typeof action.value === 'object' && !Array.isArray(action.value)
@@ -632,7 +632,7 @@ function MetadataBoundPageComponent({
     if(binding.outputs!==undefined)Object.assign(outputMappings,binding.outputs);
     resolveFlowOutputBindings({},outputMappings);
     setActionError('');
-    if (flowType === 'Screen Flow') {
+    if (['Screen Flow','In-Screen Flow'].includes(flowType)) {
       if (!selected) throw new Error('Screen Flow metadata is unavailable for this action.');
       const requestId=crypto.randomUUID();
       if(pendingFlowOutputs.current.size>=10)throw new Error('Too many pending Flow output mappings.');
