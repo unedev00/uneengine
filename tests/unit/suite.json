@@ -203,6 +203,7 @@
     "apps/web/test/pageBuilderSingleSurfaceBorder.test.mjs",
     "apps/web/test/pageBuilderStandardComponents.test.ts",
     "apps/web/test/pageBuilderTypographySpacing.test.ts",
+    "apps/web/test/pageBuilderUnifiedActions.test.ts",
     "apps/web/test/pageBuilderUx.test.ts",
     "apps/web/test/pageBuilderVisibilityRepair.test.ts",
     "apps/web/test/pagePerformanceAnalysis.test.ts",

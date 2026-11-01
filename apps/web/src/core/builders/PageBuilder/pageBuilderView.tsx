@@ -153,7 +153,7 @@ import PageBuilderRibbonMetadataPager from './PageBuilderRibbonMetadataPager';
 import UniversalRibbonInventory from './UniversalRibbonInventory';
 import UneBuilderRibbon from './UneBuilderRibbon';
 import SmartRibbon from './SmartRibbon';
-import SmartEventActionsRibbon from './SmartEventActionsRibbon';
+import {supportsSmartActionEvent} from './SmartEventActionsRibbon';
 import SmartInsertRibbon from './SmartInsertRibbon';
 import ArrangeRibbon from './ArrangeRibbon';
 import PageBuilderAdvancedRibbon, {advancedFeatureLabels, type AdvancedFeature} from './PageBuilderAdvancedRibbon';
@@ -538,6 +538,8 @@ function PageBuilder({
   const [additionalPropertyDialogOpen,setAdditionalPropertyDialogOpen] = useState(false);
   const [pageSettingsDialogOpen,setPageSettingsDialogOpen] = useState(false);
   const [advancedEditor,setAdvancedEditor] = useState<AdvancedFeature|null>(null);
+  const [inlineActionEvent,setInlineActionEvent]=useState('');
+  const [inlineActionSettingsOpen,setInlineActionSettingsOpen]=useState(false);
   const [focusedCardMapping,setFocusedCardMapping] = useState('');
   const ribbonStripRef=useRef<HTMLDivElement|null>(null);
   const [viewFind,setViewFind]=useState('');
@@ -680,6 +682,57 @@ function PageBuilder({
     ? findRegisteredComponent(libraryComponents, selected.type.slice('Custom:'.length), 'page')
     : undefined;
   const selectedNewUne=Boolean(selected?.type.startsWith('Custom:')&&isUneBuilderApi(selected.type.slice(7),ribbonCatalog?.components??[]));
+  const rawSelectedActions=selected?.properties.actionFlows;
+  const selectedActions=rawSelectedActions&&typeof rawSelectedActions==='object'&&!Array.isArray(rawSelectedActions)
+    ?rawSelectedActions as Record<string,unknown>:{};
+  const activeActionEvent=Object.prototype.hasOwnProperty.call(selectedActions,inlineActionEvent)
+    ?inlineActionEvent:Object.keys(selectedActions)[0]??'';
+  // Metadata declares the events. Smart controls additionally support the shared
+  // page-session start event; only events common to the selection are editable.
+  const actionMembers=ribbonSelectedMembers.length?ribbonSelectedMembers:selected?[selected]:[];
+  const memberActionOptions=(item:PageComponentMetadata):Array<{apiName:string;label:string}>=>{
+    const api=item.type.startsWith('Custom:')?item.type.slice(7):'';
+    const definition=item.id===selected?.id?selectedCustomDefinition:
+      api?findRegisteredComponent(libraryComponents,api,'page'):undefined;
+    const declared=(definition?.eventDefinitions??[]).filter(event=>
+      !api.startsWith('smart_')||supportsSmartActionEvent(api,event.apiName));
+    const options=api.startsWith('smart_')?[...declared,
+      {apiName:'start',label:'On Session Start'}]:declared;
+    return options;
+  };
+  const actionOptions=actionMembers.length
+    ?memberActionOptions(actionMembers[0]).filter(option=>
+      actionMembers.every(member=>memberActionOptions(member).some(other=>other.apiName===option.apiName)))
+    :[];
+  if(selected)for(const event of Object.keys(selectedActions)){
+    if(!actionOptions.some(option=>option.apiName===event) &&
+      actionMembers.every(member=>member.id===selected.id||
+        memberActionOptions(member).some(option=>option.apiName===event))){
+      actionOptions.push({apiName:event,label:event});
+    }
+  }
+  const actionSelectionDisabled=actionMembers.some(isCanvasLocked)
+    || (actionMembers.length>1&&actionOptions.length===0);
+  const applyActionFlows=(actionFlows:Record<string,unknown>)=>{
+    if(!selected||actionSelectionDisabled)return;
+    if(actionMembers.length>1){
+      const changed=[...new Set([...Object.keys(selectedActions),...Object.keys(actionFlows)])]
+        .filter(key=>JSON.stringify(selectedActions[key])!==JSON.stringify(actionFlows[key]));
+      const ids=new Set(actionMembers.map(item=>item.id));
+      applyPage({...page,components:page.components.map(item=>{
+        if(!ids.has(item.id))return item;
+        const stored=item.properties.actionFlows&&typeof item.properties.actionFlows==='object'
+          &&!Array.isArray(item.properties.actionFlows)
+          ?item.properties.actionFlows as Record<string,unknown>:{};
+        const next={...stored};
+        for(const key of changed){
+          if(key in actionFlows)next[key]=actionFlows[key];
+          else delete next[key];
+        }
+        return {...item,properties:{...item.properties,actionFlows:next}};
+      })});
+    }else updateComponent(selected.id,{properties:{...selected.properties,actionFlows}});
+  };
   const selectedAppOwnedUne=Boolean(selected?.type.startsWith('Custom:une_'))&&!selectedNewUne;
   const editingConversation=selectedCustomDefinition?.apiName==='ui_conversation';
   // Child element selection affects the inspector only; runtime DOM is unchanged.
@@ -2667,7 +2720,7 @@ function PageBuilder({
       ?structuredClone(raw as ComponentVisibilityRule):undefined);
   };
   const openAdvanced=(feature:AdvancedFeature)=>{
-    if(['actions','responsive','nesting','properties'].includes(feature)&&!selected)return;
+    if(['responsive','nesting','properties'].includes(feature)&&!selected)return;
     if(feature==='recordPage'&&page.pageType!=='Record Page')return;
     if(feature==='properties'){setInspectorTab('Data & Actions');setActivePanel('properties');}
     setAdvancedEditor(feature);
@@ -3072,58 +3125,18 @@ function PageBuilder({
               <button type="button" disabled={!selected} onClick={()=>openAdvanced('responsive')}>Responsive settings</button>
             </div><span>Rules</span>
           </div>}
-          {ribbonTab==='Component Action' && <div className="office-ribbon-group ribbon-advanced-actions" aria-label="Advanced actions">
-            <div className="office-ribbon-stack">
-              <button type="button" disabled={!selected} onClick={()=>openAdvanced('actions')}>Advanced actions</button>
-            </div><span>Advanced</span>
-          </div>}
           {ribbonTab==='Add Block' && <SmartInsertRibbon
             items={paletteComponents}
             onInsert={addPaletteComponent}
             renderIcon={renderPaletteIcon}/>}
-          {selectedNewUne && selected && ribbonTab==='Component Action' &&
-            <SmartEventActionsRibbon api={selected.type.slice(7)}
-              selectedApis={ribbonSelectedMembers.length>1?ribbonSelectedMembers.map(item=>
-                item.type.startsWith('Custom:')&&!isCanvasLocked(item)?item.type.slice(7):''):undefined}
-              mixedSlots={ribbonSelectedMembers.length>1
-                ? [...new Set(ribbonSelectedMembers.flatMap(item=>{
-                    const actions=item.properties.actionFlows;
-                    return actions&&typeof actions==='object'&&!Array.isArray(actions)
-                      ?Object.keys(actions):[];
-                  }))].filter(key=>{
-                    const values=ribbonSelectedMembers.map(item=>{
-                      const actions=item.properties.actionFlows;
-                      return actions&&typeof actions==='object'&&!Array.isArray(actions)
-                        ?(actions as Record<string,unknown>)[key]:undefined;
-                    });
-                    return values.some(value=>JSON.stringify(value)!==JSON.stringify(values[0]));
-                  }):undefined}
-              actions={selected.properties.actionFlows&&typeof selected.properties.actionFlows==='object'
-                &&!Array.isArray(selected.properties.actionFlows)
-                ? selected.properties.actionFlows as Record<string,unknown>:{}}
-              flows={flows}
-              onChange={actionFlows=>{
-                if(ribbonSelectedMembers.length>1){
-                  const previous=selected.properties.actionFlows&&typeof selected.properties.actionFlows==='object'
-                    &&!Array.isArray(selected.properties.actionFlows)
-                    ?selected.properties.actionFlows as Record<string,unknown>:{};
-                  const changed=[...new Set([...Object.keys(previous),...Object.keys(actionFlows)])]
-                    .filter(key=>JSON.stringify(previous[key])!==JSON.stringify(actionFlows[key]));
-                  const ids=new Set(ribbonSelectedMembers.map(item=>item.id));
-                  applyPage({...page,components:page.components.map(item=>{
-                    if(!ids.has(item.id))return item;
-                    const stored=item.properties.actionFlows&&typeof item.properties.actionFlows==='object'
-                      &&!Array.isArray(item.properties.actionFlows)
-                      ?item.properties.actionFlows as Record<string,unknown>:{};
-                    const next={...stored};
-                    for(const key of changed){
-                      if(key in actionFlows)next[key]=actionFlows[key];
-                      else delete next[key];
-                    }
-                    return {...item,properties:{...item.properties,actionFlows:next}};
-                  })});
-                }else updateComponent(selected.id,{properties:{...selected.properties,actionFlows}});
-              }}/>}
+          {ribbonTab==='Component Action' && selected &&
+            <PageBuilderActionRibbon
+              actions={selectedActions} eventDefinitions={actionOptions} flows={flows}
+              selectedEvent={activeActionEvent} disabled={actionSelectionDisabled}
+              onSelectEvent={setInlineActionEvent}
+              showDetails={inlineActionSettingsOpen}
+              onToggleDetails={()=>setInlineActionSettingsOpen(open=>!open)}
+              onChange={applyActionFlows}/>}
           {selected?.type==='Custom:smart_icon' && ribbonTab==='Component Layout' &&
             <SmartIconGallery value={String(selected.properties.iconId??'house')}
               disabled={ribbonSelectedMembers.some(item=>item.type!=='Custom:smart_icon'||isCanvasLocked(item))}
@@ -3157,6 +3170,31 @@ function PageBuilder({
               }}/>}
         </div>
       </section>
+      {ribbonTab==='Component Action' && selected && inlineActionSettingsOpen && activeActionEvent &&
+        <section className="page-ribbon-expanded-editor page-builder-inline-actions"
+          aria-label="Inline action configuration">
+          <div className="page-ribbon-expanded-heading">
+            <strong>Configure {actionOptions.find(option=>option.apiName===activeActionEvent)?.label??activeActionEvent}</strong>
+            <button type="button" className="btn btn-small"
+              onClick={()=>setInlineActionSettingsOpen(false)}>Collapse details</button>
+          </div>
+          <div className="page-ribbon-expanded-content">
+            <MetadataComponentProperties key={selected.id+':'+activeActionEvent}
+              mode="actions-inline" actionEvent={activeActionEvent} properties={selected.properties}
+              onChange={(properties:Record<string,unknown>)=>{
+                const raw=properties.actionFlows;
+                if(raw&&typeof raw==='object'&&!Array.isArray(raw))
+                  applyActionFlows(raw as Record<string,unknown>);
+              }}
+              pageComponents={page.components} componentCatalog={libraryComponents}
+              definitions={selectedCustomDefinition?.propertyDefinitions}
+              eventDefinitions={actionOptions}
+              device={page.layoutVariant??'Desktop'} componentVersion={selectedCustomDefinition?.version}
+              objects={objects} apps={apps} pages={pages}
+              currentAppId={builderAppApiName||apps[0]?.apiName||'Records'}
+              primaryObjectApiName={page.targetObject} flows={flows}/>
+          </div>
+        </section>}
 
       {advancedEditor && <div className="modal-backdrop office-ribbon-modal-backdrop" role="presentation"
         onMouseDown={event=>{if(event.currentTarget===event.target)setAdvancedEditor(null);}}>
@@ -3166,17 +3204,6 @@ function PageBuilder({
             <button type="button" className="icon-button" aria-label="Close advanced editor"
               onClick={()=>setAdvancedEditor(null)}><X size={16}/></button></div>
           <div className="page-builder-advanced-body">
-            {advancedEditor==='actions' && selected && <MetadataComponentProperties
-              key={selected.id} mode="actions-editor" properties={selected.properties}
-              onChange={(properties:Record<string,unknown>)=>updateComponent(selected.id,{properties})}
-              pageComponents={page.components} componentCatalog={libraryComponents}
-              definitions={selectedCustomDefinition?.propertyDefinitions}
-              eventDefinitions={selectedCustomDefinition?.eventDefinitions}
-              device={page.layoutVariant??'Desktop'}
-              componentVersion={selectedCustomDefinition?.version}
-              objects={objects} apps={apps} pages={pages}
-              currentAppId={builderAppApiName||apps[0]?.apiName||'Records'}
-              primaryObjectApiName={page.targetObject} flows={flows}/>}
             {advancedEditor==='responsive' && <>
               <label className="form-label">Current page device layout {homeValue('deviceLayout')}</label>
               {selected && <>

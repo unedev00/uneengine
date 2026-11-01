@@ -461,7 +461,7 @@ test('Smart Event ribbon matches On Click and Qty Icon component support',()=>{
  assert.match(ribbon,/key:'start',label:'On Session Start',enabled:members.every\(member=>member.startsWith\('smart_'\)\)/);
  assert.match(ribbon,/Autolaunched Flow/);
  assert.match(ribbon,/Screen Flow/);
- assert.match(view,/ribbonTab==='Component Action' &&\s*<SmartEventActionsRibbon/);
+ assert.match(view,/ribbonTab==='Component Action' && selected &&\s*<PageBuilderActionRibbon/);
  assert.match(runtime,/fire=\{fire\}/);
  for(const name of ['smart_button','smart_toggle','smart_calendar','smart_cart','smart_card_grid']){
   const descriptor=JSON.parse(read('../src/component-libraries/'+name+'/component.json'));

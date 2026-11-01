@@ -807,6 +807,7 @@ test('Group icon picker and group locking share edits instead of updating only t
  assert.match(gallery,/disabled=\{disabled\}/);
  assert.match(view,/const nextLocked=!members\.some\(isCanvasLocked\)/);
  assert.match(view,/editorLocked:nextLocked/);
- assert.match(view,/const changed=\[\.\.\.new Set\(\[\.\.\.Object\.keys\(previous\)/);
- assert.match(view,/selectedApis=\{ribbonSelectedMembers\.length>1/);
+ assert.match(view,/const changed=\[\.\.\.new Set\(\[\.\.\.Object\.keys\(selectedActions\)/);
+ assert.match(view,/const actionMembers=ribbonSelectedMembers\.length/);
+  assert.match(view,/const applyActionFlows=/);
 });

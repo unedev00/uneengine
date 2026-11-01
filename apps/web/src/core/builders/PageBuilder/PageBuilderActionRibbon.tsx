@@ -1,80 +1,165 @@
-import { useState, type ReactNode } from 'react';
-import { ChevronLeft, ChevronRight, Plus, Settings2, Trash2, X } from 'lucide-react';
+import {useState} from 'react';
+import { Trash2, SlidersHorizontal } from 'lucide-react';
 import type { FlowDefinitionMetadata } from '../../metadata/Definitions/metadata';
-type Binding=Record<string,unknown>;
-const record=(value:unknown):Binding=>value&&typeof value==='object'&&!Array.isArray(value)?value as Binding:{};
-const types=[['Flow','Run automation'],['Navigate','Open another page'],['SetFilter','Filter a list'],['PageState','Update page value']] as const;
+import { metadataReference, metadataSelection } from '../../metadata/Definitions/metadataReferences';
 
-/** Compact rendering of existing actionFlows. There is exactly one binding per event in the runtime. */
-export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,onChange,advanced}:{
-  actions:Binding;
-  eventDefinitions:Array<{apiName:string;label:string}>;
-  flows:FlowDefinitionMetadata[];
-  onChange:(next:Binding)=>void;
-  advanced:ReactNode;
+type Binding=Record<string,unknown>;
+type EventOption={apiName:string;label:string};
+type ActionKind='Flow'|'Navigate'|'SetFilter'|'PageState';
+const asBinding=(value:unknown):Binding=>
+  value&&typeof value==='object'&&!Array.isArray(value)?value as Binding:{};
+const actionTypes:ReadonlyArray<{kind:ActionKind;label:string;group:string}>=[
+  {kind:'Flow',label:'Run automation',group:'Flows'},
+  {kind:'Navigate',label:'Open another page',group:'Navigation'},
+  {kind:'SetFilter',label:'Filter a list',group:'Page actions'},
+  {kind:'PageState',label:'Update page value',group:'Page actions'}
+];
+
+/**
+ * One action catalog for all Page Builder components. It edits the same
+ * actionFlows metadata consumed by Page Runtime. Detailed Flow mappings and
+ * navigation destinations are edited in the inline panel, never in a modal.
+ */
+export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,selectedEvent,
+  onSelectEvent,onChange,showDetails,onToggleDetails,disabled=false}:{
+  actions:Binding;eventDefinitions:EventOption[];flows:FlowDefinitionMetadata[];
+  selectedEvent:string;onSelectEvent:(name:string)=>void;
+  onChange:(next:Binding)=>void;showDetails:boolean;onToggleDetails:()=>void;
+  disabled?:boolean;
 }) {
-  const [eventToAdd,setEventToAdd]=useState('');
-  const [customEvent,setCustomEvent]=useState('');
-  const [start,setStart]=useState(0);
-  const [showAdvanced,setShowAdvanced]=useState(false);
-  const names=Object.keys(actions);
-  const allowed=eventDefinitions.filter(e=>!Object.prototype.hasOwnProperty.call(actions,e.apiName));
-  const currentName=eventDefinitions.length?eventToAdd:customEvent.trim();
-  const valid=/^[A-Za-z][A-Za-z0-9_]*$/.test(currentName)&&!Object.prototype.hasOwnProperty.call(actions,currentName);
-  const add=()=>{
-    if(!valid)return;
-    onChange({...actions,[currentName]:{actionType:'Flow',flowApiName:'',inputs:{}}});
-    setEventToAdd('');setCustomEvent('');
-    setStart(Math.max(0,names.length-2));
+  const [customTrigger,setCustomTrigger]=useState('');
+  const selected=asBinding(actions[selectedEvent]);
+  const active=Boolean(selectedEvent&&Object.prototype.hasOwnProperty.call(actions,selectedEvent));
+  const kind:ActionKind=actionTypes.some(option=>option.kind===selected.actionType)
+    ?selected.actionType as ActionKind:'Flow';
+  const availableFlows=flows.filter(flow=>flow.status==='Active'&&
+    (flow.flowType==='Autolaunched Flow'||flow.flowType==='Screen Flow'));
+  const selectedFlow=metadataSelection(flows,selected.flowApiName);
+  const activeEvents=[...new Set([...eventDefinitions.map(event=>event.apiName),...Object.keys(actions)])];
+  const eventLabel=(apiName:string)=>eventDefinitions.find(event=>event.apiName===apiName)?.label??apiName;
+  const patch=(update:Binding)=>{
+    if(!active||disabled)return;
+    onChange({...actions,[selectedEvent]:{...selected,...update}});
   };
-  const patch=(name:string,partial:Binding)=>{
-    const binding=record(actions[name]);
-    onChange({...actions,[name]:{...binding,...partial}});
+  const choose=(value:string)=>{
+    if(disabled||!value)return;
+    if(value.startsWith('trigger:')){
+      const name=value.slice(8);
+      if(!activeEvents.includes(name))return;
+      if(!Object.prototype.hasOwnProperty.call(actions,name))
+        onChange({...actions,[name]:{actionType:'Flow',flowApiName:'',inputs:{}}});
+      onSelectEvent(name);
+      return;
+    }
+    if(!active)return;
+    if(value.startsWith('type:')){
+      const next=value.slice(5);
+      if(actionTypes.some(item=>item.kind===next)){
+        patch({actionType:next});
+        if(next!=='Flow'&&!showDetails)onToggleDetails();
+      }
+    }else if(value.startsWith('flow:')){
+      const flow=availableFlows.find(item=>item.apiName===value.slice(5));
+      if(flow)patch({actionType:'Flow',flowApiName:flow.id?metadataReference(flow.id):flow.apiName,
+        flowType:flow.flowType});
+    }
   };
-  const count=3;
-  const pageStart=Math.min(start,Math.max(0,names.length-count));
-  const visible=names.slice(pageStart,pageStart+count);
-  return <div className="office-ribbon-compact-strip office-ribbon-actions-strip" aria-label="Component event actions">
-    {pageStart>0&&<button type="button" className="office-ribbon-icon-button" onClick={()=>setStart(Math.max(0,pageStart-count))} aria-label="Previous actions" title="Previous actions"><ChevronLeft size={17}/></button>}
-    {visible.map((name,index)=>{
-      const binding=record(actions[name]);
-      const kind=types.some(t=>t[0]===binding.actionType)?String(binding.actionType):'Flow';
-      const event=eventDefinitions.find(e=>e.apiName===name);
-      const saved=String(binding.flowApiName??'');
-      const selected=flows.find(f=>f.apiName===saved||f.id===saved);
-      const chosen=selected?.apiName??saved;
-      return <div className="office-ribbon-mini-group office-ribbon-action-card" key={name}>
-        <button type="button" className="ribbon-condition-delete" aria-label={'Delete '+name+' action'} title="Remove action" onClick={()=>{const next={...actions};delete next[name];onChange(next);}}><Trash2 size={13}/></button>
-        <label>When <select disabled aria-label="Component event" value={name}><option value={name}>{event?.label??name}</option></select></label>
-        <label>Action <select aria-label={'Action type for '+name} value={kind} onChange={e=>patch(name,{actionType:e.target.value})}>
-          {types.map(([type,label])=><option key={type} value={type}>{label}</option>)}
-        </select></label>
-        <div className="ribbon-action-target">
-          {kind==='Flow'?<select aria-label={'Flow for '+name} value={chosen} onChange={e=>patch(name,{flowApiName:e.target.value})}>
-            <option value="">Choose Flow</option>
-            {saved&&!flows.some(f=>f.apiName===chosen)&&<option value={saved}>{saved} (saved)</option>}
-            {flows.filter(f=>f.status==='Active'&&['Screen Flow','Autolaunched Flow'].includes(f.flowType)).map(f=><option key={f.apiName} value={f.apiName}>{f.label}</option>)}
-          </select>:kind==='Navigate'?<select aria-label={'Destination type for '+name} value={String(binding.navigationTargetType??'Record List')} onChange={e=>patch(name,{navigationTargetType:e.target.value})}>
-            <option value="Record List">Record list</option><option value="App Home">App home</option><option value="App Page">App page</option>
-          </select>:<input aria-label={kind==='SetFilter'?'Shared filter key':'Page state key'} placeholder={kind==='SetFilter'?'Shared filter key':'Page state key'}
-            value={String(kind==='SetFilter'?binding.filterKey??'category':binding.stateKey??'')}
-            onChange={e=>patch(name,{[kind==='SetFilter'?'filterKey':'stateKey']:e.target.value})}/>}
-          <button className="office-ribbon-icon-button" type="button" title={'Configure '+name+' mappings, destination and conditions'} aria-label={'Advanced settings for '+name} onClick={()=>setShowAdvanced(true)}><Settings2 size={15}/></button>
-        </div>
-        <span className="office-ribbon-group-heading">Action {pageStart+index+1}</span>
-      </div>;
-    })}
-    {pageStart+count<names.length&&<button type="button" className="office-ribbon-icon-button" title="Next actions" aria-label="Next actions" onClick={()=>setStart(pageStart+count)}><ChevronRight size={17}/></button>}
-    <div className="office-ribbon-mini-group ribbon-add-event">
-      {eventDefinitions.length?<label>Event <select aria-label="New action event" value={eventToAdd} onChange={e=>setEventToAdd(e.target.value)}>
-        <option value="">Choose event</option>{allowed.map(e=><option key={e.apiName} value={e.apiName}>{e.label}</option>)}
-      </select></label>:<label>Event <input aria-label="Custom event" placeholder="Event ID" value={customEvent} onChange={e=>setCustomEvent(e.target.value)}/></label>}
-      <button type="button" className="office-ribbon-icon-button" title="Add action to right" aria-label="Add action" disabled={!valid} onClick={add}><Plus size={17}/></button>
-      <span className="office-ribbon-group-heading">Add action</span>
-    </div>
-    {showAdvanced&&<div className="office-ribbon-action-overlay" role="dialog" aria-label="Existing action mappings and settings">
-      <div className="ribbon-action-overlay-header"><strong>Action mappings and destinations</strong><button type="button" title="Close advanced settings" onClick={()=>setShowAdvanced(false)}><X size={17}/></button></div>
-      {advanced}
+  const addCustomTrigger=()=>{
+    const name=customTrigger.trim();
+    if(disabled||eventDefinitions.length)return;
+    if(!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(name)||Object.prototype.hasOwnProperty.call(actions,name))return;
+    onChange({...actions,[name]:{actionType:'Flow',flowApiName:'',inputs:{}}});
+    onSelectEvent(name);setCustomTrigger('');
+  };
+  const remove=()=>{
+    if(disabled||!active)return;
+    const next={...actions};
+    delete next[selectedEvent];
+    onChange(next);
+    onSelectEvent(Object.keys(next)[0]??'');
+  };
+  return <div className="office-ribbon-compact-strip page-unified-actions-ribbon" aria-label="Unified component actions">
+    <section className="office-ribbon-mini-group page-action-library">
+      <label>Actions
+        <select aria-label="All component actions" value="" disabled={disabled}
+          onChange={event=>choose(event.target.value)}>
+          <option value="">Choose trigger or action…</option>
+          <optgroup label="Triggers">
+            {activeEvents.map(name=><option key={name} value={'trigger:'+name}>
+              {eventLabel(name)}{Object.prototype.hasOwnProperty.call(actions,name)?' (configured)':''}
+            </option>)}
+          </optgroup>
+          <optgroup label="Flows">
+            <option value="type:Flow" disabled={!active}>Run automation</option>
+            {availableFlows.map(flow=><option key={flow.apiName} value={'flow:'+flow.apiName} disabled={!active}>
+              {flow.label}
+            </option>)}
+          </optgroup>
+          <optgroup label="Navigation">
+            <option value="type:Navigate" disabled={!active}>Open another page</option>
+          </optgroup>
+          <optgroup label="Page actions">
+            <option value="type:SetFilter" disabled={!active}>Filter a list</option>
+            <option value="type:PageState" disabled={!active}>Update page value</option>
+          </optgroup>
+        </select>
+      </label>
+      <small>Choose a trigger first, then its action.</small>
+      {!eventDefinitions.length&&<div className="page-action-custom-trigger">
+        <input aria-label="Custom action trigger" placeholder="Custom event ID"
+          value={customTrigger} disabled={disabled} onChange={event=>setCustomTrigger(event.target.value)}/>
+        <button type="button" disabled={disabled||!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(customTrigger.trim())||
+          Object.prototype.hasOwnProperty.call(actions,customTrigger.trim())}
+          onClick={addCustomTrigger}>Add trigger</button>
+      </div>}
+      <span className="office-ribbon-group-heading">All actions</span>
+    </section>
+    {active&&<section className="office-ribbon-mini-group page-action-selected">
+      <label>Trigger <select aria-label="Selected action trigger" value={selectedEvent}
+        disabled={disabled} onChange={event=>onSelectEvent(event.target.value)}>
+        {Object.keys(actions).map(name=><option key={name} value={name}>{eventLabel(name)}</option>)}
+      </select></label>
+      <label>Action <span className="page-action-current-kind">
+        {actionTypes.find(option=>option.kind===kind)?.label}
+      </span></label>
+      <button type="button" className="office-ribbon-icon-button page-action-remove"
+        disabled={disabled} onClick={remove} title="Remove action from this trigger"
+        aria-label="Remove selected trigger action"><Trash2 size={15}/> Remove</button>
+      <span className="office-ribbon-group-heading">Selected action</span>
+    </section>}
+    {active&&<section className="office-ribbon-mini-group page-action-target">
+      {kind==='Flow'?<label>Flow
+        <select aria-label="Flow for selected action" disabled={disabled}
+          value={selectedFlow?.apiName??String(selected.flowApiName??'')}
+          onChange={event=>{
+            const flow=availableFlows.find(item=>item.apiName===event.target.value);
+            patch({flowApiName:flow?.id?metadataReference(flow.id):flow?.apiName??'',
+              ...(flow?{flowType:flow.flowType}:{})});
+          }}>
+          <option value="">Select Flow…</option>
+          {Boolean(selected.flowApiName)&&!selectedFlow&&
+            <option value={String(selected.flowApiName)}>{String(selected.flowApiName)} (saved/unavailable)</option>}
+          {availableFlows.map(flow=><option key={flow.apiName} value={flow.apiName}>{flow.label}</option>)}
+        </select></label>:kind==='Navigate'?<label>Destination
+        <select aria-label="Destination type for selected action" disabled={disabled}
+          value={String(selected.navigationTargetType??'Record List')}
+          onChange={event=>patch({navigationTargetType:event.target.value,
+            navigationPageApiName:''})}>
+          <option value="Record List">Record list</option>
+          <option value="App Home">App home</option>
+          <option value="App Page">App page</option>
+        </select></label>:<label>{kind==='SetFilter'?'Filter key':'Page state key'}
+        <input aria-label={kind==='SetFilter'?'Shared filter key':'Page state key'}
+          disabled={disabled} value={String(kind==='SetFilter'?selected.filterKey??'category':selected.stateKey??'')}
+          onChange={event=>patch({[kind==='SetFilter'?'filterKey':'stateKey']:event.target.value})}/></label>}
+      <button type="button" className="office-ribbon-icon-button page-action-details-toggle"
+        aria-label={showDetails?'Hide action details':'Show action details'} aria-expanded={showDetails}
+        onClick={onToggleDetails}><SlidersHorizontal size={15}/>{showDetails?'Hide details':'Configure details'}</button>
+      <span className="office-ribbon-group-heading">Configuration</span>
+    </section>}
+    {!active&&<div className="page-action-empty" role="status">
+      {disabled?'Select one editable component to configure its actions.'
+        :'Choose a trigger from the Actions dropdown to configure its Flow, navigation or page action.'}
     </div>}
   </div>;
 }
