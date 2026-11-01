@@ -73,6 +73,7 @@ import {
   MousePointer2,
   BarChart3,
   FormInput,
+  ToggleRight,
   List,
   ListFilter,
   Maximize2,
@@ -921,6 +922,15 @@ function PageBuilder({
   const renderPaletteIcon = (component: { type: string; label: string }) => {
     const svgIcon=uneRibbonIcon(component.type,null);
     if(svgIcon)return svgIcon;
+    // Smart component kinds are visually distinct even without bundled UNE SVGs.
+    // Otherwise the generic fallback gives Navigation the Button icon and
+    // Toggle the Input icon, making insertion choices unnecessarily ambiguous.
+    switch(component.type){
+      case 'Custom:smart_navigation':return <Menu size={15}/>;
+      case 'Custom:smart_container':return <Layers3 size={15}/>;
+      case 'Custom:smart_icon':return <Star size={15}/>;
+      case 'Custom:smart_toggle':return <ToggleRight size={15}/>;
+    }
     const name = `${component.label} ${component.type}`.toLowerCase();
     if (/\b(text|heading|paragraph|rich text|label)\b/.test(name)) return <Type size={15} />;
     if (/\b(image|photo|picture|avatar|logo)\b/.test(name)) return <ImageIcon size={15} />;
@@ -2401,8 +2411,8 @@ function PageBuilder({
           onPointerCancel={event => endCanvasMove(event, true)}
           onLostPointerCapture={event => endCanvasMove(event, true)}
           onClick={event => event.stopPropagation()}><Move size={15}/></button>}
-        <button type="button" onClick={() => openComponentInspector('Design')} title="Edit block"><Pencil size={15}/> Edit</button>
-        {page.layoutMode === 'free-canvas' && <button type="button" onClick={() => openComponentInspector('Position')} title="Position and size"><Maximize2 size={15}/> Position</button>}
+        <button type="button" onClick={() => selectRibbonTab('Component Properties')} title="Edit block"><Pencil size={15}/> Edit</button>
+        {page.layoutMode === 'free-canvas' && <button type="button" onClick={() => selectRibbonTab('Component Layout')} title="Position and size"><Maximize2 size={15}/> Position</button>}
         <button type="button" onClick={duplicateSelected} disabled={isCanvasLocked(component)} title="Duplicate"><Copy size={16}/></button>
         <button type="button" onClick={() => setComponentMenuId(current => current === component.id ? '' : component.id)}
           aria-expanded={componentMenuId === component.id} aria-label="More component actions"><MoreHorizontal size={18}/></button>
@@ -2410,10 +2420,10 @@ function PageBuilder({
           <button type="button" role="menuitem" onClick={() => {copySelected();setComponentMenuId('');}}>Copy <kbd>Ctrl+C</kbd></button>
           <button type="button" role="menuitem" disabled={!componentClipboard} onClick={() => {pasteComponent();setComponentMenuId('');}}>Paste <kbd>Ctrl+V</kbd></button>
           <button type="button" role="menuitem" disabled={isCanvasLocked(component)} onClick={duplicateSelected}>Duplicate <kbd>Ctrl+D</kbd></button>
-          <button type="button" role="menuitem" onClick={() => openComponentInspector('Position')}>Align and position</button>
+          <button type="button" role="menuitem" onClick={() => selectRibbonTab('Component Layout')}>Align and position</button>
           <button type="button" role="menuitem" onClick={() => {moveSelected(1);setComponentMenuId('');}}>Bring forward</button>
           <button type="button" role="menuitem" onClick={() => {moveSelected(-1);setComponentMenuId('');}}>Send backward</button>
-          <button type="button" role="menuitem" onClick={() => openComponentInspector('Data & Actions')}>Data, links and actions</button>
+          <button type="button" role="menuitem" onClick={() => selectRibbonTab('Component Data')}>Data, links and actions</button>
 
           <button type="button" role="menuitem" disabled={isCanvasLocked(component)} onClick={() => {removeSelected();setComponentMenuId('');}}>Delete <kbd>Delete</kbd></button>
         </div>}
