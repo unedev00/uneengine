@@ -86,3 +86,18 @@ test('spacing and Actions helper removal preserve real configuration',()=>{
   'page-action-target','Flow for selected action','Custom Button 2'])
   assert.ok(action.includes(text),'missing Action control: '+text);
 });
+
+test('shared Actions tab exposes actual editable + and minus formula bars',()=>{
+ const action=readFileSync(new URL('../src/core/builders/PageBuilder/PageBuilderActionRibbon.tsx',import.meta.url),'utf8');
+ const css=readFileSync(new URL('../src/core/builders/PageBuilder/PageBuilderEightTabRibbon.css',import.meta.url),'utf8');
+ const engine=readFileSync(new URL('../src/core/pages/PageRuntime/adjustNumberRecord.ts',import.meta.url),'utf8');
+ assert.match(action,/Editable quantity action formulas/);
+ assert.match(action,/label="Increase quantity formula"/);
+ assert.match(action,/label="Decrease quantity formula"/);
+ assert.match(action,/onChange=\{value=>patch\(\{incrementFormula:value\}\)\}/);
+ assert.match(action,/onChange=\{value=>patch\(\{decrementFormula:value\}\)\}/);
+ assert.match(css,/page-action-formula-rows/);
+ assert.match(engine,/evaluateFieldExpressionDetailed/);
+ assert.match(engine,/config\.incrementFormula/);
+ assert.match(engine,/config\.decrementFormula/);
+});
