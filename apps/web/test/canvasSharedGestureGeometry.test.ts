@@ -1,3 +1,4 @@
+import {canvasResizeOverlayGeometry} from '../src/core/builders/PageBuilder/canvasResizeOverlayGeometry';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -38,7 +39,7 @@ test('resize controls are in an independent portal, not hidden under sibling com
  assert.match(builder,/canvasDimensionsForGesture\(\{width:page\.canvasWidth,height:page\.canvasHeight\},position\)/);
  assert.match(builder,/canvasScrollbarHit\(target,event\.clientX,event\.clientY,event\.currentTarget\)/);
  assert.match(portal,/return createPortal\(/);
- assert.match(portal,/edges\.map\(edge=>/);
+ assert.match(portal,/points\.map\(point=>/);
  assert.match(portal,/observer\.observe\(anchor\)/);
  assert.match(css,/\.canvas-floating-resize-overlay\{/);
  assert.match(css,/pointer-events:none/);
@@ -47,4 +48,40 @@ test('resize controls are in an independent portal, not hidden under sibling com
   assert.ok(!builder.includes("component.type==='Custom:"+name+"'&&target.closest("),
     name+' content drag must not be blocked by the scroll handler');
  }
+});
+
+test('handles never cover the ribbon and offscreen south edge remains reachable',()=>{
+ const screen={width:1649,height:928};
+ const editor={left:0,top:300,right:1649,bottom:858,width:1649,height:558};
+ const cart={left:1074,top:214,right:1624,bottom:1144,width:550,height:930};
+ const g=canvasResizeOverlayGeometry(cart,editor,screen);
+ const topEdges=g.points.filter(p=>p.edge==='n'||p.edge==='ne'||p.edge==='nw');
+ assert.equal(topEdges.length,0,'north handles scrolled above editor must NOT cover the ribbon');
+ const south=g.points.find(p=>p.edge==='s');
+ assert.ok(south,'south resize handle must be available even below fold');
+ assert.equal(south.proxy,true);
+ assert.ok(south.top>editor.top+20&&south.top<editor.bottom-50,'bottom proxy must have drag room');
+ assert.ok(g.points.every(p=>p.top>=editor.top+10&&p.top<=editor.bottom-10));
+ assert.ok(g.points.every(p=>p.left>=editor.left+10&&p.left<=editor.right-10));
+ assert.equal(g.clip.top,300,'portal itself is clipped at ribbon boundary');
+});
+test('normally visible bounds retain true eight-handle resize placement',()=>{
+ const editor={left:0,top:300,right:1649,bottom:858,width:1649,height:558};
+ const block={left:280,top:330,right:780,bottom:650,width:500,height:320};
+ const points=canvasResizeOverlayGeometry(block,editor,{width:1649,height:928}).points;
+ assert.equal(points.length,8);
+ assert.equal(points.find(p=>p.edge==='s')?.top,650);
+ assert.equal(points.find(p=>p.edge==='nw')?.top,330);
+ assert.ok(points.every(p=>!p.proxy));
+});
+test('bottom drag expands scroll space while scrolling; a cancellation restores it',()=>{
+ const builder=readFileSync(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+ assert.match(builder,/const scrollDelta=start\.viewport \? start\.viewport\.scrollTop-start\.scrollStart/);
+ assert.match(builder,/start\.viewport\.scrollTop\+=step/);
+ assert.match(builder,/y\+height\+240/);
+ assert.match(builder,/if\(start\.stage\)start\.stage\.style\.height=start\.stageHeight/);
+ assert.match(builder,/if\(start\.preview\)start\.preview\.style\.height=start\.previewHeight/);
+ const portal=readFileSync(new URL('../src/core/builders/PageBuilder/CanvasFloatingResizeHandles.tsx',import.meta.url),'utf8');
+ assert.match(portal,/clipPath:/,'overlay must clip inside editor viewport');
+ assert.match(portal,/data-offscreen-bottom=/);
 });
