@@ -632,6 +632,7 @@ export default function FlowBuilder({
             <option value="page-load">When target page opens</option>
             <option value="component-event">When a component raises an event</option>
             <option value="page-updated">When page data is changed by a Flow</option>
+            <option value="platform-event">When a subscribed Platform Event arrives</option>
           </select>
         </label>
         <label className="form-label">Target application
@@ -649,6 +650,14 @@ export default function FlowBuilder({
               <option key={page.apiName} value={page.apiName}>{page.label}</option>)}
           </select>
         </label>
+        {flow.startConfig.launchTrigger==='platform-event' && <label className="form-label">
+          Platform Event
+          <select className="form-control" value={displayValue(flow.startConfig.platformEventApiName)}
+            onChange={event=>setStartConfig('platformEventApiName',event.target.value)}>
+            <option value="">Choose a published Platform Event</option>
+            {platformEvents.map(event=><option key={event.apiName} value={event.apiName}>{event.label}</option>)}
+          </select>
+        </label>}
         {flow.startConfig.launchTrigger==='component-event' && <label className="form-label">
           Component event<input className="form-control" value={displayValue(flow.startConfig.launchEventName)}
             onChange={event=>setStartConfig('launchEventName',event.target.value)}

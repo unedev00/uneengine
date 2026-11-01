@@ -93,7 +93,7 @@ export async function validateFlowDraft(rbac:RbacEngine|undefined,tenantId:strin
        !inputNames.has(name)||!sources.includes(String(source))))
     errors.push('Invalid In-Screen input binding configuration');
   }
-  const windowFields=['windowPageApiName','targetAppApiName','targetPageApiName','launchEventName'] as const;
+  const windowFields=['windowPageApiName','targetAppApiName','targetPageApiName','launchEventName','platformEventApiName'] as const;
   for(const field of windowFields){
    const value=startConfig[field];
    if(value!==undefined&&(typeof value!=='string'||value.length>128
@@ -101,10 +101,12 @@ export async function validateFlowDraft(rbac:RbacEngine|undefined,tenantId:strin
     errors.push('Invalid In-Screen Flow '+field);
   }
   const launch=String(startConfig.launchTrigger??'manual');
-  if(!['manual','page-load','component-event','page-updated'].includes(launch))
+  if(!['manual','page-load','component-event','page-updated','platform-event'].includes(launch))
    errors.push('Invalid In-Screen Flow launch trigger');
   if(launch!=='manual'&&!startConfig.targetAppApiName&&!startConfig.targetPageApiName)
    errors.push('Automatic In-Screen Flows require an app or page target');
+  if(launch==='platform-event'&&!startConfig.platformEventApiName)
+   errors.push('Platform Event trigger requires a published Event name');
   const mode=String(startConfig.windowMode??'modal'),placement=String(startConfig.windowPlacement??'center');
   if(!['modal','drawer','floating','fullscreen'].includes(mode))errors.push('Invalid In-Screen window type');
   if(!['center','top-left','top-right','bottom-left','bottom-right'].includes(placement))

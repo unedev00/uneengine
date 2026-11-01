@@ -1,4 +1,5 @@
 import {useEffect,useRef} from 'react';
+import {apiRequest} from '../authentication/Client/authClient';
 import type {FlowDefinitionMetadata} from '../metadata/Definitions/metadata';
 type Signal={pageSessionKey?:string;componentId?:string;event?:string;value?:unknown;recordId?:string};
 type Props={flows:ReadonlyArray<Pick<FlowDefinitionMetadata,'apiName'|'flowType'|'status'|'startConfig'|'resources'>>;appApiName:string;pageApiName:string;
@@ -20,6 +21,7 @@ export default function InScreenFlowHost({flows,appApiName,pageApiName,onLaunchF
     const settings=flow.startConfig;
     if(String(settings.launchTrigger??'manual')!==trigger)continue;
     if(trigger==='component-event'&&settings.launchEventName&&settings.launchEventName!==detail.event)continue;
+    if(trigger==='platform-event'&&settings.platformEventApiName!==detail.event)continue;
     const key=scope+':'+flow.apiName,now=Date.now();
     if(trigger==='page-load'&&firstLoad.current.has(key))continue;
     if(settings.oncePerSession===true&&once.current.has(key))continue;
@@ -58,8 +60,42 @@ export default function InScreenFlowHost({flows,appApiName,pageApiName,onLaunchF
   window.addEventListener('metadrive:in-screen-action',component);
   window.addEventListener('metadrive:page-component-interaction',component);
   window.addEventListener('metadrive:page-flow-mutated',updated);
+  const feeds=[...new Set(active.filter(flow=>flow.startConfig.launchTrigger==='platform-event')
+    .map(flow=>flow.startConfig.platformEventApiName).filter((name):name is string=>
+      typeof name==='string'&&/^[A-Za-z][A-Za-z0-9_]*$/.test(name)))].slice(0,8);
+  const cursors=new Map<string,string>(),blocked=new Set<string>();
+  let running=false,live=true;
+  const poll=async()=>{
+   if(!live||running||document.visibilityState==='hidden')return;
+   running=true;
+   try{
+    for(const name of feeds){
+     if(!live||blocked.has(name))continue;
+     const previous=cursors.get(name);
+     try{
+      const result=await apiRequest<{cursor:string;events:Array<{
+        replayId:string;eventId:string;payload:Record<string,unknown>
+      }>}>('/platform-event-feed/'+encodeURIComponent(name)+'?after='+encodeURIComponent(previous??'latest'));
+      if(!live)break;
+      if(/^(0|[1-9][0-9]*)$/.test(result.cursor))cursors.set(name,result.cursor);
+      for(const message of result.events??[]){
+       if(!live)break;
+       const payload=objectValue(message.payload);
+       const recordId=typeof payload.recordId==='string'?payload.recordId:
+        typeof payload.RecordId==='string'?payload.RecordId:'';
+       launch('platform-event',{pageSessionKey:scope,event:name,value:payload,recordId});
+      }
+     }catch{blocked.add(name);} // Permission failures do not cause repeated unauthorised requests.
+    }
+   }finally{running=false;}
+  };
+  void poll();
+  const timer=window.setInterval(()=>void poll(),4000);
+  const visible=()=>{if(document.visibilityState==='visible')void poll();};
+  document.addEventListener('visibilitychange',visible);
   launch('page-load',{pageSessionKey:scope});
   return()=>{
+   live=false;window.clearInterval(timer);document.removeEventListener('visibilitychange',visible);
    window.removeEventListener('metadrive:in-screen-action',component);
    window.removeEventListener('metadrive:page-component-interaction',component);
    window.removeEventListener('metadrive:page-flow-mutated',updated);
