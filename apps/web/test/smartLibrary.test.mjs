@@ -899,12 +899,12 @@ test('SQL-backed eight-tab ribbon retains existing controls and correct geometry
  const insert=read('../src/core/builders/PageBuilder/SmartInsertRibbon.tsx');
  const arrange=read('../src/core/builders/PageBuilder/ArrangeRibbon.tsx');
  const visual=read('../src/core/builders/PageBuilder/PageBuilderEightTabRibbon.css');
- assert.match(view,/'Component Layout','Arrange','Component Action','Logic','Preview'/);
+ assert.match(view,/'Component Layout','Arrange','Component Action','Advanced','Preview'/);
  assert.match(view,/Preview: 'View'/);
  assert.doesNotMatch(view,/Shapes: 'Shapes'/);
  assert.doesNotMatch(view,/Grok: 'Grok'/);
- assert.match(view,/ribbonTab === 'Logic'/);
- assert.match(view,/RibbonVisibilityRules/);
+ assert.match(view,/ribbonTab==='Preview' && <div className="office-ribbon-group preview-visibility-group"/);
+ assert.match(view,/<PageBuilderVisibilityDialog/);
  assert.match(view,/<ArrangeRibbon/);
  assert.match(arrange,/onAlign/);
  assert.match(arrange,/onNesting/);
