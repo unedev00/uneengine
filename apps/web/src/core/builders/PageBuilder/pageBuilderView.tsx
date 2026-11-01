@@ -2273,7 +2273,7 @@ function PageBuilder({
       role={libraryPreview ? undefined : page.layoutMode === 'free-canvas' ? 'group' : 'button'} tabIndex={previewMode || libraryPreview ? -1 : 0} aria-label={libraryPreview ? undefined : `${component.label} component`}
       aria-hidden={libraryPreview && !interactivePreview || undefined}
     >
-      {!previewMode && !libraryPreview && selectedId === component.id && !nested && page.layoutMode === 'free-canvas' && <CanvasFloatingActions componentId={component.id} viewportRef={pagePreviewAreaRef}><div
+      {!previewMode && !libraryPreview && selectedId === component.id && !nested && <CanvasFloatingActions componentId={component.id} viewportRef={pagePreviewAreaRef} enabled={page.layoutMode === 'free-canvas'}><div
         className="canvas-element-actions" role="toolbar" aria-label={`Actions for ${component.label}`}
         onPointerDown={event => event.stopPropagation()} onClick={event => event.stopPropagation()}>
         {page.layoutMode === 'free-canvas' && !isCanvasLocked(component) && <button type="button"
