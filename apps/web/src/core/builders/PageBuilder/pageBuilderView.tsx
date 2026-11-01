@@ -2434,7 +2434,7 @@ function PageBuilder({
                         ? component.properties.label : component.label,
                       properties: component.properties,
                       object: page.pageType === 'Record Page' ? targetObject : undefined,
-                      device, previewOnly: !previewMode, builderPreview: !previewMode, pageSessionKey: (builderAppApiName || apps[0]?.apiName || 'Records') + ':' + page.apiName,
+                      device, previewOnly: true, builderPreview: !previewMode, pageSessionKey: (builderAppApiName || apps[0]?.apiName || 'Records') + ':' + page.apiName,
                        loadAsset:(id:string)=>request<{contentType:string;contentBase64:string}>('/media-assets/'+id),
                       children: nestedChildren
                     }} />
