@@ -3446,7 +3446,7 @@ function PageBuilder({
                 pageDefinitionCache={previewPageDefinitionCache.current}
                 objects={objects} apps={apps} pages={pages} reports={reports}
                 libraryComponents={libraryComponents} availableFlows={flows}
-                formFactor={device}
+                formFactor={device} previewLayoutDevice={device}
                 onNavigate={(route:AppRoute) => { window.open(appRoutePath(route),'_blank','noopener,noreferrer'); }}
                 onLaunchFlow={onLaunchFlow} onStandaloneModeChange={() => {}} />
             </div> : <div
