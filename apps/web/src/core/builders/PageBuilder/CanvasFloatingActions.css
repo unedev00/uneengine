@@ -1,0 +1,18 @@
+/* Editing controls are UI chrome, not part of tenant-authored component z-order. */
+.canvas-floating-actions-host{
+ position:fixed!important;z-index:11000!important;display:block!important;
+ width:max-content!important;max-width:calc(100vw - 16px)!important;
+ height:auto!important;min-height:0!important;pointer-events:auto;
+ overflow:visible!important;transform:none!important;
+}
+.canvas-floating-actions-host>.canvas-element-actions{
+ position:relative!important;inset:auto!important;left:auto!important;
+ top:auto!important;bottom:auto!important;right:auto!important;
+ transform:none!important;max-width:calc(100vw - 16px)!important;
+ z-index:auto!important;
+}
+/* Action menus, help titles and keyboard focus remain above every canvas layer. */
+.canvas-floating-actions-host .canvas-action-menu{z-index:1!important}
+.canvas-floating-actions-host :is(button,[role="menuitem"]):focus-visible{
+ outline:2px solid var(--md-focus-ring,#2563eb);outline-offset:2px;
+}
