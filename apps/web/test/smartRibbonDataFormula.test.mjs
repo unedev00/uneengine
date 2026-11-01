@@ -62,3 +62,41 @@ test('Data styling is scoped; the full-width formula row stays above two 26px ch
  assert.match(css,/height:26px/);
  assert.doesNotMatch(css,/\.office-builder-ribbon\s*\{\s*height/);
 });
+
+
+test('selected filters have independent counts and never overwrite component filters',()=>{
+ assert.match(ui,/const storedFieldFilters=properties\.dataFieldFilters/);
+ assert.match(ui,/selectedFieldFilterCount=selectedFieldRule\?\.filters\.length\?\?0/);
+ assert.match(ui,/activeDataProperty&&selectedFieldFilterCount>0/);
+ assert.match(ui,/dataFieldFilters:\{\.\.\.existing,\[id\]:\{\.\.\.previous,\.\.\.patch\}\}/);
+ assert.match(ui,/activeDataProperty\?updateFieldFilter\(activeDataProperty\.id,\{filters\}\)/);
+ assert.match(ui,/contextApiName/);
+ assert.doesNotMatch(ui,/apiRequest\<\{contexts:/);
+});
+test('compact width metadata keeps Source controls while allowing natural scrollbar overflow',()=>{
+ const compact=read('../../server/src/system-support/migrations/20270217-data-ribbon-compact-widths.sql');
+ assert.match(compact,/SET design_width=CASE WHEN property_key IN \('defaultCheck','columnVisibility'\) THEN 105 ELSE 100 END/);
+ assert.match(compact,/section_group IN \('Values','Cart','Cart columns','Cart totals'\)/);
+ assert.doesNotMatch(compact,/objectApiName/);
+ const layout=read('../src/core/builders/PageBuilder/PageBuilderRibbonLayout.css');
+ assert.match(layout,/overflow-x: auto !important/);
+});
+test('field-only filtering is applied after authorised record loading without changing the global query',()=>{
+ const matcher=read('../src/core/pages/PageRuntime/fieldScopedRecordFilters.ts');
+ const runtime=read('../src/component-libraries/smart/shared/SmartRuntime.jsx');
+ const cart=read('../src/component-libraries/smart_cart/SmartCart.jsx');
+ assert.match(matcher,/filterPageComponentRecords\(\[record\]/);
+ assert.match(matcher,/compileRecordFilterFormula/);
+ assert.match(matcher,/return false;/);
+ assert.match(runtime,/scopedFieldAllows\(p\.dataFieldFilters/);
+ assert.match(runtime,/scopedExpression\(p,"textSource"/);
+ assert.match(runtime,/fieldAllowed=\{\(key,row\)=>fieldAllows\(p,key,row\)\}/);
+ assert.match(cart,/fieldExpression\('column'\+\(index\+1\)\+'Source'/);
+});
+test('filter modal is 50 percent wider, compact, four-column and not multiply scrollable',()=>{
+ const style=read('../src/core/builders/PageBuilder/SmartRibbon.css');
+ assert.match(style,/z-index:2147483000!important/);
+ assert.match(style,/min\(1140px,calc\(100vw - 32px\)\)/);
+ assert.match(style,/grid-template-columns:repeat\(4,minmax\(0,190px\)\)/);
+ assert.match(style,/max-height:none!important;overflow:visible!important/);
+});
