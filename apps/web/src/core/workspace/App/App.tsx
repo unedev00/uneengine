@@ -333,7 +333,7 @@ const LazySetupWorkspace = React.lazy(async () => {
     const [createPageBuilder, { MetadataComponentProperties }, runtime] = await Promise.all([
       loadPageBuilderFactory(), import('../../builders/ComponentProperties/componentPropertiesView'), loadPageRuntimeViews()
     ]);
-    return { default: createPageBuilder(MetadataComponentProperties, runtime.MetadataBoundPageComponent) };
+    return { default: createPageBuilder(MetadataComponentProperties, runtime.MetadataBoundPageComponent, runtime.LightningAppRuntime) };
   });
   return { default: createSetupApp({isAuthErrorMessage, loadAppCommunicationHistory, loadConnectorMarketplaceApps, executeConnectorAppLifecycleFlow, loadFlowScreenRecords, apiRequest, ApiRequestError, fetchFlowListPage, customTabStyles, uneSolutionsLogoUrl, ProfilePasswordMenu, ConnectionHealthIndicator, LightningAppRuntime, RecordWorkspace, ObjectManager, PageBuilder, ReportBuilder, Permissions, SetupHome, AutomationSettingsWorkspace, CompanySettings, TenantMfaSettings, TenantSecurityAudit, TenantUserLockSettings, AccountSessionSecurity, TenantEmailRecoverySettings}) };
 });
