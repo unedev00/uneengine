@@ -45,3 +45,14 @@
 .canvas-floating-resize-overlay .floating-resize-sw{cursor:nesw-resize}
 .canvas-floating-resize-overlay .floating-resize-nw,
 .canvas-floating-resize-overlay .floating-resize-se{cursor:nwse-resize}
+
+/* An off-screen bottom is a resize affordance, NOT a handle on the ribbon.
+   Its slightly larger grip is intentionally visible within the canvas. */
+.canvas-floating-resize-overlay>.free-canvas-resize-handle[data-offscreen-bottom="true"]{
+ width:26px;height:26px;min-width:26px;min-height:26px;
+ background:rgba(237,245,255,.92);border:1px solid #8bb4f4;
+ border-radius:6px;box-shadow:0 2px 7px #13294b25;
+}
+.canvas-floating-resize-overlay>.free-canvas-resize-handle[data-offscreen-bottom="true"]::before{
+ width:9px;height:9px;background:#2563eb;border-color:#fff;
+}
