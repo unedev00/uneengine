@@ -917,9 +917,11 @@ function LightningAppRuntime({
       return ()=>{active=false;};
     }
     setPageLoad({routeKey,appId,page:null,error:'',loading:true});
-    const endpoint = pageApiName
-      ? `/apps/${encodeURIComponent(appId)}/${inScreenPage?'in-screen-pages':'pages'}/${encodeURIComponent(pageApiName)}?formFactor=${requestedLayout}&viewportWidth=${viewportWidth}`
-      : `/apps/${encodeURIComponent(appId)}/home-page?formFactor=${requestedLayout}&viewportWidth=${viewportWidth}`;
+    const endpoint = inScreenPage && pageApiName
+      ? `/apps/${encodeURIComponent(appId)}/in-screen-pages/${encodeURIComponent(pageApiName)}?formFactor=${requestedLayout}&viewportWidth=${viewportWidth}`
+      : pageApiName
+        ? `/apps/${encodeURIComponent(appId)}/pages/${encodeURIComponent(pageApiName)}?formFactor=${requestedLayout}&viewportWidth=${viewportWidth}`
+        : `/apps/${encodeURIComponent(appId)}/home-page?formFactor=${requestedLayout}&viewportWidth=${viewportWidth}`;
     void apiRequest<{ page: LightningPageMetadata | null }>(endpoint).then((payload) => {
       if(active){
         writePageDefinitionCache(pageDefinitionCache,cacheKey,payload.page);

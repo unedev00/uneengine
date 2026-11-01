@@ -187,6 +187,7 @@
     "apps/web/test/offlinePublicationClient.test.mjs",
     "apps/web/test/oneComponentRendering.test.mjs",
     "apps/web/test/openPageActionNode.test.ts",
+    "apps/web/test/pageAppMembership.test.ts",
     "apps/web/test/pageBehaviorValidation.test.ts",
     "apps/web/test/pageBuilderActionDependencies.test.ts",
     "apps/web/test/pageBuilderAdvancedRibbon.test.mjs",
