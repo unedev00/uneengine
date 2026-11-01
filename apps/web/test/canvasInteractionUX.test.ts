@@ -741,7 +741,9 @@ test('Free Canvas move cursor and directional resize handles remain usable',asyn
   assert.match(overlay,/onPointerDown=\{event=>onStart\(event,point\.edge\)\}/);
   assert.match(overlay,/onPointerMove=\{onMove\} onPointerUp=\{onEnd\}/);
   assert.match(chrome,/\.canvas-floating-resize-overlay\{/);
-  assert.match(source,/setSelectionIds\(\[component\.id\]\);\s*setSelectedRegion\(null\);\s*\};\s*const moveCanvasResize/);
+  assert.match(source,/setSelectionIds\(\[component\.id\]\);\s*setSelectedRegion\(null\);/);
+  assert.match(source,/const updateCanvasResizePreview/);
+  assert.match(source,/const moveCanvasResize/);
   for(const [edge,cursor] of Object.entries({n:'ns',ne:'nesw',e:'ew',se:'nwse',s:'ns',sw:'nesw',w:'ew',nw:'nwse'})){
     assert.match(handles,new RegExp('\\.resize-'+edge+'(?:,|\\{|[^}]*\\{)[^}]*cursor:'+cursor+'-resize!important'),'resize direction '+edge);
   }
