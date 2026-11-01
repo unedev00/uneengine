@@ -29,7 +29,7 @@ test('Actions formula is a nonfunctional, readonly preview regardless of selecti
   for(const html of [render({}),render({qtyIcon:{actionType:'AdjustNumber',fieldApiName:'Quantity'}},'qtyIcon','smart_cart')]){
     assert.match(html,/aria-label="Actions formula bar preview"/);
     assert.match(html,/aria-label="Actions formula preview"[^>]*(?:readOnly|readonly)/);
-    assert.match(html,/<button[^>]*disabled[^>]*aria-label="Formula options \(coming soon\\)"/);
+    assert.match(html,/<button[^>]*disabled[^>]*aria-label="Formula options \(coming soon\)"/);
     assert.doesNotMatch(html,/oninput=|onchange=/i);
   }
   const source=read('../src/core/builders/PageBuilder/PageBuilderActionRibbon.tsx');
