@@ -40,3 +40,16 @@ test('floating actions use the visible portion of tall or scrolled components',(
  assert.match(floating,/const visibleBottom=Math\.min\(target\.bottom,visible\.bottom\)/);
  assert.match(floating,/visibleTop\+12/);
 });
+
+test('native scroll controls remain usable without moving the page component',()=>{
+ const css=src('core/builders/PageBuilder/sections/01-page-builder.css');
+ const builder=src('core/builders/PageBuilder/pageBuilderView.tsx');
+ const workspace=src('workspace/WorkspaceTheme/sections/07-workspace.css');
+ assert.match(css,/free-canvas-content-viewport > \.canvas-design-interaction-shield/);
+ assert.match(css,/\.smart-grid,\.smart-cart-root,\.smart-tabs-shell,\.smart-calendar,\.smart-navigation/);
+ assert.match(css,/canvas-design-interaction-shield\{pointer-events:none;\}/);
+ for(const api of ['smart_cart','smart_card_grid','smart_calendar','smart_navigation','smart_tabs']){
+   assert.ok(builder.includes("component.type==='Custom:"+api+"'&&target.closest("),api+' keeps its internal scroller');
+ }
+ assert.match(workspace,/layout-container-component > \.free-canvas-content-viewport > \.registered-component/);
+});
