@@ -1,6 +1,7 @@
 import {requireAvailableMetadataName} from '../system-support/metadata-name-guard.js';
 import {TillPinService} from '../system-support/till-pin-service.js';
 import {enforceFlowRecordAttestation} from './FlowRecordAttestationGuard.js';
+import {resolveFlowLoopResources} from './FlowLoopResourceContract.js';
 import {createLinkedReturnDocument,loadLinkedReturnDocument} from './FlowLinkedReturnDocument.js';
 import {enforceFlowBusinessCalendar} from './FlowBusinessCalendarGuard.js';
 import {failedFlowLogs,pendingFlowInterviews} from './FlowExecutionHistory.js';
@@ -738,17 +739,8 @@ export class FlowRuntime {
           :element.config.recordSource==='collection';
         persistenceResources.push({name:output,type:collection?'Record Collection':'Record',dataType:objectApi});
       }
-      for(const element of elements){
-        if(element.type!=='Loop'||typeof element.config.loopVariable!=='string')continue;
-        if(resources.some(resource=>resource.name===element.config.loopVariable))
-          throw new Error('Loop variable conflicts with a declared Flow resource');
-        const collection=resources.find(resource=>resource.name===element.config.collection
-          &&resource.type==='Record Collection');
-        if(!collection||!/^[A-Za-z][A-Za-z0-9_]*$/.test(collection.dataType))
-          throw new Error('Loop source has no valid Record Collection Object');
-        persistenceResources.push({name:element.config.loopVariable,type:'Record',
-          dataType:collection.dataType});
-      }
+      // Reuse any correctly declared Loop Record rather than rejecting it.
+      persistenceResources.push(...resolveFlowLoopResources(elements,resources));
       const formulaStack=new Set<string>();
       const resolveResource=(reference:string):unknown=>{
         const separator=reference.indexOf('.');
