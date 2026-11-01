@@ -516,7 +516,7 @@ function PageBuilder({
   const [selectionUndoStack, setSelectionUndoStack] = useState<CanvasSelectionSnapshot[]>([]);
   const [selectionRedoStack, setSelectionRedoStack] = useState<CanvasSelectionSnapshot[]>([]);
   type ResizeEdge = 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'nw';
-  const canvasResizeStart = useRef<{ id: string; pointerId: number; pointerX: number; pointerY: number; x: number; y: number; width: number; height: number; edge: ResizeEdge; element: HTMLElement; current: { x: number; y: number; width: number; height: number } } | null>(null);
+  const canvasResizeStart = useRef<{ id: string; pointerId: number; pointerX: number; pointerY: number; x: number; y: number; width: number; height: number; edge: ResizeEdge; element: HTMLElement; current: { x: number; y: number; width: number; height: number }; viewport: HTMLDivElement | null; stage: HTMLElement | null; preview: HTMLElement | null; stageHeight: string; previewHeight: string; scrollStart: number; lastX: number; lastY: number; dragged: boolean; autoScrollFrame: number } | null>(null);
   const canvasGuideXRef = useRef<HTMLDivElement | null>(null);
   const canvasGuideYRef = useRef<HTMLDivElement | null>(null);
   const canvasSnap = false;
@@ -1317,23 +1317,32 @@ function PageBuilder({
           .find(candidate=>candidate.dataset.componentId===component.id)??null:null);
     if (!element) return;
     event.preventDefault(); event.stopPropagation(); event.currentTarget.setPointerCapture(event.pointerId);
+    const viewport=pagePreviewAreaRef.current;
+    const stage=viewport?.querySelector<HTMLElement>('.free-canvas-stage')??null;
+    const preview=viewport?.querySelector<HTMLElement>('.free-canvas-preview')??null;
     canvasResizeStart.current = { id: component.id, pointerId: event.pointerId, pointerX: event.clientX, pointerY: event.clientY,
       x: component.position.x, y: component.position.y, width: component.position.width, height: component.position.height, edge,
-      element, current: { ...component.position } };
+      element, current: { ...component.position }, viewport, stage, preview,
+      stageHeight:stage?.style.height??'',previewHeight:preview?.style.height??'',
+      scrollStart:viewport?.scrollTop??0,lastX:event.clientX,lastY:event.clientY,
+      dragged:false,autoScrollFrame:0 };
     setSelectedId(component.id);
     setSelectionIds([component.id]);
     setSelectedRegion(null);
   };
-  const moveCanvasResize = (event: React.PointerEvent<HTMLButtonElement>) => {
-    const start = canvasResizeStart.current;
-    if (!start || start.pointerId !== event.pointerId) return;
+  // Drive resize from the pointer AND the editor scroll displacement.
+  // An offscreen bottom can be gripped from inside the viewport; auto-scroll
+  // extends the usable canvas instead of leaving the bottom handle inaccessible.
+  const updateCanvasResizePreview = (start: NonNullable<typeof canvasResizeStart.current>, pointerX:number, pointerY:number) => {
     const component = page.components.find(item => item.id === start.id);
     if (!component?.position) return;
     const definition = component.type.startsWith('Custom:') ? findRegisteredComponent(libraryComponents, component.type.slice('Custom:'.length), 'page') : undefined;
     const minWidth = Math.min(start.width, component.type === 'Custom:smart_button' ? 32 : (definition?.resize?.minWidth ?? 20));
     const minHeight = Math.min(start.height, definition?.resize?.minHeight ?? 20);
-    const dx = canvasUnitsFromScreenDelta(event.clientX - start.pointerX, fitCanvas ? fitScale : canvasZoom/100);
-    const dy = canvasUnitsFromScreenDelta(event.clientY - start.pointerY, fitCanvas ? fitScale : canvasZoom/100);
+    const scale=fitCanvas ? fitScale : canvasZoom/100;
+    const dx = canvasUnitsFromScreenDelta(pointerX - start.pointerX, scale);
+    const scrollDelta=start.viewport ? start.viewport.scrollTop-start.scrollStart : 0;
+    const dy = canvasUnitsFromScreenDelta(pointerY - start.pointerY + scrollDelta, scale);
     const west = start.edge.includes('w'), east = start.edge.includes('e'), north = start.edge.includes('n'), south = start.edge.includes('s');
     let x = start.x, y = start.y, width = start.width, height = start.height;
     if (east) width = Math.max(minWidth, Math.min(MAX_CANVAS_EDGE - start.x, start.width + dx));
@@ -1342,11 +1351,47 @@ function PageBuilder({
     if (north) { y = Math.max(0, Math.min(start.y + start.height - minHeight, start.y + dy)); height = start.height + start.y - y; }
     start.current = { x, y, width, height };
     Object.assign(start.element.style, { left: `${x}px`, top: `${y}px`, width: `${width}px`, height: `${height}px` });
+    // Absolutely positioned shapes do not increase scrollHeight. Provide
+    // temporary drag room inside the preview; commit only the actual bounds.
+    if(start.viewport && start.stage && start.preview && south){
+      const canvas=canvasDimensionsForGesture({width:page.canvasWidth,height:page.canvasHeight},
+        {x,y,width,height});
+      const dragRoom=Math.min(MAX_CANVAS_EDGE,Math.max(canvas.height,y+height+240));
+      start.stage.style.height=`${dragRoom}px`;
+      start.preview.style.height=`${dragRoom*scale}px`;
+    }
+  };
+  const autoScrollCanvasResize = () => {
+    const start=canvasResizeStart.current;
+    if(!start || !start.viewport || !start.dragged || !start.edge.includes('s'))return;
+    const view=start.viewport.getBoundingClientRect();
+    const distance=view.bottom-start.lastY;
+    if(start.lastY<view.top || distance>52 || start.lastX<view.left || start.lastX>view.right){
+      start.autoScrollFrame=0;return;
+    }
+    const step=Math.min(22,Math.max(2,Math.round((52-distance)/3)));
+    const before=start.viewport.scrollTop;
+    start.viewport.scrollTop+=step;
+    if(start.viewport.scrollTop!==before)
+      updateCanvasResizePreview(start,start.lastX,start.lastY);
+    start.autoScrollFrame=window.requestAnimationFrame(autoScrollCanvasResize);
+  };
+  const moveCanvasResize = (event: React.PointerEvent<HTMLButtonElement>) => {
+    const start = canvasResizeStart.current;
+    if (!start || start.pointerId !== event.pointerId) return;
+    start.lastX=event.clientX;start.lastY=event.clientY;
+    if(Math.abs(start.lastX-start.pointerX)+Math.abs(start.lastY-start.pointerY)>2)start.dragged=true;
+    updateCanvasResizePreview(start,event.clientX,event.clientY);
+    if(start.dragged && !start.autoScrollFrame && start.edge.includes('s'))
+      start.autoScrollFrame=window.requestAnimationFrame(autoScrollCanvasResize);
   };
   const endCanvasResize = (event: React.PointerEvent<HTMLButtonElement>, cancelled = false) => {
     const start = canvasResizeStart.current;
     if (!start || start.pointerId !== event.pointerId) return;
     canvasResizeStart.current = null;
+    if(start.autoScrollFrame)window.cancelAnimationFrame(start.autoScrollFrame);
+    if(start.stage)start.stage.style.height=start.stageHeight;
+    if(start.preview)start.preview.style.height=start.previewHeight;
     const size = start.current;
     const changed = !cancelled && (size.x !== start.x || size.y !== start.y || size.width !== start.width || size.height !== start.height);
     if (changed) {
