@@ -63,3 +63,25 @@ test('Container, Input Box, Toggle and Lookup Record share the same shape render
  const rectangularToggle=await renderSmart('smart_toggle',{shapeId:'shape:rectangle'});
  assert.match(rectangularToggle,/border-radius:0/);
 });
+
+test('Shape and Shape Fill occupy exact Design tracks and reuse effective surface colours',()=>{
+ const placement=read('../../server/src/system-support/migrations/20270215-design-shape-fill-ribbon.sql');
+ assert.match(placement,/SET tab='Design', section_group='Shape'/);
+ assert.match(placement,/design_row=1, design_order=1, design_width=94, design_height=26/);
+ assert.match(placement,/'shapeFill','Shape Fill','Design','Shape','color'/);
+ assert.match(placement,/NULL::jsonb,'\[\]'::jsonb,'component',2,1,40,26/);
+ for(const api of ['smart_button','smart_toggle','smart_lookup','smart_text','smart_container'])
+  assert.match(placement,new RegExp("'"+api+"'"));
+ assert.match(placement,/THEN 'imageBackgroundColor' ELSE 'backgroundColor'/);
+ assert.match(placement,/ON CONFLICT\(property_key\) DO NOTHING/);
+ assert.match(placement,/ON CONFLICT\(component_api,property_key\) DO NOTHING/);
+ assert.doesNotMatch(placement,/ALTER TABLE|UPDATE md_page_|DELETE FROM md_page_/i);
+ const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
+ assert.match(ribbon,/\['Body','Shape','Typography'/);
+ assert.match(ribbon,/if\(p\.id==='shapeId'\)return p\.designWidth\?\?94/);
+ assert.match(ribbon,/property\.valueKeys\?\.\[api\]\?\?property\.id/);
+ assert.match(ribbon,/else if\(kind==='color'\)editor=<RibbonColorPalette variant="property"/);
+ const shared=read('../src/component-libraries/smart/shared/SmartRuntime.jsx');
+ assert.match(shared,/background:p\.backgroundColor\|\|"#2267bc"/);
+ assert.match(shared,/background:p\.imageBackgroundColor\?\?p\.backgroundColor\?\?"transparent"/);
+});
