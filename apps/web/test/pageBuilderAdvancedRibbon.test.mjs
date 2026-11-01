@@ -51,7 +51,7 @@ test('Distinct responsive overrides and flow-bound details stay accessible',()=>
 
 test('Preserves global Actions and record-page metadata editing',()=>{
  assert.match(page,/<PageBuilderActionRibbon/);
- assert.match(page,/advancedEditor==='recordPage'/);
+ assert.match(advanced,/section==='recordPage'/);
  assert.match(page,/reparentComponent\(page\.components,selected\.id,parent\)/);
 });
 
