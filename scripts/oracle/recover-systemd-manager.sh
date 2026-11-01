@@ -66,10 +66,14 @@ marker=/run/lock/metadrive-systemd-manager-reexec-once
  else
   echo 'Retrying non-disruptive failed MCP broker cleanup; manager signal guards remain enforced.'
  fi
- if ! timeout 20 systemctl reset-failed 'metadrive-mcp-broker@*.service'; then
-  # No failed broker instances or a busy manager must not prevent probing a
-  # recovered daemon. The reload and service health gates remain mandatory.
-  echo 'Failed broker cleanup unavailable or no instances matched; checking reload.' >&2
+ # Only failed MCP socket instances may be cleared, never running services.
+ # The helper also stages a systemd CollectMode drop-in to prevent recurrence.
+ # It does not reload the manager or restart any service; this gate does both
+ # readiness checks below only after the bounded state cleanup succeeds.
+ if ! timeout 900 bash "$(dirname "$0")/clear-failed-mcp-brokers.sh"; then
+  echo 'Failed broker cleanup did not finish; refusing deployment.' >&2
+  diagnose_reload_failure
+  exit 1
  fi
  echo 'Attempting bounded systemd reload after failed broker unit cleanup.'
  if timeout 150 systemctl daemon-reload; then

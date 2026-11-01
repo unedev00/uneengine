@@ -31,6 +31,9 @@ UNIT
 cat >/etc/systemd/system/metadrive-mcp-broker@.service <<'UNIT'
 [Unit]
 Description=MetaDrive restricted operations request
+# Socket Accept=yes creates one instance per connection. Retain failures in
+# journald, not as indefinitely loaded failed systemd units.
+CollectMode=inactive-or-failed
 [Service]
 Type=exec
 User=root
