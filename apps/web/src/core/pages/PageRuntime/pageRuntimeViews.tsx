@@ -1,4 +1,5 @@
 import {adjustNumberRecord,type AdjustNumberBinding} from '../PageRuntime/adjustNumberRecord';
+import {evaluateFieldExpressionDetailed} from '../../../component-libraries/shared/FieldExpression.js';
 import {nextAccessibleTabIndex} from '../PageRuntime/tabKeyboardNavigation';
 import { useFormFactor } from '../../workspace/Responsive/useFormFactor';
 import {resolveMetadataProperties} from '../../metadata/Definitions/metadataReferences';
@@ -597,6 +598,50 @@ function MetadataBoundPageComponent({
       const value=resolveInput(binding.value,payload);
       window.dispatchEvent(new CustomEvent('metadrive:page-local-state',{
         detail:{pageSessionKey,key,value}
+      }));
+      return {updated:true};
+    }
+    if (binding.actionType === 'Formula') {
+      const payload=action.value&&typeof action.value==='object'&&!Array.isArray(action.value)
+        ?action.value as Record<string,unknown>:{value:action.value};
+      const formula=String(binding.formula??'');
+      if(!formula.trim())throw Error('Enter an action formula in the Actions ribbon.');
+      if(payload.recordId&&binding.fieldApiName){
+        // Reuse the guarded Record API and concurrency checks, not a second
+        // persistence path. Both Cart icons carry their own delta.
+        const delta=payload.delta===-1?-1:1;
+        const config={...binding,actionType:'AdjustNumber' as const,
+          deltaSource:'$event.delta' as const,
+          incrementFormula:formula,decrementFormula:formula};
+        const changes=await adjustNumberRecord(apiRequest,config as AdjustNumberBinding,
+          {...payload,delta},pageState,objects,objectApiName);
+        for(const change of changes)window.dispatchEvent(new CustomEvent('metadrive:page-local-state',{
+          detail:{pageSessionKey,key:change.key,value:change.value}
+        }));
+        setRevision(value=>value+1);
+        window.dispatchEvent(new CustomEvent('metadrive:page-flow-mutated',{
+          detail:{pageSessionKey,sessionId}
+        }));
+        return {updated:true};
+      }
+      // Formula without a record only mutates an explicit numeric Page State
+      // key. SQL, HTTP, Flow execution and arbitrary JS remain disallowed.
+      const key=String(binding.stateKey??'');
+      if(!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(key))
+        throw Error('Formula requires an authorised record or a Page State key.');
+      const refs=[...formula.matchAll(/@([A-Za-z][A-Za-z0-9_.]*)/g)].map(match=>match[1]);
+      if(!refs.includes(key)||refs.some(name=>
+        !/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(name)||
+        !Object.prototype.hasOwnProperty.call(pageState,name)||
+        typeof pageState[name]!=='number'||!Number.isFinite(pageState[name])))
+        throw Error('Formula may only reference numeric Page State values.');
+      const values=Object.fromEntries(refs.map(name=>[name,pageState[name]]));
+      const result=evaluateFieldExpressionDetailed(formula,values);
+      if(result.error||typeof result.value!=='string'||!result.value.trim()||
+        !Number.isFinite(Number(result.value)))
+        throw Error('Formula must return a finite number.');
+      window.dispatchEvent(new CustomEvent('metadrive:page-local-state',{
+        detail:{pageSessionKey,key,value:Number(result.value)}
       }));
       return {updated:true};
     }
