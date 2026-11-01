@@ -1,5 +1,6 @@
 import SmartCart from "../../smart_cart/SmartCart.jsx";
 import {evaluateFieldExpression} from "../../shared/FieldExpression.js";
+import {useTenantImageSource} from "../../shared/TenantImage.jsx";
 const number=(v,f,min=0,max=2000)=>Number.isFinite(Number(v))?Math.max(min,Math.min(max,Number(v))):f;
 const text=(v)=>v===null||v===undefined?"":String(v);
 const expression=(v,record)=>{
@@ -12,28 +13,12 @@ const expression=(v,record)=>{
    !/^\s*-?(?:\d+(?:\.\d*)?|\.\d+)\s*[+\-*/&]/.test(v))return v;
  try{return text(evaluateFieldExpression(v,record||{}));}catch{return "";}
 };
-const assetPattern=/^asset:([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i;
-const mime=new Set(["image/png","image/jpeg","image/webp","image/gif"]);
 function SmartPicture({src,alt,loadAsset,style}){
- const [data,setData]=React.useState("");
+ const source=useTenantImageSource(src,loadAsset);
  const [failed,setFailed]=React.useState(false);
  React.useEffect(()=>setFailed(false),[src]);
- React.useEffect(()=>{
-   let live=true;setData("");
-   const match=typeof src==="string"?src.match(assetPattern):null;
-   if(match&&typeof loadAsset==="function")Promise.resolve(loadAsset(match[1])).then(asset=>{
-     if(live&&asset&&mime.has(asset.contentType)&&typeof asset.contentBase64==="string"&&
-       asset.contentBase64.length<7100000&&/^[A-Za-z0-9+/]+={0,2}$/.test(asset.contentBase64))
-       setData("data:"+asset.contentType+";base64,"+asset.contentBase64);
-   }).catch(()=>{});
-   return()=>{live=false};
- },[src,loadAsset]);
- const safeSrc=typeof src==="string"&&/^https:\/\//i.test(src.trim())?src.trim():data;
- return safeSrc&&!failed?<img src={safeSrc} alt={alt} style={style} onError={()=>setFailed(true)}/>:null;
+ return source&&!failed?<img src={source} alt={alt} style={style} onError={()=>setFailed(true)}/>:null;
 }
-const recordOf=p=>p.objectApiName&&Array.isArray(p.records)
- ?(p.records[0]??{}):p.record&&typeof p.record==="object"&&!Array.isArray(p.record)?p.record:
- Array.isArray(p.records)&&p.records.length?p.records[0]:Array.isArray(p.items)&&p.items.length?p.items[0]:{};
 // Editor-only examples are derived from the existing shared record source.
 // They never have a database Id and never invoke a Flow action.
 const editorCardRows=(count)=>Array.from({length:Math.min(6,Math.max(1,count))},(_,i)=>({
