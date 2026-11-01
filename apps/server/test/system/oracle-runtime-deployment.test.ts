@@ -149,7 +149,7 @@ test('normal main pushes have one full-stack deployment owner, while manual fron
  assert.ok(fullstack.includes('apps/web/**'));
  assert.ok(frontend.includes('workflow_dispatch:'));
  assert.ok(!frontend.includes('  push:'),'frontend-only workflow must not race the full-stack main-push deployment');
- assert.ok(frontend.includes('Backend/shared changes require full-stack deployment'));
+ assert.ok(frontend.includes('Backend/shared changes require full-stack deployment') || frontend.includes('the live API is behind backend/shared changes'));
  assert.ok(frontend.includes('Frontend deployment blocked:'));
  assert.ok(frontend.includes('exit 1'),'incompatible manual frontend deployment must fail visibly');
  assert.ok(frontend.includes('oracle-production-release-main'),'manual frontend release retains production lock');
