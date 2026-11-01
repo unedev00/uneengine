@@ -218,7 +218,7 @@ test('all editor previews are ephemeral and never stored or visible in published
  const bound=read('../src/core/pages/MetadataBoundPageComponent/MetadataBoundPageComponent.tsx');
  const css=read('../src/core/builders/PageBuilder/PageBuilderEditorPreview.css');
  assert.match(canvas,/builderPreview: !previewMode/);
- assert.match(bound,/builderPreview: disableActions/);
+ assert.match(bound,/builderPreview: builderPreview===true&&disableActions/);
  assert.match(canvas,/page-editor-generic-hint/);
  assert.match(canvas,/data-builder-editor=\{!previewMode/);
  assert.match(css,/pointer-events:none/);
