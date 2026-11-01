@@ -1,3 +1,4 @@
+import {validateRecordFilterFormula} from '../../../../core/pages/PageRuntime/recordFilterFormula';
 import { useState } from 'react';
 import { Plus, Search, Trash2 } from 'lucide-react';
 import type { FieldMetadata,ObjectMetadata } from '../../../../core/metadata/Definitions/metadata';
@@ -8,7 +9,7 @@ import {
 } from '../../../../core/records/RecordWorkspace/recordFilterMetadata';
 import './RecordFilterEditor.css';
 
-type Filter = {field: string; operator: string; value: unknown; skipWhenEmpty?: boolean};
+type Filter = {field: string; operator: string; value: unknown};
 const isFilter = (item: unknown): item is Filter =>
   Boolean(item && typeof item === 'object' && !Array.isArray(item));
 const isBlank = (operator: string) => operator === 'Is Blank' || operator === 'Is Not Blank';
@@ -22,7 +23,7 @@ const isPicklist = (field?: FieldMetadata) =>
 
 /** Shared no-code filter editor: all types and choices come from accessible Field metadata. */
 export default function RecordFilterEditor({
-  title, fields, filters, onChange, logic = 'AND', onLogicChange, objects = [], rootObjectApiName = ''
+  title, fields, filters, onChange, logic = 'AND', onLogicChange, objects = [], rootObjectApiName = '',formula='',onFormulaChange
 }: {
   title: string;
   fields: FieldMetadata[];
@@ -32,6 +33,8 @@ export default function RecordFilterEditor({
   onChange: (next: unknown[]) => void;
   logic?: 'AND'|'OR';
   onLogicChange?: (next: 'AND'|'OR') => void;
+  formula?:string;
+  onFormulaChange?:(value:string)=>void;
 }) {
   const [fieldSearch, setFieldSearch] = useState('');
   const related=mentionGroups(objects,rootObjectApiName,[],'','text')
@@ -80,6 +83,18 @@ export default function RecordFilterEditor({
         <Plus size={15} aria-hidden="true"/> {item.label} <small>{item.apiName}</small>
       </button>) : <p>No matching accessible fields.</p>}
     </div>}
+    {onFormulaChange && <section className="metadata-filter-formula" aria-label="Record filter formula">
+      <label><strong>Filter Formula</strong>
+        <textarea rows={3} spellCheck={false} value={formula}
+          aria-label={title+' filter formula'}
+          placeholder={'IF(ISBLANK($state.categoryId), TRUE, @MenuCategory = $state.categoryId)'}
+          onChange={event=>onFormulaChange(event.target.value)}/>
+      </label>
+      <small>Use @Field, $state.key, IF, ISBLANK and AND/OR. The formula is applied to authorised records before pagination.</small>
+      {validateRecordFilterFormula(formula,allFields) && <p role="alert" className="metadata-filter-error">
+        {validateRecordFilterFormula(formula,allFields)}
+      </p>}
+    </section>}
     <div className="metadata-filter-conditions">
       {filters.length === 0 && <p className="metadata-filter-empty">No conditions. All accessible records match until you add a filter.</p>}
       {filters.map((entry, index) => {
@@ -169,12 +184,6 @@ export default function RecordFilterEditor({
                 </label>
               : source === 'Fixed' ? <label><span>Value</span>{valueControl}</label> : null)}
           </div>
-          {source === 'PageState' && !isBlank(operator) && <label className="metadata-filter-optional-condition">
-            <input type="checkbox" checked={raw.skipWhenEmpty === true}
-              aria-label={title + ' ignore condition when page state is empty ' + (index + 1)}
-              onChange={event=>set(index,{skipWhenEmpty:event.target.checked})}/>
-            When no value is selected, ignore this condition (show all matching records)
-          </label>}
           {error && <p role="alert" className="metadata-filter-error">{error}</p>}
         </div>;
       })}
