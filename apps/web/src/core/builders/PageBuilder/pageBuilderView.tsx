@@ -6,6 +6,7 @@ import {generateMetadataApiName,suggestMetadataApiName} from '../../metadata/Def
 import { useFormFactor } from '../../workspace/Responsive/useFormFactor';
 import './MobileBuilderReadMode.css';
 import CanvasFloatingActions from './CanvasFloatingActions';
+import {placeNewCanvasComponent,visibleCanvasBounds} from './canvasInsertPlacement';
 import {confirmDestructiveAction} from '../../components/ConfirmAction/confirmDestructiveAction';
 import './PageBuilderNoCode.css';
 import './PageBuilderRibbonGallery.css';
@@ -39,7 +40,7 @@ import { queueOfflineRecord, listOfflineRecords, markOfflineRecord, removeOfflin
 import SchemaBuilder from '../SchemaBuilder/SchemaBuilder';
 import * as React from 'react';
 import { createPortal } from 'react-dom';
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import {
   Activity,
   ArrowDown,
@@ -458,7 +459,30 @@ function PageBuilder({
   const [canvasZoom,setCanvasZoom] = useState(100);
   const [fitScale, setFitScale] = useState(1);
   const pagePreviewAreaRef = useRef<HTMLDivElement | null>(null);
+  const pendingInsertedRef=useRef<string|null>(null);
   const [canvasRefreshKey, setCanvasRefreshKey] = useState(0);
+  // After inserting at any canvas zoom/scroll offset, reveal the selected block.
+  // No page-level scrolling, camera metadata mutation, or global DOM query.
+  useLayoutEffect(()=>{
+    const id=pendingInsertedRef.current;
+    const viewport=pagePreviewAreaRef.current;
+    if(!id||!viewport)return;
+    const frame=window.requestAnimationFrame(()=>{
+      const target=Array.from(viewport.querySelectorAll<HTMLElement>('[data-component-id]'))
+        .find(element=>element.dataset.componentId===id);
+      if(!target)return;
+      pendingInsertedRef.current=null;
+      const visible=viewport.getBoundingClientRect();
+      const bounds=target.getBoundingClientRect();
+      const gap=20;
+      const dx=bounds.left<visible.left+gap?bounds.left-visible.left-gap:
+        bounds.right>visible.right-gap?bounds.left-visible.left-gap:0;
+      const dy=bounds.top<visible.top+gap?bounds.top-visible.top-gap:
+        bounds.bottom>visible.bottom-gap?bounds.top-visible.top-gap:0;
+      if(dx||dy)viewport.scrollTo({left:viewport.scrollLeft+dx,top:viewport.scrollTop+dy,behavior:'instant'});
+    });
+    return()=>window.cancelAnimationFrame(frame);
+  },[page.components,page.layoutMode]);
   const [createPageOpen, setCreatePageOpen] = useState(false);
   const [routeDirectoryOpen, setRouteDirectoryOpen] = useState(false);
   const [dependenciesOpen, setDependenciesOpen] = useState(false);
@@ -1265,18 +1289,14 @@ function PageBuilder({
     // 24px-offset component on top of its neighbours.
     const usedBounds = page.components.filter(item=>item.position && !rawLayoutParentId(item))
       .map(item=>item.position!);
-    const vacancy = () => {
-      const maxX=Math.max(0,page.canvasWidth-defaultWidth);
-      const maxY=Math.max(0,page.canvasHeight-defaultHeight);
-      const coordinates=(max:number)=>[...new Set([Math.min(24,max),
-        ...Array.from({length:Math.ceil(max/24)+1},(_,i)=>Math.min(i*24,max))])];
-      for(const y of coordinates(maxY))for(const x of coordinates(maxX)){
-        if(usedBounds.every(other=>x+defaultWidth<=other.x || other.x+other.width<=x
-          || y+defaultHeight<=other.y || other.y+other.height<=y))return {x,y};
-      }
-      return {x:Math.min(24,maxX),y:Math.min(24,maxY)};
-    };
-    const origin=canvasPosition??vacancy();
+    const viewport=pagePreviewAreaRef.current;
+    const stage=viewport?.querySelector<HTMLElement>('.free-canvas-stage');
+    const visible=viewport&&stage?visibleCanvasBounds(stage.getBoundingClientRect(),
+      viewport.getBoundingClientRect(),page.canvasWidth,page.canvasHeight):undefined;
+    const origin=canvasPosition??placeNewCanvasComponent({
+      canvasWidth:page.canvasWidth,canvasHeight:page.canvasHeight,
+      width:defaultWidth,height:defaultHeight,used:usedBounds,visible
+    });
     const freeCanvasPosition = page.layoutMode === 'free-canvas'
       ? {x:Math.max(0,Math.min(origin.x,page.canvasWidth-defaultWidth)),
          y:Math.max(0,Math.min(origin.y,page.canvasHeight-defaultHeight)),
@@ -1321,6 +1341,7 @@ function PageBuilder({
     inserted.properties = isLayoutType(type)
       ? {...inserted.properties,visualStyle:{...authored,borderWidth:1,borderColor:'#000000'}}
       : {...inserted.properties,borderWidth:1,borderColor:'#000000'};
+    pendingInsertedRef.current=page.layoutMode==='free-canvas'?id:null;
     applyPage({ ...page, components: assignTabOnReparent(
       components,id,parentId,parentId ? openBuilderTabs[parentId] : undefined) });
     setRecentComponents(current => addRecentPageBlock(current, type));
@@ -1329,6 +1350,7 @@ function PageBuilder({
     setActivePanel('properties');
     setInspectorTab(componentNeedsData(type)?'Data & Actions':'Design');
     setRibbonTab(componentNeedsData(type)?'Component Data':'Component Properties');
+    onNotify(`${custom?libraryComponentLabel(custom):type} added and selected`);
   };
   const addField = (fieldApiName: string) => {
     if (dynamicFormsEnabled) {
