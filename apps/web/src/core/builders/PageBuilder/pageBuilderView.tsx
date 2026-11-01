@@ -2429,7 +2429,7 @@ function PageBuilder({
                         onNavigate={(route:AppRoute)=>{if(previewMode)window.open(appRoutePath(route),'_blank','noopener,noreferrer');}}
                          onLaunchFlow={(flowApiName: string, inputs: Record<string, unknown>) => { onLaunchFlow(flowApiName, inputs); externalPreviewWindowRef.current?.opener?.focus?.(); }} disableActions={!previewMode} builderPreview={!previewMode} />
                   : customDefinition
-                    ? <RegisteredComponent definition={customDefinition} layoutTransparent editorPreview={!previewMode} props={libraryPreview ? customPreviewProps : {
+                    ? <RegisteredComponent definition={customDefinition} layoutTransparent props={libraryPreview ? customPreviewProps : {
                       ...component.properties,
                       ...componentLayoutProps(component.properties, device),
                       ...(customDefinition.apiName.startsWith('smart_') && component.position && page.layoutMode==='free-canvas'
@@ -2441,7 +2441,7 @@ function PageBuilder({
                       device, previewOnly: true, builderPreview: !previewMode, pageSessionKey: (builderAppApiName || apps[0]?.apiName || 'Records') + ':' + page.apiName,
                        loadAsset:(id:string)=>request<{contentType:string;contentBase64:string}>('/media-assets/'+id),
                       children: nestedChildren
-                    }} />
+                    }} editorPreview={!previewMode} />
                     : libraryPreview
                       ? <div className="component-demo-fallback"><strong>{component.label}</strong><span>{selectedComponentDescription || 'Preview of a reusable page component.'}</span><div><i /><i /><i /></div></div>
                       : <div className="component-demo-fallback"><strong>{component.label}</strong><span>This component is no longer registered. Re-register it to restore its live preview.</span><div><i /><i /><i /></div></div>}
