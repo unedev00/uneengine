@@ -54,6 +54,7 @@ jobs:
           bash -n scripts/oracle/deploy-full-stack.sh
           bash -n scripts/oracle/recover-systemd-bus.sh
           bash -n scripts/oracle/recover-systemd-manager.sh
+          bash -n scripts/oracle/clear-failed-mcp-brokers.sh
           bash -n scripts/oracle/check-communication-backlog.sh
 
   deploy:
