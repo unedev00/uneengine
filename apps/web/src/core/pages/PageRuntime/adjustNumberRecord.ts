@@ -1,9 +1,12 @@
 import type {FieldMetadata} from '../../metadata/Definitions/metadata';
+import {evaluateFieldExpressionDetailed} from '../../../component-libraries/shared/FieldExpression.js';
 
 type Request=<T>(path:string,init?:RequestInit)=>Promise<T>;
 export type AdjustNumberBinding={
  actionType:'AdjustNumber';objectApiName?:string;fieldApiName:string;
  deltaSource:'$event.delta';
+ /** Per-button declarative formulas, e.g. @Quantity + 2 and @Quantity - 2. */
+ incrementFormula?:string;decrementFormula?:string;
  minValue?:number;deleteOnZero?:boolean;
  totalFieldApiName?:string;unitPriceFieldApiName?:string;
  relatedFieldApiName?:string;relatedStateKey?:string;
@@ -19,6 +22,29 @@ const valueNumber=(value:unknown):number=>{
  return n;
 };
 const cents=(n:number)=>Math.round((n+Number.EPSILON)*100)/100;
+/** Use the existing bounded formula engine on authorised numeric record fields.
+ * No arbitrary JS, HTTP, SQL, page state writes or cross-record references.
+ */
+export function evaluateNumberActionFormula(
+ formula:string,field:string,row:Readonly<Record<string,unknown>>,
+ fields:ReadonlyArray<FieldMetadata>
+):number{
+ if(typeof formula!=='string'||formula.length>300||!formula.trim())
+  throw Error('Enter a quantity formula using @Field and numbers.');
+ const numericFields=new Set(fields.filter(item=>numeric.test(item.dataType)).map(item=>item.apiName));
+ if(!numericFields.has(field))throw Error('The formula target must be a Number field.');
+ const references=[...formula.matchAll(/@([A-Za-z][A-Za-z0-9_.]*)/g)].map(match=>match[1]);
+ if(!references.includes(field))throw Error('Quantity formula must reference @'+field+'.');
+ if(references.some(name=>!numericFields.has(name)||!Object.prototype.hasOwnProperty.call(row,name)))
+  throw Error('Quantity formula references an unavailable numeric field.');
+ const values:Record<string,number>={};
+ for(const name of new Set(references))values[name]=valueNumber(row[name]);
+ const result=evaluateFieldExpressionDetailed(formula,values);
+ if(result.error)throw Error('Invalid quantity formula: '+result.error);
+ if(!result.value.trim()||!Number.isFinite(Number(result.value)))
+  throw Error('Quantity formula must return a finite number.');
+ return Number(result.value);
+}
 
 /** Generic, no-Flow numeric record adjustment through RBAC-enforced Record API.
  * No business-object names, app names, or JavaScript expressions are evaluated.
@@ -68,9 +94,17 @@ export async function adjustNumberRecord(
  const original=valueNumber(row[field]);
  if(!Number.isSafeInteger(original)||original<min)
   throw Error('Current quantity is invalid.');
- const next=original+delta;
+ const authoredFormula=delta===1?config.incrementFormula:config.decrementFormula;
+ const formula=authoredFormula===undefined
+  ?'@'+field+(delta===1?' + 1':' - 1'):authoredFormula;
+ const calculated=evaluateNumberActionFormula(formula,field,row,metadata?.fields??[]);
+ // Removing more than the remaining quantity removes the line at zero,
+ // rather than producing a negative quantity or an accidental overcharge.
+ const next=calculated<min&&delta===-1&&config.deleteOnZero?min:calculated;
  if(next<min||!Number.isSafeInteger(next)||next>1000000)
   throw Error('Quantity would be outside its allowed range.');
+ if(delta===1&&next<=original||delta===-1&&next>=original)
+  throw Error('Quantity formula must increase on + and decrease on −.');
  // The Record API requires a precondition so simultaneous operators cannot
  // overwrite each other's number changes or delete a newly edited row.
  const modifiedAt=row.LastModifiedDate;
