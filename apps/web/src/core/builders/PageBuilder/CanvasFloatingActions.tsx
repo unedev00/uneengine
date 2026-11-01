@@ -28,8 +28,16 @@ export default function CanvasFloatingActions({componentId,viewportRef,children,
       const width=panel?.width||200,height=panel?.height||44;
       const isVisible=target.bottom>visible.top&&target.top<visible.bottom
         &&target.right>visible.left&&target.left<visible.right;
-      const top=target.top-height-12>=Math.max(visible.top,8)
-        ?target.top-height-12:target.bottom+12;
+      // Anchor to the visible portion, not a huge offscreen component bottom.
+      // Otherwise tall carts/grids send the action toolbar to the window edge.
+      const visibleTop=Math.max(target.top,visible.top);
+      const visibleBottom=Math.min(target.bottom,visible.bottom);
+      const viewportTop=Math.max(8,visible.top+8);
+      const viewportBottom=Math.min(window.innerHeight-8,visible.bottom-8);
+      const above=visibleTop-height-12>=viewportTop;
+      const below=visibleBottom+height+12<=viewportBottom;
+      const top=above?visibleTop-height-12
+        :below?visibleBottom+12:visibleTop+12;
       const next={
         top:Math.max(8,Math.min(window.innerHeight-height-8,top)),
         left:Math.max(8,Math.min(window.innerWidth-width-8,target.left+target.width/2-width/2)),
