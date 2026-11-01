@@ -267,107 +267,120 @@ export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,
       <span className="office-ribbon-group-heading">Selected action</span>
     </section>
     <section className="office-ribbon-mini-group page-action-target" aria-label="Configuration" data-inactive={!active}>
-      {kind==='AdjustNumber' ? <>
-        <label>Number field
-          <select aria-label="Number field to adjust" disabled={inactive}
-            value={String(selected.fieldApiName??'')}
-            onChange={e=>{
-              const oldField=String(selected.fieldApiName??'Quantity');
-              const next=e.target.value;
-              patch({fieldApiName:next,
-                ...(selected.incrementFormula===defaultNumberFormula('increment',oldField)
-                  ?{incrementFormula:defaultNumberFormula('increment',next)}:{}),
-                ...(selected.decrementFormula===defaultNumberFormula('decrement',oldField)
-                  ?{decrementFormula:defaultNumberFormula('decrement',next)}:{})
-              });
-            }}>
-            <option value="">Choose numeric field…</option>
-            {dataFields.filter(field=>/^(Number|Currency|Percent|Integer|Decimal|Double|Float)(\(|$)/i.test(field.dataType))
-              .map(field=><option key={field.apiName} value={field.apiName}>{field.label}</option>)}
-          </select>
-        </label>
-        <label>Minimum <input type="number" min={0} step={1} disabled={inactive}
-          aria-label="Minimum number after adjustment"
-          value={Number(selected.minValue??0)}
-          onChange={e=>patch({minValue:Math.max(0,Number(e.target.value)||0)})}/></label>
-        <label><input type="checkbox" disabled={inactive}
-          aria-label="Delete row when number reaches zero"
-          checked={selected.deleteOnZero===true}
-          onChange={e=>patch({deleteOnZero:e.target.checked,minValue:0})}/> Remove row at zero</label>
-        <label>Related record field
-          <select aria-label="Optional relation guard field" disabled={inactive}
-            value={String(selected.relatedFieldApiName??'')}
-            onChange={e=>patch({relatedFieldApiName:e.target.value})}>
-            <option value="">No relation guard</option>
-            {dataFields.filter(field=>/^(Lookup|Reference)(\(|$)/i.test(field.dataType))
-              .map(field=><option key={field.apiName} value={field.apiName}>{field.label}</option>)}
-          </select>
-        </label>
-        <label>Related page state key
-          <input aria-label="Related page state key for permission-scoped row"
-            disabled={inactive} placeholder="e.g. currentCartId"
-            value={String(selected.relatedStateKey??'')}
-            onChange={e=>patch({relatedStateKey:e.target.value})}/>
-        </label>
-        <label>Page collection key
-          <input aria-label="Optional Page State collection to refresh"
-            disabled={inactive} placeholder="e.g. cartItems"
-            value={String(selected.stateCollectionKey??'')}
-            onChange={e=>patch({stateCollectionKey:e.target.value})}/>
-        </label>
-        <label>Total page state key
-          <input aria-label="Optional Page State total to recalculate"
-            disabled={inactive} placeholder="e.g. total"
-            value={String(selected.totalStateKey??'')}
-            onChange={e=>patch({totalStateKey:e.target.value})}/>
-        </label>
-        <label>Unit price field
-          <select aria-label="Optional unit price field" disabled={inactive}
-            value={String(selected.unitPriceFieldApiName??'')}
-            onChange={e=>patch({unitPriceFieldApiName:e.target.value,totalFieldApiName:e.target.value?selected.totalFieldApiName??'':''})}>
-            <option value="">No calculated total</option>
-            {dataFields.filter(field=>/^(Number|Currency|Percent|Integer|Decimal|Double|Float)(\(|$)/i.test(field.dataType))
-              .map(field=><option key={field.apiName} value={field.apiName}>{field.label}</option>)}
-          </select>
-        </label>
-        <label>Line total field
-          <select aria-label="Optional line total field" disabled={inactive}
-            value={String(selected.totalFieldApiName??'')}
-            onChange={e=>patch({totalFieldApiName:e.target.value})}>
-            <option value="">None</option>
-            {dataFields.filter(field=>/^(Number|Currency|Percent|Integer|Decimal|Double|Float)(\(|$)/i.test(field.dataType))
-              .map(field=><option key={field.apiName} value={field.apiName}>{field.label}</option>)}
-          </select>
-        </label>
-      </> : null}
-      {kind==='Flow'?<label>Flow
-        <select aria-label="Flow for selected action" disabled={inactive}
-          value={selectedFlow?.apiName??String(selected.flowApiName??'')}
+      <label>Flow
+        <select aria-label="Flow for selected action" disabled={inactive||!isFlow}
+          value={isFlow?(selectedFlow?.apiName??String(selected.flowApiName??'')):''}
           onChange={event=>{
             const flow=availableFlows.find(item=>item.apiName===event.target.value);
             patch({flowApiName:flow?.id?metadataReference(flow.id):flow?.apiName??'',
               ...(flow?{flowType:flow.flowType}:{})});
           }}>
           <option value="">Select Flow…</option>
-          {Boolean(selected.flowApiName)&&!selectedFlow&&
+          {isFlow&&Boolean(selected.flowApiName)&&!selectedFlow&&
             <option value={String(selected.flowApiName)}>{String(selected.flowApiName)} (saved/unavailable)</option>}
           {availableFlows.map(flow=><option key={flow.apiName} value={flow.apiName}>{flow.label}</option>)}
-        </select></label>:kind==='Navigate'?<label>Destination
-        <select aria-label="Destination type for selected action" disabled={inactive}
-          value={String(selected.navigationTargetType??'Record List')}
-          onChange={event=>patch({navigationTargetType:event.target.value,
-            navigationPageApiName:''})}>
+        </select>
+      </label>
+      <label>Number field
+        <select aria-label="Number field to adjust" disabled={inactive||!isNumeric}
+          value={isNumeric?selectNumericField:''}
+          onChange={event=>{
+            const previous=String(selected.fieldApiName??'Quantity'),field=event.target.value;
+            patch({fieldApiName:field,
+              ...(selected.formula===fallbackFormula(selectedEvent,previous)
+                ?{formula:fallbackFormula(selectedEvent,field)}:{})
+            });
+          }}>
+          <option value="">Choose numeric field…</option>
+          {numericFields.map(field=><option key={field.apiName} value={field.apiName}>{field.label}</option>)}
+        </select>
+      </label>
+      <label>Minimum
+        <input type="number" min={0} step={1} aria-label="Minimum number after adjustment"
+          disabled={inactive||!isNumeric} value={isNumeric?Number(selected.minValue??0):0}
+          onChange={e=>patch({minValue:Math.max(0,Number(e.target.value)||0)})}/>
+      </label>
+      <label>Destination
+        <select aria-label="Destination type for selected action" disabled={inactive||!isNavigation}
+          value={isNavigation?String(selected.navigationTargetType??'Record List'):'Record List'}
+          onChange={event=>patch({navigationTargetType:event.target.value,navigationPageApiName:''})}>
           <option value="Record List">Record list</option>
           <option value="App Home">App home</option>
           <option value="App Page">App page</option>
-        </select></label>:<label>{kind==='SetFilter'?'Filter key':'Page state key'}
-        <input aria-label={kind==='SetFilter'?'Shared filter key':'Page state key'}
-          disabled={inactive} value={String(kind==='SetFilter'?selected.filterKey??'category':selected.stateKey??'')}
-          onChange={event=>patch({[kind==='SetFilter'?'filterKey':'stateKey']:event.target.value})}/></label>}
+        </select>
+      </label>
+      <label>Filter key
+        <input aria-label="Shared filter key" disabled={inactive||kind!=='SetFilter'}
+          value={kind==='SetFilter'?String(selected.filterKey??'category'):''}
+          onChange={event=>patch({filterKey:event.target.value})}/>
+      </label>
+      <label>Page state key
+        <input aria-label="Page state key" disabled={inactive||!isPageValue}
+          placeholder="e.g. quantity"
+          value={isPageValue?String(selected.stateKey??''):''}
+          onChange={event=>patch({stateKey:event.target.value})}/>
+      </label>
+      <label className="page-action-checkbox">
+        <input type="checkbox" aria-label="Delete row when number reaches zero"
+          disabled={inactive||!isNumeric} checked={isNumeric&&selected.deleteOnZero===true}
+          onChange={event=>patch({deleteOnZero:event.target.checked,minValue:0})}/>
+        Remove row at zero
+      </label>
       <button type="button" className="office-ribbon-icon-button page-action-details-toggle"
         aria-label={showDetails?'Hide action details':'Show action details'} aria-expanded={showDetails}
-        disabled={inactive} onClick={onToggleDetails}><SlidersHorizontal size={15}/>{showDetails?'Hide details':'Configure details'}</button>
+        disabled={inactive} onClick={onToggleDetails}>
+        <SlidersHorizontal size={15}/>{showDetails?'Hide details':'Configure details'}
+      </button>
       <span className="office-ribbon-group-heading">Configuration</span>
+    </section>
+    <section className="office-ribbon-mini-group page-action-parameters" aria-label="Action parameters" data-inactive={!active}>
+      <label>Related record
+        <select aria-label="Optional relation guard field" disabled={inactive||!isNumeric}
+          value={isNumeric?String(selected.relatedFieldApiName??''):''}
+          onChange={event=>patch({relatedFieldApiName:event.target.value})}>
+          <option value="">No relation guard</option>
+          {dataFields.filter(field=>/^(Lookup|Reference)(\(|$)/i.test(field.dataType))
+            .map(field=><option key={field.apiName} value={field.apiName}>{field.label}</option>)}
+        </select>
+      </label>
+      <label>Related state
+        <input aria-label="Related page state key for permission-scoped row"
+          disabled={inactive||!isNumeric} value={isNumeric?String(selected.relatedStateKey??''):''}
+          onChange={event=>patch({relatedStateKey:event.target.value})}/>
+      </label>
+      <label>Collection
+        <input aria-label="Optional Page State collection to refresh"
+          disabled={inactive||!isNumeric} value={isNumeric?String(selected.stateCollectionKey??''):''}
+          onChange={event=>patch({stateCollectionKey:event.target.value})}/>
+      </label>
+      <label>Subtotal state
+        <input aria-label="Optional subtotal page state to recalculate"
+          disabled={inactive||!isNumeric} value={isNumeric?String(selected.subtotalStateKey??''):''}
+          onChange={event=>patch({subtotalStateKey:event.target.value})}/>
+      </label>
+      <label>Total state
+        <input aria-label="Optional Page State total to recalculate"
+          disabled={inactive||!isNumeric} value={isNumeric?String(selected.totalStateKey??''):''}
+          onChange={event=>patch({totalStateKey:event.target.value})}/>
+      </label>
+      <label>Unit price
+        <select aria-label="Optional unit price field" disabled={inactive||!isNumeric}
+          value={isNumeric?String(selected.unitPriceFieldApiName??''):''}
+          onChange={event=>patch({unitPriceFieldApiName:event.target.value,
+            totalFieldApiName:event.target.value?selected.totalFieldApiName??'':''})}>
+          <option value="">No calculated total</option>
+          {numericFields.map(field=><option key={field.apiName} value={field.apiName}>{field.label}</option>)}
+        </select>
+      </label>
+      <label>Line total
+        <select aria-label="Optional line total field" disabled={inactive||!isNumeric}
+          value={isNumeric?String(selected.totalFieldApiName??''):''}
+          onChange={event=>patch({totalFieldApiName:event.target.value})}>
+          <option value="">None</option>
+          {numericFields.map(field=><option key={field.apiName} value={field.apiName}>{field.label}</option>)}
+        </select>
+      </label>
+      <span className="office-ribbon-group-heading">Action parameters</span>
     </section>
     </div>
   </div>;
