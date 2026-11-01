@@ -137,7 +137,7 @@ export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,
               ...(flow?{flowType:flow.flowType}:{})});
           }}>
           <option value="">Select Flow…</option>
-          {selected.flowApiName&&!selectedFlow&&
+          {Boolean(selected.flowApiName)&&!selectedFlow&&
             <option value={String(selected.flowApiName)}>{String(selected.flowApiName)} (saved/unavailable)</option>}
           {availableFlows.map(flow=><option key={flow.apiName} value={flow.apiName}>{flow.label}</option>)}
         </select></label>:kind==='Navigate'?<label>Destination
