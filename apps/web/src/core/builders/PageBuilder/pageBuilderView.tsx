@@ -171,6 +171,8 @@ import './PageBuilderEightTabRibbon.css';
 import './PageBuilderCanvasWorkspace.css';
 import './PageBuilderEditorPreview.css';
 import './SmartCanvasHandles.css';
+// Single owner for ribbon height, overflow and scrollbar geometry.
+import './PageBuilderRibbonLayout.css';
 import RibbonFieldExpressionInput from './RibbonFieldExpressionInput';
 import {RibbonResponsive} from './PageBuilderRibbonStyle';
 import PageBuilderAdvancedStyle from './PageBuilderAdvancedStyle';

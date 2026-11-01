@@ -55,7 +55,7 @@ export default function SmartInsertRibbon({items,onInsert,renderIcon}:{
   </div>
   <div className="smart-insert-gallery">
    <div className="smart-insert-gallery-row">
-    {visible.length>28&&<button className="smart-insert-pager" type="button" title="Previous components"
+    {(arrows.left||arrows.right)&&<button className="smart-insert-pager" type="button" title="Previous components"
       aria-label="Previous components" disabled={!arrows.left}
       onClick={()=>move(-500)}><ChevronLeft size={16}/></button>}
     <div className="smart-insert-tiles" ref={scroll} onScroll={measure} key={scope+'-'+term}>
@@ -71,7 +71,7 @@ export default function SmartInsertRibbon({items,onInsert,renderIcon}:{
        scope==='smart'&&smartCount===0?'No Smart components are installed for this tenant.':'No components match the search.'}
      </div>}
     </div>
-    {visible.length>28&&<button className="smart-insert-pager" type="button" title="Next components"
+    {(arrows.left||arrows.right)&&<button className="smart-insert-pager" type="button" title="Next components"
       aria-label="Next components" disabled={!arrows.right}
       onClick={()=>move(500)}><ChevronRight size={16}/></button>}
    </div>

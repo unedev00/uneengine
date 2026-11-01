@@ -64,8 +64,8 @@ test('Insert Ribbon exposes visible Smart components without requiring a selecte
  assert.match(insert,/aria-label="Search Insert components"/);
  assert.doesNotMatch(insert,/Open full library/);
  assert.match(insert,/No Smart components are installed for this tenant/);
- assert.match(css,/grid-template-rows:repeat\(2,56px\)/);
- assert.match(css,/office-builder-ribbon #page-builder-tab-content:has\(>\.smart-insert-ribbon\)/);
+ assert.match(read('../src/core/builders/PageBuilder/PageBuilderRibbonLayout.css'),/grid-template-rows: repeat\(2,55px\)/);
+ assert.match(read('../src/core/builders/PageBuilder/PageBuilderRibbonLayout.css'),/> \.smart-insert-ribbon/);
 });
 
 test('Smart visual/property fixes are registered without changing historic SQL migrations',()=>{
@@ -118,8 +118,8 @@ test('Smart ribbon keeps all shared properties and renders the approved compact 
  assert.match(css,/\.smart-property\.disabled/);
  assert.match(css,/\.smart-icons button>svg/);
  assert.match(css,/\.smart-default-check-switch/);
- assert.match(css,/#page-builder-tab-content\.office-ribbon-content:has\(>\.smart-ribbon\)/);
- assert.match(css,/height:146px!important/);
+ assert.match(read('../src/core/builders/PageBuilder/PageBuilderRibbonLayout.css'),/#page-builder-tab-content\.office-ribbon-content/);
+ assert.match(read('../src/core/builders/PageBuilder/PageBuilderRibbonLayout.css'),/--page-ribbon-scroll-strip-height: 127px/);
  assert.match(css,/input\.smart-office-number/);
  const metadata=read('../../server/src/system-support/migrations/20270126-une-ribbon-requirements.sql');
  assert.match(metadata,/WHEN property_key IN \('label','defaultValue'\) THEN 'Data'/);
@@ -132,7 +132,7 @@ test('Smart ribbon compact corrections preserve visibility and size controls cor
  assert.match(ribbon,/const visible=definitions\.filter\(p=>p\.tab===tab\)/);
  assert.match(ribbon,/const supported=property\.components\.includes\(api\)/);
  assert.doesNotMatch(ribbon,/p\.tab===tab&&p\.components\.includes\(api\)/);
- assert.match(css,/padding:4px 26px 4px 0!important/);
+ assert.match(read('../src/core/builders/PageBuilder/PageBuilderRibbonLayout.css'),/padding: 2px 6px !important/);
  assert.match(css,/flex:0 0 52px!important/);
  assert.match(css,/width:52px!important;min-width:52px!important;max-width:52px!important/);
   assert.match(css,/grid-template-rows:repeat\(3,30px\)/);
@@ -383,7 +383,7 @@ test('Smart compact rows share measured tracks and align related controls, witho
  for(const property of ['backgroundColor','borderColor','labelColor','wrapText','headerBold','headerBorderColor','badgeBold','badgeTextColor','badgeBodyColor'])
    assert.ok(css.includes('[data-property="'+property+'"]'),'Hidden icon label mapping missing '+property);
   assert.match(css,/grid-template-rows:repeat\(3,30px\)/);
- assert.match(css,/height:146px!important/);
+ assert.match(read('../src/core/builders/PageBuilder/PageBuilderRibbonLayout.css'),/--page-ribbon-scroll-strip-height: 127px/);
  assert.match(css,/\.smart-ribbon-caption/);
  // The two already-approved sections must stay on their original shared tracks.
  assert.doesNotMatch(css,/\[aria-label="Typography"\]/);
@@ -918,7 +918,7 @@ test('SQL-backed eight-tab ribbon retains existing controls and correct geometry
  assert.match(ribbon,/property.id===firstFilterPropertyId/);
  assert.match(ribbon,/smart-formula-prefix/);
  assert.match(css,/padding:6px 7px 1px!important/);
- assert.match(visual,/overflow-x:hidden!important/);
+ assert.match(read('../src/core/builders/PageBuilder/PageBuilderRibbonLayout.css'),/overflow-x: auto !important/);
  for(const id of ['badgeAlignment','summaryTextSize','summary2TextSize',
   'cardsPerRow','cardsPerColumn','column2Source','columnVisibility','iconFillColor'])
    assert.ok(sql.includes("'"+id+"'"),'Missing SQL placement '+id);
@@ -1012,7 +1012,7 @@ test('31 October ribbon consolidation scopes @ fields to three explicit objects 
  assert.match(sql,/Navigation Placement/);
  assert.match(sql,/section_group='Component'/);
  assert.match(sql,/objectApiName3/);
- assert.match(styles,/height:118px!important/);
+ assert.match(read('../src/core/builders/PageBuilder/PageBuilderRibbonLayout.css'),/--page-ribbon-content-height: 114px/);
  assert.match(styles,/gap:4px!important/);
  assert.match(page,/homeValue\('restoreVersion'\)/);
  assert.doesNotMatch(page,/case 'canvasMode'/);

@@ -1,10 +1,5 @@
+/* Outer ribbon height/overflow/scrollbar geometry is owned by PageBuilderRibbonLayout.css. */
 /* Shared UNE property catalog — stable across all 36 component selections. */
-.office-builder-ribbon #page-builder-tab-content:has(>.une-universal-ribbon){
-  display:flex!important;flex-direction:row!important;align-items:stretch!important;
-  box-sizing:border-box!important;overflow-x:auto!important;overflow-y:hidden!important;
-  height:158px!important;min-height:158px!important;max-height:158px!important;
-  padding:3px 8px!important;scrollbar-width:thin!important;
-}
 /* Old ad-hoc editors must not duplicate or reflow the universal ribbon. */
 .office-builder-ribbon #page-builder-tab-content:not([aria-label="Component Action"]):has(>.une-universal-ribbon)>:not(.une-universal-ribbon){
   display:none!important;
@@ -122,9 +117,6 @@
 }
 
 /* Complex editors live in the ribbon as their own scrollable section, never a popup. */
-.office-builder-ribbon #page-builder-tab-content:has(>.une-universal-ribbon .une-universal-complex-section){
-  height:360px!important;min-height:360px!important;max-height:360px!important;
-}
 .office-builder-ribbon #page-builder-tab-content>.une-universal-ribbon:has(.une-universal-complex-section){
   height:350px!important;min-height:350px!important;
 }
@@ -153,14 +145,6 @@
 }
 
 /* Data ribbon always remains compact. Every property appears in its section. */
-.office-builder-ribbon #page-builder-tab-content:has(>.une-universal-ribbon){
- height:158px!important;min-height:158px!important;max-height:158px!important;
- overflow-x:auto!important;overflow-y:hidden!important;direction:ltr!important;
- scrollbar-width:thin!important;scrollbar-color:#9aaec8 transparent!important;
- padding:3px 8px!important;
-}
-.office-builder-ribbon #page-builder-tab-content:has(>.une-universal-ribbon)::-webkit-scrollbar{display:block!important;height:9px!important}
-.office-builder-ribbon #page-builder-tab-content:has(>.une-universal-ribbon)::-webkit-scrollbar-thumb{background:#9aaec8;border-radius:8px}
 .office-builder-ribbon .une-universal-inline-complex{flex:0 0 180px;width:180px;max-width:180px;max-height:112px;overflow:auto;scrollbar-width:thin}
 .office-builder-ribbon .une-universal-inline-complex .metadata-component-properties{width:100%;min-width:160px;font-size:11px}
 .office-builder-ribbon .une-universal-inline-complex .component-optional-settings{display:block;margin:0;padding:0;border:0}

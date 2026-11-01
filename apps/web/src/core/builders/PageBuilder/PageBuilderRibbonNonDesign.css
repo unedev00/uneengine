@@ -1,8 +1,5 @@
+/* Outer ribbon height/overflow/scrollbar geometry is owned by PageBuilderRibbonLayout.css. */
 /* Non-Design ribbon corrections. Keep Design-tab blueprint unchanged. */
-.office-builder-ribbon #page-builder-tab-content[aria-label="Add Block"]{
-  height:122px!important;min-height:122px!important;max-height:122px!important;
-  padding:4px 8px!important;
-}
 .office-builder-ribbon #page-builder-tab-content[aria-label="Add Block"]>.office-ribbon-add-library,
 .office-builder-ribbon #page-builder-tab-content[aria-label="Add Block"] .office-ribbon-gallery-pages{
   height:112px!important;min-height:112px!important;max-height:112px!important;
