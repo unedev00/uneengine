@@ -12,6 +12,7 @@ test('interactive preview uses the same lazy-loaded runtime as published App Pag
   assert.match(builder, /<LightningAppRuntime[\s\S]*?previewPage=\{page\}/);
   assert.match(builder, /pageDefinitionCache=\{previewPageDefinitionCache\.current\}/);
   assert.match(builder, /onLaunchFlow=\{onLaunchFlow\}/);
+  assert.match(builder, /formFactor=\{device\} previewLayoutDevice=\{device\}/);
   assert.match(builder, /previewMode && page\.pageType !== 'Record Page' \? <div className="page-builder-live-runtime"[\s\S]*? : <div\s+className=\{\`record-preview/);
 });
 
@@ -20,6 +21,7 @@ test('preview renders draft metadata without fetching or caching a published pag
   assert.match(runtime, /previewPage\?: LightningPageMetadata/);
   assert.match(runtime, /const page=previewPage\?\?\(routePending\?cached:pageLoad\.page\)/);
   assert.match(runtime, /const loading=previewPage\?false/);
+  assert.match(runtime, /const layoutDevice = previewLayoutDevice \?\? detectedLayoutDevice/);
   assert.match(runtime, /if\(previewPage\)return;[\s\S]*?const cachedPage=readPageDefinitionCache/);
 });
 
