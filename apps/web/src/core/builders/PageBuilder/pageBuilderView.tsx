@@ -2418,10 +2418,10 @@ function PageBuilder({
       role={libraryPreview ? undefined : page.layoutMode === 'free-canvas' ? 'group' : 'button'} tabIndex={previewMode || libraryPreview ? -1 : 0} aria-label={libraryPreview ? undefined : `${component.label} component`}
       aria-hidden={libraryPreview && !interactivePreview || undefined}
     >
-      {!previewMode && !libraryPreview && selectedId === component.id && !nested && <CanvasFloatingActions componentId={component.id} viewportRef={pagePreviewAreaRef} enabled={page.layoutMode === 'free-canvas'}><div
+      {!previewMode && !libraryPreview && selectedId === component.id && <CanvasFloatingActions componentId={component.id} viewportRef={pagePreviewAreaRef} enabled={page.layoutMode === 'free-canvas'}><div
         className="canvas-element-actions" role="toolbar" aria-label={`Actions for ${component.label}`}
         onPointerDown={event => event.stopPropagation()} onClick={event => event.stopPropagation()}>
-        {page.layoutMode === 'free-canvas' && !isCanvasLocked(component) && <button type="button"
+        {page.layoutMode === 'free-canvas' && !nested && !isCanvasLocked(component) && <button type="button"
           className="canvas-move-grip" aria-label={`Drag to move ${component.label}`}
           title="Drag to move only this component" draggable={false}
           onPointerDown={event => startCanvasMove(event, component)}
