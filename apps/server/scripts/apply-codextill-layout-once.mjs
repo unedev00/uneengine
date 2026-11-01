@@ -3,6 +3,17 @@ import {PageRuntime} from '../dist-system/system-files/page-runtime.js';
 import {applyCodextillDesktopLayout,codextillDesktopComponents}
   from '../dist-system/app-seeders/codextill-page-layout.js';
 
+// The checkout is private to the runner but PostgreSQL authenticates over a
+// Unix peer socket as the metadrive OS user. Resolve static imports while
+// privileged, then permanently drop uid/gid before opening any SQL connection.
+if(typeof process.getuid==='function' && process.getuid()===0){
+ process.initgroups('metadrive','metadrive');
+ process.setgid('metadrive');
+ process.setuid('metadrive');
+}
+if(typeof process.getuid==='function' && process.getuid()===0)
+ throw Error('Refusing a privileged CODEXTILL database connection');
+
 // One-time, tenant-scoped visual draft write. No page publication, app seeding,
 // user records or service manipulation. The seeder itself is checksum guarded.
 if(!process.env.DATABASE_URL)throw Error('Configured DATABASE_URL required');
