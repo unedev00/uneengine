@@ -1248,6 +1248,21 @@ function PageBuilder({
       && existing.profileId === assignment.profileId
       && existing.recordTypeId === assignment.recordTypeId
       && existing.formFactors.some((factor) => assignment.formFactors.includes(factor)));
+  // A palette insertion must be discoverable even when the first vacancy is below the viewport.
+  const pendingInsertedComponentRef = useRef<string | null>(null);
+  useEffect(() => {
+    const pendingId = pendingInsertedComponentRef.current;
+    if (!pendingId || !page.components.some(item => item.id === pendingId)) return;
+    const frame = window.requestAnimationFrame(() => {
+      const node = Array.from(pagePreviewAreaRef.current?.querySelectorAll<HTMLElement>('[data-component-id]') ?? [])
+        .find(item => item.dataset.componentId === pendingId);
+      if (!node) return;
+      node.scrollIntoView({block: 'nearest', inline: 'nearest', behavior: 'instant'});
+      pendingInsertedComponentRef.current = null;
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [page.components]);
+
   const addComponent = (type: string, position = page.components.length, region: 'header' | 'main' | 'sidebar' = 'main', canvasPosition?: PageComponentMetadata['position'], parentId: string | null = null) => {
     const customApiName = type.startsWith('Custom:') ? type.slice('Custom:'.length) : '';
     const custom = findRegisteredComponent(libraryComponents, customApiName, 'page');
@@ -1324,6 +1339,7 @@ function PageBuilder({
     applyPage({ ...page, components: assignTabOnReparent(
       components,id,parentId,parentId ? openBuilderTabs[parentId] : undefined) });
     setRecentComponents(current => addRecentPageBlock(current, type));
+    pendingInsertedComponentRef.current = id;
     setSelectedId(id);
     setPageSettingsOpen(false);
     setActivePanel('properties');
