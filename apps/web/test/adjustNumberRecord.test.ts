@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {adjustNumberRecord,type AdjustNumberBinding} from '../src/core/pages/PageRuntime/adjustNumberRecord';
+import {adjustNumberRecord,evaluateNumberActionFormula,type AdjustNumberBinding} from '../src/core/pages/PageRuntime/adjustNumberRecord';
 const fields=['Quantity','UnitPrice','LineTotal'].map(apiName=>({
  apiName,label:apiName,dataType:'Number'
 })).concat([{apiName:'CartSession',label:'Cart Session',dataType:'Lookup(CartSession)'}]) as any;
@@ -55,4 +55,62 @@ test('wrong session and unrecognised delta are rejected before any write',async(
   adjustNumberRecord(req,binding,{recordId:id,delta:9},{cartSessionId:session,cartItems:[row]},objects,'CartLine'),
   /Only \+1 or -1/);
  assert.equal(calls.length,0);
+});
+
+test('authored +2 formula increases authorised row and recalculates totals without a Flow',async()=>{
+ const calls:Array<{method?:string;body?:string}>=[];
+ const request=async<T>(_path:string,init?:RequestInit):Promise<T>=>{
+  calls.push({method:init?.method,body:init?.body as string|undefined});
+  return {record:row} as T;
+ };
+ const changes=await adjustNumberRecord(request,{...binding,incrementFormula:'@Quantity + 2'},
+  {recordId:id,delta:1},{cartSessionId:session,cartItems:[row]},objects,'CartLine');
+ assert.deepEqual(JSON.parse(calls[1].body!),{Quantity:4,LineTotal:5});
+ assert.equal(changes.find(c=>c.key==='subtotal')?.value,5);
+ assert.equal(changes.find(c=>c.key==='total')?.value,5);
+});
+test('authored minus 2 removes a one-item row at zero, without creating negative quantity',async()=>{
+ const data={...row,Quantity:1,LineTotal:1.25};
+ const calls:Array<{method?:string;body?:string}>=[];
+ const request=async<T>(_path:string,init?:RequestInit):Promise<T>=>{
+  calls.push({method:init?.method,body:init?.body as string|undefined});
+  return {record:data} as T;
+ };
+ const changes=await adjustNumberRecord(request,{...binding,decrementFormula:'@Quantity - 2'},
+  {recordId:id,delta:-1},{cartSessionId:session,cartItems:[data]},objects,'CartLine');
+ assert.equal(calls[1].method,'DELETE');
+ assert.deepEqual(changes.find(c=>c.key==='cartItems')?.value,[]);
+ assert.equal(changes.find(c=>c.key==='total')?.value,0);
+});
+test('author can use another numeric field in a safe formula but not unlisted fields',()=>{
+ const result=evaluateNumberActionFormula('@Quantity + @UnitPrice * 2','Quantity',row,fields);
+ assert.equal(result,4.5);
+ assert.throws(()=>evaluateNumberActionFormula('@Quantity + @CartSession','Quantity',row,fields),
+  /unavailable numeric field/);
+ assert.throws(()=>evaluateNumberActionFormula('@Quantity + @Password','Quantity',row,fields),
+  /unavailable numeric field/);
+ assert.throws(()=>evaluateNumberActionFormula('@Quantity + 0 / 0','Quantity',row,fields),
+  /Invalid quantity formula|finite number/);
+ assert.throws(()=>evaluateNumberActionFormula('@Quantity + 1; DROP TABLE','Quantity',row,fields),
+  /Invalid quantity formula/);
+});
+test('invalid, reversed, fractional and unavailable formulas perform no writes',async()=>{
+ const calls:Array<{method?:string}>=[];
+ const request=async<T>(_path:string,init?:RequestInit):Promise<T>=>{
+  calls.push({method:init?.method});return {record:row} as T;
+ };
+ for(const formula of ['@Quantity - 2','@Quantity + 1.5','@Quantity + @Secret',
+   '@Quantity + 2000000','@UnitPrice + 2','@Quantity + 0']){
+  calls.length=0;
+  await assert.rejects(
+   adjustNumberRecord(request,{...binding,incrementFormula:formula},
+    {recordId:id,delta:1,operation:'increment'},
+    {cartSessionId:session,cartItems:[row]},objects,'CartLine'));
+  assert.equal(calls.filter(c=>c.method==='PATCH'||c.method==='DELETE').length,0,formula);
+ }
+});
+test('legacy +1 and -1 action metadata remain supported without authored formulas',async()=>{
+ const changes=await adjustNumberRecord(async<T>()=>({record:row} as T),binding,
+  {recordId:id,delta:-1},{cartSessionId:session,cartItems:[row]},objects,'CartLine');
+ assert.equal(changes.find(c=>c.key==='total')?.value,1.25);
 });

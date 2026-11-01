@@ -10,6 +10,7 @@ import CanvasFloatingResizeHandles from './CanvasFloatingResizeHandles';
 import {placeNewCanvasComponent,visibleCanvasBounds} from './canvasInsertPlacement';
 import {confirmDestructiveAction} from '../../components/ConfirmAction/confirmDestructiveAction';
 import './PageBuilderNoCode.css';
+import './SmartFormulaField.css';
 import './PageBuilderRibbonGallery.css';
 import './PageBuilderRibbonBlueprint.css';
 import './PageBuilderRibbonNonDesign.css';
