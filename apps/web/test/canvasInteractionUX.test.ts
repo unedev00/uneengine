@@ -597,7 +597,9 @@ test('PowerPoint-style canvas gestures target one component and keep resize grip
     'selected resize squares must be visible without hovering');
   assert.ok(resize.includes('const changed = !cancelled'),
     'cancelled resize gestures must roll back rather than persisting');
-  assert.ok(builder.includes('onPointerCancel={event => endCanvasResize(event, true)}'));
+  assert.ok(builder.includes('onCancel={event=>endCanvasResize(event,true)}'));
+  const overlay=await readFile(new URL('../src/core/builders/PageBuilder/CanvasFloatingResizeHandles.tsx',import.meta.url),'utf8');
+  assert.match(overlay,/onPointerCancel=\{onCancel\} onLostPointerCapture=\{onCancel\}/);
 });
 
 function canvasFixture(id:string,x:number,y=10,parentId?:string):PageComponentMetadata {
@@ -732,9 +734,13 @@ test('Free Canvas image clicks select the image instead of the overlapping tab',
 test('Free Canvas move cursor and directional resize handles remain usable',async()=>{
   const source=await readFile(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
   const handles=await readFile(new URL('../src/core/builders/PageBuilder/SmartCanvasHandles.css',import.meta.url),'utf8');
-  assert.match(source,/className=\{`free-canvas-resize-handle resize-\$\{edge\}`\}/);
-  assert.match(source,/onPointerDown=\{event => startCanvasResize\(event, component, edge\)\}/);
-  assert.match(source,/onPointerMove=\{moveCanvasResize\} onPointerUp=\{endCanvasResize\}/);
+  const overlay=await readFile(new URL('../src/core/builders/PageBuilder/CanvasFloatingResizeHandles.tsx',import.meta.url),'utf8');
+  const chrome=await readFile(new URL('../src/core/builders/PageBuilder/CanvasFloatingActions.css',import.meta.url),'utf8');
+  assert.match(source,/<CanvasFloatingResizeHandles componentId=\{component\.id\}/);
+  assert.match(overlay,/free-canvas-resize-handle floating-resize-/);
+  assert.match(overlay,/onPointerDown=\{event=>onStart\(event,edge\)\}/);
+  assert.match(overlay,/onPointerMove=\{onMove\} onPointerUp=\{onEnd\}/);
+  assert.match(chrome,/\.canvas-floating-resize-overlay\{/);
   assert.match(source,/setSelectionIds\(\[component\.id\]\);\s*setSelectedRegion\(null\);\s*\};\s*const moveCanvasResize/);
   for(const [edge,cursor] of Object.entries({n:'ns',ne:'nesw',e:'ew',se:'nwse',s:'ns',sw:'nesw',w:'ew',nw:'nwse'})){
     assert.match(handles,new RegExp('\\.resize-'+edge+'(?:,|\\{|[^}]*\\{)[^}]*cursor:'+cursor+'-resize!important'),'resize direction '+edge);
