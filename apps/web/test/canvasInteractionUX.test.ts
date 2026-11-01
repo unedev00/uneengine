@@ -750,7 +750,7 @@ test('Free Canvas move cursor and directional resize handles remain usable',asyn
   assert.match(handles,/\.free-canvas-component:not\(\.canvas-component-locked\) > :not\(\.canvas-element-actions\)/);
   assert.doesNotMatch(handles,/cursor:grabbing!important/);
   assert.match(source,/canvas-editing/);
-  assert.match(handles,/\.free-canvas-stage\.canvas-editing\{\s*overflow:visible/);
+  assert.match(handles,/\.free-canvas-stage\.canvas-editing\{\s*overflow:hidden/);
 });
 
 test('UI Image obeys free-canvas frame resizing in edit and published runtime without affecting templates',async()=>{
