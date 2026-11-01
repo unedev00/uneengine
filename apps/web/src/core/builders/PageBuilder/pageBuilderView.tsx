@@ -1314,7 +1314,7 @@ function PageBuilder({
     const component = page.components.find(item => item.id === start.id);
     if (!component?.position) return;
     const definition = component.type.startsWith('Custom:') ? findRegisteredComponent(libraryComponents, component.type.slice('Custom:'.length), 'page') : undefined;
-    const minWidth = Math.min(start.width, definition?.resize?.minWidth ?? 20);
+    const minWidth = Math.min(start.width, component.type === 'Custom:smart_button' ? 32 : (definition?.resize?.minWidth ?? 20));
     const minHeight = Math.min(start.height, definition?.resize?.minHeight ?? 20);
     const dx = canvasUnitsFromScreenDelta(event.clientX - start.pointerX, fitCanvas ? fitScale : canvasZoom/100);
     const dy = canvasUnitsFromScreenDelta(event.clientY - start.pointerY, fitCanvas ? fitScale : canvasZoom/100);
@@ -2216,10 +2216,12 @@ function PageBuilder({
     const start = templateResizeRef.current;
     if (!start || start.pointerId !== event.pointerId) return;
     const region = start.node.closest<HTMLElement>('.page-region');
-    const maximumWidth = Math.max(80, region?.clientWidth ?? start.width);
+    const component = page.components.find(item => item.id === start.id);
+    const minimumWidth = component?.type === 'Custom:smart_button' ? 32 : 80;
+    const maximumWidth = Math.max(minimumWidth, region?.clientWidth ?? start.width);
     const horizontal = start.edge.includes('e') ? 1 : start.edge.includes('w') ? -1 : 0;
     const vertical = start.edge.includes('s') ? 1 : start.edge.includes('n') ? -1 : 0;
-    start.nextWidth = Math.round(Math.max(80, Math.min(maximumWidth, start.width + horizontal * (event.clientX - start.x))));
+    start.nextWidth = Math.round(Math.max(minimumWidth, Math.min(maximumWidth, start.width + horizontal * (event.clientX - start.x))));
     start.nextHeight = Math.round(Math.max(40, start.height + vertical * (event.clientY - start.y)));
     // Keep the opposite edge stationary when resizing from north or west.
     // Use the existing published transform contract instead of a new geometry store.
