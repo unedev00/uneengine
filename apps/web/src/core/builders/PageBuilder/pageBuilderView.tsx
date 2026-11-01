@@ -712,6 +712,26 @@ function PageBuilder({
     }
   }
   const actionSelectionDisabled=actionMembers.some(isCanvasLocked);
+  const applyActionFlows=(actionFlows:Record<string,unknown>)=>{
+    if(!selected||actionSelectionDisabled)return;
+    if(actionMembers.length>1){
+      const changed=[...new Set([...Object.keys(selectedActions),...Object.keys(actionFlows)])]
+        .filter(key=>JSON.stringify(selectedActions[key])!==JSON.stringify(actionFlows[key]));
+      const ids=new Set(actionMembers.map(item=>item.id));
+      applyPage({...page,components:page.components.map(item=>{
+        if(!ids.has(item.id))return item;
+        const stored=item.properties.actionFlows&&typeof item.properties.actionFlows==='object'
+          &&!Array.isArray(item.properties.actionFlows)
+          ?item.properties.actionFlows as Record<string,unknown>:{};
+        const next={...stored};
+        for(const key of changed){
+          if(key in actionFlows)next[key]=actionFlows[key];
+          else delete next[key];
+        }
+        return {...item,properties:{...item.properties,actionFlows:next}};
+      })});
+    }else updateComponent(selected.id,{properties:{...selected.properties,actionFlows}});
+  };
   const selectedAppOwnedUne=Boolean(selected?.type.startsWith('Custom:une_'))&&!selectedNewUne;
   const editingConversation=selectedCustomDefinition?.apiName==='ui_conversation';
   // Child element selection affects the inspector only; runtime DOM is unchanged.
@@ -3111,26 +3131,7 @@ function PageBuilder({
               onSelectEvent={setInlineActionEvent}
               showDetails={inlineActionSettingsOpen}
               onToggleDetails={()=>setInlineActionSettingsOpen(open=>!open)}
-              onChange={actionFlows=>{
-                if(actionMembers.length>1){
-                  const previous=selectedActions;
-                  const changed=[...new Set([...Object.keys(previous),...Object.keys(actionFlows)])]
-                    .filter(key=>JSON.stringify(previous[key])!==JSON.stringify(actionFlows[key]));
-                  const ids=new Set(actionMembers.filter(item=>!isCanvasLocked(item)).map(item=>item.id));
-                  applyPage({...page,components:page.components.map(item=>{
-                    if(!ids.has(item.id))return item;
-                    const stored=item.properties.actionFlows&&typeof item.properties.actionFlows==='object'
-                      &&!Array.isArray(item.properties.actionFlows)
-                      ?item.properties.actionFlows as Record<string,unknown>:{};
-                    const next={...stored};
-                    for(const key of changed){
-                      if(key in actionFlows)next[key]=actionFlows[key];
-                      else delete next[key];
-                    }
-                    return {...item,properties:{...item.properties,actionFlows:next}};
-                  })});
-                }else updateComponent(selected.id,{properties:{...selected.properties,actionFlows}});
-              }}/>}
+              onChange={applyActionFlows}/>
           {selected?.type==='Custom:smart_icon' && ribbonTab==='Component Layout' &&
             <SmartIconGallery value={String(selected.properties.iconId??'house')}
               disabled={ribbonSelectedMembers.some(item=>item.type!=='Custom:smart_icon'||isCanvasLocked(item))}
@@ -3175,7 +3176,11 @@ function PageBuilder({
           <div className="page-ribbon-expanded-content">
             <MetadataComponentProperties key={selected.id+':'+activeActionEvent}
               mode="actions-inline" actionEvent={activeActionEvent} properties={selected.properties}
-              onChange={(properties:Record<string,unknown>)=>updateComponent(selected.id,{properties})}
+              onChange={(properties:Record<string,unknown>)=>{
+                const raw=properties.actionFlows;
+                if(raw&&typeof raw==='object'&&!Array.isArray(raw))
+                  applyActionFlows(raw as Record<string,unknown>);
+              }}
               pageComponents={page.components} componentCatalog={libraryComponents}
               definitions={selectedCustomDefinition?.propertyDefinitions}
               eventDefinitions={actionOptions}
