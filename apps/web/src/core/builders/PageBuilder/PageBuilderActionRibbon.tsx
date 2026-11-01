@@ -76,7 +76,12 @@ export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,
     if(value.startsWith('type:')){
       const next=value.slice(5);
       if(actionTypes.some(item=>item.kind===next)){
-        patch({actionType:next,...(next==='AdjustNumber'?{
+        patch({actionType:next,...(next==='Formula'?{
+          fieldApiName:String(selected.fieldApiName??numericFields.find(f=>/^(Quantity|Qty)$/i.test(f.apiName))?.apiName??numericFields[0]?.apiName??''),
+          formula:String(selected.formula??fallbackFormula(selectedEvent)),
+          deltaSource:'$event.delta',minValue:selected.minValue??0,
+          deleteOnZero:selected.deleteOnZero??true
+        }:{}),...(next==='AdjustNumber'?{
           fieldApiName:String(selected.fieldApiName??numericFields.find(f=>/^(Quantity|Qty)$/i.test(f.apiName))?.apiName??numericFields[0]?.apiName??''),
           deltaSource:'$event.delta',minValue:0,deleteOnZero:true
         }:{})});
@@ -192,15 +197,14 @@ export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,
     onSelectEvent(Object.keys(next)[0]??'');
   };
   return <div className="page-action-ribbon-workspace" aria-label="Actions ribbon workspace">
-    {/* Formula bar placeholder is visual only; do not bind it to the editable quantity formulas. */}
-    <div className="page-action-formula-bar" role="group" aria-label="Actions formula bar preview">
-      <button type="button" disabled className="page-action-formula-menu"
-        aria-label="Formula options (coming soon)" title="Formula options (coming soon)">
-        <SlidersHorizontal size={15}/>
-      </button>
+    {/* One fixed formula editor for the selected event. It never appears or
+        disappears when components or action kinds change. */}
+    <div className="page-action-formula-bar" role="group" aria-label="Actions formula bar">
+      <span className="page-action-formula-menu" aria-hidden="true"><SlidersHorizontal size={15}/></span>
       <span className="page-action-formula-symbol" aria-hidden="true">ƒx</span>
-      <input aria-label="Actions formula preview" type="text" readOnly
-        aria-disabled="true" placeholder="Select an action property to edit its formula (coming soon)"/>
+      <SmartFormulaField label="Selected action formula" fields={formulaFields}
+        disabled={!supportsFormula} value={active?String(selected.formula??fallbackFormula(selectedEvent)):''}
+        onChange={value=>patch({formula:value})}/>
     </div>
     <div className="office-ribbon-compact-strip page-unified-actions-ribbon" aria-label="Unified component actions">
     <section className="office-ribbon-mini-group page-action-property-group" aria-label="Event">
@@ -210,22 +214,6 @@ export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,
     <section className="office-ribbon-mini-group page-action-property-group" aria-label="Component Custom">
       <div className="page-action-property-rows">{componentSlots.map(slotPicker)}</div>
       <span className="office-ribbon-group-heading">Component Custom</span>
-    </section>
-    <section
-      className="office-ribbon-mini-group page-action-formula-group" data-inactive={!active||kind!=='AdjustNumber'}
-      aria-label="Editable quantity action formulas">
-      <div className="page-action-formula-rows">
-        <label><span>+ fx</span><SmartFormulaField
-          label="Increase quantity formula" disabled={disabled||!active||kind!=='AdjustNumber'} fields={formulaFields}
-          value={String(selected.incrementFormula??defaultNumberFormula('increment'))}
-          onChange={value=>patch({incrementFormula:value})}/></label>
-        <label><span>− fx</span><SmartFormulaField
-          label="Decrease quantity formula" disabled={disabled||!active||kind!=='AdjustNumber'} fields={formulaFields}
-          value={String(selected.decrementFormula??defaultNumberFormula('decrement'))}
-          onChange={value=>patch({decrementFormula:value})}/></label>
-      </div>
-      <small>Edit +1 to +2 or −1 to −2; @ selects a field.</small>
-      <span className="office-ribbon-group-heading">Quantity formulas</span>
     </section>
     <section className="office-ribbon-mini-group page-action-library" aria-label="All actions">
       <label>Actions
