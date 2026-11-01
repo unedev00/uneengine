@@ -424,10 +424,17 @@
 .modern-canvas-builder .record-component:not(.free-canvas-component):has(> .canvas-design-interaction-shield){
  position:relative;
 }
-.modern-canvas-builder .record-component > .canvas-design-interaction-shield{
+.modern-canvas-builder .record-component > .canvas-design-interaction-shield,
+.modern-canvas-builder .record-component > .free-canvas-content-viewport > .canvas-design-interaction-shield{
  position:absolute;inset:0;z-index:90;background:transparent;
  cursor:inherit;touch-action:inherit;
 }
+/* Let nested native scrollbars receive pointer and wheel input. Canvas selection
+   remains handled at the Page Builder capture layer; the surrounding edge grips
+   and floating toolbar provide unambiguous move/resize controls. */
+.modern-canvas-builder .free-canvas-content-viewport:has(
+ .smart-grid,.smart-cart-root,.smart-tabs-shell,.smart-calendar,.smart-navigation,.md-product-grid--scroll
+) > .canvas-design-interaction-shield{pointer-events:none;}
 .modern-canvas-builder .record-component > :is(.free-canvas-resize-handle,.template-component-resize-handle,.template-placement-handle){
  z-index:160;
 }

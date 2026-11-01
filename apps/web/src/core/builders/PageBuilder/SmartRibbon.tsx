@@ -96,20 +96,25 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  // Unsupported controls are disabled by the per-property `supported` check below.
  const compactDesign=true;
  const visible=definitions.filter(p=>p.tab===tab);
- const groups=[...new Set(visible.map(p=>p.group))];
+ // Keep active-record scope metadata and persisted settings intact, but do not
+ // surface its automatic binding switch in any visible ribbon section.
+ const displayProperties=visible.filter(p=>p.id!=='autoRecordScope');
+ const groups=[...new Set(displayProperties.map(p=>p.group))];
  const groupOrder=tab==='Data'?['Source','Values','Cart','Cart columns','Cart totals']
-  :tab==='Design'?['Body','Typography','Tabs','Header','Badge','Header Supporting',
+  :tab==='Design'?['Body','Shape','Typography','Tabs','Header','Badge','Header Supporting',
     'Table','Row','Summary','Summary 2']
-  :tab==='Layout'?['Size & Position','Shape','Tabs','Cards','Navigation','Calendar','Image','Icon']
+  :tab==='Layout'?['Size & Position','Tabs','Cards','Navigation','Calendar','Image','Icon']
   :[];
  const sections=[...groupOrder.filter(group=>groups.includes(group)),
   ...groups.filter(group=>!groupOrder.includes(group))];
- const sectionRow=(group:string,row:number)=>visible
+ const sectionRow=(group:string,row:number)=>displayProperties
    .filter(p=>p.group===group&&((p.designRow??2)>=1&&(p.designRow??2)<=3?p.designRow??2:2)===row)
    .sort((a,b)=>(a.designOrder??999)-(b.designOrder??999));
  // Geometry only. Keep every property, icon, dropdown and persisted value;
  // fit their existing three rows without reserving space for empty columns.
  const controlWidth=(p:UneRibbonProperty)=>{
+   // Shape's 94px SQL width is exact, unlike other compact choice tracks.
+   if(p.id==='shapeId')return p.designWidth??94;
    // Shadow/Alignment icon dropdowns must remain at least 35px wide.
    if(p.designDisplay==='dropdown'&&(p.kind==='shadow'||p.kind==='align'))
      return Math.max(35,p.designWidth??0);
@@ -126,13 +131,13 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    }
    return width;
  };
- // Reserve exactly the rendered track widths, 2px between icons and 7px
+ // Reserve exactly the rendered track widths, 4px between controls and 7px
  // side gutters. The caption minimum avoids clipping long section names.
  const sectionWidth=(group:string)=>Math.ceil(Math.max(
    Math.max(0,...[1,2,3].map(row=>{
      const properties=sectionRow(group,row);
      return properties.reduce((total,p)=>total+controlWidth(p)+(p.designCaptionWidth??0),0)
-       +Math.max(0,properties.length-1)*2;
+       +Math.max(0,properties.length-1)*4;
    }))+15,
    group.length*5.5+16
  ));
@@ -210,6 +215,18 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
        onClick={()=>openFilters('Record')}><SlidersHorizontal size={16} aria-hidden="true"/>
        {filterCount>0&&property.id===firstFilterPropertyId&&<span className="smart-filter-count">{filterCount}</span>}</button>
    </div>;
+   else if(tab==='Design'&&property.id==='badgeAlignment')editor=
+     <div className="smart-inline-caption-select">
+       <span aria-hidden="true">Alignment</span>
+       <select className="smart-select" aria-label={title} title={title}
+         disabled={!enabled} value={String(value)}
+         onChange={event=>write(event.target.value)}>
+         <option value="">Select</option>
+         {options.map(option=><option key={option} value={option}>
+           {option.replaceAll('-',' ')}
+         </option>)}
+       </select>
+     </div>;
    else if(kind==='object')editor=<select className="smart-select" aria-label={title} disabled={!enabled} value={String(value)}
      onChange={e=>write(e.target.value)}><option value="">Select Object</option>
      {objects.map(o=><option key={o.apiName} value={o.apiName}>{o.label}</option>)}</select>;

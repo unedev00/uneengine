@@ -161,7 +161,6 @@ import ArrangeRibbon from './ArrangeRibbon';
 import type {AdvancedFeature} from './PageBuilderAdvancedRibbon';
 import './PageBuilderAdvancedRibbon.css';
 import PageBuilderAdvancedSections from './PageBuilderAdvancedSections';
-import PageBuilderAdvancedResponsive from './PageBuilderAdvancedResponsive';
 import SmartIconGallery from './SmartIconGallery';
 import {isUneBuilderApi,uneBuilderDefaults,type SharedRibbonCatalog,type UneBuilderApi} from './uneBuilderPropertyInventory';
 import './UniversalRibbonInventory.css';
@@ -289,7 +288,6 @@ import {
   type WorkspaceId
 } from '../../metadata/Definitions/metadata';
 import SavedListViewPicker from './SavedListViewPicker';
-import {pageAppMembership,pageIsUnassigned} from './pageAppMembership';
 import {uneRibbonIcon} from './uneRibbonIcon';
 import RibbonImageContent from './RibbonImageContent';
 export function createPageBuilder(MetadataComponentProperties: React.ComponentType<any>, MetadataBoundPageComponent: React.ComponentType<any>) {
@@ -422,9 +420,9 @@ function PageBuilder({
   }, [activePanel]);
   const [pageListObject, setPageListObject] = useState('');
   const [pageListSearch, setPageListSearch] = useState('');
-  const [pageListAppTab,setPageListAppTab]=useState('All');
-  const [pageListTypeTab,setPageListTypeTab]=useState('All');
-  const [pageListDeviceTab,setPageListDeviceTab]=useState('All');
+  const [pageListAppTab, setPageListAppTab] = useState('all');
+  const [pageListTypeTab, setPageListTypeTab] = useState('all');
+  const [pageListDeviceTab, setPageListDeviceTab] = useState('all');
   const [pageListPage,setPageListPage]=useState(1);
   const paletteResizeStart = useRef<{ pointerId: number; pointerX: number; width: number } | null>(null);
   const [customPropertiesDraft, setCustomPropertiesDraft] = useState('');
@@ -1320,7 +1318,7 @@ function PageBuilder({
     const component = page.components.find(item => item.id === start.id);
     if (!component?.position) return;
     const definition = component.type.startsWith('Custom:') ? findRegisteredComponent(libraryComponents, component.type.slice('Custom:'.length), 'page') : undefined;
-    const minWidth = Math.min(start.width, definition?.resize?.minWidth ?? 20);
+    const minWidth = Math.min(start.width, component.type === 'Custom:smart_button' ? 32 : (definition?.resize?.minWidth ?? 20));
     const minHeight = Math.min(start.height, definition?.resize?.minHeight ?? 20);
     const dx = canvasUnitsFromScreenDelta(event.clientX - start.pointerX, fitCanvas ? fitScale : canvasZoom/100);
     const dy = canvasUnitsFromScreenDelta(event.clientY - start.pointerY, fitCanvas ? fitScale : canvasZoom/100);
@@ -1989,28 +1987,30 @@ function PageBuilder({
       setPendingArchivePageApiName('');
     }
   };
-  const pageAppLinks=pageAppMembership(apps,pages);
-  const activeAppTab=pageListAppTab==='All'||pageListAppTab==='Other'
-    ||apps.some(app=>app.apiName===pageListAppTab)?pageListAppTab:'All';
+  // Rebuild the app tabs from tenant app metadata on every render. No app names are hardcoded.
+  const pageAppIds = (item: LightningPageMetadata): string[] => apps.filter(app =>
+    (app.navigationPageApiNames ?? []).includes(item.apiName)
+    || (app.navigationOrder ?? []).some(entry => entry.type === 'App Page' && entry.apiName === item.apiName)
+    || (item.activationAssignments ?? []).some(assignment => assignment.appId === app.apiName)
+    || item.ownerNamespace === app.apiName
+  ).map(app => app.apiName);
+  const pageAppTabs = [...apps].sort((a,b) => a.label.localeCompare(b.label));
+  const pageTabType = (item: LightningPageMetadata) => item.pageType;
   const visiblePages = pages.filter(item => (recordPageContext
     ? item.pageType === 'Record Page' && item.targetObject === recordPageContext
-    : item.pageType !== 'Record Page')
-    && (activeAppTab==='All'||(activeAppTab==='Other'
-      ?pageIsUnassigned(item.apiName,pageAppLinks)
-      :pageAppLinks.get(activeAppTab)?.has(item.apiName)===true))
-    && (pageListTypeTab==='All'||item.pageType===pageListTypeTab)
-    && (pageListDeviceTab==='All'
-      ||(pageListDeviceTab==='Custom'?item.layoutVariant==='Custom'
-      :pageListDeviceTab==='Mobile'?item.layoutVariant==='Mobile'||item.devices.includes('Phone')
-      :pageListDeviceTab==='Tablet'?item.layoutVariant==='Tablet'
-      :item.layoutVariant==='Desktop'||!item.layoutVariant))
-    && (!pageListObject||item.targetObject===pageListObject)
-    && `${item.label} ${item.apiName}`.toLowerCase().includes(pageListSearch.trim().toLowerCase()))
-    .sort((a,b) => (Date.parse(b.updatedAt??'')||0)-(Date.parse(a.updatedAt??'')||0));
+    : item.pageType !== 'Record Page') && (pageListAppTab === 'all' || (pageListAppTab === 'other'
+      ? pageAppIds(item).length === 0 : pageAppIds(item).includes(pageListAppTab)))
+    && (pageListTypeTab === 'all' || pageTabType(item) === pageListTypeTab)
+    && (pageListDeviceTab === 'all' || (pageListDeviceTab === 'Mobile'
+      ? item.layoutVariant === 'Mobile' || item.devices.includes('Phone')
+      : pageListDeviceTab === 'Desktop'
+        ? item.layoutVariant === 'Desktop' || item.devices.includes('Desktop')
+        : item.layoutVariant === pageListDeviceTab))
+    && (!pageListObject || item.targetObject === pageListObject) && `${item.label} ${item.apiName}`.toLowerCase().includes(pageListSearch.trim().toLowerCase())).sort((a,b) => (Date.parse(b.updatedAt ?? '') || 0) - (Date.parse(a.updatedAt ?? '') || 0));
   const pageListPageCount=Math.max(1,Math.ceil(visiblePages.length/50));
   const safePageListPage=Math.min(pageListPage,pageListPageCount);
   const paginatedPages=visiblePages.slice((safePageListPage-1)*50,safePageListPage*50);
-  const openCreatePage = () => { setNewPageAppId(activeAppTab!=='All'&&activeAppTab!=='Other'?activeAppTab:''); setNewPageTargetObject(pageListObject || ''); setNewPageLayoutMode('free-canvas'); setNewPageType(recordPageContext ? 'Record Page' : 'Home Page'); setNewPageDeviceChoice('Desktop'); setNewPageDevices(['Desktop']); setNewPageCanvasWidth(1440); setNewPageCanvasHeight(900); setCreatePageOpen(true); };
+  const openCreatePage = () => { setNewPageAppId(pageListAppTab!=='all'&&pageListAppTab!=='other'?pageListAppTab:''); setNewPageTargetObject(pageListObject || page.targetObject || objects[0]?.apiName || ''); setNewPageLayoutMode('free-canvas'); setNewPageType(recordPageContext ? 'Record Page' : 'Home Page'); setNewPageDeviceChoice('Desktop'); setNewPageDevices(['Desktop']); setNewPageCanvasWidth(1440); setNewPageCanvasHeight(900); setCreatePageOpen(true); };
   const createPage = async () => {
     if (saving) return;
     const label = newPageLabel.trim();
@@ -2240,10 +2240,12 @@ function PageBuilder({
     const start = templateResizeRef.current;
     if (!start || start.pointerId !== event.pointerId) return;
     const region = start.node.closest<HTMLElement>('.page-region');
-    const maximumWidth = Math.max(80, region?.clientWidth ?? start.width);
+    const component = page.components.find(item => item.id === start.id);
+    const minimumWidth = component?.type === 'Custom:smart_button' ? 32 : 80;
+    const maximumWidth = Math.max(minimumWidth, region?.clientWidth ?? start.width);
     const horizontal = start.edge.includes('e') ? 1 : start.edge.includes('w') ? -1 : 0;
     const vertical = start.edge.includes('s') ? 1 : start.edge.includes('n') ? -1 : 0;
-    start.nextWidth = Math.round(Math.max(80, Math.min(maximumWidth, start.width + horizontal * (event.clientX - start.x))));
+    start.nextWidth = Math.round(Math.max(minimumWidth, Math.min(maximumWidth, start.width + horizontal * (event.clientX - start.x))));
     start.nextHeight = Math.round(Math.max(40, start.height + vertical * (event.clientY - start.y)));
     // Keep the opposite edge stationary when resizing from north or west.
     // Use the existing published transform contract instead of a new geometry store.
@@ -2355,6 +2357,10 @@ function PageBuilder({
 
     };
     const selectOnlyInDesigner = !previewMode && !libraryPreview;
+    // The canvas frame owns the resize handles; its content owns clipping/scrolling.
+    // In template/nested layouts use a Fragment to preserve native direct-child styling.
+    const ContentHost = page.layoutMode === 'free-canvas' && !nested && !libraryPreview ? 'div' : React.Fragment;
+    const contentHostProps = ContentHost === 'div' ? {className:'free-canvas-content-viewport'} : {};
     return <div
       key={component.id}
       data-builder-editor={!previewMode&&!libraryPreview?'true':undefined}
@@ -2405,7 +2411,11 @@ function PageBuilder({
         // The component's dedicated move grips and resize handles still work.
         const target=event.target as HTMLElement;
         if((component.type==='Custom:ui_item_grid'&&target.closest('.md-product-grid--scroll'))
-          ||(component.type==='Custom:smart_card_grid'&&target.closest('.smart-grid')))return;
+          ||(component.type==='Custom:smart_card_grid'&&target.closest('.smart-grid'))
+          ||(component.type==='Custom:smart_cart'&&target.closest('.smart-cart-root'))
+          ||(component.type==='Custom:smart_tabs'&&target.closest('.smart-tabs-shell'))
+          ||(component.type==='Custom:smart_calendar'&&target.closest('.smart-calendar'))
+          ||(component.type==='Custom:smart_navigation'&&target.closest('.smart-navigation')))return;
         startCanvasMove(event, component);
       } : undefined}
       onPointerMove={!libraryPreview && page.layoutMode === 'free-canvas' && !nested ? moveCanvasPointer : undefined}
@@ -2480,6 +2490,7 @@ function PageBuilder({
           <button type="button" role="menuitem" disabled={isCanvasLocked(component)} onClick={() => {removeSelected();setComponentMenuId('');}}>Delete <kbd>Delete</kbd></button>
         </div>}
       </div></CanvasFloatingActions>}
+      <ContentHost {...contentHostProps}>
       {editorGenericHint&&<span className="page-editor-generic-hint" aria-hidden="true">{editorGenericHint}</span>}
       {showHiddenSelection && !component.visible
         ? <span className="canvas-hidden-marker">Hidden: {component.label}</span>
@@ -2622,6 +2633,7 @@ function PageBuilder({
       {selectOnlyInDesigner && !isLayoutContainer(component) && !isLayoutType(component.type)
         && !['Tabs','Accordion'].includes(component.type)
         && <div className="canvas-design-interaction-shield" aria-hidden="true" data-canvas-select-only="true"/>}
+      </ContentHost>
       {!libraryPreview && page.layoutMode === 'template' && selectedId === component.id && !previewMode && !isCanvasLocked(component)
         && (['move', 'rotate'] as const).map(mode => <button key={mode} type="button"
           className={`template-placement-handle template-placement-${mode}`}
@@ -2978,32 +2990,26 @@ function PageBuilder({
           <div className="page-manager-header-actions">
             <button className="btn btn-brand" type="button" onClick={openCreatePage}><Plus size={16}/> New Page</button>
           </div></header>
-        <nav className="page-manager-app-tabs" role="tablist" aria-label="Pages by application"
-          style={{display:'flex',gap:6,overflowX:'auto',padding:'8px 0'}}>
-          {([{apiName:'All',label:'All Pages'},...apps.map(app=>({apiName:app.apiName,label:app.label})),
-            {apiName:'Other',label:'Other'}]).map(tab=>
-            <button key={tab.apiName} type="button" role="tab" className="btn btn-small"
-              aria-selected={activeAppTab===tab.apiName}
-              style={{flex:'0 0 auto',fontWeight:activeAppTab===tab.apiName?700:400}}
-              onClick={()=>{setPageListAppTab(tab.apiName);setPageListPage(1);}}>{tab.label}</button>)}
-        </nav>
+        {!recordPageContext && <>
+          <nav className="page-manager-app-tabs" aria-label="Pages by application" style={{display:'flex',gap:6,flexWrap:'wrap',padding:'12px 0'}}>
+            {[{apiName:'all',label:'All Apps'},...pageAppTabs,{apiName:'other',label:'Other'}].map(tab =>
+              <button type="button" key={tab.apiName} className={'btn btn-small'+(pageListAppTab===tab.apiName?' btn-brand':'')}
+                aria-pressed={pageListAppTab===tab.apiName} onClick={()=>setPageListAppTab(tab.apiName)}>{tab.label}</button>)}
+          </nav>
+          <nav aria-label="Pages by type" style={{display:'flex',gap:6,flexWrap:'wrap',padding:'4px 0 10px'}}>
+            {[['all','All Pages'],['Home Page','Home'],['App Page','App'],['Record Page','Record'],['In-Screen Page','In-Screen']].map(([value,label])=>
+              <button type="button" key={value} className={'btn btn-small'+(pageListTypeTab===value?' btn-brand':'')}
+                aria-pressed={pageListTypeTab===value} onClick={()=>setPageListTypeTab(value)}>{label}</button>)}
+            <label className="form-label" style={{marginLeft:'auto'}}>Layout
+              <select className="form-control" value={pageListDeviceTab} onChange={event=>setPageListDeviceTab(event.target.value)}>
+                <option value="all">All devices</option>{['Desktop','Tablet','Mobile','Custom'].map(device=><option key={device} value={device}>{device}</option>)}
+              </select>
+            </label>
+          </nav>
+        </>}
         <div className="page-manager-filters">
-          <label className="form-label">Page type
-            <select className="form-control" aria-label="Page type filter" value={pageListTypeTab}
-              onChange={event=>{setPageListTypeTab(event.target.value);setPageListPage(1);}}>
-              {['All',...(recordPageContext?['Record Page']:['Home Page','App Page','In-Screen Page'])].map(type=>
-                <option key={type} value={type}>{type==='All'?'All types':type}</option>)}
-            </select>
-          </label>
-          <label className="form-label">Device
-            <select className="form-control" aria-label="Page device filter" value={pageListDeviceTab}
-              onChange={event=>{setPageListDeviceTab(event.target.value);setPageListPage(1);}}>
-              {['All','Desktop','Tablet','Mobile','Custom'].map(device=><option key={device} value={device}>
-                {device==='All'?'All devices':device}</option>)}
-            </select>
-          </label>
-          <label className="form-label">Related Record / Object<select className="form-control" value={pageListObject} aria-label="Related Record or Object" onChange={event=>{setPageListObject(event.target.value);setPageListPage(1);}}><option value="">All objects</option>{objects.map(item=><option key={item.apiName} value={item.apiName}>{item.label}</option>)}</select></label>
-          <label className="form-label">Search pages<input className="form-control" type="search" value={pageListSearch} onChange={event=>{setPageListSearch(event.target.value);setPageListPage(1);}} placeholder="Search page name…"/></label>
+          <label className="form-label">Related Record / Object<select className="form-control" value={pageListObject} aria-label="Related Record or Object" onChange={event=>setPageListObject(event.target.value)}><option value="">All objects</option>{objects.map(item=><option key={item.apiName} value={item.apiName}>{item.label}</option>)}</select></label>
+          <label className="form-label">Search pages<input className="form-control" type="search" value={pageListSearch} onChange={event=>setPageListSearch(event.target.value)} placeholder="Search page name…"/></label>
         </div>
         <div className="page-manager-table-scroll"><table className="records-table page-manager-table"><thead><tr><th>Page name</th><th>API Name</th><th>Type</th><th>Related object</th><th>Device</th><th>Dimensions</th><th>Orientation</th><th>Last modified</th><th>Status</th><th>Actions</th></tr></thead>
         <tbody>{paginatedPages.map(item=><tr key={item.apiName}>
@@ -3012,7 +3018,7 @@ function PageBuilder({
           <td>{item.updatedAt ? new Date(item.updatedAt).toLocaleDateString() : '—'}</td>
           <td><span className={item.status === 'Active' ? 'page-status-badge active' : 'page-status-badge'}>{item.status}</span></td>
           <td className="page-manager-actions"><button className="btn btn-small" type="button" aria-label={'Edit '+item.label} onClick={()=>selectSavedPage(item.apiName)}><Pencil size={14}/> Edit</button>
-          <button className="btn btn-small" type="button" disabled={saving} aria-label={(item.status==='Active'?'Deactivate ':'Activate ')+item.label} onClick={()=>void(item.status==='Active'?onDeactivate(item.apiName):savePage('Active',item,true))}>{item.status==='Active'?'Deactivate':'Activate'}</button>
+          <button className="btn btn-small page-manager-toggle" type="button" disabled={saving} aria-label={(item.status==='Active'?'Deactivate ':'Activate ')+item.label} onClick={()=>void(item.status==='Active'?onDeactivate(item.apiName):savePage('Active',item,true))}>{item.status==='Active'?'Deactivate':'Activate'}</button>
           <button className="btn btn-small" type="button" disabled={saving||Boolean(archivingPageApiName)}
             aria-label={'Delete '+item.label} onClick={()=>setPendingArchivePageApiName(item.apiName)}>
             <Trash2 size={14}/>{archivingPageApiName===item.apiName?'Deleting…':'Delete'}
@@ -3211,54 +3217,99 @@ function PageBuilder({
             }}
             onNesting={()=>openAdvanced('nesting')}/>}
           {ribbonTab==='Advanced' && <PageBuilderAdvancedSections
-            section={advancedEditor} onSelect={openAdvanced} selected={!!selected}
-            recordPage={page.pageType==='Record Page'} appPage={page.pageType==='App Page'}
-            onInspectorHost={setRibbonPropertyHost}>
-            {advancedEditor==='responsive' && selected && <>
-              <p className="properties-help">Device-specific overrides use the shared layout engine. Select a page device layout in Layout first.</p>
-              <PageBuilderAdvancedResponsive properties={selected.properties} device={currentRibbonDevice}
-                onChange={(properties:Record<string,unknown>)=>updateComponent(selected.id,{properties})}/>
-            </>}
-            {advancedEditor==='nesting' && selected && <section className="page-builder-advanced-nesting" aria-label="Component nesting">
-              <label className="checkbox-row"><input type="checkbox"
-                checked={isLayoutContainer(selected)} disabled={!selectedCustomDefinition&&!isLayoutContainer(selected)}
-                onChange={event=>{
-                  if(!event.target.checked&&childrenOf(page.components,selected.id).length){
-                    onNotify('Move children out before disabling nesting.');return;
-                  }
-                  updateComponent(selected.id,{properties:{...selected.properties,layoutContainer:event.target.checked}});
-                }}/>Accept nested components</label>
-              <label className="form-label">Parent container
-                <select className="form-control" aria-label="Advanced parent container"
-                  value={rawLayoutParentId(selected)??''}
-                  onChange={event=>{
-                    const parent=event.target.value||null;
-                    if(!canNest(page.components,selected.id,parent)){
-                      onNotify('A component cannot be nested inside itself or a descendant.');return;
-                    }
-                    applyPage({...page,components:reparentComponent(page.components,selected.id,parent)});
-                  }}>
-                  <option value="">Canvas / page root</option>
-                  {page.components.filter(item=>canNest(page.components,selected.id,item.id))
-                    .map(item=><option key={item.id} value={item.id}>{item.label}</option>)}
-                </select></label>
-              {isLayoutContainer(selected)&&<div className="page-builder-advanced-children">
-                <strong>Nested components</strong>
-                {childrenOf(page.components,selected.id).map(item=><button key={item.id}
-                  type="button" className="btn btn-small" onClick={()=>setSelectedId(item.id)}>
-                  {item.label}</button>)}
-              </div>}
-            </section>}
-            {advancedEditor==='properties' && selected && <MetadataComponentProperties
-              key={selected.id+':'+page.layoutVariant} mode="details" properties={selected.properties}
-              onChange={(properties:Record<string,unknown>)=>updateComponent(selected.id,{properties})}
-              pageComponents={page.components} componentCatalog={libraryComponents}
-              definitions={selectedCustomDefinition?.propertyDefinitions}
-              device={page.layoutVariant??'Desktop'} componentVersion={selectedCustomDefinition?.version}
-              objects={objects} apps={apps} pages={pages}
-              currentAppId={builderAppApiName||apps[0]?.apiName||'Records'}
-              primaryObjectApiName={page.targetObject} flows={flows}/>}
-          </PageBuilderAdvancedSections>}
+            section={advancedEditor} onInspectorHost={setRibbonPropertyHost}
+            assignment={{
+              enabled:page.pageType!=='App Page',
+              assigned:(page.activationAssignments??[]).length>0,
+              isDefault:page.pageType==='Record Page'?recordScope==='Org Default':homeScope==='App Default',
+              role:page.pageType==='Record Page'?recordProfileId:homeProfileId,
+              app:page.pageType==='Record Page'?recordAppId:homeAppId,
+              roles:profiles.map(profile=>({value:profile.id,label:profile.label})),
+              apps:apps.map(app=>({value:app.apiName,label:app.label})),
+              onRole:value=>{
+                if(page.pageType==='Record Page'){
+                  setRecordProfileId(value);
+                  if(value&&recordScope==='App Default')setRecordScope('App and Profile');
+                }else{
+                  setHomeProfileId(value);
+                  if(value)setHomeScope('App and Profile');
+                }
+              },
+              onApp:value=>{
+                if(page.pageType==='Record Page'){
+                  setRecordAppId(value);
+                  if(value&&recordScope==='Org Default')setRecordScope('App Default');
+                }else setHomeAppId(value);
+              },
+              onDefault:value=>{
+                if(page.pageType==='Record Page')setRecordScope(value?'Org Default':'App Default');
+                else setHomeScope(value?'App Default':'App and Profile');
+              },
+              onAdd:()=>page.pageType==='Record Page'?addRecordAssignment():addHomeAssignment()
+            }}
+            responsive={{
+              desktop:(page.pageType==='Record Page'?recordFormFactors:homeFormFactors).includes('Desktop'),
+              tablet:(page.pageType==='Record Page'?recordFormFactors:homeFormFactors).includes('Tablet'),
+              mobile:(page.pageType==='Record Page'?recordFormFactors:homeFormFactors).includes('Phone'),
+              canAssign:page.pageType!=='App Page',
+              breakpoint:page.customTargetMinWidth??320,
+              canBreakpoint:(page.layoutVariant??'Desktop')==='Custom',
+              columns:Number(selected?.properties.cardsPerRow??0)||1,
+              canColumns:!!selected&&['Custom:smart_card_grid','Custom:smart_cart'].includes(selected.type),
+              onDevice:factor=>{
+                const toggle=(current:('Desktop'|'Tablet'|'Phone'|'Custom')[])=>
+                  current.includes(factor)?current.filter(value=>value!==factor):[...current,factor];
+                if(page.pageType==='Record Page')setRecordFormFactors(toggle);
+                else setHomeFormFactors(toggle);
+              },
+              onBreakpoint:value=>{
+                if(Number.isInteger(value)&&value>=320&&value<=(page.customTargetMaxWidth??10000))
+                  applyPage({...page,customTargetMinWidth:value});
+              },
+              onColumns:value=>{
+                if(selected&&Number.isInteger(value)&&value>=1&&value<=50)
+                  updateComponent(selected.id,{properties:{...selected.properties,cardsPerRow:value}});
+              }
+            }}
+            properties={{
+              selected:!!selected,apiName:selected?.type.startsWith('Custom:')?selected.type.slice(7):selected?.type??'',
+              cssClass:String(selected?.properties.cssClass??''),
+              visible:selected?.visible!==false,
+              readOnly:selected?.properties.readOnlyOnLayout===true,
+              canReadOnly:!!selected&&selected.type==='Record Field',
+              onVisible:value=>{if(selected)updateComponent(selected.id,{visible:value});},
+              onReadOnly:value=>{if(selected)updateComponent(selected.id,{properties:{
+                ...selected.properties,readOnlyOnLayout:value,requiredOnLayout:false}});}
+            }}
+            nesting={{
+              selected:!!selected,
+              accepted:!!selected&&isLayoutContainer(selected),
+              canChange:!!selected&&(!!selectedCustomDefinition||isLayoutContainer(selected)),
+              parentId:selected?rawLayoutParentId(selected)??'':'',
+              parents:selected?page.components.filter(item=>canNest(page.components,selected.id,item.id))
+                .map(item=>({value:item.id,label:item.label})):[],
+              onAccepted:value=>{
+                if(!selected)return;
+                if(!value&&childrenOf(page.components,selected.id).length){
+                  onNotify('Move children out before disabling nesting.');return;
+                }
+                updateComponent(selected.id,{properties:{...selected.properties,layoutContainer:value}});
+              },
+              onParent:value=>{
+                if(!selected)return;
+                const parent=value||null;
+                if(!canNest(page.components,selected.id,parent)){
+                  onNotify('A component cannot be nested inside itself or a descendant.');return;
+                }
+                applyPage({...page,components:reparentComponent(page.components,selected.id,parent)});
+              }
+            }}
+            technical={{
+              id:selected?.id??'',
+              objectName:String(selected?.properties.objectApiName??page.targetObject??''),
+              renderMode:selected?'Page Runtime':''
+            }}/>}
+
           {ribbonTab==='Add Block' && <SmartInsertRibbon
             items={paletteComponents}
             onInsert={addPaletteComponent}

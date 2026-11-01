@@ -163,27 +163,27 @@ export class FlowRuntime {
     `,[tenantId]);
     return Promise.all(rows.map(row=>this.loadEditor(tenantId,row.api_name)));
   }
-  async listPage(tenantId:string,page:unknown=1,search:unknown='',type:unknown='') {
+  async listPage(tenantId:string,page:unknown=1,search:unknown='',flowType:unknown='') {
     const index=Number(page);
     if(!Number.isSafeInteger(index)||index<1||index>100000||typeof search!=='string'||search.length>100
-      ||typeof type!=='string'||type.length>100||type!==''&&!/^[A-Za-z -]+$/.test(type))
+      ||typeof flowType!=='string'||(flowType!==''&&!['Screen Flow','In-Screen Flow','Autolaunched Flow','Record-Triggered Flow','Schedule-Triggered Flow','Platform Event-Triggered Flow','Flow Orchestration'].includes(flowType)))
       throw new Error('Invalid Flow list query');
     const query='%'+search.replace(/[\\%_]/g,'\\$&')+'%';
     const {rows}=await this.db.query<{api_name:string;total:string}>(`
       SELECT names.api_name,(SELECT count(DISTINCT api_name)::text FROM md_flow_definitions
-        WHERE tenant_id=$1 AND archived=false AND (api_name ILIKE $2 ESCAPE '\\'
-          OR label ILIKE $2 ESCAPE '\\') AND ($4='' OR flow_type=$4)) AS total
+        WHERE tenant_id=$1 AND archived=false AND ($4='' OR flow_type=$4) AND (api_name ILIKE $2 ESCAPE '\\'
+          OR label ILIKE $2 ESCAPE '\\')) AS total
       FROM (SELECT DISTINCT api_name FROM md_flow_definitions
-        WHERE tenant_id=$1 AND archived=false AND (api_name ILIKE $2 ESCAPE '\\'
-          OR label ILIKE $2 ESCAPE '\\') AND ($4='' OR flow_type=$4)
+        WHERE tenant_id=$1 AND archived=false AND ($4='' OR flow_type=$4) AND (api_name ILIKE $2 ESCAPE '\\'
+          OR label ILIKE $2 ESCAPE '\\')
         ORDER BY api_name LIMIT 50 OFFSET $3) names
-    `,[tenantId,query,(index-1)*50,type]);
+    `,[tenantId,query,(index-1)*50,flowType]);
     const flows=await Promise.all(rows.map(row=>this.loadEditor(tenantId,row.api_name)));
     // A page past the last result still needs the true count.
     const total=rows[0]?.total ?? (await this.db.query<{total:string}>(`
       SELECT count(DISTINCT api_name)::text AS total FROM md_flow_definitions
-      WHERE tenant_id=$1 AND archived=false AND (api_name ILIKE $2 ESCAPE '\\'
-        OR label ILIKE $2 ESCAPE '\\') AND ($4='' OR flow_type=$4)`,[tenantId,query,(index-1)*50,type])).rows[0]?.total??'0';
+      WHERE tenant_id=$1 AND archived=false AND ($3='' OR flow_type=$3) AND (api_name ILIKE $2 ESCAPE '\\'
+        OR label ILIKE $2 ESCAPE '\\')`,[tenantId,query,flowType])).rows[0]?.total??'0';
     return {flows,total:Number(total),page:index,pageSize:50};
   }
   async saveEditor(tenantId:string,userId:string,apiName:string,raw:unknown,createOnly=false) {

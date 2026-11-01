@@ -30,7 +30,7 @@ test('Design groups fit a 1760px desktop without losing the third row',()=>{
   const css=source('SmartRibbonApprovedThreeRow.css');
   assert.match(ui,/const sectionRow=\(group:string,row:number\)/);
   assert.match(ui,/sectionRow\(section,row\)\.map\(controls\)/);
-  assert.match(ui,/Math\.max\(0,properties\.length-1\)\*2/);
+  assert.match(ui,/Math\.max\(0,properties\.length-1\)\*4/);
   assert.match(ui,/Math\.max\(54,Math\.min\(width,58\)\)/);
   assert.match(css,/padding:6px 7px 1px!important/);
   assert.match(css,/gap:2px!important;padding:0!important;margin:0!important;white-space:nowrap/);

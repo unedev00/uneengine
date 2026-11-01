@@ -297,11 +297,11 @@ const uneSolutionsLogoUrl = `${import.meta.env.BASE_URL}une-solutions-logo.webp`
 
 const Login = createLoginView(uneSolutionsLogoUrl);
 
-async function fetchFlowListPage(page: number, search: string, type='') {
+async function fetchFlowListPage(page: number, search: string, flowType = '') {
   return apiRequest<{
     flows: Array<Pick<FlowDefinitionMetadata, 'apiName' | 'label' | 'flowType' | 'status' | 'versionNumber' | 'activeVersion' | 'createdAt' | 'createdBy' | 'lastModifiedAt' | 'lastModifiedBy'>>;
     total: number; page: number; pageSize: number;
-  }>(`/metadata/flows/list?page=${encodeURIComponent(String(page))}&search=${encodeURIComponent(search)}&type=${encodeURIComponent(type)}`);
+  }>(`/metadata/flows/list?page=${encodeURIComponent(String(page))}&search=${encodeURIComponent(search)}&flowType=${encodeURIComponent(flowType)}`);
 }
 
 

@@ -72,7 +72,7 @@ type FlowBuilderProps = {
   flows: FlowDefinitionMetadata[];
   pages: LightningPageMetadata[];
   apps: LightningAppMetadata[];
-  onListFlows?: (page: number, search: string, type?:string) => Promise<FlowListResponse>;
+  onListFlows?: (page: number, search: string, flowType?: string) => Promise<FlowListResponse>;
   onLoadCapabilities: () => Promise<FlowCapabilityCatalog>;
   onLoadExternalServices: () => Promise<{ services: ExternalServiceMetadata[] }>;
   onImportExternalService: (apiName: string, label: string, spec: unknown) => Promise<void>;
@@ -183,7 +183,7 @@ export default function FlowBuilder({
   const [newFlowLabel, setNewFlowLabel] = useState('');
   const [newFlowType, setNewFlowType] = useState<FlowDefinitionMetadata['flowType'] | null>(null);
   const [existingFlowSearch, setExistingFlowSearch] = useState('');
-  const [existingFlowType,setExistingFlowType]=useState('All');
+  const [existingFlowTypeTab, setExistingFlowTypeTab] = useState('all');
   const [existingFlowPage, setExistingFlowPage] = useState(1);
   const [remoteFlowResults, setRemoteFlowResults] = useState<FlowListResponse | null>(null);
   const [remoteFlowLoading, setRemoteFlowLoading] = useState(false);
@@ -191,14 +191,13 @@ export default function FlowBuilder({
     if (!landing || !onListFlows) return;
     let cancelled = false;
     setRemoteFlowLoading(true);
-    void onListFlows(existingFlowPage, existingFlowSearch,existingFlowType==='All'?'':existingFlowType)
+    void onListFlows(existingFlowPage, existingFlowSearch, existingFlowTypeTab === 'all' ? '' : existingFlowTypeTab)
       .then((response) => { if (!cancelled) setRemoteFlowResults(response); })
       .catch(() => { if (!cancelled) setRemoteFlowResults(null); })
       .finally(() => { if (!cancelled) setRemoteFlowLoading(false); });
     return () => { cancelled = true; };
-  }, [landing, onListFlows, existingFlowPage, existingFlowSearch,existingFlowType]);
-  const matchingFlows = flows.filter((candidate) => (existingFlowType==='All'||candidate.flowType===existingFlowType)
-    && `${candidate.label} ${candidate.apiName} ${candidate.flowType} ${candidate.status}`.toLowerCase().includes(existingFlowSearch.trim().toLowerCase()));
+  }, [landing, onListFlows, existingFlowPage, existingFlowSearch, existingFlowTypeTab]);
+  const matchingFlows = flows.filter((candidate) => (existingFlowTypeTab === 'all' || candidate.flowType === existingFlowTypeTab) && `${candidate.label} ${candidate.apiName} ${candidate.flowType} ${candidate.status}`.toLowerCase().includes(existingFlowSearch.trim().toLowerCase()));
   const totalFlowCount = remoteFlowResults?.total ?? matchingFlows.length;
   const flowPageCount = Math.max(1, Math.ceil(totalFlowCount / 50));
   const safeFlowPage = Math.min(existingFlowPage, flowPageCount);
@@ -1829,15 +1828,13 @@ export default function FlowBuilder({
     </section></div>}
     <section className="flow-start-existing surface" aria-labelledby="flow-start-existing-title">
       <h2 id="flow-start-existing-title">Existing flows</h2>
-      <nav role="tablist" aria-label="Flows by type" style={{display:'flex',gap:6,overflowX:'auto',padding:'8px 0'}}>
-        {['All',...new Set([...(capabilityCatalog?.flowTypes??[]).map(item=>item.type),
-          ...flows.map(item=>item.flowType)])].map(type=>
-          <button key={type} type="button" role="tab" className="btn btn-small"
-            style={{flex:'0 0 auto',fontWeight:existingFlowType===type?700:400}}
-            aria-selected={existingFlowType===type}
-            onClick={()=>{setExistingFlowType(type);setExistingFlowPage(1);setRemoteFlowResults(null);}}>
-            {type==='All'?'All Flows':type}
-          </button>)}
+      <nav aria-label="Flows by type" style={{display:'flex',gap:6,flexWrap:'wrap',padding:'10px 0'}}>
+        {[{type:'all',label:'All Flows'},...flowTypeOptions.map(option=>({type:option.type,label:option.type})),
+          ...(['Screen Flow','In-Screen Flow','Autolaunched Flow','Record-Triggered Flow','Schedule-Triggered Flow','Platform Event-Triggered Flow','Flow Orchestration'] as const)
+            .filter(type=>!flowTypeOptions.some(option=>option.type===type)).map(type=>({type,label:type}))].map(option=>
+          <button type="button" className={'btn btn-small'+(existingFlowTypeTab===option.type?' btn-brand':'')}
+            key={option.type} aria-pressed={existingFlowTypeTab===option.type}
+            onClick={()=>{setExistingFlowTypeTab(option.type);setExistingFlowPage(1);setRemoteFlowResults(null);}}>{option.label}</button>)}
       </nav>
       <div className="flow-existing-controls">
         <label className="form-label" htmlFor="existing-flow-search">Search Flows
