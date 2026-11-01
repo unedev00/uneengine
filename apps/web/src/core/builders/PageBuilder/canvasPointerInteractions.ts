@@ -18,33 +18,50 @@ export function canvasDimensionsForGesture(
     height:grow(canvas.height,rect.y+rect.height)};
 }
 
-/** Identify a native scrollbar rail without disabling drag for the whole cart/grid.
- * Browser scrollbars may be overlay (zero offset/client delta): reserve an 8px
- * hit strip only when scrollable content actually exceeds the available axis.
+export type CanvasScrollMetrics={
+ rect:{left:number;top:number;right:number;bottom:number};
+ scrollHeight:number;clientHeight:number;offsetHeight:number;
+ scrollWidth:number;clientWidth:number;offsetWidth:number;
+ overflowY:string;overflowX:string;direction:string;
+};
+
+/** Test the genuine rail, not all of the content in a scrollable component. */
+export function canvasScrollbarRailHit(
+ m:CanvasScrollMetrics,clientX:number,clientY:number
+):boolean {
+ const vertical=m.scrollHeight>m.clientHeight+1;
+ const horizontal=m.scrollWidth>m.clientWidth+1;
+ const width=Math.max(8,m.offsetWidth-m.clientWidth);
+ const height=Math.max(8,m.offsetHeight-m.clientHeight);
+ const inside=clientX>=m.rect.left&&clientX<=m.rect.right
+   &&clientY>=m.rect.top&&clientY<=m.rect.bottom;
+ if(!inside)return false;
+ return (vertical&&['auto','scroll'].includes(m.overflowY)
+  &&(clientX>=m.rect.right-width||m.direction==='rtl'&&clientX<=m.rect.left+width))
+  ||(horizontal&&['auto','scroll'].includes(m.overflowX)
+    &&clientY>=m.rect.bottom-height);
+}
+
+/** Check every scrollable descendant through the frame, including native item
+ * grids, smart carts/tabs/calendars, and future component types.
  */
 export function canvasScrollbarHit(
   target:Element,clientX:number,clientY:number,container:Element
 ):boolean {
-  let node:Element|null=target;
-  while(node&&node!==container){
-    if(node instanceof HTMLElement){
-      const rect=node.getBoundingClientRect();
-      const vertical=node.scrollHeight>node.clientHeight+1;
-      const horizontal=node.scrollWidth>node.clientWidth+1;
-      if(vertical||horizontal){
-        const styles=getComputedStyle(node);
-        const width=Math.max(8,node.offsetWidth-node.clientWidth);
-        const height=Math.max(8,node.offsetHeight-node.clientHeight);
-        const inRect=clientX>=rect.left&&clientX<=rect.right
-          &&clientY>=rect.top&&clientY<=rect.bottom;
-        if(inRect&&vertical&&['auto','scroll'].includes(styles.overflowY)
-          && (clientX>=rect.right-width||styles.direction==='rtl'&&clientX<=rect.left+width))
-          return true;
-        if(inRect&&horizontal&&['auto','scroll'].includes(styles.overflowX)
-          &&clientY>=rect.bottom-height)return true;
-      }
-    }
-    node=node.parentElement;
-  }
-  return false;
+ let node:Element|null=target;
+ while(node&&node!==container){
+   if(node instanceof HTMLElement){
+     const rect=node.getBoundingClientRect();
+     const styles=getComputedStyle(node);
+     if(canvasScrollbarRailHit({
+       rect,scrollHeight:node.scrollHeight,clientHeight:node.clientHeight,
+       offsetHeight:node.offsetHeight,scrollWidth:node.scrollWidth,
+       clientWidth:node.clientWidth,offsetWidth:node.offsetWidth,
+       overflowY:styles.overflowY,overflowX:styles.overflowX,
+       direction:styles.direction
+     },clientX,clientY))return true;
+   }
+   node=node.parentElement;
+ }
+ return false;
 }
