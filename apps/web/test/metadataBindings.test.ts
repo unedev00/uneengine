@@ -446,7 +446,7 @@ test('server filter formula handles AND/OR and rejects unserverable expressions'
  assert.equal(valid.blocked,false,valid.error);
  assert.equal(valid.filters.length,3);
  assert.equal(valid.filterLogic,'(1 AND (2 OR 3))');
- assert.match(validateRecordFilterFormula('IF(TRUE, TRUE, @Unknown = 1)',fields)??'',/readable @Field/);
+ assert.match(validateRecordFilterFormula('IF(ISBLANK($state.pick), TRUE, @Unknown = 1)',fields)??'',/readable @Field/);
  assert.equal(compileRecordFilterFormula('@Category = $state.pick',fields,{}).blocked,true);
  assert.equal(compileRecordFilterFormula('IF(ISBLANK($state.pick), FALSE, TRUE)',fields,{}).blocked,true);
 });
