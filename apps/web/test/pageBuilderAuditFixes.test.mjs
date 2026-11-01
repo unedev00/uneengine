@@ -9,7 +9,8 @@ test('View exposes the visibility rule filter dialog without a duplicate Logic r
  assert.match(view,/ribbonTab==='Preview' && <div className="office-ribbon-group preview-visibility-group"/);
  assert.match(view,/Visible on this page<\/label>/);
  assert.match(view,/aria-label="Edit conditional visibility"/);
- assert.match(view,/smart-dialog smart-filter-dialog/);
+ const dialog=read('../src/core/builders/PageBuilder/PageBuilderVisibilityDialog.tsx');
+ assert.match(dialog,/smart-dialog smart-filter-dialog/);
  assert.match(view,/<PageBuilderVisibilityDialog/);
  assert.doesNotMatch(view,/ribbonTab==='Logic'/);
 });
