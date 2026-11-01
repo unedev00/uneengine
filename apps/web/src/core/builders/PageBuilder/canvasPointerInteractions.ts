@@ -1,21 +1,19 @@
 /** Shared Page Builder gesture rules: scrollbars are controls, content is movable.
  * The Page Builder frame (not its embedded app) owns geometry on a free canvas.
  */
-export const MAX_CANVAS_EDGE = 10000;
 export type CanvasRect = {x:number;y:number;width:number;height:number};
 export type CanvasDimensions = {width:number;height:number};
 
-/** Grow an authored canvas only when a move or resize crosses its edge.
- * Leave the opposite edge, other component coordinates, and the original
- * dimensions untouched. Values remain within the page runtime's 10000px limit.
+/** A slide and the shapes on it are separate geometries.
+ * A drag/resize can only update a shape inside the user's configured page.
+ * Enlarging a component must NEVER alter the page width or height.
  */
-export function canvasDimensionsForGesture(
-  canvas:CanvasDimensions, rect:CanvasRect
-):CanvasDimensions {
-  const grow=(current:number,edge:number)=>
-    Math.min(MAX_CANVAS_EDGE,Math.max(current,Math.ceil(edge)));
-  return {width:grow(canvas.width,rect.x+rect.width),
-    height:grow(canvas.height,rect.y+rect.height)};
+export function constrainCanvasRect(rect:CanvasRect,page:CanvasDimensions):CanvasRect {
+ const w=Math.max(1,Math.floor(page.width)),h=Math.max(1,Math.floor(page.height));
+ const x=Math.max(0,Math.min(w-1,Math.round(rect.x)));
+ const y=Math.max(0,Math.min(h-1,Math.round(rect.y)));
+ return {x,y,width:Math.max(1,Math.min(w-x,Math.round(rect.width))),
+   height:Math.max(1,Math.min(h-y,Math.round(rect.height)))};
 }
 
 export type CanvasScrollMetrics={
