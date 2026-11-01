@@ -2203,6 +2203,7 @@ function PageBuilder({
     const selectOnlyInDesigner = !previewMode && !libraryPreview;
     return <div
       key={component.id}
+      data-builder-editor={!previewMode&&!libraryPreview?'true':undefined}
       data-page-appearance={isLayoutType(component.type) ? 'layout' : pageAppearanceTarget(component.type)}
       data-page-style={pageAppearanceStyleKeys(visualStyle)}
       ref={libraryPreview && !interactivePreview ? (element) => { if (element) element.inert = true; } : undefined}
