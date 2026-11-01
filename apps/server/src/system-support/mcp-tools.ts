@@ -48,6 +48,7 @@ const schemas={
  list_objects:z.object({}).strict(),
  describe_object:z.object({object:identifier}).strict(),
  run_flow:z.object({flow:identifier,inputs:values.default({})}).strict(),
+ create_page:z.object({page:identifier,definition:values}).strict(),
  get_page_layout:z.object({page:identifier,variant:layout.default('Desktop'),view:z.enum(['draft','published']).default('draft')}).strict(),
  get_flow_definition:z.object({flow:identifier}).strict(),
  create_flow_draft:z.object({flow:identifier,definition:values}).strict(),
@@ -64,6 +65,7 @@ const descriptions:Record<keyof typeof schemas,string>={
  describe_object:'Describe readable fields on a database object before querying or editing records.',
  list_objects:'List objects the signed-in user can read.',
  run_flow:'Execute a published MetaDrive flow with the signed-in user permissions.',
+ create_page:'Create a new tenant Page Builder page as a draft through the shared SQL Page Runtime. Never overwrite an existing page.',
  get_page_layout:'Read a tenant Page Builder draft or published layout through the shared SQL runtime and Page permissions.',
  get_flow_definition:'Read a tenant Flow graph through the existing versioned SQL Flow Editor and central RBAC.',
  create_flow_draft:'Create a missing Flow as a draft through the existing SQL Flow Editor; reject existing names and never activate implicitly.',
@@ -73,7 +75,7 @@ const descriptions:Record<keyof typeof schemas,string>={
 };
 // JSON schemas are derived from the same Zod validators used for execution.
 import {zodToJsonSchema} from 'zod-to-json-schema';
-export const mcpTools=Object.entries(schemas).map(([name,schema])=>({name,description:descriptions[name as keyof typeof schemas],inputSchema:zodToJsonSchema(schema,{$refStrategy:'none'}),annotations:{readOnlyHint:['list_records','get_record','list_objects','describe_object','get_page_layout','get_flow_definition'].includes(name),destructiveHint:!['list_records','get_record','list_objects','describe_object','get_page_layout','get_flow_definition','create_record','save_page_draft','create_flow_draft'].includes(name),openWorldHint:name==='run_flow'}}));
+export const mcpTools=Object.entries(schemas).map(([name,schema])=>({name,description:descriptions[name as keyof typeof schemas],inputSchema:zodToJsonSchema(schema,{$refStrategy:'none'}),annotations:{readOnlyHint:['list_records','get_record','list_objects','describe_object','get_page_layout','get_flow_definition'].includes(name),destructiveHint:!['list_records','get_record','list_objects','describe_object','get_page_layout','get_flow_definition','create_record','create_page','save_page_draft','create_flow_draft'].includes(name),openWorldHint:name==='run_flow'}}));
 /** Scope choices are permission alternatives, not implicit RBAC grants.
  * All tools still run under the caller's tenant, user and OneEngine rules. */
 export function mcpToolScopes(name:string):readonly string[]{
@@ -82,7 +84,7 @@ export function mcpToolScopes(name:string):readonly string[]{
  if(['list_objects','describe_object'].includes(name))return ['metadata:read','objects:read','fields:read'];
  if(name==='get_page_layout')return ['metadata:read','pages:read'];
  if(name==='get_flow_definition')return ['metadata:read','flows:read'];
- if(name==='save_page_draft'||name==='publish_page_draft')return ['metadata:write','pages:manage'];
+ if(name==='create_page'||name==='save_page_draft'||name==='publish_page_draft')return ['metadata:write','pages:manage'];
  if(name==='create_flow_draft')return ['metadata:write','flows:manage'];
  if(name==='run_flow')return ['flows:execute'];
  if(name==='server_operation')return ['operations:manage','operations:read'];
@@ -130,6 +132,14 @@ export async function callMcpTool(s:McpServices,a:McpActor,name:string,input:unk
   if(p.definition.apiName!==p.flow||p.definition.status!=='Draft')
    throw Error('New Flows must be named draft definitions');
   return s.flows.saveEditor(t,u,p.flow,p.definition,true);
+ }
+ if(name==='create_page'){
+  const p=schemas.create_page.parse(input);
+  await s.rbac.require(t,u,'PageDefinition','manage');
+  // A new Page must always begin as a draft, with no existing name overwritten.
+  if(p.definition.apiName!==p.page||p.definition.status!=='Draft')
+   throw Error('New Pages must be named draft definitions');
+  return s.pages.save(t,p.page,p.definition,true);
  }
  if(name==='get_page_layout'){
   const p=schemas.get_page_layout.parse(input);
