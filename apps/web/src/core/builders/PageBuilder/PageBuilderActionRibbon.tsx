@@ -7,10 +7,11 @@ import SmartFormulaField from './SmartFormulaField';
 
 type Binding=Record<string,unknown>;
 type EventOption={apiName:string;label:string};
-type ActionKind='Flow'|'Navigate'|'SetFilter'|'PageState'|'AdjustNumber';
+type ActionKind='Formula'|'Flow'|'Navigate'|'SetFilter'|'PageState'|'AdjustNumber';
 const asBinding=(value:unknown):Binding=>
   value&&typeof value==='object'&&!Array.isArray(value)?value as Binding:{};
 const actionTypes:ReadonlyArray<{kind:ActionKind;label:string;group:string}>=[
+  {kind:'Formula',label:'Formula',group:'Formula'},
   {kind:'Flow',label:'Run automation',group:'Flows'},
   {kind:'Navigate',label:'Open another page',group:'Navigation'},
   {kind:'SetFilter',label:'Filter a list',group:'Page actions'},
@@ -41,6 +42,15 @@ export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,
   const selected=asBinding(actions[selectedEvent]);
   const active=Boolean(selectedEvent&&Object.prototype.hasOwnProperty.call(actions,selectedEvent));
   const inactive=disabled||!active;
+  const isFormula=active&&selected.actionType==='Formula';
+  const isNumeric=active&&(selected.actionType==='Formula'||selected.actionType==='AdjustNumber');
+  const isFlow=active&&selected.actionType==='Flow';
+  const isNavigation=active&&selected.actionType==='Navigate';
+  const isPageValue=active&&(['Formula','PageState','SetFilter'].includes(String(selected.actionType)));
+  const fallbackFormula=(eventName:string,field=numberTarget)=>'@'+field+
+    (eventName==='qtyDecrease'?' - 1':' + 1');
+  const selectNumericField=String(selected.fieldApiName??'');
+  const supportsFormula=Boolean(isFormula&&!disabled);
   const kind:ActionKind=actionTypes.some(option=>option.kind===selected.actionType)
     ?selected.actionType as ActionKind:'Flow';
   const availableFlows=flows.filter(flow=>flow.status==='Active'&&
@@ -70,7 +80,7 @@ export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,
           fieldApiName:String(selected.fieldApiName??numericFields.find(f=>/^(Quantity|Qty)$/i.test(f.apiName))?.apiName??numericFields[0]?.apiName??''),
           deltaSource:'$event.delta',minValue:0,deleteOnZero:true
         }:{})});
-        if(next!=='Flow'&&!showDetails)onToggleDetails();
+        // Fixed ribbon geometry: selecting an action must not open a new panel.
       }
     }else if(value.startsWith('flow:')){
       const flow=availableFlows.find(item=>item.apiName===value.slice(5));
@@ -94,7 +104,8 @@ export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,
     {key:'start',label:'On Session Start'}
   ] as const;
   const componentSlots=[
-    {key:'qtyIcon',label:'Qty Icon'},
+    {key:'qtyIncrease',label:'+ Icon'},
+    {key:'qtyDecrease',label:'− Icon'},
     {key:'customButton1',label:'Custom Button 1'},
     {key:'customButton2',label:'Custom Button 2'}
   ] as const;
@@ -103,7 +114,8 @@ export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,
     :eventDefinitions.some(item=>item.apiName===key));
   const chooseSlotAction=(key:string,choice:string)=>{
     if(disabled||!supportsSlot(key))return;
-    const previous=asBinding(actions[key]);
+    const previous=asBinding(actions[key]??(
+      (key==='qtyIncrease'||key==='qtyDecrease')?actions.qtyIcon:undefined));
     if(!choice){
       const next={...actions};delete next[key];
       onChange(next);onSelectEvent(key);return;
@@ -118,7 +130,15 @@ export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,
       const actionType=choice.slice(5);
       if(!actionTypes.some(type=>type.kind===actionType))return;
       const suggested=numericFields.find(f=>/^(Quantity|Qty)$/i.test(f.apiName))??numericFields[0];
+      const target=String(previous.fieldApiName??suggested?.apiName??'Quantity');
       onChange({...actions,[key]:{...previous,actionType,
+        ...(actionType==='Formula'?{
+          fieldApiName:target,deltaSource:'$event.delta',minValue:previous.minValue??0,
+          deleteOnZero:previous.deleteOnZero??true,
+          formula:String(previous.formula??(
+            key==='qtyDecrease'?previous.decrementFormula:key==='qtyIncrease'?previous.incrementFormula:undefined
+          )??fallbackFormula(key,target))
+        }:{}),
         ...(actionType==='Flow'?{flowApiName:''}:{}),
         ...(actionType==='AdjustNumber'?{
           deltaSource:'$event.delta',fieldApiName:suggested?.apiName??'',
@@ -145,6 +165,7 @@ export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,
         <option value="">Choose action…</option>
         {value.startsWith('flow:')&&!availableFlows.some(f=>f.apiName===storedFlow)&&
           <option value={value}>{storedFlow} (saved/unavailable)</option>}
+        <optgroup label="Formula"><option value="type:Formula">Formula</option></optgroup>
         <optgroup label="Flows"><option value="type:Flow">Run automation / choose Flow</option></optgroup>
         <optgroup label="Autolaunched Flows">
           {availableFlows.filter(f=>f.flowType==='Autolaunched Flow').map(flow=>
@@ -211,6 +232,7 @@ export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,
         <select aria-label="All component actions" value="" disabled={disabled}
           onChange={event=>choose(event.target.value)}>
           <option value="">Choose trigger or action…</option>
+          <optgroup label="Formula"><option value="type:Formula" disabled={!active}>Formula</option></optgroup>
           <optgroup label="Triggers">
             {activeEvents.map(name=><option key={name} value={'trigger:'+name}>
               {eventLabel(name)}{Object.prototype.hasOwnProperty.call(actions,name)?' (configured)':''}
