@@ -182,7 +182,7 @@ import PageBuilderRibbonContent from './PageBuilderRibbonContent';
 import { canNestComponent, pageAppearanceTarget, pageAppearanceStyleKeys, updateLayoutSettings, type LayoutSettingKey, directChildren, isLayoutType, isDescendantOf, layoutTypes } from '../../pages/TemplatePageRuntime/pageComponentLayout';
 import PageComponentStyleEditor from '../ComponentStyleEditor/PageComponentStyleEditor';
 import { isCanvasLocked, ungroupCanvasComponent, snapCanvasPosition, alignCanvasComponents, distributeCanvasComponents } from './canvasInteractions';
-import {canvasGroupKey, canvasGroupMembers, groupCanvasSelection, ungroupCanvasSelection, moveCanvasLayer, shiftCanvasLayer, canvasGroupBounds} from './canvasLayerGroups';
+import {canvasGroupKey, canvasGroupMembers, groupCanvasSelection, ungroupCanvasSelection, moveCanvasLayer, shiftCanvasLayer, canMoveCanvasLayer, canvasSiblingLayerIndex, canvasGroupBounds} from './canvasLayerGroups';
 import {isSharedCanvasProperty,mixedCanvasPropertyIds,updateSharedCanvasProperties,updateSharedCanvasPositions} from './canvasSharedRibbonProperties';
 import {useCanvasGroupGestures} from './useCanvasGroupGestures';
 import { copyComponentTree, cloneComponentTree, remapComponentInteractionTargets, assignTabOnReparent, type ComponentClipboard } from './pageComponentTree';
@@ -2353,7 +2353,10 @@ function PageBuilder({
         ...(isLayoutType(component.type) ? {} : visualStyle),
         // The rendered and hit-tested stack follows the saved sibling order,
         // never the temporary .selected state or an authored visual override.
-        ...(page.layoutMode==='free-canvas' ? {'--canvas-layer-order':index+1,zIndex:index+1} : {}),
+        ...(page.layoutMode==='free-canvas' ? {
+          '--canvas-layer-order':canvasSiblingLayerIndex(page.components,component.id),
+          zIndex:canvasSiblingLayerIndex(page.components,component.id)
+        } : {}),
         ...(component.properties?.fillRegion===true && page.layoutMode==='template' ? {height:'100%',minHeight:0}: {})
       } as React.CSSProperties}
       onClick={selectOnlyInDesigner ? selectCanvasComponent : undefined}
@@ -2437,8 +2440,18 @@ function PageBuilder({
           <button type="button" role="menuitem" disabled={!componentClipboard} onClick={() => {pasteComponent();setComponentMenuId('');}}>Paste <kbd>Ctrl+V</kbd></button>
           <button type="button" role="menuitem" disabled={isCanvasLocked(component)} onClick={duplicateSelected}>Duplicate <kbd>Ctrl+D</kbd></button>
           <button type="button" role="menuitem" onClick={() => selectRibbonTab('Component Layout')}>Align and position</button>
-          <button type="button" role="menuitem" onClick={() => {moveSelected(1);setComponentMenuId('');}}>Bring forward</button>
-          <button type="button" role="menuitem" onClick={() => {moveSelected(-1);setComponentMenuId('');}}>Send backward</button>
+          <button type="button" role="menuitem"
+            disabled={!canMoveCanvasLayer(page.components,component.id,'front')}
+            onClick={() => {placeSelectedLayer('front');setComponentMenuId('');}}>Bring to front</button>
+          <button type="button" role="menuitem"
+            disabled={!canMoveCanvasLayer(page.components,component.id,'forward')}
+            onClick={() => {moveSelected(1);setComponentMenuId('');}}>Bring forward</button>
+          <button type="button" role="menuitem"
+            disabled={!canMoveCanvasLayer(page.components,component.id,'back')}
+            onClick={() => {placeSelectedLayer('back');setComponentMenuId('');}}>Send to back</button>
+          <button type="button" role="menuitem"
+            disabled={!canMoveCanvasLayer(page.components,component.id,'backward')}
+            onClick={() => {moveSelected(-1);setComponentMenuId('');}}>Send backward</button>
           <button type="button" role="menuitem" onClick={() => selectRibbonTab('Component Data')}>Data, links and actions</button>
 
           <button type="button" role="menuitem" disabled={isCanvasLocked(component)} onClick={() => {removeSelected();setComponentMenuId('');}}>Delete <kbd>Delete</kbd></button>
