@@ -68,3 +68,9 @@ test('all five Advanced sections stay reachable inline, not through a separate m
  assert.match(page,/ribbonTab==='Advanced' && <PageBuilderAdvancedSections/);
  assert.match(page,/reparentComponent\(page\.components,selected\.id,parent\)/);
 });
+
+test('Arrange nesting opens the Advanced tab rather than a removed modal',()=>{
+ assert.match(page,/onNesting=\{\(\)=>openAdvanced\('nesting'\)\}/);
+ assert.match(page,/setRibbonTab\('Advanced'\);\s*setAdvancedEditor\(feature\)/);
+ assert.doesNotMatch(page,/modal page-builder-advanced-dialog/);
+});
