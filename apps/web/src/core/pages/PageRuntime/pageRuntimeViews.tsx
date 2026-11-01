@@ -247,7 +247,7 @@ function RuntimeReportChart({ report, objects, recordContext }: {
 }
 
 function MetadataBoundPageComponent({
-  definition, component, objects, apps, pages, currentAppId, pageSessionKey, reports, availableFlows, formFactor, onNavigate, onLaunchFlow, disableActions = false, defaultObjectApiName = '', recordId = '', children
+  definition, component, objects, apps, pages, currentAppId, pageSessionKey, reports, availableFlows, formFactor, onNavigate, onLaunchFlow, disableActions = false, defaultObjectApiName = '', recordId = '', initialPageState, sessionIdOverride, children
 }: {
   definition: LibraryComponentMetadata;
   component: PageComponentMetadata;
@@ -265,6 +265,8 @@ function MetadataBoundPageComponent({
   disableActions?: boolean;
   defaultObjectApiName?: string;
   recordId?: string;
+  initialPageState?:Record<string,unknown>;
+  sessionIdOverride?:string;
   children?: ReactNode;
 }) {
   const properties = resolveMetadataProperties({...component.properties,objectApiName:component.properties.objectApiName||defaultObjectApiName},objects,availableFlows);
@@ -272,6 +274,7 @@ function MetadataBoundPageComponent({
   const mentionRootObjectApiName = defaultObjectApiName || objectApiName;
   // An application-independent session can be referenced by configured Flows.
   const [sessionId, setSessionId] = useState(() => {
+    if(sessionIdOverride)return sessionIdOverride;
     const key = 'metadrive-page-session:' + pageSessionKey;
     try {
       let value = window.sessionStorage.getItem(key);
@@ -286,10 +289,11 @@ function MetadataBoundPageComponent({
   });
   // Generic, page-scoped visual state for metadata-configured local actions.
   // Never grants data permissions or persists cross-tenant information.
-  const [pageState, setPageState] = useState<Record<string, unknown>>({});
+  const [pageState, setPageState] = useState<Record<string, unknown>>(()=>initialPageState??{});
   const pendingFlowOutputs=useRef(new Map<string,{flowApiName:string;mappings:Record<string,unknown>}>());
   useEffect(() => {
-    setPageState({});
+    setPageState(initialPageState??{});
+    if(sessionIdOverride)setSessionId(sessionIdOverride);
     const sync = (event: Event) => {
       const detail=(event as CustomEvent<{pageSessionKey:string;key:string;value:unknown}>).detail;
       if(detail?.pageSessionKey !== pageSessionKey || !/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(detail.key))return;
@@ -297,7 +301,7 @@ function MetadataBoundPageComponent({
     };
     window.addEventListener('metadrive:page-local-state',sync);
     return ()=>window.removeEventListener('metadrive:page-local-state',sync);
-  },[pageSessionKey]);
+  },[pageSessionKey,sessionIdOverride]);
   useEffect(()=>{
     const complete=(event:Event)=>{
       const detail=(event as CustomEvent<{requestId?:string;flowApiName?:string;outputs?:Record<string,unknown>}>).detail;
