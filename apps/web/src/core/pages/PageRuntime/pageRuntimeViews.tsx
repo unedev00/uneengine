@@ -1121,7 +1121,8 @@ function LightningAppRuntime({
   };
   const inScreenHost=!inScreenPage&&availableFlows.some(flow=>flow.flowType==='In-Screen Flow'&&flow.status==='Active')
     ?<React.Suspense fallback={null}><InScreenFlowHost flows={availableFlows}
-      appApiName={appId} pageApiName={page.apiName} onLaunchFlow={onLaunchFlow}/></React.Suspense>:null;
+      appApiName={appId} pageApiName={page.apiName} onLaunchFlow={onLaunchFlow}
+      pageRecordId={typeof layoutState.recordId==='string'?layoutState.recordId:undefined}/></React.Suspense>:null;
   if(page.layoutMode==='free-canvas')return <><ResponsivePageCanvas page={page}>
     {childrenOf(page.components,null).map(component=>renderCanvasComponent(component))}
   </ResponsivePageCanvas>{inScreenHost}</>;

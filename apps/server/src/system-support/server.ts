@@ -92,6 +92,7 @@ import {registerDeclarativeRuleRoutes} from './declarative-rule-routes.js';
 import {DeclarativeRuleError} from '../system-files/declarative-rules.js';
 import {registerVersionedApiRoutes} from './versioned-api-routes.js';
 import {registerPlatformEventStreamRoutes} from './platform-event-stream-routes.js';
+import {registerBusinessContextRoutes} from './business-context-routes.js';
 import {registerOutboundWebhookRoutes} from './outbound-webhook-service.js';
 import {registerDockerMailAdminRoutes} from './docker-mail-admin-routes.js';
 import {registerDockerMailWebRoutes} from './docker-mail-web-routes.js';
@@ -2690,6 +2691,7 @@ export function createSystemServer(db:SqlPersistence) {
   registerObjectLabelTranslationRoutes(app,db,rbac);
   registerVersionedApiRoutes(app,records,definitions,rbac,db);
   registerPlatformEventStreamRoutes(app,db,rbac);
+  registerBusinessContextRoutes(app,db,rbac,records);
   registerOutboundWebhookRoutes(app,db,rbac);
   registerDockerMailAdminRoutes(app,db,rbac,adminMailAccess);
   registerInboundWebhookAdminRoutes(app,db,namedCredentials,rbac);

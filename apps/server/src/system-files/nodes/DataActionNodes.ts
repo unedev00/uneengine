@@ -7,6 +7,7 @@ import {executeUpdateRecordsNode} from './UpdateRecordsNode.js';
 import {executeGetRecordsNode} from './GetRecordsNode.js';
 import {executeAvailableSlotsNode} from './AvailableSlotsNode.js';
 import {executeParseJsonNode} from './ParseJsonNode.js';
+import {executeBusinessContextNode} from './BusinessContextNode.js';
 import {executeCreateRecordsNode} from './CreateRecordsNode.js';
 import {executeLoopNode} from './LoopNode.js';
 import type {PoolClient} from 'pg';
@@ -37,6 +38,7 @@ export function evaluateFlowCollectionStep(type:string,config:Record<string,unkn
 export async function executeFlowDataAction(context:Context):Promise<FlowActionResult> {
   const {tenantId,userId,client,node,records,recordQuery,vars,loops,evaluate,set}=context;
   const config=node.config;
+  if(['Get Context','Set Context','Clear Context'].includes(node.type))return executeBusinessContextNode({...context,conditionsFrom,recordValues,scalar});
   if(node.type==='Parse JSON')return executeParseJsonNode({...context,conditionsFrom,recordValues,scalar});
   if(node.type==='Get Available Slots')return executeAvailableSlotsNode({...context,conditionsFrom,recordValues,scalar});
   if(node.type==='Get Records')return executeGetRecordsNode({...context,conditionsFrom,recordValues,scalar});

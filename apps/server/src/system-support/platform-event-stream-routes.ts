@@ -70,7 +70,7 @@ export function registerPlatformEventStreamRoutes(app:Express,db:SqlPersistence,
     replayId:event.replay_id,eventId:event.id,payload:event.payload
   }))});
  }));
- app.get('/services/data/v1.0/event-stream/:eventApiName',route(async(req,res)=>{
+ app.get(['/services/data/v1.0/event-stream/:eventApiName','/api/platform-event-stream/:eventApiName'],route(async(req,res)=>{
   const actor=req.actor;
   const eventApiName=req.params.eventApiName;
   if(!actor?.tenant_id||!actor.user_id)throw new Error('Authenticated tenant required');
