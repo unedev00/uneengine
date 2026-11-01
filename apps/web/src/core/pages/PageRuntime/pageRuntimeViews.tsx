@@ -105,6 +105,7 @@ import {StandardRecordList,StandardRichText,StandardFlowLauncher} from './Standa
 import {useViewportWidth} from '../../workspace/Responsive/useViewportWidth';
 import ResponsivePageCanvas from './ResponsivePageCanvas';
 const EmbeddedScreenFlow=React.lazy(()=>import('./EmbeddedScreenFlow'));
+const InScreenFlowHost=React.lazy(()=>import('../../automation/InScreenFlowHost'));
 const StandardApprovals=React.lazy(()=>import('./StandardApprovals'));
 import { inspectPageDependencies } from './pageDependencies';
 import {
@@ -837,7 +838,7 @@ function LightningAppRuntime({
   pages: LightningPageMetadata[];
   reports: ReportMetadata[];
   libraryComponents: LibraryComponentMetadata[];
-  availableFlows: Array<Pick<FlowDefinitionMetadata, 'id' | 'apiName' | 'label' | 'flowType' | 'status'>>;
+  availableFlows: Array<Pick<FlowDefinitionMetadata, 'id' | 'apiName' | 'label' | 'flowType' | 'status' | 'startConfig' | 'resources'>>;
   formFactor: 'Desktop' | 'Tablet' | 'Phone';
   profileId?: string;
   pageDefinitionCache: PageDefinitionCache;
@@ -1109,9 +1110,12 @@ function LightningAppRuntime({
       {renderComponent(component)}
     </div>;
   };
-  if(page.layoutMode==='free-canvas')return <ResponsivePageCanvas page={page}>
+  const inScreenHost=!inScreenPage&&availableFlows.some(flow=>flow.flowType==='In-Screen Flow'&&flow.status==='Active')
+    ?<React.Suspense fallback={null}><InScreenFlowHost flows={availableFlows}
+      appApiName={appId} pageApiName={page.apiName} onLaunchFlow={onLaunchFlow}/></React.Suspense>:null;
+  if(page.layoutMode==='free-canvas')return <><ResponsivePageCanvas page={page}>
     {childrenOf(page.components,null).map(component=>renderCanvasComponent(component))}
-  </ResponsivePageCanvas>;
+  </ResponsivePageCanvas>{inScreenHost}</>;
   const renderRegion = (region: 'header' | 'main' | 'sidebar') =>
     childrenOf(page.components, null).filter((component) => isAppComponentVisible(component) && (component.region ?? 'main') === region).map(component => {
       const content = renderComponent(component);
@@ -1120,11 +1124,11 @@ function LightningAppRuntime({
         ? <div key={component.id} data-page-appearance={pageAppearanceTarget(component.type)} data-page-style={pageAppearanceStyleKeys(resolvePageComponentStyle(component.properties, component.type, layoutDevice))} style={{...resolvePageComponentStyle(component.properties, component.type, layoutDevice),...behaviorAppearance(component.properties,appVisibilityContext)}}>{content}</div>
         : content;
     });
-  return <TemplatePageRuntimeLayout apiName={page.apiName} label={page.label}
+  return <><TemplatePageRuntimeLayout apiName={page.apiName} label={page.label}
     pageType={page.pageType} template={page.template} canvasFillColor={page.canvasFillColor}
     fullscreen={isStandaloneRuntime && page.layoutMode === 'template'} phone={formFactor === 'Phone'} layoutVariant={page.components.find(component => component.properties?.standalonePresentation === true)?.properties?.presentationLayout as string | undefined}
     overlayOpen={layoutState.basketOpen===true}
-    header={renderRegion('header')} main={renderRegion('main')} sidebar={renderRegion('sidebar')} />;
+    header={renderRegion('header')} main={renderRegion('main')} sidebar={renderRegion('sidebar')} />{inScreenHost}</>;
 }
 
 

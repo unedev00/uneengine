@@ -9,7 +9,6 @@ import * as React from 'react';
 import './InstalledAppMenu.css';
 const WorkspaceShortcutHelp = React.lazy(() => import('../Navigation/WorkspaceShortcutHelp'));
 const GlobalQuickActionLauncher=React.lazy(()=>import('./GlobalQuickActionLauncher'));
-const InScreenFlowHost=React.lazy(()=>import('../../automation/InScreenFlowHost'));
 import { MobileAppNavigation, MobileAppLauncher } from './MobileAppNavigation';
 import { resolvePageToolbarActions } from '../../pages/PageRuntime/pageToolbarActions';
 import { workspaces, type ObjectMetadata, type LightningPageMetadata, type LightningAppMetadata } from '../../metadata/Definitions/metadata';
@@ -278,12 +277,12 @@ export function renderSetupShell(ctx: any) {
           </section>}
           {route.kind === 'app-home' && <LightningAppRuntime appId={route.appId} objects={objects} apps={apps} pages={pages} reports={reports}
             libraryComponents={libraryComponents} availableFlows={flows.filter((item) => ['Screen Flow', 'In-Screen Flow', 'Autolaunched Flow'].includes(item.flowType))
-              .map(({ id, apiName, label, flowType, status }) => ({ id, apiName, label, flowType, status }))}
+              .map(({ id, apiName, label, flowType, status, startConfig, resources }) => ({ id, apiName, label, flowType, status, startConfig, resources }))}
             formFactor={runtimeFormFactor} profileId={currentProfileId} pageDefinitionCache={pageDefinitionCache.current} onNavigate={navigateRoute}
             onLaunchFlow={(apiName: string, inputs: Record<string, unknown>,context?:{requestId?:string}) => void runFlow(apiName, inputs,context)} onStandaloneModeChange={setStandalonePageMode} />}
           {route.kind === 'app-page' && <LightningAppRuntime appId={route.appId} pageApiName={route.pageApiName} objects={objects} apps={apps} pages={pages} reports={reports}
             libraryComponents={libraryComponents} availableFlows={flows.filter((item) => ['Screen Flow', 'In-Screen Flow', 'Autolaunched Flow'].includes(item.flowType))
-              .map(({ id, apiName, label, flowType, status }) => ({ id, apiName, label, flowType, status }))}
+              .map(({ id, apiName, label, flowType, status, startConfig, resources }) => ({ id, apiName, label, flowType, status, startConfig, resources }))}
             formFactor={runtimeFormFactor} profileId={currentProfileId} pageDefinitionCache={pageDefinitionCache.current} onNavigate={navigateRoute}
             onLaunchFlow={(apiName: string, inputs: Record<string, unknown>,context?:{requestId?:string}) => void runFlow(apiName, inputs,context)} onStandaloneModeChange={setStandalonePageMode} />}
           {route.kind === 'setup' && workspace === 'home' && (runtimeFormFactor === 'Phone'
@@ -727,11 +726,6 @@ export function renderSetupShell(ctx: any) {
       </main>
       {showNewField && <React.Suspense fallback={null}><FieldWizardModal context={{ X, addField, formulaEditorRef, insertFormulaText, newFieldAllowReparenting, newFieldApiName, newFieldCaseSensitive, newFieldChildRelationshipName, newFieldConfigurationError, newFieldController, newFieldControllerApiName, newFieldControllerValues, newFieldDefaultValue, newFieldDeleteBehavior, newFieldDescription, newFieldExternalId, newFieldFormula, newFieldFormulaValidation, newFieldHasDefault, newFieldHelpText, newFieldLabel, newFieldLayoutIds, newFieldLookupFilterLogic, newFieldLookupFilters, newFieldPicklistOptions, newFieldPicklistRestricted, newFieldPicklistValues, newFieldPrecision, newFieldRelationshipName, newFieldRelationshipTarget, newFieldRequired, newFieldReturnType, newFieldScale, newFieldStage, newFieldTextLength, newFieldType, newFieldUnique, newFieldValueSettings, object, objects, relatedLookupFilterOperators, resetNewFieldDraft, setNewFieldAllowReparenting, setNewFieldCaseSensitive, setNewFieldChildRelationshipName, setNewFieldControllerApiName, setNewFieldDefaultValue, setNewFieldDeleteBehavior, setNewFieldDescription, setNewFieldExternalId, setNewFieldFormula, setNewFieldFormulaValidation, setNewFieldHasDefault, setNewFieldHelpText, setNewFieldLabel, setNewFieldLayoutIds, setNewFieldLookupFilterLogic, setNewFieldLookupFilters, setNewFieldPicklistRestricted, setNewFieldPicklistValues, setNewFieldPrecision, setNewFieldRelationshipName, setNewFieldRelationshipTarget, setNewFieldRequired, setNewFieldReturnType, setNewFieldScale, setNewFieldStage, setNewFieldTextLength, setNewFieldType, setNewFieldUnique, setNewFieldValueSettings, setShowNewField, showNewField, validateNewFieldFormula }} /></React.Suspense>}
       {(showNewObject || showCustomTabWizard) && <React.Suspense fallback={null}><SetupObjectDialogs context={{ showNewObject, setShowNewObject, setShowCustomTabWizard, newObjectLabel, setNewObjectLabel, newObjectPluralLabel, setNewObjectPluralLabel, newObjectRecordNameLabel, setNewObjectRecordNameLabel, newObjectSettings, setNewObjectSettings, newObjectDescription, setNewObjectDescription, launchCustomTabWizard, setLaunchCustomTabWizard, createObject, showCustomTabWizard, customTabObject, setCustomTabObject, customTabStyle, setCustomTabStyle, customTabStyles, customTabAppIds, setCustomTabAppIds, apps, saveCustomTab }} /></React.Suspense>}
-      {(route.kind==='app-page'||route.kind==='app-home')&&flows.some(item=>item.flowType==='In-Screen Flow'&&item.status==='Active')
-        &&<React.Suspense fallback={null}><InScreenFlowHost
-          flows={flows} appApiName={route.appId} pageApiName={route.kind==='app-page'?route.pageApiName:''}
-          onLaunchFlow={(apiName:string,inputs?:Record<string,unknown>)=>void runFlow(apiName,inputs)}
-        /></React.Suspense>}
       {(flowRun || flowDebug) && <React.Suspense fallback={null}><SetupFlowDialogs context={{ flowRun, setFlowRun, flowRunnerError, setFlowRunnerError, submitFlowScreen, goBackFlowScreen, flowRunnerSubmitting, flowDebug, setFlowDebug, runFlowDebug, libraryComponents, loadFlowScreenRecords,
         flows,pages,apps,objects,reports,LightningAppRuntime,formFactor:runtimeFormFactor,
         pageDefinitionCache:pageDefinitionCache.current,activeAppId:(route.kind==='app-page'||route.kind==='app-home')?route.appId:'',

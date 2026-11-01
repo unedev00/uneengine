@@ -1,7 +1,7 @@
 import {useEffect,useRef} from 'react';
 import type {FlowDefinitionMetadata} from '../metadata/Definitions/metadata';
 type Signal={pageSessionKey?:string;componentId?:string;event?:string;value?:unknown;recordId?:string};
-type Props={flows:ReadonlyArray<FlowDefinitionMetadata>;appApiName:string;pageApiName:string;
+type Props={flows:ReadonlyArray<Pick<FlowDefinitionMetadata,'apiName'|'flowType'|'status'|'startConfig'|'resources'>>;appApiName:string;pageApiName:string;
  onLaunchFlow:(apiName:string,inputs?:Record<string,unknown>)=>void};
 const objectValue=(value:unknown):Record<string,unknown>=>
  value&&typeof value==='object'&&!Array.isArray(value)?value as Record<string,unknown>:{};
