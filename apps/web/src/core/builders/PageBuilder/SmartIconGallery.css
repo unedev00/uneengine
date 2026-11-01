@@ -23,7 +23,7 @@
  -webkit-mask-size:contain;mask-size:contain;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
  -webkit-mask-position:center;mask-position:center;}
 
-/* Global metadata Shape control fits the existing 26px Layout ribbon row. */
+/* Global metadata Shape control fills the approved 26px Design ribbon track. */
 .office-builder-ribbon .smart-property[data-property="shapeId"] .smart-icon-gallery{
   flex:1 1 auto;width:100%;min-width:0;height:26px;padding:0;border:0;align-items:center;
 }

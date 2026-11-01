@@ -101,9 +101,9 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  const displayProperties=visible.filter(p=>p.id!=='autoRecordScope');
  const groups=[...new Set(displayProperties.map(p=>p.group))];
  const groupOrder=tab==='Data'?['Source','Values','Cart','Cart columns','Cart totals']
-  :tab==='Design'?['Body','Typography','Tabs','Header','Badge','Header Supporting',
+  :tab==='Design'?['Body','Shape','Typography','Tabs','Header','Badge','Header Supporting',
     'Table','Row','Summary','Summary 2']
-  :tab==='Layout'?['Size & Position','Shape','Tabs','Cards','Navigation','Calendar','Image','Icon']
+  :tab==='Layout'?['Size & Position','Tabs','Cards','Navigation','Calendar','Image','Icon']
   :[];
  const sections=[...groupOrder.filter(group=>groups.includes(group)),
   ...groups.filter(group=>!groupOrder.includes(group))];
@@ -113,6 +113,8 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  // Geometry only. Keep every property, icon, dropdown and persisted value;
  // fit their existing three rows without reserving space for empty columns.
  const controlWidth=(p:UneRibbonProperty)=>{
+   // Shape's 94px SQL width is exact, unlike other compact choice tracks.
+   if(p.id==='shapeId')return p.designWidth??94;
    // Shadow/Alignment icon dropdowns must remain at least 35px wide.
    if(p.designDisplay==='dropdown'&&(p.kind==='shadow'||p.kind==='align'))
      return Math.max(35,p.designWidth??0);
