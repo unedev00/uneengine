@@ -6,6 +6,7 @@ import {registerMcpRoutes} from '../../src/system-support/mcp-routes.js';
 import {callMcpTool,mcpTools,mcpToolScopes,mcpToolAllowed,type McpServices} from '../../src/system-support/mcp-tools.js';
 import {validMcpResource} from '../../src/system-support/mcp-resource.js';
 import {ConnectedAppService} from '../../src/system-support/connected-app-service.js';
+import {PageRuntime} from '../../src/system-files/page-runtime.js';
 import type {SqlPersistence} from '../../src/system-files/sql-persistence.js';
 import type {AuthenticationService} from '../../src/system-files/authentication.js';
 import type {RbacEngine} from '../../src/system-files/rbac-engine.js';
@@ -25,6 +26,7 @@ function services(scopes=['mcp:access','records:read']){
    loadEditor:async(...args:unknown[])=>{calls.push(['flow-read',...args]);return {apiName:'MyFlow',version:1};},
    saveEditor:async(...args:unknown[])=>{calls.push(['flow-create',...args]);return {apiName:'MyFlow',version:1};}},
   pages:{
+   save:async(...args:unknown[])=>{calls.push(['page-create',...args]);return {apiName:'NewPage',status:'Draft'};},
    editor:async(...args:unknown[])=>{calls.push(['page-draft',...args]);return {apiName:'COPILOTTILL_POS',draftRevision:3,components:[]};},
    metadata:async(...args:unknown[])=>{calls.push(['page-published',...args]);return {apiName:'COPILOTTILL_POS',components:[]};},
    saveLayoutDraft:async(...args:unknown[])=>{calls.push(['page-save',...args]);return {draftRevision:4};},
@@ -73,6 +75,7 @@ test('tools are scope-filtered and attempted write without scope never reaches r
 });
 test('new grouped OAuth scopes expose only their corresponding MCP tools and never bypass RBAC',async()=>{
  assert.deepEqual(mcpToolScopes('get_page_layout'),['metadata:read','pages:read']);
+ assert.deepEqual(mcpToolScopes('create_page'),['metadata:write','pages:manage']);
  assert.deepEqual(mcpToolScopes('create_flow_draft'),['metadata:write','flows:manage']);
  assert.equal(mcpToolAllowed('server_operation',new Set(['operations:read']),{action:'restart'}),false);
  assert.equal(mcpToolAllowed('server_operation',new Set(['operations:read']),{action:'status'}),true);
@@ -130,6 +133,56 @@ test('MCP can inspect existing Flow metadata and create only draft flows with ex
  }finally{await x.close();}
  const source=readFileSync(new URL('../../src/flow-engine/FlowEngineCore.ts',import.meta.url),'utf8');
  assert.match(source,/if\(createOnly&&last\)throw new Error\('Flow already exists'\)/);
+});
+
+test('Page Builder MCP creates a draft only through the existing tenant-scoped Page Runtime',async()=>{
+ const x=await server(['mcp:access','pages:manage']);try{
+  const list=await (await x.rpc('tools/list')).json();
+  assert.ok(list.result.tools.some((t:{name:string})=>t.name==='create_page'));
+  const invalid=await (await x.rpc('tools/call',{name:'create_page',arguments:{
+   page:'NewPage',definition:{apiName:'OtherPage',status:'Draft'}
+  }})).json();
+  assert.equal(invalid.result.isError,true);
+  const active=await (await x.rpc('tools/call',{name:'create_page',arguments:{
+   page:'NewPage',definition:{apiName:'NewPage',status:'Active'}
+  }})).json();
+  assert.equal(active.result.isError,true);
+  assert.ok(!x.calls.some(row=>row[0]==='page-create'));
+  const created=await (await x.rpc('tools/call',{name:'create_page',arguments:{
+   page:'NewPage',definition:{apiName:'NewPage',status:'Draft'}
+  }})).json();
+  assert.equal(created.result.isError,undefined);
+  assert.deepEqual(x.calls.find(row=>row[0]==='page-create')?.slice(1),
+   ['tenant-a','NewPage',{apiName:'NewPage',status:'Draft'},true]);
+ }finally{await x.close();}
+ const blocked=await server(['mcp:access','pages:read']);try{
+  const list=await (await blocked.rpc('tools/list')).json();
+  assert.ok(!list.result.tools.some((t:{name:string})=>t.name==='create_page'));
+ }finally{await blocked.close();}
+ const {s,calls}=services();
+ s.rbac.require=async()=>{throw Error('Page permission denied');};
+ await assert.rejects(callMcpTool(s,actor,'create_page',{
+  page:'NewPage',definition:{apiName:'NewPage',status:'Draft'}
+ }),/Page permission denied/);
+ assert.ok(!calls.some(row=>row[0]==='page-create'));
+});
+
+test('PageRuntime create-only writes refuse existing pages without modifying them',async()=>{
+ let writes=0;
+ const db={transaction:async(fn:(client:unknown)=>Promise<unknown>)=>fn({
+  query:async(sql:string)=>{
+   if(sql.startsWith('SELECT id FROM md_page_definitions'))
+    return {rows:[{id:'existing-page'}],rowCount:1};
+   writes++;throw Error('Unexpected write');
+  }
+ })} as unknown as SqlPersistence;
+ const pages=new PageRuntime(db);
+ await assert.rejects(pages.save('tenant-a','NewPage',{
+  apiName:'NewPage',label:'New Page',pageType:'App Page',targetObject:'',
+  layoutMode:'free-canvas',canvasWidth:1440,canvasHeight:900,
+  status:'Draft',devices:['Desktop'],components:[],activationAssignments:[]
+ },true),/Page already exists/);
+ assert.equal(writes,0);
 });
 
 test('Page Builder MCP reads require metadata scope and use the authenticated tenant',async()=>{
