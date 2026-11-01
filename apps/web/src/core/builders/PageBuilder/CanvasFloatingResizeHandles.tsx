@@ -8,7 +8,7 @@ const empty:OverlayGeometry={points:[],clip:{left:0,top:0,right:0,bottom:0}};
 
 /** Portal out of component stacking contexts, but CLIP to the actual scrollable
  * designer viewport. A component may scroll behind the fixed ribbon; its grips
- * must never appear there. Offscreen bottom grips have a visible proxy.
+ * must never appear there. Scroll the fixed-size page to reach the true edge.
  */
 export default function CanvasFloatingResizeHandles({componentId,componentLabel,viewportRef,onStart,onMove,onEnd,onCancel}:{
  componentId:string;
@@ -54,10 +54,9 @@ export default function CanvasFloatingResizeHandles({componentId,componentLabel,
    style={{clipPath:`inset(${clip.top}px ${Math.max(0,window.innerWidth-clip.right)}px ${Math.max(0,window.innerHeight-clip.bottom)}px ${clip.left}px)`}}>
    {points.map(point=><button key={point.edge} type="button"
     className={`free-canvas-resize-handle floating-resize-${point.edge}`}
-    data-offscreen-bottom={point.proxy?'true':undefined}
     style={{left:point.left,top:point.top}}
     aria-label={`Resize ${componentLabel} ${point.edge}`}
-    title={point.proxy?`Drag to resize ${componentLabel} height (bottom edge below visible canvas)`:`Drag ${point.edge} corner or edge to resize`}
+    title={`Drag ${point.edge} corner or edge to resize` }
     onPointerDown={event=>onStart(event,point.edge)}
     onPointerMove={onMove} onPointerUp={onEnd}
     onPointerCancel={onCancel} onLostPointerCapture={onCancel}
