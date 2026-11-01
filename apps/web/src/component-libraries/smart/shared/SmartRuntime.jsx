@@ -37,7 +37,7 @@ const recordOf=p=>p.objectApiName&&Array.isArray(p.records)
 const recordsOf=p=>Array.isArray(p.records)?p.records:Array.isArray(p.items)?p.items:[];
 // Editor-only samples are never Object records: no real IDs, no SQL writes,
 // and no action handlers. Each shared component opts into its normal shape.
-const isBuilderEmpty=p=>p.builderPreview===true&&recordsOf(p).length===0;
+const isBuilderEmpty=p=>p.builderPreview===true&&!p.loading&&recordsOf(p).length===0;
 const editorCardRows=(count)=>Array.from({length:Math.min(6,Math.max(1,count))},(_,i)=>({
  __builderSample:true,Name:"Product Name "+(i+1),Price:"Price",Quantity:1
 }));
