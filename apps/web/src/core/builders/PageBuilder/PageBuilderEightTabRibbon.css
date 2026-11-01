@@ -262,12 +262,40 @@
 .office-builder-ribbon .page-unified-actions-ribbon .page-action-empty {
   align-self:flex-start;margin:14px;padding:8px;color:#53647d;font-size:12px;
 }
+/* Preserve the original six event and component-custom slots. The unified
+   trigger/Flow catalog extends them, never replaces or hides the property rows. */
+.office-builder-ribbon .page-unified-actions-ribbon>.page-action-property-group {
+  box-sizing:border-box!important;flex:0 0 276px!important;
+  width:276px!important;min-width:276px!important;max-width:276px!important;
+  display:flex!important;flex-direction:column!important;justify-content:space-between!important;
+}
+.office-builder-ribbon .page-unified-actions-ribbon .page-action-property-rows {
+  display:flex!important;flex-direction:column!important;gap:4px!important;
+}
+.office-builder-ribbon .page-unified-actions-ribbon .page-action-property-picker {
+  display:flex!important;align-items:center!important;justify-content:flex-start!important;
+  height:26px!important;min-height:26px!important;gap:6px!important;
+  white-space:nowrap!important;font:11px "Segoe UI",Arial,sans-serif!important;
+}
+.office-builder-ribbon .page-unified-actions-ribbon .page-action-property-picker>span {
+  flex:0 0 98px!important;min-width:98px!important;overflow:visible!important;
+}
+.office-builder-ribbon .page-unified-actions-ribbon .page-action-property-picker>select {
+  box-sizing:border-box!important;flex:0 0 145px!important;
+  width:145px!important;min-width:145px!important;max-width:145px!important;
+  height:26px!important;padding:2px 3px!important;
+  border:1px solid #b7c9df!important;border-radius:4px!important;
+  background:#fff;color:#29476a;font:11px "Segoe UI",Arial,sans-serif!important;
+}
+.office-builder-ribbon .page-unified-actions-ribbon .page-action-property-picker>select:disabled {
+  opacity:.5!important;background:#edf1f6!important;cursor:not-allowed!important;
+}
 /* Detailed mappings and destinations expand below the ribbon in document flow.
    They are not another popup and are confined to the Actions tab. */
 .page-builder-inline-actions {
   position:relative;z-index:2;isolation:isolate;
-  height:clamp(220px,33vh,390px);min-height:220px;
-  max-height:65vh;background:var(--surface,#fff);
+  height:185px;min-height:125px;max-height:40vh;
+  resize:vertical;overflow:hidden;background:var(--surface,#fff);
 }
 .page-builder-inline-actions .page-ribbon-expanded-content {
   overflow:auto;min-height:0;scrollbar-gutter:stable;
