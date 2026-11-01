@@ -2,15 +2,12 @@ name: Oracle frontend delivery
 
 # Frontend-only maintenance. A live API release compatibility check is mandatory:
 # if backend, connector, or shared dependencies changed, use the full-stack workflow.
+# Main-branch changes deploy exclusively through oracle-api-deploy.yml.
+# Two push workflows in the same concurrency group can silently replace a
+# pending full-stack deployment with a frontend compatibility no-op.
+# Frontend-only delivery remains an explicit, verified maintenance operation.
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/oracle-frontend-delivery.yml'
-      - 'apps/web/**'
-      - 'scripts/oracle/deploy-frontend.sh'
-      - 'scripts/oracle/ensure-frontend-api-proxy.sh'
 
 permissions:
   contents: read
@@ -54,9 +51,8 @@ jobs:
           if ! git diff --quiet "$api_sha" "$GITHUB_SHA" -- \
              apps/server apps/connectors apps/acetill package.json package-lock.json \
              scripts/oracle/deploy-api.sh scripts/oracle/deploy-full-stack.sh; then
-            echo "::notice::Backend/shared changes require full-stack deployment; frontend-only job skipped."
-            echo "deploy_needed=false" >> "$GITHUB_OUTPUT"
-            exit 0
+            echo "::error::Frontend deployment blocked: the live API is behind backend/shared changes. Run the protected full-stack deployment; never report a skipped publish as successful."
+            exit 1
           fi
           echo "Frontend-compatible with live API release $api_sha"
           current="$(curl -fsS --max-time 12 -H 'Cache-Control: no-cache' "https://unesolutions.co.uk/frontend-release.json?check=$GITHUB_SHA" || true)"
