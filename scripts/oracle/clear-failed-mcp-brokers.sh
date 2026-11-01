@@ -23,28 +23,44 @@ chmod 0644 "$tmp"
 mv -f -- "$tmp" "$dropin/10-collect.conf"
 trap - EXIT
 
-# Never use a single wildcard reset of >15k failed units: that previously
-# timed out. Reset in bounded batches; the --failed filter cannot select a
-# running broker or the API/worker/NGINX units.
-listing="$(timeout 30 systemctl list-units --all --failed --no-legend --plain 'metadrive-mcp-broker@*.service')"
-units=()
-while IFS= read -r line; do
-  if [[ "$line" =~ (metadrive-mcp-broker@[A-Za-z0-9_.-]+\.service) ]]; then
-    units+=("${BASH_REMATCH[1]}")
-  fi
-done <<< "$listing"
-echo "Failed MCP broker instance states to reset: ${#units[@]}"
-(( ${#units[@]} <= 30000 )) || { echo 'Unexpected MCP broker unit count; refusing unbounded cleanup' >&2; exit 1; }
-
+# Never fetch all >15k failed units in one D-Bus response: that read itself
+# timed out on this host. systemctl's unspecialised --all listing can stream
+# a short prefix quickly (confirmed by production diagnostics), so close
+# the listing pipe after one bounded batch and retry after resetting.
 batch=96
-for (( offset=0; offset<${#units[@]}; offset+=batch )); do
-  timeout 30 systemctl reset-failed -- "${units[@]:offset:batch}"
-  if (( offset % (batch*10) == 0 )); then
-    echo "Reset failed broker state through index $((offset+batch)) of ${#units[@]}"
+max_passes=240
+previous_first=''
+for (( pass=1; pass<=max_passes; pass++ )); do
+  # head closes the pipe promptly; an upstream SIGPIPE is expected here.
+  # Do not use --failed: the server-side failed-unit filter wedged at 15k.
+  listing="$(timeout 15 systemctl list-units --all --plain --no-legend --no-pager 'metadrive-mcp-broker@*.service' | head -n "$batch" || true)"
+  units=()
+  while IFS= read -r line; do
+    # Match only failed broker instances; never a live instance or other unit.
+    if [[ "$line" == *' loaded failed failed '* &&
+          "$line" =~ (metadrive-mcp-broker@[A-Za-z0-9_.-]+\.service) ]]; then
+      units+=("${BASH_REMATCH[1]}")
+    fi
+  done <<< "$listing"
+  if (( ${#units[@]} == 0 )); then
+    # An empty or healthy prefix is not proof of an empty manager. The final
+    # guarded daemon-reload still decides release eligibility.
+    echo "No failed MCP broker instances in bounded listing prefix."
+    break
+  fi
+  if [[ "${units[0]}" == "$previous_first" ]]; then
+    echo 'Failed MCP broker state did not advance after previous batch; refusing repeat.' >&2
+    exit 1
+  fi
+  previous_first="${units[0]}"
+  timeout 30 systemctl reset-failed -- "${units[@]}"
+  if (( pass % 10 == 1 )); then
+    echo "Reset failed MCP broker batch $pass (${#units[@]} instances)."
+  fi
+  if (( pass == max_passes )); then
+    echo 'Bounded failed MCP broker cleanup reached its pass limit.' >&2
+    exit 1
   fi
 done
-
-# All changes are limited to failed service bookkeeping and a template drop-in.
-# The caller still MUST complete daemon-reload and verify API/worker health
-# before any release activation.
+# The caller MUST still pass daemon-reload and API/worker health checks.
 echo 'Bounded failed MCP broker cleanup finished; daemon-reload still required.'
