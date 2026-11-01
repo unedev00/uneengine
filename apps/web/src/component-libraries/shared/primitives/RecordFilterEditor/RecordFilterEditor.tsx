@@ -8,7 +8,7 @@ import {
 } from '../../../../core/records/RecordWorkspace/recordFilterMetadata';
 import './RecordFilterEditor.css';
 
-type Filter = {field: string; operator: string; value: unknown};
+type Filter = {field: string; operator: string; value: unknown; skipWhenEmpty?: boolean};
 const isFilter = (item: unknown): item is Filter =>
   Boolean(item && typeof item === 'object' && !Array.isArray(item));
 const isBlank = (operator: string) => operator === 'Is Blank' || operator === 'Is Not Blank';
@@ -169,6 +169,12 @@ export default function RecordFilterEditor({
                 </label>
               : source === 'Fixed' ? <label><span>Value</span>{valueControl}</label> : null)}
           </div>
+          {source === 'PageState' && !isBlank(operator) && <label className="metadata-filter-optional-condition">
+            <input type="checkbox" checked={raw.skipWhenEmpty === true}
+              aria-label={title + ' ignore condition when page state is empty ' + (index + 1)}
+              onChange={event=>set(index,{skipWhenEmpty:event.target.checked})}/>
+            When no value is selected, ignore this condition (show all matching records)
+          </label>}
           {error && <p role="alert" className="metadata-filter-error">{error}</p>}
         </div>;
       })}

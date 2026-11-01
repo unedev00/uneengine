@@ -397,3 +397,35 @@ test('Metadata-only POS Flow inputs project authorised fields and parse numeric 
   fields:['NotPresent']},resolve),undefined);
  assert.throws(()=>encodeInputSource('Record Collection','cartItems:Id',[]),/excluding Id/);
 });
+
+test('Optional PageState filter retains other server filters and shows all when unselected',()=>{
+ const fields=[
+  {apiName:'Active',label:'Active',dataType:'Boolean'},
+  {apiName:'MenuCategory',label:'Category',dataType:'Lookup(MenuCategory)',
+   relationship:{targetObject:'MenuCategory',type:'Lookup',relationshipName:'MenuCategory'}},
+  {apiName:'ImageUrl',label:'Image',dataType:'Text'}
+ ] as any;
+ const rules=[
+  {field:'Active',operator:'Equals',value:true},
+  {field:'ImageUrl',operator:'Is Not Blank',value:''},
+  {field:'MenuCategory',operator:'Equals',value:{source:'PageState',key:'categoryId'},skipWhenEmpty:true}
+ ];
+ const all=pageComponentRecordQuery(rules,fields,{pageState:{}});
+ assert.equal(all.blocked,false);
+ assert.equal(all.filters?.length,2);
+ assert.equal(all.filters?.some(item=>item.field==='MenuCategory'),false);
+ const selected=pageComponentRecordQuery(rules,fields,{pageState:{categoryId:'cat1'}});
+ assert.equal(selected.blocked,false);
+ assert.equal(selected.filters?.length,3);
+ assert.equal(selected.filters?.find(item=>item.field==='MenuCategory')?.value,'cat1');
+ const rows=[{Active:true,ImageUrl:'a',MenuCategory:'cat1'},
+  {Active:true,ImageUrl:'b',MenuCategory:'cat2'},
+  {Active:false,ImageUrl:'c',MenuCategory:'cat1'}];
+ assert.equal(filterPageComponentRecords(rows,rules,fields,{pageState:{}}).length,2);
+ assert.equal(filterPageComponentRecords(rows,rules,fields,{pageState:{categoryId:'cat1'}}).length,1);
+ const required=rules.map(item=>({...item,skipWhenEmpty:false}));
+ assert.equal(pageComponentRecordQuery(required,fields,{pageState:{}}).blocked,true);
+ const invalid=[...rules.slice(0,2),{field:'DeletedField',operator:'Equals',
+  value:{source:'PageState',key:'categoryId'},skipWhenEmpty:true}];
+ assert.equal(pageComponentRecordQuery(invalid,fields,{pageState:{}}).blocked,true);
+});
