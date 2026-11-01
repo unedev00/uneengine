@@ -103,7 +103,8 @@ test('Batch 2 grid runtime reads density, line-height, radius and image position
  const page=readFileSync(new URL('../src/core/pages/TemplatePageRuntime/pageComponentLayout.ts',import.meta.url),'utf8');
  for(const key of ['p.density','p.lineHeight','p.cardRadius','p.imagePosition','p.headingExpression','p[part+"LineLimit"]'])
    assert.ok(runtime.includes(key),key);
- assert.match(runtime,/gap:Number\(p\.gap\)/);
+ assert.match(runtime,/gap:gridGap/);
+ assert.match(runtime,/const gridGap=Number\.isFinite\(Number\(p\.gap\)\)/);
  assert.match(page,/--md-page-line-height/);
 });
 test('Batch 2 fixes shared palette contrast and Layout numeric input widths',()=>{

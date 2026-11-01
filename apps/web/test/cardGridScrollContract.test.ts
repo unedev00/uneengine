@@ -35,3 +35,22 @@ test('Card Grid scrolling does not replace move/resize or enable nested scrollin
  assert.match(grid,/event\.pointerType==="touch"\)event\.stopPropagation\(\)/);
  assert.match(builder,/closest\('\.md-product-grid--scroll'\)/);
 });
+
+
+test('Both Card Grid runtimes keep every authorised row and use row count for visible geometry',()=>{
+ const smart=read('../src/component-libraries/smart/shared/SmartRuntime.jsx');
+ const generic=read('../src/component-libraries/shared/primitives/ItemGrid/ItemGrid.jsx');
+ assert.match(smart,/gridAutoRows:"max\("/);
+ assert.match(smart,/previewRows\.map\(\(r,i\)=>/);
+ assert.match(smart,/recordsOf\(p\)/);
+ assert.match(generic,/visibleRowCount/);
+ assert.match(generic,/gridAutoRows:"max\("/);
+ assert.match(generic,/visibleRows\.map\(\(r, i\) =>/);
+ assert.doesNotMatch(generic,/visibleRows\.slice\(0,maxCards\)/);
+});
+
+test('Smart Card Grid scroll interaction preserves Page Builder move grips',()=>{
+ const builder=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ assert.match(builder,/component\.type==='Custom:smart_card_grid'&&target\.closest\('\.smart-grid'\)/);
+ assert.match(builder,/startCanvasMove\(event, component\)/);
+});

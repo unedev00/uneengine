@@ -123,9 +123,14 @@ function ItemGrid({ p, rows }) {
     if (av!=null && bv!=null && Number.isFinite(na) && Number.isFinite(nb)) return na-nb;
     return String(av??"").localeCompare(String(bv??""));
   });
-  const maxCards=Number.isFinite(Number(p.cardsPerColumn))&&Number(p.cardsPerColumn)>0
-    ?count*Math.min(40,Number(p.cardsPerColumn)):Infinity;
-  const displayedRows=visibleRows.slice(0,maxCards);
+  // Rows per column controls viewport geometry, not the number of records.
+  // Never silently discard authorised results when the user requests more rows.
+  const visibleRowCount=Number.isFinite(Number(p.cardsPerColumn))&&Number(p.cardsPerColumn)>0
+    ?Math.max(1,Math.min(40,Math.floor(Number(p.cardsPerColumn)))):0;
+  const minimumRowHeight=Number.isFinite(Number(p.cardMinHeight))&&Number(p.cardMinHeight)>0
+    ?Math.min(1200,Number(p.cardMinHeight)):96;
+  const gridGap=Number.isFinite(Number(p.gap))&&Number(p.gap)>=0&&Number(p.gap)<=160
+    ?Number(p.gap):12;
   let formatter;
   try {
     if (p.showPrice !== false && priceField && p.currencyCode) {
@@ -218,10 +223,13 @@ function ItemGrid({ p, rows }) {
             flex:"1 1 auto",minHeight:0,overflowY:"scroll",overflowX:"hidden",
             alignContent:"start",scrollbarGutter:"stable"
           }:{}),
-          ...(Number.isFinite(Number(p.gap)) && p.gap!==undefined && Number(p.gap)>=0 && Number(p.gap)<=160 ? {gap:Number(p.gap)} : {}),
+          ...(Number.isFinite(Number(p.gap)) && p.gap!==undefined && Number(p.gap)>=0 && Number(p.gap)<=160 ? {gap:gridGap} : {}),
+          ...(p.boundedViewport===true&&visibleRowCount>0?{
+            gridAutoRows:"max("+minimumRowHeight+"px, calc((100% - "+(visibleRowCount-1)*gridGap+"px) / "+visibleRowCount+"))"
+          }:{}),
         }}
       >
-        {displayedRows.map((r, i) => {
+        {visibleRows.map((r, i) => {
           const image = p.imageSource ? (Object.prototype.hasOwnProperty.call(r,p.imageSource)
             ? String(r[p.imageSource]??"") : evaluateFieldExpression(p.imageSource,r)) :
             p.imageExpression ? evaluateFieldExpression(p.imageExpression,r) : r?.[imageField],
