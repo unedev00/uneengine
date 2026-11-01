@@ -19,6 +19,7 @@ import '../../pages/TemplatePageRuntime/pageComponentAppearance.css';
 import '../SharedBuilderFrame/adaptiveBuilder.css';
 import { libraryComponentLabel } from '../../components/Registry/componentLibraryDiscovery';
 import { relatedListRelationships } from './relatedListRelationships';
+import PageManagerTabs from './PageManagerTabs';
 import {legacyLayoutToRecordComponents} from '../../records/RecordWorkspace/recordPageLayoutMigration';
 import { standaloneTemplateCanvasStyle } from './standaloneTemplateCanvasStyle';
 import { pageTemplates, pageStringList } from './pageEditorMetadata';
@@ -424,7 +425,7 @@ function PageBuilder({
   const [pageListObject, setPageListObject] = useState('');
   const [pageListSearch, setPageListSearch] = useState('');
   const [pageListAppTab, setPageListAppTab] = useState('all');
-  const [pageListTypeTab, setPageListTypeTab] = useState('all');
+  const [pageListTypeTab, setPageListTypeTab] = useState('App Page');
   const [pageListDeviceTab, setPageListDeviceTab] = useState('all');
   const [pageListPage,setPageListPage]=useState(1);
   const paletteResizeStart = useRef<{ pointerId: number; pointerX: number; width: number } | null>(null);
@@ -2027,9 +2028,9 @@ function PageBuilder({
   const pageTabType = (item: LightningPageMetadata) => item.pageType;
   const visiblePages = pages.filter(item => (recordPageContext
     ? item.pageType === 'Record Page' && item.targetObject === recordPageContext
-    : item.pageType !== 'Record Page') && (pageListAppTab === 'all' || (pageListAppTab === 'other'
+    : item.pageType !== 'Record Page') && (pageListTypeTab !== 'App Page' || pageListAppTab === 'all' || (pageListAppTab === 'other'
       ? pageAppIds(item).length === 0 : pageAppIds(item).includes(pageListAppTab)))
-    && (pageListTypeTab === 'all' || pageTabType(item) === pageListTypeTab)
+    && (recordPageContext || pageListTypeTab === 'all' || pageTabType(item) === pageListTypeTab)
     && (pageListDeviceTab === 'all' || (pageListDeviceTab === 'Mobile'
       ? item.layoutVariant === 'Mobile' || item.devices.includes('Phone')
       : pageListDeviceTab === 'Desktop'
@@ -3011,26 +3012,18 @@ function PageBuilder({
           <div className="page-manager-header-actions">
             <button className="btn btn-brand" type="button" onClick={openCreatePage}><Plus size={16}/> New Page</button>
           </div></header>
-        {!recordPageContext && <>
-          <nav className="page-manager-app-tabs" aria-label="Pages by application" style={{display:'flex',gap:6,flexWrap:'wrap',padding:'12px 0'}}>
-            {[{apiName:'all',label:'All Apps'},...pageAppTabs,{apiName:'other',label:'Other'}].map(tab =>
-              <button type="button" key={tab.apiName} className={'btn btn-small'+(pageListAppTab===tab.apiName?' btn-brand':'')}
-                aria-pressed={pageListAppTab===tab.apiName} onClick={()=>setPageListAppTab(tab.apiName)}>{tab.label}</button>)}
-          </nav>
-          <nav aria-label="Pages by type" style={{display:'flex',gap:6,flexWrap:'wrap',padding:'4px 0 10px'}}>
-            {[['all','All Pages'],['Home Page','Home'],['App Page','App'],['Record Page','Record'],['In-Screen Page','In-Screen']].map(([value,label])=>
-              <button type="button" key={value} className={'btn btn-small'+(pageListTypeTab===value?' btn-brand':'')}
-                aria-pressed={pageListTypeTab===value} onClick={()=>setPageListTypeTab(value)}>{label}</button>)}
-            <label className="form-label" style={{marginLeft:'auto'}}>Layout
-              <select className="form-control" value={pageListDeviceTab} onChange={event=>setPageListDeviceTab(event.target.value)}>
-                <option value="all">All devices</option>{['Desktop','Tablet','Mobile','Custom'].map(device=><option key={device} value={device}>{device}</option>)}
-              </select>
-            </label>
-          </nav>
-        </>}
+        {!recordPageContext && <PageManagerTabs
+          type={pageListTypeTab} app={pageListAppTab} apps={pageAppTabs}
+          onTypeChange={value=>{setPageListTypeTab(value);setPageListPage(1);}}
+          onAppChange={value=>{setPageListAppTab(value);setPageListPage(1);}}/>}
         <div className="page-manager-filters">
           <label className="form-label">Related Record / Object<select className="form-control" value={pageListObject} aria-label="Related Record or Object" onChange={event=>setPageListObject(event.target.value)}><option value="">All objects</option>{objects.map(item=><option key={item.apiName} value={item.apiName}>{item.label}</option>)}</select></label>
           <label className="form-label">Search pages<input className="form-control" type="search" value={pageListSearch} onChange={event=>setPageListSearch(event.target.value)} placeholder="Search page name…"/></label>
+          {!recordPageContext && <label className="form-label page-manager-layout-filter">Layout
+            <select className="form-control" value={pageListDeviceTab} onChange={event=>setPageListDeviceTab(event.target.value)}>
+              <option value="all">All devices</option>{['Desktop','Tablet','Mobile','Custom'].map(device=><option key={device} value={device}>{device}</option>)}
+            </select>
+          </label>}
         </div>
         <div className="page-manager-table-scroll"><table className="records-table page-manager-table"><thead><tr><th>Page name</th><th>API Name</th><th>Type</th><th>Related object</th><th>Device</th><th>Dimensions</th><th>Orientation</th><th>Last modified</th><th>Status</th><th>Actions</th></tr></thead>
         <tbody>{paginatedPages.map(item=><tr key={item.apiName}>
