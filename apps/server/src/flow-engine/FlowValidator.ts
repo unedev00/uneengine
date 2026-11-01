@@ -81,6 +81,13 @@ export async function validateFlowDraft(rbac:RbacEngine|undefined,tenantId:strin
  const beforeSave=data.flowType==='Record-Triggered Flow'&&startConfig.runWhen==='before-save';
  const catalogType=capabilities?.flowTypes.find(type=>type.type===data.flowType);
  if(data.flowType==='In-Screen Flow'){
+  const exposed=startConfig.windowPageBindings;
+  const availableInputs=new Set(Array.isArray(data.resources)
+   ?(data.resources as Array<{name?:unknown;availableForInput?:unknown}>)
+     .filter(item=>item.availableForInput===true).map(item=>item.name):[]);
+  if(exposed!==undefined&&(!Array.isArray(exposed)||exposed.length>100
+   ||new Set(exposed).size!==exposed.length||exposed.some(name=>!availableInputs.has(name))))
+   errors.push('Invalid In-Screen page data exposure');
   const bindings=startConfig.inputBindings;
   if(bindings!==undefined){
    const sources=['auto','page.sessionKey','page.apiName','app.apiName',

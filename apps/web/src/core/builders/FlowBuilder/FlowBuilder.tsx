@@ -715,6 +715,23 @@ export default function FlowBuilder({
               </select>
             </label>)}
         </fieldset>
+        <fieldset className="metadata-card"><legend>Expose input values to the Window Page</legend>
+          <p className="settings-panel-copy">Selected inputs are available as Page Builder state bindings. Do not expose passwords, credentials or confidential values.</p>
+          {flow.resources.filter(resource=>resource.availableForInput).map(resource=>
+            <label className="checkbox-row" key={resource.name}>
+              <input type="checkbox"
+                checked={Array.isArray(flow.startConfig.windowPageBindings)
+                  &&flow.startConfig.windowPageBindings.includes(resource.name)}
+                onChange={event=>{
+                  const current=Array.isArray(flow.startConfig.windowPageBindings)
+                    ?flow.startConfig.windowPageBindings.filter((name):name is string=>typeof name==='string'):[];
+                  setStartConfig('windowPageBindings',event.target.checked
+                    ?[...new Set([...current,resource.name])]
+                    :current.filter(name=>name!==resource.name));
+                }}/>
+              {resource.label||resource.name} → Page State
+            </label>)}
+        </fieldset>
       </fieldset>}
       {flow.flowType === 'Platform Event-Triggered Flow' && <>
         <label className="form-label">Platform Event<select className="form-control" value={flow.triggerObject ?? ''} onChange={(event) => setStartConfig('object', event.target.value)}><option value="">Select platform event</option>{platformEvents.map((platformEvent) => <option key={platformEvent.apiName} value={platformEvent.apiName}>{platformEvent.label} ({platformEvent.apiName})</option>)}</select></label>
