@@ -183,7 +183,7 @@ import { canNestComponent, pageAppearanceTarget, pageAppearanceStyleKeys, update
 import PageComponentStyleEditor from '../ComponentStyleEditor/PageComponentStyleEditor';
 import { isCanvasLocked, ungroupCanvasComponent, snapCanvasPosition, alignCanvasComponents, distributeCanvasComponents } from './canvasInteractions';
 import {canvasGroupKey, canvasGroupMembers, groupCanvasSelection, ungroupCanvasSelection, moveCanvasLayer, shiftCanvasLayer, canMoveCanvasLayer, canvasSiblingLayerIndex, canvasGroupBounds} from './canvasLayerGroups';
-import {canvasDimensionsForGesture,canvasScrollbarHit,MAX_CANVAS_EDGE} from './canvasPointerInteractions';
+import {canvasScrollbarHit} from './canvasPointerInteractions';
 import {isSharedCanvasProperty,mixedCanvasPropertyIds,updateSharedCanvasProperties,updateSharedCanvasPositions} from './canvasSharedRibbonProperties';
 import {useCanvasGroupGestures} from './useCanvasGroupGestures';
 import { copyComponentTree, cloneComponentTree, remapComponentInteractionTargets, assignTabOnReparent, type ComponentClipboard } from './pageComponentTree';
@@ -516,7 +516,7 @@ function PageBuilder({
   const [selectionUndoStack, setSelectionUndoStack] = useState<CanvasSelectionSnapshot[]>([]);
   const [selectionRedoStack, setSelectionRedoStack] = useState<CanvasSelectionSnapshot[]>([]);
   type ResizeEdge = 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'nw';
-  const canvasResizeStart = useRef<{ id: string; pointerId: number; pointerX: number; pointerY: number; x: number; y: number; width: number; height: number; edge: ResizeEdge; element: HTMLElement; current: { x: number; y: number; width: number; height: number }; viewport: HTMLDivElement | null; stage: HTMLElement | null; preview: HTMLElement | null; stageHeight: string; previewHeight: string; scrollStart: number; lastX: number; lastY: number; dragged: boolean; autoScrollFrame: number } | null>(null);
+  const canvasResizeStart = useRef<{ id: string; pointerId: number; pointerX: number; pointerY: number; x: number; y: number; width: number; height: number; edge: ResizeEdge; element: HTMLElement; current: { x: number; y: number; width: number; height: number }; viewport: HTMLDivElement | null; scrollStart: number; lastX: number; lastY: number; dragged: boolean; autoScrollFrame: number } | null>(null);
   const canvasGuideXRef = useRef<HTMLDivElement | null>(null);
   const canvasGuideYRef = useRef<HTMLDivElement | null>(null);
   const canvasSnap = false;
@@ -1242,13 +1242,12 @@ function PageBuilder({
     const scale = fitCanvas ? fitScale : canvasZoom/100;
     const x = start.original.x + canvasUnitsFromScreenDelta(event.clientX - start.pointerX, scale);
     const y = start.original.y + canvasUnitsFromScreenDelta(event.clientY - start.pointerY, scale);
-    const grownCanvas=canvasDimensionsForGesture({width:page.canvasWidth,height:page.canvasHeight},
-      {...start.original,x,y});
+    const fixedCanvas={width:page.canvasWidth,height:page.canvasHeight};
     const next = canvasSnap
       ? snapCanvasPosition({ ...start.original, x, y },
-          grownCanvas,
+          fixedCanvas,
           page.components.filter(item => item.id !== start.id && !rawLayoutParentId(item) && item.position).map(item => item.position!), true)
-      : { position: canvasBoundPosition({ ...start.original, x, y }, grownCanvas, false),
+      : { position: canvasBoundPosition({ ...start.original, x, y }, fixedCanvas, false),
           guides: { x: false, y: false } };
     start.x = next.position.x; start.y = next.position.y;
     // CSS translate is independent of the component's authored transform/rotation.
@@ -1278,10 +1277,7 @@ function PageBuilder({
     if (canvasGuideXRef.current) canvasGuideXRef.current.style.display = 'none';
     if (canvasGuideYRef.current) canvasGuideYRef.current.style.display = 'none';
     if (changed) {
-      const canvas=canvasDimensionsForGesture({width:page.canvasWidth,height:page.canvasHeight},
-        {...start.original,x:start.x,y:start.y});
-      applyPage({ ...page, canvasWidth:canvas.width,canvasHeight:canvas.height,
-        components: page.components.map(item =>
+      applyPage({ ...page, components: page.components.map(item =>
         item.id === start.id ? { ...item, position: { ...start.original, x: start.x, y: start.y } } : item) });
     }
   };
@@ -1318,12 +1314,9 @@ function PageBuilder({
     if (!element) return;
     event.preventDefault(); event.stopPropagation(); event.currentTarget.setPointerCapture(event.pointerId);
     const viewport=pagePreviewAreaRef.current;
-    const stage=viewport?.querySelector<HTMLElement>('.free-canvas-stage')??null;
-    const preview=viewport?.querySelector<HTMLElement>('.free-canvas-preview')??null;
     canvasResizeStart.current = { id: component.id, pointerId: event.pointerId, pointerX: event.clientX, pointerY: event.clientY,
       x: component.position.x, y: component.position.y, width: component.position.width, height: component.position.height, edge,
-      element, current: { ...component.position }, viewport, stage, preview,
-      stageHeight:stage?.style.height??'',previewHeight:preview?.style.height??'',
+      element, current: { ...component.position }, viewport,
       scrollStart:viewport?.scrollTop??0,lastX:event.clientX,lastY:event.clientY,
       dragged:false,autoScrollFrame:0 };
     setSelectedId(component.id);
@@ -1345,21 +1338,12 @@ function PageBuilder({
     const dy = canvasUnitsFromScreenDelta(pointerY - start.pointerY + scrollDelta, scale);
     const west = start.edge.includes('w'), east = start.edge.includes('e'), north = start.edge.includes('n'), south = start.edge.includes('s');
     let x = start.x, y = start.y, width = start.width, height = start.height;
-    if (east) width = Math.max(minWidth, Math.min(MAX_CANVAS_EDGE - start.x, start.width + dx));
-    if (south) height = Math.max(minHeight, Math.min(MAX_CANVAS_EDGE - start.y, start.height + dy));
+    if (east) width = Math.max(Math.min(minWidth,page.canvasWidth-start.x), Math.min(page.canvasWidth - start.x, start.width + dx));
+    if (south) height = Math.max(Math.min(minHeight,page.canvasHeight-start.y), Math.min(page.canvasHeight - start.y, start.height + dy));
     if (west) { x = Math.max(0, Math.min(start.x + start.width - minWidth, start.x + dx)); width = start.width + start.x - x; }
     if (north) { y = Math.max(0, Math.min(start.y + start.height - minHeight, start.y + dy)); height = start.height + start.y - y; }
     start.current = { x, y, width, height };
     Object.assign(start.element.style, { left: `${x}px`, top: `${y}px`, width: `${width}px`, height: `${height}px` });
-    // Absolutely positioned shapes do not increase scrollHeight. Provide
-    // temporary drag room inside the preview; commit only the actual bounds.
-    if(start.viewport && start.stage && start.preview && south){
-      const canvas=canvasDimensionsForGesture({width:page.canvasWidth,height:page.canvasHeight},
-        {x,y,width,height});
-      const dragRoom=Math.min(MAX_CANVAS_EDGE,Math.max(canvas.height,y+height+240));
-      start.stage.style.height=`${dragRoom}px`;
-      start.preview.style.height=`${dragRoom*scale}px`;
-    }
   };
   const autoScrollCanvasResize = () => {
     const start=canvasResizeStart.current;
@@ -1390,8 +1374,6 @@ function PageBuilder({
     if (!start || start.pointerId !== event.pointerId) return;
     canvasResizeStart.current = null;
     if(start.autoScrollFrame)window.cancelAnimationFrame(start.autoScrollFrame);
-    if(start.stage)start.stage.style.height=start.stageHeight;
-    if(start.preview)start.preview.style.height=start.previewHeight;
     const size = start.current;
     const changed = !cancelled && (size.x !== start.x || size.y !== start.y || size.width !== start.width || size.height !== start.height);
     if (changed) {
@@ -1400,8 +1382,7 @@ function PageBuilder({
         width: Math.round(size.width), height: Math.round(size.height) };
       Object.assign(start.element.style, { left: `${position.x}px`, top: `${position.y}px`,
         width: `${position.width}px`, height: `${position.height}px` });
-      const canvas=canvasDimensionsForGesture({width:page.canvasWidth,height:page.canvasHeight},position);
-      applyPage({...page,canvasWidth:canvas.width,canvasHeight:canvas.height,
+      applyPage({...page,
         components:page.components.map(item=>item.id===start.id?{...item,position}:item)});
     } else {
       Object.assign(start.element.style, { left: `${start.x}px`, top: `${start.y}px`,
@@ -2366,7 +2347,7 @@ function PageBuilder({
       ...component.properties,
       ...componentLayoutProps(component.properties, device),
       ...(customDefinition?.apiName?.startsWith('smart_') && component.position && page.layoutMode==='free-canvas'
-        ? {width:component.position.width,height:component.position.height}:{}),
+        ? {canvasFrameSized:true}:{}),
       label: customDefinition?.apiName?.startsWith('smart_') && typeof component.properties.label==='string'
         ? component.properties.label : component.label,
       properties: component.properties,
@@ -2488,10 +2469,9 @@ function PageBuilder({
            const x = pos.x + (event.key === 'ArrowLeft' ? -delta : event.key === 'ArrowRight' ? delta : 0);
            const y = pos.y + (event.key === 'ArrowUp' ? -delta : event.key === 'ArrowDown' ? delta : 0);
            const position={...pos,
-             x:Math.max(0,Math.min(MAX_CANVAS_EDGE-pos.width,x)),
-             y:Math.max(0,Math.min(MAX_CANVAS_EDGE-pos.height,y))};
-           const canvas=canvasDimensionsForGesture({width:page.canvasWidth,height:page.canvasHeight},position);
-           applyPage({...page,canvasWidth:canvas.width,canvasHeight:canvas.height,
+             x:Math.max(0,Math.min(page.canvasWidth-pos.width,x)),
+             y:Math.max(0,Math.min(page.canvasHeight-pos.height,y))};
+           applyPage({...page,
              components:page.components.map(item=>item.id===component.id?{...item,position}:item)});
          }
        } : undefined}
@@ -2667,7 +2647,7 @@ function PageBuilder({
                       ...component.properties,
                       ...componentLayoutProps(component.properties, device),
                       ...(customDefinition.apiName.startsWith('smart_') && component.position && page.layoutMode==='free-canvas'
-                        ? {width:component.position.width,height:component.position.height}:{}),
+                        ? {canvasFrameSized:true}:{}),
                       label: component.type.startsWith('Custom:smart_') && typeof component.properties.label === 'string'
                         ? component.properties.label : component.label,
                       properties: component.properties,
