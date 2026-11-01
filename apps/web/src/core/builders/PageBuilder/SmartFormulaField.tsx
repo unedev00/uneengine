@@ -3,7 +3,8 @@ import {createPortal} from 'react-dom';
 import type {FieldMetadata,ObjectMetadata} from '../../metadata/Definitions/metadata';
 import {relationshipFormulaFields} from './relationshipFormulaFields';
 import type {MentionKind} from '../../../component-libraries/shared/primitives/SmartFieldInput/smartFieldMentions';
-import './SmartFormulaField.css';
+// Styles are loaded by the Page Builder entrypoint so this reusable editor
+// can also render in lightweight server-side ribbon contract tests.
 /** Presentation tokenizer; the shared bounded expression evaluator owns semantics.
  * Quoted operators (+ - * / &) and @names are literal strings, never formulas.
  */
