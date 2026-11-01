@@ -493,7 +493,7 @@
 .modern-inspector-tabs button{border:0;border-radius:9px;background:transparent;color:#506077;padding:10px 12px;flex:1;cursor:pointer;font:600 12px system-ui}
 .modern-inspector-tabs button.active{background:#e8f0ff;color:#1557bf}
 .page-stage{position:relative}
-.free-canvas-component.selected{outline:2px solid #4e8df7;outline-offset:2px}
+/* Selection uses the Page Builder's handles; no square outline over a rounded image. */
 @media(max-width:740px){.modern-canvas-layers{left:8px;width:min(244px,calc(100vw - 36px))}}
 @media(prefers-reduced-motion:no-preference){.modern-layer,.modern-inspector-tabs button,.free-canvas-component.selected{transition:background-color .15s ease,box-shadow .15s ease}}
 

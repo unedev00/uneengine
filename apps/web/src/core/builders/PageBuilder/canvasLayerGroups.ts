@@ -36,6 +36,36 @@ export function ungroupCanvasSelection(components: readonly PageComponentMetadat
   });
 }
 
+/** Office-style stacking is scoped to the direct siblings of the selected
+ * component. Children are ordered inside their parent, not against page roots.
+ * Both editor and runtime use the same sibling order. */
+export function canvasSiblingLayerIndex(
+  components: readonly PageComponentMetadata[], id: string
+): number {
+  const selected = components.find(item => item.id === id);
+  if (!selected) return 0;
+  return components.filter(item => parentId(item) === parentId(selected))
+    .findIndex(item => item.id === id) + 1;
+}
+
+/** A command is unavailable when the whole selected group already occupies
+ * the relevant edge. Locked objects cannot be rearranged. */
+export function canMoveCanvasLayer(
+  components: readonly PageComponentMetadata[], id: string,
+  direction: 'front' | 'back' | 'forward' | 'backward'
+): boolean {
+  const selected = components.find(item => item.id === id);
+  if (!selected || selected.properties.editorLocked === true) return false;
+  const siblings = components.filter(item => parentId(item) === parentId(selected));
+  const moving = canvasGroupMembers(siblings,selected);
+  if (moving.some(item => item.properties.editorLocked === true)) return false;
+  const ids = new Set(moving.map(item=>item.id));
+  const first = siblings.findIndex(item => ids.has(item.id));
+  const last = siblings.length-1-siblings.slice().reverse().findIndex(item => ids.has(item.id));
+  if (first < 0 || last < 0) return false;
+  return direction === 'back' || direction === 'backward' ? first > 0 : last < siblings.length-1;
+}
+
 /** Reorder sibling slots only. Grouped members stay together, without changing other parents. */
 export function moveCanvasLayer(
   components: readonly PageComponentMetadata[], id: string, edge: 'front' | 'back'
