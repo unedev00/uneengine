@@ -1,0 +1,117 @@
+/*
+ * Page Builder ribbon geometry — single owner.
+ * Keep component look-and-feel in component styles, but never set the outer
+ * ribbon height, overflow or scrollbar allowance anywhere else.
+ *
+ * The user's section/property widths are supplied by metadata and TSX.
+ * Content stays 114px; the 9px horizontal scrollbar has its own space:
+ *   2px top + 114px content + 2px bottom + 9px scrollbar = 127px.
+ */
+.office-builder-ribbon {
+  --page-ribbon-content-height: 114px;
+  --page-ribbon-scrollbar-height: 9px;
+  --page-ribbon-scroll-strip-height: 127px;
+}
+.office-builder-ribbon[aria-label="Page Builder ribbon"]:not(.is-interactive-preview)
+  #page-builder-tab-content.office-ribbon-content:is([role="tabpanel"]) {
+  box-sizing: border-box !important;
+  display: flex !important;
+  flex-flow: row nowrap !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  gap: 0 !important;
+  width: 100%;
+  height: var(--page-ribbon-scroll-strip-height) !important;
+  min-height: var(--page-ribbon-scroll-strip-height) !important;
+  max-height: var(--page-ribbon-scroll-strip-height) !important;
+  padding: 2px 6px !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  direction: ltr !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: #91a7c5 #edf2f8 !important;
+  scroll-behavior: auto !important;
+}
+.office-builder-ribbon[aria-label="Page Builder ribbon"]:not(.is-interactive-preview)
+  #page-builder-tab-content.office-ribbon-content::-webkit-scrollbar {
+  display: block !important;
+  height: var(--page-ribbon-scrollbar-height) !important;
+}
+.office-builder-ribbon[aria-label="Page Builder ribbon"]:not(.is-interactive-preview)
+  #page-builder-tab-content.office-ribbon-content::-webkit-scrollbar-track {
+  background: #edf2f8 !important;
+}
+.office-builder-ribbon[aria-label="Page Builder ribbon"]:not(.is-interactive-preview)
+  #page-builder-tab-content.office-ribbon-content::-webkit-scrollbar-thumb {
+  background: #91a7c5 !important;
+  border-radius: 8px !important;
+}
+/* Every tab gets exactly the same content height; horizontal widths remain auto. */
+.office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content
+  > :is(.smart-ribbon,.arrange-ribbon,.une-universal-ribbon,
+        .office-ribbon-page-layout-groups,.smart-event-actions-ribbon,
+        .page-unified-actions-ribbon,.office-ribbon-add-library,.office-ribbon-group,
+        .page-builder-advanced-ribbon,.page-builder-advanced-inline) {
+  box-sizing: border-box !important;
+  height: var(--page-ribbon-content-height) !important;
+  min-height: var(--page-ribbon-content-height) !important;
+  max-height: var(--page-ribbon-content-height) !important;
+}
+.office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content
+  > .smart-ribbon {
+  width: max-content !important;
+  min-width: 100% !important;
+  flex: 0 0 auto !important;
+  flex-wrap: nowrap !important;
+}
+.office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content
+  > .office-ribbon-page-layout-groups > .une-sql-home-group {
+  height: var(--page-ribbon-content-height) !important;
+  min-height: var(--page-ribbon-content-height) !important;
+  max-height: var(--page-ribbon-content-height) !important;
+}
+.office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content
+  > .office-ribbon-add-library .office-ribbon-gallery-pages {
+  height: var(--page-ribbon-content-height) !important;
+  min-height: var(--page-ribbon-content-height) !important;
+  max-height: var(--page-ribbon-content-height) !important;
+}
+/* Universal inventory's old 148px strip would otherwise force a taller tab.
+ * The group heading duplicates the bottom caption; retain one label. */
+.office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content
+  > .une-universal-ribbon > .une-universal-ribbon-section {
+  height: var(--page-ribbon-content-height) !important;
+  min-height: var(--page-ribbon-content-height) !important;
+  max-height: var(--page-ribbon-content-height) !important;
+  overflow: hidden !important;
+}
+.office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content
+  > .une-universal-ribbon .une-universal-ribbon-section-heading {
+  display: none !important;
+}
+.office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content
+  > .une-universal-ribbon .une-universal-ribbon-controls {
+  grid-template-rows: repeat(3,26px) !important;
+  height: 90px !important;
+  min-height: 0 !important;
+}
+.office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content
+  > .une-universal-ribbon .une-universal-property {
+  height: 26px !important;
+  min-height: 26px !important;
+  max-height: 26px !important;
+}
+/* An expanded complex editor must scroll INSIDE its section, never resize the ribbon. */
+.office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content
+  > .une-universal-ribbon:has(.une-universal-complex-section) {
+  height: var(--page-ribbon-content-height) !important;
+  min-height: var(--page-ribbon-content-height) !important;
+  max-height: var(--page-ribbon-content-height) !important;
+}
+.office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content
+  .une-universal-complex-section {
+  height: var(--page-ribbon-content-height) !important;
+  min-height: 0 !important;
+  max-height: var(--page-ribbon-content-height) !important;
+  overflow: auto !important;
+}
