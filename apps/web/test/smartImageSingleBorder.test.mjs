@@ -50,3 +50,79 @@ test('Card Grid retains its independently configurable card and image borders', 
   assert.match(native(html,'article'),/border:1px solid #333333/);
   assert.match(native(html,'img'),/border:1px solid #444444/);
 });
+
+
+test('Smart Card Grid keeps every record and derives card height from configured visible rows', () => {
+  for (const rowCount of [1,2,3,6]) {
+    const items=Array.from({length:23},(_,i)=>({Id:'item-'+i,Name:'Product '+(i+1)}));
+    const html=renderToStaticMarkup(React.createElement(SmartRuntime,{
+      kind:'smart_card_grid',records:items,cardsPerRow:3,cardsPerColumn:rowCount,
+      width:640,height:420,gap:10,imageSource:'@ImageUrl',textSource:'@Name'
+    }));
+    assert.equal((html.split('<article').length-1),23,
+      'Rows per column must never discard records');
+    assert.match(html,/height:100%;min-height:0/);
+    assert.ok(html.includes('grid-auto-rows:max(96px, calc((100% - '+(rowCount-1)*10+'px) / '+rowCount+'))'));
+
+    assert.match(html,/overflow-y:auto/);
+  }
+});
+
+test('Card Grid preview shows image, title and badge placeholders but published records do not', () => {
+  const preview=renderToStaticMarkup(React.createElement(SmartRuntime,{
+    kind:'smart_card_grid',records:[],cardsPerRow:3,cardsPerColumn:2,
+    width:640,height:400,previewOnly:true,badgeVisible:true
+  }));
+  assert.equal((preview.split('<article').length-1),6);
+  assert.equal((preview.split('Image here').length-1),6);
+  assert.equal((preview.split('Text here').length-1),6);
+  assert.equal((preview.split('>Badge</span>').length-1),6);
+  const published=renderToStaticMarkup(React.createElement(SmartRuntime,{
+    kind:'smart_card_grid',records:[],cardsPerRow:3,cardsPerColumn:2
+  }));
+  assert.doesNotMatch(published,/Image here|Text here|card-preview-/);
+});
+
+test('Card Grid appearance applies typography, alignment, visible header and image constraints', () => {
+  const html=renderToStaticMarkup(React.createElement(SmartRuntime,{
+    kind:'smart_card_grid',records:[{Id:'1',Name:'Product'}],
+    cardsPerRow:1,cardsPerColumn:1, imageSource:'https://example.com/product.png',
+    textSource:'@Name',textSize:20,labelAlignment:'right',imageHeight:180,
+    headerBoxHeight:48,backgroundColor:'#aabbcc',borderColor:'#334455',
+    imageBorderColor:'#445566',headerBorderColor:'#556677',radius:15
+  }));
+  assert.match(html,/font-size:20px/);
+  assert.match(html,/text-align:right/);
+  assert.match(html,/height:48px/);
+  assert.match(html,/max-height:180px/);
+  assert.match(html,/border:1px solid #334455/);
+  assert.match(html,/border:1px solid #445566/);
+  assert.match(html,/border:1px solid #556677/);
+  assert.match(html,/background:#aabbcc/);
+  const noHeader=renderToStaticMarkup(React.createElement(SmartRuntime,{
+    kind:'smart_card_grid',records:[{Id:'1',Name:'Product'}],textSource:'@Name',headerBoxHeight:0
+  }));
+  assert.doesNotMatch(noHeader,/smart-card-content/);
+});
+
+
+test('Card Grid handles every image placement, zero-height image/header and blank badge',()=>{
+ for(const placement of ['top','bottom','left','right']){
+   const html=renderToStaticMarkup(React.createElement(SmartRuntime,{
+     kind:'smart_card_grid',records:[{Id:'i1',Name:'Product'}],
+     textSource:'@Name',imageSource:'https://example.com/a.png',
+     imagePlacement:placement,imageHeight:100,headerBoxHeight:28,
+     cardsPerRow:1,cardsPerColumn:1,
+     badgeVisible:true,badgeText:''
+   }));
+   assert.match(html,/height:28px/,'Header height must apply to '+placement);
+   assert.doesNotMatch(html,/smart-badge/,'An empty badge must not appear');
+   assert.equal(html.split('<article').length-1,1);
+ }
+ const collapsed=renderToStaticMarkup(React.createElement(SmartRuntime,{
+   kind:'smart_card_grid',records:[{Id:'i1',Name:'Product'}],
+   textSource:'@Name',imageHeight:0,headerBoxHeight:0
+ }));
+ assert.doesNotMatch(collapsed,/smart-card-content|smart-card-image-placeholder/);
+ assert.doesNotMatch(collapsed,/<img /);
+});
