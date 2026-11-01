@@ -15,7 +15,7 @@
   "resize": {
     "defaultWidth": 180,
     "defaultHeight": 48,
-    "minWidth": 96,
+    "minWidth": 32,
     "minHeight": 40
   },
   "propertyDefinitions": [],
