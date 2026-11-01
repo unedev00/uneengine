@@ -479,7 +479,7 @@ function PageBuilder({
         bounds.right>visible.right-gap?bounds.left-visible.left-gap:0;
       const dy=bounds.top<visible.top+gap?bounds.top-visible.top-gap:
         bounds.bottom>visible.bottom-gap?bounds.top-visible.top-gap:0;
-      if(dx||dy)viewport.scrollTo({left:viewport.scrollLeft+dx,top:viewport.scrollTop+dy,behavior:'instant'});
+      if(dx||dy)viewport.scrollTo({left:viewport.scrollLeft+dx,top:viewport.scrollTop+dy,behavior:'auto'});
     });
     return()=>window.cancelAnimationFrame(frame);
   },[page.components,page.layoutMode]);
@@ -1129,10 +1129,19 @@ function PageBuilder({
   const startCanvasMove = (event: React.PointerEvent<HTMLElement>, component: PageComponentMetadata) => {
     if (canvasGroupKey(component) || previewMode || !component.position || isCanvasLocked(component)
       || event.button !== 0 || event.shiftKey || canvasMoveStart.current || canvasResizeStart.current) return;
-    const element = event.currentTarget.closest<HTMLElement>('.free-canvas-component');
     const hit = event.target as Element;
+    // The action grip lives in a top-level portal so it cannot be obscured.
+    // Resolve its authored canvas element explicitly; do not use document-wide
+    // selection or change the component's persisted z-order.
+    const floating=event.currentTarget.closest<HTMLElement>('.canvas-floating-actions-host');
+    const portalGrip=floating?.dataset.canvasActionsFor===component.id
+      && Boolean(hit.closest('.canvas-move-grip'));
+    const element = event.currentTarget.closest<HTMLElement>('.free-canvas-component')
+      ?? (portalGrip?Array.from(pagePreviewAreaRef.current?.querySelectorAll<HTMLElement>(
+        '.free-canvas-component[data-component-id]')??[])
+        .find(candidate=>candidate.dataset.componentId===component.id)??null:null);
     // Avoid starting a parent move from a nested component's pointer event.
-    if (!element || hit.closest('[data-component-id]') !== element) return;
+    if (!element || (!portalGrip && hit.closest('[data-component-id]') !== element)) return;
     if (!hit.closest('.free-canvas-move-edge,.canvas-move-grip') &&
       hit.closest('button,input,select,textarea,a,[contenteditable="true"],.free-canvas-resize-handle,.canvas-element-actions')) return;
     event.preventDefault();
