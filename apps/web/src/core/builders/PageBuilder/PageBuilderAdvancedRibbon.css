@@ -60,3 +60,41 @@
   display:flex;flex-direction:column;gap:3px;justify-content:flex-start;
   min-width:210px;max-width:240px;padding-top:3px;
 }
+
+
+/* Advanced uses the existing page/component editor directly inside the ribbon,
+   not a second modal or a new metadata engine. Only its active section renders. */
+.office-builder-ribbon #page-builder-tab-content.office-ribbon-content:has(>.page-builder-advanced-inline) {
+  box-sizing:border-box!important;display:block!important;overflow:hidden!important;
+  height:235px!important;min-height:235px!important;max-height:235px!important;
+  padding:6px 12px!important;
+}
+.page-builder-advanced-inline{display:grid;grid-template-columns:170px minmax(0,1fr);
+  align-items:stretch;gap:12px;height:100%;min-height:0;width:100%}
+.page-builder-advanced-inline-nav{display:flex;flex-direction:column;gap:7px;
+  padding:3px 12px 3px 0;border-right:1px solid #d5deeb}
+.page-builder-advanced-inline-nav button{font:12px "Segoe UI",Arial,sans-serif;
+  text-align:left;cursor:pointer;border:1px solid #c9d5e5;border-radius:5px;
+  padding:8px 10px;background:#fff;color:#263b57}
+.page-builder-advanced-inline-nav button[aria-pressed=true]{background:#e8f1fd;
+  border-color:#78a5da;color:#144d86;font-weight:600}
+.page-builder-advanced-inline-nav button:disabled{opacity:.5;cursor:not-allowed}
+.page-builder-advanced-inline-body{overflow-y:auto;overflow-x:auto;
+  padding:3px 8px;min-width:0;min-height:0;scrollbar-width:thin}
+.office-builder-ribbon #page-builder-tab-content .page-builder-advanced-inline-host>.properties-panel{display:block!important;
+  position:static!important;width:100%!important;max-width:none!important;
+  height:auto!important;max-height:none!important;overflow:visible!important;padding:0!important}
+.office-builder-ribbon #page-builder-tab-content .page-builder-advanced-inline-host{
+  display:block!important;width:100%;min-width:0;max-width:none;overflow:visible!important}
+.page-builder-advanced-inline-host .properties-panel .form-label{margin:3px 8px 6px 0}
+.smart-filter-dialog header>.page-builder-visibility-modal-actions{display:flex;flex-direction:row;gap:8px;align-items:center}
+.smart-filter-dialog .page-builder-visibility-modal-actions button:disabled{opacity:.5;cursor:not-allowed}
+.smart-filter-dialog .component-visibility-editor>.form-label{max-width:390px}
+.smart-filter-dialog .component-visibility-editor .metadata-array-property{padding:12px;
+  border:1px solid #d8e1ec;border-radius:6px;margin:10px 0}
+@media(max-width:700px){
+  .office-builder-ribbon #page-builder-tab-content.office-ribbon-content:has(>.page-builder-advanced-inline){
+    height:300px!important;min-height:300px!important;max-height:300px!important}
+  .page-builder-advanced-inline{grid-template-columns:135px minmax(0,1fr);gap:6px}
+  .page-builder-advanced-inline-nav{padding-right:6px}
+}

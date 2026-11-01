@@ -462,7 +462,7 @@ test('Page Builder contextual ribbon respects the fixed-height no-scroll contrac
   const actions=await readFile(new URL('PageBuilder/PageBuilderActionRibbon.tsx',root),'utf8');
   assert.doesNotMatch(builder,/ribbonTab==='Filters' && <RibbonFilters/);
   assert.doesNotMatch(builder,/ribbonTab==='Visibility Rules' && <RibbonVisibilityRules/);
-  assert.match(builder,/ribbonTab==='Logic'/);
+  assert.match(builder,/ribbonTab==='Advanced'/);
   assert.match(builder,/ribbonTab==='Preview'/);
   assert.match(builder,/<SmartRibbon/);
   assert.doesNotMatch(builder,/ribbonTab === 'Component Content'/);
@@ -552,7 +552,7 @@ test('Page Builder no longer offers redundant Show component controls', async ()
 test('Page Builder authors shared visibility rules without replacing conditional appearance actions', async () => {
   const builder = await readFile(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
   const ribbon = await readFile(new URL('../src/core/builders/PageBuilder/PageBuilderRibbonStyle.tsx',import.meta.url),'utf8');
-  assert.match(builder,/RibbonVisibilityRules/);
+  assert.match(builder,/PageBuilderVisibilityDialog/);
   assert.doesNotMatch(builder,/Edit visibility rules/);
   assert.doesNotMatch(builder,/allowRecordFields=\{page\.pageType==='Record Page'\}/);
   assert.match(builder,/visibilityRules=|properties\.visibilityRules/);

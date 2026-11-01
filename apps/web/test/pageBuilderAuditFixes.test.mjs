@@ -4,17 +4,15 @@ import {readFileSync} from 'node:fs';
 
 const read = path=>readFileSync(new URL(path,import.meta.url),'utf8');
 
-test('Logic visibility and rule enablement have separate non-overlapping ribbon rows',()=>{
- const css=read('../src/core/builders/PageBuilder/PageBuilderEightTabRibbon.css');
- assert.match(css,/\.preview-visibility-controls\s*\{[^}]*flex-direction:row!important/);
- assert.match(css,/\.preview-visibility-controls>\.office-ribbon-compact-strip\s*\{[^}]*height:90px!important/);
- assert.match(css,/\.preview-visibility-controls \.office-ribbon-mini-group\s*\{[^}]*max-height:90px!important/);
- assert.match(css,/\.ribbon-logic-rules \.office-ribbon-stack\s*\{[^}]*grid-template-rows:repeat\(2,28px\)/);
- assert.match(css,/#page-builder-tab-content\.office-ribbon-content:has\(>\.preview-visibility-group\)/);
+test('View exposes the visibility rule filter dialog without a duplicate Logic ribbon editor',()=>{
  const view=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ assert.match(view,/ribbonTab==='Preview' && <div className="office-ribbon-group preview-visibility-group"/);
  assert.match(view,/Visible on this page<\/label>/);
- const editor=read('../src/core/builders/PageBuilder/PageBuilderRibbonEditors.tsx');
- assert.match(editor,/Enable<\/label>/);
+ assert.match(view,/aria-label="Edit conditional visibility"/);
+ const dialog=read('../src/core/builders/PageBuilder/PageBuilderVisibilityDialog.tsx');
+ assert.match(dialog,/smart-dialog smart-filter-dialog/);
+ assert.match(view,/<PageBuilderVisibilityDialog/);
+ assert.doesNotMatch(view,/ribbonTab==='Logic'/);
 });
 test('Actions picker has room for the entire label and stays Cart-scoped',()=>{
  const css=read('../src/core/builders/PageBuilder/PageBuilderEightTabRibbon.css');
