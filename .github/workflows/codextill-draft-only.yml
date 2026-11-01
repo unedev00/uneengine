@@ -1,4 +1,4 @@
-name: Repair CODEXTILL free-canvas geometry (one time)
+name: Apply CODEXTILL supported visual and Product metadata (one time)
 on:
   push:
     branches: [main]
@@ -6,14 +6,35 @@ on:
       - '.github/workflows/codextill-draft-only.yml'
       - 'scripts/oracle/apply-codextill-draft-only.sh'
   workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/codextill-draft-only.yml'
+      - 'scripts/codextill/**'
 permissions:
   contents: read
 concurrency:
   group: oracle-production-codextill-metadata-only
   cancel-in-progress: false
 jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Check CODEXTILL metadata and price formula
+        run: |
+          set -euo pipefail
+          npm ci
+          npm run build:system --workspace apps/server
+          node scripts/codextill/apply-supported-metadata.mjs --preflight
+          node --import tsx scripts/codextill/verify-price-formula.mjs
   apply:
-    if: github.ref == 'refs/heads/main'
+    needs: validate
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: [self-hosted, linux, ARM64, metadrive-oracle]
     environment: oracle-production
     timeout-minutes: 25
@@ -31,8 +52,9 @@ jobs:
           npm ci
           npm run build:system --workspace apps/server
           bash -n scripts/oracle/apply-codextill-draft-only.sh
-          node apps/server/scripts/fix-codextill-free-canvas.mjs --preflight
-      - name: Fix and independently verify CODEXTILL free-canvas positions
+          node scripts/codextill/apply-supported-metadata.mjs --preflight
+          node --import tsx scripts/codextill/verify-price-formula.mjs
+      - name: Save and read back CODEXTILL supported Smart metadata
         shell: bash
         run: |
           set -euo pipefail
@@ -40,4 +62,14 @@ jobs:
           test "$(uname -m)" = "aarch64"
           sudo -n true
           curl -fsS --max-time 10 https://api.unesolutions.co.uk/api/health | grep -q '"status":"ok"'
-          sudo -n env GITHUB_REPOSITORY="$GITHUB_REPOSITORY" bash scripts/oracle/apply-codextill-draft-only.sh "$GITHUB_WORKSPACE"
+          sudo -n env GITHUB_REPOSITORY="$GITHUB_REPOSITORY" GITHUB_WORKSPACE="$GITHUB_WORKSPACE" bash -c '
+            set -Eeuo pipefail
+            test "$GITHUB_REPOSITORY" = "unedev00/uneengine"
+            test -r /etc/metadrive/production.env
+            set -a
+            source /etc/metadrive/production.env
+            set +a
+            test -n "${DATABASE_URL:-}"
+            cd "$GITHUB_WORKSPACE"
+            node scripts/codextill/apply-supported-metadata.mjs
+          '
