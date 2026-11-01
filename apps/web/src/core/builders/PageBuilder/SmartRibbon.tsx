@@ -6,7 +6,7 @@ import type {ObjectMetadata} from '../../metadata/Definitions/metadata';
 import type {UneRibbonProperty,UneBuilderTab} from './uneBuilderPropertyInventory';
 import RibbonColorPalette from './RibbonColorPalette';
 import {uploadTenantImageFile} from '../ComponentProperties/TenantMediaPicker';
-import {apiRequest} from '../../authentication/Client/authClient';
+import {scopedFieldRule,type ScopedFieldFilter} from '../../pages/PageRuntime/fieldScopedRecordFilters';
 import RecordFilterEditor from '../../../component-libraries/shared/primitives/RecordFilterEditor/RecordFilterEditor';
 import SmartFormulaField from './SmartFormulaField';
 import SmartIconDropdown from './SmartIconDropdown';
@@ -45,15 +45,6 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
      setUploadError(reason instanceof Error?reason.message:'Image upload failed');
    }finally{setUploadBusy(false);}
  };
- const [contextChoices,setContextChoices]=useState<Array<{apiName:string;label:string}>>([]);
- useEffect(()=>{
-  let alive=true;
-  if(tab!=='Data'||!definitions.some(property=>property.id==='contextApiName'))return;
-  void apiRequest<{contexts:Array<{apiName:string;label:string}>}>('/contexts/definitions')
-   .then(result=>{if(alive)setContextChoices(result.contexts);})
-   .catch(()=>{if(alive)setContextChoices([]);});
-  return()=>{alive=false;};
- },[tab,definitions]);
  const [filtersOpen,setFiltersOpen]=useState(false);
  const [filterTarget,setFilterTarget]=useState('Record');
  const [selectedDataField,setSelectedDataField]=useState<string|null>(null);
@@ -102,15 +93,24 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  const object=objects.find(o=>o.apiName===objectName);
  const update=(key:string,value:unknown)=>onChange({...properties,[key]:value});
  const openFilters=(target:string)=>{setFilterTarget(target);setFiltersOpen(true);};
+ const storedFieldFilters=properties.dataFieldFilters;
+ const fieldFilterRule=(id:string)=>scopedFieldRule(storedFieldFilters,id);
+ const updateFieldFilter=(id:string,patch:Partial<ScopedFieldFilter>)=>{
+   if(!/^[A-Za-z][A-Za-z0-9_]{0,127}$/.test(id))return;
+   const existing=storedFieldFilters&&typeof storedFieldFilters==='object'&&!Array.isArray(storedFieldFilters)
+     ?storedFieldFilters as Record<string,unknown>:{};
+   const previous=fieldFilterRule(id)??{filters:[],filterLogic:'AND',filterFormula:''};
+   onChange({...properties,dataFieldFilters:{...existing,[id]:{...previous,...patch}}});
+ };
  const filterCount=Array.isArray(properties.filters)?properties.filters.length:0;
- const firstFilterPropertyId=definitions.find(p=>p.tab==='Data'&&p.kind==='expression')?.id;
  // Keep the global property inventory visible for every selected component.
  // Unsupported controls are disabled by the per-property `supported` check below.
  const compactDesign=true;
  const visible=definitions.filter(p=>p.tab===tab);
  // Keep active-record scope metadata and persisted settings intact, but do not
  // surface its automatic binding switch in any visible ribbon section.
- const displayProperties=visible.filter(p=>p.id!=='autoRecordScope');
+ const displayProperties=visible.filter(p=>p.id!=='autoRecordScope'&&
+   !(tab==='Data'&&p.id==='contextApiName'));
  const groups=[...new Set(displayProperties.map(p=>p.group))];
  const groupOrder=tab==='Data'?['Source','Values','Cart','Cart columns','Cart totals']
   :tab==='Design'?['Body','Shape','Typography','Tabs','Header','Badge','Header Supporting',
@@ -130,6 +130,8 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  const activeDataProperty=tab==='Data'
    ?displayProperties.find(p=>p.id===selectedDataField&&isDataFormula(p)):undefined;
  const activeDataKey=activeDataProperty?.valueKeys?.[api]??activeDataProperty?.id??'';
+ const selectedFieldRule=activeDataProperty?fieldFilterRule(activeDataProperty.id):undefined;
+ const selectedFieldFilterCount=selectedFieldRule?.filters.length??0;
  const activeDataEnabled=Boolean(activeDataProperty&&activeDataProperty.components.includes(api)&&
    (!sharedPropertyIds||sharedPropertyIds.includes(activeDataProperty.id)));
  const activeDataValue=activeDataProperty
@@ -261,7 +263,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
        title={!object?'Choose an Object to configure record filters':'Shared record filters for '+object.label}
        aria-label={'Shared record filters from '+title} aria-haspopup="dialog"
        onClick={()=>openFilters('Record')}><SlidersHorizontal size={16} aria-hidden="true"/>
-       {filterCount>0&&property.id===firstFilterPropertyId&&<span className="smart-filter-count">{filterCount}</span>}</button>
+       {filterCount>0&&<span className="smart-filter-count">{filterCount}</span>}</button>
    </div>;
    else if(tab==='Design'&&property.id==='badgeAlignment')editor=
      <div className="smart-inline-caption-select">
@@ -340,12 +342,6 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
      onClick={()=>write(!(value===true||value==='true'))}>
      <span className="smart-default-check-thumb" aria-hidden="true"/>
    </button>;
-   else if(kind==='choice'&&property.id==='contextApiName')editor=
-    <select className="smart-select" aria-label={title} disabled={!enabled}
-      value={String(value)} onChange={event=>write(event.target.value)}>
-      <option value="">No business Context</option>
-      {contextChoices.map(item=><option key={item.apiName} value={item.apiName}>{item.label}</option>)}
-    </select>;
    else if(kind==='choice'&&Array.isArray(value))editor=<SmartMultiSelect
       label={title} choices={options} value={value.filter((item):item is string=>typeof item==='string')}
       disabled={!enabled} onChange={write}/>;
@@ -383,8 +379,8 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
           aria-label={activeDataProperty?'Filter for '+activeDataProperty.label:'Filter for selected field'}
           title={activeDataProperty?'Record filters: '+activeDataProperty.label:'Select a field first'}
           disabled={!activeDataEnabled||!object} onClick={()=>openFilters(activeDataProperty?.label??'Record')}
-          aria-haspopup="dialog"><SlidersHorizontal size={17}/>{filterCount>0&&
-            <span className="smart-filter-count">{filterCount}</span>}</button>
+          aria-haspopup="dialog"><SlidersHorizontal size={17}/>{activeDataProperty&&selectedFieldFilterCount>0&&
+            <span className="smart-filter-count">{selectedFieldFilterCount}</span>}</button>
         <span className="smart-data-fx-prefix" aria-hidden="true">ƒx</span>
         <div className="smart-data-formula-input">
           {activeDataProperty?<SmartFormulaField key={activeDataProperty.id}
@@ -438,12 +434,12 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
        <button type="button" autoFocus onClick={()=>setFiltersOpen(false)}>Done</button></header>
      <div className="smart-filter-dialog-body">
        {object?<RecordFilterEditor title={object.label+' records'} fields={object.fields??[]} objects={objects} rootObjectApiName={objectName}
-         filters={Array.isArray(properties.filters)?properties.filters:[]}
-         formula={typeof properties.filterFormula==='string'?properties.filterFormula:''}
-         onFormulaChange={filterFormula=>onChange({...properties,filterFormula})}
-         logic={properties.filterLogic==='OR'?'OR':'AND'}
-         onLogicChange={filterLogic=>onChange({...properties,filterLogic})}
-         onChange={filters=>onChange({...properties,filters})}/>:
+         filters={activeDataProperty?(selectedFieldRule?.filters??[]):Array.isArray(properties.filters)?properties.filters:[]}
+         formula={activeDataProperty?(selectedFieldRule?.filterFormula??''):typeof properties.filterFormula==='string'?properties.filterFormula:''}
+         onFormulaChange={filterFormula=>activeDataProperty?updateFieldFilter(activeDataProperty.id,{filterFormula}):onChange({...properties,filterFormula})}
+         logic={activeDataProperty?(selectedFieldRule?.filterLogic??'AND'):properties.filterLogic==='OR'?'OR':'AND'}
+         onLogicChange={filterLogic=>activeDataProperty?updateFieldFilter(activeDataProperty.id,{filterLogic}):onChange({...properties,filterLogic})}
+         onChange={filters=>activeDataProperty?updateFieldFilter(activeDataProperty.id,{filters}):onChange({...properties,filters})}/>:
          <p>Choose an Object first to configure the record conditions.</p>}
      </div>
     </section></div>,document.body)}
