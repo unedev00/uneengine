@@ -26,28 +26,27 @@ export function placeNewCanvasComponent(input:{
  const {canvasWidth,canvasHeight,width,height,used}=input;
  const maxX=Math.max(0,canvasWidth-width),maxY=Math.max(0,canvasHeight-height);
  const v=input.visible??{left:0,top:0,right:canvasWidth,bottom:canvasHeight};
- const targetX=clamp(Math.round(v.left+16),maxX);
- const targetY=clamp(Math.round(v.top+16),maxY);
+ // Place at the centre of the *screenful the user is looking at*, not
+ // the centre or the top of the full authored page.
+ const targetX=clamp(Math.round((v.left+v.right-width)/2),maxX);
+ const targetY=clamp(Math.round((v.top+v.bottom-height)/2),maxY);
  const clear=(x:number,y:number)=>used.every(item=>
   x+width<=item.x||item.x+item.width<=x||
   y+height<=item.y||item.y+item.height<=y);
- const positions=(max:number,target:number)=>{
-  const choices=new Set<number>([target,clamp(24,max),0,max]);
-  // Small increments within visible area; coarser samples limit search cost
-  // when the authored canvas is very large.
-  const step=max>2400?64:24;
-  for(let n=0;n<=max;n+=step)choices.add(n);
+ // Never search distant off-screen rows merely because the visible area is
+ // occupied. Prefer an unoccupied position nearest the visible centre.
+ const positions=(start:number,end:number,max:number,target:number)=>{
+  const low=Math.max(0,Math.ceil(start)),high=Math.min(max,Math.floor(end));
+  if(low>high)return [target]; // Small viewport: centre with partial visibility.
+  const choices=new Set<number>([Math.max(low,Math.min(high,target)),low,high]);
+  const step=high-low>2400?64:24;
+  for(let n=low;n<=high;n+=step)choices.add(n);
   return [...choices].sort((a,b)=>Math.abs(a-target)-Math.abs(b-target));
  };
- const xs=positions(maxX,targetX),ys=positions(maxY,targetY);
- // First try to keep the whole block within the user's viewport.
- for(const y of ys)for(const x of xs){
-  if(x<v.left-8||y<v.top-8||x+width>v.right+8||y+height>v.bottom+8)continue;
-  if(clear(x,y))return{x,y};
- }
- // If visible space is occupied, find the nearest free place. The caller will
- // pan to it, making insertion immediately discoverable.
+ const xs=positions(v.left,v.right-width,maxX,targetX);
+ const ys=positions(v.top,v.bottom-height,maxY,targetY);
  for(const y of ys)for(const x of xs)if(clear(x,y))return{x,y};
- // Very crowded canvases still insert visibly, with normal Arrange tools.
+ // A full viewport is still the user's insertion target; overlapping here is
+ // more predictable than silently adding a component at the far end of a page.
  return{x:targetX,y:targetY};
 }
