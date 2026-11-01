@@ -766,7 +766,7 @@ test('Arrange respects topmost DOM order and directional single-step commands',a
  const css=await readFile(new URL('../src/core/builders/PageBuilder/SmartCanvasHandles.css',import.meta.url),'utf8');
  assert.match(ribbon,/Bring forward'[^\n]*onMove\(1\)/);
  assert.match(ribbon,/Send backward'[^\n]*onMove\(-1\)/);
- assert.match(view,/\{'--canvas-layer-order':index\+1,zIndex:index\+1\}/);
+ assert.match(view,/'--canvas-layer-order':canvasSiblingLayerIndex\(page\.components,component\.id\)/);
  assert.match(css,/z-index:var\(--canvas-layer-order,0\)!important/);
  assert.doesNotMatch(css,/z-index:1000!important/);
  const a=canvasFixture('a',0),b=canvasFixture('b',10),c=canvasFixture('c',20);
