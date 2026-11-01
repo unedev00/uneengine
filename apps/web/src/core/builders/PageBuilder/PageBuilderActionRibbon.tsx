@@ -191,7 +191,7 @@ export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,
       <span className="office-ribbon-group-heading">Component Custom</span>
     </section>
     <section
-      className="office-ribbon-mini-group page-action-formula-group" data-inactive={!active||kind!=='AdjustNumber'
+      className="office-ribbon-mini-group page-action-formula-group" data-inactive={!active||kind!=='AdjustNumber'}
       aria-label="Editable quantity action formulas">
       <div className="page-action-formula-rows">
         <label><span>+ fx</span><SmartFormulaField
