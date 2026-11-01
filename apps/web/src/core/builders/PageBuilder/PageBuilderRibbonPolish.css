@@ -1,3 +1,4 @@
+/* Outer ribbon height/overflow/scrollbar geometry is owned by PageBuilderRibbonLayout.css. */
 /* Page Builder ribbon polish — loaded LAST (see pageBuilderView.tsx).
    Presentation only: no metadata, property keys or actions are changed here.
    Office-style compact property ribbon: label left, small fixed-size control
@@ -15,10 +16,6 @@
 }
 
 /* ── Scroll strip: arrows only, never over content ── */
-.office-builder-ribbon #page-builder-tab-content:has(>.une-universal-ribbon){
-  scrollbar-width:none!important;padding:3px 30px!important;scroll-padding-inline:30px;
-}
-.office-builder-ribbon #page-builder-tab-content:has(>.une-universal-ribbon)::-webkit-scrollbar{display:none!important}
 .office-builder-ribbon .office-ribbon-group-navigation button{width:24px;height:34px;border-radius:4px;box-shadow:0 1px 3px #0b254a24}
 .office-builder-ribbon .office-ribbon-group-navigation button:focus-visible{outline:2px solid var(--rb-accent);outline-offset:1px}
 
@@ -115,9 +112,6 @@
 }
 
 /* Data tab: visible left-to-right scrollbar and fixed ribbon height. */
-.office-builder-ribbon #page-builder-tab-content:has(>.une-universal-ribbon){scrollbar-width:thin!important;scrollbar-color:#9aaec8 transparent!important;overflow-x:auto!important;overflow-y:hidden!important;height:158px!important;min-height:158px!important;max-height:158px!important;direction:ltr!important;padding:3px 8px!important}
-.office-builder-ribbon #page-builder-tab-content:has(>.une-universal-ribbon)::-webkit-scrollbar{display:block!important;height:9px!important}
-.office-builder-ribbon #page-builder-tab-content:has(>.une-universal-ribbon)::-webkit-scrollbar-thumb{background:#9aaec8;border-radius:8px}
 
 /* All UNE applications own their properties. Never render duplicate SQL/ribbon
    property editors over an existing application component. Shared tenant-built
@@ -164,10 +158,3 @@
 
 /* Explicit LTR scroll for the universal inventory; do not suppress property
    controls when their SQL groups exceed the available ribbon width. */
-.office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content:has(>.une-universal-ribbon){
- direction:ltr!important;overflow-x:auto!important;overflow-y:hidden!important;
- scrollbar-width:thin!important;scrollbar-color:#91a7c5 #edf2f8!important;
-}
-.office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content:has(>.une-universal-ribbon)::-webkit-scrollbar{
- display:block!important;height:9px!important;
-}
