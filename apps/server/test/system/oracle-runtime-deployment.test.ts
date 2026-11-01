@@ -173,7 +173,11 @@ test('failed MCP unit cleanup is bounded, only touches failed broker instances, 
  const installer=readFileSync(mcpInstaller,'utf8');
  const recovery=readFileSync(managerRecovery,'utf8');
  const workflowSource=readFileSync(workflow,'utf8');
- assert.ok(cleanup.includes('systemctl list-units --all --failed'));
+ assert.ok(cleanup.includes('systemctl list-units --all --plain --no-legend --no-pager'));
+ assert.ok(cleanup.includes('head -n "$batch"'));
+ assert.ok(cleanup.includes('loaded failed failed'));
+ assert.ok(cleanup.includes('max_passes=240'));
+ assert.ok(!cleanup.includes("list-units --all --failed"),'avoid a full failed-unit listing on overloaded systemd');
  assert.ok(cleanup.includes('systemctl reset-failed --'));
  assert.ok(cleanup.includes('batch=96'));
  assert.ok(cleanup.includes('CollectMode=inactive-or-failed'));
