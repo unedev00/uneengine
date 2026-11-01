@@ -3155,6 +3155,7 @@ function PageBuilder({
               api={selected.type.slice(7)} definitions={ribbonCatalog.properties}
               properties={selected.properties} objects={objects} pageObjectApiName={page.targetObject}
               sharedPropertyIds={ribbonSharedPropertyIds} mixedPropertyIds={ribbonMixedPropertyIds}
+              selectedApis={ribbonSelectedMembers.map(item=>item.type.startsWith('Custom:')?item.type.slice(7):item.type)}
               onChange={(properties:Record<string,unknown>)=>{
                 if(ribbonSelectedMembers.length>1){
                   const tab=ribbonTab==='Component Data'?'Data':ribbonTab==='Component Layout'?'Layout':'Design';
