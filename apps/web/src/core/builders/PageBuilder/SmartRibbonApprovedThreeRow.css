@@ -1,20 +1,10 @@
+/* Outer ribbon height/overflow/scrollbar geometry is owned by PageBuilderRibbonLayout.css. */
 /* Approved 26px / three-row Design ribbon. SQL supplies each item's row,
  * order and full control width. Section widths are the maximum of the THREE rows,
  * never the sum of all controls. The existing left/right ribbon arrows navigate
  * horizontal overflow. No vertical wrapping or forced third row is permitted.
  * Other tabs continue to use their existing ribbon CSS.
  */
-.office-builder-ribbon #page-builder-tab-content.office-ribbon-content:has(>.smart-ribbon[data-three-row="true"]){
- box-sizing:border-box!important;
- display:flex!important;flex-flow:row nowrap!important;
- height:118px!important;min-height:118px!important;max-height:118px!important;
- padding:2px 6px!important;
- overflow-x:hidden!important;overflow-y:hidden!important;
- scrollbar-width:none!important;background:var(--page-ribbon-bg,#f3f5f7)!important;
-}
-.office-builder-ribbon #page-builder-tab-content.office-ribbon-content:has(>.smart-ribbon[data-three-row="true"])::-webkit-scrollbar{
- display:none!important;
-}
 .office-builder-ribbon #page-builder-tab-content>.smart-ribbon[data-compact-design="true"][data-three-row="true"]{
  box-sizing:border-box!important;display:flex!important;
  flex:0 0 auto!important;flex-flow:row nowrap!important;
@@ -263,10 +253,6 @@
 }
 
 /* Page and Canvas: one 114px content strip, matching the three-row Design ribbon. */
-.office-builder-ribbon #page-builder-tab-content.office-ribbon-content:has(>.office-ribbon-page-layout-groups){
- height:118px!important;min-height:118px!important;max-height:118px!important;
- padding:2px 32px 2px 6px!important;overflow-x:hidden!important;overflow-y:hidden!important;
-}
 .office-builder-ribbon #page-builder-tab-content>.office-ribbon-page-layout-groups{
  height:114px!important;min-height:114px!important;max-height:114px!important;
 }
@@ -437,18 +423,6 @@
 /* Horizontal overflow is intentional across all three-row tabs. This selector
    matches the original :has() specificity; the scrollbar cannot be suppressed
    by the earlier Design geometry rule. */
-.office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content:has(>.smart-ribbon[data-three-row="true"]){
- overflow-x:auto!important;overflow-y:hidden!important;
- scrollbar-width:thin!important;scrollbar-color:#91a7c5 #edf2f8!important;
- height:127px!important;min-height:127px!important;max-height:127px!important;
- padding:2px 6px 11px!important;direction:ltr!important;
-}
-.office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content:has(>.smart-ribbon[data-three-row="true"])::-webkit-scrollbar{
- display:block!important;height:9px!important;
-}
-.office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content:has(>.smart-ribbon[data-three-row="true"])::-webkit-scrollbar-thumb{
- background:#91a7c5!important;border-radius:8px!important;
-}
 
 /* Compact Layout's SQL-backed Page controls as well as the shared Design rows.
  * Geometry only: do not change background, fill, border or disabled colours.
