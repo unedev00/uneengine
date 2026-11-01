@@ -10,6 +10,7 @@ import RecordFilterEditor from '../../../component-libraries/shared/primitives/R
 import SmartFormulaField from './SmartFormulaField';
 import SmartIconDropdown from './SmartIconDropdown';
 import SmartMultiSelect from './SmartMultiSelect';
+import SmartIconGallery from './SmartIconGallery';
 import './SmartRibbon.css';
 import './SmartRibbonApprovedThreeRow.css';
 type Position={x:number;y:number;width:number;height:number};
@@ -17,7 +18,7 @@ type Props={tab:UneBuilderTab;api:string;definitions:readonly UneRibbonProperty[
  onChange:(next:Record<string,unknown>)=>void;objects:readonly ObjectMetadata[];pageObjectApiName?:string;
  position?:Position;onPositionChange?:(next:Position)=>void;layoutMode:string;
  /** For grouped/multiple components, expose only the intersection of SQL properties. */
- sharedPropertyIds?:readonly string[];mixedPropertyIds?:readonly string[]};
+ sharedPropertyIds?:readonly string[];mixedPropertyIds?:readonly string[];selectedApis?:readonly string[]};
 const weekdays=[['sun','Sun'],['mon','Mon'],['tue','Tue'],['wed','Wed'],['thu','Thu'],['fri','Fri'],['sat','Sat']] as const;
 const fallback=(value:unknown)=>typeof value==='string'?value:'';
 const cartSummaryLabels:Record<string,{key:string;slot:string}>={
@@ -26,7 +27,7 @@ const cartSummaryLabels:Record<string,{key:string;slot:string}>={
  taxValue:{key:'taxLabel',slot:'Summary 3'},
  discountValue:{key:'discountLabel',slot:'Summary 4'}
 };
-export default function SmartRibbon({tab,api,definitions,properties,onChange,objects,pageObjectApiName='',position,onPositionChange,layoutMode,sharedPropertyIds,mixedPropertyIds}:Props){
+export default function SmartRibbon({tab,api,definitions,properties,onChange,objects,pageObjectApiName='',position,onPositionChange,layoutMode,sharedPropertyIds,mixedPropertyIds,selectedApis}:Props){
  const uploadInput=useRef<HTMLInputElement>(null);
  const [uploadBusy,setUploadBusy]=useState(false);
  const [uploadError,setUploadError]=useState('');
@@ -99,7 +100,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  const groupOrder=tab==='Data'?['Source','Values','Cart','Cart columns','Cart totals']
   :tab==='Design'?['Body','Typography','Tabs','Header','Badge','Header Supporting',
     'Table','Row','Summary','Summary 2']
-  :tab==='Layout'?['Size & Position','Tabs','Cards','Navigation','Calendar','Image','Icon']
+  :tab==='Layout'?['Size & Position','Shape','Tabs','Cards','Navigation','Calendar','Image','Icon']
   :[];
  const sections=[...groupOrder.filter(group=>groups.includes(group)),
   ...groups.filter(group=>!groupOrder.includes(group))];
@@ -168,7 +169,11 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    const hasNumericIcon=(kind==='number'||kind==='position')&&
      (isTextSize||isCorner||isWidth||isHeight);
    let editor;
-   if(property.id==='imageSource'&&supported){
+   if(property.id==='shapeId')editor=<SmartIconGallery value={String(value||'shape:rectangle')}
+     disabled={!enabled} allowIcons={(selectedApis?.length?selectedApis:[api]).every(member=>
+       (property.choicesOverrides?.[member]??property.choices??[]).includes('icons'))}
+     onChange={write}/>;
+   else if(property.id==='imageSource'&&supported){
      // The source is always editable: any direct or nested lookup reference
      // is resolved by the shared metadata engine, never by an image-name list.
      editor=<div className="smart-formula-filter smart-image-source-editor">

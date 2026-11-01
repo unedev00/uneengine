@@ -856,6 +856,7 @@ function PageBuilder({
       categories: ['Layout'] as (typeof pageBuilderPaletteCategories)[number][]
     }] : []),
     ...libraryComponents.filter(component=>isUneBuilderApi(component.apiName,ribbonCatalog?.components??[])
+      &&component.apiName!=='smart_icon' // Legacy instances stay registered; new pages use Button + Shape.
       &&component.status!=='Draft'&&!RETIRED_UNE_PAGE_BUILDER_COMPONENTS.has(component.apiName)).map(component=>({
       id:'Custom:'+component.apiName,
       type:'Custom:'+component.apiName,
@@ -3184,6 +3185,7 @@ function PageBuilder({
               api={selected.type.slice(7)} definitions={ribbonCatalog.properties}
               properties={selected.properties} objects={objects} pageObjectApiName={page.targetObject}
               sharedPropertyIds={ribbonSharedPropertyIds} mixedPropertyIds={ribbonMixedPropertyIds}
+              selectedApis={ribbonSelectedMembers.map(item=>item.type.startsWith('Custom:')?item.type.slice(7):item.type)}
               onChange={(properties:Record<string,unknown>)=>{
                 if(ribbonSelectedMembers.length>1){
                   const tab=ribbonTab==='Component Data'?'Data':ribbonTab==='Component Layout'?'Layout':'Design';
