@@ -73,7 +73,7 @@
 }
 .office-builder-ribbon #page-builder-tab-content .smart-data-sections .smart-ribbon-row{
   box-sizing:border-box!important;display:flex!important;flex:0 0 26px!important;
-  flex-direction:row!important;align-items:center!important;gap:4px!important;
+  flex-direction:row!important;align-items:center!important;gap:2px!important;
   height:26px!important;min-height:26px!important;width:max-content!important;
   white-space:nowrap!important;margin:0!important;padding:0!important;
 }
@@ -139,4 +139,30 @@
 .office-builder-ribbon #page-builder-tab-content .smart-data-sections
  .smart-property[data-property="defaultCheck"] .smart-default-check-switch{
   flex:0 0 auto!important;margin-left:auto!important;
+}
+
+/* Cart's final boundary is not a section separator. Keep the Source and
+ * Values separators, but never draw a trailing rule after Cart. */
+.office-builder-ribbon #page-builder-tab-content .smart-data-sections
+  >.smart-ribbon-group[aria-label="Cart"],
+.office-builder-ribbon #page-builder-tab-content .smart-data-sections
+  >.smart-ribbon-group:last-child{
+  border-right:0!important;
+}
+/* The generic multiselect used a fixed 155px width, overriding the SQL 105px
+ * track and spilling past the Cart boundary. Both levels must share the
+ * metadata-owned width; the 171px dropdown remains fully visible. */
+.office-builder-ribbon #page-builder-tab-content .smart-data-sections
+  .smart-property[data-property="columnVisibility"] .smart-multiselect,
+.office-builder-ribbon #page-builder-tab-content .smart-data-sections
+  .smart-property[data-property="columnVisibility"] .smart-multiselect-trigger{
+  box-sizing:border-box!important;
+  display:flex!important;align-items:center!important;
+  flex:1 1 auto!important;
+  width:100%!important;min-width:0!important;max-width:100%!important;
+  height:26px!important;min-height:26px!important;max-height:26px!important;
+}
+.office-builder-ribbon #page-builder-tab-content .smart-data-sections
+  .smart-property[data-property="columnVisibility"] .smart-multiselect-trigger>span{
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
