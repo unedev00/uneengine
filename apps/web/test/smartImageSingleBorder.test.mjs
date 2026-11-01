@@ -74,13 +74,13 @@ test('Card Grid preview shows image, title and badge placeholders but published 
     width:640,height:400,previewOnly:true,badgeVisible:true
   }));
   assert.equal((preview.split('<article').length-1),6);
-  assert.equal((preview.split('Image here').length-1),6);
+  assert.equal((preview.split('Image Here').length-1),6);
   assert.equal((preview.split('Text here').length-1),6);
   assert.equal((preview.split('>Badge</span>').length-1),6);
   const published=renderToStaticMarkup(React.createElement(SmartRuntime,{
     kind:'smart_card_grid',records:[],cardsPerRow:3,cardsPerColumn:2
   }));
-  assert.doesNotMatch(published,/Image here|Text here|card-preview-/);
+  assert.doesNotMatch(published,/Image Here|Text here|card-preview-/);
 });
 
 test('Card Grid appearance applies typography, alignment, visible header and image constraints', () => {
