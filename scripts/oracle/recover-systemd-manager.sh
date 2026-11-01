@@ -53,21 +53,32 @@ marker=/run/lock/metadrive-systemd-manager-reexec-once
   fi
   echo 'Oracle manager reload still blocked after D-Bus reconnect.' >&2
  fi
- # Failed socket-activated MCP broker instances can hold unit references after
- # thousands of requests. Reset only this template's FAILED states once per boot.
- # Never stop/restart the API, worker, broker socket or PID 1 here.
+ # Socket-activated MCP broker instances can leave failed transient units in
+ # systemd. Reset *only* their failed state; no running unit is stopped or
+ # restarted, no services or files are deleted, and no signal is sent to PID 1.
+ # This low-risk cleanup may be retried by a later deployment even if the
+ # once-per-boot *manager reexecution* and D-Bus reconnect guards are spent.
+ # Keep the original GC marker for audit, but do not let it permanently block a
+ # harmless reset-failed attempt after the host has had time to drain requests.
  gc_marker=/run/lock/metadrive-systemd-manager-mcp-gc-once
- if ( set -C; printf 'one bounded broker unit GC\\n' > "$gc_marker" ) 2>/dev/null; then
-  echo 'Clearing failed MCP broker unit state and attempting one longer reload.'
-  timeout 15 systemctl reset-failed 'metadrive-mcp-broker@*.service' || true
-  if timeout 150 systemctl daemon-reload; then
-   systemctl is-active --quiet metadrive-api.service
-   systemctl is-active --quiet metadrive-worker.service
-   echo 'Oracle systemd manager reload recovered after broker unit cleanup.'
-   exit 0
-  fi
-  echo 'Oracle daemon-reload remains blocked after broker state cleanup.' >&2
+ if ( set -C; printf 'bounded broker failed-state cleanup\\n' > "$gc_marker" ) 2>/dev/null; then
+  echo 'First failed MCP broker cleanup this boot.'
+ else
+  echo 'Retrying non-disruptive failed MCP broker cleanup; manager signal guards remain enforced.'
  fi
+ if ! timeout 20 systemctl reset-failed 'metadrive-mcp-broker@*.service'; then
+  # No failed broker instances or a busy manager must not prevent probing a
+  # recovered daemon. The reload and service health gates remain mandatory.
+  echo 'Failed broker cleanup unavailable or no instances matched; checking reload.' >&2
+ fi
+ echo 'Attempting bounded systemd reload after failed broker unit cleanup.'
+ if timeout 150 systemctl daemon-reload; then
+  timeout 8 systemctl is-active --quiet metadrive-api.service
+  timeout 8 systemctl is-active --quiet metadrive-worker.service
+  echo 'Oracle systemd manager reload recovered after failed broker unit cleanup.'
+  exit 0
+ fi
+ echo 'Oracle daemon-reload remains blocked after broker state cleanup.' >&2
  diagnose_reload_failure
  exit 1
 }
