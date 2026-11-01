@@ -66,18 +66,19 @@ marker=/run/lock/metadrive-systemd-manager-reexec-once
  else
   echo 'Retrying non-disruptive failed MCP broker cleanup; manager signal guards remain enforced.'
  fi
- if timeout 20 systemctl reset-failed 'metadrive-mcp-broker@*.service'; then
-  echo 'Attempting bounded systemd reload after failed broker unit cleanup.'
-  if timeout 150 systemctl daemon-reload; then
-   timeout 8 systemctl is-active --quiet metadrive-api.service
-   timeout 8 systemctl is-active --quiet metadrive-worker.service
-   echo 'Oracle systemd manager reload recovered after failed broker unit cleanup.'
-   exit 0
-  fi
-  echo 'Oracle daemon-reload remains blocked after broker state cleanup.' >&2
- else
-  echo 'Failed broker state could not be reset; deployment remains blocked.' >&2
+ if ! timeout 20 systemctl reset-failed 'metadrive-mcp-broker@*.service'; then
+  # No failed broker instances or a busy manager must not prevent probing a
+  # recovered daemon. The reload and service health gates remain mandatory.
+  echo 'Failed broker cleanup unavailable or no instances matched; checking reload.' >&2
  fi
+ echo 'Attempting bounded systemd reload after failed broker unit cleanup.'
+ if timeout 150 systemctl daemon-reload; then
+  timeout 8 systemctl is-active --quiet metadrive-api.service
+  timeout 8 systemctl is-active --quiet metadrive-worker.service
+  echo 'Oracle systemd manager reload recovered after failed broker unit cleanup.'
+  exit 0
+ fi
+ echo 'Oracle daemon-reload remains blocked after broker state cleanup.' >&2
  diagnose_reload_failure
  exit 1
 }
