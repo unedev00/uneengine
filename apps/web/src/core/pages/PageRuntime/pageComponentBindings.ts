@@ -288,7 +288,7 @@ export function pageComponentRecordQuery(
  if(combined.length>20)return {blocked:true,serverFilterable:false,error:'At most 20 combined record filters are supported'};
  const existing=regular.length?(base.filterLogic??regular.map((_,i)=>String(i+1)).join(' AND ')):'';
  const compiled=extra.filterLogic??extra.filters.map((_,i)=>String(i+1)).join(' AND ');
- const shifted=compiled.replace(/\\b\\d+\\b/g,num=>String(Number(num)+regular.length));
+ const shifted=compiled.replace(/\b\d+\b/g,num=>String(Number(num)+regular.length));
  return {blocked:false,serverFilterable:true,filters:combined,
   filterLogic:existing?'('+existing+') AND ('+shifted+')':shifted};
 }
