@@ -5,72 +5,73 @@ import {readFileSync} from 'node:fs';
 const read=path=>readFileSync(new URL(path,import.meta.url),'utf8');
 const page=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
 const advanced=read('../src/core/builders/PageBuilder/PageBuilderAdvancedSections.tsx');
+const layout=read('../src/core/builders/PageBuilder/PageBuilderRibbonLayout.css');
 const dialog=read('../src/core/builders/PageBuilder/PageBuilderVisibilityDialog.tsx');
-const responsive=read('../src/core/builders/PageBuilder/PageBuilderAdvancedResponsive.tsx');
-const css=read('../src/core/builders/PageBuilder/PageBuilderAdvancedRibbon.css');
 
 test('View owns visibility conditions and reuses the record filter dialog shell',()=>{
  assert.match(page,/'Component Layout','Arrange','Component Action','Advanced','Preview'/);
- assert.doesNotMatch(page,/ribbonTab==='Logic'/);
- assert.match(page,/ribbonTab==='Preview' && <div className="office-ribbon-group preview-visibility-group"/);
  assert.match(page,/aria-label="Edit conditional visibility"/);
  assert.match(page,/onClick=\{openVisibilityEditor\}/);
  assert.match(page,/<PageBuilderVisibilityDialog/);
  assert.match(dialog,/smart-dialog smart-filter-dialog/);
  assert.match(dialog,/<ComponentVisibilityEditor rules=\{rules\}/);
  assert.match(dialog,/validateVisibilityRule\(rules/);
- assert.match(page,/onApply=\{applyVisibilityEditor\}/);
 });
 
-test('Activation and advanced property editors render inline without a popup',()=>{
+test('Advanced is five permanently rendered ribbon groups, never button navigation or modal inspector',()=>{
+ for(const section of ['Activation Assignments','Responsive Settings','Advanced Properties','Component Nesting','Technical Details'])
+   assert.ok(advanced.includes('aria-label="'+section+'"'),section);
  assert.match(page,/ribbonTab==='Advanced' && <PageBuilderAdvancedSections/);
- assert.match(advanced,/Activation assignments/);
- assert.match(advanced,/Advanced properties/);
- assert.match(advanced,/page-builder-advanced-inline-host/);
- assert.match(advanced,/ref=\{onInspectorHost\}/);
+ assert.doesNotMatch(advanced,/<button[^>]+onClick=\{\(\)=>onSelect/);
+ assert.doesNotMatch(advanced,/page-builder-advanced-inline-nav/);
+ assert.doesNotMatch(advanced,/page-builder-advanced-inline-host/);
+ assert.doesNotMatch(page,/advancedEditor==='nesting' && selected/);
+ assert.doesNotMatch(page,/<PageBuilderAdvancedResponsive properties=\{selected.properties\}/);
  assert.doesNotMatch(page,/modal page-builder-advanced-dialog/);
- assert.match(advanced,/Component nesting/);
- assert.match(advanced,/section==='recordPage'/);
- assert.match(page,/className="page-builder-advanced-nesting"/);
- assert.match(page,/advancedEditor==='nesting' && selected/);
- assert.match(page,/advancedEditor!=='assignments' && <>/);
- assert.match(page,/activationAssignments/);
- assert.match(css,/page-builder-advanced-inline-body/);
 });
 
-test('Distinct responsive overrides and flow-bound details stay accessible',()=>{
- assert.match(advanced,/Responsive settings/);
- assert.match(page,/<PageBuilderAdvancedResponsive properties=\{selected.properties\} device=\{currentRibbonDevice\}/);
- assert.match(page,/advancedEditor==='properties' && selected && <MetadataComponentProperties/);
- assert.match(page,/mode="details"/);
- for(const symbol of ['responsiveNumberFields','responsiveOptionFields',
-  'layoutSettings','updateLayoutSettings'])assert.ok(responsive.includes(symbol),symbol);
- assert.match(responsive,/onChange\(updateLayoutSettings\(properties,device,key,value\)\)/);
- assert.doesNotMatch(responsive,/responsiveColorFields\.map/);
- assert.match(responsive,/deviceDimensions\.map/);
- assert.match(responsive,/deviceArrangement\.map/);
- assert.match(responsive,/if\(device==='Base'\)return/);
+test('Every mock Advanced property has a fixed slot and remains visible when disabled',()=>{
+ const fields=[
+  'assigned','default','role','app',
+  'device-0','device-1','device-2','breakpoint','columns',
+  'api-name','css-class','visible','readonly',
+  'accept','child-types','max-children','parent',
+  'component-id','object','render-mode'
+ ];
+ for(const key of fields){
+   assert.ok(advanced.includes('advanced-'+key),key);
+   assert.match(layout,new RegExp('advanced-'+key+'[^\n]*\\{left:[0-9]+px;top:[0-9]+px;width:[0-9]+px\\}'),
+     key+' geometry');
+ }
+ for(const group of ['activation','responsive','properties','nesting','technical'])
+   assert.ok(layout.includes('advanced-fixed-group.advanced-'+group),group);
+ assert.match(layout,/width:1641px!important;min-width:1641px!important;max-width:1641px!important/);
+ assert.match(layout,/height:114px!important;min-height:114px!important;max-height:114px!important/);
+ assert.match(layout,/top:92px;height:22px/);
+ assert.match(layout,/advanced-fixed-field.*input:disabled/s);
+});
+
+test('Existing page handlers own assignments, visibility, grid count, and safe reparenting',()=>{
+ for(const action of [
+  'addRecordAssignment()','addHomeAssignment()',
+  'setRecordProfileId(value)','setHomeProfileId(value)',
+  'setRecordAppId(value)','setHomeAppId(value)',
+  'setRecordFormFactors(toggle)','setHomeFormFactors(toggle)',
+  'cardsPerRow:value','visible:value','readOnlyOnLayout:value',
+  'layoutContainer:value','canNest(page.components,selected.id,parent)',
+  'reparentComponent(page.components,selected.id,parent)',
+  'customTargetMinWidth:value'
+ ])assert.ok(page.includes(action),action);
+ assert.match(advanced,/disabled=\{!responsive\.canBreakpoint\}/);
+ assert.match(advanced,/disabled=\{!responsive\.canColumns\}/);
+ assert.match(advanced,/disabled=\{!nesting\.canChange\}/);
+ assert.match(advanced,/disabled title="Custom CSS class is not supported/);
+ assert.match(advanced,/disabled title="Per-container allowed child types is not supported/);
+ assert.match(advanced,/disabled\s+title="Maximum child count is not supported/);
  assert.doesNotMatch(advanced,/fetch\(|request\(|localStorage|INSERT INTO/);
 });
 
-test('Preserves global Actions and record-page metadata editing',()=>{
- assert.match(page,/<PageBuilderActionRibbon/);
- assert.match(advanced,/section==='recordPage'/);
- assert.match(page,/reparentComponent\(page\.components,selected\.id,parent\)/);
-});
-
-
-test('all five Advanced sections stay reachable inline, not through a separate modal',()=>{
- for(const section of ['assignments','properties','responsive','nesting','recordPage'])
-  assert.match(advanced,new RegExp("section==='"+section+"'"));
- assert.match(advanced,/section==='recordPage'\?'Record page settings'/);
- assert.doesNotMatch(page,/modal page-builder-advanced-dialog/);
- assert.match(page,/ribbonTab==='Advanced' && <PageBuilderAdvancedSections/);
- assert.match(page,/reparentComponent\(page\.components,selected\.id,parent\)/);
-});
-
-test('Arrange nesting opens the Advanced tab rather than a removed modal',()=>{
+test('Arrange nesting activates Advanced tab without a popup',()=>{
  assert.match(page,/onNesting=\{\(\)=>openAdvanced\('nesting'\)\}/);
  assert.match(page,/setRibbonTab\('Advanced'\);\s*setAdvancedEditor\(feature\)/);
- assert.doesNotMatch(page,/modal page-builder-advanced-dialog/);
 });
