@@ -3457,7 +3457,7 @@ function PageBuilder({
                 width: page.canvasWidth * (fitCanvas ? fitScale : canvasZoom/100),
                 height: page.canvasHeight * (fitCanvas ? fitScale : canvasZoom/100),
                 minHeight: 0,
-                overflow: previewMode ? 'hidden' : 'visible'
+                overflow: 'hidden'
               } : page.layoutMode === 'template' && page.components.some(c => c.visible && c.properties?.standalonePresentation === true) ? standaloneTemplateCanvasStyle(page.canvasWidth, page.canvasHeight) : {}),backgroundColor:page.canvasFillColor??'#ffffff'}}
             >
               {page.layoutMode === 'free-canvas' ? <div
