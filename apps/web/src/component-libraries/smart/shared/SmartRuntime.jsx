@@ -77,7 +77,7 @@ function SmartCard({p,record}){
   <div style={{order:["right","bottom"].includes(p.imagePlacement)?2:0,
     flex:horizontal?"1 1 50%":single?"1 1 auto":undefined,minWidth:0,minHeight:0,
     ...(single?{display:"flex"}:{})}}>
-   {p.builderPreview===true&&!image
+   {p.builderPreview===true&&(single||sample)&&!image
      ?<div className="smart-image-empty smart-editor-image-placeholder" aria-label="Image Here"
        style={{height:single?"100%":imageHeight,width:"100%",border:nativeImageBorder}}>
        <span>Image Here</span>
