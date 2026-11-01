@@ -120,6 +120,15 @@ test('One-time Oracle systemd manager reexecution requires a timed-out reload an
  assert.match(sh,/\$rc" != 124/);
  assert.match(sh,/metadrive-systemd-manager-reexec-once/);
  assert.match(sh,/set -C/);
+ // A spent one-per-boot manager signal guard must still allow a bounded,
+ // non-disruptive reset of only failed MCP broker template units.
+ assert.match(sh,/Retrying non-disruptive failed MCP broker cleanup/);
+ assert.match(sh,/if timeout 20 systemctl reset-failed 'metadrive-mcp-broker@\\\*\\.service'/);
+ assert.match(sh,/if timeout 150 systemctl daemon-reload/);
+ assert.equal((sh.match(/kill -s TERM 1/g)??[]).length,1);
+ assert.equal((sh.match(/kill -s USR1 1/g)??[]).length,1);
+ assert.ok(sh.indexOf("systemctl reset-failed 'metadrive-mcp-broker@*.service'") <
+   sh.indexOf('if timeout 150 systemctl daemon-reload'));
  assert.match(sh,/kill -s TERM 1/);
  assert.doesNotMatch(sh,/^\s*(?:reboot|poweroff|shutdown|pkill|killall)\b/m);
  assert.ok(yaml.indexOf('Recover stalled systemd daemon-reload')<yaml.indexOf('Build release on the target architecture'));
