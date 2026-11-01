@@ -10,7 +10,7 @@ test('View exposes the visibility rule filter dialog without a duplicate Logic r
  assert.match(view,/Visible on this page<\/label>/);
  assert.match(view,/aria-label="Edit conditional visibility"/);
  assert.match(view,/smart-dialog smart-filter-dialog/);
- assert.match(view,/<ComponentVisibilityEditor rules=\{visibilityDraft\}/);
+ assert.match(view,/<PageBuilderVisibilityDialog/);
  assert.doesNotMatch(view,/ribbonTab==='Logic'/);
 });
 test('Actions picker has room for the entire label and stays Cart-scoped',()=>{
