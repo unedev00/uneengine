@@ -65,6 +65,7 @@
     "apps/server/test/system/flow-error-runtime.test.ts",
     "apps/server/test/system/flow-execution-context.test.ts",
     "apps/server/test/system/flow-execution-requests.test.ts",
+    "apps/server/test/system/flow-loop-resource-contract.test.ts",
     "apps/server/test/system/flow-formula-runtime.test.ts",
     "apps/server/test/system/flow-interview-record-bounds.test.ts",
     "apps/server/test/system/flow-phase2.test.ts",
