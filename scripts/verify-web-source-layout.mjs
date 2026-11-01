@@ -5,7 +5,7 @@ import { loadComponentCatalog, webSourceRoot } from './component-catalog.mjs';
 
 const entries = await readdir(webSourceRoot, { withFileTypes: true });
 assert.deepEqual(entries.filter(entry => entry.isDirectory()).map(entry => entry.name).sort(), ['component-libraries', 'core']);
-assert.deepEqual(entries.filter(entry => entry.isFile()).map(entry => entry.name).sort(), ['README.md', 'main.tsx']);
+assert.deepEqual(entries.filter(entry => entry.isFile()).map(entry => entry.name).sort(), ['main.tsx']);
 // A renamed library is not enough: fail if any retired source component filename remains.
 for (const relative of ['component-libraries','component-libraries/shared',
   'component-libraries/ui-runtime/shared','core/components/SharedRuntime']) {
