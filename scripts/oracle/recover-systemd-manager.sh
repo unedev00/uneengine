@@ -53,6 +53,21 @@ marker=/run/lock/metadrive-systemd-manager-reexec-once
   fi
   echo 'Oracle manager reload still blocked after D-Bus reconnect.' >&2
  fi
+ # Failed socket-activated MCP broker instances can hold unit references after
+ # thousands of requests. Reset only this template's FAILED states once per boot.
+ # Never stop/restart the API, worker, broker socket or PID 1 here.
+ gc_marker=/run/lock/metadrive-systemd-manager-mcp-gc-once
+ if ( set -C; printf 'one bounded broker unit GC\\n' > "$gc_marker" ) 2>/dev/null; then
+  echo 'Clearing failed MCP broker unit state and attempting one longer reload.'
+  timeout 15 systemctl reset-failed 'metadrive-mcp-broker@*.service' || true
+  if timeout 150 systemctl daemon-reload; then
+   systemctl is-active --quiet metadrive-api.service
+   systemctl is-active --quiet metadrive-worker.service
+   echo 'Oracle systemd manager reload recovered after broker unit cleanup.'
+   exit 0
+  fi
+  echo 'Oracle daemon-reload remains blocked after broker state cleanup.' >&2
+ fi
  diagnose_reload_failure
  exit 1
 }
