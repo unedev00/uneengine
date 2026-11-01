@@ -237,9 +237,5 @@ export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,
         onClick={onToggleDetails}><SlidersHorizontal size={15}/>{showDetails?'Hide details':'Configure details'}</button>
       <span className="office-ribbon-group-heading">Configuration</span>
     </section>}
-    {!active&&<div className="page-action-empty" role="status">
-      {disabled?'Select one editable component to configure its actions.'
-        :'Choose a trigger from the Actions dropdown to configure its Flow, navigation or page action.'}
-    </div>}
   </div>;
 }

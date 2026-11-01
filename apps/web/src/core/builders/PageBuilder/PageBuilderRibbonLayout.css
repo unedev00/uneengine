@@ -223,3 +223,96 @@
 .office-builder-ribbon .advanced-technical .advanced-component-id{left:12px;top:5px;width:322px}
 .office-builder-ribbon .advanced-technical .advanced-object{left:12px;top:35px;width:322px}
 .office-builder-ribbon .advanced-technical .advanced-render-mode{left:12px;top:65px;width:322px}
+
+/* One minimum-spacing contract for all Page Builder tabs. Actual groups may
+ * use more spacing; Data's three-row controls need an explicit nonzero gap. */
+.office-builder-ribbon{--page-ribbon-min-control-gap:2px}
+.office-builder-ribbon #page-builder-tab-content .smart-ribbon[data-three-row="true"]
+  .smart-ribbon-row{column-gap:4px!important}
+.office-builder-ribbon #page-builder-tab-content
+  :is(.smart-formula-filter,.page-action-property-picker,.ribbon-view-zoom-buttons){
+  column-gap:4px!important;
+}
+.office-builder-ribbon #page-builder-tab-content .smart-ribbon[data-three-row="true"]
+  .smart-property .smart-formula-filter{
+  box-sizing:border-box!important;max-width:100%!important;min-width:0!important;
+}
+.office-builder-ribbon #page-builder-tab-content .smart-ribbon[data-three-row="true"]
+  .smart-property .smart-formula-filter>.smart-filter-trigger{
+  flex-shrink:0!important;margin-left:var(--page-ribbon-min-control-gap)!important;
+}
+
+/* Data: keep the label + field track inside each defined property width. */
+.office-builder-ribbon #page-builder-tab-content .smart-ribbon[data-three-row="true"]
+  .smart-ribbon-group[data-smart-tab="Data"]
+  .smart-property[data-property^="objectApiName"] .smart-select{
+  box-sizing:border-box!important;width:150px!important;min-width:150px!important;
+  max-width:150px!important;flex:0 0 150px!important;
+}
+.office-builder-ribbon #page-builder-tab-content .smart-ribbon[data-three-row="true"]
+  .smart-ribbon-group[data-smart-tab="Data"]
+  .smart-property[data-property="defaultCheck"]{
+  box-sizing:border-box!important;padding:0 6px!important;gap:6px!important;
+}
+.office-builder-ribbon #page-builder-tab-content .smart-ribbon[data-three-row="true"]
+  .smart-ribbon-group[data-smart-tab="Data"]
+  .smart-property[data-property="defaultCheck"]>.smart-label{
+  display:inline-flex!important;flex:1 1 auto!important;min-width:0!important;
+  padding-left:2px!important;white-space:nowrap!important;
+}
+/* The 150px object editor shares a 202px track with its short label. */
+.office-builder-ribbon #page-builder-tab-content .smart-ribbon[data-three-row="true"]
+  .smart-ribbon-group[data-smart-tab="Data"]
+  .smart-property[data-property^="objectApiName"]{
+  gap:3px!important;
+}
+.office-builder-ribbon #page-builder-tab-content .smart-ribbon[data-three-row="true"]
+  .smart-ribbon-group[data-smart-tab="Data"]
+  .smart-property[data-property^="objectApiName"]>.smart-label{
+  box-sizing:border-box!important;flex:0 0 47px!important;width:47px!important;
+  min-width:47px!important;max-width:47px!important;
+}
+/* Preserve Column Visibility's metadata, width and location. Only extend the
+ * gap AFTER it to align Summary 3 beneath Column 5 (225px first track). */
+.office-builder-ribbon #page-builder-tab-content .smart-ribbon[data-three-row="true"]
+  .smart-ribbon-group[data-smart-tab="Data"][aria-label="Cart"]
+  .smart-ribbon-row[data-design-row="3"]>.smart-property[data-property="columnVisibility"]{
+  margin-right:80px!important;
+}
+
+/* Design: 125px Badge Alignment with a single shared bordered
+ * "Alignment | value" field, preserving the existing choices and binding. */
+.office-builder-ribbon #page-builder-tab-content .smart-ribbon[data-three-row="true"]
+  .smart-property[data-property="badgeAlignment"] .smart-inline-caption-select{
+  box-sizing:border-box!important;display:flex!important;align-items:center!important;
+  width:125px!important;min-width:125px!important;max-width:125px!important;
+  height:26px!important;border:1px solid #9db9dd!important;
+  border-radius:4px!important;background:#fff!important;overflow:hidden!important;
+}
+.office-builder-ribbon #page-builder-tab-content .smart-ribbon[data-three-row="true"]
+  .smart-property[data-property="badgeAlignment"] .smart-inline-caption-select>span{
+  box-sizing:border-box!important;display:flex!important;align-items:center!important;
+  flex:0 0 58px!important;width:58px!important;height:24px!important;
+  padding:0 4px!important;border-right:1px solid #c9d6ea!important;
+  color:#1f5fa8!important;font:10px "Segoe UI",Arial,sans-serif!important;
+}
+.office-builder-ribbon #page-builder-tab-content .smart-ribbon[data-three-row="true"][data-smart-api]
+  .smart-ribbon-group .smart-property[data-property="badgeAlignment"]
+  .smart-inline-caption-select>.smart-select{
+  box-sizing:border-box!important;flex:1 1 auto!important;width:0!important;
+  min-width:0!important;max-width:none!important;
+  height:24px!important;min-height:24px!important;max-height:24px!important;
+  border:0!important;border-radius:0!important;padding:0 2px!important;
+  background:transparent!important;
+}
+/* Only Body and Summary use three shadow buttons; Table remains one dropdown. */
+.office-builder-ribbon #page-builder-tab-content .smart-ribbon[data-three-row="true"]
+  .smart-property:is([data-property="shadow"],[data-property="summaryShadow"]) .smart-icons{
+  box-sizing:border-box!important;display:flex!important;gap:3px!important;
+  width:105px!important;min-width:105px!important;max-width:105px!important;
+}
+.office-builder-ribbon #page-builder-tab-content .smart-ribbon[data-three-row="true"]
+  .smart-property:is([data-property="shadow"],[data-property="summaryShadow"]) .smart-icons>button{
+  box-sizing:border-box!important;flex:0 0 33px!important;width:33px!important;
+  min-width:33px!important;max-width:33px!important;height:26px!important;
+}
