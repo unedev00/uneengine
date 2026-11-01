@@ -151,7 +151,8 @@ test('colour pickers share a single accessible, metadata-backed palette',()=>{
     assert.ok(source.includes(token),token);
   const styles=readFileSync(new URL('../src/core/builders/PageBuilder/sections/04-page-builder.css',import.meta.url),'utf8');
   assert.match(styles,/Excel-style 10-tab ribbon/);
-  assert.match(styles,/height:146px!important;min-height:146px!important;max-height:146px!important/);
+  const ribbonLayout=readFileSync(new URL('../src/core/builders/PageBuilder/PageBuilderRibbonLayout.css',import.meta.url),'utf8');
+   assert.match(ribbonLayout,/--page-ribbon-scroll-strip-height: 127px/);
   assert.match(styles,/overflow:visible!important;padding:5px 6px/);
   assert.match(styles,/flex-wrap:nowrap!important/);
   assert.match(styles,/office-ribbon-colour-palette/);
