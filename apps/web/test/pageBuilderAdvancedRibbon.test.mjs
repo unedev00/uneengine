@@ -43,9 +43,13 @@ test('Distinct responsive overrides and flow-bound details stay accessible',()=>
  assert.match(page,/<PageBuilderAdvancedResponsive properties=\{selected.properties\} device=\{currentRibbonDevice\}/);
  assert.match(page,/advancedEditor==='properties' && selected && <MetadataComponentProperties/);
  assert.match(page,/mode="details"/);
- for(const symbol of ['responsiveNumberFields','responsiveOptionFields','responsiveColorFields',
+ for(const symbol of ['responsiveNumberFields','responsiveOptionFields',
   'layoutSettings','updateLayoutSettings'])assert.ok(responsive.includes(symbol),symbol);
  assert.match(responsive,/onChange\(updateLayoutSettings\(properties,device,key,value\)\)/);
+ assert.doesNotMatch(responsive,/responsiveColorFields\.map/);
+ assert.match(responsive,/deviceDimensions\.map/);
+ assert.match(responsive,/deviceArrangement\.map/);
+ assert.match(responsive,/if\(device==='Base'\)return/);
  assert.doesNotMatch(advanced,/fetch\(|request\(|localStorage|INSERT INTO/);
 });
 
