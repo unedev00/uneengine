@@ -11,11 +11,12 @@ test('app tabs derive memberships from navigation and activation metadata',()=>{
   {apiName:'Shared',activationAssignments:[{appId:'Beta'}]},
   {apiName:'AlphaPage',activationAssignments:[]},
   {apiName:'BetaPage',activationAssignments:[]},
-  {apiName:'Unassigned',activationAssignments:[]}
+  {apiName:'Unassigned',activationAssignments:[]},
+  {apiName:'Packaged',ownerNamespace:'Beta',activationAssignments:[]}
  ];
  const memberships=pageAppMembership(apps,pages as never);
  assert.deepEqual([...memberships.get('Alpha')!].sort(),['AlphaPage','Shared']);
- assert.deepEqual([...memberships.get('Beta')!].sort(),['BetaPage','Shared']);
+ assert.deepEqual([...memberships.get('Beta')!].sort(),['BetaPage','Packaged','Shared']);
  assert.equal(pageIsUnassigned('Unassigned',memberships),true);
  assert.equal(pageIsUnassigned('Shared',memberships),false);
 });
