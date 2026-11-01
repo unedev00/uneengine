@@ -6,6 +6,7 @@ import {generateMetadataApiName,suggestMetadataApiName} from '../../metadata/Def
 import { useFormFactor } from '../../workspace/Responsive/useFormFactor';
 import './MobileBuilderReadMode.css';
 import CanvasFloatingActions from './CanvasFloatingActions';
+import CanvasFloatingResizeHandles from './CanvasFloatingResizeHandles';
 import {placeNewCanvasComponent,visibleCanvasBounds} from './canvasInsertPlacement';
 import {confirmDestructiveAction} from '../../components/ConfirmAction/confirmDestructiveAction';
 import './PageBuilderNoCode.css';
@@ -1308,7 +1309,12 @@ function PageBuilder({
   const startCanvasResize = (event: React.PointerEvent<HTMLButtonElement>, component: PageComponentMetadata, edge: ResizeEdge) => {
     if (!component.position || isCanvasLocked(component) || event.button !== 0
       || canvasMoveStart.current || canvasResizeStart.current) return;
-    const element = event.currentTarget.closest<HTMLElement>('.free-canvas-component');
+    const overlay=event.currentTarget.closest<HTMLElement>('.canvas-floating-resize-overlay');
+    const element=event.currentTarget.closest<HTMLElement>('.free-canvas-component')
+      ?? (overlay?.dataset.canvasResizeFor===component.id
+        ?Array.from(pagePreviewAreaRef.current?.querySelectorAll<HTMLElement>(
+          '.free-canvas-component[data-component-id]')??[])
+          .find(candidate=>candidate.dataset.componentId===component.id)??null:null);
     if (!element) return;
     event.preventDefault(); event.stopPropagation(); event.currentTarget.setPointerCapture(event.pointerId);
     canvasResizeStart.current = { id: component.id, pointerId: event.pointerId, pointerX: event.clientX, pointerY: event.clientY,
@@ -2674,14 +2680,10 @@ function PageBuilder({
           onLostPointerCapture={event=>endCanvasMove(event,true)}
           onClick={event=>event.stopPropagation()}/>)}
       {!libraryPreview && page.layoutMode === 'free-canvas' && !nested && selectedId === component.id && !previewMode && !isCanvasLocked(component) && !canvasGroupKey(component)
-        && (['n','ne','e','se','s','sw','w','nw'] as const).map(edge =>
-          <button key={edge} type="button" className={`free-canvas-resize-handle resize-${edge}`}
-            aria-label={`Resize ${component.label} ${edge}`} title="Drag edge or corner to resize"
-            onPointerDown={event => startCanvasResize(event, component, edge)}
-            onPointerMove={moveCanvasResize} onPointerUp={endCanvasResize}
-            onPointerCancel={event => endCanvasResize(event, true)}
-            onLostPointerCapture={event => endCanvasResize(event, true)}
-            onClick={event => event.stopPropagation()}/>)}
+        && <CanvasFloatingResizeHandles componentId={component.id} viewportRef={pagePreviewAreaRef}
+          onStart={(event,edge)=>startCanvasResize(event,component,edge)}
+          onMove={moveCanvasResize} onEnd={endCanvasResize}
+          onCancel={event=>endCanvasResize(event,true)}/>} 
     </div>;
   };
   const renderRegion = (region: 'header' | 'main' | 'sidebar') => {
