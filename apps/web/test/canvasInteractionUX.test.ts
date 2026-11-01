@@ -477,7 +477,7 @@ test('Page Builder contextual ribbon respects the fixed-height no-scroll contrac
   assert.match(actions,/actionType/);
   const ribbonLayout=await readFile(new URL('PageBuilder/PageBuilderRibbonLayout.css',root),'utf8');
    assert.match(ribbonLayout,/--page-ribbon-scroll-strip-height: 127px/);
-  assert.match(css,/overflow:visible!important;padding:5px 6px/);
+  assert.match(ribbonLayout,/overflow-x: auto !important/);
   assert.doesNotMatch(builder,/ribbonComponentSearch/);
 });
 
