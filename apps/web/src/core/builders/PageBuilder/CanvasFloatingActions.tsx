@@ -1,4 +1,4 @@
-import {useLayoutEffect,useRef,useState,type ReactNode,type RefObject} from 'react';
+import {useEffect,useRef,useState,type ReactNode,type RefObject} from 'react';
 import {createPortal} from 'react-dom';
 import './CanvasFloatingActions.css';
 
@@ -12,7 +12,8 @@ export default function CanvasFloatingActions({componentId,viewportRef,children,
 }){
   const floatingRef=useRef<HTMLDivElement>(null);
   const [position,setPosition]=useState({top:0,left:0,visible:false});
-  useLayoutEffect(()=>{
+  // Portal effects must run after the canvas anchor has been attached to its viewport.
+  useEffect(()=>{
     const viewport=viewportRef.current;
     if(!viewport||!enabled)return;
     const anchor=Array.from(viewport.querySelectorAll<HTMLElement>('.free-canvas-component[data-component-id]'))
