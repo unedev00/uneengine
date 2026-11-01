@@ -102,5 +102,9 @@ WHERE tab='Design' AND property_key='badgeAlignment';
 -- Body and Summary shadow use three inline choices across 105px.
 -- Keep Table Shadow's existing 35px dropdown unchanged.
 UPDATE md_builder_shared_properties
-SET design_display='icons'
+SET design_display='buttons'
 WHERE tab='Design' AND property_key IN ('shadow','summaryShadow');
+
+UPDATE md_builder_shared_properties
+SET design_display='dropdown'
+WHERE tab='Design' AND property_key='tableShadow';
