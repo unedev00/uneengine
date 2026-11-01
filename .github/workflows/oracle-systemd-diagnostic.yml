@@ -1,0 +1,38 @@
+name: Oracle systemd control-plane diagnosis
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/oracle-systemd-diagnostic.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: [self-hosted, linux, ARM64, metadrive-oracle]
+    timeout-minutes: 5
+    steps:
+      - name: Inspect systemd control-plane state (read only)
+        shell: bash
+        run: |
+          set -uo pipefail
+          test "${GITHUB_REPOSITORY}" = "unedev00/uneengine" || exit 1
+          test "$(uname -m)" = "aarch64" || exit 1
+          echo "== systemd manager health =="
+          timeout 6 systemctl show -p Version,SystemState,Reloading --no-pager 2>&1 || true
+          echo "== manager pid and wait state =="
+          ps -p 1 -o pid,ppid,stat,wchan:35,etime,comm || true
+          cat /proc/1/wchan 2>/dev/null || true
+          echo "== system bus and blocked processes =="
+          ps -eo pid,ppid,stat,wchan:32,etime,comm | grep -E '(^ *PID|systemd|dbus|systemctl|polkit|journald|nginx|node)' | head -n 70 || true
+          echo "== D-Bus socket and manager unit =="
+          timeout 5 systemctl is-active dbus.service 2>&1 || true
+          timeout 5 systemctl list-jobs --no-pager 2>&1 | head -n 35 || true
+          echo "== recent PID 1 journal =="
+          timeout 8 journalctl -b _PID=1 -n 35 --no-pager -o short-iso 2>&1 || true
+          echo "== filesystem resources =="
+          df -h / /run || true
+          free -m || true
+          echo "Diagnostic complete; no changes made."
