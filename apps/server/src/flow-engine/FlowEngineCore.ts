@@ -163,26 +163,27 @@ export class FlowRuntime {
     `,[tenantId]);
     return Promise.all(rows.map(row=>this.loadEditor(tenantId,row.api_name)));
   }
-  async listPage(tenantId:string,page:unknown=1,search:unknown='') {
+  async listPage(tenantId:string,page:unknown=1,search:unknown='',type:unknown='') {
     const index=Number(page);
-    if(!Number.isSafeInteger(index)||index<1||index>100000||typeof search!=='string'||search.length>100)
+    if(!Number.isSafeInteger(index)||index<1||index>100000||typeof search!=='string'||search.length>100
+      ||typeof type!=='string'||type.length>100||type!==''&&!/^[A-Za-z -]+$/.test(type))
       throw new Error('Invalid Flow list query');
     const query='%'+search.replace(/[\\%_]/g,'\\$&')+'%';
     const {rows}=await this.db.query<{api_name:string;total:string}>(`
       SELECT names.api_name,(SELECT count(DISTINCT api_name)::text FROM md_flow_definitions
         WHERE tenant_id=$1 AND archived=false AND (api_name ILIKE $2 ESCAPE '\\'
-          OR label ILIKE $2 ESCAPE '\\')) AS total
+          OR label ILIKE $2 ESCAPE '\\') AND ($4='' OR flow_type=$4)) AS total
       FROM (SELECT DISTINCT api_name FROM md_flow_definitions
         WHERE tenant_id=$1 AND archived=false AND (api_name ILIKE $2 ESCAPE '\\'
-          OR label ILIKE $2 ESCAPE '\\')
+          OR label ILIKE $2 ESCAPE '\\') AND ($4='' OR flow_type=$4)
         ORDER BY api_name LIMIT 50 OFFSET $3) names
-    `,[tenantId,query,(index-1)*50]);
+    `,[tenantId,query,(index-1)*50,type]);
     const flows=await Promise.all(rows.map(row=>this.loadEditor(tenantId,row.api_name)));
     // A page past the last result still needs the true count.
     const total=rows[0]?.total ?? (await this.db.query<{total:string}>(`
       SELECT count(DISTINCT api_name)::text AS total FROM md_flow_definitions
       WHERE tenant_id=$1 AND archived=false AND (api_name ILIKE $2 ESCAPE '\\'
-        OR label ILIKE $2 ESCAPE '\\')`,[tenantId,query])).rows[0]?.total??'0';
+        OR label ILIKE $2 ESCAPE '\\') AND ($4='' OR flow_type=$4)`,[tenantId,query,(index-1)*50,type])).rows[0]?.total??'0';
     return {flows,total:Number(total),page:index,pageSize:50};
   }
   async saveEditor(tenantId:string,userId:string,apiName:string,raw:unknown,createOnly=false) {

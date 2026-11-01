@@ -1949,7 +1949,7 @@ export function createSystemServer(db:SqlPersistence) {
   app.get('/api/metadata/flows/list',route(async(req,res)=>{
     const actor=req.actor!;
     await rbac.require(actor.tenant_id,actor.user_id,'FlowDefinition','read');
-    res.json(await flows.listPage(actor.tenant_id,req.query.page,req.query.search??''));
+    res.json(await flows.listPage(actor.tenant_id,req.query.page,req.query.search??'',req.query.type??''));
   }));
   app.get('/api/metadata/flows/:apiName/versions/:version',route(async(req,res)=>{
     const actor=req.actor!;
