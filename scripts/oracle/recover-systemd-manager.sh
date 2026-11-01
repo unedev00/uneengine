@@ -11,6 +11,17 @@ export PATH=/usr/sbin:/usr/bin:/sbin:/bin
 version="$(systemctl --version | sed -nE '1s/^systemd ([0-9]+).*/\1/p')"
 [[ "$version" =~ ^[0-9]+$ ]] && ((version >= 239)) || exit 1
 
+# Report bounded systemd control-plane evidence without leaking service environment.
+# This diagnostic is read-only and never changes or retries the one-boot guard.
+diagnose_reload_failure() {
+ echo 'Oracle systemd daemon-reload diagnostic (read-only):'
+ printf 'PID 1 wait channel: '; cat /proc/1/wchan 2>/dev/null || true
+ timeout 8 systemctl show --property=SystemState,Reloading,Version --no-pager 2>&1 || true
+ timeout 8 systemctl list-jobs --no-pager 2>&1 || true
+ ps -eo pid,ppid,stat,wchan:28,comm | grep -E '(^ *PID|systemd|dbus|systemctl)' | head -n 40 || true
+ timeout 8 journalctl -b _PID=1 -n 25 --no-pager -o short-iso 2>&1 || true
+}
+
 # A routine success never signals PID 1. Other errors also fail closed.
 set +e
 timeout 35 systemctl daemon-reload
@@ -29,6 +40,7 @@ fi
 marker=/run/lock/metadrive-systemd-manager-reexec-once
 ( set -C; printf 'single audited systemd reexecution\n' > "$marker" ) || {
  echo 'Oracle systemd manager reexecution already attempted this boot; stopped.' >&2
+ diagnose_reload_failure
  exit 1
 }
 echo 'Oracle daemon-reload timed out. Requesting one documented systemd manager reexecution.'
@@ -46,4 +58,5 @@ for attempt in 1 2 3 4 5 6 7 8; do
  fi
 done
 echo 'Oracle systemd manager still unhealthy after single reexecution. Deployment blocked.' >&2
+diagnose_reload_failure
 exit 1
