@@ -2,11 +2,12 @@ import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {SqlPersistence} from '../../apps/server/dist-system/system-files/sql-persistence.js';
 import {PageRuntime} from '../../apps/server/dist-system/system-files/page-runtime.js';
+import {PRICE_FORMULA} from './price-formula.mjs';
 
 // Supported Smart renderer properties only. No component insert/delete,
 // geometry, app records, page publishing, actionFlows, or business data writes.
 const RECEIPT='codextill-supported-metadata-20261101-v1';
-export const PRICE_FORMULA='"£" & TEXT(FLOOR(ROUND(@Price * 100, 0) / 100)) & "." & RIGHT("0" & TEXT(MOD(ROUND(@Price * 100, 0), 100)), 2)';
+
 const commonButton={labelAlignment:'center',textSize:16,borderColor:'#DDE3EC',radius:14};
 const topButton={...commonButton,backgroundColor:'#FAFAFC',labelColor:'#172033'};
 const footerButton={...commonButton,backgroundColor:'#FFFFFF',labelColor:'#8295B0',borderColor:'#E1E6ED'};
