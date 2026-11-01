@@ -115,3 +115,68 @@
   max-height: var(--page-ribbon-content-height) !important;
   overflow: auto !important;
 }
+/* Insert and Advanced must use the same 114px lane as all property tabs. */
+.office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content
+  > .smart-insert-ribbon {
+  box-sizing: border-box !important;
+  height: var(--page-ribbon-content-height) !important;
+  min-height: var(--page-ribbon-content-height) !important;
+  max-height: var(--page-ribbon-content-height) !important;
+}
+.office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content
+  .smart-insert-gallery, 
+.office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content
+  .smart-insert-gallery-row,
+.office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content
+  .smart-insert-tiles {
+  height: var(--page-ribbon-content-height) !important;
+  min-height: 0 !important;
+  max-height: var(--page-ribbon-content-height) !important;
+}
+.office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content
+  .smart-insert-tiles {
+  grid-template-rows: repeat(2,55px) !important;
+}
+.office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content
+  .smart-insert-tile { height: 55px !important; }
+.office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content
+  > .page-builder-advanced-inline {
+  display: flex !important;
+  flex-flow: row nowrap !important;
+  align-items: stretch !important;
+  width: max-content !important;
+  min-width: 100% !important;
+  height: var(--page-ribbon-content-height) !important;
+  min-height: var(--page-ribbon-content-height) !important;
+  max-height: var(--page-ribbon-content-height) !important;
+  gap: 8px !important;
+}
+.office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content
+  .page-builder-advanced-inline-nav {
+  display: grid !important;
+  flex: 0 0 auto !important;
+  grid-template-rows: repeat(3,26px) !important;
+  grid-auto-flow: column !important;
+  grid-auto-columns: max-content !important;
+  justify-content: start !important;
+  align-content: start !important;
+  gap: 4px 6px !important;
+  min-width: max-content !important;
+  padding: 3px 8px 3px 0 !important;
+}
+.office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content
+  .page-builder-advanced-inline-nav button {
+  box-sizing: border-box !important;
+  height: 26px !important;
+  min-height: 26px !important;
+  max-height: 26px !important;
+  padding: 2px 8px !important;
+  white-space: nowrap !important;
+}
+.office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content
+  .page-builder-advanced-inline-body {
+  flex: 1 1 320px !important;
+  min-width: 320px !important;
+  max-height: var(--page-ribbon-content-height) !important;
+  overflow: auto !important;
+}
