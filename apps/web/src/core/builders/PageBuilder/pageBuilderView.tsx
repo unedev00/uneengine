@@ -147,8 +147,8 @@ import PageRouteDirectory from '../../pages/PageRouteDirectory/PageRouteDirector
 import PageComponentVisualEditor from '../ComponentStyleEditor/PageComponentVisualEditor';
 import RibbonColorPalette from './RibbonColorPalette';
 import {RibbonFilters} from './PageBuilderRibbonEditors';
-import ComponentVisibilityEditor from '../ComponentProperties/ComponentVisibilityEditor';
-import {validateVisibilityRule,type ComponentVisibilityRule} from '../../components/Properties/componentVisibility';
+import PageBuilderVisibilityDialog from './PageBuilderVisibilityDialog';
+import type {ComponentVisibilityRule} from '../../components/Properties/componentVisibility';
 import PageBuilderActionRibbon from './PageBuilderActionRibbon';
 import PageBuilderRibbonMetadataPager from './PageBuilderRibbonMetadataPager';
 import UniversalRibbonInventory from './UniversalRibbonInventory';
@@ -3204,25 +3204,12 @@ function PageBuilder({
           </div>
         </section>}
 
-      {visibilityEditorOpen && selected && createPortal(<div className="smart-dialog-backdrop smart-filter-backdrop"
-        role="presentation" onMouseDown={event=>{if(event.currentTarget===event.target)setVisibilityEditorOpen(false);}}>
-        <section className="smart-dialog smart-filter-dialog" role="dialog" aria-modal="true"
-          aria-label="Conditional visibility filters" onKeyDown={event=>{if(event.key==='Escape')setVisibilityEditorOpen(false);}}>
-          <header><div><strong>Conditional Visibility</strong>
-            <span>{selected.label||selected.type} · Show the component when conditions match</span></div>
-            <div className="page-builder-visibility-modal-actions">
-              <button type="button" onClick={()=>setVisibilityEditorOpen(false)}>Cancel</button>
-              <button type="button" autoFocus disabled={validateVisibilityRule(visibilityDraft,fields,
-                Boolean(targetObject&&page.pageType==='Record Page')).length>0}
-                onClick={applyVisibilityEditor}>Apply</button>
-            </div></header>
-          <div className="smart-filter-dialog-body">
-            <ComponentVisibilityEditor rules={visibilityDraft} onChange={setVisibilityDraft}
-              fields={fields} allowRecordFields={Boolean(targetObject&&page.pageType==='Record Page')}
-              profiles={profiles.map(profile=>({id:profile.id,label:profile.label}))}
-              recordTypes={(targetObject?.recordTypes??[]).map(type=>({id:type.id,label:type.label}))}/>
-          </div>
-        </section></div>,document.body)}
+      {visibilityEditorOpen && selected && <PageBuilderVisibilityDialog
+        label={selected.label||selected.type} rules={visibilityDraft} onChange={setVisibilityDraft}
+        fields={fields} allowRecordFields={Boolean(targetObject&&page.pageType==='Record Page')}
+        profiles={profiles.map(profile=>({id:profile.id,label:profile.label}))}
+        recordTypes={(targetObject?.recordTypes??[]).map(type=>({id:type.id,label:type.label}))}
+        onApply={applyVisibilityEditor} onClose={()=>setVisibilityEditorOpen(false)}/>}
       {advancedEditor && !['assignments','properties','responsive'].includes(advancedEditor) && <div className="modal-backdrop office-ribbon-modal-backdrop" role="presentation"
         onMouseDown={event=>{if(event.currentTarget===event.target)setAdvancedEditor(null);}}>
         <section className="modal page-builder-advanced-dialog" role="dialog" aria-modal="true"
