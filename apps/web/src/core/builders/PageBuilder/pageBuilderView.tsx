@@ -183,7 +183,7 @@ import { canNestComponent, pageAppearanceTarget, pageAppearanceStyleKeys, update
 import PageComponentStyleEditor from '../ComponentStyleEditor/PageComponentStyleEditor';
 import { isCanvasLocked, ungroupCanvasComponent, snapCanvasPosition, alignCanvasComponents, distributeCanvasComponents } from './canvasInteractions';
 import {canvasGroupKey, canvasGroupMembers, groupCanvasSelection, ungroupCanvasSelection, moveCanvasLayer, shiftCanvasLayer, canMoveCanvasLayer, canvasSiblingLayerIndex, canvasGroupBounds} from './canvasLayerGroups';
-import {canvasScrollbarHit} from './canvasPointerInteractions';
+import {canvasScrollbarHit,constrainCanvasRect} from './canvasPointerInteractions';
 import {isSharedCanvasProperty,mixedCanvasPropertyIds,updateSharedCanvasProperties,updateSharedCanvasPositions} from './canvasSharedRibbonProperties';
 import {useCanvasGroupGestures} from './useCanvasGroupGestures';
 import { copyComponentTree, cloneComponentTree, remapComponentInteractionTargets, assignTabOnReparent, type ComponentClipboard } from './pageComponentTree';
@@ -1358,6 +1358,7 @@ function PageBuilder({
     start.viewport.scrollTop+=step;
     if(start.viewport.scrollTop!==before)
       updateCanvasResizePreview(start,start.lastX,start.lastY);
+    if(start.viewport.scrollTop===before){start.autoScrollFrame=0;return;}
     start.autoScrollFrame=window.requestAnimationFrame(autoScrollCanvasResize);
   };
   const moveCanvasResize = (event: React.PointerEvent<HTMLButtonElement>) => {
@@ -1378,8 +1379,7 @@ function PageBuilder({
     const changed = !cancelled && (size.x !== start.x || size.y !== start.y || size.width !== start.width || size.height !== start.height);
     if (changed) {
       // Commit integer dimensions without flashing the original box on release.
-      const position = { x: Math.round(size.x), y: Math.round(size.y),
-        width: Math.round(size.width), height: Math.round(size.height) };
+      const position = constrainCanvasRect(size,{width:page.canvasWidth,height:page.canvasHeight});
       Object.assign(start.element.style, { left: `${position.x}px`, top: `${position.y}px`,
         width: `${position.width}px`, height: `${position.height}px` });
       applyPage({...page,
