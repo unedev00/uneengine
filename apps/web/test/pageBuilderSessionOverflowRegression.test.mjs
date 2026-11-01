@@ -12,16 +12,20 @@ test('Smart SQL ribbon renders all properties in every selected tab, including i
  assert.match(ribbon,/<=3\?p\.designRow\?\?2:2/);
  assert.match(ribbon,/data-supported=\{supported\}/);
 });
-test('all Page Builder tabs expose left-to-right scrolling and do not hide overflow',()=>{
- const css=file('core/builders/PageBuilder/PageBuilderEightTabRibbon.css');
- const design=file('core/builders/PageBuilder/SmartRibbonApprovedThreeRow.css');
- const universal=file('core/builders/PageBuilder/PageBuilderRibbonPolish.css');
- assert.match(css,/direction:ltr!important/);
- assert.match(css,/scrollbar-width:thin!important/);
- assert.match(design,/not\(\.is-interactive-preview\).*:has\(>\.smart-ribbon\[data-three-row="true"\]\)/);
- assert.match(design,/overflow-x:auto!important;overflow-y:hidden!important/);
- assert.match(universal,/not\(\.is-interactive-preview\).*:has\(>\.une-universal-ribbon\)/);
+test('all Page Builder tabs share one 114px content lane and a separate scrollbar',()=>{
+ const css=file('core/builders/PageBuilder/PageBuilderRibbonLayout.css');
+ const page=file('core/builders/PageBuilder/pageBuilderView.tsx');
+ assert.match(css,/--page-ribbon-content-height: 114px/);
+ assert.match(css,/--page-ribbon-scrollbar-height: 9px/);
+ assert.match(css,/--page-ribbon-scroll-strip-height: 127px/);
+ assert.match(css,/overflow-x: auto !important/);
+ assert.match(css,/overflow-y: hidden !important/);
+ assert.match(css,/direction: ltr !important/);
+ assert.match(css,/scrollbar-width: thin !important/);
+ assert.match(css,/width: max-content !important/);
+ assert.ok(page.includes("import './PageBuilderRibbonLayout.css';"));
 });
+
 test('Cart supports selected-row custom Flow actions and Container only has one normal border',()=>{
  const cart=file('component-libraries/smart_cart/SmartCart.jsx');
  const actions=file('core/builders/PageBuilder/SmartEventActionsRibbon.tsx');
