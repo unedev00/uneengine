@@ -63,7 +63,7 @@ test('restores three Event and three Component Custom selectors without removing
   const html=render({click:{actionType:'Flow',flowApiName:'metadata:flow-id'}},'click','smart_cart');
   for(const label of ['On Click','On Change','On Session Start','+ Icon','− Icon',
     'Custom Button 1','Custom Button 2'])
-    assert.match(html,new RegExp('aria-label="'+label+' action"'));
+    assert.ok(html.includes('aria-label="'+label+' action"'),label+' slot must be permanent');
   assert.match(html,/aria-label="Event"/);
   assert.match(html,/aria-label="Component Custom"/);
   assert.match(html,/aria-label="All component actions"/);
@@ -73,15 +73,15 @@ test('restores three Event and three Component Custom selectors without removing
   assert.match(html,/optgroup label="Page actions"/);
   assert.match(html,/aria-label="On Click action"[^>]*>/);
   assert.match(html,/value="flow:Send_Message" selected=""/);
-  assert.doesNotMatch(html,/aria-label="+ Icon action" disabled/);
-  assert.doesNotMatch(html,/aria-label="− Icon action" disabled/);
+  assert.ok(!html.includes('aria-label="+ Icon action" disabled'));
+  assert.ok(!html.includes('aria-label="− Icon action" disabled'));
 });
 test('inapplicable action slots stay visible but disabled, without losing event mappings',()=>{
   const html=render({},'','smart_button');
   assert.match(html,/aria-label="On Click action"/);
   assert.match(html,/aria-label="On Change action" disabled/);
-  assert.match(html,/aria-label="+ Icon action" disabled/);
-  assert.match(html,/aria-label="− Icon action" disabled/);
+  assert.ok(html.includes('aria-label="+ Icon action" disabled'));
+  assert.ok(html.includes('aria-label="− Icon action" disabled'));
   assert.match(html,/aria-label="Custom Button 1 action" disabled/);
   assert.match(html,/aria-label="Custom Button 2 action" disabled/);
   const view=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
