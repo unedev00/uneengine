@@ -215,3 +215,83 @@
 }
 .office-builder-ribbon .smart-event-picker>span {min-width:90px!important}
 .office-builder-ribbon .smart-event-picker>select {width:145px!important;flex:0 0 145px!important}
+
+/* All components now use one metadata-backed Actions catalog, with no
+   separate Advanced Actions modal. Keep groups within the three-row ribbon. */
+.office-builder-ribbon #page-builder-tab-content.office-ribbon-content:has(>.page-unified-actions-ribbon) {
+  flex-wrap:nowrap!important;overflow-x:auto!important;overflow-y:hidden!important;
+}
+.office-builder-ribbon .page-unified-actions-ribbon {
+  flex:0 0 auto!important;width:max-content!important;min-width:max-content!important;
+  height:114px!important;max-height:114px!important;align-items:flex-start!important;
+  gap:0!important;
+}
+.office-builder-ribbon .page-unified-actions-ribbon>.office-ribbon-mini-group {
+  flex:0 0 275px!important;min-width:275px!important;width:275px!important;
+  height:114px!important;max-height:114px!important;
+  padding:5px 12px 21px 9px!important;gap:4px!important;
+}
+.office-builder-ribbon .page-unified-actions-ribbon>.page-action-library {
+  flex-basis:355px!important;width:355px!important;min-width:355px!important;
+}
+.office-builder-ribbon .page-unified-actions-ribbon .office-ribbon-mini-group>label {
+  display:flex!important;justify-content:space-between!important;align-items:center!important;
+  min-height:28px!important;max-width:100%!important;gap:7px!important;
+}
+.office-builder-ribbon .page-unified-actions-ribbon :is(select,input) {
+  width:185px!important;max-width:185px!important;min-width:0!important;
+  height:26px!important;min-height:26px!important;
+}
+.office-builder-ribbon .page-unified-actions-ribbon .page-action-library select {
+  width:280px!important;max-width:280px!important;
+}
+.office-builder-ribbon .page-unified-actions-ribbon small {
+  display:block;font-size:11px;white-space:nowrap;color:#53647d;
+}
+.office-builder-ribbon .page-unified-actions-ribbon :is(.page-action-details-toggle,.page-action-remove) {
+  display:inline-flex;align-items:center;gap:5px;align-self:flex-start;
+  width:auto!important;min-width:0!important;max-width:none!important;
+  padding:3px 8px!important;height:27px!important;
+  border:1px solid #b7c9df;border-radius:4px;background:#fff;color:#29476a;
+  font-size:11px;cursor:pointer;
+}
+.office-builder-ribbon .page-unified-actions-ribbon .page-action-current-kind {
+  display:inline-block;max-width:185px;min-width:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.office-builder-ribbon .page-unified-actions-ribbon .page-action-empty {
+  align-self:flex-start;margin:14px;padding:8px;color:#53647d;font-size:12px;
+}
+/* Detailed mappings and destinations expand below the ribbon in document flow.
+   They are not another popup and are confined to the Actions tab. */
+.page-builder-inline-actions {
+  position:relative;z-index:2;isolation:isolate;
+  height:clamp(220px,33vh,390px);min-height:220px;
+  max-height:65vh;background:var(--surface,#fff);
+}
+.page-builder-inline-actions .page-ribbon-expanded-content {
+  overflow:auto;min-height:0;scrollbar-gutter:stable;
+}
+.page-builder-inline-actions .metadata-component-properties {
+  display:block!important;width:100%!important;max-width:none!important;
+}
+.page-builder-inline-actions .metadata-component-properties>.office-ribbon-data-section {
+  display:block!important;position:static!important;
+  width:100%!important;min-width:0!important;max-width:none!important;
+  height:auto!important;min-height:0!important;max-height:none!important;
+  padding:0!important;margin:0!important;overflow:visible!important;border:0!important;
+}
+.page-builder-inline-actions .home-page-assignment {
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(min(250px,100%),1fr));
+  gap:9px 16px;align-items:start;
+  padding:12px;margin:6px 0 12px;border:1px solid #dae2ec;border-radius:6px;
+}
+.page-builder-inline-actions .home-page-assignment>strong {
+  grid-column:1/-1;
+}
+.page-builder-inline-actions .home-page-assignment>.form-label {
+  min-width:0;max-width:100%;
+}
+.page-builder-inline-actions .home-page-assignment .form-control {
+  width:100%;max-width:100%;min-width:0;
+}
