@@ -28,7 +28,7 @@ test('Smart Card Grid, Cart and other scrolling Smart components remain bounded'
 });
 
 test('existing appearance selectors still work when the canvas adds a viewport',()=>{
- const appearance=src('pages/TemplatePageRuntime/pageComponentAppearance.css');
+ const appearance=src('core/pages/TemplatePageRuntime/pageComponentAppearance.css');
  for(const target of ['record-detail-grid','record-fields-card','page-nested-layout','fake-tabs']){
   assert.ok(appearance.includes('> .free-canvas-content-viewport > .'+target),target+' is styled through viewport');
  }
@@ -44,7 +44,7 @@ test('floating actions use the visible portion of tall or scrolled components',(
 test('native scroll controls remain usable without moving the page component',()=>{
  const css=src('core/builders/PageBuilder/sections/01-page-builder.css');
  const builder=src('core/builders/PageBuilder/pageBuilderView.tsx');
- const workspace=src('workspace/WorkspaceTheme/sections/07-workspace.css');
+ const workspace=src('core/workspace/WorkspaceTheme/sections/07-workspace.css');
  assert.match(css,/free-canvas-content-viewport > \.canvas-design-interaction-shield/);
  assert.match(css,/\.smart-grid,\.smart-cart-root,\.smart-tabs-shell,\.smart-calendar,\.smart-navigation/);
  assert.match(css,/canvas-design-interaction-shield\{pointer-events:none;\}/);
