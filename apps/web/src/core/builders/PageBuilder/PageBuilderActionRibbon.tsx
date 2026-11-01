@@ -106,7 +106,7 @@ export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,
     }else if(choice.startsWith('type:')){
       const actionType=choice.slice(5);
       if(!actionTypes.some(type=>type.kind===actionType))return;
-      const numericFields=dataFields.filter(field=>/^(Number|Currency|Percent|Integer|Decimal|Double|Float)(\\(|$)/i.test(field.dataType));
+      const numericFields=dataFields.filter(field=>/^(Number|Currency|Percent|Integer|Decimal|Double|Float)(\(|$)/i.test(field.dataType));
       const suggested=numericFields.find(f=>/^(Quantity|Qty)$/i.test(f.apiName))??numericFields[0];
       onChange({...actions,[key]:{...previous,actionType,
         ...(actionType==='Flow'?{flowApiName:''}:{}),
@@ -223,7 +223,7 @@ export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,
             value={String(selected.fieldApiName??'')}
             onChange={e=>patch({fieldApiName:e.target.value})}>
             <option value="">Choose numeric field…</option>
-            {dataFields.filter(field=>/^(Number|Currency|Percent|Integer|Decimal|Double|Float)(\\(|$)/i.test(field.dataType))
+            {dataFields.filter(field=>/^(Number|Currency|Percent|Integer|Decimal|Double|Float)(\(|$)/i.test(field.dataType))
               .map(field=><option key={field.apiName} value={field.apiName}>{field.label}</option>)}
           </select>
         </label>
@@ -240,7 +240,7 @@ export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,
             value={String(selected.relatedFieldApiName??'')}
             onChange={e=>patch({relatedFieldApiName:e.target.value})}>
             <option value="">No relation guard</option>
-            {dataFields.filter(field=>/^(Lookup|Reference)(\\(|$)/i.test(field.dataType))
+            {dataFields.filter(field=>/^(Lookup|Reference)(\(|$)/i.test(field.dataType))
               .map(field=><option key={field.apiName} value={field.apiName}>{field.label}</option>)}
           </select>
         </label>
@@ -267,7 +267,7 @@ export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,
             value={String(selected.unitPriceFieldApiName??'')}
             onChange={e=>patch({unitPriceFieldApiName:e.target.value,totalFieldApiName:e.target.value?selected.totalFieldApiName??'':''})}>
             <option value="">No calculated total</option>
-            {dataFields.filter(field=>/^(Number|Currency|Percent|Integer|Decimal|Double|Float)(\\(|$)/i.test(field.dataType))
+            {dataFields.filter(field=>/^(Number|Currency|Percent|Integer|Decimal|Double|Float)(\(|$)/i.test(field.dataType))
               .map(field=><option key={field.apiName} value={field.apiName}>{field.label}</option>)}
           </select>
         </label>
@@ -276,7 +276,7 @@ export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,
             value={String(selected.totalFieldApiName??'')}
             onChange={e=>patch({totalFieldApiName:e.target.value})}>
             <option value="">None</option>
-            {dataFields.filter(field=>/^(Number|Currency|Percent|Integer|Decimal|Double|Float)(\\(|$)/i.test(field.dataType))
+            {dataFields.filter(field=>/^(Number|Currency|Percent|Integer|Decimal|Double|Float)(\(|$)/i.test(field.dataType))
               .map(field=><option key={field.apiName} value={field.apiName}>{field.label}</option>)}
           </select>
         </label>
