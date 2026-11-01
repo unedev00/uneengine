@@ -22,4 +22,5 @@ cd "$SOURCE"
 # The runner checkout is private to the runner user. Run this one-shot scoped
 # database metadata operation under the already-authorised sudo shell; the
 # PageRuntime checks the single target page and verifies persisted geometry.
+# The preloaded Node process drops uid/gid to metadrive before DB access.
 node apps/server/scripts/apply-codextill-layout-once.mjs
