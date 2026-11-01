@@ -24,7 +24,7 @@ async function readModularCss(url: URL): Promise<string> {
 import { pageAppearanceTarget, pageAppearanceStyleKeys, resolvePageComponentStyle, visualDefaults } from '../src/core/pages/TemplatePageRuntime/pageComponentLayout';
 import { snapCanvasPosition, snapCanvasSize, wrapCanvasComponent, ungroupCanvasComponent, alignCanvasComponents, distributeCanvasComponents } from '../src/core/builders/PageBuilder/canvasInteractions';
 import { copyComponentTree, cloneComponentTree, remapComponentInteractionTargets, assignTabOnReparent } from '../src/core/builders/PageBuilder/pageComponentTree';
-import {canvasGroupKey, canvasGroupBounds, canvasGroupMembers, groupCanvasSelection, ungroupCanvasSelection, moveCanvasLayer, shiftCanvasLayer, scaleCanvasGroup} from '../src/core/builders/PageBuilder/canvasLayerGroups';
+import {canvasGroupKey, canvasGroupBounds, canvasGroupMembers, groupCanvasSelection, ungroupCanvasSelection, moveCanvasLayer, shiftCanvasLayer, canMoveCanvasLayer, canvasSiblingLayerIndex, scaleCanvasGroup} from '../src/core/builders/PageBuilder/canvasLayerGroups';
 import type {PageComponentMetadata} from '../src/core/metadata/Definitions/metadata';
 import type {UneRibbonProperty} from '../src/core/builders/PageBuilder/uneBuilderPropertyInventory';
 import {isSharedCanvasProperty,mixedCanvasPropertyIds,updateSharedCanvasProperties,updateSharedCanvasPositions} from '../src/core/builders/PageBuilder/canvasSharedRibbonProperties';
@@ -632,6 +632,63 @@ test('bring to front and send to back affect only sibling stack and group member
   assert.deepEqual(back.map(item=>item.id),['a','nested','b','c']);
   assert.deepEqual(front.find(item=>item.id==='nested')?.position,items[1].position);
 });
+test('Office-style nested stacking preserves parent boundaries and root order',()=>{
+  const root=canvasFixture('container',0);
+  root.type='Container';
+  const image=canvasFixture('image',12,12,'container');
+  const tab=canvasFixture('tabs',60);
+  tab.type='Tabs';
+  const badge=canvasFixture('badge',20,20,'container');
+  const footer=canvasFixture('footer',120);
+  const page=[tab,image,root,badge,footer];
+  // Tabs sent to back: only root siblings change. Children stay in container.
+  const tabsBack=moveCanvasLayer(page,'tabs','back');
+  assert.deepEqual(tabsBack.map(item=>item.id),page.map(item=>item.id));
+  assert.equal(canMoveCanvasLayer(page,'tabs','back'),false);
+  assert.equal(canMoveCanvasLayer(page,'tabs','front'),true);
+  // A child sent to front cannot escape its container and cover root-level Tabs.
+  const imageFront=moveCanvasLayer(page,'image','front');
+  assert.deepEqual(imageFront.map(item=>item.id),['tabs','badge','container','image','footer']);
+  assert.equal(canvasSiblingLayerIndex(imageFront,'badge'),1);
+  assert.equal(canvasSiblingLayerIndex(imageFront,'image'),2);
+  assert.equal(canvasSiblingLayerIndex(imageFront,'tabs'),1);
+  assert.equal(canvasSiblingLayerIndex(imageFront,'container'),2);
+  assert.equal(canMoveCanvasLayer(imageFront,'image','front'),false);
+  assert.equal(canMoveCanvasLayer(imageFront,'badge','back'),false);
+  // To cover a root tab, bring its CONTAINER forward, not the nested Image.
+  const containerFront=moveCanvasLayer(imageFront,'container','front');
+  assert.deepEqual(containerFront.filter(item=>!item.parentId).map(item=>item.id),
+    ['tabs','footer','container']);
+  assert.equal(canvasSiblingLayerIndex(containerFront,'container'),3);
+  assert.equal(canvasSiblingLayerIndex(containerFront,'image'),2);
+  assert.deepEqual(containerFront.filter(item=>item.parentId).map(item=>item.id),['badge','image']);
+  // Single-step movement never jumps out of the container.
+  assert.deepEqual(shiftCanvasLayer(page,'image',1).map(item=>item.id),
+    imageFront.map(item=>item.id));
+  image.properties.editorLocked=true;
+  assert.equal(canMoveCanvasLayer(page,'image','front'),false);
+  assert.deepEqual(moveCanvasLayer(page,'image','front'),page);
+});
+
+test('UI Image corners share one native clip and Page Builder uses no square selection stroke',async()=>{
+  const image=await readFile(new URL('../src/component-libraries/ui_image/UiImage.jsx',import.meta.url),'utf8');
+  const css=await readFile(new URL('../src/component-libraries/ui_image/UiImage.css',import.meta.url),'utf8');
+  const handles=await readFile(new URL('../src/core/builders/PageBuilder/SmartCanvasHandles.css',import.meta.url),'utf8');
+  const builder=await readFile(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+  const first=await readFile(new URL('../src/core/workspace/WorkspaceTheme/sections/07-workspace.css',import.meta.url),'utf8');
+  const second=await readFile(new URL('../src/core/workspace/WorkspaceTheme/sections/08-workspace.css',import.meta.url),'utf8');
+  assert.match(image,/borderRadius:safe\(p\.radius,12\),overflow:"hidden"/);
+  assert.match(css,/\.une-image-card\s*\{\s*border-radius:var\(--md-page-radius,var\(--one-radius,12px\)\)!important;/);
+  assert.match(css,/\.une-image-card-picture\s*\{\s*border-radius:inherit!important;/);
+  assert.doesNotMatch(first,/\.free-canvas-component\.selected\{outline:2px solid/);
+  assert.doesNotMatch(second,/\.free-canvas-component\.selected\s*\{\s*outline:1\.5px/);
+  assert.match(handles,/\.free-canvas-component\.layout-container-component\{\s*isolation:isolate;/);
+  assert.match(handles,/\.free-canvas-component\[data-page-appearance\]\{\s*outline:0!important;\s*border:0!important;/);
+  assert.match(builder,/canMoveCanvasLayer\(page\.components,component\.id,'front'\)/);
+  assert.match(builder,/canMoveCanvasLayer\(page\.components,component\.id,'back'\)/);
+  assert.match(builder,/canvasSiblingLayerIndex\(page\.components,component\.id\)/);
+});
+
 test('group resize scales geometry proportionally while leaving unrelated components unchanged',()=>{
   const items=[canvasFixture('a',10,20),canvasFixture('b',50,20)];
   const original=canvasGroupBounds(items)!;
