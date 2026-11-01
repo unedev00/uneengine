@@ -4,8 +4,9 @@ import './CanvasFloatingActions.css';
 
 /** Builder chrome is portalled outside the transformed canvas stacking context.
  * Authored component z-order stays unchanged, including send-back/bring-front. */
-export default function CanvasFloatingActions({componentId,viewportRef,children}:{
+export default function CanvasFloatingActions({componentId,viewportRef,children,enabled=true}:{
   componentId:string;
+  enabled?:boolean;
   viewportRef:RefObject<HTMLDivElement|null>;
   children:ReactNode;
 }){
@@ -13,7 +14,7 @@ export default function CanvasFloatingActions({componentId,viewportRef,children}
   const [position,setPosition]=useState({top:0,left:0,visible:false});
   useLayoutEffect(()=>{
     const viewport=viewportRef.current;
-    if(!viewport)return;
+    if(!viewport||!enabled)return;
     const anchor=Array.from(viewport.querySelectorAll<HTMLElement>('.free-canvas-component[data-component-id]'))
       .find(element=>element.dataset.componentId===componentId);
     if(!anchor)return;
@@ -57,7 +58,8 @@ export default function CanvasFloatingActions({componentId,viewportRef,children}
       window.removeEventListener('scroll',schedule,true);
       window.removeEventListener('pointermove',schedule,true);
     };
-  },[componentId,viewportRef]);
+  },[componentId,viewportRef,enabled]);
+  if(!enabled)return <>{children}</>;
   if(typeof document==='undefined')return null;
   return createPortal(<div className="canvas-unified-builder canvas-floating-actions-host"
     ref={floatingRef} data-canvas-actions-for={componentId}
