@@ -440,7 +440,7 @@ export default function MetadataBoundPageComponent({
     {dataError && <div className="records-message" role="alert">{dataError}</div>}
     <RegisteredComponent definition={definition} layoutTransparent={smartCanvas} editorPreview={builderPreview===true&&disableActions} props={{
       ...rowResolvedProperties, ...componentLayoutProps(properties, formFactor),
-      ...(smartCanvas?{width:component.position!.width,height:component.position!.height}:{}),
+      ...(smartCanvas?{canvasFrameSized:true}:{}),
       ...(boundedCardGrid?{boundedViewport:true}:{}),
       ...(categoryFilterKey ? {
         selectedCategory:selectedCategories[categoryFilterKey] ?? String(properties.selectedCategory ?? ''),
