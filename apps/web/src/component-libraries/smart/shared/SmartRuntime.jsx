@@ -1,7 +1,6 @@
 import SmartCart from "../../smart_cart/SmartCart.jsx";
 import icons from "../../smart_icon/iconCatalog.json";
-import {SmartShapeGlyph} from "../../smart_icon/SmartShapes";
-import {smartShapeAppearance,isSmartLineShape} from "./SmartShapeAppearance.js";
+import {smartShapeAppearance} from "./SmartShapeAppearance.js";
 import {evaluateFieldExpression} from "../../shared/FieldExpression.js";
 import {useTenantImageSource} from "../../shared/TenantImage.jsx";
 const number=(v,f,min=0,max=2000)=>Number.isFinite(Number(v))?Math.max(min,Math.min(max,Number(v))):f;
@@ -247,10 +246,6 @@ export default function SmartRuntime(p){
      WebkitMaskImage:'url(/smart-icons/'+buttonIcon.id+'.svg)',
      maskImage:'url(/smart-icons/'+buttonIcon.id+'.svg)'
    }}/>}
-   {isSmartLineShape(p.shapeId)&&!label&&<span className="smart-button-shape" aria-hidden="true"
-     style={{color:p.iconFillColor||p.labelColor||"#fff"}}>
-     <SmartShapeGlyph id={p.shapeId}/>
-   </span>}
    {label&&<span className="smart-button-label">{label}</span>}
  </button>;
  else if(name==="smart_toggle")content=<SmartToggle p={p} fire={fire}/>;
