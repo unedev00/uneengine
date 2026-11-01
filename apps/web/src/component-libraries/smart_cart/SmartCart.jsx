@@ -10,7 +10,7 @@ const numericType=/^(Number|Currency|Percent|Integer|Decimal|Double|Float|Long|S
 const directField=source=>/^@([A-Za-z][A-Za-z0-9_]*)$/.exec(typeof source==="string"?source.trim():"")?.[1]??null;
 const display=value=>value===null||value===undefined||value===""?"—":String(value);
 export default function SmartCart({p,records,Picture,expression,fire}){
- const demo=Boolean(p.previewOnly||p.builderPreview)&&!records.length;
+ const demo=p.builderPreview===true&&!records.length;
  const actions=p.actionFlows&&typeof p.actionFlows==="object"&&!Array.isArray(p.actionFlows)?p.actionFlows:{};
  const canClick=Boolean(actions.click)&&!p.previewOnly&&!p.builderPreview;
  const canChangeQty=Boolean(actions.qtyIcon)&&!p.previewOnly&&!p.builderPreview;

@@ -155,6 +155,75 @@ async function renderSmart(apiName, props) {
  vm.runInNewContext(built.compiledJs,sandbox);
  return renderToStaticMarkup(React.createElement(sandbox.module.exports.default,props));
 }
+
+test('unbound Card Grid displays sample cards only in editable canvas, not live or published',async()=>{
+ const props={textSource:'@Name',imageSource:'@ImageUrl',badgeVisible:true,
+  badgeText:'@Price',cardsPerRow:3,records:[]};
+ const editor=await renderSmart('smart_card_grid',{...props,builderPreview:true,previewOnly:true});
+ assert.match(editor,/Product Name 1/);
+ assert.match(editor,/Product Name 2/);
+ assert.match(editor,/Image Here/);
+ assert.match(editor,/Price/);
+ assert.doesNotMatch(editor,/smart-grid-action/,'demo cards must not trigger add-item actions');
+ const published=await renderSmart('smart_card_grid',props);
+ assert.doesNotMatch(published,/Product Name 1|Image Here/);
+ const withRecords=await renderSmart('smart_card_grid',{
+  ...props,records:[{Id:'real-1',Name:'Real product',Price:150}],
+  builderPreview:true,previewOnly:true
+ });
+ assert.match(withRecords,/Real product/);
+ assert.doesNotMatch(withRecords,/Product Name 1|Image Here/);
+});
+
+test('Cart sample lines stay in editor and never appear in read-only preview',async()=>{
+ const editor=await renderSmart('smart_cart',{builderPreview:true,previewOnly:true,records:[]});
+ assert.match(editor,/Preview items \(3\)/);
+ const runtime=await renderSmart('smart_cart',{previewOnly:true,records:[]});
+ assert.doesNotMatch(runtime,/Preview items \(3\)|Sample item/);
+});
+
+test('Image, Tabs, Navigation, Text and Container have editor-only empty previews',async()=>{
+ const image=await renderSmart('smart_image',{builderPreview:true,imageSource:'@ImageUrl'});
+ assert.match(image,/Image Here/);
+ const publishedImage=await renderSmart('smart_image',{imageSource:'@ImageUrl'});
+ assert.doesNotMatch(publishedImage,/Image Here/);
+ const tabs=await renderSmart('smart_tabs',{
+  objectApiName:'Category',textSource:'@Name',records:[],builderPreview:true
+ });
+ assert.match(tabs,/Tab 1/);
+ assert.doesNotMatch(tabs,/No matching records/);
+ const publishedTabs=await renderSmart('smart_tabs',{
+  objectApiName:'Category',textSource:'@Name',records:[]
+ });
+ assert.match(publishedTabs,/No matching records/);
+ const nav=await renderSmart('smart_navigation',{builderPreview:true,items:[]});
+ assert.match(nav,/>Home<\/button>/);
+ const publishedNav=await renderSmart('smart_navigation',{items:[]});
+ assert.doesNotMatch(publishedNav,/>Home<\/button>/);
+ const input=await renderSmart('smart_text',{builderPreview:true,label:''});
+ assert.match(input,/placeholder="Text Here"/);
+ const container=await renderSmart('smart_container',{builderPreview:true});
+ assert.match(container,/Drop components here/);
+ const publishedContainer=await renderSmart('smart_container',{});
+ assert.doesNotMatch(publishedContainer,/Drop components here/);
+ const nested=await renderSmart('smart_container',{
+  builderPreview:true,children:React.createElement('span',null,'My content')
+ });
+ assert.match(nested,/My content/);
+ assert.doesNotMatch(nested,/Drop components here/);
+});
+
+test('all editor previews are ephemeral and never stored or visible in published runtime',()=>{
+ const canvas=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const bound=read('../src/core/pages/MetadataBoundPageComponent/MetadataBoundPageComponent.tsx');
+ const css=read('../src/core/builders/PageBuilder/PageBuilderEditorPreview.css');
+ assert.match(canvas,/builderPreview: !previewMode/);
+ assert.match(bound,/builderPreview: builderPreview===true&&disableActions/);
+ assert.match(canvas,/page-editor-generic-hint/);
+ assert.match(canvas,/data-builder-editor=\{!previewMode/);
+ assert.match(css,/pointer-events:none/);
+ assert.doesNotMatch(css,/\.free-canvas-component\.selected\s*\{/);
+});
 test('edited Smart Button label renders instead of metadata component name',async()=>{
  const html=await renderSmart('smart_button',{label:'Pay now',builderPreview:true});
  assert.match(html,/Pay now/);
