@@ -3,13 +3,12 @@ import {Workflow, Smartphone, Boxes, ListChecks, ShieldCheck, SlidersHorizontal}
 import './PageBuilderAdvancedRibbon.css';
 
 export type AdvancedFeature =
-  | 'actions' | 'responsive' | 'nesting'
+  | 'responsive' | 'nesting'
   | 'recordPage' | 'assignments' | 'properties';
 
 type Feature={key:AdvancedFeature;label:string;hint:string;scope:'component'|'record'|'page';icon:typeof Workflow};
 const groups: Array<{label:string;features:Feature[]}> = [
   {label:'Component',features:[
-    {key:'actions',label:'Advanced actions',hint:'Flows, navigation, page state, filters and event mappings',scope:'component',icon:Workflow},
     {key:'responsive',label:'Responsive settings',hint:'Edit the active device layout and component responsive properties',scope:'component',icon:Smartphone},
     {key:'nesting',label:'Component nesting',hint:'Set the parent container and configure nested blocks',scope:'component',icon:Boxes},
     {key:'properties',label:'Advanced properties',hint:'Open all existing component configuration controls',scope:'component',icon:SlidersHorizontal}
