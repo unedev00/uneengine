@@ -103,9 +103,35 @@ function MediaStabilityFixture(){
   </section>
  </main>;
 }
+
+function CanvasActionLayerFixture(){
+ const viewport=React.useRef(null);
+ const [opened,setOpened]=React.useState(false);
+ return <main ref={viewport} style={{height:550,overflow:'auto',position:'relative'}}>
+  <div className="canvas-unified-builder modern-canvas-builder free-canvas-stage"
+   style={{position:'relative',height:750,width:900}}>
+   <div className="free-canvas-component selected" data-component-id="selected-test"
+    style={{position:'absolute',left:80,top:190,width:340,height:170,zIndex:0,background:'#dbeafe'}}>
+    <CanvasFloatingActions componentId="selected-test" viewportRef={viewport}>
+     <div className="canvas-element-actions" role="toolbar" aria-label="Selected canvas tools"
+      onPointerDown={event=>event.stopPropagation()} onClick={event=>event.stopPropagation()}>
+      <button type="button" title="Edit selected item" onClick={()=>setOpened(true)}>Edit selected item</button>
+      {opened&&<button type="button">Canvas menu action</button>}
+     </div>
+    </CanvasFloatingActions>
+    This selected item stays behind the overlapping authored layer.
+   </div>
+   <div className="free-canvas-component" aria-label="Overlapping item"
+    style={{position:'absolute',left:65,top:115,width:480,height:170,zIndex:10,background:'#fecaca'}}>
+    Higher authored component layer
+   </div>
+  </div>
+ </main>;
+}
 function RecordImportCheck(){ const [ready,setReady]=React.useState(false); React.useEffect(()=>{import('../src/core/records/RecordWorkspace/recordWorkspaceViews').then(module=>setReady(typeof module.createRecordWorkspaceViews === 'function'));},[]);return <p>{ready ? 'Record workspace import passed' : 'Loading record workspace'}</p>; }
 function Fixture(){
  if(view==='image-render-stability')return <MediaStabilityFixture/>;
+ if(view==='floating-canvas-actions')return <CanvasActionLayerFixture/>;
  if(view==='card-grid-scroll'){
    const sampleCards=Array.from({length:42},(_,i)=>({Id:'product-'+i,Name:'Product '+String(i+1),Price:i+1}));
    const base={records:sampleCards,cardsPerRow:3,desktopColumns:3,tabletColumns:2,mobileColumns:2,
