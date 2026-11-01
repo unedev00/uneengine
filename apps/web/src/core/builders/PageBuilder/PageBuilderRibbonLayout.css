@@ -92,7 +92,7 @@
 .office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content
   > .une-universal-ribbon .une-universal-ribbon-controls {
   grid-template-rows: repeat(3,26px) !important;
-  height: 90px !important;
+  height: 86px !important;
   min-height: 0 !important;
 }
 .office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content
