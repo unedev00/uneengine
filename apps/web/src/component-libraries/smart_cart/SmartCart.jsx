@@ -51,7 +51,31 @@ export default function SmartCart({p,records,Picture,expression,fire}){
    return p.pageState&&Object.prototype.hasOwnProperty.call(p.pageState,key)
     ?p.pageState[key]:null;
   }
+  // SUM(@Price * @Quantity) is a display-only aggregation over the
+  // authorised loaded cart records. Never silently sum a truncated set.
+  const sum=typeof source==='string'?/^SUM\s*\(([\s\S]+)\)$/i.exec(source.trim()):null;
+  if(sum){
+   const term=sum[1].trim();
+   if(!term||term.length>500||!records.length||records.length>200)return null;
+   let total=0;
+   for(const record of records){
+    const raw=expression(term,record);
+    const value=(typeof raw==='number'||typeof raw==='string'&&raw.trim())?Number(raw):NaN;
+    if(!Number.isFinite(value))return null;
+    total+=value;
+    if(!Number.isFinite(total))return null;
+   }
+   return total;
+  }
   return expression(source,summaryRecord);
+ };
+ const summaryLabel=(key,fallback)=>typeof p[key]==='string'&&p[key].trim()
+  ?p[key].trim():fallback;
+ const summaryLabels={
+  Subtotal:summaryLabel('subtotalLabel','Subtotal'),
+  Discount:summaryLabel('discountLabel','Discount'),
+  Tax:summaryLabel('taxLabel','Tax'),
+  Total:summaryLabel('totalLabel','Total')
  };
  const summaryAmounts={Subtotal:money(summarySource(p.subtotalValue)),
   Discount:money(summarySource(p.discountValue)),
@@ -179,11 +203,11 @@ export default function SmartCart({p,records,Picture,expression,fire}){
    {["Subtotal","Discount","Tax"].map(label=><div key={label} className="smart-cart-summary-line"
     style={{fontSize:n(p.summaryTextSize,14,8,96),
      fontWeight:p.summaryTextWeight===true?700:400,color:p.summaryTextColor||"#52657d"}}>
-    <span>{label}</span><span aria-label={summaryAmounts[label]===null?label+" not bound":undefined}>{summaryAmounts[label]??"—"}</span></div>)}
+    <span>{summaryLabels[label]}</span><span aria-label={summaryAmounts[label]===null?summaryLabels[label]+" not bound":undefined}>{summaryAmounts[label]??"—"}</span></div>)}
    <div className="smart-cart-summary-line smart-cart-total" style={{
     fontSize:n(p.summary2TextSize,18,8,96),fontWeight:p.summary2TextWeight===false?400:700,
     color:p.summary2TextColor||"#1c3558"}}>
-    <span>Total</span><span aria-label={summaryAmounts.Total===null?"Total not bound":undefined}>{summaryAmounts.Total??"—"}</span>
+    <span>{summaryLabels.Total}</span><span aria-label={summaryAmounts.Total===null?summaryLabels.Total+" not bound":undefined}>{summaryAmounts.Total??"—"}</span>
    </div>
   </section>
   {(p.builderPreview||p.previewOnly)&&<div className="smart-cart-preview-note">Visual preview — totals and actions are configured separately</div>}
