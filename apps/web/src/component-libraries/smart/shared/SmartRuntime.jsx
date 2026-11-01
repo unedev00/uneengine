@@ -2,7 +2,6 @@ import SmartCart from "../../smart_cart/SmartCart.jsx";
 import icons from "../../smart_icon/iconCatalog.json";
 import {smartShapeAppearance} from "./SmartShapeAppearance.js";
 import {evaluateFieldExpression} from "../../shared/FieldExpression.js";
-import {scopedFieldAllows} from "../../../core/pages/PageRuntime/fieldScopedRecordFilters";
 import {useTenantImageSource} from "../../shared/TenantImage.jsx";
 const number=(v,f,min=0,max=2000)=>Number.isFinite(Number(v))?Math.max(min,Math.min(max,Number(v))):f;
 const text=(v)=>v===null||v===undefined?"":String(v);
@@ -25,9 +24,11 @@ function SmartPicture({src,alt,loadAsset,style}){
 // Reuse the normal authorised record-filter matcher for independent value
 // visibility. Global object filtering/paging remains untouched.
 const fieldAllows=(p,key,record)=>{
- const object=Array.isArray(p.objects)?p.objects.find(o=>o.apiName===p.objectApiName):null;
- return scopedFieldAllows(p.dataFieldFilters,key,record??{},object?.fields??[],
-   {pageState:p.pageState??{},sessionId:p.sessionId,recordId:p.recordId});
+ if(typeof p.fieldAllowed==='function')return p.fieldAllowed(key,record??{});
+ // Outside the authorised page runtime, reject configured scoped rules rather
+ // than silently exposing an unverified value.
+ return !p.dataFieldFilters||typeof p.dataFieldFilters!=='object'
+   ||!Object.prototype.hasOwnProperty.call(p.dataFieldFilters,key);
 };
 const scopedExpression=(p,key,source,record)=>fieldAllows(p,key,record)
  ?expression(source,record):"";
