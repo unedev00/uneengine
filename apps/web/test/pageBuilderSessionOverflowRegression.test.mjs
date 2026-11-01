@@ -23,7 +23,7 @@ test('all Page Builder tabs share one 114px content lane and a separate scrollba
  assert.match(css,/direction: ltr !important/);
  assert.match(css,/scrollbar-width: thin !important/);
  assert.match(css,/width: max-content !important/);
- assert.ok(page.includes("import './PageBuilderRibbonLayout.css';"));
+ assert.match(page,/PageBuilderRibbonLayout\\.css/);
 });
 
 test('Cart supports selected-row custom Flow actions and Container only has one normal border',()=>{
