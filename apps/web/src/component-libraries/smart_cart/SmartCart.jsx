@@ -9,7 +9,9 @@ const tracks=['minmax(0,2.2fr)','minmax(0,1fr)','minmax(78px,1.35fr)','minmax(0,
 const numericType=/^(Number|Currency|Percent|Integer|Decimal|Double|Float|Long|Short|Int)$/i;
 const directField=source=>/^@([A-Za-z][A-Za-z0-9_]*)$/.exec(typeof source==="string"?source.trim():"")?.[1]??null;
 const display=value=>value===null||value===undefined||value===""?"—":String(value);
-export default function SmartCart({p,records,Picture,expression,fire}){
+export default function SmartCart({p,records,Picture,expression,fieldAllowed,fire}){
+ const allows=(key,row)=>typeof fieldAllowed!=='function'||fieldAllowed(key,row);
+ const fieldExpression=(key,source,row)=>allows(key,row)?expression(source,row):'';
  const demo=p.builderPreview===true&&!records.length;
  const actions=p.actionFlows&&typeof p.actionFlows==="object"&&!Array.isArray(p.actionFlows)?p.actionFlows:{};
  const canClick=Boolean(actions.click)&&!p.previewOnly&&!p.builderPreview;
@@ -45,7 +47,8 @@ export default function SmartCart({p,records,Picture,expression,fire}){
  // The same existing ribbon expression evaluator resolves @Field, formulas,
  // literals and Flow-bound Page State values; all fields come from authorised rows.
  const summaryRecord=records[0]??{};
- const summarySource=source=>{
+ const summarySource=(source,key)=>{
+  if(!allows(key,summaryRecord))return null;
   if(typeof source==='string'&&/^\$state\.[A-Za-z][A-Za-z0-9_]{0,63}$/.test(source)){
    const key=source.slice(7);
    return p.pageState&&Object.prototype.hasOwnProperty.call(p.pageState,key)
@@ -77,10 +80,10 @@ export default function SmartCart({p,records,Picture,expression,fire}){
   Tax:summaryLabel('taxLabel','Tax'),
   Total:summaryLabel('totalLabel','Total')
  };
- const summaryAmounts={Subtotal:money(summarySource(p.subtotalValue)),
-  Discount:money(summarySource(p.discountValue)),
-  Tax:money(summarySource(p.taxValue)),
-  Total:money(summarySource(p.totalValue))};
+ const summaryAmounts={Subtotal:money(summarySource(p.subtotalValue,'subtotalValue')),
+  Discount:money(summarySource(p.discountValue,'discountValue')),
+  Tax:money(summarySource(p.taxValue,'taxValue')),
+  Total:money(summarySource(p.totalValue,'totalValue'))};
  const rowHeight=n(p.rowHeight,64,24);
  const rowLimit=Math.floor(n(p.cardsPerRow,5,1,50));
  const visible=Array.isArray(p.columnVisibility)
@@ -99,9 +102,9 @@ export default function SmartCart({p,records,Picture,expression,fire}){
   const legacyKey=['Quantity','quantity','Qty','qty'].find(key=>record?.[key]!==undefined);
   const fieldName=legacy?legacyKey:quantityField;
   const raw=fieldName?record?.[fieldName]:undefined;
-  const computed=legacy?raw:expression(p.column3Source,record);
+  const computed=legacy?raw:fieldExpression('column3Source',p.column3Source,record);
   // A calculated number is not a writable numeric field: suppress +/- for formulas.
-  const numeric=Boolean(fieldName)&&(legacy
+  const numeric=allows('column3Source',record)&&Boolean(fieldName)&&(legacy
    ?(typeof raw==='number'&&Number.isFinite(raw)||
      typeof raw==='string'&&raw.trim()!==''&&Number.isFinite(Number(raw)))
    :field?numericType.test(field.dataType):typeof raw==='number'&&Number.isFinite(raw));
@@ -143,8 +146,8 @@ export default function SmartCart({p,records,Picture,expression,fire}){
     <div className="smart-cart-rows" role="region" tabIndex={0} aria-label="Cart item rows"
      style={{maxHeight:rowLimit*(effectiveRowHeight+6)}}>
      {rows.map((record,i)=>{
-      const name=demo?"Sample item "+(i+1):(p.textSource?expression(p.textSource,record):"Product "+(i+1));
-      const src=p.imageSource?expression(p.imageSource,record):"";
+      const name=demo?"Sample item "+(i+1):(p.textSource?fieldExpression('textSource',p.textSource,record):"Product "+(i+1));
+      const src=p.imageSource?fieldExpression('imageSource',p.imageSource,record):"";
       const itemId=record?.Id??record?.id??null;
       const payload={record,recordId:itemId};
       const rowKey=rowKeys[i];
@@ -175,7 +178,7 @@ export default function SmartCart({p,records,Picture,expression,fire}){
         </div>;
         if(index===2)return <div key={index} className="smart-cart-cell-qty">
          {renderQuantity(record,name,payload)}</div>;
-        const value=demo||!sources[index]?"—":expression(sources[index],record);
+        const value=demo||!sources[index]?"—":fieldExpression('column'+(index+1)+'Source',sources[index],record);
         return <span key={index} className="smart-cart-cell" aria-label={value==="—"?headings[index]+" not bound":undefined}>
          {display(value)}</span>;
        })}
