@@ -3131,7 +3131,7 @@ function PageBuilder({
               onSelectEvent={setInlineActionEvent}
               showDetails={inlineActionSettingsOpen}
               onToggleDetails={()=>setInlineActionSettingsOpen(open=>!open)}
-              onChange={applyActionFlows}/>
+              onChange={applyActionFlows}/>}
           {selected?.type==='Custom:smart_icon' && ribbonTab==='Component Layout' &&
             <SmartIconGallery value={String(selected.properties.iconId??'house')}
               disabled={ribbonSelectedMembers.some(item=>item.type!=='Custom:smart_icon'||isCanvasLocked(item))}
