@@ -81,6 +81,18 @@ export async function validateFlowDraft(rbac:RbacEngine|undefined,tenantId:strin
  const beforeSave=data.flowType==='Record-Triggered Flow'&&startConfig.runWhen==='before-save';
  const catalogType=capabilities?.flowTypes.find(type=>type.type===data.flowType);
  if(data.flowType==='In-Screen Flow'){
+  const bindings=startConfig.inputBindings;
+  if(bindings!==undefined){
+   const sources=['auto','page.sessionKey','page.apiName','app.apiName',
+    'event.recordId','event.componentId','event.name','event.value'];
+   const inputNames=new Set(Array.isArray(data.resources)
+    ?(data.resources as Array<{name?:unknown;availableForInput?:unknown}>)
+      .filter(resource=>resource.availableForInput===true).map(resource=>resource.name):[]);
+   if(!bindings||typeof bindings!=='object'||Array.isArray(bindings)
+     ||Object.entries(bindings as Record<string,unknown>).some(([name,source])=>
+       !inputNames.has(name)||!sources.includes(String(source))))
+    errors.push('Invalid In-Screen input binding configuration');
+  }
   const windowFields=['windowPageApiName','targetAppApiName','targetPageApiName','launchEventName'] as const;
   for(const field of windowFields){
    const value=startConfig[field];
@@ -99,7 +111,7 @@ export async function validateFlowDraft(rbac:RbacEngine|undefined,tenantId:strin
    errors.push('Invalid In-Screen window position');
   for(const [field,min,max] of [['windowWidth',320,1600],['windowHeight',320,1000],['cooldownSeconds',0,3600]] as const){
    const val=startConfig[field];
-   if(val!==undefined&&(!Number.isSafeInteger(val)||Number(val)<min||Number(val)>max))
+   if(val!==undefined&&(typeof val!=='number'||!Number.isSafeInteger(val)||val<min||val>max))
     errors.push('Invalid In-Screen Flow '+field);
   }
  }

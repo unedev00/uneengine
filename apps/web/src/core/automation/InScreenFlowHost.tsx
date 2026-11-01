@@ -30,10 +30,22 @@ export default function InScreenFlowHost({flows,appApiName,pageApiName,onLaunchF
     const candidate=detail.recordId??payload.recordId??record.Id??record.id;
     const values:Record<string,unknown>={appApiName,pageApiName,sessionKey,eventName:detail.event??trigger,
       componentId:detail.componentId??'',recordId:typeof candidate==='string'?candidate:''};
+    const sourceValues:Record<string,unknown>={
+      'page.sessionKey':sessionKey,'page.apiName':pageApiName,'app.apiName':appApiName,
+      'event.recordId':values.recordId,'event.componentId':values.componentId,
+      'event.name':values.eventName,'event.value':detail.value
+    };
+    const mapping=objectValue(settings.inputBindings);
     const inputs:Record<string,unknown>={};
-    for(const resource of flow.resources??[])
-     if(resource.availableForInput&&Object.prototype.hasOwnProperty.call(values,resource.name)&&values[resource.name]!=='')
-      inputs[resource.name]=values[resource.name];
+    for(const resource of flow.resources??[]){
+     if(!resource.availableForInput)continue;
+     const source=mapping[resource.name];
+     const value=typeof source==='string'&&source!=='auto'
+       ?sourceValues[source]:values[resource.name];
+     if(value===undefined||value==='')continue;
+     if(typeof value==='object'&&JSON.stringify(value).length>8192)continue;
+     inputs[resource.name]=value;
+    }
     recent.current.set(key,now);
     if(trigger==='page-load')firstLoad.current.add(key);
     if(settings.oncePerSession===true)once.current.add(key);

@@ -599,6 +599,9 @@ export default function FlowBuilder({
       object={objects.find(obj=>obj.apiName===selected?.config.object)}
       config={selected?.config ?? {}} onChange={rows=>setConfig('fieldValues',rows)} />
   );
+  const inScreenBindings=flow.startConfig.inputBindings&&typeof flow.startConfig.inputBindings==='object'
+    &&!Array.isArray(flow.startConfig.inputBindings)
+    ?flow.startConfig.inputBindings as Record<string,string>:{};
   const renderStartSettings = () => (
     <>
       <label className="form-label">Execution Context<select className="form-control"
@@ -684,7 +687,25 @@ export default function FlowBuilder({
             value={displayValue(flow.startConfig.cooldownSeconds)||0}
             onChange={event=>setStartConfig('cooldownSeconds',Number(event.target.value))}/>
         </label>
-        <p className="settings-panel-copy">Use Flow Manager inputs, Get Records and Decision to bind any permitted Object, relationship or business session.</p>
+        <fieldset className="metadata-card"><legend>Flow input bindings</legend>
+          <p className="settings-panel-copy">Map declared Flow inputs to the triggering context. Resolve business records and related fields with authorised Get Records elements.</p>
+          {flow.resources.filter(resource=>resource.availableForInput).map(resource=>
+            <label className="form-label" key={resource.name}>{resource.label||resource.name}
+              <select className="form-control" value={inScreenBindings[resource.name]??'auto'}
+                onChange={event=>setStartConfig('inputBindings',{
+                  ...inScreenBindings,[resource.name]:event.target.value
+                })}>
+                <option value="auto">Automatically match input name</option>
+                <option value="page.sessionKey">Current page session key</option>
+                <option value="page.apiName">Current page</option>
+                <option value="app.apiName">Current application</option>
+                <option value="event.recordId">Triggered record ID</option>
+                <option value="event.componentId">Triggering component</option>
+                <option value="event.name">Triggering event name</option>
+                <option value="event.value">Triggering event value</option>
+              </select>
+            </label>)}
+        </fieldset>
       </fieldset>}
       {flow.flowType === 'Platform Event-Triggered Flow' && <>
         <label className="form-label">Platform Event<select className="form-control" value={flow.triggerObject ?? ''} onChange={(event) => setStartConfig('object', event.target.value)}><option value="">Select platform event</option>{platformEvents.map((platformEvent) => <option key={platformEvent.apiName} value={platformEvent.apiName}>{platformEvent.label} ({platformEvent.apiName})</option>)}</select></label>
