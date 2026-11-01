@@ -2745,6 +2745,8 @@ function PageBuilder({
     if(['responsive','nesting','properties'].includes(feature)&&!selected)return;
     if(feature==='recordPage'&&page.pageType!=='Record Page')return;
     if(feature==='properties'){setInspectorTab('Data & Actions');setActivePanel('properties');}
+    // Arrange → Nesting and other deep links must activate the inline Advanced tab.
+    setRibbonTab('Advanced');
     setAdvancedEditor(feature);
   };
   const quickAccessOrder=['save','activate','preview','exitPreview','resetIcon','undo','redo','cut','copy','paste','delete'] as const;
