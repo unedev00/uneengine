@@ -12,6 +12,8 @@ const diagnostic=new URL('../../../../scripts/oracle/check-communication-backlog
 const startupDiagnostic=new URL('../../../../scripts/oracle/diagnose-api-startup.py',import.meta.url);
 const ownerRepair=new URL('../../../../scripts/oracle/repair-oauth-function-owner.py',import.meta.url);
 const managerRecovery=new URL('../../../../scripts/oracle/recover-systemd-manager.sh',import.meta.url);
+const mcpFailedCleanup=new URL('../../../../scripts/oracle/clear-failed-mcp-brokers.sh',import.meta.url);
+const mcpInstaller=new URL('../../../../scripts/oracle/install-mcp-broker.sh',import.meta.url);
 const busRecovery=new URL('../../../../scripts/oracle/recover-systemd-bus.sh',import.meta.url);
 const ownerTests=new URL('../../../../scripts/oracle/',import.meta.url);
 
@@ -125,11 +127,11 @@ test('One-time Oracle systemd manager reexecution requires a timed-out reload an
  // A spent one-per-boot manager signal guard must still allow a bounded,
  // non-disruptive reset of only failed MCP broker template units.
  assert.match(sh,/Retrying non-disruptive failed MCP broker cleanup/);
- assert.match(sh,/if ! timeout 20 systemctl reset-failed/);
+ assert.ok(sh.includes('clear-failed-mcp-brokers.sh'));
  assert.match(sh,/if timeout 150 systemctl daemon-reload/);
  assert.equal((sh.match(/kill -s TERM 1/g)??[]).length,1);
  assert.equal((sh.match(/kill -s USR1 1/g)??[]).length,1);
- assert.ok(sh.indexOf("systemctl reset-failed 'metadrive-mcp-broker@*.service'") <
+ assert.ok(sh.indexOf('clear-failed-mcp-brokers.sh') <
    sh.indexOf('if timeout 150 systemctl daemon-reload'));
  assert.match(sh,/kill -s TERM 1/);
  assert.doesNotMatch(sh,/^\s*(?:reboot|poweroff|shutdown|pkill|killall)\b/m);
@@ -164,4 +166,27 @@ test('Oracle systemd diagnostic inspects recovery state without mutating live se
  assert.ok(yaml.includes('systemctl show -p Jobs -p NFailedUnits'));
  assert.ok(!yaml.includes('sudo -n systemctl restart'));
  assert.ok(!yaml.includes('sudo -n systemctl daemon-reload'));
+});
+
+test('failed MCP unit cleanup is bounded, only touches failed broker instances, and prevents recurrence',()=>{
+ const cleanup=readFileSync(mcpFailedCleanup,'utf8');
+ const installer=readFileSync(mcpInstaller,'utf8');
+ const recovery=readFileSync(managerRecovery,'utf8');
+ const workflowSource=readFileSync(workflow,'utf8');
+ assert.ok(cleanup.includes('systemctl list-units --all --failed'));
+ assert.ok(cleanup.includes('systemctl reset-failed --'));
+ assert.ok(cleanup.includes('batch=96'));
+ assert.ok(cleanup.includes('CollectMode=inactive-or-failed'));
+ assert.ok(installer.includes('CollectMode=inactive-or-failed'));
+ assert.ok(cleanup.includes('GITHUB_REPOSITORY'));
+ assert.ok(cleanup.includes('uname -m'));
+ assert.ok(recovery.includes('timeout 900 bash'));
+ assert.ok(workflowSource.includes('bash -n scripts/oracle/clear-failed-mcp-brokers.sh'));
+ assert.ok(!cleanup.includes('systemctl restart'));
+ assert.ok(!cleanup.includes('systemctl stop'));
+ assert.ok(!cleanup.includes('systemctl daemon-reload'));
+ if(process.platform!=='win32'){
+  const syntax=spawnSync('bash',['-n',fileURLToPath(mcpFailedCleanup)],{encoding:'utf8'});
+  assert.equal(syntax.status,0,syntax.stderr);
+ }
 });
