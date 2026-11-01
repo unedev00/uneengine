@@ -166,3 +166,10 @@
   .smart-property[data-property="columnVisibility"] .smart-multiselect-trigger>span{
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
+
+/* Higher specificity than the legacy global 4px three-row rule: use the
+ * same 2px horizontal gap as the Data section-width calculation. */
+.office-builder-ribbon #page-builder-tab-content
+  .smart-ribbon[data-three-row="true"] .smart-data-sections .smart-ribbon-row{
+  column-gap:2px!important;
+}
