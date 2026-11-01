@@ -117,8 +117,8 @@
  pointer-events:auto;
 }
 /* Corners on the canvas boundary must remain accessible, not be clipped. */
-.builder-editor-mode .modern-canvas-builder .free-canvas-stage.canvas-editing{
- overflow:visible;
+ .builder-editor-mode .modern-canvas-builder .free-canvas-stage.canvas-editing{
+ overflow:hidden;
 }
 /* Native images and runtime wrappers otherwise advertise grab/pointer cursors.
    In the designer all non-toolbar component content is a four-way move surface.
