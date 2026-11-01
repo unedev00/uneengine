@@ -13,8 +13,9 @@ const coordinates:Record<CanvasResizeEdge,[number,number]>={
  * cover the selected component's resize handles. Only the handles accept hits;
  * the authored canvas and its z-order remain untouched.
  */
-export default function CanvasFloatingResizeHandles({componentId,viewportRef,onStart,onMove,onEnd,onCancel}:{
+export default function CanvasFloatingResizeHandles({componentId,componentLabel,viewportRef,onStart,onMove,onEnd,onCancel}:{
  componentId:string;
+ componentLabel:string;
  viewportRef:RefObject<HTMLDivElement|null>;
  onStart:(event:ReactPointerEvent<HTMLButtonElement>,edge:CanvasResizeEdge)=>void;
  onMove:(event:ReactPointerEvent<HTMLButtonElement>)=>void;
@@ -64,7 +65,7 @@ export default function CanvasFloatingResizeHandles({componentId,viewportRef,onS
     className={`free-canvas-resize-handle floating-resize-${edge}`}
     style={{left:rect.left+rect.width*coordinates[edge][0],
       top:rect.top+rect.height*coordinates[edge][1]}}
-    aria-label={`Resize selected component ${edge}`} title={`Drag ${edge} corner or edge to resize`}
+    aria-label={`Resize ${componentLabel} ${edge}`} title={`Drag ${edge} corner or edge to resize`}
     onPointerDown={event=>onStart(event,edge)}
     onPointerMove={onMove} onPointerUp={onEnd}
     onPointerCancel={onCancel} onLostPointerCapture={onCancel}
