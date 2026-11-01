@@ -60,4 +60,6 @@ test('Container, Input Box, Toggle and Lookup Record share the same shape render
  assert.match(lookup,/role="combobox"/);
  const toggle=await renderSmart('smart_toggle',{shapeId:'shape:triangle'});
  assert.match(toggle,/role="switch"/);
+ const rectangularToggle=await renderSmart('smart_toggle',{shapeId:'shape:rectangle'});
+ assert.match(rectangularToggle,/border-radius:0/);
 });
