@@ -3160,54 +3160,99 @@ function PageBuilder({
             }}
             onNesting={()=>openAdvanced('nesting')}/>}
           {ribbonTab==='Advanced' && <PageBuilderAdvancedSections
-            section={advancedEditor} onSelect={openAdvanced} selected={!!selected}
-            recordPage={page.pageType==='Record Page'} appPage={page.pageType==='App Page'}
-            onInspectorHost={setRibbonPropertyHost}>
-            {advancedEditor==='responsive' && selected && <>
-              <p className="properties-help">Device-specific overrides use the shared layout engine. Select a page device layout in Layout first.</p>
-              <PageBuilderAdvancedResponsive properties={selected.properties} device={currentRibbonDevice}
-                onChange={(properties:Record<string,unknown>)=>updateComponent(selected.id,{properties})}/>
-            </>}
-            {advancedEditor==='nesting' && selected && <section className="page-builder-advanced-nesting" aria-label="Component nesting">
-              <label className="checkbox-row"><input type="checkbox"
-                checked={isLayoutContainer(selected)} disabled={!selectedCustomDefinition&&!isLayoutContainer(selected)}
-                onChange={event=>{
-                  if(!event.target.checked&&childrenOf(page.components,selected.id).length){
-                    onNotify('Move children out before disabling nesting.');return;
-                  }
-                  updateComponent(selected.id,{properties:{...selected.properties,layoutContainer:event.target.checked}});
-                }}/>Accept nested components</label>
-              <label className="form-label">Parent container
-                <select className="form-control" aria-label="Advanced parent container"
-                  value={rawLayoutParentId(selected)??''}
-                  onChange={event=>{
-                    const parent=event.target.value||null;
-                    if(!canNest(page.components,selected.id,parent)){
-                      onNotify('A component cannot be nested inside itself or a descendant.');return;
-                    }
-                    applyPage({...page,components:reparentComponent(page.components,selected.id,parent)});
-                  }}>
-                  <option value="">Canvas / page root</option>
-                  {page.components.filter(item=>canNest(page.components,selected.id,item.id))
-                    .map(item=><option key={item.id} value={item.id}>{item.label}</option>)}
-                </select></label>
-              {isLayoutContainer(selected)&&<div className="page-builder-advanced-children">
-                <strong>Nested components</strong>
-                {childrenOf(page.components,selected.id).map(item=><button key={item.id}
-                  type="button" className="btn btn-small" onClick={()=>setSelectedId(item.id)}>
-                  {item.label}</button>)}
-              </div>}
-            </section>}
-            {advancedEditor==='properties' && selected && <MetadataComponentProperties
-              key={selected.id+':'+page.layoutVariant} mode="details" properties={selected.properties}
-              onChange={(properties:Record<string,unknown>)=>updateComponent(selected.id,{properties})}
-              pageComponents={page.components} componentCatalog={libraryComponents}
-              definitions={selectedCustomDefinition?.propertyDefinitions}
-              device={page.layoutVariant??'Desktop'} componentVersion={selectedCustomDefinition?.version}
-              objects={objects} apps={apps} pages={pages}
-              currentAppId={builderAppApiName||apps[0]?.apiName||'Records'}
-              primaryObjectApiName={page.targetObject} flows={flows}/>}
-          </PageBuilderAdvancedSections>}
+            section={advancedEditor} onInspectorHost={setRibbonPropertyHost}
+            assignment={{
+              enabled:page.pageType!=='App Page',
+              assigned:(page.activationAssignments??[]).length>0,
+              isDefault:page.pageType==='Record Page'?recordScope==='Org Default':homeScope==='App Default',
+              role:page.pageType==='Record Page'?recordProfileId:homeProfileId,
+              app:page.pageType==='Record Page'?recordAppId:homeAppId,
+              roles:profiles.map(profile=>({value:profile.id,label:profile.label})),
+              apps:apps.map(app=>({value:app.apiName,label:app.label})),
+              onRole:value=>{
+                if(page.pageType==='Record Page'){
+                  setRecordProfileId(value);
+                  if(value&&recordScope==='App Default')setRecordScope('App and Profile');
+                }else{
+                  setHomeProfileId(value);
+                  if(value)setHomeScope('App and Profile');
+                }
+              },
+              onApp:value=>{
+                if(page.pageType==='Record Page'){
+                  setRecordAppId(value);
+                  if(value&&recordScope==='Org Default')setRecordScope('App Default');
+                }else setHomeAppId(value);
+              },
+              onDefault:value=>{
+                if(page.pageType==='Record Page')setRecordScope(value?'Org Default':'App Default');
+                else setHomeScope(value?'App Default':'App and Profile');
+              },
+              onAdd:()=>page.pageType==='Record Page'?addRecordAssignment():addHomeAssignment()
+            }}
+            responsive={{
+              desktop:(page.pageType==='Record Page'?recordFormFactors:homeFormFactors).includes('Desktop'),
+              tablet:(page.pageType==='Record Page'?recordFormFactors:homeFormFactors).includes('Tablet'),
+              mobile:(page.pageType==='Record Page'?recordFormFactors:homeFormFactors).includes('Phone'),
+              canAssign:page.pageType!=='App Page',
+              breakpoint:page.customTargetMinWidth??320,
+              canBreakpoint:(page.layoutVariant??'Desktop')==='Custom',
+              columns:Number(selected?.properties.cardsPerRow??0)||1,
+              canColumns:!!selected&&['Custom:smart_card_grid','Custom:smart_cart'].includes(selected.type),
+              onDevice:factor=>{
+                const toggle=(current:('Desktop'|'Tablet'|'Phone'|'Custom')[])=>
+                  current.includes(factor)?current.filter(value=>value!==factor):[...current,factor];
+                if(page.pageType==='Record Page')setRecordFormFactors(toggle);
+                else setHomeFormFactors(toggle);
+              },
+              onBreakpoint:value=>{
+                if(Number.isInteger(value)&&value>=320&&value<=(page.customTargetMaxWidth??10000))
+                  applyPage({...page,customTargetMinWidth:value});
+              },
+              onColumns:value=>{
+                if(selected&&Number.isInteger(value)&&value>=1&&value<=50)
+                  updateComponent(selected.id,{properties:{...selected.properties,cardsPerRow:value}});
+              }
+            }}
+            properties={{
+              selected:!!selected,apiName:selected?.type.startsWith('Custom:')?selected.type.slice(7):selected?.type??'',
+              cssClass:String(selected?.properties.cssClass??''),
+              visible:selected?.visible!==false,
+              readOnly:selected?.properties.readOnlyOnLayout===true,
+              canReadOnly:!!selected&&selected.type==='Record Field',
+              onVisible:value=>{if(selected)updateComponent(selected.id,{visible:value});},
+              onReadOnly:value=>{if(selected)updateComponent(selected.id,{properties:{
+                ...selected.properties,readOnlyOnLayout:value,requiredOnLayout:false}});}
+            }}
+            nesting={{
+              selected:!!selected,
+              accepted:!!selected&&isLayoutContainer(selected),
+              canChange:!!selected&&(!!selectedCustomDefinition||isLayoutContainer(selected)),
+              parentId:selected?rawLayoutParentId(selected)??'':'',
+              parents:selected?page.components.filter(item=>canNest(page.components,selected.id,item.id))
+                .map(item=>({value:item.id,label:item.label})):[],
+              onAccepted:value=>{
+                if(!selected)return;
+                if(!value&&childrenOf(page.components,selected.id).length){
+                  onNotify('Move children out before disabling nesting.');return;
+                }
+                updateComponent(selected.id,{properties:{...selected.properties,layoutContainer:value}});
+              },
+              onParent:value=>{
+                if(!selected)return;
+                const parent=value||null;
+                if(!canNest(page.components,selected.id,parent)){
+                  onNotify('A component cannot be nested inside itself or a descendant.');return;
+                }
+                applyPage({...page,components:reparentComponent(page.components,selected.id,parent)});
+              }
+            }}
+            technical={{
+              id:selected?.id??'',
+              objectName:String(selected?.properties.objectApiName??page.targetObject??''),
+              renderMode:selected?'Page Runtime':''
+            }}/>}
+
           {ribbonTab==='Add Block' && <SmartInsertRibbon
             items={paletteComponents}
             onInsert={addPaletteComponent}
