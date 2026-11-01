@@ -392,13 +392,29 @@
  width:100%!important;min-width:0!important;
 }
 .office-builder-ribbon #page-builder-tab-content>.smart-ribbon[data-three-row="true"]
- .smart-property .smart-formula-filter .smart-formula-prefix{
+ .smart-property .smart-formula-filter :is(.smart-formula-prefix,.smart-summary-label){
  position:absolute!important;z-index:2;left:1px;top:1px;bottom:1px;
  box-sizing:border-box;display:flex;align-items:center;justify-content:center;
- flex:0 0 74px;width:74px;max-width:74px;padding:0 3px;
- font:600 11px/1 "Segoe UI",Arial,sans-serif;color:#1f5fa8;
- border-right:1px solid #c9d6ea;background:#fff;
- white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;
+ flex:0 0 67px;width:67px;min-width:67px;max-width:67px;padding:0 3px;
+ font:400 9px/1 "Segoe UI",Arial,sans-serif;color:#1f5fa8;
+ border:0;border-right:1px solid #c9d6ea;background:#fff;
+ white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.office-builder-ribbon #page-builder-tab-content>.smart-ribbon[data-three-row="true"]
+ .smart-property .smart-formula-filter .smart-formula-prefix{pointer-events:none}
+.office-builder-ribbon #page-builder-tab-content>.smart-ribbon[data-three-row="true"]
+ .smart-property .smart-formula-filter input.smart-summary-label{
+ appearance:none!important;height:24px!important;max-height:24px!important;
+ text-align:center;pointer-events:auto!important;z-index:3!important;
+ border-radius:4px 0 0 4px!important;caret-color:#1f5fa8;
+}
+.office-builder-ribbon #page-builder-tab-content>.smart-ribbon[data-three-row="true"]
+ .smart-property .smart-formula-filter input.smart-summary-label::placeholder{
+ color:#1f5fa8;opacity:1;
+}
+.office-builder-ribbon #page-builder-tab-content>.smart-ribbon[data-three-row="true"]
+ .smart-property .smart-formula-filter input.smart-summary-label:focus-visible{
+ outline:2px solid #2877d1!important;outline-offset:-2px!important;
 }
 .office-builder-ribbon #page-builder-tab-content>.smart-ribbon[data-three-row="true"]
  .smart-property .smart-formula-filter .smart-formula{
@@ -409,7 +425,7 @@
  .smart-property .smart-formula-filter .smart-formula input,
 .office-builder-ribbon #page-builder-tab-content>.smart-ribbon[data-three-row="true"]
  .smart-property .smart-formula-filter .smart-formula-highlight{
- box-sizing:border-box!important;padding-left:82px!important;
+ box-sizing:border-box!important;padding-left:75px!important;
 }
 .office-builder-ribbon #page-builder-tab-content>.smart-ribbon[data-three-row="true"]
  .smart-property[data-property="defaultCheck"]{
