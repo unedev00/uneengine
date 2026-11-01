@@ -1,4 +1,5 @@
 import {adjustNumberRecord,type AdjustNumberBinding} from '../PageRuntime/adjustNumberRecord';
+import {executePageFormulaAction} from '../PageRuntime/formulaAction';
 import {resolveMetadataProperties} from '../../metadata/Definitions/metadataReferences';
 import * as React from 'react';
 import {useState,useEffect,useRef} from 'react';
@@ -364,6 +365,23 @@ export default function MetadataBoundPageComponent({
         ?action.value as Record<string,unknown>:{value:action.value};
       const value=resolveInput(binding.value??'$event',payload);
       window.dispatchEvent(new CustomEvent('metadrive:page-local-state',{detail:{pageSessionKey,key,value}}));
+      return {updated:true};
+    }
+    if(binding.actionType==='Formula'){
+      const payload=action.value&&typeof action.value==='object'&&!Array.isArray(action.value)
+        ?action.value as Record<string,unknown>:{value:action.value};
+      const result=await executePageFormulaAction(apiRequest,binding,payload,
+        pageState,objects,objectApiName);
+      for(const change of result.changes)
+        window.dispatchEvent(new CustomEvent('metadrive:page-local-state',{
+          detail:{pageSessionKey,key:change.key,value:change.value}
+        }));
+      if(result.recordChanged){
+        setRevision(value=>value+1);
+        window.dispatchEvent(new CustomEvent('metadrive:page-flow-mutated',{
+          detail:{pageSessionKey,sessionId}
+        }));
+      }
       return {updated:true};
     }
     if (binding.actionType === 'AdjustNumber') {
