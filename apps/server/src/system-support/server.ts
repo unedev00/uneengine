@@ -39,6 +39,7 @@ import {reconcileCoreObjectDefaults} from '../app-seeders/core-object-defaults.j
 import {seedBundledComponentsForExistingTenants} from '../app-seeders/bundled-components.js';
 import {seedUiComponentsForExistingTenants} from '../app-seeders/ui-components.js';
 import {seedSmartComponentsForExistingTenants} from '../app-seeders/smart-components.js';
+import {applyCodextillDesktopLayout} from '../app-seeders/codextill-page-layout.js';
 import {seedProductImageFieldForExistingTenants} from '../app-seeders/product-image-field.js';
 import { AuthenticationService } from '../system-files/authentication.js';
 import {PasswordRecoverySettingsService} from './password-recovery-settings-service.js';
@@ -2793,6 +2794,7 @@ export async function startSystemServer() {
     const bundledTenants=await seedBundledComponentsForExistingTenants(db);
     const uneTenants=await seedUiComponentsForExistingTenants(db);
     await seedSmartComponentsForExistingTenants(db);
+    await applyCodextillDesktopLayout(db);
     console.info('UNE tenant component registrations checked:',uneTenants);
     console.info('Bundled component registrations checked for tenants:',bundledTenants);
     await reconcileCoreObjectDefaults(db); const status=await reconcileBootstrapPassword(db); if(status!=='disabled')console.info('First-install credential reconciliation:',status);
