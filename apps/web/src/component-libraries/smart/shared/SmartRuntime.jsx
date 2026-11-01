@@ -350,7 +350,7 @@ export default function SmartRuntime(p){
  return <div className={"smart-runtime "+name} style={{
    display:"flex",flexDirection:"column",boxSizing:"border-box",border:0,
    background:"transparent",boxShadow:"none",padding:0,margin:0,
-   minWidth:0,minHeight:0,width:p.width!==undefined&&p.width!==''?number(parseFloat(p.width),undefined,0,10000):"100%",
-   height:p.height!==undefined&&p.height!==''?number(parseFloat(p.height),undefined,0,10000):"100%"
+   minWidth:0,minHeight:0,width:p.canvasFrameSized===true?"100%":p.width!==undefined&&p.width!==''?number(parseFloat(p.width),undefined,0,10000):"100%",
+   height:p.canvasFrameSized===true?"100%":p.height!==undefined&&p.height!==''?number(parseFloat(p.height),undefined,0,10000):"100%"
  }}>{content}</div>;
 }
