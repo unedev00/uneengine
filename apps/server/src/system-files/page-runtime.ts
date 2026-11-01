@@ -287,6 +287,38 @@ export class PageRuntime {
       [tenantId,objectApi,appId,profileId,recordTypeId,dbDevice,mode,strictCustom]);
     return rows[0]?this.metadata(tenantId,rows[0].api_name,runtimeLayoutVariant(device)):null;
   }
+  /** Published in-screen surfaces never enter normal application navigation. */
+  async resolveInScreenPage(tenantId:string,appId:string,pageApi:string,device:string):
+    Promise<Awaited<ReturnType<PageRuntime['load']>>|null>{
+    if(!['Desktop','Phone','Mobile','Tablet','Custom'].includes(device))
+      throw new Error('Invalid in-screen page device');
+    const factor=device==='Mobile'?'Phone':device;
+    const {rows}=await this.db.query<{api_name:string}>(`
+      SELECT p.api_name FROM md_page_definitions p
+      JOIN md_lightning_page_details d ON d.tenant_id=p.tenant_id AND d.page_id=p.id
+      JOIN md_app_installations i ON i.tenant_id=p.tenant_id
+      JOIN md_apps a ON a.id=i.app_id AND a.enabled=true
+        AND (a.tenant_owner_id IS NULL OR a.tenant_owner_id=p.tenant_id)
+      LEFT JOIN md_tenant_app_metadata m ON m.tenant_id=i.tenant_id AND m.app_id=i.app_id
+      JOIN md_app_entitlements e ON e.tenant_id=i.tenant_id AND e.app_id=i.app_id AND e.active=true
+      WHERE p.tenant_id=$1 AND p.api_name=$3 AND p.enabled=true
+        AND d.page_type='In-Screen Page' AND d.status='Active'
+        AND COALESCE(m.api_name,a.api_name)=$2
+        AND (e.expires_at IS NULL OR e.expires_at>now())
+        AND (EXISTS(
+          SELECT 1 FROM md_lightning_page_activation x
+          WHERE x.tenant_id=p.tenant_id AND x.page_id=p.id AND x.app_api=$2
+            AND (($4='Desktop' AND x.desktop) OR ($4='Phone' AND x.phone)
+              OR ($4='Tablet' AND (x.tablet OR x.desktop))
+              OR ($4='Custom' AND (x.custom OR x.desktop)))
+        ) OR NOT EXISTS(
+          SELECT 1 FROM md_lightning_page_activation x
+          WHERE x.tenant_id=p.tenant_id AND x.page_id=p.id AND x.app_api IS NOT NULL
+        ))
+      LIMIT 1`,[tenantId,appId,pageApi,factor]);
+    return rows[0]?this.load(tenantId,rows[0].api_name,runtimeLayoutVariant(device)):null;
+  }
+
   async resolveAppPage(tenantId:string,appId:string,pageApi:string,device:string,viewportWidth?:number,strictCustom=false):Promise<Awaited<ReturnType<PageRuntime['load']>>|null>{
     if(device!=='Custom'&&Number.isInteger(viewportWidth)&&viewportWidth!>=320&&viewportWidth!<=10000){
       const preferred=await this.resolveAppPage(tenantId,appId,pageApi,'Custom',undefined,true);

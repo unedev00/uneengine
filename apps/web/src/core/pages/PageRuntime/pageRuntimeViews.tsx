@@ -824,7 +824,8 @@ function LightningAppRuntime({
   pageDefinitionCache,
   onNavigate,
   onLaunchFlow,
-  onStandaloneModeChange
+  onStandaloneModeChange,
+  inScreenPage=false
 }: {
   appId: string;
   pageApiName?: string;
@@ -840,13 +841,14 @@ function LightningAppRuntime({
   onNavigate: (route: AppRoute) => void;
   onLaunchFlow: (flowApiName: string, inputs?: Record<string, unknown>, context?:{requestId?:string}) => void;
   onStandaloneModeChange: (enabled: boolean) => void;
+  inScreenPage?: boolean;
 }) {
   const layoutDevice = usePageLayoutDevice();
   const viewportWidth=useViewportWidth();
   const requestedLayout = typeof window !== 'undefined'
     && new URLSearchParams(window.location.search).get('pageLayout') === 'Custom'
       ? 'Custom' : layoutDevice === 'Tablet' ? 'Tablet' : formFactor === 'Phone' ? 'Mobile' : 'Desktop';
-  const cacheKey=pageDefinitionCacheKey(appId,pageApiName,requestedLayout,viewportWidth,profileId);
+  const cacheKey=pageDefinitionCacheKey(appId,inScreenPage?'window:'+pageApiName:pageApiName,requestedLayout,viewportWidth,profileId);
   const routeKey=cacheKey;
   const [pageLoad,setPageLoad]=useState<{
     routeKey:string;
@@ -913,7 +915,7 @@ function LightningAppRuntime({
     }
     setPageLoad({routeKey,appId,page:null,error:'',loading:true});
     const endpoint = pageApiName
-      ? `/apps/${encodeURIComponent(appId)}/pages/${encodeURIComponent(pageApiName)}?formFactor=${requestedLayout}&viewportWidth=${viewportWidth}`
+      ? `/apps/${encodeURIComponent(appId)}/${inScreenPage?'in-screen-pages':'pages'}/${encodeURIComponent(pageApiName)}?formFactor=${requestedLayout}&viewportWidth=${viewportWidth}`
       : `/apps/${encodeURIComponent(appId)}/home-page?formFactor=${requestedLayout}&viewportWidth=${viewportWidth}`;
     void apiRequest<{ page: LightningPageMetadata | null }>(endpoint).then((payload) => {
       if(active){
@@ -928,7 +930,7 @@ function LightningAppRuntime({
       });
     });
     return ()=>{active=false;};
-  },[routeKey,appId,pageApiName,requestedLayout,viewportWidth,pageDefinitionCache,cacheKey]);
+  },[routeKey,appId,pageApiName,inScreenPage,requestedLayout,viewportWidth,pageDefinitionCache,cacheKey]);
   useEffect(() => {
     setActiveTabs({});
   }, [page?.apiName]);

@@ -1364,6 +1364,16 @@ export function createSystemServer(db:SqlPersistence) {
     res.setHeader('Vary','Authorization, Cookie');
     res.json({page});
   }));
+  app.get('/api/apps/:appId/in-screen-pages/:pageApiName',route(async(req,res)=>{
+    const actor=req.actor!;
+    await rbac.require(actor.tenant_id,actor.user_id,'App:'+req.params.appId,'read');
+    const page=await pages.resolveInScreenPage(actor.tenant_id,req.params.appId,
+      req.params.pageApiName,String(req.query.formFactor??'Desktop'));
+    if(!page)throw new Error('In-Screen Page is not published or permitted for this app');
+    res.setHeader('Cache-Control','private, no-store');
+    res.setHeader('Vary','Authorization, Cookie');
+    res.json({page:page.page});
+  }));
   app.get('/api/apps/:appId/pages/:pageApiName',route(async(req,res)=>{
     const actor=req.actor!;
     await rbac.require(actor.tenant_id,actor.user_id,'App:'+req.params.appId,'read');
