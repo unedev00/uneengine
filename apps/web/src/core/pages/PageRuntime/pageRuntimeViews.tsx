@@ -850,7 +850,9 @@ function LightningAppRuntime({
   onLaunchFlow,
   onStandaloneModeChange,
   inScreenPage=false,
-  inScreenContext
+  inScreenContext,
+  previewPage,
+  previewLayoutDevice
 }: {
   appId: string;
   pageApiName?: string;
@@ -868,8 +870,13 @@ function LightningAppRuntime({
   onStandaloneModeChange: (enabled: boolean) => void;
   inScreenPage?: boolean;
   inScreenContext?: {sessionId?:string;values?:Record<string,unknown>};
+  /** Unpublished draft for the Page Builder. Uses this runtime without fetching/caching a published page. */
+  previewPage?: LightningPageMetadata;
+  /** Match the device selected in the builder instead of the admin window width. */
+  previewLayoutDevice?: 'Desktop' | 'Tablet' | 'Phone';
 }) {
-  const layoutDevice = usePageLayoutDevice();
+  const detectedLayoutDevice = usePageLayoutDevice();
+  const layoutDevice = previewLayoutDevice ?? detectedLayoutDevice;
   const viewportWidth=useViewportWidth();
   const requestedLayout = typeof window !== 'undefined'
     && new URLSearchParams(window.location.search).get('pageLayout') === 'Custom'
@@ -887,9 +894,9 @@ function LightningAppRuntime({
   const cached=routePending?readPageDefinitionCache(pageDefinitionCache,cacheKey):null;
   // Never run components from the previous route while navigating. Cached
   // definitions render immediately; uncached routes show the loading state.
-  const page=routePending?cached:pageLoad.page;
-  const error=routePending?'':pageLoad.error;
-  const loading=routePending?!cached:pageLoad.loading;
+  const page=previewPage??(routePending?cached:pageLoad.page);
+  const error=previewPage?'':routePending?'':pageLoad.error;
+  const loading=previewPage?false:routePending?!cached:pageLoad.loading;
   const [activeTabs, setActiveTabs] = useState<Record<string,string>>({});
   const [layoutState,setLayoutState]=useState<Record<string,unknown>>(inScreenPage?inScreenContext?.values??{}:{});
   const [interactionOverrides,setInteractionOverrides]=useState<Record<string,Record<string,unknown>>>({});
@@ -933,6 +940,8 @@ function LightningAppRuntime({
     return()=>window.removeEventListener('metadrive:page-local-state',listener);
   },[appId,page?.apiName]);
   useEffect(() => {
+    // Draft previews never fetch the published revision or pollute the tenant-scoped page cache.
+    if(previewPage)return;
     let active = true;
     const cachedPage=readPageDefinitionCache(pageDefinitionCache,cacheKey);
     if(cachedPage){
@@ -958,7 +967,7 @@ function LightningAppRuntime({
       });
     });
     return ()=>{active=false;};
-  },[routeKey,appId,pageApiName,inScreenPage,requestedLayout,viewportWidth,pageDefinitionCache,cacheKey]);
+  },[routeKey,appId,pageApiName,inScreenPage,requestedLayout,viewportWidth,pageDefinitionCache,cacheKey,previewPage]);
   useEffect(() => {
     setActiveTabs({});
   }, [page?.apiName]);

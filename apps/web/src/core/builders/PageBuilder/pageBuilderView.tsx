@@ -293,7 +293,7 @@ import {
 import SavedListViewPicker from './SavedListViewPicker';
 import {uneRibbonIcon} from './uneRibbonIcon';
 import RibbonImageContent from './RibbonImageContent';
-export function createPageBuilder(MetadataComponentProperties: React.ComponentType<any>, MetadataBoundPageComponent: React.ComponentType<any>) {
+export function createPageBuilder(MetadataComponentProperties: React.ComponentType<any>, MetadataBoundPageComponent: React.ComponentType<any>, LightningAppRuntime: React.ComponentType<any>) {
 function PageBuilder({
   page, pages, objects, apps, profiles, reports, dashboards, libraryComponents, flows, onChange, onSelectPage, onTargetObjectChange, onSave, onPublish, onDeactivate, onSaveApp, onDeleteApp, onDeletePage, onExit, onNotify, onLaunchFlow,
   preparedAppId, onPrepareApp, onAppLinked, request, canManageRoutes, editorMode, onBackToPages, recordPageContext,
@@ -431,6 +431,8 @@ function PageBuilder({
   const [customPropertiesDraft, setCustomPropertiesDraft] = useState('');
   const [customPropertiesError, setCustomPropertiesError] = useState('');
   const [previewMode, setPreviewMode] = useState(false);
+  // Preview uses the same published runtime, but with draft metadata and an isolated cache.
+  const previewPageDefinitionCache = useRef(new Map<string,{page:LightningPageMetadata;fetchedAt:number}>());
   const externalPreviewWindowRef = useRef<Window | null>(null);
   const [externalPreviewTarget, setExternalPreviewTarget] = useState<HTMLElement | null>(null);
   useEffect(() => {
@@ -2433,17 +2435,17 @@ function PageBuilder({
           } : undefined}
       onDoubleClick={!libraryPreview ? event => { event.stopPropagation(); if (!previewMode) { setSelectedRegion(null); setSelectedId(component.id); selectRibbonTab(componentNeedsData(component.type)?'Component Data':'Component Properties'); } } : undefined}
       onContextMenu={!libraryPreview && !previewMode ? event => { event.preventDefault(); event.stopPropagation(); setSelectedRegion(null); setSelectedId(component.id); setComponentMenuId(component.id); } : undefined}
-      onPointerDown={!libraryPreview && page.layoutMode === 'free-canvas' && !nested ? event => {
+      onPointerDown={!previewMode && !libraryPreview && page.layoutMode === 'free-canvas' && !nested ? event => {
         // A scrollable component is still a movable shape. Only native scrollbar
         // rails and touch panning are excluded; never exclude all Cart/Grid content.
         const target=event.target as Element;
         if(event.pointerType==='touch' || canvasScrollbarHit(target,event.clientX,event.clientY,event.currentTarget))return;
         startCanvasMove(event, component);
       } : undefined}
-      onPointerMove={!libraryPreview && page.layoutMode === 'free-canvas' && !nested ? moveCanvasPointer : undefined}
-      onPointerUp={!libraryPreview && page.layoutMode === 'free-canvas' && !nested ? event => endCanvasMove(event) : undefined}
-      onPointerCancel={!libraryPreview && page.layoutMode === 'free-canvas' && !nested ? event => endCanvasMove(event, true) : undefined}
-      onLostPointerCapture={!libraryPreview && page.layoutMode === 'free-canvas' && !nested ? event => endCanvasMove(event, true) : undefined}
+      onPointerMove={!previewMode && !libraryPreview && page.layoutMode === 'free-canvas' && !nested ? moveCanvasPointer : undefined}
+      onPointerUp={!previewMode && !libraryPreview && page.layoutMode === 'free-canvas' && !nested ? event => endCanvasMove(event) : undefined}
+      onPointerCancel={!previewMode && !libraryPreview && page.layoutMode === 'free-canvas' && !nested ? event => endCanvasMove(event, true) : undefined}
+      onLostPointerCapture={!previewMode && !libraryPreview && page.layoutMode === 'free-canvas' && !nested ? event => endCanvasMove(event, true) : undefined}
       onKeyDown={!libraryPreview ? (event) => {
          if (event.currentTarget !== event.target || previewMode) return;
          if (event.key === 'Enter' || event.key === ' ') {
@@ -2462,15 +2464,15 @@ function PageBuilder({
              components:page.components.map(item=>item.id===component.id?{...item,position}:item)});
          }
        } : undefined}
-      onDragOver={!libraryPreview && !isPhoneBuilder ? (event) => { event.preventDefault(); event.stopPropagation(); setDragOverId(isLayoutContainer(component) ? component.id : rawLayoutParentId(component) ?? component.id); } : undefined}
-      onDragLeave={!libraryPreview ? () => setDragOverId('') : undefined}
-      onDrop={!libraryPreview && !isPhoneBuilder ? (event) => handleDrop(event, index, component.region ?? 'main', isLayoutContainer(component) ? component.id : rawLayoutParentId(component)) : undefined}
+      onDragOver={!previewMode && !libraryPreview && !isPhoneBuilder ? (event) => { event.preventDefault(); event.stopPropagation(); setDragOverId(isLayoutContainer(component) ? component.id : rawLayoutParentId(component) ?? component.id); } : undefined}
+      onDragLeave={!previewMode && !libraryPreview ? () => setDragOverId('') : undefined}
+      onDrop={!previewMode && !libraryPreview && !isPhoneBuilder ? (event) => handleDrop(event, index, component.region ?? 'main', isLayoutContainer(component) ? component.id : rawLayoutParentId(component)) : undefined}
       draggable={!isPhoneBuilder && !previewMode && !libraryPreview && page.layoutMode !== 'free-canvas' && !isCanvasLocked(component)}
       data-component-id={libraryPreview ? undefined : component.id}
       onDragStartCapture={selectOnlyInDesigner && page.layoutMode === 'free-canvas'
         ? event => { event.preventDefault(); event.stopPropagation(); }
         : undefined}
-      onDragStart={!libraryPreview && !isPhoneBuilder ? (event) => { if (page.layoutMode === 'free-canvas' || canvasMoveStart.current?.id === component.id) { event.preventDefault(); return; } event.stopPropagation(); event.dataTransfer.setData('text/plain', `component:${component.type}`); event.dataTransfer.setData('application/x-metadrive-component-id', component.id); } : undefined}
+      onDragStart={!previewMode && !libraryPreview && !isPhoneBuilder ? (event) => { if (page.layoutMode === 'free-canvas' || canvasMoveStart.current?.id === component.id) { event.preventDefault(); return; } event.stopPropagation(); event.dataTransfer.setData('text/plain', `component:${component.type}`); event.dataTransfer.setData('application/x-metadrive-component-id', component.id); } : undefined}
       role={libraryPreview ? undefined : page.layoutMode === 'free-canvas' ? 'group' : 'button'} tabIndex={previewMode || libraryPreview ? -1 : 0} aria-label={libraryPreview ? undefined : `${component.label} component`}
       aria-hidden={libraryPreview && !interactivePreview || undefined}
     >
@@ -3434,8 +3436,20 @@ function PageBuilder({
             onClick={(event) => {
             if (previewMode || (event.target as HTMLElement).closest('.record-component,.canvas-drop-zone,button,input,select,textarea')) return;
             setSelectedId(''); setSelectionIds([]); setSelectedRegion(null); setRibbonTab('Add Block'); setPageSettingsOpen(false); setActivePanel(null);
-          }} onDragOver={(event) => event.preventDefault()} onDrop={(event) => handleDrop(event)}>
-            <div
+          }} onDragOver={previewMode ? undefined : (event) => event.preventDefault()}
+             onDrop={previewMode ? undefined : (event) => handleDrop(event)}>
+            {previewMode && page.pageType !== 'Record Page' ? <div className="page-builder-live-runtime" aria-label="Published runtime preview of current draft">
+              <LightningAppRuntime
+                appId={builderAppApiName || apps[0]?.apiName || 'Records'}
+                pageApiName={page.apiName} previewPage={page}
+                inScreenPage={page.pageType === 'In-Screen Page'}
+                pageDefinitionCache={previewPageDefinitionCache.current}
+                objects={objects} apps={apps} pages={pages} reports={reports}
+                libraryComponents={libraryComponents} availableFlows={flows}
+                formFactor={device} previewLayoutDevice={device}
+                onNavigate={(route:AppRoute) => { window.open(appRoutePath(route),'_blank','noopener,noreferrer'); }}
+                onLaunchFlow={onLaunchFlow} onStandaloneModeChange={() => {}} />
+            </div> : <div
               className={`record-preview ${page.layoutMode === 'free-canvas' ? 'free-canvas-preview' : page.pageType === 'Record Page' ? 'record-page-preview' : page.pageType === 'App Page' ? 'app-page-preview' : 'home-page-preview'} ${device === 'Phone' ? 'phone-preview' : device === 'Tablet' ? 'tablet-preview' : ''}`}
               style={{...(page.layoutMode === 'free-canvas' ? {
                 width: page.canvasWidth * (fitCanvas ? fitScale : canvasZoom/100),
@@ -3506,7 +3520,7 @@ function PageBuilder({
                     </div>
                   </div>}
               </>}
-            </div>
+            </div>}
           </div>
         </div>
         {ribbonPropertyHost && createPortal(<aside id="lightning-page-properties" style={ribbonTab !== 'Component Layout' && ribbonTab !== 'Advanced' && !ribbonTab.startsWith('Component ') ? { display: 'none' } : undefined}

@@ -111,7 +111,7 @@ test('Lightning page loading uses its metadata query instead of a redundant exis
 
 test('cached page navigation never mounts previous route components', () => {
   const runtime = readFileSync(new URL('../src/core/pages/PageRuntime/pageRuntimeViews.tsx', import.meta.url), 'utf8');
-  assert.match(runtime, /const page=routePending\?cached:pageLoad\.page;/);
+  assert.match(runtime, /const page=previewPage\?\?\(routePending\?cached:pageLoad\.page\)/);
   assert.match(runtime, /setPageLoad\(\{routeKey,appId,page:null,error:'',loading:true\}\);/);
   assert.match(runtime, /JSON\.stringify\(\[appId,pageApiName\?\?'__home__',layout,viewportWidth,profileId\?\?''\]\)/);
   assert.doesNotMatch(runtime, /pageLoad\.appId===appId\?pageLoad\.page/);
