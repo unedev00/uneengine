@@ -2407,7 +2407,11 @@ function PageBuilder({
         // The component's dedicated move grips and resize handles still work.
         const target=event.target as HTMLElement;
         if((component.type==='Custom:ui_item_grid'&&target.closest('.md-product-grid--scroll'))
-          ||(component.type==='Custom:smart_card_grid'&&target.closest('.smart-grid')))return;
+          ||(component.type==='Custom:smart_card_grid'&&target.closest('.smart-grid'))
+          ||(component.type==='Custom:smart_cart'&&target.closest('.smart-cart-root'))
+          ||(component.type==='Custom:smart_tabs'&&target.closest('.smart-tabs-shell'))
+          ||(component.type==='Custom:smart_calendar'&&target.closest('.smart-calendar'))
+          ||(component.type==='Custom:smart_navigation'&&target.closest('.smart-navigation')))return;
         startCanvasMove(event, component);
       } : undefined}
       onPointerMove={!libraryPreview && page.layoutMode === 'free-canvas' && !nested ? moveCanvasPointer : undefined}
