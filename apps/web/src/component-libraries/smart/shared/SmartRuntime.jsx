@@ -240,6 +240,7 @@ export default function SmartRuntime(p){
    title={label||"Button"} aria-label={label||buttonIcon?.label||"Button"}
    onClick={()=>fire("click",record)}
    style={{...style,...shadowStyle,...smartShapeAppearance(p.shapeId,number(p.radius,12)),
+    justifyContent:label?(p.labelAlignment==="right"?"flex-end":p.labelAlignment==="center"?"center":"flex-start"):"center",
     background:p.backgroundColor||"#2267bc",color:p.labelColor||"#fff",borderColor:p.borderColor}}>
    {buttonIcon&&<span className="smart-button-glyph" aria-hidden="true" style={{
      backgroundColor:p.iconFillColor||p.labelColor||"#fff",
