@@ -13,43 +13,63 @@ const render=(actions:Record<string,unknown>,selectedEvent='',api='')=>
     dataFields:[{apiName:'Quantity',label:'Quantity',dataType:'Number'}]
   }));
 
-test('empty Actions tab shows the complete, disabled, stable five-group design surface',()=>{
-  const html=render({});
-  for(const section of ['Event','Component Custom','All actions','Selected action','Configuration'])
-    assert.ok(html.includes('aria-label="'+section+'"'),'missing design section '+section);
-  for(const slot of ['On Click','On Change','On Session Start','Qty Icon','Custom Button 1','Custom Button 2'])
-    assert.match(html,new RegExp('aria-label="'+slot+' action"[^>]*disabled'));
-  assert.match(html,/aria-label="Selected action trigger"[^>]*disabled/);
-  assert.match(html,/aria-label="Flow for selected action"[^>]*disabled/);
-  assert.match(html,/aria-label="Editable quantity action formulas"/);
-  assert.match(html,/data-inactive="true"/);
+test('all three component selections keep exactly six fixed Actions sections and disabled placeholders',()=>{
+ const scenarios=[
+  render({},'','smart_text'),
+  render({click:{actionType:'Flow',flowApiName:'Example'}},'click','smart_card_grid'),
+  render({qtyIncrease:{actionType:'Formula',fieldApiName:'Quantity',formula:'@Quantity + 2'}},'qtyIncrease','smart_cart')
+ ];
+ for(const html of scenarios){
+  for(const section of ['Event','Component Custom','All actions','Selected action','Configuration','Action parameters'])
+   assert.ok(html.includes('aria-label="'+section+'"'),'missing '+section);
+  assert.equal((html.match(/class="office-ribbon-mini-group /g)||[]).length,6);
+  for(const slot of ['On Click','On Change','On Session Start','+ Icon','− Icon','Custom Button 1','Custom Button 2'])
+   assert.ok(html.includes('aria-label="'+slot+' action"'),slot+' disappears');
+  for(const control of ['Flow for selected action','Number field to adjust',
+    'Minimum number after adjustment','Destination type for selected action',
+    'Shared filter key','Page state key','Optional unit price field',
+    'Optional line total field','Optional Page State collection to refresh'])
+   assert.ok(html.includes('aria-label="'+control+'"'),control+' disappears');
+ }
+ const blank=scenarios[0];
+ assert.match(blank,/aria-label="Selected action trigger"[^>]*disabled/);
+ assert.match(blank,/aria-label="Flow for selected action"[^>]*disabled/);
+ assert.match(blank,/aria-label="Number field to adjust"[^>]*disabled/);
+ assert.match(blank,/aria-label="Selected action formula"[^>]*disabled/);
 });
 
-test('Actions formula is a nonfunctional, readonly preview regardless of selection',()=>{
-  for(const html of [render({}),render({qtyIcon:{actionType:'AdjustNumber',fieldApiName:'Quantity'}},'qtyIcon','smart_cart')]){
-    assert.match(html,/aria-label="Actions formula bar preview"/);
-    assert.match(html,/aria-label="Actions formula preview"[^>]*(?:readOnly|readonly)/);
-    assert.match(html,/<button[^>]*disabled[^>]*aria-label="Formula options \(coming soon\)"/);
-    assert.doesNotMatch(html,/oninput=|onchange=/i);
-  }
-  const source=read('../src/core/builders/PageBuilder/PageBuilderActionRibbon.tsx');
-  const start=source.indexOf('aria-label="Actions formula bar preview"');
-  const end=source.indexOf('className="office-ribbon-compact-strip page-unified-actions-ribbon"',start);
-  assert.ok(start>=0&&end>start,'visual placeholder must remain separate from real numeric action formulas');
-  assert.doesNotMatch(source.slice(start,end),/onChange=|onClick=|patch\(/);
+test('existing permanent formula bar edits only Formula actions and is disabled for Flow',()=>{
+ const none=render({});
+ const flow=render({click:{actionType:'Flow',flowApiName:'Example',formula:'@Quantity + 9'}},'click','smart_button');
+ const plus=render({qtyIncrease:{actionType:'Formula',fieldApiName:'Quantity',formula:'@Quantity + 2'}},'qtyIncrease','smart_cart');
+ const minus=render({qtyDecrease:{actionType:'Formula',fieldApiName:'Quantity',formula:'@Quantity - 3'}},'qtyDecrease','smart_cart');
+ for(const html of [none,flow,plus,minus])
+  assert.match(html,/aria-label="Actions formula bar"/);
+ for(const html of [none,flow])
+  assert.match(html,/aria-label="Selected action formula"[^>]*disabled/);
+ for(const html of [plus,minus])
+  assert.doesNotMatch(html,/aria-label="Selected action formula"[^>]*disabled/);
+ assert.match(plus, /@Quantity \+ 2/);
+ assert.match(minus, /@Quantity - 3/);
+ assert.match(flow, /aria-label="Flow for selected action"/);
+ const source=read('../src/core/builders/PageBuilder/PageBuilderActionRibbon.tsx');
+ assert.match(source,/onChange=\{value=>patch\(\{formula:value\}\)\}/);
+ assert.doesNotMatch(source,/Editable quantity action formulas|page-action-formula-group/);
 });
 
-test('selected action and number configuration mount without hiding longer options',()=>{
-  const html=render({qtyIcon:{actionType:'AdjustNumber',fieldApiName:'Quantity',minValue:0,deleteOnZero:true}},'qtyIcon','smart_cart');
-  assert.match(html,/aria-label="Number field to adjust"/);
-  assert.match(html,/aria-label="Minimum number after adjustment"/);
-  assert.match(html,/aria-label="Delete row when number reaches zero"/);
-  assert.match(html,/aria-label="Optional unit price field"/);
-  assert.match(html,/aria-label="Optional line total field"/);
-  assert.doesNotMatch(html,/aria-label="Number field to adjust"[^>]*disabled/);
-  const css=read('../src/core/builders/PageBuilder/PageBuilderEightTabRibbon.css');
-  assert.match(css,/page-unified-actions-ribbon>\.page-action-target\{/);
-  assert.match(css,/grid-auto-flow:column!important/);
+test('numeric configuration and extended settings stay mounted for Flow and no selection',()=>{
+ for(const html of [render({}),render({click:{actionType:'Flow',flowApiName:'Example'}},'click','smart_card_grid')]){
+  for(const label of ['Number field to adjust','Minimum number after adjustment',
+    'Delete row when number reaches zero','Optional unit price field','Optional line total field'])
+   assert.ok(html.includes('aria-label="'+label+'"'));
+  assert.match(html,/aria-label="Number field to adjust"[^>]*disabled/);
+ }
+ const html=render({qtyIncrease:{actionType:'Formula',fieldApiName:'Quantity',
+  formula:'@Quantity + 2',deleteOnZero:true}},'qtyIncrease','smart_cart');
+ assert.doesNotMatch(html,/aria-label="Number field to adjust"[^>]*disabled/);
+ const css=read('../src/core/builders/PageBuilder/PageBuilderEightTabRibbon.css');
+ assert.match(css,/grid-auto-flow:column!important/);
+ assert.match(css,/page-action-parameters/);
 });
 
 test('Actions tab stays mounted without a selected canvas component and owns its scroll height',()=>{
