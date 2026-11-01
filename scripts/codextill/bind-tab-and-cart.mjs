@@ -116,8 +116,9 @@ try{
   assert.equal(original.get('codextill-product-grid')?.properties?.objectApiName,'Product',
    'Existing Product Grid binding changed unexpectedly');
   const productFilters=original.get('codextill-product-grid')?.properties?.filters;
-  assert.deepEqual(productFilters,[{field:'Active',operator:'Equals',value:true}],
-   'Product Grid Active filter differs; do not override user changes');
+  assert(Array.isArray(productFilters)
+   && productFilters.some(f=>f?.field==='Active'&&f?.operator==='Equals'&&f?.value===true),
+   'Product Grid must retain Active=true; no existing filters will be modified');
   const next=before.components.map(c=>{
    const add=BINDINGS[c.id];
    if(!add)return c;
