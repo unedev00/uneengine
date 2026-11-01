@@ -1,7 +1,7 @@
 // Presentation-only model for components already present on a Page Builder layout.
 // It never expands record-driven grids into individual records or changes runtime labels.
 const text = value => typeof value === 'string' ? value.trim() : '';
-const readable = value => text(value).replace(/\\s+/g, ' ').slice(0, 110);
+const readable = value => text(value).replace(/\s+/g, ' ').slice(0, 110);
 const displayKeys = ['caption','buttonText','text','placeholder','title','heading','displayText','badgeText','textValue','label','value','defaultValue'];
 const bindingKeys = /(?:field|formula|expression|binding|textsource|valuesource)/i;
 export function navigatorParentId(component) {
