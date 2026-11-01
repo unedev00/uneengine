@@ -87,6 +87,7 @@ import {behaviorValidation,behaviorAction,behaviorAppearance,behaviorInteraction
 import { canNestComponent, componentVisualStyle, directChildren, isLayoutType, isDescendantOf, layoutTypes } from '../TemplatePageRuntime/pageComponentLayout';
 import { isCanvasLocked, wrapCanvasComponent, ungroupCanvasComponent } from '../../builders/PageBuilder/canvasInteractions';
 import { filterPageComponentRecords, pageComponentRecordQuery, bindPageStateProperties, needsMetadataComponentRuntime, resolvePageStatePath } from './pageComponentBindings';
+import {scopedFieldAllows} from './fieldScopedRecordFilters';
 import {resolveSmartToggleFieldBinding,updateSmartToggleField} from './smartToggleFieldBinding';
 import {usePageComponentRelatedScope} from '../PageRuntime/usePageSessionRelatedQuery';
 import {filterRelatedRecords} from './filterRelatedRecords.mjs';
@@ -767,6 +768,8 @@ function MetadataBoundPageComponent({
       label: component.type.startsWith('Custom:smart_') && typeof resolvedProperties.label === 'string'
         ? resolvedProperties.label : component.label,
       properties: resolvedProperties, objects, reports, flows: availableFlows, pageState, children,
+      fieldAllowed:(key:string,row:Record<string,unknown>)=>scopedFieldAllows(
+        properties.dataFieldFilters,key,row,fields,{pageState,recordId,sessionId}),
        pageSessionKey, componentId: component.id,
       device: formFactor, onNavigate, onLaunchFlow, onAction, actionError,
       disabled:behaviorAction(properties,'click',{formFactor})!=='enabled',
