@@ -278,6 +278,33 @@ try {
  assert.equal(await customerDialog.count(),0,'Escape closes nested Add customer dialog');
  assert.equal(await documentDialog.evaluate(el=>el.contains(document.activeElement)),true,'Focus returns inside financial editor');
  await screenshot('audit-verified-assist-document-modal');
+ await open('image-render-stability');
+ await page.getByRole('img',{name:'UI image stable'}).waitFor();
+ await page.locator('[aria-label="Smart Image stability"] img').waitFor();
+ await page.waitForFunction(()=>window.assetFetchCount===2);
+ const beforeImages=await page.locator('main img').evaluateAll(nodes=>nodes.map(node=>node.src));
+ for(let i=0;i<5;i++)await page.getByRole('button',{name:'Rerender parent'}).click();
+ await page.getByLabel('Parent render count').getByText('5').waitFor();
+ await page.waitForTimeout(150);
+ assert.equal(await page.evaluate(()=>window.assetFetchCount),2,
+   'Stable image sources must not refetch when the parent supplies a new loader callback');
+ assert.deepEqual(await page.locator('main img').evaluateAll(nodes=>nodes.map(node=>node.src)),beforeImages,
+   'UI and Smart images must never flash blank on ordinary builder renders');
+ await screenshot('builder-stable-image-source');
+ await open('floating-canvas-actions');
+ const actions=page.getByRole('toolbar',{name:'Selected canvas tools'});
+ await actions.waitFor();
+ const toolbarOnTop=await actions.getByRole('button',{name:'Edit selected item'}).evaluate(element=>{
+   const bounds=element.getBoundingClientRect();
+   const top=document.elementFromPoint(bounds.left+bounds.width/2,bounds.top+bounds.height/2);
+   return element===top||element.contains(top);
+ });
+ assert.equal(toolbarOnTop,true,'Selection actions must remain hittable above overlapping components');
+ assert.equal(await page.locator('[data-component-id="selected-test"]').evaluate(el=>getComputedStyle(el).zIndex),'0',
+   'Canvas authoring order must remain untouched while toolbar floats on top');
+ await actions.getByRole('button',{name:'Edit selected item'}).click();
+ await actions.getByRole('button',{name:'Canvas menu action'}).waitFor();
+ await screenshot('builder-floating-actions-layer');
  await open('card-grid-scroll');
  const cardGrid=page.getByRole('region',{name:'Card Grid items'});
  await cardGrid.waitFor();
