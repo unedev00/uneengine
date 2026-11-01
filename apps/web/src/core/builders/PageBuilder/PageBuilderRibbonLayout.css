@@ -203,10 +203,9 @@
 .office-builder-ribbon .advanced-activation .advanced-role{left:12px;top:35px;width:258px}
 .office-builder-ribbon .advanced-activation .advanced-app{left:12px;top:65px;width:258px}
 /* Group 2: x=286-629 */
-.office-builder-ribbon .advanced-responsive .advanced-device{left:12px;width:121px}
-.office-builder-ribbon .advanced-responsive .advanced-device-0{top:5px}
-.office-builder-ribbon .advanced-responsive .advanced-device-1{top:35px}
-.office-builder-ribbon .advanced-responsive .advanced-device-2{top:65px}
+.office-builder-ribbon .advanced-responsive .advanced-device-0{left:12px;top:5px;width:121px}
+.office-builder-ribbon .advanced-responsive .advanced-device-1{left:12px;top:35px;width:121px}
+.office-builder-ribbon .advanced-responsive .advanced-device-2{left:12px;top:65px;width:121px}
 .office-builder-ribbon .advanced-responsive .advanced-breakpoint{left:143px;top:5px;width:188px}
 .office-builder-ribbon .advanced-responsive .advanced-columns{left:143px;top:35px;width:188px}
 /* Group 3: x=630-916 */
