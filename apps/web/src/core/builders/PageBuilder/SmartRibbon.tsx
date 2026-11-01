@@ -166,10 +166,10 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  // side gutters. The caption minimum avoids clipping long section names.
  const sectionWidth=(group:string)=>Math.ceil(Math.max(
    Math.max(0,...(tab==='Data'&&group!=='Source'?[1,2]:[1,2,3]).map(row=>{
-     const entries=dataSectionRow(group,row);
-     return entries.reduce((sum,p)=>sum+controlWidth(p)+
+     const properties=dataSectionRow(group,row);
+     return properties.reduce((sum,p)=>sum+controlWidth(p)+
        (tab==='Data'&&isDataFormula(p)?0:(p.designCaptionWidth??0)),0)
-       +Math.max(0,entries.length-1)*4;
+       +Math.max(0,properties.length-1)*4;
    }))+15,
    group.length*5.5+16
  ));
