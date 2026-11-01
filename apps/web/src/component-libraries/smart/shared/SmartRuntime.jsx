@@ -223,7 +223,7 @@ function SmartToggle({p,fire}){
    aria-busy={saving} checked={checked} disabled={disabled} onChange={change}/>
   <span className="smart-switch-track" style={{background:checked?(p.backgroundColor||"#34c759"):"#e5e5ea",
    border:p.borderColor?"1px solid "+p.borderColor:undefined,
-   ...smartShapeAppearance(p.shapeId,number(p.radius,999)),
+   ...smartShapeAppearance(p.shapeId,p.shapeId==='shape:rectangle'?0:number(p.radius,999)),
    boxShadow:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none"}}>
    <span className="smart-switch-thumb"/></span></label>;
 }
