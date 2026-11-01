@@ -1,7 +1,6 @@
 import type { KeyboardEvent } from 'react';
 import './PageManagerTabs.css';
 
-type PageType = 'Home Page' | 'App Page' | 'Record Page' | 'In-Screen Page';
 type Tab = { value: string; label: string };
 type AppTab = { apiName: string; label: string };
 
