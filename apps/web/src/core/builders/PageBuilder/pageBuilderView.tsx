@@ -1135,7 +1135,10 @@ function PageBuilder({
     const nextUpdate=target.type==='Custom:smart_toggle'&&update.position
       ? {...update,position:{...update.position,height:Math.min(update.position.height,
           Math.max(24,Math.round(update.position.width/1.6)))}}:update;
-    applyPage({ ...page, components: page.components.map((component) => component.id === id ? { ...component, ...nextUpdate } : component) });
+    const bounded=page.layoutMode==='free-canvas'&&nextUpdate.position
+      ?{...nextUpdate,position:constrainCanvasRect(nextUpdate.position,
+        {width:page.canvasWidth,height:page.canvasHeight})}:nextUpdate;
+    applyPage({ ...page, components: page.components.map((component) => component.id === id ? { ...component, ...bounded } : component) });
   };
   const moveLayer = (id: string, offset: -1 | 1) => {
     applyPage({...page,components:shiftCanvasLayer(page.components,id,offset)});
