@@ -2,6 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {visibleCanvasBounds,placeNewCanvasComponent} from '../src/core/builders/PageBuilder/canvasInsertPlacement';
+import {childrenOf,isLayoutContainer} from '../src/core/pages/TemplatePageRuntime/pageComponentLayout';
+import {copyComponentTree,cloneComponentTree} from '../src/core/builders/PageBuilder/pageComponentTree';
+import type {PageComponentMetadata} from '../src/core/metadata/Definitions/metadata';
 const read=(path:string)=>readFileSync(new URL(path,import.meta.url),'utf8');
 
 test('insertion prefers the visible portion of a scrollable, zoomed canvas',()=>{
@@ -24,11 +27,27 @@ test('occupied visible area selects a free location instead of stacking on an ex
  assert.ok(placed.x<640&&placed.y<480,'Visible free space should be preferred');
 });
 
-test('crowded viewport still chooses an authored canvas position for scroll-to-reveal',()=>{
+test('crowded viewport still inserts in the visible middle, never at the end of the page',()=>{
  const p=placeNewCanvasComponent({canvasWidth:900,canvasHeight:1100,
    width:250,height:200,used:[{x:0,y:0,width:900,height:730}],
    visible:{left:0,top:0,right:900,bottom:400}});
- assert.ok(p.y>=700,'Off-screen free space must be found when view is full');
+ assert.deepEqual(p,{x:325,y:100},'Do not search for an off-screen vacant row');
+});
+
+test('scrolled and zoomed viewport places new shapes near the visible centre',()=>{
+ const visible=visibleCanvasBounds({left:0,top:-300,width:600,height:900},
+   {left:0,top:100,right:600,bottom:550},1200,1800);
+ const p=placeNewCanvasComponent({canvasWidth:1200,canvasHeight:1800,
+   width:200,height:100,used:[],visible});
+ assert.equal(visible.top,800);
+ assert.equal(visible.bottom,1700);
+ assert.deepEqual(p,{x:500,y:1200});
+});
+
+test('viewport narrower than inserted shape retains a centred, partially visible result',()=>{
+ const p=placeNewCanvasComponent({canvasWidth:1200,canvasHeight:1200,
+   width:400,height:200,used:[],visible:{left:500,top:420,right:580,bottom:520}});
+ assert.deepEqual(p,{x:340,y:370});
 });
 
 test('Smart Image and UI Image share one stable, source-keyed media loader',()=>{
@@ -62,4 +81,23 @@ test('inserted element becomes selected and is revealed in the canvas viewport',
  assert.match(builder,/pendingInsertedRef\.current=page\.layoutMode==='free-canvas'\?id:null/);
  assert.match(builder,/viewport\.scrollTo\(/);
  assert.match(builder,/added and selected/);
+});
+
+test('Smart Container accepts palette inserts and cut/paste children without changing tenant metadata',()=>{
+ const parent:PageComponentMetadata={id:'container',type:'Custom:smart_container',
+   label:'Container',visible:true,region:'main',properties:{},position:{x:100,y:100,width:600,height:380}};
+ const image:PageComponentMetadata={id:'image',type:'Custom:smart_image',
+   label:'Image',visible:true,region:'main',properties:{imageSource:''},position:{x:820,y:990,width:300,height:200}};
+ assert.equal(isLayoutContainer(parent),true,'Legacy Smart Container must be a shared layout target');
+ const clipped=copyComponentTree([image],image.id);
+ const pasted=cloneComponentTree(clipped,parent.id,()=>'pasted-image');
+ const components=[parent,...pasted.components];
+ assert.equal(childrenOf(components,parent.id)[0]?.id,pasted.rootId);
+ assert.equal(childrenOf(components,null).length,1,'Pasted image cannot become a root sibling');
+ assert.equal(pasted.components[0].properties.layoutParentId,parent.id);
+ const disabled={...parent,properties:{layoutContainer:false}};
+ assert.equal(isLayoutContainer(disabled),false,'Explicitly disabled nesting remains respected');
+ const builder=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ assert.match(builder,/isLayoutContainer\(selected\) \? selected.id : rawLayoutParentId\(selected\)/);
+ assert.match(builder,/assignTabOnReparent\(components,cloned.rootId,parentId/);
 });
