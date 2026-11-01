@@ -16,3 +16,32 @@
 .canvas-floating-actions-host :is(button,[role="menuitem"]):focus-visible{
  outline:2px solid var(--md-focus-ring,#2563eb);outline-offset:2px;
 }
+
+/* Unlike authored content, resize chrome must be above every canvas sibling.
+   The overlay itself never steals content/scrolling hits. */
+.canvas-floating-resize-overlay{
+ position:fixed;inset:0;z-index:10990;pointer-events:none;overflow:visible;
+}
+.canvas-floating-resize-overlay>.free-canvas-resize-handle{
+ position:fixed;display:flex;align-items:center;justify-content:center;
+ width:18px;height:18px;min-width:18px;min-height:18px;
+ margin:0;padding:0;border:0;border-radius:0;background:transparent;
+ box-shadow:none;transform:translate(-50%,-50%);
+ pointer-events:auto;touch-action:none;user-select:none;z-index:1;
+}
+.canvas-floating-resize-overlay>.free-canvas-resize-handle::before{
+ content:"";display:block;width:8px;height:8px;box-sizing:border-box;
+ background:#fff;border:1.5px solid #2563eb;border-radius:1px;
+ box-shadow:0 0 0 1px #fff;
+}
+.canvas-floating-resize-overlay>.free-canvas-resize-handle:is(:hover,:focus-visible){
+ outline:0;
+}
+.canvas-floating-resize-overlay .floating-resize-n,
+.canvas-floating-resize-overlay .floating-resize-s{cursor:ns-resize}
+.canvas-floating-resize-overlay .floating-resize-e,
+.canvas-floating-resize-overlay .floating-resize-w{cursor:ew-resize}
+.canvas-floating-resize-overlay .floating-resize-ne,
+.canvas-floating-resize-overlay .floating-resize-sw{cursor:nesw-resize}
+.canvas-floating-resize-overlay .floating-resize-nw,
+.canvas-floating-resize-overlay .floating-resize-se{cursor:nwse-resize}
