@@ -32,7 +32,10 @@ test('Actions formula is a nonfunctional, readonly preview regardless of selecti
     assert.doesNotMatch(html,/oninput=|onchange=/i);
   }
   const source=read('../src/core/builders/PageBuilder/PageBuilderActionRibbon.tsx');
-  assert.doesNotMatch(source,/onChange=\{[^}]*formula/i);
+  const start=source.indexOf('aria-label="Actions formula bar preview"');
+  const end=source.indexOf('className="office-ribbon-compact-strip page-unified-actions-ribbon"',start);
+  assert.ok(start>=0&&end>start,'visual placeholder must remain separate from real numeric action formulas');
+  assert.doesNotMatch(source.slice(start,end),/onChange=|onClick=|patch\\(/);
 });
 
 test('selected action and number configuration mount without hiding longer options',()=>{
