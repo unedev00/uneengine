@@ -18,3 +18,17 @@
 :is(.free-canvas-component,.free-canvas-runtime-component)[data-page-appearance="image"] .une-image-card:is([data-image-placement="left"],[data-image-placement="right"]) .une-image-card-picture{
  height:100%!important;min-height:0!important;object-position:center;
 }
+
+/* The entire Image is one rounded visual, including its placeholder and
+   supporting text. Do not create a second border on the editor frame. */
+:is(.free-canvas-component,.free-canvas-runtime-component)[data-page-appearance="image"]
+  .metadrive-component-ui_image .une-image-card {
+  border-radius:var(--md-page-radius,var(--one-radius,12px))!important;
+  overflow:hidden!important;
+}
+/* Native image / empty state uses the same radius, but its stroke is the only
+   authored stroke. Do not put another outline or border on the figure. */
+:is(.free-canvas-component,.free-canvas-runtime-component)[data-page-appearance="image"]
+  .metadrive-component-ui_image .une-image-card-picture {
+  border-radius:inherit!important;
+}
