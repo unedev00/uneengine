@@ -465,9 +465,13 @@ export function createSetupFlowActions(ctx: any) {
       startConfig,
       elements: [
         { id: 1, type: 'Start', label: `${flowType} Start`, config: { ...startConfig, ...(triggerObject ? { object: triggerObject } : {}) } },
-        { id: 2, type: 'End', label: 'End', config: {} }
+        ...(flowType==='In-Screen Flow' ? [{id:2,type:'Screen',label:'Window Screen',config:{fields:[]}}] : []),
+        { id: flowType==='In-Screen Flow'?3:2, type: 'End', label: 'End', config: {} }
       ],
-      connectors: [{ id: 'connector-start-end', from: 1, to: 2, label: '', kind: 'normal' as const }],
+      connectors: flowType==='In-Screen Flow'
+        ? [{id:'connector-start-window',from:1,to:2,label:'',kind:'normal' as const},
+           {id:'connector-window-end',from:2,to:3,label:'',kind:'normal' as const}]
+        : [{ id: 'connector-start-end', from: 1, to: 2, label: '', kind: 'normal' as const }],
       resources: [],
       versions: []
     };
