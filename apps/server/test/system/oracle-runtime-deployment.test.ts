@@ -6,6 +6,8 @@ import {test} from 'node:test';
 
 const script=new URL('../../../../scripts/oracle/deploy-api.sh',import.meta.url);
 const workflow=new URL('../../../../.github/workflows/oracle-api-deploy.yml',import.meta.url);
+const frontendDelivery=new URL('../../../../.github/workflows/oracle-frontend-delivery.yml',import.meta.url);
+const systemdDiagnostic=new URL('../../../../.github/workflows/oracle-systemd-diagnostic.yml',import.meta.url);
 const diagnostic=new URL('../../../../scripts/oracle/check-communication-backlog.sh',import.meta.url);
 const startupDiagnostic=new URL('../../../../scripts/oracle/diagnose-api-startup.py',import.meta.url);
 const ownerRepair=new URL('../../../../scripts/oracle/repair-oauth-function-owner.py',import.meta.url);
@@ -138,4 +140,27 @@ test('One-time Oracle systemd manager reexecution requires a timed-out reload an
   const syntax=spawnSync('bash',['-n',fileURLToPath(managerRecovery)],{encoding:'utf8'});
   assert.equal(syntax.status,0,syntax.stderr);
  }
+});
+
+test('normal main pushes have one full-stack deployment owner, while manual frontend delivery fails closed',()=>{
+ const fullstack=readFileSync(workflow,'utf8');
+ const frontend=readFileSync(frontendDelivery,'utf8');
+ assert.match(fullstack,/push:\\s*\\n\\s*branches: \\[main\\]/);
+ assert.match(fullstack,/apps\\/web\\/\\*\\*/);
+ assert.match(frontend,/^on:\\s*\\n\\s*workflow_dispatch:/m);
+ assert.doesNotMatch(frontend,/^\\s*push:\\s*$/m,'frontend-only workflow must not race full-stack push deployment');
+ assert.match(frontend,/Backend\\/shared changes require full-stack deployment/);
+ assert.match(frontend,/Frontend deployment blocked:/);
+ assert.match(frontend,/echo "::error::Frontend deployment blocked:[^\\n]+\\n\\s*exit 1/);
+ assert.match(frontend,/oracle-production-release-main/,'manual frontend deploy retains the production lock');
+});
+
+test('Oracle systemd diagnostic inspects recovery state without mutating live services',()=>{
+ const yaml=readFileSync(systemdDiagnostic,'utf8');
+ assert.match(yaml,/Inspect recovery guards and transient MCP broker pressure/);
+ assert.match(yaml,/metadrive-systemd-manager-reexec-once/);
+ assert.match(yaml,/metadrive-systemd-manager-bus-reconnect-once/);
+ assert.match(yaml,/systemctl list-units --all/);
+ assert.match(yaml,/systemctl show -p Jobs -p NFailedUnits/);
+ assert.doesNotMatch(yaml,/sudo -n (?:systemctl restart|systemctl daemon-reload)/);
 });
