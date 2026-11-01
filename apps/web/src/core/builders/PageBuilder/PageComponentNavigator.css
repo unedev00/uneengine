@@ -58,3 +58,17 @@
 .page-navigator-footer {border-top:1px solid #e5ebf3;white-space:nowrap}
 .page-navigator-footer>span {max-width:62%;overflow:hidden;text-overflow:ellipsis}
 .page-navigator-popup :is(button,input,select):focus-visible {outline:2px solid #2563b8;outline-offset:0}
+
+/* Override legacy portal button rules, which otherwise force every action to 100% width. */
+.page-navigator-popup .page-navigator-option {
+  flex:1 1 auto;width:auto!important;min-height:42px;justify-content:flex-start!important;
+  border-bottom:0!important;padding:8px 7px 7px 11px!important
+}
+.page-navigator-popup .page-navigator-rename-button {
+  flex:0 0 30px;width:30px!important;min-width:30px!important;min-height:0!important;
+  justify-content:center!important;border-bottom:0!important
+}
+.page-navigator-popup .page-navigator-heading button,
+.page-navigator-popup .page-navigator-rename button {
+  width:auto!important;min-height:0!important;justify-content:center!important
+}
