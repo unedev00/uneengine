@@ -924,7 +924,7 @@ function SetupApp({ onLogout, entryTiming }: { onLogout: () => void; entryTiming
         if (!existing || !(error instanceof Error) ||
             !/Page layout draft revision conflict/i.test(error.message)) throw error;
         const latest=await apiRequest<{page:LightningPageMetadata}>(
-          `/metadata/pages/${encodeURIComponent(previousApiName)}/layouts/${variant}/draft`);
+          `/metadata/pages/${encodeURIComponent(previousApiName)}/layouts/${variant}/editor`);
         const revision=latest.page.draftRevision;
         if (typeof revision!=='number' || !Number.isInteger(revision))
           throw new Error('Cannot verify current draft revision. Your unsaved edits remain in the builder.');
