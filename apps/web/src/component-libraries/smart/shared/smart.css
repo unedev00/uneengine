@@ -155,3 +155,11 @@
  outline:1px dashed #cbd5e1;outline-offset:-2px;
  pointer-events:none;
 }
+
+/* Button metadata may specify a font size larger than the fixed canvas box.
+   Never show half of a wrapped label or paint text outside the component.
+   The full label remains available through the button's title. */
+.smart-runtime.smart_button>.smart-button {
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  line-height:1.2;min-width:0;
+}
