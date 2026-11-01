@@ -39,7 +39,20 @@ fi
 # Never repeatedly reexecute the manager within one boot. Marker is atomic.
 marker=/run/lock/metadrive-systemd-manager-reexec-once
 ( set -C; printf 'single audited systemd reexecution\n' > "$marker" ) || {
- echo 'Oracle systemd manager reexecution already attempted this boot; stopped.' >&2
+ echo 'Oracle systemd manager reexecution already attempted this boot; refusing repeat.' >&2
+ # A single D-Bus reconnect is less disruptive than systemd reexecution.
+ # It does not restart API/worker and cannot bypass the one-reexec guard.
+ reconnect_marker=/run/lock/metadrive-systemd-manager-bus-reconnect-once
+ if ( set -C; printf 'one bounded manager D-Bus reconnect\\n' > "$reconnect_marker" ) 2>/dev/null; then
+  echo 'Requesting one systemd D-Bus reconnect (SIGUSR1), no service restarts.'
+  kill -s USR1 1
+  sleep 3
+  if timeout 35 systemctl daemon-reload; then
+   echo 'Oracle systemd manager recovered after bounded D-Bus reconnect.'
+   exit 0
+  fi
+  echo 'Oracle manager reload still blocked after D-Bus reconnect.' >&2
+ fi
  diagnose_reload_failure
  exit 1
 }
