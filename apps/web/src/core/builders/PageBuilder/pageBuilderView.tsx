@@ -161,7 +161,6 @@ import ArrangeRibbon from './ArrangeRibbon';
 import type {AdvancedFeature} from './PageBuilderAdvancedRibbon';
 import './PageBuilderAdvancedRibbon.css';
 import PageBuilderAdvancedSections from './PageBuilderAdvancedSections';
-import PageBuilderAdvancedResponsive from './PageBuilderAdvancedResponsive';
 import SmartIconGallery from './SmartIconGallery';
 import {isUneBuilderApi,uneBuilderDefaults,type SharedRibbonCatalog,type UneBuilderApi} from './uneBuilderPropertyInventory';
 import './UniversalRibbonInventory.css';
