@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
+import {readFileSync} from 'node:fs';
 import type {PoolClient} from 'pg';
 import {copilotPosGraphs,seedAcetillCopilotPosFlows} from '../../src/app-seeders/acetill-copilot-pos-flows.js';
 import {copilotTillLayout} from '../../src/app-seeders/acetill-copilot-pos-page.js';
@@ -82,4 +83,25 @@ test('Copilot till Flow seeder is idempotent and never replaces authored metadat
  assert.equal(await seedAcetillCopilotPosFlows(client,'tenant-1'),0);
  assert.equal(queries.filter(q=>q.includes('INSERT INTO md_flow_definitions')).length,5);
  assert.equal(queries.some(q=>q.includes('DELETE FROM md_flow')||q.includes('UPDATE md_flow')),false);
+});
+
+test('CODEXTILL cart session picklist migration preserves original metadata and status semantics',()=>{
+ const add=copilotPosGraphs.find(flow=>flow.apiName==='AcetillCopilotAddProduct');
+ const sessionNode=add?.elements.find(node=>node.type==='Create Records'
+   &&node.config.object==='CartSession');
+ assert.ok(sessionNode,'Missing session creation Flow node');
+ const fields=sessionNode.config.fieldValues as Array<{field:string;value:unknown}>;
+ assert.deepEqual(fields.find(item=>item.field==='Status'),{field:'Status',value:'Open'});
+ const script=readFileSync(new URL('../../../../scripts/codextill/ensure-cart-session-open-status.mjs',import.meta.url),'utf8');
+ const workflow=readFileSync(new URL('../../../../.github/workflows/codextill-data-bindings.yml',import.meta.url),'utf8');
+ assert.ok(script.includes('md_field_picklist_values'));
+ assert.ok(script.includes('md_field_global_value_sets'));
+ assert.ok(script.includes('ON CONFLICT (tenant_id,object_api,field_api,value) DO NOTHING'));
+ assert.ok(script.includes('md_system_migrations'));
+ assert.ok(script.includes("graph.elements.filter"));
+ assert.ok(!script.includes('UPDATE md_field_definitions'));
+ assert.ok(!script.includes('DELETE FROM md_field_picklist_values'));
+ assert.ok(!script.includes('UPDATE md_flow_editor_values'));
+ assert.ok(workflow.includes('node scripts/codextill/ensure-cart-session-open-status.mjs --preflight'));
+ assert.ok(workflow.includes('node scripts/codextill/ensure-cart-session-open-status.mjs'));
 });
