@@ -13,14 +13,16 @@ ON CONFLICT(property_key) DO NOTHING;
 
 INSERT INTO md_builder_ribbon_component_rules
  (component_api,property_key,enabled,control_kind_override,value_key,default_value_override,choices_override)
-SELECT c.component_api,'shapeId',true,NULL,NULL,NULL,
+SELECT c.component_api,'shapeId',true,NULL,NULL,
+ CASE WHEN c.component_api='smart_toggle' THEN '"shape:oval"'::jsonb ELSE NULL END,
  CASE WHEN c.component_api='smart_button' THEN '["shapes","icons"]'::jsonb
  ELSE '["shapes"]'::jsonb END
 FROM (VALUES ('smart_button'),('smart_container'),('smart_text'),('smart_toggle'),('smart_lookup'))
   AS c(component_api)
 JOIN md_builder_ribbon_components r ON r.component_api=c.component_api
 ON CONFLICT(component_api,property_key)
-DO UPDATE SET enabled=true, choices_override=EXCLUDED.choices_override;
+DO UPDATE SET enabled=true, choices_override=EXCLUDED.choices_override,
+ default_value_override=EXCLUDED.default_value_override;
 
 -- The existing icon glyph colour is now also available on Button.
 INSERT INTO md_builder_ribbon_component_rules
