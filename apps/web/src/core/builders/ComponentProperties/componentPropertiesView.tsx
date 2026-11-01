@@ -436,15 +436,15 @@ export function MetadataComponentProperties({ properties, objects, apps, pages, 
       })() : '';
       return <div className="home-page-assignment" key={eventName}>
         <strong>{eventDefinitions.find(event => event.apiName === eventName)?.label ?? labelFor(eventName)}</strong>
-        <button type="button" className="btn btn-small" onClick={() => {const next={...(actionFlows ?? {})};delete next[eventName];update('actionFlows',next);}}>Remove action</button>
-        <label className="form-label">Choose an action<select className="form-control" value={actionType}
+        {mode!=='actions-inline'&&<button type="button" className="btn btn-small" onClick={() => {const next={...(actionFlows ?? {})};delete next[eventName];update('actionFlows',next);}}>Remove action</button>}
+        {mode!=='actions-inline'&&<label className="form-label">Choose an action<select className="form-control" value={actionType}
           onChange={(e) => setBinding({...binding,actionType:e.target.value})}>
           <option value="Flow">Run automation</option><option value="Navigate">Open another page</option><option value="SetFilter">Filter a list</option><option value="PageState">Update page value</option>
-        </select></label>
+        </select></label>}
         {actionType==='PageState' ? <div>
-               <label className="form-label">Page state key<input className="form-control"
+               {mode!=='actions-inline'&&<label className="form-label">Page state key<input className="form-control"
                  value={String(binding.stateKey??'')} placeholder="selectedRecord"
-                 onChange={e=>setBinding({...binding,stateKey:e.target.value})}/></label>
+                 onChange={e=>setBinding({...binding,stateKey:e.target.value})}/></label>}
                <label className="form-label">Value source<select className="form-control"
                  value={String(binding.value??'$event')} onChange={e=>setBinding({...binding,value:e.target.value})}>
                  <option value="$event">Entire component event</option>
@@ -452,12 +452,14 @@ export function MetadataComponentProperties({ properties, objects, apps, pages, 
                  <option value="$event.record">Selected record (use a Flow for collections)</option>
                  <option value="$session">Current session</option>
                </select></label>
-             </div> : actionType==='SetFilter' ? <label className="form-label">Shared filter key
+             </div> : actionType==='SetFilter' ? mode==='actions-inline'
+          ? <p className="properties-help">The list filter uses the key configured in the Actions ribbon.</p>
+          : <label className="form-label">Shared filter key
           <input className="form-control" value={String(binding.filterKey ?? 'category')}
             onChange={(e) => setBinding({...binding,filterKey:e.target.value})}
             placeholder="category" pattern="[A-Za-z][A-Za-z0-9_]*" />
         </label> : actionType==='Flow' ? <>
-          <label className="form-label">Automation
+          {mode!=='actions-inline'&&<label className="form-label">Automation
             <select className="form-control" value={selectedFlow?.apiName??String(binding.flowApiName??'')}
               onChange={(e) => {const flow=flows.find(f=>f.apiName===e.target.value&&f.status==='Active');setBinding({ ...binding, flowApiName: flow?.id?metadataReference(flow.id):e.target.value });}}>
               <option value="">Choose an automation…</option>
@@ -468,13 +470,13 @@ export function MetadataComponentProperties({ properties, objects, apps, pages, 
                 || !['Screen Flow','Autolaunched Flow'].includes(selectedFlow.flowType))
                 && <option value={selectedFlow.apiName} disabled>{selectedFlow.label} (not available)</option>}
             </select>
-          </label>
+          </label>}
           <FlowInputBindingEditor flow={selectedFlow} inputs={map} fields={fields}
             outputs={outputMap}
             onChange={inputs => setBinding({ ...binding, inputs })}
             onOutputChange={outputs => setBinding({ ...binding, outputs })} />
         </> : <div className="metadata-navigation-target" aria-label="Navigation destination">
-          <label className="form-label">Destination type
+          {mode!=='actions-inline'&&<label className="form-label">Destination type
             <select className="form-control" value={navigationTargetType}
               onChange={(e) => setBinding({ ...binding, navigationTargetType: e.target.value,
                 navigationAppId: e.target.value === 'Record List' ? 'Records' : currentAppId,
@@ -483,7 +485,7 @@ export function MetadataComponentProperties({ properties, objects, apps, pages, 
               <option value="App Home">App home</option>
               <option value="App Page">App page</option>
             </select>
-          </label>
+          </label>}
           <label className="form-label">Application
             <select className="form-control" value={navigationAppId}
               onChange={(e) => setBinding({ ...binding, navigationAppId: e.target.value, navigationPageApiName: '' })}>
