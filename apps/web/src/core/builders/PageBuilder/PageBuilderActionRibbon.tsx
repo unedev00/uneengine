@@ -6,14 +6,15 @@ import {supportsSmartActionEvent} from './SmartEventActionsRibbon';
 
 type Binding=Record<string,unknown>;
 type EventOption={apiName:string;label:string};
-type ActionKind='Flow'|'Navigate'|'SetFilter'|'PageState';
+type ActionKind='Flow'|'Navigate'|'SetFilter'|'PageState'|'AdjustNumber';
 const asBinding=(value:unknown):Binding=>
   value&&typeof value==='object'&&!Array.isArray(value)?value as Binding:{};
 const actionTypes:ReadonlyArray<{kind:ActionKind;label:string;group:string}>=[
   {kind:'Flow',label:'Run automation',group:'Flows'},
   {kind:'Navigate',label:'Open another page',group:'Navigation'},
   {kind:'SetFilter',label:'Filter a list',group:'Page actions'},
-  {kind:'PageState',label:'Update page value',group:'Page actions'}
+  {kind:'PageState',label:'Update page value',group:'Page actions'},
+  {kind:'AdjustNumber',label:'Change number (+/−)',group:'Page actions'}
 ];
 
 /**
@@ -22,10 +23,10 @@ const actionTypes:ReadonlyArray<{kind:ActionKind;label:string;group:string}>=[
  * navigation destinations are edited in the inline panel, never in a modal.
  */
 export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,selectedEvent,
-  onSelectEvent,onChange,showDetails,onToggleDetails,api='',selectedApis,disabled=false}:{
+  onSelectEvent,onChange,showDetails,onToggleDetails,api='',selectedApis,dataFields=[],disabled=false}:{
   actions:Binding;eventDefinitions:EventOption[];flows:FlowDefinitionMetadata[];
   selectedEvent:string;onSelectEvent:(name:string)=>void;
-  api?:string;selectedApis?:readonly string[];
+  api?:string;selectedApis?:readonly string[];dataFields?:Array<{apiName:string;label:string;dataType:string}>;
   onChange:(next:Binding)=>void;showDetails:boolean;onToggleDetails:()=>void;
   disabled?:boolean;
 }) {
@@ -105,8 +106,14 @@ export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,
     }else if(choice.startsWith('type:')){
       const actionType=choice.slice(5);
       if(!actionTypes.some(type=>type.kind===actionType))return;
+      const numericFields=dataFields.filter(field=>/^(Number|Currency|Percent|Integer|Decimal|Double|Float)(\(|$)/i.test(field.dataType));
+      const suggested=numericFields.find(f=>/^(Quantity|Qty)$/i.test(f.apiName))??numericFields[0];
       onChange({...actions,[key]:{...previous,actionType,
-        ...(actionType==='Flow'?{flowApiName:''}:{})}});
+        ...(actionType==='Flow'?{flowApiName:''}:{}),
+        ...(actionType==='AdjustNumber'?{
+          deltaSource:'$event.delta',fieldApiName:suggested?.apiName??'',
+          minValue:0,deleteOnZero:true
+        }:{})}});
     }else return;
     onSelectEvent(key);
   };
@@ -139,6 +146,7 @@ export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,
         <optgroup label="Page actions">
           <option value="type:SetFilter">Filter a list</option>
           <option value="type:PageState">Update page value</option>
+          <option value="type:AdjustNumber">Change number (+/−)</option>
         </optgroup>
       </select>
     </label>;
@@ -181,6 +189,7 @@ export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,
           <optgroup label="Page actions">
             <option value="type:SetFilter" disabled={!active}>Filter a list</option>
             <option value="type:PageState" disabled={!active}>Update page value</option>
+            <option value="type:AdjustNumber" disabled={!active}>Change number (+/−)</option>
           </optgroup>
         </select>
       </label>
@@ -208,6 +217,70 @@ export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,
       <span className="office-ribbon-group-heading">Selected action</span>
     </section>}
     {active&&<section className="office-ribbon-mini-group page-action-target">
+      {kind==='AdjustNumber' ? <>
+        <label>Number field
+          <select aria-label="Number field to adjust" disabled={disabled}
+            value={String(selected.fieldApiName??'')}
+            onChange={e=>patch({fieldApiName:e.target.value})}>
+            <option value="">Choose numeric field…</option>
+            {dataFields.filter(field=>/^(Number|Currency|Percent|Integer|Decimal|Double|Float)(\(|$)/i.test(field.dataType))
+              .map(field=><option key={field.apiName} value={field.apiName}>{field.label}</option>)}
+          </select>
+        </label>
+        <label>Minimum <input type="number" min={0} step={1} disabled={disabled}
+          aria-label="Minimum number after adjustment"
+          value={Number(selected.minValue??0)}
+          onChange={e=>patch({minValue:Math.max(0,Number(e.target.value)||0)})}/></label>
+        <label><input type="checkbox" disabled={disabled}
+          aria-label="Delete row when number reaches zero"
+          checked={selected.deleteOnZero===true}
+          onChange={e=>patch({deleteOnZero:e.target.checked,minValue:0})}/> Remove row at zero</label>
+        <label>Related record field
+          <select aria-label="Optional relation guard field" disabled={disabled}
+            value={String(selected.relatedFieldApiName??'')}
+            onChange={e=>patch({relatedFieldApiName:e.target.value})}>
+            <option value="">No relation guard</option>
+            {dataFields.filter(field=>/^(Lookup|Reference)(\(|$)/i.test(field.dataType))
+              .map(field=><option key={field.apiName} value={field.apiName}>{field.label}</option>)}
+          </select>
+        </label>
+        <label>Related page state key
+          <input aria-label="Related page state key for permission-scoped row"
+            disabled={disabled} placeholder="e.g. currentCartId"
+            value={String(selected.relatedStateKey??'')}
+            onChange={e=>patch({relatedStateKey:e.target.value})}/>
+        </label>
+        <label>Page collection key
+          <input aria-label="Optional Page State collection to refresh"
+            disabled={disabled} placeholder="e.g. cartItems"
+            value={String(selected.stateCollectionKey??'')}
+            onChange={e=>patch({stateCollectionKey:e.target.value})}/>
+        </label>
+        <label>Total page state key
+          <input aria-label="Optional Page State total to recalculate"
+            disabled={disabled} placeholder="e.g. total"
+            value={String(selected.totalStateKey??'')}
+            onChange={e=>patch({totalStateKey:e.target.value})}/>
+        </label>
+        <label>Unit price field
+          <select aria-label="Optional unit price field" disabled={disabled}
+            value={String(selected.unitPriceFieldApiName??'')}
+            onChange={e=>patch({unitPriceFieldApiName:e.target.value,totalFieldApiName:e.target.value?selected.totalFieldApiName??'':''})}>
+            <option value="">No calculated total</option>
+            {dataFields.filter(field=>/^(Number|Currency|Percent|Integer|Decimal|Double|Float)(\(|$)/i.test(field.dataType))
+              .map(field=><option key={field.apiName} value={field.apiName}>{field.label}</option>)}
+          </select>
+        </label>
+        <label>Line total field
+          <select aria-label="Optional line total field" disabled={disabled}
+            value={String(selected.totalFieldApiName??'')}
+            onChange={e=>patch({totalFieldApiName:e.target.value})}>
+            <option value="">None</option>
+            {dataFields.filter(field=>/^(Number|Currency|Percent|Integer|Decimal|Double|Float)(\(|$)/i.test(field.dataType))
+              .map(field=><option key={field.apiName} value={field.apiName}>{field.label}</option>)}
+          </select>
+        </label>
+      </> : null}
       {kind==='Flow'?<label>Flow
         <select aria-label="Flow for selected action" disabled={disabled}
           value={selectedFlow?.apiName??String(selected.flowApiName??'')}

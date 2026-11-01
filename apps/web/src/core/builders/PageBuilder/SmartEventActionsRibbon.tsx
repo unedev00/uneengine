@@ -44,8 +44,9 @@ export default function SmartEventActionsRibbon({api,actions,flows,onChange,sele
  };
  const picker=(slot:{key:string;label:string;enabled:boolean})=>{
   const saved=asObject(actions[slot.key]);
-  const selected=slot.enabled&&!mixedSlots?.includes(slot.key)&&
-    !['Navigate','PageState','SetFilter'].includes(String(saved.actionType))
+  const adjusted=slot.enabled&&!mixedSlots?.includes(slot.key)&&saved.actionType==='AdjustNumber';
+  const selected=adjusted?'__adjust_number__':slot.enabled&&!mixedSlots?.includes(slot.key)&&
+    !['Navigate','PageState','SetFilter','AdjustNumber'].includes(String(saved.actionType))
     ?String(saved.flowApiName??''):'';
   return <label key={slot.key} className="smart-event-picker">
     <span>{slot.label}</span>
@@ -53,6 +54,7 @@ export default function SmartEventActionsRibbon({api,actions,flows,onChange,sele
       title={!slot.enabled?'Not supported by selected component':'Select Autolaunched or Screen Flow'}
       value={selected} onChange={event=>update(slot.key,event.target.value)}>
       <option value="">Select Flow…</option>
+      {adjusted&&<option value="__adjust_number__" disabled>Change number (+/−) — use Component Action ribbon</option>}
       {selected&&!active.some(flow=>flow.apiName===selected)&&
         <option value={selected}>{selected} (saved/inactive)</option>}
       {(['Autolaunched Flow','Screen Flow','In-Screen Flow'] as const).map(kind=>

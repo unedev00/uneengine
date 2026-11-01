@@ -1717,17 +1717,21 @@ export class RecordEngine {
   }
 
   /** Object-level delete permission and record access are checked for the root. */
-  async remove(tenantId:string,userId:string,objectApi:string,id:string,client?:PoolClient) {
+  async remove(tenantId:string,userId:string,objectApi:string,id:string,client?:PoolClient,ifUnmodifiedSince?:string) {
     if(objectApi==='CashLedger')throw Error('CashLedger entries cannot be deleted; post a reversal');
     if(!uuid.test(id)||!/^[A-Za-z][A-Za-z0-9_]*$/.test(objectApi))
       throw new Error('Invalid record reference');
+    const checkDate=ifUnmodifiedSince?new Date(ifUnmodifiedSince):null;
+    if(checkDate&&!Number.isFinite(checkDate.getTime()))throw Error('Invalid record modification precondition');
     await this.rbac.require(tenantId,userId,objectApi,'delete');
     const run=async(transactionClient:PoolClient)=>{
       await this.lockObjectForWrite(transactionClient,tenantId,objectApi);
-      const locked=await transactionClient.query(
-        "SELECT id FROM md_records WHERE tenant_id=$1 AND object_api=$2 AND id=$3 AND is_deleted=false AND md_record_access($1,$4,id,'delete') FOR UPDATE",
+      const locked=await transactionClient.query<{id:string;updated_at:Date}>(
+        "SELECT id,updated_at FROM md_records WHERE tenant_id=$1 AND object_api=$2 AND id=$3 AND is_deleted=false AND md_record_access($1,$4,id,'delete') FOR UPDATE",
         [tenantId,objectApi,id,userId]);
       if(!locked.rowCount)throw new Error('Record not found');
+      if(checkDate&&new Date(locked.rows[0].updated_at).getTime()>checkDate.getTime()+999)
+        throw new Error('Record has changed since it was loaded');
       const prior=this.recordTrigger
         ?await this.get(tenantId,userId,objectApi,id,transactionClient):null;
       const group=await transactionClient.query<{id:string}>(

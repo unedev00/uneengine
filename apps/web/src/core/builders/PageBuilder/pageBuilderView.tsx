@@ -3333,6 +3333,8 @@ function PageBuilder({
               api={selected.type.startsWith('Custom:')?selected.type.slice(7):selected.type}
               selectedApis={actionMembers.map(item=>item.type.startsWith('Custom:')?item.type.slice(7):item.type)}
               actions={selectedActions} eventDefinitions={actionOptions} flows={flows}
+              dataFields={objects.find(item=>item.apiName===
+                String(selected.properties.objectApiName||page.targetObject||''))?.fields??[]}
               selectedEvent={activeActionEvent} disabled={actionSelectionDisabled}
               onSelectEvent={setInlineActionEvent}
               showDetails={inlineActionSettingsOpen}

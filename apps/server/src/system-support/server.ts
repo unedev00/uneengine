@@ -2636,7 +2636,8 @@ export function createSystemServer(db:SqlPersistence) {
   }));
   app.delete('/api/records/:objectApi/:id',route(async(req,res)=>{
     const actor=req.actor!;
-    await records.remove(actor.tenant_id,actor.user_id,req.params.objectApi,req.params.id);
+    await records.remove(actor.tenant_id,actor.user_id,req.params.objectApi,req.params.id,
+      undefined,req.get('if-unmodified-since'));
     res.status(204).end();
   }));
   // Generic tenant-owned media library, subject to the existing Files permission.
