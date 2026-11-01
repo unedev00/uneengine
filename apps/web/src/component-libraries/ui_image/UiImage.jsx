@@ -21,6 +21,9 @@ export default function UiImage(props){
  })).catch(()=>{});};
  return <UneFrame p={props}><figure className="une-image-card" data-image-placement={placement} style={{
    margin:0,display:"flex",position:"relative",minWidth:0,
+   // The picture, empty placeholder, header and badges share ONE rounded clip.
+   // A square figure overflow box otherwise cuts across the native image corners.
+   borderRadius:safe(p.radius,12),overflow:"hidden",
    flexDirection:placement==="left"||placement==="right"?"row":"column",gap:0
  }} role={clickable?"button":undefined} tabIndex={clickable?0:undefined}
     onClick={clickable?activate:undefined}
