@@ -2353,6 +2353,10 @@ function PageBuilder({
 
     };
     const selectOnlyInDesigner = !previewMode && !libraryPreview;
+    // The canvas frame owns the resize handles; its content owns clipping/scrolling.
+    // In template/nested layouts use a Fragment to preserve native direct-child styling.
+    const ContentHost = page.layoutMode === 'free-canvas' && !nested && !libraryPreview ? 'div' : React.Fragment;
+    const contentHostProps = ContentHost === 'div' ? {className:'free-canvas-content-viewport'} : {};
     return <div
       key={component.id}
       data-builder-editor={!previewMode&&!libraryPreview?'true':undefined}
@@ -2478,6 +2482,7 @@ function PageBuilder({
           <button type="button" role="menuitem" disabled={isCanvasLocked(component)} onClick={() => {removeSelected();setComponentMenuId('');}}>Delete <kbd>Delete</kbd></button>
         </div>}
       </div></CanvasFloatingActions>}
+      <ContentHost {...contentHostProps}>
       {editorGenericHint&&<span className="page-editor-generic-hint" aria-hidden="true">{editorGenericHint}</span>}
       {showHiddenSelection && !component.visible
         ? <span className="canvas-hidden-marker">Hidden: {component.label}</span>
@@ -2620,6 +2625,7 @@ function PageBuilder({
       {selectOnlyInDesigner && !isLayoutContainer(component) && !isLayoutType(component.type)
         && !['Tabs','Accordion'].includes(component.type)
         && <div className="canvas-design-interaction-shield" aria-hidden="true" data-canvas-select-only="true"/>}
+      </ContentHost>
       {!libraryPreview && page.layoutMode === 'template' && selectedId === component.id && !previewMode && !isCanvasLocked(component)
         && (['move', 'rotate'] as const).map(mode => <button key={mode} type="button"
           className={`template-placement-handle template-placement-${mode}`}
