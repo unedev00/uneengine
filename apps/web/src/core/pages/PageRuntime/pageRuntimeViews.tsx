@@ -369,7 +369,7 @@ function MetadataBoundPageComponent({
     return () => window.removeEventListener('metadrive:page-flow-mutated', sync);
   }, [pageSessionKey, sessionId]);
   const fields = objects.find((item) => item.apiName === objectApiName)?.fields ?? [];
-  const recordQuery=pageComponentRecordQuery(properties.filters,fields,{pageState,recordId,sessionId},properties.filterLogic==='OR'?'OR':'AND');
+  const recordQuery=pageComponentRecordQuery(properties.filters,fields,{pageState,recordId,sessionId},properties.filterLogic==='OR'?'OR':'AND',properties.filterFormula);
   const relatedKey=String(properties.relatedFilterKey??'');
   const {relatedQuery,relatedField,parentId:selectedId}=usePageComponentRelatedScope(
     properties,component.type,fields,objects,pageState,sessionId,revision,

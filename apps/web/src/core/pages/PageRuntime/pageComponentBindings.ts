@@ -1,3 +1,4 @@
+import {compileRecordFilterFormula} from './recordFilterFormula';
 import { compareMetadataValue } from '../../metadata/Definitions/metadataValueComparison';
 import type { FieldMetadata } from '../../metadata/Definitions/metadata';
 import { examineRecordFilter, isNumericFilterField } from '../../records/RecordWorkspace/recordFilterMetadata';
@@ -26,6 +27,7 @@ export function needsMetadataComponentRuntime(properties: Record<string, unknown
   const state = properties.stateBindings;
   if(state && typeof state==='object' && !Array.isArray(state)
      && Object.keys(state).length>0)return true;
+  if(typeof properties.filterFormula==='string'&&properties.filterFormula.trim())return true;
   const bindings = properties.actionFlows;
   return Boolean(bindings && typeof bindings === 'object' && !Array.isArray(bindings)
     && Object.keys(bindings).length > 0);
@@ -94,7 +96,7 @@ export type PageFilterContext={
   recordId?:string;
   sessionId?:string;
 };
-type PageFilter={field:string;operator:string;value:unknown;skipWhenEmpty?:boolean};
+type PageFilter={field:string;operator:string;value:unknown};
 export type PageQueryFilter={field:string;value:string;related:boolean};
 export type PageServerRecordFilter={field:string;operator:string;value:string};
 const serverFilterOperators:Record<string,string>={
@@ -227,29 +229,18 @@ export function resolvePageFilterValue(value:unknown,context:PageFilterContext):
   return undefined;
 }
 /** Block unbound parent filters *before* querying; missing context never means "all records". */
-export function pageComponentRecordQuery(
+function pageComponentRecordQueryBase(
   definitions:unknown,fields:ReadonlyArray<FieldMetadata>,context:PageFilterContext={},logic:'AND'|'OR'='AND'
 ):{blocked:boolean;filter?:PageQueryFilter;filters?:PageServerRecordFilter[];filterLogic?:string;serverFilterable:boolean}{
   if(definitions===undefined||definitions===null)return {blocked:false,serverFilterable:true};
   if(!Array.isArray(definitions))return {blocked:true,serverFilterable:false};
-  // Validate every configured condition before applying optionality. An invalid
-  // condition must never turn into an unrestricted record query.
+  // A saved filter is mandatory. Invalid metadata must never widen queries.
   if(definitions.some(item=>examineRecordFilter(item,fields)!==null))
     return {blocked:true,serverFilterable:false};
-  // A PageState-bound filter can explicitly be skipped when unselected. This
-  // user-configured option preserves the other conditions and their server-side
-  // pagination/filtering instead of downloading an incomplete result set.
-  const effective=definitions.filter(value=>{
-    const item=value as PageFilter;
-    if(item.skipWhenEmpty!==true || !isDynamic(item.value)
-      ||item.value.source!=='PageState')return true;
-    const stateValue=resolvePageFilterValue(item.value,context);
-    return stateValue!==undefined&&stateValue!==null&&stateValue!=='';
-  });
   let first:PageQueryFilter|undefined;
   const serverFilters:PageServerRecordFilter[]=[];
   let serverFilterable=true;
-  for(const value of effective){
+  for(const value of definitions){
     const filter=value as PageFilter;
     const expressionValue=isDynamic(filter.value)&&filter.value.source==='FieldExpression';
     const resolved=expressionValue?undefined:resolvePageFilterValue(filter.value,context);
@@ -272,11 +263,34 @@ export function pageComponentRecordQuery(
       first={field:filter.field,value:String(resolved),related:Boolean(field?.relationship)};
     }
   }
-  const filters=serverFilterable&&serverFilters.length===effective.length&&serverFilters.length>0
+  const filters=serverFilterable&&serverFilters.length===definitions.length&&serverFilters.length>0
     ?serverFilters:undefined;
   return {blocked:false,filter:first,filters,
     filterLogic:filters&&filters.length>1?filters.map((_,index)=>String(index+1)).join(` ${logic} `):undefined,
     serverFilterable};
+}
+/** Compose an optional user-authored formula with ordinary Object filters.
+ * The formula must compile to server-side predicates BEFORE paging; otherwise
+ * reject it instead of returning an incomplete client-filtered page. */
+export function pageComponentRecordQuery(
+ definitions:unknown,fields:ReadonlyArray<FieldMetadata>,context:PageFilterContext={},
+ logic:'AND'|'OR'='AND',formula?:unknown
+):{blocked:boolean;filter?:PageQueryFilter;filters?:PageServerRecordFilter[];filterLogic?:string;serverFilterable:boolean;error?:string}{
+ const base=pageComponentRecordQueryBase(definitions,fields,context,logic);
+ if(formula===undefined||formula===null||formula==='')return base;
+ const extra=compileRecordFilterFormula(formula,fields,context.pageState??{});
+ if(extra.blocked)return {blocked:true,serverFilterable:false,error:extra.error};
+ if(!extra.filters.length)return base;
+ if(base.blocked||!base.serverFilterable||(Array.isArray(definitions)&&definitions.length>0&&!base.filters))
+  return {blocked:true,serverFilterable:false,error:'Filter formula requires all existing conditions to be server-filterable'};
+ const regular=base.filters??[];
+ const combined=[...regular,...extra.filters];
+ if(combined.length>20)return {blocked:true,serverFilterable:false,error:'At most 20 combined record filters are supported'};
+ const existing=regular.length?(base.filterLogic??regular.map((_,i)=>String(i+1)).join(' AND ')):'';
+ const compiled=extra.filterLogic??extra.filters.map((_,i)=>String(i+1)).join(' AND ');
+ const shifted=compiled.replace(/\b\d+\b/g,num=>String(Number(num)+regular.length));
+ return {blocked:false,serverFilterable:true,filters:combined,
+  filterLogic:existing?'('+existing+') AND ('+shifted+')':shifted};
 }
 export function comparePageFilterValue(actual:unknown,operator:string,expected:unknown,field:FieldMetadata|undefined):boolean{
  if(actual!=null&&isNumericFilterField(field)&&['Equals','Not Equals'].includes(operator)
@@ -310,15 +324,7 @@ export function filterPageComponentRecords<T extends Record<string, unknown>>(
   if (!Array.isArray(definitions)) return [];
   if (definitions.length===0) return [...records];
   if (pageComponentRecordQuery(definitions,fields,context,logic).blocked)return [];
-  const effective=definitions.filter(item=>{
-    const filter=item as PageFilter;
-    if(filter.skipWhenEmpty!==true||!isDynamic(filter.value)
-      ||filter.value.source!=='PageState')return true;
-    const value=resolvePageFilterValue(filter.value,context);
-    return value!==undefined&&value!==null&&value!=='';
-  });
-  if(!effective.length)return [...records];
-  return records.filter(record => effective[logic==='OR'?'some':'every'](item => {
+  return records.filter(record => definitions[logic==='OR'?'some':'every'](item => {
     const filter = item as PageFilter;
     const mentions=record.__mentionValues&&typeof record.__mentionValues==='object'&&!Array.isArray(record.__mentionValues)
       ?record.__mentionValues as Record<string,unknown>:{};

@@ -350,6 +350,8 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
      <div className="smart-filter-dialog-body">
        {object?<RecordFilterEditor title={object.label+' records'} fields={object.fields??[]} objects={objects} rootObjectApiName={objectName}
          filters={Array.isArray(properties.filters)?properties.filters:[]}
+         formula={typeof properties.filterFormula==='string'?properties.filterFormula:''}
+         onFormulaChange={filterFormula=>onChange({...properties,filterFormula})}
          logic={properties.filterLogic==='OR'?'OR':'AND'}
          onLogicChange={filterLogic=>onChange({...properties,filterLogic})}
          onChange={filters=>onChange({...properties,filters})}/>:
