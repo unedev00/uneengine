@@ -7,6 +7,8 @@ SHA="${2:?commit SHA required}"
 test -s "$DIST/index.html"
 test -s "$DIST/acetill/index.html"
 test -d "$DIST/assets"
+test -s "$DIST/frontend-release.json"
+grep -Fq "\"commit\":\"$SHA\"" "$DIST/frontend-release.json"
 BASE=/var/www/metadrive-frontend
 RELEASE="$BASE/releases/$SHA"
 mkdir -p "$BASE/releases"
@@ -58,6 +60,18 @@ systemctl reload nginx
 if ! curl --fail --silent --show-error --max-time 10 -H 'Host: unesolutions.co.uk' http://127.0.0.1/ | grep -qi '<html'; then
   if [ -n "$PREVIOUS" ]; then ln -sfn "$PREVIOUS" "$BASE/.next"; mv -Tf "$BASE/.next" "$BASE/current"; systemctl reload nginx; fi
   echo "Local frontend verification failed; reverted where possible" >&2
+  exit 1
+fi
+# Verify the newly served build identity, not merely an HTML document.
+# A stale Nginx root or cached release must fail the deployment.
+served_release="$(curl --noproxy '*' -fsS --max-time 10 -H 'Host: unesolutions.co.uk' -H 'Cache-Control: no-cache' http://127.0.0.1/frontend-release.json)"
+if [[ "$served_release" != *"\"commit\":\"$SHA\""* ]]; then
+  if [ -n "$PREVIOUS" ]; then
+    ln -sfn "$PREVIOUS" "$BASE/.next"
+    mv -Tf "$BASE/.next" "$BASE/current"
+    systemctl reload nginx
+  fi
+  echo "Served frontend release does not match deployed commit $SHA" >&2
   exit 1
 fi
 # Remove only older frontend releases; never touch API releases or mail data.
