@@ -14,6 +14,7 @@ import SmartMultiSelect from './SmartMultiSelect';
 import SmartIconGallery from './SmartIconGallery';
 import './SmartRibbon.css';
 import './SmartRibbonApprovedThreeRow.css';
+import './SmartRibbonDataFormula.css';
 type Position={x:number;y:number;width:number;height:number};
 type Props={tab:UneBuilderTab;api:string;definitions:readonly UneRibbonProperty[];properties:Record<string,unknown>;
  onChange:(next:Record<string,unknown>)=>void;objects:readonly ObjectMetadata[];pageObjectApiName?:string;
@@ -55,11 +56,12 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  },[tab,definitions]);
  const [filtersOpen,setFiltersOpen]=useState(false);
  const [filterTarget,setFilterTarget]=useState('Record');
+ const [selectedDataField,setSelectedDataField]=useState<string|null>(null);
  const [daysOpen,setDaysOpen]=useState(false);
  const daysButton=useRef<HTMLButtonElement>(null);
  const daysMenu=useRef<HTMLDivElement>(null);
  const [daysPosition,setDaysPosition]=useState({top:0,left:0});
- useEffect(()=>{setDaysOpen(false);setFiltersOpen(false);},[tab,api]);
+ useEffect(()=>{setDaysOpen(false);setFiltersOpen(false);setSelectedDataField(null);},[tab,api]);
  useEffect(()=>{
    if(!filtersOpen)return;
    const close=(event:globalThis.KeyboardEvent)=>{if(event.key==='Escape')setFiltersOpen(false);};
@@ -120,6 +122,25 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  const sectionRow=(group:string,row:number)=>displayProperties
    .filter(p=>p.group===group&&((p.designRow??2)>=1&&(p.designRow??2)<=3?p.designRow??2:2)===row)
    .sort((a,b)=>(a.designOrder??999)-(b.designOrder??999));
+ // Preserve row-three Data fields on row two before a tenant's SQL migration runs.
+ const dataSectionRow=(group:string,row:number)=>tab==='Data'&&group!=='Source'&&row===2
+   ?[...sectionRow(group,2),...sectionRow(group,3)]:sectionRow(group,row);
+ const isDataFormula=(p:UneRibbonProperty)=>p.group!=='Source'&&
+   (p.kindOverrides?.[api]??p.kind)==='expression';
+ const activeDataProperty=tab==='Data'
+   ?displayProperties.find(p=>p.id===selectedDataField&&isDataFormula(p)):undefined;
+ const activeDataKey=activeDataProperty?.valueKeys?.[api]??activeDataProperty?.id??'';
+ const activeDataEnabled=Boolean(activeDataProperty&&activeDataProperty.components.includes(api)&&
+   (!sharedPropertyIds||sharedPropertyIds.includes(activeDataProperty.id)));
+ const activeDataValue=activeDataProperty
+   ?String(properties[activeDataKey]??activeDataProperty.defaultsOverrides?.[api]??activeDataProperty.default??''):'';
+ const activeSummaryLabel=activeDataProperty&&api==='smart_cart'
+   ?cartSummaryLabels[activeDataProperty.id]:undefined;
+ const changeActiveDataFormula=(next:string)=>{
+   if(!activeDataEnabled||!activeDataProperty)return;
+   onChange({...properties,[activeDataKey]:next,
+     ...(activeDataProperty.id==='imageSource'?{imageSourceMode:'field'}:{})});
+ };
  // Geometry only. Keep every property, icon, dropdown and persisted value;
  // fit their existing three rows without reserving space for empty columns.
  const controlWidth=(p:UneRibbonProperty)=>{
@@ -144,9 +165,10 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  // Reserve exactly the rendered track widths, 4px between controls and 7px
  // side gutters. The caption minimum avoids clipping long section names.
  const sectionWidth=(group:string)=>Math.ceil(Math.max(
-   Math.max(0,...[1,2,3].map(row=>{
-     const properties=sectionRow(group,row);
-     return properties.reduce((total,p)=>total+controlWidth(p)+(p.designCaptionWidth??0),0)
+   Math.max(0,...(tab==='Data'&&group!=='Source'?[1,2]:[1,2,3]).map(row=>{
+     const properties=dataSectionRow(group,row);
+     return properties.reduce((sum,p)=>sum+controlWidth(p)+
+       (tab==='Data'&&isDataFormula(p)?0:(p.designCaptionWidth??0)),0)
        +Math.max(0,properties.length-1)*4;
    }))+15,
    group.length*5.5+16
@@ -177,6 +199,22 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
      navigationDirection:'Direction',tabCount:'Tabs',firstDay:'First day'
    };
    const shortLabel=compactDesign?(property.designCaption??labelOverrides[property.id]??title):title;
+   if(tab==='Data'&&isDataFormula(property)){
+     const selected=selectedDataField===property.id;
+     return <div key={property.id} data-property={property.id} data-kind={kind}
+       data-supported={supported} className={'smart-property smart-data-field'+(!enabled?' disabled':'')}
+       style={{'--smart-control-width':controlWidth(property)+'px',
+         '--smart-caption-width':'0px','--smart-control-height':'26px'} as CSSProperties}>
+       <span className="smart-data-field-pair">
+         <button type="button" className="smart-data-field-name" disabled={!enabled}
+           aria-label={'Select formula for '+title} onClick={()=>setSelectedDataField(property.id)}>{shortLabel}</button>
+         <button type="button" disabled={!enabled} aria-pressed={selected}
+           aria-label={'Formula for '+title} title={'Edit '+title+' formula'}
+           className={'smart-data-field-fx'+(selected?' is-selected':'')}
+           onClick={()=>setSelectedDataField(property.id)}>ƒx</button>
+       </span>
+     </div>;
+   }
    const isTextSize=compactDesign&&/^(textSize|badgeTextSize|summary2?TextSize|placeholderSize)$/.test(property.id);
    const isCorner=compactDesign&&/radius/i.test(property.id);
    const isWidth=compactDesign&&/width/i.test(property.id);
@@ -331,7 +369,58 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
     accept="image/png,image/jpeg,image/gif,image/webp" aria-label="Select local image"
     onChange={event=>void selectLocalImage(event)} />
   {uploadError&&<div className="smart-upload-error" role="alert" title={uploadError}>{uploadError}</div>}
-  {sections.map(section=><section className="smart-ribbon-group" key={section}
+  {tab==='Data'?<>
+    {sections.filter(group=>group==='Source').map(section=><section className="smart-ribbon-group" key={section}
+      data-design-three-row="true" data-smart-tab={tab} aria-label={section}
+      style={{'--smart-section-width':sectionWidth(section)+'px'} as CSSProperties}>
+      <div className="smart-ribbon-items">{[1,2,3].map(row=><div className="smart-ribbon-row"
+        data-design-row={row} key={row}>{sectionRow(section,row).map(controls)}</div>)}</div>
+      <span className="smart-ribbon-caption">{section}</span>
+    </section>)}
+    <div className="smart-data-workspace">
+      <div className="smart-data-formula-bar" aria-label="Formula for selected Data property">
+        <button type="button" className="smart-data-filter-button"
+          aria-label={activeDataProperty?'Filter for '+activeDataProperty.label:'Filter for selected field'}
+          title={activeDataProperty?'Record filters: '+activeDataProperty.label:'Select a field first'}
+          disabled={!activeDataEnabled||!object} onClick={()=>openFilters(activeDataProperty?.label??'Record')}
+          aria-haspopup="dialog"><SlidersHorizontal size={17}/>{filterCount>0&&
+            <span className="smart-filter-count">{filterCount}</span>}</button>
+        <span className="smart-data-fx-prefix" aria-hidden="true">ƒx</span>
+        <div className="smart-data-formula-input">
+          {activeDataProperty?<SmartFormulaField key={activeDataProperty.id}
+            label={activeDataProperty.label} value={activeDataValue}
+            disabled={!activeDataEnabled} onChange={changeActiveDataFormula}
+            singleFieldOnly={api==='smart_toggle'&&activeDataProperty.id==='textSource'}
+            fields={api==='smart_toggle'&&activeDataProperty.id==='textSource'
+              ?(object?.fields??[]).filter(field=>['Checkbox','Boolean'].includes(field.dataType))
+              :object?.fields??[]}
+            objects={objects} rootObjectApiName={objectName} selectedSourceObjects={sourceObjects}
+            mentionKind={activeDataProperty.id==='imageSource'?'image':'text'}/>:
+            <input type="text" disabled aria-label="Formula (select a field first)"
+              placeholder="Select a field's Fx button to edit its formula"/>}
+        </div>
+        {activeSummaryLabel&&<input className="smart-data-summary-name"
+          aria-label={activeSummaryLabel.slot+' cart label'} title="Edit cart summary heading"
+          maxLength={64} spellCheck={false} disabled={!activeDataEnabled}
+          value={fallback(properties[activeSummaryLabel.key])}
+          placeholder={activeSummaryLabel.slot}
+          onChange={event=>update(activeSummaryLabel.key,event.target.value)}/>}
+        {activeDataProperty?.id==='imageSource'&&api==='smart_image'&&
+          <button type="button" className="smart-data-image-upload" disabled={uploadBusy||!activeDataEnabled}
+            title="Upload image" aria-label="Upload image"
+            onClick={()=>uploadInput.current?.click()}><ImagePlus size={17}/></button>}
+      </div>
+      <div className="smart-data-sections">
+        {sections.filter(group=>group!=='Source').map(section=><section className="smart-ribbon-group"
+          key={section} data-smart-tab={tab} aria-label={section}
+          style={{'--smart-section-width':sectionWidth(section)+'px'} as CSSProperties}>
+          <div className="smart-ribbon-items">{[1,2].map(row=><div className="smart-ribbon-row"
+            data-design-row={row} key={row}>{dataSectionRow(section,row).map(controls)}</div>)}</div>
+          <span className="smart-ribbon-caption">{section}</span>
+        </section>)}
+      </div>
+    </div>
+  </>:sections.map(section=><section className="smart-ribbon-group" key={section}
      data-design-three-row={compactDesign?'true':undefined} data-smart-tab={tab} aria-label={section}
      style={compactDesign?{'--smart-section-width':sectionWidth(section)+'px'} as CSSProperties:undefined}>
    <div className="smart-ribbon-items">
