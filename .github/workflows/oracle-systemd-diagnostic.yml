@@ -67,3 +67,22 @@ jobs:
             echo "== selected directives from $site =="
             sudo -n grep -nE '^[[:space:]]*(server[[:space:]]*\\{|listen[[:space:]]|server_name[[:space:]]|root[[:space:]]|location[[:space:]]|return[[:space:]]|try_files[[:space:]]|proxy_pass[[:space:]]|ssl_certificate[[:space:]])' "$site" | head -n 110 || true
           done
+
+      - name: Inspect recovery guards and transient MCP broker pressure (read only)
+        shell: bash
+        run: |
+          set -uo pipefail
+          echo "== single-boot manager recovery guards (presence only) =="
+          for marker in metadrive-systemd-manager-reexec-once metadrive-systemd-manager-bus-reconnect-once metadrive-systemd-manager-mcp-gc-once; do
+            if test -e "/run/lock/$marker"; then echo "$marker: used"; else echo "$marker: available"; fi
+          done
+          echo "== transient broker files (bounded count) =="
+          sudo -n find /run/systemd/transient -maxdepth 1 -name 'metadrive-mcp-broker@*.service' -type f -printf '.' 2>/dev/null |
+            wc -c || true
+          echo "== broker active/failed state (bounded) =="
+          timeout 10 systemctl list-units --all --no-pager --no-legend 'metadrive-mcp-broker@*.service' 2>&1 | head -n 35 || true
+          echo "== manager jobs and unit pressure =="
+          timeout 10 systemctl show -p Jobs -p NFailedUnits -p Reloading -p SystemState --no-pager 2>&1 || true
+          echo "== stuck reload and broker processes =="
+          ps -eo pid,ppid,stat,etime,wchan:30,comm | grep -E '(^ *PID|systemctl|dbus|systemd|metadrive-mcp)' | head -n 70 || true
+          echo "Read-only manager recovery diagnosis complete."
