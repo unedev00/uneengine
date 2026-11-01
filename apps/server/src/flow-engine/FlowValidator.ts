@@ -83,10 +83,10 @@ export async function validateFlowDraft(rbac:RbacEngine|undefined,tenantId:strin
  const executionContext=startConfig.executionContext??'User';
  if(!['User','System'].includes(String(executionContext)))
   errors.push('Flow execution context must be User or System');
- if(executionContext==='System'&&(data.flowType==='Screen Flow'||beforeSave))
+ if(executionContext==='System'&&(['Screen Flow','In-Screen Flow'].includes(data.flowType)||beforeSave))
   errors.push('System execution context is not supported for Screen or before-save Record-Triggered Flows');
  if(data.apiName!==apiName)errors.push('Flow API name must match the requested definition');
- if(capabilities?!catalogType?.validateEnabled:!['Autolaunched Flow','Screen Flow',
+ if(capabilities?!catalogType?.validateEnabled:!['Autolaunched Flow','Screen Flow','In-Screen Flow',
   'Record-Triggered Flow','Schedule-Triggered Flow','Platform Event-Triggered Flow','Flow Orchestration'].includes(String(data.flowType)))
  errors.push('This SQL runtime supports Autolaunched Flow, Screen Flow, supported Record-Triggered Flows, durable Schedule-Triggered Flows, Platform Event-Triggered Flows and Flow Orchestration');
  errors.push(...validateFlowResources(data.resources,data.flowType==='Record-Triggered Flow'));
@@ -111,7 +111,7 @@ export async function validateFlowDraft(rbac:RbacEngine|undefined,tenantId:strin
     'HTTP Callout','Action','End','Get Records','Get Available Slots','Update Records','Delete Records','Loop',
     'Collection Filter','Collection Sort','Transform','Parse JSON','Subflow','Wait','Roll Back Records',
     'Custom Error','Publish Platform Event','Orchestration Stage',
-    ...(data.flowType==='Screen Flow'?['Screen']:[])].includes(type);
+    ...(['Screen Flow','In-Screen Flow'].includes(data.flowType)?['Screen']:[])].includes(type);
   if(capabilities?!capability?.allowedFlowTypes.includes(String(data.flowType)):!legacyElementAllowed)
    errors.push('Unsupported SQL Flow element: '+type);
   if(beforeSave&&!(capabilities?capability?.beforeSaveAllowed:

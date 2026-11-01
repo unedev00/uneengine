@@ -284,7 +284,7 @@ export function createSetupFlowActions(ctx: any) {
     for (const test of definition.tests ?? []) {
       try {
         const isRecord = definition.flowType === 'Record-Triggered Flow';
-        if (!isRecord && !['Autolaunched Flow', 'Screen Flow', 'Flow Orchestration'].includes(definition.flowType)) {
+        if (!isRecord && !['Autolaunched Flow', 'Screen Flow', 'In-Screen Flow', 'Flow Orchestration'].includes(definition.flowType)) {
           throw new Error('This Flow type cannot be tested through a manual run.');
         }
         const payload = isRecord ? {

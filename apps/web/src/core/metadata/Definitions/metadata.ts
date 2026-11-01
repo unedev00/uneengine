@@ -339,7 +339,7 @@ export type FlowVersionMetadata = {
   savedAt: string;
   label?: string;
   description?: string;
-  flowType?: 'Record-Triggered Flow' | 'Screen Flow' | 'Autolaunched Flow' | 'Flow Orchestration' | 'Schedule-Triggered Flow' | 'Platform Event-Triggered Flow';
+  flowType?: 'Record-Triggered Flow' | 'Screen Flow' | 'In-Screen Flow' | 'Autolaunched Flow' | 'Flow Orchestration' | 'Schedule-Triggered Flow' | 'Platform Event-Triggered Flow';
   triggerObject?: string | null;
   startConfig?: Record<string, unknown>;
   elements: FlowElementMetadata[];
@@ -408,7 +408,7 @@ export type FlowDefinitionMetadata = {
   createdBy?: string;
   lastModifiedAt?: string;
   lastModifiedBy?: string;
-  flowType: 'Record-Triggered Flow' | 'Screen Flow' | 'Autolaunched Flow' | 'Flow Orchestration' | 'Schedule-Triggered Flow' | 'Platform Event-Triggered Flow';
+  flowType: 'Record-Triggered Flow' | 'Screen Flow' | 'In-Screen Flow' | 'Autolaunched Flow' | 'Flow Orchestration' | 'Schedule-Triggered Flow' | 'Platform Event-Triggered Flow';
   status: 'Draft' | 'Active';
   versionNumber: number;
   activeVersion: number | null;

@@ -193,7 +193,7 @@ export class FlowRuntime {
       throw new Error('Invalid Flow metadata');
     const input=raw as Record<string,unknown>;
     if(input.apiName!==apiName||typeof input.label!=='string'||!input.label.trim()||input.label.length>200
-      ||!['Screen Flow','Record-Triggered Flow','Autolaunched Flow','Flow Orchestration',
+      ||!['Screen Flow','In-Screen Flow','Record-Triggered Flow','Autolaunched Flow','Flow Orchestration',
         'Schedule-Triggered Flow','Platform Event-Triggered Flow'].includes(String(input.flowType))
       ||!['Draft','Active'].includes(String(input.status))
       ||!Array.isArray(input.elements)||input.elements.length>250
@@ -575,7 +575,7 @@ export class FlowRuntime {
         FOR UPDATE OF r,f`,[tenantId,runId]);
       const active=rows[0];
       if(!active||active.status!=='pending'||active.started_by!==userId
-        ||!['Screen Flow','Autolaunched Flow','Record-Triggered Flow','Schedule-Triggered Flow',
+        ||!['Screen Flow','In-Screen Flow','Autolaunched Flow','Record-Triggered Flow','Schedule-Triggered Flow',
           'Platform Event-Triggered Flow','Flow Orchestration'].includes(active.flow_type))
         throw new Error('Pending Flow interview not found');
       const nested=callStack.at(-1)===active.api_name;
