@@ -149,6 +149,7 @@ import PageRouteDirectory from '../../pages/PageRouteDirectory/PageRouteDirector
 import PageComponentVisualEditor from '../ComponentStyleEditor/PageComponentVisualEditor';
 import RibbonColorPalette from './RibbonColorPalette';
 import {RibbonFilters} from './PageBuilderRibbonEditors';
+import PageComponentNavigator from './PageComponentNavigator';
 import PageBuilderVisibilityDialog from './PageBuilderVisibilityDialog';
 import type {ComponentVisibilityRule} from '../../components/Properties/componentVisibility';
 import PageBuilderActionRibbon from './PageBuilderActionRibbon';
@@ -553,23 +554,6 @@ function PageBuilder({
   const [inlineActionSettingsOpen,setInlineActionSettingsOpen]=useState(false);
   const [focusedCardMapping,setFocusedCardMapping] = useState('');
   const ribbonStripRef=useRef<HTMLDivElement|null>(null);
-  const [viewFind,setViewFind]=useState('');
-  const [viewFindOpen,setViewFindOpen]=useState(false);
-  const viewFindInputRef=useRef<HTMLInputElement|null>(null);
-  const [viewFindPosition,setViewFindPosition]=useState({top:0,left:0});
-  useEffect(()=>{
-    if(!viewFindOpen)return;
-    const update=()=>{
-      const rect=viewFindInputRef.current?.getBoundingClientRect();
-      if(rect)setViewFindPosition({
-        top:Math.min(rect.bottom+4,window.innerHeight-218),
-        left:Math.max(6,Math.min(rect.left,window.innerWidth-366))
-      });
-    };
-    update();window.addEventListener('resize',update);
-    window.addEventListener('scroll',update,true);
-    return()=>{window.removeEventListener('resize',update);window.removeEventListener('scroll',update,true);};
-  },[viewFindOpen]);
   const [selectedConversationPart,setSelectedConversationPart]=useState('parent');
   useEffect(()=>setSelectedConversationPart('parent'),[selectedId]);
   const [ribbonTab, setRibbonTab] = useState<'Add Block' | 'Component Content' | 'Component Properties' | 'Component Style' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Component Responsive' | 'Preview' | 'Filters' | 'Source' | 'Arrange' | 'Advanced'>('Add Block');
@@ -2319,7 +2303,7 @@ function PageBuilder({
     }
   };
   const renderPageComponent = (component: LightningPageMetadata['components'][number], index: number, libraryPreview = false, interactivePreview = false) => {
-    const showHiddenSelection = ribbonTab === 'Preview' && !previewMode && selectedId === component.id && !libraryPreview;
+    const showHiddenSelection = ribbonTab === 'Preview' && !previewMode && !libraryPreview && Boolean(selectedId) && (selectedId === component.id || isDescendantOf(page.components,selectedId,component.id));
     if (!component.visible && !showHiddenSelection) return null;
     const customDefinition = component.type.startsWith('Custom:')
       ? findRegisteredComponent(libraryComponents, component.type.slice('Custom:'.length), 'page')
@@ -3122,31 +3106,26 @@ function PageBuilder({
           className="office-ribbon-content" role="tabpanel" aria-hidden={previewMode} aria-label={ribbonTab}
           aria-labelledby={`page-builder-tab-${Math.max(0,ribbonTabsVisible.indexOf(ribbonTab))}`}>
           {ribbonTab==='Preview' && <div className="office-ribbon-group canvas-preview-selector-group" aria-label="Find">
-            <div className="office-ribbon-stack ribbon-view-find">
-              <label className="ribbon-view-search"><Search size={14} aria-hidden="true"/>
-                <input type="search" ref={viewFindInputRef} aria-label="Find a component" placeholder="Find a component"
-                  value={viewFind} onFocus={()=>setViewFindOpen(true)}
-                  onKeyDown={event=>{if(event.key==='Escape')setViewFindOpen(false);}}
-                  onChange={event=>{setViewFind(event.target.value);setViewFindOpen(true);}}/>
-              </label>
-              {viewFindOpen && viewFind.trim() && createPortal(<div className="ribbon-view-find-results" role="listbox"
-                style={{position:'fixed',top:viewFindPosition.top,left:viewFindPosition.left}}
-                aria-label="Matching components">
-                {page.components.filter(item=>(item.label+' '+item.type).toLowerCase().includes(viewFind.trim().toLowerCase()))
-                  .slice(0,50).map(item=><button key={item.id} type="button" role="option"
-                    aria-selected={selectedId===item.id} onMouseDown={event=>event.preventDefault()}
-                    onClick={()=>{
-                      setSelectedId(item.id);setSelectionIds([item.id]);setSelectedRegion(null);
-                      setViewFind(item.label);setViewFindOpen(false);
-                      window.requestAnimationFrame(()=>{
-                        const nodes=pagePreviewAreaRef.current?.querySelectorAll<HTMLElement>('[data-component-id]');
-                        Array.from(nodes??[]).find(node=>node.dataset.componentId===item.id)
-                          ?.scrollIntoView({block:'nearest',inline:'nearest',behavior:'smooth'});
-                      });
-                    }}>{item.label} <small>{item.type}{item.visible?'':' · Hidden'}
-                    {rawLayoutParentId(item)?' · Nested':''}</small></button>)}
-              </div>,document.body)}
-            </div><span>Find</span>
+            <PageComponentNavigator components={page.components} libraryComponents={libraryComponents}
+              pageKey={page.apiName+':'+(page.layoutVariant??'Desktop')}
+              selectedId={selectedId}
+              onSelect={id=>{
+                setSelectedId(id);setSelectionIds([id]);setSelectedRegion(null);setPageSettingsOpen(false);
+                window.requestAnimationFrame(()=>{
+                  const nodes=pagePreviewAreaRef.current?.querySelectorAll<HTMLElement>('[data-component-id]');
+                  Array.from(nodes??[]).find(node=>node.dataset.componentId===id)
+                    ?.scrollIntoView({block:'nearest',inline:'nearest',behavior:'smooth'});
+                });
+              }}
+              onRename={(id,name)=>{
+                const component=page.components.find(item=>item.id===id);
+                if(!component)return;
+                const properties={...component.properties};
+                if(name)properties.navigatorName=name;
+                else delete properties.navigatorName;
+                updateComponent(id,{properties});
+              }}/>
+            <span>Find</span>
           </div>}
           {ribbonTab==='Preview' && <div className="office-ribbon-group canvas-preview-tools ribbon-view-zoom" aria-label="Zoom">
             <div className="office-ribbon-stack">

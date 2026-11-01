@@ -707,12 +707,14 @@ test('group resize scales geometry proportionally while leaving unrelated compon
 });
 test('placement controls, component finder and full-width workspace are builder-only',async()=>{
   const builder=await readFile(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+  const navigator=await readFile(new URL('../src/core/builders/PageBuilder/PageComponentNavigator.tsx',import.meta.url),'utf8');
   const css=await readFile(new URL('../src/core/builders/PageBuilder/PageBuilderCanvasWorkspace.css',import.meta.url),'utf8');
   const arrange=await readFile(new URL('../src/core/builders/PageBuilder/ArrangeRibbon.tsx',import.meta.url),'utf8');
   for(const action of ['Bring to front','Send to back','Group','Ungroup'])
     assert.ok(arrange.includes(action),action);
-  for(const action of ['aria-label="Find a component"','Fit to Screen','ribbonTab===\'Arrange\''])
+  for(const action of ['Fit to Screen','ribbonTab===\'Arrange\''])
     assert.ok(builder.includes(action),action);
+  assert.ok(navigator.includes('aria-label="Find a component"'));
   assert.match(builder,/borderWidth:1,borderColor:'#000000'/);
   assert.match(builder,/canvasGroupKey\(component\) \|\| previewMode/, 'grouped components move through the shared group gesture');
   assert.match(css,/\.page-stage/);
