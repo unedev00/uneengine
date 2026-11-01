@@ -2393,8 +2393,7 @@ function PageBuilder({
                   <a key={name} href={'#related-'+name}>{name}</a>)}
               </nav>
           : component.type === 'Rich Text'
-            ? <div className="record-fields-card surface" style={{whiteSpace:'pre-wrap'}}>{String(component.properties.content??'').trim()
-              ||(!previewMode?'Text Here':'')}</div>
+            ? <div className="record-fields-card surface" style={{whiteSpace:'pre-wrap'}}>{(String(component.properties.content??'').trim()?String(component.properties.content):(!previewMode?'Text Here':''))}</div>
           : component.type === 'List View'
             ? <div className="record-fields-card surface"><strong>{objects.find(item=>item.apiName===component.properties.listObjectApiName)?.pluralLabel??'Select an Object'}</strong>
                 <p>Authorised records, sorting, search and pagination load when this page runs.</p></div>
