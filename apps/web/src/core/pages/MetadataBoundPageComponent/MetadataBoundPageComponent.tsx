@@ -116,7 +116,7 @@ export default function MetadataBoundPageComponent({
     relatedKey?selectedFilterRecords[relatedKey]?.recordId||pageState[relatedKey]:undefined,
     disableActions);
   const recordQuery=pageComponentRecordQuery(properties.filters,filterFields,{pageState,recordId,sessionId},
-    properties.filterLogic==='OR'?'OR':'AND');
+    properties.filterLogic==='OR'?'OR':'AND',properties.filterFormula);
   const recordQueryKey=JSON.stringify([recordQuery,relatedQuery]);
 
   useEffect(() => {
