@@ -83,7 +83,7 @@ export async function validateFlowDraft(rbac:RbacEngine|undefined,tenantId:strin
  const executionContext=startConfig.executionContext??'User';
  if(!['User','System'].includes(String(executionContext)))
   errors.push('Flow execution context must be User or System');
- if(executionContext==='System'&&(['Screen Flow','In-Screen Flow'].includes(data.flowType)||beforeSave))
+ if(executionContext==='System'&&(['Screen Flow','In-Screen Flow'].includes(String(data.flowType))||beforeSave))
   errors.push('System execution context is not supported for Screen or before-save Record-Triggered Flows');
  if(data.apiName!==apiName)errors.push('Flow API name must match the requested definition');
  if(capabilities?!catalogType?.validateEnabled:!['Autolaunched Flow','Screen Flow','In-Screen Flow',
@@ -111,7 +111,7 @@ export async function validateFlowDraft(rbac:RbacEngine|undefined,tenantId:strin
     'HTTP Callout','Action','End','Get Records','Get Available Slots','Update Records','Delete Records','Loop',
     'Collection Filter','Collection Sort','Transform','Parse JSON','Subflow','Wait','Roll Back Records',
     'Custom Error','Publish Platform Event','Orchestration Stage',
-    ...(['Screen Flow','In-Screen Flow'].includes(data.flowType)?['Screen']:[])].includes(type);
+    ...(['Screen Flow','In-Screen Flow'].includes(String(data.flowType))?['Screen']:[])].includes(type);
   if(capabilities?!capability?.allowedFlowTypes.includes(String(data.flowType)):!legacyElementAllowed)
    errors.push('Unsupported SQL Flow element: '+type);
   if(beforeSave&&!(capabilities?capability?.beforeSaveAllowed:
