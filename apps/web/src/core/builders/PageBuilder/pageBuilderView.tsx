@@ -2028,7 +2028,7 @@ function PageBuilder({
   const pageTabType = (item: LightningPageMetadata) => item.pageType;
   const visiblePages = pages.filter(item => (recordPageContext
     ? item.pageType === 'Record Page' && item.targetObject === recordPageContext
-    : item.pageType !== 'Record Page') && (pageListTypeTab !== 'App Page' || pageListAppTab === 'all' || (pageListAppTab === 'other'
+    : item.pageType !== 'Record Page') && (recordPageContext || pageListTypeTab !== 'App Page' || pageListAppTab === 'all' || (pageListAppTab === 'other'
       ? pageAppIds(item).length === 0 : pageAppIds(item).includes(pageListAppTab)))
     && (recordPageContext || pageListTypeTab === 'all' || pageTabType(item) === pageListTypeTab)
     && (pageListDeviceTab === 'all' || (pageListDeviceTab === 'Mobile'
@@ -3037,7 +3037,7 @@ function PageBuilder({
             aria-label={'Delete '+item.label} onClick={()=>setPendingArchivePageApiName(item.apiName)}>
             <Trash2 size={14}/>{archivingPageApiName===item.apiName?'Deleting…':'Delete'}
           </button></td>
-        </tr>)}</tbody></table>{!visiblePages.length && <div className="records-empty">No pages match the selected filter. Create a new page to begin.</div>}</div>
+        </tr>)}</tbody></table>{!visiblePages.length && <div className="records-empty">{!recordPageContext && pageListTypeTab === 'Record Page' ? 'Record Pages are managed inside Object Manager. Choose an object there to manage its record pages.' : 'No pages match the selected filter. Create a new page to begin.'}</div>}</div>
         <nav className="flow-existing-pagination" aria-label="Page list pagination">
           <span>{visiblePages.length} pages · Page {safePageListPage} of {pageListPageCount}</span>
           <button className="btn" disabled={safePageListPage<=1} onClick={()=>setPageListPage(safePageListPage-1)}>Previous</button>
