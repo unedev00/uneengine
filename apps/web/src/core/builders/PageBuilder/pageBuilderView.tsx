@@ -2680,7 +2680,7 @@ function PageBuilder({
           onLostPointerCapture={event=>endCanvasMove(event,true)}
           onClick={event=>event.stopPropagation()}/>)}
       {!libraryPreview && page.layoutMode === 'free-canvas' && !nested && selectedId === component.id && !previewMode && !isCanvasLocked(component) && !canvasGroupKey(component)
-        && <CanvasFloatingResizeHandles componentId={component.id} viewportRef={pagePreviewAreaRef}
+        && <CanvasFloatingResizeHandles componentId={component.id} componentLabel={component.label} viewportRef={pagePreviewAreaRef}
           onStart={(event,edge)=>startCanvasResize(event,component,edge)}
           onMove={moveCanvasResize} onEnd={endCanvasResize}
           onCancel={event=>endCanvasResize(event,true)}/>} 
