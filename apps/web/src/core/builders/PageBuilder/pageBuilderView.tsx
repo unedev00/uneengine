@@ -711,7 +711,8 @@ function PageBuilder({
       actionOptions.push({apiName:event,label:event});
     }
   }
-  const actionSelectionDisabled=actionMembers.some(isCanvasLocked);
+  const actionSelectionDisabled=actionMembers.some(isCanvasLocked)
+    || (actionMembers.length>1&&actionOptions.length===0);
   const applyActionFlows=(actionFlows:Record<string,unknown>)=>{
     if(!selected||actionSelectionDisabled)return;
     if(actionMembers.length>1){
