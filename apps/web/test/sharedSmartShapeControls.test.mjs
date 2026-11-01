@@ -24,11 +24,13 @@ test('global Shape is SQL owned, enabled only for requested components, and icon
  assert.doesNotMatch(sql,/DELETE FROM md_page_|DELETE FROM md_component_definitions/i);
  const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
  assert.match(ribbon,/property.id==='shapeId'/);
- assert.match(ribbon,/allowIcons=\{options.includes\('icons'\)\}/);
+ assert.match(ribbon,/allowIcons=\{\(selectedApis\?\.length\?selectedApis:\[api\]\)\.every/);
+ assert.match(ribbon,/choicesOverrides\?\.\[member\]/);
  const gallery=read('../src/core/builders/PageBuilder/SmartIconGallery.tsx');
  assert.match(gallery,/allowIcons&&<section><strong>Icons<\/strong>/);
  const builder=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
  assert.match(builder,/component.apiName!=='smart_icon'/);
+ assert.match(builder,/selectedApis=\{ribbonSelectedMembers\.map/);
  assert.match(builder,/selected\?\.type==='Custom:smart_icon'/);
 });
 test('Button preserves empty labels and renders selected icons using the shared runtime',async()=>{
