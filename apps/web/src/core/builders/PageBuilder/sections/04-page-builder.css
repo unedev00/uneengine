@@ -971,8 +971,8 @@
 }
 .office-builder-ribbon .office-ribbon-content {
   display:flex!important;flex-wrap:nowrap!important;align-items:stretch!important;
-  box-sizing:border-box;height:146px!important;min-height:146px!important;max-height:146px!important;
-  overflow:visible!important;padding:5px 6px 6px!important;gap:0!important;
+  /* Outer height, scrolling and padding belong to PageBuilderRibbonLayout.css. */
+  box-sizing:border-box;gap:0!important;
 }
 .office-builder-ribbon .office-ribbon-content>.office-ribbon-group {
   flex:0 0 auto!important;max-height:133px!important;height:133px!important;
