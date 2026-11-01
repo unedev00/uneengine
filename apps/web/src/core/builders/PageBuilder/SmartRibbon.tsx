@@ -20,6 +20,12 @@ type Props={tab:UneBuilderTab;api:string;definitions:readonly UneRibbonProperty[
  sharedPropertyIds?:readonly string[];mixedPropertyIds?:readonly string[]};
 const weekdays=[['sun','Sun'],['mon','Mon'],['tue','Tue'],['wed','Wed'],['thu','Thu'],['fri','Fri'],['sat','Sat']] as const;
 const fallback=(value:unknown)=>typeof value==='string'?value:'';
+const cartSummaryLabels:Record<string,{key:string;slot:string}>={
+ subtotalValue:{key:'subtotalLabel',slot:'Summary 1'},
+ totalValue:{key:'totalLabel',slot:'Summary 2'},
+ taxValue:{key:'taxLabel',slot:'Summary 3'},
+ discountValue:{key:'discountLabel',slot:'Summary 4'}
+};
 export default function SmartRibbon({tab,api,definitions,properties,onChange,objects,pageObjectApiName='',position,onPositionChange,layoutMode,sharedPropertyIds,mixedPropertyIds}:Props){
  const uploadInput=useRef<HTMLInputElement>(null);
  const [uploadBusy,setUploadBusy]=useState(false);
@@ -90,7 +96,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  const compactDesign=true;
  const visible=definitions.filter(p=>p.tab===tab);
  const groups=[...new Set(visible.map(p=>p.group))];
- const groupOrder=tab==='Data'?['Source','Values','Cart columns','Cart totals']
+ const groupOrder=tab==='Data'?['Source','Values','Cart','Cart columns','Cart totals']
   :tab==='Design'?['Body','Typography','Tabs','Header','Badge','Header Supporting',
     'Table','Row','Summary','Summary 2']
   :tab==='Layout'?['Size & Position','Tabs','Cards','Navigation','Calendar','Image','Icon']
@@ -147,6 +153,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
     else if(kind!=='position')update(key,v);
    };
    const title=property.label;
+   const summaryLabel=api==='smart_cart'?cartSummaryLabels[property.id]:undefined;
    // Presentation-only shortening: metadata keys, persisted values and full
    // accessible names are retained. Unsupported properties stay disabled.
    const labelOverrides:Record<string,string>={
@@ -178,7 +185,12 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
          disabled={!object} aria-haspopup="dialog"><SlidersHorizontal size={16}/></button>
      </div>;
    }else if(kind==='expression')editor=<div className="smart-formula-filter">
-     <span className="smart-formula-prefix" title={title}>{shortLabel}</span>
+     {summaryLabel?<input type="text" className="smart-summary-label"
+       aria-label={summaryLabel.slot+' cart label'} title={summaryLabel.slot+' displayed cart label'}
+       placeholder={summaryLabel.slot} maxLength={64} spellCheck={false}
+       disabled={!enabled} value={fallback(properties[summaryLabel.key])}
+       onChange={event=>{if(enabled)update(summaryLabel.key,event.target.value);}}/>:
+       <span className="smart-formula-prefix" title={title}>{shortLabel}</span>}
      <SmartFormulaField value={String(value)} onChange={write}
        label={title} disabled={!enabled}
        singleFieldOnly={api==='smart_toggle'&&property.id==='textSource'}
