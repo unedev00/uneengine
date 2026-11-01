@@ -122,3 +122,15 @@ test('Cart Data geometry uses 10 percent wider true control tracks and two-pixel
  assert.match(dataCss,/width:100%!important;min-width:0!important;max-width:100%!important/);
  assert.match(pageLayout,/overflow-x: auto !important/);
 });
+
+
+test('Cart Summary 1–4 labels fit the existing Data ribbon controls without width changes',()=>{
+ const chipSelector=css.slice(css.indexOf('/* Only Cart Summary 1'));
+ assert.ok(chipSelector.length>50,'cart summary label rule missing');
+ for(const id of ['subtotalValue','totalValue','taxValue','discountValue'])
+  assert.ok(chipSelector.includes('[data-property="'+id+'"]'),'missing compact label '+id);
+ assert.match(chipSelector,/\.smart-data-field-name\s*\{\s*font-size:10px!important;/);
+ assert.doesNotMatch(chipSelector,/\b(?:width|min-width|max-width|padding)\s*:/);
+ for(const label of ['Summary 1','Summary 2','Summary 3','Summary 4'])
+  assert.ok(ui.includes("slot:'"+label+"'"),'cart summary metadata lost: '+label);
+});

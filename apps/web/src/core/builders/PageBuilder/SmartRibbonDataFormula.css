@@ -173,3 +173,12 @@
   .smart-ribbon[data-three-row="true"] .smart-data-sections .smart-ribbon-row{
   column-gap:2px!important;
 }
+
+
+/* Only Cart Summary 1–4: their SQL-defined 110px binding chips leave a
+   compact text region alongside the shared fx button. Do not resize chips. */
+.office-builder-ribbon #page-builder-tab-content .smart-data-sections
+  .smart-data-field:is([data-property="subtotalValue"],[data-property="totalValue"],
+    [data-property="taxValue"],[data-property="discountValue"]) .smart-data-field-name{
+  font-size:10px!important;
+}
