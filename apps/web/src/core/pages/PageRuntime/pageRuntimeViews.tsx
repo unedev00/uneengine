@@ -851,7 +851,8 @@ function LightningAppRuntime({
   onStandaloneModeChange,
   inScreenPage=false,
   inScreenContext,
-  previewPage
+  previewPage,
+  previewLayoutDevice
 }: {
   appId: string;
   pageApiName?: string;
@@ -871,8 +872,11 @@ function LightningAppRuntime({
   inScreenContext?: {sessionId?:string;values?:Record<string,unknown>};
   /** Unpublished draft for the Page Builder. Uses this runtime without fetching/caching a published page. */
   previewPage?: LightningPageMetadata;
+  /** Match the device selected in the builder instead of the admin window width. */
+  previewLayoutDevice?: 'Desktop' | 'Tablet' | 'Phone';
 }) {
-  const layoutDevice = usePageLayoutDevice();
+  const detectedLayoutDevice = usePageLayoutDevice();
+  const layoutDevice = previewLayoutDevice ?? detectedLayoutDevice;
   const viewportWidth=useViewportWidth();
   const requestedLayout = typeof window !== 'undefined'
     && new URLSearchParams(window.location.search).get('pageLayout') === 'Custom'
