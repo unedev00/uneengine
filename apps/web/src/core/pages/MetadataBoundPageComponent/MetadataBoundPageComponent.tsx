@@ -454,7 +454,7 @@ export default function MetadataBoundPageComponent({
           &&(pageBehaviors(properties)!.interactions as Array<{event?:unknown}>).some(item=>item?.event==='change')))
           void onAction({ event: 'change', value }).catch(() => {});
       },
-      loading: dataLoading, sessionId, previewOnly: disableActions,
+      loading: dataLoading, sessionId, previewOnly: disableActions, builderPreview: disableActions,
       // Only bind scalar expressions when one authorised record is in scope.
       // Multi-row components resolve their per-row values inside their own renderer.
       ...(visibleRecords.length===1 ? {record:visibleRecords[0]} : {}),
