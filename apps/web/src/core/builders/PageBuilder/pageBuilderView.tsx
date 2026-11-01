@@ -182,6 +182,7 @@ import { canNestComponent, pageAppearanceTarget, pageAppearanceStyleKeys, update
 import PageComponentStyleEditor from '../ComponentStyleEditor/PageComponentStyleEditor';
 import { isCanvasLocked, ungroupCanvasComponent, snapCanvasPosition, alignCanvasComponents, distributeCanvasComponents } from './canvasInteractions';
 import {canvasGroupKey, canvasGroupMembers, groupCanvasSelection, ungroupCanvasSelection, moveCanvasLayer, shiftCanvasLayer, canMoveCanvasLayer, canvasSiblingLayerIndex, canvasGroupBounds} from './canvasLayerGroups';
+import {canvasDimensionsForGesture,canvasScrollbarHit,MAX_CANVAS_EDGE} from './canvasPointerInteractions';
 import {isSharedCanvasProperty,mixedCanvasPropertyIds,updateSharedCanvasProperties,updateSharedCanvasPositions} from './canvasSharedRibbonProperties';
 import {useCanvasGroupGestures} from './useCanvasGroupGestures';
 import { copyComponentTree, cloneComponentTree, remapComponentInteractionTargets, assignTabOnReparent, type ComponentClipboard } from './pageComponentTree';
@@ -1240,11 +1241,13 @@ function PageBuilder({
     const scale = fitCanvas ? fitScale : canvasZoom/100;
     const x = start.original.x + canvasUnitsFromScreenDelta(event.clientX - start.pointerX, scale);
     const y = start.original.y + canvasUnitsFromScreenDelta(event.clientY - start.pointerY, scale);
+    const grownCanvas=canvasDimensionsForGesture({width:page.canvasWidth,height:page.canvasHeight},
+      {...start.original,x,y});
     const next = canvasSnap
       ? snapCanvasPosition({ ...start.original, x, y },
-          { width: page.canvasWidth, height: page.canvasHeight },
+          grownCanvas,
           page.components.filter(item => item.id !== start.id && !rawLayoutParentId(item) && item.position).map(item => item.position!), true)
-      : { position: canvasBoundPosition({ ...start.original, x, y }, { width: page.canvasWidth, height: page.canvasHeight }, false),
+      : { position: canvasBoundPosition({ ...start.original, x, y }, grownCanvas, false),
           guides: { x: false, y: false } };
     start.x = next.position.x; start.y = next.position.y;
     // CSS translate is independent of the component's authored transform/rotation.
@@ -1274,7 +1277,10 @@ function PageBuilder({
     if (canvasGuideXRef.current) canvasGuideXRef.current.style.display = 'none';
     if (canvasGuideYRef.current) canvasGuideYRef.current.style.display = 'none';
     if (changed) {
-      applyPage({ ...page, components: page.components.map(item =>
+      const canvas=canvasDimensionsForGesture({width:page.canvasWidth,height:page.canvasHeight},
+        {...start.original,x:start.x,y:start.y});
+      applyPage({ ...page, canvasWidth:canvas.width,canvasHeight:canvas.height,
+        components: page.components.map(item =>
         item.id === start.id ? { ...item, position: { ...start.original, x: start.x, y: start.y } } : item) });
     }
   };
@@ -1324,8 +1330,8 @@ function PageBuilder({
     const dy = canvasUnitsFromScreenDelta(event.clientY - start.pointerY, fitCanvas ? fitScale : canvasZoom/100);
     const west = start.edge.includes('w'), east = start.edge.includes('e'), north = start.edge.includes('n'), south = start.edge.includes('s');
     let x = start.x, y = start.y, width = start.width, height = start.height;
-    if (east) width = Math.max(minWidth, Math.min(page.canvasWidth - start.x, start.width + dx));
-    if (south) height = Math.max(minHeight, Math.min(page.canvasHeight - start.y, start.height + dy));
+    if (east) width = Math.max(minWidth, Math.min(MAX_CANVAS_EDGE - start.x, start.width + dx));
+    if (south) height = Math.max(minHeight, Math.min(MAX_CANVAS_EDGE - start.y, start.height + dy));
     if (west) { x = Math.max(0, Math.min(start.x + start.width - minWidth, start.x + dx)); width = start.width + start.x - x; }
     if (north) { y = Math.max(0, Math.min(start.y + start.height - minHeight, start.y + dy)); height = start.height + start.y - y; }
     start.current = { x, y, width, height };
@@ -1343,7 +1349,9 @@ function PageBuilder({
         width: Math.round(size.width), height: Math.round(size.height) };
       Object.assign(start.element.style, { left: `${position.x}px`, top: `${position.y}px`,
         width: `${position.width}px`, height: `${position.height}px` });
-      updateComponent(start.id, { position });
+      const canvas=canvasDimensionsForGesture({width:page.canvasWidth,height:page.canvasHeight},position);
+      applyPage({...page,canvasWidth:canvas.width,canvasHeight:canvas.height,
+        components:page.components.map(item=>item.id===start.id?{...item,position}:item)});
     } else {
       Object.assign(start.element.style, { left: `${start.x}px`, top: `${start.y}px`,
         width: `${start.width}px`, height: `${start.height}px` });
@@ -2407,15 +2415,10 @@ function PageBuilder({
       onDoubleClick={!libraryPreview ? event => { event.stopPropagation(); if (!previewMode) { setSelectedRegion(null); setSelectedId(component.id); selectRibbonTab(componentNeedsData(component.type)?'Component Data':'Component Properties'); } } : undefined}
       onContextMenu={!libraryPreview && !previewMode ? event => { event.preventDefault(); event.stopPropagation(); setSelectedRegion(null); setSelectedId(component.id); setComponentMenuId(component.id); } : undefined}
       onPointerDown={!libraryPreview && page.layoutMode === 'free-canvas' && !nested ? event => {
-        // Native Card Grid scrolling must not trigger free-canvas dragging.
-        // The component's dedicated move grips and resize handles still work.
-        const target=event.target as HTMLElement;
-        if((component.type==='Custom:ui_item_grid'&&target.closest('.md-product-grid--scroll'))
-          ||(component.type==='Custom:smart_card_grid'&&target.closest('.smart-grid'))
-          ||(component.type==='Custom:smart_cart'&&target.closest('.smart-cart-root'))
-          ||(component.type==='Custom:smart_tabs'&&target.closest('.smart-tabs-shell'))
-          ||(component.type==='Custom:smart_calendar'&&target.closest('.smart-calendar'))
-          ||(component.type==='Custom:smart_navigation'&&target.closest('.smart-navigation')))return;
+        // A scrollable component is still a movable shape. Only native scrollbar
+        // rails and touch panning are excluded; never exclude all Cart/Grid content.
+        const target=event.target as Element;
+        if(event.pointerType==='touch' || canvasScrollbarHit(target,event.clientX,event.clientY,event.currentTarget))return;
         startCanvasMove(event, component);
       } : undefined}
       onPointerMove={!libraryPreview && page.layoutMode === 'free-canvas' && !nested ? moveCanvasPointer : undefined}
@@ -2433,10 +2436,12 @@ function PageBuilder({
            const pos = component.position;
            const x = pos.x + (event.key === 'ArrowLeft' ? -delta : event.key === 'ArrowRight' ? delta : 0);
            const y = pos.y + (event.key === 'ArrowUp' ? -delta : event.key === 'ArrowDown' ? delta : 0);
-           updateComponent(component.id, { position: {
-             ...pos, x: Math.max(0, Math.min(page.canvasWidth - pos.width, x)),
-             y: Math.max(0, Math.min(page.canvasHeight - pos.height, y))
-           } });
+           const position={...pos,
+             x:Math.max(0,Math.min(MAX_CANVAS_EDGE-pos.width,x)),
+             y:Math.max(0,Math.min(MAX_CANVAS_EDGE-pos.height,y))};
+           const canvas=canvasDimensionsForGesture({width:page.canvasWidth,height:page.canvasHeight},position);
+           applyPage({...page,canvasWidth:canvas.width,canvasHeight:canvas.height,
+             components:page.components.map(item=>item.id===component.id?{...item,position}:item)});
          }
        } : undefined}
       onDragOver={!libraryPreview && !isPhoneBuilder ? (event) => { event.preventDefault(); event.stopPropagation(); setDragOverId(isLayoutContainer(component) ? component.id : rawLayoutParentId(component) ?? component.id); } : undefined}
