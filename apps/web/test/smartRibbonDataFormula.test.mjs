@@ -88,7 +88,9 @@ test('field-only filtering is applied after authorised record loading without ch
  assert.match(matcher,/filterPageComponentRecords\(\[record\]/);
  assert.match(matcher,/compileRecordFilterFormula/);
  assert.match(matcher,/return false;/);
- assert.match(runtime,/scopedFieldAllows\(p\.dataFieldFilters/);
+ assert.match(runtime,/typeof p\.fieldAllowed==='function'/);
+ const page=read('../src/core/pages/MetadataBoundPageComponent/MetadataBoundPageComponent.tsx');
+ assert.match(page,/scopedFieldAllows\(/);
  assert.match(runtime,/scopedExpression\(p,"textSource"/);
  assert.match(runtime,/fieldAllowed=\{\(key,row\)=>fieldAllows\(p,key,row\)\}/);
  assert.match(cart,/fieldExpression\('column'\+\(index\+1\)\+'Source'/);
