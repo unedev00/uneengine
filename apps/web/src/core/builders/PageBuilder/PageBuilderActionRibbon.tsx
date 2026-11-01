@@ -2,6 +2,7 @@ import {useState} from 'react';
 import { Trash2, SlidersHorizontal } from 'lucide-react';
 import type { FlowDefinitionMetadata } from '../../metadata/Definitions/metadata';
 import { metadataReference, metadataSelection } from '../../metadata/Definitions/metadataReferences';
+import {supportsSmartActionEvent} from './SmartEventActionsRibbon';
 
 type Binding=Record<string,unknown>;
 type EventOption={apiName:string;label:string};
@@ -21,9 +22,10 @@ const actionTypes:ReadonlyArray<{kind:ActionKind;label:string;group:string}>=[
  * navigation destinations are edited in the inline panel, never in a modal.
  */
 export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,selectedEvent,
-  onSelectEvent,onChange,showDetails,onToggleDetails,disabled=false}:{
+  onSelectEvent,onChange,showDetails,onToggleDetails,api='',selectedApis,disabled=false}:{
   actions:Binding;eventDefinitions:EventOption[];flows:FlowDefinitionMetadata[];
   selectedEvent:string;onSelectEvent:(name:string)=>void;
+  api?:string;selectedApis?:readonly string[];
   onChange:(next:Binding)=>void;showDetails:boolean;onToggleDetails:()=>void;
   disabled?:boolean;
 }) {
@@ -71,6 +73,75 @@ export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,
     onChange({...actions,[name]:{actionType:'Flow',flowApiName:'',inputs:{}}});
     onSelectEvent(name);setCustomTrigger('');
   };
+  // Do not replace the historical six property slots with the unified catalog.
+  // All slots remain visible; unsupported component events are disabled.
+  const members=selectedApis?.length?selectedApis:[api];
+  const eventSlots=[
+    {key:'click',label:'On Click'},
+    {key:'change',label:'On Change'},
+    {key:'start',label:'On Session Start'}
+  ] as const;
+  const componentSlots=[
+    {key:'qtyIcon',label:'Qty Icon'},
+    {key:'customButton1',label:'Custom Button 1'},
+    {key:'customButton2',label:'Custom Button 2'}
+  ] as const;
+  const supportsSlot=(key:string)=>members.every(member=>member.startsWith('smart_')
+    ?supportsSmartActionEvent(member,key)
+    :eventDefinitions.some(item=>item.apiName===key));
+  const chooseSlotAction=(key:string,choice:string)=>{
+    if(disabled||!supportsSlot(key))return;
+    const previous=asBinding(actions[key]);
+    if(!choice){
+      const next={...actions};delete next[key];
+      onChange(next);onSelectEvent(key);return;
+    }
+    if(choice.startsWith('flow:')){
+      const flow=availableFlows.find(item=>item.apiName===choice.slice(5));
+      if(!flow)return;
+      onChange({...actions,[key]:{...previous,actionType:'Flow',
+        flowApiName:flow.id?metadataReference(flow.id):flow.apiName,
+        flowType:flow.flowType,inputs:asBinding(previous.inputs)}});
+    }else if(choice.startsWith('type:')){
+      const actionType=choice.slice(5);
+      if(!actionTypes.some(type=>type.kind===actionType))return;
+      onChange({...actions,[key]:{...previous,actionType,
+        ...(actionType==='Flow'?{flowApiName:''}:{})}});
+    }else return;
+    onSelectEvent(key);
+  };
+  const slotPicker=(slot:{key:string;label:string})=>{
+    const saved=asBinding(actions[slot.key]);
+    const flow=metadataSelection(flows,saved.flowApiName);
+    const storedFlow=String(flow?.apiName??saved.flowApiName??'');
+    const type=String(saved.actionType??(storedFlow?'Flow':''));
+    const value=type==='Flow'&&storedFlow?'flow:'+storedFlow
+      :actionTypes.some(kind=>kind.kind===type)?'type:'+type:'';
+    const available=supportsSlot(slot.key)&&!disabled;
+    return <label className="page-action-property-picker" key={slot.key}>
+      <span>{slot.label}</span>
+      <select aria-label={slot.label+' action'} disabled={!available}
+        title={!available?'Not supported by selected component':'Choose Flow, navigation or page action'}
+        value={value} onChange={event=>chooseSlotAction(slot.key,event.target.value)}>
+        <option value="">Choose action…</option>
+        {value.startsWith('flow:')&&!availableFlows.some(f=>f.apiName===storedFlow)&&
+          <option value={value}>{storedFlow} (saved/unavailable)</option>}
+        <optgroup label="Autolaunched Flows">
+          {availableFlows.filter(f=>f.flowType==='Autolaunched Flow').map(flow=>
+            <option key={flow.apiName} value={'flow:'+flow.apiName}>{flow.label}</option>)}
+        </optgroup>
+        <optgroup label="Screen Flows">
+          {availableFlows.filter(f=>f.flowType==='Screen Flow').map(flow=>
+            <option key={flow.apiName} value={'flow:'+flow.apiName}>{flow.label}</option>)}
+        </optgroup>
+        <optgroup label="Navigation"><option value="type:Navigate">Open another page</option></optgroup>
+        <optgroup label="Page actions">
+          <option value="type:SetFilter">Filter a list</option>
+          <option value="type:PageState">Update page value</option>
+        </optgroup>
+      </select>
+    </label>;
+  };
   const remove=()=>{
     if(disabled||!active)return;
     const next={...actions};
@@ -79,6 +150,14 @@ export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,
     onSelectEvent(Object.keys(next)[0]??'');
   };
   return <div className="office-ribbon-compact-strip page-unified-actions-ribbon" aria-label="Unified component actions">
+    <section className="office-ribbon-mini-group page-action-property-group" aria-label="Event">
+      <div className="page-action-property-rows">{eventSlots.map(slotPicker)}</div>
+      <span className="office-ribbon-group-heading">Event</span>
+    </section>
+    <section className="office-ribbon-mini-group page-action-property-group" aria-label="Component Custom">
+      <div className="page-action-property-rows">{componentSlots.map(slotPicker)}</div>
+      <span className="office-ribbon-group-heading">Component Custom</span>
+    </section>
     <section className="office-ribbon-mini-group page-action-library">
       <label>Actions
         <select aria-label="All component actions" value="" disabled={disabled}
