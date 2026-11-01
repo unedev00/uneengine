@@ -19,7 +19,7 @@ import type {LibraryComponentMetadata,PageComponentMetadata,ObjectMetadata,Field
 import type {AppRoute} from '../../workspace/Navigation/appRouting';
 
 export default function MetadataBoundPageComponent({
-  apiRequest, definition, component, objects, apps, pages, currentAppId, pageSessionKey, reports, availableFlows, formFactor, onNavigate, onLaunchFlow, disableActions = false, builderPreview = false, defaultObjectApiName = '', recordId = '', behaviorContext
+  apiRequest, definition, component, objects, apps, pages, currentAppId, pageSessionKey, reports, availableFlows, formFactor, onNavigate, onLaunchFlow, disableActions = false, builderPreview = false, defaultObjectApiName = '', recordId = '', behaviorContext, initialPageState, sessionIdOverride
 }: {
   apiRequest:<T>(path:string,init?:RequestInit)=>Promise<T>;
   definition: LibraryComponentMetadata;
@@ -39,12 +39,15 @@ export default function MetadataBoundPageComponent({
   defaultObjectApiName?: string;
   recordId?: string;
   behaviorContext?:BehaviorContext;
+  initialPageState?:Record<string,unknown>;
+  sessionIdOverride?:string;
 }) {
   const properties = resolveMetadataProperties({...component.properties,objectApiName:component.properties.objectApiName||defaultObjectApiName},objects,availableFlows);
   const objectApiName = String(properties.objectApiName || defaultObjectApiName || '');
   const mentionRootObjectApiName = defaultObjectApiName || objectApiName;
   // An application-independent session can be referenced by configured Flows.
   const [sessionId, setSessionId] = useState(() => {
+    if(sessionIdOverride)return sessionIdOverride;
     const key = 'metadrive-page-session:' + pageSessionKey;
     try {
       let value = window.sessionStorage.getItem(key);
@@ -57,7 +60,7 @@ export default function MetadataBoundPageComponent({
       return crypto.randomUUID();
     }
   });
-  const [pageState,setPageState]=useState<Record<string,unknown>>({});
+  const [pageState,setPageState]=useState<Record<string,unknown>>(initialPageState??{});
   const [revision, setRevision] = useState(0);
   useEffect(()=>{
     const receive=(event:Event)=>{
@@ -306,6 +309,9 @@ export default function MetadataBoundPageComponent({
       throw new Error('This action is unavailable under the published Page rules.');
     const validationError=behaviorValidation(properties,action.event,behaviorContext??{formFactor});
     if(validationError)throw new Error(validationError);
+    window.dispatchEvent(new CustomEvent('metadrive:in-screen-action',{
+      detail:{pageSessionKey,componentId:component.id,event:action.event,value:action.value}
+    }));
     const interactions=pageBehaviors(properties)?.interactions;
     const hasInteraction=Array.isArray(interactions)&&interactions.some(item=>item?.event===action.event);
     if(hasInteraction)window.dispatchEvent(new CustomEvent('metadrive:page-component-interaction',{
@@ -366,7 +372,7 @@ export default function MetadataBoundPageComponent({
     if(binding.outputs!==undefined)Object.assign(outputMappings,binding.outputs);
     resolveFlowOutputBindings({},outputMappings);
     setActionError('');
-    if (selected.flowType === 'Screen Flow') {
+    if (['Screen Flow','In-Screen Flow'].includes(selected.flowType)) {
       const requestId=crypto.randomUUID();
       if(pendingFlowOutputs.current.size>=10)throw new Error('Too many pending Flow output mappings.');
       pendingFlowOutputs.current.set(requestId,{flowApiName,mappings:outputMappings});

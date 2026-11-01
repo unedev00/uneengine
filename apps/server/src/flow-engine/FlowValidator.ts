@@ -80,13 +80,57 @@ export async function validateFlowDraft(rbac:RbacEngine|undefined,tenantId:strin
   &&!Array.isArray(startNode.config)?startNode.config as Record<string,unknown>:{};
  const beforeSave=data.flowType==='Record-Triggered Flow'&&startConfig.runWhen==='before-save';
  const catalogType=capabilities?.flowTypes.find(type=>type.type===data.flowType);
+ if(data.flowType==='In-Screen Flow'){
+  const exposed=startConfig.windowPageBindings;
+  const availableInputs=new Set(Array.isArray(data.resources)
+   ?(data.resources as Array<{name?:unknown;availableForInput?:unknown}>)
+     .filter(item=>item.availableForInput===true).map(item=>item.name):[]);
+  if(exposed!==undefined&&(!Array.isArray(exposed)||exposed.length>100
+   ||new Set(exposed).size!==exposed.length||exposed.some(name=>!availableInputs.has(name))))
+   errors.push('Invalid In-Screen page data exposure');
+  const bindings=startConfig.inputBindings;
+  if(bindings!==undefined){
+   const sources=['auto','page.sessionKey','page.apiName','app.apiName',
+    'event.recordId','event.componentId','event.name','event.value'];
+   const inputNames=new Set(Array.isArray(data.resources)
+    ?(data.resources as Array<{name?:unknown;availableForInput?:unknown}>)
+      .filter(resource=>resource.availableForInput===true).map(resource=>resource.name):[]);
+   if(!bindings||typeof bindings!=='object'||Array.isArray(bindings)
+     ||Object.entries(bindings as Record<string,unknown>).some(([name,source])=>
+       !inputNames.has(name)||!sources.includes(String(source))))
+    errors.push('Invalid In-Screen input binding configuration');
+  }
+  const windowFields=['windowPageApiName','targetAppApiName','targetPageApiName','launchEventName','platformEventApiName'] as const;
+  for(const field of windowFields){
+   const value=startConfig[field];
+   if(value!==undefined&&(typeof value!=='string'||value.length>128
+     ||value!==''&&!/^[A-Za-z][A-Za-z0-9_]*$/.test(value)))
+    errors.push('Invalid In-Screen Flow '+field);
+  }
+  const launch=String(startConfig.launchTrigger??'manual');
+  if(!['manual','page-load','component-event','page-updated','platform-event'].includes(launch))
+   errors.push('Invalid In-Screen Flow launch trigger');
+  if(launch!=='manual'&&!startConfig.targetAppApiName&&!startConfig.targetPageApiName)
+   errors.push('Automatic In-Screen Flows require an app or page target');
+  if(launch==='platform-event'&&!startConfig.platformEventApiName)
+   errors.push('Platform Event trigger requires a published Event name');
+  const mode=String(startConfig.windowMode??'modal'),placement=String(startConfig.windowPlacement??'center');
+  if(!['modal','drawer','floating','fullscreen'].includes(mode))errors.push('Invalid In-Screen window type');
+  if(!['center','top-left','top-right','bottom-left','bottom-right'].includes(placement))
+   errors.push('Invalid In-Screen window position');
+  for(const [field,min,max] of [['windowWidth',320,1600],['windowHeight',320,1000],['cooldownSeconds',0,3600]] as const){
+   const val=startConfig[field];
+   if(val!==undefined&&(typeof val!=='number'||!Number.isSafeInteger(val)||val<min||val>max))
+    errors.push('Invalid In-Screen Flow '+field);
+  }
+ }
  const executionContext=startConfig.executionContext??'User';
  if(!['User','System'].includes(String(executionContext)))
   errors.push('Flow execution context must be User or System');
- if(executionContext==='System'&&(data.flowType==='Screen Flow'||beforeSave))
+ if(executionContext==='System'&&(['Screen Flow','In-Screen Flow'].includes(String(data.flowType))||beforeSave))
   errors.push('System execution context is not supported for Screen or before-save Record-Triggered Flows');
  if(data.apiName!==apiName)errors.push('Flow API name must match the requested definition');
- if(capabilities?!catalogType?.validateEnabled:!['Autolaunched Flow','Screen Flow',
+ if(capabilities?!catalogType?.validateEnabled:!['Autolaunched Flow','Screen Flow','In-Screen Flow',
   'Record-Triggered Flow','Schedule-Triggered Flow','Platform Event-Triggered Flow','Flow Orchestration'].includes(String(data.flowType)))
  errors.push('This SQL runtime supports Autolaunched Flow, Screen Flow, supported Record-Triggered Flows, durable Schedule-Triggered Flows, Platform Event-Triggered Flows and Flow Orchestration');
  errors.push(...validateFlowResources(data.resources,data.flowType==='Record-Triggered Flow'));
@@ -111,7 +155,7 @@ export async function validateFlowDraft(rbac:RbacEngine|undefined,tenantId:strin
     'HTTP Callout','Action','End','Get Records','Get Available Slots','Update Records','Delete Records','Loop',
     'Collection Filter','Collection Sort','Transform','Parse JSON','Subflow','Wait','Roll Back Records',
     'Custom Error','Publish Platform Event','Orchestration Stage',
-    ...(data.flowType==='Screen Flow'?['Screen']:[])].includes(type);
+    ...(['Screen Flow','In-Screen Flow'].includes(String(data.flowType))?['Screen']:[])].includes(type);
   if(capabilities?!capability?.allowedFlowTypes.includes(String(data.flowType)):!legacyElementAllowed)
    errors.push('Unsupported SQL Flow element: '+type);
   if(beforeSave&&!(capabilities?capability?.beforeSaveAllowed:

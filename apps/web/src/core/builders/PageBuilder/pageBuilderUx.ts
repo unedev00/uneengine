@@ -15,7 +15,8 @@ export const pageBuilderCategoryLabels: Record<PageBuilderPaletteCategory, strin
 export const pageBuilderStartOptions = [
   { type: 'Home Page', title: 'Home page', description: 'A starting place for your team.' },
   { type: 'Record Page', title: 'Record page', description: 'Display and edit a saved record.' },
-  { type: 'App Page', title: 'App page', description: 'Create a page inside an application.' }
+  { type: 'App Page', title: 'App page', description: 'Create a page inside an application.' },
+  { type: 'In-Screen Page', title: 'In-screen window', description: 'Reusable Flow window; not a navigation page.' }
 ] as const;
 
 /** Recently used entries are local editor preferences, not published tenant page metadata. */

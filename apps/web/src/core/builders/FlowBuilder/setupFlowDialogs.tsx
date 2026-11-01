@@ -7,13 +7,50 @@ import { screenFieldIsVisible } from '../../automation/FlowScreen/flowScreenRunt
 import { X } from 'lucide-react';
 
 export default function SetupFlowDialogs({ context }: { context: any }) {
- const { flowRun, setFlowRun, flowRunnerError, setFlowRunnerError, submitFlowScreen, goBackFlowScreen, flowRunnerSubmitting, flowDebug, setFlowDebug, runFlowDebug, libraryComponents, loadFlowScreenRecords } = context;
+ const { flowRun, setFlowRun, flowRunnerError, setFlowRunnerError, submitFlowScreen, goBackFlowScreen,
+   flowRunnerSubmitting, flowDebug, setFlowDebug, runFlowDebug, libraryComponents, loadFlowScreenRecords,
+   flows, pages, apps, objects, reports, LightningAppRuntime, pageDefinitionCache, formFactor,
+   activeAppId, onNavigate, onLaunchFlow } = context;
+ const flowMetadata=flows?.find(item=>item.apiName===flowRun?.flowApiName);
+ const settings=flowMetadata?.flowType==='In-Screen Flow'?flowMetadata.startConfig??{}:{};
+ const windowPage=pages?.find(page=>page.pageType==='In-Screen Page'
+   &&page.apiName===settings.windowPageApiName&&page.status==='Active');
+ const windowAppId=settings.targetAppApiName||activeAppId;
+ const pageBindings=Array.isArray(settings.windowPageBindings)?settings.windowPageBindings:[];
+ const exposedPageInputs=Object.fromEntries(pageBindings.filter((name:unknown)=>typeof name==='string')
+   .map((name:string)=>[name,flowRun?.launchInputs?.[name]]).filter(([,value])=>value!==undefined));
+ const sourceSessionBinding=Object.entries(settings.inputBindings??{}).find(([,source])=>source==='page.sessionKey')?.[0]??'sessionKey';
+ const sourceSessionId=typeof flowRun?.launchInputs?.[sourceSessionBinding]==='string'
+   ?String(flowRun.launchInputs[sourceSessionBinding]).slice(0,128):'';
+ const mode=['modal','drawer','floating','fullscreen'].includes(settings.windowMode)?settings.windowMode:'modal';
+ const position=settings.windowPlacement||'center';
+ const width=Number.isInteger(settings.windowWidth)?Math.max(320,Math.min(1600,settings.windowWidth)):480;
+ const height=Number.isInteger(settings.windowHeight)?Math.max(320,Math.min(1000,settings.windowHeight)):undefined;
+ const isWindow=flowMetadata?.flowType==='In-Screen Flow';
+ const horizontal=mode==='drawer'||position.endsWith('right')?'flex-end':
+   position.endsWith('left')?'flex-start':'center';
+ const vertical=position.startsWith('top')?'flex-start':position.startsWith('bottom')?'flex-end':'center';
+ const backdropStyle=isWindow?{justifyContent:horizontal,alignItems:mode==='drawer'?'stretch':vertical}:undefined;
+ const windowStyle=isWindow?{
+   width:mode==='fullscreen'?'100vw':mode==='drawer'?'min(520px,100vw)':Math.min(width,1600)+'px',
+   height:mode==='fullscreen'||mode==='drawer'?'100vh':height?height+'px':undefined,
+   maxWidth:'100vw',maxHeight:'100vh',overflowY:'auto'
+ }:undefined;
  return <>
       {flowRun && (
-        <div className="modal-backdrop" role="presentation">
-          <form className="modal" role="dialog" aria-modal="true" aria-labelledby="flow-screen-title" onSubmit={submitFlowScreen}>
+        <div className="modal-backdrop" role="presentation" style={backdropStyle}>
+          <section className="modal" role="dialog" aria-modal="true" aria-labelledby="flow-screen-title" style={windowStyle}>
             <div className="modal-header"><h2 id="flow-screen-title">{flowRun.screen.label}</h2><button className="icon-button dark" type="button" onClick={() => { window.dispatchEvent(new CustomEvent('metadrive:flow-cancelled', { detail: { requestId:flowRun.requestId,flowApiName: flowRun.flowApiName } })); setFlowRun(null); }} aria-label="Close"><X size={18} /></button></div>
             {flowRunnerError && <div className="flow-screen-error" role="alert" aria-live="assertive">{flowRunnerError}</div>}
+            {windowPage&&windowAppId&&LightningAppRuntime&&<div className="in-screen-page-host" style={{maxHeight:'65vh',overflow:'auto'}}>
+              <LightningAppRuntime appId={windowAppId} pageApiName={windowPage.apiName} inScreenPage
+                inScreenContext={{sessionId:sourceSessionId,values:exposedPageInputs}}
+                objects={objects} apps={apps} pages={pages} reports={reports}
+                libraryComponents={libraryComponents} availableFlows={flows.filter(item=>['Screen Flow','In-Screen Flow','Autolaunched Flow'].includes(item.flowType))}
+                formFactor={formFactor} pageDefinitionCache={pageDefinitionCache}
+                onNavigate={onNavigate} onLaunchFlow={onLaunchFlow} onStandaloneModeChange={()=>{}} />
+            </div>}
+            <form onSubmit={submitFlowScreen}>
             <div className={`flow-screen-grid${flowRun.screen.config.layout === 'Two Columns' ? ' flow-screen-grid-two' : ''}`}>
               <Suspense fallback={<div className="records-loading" role="status">Loading screen components…</div>}>
               <FlowScreenContent
@@ -33,6 +70,7 @@ export default function SetupFlowDialogs({ context }: { context: any }) {
             </div>
             <div className="modal-actions"><button className="btn" type="button" onClick={() => { window.dispatchEvent(new CustomEvent('metadrive:flow-cancelled', { detail: { requestId:flowRun.requestId,flowApiName: flowRun.flowApiName } })); setFlowRun(null); }}>Cancel</button>{flowRun.canGoBack && <button className="btn" type="button" onClick={() => void goBackFlowScreen()} disabled={flowRunnerSubmitting}>Previous</button>}{flowRun.outcomes.map((outcome) => <button className="btn btn-brand" type="submit" name="outcome" value={outcome.label} key={outcome.name} disabled={flowRunnerSubmitting}>{flowRunnerSubmitting ? 'Continuing…' : outcome.label}</button>)}</div>
           </form>
+          </section>
         </div>
       )}
       {flowDebug && (

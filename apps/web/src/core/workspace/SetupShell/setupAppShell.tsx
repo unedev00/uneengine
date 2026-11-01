@@ -216,7 +216,7 @@ function SetupApp({ onLogout, entryTiming }: { onLogout: () => void; entryTiming
   const [dashboardsLoaded,setDashboardsLoaded]=useState(false);
   const [dashboardsError,setDashboardsError]=useState('');
   const [flowValidation, setFlowValidation] = useState<FlowValidationMetadata | null>(null);
-  const [flowRun, setFlowRun] = useState<{ requestId?:string;interviewId: string; flowApiName: string; screen: FlowElementMetadata; values: Record<string, unknown>; screenResources?: Record<string, unknown>; outcomes: Array<{ name: string; label: string }>; canGoBack: boolean } | null>(null);
+  const [flowRun, setFlowRun] = useState<{ requestId?:string;interviewId: string; flowApiName: string; screen: FlowElementMetadata; values: Record<string, unknown>; screenResources?: Record<string, unknown>; launchInputs?: Record<string, unknown>; outcomes: Array<{ name: string; label: string }>; canGoBack: boolean } | null>(null);
   const [flowDebug, setFlowDebug] = useState<{
     flow: FlowDefinitionMetadata;
     mode: 'debug' | 'run';

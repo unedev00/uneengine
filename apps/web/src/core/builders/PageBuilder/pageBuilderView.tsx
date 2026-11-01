@@ -423,6 +423,7 @@ function PageBuilder({
   const [pageListAppTab, setPageListAppTab] = useState('all');
   const [pageListTypeTab, setPageListTypeTab] = useState('all');
   const [pageListDeviceTab, setPageListDeviceTab] = useState('all');
+  const [pageListPage,setPageListPage]=useState(1);
   const paletteResizeStart = useRef<{ pointerId: number; pointerX: number; width: number } | null>(null);
   const [customPropertiesDraft, setCustomPropertiesDraft] = useState('');
   const [customPropertiesError, setCustomPropertiesError] = useState('');
@@ -2006,7 +2007,10 @@ function PageBuilder({
         ? item.layoutVariant === 'Desktop' || item.devices.includes('Desktop')
         : item.layoutVariant === pageListDeviceTab))
     && (!pageListObject || item.targetObject === pageListObject) && `${item.label} ${item.apiName}`.toLowerCase().includes(pageListSearch.trim().toLowerCase())).sort((a,b) => (Date.parse(b.updatedAt ?? '') || 0) - (Date.parse(a.updatedAt ?? '') || 0));
-  const openCreatePage = () => { setNewPageTargetObject(pageListObject || page.targetObject || objects[0]?.apiName || ''); setNewPageLayoutMode('free-canvas'); setNewPageType(recordPageContext ? 'Record Page' : 'Home Page'); setNewPageDeviceChoice('Desktop'); setNewPageDevices(['Desktop']); setNewPageCanvasWidth(1440); setNewPageCanvasHeight(900); setCreatePageOpen(true); };
+  const pageListPageCount=Math.max(1,Math.ceil(visiblePages.length/50));
+  const safePageListPage=Math.min(pageListPage,pageListPageCount);
+  const paginatedPages=visiblePages.slice((safePageListPage-1)*50,safePageListPage*50);
+  const openCreatePage = () => { setNewPageAppId(pageListAppTab!=='all'&&pageListAppTab!=='other'?pageListAppTab:''); setNewPageTargetObject(pageListObject || page.targetObject || objects[0]?.apiName || ''); setNewPageLayoutMode('free-canvas'); setNewPageType(recordPageContext ? 'Record Page' : 'Home Page'); setNewPageDeviceChoice('Desktop'); setNewPageDevices(['Desktop']); setNewPageCanvasWidth(1440); setNewPageCanvasHeight(900); setCreatePageOpen(true); };
   const createPage = async () => {
     if (saving) return;
     const label = newPageLabel.trim();
@@ -2052,7 +2056,7 @@ function PageBuilder({
     try {
       // Persist first: the route resolver must never replace a new unsaved page
       // with the previously selected page on its next metadata refresh.
-      if (newPageAppId) onPrepareApp(apiName, newPageAppId);
+      if (newPageAppId&&newPageType!=='In-Screen Page') onPrepareApp(apiName,newPageAppId);
       const saved = await onSave(nextPage, apiName, 'Lightning page draft created');
       if (!saved) { onAppLinked(apiName); return; }
       savedPageApiName.current = apiName;
@@ -2993,7 +2997,7 @@ function PageBuilder({
                 aria-pressed={pageListAppTab===tab.apiName} onClick={()=>setPageListAppTab(tab.apiName)}>{tab.label}</button>)}
           </nav>
           <nav aria-label="Pages by type" style={{display:'flex',gap:6,flexWrap:'wrap',padding:'4px 0 10px'}}>
-            {[['all','All Pages'],['Home Page','Home'],['App Page','App'],['Record Page','Record']].map(([value,label])=>
+            {[['all','All Pages'],['Home Page','Home'],['App Page','App'],['Record Page','Record'],['In-Screen Page','In-Screen']].map(([value,label])=>
               <button type="button" key={value} className={'btn btn-small'+(pageListTypeTab===value?' btn-brand':'')}
                 aria-pressed={pageListTypeTab===value} onClick={()=>setPageListTypeTab(value)}>{label}</button>)}
             <label className="form-label" style={{marginLeft:'auto'}}>Layout
@@ -3008,7 +3012,7 @@ function PageBuilder({
           <label className="form-label">Search pages<input className="form-control" type="search" value={pageListSearch} onChange={event=>setPageListSearch(event.target.value)} placeholder="Search page name…"/></label>
         </div>
         <div className="page-manager-table-scroll"><table className="records-table page-manager-table"><thead><tr><th>Page name</th><th>API Name</th><th>Type</th><th>Related object</th><th>Device</th><th>Dimensions</th><th>Orientation</th><th>Last modified</th><th>Status</th><th>Actions</th></tr></thead>
-        <tbody>{visiblePages.map(item=><tr key={item.apiName}>
+        <tbody>{paginatedPages.map(item=><tr key={item.apiName}>
           <td><button type="button" className="page-manager-page-link" onClick={()=>selectSavedPage(item.apiName)}>{item.label}</button></td><td title={item.apiName}><code>{item.apiName}</code></td>
           <td>{item.pageType}</td><td>{item.targetObject ? objects.find(object=>object.apiName===item.targetObject)?.label ?? item.targetObject : 'Not object-specific'}</td><td>{pageDeviceLabel(item)}</td><td>{item.canvasWidth} × {item.canvasHeight} px</td><td>{canvasOrientation(item.canvasWidth,item.canvasHeight)}</td>
           <td>{item.updatedAt ? new Date(item.updatedAt).toLocaleDateString() : '—'}</td>
@@ -3020,6 +3024,11 @@ function PageBuilder({
             <Trash2 size={14}/>{archivingPageApiName===item.apiName?'Deleting…':'Delete'}
           </button></td>
         </tr>)}</tbody></table>{!visiblePages.length && <div className="records-empty">No pages match the selected filter. Create a new page to begin.</div>}</div>
+        <nav className="flow-existing-pagination" aria-label="Page list pagination">
+          <span>{visiblePages.length} pages · Page {safePageListPage} of {pageListPageCount}</span>
+          <button className="btn" disabled={safePageListPage<=1} onClick={()=>setPageListPage(safePageListPage-1)}>Previous</button>
+          <button className="btn" disabled={safePageListPage>=pageListPageCount} onClick={()=>setPageListPage(safePageListPage+1)}>Next</button>
+        </nav>
       </section>}
       {editorMode && <>
       <section className={`office-builder-ribbon ${previewMode ? 'is-interactive-preview' : ''}`} aria-label="Page Builder ribbon">
@@ -4185,7 +4194,9 @@ function PageBuilder({
             <div role="radiogroup" aria-label="Choose page type" className="builder-choice-grid">
               {pageBuilderStartOptions.filter(choice => recordPageContext ? choice.type === 'Record Page' : choice.type !== 'Record Page').map(choice => <label key={choice.type} className={newPageType === choice.type ? 'builder-choice active' : 'builder-choice'}>
                 <input type="radio" name="builder-new-page-type" value={choice.type} checked={newPageType === choice.type}
-                  onChange={() => {setNewPageType(choice.type);setNewPageTemplate(choice.type === 'Record Page' ? 'header-main-sidebar' : 'main-sidebar');}}/>
+                  onChange={() => {setNewPageType(choice.type);setNewPageTemplate(choice.type === 'Record Page' ? 'header-main-sidebar' : 'main-sidebar');
+                    if(choice.type==='In-Screen Page'){setNewPageLayoutMode('free-canvas');setNewPageCanvasWidth(480);setNewPageCanvasHeight(420);}
+                    else {setNewPageCanvasWidth(1440);setNewPageCanvasHeight(900);}}}/>
                 <strong>{choice.title}</strong><span>{choice.description}</span>
               </label>)}
             </div>
@@ -4212,7 +4223,8 @@ function PageBuilder({
           <p className="properties-help">
             {newPageType === 'App Page'
               ? "When you Activate this page, it will automatically be added to the chosen application's navigation."
-              : 'For Home and Record pages, choosing an application prepares an App Default assignment. You can change it before activation.'}
+              :newPageType==='In-Screen Page'?'In-screen windows are reusable and not added to navigation. Their application association controls ownership and filtering.'
+              :'For Home and Record pages, choosing an application prepares an App Default assignment. You can change it before activation.'}
           </p>
 
 <label className="form-label">Design for

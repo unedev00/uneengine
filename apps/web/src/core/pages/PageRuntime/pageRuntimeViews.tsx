@@ -105,6 +105,7 @@ import {StandardRecordList,StandardRichText,StandardFlowLauncher} from './Standa
 import {useViewportWidth} from '../../workspace/Responsive/useViewportWidth';
 import ResponsivePageCanvas from './ResponsivePageCanvas';
 const EmbeddedScreenFlow=React.lazy(()=>import('./EmbeddedScreenFlow'));
+const InScreenFlowHost=React.lazy(()=>import('../../automation/InScreenFlowHost'));
 const StandardApprovals=React.lazy(()=>import('./StandardApprovals'));
 import { inspectPageDependencies } from './pageDependencies';
 import {
@@ -246,7 +247,7 @@ function RuntimeReportChart({ report, objects, recordContext }: {
 }
 
 function MetadataBoundPageComponent({
-  definition, component, objects, apps, pages, currentAppId, pageSessionKey, reports, availableFlows, formFactor, onNavigate, onLaunchFlow, disableActions = false, defaultObjectApiName = '', recordId = '', children
+  definition, component, objects, apps, pages, currentAppId, pageSessionKey, reports, availableFlows, formFactor, onNavigate, onLaunchFlow, disableActions = false, defaultObjectApiName = '', recordId = '', initialPageState, sessionIdOverride, children
 }: {
   definition: LibraryComponentMetadata;
   component: PageComponentMetadata;
@@ -264,6 +265,8 @@ function MetadataBoundPageComponent({
   disableActions?: boolean;
   defaultObjectApiName?: string;
   recordId?: string;
+  initialPageState?:Record<string,unknown>;
+  sessionIdOverride?:string;
   children?: ReactNode;
 }) {
   const properties = resolveMetadataProperties({...component.properties,objectApiName:component.properties.objectApiName||defaultObjectApiName},objects,availableFlows);
@@ -271,6 +274,7 @@ function MetadataBoundPageComponent({
   const mentionRootObjectApiName = defaultObjectApiName || objectApiName;
   // An application-independent session can be referenced by configured Flows.
   const [sessionId, setSessionId] = useState(() => {
+    if(sessionIdOverride)return sessionIdOverride;
     const key = 'metadrive-page-session:' + pageSessionKey;
     try {
       let value = window.sessionStorage.getItem(key);
@@ -285,10 +289,11 @@ function MetadataBoundPageComponent({
   });
   // Generic, page-scoped visual state for metadata-configured local actions.
   // Never grants data permissions or persists cross-tenant information.
-  const [pageState, setPageState] = useState<Record<string, unknown>>({});
+  const [pageState, setPageState] = useState<Record<string, unknown>>(()=>initialPageState??{});
   const pendingFlowOutputs=useRef(new Map<string,{flowApiName:string;mappings:Record<string,unknown>}>());
   useEffect(() => {
-    setPageState({});
+    setPageState(initialPageState??{});
+    if(sessionIdOverride)setSessionId(sessionIdOverride);
     const sync = (event: Event) => {
       const detail=(event as CustomEvent<{pageSessionKey:string;key:string;value:unknown}>).detail;
       if(detail?.pageSessionKey !== pageSessionKey || !/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(detail.key))return;
@@ -296,7 +301,7 @@ function MetadataBoundPageComponent({
     };
     window.addEventListener('metadrive:page-local-state',sync);
     return ()=>window.removeEventListener('metadrive:page-local-state',sync);
-  },[pageSessionKey]);
+  },[pageSessionKey,sessionIdOverride]);
   useEffect(()=>{
     const complete=(event:Event)=>{
       const detail=(event as CustomEvent<{requestId?:string;flowApiName?:string;outputs?:Record<string,unknown>}>).detail;
@@ -555,6 +560,9 @@ function MetadataBoundPageComponent({
       throw new Error('This action is unavailable under the published Page rules.');
     const validationError=behaviorValidation(properties,action.event,{formFactor});
     if(validationError)throw new Error(validationError);
+    window.dispatchEvent(new CustomEvent('metadrive:in-screen-action',{
+      detail:{pageSessionKey,componentId:component.id,event:action.event,value:action.value}
+    }));
     const hasInteraction=Array.isArray(pageBehaviors(properties)?.interactions)
       &&(pageBehaviors(properties)!.interactions as Array<{event?:unknown}>).some(item=>item?.event===action.event);
     if(hasInteraction)window.dispatchEvent(new CustomEvent('metadrive:page-component-interaction',{
@@ -601,7 +609,7 @@ function MetadataBoundPageComponent({
     if (selected && selected.status !== 'Active') {
       throw new Error('Choose an active Flow for the "' + action.event + '" action in Page Builder.');
     }
-    if (flowType !== 'Screen Flow' && flowType !== 'Autolaunched Flow') {
+    if (flowType !== 'Screen Flow' && flowType !== 'In-Screen Flow' && flowType !== 'Autolaunched Flow') {
       throw new Error('Configure an Autolaunched Flow for this standalone app action.');
     }
     const payload = action.value && typeof action.value === 'object' && !Array.isArray(action.value)
@@ -632,7 +640,7 @@ function MetadataBoundPageComponent({
     if(binding.outputs!==undefined)Object.assign(outputMappings,binding.outputs);
     resolveFlowOutputBindings({},outputMappings);
     setActionError('');
-    if (flowType === 'Screen Flow') {
+    if (['Screen Flow','In-Screen Flow'].includes(flowType)) {
       if (!selected) throw new Error('Screen Flow metadata is unavailable for this action.');
       const requestId=crypto.randomUUID();
       if(pendingFlowOutputs.current.size>=10)throw new Error('Too many pending Flow output mappings.');
@@ -824,7 +832,9 @@ function LightningAppRuntime({
   pageDefinitionCache,
   onNavigate,
   onLaunchFlow,
-  onStandaloneModeChange
+  onStandaloneModeChange,
+  inScreenPage=false,
+  inScreenContext
 }: {
   appId: string;
   pageApiName?: string;
@@ -833,20 +843,22 @@ function LightningAppRuntime({
   pages: LightningPageMetadata[];
   reports: ReportMetadata[];
   libraryComponents: LibraryComponentMetadata[];
-  availableFlows: Array<Pick<FlowDefinitionMetadata, 'id' | 'apiName' | 'label' | 'flowType' | 'status'>>;
+  availableFlows: Array<Pick<FlowDefinitionMetadata, 'id' | 'apiName' | 'label' | 'flowType' | 'status' | 'startConfig' | 'resources'>>;
   formFactor: 'Desktop' | 'Tablet' | 'Phone';
   profileId?: string;
   pageDefinitionCache: PageDefinitionCache;
   onNavigate: (route: AppRoute) => void;
   onLaunchFlow: (flowApiName: string, inputs?: Record<string, unknown>, context?:{requestId?:string}) => void;
   onStandaloneModeChange: (enabled: boolean) => void;
+  inScreenPage?: boolean;
+  inScreenContext?: {sessionId?:string;values?:Record<string,unknown>};
 }) {
   const layoutDevice = usePageLayoutDevice();
   const viewportWidth=useViewportWidth();
   const requestedLayout = typeof window !== 'undefined'
     && new URLSearchParams(window.location.search).get('pageLayout') === 'Custom'
       ? 'Custom' : layoutDevice === 'Tablet' ? 'Tablet' : formFactor === 'Phone' ? 'Mobile' : 'Desktop';
-  const cacheKey=pageDefinitionCacheKey(appId,pageApiName,requestedLayout,viewportWidth,profileId);
+  const cacheKey=pageDefinitionCacheKey(appId,inScreenPage?'window:'+pageApiName:pageApiName,requestedLayout,viewportWidth,profileId);
   const routeKey=cacheKey;
   const [pageLoad,setPageLoad]=useState<{
     routeKey:string;
@@ -863,7 +875,7 @@ function LightningAppRuntime({
   const error=routePending?'':pageLoad.error;
   const loading=routePending?!cached:pageLoad.loading;
   const [activeTabs, setActiveTabs] = useState<Record<string,string>>({});
-  const [layoutState,setLayoutState]=useState<Record<string,unknown>>({});
+  const [layoutState,setLayoutState]=useState<Record<string,unknown>>(inScreenPage?inScreenContext?.values??{}:{});
   const [interactionOverrides,setInteractionOverrides]=useState<Record<string,Record<string,unknown>>>({});
   useEffect(()=>setInteractionOverrides({}),[appId,page?.apiName]);
   useEffect(()=>{
@@ -894,7 +906,7 @@ function LightningAppRuntime({
     return()=>window.removeEventListener('metadrive:page-component-interaction',onInteraction);
   },[page,appId,libraryComponents,layoutState,requestedLayout]);
   useEffect(()=>{
-    setLayoutState({});
+    setLayoutState(inScreenPage?inScreenContext?.values??{}:{});
     const listener=(event:Event)=>{
       const detail=(event as CustomEvent<{pageSessionKey:string;key:string;value:unknown}>).detail;
       if(detail?.pageSessionKey!==appId+':'+page?.apiName)return;
@@ -912,9 +924,11 @@ function LightningAppRuntime({
       return ()=>{active=false;};
     }
     setPageLoad({routeKey,appId,page:null,error:'',loading:true});
-    const endpoint = pageApiName
-      ? `/apps/${encodeURIComponent(appId)}/pages/${encodeURIComponent(pageApiName)}?formFactor=${requestedLayout}&viewportWidth=${viewportWidth}`
-      : `/apps/${encodeURIComponent(appId)}/home-page?formFactor=${requestedLayout}&viewportWidth=${viewportWidth}`;
+    const endpoint = inScreenPage && pageApiName
+      ? `/apps/${encodeURIComponent(appId)}/in-screen-pages/${encodeURIComponent(pageApiName)}?formFactor=${requestedLayout}&viewportWidth=${viewportWidth}`
+      : pageApiName
+        ? `/apps/${encodeURIComponent(appId)}/pages/${encodeURIComponent(pageApiName)}?formFactor=${requestedLayout}&viewportWidth=${viewportWidth}`
+        : `/apps/${encodeURIComponent(appId)}/home-page?formFactor=${requestedLayout}&viewportWidth=${viewportWidth}`;
     void apiRequest<{ page: LightningPageMetadata | null }>(endpoint).then((payload) => {
       if(active){
         writePageDefinitionCache(pageDefinitionCache,cacheKey,payload.page);
@@ -928,7 +942,7 @@ function LightningAppRuntime({
       });
     });
     return ()=>{active=false;};
-  },[routeKey,appId,pageApiName,requestedLayout,viewportWidth,pageDefinitionCache,cacheKey]);
+  },[routeKey,appId,pageApiName,inScreenPage,requestedLayout,viewportWidth,pageDefinitionCache,cacheKey]);
   useEffect(() => {
     setActiveTabs({});
   }, [page?.apiName]);
@@ -966,10 +980,13 @@ function LightningAppRuntime({
       const content = needsMetadataComponentRuntime(component.properties)
         ? <MetadataBoundPageComponent definition={definition} component={component} defaultObjectApiName={page.targetObject}
             objects={objects} apps={apps} pages={pages} currentAppId={appId} pageSessionKey={appId + ':' + page.apiName} reports={reports} availableFlows={availableFlows} formFactor={formFactor}
+            initialPageState={inScreenPage?inScreenContext?.values:undefined}
+            sessionIdOverride={inScreenPage?inScreenContext?.sessionId:undefined}
             children={nestedChildren}
             onNavigate={onNavigate} onLaunchFlow={onLaunchFlow} />
         : <RegisteredComponent definition={definition} layoutTransparent props={{
-            ...component.properties, ...componentLayoutProps(component.properties, layoutDevice),
+            ...component.properties, pageState:layoutState,
+            ...componentLayoutProps(component.properties, layoutDevice),
             ...(definition.apiName.startsWith('smart_') && component.position
               ? {width:component.position.width,height:component.position.height}:{}),
             disabled:behaviorAction(component.properties,'click',appVisibilityContext)!=='enabled',
@@ -1102,9 +1119,12 @@ function LightningAppRuntime({
       {renderComponent(component)}
     </div>;
   };
-  if(page.layoutMode==='free-canvas')return <ResponsivePageCanvas page={page}>
+  const inScreenHost=!inScreenPage&&availableFlows.some(flow=>flow.flowType==='In-Screen Flow'&&flow.status==='Active')
+    ?<React.Suspense fallback={null}><InScreenFlowHost flows={availableFlows}
+      appApiName={appId} pageApiName={page.apiName} onLaunchFlow={onLaunchFlow}/></React.Suspense>:null;
+  if(page.layoutMode==='free-canvas')return <><ResponsivePageCanvas page={page}>
     {childrenOf(page.components,null).map(component=>renderCanvasComponent(component))}
-  </ResponsivePageCanvas>;
+  </ResponsivePageCanvas>{inScreenHost}</>;
   const renderRegion = (region: 'header' | 'main' | 'sidebar') =>
     childrenOf(page.components, null).filter((component) => isAppComponentVisible(component) && (component.region ?? 'main') === region).map(component => {
       const content = renderComponent(component);
@@ -1113,11 +1133,11 @@ function LightningAppRuntime({
         ? <div key={component.id} data-page-appearance={pageAppearanceTarget(component.type)} data-page-style={pageAppearanceStyleKeys(resolvePageComponentStyle(component.properties, component.type, layoutDevice))} style={{...resolvePageComponentStyle(component.properties, component.type, layoutDevice),...behaviorAppearance(component.properties,appVisibilityContext)}}>{content}</div>
         : content;
     });
-  return <TemplatePageRuntimeLayout apiName={page.apiName} label={page.label}
+  return <><TemplatePageRuntimeLayout apiName={page.apiName} label={page.label}
     pageType={page.pageType} template={page.template} canvasFillColor={page.canvasFillColor}
     fullscreen={isStandaloneRuntime && page.layoutMode === 'template'} phone={formFactor === 'Phone'} layoutVariant={page.components.find(component => component.properties?.standalonePresentation === true)?.properties?.presentationLayout as string | undefined}
     overlayOpen={layoutState.basketOpen===true}
-    header={renderRegion('header')} main={renderRegion('main')} sidebar={renderRegion('sidebar')} />;
+    header={renderRegion('header')} main={renderRegion('main')} sidebar={renderRegion('sidebar')} />{inScreenHost}</>;
 }
 
 

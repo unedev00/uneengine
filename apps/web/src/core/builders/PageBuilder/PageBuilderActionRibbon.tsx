@@ -35,7 +35,7 @@ export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,
   const kind:ActionKind=actionTypes.some(option=>option.kind===selected.actionType)
     ?selected.actionType as ActionKind:'Flow';
   const availableFlows=flows.filter(flow=>flow.status==='Active'&&
-    (flow.flowType==='Autolaunched Flow'||flow.flowType==='Screen Flow'));
+    (flow.flowType==='Autolaunched Flow'||flow.flowType==='Screen Flow'||flow.flowType==='In-Screen Flow'));
   const selectedFlow=metadataSelection(flows,selected.flowApiName);
   const activeEvents=[...new Set([...eventDefinitions.map(event=>event.apiName),...Object.keys(actions)])];
   const eventLabel=(apiName:string)=>eventDefinitions.find(event=>event.apiName===apiName)?.label??apiName;
@@ -132,7 +132,7 @@ export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,
             <option key={flow.apiName} value={'flow:'+flow.apiName}>{flow.label}</option>)}
         </optgroup>
         <optgroup label="Screen Flows">
-          {availableFlows.filter(f=>f.flowType==='Screen Flow').map(flow=>
+          {availableFlows.filter(f=>f.flowType==='Screen Flow'||f.flowType==='In-Screen Flow').map(flow=>
             <option key={flow.apiName} value={'flow:'+flow.apiName}>{flow.label}</option>)}
         </optgroup>
         <optgroup label="Navigation"><option value="type:Navigate">Open another page</option></optgroup>

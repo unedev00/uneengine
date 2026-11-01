@@ -266,7 +266,7 @@ export function renderSetupShell(ctx: any) {
               <strong>{workspaces.find(item => item.id === workspace)?.label ?? 'Settings'}</strong>
             </nav>}
           {(route.kind === 'record-list' || route.kind === 'record-detail') && (metadataLoadError && !objects.length ? <section className="setup-card" role="alert"><h1>Unable to load record metadata</h1><p>{metadataLoadError}</p><button className="btn" onClick={() => window.location.reload()}>Retry</button><button className="btn" onClick={() => navigateRoute({kind:'setup',workspace:'rbac',resourceApiName:'Users'})}>Back to Users</button></section> : <RecordWorkspace route={route} objects={objects} apps={apps} pages={pages}
-            availableFlows={flows.filter(item => ['Screen Flow', 'Autolaunched Flow'].includes(item.flowType))
+            availableFlows={flows.filter(item => ['Screen Flow', 'In-Screen Flow', 'Autolaunched Flow'].includes(item.flowType))
               .map(({ id, apiName, label, flowType, status }) => ({ id, apiName, label, flowType, status }))}
             onLaunchFlow={(apiName: string, inputs?: Record<string, unknown>,context?:{requestId?:string}) => void runFlow(apiName, inputs,context)}
             reports={reports} metadataLoaded={metadataLoaded} profileId={currentProfileId} canManageUserIdentities={canManageUserIdentities} userRoles={accessControl.roles}
@@ -276,13 +276,13 @@ export function renderSetupShell(ctx: any) {
             {routeAliasError ? <p role="alert">{routeAliasError}</p> : <p>Resolving route alias…</p>}
           </section>}
           {route.kind === 'app-home' && <LightningAppRuntime appId={route.appId} objects={objects} apps={apps} pages={pages} reports={reports}
-            libraryComponents={libraryComponents} availableFlows={flows.filter((item) => ['Screen Flow', 'Autolaunched Flow'].includes(item.flowType))
-              .map(({ id, apiName, label, flowType, status }) => ({ id, apiName, label, flowType, status }))}
+            libraryComponents={libraryComponents} availableFlows={flows.filter((item) => ['Screen Flow', 'In-Screen Flow', 'Autolaunched Flow'].includes(item.flowType))
+              .map(({ id, apiName, label, flowType, status, startConfig, resources }) => ({ id, apiName, label, flowType, status, startConfig, resources }))}
             formFactor={runtimeFormFactor} profileId={currentProfileId} pageDefinitionCache={pageDefinitionCache.current} onNavigate={navigateRoute}
             onLaunchFlow={(apiName: string, inputs: Record<string, unknown>,context?:{requestId?:string}) => void runFlow(apiName, inputs,context)} onStandaloneModeChange={setStandalonePageMode} />}
           {route.kind === 'app-page' && <LightningAppRuntime appId={route.appId} pageApiName={route.pageApiName} objects={objects} apps={apps} pages={pages} reports={reports}
-            libraryComponents={libraryComponents} availableFlows={flows.filter((item) => ['Screen Flow', 'Autolaunched Flow'].includes(item.flowType))
-              .map(({ id, apiName, label, flowType, status }) => ({ id, apiName, label, flowType, status }))}
+            libraryComponents={libraryComponents} availableFlows={flows.filter((item) => ['Screen Flow', 'In-Screen Flow', 'Autolaunched Flow'].includes(item.flowType))
+              .map(({ id, apiName, label, flowType, status, startConfig, resources }) => ({ id, apiName, label, flowType, status, startConfig, resources }))}
             formFactor={runtimeFormFactor} profileId={currentProfileId} pageDefinitionCache={pageDefinitionCache.current} onNavigate={navigateRoute}
             onLaunchFlow={(apiName: string, inputs: Record<string, unknown>,context?:{requestId?:string}) => void runFlow(apiName, inputs,context)} onStandaloneModeChange={setStandalonePageMode} />}
           {route.kind === 'setup' && workspace === 'home' && (runtimeFormFactor === 'Phone'
@@ -621,6 +621,7 @@ export function renderSetupShell(ctx: any) {
               landing={!route.resourceApiName}
               flow={flow}
               flows={flows}
+              pages={pages} apps={apps}
               onListFlows={fetchFlowListPage}
               onLoadCapabilities={() => apiRequest('/metadata/flow-capabilities')}
               onLoadExternalServices={() => apiRequest('/metadata/external-services')}
@@ -725,7 +726,10 @@ export function renderSetupShell(ctx: any) {
       </main>
       {showNewField && <React.Suspense fallback={null}><FieldWizardModal context={{ X, addField, formulaEditorRef, insertFormulaText, newFieldAllowReparenting, newFieldApiName, newFieldCaseSensitive, newFieldChildRelationshipName, newFieldConfigurationError, newFieldController, newFieldControllerApiName, newFieldControllerValues, newFieldDefaultValue, newFieldDeleteBehavior, newFieldDescription, newFieldExternalId, newFieldFormula, newFieldFormulaValidation, newFieldHasDefault, newFieldHelpText, newFieldLabel, newFieldLayoutIds, newFieldLookupFilterLogic, newFieldLookupFilters, newFieldPicklistOptions, newFieldPicklistRestricted, newFieldPicklistValues, newFieldPrecision, newFieldRelationshipName, newFieldRelationshipTarget, newFieldRequired, newFieldReturnType, newFieldScale, newFieldStage, newFieldTextLength, newFieldType, newFieldUnique, newFieldValueSettings, object, objects, relatedLookupFilterOperators, resetNewFieldDraft, setNewFieldAllowReparenting, setNewFieldCaseSensitive, setNewFieldChildRelationshipName, setNewFieldControllerApiName, setNewFieldDefaultValue, setNewFieldDeleteBehavior, setNewFieldDescription, setNewFieldExternalId, setNewFieldFormula, setNewFieldFormulaValidation, setNewFieldHasDefault, setNewFieldHelpText, setNewFieldLabel, setNewFieldLayoutIds, setNewFieldLookupFilterLogic, setNewFieldLookupFilters, setNewFieldPicklistRestricted, setNewFieldPicklistValues, setNewFieldPrecision, setNewFieldRelationshipName, setNewFieldRelationshipTarget, setNewFieldRequired, setNewFieldReturnType, setNewFieldScale, setNewFieldStage, setNewFieldTextLength, setNewFieldType, setNewFieldUnique, setNewFieldValueSettings, setShowNewField, showNewField, validateNewFieldFormula }} /></React.Suspense>}
       {(showNewObject || showCustomTabWizard) && <React.Suspense fallback={null}><SetupObjectDialogs context={{ showNewObject, setShowNewObject, setShowCustomTabWizard, newObjectLabel, setNewObjectLabel, newObjectPluralLabel, setNewObjectPluralLabel, newObjectRecordNameLabel, setNewObjectRecordNameLabel, newObjectSettings, setNewObjectSettings, newObjectDescription, setNewObjectDescription, launchCustomTabWizard, setLaunchCustomTabWizard, createObject, showCustomTabWizard, customTabObject, setCustomTabObject, customTabStyle, setCustomTabStyle, customTabStyles, customTabAppIds, setCustomTabAppIds, apps, saveCustomTab }} /></React.Suspense>}
-      {(flowRun || flowDebug) && <React.Suspense fallback={null}><SetupFlowDialogs context={{ flowRun, setFlowRun, flowRunnerError, setFlowRunnerError, submitFlowScreen, goBackFlowScreen, flowRunnerSubmitting, flowDebug, setFlowDebug, runFlowDebug, libraryComponents, loadFlowScreenRecords }} /></React.Suspense>}
+      {(flowRun || flowDebug) && <React.Suspense fallback={null}><SetupFlowDialogs context={{ flowRun, setFlowRun, flowRunnerError, setFlowRunnerError, submitFlowScreen, goBackFlowScreen, flowRunnerSubmitting, flowDebug, setFlowDebug, runFlowDebug, libraryComponents, loadFlowScreenRecords,
+        flows,pages,apps,objects,reports,LightningAppRuntime,formFactor:runtimeFormFactor,
+        pageDefinitionCache:pageDefinitionCache.current,activeAppId:(route.kind==='app-page'||route.kind==='app-home')?route.appId:'',
+        onNavigate:navigateRoute,onLaunchFlow:(apiName:string,inputs?:Record<string,unknown>)=>void runFlow(apiName,inputs) }} /></React.Suspense>}
       {toast && <div className="toast" role="status"><Check size={16} aria-hidden="true" /><span className="toast-message">{toast}</span><button type="button" className="toast-dismiss" aria-label="Dismiss notification" title="Dismiss notification" onClick={() => setToast('')}><X size={16} aria-hidden="true" /></button></div>}
     </div>
   );

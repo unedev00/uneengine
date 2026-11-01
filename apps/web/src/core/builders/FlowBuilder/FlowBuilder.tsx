@@ -54,7 +54,9 @@ import {
   type PlatformEventMetadata,
   type UserMetadata,
   type ApprovalProcessMetadata,
-  type LibraryComponentMetadata
+  type LibraryComponentMetadata,
+  type LightningPageMetadata,
+  type LightningAppMetadata
 } from '../../metadata/Definitions/metadata';
 type FlowListRow = Pick<FlowDefinitionMetadata, 'apiName' | 'label' | 'flowType' | 'status' | 'versionNumber' | 'activeVersion' | 'createdAt' | 'createdBy' | 'lastModifiedAt' | 'lastModifiedBy'>;
 type FlowListResponse = { flows: FlowListRow[]; total: number; page: number; pageSize: number };
@@ -68,6 +70,8 @@ type FlowBuilderProps = {
   landing?: boolean;
   flow: FlowDefinitionMetadata;
   flows: FlowDefinitionMetadata[];
+  pages: LightningPageMetadata[];
+  apps: LightningAppMetadata[];
   onListFlows?: (page: number, search: string, flowType?: string) => Promise<FlowListResponse>;
   onLoadCapabilities: () => Promise<FlowCapabilityCatalog>;
   onLoadExternalServices: () => Promise<{ services: ExternalServiceMetadata[] }>;
@@ -128,7 +132,7 @@ type FlowBuilderProps = {
   onDeletePlatformEvent: (apiName: string) => Promise<void>;
 };
 export default function FlowBuilder({
-  landing = false, flow, flows, onListFlows, onLoadCapabilities, onLoadExternalServices, onImportExternalService, libraryComponents, platformEvents, objects, users, approvalProcesses, namedCredentials, emailAlerts, connectorProviders, integrationConnections, validation, isDirty, canRunFlows, selectedId, canUndo, canRedo, onOpenFlowList,
+  landing = false, flow, flows, pages, apps, onListFlows, onLoadCapabilities, onLoadExternalServices, onImportExternalService, libraryComponents, platformEvents, objects, users, approvalProcesses, namedCredentials, emailAlerts, connectorProviders, integrationConnections, validation, isDirty, canRunFlows, selectedId, canUndo, canRedo, onOpenFlowList,
   onFlowChange, onSelectFlow, onRestoreFlowVersion, onExportFlow, onImportFlow, onCloneFlow, onDeactivateFlow, onDeleteFlow, onCreateFlow, onUndo, onRedo, onSelect, onToolTab,
   onAdd, onUpdateLabel, onUpdateConfig, onRemove, onValidate, onSave, onActivate, onRun, onDebug, onRunTests, onNotify,
   onSaveNamedCredential, onDeleteNamedCredential, onSaveEmailAlert, onDeleteEmailAlert, onSavePlatformEvent, onDeletePlatformEvent
@@ -375,9 +379,9 @@ export default function FlowBuilder({
         ? { entryConditions: rowsFrom(flow.startConfig.entryConditions), executionContext: flow.startConfig.executionContext === 'System' ? 'System' : 'User', ...(flow.startConfig.conditionLogic ? { conditionLogic: flow.startConfig.conditionLogic } : {}) }
         : flowType === 'Record-Triggered Flow'
           ? { entryConditions: rowsFrom(flow.startConfig.entryConditions), trigger: 'created-or-updated', runWhen: 'after-save', executionContext: flow.startConfig.executionContext === 'System' ? 'System' : 'User', ...(flow.startConfig.conditionLogic ? { conditionLogic: flow.startConfig.conditionLogic } : {}) }
-          : { executionContext: flowType === 'Screen Flow' ? 'User' : flow.startConfig.executionContext === 'System' ? 'System' : 'User' };
+          : { executionContext: ['Screen Flow','In-Screen Flow'].includes(flowType) ? 'User' : flow.startConfig.executionContext === 'System' ? 'System' : 'User' };
     const elements = flow.elements
-      .filter((element) => element.type !== 'Screen' || flowType === 'Screen Flow')
+      .filter((element) => element.type !== 'Screen' || ['Screen Flow','In-Screen Flow'].includes(flowType))
       .map((element) => element.type === 'Start'
         ? { ...element, config: { ...element.config, ...startConfig, ...(triggerObject ? { object: triggerObject } : {}) } }
         : element);
@@ -594,18 +598,140 @@ export default function FlowBuilder({
       object={objects.find(obj=>obj.apiName===selected?.config.object)}
       config={selected?.config ?? {}} onChange={rows=>setConfig('fieldValues',rows)} />
   );
+  const inScreenBindings=flow.startConfig.inputBindings&&typeof flow.startConfig.inputBindings==='object'
+    &&!Array.isArray(flow.startConfig.inputBindings)
+    ?flow.startConfig.inputBindings as Record<string,string>:{};
   const renderStartSettings = () => (
     <>
       <label className="form-label">Execution Context<select className="form-control"
         value={displayValue(flow.startConfig.executionContext) || 'User'}
         onChange={(event) => setStartConfig('executionContext', event.target.value)}>
         <option value="User">User Context</option>
-        <option value="System" disabled={flow.flowType === 'Screen Flow'
+        <option value="System" disabled={['Screen Flow','In-Screen Flow'].includes(flow.flowType)
           || flow.flowType === 'Record-Triggered Flow' && flow.startConfig?.runWhen === 'before-save'}>
           System Context
         </option>
       </select></label>
       <p className="settings-panel-copy">System Context runs as the configured tenant automation user. It does not bypass Object, Field, Record, tenant, app, or Flow permissions. Activation requires explicit Flow system-context approval.</p>
+      {flow.flowType==='In-Screen Flow' && <fieldset className="metadata-card">
+        <legend>In-Screen Window</legend>
+        <p className="settings-panel-copy">Reuse the Screen elements and Page Builder components. No app-specific logic is required.</p>
+        <label className="form-label">Window page
+          <select className="form-control" value={displayValue(flow.startConfig.windowPageApiName)}
+            onChange={event=>setStartConfig('windowPageApiName',event.target.value)}>
+            <option value="">Use Flow Screen fields</option>
+            {pages.filter(page=>page.pageType==='In-Screen Page').map(page=>
+              <option key={page.apiName} value={page.apiName}>{page.label}</option>)}
+          </select>
+        </label>
+        <label className="form-label">Launch trigger
+          <select className="form-control" value={displayValue(flow.startConfig.launchTrigger)||'manual'}
+            onChange={event=>setStartConfig('launchTrigger',event.target.value)}>
+            <option value="manual">Manual action / another Flow</option>
+            <option value="page-load">When target page opens</option>
+            <option value="component-event">When a component raises an event</option>
+            <option value="page-updated">When page data is changed by a Flow</option>
+            <option value="platform-event">When a subscribed Platform Event arrives</option>
+          </select>
+        </label>
+        <label className="form-label">Target application
+          <select className="form-control" value={displayValue(flow.startConfig.targetAppApiName)}
+            onChange={event=>setStartConfig('targetAppApiName',event.target.value)}>
+            <option value="">Any permitted app (manual only)</option>
+            {apps.map(app=><option key={app.apiName} value={app.apiName}>{app.label}</option>)}
+          </select>
+        </label>
+        <label className="form-label">Target page
+          <select className="form-control" value={displayValue(flow.startConfig.targetPageApiName)}
+            onChange={event=>setStartConfig('targetPageApiName',event.target.value)}>
+            <option value="">Any page within selected app</option>
+            {pages.filter(page=>page.pageType!=='In-Screen Page').map(page=>
+              <option key={page.apiName} value={page.apiName}>{page.label}</option>)}
+          </select>
+        </label>
+        {flow.startConfig.launchTrigger==='platform-event' && <label className="form-label">
+          Platform Event
+          <select className="form-control" value={displayValue(flow.startConfig.platformEventApiName)}
+            onChange={event=>setStartConfig('platformEventApiName',event.target.value)}>
+            <option value="">Choose a published Platform Event</option>
+            {platformEvents.map(event=><option key={event.apiName} value={event.apiName}>{event.label}</option>)}
+          </select>
+        </label>}
+        {flow.startConfig.launchTrigger==='component-event' && <label className="form-label">
+          Component event<input className="form-control" value={displayValue(flow.startConfig.launchEventName)}
+            onChange={event=>setStartConfig('launchEventName',event.target.value)}
+            placeholder="click, change or published component event" />
+        </label>}
+        <label className="form-label">Window type
+          <select className="form-control" value={displayValue(flow.startConfig.windowMode)||'modal'}
+            onChange={event=>setStartConfig('windowMode',event.target.value)}>
+            <option value="modal">Modal</option><option value="drawer">Side drawer</option>
+            <option value="floating">Floating window</option><option value="fullscreen">Full screen</option>
+          </select>
+        </label>
+        <label className="form-label">Position
+          <select className="form-control" value={displayValue(flow.startConfig.windowPlacement)||'center'}
+            onChange={event=>setStartConfig('windowPlacement',event.target.value)}>
+            {['center','top-left','top-right','bottom-left','bottom-right'].map(x=>
+              <option key={x} value={x}>{x.replace('-', ' ')}</option>)}
+          </select>
+        </label>
+        <label className="form-label">Width (px)
+          <input className="form-control" type="number" min={320} max={1600}
+            value={displayValue(flow.startConfig.windowWidth)||480}
+            onChange={event=>setStartConfig('windowWidth',Number(event.target.value))} />
+        </label>
+        <label className="form-label">Height (px; blank = automatic)
+          <input className="form-control" type="number" min={320} max={1000}
+            value={displayValue(flow.startConfig.windowHeight)}
+            onChange={event=>setStartConfig('windowHeight',event.target.value?Number(event.target.value):undefined)} />
+        </label>
+        <label className="checkbox-row"><input type="checkbox"
+          checked={flow.startConfig.oncePerSession===true}
+          onChange={event=>setStartConfig('oncePerSession',event.target.checked)} />
+          Show only once per page session</label>
+        <label className="form-label">Cooldown (seconds)
+          <input className="form-control" type="number" min={0} max={3600}
+            value={displayValue(flow.startConfig.cooldownSeconds)||0}
+            onChange={event=>setStartConfig('cooldownSeconds',Number(event.target.value))}/>
+        </label>
+        <fieldset className="metadata-card"><legend>Flow input bindings</legend>
+          <p className="settings-panel-copy">Map declared Flow inputs to the triggering context. Resolve business records and related fields with authorised Get Records elements.</p>
+          {flow.resources.filter(resource=>resource.availableForInput).map(resource=>
+            <label className="form-label" key={resource.name}>{resource.label||resource.name}
+              <select className="form-control" value={inScreenBindings[resource.name]??'auto'}
+                onChange={event=>setStartConfig('inputBindings',{
+                  ...inScreenBindings,[resource.name]:event.target.value
+                })}>
+                <option value="auto">Automatically match input name</option>
+                <option value="page.sessionKey">Current page session key</option>
+                <option value="page.apiName">Current page</option>
+                <option value="app.apiName">Current application</option>
+                <option value="event.recordId">Triggered record ID</option>
+                <option value="event.componentId">Triggering component</option>
+                <option value="event.name">Triggering event name</option>
+                <option value="event.value">Triggering event value</option>
+              </select>
+            </label>)}
+        </fieldset>
+        <fieldset className="metadata-card"><legend>Expose input values to the Window Page</legend>
+          <p className="settings-panel-copy">Selected inputs are available as Page Builder state bindings. Do not expose passwords, credentials or confidential values.</p>
+          {flow.resources.filter(resource=>resource.availableForInput).map(resource=>
+            <label className="checkbox-row" key={resource.name}>
+              <input type="checkbox"
+                checked={Array.isArray(flow.startConfig.windowPageBindings)
+                  &&flow.startConfig.windowPageBindings.includes(resource.name)}
+                onChange={event=>{
+                  const current=Array.isArray(flow.startConfig.windowPageBindings)
+                    ?flow.startConfig.windowPageBindings.filter((name):name is string=>typeof name==='string'):[];
+                  setStartConfig('windowPageBindings',event.target.checked
+                    ?[...new Set([...current,resource.name])]
+                    :current.filter(name=>name!==resource.name));
+                }}/>
+              {resource.label||resource.name} → Page State
+            </label>)}
+        </fieldset>
+      </fieldset>}
       {flow.flowType === 'Platform Event-Triggered Flow' && <>
         <label className="form-label">Platform Event<select className="form-control" value={flow.triggerObject ?? ''} onChange={(event) => setStartConfig('object', event.target.value)}><option value="">Select platform event</option>{platformEvents.map((platformEvent) => <option key={platformEvent.apiName} value={platformEvent.apiName}>{platformEvent.label} ({platformEvent.apiName})</option>)}</select></label>
         <label className="form-label">Entry Conditions</label>
@@ -666,7 +792,7 @@ export default function FlowBuilder({
           {renderConditionLogic('Condition Requirements', flow.startConfig.conditionLogic, rowsFrom(flow.startConfig.entryConditions).length, (logic) => setStartConfig('conditionLogic', logic))}
         </>}
       </>}
-      {(['Screen Flow', 'Autolaunched Flow', 'Flow Orchestration'].includes(flow.flowType)) && <p className="info-callout">{flow.flowType === 'Screen Flow' ? 'This flow starts when launched by a user or supported Lightning entry point.' : flow.flowType === 'Flow Orchestration' ? 'Launch this orchestration to coordinate approval stages and persist human work items.' : 'This flow runs without screens when invoked by another automation or API.'}</p>}
+      {(['Screen Flow', 'In-Screen Flow', 'Autolaunched Flow', 'Flow Orchestration'].includes(flow.flowType)) && <p className="info-callout">{['Screen Flow','In-Screen Flow'].includes(flow.flowType) ? 'This flow starts when launched by a user or supported Lightning entry point.' : flow.flowType === 'Flow Orchestration' ? 'Launch this orchestration to coordinate approval stages and persist human work items.' : 'This flow runs without screens when invoked by another automation or API.'}</p>}
     </>
   );
   const renderElementSettings = () => {
@@ -1704,7 +1830,7 @@ export default function FlowBuilder({
       <h2 id="flow-start-existing-title">Existing flows</h2>
       <nav aria-label="Flows by type" style={{display:'flex',gap:6,flexWrap:'wrap',padding:'10px 0'}}>
         {[{type:'all',label:'All Flows'},...flowTypeOptions.map(option=>({type:option.type,label:option.type})),
-          ...(['Screen Flow','Autolaunched Flow','Record-Triggered Flow','Schedule-Triggered Flow','Platform Event-Triggered Flow','Flow Orchestration'] as const)
+          ...(['Screen Flow','In-Screen Flow','Autolaunched Flow','Record-Triggered Flow','Schedule-Triggered Flow','Platform Event-Triggered Flow','Flow Orchestration'] as const)
             .filter(type=>!flowTypeOptions.some(option=>option.type===type)).map(type=>({type,label:type}))].map(option=>
           <button type="button" className={'btn btn-small'+(existingFlowTypeTab===option.type?' btn-brand':'')}
             key={option.type} aria-pressed={existingFlowTypeTab===option.type}
@@ -1756,8 +1882,8 @@ export default function FlowBuilder({
         <button className="icon-button subtle" title="Redo" aria-label="Redo" onClick={onRedo} disabled={!canRedo}><Redo2 size={15} /></button>
         <button className="btn" onClick={onValidate}><Check size={14} />Check</button>
         <button className="btn" onClick={onSave}><Save size={14} />Save</button>
-        {(['Autolaunched Flow', 'Screen Flow', 'Flow Orchestration', 'Record-Triggered Flow'].includes(flow.flowType)) && <button className="btn" onClick={onDebug} disabled={!canRunFlows} title={!canRunFlows ? 'The Run Flows permission is required.' : 'Debug the most recently saved version with sample inputs.'}>Debug</button>}
-        {(['Autolaunched Flow', 'Screen Flow', 'Flow Orchestration'].includes(flow.flowType)) && <button className="btn" onClick={onRun} disabled={!canRunFlows} title={!canRunFlows ? 'The Run Flows permission is required.' : isDirty ? 'Runs the most recently saved version; unsaved changes are excluded.' : undefined}>Run</button>}
+        {(['Autolaunched Flow', 'Screen Flow', 'In-Screen Flow', 'Flow Orchestration', 'Record-Triggered Flow'].includes(flow.flowType)) && <button className="btn" onClick={onDebug} disabled={!canRunFlows} title={!canRunFlows ? 'The Run Flows permission is required.' : 'Debug the most recently saved version with sample inputs.'}>Debug</button>}
+        {(['Autolaunched Flow', 'Screen Flow', 'In-Screen Flow', 'Flow Orchestration'].includes(flow.flowType)) && <button className="btn" onClick={onRun} disabled={!canRunFlows} title={!canRunFlows ? 'The Run Flows permission is required.' : isDirty ? 'Runs the most recently saved version; unsaved changes are excluded.' : undefined}>Run</button>}
         <button className="btn btn-brand" onClick={onActivate}><Check size={14} />Activate</button>
         <button className="icon-button subtle" title="Flow Builder help" onClick={() => onNotify('Configure the Start node, build element paths, check, then save or activate.')}><CircleHelp size={16} /></button>
       </div>

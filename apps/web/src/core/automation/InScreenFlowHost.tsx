@@ -1,0 +1,105 @@
+import {useEffect,useRef} from 'react';
+import {apiRequest} from '../authentication/Client/authClient';
+import type {FlowDefinitionMetadata} from '../metadata/Definitions/metadata';
+type Signal={pageSessionKey?:string;componentId?:string;event?:string;value?:unknown;recordId?:string};
+type Props={flows:ReadonlyArray<Pick<FlowDefinitionMetadata,'apiName'|'flowType'|'status'|'startConfig'|'resources'>>;appApiName:string;pageApiName:string;
+ onLaunchFlow:(apiName:string,inputs?:Record<string,unknown>)=>void};
+const objectValue=(value:unknown):Record<string,unknown>=>
+ value&&typeof value==='object'&&!Array.isArray(value)?value as Record<string,unknown>:{};
+/** Existing Flow runtime evaluates every business rule; this host only routes UI events. */
+export default function InScreenFlowHost({flows,appApiName,pageApiName,onLaunchFlow}:Props){
+ const firstLoad=useRef(new Set<string>()),once=useRef(new Set<string>()),recent=useRef(new Map<string,number>());
+ const scope=appApiName+':'+pageApiName;
+ useEffect(()=>{
+  const active=flows.filter(flow=>flow.flowType==='In-Screen Flow'&&flow.status==='Active'
+    &&(!flow.startConfig.targetAppApiName||flow.startConfig.targetAppApiName===appApiName)
+    &&(!flow.startConfig.targetPageApiName||flow.startConfig.targetPageApiName===pageApiName));
+  if(!active.length)return;
+  const launch=(trigger:string,detail:Signal)=>{
+   if(detail.pageSessionKey&&detail.pageSessionKey!==scope)return;
+   for(const flow of active){
+    const settings=flow.startConfig;
+    if(String(settings.launchTrigger??'manual')!==trigger)continue;
+    if(trigger==='component-event'&&settings.launchEventName&&settings.launchEventName!==detail.event)continue;
+    if(trigger==='platform-event'&&settings.platformEventApiName!==detail.event)continue;
+    const key=scope+':'+flow.apiName,now=Date.now();
+    if(trigger==='page-load'&&firstLoad.current.has(key))continue;
+    if(settings.oncePerSession===true&&once.current.has(key))continue;
+    if(now-(recent.current.get(key)??0)<Math.max(250,Math.min(3600,Number(settings.cooldownSeconds??0))*1000))continue;
+    let sessionKey='';
+    try{sessionKey=window.sessionStorage.getItem('metadrive-page-session:'+scope)??'';}catch{ /* optional */ }
+    const payload=objectValue(detail.value),record=objectValue(payload.record);
+    const candidate=detail.recordId??payload.recordId??record.Id??record.id;
+    const values:Record<string,unknown>={appApiName,pageApiName,sessionKey,eventName:detail.event??trigger,
+      componentId:detail.componentId??'',recordId:typeof candidate==='string'?candidate:''};
+    const sourceValues:Record<string,unknown>={
+      'page.sessionKey':sessionKey,'page.apiName':pageApiName,'app.apiName':appApiName,
+      'event.recordId':values.recordId,'event.componentId':values.componentId,
+      'event.name':values.eventName,'event.value':detail.value
+    };
+    const mapping=objectValue(settings.inputBindings);
+    const inputs:Record<string,unknown>={};
+    for(const resource of flow.resources??[]){
+     if(!resource.availableForInput)continue;
+     const source=mapping[resource.name];
+     const value=typeof source==='string'&&source!=='auto'
+       ?sourceValues[source]:values[resource.name];
+     if(value===undefined||value==='')continue;
+     if(typeof value==='object'&&JSON.stringify(value).length>8192)continue;
+     inputs[resource.name]=value;
+    }
+    recent.current.set(key,now);
+    if(trigger==='page-load')firstLoad.current.add(key);
+    if(settings.oncePerSession===true)once.current.add(key);
+    onLaunchFlow(flow.apiName,inputs);
+    break; // One shared Screen interview at a time; no competing modal engines.
+   }
+  };
+  const component=(event:Event)=>{const d=(event as CustomEvent<Signal>).detail;if(d)launch('component-event',d);};
+  const updated=(event:Event)=>{const d=(event as CustomEvent<Signal>).detail;if(d)launch('page-updated',d);};
+  window.addEventListener('metadrive:in-screen-action',component);
+  window.addEventListener('metadrive:page-component-interaction',component);
+  window.addEventListener('metadrive:page-flow-mutated',updated);
+  const feeds=[...new Set(active.filter(flow=>flow.startConfig.launchTrigger==='platform-event')
+    .map(flow=>flow.startConfig.platformEventApiName).filter((name):name is string=>
+      typeof name==='string'&&/^[A-Za-z][A-Za-z0-9_]*$/.test(name)))].slice(0,8);
+  const cursors=new Map<string,string>(),blocked=new Set<string>();
+  let running=false,live=true;
+  const poll=async()=>{
+   if(!live||running||document.visibilityState==='hidden')return;
+   running=true;
+   try{
+    for(const name of feeds){
+     if(!live||blocked.has(name))continue;
+     const previous=cursors.get(name);
+     try{
+      const result=await apiRequest<{cursor:string;events:Array<{
+        replayId:string;eventId:string;payload:Record<string,unknown>
+      }>}>('/platform-event-feed/'+encodeURIComponent(name)+'?after='+encodeURIComponent(previous??'latest'));
+      if(!live)break;
+      if(/^(0|[1-9][0-9]*)$/.test(result.cursor))cursors.set(name,result.cursor);
+      for(const message of result.events??[]){
+       if(!live)break;
+       const payload=objectValue(message.payload);
+       const recordId=typeof payload.recordId==='string'?payload.recordId:
+        typeof payload.RecordId==='string'?payload.RecordId:'';
+       launch('platform-event',{pageSessionKey:scope,event:name,value:payload,recordId});
+      }
+     }catch{blocked.add(name);} // Permission failures do not cause repeated unauthorised requests.
+    }
+   }finally{running=false;}
+  };
+  void poll();
+  const timer=window.setInterval(()=>void poll(),4000);
+  const visible=()=>{if(document.visibilityState==='visible')void poll();};
+  document.addEventListener('visibilitychange',visible);
+  launch('page-load',{pageSessionKey:scope});
+  return()=>{
+   live=false;window.clearInterval(timer);document.removeEventListener('visibilitychange',visible);
+   window.removeEventListener('metadrive:in-screen-action',component);
+   window.removeEventListener('metadrive:page-component-interaction',component);
+   window.removeEventListener('metadrive:page-flow-mutated',updated);
+  };
+ },[flows,scope,appApiName,pageApiName,onLaunchFlow]);
+ return null;
+}
