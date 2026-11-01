@@ -33,7 +33,7 @@ test('Card Grid scrolling does not replace move/resize or enable nested scrollin
  assert.match(handles,/\.free-canvas-resize-handle/);
  assert.match(handles,/overflow:visible!important/);
  assert.match(grid,/event\.pointerType==="touch"\)event\.stopPropagation\(\)/);
- assert.match(builder,/canvasScrollbarHit\\(target,event\\.clientX,event\\.clientY,event\\.currentTarget\\)/);
+ assert.match(builder,/canvasScrollbarHit\(target,event\.clientX,event\.clientY,event\.currentTarget\)/);
 });
 
 
@@ -51,6 +51,6 @@ test('Both Card Grid runtimes keep every authorised row and use row count for vi
 
 test('Smart Card Grid scroll interaction preserves Page Builder move grips',()=>{
  const builder=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
- assert.doesNotMatch(builder,/component\\.type==='Custom:smart_card_grid'&&target\\.closest/);
+ assert.doesNotMatch(builder,/component\.type==='Custom:smart_card_grid'&&target\.closest/);
  assert.match(builder,/startCanvasMove\(event, component\)/);
 });
