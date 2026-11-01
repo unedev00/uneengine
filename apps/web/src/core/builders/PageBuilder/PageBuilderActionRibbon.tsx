@@ -40,6 +40,7 @@ export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,
     '@'+field+(operation==='increment'?' + 1':' - 1');
   const selected=asBinding(actions[selectedEvent]);
   const active=Boolean(selectedEvent&&Object.prototype.hasOwnProperty.call(actions,selectedEvent));
+  const inactive=disabled||!active;
   const kind:ActionKind=actionTypes.some(option=>option.kind===selected.actionType)
     ?selected.actionType as ActionKind:'Flow';
   const availableFlows=flows.filter(flow=>flow.status==='Active'&&
@@ -169,7 +170,18 @@ export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,
     onChange(next);
     onSelectEvent(Object.keys(next)[0]??'');
   };
-  return <div className="office-ribbon-compact-strip page-unified-actions-ribbon" aria-label="Unified component actions">
+  return <div className="page-action-ribbon-workspace" aria-label="Actions ribbon workspace">
+    {/* Formula bar placeholder is visual only; do not bind it to the editable quantity formulas. */}
+    <div className="page-action-formula-bar" role="group" aria-label="Actions formula bar preview">
+      <button type="button" disabled className="page-action-formula-menu"
+        aria-label="Formula options (coming soon)" title="Formula options (coming soon)">
+        <SlidersHorizontal size={15}/>
+      </button>
+      <span className="page-action-formula-symbol" aria-hidden="true">ƒx</span>
+      <input aria-label="Actions formula preview" type="text" readOnly
+        aria-disabled="true" placeholder="Select an action property to edit its formula (coming soon)"/>
+    </div>
+    <div className="office-ribbon-compact-strip page-unified-actions-ribbon" aria-label="Unified component actions">
     <section className="office-ribbon-mini-group page-action-property-group" aria-label="Event">
       <div className="page-action-property-rows">{eventSlots.map(slotPicker)}</div>
       <span className="office-ribbon-group-heading">Event</span>
@@ -178,23 +190,23 @@ export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,
       <div className="page-action-property-rows">{componentSlots.map(slotPicker)}</div>
       <span className="office-ribbon-group-heading">Component Custom</span>
     </section>
-    {active&&kind==='AdjustNumber'&&<section
-      className="office-ribbon-mini-group page-action-formula-group"
+    <section
+      className="office-ribbon-mini-group page-action-formula-group" data-inactive={!active||kind!=='AdjustNumber'}
       aria-label="Editable quantity action formulas">
       <div className="page-action-formula-rows">
         <label><span>+ fx</span><SmartFormulaField
-          label="Increase quantity formula" disabled={disabled} fields={formulaFields}
+          label="Increase quantity formula" disabled={disabled||!active||kind!=='AdjustNumber'} fields={formulaFields}
           value={String(selected.incrementFormula??defaultNumberFormula('increment'))}
           onChange={value=>patch({incrementFormula:value})}/></label>
         <label><span>− fx</span><SmartFormulaField
-          label="Decrease quantity formula" disabled={disabled} fields={formulaFields}
+          label="Decrease quantity formula" disabled={disabled||!active||kind!=='AdjustNumber'} fields={formulaFields}
           value={String(selected.decrementFormula??defaultNumberFormula('decrement'))}
           onChange={value=>patch({decrementFormula:value})}/></label>
       </div>
       <small>Edit +1 to +2 or −1 to −2; @ selects a field.</small>
       <span className="office-ribbon-group-heading">Quantity formulas</span>
-    </section>}
-    <section className="office-ribbon-mini-group page-action-library">
+    </section>
+    <section className="office-ribbon-mini-group page-action-library" aria-label="All actions">
       <label>Actions
         <select aria-label="All component actions" value="" disabled={disabled}
           onChange={event=>choose(event.target.value)}>
@@ -221,32 +233,33 @@ export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,
         </select>
       </label>
       <small>Choose a trigger first, then its action.</small>
-      {!eventDefinitions.length&&<div className="page-action-custom-trigger">
+      <div className="page-action-custom-trigger">
         <input aria-label="Custom action trigger" placeholder="Custom event ID"
-          value={customTrigger} disabled={disabled} onChange={event=>setCustomTrigger(event.target.value)}/>
-        <button type="button" disabled={disabled||!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(customTrigger.trim())||
+          value={customTrigger} disabled={disabled||eventDefinitions.length>0} onChange={event=>setCustomTrigger(event.target.value)}/>
+        <button type="button" disabled={disabled||eventDefinitions.length>0||!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(customTrigger.trim())||
           Object.prototype.hasOwnProperty.call(actions,customTrigger.trim())}
           onClick={addCustomTrigger}>Add trigger</button>
-      </div>}
+      </div>
       <span className="office-ribbon-group-heading">All actions</span>
     </section>
-    {active&&<section className="office-ribbon-mini-group page-action-selected">
-      <label>Trigger <select aria-label="Selected action trigger" value={selectedEvent}
-        disabled={disabled} onChange={event=>onSelectEvent(event.target.value)}>
+    <section className="office-ribbon-mini-group page-action-selected" aria-label="Selected action" data-inactive={!active}>
+      <label>Trigger <select aria-label="Selected action trigger" value={active?selectedEvent:''}
+        disabled={inactive} onChange={event=>onSelectEvent(event.target.value)}>
+        {!active&&<option value="">Choose trigger…</option>}
         {Object.keys(actions).map(name=><option key={name} value={name}>{eventLabel(name)}</option>)}
       </select></label>
       <label>Action <span className="page-action-current-kind">
-        {actionTypes.find(option=>option.kind===kind)?.label}
+        {active?actionTypes.find(option=>option.kind===kind)?.label:'Choose action…'}
       </span></label>
       <button type="button" className="office-ribbon-icon-button page-action-remove"
-        disabled={disabled} onClick={remove} title="Remove action from this trigger"
+        disabled={inactive} onClick={remove} title="Remove action from this trigger"
         aria-label="Remove selected trigger action"><Trash2 size={15}/> Remove</button>
       <span className="office-ribbon-group-heading">Selected action</span>
-    </section>}
-    {active&&<section className="office-ribbon-mini-group page-action-target">
+    </section>
+    <section className="office-ribbon-mini-group page-action-target" aria-label="Configuration" data-inactive={!active}>
       {kind==='AdjustNumber' ? <>
         <label>Number field
-          <select aria-label="Number field to adjust" disabled={disabled}
+          <select aria-label="Number field to adjust" disabled={inactive}
             value={String(selected.fieldApiName??'')}
             onChange={e=>{
               const oldField=String(selected.fieldApiName??'Quantity');
@@ -263,16 +276,16 @@ export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,
               .map(field=><option key={field.apiName} value={field.apiName}>{field.label}</option>)}
           </select>
         </label>
-        <label>Minimum <input type="number" min={0} step={1} disabled={disabled}
+        <label>Minimum <input type="number" min={0} step={1} disabled={inactive}
           aria-label="Minimum number after adjustment"
           value={Number(selected.minValue??0)}
           onChange={e=>patch({minValue:Math.max(0,Number(e.target.value)||0)})}/></label>
-        <label><input type="checkbox" disabled={disabled}
+        <label><input type="checkbox" disabled={inactive}
           aria-label="Delete row when number reaches zero"
           checked={selected.deleteOnZero===true}
           onChange={e=>patch({deleteOnZero:e.target.checked,minValue:0})}/> Remove row at zero</label>
         <label>Related record field
-          <select aria-label="Optional relation guard field" disabled={disabled}
+          <select aria-label="Optional relation guard field" disabled={inactive}
             value={String(selected.relatedFieldApiName??'')}
             onChange={e=>patch({relatedFieldApiName:e.target.value})}>
             <option value="">No relation guard</option>
@@ -282,24 +295,24 @@ export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,
         </label>
         <label>Related page state key
           <input aria-label="Related page state key for permission-scoped row"
-            disabled={disabled} placeholder="e.g. currentCartId"
+            disabled={inactive} placeholder="e.g. currentCartId"
             value={String(selected.relatedStateKey??'')}
             onChange={e=>patch({relatedStateKey:e.target.value})}/>
         </label>
         <label>Page collection key
           <input aria-label="Optional Page State collection to refresh"
-            disabled={disabled} placeholder="e.g. cartItems"
+            disabled={inactive} placeholder="e.g. cartItems"
             value={String(selected.stateCollectionKey??'')}
             onChange={e=>patch({stateCollectionKey:e.target.value})}/>
         </label>
         <label>Total page state key
           <input aria-label="Optional Page State total to recalculate"
-            disabled={disabled} placeholder="e.g. total"
+            disabled={inactive} placeholder="e.g. total"
             value={String(selected.totalStateKey??'')}
             onChange={e=>patch({totalStateKey:e.target.value})}/>
         </label>
         <label>Unit price field
-          <select aria-label="Optional unit price field" disabled={disabled}
+          <select aria-label="Optional unit price field" disabled={inactive}
             value={String(selected.unitPriceFieldApiName??'')}
             onChange={e=>patch({unitPriceFieldApiName:e.target.value,totalFieldApiName:e.target.value?selected.totalFieldApiName??'':''})}>
             <option value="">No calculated total</option>
@@ -308,7 +321,7 @@ export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,
           </select>
         </label>
         <label>Line total field
-          <select aria-label="Optional line total field" disabled={disabled}
+          <select aria-label="Optional line total field" disabled={inactive}
             value={String(selected.totalFieldApiName??'')}
             onChange={e=>patch({totalFieldApiName:e.target.value})}>
             <option value="">None</option>
@@ -318,7 +331,7 @@ export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,
         </label>
       </> : null}
       {kind==='Flow'?<label>Flow
-        <select aria-label="Flow for selected action" disabled={disabled}
+        <select aria-label="Flow for selected action" disabled={inactive}
           value={selectedFlow?.apiName??String(selected.flowApiName??'')}
           onChange={event=>{
             const flow=availableFlows.find(item=>item.apiName===event.target.value);
@@ -330,7 +343,7 @@ export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,
             <option value={String(selected.flowApiName)}>{String(selected.flowApiName)} (saved/unavailable)</option>}
           {availableFlows.map(flow=><option key={flow.apiName} value={flow.apiName}>{flow.label}</option>)}
         </select></label>:kind==='Navigate'?<label>Destination
-        <select aria-label="Destination type for selected action" disabled={disabled}
+        <select aria-label="Destination type for selected action" disabled={inactive}
           value={String(selected.navigationTargetType??'Record List')}
           onChange={event=>patch({navigationTargetType:event.target.value,
             navigationPageApiName:''})}>
@@ -339,12 +352,13 @@ export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,
           <option value="App Page">App page</option>
         </select></label>:<label>{kind==='SetFilter'?'Filter key':'Page state key'}
         <input aria-label={kind==='SetFilter'?'Shared filter key':'Page state key'}
-          disabled={disabled} value={String(kind==='SetFilter'?selected.filterKey??'category':selected.stateKey??'')}
+          disabled={inactive} value={String(kind==='SetFilter'?selected.filterKey??'category':selected.stateKey??'')}
           onChange={event=>patch({[kind==='SetFilter'?'filterKey':'stateKey']:event.target.value})}/></label>}
       <button type="button" className="office-ribbon-icon-button page-action-details-toggle"
         aria-label={showDetails?'Hide action details':'Show action details'} aria-expanded={showDetails}
-        onClick={onToggleDetails}><SlidersHorizontal size={15}/>{showDetails?'Hide details':'Configure details'}</button>
+        disabled={inactive} onClick={onToggleDetails}><SlidersHorizontal size={15}/>{showDetails?'Hide details':'Configure details'}</button>
       <span className="office-ribbon-group-heading">Configuration</span>
-    </section>}
+    </section>
+    </div>
   </div>;
 }

@@ -329,3 +329,84 @@
 .page-builder-inline-actions .home-page-assignment .form-control {
   width:100%;max-width:100%;min-width:0;
 }
+
+/* Fixed Actions design surface: one mock formula row + five named control
+   groups. Sections never pop in/out as users select different components. */
+.office-builder-ribbon .page-action-ribbon-workspace .page-action-formula-bar{
+  box-sizing:border-box;display:flex;align-items:center;gap:5px;
+  flex:0 0 36px;height:36px;min-height:36px;
+  width:100%;padding:3px 8px 5px 4px;
+  border-bottom:1px solid #d6e1ee;background:#f5f8fd;
+}
+.office-builder-ribbon .page-action-formula-bar .page-action-formula-menu,
+.office-builder-ribbon .page-action-formula-bar .page-action-formula-symbol{
+  box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;
+  height:27px;flex:0 0 34px;border:1px solid #ccd9e8;border-radius:4px;
+  background:#fff;color:#304b71;font:italic 14px Georgia,serif;
+}
+.office-builder-ribbon .page-action-formula-bar .page-action-formula-menu{
+  cursor:not-allowed;opacity:.7;
+}
+.office-builder-ribbon .page-action-formula-bar input[readonly]{
+  box-sizing:border-box;display:block;flex:1 1 auto;width:0;min-width:240px;
+  height:27px;border:1px solid #ccd9e8;border-radius:4px;
+  padding:0 10px;background:#fff;color:#50657d;
+  font:11px "Segoe UI",Arial,sans-serif;cursor:default;
+}
+.office-builder-ribbon .page-action-formula-bar input[readonly]::placeholder{color:#8b9aaa}
+.office-builder-ribbon .page-action-ribbon-workspace>.page-unified-actions-ribbon{
+  box-sizing:border-box!important;height:114px!important;min-height:114px!important;
+  max-height:114px!important;flex:0 0 114px!important;
+}
+.office-builder-ribbon .page-unified-actions-ribbon>.page-action-library{
+  flex:0 0 350px!important;min-width:350px!important;width:350px!important;
+}
+.office-builder-ribbon .page-unified-actions-ribbon .page-action-custom-trigger{
+  display:flex;align-items:center;gap:4px;min-height:26px;width:100%;
+}
+.office-builder-ribbon .page-unified-actions-ribbon .page-action-custom-trigger>input{
+  flex:1 1 auto!important;width:0!important;min-width:0!important;max-width:none!important;
+}
+.office-builder-ribbon .page-unified-actions-ribbon .page-action-custom-trigger>button{
+  box-sizing:border-box;flex:0 0 86px;height:26px;border:1px solid #b7c9df;
+  border-radius:4px;background:#fff;color:#29476a;font-size:11px;
+}
+.office-builder-ribbon .page-unified-actions-ribbon .page-action-custom-trigger>button:disabled{
+  color:#8491a2;background:#f2f5f9;cursor:not-allowed;
+}
+.office-builder-ribbon .page-unified-actions-ribbon>.page-action-selected{
+  flex:0 0 265px!important;width:265px!important;min-width:265px!important;
+}
+.office-builder-ribbon .page-unified-actions-ribbon>.page-action-selected .page-action-current-kind{
+  width:175px;max-width:175px;
+}
+.office-builder-ribbon .page-unified-actions-ribbon [data-inactive="true"] .page-action-current-kind{
+  color:#8795a7;
+}
+/* Grid columns, not clipping: complex number adjustments expose every saved
+   field with horizontal scroll rather than hiding rows 4 onward. */
+.office-builder-ribbon .page-unified-actions-ribbon>.page-action-target{
+  box-sizing:border-box!important;flex:0 0 auto!important;
+  display:grid!important;grid-template-rows:repeat(3,26px)!important;
+  grid-auto-flow:column!important;grid-auto-columns:320px!important;
+  align-content:start!important;justify-content:start!important;
+  row-gap:4px!important;column-gap:9px!important;
+  width:max-content!important;min-width:320px!important;max-width:none!important;
+  padding:5px 12px 23px 9px!important;
+}
+.office-builder-ribbon .page-unified-actions-ribbon>.page-action-target>label{
+  box-sizing:border-box!important;display:flex!important;
+  align-items:center!important;justify-content:space-between!important;
+  width:310px!important;min-width:310px!important;max-width:310px!important;
+  height:26px!important;min-height:26px!important;white-space:nowrap!important;
+}
+.office-builder-ribbon .page-unified-actions-ribbon>.page-action-target>label>input[type="checkbox"]{
+  width:15px!important;min-width:15px!important;height:15px!important;
+  margin:0 5px 0 0!important;
+}
+.office-builder-ribbon .page-unified-actions-ribbon>.page-action-target>.page-action-details-toggle{
+  box-sizing:border-box!important;align-self:start!important;margin:0!important;
+}
+.office-builder-ribbon .page-unified-actions-ribbon>.page-action-target>.office-ribbon-group-heading{
+  grid-row:auto!important;position:absolute!important;bottom:3px!important;
+}
