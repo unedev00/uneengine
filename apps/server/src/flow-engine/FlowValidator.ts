@@ -80,6 +80,29 @@ export async function validateFlowDraft(rbac:RbacEngine|undefined,tenantId:strin
   &&!Array.isArray(startNode.config)?startNode.config as Record<string,unknown>:{};
  const beforeSave=data.flowType==='Record-Triggered Flow'&&startConfig.runWhen==='before-save';
  const catalogType=capabilities?.flowTypes.find(type=>type.type===data.flowType);
+ if(data.flowType==='In-Screen Flow'){
+  const windowFields=['windowPageApiName','targetAppApiName','targetPageApiName','launchEventName'] as const;
+  for(const field of windowFields){
+   const value=startConfig[field];
+   if(value!==undefined&&(typeof value!=='string'||value.length>128
+     ||value!==''&&!/^[A-Za-z][A-Za-z0-9_]*$/.test(value)))
+    errors.push('Invalid In-Screen Flow '+field);
+  }
+  const launch=String(startConfig.launchTrigger??'manual');
+  if(!['manual','page-load','component-event','page-updated'].includes(launch))
+   errors.push('Invalid In-Screen Flow launch trigger');
+  if(launch!=='manual'&&!startConfig.targetAppApiName&&!startConfig.targetPageApiName)
+   errors.push('Automatic In-Screen Flows require an app or page target');
+  const mode=String(startConfig.windowMode??'modal'),placement=String(startConfig.windowPlacement??'center');
+  if(!['modal','drawer','floating','fullscreen'].includes(mode))errors.push('Invalid In-Screen window type');
+  if(!['center','top-left','top-right','bottom-left','bottom-right'].includes(placement))
+   errors.push('Invalid In-Screen window position');
+  for(const [field,min,max] of [['windowWidth',320,1600],['windowHeight',320,1000],['cooldownSeconds',0,3600]] as const){
+   const val=startConfig[field];
+   if(val!==undefined&&(!Number.isSafeInteger(val)||Number(val)<min||Number(val)>max))
+    errors.push('Invalid In-Screen Flow '+field);
+  }
+ }
  const executionContext=startConfig.executionContext??'User';
  if(!['User','System'].includes(String(executionContext)))
   errors.push('Flow execution context must be User or System');

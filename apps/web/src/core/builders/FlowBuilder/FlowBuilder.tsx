@@ -54,7 +54,9 @@ import {
   type PlatformEventMetadata,
   type UserMetadata,
   type ApprovalProcessMetadata,
-  type LibraryComponentMetadata
+  type LibraryComponentMetadata,
+  type LightningPageMetadata,
+  type LightningAppMetadata
 } from '../../metadata/Definitions/metadata';
 type FlowListRow = Pick<FlowDefinitionMetadata, 'apiName' | 'label' | 'flowType' | 'status' | 'versionNumber' | 'activeVersion' | 'createdAt' | 'createdBy' | 'lastModifiedAt' | 'lastModifiedBy'>;
 type FlowListResponse = { flows: FlowListRow[]; total: number; page: number; pageSize: number };
@@ -68,6 +70,8 @@ type FlowBuilderProps = {
   landing?: boolean;
   flow: FlowDefinitionMetadata;
   flows: FlowDefinitionMetadata[];
+  pages: LightningPageMetadata[];
+  apps: LightningAppMetadata[];
   onListFlows?: (page: number, search: string, type?:string) => Promise<FlowListResponse>;
   onLoadCapabilities: () => Promise<FlowCapabilityCatalog>;
   onLoadExternalServices: () => Promise<{ services: ExternalServiceMetadata[] }>;
@@ -128,7 +132,7 @@ type FlowBuilderProps = {
   onDeletePlatformEvent: (apiName: string) => Promise<void>;
 };
 export default function FlowBuilder({
-  landing = false, flow, flows, onListFlows, onLoadCapabilities, onLoadExternalServices, onImportExternalService, libraryComponents, platformEvents, objects, users, approvalProcesses, namedCredentials, emailAlerts, connectorProviders, integrationConnections, validation, isDirty, canRunFlows, selectedId, canUndo, canRedo, onOpenFlowList,
+  landing = false, flow, flows, pages, apps, onListFlows, onLoadCapabilities, onLoadExternalServices, onImportExternalService, libraryComponents, platformEvents, objects, users, approvalProcesses, namedCredentials, emailAlerts, connectorProviders, integrationConnections, validation, isDirty, canRunFlows, selectedId, canUndo, canRedo, onOpenFlowList,
   onFlowChange, onSelectFlow, onRestoreFlowVersion, onExportFlow, onImportFlow, onCloneFlow, onDeactivateFlow, onDeleteFlow, onCreateFlow, onUndo, onRedo, onSelect, onToolTab,
   onAdd, onUpdateLabel, onUpdateConfig, onRemove, onValidate, onSave, onActivate, onRun, onDebug, onRunTests, onNotify,
   onSaveNamedCredential, onDeleteNamedCredential, onSaveEmailAlert, onDeleteEmailAlert, onSavePlatformEvent, onDeletePlatformEvent
@@ -607,6 +611,81 @@ export default function FlowBuilder({
         </option>
       </select></label>
       <p className="settings-panel-copy">System Context runs as the configured tenant automation user. It does not bypass Object, Field, Record, tenant, app, or Flow permissions. Activation requires explicit Flow system-context approval.</p>
+      {flow.flowType==='In-Screen Flow' && <fieldset className="metadata-card">
+        <legend>In-Screen Window</legend>
+        <p className="settings-panel-copy">Reuse the Screen elements and Page Builder components. No app-specific logic is required.</p>
+        <label className="form-label">Window page
+          <select className="form-control" value={displayValue(flow.startConfig.windowPageApiName)}
+            onChange={event=>setStartConfig('windowPageApiName',event.target.value)}>
+            <option value="">Use Flow Screen fields</option>
+            {pages.filter(page=>page.pageType==='In-Screen Page').map(page=>
+              <option key={page.apiName} value={page.apiName}>{page.label}</option>)}
+          </select>
+        </label>
+        <label className="form-label">Launch trigger
+          <select className="form-control" value={displayValue(flow.startConfig.launchTrigger)||'manual'}
+            onChange={event=>setStartConfig('launchTrigger',event.target.value)}>
+            <option value="manual">Manual action / another Flow</option>
+            <option value="page-load">When target page opens</option>
+            <option value="component-event">When a component raises an event</option>
+            <option value="page-updated">When page data is changed by a Flow</option>
+          </select>
+        </label>
+        <label className="form-label">Target application
+          <select className="form-control" value={displayValue(flow.startConfig.targetAppApiName)}
+            onChange={event=>setStartConfig('targetAppApiName',event.target.value)}>
+            <option value="">Any permitted app (manual only)</option>
+            {apps.map(app=><option key={app.apiName} value={app.apiName}>{app.label}</option>)}
+          </select>
+        </label>
+        <label className="form-label">Target page
+          <select className="form-control" value={displayValue(flow.startConfig.targetPageApiName)}
+            onChange={event=>setStartConfig('targetPageApiName',event.target.value)}>
+            <option value="">Any page within selected app</option>
+            {pages.filter(page=>page.pageType!=='In-Screen Page').map(page=>
+              <option key={page.apiName} value={page.apiName}>{page.label}</option>)}
+          </select>
+        </label>
+        {flow.startConfig.launchTrigger==='component-event' && <label className="form-label">
+          Component event<input className="form-control" value={displayValue(flow.startConfig.launchEventName)}
+            onChange={event=>setStartConfig('launchEventName',event.target.value)}
+            placeholder="click, change or published component event" />
+        </label>}
+        <label className="form-label">Window type
+          <select className="form-control" value={displayValue(flow.startConfig.windowMode)||'modal'}
+            onChange={event=>setStartConfig('windowMode',event.target.value)}>
+            <option value="modal">Modal</option><option value="drawer">Side drawer</option>
+            <option value="floating">Floating window</option><option value="fullscreen">Full screen</option>
+          </select>
+        </label>
+        <label className="form-label">Position
+          <select className="form-control" value={displayValue(flow.startConfig.windowPlacement)||'center'}
+            onChange={event=>setStartConfig('windowPlacement',event.target.value)}>
+            {['center','top-left','top-right','bottom-left','bottom-right'].map(x=>
+              <option key={x} value={x}>{x.replace('-', ' ')}</option>)}
+          </select>
+        </label>
+        <label className="form-label">Width (px)
+          <input className="form-control" type="number" min={320} max={1600}
+            value={displayValue(flow.startConfig.windowWidth)||480}
+            onChange={event=>setStartConfig('windowWidth',Number(event.target.value))} />
+        </label>
+        <label className="form-label">Height (px; blank = automatic)
+          <input className="form-control" type="number" min={320} max={1000}
+            value={displayValue(flow.startConfig.windowHeight)}
+            onChange={event=>setStartConfig('windowHeight',event.target.value?Number(event.target.value):undefined)} />
+        </label>
+        <label className="checkbox-row"><input type="checkbox"
+          checked={flow.startConfig.oncePerSession===true}
+          onChange={event=>setStartConfig('oncePerSession',event.target.checked)} />
+          Show only once per page session</label>
+        <label className="form-label">Cooldown (seconds)
+          <input className="form-control" type="number" min={0} max={3600}
+            value={displayValue(flow.startConfig.cooldownSeconds)||0}
+            onChange={event=>setStartConfig('cooldownSeconds',Number(event.target.value))}/>
+        </label>
+        <p className="settings-panel-copy">Use Flow Manager inputs, Get Records and Decision to bind any permitted Object, relationship or business session.</p>
+      </fieldset>}
       {flow.flowType === 'Platform Event-Triggered Flow' && <>
         <label className="form-label">Platform Event<select className="form-control" value={flow.triggerObject ?? ''} onChange={(event) => setStartConfig('object', event.target.value)}><option value="">Select platform event</option>{platformEvents.map((platformEvent) => <option key={platformEvent.apiName} value={platformEvent.apiName}>{platformEvent.label} ({platformEvent.apiName})</option>)}</select></label>
         <label className="form-label">Entry Conditions</label>

@@ -621,6 +621,7 @@ export function renderSetupShell(ctx: any) {
               landing={!route.resourceApiName}
               flow={flow}
               flows={flows}
+              pages={pages} apps={apps}
               onListFlows={fetchFlowListPage}
               onLoadCapabilities={() => apiRequest('/metadata/flow-capabilities')}
               onLoadExternalServices={() => apiRequest('/metadata/external-services')}
