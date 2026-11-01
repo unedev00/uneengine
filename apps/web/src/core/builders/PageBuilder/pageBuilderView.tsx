@@ -146,8 +146,9 @@ import RichTextBlockEditor from '../ComponentProperties/RichTextBlockEditor';
 import PageRouteDirectory from '../../pages/PageRouteDirectory/PageRouteDirectory';
 import PageComponentVisualEditor from '../ComponentStyleEditor/PageComponentVisualEditor';
 import RibbonColorPalette from './RibbonColorPalette';
-import {RibbonFilters,RibbonVisibilityRules} from './PageBuilderRibbonEditors';
-import type {ComponentVisibilityRule} from '../../components/Properties/componentVisibility';
+import {RibbonFilters} from './PageBuilderRibbonEditors';
+import ComponentVisibilityEditor from '../ComponentProperties/ComponentVisibilityEditor';
+import {validateVisibilityRule,type ComponentVisibilityRule} from '../../components/Properties/componentVisibility';
 import PageBuilderActionRibbon from './PageBuilderActionRibbon';
 import PageBuilderRibbonMetadataPager from './PageBuilderRibbonMetadataPager';
 import UniversalRibbonInventory from './UniversalRibbonInventory';
@@ -157,6 +158,7 @@ import {supportsSmartActionEvent} from './SmartEventActionsRibbon';
 import SmartInsertRibbon from './SmartInsertRibbon';
 import ArrangeRibbon from './ArrangeRibbon';
 import PageBuilderAdvancedRibbon, {advancedFeatureLabels, type AdvancedFeature} from './PageBuilderAdvancedRibbon';
+import PageBuilderAdvancedSections from './PageBuilderAdvancedSections';
 import PageBuilderAdvancedResponsive from './PageBuilderAdvancedResponsive';
 import SmartIconGallery from './SmartIconGallery';
 import {isUneBuilderApi,uneBuilderDefaults,type SharedRibbonCatalog,type UneBuilderApi} from './uneBuilderPropertyInventory';
@@ -561,7 +563,7 @@ function PageBuilder({
   },[viewFindOpen]);
   const [selectedConversationPart,setSelectedConversationPart]=useState('parent');
   useEffect(()=>setSelectedConversationPart('parent'),[selectedId]);
-  const [ribbonTab, setRibbonTab] = useState<'Add Block' | 'Component Content' | 'Component Properties' | 'Component Style' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Component Responsive' | 'Preview' | 'Filters' | 'Source' | 'Arrange' | 'Logic'>('Add Block');
+  const [ribbonTab, setRibbonTab] = useState<'Add Block' | 'Component Content' | 'Component Properties' | 'Component Style' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Component Responsive' | 'Preview' | 'Filters' | 'Source' | 'Arrange' | 'Advanced'>('Add Block');
   const componentNeedsData = (type: string) => {
     const metadata = type.startsWith('Custom:') ? findRegisteredComponent(libraryComponents,type.slice('Custom:'.length),'page') : undefined;
     return Boolean(type.startsWith('Custom:')&&isUneBuilderApi(type.slice(7),ribbonCatalog?.components??[])
@@ -573,8 +575,10 @@ function PageBuilder({
     setRibbonTab(tab);
     setPageSettingsDialogOpen(false);
     if (tab === 'Add Block') { setPageSettingsOpen(false); openPalette('Components', 'All Components'); }
-    if (tab === 'Component Layout' || tab === 'Arrange' || tab === 'Logic') { setPageSettingsOpen(false); }
-    const inspector = { 'Component Properties': 'Design', 'Arrange': 'Position', 'Logic': 'Visibility', 'Component Style': 'Design', 'Component Data': 'Data & Actions', 'Component Content': 'Data & Actions', 'Component Action': 'Visibility', 'Component Layout': 'Position', 'Component Responsive': 'Position' } as const;
+    if (tab === 'Component Layout' || tab === 'Arrange' || tab === 'Advanced') { setPageSettingsOpen(false); }
+    if (tab === 'Advanced') setAdvancedEditor('assignments');
+    else setAdvancedEditor(null);
+    const inspector = { 'Component Properties': 'Design', 'Arrange': 'Position', 'Component Style': 'Design', 'Component Data': 'Data & Actions', 'Component Content': 'Data & Actions', 'Component Action': 'Visibility', 'Component Layout': 'Position', 'Component Responsive': 'Position' } as const;
     if (tab in inspector) { setPageSettingsOpen(false); openComponentInspector(inspector[tab as keyof typeof inspector]); }
   };
   useEffect(()=>{
@@ -2221,7 +2225,7 @@ function PageBuilder({
     }
   };
   const renderPageComponent = (component: LightningPageMetadata['components'][number], index: number, libraryPreview = false, interactivePreview = false) => {
-    const showHiddenSelection = (ribbonTab === 'Preview' || ribbonTab === 'Logic') && !previewMode && selectedId === component.id && !libraryPreview;
+    const showHiddenSelection = ribbonTab === 'Preview' && !previewMode && selectedId === component.id && !libraryPreview;
     if (!component.visible && !showHiddenSelection) return null;
     const customDefinition = component.type.startsWith('Custom:')
       ? findRegisteredComponent(libraryComponents, component.type.slice('Custom:'.length), 'page')
@@ -2713,12 +2717,6 @@ function PageBuilder({
       default:return null;
     }
   };
-  const savePreviewVisibility=()=>applyVisibilityEditor();
-  const cancelPreviewVisibility=()=>{
-    const raw=selected?.properties.visibilityRules;
-    setVisibilityDraft(raw&&typeof raw==='object'&&!Array.isArray(raw)
-      ?structuredClone(raw as ComponentVisibilityRule):undefined);
-  };
   const openAdvanced=(feature:AdvancedFeature)=>{
     if(['responsive','nesting','properties'].includes(feature)&&!selected)return;
     if(feature==='recordPage'&&page.pageType!=='Record Page')return;
@@ -2727,7 +2725,7 @@ function PageBuilder({
   };
   const quickAccessOrder=['save','activate','preview','exitPreview','resetIcon','undo','redo','cut','copy','paste','delete'] as const;
   const journeyTabs: Array<typeof ribbonTab> = ['Add Block','Component Data','Component Properties',
-    'Component Layout','Arrange','Component Action','Logic','Preview'];
+    'Component Layout','Arrange','Component Action','Advanced','Preview'];
   const ribbonTabsVisible: Array<typeof ribbonTab> = [...journeyTabs];
 
 
@@ -2952,7 +2950,7 @@ function PageBuilder({
                   'Component Content': Type,
                   'Component Properties': SlidersHorizontal,
 
-                  Arrange: Layers3, Logic: Eye,
+                  Arrange: Layers3, Advanced: SlidersHorizontal,
                   'Component Style': Type,
                   'Component Responsive': Smartphone,
                   'Component Layout': Layers3,
@@ -2965,7 +2963,7 @@ function PageBuilder({
                   'Component Content': 'Content',
                   'Component Properties': 'Design',
 
-                  Arrange: 'Arrange', Logic: 'Logic',
+                  Arrange: 'Arrange', Advanced: 'Advanced',
                   'Component Style': 'Format',
                   'Component Responsive': 'Responsive',
                   'Component Layout': 'Layout',
@@ -3040,16 +3038,15 @@ function PageBuilder({
               {page.canvasWidth} × {page.canvasHeight}</span>
             </div><span>Canvas</span>
           </div>}
-          {ribbonTab==='Logic' && <div className="office-ribbon-group preview-visibility-group" aria-label="Conditional visibility">
+          {ribbonTab==='Preview' && <div className="office-ribbon-group preview-visibility-group" aria-label="Conditional visibility">
             {selected ? <div className="preview-visibility-controls">
               <label className="ribbon-small-checkbox"><input type="checkbox" checked={selected.visible}
                 onChange={event=>updateComponent(selected.id,{visible:event.target.checked})}/>
                 Visible on this page</label>
-              <RibbonVisibilityRules draft={visibilityDraft} onChange={setVisibilityDraft}
-                onApply={savePreviewVisibility} onCancel={cancelPreviewVisibility} fields={fields}
-                allowRecordFields={Boolean(targetObject&&page.pageType==='Record Page')}
-                profiles={profiles.map(profile=>({id:profile.id,label:profile.label}))}
-                recordTypes={(targetObject?.recordTypes??[]).map(type=>({id:type.id,label:type.label}))}/>
+              <button type="button" className="office-ribbon-icon-button" aria-label="Edit conditional visibility"
+                title="Edit conditional visibility" onClick={openVisibilityEditor}>
+                <Filter size={17} aria-hidden="true"/></button>
+              <button type="button" onClick={openVisibilityEditor}>Conditions</button>
             </div> : <div className="preview-visibility-unselected">Select a component to set its visibility.</div>}
             <span>Conditional visibility</span>
           </div>}
@@ -3117,14 +3114,25 @@ function PageBuilder({
                 ?{...item,properties:{...item.properties,editorLocked:nextLocked}}:item)});
             }}
             onNesting={()=>openAdvanced('nesting')}/>}
-          {ribbonTab==='Logic' && <div className="office-ribbon-group ribbon-logic-rules" aria-label="Rules">
-            <div className="office-ribbon-stack">
-              <button type="button" onClick={()=>openAdvanced('assignments')}>Activation assignments</button>
-              <button type="button" disabled={!selected} onClick={()=>openAdvanced('properties')}>Advanced properties</button>
-              <button type="button" disabled={page.pageType!=='Record Page'} onClick={()=>openAdvanced('recordPage')}>Record page settings</button>
-              <button type="button" disabled={!selected} onClick={()=>openAdvanced('responsive')}>Responsive settings</button>
-            </div><span>Rules</span>
-          </div>}
+          {ribbonTab==='Advanced' && <PageBuilderAdvancedSections
+            section={advancedEditor} onSelect={openAdvanced} selected={!!selected}
+            recordPage={page.pageType==='Record Page'} appPage={page.pageType==='App Page'}
+            onInspectorHost={setRibbonPropertyHost}>
+            {advancedEditor==='responsive' && selected && <>
+              <p className="properties-help">Device-specific overrides use the shared layout engine. Select a page device layout in Layout first.</p>
+              <PageBuilderAdvancedResponsive properties={selected.properties} device={currentRibbonDevice}
+                onChange={(properties:Record<string,unknown>)=>updateComponent(selected.id,{properties})}/>
+            </>}
+            {advancedEditor==='properties' && selected && <MetadataComponentProperties
+              key={selected.id+':'+page.layoutVariant} mode="details" properties={selected.properties}
+              onChange={(properties:Record<string,unknown>)=>updateComponent(selected.id,{properties})}
+              pageComponents={page.components} componentCatalog={libraryComponents}
+              definitions={selectedCustomDefinition?.propertyDefinitions}
+              device={page.layoutVariant??'Desktop'} componentVersion={selectedCustomDefinition?.version}
+              objects={objects} apps={apps} pages={pages}
+              currentAppId={builderAppApiName||apps[0]?.apiName||'Records'}
+              primaryObjectApiName={page.targetObject} flows={flows}/>}
+          </PageBuilderAdvancedSections>}
           {ribbonTab==='Add Block' && <SmartInsertRibbon
             items={paletteComponents}
             onInsert={addPaletteComponent}
@@ -3196,7 +3204,26 @@ function PageBuilder({
           </div>
         </section>}
 
-      {advancedEditor && <div className="modal-backdrop office-ribbon-modal-backdrop" role="presentation"
+      {visibilityEditorOpen && selected && createPortal(<div className="smart-dialog-backdrop smart-filter-backdrop"
+        role="presentation" onMouseDown={event=>{if(event.currentTarget===event.target)setVisibilityEditorOpen(false);}}>
+        <section className="smart-dialog smart-filter-dialog" role="dialog" aria-modal="true"
+          aria-label="Conditional visibility filters" onKeyDown={event=>{if(event.key==='Escape')setVisibilityEditorOpen(false);}}>
+          <header><div><strong>Conditional Visibility</strong>
+            <span>{selected.label||selected.type} · Show the component when conditions match</span></div>
+            <div className="page-builder-visibility-modal-actions">
+              <button type="button" onClick={()=>setVisibilityEditorOpen(false)}>Cancel</button>
+              <button type="button" autoFocus disabled={validateVisibilityRule(visibilityDraft,fields,
+                Boolean(targetObject&&page.pageType==='Record Page')).length>0}
+                onClick={applyVisibilityEditor}>Apply</button>
+            </div></header>
+          <div className="smart-filter-dialog-body">
+            <ComponentVisibilityEditor rules={visibilityDraft} onChange={setVisibilityDraft}
+              fields={fields} allowRecordFields={Boolean(targetObject&&page.pageType==='Record Page')}
+              profiles={profiles.map(profile=>({id:profile.id,label:profile.label}))}
+              recordTypes={(targetObject?.recordTypes??[]).map(type=>({id:type.id,label:type.label}))}/>
+          </div>
+        </section></div>,document.body)}
+      {advancedEditor && !['assignments','properties','responsive'].includes(advancedEditor) && <div className="modal-backdrop office-ribbon-modal-backdrop" role="presentation"
         onMouseDown={event=>{if(event.currentTarget===event.target)setAdvancedEditor(null);}}>
         <section className="modal page-builder-advanced-dialog" role="dialog" aria-modal="true"
           aria-label={advancedFeatureLabels[advancedEditor]}>
@@ -3204,23 +3231,6 @@ function PageBuilder({
             <button type="button" className="icon-button" aria-label="Close advanced editor"
               onClick={()=>setAdvancedEditor(null)}><X size={16}/></button></div>
           <div className="page-builder-advanced-body">
-            {advancedEditor==='responsive' && <>
-              <label className="form-label">Current page device layout {homeValue('deviceLayout')}</label>
-              {selected && <>
-                <p className="properties-help">Each device layout has an independent draft. Switch the layout above before editing this component.</p>
-                <PageBuilderAdvancedResponsive properties={selected.properties} device={currentRibbonDevice}
-                  onChange={(properties:Record<string,unknown>)=>updateComponent(selected.id,{properties})}/>
-                <MetadataComponentProperties key={selected.id+':'+page.layoutVariant} mode="details"
-                  properties={selected.properties}
-                  onChange={(properties:Record<string,unknown>)=>updateComponent(selected.id,{properties})}
-                  pageComponents={page.components} componentCatalog={libraryComponents}
-                  definitions={selectedCustomDefinition?.propertyDefinitions}
-                  device={page.layoutVariant??'Desktop'} componentVersion={selectedCustomDefinition?.version}
-                  objects={objects} apps={apps} pages={pages}
-                  currentAppId={builderAppApiName||apps[0]?.apiName||'Records'}
-                  primaryObjectApiName={page.targetObject} flows={flows}/>
-              </>}
-            </>}
             {advancedEditor==='nesting' && selected && <>
               <label className="checkbox-row"><input type="checkbox"
                 checked={isLayoutContainer(selected)} disabled={!selectedCustomDefinition&&!isLayoutContainer(selected)}
@@ -3255,7 +3265,7 @@ function PageBuilder({
               <button type="button" className="btn btn-small"
                 onClick={()=>{setInspectorTab('Data & Actions');setActivePanel('properties');setAdvancedEditor('properties');}}>
                 Configure selected {selected.type} block</button>}
-            {(['recordPage','assignments','properties'] as AdvancedFeature[]).includes(advancedEditor) &&
+            {advancedEditor==='recordPage' &&
               <div className="office-ribbon-inspector-host" ref={setRibbonPropertyHost}
                 aria-label={advancedFeatureLabels[advancedEditor]}/>}
           </div>
@@ -3367,7 +3377,7 @@ function PageBuilder({
             </div>
           </div>
         </div>
-        {ribbonPropertyHost && createPortal(<aside id="lightning-page-properties" style={ribbonTab !== 'Component Layout' && !ribbonTab.startsWith('Component ') ? { display: 'none' } : undefined}
+        {ribbonPropertyHost && createPortal(<aside id="lightning-page-properties" style={ribbonTab !== 'Component Layout' && ribbonTab !== 'Advanced' && !ribbonTab.startsWith('Component ') ? { display: 'none' } : undefined}
           className={`properties-panel reference-properties-panel ${pageSettingsOpen || selected ? 'responsive-open' : ''}`}>
           {selectedRegion && !pageSettingsOpen && activePanel !== 'page' && !advancedEditor ? <div className="properties-section">
             <div className="properties-section-title">Section configuration</div>
