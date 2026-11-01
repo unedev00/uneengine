@@ -31,7 +31,7 @@ test('global Shape is SQL owned, enabled only for requested components, and icon
  assert.match(builder,/component.apiName!=='smart_icon'/);
  assert.match(builder,/selected\?\.type==='Custom:smart_icon'/);
 });
-test('Button preserves empty labels, renders selected icons and passes click through shared runtime',async()=>{
+test('Button preserves empty labels and renders selected icons using the shared runtime',async()=>{
  const icon=await renderSmart('smart_button',{label:'',shapeId:'lock',iconFillColor:'#123456'});
  assert.match(icon,/class="smart-button"/);
  assert.match(icon,/smart-button-glyph/);
@@ -43,14 +43,14 @@ test('Button preserves empty labels, renders selected icons and passes click thr
  assert.match(filled,/Save/);
  assert.match(filled,/border-radius:50%/);
  const fancy=await renderSmart('smart_button',{label:'',shapeId:'shape:triangle'});
- assert.match(fancy,/clip-path:polygon/);
+ assert.match(fancy,/mask-image:url/);
 });
 test('Container, Input Box, Toggle and Lookup Record share the same shape renderer',async()=>{
  for(const api of ['smart_container','smart_text','smart_toggle','smart_lookup']){
   const html=await renderSmart(api,{shapeId:'shape:oval',builderPreview:true});
   assert.match(html,/border-radius:50%/,api);
   const triangle=await renderSmart(api,{shapeId:'shape:triangle',builderPreview:true});
-  assert.match(triangle,/clip-path:polygon/,api);
+  assert.match(triangle,/mask-image:url/,api);
  }
  const lookup=await renderSmart('smart_lookup',{shapeId:'shape:triangle'});
  assert.match(lookup,/role="combobox"/);
