@@ -2322,7 +2322,8 @@ function PageBuilder({
           {!libraryPreview && !previewMode && <div className="canvas-drop-zone" onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.stopPropagation(); const draggedId = event.dataTransfer.getData('application/x-metadrive-component-id'); if (draggedId && canNestComponent(page.components, draggedId, component.id)) { applyPage({ ...page, components: page.components.map((item) => item.id === draggedId ? { ...item, parentId: component.id } : item) }); } else if (!draggedId) { const type = event.dataTransfer.getData('text/plain').replace(/^component:/, ''); if (type) addComponent(type, page.components.length, component.region ?? 'main', undefined, component.id); } }}>Drop components inside {component.label}</div>}
         </div>
         : component.type === 'Record Detail'
-        ? <div className="record-detail-grid">{(Array.isArray(component.properties.fields) ? component.properties.fields : fields.slice(0, 6).map((field) => field.apiName)).map((apiName) => { const field = fields.find((item) => item.apiName === apiName); return field ? <div className="record-detail-field" key={apiName}><small>{field.label}</small><span>{previewFieldValue(field.apiName)}</span></div> : null; })}</div>
+        ? <div className="record-detail-grid">{(Array.isArray(component.properties.fields) ? component.properties.fields : fields.slice(0, 6).map((field) => field.apiName)).map((apiName) => { const field = fields.find((item) => item.apiName === apiName); return field ? <div className="record-detail-field" key={apiName}><small>{field.label}</small><span>{previewFieldValue(field.apiName)}</span></div> : null; })}
+          {!previewMode&&!(Array.isArray(component.properties.fields)?component.properties.fields:fields.slice(0,6)).length&&<div className="record-detail-field"><small>Field Name</small><span>Field value</span></div>}</div>
         : component.type === 'Field Section'
           ? <div className={`record-detail-grid columns-${component.properties.columns === 1 ? 1 : 2}`}>{stringList(component.properties.fieldApiNames, []).map((apiName) => fields.find((field) => field.apiName === apiName)).filter((field): field is FieldMetadata => Boolean(field)).map((field) => <div className="record-detail-field" key={field.apiName}><small>{field.label}</small><span>{previewFieldValue(field.apiName)}</span></div>)}
             {!previewMode&&!stringList(component.properties.fieldApiNames, []).length&&<div className="record-detail-field"><small>Field Name</small><span>Field value</span></div>}</div>
@@ -2361,6 +2362,7 @@ function PageBuilder({
                   .map(name=>fields.find(field=>field.apiName===name))
                   .filter((field):field is FieldMetadata=>Boolean(field))
                   .map(field=><div key={field.apiName}><span>{field.label}</span><strong>{previewFieldValue(field.apiName)}</strong></div>)}
+                {!previewMode&&(!targetObject||!fields.length)&&<div><span>Field Name</span><strong>Field value</strong></div>}
               </div>
           : component.type === 'Dashboard'
             ? <div className="record-fields-card surface">
@@ -2391,6 +2393,7 @@ function PageBuilder({
             ? <nav className="record-fields-card surface" aria-label={component.label}>
                 {stringList(component.properties.relatedLists,defaultRelatedLists).map(name=>
                   <a key={name} href={'#related-'+name}>{name}</a>)}
+                {!previewMode&&!stringList(component.properties.relatedLists,defaultRelatedLists).length&&<span>Related List</span>}
               </nav>
           : component.type === 'Rich Text'
             ? <div className="record-fields-card surface" style={{whiteSpace:'pre-wrap'}}>{(String(component.properties.content??'').trim()?String(component.properties.content):(!previewMode?'Text Here':''))}</div>
@@ -2399,7 +2402,9 @@ function PageBuilder({
                 <p>Authorised records, sorting, search and pagination load when this page runs.</p></div>
           : component.type === 'Path'
             ? <div className="record-fields-card surface"><strong>{component.label}</strong>
-                <ol className="record-path">{(fields.find(field=>field.apiName===component.properties.stageFieldApiName)?.picklistValues??(!previewMode?['Stage 1','Stage 2','Stage 3']:[])).map(value=>
+                <ol className="record-path">{((fields.find(field=>field.apiName===component.properties.stageFieldApiName)?.picklistValues?.length
+                  ?fields.find(field=>field.apiName===component.properties.stageFieldApiName)?.picklistValues
+                  :(!previewMode?['Stage 1','Stage 2','Stage 3']:[]))??[]).map(value=>
                   <li key={value}>{value}</li>)}</ol></div>
           : component.type === 'Screen Flow'
             ? <div className="record-fields-card surface"><strong>{component.label}</strong>
