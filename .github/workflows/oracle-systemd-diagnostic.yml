@@ -36,3 +36,26 @@ jobs:
           df -h / /run || true
           free -m || true
           echo "Diagnostic complete; no changes made."
+      - name: Diagnose public frontend routing (read only)
+        shell: bash
+        run: |
+          set -uo pipefail
+          echo "== frontend release pointer =="
+          readlink -f /var/www/metadrive-frontend/current || true
+          echo "== current release manifest on disk =="
+          head -c 350 /var/www/metadrive-frontend/current/frontend-release.json 2>/dev/null || true
+          echo
+          echo "== routed release manifest via HTTP localhost =="
+          curl --noproxy '*' -fsS --max-time 10 -H 'Host: unesolutions.co.uk' http://127.0.0.1/frontend-release.json | head -c 350 || true
+          echo
+          echo "== routed release manifest via local HTTPS =="
+          curl --noproxy '*' -fsS --max-time 10 --resolve unesolutions.co.uk:443:127.0.0.1 https://unesolutions.co.uk/frontend-release.json | head -c 350 || true
+          echo
+          echo "== routed release manifest via public HTTPS =="
+          curl -fsS --max-time 10 -H 'Cache-Control: no-cache' https://unesolutions.co.uk/frontend-release.json | head -c 350 || true
+          echo
+          echo "== active frontend vhosts =="
+          ls -l /etc/nginx/sites-enabled/ 2>/dev/null | head -n 28 || true
+          echo "== loaded Nginx listen/server/root/route directives =="
+          sudo -n nginx -T 2>/dev/null | grep -E '^[[:space:]]*(listen |server_name |root |location |try_files |proxy_pass |include /etc/nginx/sites-enabled/)' | head -n 90 || true
+          echo "Read-only routing diagnosis complete."
