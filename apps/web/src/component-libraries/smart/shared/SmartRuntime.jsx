@@ -232,7 +232,9 @@ export default function SmartRuntime(p){
  else if(name==="smart_toggle")content=<SmartToggle p={p} fire={fire}/>;
  else if(name==="smart_text")content=<input className="smart-input-box" type="text"
   aria-label={label||text(p.placeholder||"Input")}
-  placeholder={label||text(p.placeholder||(p.builderPreview?"Text Here":""))}
+  placeholder={p.builderPreview===true&&![p.placeholder,p.textSource,p.defaultValue,p.value].some(v=>v!==undefined&&v!==null&&v!=="")
+    &&!(p.properties&&Object.prototype.hasOwnProperty.call(p.properties,"label"))
+    ?"Text Here":label||text(p.placeholder||"")}
   defaultValue={expression(p.textSource??p.defaultValue??p.value??"",record)}
   style={{...style,...shadowStyle,width:"100%",height:"100%",minWidth:0,minHeight:0,
     fontSize:number(p.textSize,16),color:p.defaultValueColor||p.labelColor||undefined,
