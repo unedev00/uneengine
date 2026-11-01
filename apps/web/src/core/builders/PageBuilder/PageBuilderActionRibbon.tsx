@@ -3,6 +3,7 @@ import { Trash2, SlidersHorizontal } from 'lucide-react';
 import type { FlowDefinitionMetadata } from '../../metadata/Definitions/metadata';
 import { metadataReference, metadataSelection } from '../../metadata/Definitions/metadataReferences';
 import {supportsSmartActionEvent} from './SmartEventActionsRibbon';
+import SmartFormulaField from './SmartFormulaField';
 
 type Binding=Record<string,unknown>;
 type EventOption={apiName:string;label:string};
@@ -31,6 +32,12 @@ export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,
   disabled?:boolean;
 }) {
   const [customTrigger,setCustomTrigger]=useState('');
+  const numericFields=dataFields.filter(field=>
+    /^(Number|Currency|Percent|Integer|Decimal|Double|Float|Long|Short|Int)(\(|$)/i.test(field.dataType));
+  const formulaFields=numericFields.map(field=>({...field,required:false,unique:false}));
+  const numberTarget=String(asBinding(actions[selectedEvent]).fieldApiName??'Quantity');
+  const defaultNumberFormula=(operation:'increment'|'decrement',field=numberTarget)=>
+    '@'+field+(operation==='increment'?' + 1':' - 1');
   const selected=asBinding(actions[selectedEvent]);
   const active=Boolean(selectedEvent&&Object.prototype.hasOwnProperty.call(actions,selectedEvent));
   const kind:ActionKind=actionTypes.some(option=>option.kind===selected.actionType)
@@ -58,7 +65,10 @@ export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,
     if(value.startsWith('type:')){
       const next=value.slice(5);
       if(actionTypes.some(item=>item.kind===next)){
-        patch({actionType:next});
+        patch({actionType:next,...(next==='AdjustNumber'?{
+          fieldApiName:String(selected.fieldApiName??numericFields.find(f=>/^(Quantity|Qty)$/i.test(f.apiName))?.apiName??numericFields[0]?.apiName??''),
+          deltaSource:'$event.delta',minValue:0,deleteOnZero:true
+        }:{})});
         if(next!=='Flow'&&!showDetails)onToggleDetails();
       }
     }else if(value.startsWith('flow:')){
@@ -106,13 +116,14 @@ export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,
     }else if(choice.startsWith('type:')){
       const actionType=choice.slice(5);
       if(!actionTypes.some(type=>type.kind===actionType))return;
-      const numericFields=dataFields.filter(field=>/^(Number|Currency|Percent|Integer|Decimal|Double|Float)(\(|$)/i.test(field.dataType));
       const suggested=numericFields.find(f=>/^(Quantity|Qty)$/i.test(f.apiName))??numericFields[0];
       onChange({...actions,[key]:{...previous,actionType,
         ...(actionType==='Flow'?{flowApiName:''}:{}),
         ...(actionType==='AdjustNumber'?{
           deltaSource:'$event.delta',fieldApiName:suggested?.apiName??'',
-          minValue:0,deleteOnZero:true
+          minValue:0,deleteOnZero:true,
+          incrementFormula:'@'+(suggested?.apiName??'Quantity')+' + 1',
+          decrementFormula:'@'+(suggested?.apiName??'Quantity')+' - 1'
         }:{})}});
     }else return;
     onSelectEvent(key);
@@ -167,6 +178,22 @@ export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,
       <div className="page-action-property-rows">{componentSlots.map(slotPicker)}</div>
       <span className="office-ribbon-group-heading">Component Custom</span>
     </section>
+    {active&&kind==='AdjustNumber'&&<section
+      className="office-ribbon-mini-group page-action-formula-group"
+      aria-label="Editable quantity action formulas">
+      <div className="page-action-formula-rows">
+        <label><span>+ fx</span><SmartFormulaField
+          label="Increase quantity formula" disabled={disabled} fields={formulaFields}
+          value={String(selected.incrementFormula??defaultNumberFormula('increment'))}
+          onChange={value=>patch({incrementFormula:value})}/></label>
+        <label><span>− fx</span><SmartFormulaField
+          label="Decrease quantity formula" disabled={disabled} fields={formulaFields}
+          value={String(selected.decrementFormula??defaultNumberFormula('decrement'))}
+          onChange={value=>patch({decrementFormula:value})}/></label>
+      </div>
+      <small>Edit +1 to +2 or −1 to −2; @ selects a field.</small>
+      <span className="office-ribbon-group-heading">Quantity formulas</span>
+    </section>}
     <section className="office-ribbon-mini-group page-action-library">
       <label>Actions
         <select aria-label="All component actions" value="" disabled={disabled}
@@ -221,7 +248,16 @@ export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,
         <label>Number field
           <select aria-label="Number field to adjust" disabled={disabled}
             value={String(selected.fieldApiName??'')}
-            onChange={e=>patch({fieldApiName:e.target.value})}>
+            onChange={e=>{
+              const oldField=String(selected.fieldApiName??'Quantity');
+              const next=e.target.value;
+              patch({fieldApiName:next,
+                ...(selected.incrementFormula===defaultNumberFormula('increment',oldField)
+                  ?{incrementFormula:defaultNumberFormula('increment',next)}:{}),
+                ...(selected.decrementFormula===defaultNumberFormula('decrement',oldField)
+                  ?{decrementFormula:defaultNumberFormula('decrement',next)}:{})
+              });
+            }}>
             <option value="">Choose numeric field…</option>
             {dataFields.filter(field=>/^(Number|Currency|Percent|Integer|Decimal|Double|Float)(\(|$)/i.test(field.dataType))
               .map(field=><option key={field.apiName} value={field.apiName}>{field.label}</option>)}
