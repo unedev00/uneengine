@@ -5,6 +5,7 @@ import {resolveMetadataProperties} from '../../metadata/Definitions/metadataRefe
 import {generateMetadataApiName,suggestMetadataApiName} from '../../metadata/Definitions/metadataApiNames';
 import { useFormFactor } from '../../workspace/Responsive/useFormFactor';
 import './MobileBuilderReadMode.css';
+import CanvasFloatingActions from './CanvasFloatingActions';
 import {confirmDestructiveAction} from '../../components/ConfirmAction/confirmDestructiveAction';
 import './PageBuilderNoCode.css';
 import './PageBuilderRibbonGallery.css';
@@ -2272,9 +2273,8 @@ function PageBuilder({
       role={libraryPreview ? undefined : page.layoutMode === 'free-canvas' ? 'group' : 'button'} tabIndex={previewMode || libraryPreview ? -1 : 0} aria-label={libraryPreview ? undefined : `${component.label} component`}
       aria-hidden={libraryPreview && !interactivePreview || undefined}
     >
-      {!previewMode && !libraryPreview && selectedId === component.id && !nested && <div
+      {!previewMode && !libraryPreview && selectedId === component.id && !nested && page.layoutMode === 'free-canvas' && <CanvasFloatingActions componentId={component.id} viewportRef={pagePreviewAreaRef}><div
         className="canvas-element-actions" role="toolbar" aria-label={`Actions for ${component.label}`}
-        style={component.position && component.position.y < 60 ? {bottom:'auto',top:'calc(100% + 12px)'} : undefined}
         onPointerDown={event => event.stopPropagation()} onClick={event => event.stopPropagation()}>
         {page.layoutMode === 'free-canvas' && !isCanvasLocked(component) && <button type="button"
           className="canvas-move-grip" aria-label={`Drag to move ${component.label}`}
@@ -2301,7 +2301,7 @@ function PageBuilder({
 
           <button type="button" role="menuitem" disabled={isCanvasLocked(component)} onClick={() => {removeSelected();setComponentMenuId('');}}>Delete <kbd>Delete</kbd></button>
         </div>}
-      </div>}
+      </div></CanvasFloatingActions>}
       {showHiddenSelection && !component.visible
         ? <span className="canvas-hidden-marker">Hidden: {component.label}</span>
         : isLayoutType(component.type)
