@@ -34,13 +34,17 @@ function SmartPicture({src,alt,loadAsset,style}){
 const recordOf=p=>p.objectApiName&&Array.isArray(p.records)
  ?(p.records[0]??{}):p.record&&typeof p.record==="object"&&!Array.isArray(p.record)?p.record:
  Array.isArray(p.records)&&p.records.length?p.records[0]:Array.isArray(p.items)&&p.items.length?p.items[0]:{};
-const recordsOf=p=>Array.isArray(p.records)?p.records:Array.isArray(p.items)?p.items:[];
-// Editor-only samples are never Object records: no real IDs, no SQL writes,
-// and no action handlers. Each shared component opts into its normal shape.
-const isBuilderEmpty=p=>p.builderPreview===true&&!p.loading&&recordsOf(p).length===0;
+// Editor-only examples are derived from the existing shared record source.
+// They never have a database Id and never invoke a Flow action.
 const editorCardRows=(count)=>Array.from({length:Math.min(6,Math.max(1,count))},(_,i)=>({
  __builderSample:true,Name:"Product Name "+(i+1),Price:"Price",Quantity:1
 }));
+const recordsOf=p=>{
+ const records=Array.isArray(p.records)?p.records:Array.isArray(p.items)?p.items:[];
+ return p.kind==="smart_card_grid"&&p.builderPreview===true&&!p.loading&&!records.length
+  ?editorCardRows(number(p.cardsPerRow,3)*number(p.cardsPerColumn,3)):records;
+};
+const isBuilderEmpty=p=>p.builderPreview===true&&!p.loading&&recordsOf(p).length===0;
 // Image bindings must resolve once per authorised record, not once for the grid.
 // Plain API names and @Field expressions both use the same record values.
 const boundImage=(p,record)=>{
@@ -257,7 +261,7 @@ export default function SmartRuntime(p){
    gridTemplateColumns:"repeat("+columns+",minmax(0,1fr))",
    gridAutoRows:"max(180px, calc((100% - "+(rows-1)*12+"px) / "+rows+"))",alignContent:"start"
   }}>
-   {(isBuilderEmpty(p)?editorCardRows(columns*rows):recordsOf(p)).map((r,i)=>{
+   {recordsOf(p).map((r,i)=>{
     const card=<SmartCard p={p} record={r}/>;
     // Published metadata decides if the card is actionable. Never fabricate
     // an Add To Cart operation: the bound Flow owns persistence and RBAC.
