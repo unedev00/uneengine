@@ -829,7 +829,8 @@ function LightningAppRuntime({
   onNavigate,
   onLaunchFlow,
   onStandaloneModeChange,
-  inScreenPage=false
+  inScreenPage=false,
+  inScreenContext
 }: {
   appId: string;
   pageApiName?: string;
@@ -846,6 +847,7 @@ function LightningAppRuntime({
   onLaunchFlow: (flowApiName: string, inputs?: Record<string, unknown>, context?:{requestId?:string}) => void;
   onStandaloneModeChange: (enabled: boolean) => void;
   inScreenPage?: boolean;
+  inScreenContext?: {sessionId?:string;values?:Record<string,unknown>};
 }) {
   const layoutDevice = usePageLayoutDevice();
   const viewportWidth=useViewportWidth();
@@ -869,7 +871,7 @@ function LightningAppRuntime({
   const error=routePending?'':pageLoad.error;
   const loading=routePending?!cached:pageLoad.loading;
   const [activeTabs, setActiveTabs] = useState<Record<string,string>>({});
-  const [layoutState,setLayoutState]=useState<Record<string,unknown>>({});
+  const [layoutState,setLayoutState]=useState<Record<string,unknown>>(inScreenPage?inScreenContext?.values??{}:{});
   const [interactionOverrides,setInteractionOverrides]=useState<Record<string,Record<string,unknown>>>({});
   useEffect(()=>setInteractionOverrides({}),[appId,page?.apiName]);
   useEffect(()=>{
@@ -900,7 +902,7 @@ function LightningAppRuntime({
     return()=>window.removeEventListener('metadrive:page-component-interaction',onInteraction);
   },[page,appId,libraryComponents,layoutState,requestedLayout]);
   useEffect(()=>{
-    setLayoutState({});
+    setLayoutState(inScreenPage?inScreenContext?.values??{}:{});
     const listener=(event:Event)=>{
       const detail=(event as CustomEvent<{pageSessionKey:string;key:string;value:unknown}>).detail;
       if(detail?.pageSessionKey!==appId+':'+page?.apiName)return;
@@ -974,10 +976,13 @@ function LightningAppRuntime({
       const content = needsMetadataComponentRuntime(component.properties)
         ? <MetadataBoundPageComponent definition={definition} component={component} defaultObjectApiName={page.targetObject}
             objects={objects} apps={apps} pages={pages} currentAppId={appId} pageSessionKey={appId + ':' + page.apiName} reports={reports} availableFlows={availableFlows} formFactor={formFactor}
+            initialPageState={inScreenPage?inScreenContext?.values:undefined}
+            sessionIdOverride={inScreenPage?inScreenContext?.sessionId:undefined}
             children={nestedChildren}
             onNavigate={onNavigate} onLaunchFlow={onLaunchFlow} />
         : <RegisteredComponent definition={definition} layoutTransparent props={{
-            ...component.properties, ...componentLayoutProps(component.properties, layoutDevice),
+            ...component.properties, pageState:layoutState,
+            ...componentLayoutProps(component.properties, layoutDevice),
             ...(definition.apiName.startsWith('smart_') && component.position
               ? {width:component.position.width,height:component.position.height}:{}),
             disabled:behaviorAction(component.properties,'click',appVisibilityContext)!=='enabled',

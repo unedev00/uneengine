@@ -19,7 +19,7 @@ import type {LibraryComponentMetadata,PageComponentMetadata,ObjectMetadata,Field
 import type {AppRoute} from '../../workspace/Navigation/appRouting';
 
 export default function MetadataBoundPageComponent({
-  apiRequest, definition, component, objects, apps, pages, currentAppId, pageSessionKey, reports, availableFlows, formFactor, onNavigate, onLaunchFlow, disableActions = false, builderPreview = false, defaultObjectApiName = '', recordId = '', behaviorContext
+  apiRequest, definition, component, objects, apps, pages, currentAppId, pageSessionKey, reports, availableFlows, formFactor, onNavigate, onLaunchFlow, disableActions = false, builderPreview = false, defaultObjectApiName = '', recordId = '', behaviorContext, initialPageState, sessionIdOverride
 }: {
   apiRequest:<T>(path:string,init?:RequestInit)=>Promise<T>;
   definition: LibraryComponentMetadata;
@@ -39,12 +39,15 @@ export default function MetadataBoundPageComponent({
   defaultObjectApiName?: string;
   recordId?: string;
   behaviorContext?:BehaviorContext;
+  initialPageState?:Record<string,unknown>;
+  sessionIdOverride?:string;
 }) {
   const properties = resolveMetadataProperties({...component.properties,objectApiName:component.properties.objectApiName||defaultObjectApiName},objects,availableFlows);
   const objectApiName = String(properties.objectApiName || defaultObjectApiName || '');
   const mentionRootObjectApiName = defaultObjectApiName || objectApiName;
   // An application-independent session can be referenced by configured Flows.
   const [sessionId, setSessionId] = useState(() => {
+    if(sessionIdOverride)return sessionIdOverride;
     const key = 'metadrive-page-session:' + pageSessionKey;
     try {
       let value = window.sessionStorage.getItem(key);
@@ -57,7 +60,7 @@ export default function MetadataBoundPageComponent({
       return crypto.randomUUID();
     }
   });
-  const [pageState,setPageState]=useState<Record<string,unknown>>({});
+  const [pageState,setPageState]=useState<Record<string,unknown>>(initialPageState??{});
   const [revision, setRevision] = useState(0);
   useEffect(()=>{
     const receive=(event:Event)=>{
