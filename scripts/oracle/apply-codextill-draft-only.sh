@@ -10,7 +10,7 @@ SOURCE="$1"
 [[ "$SOURCE" == /* ]] || exit 64
 test -r /etc/metadrive/production.env
 test -f "$SOURCE/apps/server/dist-system/app-seeders/codextill-page-layout.js"
-test -f "$SOURCE/apps/server/scripts/apply-codextill-layout-once.mjs"
+test -f "$SOURCE/apps/server/scripts/fix-codextill-free-canvas.mjs"
 # Metadata-only change; no systemd daemon-reload, restart, or release switch.
 # Read the existing root-owned runtime environment without logging secrets.
 set -a
@@ -23,4 +23,4 @@ cd "$SOURCE"
 # database metadata operation under the already-authorised sudo shell; the
 # PageRuntime checks the single target page and verifies persisted geometry.
 # The preloaded Node process drops uid/gid to metadrive before DB access.
-node apps/server/scripts/apply-codextill-layout-once.mjs
+node apps/server/scripts/fix-codextill-free-canvas.mjs

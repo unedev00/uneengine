@@ -1,4 +1,4 @@
-name: Apply CODEXTILL Desktop metadata draft (one time)
+name: Repair CODEXTILL free-canvas geometry (one time)
 on:
   push:
     branches: [main]
@@ -31,7 +31,8 @@ jobs:
           npm ci
           npm run build:system --workspace apps/server
           bash -n scripts/oracle/apply-codextill-draft-only.sh
-      - name: Apply and independently verify CODEXTILL Desktop draft
+          node apps/server/scripts/fix-codextill-free-canvas.mjs --preflight
+      - name: Fix and independently verify CODEXTILL free-canvas positions
         shell: bash
         run: |
           set -euo pipefail
