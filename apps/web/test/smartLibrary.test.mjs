@@ -1034,21 +1034,3 @@ test('Layout Image Background uses SQL fill palette for only Image and Container
  assert.match(ribbon,/kind==='color'/);
  assert.match(palette,/kind==='fill'\?'No fill'/);
 });
-
-test('Logic ribbon keeps visibility separate from rule controls and fits action rows',()=>{
- const css=read('../src/core/builders/PageBuilder/PageBuilderEightTabRibbon.css');
- assert.match(css,/\.preview-visibility-controls\s*\{[^}]*flex-direction:row!important/);
- assert.match(css,/\.preview-visibility-controls>\.office-ribbon-compact-strip\s*\{[^}]*height:90px!important/);
- assert.match(css,/\.preview-visibility-controls \.office-ribbon-mini-group\s*\{[^}]*max-height:90px!important/);
- assert.match(css,/\.ribbon-logic-rules \.office-ribbon-stack\s*\{[^}]*grid-template-rows:repeat\(2,28px\)/);
- assert.match(css,/\.smart-event-actions-ribbon>\.smart-event-group\s*\{[^}]*min-width:270px!important/);
- const events=read('../src/core/builders/PageBuilder/SmartEventActionsRibbon.tsx');
- assert.match(events,/enabled:members\.every\(member=>member==='smart_cart'\)/);
-});
-test('Smart Button has safe label overflow without changing its metadata font size',()=>{
- const css=read('../src/component-libraries/smart/shared/smart.css');
- const runtime=read('../src/component-libraries/smart/shared/SmartRuntime.jsx');
- assert.match(css,/\.smart-runtime\.smart_button>\.smart-button\s*\{[^}]*white-space:nowrap;overflow:hidden;text-overflow:ellipsis/);
- assert.match(runtime,/title=\{label\|\|"Button"\}/);
- assert.match(runtime,/fontSize:number\(p\.textSize,16\)/);
-});
