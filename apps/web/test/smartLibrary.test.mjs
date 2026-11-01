@@ -91,7 +91,7 @@ test('Smart visual/property fixes are registered without changing historic SQL m
 
 test('Smart canvas positions remain the source of truth for rendered sizes',()=>{
  const view=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
- assert.ok(view.includes('component.position.width,height:component.position.height'));
+ assert.ok(view.includes('canvasFrameSized:true'));
  assert.ok(view.includes("target.type==='Custom:smart_toggle'&&update.position"));
 });
 
@@ -620,8 +620,8 @@ test('Smart Button and Input Box own visible configured dimensions, not outer ca
  const canvas=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
  const dataRuntime=read('../src/core/pages/MetadataBoundPageComponent/MetadataBoundPageComponent.tsx');
  assert.match(canvas,/customDefinition\.apiName\.startsWith\('smart_'\) && component\.position/);
- assert.match(canvas,/width:component\.position\.width,height:component\.position\.height/);
- assert.match(dataRuntime,/smartCanvas\?\{width:component\.position!\.width,height:component\.position!\.height\}/);
+ assert.match(canvas,/canvasFrameSized:true/);
+ assert.match(dataRuntime,/smartCanvas\?\{canvasFrameSized:true\}/);
 });
 test('Smart Image and Card Grid bind URL from each Product record independently',async()=>{
  const records=[{id:'a',ImageURL:'https://example.com/first.png'},
