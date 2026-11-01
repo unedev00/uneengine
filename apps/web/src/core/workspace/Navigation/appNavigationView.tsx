@@ -31,10 +31,38 @@ export function NavigationLoadTime({ routeKey, startedAt, ready, kind, authMs }:
 }) {
   const [result, setResult] = useState<{ routeKey: string; milliseconds: number } | null>(null);
   const [open, setOpen] = useState(false);
+  const [newFrontendAvailable, setNewFrontendAvailable] = useState(false);
   const [oracle, setOracle] = useState<{ status: OracleStatus; release: OracleRelease | null }>({ status: 'idle', release: null });
   const containerRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const popoverId = useId();
+
+  useEffect(() => {
+    const loaded = typeof __METADRIVE_WEB_RELEASE__ === 'undefined'
+      ? null : __METADRIVE_WEB_RELEASE__?.commit;
+    if (!loaded) return;
+    let stopped = false;
+    const checkRelease = async () => {
+      if (document.visibilityState === 'hidden') return;
+      try {
+        const response = await fetch('/frontend-release.json', {cache:'no-store'});
+        if (!response.ok) return;
+        const release:unknown = await response.json();
+        if (!stopped && release && typeof release === 'object'
+          && 'commit' in release && typeof release.commit === 'string'
+          && /^[a-f0-9]{40}$/.test(release.commit) && release.commit !== loaded)
+          setNewFrontendAvailable(true);
+      } catch { /* Offline clients continue working without a forced refresh. */ }
+    };
+    void checkRelease();
+    const interval = window.setInterval(() => {void checkRelease();},60_000);
+    document.addEventListener('visibilitychange',checkRelease);
+    return () => {
+      stopped = true;
+      window.clearInterval(interval);
+      document.removeEventListener('visibilitychange',checkRelease);
+    };
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -134,6 +162,10 @@ export function NavigationLoadTime({ routeKey, startedAt, ready, kind, authMs }:
   const webRelease = typeof __METADRIVE_WEB_RELEASE__ === 'undefined' ? null : __METADRIVE_WEB_RELEASE__;
   const oracleValue = oracle.status === 'loading' ? 'Checking…' : oracle.release?.commit.slice(0, 12) ?? 'Not available';
   return <div className="navigation-diagnostics" ref={containerRef}>
+    {newFrontendAvailable && <button type="button" className="btn btn-small"
+      style={{marginRight:8,whiteSpace:'nowrap'}}
+      title="A newer frontend is deployed. Save any Page Builder changes before reloading."
+      onClick={() => window.location.reload()}>Update available — reload</button>}
     <button ref={buttonRef} type="button" className="icon-button navigation-diagnostics-trigger"
       aria-label="System and release information" title="System and release information"
       aria-haspopup="dialog" aria-expanded={open} aria-controls={open ? popoverId : undefined}
