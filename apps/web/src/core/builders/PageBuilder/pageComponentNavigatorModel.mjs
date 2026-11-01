@@ -44,7 +44,7 @@ export function buildPageNavigatorEntries(components, typeLabels = {}) {
     const pathParts = parentPath.length ? parentPath : [region];
     const path = pathParts.join(' / ');
     const props = item.properties || {};
-    const bindings = Object.entries(props).filter(([key,value]) => bindingKeys.test(key) && typeof value === 'string' && text(value))
+    const bindings = Object.entries(props).filter(([key,value]) => (bindingKeys.test(key) || (displayKeys.includes(key) && typeof value === 'string' && /[@{}]/.test(value))) && typeof value === 'string' && text(value))
       .slice(0, 6).map(([key,value]) => key + ': ' + readable(value));
     const location = item.position ? 'x:' + Math.round(item.position.x) + ' y:' + Math.round(item.position.y) : '';
     draft.push({
