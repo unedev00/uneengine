@@ -126,6 +126,7 @@ export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,
         <option value="">Choose action…</option>
         {value.startsWith('flow:')&&!availableFlows.some(f=>f.apiName===storedFlow)&&
           <option value={value}>{storedFlow} (saved/unavailable)</option>}
+        <optgroup label="Flows"><option value="type:Flow">Run automation / choose Flow</option></optgroup>
         <optgroup label="Autolaunched Flows">
           {availableFlows.filter(f=>f.flowType==='Autolaunched Flow').map(flow=>
             <option key={flow.apiName} value={'flow:'+flow.apiName}>{flow.label}</option>)}
