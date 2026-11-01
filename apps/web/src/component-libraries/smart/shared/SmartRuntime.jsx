@@ -302,7 +302,7 @@ export default function SmartRuntime(p){
     background:p.imageBackgroundColor??p.backgroundColor??"transparent",
     border:p.borderColor?"1px solid "+p.borderColor:0,
     borderRadius:number(p.radius,12),...shadowStyle
- }>{p.children||(p.builderPreview?<span className="smart-editor-container-placeholder">Drop components here</span>:null)}</div>;
+ }}>{p.children||(p.builderPreview?<span className="smart-editor-container-placeholder">Drop components here</span>:null)}</div>;
  // Geometry-only technical host; the native Smart surface owns all visible styling.
  return <div className={"smart-runtime "+name} style={{
    display:"flex",flexDirection:"column",boxSizing:"border-box",border:0,
