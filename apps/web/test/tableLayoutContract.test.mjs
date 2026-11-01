@@ -17,6 +17,21 @@ test('workspace table behaviour is shared and lazy, without changing record-spec
   assert.match(css, /overflow-x: auto/);
 });
 
+test('page list keeps one control height, a visible scrollbar and a reachable Actions column', () => {
+  const styles = source('core/workspace/WorkspaceTheme/styles.css');
+  const css = source('core/workspace/WorkspaceTheme/adminTableControls.css');
+  const pages = source('core/builders/PageBuilder/pageBuilderView.tsx');
+  const imports = [...styles.matchAll(/@import\s+["']([^"']+)["']/g)].map(match => match[1]);
+  assert.equal(imports.at(-1), './adminTableControls.css', 'must load last so it wins the cascade');
+  assert.match(css, /\.page-manager-table-scroll\s*\{[^}]*max-height/);
+  assert.match(css, /thead th\s*\{[^}]*position:\s*sticky/);
+  assert.match(css, /:last-child\s*\{[^}]*position:\s*sticky;[^}]*right:\s*0/);
+  assert.match(css, /\.btn\s*\{[^}]*height:\s*var\(--md-row-control-height\)/);
+  assert.match(css, /\.page-manager-toggle\s*\{[^}]*min-width/);
+  assert.match(css, /\.page-status-badge\s*\{[^}]*min-width[^}]*height/);
+  assert.match(pages, /className="btn btn-small page-manager-toggle"/);
+});
+
 test('independent values have independent labelled table columns', () => {
   const pages = source('core/builders/PageBuilder/pageBuilderView.tsx');
   assert.match(pages, /<th>Page name<\/th><th>API Name<\/th>/);

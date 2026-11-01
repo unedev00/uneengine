@@ -1,0 +1,90 @@
+/* Admin list tables (Page Builder list first): one control height, a scroll box that
+ * keeps its horizontal scrollbar on screen, and an Actions column that stays reachable.
+ *
+ * Loaded LAST from styles.css. Earlier files set .btn / .btn-small min-height to
+ * 25, 30, 32, 40 and 44px in different places; these selectors out-rank all of them so
+ * every row button is the same size on every machine. Do not add per-file overrides.
+ */
+.lightning {
+  --md-row-control-height: 32px;
+  --md-actions-col-width: 268px;
+}
+
+/* Scroll box: bounded height so the horizontal scrollbar sits at the bottom of the
+   viewport instead of below a long list, and the header stays visible. */
+.lightning .page-manager-table-scroll {
+  max-height: max(320px, calc(100dvh - 300px));
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+}
+.lightning .page-manager-table-scroll:focus-visible {
+  outline: 2px solid var(--md-focus-ring, var(--md-primary));
+  outline-offset: -2px;
+}
+
+/* Sticky header row. */
+.lightning .page-manager-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: var(--md-surface-2, #f6f8fb);
+}
+
+/* Actions column pinned to the right edge of the scroll box. */
+.lightning .page-manager-table :is(th, td):last-child {
+  position: sticky;
+  right: 0;
+  min-width: var(--md-actions-col-width);
+  box-shadow: -1px 0 0 var(--md-border, #e0e5eb);
+}
+.lightning .page-manager-table thead th:last-child { z-index: 4; }
+.lightning .page-manager-table tbody td:last-child {
+  z-index: 2;
+  background: var(--md-surface, #fff);
+}
+.lightning .page-manager-table tbody tr:hover td:last-child {
+  background: color-mix(in srgb, var(--md-primary, #1d4ed8) 4%, var(--md-surface, #fff));
+}
+
+/* Row buttons: identical height, padding and alignment whether or not they hold an icon. */
+.lightning .page-manager-table td.page-manager-actions {
+  white-space: nowrap;
+  text-align: left;
+}
+.lightning .page-manager-table td.page-manager-actions .btn {
+  box-sizing: border-box;
+  height: var(--md-row-control-height);
+  min-height: var(--md-row-control-height);
+  padding: 0 12px;
+  margin: 0 8px 0 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  vertical-align: middle;
+  font-size: var(--md-fs-sm, 12px);
+  line-height: 1;
+}
+.lightning .page-manager-table td.page-manager-actions .btn:last-child { margin-right: 0; }
+.lightning .page-manager-table td.page-manager-actions .btn svg { flex: 0 0 auto; }
+/* Activate / Deactivate share one width so Delete never shifts between rows. */
+.lightning .page-manager-table td.page-manager-actions .page-manager-toggle { min-width: 96px; }
+
+/* Status badge: same size for Draft and Active. */
+.lightning .page-manager-table .page-status-badge {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 64px;
+  height: 24px;
+  padding: 0 10px;
+  line-height: 1;
+}
+
+/* API names: monospace without looking larger than the surrounding text. */
+.lightning .page-manager-table code {
+  font-size: .92em;
+}
