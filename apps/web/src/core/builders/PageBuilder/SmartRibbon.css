@@ -1,18 +1,8 @@
+/* Outer ribbon height/overflow/scrollbar geometry is owned by PageBuilderRibbonLayout.css. */
 /* Smart ribbon: scoped Office-style presentation for SQL-backed Data, Design and Layout.
    Keep every property slot visible; applicability is handled by SmartRibbon.tsx.
    Intentionally stronger than PageBuilderRibbonBlueprint.css's global 120px
    #page-builder-tab-content rule and the global numeric control rule. */
-.office-builder-ribbon #page-builder-tab-content.office-ribbon-content:has(>.smart-ribbon){
-  box-sizing:border-box!important;
-  height:146px!important;min-height:146px!important;max-height:146px!important;
-  /* The first section begins at the left edge; keep clearance for right scroll arrow. */
-  padding:4px 26px 4px 0!important;
-  display:flex!important;align-items:stretch!important;flex-wrap:nowrap!important;
-  overflow-x:auto!important;overflow-y:hidden!important;
-  scrollbar-width:none!important;
-  scroll-behavior:smooth;
-}
-.office-builder-ribbon #page-builder-tab-content.office-ribbon-content:has(>.smart-ribbon)::-webkit-scrollbar{display:none!important}
 .office-builder-ribbon #page-builder-tab-content>.smart-ribbon{
   display:flex;flex:0 0 auto;align-items:stretch;gap:0;
   width:max-content;min-width:100%;height:136px;
