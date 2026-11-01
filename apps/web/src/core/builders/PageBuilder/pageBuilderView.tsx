@@ -3438,10 +3438,11 @@ function PageBuilder({
             setSelectedId(''); setSelectionIds([]); setSelectedRegion(null); setRibbonTab('Add Block'); setPageSettingsOpen(false); setActivePanel(null);
           }} onDragOver={previewMode ? undefined : (event) => event.preventDefault()}
              onDrop={previewMode ? undefined : (event) => handleDrop(event)}>
-            {previewMode ? <div className="page-builder-live-runtime" aria-label="Published runtime preview of current draft">
+            {previewMode && page.pageType !== 'Record Page' ? <div className="page-builder-live-runtime" aria-label="Published runtime preview of current draft">
               <LightningAppRuntime
                 appId={builderAppApiName || apps[0]?.apiName || 'Records'}
                 pageApiName={page.apiName} previewPage={page}
+                inScreenPage={page.pageType === 'In-Screen Page'}
                 pageDefinitionCache={previewPageDefinitionCache.current}
                 objects={objects} apps={apps} pages={pages} reports={reports}
                 libraryComponents={libraryComponents} availableFlows={flows}
