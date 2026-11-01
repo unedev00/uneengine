@@ -586,7 +586,7 @@ test('PowerPoint-style canvas gestures target one component and keep resize grip
     'independent translation preserves author-defined component transforms');
   assert.ok(move.includes('start.element.style.left ='), 'release must not jump to the original position');
   assert.ok(builder.includes('className="canvas-move-grip"'), 'the selection toolbar needs a move icon');
-  assert.ok(builder.includes('onLostPointerCapture={!libraryPreview'),
+  assert.ok(builder.includes('onLostPointerCapture={!previewMode && !libraryPreview'),
     'a lost pointer must not leave movement stuck');
   assert.ok(builder.includes("page.layoutMode === 'free-canvas' || canvasMoveStart.current?.id"),
     'native child HTML drags must not interrupt pointer dragging');
