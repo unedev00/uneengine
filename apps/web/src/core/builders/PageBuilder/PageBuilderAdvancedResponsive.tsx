@@ -1,4 +1,4 @@
-import {responsiveNumberFields,responsiveOptionFields,responsiveColorFields} from '../../metadata/Definitions/metadataAppearanceSchema';
+import {responsiveNumberFields,responsiveOptionFields} from '../../metadata/Definitions/metadataAppearanceSchema';
 import {layoutSettings,updateLayoutSettings,type LayoutDevice,type LayoutSettingKey} from '../../pages/TemplatePageRuntime/pageComponentLayout';
 
 /** Metadata-schema-driven editor for the existing base/device layoutStyle engine. */
@@ -6,7 +6,12 @@ export default function PageBuilderAdvancedResponsive({properties,device,onChang
   properties:Record<string,unknown>;device:'Base'|LayoutDevice;
   onChange:(properties:Record<string,unknown>)=>void;
 }){
+  // Base appearance is already editable in Design / Layout; only show device overrides here.
   const effective=layoutSettings(properties,device==='Base'?'Desktop':device);
+  const deviceDimensions=responsiveNumberFields.filter(field=>
+    ['width','height','padding','margin','gap'].includes(field.key));
+  const deviceArrangement=responsiveOptionFields.filter(field=>
+    ['alignItems','justifyContent','overflowY'].includes(field.key));
   const own=device==='Base'?properties.layoutStyle
     :(properties.layoutResponsive&&typeof properties.layoutResponsive==='object'
       ?(properties.layoutResponsive as Record<string,unknown>)[device]:undefined);
@@ -17,11 +22,16 @@ export default function PageBuilderAdvancedResponsive({properties,device,onChang
     aria-label={'Reset '+key+' for '+device} title="Use inherited/default setting"
     disabled={!Object.prototype.hasOwnProperty.call(overrides,key)}
     onClick={()=>set(key,null)}>Reset</button>;
+  if(device==='Base')return <div className="page-builder-advanced-responsive" aria-label="Custom base layout guidance">
+    <p className="properties-help">Custom base dimensions and appearance are edited in Layout and Design.
+      Choose a Desktop, Tablet or Mobile layout to edit its device-specific overrides.</p>
+  </div>;
   return <div className="page-builder-advanced-responsive" aria-label={device+' responsive component layout'}>
-    <p className="properties-help">Edit the selected block for {device==='Base'?'the Custom layout base':device+'.'} 
-      Changes use the shared layout metadata engine and keep other device settings unchanged.</p>
+    <p className="properties-help">Only {device} layout overrides appear here.
+      Colours, borders, typography and base dimensions remain in Design / Layout.
+      Reset an override to inherit the shared value.</p>
     <div className="page-builder-advanced-responsive-grid">
-      {responsiveNumberFields.map(field=>{
+      {deviceDimensions.map(field=>{
         const value=effective[field.key];
         return <label key={field.key} className="form-label">{field.label}
           <span className="page-builder-advanced-responsive-field">
@@ -36,22 +46,13 @@ export default function PageBuilderAdvancedResponsive({properties,device,onChang
           </span>
         </label>;
       })}
-      {responsiveOptionFields.map(field=><label key={field.key} className="form-label">{field.label}
+      {deviceArrangement.map(field=><label key={field.key} className="form-label">{field.label}
         <span className="page-builder-advanced-responsive-field">
           <select className="form-control" value={String(effective[field.key]??'')}
             onChange={event=>set(field.key,event.target.value||null)}>
             <option value="">Use default</option>
             {field.options.map(value=><option key={value} value={value}>{value}</option>)}
           </select>{reset(field.key)}
-        </span>
-      </label>)}
-      {responsiveColorFields.map(field=><label key={field.key} className="form-label">{field.label}
-        <span className="page-builder-advanced-responsive-field">
-          <input className="form-control" type="color"
-            value={typeof effective[field.key]==='string'&&/^#[0-9a-f]{6}$/i.test(effective[field.key] as string)
-              ?String(effective[field.key]):'#ffffff'}
-            onChange={event=>set(field.key,event.target.value)}/>
-          {reset(field.key)}
         </span>
       </label>)}
       <label className="checkbox-row"><input type="checkbox"

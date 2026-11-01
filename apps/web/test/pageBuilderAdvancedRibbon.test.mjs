@@ -28,7 +28,11 @@ test('Activation and advanced property editors render inline without a popup',()
  assert.match(advanced,/Advanced properties/);
  assert.match(advanced,/page-builder-advanced-inline-host/);
  assert.match(advanced,/ref=\{onInspectorHost\}/);
- assert.match(page,/!\['assignments','properties','responsive'\]\.includes\(advancedEditor\)/);
+ assert.doesNotMatch(page,/modal page-builder-advanced-dialog/);
+ assert.match(advanced,/Component nesting/);
+ assert.match(advanced,/section==='recordPage'/);
+ assert.match(page,/className="page-builder-advanced-nesting"/);
+ assert.match(page,/advancedEditor==='nesting' && selected/);
  assert.match(page,/advancedEditor!=='assignments' && <>/);
  assert.match(page,/activationAssignments/);
  assert.match(css,/page-builder-advanced-inline-body/);
@@ -39,14 +43,34 @@ test('Distinct responsive overrides and flow-bound details stay accessible',()=>
  assert.match(page,/<PageBuilderAdvancedResponsive properties=\{selected.properties\} device=\{currentRibbonDevice\}/);
  assert.match(page,/advancedEditor==='properties' && selected && <MetadataComponentProperties/);
  assert.match(page,/mode="details"/);
- for(const symbol of ['responsiveNumberFields','responsiveOptionFields','responsiveColorFields',
+ for(const symbol of ['responsiveNumberFields','responsiveOptionFields',
   'layoutSettings','updateLayoutSettings'])assert.ok(responsive.includes(symbol),symbol);
  assert.match(responsive,/onChange\(updateLayoutSettings\(properties,device,key,value\)\)/);
+ assert.doesNotMatch(responsive,/responsiveColorFields\.map/);
+ assert.match(responsive,/deviceDimensions\.map/);
+ assert.match(responsive,/deviceArrangement\.map/);
+ assert.match(responsive,/if\(device==='Base'\)return/);
  assert.doesNotMatch(advanced,/fetch\(|request\(|localStorage|INSERT INTO/);
 });
 
 test('Preserves global Actions and record-page metadata editing',()=>{
  assert.match(page,/<PageBuilderActionRibbon/);
- assert.match(page,/advancedEditor==='recordPage'/);
+ assert.match(advanced,/section==='recordPage'/);
  assert.match(page,/reparentComponent\(page\.components,selected\.id,parent\)/);
+});
+
+
+test('all five Advanced sections stay reachable inline, not through a separate modal',()=>{
+ for(const section of ['assignments','properties','responsive','nesting','recordPage'])
+  assert.match(advanced,new RegExp("section==='"+section+"'"));
+ assert.match(advanced,/section==='recordPage'\?'Record page settings'/);
+ assert.doesNotMatch(page,/modal page-builder-advanced-dialog/);
+ assert.match(page,/ribbonTab==='Advanced' && <PageBuilderAdvancedSections/);
+ assert.match(page,/reparentComponent\(page\.components,selected\.id,parent\)/);
+});
+
+test('Arrange nesting opens the Advanced tab rather than a removed modal',()=>{
+ assert.match(page,/onNesting=\{\(\)=>openAdvanced\('nesting'\)\}/);
+ assert.match(page,/setRibbonTab\('Advanced'\);\s*setAdvancedEditor\(feature\)/);
+ assert.doesNotMatch(page,/modal page-builder-advanced-dialog/);
 });
