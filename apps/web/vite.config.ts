@@ -33,7 +33,14 @@ const frontendBuild = {
 };
 
 export default defineConfig({
-  plugins: [formulaEngineSourcePlugin, react()],
+  plugins: [formulaEngineSourcePlugin, react(), {
+    name: 'frontend-release-manifest',
+    apply: 'build',
+    generateBundle() {
+      this.emitFile({type:'asset',fileName:'frontend-release.json',
+        source:JSON.stringify(frontendBuild)});
+    }
+  }],
   define: {
     __METADRIVE_WEB_RELEASE__: JSON.stringify(frontendBuild)
   },
