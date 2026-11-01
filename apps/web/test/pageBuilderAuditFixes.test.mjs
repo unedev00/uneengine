@@ -27,3 +27,22 @@ test('Smart Button confines overlarge labels and retains full accessible tooltip
  assert.match(runtime,/title=\{label\|\|"Button"\}/);
  assert.match(runtime,/fontSize:number\(p\.textSize,16\)/);
 });
+
+test('Floating canvas editor commands open the ribbon tabs that actually render those properties',()=>{
+ const view=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ assert.match(view,/onClick=\{\(\) => selectRibbonTab\('Component Properties'\)\} title="Edit block"/);
+ assert.match(view,/onClick=\{\(\) => selectRibbonTab\('Component Layout'\)\} title="Position and size"/);
+ assert.match(view,/onClick=\{\(\) => selectRibbonTab\('Component Layout'\)\}>Align and position/);
+ assert.match(view,/onClick=\{\(\) => selectRibbonTab\('Component Data'\)\}>Data, links and actions/);
+ assert.match(view,/style=\{ribbonTab !== 'Component Layout' && ribbonTab !== 'Advanced' && !ribbonTab\.startsWith\('Component '\)/);
+});
+
+test('Smart Insert differentiates button/navigation, container/icon, and input/toggle',()=>{
+ const view=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ assert.match(view,/case 'Custom:smart_navigation':return <Menu/);
+ assert.match(view,/case 'Custom:smart_container':return <Layers3/);
+ assert.match(view,/case 'Custom:smart_icon':return <Star/);
+ assert.match(view,/case 'Custom:smart_toggle':return <ToggleRight/);
+ assert.ok(view.includes('return <MousePointer2 size={15} />'));
+ assert.ok(view.includes('return <FormInput size={15} />'));
+});
