@@ -420,6 +420,9 @@ function PageBuilder({
   }, [activePanel]);
   const [pageListObject, setPageListObject] = useState('');
   const [pageListSearch, setPageListSearch] = useState('');
+  const [pageListAppTab, setPageListAppTab] = useState('all');
+  const [pageListTypeTab, setPageListTypeTab] = useState('all');
+  const [pageListDeviceTab, setPageListDeviceTab] = useState('all');
   const paletteResizeStart = useRef<{ pointerId: number; pointerX: number; width: number } | null>(null);
   const [customPropertiesDraft, setCustomPropertiesDraft] = useState('');
   const [customPropertiesError, setCustomPropertiesError] = useState('');
@@ -1983,9 +1986,26 @@ function PageBuilder({
       setPendingArchivePageApiName('');
     }
   };
+  // Rebuild the app tabs from tenant app metadata on every render. No app names are hardcoded.
+  const pageAppIds = (item: LightningPageMetadata): string[] => apps.filter(app =>
+    (app.navigationPageApiNames ?? []).includes(item.apiName)
+    || (app.navigationOrder ?? []).some(entry => entry.type === 'App Page' && entry.apiName === item.apiName)
+    || (item.activationAssignments ?? []).some(assignment => assignment.appId === app.apiName)
+    || item.ownerNamespace === app.apiName
+  ).map(app => app.apiName);
+  const pageAppTabs = [...apps].sort((a,b) => a.label.localeCompare(b.label));
+  const pageTabType = (item: LightningPageMetadata) => item.pageType;
   const visiblePages = pages.filter(item => (recordPageContext
     ? item.pageType === 'Record Page' && item.targetObject === recordPageContext
-    : item.pageType !== 'Record Page') && (!pageListObject || item.targetObject === pageListObject) && `${item.label} ${item.apiName}`.toLowerCase().includes(pageListSearch.trim().toLowerCase())).sort((a,b) => (Date.parse(b.updatedAt ?? '') || 0) - (Date.parse(a.updatedAt ?? '') || 0));
+    : item.pageType !== 'Record Page') && (pageListAppTab === 'all' || (pageListAppTab === 'other'
+      ? pageAppIds(item).length === 0 : pageAppIds(item).includes(pageListAppTab)))
+    && (pageListTypeTab === 'all' || pageTabType(item) === pageListTypeTab)
+    && (pageListDeviceTab === 'all' || (pageListDeviceTab === 'Mobile'
+      ? item.layoutVariant === 'Mobile' || item.devices.includes('Phone')
+      : pageListDeviceTab === 'Desktop'
+        ? item.layoutVariant === 'Desktop' || item.devices.includes('Desktop')
+        : item.layoutVariant === pageListDeviceTab))
+    && (!pageListObject || item.targetObject === pageListObject) && `${item.label} ${item.apiName}`.toLowerCase().includes(pageListSearch.trim().toLowerCase())).sort((a,b) => (Date.parse(b.updatedAt ?? '') || 0) - (Date.parse(a.updatedAt ?? '') || 0));
   const openCreatePage = () => { setNewPageTargetObject(pageListObject || page.targetObject || objects[0]?.apiName || ''); setNewPageLayoutMode('free-canvas'); setNewPageType(recordPageContext ? 'Record Page' : 'Home Page'); setNewPageDeviceChoice('Desktop'); setNewPageDevices(['Desktop']); setNewPageCanvasWidth(1440); setNewPageCanvasHeight(900); setCreatePageOpen(true); };
   const createPage = async () => {
     if (saving) return;
@@ -2956,6 +2976,23 @@ function PageBuilder({
           <div className="page-manager-header-actions">
             <button className="btn btn-brand" type="button" onClick={openCreatePage}><Plus size={16}/> New Page</button>
           </div></header>
+        {!recordPageContext && <>
+          <nav className="page-manager-app-tabs" aria-label="Pages by application" style={{display:'flex',gap:6,flexWrap:'wrap',padding:'12px 0'}}>
+            {[{apiName:'all',label:'All Apps'},...pageAppTabs,{apiName:'other',label:'Other'}].map(tab =>
+              <button type="button" key={tab.apiName} className={'btn btn-small'+(pageListAppTab===tab.apiName?' btn-brand':'')}
+                aria-pressed={pageListAppTab===tab.apiName} onClick={()=>setPageListAppTab(tab.apiName)}>{tab.label}</button>)}
+          </nav>
+          <nav aria-label="Pages by type" style={{display:'flex',gap:6,flexWrap:'wrap',padding:'4px 0 10px'}}>
+            {[['all','All Pages'],['Home Page','Home'],['App Page','App'],['Record Page','Record']].map(([value,label])=>
+              <button type="button" key={value} className={'btn btn-small'+(pageListTypeTab===value?' btn-brand':'')}
+                aria-pressed={pageListTypeTab===value} onClick={()=>setPageListTypeTab(value)}>{label}</button>)}
+            <label className="form-label" style={{marginLeft:'auto'}}>Layout
+              <select className="form-control" value={pageListDeviceTab} onChange={event=>setPageListDeviceTab(event.target.value)}>
+                <option value="all">All devices</option>{['Desktop','Tablet','Mobile','Custom'].map(device=><option key={device} value={device}>{device}</option>)}
+              </select>
+            </label>
+          </nav>
+        </>}
         <div className="page-manager-filters">
           <label className="form-label">Related Record / Object<select className="form-control" value={pageListObject} aria-label="Related Record or Object" onChange={event=>setPageListObject(event.target.value)}><option value="">All objects</option>{objects.map(item=><option key={item.apiName} value={item.apiName}>{item.label}</option>)}</select></label>
           <label className="form-label">Search pages<input className="form-control" type="search" value={pageListSearch} onChange={event=>setPageListSearch(event.target.value)} placeholder="Search page name…"/></label>
