@@ -19,4 +19,7 @@ source /etc/metadrive/production.env
 set +a
 [[ -n "${DATABASE_URL:-}" ]] || { echo "Missing production SQL connection"; exit 1; }
 cd "$SOURCE"
-# The runner checkout is private to the runner user. Run this one-shot scoped\n# database metadata operation under the already-authorised sudo shell; the\n# PageRuntime checks the single target page and verifies persisted geometry.\nnode apps/server/scripts/apply-codextill-layout-once.mjs
+# The runner checkout is private to the runner user. Run this one-shot scoped
+# database metadata operation under the already-authorised sudo shell; the
+# PageRuntime checks the single target page and verifies persisted geometry.
+node apps/server/scripts/apply-codextill-layout-once.mjs
