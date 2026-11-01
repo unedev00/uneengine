@@ -425,7 +425,8 @@ test('Smart Cart ribbon is SQL-driven and visual preview defers cart data and ac
  'rowHeight','summaryTextSize','summary2TextWeight','summaryWidth'])assert.ok(renderer.includes('p.'+k),k);
  assert.doesNotMatch(renderer,/fetch\(|createRecord|checkoutAction/);
  assert.match(renderer,/smart-cart-qty-controls/);
- assert.match(renderer,/fire\?\.\("qtyIcon"/);
+ assert.match(renderer,/actions\.qtyIncrease\?'qtyIncrease':'qtyIcon'/);
+ assert.match(renderer,/actions\.qtyDecrease\?'qtyDecrease':'qtyIcon'/);
  assert.match(read('../src/component-libraries/smart/shared/SmartRuntime.jsx'),/name==="smart_cart"/);
  assert.match(read('../src/core/builders/PageBuilder/SmartRibbon.tsx'),/summary2TextWeight/);
  const catalog=await loadComponentCatalog();

@@ -263,38 +263,19 @@
 .office-builder-ribbon .page-unified-actions-ribbon .page-action-property-picker>select:disabled {
   opacity:.5!important;background:#edf1f6!important;cursor:not-allowed!important;
 }
-/* Two true editable formula bars for the selected numeric action. Keep the
-   114px Office ribbon unchanged; users can edit both independently, no modal. */
-.office-builder-ribbon .page-unified-actions-ribbon>.page-action-formula-group {
-  box-sizing:border-box!important;flex:0 0 420px!important;
-  width:420px!important;min-width:420px!important;max-width:420px!important;
+/* Stable two-by-two custom button slots inside their permanent section. */
+.office-builder-ribbon .page-unified-actions-ribbon>.page-action-property-group:has(.page-action-property-picker:nth-child(4)){
+  flex:0 0 522px!important;width:522px!important;min-width:522px!important;
 }
-.office-builder-ribbon .page-action-formula-rows {
-  display:flex;flex-direction:column;gap:4px;
+.office-builder-ribbon .page-action-property-group:has(.page-action-property-picker:nth-child(4)) .page-action-property-rows{
+  display:grid!important;grid-template-columns:repeat(2,245px);grid-template-rows:repeat(2,26px);
+  grid-auto-flow:column;gap:4px 7px!important;align-items:start;
 }
-.office-builder-ribbon .page-action-formula-rows>label {
-  display:flex;align-items:center;gap:7px;height:26px;min-height:26px;
-  margin:0;white-space:nowrap;
+.office-builder-ribbon .page-action-property-group:has(.page-action-property-picker:nth-child(4)) .page-action-property-picker>span{
+  flex-basis:94px!important;min-width:94px!important;
 }
-.office-builder-ribbon .page-action-formula-rows>label>span {
-  display:inline-flex;align-items:center;justify-content:center;
-  width:40px;min-width:40px;height:26px;
-  font:italic 600 15px Georgia,serif;color:#235a99;
-  border:1px solid #b7c9df;border-radius:4px;background:#f4f8ff;
-}
-.office-builder-ribbon .page-action-formula-rows .smart-formula {
-  box-sizing:border-box;flex:1 1 auto;width:340px;min-width:0;height:26px;
-  border:1px solid #b7c9df;border-radius:4px;background:white;
-}
-.office-builder-ribbon .page-unified-actions-ribbon .page-action-formula-rows .smart-formula input,
-.office-builder-ribbon .page-action-formula-rows .smart-formula-highlight {
-  box-sizing:border-box;width:100%!important;max-width:none!important;
-  height:24px!important;min-height:24px!important;
-  padding:2px 8px;font:12px/20px Consolas,monospace;
-}
-.office-builder-ribbon .page-unified-actions-ribbon>.page-action-formula-group>small {
-  display:block;max-width:390px;overflow:hidden;text-overflow:ellipsis;
-  font-size:10px;line-height:16px;
+.office-builder-ribbon .page-action-property-group:has(.page-action-property-picker:nth-child(4)) .page-action-property-picker>select{
+  flex:0 0 139px!important;width:139px!important;min-width:139px!important;max-width:139px!important;
 }
 /* Detailed mappings and destinations expand below the ribbon in document flow.
    They are not another popup and are confined to the Actions tab. */
@@ -330,8 +311,7 @@
   width:100%;max-width:100%;min-width:0;
 }
 
-/* Fixed Actions design surface: one mock formula row + five named control
-   groups. Sections never pop in/out as users select different components. */
+/* One permanent editable formula bar and six fixed sections. */
 .office-builder-ribbon .page-action-ribbon-workspace .page-action-formula-bar{
   box-sizing:border-box;display:flex;align-items:center;gap:5px;
   flex:0 0 36px;height:36px;min-height:36px;
@@ -344,16 +324,17 @@
   height:27px;flex:0 0 34px;border:1px solid #ccd9e8;border-radius:4px;
   background:#fff;color:#304b71;font:italic 14px Georgia,serif;
 }
-.office-builder-ribbon .page-action-formula-bar .page-action-formula-menu{
-  cursor:not-allowed;opacity:.7;
+.office-builder-ribbon .page-action-formula-bar>.smart-formula{
+  box-sizing:border-box;display:block;flex:1 1 auto;width:0;min-width:240px;height:27px;
+  border:1px solid #ccd9e8;border-radius:4px;background:#fff;
 }
-.office-builder-ribbon .page-action-formula-bar input[readonly]{
-  box-sizing:border-box;display:block;flex:1 1 auto;width:0;min-width:240px;
-  height:27px;border:1px solid #ccd9e8;border-radius:4px;
-  padding:0 10px;background:#fff;color:#50657d;
-  font:11px "Segoe UI",Arial,sans-serif;cursor:default;
+.office-builder-ribbon .page-action-formula-bar .smart-formula input{
+  box-sizing:border-box;width:100%;max-width:none;height:25px;
+  padding:0 10px;color:#304b71;font:12px Consolas,monospace;
 }
-.office-builder-ribbon .page-action-formula-bar input[readonly]::placeholder{color:#8b9aaa}
+.office-builder-ribbon .page-action-formula-bar .smart-formula input:disabled{
+  background:#f0f3f7;color:#8b9aaa;cursor:not-allowed;
+}
 .office-builder-ribbon .page-action-ribbon-workspace>.page-unified-actions-ribbon{
   box-sizing:border-box!important;height:114px!important;min-height:114px!important;
   max-height:114px!important;flex:0 0 114px!important;
@@ -385,7 +366,8 @@
 }
 /* Grid columns, not clipping: complex number adjustments expose every saved
    field with horizontal scroll rather than hiding rows 4 onward. */
-.office-builder-ribbon .page-unified-actions-ribbon>.page-action-target{
+.office-builder-ribbon .page-unified-actions-ribbon>.page-action-target,
+.office-builder-ribbon .page-unified-actions-ribbon>.page-action-parameters{
   box-sizing:border-box!important;flex:0 0 auto!important;
   display:grid!important;grid-template-rows:repeat(3,26px)!important;
   grid-auto-flow:column!important;grid-auto-columns:320px!important;
@@ -394,7 +376,8 @@
   width:max-content!important;min-width:320px!important;max-width:none!important;
   padding:5px 12px 23px 9px!important;
 }
-.office-builder-ribbon .page-unified-actions-ribbon>.page-action-target>label{
+.office-builder-ribbon .page-unified-actions-ribbon>.page-action-target>label,
+.office-builder-ribbon .page-unified-actions-ribbon>.page-action-parameters>label{
   box-sizing:border-box!important;display:flex!important;
   align-items:center!important;justify-content:space-between!important;
   width:310px!important;min-width:310px!important;max-width:310px!important;
@@ -407,6 +390,14 @@
 .office-builder-ribbon .page-unified-actions-ribbon>.page-action-target>.page-action-details-toggle{
   box-sizing:border-box!important;align-self:start!important;margin:0!important;
 }
-.office-builder-ribbon .page-unified-actions-ribbon>.page-action-target>.office-ribbon-group-heading{
+.office-builder-ribbon .page-unified-actions-ribbon>.page-action-target>.office-ribbon-group-heading,
+.office-builder-ribbon .page-unified-actions-ribbon>.page-action-parameters>.office-ribbon-group-heading{
   grid-row:auto!important;position:absolute!important;bottom:3px!important;
+}
+
+.office-builder-ribbon .page-unified-actions-ribbon .page-action-checkbox{
+  justify-content:flex-start!important;gap:8px!important;
+}
+.office-builder-ribbon .page-unified-actions-ribbon :is(.page-action-target,.page-action-parameters) :is(input,select):disabled{
+  opacity:.55;background:#edf1f6;cursor:not-allowed;
 }

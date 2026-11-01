@@ -15,7 +15,9 @@ export default function SmartCart({p,records,Picture,expression,fieldAllowed,fir
  const demo=p.builderPreview===true&&!records.length;
  const actions=p.actionFlows&&typeof p.actionFlows==="object"&&!Array.isArray(p.actionFlows)?p.actionFlows:{};
  const canClick=Boolean(actions.click)&&!p.previewOnly&&!p.builderPreview;
- const canChangeQty=Boolean(actions.qtyIcon)&&!p.previewOnly&&!p.builderPreview;
+ // Per-button metadata actions; legacy qtyIcon is a compatibility fallback.
+ const canIncrease=Boolean(actions.qtyIncrease||actions.qtyIcon)&&!p.previewOnly&&!p.builderPreview;
+ const canDecrease=Boolean(actions.qtyDecrease||actions.qtyIcon)&&!p.previewOnly&&!p.builderPreview;
  const rows=demo?Array.from({length:3},(_,i)=>({id:"preview-"+i,Quantity:1,__preview:true})):records.slice(0,200);
  // Select the most recently appended item by default. Preserve a manually
  // selected row until it is removed, and automatically follow newly added rows.
@@ -114,13 +116,13 @@ export default function SmartCart({p,records,Picture,expression,fieldAllowed,fir
   return <div className="smart-cart-qty-controls" aria-label={"Quantity controls for "+String(name||"Product")}>
    <button type="button" className="smart-cart-qty-button"
     aria-label={"Decrease quantity for "+String(name||"Product")}
-    disabled={demo||!canChangeQty||payload.recordId===null||quantity===null||quantity<=0}
-    onClick={()=>fire?.("qtyIcon",{...payload,delta:-1,operation:"decrement",fieldApiName:fieldName,quantity})}>−</button>
+    disabled={demo||!canDecrease||payload.recordId===null||quantity===null||quantity<=0}
+    onClick={()=>fire?.(actions.qtyDecrease?'qtyDecrease':'qtyIcon',{...payload,delta:-1,operation:"decrement",fieldApiName:fieldName,quantity})}>−</button>
    <span className="smart-cart-qty-value" aria-label={quantity===null?"Quantity not bound":"Quantity "+quantity}>{display(computed)}</span>
    <button type="button" className="smart-cart-qty-button"
     aria-label={"Increase quantity for "+String(name||"Product")}
-    disabled={demo||!canChangeQty||payload.recordId===null||quantity===null}
-    onClick={()=>fire?.("qtyIcon",{...payload,delta:1,operation:"increment",fieldApiName:fieldName,quantity})}>+</button>
+    disabled={demo||!canIncrease||payload.recordId===null||quantity===null}
+    onClick={()=>fire?.(actions.qtyIncrease?'qtyIncrease':'qtyIcon',{...payload,delta:1,operation:"increment",fieldApiName:fieldName,quantity})}>+</button>
   </div>;
  };
  return <section className="smart-cart-root" aria-label="Smart Cart" style={{

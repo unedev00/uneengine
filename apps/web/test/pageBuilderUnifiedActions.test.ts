@@ -19,7 +19,7 @@ const render=(actions:Record<string,unknown>,selectedEvent:string,api='')=>
 
 test('one global action menu groups triggers, live Flows, navigation and page actions',()=>{
   const html=render({},'');
-  for(const group of ['Triggers','Flows','Navigation','Page actions'])
+  for(const group of ['Formula','Triggers','Flows','Navigation','Page actions'])
     assert.match(html,new RegExp('label="'+group+'"'));
   assert.match(html,/aria-label="All component actions"/);
   assert.match(html,/On Click/);
@@ -37,6 +37,8 @@ test('saved metadata-ID Flow is displayed correctly on the Actions ribbon',()=>{
 });
 test('global action definitions preserve smart component applicability',()=>{
   assert.equal(supportsSmartActionEvent('smart_cart','qtyIcon'),true);
+  assert.equal(supportsSmartActionEvent('smart_cart','qtyIncrease'),true);
+  assert.equal(supportsSmartActionEvent('smart_cart','qtyDecrease'),true);
   assert.equal(supportsSmartActionEvent('smart_button','qtyIcon'),false);
   assert.equal(supportsSmartActionEvent('smart_button','click'),true);
   assert.equal(supportsSmartActionEvent('smart_button','change'),false);
@@ -59,9 +61,9 @@ test('Page Builder shows inline configuration but no Advanced Actions modal/butt
 
 test('restores three Event and three Component Custom selectors without removing global catalog',()=>{
   const html=render({click:{actionType:'Flow',flowApiName:'metadata:flow-id'}},'click','smart_cart');
-  for(const label of ['On Click','On Change','On Session Start','Qty Icon',
+  for(const label of ['On Click','On Change','On Session Start','+ Icon','− Icon',
     'Custom Button 1','Custom Button 2'])
-    assert.match(html,new RegExp('aria-label="'+label+' action"'));
+    assert.ok(html.includes('aria-label="'+label+' action"'),label+' slot must be permanent');
   assert.match(html,/aria-label="Event"/);
   assert.match(html,/aria-label="Component Custom"/);
   assert.match(html,/aria-label="All component actions"/);
@@ -71,13 +73,15 @@ test('restores three Event and three Component Custom selectors without removing
   assert.match(html,/optgroup label="Page actions"/);
   assert.match(html,/aria-label="On Click action"[^>]*>/);
   assert.match(html,/value="flow:Send_Message" selected=""/);
-  assert.doesNotMatch(html,/aria-label="Qty Icon action" disabled/);
+  assert.ok(!html.includes('aria-label="+ Icon action" disabled'));
+  assert.ok(!html.includes('aria-label="− Icon action" disabled'));
 });
 test('inapplicable action slots stay visible but disabled, without losing event mappings',()=>{
   const html=render({},'','smart_button');
   assert.match(html,/aria-label="On Click action"/);
   assert.match(html,/aria-label="On Change action" disabled/);
-  assert.match(html,/aria-label="Qty Icon action" disabled/);
+  assert.ok(html.includes('aria-label="+ Icon action" disabled'));
+  assert.ok(html.includes('aria-label="− Icon action" disabled'));
   assert.match(html,/aria-label="Custom Button 1 action" disabled/);
   assert.match(html,/aria-label="Custom Button 2 action" disabled/);
   const view=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
@@ -85,4 +89,16 @@ test('inapplicable action slots stay visible but disabled, without losing event 
   const css=read('../src/core/builders/PageBuilder/PageBuilderEightTabRibbon.css');
   assert.match(css,/page-action-property-picker>select/);
   assert.match(css,/page-builder-inline-actions/);
+});
+
+test('Formula is the first action kind in custom slots and shared catalog',()=>{
+ const html=render({},'','smart_cart');
+ const start=html.indexOf('aria-label="+ Icon action"');
+ const select=html.slice(start,html.indexOf('</select>',start));
+ assert.ok(select.indexOf('label="Formula"')>=0);
+ assert.ok(select.indexOf('label="Formula"')<select.indexOf('label="Flows"'));
+ assert.match(select,/<option value="type:Formula">Formula<\/option>/);
+ const code=read('../src/core/builders/PageBuilder/PageBuilderActionRibbon.tsx');
+ assert.match(code,/actionType==='Formula'/);
+ assert.match(code,/actions\.qtyIcon/,'old qtyIcon metadata is preserved and reusable');
 });

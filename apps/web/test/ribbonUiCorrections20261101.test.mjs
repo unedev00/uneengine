@@ -88,17 +88,20 @@ test('spacing and Actions helper removal preserve real configuration',()=>{
   assert.ok(action.includes(text),'missing Action control: '+text);
 });
 
-test('shared Actions tab exposes actual editable + and minus formula bars',()=>{
- const action=readFileSync(new URL('../src/core/builders/PageBuilder/PageBuilderActionRibbon.tsx',import.meta.url),'utf8');
- const css=readFileSync(new URL('../src/core/builders/PageBuilder/PageBuilderEightTabRibbon.css',import.meta.url),'utf8');
- const engine=readFileSync(new URL('../src/core/pages/PageRuntime/adjustNumberRecord.ts',import.meta.url),'utf8');
- assert.match(action,/Editable quantity action formulas/);
- assert.match(action,/label="Increase quantity formula"/);
- assert.match(action,/label="Decrease quantity formula"/);
- assert.match(action,/onChange=\{value=>patch\(\{incrementFormula:value\}\)\}/);
- assert.match(action,/onChange=\{value=>patch\(\{decrementFormula:value\}\)\}/);
- assert.match(css,/page-action-formula-rows/);
- assert.match(engine,/evaluateFieldExpressionDetailed/);
- assert.match(engine,/config\.incrementFormula/);
- assert.match(engine,/config\.decrementFormula/);
+test('fixed Actions ribbon reuses one functional formula bar, with no conditional quantity section',()=>{
+ const action=read('../src/core/builders/PageBuilder/PageBuilderActionRibbon.tsx');
+ const visual=read('../src/core/builders/PageBuilder/PageBuilderEightTabRibbon.css');
+ const runtime=read('../src/core/pages/PageRuntime/pageRuntimeViews.tsx');
+ assert.match(action,/aria-label="Actions formula bar"/);
+ assert.match(action,/label="Selected action formula"/);
+ assert.match(action,/disabled=\{!supportsFormula\}/);
+ assert.match(action,/onChange=\{value=>patch\(\{formula:value\}\)\}/);
+ assert.doesNotMatch(action,/page-action-formula-group|Editable quantity action formulas/);
+ for(const label of ['+ Icon','− Icon','Action parameters','Flow for selected action',
+   'Number field to adjust','Minimum number after adjustment','Page state key'])
+  assert.ok(action.includes(label),'missing fixed control '+label);
+ assert.match(visual,/page-action-parameters/);
+ assert.match(visual,/page-action-property-group:has/);
+ assert.match(runtime,/binding.actionType === 'Formula'/);
+ assert.match(runtime,/adjustNumberRecord/);
 });
