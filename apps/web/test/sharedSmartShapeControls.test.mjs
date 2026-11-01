@@ -44,6 +44,8 @@ test('Button preserves empty labels and renders selected icons using the shared 
  const filled=await renderSmart('smart_button',{label:'Save',shapeId:'shape:oval'});
  assert.match(filled,/Save/);
  assert.match(filled,/border-radius:50%/);
+ const right=await renderSmart('smart_button',{label:'Save',labelAlignment:'right'});
+ assert.match(right,/justify-content:flex-end/);
  const fancy=await renderSmart('smart_button',{label:'',shapeId:'shape:triangle'});
  assert.match(fancy,/mask-image:url/);
 });
