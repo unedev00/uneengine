@@ -2,7 +2,7 @@ const idPattern=/^asset:([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]
 const types=new Set(["image/png","image/jpeg","image/webp","image/gif"]);
 /** Tenant image bytes belong to this component instance, never a global cross-tenant cache.
  *  A new inline loadAsset callback on a parent render must NOT clear a stable picture. */
-export default function OneTenantImage({src,alt="",loadAsset,...props}) {
+export function useTenantImageSource(src,loadAsset) {
   const [loaded,setLoaded]=React.useState({src:"",url:""});
   const loader=React.useRef(loadAsset);
   loader.current=loadAsset;
@@ -22,6 +22,10 @@ export default function OneTenantImage({src,alt="",loadAsset,...props}) {
   const external=typeof src==="string"&&/^https:\/\//i.test(src);
   // Never flash a previous asset while a different image is being requested.
   const source=external?src:loaded.src===src?loaded.url:"";
+  return source;
+}
+export default function OneTenantImage({src,alt="",loadAsset,...props}){
+  const source=useTenantImageSource(src,loadAsset);
   return source?<img {...props} src={source} alt={alt}/>:
     <span className="one-empty" role="status">Image unavailable</span>;
 }
