@@ -1,4 +1,7 @@
 import SmartCart from "../../smart_cart/SmartCart.jsx";
+import icons from "../../smart_icon/iconCatalog.json";
+import {SmartShapeGlyph} from "../../smart_icon/SmartShapes";
+import {smartShapeAppearance,isSmartLineShape} from "./SmartShapeAppearance.js";
 import {evaluateFieldExpression} from "../../shared/FieldExpression.js";
 import {useTenantImageSource} from "../../shared/TenantImage.jsx";
 const number=(v,f,min=0,max=2000)=>Number.isFinite(Number(v))?Math.max(min,Math.min(max,Number(v))):f;
@@ -160,7 +163,8 @@ function SmartLookup({p,style,fire}){
    placeholder={text(p.placeholder||p.label||"Search records…")}
    style={{textAlign:p.labelAlignment||"left",fontSize:number(p.textSize,16),color:p.labelColor||undefined,
     boxShadow:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none",
-    background:p.backgroundColor||"#fff",borderColor:p.borderColor||undefined}}
+    background:p.backgroundColor||"#fff",borderColor:p.borderColor||undefined,
+    ...smartShapeAppearance(p.shapeId,number(p.radius,12))}}
    value={query} onFocus={()=>setOpened(true)}
    onChange={event=>{setQuery(event.target.value);setOpened(true);fire("change",event.target.value)}}/>
   {opened&&query&&matches.length>0&&<div id="smart-lookup-suggestions" className="smart-lookup-menu" role="listbox" style={{textAlign:p.labelAlignment||"left",fontSize:number(p.textSize,16)}}>
@@ -220,19 +224,35 @@ function SmartToggle({p,fire}){
    aria-busy={saving} checked={checked} disabled={disabled} onChange={change}/>
   <span className="smart-switch-track" style={{background:checked?(p.backgroundColor||"#34c759"):"#e5e5ea",
    border:p.borderColor?"1px solid "+p.borderColor:undefined,
+   ...smartShapeAppearance(p.shapeId,number(p.radius,999)),
    boxShadow:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none"}}>
    <span className="smart-switch-thumb"/></span></label>;
 }
 export default function SmartRuntime(p){
  const name=p.kind||"smart_text",record=recordOf(p),label=expression(p.label||"",record);
  const style={fontSize:number(p.textSize,16),color:p.labelColor||undefined,textAlign:p.labelAlignment||"left",borderRadius:number(p.radius,12)};
+ const buttonIcon=name==="smart_button"?icons.find(icon=>icon.id===p.shapeId):null;
  const shadowStyle={boxShadow:p.calendarShadowColor?"0 4px 10px "+p.calendarShadowColor:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none",borderRadius:number(p.radius,12)};
  const fire=(event,value)=>{if(p.previewOnly||p.builderPreview)return;
   if(typeof p.onAction==="function")void Promise.resolve(p.onAction({event,value})).catch(()=>{});
  };
  let content;
  if(name==="smart_button")content=<button type="button" className="smart-button"
-   title={label||"Button"} onClick={()=>fire("click",record)} style={{...style,...shadowStyle,background:p.backgroundColor||"#2267bc",color:p.labelColor||"#fff",borderColor:p.borderColor}}>{label||"Button"}</button>;
+   title={label||"Button"} aria-label={label||buttonIcon?.label||"Button"}
+   onClick={()=>fire("click",record)}
+   style={{...style,...shadowStyle,...smartShapeAppearance(p.shapeId,number(p.radius,12)),
+    background:p.backgroundColor||"#2267bc",color:p.labelColor||"#fff",borderColor:p.borderColor}}>
+   {buttonIcon&&<span className="smart-button-glyph" aria-hidden="true" style={{
+     backgroundColor:p.iconFillColor||p.labelColor||"#fff",
+     WebkitMaskImage:'url(/smart-icons/'+buttonIcon.id+'.svg)',
+     maskImage:'url(/smart-icons/'+buttonIcon.id+'.svg)'
+   }}/>}
+   {isSmartLineShape(p.shapeId)&&!label&&<span className="smart-button-shape" aria-hidden="true"
+     style={{color:p.iconFillColor||p.labelColor||"#fff"}}>
+     <SmartShapeGlyph id={p.shapeId}/>
+   </span>}
+   {label&&<span className="smart-button-label">{label}</span>}
+ </button>;
  else if(name==="smart_toggle")content=<SmartToggle p={p} fire={fire}/>;
  else if(name==="smart_text")content=<input className="smart-input-box" type="text"
   aria-label={label||text(p.placeholder||"Input")}
@@ -240,7 +260,7 @@ export default function SmartRuntime(p){
     &&!(p.properties&&Object.prototype.hasOwnProperty.call(p.properties,"label"))
     ?"Text Here":label||text(p.placeholder||"")}
   defaultValue={expression(p.textSource??p.defaultValue??p.value??"",record)}
-  style={{...style,...shadowStyle,width:"100%",height:"100%",minWidth:0,minHeight:0,
+  style={{...style,...shadowStyle,...smartShapeAppearance(p.shapeId,number(p.radius,12)),width:"100%",height:"100%",minWidth:0,minHeight:0,
     fontSize:number(p.textSize,16),color:p.defaultValueColor||p.labelColor||undefined,
     borderColor:p.borderColor||undefined,background:p.backgroundColor||"#fff",
     textAlign:p.labelAlignment||"left","--smart-placeholder-color":p.labelColor||"#64748b"}}
@@ -326,7 +346,7 @@ export default function SmartRuntime(p){
  }else content=<div className="smart-container" style={{
     background:p.imageBackgroundColor??p.backgroundColor??"transparent",
     border:p.borderColor?"1px solid "+p.borderColor:0,
-    borderRadius:number(p.radius,12),...shadowStyle
+    borderRadius:number(p.radius,12),...shadowStyle,...smartShapeAppearance(p.shapeId,number(p.radius,12))
  }}>{p.children||(p.builderPreview?<span className="smart-editor-container-placeholder">Drop components here</span>:null)}</div>;
  // Geometry-only technical host; the native Smart surface owns all visible styling.
  return <div className={"smart-runtime "+name} style={{
