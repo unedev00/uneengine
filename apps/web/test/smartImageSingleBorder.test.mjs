@@ -126,3 +126,16 @@ test('Card Grid handles every image placement, zero-height image/header and blan
  assert.doesNotMatch(collapsed,/smart-card-content|smart-card-image-placeholder/);
  assert.doesNotMatch(collapsed,/<img /);
 });
+
+test('Smart Image preview placeholder shares native image radius and clips all four corners',()=>{
+  const html=render({imageSource:'',builderPreview:true,radius:18,
+    imageBorderColor:'#123456',borderWidth:1});
+  const node=html.match(/<div class="smart-image-empty smart-editor-image-placeholder"[^>]*>/)?.[0]??'';
+  assert.ok(node,'Missing Image Here preview placeholder');
+  assert.match(node,/border:1px solid #123456/);
+  assert.match(node,/border-radius:18px/);
+  assert.match(node,/box-sizing:border-box/);
+  assert.match(node,/overflow:hidden/);
+  assert.match(native(html,'article'),/border-radius:18px/);
+  assert.match(native(html,'article'),/overflow:hidden/);
+});
