@@ -19,6 +19,9 @@ function SmartPicture({src,alt,loadAsset,style}){
  React.useEffect(()=>setFailed(false),[src]);
  return source&&!failed?<img src={source} alt={alt} style={style} onError={()=>setFailed(true)}/>:null;
 }
+const recordOf=p=>p.objectApiName&&Array.isArray(p.records)
+ ?(p.records[0]??{}):p.record&&typeof p.record==="object"&&!Array.isArray(p.record)?p.record:
+ Array.isArray(p.records)&&p.records.length?p.records[0]:Array.isArray(p.items)&&p.items.length?p.items[0]:{};
 // Editor-only examples are derived from the existing shared record source.
 // They never have a database Id and never invoke a Flow action.
 const editorCardRows=(count)=>Array.from({length:Math.min(6,Math.max(1,count))},(_,i)=>({
