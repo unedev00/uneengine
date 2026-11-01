@@ -5,7 +5,7 @@ const page=readFileSync(new URL('../src/core/builders/PageBuilder/pageBuilderVie
 
 test('Arrange replaces the old Grok and Advanced canvas commands without changing their handlers',()=>{
  const arrange=readFileSync(new URL('../src/core/builders/PageBuilder/ArrangeRibbon.tsx',import.meta.url),'utf8');
- assert.match(page,/'Component Layout','Arrange','Component Action','Logic','Preview'/);
+ assert.match(page,/'Component Layout','Arrange','Component Action','Advanced','Preview'/);
  assert.doesNotMatch(page,/ribbonTab==='Grok'/);
  assert.match(page,/<ArrangeRibbon/);
  assert.match(page,/onAlign=\\{alignSelected\\}/);
@@ -18,7 +18,7 @@ test('Arrange replaces the old Grok and Advanced canvas commands without changin
  assert.match(arrange,/Distribute vertically/);
  assert.match(arrange,/Bring to front/);
  assert.match(arrange,/Component nesting/);
- assert.match(page,/ribbonTab==='Logic'.*preview-visibility-group/);
+ assert.match(page,/ribbonTab==='Preview'.*preview-visibility-group/);
  assert.match(page,/case 'exitPreview'/);
 });
 test('Grok keyboard shortcuts respect editing and preview guards',()=>{
