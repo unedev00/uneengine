@@ -306,6 +306,9 @@ export default function MetadataBoundPageComponent({
       throw new Error('This action is unavailable under the published Page rules.');
     const validationError=behaviorValidation(properties,action.event,behaviorContext??{formFactor});
     if(validationError)throw new Error(validationError);
+    window.dispatchEvent(new CustomEvent('metadrive:in-screen-action',{
+      detail:{pageSessionKey,componentId:component.id,event:action.event,value:action.value}
+    }));
     const interactions=pageBehaviors(properties)?.interactions;
     const hasInteraction=Array.isArray(interactions)&&interactions.some(item=>item?.event===action.event);
     if(hasInteraction)window.dispatchEvent(new CustomEvent('metadrive:page-component-interaction',{

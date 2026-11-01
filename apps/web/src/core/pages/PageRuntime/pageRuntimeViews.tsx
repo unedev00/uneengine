@@ -555,6 +555,9 @@ function MetadataBoundPageComponent({
       throw new Error('This action is unavailable under the published Page rules.');
     const validationError=behaviorValidation(properties,action.event,{formFactor});
     if(validationError)throw new Error(validationError);
+    window.dispatchEvent(new CustomEvent('metadrive:in-screen-action',{
+      detail:{pageSessionKey,componentId:component.id,event:action.event,value:action.value}
+    }));
     const hasInteraction=Array.isArray(pageBehaviors(properties)?.interactions)
       &&(pageBehaviors(properties)!.interactions as Array<{event?:unknown}>).some(item=>item?.event===action.event);
     if(hasInteraction)window.dispatchEvent(new CustomEvent('metadrive:page-component-interaction',{
