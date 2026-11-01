@@ -278,6 +278,59 @@ try {
  assert.equal(await customerDialog.count(),0,'Escape closes nested Add customer dialog');
  assert.equal(await documentDialog.evaluate(el=>el.contains(document.activeElement)),true,'Focus returns inside financial editor');
  await screenshot('audit-verified-assist-document-modal');
+ await open('smart-card-grid-scroll');
+ const smartCardGrid=page.getByRole('region',{name:'Product cards'}).first();
+ await smartCardGrid.waitFor();
+ const smartFrame=page.getByLabel('Selected Smart Card Grid');
+ const smartGeometry=await smartCardGrid.evaluate(el=>{
+   const cards=[...el.querySelectorAll('article.smart-card')];
+   const outer=el.getBoundingClientRect(), first=cards[0].getBoundingClientRect();
+   return {totalCards:cards.length,viewportHeight:el.clientHeight,scrollHeight:el.scrollHeight,
+     clientWidth:el.clientWidth,scrollWidth:el.scrollWidth,firstCardHeight:first.height,
+     firstCardTop:first.top,top:outer.top,bottom:outer.bottom,
+     overflowY:getComputedStyle(el).overflowY};
+ });
+ assert.equal(smartGeometry.totalCards,23,'Card Grid rows must not truncate records');
+ assert.ok(smartGeometry.viewportHeight>=360&&smartGeometry.viewportHeight<=395,
+   'Smart Card Grid must use the selected component height');
+ assert.ok(smartGeometry.firstCardHeight>=170&&smartGeometry.firstCardHeight<=240,
+   'Cards per column must size a full card instead of cropping it');
+ assert.ok(smartGeometry.scrollHeight>smartGeometry.viewportHeight*2,
+   'Additional cards must scroll inside the selected component');
+ assert.ok(smartGeometry.scrollWidth<=smartGeometry.clientWidth+1,
+   'Smart Card Grid must not overflow horizontally');
+ assert.equal(smartGeometry.overflowY,'auto');
+ assert.equal(await smartFrame.locator('article.smart-card').count(),23);
+ await smartCardGrid.hover();
+ await page.mouse.wheel(0,500);
+ await page.waitForFunction(()=>document.querySelector('.smart-grid')?.scrollTop>0);
+ await smartCardGrid.focus();
+ const beforeKeyboard=await smartCardGrid.evaluate(el=>el.scrollTop);
+ await page.keyboard.press('End');
+ await page.waitForFunction(before=>{
+   const grid=document.querySelector('.smart-grid');
+   return grid&&grid.scrollTop>before+20;
+ },beforeKeyboard,{timeout:3000});
+ await page.keyboard.press('Home');
+ await page.waitForFunction(()=>{
+   const grid=document.querySelector('.smart-grid');
+   return grid&&grid.scrollTop===0;
+ },undefined,{timeout:3000});
+ const preview=page.getByLabel('Empty Smart Card Grid preview');
+ assert.equal(await preview.locator('article.smart-card').count(),3);
+ assert.equal(await preview.getByText('Image here').count(),3);
+ assert.equal(await preview.getByText('Text here').count(),3);
+ await screenshot('smart-card-grid-height-rows-desktop');
+ await page.setViewportSize({width:390,height:844});
+ await open('smart-card-grid-scroll');
+ const mobileSmartGrid=page.getByRole('region',{name:'Product cards'}).first();
+ await mobileSmartGrid.waitFor();
+ assert.ok(await mobileSmartGrid.evaluate(el=>el.scrollHeight>el.clientHeight),
+   'Smart Card Grid should remain scrollable on mobile');
+ assert.ok(await mobileSmartGrid.evaluate(el=>el.scrollWidth<=el.clientWidth+1),
+   'Smart Card Grid mobile viewport should not overflow horizontally');
+ await screenshot('smart-card-grid-height-rows-mobile');
+ await page.setViewportSize({width:1365,height:768});
  await open('card-grid-scroll');
  const cardGrid=page.getByRole('region',{name:'Card Grid items'});
  await cardGrid.waitFor();
