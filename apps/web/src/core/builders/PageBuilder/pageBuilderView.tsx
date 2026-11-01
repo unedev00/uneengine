@@ -1650,23 +1650,35 @@ function PageBuilder({
   };
   const pasteComponent = () => {
     if (!componentClipboard) return;
+    // Match Insert and the runtime: a selected layout container is the paste
+    // destination; selecting its child pastes a sibling inside that container.
     const parentId=selected
       ? (isLayoutContainer(selected) ? selected.id : rawLayoutParentId(selected))
       : null;
+    if (parentId && !page.components.some(item=>item.id===parentId && isLayoutContainer(item))) {
+      onNotify('Select a valid container before pasting inside it.');
+      return;
+    }
     const cloned=cloneComponentTree(componentClipboard,parentId);
     const root=cloned.components.find(item=>item.id===cloned.rootId)!;
     const position=root.position ? {
       ...root.position,
-      x:Math.max(0,Math.min(page.canvasWidth-root.position.width,root.position.x+24)),
-      y:Math.max(0,Math.min(page.canvasHeight-root.position.height,root.position.y+24))
+      // Nested content flows inside the container, not at its former page
+      // coordinates. Retain dimensions and a useful local position for unnest.
+      x:parentId?16:Math.max(0,Math.min(page.canvasWidth-root.position.width,root.position.x+24)),
+      y:parentId?16:Math.max(0,Math.min(page.canvasHeight-root.position.height,root.position.y+24))
     }:undefined;
     const inserted=cloned.components.map(item=>item.id===root.id?{...item,position,region:selected?.region??item.region}:item);
     const originalIndex=selected?page.components.findIndex(item=>item.id===selected.id):-1;
     const components=[...page.components];
     components.splice(originalIndex<0?components.length:originalIndex+1,0,...inserted);
-    applyPage({...page,components});
+    // The same shared nesting contract is used for paste, palette insertion,
+    // drag-and-drop and published runtime. Preserve active Tabs membership.
+    applyPage({...page,components:assignTabOnReparent(components,cloned.rootId,parentId,
+      parentId?openBuilderTabs[parentId]:undefined)});
     setSelectedId(cloned.rootId);
     setSelectionIds([cloned.rootId]);
+    pendingInsertedComponentRef.current=cloned.rootId;
   };
   const duplicateSelected = () => {
     if (!selected || isCanvasLocked(selected)) return;

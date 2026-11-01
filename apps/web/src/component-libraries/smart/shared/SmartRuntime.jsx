@@ -76,7 +76,8 @@ function SmartCard({p,record}){
     ...(grid?{overflow:"hidden",maxHeight:horizontal?undefined:imageHeight}:{} )}}>
    {single&&p.builderPreview&&!image
      ?<div className="smart-image-empty smart-editor-image-placeholder" aria-label="Image Here"
-        style={{height:"100%",width:"100%",border:nativeImageBorder}}>
+        style={{height:"100%",width:"100%",border:nativeImageBorder,
+          borderRadius:number(p.radius,12),boxSizing:"border-box",overflow:"hidden"}}>
         <span>Image Here</span>
       </div>
      :grid&&preview&&!image&&(sample||p.builderPreview!==true)
