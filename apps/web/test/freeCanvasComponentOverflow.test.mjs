@@ -48,8 +48,11 @@ test('native scroll controls remain usable without moving the page component',()
  assert.match(css,/free-canvas-content-viewport > \.canvas-design-interaction-shield/);
  assert.match(css,/\.smart-grid,\.smart-cart-root,\.smart-tabs-shell,\.smart-calendar,\.smart-navigation/);
  assert.match(css,/canvas-design-interaction-shield\{pointer-events:none;\}/);
- for(const api of ['smart_cart','smart_card_grid','smart_calendar','smart_navigation','smart_tabs']){
-   assert.ok(builder.includes("component.type==='Custom:"+api+"'&&target.closest("),api+' keeps its internal scroller');
- }
+ assert.match(builder,/canvasScrollbarHit\\(target,event\\.clientX,event\\.clientY,event\\.currentTarget\\)/);
+ assert.match(builder,/event\\.pointerType==='touch'/);
+ assert.doesNotMatch(builder,/component\\.type==='Custom:smart_cart'&&target\\.closest/);
+ const scrollLogic=src('core/builders/PageBuilder/canvasPointerInteractions.ts');
+ assert.match(scrollLogic,/canvasScrollbarRailHit/);
+ assert.match(scrollLogic,/while\\(node&&node!==container\\)/);
  assert.match(workspace,/layout-container-component > \.free-canvas-content-viewport > \.registered-component/);
 });
