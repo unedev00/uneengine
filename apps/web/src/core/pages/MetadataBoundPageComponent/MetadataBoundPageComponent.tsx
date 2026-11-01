@@ -432,7 +432,7 @@ export default function MetadataBoundPageComponent({
     ?{width:'100%',height:'100%',minHeight:0,minWidth:0}:undefined}>
     {!objectApiName && <div className="records-message" role="alert">Select a bound object to load records for this component.</div>}
     {dataError && <div className="records-message" role="alert">{dataError}</div>}
-    <RegisteredComponent definition={definition} layoutTransparent={smartCanvas} props={{
+    <RegisteredComponent definition={definition} layoutTransparent={smartCanvas} editorPreview={builderPreview===true&&disableActions} props={{
       ...rowResolvedProperties, ...componentLayoutProps(properties, formFactor),
       ...(smartCanvas?{width:component.position!.width,height:component.position!.height}:{}),
       ...(boundedCardGrid?{boundedViewport:true}:{}),
