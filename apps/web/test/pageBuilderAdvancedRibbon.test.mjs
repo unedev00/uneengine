@@ -28,7 +28,9 @@ test('all nine previous functions have one discoverable advanced command',()=>{
 test('advanced controls reuse existing metadata editors and shared canvas and nesting functions',()=>{
   assert.match(page,/<RibbonVisibilityRules draft=\{visibilityDraft\}/);
   assert.match(page,/onApply=\{saveAdvancedVisibility\}/);
-  assert.match(page,/mode="actions-editor"/);
+  assert.match(page,/mode="actions-inline"/);
+   assert.doesNotMatch(page,/advancedEditor==='actions'/);
+   assert.doesNotMatch(advanced,/key:'actions',label:'Advanced actions'/);
   assert.match(page,/mode="details"/);
   assert.match(page,/reparentComponent\(page\.components,selected\.id,parent\)/);
   for(const fn of ['wrapSelectedInContainer','ungroupSelected','alignSelected','distributeSelected','moveSelected'])
