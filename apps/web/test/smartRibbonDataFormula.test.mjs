@@ -102,3 +102,23 @@ test('filter modal is 50 percent wider, compact, four-column and not multiply sc
  assert.match(style,/grid-template-columns:repeat\(4,minmax\(0,190px\)\)/);
  assert.match(style,/max-height:none!important;overflow:visible!important/);
 });
+
+
+test('Cart Data geometry uses 10 percent wider true control tracks and two-pixel gaps',()=>{
+ const migration=read('../../server/src/system-support/migrations/20270218-data-ribbon-cart-geometry.sql');
+ const ui=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
+ const dataCss=read('../src/core/builders/PageBuilder/SmartRibbonDataFormula.css');
+ const pageLayout=read('../src/core/builders/PageBuilder/PageBuilderRibbonLayout.css');
+ assert.match(migration,/property_key='columnVisibility' THEN 171/);
+ assert.match(migration,/property_key='defaultCheck' THEN 116/);
+ assert.match(migration,/ELSE 110/);
+ assert.match(migration,/section_group IN \('Values','Cart','Cart columns','Cart totals'\)/);
+ assert.doesNotMatch(migration,/objectApiName|DELETE FROM|TRUNCATE|md_page_components/);
+ assert.match(ui,/properties\.length-1\)\*\(tab==='Data'&&group!=='Source'\?2:4\)/);
+ assert.match(dataCss,/smart-data-sections[\s\S]*?\.smart-ribbon-row\{[\s\S]*?column-gap:2px!important/);
+ assert.match(dataCss,/\.smart-ribbon-group\[aria-label="Cart"\]/);
+ assert.match(dataCss,/\.smart-ribbon-group:last-child\{/);
+ assert.match(dataCss,/data-property="columnVisibility"\] \.smart-multiselect-trigger/);
+ assert.match(dataCss,/width:100%!important;min-width:0!important;max-width:100%!important/);
+ assert.match(pageLayout,/overflow-x: auto !important/);
+});
