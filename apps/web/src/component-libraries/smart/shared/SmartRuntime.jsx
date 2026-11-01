@@ -35,6 +35,12 @@ const recordOf=p=>p.objectApiName&&Array.isArray(p.records)
  ?(p.records[0]??{}):p.record&&typeof p.record==="object"&&!Array.isArray(p.record)?p.record:
  Array.isArray(p.records)&&p.records.length?p.records[0]:Array.isArray(p.items)&&p.items.length?p.items[0]:{};
 const recordsOf=p=>Array.isArray(p.records)?p.records:Array.isArray(p.items)?p.items:[];
+// Editor-only samples are never Object records: no real IDs, no SQL writes,
+// and no action handlers. Each shared component opts into its normal shape.
+const isBuilderEmpty=p=>p.builderPreview===true&&recordsOf(p).length===0;
+const editorCardRows=(count)=>Array.from({length:Math.min(6,Math.max(1,count))},(_,i)=>({
+ __builderSample:true,Name:"Product Name "+(i+1),Price:"Price",Quantity:1
+}));
 // Image bindings must resolve once per authorised record, not once for the grid.
 // Plain API names and @Field expressions both use the same record values.
 const boundImage=(p,record)=>{
@@ -46,8 +52,9 @@ const boundImage=(p,record)=>{
 function SmartCard({p,record}){
  const rawImage=p.imageSource;
  const image=boundImage(p,record);
- const header=expression(p.textSource??p.title??"",record);
- const badge=expression(p.badgeText??"",record);
+ const sample=Boolean(p.builderPreview===true&&record?.__builderSample===true);
+ const header=expression(p.textSource??p.title??"",record)||(sample?"Product Name": "");
+ const badge=expression(p.badgeText??"",record)||(sample?"Price":"");
  const horizontal=["left","right"].includes(p.imagePlacement);
  const single=p.kind==="smart_image";
  const imageHeight=number(p.imageHeight,220);
@@ -70,11 +77,16 @@ function SmartCard({p,record}){
   <div style={{order:["right","bottom"].includes(p.imagePlacement)?2:0,
     flex:horizontal?"1 1 50%":single?"1 1 auto":undefined,minWidth:0,minHeight:0,
     ...(single?{display:"flex"}:{})}}>
-   <SmartPicture src={image} alt={header} loadAsset={p.loadAsset}
-      style={{height:single?"100%":imageHeight,width:"100%",display:"block",
-       objectFit:p.imageFill==="fit"?"contain":p.imageFill==="stretch"?"fill":"cover",
-       boxSizing:"border-box",borderRadius:single?number(p.radius,12):undefined,
-       border:nativeImageBorder}}/>
+   {p.builderPreview===true&&!image
+     ?<div className="smart-image-empty smart-editor-image-placeholder" aria-label="Image Here"
+       style={{height:single?"100%":imageHeight,width:"100%",border:nativeImageBorder}}>
+       <span>Image Here</span>
+      </div>
+     :<SmartPicture src={image} alt={header} loadAsset={p.loadAsset}
+       style={{height:single?"100%":imageHeight,width:"100%",display:"block",
+        objectFit:p.imageFill==="fit"?"contain":p.imageFill==="stretch"?"fill":"cover",
+        boxSizing:"border-box",borderRadius:single?number(p.radius,12):undefined,
+        border:nativeImageBorder}}/>}
   </div>
   {header&&<div className="smart-card-content" style={{
     order:1,flex:horizontal?"1 1 50%":undefined,display:"flex",alignItems:"center",
@@ -162,9 +174,11 @@ function SmartTabs({p,record,fire}){
  // When bound to an Object, the shared Page Runtime supplies only filtered,
  // permission-checked records. Never generate unlimited tabs from raw records.
  const dynamic=Boolean(p.objectApiName&&p.textSource);
- const tabs=dynamic?recordsOf(p).slice(0,count).map(row=>({
+ const tabs=dynamic?(isBuilderEmpty(p)?Array.from({length:Math.min(count,5)},(_,i)=>({
+   label:"Tab "+(i+1),id:"editor-tab-"+i
+  })):recordsOf(p).slice(0,count).map(row=>({
    label:expression(p.textSource,row),id:row?.Id??row?.id
- })):Array.isArray(p.tabs)?p.tabs:Array.from({length:count},(_,i)=>i===0&&typeof p.label==="string"&&p.label&&!p.label.startsWith("@")?p.label:"Tab "+(i+1));
+  }))):Array.isArray(p.tabs)?p.tabs:Array.from({length:count},(_,i)=>i===0&&typeof p.label==="string"&&p.label&&!p.label.startsWith("@")?p.label:"Tab "+(i+1));
  React.useEffect(()=>{if(active>=tabs.length)setActive(0)},[active,tabs.length]);
  return <div className="smart-tabs-shell" style={{background:p.backgroundColor||undefined,
    display:"flex",flexDirection:"column",height:"100%",minHeight:0,width:"100%"}}>
@@ -218,7 +232,7 @@ export default function SmartRuntime(p){
  else if(name==="smart_toggle")content=<SmartToggle p={p} fire={fire}/>;
  else if(name==="smart_text")content=<input className="smart-input-box" type="text"
   aria-label={label||text(p.placeholder||"Input")}
-  placeholder={label||text(p.placeholder||"")}
+  placeholder={label||text(p.placeholder||(p.builderPreview?"Text Here":""))}
   defaultValue={expression(p.textSource??p.defaultValue??p.value??"",record)}
   style={{...style,...shadowStyle,width:"100%",height:"100%",minWidth:0,minHeight:0,
     fontSize:number(p.textSize,16),color:p.defaultValueColor||p.labelColor||undefined,
@@ -241,7 +255,7 @@ export default function SmartRuntime(p){
    gridTemplateColumns:"repeat("+columns+",minmax(0,1fr))",
    gridAutoRows:"max(180px, calc((100% - "+(rows-1)*12+"px) / "+rows+"))",alignContent:"start"
   }}>
-   {recordsOf(p).map((r,i)=>{
+   {(isBuilderEmpty(p)?editorCardRows(columns*rows):recordsOf(p)).map((r,i)=>{
     const card=<SmartCard p={p} record={r}/>;
     // Published metadata decides if the card is actionable. Never fabricate
     // an Add To Cart operation: the bound Flow owns persistence and RBAC.
@@ -258,7 +272,7 @@ export default function SmartRuntime(p){
  else if(name==="smart_tabs")content=<SmartTabs p={p} record={record} fire={fire}/>;
  else if(name==="smart_navigation"){
   const items=Array.isArray(p.items)&&p.items.length?p.items:recordsOf(p);
-  const entries=items.length?items:p.textSource?[record]:[];
+  const entries=items.length?items:isBuilderEmpty(p)?["Home","Products","Settings"]:p.textSource?[record]:[];
   const labelOf=item=>{
     if(item&&typeof item==="object"){
       if(typeof item.label==="string"&&item.label)return item.label;
@@ -286,7 +300,7 @@ export default function SmartRuntime(p){
     background:p.imageBackgroundColor??p.backgroundColor??"transparent",
     border:p.borderColor?"1px solid "+p.borderColor:0,
     borderRadius:number(p.radius,12),...shadowStyle
- }}>{p.children||null}</div>;
+ }>{p.children||(p.builderPreview?<span className="smart-editor-container-placeholder">Drop components here</span>:null)}</div>;
  // Geometry-only technical host; the native Smart surface owns all visible styling.
  return <div className={"smart-runtime "+name} style={{
    display:"flex",flexDirection:"column",boxSizing:"border-box",border:0,
