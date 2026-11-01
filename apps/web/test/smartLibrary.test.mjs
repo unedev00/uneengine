@@ -175,6 +175,13 @@ test('unbound Card Grid displays sample cards only in editable canvas, not live 
  assert.doesNotMatch(withRecords,/Product Name 1|Image Here/);
 });
 
+test('Cart sample lines stay in editor and never appear in read-only preview',async()=>{
+ const editor=await renderSmart('smart_cart',{builderPreview:true,previewOnly:true,records:[]});
+ assert.match(editor,/Preview items \(3\)/);
+ const runtime=await renderSmart('smart_cart',{previewOnly:true,records:[]});
+ assert.doesNotMatch(runtime,/Preview items \(3\)|Sample item/);
+});
+
 test('Image, Tabs, Navigation, Text and Container have editor-only empty previews',async()=>{
  const image=await renderSmart('smart_image',{builderPreview:true,imageSource:'@ImageUrl'});
  assert.match(image,/Image Here/);
