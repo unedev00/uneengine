@@ -686,6 +686,11 @@ test('UI Image corners share one native clip and Page Builder uses no square sel
   assert.match(handles,/\.free-canvas-component\[data-page-appearance\]\{\s*outline:0!important;\s*border:0!important;/);
   assert.match(builder,/canMoveCanvasLayer\(page\.components,component\.id,'front'\)/);
   assert.match(builder,/canMoveCanvasLayer\(page\.components,component\.id,'back'\)/);
+  assert.match(builder,/selectedId === component.id && <CanvasFloatingActions/,
+    'nested children must have an editable toolbar and sibling order menu');
+  assert.doesNotMatch(builder,/selectedId === component.id && !nested && <CanvasFloatingActions/);
+  assert.match(builder,/page.layoutMode === 'free-canvas' && !nested && !isCanvasLocked\(component\)/,
+    'the root-coordinate move grip must not move nested children outside their parent');
   assert.match(builder,/canvasSiblingLayerIndex\(page\.components,component\.id\)/);
 });
 
