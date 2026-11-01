@@ -1,17 +1,14 @@
-import {useEffect,useState,useRef,type RefObject,type PointerEvent as ReactPointerEvent} from 'react';
+import {useEffect,useState,type RefObject,type PointerEvent as ReactPointerEvent} from 'react';
 import {createPortal} from 'react-dom';
+import {canvasResizeOverlayGeometry,type OverlayGeometry,type OverlayEdge} from './canvasResizeOverlayGeometry';
 import './CanvasFloatingActions.css';
 
-export type CanvasResizeEdge='n'|'ne'|'e'|'se'|'s'|'sw'|'w'|'nw';
-const edges:CanvasResizeEdge[]=['n','ne','e','se','s','sw','w','nw'];
-const coordinates:Record<CanvasResizeEdge,[number,number]>={
- n:[.5,0],ne:[1,0],e:[1,.5],se:[1,1],
- s:[.5,1],sw:[0,1],w:[0,.5],nw:[0,0]
-};
+export type CanvasResizeEdge=OverlayEdge;
+const empty:OverlayGeometry={points:[],clip:{left:0,top:0,right:0,bottom:0}};
 
-/** Chrome lives outside sibling stacking contexts so another card/grid cannot
- * cover the selected component's resize handles. Only the handles accept hits;
- * the authored canvas and its z-order remain untouched.
+/** Portal out of component stacking contexts, but CLIP to the actual scrollable
+ * designer viewport. A component may scroll behind the fixed ribbon; its grips
+ * must never appear there. Offscreen bottom grips have a visible proxy.
  */
 export default function CanvasFloatingResizeHandles({componentId,componentLabel,viewportRef,onStart,onMove,onEnd,onCancel}:{
  componentId:string;
@@ -22,8 +19,7 @@ export default function CanvasFloatingResizeHandles({componentId,componentLabel,
  onEnd:(event:ReactPointerEvent<HTMLButtonElement>)=>void;
  onCancel:(event:ReactPointerEvent<HTMLButtonElement>)=>void;
 }){
- const [rect,setRect]=useState({left:0,top:0,width:0,height:0,visible:false});
- const rectRef=useRef(rect);
+ const [geometry,setGeometry]=useState<OverlayGeometry>(empty);
  useEffect(()=>{
   const viewport=viewportRef.current;
   const anchor=Array.from(viewport?.querySelectorAll<HTMLElement>('.free-canvas-component[data-component-id]')??[])
@@ -32,16 +28,10 @@ export default function CanvasFloatingResizeHandles({componentId,componentLabel,
   let frame=0;
   const reposition=()=>{
    frame=0;
-   const box=anchor.getBoundingClientRect();
-   const view=viewport.getBoundingClientRect();
-   const next={left:box.left,top:box.top,width:box.width,height:box.height,
-    visible:box.width>0&&box.height>0&&box.right>view.left&&box.left<view.right
-      &&box.bottom>view.top&&box.top<view.bottom};
-   const old=rectRef.current;
-   if(Object.keys(next).some(key=>next[key as keyof typeof next]!==old[key as keyof typeof old])){
-    rectRef.current=next;
-    setRect(next);
-   }
+   const result=canvasResizeOverlayGeometry(
+    anchor.getBoundingClientRect(),viewport.getBoundingClientRect(),
+    {width:window.innerWidth,height:window.innerHeight});
+   setGeometry(old=>JSON.stringify(old)===JSON.stringify(result)?old:result);
   };
   const schedule=()=>{if(!frame)frame=window.requestAnimationFrame(reposition);};
   reposition();
@@ -59,14 +49,16 @@ export default function CanvasFloatingResizeHandles({componentId,componentLabel,
   };
  },[componentId,viewportRef]);
  if(typeof document==='undefined')return null;
+ const {clip,points}=geometry;
  return createPortal(<div className="canvas-floating-resize-overlay" data-canvas-resize-for={componentId}
-   style={{visibility:rect.visible?'visible':'hidden'}}>
-   {edges.map(edge=><button key={edge} type="button"
-    className={`free-canvas-resize-handle floating-resize-${edge}`}
-    style={{left:rect.left+rect.width*coordinates[edge][0],
-      top:rect.top+rect.height*coordinates[edge][1]}}
-    aria-label={`Resize ${componentLabel} ${edge}`} title={`Drag ${edge} corner or edge to resize`}
-    onPointerDown={event=>onStart(event,edge)}
+   style={{clipPath:`inset(${clip.top}px ${Math.max(0,window.innerWidth-clip.right)}px ${Math.max(0,window.innerHeight-clip.bottom)}px ${clip.left}px)`}}>
+   {points.map(point=><button key={point.edge} type="button"
+    className={`free-canvas-resize-handle floating-resize-${point.edge}`}
+    data-offscreen-bottom={point.proxy?'true':undefined}
+    style={{left:point.left,top:point.top}}
+    aria-label={`Resize ${componentLabel} ${point.edge}`}
+    title={point.proxy?`Drag to resize ${componentLabel} height (bottom edge below visible canvas)`:`Drag ${point.edge} corner or edge to resize`}
+    onPointerDown={event=>onStart(event,point.edge)}
     onPointerMove={onMove} onPointerUp={onEnd}
     onPointerCancel={onCancel} onLostPointerCapture={onCancel}
     onClick={event=>event.stopPropagation()}/>)}
