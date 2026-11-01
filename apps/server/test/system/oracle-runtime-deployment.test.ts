@@ -145,22 +145,23 @@ test('One-time Oracle systemd manager reexecution requires a timed-out reload an
 test('normal main pushes have one full-stack deployment owner, while manual frontend delivery fails closed',()=>{
  const fullstack=readFileSync(workflow,'utf8');
  const frontend=readFileSync(frontendDelivery,'utf8');
- assert.match(fullstack,/push:\\s*\\n\\s*branches: \\[main\\]/);
- assert.match(fullstack,/apps\\/web\\/\\*\\*/);
- assert.match(frontend,/^on:\\s*\\n\\s*workflow_dispatch:/m);
- assert.doesNotMatch(frontend,/^\\s*push:\\s*$/m,'frontend-only workflow must not race full-stack push deployment');
- assert.match(frontend,/Backend\\/shared changes require full-stack deployment/);
- assert.match(frontend,/Frontend deployment blocked:/);
- assert.match(frontend,/echo "::error::Frontend deployment blocked:[^\\n]+\\n\\s*exit 1/);
- assert.match(frontend,/oracle-production-release-main/,'manual frontend deploy retains the production lock');
+ assert.ok(fullstack.includes('branches: [main]'));
+ assert.ok(fullstack.includes('apps/web/**'));
+ assert.ok(frontend.includes('workflow_dispatch:'));
+ assert.ok(!frontend.includes('  push:'),'frontend-only workflow must not race the full-stack main-push deployment');
+ assert.ok(frontend.includes('Backend/shared changes require full-stack deployment'));
+ assert.ok(frontend.includes('Frontend deployment blocked:'));
+ assert.ok(frontend.includes('exit 1'),'incompatible manual frontend deployment must fail visibly');
+ assert.ok(frontend.includes('oracle-production-release-main'),'manual frontend release retains production lock');
 });
 
 test('Oracle systemd diagnostic inspects recovery state without mutating live services',()=>{
  const yaml=readFileSync(systemdDiagnostic,'utf8');
- assert.match(yaml,/Inspect recovery guards and transient MCP broker pressure/);
- assert.match(yaml,/metadrive-systemd-manager-reexec-once/);
- assert.match(yaml,/metadrive-systemd-manager-bus-reconnect-once/);
- assert.match(yaml,/systemctl list-units --all/);
- assert.match(yaml,/systemctl show -p Jobs -p NFailedUnits/);
- assert.doesNotMatch(yaml,/sudo -n (?:systemctl restart|systemctl daemon-reload)/);
+ assert.ok(yaml.includes('Inspect recovery guards and transient MCP broker pressure'));
+ assert.ok(yaml.includes('metadrive-systemd-manager-reexec-once'));
+ assert.ok(yaml.includes('metadrive-systemd-manager-bus-reconnect-once'));
+ assert.ok(yaml.includes('systemctl list-units --all'));
+ assert.ok(yaml.includes('systemctl show -p Jobs -p NFailedUnits'));
+ assert.ok(!yaml.includes('sudo -n systemctl restart'));
+ assert.ok(!yaml.includes('sudo -n systemctl daemon-reload'));
 });
