@@ -77,7 +77,7 @@ jobs:
           deployed="$(readlink -f /var/www/metadrive-frontend/current)"
           test "$deployed" = "/var/www/metadrive-frontend/releases/$GITHUB_SHA"
           test -s "$deployed/index.html"
-          local_sha="$(curl --noproxy '*' -fsS --max-time 15 -H 'Host: unesolutions.co.uk' -H 'Cache-Control: no-cache' http://127.0.0.1/frontend-release.json)"
+          local_sha="$(curl --noproxy '*' -fsS --max-time 15 --resolve unesolutions.co.uk:443:127.0.0.1 -H 'Cache-Control: no-cache' https://unesolutions.co.uk/frontend-release.json)"
           [[ "$local_sha" == *"\"commit\":\"$GITHUB_SHA\""* ]]
           public_sha=""
           for attempt in 1 2 3 4 5 6; do
