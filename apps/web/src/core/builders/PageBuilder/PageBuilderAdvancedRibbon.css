@@ -1,6 +1,4 @@
-.office-builder-ribbon #page-builder-tab-content:has(.page-builder-advanced-ribbon){
-  display:block;overflow-x:auto;overflow-y:hidden;padding:4px 8px;
-}
+/* Outer ribbon height/overflow/scrollbar geometry is owned by PageBuilderRibbonLayout.css. */
 .page-builder-advanced-ribbon{display:flex;gap:8px;align-items:stretch;min-width:max-content;height:100%}
 .page-builder-advanced-group{display:flex;flex-direction:column;justify-content:space-between;
   padding:2px 10px 3px 2px;border-right:1px solid #d5deeb;min-height:120px}
@@ -100,8 +98,6 @@
 .page-builder-advanced-children{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .page-builder-advanced-children>strong{width:100%;font-size:12px}
 @media(max-width:700px){
-  .office-builder-ribbon #page-builder-tab-content.office-ribbon-content:has(>.page-builder-advanced-inline){
-    height:300px!important;min-height:300px!important;max-height:300px!important}
   .page-builder-advanced-inline{grid-template-columns:135px minmax(0,1fr);gap:6px}
   .page-builder-advanced-inline-nav{padding-right:6px}
 }
