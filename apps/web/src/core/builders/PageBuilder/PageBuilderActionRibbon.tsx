@@ -1,3 +1,4 @@
+import {useState} from 'react';
 import { Trash2, SlidersHorizontal } from 'lucide-react';
 import type { FlowDefinitionMetadata } from '../../metadata/Definitions/metadata';
 import { metadataReference, metadataSelection } from '../../metadata/Definitions/metadataReferences';
@@ -26,6 +27,7 @@ export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,
   onChange:(next:Binding)=>void;showDetails:boolean;onToggleDetails:()=>void;
   disabled?:boolean;
 }) {
+  const [customTrigger,setCustomTrigger]=useState('');
   const selected=asBinding(actions[selectedEvent]);
   const active=Boolean(selectedEvent&&Object.prototype.hasOwnProperty.call(actions,selectedEvent));
   const kind:ActionKind=actionTypes.some(option=>option.kind===selected.actionType)
@@ -62,6 +64,13 @@ export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,
         flowType:flow.flowType});
     }
   };
+  const addCustomTrigger=()=>{
+    const name=customTrigger.trim();
+    if(disabled||eventDefinitions.length)return;
+    if(!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(name)||Object.prototype.hasOwnProperty.call(actions,name))return;
+    onChange({...actions,[name]:{actionType:'Flow',flowApiName:'',inputs:{}}});
+    onSelectEvent(name);setCustomTrigger('');
+  };
   const remove=()=>{
     if(disabled||!active)return;
     const next={...actions};
@@ -96,6 +105,13 @@ export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,
         </select>
       </label>
       <small>Choose a trigger first, then its action.</small>
+      {!eventDefinitions.length&&<div className="page-action-custom-trigger">
+        <input aria-label="Custom action trigger" placeholder="Custom event ID"
+          value={customTrigger} disabled={disabled} onChange={event=>setCustomTrigger(event.target.value)}/>
+        <button type="button" disabled={disabled||!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(customTrigger.trim())||
+          Object.prototype.hasOwnProperty.call(actions,customTrigger.trim())}
+          onClick={addCustomTrigger}>Add trigger</button>
+      </div>}
       <span className="office-ribbon-group-heading">All actions</span>
     </section>
     {active&&<section className="office-ribbon-mini-group page-action-selected">
