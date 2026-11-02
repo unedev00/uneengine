@@ -734,6 +734,18 @@ function PageBuilder({
       })});
     }else updateComponent(selected.id,{properties:{...selected.properties,actionFlows}});
   };
+  // Cart visibility is component metadata, independent of the configured event.
+  // Preserve other instance properties and any existing Flow/Formula bindings.
+  const applyCartButtonVisibility=(key:'qtyIncrease'|'qtyDecrease'|'customButton1'|'customButton2',visible:boolean)=>{
+    if(!selected||actionSelectionDisabled||!actionMembers.length||
+      actionMembers.some(member=>member.type!=='Custom:smart_cart'))return;
+    const property=key+'Visible';
+    if(actionMembers.length>1){
+      const ids=new Set(actionMembers.map(item=>item.id));
+      applyPage({...page,components:page.components.map(item=>ids.has(item.id)
+        ?{...item,properties:{...item.properties,[property]:visible}}:item)});
+    }else updateComponent(selected.id,{properties:{...selected.properties,[property]:visible}});
+  };
   const selectedAppOwnedUne=Boolean(selected?.type.startsWith('Custom:une_'))&&!selectedNewUne;
   const editingConversation=selectedCustomDefinition?.apiName==='ui_conversation';
   // Child element selection affects the inspector only; runtime DOM is unchanged.
@@ -3333,7 +3345,14 @@ function PageBuilder({
                 String(selected?.properties.objectApiName||page.targetObject||''))?.fields??[]}
               selectedEvent={activeActionEvent} disabled={!selected||actionSelectionDisabled}
               onSelectEvent={setInlineActionEvent}
-              onChange={applyActionFlows}/>}
+              onChange={applyActionFlows}
+              buttonVisibility={{
+                qtyIncrease:selected?.properties.qtyIncreaseVisible!==false,
+                qtyDecrease:selected?.properties.qtyDecreaseVisible!==false,
+                customButton1:selected?.properties.customButton1Visible!==false,
+                customButton2:selected?.properties.customButton2Visible!==false
+              }}
+              onButtonVisibilityChange={applyCartButtonVisibility}/>}
           {selected?.type==='Custom:smart_icon' && ribbonTab==='Component Layout' &&
             <SmartIconGallery value={String(selected.properties.iconId??'house')}
               disabled={ribbonSelectedMembers.some(item=>item.type!=='Custom:smart_icon'||isCanvasLocked(item))}
