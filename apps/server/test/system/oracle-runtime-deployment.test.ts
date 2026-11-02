@@ -246,3 +246,30 @@ test('OCI latest deployment reuses protected runner and isolates build credentia
   assert.equal(py.status,0,py.stderr);
  }
 });
+
+test('manual OCI tenant API normalization is protected, opt-in and restarts services on failure',()=>{
+ const action=readFileSync(new URL('../../../../.github/workflows/oracle-tenant-api-names.yml',import.meta.url),'utf8');
+ const helper=new URL('../../../../scripts/oracle/run-tenant-api-casefold-action.sh',import.meta.url);
+ const sh=readFileSync(helper,'utf8');
+ assert.match(action,/workflow_dispatch:/);
+ assert.doesNotMatch(action,/^\s+push:/m);
+ assert.match(action,/environment: oracle-production/);
+ assert.match(action,/runs-on: \[self-hosted, linux, ARM64, metadrive-oracle\]/);
+ assert.match(action,/oracle-production-release-main/);
+ assert.match(action,/confirmation/);
+ assert.match(action,/NORMALIZE TEST TENANT/);
+ assert.doesNotMatch(action,/secrets\./);
+ assert.match(sh,/md_casefold_tenant_api_names/);
+ assert.match(sh,/runuser -u postgres -- psql/);
+ assert.match(sh,/metadrive-full-stack\.lock/);
+ assert.match(sh,/recover_services/);
+ assert.match(sh,/systemctl stop metadrive-worker/);
+ assert.match(sh,/systemctl start metadrive-api/);
+ assert.match(sh,/sha.*GITHUB_SHA/);
+ assert.match(sh,/COMMIT;/);
+ assert.doesNotMatch(sh,/DATABASE_URL|curl .*github|sudo.*ssh/);
+ if(process.platform!=='win32'){
+  const syntax=spawnSync('bash',['-n',fileURLToPath(helper)],{encoding:'utf8'});
+  assert.equal(syntax.status,0,syntax.stderr);
+ }
+});
