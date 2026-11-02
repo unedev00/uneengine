@@ -10,7 +10,7 @@ import sys
 import re
 import os
 
-ALLOWED = {"status", "logs", "restart", "activate_release", "mail_diagnostic", "mailbox_list", "mailbox_add", "mailbox_reset", "mailbox_delete", "sender_approve", "mailbox_scan"}
+ALLOWED = {"status", "logs", "restart", "activate_release", "deploy_latest", "deploy_status", "mail_diagnostic", "mailbox_list", "mailbox_add", "mailbox_reset", "mailbox_delete", "sender_approve", "mailbox_scan"}
 SERVICES = {"api", "worker"}
 MAX_INPUT = 4096
 
@@ -101,7 +101,7 @@ def main():
                   "\n=== containers ===\n" +
                   run(["/usr/bin/docker", "ps", "--format", "{{.Names}} {{.Status}} {{.Ports}}"]))
     else:
-        if (action == "activate_release") != (release is not None):
+        if (action in {"activate_release", "deploy_latest"}) != (release is not None):
             raise ValueError("Invalid release")
         if release is not None:
             if not isinstance(release, str) or len(release) != 40 or any(c not in "0123456789abcdef" for c in release) or service != "api":
