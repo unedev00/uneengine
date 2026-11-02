@@ -232,14 +232,59 @@ function SmartTabs({p,record,fire}){
     name.toLowerCase()===p.dataCollection.name.toLowerCase())?.[1]:null;
  const selectedId=hasCollection?selectedCollection?.Id
   :stateKey&&p.pageState?p.pageState[stateKey]:undefined;
+ const indexForSelection=selectedId===null||selectedId===undefined||selectedId===""?-1:
+  tabs.findIndex((tab,index)=>{
+   const id=firstTabCustom&&index===0?firstTabValue
+    :hasCollection?tab?.record?.Id??tab?.record?.id??tab?.value:tab?.id;
+   return String(id??"")===String(selectedId);
+  });
+ // Always default to the FIRST actual tab, regardless of its caption or ID.
+ // Existing explicit selections still take priority when changing tabs.
  const selectedTabIndex=(hasCollection||stateKey)
-  ?selectedId===null||selectedId===undefined||selectedId===""?-1:
-   tabs.findIndex((tab,index)=>{
-    const id=firstTabCustom&&index===0?firstTabValue
-     :hasCollection?tab?.record?.Id??tab?.record?.id??tab?.value:tab?.id;
-    return String(id??"")===String(selectedId);
-   })
-  :active;
+  ?indexForSelection>=0?indexForSelection:tabs.length?0:-1
+  :tabs.length?Math.min(active,tabs.length-1):-1;
+ const autoSelected=React.useRef(null);
+ const selectTab=index=>{
+  setActive(index);
+  if(firstTabCustom&&index===0){
+   fire("change",{index,value:firstTabValue,isCustom:true,record:{Id:firstTabValue,Name:firstTabCaption},
+    ...(hasCollection?{collectionName:p.dataCollection.key??p.dataCollection.name}:{})});
+  }else if(hasCollection){
+   const item=recordTabs[index-(firstTabCustom?1:0)];
+   const itemId=item?.record?.Id||item?.record?.id||item?.value;
+   fire("change",{index,value:itemId??"",record:{
+    ...item?.record,Id:itemId??"",Name:item?.label??item?.record?.Name??"",
+    ...(item?.record?.__collectionCriteriaField?{
+     Field:item.record.__collectionCriteriaField,
+     Criteria:item.record.__collectionCriteria}: {})},
+    collectionName:p.dataCollection.key??p.dataCollection.name});
+  }else if(dynamic){
+   const row=recordsOf(p)[index-(firstTabCustom?1:0)];
+   fire("change",{index,value:String(row?.Id??row?.id??""),record:row});
+  }else{
+   const chosen=recordTabs[index-(firstTabCustom?1:0)];
+   const identifier=chosen&&typeof chosen==="object"
+    ?chosen.id??chosen.value??chosen.label:chosen;
+   fire("change",{index,value:String(identifier??""),record:{
+    Id:String(identifier??""),Name:text(chosen?.label??chosen??"")}});
+  }
+  if(index!==0)autoSelected.current=null;
+ };
+ const firstItemId=tabs.length?(firstTabCustom?firstTabValue:
+  hasCollection?tabs[0]?.record?.Id??tabs[0]?.record?.id??tabs[0]?.value:tabs[0]?.id):null;
+ // Publishing the first selection matters: a visual highlight alone leaves
+ // Collection State blank, so dependent components cannot filter correctly.
+ React.useEffect(()=>{
+  if(!tabs.length||p.loading||p.previewOnly||p.builderPreview||
+    !(hasCollection||stateKey)||typeof p.onAction!=="function")return;
+  if(indexForSelection>=0){autoSelected.current=null;return;}
+  const key=String(p.pageSessionKey??"")+"|"+String(p.componentId??"")+"|"+
+   String(hasCollection?p.dataCollection.name:stateKey)+"|"+String(firstItemId??"");
+  if(autoSelected.current===key)return;
+  autoSelected.current=key;
+  selectTab(0);
+ },[indexForSelection,firstItemId,tabs.length,p.loading,p.previewOnly,p.builderPreview,
+   p.pageSessionKey,p.componentId,p.onAction,hasCollection,stateKey,p.dataCollection?.name]);
  React.useEffect(()=>{if(active>=tabs.length)setActive(0)},[active,tabs.length]);
  return <div className="smart-tabs-shell" style={{background:p.backgroundColor||undefined,
    display:"flex",flexDirection:"column",height:"100%",minHeight:0,width:"100%"}}>
@@ -250,31 +295,8 @@ function SmartTabs({p,record,fire}){
      minWidth:number(p.tabWidth,120),borderRadius:number(p.radius,10),fontSize:number(p.textSize,16),textAlign:p.labelAlignment||"center",boxShadow:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none",color:p.labelColor||undefined,
      background:selectedTabIndex===index?p.selectedTabColor||"#eaf2ff":p.tabColor||"#fff",
     borderColor:p.borderColor||undefined}}
-    onClick={()=>{setActive(index);
-      if(firstTabCustom&&index===0){
-       fire("change",{index,value:firstTabValue,isCustom:true,record:{Id:firstTabValue,Name:firstTabCaption},
-        ...(hasCollection?{collectionName:p.dataCollection.key??p.dataCollection.name}:{})});
-      }else if(hasCollection){
-       const item=recordTabs[index-(firstTabCustom?1:0)];
-       const itemId=item?.record?.Id||item?.record?.id||item?.value;
-       fire("change",{index,value:itemId??"",record:{
-        ...item?.record,Id:itemId??"",Name:item?.label??item?.record?.Name??"",
-        ...(item?.record?.__collectionCriteriaField?{
-          Field:item.record.__collectionCriteriaField,
-          Criteria:item.record.__collectionCriteria}: {})},
-        collectionName:p.dataCollection.key??p.dataCollection.name});
-      }else if(dynamic){
-       const row=recordsOf(p)[index-(firstTabCustom?1:0)];
-       fire("change",{index,value:String(row?.Id??row?.id??""),record:row});
-       }else{
-       const chosen=recordTabs[index-(firstTabCustom?1:0)];
-       const identifier=chosen&&typeof chosen==='object'
-        ?chosen.id??chosen.value??chosen.label
-        :chosen;
-       fire("change",{index,value:String(identifier??""),record:{
-        Id:String(identifier??""),Name:text(chosen?.label??chosen??"")}});
-      }
-     }}>{text(tab?.label??tab)}</button>)}
+    tabIndex={selectedTabIndex===index?0:-1}
+    onClick={()=>selectTab(index)}>{text(tab?.label??tab)}</button>)}
    {(dynamic||hasCollection)&&tabs.length===0&&<span className="smart-tabs-empty">No matching records</span>}
   </nav>
  </div>;
