@@ -172,6 +172,7 @@ BEGIN
   LOOP
    -- Do not rewrite unrelated user-visible text. Property-path filtering is
    -- conservative; references in unknown keys are left for the audit check.
+   count_rows:=0;
    IF EXISTS(SELECT 1 FROM information_schema.columns c
       WHERE c.table_schema=current_schema()
        AND c.table_name=item.table_name AND c.column_name='property_path') THEN
@@ -181,6 +182,7 @@ BEGIN
       item.table_name)
      USING p_tenant, '\m'||mapping.old_name||'\M',mapping.new_name,
        mapping.old_name,'(formula|bind|flow|action|object|field|page|app|source|target|reference|filter|query|expression|navigation)';
+    GET DIAGNOSTICS count_rows=ROW_COUNT;
    ELSIF EXISTS(SELECT 1 FROM information_schema.columns c
       WHERE c.table_schema=current_schema()
        AND c.table_name=item.table_name AND c.column_name='api_name') THEN
@@ -190,8 +192,8 @@ BEGIN
       item.table_name)
      USING p_tenant, '\m'||mapping.old_name||'\M',mapping.new_name,
        mapping.old_name,'(formula|bind|flow|action|object|field|page|app|source|target|reference|filter|query|expression|navigation)';
+    GET DIAGNOSTICS count_rows=ROW_COUNT;
    END IF;
-   GET DIAGNOSTICS count_rows=ROW_COUNT;
    touched:=touched+count_rows;
   END LOOP;
  END LOOP;
