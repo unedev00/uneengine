@@ -526,7 +526,7 @@ export function validateFlowFormula(expression:string,
 }
 
 export type FormulaValueType='Number'|'Text'|'Checkbox'|'Date'|'DateTime'|'Time'
-  |'Picklist'|'MultiPicklist'|'Geolocation'|'Null';
+  |'Picklist'|'MultiPicklist'|'Geolocation'|'Collection'|'Null';
 type FormulaTypeResolver=(reference:string)=>FormulaValueType|null;
 const formulaTextTypes=new Set<FormulaValueType>(['Text','Picklist']);
 const formulaNumeric=(type:FormulaValueType)=>type==='Number';
@@ -606,6 +606,7 @@ export function inferFlowFormulaType(expression:string,resolve:FormulaTypeResolv
     const requireText=(index:number)=>requireType(index,['Text','Picklist']);
     const requireNumber=(index:number)=>requireType(index,['Number']);
     switch(node.name){
+      case 'COLLECTION':arity(2,20);requireText(0);return 'Collection';
       case 'ISCHANGED':arity(1);triggerFieldReference(node.args[0]);return 'Checkbox';
       case 'ISNEW':case 'ISCLONE':arity(0);return 'Checkbox';
       case 'PRIORVALUE':arity(1);triggerFieldReference(node.args[0]);return args[0];
