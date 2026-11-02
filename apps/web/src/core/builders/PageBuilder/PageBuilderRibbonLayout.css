@@ -139,29 +139,29 @@
 }
 .office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content
   .smart-insert-tile { height: 55px !important; }
-/* Advanced five-section Office ribbon — the single geometry owner.
- * Section/field X/Y below are CSS pixels relative to this ribbon's origin.
- * Fixed 114px height, 26px property rows at y=5/35/65 and 22px captions
- * at y=92. The 9px horizontal scrollbar stays outside the content lane.
- * Unsupported controls remain visible and disabled; never a modal/form. */
+/* Advanced ribbon: all five groups and their permanent field slots remain.
+ * Fluid group widths replace the fixed 1641px scroll lane. The three property
+ * rows and bottom captions keep the same 114px vertical footprint. */
 .office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content
   > .page-builder-advanced-inline {
-  box-sizing:border-box!important;display:flex!important;flex:0 0 1641px!important;
-  flex-flow:row nowrap!important;align-items:stretch!important;
-  width:1641px!important;min-width:1641px!important;max-width:1641px!important;
+  box-sizing:border-box!important;display:grid!important;flex:1 1 100%!important;
+  grid-template-columns:minmax(0,1.08fr) minmax(0,1fr) minmax(0,1.02fr) minmax(0,1.42fr) minmax(0,1.02fr)!important;
+  grid-template-rows:114px!important;
+  align-items:stretch!important;
+  width:100%!important;min-width:0!important;max-width:100%!important;
   height:114px!important;min-height:114px!important;max-height:114px!important;
-  gap:0!important;overflow:visible!important;
+  gap:0!important;overflow:hidden!important;
 }
 .office-builder-ribbon .page-builder-advanced-inline>.advanced-fixed-group{
-  box-sizing:border-box;position:relative;flex-shrink:0;height:114px;
+  box-sizing:border-box;position:relative;min-width:0;width:auto;height:114px;
   min-height:114px;max-height:114px;border-right:1px solid #cbd6e4;
   background:#fbfcfe;color:#263950;
 }
-.office-builder-ribbon .advanced-fixed-group.advanced-activation{flex-basis:286px;width:286px}
-.office-builder-ribbon .advanced-fixed-group.advanced-responsive{flex-basis:344px;width:344px}
-.office-builder-ribbon .advanced-fixed-group.advanced-properties{flex-basis:287px;width:287px}
-.office-builder-ribbon .advanced-fixed-group.advanced-nesting{flex-basis:378px;width:378px}
-.office-builder-ribbon .advanced-fixed-group.advanced-technical{flex-basis:346px;width:346px}
+.office-builder-ribbon .advanced-fixed-group.advanced-activation{min-width:0;width:auto}
+.office-builder-ribbon .advanced-fixed-group.advanced-responsive{min-width:0;width:auto}
+.office-builder-ribbon .advanced-fixed-group.advanced-properties{min-width:0;width:auto}
+.office-builder-ribbon .advanced-fixed-group.advanced-nesting{min-width:0;width:auto}
+.office-builder-ribbon .advanced-fixed-group.advanced-technical{min-width:0;width:auto}
 .office-builder-ribbon .page-builder-advanced-inline .advanced-fixed-field{
   box-sizing:border-box;position:absolute;display:flex;align-items:center;
   justify-content:space-between;gap:4px;margin:0;padding:0 3px;
@@ -198,31 +198,77 @@
   white-space:nowrap;pointer-events:none;
 }
 /* Group 1: x=0-285 */
-.office-builder-ribbon .advanced-activation .advanced-assigned{left:12px;top:5px;width:125px}
-.office-builder-ribbon .advanced-activation .advanced-default{left:147px;top:5px;width:125px}
-.office-builder-ribbon .advanced-activation .advanced-role{left:12px;top:35px;width:258px}
-.office-builder-ribbon .advanced-activation .advanced-app{left:12px;top:65px;width:258px}
+.office-builder-ribbon .advanced-activation .advanced-assigned{left:8px;top:5px;width:calc(50% - 12px)}
+.office-builder-ribbon .advanced-activation .advanced-default{left:50%;top:5px;right:8px}
+.office-builder-ribbon .advanced-activation .advanced-role{left:8px;right:8px;top:35px}
+.office-builder-ribbon .advanced-activation .advanced-app{left:8px;right:8px;top:65px}
 /* Group 2: x=286-629 */
-.office-builder-ribbon .advanced-responsive .advanced-device-0{left:12px;top:5px;width:121px}
-.office-builder-ribbon .advanced-responsive .advanced-device-1{left:12px;top:35px;width:121px}
-.office-builder-ribbon .advanced-responsive .advanced-device-2{left:12px;top:65px;width:121px}
-.office-builder-ribbon .advanced-responsive .advanced-breakpoint{left:143px;top:5px;width:188px}
-.office-builder-ribbon .advanced-responsive .advanced-columns{left:143px;top:35px;width:188px}
+.office-builder-ribbon .advanced-responsive .advanced-device-0{left:8px;top:5px;width:calc(40% - 8px)}
+.office-builder-ribbon .advanced-responsive .advanced-device-1{left:8px;top:35px;width:calc(40% - 8px)}
+.office-builder-ribbon .advanced-responsive .advanced-device-2{left:8px;top:65px;width:calc(40% - 8px)}
+.office-builder-ribbon .advanced-responsive .advanced-breakpoint{left:40%;right:8px;top:5px}
+.office-builder-ribbon .advanced-responsive .advanced-columns{left:40%;right:8px;top:35px}
 /* Group 3: x=630-916 */
-.office-builder-ribbon .advanced-properties .advanced-api-name{left:12px;top:5px;width:263px}
-.office-builder-ribbon .advanced-properties .advanced-css-class{left:12px;top:35px;width:263px}
-.office-builder-ribbon .advanced-properties .advanced-visible{left:12px;top:65px;width:128px}
-.office-builder-ribbon .advanced-properties .advanced-readonly{left:148px;top:65px;width:127px}
+.office-builder-ribbon .advanced-properties .advanced-api-name{left:8px;right:8px;top:5px}
+.office-builder-ribbon .advanced-properties .advanced-css-class{left:8px;right:8px;top:35px}
+.office-builder-ribbon .advanced-properties .advanced-visible{left:8px;top:65px;width:calc(50% - 12px)}
+.office-builder-ribbon .advanced-properties .advanced-readonly{left:50%;top:65px;right:8px}
 /* Group 4: x=917-1294 */
-.office-builder-ribbon .advanced-nesting .advanced-accept{left:12px;top:5px;width:354px}
-.office-builder-ribbon .advanced-nesting .advanced-child-types{left:12px;top:35px;width:354px}
-.office-builder-ribbon .advanced-nesting .advanced-max-children{left:12px;top:65px;width:165px}
-.office-builder-ribbon .advanced-nesting .advanced-parent{left:186px;top:65px;width:180px}
-.office-builder-ribbon .advanced-nesting .advanced-parent>select{max-width:65%}
+.office-builder-ribbon .advanced-nesting .advanced-accept{left:8px;right:8px;top:5px}
+.office-builder-ribbon .advanced-nesting .advanced-child-types{left:8px;right:8px;top:35px}
+.office-builder-ribbon .advanced-nesting .advanced-max-children{left:8px;top:65px;width:calc(42% - 10px)}
+.office-builder-ribbon .advanced-nesting .advanced-parent{left:42%;right:8px;top:65px}
+.office-builder-ribbon .advanced-nesting .advanced-parent>select{max-width:52%}
 /* Group 5: x=1295-1640 */
-.office-builder-ribbon .advanced-technical .advanced-component-id{left:12px;top:5px;width:322px}
-.office-builder-ribbon .advanced-technical .advanced-object{left:12px;top:35px;width:322px}
-.office-builder-ribbon .advanced-technical .advanced-render-mode{left:12px;top:65px;width:322px}
+.office-builder-ribbon .advanced-technical .advanced-component-id{left:8px;right:8px;top:5px}
+.office-builder-ribbon .advanced-technical .advanced-object{left:8px;right:8px;top:35px}
+.office-builder-ribbon .advanced-technical .advanced-render-mode{left:8px;right:8px;top:65px}
+
+
+/* The Advanced tab does not reserve or show a horizontal scrollbar. */
+.office-builder-ribbon[aria-label="Page Builder ribbon"]:not(.is-interactive-preview)
+  #page-builder-tab-content.office-ribbon-content[aria-label="Advanced"]:is([role="tabpanel"]){
+  --page-ribbon-scroll-strip-height:118px;
+  overflow-x:hidden!important;overflow-y:hidden!important;scrollbar-width:none!important;
+}
+.office-builder-ribbon[aria-label="Page Builder ribbon"]:not(.is-interactive-preview)
+  #page-builder-tab-content.office-ribbon-content[aria-label="Advanced"]::-webkit-scrollbar{
+  display:none!important;height:0!important;
+}
+.office-builder-ribbon .page-builder-advanced-inline>.advanced-fixed-group:last-child{border-right:0}
+
+/* Keep every field accessible on narrower viewports by wrapping whole groups,
+ * never by hiding fields or reintroducing a horizontal scrollbar. */
+@media(max-width:1180px){
+  .office-builder-ribbon[aria-label="Page Builder ribbon"]:not(.is-interactive-preview)
+    #page-builder-tab-content.office-ribbon-content[aria-label="Advanced"]:is([role="tabpanel"]){
+    --page-ribbon-scroll-strip-height:232px;
+  }
+  .office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content
+    >.page-builder-advanced-inline{
+    grid-template-columns:repeat(6,minmax(0,1fr))!important;
+    grid-template-rows:repeat(2,114px)!important;
+    height:228px!important;min-height:228px!important;max-height:228px!important;
+  }
+  .office-builder-ribbon .page-builder-advanced-inline>.advanced-fixed-group:nth-child(-n+3){grid-column:span 2}
+  .office-builder-ribbon .page-builder-advanced-inline>.advanced-fixed-group:nth-child(n+4){grid-column:span 3}
+  .office-builder-ribbon .page-builder-advanced-inline>.advanced-fixed-group:nth-child(3){border-right:0}
+}
+@media(max-width:680px){
+  .office-builder-ribbon[aria-label="Page Builder ribbon"]:not(.is-interactive-preview)
+    #page-builder-tab-content.office-ribbon-content[aria-label="Advanced"]:is([role="tabpanel"]){
+    --page-ribbon-scroll-strip-height:574px;
+  }
+  .office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content
+    >.page-builder-advanced-inline{
+    grid-template-columns:minmax(0,1fr)!important;
+    grid-template-rows:repeat(5,114px)!important;
+    height:570px!important;min-height:570px!important;max-height:570px!important;
+  }
+  .office-builder-ribbon .page-builder-advanced-inline>.advanced-fixed-group{
+    grid-column:span 1!important;border-right:0;
+  }
+}
 
 /* One minimum-spacing contract for all Page Builder tabs. Actual groups may
  * use more spacing; Data's three-row controls need an explicit nonzero gap. */
