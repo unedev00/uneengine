@@ -180,7 +180,9 @@ export function usePageCollectionFormula(
    lastValid.current={object:primaryObject,collection:sessionResult.collection};
  const visible=recoverable?{collection:lastValid.current?.object===primaryObject
    ?lastValid.current.collection:null,error:null,loading:false}:sessionResult;
- const owned=referencesNamed?visible.collection:null;
+ // A restricted record presenter may enforce additional channel grants.
+ // Its unpresented Object rows must never be published as a shared collection.
+ const owned=referencesNamed&&!properties.recordPresenterApiName?visible.collection:null;
  const identity=owned?JSON.stringify(owned):'';
  useEffect(()=>registerSessionCollection(scope,componentId,owned),[scope,componentId,identity]);
  const duplicate=registry.errors[componentId];
