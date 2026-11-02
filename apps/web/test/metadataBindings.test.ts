@@ -10,7 +10,7 @@ import {presentPageRecords} from '../src/core/records/RecordWorkspace/recordPres
 import type {ObjectMetadata,FlowDefinitionMetadata} from '../src/core/metadata/Definitions/metadata';
 import {pageLayoutForRecord} from '../src/core/records/RecordWorkspace/recordMetadataUtils';
 import {declaredFlowOutputs,resolveFlowOutputBindings,encodeInputSource,decodeInputSource,resolveStructuredFlowInput} from '../src/core/automation/FlowScreen/flowInputBindings';
-import {pageComponentRecordQuery,filterPageComponentRecords,bindPageStateProperties} from '../src/core/pages/PageRuntime/pageComponentBindings';
+import {pageComponentRecordQuery,filterPageComponentRecords,bindPageStateProperties,activePageRecordFilters} from '../src/core/pages/PageRuntime/pageComponentBindings';
 import {compareMetadataValue} from '../src/core/metadata/Definitions/metadataValueComparison';
 import {supportedFilterOperators,isNumericFilterField,isBooleanFilterField,examineRecordFilter} from '../src/core/records/RecordWorkspace/recordFilterMetadata';
 
@@ -449,4 +449,25 @@ test('server filter formula handles AND/OR and rejects unserverable expressions'
  assert.match(validateRecordFilterFormula('IF(ISBLANK($state.pick), TRUE, @Unknown = 1)',fields)??'',/readable @Field/);
  assert.equal(compileRecordFilterFormula('@Category = $state.pick',fields,{}).blocked,true);
  assert.equal(compileRecordFilterFormula('IF(ISBLANK($state.pick), FALSE, TRUE)',fields,{}).blocked,true);
+});
+
+
+test('Field and Formula modes select the active record query without deleting saved rules',()=>{
+ const fields=[{apiName:'Status',label:'Status',dataType:'Text'}] as any;
+ const saved={filters:[{field:'Status',operator:'Equals',value:'Open'}],
+   filterFormula:'@Status = "Closed"'};
+ const field=activePageRecordFilters({...saved,filterMode:'Field'});
+ assert.equal(field.formula,undefined);
+ assert.deepEqual(field.filters,saved.filters);
+ assert.deepEqual(pageComponentRecordQuery(field.filters,fields,{},'AND',field.formula).filters,
+   [{field:'Status',operator:'eq',value:'Open'}]);
+ const formula=activePageRecordFilters({...saved,filterMode:'Formula'});
+ assert.deepEqual(formula.filters,[]);
+ assert.equal(formula.formula,saved.filterFormula);
+ assert.deepEqual(pageComponentRecordQuery(formula.filters,fields,{},'AND',formula.formula).filters,
+   [{field:'Status',operator:'eq',value:'Closed'}]);
+ assert.deepEqual(activePageRecordFilters(saved),
+   {filters:saved.filters,formula:saved.filterFormula},
+   'legacy pages without an explicit mode retain combined rules');
+ assert.equal(saved.filters.length,1);
 });
