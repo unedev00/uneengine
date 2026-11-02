@@ -746,7 +746,9 @@ test('Image source is editable @ text, with upload only for the Image component'
  assert.match(ribbon,/className="smart-formula-filter smart-image-source-editor"/);
  assert.match(ribbon,/rootObjectApiName=\{objectName\}/);
  assert.match(ribbon,/api==='smart_image'/);
- assert.doesNotMatch(ribbon,/Image source type|Choose field|allImageFields/);
+ assert.doesNotMatch(ribbon,/Image source type|allImageFields/);
+ assert.match(ribbon,/relationshipFormulaFields\(objects,sourceObjectNames/);
+ assert.match(ribbon,/activeDataProperty\.id==='imageSource'\?'image':'text'/);
  assert.match(ribbon,/uploadInput.current\?\.click\(\)/);
  assert.doesNotMatch(ribbon,/>Library<\/button>/);
  assert.doesNotMatch(ribbon,/setLibraryOpen/);

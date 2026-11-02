@@ -1223,7 +1223,7 @@ function PageBuilder({
     // Avoid starting a parent move from a nested component's pointer event.
     if (!element || (!portalGrip && hit.closest('[data-component-id]') !== element)) return;
     if (!hit.closest('.free-canvas-move-edge,.canvas-move-grip') &&
-      hit.closest('button,input,select,textarea,a,[contenteditable="true"],.free-canvas-resize-handle,.canvas-element-actions')) return;
+      hit.closest('input,select,textarea,[contenteditable="true"],.free-canvas-resize-handle,.canvas-element-actions')) return;
     event.preventDefault();
     event.stopPropagation();
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -2429,7 +2429,13 @@ function PageBuilder({
           '--canvas-layer-order':canvasSiblingLayerIndex(page.components,component.id),
           zIndex:canvasSiblingLayerIndex(page.components,component.id)
         } : {}),
-        ...(component.properties?.fillRegion===true && page.layoutMode==='template' ? {height:'100%',minHeight:0}: {})
+        ...(component.properties?.fillRegion===true && page.layoutMode==='template' ? {height:'100%',minHeight:0}: {}),
+        // Editor-only frame colour: reuse an authored border, never persist a selection property.
+        ...(!previewMode && !libraryPreview &&
+          typeof (typeof component.properties.borderColor==='string'
+            ? component.properties.borderColor:visualStyle.borderColor)==='string' &&
+          Number(component.properties.borderWidth??visualStyle.borderWidth??1)>0
+          ? {'--canvas-selection-outline':component.properties.borderColor || visualStyle.borderColor} : {})
       } as React.CSSProperties}
       onClick={selectOnlyInDesigner ? selectCanvasComponent : undefined}
       onClickCapture={libraryPreview && !interactivePreview

@@ -144,6 +144,19 @@
  border:0!important;
  box-shadow:none!important;
 }
+/* Editor-only selection frame always tracks the saved component box, including
+   very short heights where a child scroller can hide its own bottom edge.
+   This is not authored border metadata and never appears in Preview/runtime. */
+.builder-editor-mode .modern-canvas-builder .free-canvas-component.selected::after{
+ content:"";position:absolute;inset:0;box-sizing:border-box;
+ border:1px solid var(--canvas-selection-outline,#2563eb);
+ border-radius:inherit;pointer-events:none;z-index:161;
+}
+/* Template components also show their bounds only while selected. */
+.builder-editor-mode .modern-canvas-builder .record-component.selected:not(.free-canvas-component){
+ outline:1px solid var(--canvas-selection-outline,#2563eb);
+ outline-offset:0;
+}
 /* Keyboard-only selection stays perceivable, rounded like the native shape. */
 .builder-editor-mode .modern-canvas-builder .free-canvas-component[data-page-appearance].selected:focus-visible{
  border-radius:var(--md-page-radius,var(--one-radius,12px))!important;

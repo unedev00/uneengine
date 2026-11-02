@@ -205,7 +205,7 @@ function SmartTabs({p,record,fire}){
   <nav className="smart-tabs" aria-label="Tabs" style={{
     width:"100%",height:"100%",flex:"1 1 auto",minHeight:0,alignContent:"stretch"}}>
    {tabs.map((tab,index)=><button key={tab?.id??index} type="button" role="tab"
-    aria-selected={active===index} style={{minHeight:number(p.tabHeight,44),flex:"1 1 auto",
+    aria-selected={active===index} style={{height:number(p.tabHeight,44),maxHeight:"100%",minHeight:0,flex:"1 1 auto",
      minWidth:number(p.tabWidth,120),borderRadius:number(p.radius,10),fontSize:number(p.textSize,16),textAlign:p.labelAlignment||"center",boxShadow:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none",color:p.labelColor||undefined,
      background:active===index?p.selectedTabColor||"#eaf2ff":p.tabColor||"#fff",
     borderColor:p.borderColor||undefined}}
@@ -346,7 +346,7 @@ export default function SmartRuntime(p){
       const src=item&&typeof item==="object"?item.imageSrc??item.imageUrl:null;
       const safeSrc=typeof src==="string"&&/^https:\/\//i.test(src)?src:null;
       return <button key={item?.id??i} type="button" className="smart-navigation-item"
-        style={{flex:"0 0 auto",minHeight:32,color:p.labelColor||undefined,background:p.backgroundColor||"#fff",
+        style={{flex:"0 0 auto",height:32,maxHeight:"100%",minHeight:0,color:p.labelColor||undefined,background:p.backgroundColor||"#fff",
           boxShadow:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none",
           borderColor:p.borderColor||undefined,borderRadius:number(p.radius,4),fontSize:number(p.textSize,16)}}
         onClick={()=>{fire("click",item);if(p.onNavigate&&item?.target)p.onNavigate(item.target)}}>
