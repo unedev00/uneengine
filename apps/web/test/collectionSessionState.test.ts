@@ -249,3 +249,13 @@ test('named Collection list filters reuse saved items without losing IDs or crit
  assert.equal(match[0].criteriaField,'MenuCategory.Name');
  assert.equal(match[0].criteria,'Desserts');
 });
+
+test('a single field can expand into more than nineteen authorised Collection entries',()=>{
+ const rows=Array.from({length:35},(_,index)=>({Id:'c'+index,Name:'Category '+index}));
+ const result=evaluateCollectionFormula('=COLLECTION("All Categories",@Name)',{
+  MenuCategory:rows
+ },{primaryObject:'MenuCategory'});
+ assert.equal(result.error,undefined);
+ assert.equal(result.value.items.length,35);
+ assert.equal(result.value.items[34].value,'c34');
+});
