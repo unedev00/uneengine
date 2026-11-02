@@ -21,7 +21,7 @@ export default function PageDetailsDialog({page,apps,disabled,request,onClose,on
 }){
  const [label,setLabel]=useState(page.label);
  const [apiName,setApiName]=useState(page.apiName);
- const apiNameValid=/^[a-z][a-z0-9_]{0,127}$/.test(apiName);
+ const apiNameValid=apiName===page.apiName||/^[a-z][a-z0-9_]{0,127}$/.test(apiName);
  const existing=(page.activationAssignments??[]).find(a=>a.scope==='App Default'&&a.appId)?.appId
    ??apps.find(app=>app.navigationPageApiNames.includes(page.apiName))?.apiName??'';
  const [appApiName,setAppApiName]=useState(existing);
