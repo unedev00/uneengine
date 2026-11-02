@@ -16,6 +16,8 @@ const screens=[
   {app:'MetaDrive Setup',view:'setup-home',title:'Setup Home'},
   {app:'MetaDrive Setup',view:'tenants',title:'Tenant management'},
   {app:'MetaDrive Setup',view:'credentials',title:'Named Credentials and Webhook'},
+  {app:'MetaDrive Setup',view:'credentials-view',title:'Credential details modal'},
+  {app:'MetaDrive Setup',view:'credentials-edit',title:'Credential editing modal'},
   {app:'MetaDrive Setup',view:'offline',title:'Offline briefcase settings'},
   {app:'MetaDrive Setup',view:'records-import',title:'Record workspace lazy route'},
   {app:'MetaDrive Builders',view:'schema',title:'Schema Builder'},
@@ -103,6 +105,20 @@ try{
         await page.goto(url,{waitUntil:'domcontentloaded',timeout:30000});
         await page.locator('#root > *').first().waitFor({state:'visible',timeout:15000});
         await page.waitForTimeout(300);
+        if(screen.view==='credentials-view'||screen.view==='credentials-edit'){
+          // Open the actual credential dialog via its user-visible controls.
+          // The responsive list uses a row-opening action rather than desktop's icon bar.
+          const tableAction=screen.view==='credentials-edit'?'Edit Sample credential':'Webhook details for Sample credential';
+          const isDesktop=viewport.width>=900;
+          if(isDesktop)await page.getByRole('button',{name:tableAction,exact:true}).click();
+          else {
+            const row=page.getByRole('button',{name:'View connection'}).first();
+            if(await row.count())await row.click();
+            else await page.getByText('Sample credential',{exact:true}).first().click();
+            if(screen.view==='credentials-edit')await page.getByRole('dialog').getByRole('button',{name:'Edit',exact:true}).click();
+          }
+          await page.locator('.named-credential-modal').waitFor({state:'visible',timeout:5000});
+        }
       }catch(e){failure=e instanceof Error?e.message:String(e);}
       const metric=await page.evaluate(()=>{
         const html=document.documentElement, body=document.body;
@@ -125,12 +141,26 @@ try{
           .slice(0,12).map(el=>({name:(el.getAttribute('aria-label')||el.name||el.getAttribute('placeholder')||'').slice(0,60),
             width:Math.round(el.getBoundingClientRect().width)}));
         const actions=[...document.querySelectorAll('.named-credentials-page .slds-table td:last-child .toolbar-actions')];
-        const actionWraps=actions.map(el=>[...el.children].map(child=>Math.round(child.getBoundingClientRect().top)))
-          .filter(tops=>new Set(tops).size>1).length;
+        // A short icon button naturally has a different top edge from a tall
+        // labelled button. Measure centre lines, not top edges: wrapping shifts
+        // the centre by a whole row, while align-items:center keeps it shared.
+        const actionWraps=actions.map(el=>{
+          const mids=[...el.children].filter(visible).map(child=>{
+            const rect=child.getBoundingClientRect();
+            return rect.top+rect.height/2;
+          });
+          return mids.length>1&&Math.max(...mids)-Math.min(...mids)>12;
+        }).filter(Boolean).length;
+        const modal=document.querySelector('.named-credential-modal');
+        const modalRect=modal?.getBoundingClientRect();
+        const configGrid=modal?.querySelector('.connector-config-fields');
+        const configColumns=configGrid?getComputedStyle(configGrid).gridTemplateColumns.split(' ').filter(Boolean).length:0;
+        const modalOverflow=modal?modal.scrollWidth>modal.clientWidth+6:false;
         return {zoom:window.visualViewport?.scale??1,docWidth,viewportWidth,
           horizontalOverflow:Math.max(0,docWidth-viewportWidth),
           renderedText:body.innerText.trim().slice(0,180),
-          controlCount:controls.length,clipped,offscreenControls,oversizedInputs,actionWraps};
+          controlCount:controls.length,clipped,offscreenControls,oversizedInputs,actionWraps,
+          modalWidth:modalRect?Math.round(modalRect.width):null,modalOverflow,configColumns};
       }).catch(e=>({error:String(e)}));
       try{await page.screenshot({path:join(root,file+'.png'),animations:'disabled'});}
       catch(e){failure+=(failure?'; ':'')+'Screenshot failed: '+String(e);}
@@ -140,6 +170,12 @@ try{
       if(metric.error)issues.push('metrics: '+metric.error);
       if(metric.horizontalOverflow>6)issues.push('document horizontal overflow: '+metric.horizontalOverflow+'px');
       if(metric.actionWraps)issues.push('wrapped credential action rows: '+metric.actionWraps);
+      if(metric.modalOverflow)issues.push('credential dialog horizontal overflow');
+      if(screen.view==='credentials-view'||screen.view==='credentials-edit'){
+        if(!metric.modalWidth)issues.push('credential dialog missing');
+        if(metric.modalWidth>metric.viewportWidth+2)issues.push('credential dialog exceeds viewport');
+        if(metric.configColumns!==(viewport.width>720?2:1))issues.push('configuration grid columns: '+metric.configColumns);
+      }
       if(!metric.renderedText)issues.push('empty rendered content');
       if(Math.abs((metric.zoom??1)-1)>0.001)issues.push('browser zoom is not 100%');
       const entry={application:screen.app,screen:screen.title,view:screen.view,
