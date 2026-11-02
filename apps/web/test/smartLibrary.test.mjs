@@ -683,6 +683,40 @@ test('Smart Tabs renders only bounded matching record labels from a filtered Obj
 });
 
 
+test('Smart Tabs first tab is optional, formula-capable, and never replaces a real category',async()=>{
+ const base={objectApiName:'MenuCategory',textSource:'@Name',tabCount:2,
+  records:[{Id:'category-1',Name:'Desserts'},{Id:'category-2',Name:'Drinks'}]};
+ const original=await renderSmart('smart_tabs',base);
+ assert.doesNotMatch(original,/All items|Custom tab/);
+ assert.equal((original.match(/role="tab"/g)??[]).length,2);
+ const customised=await renderSmart('smart_tabs',{...base,firstTabCustom:true,firstTabCaption:'All items'});
+ assert.match(customised,/All items/);
+ assert.match(customised,/Desserts/);
+ assert.match(customised,/Drinks/);
+ assert.equal((customised.match(/role="tab"/g)??[]).length,3);
+ assert.ok(customised.indexOf('All items')<customised.indexOf('Desserts'));
+ const dynamicCaption=await renderSmart('smart_tabs',{...base,firstTabCustom:true,
+  firstTabCaption:'"Hello " & @state.displayName',pageState:{displayName:'Visitor'}});
+ assert.match(dynamicCaption,/Hello Visitor/);
+ const disabled=await renderSmart('smart_tabs',{...base,firstTabCustom:false,firstTabCaption:'All items'});
+ assert.doesNotMatch(disabled,/All items/);
+ const runtime=read('../src/component-libraries/smart/shared/SmartRuntime.jsx');
+ assert.match(runtime,/firstTabCustom&&index===0/);
+ assert.match(runtime,/value:"",isCustom:true/);
+ assert.match(runtime,/index-\\(firstTabCustom\\?1:0\\)/);
+});
+
+test('Optional leading Smart Tab is SQL-configured and has no app-specific default',()=>{
+ const sql=read('../../server/src/system-support/migrations/20270302-smart-tabs-optional-first-tab.sql');
+ const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
+ for(const key of ['firstTabCustom','firstTabCaption'])assert.ok(sql.includes("'"+key+"'"));
+ assert.match(sql,/SELECT 'smart_tabs',p.property_key,true/);
+ assert.match(sql,/'Design','Tabs'/);
+ assert.match(sql,/'false'::jsonb/);
+ assert.doesNotMatch(sql,/All items|MenuCategory|CODEXTILL|DELETE FROM md_page_|UPDATE md_page_/i);
+ assert.match(ribbon,/property.id!=='firstTabCaption'\\|\\|properties.firstTabCustom===true/);
+});
+
 test('Dynamic Tabs use Object text values inside tabs even when old static tabs were saved',async()=>{
  const records=[{Id:'a',Barcode:'DEMO10001',Name:'First'},
   {Id:'b',Barcode:'DEMO10002',Name:'Second'},
