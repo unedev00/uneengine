@@ -6,7 +6,7 @@ WITH spec AS (
 INSERT INTO md_builder_shared_properties
  (property_key,label,tab,section_group,control_kind,sort_order,default_value,choices,scope,
   design_row,design_order,design_width,design_height,design_caption,design_caption_width)
-SELECT 'firstTabValue','First Tab ID','Design','Tabs','text',spec.sort,'"*"'::jsonb,
+SELECT 'firstTabValue','First Tab ID','Design','Tabs','expression',spec.sort,'"*"'::jsonb,
  '[]'::jsonb,'component',3,2,160,26,'ID',42 FROM spec
 ON CONFLICT(property_key) DO NOTHING;
 
