@@ -88,8 +88,20 @@ export default function MetadataBoundPageComponent({
         ||!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(data.key))return;
       setPageState(previous=>({...previous,[data.key]:data.value}));
     };
+    const select=(event:Event)=>{
+      const detail=(event as CustomEvent<{pageSessionKey:string;name:string;value:Record<string,unknown>}>).detail;
+      if(detail?.pageSessionKey!==pageSessionKey||
+        !/^[A-Za-z][A-Za-z0-9_]{0,79}$/.test(detail.name))return;
+      setPageState(previous=>({...previous,collectionSelections:{
+       ...(previous.collectionSelections&&typeof previous.collectionSelections==='object'
+        &&!Array.isArray(previous.collectionSelections)?previous.collectionSelections as Record<string,unknown>:{}),
+       [detail.name]:detail.value
+      }}));
+    };
     window.addEventListener('metadrive:page-local-state',receive);
-    return ()=>window.removeEventListener('metadrive:page-local-state',receive);
+    window.addEventListener('metadrive:page-collection-selected',select);
+    return ()=>{window.removeEventListener('metadrive:page-local-state',receive);
+     window.removeEventListener('metadrive:page-collection-selected',select)};
   },[pageSessionKey]);
   const fields = objects.find((item) => item.apiName === objectApiName)?.fields ?? [];
   // Related filter targets retain the exact relationship path; type information
@@ -268,7 +280,7 @@ export default function MetadataBoundPageComponent({
   const contextRecords=contextApiName
    ?currentContextRecord?[currentContextRecord]:[]:visibleRecords;
   const namedSource=usePageCollectionFormula(properties.collectionFormula,properties,objects,
-    objectApiName,contextRecords,recordTotal,revision,pageState,sessionId);
+    objectApiName,contextRecords,recordTotal,revision,pageState,sessionId,pageSessionKey,component.id);
   const dataCollection=namedSource.collection;
   const dataCollectionRows=dataCollection?namedCollectionRows(dataCollection):null;
   const mentionContext = useRelationshipMentionContext(objects, mentionRootObjectApiName,
@@ -343,9 +355,22 @@ export default function MetadataBoundPageComponent({
     if(hasInteraction)window.dispatchEvent(new CustomEvent('metadrive:page-component-interaction',{
       detail:{pageSessionKey,componentId:component.id,event:action.event,value:action.value}
     }));
+    // Every authorised selection can update a named Collection without a Flow.
+    const selectionPayload=action.value&&typeof action.value==='object'&&!Array.isArray(action.value)
+      ?action.value as Record<string,unknown>:null;
+    const selectedCollection=selectionPayload?.collectionName;
+    if(action.event==='change'&&typeof selectedCollection==='string'
+      &&/^[A-Za-z][A-Za-z0-9_]{0,79}$/.test(selectedCollection)){
+      const record=selectionPayload?.record&&typeof selectionPayload.record==='object'&&!Array.isArray(selectionPayload.record)
+        ?selectionPayload.record as Record<string,unknown>:{};
+      window.dispatchEvent(new CustomEvent('metadrive:page-collection-selected',{detail:{
+        pageSessionKey,name:selectedCollection,
+        value:{Id:String(record.Id??selectionPayload?.value??''),Name:String(record.Name??''),Value:selectionPayload?.value??null}
+      }}));
+    }
     const config = actionFlows[action.event];
     if (!config || typeof config !== 'object' || Array.isArray(config)) {
-      if(hasInteraction)return {updated:true};
+      if(hasInteraction||selectedCollection)return {updated:true};
       throw new Error('No metadata event action is configured for "' + action.event + '".');
     }
     const binding = config as Record<string, unknown>;
