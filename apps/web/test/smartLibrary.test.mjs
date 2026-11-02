@@ -1121,7 +1121,7 @@ test('three shared Tab source paths preserve Object ID, custom ID and named Coll
  assert.match(ribbon,/p\.id!=='collectionFormula'/);
 });
 
-test('Smart Tabs highlights only the selected Collection or Formula/Page State record',async()=>{
+test('Smart Tabs starts on first actual tab and keeps explicit selections across sources',async()=>{
  const base={objectApiName:'Category',textSource:'@Name',tabCount:2,
   records:[{Id:'a',Name:'Food'},{Id:'b',Name:'Drinks'}]};
  for(const action of [
@@ -1131,8 +1131,9 @@ test('Smart Tabs highlights only the selected Collection or Formula/Page State r
   const configured={...base,actionFlows:{change:action}};
   const chosen=await renderSmart('smart_tabs',{...configured,pageState:{categoryId:'b'}});
   assert.match(chosen,/aria-selected="true"[^>]*>Drinks<\/button>/);
-  const cleared=await renderSmart('smart_tabs',{...configured,pageState:{}});
-  assert.doesNotMatch(cleared,/aria-selected="true"/);
+  const initial=await renderSmart('smart_tabs',{...configured,pageState:{}});
+  assert.match(initial,/aria-selected="true"[^>]*tabindex="0"[^>]*>Food<\/button>/);
+  assert.doesNotMatch(initial,/aria-selected="true"[^>]*>Drinks<\/button>/);
  }
  const dataCollection={name:'Children',items:[]};
  const records=[{Id:'a',Name:'Food',__collectionLabel:'Food',__collectionValue:'a'},
@@ -1140,11 +1141,24 @@ test('Smart Tabs highlights only the selected Collection or Formula/Page State r
  const selected=await renderSmart('smart_tabs',{...base,records,dataCollection,
   pageState:{collectionSelections:{Children:{Id:'b'}}}});
  assert.match(selected,/aria-selected="true"[^>]*>Drinks<\/button>/);
- const invalidated=await renderSmart('smart_tabs',{...base,records,dataCollection,
+ const unselected=await renderSmart('smart_tabs',{...base,records,dataCollection,
   pageState:{collectionSelections:{}}});
- assert.doesNotMatch(invalidated,/aria-selected="true"/);
+ assert.match(unselected,/aria-selected="true"[^>]*>Food<\/button>/);
+ const custom=await renderSmart('smart_tabs',{...base,records,dataCollection,
+  firstTabCustom:true,firstTabCaption:'Featured',firstTabValue:'featured',
+  pageState:{collectionSelections:{}}});
+ assert.match(custom,/aria-selected="true"[^>]*>Featured<\/button>/);
+ assert.doesNotMatch(custom,/aria-selected="true"[^>]*>Food<\/button>/);
+ const empty=await renderSmart('smart_tabs',{...base,records:[],dataCollection,
+  pageState:{collectionSelections:{}}});
+ assert.doesNotMatch(empty,/aria-selected="true"/);
+ const runtime=read('../src/component-libraries/smart/shared/SmartRuntime.jsx');
+ assert.match(runtime,/React\.useEffect\(\(\)=>\{[\s\S]*?selectTab\(0\)/);
+ assert.match(runtime,/if\(!tabs\.length\|\|p\.loading\|\|p\.previewOnly\|\|p\.builderPreview/);
+ assert.match(runtime,/if\(indexForSelection>=0\)\{autoSelected\.current=null;return;/);
+ assert.match(runtime,/if\(autoSelected\.current===key\)return;/);
 });
-
+ 
 test('collection-driven Smart Card Grid renders authorised record title and other fields, not lookup criterion',async()=>{
  const formula='=COLLECTION("FilteredProducts",@Product.MenuCategory=@CatCollection.state.Id)';
  const collectionResult=evaluateCollectionFormula(formula,{Product:[
