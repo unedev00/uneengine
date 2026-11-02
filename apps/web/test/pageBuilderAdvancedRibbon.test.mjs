@@ -46,7 +46,7 @@ test('Advanced keeps all permanent fields in a compact responsive ribbon without
  for(const group of ['activation','responsive','properties','nesting','technical'])
    assert.ok(layout.includes('advanced-fixed-group.advanced-'+group),group);
  assert.match(layout,/grid-template-columns:minmax\(0,1\.08fr\)/);
- assert.match(layout,/width:100%!important;min-width:0!important;max-width:100%!important/);
+ assert.match(layout,/width:min\(100%,1360px\)!important;min-width:0!important;max-width:1360px!important/);
  assert.doesNotMatch(layout,/width:1641px!important/);
  assert.match(layout,/scrollbar-width:none!important/);
  assert.match(layout,/\[aria-label="Advanced"\]::-webkit-scrollbar/);
