@@ -269,6 +269,10 @@ test('nested IF returns a typed Collection and publishes both possible output na
  assert.equal(result.error,undefined);
  assert.equal(result.value.name,'FoodTabs');
  assert.deepEqual(result.value.items.map((item:any)=>item.label),['Fruits','Vegetables']);
+ const actual=evaluateCollectionFormula('=IF(@type = "Food", COLLECTION("FoodTabs", "Pizza", @MenuCategory.Name, "Pizza*"), COLLECTION("DrinkTabs", "Tea", "", ""))',
+  source,{primaryObject:'MenuCategory',record:{type:'Food'}});
+ assert.equal(actual.error,undefined);
+ assert.equal(actual.value.name,'FoodTabs');
  const choices=pageStateChoices([{id:'source',properties:{textSource:formula}}]);
  assert.ok(choices.some(item=>item.key==='FoodTabs.state.Id'));
  assert.ok(choices.some(item=>item.key==='DrinkTabs.state.Id'));
