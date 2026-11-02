@@ -58,7 +58,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
     ?'Duplicate collection name on this page: '+name:'';
  })();
  const validateCollection=(next:string):string|null=>{
-  if(!next.trim())return null;
+  if(!next.trim()||/^@[A-Za-z][A-Za-z0-9_]{0,79}$/.test(next.trim()))return null;
   if(!/^COLLECTION\s*\(/i.test(next.trim()))return 'Use COLLECTION("Name", value1, ...)';
   const name=namedCollectionName(next);
   if(!name)return 'Collection name is required as the first argument';
