@@ -190,6 +190,7 @@
     "apps/web/test/layoutWritableValues.test.ts",
     "apps/web/test/metadataApiNames.test.ts",
     "apps/web/test/metadataBindings.test.ts",
+    "apps/web/test/collectionSessionState.test.ts",
     "apps/web/test/metadataSelection.test.mjs",
     "apps/web/test/named-credentials-bootstrap-regression.test.ts",
     "apps/web/test/nativeRecordFormValues.test.mjs",
