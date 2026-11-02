@@ -205,6 +205,18 @@ function validateBindings(){
  const skipped=smartTillCartBindings(customised);
  assert.equal(skipped.layout.components[0].properties.actionFlows.click.flowApiName,'MyCustomFlow');
  assert(skipped.skipped.length>0);
+ // Do not replace a customer's separate On Start action.
+ const customCart=structuredClone(layout);
+ customCart.components[1].properties.actionFlows.start={
+  actionType:'Flow',flowApiName:'UserManagedCartFlow'};
+ const customisedCart=smartTillCartBindings(customCart);
+ assert.equal(customisedCart.layout.components[1].properties.actionFlows.start.flowApiName,
+  'UserManagedCartFlow');
+ assert(customisedCart.skipped.some(message=>message.includes('Cart')));
+ // The new Auto scope keeps all unrelated Cart metadata and is safe to
+ // reapply to an already SmartTillAddProduct-bound Card Grid.
+ assert.equal(first.layout.components[1].properties.objectApiName,'CartLine');
+ assert.deepEqual(first.layout.components[1].position,layout.components[1].position);
 }
 validateBindings();
 
