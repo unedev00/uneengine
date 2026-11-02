@@ -29,9 +29,9 @@ export async function seedPlatformDeploymentOwner(
  if(!exact&&!platformDomain)return 'not-configured';
  if(exact&&(!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug!)
   ||!/^[a-z0-9.-]+$/.test(legacyDomain!)||!legacyDomain!.includes('.')
-  ||!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email!)))
+  ||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email!)))
   throw Error('Invalid trusted platform bootstrap identity configuration');
- if(platformDomain&&(!/^[a-z0-9-]+(?:\\.[a-z0-9-]+)+$/.test(platformDomain)
+ if(platformDomain&&(!/^[a-z0-9-]+(?:\.[a-z0-9-]+)+$/.test(platformDomain)
    ||platformDomain.startsWith('api.')))
   throw Error('Invalid root-installed OCI canonical domain');
  return db.transaction(async client=>{
