@@ -19,6 +19,7 @@ async function assertNoUnmanagedPageReferences(client:PoolClient,tenant:string,p
        OR (c.column_name LIKE '%page%api%' AND c.column_name<>'api_name'))
      AND EXISTS(SELECT 1 FROM information_schema.columns t
        WHERE t.table_schema=c.table_schema AND t.table_name=c.table_name AND t.column_name='tenant_id')
+     AND (c.column_name LIKE '%page%api%' OR c.table_name LIKE '%\\_properties' ESCAPE '\\' OR c.table_name LIKE '%\\_bindings' ESCAPE '\\')
      AND c.table_name NOT IN ('md_tenant_app_navigation')
      AND c.table_name NOT LIKE '%\\_audit' ESCAPE '\\'
    ORDER BY c.table_name,c.column_name`);
