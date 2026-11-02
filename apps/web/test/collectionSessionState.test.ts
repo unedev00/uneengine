@@ -259,3 +259,44 @@ test('a single field can expand into more than nineteen authorised Collection en
  assert.equal(result.value.items.length,35);
  assert.equal(result.value.items[34].value,'c34');
 });
+
+test('nested IF returns typed collections with original field and criterion triples',()=>{
+ const source={Category:[{Id:'1',Name:'Pizza'},{Id:'2',Name:'Burger'}]};
+ const food=evaluateCollectionFormula(
+  '=IF(TRUE,COLLECTION("FoodTabs","Pizza",@Category.Name,"Pizza*"),COLLECTION("DrinkTabs","Tea","",""))',
+  source,{primaryObject:'Category'});
+ assert.equal(food.error,undefined);
+ assert.equal(food.value.name,'FoodTabs');
+ assert.equal(food.value.items[0].criteriaField,'Category.Name');
+ assert.equal(food.value.items[0].criteria,'Pizza*');
+ const drinks=evaluateCollectionFormula(
+  '=IF(FALSE,COLLECTION("FoodTabs","Pizza",@Category.Name,"Pizza*"),COLLECTION("DrinkTabs","Tea","",""))',
+  source,{primaryObject:'Category'});
+ assert.equal(drinks.error,undefined);
+ assert.equal(drinks.value.name,'DrinkTabs');
+ assert.equal(drinks.value.items[0].criteriaField,'');
+ assert.equal(drinks.value.items[0].criteria,'');
+});
+test('session collection reuse and exclusion retain source collection',()=>{
+ const base={name:'myfood',items:['Fruits','Vegetables','Banana']};
+ const options={namedCollections:{myfood:base}};
+ const derived=evaluateCollectionFormula('=COLLECTION(mynewfood,@myfood,"<>Vegetables")',{},options);
+ assert.equal(derived.error,undefined);
+ assert.equal(derived.value.name,'mynewfood');
+ assert.deepEqual(derived.value.items,['Fruits','Banana']);
+ assert.deepEqual(base.items,['Fruits','Vegetables','Banana']);
+ const prefix=evaluateCollectionFormula('=COLLECTION("matched",@myfood,"B*")',{},options);
+ assert.deepEqual(prefix.value.items,['Banana']);
+});
+test('numeric COLLECTION composes with SUM and nested IF',()=>{
+ assert.equal(evaluateFieldExpression('=SUM(COLLECTION("Numbers",10,20,30))',{}),'60');
+ assert.equal(evaluateFieldExpression('=IF(SUM(COLLECTION("Numbers",10,20,30))>50,"Yes","No")',{}),'Yes');
+});
+test('named collection list filters support exclusions and prefix criteria',()=>{
+ const rows=[{Id:'1',Name:'Fruits'},{Id:'2',Name:'Vegetables'},{Id:'3',Name:'Banana'}];
+ const excluded=parseCollectionListBinding('@myfood = "<>Vegetables"','');
+ assert.ok(excluded);
+ assert.deepEqual(filteredCollectionItems(excluded!,rows).map(item=>item.label),['Fruits','Banana']);
+ const prefix=parseCollectionListBinding('@myfood = "B*"','');
+ assert.deepEqual(filteredCollectionItems(prefix!,rows).map(item=>item.label),['Banana']);
+});
