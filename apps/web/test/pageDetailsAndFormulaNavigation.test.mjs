@@ -16,9 +16,13 @@ test('page details uses immutable, permission-checked history endpoints',()=>{
  assert.match(ui,/base\+'\/restore'/);
  assert.match(ui,/onOpenDesign\(page\.apiName\)/);
  assert.match(ui,/Historical versions are immutable/);
+ assert.match(ui,/Show archived/);
+ assert.match(ui,/Unarchive/);
+ assert.match(ui,/Page API name/);
  const api=read('../../server/src/api/PageApiController.ts');
  assert.match(api,/\/layouts\/:variant\/versions\/:version/);
  assert.match(api,/PageDefinition','read'/);
+ assert.match(api,/versions\/:version\/archive/);
 });
 test('formula autocomplete supports up down enter and selection accessibility',()=>{
  const ui=read('../src/core/builders/PageBuilder/SmartFormulaField.tsx');
