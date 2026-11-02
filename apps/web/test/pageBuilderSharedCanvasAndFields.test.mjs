@@ -8,6 +8,7 @@ const handles=read('../src/core/builders/PageBuilder/SmartCanvasHandles.css');
 const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
 const formulaCss=read('../src/core/builders/PageBuilder/SmartRibbonDataFormula.css');
 const runtime=read('../src/component-libraries/smart/shared/SmartRuntime.jsx');
+const smartCss=read('../src/component-libraries/smart/shared/smart.css');
 
 test('button-based smart components are draggable on the editing canvas without enabling runtime actions',()=>{
  const move=builder.slice(builder.indexOf('const startCanvasMove ='),builder.indexOf('const moveCanvasPointer ='));
@@ -34,6 +35,8 @@ test('tab bounds stay visible in short containers while preserving configured ta
  assert.match(runtime,/height:number\(p\.tabHeight,44\),maxHeight:"100%",minHeight:0/);
  assert.doesNotMatch(runtime,/minHeight:number\(p\.tabHeight,44\)/);
  assert.match(handles,/\.free-canvas-component > \.free-canvas-content-viewport/);
+ assert.match(runtime,/height:32,maxHeight:"100%",minHeight:0/);
+ assert.match(smartCss,/\.smart-container\{[^}]*min-height:0;max-height:100%/);
 });
 
 test('data ribbon exposes existing metadata fields without new binding properties',()=>{
