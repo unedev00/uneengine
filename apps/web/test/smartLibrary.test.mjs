@@ -4,6 +4,7 @@ import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {namedCollectionRows} from '../src/core/pages/PageRuntime/usePageCollectionFormula.ts';
 import {evaluateFieldExpression,evaluateCollectionFormula} from '../src/component-libraries/shared/FieldExpression.js';
 import {loadComponentCatalog,buildBundledComponent} from '../../../scripts/component-catalog.mjs';
 const read=path=>readFileSync(new URL(path,import.meta.url),'utf8');
@@ -1143,4 +1144,22 @@ test('Smart Tabs highlights only the selected Collection or Formula/Page State r
  const invalidated=await renderSmart('smart_tabs',{...base,records,dataCollection,
   pageState:{collectionSelections:{}}});
  assert.doesNotMatch(invalidated,/aria-selected="true"/);
+});
+
+test('collection-driven Smart Card Grid renders authorised record title and other fields, not lookup criterion',async()=>{
+ const collection={name:'FilteredProducts',items:[{label:'drinks',value:'p1',
+  criteriaField:'Product.MenuCategory',criteria:'drinks',
+  record:{Id:'p1',Name:'Cola',MenuCategory:'drinks',Price:1.25,
+   ImageUrl:'https://example.com/cola.png'}}]};
+ const rows=namedCollectionRows(collection);
+ const html=await renderSmart('smart_card_grid',{
+  objectApiName:'Product',dataCollection:collection,records:rows,
+  textSource:'=COLLECTION("FilteredProducts",@Product.MenuCategory=@CatCollection.state.Id)',
+  badgeVisible:true,badgeText:'@Price',imageSource:'@ImageUrl',
+  imageSourceMode:'field',cardsPerRow:2,cardsPerColumn:1
+ });
+ assert.match(html,/Cola/);
+ assert.match(html,/1\.25/);
+ assert.match(html,/cola\.png/);
+ assert.doesNotMatch(html,/>drinks<\/span>/,'Category ID must never replace the product title');
 });
