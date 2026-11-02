@@ -65,5 +65,7 @@ export function createCriteriaFormulaCollection(name:unknown,items:readonly unkn
    throw Error('COLLECTION entry requires a label, field and criterion');
   return item;
  });
- return {name,items:mergeFormulaCollectionValues(checked)};
+ // A single @Field argument can expand to 200 authorised records even though
+ // the formula itself accepts at most 19 user-authored item arguments.
+ return {name,items:mergeFormulaCollectionValues([checked])};
 }
