@@ -106,6 +106,19 @@ export default function PageDetailsDialog({page,apps,disabled,request,onClose,on
   }catch(e){setError(e instanceof Error?e.message:'Unable to restore version')}
   finally{setBusy(false)}
  };
+ const copyVersion=async(version:number)=>{
+  if(busy||disabled||!window.confirm(
+   'Copy version '+version+' into a new editable draft? The currently published page will not change.'))return;
+  setBusy(true);setError('');
+  try{
+   const result=await request<{page:LightningPageMetadata}>(base+'/versions/'+version+'/copy',{
+    method:'POST'
+   });
+   onReload(result.page);
+   onClose();onOpenDesign(page.apiName);
+  }catch(e){setError(e instanceof Error?e.message:'Unable to copy this version')}
+  finally{setBusy(false)}
+ };
  const archiveVersion=async(version:number,archived:boolean)=>{
   if(busy||disabled)return;
   if(archived&&!window.confirm('Archive version v'+version+'? It will be hidden from the default list but can be restored later.'))return;
@@ -206,9 +219,12 @@ export default function PageDetailsDialog({page,apps,disabled,request,onClose,on
         <td>
          <div className="page-details-row-actions">
           <button type="button" className="btn btn-small" disabled={busy} onClick={()=>void viewVersion(v.version)}>View</button>
+          <button type="button" className="btn btn-small" disabled={busy||disabled||v.archived}
+           title="Create a new editable revision from this historical layout"
+           onClick={()=>void copyVersion(v.version)}>Copy as New Version</button>
           <button type="button" className="btn btn-small" disabled={busy||disabled||v.draft||v.archived}
-           title="Restore to a new editable draft. Published layouts remain unchanged."
-           onClick={()=>void restoreVersion(v.version)}>Restore as draft &amp; Design</button>
+           title="Restore this version as the editable draft. Published layouts remain unchanged."
+           onClick={()=>void restoreVersion(v.version)}>Restore &amp; Design</button>
           <button type="button" className="btn btn-small"
            disabled={busy||disabled||v.draft||v.published}
            title={v.archived?'Restore archived version to the history list':
