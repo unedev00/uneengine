@@ -16,7 +16,8 @@ const components:Component[]=[
  }),
  component('subsubcategories',{
   textSource:'=COLLECTION("SubSubcategories", @Category.Name)',
-  filterMode:'Formula',filterFormula:'IF(ISBLANK($state.subCategoryId), TRUE, @Parent = $state.subCategoryId)'
+  filterFormula:'IF(ISBLANK($state.subCategoryId), TRUE, @Parent = $state.subCategoryId)',
+  filters:[{field:'Parent',operator:'Equals',value:source('Subcategories.state.Id')}]
  }),
  component('products',{
   filters:[{field:'Category',operator:'Equals',value:source('SubSubcategories.state.Id')}]
