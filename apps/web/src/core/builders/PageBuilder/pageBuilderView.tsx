@@ -556,7 +556,6 @@ function PageBuilder({
   const [pageSettingsDialogOpen,setPageSettingsDialogOpen] = useState(false);
   const [advancedEditor,setAdvancedEditor] = useState<AdvancedFeature|null>(null);
   const [inlineActionEvent,setInlineActionEvent]=useState('');
-  const [inlineActionSettingsOpen,setInlineActionSettingsOpen]=useState(false);
   const [focusedCardMapping,setFocusedCardMapping] = useState('');
   const ribbonStripRef=useRef<HTMLDivElement|null>(null);
   const [selectedConversationPart,setSelectedConversationPart]=useState('parent');
