@@ -1152,7 +1152,7 @@ test('collection-driven Smart Card Grid renders authorised record title and othe
   {Id:'p1',Name:'Cola',MenuCategory:'drinks',Price:1.25,
    ImageUrl:'https://example.com/cola.png'}
  ]},{primaryObject:'Product',collectionSourceFields:{Product:['MenuCategory','Name','Price','ImageUrl']},
-  state:{collectionSelections:{CatCollection:{Id:'drinks'}}}}});
+  state:{collectionSelections:{CatCollection:{Id:'drinks'}}}});
  assert.equal(collectionResult.error,undefined);
  const collection=collectionResult.value;
  assert.deepEqual(collection.items.map(item=>item.value),['p1']);
