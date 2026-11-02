@@ -298,7 +298,7 @@ function parse(source,record,formulaContext){
     if(selections&&typeof selections==='object'&&!Array.isArray(selections)){
      const entry=Object.entries(selections).find(([key])=>key.toLowerCase()===reference.toLowerCase())?.[1];
      if(entry&&typeof entry==='object'&&!Array.isArray(entry))
-      return entry.Value??entry.Id??entry.Name??'';
+      return entry.Name??entry.Value??entry.Id??'';
     }
    }
    // Object.Field collection references can use only authorised records
