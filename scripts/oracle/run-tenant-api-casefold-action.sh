@@ -78,6 +78,17 @@ recover_services() {
   trap - EXIT
   if [[ "$stopped" == 1 ]]; then
     systemctl start metadrive-api.service || result=1
+    # API startup owns system migrations; verify readiness before worker jobs resume.
+    local healthy=0
+    for attempt in $(seq 1 90); do
+      if curl -fsS --max-time 4 https://api.unesolutions.co.uk/api/health 2>/dev/null |
+         grep -q '"status":"ok"'; then
+        healthy=1
+        break
+      fi
+      sleep 2
+    done
+    [[ "$healthy" == 1 ]] || result=1
     systemctl start metadrive-worker.service || result=1
     systemctl is-active --quiet metadrive-api.service || result=1
     systemctl is-active --quiet metadrive-worker.service || result=1
