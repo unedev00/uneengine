@@ -17,6 +17,7 @@ import {
 } from '../expression-engine/FormulaDate.js';
 import {roundFormulaNumber} from '../expression-engine/FormulaNumeric.js';
 import {createNamedFormulaCollection} from '../expression-engine/FormulaCollection.js';
+import {sumFormulaCollection} from '../expression-engine/FormulaCollection.js';
 import {isExcelWildcardDataReference} from '../expression-engine/FormulaWildcard.js';
 import type {Expression} from '../expression-engine/FormulaParser.js';
 
@@ -202,6 +203,7 @@ function evaluateNode(node:Expression,resolve:FormulaResolver,context:FormulaEva
       const items=node.args.slice(1).map((_,index)=>argument(index+1));
       return createNamedFormulaCollection(name,items);
     }
+    case 'SUM':arity(1);return sumFormulaCollection(argument(0));
     case 'COLLECTIONCOUNT':case 'COLLECTIONSUM':{
       arity(node.name==='COLLECTIONCOUNT'?1:2);
       const source=argument(0);
