@@ -36,7 +36,7 @@ test('journey mounts record filters inline and saves draft separately from publi
   const source=readFileSync(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
   const engine=readFileSync(new URL('../src/core/builders/ComponentProperties/componentPropertiesView.tsx',import.meta.url),'utf8');
   assert.match(source,/Component Content/);
-  assert.match(source,/ribbonTab==='Component Action' &&\\s*<PageBuilderActionRibbon/);
+  assert.match(source,/ribbonTab==='Component Action' &&\s*<PageBuilderActionRibbon/);
   assert.doesNotMatch(source,/inlineActionSettingsOpen|page-builder-inline-actions/);
   assert.doesNotMatch(source,/ribbonTab==='Component Data' &&.*page-ribbon-expanded-editor/);
   assert.match(source,/ribbonTab==='Component Data'/);
