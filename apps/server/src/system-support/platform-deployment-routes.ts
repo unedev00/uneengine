@@ -117,7 +117,7 @@ export function registerPlatformDeploymentRoutes(
  app:Express,db:SqlPersistence,rbac:RbacEngine,platform:PlatformTenantService
 ){
  async function permission(req:Request,operation:'read'|'manage'){
-  const actor=req.actor;
+  const actor=(req as Request & {actor?:{tenant_id:string;user_id:string}}).actor;
   if(!actor?.tenant_id||!actor.user_id)throw new DeploymentControlError('Authentication required.',401);
   await platform.requirePlatform(actor.tenant_id,actor.user_id);
   await rbac.require(actor.tenant_id,actor.user_id,'PlatformOperations',operation);
@@ -127,7 +127,11 @@ export function registerPlatformDeploymentRoutes(
   try{
    await permission(req,'read');
    res.set('Cache-Control','private, no-store');
-   res.json(await readProductionDeployment());
+   res.json({...await readProductionDeployment(),
+    canDeploy:await rbac.allowed(
+      (req as Request & {actor?:{tenant_id:string;user_id:string}}).actor!.tenant_id,
+      (req as Request & {actor?:{tenant_id:string;user_id:string}}).actor!.user_id,
+      'PlatformOperations','manage')});
   }catch(error){
    // Access-denied users must not learn GitHub release data or credential status.
    if(error instanceof Error&&/Permission denied|permission denied/i.test(error.message)){
