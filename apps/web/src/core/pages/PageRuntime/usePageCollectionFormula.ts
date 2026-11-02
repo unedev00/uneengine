@@ -1,13 +1,15 @@
-import {useEffect,useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
 import {Parser,type Expression} from '../../../../../server/src/expression-engine/FormulaParser.js';
 import {tokenize} from '../../../../../server/src/expression-engine/FormulaTokenizer.js';
 import {evaluateCollectionFormula} from '../../../component-libraries/shared/FieldExpression.js';
 import {loadFlowScreenRecordPage} from '../../authentication/Client/authClient';
 import type {ObjectMetadata} from '../../metadata/Definitions/metadata';
 import {registerSessionCollection,useSessionCollectionSnapshot} from './pageCollectionSession';
+import {formulaCollectionReferenceKey} from '../../../../../server/src/expression-engine/FormulaCollection.js';
+import {parseCollectionListBinding,filteredCollectionItems} from './pageCollectionListBinding';
 
 type Row=Record<string,unknown>;
-export type PageNamedCollection={name:string;items:unknown[]};
+export type PageNamedCollection={name:string;key?:string;items:unknown[]};
 type SourceResult={key:string;records:Record<string,Row[]>;error?:string};
 
 export function collectionFormulaReferences(formula:string,primaryObject=''):Array<{object:string;field:string}>{
@@ -45,13 +47,17 @@ export function usePageCollectionFormula(
  const explicit=expressions.find(value=>/^=\s*COLLECTION\s*\(/i.test(value))
    ??expressions.find(value=>/^=\s*@[A-Za-z][A-Za-z0-9_]{0,79}$/.test(value));
  const reference=expressions.find(value=>/^@[A-Za-z][A-Za-z0-9_]{0,79}$/.test(value));
- // An explicit formula takes precedence over an old hidden Collection setting,
- // but a legacy Collection still controls historical pages using @Name captions.
- const entered=explicit||declared||reference||'';
+ const listExpression=expressions.find(value=>Boolean(parseCollectionListBinding(value,primaryObject)));
+ // List-expression metadata is distinct from scalar Boolean expressions. A
+ // source binding selects records; individual row property formulas remain scalar.
+ const entered=explicit||listExpression||declared||reference||'';
  const source=entered.startsWith('=')?entered.slice(1).trim():entered;
  const scope=pageSessionKey+'#'+sessionId;
+ const lastValid=useRef<{object:string;collection:PageNamedCollection}|null>(null);
+ const listBinding=parseCollectionListBinding(source,primaryObject);
  const registry=useSessionCollectionSnapshot(scope);
- const refs=collectionFormulaReferences(source,primaryObject);
+ const refs=listBinding?[{object:listBinding.object,field:listBinding.field}]:
+  collectionFormulaReferences(source,primaryObject);
  const selected=['objectApiName','objectApiName2','objectApiName3']
   .map(key=>String(properties[key]??'')).filter(Boolean);
  const referenced=[...new Set(refs.map(ref=>ref.object))];
@@ -82,8 +88,8 @@ export function usePageCollectionFormula(
   return named?{collection:named,error:null,loading:false}:
    {collection:null,error:null,loading:false};
  }
- if(!/^COLLECTION\s*\(/i.test(source))
-  return {collection:null,error:'Use COLLECTION("Name", values, @Object.Field)',loading:false};
+ if(!listBinding&&!/^COLLECTION\s*\(/i.test(source))
+  return {collection:null,error:null,loading:false};
  const notSelected=refs.find(ref=>!selected.includes(ref.object));
  if(notSelected)return {collection:null,error:'Select Object '+notSelected.object+' in Data Source before referencing it',loading:false};
  const missingField=refs.find(ref=>!objects.find(o=>o.apiName===ref.object)?.fields.some(f=>f.apiName===ref.field));
@@ -94,15 +100,28 @@ export function usePageCollectionFormula(
  if(remote?.error)return {collection:null,error:remote.error,loading:false};
  const sources:Record<string,Row[]>={...remote?.records};
  if(primaryObject&&referenced.includes(primaryObject))sources[primaryObject]=[...primaryRecords];
+ if(listBinding){
+  const rows=sources[listBinding.object]??[];
+  return {collection:{name:'__filtered_list__',
+    items:filteredCollectionItems(listBinding,rows)},error:null,loading:false};
+ }
  const resolved=evaluateCollectionFormula(source,sources,{state:pageState,session:{id:sessionId},primaryObject});
  const value=resolved.value as PageNamedCollection|null;
- return {collection:value,error:resolved.error??null,loading:false};
+ return {collection:value?{...value,key:formulaCollectionReferenceKey(value.name)}:null,
+   error:resolved.error??null,loading:false};
  })();
- const owned=/^COLLECTION\s*\(/i.test(source)?result.collection:null;
+ const recoverable=Boolean(result.error&&/^COLLECTION has a blank value|^Invalid Flow formula|^COLLECTION requires|^Unexpected|^Unterminated/.test(result.error));
+ // Keep the last successful rendering when legacy persisted metadata contains
+ // an invalid expression. Do not turn parser errors into visible list items.
+ if(result.collection&&result.collection.name!=='__filtered_list__')
+   lastValid.current={object:primaryObject,collection:result.collection};
+ const visible=recoverable?{collection:lastValid.current?.object===primaryObject
+   ?lastValid.current.collection:null,error:null,loading:false}:result;
+ const owned=/^COLLECTION\s*\(/i.test(source)?visible.collection:null;
  const identity=owned?JSON.stringify(owned):'';
  useEffect(()=>registerSessionCollection(scope,componentId,owned),[scope,componentId,identity]);
  const duplicate=registry.errors[componentId];
- return duplicate?{collection:null,error:duplicate,loading:false}:result;
+ return duplicate?{collection:null,error:duplicate,loading:false}:visible;
 }
 
 /** Read-only record-shaped adapter for collection-capable Tables, Lists and Cards.
