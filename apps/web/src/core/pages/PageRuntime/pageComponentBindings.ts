@@ -233,7 +233,7 @@ export function resolvePageFilterValue(value:unknown,context:PageFilterContext):
     return resolved===null||['string','number','boolean'].includes(typeof resolved)?resolved:undefined;
   }
   if(value.source==='CollectionState'&&typeof value.key==='string'){
-    const match=/^([A-Za-z][A-Za-z0-9_]{0,79})\.state\.(Id|Name|Value)$/.exec(value.key);
+    const match=/^([A-Za-z][A-Za-z0-9_]{0,79})\.state\.(Id|Name|Value|Field|Criteria)$/.exec(value.key);
     const selections=context.pageState?.collectionSelections;
     if(!match||!selections||typeof selections!=='object'||Array.isArray(selections))return undefined;
     const record=Object.entries(selections as Record<string,unknown>).find(([key])=>key.toLowerCase()===match[1].toLowerCase())?.[1];
