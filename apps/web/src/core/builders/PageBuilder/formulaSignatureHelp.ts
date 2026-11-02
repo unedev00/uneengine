@@ -1,0 +1,46 @@
+import {formulaFunctionCatalog} from '../../../../../server/src/expression-engine/FormulaFunctionRegistry.js';
+
+/** Excel-style argument guidance for any registered function, including nested calls.
+ * Quotes and commas inside nested expressions are ignored. No evaluation occurs. */
+export function formulaSignatureAt(source:string,caret:number){
+ const frames:Array<{name:string;argument:number}>=[];
+ let quote=false;
+ for(let index=0;index<Math.max(0,Math.min(caret,source.length));index++){
+  const character=source[index];
+  if(character==='"'){
+   if(quote&&source[index+1]==='"'){index++;continue;}
+   quote=!quote;continue;
+  }
+  if(quote)continue;
+  if(character==='('){
+   const prefix=source.slice(0,index).match(/([A-Za-z][A-Za-z0-9_]*)\s*$/);
+   frames.push({name:prefix?.[1].toUpperCase()??'',argument:0});
+  }else if(character===')')frames.pop();
+  else if(character===','&&frames.length)frames[frames.length-1].argument++;
+ }
+ const active=frames.at(-1);
+ if(!active)return null;
+ const definition=formulaFunctionCatalog.get(active.name);
+ if(!definition)return null;
+ const {parameters,minimumArguments,maximumArguments}=definition.signature;
+ const names=parameters.map((entry,index)=>{
+  const ordinal=index+1;
+  const titles:Record<string,string[]>={
+   COLLECTION:['name','value1'],IF:['condition','value_if_true','value_if_false'],
+   IFERROR:['value','fallback'],AND:['condition1'],OR:['condition1'],
+   ISBLANK:['value'],ISNULL:['value'],SUM:['number1'],
+   LEFT:['text','number_of_characters'],RIGHT:['text','number_of_characters'],
+   MID:['text','start','number_of_characters'],FIND:['find_text','within_text','start'],
+   CONTAINS:['text','search'],VLOOKUP:['lookup_value','table','column','exact_match'],
+   ROUND:['number','digits'],DATE:['year','month','day'],
+   SUBSTITUTE:['text','old_text','new_text','instance'],
+   COLLECTIONCOUNT:['collection'],COLLECTIONSUM:['collection','field']
+  };
+  const title=titles[active.name]?.[index]??(active.name==='COLLECTION'?'value'+index:
+    ['AND','OR'].includes(active.name)?'condition'+ordinal:
+    entry.name.replace(/^argument/, 'value'));
+  return {name:title,optional:index>=minimumArguments};
+ });
+ return {name:active.name,argument:Math.min(active.argument,maximumArguments-1),parameters:names,
+  minimumArguments,maximumArguments};
+}
