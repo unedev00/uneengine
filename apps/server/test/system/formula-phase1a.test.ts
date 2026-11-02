@@ -48,6 +48,38 @@ test('formula client and server share parsing, precedence, coercion, and blank s
   }
 });
 
+test('MATCHES shares Excel wildcard semantics across Flow and browser formulas',()=>{
+ const formula=(value:unknown,pattern:string)=>evaluateFlowFormula('MATCHES(@Value,@Pattern)',
+  key=>key==='Value'?value:key==='Pattern'?pattern:null);
+ const cases:[unknown,string,boolean][]=[
+  ['Burgers','*',true],['','*',false],[null,'*',false],[42,'*',false],
+  ['burger combo','Burger*',true],['Burger','B?rg*r',true],
+  ['ba','b?',true],['baa','b?',false],['A*B','A~*B',true],
+  ['A?B','A~?B',true],['A~B','A~~B',true],['a%b','a%b',true],
+  ['a_b','a_b',true],['x/y','x/y',true],['one','two',false],
+  ['', '',true],['test','',false],['A~z','A~z',true]
+ ];
+ for(const [value,pattern,expected] of cases){
+  const f='MATCHES(@Value,@Pattern)';
+  const result=evaluateFieldExpressionDetailed(f,{Value:value,Pattern:pattern});
+  assert.equal(result.error,undefined,JSON.stringify([value,pattern]));
+  assert.equal(result.value,String(expected),JSON.stringify([value,pattern]));
+  assert.equal(formula(value,pattern),expected,JSON.stringify([value,pattern]));
+ }
+ assert.equal(evaluateFlowFormula('2 * 3',()=>null),6);
+ assert.equal(evaluateFlowFormula('"*" = "*"',()=>null),true);
+ assert.equal(evaluateFlowFormula('"Burgers" = "*"',()=>null),false);
+ assert.equal(evaluateFieldExpressionDetailed('"*"',{}).value,'*');
+ for(const context of ['formula_field','validation_rule','flow_formula','ribbon_binding','record_filter'] as const)
+  validateFlowFormula('MATCHES(@Name,"B*")',context);
+ assert.equal(inferFlowFormulaType('MATCHES(@Name, "B*")',
+  name=>name==='Name'?'Text':null),'Checkbox');
+ assert.throws(()=>inferFlowFormulaType('MATCHES(@Amount,"*")',
+  name=>name==='Amount'?'Number':null),/invalid argument type/);
+ assert.throws(()=>evaluateFlowFormula('MATCHES("test","'+'*'.repeat(257)+'")',()=>null),
+  /256 characters/);
+ assert.equal(evaluateFieldExpressionDetailed('MATCHES("test")',{}).error?.includes('argument count'),true);
+});
 test('COLLECTION requires a name and produces typed named content in Flow and ribbon',()=>{
  const formula='COLLECTION("LineChoices", "a22", "none", @Rows)';
  const rows=[{Id:'a',Name:'Widget'}];
