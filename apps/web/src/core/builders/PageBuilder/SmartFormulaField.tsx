@@ -45,7 +45,7 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
  const functionSuggestions=functionMatch?functions.filter(name=>
    name.startsWith(functionMatch.query.toUpperCase())).slice(0,12):[];
  const [hintPosition,setHintPosition]=useState<{top:number;left:number}|null>(null);
- const hint=focused?formulaSignatureAt(draft,caret):null;
+ const hint=focused&&draft.trimStart().startsWith('=')?formulaSignatureAt(draft,caret):null;
  useLayoutEffect(()=>{
   if(!hint||!input.current){setHintPosition(null);return;}
   const reposition=()=>{
@@ -94,6 +94,9 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
   const source=next.trim();
   if(!source.startsWith('='))return null;
   if(!source.slice(1).trim())return 'Complete the formula after =';
+  const functionPrefix=/^=\s*([A-Za-z][A-Za-z0-9_]*)$/.exec(source);
+  if(functionPrefix&&functions.some(name=>name.startsWith(functionPrefix[1].toUpperCase())))
+    return 'Complete the function with arguments';
   try{
    const expression=new Parser(tokenize(source.slice(1))).parse();
    validateFormulaFunctions(expression,'ribbon_binding');
