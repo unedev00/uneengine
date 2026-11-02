@@ -7,7 +7,7 @@ import {pageStateDependencies,applyPageSelection} from '../PageRuntime/pageState
 import {loadFlowScreenRecordPage} from '../../authentication/Client/authClient';
 // Load the browser API client only during the mounted effect, not on SSR import.
 import {presentPageRecords,type ChannelGrant} from '../../records/RecordWorkspace/recordPresentationAdapters';
-import {filterPageComponentRecords,pageComponentRecordQuery,bindPageStateProperties,activePageRecordFilters} from '../PageRuntime/pageComponentBindings';
+import {filterPageComponentRecords,pageComponentRecordQuery,bindPageStateProperties,activePageRecordFilters,collectionRecordFilterFormula} from '../PageRuntime/pageComponentBindings';
 import {scopedFieldAllows} from '../PageRuntime/fieldScopedRecordFilters';
 import {resolveSmartToggleFieldBinding,updateSmartToggleField} from '../PageRuntime/smartToggleFieldBinding';
 import {usePageComponentRelatedScope} from '../PageRuntime/usePageSessionRelatedQuery';
@@ -130,8 +130,12 @@ export default function MetadataBoundPageComponent({
     relatedKey?selectedFilterRecords[relatedKey]?.recordId||pageState[relatedKey]:undefined,
     disableActions);
   const selectedRecordFilters=activePageRecordFilters(properties);
+ const collectionPredicate=collectionRecordFilterFormula(properties,objectApiName,fields);
+ const combinedRecordFormula=collectionPredicate
+  ?selectedRecordFilters.formula? 'AND('+String(selectedRecordFilters.formula)+','+collectionPredicate+')'
+   :collectionPredicate:selectedRecordFilters.formula;
   const recordQuery=pageComponentRecordQuery(selectedRecordFilters.filters,filterFields,{pageState,recordId,sessionId},
-    properties.filterLogic==='OR'?'OR':'AND',selectedRecordFilters.formula);
+    properties.filterLogic==='OR'?'OR':'AND',combinedRecordFormula);
   const recordQueryKey=JSON.stringify([recordQuery,relatedQuery]);
 
   useEffect(() => {
