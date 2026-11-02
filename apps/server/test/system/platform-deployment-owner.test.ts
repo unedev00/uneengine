@@ -20,8 +20,7 @@ function dbFixture(options:{receipt?:boolean;identity?:boolean}={}){
    return {rows:options.identity===false?[]:[{tenant_id:tenant,user_id:user}]};
   return {rows:[]};
  };
- const db=({transaction:async<T>(callback:(client:{query:typeof query})=>Promise<T>)=>callback({query})})
-  as unknown as Pick<SqlPersistence,'transaction'>;
+ const db={transaction:async(callback:(client:{query:typeof query})=>Promise<unknown>)=>callback({query})} as unknown as Pick<SqlPersistence,'transaction'>;
  return {db,statements};
 }
 test('unconfigured platform owner never receives or creates a deployment grant',async()=>{
