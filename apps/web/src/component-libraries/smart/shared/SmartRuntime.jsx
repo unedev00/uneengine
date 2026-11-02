@@ -32,7 +32,7 @@ const fieldAllows=(p,key,record)=>{
 };
 const scopedExpression=(p,key,source,record)=>fieldAllows(p,key,record)
  ?(key==="textSource"&&p.dataCollection&&record&&
-    /^\s*(?:=\s*COLLECTION\s*\(|=?\s*@[A-Za-z][A-Za-z0-9_]*\s*$)/i.test(String(source??""))
+    /^\s*(?:=\s*COLLECTION\s*\(|=?\s*@[A-Za-z][A-Za-z0-9_]*\s*$|=?\s*@[A-Za-z][A-Za-z0-9_.]*\s*={1,2}\s*["'])/i.test(String(source??""))
     ?text(record.__collectionLabel??record.Name??"")
     :expression(source,record,p.pageState,p.objectApiName)):"";
 const recordOf=p=>p.objectApiName&&Array.isArray(p.records)
@@ -231,7 +231,7 @@ function SmartTabs({p,record,fire}){
     onClick={()=>{setActive(index);
       if(firstTabCustom&&index===0){
        fire("change",{index,value:firstTabValue,isCustom:true,record:{Id:firstTabValue,Name:firstTabCaption},
-        ...(hasCollection?{collectionName:p.dataCollection.name}:{})});
+        ...(hasCollection?{collectionName:p.dataCollection.key??p.dataCollection.name}:{})});
       }else if(hasCollection){
        const item=recordTabs[index-(firstTabCustom?1:0)];
        const itemId=item?.record?.Id||item?.record?.id||item?.value;
@@ -240,7 +240,7 @@ function SmartTabs({p,record,fire}){
         ...(item?.record?.__collectionCriteriaField?{
           Field:item.record.__collectionCriteriaField,
           Criteria:item.record.__collectionCriteria}: {})},
-        collectionName:p.dataCollection.name});
+        collectionName:p.dataCollection.key??p.dataCollection.name});
       }else if(dynamic){
        const row=recordsOf(p)[index-(firstTabCustom?1:0)];
        fire("change",{index,value:String(row?.Id??row?.id??""),record:row});
