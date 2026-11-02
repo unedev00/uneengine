@@ -68,12 +68,19 @@
 .metadata-filter-field-trigger>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .metadata-filter-field-trigger .is-placeholder{color:#78879b}
 .metadata-filter-field-trigger svg{flex:none;color:#516b86}
-.metadata-filter-field-dropdown{position:absolute;top:calc(100% + 3px);left:0;right:0;z-index:40;
-  padding:6px;border:1px solid #a9c1dd;border-radius:7px;background:#fff;box-shadow:0 12px 30px #1838592b}
+.metadata-filter-field-dropdown{position:fixed;z-index:2147483001;display:flex;flex-direction:column;
+  overflow:hidden;min-height:0;padding:6px;border:1px solid #a9c1dd;border-radius:7px;
+  background:#fff;box-shadow:0 12px 30px #1838592b;
+  color:#233752;font:400 11.5px/1.3 "Segoe UI",Arial,sans-serif}
 .metadata-filter-field-search{position:relative;display:block}
 .metadata-filter-field-search>svg{position:absolute;left:9px;top:11px;color:#67809b;pointer-events:none;z-index:1}
-.metadata-record-filter-editor .metadata-filter-field-search input{padding-left:29px}
-.metadata-filter-field-options{max-height:205px;overflow-y:auto;overscroll-behavior:contain}
+.metadata-filter-field-dropdown .metadata-filter-field-search input{
+  display:block;box-sizing:border-box;width:100%;min-width:0;height:32px;
+  border:1px solid #b5c4d8;border-radius:5px;background:#fff;color:#233752;
+  padding:5px 9px 5px 29px;font:400 11.5px/1.3 "Segoe UI",Arial,sans-serif
+}
+.metadata-filter-field-dropdown .metadata-filter-field-search input:focus-visible{outline:2px solid #2563eb;outline-offset:1px}
+.metadata-filter-field-options{flex:1 1 auto;min-height:0;max-height:205px;overflow-y:auto;overscroll-behavior:contain}
 .metadata-filter-field-options [role="group"]>strong{display:block;position:sticky;top:0;
   padding:5px 8px;background:#f0f5fb;color:#536c87;font-size:11px;font-weight:600}
 .metadata-filter-field-options button{width:100%;min-height:29px;padding:5px 8px;border:0;border-radius:3px;
