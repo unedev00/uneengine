@@ -48,7 +48,7 @@ chown metadrive-build:metadrive-build "$workspace"
 builder() {
   /usr/sbin/runuser -u metadrive-build -- /usr/bin/env -i \
     HOME="$workspace" npm_config_cache="$workspace/.npm" \
-    PATH=/usr/local/bin:/usr/bin:/bin GITHUB_SHA="$sha" \
+    PATH=/usr/local/bin:/usr/bin:/bin GITHUB_SHA="$sha" PYTHONDONTWRITEBYTECODE=1 \
     "$@"
 }
 stage=fetching
@@ -64,6 +64,9 @@ fetched=$(builder git -C "$workspace" rev-parse FETCH_HEAD)
   exit 1
 }
 builder git -C "$workspace" checkout --quiet --force --detach "$sha"
+# Freeze a digest of all privileged deployment scripts before running any
+# untrusted npm lifecycle hooks as the isolated build identity.
+script_digest=$(tar -C "$workspace" --sort=name -cf - scripts/oracle | sha256sum | awk '{print $1}')
 
 stage=validating
 write_status running "$stage"
@@ -83,6 +86,17 @@ remote_sha=$(builder git -C "$workspace" ls-remote origin refs/heads/main | awk 
   echo 'Main changed during build; refusing to publish stale release' >&2
   exit 1
 }
+# Refuse any build which modified the deployment scripts. Lock ownership of
+# these paths and their parent directories before invoking them as root.
+updated_digest=$(tar -C "$workspace" --sort=name -cf - scripts/oracle | sha256sum | awk '{print $1}')
+[[ "$updated_digest" == "$script_digest" ]] || {
+  stage=modified-deployment-scripts
+  exit 1
+}
+chown root:root "$workspace" "$workspace/scripts"
+chown -R root:root "$workspace/scripts/oracle"
+chmod 0755 "$workspace" "$workspace/scripts" "$workspace/scripts/oracle"
+find "$workspace/scripts/oracle" -type f -exec chmod a-w {} +
 stage=deploying
 write_status running "$stage"
 # Reuse the protected existing combined SQL-backup/API/worker/frontend deployment.
