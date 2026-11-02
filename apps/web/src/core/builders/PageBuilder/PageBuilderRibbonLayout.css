@@ -144,11 +144,11 @@
  * rows and bottom captions keep the same 114px vertical footprint. */
 .office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content
   > .page-builder-advanced-inline {
-  box-sizing:border-box!important;display:grid!important;flex:1 1 100%!important;
+  box-sizing:border-box!important;display:grid!important;flex:0 1 1360px!important;
   grid-template-columns:minmax(0,1.08fr) minmax(0,1fr) minmax(0,1.02fr) minmax(0,1.42fr) minmax(0,1.02fr)!important;
   grid-template-rows:114px!important;
   align-items:stretch!important;
-  width:100%!important;min-width:0!important;max-width:100%!important;
+  width:min(100%,1360px)!important;min-width:0!important;max-width:1360px!important;
   height:114px!important;min-height:114px!important;max-height:114px!important;
   gap:0!important;overflow:hidden!important;
 }
