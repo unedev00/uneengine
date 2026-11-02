@@ -46,6 +46,17 @@
   border:1px solid #becbdc;border-left:0;border-radius:0 5px 5px 0;
   color:#8895a6;background:#f2f4f8;
 }
+/* A visible, object-scoped field picker complements the @ formula suggestions.
+   This is an editor control, not a persisted component property. */
+.office-builder-ribbon #page-builder-tab-content .smart-data-field-picker{
+ box-sizing:border-box;flex:0 0 150px;width:150px;min-width:125px;max-width:150px;
+ height:28px;margin-left:6px;padding:0 6px;
+ border:1px solid #b6c7de;border-radius:5px;background:#fff;
+ color:#315279;font:11px "Segoe UI",Arial,sans-serif;
+}
+.office-builder-ribbon #page-builder-tab-content .smart-data-field-picker:disabled{
+ color:#97a5b6;background:#f4f6f9;cursor:not-allowed;
+}
 .office-builder-ribbon #page-builder-tab-content .smart-data-summary-name{
   box-sizing:border-box;width:115px;height:28px;min-width:115px;margin-left:6px;
   padding:0 5px;border:1px solid #b6c7de;border-radius:5px;
