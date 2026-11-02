@@ -120,18 +120,37 @@ export function registerPlatformDeploymentRoutes(
   const actor=(req as Request & {actor?:{tenant_id:string;user_id:string}}).actor;
   if(!actor?.tenant_id||!actor.user_id)throw new DeploymentControlError('Authentication required.',401);
   await platform.requirePlatform(actor.tenant_id,actor.user_id);
+  // Tenant OneEngine membership is not by itself production deployment authority.
+  // Require the separately assigned Platform Developer policy (directly or
+  // through a role/profile/group), then the revocable operations permission.
+  const {rows}=await db.query<{authorised:boolean}>(`
+   SELECT EXISTS(
+    SELECT 1 FROM md_permission_assignments a JOIN md_permission_sets p
+      ON p.tenant_id=a.tenant_id AND p.id=a.permission_set_id
+      WHERE a.tenant_id=$1 AND a.user_id=$2 AND p.api_name='PlatformDeveloper'
+    UNION ALL SELECT 1 FROM md_user_roles ur JOIN md_role_permission_sets rp
+      ON rp.tenant_id=ur.tenant_id AND rp.role_id=ur.role_id
+      JOIN md_permission_sets p ON p.tenant_id=rp.tenant_id AND p.id=rp.permission_set_id
+      WHERE ur.tenant_id=$1 AND ur.user_id=$2 AND p.api_name='PlatformDeveloper'
+    UNION ALL SELECT 1 FROM md_user_profiles up JOIN md_profile_permission_sets pp
+      ON pp.tenant_id=up.tenant_id AND pp.profile_id=up.profile_id
+      JOIN md_permission_sets p ON p.tenant_id=pp.tenant_id AND p.id=pp.permission_set_id
+      WHERE up.tenant_id=$1 AND up.user_id=$2 AND p.api_name='PlatformDeveloper'
+    UNION ALL SELECT 1 FROM md_user_permission_groups ug JOIN md_permission_group_sets gs
+      ON gs.tenant_id=ug.tenant_id AND gs.group_id=ug.group_id
+      JOIN md_permission_sets p ON p.tenant_id=gs.tenant_id AND p.id=gs.permission_set_id
+      WHERE ug.tenant_id=$1 AND ug.user_id=$2 AND p.api_name='PlatformDeveloper'
+   ) AS authorised`,[actor.tenant_id,actor.user_id]);
+  if(!rows[0]?.authorised)throw new DeploymentControlError('Platform deployment access denied.',403);
   await rbac.require(actor.tenant_id,actor.user_id,'PlatformOperations',operation);
   return actor;
  }
  app.get('/api/platform/production-deployment',async(req,res,next)=>{
   try{
-   await permission(req,'read');
+   const actor=await permission(req,'read');
    res.set('Cache-Control','private, no-store');
-   res.json({...await readProductionDeployment(),
-    canDeploy:await rbac.allowed(
-      (req as Request & {actor?:{tenant_id:string;user_id:string}}).actor!.tenant_id,
-      (req as Request & {actor?:{tenant_id:string;user_id:string}}).actor!.user_id,
-      'PlatformOperations','manage')});
+   res.json({...(await readProductionDeployment()),
+    canDeploy:await rbac.allowed(actor.tenant_id,actor.user_id,'PlatformOperations','manage')});
   }catch(error){
    // Access-denied users must not learn GitHub release data or credential status.
    if(error instanceof Error&&/Permission denied|permission denied/i.test(error.message)){
