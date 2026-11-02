@@ -36,8 +36,12 @@ export function formulaSignatureAt(source:string,caret:number){
    SUBSTITUTE:['text','old_text','new_text','instance'],
    COLLECTIONCOUNT:['collection'],COLLECTIONSUM:['collection','field']
   };
-  const title=titles[active.name]?.[index]??(active.name==='COLLECTION'?'value'+index:
-    ['AND','OR'].includes(active.name)?'condition'+ordinal:
+  // SUMIFS-like groups: name, caption, criteria field, criterion, repeating.
+  // A standalone @Field (optionally compared to a criterion) also expands records.
+  const collectionName=index===0?'name':(['tab_label','criteria_range','criteria'][(index-1)%3]+
+    (index<=3?'':Math.floor((index-1)/3)+1));
+  const title=active.name==='COLLECTION'?collectionName:
+    titles[active.name]?.[index]??(['AND','OR'].includes(active.name)?'condition'+ordinal:
     entry.name.replace(/^argument/, 'value'));
   return {name:title,optional:index>=minimumArguments};
  });
