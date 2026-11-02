@@ -1157,6 +1157,10 @@ test('Smart Tabs starts on first actual tab and keeps explicit selections across
  assert.match(runtime,/if\(!tabs\.length\|\|p\.loading\|\|p\.previewOnly\|\|p\.builderPreview/);
  assert.match(runtime,/if\(indexForSelection>=0\)\{autoSelected\.current=null;return;/);
  assert.match(runtime,/if\(autoSelected\.current===key\)return;/);
+ assert.match(runtime,/changeAction\.actionType!=="PageState"/);
+ assert.match(runtime,/changeAction\.actionType==="Formula"&&formulaStateKey/);
+ assert.match(runtime,/firstTabRef\.current\?\.focus\(\{preventScroll:true\}\)/);
+ assert.match(runtime,/document\.activeElement!==document\.body/);
 });
  
 test('collection-driven Smart Card Grid renders authorised record title and other fields, not lookup criterion',async()=>{
