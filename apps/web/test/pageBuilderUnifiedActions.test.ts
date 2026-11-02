@@ -42,7 +42,7 @@ test('unusual declared events and existing custom events remain reachable',()=>{
 test('unsupported smart component slots remain mounted disabled',()=>{
  const html=render({},'','smart_button');
  for(const title of ['On Change','+ Icon','− Icon','Custom Button 1','Custom Button 2'])
-  assert.match(html,new RegExp('aria-label="'+title.replace(/[+−]/g,x=>x)+' action" disabled'));
+  assert.ok(html.includes('aria-label="'+title+' action" disabled'),title);
  for(const key of ['smart_cart','smart_button'])
   assert.equal(supportsSmartActionEvent(key,'click'),true);
 });
