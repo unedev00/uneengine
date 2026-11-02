@@ -848,6 +848,7 @@ function MetadataBoundPageComponent({
         ? resolvedProperties.label : component.label,
       properties: resolvedProperties, objects, reports, flows: availableFlows, pageState, children,
       dataCollection,
+      formulaCollectionSources:namedSource.formulaSources,namedCollections:namedSource.namedCollections,
       fieldAllowed:(key:string,row:Record<string,unknown>)=>scopedFieldAllows(
         properties.dataFieldFilters,key,row,fields,{pageState,recordId,sessionId}),
        pageSessionKey, componentId: component.id,
