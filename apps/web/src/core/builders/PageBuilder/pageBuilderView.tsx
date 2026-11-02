@@ -3047,9 +3047,12 @@ function PageBuilder({
             </select>
           </label>}
         </div>
-        <div className="page-manager-table-scroll"><table className="records-table page-manager-table"><thead><tr><th>Page name</th><th>API Name</th><th>Type</th><th>Related object</th><th>Device</th><th>Dimensions</th><th>Orientation</th><th>Last modified</th><th>Status</th><th>Actions</th></tr></thead>
+        <div className="page-manager-table-scroll"><table className="records-table page-manager-table"><thead><tr><th>Page name</th><th>API Name</th><th>Application</th><th>Version</th><th>Type</th><th>Related object</th><th>Device</th><th>Dimensions</th><th>Orientation</th><th>Last modified</th><th>Status</th><th>Actions</th></tr></thead>
         <tbody>{paginatedPages.map(item=><tr key={item.apiName}>
           <td><button type="button" className="page-manager-page-link" onClick={()=>selectSavedPage(item.apiName)}>{item.label}</button></td><td title={item.apiName}><code>{item.apiName}</code></td>
+          <td>{apps.find(app=>app.navigationPageApiNames.includes(item.apiName)
+            ||(item.activationAssignments??[]).some(a=>a.appId===app.apiName))?.label??'—'}</td>
+          <td>{item.publishedRevision?'v'+item.publishedRevision:'—'}</td>
           <td>{item.pageType}</td><td>{item.targetObject ? objects.find(object=>object.apiName===item.targetObject)?.label ?? item.targetObject : 'Not object-specific'}</td><td>{pageDeviceLabel(item)}</td><td>{item.canvasWidth} × {item.canvasHeight} px</td><td>{canvasOrientation(item.canvasWidth,item.canvasHeight)}</td>
           <td>{item.updatedAt ? new Date(item.updatedAt).toLocaleDateString() : '—'}</td>
           <td><span className={item.status === 'Active' ? 'page-status-badge active' : 'page-status-badge'}>{item.status}</span></td>
