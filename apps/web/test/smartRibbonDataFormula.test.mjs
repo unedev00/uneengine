@@ -201,9 +201,9 @@ test('one icon opens visual filters while the same Formula Bar edits record pred
  assert.match(ui,/selectedDataField==='__record_filter__'/);
  assert.match(ui,/aria-label="Configure record filters"/);
  assert.match(ui,/label="Record filter formula"/);
- assert.match(ui,/validate=\\{value=>validateRecordFilterFormula/);
- assert.match(ui,/onChange=\\{changeRecordFilterFormula\\}/);
- assert.match(ui,/openFilters\\('Record'\\)/);
+ assert.match(ui,/validate=\{value=>validateRecordFilterFormula/);
+ assert.match(ui,/onChange=\{changeRecordFilterFormula\}/);
+ assert.match(ui,/openFilters\('Record'\)/);
  assert.doesNotMatch(ui,/smart-data-field-picker|smart-data-move-to-filter|smart-data-record-filter-target/);
  assert.doesNotMatch(css,/smart-data-field-picker|smart-data-move-to-filter|smart-data-record-filter-target/);
 });
