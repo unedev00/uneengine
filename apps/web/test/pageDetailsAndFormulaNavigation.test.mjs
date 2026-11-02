@@ -16,7 +16,7 @@ test('page details uses immutable, permission-checked history endpoints',()=>{
  assert.match(ui,/base\+'\/restore'/);
  assert.match(ui,/onOpenDesign\(page\.apiName\)/);
  assert.match(ui,/Historical versions are immutable/);
- const api=read('../../../server/src/api/PageApiController.ts');
+ const api=read('../../server/src/api/PageApiController.ts');
  assert.match(api,/\/layouts\/:variant\/versions\/:version/);
  assert.match(api,/PageDefinition','read'/);
 });
