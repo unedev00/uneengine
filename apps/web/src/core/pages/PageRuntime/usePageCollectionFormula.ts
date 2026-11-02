@@ -57,7 +57,7 @@ export function usePageCollectionFormula(
  const listExpression=expressions.find(value=>Boolean(parseCollectionListBinding(value,primaryObject)));
  // List-expression metadata is distinct from scalar Boolean expressions. A
  // source binding selects records; individual row property formulas remain scalar.
- const entered=explicit||listExpression||reference||declared||'';
+ const entered=explicit||listExpression||declared||reference||'';
  const source=entered.startsWith('=')?entered.slice(1).trim():entered;
  const scope=pageSessionKey+'#'+sessionId;
  const lastValid=useRef<{object:string;collection:PageNamedCollection}|null>(null);
