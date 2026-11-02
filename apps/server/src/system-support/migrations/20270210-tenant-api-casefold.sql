@@ -41,6 +41,7 @@ DECLARE
  ];
  touched integer := 0;
  count_rows integer;
+ duplicate_exists boolean;
 BEGIN
  IF NOT EXISTS(SELECT 1 FROM md_tenants WHERE id=p_tenant) THEN
   RAISE EXCEPTION 'Unknown tenant for API-name migration';
@@ -66,8 +67,8 @@ BEGIN
           WHEN item.table_name IN ('md_matching_rules','md_validation_rules','md_field_default_formulas') THEN 'object_api'
           WHEN item.table_name='md_flow_definitions' THEN 'version'
           ELSE 'tenant_id' END)
-   INTO STRICT item.duplicate_exists USING p_tenant;
-  IF item.duplicate_exists THEN
+   INTO STRICT duplicate_exists USING p_tenant;
+  IF duplicate_exists THEN
    RAISE EXCEPTION 'Case-only API identity collision in %',item.table_name;
   END IF;
  END LOOP;
@@ -195,11 +196,15 @@ BEGIN
   END LOOP;
  END LOOP;
 
- -- Tenant-owned app definitions may be canonicalized, but global/platform
- -- md_apps names must retain their seeded identities for other tenants.
+ -- Tenant-owned global app rows are changed only when they belong to this
+ -- tenant. Their route-alias foreign keys must change in the same transaction.
+ -- Shared installed app definitions remain stable for other tenants.
  IF EXISTS(SELECT 1 FROM information_schema.columns c WHERE
    c.table_schema=current_schema() AND c.table_name='md_apps'
    AND c.column_name='tenant_owner_id') THEN
+  UPDATE md_app_route_aliases r SET app_api=lower(r.app_api)
+    FROM md_apps a WHERE a.api_name=r.app_api AND a.tenant_owner_id=p_tenant
+      AND r.tenant_id=p_tenant AND r.app_api<>lower(r.app_api);
   UPDATE md_apps SET api_name=lower(api_name)
    WHERE tenant_owner_id=p_tenant AND api_name<>lower(api_name);
  END IF;
