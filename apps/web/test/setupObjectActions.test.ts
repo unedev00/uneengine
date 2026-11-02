@@ -48,7 +48,7 @@ test('Object Manager field wizard generates tenant-local collision-safe suffix n
   assert.equal(actions.newFieldApiName,'revenue_3__c');
   assert.equal(actions.newFieldConfigurationError,'');
   const special=createSetupObjectActions({...ctx,newFieldLabel:'123 Purchase'});
-  assert.equal(special.newFieldApiName,'Purchase__c');
+  assert.equal(special.newFieldApiName,'purchase__c');
   const invalid=createSetupObjectActions({...ctx,newFieldLabel:'!!'});
   assert.equal(invalid.newFieldApiName,'');
   assert.match(invalid.newFieldConfigurationError,/valid custom field name/);
