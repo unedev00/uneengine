@@ -221,7 +221,7 @@ export async function pageComponentSessionRelatedQuery(
  }
  return matches.length===1?{blocked:false,filter:matches[0]}:{blocked:true};
 }
-const isDynamic=(value:unknown):value is {source:string;key?:string}=>
+const isDynamic=(value:unknown):value is {source:string;key?:string;skipWhenBlank?:boolean}=>
   Boolean(value&&typeof value==='object'&&!Array.isArray(value));
 /** Resolve only declared, typed page context sources; never evaluate expressions. */
 export function resolvePageFilterValue(value:unknown,context:PageFilterContext):unknown {
@@ -235,6 +235,17 @@ export function resolvePageFilterValue(value:unknown,context:PageFilterContext):
   if(value.source==='Session')return context.sessionId||undefined;
   return undefined;
 }
+/** Explicit opt-in only. Skip an optional Page State condition when its
+ * source is blank; never treat the blank condition as TRUE inside OR.
+ * Every definition is still validated before this is evaluated. */
+function skipsOptionalPageStateFilter(filter:PageFilter,context:PageFilterContext):boolean{
+ const source=filter.value;
+ return !['Is Blank','Is Not Blank'].includes(filter.operator)&&isDynamic(source)
+  &&source.source==='PageState'&&source.skipWhenBlank===true
+  &&typeof source.key==='string'
+  &&/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(source.key)
+  &&[undefined,null,''].includes(resolvePageFilterValue(source,context) as undefined|null|string);
+}
 /** Block unbound parent filters *before* querying; missing context never means "all records". */
 function pageComponentRecordQueryBase(
   definitions:unknown,fields:ReadonlyArray<FieldMetadata>,context:PageFilterContext={},logic:'AND'|'OR'='AND'
@@ -244,10 +255,11 @@ function pageComponentRecordQueryBase(
   // A saved filter is mandatory. Invalid metadata must never widen queries.
   if(definitions.some(item=>examineRecordFilter(item,fields)!==null))
     return {blocked:true,serverFilterable:false};
+  const active=definitions.filter(item=>!skipsOptionalPageStateFilter(item as PageFilter,context));
   let first:PageQueryFilter|undefined;
   const serverFilters:PageServerRecordFilter[]=[];
   let serverFilterable=true;
-  for(const value of definitions){
+  for(const value of active){
     const filter=value as PageFilter;
     const expressionValue=isDynamic(filter.value)&&filter.value.source==='FieldExpression';
     const resolved=expressionValue?undefined:resolvePageFilterValue(filter.value,context);
@@ -270,7 +282,7 @@ function pageComponentRecordQueryBase(
       first={field:filter.field,value:String(resolved),related:Boolean(field?.relationship)};
     }
   }
-  const filters=serverFilterable&&serverFilters.length===definitions.length&&serverFilters.length>0
+  const filters=serverFilterable&&serverFilters.length===active.length&&serverFilters.length>0
     ?serverFilters:undefined;
   return {blocked:false,filter:first,filters,
     filterLogic:filters&&filters.length>1?filters.map((_,index)=>String(index+1)).join(` ${logic} `):undefined,
@@ -288,7 +300,8 @@ export function pageComponentRecordQuery(
  const extra=compileRecordFilterFormula(formula,fields,context.pageState??{});
  if(extra.blocked)return {blocked:true,serverFilterable:false,error:extra.error};
  if(!extra.filters.length)return base;
- if(base.blocked||!base.serverFilterable||(Array.isArray(definitions)&&definitions.length>0&&!base.filters))
+ if(base.blocked||!base.serverFilterable||(Array.isArray(definitions)
+   &&definitions.some(item=>!skipsOptionalPageStateFilter(item as PageFilter,context))&&!base.filters))
   return {blocked:true,serverFilterable:false,error:'Filter formula requires all existing conditions to be server-filterable'};
  const regular=base.filters??[];
  const combined=[...regular,...extra.filters];
@@ -331,7 +344,9 @@ export function filterPageComponentRecords<T extends Record<string, unknown>>(
   if (!Array.isArray(definitions)) return [];
   if (definitions.length===0) return [...records];
   if (pageComponentRecordQuery(definitions,fields,context,logic).blocked)return [];
-  return records.filter(record => definitions[logic==='OR'?'some':'every'](item => {
+  const active=definitions.filter(item=>!skipsOptionalPageStateFilter(item as PageFilter,context));
+  if(active.length===0)return [...records];
+  return records.filter(record => active[logic==='OR'?'some':'every'](item => {
     const filter = item as PageFilter;
     const mentions=record.__mentionValues&&typeof record.__mentionValues==='object'&&!Array.isArray(record.__mentionValues)
       ?record.__mentionValues as Record<string,unknown>:{};
