@@ -64,7 +64,7 @@ export async function readProductionDeployment():Promise<DeploymentStatus>{
  if(!latestCommit)throw new DeploymentControlError('GitHub returned an invalid main-branch revision.',502);
  const matches:Array<Run>=Array.isArray(runs?.workflow_runs)
   ?runs.workflow_runs.filter((r:unknown)=>validRun(r)&&(r as Run).event!=='pull_request'): [];
- const current=matches[0];
+ const current=matches.find(run=>activeStatuses.has(run.status))??matches[0];
  return {configured:true,latestCommit,deployedCommit,
   active:!!current&&activeStatuses.has(current.status),
   run:current?{id:current.id,commit:current.head_sha,status:current.status,
