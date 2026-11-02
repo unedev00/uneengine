@@ -3375,6 +3375,7 @@ function PageBuilder({
               tab={ribbonTab==='Component Data'?'Data':ribbonTab==='Component Layout'?'Layout':'Design'}
               api={selected.type.slice(7)} definitions={ribbonCatalog.properties}
               properties={selected.properties} objects={objects} pageObjectApiName={page.targetObject}
+              componentId={selected.id} pageComponents={page.components}
               sharedPropertyIds={ribbonSharedPropertyIds} mixedPropertyIds={ribbonMixedPropertyIds}
               selectedApis={ribbonSelectedMembers.map(item=>item.type.startsWith('Custom:')?item.type.slice(7):item.type)}
               onChange={(properties:Record<string,unknown>)=>{
