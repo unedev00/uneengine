@@ -191,6 +191,9 @@ try{
  }else if(process.env.METADRIVE_BROWSER_TARGET==='relationship-integrity'){
   const {runRelationshipGraphBrowserCheck}=await import('./relationship-graph-browser-check.mjs');
   await runRelationshipGraphBrowserCheck({page,origin,db,tenantId,token:tokens.accessToken});
+ }else if(process.env.METADRIVE_BROWSER_TARGET==='ui-route-audit'){
+  const {auditAuthenticatedCoreRoutes}=await import('./authenticated-core-100pct-audit.mjs');
+  await auditAuthenticatedCoreRoutes({page,origin,caseId});
  }else{
  await page.goto(origin+'/une/setup/flow-builder',{waitUntil:'domcontentloaded'});
  await page.getByText('Existing flows',{exact:true}).waitFor({state:'visible',timeout:20000});
