@@ -156,11 +156,15 @@ try{
         const configGrid=modal?.querySelector('.connector-config-fields');
         const configColumns=configGrid?getComputedStyle(configGrid).gridTemplateColumns.split(' ').filter(Boolean).length:0;
         const modalOverflow=modal?modal.scrollWidth>modal.clientWidth+6:false;
+        const variableInputWidths=modal?[...modal.querySelectorAll('.connector-config-row input.form-control')].map(input=>({
+          inputWidth:Math.round(input.getBoundingClientRect().width),
+          rowWidth:Math.round(input.closest('.connector-config-row').getBoundingClientRect().width)
+        })) : [];
         return {zoom:window.visualViewport?.scale??1,docWidth,viewportWidth,
           horizontalOverflow:Math.max(0,docWidth-viewportWidth),
           renderedText:body.innerText.trim().slice(0,180),
           controlCount:controls.length,clipped,offscreenControls,oversizedInputs,actionWraps,
-          modalWidth:modalRect?Math.round(modalRect.width):null,modalOverflow,configColumns};
+          modalWidth:modalRect?Math.round(modalRect.width):null,modalOverflow,configColumns,variableInputWidths};
       }).catch(e=>({error:String(e)}));
       try{await page.screenshot({path:join(root,file+'.png'),animations:'disabled'});}
       catch(e){failure+=(failure?'; ':'')+'Screenshot failed: '+String(e);}
@@ -175,6 +179,8 @@ try{
         if(!metric.modalWidth)issues.push('credential dialog missing');
         if(metric.modalWidth>metric.viewportWidth+2)issues.push('credential dialog exceeds viewport');
         if(metric.configColumns!==(viewport.width>720?2:1))issues.push('configuration grid columns: '+metric.configColumns);
+        if(metric.variableInputWidths?.some(({inputWidth,rowWidth})=>inputWidth<Math.max(110,rowWidth*.72)))
+          issues.push('configuration field too narrow relative to grid column');
       }
       if(!metric.renderedText)issues.push('empty rendered content');
       if(Math.abs((metric.zoom??1)-1)>0.001)issues.push('browser zoom is not 100%');
