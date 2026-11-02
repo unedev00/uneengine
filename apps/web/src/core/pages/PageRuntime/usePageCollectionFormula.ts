@@ -1,12 +1,13 @@
 import {useEffect,useRef,useState} from 'react';
 import {Parser,type Expression} from '../../../../../server/src/expression-engine/FormulaParser.js';
 import {tokenize} from '../../../../../server/src/expression-engine/FormulaTokenizer.js';
-import {evaluateCollectionFormula} from '../../../component-libraries/shared/FieldExpression.js';
+import {evaluateCollectionFormula,evaluateFieldExpressionDetailed} from '../../../component-libraries/shared/FieldExpression.js';
 import {loadFlowScreenRecordPage} from '../../authentication/Client/authClient';
 import type {ObjectMetadata} from '../../metadata/Definitions/metadata';
 import {isCollectionSourceExpression,namedCollectionNames,registerSessionCollection,useSessionCollectionSnapshot} from './pageCollectionSession';
 import {formulaCollectionReferenceKey} from '../../../../../server/src/expression-engine/FormulaCollection.js';
-import {parseCollectionListBinding,filteredCollectionItems} from './pageCollectionListBinding';
+import {parseCollectionListBinding,filteredCollectionItems,sessionCollectionFields} from './pageCollectionListBinding';
+import {filterPageComponentRecords} from './pageComponentBindings';
 
 type Row=Record<string,unknown>;
 export type PageNamedCollection={name:string;key?:string;items:unknown[]};
@@ -148,13 +149,37 @@ export function usePageCollectionFormula(
  return {collection:value?{...value,key:formulaCollectionReferenceKey(value.name)}:null,
    error:resolved.error??null,loading:false};
  })();
- const recoverable=Boolean(result.error&&/^COLLECTION has a blank value|^Invalid Flow formula|^COLLECTION requires|^Unexpected|^Unterminated/.test(result.error));
+ // Only a bounded, already-authorised session collection is filtered locally.
+ // Object-backed lists always use the existing tenant/RBAC-protected Record API.
+ const sessionResult=(()=>{
+  if(primaryObject||!result.collection)return result;
+  const visual=properties.filterMode!=='Formula'&&Array.isArray(properties.filters)
+   ?properties.filters:[];
+  const authored=properties.filterMode!=='Field'&&typeof properties.filterFormula==='string'
+   ?properties.filterFormula.trim():'';
+  if(!visual.length&&!authored)return result;
+  const rows=namedCollectionRows(result.collection)
+   .map(row=>({...row,Value:row.__collectionValue}));
+  const visualRows=visual.length?filterPageComponentRecords(rows,visual,sessionCollectionFields,
+   {pageState,sessionId},properties.filterLogic==='OR'?'OR':'AND'):rows;
+  let formulaError:string|null=null;
+  const kept=authored?visualRows.filter(row=>{
+   const outcome=evaluateFieldExpressionDetailed(authored,row,{namedCollections:registry.collections});
+   if(outcome.error){formulaError=outcome.error;return false;}
+   return outcome.value==='true'||outcome.value===true;
+  }):visualRows;
+  const positions=new Set(kept.map(row=>row.__collectionIndex));
+  return {...result,collection:{...result.collection,
+   items:result.collection.items.filter((_,index)=>positions.has(index))},
+   error:formulaError??result.error};
+ })();
+ const recoverable=Boolean(sessionResult.error&&/^COLLECTION has a blank value|^Invalid Flow formula|^COLLECTION requires|^Unexpected|^Unterminated/.test(result.error));
  // Keep the last successful rendering when legacy persisted metadata contains
  // an invalid expression. Do not turn parser errors into visible list items.
- if(result.collection&&result.collection.name!=='__filtered_list__')
-   lastValid.current={object:primaryObject,collection:result.collection};
+ if(sessionResult.collection&&!sessionResult.error&&sessionResult.collection.name!=='__filtered_list__')
+   lastValid.current={object:primaryObject,collection:sessionResult.collection};
  const visible=recoverable?{collection:lastValid.current?.object===primaryObject
-   ?lastValid.current.collection:null,error:null,loading:false}:result;
+   ?lastValid.current.collection:null,error:null,loading:false}:sessionResult;
  const owned=referencesNamed?visible.collection:null;
  const identity=owned?JSON.stringify(owned):'';
  useEffect(()=>registerSessionCollection(scope,componentId,owned),[scope,componentId,identity]);
