@@ -293,6 +293,14 @@ function parse(source,record,formulaContext){
     const result=entry[selected[2]];
     return result===null||['string','number','boolean'].includes(typeof result)?result:'';
    }
+   if(/^[A-Za-z][A-Za-z0-9_]{0,79}$/.test(reference)){
+    const selections=formulaContext.namedCollectionSelections;
+    if(selections&&typeof selections==='object'&&!Array.isArray(selections)){
+     const entry=Object.entries(selections).find(([key])=>key.toLowerCase()===reference.toLowerCase())?.[1];
+     if(entry&&typeof entry==='object'&&!Array.isArray(entry))
+      return entry.Value??entry.Id??entry.Name??'';
+    }
+   }
    // Object.Field collection references can use only authorised records
    // supplied by the Page Runtime; a formula never performs a database query.
    const sourceRef=/^([A-Za-z][A-Za-z0-9_]*)\.([A-Za-z][A-Za-z0-9_]*)$/.exec(reference);
@@ -402,7 +410,14 @@ export class FieldExpressionEvaluationError extends Error {
 export function evaluateFieldExpressionDetailed(expression,record,options={}){
  if(typeof expression!=='string')return {value:''};
  if(expression.length>4000)return {value:'',error:'Formula exceeds the 4000-character limit'};
- const input=expression.trim();if(!input)return {value:''};
+ const entered=expression.trim();if(!entered)return {value:''};
+ // Excel convention: '=' makes a formula; Collection(...) without '=' is plain text
+ // in ordinary display properties. Preserve legacy metadata-only collection sources.
+ const explicit=entered.startsWith('=');
+ const input=explicit?entered.slice(1).trim():entered;
+ if(explicit&&!input)return {value:'',error:'Complete the formula after ='};
+ if(!explicit&&!options.collectionResult&&/^COLLECTION\s*\(/i.test(input))
+  return {value:expression};
  if(!/^(?:TRUE|FALSE|NULL|PI)$/i.test(input)&&!/@[A-Za-z]/.test(input)&&!input.startsWith('@')&&!/^[A-Za-z][A-Za-z0-9_]*\s*\(/.test(input)
   &&!/^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)+(?:\s*\(|$)/.test(input)
   &&!/^(?:["(]|[-+]?\d+(?:\.\d+)?\s*[+*\/%^<>=!-])/.test(input)
