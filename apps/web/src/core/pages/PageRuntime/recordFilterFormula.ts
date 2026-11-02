@@ -74,7 +74,7 @@ function compile(node:Expression,fields:ReadonlyArray<FieldMetadata>,state:Reado
  }
  if(node.kind==='call'&&node.name==='MATCHES'&&node.args.length===2){
   const field=simpleField(node.args[0],fields);
-  if(!field||!/^(Text|Email|Phone|Url|Picklist)(\\(|$)/i.test(field.dataType))
+  if(!field||!/^(Text|Email|Phone|Url|Picklist)(\(|$)/i.test(field.dataType))
    throw Error('MATCHES requires a directly readable text field');
   const value=asState(node.args[1],state);
   if(typeof value!=='string')throw Error('MATCHES requires a text pattern');
