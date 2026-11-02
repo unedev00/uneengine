@@ -197,18 +197,29 @@
   background:transparent;color:#2e3850;cursor:pointer;font:inherit;
 }
 .canvas-unified-builder .canvas-element-actions > button:hover {background:#eff1fb;}
+/* All page layouts use this shared canvas action menu. Explicit foregrounds
+   are required: floating toolbars are portalled outside theme-colour scopes. */
 .canvas-unified-builder .canvas-element-actions .canvas-action-menu {
   position:absolute;top:calc(100% + 5px);right:0;width:215px;padding:6px;
-  z-index:200;border-radius:11px;border:1px solid #e0e4ec;background:white;
+  z-index:200;border-radius:11px;border:1px solid #ced8e5;background:#fff;
+  color:#243247;
   box-shadow:0 9px 28px #27315033;display:flex;flex-direction:column;gap:2px;
 }
 .canvas-unified-builder .canvas-action-menu button {
   border:0;background:transparent;border-radius:6px;padding:8px;
-  text-align:left;color:inherit;cursor:pointer;font:inherit;
+  text-align:left;color:#243247;cursor:pointer;font:inherit;
 }
-.canvas-unified-builder .canvas-action-menu button:hover {background:#f3f5fb;}
-.canvas-unified-builder .canvas-action-menu button:disabled {opacity:.45;cursor:not-allowed;}
-.canvas-unified-builder .canvas-action-menu kbd {float:right;font-size:var(--md-fs-sm,12px);color:#7b869a;}
+.canvas-unified-builder .canvas-action-menu button:hover:not(:disabled) {background:#edf3fb;}
+.canvas-unified-builder .canvas-action-menu button:focus-visible {
+  outline:2px solid #1d62bd;outline-offset:-2px;
+}
+.canvas-unified-builder .canvas-action-menu button:disabled {
+  opacity:1;color:#586779;background:#f3f5f8;cursor:not-allowed;
+}
+.canvas-unified-builder .canvas-action-menu kbd {
+  float:right;font-size:var(--md-fs-sm,12px);color:#52647a;
+}
+.canvas-unified-builder .canvas-action-menu button:disabled kbd {color:#586779;}
 .canvas-unified-builder .canvas-position-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
 .canvas-unified-builder .canvas-position-grid .form-label {min-width:0;}
 .canvas-unified-builder .canvas-align-choices {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;}
