@@ -13,7 +13,7 @@ export type PageNamedCollection={name:string;key?:string;items:unknown[]};
 type SourceResult={key:string;records:Record<string,Row[]>;error?:string};
 
 export function collectionFormulaReferences(formula:string,primaryObject='',knownCollections:readonly string[]=[]):Array<{object:string;field:string}>{
- if(!namedCollectionNames(formula).length)return [];
+ if(!/\bCOLLECTION\s*\(/i.test(formula))return [];
  const found=new Map<string,{object:string;field:string}>();
  const visit=(node:Expression):void=>{
   if(node.kind==='reference'){
@@ -45,7 +45,9 @@ export function usePageCollectionFormula(
  formula:unknown,properties:Readonly<Row>,objects:readonly ObjectMetadata[],
  primaryObject:string,primaryRecords:readonly Row[],primaryTotal:number,
  revision:number,pageState:Readonly<Row>,sessionId:string,pageSessionKey:string,componentId:string
-):{collection:PageNamedCollection|null;error:string|null;loading:boolean}{
+):{collection:PageNamedCollection|null;error:string|null;loading:boolean;
+   formulaSources:Readonly<Record<string,readonly Row[]>>;
+   namedCollections:Readonly<Record<string,PageNamedCollection>>}{
  const declared=typeof formula==='string'?formula.trim():'';
  // A Collection is authored in any existing formula property. The old hidden
  // collectionFormula metadata remains readable for previously published pages.
@@ -57,7 +59,8 @@ export function usePageCollectionFormula(
  const listExpression=expressions.find(value=>Boolean(parseCollectionListBinding(value,primaryObject)));
  // List-expression metadata is distinct from scalar Boolean expressions. A
  // source binding selects records; individual row property formulas remain scalar.
- const entered=explicit||listExpression||declared||reference||'';
+ const scalarCollectionExpression=expressions.find(value=>/\bCOLLECTION\s*\(/i.test(value));
+ const entered=explicit||listExpression||declared||reference||scalarCollectionExpression||'';
  const source=entered.startsWith('=')?entered.slice(1).trim():entered;
  const scope=pageSessionKey+'#'+sessionId;
  const lastValid=useRef<{object:string;collection:PageNamedCollection}|null>(null);
@@ -148,7 +151,16 @@ export function usePageCollectionFormula(
  const identity=owned?JSON.stringify(owned):'';
  useEffect(()=>registerSessionCollection(scope,componentId,owned),[scope,componentId,identity]);
  const duplicate=registry.errors[componentId];
- return duplicate?{collection:null,error:duplicate,loading:false}:visible;
+ // Scalar formulas such as SUM(COLLECTION(...)) use these very same already
+ // authorised complete Object rows; no renderer or formula performs its own IO.
+ const complete=(!primaryObject||primaryTotal<=primaryRecords.length)
+  &&(!secondary.length||remote?.key===key)&&!remote?.error;
+ const formulaSources:Record<string,readonly Row[]>=complete?{
+  ...(remote?.key===key?remote.records:{}),
+  ...(primaryObject?{[primaryObject]:primaryRecords}:{})
+ }:{};
+ return {...(duplicate?{collection:null,error:duplicate,loading:false}:visible),
+   formulaSources,namedCollections:registry.collections};
 }
 
 /** Read-only record-shaped adapter for collection-capable Tables, Lists and Cards.
