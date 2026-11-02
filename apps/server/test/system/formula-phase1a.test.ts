@@ -112,7 +112,7 @@ test('formula contexts share validation and report unavailable functions before 
   assert.match(evaluateFieldExpressionDetailed('ISNEW()',browserRecord).error??'',
     /not available in ribbon binding context/);
   assert.deepEqual(getFormulaFunctionNames('component_visibility'),[]);
-  assert.deepEqual(getFormulaFunctionNames('record_filter'),[]);
+  assert.deepEqual(getFormulaFunctionNames('record_filter'),['MATCHES']);
   assert.equal(formulaFunctionCatalog.get('IF')?.signature.minimumArguments,3);
   assert.equal(formulaFunctionCatalog.get('IF')?.signature.maximumArguments,3);
 });
