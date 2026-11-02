@@ -2,6 +2,7 @@ import {adjustNumberRecord,type AdjustNumberBinding} from '../PageRuntime/adjust
 import {executePageFormulaAction,parseActionFormulaAssignment,resolveActionFormulaValue} from '../PageRuntime/formulaAction';
 import {nextAccessibleTabIndex} from '../PageRuntime/tabKeyboardNavigation';
 import {usePageCollectionFormula,namedCollectionRows} from '../PageRuntime/usePageCollectionFormula';
+import {pageStateDependencies,applyPageSelection} from './pageStateDependencies';
 import { useFormFactor } from '../../workspace/Responsive/useFormFactor';
 import {resolveMetadataProperties} from '../../metadata/Definitions/metadataReferences';
 import {useFlowStateChannel} from '../../automation/FlowScreen/useFlowStateChannel';
@@ -251,7 +252,7 @@ function RuntimeReportChart({ report, objects, recordContext }: {
 }
 
 function MetadataBoundPageComponent({
-  definition, component, objects, apps, pages, currentAppId, pageSessionKey, reports, availableFlows, formFactor, onNavigate, onLaunchFlow, disableActions = false, defaultObjectApiName = '', recordId = '', initialPageState, sessionIdOverride, children
+  definition, component, objects, apps, pages, currentAppId, pageSessionKey, pageComponents, reports, availableFlows, formFactor, onNavigate, onLaunchFlow, disableActions = false, defaultObjectApiName = '', recordId = '', initialPageState, sessionIdOverride, children
 }: {
   definition: LibraryComponentMetadata;
   component: PageComponentMetadata;
@@ -270,6 +271,7 @@ function MetadataBoundPageComponent({
   defaultObjectApiName?: string;
   recordId?: string;
   initialPageState?:Record<string,unknown>;
+  pageComponents?:readonly PageComponentMetadata[];
   sessionIdOverride?:string;
   children?: ReactNode;
 }) {
@@ -294,6 +296,7 @@ function MetadataBoundPageComponent({
   // Generic, page-scoped visual state for metadata-configured local actions.
   // Never grants data permissions or persists cross-tenant information.
   const [pageState, setPageState] = useState<Record<string, unknown>>(()=>initialPageState??{});
+  const stateDependencies=useMemo(()=>pageStateDependencies(pageComponents??[component]),[pageComponents,component]);
   const pendingFlowOutputs=useRef(new Map<string,{flowApiName:string;mappings:Record<string,unknown>}>());
   useEffect(() => {
     setPageState(initialPageState??{});
@@ -301,23 +304,19 @@ function MetadataBoundPageComponent({
     const sync = (event: Event) => {
       const detail=(event as CustomEvent<{pageSessionKey:string;key:string;value:unknown}>).detail;
       if(detail?.pageSessionKey !== pageSessionKey || !/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(detail.key))return;
-      setPageState(previous=>({...previous,[detail.key]:detail.value}));
+      setPageState(previous=>applyPageSelection(previous,{kind:'state',key:detail.key,value:detail.value},stateDependencies));
     };
     const select=(event:Event)=>{
       const detail=(event as CustomEvent<{pageSessionKey:string;name:string;value:Record<string,unknown>}>).detail;
       if(detail?.pageSessionKey!==pageSessionKey||
         !/^[A-Za-z][A-Za-z0-9_]{0,79}$/.test(detail.name))return;
-      setPageState(previous=>({...previous,collectionSelections:{
-       ...(previous.collectionSelections&&typeof previous.collectionSelections==='object'
-        &&!Array.isArray(previous.collectionSelections)?previous.collectionSelections as Record<string,unknown>:{}),
-       [detail.name]:detail.value
-      }}));
+      setPageState(previous=>applyPageSelection(previous,{kind:'collection',key:detail.name,value:detail.value},stateDependencies));
     };
     window.addEventListener('metadrive:page-local-state',sync);
     window.addEventListener('metadrive:page-collection-selected',select);
     return ()=>{window.removeEventListener('metadrive:page-local-state',sync);
       window.removeEventListener('metadrive:page-collection-selected',select)};
-  },[pageSessionKey,sessionIdOverride]);
+  },[pageSessionKey,sessionIdOverride,stateDependencies]);
   useEffect(()=>{
     const complete=(event:Event)=>{
       const detail=(event as CustomEvent<{requestId?:string;flowApiName?:string;outputs?:Record<string,unknown>}>).detail;
@@ -1089,7 +1088,7 @@ function LightningAppRuntime({
       </div>;
       const content = needsMetadataComponentRuntime(component.properties)
         ? <MetadataBoundPageComponent definition={definition} component={component} defaultObjectApiName={page.targetObject}
-            objects={objects} apps={apps} pages={pages} currentAppId={appId} pageSessionKey={appId + ':' + page.apiName} reports={reports} availableFlows={availableFlows} formFactor={formFactor}
+            objects={objects} apps={apps} pages={pages} currentAppId={appId} pageSessionKey={appId + ':' + page.apiName} pageComponents={page.components} reports={reports} availableFlows={availableFlows} formFactor={formFactor}
             initialPageState={inScreenPage?inScreenContext?.values:undefined}
             sessionIdOverride={inScreenPage?inScreenContext?.sessionId:undefined}
             children={nestedChildren}
