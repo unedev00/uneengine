@@ -185,6 +185,43 @@ export function validateSmartTillGraph(){
 }
 validateSmartTillGraph();
 
+// This runs in PR CI without touching tenant SQL or mutating any saved Page.
+function validateBindings(){
+ const layout={layoutMode:'free-canvas',canvasWidth:1400,canvasHeight:900,
+  components:[
+   {id:'codextill-product-grid',type:'Custom:smart_card_grid',position:{x:10,y:20},
+    properties:{objectApiName:'Product',collectionFormula:'=@CatCollection',
+     actionFlows:{click:{flowApiName:'AcetillCopilotAddProduct',
+      actionType:'Flow',inputs:{productId:'$event.value'}},start:{actionType:'Navigate'}}}},
+   {id:'codextill-cart',type:'Custom:smart_cart',position:{x:50,y:70},
+    properties:{objectApiName:'CartLine',actionFlows:{start:{
+     actionType:'Flow',flowApiName:'AcetillCopilotReadCart'}}}},
+   {id:'unrelated',type:'Custom:smart_tabs',position:{x:1},
+    properties:{collectionFormula:'=COLLECTION("CatCollection",@Name)'}}
+  ]};
+ const first=smartTillCartBindings(layout);
+ assert(first.changed);
+ assert.deepEqual(first.layout.components[2],layout.components[2]);
+ assert.deepEqual(first.layout.components.map(c=>c.position),
+  layout.components.map(c=>c.position));
+ assert.equal(first.layout.components[0].properties.collectionFormula,
+  layout.components[0].properties.collectionFormula);
+ assert.deepEqual(first.layout.components[0].properties.actionFlows.start,
+  layout.components[0].properties.actionFlows.start);
+ assert.deepEqual(first.layout.components[0].properties.actionFlows.click.inputs,
+  SMART_TILL_CLICK.inputs);
+ assert.equal(first.layout.components[1].properties.relatedFilterKey,'cartSessionId');
+ assert.equal(first.layout.components[1].properties.relatedFieldApiName,'CartSession');
+ const again=smartTillCartBindings(first.layout);
+ assert.equal(again.changed,false,'Seeder must be idempotent');
+ const customised=structuredClone(layout);
+ customised.components[0].properties.actionFlows.click.flowApiName='MyCustomFlow';
+ const skipped=smartTillCartBindings(customised);
+ assert.equal(skipped.layout.components[0].properties.actionFlows.click.flowApiName,'MyCustomFlow');
+ assert(skipped.skipped.length>0);
+}
+validateBindings();
+
 if(process.argv.includes('--preflight')){
  console.log('Smart Till standalone Flow and Page metadata preflight passed');
  process.exit(0);
@@ -225,6 +262,10 @@ try{
     [tenant,flow.apiName]);
    if(existing.rows.length){
     assert(existing.rows[0].active===true,'Existing Smart Till Flow is inactive: '+flow.apiName);
+    const owner=await client.query(`SELECT value_text FROM md_flow_editor_values
+      WHERE tenant_id=$1 AND flow_id=$2 AND property_path='/builder/appApiName'`,
+      [tenant,existing.rows[0].id]);
+    assert(!owner.rows[0]?.value_text,'Existing Smart Till Flow is app-owned: '+flow.apiName);
     console.log(flow.apiName+': existing tenant customisation retained');
     continue;
    }
