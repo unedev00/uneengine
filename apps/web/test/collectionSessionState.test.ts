@@ -476,3 +476,38 @@ test('COLLECTION field comparisons fail closed on unavailable or non-scalar fiel
   '=COLLECTION("Unsafe",@Details<>"Offers")',source,{primaryObject:'MenuCategory'});
  assert.match(unsafe.error??'',/COLLECTION field must be scalar: MenuCategory.Details/);
 });
+
+test('COLLECTION joins selected category to nullable authorised lookups without losing record data',()=>{
+ const products=[
+  {Id:'uncategorised',Name:'Uncategorised',Price:3},
+  {Id:'p1',Name:'Cola',Price:1.25,ImageUrl:'https://example.com/cola.png',MenuCategory:'drinks'},
+  {Id:'p2',Name:'Fries',Price:2,MenuCategory:'sides'},
+  {Id:'p3',Name:'Water',Price:1,MenuCategory:'drinks'}
+ ];
+ const formula='=COLLECTION("FilteredProducts",@Product.MenuCategory=@CatCollection.state.Id)';
+ const context={primaryObject:'Product',
+  state:{collectionSelections:{CatCollection:{Id:'drinks'}}},
+  collectionSourceFields:{Product:['MenuCategory','Name','Price','ImageUrl']}};
+ const result=evaluateCollectionFormula(formula,{Product:products},context);
+ assert.equal(result.error,undefined);
+ assert.deepEqual(result.value.items.map((item:any)=>item.value),['p1','p3']);
+ const gridRows=namedCollectionRows(result.value);
+ assert.deepEqual(gridRows.map(row=>row.Name),['Cola','Water']);
+ assert.equal(gridRows[0].Price,1.25);
+ assert.equal(gridRows[0].ImageUrl,'https://example.com/cola.png');
+ assert.equal(gridRows[0].Id,'p1');
+ assert.equal(gridRows[0].__collectionLabel,'drinks');
+
+ // Even if every authorised lookup is unset, this is an empty result, not
+ // an unavailable-field error. Unknown or inaccessible metadata still fails.
+ const empty=evaluateCollectionFormula(formula,{Product:products.slice(0,1)},context);
+ assert.equal(empty.error,undefined);
+ assert.equal(empty.value.items.length,0);
+ const inaccessible=evaluateCollectionFormula(formula,{Product:products},{
+  ...context,collectionSourceFields:{Product:['Name','Price']}});
+ assert.match(inaccessible.error??'',/COLLECTION field unavailable: Product.MenuCategory/);
+ const all=evaluateCollectionFormula(
+  '=COLLECTION("FilteredProducts",@Product.Name)',{Product:products},context);
+ assert.equal(all.error,undefined);
+ assert.equal(all.value.items.length,4);
+});
