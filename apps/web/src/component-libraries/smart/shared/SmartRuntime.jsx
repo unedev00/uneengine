@@ -32,7 +32,8 @@ const fieldAllows=(p,key,record)=>{
 };
 const scopedExpression=(p,key,source,record)=>fieldAllows(p,key,record)
  ?(key==="textSource"&&p.dataCollection&&record&&
-    /^\s*(?:=\s*COLLECTION\s*\(|=?\s*@[A-Za-z][A-Za-z0-9_]*\s*$|=?\s*@[A-Za-z][A-Za-z0-9_.]*\s*={1,2}\s*["'])/i.test(String(source??""))
+    (/(?:^|[=(,])\s*COLLECTION\s*\(/i.test(String(source??""))
+     ||/^\s*=?\s*@[A-Za-z][A-Za-z0-9_.]*(?:\s*(?:=|==|<>|!=|>=|<=|>|<)\s*.+)?\s*$/i.test(String(source??"")))
     ?text(record.__collectionLabel??record.Name??"")
     :expression(source,record,p.pageState,p.objectApiName)):"";
 const recordOf=p=>p.objectApiName&&Array.isArray(p.records)
