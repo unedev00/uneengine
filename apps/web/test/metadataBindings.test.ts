@@ -46,32 +46,42 @@ test('dynamic related-record filter isolates current parent and blocks missing p
    [{Cart:'cart-1',Id:'line-1'},{Cart:'cart-2',Id:'line-2'}],definitions,fields,context),
    [{Cart:'cart-1',Id:'line-1'}]);
 });
-test('MATCHES formulas compile to tenant-scoped server filters without fetching partial pages',async()=>{
+test('native wildcard field comparisons compile to guarded server filters',async()=>{
  const {compileRecordFilterFormula,validateRecordFilterFormula}=
   await import('../src/core/pages/PageRuntime/recordFilterFormula');
  const fields=[
   {apiName:'Name',label:'Name',dataType:'Text'},
-  {apiName:'Amount',label:'Amount',dataType:'Currency'}
+  {apiName:'Amount',label:'Amount',dataType:'Currency'},
+  {apiName:'Category',label:'Category',dataType:'Lookup(Category)',
+   relationship:{targetObject:'Category',type:'Lookup'}}
  ] as any;
- const direct=compileRecordFilterFormula('MATCHES(@Name,"B*")',fields);
+ const direct=compileRecordFilterFormula('@Name = "B*"',fields);
  assert.equal(direct.blocked,false);
  assert.deepEqual(direct.filters,[{field:'Name',operator:'matches',value:'B*'}]);
- assert.equal(validateRecordFilterFormula('MATCHES(@Name,"B*")',fields),null);
- const all=compileRecordFilterFormula('IF(ISBLANK($state.search), TRUE, MATCHES(@Name,$state.search))',
+ assert.equal(validateRecordFilterFormula('@Name = "B*"',fields),null);
+ const all=compileRecordFilterFormula('IF(ISBLANK($state.search), TRUE, @Name = $state.search)',
   fields,{search:'*'});
  assert.equal(all.blocked,false);
  assert.deepEqual(all.filters,[{field:'Name',operator:'matches',value:'*'}]);
- assert.equal(validateRecordFilterFormula('IF(ISBLANK($state.search), TRUE, MATCHES(@Name,$state.search))',fields),null);
- const missing=compileRecordFilterFormula('IF(ISBLANK($state.search), TRUE, MATCHES(@Name,$state.search))',
+ assert.equal(validateRecordFilterFormula('IF(ISBLANK($state.search), TRUE, @Name = $state.search)',fields),null);
+ const missing=compileRecordFilterFormula('IF(ISBLANK($state.search), TRUE, @Name = $state.search)',
   fields,{});
  assert.equal(missing.blocked,false);
  assert.deepEqual(missing.filters,[]);
- assert.equal(compileRecordFilterFormula('MATCHES(@Amount,"*")',fields).blocked,true);
- assert.equal(compileRecordFilterFormula('MATCHES(@Unknown,"*")',fields).blocked,true);
- assert.equal(compileRecordFilterFormula('MATCHES(@Name,42)',fields).blocked,true);
- assert.equal(compileRecordFilterFormula('MATCHES(@Name,"'+'*'.repeat(257)+'")',fields).blocked,true);
- assert.deepEqual(pageComponentRecordQuery([],fields,{},'AND','MATCHES(@Name,"*")').filters,
+ assert.deepEqual(compileRecordFilterFormula('@Name = "Drinks"',fields).filters,
+  [{field:'Name',operator:'eq',value:'Drinks'}]);
+ assert.deepEqual(compileRecordFilterFormula('@Name = "~*"',fields).filters,
+  [{field:'Name',operator:'matches',value:'~*'}]);
+ assert.deepEqual(compileRecordFilterFormula('@Category = $state.categoryId',
+  fields,{categoryId:'*'}).filters,
+  [{field:'Category',operator:'isNotBlank',value:''}]);
+ assert.equal(compileRecordFilterFormula('@Amount = "*"',fields).blocked,true);
+ assert.equal(compileRecordFilterFormula('@Unknown = "*"',fields).blocked,true);
+ assert.equal(compileRecordFilterFormula('@Name = "'+'*'.repeat(257)+'"',fields).blocked,true);
+ assert.deepEqual(pageComponentRecordQuery([],fields,{},'AND','@Name = "*"').filters,
   [{field:'Name',operator:'matches',value:'*'}]);
+ assert.deepEqual(pageComponentRecordQuery([],fields,{},'AND',
+  'AND(@Active = TRUE, @Name = "*")').blocked,true);
 });
 test('numeric and date filters support inclusive comparisons and blank checks',()=>{
  const fields=[

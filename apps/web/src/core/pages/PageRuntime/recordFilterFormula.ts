@@ -4,7 +4,7 @@
  * client-side filtering of a partial page and NO eval or arbitrary scripts. */
 import {Parser,type Expression} from '../../../../../server/src/expression-engine/FormulaParser.js';
 import {tokenize} from '../../../../../server/src/expression-engine/FormulaTokenizer.js';
-import {parseExcelWildcardPattern} from '../../../../../server/src/expression-engine/FormulaWildcard.js';
+import {hasExcelWildcardCriteria,parseExcelWildcardPattern} from '../../../../../server/src/expression-engine/FormulaWildcard.js';
 import type {FieldMetadata} from '../../metadata/Definitions/metadata';
 
 export type CompiledFilterFormula={
@@ -72,15 +72,6 @@ function compile(node:Expression,fields:ReadonlyArray<FieldMetadata>,state:Reado
   if(typeof condition!=='boolean')throw Error('IF condition must return TRUE or FALSE');
   return compile(condition?node.args[1]:node.args[2],fields,state);
  }
- if(node.kind==='call'&&node.name==='MATCHES'&&node.args.length===2){
-  const field=simpleField(node.args[0],fields);
-  if(!field||!/^(Text|Email|Phone|Url|Picklist)(\(|$)/i.test(field.dataType))
-   throw Error('MATCHES requires a directly readable text field');
-  const value=asState(node.args[1],state);
-  if(typeof value!=='string')throw Error('MATCHES requires a text pattern');
-  parseExcelWildcardPattern(value);
-  return {filters:[{field:field.apiName,operator:'matches',value}],logic:'1'};
- }
  if(node.kind==='binary'&&(node.operator==='AND'||node.operator==='OR'))
   return both(node.operator,compile(node.left,fields,state),compile(node.right,fields,state));
  if(node.kind==='call'&&(node.name==='AND'||node.name==='OR')&&node.args.length>=2
@@ -104,12 +95,22 @@ function compile(node:Expression,fields:ReadonlyArray<FieldMetadata>,state:Reado
   if(value===undefined||value===null||value==='')throw Error('Selected formula state value is empty');
   if(!['string','boolean','number'].includes(typeof value)||typeof value==='number'&&!Number.isFinite(value))
    throw Error('Formula comparison requires a scalar');
+  if((op==='='||op==='==')&&hasExcelWildcardCriteria(value)){
+   parseExcelWildcardPattern(value);
+   // Match any populated relationship ID with "*", without loading records.
+   if(field.relationship&&value==='*')
+    return {filters:[{field:field.apiName,operator:'isNotBlank',value:''}],logic:'1'};
+   if(!/^(Text|Email|Phone|Url|Picklist)(\(|$)/i.test(field.dataType))
+    throw Error('Wildcard criterion requires a text field or an All relationship selector');
+   return {filters:[{field:field.apiName,operator:'matches',value}],logic:'1'};
+  }
+
   if(opNames[op]==='gt'||opNames[op]==='gte'||opNames[op]==='lt'||opNames[op]==='lte'){
    if(/^(Time|Geolocation|Address)/i.test(field.dataType))throw Error('Unsupported server comparison type');
   }
   return {filters:[{field:field.apiName,operator:opNames[op],value:String(value)}],logic:'1'};
  }
- throw Error('Filter formula must use IF, ISBLANK, AND/OR, MATCHES and supported @Field comparisons');
+ throw Error('Filter formula must use IF, ISBLANK, AND/OR and supported @Field comparisons');
 }
 export function compileRecordFilterFormula(formula:unknown,fields:ReadonlyArray<FieldMetadata>,
  state:Readonly<Record<string,unknown>>={}):CompiledFilterFormula{

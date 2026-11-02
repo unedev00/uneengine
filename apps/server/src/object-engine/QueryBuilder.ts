@@ -253,7 +253,7 @@ export function compileRecordFilters(
     }
     if (filter.operator === 'matches') {
       if (!['text', 'email', 'phone', 'url', 'picklist'].includes(field.data_type))
-        throw new Error('MATCHES requires a text field');
+        throw new Error('Wildcard criteria require a text field');
       const pattern=excelWildcardSqlLike(filter.value);
       parameters.push(pattern);
       // Like the Excel wildcard criterion "*", omit blank text cells.

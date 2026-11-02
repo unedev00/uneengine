@@ -1,3 +1,4 @@
+import {hasExcelWildcardCriteria,matchesExcelWildcard} from './FormulaWildcard.js';
 import type {Token} from './FormulaTokenizer.js';
 export type Expression=
   |{kind:'literal';value:string|number|boolean|null}
@@ -125,7 +126,12 @@ export function evaluateFormulaUnary(operator:string,value:unknown):unknown {
     default:throw new Error('Unsupported formula unary operator: '+operator);
   }
 }
-export function evaluateFormulaBinary(operator:string,left:unknown,right:unknown):unknown {
+export function evaluateFormulaBinary(operator:string,left:unknown,right:unknown,wildcardCriterion=false):unknown {
+ if(wildcardCriterion&&hasExcelWildcardCriteria(right)
+   &&['=','==','!=','<>'].includes(operator)){
+  const matched=matchesExcelWildcard(left,right);
+  return operator==='='||operator==='=='?matched:!matched;
+ }
   switch(operator.toUpperCase()){
     case 'AND':return formulaTruth(left)&&formulaTruth(right);
     case 'OR':return formulaTruth(left)||formulaTruth(right);

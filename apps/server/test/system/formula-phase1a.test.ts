@@ -48,9 +48,7 @@ test('formula client and server share parsing, precedence, coercion, and blank s
   }
 });
 
-test('MATCHES shares Excel wildcard semantics across Flow and browser formulas',()=>{
- const formula=(value:unknown,pattern:string)=>evaluateFlowFormula('MATCHES(@Value,@Pattern)',
-  key=>key==='Value'?value:key==='Pattern'?pattern:null);
+test('native Excel wildcard criteria work in Flow and browser without a new function',()=>{
  const cases:[unknown,string,boolean][]=[
   ['Burgers','*',true],['','*',false],[null,'*',false],[42,'*',false],
   ['burger combo','Burger*',true],['Burger','B?rg*r',true],
@@ -60,25 +58,42 @@ test('MATCHES shares Excel wildcard semantics across Flow and browser formulas',
   ['', '',true],['test','',false],['A~z','A~z',true]
  ];
  for(const [value,pattern,expected] of cases){
-  const f='MATCHES(@Value,@Pattern)';
-  const result=evaluateFieldExpressionDetailed(f,{Value:value,Pattern:pattern});
-  assert.equal(result.error,undefined,JSON.stringify([value,pattern]));
-  assert.equal(result.value,String(expected),JSON.stringify([value,pattern]));
-  assert.equal(formula(value,pattern),expected,JSON.stringify([value,pattern]));
+  const expression='@Value = @Pattern';
+  const browser=evaluateFieldExpressionDetailed(expression,{Value:value,Pattern:pattern});
+  assert.equal(browser.error,undefined,JSON.stringify([value,pattern]));
+  assert.equal(browser.value,String(expected),JSON.stringify([value,pattern]));
+  assert.equal(evaluateFlowFormula(expression,
+   key=>key==='Value'?value:key==='Pattern'?pattern:null),expected,
+   JSON.stringify([value,pattern]));
  }
  assert.equal(evaluateFlowFormula('2 * 3',()=>null),6);
  assert.equal(evaluateFlowFormula('"*" = "*"',()=>null),true);
  assert.equal(evaluateFlowFormula('"Burgers" = "*"',()=>null),false);
  assert.equal(evaluateFieldExpressionDetailed('"*"',{}).value,'*');
+ assert.equal(evaluateFlowFormula('@Value <> "*"',key=>key==='Value'?'Burgers':null),false);
+ assert.equal(evaluateFlowFormula('@Value <> "*"',key=>key==='Value'?null:null),true);
+ // State checks are literal. Only data-field comparisons treat the RHS as criteria.
+ assert.equal(evaluateFieldExpressionDetailed('@state.categoryId = "*"',
+  {state:{categoryId:'c1'}}).value,'false');
+ assert.equal(evaluateFieldExpressionDetailed('@state.categoryId = "*"',
+  {state:{categoryId:'*'}}).value,'true');
+ assert.equal(evaluateFieldExpressionDetailed('@Category = @state.categoryId',
+  {Category:'c1',state:{categoryId:'*'}}).value,'true');
+ assert.equal(evaluateFieldExpressionDetailed('@Category = @state.categoryId',
+  {Category:'',state:{categoryId:'*'}}).value,'false');
+ assert.equal(evaluateFieldExpressionDetailed('@Name = "Burger*"',
+  {Name:'burger combo'}).value,'true');
+ assert.equal(evaluateFieldExpressionDetailed('@Name = "~*"',
+  {Name:'*'}).value,'true');
  for(const context of ['formula_field','validation_rule','flow_formula','ribbon_binding','record_filter'] as const)
-  validateFlowFormula('MATCHES(@Name,"B*")',context);
- assert.equal(inferFlowFormulaType('MATCHES(@Name, "B*")',
+  validateFlowFormula('@Name = "B*"',context);
+ assert.equal(inferFlowFormulaType('@Name = "B*"',
   name=>name==='Name'?'Text':null),'Checkbox');
- assert.throws(()=>inferFlowFormulaType('MATCHES(@Amount,"*")',
-  name=>name==='Amount'?'Number':null),/invalid argument type/);
- assert.throws(()=>evaluateFlowFormula('MATCHES("test","'+'*'.repeat(257)+'")',()=>null),
-  /256 characters/);
- assert.equal(evaluateFieldExpressionDetailed('MATCHES("test")',{}).error?.includes('argument count'),true);
+ assert.throws(()=>inferFlowFormulaType('@Amount = "*"',
+  name=>name==='Amount'?'Number':null),/comparison types do not match/);
+ assert.throws(()=>evaluateFlowFormula('@Value = "'+'*'.repeat(257)+'"',
+  key=>key==='Value'?'test':null),/256 characters/);
+ assert.throws(()=>validateFlowFormula('MATCHES(@Name,"*")'),/not available|Unsupported/);
 });
 test('COLLECTION requires a name and produces typed named content in Flow and ribbon',()=>{
  const formula='COLLECTION("LineChoices", "a22", "none", @Rows)';
@@ -112,7 +127,7 @@ test('formula contexts share validation and report unavailable functions before 
   assert.match(evaluateFieldExpressionDetailed('ISNEW()',browserRecord).error??'',
     /not available in ribbon binding context/);
   assert.deepEqual(getFormulaFunctionNames('component_visibility'),[]);
-  assert.deepEqual(getFormulaFunctionNames('record_filter'),['MATCHES']);
+  assert.deepEqual(getFormulaFunctionNames('record_filter'),[]);
   assert.equal(formulaFunctionCatalog.get('IF')?.signature.minimumArguments,3);
   assert.equal(formulaFunctionCatalog.get('IF')?.signature.maximumArguments,3);
 });
