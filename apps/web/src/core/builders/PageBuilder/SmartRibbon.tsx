@@ -486,7 +486,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
   </section>)}
   {filtersOpen&&createPortal(<div className="smart-dialog-backdrop smart-filter-backdrop"
        role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)setFiltersOpen(false);}}>
-    <section className="smart-dialog smart-filter-dialog" role="dialog" aria-modal="true"
+    <section className="smart-dialog smart-filter-dialog smart-record-filter-dialog" role="dialog" aria-modal="true"
       aria-label="Record filters" onKeyDown={e=>{if(e.key==='Escape')setFiltersOpen(false);}}>
      <header><div><strong>Filter Records</strong>
        <span>{object?.label??'Session Collection'} · {scopedFilterId?filterTarget+' only':'All records'}</span></div>

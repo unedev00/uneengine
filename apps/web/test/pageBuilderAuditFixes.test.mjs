@@ -82,3 +82,23 @@ test('Shared canvas popup has legible enabled and disabled text across all pages
  assert.match(view,/disabled=\{!canMoveCanvasLayer\(page\.components,component\.id,'front'\)\}/,'layer permissions unchanged');
  assert.doesNotMatch(rule('.canvas-unified-builder .canvas-action-menu button'),/color:inherit/);
 });
+
+test('Filter Records has viewport-aware height without resizing the visibility dialog',()=>{
+ const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
+ const css=read('../src/core/builders/PageBuilder/SmartRibbon.css');
+ assert.match(ribbon,/smart-dialog smart-filter-dialog smart-record-filter-dialog/);
+ assert.match(css,/\.smart-filter-backdrop \.smart-dialog\.smart-record-filter-dialog\s*\{[^}]*height:min\(72dvh,720px\)/);
+ assert.match(css,/\.smart-filter-backdrop \.smart-record-filter-dialog \.smart-filter-dialog-body\s*\{[^}]*flex:1 1 auto/);
+});
+
+test('Shared filter field options escape the scroll container but remain anchored and dismissible',()=>{
+ const editor=read('../src/component-libraries/shared/primitives/RecordFilterEditor/RecordFilterEditor.tsx');
+ const css=read('../src/component-libraries/shared/primitives/RecordFilterEditor/RecordFilterEditor.css');
+ assert.match(editor,/createPortal\(<div ref=\{dropdownRef\} className="metadata-filter-field-dropdown"/);
+ assert.match(editor,/window\.addEventListener\('scroll', positionDropdown, true\)/);
+ assert.match(editor,/dropdownRef\.current\?\.contains\(target\)/);
+ assert.match(editor,/dropdownRef\.current\?\.contains\(next\)/);
+ assert.match(editor,/const placeAbove = below < 260 && above > below/);
+ assert.match(css,/\.metadata-filter-field-dropdown\{position:fixed;z-index:2147483001/);
+ assert.match(css,/\.metadata-filter-field-options\{flex:1 1 auto;min-height:0;max-height:205px;overflow-y:auto/);
+});
