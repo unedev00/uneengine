@@ -9,6 +9,7 @@ import {uploadTenantImageFile} from '../ComponentProperties/TenantMediaPicker';
 import {scopedFieldRule,type ScopedFieldFilter} from '../../pages/PageRuntime/fieldScopedRecordFilters';
 import RecordFilterEditor from '../../../component-libraries/shared/primitives/RecordFilterEditor/RecordFilterEditor';
 import SmartFormulaField from './SmartFormulaField';
+import {relationshipFormulaFields} from './relationshipFormulaFields';
 import SmartIconDropdown from './SmartIconDropdown';
 import SmartMultiSelect from './SmartMultiSelect';
 import SmartIconGallery from './SmartIconGallery';
@@ -136,6 +137,13 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    (!sharedPropertyIds||sharedPropertyIds.includes(activeDataProperty.id)));
  const activeDataValue=activeDataProperty
    ?String(properties[activeDataKey]??activeDataProperty.defaultsOverrides?.[api]??activeDataProperty.default??''):'';
+ // Reuse the metadata field catalogue used by @ suggestions. The picker
+ // changes only the existing binding; advanced expressions remain editable.
+ const selectableDataFields=activeDataProperty
+   ?relationshipFormulaFields(objects,sourceObjectNames,'',
+      activeDataProperty.id==='imageSource'?'image':'text',
+      api==='smart_toggle'&&activeDataProperty.id==='textSource')
+   :[];
  const activeSummaryLabel=activeDataProperty&&api==='smart_cart'
    ?cartSummaryLabels[activeDataProperty.id]:undefined;
  const changeActiveDataFormula=(next:string)=>{
@@ -396,6 +404,17 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
             <input type="text" disabled aria-label="Formula (select a field first)"
               placeholder="Select a field's Fx button to edit its formula"/>}
         </div>
+        <select className="smart-data-field-picker" aria-label="Choose display field"
+          title={activeDataProperty?'Choose a field for '+activeDataProperty.label:'Select a Data property first'}
+          disabled={!activeDataEnabled||!selectableDataFields.length}
+          value={selectableDataFields.some(field=>field.reference===activeDataValue.trim())
+            ?activeDataValue.trim():''}
+          onChange={event=>{if(event.target.value)changeActiveDataFormula(event.target.value);}}>
+          <option value="">Choose field…</option>
+          {selectableDataFields.map(field=><option key={field.reference} value={field.reference}>
+            {field.label} ({field.reference})
+          </option>)}
+        </select>
         {activeSummaryLabel&&<input className="smart-data-summary-name"
           aria-label={activeSummaryLabel.slot+' cart label'} title="Edit cart summary heading"
           maxLength={64} spellCheck={false} disabled={!activeDataEnabled}
