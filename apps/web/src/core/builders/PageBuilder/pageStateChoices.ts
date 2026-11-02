@@ -1,4 +1,4 @@
-import {namedCollectionName} from '../../pages/PageRuntime/pageCollectionSession';
+import {namedCollectionNames} from '../../pages/PageRuntime/pageCollectionSession';
 import {formulaCollectionReferenceKey} from '../../../../../server/src/expression-engine/FormulaCollection.js';
 type SourceComponent={id:string;properties:Record<string,unknown>};
 export type PageStateChoice={source:'PageState'|'CollectionState';key:string;label:string};
@@ -9,10 +9,8 @@ export function pageStateChoices(components:readonly SourceComponent[]):PageStat
  const add=(item:PageStateChoice)=>entries.set(item.source+':'+item.key,item);
  for(const component of components){
   const props=component.properties;
-  const authored=Object.values(props).find(value=>typeof value==='string'
-    &&/^=\s*COLLECTION\s*\(/i.test(value));
-  const name=namedCollectionName(props.collectionFormula)||namedCollectionName(authored);
-  if(name)for(const field of ['Id','Name','Value','Field','Criteria'])
+  const names=[...new Set(Object.values(props).flatMap(value=>namedCollectionNames(value)))];
+  for(const name of names)for(const field of ['Id','Name','Value','Field','Criteria'])
    add({source:'CollectionState',key:formulaCollectionReferenceKey(name)+'.state.'+field,label:name+'.state.'+field});
   const actions=props.actionFlows;
   if(actions&&typeof actions==='object'&&!Array.isArray(actions)){
