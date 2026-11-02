@@ -703,7 +703,7 @@ test('Smart Tabs first tab is optional, formula-capable, and never replaces a re
  const runtime=read('../src/component-libraries/smart/shared/SmartRuntime.jsx');
  assert.match(runtime,/firstTabCustom&&index===0/);
  assert.match(runtime,/value:"",isCustom:true/);
- assert.match(runtime,/index-\\(firstTabCustom\\?1:0\\)/);
+ assert.match(runtime,/index-\(firstTabCustom\?1:0\)/);
 });
 
 test('Optional leading Smart Tab is SQL-configured and has no app-specific default',()=>{
@@ -714,7 +714,7 @@ test('Optional leading Smart Tab is SQL-configured and has no app-specific defau
  assert.match(sql,/'Design','Tabs'/);
  assert.match(sql,/'false'::jsonb/);
  assert.doesNotMatch(sql,/All items|MenuCategory|CODEXTILL|DELETE FROM md_page_|UPDATE md_page_/i);
- assert.match(ribbon,/property.id!=='firstTabCaption'\\|\\|properties.firstTabCustom===true/);
+ assert.match(ribbon,/property.id!=='firstTabCaption'\|\|properties.firstTabCustom===true/);
 });
 
 test('named COLLECTION mixes manual items with authorised Object.Field values',async()=>{
