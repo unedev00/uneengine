@@ -4,6 +4,7 @@ import {tokenize} from '../../../../../server/src/expression-engine/FormulaToken
 import {evaluateCollectionFormula} from '../../../component-libraries/shared/FieldExpression.js';
 import {loadFlowScreenRecordPage} from '../../authentication/Client/authClient';
 import type {ObjectMetadata} from '../../metadata/Definitions/metadata';
+import {registerSessionCollection,useSessionCollectionSnapshot} from './pageCollectionSession';
 
 type Row=Record<string,unknown>;
 export type PageNamedCollection={name:string;items:unknown[]};
@@ -31,9 +32,11 @@ export function collectionFormulaReferences(formula:string):Array<{object:string
 export function usePageCollectionFormula(
  formula:unknown,properties:Readonly<Row>,objects:readonly ObjectMetadata[],
  primaryObject:string,primaryRecords:readonly Row[],primaryTotal:number,
- revision:number,pageState:Readonly<Row>,sessionId:string
+ revision:number,pageState:Readonly<Row>,sessionId:string,pageSessionKey:string,componentId:string
 ):{collection:PageNamedCollection|null;error:string|null;loading:boolean}{
  const source=typeof formula==='string'?formula.trim():'';
+ const scope=pageSessionKey+'#'+sessionId;
+ const registry=useSessionCollectionSnapshot(scope);
  const refs=collectionFormulaReferences(source);
  const selected=['objectApiName','objectApiName2','objectApiName3']
   .map(key=>String(properties[key]??'')).filter(Boolean);
@@ -57,7 +60,14 @@ export function usePageCollectionFormula(
      error:error instanceof Error?error.message:'COLLECTION source failed'});});
   return()=>{active=false;};
  },[key]);
+ const result=(()=>{
  if(!source)return {collection:null,error:null,loading:false};
+ const saved=/^@([A-Za-z][A-Za-z0-9_]{0,79})$/.exec(source);
+ if(saved){
+  const named=Object.entries(registry.collections).find(([name])=>name.toLowerCase()===saved[1].toLowerCase())?.[1];
+  return named?{collection:named,error:null,loading:false}:
+   {collection:null,error:'Collection not found in this page session: '+saved[1],loading:false};
+ }
  if(!/^COLLECTION\s*\(/i.test(source))
   return {collection:null,error:'Use COLLECTION("Name", values, @Object.Field)',loading:false};
  const notSelected=refs.find(ref=>!selected.includes(ref.object));
@@ -73,6 +83,12 @@ export function usePageCollectionFormula(
  const resolved=evaluateCollectionFormula(source,sources,{state:pageState,session:{id:sessionId}});
  const value=resolved.value as PageNamedCollection|null;
  return {collection:value,error:resolved.error??null,loading:false};
+ })();
+ const owned=/^COLLECTION\s*\(/i.test(source)?result.collection:null;
+ const identity=owned?JSON.stringify(owned):'';
+ useEffect(()=>registerSessionCollection(scope,componentId,owned),[scope,componentId,identity]);
+ const duplicate=registry.errors[componentId];
+ return duplicate?{collection:null,error:duplicate,loading:false}:result;
 }
 
 /** Read-only record-shaped adapter for collection-capable Tables, Lists and Cards.
