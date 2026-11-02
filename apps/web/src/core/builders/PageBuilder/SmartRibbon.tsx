@@ -57,6 +57,18 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    &&namedCollectionName(item.properties.collectionFormula)?.toLowerCase()===name.toLowerCase())
     ?'Duplicate collection name on this page: '+name:'';
  })();
+ const validateCollection=(next:string):string|null=>{
+  if(!next.trim())return null;
+  if(!/^COLLECTION\s*\(/i.test(next.trim()))return 'Use COLLECTION("Name", value1, ...)';
+  const name=namedCollectionName(next);
+  if(!name)return 'Collection name is required as the first argument';
+  if(pageComponents.some(item=>item.id!==componentId
+    &&namedCollectionName(item.properties.collectionFormula)?.toLowerCase()===name.toLowerCase()))
+    return 'Duplicate Collection name: '+name;
+  if(/,\s*(?:,|""|\))/.test(next))return 'Collection value is required after the comma';
+  if(!next.trim().endsWith(')'))return 'Complete the Collection formula';
+  return null;
+ };
  const [filtersOpen,setFiltersOpen]=useState(false);
  const [filterTarget,setFilterTarget]=useState('Record');
  const [filterScope,setFilterScope]=useState<'Records'|'SelectedValue'>('Records');
@@ -277,6 +289,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
        onChange={event=>{if(enabled)update(summaryLabel.key,event.target.value);}}/>:
        <span className="smart-formula-prefix" title={title}>{shortLabel}</span>}
      <SmartFormulaField value={String(value)} onChange={write}
+       validate={property.id==='collectionFormula'?validateCollection:undefined}
        label={title} disabled={!enabled}
        singleFieldOnly={api==='smart_toggle'&&property.id==='textSource'}
        fields={api==='smart_toggle'&&property.id==='textSource'
