@@ -6,7 +6,7 @@ import {
 } from '../../../../server/src/expression-engine/FormulaParser.js';
 import {tokenize} from '../../../../server/src/expression-engine/FormulaTokenizer.js';
 import {createNamedFormulaCollection} from '../../../../server/src/expression-engine/FormulaCollection.js';
-import {matchesExcelWildcard} from '../../../../server/src/expression-engine/FormulaWildcard.js';
+import {isExcelWildcardDataReference} from '../../../../server/src/expression-engine/FormulaWildcard.js';
 import {validateFormulaFunctions} from '../../../../server/src/expression-engine/FormulaFunctionRegistry.js';
 import {roundFormulaNumber} from '../../../../server/src/expression-engine/FormulaNumeric.js';
 import {
@@ -67,7 +67,6 @@ const evaluateCall=(name,args,context)=>{
    }
    return found<0?0:found+1;
   }
-  case 'MATCHES':arity(2);return matchesExcelWildcard(args[0],args[1]);
    case 'BEGINS':case 'CONTAINS':case 'EXACT':arity(2);
    if(name==='BEGINS')return text(args[0]).startsWith(text(args[1]));
    if(name==='CONTAINS')return text(args[0]).includes(text(args[1]));
@@ -349,7 +348,8 @@ function parse(source,record,formulaContext){
    if(node.operator==='OR'&&truth(left))return true;
    const right=evaluate(node.right);
    const temporal=evaluateFormulaDateBinary(node.operator,left,right,formulaContext.timeZone);
-   result=temporal.handled?temporal.value:evaluateFormulaBinary(node.operator,left,right);
+   result=temporal.handled?temporal.value:evaluateFormulaBinary(node.operator,left,right,
+    node.left.kind==='reference'&&isExcelWildcardDataReference(node.left.value));
   }else if(node.name==='IF'){
    result=truth(evaluate(node.args[0]))?evaluate(node.args[1]):evaluate(node.args[2]);
   }else if(node.name==='NOT'){
