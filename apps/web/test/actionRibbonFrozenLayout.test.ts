@@ -5,79 +5,73 @@ import {renderToStaticMarkup} from 'react-dom/server';
 import {readFileSync} from 'node:fs';
 import PageBuilderActionRibbon from '../src/core/builders/PageBuilder/PageBuilderActionRibbon';
 
-const read=(path:string)=>readFileSync(new URL(path,import.meta.url),'utf8');
-const render=(actions:Record<string,unknown>,selectedEvent='',api='')=>
-  renderToStaticMarkup(React.createElement(PageBuilderActionRibbon,{
-    api,actions,selectedEvent,eventDefinitions:[],flows:[],
-    onSelectEvent:()=>{},onChange:()=>{},showDetails:false,onToggleDetails:()=>{},
-    dataFields:[{apiName:'Quantity',label:'Quantity',dataType:'Number'}]
-  }));
+const read=(p:string)=>readFileSync(new URL(p,import.meta.url),'utf8');
+const render=(actions:Record<string,unknown>,event='',api='smart_cart')=>
+ renderToStaticMarkup(React.createElement(PageBuilderActionRibbon,{
+  api,actions,selectedEvent:event,eventDefinitions:[],flows:[],
+  onSelectEvent:()=>{},onChange:()=>{},
+  dataFields:[{apiName:'Quantity',label:'Quantity',dataType:'Number'}]
+ }));
 
-test('all three component selections keep exactly six fixed Actions sections and disabled placeholders',()=>{
- const scenarios=[
-  render({},'','smart_text'),
-  render({click:{actionType:'Flow',flowApiName:'Example'}},'click','smart_card_grid'),
-  render({qtyIncrease:{actionType:'Formula',fieldApiName:'Quantity',formula:'@Quantity + 2'}},'qtyIncrease','smart_cart')
- ];
- for(const html of scenarios){
-  for(const section of ['Event','Component Custom','All actions','Selected action','Configuration','Action parameters'])
-   assert.ok(html.includes('aria-label="'+section+'"'),'missing '+section);
-  assert.equal((html.match(/class="office-ribbon-mini-group /g)||[]).length,6);
-  for(const slot of ['On Click','On Change','On Session Start','+ Icon','− Icon','Custom Button 1','Custom Button 2'])
-   assert.ok(html.includes('aria-label="'+slot+' action"'),slot+' disappears');
-  for(const control of ['Flow for selected action','Number field to adjust',
-    'Minimum number after adjustment','Destination type for selected action',
-    'Shared filter key','Page state key','Optional unit price field',
-    'Optional line total field','Optional Page State collection to refresh'])
-   assert.ok(html.includes('aria-label="'+control+'"'),control+' disappears');
+test('Event is exactly three rows and Component Custom exactly two rows',()=>{
+ for(const html of [
+  render({}),render({click:{actionType:'Flow',flowApiName:'Some_Flow'}},'click'),
+  render({qtyIncrease:{actionType:'Formula',formula:'@Quantity + 2'}},'qtyIncrease')
+ ]){
+  assert.match(html,/aria-label="Event"/);
+  assert.match(html,/aria-label="Component Custom"/);
+  assert.equal((html.match(/class="page-action-compact-event-rows"/g)||[]).length,1);
+  assert.equal((html.match(/class="page-action-compact-custom-grid"/g)||[]).length,1);
+  for(const name of ['On Click','On Change','On Session Start',
+    '+ Icon','− Icon','Custom Button 1','Custom Button 2']){
+   assert.ok(html.includes('aria-label="'+name+' action"'),name);
+  }
+  for(const section of ['Flow inputs','Flow outputs'])
+   assert.ok(html.includes('aria-label="'+section+'"'));
+  for(const old of ['Custom action trigger','All component actions','Show action details',
+   'Number field to adjust','Minimum number after adjustment','Shared filter key',
+   'Optional unit price field','Optional Page State collection to refresh'])
+   assert.ok(!html.includes('aria-label="'+old+'"'),old+' should not occupy the ribbon');
  }
- const blank=scenarios[0];
- assert.match(blank,/aria-label="Selected action trigger"[^>]*disabled/);
- assert.match(blank,/aria-label="Flow for selected action"[^>]*disabled/);
- assert.match(blank,/aria-label="Number field to adjust"[^>]*disabled/);
- assert.match(blank,/aria-label="Selected action formula"[^>]*disabled/);
 });
 
-test('existing permanent formula bar edits only Formula actions and is disabled for Flow',()=>{
- const none=render({});
- const flow=render({click:{actionType:'Flow',flowApiName:'Example',formula:'@Quantity + 9'}},'click','smart_button');
- const plus=render({qtyIncrease:{actionType:'Formula',fieldApiName:'Quantity',formula:'@Quantity + 2'}},'qtyIncrease','smart_cart');
- const minus=render({qtyDecrease:{actionType:'Formula',fieldApiName:'Quantity',formula:'@Quantity - 3'}},'qtyDecrease','smart_cart');
- for(const html of [none,flow,plus,minus])
-  assert.match(html,/aria-label="Actions formula bar"/);
- for(const html of [none,flow])
+test('Formula bar remains mounted and editable only for Formula action',()=>{
+ const blank=render({});
+ const flow=render({click:{actionType:'Flow',flowApiName:'Some_Flow'}},'click');
+ const plus=render({qtyIncrease:{actionType:'Formula',formula:'@Quantity + 2'}},'qtyIncrease');
+ const minus=render({qtyDecrease:{actionType:'Formula',formula:'@Quantity - 3'}},'qtyDecrease');
+ for(const html of [blank,flow,plus,minus])assert.match(html,/aria-label="Actions formula bar"/);
+ for(const html of [blank,flow])
   assert.match(html,/aria-label="Selected action formula"[^>]*disabled/);
- for(const html of [plus,minus])
-  assert.doesNotMatch(html,/aria-label="Selected action formula"[^>]*disabled/);
- assert.match(plus, /@Quantity \+ 2/);
- assert.match(minus, /@Quantity - 3/);
- assert.match(flow, /aria-label="Flow for selected action"/);
+ assert.match(plus,/@Quantity \+ 2/);
+ assert.match(minus,/@Quantity - 3/);
+ assert.doesNotMatch(plus,/aria-label="Selected action formula"[^>]*disabled/);
+ assert.match(plus,/aria-label="Remove \+ Icon action"/);
  const source=read('../src/core/builders/PageBuilder/PageBuilderActionRibbon.tsx');
  assert.match(source,/onChange=\{value=>patch\(\{formula:value\}\)\}/);
- assert.doesNotMatch(source,/Editable quantity action formulas|page-action-formula-group/);
+ assert.match(source,/delete next\[slot\.key\]/);
 });
 
-test('numeric configuration and extended settings stay mounted for Flow and no selection',()=>{
- for(const html of [render({}),render({click:{actionType:'Flow',flowApiName:'Example'}},'click','smart_card_grid')]){
-  for(const label of ['Number field to adjust','Minimum number after adjustment',
-    'Delete row when number reaches zero','Optional unit price field','Optional line total field'])
-   assert.ok(html.includes('aria-label="'+label+'"'));
-  assert.match(html,/aria-label="Number field to adjust"[^>]*disabled/);
- }
- const html=render({qtyIncrease:{actionType:'Formula',fieldApiName:'Quantity',
-  formula:'@Quantity + 2',deleteOnZero:true}},'qtyIncrease','smart_cart');
- assert.doesNotMatch(html,/aria-label="Number field to adjust"[^>]*disabled/);
- const css=read('../src/core/builders/PageBuilder/PageBuilderEightTabRibbon.css');
- assert.match(css,/grid-auto-flow:column!important/);
- assert.match(css,/page-action-parameters/);
+test('legacy action configs are preserved without hiding or reinterpreting them',()=>{
+ const nav=render({click:{actionType:'Navigate',navigationTargetType:'App Page',
+   navigationPageApiName:'Dashboard'}},'click');
+ assert.match(nav,/Existing: Open another page/);
+ assert.match(nav,/value="legacy:Navigate" selected/);
+ const css=read('../src/core/builders/PageBuilder/PageBuilderActionRibbonCompact.css');
+ assert.match(css,/grid-template-rows:repeat\(3,26px\)/);
+ assert.match(css,/grid-template-rows:repeat\(2,26px\)/);
+ assert.match(css,/gap:2px/);
+ assert.match(css,/page-action-icon-remove/);
+ const main=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ assert.doesNotMatch(main,/page-builder-inline-actions|Configure details|Collapse details/);
 });
 
-test('Actions tab stays mounted without a selected canvas component and owns its scroll height',()=>{
-  const view=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
-  const geometry=read('../src/core/builders/PageBuilder/PageBuilderRibbonLayout.css');
-  assert.match(view,/\{ribbonTab==='Component Action' &&\s*<PageBuilderActionRibbon/);
-  assert.match(view,/disabled=\{!selected\|\|actionSelectionDisabled\}/);
-  assert.match(geometry,/\[aria-label="Component Action"\]/);
-  assert.match(geometry,/--page-ribbon-scroll-strip-height: 164px/);
-  assert.match(geometry,/> \.page-action-ribbon-workspace/);
+test('Actions tab retains natural horizontal scrolling at 127px',()=>{
+ const view=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const base=read('../src/core/builders/PageBuilder/PageBuilderRibbonLayout.css');
+ const compact=read('../src/core/builders/PageBuilder/PageBuilderActionRibbonCompact.css');
+ assert.match(view,/\{ribbonTab==='Component Action' &&\s*<PageBuilderActionRibbon/);
+ assert.match(view,/disabled=\{!selected\|\|actionSelectionDisabled\}/);
+ assert.match(base,/overflow-x: auto !important/);
+ assert.match(compact,/--page-ribbon-scroll-strip-height:127px/);
 });

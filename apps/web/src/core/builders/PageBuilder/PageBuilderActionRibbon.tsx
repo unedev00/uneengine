@@ -1,387 +1,222 @@
 import {useState} from 'react';
-import { Trash2, SlidersHorizontal } from 'lucide-react';
-import type { FlowDefinitionMetadata } from '../../metadata/Definitions/metadata';
-import { metadataReference, metadataSelection } from '../../metadata/Definitions/metadataReferences';
+import {Trash2, SlidersHorizontal} from 'lucide-react';
+import type {FlowDefinitionMetadata,FieldMetadata} from '../../metadata/Definitions/metadata';
+import {metadataReference,metadataSelection} from '../../metadata/Definitions/metadataReferences';
 import {supportsSmartActionEvent} from './SmartEventActionsRibbon';
 import SmartFormulaField from './SmartFormulaField';
+import CompactActionFlowBindings from './CompactActionFlowBindings';
 
 type Binding=Record<string,unknown>;
 type EventOption={apiName:string;label:string};
-type ActionKind='Formula'|'Flow'|'Navigate'|'SetFilter'|'PageState'|'AdjustNumber';
 const asBinding=(value:unknown):Binding=>
   value&&typeof value==='object'&&!Array.isArray(value)?value as Binding:{};
-const actionTypes:ReadonlyArray<{kind:ActionKind;label:string;group:string}>=[
-  {kind:'Formula',label:'Formula',group:'Formula'},
-  {kind:'Flow',label:'Run automation',group:'Flows'},
-  {kind:'Navigate',label:'Open another page',group:'Navigation'},
-  {kind:'SetFilter',label:'Filter a list',group:'Page actions'},
-  {kind:'PageState',label:'Update page value',group:'Page actions'},
-  {kind:'AdjustNumber',label:'Change number (+/−)',group:'Page actions'}
-];
+const eventSlots=[
+ {key:'click',label:'On Click'},
+ {key:'change',label:'On Change'},
+ {key:'start',label:'On Session Start'}
+] as const;
+const componentSlots=[
+ {key:'qtyIncrease',label:'+ Icon'},
+ {key:'qtyDecrease',label:'− Icon'},
+ {key:'customButton1',label:'Custom Button 1'},
+ {key:'customButton2',label:'Custom Button 2'}
+] as const;
+const legacyLabels:Record<string,string>={
+ Navigate:'Open another page',SetFilter:'Filter a list',
+ PageState:'Update page value',AdjustNumber:'Change number'
+};
+/** Convert legacy settings only when a user explicitly changes that event to
+ * Formula. No migration runs on load, so published metadata remains stable. */
+const legacyFormula=(binding:Binding,eventName:string,field:string):string=>{
+ const type=String(binding.actionType??'');
+ const quoted=(value:string)=>JSON.stringify(value);
+ if(type==='SetFilter'){
+   const key=String(binding.filterKey??'category');
+   return /^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(key)
+     ?'@filter.'+key+' := @event.value':'';
+ }
+ if(type==='PageState'){
+   const key=String(binding.stateKey??'');
+   const original=String(binding.value??'$event.value');
+   const expression=original==='$session'?'@session.id':
+     original==='$event'?'@event.value':
+     original.startsWith('$event.')?'@event.'+original.slice(7):
+     original.startsWith('$state.')?'@state.'+original.slice(7):quoted(original);
+   return /^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(key)
+     ?'@state.'+key+' := '+expression:'';
+ }
+ if(type==='Navigate'){
+   const mode=String(binding.navigationTargetType??'Record List');
+   const app=String(binding.navigationAppId??'');
+   const page=String(binding.navigationPageApiName??'');
+   const object=String(binding.navigationObjectApiName??'');
+   if(mode==='App Page'&&app&&page)
+     return '@navigate.page := '+quoted(app+'/'+page);
+   if(mode==='App Home'&&app)return '@navigate.home := '+quoted(app);
+   if(mode==='Record List'&&object)return '@navigate.list := '+quoted(object);
+   return '';
+ }
+ if(type==='AdjustNumber'||eventName==='qtyIncrease'||eventName==='qtyDecrease'){
+   return String(binding.formula??
+     (eventName==='qtyDecrease'?binding.decrementFormula:binding.incrementFormula)??
+     (field?'@'+field+(eventName==='qtyDecrease'?' - 1':' + 1'):''));
+ }
+ return String(binding.formula??'');
+};
 
-/**
- * One action catalog for all Page Builder components. It edits the same
- * actionFlows metadata consumed by Page Runtime. Detailed Flow mappings and
- * navigation destinations are edited in the inline panel, never in a modal.
+/** One metadata-driven no-code action selector. Formulas and Flows are the only
+ * choices for NEW actions. Legacy actions are retained and remain executable
+ * until a user deliberately converts them; no business metadata is deleted.
+ * Flow mapping uses the shared typed mapping engine, not a second runtime.
  */
-export default function PageBuilderActionRibbon({actions,eventDefinitions,flows,selectedEvent,
-  onSelectEvent,onChange,showDetails,onToggleDetails,api='',selectedApis,dataFields=[],disabled=false}:{
-  actions:Binding;eventDefinitions:EventOption[];flows:FlowDefinitionMetadata[];
-  selectedEvent:string;onSelectEvent:(name:string)=>void;
-  api?:string;selectedApis?:readonly string[];dataFields?:Array<{apiName:string;label:string;dataType:string}>;
-  onChange:(next:Binding)=>void;showDetails:boolean;onToggleDetails:()=>void;
-  disabled?:boolean;
+export default function PageBuilderActionRibbon({
+ actions,eventDefinitions,flows,selectedEvent,onSelectEvent,onChange,
+ api='',selectedApis,dataFields=[],disabled=false
+}:{
+ actions:Binding;eventDefinitions:EventOption[];flows:FlowDefinitionMetadata[];
+ selectedEvent:string;onSelectEvent:(name:string)=>void;
+ onChange:(next:Binding)=>void;api?:string;selectedApis?:readonly string[];
+ dataFields?:Array<{apiName:string;label:string;dataType:string}>;disabled?:boolean;
+ // Deprecated parameters remain optional for existing Page Builder integrations.
+ showDetails?:boolean;onToggleDetails?:()=>void;
 }) {
-  const [customTrigger,setCustomTrigger]=useState('');
-  const numericFields=dataFields.filter(field=>
-    /^(Number|Currency|Percent|Integer|Decimal|Double|Float|Long|Short|Int)(\(|$)/i.test(field.dataType));
-  const formulaFields=numericFields.map(field=>({...field,required:false,unique:false}));
-  const numberTarget=String(asBinding(actions[selectedEvent]).fieldApiName??'Quantity');
-  const defaultNumberFormula=(operation:'increment'|'decrement',field=numberTarget)=>
-    '@'+field+(operation==='increment'?' + 1':' - 1');
-  const selected=asBinding(actions[selectedEvent]);
-  const active=Boolean(selectedEvent&&Object.prototype.hasOwnProperty.call(actions,selectedEvent));
-  const inactive=disabled||!active;
-  const isFormula=active&&selected.actionType==='Formula';
-  const isNumeric=active&&(selected.actionType==='Formula'||selected.actionType==='AdjustNumber');
-  const isFlow=active&&selected.actionType==='Flow';
-  const isNavigation=active&&selected.actionType==='Navigate';
-  const isPageValue=active&&(['Formula','PageState','SetFilter'].includes(String(selected.actionType)));
-  const fallbackFormula=(eventName:string,field=numberTarget)=>'@'+field+
-    (eventName==='qtyDecrease'?' - 1':' + 1');
-  const selectNumericField=String(selected.fieldApiName??'');
-  const supportsFormula=Boolean(isFormula&&!disabled);
-  const kind:ActionKind=actionTypes.some(option=>option.kind===selected.actionType)
-    ?selected.actionType as ActionKind:'Flow';
-  const availableFlows=flows.filter(flow=>flow.status==='Active'&&
-    (flow.flowType==='Autolaunched Flow'||flow.flowType==='Screen Flow'||flow.flowType==='In-Screen Flow'));
-  const selectedFlow=metadataSelection(flows,selected.flowApiName);
-  const activeEvents=[...new Set([...eventDefinitions.map(event=>event.apiName),...Object.keys(actions)])];
-  const eventLabel=(apiName:string)=>eventDefinitions.find(event=>event.apiName===apiName)?.label??apiName;
-  const patch=(update:Binding)=>{
-    if(!active||disabled)return;
-    onChange({...actions,[selectedEvent]:{...selected,...update}});
-  };
-  const choose=(value:string)=>{
-    if(disabled||!value)return;
-    if(value.startsWith('trigger:')){
-      const name=value.slice(8);
-      if(!activeEvents.includes(name))return;
-      if(!Object.prototype.hasOwnProperty.call(actions,name))
-        onChange({...actions,[name]:{actionType:'Flow',flowApiName:'',inputs:{}}});
-      onSelectEvent(name);
-      return;
-    }
-    if(!active)return;
-    if(value.startsWith('type:')){
-      const next=value.slice(5);
-      if(actionTypes.some(item=>item.kind===next)){
-        patch({actionType:next,...(next==='Formula'?{
-          fieldApiName:String(selected.fieldApiName??numericFields.find(f=>/^(Quantity|Qty)$/i.test(f.apiName))?.apiName??numericFields[0]?.apiName??''),
-          formula:String(selected.formula??fallbackFormula(selectedEvent)),
-          deltaSource:'$event.delta',minValue:selected.minValue??0,
-          deleteOnZero:selected.deleteOnZero??true
-        }:{}),...(next==='AdjustNumber'?{
-          fieldApiName:String(selected.fieldApiName??numericFields.find(f=>/^(Quantity|Qty)$/i.test(f.apiName))?.apiName??numericFields[0]?.apiName??''),
-          deltaSource:'$event.delta',minValue:0,deleteOnZero:true
-        }:{})});
-        // Fixed ribbon geometry: selecting an action must not open a new panel.
-      }
-    }else if(value.startsWith('flow:')){
-      const flow=availableFlows.find(item=>item.apiName===value.slice(5));
-      if(flow)patch({actionType:'Flow',flowApiName:flow.id?metadataReference(flow.id):flow.apiName,
-        flowType:flow.flowType});
-    }
-  };
-  const addCustomTrigger=()=>{
-    const name=customTrigger.trim();
-    if(disabled||eventDefinitions.length)return;
-    if(!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(name)||Object.prototype.hasOwnProperty.call(actions,name))return;
-    onChange({...actions,[name]:{actionType:'Flow',flowApiName:'',inputs:{}}});
-    onSelectEvent(name);setCustomTrigger('');
-  };
-  // Do not replace the historical six property slots with the unified catalog.
-  // All slots remain visible; unsupported component events are disabled.
-  const members=selectedApis?.length?selectedApis:[api];
-  const eventSlots=[
-    {key:'click',label:'On Click'},
-    {key:'change',label:'On Change'},
-    {key:'start',label:'On Session Start'}
-  ] as const;
-  const componentSlots=[
-    {key:'qtyIncrease',label:'+ Icon'},
-    {key:'qtyDecrease',label:'− Icon'},
-    {key:'customButton1',label:'Custom Button 1'},
-    {key:'customButton2',label:'Custom Button 2'}
-  ] as const;
-  const supportsSlot=(key:string)=>members.every(member=>member.startsWith('smart_')
-    ?supportsSmartActionEvent(member,key)
-    :eventDefinitions.some(item=>item.apiName===key));
-  const chooseSlotAction=(key:string,choice:string)=>{
-    if(disabled||!supportsSlot(key))return;
-    const previous=asBinding(actions[key]??(
-      (key==='qtyIncrease'||key==='qtyDecrease')?actions.qtyIcon:undefined));
-    if(!choice){
-      const next={...actions};delete next[key];
-      onChange(next);onSelectEvent(key);return;
-    }
-    if(choice.startsWith('flow:')){
-      const flow=availableFlows.find(item=>item.apiName===choice.slice(5));
-      if(!flow)return;
-      onChange({...actions,[key]:{...previous,actionType:'Flow',
-        flowApiName:flow.id?metadataReference(flow.id):flow.apiName,
-        flowType:flow.flowType,inputs:asBinding(previous.inputs)}});
-    }else if(choice.startsWith('type:')){
-      const actionType=choice.slice(5);
-      if(!actionTypes.some(type=>type.kind===actionType))return;
-      const suggested=numericFields.find(f=>/^(Quantity|Qty)$/i.test(f.apiName))??numericFields[0];
-      const target=String(previous.fieldApiName??suggested?.apiName??'Quantity');
-      onChange({...actions,[key]:{...previous,actionType,
-        ...(actionType==='Formula'?{
-          fieldApiName:target,deltaSource:'$event.delta',minValue:previous.minValue??0,
-          deleteOnZero:previous.deleteOnZero??true,
-          formula:String(previous.formula??(
-            key==='qtyDecrease'?previous.decrementFormula:key==='qtyIncrease'?previous.incrementFormula:undefined
-          )??fallbackFormula(key,target))
-        }:{}),
-        ...(actionType==='Flow'?{flowApiName:''}:{}),
-        ...(actionType==='AdjustNumber'?{
-          deltaSource:'$event.delta',fieldApiName:suggested?.apiName??'',
-          minValue:0,deleteOnZero:true,
-          incrementFormula:'@'+(suggested?.apiName??'Quantity')+' + 1',
-          decrementFormula:'@'+(suggested?.apiName??'Quantity')+' - 1'
-        }:{})}});
-    }else return;
-    onSelectEvent(key);
-  };
-  const slotPicker=(slot:{key:string;label:string})=>{
-    const saved=asBinding(actions[slot.key]);
-    const flow=metadataSelection(flows,saved.flowApiName);
-    const storedFlow=String(flow?.apiName??saved.flowApiName??'');
-    const type=String(saved.actionType??(storedFlow?'Flow':''));
-    const value=type==='Flow'&&storedFlow?'flow:'+storedFlow
-      :actionTypes.some(kind=>kind.kind===type)?'type:'+type:'';
-    const available=supportsSlot(slot.key)&&!disabled;
-    return <label className="page-action-property-picker" key={slot.key}>
-      <span>{slot.label}</span>
-      <select aria-label={slot.label+' action'} disabled={!available}
-        title={!available?'Not supported by selected component':'Choose Flow, navigation or page action'}
-        value={value} onChange={event=>chooseSlotAction(slot.key,event.target.value)}>
-        <option value="">Choose action…</option>
-        {value.startsWith('flow:')&&!availableFlows.some(f=>f.apiName===storedFlow)&&
-          <option value={value}>{storedFlow} (saved/unavailable)</option>}
-        <optgroup label="Formula"><option value="type:Formula">Formula</option></optgroup>
-        <optgroup label="Flows"><option value="type:Flow">Run automation / choose Flow</option></optgroup>
-        <optgroup label="Autolaunched Flows">
-          {availableFlows.filter(f=>f.flowType==='Autolaunched Flow').map(flow=>
-            <option key={flow.apiName} value={'flow:'+flow.apiName}>{flow.label}</option>)}
-        </optgroup>
-        <optgroup label="Screen Flows">
-          {availableFlows.filter(f=>f.flowType==='Screen Flow'||f.flowType==='In-Screen Flow').map(flow=>
-            <option key={flow.apiName} value={'flow:'+flow.apiName}>{flow.label}</option>)}
-        </optgroup>
-        <optgroup label="Navigation"><option value="type:Navigate">Open another page</option></optgroup>
-        <optgroup label="Page actions">
-          <option value="type:SetFilter">Filter a list</option>
-          <option value="type:PageState">Update page value</option>
-          <option value="type:AdjustNumber">Change number (+/−)</option>
-        </optgroup>
-      </select>
-    </label>;
-  };
-  const remove=()=>{
-    if(disabled||!active)return;
-    const next={...actions};
-    delete next[selectedEvent];
-    onChange(next);
-    onSelectEvent(Object.keys(next)[0]??'');
-  };
-  return <div className="page-action-ribbon-workspace" aria-label="Actions ribbon workspace">
-    {/* One fixed formula editor for the selected event. It never appears or
-        disappears when components or action kinds change. */}
-    <div className="page-action-formula-bar" role="group" aria-label="Actions formula bar">
-      <span className="page-action-formula-menu" aria-hidden="true"><SlidersHorizontal size={15}/></span>
-      <span className="page-action-formula-symbol" aria-hidden="true">ƒx</span>
-      <SmartFormulaField label="Selected action formula" fields={formulaFields}
-        disabled={!supportsFormula} value={active?String(selected.formula??fallbackFormula(selectedEvent)):''}
-        onChange={value=>patch({formula:value})}/>
-    </div>
-    <div className="office-ribbon-compact-strip page-unified-actions-ribbon" aria-label="Unified component actions">
-    <section className="office-ribbon-mini-group page-action-property-group" aria-label="Event">
-      <div className="page-action-property-rows">{eventSlots.map(slotPicker)}</div>
-      <span className="office-ribbon-group-heading">Event</span>
-    </section>
-    <section className="office-ribbon-mini-group page-action-property-group" aria-label="Component Custom">
-      <div className="page-action-property-rows">{componentSlots.map(slotPicker)}</div>
-      <span className="office-ribbon-group-heading">Component Custom</span>
-    </section>
-    <section className="office-ribbon-mini-group page-action-library" aria-label="All actions">
-      <label>Actions
-        <select aria-label="All component actions" value="" disabled={disabled}
-          onChange={event=>choose(event.target.value)}>
-          <option value="">Choose trigger or action…</option>
-          <optgroup label="Formula"><option value="type:Formula" disabled={!active}>Formula</option></optgroup>
-          <optgroup label="Triggers">
-            {activeEvents.map(name=><option key={name} value={'trigger:'+name}>
-              {eventLabel(name)}{Object.prototype.hasOwnProperty.call(actions,name)?' (configured)':''}
-            </option>)}
-          </optgroup>
-          <optgroup label="Flows">
-            <option value="type:Flow" disabled={!active}>Run automation</option>
-            {availableFlows.map(flow=><option key={flow.apiName} value={'flow:'+flow.apiName} disabled={!active}>
-              {flow.label}
-            </option>)}
-          </optgroup>
-          <optgroup label="Navigation">
-            <option value="type:Navigate" disabled={!active}>Open another page</option>
-          </optgroup>
-          <optgroup label="Page actions">
-            <option value="type:SetFilter" disabled={!active}>Filter a list</option>
-            <option value="type:PageState" disabled={!active}>Update page value</option>
-            <option value="type:AdjustNumber" disabled={!active}>Change number (+/−)</option>
-          </optgroup>
-        </select>
-      </label>
-      <small>Choose a trigger first, then its action.</small>
-      <div className="page-action-custom-trigger">
-        <input aria-label="Custom action trigger" placeholder="Custom event ID"
-          value={customTrigger} disabled={disabled||eventDefinitions.length>0} onChange={event=>setCustomTrigger(event.target.value)}/>
-        <button type="button" disabled={disabled||eventDefinitions.length>0||!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(customTrigger.trim())||
-          Object.prototype.hasOwnProperty.call(actions,customTrigger.trim())}
-          onClick={addCustomTrigger}>Add trigger</button>
-      </div>
-      <span className="office-ribbon-group-heading">All actions</span>
-    </section>
-    <section className="office-ribbon-mini-group page-action-selected" aria-label="Selected action" data-inactive={!active}>
-      <label>Trigger <select aria-label="Selected action trigger" value={active?selectedEvent:''}
-        disabled={inactive} onChange={event=>onSelectEvent(event.target.value)}>
-        {!active&&<option value="">Choose trigger…</option>}
-        {Object.keys(actions).map(name=><option key={name} value={name}>{eventLabel(name)}</option>)}
-      </select></label>
-      <label>Action <span className="page-action-current-kind">
-        {active?actionTypes.find(option=>option.kind===kind)?.label:'Choose action…'}
-      </span></label>
-      <button type="button" className="office-ribbon-icon-button page-action-remove"
-        disabled={inactive} onClick={remove} title="Remove action from this trigger"
-        aria-label="Remove selected trigger action"><Trash2 size={15}/> Remove</button>
-      <span className="office-ribbon-group-heading">Selected action</span>
-    </section>
-    <section className="office-ribbon-mini-group page-action-target" aria-label="Configuration" data-inactive={!active}>
-      <label>Flow
-        <select aria-label="Flow for selected action" disabled={inactive||!isFlow}
-          value={isFlow?(selectedFlow?.apiName??String(selected.flowApiName??'')):''}
-          onChange={event=>{
-            const flow=availableFlows.find(item=>item.apiName===event.target.value);
-            patch({flowApiName:flow?.id?metadataReference(flow.id):flow?.apiName??'',
-              ...(flow?{flowType:flow.flowType}:{})});
-          }}>
-          <option value="">Select Flow…</option>
-          {isFlow&&Boolean(selected.flowApiName)&&!selectedFlow&&
-            <option value={String(selected.flowApiName)}>{String(selected.flowApiName)} (saved/unavailable)</option>}
-          {availableFlows.map(flow=><option key={flow.apiName} value={flow.apiName}>{flow.label}</option>)}
-        </select>
-      </label>
-      <label>Number field
-        <select aria-label="Number field to adjust" disabled={inactive||!isNumeric}
-          value={isNumeric?selectNumericField:''}
-          onChange={event=>{
-            const previous=String(selected.fieldApiName??'Quantity'),field=event.target.value;
-            patch({fieldApiName:field,
-              ...(selected.formula===fallbackFormula(selectedEvent,previous)
-                ?{formula:fallbackFormula(selectedEvent,field)}:{})
-            });
-          }}>
-          <option value="">Choose numeric field…</option>
-          {numericFields.map(field=><option key={field.apiName} value={field.apiName}>{field.label}</option>)}
-        </select>
-      </label>
-      <label>Minimum
-        <input type="number" min={0} step={1} aria-label="Minimum number after adjustment"
-          disabled={inactive||!isNumeric} value={isNumeric?Number(selected.minValue??0):0}
-          onChange={e=>patch({minValue:Math.max(0,Number(e.target.value)||0)})}/>
-      </label>
-      <label>Destination
-        <select aria-label="Destination type for selected action" disabled={inactive||!isNavigation}
-          value={isNavigation?String(selected.navigationTargetType??'Record List'):'Record List'}
-          onChange={event=>patch({navigationTargetType:event.target.value,navigationPageApiName:''})}>
-          <option value="Record List">Record list</option>
-          <option value="App Home">App home</option>
-          <option value="App Page">App page</option>
-        </select>
-      </label>
-      <label>Filter key
-        <input aria-label="Shared filter key" disabled={inactive||kind!=='SetFilter'}
-          value={kind==='SetFilter'?String(selected.filterKey??'category'):''}
-          onChange={event=>patch({filterKey:event.target.value})}/>
-      </label>
-      <label>Page state key
-        <input aria-label="Page state key" disabled={inactive||!isPageValue}
-          placeholder="e.g. quantity"
-          value={isPageValue?String(selected.stateKey??''):''}
-          onChange={event=>patch({stateKey:event.target.value})}/>
-      </label>
-      <label className="page-action-checkbox">
-        <input type="checkbox" aria-label="Delete row when number reaches zero"
-          disabled={inactive||!isNumeric} checked={isNumeric&&selected.deleteOnZero===true}
-          onChange={event=>patch({deleteOnZero:event.target.checked,minValue:0})}/>
-        Remove row at zero
-      </label>
-      <button type="button" className="office-ribbon-icon-button page-action-details-toggle"
-        aria-label={showDetails?'Hide action details':'Show action details'} aria-expanded={showDetails}
-        disabled={inactive} onClick={onToggleDetails}>
-        <SlidersHorizontal size={15}/>{showDetails?'Hide details':'Configure details'}
-      </button>
-      <span className="office-ribbon-group-heading">Configuration</span>
-    </section>
-    <section className="office-ribbon-mini-group page-action-parameters" aria-label="Action parameters" data-inactive={!active}>
-      <label>Related record
-        <select aria-label="Optional relation guard field" disabled={inactive||!isNumeric}
-          value={isNumeric?String(selected.relatedFieldApiName??''):''}
-          onChange={event=>patch({relatedFieldApiName:event.target.value})}>
-          <option value="">No relation guard</option>
-          {dataFields.filter(field=>/^(Lookup|Reference)(\(|$)/i.test(field.dataType))
-            .map(field=><option key={field.apiName} value={field.apiName}>{field.label}</option>)}
-        </select>
-      </label>
-      <label>Related state
-        <input aria-label="Related page state key for permission-scoped row"
-          disabled={inactive||!isNumeric} value={isNumeric?String(selected.relatedStateKey??''):''}
-          onChange={event=>patch({relatedStateKey:event.target.value})}/>
-      </label>
-      <label>Collection
-        <input aria-label="Optional Page State collection to refresh"
-          disabled={inactive||!isNumeric} value={isNumeric?String(selected.stateCollectionKey??''):''}
-          onChange={event=>patch({stateCollectionKey:event.target.value})}/>
-      </label>
-      <label>Subtotal state
-        <input aria-label="Optional subtotal page state to recalculate"
-          disabled={inactive||!isNumeric} value={isNumeric?String(selected.subtotalStateKey??''):''}
-          onChange={event=>patch({subtotalStateKey:event.target.value})}/>
-      </label>
-      <label>Total state
-        <input aria-label="Optional Page State total to recalculate"
-          disabled={inactive||!isNumeric} value={isNumeric?String(selected.totalStateKey??''):''}
-          onChange={event=>patch({totalStateKey:event.target.value})}/>
-      </label>
-      <label>Unit price
-        <select aria-label="Optional unit price field" disabled={inactive||!isNumeric}
-          value={isNumeric?String(selected.unitPriceFieldApiName??''):''}
-          onChange={event=>patch({unitPriceFieldApiName:event.target.value,
-            totalFieldApiName:event.target.value?selected.totalFieldApiName??'':''})}>
-          <option value="">No calculated total</option>
-          {numericFields.map(field=><option key={field.apiName} value={field.apiName}>{field.label}</option>)}
-        </select>
-      </label>
-      <label>Line total
-        <select aria-label="Optional line total field" disabled={inactive||!isNumeric}
-          value={isNumeric?String(selected.totalFieldApiName??''):''}
-          onChange={event=>patch({totalFieldApiName:event.target.value})}>
-          <option value="">None</option>
-          {numericFields.map(field=><option key={field.apiName} value={field.apiName}>{field.label}</option>)}
-        </select>
-      </label>
-      <span className="office-ribbon-group-heading">Action parameters</span>
-    </section>
-    </div>
-  </div>;
+ const active=Boolean(selectedEvent&&Object.prototype.hasOwnProperty.call(actions,selectedEvent));
+ const selected=asBinding(actions[selectedEvent]);
+ const numericFields=dataFields.filter(field=>
+  /^(Number|Currency|Percent|Integer|Decimal|Double|Float|Long|Short|Int)(\(|$)/i.test(field.dataType));
+ const formulaFields=numericFields.map(field=>({...field,required:false,unique:false}));
+ const availableFlows=flows.filter(flow=>flow.status==='Active'&&
+  ['Autolaunched Flow','Screen Flow','In-Screen Flow'].includes(flow.flowType));
+ const selectedFlow=metadataSelection(flows,selected.flowApiName);
+ const eventLabels=new Map(eventDefinitions.map(item=>[item.apiName,item.label]));
+ const members=selectedApis?.length?selectedApis:[api];
+ const supports=(key:string)=>members.every(member=>member.startsWith('smart_')
+   ?supportsSmartActionEvent(member,key)
+   :eventDefinitions.some(item=>item.apiName===key));
+ const otherEvents=[...new Set([
+   ...eventDefinitions.map(item=>item.apiName),
+   ...Object.keys(actions)
+ ])].filter(key=>!eventSlots.some(slot=>slot.key===key)&&
+   !componentSlots.some(slot=>slot.key===key));
+ const [otherEvent,setOtherEvent]=useState('');
+ const selectedOther=otherEvents.includes(selectedEvent)?selectedEvent:
+   otherEvents.includes(otherEvent)?otherEvent:otherEvents[0]??'';
+ const patch=(change:Binding)=>{
+   if(disabled||!active)return;
+   onChange({...actions,[selectedEvent]:{...selected,...change}});
+ };
+ const choose=(key:string,option:string)=>{
+   if(disabled||!supports(key))return;
+   const previous=asBinding(actions[key]??(
+    (key==='qtyIncrease'||key==='qtyDecrease')?actions.qtyIcon:undefined));
+   if(!option){
+     const next={...actions};delete next[key];
+     onChange(next);onSelectEvent(key);return;
+   }
+   if(option==='formula'){
+     const preferred=numericFields.find(field=>/^(Quantity|Qty)$/i.test(field.apiName))??numericFields[0];
+     const field=String(previous.fieldApiName??preferred?.apiName??'');
+     const previousFormula=legacyFormula(previous,key,field);
+     const formula=previousFormula||(
+       (key==='qtyDecrease'||key==='qtyIncrease')&&field
+        ?'@'+field+(key==='qtyDecrease'?' - 1':' + 1'):'');
+     onChange({...actions,[key]:{...previous,actionType:'Formula',formula,
+       ...(field&&(key==='qtyIncrease'||key==='qtyDecrease')?{fieldApiName:field}:{}),
+       ...(key==='qtyDecrease'||key==='qtyIncrease'?{
+         deltaSource:'$event.delta',minValue:previous.minValue??0,
+         deleteOnZero:previous.deleteOnZero??true
+       }:{})}});
+   }else if(option==='flow'){
+     onChange({...actions,[key]:{...previous,actionType:'Flow',
+       flowApiName:'',inputs:asBinding(previous.inputs)}});
+   }else if(option.startsWith('flow:')){
+     const flow=availableFlows.find(item=>item.apiName===option.slice(5));
+     if(!flow)return;
+     onChange({...actions,[key]:{...previous,actionType:'Flow',
+       flowApiName:flow.id?metadataReference(flow.id):flow.apiName,
+       flowType:flow.flowType,inputs:asBinding(previous.inputs)}});
+   }else return;
+   onSelectEvent(key);
+ };
+ const slotPicker=(slot:{key:string;label:string})=>{
+   const saved=asBinding(actions[slot.key]);
+   const type=String(saved.actionType??(saved.flowApiName?'Flow':''));
+   const flow=metadataSelection(flows,saved.flowApiName);
+   const flowName=String(flow?.apiName??saved.flowApiName??'');
+   const selectedValue=type==='Flow'?(flowName?'flow:'+flowName:'flow')
+     :type==='Formula'?'formula':type?'legacy:'+type:'';
+   const available=supports(slot.key)&&!disabled;
+   const isSelected=selectedEvent===slot.key;
+   return <div key={slot.key} className={'page-action-slot'+(isSelected?' is-selected':'')}
+     data-action-event={slot.key} data-design-row={slot.key==='click'||slot.key==='qtyIncrease'||slot.key==='customButton1'?1:
+       slot.key==='change'||slot.key==='qtyDecrease'||slot.key==='customButton2'?2:3}>
+     <label htmlFor={'page-action-'+slot.key}>{slot.label}</label>
+     <select id={'page-action-'+slot.key} aria-label={slot.label+' action'}
+       value={selectedValue} disabled={!available}
+       onFocus={()=>{if(saved.actionType)onSelectEvent(slot.key);}}
+       onChange={event=>choose(slot.key,event.target.value)}>
+       <option value="">Choose action…</option>
+       <option value="formula">Formula</option>
+       <option value="flow">Flow</option>
+       {availableFlows.map(flow=><option key={flow.apiName} value={'flow:'+flow.apiName}>
+         {flow.label}</option>)}
+       {type&&type!=='Formula'&&type!=='Flow'&&
+         <option value={'legacy:'+type}>Existing: {legacyLabels[type]??type}</option>}
+       {type==='Flow'&&flowName&&!availableFlows.some(item=>item.apiName===flowName)&&
+         <option value={'flow:'+flowName}>{flowName} (saved/unavailable)</option>}
+     </select>
+     {isSelected&&active&&<button className="page-action-icon-remove" type="button"
+       aria-label={'Remove '+slot.label+' action'} title={'Remove '+slot.label+' action'}
+       disabled={disabled} onClick={()=>{
+         const next={...actions};delete next[slot.key];onChange(next);onSelectEvent('');
+       }}><Trash2 size={15}/></button>}
+   </div>;
+ };
+ const updateInput=(inputs:Record<string,unknown>)=>patch({inputs});
+ const updateOutput=(outputs:Record<string,unknown>)=>patch({outputs});
+ const canEditFlow=active&&!disabled&&selected.actionType==='Flow'&&Boolean(selectedFlow);
+ return <div className="page-action-ribbon-workspace page-action-compact-workspace"
+   aria-label="Actions ribbon workspace">
+   <section className="page-action-compact-event" aria-label="Event">
+     <div className="page-action-compact-event-rows">
+       {eventSlots.map(slot=>slotPicker(slot))}
+     </div>
+     <span className="page-action-section-caption">Event</span>
+   </section>
+   <div className="page-action-compact-main">
+     <div className="page-action-formula-bar" role="group" aria-label="Actions formula bar">
+       <span className="page-action-formula-menu" aria-hidden="true"><SlidersHorizontal size={15}/></span>
+       <span className="page-action-formula-symbol" aria-hidden="true"
+         title={'Formula: @Quantity + 1; @state.key := @event.value; @filter.key := @event.value; @navigate.page := "App/Page"'}>ƒx</span>
+       <SmartFormulaField label="Selected action formula" fields={formulaFields}
+         disabled={disabled||!active||selected.actionType!=='Formula'}
+         value={active&&selected.actionType==='Formula'?String(selected.formula??''):''}
+         onChange={value=>patch({formula:value})}/>
+     </div>
+     <div className="page-action-compact-sections">
+       <section className="page-action-compact-group page-action-compact-custom" aria-label="Component Custom">
+         <div className="page-action-compact-custom-grid">
+           {componentSlots.map(slot=>slotPicker(slot))}
+         </div>
+         <span className="page-action-section-caption">Component Custom</span>
+       </section>
+       {otherEvents.length>0&&<section className="page-action-compact-group page-action-compact-extra" aria-label="Other events">
+         <div className="page-action-compact-rows">
+           <label className="page-action-compact-mapping">
+             <span>Event</span><select aria-label="Other supported event" disabled={disabled}
+               value={selectedOther} onChange={event=>{setOtherEvent(event.target.value);onSelectEvent(event.target.value);}}>
+               {otherEvents.map(key=><option key={key} value={key}>{eventLabels.get(key)??key}</option>)}
+             </select>
+           </label>
+           {selectedOther&&slotPicker({key:selectedOther,label:'Action'})}
+         </div>
+         <span className="page-action-section-caption">Other events</span>
+       </section>}
+       <CompactActionFlowBindings
+         flow={selectedFlow} enabled={canEditFlow}
+         inputs={asBinding(selected.inputs)} outputs={asBinding(selected.outputs)}
+         fields={dataFields.map(field=>({...field,required:false,unique:false})) as FieldMetadata[]} onInputsChange={updateInput} onOutputsChange={updateOutput}/>
+     </div>
+   </div>
+ </div>;
 }

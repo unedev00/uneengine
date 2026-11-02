@@ -79,29 +79,31 @@ test('all 45 Design slots retain exact widths, 26px heights and positions',()=>{
  assert.match(css,/width:125px!important/);
 });
 
-test('spacing and Actions helper removal preserve real configuration',()=>{
+test('Actions sections keep no redundant configuration controls',()=>{
  assert.match(css,/--page-ribbon-min-control-gap:2px/);
  assert.match(css,/smart-ribbon-row\{column-gap:4px!important/);
- assert.doesNotMatch(action,/Choose a trigger from the Actions dropdown/);
- for(const text of ['page-action-property-group','page-action-library','page-action-selected',
-  'page-action-target','Flow for selected action','Custom Button 2'])
+ for(const text of ['page-action-compact-event','page-action-compact-custom',
+   'CompactActionFlowBindings','Custom Button 2'])
   assert.ok(action.includes(text),'missing Action control: '+text);
+ for(const obsolete of ['page-action-library','page-action-selected','page-action-target',
+   'Custom action trigger','Configure details'])
+  assert.ok(!action.includes(obsolete),'obsolete control: '+obsolete);
 });
 
-test('fixed Actions ribbon reuses one functional formula bar, with no conditional quantity section',()=>{
+test('one functional Actions formula bar sits above exactly two-row sections',()=>{
  const action=read('../src/core/builders/PageBuilder/PageBuilderActionRibbon.tsx');
- const visual=read('../src/core/builders/PageBuilder/PageBuilderEightTabRibbon.css');
+ const visual=read('../src/core/builders/PageBuilder/PageBuilderActionRibbonCompact.css');
  const runtime=read('../src/core/pages/PageRuntime/pageRuntimeViews.tsx');
  assert.match(action,/aria-label="Actions formula bar"/);
  assert.match(action,/label="Selected action formula"/);
- assert.match(action,/disabled=\{!supportsFormula\}/);
  assert.match(action,/onChange=\{value=>patch\(\{formula:value\}\)\}/);
- assert.doesNotMatch(action,/page-action-formula-group|Editable quantity action formulas/);
- for(const label of ['+ Icon','− Icon','Action parameters','Flow for selected action',
-   'Number field to adjust','Minimum number after adjustment','Page state key'])
-  assert.ok(action.includes(label),'missing fixed control '+label);
- assert.match(visual,/page-action-parameters/);
- assert.match(visual,/page-action-property-group:has/);
+ for(const label of ['+ Icon','− Icon','CompactActionFlowBindings','Custom Button 2'])
+  assert.ok(action.includes(label),'missing supported control '+label);
+ const flow=read('../src/core/builders/PageBuilder/CompactActionFlowBindings.tsx');
+ assert.match(flow,/aria-label="Flow inputs"/);
+ assert.match(flow,/aria-label="Flow outputs"/);
+ assert.match(visual,/page-action-compact-custom-grid/);
+ assert.match(visual,/grid-template-rows:repeat\(2,26px\)/);
  assert.match(runtime,/binding.actionType === 'Formula'/);
  assert.match(runtime,/adjustNumberRecord/);
 });

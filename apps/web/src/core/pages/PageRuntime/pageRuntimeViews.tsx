@@ -1,5 +1,5 @@
 import {adjustNumberRecord,type AdjustNumberBinding} from '../PageRuntime/adjustNumberRecord';
-import {executePageFormulaAction} from '../PageRuntime/formulaAction';
+import {executePageFormulaAction,parseActionFormulaAssignment,resolveActionFormulaValue} from '../PageRuntime/formulaAction';
 import {nextAccessibleTabIndex} from '../PageRuntime/tabKeyboardNavigation';
 import { useFormFactor } from '../../workspace/Responsive/useFormFactor';
 import {resolveMetadataProperties} from '../../metadata/Definitions/metadataReferences';
@@ -604,8 +604,35 @@ function MetadataBoundPageComponent({
     if (binding.actionType === 'Formula') {
       const payload=action.value&&typeof action.value==='object'&&!Array.isArray(action.value)
         ?action.value as Record<string,unknown>:{value:action.value};
+      const assignment=parseActionFormulaAssignment(String(binding.formula??''));
+      if(assignment?.kind==='filter'){
+        const value=String(resolveActionFormulaValue(assignment.value,payload,pageState,sessionId)??'');
+        window.dispatchEvent(new CustomEvent('metadrive:page-filter-selected',{detail:{
+          pageSessionKey,filterKey:assignment.key,value,label:value,
+          recordId:String(payload.recordId??''),
+          sourceObjectApiName:String(payload.sourceObjectApiName??'')
+        }}));
+        return {selected:value};
+      }
+      if(assignment?.kind==='navigate'){
+        const name=resolveActionFormulaValue(assignment.value,payload,pageState,sessionId);
+        if(typeof name!=='string'||!/^[A-Za-z][A-Za-z0-9_]*(?:\/[A-Za-z][A-Za-z0-9_]*)?$/.test(name))
+          throw Error('Formula navigation requires a declared destination name.');
+        const [first,second]=name.split('/');
+        const nextBinding=assignment.key==='page'
+          ?{actionType:'Navigate',navigationTargetType:'App Page',
+             navigationAppId:first,navigationPageApiName:second??''}
+          :assignment.key==='home'
+          ?{actionType:'Navigate',navigationTargetType:'App Home',
+             navigationAppId:first}
+          :{actionType:'Navigate',navigationTargetType:'Record List',
+             navigationAppId:'Records',navigationObjectApiName:first};
+        return executeOpenPageActionNode({binding:nextBinding,context:{
+          objects,apps,pages,currentAppId,defaultObjectApiName:objectApiName
+        },onNavigate});
+      }
       const result=await executePageFormulaAction(apiRequest,binding,payload,
-        pageState,objects,objectApiName);
+        pageState,objects,objectApiName,sessionId);
       for(const change of result.changes)
         window.dispatchEvent(new CustomEvent('metadrive:page-local-state',{
           detail:{pageSessionKey,key:change.key,value:change.value}
