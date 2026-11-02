@@ -1,4 +1,5 @@
 import {useSyncExternalStore} from 'react';
+import {validFormulaCollectionName,formulaCollectionReferenceKey} from '../../../../../server/src/expression-engine/FormulaCollection.js';
 
 export type SessionCollection={name:string;items:unknown[]};
 type Entry={owner:string;collection:SessionCollection};
@@ -6,11 +7,10 @@ type Snapshot={collections:Readonly<Record<string,SessionCollection>>;errors:Rea
 type Registry={owners:Map<string,Entry>;subscribers:Set<()=>void>;snapshot:Snapshot};
 const empty:Snapshot=Object.freeze({collections:Object.freeze({}),errors:Object.freeze({})});
 const sessions=new Map<string,Registry>();
-const validName=/^[A-Za-z][A-Za-z0-9_]{0,79}$/;
 export function namedCollectionName(formula:unknown):string|undefined{
  if(typeof formula!=='string')return undefined;
  const match=/^\s*=?\s*COLLECTION\s*\(\s*"([^"]+)"/i.exec(formula);
- return match&&validName.test(match[1])?match[1]:undefined;
+ return match&&validFormulaCollectionName(match[1])?match[1]:undefined;
 }
 function registry(scope:string):Registry{
  let current=sessions.get(scope);
@@ -23,11 +23,11 @@ function refresh(current:Registry):void{
  const registered=new Map<string,string>();
  for(const {owner,collection} of current.owners.values()){
   const name=collection.name;
-  if(!validName.test(name)){errors[owner]='Collection requires a valid nonblank name';continue;}
-  const normalized=name.toLocaleLowerCase('en');
+  if(!validFormulaCollectionName(name)){errors[owner]='Collection requires a valid nonblank name';continue;}
+  const normalized=formulaCollectionReferenceKey(name).toLocaleLowerCase('en');
   const prior=registered.get(normalized);
   if(prior&&prior!==owner){errors[owner]='Duplicate collection name in this session: '+name;continue;}
-  registered.set(normalized,owner);collections[name]=collection;
+  registered.set(normalized,owner);collections[formulaCollectionReferenceKey(name)]=collection;
  }
  current.snapshot={collections,errors};
  current.subscribers.forEach(callback=>callback());
