@@ -218,15 +218,34 @@ function SmartTabs({p,record,fire}){
  const firstTabValue=firstTabCustom&&typeof p.firstTabValue==="string"&&p.firstTabValue.trim()
   ?expression(p.firstTabValue,captionContext,p.pageState):"*";
  const tabs=firstTabCustom?[{label:firstTabCaption,id:"__custom_first_tab__"},...recordTabs]:recordTabs;
+ // The page-scoped selection is authoritative for data-backed Tabs. Clearing a
+ // parent selection must not leave a dependent child visibly selected.
+ const changeAction=p.actionFlows?.change;
+ const formulaStateKey=changeAction?.actionType==="Formula"&&typeof changeAction.formula==="string"
+  ?/^@state\.([A-Za-z][A-Za-z0-9_]{0,63})\s*:=/.exec(changeAction.formula.trim())?.[1]:null;
+ const stateKey=dynamic?(changeAction?.actionType==="PageState"?changeAction.stateKey:formulaStateKey):null;
+ const selectedCollection=hasCollection&&p.pageState?.collectionSelections
+  ?Object.entries(p.pageState.collectionSelections).find(([name])=>
+    name.toLowerCase()===p.dataCollection.name.toLowerCase())?.[1]:null;
+ const selectedId=hasCollection?selectedCollection?.Id
+  :stateKey&&p.pageState?p.pageState[stateKey]:undefined;
+ const selectedTabIndex=(hasCollection||stateKey)
+  ?selectedId===null||selectedId===undefined||selectedId===""?-1:
+   tabs.findIndex((tab,index)=>{
+    const id=firstTabCustom&&index===0?firstTabValue
+     :hasCollection?tab?.record?.Id??tab?.record?.id??tab?.value:tab?.id;
+    return String(id??"")===String(selectedId);
+   })
+  :active;
  React.useEffect(()=>{if(active>=tabs.length)setActive(0)},[active,tabs.length]);
  return <div className="smart-tabs-shell" style={{background:p.backgroundColor||undefined,
    display:"flex",flexDirection:"column",height:"100%",minHeight:0,width:"100%"}}>
   <nav className="smart-tabs" aria-label="Tabs" style={{
     width:"100%",height:"100%",flex:"1 1 auto",minHeight:0,alignContent:"stretch"}}>
    {tabs.map((tab,index)=><button key={tab?.id??index} type="button" role="tab"
-    aria-selected={active===index} style={{height:number(p.tabHeight,44),maxHeight:"100%",minHeight:0,flex:"1 1 auto",
+    aria-selected={selectedTabIndex===index} style={{height:number(p.tabHeight,44),maxHeight:"100%",minHeight:0,flex:"1 1 auto",
      minWidth:number(p.tabWidth,120),borderRadius:number(p.radius,10),fontSize:number(p.textSize,16),textAlign:p.labelAlignment||"center",boxShadow:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none",color:p.labelColor||undefined,
-     background:active===index?p.selectedTabColor||"#eaf2ff":p.tabColor||"#fff",
+     background:selectedTabIndex===index?p.selectedTabColor||"#eaf2ff":p.tabColor||"#fff",
     borderColor:p.borderColor||undefined}}
     onClick={()=>{setActive(index);
       if(firstTabCustom&&index===0){
