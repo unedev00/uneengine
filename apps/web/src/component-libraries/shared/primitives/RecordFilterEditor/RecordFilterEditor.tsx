@@ -1,6 +1,7 @@
 import {validateRecordFilterFormula} from '../../../../core/pages/PageRuntime/recordFilterFormula';
 import FormulaSignatureGuide from '../../../../core/builders/PageBuilder/FormulaSignatureGuide';
-import { useEffect, useId, useRef, useState } from 'react';
+import { useId, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { KeyboardEvent } from 'react';
 import { ChevronDown, Plus, Search, Trash2 } from 'lucide-react';
 import type { FieldMetadata,ObjectMetadata } from '../../../../core/metadata/Definitions/metadata';
@@ -40,7 +41,10 @@ function FilterFieldCombobox({
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+  const [placement, setPlacement] = useState({top: 0, left: 0, width: 240, maxHeight: 260});
   const listId = useId();
   const match = (item: FieldMetadata) =>
     (item.label + ' ' + item.apiName).toLocaleLowerCase().includes(query.trim().toLocaleLowerCase());
@@ -48,14 +52,41 @@ function FilterFieldCombobox({
   const relatedFields = related.filter(match);
   const available = [...currentFields, ...relatedFields];
   const selected = [...fields, ...related].find(item => item.apiName === value);
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!open) return;
-    searchRef.current?.focus();
-    const closeOnOutsidePointer = (event: PointerEvent) => {
-      if (!containerRef.current?.contains(event.target as Node)) setOpen(false);
+    // Portal the picker outside the scrolling dialog body, and keep it anchored
+    // to its field trigger when the dialog or viewport scrolls.
+    const positionDropdown = () => {
+      const rect = triggerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const below = Math.max(0, window.innerHeight - rect.bottom - 8);
+      const above = Math.max(0, rect.top - 8);
+      const placeAbove = below < 260 && above > below;
+      const availableHeight = placeAbove ? above : below;
+      const maxHeight = Math.max(70, Math.min(260, availableHeight - 4));
+      const width = Math.min(Math.max(240, rect.width), Math.max(100, window.innerWidth - 16));
+      setPlacement({
+        top: placeAbove ? Math.max(8, rect.top - maxHeight - 3)
+          : Math.max(8, Math.min(rect.bottom + 3, window.innerHeight - maxHeight - 8)),
+        left: Math.max(8, Math.min(rect.left, window.innerWidth - width - 8)),
+        width,
+        maxHeight
+      });
     };
+    const closeOnOutsidePointer = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (!containerRef.current?.contains(target) && !dropdownRef.current?.contains(target)) setOpen(false);
+    };
+    positionDropdown();
+    searchRef.current?.focus();
     document.addEventListener('pointerdown', closeOnOutsidePointer);
-    return () => document.removeEventListener('pointerdown', closeOnOutsidePointer);
+    window.addEventListener('resize', positionDropdown);
+    window.addEventListener('scroll', positionDropdown, true);
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutsidePointer);
+      window.removeEventListener('resize', positionDropdown);
+      window.removeEventListener('scroll', positionDropdown, true);
+    };
   }, [open]);
   const choose = (apiName: string) => {
     onChange(apiName);
@@ -85,8 +116,11 @@ function FilterFieldCombobox({
       <span>{item.label}</span><small>{item.apiName}</small>
     </button>;
   return <div className="metadata-filter-field-picker" ref={containerRef}
-    onBlur={event => {if (!event.currentTarget.contains(event.relatedTarget as Node)) setOpen(false);}}>
-    <button type="button" className="metadata-filter-field-trigger" role="combobox"
+    onBlur={event => {
+      const next = event.relatedTarget as Node | null;
+      if (!containerRef.current?.contains(next) && !dropdownRef.current?.contains(next)) setOpen(false);
+    }}>
+    <button ref={triggerRef} type="button" className="metadata-filter-field-trigger" role="combobox"
       aria-label={label} aria-haspopup="listbox" aria-expanded={open} aria-controls={listId}
       onClick={() => {setOpen(previous => !previous); setQuery(''); setActiveIndex(0);}}
       onKeyDown={event => {
@@ -100,7 +134,8 @@ function FilterFieldCombobox({
       <span className={!value ? 'is-placeholder' : ''}>{selected?.label ?? (value ? 'Missing: ' + value : 'Choose field…')}</span>
       <ChevronDown size={15} aria-hidden="true"/>
     </button>
-    {open && <div className="metadata-filter-field-dropdown">
+    {open && createPortal(<div ref={dropdownRef} className="metadata-filter-field-dropdown"
+      style={{top: placement.top, left: placement.left, width: placement.width, maxHeight: placement.maxHeight}}>
       <span className="metadata-filter-field-search"><Search size={15} aria-hidden="true"/>
         <input ref={searchRef} type="search" value={query} placeholder="Search fields…"
           aria-label={'Search ' + label} aria-controls={listId}
@@ -119,7 +154,7 @@ function FilterFieldCombobox({
         </div>}
         {!available.length && <p>No matching accessible fields.</p>}
       </div>
-    </div>}
+    </div>, document.body)}
   </div>;
 }
 
