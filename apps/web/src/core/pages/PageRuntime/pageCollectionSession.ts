@@ -1,0 +1,62 @@
+import {useEffect,useSyncExternalStore} from 'react';
+
+export type SessionCollection={name:string;items:unknown[]};
+type Entry={owner:string;collection:SessionCollection};
+type Snapshot={collections:Readonly<Record<string,SessionCollection>>;errors:Readonly<Record<string,string>>};
+type Registry={owners:Map<string,Entry>;subscribers:Set<()=>void>;snapshot:Snapshot};
+const empty:Snapshot=Object.freeze({collections:Object.freeze({}),errors:Object.freeze({})});
+const sessions=new Map<string,Registry>();
+const validName=/^[A-Za-z][A-Za-z0-9_]{0,79}$/;
+export function namedCollectionName(formula:unknown):string|undefined{
+ if(typeof formula!=='string')return undefined;
+ const match=/^\s*COLLECTION\s*\(\s*"([^"]+)"/i.exec(formula);
+ return match&&validName.test(match[1])?match[1]:undefined;
+}
+function registry(scope:string):Registry{
+ let current=sessions.get(scope);
+ if(!current){current={owners:new Map(),subscribers:new Set(),snapshot:empty};sessions.set(scope,current);}
+ return current;
+}
+function refresh(current:Registry):void{
+ const collections:Record<string,SessionCollection>=Object.create(null);
+ const errors:Record<string,string>=Object.create(null);
+ const registered=new Map<string,string>();
+ for(const {owner,collection} of current.owners.values()){
+  const name=collection.name;
+  if(!validName.test(name)){errors[owner]='Collection requires a valid nonblank name';continue;}
+  const normalized=name.toLocaleLowerCase('en');
+  const prior=registered.get(normalized);
+  if(prior&&prior!==owner){errors[owner]='Duplicate collection name in this session: '+name;continue;}
+  registered.set(normalized,owner);collections[name]=collection;
+ }
+ current.snapshot={collections,errors};
+ current.subscribers.forEach(callback=>callback());
+}
+export function registerSessionCollection(scope:string,owner:string,collection:SessionCollection|null):()=>void{
+ if(!scope||!owner)return ()=>{};
+ const current=registry(scope);
+ if(collection)current.owners.set(owner,{owner,collection});
+ else current.owners.delete(owner);
+ refresh(current);
+ return ()=>{
+  const entry=current.owners.get(owner);
+  if(entry?.collection===collection){current.owners.delete(owner);refresh(current);}
+  if(current.owners.size===0&&current.subscribers.size===0)sessions.delete(scope);
+ };
+}
+export function getSessionCollection(scope:string,name:string):SessionCollection|undefined{
+ const current=sessions.get(scope)?.snapshot.collections;
+ return current?.[name]??Object.entries(current??{}).find(([key])=>key.toLowerCase()===name.toLowerCase())?.[1];
+}
+export function useSessionCollections(scope:string,owner:string,collection:SessionCollection|null){
+ const snapshot=useSyncExternalStore(
+  callback=>{const current=registry(scope);current.subscribers.add(callback);
+   return ()=>{current.subscribers.delete(callback);
+    if(!current.owners.size&&!current.subscribers.size)sessions.delete(scope);};},
+  ()=>sessions.get(scope)?.snapshot??empty,()=>empty
+ );
+ // Collection values are limited by the shared formula engine (200 items).
+ const signature=collection?JSON.stringify(collection):'';
+ useEffect(()=>registerSessionCollection(scope,owner,collection),[scope,owner,signature]);
+ return snapshot;
+}
