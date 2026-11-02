@@ -2687,7 +2687,7 @@ export function createSystemServer(db:SqlPersistence) {
   registerOpenApiExternalServiceRoutes(app,externalServices);
   registerDurableJobAdminRoutes(app,db,rbac);
   registerSeederManagerRoutes(app,db,platformTenants);
-  registerPlatformDeploymentRoutes(app,db,rbac,platformTenants);
+  registerPlatformDeploymentRoutes(app,db,rbac);
   registerDeclarativeRuleRoutes(app,db,rbac);
   registerMatchingRoutes(app,db,rbac);
   registerFieldExactIndexRoutes(app,db,rbac);
