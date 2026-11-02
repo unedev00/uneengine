@@ -163,7 +163,7 @@ test('Page State condition makes its optional blank behaviour visible and keeps 
  const css=read('../src/component-libraries/shared/primitives/RecordFilterEditor/RecordFilterEditor.css');
  assert.match(editor,/Ignore condition when Page State value is blank/);
  assert.match(editor,/skipWhenBlank:e\.target\.checked/);
- assert.match(editor,/source:'PageState', key: e\.target\.value/);
+ assert.match(editor,/source: 'PageState', key: e\.target\.value/);
  assert.match(editor,/\.\.\.dynamic,source: 'PageState'/);
  assert.match(editor,/placeholder="e\.g\. categoryId"/);
  assert.match(css,/metadata-filter-optional/);
