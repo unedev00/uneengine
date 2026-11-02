@@ -27,6 +27,9 @@ test('Credential config variables have a compact two-column desktop grid and mob
   assert.doesNotMatch(credentialView, /gridTemplateColumns:'minmax\(130px/);
   assert.match(css, /\.named-credential-modal \.connector-config-fields\s*\{[^}]*repeat\(2, minmax\(0, 1fr\)\)/);
   assert.match(css, /@media \(max-width: 720px\)\s*\{\s*\.lightning \.named-credential-modal \.connector-config-fields/);
+  const legacy = read('../src/core/workspace/WorkspaceTheme/sections/07-workspace.css');
+  assert.doesNotMatch(legacy, /connector-config-row[^\n]*grid-template-columns:[^\n]*!important/);
+  assert.match(legacy, /\.connector-config-row\s*\{\s*grid-template-columns:\s*minmax\(0, 1fr\) auto/);
 });
 
 test('Setup menu retains readable full-text tooltip when a label cannot fit on one line', () => {
