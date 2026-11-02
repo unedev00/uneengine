@@ -36,6 +36,9 @@ export async function auditAuthenticatedCoreRoutes({page,origin,caseId}){
     try{
      await page.goto(origin+route.path,{waitUntil:'domcontentloaded',timeout:25000});
      await page.locator('.workspace').first().waitFor({state:'visible',timeout:15000});
+     if(['setup-app-exchange','setup-named-credentials'].includes(route.name)){
+      await page.waitForFunction(()=>!document.querySelector('.workspace')?.innerText.includes('Loading live'),undefined,{timeout:15000});
+     }
      await page.waitForTimeout(200);
      const metrics=await page.evaluate(()=>{
       const root=document.documentElement;
