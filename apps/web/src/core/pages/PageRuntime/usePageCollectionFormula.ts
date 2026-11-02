@@ -59,8 +59,7 @@ export function usePageCollectionFormula(
  const listExpression=expressions.find(value=>Boolean(parseCollectionListBinding(value,primaryObject)));
  // List-expression metadata is distinct from scalar Boolean expressions. A
  // source binding selects records; individual row property formulas remain scalar.
- const scalarCollectionExpression=expressions.find(value=>/\bCOLLECTION\s*\(/i.test(value));
- const entered=explicit||listExpression||declared||reference||scalarCollectionExpression||'';
+ const entered=explicit||listExpression||declared||reference||'';
  const source=entered.startsWith('=')?entered.slice(1).trim():entered;
  const scope=pageSessionKey+'#'+sessionId;
  const lastValid=useRef<{object:string;collection:PageNamedCollection}|null>(null);
@@ -81,9 +80,14 @@ export function usePageCollectionFormula(
  const unresolvedNamedList=Boolean(listBinding&&!namedListSource&&!primaryField
    &&listBinding.object===primaryObject);
  const existingCollections=Object.keys(registry.collections);
- const refs=unresolvedNamedList||namedListSource?[]:
+ const sourceRefs=unresolvedNamedList||namedListSource?[]:
   listBinding?[{object:listBinding.object,field:listBinding.field}]:
     collectionFormulaReferences(source,primaryObject,existingCollections);
+ // Scalar formulas may consume a Collection without themselves returning one.
+ const scalarRefs=expressions.filter(value=>/\bCOLLECTION\s*\(/i.test(value))
+  .flatMap(value=>collectionFormulaReferences(value,primaryObject,existingCollections));
+ const refs=[...new Map([...sourceRefs,...scalarRefs]
+  .map(ref=>[ref.object+'.'+ref.field,ref])).values()];
  const referencesNamed=Boolean(namedCollectionNames(source).length);
  const selected=['objectApiName','objectApiName2','objectApiName3']
   .map(key=>String(properties[key]??'')).filter(Boolean);
@@ -93,7 +97,7 @@ export function usePageCollectionFormula(
  const [remote,setRemote]=useState<SourceResult|null>(null);
  useEffect(()=>{
   let active=true;
-  if(!source||!secondary.length){setRemote({key,records:{}});return()=>{active=false;};}
+  if(!secondary.length){setRemote({key,records:{}});return()=>{active=false;};}
   setRemote(null);
   void Promise.all(secondary.map(async name=>{
    if(!selected.includes(name)||!objects.some(o=>o.apiName===name))
