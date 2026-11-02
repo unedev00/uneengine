@@ -26,12 +26,17 @@ function references(formula:unknown,inputs:Set<Channel>,available:ReadonlySet<st
  */
 export function pageStateDependencies(components:readonly Component[]):PageStateDependencies {
  const graph=new Map<Channel,Set<Channel>>();
- const available=new Set(components.flatMap(item=>Object.values(item.properties)
-  .flatMap(value=>namedCollectionNames(value).map(name=>name.replace(/ +/g,'_').toLowerCase()))));
+ const emitted=(props:Readonly<Record<string,unknown>>):string[]=>{
+  const authored=Object.entries(props).filter(([key])=>key!=='collectionFormula')
+   .flatMap(([,value])=>namedCollectionNames(value));
+  return authored.length?authored:namedCollectionNames(props.collectionFormula);
+ };
+ const available=new Set(components.flatMap(item=>emitted(item.properties)
+  .map(name=>name.replace(/ +/g,'_').toLowerCase())));
  for(const {properties:props} of components){
   const inputs=new Set<Channel>(),outputs=new Set<Channel>();
   const declared=typeof props.collectionFormula==='string'?props.collectionFormula:'';
-  const names=[...new Set(Object.values(props).flatMap(value=>namedCollectionNames(value)))];
+  const names=[...new Set(emitted(props))];
   for(const name of names)outputs.add(collection(name));
 
   const active=activePageRecordFilters(props);
