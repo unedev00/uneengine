@@ -530,3 +530,26 @@ test('optional Page State conditions can coexist with a legacy formula without w
  assert.equal(selected.blocked,false,selected.error);
  assert.equal(selected.filters?.length,2);
 });
+
+test('single effective OR lookup condition still uses complete server paging',()=>{
+ const fields=[
+  {apiName:'Category',label:'Category',dataType:'Lookup(Category)',
+   relationship:{targetObject:'Category',type:'Lookup',relationshipName:'Category'}},
+  {apiName:'Name',label:'Name',dataType:'Text'}
+ ] as any;
+ const chosen={field:'Category',operator:'Equals',
+  value:{source:'PageState',key:'categoryId',skipWhenBlank:true}};
+ const optionalName={field:'Name',operator:'Equals',
+  value:{source:'PageState',key:'nameSearch',skipWhenBlank:true}};
+ const one=pageComponentRecordQuery([chosen],fields,{pageState:{categoryId:'cat1'}},'OR');
+ assert.equal(one.serverFilterable,true);
+ assert.deepEqual(one.filters,[{field:'Category',operator:'eq',value:'cat1'}]);
+ const afterSkipping=pageComponentRecordQuery([chosen,optionalName],fields,
+  {pageState:{categoryId:'cat1'}},'OR');
+ assert.equal(afterSkipping.serverFilterable,true);
+ assert.deepEqual(afterSkipping.filters,[{field:'Category',operator:'eq',value:'cat1'}]);
+ const both=pageComponentRecordQuery([chosen,optionalName],fields,
+  {pageState:{categoryId:'cat1',nameSearch:'test'}},'OR');
+ assert.equal(both.serverFilterable,false,
+  'multiple OR terms involving lookup relationships retain conservative fallback');
+});
