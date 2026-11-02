@@ -221,7 +221,9 @@ function SmartTabs({p,record,fire}){
  // The page-scoped selection is authoritative for data-backed Tabs. Clearing a
  // parent selection must not leave a dependent child visibly selected.
  const changeAction=p.actionFlows?.change;
- const stateKey=dynamic&&changeAction?.actionType==="PageState"?changeAction.stateKey:null;
+ const formulaStateKey=changeAction?.actionType==="Formula"&&typeof changeAction.formula==="string"
+  ?/^@state\.([A-Za-z][A-Za-z0-9_]{0,63})\s*:=/.exec(changeAction.formula.trim())?.[1]:null;
+ const stateKey=dynamic?(changeAction?.actionType==="PageState"?changeAction.stateKey:formulaStateKey):null;
  const selectedCollection=hasCollection&&p.pageState?.collectionSelections
   ?Object.entries(p.pageState.collectionSelections).find(([name])=>
     name.toLowerCase()===p.dataCollection.name.toLowerCase())?.[1]:null;
