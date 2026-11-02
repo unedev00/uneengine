@@ -222,7 +222,7 @@ export async function pageComponentSessionRelatedQuery(
  }
  return matches.length===1?{blocked:false,filter:matches[0]}:{blocked:true};
 }
-const isDynamic=(value:unknown):value is {source:string;key?:string;skipWhenBlank?:boolean}=>
+const isDynamic=(value:unknown):value is {source:string;key?:string;skipWhenBlank?:boolean;allWhenStar?:boolean}=>
   Boolean(value&&typeof value==='object'&&!Array.isArray(value));
 /** Resolve only declared, typed page context sources; never evaluate expressions. */
 export function resolvePageFilterValue(value:unknown,context:PageFilterContext):unknown {
@@ -231,6 +231,16 @@ export function resolvePageFilterValue(value:unknown,context:PageFilterContext):
     && /^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(value.key)){
     const resolved=context.pageState?.[value.key];
     return resolved===null||['string','number','boolean'].includes(typeof resolved)?resolved:undefined;
+  }
+  if(value.source==='CollectionState'&&typeof value.key==='string'){
+    const match=/^([A-Za-z][A-Za-z0-9_]{0,79})\.state\.(Id|Name|Value)$/.exec(value.key);
+    const selections=context.pageState?.collectionSelections;
+    if(!match||!selections||typeof selections!=='object'||Array.isArray(selections))return undefined;
+    const record=Object.entries(selections as Record<string,unknown>).find(([key])=>key.toLowerCase()===match[1].toLowerCase())?.[1];
+    if(!record||typeof record!=='object'||Array.isArray(record)
+      ||!Object.prototype.hasOwnProperty.call(record,match[2]))return undefined;
+    const result=(record as Record<string,unknown>)[match[2]];
+    return result===null||['string','number','boolean'].includes(typeof result)?result:undefined;
   }
   if(value.source==='CurrentRecord')return context.recordId||undefined;
   if(value.source==='Session')return context.sessionId||undefined;
@@ -241,11 +251,12 @@ export function resolvePageFilterValue(value:unknown,context:PageFilterContext):
  * Every definition is still validated before this is evaluated. */
 function skipsOptionalPageStateFilter(filter:PageFilter,context:PageFilterContext):boolean{
  const source=filter.value;
- return !['Is Blank','Is Not Blank'].includes(filter.operator)&&isDynamic(source)
-  &&source.source==='PageState'&&source.skipWhenBlank===true
-  &&typeof source.key==='string'
-  &&/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(source.key)
-  &&[undefined,null,''].includes(resolvePageFilterValue(source,context) as undefined|null|string);
+ if(['Is Blank','Is Not Blank'].includes(filter.operator)||!isDynamic(source)
+  ||!['PageState','CollectionState'].includes(source.source))return false;
+ const resolved=resolvePageFilterValue(source,context);
+ // '*' is a selection sentinel only for explicitly configured state filters.
+ return source.allWhenStar===true&&resolved==='*'
+  ||source.skipWhenBlank===true&&[undefined,null,''].includes(resolved as undefined|null|string);
 }
 /** Block unbound parent filters *before* querying; missing context never means "all records". */
 function pageComponentRecordQueryBase(
