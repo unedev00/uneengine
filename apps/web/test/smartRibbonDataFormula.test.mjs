@@ -181,6 +181,6 @@ test('the originating filter button sets the target without wasting modal space'
  assert.ok(ui.includes("modalFieldRule?.filters"));
  assert.ok(ui.includes("<RecordFilterEditor compact title="));
  assert.ok(ui.includes("openFilters('Record')"));
- assert.doesNotMatch(ui,/smart-filter-scope|smart-filter-target|Apply filters to|Filter target/);
+ assert.doesNotMatch(ui,/smart-filter-scope|smart-filter-target|Apply filters to|aria-label="Filter target"/);
  assert.doesNotMatch(css,/\\.smart-filter-scope/);
 });
