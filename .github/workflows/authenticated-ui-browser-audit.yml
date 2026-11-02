@@ -1,0 +1,72 @@
+name: Authenticated SQL UI browser audit
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/web/**'
+      - 'apps/server/scripts/builder-browser-smoke.mjs'
+      - 'apps/server/scripts/*browser-check.mjs'
+      - 'scripts/setup-ui-audit-sql.mjs'
+      - '.github/workflows/authenticated-ui-browser-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  authenticated-ui:
+    name: Real Core routes / isolated tenant / Chromium
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: metadrive_ui_audit
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d metadrive_ui_audit"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      METADRIVE_SQL_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/metadrive_ui_audit
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Build SQL Core
+        run: npm run build:system --workspace apps/server
+      - name: Initialise disposable SQL tenant
+        run: node scripts/setup-ui-audit-sql.mjs
+      - name: Build production UI at native dimensions
+        env:
+          GITHUB_PAGES: 'true'
+          GITHUB_PAGES_BASE_PATH: /
+          VITE_API_BASE_URL: /api
+        run: npm run build --workspace apps/web
+      - name: Install Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright
+          npx playwright install --with-deps chromium
+      - name: Exercise authenticated OneEngine UI through isolated SQL
+        env:
+          METADRIVE_BROWSER_PREBUILT: '1'
+        run: |
+          mkdir -p apps/server/artifacts
+          node apps/server/scripts/builder-browser-smoke.mjs
+      - name: Upload real authenticated UI screenshot evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: authenticated-core-ui-screenshots
+          path: apps/server/artifacts/*.png
+          if-no-files-found: warn
