@@ -195,7 +195,11 @@ function SmartLookup({p,style,fire}){
  </div>;
 }
 function SmartTabs({p,record,fire}){
- const [active,setActive]=React.useState(0);
+ // A zero-based, per-component page-load default; invalid metadata falls back to All/first.
+ const configuredTabIndex=Number.isInteger(Number(p.tabIndex))&&Number(p.tabIndex)>=0
+  ?Number(p.tabIndex):0;
+ const [active,setActive]=React.useState(configuredTabIndex);
+ React.useEffect(()=>setActive(configuredTabIndex),[configuredTabIndex]);
  const count=number(p.tabCount,3,1,20);
  // When bound to an Object, the shared Page Runtime supplies only filtered,
  // permission-checked records. Never generate unlimited tabs from raw records.
@@ -221,6 +225,9 @@ function SmartTabs({p,record,fire}){
  const firstTabValue=firstTabCustom&&typeof p.firstTabValue==="string"&&p.firstTabValue.trim()
   ?expression(p.firstTabValue,captionContext,p.pageState,p.objectApiName,p.formulaCollectionSources,p.namedCollections):"*";
  const tabs=firstTabCustom?[{label:firstTabCaption,id:"__custom_first_tab__"},...recordTabs]:recordTabs;
+ // Clamp when there are fewer loaded tabs than requested; preserve the configured
+ // index while records/collections load so it can become available later.
+ const defaultTabIndex=tabs.length?Math.min(configuredTabIndex,tabs.length-1):-1;
  // The page-scoped selection is authoritative for data-backed Tabs. Clearing a
  // parent selection must not leave a dependent child visibly selected.
  const changeAction=p.actionFlows?.change;
@@ -238,13 +245,13 @@ function SmartTabs({p,record,fire}){
     :hasCollection?tab?.record?.Id??tab?.record?.id??tab?.value:tab?.id;
    return String(id??"")===String(selectedId);
   });
- // Always default to the FIRST actual tab, regardless of its caption or ID.
- // Existing explicit selections still take priority when changing tabs.
+ // Existing page-scoped selections win after a user click; otherwise the
+ // configured default drives both the visual selection and state initialisation.
  const selectedTabIndex=(hasCollection||stateKey)
-  ?indexForSelection>=0?indexForSelection:tabs.length?0:-1
-  :tabs.length?Math.min(active,tabs.length-1):-1;
+  ?indexForSelection>=0?indexForSelection:defaultTabIndex
+  :tabs.length?Math.max(0,Math.min(active,tabs.length-1)):-1;
  const autoSelected=React.useRef(null);
- const firstTabRef=React.useRef(null);
+ const selectedTabRef=React.useRef(null);
  const selectTab=index=>{
   setActive(index);
   if(firstTabCustom&&index===0){
@@ -271,9 +278,11 @@ function SmartTabs({p,record,fire}){
   }
   if(index!==0)autoSelected.current=null;
  };
- const firstItemId=tabs.length?(firstTabCustom?firstTabValue:
-  hasCollection?tabs[0]?.record?.Id??tabs[0]?.record?.id??tabs[0]?.value:tabs[0]?.id):null;
- // Publishing the first selection matters: a visual highlight alone leaves
+ const defaultItem=tabs[defaultTabIndex];
+ const defaultItemId=defaultItem?(firstTabCustom&&defaultTabIndex===0?firstTabValue:
+  hasCollection?defaultItem?.record?.Id??defaultItem?.record?.id??defaultItem?.value:
+   defaultItem?.id??defaultItem?.value):null;
+ // Publishing the configured selection matters: a visual highlight alone leaves
  // Collection State blank, so dependent components cannot filter correctly.
  React.useEffect(()=>{
   if(!tabs.length||p.loading||p.previewOnly||p.builderPreview||
@@ -284,26 +293,27 @@ function SmartTabs({p,record,fire}){
     !(changeAction.actionType==="Formula"&&formulaStateKey))return;
   if(indexForSelection>=0){autoSelected.current=null;return;}
   const key=String(p.pageSessionKey??"")+"|"+String(p.componentId??"")+"|"+
-   String(hasCollection?p.dataCollection.name:stateKey)+"|"+String(firstItemId??"");
+   String(hasCollection?p.dataCollection.name:stateKey)+"|"+String(defaultTabIndex)+"|"+String(defaultItemId??"");
   if(autoSelected.current===key)return;
   autoSelected.current=key;
-  selectTab(0);
- },[indexForSelection,firstItemId,tabs.length,p.loading,p.previewOnly,p.builderPreview,
+  selectTab(defaultTabIndex);
+ },[indexForSelection,defaultItemId,defaultTabIndex,tabs.length,p.loading,p.previewOnly,p.builderPreview,
    p.pageSessionKey,p.componentId,p.onAction,hasCollection,stateKey,p.dataCollection?.name]);
- // Give the first selected tab keyboard focus only if the page has no
- // active control. Never steal focus from a search field or later user choice.
+ // Focus the selected default only when no other control owns focus.
  React.useEffect(()=>{
-  if(selectedTabIndex!==0||!tabs.length||p.loading||
+  if(selectedTabIndex<0||!tabs.length||p.loading||
    p.previewOnly||p.builderPreview||typeof document==="undefined"||
    document.activeElement!==document.body)return;
-  firstTabRef.current?.focus({preventScroll:true});
+  selectedTabRef.current?.focus({preventScroll:true});
  },[selectedTabIndex,tabs.length,p.loading,p.previewOnly,p.builderPreview]);
- React.useEffect(()=>{if(active>=tabs.length)setActive(0)},[active,tabs.length]);
+ React.useEffect(()=>{
+  if(tabs.length&&active>=tabs.length)setActive(defaultTabIndex);
+ },[active,tabs.length,defaultTabIndex]);
  return <div className="smart-tabs-shell" style={{background:p.backgroundColor||undefined,
    display:"flex",flexDirection:"column",height:"100%",minHeight:0,width:"100%"}}>
   <nav className="smart-tabs" aria-label="Tabs" style={{
     width:"100%",height:"100%",flex:"1 1 auto",minHeight:0,alignContent:"stretch"}}>
-   {tabs.map((tab,index)=><button key={tab?.id??index} ref={index===0?firstTabRef:null} type="button" role="tab"
+   {tabs.map((tab,index)=><button key={tab?.id??index} ref={index===selectedTabIndex?selectedTabRef:null} type="button" role="tab"
     aria-selected={selectedTabIndex===index} style={{height:number(p.tabHeight,44),maxHeight:"100%",minHeight:0,flex:"1 1 auto",
      minWidth:number(p.tabWidth,120),borderRadius:number(p.radius,10),fontSize:number(p.textSize,16),textAlign:p.labelAlignment||"center",boxShadow:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none",color:p.labelColor||undefined,
      background:selectedTabIndex===index?p.selectedTabColor||"#eaf2ff":p.tabColor||"#fff",
