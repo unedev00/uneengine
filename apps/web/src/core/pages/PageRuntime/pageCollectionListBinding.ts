@@ -15,8 +15,7 @@ export function parseCollectionListBinding(source:string,primaryObject:string):C
     ||typeof node.right.value!=='string')return null;
   const parts=node.left.value.split('.');
   if(parts.length>2||parts.some(part=>!/^[A-Za-z][A-Za-z0-9_]*$/.test(part)))return null;
-  const object=parts.length===2?parts[0]:primaryObject;
-  if(!object)return null;
+  const object=parts.length===2?parts[0]:primaryObject||'__session_collection__';
   return {object,field:parts.at(-1)!,criterion:node.operator==='='||node.operator==='=='
    ?node.right.value:node.operator+node.right.value};
  }catch{return null;}
