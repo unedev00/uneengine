@@ -683,40 +683,38 @@ test('Smart Tabs renders only bounded matching record labels from a filtered Obj
 });
 
 
-test('Smart Tabs first tab is optional, formula-capable, and never replaces a real category',async()=>{
+test('Smart Tabs uses first actual Object tab rather than deprecated synthetic first-tab settings',async()=>{
  const base={objectApiName:'MenuCategory',textSource:'@Name',tabCount:2,
   records:[{Id:'category-1',Name:'Desserts'},{Id:'category-2',Name:'Drinks'}]};
  const original=await renderSmart('smart_tabs',base);
- assert.doesNotMatch(original,/All items|Custom tab/);
  assert.equal((original.match(/role="tab"/g)??[]).length,2);
- const customised=await renderSmart('smart_tabs',{...base,firstTabCustom:true,firstTabCaption:'All items'});
- assert.match(customised,/All items/);
- assert.match(customised,/Desserts/);
- assert.match(customised,/Drinks/);
- assert.equal((customised.match(/role="tab"/g)??[]).length,3);
- assert.ok(customised.indexOf('All items')<customised.indexOf('Desserts'));
- const dynamicCaption=await renderSmart('smart_tabs',{...base,firstTabCustom:true,
-  firstTabCaption:'"Hello " & @state.displayName',pageState:{displayName:'Visitor'}});
- assert.match(dynamicCaption,/Hello Visitor/);
- const disabled=await renderSmart('smart_tabs',{...base,firstTabCustom:false,firstTabCaption:'All items'});
- assert.doesNotMatch(disabled,/All items/);
+ assert.match(original,/aria-selected="true"[^>]*>Desserts<\/button>/);
+ const legacy=await renderSmart('smart_tabs',{...base,firstTabCustom:true,
+  firstTabCaption:'Deprecated first',firstTabValue:'*'});
+ assert.equal((legacy.match(/role="tab"/g)??[]).length,2);
+ assert.doesNotMatch(legacy,/Deprecated first|Custom tab/);
+ assert.match(legacy,/aria-selected="true"[^>]*>Desserts<\/button>/);
  const runtime=read('../src/component-libraries/smart/shared/SmartRuntime.jsx');
- assert.match(runtime,/firstTabCustom&&index===0/);
- assert.match(runtime,/value:firstTabValue,isCustom:true/);
- assert.match(runtime,/index-\(firstTabCustom\?1:0\)/);
+ for(const property of ['firstTabCustom','firstTabCaption','firstTabValue'])
+  assert.doesNotMatch(runtime,new RegExp(property));
+ assert.match(runtime,/const tabs=recordTabs;/);
 });
-
-test('Optional leading Smart Tab is SQL-configured and has no app-specific default',()=>{
- const sql=read('../../server/src/system-support/migrations/20270302-smart-tabs-optional-first-tab.sql');
+test('SQL and ribbon retire the three first-tab properties without deleting saved metadata',()=>{
+ const sql=read('../../server/src/system-support/migrations/20270305-retire-smart-tabs-custom-first-tab.sql');
  const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
- for(const key of ['firstTabCustom','firstTabCaption'])assert.ok(sql.includes("'"+key+"'"));
- assert.match(sql,/SELECT 'smart_tabs',p.property_key,true/);
- assert.match(sql,/'Design','Tabs'/);
- assert.match(sql,/'false'::jsonb/);
- assert.doesNotMatch(sql,/All items|MenuCategory|CODEXTILL|DELETE FROM md_page_|UPDATE md_page_/i);
- assert.match(ribbon,/property.id!=='firstTabCaption'\|\|properties.firstTabCustom===true/);
+ const server=read('../../server/src/system-support/server.ts');
+ for(const property of ['firstTabCustom','firstTabCaption','firstTabValue']){
+  assert.match(sql,new RegExp("'"+property+"'"));
+  assert.match(ribbon,new RegExp("'"+property+"'"));
+  assert.match(server,new RegExp("'"+property+"'"));
+ }
+ assert.match(sql,/UPDATE md_builder_ribbon_component_rules/);
+ assert.match(sql,/SET enabled=false/);
+ assert.match(ribbon,/!retiredTabs\.has\(p\.id\)/);
+ assert.match(server,/WHERE p\.property_key NOT IN \('firstTabCustom','firstTabCaption','firstTabValue'\)/);
+ assert.doesNotMatch(sql,/DELETE|DROP|md_page_definitions|md_page_components|md_records/i);
 });
-
+ 
 test('named COLLECTION mixes manual items with authorised Object.Field values',async()=>{
  const value=evaluateCollectionFormula(
   'COLLECTION("Mycollection", "a22", "none", @MenuCategory.Name)',
@@ -734,10 +732,10 @@ test('named COLLECTION mixes manual items with authorised Object.Field values',a
   ?{...item.record,__collectionLabel:item.label,__collectionValue:item.value}
   :{Id:'',Name:item,__collectionLabel:item,__collectionValue:item});
  const markup=await renderSmart('smart_tabs',{objectApiName:'MenuCategory',textSource:'@Name',
-  records,tabCount:5,dataCollection:value.value,firstTabCustom:true,firstTabCaption:'All items'});
- for(const label of ['All items','a22','none','Burgers','Drinks'])assert.match(markup,new RegExp(label));
- assert.equal((markup.match(/role="tab"/g)??[]).length,5);
- assert.ok(markup.indexOf('All items')<markup.indexOf('a22'));
+  records,tabCount:5,dataCollection:value.value});
+ for(const label of ['a22','none','Burgers','Drinks'])assert.match(markup,new RegExp(label));
+ assert.equal((markup.match(/role="tab"/g)??[]).length,4);
+ assert.ok(markup.indexOf('a22')<markup.indexOf('none'));
  const sql=read('../../server/src/system-support/migrations/20270303-universal-named-collection-formula.sql');
  assert.match(sql,/'collectionFormula','Collection','Data','Source','expression'/);
  assert.doesNotMatch(sql,/All items|MenuCategory|CODEXTILL|UPDATE md_page_/i);
@@ -1108,19 +1106,15 @@ test('Layout Image Background uses SQL fill palette for only Image and Container
  assert.match(palette,/kind==='fill'\?'No fill'/);
 });
 
-test('three shared Tab source paths preserve Object ID, custom ID and named Collection ID',()=>{
+test('two shared Tabs source paths preserve Object IDs and named Collection IDs',()=>{
  const runtime=read('../src/component-libraries/smart/shared/SmartRuntime.jsx');
- const sql=read('../../server/src/system-support/migrations/20270304-smart-tabs-custom-selected-value.sql');
  const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
  assert.match(runtime,/row\?\.Id\?\?row\?\.id/);
  assert.match(runtime,/collectionName:p\.dataCollection\.key\?\?p\.dataCollection\.name/);
- assert.match(runtime,/const firstTabValue=firstTabCustom/);
- assert.match(runtime,/fire\("change",\{index,value:firstTabValue,isCustom:true/);
- assert.match(sql,/'firstTabValue','First Tab ID','Design','Tabs','expression'/);
- assert.match(ribbon,/property\.id!=='firstTabValue'\|\|properties\.firstTabCustom===true/);
+ assert.doesNotMatch(runtime,/isCustom:true/);
  assert.match(ribbon,/p\.id!=='collectionFormula'/);
 });
-
+ 
 test('Smart Tabs starts on first actual tab and keeps explicit selections across sources',async()=>{
  const base={objectApiName:'Category',textSource:'@Name',tabCount:2,
   records:[{Id:'a',Name:'Food'},{Id:'b',Name:'Drinks'}]};
@@ -1144,11 +1138,11 @@ test('Smart Tabs starts on first actual tab and keeps explicit selections across
  const unselected=await renderSmart('smart_tabs',{...base,records,dataCollection,
   pageState:{collectionSelections:{}}});
  assert.match(unselected,/aria-selected="true"[^>]*>Food<\/button>/);
- const custom=await renderSmart('smart_tabs',{...base,records,dataCollection,
+ const legacy=await renderSmart('smart_tabs',{...base,records,dataCollection,
   firstTabCustom:true,firstTabCaption:'Featured',firstTabValue:'featured',
   pageState:{collectionSelections:{}}});
- assert.match(custom,/aria-selected="true"[^>]*>Featured<\/button>/);
- assert.doesNotMatch(custom,/aria-selected="true"[^>]*>Food<\/button>/);
+ assert.match(legacy,/aria-selected="true"[^>]*>Food<\/button>/);
+ assert.doesNotMatch(legacy,/Featured/);
  const empty=await renderSmart('smart_tabs',{...base,records:[],dataCollection,
   pageState:{collectionSelections:{}}});
  assert.doesNotMatch(empty,/aria-selected="true"/);
