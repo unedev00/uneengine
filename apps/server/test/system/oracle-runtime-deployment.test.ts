@@ -194,3 +194,53 @@ test('failed MCP unit cleanup is bounded, only touches failed broker instances, 
   assert.equal(syntax.status,0,syntax.stderr);
  }
 });
+
+test('OCI latest deployment reuses protected runner and isolates build credentials',()=>{
+ const helper=new URL('../../../../scripts/oracle/metadrive-oci-deploy-latest',import.meta.url);
+ const install=new URL('../../../../scripts/oracle/install-oci-deploy-control.sh',import.meta.url);
+ const operations=new URL('../../../../scripts/oracle/metadrive-mcp-operations',import.meta.url);
+ const broker=new URL('../../../../scripts/oracle/metadrive-mcp-broker.py',import.meta.url);
+ const fullstack=new URL('../../../../scripts/oracle/deploy-full-stack.sh',import.meta.url);
+ const sh=readFileSync(helper,'utf8');
+ const installer=readFileSync(install,'utf8');
+ const ops=readFileSync(operations,'utf8');
+ const brokerPy=readFileSync(broker,'utf8');
+ const pipeline=readFileSync(workflow,'utf8');
+ const full=readFileSync(fullstack,'utf8');
+ assert.ok(sh.includes('[[ $EUID == 0 && $# == 1'));
+ assert.match(sh,/\^\[0-9a-f\]\{40\}/);
+ assert.match(sh,/metadrive-build/);
+ assert.match(sh,/runuser -u metadrive-build/);
+ assert.match(sh,/https:\/\/github\.com\/unedev00\/uneengine\.git/);
+ assert.match(sh,/refs\/heads\/main/);
+ assert.match(sh,/fetched.*==.*sha/);
+ assert.match(sh,/remote_sha.*==.*sha/);
+ assert.match(sh,/script_digest/);
+ assert.match(sh,/updated_digest/);
+ assert.match(sh,/chown -R root:root/);
+ assert.match(sh,/npm --prefix.*run check/);
+ assert.match(sh,/npm --prefix.*run build/);
+ assert.match(sh,/backup/);
+ assert.match(sh,/deploy-full-stack\.sh/);
+ assert.match(sh,/frontend-release\.json/);
+ assert.doesNotMatch(sh,/GITHUB_TOKEN|METADRIVE_GITHUB_DEPLOY_TOKEN|gh auth login|curl.*token/);
+ assert.match(ops,/deploy_latest\)/);
+ assert.match(ops,/deploy_status\)/);
+ assert.match(ops,/systemd-run --quiet --collect/);
+ assert.match(ops,/RuntimeMaxSec=7200/);
+ assert.match(brokerPy,/deploy_latest/);
+ assert.match(brokerPy,/deploy_status/);
+ assert.match(installer,/useradd --system/);
+ assert.match(installer,/metadrive-mcp-broker\.py/);
+ assert.match(pipeline,/Install OCI deployment control using the existing operations socket/);
+ assert.match(full,/metadrive-full-stack\.lock/);
+ if(process.platform!=='win32'){
+  for(const item of [helper,install,operations,fullstack]){
+   const result=spawnSync('bash',['-n',fileURLToPath(item)],{encoding:'utf8'});
+   assert.equal(result.status,0,item.pathname+' '+result.stderr);
+  }
+  const py=spawnSync('python3',['-m','py_compile',fileURLToPath(broker)],{encoding:'utf8',
+   env:{...process.env,PYTHONDONTWRITEBYTECODE:'1'}});
+  assert.equal(py.status,0,py.stderr);
+ }
+});
