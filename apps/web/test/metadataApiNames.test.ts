@@ -1,34 +1,32 @@
-/** Shared editor-side API identifiers. SQL services remain the final authority for uniqueness. */
-export const generateMetadataApiName=(label:string,maxLength=80):string=>{
-  const ascii=label.normalize('NFKD').replace(/[\u0300-\u036f]/g,'');
-  const base=ascii.replace(/[^A-Za-z0-9_]+/g,'_').replace(/_+/g,'_')
-    .replace(/^_+|_+$/g,'').replace(/^[^A-Za-z]+/,'');
-  return base.slice(0,maxLength).replace(/_+$/g,'').toLowerCase();
-};
-export const apiNameIsValid=(name:string):boolean=>/^[A-Za-z][A-Za-z0-9_]*$/.test(name);
-export const metadataNameConflict=(name:string,existing:readonly string[]):boolean=>
-  existing.some(value=>value.toLowerCase()===name.toLowerCase());
-export const suggestMetadataApiName=(base:string,existing:readonly string[],maxLength=80):string=>{
-  const normalized=base.toLowerCase();
-  if(!apiNameIsValid(normalized))return '';
-  if(!metadataNameConflict(normalized,existing))return normalized;
-  for(let index=2;index<10000;index++){
-    const suffix='_'+index;
-    const proposal=normalized.slice(0,maxLength-suffix.length).replace(/_+$/g,'')+suffix;
-    if(!metadataNameConflict(proposal,existing))return proposal;
-  }
-  return '';
-};
+import assert from 'node:assert/strict';
+import {test} from 'node:test';
+import {generateMetadataApiName,metadataNameConflict,suggestMetadataApiName,apiNameIsValid,suggestMetadataApiNameWithSuffix} from '../src/core/metadata/Definitions/metadataApiNames';
 
-/** Reserve a platform metadata suffix while suggesting a case-insensitive unique name. */
-export const suggestMetadataApiNameWithSuffix=(
-  label:string,existing:readonly string[],suffix:string,maxLength=80
-):string=>{
-  if(!suffix||!/^[A-Za-z0-9_]+$/.test(suffix)||maxLength<=suffix.length)return '';
-  const base=generateMetadataApiName(label,maxLength-suffix.length);
-  if(!base)return '';
-  const reserved=existing.filter(name=>name.toLowerCase().endsWith(suffix.toLowerCase()))
-    .map(name=>name.slice(0,-suffix.length));
-  const available=suggestMetadataApiName(base,reserved,maxLength-suffix.length);
-  return available?available+suffix.toLowerCase():'';
-};
+test('generates valid, deterministic metadata identifiers from labels',()=>{
+  assert.equal(generateMetadataApiName('Customer Status'),'customer_status');
+  assert.equal(generateMetadataApiName('  Invoice - Number  '),'invoice_number');
+  assert.equal(generateMetadataApiName('123 Customer'),'customer');
+  assert.equal(generateMetadataApiName('Résumé'),'resume');
+  assert.equal(generateMetadataApiName('!!!'),'');
+});
+test('duplicate detection is case-insensitive and suggestions never overwrite',()=>{
+  assert.equal(metadataNameConflict('customer_status',['customer_status']),true);
+  assert.equal(suggestMetadataApiName('customer_status',['customer_status','Customer_Status_2']),'customer_status_3');
+  assert.equal(suggestMetadataApiName('unique',['Existing']),'unique');
+});
+test('validates names before server submission',()=>{
+  assert.equal(apiNameIsValid('Valid_2'),true);
+  assert.equal(apiNameIsValid('2_Invalid'),false);
+  assert.equal(apiNameIsValid('Invalid Name'),false);
+});
+
+test('custom metadata suffix stays at the end after case-insensitive collision resolution',()=>{
+  assert.equal(suggestMetadataApiNameWithSuffix('Total Value',['total_value__c'],'__c'),'total_value_2__c');
+  assert.equal(suggestMetadataApiNameWithSuffix('Résumé',['Resume__c','RESUME_2__C'],'__c'),'resume_3__c');
+  assert.equal(suggestMetadataApiNameWithSuffix('123 Invoice',['Invoice__c'],'__c'),'invoice_2__c');
+  assert.equal(suggestMetadataApiNameWithSuffix('!!!',[],'__c'),'');
+  assert.equal(suggestMetadataApiNameWithSuffix('Active',[],'__c',8),'activ__c');
+  const proposed=suggestMetadataApiNameWithSuffix('Very Long Description',['very__c'],'__c',11);
+  assert.ok(proposed.length<=11&&proposed.endsWith('__c'));
+  assert.equal(suggestMetadataApiNameWithSuffix('Valid',[],'$',80),'');
+});
