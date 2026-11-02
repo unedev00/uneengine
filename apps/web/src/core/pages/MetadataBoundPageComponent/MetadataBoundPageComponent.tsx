@@ -587,13 +587,15 @@ export default function MetadataBoundPageComponent({
       // Multi-row components resolve their per-row values inside their own renderer.
       ...(contextRecords.length===1 ? {record:contextRecords[0]} : {}),
       ...(objectApiName ? { records: contextRecords } : {}),
+      ...presented,
+      // A typed collection is the Data Source; presenter defaults must not
+      // overwrite its permission-checked, formula-filtered rows.
       ...(dataCollectionRows?{records:dataCollectionRows}:{}),
       ...(!dataCollectionRows&&objectApiName ? {recordPagination:{
         limit:recordPageSize,offset:recordOffset,total:recordTotal,
         hasPrevious:recordOffset>0,hasNext:recordOffset+recordPageSize<recordTotal,
         available:recordQuery.serverFilterable
       }} : {}),
-      ...presented,
       ...(toggleBinding?{toggleFieldBound:true,toggleFieldReady:toggleCanWrite,
         toggleFieldError:toggleBinding.error??'',
         value:toggleBinding.ready?toggleBinding.value:false,
