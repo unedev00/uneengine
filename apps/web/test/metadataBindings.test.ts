@@ -471,3 +471,62 @@ test('Field and Formula modes select the active record query without deleting sa
    'legacy pages without an explicit mode retain combined rules');
  assert.equal(saved.filters.length,1);
 });
+
+test('optional blank Page State skips only the chosen rule; AND/OR retain active conditions',()=>{
+ const fields=[
+  {apiName:'Category',label:'Category',dataType:'Text'},
+  {apiName:'Active',label:'Active',dataType:'Boolean'}
+ ] as any;
+ const category={field:'Category',operator:'Equals',
+  value:{source:'PageState',key:'categoryId',skipWhenBlank:true}};
+ const active={field:'Active',operator:'Equals',value:'true'};
+ const records=[
+  {Category:'cat1',Active:true},{Category:'cat2',Active:true},
+  {Category:'cat2',Active:false}
+ ];
+ const missing={pageState:{}};
+ const selected={pageState:{categoryId:'cat1'}};
+ assert.deepEqual(pageComponentRecordQuery([category],fields,missing),{
+  blocked:false,serverFilterable:true
+ });
+ assert.deepEqual(filterPageComponentRecords(records,[category],fields,missing),records);
+ assert.deepEqual(pageComponentRecordQuery([category],fields,selected).filters,
+  [{field:'Category',operator:'eq',value:'cat1'}]);
+ assert.deepEqual(filterPageComponentRecords(records,[category],fields,selected),
+  [records[0]]);
+ const orQuery=pageComponentRecordQuery([category,active],fields,missing,'OR');
+ assert.equal(orQuery.blocked,false);
+ assert.deepEqual(orQuery.filters,[{field:'Active',operator:'eq',value:'true'}]);
+ assert.deepEqual(filterPageComponentRecords(records,[category,active],fields,missing,'OR'),
+  [records[0],records[1]],'an ignored OR clause must never match all records');
+ assert.deepEqual(filterPageComponentRecords(records,[category,active],fields,missing,'AND'),
+  [records[0],records[1]]);
+ const two=pageComponentRecordQuery([category,active],fields,selected,'OR');
+ assert.equal(two.filterLogic,'1 OR 2');
+ assert.equal(two.filters?.length,2);
+ assert.deepEqual(filterPageComponentRecords(records,[category,active],fields,selected,'AND'),
+  [records[0]]);
+ const strict={...category,value:{source:'PageState',key:'categoryId'}};
+ assert.equal(pageComponentRecordQuery([strict],fields,missing).blocked,true,
+  'missing required Page State must remain fail-closed');
+ assert.equal(pageComponentRecordQuery([category],fields,{pageState:{categoryId:0}}).blocked,false);
+ assert.equal(pageComponentRecordQuery([category],fields,{pageState:{categoryId:false}}).blocked,false);
+ const invalid={...category,value:{source:'PageState',key:'',skipWhenBlank:true}};
+ assert.equal(pageComponentRecordQuery([invalid],fields,missing).blocked,true,
+  'optional filters with invalid metadata are not silently ignored');
+});
+
+test('optional Page State conditions can coexist with a legacy formula without widening it',()=>{
+ const fields=[
+  {apiName:'Category',label:'Category',dataType:'Text'},
+  {apiName:'Active',label:'Active',dataType:'Boolean'}
+ ] as any;
+ const rules=[{field:'Category',operator:'Equals',
+  value:{source:'PageState',key:'categoryId',skipWhenBlank:true}}];
+ const noCategory=pageComponentRecordQuery(rules,fields,{pageState:{}},'AND','@Active = TRUE');
+ assert.equal(noCategory.blocked,false,noCategory.error);
+ assert.deepEqual(noCategory.filters,[{field:'Active',operator:'eq',value:'true'}]);
+ const selected=pageComponentRecordQuery(rules,fields,{pageState:{categoryId:'cat1'}},'AND','@Active = TRUE');
+ assert.equal(selected.blocked,false,selected.error);
+ assert.equal(selected.filters?.length,2);
+});
