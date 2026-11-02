@@ -13,18 +13,18 @@ export type PageNamedCollection={name:string;key?:string;items:unknown[]};
 type SourceResult={key:string;records:Record<string,Row[]>;error?:string};
 
 export function collectionFormulaReferences(formula:string,primaryObject=''):Array<{object:string;field:string}>{
- if(!/^\s*=?\s*COLLECTION\s*\(/i.test(formula))return [];
+ if(!/\bCOLLECTION\s*\(/i.test(formula))return [];
  const found=new Map<string,{object:string;field:string}>();
- const visit=(node:Expression):void=>{
-  if(node.kind==='reference'){
+ const visit=(node:Expression,insideCollection=false):void=>{
+  if(node.kind==='reference'&&insideCollection){
    const match=/^([A-Za-z][A-Za-z0-9_]*)\.([A-Za-z][A-Za-z0-9_]*)$/.exec(node.value);
    if(match)found.set(match[0],{object:match[1],field:match[2]});
    else if(primaryObject&&/^[A-Za-z][A-Za-z0-9_]*$/.test(node.value)
      &&!['state','session','event'].includes(node.value.toLowerCase()))
      found.set(primaryObject+'.'+node.value,{object:primaryObject,field:node.value});
-  }else if(node.kind==='call')node.args.forEach(visit);
-  else if(node.kind==='unary')visit(node.value);
-  else if(node.kind==='binary'){visit(node.left);visit(node.right);}
+  }else if(node.kind==='call')node.args.forEach(arg=>visit(arg,insideCollection||node.name==='COLLECTION'));
+  else if(node.kind==='unary')visit(node.value,insideCollection);
+  else if(node.kind==='binary'){visit(node.left,insideCollection);visit(node.right,insideCollection);}
  };
  try{visit(new Parser(tokenize(formula.trim().replace(/^=\s*/,''))).parse());}catch{/* evaluator reports syntax errors */}
  return [...found.values()];
@@ -44,7 +44,7 @@ export function usePageCollectionFormula(
  // collectionFormula metadata remains readable for previously published pages.
  const expressions=Object.entries(properties).filter(([key,value])=>
    key!=='collectionFormula'&&typeof value==='string').map(([,value])=>String(value).trim());
- const explicit=expressions.find(value=>/^=\s*COLLECTION\s*\(/i.test(value))
+ const explicit=expressions.find(value=>/^=\s*(?:IF|IFERROR|COLLECTION)\s*\(/i.test(value))
    ??expressions.find(value=>/^=\s*@[A-Za-z][A-Za-z0-9_]{0,79}$/.test(value));
  const reference=expressions.find(value=>/^@[A-Za-z][A-Za-z0-9_]{0,79}$/.test(value));
  const listExpression=expressions.find(value=>Boolean(parseCollectionListBinding(value,primaryObject)));
@@ -90,7 +90,7 @@ export function usePageCollectionFormula(
   return named?{collection:named,error:null,loading:false}:
    {collection:null,error:null,loading:false};
  }
- if(!listBinding&&!/^COLLECTION\s*\(/i.test(source))
+ if(!listBinding&&!/\bCOLLECTION\s*\(/i.test(source))
   return {collection:null,error:null,loading:false};
  const notSelected=refs.find(ref=>!selected.includes(ref.object));
  if(notSelected)return {collection:null,error:'Select Object '+notSelected.object+' in Data Source before referencing it',loading:false};
@@ -108,7 +108,8 @@ export function usePageCollectionFormula(
   return {collection:{name:'__filtered_list__',
     items:filteredCollectionItems(criteria,rows)},error:null,loading:false};
  }
- const resolved=evaluateCollectionFormula(source,sources,{state:pageState,session:{id:sessionId},primaryObject});
+ const resolved=evaluateCollectionFormula(source,sources,{state:pageState,session:{id:sessionId},primaryObject,
+  namedCollections:registry.collections});
  const value=resolved.value as PageNamedCollection|null;
  return {collection:value?{...value,key:formulaCollectionReferenceKey(value.name)}:null,
    error:resolved.error??null,loading:false};
@@ -120,7 +121,7 @@ export function usePageCollectionFormula(
    lastValid.current={object:primaryObject,collection:result.collection};
  const visible=recoverable?{collection:lastValid.current?.object===primaryObject
    ?lastValid.current.collection:null,error:null,loading:false}:result;
- const owned=/^COLLECTION\s*\(/i.test(source)?visible.collection:null;
+ const owned=/\bCOLLECTION\s*\(/i.test(source)?visible.collection:null;
  const identity=owned?JSON.stringify(owned):'';
  useEffect(()=>registerSessionCollection(scope,componentId,owned),[scope,componentId,identity]);
  const duplicate=registry.errors[componentId];
