@@ -89,6 +89,7 @@ import {
   Monitor,
   MoreHorizontal,
   Pencil,
+  Power,
   Plus,
   Puzzle,
   Smartphone,
@@ -3047,8 +3048,28 @@ function PageBuilder({
             </select>
           </label>}
         </div>
-        <div className="page-manager-table-scroll"><table className="records-table page-manager-table"><thead><tr><th>Page name</th><th>API Name</th><th>Application</th><th>Version</th><th>Type</th><th>Related object</th><th>Device</th><th>Dimensions</th><th>Orientation</th><th>Last modified</th><th>Status</th><th>Actions</th></tr></thead>
+        <div className="page-manager-table-scroll"><table className="records-table page-manager-table"><thead><tr><th scope="col" className="page-manager-actions-heading">Actions</th><th>Page name</th><th>API Name</th><th>Application</th><th>Version</th><th>Type</th><th>Related object</th><th>Device</th><th>Dimensions</th><th>Orientation</th><th>Last modified</th><th>Status</th></tr></thead>
         <tbody>{paginatedPages.map(item=><tr key={item.apiName}>
+          <td className="page-manager-actions">
+            <div className="page-manager-action-icons" role="group" aria-label={'Actions for '+item.label}>
+              <button className="page-manager-icon-action" type="button" disabled={saving}
+                aria-label={'Edit page properties for '+item.label} title="Edit page properties"
+                onClick={()=>setPageDetailsApi(item.apiName)}><Pencil size={16}/></button>
+              <button className="page-manager-icon-action" type="button"
+                aria-label={'Design '+item.label} title="Open page designer"
+                onClick={()=>selectSavedPage(item.apiName)}><PanelsTopLeft size={16}/></button>
+              <button className={'page-manager-icon-action page-manager-toggle'+(item.status==='Active'?' is-active':'')} type="button"
+                disabled={saving} aria-pressed={item.status==='Active'}
+                aria-label={(item.status==='Active'?'Deactivate ':'Activate ')+item.label}
+                title={item.status==='Active'?'Deactivate page':'Activate page'}
+                onClick={()=>void(item.status==='Active'?onDeactivate(item.apiName):savePage('Active',item,true))}><Power size={16}/></button>
+              <button className="page-manager-icon-action page-manager-delete" type="button"
+                disabled={saving||Boolean(archivingPageApiName)}
+                aria-label={(archivingPageApiName===item.apiName?'Deleting ':'Delete ')+item.label}
+                title={archivingPageApiName===item.apiName?'Deleting page…':'Delete page'}
+                onClick={()=>setPendingArchivePageApiName(item.apiName)}><Trash2 size={16}/></button>
+            </div>
+          </td>
           <td><button type="button" className="page-manager-page-link" onClick={()=>selectSavedPage(item.apiName)}>{item.label}</button></td><td title={item.apiName}><code>{item.apiName}</code></td>
           <td>{apps.find(app=>app.navigationPageApiNames.includes(item.apiName)
             ||(item.activationAssignments??[]).some(a=>a.appId===app.apiName))?.label??'—'}</td>
@@ -3056,15 +3077,7 @@ function PageBuilder({
           <td>{item.pageType}</td><td>{item.targetObject ? objects.find(object=>object.apiName===item.targetObject)?.label ?? item.targetObject : 'Not object-specific'}</td><td>{pageDeviceLabel(item)}</td><td>{item.canvasWidth} × {item.canvasHeight} px</td><td>{canvasOrientation(item.canvasWidth,item.canvasHeight)}</td>
           <td>{item.updatedAt ? new Date(item.updatedAt).toLocaleDateString() : '—'}</td>
           <td><span className={item.status === 'Active' ? 'page-status-badge active' : 'page-status-badge'}>{item.status}</span></td>
-          <td className="page-manager-actions"><button className="btn btn-small" type="button" disabled={saving}
-            aria-label={'Edit page properties for '+item.label} onClick={()=>setPageDetailsApi(item.apiName)}><Pencil size={14}/> Edit</button>
-          <button className="btn btn-small" type="button"
-            aria-label={'Design '+item.label} onClick={()=>selectSavedPage(item.apiName)}><PanelsTopLeft size={14}/> Design</button>
-          <button className="btn btn-small page-manager-toggle" type="button" disabled={saving} aria-label={(item.status==='Active'?'Deactivate ':'Activate ')+item.label} onClick={()=>void(item.status==='Active'?onDeactivate(item.apiName):savePage('Active',item,true))}>{item.status==='Active'?'Deactivate':'Activate'}</button>
-          <button className="btn btn-small" type="button" disabled={saving||Boolean(archivingPageApiName)}
-            aria-label={'Delete '+item.label} onClick={()=>setPendingArchivePageApiName(item.apiName)}>
-            <Trash2 size={14}/>{archivingPageApiName===item.apiName?'Deleting…':'Delete'}
-          </button></td>
+
         </tr>)}</tbody></table>{!visiblePages.length && <div className="records-empty">{!recordPageContext && pageListTypeTab === 'Record Page' ? 'Record Pages are managed inside Object Manager. Choose an object there to manage its record pages.' : 'No pages match the selected filter. Create a new page to begin.'}</div>}</div>
         <nav className="flow-existing-pagination" aria-label="Page list pagination">
           <span>{visiblePages.length} pages · Page {safePageListPage} of {pageListPageCount}</span>
