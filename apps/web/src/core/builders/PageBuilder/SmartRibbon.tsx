@@ -48,6 +48,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  };
  const [filtersOpen,setFiltersOpen]=useState(false);
  const [filterTarget,setFilterTarget]=useState('Record');
+ const [filterScope,setFilterScope]=useState<'Records'|'SelectedValue'>('Records');
  const [selectedDataField,setSelectedDataField]=useState<string|null>(null);
  const [daysOpen,setDaysOpen]=useState(false);
  const daysButton=useRef<HTMLButtonElement>(null);
@@ -93,7 +94,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  const objectName=sourceObjectNames[0]??'';
  const object=objects.find(o=>o.apiName===objectName);
  const update=(key:string,value:unknown)=>onChange({...properties,[key]:value});
- const openFilters=(target:string)=>{setFilterTarget(target);setFiltersOpen(true);};
+ const openFilters=(target:string)=>{setFilterTarget(target);setFilterScope('Records');setFiltersOpen(true);};
  const storedFieldFilters=properties.dataFieldFilters;
  const fieldFilterRule=(id:string)=>scopedFieldRule(storedFieldFilters,id);
  const updateFieldFilter=(id:string,patch:Partial<ScopedFieldFilter>)=>{
@@ -132,6 +133,9 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    ?displayProperties.find(p=>p.id===selectedDataField&&isDataFormula(p)):undefined;
  const activeDataKey=activeDataProperty?.valueKeys?.[api]??activeDataProperty?.id??'';
  const selectedFieldRule=activeDataProperty?fieldFilterRule(activeDataProperty.id):undefined;
+ // Record filtering and output-only visibility are different operations.
+ const scopedFilterId=filterScope==='SelectedValue'&&activeDataProperty?activeDataProperty.id:null;
+ const modalFieldRule=scopedFilterId?fieldFilterRule(scopedFilterId):undefined;
  const selectedFieldFilterCount=selectedFieldRule?.filters.length??0;
  const activeDataEnabled=Boolean(activeDataProperty&&activeDataProperty.components.includes(api)&&
    (!sharedPropertyIds||sharedPropertyIds.includes(activeDataProperty.id)));
@@ -450,23 +454,35 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
        role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)setFiltersOpen(false);}}>
     <section className="smart-dialog smart-filter-dialog" role="dialog" aria-modal="true"
       aria-label="Record filters" onKeyDown={e=>{if(e.key==='Escape')setFiltersOpen(false);}}>
-     <header><div><strong>Filter Records</strong><span>{object?.label??'Object'} · {filterTarget}</span></div>
+     <header><div><strong>Filter Records</strong>
+       <span>{object?.label??'Object'} · {scopedFilterId?filterTarget+' only':'All records'}</span></div>
        <button type="button" autoFocus onClick={()=>setFiltersOpen(false)}>Done</button></header>
      <div className="smart-filter-dialog-body">
-       {object?<RecordFilterEditor title={object.label+' records'} fields={object.fields??[]} objects={objects} rootObjectApiName={objectName}
-         filters={activeDataProperty?(selectedFieldRule?.filters??[]):Array.isArray(properties.filters)?properties.filters:[]}
-         formula={activeDataProperty?(selectedFieldRule?.filterFormula??''):typeof properties.filterFormula==='string'?properties.filterFormula:''}
-         mode={activeDataProperty
-           ?(selectedFieldRule?.filterMode??((selectedFieldRule?.filterFormula??'').trim()?'Formula':'Field'))
+       {object&&activeDataProperty&&<div className="smart-filter-scope">
+         <label htmlFor="smart-filter-target">Apply filters to</label>
+         <select id="smart-filter-target" aria-label="Filter target" value={filterScope}
+           onChange={event=>setFilterScope(event.target.value==='SelectedValue'?'SelectedValue':'Records')}>
+           <option value="Records">{object.label} records (filter the list)</option>
+           <option value="SelectedValue">{activeDataProperty.label} only (filter displayed value)</option>
+         </select>
+         <small>{scopedFilterId
+           ?'Only the selected display field is affected; the record list stays unchanged.'
+           :'All record rows are filtered before displaying this component.'}</small>
+       </div>}
+       {object?<RecordFilterEditor title={scopedFilterId?filterTarget+' value':object.label+' records'} fields={object.fields??[]} objects={objects} rootObjectApiName={objectName}
+         filters={scopedFilterId?(modalFieldRule?.filters??[]):Array.isArray(properties.filters)?properties.filters:[]}
+         formula={scopedFilterId?(modalFieldRule?.filterFormula??''):typeof properties.filterFormula==='string'?properties.filterFormula:''}
+         mode={scopedFilterId
+           ?(modalFieldRule?.filterMode??((modalFieldRule?.filterFormula??'').trim()?'Formula':'Field'))
            :(properties.filterMode==='Field'||properties.filterMode==='Formula'?properties.filterMode
              :typeof properties.filterFormula==='string'&&properties.filterFormula.trim()?'Formula':'Field')}
-         onModeChange={filterMode=>activeDataProperty
-           ?updateFieldFilter(activeDataProperty.id,{filterMode})
+         onModeChange={filterMode=>scopedFilterId
+           ?updateFieldFilter(scopedFilterId,{filterMode})
            :onChange({...properties,filterMode})}
-         onFormulaChange={filterFormula=>activeDataProperty?updateFieldFilter(activeDataProperty.id,{filterFormula}):onChange({...properties,filterFormula})}
-         logic={activeDataProperty?(selectedFieldRule?.filterLogic??'AND'):properties.filterLogic==='OR'?'OR':'AND'}
-         onLogicChange={filterLogic=>activeDataProperty?updateFieldFilter(activeDataProperty.id,{filterLogic}):onChange({...properties,filterLogic})}
-         onChange={filters=>activeDataProperty?updateFieldFilter(activeDataProperty.id,{filters}):onChange({...properties,filters})}/>:
+         onFormulaChange={filterFormula=>scopedFilterId?updateFieldFilter(scopedFilterId,{filterFormula}):onChange({...properties,filterFormula})}
+         logic={scopedFilterId?(modalFieldRule?.filterLogic??'AND'):properties.filterLogic==='OR'?'OR':'AND'}
+         onLogicChange={filterLogic=>scopedFilterId?updateFieldFilter(scopedFilterId,{filterLogic}):onChange({...properties,filterLogic})}
+         onChange={filters=>scopedFilterId?updateFieldFilter(scopedFilterId,{filters}):onChange({...properties,filters})}/>:
          <p>Choose an Object first to configure the record conditions.</p>}
      </div>
     </section></div>,document.body)}
