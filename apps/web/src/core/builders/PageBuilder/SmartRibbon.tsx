@@ -172,6 +172,9 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
       activeDataProperty.id==='imageSource'?'image':'text',
       api==='smart_toggle'&&activeDataProperty.id==='textSource')
    :[];
+ const collectionOptions=[...new Set(stateOptions.filter(item=>item.source==='CollectionState')
+   .map(item=>item.key.split('.')[0]))].map(name=>({reference:'@'+name,label:name+' Collection'}));
+ const selectableDataSources=[...selectableDataFields,...collectionOptions];
  const activeSummaryLabel=activeDataProperty&&api==='smart_cart'
    ?cartSummaryLabels[activeDataProperty.id]:undefined;
  const changeActiveDataFormula=(next:string)=>{
@@ -288,7 +291,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
        onChange={event=>{if(enabled)update(summaryLabel.key,event.target.value);}}/>:
        <span className="smart-formula-prefix" title={title}>{shortLabel}</span>}
      <SmartFormulaField value={String(value)} onChange={write}
-       validate={undefined}
+       validate={validateCollection} stateOptions={stateOptions}
        label={title} disabled={!enabled}
        singleFieldOnly={api==='smart_toggle'&&property.id==='textSource'}
        fields={api==='smart_toggle'&&property.id==='textSource'
@@ -426,12 +429,12 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
         </div>
         <select className="smart-data-field-picker" aria-label="Choose display field"
           title={activeDataProperty?'Choose a field for '+activeDataProperty.label:'Select a Data property first'}
-          disabled={!activeDataEnabled||!selectableDataFields.length}
-          value={selectableDataFields.some(field=>field.reference===activeDataValue.trim())
+          disabled={!activeDataEnabled||!selectableDataSources.length}
+          value={selectableDataSources.some(field=>field.reference===activeDataValue.trim())
             ?activeDataValue.trim():''}
           onChange={event=>{if(event.target.value)changeActiveDataFormula(event.target.value);}}>
           <option value="">Choose field…</option>
-          {selectableDataFields.map(field=><option key={field.reference} value={field.reference}>
+          {selectableDataSources.map(field=><option key={field.reference} value={field.reference}>
             {field.label} ({field.reference})
           </option>)}
         </select>
