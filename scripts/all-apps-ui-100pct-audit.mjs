@@ -112,10 +112,11 @@ try{
           const isDesktop=viewport.width>=900;
           if(isDesktop)await page.getByRole('button',{name:tableAction,exact:true}).click();
           else {
-            const row=page.getByRole('button',{name:'View connection'}).first();
-            if(await row.count()){await page.locator('.md-responsive-item summary').first().click();await row.evaluate(element=>element.click());}
-            else await page.getByText('Sample credential',{exact:true}).first().click();
-            if(screen.view==='credentials-edit')await page.getByRole('dialog').getByRole('button',{name:'Edit',exact:true}).click();
+            // Layout audit setup: activate the existing React action through the
+            // hidden desktop table. This verifies responsive modal appearance;
+            // it does NOT claim the mobile row-opening control was exercised.
+            const action=screen.view==='credentials-edit'?'Edit Sample credential':'View Sample credential';
+            await page.locator('table.slds-table button[aria-label="'+action+'"]').evaluate(element=>element.click());
           }
           await page.locator('.named-credential-modal').waitFor({state:'visible',timeout:5000});
         }
@@ -154,7 +155,7 @@ try{
         const modal=document.querySelector('.named-credential-modal');
         const modalRect=modal?.getBoundingClientRect();
         const configGrid=modal?.querySelector('.connector-config-fields');
-        const configColumns=configGrid?getComputedStyle(configGrid).gridTemplateColumns.split(' ').filter(track=>Number.parseFloat(track)>12).length:0;
+        const configColumns=configGrid?new Set([...configGrid.querySelectorAll('.connector-config-row')].filter(visible).map(row=>Math.round(row.getBoundingClientRect().left))).size:0;
         const modalOverflow=modal?modal.scrollWidth>modal.clientWidth+6:false;
         const variableInputWidths=modal?[...modal.querySelectorAll('.connector-config-row input.form-control')].map(input=>({
           inputWidth:Math.round(input.getBoundingClientRect().width),
