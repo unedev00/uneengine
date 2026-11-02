@@ -278,6 +278,10 @@ function SmartTabs({p,record,fire}){
  React.useEffect(()=>{
   if(!tabs.length||p.loading||p.previewOnly||p.builderPreview||
     !(hasCollection||stateKey)||typeof p.onAction!=="function")return;
+  // Automatic default selection is not permission to execute an authored Flow
+  // or arbitrary action during page load. State bindings are safe to initialise.
+  if(changeAction&&changeAction.actionType!=="PageState"&&
+    !(changeAction.actionType==="Formula"&&formulaStateKey))return;
   if(indexForSelection>=0){autoSelected.current=null;return;}
   const key=String(p.pageSessionKey??"")+"|"+String(p.componentId??"")+"|"+
    String(hasCollection?p.dataCollection.name:stateKey)+"|"+String(firstItemId??"");
