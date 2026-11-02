@@ -4,7 +4,7 @@ import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {evaluateFieldExpression} from '../src/component-libraries/shared/FieldExpression.js';
+import {evaluateFieldExpression,evaluateCollectionFormula} from '../src/component-libraries/shared/FieldExpression.js';
 import {loadComponentCatalog,buildBundledComponent} from '../../../scripts/component-catalog.mjs';
 const read=path=>readFileSync(new URL(path,import.meta.url),'utf8');
 test('Smart Formula uses Excel semantics for maths, literals, fields and &',()=>{
@@ -682,6 +682,66 @@ test('Smart Tabs renders only bounded matching record labels from a filtered Obj
  assert.match(empty,/No matching records/);
 });
 
+
+test('Smart Tabs first tab is optional, formula-capable, and never replaces a real category',async()=>{
+ const base={objectApiName:'MenuCategory',textSource:'@Name',tabCount:2,
+  records:[{Id:'category-1',Name:'Desserts'},{Id:'category-2',Name:'Drinks'}]};
+ const original=await renderSmart('smart_tabs',base);
+ assert.doesNotMatch(original,/All items|Custom tab/);
+ assert.equal((original.match(/role="tab"/g)??[]).length,2);
+ const customised=await renderSmart('smart_tabs',{...base,firstTabCustom:true,firstTabCaption:'All items'});
+ assert.match(customised,/All items/);
+ assert.match(customised,/Desserts/);
+ assert.match(customised,/Drinks/);
+ assert.equal((customised.match(/role="tab"/g)??[]).length,3);
+ assert.ok(customised.indexOf('All items')<customised.indexOf('Desserts'));
+ const dynamicCaption=await renderSmart('smart_tabs',{...base,firstTabCustom:true,
+  firstTabCaption:'"Hello " & @state.displayName',pageState:{displayName:'Visitor'}});
+ assert.match(dynamicCaption,/Hello Visitor/);
+ const disabled=await renderSmart('smart_tabs',{...base,firstTabCustom:false,firstTabCaption:'All items'});
+ assert.doesNotMatch(disabled,/All items/);
+ const runtime=read('../src/component-libraries/smart/shared/SmartRuntime.jsx');
+ assert.match(runtime,/firstTabCustom&&index===0/);
+ assert.match(runtime,/value:"",isCustom:true/);
+ assert.match(runtime,/index-\(firstTabCustom\?1:0\)/);
+});
+
+test('Optional leading Smart Tab is SQL-configured and has no app-specific default',()=>{
+ const sql=read('../../server/src/system-support/migrations/20270302-smart-tabs-optional-first-tab.sql');
+ const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
+ for(const key of ['firstTabCustom','firstTabCaption'])assert.ok(sql.includes("'"+key+"'"));
+ assert.match(sql,/SELECT 'smart_tabs',p.property_key,true/);
+ assert.match(sql,/'Design','Tabs'/);
+ assert.match(sql,/'false'::jsonb/);
+ assert.doesNotMatch(sql,/All items|MenuCategory|CODEXTILL|DELETE FROM md_page_|UPDATE md_page_/i);
+ assert.match(ribbon,/property.id!=='firstTabCaption'\|\|properties.firstTabCustom===true/);
+});
+
+test('named COLLECTION mixes manual items with authorised Object.Field values',async()=>{
+ const value=evaluateCollectionFormula(
+  'COLLECTION("Mycollection", "a22", "none", @MenuCategory.Name)',
+  {MenuCategory:[{Id:'c1',Name:'Burgers'},{Id:'c2',Name:'Drinks'}]});
+ assert.equal(value.error,undefined);
+ assert.equal(value.value.name,'Mycollection');
+ assert.equal(value.value.items.length,4);
+ assert.deepEqual(value.value.items.slice(0,2),['a22','none']);
+ assert.equal(value.value.items[2].label,'Burgers');
+ assert.equal(value.value.items[2].value,'c1');
+ assert.equal(value.value.items[3].label,'Drinks');
+ assert.match(evaluateCollectionFormula('COLLECTION("1bad", "none")').error,/name/);
+ assert.match(evaluateCollectionFormula('COLLECTION("Missing", @Missing.Name)').error,/unavailable|field/);
+ const records=value.value.items.map((item,index)=>item&&typeof item==='object'
+  ?{...item.record,__collectionLabel:item.label,__collectionValue:item.value}
+  :{Id:'',Name:item,__collectionLabel:item,__collectionValue:item});
+ const markup=await renderSmart('smart_tabs',{objectApiName:'MenuCategory',textSource:'@Name',
+  records,tabCount:5,dataCollection:value.value,firstTabCustom:true,firstTabCaption:'All items'});
+ for(const label of ['All items','a22','none','Burgers','Drinks'])assert.match(markup,new RegExp(label));
+ assert.equal((markup.match(/role="tab"/g)??[]).length,5);
+ assert.ok(markup.indexOf('All items')<markup.indexOf('a22'));
+ const sql=read('../../server/src/system-support/migrations/20270303-universal-named-collection-formula.sql');
+ assert.match(sql,/'collectionFormula','Collection','Data','Source','expression'/);
+ assert.doesNotMatch(sql,/All items|MenuCategory|CODEXTILL|UPDATE md_page_/i);
+});
 
 test('Dynamic Tabs use Object text values inside tabs even when old static tabs were saved',async()=>{
  const records=[{Id:'a',Barcode:'DEMO10001',Name:'First'},

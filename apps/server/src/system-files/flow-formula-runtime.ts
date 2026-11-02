@@ -16,6 +16,7 @@ import {
   formulaWeekday,formulaIsoParts,isFormulaDate,parseFormulaDateTime
 } from '../expression-engine/FormulaDate.js';
 import {roundFormulaNumber} from '../expression-engine/FormulaNumeric.js';
+import {createNamedFormulaCollection} from '../expression-engine/FormulaCollection.js';
 import type {Expression} from '../expression-engine/FormulaParser.js';
 
 type FormulaResolver=(name:string)=>unknown;
@@ -193,6 +194,12 @@ function evaluateNode(node:Expression,resolve:FormulaResolver,context:FormulaEva
     case 'TEXT':arity(1);return formulaText(argument(0));
     case 'VALUE':arity(1);return numeric(argument(0));
     case 'LEN':arity(1);return textPoints(argument(0)).length;
+    case 'COLLECTION':{
+      arity(2,20);
+      const name=argument(0);
+      const items=node.args.slice(1).map((_,index)=>argument(index+1));
+      return createNamedFormulaCollection(name,items);
+    }
     case 'COLLECTIONCOUNT':case 'COLLECTIONSUM':{
       arity(node.name==='COLLECTIONCOUNT'?1:2);
       const source=argument(0);
@@ -519,7 +526,7 @@ export function validateFlowFormula(expression:string,
 }
 
 export type FormulaValueType='Number'|'Text'|'Checkbox'|'Date'|'DateTime'|'Time'
-  |'Picklist'|'MultiPicklist'|'Geolocation'|'Null';
+  |'Picklist'|'MultiPicklist'|'Geolocation'|'Collection'|'Null';
 type FormulaTypeResolver=(reference:string)=>FormulaValueType|null;
 const formulaTextTypes=new Set<FormulaValueType>(['Text','Picklist']);
 const formulaNumeric=(type:FormulaValueType)=>type==='Number';
@@ -599,6 +606,7 @@ export function inferFlowFormulaType(expression:string,resolve:FormulaTypeResolv
     const requireText=(index:number)=>requireType(index,['Text','Picklist']);
     const requireNumber=(index:number)=>requireType(index,['Number']);
     switch(node.name){
+      case 'COLLECTION':arity(2,20);requireText(0);return 'Collection';
       case 'ISCHANGED':arity(1);triggerFieldReference(node.args[0]);return 'Checkbox';
       case 'ISNEW':case 'ISCLONE':arity(0);return 'Checkbox';
       case 'PRIORVALUE':arity(1);triggerFieldReference(node.args[0]);return args[0];

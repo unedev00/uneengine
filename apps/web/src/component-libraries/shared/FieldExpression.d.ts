@@ -16,3 +16,10 @@ export function evaluateFieldExpressionDetailed(
 export class FieldExpressionEvaluationError extends Error {
  constructor(message:string);
 }
+
+export type FormulaNamedCollection={name:string;items:unknown[]};
+export function evaluateCollectionFormula(
+ formula:unknown,
+ sources?:Readonly<Record<string,ReadonlyArray<Record<string,unknown>>>>,
+ context?:Readonly<Record<string,unknown>>
+):{value:FormulaNamedCollection|null;error?:string};

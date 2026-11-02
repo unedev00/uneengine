@@ -28,6 +28,7 @@ export function needsMetadataComponentRuntime(properties: Record<string, unknown
   if(state && typeof state==='object' && !Array.isArray(state)
      && Object.keys(state).length>0)return true;
   if(properties.filterMode!=='Field'&&typeof properties.filterFormula==='string'&&properties.filterFormula.trim())return true;
+  if(typeof properties.collectionFormula==='string'&&properties.collectionFormula.trim())return true;
   const bindings = properties.actionFlows;
   return Boolean(bindings && typeof bindings === 'object' && !Array.isArray(bindings)
     && Object.keys(bindings).length > 0);
