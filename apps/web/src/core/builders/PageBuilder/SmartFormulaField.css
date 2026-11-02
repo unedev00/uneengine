@@ -8,3 +8,9 @@
 .smart-formula-list button:hover{background:#dff0ff}
 
 .smart-formula-list{z-index:6000!important;overflow-y:auto;pointer-events:auto}
+
+.smart-formula-signature{max-width:min(650px,calc(100vw - 12px));padding:7px 10px;border-radius:5px;border:1px solid #9eb5d0;background:#fff;color:#223b5c;box-shadow:0 6px 22px #0002;font:12px/1.5 Consolas,monospace;pointer-events:none;overflow-wrap:anywhere}
+.smart-formula-signature strong{margin-right:3px;color:#1766c4}
+.smart-formula-signature .is-current{font-weight:800;color:#132b4c;background:#dcecff;border-radius:3px}
+
+.smart-formula-error{position:absolute;top:calc(100% + 3px);left:0;min-width:210px;max-width:380px;background:#fff3f1;border:1px solid #e6a7a0;border-radius:4px;padding:5px 7px;color:#9a302a;font:11px/1.35 "Segoe UI",Arial,sans-serif;z-index:6200;box-shadow:0 5px 12px #0001}

@@ -10,6 +10,8 @@ import {scopedFieldRule,type ScopedFieldFilter} from '../../pages/PageRuntime/fi
 import RecordFilterEditor from '../../../component-libraries/shared/primitives/RecordFilterEditor/RecordFilterEditor';
 import SmartFormulaField from './SmartFormulaField';
 import {relationshipFormulaFields} from './relationshipFormulaFields';
+import {pageStateChoices} from './pageStateChoices';
+import {namedCollectionName} from '../../pages/PageRuntime/pageCollectionSession';
 import SmartIconDropdown from './SmartIconDropdown';
 import SmartMultiSelect from './SmartMultiSelect';
 import SmartIconGallery from './SmartIconGallery';
@@ -21,7 +23,8 @@ type Props={tab:UneBuilderTab;api:string;definitions:readonly UneRibbonProperty[
  onChange:(next:Record<string,unknown>)=>void;objects:readonly ObjectMetadata[];pageObjectApiName?:string;
  position?:Position;onPositionChange?:(next:Position)=>void;layoutMode:string;
  /** For grouped/multiple components, expose only the intersection of SQL properties. */
- sharedPropertyIds?:readonly string[];mixedPropertyIds?:readonly string[];selectedApis?:readonly string[]};
+ sharedPropertyIds?:readonly string[];mixedPropertyIds?:readonly string[];selectedApis?:readonly string[];
+ pageComponents?:readonly {id:string;properties:Record<string,unknown>}[];componentId?:string};
 const weekdays=[['sun','Sun'],['mon','Mon'],['tue','Tue'],['wed','Wed'],['thu','Thu'],['fri','Fri'],['sat','Sat']] as const;
 const fallback=(value:unknown)=>typeof value==='string'?value:'';
 const cartSummaryLabels:Record<string,{key:string;slot:string}>={
@@ -30,7 +33,7 @@ const cartSummaryLabels:Record<string,{key:string;slot:string}>={
  taxValue:{key:'taxLabel',slot:'Summary 3'},
  discountValue:{key:'discountLabel',slot:'Summary 4'}
 };
-export default function SmartRibbon({tab,api,definitions,properties,onChange,objects,pageObjectApiName='',position,onPositionChange,layoutMode,sharedPropertyIds,mixedPropertyIds,selectedApis}:Props){
+export default function SmartRibbon({tab,api,definitions,properties,onChange,objects,pageObjectApiName='',position,onPositionChange,layoutMode,sharedPropertyIds,mixedPropertyIds,selectedApis,pageComponents=[],componentId=''}:Props){
  const uploadInput=useRef<HTMLInputElement>(null);
  const [uploadBusy,setUploadBusy]=useState(false);
  const [uploadError,setUploadError]=useState('');
@@ -45,6 +48,26 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    }catch(reason){
      setUploadError(reason instanceof Error?reason.message:'Image upload failed');
    }finally{setUploadBusy(false);}
+ };
+ const stateOptions=pageStateChoices(pageComponents);
+ const duplicateCollectionName=(()=>{
+  const name=namedCollectionName(properties.collectionFormula);
+  if(!name)return '';
+  return pageComponents.some(item=>item.id!==componentId
+   &&namedCollectionName(item.properties.collectionFormula)?.toLowerCase()===name.toLowerCase())
+    ?'Duplicate collection name on this page: '+name:'';
+ })();
+ const validateCollection=(next:string):string|null=>{
+  if(!next.trim()||/^@[A-Za-z][A-Za-z0-9_]{0,79}$/.test(next.trim()))return null;
+  if(!/^COLLECTION\s*\(/i.test(next.trim()))return 'Use COLLECTION("Name", value1, ...)';
+  const name=namedCollectionName(next);
+  if(!name)return 'Collection name is required as the first argument';
+  if(pageComponents.some(item=>item.id!==componentId
+    &&namedCollectionName(item.properties.collectionFormula)?.toLowerCase()===name.toLowerCase()))
+    return 'Duplicate Collection name: '+name;
+  if(/,\s*(?:,|""|\))/.test(next))return 'Collection value is required after the comma';
+  if(!next.trim().endsWith(')'))return 'Complete the Collection formula';
+  return null;
  };
  const [filtersOpen,setFiltersOpen]=useState(false);
  const [filterTarget,setFilterTarget]=useState('Record');
@@ -266,6 +289,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
        onChange={event=>{if(enabled)update(summaryLabel.key,event.target.value);}}/>:
        <span className="smart-formula-prefix" title={title}>{shortLabel}</span>}
      <SmartFormulaField value={String(value)} onChange={write}
+       validate={property.id==='collectionFormula'?validateCollection:undefined}
        label={title} disabled={!enabled}
        singleFieldOnly={api==='smart_toggle'&&property.id==='textSource'}
        fields={api==='smart_toggle'&&property.id==='textSource'
@@ -273,6 +297,8 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
          :object?.fields??[]}
        objects={objects} rootObjectApiName={objectName}
         selectedSourceObjects={sourceObjects} />
+     {property.id==='collectionFormula'&&duplicateCollectionName&&
+       <span role="alert" className="smart-collection-error">{duplicateCollectionName}</span>}
      <button type="button" className="smart-filter-trigger" disabled={!enabled||!object}
        title={!object?'Choose an Object to configure record filters':'Shared record filters for '+object.label}
        aria-label={'Shared record filters from '+title} aria-haspopup="dialog"
@@ -471,6 +497,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
            :'All record rows are filtered before displaying this component.'}</small>
        </div>}
        {object?<RecordFilterEditor compact={!scopedFilterId} title={scopedFilterId?filterTarget+' value':object.label+' records'} fields={object.fields??[]} objects={objects} rootObjectApiName={objectName}
+         stateOptions={stateOptions}
          filters={scopedFilterId?(modalFieldRule?.filters??[]):Array.isArray(properties.filters)?properties.filters:[]}
          formula={scopedFilterId?(modalFieldRule?.filterFormula??''):typeof properties.filterFormula==='string'?properties.filterFormula:''}
          mode={scopedFilterId

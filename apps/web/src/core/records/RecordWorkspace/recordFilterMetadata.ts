@@ -58,6 +58,14 @@ export function examineRecordFilter(raw: unknown, fields: ReadonlyArray<RecordFi
         return 'Invalid optional Page State setting.';
       return null;
     }
+    if(source.source==='CollectionState'){
+      if(typeof source.key!=='string'||!/^[A-Za-z][A-Za-z0-9_]{0,79}\.state\.(Id|Name|Value)$/.test(source.key))
+        return 'Choose a named Collection State value.';
+      if(source.skipWhenBlank!==undefined&&typeof source.skipWhenBlank!=='boolean'
+        ||source.allWhenStar!==undefined&&typeof source.allWhenStar!=='boolean')
+        return 'Invalid Collection State selection option.';
+      return null;
+    }
     if(source.source==='FieldExpression' && typeof source.key==='string'){
       const ref=source.key;
       const direct=/^@[A-Za-z][A-Za-z0-9_]*$/.test(ref)
