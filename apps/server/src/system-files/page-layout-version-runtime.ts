@@ -336,13 +336,41 @@ export class PageLayoutVersionRuntime{
   });
   // Rollback prepares an immutable prior snapshot as the draft; publishing remains explicit.
  }
+ /** Reversible history controls: immutable versions remain available for recovery.
+  * Only unreferenced historical snapshots may be archived. */
+ async archive(tenant:string,name:string,variant:PageLayoutVariant,version:number,archived:boolean,actor:string){
+  if(!Number.isSafeInteger(version)||version<1)throw new Error('Invalid page revision');
+  await this.db.transaction(async client=>{
+   const found=await this.pageId(tenant,name,client);
+   const heads=await client.query<HeadRow>(`SELECT draft_version,published_version
+      FROM md_page_layout_heads WHERE tenant_id=$1 AND page_id=$2 AND variant=$3 FOR UPDATE`,
+      [tenant,found.id,variant]);
+   const head=heads.rows[0];
+   if(!head)throw new Error('Page layout has no history');
+   if(version===head.draft_version||version===head.published_version)
+    throw new Error('Current draft and published versions cannot be archived');
+   const target=await client.query<{archived_at:Date|null}>(`SELECT archived_at
+     FROM md_page_layout_versions WHERE tenant_id=$1 AND page_id=$2 AND variant=$3
+       AND version=$4 FOR UPDATE`,[tenant,found.id,variant,version]);
+   if(!target.rows.length)throw new Error('Page layout revision not found');
+   if(Boolean(target.rows[0].archived_at)===archived)return;
+   await client.query(`UPDATE md_page_layout_versions
+     SET archived_at=CASE WHEN $5::boolean THEN now() ELSE NULL END,
+         archived_by=CASE WHEN $5::boolean THEN $6::uuid ELSE NULL END
+     WHERE tenant_id=$1 AND page_id=$2 AND variant=$3 AND version=$4`,
+     [tenant,found.id,variant,version,archived,actor]);
+   await client.query(`INSERT INTO md_page_layout_version_archive_audit
+     (tenant_id,page_id,variant,version,actor_user_id,operation)
+     VALUES($1,$2,$3,$4,$5,$6)`,[tenant,found.id,variant,version,actor,archived?'Archive':'Unarchive']);
+  });
+ }
  async history(tenant:string,name:string,variant:PageLayoutVariant){
-  const {rows}=await this.db.query<{version:number;created_at:Date;is_published:boolean;is_draft:boolean}>(`SELECT v.version,v.created_at,
-    v.version=h.published_version AS is_published,v.version=h.draft_version AS is_draft
+  const {rows}=await this.db.query<{version:number;created_at:Date;is_published:boolean;is_draft:boolean;archived_at:Date|null}>(`SELECT v.version,v.created_at,
+    v.version=h.published_version AS is_published,v.version=h.draft_version AS is_draft,v.archived_at
     FROM md_page_layout_versions v JOIN md_page_layout_heads h
     ON h.tenant_id=v.tenant_id AND h.page_id=v.page_id AND h.variant=v.variant
     JOIN md_page_definitions p ON p.tenant_id=v.tenant_id AND p.id=v.page_id
     WHERE v.tenant_id=$1 AND p.api_name=$2 AND v.variant=$3 ORDER BY v.version DESC LIMIT 100`,[tenant,name,variant]);
-  return rows.map(r=>({version:r.version,createdAt:r.created_at,published:r.is_published,draft:r.is_draft}));
+  return rows.map(r=>({version:r.version,createdAt:r.created_at,published:r.is_published,draft:r.is_draft,archived:Boolean(r.archived_at)}));
  }
 }
