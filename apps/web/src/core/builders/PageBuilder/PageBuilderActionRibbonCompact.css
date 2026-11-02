@@ -48,6 +48,24 @@
  border-color:#1975dc;box-shadow:0 0 0 1px #8bbffa;
  background:#eef5ff;
 }
+.office-builder-ribbon .page-action-slot .page-action-visibility-toggle{
+ box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;
+ flex:0 0 23px;width:23px;min-width:23px;height:26px;min-height:26px;
+ padding:0;margin:0;border:0;border-radius:3px;background:transparent;
+ color:#385b82;cursor:pointer;
+}
+.office-builder-ribbon .page-action-slot .page-action-visibility-toggle:hover:not(:disabled){
+ background:#e7f0fb;
+}
+.office-builder-ribbon .page-action-slot .page-action-visibility-toggle[aria-pressed="false"]{
+ color:#8997a9;
+}
+.office-builder-ribbon .page-action-slot .page-action-visibility-toggle:focus-visible{
+ outline:2px solid #1975dc;outline-offset:1px;
+}
+.office-builder-ribbon .page-action-slot .page-action-visibility-toggle:disabled{
+ opacity:.4;cursor:not-allowed;
+}
 .office-builder-ribbon .page-action-slot .page-action-icon-remove{
  box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;
  flex:0 0 26px;width:26px;height:26px;min-width:26px;
