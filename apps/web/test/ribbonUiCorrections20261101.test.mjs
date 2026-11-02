@@ -83,7 +83,7 @@ test('Actions sections keep no redundant configuration controls',()=>{
  assert.match(css,/--page-ribbon-min-control-gap:2px/);
  assert.match(css,/smart-ribbon-row\{column-gap:4px!important/);
  for(const text of ['page-action-compact-event','page-action-compact-custom',
-   'CompactActionFlowBindings','Custom Button 2'])
+   'Custom Button 2'])
   assert.ok(action.includes(text),'missing Action control: '+text);
  for(const obsolete of ['page-action-library','page-action-selected','page-action-target',
    'Custom action trigger','Configure details'])
@@ -97,11 +97,9 @@ test('one functional Actions formula bar sits above exactly two-row sections',()
  assert.match(action,/aria-label="Actions formula bar"/);
  assert.match(action,/label="Selected action formula"/);
  assert.match(action,/onChange=\{value=>patch\(\{formula:value\}\)\}/);
- for(const label of ['+ Icon','− Icon','CompactActionFlowBindings','Custom Button 2'])
+ for(const label of ['+ Icon','− Icon','Custom Button 2'])
   assert.ok(action.includes(label),'missing supported control '+label);
- const flow=read('../src/core/builders/PageBuilder/CompactActionFlowBindings.tsx');
- assert.match(flow,/aria-label="Flow inputs"/);
- assert.match(flow,/aria-label="Flow outputs"/);
+ assert.doesNotMatch(action,/CompactActionFlowBindings|onInputsChange|onOutputsChange/);
  assert.match(visual,/page-action-compact-custom-grid/);
  assert.match(visual,/grid-template-rows:repeat\(2,26px\)/);
  assert.match(runtime,/binding.actionType === 'Formula'/);
