@@ -9,6 +9,8 @@ import {uploadTenantImageFile} from '../ComponentProperties/TenantMediaPicker';
 import {scopedFieldRule,type ScopedFieldFilter} from '../../pages/PageRuntime/fieldScopedRecordFilters';
 import RecordFilterEditor from '../../../component-libraries/shared/primitives/RecordFilterEditor/RecordFilterEditor';
 import SmartFormulaField from './SmartFormulaField';
+import {validateRecordFilterFormula} from '../../pages/PageRuntime/recordFilterFormula';
+import {displayComparisonFilter,moveDisplayComparisonToFilter} from './dataFormulaFilterTransfer';
 import {relationshipFormulaFields} from './relationshipFormulaFields';
 import {pageStateChoices} from './pageStateChoices';
 import {namedCollectionName} from '../../pages/PageRuntime/pageCollectionSession';
@@ -160,6 +162,9 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    ?[...sectionRow(group,2),...sectionRow(group,3)]:sectionRow(group,row);
  const isDataFormula=(p:UneRibbonProperty)=>p.group!=='Source'&&
    (p.kindOverrides?.[api]??p.kind)==='expression';
+ // The same visible ƒx editor can edit a display binding or the source filter.
+ // The source filter is an explicit mode, never inferred from the caption text.
+ const filterFormulaSelected=tab==='Data'&&selectedDataField==='__record_filter__';
  const activeDataProperty=tab==='Data'
    ?displayProperties.find(p=>p.id===selectedDataField&&isDataFormula(p)):undefined;
  const activeDataKey=activeDataProperty?.valueKeys?.[api]??activeDataProperty?.id??'';
@@ -172,6 +177,23 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    (!sharedPropertyIds||sharedPropertyIds.includes(activeDataProperty.id)));
  const activeDataValue=activeDataProperty
    ?String(properties[activeDataKey]??activeDataProperty.defaultsOverrides?.[api]??activeDataProperty.default??''):'';
+ const comparisonForFilter=activeDataKey==='textSource'&&activeDataProperty&&object
+   ?displayComparisonFilter(activeDataValue,object.fields??[]):null;
+ const filterAlreadySet=typeof properties.filterFormula==='string'
+   &&properties.filterFormula.trim()&&properties.filterFormula.trim()!==comparisonForFilter?.formula;
+ const changeRecordFilterFormula=(next:string)=>{
+   if(!object)return;
+   const formula=next.trimStart().startsWith('=')?next.trimStart().slice(1):next;
+   // Keep ordinary saved data conditions active alongside the authored formula.
+   onChange({...properties,filterFormula:formula,filterMode:undefined});
+ };
+ const moveComparison=()=>{
+   if(!object)return;
+   const next=moveDisplayComparisonToFilter(properties,object.fields??[]);
+   if(!next)return;
+   onChange(next);
+   setSelectedDataField('__record_filter__');
+ };
  // Reuse the metadata field catalogue used by @ suggestions. The picker
  // changes only the existing binding; advanced expressions remain editable.
  const selectableDataFields=activeDataProperty
@@ -418,10 +440,23 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
       <span className="smart-ribbon-caption">{section}</span>
     </section>)}
     <div className="smart-data-workspace">
-      <div className="smart-data-formula-bar" aria-label="Formula for selected Data property">
+      <div className="smart-data-formula-bar" aria-label="Data expression or record filter formula">
         <span className="smart-data-fx-prefix" aria-hidden="true">ƒx</span>
+        <button type="button" className={'smart-data-record-filter-target'+(filterFormulaSelected?' is-selected':'')}
+          aria-label="Edit record filter formula" aria-pressed={filterFormulaSelected}
+          title="Filter which records are shown; this is different from a text caption formula"
+          disabled={!object} onClick={()=>setSelectedDataField('__record_filter__')}>
+          Filter records
+        </button>
         <div className="smart-data-formula-input">
-          {activeDataProperty?<SmartFormulaField key={activeDataProperty.id}
+          {filterFormulaSelected?<SmartFormulaField key="__record_filter__"
+            label="Record filter formula" value={typeof properties.filterFormula==='string'?properties.filterFormula:''}
+            disabled={!object} onChange={changeRecordFilterFormula}
+            validate={value=>validateRecordFilterFormula(value.trimStart().replace(/^=\\s*/,''),object?.fields??[])}
+            stateOptions={stateOptions}
+            fields={object?.fields??[]} objects={objects} rootObjectApiName={objectName}
+            selectedSourceObjects={sourceObjects}/>:
+          activeDataProperty?<SmartFormulaField key={activeDataProperty.id}
             label={activeDataProperty.label} value={activeDataValue}
             disabled={!activeDataEnabled} onChange={changeActiveDataFormula}
             validate={validateCollection} stateOptions={stateOptions}
@@ -434,9 +469,16 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
             <input type="text" disabled aria-label="Formula (select a field first)"
               placeholder="Select a field's Fx button to edit its formula"/>}
         </div>
+        {comparisonForFilter&&!filterFormulaSelected&&
+          <button type="button" className="smart-data-move-to-filter"
+            disabled={Boolean(filterAlreadySet)}
+            title={filterAlreadySet?'An existing record filter is configured; edit it first':
+              'Move this comparison into the record filter and restore the displayed field'}
+            onClick={moveComparison}>Use as filter</button>}
         <select className="smart-data-field-picker" aria-label="Choose display field"
-          title={activeDataProperty?'Choose a field for '+activeDataProperty.label:'Select a Data property first'}
-          disabled={!activeDataEnabled||!selectableDataSources.length}
+          title={filterFormulaSelected?'Record filter formulas do not replace display fields':
+            activeDataProperty?'Choose a field for '+activeDataProperty.label:'Select a Data property first'}
+          disabled={filterFormulaSelected||!activeDataEnabled||!selectableDataSources.length}
           value={selectableDataSources.some(field=>field.reference===activeDataValue.trim())
             ?activeDataValue.trim():''}
           onChange={event=>{if(event.target.value)changeActiveDataFormula(event.target.value);}}>
