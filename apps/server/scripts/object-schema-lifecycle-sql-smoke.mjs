@@ -109,6 +109,7 @@ try{
  await lifecycle.restore(primary,'Invoice__c');
  await assert.rejects(()=>lifecycle.impact(secondary,'Milestone__c'),/Object not found/);
  assert.equal((await defs.get(primary,'Invoice__c')).label,'Customer Invoice');
+ // The shared casefold migration must also preserve tenant FKs and business records.
  const {runApiCasefoldSqlSmoke}=await import('./api-casefold-sql-smoke.mjs');
  await runApiCasefoldSqlSmoke(db);
  console.info('Phase 2A disposable SQL lifecycle smoke: passed (2 objects, 2 tenants, record preservation/relationship blocks, label revision, restore)');
