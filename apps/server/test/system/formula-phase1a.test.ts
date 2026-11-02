@@ -7,7 +7,7 @@ import {
   formulaFunctionCatalog,getFormulaFunctionNames,validateFormulaFunctions
 } from '../../src/expression-engine/FormulaFunctionRegistry.js';
 import {
-  evaluateFieldExpressionDetailed
+  evaluateFieldExpressionDetailed,evaluateCollectionFormula
 } from '../../../web/src/component-libraries/shared/FieldExpression.js';
 import {Parser} from '../../src/expression-engine/FormulaParser.js';
 import {tokenize} from '../../src/expression-engine/FormulaTokenizer.js';
@@ -46,6 +46,21 @@ test('formula client and server share parsing, precedence, coercion, and blank s
     assert.equal(browserResult.value,serverValue==null?'':String(serverValue),expression);
     assert.equal(serverValue,expected,expression);
   }
+});
+
+test('COLLECTION requires a name and produces typed named content in Flow and ribbon',()=>{
+ const formula='COLLECTION("LineChoices", "a22", "none", @Rows)';
+ const rows=[{Id:'a',Name:'Widget'}];
+ const result=evaluateFlowFormula(formula,key=>key==='Rows'?rows:null,{},'flow_formula') as
+  {name:string;items:unknown[]};
+ assert.equal(result.name,'LineChoices');
+ assert.equal(result.items[2],rows[0]);
+ const typed=evaluateCollectionFormula('COLLECTION("LineChoices","a22","none")');
+ assert.equal(typed.error,undefined);
+ assert.deepEqual(typed.value,{name:'LineChoices',items:['a22','none']});
+ assert.equal(inferFlowFormulaType('COLLECTION("LineChoices","a22")',()=>null,'flow_formula'),'Collection');
+ assert.throws(()=>validateFlowFormula('COLLECTION("LineChoices","a22")','formula_field'),/not available/);
+ assert.throws(()=>evaluateFlowFormula('COLLECTION("1bad","a22")',()=>null),/name/);
 });
 
 test('formula contexts share validation and report unavailable functions before execution',()=>{
