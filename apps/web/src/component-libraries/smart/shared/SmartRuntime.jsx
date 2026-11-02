@@ -5,7 +5,7 @@ import {evaluateFieldExpression} from "../../shared/FieldExpression.js";
 import {useTenantImageSource} from "../../shared/TenantImage.jsx";
 const number=(v,f,min=0,max=2000)=>Number.isFinite(Number(v))?Math.max(min,Math.min(max,Number(v))):f;
 const text=(v)=>v===null||v===undefined?"":String(v);
-const expression=(v,record,pageState)=>{
+const expression=(v,record,pageState,objectApiName)=>{
  if(typeof v!=="string")return text(v);
  // The common bounded evaluator resolves authorised row-specific relationship
  // values via __mentionValues without turning numbers into quoted strings or
@@ -13,7 +13,7 @@ const expression=(v,record,pageState)=>{
  if(/^(?:https:\/\/|asset:)/i.test(v.trim()))return v;
  if(!/^\s*=/.test(v)&&!/@[A-Za-z]/.test(v)&&!/^\s*"/.test(v)&&
    !/^\s*-?(?:\d+(?:\.\d*)?|\.\d+)\s*[+\-*/&]/.test(v))return v;
- try{return text(evaluateFieldExpression(v,record||{},{namedCollectionSelections:pageState?.collectionSelections}));}catch{return "";}
+ try{return text(evaluateFieldExpression(v,record||{},{namedCollectionSelections:pageState?.collectionSelections,rootObjectApiName:objectApiName}));}catch{return "";}
 };
 function SmartPicture({src,alt,loadAsset,style}){
  const source=useTenantImageSource(src,loadAsset);
@@ -34,7 +34,7 @@ const scopedExpression=(p,key,source,record)=>fieldAllows(p,key,record)
  ?(key==="textSource"&&p.dataCollection&&record&&
     /^\s*(?:=\s*COLLECTION\s*\(|=?\s*@[A-Za-z][A-Za-z0-9_]*\s*$)/i.test(String(source??""))
     ?text(record.__collectionLabel??record.Name??"")
-    :expression(source,record,p.pageState)):"";
+    :expression(source,record,p.pageState,p.objectApiName)):"";
 const recordOf=p=>p.objectApiName&&Array.isArray(p.records)
  ?(p.records[0]??{}):p.record&&typeof p.record==="object"&&!Array.isArray(p.record)?p.record:
  Array.isArray(p.records)&&p.records.length?p.records[0]:Array.isArray(p.items)&&p.items.length?p.items[0]:{};
