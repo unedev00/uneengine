@@ -5,7 +5,7 @@ import {evaluateFieldExpression} from "../../shared/FieldExpression.js";
 import {useTenantImageSource} from "../../shared/TenantImage.jsx";
 const number=(v,f,min=0,max=2000)=>Number.isFinite(Number(v))?Math.max(min,Math.min(max,Number(v))):f;
 const text=(v)=>v===null||v===undefined?"":String(v);
-const expression=(v,record)=>{
+const expression=(v,record,pageState)=>{
  if(typeof v!=="string")return text(v);
  // The common bounded evaluator resolves authorised row-specific relationship
  // values via __mentionValues without turning numbers into quoted strings or
@@ -13,7 +13,7 @@ const expression=(v,record)=>{
  if(/^(?:https:\/\/|asset:)/i.test(v.trim()))return v;
  if(!/@[A-Za-z]/.test(v)&&!/^\s*"/.test(v)&&
    !/^\s*-?(?:\d+(?:\.\d*)?|\.\d+)\s*[+\-*/&]/.test(v))return v;
- try{return text(evaluateFieldExpression(v,record||{}));}catch{return "";}
+ try{return text(evaluateFieldExpression(v,record||{},{namedCollectionSelections:pageState?.collectionSelections}));}catch{return "";}
 };
 function SmartPicture({src,alt,loadAsset,style}){
  const source=useTenantImageSource(src,loadAsset);
@@ -31,7 +31,7 @@ const fieldAllows=(p,key,record)=>{
    ||!Object.prototype.hasOwnProperty.call(p.dataFieldFilters,key);
 };
 const scopedExpression=(p,key,source,record)=>fieldAllows(p,key,record)
- ?expression(source,record):"";
+ ?expression(source,record,p.pageState):"";
 const recordOf=p=>p.objectApiName&&Array.isArray(p.records)
  ?(p.records[0]??{}):p.record&&typeof p.record==="object"&&!Array.isArray(p.record)?p.record:
  Array.isArray(p.records)&&p.records.length?p.records[0]:Array.isArray(p.items)&&p.items.length?p.items[0]:{};
@@ -53,7 +53,7 @@ const boundImage=(p,record)=>{
   const source=p.imageSource??p.src??'';
  const key=typeof source==='string'?source.replace(/^@/,''):'';
  if(key && record && Object.prototype.hasOwnProperty.call(record,key))return text(record[key]);
- return expression(source,record);
+ return expression(source,record,p.pageState);
 };
 function SmartCard({p,record}){
  const image=boundImage(p,record);
@@ -211,7 +211,7 @@ function SmartTabs({p,record,fire}){
  const captionContext={...(record&&typeof record==="object"&&!Array.isArray(record)?record:{}),
   state:p.pageState??{},session:{id:p.sessionId??""}};
  const firstTabCaption=firstTabCustom&&typeof p.firstTabCaption==="string"&&p.firstTabCaption.trim()
-  ?expression(p.firstTabCaption,captionContext)||"Custom tab":"Custom tab";
+  ?expression(p.firstTabCaption,captionContext,p.pageState)||"Custom tab":"Custom tab";
  const tabs=firstTabCustom?[{label:firstTabCaption,id:"__custom_first_tab__"},...recordTabs]:recordTabs;
  React.useEffect(()=>{if(active>=tabs.length)setActive(0)},[active,tabs.length]);
  return <div className="smart-tabs-shell" style={{background:p.backgroundColor||undefined,
@@ -225,15 +225,25 @@ function SmartTabs({p,record,fire}){
     borderColor:p.borderColor||undefined}}
     onClick={()=>{setActive(index);
       if(firstTabCustom&&index===0){
-       fire("change",{index,value:"",isCustom:true,record:{Id:"",Name:firstTabCaption}});
+       fire("change",{index,value:"*",isCustom:true,record:{Id:"*",Name:firstTabCaption},
+        ...(hasCollection?{collectionName:p.dataCollection.name}:{})});
       }else if(hasCollection){
        const item=recordTabs[index-(firstTabCustom?1:0)];
-       fire("change",{index,value:item?.value??"",record:item?.record??{},
+       const itemId=item?.record?.Id||item?.record?.id||item?.value;
+       fire("change",{index,value:itemId??"",record:{
+        ...item?.record,Id:itemId??"",Name:item?.label??item?.record?.Name??""},
         collectionName:p.dataCollection.name});
       }else if(dynamic){
        const row=recordsOf(p)[index-(firstTabCustom?1:0)];
        fire("change",{index,value:String(row?.Id??row?.id??""),record:row});
-      }else fire("change",index);
+       }else{
+       const chosen=recordTabs[index-(firstTabCustom?1:0)];
+       const identifier=chosen&&typeof chosen==='object'
+        ?chosen.id??chosen.value??chosen.label
+        :chosen;
+       fire("change",{index,value:String(identifier??""),record:{
+        Id:String(identifier??""),Name:text(chosen?.label??chosen??"")}});
+      }
      }}>{text(tab?.label??tab)}</button>)}
    {(dynamic||hasCollection)&&tabs.length===0&&<span className="smart-tabs-empty">No matching records</span>}
   </nav>
@@ -349,7 +359,7 @@ export default function SmartRuntime(p){
    })}
   </div>;
  }
- else if(name==="smart_cart")content=<SmartCart p={p} records={recordsOf(p)} Picture={SmartPicture} expression={expression}
+ else if(name==="smart_cart")content=<SmartCart p={p} records={recordsOf(p)} Picture={SmartPicture} expression={(formula,row)=>expression(formula,row,p.pageState)}
     fieldAllowed={(key,row)=>fieldAllows(p,key,row)} fire={fire}/>;
  else if(name==="smart_calendar")content=<SmartCalendar p={p} fire={fire}/>;
  else if(name==="smart_tabs")content=<SmartTabs p={p} record={record} fire={fire}/>;
