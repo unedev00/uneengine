@@ -100,7 +100,7 @@ function compile(node:Expression,fields:ReadonlyArray<FieldMetadata>,state:Reado
    // Match any populated relationship ID with "*", without loading records.
    if(field.relationship&&value==='*')
     return {filters:[{field:field.apiName,operator:'isNotBlank',value:''}],logic:'1'};
-   if(!/^(Text|Email|Phone|Url|Picklist)(\\(|$)/i.test(field.dataType))
+   if(!/^(Text|Email|Phone|Url|Picklist)(\(|$)/i.test(field.dataType))
     throw Error('Wildcard criterion requires a text field or an All relationship selector');
    return {filters:[{field:field.apiName,operator:'matches',value}],logic:'1'};
   }
