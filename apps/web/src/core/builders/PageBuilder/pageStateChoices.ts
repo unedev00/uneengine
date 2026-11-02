@@ -9,7 +9,9 @@ export function pageStateChoices(components:readonly SourceComponent[]):PageStat
  const add=(item:PageStateChoice)=>entries.set(item.source+':'+item.key,item);
  for(const component of components){
   const props=component.properties;
-  const names=[...new Set(Object.values(props).flatMap(value=>namedCollectionNames(value)))];
+  const authored=Object.entries(props).filter(([key])=>key!=='collectionFormula')
+    .flatMap(([,value])=>namedCollectionNames(value));
+  const names=[...new Set(authored.length?authored:namedCollectionNames(props.collectionFormula))];
   for(const name of names)for(const field of ['Id','Name','Value','Field','Criteria'])
    add({source:'CollectionState',key:formulaCollectionReferenceKey(name)+'.state.'+field,label:name+'.state.'+field});
   const actions=props.actionFlows;
