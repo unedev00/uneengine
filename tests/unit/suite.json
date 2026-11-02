@@ -20,6 +20,7 @@
     "apps/server/test/system/acetill-operational-flows.test.ts",
     "apps/server/test/system/acetill-payment-flow-metadata.test.ts",
     "apps/server/test/system/acetill-visual-style.test.ts",
+    "apps/server/test/system/approved-platform-owner-bootstrap.test.ts",
     "apps/server/test/system/builder-contracts.test.ts",
     "apps/server/test/system/bundled-components.test.ts",
     "apps/server/test/system/business-automation-recipes.test.ts",
