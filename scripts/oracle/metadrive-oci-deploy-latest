@@ -93,7 +93,7 @@ stage=verifying
 write_status running "$stage"
 [[ "$(systemctl show metadrive-api.service -p WorkingDirectory --value)" == "/opt/metadrive/releases/gh-$sha" ]]
 [[ "$(systemctl show metadrive-worker.service -p WorkingDirectory --value)" == "/opt/metadrive/releases/gh-$sha" ]]
-test "$(cat /var/www/metadrive-frontend/current/release.json 2>/dev/null | grep -F "$sha" | wc -l)" -ge 0
+grep -Fq "\"commit\":\"$sha\"" /var/www/metadrive-frontend/current/frontend-release.json
 systemctl is-active --quiet metadrive-api.service
 systemctl is-active --quiet metadrive-worker.service
 systemctl is-active --quiet nginx.service
