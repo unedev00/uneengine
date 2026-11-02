@@ -96,7 +96,7 @@ export function matchesFormulaCollectionCriterion(value:unknown,raw:unknown):boo
  }
  const matched=hasExcelWildcardCriteria(expected)
   ?matchesExcelWildcard(actual,expected)
-  :comparable?valueNumber===expectedNumber:actual.toLocaleLowerCase('en')===expected.toLocaleLowerCase('en');
+  :comparable?valueNumber===expectedNumber:actual.toLocaleLowerCase('en')===String(expected).toLocaleLowerCase('en');
  return op==='!='||op==='<>'?!matched:matched;
 }
 
