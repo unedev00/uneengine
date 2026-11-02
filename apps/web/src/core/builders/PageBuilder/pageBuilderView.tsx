@@ -2420,11 +2420,10 @@ function PageBuilder({
         ...(component.properties?.fillRegion===true && page.layoutMode==='template' ? {height:'100%',minHeight:0}: {}),
         // Editor-only frame colour: reuse an authored border, never persist a selection property.
         ...(!previewMode && !libraryPreview &&
-          typeof component.properties.borderColor==='string' &&
-          component.properties.borderColor.trim() &&
-          component.properties.borderColor.trim().toLowerCase()!=='transparent' &&
-          Number(component.properties.borderWidth??1)>0
-          ? {'--canvas-selection-outline':component.properties.borderColor} : {})
+          typeof (typeof component.properties.borderColor==='string'
+            ? component.properties.borderColor:visualStyle.borderColor)==='string' &&
+          Number(component.properties.borderWidth??visualStyle.borderWidth??1)>0
+          ? {'--canvas-selection-outline':component.properties.borderColor || visualStyle.borderColor} : {})
       } as React.CSSProperties}
       onClick={selectOnlyInDesigner ? selectCanvasComponent : undefined}
       onClickCapture={libraryPreview && !interactivePreview
