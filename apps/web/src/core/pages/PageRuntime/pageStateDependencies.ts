@@ -50,7 +50,8 @@ export function pageStateDependencies(components:readonly Component[]):PageState
   if(typeof authored==='string')references(authored,inputs);
   // A named Collection can be authored in any formula-capable Data property.
   // Dependencies on selected parent collections also work in those properties.
-  if(name)for(const value of Object.values(props))references(value,inputs);
+  if(name)for(const [key,value] of Object.entries(props))
+   if(key!=='collectionFormula'&&key!=='filterFormula')references(value,inputs);
   if(typeof props.relatedFilterKey==='string'&&identifier.test(props.relatedFilterKey))
    inputs.add(state(props.relatedFilterKey));
 
