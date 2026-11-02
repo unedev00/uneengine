@@ -34,7 +34,15 @@ export function usePageCollectionFormula(
  primaryObject:string,primaryRecords:readonly Row[],primaryTotal:number,
  revision:number,pageState:Readonly<Row>,sessionId:string,pageSessionKey:string,componentId:string
 ):{collection:PageNamedCollection|null;error:string|null;loading:boolean}{
- const entered=typeof formula==='string'?formula.trim():'';
+ const declared=typeof formula==='string'?formula.trim():'';
+ // A Collection is authored in any existing formula property. The old hidden
+ // collectionFormula metadata remains readable for previously published pages.
+ const expressions=Object.entries(properties).filter(([key,value])=>
+   key!=='collectionFormula'&&typeof value==='string').map(([,value])=>String(value).trim());
+ const authored=expressions.find(value=>/^=\s*COLLECTION\s*\(/i.test(value))
+   ??expressions.find(value=>/^=\s*@[A-Za-z][A-Za-z0-9_]{0,79}$/.test(value))
+   ??expressions.find(value=>/^@[A-Za-z][A-Za-z0-9_]{0,79}$/.test(value));
+ const entered=declared||authored||'';
  const source=entered.startsWith('=')?entered.slice(1).trim():entered;
  const scope=pageSessionKey+'#'+sessionId;
  const registry=useSessionCollectionSnapshot(scope);
