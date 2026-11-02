@@ -1,4 +1,4 @@
-import {useEffect,useSyncExternalStore} from 'react';
+import {useSyncExternalStore} from 'react';
 
 export type SessionCollection={name:string;items:unknown[]};
 type Entry={owner:string;collection:SessionCollection};
@@ -48,15 +48,11 @@ export function getSessionCollection(scope:string,name:string):SessionCollection
  const current=sessions.get(scope)?.snapshot.collections;
  return current?.[name]??Object.entries(current??{}).find(([key])=>key.toLowerCase()===name.toLowerCase())?.[1];
 }
-export function useSessionCollections(scope:string,owner:string,collection:SessionCollection|null){
- const snapshot=useSyncExternalStore(
+export function useSessionCollectionSnapshot(scope:string){
+ return useSyncExternalStore(
   callback=>{const current=registry(scope);current.subscribers.add(callback);
    return ()=>{current.subscribers.delete(callback);
     if(!current.owners.size&&!current.subscribers.size)sessions.delete(scope);};},
   ()=>sessions.get(scope)?.snapshot??empty,()=>empty
  );
- // Collection values are limited by the shared formula engine (200 items).
- const signature=collection?JSON.stringify(collection):'';
- useEffect(()=>registerSessionCollection(scope,owner,collection),[scope,owner,signature]);
- return snapshot;
 }
