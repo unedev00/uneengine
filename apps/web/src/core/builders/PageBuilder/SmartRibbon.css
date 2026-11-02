@@ -810,3 +810,59 @@
     padding:10px 12px 14px!important;
   }
 }
+
+
+/* Global records mode only: keep the filter dialog short and readable.
+   Field-specific filter and other shared editor consumers retain their existing UI. */
+.smart-filter-backdrop .metadata-record-filter-editor.is-compact .metadata-filter-intro{
+  padding-bottom:9px!important;align-items:center!important
+}
+.smart-filter-backdrop .metadata-record-filter-editor.is-compact .metadata-filter-intro p{display:none!important}
+.smart-filter-backdrop .metadata-record-filter-editor.is-compact .metadata-filter-intro-heading{
+  gap:8px 12px!important
+}
+.smart-filter-backdrop .metadata-record-filter-editor.is-compact .metadata-filter-intro-heading .metadata-filter-logic{
+  display:flex!important;flex-direction:row!important;align-items:center!important;gap:7px!important;
+  margin-left:10px!important
+}
+.smart-filter-backdrop .metadata-record-filter-editor.is-compact .metadata-filter-intro-heading .metadata-filter-logic>span{
+  font-size:11px!important;white-space:nowrap
+}
+.smart-filter-backdrop .metadata-record-filter-editor.is-compact .metadata-filter-intro-heading .metadata-filter-logic select{
+  width:205px!important;min-width:165px!important;height:32px!important
+}
+.smart-filter-backdrop .metadata-record-filter-editor.is-compact .metadata-filter-cell{
+  gap:4px!important
+}
+.smart-filter-backdrop .metadata-record-filter-editor.is-compact .metadata-filter-cell>span:first-child{
+  font-size:10.5px!important;line-height:1.3!important
+}
+.smart-filter-backdrop .metadata-record-filter-editor.is-compact .metadata-filter-condition{
+  padding:9px 12px!important
+}
+.smart-filter-backdrop .metadata-record-filter-editor.is-compact .metadata-filter-condition-heading{
+  margin-bottom:6px!important
+}
+.smart-filter-backdrop .metadata-record-filter-editor.is-compact .metadata-filter-condition-heading button{
+  width:27px!important;height:27px!important;padding:4px!important
+}
+.smart-filter-backdrop .metadata-record-filter-editor.is-compact .metadata-filter-field-trigger{
+  width:100%!important;height:32px!important;padding:5px 9px!important;font-size:11.5px!important
+}
+.smart-filter-backdrop .metadata-record-filter-editor.is-compact .metadata-filter-field-search svg{
+  top:8px!important;left:9px!important
+}
+.smart-filter-backdrop .metadata-record-filter-editor.is-compact .metadata-filter-field-search input{
+  padding-left:30px!important
+}
+.smart-filter-backdrop .metadata-record-filter-editor.is-compact .metadata-filter-inline-error{
+  font-size:10.5px!important;margin:0!important;padding:3px 5px!important
+}
+.smart-filter-backdrop .metadata-record-filter-editor.is-compact .metadata-filter-footer{
+  margin-top:9px!important
+}
+@media(max-width:650px){
+  .smart-filter-backdrop .metadata-record-filter-editor.is-compact .metadata-filter-intro-heading .metadata-filter-logic{
+    flex-basis:100%;margin-left:0!important;justify-content:space-between
+  }
+}
