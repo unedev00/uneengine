@@ -33,3 +33,14 @@ test('formula autocomplete supports up down enter and selection accessibility',(
  assert.match(ui,/insertFunction\(functionSuggestions\[Math\.min\(activeSuggestion/);
  assert.match(ui,/insert\(filtered\[Math\.min\(activeSuggestion/);
 });
+
+test('new API names typed manually are normalized to lowercase across metadata editors',()=>{
+ const custom=read('../src/core/builders/ObjectManager/CustomMetadataManager.tsx');
+ const values=read('../src/core/builders/ObjectManager/GlobalValueSetManager.tsx');
+ const approvals=read('../src/core/automation/ApprovalProcessManager/ApprovalProcessManager.tsx');
+ const pages=read('../src/core/builders/PageBuilder/PageDetailsDialog.tsx');
+ for(const source of [custom,values,approvals,pages])
+  assert.match(source,/event\.target\.value\.toLowerCase\(\)|e\.target\.value\.toLowerCase\(\)/);
+ assert.match(custom,/apiName:'value'/);
+ assert.match(pages,/nextApiName|apiName/);
+});
