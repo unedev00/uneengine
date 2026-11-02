@@ -23,9 +23,8 @@ DECLARE
   'md_global_value_sets','md_custom_labels','md_custom_metadata_types',
   'md_custom_metadata_fields','md_custom_settings','md_custom_setting_fields',
   'md_system_definitions','md_matching_rules','md_validation_rules',
-  'md_field_default_formulas','md_permission_sets','md_roles',
-  'md_record_policies','md_app_route_aliases',
-  'md_named_credentials','md_inbound_webhook_endpoints','md_webhook_subscriptions'
+  'md_field_default_formulas',
+  'md_inbound_webhook_endpoints','md_webhook_subscriptions'
  ];
  structural text[] := ARRAY[
   'object_api','related_object','target_object','source_object_api','target_object_api',
@@ -119,9 +118,10 @@ BEGIN
  END LOOP;
  SET CONSTRAINTS ALL DEFERRED;
 
- -- Only columns whose SQL meaning is an API identifier are changed.
- -- Crucially, component property keys (api_name) and ordinary record values
- -- are NOT indiscriminately lowercased.
+ -- Only columns whose SQL meaning is an API identifier are changed, and
+ -- only when that value appears in an inventoried tenant identifier map.
+ -- Core reserved permission names, platform app identities, component
+ -- property keys and ordinary record values are NOT indiscriminately lowered.
  FOR item IN
   SELECT c.table_name,c.column_name FROM information_schema.columns c
   WHERE c.table_schema=current_schema()
@@ -141,10 +141,10 @@ BEGIN
     AND NOT(c.table_name='md_app_route_aliases' AND c.column_name='app_api')
   ORDER BY c.table_name,c.column_name
  LOOP
-  EXECUTE format('UPDATE %I SET %I=lower(%I)
-    WHERE tenant_id=$1 AND %I IS NOT NULL AND %I<>lower(%I)',
-    item.table_name,item.column_name,item.column_name,item.column_name,
-    item.column_name,item.column_name) USING p_tenant;
+  EXECUTE format('UPDATE %I t SET %I=m.new_name
+    FROM md_api_casefold_changes m WHERE t.tenant_id=$1 AND m.tenant_id=$1
+      AND t.%I=m.old_name AND m.old_name<>m.new_name',
+    item.table_name,item.column_name,item.column_name) USING p_tenant;
   GET DIAGNOSTICS count_rows=ROW_COUNT;
   touched:=touched+count_rows;
  END LOOP;
