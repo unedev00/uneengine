@@ -10,7 +10,8 @@ import {
 import './RecordFilterEditor.css';
 
 type Filter = {field: string; operator: string; value: unknown};
-type DynamicValue = {source?: string; key?: string; skipWhenBlank?: boolean};
+type DynamicValue = {source?: string; key?: string; skipWhenBlank?: boolean; allWhenStar?: boolean};
+type StateChoice={source:'PageState'|'CollectionState';key:string;label:string};
 const isFilter = (item: unknown): item is Filter =>
   Boolean(item && typeof item === 'object' && !Array.isArray(item));
 const isBlank = (operator: string) => operator === 'Is Blank' || operator === 'Is Not Blank';
@@ -25,7 +26,7 @@ const isPicklist = (field?: FieldMetadata) =>
 /** Shared no-code filter editor: all types and choices come from accessible Field metadata. */
 export default function RecordFilterEditor({
   title, fields, filters, onChange, logic = 'AND', onLogicChange, objects = [], rootObjectApiName = '',
-  formula = '', onFormulaChange, mode, onModeChange
+  formula = '', onFormulaChange, mode, onModeChange, stateOptions = []
 }: {
   title: string;
   fields: FieldMetadata[];
@@ -39,8 +40,10 @@ export default function RecordFilterEditor({
   onFormulaChange?:(value:string)=>void;
   mode?:'Field'|'Formula';
   onModeChange?:(next:'Field'|'Formula')=>void;
+  stateOptions?:readonly StateChoice[];
 }) {
   const [fieldSearch, setFieldSearch] = useState('');
+  const [manualStateIndex,setManualStateIndex]=useState<number|null>(null);
   const related=mentionGroups(objects,rootObjectApiName,[],'','text')
     .filter(group=>!group.primary).flatMap(group=>group.fields.flatMap(item=>{
       const field=objects.find(object=>object.apiName===item.objectApiName)
@@ -125,6 +128,7 @@ export default function RecordFilterEditor({
         const dynamic = raw.value && typeof raw.value === 'object' && !Array.isArray(raw.value)
           ? raw.value as DynamicValue : undefined;
         const source = dynamic?.source ?? 'Fixed';
+        const stateSource=source==='CollectionState'||source==='PageState';
         const value = dynamic ? '' : String(raw.value ?? '');
         const operators = supportedFilterOperators(field);
         const error = filters.length === 0 ? null : examineRecordFilter(entry, allFields);
@@ -177,12 +181,12 @@ export default function RecordFilterEditor({
               </select>
             </label>
             {!isBlank(operator) && <label><span>Value source</span>
-              <select aria-label={title + ' value source ' + (index + 1)} value={source}
+              <select aria-label={title + ' value source ' + (index + 1)} value={stateSource?'PageState':source}
                 disabled={!field} onChange={e => set(index, {value: e.target.value === 'Fixed' ? ''
                   : e.target.value === 'PageState' ? {source: 'PageState', key: ''}
                   : {source: e.target.value}})}>
                 <option value="Fixed">Fixed value</option>
-                <option value="PageState">Page state / Flow output</option>
+                <option value="PageState">State (Collection / Page State)</option>
                 <option value="FieldExpression">@ Field or related lookup</option>
                 <option value="CurrentRecord">Current record ID</option>
                 <option value="Session">Current session ID</option>
@@ -196,20 +200,49 @@ export default function RecordFilterEditor({
                     ariaLabel={title+' comparison field '+(index+1)} kind="text"
                     placeholder="@Field or @Object.Relationship.Field"/>
                 </label>
-              : source === 'PageState'
-              ? <label><span>Page state key</span>
-                  <input aria-label={title + ' page state key ' + (index + 1)}
-                    value={dynamic?.key ?? ''} placeholder="e.g. categoryId"
-                    onChange={e => set(index, {value: {...dynamic,source: 'PageState', key: e.target.value}})}/>
+              : stateSource
+              ? <label><span>State value</span>
+                  {stateOptions.length>0&&<select aria-label={title+' available state '+(index+1)}
+                    value={manualStateIndex===index?'manual':stateOptions.some(option=>
+                      option.source===source&&option.key===dynamic?.key)?source+':'+dynamic?.key:''}
+                    onChange={e=>{
+                      if(e.target.value==='manual'){
+                        setManualStateIndex(index);
+                        set(index,{value:{source:'PageState',key:'',skipWhenBlank:true,allWhenStar:true}});
+                        return;
+                      }
+                      setManualStateIndex(null);
+                      const choice=stateOptions.find(option=>option.source+':'+option.key===e.target.value);
+                      if(choice)set(index,{value:{source:choice.source,key:choice.key,skipWhenBlank:true,allWhenStar:true}});
+                    }}>
+                    <option value="">Choose state…</option>
+                    {stateOptions.filter(option=>option.source==='CollectionState').length>0&&
+                      <optgroup label="Named Collections">
+                        {stateOptions.filter(option=>option.source==='CollectionState').map(option=>
+                          <option key={option.source+option.key} value={option.source+':'+option.key}>{option.label}</option>)}
+                      </optgroup>}
+                    {stateOptions.filter(option=>option.source==='PageState').length>0&&
+                      <optgroup label="Page / Flow State">
+                        {stateOptions.filter(option=>option.source==='PageState').map(option=>
+                          <option key={option.source+option.key} value={option.source+':'+option.key}>{option.label}</option>)}
+                      </optgroup>}
+                    <option value="manual">Enter state key manually…</option>
+                  </select>}
+                  {(stateOptions.length===0||manualStateIndex===index
+                   ||Boolean(dynamic?.key&&!stateOptions.some(choice=>
+                       choice.source===source&&choice.key===dynamic.key)))&&
+                    <input aria-label={title + ' page state key ' + (index + 1)}
+                      value={dynamic?.key ?? ''} placeholder="e.g. categoryId"
+                      onChange={e => set(index, {value: {...dynamic,source: 'PageState', key: e.target.value}})}/>}
                 </label>
               : source === 'Fixed' ? <label><span>Value</span>{valueControl}</label> : null)}
           </div>
-          {!isBlank(operator) && source === 'PageState' && <label className="metadata-filter-optional">
+          {!isBlank(operator) && stateSource && <label className="metadata-filter-optional">
             <input type="checkbox" aria-label={title + ' ignore blank page state ' + (index + 1)}
               checked={dynamic?.skipWhenBlank === true}
-              onChange={e => set(index,{value:{...dynamic,source:'PageState',skipWhenBlank:e.target.checked}})}/>
-            <span>Ignore condition when Page State value is blank</span>
-            <small>Blank → skip this condition. With other conditions, AND/OR applies to the remaining conditions.</small>
+              onChange={e => set(index,{value:{...dynamic,source,skipWhenBlank:e.target.checked}})}/>
+            <span>Ignore condition when State value is blank</span>
+            <small>Blank → skip this condition. Selecting All (*) also skips this condition; AND/OR applies to remaining conditions.</small>
           </label>}
           {error && <p role="alert" className="metadata-filter-error">{error}</p>}
         </div>;
