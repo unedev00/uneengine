@@ -57,8 +57,9 @@ export function usePageCollectionFormula(
  const lastValid=useRef<{object:string;collection:PageNamedCollection}|null>(null);
  const listBinding=parseCollectionListBinding(source,primaryObject);
  const registry=useSessionCollectionSnapshot(scope);
- const namedListSource=listBinding&&listBinding.object===primaryObject
-  ?registry.collections[listBinding.field]:undefined;
+ const namedListSource=listBinding?Object.entries(registry.collections)
+  .find(([key,collection])=>key.toLowerCase()===listBinding.field.toLowerCase()
+   ||collection.name.toLowerCase()===listBinding.field.toLowerCase())?.[1]:undefined;
  const refs=listBinding&&!namedListSource?[{object:listBinding.object,field:listBinding.field}]:
   collectionFormulaReferences(source,primaryObject,registry.collections);
  const selected=['objectApiName','objectApiName2','objectApiName3']
