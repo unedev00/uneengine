@@ -1550,6 +1550,7 @@ export function createSystemServer(db:SqlPersistence) {
         FROM md_builder_shared_properties p
         LEFT JOIN md_builder_ribbon_component_rules r
           ON r.property_key=p.property_key AND r.enabled=true
+        WHERE p.property_key NOT IN ('firstTabCustom','firstTabCaption','firstTabValue')
         ORDER BY p.sort_order,r.component_api`),
       db.query<{component_api:string}>(`SELECT component_api FROM md_builder_ribbon_components
         ORDER BY component_api`)

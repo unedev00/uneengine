@@ -211,16 +211,9 @@ function SmartTabs({p,record,fire}){
   })):recordsOf(p).slice(0,count).map(row=>({
    label:scopedExpression(p,"textSource",p.textSource,row),id:row?.Id??row?.id
   }))):Array.isArray(p.tabs)?p.tabs:Array.from({length:count},(_,i)=>i===0&&typeof p.label==="string"&&p.label&&!p.label.startsWith("@")?p.label:"Tab "+(i+1)));
- // A custom leading tab is an optional display entry, never an Object record.
- // The authorised Object records and their configured limit remain unchanged.
- const firstTabCustom=p.firstTabCustom===true;
- const captionContext={...(record&&typeof record==="object"&&!Array.isArray(record)?record:{}),
-  state:p.pageState??{},session:{id:p.sessionId??""}};
- const firstTabCaption=firstTabCustom&&typeof p.firstTabCaption==="string"&&p.firstTabCaption.trim()
-  ?expression(p.firstTabCaption,captionContext,p.pageState,p.objectApiName,p.formulaCollectionSources,p.namedCollections)||"Custom tab":"Custom tab";
- const firstTabValue=firstTabCustom&&typeof p.firstTabValue==="string"&&p.firstTabValue.trim()
-  ?expression(p.firstTabValue,captionContext,p.pageState,p.objectApiName,p.formulaCollectionSources,p.namedCollections):"*";
- const tabs=firstTabCustom?[{label:firstTabCaption,id:"__custom_first_tab__"},...recordTabs]:recordTabs;
+ // Named collections and ordinary authorised Object rows both supply their
+ // tab captions and IDs. No synthetic leading tab is inserted by properties.
+ const tabs=recordTabs;
  // The page-scoped selection is authoritative for data-backed Tabs. Clearing a
  // parent selection must not leave a dependent child visibly selected.
  const changeAction=p.actionFlows?.change;
@@ -234,8 +227,7 @@ function SmartTabs({p,record,fire}){
   :stateKey&&p.pageState?p.pageState[stateKey]:undefined;
  const indexForSelection=selectedId===null||selectedId===undefined||selectedId===""?-1:
   tabs.findIndex((tab,index)=>{
-   const id=firstTabCustom&&index===0?firstTabValue
-    :hasCollection?tab?.record?.Id??tab?.record?.id??tab?.value:tab?.id;
+   const id=hasCollection?tab?.record?.Id??tab?.record?.id??tab?.value:tab?.id;
    return String(id??"")===String(selectedId);
   });
  // Always default to the FIRST actual tab, regardless of its caption or ID.
@@ -247,12 +239,9 @@ function SmartTabs({p,record,fire}){
  const firstTabRef=React.useRef(null);
  const selectTab=index=>{
   setActive(index);
-  if(firstTabCustom&&index===0){
-   fire("change",{index,value:firstTabValue,isCustom:true,record:{Id:firstTabValue,Name:firstTabCaption},
-    ...(hasCollection?{collectionName:p.dataCollection.key??p.dataCollection.name}:{})});
-  }else if(hasCollection){
-   const item=recordTabs[index-(firstTabCustom?1:0)];
-   const itemId=item?.record?.Id||item?.record?.id||item?.value;
+  if(hasCollection){
+   const item=recordTabs[index];
+   const itemId=item?.record?.Id??item?.record?.id??item?.value;
    fire("change",{index,value:itemId??"",record:{
     ...item?.record,Id:itemId??"",Name:item?.label??item?.record?.Name??"",
     ...(item?.record?.__collectionCriteriaField?{
@@ -260,10 +249,10 @@ function SmartTabs({p,record,fire}){
      Criteria:item.record.__collectionCriteria}: {})},
     collectionName:p.dataCollection.key??p.dataCollection.name});
   }else if(dynamic){
-   const row=recordsOf(p)[index-(firstTabCustom?1:0)];
+   const row=recordsOf(p)[index];
    fire("change",{index,value:String(row?.Id??row?.id??""),record:row});
   }else{
-   const chosen=recordTabs[index-(firstTabCustom?1:0)];
+   const chosen=recordTabs[index];
    const identifier=chosen&&typeof chosen==="object"
     ?chosen.id??chosen.value??chosen.label:chosen;
    fire("change",{index,value:String(identifier??""),record:{
@@ -271,8 +260,11 @@ function SmartTabs({p,record,fire}){
   }
   if(index!==0)autoSelected.current=null;
  };
- const firstItemId=tabs.length?(firstTabCustom?firstTabValue:
-  hasCollection?tabs[0]?.record?.Id??tabs[0]?.record?.id??tabs[0]?.value:tabs[0]?.id):null;
+ let firstItemId=null;
+ if(tabs.length){
+  if(hasCollection)firstItemId=tabs[0]?.record?.Id??tabs[0]?.record?.id??tabs[0]?.value;
+  else firstItemId=tabs[0]?.id;
+ }
  // Publishing the first selection matters: a visual highlight alone leaves
  // Collection State blank, so dependent components cannot filter correctly.
  React.useEffect(()=>{

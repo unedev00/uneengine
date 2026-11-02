@@ -146,7 +146,11 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  const visible=definitions.filter(p=>p.tab===tab);
  // Keep active-record scope metadata and persisted settings intact, but do not
  // surface its automatic binding switch in any visible ribbon section.
- const displayProperties=visible.filter(p=>p.id!=='autoRecordScope'&&p.id!=='collectionFormula'&&
+ // A formula-created Collection now owns every tab; retired synthetic
+ // leading-tab controls must not appear even with an older metadata snapshot.
+ const retiredTabs=new Set(['firstTabCustom','firstTabCaption','firstTabValue']);
+ const displayProperties=visible.filter(p=>!retiredTabs.has(p.id)&&
+   p.id!=='autoRecordScope'&&p.id!=='collectionFormula'&&
    !(tab==='Data'&&p.id==='contextApiName'));
  const groups=[...new Set(displayProperties.map(p=>p.group))];
  const groupOrder=tab==='Data'?['Source','Values','Cart','Cart columns','Cart totals']
@@ -232,9 +236,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    const key=api==='smart_calendar'&&property.id==='shadow'?'shadow':property.valueKeys?.[api]??property.id;
    const isSize=property.id==='width'||property.id==='height';
    const useCanvasPosition=layoutMode==='free-canvas'&&Boolean(position&&onPositionChange);
-   const enabled=supported&&(kind!=='position'||isSize||useCanvasPosition)&&
-     (property.id!=='firstTabCaption'||properties.firstTabCustom===true)&&
-     (property.id!=='firstTabValue'||properties.firstTabCustom===true);
+   const enabled=supported&&(kind!=='position'||isSize||useCanvasPosition);
    const value=mixedPropertyIds?.includes(property.id)?'':properties[key]??property.defaultsOverrides?.[api]??property.default??'';
    const options=property.choicesOverrides?.[api]??property.choices??[];
    const write=(v:unknown)=>{
