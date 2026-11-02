@@ -32,7 +32,7 @@
 .lightning .page-manager-table .page-manager-action-icons {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
 }
 .lightning .page-manager-table td.page-manager-actions .page-manager-icon-action {
   box-sizing: border-box;
