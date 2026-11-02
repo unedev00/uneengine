@@ -281,6 +281,18 @@ function parse(source,record,formulaContext){
  const expression=new Parser(tokenize(source)).parse();
  validateFormulaFunctions(expression,'ribbon_binding');
  const resolveReference=reference=>{
+   // Named session selection references are read-only, scalar and already
+   // populated from authorised Tab/Lookup events by the page runtime.
+   const selected=/^([A-Za-z][A-Za-z0-9_]{0,79})\\.state\\.(Id|Name|Value)$/.exec(reference);
+   if(selected){
+    const selections=formulaContext.namedCollectionSelections;
+    if(!selections||typeof selections!=='object'||Array.isArray(selections))return '';
+    const entry=Object.entries(selections).find(([name])=>name.toLowerCase()===selected[1].toLowerCase())?.[1];
+    if(!entry||typeof entry!=='object'||Array.isArray(entry)
+      ||!Object.prototype.hasOwnProperty.call(entry,selected[2]))return '';
+    const result=entry[selected[2]];
+    return result===null||['string','number','boolean'].includes(typeof result)?result:'';
+   }
    // Object.Field collection references can use only authorised records
    // supplied by the Page Runtime; a formula never performs a database query.
    const sourceRef=/^([A-Za-z][A-Za-z0-9_]*)\.([A-Za-z][A-Za-z0-9_]*)$/.exec(reference);
@@ -405,7 +417,8 @@ export function evaluateFieldExpressionDetailed(expression,record,options={}){
     ?parseFormulaDateTime(options.now,'UTC'):new Date(NaN);
   if(!Number.isFinite(now.getTime()))throw Error('Invalid formula evaluation time');
   const result=parse(input,record,{timeZone,now,collectionSources:options.collectionSources,
-   collectionResult:options.collectionResult===true});
+   collectionResult:options.collectionResult===true,
+   namedCollectionSelections:options.namedCollectionSelections});
   if(options.collectionResult===true){
    if(!result||typeof result!=='object'||Array.isArray(result)
      ||typeof result.name!=='string'||!Array.isArray(result.items))
@@ -430,5 +443,6 @@ export function evaluateCollectionFormula(formula,sourceRecords={},context={}){
  if(typeof formula!=='string'||!/^\s*COLLECTION\s*\(/i.test(formula))
   return {value:null,error:'Enter COLLECTION("Name", values, @Object.Field)'};
  return evaluateFieldExpressionDetailed(formula,{...context},
-  {collectionSources:sourceRecords,collectionResult:true});
+  {collectionSources:sourceRecords,collectionResult:true,
+   namedCollectionSelections:context?.state?.collectionSelections});
 }
