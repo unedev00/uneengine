@@ -9,161 +9,173 @@ import {
 
 const latest='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 const stale='bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
-const originalToken=process.env.METADRIVE_GITHUB_DEPLOY_TOKEN;
-const originalRelease=process.env.METADRIVE_RELEASE_SHA;
-const originalFetch=globalThis.fetch;
-function json(value:unknown){return new Response(JSON.stringify(value),{status:200,headers:{'Content-Type':'application/json'}});}
+const initial={
+ socket:process.env.METADRIVE_MCP_BROKER_SOCKET,
+ operations:process.env.METADRIVE_MCP_OPERATIONS,
+ release:process.env.METADRIVE_RELEASE_SHA,
+ fetch:globalThis.fetch
+};
+function enableOci(){
+ process.env.METADRIVE_MCP_BROKER_SOCKET='/run/fixture-oci.sock';
+ process.env.METADRIVE_MCP_OPERATIONS='enabled';
+}
+function disableOci(){
+ delete process.env.METADRIVE_MCP_BROKER_SOCKET;
+ delete process.env.METADRIVE_MCP_OPERATIONS;
+}
+function reset(){
+ globalThis.fetch=initial.fetch;
+ for(const [name,value] of [
+  ['METADRIVE_MCP_BROKER_SOCKET',initial.socket],
+  ['METADRIVE_MCP_OPERATIONS',initial.operations],
+  ['METADRIVE_RELEASE_SHA',initial.release]
+ ] as const){
+  if(value===undefined)delete process.env[name];
+  else process.env[name]=value;
+ }
+}
+function json(value:unknown){return new Response(JSON.stringify(value),{status:200});}
 function fakeGithub(active=false){
- const requests:Array<{url:string;method:string}>=[];
+ const calls:string[]=[];
  globalThis.fetch=async(input:RequestInfo|URL,init?:RequestInit)=>{
-  const url=String(input),method=init?.method??'GET';
-  requests.push({url,method});
+  const url=String(input);
+  calls.push(url);
+  assert.equal(init?.method,'GET');
+  assert.equal((init?.headers as Record<string,string>)?.Authorization,undefined,
+   'No GitHub deploy credential or authenticated GitHub API call');
   assert.match(url,/^https:\/\/api\.github\.com\/repos\/unedev00\/uneengine\//);
-  if(process.env.METADRIVE_GITHUB_DEPLOY_TOKEN)
-   assert.match(String((init?.headers as Record<string,string>)?.Authorization),/^Bearer /);
-  else assert.equal((init?.headers as Record<string,string>)?.Authorization,undefined);
   if(url.endsWith('/commits/main'))return json({sha:latest});
   if(url.includes('/runs?branch=main'))return json({workflow_runs:[{
    id:42,head_sha:stale,status:active?'in_progress':'completed',
    conclusion:active?null:'success',created_at:'2026-11-02T13:25:00Z',event:'push'
   }]});
-  if(url.endsWith('/dispatches')){assert.equal(method,'POST');assert.equal(init?.body,JSON.stringify({ref:'main'}));return new Response(null,{status:204});}
-  throw Error('Unexpected request '+url);
+  throw Error('Unexpected GitHub request '+url);
  };
- return requests;
+ return calls;
 }
-function fakeDatabase(recent=false){
+function fakeOci(state:'idle'|'running'|'succeeded'|'failed'='idle'){
+ const calls:Array<{action:string;service:string;release?:string}>=[];
+ const operate=async(input:{action:string;service:string;release?:string})=>{
+  calls.push(input);
+  if(input.action==='deploy_status')return {
+   output:state==='idle'?'state=idle\n':
+    'state='+state+'\nsha='+latest+'\nstage=building\nupdated_at=2026-11-02T14:00:00Z\n'
+  };
+  if(input.action==='deploy_latest')return {output:'QUEUED '+input.release+'\n'};
+  throw Error('Unexpected OCI operation');
+ };
+ return {operate,calls};
+}
+function fakeDatabase(recent=false,authorised=true){
  const actions:string[]=[];
  const query=async(sql:string,params?:unknown[])=>{
   if(sql.includes('md_security_events'))actions.push(String(params?.[2]??'query'));
   if(sql.includes('AS exists'))return {rows:[{exists:recent}]};
-  if(sql.includes('AS authorised'))return {rows:[{authorised:true}]};
+  if(sql.includes('AS authorised'))return {rows:[{authorised}]};
   return {rows:[]};
  };
  const client={query};
- const db={query,transaction:async<T>(fn:(value:typeof client)=>Promise<T>)=>fn(client)} as unknown as SqlPersistence;
- return {db,actions};
+ return {
+  db:{query,transaction:async<T>(fn:(c:typeof client)=>Promise<T>)=>fn(client)} as unknown as SqlPersistence,
+  actions
+ };
 }
-test('deploy control shows disabled status when secret is absent',async()=>{
- delete process.env.METADRIVE_GITHUB_DEPLOY_TOKEN;
+test('OCI is optional for public status, but is required for dispatch',async()=>{
+ disableOci();
  const calls=fakeGithub();
  try{
   const status=await readProductionDeployment();
   assert.equal(status.configured,false);
   assert.equal(status.latestCommit,latest);
-  assert.equal(status.run?.id,42);
-  assert.equal(calls.filter(c=>c.method==='POST').length,0);
- }finally{
-  globalThis.fetch=originalFetch;
-  if(originalToken===undefined)delete process.env.METADRIVE_GITHUB_DEPLOY_TOKEN;
-  else process.env.METADRIVE_GITHUB_DEPLOY_TOKEN=originalToken;
- }
+  assert.equal(status.oci,null);
+  assert.equal(calls.length,2);
+  await assert.rejects(requestProductionDeployment(fakeDatabase().db,'tenant','user',latest),
+   (e:unknown)=>e instanceof DeploymentControlError&&e.statusCode===503);
+ }finally{reset();}
 });
-test('deploy button dispatches only the expected validated main revision and audits',async()=>{
- process.env.METADRIVE_GITHUB_DEPLOY_TOKEN='test-only-token';
+test('OCI deploy dispatch pins main and audits without GitHub write API',async()=>{
+ enableOci();
  process.env.METADRIVE_RELEASE_SHA=stale;
- const requests=fakeGithub();
+ const calls=fakeGithub();
+ const oci=fakeOci();
  const {db,actions}=fakeDatabase();
- try {
-  const state=await readProductionDeployment();
-  assert.equal(state.latestCommit,latest);
-  assert.equal(state.deployedCommit,stale);
-  assert.equal(state.active,false);
-  assert.equal(state.run?.url,'https://github.com/unedev00/uneengine/actions/runs/42');
-  const result=await requestProductionDeployment(db,'tenant','actor',latest);
-  assert.deepEqual(result,{accepted:true,targetCommit:latest});
-  assert.equal(requests.filter(x=>x.method==='POST').length,1);
+ try{
+  const status=await readProductionDeployment(oci.operate);
+  assert.equal(status.configured,true);
+  assert.equal(status.oci?.state,'idle');
+  assert.equal(status.deployedCommit,stale);
+  assert.equal(status.run?.id,42);
+  const accepted=await requestProductionDeployment(db,'tenant','user',latest,oci.operate);
+  assert.deepEqual(accepted,{accepted:true,targetCommit:latest});
+  assert.equal(oci.calls.filter(x=>x.action==='deploy_latest').length,1);
+  assert.deepEqual(oci.calls.find(x=>x.action==='deploy_latest'),
+   {action:'deploy_latest',service:'api',release:latest});
   assert.ok(actions.includes('platform.production-deploy.requested'));
   assert.ok(actions.includes('platform.production-deploy.accepted'));
- } finally {
-  globalThis.fetch=originalFetch;
-  if(originalToken===undefined)delete process.env.METADRIVE_GITHUB_DEPLOY_TOKEN;
-  else process.env.METADRIVE_GITHUB_DEPLOY_TOKEN=originalToken;
-  if(originalRelease===undefined)delete process.env.METADRIVE_RELEASE_SHA;
-  else process.env.METADRIVE_RELEASE_SHA=originalRelease;
- }
+  assert.ok(calls.every(url=>!url.includes('/dispatches')));
+ }finally{reset();}
 });
-test('running deployments and outdated confirmations cannot dispatch',async()=>{
- process.env.METADRIVE_GITHUB_DEPLOY_TOKEN='test-only-token';
- const requests=fakeGithub(true);
+test('OCI running, concurrent workflow, stale commit and duplicates refuse dispatch',async()=>{
+ enableOci();
+ fakeGithub();
  const {db}=fakeDatabase();
- try {
-  await assert.rejects(requestProductionDeployment(db,'tenant','actor',latest),
-   (error:unknown)=>error instanceof DeploymentControlError&&error.statusCode===409);
-  await assert.rejects(requestProductionDeployment(db,'tenant','actor',stale),
-   (error:unknown)=>error instanceof DeploymentControlError&&error.statusCode===409);
-  assert.equal(requests.filter(x=>x.method==='POST').length,0);
- }finally {
-  globalThis.fetch=originalFetch;
-  if(originalToken===undefined)delete process.env.METADRIVE_GITHUB_DEPLOY_TOKEN;
-  else process.env.METADRIVE_GITHUB_DEPLOY_TOKEN=originalToken;
- }
-});
-test('recent accepted dispatch prevents duplicate submits',async()=>{
- process.env.METADRIVE_GITHUB_DEPLOY_TOKEN='test-only-token';
- const requests=fakeGithub();
- const {db}=fakeDatabase(true);
+ const running=fakeOci('running');
  try{
-  await assert.rejects(requestProductionDeployment(db,'tenant','actor',latest),
-   (error:unknown)=>error instanceof DeploymentControlError&&error.statusCode===409);
-  assert.equal(requests.length,0);
- }finally {
-  globalThis.fetch=originalFetch;
-  if(originalToken===undefined)delete process.env.METADRIVE_GITHUB_DEPLOY_TOKEN;
-  else process.env.METADRIVE_GITHUB_DEPLOY_TOKEN=originalToken;
- }
+  await assert.rejects(requestProductionDeployment(db,'tenant','user',latest,running.operate),
+   (e:unknown)=>e instanceof DeploymentControlError&&e.statusCode===409);
+  await assert.rejects(requestProductionDeployment(db,'tenant','user',stale,running.operate),
+   (e:unknown)=>e instanceof DeploymentControlError&&e.statusCode===409);
+  assert.equal(running.calls.filter(x=>x.action==='deploy_latest').length,0);
+  const oci=fakeOci();
+  await assert.rejects(requestProductionDeployment(fakeDatabase(true).db,'tenant','user',latest,oci.operate),
+   (e:unknown)=>e instanceof DeploymentControlError&&e.statusCode===409);
+  assert.equal(oci.calls.length,0);
+ }finally{reset();}
 });
-test('read-only status is visible but dispatch is denied without PlatformDeveloper',async()=>{
- process.env.METADRIVE_GITHUB_DEPLOY_TOKEN='test-only-token';
+test('read-only status is visible without platform policy but dispatch is forbidden',async()=>{
+ disableOci();
  const calls=fakeGithub();
  const handlers:Record<string,(req:any,res:any,next:(e?:unknown)=>void)=>Promise<void>>={};
- const app={get:(path:string,fn:any)=>{handlers['GET '+path]=fn;},
-  post:(path:string,fn:any)=>{handlers['POST '+path]=fn;}} as any;
- const db={query:async()=>({rows:[{authorised:false}]})} as unknown as SqlPersistence;
+ const app={
+  get:(p:string,fn:any)=>{handlers['GET '+p]=fn;},
+  post:(p:string,fn:any)=>{handlers['POST '+p]=fn;}
+ } as any;
+ const {db}=fakeDatabase(false,false);
  const rbac={allowed:async()=>true} as unknown as RbacEngine;
  registerPlatformDeploymentRoutes(app,db,rbac);
- try{
+ try {
   for(const method of ['GET','POST']){
-   const result:{status?:number;body?:any}={};
+   const response:{status?:number;body?:any}={};
    const res={
-    status(code:number){result.status=code;return this;},
-    json(body:unknown){result.body=body;return this;},
+    status(code:number){response.status=code;return this;},
+    json(body:unknown){response.body=body;return this;},
     set(){return this;}
    };
-   let nextCalled=false;
    await handlers[method+' /api/platform/production-deployment'](
-    {actor:{tenant_id:'tenant',user_id:'user'},body:{expectedCommit:latest}},res,()=>{nextCalled=true;});
-   assert.equal(nextCalled,false);
+    {actor:{tenant_id:'tenant',user_id:'user'},body:{expectedCommit:latest}},res,
+    (error?:unknown)=>{throw error;});
    if(method==='GET'){
-    assert.equal(result.status,undefined);
-    assert.equal(result.body.latestCommit,latest);
-    assert.equal(result.body.canDeploy,false);
-   }else assert.equal(result.status,403);
+    assert.equal(response.status,undefined);
+    assert.equal(response.body.latestCommit,latest);
+    assert.equal(response.body.canDeploy,false);
+   }else assert.equal(response.status,403);
   }
-  assert.equal(calls.filter(c=>c.method==='POST').length,0);
- }finally{
-  globalThis.fetch=originalFetch;
-  if(originalToken===undefined)delete process.env.METADRIVE_GITHUB_DEPLOY_TOKEN;
-  else process.env.METADRIVE_GITHUB_DEPLOY_TOKEN=originalToken;
- }
+  assert.ok(calls.every(url=>!url.includes('/dispatches')));
+ }finally{reset();}
 });
-test('only platform developers with manage grant can dispatch',async()=>{
- process.env.METADRIVE_GITHUB_DEPLOY_TOKEN='test-only-token';
- const calls=fakeGithub();
- const handlers:Record<string,(req:any,res:any,next:(e?:unknown)=>void)=>Promise<void>>={};
- const app={get:(path:string,fn:any)=>{handlers['GET '+path]=fn;},
-  post:(path:string,fn:any)=>{handlers['POST '+path]=fn;}} as any;
- const {db}=fakeDatabase();
+test('separate PlatformOperations permission is mandatory even with platform policy',async()=>{
+ disableOci();
+ const handlers:Record<string,any>={};
+ const app={get:(p:string,f:any)=>{handlers['GET '+p]=f;},
+  post:(p:string,f:any)=>{handlers['POST '+p]=f;}} as any;
+ const {db}=fakeDatabase(false,true);
  const rbac={allowed:async()=>false} as unknown as RbacEngine;
  registerPlatformDeploymentRoutes(app,db,rbac);
- const response:{status?:number;body?:any}={};
+ let status=0;
  await handlers['POST /api/platform/production-deployment'](
   {actor:{tenant_id:'tenant',user_id:'user'},body:{expectedCommit:latest}},
-  {status(code:number){response.status=code;return this;},json(body:unknown){response.body=body;return this;},
-   set(){return this;}},(error?:unknown)=>{throw error;});
- assert.equal(response.status,403);
- assert.equal(calls.filter(c=>c.method==='POST').length,0);
- globalThis.fetch=originalFetch;
- if(originalToken===undefined)delete process.env.METADRIVE_GITHUB_DEPLOY_TOKEN;
- else process.env.METADRIVE_GITHUB_DEPLOY_TOKEN=originalToken;
+  {status(c:number){status=c;return this;},json(){return this;},set(){return this;}},
+  (error?:unknown)=>{throw error;});
+ assert.equal(status,403);
+ reset();
 });

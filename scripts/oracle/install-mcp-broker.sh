@@ -11,6 +11,12 @@ id metadrive >/dev/null
 install -d -o root -g root -m 0755 /usr/local/libexec
 install -o root -g root -m 0755 "$src/metadrive-mcp-operations" /usr/local/sbin/metadrive-mcp-operations
 install -o root -g root -m 0755 "$src/metadrive-mcp-activate" /usr/local/libexec/metadrive-mcp-activate
+# Fresh installs include the already versioned OCI deployment control.
+if ! id metadrive-build >/dev/null 2>&1; then
+  /usr/sbin/useradd --system --no-create-home --home-dir /nonexistent --shell /usr/sbin/nologin metadrive-build
+fi
+install -o root -g root -m 0755 "$src/metadrive-oci-deploy-latest" /usr/local/libexec/metadrive-oci-deploy-latest
+install -d -o root -g root -m 0700 /var/lib/metadrive/oci-deployment
 install -o root -g root -m 0755 "$src/metadrive-mcp-broker.py" /usr/local/libexec/metadrive-mcp-broker.py
 python3 -m py_compile "$src/maildir-communication-reader.py"
 install -o root -g root -m 0755 "$src/maildir-communication-reader.py" /usr/local/libexec/metadrive-maildir-reader.py

@@ -52,6 +52,9 @@ jobs:
           bash -n scripts/oracle/ensure-frontend-api-proxy.sh
           bash -n scripts/oracle/backup-production-sql.sh
           bash -n scripts/oracle/deploy-full-stack.sh
+          bash -n scripts/oracle/install-oci-deploy-control.sh
+          bash -n scripts/oracle/metadrive-oci-deploy-latest
+          bash -n scripts/oracle/metadrive-mcp-operations
           bash -n scripts/oracle/recover-systemd-bus.sh
           bash -n scripts/oracle/recover-systemd-manager.sh
           bash -n scripts/oracle/clear-failed-mcp-brokers.sh
@@ -103,6 +106,9 @@ jobs:
           systemctl is-active --quiet nginx.service
           sudo -n test -e /etc/metadrive/production.env
           sudo -n test -d /opt/metadrive/releases
+      - name: Install OCI deployment control using the existing operations socket
+        shell: bash
+        run: sudo -n bash scripts/oracle/install-oci-deploy-control.sh
       # deploy-api.sh activates both entrypoint.js and job-worker-entrypoint.js.
       - name: Deploy existing API/worker and frontend with SQL backup and rollback
         shell: bash

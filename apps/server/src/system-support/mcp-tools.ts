@@ -10,7 +10,7 @@ import {execFile} from 'node:child_process';
 import {createConnection} from 'node:net';
 import {promisify} from 'node:util';
 const execute=promisify(execFile);
-async function brokerOperation(request:{action:string;service:string;release?:string}):Promise<{output:string}>{
+export async function brokerOperation(request:{action:string;service:string;release?:string}):Promise<{output:string}>{
  const socketPath=process.env.METADRIVE_MCP_BROKER_SOCKET;
  if(!socketPath)throw Error('Operations broker is not configured');
  return await new Promise((resolve,reject)=>{

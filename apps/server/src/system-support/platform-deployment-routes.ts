@@ -1,6 +1,7 @@
 import type {Express,Request,Response,NextFunction} from 'express';
 import type {SqlPersistence} from '../system-files/sql-persistence.js';
 import type {RbacEngine} from '../system-files/rbac-engine.js';
+import {brokerOperation} from './mcp-tools.js';
 
 /**
  * Platform-wide production deployment control. Never exposes GitHub credentials
@@ -14,16 +15,29 @@ const shaPattern=/^[a-f0-9]{40}$/;
 const activeStatuses=new Set(['queued','in_progress','waiting','pending','requested']);
 
 type Run={id:number;head_sha:string;status:string;conclusion:string|null;created_at:string;event:string};
+type OciRelease={state:'idle'|'running'|'succeeded'|'failed';sha:string|null;stage:string|null;updatedAt:string|null};
 type DeploymentStatus={
  configured:boolean; latestCommit:string|null; deployedCommit:string|null;
- active:boolean; run:null|{id:number;commit:string;status:string;conclusion:string|null;createdAt:string;url:string};
+ active:boolean; oci:OciRelease|null; run:null|{id:number;commit:string;status:string;conclusion:string|null;createdAt:string;url:string};
 };
 export class DeploymentControlError extends Error {
  constructor(message:string,readonly statusCode:number){super(message);}
 }
-const token=()=>process.env.METADRIVE_GITHUB_DEPLOY_TOKEN?.trim()??'';
-// Public repository release metadata can be read without a deploy token.
-// Only the POST dispatch requires the server-side credential.
+const brokerConfigured=()=>process.env.METADRIVE_MCP_OPERATIONS==='enabled'
+ && Boolean(process.env.METADRIVE_MCP_BROKER_SOCKET);
+type OciOperation=typeof brokerOperation;
+function parseOciStatus(text:string):OciRelease {
+ const data=new Map(text.split('\n').map(line=>line.split('=',2) as [string,string]));
+ const state=data.get('state');
+ if(!state||!['idle','running','succeeded','failed'].includes(state))
+  throw new DeploymentControlError('Invalid OCI deployment status.',502);
+ const sha=data.get('sha')??null,updatedAt=data.get('updated_at')??null;
+ if(sha&&!shaPattern.test(sha))throw new DeploymentControlError('Invalid OCI release identifier.',502);
+ return {state:state as OciRelease['state'],sha,stage:data.get('stage')??null,
+  updatedAt:updatedAt&&Number.isFinite(Date.parse(updatedAt))?updatedAt:null};
+}
+// GitHub serves public main branch metadata anonymously. OCI performs builds
+// through its existing root-owned operations broker; no GitHub dispatch token.
 const workflowUrl='https://github.com/'+repository+'/actions/workflows/'+workflow;
 function productionCommit(){
  const value=process.env.METADRIVE_RELEASE_SHA??'';
@@ -37,29 +51,24 @@ function validRun(input:unknown):input is Run{
   &&(r.conclusion===null||typeof r.conclusion==='string')
   &&typeof r.created_at==='string'&&typeof r.event==='string';
 }
-async function github(path:string,method:'GET'|'POST'='GET',body?:object):Promise<any>{
- const credential=token();
- if(method==='POST'&&!credential)
-  throw new DeploymentControlError('Production deployment credential is not configured.',503);
+async function github(path:string):Promise<any>{
  // Fixed repository and allowlisted paths only. Never proxy arbitrary URLs.
  const response=await fetch('https://api.github.com/repos/'+repository+path,{
-  method,
-  headers:{...(credential?{'Authorization':'Bearer '+credential}:{}),'Accept':'application/vnd.github+json',
-   'X-GitHub-Api-Version':'2022-11-28',...(body?{'Content-Type':'application/json'}:{})},
-  ...(body?{body:JSON.stringify(body)}:{}),
+  method:'GET',
+  headers:{'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'},
   signal:AbortSignal.timeout(12000)
  });
- if(method==='POST'&&response.status===204)return null;
  if(!response.ok)throw new DeploymentControlError(
-  response.status===401||response.status===403
-   ? 'GitHub deployment credential cannot access the production workflow.'
-   : 'GitHub deployment service is unavailable ('+response.status+').',502);
+  'Public release information is unavailable ('+response.status+').',502);
  return response.json();
 }
-export async function readProductionDeployment():Promise<DeploymentStatus>{
+export async function readProductionDeployment(operate:OciOperation=brokerOperation):Promise<DeploymentStatus>{
  const deployedCommit=productionCommit();
- // Latest main SHA and workflow results are public; the missing credential
- // disables dispatch but does not conceal the status or explanation.
+ let oci:OciRelease|null=null;
+ if(brokerConfigured()) {
+  try {oci=parseOciStatus((await operate({action:'deploy_status',service:'api'})).output);}
+  catch { /* Do not claim OCI dispatch is ready if the installed helper is unavailable. */ }
+ }
  const [commit,runs]=await Promise.all([
   github('/commits/main'),
   github('/actions/workflows/'+workflow+'/runs?branch=main&per_page=15')
@@ -69,8 +78,8 @@ export async function readProductionDeployment():Promise<DeploymentStatus>{
  const matches:Array<Run>=Array.isArray(runs?.workflow_runs)
   ?runs.workflow_runs.filter((r:unknown)=>validRun(r)&&(r as Run).event!=='pull_request'): [];
  const current=matches.find(run=>activeStatuses.has(run.status))??matches[0];
- return {configured:!!token(),latestCommit,deployedCommit,
-  active:!!current&&activeStatuses.has(current.status),
+ return {configured:oci!==null,latestCommit,deployedCommit,oci,
+  active:(!!current&&activeStatuses.has(current.status))||oci?.state==='running',
   run:current?{id:current.id,commit:current.head_sha,status:current.status,
    conclusion:current.conclusion,createdAt:current.created_at,
    url:'https://github.com/'+repository+'/actions/runs/'+current.id}:null};
@@ -80,11 +89,12 @@ async function audit(db:SqlPersistence,tenant:string,user:string,action:string,d
   [tenant,user,action,JSON.stringify(details)]);
 }
 export async function requestProductionDeployment(
- db:SqlPersistence,tenant:string,user:string,expectedCommit:unknown
+ db:SqlPersistence,tenant:string,user:string,expectedCommit:unknown,
+ operate:OciOperation=brokerOperation
 ):Promise<{accepted:true;targetCommit:string}>{
  if(typeof expectedCommit!=='string'||!shaPattern.test(expectedCommit))
   throw new DeploymentControlError('A valid expected main-branch commit is required.',400);
- if(!token())throw new DeploymentControlError('Production deployment credential is not configured.',503);
+ if(!brokerConfigured())throw new DeploymentControlError('OCI operations broker is not configured.',503);
  await audit(db,tenant,user,'platform.production-deploy.requested',{commit:expectedCommit});
  try{
   await db.transaction(async client=>{
@@ -97,14 +107,18 @@ export async function requestProductionDeployment(
        AND created_at>now()-interval '45 seconds'
        AND details->>'commit'=$1) AS exists`,[expectedCommit]);
    if(recent[0]?.exists)throw new DeploymentControlError('A deployment was just requested. Check its status before retrying.',409);
-   const status=await readProductionDeployment();
+   const status=await readProductionDeployment(operate);
+   if(!status.configured)
+    throw new DeploymentControlError('OCI deployment helper is unavailable.',503);
    if(status.latestCommit!==expectedCommit)
     throw new DeploymentControlError('Main has changed. Refresh the deployment status before confirming.',409);
    if(status.active)
     throw new DeploymentControlError('A production deployment is already queued or running.',409);
-   await github('/actions/workflows/'+workflow+'/dispatches','POST',{ref:'main'});
+   const result=await operate({action:'deploy_latest',service:'api',release:expectedCommit});
+   if(!result.output.includes('QUEUED '+expectedCommit))
+    throw new DeploymentControlError('OCI broker did not confirm the deployment request.',502);
    await client.query('INSERT INTO md_security_events(tenant_id,actor_user_id,action,details) VALUES($1,$2,$3,$4::jsonb)',
-    [tenant,user,'platform.production-deploy.accepted',JSON.stringify({commit:expectedCommit,workflow})]);
+    [tenant,user,'platform.production-deploy.accepted',JSON.stringify({commit:expectedCommit,engine:'oci'})]);
   });
  }catch(error){
   await audit(db,tenant,user,'platform.production-deploy.failed',{
@@ -171,8 +185,8 @@ export function registerPlatformDeploymentRoutes(
    } catch(error) {
     // Temporary rate limits/network failures must never make the control vanish.
     // Display an actionable status and leave dispatch disabled until refreshed.
-    res.json({configured:!!token(),canDeploy:false,latestCommit:null,
-     deployedCommit:productionCommit(),active:false,run:null,workflowUrl,
+    res.json({configured:false,canDeploy:false,latestCommit:null,
+     deployedCommit:productionCommit(),active:false,oci:null,run:null,workflowUrl,
      error:error instanceof DeploymentControlError?error.message:'GitHub status unavailable.'});
    }
   }catch(error){handleError(error,res,next);}

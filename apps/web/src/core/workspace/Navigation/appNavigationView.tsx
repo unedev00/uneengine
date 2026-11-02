@@ -14,6 +14,7 @@ declare const __METADRIVE_WEB_RELEASE__: { commit: string | null; builtAt: strin
 type ProductionStatus = {
  configured: boolean; canDeploy: boolean; latestCommit: string | null;
  workflowUrl?: string; error?: string;
+ oci?: {state:'idle'|'running'|'succeeded'|'failed';sha:string|null;stage:string|null;updatedAt:string|null}|null;
  deployedCommit: string | null; active: boolean;
  run: null | {id:number;commit:string;status:string;conclusion:string|null;createdAt:string;url:string};
 };
@@ -139,8 +140,9 @@ export function NavigationLoadTime({ routeKey, startedAt, ready, kind, authMs, r
           setDeploymentLoading(false);
           // A workflow_dispatch may take time to appear in GitHub. An older
           // completed run must not re-enable the button after acceptance.
-          if (requestedAfterRunId !== null && status.run?.id !== requestedAfterRunId &&
-              status.run?.commit === status.latestCommit) {
+          if (requestedAfterRunId !== null && (status.oci?.state === 'running' ||
+            status.oci?.state === 'succeeded' || status.oci?.state === 'failed') &&
+            status.oci.sha === status.latestCommit) {
             setDeploymentRequested(false);
             setRequestedAfterRunId(null);
           }
@@ -154,12 +156,12 @@ export function NavigationLoadTime({ routeKey, startedAt, ready, kind, authMs, r
       }
     };
     void check();
-    // Unauthenticated GitHub reads have a low shared rate limit; poll infrequently
-    // until the protected server credential is configured.
+    // Read-only GitHub metadata is public and rate limited. Allow OCI job
+    // progress to update without refreshing the page after a deployment request.
     const interval = window.setInterval(() => {void check();},
-      deployment?.configured ? 30_000 : 180_000);
+      deployment?.active || deploymentRequested ? 30_000 : 180_000);
     return () => {cancelled = true; window.clearInterval(interval);};
-  }, [open, request, requestedAfterRunId, deployment?.configured]);
+  }, [open, request, requestedAfterRunId, deployment?.active, deploymentRequested]);
 
   const deployLatest = async () => {
     if (!request || !deployment?.canDeploy || !deployment.latestCommit ||
@@ -262,8 +264,16 @@ export function NavigationLoadTime({ routeKey, startedAt, ready, kind, authMs, r
           <div><dt>Latest main commit</dt><dd title={deployment?.latestCommit ?? undefined}>
             {deploymentLoading && !deployment ? 'Checking…' :
              deployment?.latestCommit?.slice(0,12) ?? 'Unavailable'}</dd></div>
-          <div><dt>Workflow</dt><dd>
-            {deployment?.active ? 'Running' : deploymentRequested ? 'Request accepted' :
+          <div><dt>OCI deployment</dt><dd>
+            {deployment?.oci?.state === 'running'
+              ? 'Running: '+(deployment.oci.stage ?? 'preparing')
+              : deployment?.oci?.state === 'succeeded' ? 'Last OCI run succeeded'
+              : deployment?.oci?.state === 'failed' ? 'Last OCI run failed'
+              : deploymentRequested ? 'Request accepted' : 'Idle'}</dd></div>
+          <div><dt>GitHub workflow</dt><dd>
+            {deployment?.active && deployment.run && deployment.run.status !== 'completed'
+              ? 'Running' :
+             deploymentRequested ? 'Checking…' :
              deployment?.run?.status === 'completed'
               ? deployment.run.conclusion === 'success' ? 'Last run succeeded' : 'Last run failed'
               : deploymentLoading ? 'Checking…' : deployment ? 'Not running' : 'Unavailable'}</dd></div>
@@ -275,7 +285,7 @@ export function NavigationLoadTime({ routeKey, startedAt, ready, kind, authMs, r
              deployment.latestCommit === webRelease?.commit &&
              deployment.run?.conclusion !== 'failure')}
           title={!deployment?.canDeploy ? 'Platform Developer deployment permission required'
-            : !deployment.configured ? 'A protected server-side GitHub credential is required'
+            : !deployment.configured ? 'The OCI deployment broker is unavailable'
             : deployment.active ? 'A deployment is already running'
             : undefined}
           onClick={() => {void deployLatest();}}>
@@ -286,7 +296,7 @@ export function NavigationLoadTime({ routeKey, startedAt, ready, kind, authMs, r
           Deploy requires Platform Developer permission and PlatformOperations manage access.
         </p>}
         {deployment && !deployment.configured && <p className="navigation-diagnostics-note">
-          One-click deployment needs a protected server-side GitHub credential.
+          OCI deployment helper is unavailable. Production operators can inspect the existing OCI operations service.
         </p>}
         {deployment && deployment.canDeploy && deployment.configured &&
           deployment.latestCommit === deployment.deployedCommit &&
@@ -306,7 +316,7 @@ export function NavigationLoadTime({ routeKey, startedAt, ready, kind, authMs, r
           deployment?.workflowUrl ??
           'https://github.com/unedev00/uneengine/actions/workflows/oracle-api-deploy.yml'}
           target="_blank" rel="noopener noreferrer" className="navigation-deployment-link">
-          Open production workflow</a>
+          Open GitHub workflow history</a>
       </div>
       {oracle.status === 'error' && <p className="navigation-diagnostics-note">Oracle API could not be reached.</p>}
       {oracle.status === 'ready' && !oracle.release && <p className="navigation-diagnostics-note">This API does not report release details yet.</p>}
