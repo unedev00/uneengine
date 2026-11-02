@@ -76,6 +76,10 @@
 .navigation-diagnostics-details dt { color: var(--md-muted,#596b7f); flex: 0 0 auto; }
 .navigation-diagnostics-details dd { margin: 0; min-width: 0; overflow-wrap: anywhere; text-align: right; font-variant-numeric: tabular-nums; font-weight: 500; }
 .navigation-diagnostics-note { margin: 12px 0 0; color: var(--md-muted,#596b7f); font-size: 11px; }
+.navigation-deployment-control { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--md-border,#d7e0e8); }
+.navigation-deployment-link { display: inline-block; margin-top: 10px; font-size: 12px; }
+.navigation-deployment-button { display: block; width: 100%; margin-top: 10px; min-height: 34px; }
+.navigation-deployment-button:disabled { opacity: .65; cursor: not-allowed; }
 @media (max-width: 600px) { .navigation-diagnostics-popover { right: -44px; } }
 
 /* Accessible connection enable/disable switch. No permissions are changed. */
