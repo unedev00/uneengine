@@ -26,7 +26,7 @@ test('Event is exactly three rows and Component Custom exactly two rows',()=>{
     '+ Icon','− Icon','Custom Button 1','Custom Button 2']){
    assert.ok(html.includes('aria-label="'+name+' action"'),name);
   }
-  // Flow input/output declarations now belong to Flow Builder, not the action ribbon.
+  // Flow input/output declarations belong in Flow Builder, not the Page Builder ribbon.
   for(const section of ['Flow inputs','Flow outputs'])
    assert.ok(!html.includes('aria-label="'+section+'"'));
   for(const old of ['Custom action trigger','All component actions','Show action details',
@@ -34,6 +34,22 @@ test('Event is exactly three rows and Component Custom exactly two rows',()=>{
    'Optional unit price field','Optional Page State collection to refresh'])
    assert.ok(!html.includes('aria-label="'+old+'"'),old+' should not occupy the ribbon');
  }
+});
+
+test('Cart Actions expose independent eye controls without editing Flow or Formula mappings',()=>{
+ const html=render({customButton1:{actionType:'Flow',flowApiName:'Stored'},
+   customButton2:{actionType:'Formula',formula:'@Quantity + 1'}},'customButton1');
+ for(const slot of ['+ Icon','− Icon','Custom Button 1','Custom Button 2']){
+   assert.ok(html.includes('aria-label="Hide '+slot+'"'),slot);
+ }
+ assert.ok(!render({},'','smart_button').includes('aria-label="Hide Custom Button 1"'));
+ assert.ok(!render({},'','smart_button').includes('aria-label="Hide + Icon"'));
+ const action=read('../src/core/builders/PageBuilder/PageBuilderActionRibbon.tsx');
+ assert.match(action,/buttonVisibility\?\.\[slot\.key as CartButtonKey\]===false/);
+ assert.match(action,/onButtonVisibilityChange\?\.\(slot\.key as CartButtonKey/);
+ const page=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ assert.match(page,/applyCartButtonVisibility/);
+ assert.match(page,/item\.properties,\[property\]:visible/);
 });
 
 test('Formula bar remains mounted and editable only for Formula action',()=>{
