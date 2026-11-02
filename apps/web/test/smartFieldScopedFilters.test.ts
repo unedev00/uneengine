@@ -35,3 +35,18 @@ test('selected field formulas use the existing bounded expression compiler',()=>
  assert.equal(scopedFieldAllows({textSource:{filters:[],filterLogic:'AND',filterFormula:'INVALID('}},
    'textSource',{Price:10},fields),false);
 });
+
+
+test('scoped Field and Formula modes apply only the selected saved rules',()=>{
+ const both={filters:[{field:'Active',operator:'Equals',value:'true'}],
+   filterLogic:'AND' as const,filterFormula:'@Price > 5'};
+ const formulas={badgeText:{...both,filterMode:'Formula'}};
+ const manual={badgeText:{...both,filterMode:'Field'}};
+ assert.equal(scopedFieldAllows(formulas,'badgeText',{Active:false,Price:10},fields),true);
+ assert.equal(scopedFieldAllows(formulas,'badgeText',{Active:true,Price:2},fields),false);
+ assert.equal(scopedFieldAllows(manual,'badgeText',{Active:false,Price:10},fields),false);
+ assert.equal(scopedFieldAllows(manual,'badgeText',{Active:true,Price:2},fields),true);
+ assert.equal(scopedFieldRule(formulas,'badgeText')?.filterMode,'Formula');
+ assert.equal(scopedFieldAllows({badgeText:{...both,filterMode:'Invalid'}},
+   'badgeText',{Active:true,Price:10},fields),false);
+});
