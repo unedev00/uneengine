@@ -127,7 +127,7 @@ export function renderSetupShell(ctx: any) {
            </React.Suspense>}
           <NavigationLoadTime routeKey={routeTiming.routeKey} startedAt={routeTiming.startedAt}
             ready={metadataLoaded && (route.kind !== 'setup' || route.workspace === 'home' || advancedMetadataLoaded) && (route.kind !== 'setup' || route.workspace !== 'rbac' || accessControlLoaded || Boolean(accessControlError))}
-            kind={routeTiming.kind} authMs={routeTiming.authMs} />
+            kind={routeTiming.kind} authMs={routeTiming.authMs} request={apiRequest} />
           <button type="button" className="icon-button" aria-label="Keyboard shortcuts" title="Keyboard shortcuts (?)" onClick={()=>setShortcutHelpOpen(true)}><CircleHelp size={17} /></button>
           
           <ConnectionHealthIndicator />
