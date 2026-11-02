@@ -12,6 +12,7 @@ import SmartFormulaField from './SmartFormulaField';
 import {relationshipFormulaFields} from './relationshipFormulaFields';
 import {pageStateChoices} from './pageStateChoices';
 import {namedCollectionName} from '../../pages/PageRuntime/pageCollectionSession';
+import {formulaCollectionReferenceKey} from '../../../../../server/src/expression-engine/FormulaCollection.js';
 import SmartIconDropdown from './SmartIconDropdown';
 import SmartMultiSelect from './SmartMultiSelect';
 import SmartIconGallery from './SmartIconGallery';
@@ -60,11 +61,17 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  const validateCollection=(next:string):string|null=>{
   if(!/^=\s*COLLECTION\s*\(/i.test(next.trim()))return null;
   const name=namedCollectionName(next);
-  if(!name)return 'Collection name is required as the first argument';
-  if(pageComponents.some(item=>item.id!==componentId&&
-    Object.values(item.properties).some(value=>namedCollectionName(value)?.toLowerCase()===name.toLowerCase())))
+  if(!name)return 'Enter a Collection name in quotes as the first argument';
+  const alias=formulaCollectionReferenceKey(name).toLowerCase();
+  if(pageComponents.some(item=>item.id!==componentId&&Object.values(item.properties)
+    .some(value=>{const other=namedCollectionName(value);
+      return other&&formulaCollectionReferenceKey(other).toLowerCase()===alias;})))
     return 'Duplicate Collection name: '+name;
-  if(/,\s*(?:,|""|\))/.test(next))return 'Collection value is required after the comma';
+  // Detect missing separators without reporting errors for unfinished typing.
+  if(/"(?:[^"]|"")*"\s*@([A-Za-z])/i.test(next))
+    return 'Missing comma before the field reference';
+  if(/,\s*(?:,|""|\))/.test(next))
+    return 'Enter a value after the comma';
   return null;
  };
  const [filtersOpen,setFiltersOpen]=useState(false);
