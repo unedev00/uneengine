@@ -1106,3 +1106,16 @@ test('Layout Image Background uses SQL fill palette for only Image and Container
  assert.match(ribbon,/kind==='color'/);
  assert.match(palette,/kind==='fill'\?'No fill'/);
 });
+
+test('three shared Tab source paths preserve Object ID, custom ID and named Collection ID',()=>{
+ const runtime=read('../src/component-libraries/smart/shared/SmartRuntime.jsx');
+ const sql=read('../../server/src/system-support/migrations/20270304-smart-tabs-custom-selected-value.sql');
+ const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
+ assert.match(runtime,/row\?\.Id\?\?row\?\.id/);
+ assert.match(runtime,/collectionName:p\.dataCollection\.name/);
+ assert.match(runtime,/const firstTabValue=firstTabCustom/);
+ assert.match(runtime,/fire\("change",\{index,value:firstTabValue,isCustom:true/);
+ assert.match(sql,/'firstTabValue','First Tab ID','Design','Tabs','expression'/);
+ assert.match(ribbon,/property\.id!=='firstTabValue'\|\|properties\.firstTabCustom===true/);
+ assert.match(ribbon,/p\.id!=='collectionFormula'/);
+});
