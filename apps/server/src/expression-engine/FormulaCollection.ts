@@ -87,12 +87,12 @@ export function matchesFormulaCollectionCriterion(value:unknown,raw:unknown):boo
  const valueNumber=typeof value==='number'?value:NaN;
  const comparable=Number.isFinite(expectedNumber)&&Number.isFinite(valueNumber);
  if(op==='>'||op==='>='||op==='<'||op==='<='){
-  const left=comparable?valueNumber:actual.toLocaleLowerCase('en');
-  const right=comparable?expectedNumber:expected.toLocaleLowerCase('en');
-  if(op==='>')return left>right;
-  if(op==='>=')return left>=right;
-  if(op==='<')return left<right;
-  return left<=right;
+  const order=comparable?(valueNumber<expectedNumber?-1:valueNumber>expectedNumber?1:0):
+   actual.toLocaleLowerCase('en').localeCompare(expected.toLocaleLowerCase('en'),'en');
+  if(op==='>')return order>0;
+  if(op==='>=')return order>=0;
+  if(op==='<')return order<0;
+  return order<=0;
  }
  const matched=hasExcelWildcardCriteria(expected)
   ?matchesExcelWildcard(actual,expected)
@@ -120,28 +120,43 @@ export function deriveFormulaCollection(
 
 /** Excel SUM over a typed collection: numbers and numeric Object fields only.
  * Record IDs, captions and criteria strings are never treated as amounts. */
-export function sumFormulaCollection(source:unknown):number{
+export function sumFormulaCollection(source:unknown,
+ authorisedSources:Readonly<Record<string,readonly Record<string,unknown>[]>>={}):number{
  const rows=Array.isArray(source)?source:
   source&&typeof source==='object'&&!Array.isArray(source)
    &&Array.isArray((source as NamedFormulaCollection).items)
    ?(source as NamedFormulaCollection).items:null;
  if(!rows||rows.length>200)throw Error('SUM requires a bounded numeric collection');
  let total=0;
- for(const entry of rows){
-  let value:unknown=entry;
-  if(entry&&typeof entry==='object'&&!Array.isArray(entry)){
-   const item=entry as Record<string,unknown>;
-   const record=item.record;
-   const field=typeof item.criteriaField==='string'?item.criteriaField.split('.').at(-1):null;
-   if(record&&typeof record==='object'&&!Array.isArray(record)&&field
-    &&Object.prototype.hasOwnProperty.call(record,field))
-    value=(record as Record<string,unknown>)[field];
-   else value=item.value;
-  }
+ const add=(value:unknown):void=>{
   if(typeof value!=='number'||!Number.isFinite(value))
    throw Error('SUM requires finite numeric collection values');
   total+=value;
   if(!Number.isFinite(total))throw Error('SUM result must be finite');
+ };
+ for(const entry of rows){
+  if(!entry||typeof entry!=='object'||Array.isArray(entry)){add(entry);continue;}
+  const item=entry as Record<string,unknown>;
+  const field=typeof item.criteriaField==='string'?item.criteriaField.split('.').at(-1):null;
+  const record=item.record;
+  if(record&&typeof record==='object'&&!Array.isArray(record)&&field
+   &&Object.prototype.hasOwnProperty.call(record,field)){
+   add((record as Record<string,unknown>)[field]);continue;
+  }
+  // A caption + Field + Criterion clause represents its authorised source
+  // records; SUM aggregates matching values rather than the caption/criterion.
+  if(typeof item.objectApiName==='string'&&typeof item.criteriaField==='string'
+   &&typeof field==='string'&&Object.prototype.hasOwnProperty.call(authorisedSources,item.objectApiName)){
+   const sourceRows=authorisedSources[item.objectApiName];
+   if(!Array.isArray(sourceRows)||sourceRows.length>200)
+    throw Error('SUM source exceeds 200 authorised records');
+   for(const row of sourceRows){
+    if(!Object.prototype.hasOwnProperty.call(row,field))throw Error('SUM field is unavailable');
+    if(matchesFormulaCollectionCriterion(row[field],item.criteria))add(row[field]);
+   }
+   continue;
+  }
+  add(item.value);
  }
  return total;
 }
