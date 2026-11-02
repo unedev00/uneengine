@@ -313,4 +313,7 @@ test('SUM composes with typed numeric Collections and field/criterion clauses',(
  const all=evaluateCollectionFormula('=COLLECTION("Manual", "All", "", "")');
  assert.equal(all.error,undefined);
  assert.deepEqual(all.value.items,['All']);
+ const criteria=evaluateCollectionFormula('=COLLECTION("Manual", "Apple", "", "A*", "Banana", "", "A*")');
+ assert.equal(criteria.error,undefined);
+ assert.deepEqual(criteria.value.items,['Apple']);
 });
