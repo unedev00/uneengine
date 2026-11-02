@@ -1,10 +1,9 @@
 import {useState} from 'react';
 import {Trash2, SlidersHorizontal} from 'lucide-react';
-import type {FlowDefinitionMetadata,FieldMetadata} from '../../metadata/Definitions/metadata';
+import type {FlowDefinitionMetadata} from '../../metadata/Definitions/metadata';
 import {metadataReference,metadataSelection} from '../../metadata/Definitions/metadataReferences';
 import {supportsSmartActionEvent} from './SmartEventActionsRibbon';
 import SmartFormulaField from './SmartFormulaField';
-import CompactActionFlowBindings from './CompactActionFlowBindings';
 
 type Binding=Record<string,unknown>;
 type EventOption={apiName:string;label:string};
@@ -67,7 +66,7 @@ const legacyFormula=(binding:Binding,eventName:string,field:string):string=>{
 /** One metadata-driven no-code action selector. Formulas and Flows are the only
  * choices for NEW actions. Legacy actions are retained and remain executable
  * until a user deliberately converts them; no business metadata is deleted.
- * Flow mapping uses the shared typed mapping engine, not a second runtime.
+ * Flow declarations belong to Flow Builder; existing action bindings remain intact.
  */
 export default function PageBuilderActionRibbon({
  actions,eventDefinitions,flows,selectedEvent,onSelectEvent,onChange,
@@ -87,7 +86,6 @@ export default function PageBuilderActionRibbon({
  const formulaFields=numericFields.map(field=>({...field,required:false,unique:false}));
  const availableFlows=flows.filter(flow=>flow.status==='Active'&&
   ['Autolaunched Flow','Screen Flow','In-Screen Flow'].includes(flow.flowType));
- const selectedFlow=metadataSelection(flows,selected.flowApiName);
  const eventLabels=new Map(eventDefinitions.map(item=>[item.apiName,item.label]));
  const members=selectedApis?.length?selectedApis:[api];
  const supports=(key:string)=>members.every(member=>member.startsWith('smart_')
@@ -172,9 +170,6 @@ export default function PageBuilderActionRibbon({
        }}><Trash2 size={15}/></button>}
    </div>;
  };
- const updateInput=(inputs:Record<string,unknown>)=>patch({inputs});
- const updateOutput=(outputs:Record<string,unknown>)=>patch({outputs});
- const canEditFlow=active&&!disabled&&selected.actionType==='Flow'&&Boolean(selectedFlow);
  return <div className="page-action-ribbon-workspace page-action-compact-workspace"
    aria-label="Actions ribbon workspace">
    <section className="page-action-compact-event" aria-label="Event">
@@ -212,10 +207,6 @@ export default function PageBuilderActionRibbon({
          </div>
          <span className="page-action-section-caption">Other events</span>
        </section>}
-       <CompactActionFlowBindings
-         flow={selectedFlow} enabled={canEditFlow}
-         inputs={asBinding(selected.inputs)} outputs={asBinding(selected.outputs)}
-         fields={dataFields.map(field=>({...field,required:false,unique:false})) as FieldMetadata[]} onInputsChange={updateInput} onOutputsChange={updateOutput}/>
      </div>
    </div>
  </div>;
