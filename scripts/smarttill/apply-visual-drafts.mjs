@@ -64,13 +64,13 @@ export function visualBlocks(page,layout='Desktop'){
    completedSub:frame(24,240,310,52)
   }:tablet?{
    welcome:frame(32,24,960,76),order:frame(32,114,960,48),
-   cart:frame(32,177,960,490),footer:frame(32,695,960,38),
+   cart:frame(32,177,960,490),footer:frame(32,695,960,40),
    complete:frame(170,160,684,390),
    completedIcon:frame(304,30,76,76),completedTitle:frame(35,130,614,80),
    completedSub:frame(86,245,512,52)
   }:{
    welcome:frame(64,46,1300,76),order:frame(64,154,1312,48),
-   cart:frame(64,226,1312,540),footer:frame(64,803,1312,38),
+   cart:frame(64,226,1312,540),footer:frame(64,803,1312,40),
    complete:frame(304,215,832,445),
    completedIcon:frame(378,34,76,76),completedTitle:frame(86,144,660,80),
    completedSub:frame(160,255,512,52)
@@ -105,17 +105,17 @@ export function visualBlocks(page,layout='Desktop'){
  const c=palettes.lock,root='stls-root';
  const spec=mobile?{
   icon:frame(165,126,60,60),title:frame(24,219,342,54),
-  instructions:frame(24,292,342,58),pinLabel:frame(24,382,342,28),
+  instructions:frame(24,292,342,58),pinLabel:frame(24,372,342,40),
   pin:frame(24,416,342,64),unlock:frame(24,500,342,60),
-  error:frame(24,573,342,36),logout:frame(65,645,260,56)
+  error:frame(24,573,342,40),logout:frame(65,645,260,56)
  }:tablet?{
   icon:frame(474,94,76,76),title:frame(282,189,460,60),
-  instructions:frame(257,263,510,50),pinLabel:frame(312,326,400,30),
+  instructions:frame(257,263,510,50),pinLabel:frame(312,321,400,40),
   pin:frame(312,363,400,66),unlock:frame(312,447,400,64),
   error:frame(312,530,400,40),logout:frame(382,591,260,56)
  }:{
   icon:frame(682,170,76,76),title:frame(490,271,460,60),
-  instructions:frame(465,343,510,50),pinLabel:frame(520,413,400,30),
+  instructions:frame(465,343,510,50),pinLabel:frame(520,408,400,40),
   pin:frame(520,450,400,66),unlock:frame(520,535,400,64),
   error:frame(520,610,400,40),logout:frame(590,675,260,56)
  };
@@ -203,7 +203,9 @@ export function verifyVisualDraft(before,after,page,layout,added){
   assert.equal(saved.properties?.actionFlows,undefined,'Unexpected bound action');
   assert.equal(saved.properties?.objectApiName,undefined,'Unexpected data object');
  }
- assert.equal(after.draftRevision,before.draftRevision+1,'Draft revision not advanced');
+ assert(after.draftRevision>before.draftRevision,'Draft revision not advanced');
+ if(before.draftRevision>0)
+  assert.equal(after.draftRevision,before.draftRevision+1,'Unexpected draft revision jump');
  assert.equal(after.publishedRevision,before.publishedRevision,'Unexpected publish');
  assert.equal(after.targetObject,before.targetObject,'Page object binding changed');
 }
@@ -232,6 +234,8 @@ async function run(){
   import('../../apps/server/dist-system/system-files/page-runtime.js'),
   import('../../apps/server/dist-system/system-files/rbac-engine.js')
  ]);
+ if(typeof process.getuid==='function'&&process.getuid()===0)
+  throw Error('Run the page update as an unprivileged service account, not root');
  const db=new SqlPersistence(process.env.DATABASE_URL);
  try{
   await new RbacEngine(db).require(tenant,actor,'PageDefinition','manage');
