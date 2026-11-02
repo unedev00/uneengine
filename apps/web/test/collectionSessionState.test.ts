@@ -7,7 +7,7 @@ import {pageComponentRecordQuery,filterPageComponentRecords,resolvePageFilterVal
 import {createNamedFormulaCollection} from '../../server/src/expression-engine/FormulaCollection';
 
 test('Excel-style signature follows nested calls, quoted commas and any registered formula',()=>{
- const a=formulaSignatureAt('IF(AND(@Open, OR(TRUE, FALSE)), "yes, ok", 3)',29);
+ const a=formulaSignatureAt('IF(AND(@Open, OR(TRUE, FALSE)), "yes, ok", 3)',32);
  assert.equal(a?.name,'IF');
  assert.equal(a?.argument,1);
  const b=formulaSignatureAt('COLLECTION("MyCollection", IF(TRUE, 1, 2), ',43);
