@@ -45,6 +45,7 @@ export function NavigationLoadTime({ routeKey, startedAt, ready, kind, authMs, r
   const [deploymentBusy, setDeploymentBusy] = useState(false);
   const [deploymentLoading, setDeploymentLoading] = useState(false);
   const [deploymentRequested, setDeploymentRequested] = useState(false);
+  const [requestedAfterRunId, setRequestedAfterRunId] = useState<number | null>(null);
   const [oracle, setOracle] = useState<{ status: OracleStatus; release: OracleRelease | null }>({ status: 'idle', release: null });
   const containerRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -135,7 +136,13 @@ export function NavigationLoadTime({ routeKey, startedAt, ready, kind, authMs, r
           setDeployment(status);
           setDeploymentError('');
           setDeploymentLoading(false);
-          if (status.active || status.run?.conclusion) setDeploymentRequested(false);
+          // A workflow_dispatch may take time to appear in GitHub. An older
+          // completed run must not re-enable the button after acceptance.
+          if (requestedAfterRunId !== null && status.run?.id !== requestedAfterRunId &&
+              status.run?.commit === status.latestCommit) {
+            setDeploymentRequested(false);
+            setRequestedAfterRunId(null);
+          }
         }
       } catch (error) {
         if (!cancelled) {
@@ -151,7 +158,7 @@ export function NavigationLoadTime({ routeKey, startedAt, ready, kind, authMs, r
     void check();
     const interval = window.setInterval(() => {void check();}, 12000);
     return () => {cancelled = true; window.clearInterval(interval);};
-  }, [open, request]);
+  }, [open, request, requestedAfterRunId]);
 
   const deployLatest = async () => {
     if (!request || !deployment?.canDeploy || !deployment.latestCommit ||
@@ -163,6 +170,7 @@ export function NavigationLoadTime({ routeKey, startedAt, ready, kind, authMs, r
     try {
       await request('/platform/production-deployment', {method:'POST',
         body:JSON.stringify({expectedCommit:deployment.latestCommit})});
+      setRequestedAfterRunId(deployment.run?.id ?? 0);
       setDeploymentRequested(true);
     } catch (error) {
       setDeploymentError(error instanceof Error ? error.message : 'Deployment request failed');
