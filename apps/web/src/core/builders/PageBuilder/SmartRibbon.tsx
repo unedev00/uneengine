@@ -71,7 +71,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
   // Detect missing separators without reporting errors for unfinished typing.
   if(/"(?:[^"]|"")*"\s*@([A-Za-z])/i.test(next))
     return 'Missing comma before the field reference';
-  if(/,\s*(?:,|""|\))/.test(next))
+  if(/,\s*(?:,|\))/.test(next))
     return 'Enter a value after the comma';
   return null;
  };
