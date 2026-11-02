@@ -1,5 +1,5 @@
 import {useState} from 'react';
-import {Trash2, SlidersHorizontal} from 'lucide-react';
+import {Trash2, SlidersHorizontal, Eye, EyeOff} from 'lucide-react';
 import type {FlowDefinitionMetadata} from '../../metadata/Definitions/metadata';
 import {metadataReference,metadataSelection} from '../../metadata/Definitions/metadataReferences';
 import {supportsSmartActionEvent} from './SmartEventActionsRibbon';
@@ -20,6 +20,7 @@ const componentSlots=[
  {key:'customButton1',label:'Custom Button 1'},
  {key:'customButton2',label:'Custom Button 2'}
 ] as const;
+type CartButtonKey=(typeof componentSlots)[number]['key'];
 const legacyLabels:Record<string,string>={
  Navigate:'Open another page',SetFilter:'Filter a list',
  PageState:'Update page value',AdjustNumber:'Change number'
@@ -70,12 +71,15 @@ const legacyFormula=(binding:Binding,eventName:string,field:string):string=>{
  */
 export default function PageBuilderActionRibbon({
  actions,eventDefinitions,flows,selectedEvent,onSelectEvent,onChange,
- api='',selectedApis,dataFields=[],disabled=false
+ api='',selectedApis,dataFields=[],disabled=false,
+ buttonVisibility,onButtonVisibilityChange
 }:{
  actions:Binding;eventDefinitions:EventOption[];flows:FlowDefinitionMetadata[];
  selectedEvent:string;onSelectEvent:(name:string)=>void;
  onChange:(next:Binding)=>void;api?:string;selectedApis?:readonly string[];
  dataFields?:Array<{apiName:string;label:string;dataType:string}>;disabled?:boolean;
+ buttonVisibility?:Partial<Record<CartButtonKey,boolean>>;
+ onButtonVisibilityChange?:(key:CartButtonKey,visible:boolean)=>void;
  // Deprecated parameters remain optional for existing Page Builder integrations.
  showDetails?:boolean;onToggleDetails?:()=>void;
 }) {
@@ -88,6 +92,7 @@ export default function PageBuilderActionRibbon({
   ['Autolaunched Flow','Screen Flow','In-Screen Flow'].includes(flow.flowType));
  const eventLabels=new Map(eventDefinitions.map(item=>[item.apiName,item.label]));
  const members=selectedApis?.length?selectedApis:[api];
+ const isCartSelection=members.length>0&&members.every(member=>member==='smart_cart');
  const supports=(key:string)=>members.every(member=>member.startsWith('smart_')
    ?supportsSmartActionEvent(member,key)
    :eventDefinitions.some(item=>item.apiName===key));
@@ -163,6 +168,16 @@ export default function PageBuilderActionRibbon({
        {type==='Flow'&&flowName&&!availableFlows.some(item=>item.apiName===flowName)&&
          <option value={'flow:'+flowName}>{flowName} (saved/unavailable)</option>}
      </select>
+     {isCartSelection&&componentSlots.some(item=>item.key===slot.key)&&
+       <button type="button" className="page-action-visibility-toggle"
+         aria-label={(buttonVisibility?.[slot.key as CartButtonKey]===false?'Show ':'Hide ')+slot.label}
+         aria-pressed={buttonVisibility?.[slot.key as CartButtonKey]!==false}
+         title={(buttonVisibility?.[slot.key as CartButtonKey]===false?'Show ':'Hide ')+slot.label}
+         disabled={disabled||!available||!onButtonVisibilityChange}
+         onClick={()=>onButtonVisibilityChange?.(slot.key as CartButtonKey,
+           buttonVisibility?.[slot.key as CartButtonKey]===false)}>
+         {buttonVisibility?.[slot.key as CartButtonKey]===false?<EyeOff size={15}/>:<Eye size={15}/>}
+       </button>}
      {isSelected&&active&&<button className="page-action-icon-remove" type="button"
        aria-label={'Remove '+slot.label+' action'} title={'Remove '+slot.label+' action'}
        disabled={disabled} onClick={()=>{

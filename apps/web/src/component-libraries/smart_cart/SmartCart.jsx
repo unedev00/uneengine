@@ -16,8 +16,10 @@ export default function SmartCart({p,records,Picture,expression,fieldAllowed,fir
  const actions=p.actionFlows&&typeof p.actionFlows==="object"&&!Array.isArray(p.actionFlows)?p.actionFlows:{};
  const canClick=Boolean(actions.click)&&!p.previewOnly&&!p.builderPreview;
  // Per-button metadata actions; legacy qtyIcon is a compatibility fallback.
- const canIncrease=Boolean(actions.qtyIncrease||actions.qtyIcon)&&!p.previewOnly&&!p.builderPreview;
- const canDecrease=Boolean(actions.qtyDecrease||actions.qtyIcon)&&!p.previewOnly&&!p.builderPreview;
+ const showIncrease=p.qtyIncreaseVisible!==false;
+ const showDecrease=p.qtyDecreaseVisible!==false;
+ const canIncrease=showIncrease&&Boolean(actions.qtyIncrease||actions.qtyIcon)&&!p.previewOnly&&!p.builderPreview;
+ const canDecrease=showDecrease&&Boolean(actions.qtyDecrease||actions.qtyIcon)&&!p.previewOnly&&!p.builderPreview;
  const rows=demo?Array.from({length:3},(_,i)=>({id:"preview-"+i,Quantity:1,__preview:true})):records.slice(0,200);
  // Select the most recently appended item by default. Preserve a manually
  // selected row until it is removed, and automatically follow newly added rows.
@@ -33,9 +35,9 @@ export default function SmartCart({p,records,Picture,expression,fieldAllowed,fir
    previousKeys.current=rowKeys;
  },[rowSignature]);
  const expandedActions=[
-  {key:"customButton1",label:String(p.customButton1Label||"Custom Button 1")},
-  {key:"customButton2",label:String(p.customButton2Label||"Custom Button 2")}
- ];
+  {key:"customButton1",label:String(p.customButton1Label||"Custom Button 1"),visible:p.customButton1Visible!==false},
+  {key:"customButton2",label:String(p.customButton2Label||"Custom Button 2"),visible:p.customButton2Visible!==false}
+ ].filter(action=>action.visible);
  // Financial amounts come from explicit permission-checked Page State/Flow
  // bindings. Do not infer VAT, discounts or a payable total from line prices.
  const money=value=>{
@@ -114,15 +116,15 @@ export default function SmartCart({p,records,Picture,expression,fieldAllowed,fir
     ?Number(computed):null;
   if(!numeric)return <span className="smart-cart-qty-value">{display(computed)}</span>;
   return <div className="smart-cart-qty-controls" aria-label={"Quantity controls for "+String(name||"Product")}>
-   <button type="button" className="smart-cart-qty-button"
+   {showDecrease&&<button type="button" className="smart-cart-qty-button"
     aria-label={"Decrease quantity for "+String(name||"Product")}
     disabled={demo||!canDecrease||payload.recordId===null||quantity===null||quantity<=0}
-    onClick={()=>fire?.(actions.qtyDecrease?'qtyDecrease':'qtyIcon',{...payload,delta:-1,operation:"decrement",fieldApiName:fieldName,quantity})}>−</button>
+    onClick={()=>fire?.(actions.qtyDecrease?'qtyDecrease':'qtyIcon',{...payload,delta:-1,operation:"decrement",fieldApiName:fieldName,quantity})}>−</button>}
    <span className="smart-cart-qty-value" aria-label={quantity===null?"Quantity not bound":"Quantity "+quantity}>{display(computed)}</span>
-   <button type="button" className="smart-cart-qty-button"
+   {showIncrease&&<button type="button" className="smart-cart-qty-button"
     aria-label={"Increase quantity for "+String(name||"Product")}
     disabled={demo||!canIncrease||payload.recordId===null||quantity===null}
-    onClick={()=>fire?.(actions.qtyIncrease?'qtyIncrease':'qtyIcon',{...payload,delta:1,operation:"increment",fieldApiName:fieldName,quantity})}>+</button>
+    onClick={()=>fire?.(actions.qtyIncrease?'qtyIncrease':'qtyIcon',{...payload,delta:1,operation:"increment",fieldApiName:fieldName,quantity})}>+</button>}
   </div>;
  };
  return <section className="smart-cart-root" aria-label="Smart Cart" style={{
@@ -185,7 +187,7 @@ export default function SmartCart({p,records,Picture,expression,fieldAllowed,fir
          {display(value)}</span>;
        })}
        </div>
-       {selected&&<div className="smart-cart-expanded-actions" role="group"
+       {selected&&expandedActions.length>0&&<div className="smart-cart-expanded-actions" role="group"
          aria-label={"Actions for "+String(name||"selected item")}>
          {expandedActions.map(action=><button type="button" key={action.key}
           className="smart-cart-custom-action"

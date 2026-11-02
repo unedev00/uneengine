@@ -166,6 +166,7 @@
     "apps/web/test/canvasSharedGestureGeometry.test.ts",
     "apps/web/test/cardGridScrollContract.test.ts",
     "apps/web/test/cartRibbonSummaryLabels.test.mjs",
+    "apps/web/test/cartCustomActionVisibility.test.mjs",
     "apps/web/test/componentLibraries.test.ts",
     "apps/web/test/componentPropertySchema.test.ts",
     "apps/web/test/connectedAppsScopes.test.mjs",

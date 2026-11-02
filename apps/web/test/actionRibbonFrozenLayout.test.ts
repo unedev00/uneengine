@@ -36,6 +36,22 @@ test('Event is exactly three rows and Component Custom exactly two rows',()=>{
  }
 });
 
+test('Cart Actions expose independent eye controls without editing Flow or Formula mappings',()=>{
+ const html=render({customButton1:{actionType:'Flow',flowApiName:'Stored'},
+   customButton2:{actionType:'Formula',formula:'@Quantity + 1'}},'customButton1');
+ for(const slot of ['+ Icon','− Icon','Custom Button 1','Custom Button 2']){
+   assert.ok(html.includes('aria-label="Hide '+slot+'"'),slot);
+ }
+ assert.ok(!render({},'','smart_button').includes('aria-label="Hide Custom Button 1"'));
+ assert.ok(!render({},'','smart_button').includes('aria-label="Hide + Icon"'));
+ const action=read('../src/core/builders/PageBuilder/PageBuilderActionRibbon.tsx');
+ assert.match(action,/buttonVisibility\?\.\[slot\.key as CartButtonKey\]===false/);
+ assert.match(action,/onButtonVisibilityChange\?\.\(slot\.key as CartButtonKey/);
+ const page=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ assert.match(page,/applyCartButtonVisibility/);
+ assert.match(page,/item\.properties,\[property\]:visible/);
+});
+
 test('Formula bar remains mounted and editable only for Formula action',()=>{
  const blank=render({});
  const flow=render({click:{actionType:'Flow',flowApiName:'Some_Flow'}},'click');
