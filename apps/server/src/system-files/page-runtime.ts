@@ -205,6 +205,7 @@ export class PageRuntime {
       // Enforce this inside the transaction to avoid a separate check/write race.
       if(pageId&&createOnly)throw new Error('Page already exists');
       if(pageId){
+        if(p.apiName!==previousApiName)throw new Error('Rename this page from Page Properties');
         const managed=await client.query(
           'SELECT 1 FROM md_app_seed_pages WHERE tenant_id=$1 AND page_id=$2 LIMIT 1',[tenantId,pageId]);
         if(managed.rowCount)throw new Error('Invalid managed Page update');
