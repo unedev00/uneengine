@@ -56,7 +56,9 @@ export function usePageCollectionFormula(
  const lastValid=useRef<{object:string;collection:PageNamedCollection}|null>(null);
  const listBinding=parseCollectionListBinding(source,primaryObject);
  const registry=useSessionCollectionSnapshot(scope);
- const refs=listBinding?[{object:listBinding.object,field:listBinding.field}]:
+ const namedListSource=listBinding&&listBinding.object===primaryObject
+  ?registry.collections[listBinding.field]:undefined;
+ const refs=listBinding&&!namedListSource?[{object:listBinding.object,field:listBinding.field}]:
   collectionFormulaReferences(source,primaryObject);
  const selected=['objectApiName','objectApiName2','objectApiName3']
   .map(key=>String(properties[key]??'')).filter(Boolean);
@@ -101,9 +103,10 @@ export function usePageCollectionFormula(
  const sources:Record<string,Row[]>={...remote?.records};
  if(primaryObject&&referenced.includes(primaryObject))sources[primaryObject]=[...primaryRecords];
  if(listBinding){
-  const rows=sources[listBinding.object]??[];
+  const rows=namedListSource?namedCollectionRows(namedListSource):sources[listBinding.object]??[];
+  const criteria=namedListSource?{...listBinding,field:'Name'}:listBinding;
   return {collection:{name:'__filtered_list__',
-    items:filteredCollectionItems(listBinding,rows)},error:null,loading:false};
+    items:filteredCollectionItems(criteria,rows)},error:null,loading:false};
  }
  const resolved=evaluateCollectionFormula(source,sources,{state:pageState,session:{id:sessionId},primaryObject});
  const value=resolved.value as PageNamedCollection|null;
