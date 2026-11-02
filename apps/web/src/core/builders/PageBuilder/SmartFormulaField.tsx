@@ -1,4 +1,4 @@
-import {useState,useRef,useLayoutEffect,type KeyboardEvent} from 'react';
+import {useState,useRef,useEffect,useLayoutEffect,type KeyboardEvent} from 'react';
 import {createPortal} from 'react-dom';
 import type {FieldMetadata,ObjectMetadata} from '../../metadata/Definitions/metadata';
 import {relationshipFormulaFields} from './relationshipFormulaFields';
@@ -22,17 +22,21 @@ export function splitSmartFormula(value:string){
  if(cursor<value.length)parts.push({value:value.slice(cursor),kind:'text'});
  return parts;
 }
-export default function SmartFormulaField({value,onChange,fields,disabled,label,objects=[],rootObjectApiName='',singleFieldOnly=false,selectedSourceObjects,mentionKind='text'}:{
+export default function SmartFormulaField({value,onChange,fields,disabled,label,objects=[],rootObjectApiName='',singleFieldOnly=false,selectedSourceObjects,mentionKind='text',validate}:{
  value:string;onChange:(next:string)=>void;fields:readonly FieldMetadata[];disabled:boolean;label:string;
- objects?:readonly ObjectMetadata[];rootObjectApiName?:string;singleFieldOnly?:boolean;selectedSourceObjects?:readonly ObjectMetadata[];mentionKind?:MentionKind
+ objects?:readonly ObjectMetadata[];rootObjectApiName?:string;singleFieldOnly?:boolean;selectedSourceObjects?:readonly ObjectMetadata[];mentionKind?:MentionKind;
+ validate?:(formula:string)=>string|null
 }){
  const input=useRef<HTMLInputElement>(null);
+ const [draft,setDraft]=useState(value);
+ const [validationError,setValidationError]=useState<string|null>(null);
+ useEffect(()=>{setDraft(value);setValidationError(null)},[value]);
  const [matches,setMatches]=useState<{start:number;end:number;query:string}|null>(null);
  const [popup,setPopup]=useState<{top:number;left:number;width:number;above:boolean}|null>(null);
  const [caret,setCaret]=useState(value.length);
  const [focused,setFocused]=useState(false);
  const [hintPosition,setHintPosition]=useState<{top:number;left:number}|null>(null);
- const hint=focused?formulaSignatureAt(value,caret):null;
+ const hint=focused?formulaSignatureAt(draft,caret):null;
  useLayoutEffect(()=>{
   if(!hint||!input.current){setHintPosition(null);return;}
   const reposition=()=>{
@@ -67,7 +71,11 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
      field.label.toLowerCase().includes(matches.query.toLowerCase()))).slice(0,200)
     .map(field=>({reference:'@'+field.apiName,label:field.label}))) : [];
  const update=(next:string,caret:number)=>{
-  onChange(next);setCaret(caret);
+  setDraft(next);
+  const error=validate?.(next)??null;
+  setValidationError(error);
+  if(!error)onChange(next);
+  setCaret(caret);
   const before=next.slice(0,caret);
   // A field picker is never offered while editing a quoted string.
   const openString=(before.match(/"/g)||[]).length%2===1;
@@ -76,9 +84,13 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
  };
  const insert=(reference:string)=>{
   if(!matches)return;
-  const next=value.slice(0,matches.start)+reference+value.slice(matches.end);
+  const next=draft.slice(0,matches.start)+reference+draft.slice(matches.end);
   const end=matches.start+reference.length;
-  onChange(next);setCaret(end);setMatches(null);
+  setDraft(next);
+  const error=validate?.(next)??null;
+  setValidationError(error);
+  if(!error)onChange(next);
+  setCaret(end);setMatches(null);
   requestAnimationFrame(()=>{input.current?.focus();input.current?.setSelectionRange(end,end)});
  };
  const keyDown=(event:KeyboardEvent<HTMLInputElement>)=>{
@@ -86,15 +98,16 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
   if(event.key==='Enter'&&filtered.length&&matches){event.preventDefault();insert(filtered[0].reference);}
  };
  return <div className="smart-formula" title={singleFieldOnly?'Select a Boolean field, e.g. @IsActive':'Formula: @Field, + - * / and &; quoted symbols are text'}>
-  <div className="smart-formula-highlight" aria-hidden="true">{splitSmartFormula(value).map((part,i)=>
+  <div className="smart-formula-highlight" aria-hidden="true">{splitSmartFormula(draft).map((part,i)=>
     <span key={i} className={'smart-formula-'+part.kind}>{part.value}</span>)}</div>
-  <input ref={input} type="text" aria-label={label} value={value} spellCheck={false} autoComplete="off"
+  <input ref={input} type="text" aria-label={label} value={draft} spellCheck={false} autoComplete="off"
    placeholder={singleFieldOnly?'@BooleanField':'@Field & "text"'} disabled={disabled} onKeyDown={keyDown}
-   onFocus={e=>{setFocused(true);setCaret(e.currentTarget.selectionStart??value.length)}}
+   onFocus={e=>{setFocused(true);setCaret(e.currentTarget.selectionStart??draft.length)}}
    onClick={e=>setCaret(e.currentTarget.selectionStart??value.length)}
    onKeyUp={e=>setCaret(e.currentTarget.selectionStart??value.length)}
    onBlur={()=>{setMatches(null);setFocused(false)}}
    onChange={e=>update(e.currentTarget.value,e.currentTarget.selectionStart??e.currentTarget.value.length)}/>
+  {validationError&&<div className="smart-formula-error" role="alert">{validationError}</div>}
   {hint&&hintPosition&&createPortal(<div className="smart-formula-signature" role="status"
     style={{position:'fixed',top:hintPosition.top,left:hintPosition.left,zIndex:6100}}>
     <strong>{hint.name}</strong><span>(</span>
