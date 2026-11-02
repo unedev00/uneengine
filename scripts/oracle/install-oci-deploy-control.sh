@@ -20,4 +20,15 @@ install -o root -g root -m 0755 "$source_dir/metadrive-mcp-broker.py" /usr/local
 mv -f /usr/local/libexec/.metadrive-mcp-broker.py.new /usr/local/libexec/metadrive-mcp-broker.py
 install -o root -g root -m 0755 "$source_dir/metadrive-oci-deploy-latest" /usr/local/libexec/.metadrive-oci-deploy-latest.new
 mv -f /usr/local/libexec/.metadrive-oci-deploy-latest.new /usr/local/libexec/metadrive-oci-deploy-latest
+# The original temporary bootstrap email/domain variables are intentionally
+# absent from production. Declare only this fixed, OCI-owner-controlled root
+# platform domain; the SQL seeder must still find exactly one active original
+# TenantDeveloper role holder with OneEngine before it can grant anything.
+install -d -o root -g root -m 0755 /etc/systemd/system/metadrive-api.service.d
+cat >/etc/systemd/system/metadrive-api.service.d/96-platform-deploy-owner.conf <<'UNIT'
+[Service]
+Environment=METADRIVE_PLATFORM_CANONICAL_DOMAIN=unesolutions.co.uk
+UNIT
+chmod 0644 /etc/systemd/system/metadrive-api.service.d/96-platform-deploy-owner.conf
+systemctl daemon-reload
 echo 'OCI deployment control installed with existing restricted broker.'
