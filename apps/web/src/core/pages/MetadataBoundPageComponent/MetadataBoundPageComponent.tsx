@@ -16,6 +16,7 @@ import { explicitMentionRecordId, useRelationshipMentionContext } from '../../re
 import {resolvePageActionRoute} from '../PageRuntime/pageActionRouting';
 import {resolveFlowOutputBindings,resolveStructuredFlowInput} from '../../automation/FlowScreen/flowInputBindings';
 import {componentLayoutProps} from '../TemplatePageRuntime/pageComponentLayout';
+import {usePageCollectionFormula,namedCollectionRows} from '../PageRuntime/usePageCollectionFormula';
 import RegisteredComponent from '../../components/RegisteredComponent/RegisteredComponent';
 import {behaviorValidation,behaviorAction,pageBehaviors,type BehaviorContext} from '../PageRuntime/pageBehaviorRuntime';
 import type {LibraryComponentMetadata,PageComponentMetadata,ObjectMetadata,FieldMetadata,LightningAppMetadata,LightningPageMetadata,ReportMetadata,FlowDefinitionMetadata} from '../../metadata/Definitions/metadata';
@@ -266,6 +267,10 @@ export default function MetadataBoundPageComponent({
   const visibleRecords=relatedField?filterRelatedRecords(filteredRecords,parentId,relatedField):filteredRecords;
   const contextRecords=contextApiName
    ?currentContextRecord?[currentContextRecord]:[]:visibleRecords;
+  const namedSource=usePageCollectionFormula(properties.collectionFormula,properties,objects,
+    objectApiName,contextRecords,recordTotal,revision,pageState,sessionId);
+  const dataCollection=namedSource.collection;
+  const dataCollectionRows=dataCollection?namedCollectionRows(dataCollection):null;
   const mentionContext = useRelationshipMentionContext(objects, mentionRootObjectApiName,
     recordId || explicitMentionRecordId(properties), properties, apiRequest, revision);
   const resolvedProperties = bindPageStateProperties(resolveMentionProperties(properties, mentionContext.records, mentionContext.fields, objects, mentionRootObjectApiName),pageState);
@@ -518,6 +523,7 @@ export default function MetadataBoundPageComponent({
     ?{width:'100%',height:'100%',minHeight:0,minWidth:0}:undefined}>
     {!objectApiName && <div className="records-message" role="alert">Select a bound object to load records for this component.</div>}
     {dataError && !contextApiName && <div className="records-message" role="alert">{dataError}</div>}
+     {namedSource.error && <div className="records-message" role="alert">{namedSource.error}</div>}
     <RegisteredComponent definition={definition} layoutTransparent={smartCanvas} editorPreview={builderPreview===true&&disableActions} props={{
       ...rowResolvedProperties, ...componentLayoutProps(properties, formFactor),
       ...(smartCanvas?{canvasFrameSized:true}:{}),
@@ -529,6 +535,7 @@ export default function MetadataBoundPageComponent({
       } : {}),
       ...(typeof properties.searchKey === 'string' && properties.searchKey ? {searchQuery:selectedCategories[properties.searchKey] ?? ''} : {}),
       label: component.label, properties: rowResolvedProperties, pageState, objects, reports, flows: availableFlows,
+      dataCollection,
       fieldAllowed:(key:string,row:Record<string,unknown>)=>scopedFieldAllows(
         properties.dataFieldFilters,key,row,filterFields,{pageState,recordId,sessionId}),
        pageSessionKey, componentId: component.id,
@@ -548,7 +555,8 @@ export default function MetadataBoundPageComponent({
       // Multi-row components resolve their per-row values inside their own renderer.
       ...(contextRecords.length===1 ? {record:contextRecords[0]} : {}),
       ...(objectApiName ? { records: contextRecords } : {}),
-      ...(objectApiName ? {recordPagination:{
+      ...(dataCollectionRows?{records:dataCollectionRows}:{}),
+      ...(!dataCollectionRows&&objectApiName ? {recordPagination:{
         limit:recordPageSize,offset:recordOffset,total:recordTotal,
         hasPrevious:recordOffset>0,hasNext:recordOffset+recordPageSize<recordTotal,
         available:recordQuery.serverFilterable
