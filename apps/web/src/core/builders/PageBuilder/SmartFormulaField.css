@@ -14,3 +14,10 @@
 .smart-formula-signature .is-current{font-weight:800;color:#132b4c;background:#dcecff;border-radius:3px}
 
 .smart-formula-error{position:absolute;top:calc(100% + 3px);left:0;min-width:210px;max-width:380px;background:#fff3f1;border:1px solid #e6a7a0;border-radius:4px;padding:5px 7px;color:#9a302a;font:11px/1.35 "Segoe UI",Arial,sans-serif;z-index:6200;box-shadow:0 5px 12px #0001}
+
+.smart-formula-confirm-backdrop{position:fixed;inset:0;z-index:7200;display:flex;align-items:center;justify-content:center;background:#172b4680}
+.smart-formula-confirm{background:#fff;color:#20344d;box-shadow:0 14px 40px #11213855;border-radius:9px;max-width:min(450px,calc(100vw - 24px));padding:18px 22px;font:13px "Segoe UI",Arial,sans-serif}
+.smart-formula-confirm strong{display:block;font-size:16px;margin-bottom:7px}
+.smart-formula-confirm p{margin:0 0 16px;color:#a23d30}
+.smart-formula-confirm button{border:1px solid #a7bddd;border-radius:5px;background:#fff;padding:8px 12px;color:#224976;cursor:pointer;margin-right:8px}
+.smart-formula-confirm button:first-of-type{background:#216ab3;color:#fff;border-color:#216ab3}
