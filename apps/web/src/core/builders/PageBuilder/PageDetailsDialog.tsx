@@ -206,7 +206,7 @@ export default function PageDetailsDialog({page,apps,disabled,request,onClose,on
         <td>
          <div className="page-details-row-actions">
           <button type="button" className="btn btn-small" disabled={busy} onClick={()=>void viewVersion(v.version)}>View</button>
-          <button type="button" className="btn btn-small" disabled={busy||disabled||v.draft}
+          <button type="button" className="btn btn-small" disabled={busy||disabled||v.draft||v.archived}
            title="Restore to a new editable draft. Published layouts remain unchanged."
            onClick={()=>void restoreVersion(v.version)}>Restore as draft &amp; Design</button>
           <button type="button" className="btn btn-small"
