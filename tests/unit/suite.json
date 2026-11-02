@@ -247,6 +247,7 @@
     "apps/web/test/ribbonUiCorrections20261101.test.mjs",
     "apps/web/test/safeRichText.test.ts",
     "apps/web/test/schemaBuilder.test.ts",
+    "apps/web/test/setupCompactUx.test.mjs",
     "apps/web/test/setupMetadataDependencies.test.ts",
     "apps/web/test/setupObjectActions.test.ts",
     "apps/web/test/sharedSmartShapeControls.test.mjs",
