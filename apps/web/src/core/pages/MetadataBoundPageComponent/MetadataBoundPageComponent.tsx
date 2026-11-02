@@ -268,7 +268,7 @@ export default function MetadataBoundPageComponent({
   const contextRecords=contextApiName
    ?currentContextRecord?[currentContextRecord]:[]:visibleRecords;
   const namedSource=usePageCollectionFormula(properties.collectionFormula,properties,objects,
-    objectApiName,contextRecords,recordTotal,revision,pageState,sessionId);
+    objectApiName,contextRecords,recordTotal,revision,pageState,sessionId,pageSessionKey,component.id);
   const dataCollection=namedSource.collection;
   const dataCollectionRows=dataCollection?namedCollectionRows(dataCollection):null;
   const mentionContext = useRelationshipMentionContext(objects, mentionRootObjectApiName,
