@@ -347,6 +347,11 @@ function parse(source,record,formulaContext){
     return '';
    }
   }
+  // The selected Object can be addressed as @Object.Field as well as @Field;
+  // both read the same authorised record and do not execute another query.
+  if(sourceRef&&sourceRef[1]===formulaContext.rootObjectApiName
+    &&Object.prototype.hasOwnProperty.call(record,sourceRef[2]))
+   return ownValue(record,sourceRef[2])??'';
   if(Object.prototype.hasOwnProperty.call(record,reference))return ownValue(record,reference)??'';
   let value=record;
   for(const part of parts){
@@ -434,7 +439,8 @@ export function evaluateFieldExpressionDetailed(expression,record,options={}){
   if(!Number.isFinite(now.getTime()))throw Error('Invalid formula evaluation time');
   const result=parse(input,record,{timeZone,now,collectionSources:options.collectionSources,
    collectionResult:options.collectionResult===true,
-   namedCollectionSelections:options.namedCollectionSelections});
+   namedCollectionSelections:options.namedCollectionSelections,
+   rootObjectApiName:options.rootObjectApiName});
   if(options.collectionResult===true){
    if(!result||typeof result!=='object'||Array.isArray(result)
      ||typeof result.name!=='string'||!Array.isArray(result.items))
