@@ -154,9 +154,12 @@ export function NavigationLoadTime({ routeKey, startedAt, ready, kind, authMs, r
       }
     };
     void check();
-    const interval = window.setInterval(() => {void check();}, 12000);
+    // Unauthenticated GitHub reads have a low shared rate limit; poll infrequently
+    // until the protected server credential is configured.
+    const interval = window.setInterval(() => {void check();},
+      deployment?.configured ? 30_000 : 180_000);
     return () => {cancelled = true; window.clearInterval(interval);};
-  }, [open, request, requestedAfterRunId]);
+  }, [open, request, requestedAfterRunId, deployment?.configured]);
 
   const deployLatest = async () => {
     if (!request || !deployment?.canDeploy || !deployment.latestCommit ||
