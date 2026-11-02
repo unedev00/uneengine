@@ -6,9 +6,11 @@ const dense = readFileSync(new URL('../src/core/workspace/WorkspaceTheme/desktop
 
 test('desktop density beats the Setup sidebar rules that load around it', () => {
   // These must keep the same specificity as settingsAppearance.css, or the 44px rows return.
-  assert.match(dense, /\.lightning \.setup-layout \.setup-sidebar:not\(\.setup-sidebar-collapsed\) \.tree-item\s*\{[^}]*min-height:\s*34px/);
-  assert.match(dense, /\.lightning \.setup-layout \.setup-sidebar:not\(\.setup-sidebar-collapsed\)\s*\{[^}]*width:\s*200px/);
-  assert.match(dense, /\.md-setup-icon\s*\{[^}]*width:\s*26px/);
+  assert.match(dense, /\.lightning \.setup-layout \.setup-sidebar:not\(\.setup-sidebar-collapsed\) \.tree-item\s*\{[^}]*min-height:\s*36px/);
+  assert.match(dense, /\.lightning \.setup-layout \.setup-sidebar:not\(\.setup-sidebar-collapsed\)\s*\{[^}]*width:\s*232px/);
+  assert.match(dense, /\.md-setup-icon\s*\{[^}]*width:\s*24px/);
+  assert.match(dense, /white-space:\s*nowrap/);
+  assert.match(dense, /\.tree-item\.selected > span:not\(\.md-setup-icon\)[^{]*\{[^}]*font-weight:\s*400/);
 });
 
 test('dense sizing stays desktop-only and never uses zoom', () => {
