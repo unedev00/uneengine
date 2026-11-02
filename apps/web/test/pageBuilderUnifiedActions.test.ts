@@ -19,8 +19,8 @@ test('component slots show Formula and Flow, without duplicated global actions',
  const html=render({},'');
  assert.match(html,/aria-label="On Click action"/);
  assert.match(html,/aria-label="On Session Start action"/);
- assert.match(html,/aria-label="Flow inputs"/);
- assert.match(html,/aria-label="Flow outputs"/);
+ assert.doesNotMatch(html,/aria-label="Flow inputs"/);
+ assert.doesNotMatch(html,/aria-label="Flow outputs"/);
  assert.match(html,/<option value="formula">Formula<\/option>/);
  assert.match(html,/<option value="flow">Flow<\/option>/);
  assert.match(html,/<option value="flow:Send_Message">Send Message<\/option>/);
@@ -48,11 +48,14 @@ test('unsupported smart component slots remain mounted disabled',()=>{
  for(const key of ['smart_cart','smart_button'])
   assert.equal(supportsSmartActionEvent(key,'click'),true);
 });
-test('Flow mappings use shared typed input/output helpers',()=>{
+test('Flow mapping UI is hidden in Actions but saved metadata helpers remain available',()=>{
  const code=read('../src/core/builders/PageBuilder/CompactActionFlowBindings.tsx');
  assert.match(code,/decodeInputSource,encodeInputSource,declaredFlowInputs,declaredFlowOutputs,mappedInputNames/);
  assert.match(code,/aria-label="Flow input variable"/);
  assert.match(code,/aria-label="Flow output Page State target"/);
+ const actionRibbon=read('../src/core/builders/PageBuilder/PageBuilderActionRibbon.tsx');
+ assert.doesNotMatch(actionRibbon,/CompactActionFlowBindings|onInputsChange|onOutputsChange/);
+ assert.match(actionRibbon,/inputs:asBinding\(previous.inputs\)/);
  const view=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
  assert.doesNotMatch(view,/mode="actions-inline"/);
 });
