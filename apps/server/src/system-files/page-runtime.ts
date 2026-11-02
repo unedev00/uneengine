@@ -123,6 +123,11 @@ export class PageRuntime {
     await this.layouts.rollback(tenantId,pageApi,variant,version,actor);
     return this.editor(tenantId,pageApi,variant);
   }
+  async archiveLayout(tenantId:string,pageApi:string,variant:PageLayoutVariant,
+    version:number,archived:boolean,actor:string){
+    await this.layouts.archive(tenantId,pageApi,variant,version,archived,actor);
+    return this.layouts.history(tenantId,pageApi,variant);
+  }
   async layoutHistory(tenantId:string,pageApi:string,variant:PageLayoutVariant){
     return this.layouts.history(tenantId,pageApi,variant);
   }
