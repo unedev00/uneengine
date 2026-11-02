@@ -10,7 +10,7 @@ const env={
 };
 const tenant='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const user='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
-function dbFixture(options:{receipt?:boolean;identity?:boolean;rootCandidates?:number;fallbackCandidates?:number;tenantCount?:number}={}){
+function dbFixture(options:{receipt?:boolean;identity?:boolean;rootCandidates?:number;fallbackCandidates?:number;directRootCandidates?:number;directFallbackCandidates?:number;tenantCount?:number}={}){
  const statements:Array<{sql:string;params:unknown[]}>=[];
  const query=async(sql:string,params:unknown[]=[])=>{
   statements.push({sql,params});
@@ -21,9 +21,11 @@ function dbFixture(options:{receipt?:boolean;identity?:boolean;rootCandidates?:n
   if(sql.includes('SELECT count(*)::integer AS tenant_count FROM md_tenants'))
    return {rows:[{tenant_count:options.tenantCount??1}]};
   if(sql.includes('SELECT DISTINCT u.tenant_id,u.id AS user_id')){
-   const count=sql.includes('WHERE d.domain=$1')
-    ?options.rootCandidates??1
-    :options.fallbackCandidates??1;
+   const direct=sql.includes('JOIN md_permission_assignments a');
+   const root=sql.includes('WHERE d.domain=$1');
+   const count=root
+    ?direct?(options.directRootCandidates??0):(options.rootCandidates??1)
+    :direct?(options.directFallbackCandidates??0):(options.fallbackCandidates??1);
    return {rows:Array.from({length:count},(_,i)=>({tenant_id:tenant,user_id:user+i}))};
   }
   return {rows:[]};
@@ -120,5 +122,45 @@ test('OCI owner recovery never assigns a platform grant to a multi-tenant servic
 test('OCI owner recovery requires a single original developer and rejects ambiguity',async()=>{
  const {db,statements}=dbFixture({rootCandidates:0,tenantCount:1,fallbackCandidates:2});
  assert.equal(await seedPlatformDeploymentOwner(db,{METADRIVE_PLATFORM_CANONICAL_DOMAIN:'unesolutions.co.uk'}),'identity-not-found');
+ assert.ok(!statements.some(x=>x.sql.includes('INSERT INTO md_permission_assignments')));
+});
+
+test('direct OneEngine assignment in canonical OCI root recovers platform owner without legacy role',async()=>{
+ const {db,statements}=dbFixture({rootCandidates:0,directRootCandidates:1});
+ assert.equal(await seedPlatformDeploymentOwner(db,{METADRIVE_PLATFORM_CANONICAL_DOMAIN:'unesolutions.co.uk'}),'granted');
+ const direct=statements.find(x=>x.sql.includes('JOIN md_permission_assignments a')
+  && x.sql.includes('WHERE d.domain=$1'));
+ assert.deepEqual(direct?.params,['unesolutions.co.uk']);
+ assert.match(direct!.sql,/p.api_name='OneEngine'/);
+ assert.match(direct!.sql,/md_rbac_allowed\(u.tenant_id,u.id,'Tenant','manage'\)/);
+ assert.match(direct!.sql,/u.enabled=true AND u.user_type='internal'/);
+ assert.ok(statements.some(x=>x.sql.includes('INSERT INTO md_permission_assignments')));
+});
+test('multiple direct OneEngine operators cannot claim platform deployment',async()=>{
+ const {db,statements}=dbFixture({rootCandidates:0,directRootCandidates:2});
+ assert.equal(await seedPlatformDeploymentOwner(db,{METADRIVE_PLATFORM_CANONICAL_DOMAIN:'unesolutions.co.uk'}),'identity-not-found');
+ assert.ok(!statements.some(x=>x.sql.includes('INSERT INTO md_permission_assignments')));
+});
+test('single-tenant OCI root can recover a unique direct OneEngine owner without seeded role',async()=>{
+ const {db,statements}=dbFixture({rootCandidates:0,directRootCandidates:0,tenantCount:1,
+  fallbackCandidates:0,directFallbackCandidates:1});
+ assert.equal(await seedPlatformDeploymentOwner(db,{METADRIVE_PLATFORM_CANONICAL_DOMAIN:'unesolutions.co.uk'}),'granted');
+ const direct=statements.find(x=>x.sql.includes('JOIN md_permission_assignments a')
+  && x.sql.includes('(SELECT count(*) FROM md_tenants)=1'));
+ assert.ok(direct);
+ assert.match(direct!.sql,/md_rbac_allowed\(u.tenant_id,u.id,'Tenant','manage'\)/);
+ assert.ok(statements.some(x=>x.sql.includes('INSERT INTO md_permission_assignments')));
+});
+test('single-tenant OCI root rejects ambiguous direct OneEngine owners',async()=>{
+ const {db,statements}=dbFixture({rootCandidates:0,directRootCandidates:0,tenantCount:1,
+  fallbackCandidates:0,directFallbackCandidates:2});
+ assert.equal(await seedPlatformDeploymentOwner(db,{METADRIVE_PLATFORM_CANONICAL_DOMAIN:'unesolutions.co.uk'}),'identity-not-found');
+ assert.ok(!statements.some(x=>x.sql.includes('INSERT INTO md_permission_assignments')));
+});
+test('two tenants never trigger direct-OneEngine recovery without canonical domain match',async()=>{
+ const {db,statements}=dbFixture({rootCandidates:0,directRootCandidates:0,tenantCount:2,
+  fallbackCandidates:0,directFallbackCandidates:1});
+ assert.equal(await seedPlatformDeploymentOwner(db,{METADRIVE_PLATFORM_CANONICAL_DOMAIN:'unesolutions.co.uk'}),'identity-not-found');
+ assert.ok(!statements.some(x=>x.sql.includes('(SELECT count(*) FROM md_tenants)=1')));
  assert.ok(!statements.some(x=>x.sql.includes('INSERT INTO md_permission_assignments')));
 });
