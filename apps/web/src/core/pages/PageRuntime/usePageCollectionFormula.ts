@@ -12,7 +12,8 @@ type Row=Record<string,unknown>;
 export type PageNamedCollection={name:string;key?:string;items:unknown[]};
 type SourceResult={key:string;records:Record<string,Row[]>;error?:string};
 
-export function collectionFormulaReferences(formula:string,primaryObject='',namedCollections:Readonly<Record<string,PageNamedCollection>>={}):Array<{object:string;field:string}>{
+export function collectionFormulaReferences(formula:string,primaryObject='',namedCollections:Readonly<Record<string,PageNamedCollection>>={},
+ primaryFieldNames:readonly string[]=[]):Array<{object:string;field:string}>{
  if(!/\bCOLLECTION\s*\(/i.test(formula))return [];
  const found=new Map<string,{object:string;field:string}>();
  const visit=(node:Expression,insideCollection=false):void=>{
@@ -20,6 +21,7 @@ export function collectionFormulaReferences(formula:string,primaryObject='',name
    const match=/^([A-Za-z][A-Za-z0-9_]*)\.([A-Za-z][A-Za-z0-9_]*)$/.exec(node.value);
    if(match)found.set(match[0],{object:match[1],field:match[2]});
    else if(primaryObject&&!Object.keys(namedCollections).some(name=>name.toLowerCase()===node.value.toLowerCase())
+     &&primaryFieldNames.includes(node.value)
      &&/^[A-Za-z][A-Za-z0-9_]*$/.test(node.value)
      &&!['state','session','event'].includes(node.value.toLowerCase()))
      found.set(primaryObject+'.'+node.value,{object:primaryObject,field:node.value});
@@ -61,7 +63,8 @@ export function usePageCollectionFormula(
   .find(([key,collection])=>key.toLowerCase()===listBinding.field.toLowerCase()
    ||collection.name.toLowerCase()===listBinding.field.toLowerCase())?.[1]:undefined;
  const refs=listBinding&&!namedListSource?[{object:listBinding.object,field:listBinding.field}]:
-  collectionFormulaReferences(source,primaryObject,registry.collections);
+  collectionFormulaReferences(source,primaryObject,registry.collections,
+   objects.find(object=>object.apiName===primaryObject)?.fields.map(field=>field.apiName)??[]);
  const selected=['objectApiName','objectApiName2','objectApiName3']
   .map(key=>String(properties[key]??'')).filter(Boolean);
  const referenced=[...new Set(refs.map(ref=>ref.object))];
