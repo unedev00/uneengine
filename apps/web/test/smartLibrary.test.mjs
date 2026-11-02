@@ -702,7 +702,7 @@ test('Smart Tabs first tab is optional, formula-capable, and never replaces a re
  assert.doesNotMatch(disabled,/All items/);
  const runtime=read('../src/component-libraries/smart/shared/SmartRuntime.jsx');
  assert.match(runtime,/firstTabCustom&&index===0/);
- assert.match(runtime,/value:"\\*",isCustom:true/);
+ assert.match(runtime,/value:"\*",isCustom:true/);
  assert.match(runtime,/index-\(firstTabCustom\?1:0\)/);
 });
 
