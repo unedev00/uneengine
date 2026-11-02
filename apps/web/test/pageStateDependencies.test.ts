@@ -117,3 +117,34 @@ test('inactive field/formula modes do not create unintended dependency edges',()
   {kind:'state',key:'inactive',value:'y'},deps).collectionSelections,existing.collectionSelections);
  assert.deepEqual(applyPageSelection(existing,{kind:'state',key:'active',value:'b'},deps).collectionSelections,{});
 });
+
+test('new authored Collection overrides a legacy Collection name for invalidation',()=>{
+ const deps=pageStateDependencies([component('child',{
+  collectionFormula:'COLLECTION("Legacy","old")',
+  textSource:'=COLLECTION("Current","new")',
+  filters:[{field:'Parent',operator:'Equals',value:{source:'PageState',key:'parentId'}}]
+ })]);
+ const before={parentId:'old',collectionSelections:{Legacy:selected('keep'),Current:selected('clear')}};
+ const next=applyPageSelection(before,{kind:'state',key:'parentId',value:'new'},deps);
+ assert.equal(next.collectionSelections.Legacy.Id,'keep');
+ assert.equal(next.collectionSelections.Current,undefined);
+});
+
+test('click and Flow selection outputs use the same shared dependency graph',()=>{
+ const deps=pageStateDependencies([
+  component('cards',{filters:[{field:'Parent',operator:'Equals',
+   value:{source:'PageState',key:'parentId'}}],
+   actionFlows:{click:{actionType:'PageState',stateKey:'cardId'},
+    itemClick:{actionType:'Flow',flowApiName:'ChooseRow',
+     outputs:{selectedRowId:'selectedRowId'}}}}),
+  component('details',{relatedFilterKey:'cardId',
+   actionFlows:{select:{actionType:'PageState',stateKey:'detailId'}}})
+ ]);
+ const next=applyPageSelection({parentId:'old',cardId:'card',detailId:'detail',
+  selectedRowId:'row',unrelated:'keep'},
+  {kind:'state',key:'parentId',value:'new'},deps);
+ assert.equal(next.cardId,undefined);
+ assert.equal(next.detailId,undefined);
+ assert.equal(next.selectedRowId,undefined);
+ assert.equal(next.unrelated,'keep');
+});
