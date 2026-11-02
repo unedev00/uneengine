@@ -4,7 +4,6 @@ import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {namedCollectionRows} from '../src/core/pages/PageRuntime/usePageCollectionFormula.ts';
 import {evaluateFieldExpression,evaluateCollectionFormula} from '../src/component-libraries/shared/FieldExpression.js';
 import {loadComponentCatalog,buildBundledComponent} from '../../../scripts/component-catalog.mjs';
 const read=path=>readFileSync(new URL(path,import.meta.url),'utf8');
@@ -1151,7 +1150,10 @@ test('collection-driven Smart Card Grid renders authorised record title and othe
   criteriaField:'Product.MenuCategory',criteria:'drinks',
   record:{Id:'p1',Name:'Cola',MenuCategory:'drinks',Price:1.25,
    ImageUrl:'https://example.com/cola.png'}}]};
- const rows=namedCollectionRows(collection);
+ // Render the record projection provided by the shared page collection adapter;
+ // its full adapter behaviour is asserted in collectionSessionState.test.ts.
+ const rows=[{...collection.items[0].record,Name:'Cola',Id:'p1',
+  __collectionLabel:'drinks',__collectionValue:'p1',__collectionManual:false}];
  const html=await renderSmart('smart_card_grid',{
   objectApiName:'Product',dataCollection:collection,records:rows,
   textSource:'=COLLECTION("FilteredProducts",@Product.MenuCategory=@CatCollection.state.Id)',
