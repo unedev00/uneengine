@@ -5,6 +5,7 @@ import {pageStateChoices} from '../src/core/builders/PageBuilder/pageStateChoice
 import {namedCollectionName,registerSessionCollection,getSessionCollection} from '../src/core/pages/PageRuntime/pageCollectionSession';
 import {pageComponentRecordQuery,filterPageComponentRecords,resolvePageFilterValue} from '../src/core/pages/PageRuntime/pageComponentBindings';
 import {createNamedFormulaCollection} from '../../server/src/expression-engine/FormulaCollection';
+import {evaluateFieldExpression,evaluateCollectionFormula} from '../src/component-libraries/shared/FieldExpression.js';
 
 test('Excel-style signature follows nested calls, quoted commas and any registered formula',()=>{
  const a=formulaSignatureAt('IF(AND(@Open, OR(TRUE, FALSE)), "yes, ok", 3)',32);
@@ -65,4 +66,16 @@ test('COLLECTION constructor rejects empty item slots while preserving valid zer
  assert.throws(()=>createNamedFormulaCollection('Choices',['',2]),/blank value at item 1/i);
  assert.throws(()=>createNamedFormulaCollection('Choices',[null]),/blank value at item 1/i);
  assert.deepEqual(createNamedFormulaCollection('Choices',[0,false]).items,[0,false]);
+});
+
+test('named Collection selection is readable by general formula engine without a component binding',()=>{
+ const options={namedCollectionSelections:{MyCollection:{Id:'cat-22',Name:'Burgers',Value:'cat-22'}}};
+ assert.equal(evaluateFieldExpression('@MyCollection.state.Id',{},options),'cat-22');
+ assert.equal(evaluateFieldExpression('@MyCollection.state.Name',{},options),'Burgers');
+ assert.equal(evaluateFieldExpression('IF(@MyCollection.state.Id = "cat-22", "YES", "NO")',{},options),'YES');
+ assert.equal(evaluateFieldExpression('@Unknown.state.Id',{},options),'');
+ const created=evaluateCollectionFormula('COLLECTION("Selections",@MyCollection.state.Id)',{},
+  {state:{collectionSelections:options.namedCollectionSelections}});
+ assert.equal(created.error,undefined);
+ assert.deepEqual(created.value.items,['cat-22']);
 });
