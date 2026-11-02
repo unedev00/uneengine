@@ -16,6 +16,7 @@ import {
   formulaWeekday,formulaIsoParts,isFormulaDate,parseFormulaDateTime
 } from '../expression-engine/FormulaDate.js';
 import {roundFormulaNumber} from '../expression-engine/FormulaNumeric.js';
+import {createNamedFormulaCollection} from '../expression-engine/FormulaCollection.js';
 import type {Expression} from '../expression-engine/FormulaParser.js';
 
 type FormulaResolver=(name:string)=>unknown;
@@ -193,6 +194,12 @@ function evaluateNode(node:Expression,resolve:FormulaResolver,context:FormulaEva
     case 'TEXT':arity(1);return formulaText(argument(0));
     case 'VALUE':arity(1);return numeric(argument(0));
     case 'LEN':arity(1);return textPoints(argument(0)).length;
+    case 'COLLECTION':{
+      arity(2,20);
+      const name=argument(0);
+      const items=node.args.slice(1).map((_,index)=>argument(index+1));
+      return createNamedFormulaCollection(name,items);
+    }
     case 'COLLECTIONCOUNT':case 'COLLECTIONSUM':{
       arity(node.name==='COLLECTIONCOUNT'?1:2);
       const source=argument(0);
