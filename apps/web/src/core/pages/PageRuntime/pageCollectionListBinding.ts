@@ -34,7 +34,10 @@ export function filteredCollectionItems(
    :String(value)===binding.criterion;
   if(!matched)continue;
   out.push({label:String(value),value:String(row.Id??row.id??''),
-    criteriaField:binding.object+'.'+binding.field,criteria:String(value),record:row});
+    criteriaField:typeof row.__collectionCriteriaField==='string'&&row.__collectionCriteriaField
+     ?row.__collectionCriteriaField:binding.object+'.'+binding.field,
+    criteria:typeof row.__collectionCriteria==='string'&&row.__collectionCriteria
+     ?row.__collectionCriteria:String(value),record:row});
  }
  return out;
 }
