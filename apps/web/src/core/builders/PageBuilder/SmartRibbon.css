@@ -399,6 +399,22 @@
   justify-content:flex-start;
 }
 
+/* Smart Cart-only Header Body Color uses the existing SQL R3/C2 slot and
+   standard fill palette. Its 35px control fits glyph + dropdown without
+   changing the shared Header ribbon geometry for Card Grid or Image. */
+.office-builder-ribbon #page-builder-tab-content .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group[aria-label="Header"] .smart-property[data-property="headerBodyColor"]
+  .office-ribbon-colour-property{
+  gap:0!important;
+  padding:2px!important;
+}
+.office-builder-ribbon #page-builder-tab-content .smart-ribbon[data-smart-api="smart_cart"]
+  .smart-ribbon-group[aria-label="Header"] .smart-property[data-property="headerBodyColor"]
+  .office-ribbon-command-glyph{
+  flex:0 0 16px!important;
+  width:16px!important;
+}
+
 /* File chooser is invoked directly by the Upload Image action, never a modal. */
 .office-builder-ribbon .smart-ribbon>.smart-hidden-upload{display:none!important}
 .office-builder-ribbon .smart-upload-error{flex:0 0 200px;align-self:flex-start;overflow:hidden;
