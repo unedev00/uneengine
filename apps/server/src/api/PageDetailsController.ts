@@ -3,6 +3,7 @@ import type {Express} from 'express';
 import type {SqlPersistence} from '../system-files/sql-persistence.js';
 import type {RbacEngine} from '../system-files/rbac-engine.js';
 import {PageRuntime} from '../system-files/page-runtime.js';
+import {assertMetadataPackageEditable} from '../system-support/metadata-package-service.js';
 import {authenticated,wrap,api} from './ApiAuthenticationGuard.js';
 
 /** Rename a page and change its App Page placement without touching canvas
@@ -20,6 +21,7 @@ export function registerPageDetailsController(app:Express,db:SqlPersistence,rbac
     ||appApiName!==null&&(typeof appApiName!=='string'||!api.test(appApiName)))
     throw new Error('Invalid Page details');
   await rbac.require(actor.tenant_id,actor.user_id,'PageDefinition','manage');
+  await assertMetadataPackageEditable(db,actor.tenant_id,'page',pageApi);
   const current=await db.query<{id:string;title:string;page_type:string}>(`
    SELECT p.id,p.title,d.page_type FROM md_page_definitions p
    JOIN md_lightning_page_details d ON d.tenant_id=p.tenant_id AND d.page_id=p.id
@@ -44,14 +46,20 @@ export function registerPageDetailsController(app:Express,db:SqlPersistence,rbac
        WHERE n.tenant_id=$1 AND n.app_id=a.id AND n.entry_type='App Page' AND n.api_name=$3))
   `,[actor.tenant_id,page.id,pageApi]);
   const existingAppNames=known.rows.map(row=>row.api_name);
+  const direct=await db.query<{app_api:string}>(`SELECT app_api FROM md_lightning_page_activation
+   WHERE tenant_id=$1 AND page_id=$2 AND scope='App Default'`,[actor.tenant_id,page.id]);
+  const assignedAppNames=direct.rows.map(row=>row.app_api).filter(Boolean);
   const appChanged=page.page_type==='App Page'&&
-    (existingAppNames.length!==1||existingAppNames[0]!==appApiName);
+    (existingAppNames.length!==1||existingAppNames[0]!==appApiName
+      ||assignedAppNames.length!==1||assignedAppNames[0]!==appApiName);
   if(appChanged){
    await rbac.require(actor.tenant_id,actor.user_id,'AppExchange','manage');
    for(const appName of new Set([...existingAppNames,...(appApiName?[appApiName]:[])]))
     await rbac.require(actor.tenant_id,actor.user_id,'App:'+appName,'manage');
   }
   await db.transaction(async client=>{
+   await client.query(`SELECT set_config('metadrive.actor_tenant',$1,true),
+     set_config('metadrive.actor_user',$2,true)`,[actor.tenant_id,actor.user_id]);
    const locked=await client.query<{id:string;title:string;page_type:string;status:string}>(`
     SELECT p.id,p.title,d.page_type,d.status FROM md_page_definitions p
     JOIN md_lightning_page_details d ON d.tenant_id=p.tenant_id AND d.page_id=p.id
