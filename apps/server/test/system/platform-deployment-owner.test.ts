@@ -20,6 +20,10 @@ function dbFixture(options:{receipt?:boolean;identity?:boolean;rootCandidates?:n
    return {rows:options.identity===false?[]:[{tenant_id:tenant,user_id:user}]};
   if(sql.includes('SELECT count(*)::integer AS tenant_count FROM md_tenants'))
    return {rows:[{tenant_count:options.tenantCount??1}]};
+  if(sql.includes('AS root_direct_manage'))
+   return {rows:[{tenants:options.tenantCount??1,canonical_domains:0,
+    active_internal:2,direct_oneengine:1,direct_oneengine_manage:0,
+    root_direct_oneengine:0,root_direct_manage:0}]};
   if(sql.includes('SELECT DISTINCT u.tenant_id,u.id AS user_id')){
    const direct=sql.includes('JOIN md_permission_assignments a');
    const root=sql.includes('WHERE d.domain=$1');
@@ -162,5 +166,25 @@ test('two tenants never trigger direct-OneEngine recovery without canonical doma
   fallbackCandidates:0,directFallbackCandidates:1});
  assert.equal(await seedPlatformDeploymentOwner(db,{METADRIVE_PLATFORM_CANONICAL_DOMAIN:'unesolutions.co.uk'}),'identity-not-found');
  assert.ok(!statements.some(x=>x.sql.includes('(SELECT count(*) FROM md_tenants)=1')));
+ assert.ok(!statements.some(x=>x.sql.includes('INSERT INTO md_permission_assignments')));
+});
+
+test('failed OCI bootstrap emits only safe aggregate eligibility diagnostics',async()=>{
+ const {db,statements}=dbFixture({rootCandidates:0,directRootCandidates:0,
+  tenantCount:1,fallbackCandidates:0,directFallbackCandidates:0});
+ const original=console.info;
+ const logs:string[]=[];
+ console.info=(...args:unknown[])=>{logs.push(args.map(String).join(' '));};
+ try{
+  assert.equal(await seedPlatformDeploymentOwner(db,{
+   METADRIVE_PLATFORM_CANONICAL_DOMAIN:'unesolutions.co.uk'}),'identity-not-found');
+ }finally{console.info=original;}
+ const log=logs.find(x=>x.includes('Platform owner eligibility counts:'))??'';
+ assert.match(log,/"direct_oneengine":1/);
+ assert.match(log,/"direct_oneengine_manage":0/);
+ assert.doesNotMatch(log,/@|password|email|tenant_id|user_id/);
+ const probe=statements.find(x=>x.sql.includes('AS root_direct_manage'));
+ assert.ok(probe);
+ assert.match(probe!.sql,/md_rbac_allowed/);
  assert.ok(!statements.some(x=>x.sql.includes('INSERT INTO md_permission_assignments')));
 });
