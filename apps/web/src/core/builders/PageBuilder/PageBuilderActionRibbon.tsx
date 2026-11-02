@@ -26,6 +26,44 @@ const legacyLabels:Record<string,string>={
  Navigate:'Open another page',SetFilter:'Filter a list',
  PageState:'Update page value',AdjustNumber:'Change number'
 };
+/** Convert legacy settings only when a user explicitly changes that event to
+ * Formula. No migration runs on load, so published metadata remains stable. */
+const legacyFormula=(binding:Binding,eventName:string,field:string):string=>{
+ const type=String(binding.actionType??'');
+ const quoted=(value:string)=>JSON.stringify(value);
+ if(type==='SetFilter'){
+   const key=String(binding.filterKey??'category');
+   return /^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(key)
+     ?'@filter.'+key+' := @event.value':'';
+ }
+ if(type==='PageState'){
+   const key=String(binding.stateKey??'');
+   const original=String(binding.value??'$event.value');
+   const expression=original==='$session'?'@session.id':
+     original==='$event'?'@event.value':
+     original.startsWith('$event.')?'@event.'+original.slice(7):
+     original.startsWith('$state.')?'@state.'+original.slice(7):quoted(original);
+   return /^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(key)
+     ?'@state.'+key+' := '+expression:'';
+ }
+ if(type==='Navigate'){
+   const mode=String(binding.navigationTargetType??'Record List');
+   const app=String(binding.navigationAppId??'');
+   const page=String(binding.navigationPageApiName??'');
+   const object=String(binding.navigationObjectApiName??'');
+   if(mode==='App Page'&&app&&page)
+     return '@navigate.page := '+quoted(app+'/'+page);
+   if(mode==='App Home'&&app)return '@navigate.home := '+quoted(app);
+   if(mode==='Record List'&&object)return '@navigate.list := '+quoted(object);
+   return '';
+ }
+ if(type==='AdjustNumber'||eventName==='qtyIncrease'||eventName==='qtyDecrease'){
+   return String(binding.formula??
+     (eventName==='qtyDecrease'?binding.decrementFormula:binding.incrementFormula)??
+     (field?'@'+field+(eventName==='qtyDecrease'?' - 1':' + 1'):''));
+ }
+ return String(binding.formula??'');
+};
 
 /** One metadata-driven no-code action selector. Formulas and Flows are the only
  * choices for NEW actions. Legacy actions are retained and remain executable
@@ -79,15 +117,12 @@ export default function PageBuilderActionRibbon({
    if(option==='formula'){
      const preferred=numericFields.find(field=>/^(Quantity|Qty)$/i.test(field.apiName))??numericFields[0];
      const field=String(previous.fieldApiName??preferred?.apiName??'');
-     const previousFormula=String(previous.formula??(
-       key==='qtyDecrease'?previous.decrementFormula:
-       key==='qtyIncrease'?previous.incrementFormula:undefined
-     )??'');
+     const previousFormula=legacyFormula(previous,key,field);
      const formula=previousFormula||(
        (key==='qtyDecrease'||key==='qtyIncrease')&&field
         ?'@'+field+(key==='qtyDecrease'?' - 1':' + 1'):'');
      onChange({...actions,[key]:{...previous,actionType:'Formula',formula,
-       ...(field?{fieldApiName:field}:{}),
+       ...(field&&(key==='qtyIncrease'||key==='qtyDecrease')?{fieldApiName:field}:{}),
        ...(key==='qtyDecrease'||key==='qtyIncrease'?{
          deltaSource:'$event.delta',minValue:previous.minValue??0,
          deleteOnZero:previous.deleteOnZero??true
@@ -152,7 +187,8 @@ export default function PageBuilderActionRibbon({
    <div className="page-action-compact-main">
      <div className="page-action-formula-bar" role="group" aria-label="Actions formula bar">
        <span className="page-action-formula-menu" aria-hidden="true"><SlidersHorizontal size={15}/></span>
-       <span className="page-action-formula-symbol" aria-hidden="true">ƒx</span>
+       <span className="page-action-formula-symbol" aria-hidden="true"
+         title={'Formula: @Quantity + 1; @state.key := @event.value; @filter.key := @event.value; @navigate.page := "App/Page"'}>ƒx</span>
        <SmartFormulaField label="Selected action formula" fields={formulaFields}
          disabled={disabled||!active||selected.actionType!=='Formula'}
          value={active&&selected.actionType==='Formula'?String(selected.formula??''):''}
