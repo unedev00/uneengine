@@ -145,7 +145,7 @@ export default function PageDetailsDialog({page,apps,disabled,request,onClose,on
        </select>
       </label>
      </div>
-     <p className="page-details-help">Version history is preserved by layout. Opening a version shows a read-only snapshot; restoring copies it into the editable draft without changing the live page.</p>
+     <p className="page-details-help">Historical versions are immutable and preserved by layout. Opening a version shows a read-only snapshot; restoring copies it into the editable draft without changing the live page.</p>
      <div className="page-details-table-scroll">
       <table className="records-table page-details-version-table" aria-label="Page version history">
        <thead><tr><th>Version</th><th>Created</th><th>Status</th><th>Actions</th></tr></thead>
