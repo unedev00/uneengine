@@ -5,6 +5,7 @@ import {
  evaluateFormulaBinary,evaluateFormulaUnary,formulaTruth,Parser
 } from '../../../../server/src/expression-engine/FormulaParser.js';
 import {tokenize} from '../../../../server/src/expression-engine/FormulaTokenizer.js';
+import {mergeFormulaCollectionValues} from '../../../../server/src/expression-engine/FormulaCollection.js';
 import {validateFormulaFunctions} from '../../../../server/src/expression-engine/FormulaFunctionRegistry.js';
 import {roundFormulaNumber} from '../../../../server/src/expression-engine/FormulaNumeric.js';
 import {
@@ -69,7 +70,8 @@ const evaluateCall=(name,args,context)=>{
    if(name==='BEGINS')return text(args[0]).startsWith(text(args[1]));
    if(name==='CONTAINS')return text(args[0]).includes(text(args[1]));
    return text(args[0])===text(args[1]);
-  case 'CONCATENATE':arity(1,20);return args.map(text).join('');
+  case 'COLLECTION':arity(1,20);return mergeFormulaCollectionValues(args);
+   case 'CONCATENATE':arity(1,20);return args.map(text).join('');
   case 'SUBSTITUTE':arity(3,4);{
    const source=text(args[0]),search=text(args[1]),replacement=text(args[2]);
    if(!search)return source;
@@ -279,6 +281,28 @@ function parse(source,record,formulaContext){
  const expression=new Parser(tokenize(source)).parse();
  validateFormulaFunctions(expression,'ribbon_binding');
  const resolveReference=reference=>{
+   // Object.Field collection references can use only authorised records
+   // supplied by the Page Runtime; a formula never performs a database query.
+   const sourceRef=/^([A-Za-z][A-Za-z0-9_]*)\.([A-Za-z][A-Za-z0-9_]*)$/.exec(reference);
+   const sources=formulaContext.collectionSources;
+   if(sourceRef&&sources&&Object.prototype.hasOwnProperty.call(sources,sourceRef[1])){
+    const rows=sources[sourceRef[1]];
+    if(!Array.isArray(rows))throw Error('COLLECTION source unavailable: '+sourceRef[1]);
+    if(rows.length>200)throw Error('COLLECTION source exceeds 200 records');
+    return rows.map(row=>{
+     if(!row||typeof row!=='object'||Array.isArray(row)
+       ||!Object.prototype.hasOwnProperty.call(row,sourceRef[2]))
+      throw Error('COLLECTION field unavailable: '+reference);
+     const value=row[sourceRef[2]];
+     const id=row.Id??row.id;
+     if(id===undefined||id===null||typeof id!=='string'&&typeof id!=='number')
+      throw Error('COLLECTION source record has no ID');
+     if(value!==null&&value!==undefined&&!['string','number','boolean'].includes(typeof value))
+      throw Error('COLLECTION field must be scalar: '+reference);
+     return {label:value===null||value===undefined?'':String(value),
+       value:String(id),record:row,objectApiName:sourceRef[1]};
+    });
+   }
   if(!record||typeof record!=='object'||Array.isArray(record))return '';
   const parts=reference.split('.');
  if(parts.some(part=>!part||['__proto__','prototype','constructor'].includes(part)))throw Error('Invalid formula token');
@@ -376,7 +400,7 @@ export function evaluateFieldExpressionDetailed(expression,record,options={}){
    ?new Date(options.now):typeof options.now==='string'
     ?parseFormulaDateTime(options.now,'UTC'):new Date(NaN);
   if(!Number.isFinite(now.getTime()))throw Error('Invalid formula evaluation time');
-  const result=parse(input,record,{timeZone,now});
+  const result=parse(input,record,{timeZone,now,collectionSources:options.collectionSources});
   if(typeof result==='number'&&!Number.isFinite(result))return {value:'',error:'Formula result is not finite'};
   return {value:text(result)};
  }catch(failure){
