@@ -131,6 +131,7 @@ export default function SmartCart({p,records,Picture,expression,fieldAllowed,fir
   backgroundColor:p.backgroundColor||"#fff",border:border(p.borderColor),
   borderRadius:n(p.radius,12),boxShadow:shadow(p.shadow)}}>
   <header className="smart-cart-header" style={{
+   backgroundColor:p.headerBodyColor??"#255d9d",
    height:n(p.headerBoxHeight,52,24),minHeight:n(p.headerBoxHeight,52,24),
    border:border(p.headerBorderColor),textAlign:align(p.headerAlignment),
    fontWeight:p.headerBold===false?400:700,color:p.headerTextColor||"#fff"}}>{p.label||"Smart Cart"}</header>
@@ -157,7 +158,9 @@ export default function SmartCart({p,records,Picture,expression,fieldAllowed,fir
       const rowKey=rowKeys[i];
       const selected=selectedKey===rowKey;
       const selectRow=()=>setSelectedKey(rowKey);
-      return <div key={rowKey} className={"smart-cart-row-wrap"+(selected?" is-selected":"")}>
+      return <div key={rowKey} className={"smart-cart-row-wrap"+(selected?" is-selected":"")}
+       style={selected?{backgroundColor:p.selectedRowColor??"#f2f7ff",
+        borderColor:p.selectedRowBorderColor??"#8badde"}:undefined}>
        <div className="smart-cart-row" role="button" tabIndex={0}
         aria-selected={selected} aria-expanded={selected}
         aria-label={"Select cart row "+String(name||i+1)}

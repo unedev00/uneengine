@@ -253,6 +253,8 @@
     "apps/web/test/setupObjectActions.test.ts",
     "apps/web/test/sharedSmartShapeControls.test.mjs",
     "apps/web/test/smartButtonCompactResize.test.mjs",
+    "apps/web/test/smartCartHeaderBodyColor.test.mjs",
+    "apps/web/test/smartCartSelectedRowImageCaption.test.mjs",
     "apps/web/test/smartFieldScopedFilters.test.ts",
     "apps/web/test/smartImageSingleBorder.test.mjs",
     "apps/web/test/smartLibrary.test.mjs",

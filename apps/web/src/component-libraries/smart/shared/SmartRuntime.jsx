@@ -116,8 +116,14 @@ function SmartCard({p,record}){
     order:1,flex:horizontal?"1 1 50%":undefined,display:"flex",alignItems:"center",
     height:headerHeight,alignSelf:horizontal?"center":undefined,flexShrink:0,
     fontWeight:p.headerBold===false?400:700,
-    textAlign:p.headerAlignment||p.labelAlignment||"left",justifyContent:(p.headerAlignment||p.labelAlignment)==="right"?"flex-end":(p.headerAlignment||p.labelAlignment)==="center"?"center":"flex-start",
-    border:p.headerBorderColor?"1px solid "+p.headerBorderColor:undefined,color:p.defaultValueColor||p.labelColor||undefined,
+    // Standalone Image's visible caption is edited by the shared Typography
+    // Label Alignment control; Card Grid retains its prior Header precedence.
+    textAlign:(single?p.labelAlignment||p.headerAlignment:p.headerAlignment||p.labelAlignment)||"left",
+    justifyContent:(single?p.labelAlignment||p.headerAlignment:p.headerAlignment||p.labelAlignment)==="right"?"flex-end":
+      (single?p.labelAlignment||p.headerAlignment:p.headerAlignment||p.labelAlignment)==="center"?"center":"flex-start",
+    fontSize:single?number(p.textSize,16,8,96):undefined,
+    border:p.headerBorderColor?"1px solid "+p.headerBorderColor:undefined,
+    color:single?p.labelColor||p.defaultValueColor||undefined:p.defaultValueColor||p.labelColor||undefined,
     whiteSpace:p.wrapText===false?"nowrap":"normal",
     overflow:"hidden",overflowWrap:"anywhere",padding:"4px 10px"
   }}>{header}</div>}
