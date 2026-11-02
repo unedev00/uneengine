@@ -31,7 +31,7 @@ test('only the selected formula edit writes the existing metadata property',()=>
  assert.match(ui,/activeSummaryLabel\.key/);
  assert.match(ui,/disabled=\{!activeDataEnabled\}/);
  assert.match(ui,/RecordFilterEditor/);
- assert.match(ui,/onClick=\{\(\)=>openFilters\(activeDataProperty\?\.label\?\?'Record'\)\}/);
+ assert.ok(ui.includes("openFilters(activeDataProperty?.label??'Record',activeDataProperty?.id??null)"));
 });
 test('SQL placements keep Source intact and display all Value and Cart bindings',()=>{
  const slots=[...sql.matchAll(/\('([^']+)','([^']+)',(\d+),(\d+),(\d+),'([^']+)'\)/g)]
@@ -170,14 +170,17 @@ test('Page State condition makes its optional blank behaviour visible and keeps 
  assert.match(validator,/Enter a Page State key/);
 });
 
-test('record filter dialog defaults to the full record list and preserves field-only rules separately',()=>{
- assert.match(ui,/filterScope,setFilterScope/);
- assert.match(ui,/setFilterScope\('Records'\);setFiltersOpen\(true\)/);
- assert.match(ui,/aria-label="Filter target"/);
- assert.match(ui,/records \(filter the list\)/);
- assert.match(ui,/only \(filter displayed value\)/);
- assert.match(ui,/scopedFilterId=filterScope==='SelectedValue'/);
- assert.match(ui,/modalFieldRule\?\.filters/);
- assert.match(ui,/onChange=\{filters=>scopedFilterId\?updateFieldFilter/);
- assert.match(ui,/onChange\(\{\.\.\.properties,filters\}\)/);
+test('the originating filter button sets the target without wasting modal space',()=>{
+ assert.ok(ui.includes("filterFieldId,setFilterFieldId"));
+ assert.ok(ui.includes("const openFilters=(target:string,fieldId:string|null=null)"));
+ assert.ok(ui.includes("setFilterFieldId(fieldId);setFiltersOpen(true)"));
+ assert.ok(ui.includes("openFilters(activeDataProperty?.label??'Record',activeDataProperty?.id??null)"));
+ assert.ok(ui.includes("scopedFilterId=filterFieldId&&activeDataProperty?.id===filterFieldId"));
+ assert.ok(ui.includes("onChange={filters=>scopedFilterId?updateFieldFilter"));
+ assert.ok(ui.includes("onChange({...properties,filters})"));
+ assert.ok(ui.includes("modalFieldRule?.filters"));
+ assert.ok(ui.includes("<RecordFilterEditor compact title="));
+ assert.ok(ui.includes("openFilters('Record')"));
+ assert.doesNotMatch(ui,/smart-filter-scope|smart-filter-target|Apply filters to|aria-label="Filter target"/);
+ assert.doesNotMatch(css,/\\.smart-filter-scope/);
 });

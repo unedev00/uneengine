@@ -71,7 +71,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  };
  const [filtersOpen,setFiltersOpen]=useState(false);
  const [filterTarget,setFilterTarget]=useState('Record');
- const [filterScope,setFilterScope]=useState<'Records'|'SelectedValue'>('Records');
+ const [filterFieldId,setFilterFieldId]=useState<string|null>(null);
  const [selectedDataField,setSelectedDataField]=useState<string|null>(null);
  const [daysOpen,setDaysOpen]=useState(false);
  const daysButton=useRef<HTMLButtonElement>(null);
@@ -117,7 +117,10 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  const objectName=sourceObjectNames[0]??'';
  const object=objects.find(o=>o.apiName===objectName);
  const update=(key:string,value:unknown)=>onChange({...properties,[key]:value});
- const openFilters=(target:string)=>{setFilterTarget(target);setFilterScope('Records');setFiltersOpen(true);};
+ // Filter target comes from the originating button, not a second modal selector.
+ const openFilters=(target:string,fieldId:string|null=null)=>{
+  setFilterTarget(target);setFilterFieldId(fieldId);setFiltersOpen(true);
+ };
  const storedFieldFilters=properties.dataFieldFilters;
  const fieldFilterRule=(id:string)=>scopedFieldRule(storedFieldFilters,id);
  const updateFieldFilter=(id:string,patch:Partial<ScopedFieldFilter>)=>{
@@ -157,7 +160,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  const activeDataKey=activeDataProperty?.valueKeys?.[api]??activeDataProperty?.id??'';
  const selectedFieldRule=activeDataProperty?fieldFilterRule(activeDataProperty.id):undefined;
  // Record filtering and output-only visibility are different operations.
- const scopedFilterId=filterScope==='SelectedValue'&&activeDataProperty?activeDataProperty.id:null;
+ const scopedFilterId=filterFieldId&&activeDataProperty?.id===filterFieldId?filterFieldId:null;
  const modalFieldRule=scopedFilterId?fieldFilterRule(scopedFilterId):undefined;
  const selectedFieldFilterCount=selectedFieldRule?.filters.length??0;
  const activeDataEnabled=Boolean(activeDataProperty&&activeDataProperty.components.includes(api)&&
@@ -418,7 +421,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
         <button type="button" className="smart-data-filter-button"
           aria-label={activeDataProperty?'Filter for '+activeDataProperty.label:'Filter for selected field'}
           title={activeDataProperty?'Record filters: '+activeDataProperty.label:'Select a field first'}
-          disabled={!activeDataEnabled||!object} onClick={()=>openFilters(activeDataProperty?.label??'Record')}
+          disabled={!activeDataEnabled||!object} onClick={()=>openFilters(activeDataProperty?.label??'Record',activeDataProperty?.id??null)}
           aria-haspopup="dialog"><SlidersHorizontal size={17}/>{activeDataProperty&&selectedFieldFilterCount>0&&
             <span className="smart-filter-count">{selectedFieldFilterCount}</span>}</button>
         <span className="smart-data-fx-prefix" aria-hidden="true">ƒx</span>
@@ -485,18 +488,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
        <span>{object?.label??'Object'} · {scopedFilterId?filterTarget+' only':'All records'}</span></div>
        <button type="button" autoFocus onClick={()=>setFiltersOpen(false)}>Done</button></header>
      <div className="smart-filter-dialog-body">
-       {object&&activeDataProperty&&<div className="smart-filter-scope">
-         <label htmlFor="smart-filter-target">Apply filters to</label>
-         <select id="smart-filter-target" aria-label="Filter target" value={filterScope}
-           onChange={event=>setFilterScope(event.target.value==='SelectedValue'?'SelectedValue':'Records')}>
-           <option value="Records">{object.label} records (filter the list)</option>
-           <option value="SelectedValue">{activeDataProperty.label} only (filter displayed value)</option>
-         </select>
-         <small>{scopedFilterId
-           ?'Only the selected display field is affected; the record list stays unchanged.'
-           :'All record rows are filtered before displaying this component.'}</small>
-       </div>}
-       {object?<RecordFilterEditor compact={!scopedFilterId} title={scopedFilterId?filterTarget+' value':object.label+' records'} fields={object.fields??[]} objects={objects} rootObjectApiName={objectName}
+       {object?<RecordFilterEditor compact title={scopedFilterId?filterTarget+' value':object.label+' records'} fields={object.fields??[]} objects={objects} rootObjectApiName={objectName}
          stateOptions={stateOptions}
          filters={scopedFilterId?(modalFieldRule?.filters??[]):Array.isArray(properties.filters)?properties.filters:[]}
          formula={scopedFilterId?(modalFieldRule?.filterFormula??''):typeof properties.filterFormula==='string'?properties.filterFormula:''}
