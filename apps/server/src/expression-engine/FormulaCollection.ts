@@ -15,6 +15,8 @@ export function mergeFormulaCollectionValues(values:readonly unknown[],limit=200
      &&(typeof value!=='object'||Object.getPrototypeOf(value)!==Object.prototype
        &&Object.getPrototypeOf(value)!==null))
     throw Error('COLLECTION expects scalar values or plain authorised records');
+   if(value===null||value===undefined||typeof value==='string'&&!value.trim())
+    throw Error('COLLECTION has a blank value at item '+(items.length+1));
    if(typeof value==='number'&&!Number.isFinite(value))throw Error('Nonfinite COLLECTION value');
    items.push(value);
    if(items.length>limit)throw Error('COLLECTION exceeds '+limit+' entries; narrow source filters');
