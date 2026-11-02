@@ -1,7 +1,10 @@
 import type {SqlPersistence} from '../system-files/sql-persistence.js';
 
-type Config=Pick<NodeJS.ProcessEnv,
- 'METADRIVE_BOOTSTRAP_TENANT_ID'|'METADRIVE_BOOTSTRAP_DOMAIN'|'METADRIVE_BOOTSTRAP_ADMIN_EMAIL'>;
+type Config={
+ METADRIVE_BOOTSTRAP_TENANT_ID?:string;
+ METADRIVE_BOOTSTRAP_DOMAIN?:string;
+ METADRIVE_BOOTSTRAP_ADMIN_EMAIL?:string;
+};
 type Outcome='not-configured'|'already-provisioned'|'identity-not-found'|'granted';
 
 /**
