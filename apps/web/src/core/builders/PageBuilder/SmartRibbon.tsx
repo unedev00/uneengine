@@ -437,6 +437,13 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
        {object?<RecordFilterEditor title={object.label+' records'} fields={object.fields??[]} objects={objects} rootObjectApiName={objectName}
          filters={activeDataProperty?(selectedFieldRule?.filters??[]):Array.isArray(properties.filters)?properties.filters:[]}
          formula={activeDataProperty?(selectedFieldRule?.filterFormula??''):typeof properties.filterFormula==='string'?properties.filterFormula:''}
+         mode={activeDataProperty
+           ?(selectedFieldRule?.filterMode??((selectedFieldRule?.filterFormula??'').trim()?'Formula':'Field'))
+           :(properties.filterMode==='Field'||properties.filterMode==='Formula'?properties.filterMode
+             :typeof properties.filterFormula==='string'&&properties.filterFormula.trim()?'Formula':'Field')}
+         onModeChange={filterMode=>activeDataProperty
+           ?updateFieldFilter(activeDataProperty.id,{filterMode})
+           :onChange({...properties,filterMode})}
          onFormulaChange={filterFormula=>activeDataProperty?updateFieldFilter(activeDataProperty.id,{filterFormula}):onChange({...properties,filterFormula})}
          logic={activeDataProperty?(selectedFieldRule?.filterLogic??'AND'):properties.filterLogic==='OR'?'OR':'AND'}
          onLogicChange={filterLogic=>activeDataProperty?updateFieldFilter(activeDataProperty.id,{filterLogic}):onChange({...properties,filterLogic})}

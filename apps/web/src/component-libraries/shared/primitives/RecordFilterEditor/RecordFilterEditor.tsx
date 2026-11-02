@@ -23,7 +23,8 @@ const isPicklist = (field?: FieldMetadata) =>
 
 /** Shared no-code filter editor: all types and choices come from accessible Field metadata. */
 export default function RecordFilterEditor({
-  title, fields, filters, onChange, logic = 'AND', onLogicChange, objects = [], rootObjectApiName = '',formula='',onFormulaChange
+  title, fields, filters, onChange, logic = 'AND', onLogicChange, objects = [], rootObjectApiName = '',
+  formula = '', onFormulaChange, mode, onModeChange
 }: {
   title: string;
   fields: FieldMetadata[];
@@ -35,6 +36,8 @@ export default function RecordFilterEditor({
   onLogicChange?: (next: 'AND'|'OR') => void;
   formula?:string;
   onFormulaChange?:(value:string)=>void;
+  mode?:'Field'|'Formula';
+  onModeChange?:(next:'Field'|'Formula')=>void;
 }) {
   const [fieldSearch, setFieldSearch] = useState('');
   const related=mentionGroups(objects,rootObjectApiName,[],'','text')
@@ -44,23 +47,40 @@ export default function RecordFilterEditor({
       return field?[{...field,apiName:item.reference,label:group.via+' → '+item.fieldLabel}]:[];
     }));
   const allFields=[...fields,...related];
+  // The first editable row exists before the first filter is saved.
   const set = (index: number, patch: Partial<Filter>) =>
-    onChange(filters.map((entry, i) => i === index ? { ...(isFilter(entry) ? entry : {}), ...patch } : entry));
+    onChange(index === filters.length && filters.length < 20
+      ? [...filters, {field:'',operator:'Equals',value:'',...patch}]
+      : filters.map((entry, i) => i === index ? { ...(isFilter(entry) ? entry : {}), ...patch } : entry));
   const remove = (index: number) => onChange(filters.filter((_, i) => i !== index));
   const add = (field = '') => {
     if (filters.length >= 20) return;
     onChange([...filters, { field, operator: 'Equals', value: '' }]);
     setFieldSearch('');
   };
+  const effectiveMode = onFormulaChange && mode === 'Formula' ? 'Formula' : 'Field';
   const query = fieldSearch.trim().toLocaleLowerCase();
   const matchingFields = query
     ? allFields.filter(item => (item.label + ' ' + item.apiName).toLocaleLowerCase().includes(query)).slice(0, 20)
     : [];
+  const formulaError = effectiveMode === 'Formula' ? validateRecordFilterFormula(formula,allFields) : null;
   return <section className="metadata-record-filter-editor" aria-label={title + ' filter editor'}>
     <div className="metadata-filter-intro">
-      <div><strong>{title}</strong><p>Select fields and conditions to limit the records shown by this data source.</p></div>
-      <span className="metadata-filter-count">{filters.length}/20 conditions</span>
+      <div>
+        <div className="metadata-filter-intro-heading">
+          <strong>{title}</strong>
+          {onFormulaChange && onModeChange && <div className="metadata-filter-mode" role="group" aria-label="Filter method">
+            <button type="button" aria-pressed={effectiveMode === 'Field'} className={effectiveMode === 'Field' ? 'is-active' : ''}
+              onClick={() => onModeChange('Field')}>Field</button>
+            <button type="button" aria-pressed={effectiveMode === 'Formula'} className={effectiveMode === 'Formula' ? 'is-active' : ''}
+              onClick={() => onModeChange('Formula')}>Formula</button>
+          </div>}
+        </div>
+        <p>{effectiveMode === 'Formula' ? 'Write a formula to filter records.' : 'Choose a field, operator and value to filter records.'}</p>
+      </div>
+      {effectiveMode === 'Field' && <span className="metadata-filter-count">{filters.length}/20 conditions</span>}
     </div>
+    {effectiveMode === 'Field' && <>
     <div className="metadata-filter-toolbar">
       <label className="metadata-filter-search">
         <span>Find a field</span>
@@ -83,7 +103,8 @@ export default function RecordFilterEditor({
         <Plus size={15} aria-hidden="true"/> {item.label} <small>{item.apiName}</small>
       </button>) : <p>No matching accessible fields.</p>}
     </div>}
-    {onFormulaChange && <section className="metadata-filter-formula" aria-label="Record filter formula">
+    </>}
+    {effectiveMode === 'Formula' && onFormulaChange && <section className="metadata-filter-formula" aria-label="Record filter formula">
       <label><strong>Filter Formula</strong>
         <textarea rows={3} spellCheck={false} value={formula}
           aria-label={title+' filter formula'}
@@ -91,13 +112,11 @@ export default function RecordFilterEditor({
           onChange={event=>onFormulaChange(event.target.value)}/>
       </label>
       <small>Use @Field, $state.key, IF, ISBLANK and AND/OR. The formula is applied to authorised records before pagination.</small>
-      {validateRecordFilterFormula(formula,allFields) && <p role="alert" className="metadata-filter-error">
-        {validateRecordFilterFormula(formula,allFields)}
-      </p>}
+      {formulaError && <p role="alert" className="metadata-filter-error">{formulaError}</p>}
     </section>}
+    {effectiveMode === 'Field' && <>
     <div className="metadata-filter-conditions">
-      {filters.length === 0 && <p className="metadata-filter-empty">No conditions. All accessible records match until you add a filter.</p>}
-      {filters.map((entry, index) => {
+      {(filters.length ? filters : [{field:'',operator:'Equals',value:''}]).map((entry, index) => {
         const raw: Partial<Filter> = isFilter(entry) ? entry : {};
         const fieldName = typeof raw.field === 'string' ? raw.field : '';
         const field = allFields.find(candidate => candidate.apiName === fieldName);
@@ -107,7 +126,7 @@ export default function RecordFilterEditor({
         const source = dynamic?.source ?? 'Fixed';
         const value = dynamic ? '' : String(raw.value ?? '');
         const operators = supportedFilterOperators(field);
-        const error = examineRecordFilter(entry, allFields);
+        const error = filters.length === 0 ? null : examineRecordFilter(entry, allFields);
         const valueType = dateInputType(field);
         const valueControl = isBooleanFilterField(field)
           ? <select aria-label={title + ' value ' + (index + 1)} value={value}
@@ -130,9 +149,9 @@ export default function RecordFilterEditor({
         return <div key={index} className="metadata-filter-condition" data-filter-index={index}>
           <div className="metadata-filter-condition-heading">
             <strong>Condition {index + 1}</strong>
-            <button type="button" aria-label={'Remove condition ' + (index + 1)} onClick={() => remove(index)}>
+            {filters.length > 0 && <button type="button" aria-label={'Remove condition ' + (index + 1)} onClick={() => remove(index)}>
               <Trash2 size={16} aria-hidden="true"/> Remove
-            </button>
+            </button>}
           </div>
           <div className="metadata-filter-condition-grid">
             <label><span>Field</span>
@@ -194,5 +213,6 @@ export default function RecordFilterEditor({
       {!allFields.length && <span>Select an Object with accessible fields first.</span>}
       {filters.length >= 20 && <span>Maximum 20 conditions per source.</span>}
     </div>
+    </>}
   </section>;
 }

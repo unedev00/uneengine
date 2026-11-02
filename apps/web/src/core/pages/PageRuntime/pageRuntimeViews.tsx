@@ -87,7 +87,7 @@ import { isComponentVisible } from '../../components/Properties/componentVisibil
 import {behaviorValidation,behaviorAction,behaviorAppearance,behaviorInteractions,behaviorTabs,behaviorTabForChild,pageBehaviors} from './pageBehaviorRuntime';
 import { canNestComponent, componentVisualStyle, directChildren, isLayoutType, isDescendantOf, layoutTypes } from '../TemplatePageRuntime/pageComponentLayout';
 import { isCanvasLocked, wrapCanvasComponent, ungroupCanvasComponent } from '../../builders/PageBuilder/canvasInteractions';
-import { filterPageComponentRecords, pageComponentRecordQuery, bindPageStateProperties, needsMetadataComponentRuntime, resolvePageStatePath } from './pageComponentBindings';
+import { filterPageComponentRecords, pageComponentRecordQuery, bindPageStateProperties, needsMetadataComponentRuntime, resolvePageStatePath, activePageRecordFilters} from './pageComponentBindings';
 import {scopedFieldAllows} from './fieldScopedRecordFilters';
 import {resolveSmartToggleFieldBinding,updateSmartToggleField} from './smartToggleFieldBinding';
 import {usePageComponentRelatedScope} from '../PageRuntime/usePageSessionRelatedQuery';
@@ -371,7 +371,8 @@ function MetadataBoundPageComponent({
     return () => window.removeEventListener('metadrive:page-flow-mutated', sync);
   }, [pageSessionKey, sessionId]);
   const fields = objects.find((item) => item.apiName === objectApiName)?.fields ?? [];
-  const recordQuery=pageComponentRecordQuery(properties.filters,fields,{pageState,recordId,sessionId},properties.filterLogic==='OR'?'OR':'AND',properties.filterFormula);
+  const selectedRecordFilters=activePageRecordFilters(properties);
+  const recordQuery=pageComponentRecordQuery(selectedRecordFilters.filters,fields,{pageState,recordId,sessionId},properties.filterLogic==='OR'?'OR':'AND',selectedRecordFilters.formula);
   const relatedKey=String(properties.relatedFilterKey??'');
   const {relatedQuery,relatedField,parentId:selectedId}=usePageComponentRelatedScope(
     properties,component.type,fields,objects,pageState,sessionId,revision,
@@ -491,7 +492,7 @@ function MetadataBoundPageComponent({
   // Data from the previous object/filter must not flash while the new query is pending.
   const currentQueryRecords = recordsForQueryKey === recordQueryKey ? records : [];
   const filteredRecords=recordQuery.filters?currentQueryRecords:filterPageComponentRecords(
-    currentQueryRecords,properties.filters,fields,{pageState,recordId,sessionId},properties.filterLogic==='OR'?'OR':'AND');
+    currentQueryRecords,selectedRecordFilters.filters,fields,{pageState,recordId,sessionId},properties.filterLogic==='OR'?'OR':'AND');
   const visibleRecords=relatedField?filterRelatedRecords(filteredRecords,selectedId,relatedField):filteredRecords;
   const mentionContext = useRelationshipMentionContext(objects, mentionRootObjectApiName,
     recordId || explicitMentionRecordId(properties), properties, apiRequest, revision);

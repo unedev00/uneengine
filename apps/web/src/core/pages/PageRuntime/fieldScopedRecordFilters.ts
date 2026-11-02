@@ -7,13 +7,14 @@ import {comparePageFilterValue,filterPageComponentRecords,type PageFilterContext
  * to the chosen output value after the normal tenant/RBAC-gated record retrieval.
  * An invalid configured rule fails closed for that output.
  */
-export type ScopedFieldFilter={filters:unknown[];filterLogic:'AND'|'OR';filterFormula:string};
+export type ScopedFieldFilter={filters:unknown[];filterLogic:'AND'|'OR';filterFormula:string;filterMode?:'Field'|'Formula'};
 export const isScopedFieldFilter=(input:unknown):input is ScopedFieldFilter=>{
  if(!input||typeof input!=='object'||Array.isArray(input))return false;
  const rule=input as Record<string,unknown>;
  return Array.isArray(rule.filters)&&rule.filters.length<=20
   &&(rule.filterLogic==='AND'||rule.filterLogic==='OR')
-  &&typeof rule.filterFormula==='string'&&rule.filterFormula.length<=4000;
+  &&typeof rule.filterFormula==='string'&&rule.filterFormula.length<=4000
+  &&(rule.filterMode===undefined||rule.filterMode==='Field'||rule.filterMode==='Formula');
 };
 export function scopedFieldRule(collection:unknown,key:string):ScopedFieldFilter|undefined{
  if(!collection||typeof collection!=='object'||Array.isArray(collection))return undefined;
@@ -49,9 +50,10 @@ export function scopedFieldAllows(collection:unknown,key:string,record:Record<st
  if(!Object.prototype.hasOwnProperty.call(collection,key))return true;
  const rule=scopedFieldRule(collection,key);
  if(!rule||!record||typeof record!=='object'||Array.isArray(record))return false;
- if(rule.filters.length&&filterPageComponentRecords([record],rule.filters,fields,context,rule.filterLogic).length===0)
+ if(rule.filterMode!=='Formula'&&rule.filters.length
+   &&filterPageComponentRecords([record],rule.filters,fields,context,rule.filterLogic).length===0)
   return false;
- if(!rule.filterFormula.trim())return true;
+ if(rule.filterMode==='Field'||!rule.filterFormula.trim())return true;
  const compiled=compileRecordFilterFormula(rule.filterFormula,fields,context.pageState??{});
  if(compiled.blocked)return false;
  if(compiled.filters.length===0)return true;
