@@ -30,6 +30,9 @@ export class Parser {
   parse():Expression {
     if(this.tokens.length>MAX_EXPRESSION_NODES)
       throw new Error('Formula exceeds the 512-token complexity limit');
+    // Excel-style leading '=' is an expression marker, not a binary operator.
+    // Shared by Flow, field, validation and component formula contexts.
+    if(this.tokens[0]?.kind==='operator'&&this.tokens[0].value==='=')this.position=1;
     const value=this.expression(0,0);
     if(this.position!==this.tokens.length)throw new Error('Invalid Flow formula syntax');
     return value;
