@@ -211,6 +211,16 @@ export class PageLayoutVersionRuntime{
    layoutVariant:variant,draftRevision:head?.draft_version??0,
    publishedRevision:head?.published_version??0};
  }
+ /** Read a historical version without changing active/draft pointers. */
+ async version(tenant:string,name:string,variant:PageLayoutVariant,version:number,base:PageSnapshot){
+  if(!Number.isInteger(version)||version<1)throw new Error('Invalid page revision');
+  const found=await this.db.query<{id:string}>('SELECT id FROM md_page_definitions WHERE tenant_id=$1 AND api_name=$2 AND enabled=true',[tenant,name]);
+  const id=found.rows[0]?.id;if(!id)throw new Error('Page not found');
+  const snapshot=await this.snapshot(tenant,id,variant,version);
+  return {...base,...snapshot,label:base.label,
+   ...(base.pageType==='App Page'?{activationAssignments:base.activationAssignments}:{}),
+   layoutVariant:variant,readonlyVersion:version};
+ }
  async saveDraft(tenant:string,name:string,variant:PageLayoutVariant,raw:unknown,base:PageSnapshot,actor?:string){
   if(!raw||typeof raw!=='object'||Array.isArray(raw))throw new Error('Invalid Page layout draft');
   const page=raw as PageSnapshot & {draftRevision?:number};
