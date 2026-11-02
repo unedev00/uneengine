@@ -1,10 +1,17 @@
 import {Parser} from '../../../../../server/src/expression-engine/FormulaParser.js';
+import type {FieldMetadata} from '../../metadata/Definitions/metadata';
 import {tokenize} from '../../../../../server/src/expression-engine/FormulaTokenizer.js';
 import {matchesFormulaCollectionCriterion} from '../../../../../server/src/expression-engine/FormulaCollection.js';
 
 /** Pure, context-sensitive record list binding for metadata fields that supply
  * collections. An ordinary scalar/Boolean formula remains a scalar elsewhere. */
 export type CollectionListBinding={object:string;field:string;criterion:string;operator:string};
+/** Generic metadata for filtering the already-authorised items of a session
+ * collection. This is not a SQL Object and must never trigger a data query. */
+export const sessionCollectionFields:ReadonlyArray<FieldMetadata>=[
+ {apiName:'Name',label:'Caption',dataType:'Text'} as FieldMetadata,
+ {apiName:'Value',label:'Value',dataType:'Text'} as FieldMetadata
+];
 export function parseCollectionListBinding(source:string,primaryObject:string):CollectionListBinding|null{
  const input=source.trim().replace(/^=\s*/,'');
  if(!input.startsWith('@'))return null;

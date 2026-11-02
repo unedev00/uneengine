@@ -35,6 +35,26 @@ export function namedCollectionNames(formula:unknown):string[]{
 export function namedCollectionName(formula:unknown):string|undefined{
  return namedCollectionNames(formula)[0];
 }
+/** Decide whether a formula can yield a collection without evaluating it.
+ * Used only by metadata collection consumers; ordinary scalar properties stay scalar.
+ * IF/CASE/IFERROR select a branch lazily in the shared evaluator. */
+export function isCollectionSourceExpression(formula:unknown,knownCollections:readonly string[]=[]):boolean{
+ if(typeof formula!=='string'||!formula.trim())return false;
+ const names=new Set(knownCollections.map(name=>name.toLowerCase()));
+ const returnsCollection=(node:Expression):boolean=>{
+  if(node.kind==='reference')return names.has(node.value.toLowerCase());
+  if(node.kind!=='call')return false;
+  if(node.name==='COLLECTION')return true;
+  if(node.name==='IF'&&node.args.length===3)
+   return returnsCollection(node.args[1])||returnsCollection(node.args[2]);
+  if(['IFERROR','BLANKVALUE','NULLVALUE'].includes(node.name))
+   return node.args.some(returnsCollection);
+  if(node.name==='CASE')return node.args.slice(2).some(returnsCollection);
+  return false;
+ };
+ try{return returnsCollection(new Parser(tokenize(formula.trim())).parse());}
+ catch{return false;}
+}
 function registry(scope:string):Registry{
  let current=sessions.get(scope);
  if(!current){current={owners:new Map(),subscribers:new Set(),snapshot:empty};sessions.set(scope,current);}

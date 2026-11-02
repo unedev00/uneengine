@@ -7,7 +7,7 @@ import {pageStateDependencies,applyPageSelection} from '../PageRuntime/pageState
 import {loadFlowScreenRecordPage} from '../../authentication/Client/authClient';
 // Load the browser API client only during the mounted effect, not on SSR import.
 import {presentPageRecords,type ChannelGrant} from '../../records/RecordWorkspace/recordPresentationAdapters';
-import {filterPageComponentRecords,pageComponentRecordQuery,bindPageStateProperties,activePageRecordFilters} from '../PageRuntime/pageComponentBindings';
+import {filterPageComponentRecords,pageComponentRecordQuery,bindPageStateProperties,activePageRecordFilters,collectionRecordFilterFormula} from '../PageRuntime/pageComponentBindings';
 import {scopedFieldAllows} from '../PageRuntime/fieldScopedRecordFilters';
 import {resolveSmartToggleFieldBinding,updateSmartToggleField} from '../PageRuntime/smartToggleFieldBinding';
 import {usePageComponentRelatedScope} from '../PageRuntime/usePageSessionRelatedQuery';
@@ -130,8 +130,12 @@ export default function MetadataBoundPageComponent({
     relatedKey?selectedFilterRecords[relatedKey]?.recordId||pageState[relatedKey]:undefined,
     disableActions);
   const selectedRecordFilters=activePageRecordFilters(properties);
+ const collectionPredicate=collectionRecordFilterFormula(properties,objectApiName,fields);
+ const combinedRecordFormula=collectionPredicate
+  ?selectedRecordFilters.formula? 'AND('+String(selectedRecordFilters.formula)+','+collectionPredicate+')'
+   :collectionPredicate:selectedRecordFilters.formula;
   const recordQuery=pageComponentRecordQuery(selectedRecordFilters.filters,filterFields,{pageState,recordId,sessionId},
-    properties.filterLogic==='OR'?'OR':'AND',selectedRecordFilters.formula);
+    properties.filterLogic==='OR'?'OR':'AND',combinedRecordFormula);
   const recordQueryKey=JSON.stringify([recordQuery,relatedQuery]);
 
   useEffect(() => {
@@ -280,7 +284,9 @@ export default function MetadataBoundPageComponent({
    ?currentContextRecord?[currentContextRecord]:[]:visibleRecords;
   const namedSource=usePageCollectionFormula(properties.collectionFormula,properties,objects,
     objectApiName,contextRecords,recordTotal,revision,pageState,sessionId,pageSessionKey,component.id);
-  const dataCollection=namedSource.collection;
+  // A configured record presenter may enforce additional channel visibility.
+  // Never replace its authorised projection with raw formula collection rows.
+  const dataCollection=properties.recordPresenterApiName?null:namedSource.collection;
   const dataCollectionRows=dataCollection?namedCollectionRows(dataCollection):null;
   const mentionContext = useRelationshipMentionContext(objects, mentionRootObjectApiName,
     recordId || explicitMentionRecordId(properties), properties, apiRequest, revision);
@@ -583,13 +589,15 @@ export default function MetadataBoundPageComponent({
       // Multi-row components resolve their per-row values inside their own renderer.
       ...(contextRecords.length===1 ? {record:contextRecords[0]} : {}),
       ...(objectApiName ? { records: contextRecords } : {}),
+      ...presented,
+      // A typed collection is the Data Source; presenter defaults must not
+      // overwrite its permission-checked, formula-filtered rows.
       ...(dataCollectionRows?{records:dataCollectionRows}:{}),
       ...(!dataCollectionRows&&objectApiName ? {recordPagination:{
         limit:recordPageSize,offset:recordOffset,total:recordTotal,
         hasPrevious:recordOffset>0,hasNext:recordOffset+recordPageSize<recordTotal,
         available:recordQuery.serverFilterable
       }} : {}),
-      ...presented,
       ...(toggleBinding?{toggleFieldBound:true,toggleFieldReady:toggleCanWrite,
         toggleFieldError:toggleBinding.error??'',
         value:toggleBinding.ready?toggleBinding.value:false,

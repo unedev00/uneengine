@@ -1,9 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {formulaSignatureAt} from '../src/core/builders/PageBuilder/formulaSignatureHelp';
 import {pageStateChoices} from '../src/core/builders/PageBuilder/pageStateChoices';
-import {namedCollectionName,namedCollectionNames,registerSessionCollection,getSessionCollection} from '../src/core/pages/PageRuntime/pageCollectionSession';
-import {pageComponentRecordQuery,filterPageComponentRecords,resolvePageFilterValue} from '../src/core/pages/PageRuntime/pageComponentBindings';
+import {isCollectionSourceExpression,namedCollectionName,namedCollectionNames,registerSessionCollection,getSessionCollection} from '../src/core/pages/PageRuntime/pageCollectionSession';
+import {collectionRecordFilterFormula,pageComponentRecordQuery,filterPageComponentRecords,resolvePageFilterValue} from '../src/core/pages/PageRuntime/pageComponentBindings';
 import {createNamedFormulaCollection,formulaCollectionReferenceKey} from '../../server/src/expression-engine/FormulaCollection';
 import {parseCollectionListBinding,filteredCollectionItems} from '../src/core/pages/PageRuntime/pageCollectionListBinding';
 import {namedCollectionRows,collectionFormulaReferences} from '../src/core/pages/PageRuntime/usePageCollectionFormula';
@@ -331,4 +332,81 @@ test('scalar SUM formulas hydrate the same authorised Object fields as collectio
   [{object:'Sale',field:'Amount'}]);
  assert.deepEqual(collectionFormulaReferences('=IF(TRUE,COLLECTION("Food","Pizza",@MenuCategory.Name,"Pizza*"),COLLECTION("Drinks","Tea","",""))','MenuCategory'),
   [{object:'MenuCategory',field:'Name'}]);
+});
+
+test('direct Text formula @Name = "des*" uses the same permission-scoped record query as visual filtering',()=>{
+ const fields=[{apiName:'Name',label:'Name',dataType:'Text'}] as any;
+ const expression='@Name = "des*"';
+ const predicate=collectionRecordFilterFormula({textSource:expression},'MenuCategory',fields);
+ assert.equal(predicate,'@Name = "des*"');
+ const direct=pageComponentRecordQuery([],fields,{},'AND',predicate);
+ const visual=pageComponentRecordQuery([{field:'Name',operator:'Equals',value:'des*'}],fields);
+ assert.equal(direct.blocked,false);
+ assert.deepEqual(direct.filters,visual.filters);
+ assert.deepEqual(direct.filters,[{field:'Name',operator:'matches',value:'des*'}]);
+ const rows=[{Id:'1',Name:'Desserts'},{Id:'2',Name:'Drinks'}];
+ const parsed=parseCollectionListBinding(expression,'MenuCategory');
+ assert.ok(parsed);
+ assert.deepEqual(filteredCollectionItems(parsed!,rows).map(row=>row.label),['Desserts']);
+ assert.equal(collectionRecordFilterFormula({textSource:expression},'',fields),'',
+  'named session collections do not trigger an Object query');
+ assert.equal(collectionRecordFilterFormula({textSource:'@myfood = "B*"'},'MenuCategory',fields),'',
+  'named collections are not mistaken for Object fields');
+});
+
+test('IF returning an existing named session collection is a list Data Source',()=>{
+ const food={name:'myfood',items:['Fruits','Vegetables']};
+ const drinks={name:'mydrinks',items:['Tea','Coffee']};
+ const inputs={namedCollections:{myfood:food,mydrinks:drinks}};
+ assert.equal(isCollectionSourceExpression('=IF(TRUE,@myfood,@mydrinks)',['myfood','mydrinks']),true);
+ assert.equal(isCollectionSourceExpression('=IF(TRUE, @myfood, @missing)',['myfood']),true);
+ assert.equal(isCollectionSourceExpression('=IF(TRUE, 1, 2)',['myfood']),false);
+ assert.equal(isCollectionSourceExpression('=SUM(COLLECTION("Numbers", 1, 2))',[]),false);
+ const selected=evaluateCollectionFormula('=IF(TRUE, @myfood, @mydrinks)',{},inputs);
+ assert.equal(selected.error,undefined);
+ assert.deepEqual(selected.value.items,food.items);
+ const other=evaluateCollectionFormula('=IF(FALSE, @myfood, @mydrinks)',{},inputs);
+ assert.equal(other.error,undefined);
+ assert.deepEqual(other.value.items,drinks.items);
+ assert.deepEqual(collectionFormulaReferences('=IF(TRUE,@myfood,@missing)','MenuCategory',['myfood'],['Name']),[]);
+});
+
+test('direct collection criterion and authored filters combine without widening record access',()=>{
+ const fields=[{apiName:'Name',label:'Name',dataType:'Text'},
+  {apiName:'Active',label:'Active',dataType:'Boolean'}] as any;
+ const collectionPredicate=collectionRecordFilterFormula(
+  {textSource:'@Name = "des*"',filterFormula:'@Active = TRUE'},'Category',fields);
+ assert.equal(collectionPredicate,'@Name = "des*"');
+ const query=pageComponentRecordQuery([],fields,{},'AND',
+  'AND(@Active = TRUE,'+collectionPredicate+')');
+ assert.equal(query.blocked,false);
+ assert.deepEqual(query.filters,[
+  {field:'Active',operator:'eq',value:'true'},
+  {field:'Name',operator:'matches',value:'des*'}
+ ]);
+});
+
+test('collection data overrides generic presenter records in both Page Runtime adapters',()=>{
+ for(const path of ['../src/core/pages/PageRuntime/pageRuntimeViews.tsx',
+  '../src/core/pages/MetadataBoundPageComponent/MetadataBoundPageComponent.tsx']){
+  const source=readFileSync(new URL(path,import.meta.url),'utf8');
+  const data=source.indexOf('...(dataCollectionRows?{records:dataCollectionRows}:{}),');
+  assert.ok(data>=0,path+' must supply typed collection rows to the component');
+  const presenter=source.lastIndexOf('...presented,',data);
+  assert.ok(presenter>=0&&data-presenter<400,
+   path+' must not overwrite filtered Collection records with default presenter rows');
+  assert.ok(!source.slice(data,data+350).includes('...presented,'),
+   path+' must preserve source priority for collection records');
+ }
+});
+
+test('session Collection visual filter and direct Formula Bar share wildcard comparisons',()=>{
+ const fields=[{apiName:'Name',label:'Caption',dataType:'Text'}] as any;
+ const saved={name:'myfood',items:['Fruits','Vegetables','Banana']};
+ const rows=namedCollectionRows(saved);
+ const visual=filterPageComponentRecords(rows,[{field:'Name',operator:'Equals',value:'B*'}],fields);
+ const direct=parseCollectionListBinding('@myfood = "B*"','');
+ assert.ok(direct);
+ const source=filteredCollectionItems({...direct!,field:'Name'},rows);
+ assert.deepEqual(visual.map(row=>row.Name),source.map(row=>row.label));
 });

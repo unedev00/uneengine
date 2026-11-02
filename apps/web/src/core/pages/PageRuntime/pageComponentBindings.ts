@@ -1,4 +1,5 @@
 import {compileRecordFilterFormula} from './recordFilterFormula';
+import {parseCollectionListBinding} from './pageCollectionListBinding';
 import {hasExcelWildcardCriteria,matchesExcelWildcard} from '../../../../../server/src/expression-engine/FormulaWildcard.js';
 import { compareMetadataValue } from '../../metadata/Definitions/metadataValueComparison';
 import type { FieldMetadata } from '../../metadata/Definitions/metadata';
@@ -309,6 +310,29 @@ function pageComponentRecordQueryBase(
   return {blocked:false,filter:first,filters,
     filterLogic:filters&&filters.length>1?filters.map((_,index)=>String(index+1)).join(` ${logic} `):undefined,
     serverFilterable};
+}
+/** Compile the same direct @Field criterion used by a collection Data Source into
+ * the existing permission-scoped Record API predicate. This avoids filtering an
+ * incomplete browser page and keeps the direct Formula Bar and visual filters
+ * on one server filtering engine. Session collections are never queried here. */
+export function collectionRecordFilterFormula(
+ properties:Readonly<Record<string,unknown>>,primaryObject:string,fields:ReadonlyArray<FieldMetadata>
+):string{
+ if(!primaryObject)return '';
+ const expressions=Object.entries(properties).filter(([key,value])=>
+  key!=='collectionFormula'&&key!=='filterFormula'&&typeof value==='string')
+  .map(([,value])=>String(value).trim());
+ const declared=typeof properties.collectionFormula==='string'?properties.collectionFormula.trim():'';
+ const criteria=[...expressions,declared].filter(Boolean);
+ for(const formula of criteria){
+  const binding=parseCollectionListBinding(formula,primaryObject);
+  if(!binding||binding.object!==primaryObject||!fields.some(f=>f.apiName===binding.field))continue;
+  // Unsupported predicates remain subject to the collection runtime's complete
+  // page check, rather than using misleading client-side partial filtering.
+  if(!['=','==','>','>=','<','<='].includes(binding.operator))continue;
+  return '@'+binding.field+' '+binding.operator+' '+JSON.stringify(binding.criterion);
+ }
+ return '';
 }
 /** Compose an optional user-authored formula with ordinary Object filters.
  * The formula must compile to server-side predicates BEFORE paging; otherwise
