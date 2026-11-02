@@ -416,7 +416,7 @@ export function evaluateFieldExpressionDetailed(expression,record,options={}){
  const explicit=entered.startsWith('=');
  const input=explicit?entered.slice(1).trim():entered;
  if(explicit&&!input)return {value:'',error:'Complete the formula after ='};
- if(!explicit&&!options.collectionResult&&/^COLLECTION\s*\(/i.test(input))
+ if(!explicit&&!options?.collectionResult&&/^COLLECTION\s*\(/i.test(input))
   return {value:expression};
  if(!/^(?:TRUE|FALSE|NULL|PI)$/i.test(input)&&!/@[A-Za-z]/.test(input)&&!input.startsWith('@')&&!/^[A-Za-z][A-Za-z0-9_]*\s*\(/.test(input)
   &&!/^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)+(?:\s*\(|$)/.test(input)
