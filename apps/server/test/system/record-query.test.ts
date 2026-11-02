@@ -28,6 +28,27 @@ test('record filters parameterize fields, values, typed comparisons and escaped 
   assert.deepEqual(result.parameters,['Amount','12.5','Name','%A\\%\\_B%']);
 });
 
+test('MATCHES filter uses bounded, parameterized Excel wildcard matching against text only',()=>{
+ const result=compileRecordFilters([{field:'Name',operator:'matches',value:'B*?~*~?~~%_'}],
+  undefined,fields,3);
+ assert.match(result.predicate,/fv\.tenant_id=r\.tenant_id/);
+ assert.match(result.predicate,/fv\.field_api=\$3/);
+ assert.match(result.predicate,/lower\(fv\.value_text\) LIKE lower\(\$4\) ESCAPE/);
+ assert.deepEqual(result.parameters,['Name','B%_*?~\\%\\_']);
+ const any=compileRecordFilters([{field:'Name',operator:'matches',value:'*'}],
+  undefined,fields,3);
+ assert.deepEqual(any.parameters,['Name','%']);
+ assert.match(any.predicate,/fv\.value_text<>''/);
+ const literal=compileRecordFilters([{field:'Name',operator:'matches',value:'~*'}],
+  undefined,fields,3);
+ assert.deepEqual(literal.parameters,['Name','*']);
+ assert.deepEqual(parseRecordFilters(JSON.stringify([{field:'Name',operator:'matches',value:'B*'}])),
+  [{field:'Name',operator:'matches',value:'B*'}]);
+ assert.throws(()=>compileRecordFilters([{field:'Amount',operator:'matches',value:'*'}],
+  undefined,fields,3),/text field/);
+ assert.throws(()=>compileRecordFilters([{field:'Name',operator:'matches',value:'*'.repeat(257)}],
+  undefined,fields,3),/256 characters/);
+});
 test('blank, not-equal and multi-select exclusion filters preserve value semantics',()=>{
   const blank=compileRecordFilters([{field:'Name',operator:'isBlank',value:''}],
     undefined,fields,1);

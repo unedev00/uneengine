@@ -6,6 +6,7 @@ import {
 } from '../../../../server/src/expression-engine/FormulaParser.js';
 import {tokenize} from '../../../../server/src/expression-engine/FormulaTokenizer.js';
 import {createNamedFormulaCollection} from '../../../../server/src/expression-engine/FormulaCollection.js';
+import {matchesExcelWildcard} from '../../../../server/src/expression-engine/FormulaWildcard.js';
 import {validateFormulaFunctions} from '../../../../server/src/expression-engine/FormulaFunctionRegistry.js';
 import {roundFormulaNumber} from '../../../../server/src/expression-engine/FormulaNumeric.js';
 import {
@@ -66,7 +67,8 @@ const evaluateCall=(name,args,context)=>{
    }
    return found<0?0:found+1;
   }
-  case 'BEGINS':case 'CONTAINS':case 'EXACT':arity(2);
+  case 'MATCHES':arity(2);return matchesExcelWildcard(args[0],args[1]);
+   case 'BEGINS':case 'CONTAINS':case 'EXACT':arity(2);
    if(name==='BEGINS')return text(args[0]).startsWith(text(args[1]));
    if(name==='CONTAINS')return text(args[0]).includes(text(args[1]));
    return text(args[0])===text(args[1]);

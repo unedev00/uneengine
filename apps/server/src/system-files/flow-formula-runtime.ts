@@ -17,6 +17,7 @@ import {
 } from '../expression-engine/FormulaDate.js';
 import {roundFormulaNumber} from '../expression-engine/FormulaNumeric.js';
 import {createNamedFormulaCollection} from '../expression-engine/FormulaCollection.js';
+import {matchesExcelWildcard} from '../expression-engine/FormulaWildcard.js';
 import type {Expression} from '../expression-engine/FormulaParser.js';
 
 type FormulaResolver=(name:string)=>unknown;
@@ -191,6 +192,7 @@ function evaluateNode(node:Expression,resolve:FormulaResolver,context:FormulaEva
     case 'NULLVALUE':arity(2);{
       const value=argument(0);return value===null||value===undefined?argument(1):value;
     }
+    case 'MATCHES':arity(2);return matchesExcelWildcard(argument(0),argument(1));
     case 'TEXT':arity(1);return formulaText(argument(0));
     case 'VALUE':arity(1);return numeric(argument(0));
     case 'LEN':arity(1);return textPoints(argument(0)).length;
@@ -607,6 +609,7 @@ export function inferFlowFormulaType(expression:string,resolve:FormulaTypeResolv
     const requireNumber=(index:number)=>requireType(index,['Number']);
     switch(node.name){
       case 'COLLECTION':arity(2,20);requireText(0);return 'Collection';
+      case 'MATCHES':arity(2);requireText(0);requireText(1);return 'Checkbox';
       case 'ISCHANGED':arity(1);triggerFieldReference(node.args[0]);return 'Checkbox';
       case 'ISNEW':case 'ISCLONE':arity(0);return 'Checkbox';
       case 'PRIORVALUE':arity(1);triggerFieldReference(node.args[0]);return args[0];

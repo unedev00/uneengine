@@ -1,6 +1,8 @@
+import {excelWildcardSqlLike} from '../expression-engine/FormulaWildcard.js';
+
 export type RecordFilterOperator =
   | 'eq' | 'ne' | 'lt' | 'lte' | 'gt' | 'gte'
-  | 'contains' | 'startsWith' | 'includes' | 'excludes' | 'in' | 'isBlank' | 'isNotBlank';
+  | 'contains' | 'startsWith' | 'matches' | 'includes' | 'excludes' | 'in' | 'isBlank' | 'isNotBlank';
 
 export type RecordFilter = {
   field: string;
@@ -23,7 +25,7 @@ export type RecordCursor = {
 
 const apiName = /^[A-Za-z][A-Za-z0-9_]*$/;
 const operators = new Set<RecordFilterOperator>([
-  'eq', 'ne', 'lt', 'lte', 'gt', 'gte', 'contains', 'startsWith', 'includes', 'excludes', 'in', 'isBlank', 'isNotBlank',
+  'eq', 'ne', 'lt', 'lte', 'gt', 'gte', 'contains', 'startsWith', 'matches', 'includes', 'excludes', 'in', 'isBlank', 'isNotBlank',
 ]);
 const typedColumns: Record<string, { column: string; cast: string }> = {
   number: { column: 'value_number', cast: 'numeric' },
@@ -248,6 +250,18 @@ export function compileRecordFilters(
       return filter.operator==='includes'
         ?`${membership} @> ${valueParameter}::text[]`
         :`NOT (${membership} @> ${valueParameter}::text[])`;
+    }
+    if (filter.operator === 'matches') {
+      if (!['text', 'email', 'phone', 'url', 'picklist'].includes(field.data_type))
+        throw new Error('MATCHES requires a text field');
+      const pattern=excelWildcardSqlLike(filter.value);
+      parameters.push(pattern);
+      // Like the Excel wildcard criterion "*", omit blank text cells.
+      const nonblank=filter.value.includes('*')||filter.value.includes('?')
+        ? " AND fv.value_text<>''" : '';
+      return `EXISTS(SELECT 1 FROM md_record_values fv WHERE fv.tenant_id=r.tenant_id
+        AND fv.record_id=r.id AND fv.object_api=r.object_api AND fv.field_api=${fieldParameter}
+        AND lower(fv.value_text) LIKE lower(${valueParameter}) ESCAPE '\\'${nonblank})`;
     }
     if (filter.operator === 'contains' || filter.operator === 'startsWith') {
       if (!['text', 'email', 'phone', 'url', 'picklist'].includes(field.data_type))
