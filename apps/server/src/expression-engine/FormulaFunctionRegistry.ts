@@ -23,7 +23,7 @@ const validationAndFlow:readonly FormulaExpressionContext[]=['validation_rule','
 const flowOnly:readonly FormulaExpressionContext[]=['flow_formula'];
 const ribbonFunctions=new Set([
   'IF','IFERROR','AND','OR','NOT','XOR','ISBLANK','ISNULL','ISNUMBER','BLANKVALUE','NULLVALUE',
-  'TEXT','VALUE','LEN','ASCII','LOWER','UPPER','PROPER','TRIM','LEFT','RIGHT','MID','FIND',
+  'SUM','TEXT','VALUE','LEN','ASCII','LOWER','UPPER','PROPER','TRIM','LEFT','RIGHT','MID','FIND',
   'SUBSTITUTE','CONCATENATE','EXACT','CONTAINS','BEGINS','ISPICKVAL','INCLUDES','REPT',
   'REVERSE','ENCODEURL','URLENCODE','URLDECODE','CHAR','INITCAP','LPAD','RPAD','REPLACE',
   'CASESAFEID','T','ABS','ROUND','ROUNDUP','ROUNDDOWN','TRUNC','SIGN','MIN','MAX','MOD',
@@ -36,7 +36,7 @@ const ribbonFunctions=new Set([
 const flowContextOnly=new Set(['ISCHANGED','ISNEW','PRIORVALUE']);
 const formulaAndFlowOnly=new Set(['IMAGE','CURRENCYRATE']);
 const numberFunctions=new Set([
-  'VALUE','LEN','ASCII','COLLECTIONCOUNT','COLLECTIONSUM','CURRENCYRATE','ABS','ROUND','ROUNDUP',
+  'SUM','VALUE','LEN','ASCII','COLLECTIONCOUNT','COLLECTIONSUM','CURRENCYRATE','ABS','ROUND','ROUNDUP',
   'ROUNDDOWN','TRUNC','SIGN','MIN','MAX','MOD','SQRT','POWER','CEILING','FLOOR','MCEILING',
   'MFLOOR','EXP','LN','LOG','PI','DAY','MONTH','YEAR','HOUR','MINUTE','SECOND','WEEKDAY',
   'ISOWEEK','ISOYEAR','TZOFFSET','DISTANCE','SIN','COS','TAN','ASIN','ACOS','ATAN','ATAN2',
@@ -52,7 +52,7 @@ const checkboxFunctions=new Set([
   'CONTAINS','BEGINS','ISPICKVAL','INCLUDES'
 ]);
 const explicitParameters=new Map<string,FormulaValueKind[]>([
-  ['COLLECTION',['Text','Any']],['IF',['Checkbox','Any','Any']],['IFERROR',['Any','Any']],['NOT',['Checkbox']],
+  ['SUM',['Any']],['COLLECTION',['Text','Any']],['IF',['Checkbox','Any','Any']],['IFERROR',['Any','Any']],['NOT',['Checkbox']],
   ['AND',['Checkbox']],['OR',['Checkbox']],['XOR',['Checkbox']],['VALUE',['Text']],
   ['LEN',['Text']],['ASCII',['Text']],['LEFT',['Text','Number']],['RIGHT',['Text','Number']],
   ['MID',['Text','Number','Number']],['FIND',['Text','Text','Number']],
@@ -81,7 +81,7 @@ const inputs:DefinitionInput[]=[
   ['IF',3,3],['IFERROR',2,2],['AND',1,20],['OR',1,20],['NOT',1,1],['XOR',2,20],
   ['ISBLANK',1,1],['ISNULL',1,1],['ISNUMBER',1,1],['ISCHANGED',1,1,validationAndFlow],
   ['ISNEW',0,0,validationAndFlow],['ISCLONE',0,0],['PRIORVALUE',1,1,validationAndFlow],
-  ['BLANKVALUE',2,2],['NULLVALUE',2,2],['TEXT',1,1],['VALUE',1,1],['LEN',1,1],
+  ['BLANKVALUE',2,2],['NULLVALUE',2,2],['SUM',1,20],['TEXT',1,1],['VALUE',1,1],['LEN',1,1],
   ['COLLECTIONCOUNT',1,1,flowOnly],['COLLECTIONSUM',2,2,flowOnly],
   ['COLLECTION',2,20,['flow_formula','ribbon_binding']],['ASCII',1,1],
   ['LOWER',1,1],['UPPER',1,1],['PROPER',1,1],['TRIM',1,1],['LEFT',1,2],['RIGHT',1,2],
