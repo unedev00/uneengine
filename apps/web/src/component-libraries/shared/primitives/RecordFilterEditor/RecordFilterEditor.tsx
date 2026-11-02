@@ -1,4 +1,5 @@
 import {validateRecordFilterFormula} from '../../../../core/pages/PageRuntime/recordFilterFormula';
+import FormulaSignatureGuide from '../../../../core/builders/PageBuilder/FormulaSignatureGuide';
 import { useState } from 'react';
 import { Plus, Search, Trash2 } from 'lucide-react';
 import type { FieldMetadata,ObjectMetadata } from '../../../../core/metadata/Definitions/metadata';
@@ -43,6 +44,7 @@ export default function RecordFilterEditor({
   stateOptions?:readonly StateChoice[];
 }) {
   const [fieldSearch, setFieldSearch] = useState('');
+  const [formulaCaret,setFormulaCaret]=useState<number>(0);
   const [manualStateIndex,setManualStateIndex]=useState<number|null>(null);
   const related=mentionGroups(objects,rootObjectApiName,[],'','text')
     .filter(group=>!group.primary).flatMap(group=>group.fields.flatMap(item=>{
@@ -111,10 +113,13 @@ export default function RecordFilterEditor({
     {effectiveMode === 'Formula' && onFormulaChange && <section className="metadata-filter-formula" aria-label="Record filter formula">
       <label><strong>Filter Formula</strong>
         <textarea rows={3} spellCheck={false} value={formula}
+          onSelect={event=>setFormulaCaret(event.currentTarget.selectionStart)}
+          onKeyUp={event=>setFormulaCaret(event.currentTarget.selectionStart)}
           aria-label={title+' filter formula'}
           placeholder={'IF(ISBLANK($state.categoryId), TRUE, @MenuCategory = $state.categoryId)'}
           onChange={event=>onFormulaChange(event.target.value)}/>
       </label>
+      <FormulaSignatureGuide value={formula} caret={formulaCaret}/>
       <small>Use @Field, $state.key, IF, ISBLANK and AND/OR. The formula is applied to authorised records before pagination.</small>
       {formulaError && <p role="alert" className="metadata-filter-error">{formulaError}</p>}
     </section>}
