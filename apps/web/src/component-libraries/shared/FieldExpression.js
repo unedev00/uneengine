@@ -72,7 +72,7 @@ const evaluateCall=(name,args,context)=>{
    if(name==='CONTAINS')return text(args[0]).includes(text(args[1]));
    return text(args[0])===text(args[1]);
   case 'COLLECTION':arity(2,20);return createNamedFormulaCollection(args[0],args.slice(1));
-  case 'SUM':arity(1);return sumFormulaCollection(args[0]);
+  case 'SUM':arity(1);return sumFormulaCollection(args[0],context.collectionSources);
    case 'CONCATENATE':arity(1,20);return args.map(text).join('');
   case 'SUBSTITUTE':arity(3,4);{
    const source=text(args[0]),search=text(args[1]),replacement=text(args[2]);
