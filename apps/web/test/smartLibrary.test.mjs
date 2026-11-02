@@ -1119,3 +1119,27 @@ test('three shared Tab source paths preserve Object ID, custom ID and named Coll
  assert.match(ribbon,/property\.id!=='firstTabValue'\|\|properties\.firstTabCustom===true/);
  assert.match(ribbon,/p\.id!=='collectionFormula'/);
 });
+
+test('Smart Tabs highlights only the selected Collection or Formula/Page State record',async()=>{
+ const base={objectApiName:'Category',textSource:'@Name',tabCount:2,
+  records:[{Id:'a',Name:'Food'},{Id:'b',Name:'Drinks'}]};
+ for(const action of [
+  {actionType:'PageState',stateKey:'categoryId'},
+  {actionType:'Formula',formula:'@state.categoryId := @event.record.Id'}
+ ]){
+  const configured={...base,actionFlows:{change:action}};
+  const chosen=await renderSmart('smart_tabs',{...configured,pageState:{categoryId:'b'}});
+  assert.match(chosen,/aria-selected="true"[^>]*>Drinks<\/button>/);
+  const cleared=await renderSmart('smart_tabs',{...configured,pageState:{}});
+  assert.doesNotMatch(cleared,/aria-selected="true"/);
+ }
+ const dataCollection={name:'Children',items:[]};
+ const records=[{Id:'a',Name:'Food',__collectionLabel:'Food',__collectionValue:'a'},
+  {Id:'b',Name:'Drinks',__collectionLabel:'Drinks',__collectionValue:'b'}];
+ const selected=await renderSmart('smart_tabs',{...base,records,dataCollection,
+  pageState:{collectionSelections:{Children:{Id:'b'}}}});
+ assert.match(selected,/aria-selected="true"[^>]*>Drinks<\/button>/);
+ const invalidated=await renderSmart('smart_tabs',{...base,records,dataCollection,
+  pageState:{collectionSelections:{}}});
+ assert.doesNotMatch(invalidated,/aria-selected="true"/);
+});
