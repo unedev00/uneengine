@@ -6,6 +6,7 @@ import {namedCollectionName,registerSessionCollection,getSessionCollection} from
 import {pageComponentRecordQuery,filterPageComponentRecords,resolvePageFilterValue} from '../src/core/pages/PageRuntime/pageComponentBindings';
 import {createNamedFormulaCollection,formulaCollectionReferenceKey} from '../../server/src/expression-engine/FormulaCollection';
 import {parseCollectionListBinding,filteredCollectionItems} from '../src/core/pages/PageRuntime/pageCollectionListBinding';
+import {namedCollectionRows} from '../src/core/pages/PageRuntime/usePageCollectionFormula';
 import {evaluateFieldExpression,evaluateCollectionFormula} from '../src/component-libraries/shared/FieldExpression.js';
 
 test('Excel-style signature follows nested calls, quoted commas and any registered formula',()=>{
@@ -230,4 +231,21 @@ test('spaced Collection names remain rejected if invalid or unescaped',()=>{
  assert.throws(()=>createNamedFormulaCollection('Not.Valid',['ok']),/name/i);
  assert.throws(()=>createNamedFormulaCollection(' bad',['ok']),/name/i);
  assert.equal(namedCollectionName('=COLLECTION("123 bad","x")'),undefined);
+});
+
+test('named Collection list filters reuse saved items without losing IDs or criteria',()=>{
+ const saved={name:'tab collection',items:[
+  {label:'All',value:'*',criteriaField:'MenuCategory.Name',criteria:'*'},
+  {label:'Desserts',value:'22',criteriaField:'MenuCategory.Name',criteria:'Desserts'},
+  {label:'Burgers',value:'23',criteriaField:'MenuCategory.Name',criteria:'Burgers'}
+ ]};
+ const rows=namedCollectionRows(saved);
+ const choice=parseCollectionListBinding('@tab_collection = "Dessert*"','MenuCategory');
+ assert.ok(choice);
+ const match=filteredCollectionItems({...choice!,field:'Name'},rows);
+ assert.equal(match.length,1);
+ assert.equal(match[0].label,'Desserts');
+ assert.equal(match[0].value,'22');
+ assert.equal(match[0].criteriaField,'MenuCategory.Name');
+ assert.equal(match[0].criteria,'Desserts');
 });
