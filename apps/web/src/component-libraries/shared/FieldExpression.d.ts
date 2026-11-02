@@ -8,6 +8,10 @@ export type FormulaBindingContext={
   organization?:Record<string,unknown>;
   recordType?:Record<string,unknown>;
   permissions?:Readonly<Record<string,boolean>>;
+  collectionSources?:Readonly<Record<string,ReadonlyArray<Record<string,unknown>>>>;
+  namedCollections?:Readonly<Record<string,{name:string;items:unknown[]}>>;
+  rootObjectApiName?:string;
+  namedCollectionSelections?:Readonly<Record<string,Record<string,unknown>>>;
 };
 export function evaluateFieldExpression(expression:unknown,record:unknown,context?:FormulaBindingContext):unknown;
 export function evaluateFieldExpressionDetailed(
