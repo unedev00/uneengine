@@ -450,7 +450,7 @@ test('Clicking canvas releases any focused ribbon formula editor and closes fiel
  assert.match(builder,/active\.closest\('\.office-builder-ribbon'\)/);
  assert.match(builder,/active\.matches\('input,textarea,select,\[contenteditable="true"\]'\)/);
  assert.match(builder,/active\.blur\(\)/);
- assert.match(formula,/onBlur=\{\(\)=>setMatches\(null\)\}/);
+ assert.match(formula,/onBlur=\{\(\)=>\{setMatches\(null\);setFocused\(false\)\}\}/);
 });
 test('Smart Event ribbon matches On Click and Qty Icon component support',()=>{
  const ribbon=read('../src/core/builders/PageBuilder/SmartEventActionsRibbon.tsx');
@@ -702,7 +702,7 @@ test('Smart Tabs first tab is optional, formula-capable, and never replaces a re
  assert.doesNotMatch(disabled,/All items/);
  const runtime=read('../src/component-libraries/smart/shared/SmartRuntime.jsx');
  assert.match(runtime,/firstTabCustom&&index===0/);
- assert.match(runtime,/value:"",isCustom:true/);
+ assert.match(runtime,/value:"\*",isCustom:true/);
  assert.match(runtime,/index-\(firstTabCustom\?1:0\)/);
 });
 
