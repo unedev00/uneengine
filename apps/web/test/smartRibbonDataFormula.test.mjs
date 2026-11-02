@@ -156,3 +156,16 @@ test('shared Filter Records editor switches between Field and Formula and expose
  assert.match(page,/currentQueryRecords,selectedRecordFilters.filters/);
  assert.match(bound,/sourceRecords,selectedRecordFilters.filters/);
 });
+
+test('Page State condition makes its optional blank behaviour visible and keeps the key on toggle',()=>{
+ const editor=read('../src/component-libraries/shared/primitives/RecordFilterEditor/RecordFilterEditor.tsx');
+ const validator=read('../src/core/records/RecordWorkspace/recordFilterMetadata.ts');
+ const css=read('../src/component-libraries/shared/primitives/RecordFilterEditor/RecordFilterEditor.css');
+ assert.match(editor,/Ignore condition when Page State value is blank/);
+ assert.match(editor,/skipWhenBlank:e\.target\.checked/);
+ assert.match(editor,/source:'PageState', key: e\.target\.value/);
+ assert.match(editor,/\.\.\.dynamic,source: 'PageState'/);
+ assert.match(editor,/placeholder="e\.g\. categoryId"/);
+ assert.match(css,/metadata-filter-optional/);
+ assert.match(validator,/Enter a Page State key/);
+});
