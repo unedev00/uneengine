@@ -113,7 +113,7 @@ try{
           if(isDesktop)await page.getByRole('button',{name:tableAction,exact:true}).click();
           else {
             const row=page.getByRole('button',{name:'View connection'}).first();
-            if(await row.count())await row.click();
+            if(await row.count()){await page.locator('.md-responsive-item summary').first().click();await row.click();}
             else await page.getByText('Sample credential',{exact:true}).first().click();
             if(screen.view==='credentials-edit')await page.getByRole('dialog').getByRole('button',{name:'Edit',exact:true}).click();
           }
