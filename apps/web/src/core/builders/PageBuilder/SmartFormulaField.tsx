@@ -2,6 +2,7 @@ import {useState,useRef,useLayoutEffect,type KeyboardEvent} from 'react';
 import {createPortal} from 'react-dom';
 import type {FieldMetadata,ObjectMetadata} from '../../metadata/Definitions/metadata';
 import {relationshipFormulaFields} from './relationshipFormulaFields';
+import {formulaSignatureAt} from './formulaSignatureHelp';
 import type {MentionKind} from '../../../component-libraries/shared/primitives/SmartFieldInput/smartFieldMentions';
 // Styles are loaded by the Page Builder entrypoint so this reusable editor
 // can also render in lightweight server-side ribbon contract tests.
@@ -28,6 +29,20 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
  const input=useRef<HTMLInputElement>(null);
  const [matches,setMatches]=useState<{start:number;end:number;query:string}|null>(null);
  const [popup,setPopup]=useState<{top:number;left:number;width:number;above:boolean}|null>(null);
+ const [caret,setCaret]=useState(value.length);
+ const [focused,setFocused]=useState(false);
+ const [hintPosition,setHintPosition]=useState<{top:number;left:number}|null>(null);
+ const hint=focused?formulaSignatureAt(value,caret):null;
+ useLayoutEffect(()=>{
+  if(!hint||!input.current){setHintPosition(null);return;}
+  const reposition=()=>{
+   const rect=input.current?.getBoundingClientRect();
+   if(rect)setHintPosition({left:Math.max(6,Math.min(rect.left,window.innerWidth-380)),
+    top:window.innerHeight-rect.bottom>68?rect.bottom+5:Math.max(6,rect.top-62)});
+  };
+  reposition();window.addEventListener('resize',reposition);window.addEventListener('scroll',reposition,true);
+  return()=>{window.removeEventListener('resize',reposition);window.removeEventListener('scroll',reposition,true)};
+ },[hint?.name,hint?.argument]);
  useLayoutEffect(()=>{
   if(!matches||!input.current){setPopup(null);return;}
   const recalc=()=>{
@@ -52,7 +67,7 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
      field.label.toLowerCase().includes(matches.query.toLowerCase()))).slice(0,200)
     .map(field=>({reference:'@'+field.apiName,label:field.label}))) : [];
  const update=(next:string,caret:number)=>{
-  onChange(next);
+  onChange(next);setCaret(caret);
   const before=next.slice(0,caret);
   // A field picker is never offered while editing a quoted string.
   const openString=(before.match(/"/g)||[]).length%2===1;
@@ -63,11 +78,11 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
   if(!matches)return;
   const next=value.slice(0,matches.start)+reference+value.slice(matches.end);
   const end=matches.start+reference.length;
-  onChange(next);setMatches(null);
+  onChange(next);setCaret(end);setMatches(null);
   requestAnimationFrame(()=>{input.current?.focus();input.current?.setSelectionRange(end,end)});
  };
  const keyDown=(event:KeyboardEvent<HTMLInputElement>)=>{
-  if(event.key==='Escape')setMatches(null);
+  if(event.key==='Escape'){setMatches(null);setFocused(false)}
   if(event.key==='Enter'&&filtered.length&&matches){event.preventDefault();insert(filtered[0].reference);}
  };
  return <div className="smart-formula" title={singleFieldOnly?'Select a Boolean field, e.g. @IsActive':'Formula: @Field, + - * / and &; quoted symbols are text'}>
@@ -75,8 +90,21 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
     <span key={i} className={'smart-formula-'+part.kind}>{part.value}</span>)}</div>
   <input ref={input} type="text" aria-label={label} value={value} spellCheck={false} autoComplete="off"
    placeholder={singleFieldOnly?'@BooleanField':'@Field & "text"'} disabled={disabled} onKeyDown={keyDown}
-   onBlur={()=>setMatches(null)}
+   onFocus={e=>{setFocused(true);setCaret(e.currentTarget.selectionStart??value.length)}}
+   onClick={e=>setCaret(e.currentTarget.selectionStart??value.length)}
+   onKeyUp={e=>setCaret(e.currentTarget.selectionStart??value.length)}
+   onBlur={()=>{setMatches(null);setFocused(false)}}
    onChange={e=>update(e.currentTarget.value,e.currentTarget.selectionStart??e.currentTarget.value.length)}/>
+  {hint&&hintPosition&&createPortal(<div className="smart-formula-signature" role="status"
+    style={{position:'fixed',top:hintPosition.top,left:hintPosition.left,zIndex:6100}}>
+    <strong>{hint.name}</strong><span>(</span>
+    {hint.parameters.slice(0,Math.min(hint.maximumArguments,Math.max(hint.minimumArguments,hint.argument+2,4))).map((parameter,index)=>
+      <span key={index} className={index===hint.argument?'is-current':''}>
+        {index?', ':''}{parameter.name}{parameter.optional?'?':''}
+      </span>)}
+    {hint.maximumArguments>Math.max(hint.minimumArguments,hint.argument+2,4)&&<span>, …</span>}
+    <span>)</span>
+   </div>,document.body)}
   {matches&&filtered.length>0&&popup&&createPortal(<div className="smart-formula-list" role="listbox"
     style={{position:'fixed',left:popup.left,top:popup.top,minWidth:popup.width,maxHeight:200,zIndex:6000}}>
    {filtered.map(item=><button key={item.reference} type="button" role="option"
