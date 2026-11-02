@@ -123,6 +123,22 @@ export class PageRuntime {
     await this.layouts.rollback(tenantId,pageApi,variant,version,actor);
     return this.editor(tenantId,pageApi,variant);
   }
+  /** Copy an immutable history snapshot to a NEW draft revision, without
+   * changing published output or rewriting the original version. */
+  async copyLayoutVersion(tenantId:string,pageApi:string,variant:PageLayoutVariant,
+    version:number,actor:string){
+    const versions=await this.layouts.history(tenantId,pageApi,variant);
+    const selected=versions.find(v=>v.version===version);
+    if(!selected)throw new Error('Page layout revision not found');
+    if(selected.archived)throw new Error('Unarchive the version before copying it');
+    const [editor,source]=await Promise.all([
+      this.editor(tenantId,pageApi,variant),this.version(tenantId,pageApi,variant,version)
+    ]);
+    const copy={...editor,...source,apiName:editor.apiName,label:editor.label,
+      draftRevision:editor.draftRevision,activationAssignments:editor.activationAssignments};
+    const result=await this.saveLayoutDraft(tenantId,pageApi,variant,copy,actor);
+    return result;
+  }
   async archiveLayout(tenantId:string,pageApi:string,variant:PageLayoutVariant,
     version:number,archived:boolean,actor:string){
     await this.layouts.archive(tenantId,pageApi,variant,version,archived,actor);
