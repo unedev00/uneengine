@@ -41,7 +41,7 @@ test('Advanced keeps all permanent fields in a compact responsive ribbon without
  for(const key of fields){
    assert.ok(key.startsWith('device-')?advanced.includes('advanced-device-'):
      advanced.includes('advanced-'+key),key+' must be rendered');
-   assert.match(layout,new RegExp('advanced-'+key+'[^\n]*\{[^\n]*top:(5|35|65)px'),key+' has a fixed row');
+   assert.match(layout,new RegExp('advanced-'+key+'[^\\n]*\\{[^\\n]*top:(5|35|65)px'),key+' has a fixed row');
  }
  for(const group of ['activation','responsive','properties','nesting','technical'])
    assert.ok(layout.includes('advanced-fixed-group.advanced-'+group),group);
