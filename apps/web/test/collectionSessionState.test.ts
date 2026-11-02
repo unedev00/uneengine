@@ -6,7 +6,7 @@ import {namedCollectionName,namedCollectionNames,registerSessionCollection,getSe
 import {pageComponentRecordQuery,filterPageComponentRecords,resolvePageFilterValue} from '../src/core/pages/PageRuntime/pageComponentBindings';
 import {createNamedFormulaCollection,formulaCollectionReferenceKey} from '../../server/src/expression-engine/FormulaCollection';
 import {parseCollectionListBinding,filteredCollectionItems} from '../src/core/pages/PageRuntime/pageCollectionListBinding';
-import {namedCollectionRows} from '../src/core/pages/PageRuntime/usePageCollectionFormula';
+import {namedCollectionRows,collectionFormulaReferences} from '../src/core/pages/PageRuntime/usePageCollectionFormula';
 import {evaluateFieldExpression,evaluateCollectionFormula} from '../src/component-libraries/shared/FieldExpression.js';
 
 test('Excel-style signature follows nested calls, quoted commas and any registered formula',()=>{
@@ -324,4 +324,11 @@ test('SUM composes with typed numeric Collections and field/criterion clauses',(
  const criteria=evaluateCollectionFormula('=COLLECTION("Manual", "Apple", "", "A*", "Banana", "", "A*")');
  assert.equal(criteria.error,undefined);
  assert.deepEqual(criteria.value.items,['Apple']);
+});
+
+test('scalar SUM formulas hydrate the same authorised Object fields as collection-valued formulas',()=>{
+ assert.deepEqual(collectionFormulaReferences('=SUM(COLLECTION("Amounts","Positive",@Sale.Amount,">0"))','Sale'),
+  [{object:'Sale',field:'Amount'}]);
+ assert.deepEqual(collectionFormulaReferences('=IF(TRUE,COLLECTION("Food","Pizza",@MenuCategory.Name,"Pizza*"),COLLECTION("Drinks","Tea","",""))','MenuCategory'),
+  [{object:'MenuCategory',field:'Name'}]);
 });
