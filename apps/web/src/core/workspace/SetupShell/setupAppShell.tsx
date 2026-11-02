@@ -890,26 +890,38 @@ function SetupApp({ onLogout, entryTiming }: { onLogout: () => void; entryTiming
     }
   };
   const updatePageDetailsFromBuilder = async (apiName:string,label:string,
-    appApiName:string|null,expectedLabel:string):Promise<boolean>=>{
+    appApiName:string|null,expectedLabel:string,nextApiName=apiName):Promise<boolean>=>{
     try{
       const {page:updated}=await apiRequest<{page:LightningPageMetadata}>(
         `/metadata/pages/${encodeURIComponent(apiName)}/details`,{
-          method:'PATCH',body:JSON.stringify({label,appApiName,expectedLabel})
+          method:'PATCH',body:JSON.stringify({label,appApiName,expectedLabel,nextApiName})
         });
       pageDefinitionCache.current.clear();
-      // Keep any unsaved local component edits: this endpoint changed only
-      // canonical page identity and app placement, not its canvas revision.
+      // Keep local unsaved component edits while reconciling the canonical page
+      // API name and assignment. Page layouts and history are ID-backed in SQL.
       setPage(current=>current.apiName===apiName
-        ?{...current,label:updated.label,activationAssignments:updated.activationAssignments}
+        ?{...current,apiName:updated.apiName,label:updated.label,
+          activationAssignments:updated.activationAssignments}
         :current);
       setPages(current=>current.map(item=>item.apiName===apiName
-        ?{...item,label:updated.label,activationAssignments:updated.activationAssignments,
-          updatedAt:updated.updatedAt}:item));
+        ?{...item,apiName:updated.apiName,label:updated.label,
+          activationAssignments:updated.activationAssignments,updatedAt:updated.updatedAt}:item));
+      if(updated.apiName!==apiName){
+        pageRouteApiName.current=updated.apiName;
+        setPageCreationAppContext(current=>{
+          if(!Object.prototype.hasOwnProperty.call(current,apiName))return current;
+          const next={...current,[updated.apiName]:current[apiName]};
+          delete next[apiName];
+          return next;
+        });
+        if(route.kind==='setup'&&route.workspace==='page-builder'&&route.resourceApiName===apiName)
+          navigateRoute({kind:'setup',workspace:'page-builder',resourceApiName:updated.apiName});
+      }
       try{
         const fresh=await apiRequest<{apps:LightningAppMetadata[]}>('/metadata/apps');
         setApps(fresh.apps);
       }catch{notify('Page details saved. Reload App Manager to refresh navigation.');}
-      notify('Page name and application saved');
+      notify('Page properties saved');
       return true;
     }catch(error){
       notify(error instanceof Error?error.message:'Unable to update page details');
