@@ -100,6 +100,8 @@ test('wildcard criteria are global formula comparisons, never an unrestricted Ob
  assert.equal(evaluateFieldExpression('=@MyCollection = "Burgers*"',{},options),'true');
  assert.equal(evaluateFieldExpression('=@MyCollection = "Drinks*"',{},options),'false');
  assert.equal(evaluateFieldExpression('=@MyCollection.state.Id = "22"',{},options),'true');
+ assert.equal(evaluateFieldExpression('=@Product.Name = "*"',{Name:'Burgers'},
+  {rootObjectApiName:'Product'}),'true','qualified source field reads primary authorised row');
  assert.equal(evaluateFieldExpression('=@Product.Name = "*"',{Product:{Name:'Burgers'}}),'true');
  assert.equal(evaluateFieldExpression('=@Product.Name = "Burgers*"',{Product:{Name:'Burgers'}}),'true');
  assert.equal(evaluateFieldExpression('=@Product.Name = "Burgers*"',{Product:{Name:'Drinks'}}),'false');
