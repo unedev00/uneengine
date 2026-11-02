@@ -39,7 +39,7 @@ export function hasExcelWildcardCriteria(value:unknown):value is string{
  * Thus @state.categoryId = "*" tests the literal selected All ID, while
  * @Category = @state.categoryId treats a selected "*" as a criterion. */
 export function isExcelWildcardDataReference(name:string):boolean{
- return !/^(?:\\$?state|\\$?event|\\$?session)(?:\\.|$)/i.test(name);
+ return !/^(?:\$?state|\$?event|\$?session)(?:\.|$)/i.test(name);
 }
 /** Excel wildcards match text, not numbers or blank values. Case-insensitive. */
 export function matchesExcelWildcard(value:unknown,pattern:unknown):boolean{
