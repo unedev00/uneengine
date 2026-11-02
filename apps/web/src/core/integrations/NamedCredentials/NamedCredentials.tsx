@@ -282,6 +282,7 @@ export default function NamedCredentials({
           <button className="btn btn-small" type="button"
             disabled={!(canTest??canManage)||!onTest||credential.enabled===false||Boolean(busyId)}
             onClick={()=>void testCredential(credential)}>Test</button>
+          {credential.webhookId && <button className="btn btn-small" type="button" onClick={() => editCredential(credential,true)}>Webhook details</button>}
           <button className="btn btn-small" type="button" disabled={!canManage||Boolean(busyId)}
             onClick={()=>editCredential(credential)}>Edit</button>
           {onRotate&&<button className="btn btn-small" type="button" disabled={!canManage||Boolean(busyId)}
@@ -303,6 +304,9 @@ export default function NamedCredentials({
               <button className="btn btn-small" disabled={!canManage||Boolean(busyId)||credential.enabled===false}
                 onClick={()=>void authorizeOAuth(credential)}>Authorize</button>}
             <button className="btn btn-small" aria-label={`Test connection for ${credential.label}`} disabled={!(canTest ?? canManage) || !onTest || credential.enabled === false || Boolean(busyId)} title={credential.protocol === 'SMTP' ? 'Verify SMTP connection, TLS and authentication without sending email' : 'Test saved HTTPS base URL with stored authentication'} onClick={() => void testCredential(credential)}>{busyId === credential.id ? 'Testing…' : 'Test Connection'}</button>
+            {credential.webhookId && <button className="btn btn-small credential-webhook-action" type="button"
+              aria-label={`Webhook details for ${credential.label}`}
+              onClick={() => editCredential(credential,true)}>Webhook</button>}
             <button className="icon-button subtle" aria-label={`View ${credential.label}`} onClick={() => editCredential(credential, true)}><Eye size={14} /></button>
             <button className="icon-button subtle" aria-label={`Edit ${credential.label}`} title={!canManage ? 'Manage Named Credentials permission required' : 'Edit credential'} disabled={!canManage || Boolean(busyId)} onClick={() => editCredential(credential)}><Pencil size={14} /></button>
             {onRotate && <button className="icon-button subtle" aria-label={`Rotate key for ${credential.label}`} title="Rotate encryption key" disabled={!canManage || Boolean(busyId)} onClick={() => void performAction(credential, 'rotate')}><RotateCw size={14} /></button>}
@@ -341,7 +345,7 @@ export default function NamedCredentials({
         <fieldset className="connector-config-fields named-credential-span-full" style={{ border: 0, padding: 0, margin: '12px 0',gridColumn:"1 / -1" }}>
           <legend>Configuration variables</legend>
           {Object.entries(draft.configuration ?? {}).map(([key, value]) => (
-            <div key={key} className="connector-config-row" style={{display:'grid',gridTemplateColumns:'minmax(130px, 1fr) minmax(160px, 2fr) auto',gap:10,alignItems:'center',marginBottom:10}}>
+            <div key={key} className="connector-config-row">
               <label htmlFor={'credential-var-'+key}>{fieldLabels?.[key] || (draft.id ? credentials.find(c => c.id === draft.id)?.configurationLabels?.[key] : undefined) || key.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/_/g, ' ')}</label>
               <input id={'credential-var-'+key} className="form-control" disabled={viewing||!canManage} value={value} onChange={(event) => updateDraft({ configuration: { ...draft.configuration, [key]: event.target.value } })} />
               {!viewing && canManage && <button type="button" className="icon-button subtle" aria-label={'Delete variable '+key} title="Remove variable after saving" onClick={()=>{
