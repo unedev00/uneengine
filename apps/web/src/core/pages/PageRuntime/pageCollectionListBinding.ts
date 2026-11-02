@@ -1,23 +1,23 @@
 import {Parser} from '../../../../../server/src/expression-engine/FormulaParser.js';
 import {tokenize} from '../../../../../server/src/expression-engine/FormulaTokenizer.js';
-import {matchesExcelWildcard,hasExcelWildcardCriteria} from '../../../../../server/src/expression-engine/FormulaWildcard.js';
+import {matchesFormulaCollectionCriterion} from '../../../../../server/src/expression-engine/FormulaCollection.js';
 
 /** Pure, context-sensitive record list binding for metadata fields that supply
  * collections. An ordinary scalar/Boolean formula remains a scalar elsewhere. */
-export type CollectionListBinding={object:string;field:string;criterion:string};
+export type CollectionListBinding={object:string;field:string;criterion:string;operator:string};
 export function parseCollectionListBinding(source:string,primaryObject:string):CollectionListBinding|null{
  const input=source.trim().replace(/^=\s*/,'');
  if(!input.startsWith('@'))return null;
  try{
   const node=new Parser(tokenize(input)).parse();
-  if(node.kind!=='binary'||!['=','=='].includes(node.operator)
+  if(node.kind!=='binary'||!['=','==','<>','!=','>','>=','<','<='].includes(node.operator)
     ||node.left.kind!=='reference'||node.right.kind!=='literal'
-    ||typeof node.right.value!=='string')return null;
+    ||!['string','number','boolean'].includes(typeof node.right.value))return null;
   const parts=node.left.value.split('.');
   if(parts.length>2||parts.some(part=>!/^[A-Za-z][A-Za-z0-9_]*$/.test(part)))return null;
   const object=parts.length===2?parts[0]:primaryObject;
   if(!object)return null;
-  return {object,field:parts.at(-1)!,criterion:node.right.value};
+  return {object,field:parts.at(-1)!,criterion:String(node.right.value),operator:node.operator};
  }catch{return null;}
 }
 /** No source access happens here. Rows must already be authorised and complete. */
@@ -29,9 +29,9 @@ export function filteredCollectionItems(
   if(!Object.prototype.hasOwnProperty.call(row,binding.field))continue;
   const value=row[binding.field];
   if(value===null||value===undefined||String(value).trim()==='')continue;
-  const matched=hasExcelWildcardCriteria(binding.criterion)
-   ?matchesExcelWildcard(String(value),binding.criterion)
-   :String(value)===binding.criterion;
+  const criterion=['<>','!=','>','>=','<','<='].includes(binding.operator)
+   ?binding.operator+binding.criterion:binding.criterion;
+  const matched=matchesFormulaCollectionCriterion(value,criterion);
   if(!matched)continue;
   out.push({label:String(value),value:String(row.Id??row.id??''),
     criteriaField:typeof row.__collectionCriteriaField==='string'&&row.__collectionCriteriaField
