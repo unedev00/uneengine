@@ -55,6 +55,7 @@ export async function auditAuthenticatedCoreRoutes({page,origin,caseId}){
      if(Math.abs(metrics.zoom-1)>0.005)result.issues.push('non-native browser zoom');
      if(metrics.hasSignIn)result.issues.push('unexpected login screen');
      if(!metrics.content)result.issues.push('empty workspace');
+     if(/could not be verified/i.test(metrics.content))result.issues.push('credential metadata unavailable in disposable SQL fixture');
      if(metrics.overflowPx>6)result.issues.push('document horizontal overflow '+metrics.overflowPx+'px');
     }catch(error){result.issues.push('route load: '+String(error).slice(0,350));}
     if(routeErrors.length)result.issues.push('JavaScript: '+routeErrors.slice(0,2).join('; ').slice(0,300));
