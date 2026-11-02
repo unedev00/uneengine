@@ -46,17 +46,6 @@
   border:1px solid #becbdc;border-left:0;border-radius:0 5px 5px 0;
   color:#8895a6;background:#f2f4f8;
 }
-/* A visible, object-scoped field picker complements the @ formula suggestions.
-   This is an editor control, not a persisted component property. */
-.office-builder-ribbon #page-builder-tab-content .smart-data-field-picker{
- box-sizing:border-box;flex:0 0 150px;width:150px;min-width:125px;max-width:150px;
- height:28px;margin-left:6px;padding:0 6px;
- border:1px solid #b6c7de;border-radius:5px;background:#fff;
- color:#315279;font:11px "Segoe UI",Arial,sans-serif;
-}
-.office-builder-ribbon #page-builder-tab-content .smart-data-field-picker:disabled{
- color:#97a5b6;background:#f4f6f9;cursor:not-allowed;
-}
 .office-builder-ribbon #page-builder-tab-content .smart-data-summary-name{
   box-sizing:border-box;width:115px;height:28px;min-width:115px;margin-left:6px;
   padding:0 5px;border:1px solid #b6c7de;border-radius:5px;
@@ -194,22 +183,3 @@
   font-size:10px!important;
 }
 
-/* The main ƒx editor explicitly distinguishes label expressions from source
-   filter predicates. Neither option adds another ribbon row or changes
-   component canvas geometry. */
-.office-builder-ribbon #page-builder-tab-content .smart-data-record-filter-target,
-.office-builder-ribbon #page-builder-tab-content .smart-data-move-to-filter {
-  box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;
-  flex:0 0 auto;height:28px;margin:0 4px 0 3px;padding:0 10px;
-  border:1px solid #b6c7de;border-radius:5px;background:#fff;color:#235a99;
-  font:600 11px/1.1 system-ui,sans-serif;white-space:nowrap;cursor:pointer;
-}
-.office-builder-ribbon #page-builder-tab-content .smart-data-record-filter-target.is-selected {
-  background:#e6f1ff;border-color:#367fc9;color:#17467b;
-}
-.office-builder-ribbon #page-builder-tab-content :is(.smart-data-record-filter-target,.smart-data-move-to-filter):disabled {
-  opacity:.5;cursor:not-allowed;
-}
-.office-builder-ribbon #page-builder-tab-content :is(.smart-data-record-filter-target,.smart-data-move-to-filter):focus-visible {
-  outline:2px solid #246fce;outline-offset:1px;
-}
