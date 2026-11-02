@@ -106,6 +106,10 @@ export class PageRuntime {
     const base=await this.metadata(tenantId,pageApi,variant);
     return this.layouts.load(tenantId,pageApi,variant,'draft',base);
   }
+  async version(tenantId:string,pageApi:string,variant:PageLayoutVariant,version:number){
+    const base=await this.metadata(tenantId,pageApi,variant);
+    return this.layouts.version(tenantId,pageApi,variant,version,base);
+  }
   async saveLayoutDraft(tenantId:string,pageApi:string,variant:PageLayoutVariant,payload:unknown,actor?:string){
     const base=await this.metadata(tenantId,pageApi,variant);
     return this.layouts.saveDraft(tenantId,pageApi,variant,payload,base,actor);
