@@ -205,7 +205,7 @@ function SmartTabs({p,record,fire}){
   <nav className="smart-tabs" aria-label="Tabs" style={{
     width:"100%",height:"100%",flex:"1 1 auto",minHeight:0,alignContent:"stretch"}}>
    {tabs.map((tab,index)=><button key={tab?.id??index} type="button" role="tab"
-    aria-selected={active===index} style={{minHeight:number(p.tabHeight,44),flex:"1 1 auto",
+    aria-selected={active===index} style={{height:number(p.tabHeight,44),maxHeight:"100%",minHeight:0,flex:"1 1 auto",
      minWidth:number(p.tabWidth,120),borderRadius:number(p.radius,10),fontSize:number(p.textSize,16),textAlign:p.labelAlignment||"center",boxShadow:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none",color:p.labelColor||undefined,
      background:active===index?p.selectedTabColor||"#eaf2ff":p.tabColor||"#fff",
     borderColor:p.borderColor||undefined}}
