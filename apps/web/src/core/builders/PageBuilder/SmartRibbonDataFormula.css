@@ -193,3 +193,23 @@
     [data-property="taxValue"],[data-property="discountValue"]) .smart-data-field-name{
   font-size:10px!important;
 }
+
+/* The main ƒx editor explicitly distinguishes label expressions from source
+   filter predicates. Neither option adds another ribbon row or changes
+   component canvas geometry. */
+.office-builder-ribbon #page-builder-tab-content .smart-data-record-filter-target,
+.office-builder-ribbon #page-builder-tab-content .smart-data-move-to-filter {
+  box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;
+  flex:0 0 auto;height:28px;margin:0 4px 0 3px;padding:0 10px;
+  border:1px solid #b6c7de;border-radius:5px;background:#fff;color:#235a99;
+  font:600 11px/1.1 system-ui,sans-serif;white-space:nowrap;cursor:pointer;
+}
+.office-builder-ribbon #page-builder-tab-content .smart-data-record-filter-target.is-selected {
+  background:#e6f1ff;border-color:#367fc9;color:#17467b;
+}
+.office-builder-ribbon #page-builder-tab-content :is(.smart-data-record-filter-target,.smart-data-move-to-filter):disabled {
+  opacity:.5;cursor:not-allowed;
+}
+.office-builder-ribbon #page-builder-tab-content :is(.smart-data-record-filter-target,.smart-data-move-to-filter):focus-visible {
+  outline:2px solid #246fce;outline-offset:1px;
+}

@@ -591,3 +591,41 @@ test('single effective OR lookup condition still uses complete server paging',()
  assert.equal(both.serverFilterable,false,
   'multiple OR terms involving lookup relationships retain conservative fallback');
 });
+
+test('visible Data ƒx can move a caption comparison to server-side wildcard record filter',async()=>{
+ const {displayComparisonFilter,moveDisplayComparisonToFilter}=
+  await import('../src/core/builders/PageBuilder/dataFormulaFilterTransfer');
+ const {compileRecordFilterFormula}=
+  await import('../src/core/pages/PageRuntime/recordFilterFormula');
+ const fields=[{apiName:'Name',label:'Name',dataType:'Text'},
+  {apiName:'Active',label:'Active',dataType:'Boolean'}] as any;
+ assert.deepEqual(displayComparisonFilter('@Name="dess*"',fields),
+  {formula:'@Name="dess*"',displayField:'@Name'});
+ const properties={objectApiName:'MenuCategory',textSource:'@Name="dess*"',
+  filters:[{field:'Active',operator:'Equals',value:true}],
+  filterMode:'Field',label:'Menu items',tabCount:8};
+ const moved=moveDisplayComparisonToFilter(properties,fields);
+ assert.ok(moved);
+ assert.equal(moved.textSource,'@Name');
+ assert.equal(moved.filterFormula,'@Name="dess*"');
+ assert.equal(moved.filterMode,undefined);
+ assert.deepEqual(moved.filters,properties.filters);
+ assert.equal(moved.label,'Menu items');
+ assert.equal(moved.tabCount,8);
+ assert.equal(properties.textSource,'@Name="dess*"','existing state remains immutable');
+ const compiled=compileRecordFilterFormula(moved.filterFormula,fields);
+ assert.equal(compiled.blocked,false,compiled.error);
+ assert.deepEqual(compiled.filters,[{field:'Name',operator:'matches',value:'dess*'}]);
+ const query=pageComponentRecordQuery(properties.filters,fields,{},'AND',moved.filterFormula);
+ assert.equal(query.blocked,false,query.error);
+ assert.deepEqual(query.filters,[
+  {field:'Active',operator:'eq',value:'true'},
+  {field:'Name',operator:'matches',value:'dess*'}
+ ]);
+ assert.equal(moveDisplayComparisonToFilter({...properties,filterFormula:'@Name="other*"'},fields),null,
+  'do not silently overwrite an existing saved filter');
+ assert.equal(displayComparisonFilter('@Name & " - price"',fields),null,
+  'ordinary label formulas must not become record filters');
+ assert.equal(displayComparisonFilter('@Missing="dess*"',fields),null,
+  'unreadable fields must not be accepted');
+});
