@@ -11,7 +11,7 @@ const expression=(v,record,pageState)=>{
  // values via __mentionValues without turning numbers into quoted strings or
  // replacing @mentions inside quoted literals.
  if(/^(?:https:\/\/|asset:)/i.test(v.trim()))return v;
- if(!/@[A-Za-z]/.test(v)&&!/^\s*"/.test(v)&&
+ if(!/^\s*=/.test(v)&&!/@[A-Za-z]/.test(v)&&!/^\s*"/.test(v)&&
    !/^\s*-?(?:\d+(?:\.\d*)?|\.\d+)\s*[+\-*/&]/.test(v))return v;
  try{return text(evaluateFieldExpression(v,record||{},{namedCollectionSelections:pageState?.collectionSelections}));}catch{return "";}
 };
@@ -31,7 +31,10 @@ const fieldAllows=(p,key,record)=>{
    ||!Object.prototype.hasOwnProperty.call(p.dataFieldFilters,key);
 };
 const scopedExpression=(p,key,source,record)=>fieldAllows(p,key,record)
- ?expression(source,record,p.pageState):"";
+ ?(key==="textSource"&&p.dataCollection&&record&&
+    /^\s*(?:=\s*COLLECTION\s*\(|=?\s*@[A-Za-z][A-Za-z0-9_]*\s*$)/i.test(String(source??""))
+    ?text(record.__collectionLabel??record.Name??"")
+    :expression(source,record,p.pageState)):"";
 const recordOf=p=>p.objectApiName&&Array.isArray(p.records)
  ?(p.records[0]??{}):p.record&&typeof p.record==="object"&&!Array.isArray(p.record)?p.record:
  Array.isArray(p.records)&&p.records.length?p.records[0]:Array.isArray(p.items)&&p.items.length?p.items[0]:{};
@@ -212,6 +215,8 @@ function SmartTabs({p,record,fire}){
   state:p.pageState??{},session:{id:p.sessionId??""}};
  const firstTabCaption=firstTabCustom&&typeof p.firstTabCaption==="string"&&p.firstTabCaption.trim()
   ?expression(p.firstTabCaption,captionContext,p.pageState)||"Custom tab":"Custom tab";
+ const firstTabValue=firstTabCustom&&typeof p.firstTabValue==="string"&&p.firstTabValue.trim()
+  ?expression(p.firstTabValue,captionContext,p.pageState):"*";
  const tabs=firstTabCustom?[{label:firstTabCaption,id:"__custom_first_tab__"},...recordTabs]:recordTabs;
  React.useEffect(()=>{if(active>=tabs.length)setActive(0)},[active,tabs.length]);
  return <div className="smart-tabs-shell" style={{background:p.backgroundColor||undefined,
@@ -225,7 +230,7 @@ function SmartTabs({p,record,fire}){
     borderColor:p.borderColor||undefined}}
     onClick={()=>{setActive(index);
       if(firstTabCustom&&index===0){
-       fire("change",{index,value:"*",isCustom:true,record:{Id:"*",Name:firstTabCaption},
+       fire("change",{index,value:firstTabValue,isCustom:true,record:{Id:firstTabValue,Name:firstTabCaption},
         ...(hasCollection?{collectionName:p.dataCollection.name}:{})});
       }else if(hasCollection){
        const item=recordTabs[index-(firstTabCustom?1:0)];
