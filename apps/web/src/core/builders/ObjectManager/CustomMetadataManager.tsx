@@ -6,7 +6,7 @@ import {generateMetadataApiName,metadataNameConflict,suggestMetadataApiName,apiN
 type FieldDefinition={apiName:string;label:string;dataType:'text'|'number'|'boolean'|'date'|'datetime';required:boolean;maxLength?:number};
 type Definition={apiName:string;label:string;description:string;fields:FieldDefinition[];protected?:boolean};
 type MetadataRecord={id:string;recordKey:string;masterLabel:string;values:Record<string,string|number|boolean>};
-const emptyField=():FieldDefinition=>({apiName:'Value',label:'Value',dataType:'text',required:false});
+const emptyField=():FieldDefinition=>({apiName:'value',label:'Value',dataType:'text',required:false});
 
 export default function CustomMetadataManager({setting}:{setting:string}) {
   const [labels,setLabels]=useState<Array<{apiName:string;language:string;label:string;value:string}>>([]);
@@ -123,7 +123,7 @@ export default function CustomMetadataManager({setting}:{setting:string}) {
           onChange={(event)=>onChange(fields.map((item,i)=>i===index?{...item,label:event.target.value,
             apiName:item.label===item.apiName||item.apiName===generateMetadataApiName(item.label)?generateMetadataApiName(event.target.value):item.apiName}:item))}/></label>
         <details><summary>Advanced: API Name</summary><label className="form-label">API Name<input className="form-control" value={field.apiName}
-          onChange={(event)=>onChange(fields.map((item,i)=>i===index?{...item,apiName:event.target.value}:item))}/></label></details>
+          onChange={(event)=>onChange(fields.map((item,i)=>i===index?{...item,apiName:mode==='new'?event.target.value.toLowerCase():event.target.value}:item))}/></label></details>
         {metadataNameConflict(field.apiName,fields.filter((_,i)=>i!==index).map(item=>item.apiName))&&
           <p role="alert" className="formula-validation-error">Duplicate field API Name.
           <button type="button" className="btn" onClick={()=>onChange(fields.map((item,i)=>i===index?{...item,apiName:suggestMetadataApiName(field.apiName,fields.filter((_,j)=>j!==index).map(x=>x.apiName))}:item))}>Use suggested name</button></p>}
