@@ -3333,8 +3333,6 @@ function PageBuilder({
                 String(selected?.properties.objectApiName||page.targetObject||''))?.fields??[]}
               selectedEvent={activeActionEvent} disabled={!selected||actionSelectionDisabled}
               onSelectEvent={setInlineActionEvent}
-              showDetails={inlineActionSettingsOpen}
-              onToggleDetails={()=>setInlineActionSettingsOpen(open=>!open)}
               onChange={applyActionFlows}/>}
           {selected?.type==='Custom:smart_icon' && ribbonTab==='Component Layout' &&
             <SmartIconGallery value={String(selected.properties.iconId??'house')}
@@ -3370,32 +3368,6 @@ function PageBuilder({
               }}/>}
         </div>
       </section>
-      {ribbonTab==='Component Action' && selected && inlineActionSettingsOpen && activeActionEvent &&
-        <section className="page-ribbon-expanded-editor page-builder-inline-actions"
-          aria-label="Inline action configuration">
-          <div className="page-ribbon-expanded-heading">
-            <strong>Configure {actionOptions.find(option=>option.apiName===activeActionEvent)?.label??activeActionEvent}</strong>
-            <button type="button" className="btn btn-small"
-              onClick={()=>setInlineActionSettingsOpen(false)}>Collapse details</button>
-          </div>
-          <div className="page-ribbon-expanded-content">
-            <MetadataComponentProperties key={selected.id+':'+activeActionEvent}
-              mode="actions-inline" actionEvent={activeActionEvent} properties={selected.properties}
-              onChange={(properties:Record<string,unknown>)=>{
-                const raw=properties.actionFlows;
-                if(raw&&typeof raw==='object'&&!Array.isArray(raw))
-                  applyActionFlows(raw as Record<string,unknown>);
-              }}
-              pageComponents={page.components} componentCatalog={libraryComponents}
-              definitions={selectedCustomDefinition?.propertyDefinitions}
-              eventDefinitions={actionOptions}
-              device={page.layoutVariant??'Desktop'} componentVersion={selectedCustomDefinition?.version}
-              objects={objects} apps={apps} pages={pages}
-              currentAppId={builderAppApiName||apps[0]?.apiName||'Records'}
-              primaryObjectApiName={page.targetObject} flows={flows}/>
-          </div>
-        </section>}
-
       {visibilityEditorOpen && selected && <PageBuilderVisibilityDialog
         label={selected.label||selected.type} rules={visibilityDraft} onChange={setVisibilityDraft}
         fields={fields} allowRecordFields={Boolean(targetObject&&page.pageType==='Record Page')}
