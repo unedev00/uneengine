@@ -11,6 +11,13 @@ export function resolveCurrentAppNavigation(app: LightningAppMetadata | undefine
 /** Build identity is embedded in the served JavaScript, never inferred from current GitHub main. */
 declare const __METADRIVE_WEB_RELEASE__: { commit: string | null; builtAt: string };
 
+type ProductionStatus = {
+ configured: boolean; canDeploy: boolean; latestCommit: string | null;
+ deployedCommit: string | null; active: boolean;
+ run: null | {id:number;commit:string;status:string;conclusion:string|null;createdAt:string;url:string};
+};
+type DeploymentRequest = <T>(path:string,init?:RequestInit)=>Promise<T>;
+
 type OracleRelease = { commit: string; deployedAt: string };
 type OracleStatus = 'idle' | 'loading' | 'ready' | 'error';
 
@@ -22,16 +29,22 @@ function utcDate(value: string | null | undefined): string {
   }).format(new Date(value)) + ' UTC';
 }
 
-export function NavigationLoadTime({ routeKey, startedAt, ready, kind, authMs }: {
+export function NavigationLoadTime({ routeKey, startedAt, ready, kind, authMs, request }: {
   routeKey: string;
   startedAt: number;
   ready: boolean;
   kind: 'login' | 'restore' | 'navigation';
   authMs: number | null;
+  request?: DeploymentRequest;
 }) {
   const [result, setResult] = useState<{ routeKey: string; milliseconds: number } | null>(null);
   const [open, setOpen] = useState(false);
   const [newFrontendAvailable, setNewFrontendAvailable] = useState(false);
+  const [deployment, setDeployment] = useState<ProductionStatus | null>(null);
+  const [deploymentError, setDeploymentError] = useState('');
+  const [deploymentBusy, setDeploymentBusy] = useState(false);
+  const [deploymentLoading, setDeploymentLoading] = useState(false);
+  const [deploymentRequested, setDeploymentRequested] = useState(false);
   const [oracle, setOracle] = useState<{ status: OracleStatus; release: OracleRelease | null }>({ status: 'idle', release: null });
   const containerRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -112,6 +125,53 @@ export function NavigationLoadTime({ routeKey, startedAt, ready, kind, authMs }:
   }, [open]);
 
   useEffect(() => {
+    if (!open || !request) return;
+    let cancelled = false;
+    setDeploymentLoading(true);
+    const check = async () => {
+      try {
+        const status = await request<ProductionStatus>('/platform/production-deployment');
+        if (!cancelled) {
+          setDeployment(status);
+          setDeploymentError('');
+          setDeploymentLoading(false);
+          if (status.active || status.run?.conclusion) setDeploymentRequested(false);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          // This information is platform-only. Hide controls on 403 rather than
+          // exposing a misleading button to tenant administrators.
+          setDeployment(null);
+          setDeploymentLoading(false);
+          if (!(error instanceof Error && /403|permission|denied/i.test(error.message)))
+            setDeploymentError(error instanceof Error ? error.message : 'Deployment status unavailable');
+        }
+      }
+    };
+    void check();
+    const interval = window.setInterval(() => {void check();}, 12000);
+    return () => {cancelled = true; window.clearInterval(interval);};
+  }, [open, request]);
+
+  const deployLatest = async () => {
+    if (!request || !deployment?.canDeploy || !deployment.latestCommit ||
+      deployment.active || deploymentBusy || deploymentRequested) return;
+    if (!window.confirm('Deploy latest main commit ' + deployment.latestCommit.slice(0,12) +
+      ' to production? This runs the existing validation, SQL backup and full-stack release workflow.')) return;
+    setDeploymentBusy(true);
+    setDeploymentError('');
+    try {
+      await request('/platform/production-deployment', {method:'POST',
+        body:JSON.stringify({expectedCommit:deployment.latestCommit})});
+      setDeploymentRequested(true);
+    } catch (error) {
+      setDeploymentError(error instanceof Error ? error.message : 'Deployment request failed');
+    } finally {
+      setDeploymentBusy(false);
+    }
+  };
+
+  useEffect(() => {
     // Never declare a screen loaded while its essential metadata is outstanding.
     if (!ready) return;
     let idleTimer: number | undefined;
@@ -187,6 +247,38 @@ export function NavigationLoadTime({ routeKey, startedAt, ready, kind, authMs }:
         <div><dt>Frontend commit</dt><dd title={webRelease?.commit ?? undefined}>{webRelease?.commit?.slice(0, 12) ?? 'Not available'}</dd></div>
         <div><dt>Frontend built</dt><dd>{utcDate(webRelease?.builtAt)}</dd></div>
       </dl>
+      {deployment && <div className="navigation-deployment-control">
+        <dl className="navigation-diagnostics-details">
+          <div><dt>Latest main commit</dt><dd title={deployment.latestCommit ?? undefined}>
+            {deployment.latestCommit?.slice(0,12) ?? 'Not available'}</dd></div>
+          <div><dt>Production workflow</dt><dd>
+            {deployment.active ? 'Deploying…' : deploymentRequested ? 'Request accepted' :
+              deployment.run?.status === 'completed'
+                ? deployment.run.conclusion === 'success' ? 'Last run succeeded' : 'Last run failed'
+                : 'Not running'}</dd></div>
+        </dl>
+        {deployment.run && <a href={deployment.run.url} target="_blank" rel="noopener noreferrer"
+          className="navigation-deployment-link">View production workflow</a>}
+        {!deployment.configured && <p className="navigation-diagnostics-note">
+          Deployment control needs the server-side GitHub workflow credential.</p>}
+        {deployment.canDeploy && deployment.configured && deployment.latestCommit &&
+          (deployment.latestCommit !== deployment.deployedCommit ||
+           deployment.latestCommit !== webRelease?.commit ||
+           deployment.run?.conclusion === 'failure') &&
+          <button type="button" className="btn btn-small navigation-deployment-button"
+            disabled={deploymentBusy || deployment.active || deploymentRequested}
+            onClick={() => {void deployLatest();}}>
+            {deploymentBusy ? 'Requesting…' : deployment.active ? 'Deployment running' :
+             deploymentRequested ? 'Deployment requested' : 'Deploy latest'}
+          </button>}
+        {deployment.active && <p className="navigation-diagnostics-note">
+          Another release is in progress. Deployment is locked until it finishes.</p>}
+        {deployment.latestCommit && deployment.latestCommit !== webRelease?.commit &&
+          <p className="navigation-diagnostics-note">
+            Save unsaved changes before refreshing after the new frontend is published.</p>}
+      </div>}
+      {deploymentLoading && !deployment && <p className="navigation-diagnostics-note">Checking deployment status…</p>}
+      {deploymentError && <p className="navigation-diagnostics-note" role="alert">{deploymentError}</p>}
       {oracle.status === 'error' && <p className="navigation-diagnostics-note">Oracle API could not be reached.</p>}
       {oracle.status === 'ready' && !oracle.release && <p className="navigation-diagnostics-note">This API does not report release details yet.</p>}
     </section>}
