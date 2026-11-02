@@ -450,7 +450,7 @@ test('Clicking canvas releases any focused ribbon formula editor and closes fiel
  assert.match(builder,/active\.closest\('\.office-builder-ribbon'\)/);
  assert.match(builder,/active\.matches\('input,textarea,select,\[contenteditable="true"\]'\)/);
  assert.match(builder,/active\.blur\(\)/);
- assert.match(formula,/onBlur=\{\(\)=>\{setMatches\(null\);setFocused\(false\)\}\}/);
+ assert.match(formula,/if\(validationError&&draft\.trim\(\)\.startsWith\('='\)\)setConfirmIncomplete\(true\)/);
 });
 test('Smart Event ribbon matches On Click and Qty Icon component support',()=>{
  const ribbon=read('../src/core/builders/PageBuilder/SmartEventActionsRibbon.tsx');
@@ -702,7 +702,7 @@ test('Smart Tabs first tab is optional, formula-capable, and never replaces a re
  assert.doesNotMatch(disabled,/All items/);
  const runtime=read('../src/component-libraries/smart/shared/SmartRuntime.jsx');
  assert.match(runtime,/firstTabCustom&&index===0/);
- assert.match(runtime,/value:"\*",isCustom:true/);
+ assert.match(runtime,/value:firstTabValue,isCustom:true/);
  assert.match(runtime,/index-\(firstTabCustom\?1:0\)/);
 });
 
@@ -987,7 +987,7 @@ test('SQL-backed eight-tab ribbon retains existing controls and correct geometry
  assert.match(ribbon,/SmartIconDropdown kind="align"/);
  assert.match(ribbon,/SmartIconDropdown kind="shadow"/);
  assert.match(ribbon,/smart-default-check-switch/);
- assert.match(ribbon,/activeDataProperty&&selectedFieldFilterCount>0/);
+ assert.match(ribbon,/filterCount>0/);
  assert.match(ribbon,/smart-formula-prefix/);
  assert.match(css,/padding:6px 7px 1px!important/);
  assert.match(read('../src/core/builders/PageBuilder/PageBuilderRibbonLayout.css'),/overflow-x: auto !important/);
@@ -1105,4 +1105,17 @@ test('Layout Image Background uses SQL fill palette for only Image and Container
  assert.match(runtime,/background:p\.imageBackgroundColor\?\?p\.backgroundColor\?\?"transparent"/);
  assert.match(ribbon,/kind==='color'/);
  assert.match(palette,/kind==='fill'\?'No fill'/);
+});
+
+test('three shared Tab source paths preserve Object ID, custom ID and named Collection ID',()=>{
+ const runtime=read('../src/component-libraries/smart/shared/SmartRuntime.jsx');
+ const sql=read('../../server/src/system-support/migrations/20270304-smart-tabs-custom-selected-value.sql');
+ const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
+ assert.match(runtime,/row\?\.Id\?\?row\?\.id/);
+ assert.match(runtime,/collectionName:p\.dataCollection\.name/);
+ assert.match(runtime,/const firstTabValue=firstTabCustom/);
+ assert.match(runtime,/fire\("change",\{index,value:firstTabValue,isCustom:true/);
+ assert.match(sql,/'firstTabValue','First Tab ID','Design','Tabs','expression'/);
+ assert.match(ribbon,/property\.id!=='firstTabValue'\|\|properties\.firstTabCustom===true/);
+ assert.match(ribbon,/p\.id!=='collectionFormula'/);
 });

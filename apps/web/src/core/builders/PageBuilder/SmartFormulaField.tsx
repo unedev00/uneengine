@@ -3,6 +3,9 @@ import {createPortal} from 'react-dom';
 import type {FieldMetadata,ObjectMetadata} from '../../metadata/Definitions/metadata';
 import {relationshipFormulaFields} from './relationshipFormulaFields';
 import {formulaSignatureAt} from './formulaSignatureHelp';
+import {Parser} from '../../../../../server/src/expression-engine/FormulaParser.js';
+import {tokenize} from '../../../../../server/src/expression-engine/FormulaTokenizer.js';
+import {getFormulaFunctionNames,validateFormulaFunctions} from '../../../../../server/src/expression-engine/FormulaFunctionRegistry.js';
 import type {MentionKind} from '../../../component-libraries/shared/primitives/SmartFieldInput/smartFieldMentions';
 // Styles are loaded by the Page Builder entrypoint so this reusable editor
 // can also render in lightweight server-side ribbon contract tests.
@@ -22,10 +25,11 @@ export function splitSmartFormula(value:string){
  if(cursor<value.length)parts.push({value:value.slice(cursor),kind:'text'});
  return parts;
 }
-export default function SmartFormulaField({value,onChange,fields,disabled,label,objects=[],rootObjectApiName='',singleFieldOnly=false,selectedSourceObjects,mentionKind='text',validate}:{
+export default function SmartFormulaField({value,onChange,fields,disabled,label,objects=[],rootObjectApiName='',singleFieldOnly=false,selectedSourceObjects,mentionKind='text',validate,stateOptions=[]}:{
  value:string;onChange:(next:string)=>void;fields:readonly FieldMetadata[];disabled:boolean;label:string;
  objects?:readonly ObjectMetadata[];rootObjectApiName?:string;singleFieldOnly?:boolean;selectedSourceObjects?:readonly ObjectMetadata[];mentionKind?:MentionKind;
- validate?:(formula:string)=>string|null
+ validate?:(formula:string)=>string|null;
+ stateOptions?:readonly {source:'PageState'|'CollectionState';key:string;label:string}[]
 }){
  const input=useRef<HTMLInputElement>(null);
  const [draft,setDraft]=useState(value);
@@ -35,8 +39,13 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
  const [popup,setPopup]=useState<{top:number;left:number;width:number;above:boolean}|null>(null);
  const [caret,setCaret]=useState(value.length);
  const [focused,setFocused]=useState(false);
+ const [confirmIncomplete,setConfirmIncomplete]=useState(false);
+ const [functionMatch,setFunctionMatch]=useState<{start:number;end:number;query:string}|null>(null);
+ const functions=getFormulaFunctionNames('ribbon_binding');
+ const functionSuggestions=functionMatch?functions.filter(name=>
+   name.startsWith(functionMatch.query.toUpperCase())).slice(0,12):[];
  const [hintPosition,setHintPosition]=useState<{top:number;left:number}|null>(null);
- const hint=focused?formulaSignatureAt(draft,caret):null;
+ const hint=focused&&draft.trimStart().startsWith('=')?formulaSignatureAt(draft,caret):null;
  useLayoutEffect(()=>{
   if(!hint||!input.current){setHintPosition(null);return;}
   const reposition=()=>{
@@ -48,7 +57,7 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
   return()=>{window.removeEventListener('resize',reposition);window.removeEventListener('scroll',reposition,true)};
  },[hint?.name,hint?.argument]);
  useLayoutEffect(()=>{
-  if(!matches||!input.current){setPopup(null);return;}
+  if((!matches&&!functionMatch)||!input.current){setPopup(null);return;}
   const recalc=()=>{
    const rect=input.current?.getBoundingClientRect();
    if(!rect)return;
@@ -60,42 +69,80 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
   window.addEventListener('resize',recalc);
   window.addEventListener('scroll',recalc,true);
   return()=>{window.removeEventListener('resize',recalc);window.removeEventListener('scroll',recalc,true)};
- },[matches]);
+ },[matches,functionMatch]);
  const sourceRoots=selectedSourceObjects!==undefined
   ?selectedSourceObjects.map(source=>source.apiName)
   :rootObjectApiName?[rootObjectApiName]:[];
- const filtered=matches?(objects.length&&sourceRoots.length
-  ?relationshipFormulaFields(objects,sourceRoots,matches.query,mentionKind,singleFieldOnly).slice(0,200)
-  :fields.filter(field=>(!singleFieldOnly||/^(Checkbox|Boolean)$/i.test(field.dataType))&&
-    (field.apiName.toLowerCase().includes(matches.query.toLowerCase())||
-     field.label.toLowerCase().includes(matches.query.toLowerCase()))).slice(0,200)
-    .map(field=>({reference:'@'+field.apiName,label:field.label}))) : [];
+ const collectionMentions=stateOptions.filter(entry=>entry.source==='CollectionState')
+  .map(entry=>({reference:'@'+entry.key,label:entry.label}));
+ const collectionNames=[...new Set(stateOptions.filter(entry=>entry.source==='CollectionState')
+  .map(entry=>entry.key.split('.')[0]))].map(name=>({reference:'@'+name,label:name+' Collection'}));
+ const stateMentions=stateOptions.filter(entry=>entry.source==='PageState')
+  .map(entry=>({reference:'@state.'+entry.key,label:entry.label+' Page State'}));
+ const recordMentions:{reference:string;label:string}[]=objects.length&&sourceRoots.length
+  ?relationshipFormulaFields(objects,sourceRoots,matches?.query??'',mentionKind,singleFieldOnly)
+    .map(({reference,label})=>({reference,label}))
+  :fields.filter(field=>(!singleFieldOnly||/^(Checkbox|Boolean)$/i.test(field.dataType)))
+    .map(field=>({reference:'@'+field.apiName,label:field.label}));
+ const filtered=matches?[...recordMentions,...collectionMentions,...collectionNames,...stateMentions]
+    .filter(item=>item.reference.toLowerCase().includes('@'+matches.query.toLowerCase())||
+      item.label.toLowerCase().includes(matches.query.toLowerCase()))
+    .slice(0,200):[];
+ const errorFor=(next:string):string|null=>{
+  const custom=validate?.(next);
+  if(custom)return custom;
+  const source=next.trim();
+  if(!source.startsWith('='))return null;
+  if(!source.slice(1).trim())return 'Complete the formula after =';
+  const functionPrefix=/^=\s*([A-Za-z][A-Za-z0-9_]*)$/.exec(source);
+  if(functionPrefix&&functions.some(name=>name.startsWith(functionPrefix[1].toUpperCase())))
+    return 'Complete the function with arguments';
+  try{
+   const expression=new Parser(tokenize(source.slice(1))).parse();
+   validateFormulaFunctions(expression,'ribbon_binding');
+   return null;
+  }catch(error){return error instanceof Error?error.message:'Incomplete formula';}
+ };
+ const suggest=(next:string,caret:number)=>{
+   const before=next.slice(0,caret);
+   const openString=(before.match(/"/g)||[]).length%2===1;
+   const mention=!openString?/@([A-Za-z0-9_.]*)$/.exec(before):null;
+   setMatches(mention?{start:caret-mention[0].length,end:caret,query:mention[1]}:null);
+   const name=next.trimStart().startsWith('=')&&!openString
+      ?/(?:^\s*=\s*|[,()]\s*)([A-Za-z][A-Za-z0-9_]*)$/.exec(before):null;
+   setFunctionMatch(name?{start:caret-name[1].length,end:caret,query:name[1]}:null);
+ };
  const update=(next:string,caret:number)=>{
   setDraft(next);
-  const error=validate?.(next)??null;
+  const error=errorFor(next);
   setValidationError(error);
   if(!error)onChange(next);
   setCaret(caret);
-  const before=next.slice(0,caret);
-  // A field picker is never offered while editing a quoted string.
-  const openString=(before.match(/"/g)||[]).length%2===1;
-  const found=!openString?/@([A-Za-z0-9_.]*)$/.exec(before):null;
-  setMatches(found?{start:caret-found[0].length,end:caret,query:found[1]}:null);
+  suggest(next,caret);
  };
  const insert=(reference:string)=>{
   if(!matches)return;
   const next=draft.slice(0,matches.start)+reference+draft.slice(matches.end);
   const end=matches.start+reference.length;
   setDraft(next);
-  const error=validate?.(next)??null;
+  const error=errorFor(next);
   setValidationError(error);
   if(!error)onChange(next);
-  setCaret(end);setMatches(null);
+  setCaret(end);setMatches(null);setFunctionMatch(null);
+  requestAnimationFrame(()=>{input.current?.focus();input.current?.setSelectionRange(end,end)});
+ };
+ const insertFunction=(name:string)=>{
+  if(!functionMatch)return;
+  const next=draft.slice(0,functionMatch.start)+name+'('+draft.slice(functionMatch.end);
+  const end=functionMatch.start+name.length+1;
+  update(next,end);setFunctionMatch(null);setMatches(null);
   requestAnimationFrame(()=>{input.current?.focus();input.current?.setSelectionRange(end,end)});
  };
  const keyDown=(event:KeyboardEvent<HTMLInputElement>)=>{
-  if(event.key==='Escape'){setMatches(null);setFocused(false)}
-  if(event.key==='Enter'&&filtered.length&&matches){event.preventDefault();insert(filtered[0].reference);}
+  if(event.key==='Escape'){setMatches(null);setFunctionMatch(null);setFocused(false)}
+  if(event.key==='Enter'&&functionSuggestions.length&&functionMatch){
+    event.preventDefault();insertFunction(functionSuggestions[0]);
+  }else if(event.key==='Enter'&&filtered.length&&matches){event.preventDefault();insert(filtered[0].reference);}
  };
  return <div className="smart-formula" title={singleFieldOnly?'Select a Boolean field, e.g. @IsActive':'Formula: @Field, + - * / and &; quoted symbols are text'}>
   <div className="smart-formula-highlight" aria-hidden="true">{splitSmartFormula(draft).map((part,i)=>
@@ -103,9 +150,10 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
   <input ref={input} type="text" aria-label={label} value={draft} spellCheck={false} autoComplete="off"
    placeholder={singleFieldOnly?'@BooleanField':'@Field & "text"'} disabled={disabled} onKeyDown={keyDown}
    onFocus={e=>{setFocused(true);setCaret(e.currentTarget.selectionStart??draft.length)}}
-   onClick={e=>setCaret(e.currentTarget.selectionStart??value.length)}
-   onKeyUp={e=>setCaret(e.currentTarget.selectionStart??value.length)}
-   onBlur={()=>{setMatches(null);setFocused(false)}}
+   onClick={e=>setCaret(e.currentTarget.selectionStart??draft.length)}
+   onKeyUp={e=>setCaret(e.currentTarget.selectionStart??draft.length)}
+   onBlur={()=>{setMatches(null);setFunctionMatch(null);setFocused(false);
+     if(validationError&&draft.trim().startsWith('='))setConfirmIncomplete(true);}}
    onChange={e=>update(e.currentTarget.value,e.currentTarget.selectionStart??e.currentTarget.value.length)}/>
   {validationError&&<div className="smart-formula-error" role="alert">{validationError}</div>}
   {hint&&hintPosition&&createPortal(<div className="smart-formula-signature" role="status"
@@ -118,6 +166,24 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
     {hint.maximumArguments>Math.max(hint.minimumArguments,hint.argument+2,4)&&<span>, …</span>}
     <span>)</span>
    </div>,document.body)}
+  {confirmIncomplete&&createPortal(<div className="smart-formula-confirm-backdrop">
+    <section role="dialog" aria-modal="true" aria-label="Incomplete formula"
+      className="smart-formula-confirm">
+      <strong>Incomplete formula</strong><p>{validationError}</p>
+      <button type="button" autoFocus onClick={()=>{
+        setConfirmIncomplete(false);requestAnimationFrame(()=>input.current?.focus());
+      }}>Complete Formula</button>
+      <button type="button" onClick={()=>{
+        setDraft(value);setValidationError(null);setConfirmIncomplete(false);
+      }}>Discard Changes</button>
+    </section>
+  </div>,document.body)}
+  {functionSuggestions.length>0&&functionMatch&&popup&&createPortal(<div className="smart-formula-list"
+    role="listbox" aria-label="Formula functions"
+    style={{position:'fixed',left:popup.left,top:popup.top,minWidth:popup.width,maxHeight:200,zIndex:6000}}>
+    {functionSuggestions.map(name=><button type="button" role="option" key={name}
+      onMouseDown={event=>{event.preventDefault();insertFunction(name)}}>{name}(</button>)}
+  </div>,document.body)}
   {matches&&filtered.length>0&&popup&&createPortal(<div className="smart-formula-list" role="listbox"
     style={{position:'fixed',left:popup.left,top:popup.top,minWidth:popup.width,maxHeight:200,zIndex:6000}}>
    {filtered.map(item=><button key={item.reference} type="button" role="option"

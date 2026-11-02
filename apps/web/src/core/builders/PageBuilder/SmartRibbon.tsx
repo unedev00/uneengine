@@ -58,15 +58,13 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
     ?'Duplicate collection name on this page: '+name:'';
  })();
  const validateCollection=(next:string):string|null=>{
-  if(!next.trim()||/^@[A-Za-z][A-Za-z0-9_]{0,79}$/.test(next.trim()))return null;
-  if(!/^COLLECTION\s*\(/i.test(next.trim()))return 'Use COLLECTION("Name", value1, ...)';
+  if(!/^=\s*COLLECTION\s*\(/i.test(next.trim()))return null;
   const name=namedCollectionName(next);
   if(!name)return 'Collection name is required as the first argument';
-  if(pageComponents.some(item=>item.id!==componentId
-    &&namedCollectionName(item.properties.collectionFormula)?.toLowerCase()===name.toLowerCase()))
+  if(pageComponents.some(item=>item.id!==componentId&&
+    Object.values(item.properties).some(value=>namedCollectionName(value)?.toLowerCase()===name.toLowerCase())))
     return 'Duplicate Collection name: '+name;
   if(/,\s*(?:,|""|\))/.test(next))return 'Collection value is required after the comma';
-  if(!next.trim().endsWith(')'))return 'Complete the Collection formula';
   return null;
  };
  const [filtersOpen,setFiltersOpen]=useState(false);
@@ -137,7 +135,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  const visible=definitions.filter(p=>p.tab===tab);
  // Keep active-record scope metadata and persisted settings intact, but do not
  // surface its automatic binding switch in any visible ribbon section.
- const displayProperties=visible.filter(p=>p.id!=='autoRecordScope'&&
+ const displayProperties=visible.filter(p=>p.id!=='autoRecordScope'&&p.id!=='collectionFormula'&&
    !(tab==='Data'&&p.id==='contextApiName'));
  const groups=[...new Set(displayProperties.map(p=>p.group))];
  const groupOrder=tab==='Data'?['Source','Values','Cart','Cart columns','Cart totals']
@@ -174,6 +172,9 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
       activeDataProperty.id==='imageSource'?'image':'text',
       api==='smart_toggle'&&activeDataProperty.id==='textSource')
    :[];
+ const collectionOptions=[...new Set(stateOptions.filter(item=>item.source==='CollectionState')
+   .map(item=>item.key.split('.')[0]))].map(name=>({reference:'@'+name,label:name+' Collection'}));
+ const selectableDataSources=[...selectableDataFields,...collectionOptions];
  const activeSummaryLabel=activeDataProperty&&api==='smart_cart'
    ?cartSummaryLabels[activeDataProperty.id]:undefined;
  const changeActiveDataFormula=(next:string)=>{
@@ -222,7 +223,8 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    const isSize=property.id==='width'||property.id==='height';
    const useCanvasPosition=layoutMode==='free-canvas'&&Boolean(position&&onPositionChange);
    const enabled=supported&&(kind!=='position'||isSize||useCanvasPosition)&&
-     (property.id!=='firstTabCaption'||properties.firstTabCustom===true);
+     (property.id!=='firstTabCaption'||properties.firstTabCustom===true)&&
+     (property.id!=='firstTabValue'||properties.firstTabCustom===true);
    const value=mixedPropertyIds?.includes(property.id)?'':properties[key]??property.defaultsOverrides?.[api]??property.default??'';
    const options=property.choicesOverrides?.[api]??property.choices??[];
    const write=(v:unknown)=>{
@@ -280,9 +282,6 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
        {api==='smart_image'&&<button type="button" className="smart-filter-trigger"
          title="Upload image from this computer" aria-label="Upload image" disabled={uploadBusy||!enabled}
          onClick={()=>uploadInput.current?.click()}><ImagePlus size={16}/></button>}
-       <button type="button" className="smart-filter-trigger" aria-label="Image filters and conditions"
-         title="Image filters and conditions" onClick={()=>openFilters('Record')}
-         disabled={!object} aria-haspopup="dialog"><SlidersHorizontal size={16}/></button>
      </div>;
    }else if(kind==='expression')editor=<div className="smart-formula-filter">
      {summaryLabel?<input type="text" className="smart-summary-label"
@@ -292,7 +291,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
        onChange={event=>{if(enabled)update(summaryLabel.key,event.target.value);}}/>:
        <span className="smart-formula-prefix" title={title}>{shortLabel}</span>}
      <SmartFormulaField value={String(value)} onChange={write}
-       validate={property.id==='collectionFormula'?validateCollection:undefined}
+       validate={validateCollection} stateOptions={stateOptions}
        label={title} disabled={!enabled}
        singleFieldOnly={api==='smart_toggle'&&property.id==='textSource'}
        fields={api==='smart_toggle'&&property.id==='textSource'
@@ -302,11 +301,6 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
         selectedSourceObjects={sourceObjects} />
      {property.id==='collectionFormula'&&duplicateCollectionName&&
        <span role="alert" className="smart-collection-error">{duplicateCollectionName}</span>}
-     <button type="button" className="smart-filter-trigger" disabled={!enabled||!object}
-       title={!object?'Choose an Object to configure record filters':'Shared record filters for '+object.label}
-       aria-label={'Shared record filters from '+title} aria-haspopup="dialog"
-       onClick={()=>openFilters('Record')}><SlidersHorizontal size={16} aria-hidden="true"/>
-       {filterCount>0&&<span className="smart-filter-count">{filterCount}</span>}</button>
    </div>;
    else if(tab==='Design'&&property.id==='badgeAlignment')editor=
      <div className="smart-inline-caption-select">
@@ -418,17 +412,12 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
     </section>)}
     <div className="smart-data-workspace">
       <div className="smart-data-formula-bar" aria-label="Formula for selected Data property">
-        <button type="button" className="smart-data-filter-button"
-          aria-label={activeDataProperty?'Filter for '+activeDataProperty.label:'Filter for selected field'}
-          title={activeDataProperty?'Record filters: '+activeDataProperty.label:'Select a field first'}
-          disabled={!activeDataEnabled||!object} onClick={()=>openFilters(activeDataProperty?.label??'Record',activeDataProperty?.id??null)}
-          aria-haspopup="dialog"><SlidersHorizontal size={17}/>{activeDataProperty&&selectedFieldFilterCount>0&&
-            <span className="smart-filter-count">{selectedFieldFilterCount}</span>}</button>
         <span className="smart-data-fx-prefix" aria-hidden="true">ƒx</span>
         <div className="smart-data-formula-input">
           {activeDataProperty?<SmartFormulaField key={activeDataProperty.id}
             label={activeDataProperty.label} value={activeDataValue}
             disabled={!activeDataEnabled} onChange={changeActiveDataFormula}
+            validate={validateCollection} stateOptions={stateOptions}
             singleFieldOnly={api==='smart_toggle'&&activeDataProperty.id==='textSource'}
             fields={api==='smart_toggle'&&activeDataProperty.id==='textSource'
               ?(object?.fields??[]).filter(field=>['Checkbox','Boolean'].includes(field.dataType))
@@ -440,15 +429,22 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
         </div>
         <select className="smart-data-field-picker" aria-label="Choose display field"
           title={activeDataProperty?'Choose a field for '+activeDataProperty.label:'Select a Data property first'}
-          disabled={!activeDataEnabled||!selectableDataFields.length}
-          value={selectableDataFields.some(field=>field.reference===activeDataValue.trim())
+          disabled={!activeDataEnabled||!selectableDataSources.length}
+          value={selectableDataSources.some(field=>field.reference===activeDataValue.trim())
             ?activeDataValue.trim():''}
           onChange={event=>{if(event.target.value)changeActiveDataFormula(event.target.value);}}>
           <option value="">Choose field…</option>
-          {selectableDataFields.map(field=><option key={field.reference} value={field.reference}>
+          {selectableDataSources.map(field=><option key={field.reference} value={field.reference}>
             {field.label} ({field.reference})
           </option>)}
         </select>
+        <button type="button" className="smart-data-filter-button"
+          aria-label="Filter records for selected Data field"
+          title="Filter records for this component" disabled={!activeDataEnabled||!object}
+          onClick={()=>openFilters('Record')} aria-haspopup="dialog">
+          <SlidersHorizontal size={16}/>{filterCount>0&&
+            <span className="smart-filter-count">{filterCount}</span>}
+        </button>
         {activeSummaryLabel&&<input className="smart-data-summary-name"
           aria-label={activeSummaryLabel.slot+' cart label'} title="Edit cart summary heading"
           maxLength={64} spellCheck={false} disabled={!activeDataEnabled}

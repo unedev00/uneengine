@@ -31,7 +31,7 @@ test('only the selected formula edit writes the existing metadata property',()=>
  assert.match(ui,/activeSummaryLabel\.key/);
  assert.match(ui,/disabled=\{!activeDataEnabled\}/);
  assert.match(ui,/RecordFilterEditor/);
- assert.ok(ui.includes("openFilters(activeDataProperty?.label??'Record',activeDataProperty?.id??null)"));
+ assert.ok(ui.includes("onClick={()=>openFilters('Record')}"));
 });
 test('SQL placements keep Source intact and display all Value and Cart bindings',()=>{
  const slots=[...sql.matchAll(/\('([^']+)','([^']+)',(\d+),(\d+),(\d+),'([^']+)'\)/g)]
@@ -67,7 +67,7 @@ test('Data styling is scoped; the full-width formula row stays above two 26px ch
 test('selected filters have independent counts and never overwrite component filters',()=>{
  assert.match(ui,/const storedFieldFilters=properties\.dataFieldFilters/);
  assert.match(ui,/selectedFieldFilterCount=selectedFieldRule\?\.filters\.length\?\?0/);
- assert.match(ui,/activeDataProperty&&selectedFieldFilterCount>0/);
+ assert.match(ui,/filterCount>0/);
  assert.match(ui,/dataFieldFilters:\{\.\.\.existing,\[id\]:\{\.\.\.previous,\.\.\.patch\}\}/);
  assert.match(ui,/scopedFilterId\?updateFieldFilter\(scopedFilterId,\{filters\}\)/);
  assert.match(ui,/contextApiName/);
@@ -174,7 +174,7 @@ test('the originating filter button sets the target without wasting modal space'
  assert.ok(ui.includes("filterFieldId,setFilterFieldId"));
  assert.ok(ui.includes("const openFilters=(target:string,fieldId:string|null=null)"));
  assert.ok(ui.includes("setFilterFieldId(fieldId);setFiltersOpen(true)"));
- assert.ok(ui.includes("openFilters(activeDataProperty?.label??'Record',activeDataProperty?.id??null)"));
+ assert.ok(ui.includes("onClick={()=>openFilters('Record')}"));
  assert.ok(ui.includes("scopedFilterId=filterFieldId&&activeDataProperty?.id===filterFieldId"));
  assert.ok(ui.includes("onChange={filters=>scopedFilterId?updateFieldFilter"));
  assert.ok(ui.includes("onChange({...properties,filters})"));
@@ -183,4 +183,15 @@ test('the originating filter button sets the target without wasting modal space'
  assert.ok(ui.includes("openFilters('Record')"));
  assert.doesNotMatch(ui,/smart-filter-scope|smart-filter-target|Apply filters to|aria-label="Filter target"/);
  assert.doesNotMatch(css,/\\.smart-filter-scope/);
+});
+
+test('ribbon exposes only the universal formula source and one filter beside the selected field',()=>{
+ assert.match(ui,/p\.id!=='collectionFormula'/);
+ assert.doesNotMatch(ui,/aria-label=\{'Shared record filters from '\+title\}/);
+ assert.doesNotMatch(ui,/aria-label="Image filters and conditions"/);
+ const workspace=ui.slice(ui.indexOf('<div className="smart-data-formula-bar"'),ui.indexOf('<div className="smart-data-sections">'));
+ assert.ok(workspace.indexOf('smart-data-filter-button')>workspace.indexOf('smart-data-field-picker'));
+ assert.equal((workspace.match(/smart-data-filter-button/g)||[]).length,1);
+ assert.match(workspace,/stateOptions=\{stateOptions\}/);
+ assert.match(workspace,/validate=\{validateCollection\}/);
 });

@@ -79,3 +79,31 @@ test('named Collection selection is readable by general formula engine without a
  assert.equal(created.error,undefined);
  assert.deepEqual(created.value.items,['cat-22']);
 });
+
+test('Excel equals-prefix distinguishes typed Collection formula from ordinary literal text',()=>{
+ assert.equal(evaluateFieldExpression('Collection',{}),'Collection');
+ assert.equal(evaluateFieldExpression('Collection("Menu", "Burgers")',{}),
+   'Collection("Menu", "Burgers")');
+ assert.equal(evaluateFieldExpression('=IF(TRUE, "Burgers", "Other")',{}),'Burgers');
+ assert.equal(evaluateFieldExpression('=@Name',{Name:'Burgers'}),'Burgers');
+ const created=evaluateCollectionFormula('=COLLECTION("Menu", "Burgers", "Drinks")');
+ assert.equal(created.error,undefined);
+ assert.equal(created.value.name,'Menu');
+ assert.deepEqual(created.value.items,['Burgers','Drinks']);
+ assert.equal(namedCollectionName('=COLLECTION("Menu", "Burgers")'),'Menu');
+ const page=pageStateChoices([{id:'tabs',properties:{textSource:'=COLLECTION("Menu", "Burgers")'}}]);
+ assert.ok(page.some(item=>item.key==='Menu.state.Id'));
+});
+test('wildcard criteria are global formula comparisons, never an unrestricted Object query',()=>{
+ const options={namedCollectionSelections:{MyCollection:{Id:'22',Name:'Burgers',Value:'22'}}};
+ assert.equal(evaluateFieldExpression('=@MyCollection = "*"',{},options),'true');
+ assert.equal(evaluateFieldExpression('=@MyCollection = "Burgers*"',{},options),'true');
+ assert.equal(evaluateFieldExpression('=@MyCollection = "Drinks*"',{},options),'false');
+ assert.equal(evaluateFieldExpression('=@MyCollection.state.Id = "22"',{},options),'true');
+ assert.equal(evaluateFieldExpression('=@Product.Name = "*"',{Name:'Burgers'},
+  {rootObjectApiName:'Product'}),'true','qualified source field reads primary authorised row');
+ assert.equal(evaluateFieldExpression('=@Product.Name = "*"',{Product:{Name:'Burgers'}}),'true');
+ assert.equal(evaluateFieldExpression('=@Product.Name = "Burgers*"',{Product:{Name:'Burgers'}}),'true');
+ assert.equal(evaluateFieldExpression('=@Product.Name = "Burgers*"',{Product:{Name:'Drinks'}}),'false');
+ assert.equal(evaluateFieldExpression('=2*3',{}),'6','bare star remains multiplication');
+});

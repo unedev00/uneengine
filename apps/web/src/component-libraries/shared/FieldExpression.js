@@ -293,6 +293,14 @@ function parse(source,record,formulaContext){
     const result=entry[selected[2]];
     return result===null||['string','number','boolean'].includes(typeof result)?result:'';
    }
+   if(/^[A-Za-z][A-Za-z0-9_]{0,79}$/.test(reference)){
+    const selections=formulaContext.namedCollectionSelections;
+    if(selections&&typeof selections==='object'&&!Array.isArray(selections)){
+     const entry=Object.entries(selections).find(([key])=>key.toLowerCase()===reference.toLowerCase())?.[1];
+     if(entry&&typeof entry==='object'&&!Array.isArray(entry))
+      return entry.Name??entry.Value??entry.Id??'';
+    }
+   }
    // Object.Field collection references can use only authorised records
    // supplied by the Page Runtime; a formula never performs a database query.
    const sourceRef=/^([A-Za-z][A-Za-z0-9_]*)\.([A-Za-z][A-Za-z0-9_]*)$/.exec(reference);
@@ -339,6 +347,11 @@ function parse(source,record,formulaContext){
     return '';
    }
   }
+  // The selected Object can be addressed as @Object.Field as well as @Field;
+  // both read the same authorised record and do not execute another query.
+  if(sourceRef&&sourceRef[1]===formulaContext.rootObjectApiName
+    &&Object.prototype.hasOwnProperty.call(record,sourceRef[2]))
+   return ownValue(record,sourceRef[2])??'';
   if(Object.prototype.hasOwnProperty.call(record,reference))return ownValue(record,reference)??'';
   let value=record;
   for(const part of parts){
@@ -402,7 +415,14 @@ export class FieldExpressionEvaluationError extends Error {
 export function evaluateFieldExpressionDetailed(expression,record,options={}){
  if(typeof expression!=='string')return {value:''};
  if(expression.length>4000)return {value:'',error:'Formula exceeds the 4000-character limit'};
- const input=expression.trim();if(!input)return {value:''};
+ const entered=expression.trim();if(!entered)return {value:''};
+ // Excel convention: '=' makes a formula; Collection(...) without '=' is plain text
+ // in ordinary display properties. Preserve legacy metadata-only collection sources.
+ const explicit=entered.startsWith('=');
+ const input=explicit?entered.slice(1).trim():entered;
+ if(explicit&&!input)return {value:'',error:'Complete the formula after ='};
+ if(!explicit&&!options?.collectionResult&&/^COLLECTION\s*\(/i.test(input))
+  return {value:expression};
  if(!/^(?:TRUE|FALSE|NULL|PI)$/i.test(input)&&!/@[A-Za-z]/.test(input)&&!input.startsWith('@')&&!/^[A-Za-z][A-Za-z0-9_]*\s*\(/.test(input)
   &&!/^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)+(?:\s*\(|$)/.test(input)
   &&!/^(?:["(]|[-+]?\d+(?:\.\d+)?\s*[+*\/%^<>=!-])/.test(input)
@@ -419,7 +439,8 @@ export function evaluateFieldExpressionDetailed(expression,record,options={}){
   if(!Number.isFinite(now.getTime()))throw Error('Invalid formula evaluation time');
   const result=parse(input,record,{timeZone,now,collectionSources:options.collectionSources,
    collectionResult:options.collectionResult===true,
-   namedCollectionSelections:options.namedCollectionSelections});
+   namedCollectionSelections:options.namedCollectionSelections,
+   rootObjectApiName:options.rootObjectApiName});
   if(options.collectionResult===true){
    if(!result||typeof result!=='object'||Array.isArray(result)
      ||typeof result.name!=='string'||!Array.isArray(result.items))
@@ -441,9 +462,10 @@ export function evaluateFieldExpression(expression,record,options){
 
 /** Returns a named, typed collection instead of coercing it to a text field. */
 export function evaluateCollectionFormula(formula,sourceRecords={},context={}){
- if(typeof formula!=='string'||!/^\s*COLLECTION\s*\(/i.test(formula))
-  return {value:null,error:'Enter COLLECTION("Name", values, @Object.Field)'};
- return evaluateFieldExpressionDetailed(formula,{...context},
+ const source=typeof formula==='string'?formula.trim().replace(/^=\s*/,''):'';
+ if(!/^COLLECTION\s*\(/i.test(source))
+  return {value:null,error:'Enter =COLLECTION("Name", values, @Object.Field)'};
+ return evaluateFieldExpressionDetailed(source,{...context},
   {collectionSources:sourceRecords,collectionResult:true,
    namedCollectionSelections:context?.state?.collectionSelections});
 }
