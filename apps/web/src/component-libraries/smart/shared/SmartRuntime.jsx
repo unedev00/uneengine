@@ -194,11 +194,17 @@ function SmartTabs({p,record,fire}){
  // When bound to an Object, the shared Page Runtime supplies only filtered,
  // permission-checked records. Never generate unlimited tabs from raw records.
  const dynamic=Boolean(p.objectApiName&&p.textSource);
- const recordTabs=dynamic?(isBuilderEmpty(p)?Array.from({length:Math.min(count,5)},(_,i)=>({
+ const hasCollection=p.dataCollection&&typeof p.dataCollection.name==='string'
+  &&Array.isArray(p.dataCollection.items);
+ const collectionTabs=hasCollection?recordsOf(p).slice(0,count).map((row,index)=>({
+  label:String(row.__collectionLabel??row.Name??''),value:row.__collectionValue,
+  id:'collection-'+index,record:row
+ })):null;
+ const recordTabs=collectionTabs??(dynamic?(isBuilderEmpty(p)?Array.from({length:Math.min(count,5)},(_,i)=>({
    label:"Tab "+(i+1),id:"editor-tab-"+i
   })):recordsOf(p).slice(0,count).map(row=>({
    label:scopedExpression(p,"textSource",p.textSource,row),id:row?.Id??row?.id
-  }))):Array.isArray(p.tabs)?p.tabs:Array.from({length:count},(_,i)=>i===0&&typeof p.label==="string"&&p.label&&!p.label.startsWith("@")?p.label:"Tab "+(i+1));
+  }))):Array.isArray(p.tabs)?p.tabs:Array.from({length:count},(_,i)=>i===0&&typeof p.label==="string"&&p.label&&!p.label.startsWith("@")?p.label:"Tab "+(i+1)));
  // A custom leading tab is an optional display entry, never an Object record.
  // The authorised Object records and their configured limit remain unchanged.
  const firstTabCustom=p.firstTabCustom===true;
@@ -220,12 +226,16 @@ function SmartTabs({p,record,fire}){
     onClick={()=>{setActive(index);
       if(firstTabCustom&&index===0){
        fire("change",{index,value:"",isCustom:true,record:{Id:"",Name:firstTabCaption}});
+      }else if(hasCollection){
+       const item=recordTabs[index-(firstTabCustom?1:0)];
+       fire("change",{index,value:item?.value??"",record:item?.record??{},
+        collectionName:p.dataCollection.name});
       }else if(dynamic){
        const row=recordsOf(p)[index-(firstTabCustom?1:0)];
        fire("change",{index,value:String(row?.Id??row?.id??""),record:row});
       }else fire("change",index);
      }}>{text(tab?.label??tab)}</button>)}
-   {dynamic&&tabs.length===0&&<span className="smart-tabs-empty">No matching records</span>}
+   {(dynamic||hasCollection)&&tabs.length===0&&<span className="smart-tabs-empty">No matching records</span>}
   </nav>
  </div>;
 }
