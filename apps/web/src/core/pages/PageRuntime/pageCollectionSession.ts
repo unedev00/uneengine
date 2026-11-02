@@ -1,4 +1,6 @@
 import {useSyncExternalStore} from 'react';
+import {Parser,type Expression} from '../../../../../server/src/expression-engine/FormulaParser.js';
+import {tokenize} from '../../../../../server/src/expression-engine/FormulaTokenizer.js';
 import {validFormulaCollectionName,formulaCollectionReferenceKey} from '../../../../../server/src/expression-engine/FormulaCollection.js';
 
 export type SessionCollection={name:string;items:unknown[]};
@@ -7,10 +9,28 @@ type Snapshot={collections:Readonly<Record<string,SessionCollection>>;errors:Rea
 type Registry={owners:Map<string,Entry>;subscribers:Set<()=>void>;snapshot:Snapshot};
 const empty:Snapshot=Object.freeze({collections:Object.freeze({}),errors:Object.freeze({})});
 const sessions=new Map<string,Registry>();
+/** Discover output names at any formula nesting depth (IF, CASE, etc.).
+ * An unquoted identifier is allowed only in COLLECTION's name position. */
+export function namedCollectionNames(formula:unknown):string[]{
+ if(typeof formula!=='string'||!formula.trim())return [];
+ const found=new Set<string>();
+ const visit=(node:Expression):void=>{
+  if(node.kind==='call'){
+   if(node.name==='COLLECTION'){
+    const first=node.args[0];
+    const name=first?.kind==='literal'&&typeof first.value==='string'?first.value:
+     first?.kind==='reference'&&/^[A-Za-z][A-Za-z0-9_]*$/.test(first.value)?first.value:'';
+    if(validFormulaCollectionName(name))found.add(name);
+   }
+   node.args.forEach(visit);
+  }else if(node.kind==='binary'){visit(node.left);visit(node.right);}
+  else if(node.kind==='unary')visit(node.value);
+ };
+ try{visit(new Parser(tokenize(formula.trim())).parse());}catch{return [];}
+ return [...found];
+}
 export function namedCollectionName(formula:unknown):string|undefined{
- if(typeof formula!=='string')return undefined;
- const match=/^\s*=?\s*COLLECTION\s*\(\s*"([^"]+)"/i.exec(formula);
- return match&&validFormulaCollectionName(match[1])?match[1]:undefined;
+ return namedCollectionNames(formula)[0];
 }
 function registry(scope:string):Registry{
  let current=sessions.get(scope);
