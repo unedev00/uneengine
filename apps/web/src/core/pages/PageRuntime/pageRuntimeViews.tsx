@@ -496,7 +496,7 @@ function MetadataBoundPageComponent({
     currentQueryRecords,selectedRecordFilters.filters,fields,{pageState,recordId,sessionId},properties.filterLogic==='OR'?'OR':'AND');
   const visibleRecords=relatedField?filterRelatedRecords(filteredRecords,selectedId,relatedField):filteredRecords;
   const namedSource=usePageCollectionFormula(properties.collectionFormula,properties,objects,
-    objectApiName,visibleRecords,recordTotal,revision,pageState,sessionId);
+    objectApiName,visibleRecords,recordTotal,revision,pageState,sessionId,pageSessionKey,component.id);
   const dataCollection=namedSource.collection;
   const dataCollectionRows=dataCollection?namedCollectionRows(dataCollection):null;
   const mentionContext = useRelationshipMentionContext(objects, mentionRootObjectApiName,
