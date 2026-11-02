@@ -293,7 +293,7 @@ function pageComponentRecordQueryBase(
     if(wildcard&&field.relationship&&resolved==='*'){
       serverFilters.push({field:filter.field,operator:'isNotBlank',value:''});
     }else if(wildcard){
-      if(!/^(Text|Email|Phone|Url|Picklist)(\\(|$)/i.test(field.dataType))
+      if(!/^(Text|Email|Phone|Url|Picklist)(\(|$)/i.test(field.dataType))
         return {blocked:true,serverFilterable:false};
       serverFilters.push({field:filter.field,operator:'matches',value:String(resolved)});
     }else serverFilters.push({field:filter.field,operator,
