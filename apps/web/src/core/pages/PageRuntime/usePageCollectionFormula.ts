@@ -74,3 +74,23 @@ export function usePageCollectionFormula(
  const value=resolved.value as PageNamedCollection|null;
  return {collection:value,error:resolved.error??null,loading:false};
 }
+
+/** Read-only record-shaped adapter for collection-capable Tables, Lists and Cards.
+ * Synthetic manual values have no database ID and cannot masquerade as records.
+ */
+export function namedCollectionRows(collection:PageNamedCollection):Row[]{
+ return collection.items.map((item,index)=>{
+  if(item&&typeof item==='object'&&!Array.isArray(item)
+    &&'label' in item&&'value' in item){
+   const entry=item as {label:unknown;value:unknown;record?:unknown};
+   const record=entry.record&&typeof entry.record==='object'&&!Array.isArray(entry.record)
+    ?entry.record as Row:{};
+   return {...record,Name:String(entry.label??''),Id:record.Id??record.id??'',
+     __collectionLabel:String(entry.label??''),__collectionValue:entry.value,
+     __collectionManual:!entry.record,__collectionIndex:index};
+  }
+  return {Id:'',Name:item===null||item===undefined?'':String(item),
+   __collectionLabel:item===null||item===undefined?'':String(item),
+   __collectionValue:item,__collectionManual:true,__collectionIndex:index};
+ });
+}
