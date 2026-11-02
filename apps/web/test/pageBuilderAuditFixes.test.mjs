@@ -46,3 +46,39 @@ test('Smart Insert differentiates button/navigation, container/icon, and input/t
  assert.ok(view.includes('return <MousePointer2 size={15} />'));
  assert.ok(view.includes('return <FormInput size={15} />'));
 });
+
+test('Shared canvas popup has legible enabled and disabled text across all pages',()=>{
+ const css=read('../src/core/builders/PageBuilder/sections/01-page-builder.css');
+ const view=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const rule=selector=>{
+  const escaped=selector.replace(/[.*+?^$()|[\]{}]/g,'\\$&');
+  const block=css.match(new RegExp(escaped+'\\s*\\{([^}]*)\\}'));
+  assert.ok(block,'Missing shared menu rule: '+selector);
+  return block[1];
+ };
+ const colour=value=>{
+  const chars=value.slice(1);
+  const full=chars.length===3?[...chars].map(c=>c+c).join(''):chars;
+  return [0,2,4].map(n=>parseInt(full.slice(n,n+2),16)/255)
+   .map(x=>x<=.04045?x/12.92:((x+.055)/1.055)**2.4);
+ };
+ const luminance=c=>c[0]*.2126+c[1]*.7152+c[2]*.0722;
+ const contrast=(one,two)=>{
+  const [a,b]=[luminance(colour(one)),luminance(colour(two))].sort((a,b)=>b-a);
+  return (a+.05)/(b+.05);
+ };
+ const ink=rule('.canvas-unified-builder .canvas-action-menu button')
+  .match(/(?:^|;)\s*color:(#[0-9a-f]{3,6})\s*;/i)?.[1];
+ const disabled=rule('.canvas-unified-builder .canvas-action-menu button:disabled');
+ const disabledInk=disabled.match(/(?:^|;)\s*color:(#[0-9a-f]{3,6})\s*;/i)?.[1];
+ const disabledBg=disabled.match(/(?:^|;)\s*background:(#[0-9a-f]{3,6})\s*;/i)?.[1];
+ assert.ok(ink&&disabledInk&&disabledBg);
+ assert.ok(contrast(ink,'#ffffff')>=4.5,'enabled text must meet WCAG AA');
+ assert.ok(contrast(disabledInk,disabledBg)>=4.5,'disabled labels must remain legible');
+ assert.match(disabled,/\bopacity:1\b/,'disabled actions must not fade the labels');
+ assert.match(css,/\.canvas-unified-builder \.canvas-action-menu button:hover:not\(:disabled\)/);
+ assert.match(view,/disabled=\{!componentClipboard\}/,'Paste remains gated');
+ assert.match(view,/disabled=\{isCanvasLocked\(component\)\}/,'locked actions remain gated');
+ assert.match(view,/disabled=\{!canMoveCanvasLayer\(page\.components,component\.id,'front'\)\}/,'layer permissions unchanged');
+ assert.doesNotMatch(rule('.canvas-unified-builder .canvas-action-menu button'),/color:inherit/);
+});
