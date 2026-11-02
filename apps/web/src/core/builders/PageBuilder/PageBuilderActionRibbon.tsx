@@ -5,7 +5,6 @@ import {metadataReference,metadataSelection} from '../../metadata/Definitions/me
 import {supportsSmartActionEvent} from './SmartEventActionsRibbon';
 import SmartFormulaField from './SmartFormulaField';
 import CompactActionFlowBindings from './CompactActionFlowBindings';
-import './PageBuilderActionRibbonCompact.css';
 
 type Binding=Record<string,unknown>;
 type EventOption={apiName:string;label:string};
