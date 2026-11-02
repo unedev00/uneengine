@@ -271,7 +271,8 @@ function pageComponentRecordQueryBase(
       serverFilterable=false;
       continue;
     }
-    if(logic==='OR'&&field.relationship){
+    // OR over one active condition is equivalent to AND; keep lookup paging.
+    if(logic==='OR'&&active.length>1&&field.relationship){
       serverFilterable=false;
       continue;
     }
