@@ -28,8 +28,10 @@ export async function runApiCasefoldSqlSmoke(db){
   VALUES($1,$2,'selectedFlow','CasefoldPaymentFlow')`,[tenant,page]);
  const normalized=await db.query('SELECT md_casefold_tenant_api_names($1) AS count',[tenant]);
  assert.ok(Number(normalized.rows[0].count)>0);
- assert.equal((await db.query(`SELECT api_name,label FROM md_object_definitions
-  WHERE tenant_id=$1`,[tenant])).rows[0].api_name,'casefoldinvoice__c');
+ const object=(await db.query(`SELECT id,api_name,label FROM md_object_definitions
+  WHERE tenant_id=$1`,[tenant])).rows[0];
+ assert.equal(object.api_name,'casefoldinvoice__c');
+ assert.equal(object.label,'Invoice Display Label');
  assert.equal((await db.query(`SELECT object_api,api_name FROM md_field_definitions
   WHERE tenant_id=$1`,[tenant])).rows[0].api_name,'codevalue__c');
  assert.equal((await db.query(`SELECT object_api FROM md_records WHERE id=$1`,[record]))
