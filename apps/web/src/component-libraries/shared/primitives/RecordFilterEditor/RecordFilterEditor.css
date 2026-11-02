@@ -47,3 +47,66 @@
 .metadata-filter-add:disabled{opacity:.5;cursor:not-allowed}
 @media (min-width:900px){.metadata-filter-condition-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:600px){.metadata-filter-toolbar,.metadata-filter-condition-grid{grid-template-columns:minmax(0,1fr)}.metadata-filter-condition{padding:12px}.metadata-filter-count{white-space:normal}}
+
+
+/* Global Page Builder records filter: compact, searchable per-condition field picker. */
+.metadata-record-filter-editor.is-compact .metadata-filter-intro{padding-bottom:7px}
+.metadata-record-filter-editor.is-compact .metadata-filter-intro p{margin-top:2px}
+.metadata-record-filter-editor.is-compact .metadata-filter-toolbar{display:flex;gap:10px;margin-bottom:10px}
+.metadata-record-filter-editor.is-compact .metadata-filter-condition{padding:10px 12px}
+.metadata-record-filter-editor.is-compact .metadata-filter-condition-heading{margin-bottom:7px}
+.metadata-record-filter-editor.is-compact .metadata-filter-condition-heading button{
+  width:29px;height:28px;padding:4px;display:inline-flex;align-items:center;justify-content:center;
+  border:1px solid #d7dfe9;border-radius:5px;background:#fff;color:#ae3542
+}
+.metadata-record-filter-editor.is-compact .metadata-filter-condition-heading button:hover{background:#fff1f1;border-color:#e1a6aa}
+.metadata-record-filter-editor.is-compact .metadata-filter-footer{margin-top:9px}
+.metadata-filter-field-picker{position:relative;min-width:0;width:100%}
+.metadata-filter-field-trigger{display:flex;align-items:center;justify-content:space-between;gap:8px;
+  width:100%;min-width:0;height:40px;padding:7px 10px;border:1px solid #b5c4d8;border-radius:6px;
+  color:#233752;background:#fff;text-align:left;font:400 14px/1.3 "Segoe UI",Arial,sans-serif;cursor:pointer}
+.metadata-filter-field-trigger>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.metadata-filter-field-trigger .is-placeholder{color:#78879b}
+.metadata-filter-field-trigger svg{flex:none;color:#516b86}
+.metadata-filter-field-dropdown{position:absolute;top:calc(100% + 3px);left:0;right:0;z-index:40;
+  padding:6px;border:1px solid #a9c1dd;border-radius:7px;background:#fff;box-shadow:0 12px 30px #1838592b}
+.metadata-filter-field-search{position:relative;display:block}
+.metadata-filter-field-search>svg{position:absolute;left:9px;top:11px;color:#67809b;pointer-events:none;z-index:1}
+.metadata-record-filter-editor .metadata-filter-field-search input{padding-left:29px}
+.metadata-filter-field-options{max-height:205px;overflow-y:auto;overscroll-behavior:contain}
+.metadata-filter-field-options [role="group"]>strong{display:block;position:sticky;top:0;
+  padding:5px 8px;background:#f0f5fb;color:#536c87;font-size:11px;font-weight:600}
+.metadata-filter-field-options button{width:100%;min-height:29px;padding:5px 8px;border:0;border-radius:3px;
+  background:transparent;display:flex;align-items:center;justify-content:space-between;gap:5px;
+  font:inherit;text-align:left;color:#243d56;cursor:pointer}
+.metadata-filter-field-options button>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.metadata-filter-field-options button small{flex:none;color:#667b91;font-size:10px}
+.metadata-filter-field-options button:hover,.metadata-filter-field-options button.is-highlighted{background:#e7f2ff}
+.metadata-filter-field-options button[aria-selected="true"]{font-weight:600;color:#145c9d}
+.metadata-filter-field-options p{margin:0;padding:12px 8px;color:#667b91;font-size:12px}
+.metadata-record-filter-editor .metadata-filter-inline-error{display:block;order:0;font-size:11px;line-height:1.3;
+  padding:4px 6px;border-left:2px solid #d3834e;background:#fff6ec;color:#924217}
+
+
+.metadata-record-filter-editor.is-compact .metadata-filter-intro-heading{gap:9px 15px}
+.metadata-record-filter-editor.is-compact .metadata-filter-intro p{display:none}
+.metadata-record-filter-editor.is-compact .metadata-filter-intro-heading .metadata-filter-logic{
+  display:flex;flex-direction:row;align-items:center;gap:8px;margin-left:10px;
+}
+.metadata-record-filter-editor.is-compact .metadata-filter-intro-heading .metadata-filter-logic span{
+  font-size:12px;font-weight:600;color:#34445b;white-space:nowrap
+}
+.metadata-record-filter-editor.is-compact .metadata-filter-intro-heading .metadata-filter-logic select{
+  width:205px;min-width:160px;height:34px
+}
+.metadata-record-filter-editor.is-compact .metadata-filter-cell{
+  display:flex;flex-direction:column;gap:6px;min-width:0
+}
+.metadata-record-filter-editor.is-compact .metadata-filter-cell>span:first-child{
+  font-size:12px;font-weight:600;line-height:1.4;color:#34445b
+}
+@media(max-width:650px){
+  .metadata-record-filter-editor.is-compact .metadata-filter-intro-heading .metadata-filter-logic{
+    flex-basis:100%;margin-left:0;justify-content:space-between
+  }
+}

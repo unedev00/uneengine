@@ -1,6 +1,7 @@
 import {validateRecordFilterFormula} from '../../../../core/pages/PageRuntime/recordFilterFormula';
-import { useState } from 'react';
-import { Plus, Search, Trash2 } from 'lucide-react';
+import { useEffect, useId, useRef, useState } from 'react';
+import type { KeyboardEvent } from 'react';
+import { ChevronDown, Plus, Search, Trash2 } from 'lucide-react';
 import type { FieldMetadata,ObjectMetadata } from '../../../../core/metadata/Definitions/metadata';
 import SmartFieldInput from '../SmartFieldInput/SmartFieldInput';
 import {mentionGroups} from '../SmartFieldInput/smartFieldMentions';
@@ -22,10 +23,108 @@ const dateInputType = (field?: FieldMetadata): 'date'|'datetime-local'|'time'|'t
 const isPicklist = (field?: FieldMetadata) =>
   /^(Picklist|Multi-Select Picklist|Multipicklist)$/i.test(field?.dataType ?? '');
 
+
+/** Search within the field selector: every accessible field is shown before typing. */
+function FilterFieldCombobox({
+  value, fields, related, label, onChange
+}: {
+  value: string;
+  fields: FieldMetadata[];
+  related: FieldMetadata[];
+  label: string;
+  onChange: (next: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const [activeIndex, setActiveIndex] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const listId = useId();
+  const match = (item: FieldMetadata) =>
+    (item.label + ' ' + item.apiName).toLocaleLowerCase().includes(query.trim().toLocaleLowerCase());
+  const currentFields = fields.filter(match);
+  const relatedFields = related.filter(match);
+  const available = [...currentFields, ...relatedFields];
+  const selected = [...fields, ...related].find(item => item.apiName === value);
+  useEffect(() => {
+    if (!open) return;
+    searchRef.current?.focus();
+    const closeOnOutsidePointer = (event: PointerEvent) => {
+      if (!containerRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener('pointerdown', closeOnOutsidePointer);
+    return () => document.removeEventListener('pointerdown', closeOnOutsidePointer);
+  }, [open]);
+  const choose = (apiName: string) => {
+    onChange(apiName);
+    setOpen(false);
+    setQuery('');
+    setActiveIndex(0);
+  };
+  const handleKeys = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation(); // Escape should close only this picker, not the entire filter dialog.
+      setOpen(false);
+    } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      if (available.length) setActiveIndex(index =>
+        (index + (event.key === 'ArrowDown' ? 1 : -1) + available.length) % available.length);
+    } else if (event.key === 'Enter' && available.length) {
+      event.preventDefault();
+      choose(available[Math.min(activeIndex, available.length - 1)].apiName);
+    }
+  };
+  const option = (item: FieldMetadata, index: number) =>
+    <button key={item.apiName} type="button" role="option" tabIndex={-1}
+      id={listId + '-option-' + index} aria-selected={item.apiName === value}
+      className={index === activeIndex ? 'is-highlighted' : ''}
+      onMouseEnter={() => setActiveIndex(index)} onClick={() => choose(item.apiName)}>
+      <span>{item.label}</span><small>{item.apiName}</small>
+    </button>;
+  return <div className="metadata-filter-field-picker" ref={containerRef}
+    onBlur={event => {if (!event.currentTarget.contains(event.relatedTarget as Node)) setOpen(false);}}>
+    <button type="button" className="metadata-filter-field-trigger" role="combobox"
+      aria-label={label} aria-haspopup="listbox" aria-expanded={open} aria-controls={listId}
+      onClick={() => {setOpen(previous => !previous); setQuery(''); setActiveIndex(0);}}
+      onKeyDown={event => {
+        if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+          event.preventDefault();
+          setOpen(true);
+          setQuery('');
+          setActiveIndex(0);
+        }
+      }}>
+      <span className={!value ? 'is-placeholder' : ''}>{selected?.label ?? (value ? 'Missing: ' + value : 'Choose field…')}</span>
+      <ChevronDown size={15} aria-hidden="true"/>
+    </button>
+    {open && <div className="metadata-filter-field-dropdown">
+      <span className="metadata-filter-field-search"><Search size={15} aria-hidden="true"/>
+        <input ref={searchRef} type="search" value={query} placeholder="Search fields…"
+          aria-label={'Search ' + label} aria-controls={listId}
+          aria-activedescendant={available.length ? listId + '-option-' + Math.min(activeIndex, available.length - 1) : undefined}
+          onKeyDown={handleKeys}
+          onChange={event => {setQuery(event.target.value); setActiveIndex(0);}}/>
+      </span>
+      <div className="metadata-filter-field-options" id={listId} role="listbox" aria-label={label}>
+        {currentFields.length > 0 && <div role="group" aria-label="Current Object">
+          <strong>Current Object</strong>
+          {currentFields.map((item, index) => option(item, index))}
+        </div>}
+        {relatedFields.length > 0 && <div role="group" aria-label="Related Lookup Fields">
+          <strong>Related Lookup Fields</strong>
+          {relatedFields.map((item, index) => option(item, currentFields.length + index))}
+        </div>}
+        {!available.length && <p>No matching accessible fields.</p>}
+      </div>
+    </div>}
+  </div>;
+}
+
 /** Shared no-code filter editor: all types and choices come from accessible Field metadata. */
 export default function RecordFilterEditor({
   title, fields, filters, onChange, logic = 'AND', onLogicChange, objects = [], rootObjectApiName = '',
-  formula = '', onFormulaChange, mode, onModeChange
+  formula = '', onFormulaChange, mode, onModeChange, compact = false
 }: {
   title: string;
   fields: FieldMetadata[];
@@ -39,6 +138,7 @@ export default function RecordFilterEditor({
   onFormulaChange?:(value:string)=>void;
   mode?:'Field'|'Formula';
   onModeChange?:(next:'Field'|'Formula')=>void;
+  compact?:boolean;
 }) {
   const [fieldSearch, setFieldSearch] = useState('');
   const related=mentionGroups(objects,rootObjectApiName,[],'','text')
@@ -65,7 +165,7 @@ export default function RecordFilterEditor({
     ? allFields.filter(item => (item.label + ' ' + item.apiName).toLocaleLowerCase().includes(query)).slice(0, 20)
     : [];
   const formulaError = effectiveMode === 'Formula' ? validateRecordFilterFormula(formula,allFields) : null;
-  return <section className="metadata-record-filter-editor" aria-label={title + ' filter editor'}>
+  return <section className={'metadata-record-filter-editor' + (compact ? ' is-compact' : '')} aria-label={title + ' filter editor'}>
     <div className="metadata-filter-intro">
       <div>
         <div className="metadata-filter-intro-heading">
@@ -76,13 +176,21 @@ export default function RecordFilterEditor({
             <button type="button" aria-pressed={effectiveMode === 'Formula'} className={effectiveMode === 'Formula' ? 'is-active' : ''}
               onClick={() => onModeChange('Formula')}>Formula</button>
           </div>}
+          {compact && effectiveMode === 'Field' && <label className="metadata-filter-logic">
+            <span>Match conditions</span>
+            <select aria-label="Filter match logic" value={logic} disabled={!onLogicChange}
+              onChange={e => onLogicChange?.(e.target.value === 'OR' ? 'OR' : 'AND')}>
+              <option value="AND">All conditions (AND)</option>
+              <option value="OR">Any condition (OR)</option>
+            </select>
+          </label>}
         </div>
         <p>{effectiveMode === 'Formula' ? 'Write a formula to filter records.' : 'Choose a field, operator and value to filter records.'}</p>
       </div>
       {effectiveMode === 'Field' && <span className="metadata-filter-count">{filters.length}/20 conditions</span>}
     </div>
     {effectiveMode === 'Field' && <>
-    <div className="metadata-filter-toolbar">
+    {!compact && <div className="metadata-filter-toolbar">
       <label className="metadata-filter-search">
         <span>Find a field</span>
         <span className="metadata-filter-search-input"><Search size={16} aria-hidden="true"/>
@@ -97,8 +205,8 @@ export default function RecordFilterEditor({
           <option value="OR">Any condition (OR)</option>
         </select>
       </label>
-    </div>
-    {query && <div className="metadata-filter-search-results" role="region" aria-label="Matching fields">
+    </div>}
+    {!compact && query && <div className="metadata-filter-search-results" role="region" aria-label="Matching fields">
       {matchingFields.length ? matchingFields.map(item => <button type="button" key={item.apiName}
         disabled={filters.length >= 20} onClick={() => add(item.apiName)}>
         <Plus size={15} aria-hidden="true"/> {item.label} <small>{item.apiName}</small>
@@ -128,6 +236,14 @@ export default function RecordFilterEditor({
         const value = dynamic ? '' : String(raw.value ?? '');
         const operators = supportedFilterOperators(field);
         const error = filters.length === 0 ? null : examineRecordFilter(entry, allFields);
+        const errorTarget = !error ? null :
+          /^(Choose a field|This field is unavailable|Invalid saved filter)/.test(error) ? 'field' :
+          /^This operator/.test(error) ? 'operator' :
+          /^(Enter a Page State key|Invalid optional Page State)/.test(error) ? 'state' :
+          /^Choose an accessible field/.test(error) ? 'expression' :
+          /^Choose a valid dynamic filter source/.test(error) ? 'source' : 'value';
+        const inlineError = (target: string) => compact && errorTarget === target
+          ? <small role="alert" className="metadata-filter-inline-error">{error}</small> : null;
         const valueType = dateInputType(field);
         const valueControl = isBooleanFilterField(field)
           ? <select aria-label={title + ' value ' + (index + 1)} value={value}
@@ -151,24 +267,28 @@ export default function RecordFilterEditor({
           <div className="metadata-filter-condition-heading">
             <strong>Condition {index + 1}</strong>
             {filters.length > 0 && <button type="button" aria-label={'Remove condition ' + (index + 1)} onClick={() => remove(index)}>
-              <Trash2 size={16} aria-hidden="true"/> Remove
+              <Trash2 size={16} aria-hidden="true"/>{!compact && ' Remove'}
             </button>}
           </div>
           <div className="metadata-filter-condition-grid">
-            <label><span>Field</span>
-              <select aria-label={title + ' field ' + (index + 1)} value={fieldName}
-                onChange={e => set(index, {field: e.target.value, operator: 'Equals', value: ''})}>
-                <option value="">Choose field…</option>
-                {fieldName && !field && <option value={fieldName} disabled>Missing: {fieldName}</option>}
-                <optgroup label="Current Object">
-                  {fields.map(item => <option key={item.apiName} value={item.apiName}>{item.label}</option>)}
-                </optgroup>
-                {related.length>0&&<optgroup label="Related Lookup Fields">
-                  {related.map(item=><option key={item.apiName} value={item.apiName}>{item.label}</option>)}
-                </optgroup>}
-              </select>
-            </label>
-            <label><span>Operator</span>
+            {compact ? <div className="metadata-filter-cell"><span>Field</span>{inlineError('field')}
+              <FilterFieldCombobox value={fieldName} fields={fields} related={related}
+                label={title + ' field ' + (index + 1)}
+                onChange={next => set(index, {field: next, operator: 'Equals', value: ''})}/>
+              </div> : <label><span>Field</span>
+                <select aria-label={title + ' field ' + (index + 1)} value={fieldName}
+                  onChange={e => set(index, {field: e.target.value, operator: 'Equals', value: ''})}>
+                  <option value="">Choose field…</option>
+                  {fieldName && !field && <option value={fieldName} disabled>Missing: {fieldName}</option>}
+                  <optgroup label="Current Object">
+                    {fields.map(item => <option key={item.apiName} value={item.apiName}>{item.label}</option>)}
+                  </optgroup>
+                  {related.length>0&&<optgroup label="Related Lookup Fields">
+                    {related.map(item=><option key={item.apiName} value={item.apiName}>{item.label}</option>)}
+                  </optgroup>}
+                </select>
+              </label>}
+            <label><span>Operator</span>{inlineError('operator')}
               <select aria-label={title + ' operator ' + (index + 1)} value={operator}
                 disabled={!field} onChange={e => set(index, {operator: e.target.value, value: ''})}>
                 {!operators.includes(operator as typeof operators[number]) &&
@@ -176,7 +296,7 @@ export default function RecordFilterEditor({
                 {operators.map(name => <option key={name} value={name}>{name}</option>)}
               </select>
             </label>
-            {!isBlank(operator) && <label><span>Value source</span>
+            {!isBlank(operator) && <label><span>Value source</span>{inlineError('source')}
               <select aria-label={title + ' value source ' + (index + 1)} value={source}
                 disabled={!field} onChange={e => set(index, {value: e.target.value === 'Fixed' ? ''
                   : e.target.value === 'PageState' ? {source: 'PageState', key: ''}
@@ -189,7 +309,7 @@ export default function RecordFilterEditor({
               </select>
             </label>}
             {!isBlank(operator) && (source === 'FieldExpression'
-              ? <label><span>Related field expression</span>
+              ? <label><span>Related field expression</span>{inlineError('expression')}
                   <SmartFieldInput value={dynamic?.key??''}
                     onChange={key=>set(index,{value:{source:'FieldExpression',key}})}
                     objects={objects} primaryObjectApiName={rootObjectApiName}
@@ -197,12 +317,12 @@ export default function RecordFilterEditor({
                     placeholder="@Field or @Object.Relationship.Field"/>
                 </label>
               : source === 'PageState'
-              ? <label><span>Page state key</span>
+              ? <label><span>Page state key</span>{inlineError('state')}
                   <input aria-label={title + ' page state key ' + (index + 1)}
                     value={dynamic?.key ?? ''} placeholder="e.g. categoryId"
                     onChange={e => set(index, {value: {...dynamic,source: 'PageState', key: e.target.value}})}/>
                 </label>
-              : source === 'Fixed' ? <label><span>Value</span>{valueControl}</label> : null)}
+              : source === 'Fixed' ? <label><span>Value</span>{inlineError('value')}{valueControl}</label> : null)}
           </div>
           {!isBlank(operator) && source === 'PageState' && <label className="metadata-filter-optional">
             <input type="checkbox" aria-label={title + ' ignore blank page state ' + (index + 1)}
@@ -211,7 +331,7 @@ export default function RecordFilterEditor({
             <span>Ignore condition when Page State value is blank</span>
             <small>Blank → skip this condition. With other conditions, AND/OR applies to the remaining conditions.</small>
           </label>}
-          {error && <p role="alert" className="metadata-filter-error">{error}</p>}
+          {!compact && error && <p role="alert" className="metadata-filter-error">{error}</p>}
         </div>;
       })}
     </div>

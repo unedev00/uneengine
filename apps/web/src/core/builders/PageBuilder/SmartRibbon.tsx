@@ -470,7 +470,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
            ?'Only the selected display field is affected; the record list stays unchanged.'
            :'All record rows are filtered before displaying this component.'}</small>
        </div>}
-       {object?<RecordFilterEditor title={scopedFilterId?filterTarget+' value':object.label+' records'} fields={object.fields??[]} objects={objects} rootObjectApiName={objectName}
+       {object?<RecordFilterEditor compact={!scopedFilterId} title={scopedFilterId?filterTarget+' value':object.label+' records'} fields={object.fields??[]} objects={objects} rootObjectApiName={objectName}
          filters={scopedFilterId?(modalFieldRule?.filters??[]):Array.isArray(properties.filters)?properties.filters:[]}
          formula={scopedFilterId?(modalFieldRule?.filterFormula??''):typeof properties.filterFormula==='string'?properties.filterFormula:''}
          mode={scopedFilterId
