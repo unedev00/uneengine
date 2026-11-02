@@ -80,6 +80,7 @@ export async function requestProductionDeployment(
 ):Promise<{accepted:true;targetCommit:string}>{
  if(typeof expectedCommit!=='string'||!shaPattern.test(expectedCommit))
   throw new DeploymentControlError('A valid expected main-branch commit is required.',400);
+ if(!token())throw new DeploymentControlError('Production deployment credential is not configured.',503);
  await audit(db,tenant,user,'platform.production-deploy.requested',{commit:expectedCommit});
  try{
   await db.transaction(async client=>{
