@@ -34,7 +34,9 @@ const scopedExpression=(p,key,source,record)=>fieldAllows(p,key,record)
  ?(key==="textSource"&&p.dataCollection&&record&&
     (/(?:^|[=(,])\s*COLLECTION\s*\(/i.test(String(source??""))
      ||/^\s*=?\s*@[A-Za-z][A-Za-z0-9_.]*(?:\s*(?:=|==|<>|!=|>=|<=|>|<)\s*.+)?\s*$/i.test(String(source??"")))
-    ?text(record.__collectionLabel??record.Name??"")
+    ?text(p.kind==="smart_card_grid"&&record.__collectionManual===false
+      &&typeof record.Name==="string"&&record.Name.trim()
+      ?record.Name:record.__collectionLabel??record.Name??"")
     :expression(source,record,p.pageState,p.objectApiName,p.formulaCollectionSources,p.namedCollections)):"";
 const recordOf=p=>p.objectApiName&&Array.isArray(p.records)
  ?(p.records[0]??{}):p.record&&typeof p.record==="object"&&!Array.isArray(p.record)?p.record:

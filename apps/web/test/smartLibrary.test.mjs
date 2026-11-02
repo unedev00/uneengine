@@ -1144,3 +1144,30 @@ test('Smart Tabs highlights only the selected Collection or Formula/Page State r
   pageState:{collectionSelections:{}}});
  assert.doesNotMatch(invalidated,/aria-selected="true"/);
 });
+
+test('collection-driven Smart Card Grid renders authorised record title and other fields, not lookup criterion',async()=>{
+ const formula='=COLLECTION("FilteredProducts",@Product.MenuCategory=@CatCollection.state.Id)';
+ const collectionResult=evaluateCollectionFormula(formula,{Product:[
+  {Id:'missing',Name:'Uncategorised',Price:3},
+  {Id:'p1',Name:'Cola',MenuCategory:'drinks',Price:1.25,
+   ImageUrl:'https://example.com/cola.png'}
+ ]},{primaryObject:'Product',collectionSourceFields:{Product:['MenuCategory','Name','Price','ImageUrl']},
+  state:{collectionSelections:{CatCollection:{Id:'drinks'}}}});
+ assert.equal(collectionResult.error,undefined);
+ const collection=collectionResult.value;
+ assert.deepEqual(collection.items.map(item=>item.value),['p1']);
+ // Render the authorised rows with the generic page adapter's public record
+ // projection. The adapter itself has focused tests in collectionSessionState.
+ const rows=collection.items.map(item=>({...item.record,Id:item.value,
+  __collectionLabel:item.label,__collectionValue:item.value,__collectionManual:false}));
+ const html=await renderSmart('smart_card_grid',{
+  objectApiName:'Product',dataCollection:collection,records:rows,
+  textSource:'=COLLECTION("FilteredProducts",@Product.MenuCategory=@CatCollection.state.Id)',
+  badgeVisible:true,badgeText:'@Price',imageSource:'@ImageUrl',
+  imageSourceMode:'field',cardsPerRow:2,cardsPerColumn:1
+ });
+ assert.match(html,/Cola/);
+ assert.match(html,/1\.25/);
+ assert.match(html,/cola\.png/);
+ assert.doesNotMatch(html,/>drinks<\/span>/,'Category ID must never replace the product title');
+});

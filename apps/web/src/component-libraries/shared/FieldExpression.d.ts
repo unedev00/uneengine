@@ -9,6 +9,7 @@ export type FormulaBindingContext={
   recordType?:Record<string,unknown>;
   permissions?:Readonly<Record<string,boolean>>;
   collectionSources?:Readonly<Record<string,ReadonlyArray<Record<string,unknown>>>>;
+  collectionSourceFields?:Readonly<Record<string,ReadonlyArray<string>>>;
   namedCollections?:Readonly<Record<string,{name:string;items:unknown[]}>>;
   rootObjectApiName?:string;
   namedCollectionSelections?:Readonly<Record<string,Record<string,unknown>>>;

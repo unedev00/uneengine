@@ -144,6 +144,8 @@ export function usePageCollectionFormula(
  }
  const resolved=evaluateCollectionFormula(source,sources,{state:pageState,session:{id:sessionId},
    primaryObject,record:primaryRecords.length===1?primaryRecords[0]:{},
+   collectionSourceFields:Object.fromEntries(objects.map(object=>[
+    object.apiName,object.fields.map(field=>field.apiName)])),
    namedCollections:registry.collections});
  const value=resolved.value as PageNamedCollection|null;
  return {collection:value?{...value,key:formulaCollectionReferenceKey(value.name)}:null,
@@ -208,7 +210,10 @@ export function namedCollectionRows(collection:PageNamedCollection):Row[]{
    const entry=item as {label:unknown;value:unknown;record?:unknown};
    const record=entry.record&&typeof entry.record==='object'&&!Array.isArray(entry.record)
     ?entry.record as Row:{};
-   return {...record,Name:String(entry.label??''),Id:record.Id??record.id??entry.value??'',
+   // A collection's criterion label is not the record title. Preserve the
+   // authorised source record so Cards and Lists render the actual row fields.
+   return {...record,Name:typeof record.Name==='string'&&record.Name.trim()
+     ?record.Name:String(entry.label??''),Id:record.Id??record.id??entry.value??'',
      __collectionLabel:String(entry.label??''),__collectionValue:entry.value,
      __collectionCriteriaField:typeof (item as Row).criteriaField==='string'?(item as Row).criteriaField:'',
      __collectionCriteria:typeof (item as Row).criteria==='string'?(item as Row).criteria:'',
