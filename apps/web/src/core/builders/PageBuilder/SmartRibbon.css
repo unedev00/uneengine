@@ -690,9 +690,8 @@
 .smart-multiselect-done{align-self:flex-end;padding:3px 8px;border:1px solid #b7c9df;
  border-radius:3px;background:#fff;cursor:pointer}
 
-/* Filter Records: full modal stacking, compact no-code controls, one scroll owner.
-   Width grows 50% from 760 to 1140px, bounded by the available viewport.
-   All four condition editors share one row at desktop width. */
+/* Shared Filter Records modal: one scroll owner, compact search, and four
+   flexible field/operator/source/value columns on desktop. */
 .smart-filter-backdrop.smart-dialog-backdrop{
   z-index:2147483000!important;isolation:isolate;backdrop-filter:blur(2px);
   background:rgba(19,36,58,.66)!important;
@@ -735,7 +734,8 @@
 .smart-filter-backdrop .metadata-filter-count{font-size:10px!important}
 .smart-filter-backdrop .metadata-filter-toolbar{
   gap:12px!important;margin-bottom:12px!important;
-  grid-template-columns:minmax(0,1fr) minmax(155px,220px)!important;
+  grid-template-columns:minmax(0,320px) minmax(165px,210px)!important;
+  justify-content:start!important;
 }
 .smart-filter-backdrop .metadata-record-filter-editor label{
   gap:4px!important;
@@ -767,8 +767,8 @@
   font-size:11px!important;padding:5px 8px!important;
 }
 .smart-filter-backdrop .metadata-filter-condition-grid{
-  display:grid!important;grid-template-columns:repeat(4,minmax(0,190px))!important;
-  justify-content:space-between!important;gap:9px!important;
+  display:grid!important;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr) minmax(0,1.15fr) minmax(0,1.15fr)!important;
+  justify-content:stretch!important;gap:9px!important;
 }
 .smart-filter-backdrop .metadata-filter-footer{margin-top:12px!important;gap:9px!important}
 .smart-filter-backdrop .metadata-filter-add{
