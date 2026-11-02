@@ -338,7 +338,8 @@ export default function RecordFilterEditor({
                       }
                       setManualStateIndex(null);
                       const choice=stateOptions.find(option=>option.source+':'+option.key===e.target.value);
-                      if(choice)set(index,{value:{source:choice.source,key:choice.key,skipWhenBlank:true,allWhenStar:true}});
+                      if(choice)set(index,{value:{source:choice.source,key:choice.key,skipWhenBlank:true,
+                        allWhenStar:choice.source==='PageState'}});
                     }}>
                     <option value="">Choose state…</option>
                     {stateOptions.filter(option=>option.source==='CollectionState').length>0&&
@@ -367,7 +368,7 @@ export default function RecordFilterEditor({
               checked={dynamic?.skipWhenBlank === true}
               onChange={e => set(index,{value:{...dynamic,source,skipWhenBlank:e.target.checked}})}/>
             <span>Ignore condition when State value is blank</span>
-            <small>Blank → skip this condition. Selecting All (*) also skips this condition; AND/OR applies to remaining conditions.</small>
+            <small>Blank → skip this condition. Collection '*' is a field-specific wildcard criterion; optional legacy Page State All (*) skips only when explicitly configured. AND/OR still applies.</small>
           </label>}
           {!compact && error && <p role="alert" className="metadata-filter-error">{error}</p>}
         </div>;
