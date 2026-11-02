@@ -158,7 +158,9 @@ export default function SmartCart({p,records,Picture,expression,fieldAllowed,fir
       const rowKey=rowKeys[i];
       const selected=selectedKey===rowKey;
       const selectRow=()=>setSelectedKey(rowKey);
-      return <div key={rowKey} className={"smart-cart-row-wrap"+(selected?" is-selected":"")}>
+      return <div key={rowKey} className={"smart-cart-row-wrap"+(selected?" is-selected":"")}
+       style={selected?{backgroundColor:p.selectedRowColor??"#f2f7ff",
+        borderColor:p.selectedRowBorderColor??"#8badde"}:undefined}>
        <div className="smart-cart-row" role="button" tabIndex={0}
         aria-selected={selected} aria-expanded={selected}
         aria-label={"Select cart row "+String(name||i+1)}
