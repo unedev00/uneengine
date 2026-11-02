@@ -521,7 +521,7 @@ export default function MetadataBoundPageComponent({
   return <div className={boundedCardGrid?'md-card-grid-bound':undefined}
     style={smartCanvas||imageCanvas||definition.apiName==='smart_toggle'||boundedCardGrid
     ?{width:'100%',height:'100%',minHeight:0,minWidth:0}:undefined}>
-    {!objectApiName && <div className="records-message" role="alert">Select a bound object to load records for this component.</div>}
+    {!objectApiName && !properties.collectionFormula && <div className="records-message" role="alert">Select a bound object to load records for this component.</div>}
     {dataError && !contextApiName && <div className="records-message" role="alert">{dataError}</div>}
      {namedSource.error && <div className="records-message" role="alert">{namedSource.error}</div>}
     <RegisteredComponent definition={definition} layoutTransparent={smartCanvas} editorPreview={builderPreview===true&&disableActions} props={{
