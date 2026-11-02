@@ -486,9 +486,10 @@ test('optional blank Page State skips only the chosen rule; AND/OR retain active
  ];
  const missing={pageState:{}};
  const selected={pageState:{categoryId:'cat1'}};
- assert.deepEqual(pageComponentRecordQuery([category],fields,missing),{
-  blocked:false,serverFilterable:true
- });
+ const emptyQuery=pageComponentRecordQuery([category],fields,missing);
+ assert.equal(emptyQuery.blocked,false);
+ assert.equal(emptyQuery.serverFilterable,true);
+ assert.equal(emptyQuery.filters,undefined);
  assert.deepEqual(filterPageComponentRecords(records,[category],fields,missing),records);
  assert.deepEqual(pageComponentRecordQuery([category],fields,selected).filters,
   [{field:'Category',operator:'eq',value:'cat1'}]);
