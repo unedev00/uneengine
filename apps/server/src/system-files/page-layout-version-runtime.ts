@@ -326,8 +326,9 @@ export class PageLayoutVersionRuntime{
   if(!Number.isInteger(version)||version<1)throw new Error('Invalid page revision');
   await this.db.transaction(async client=>{
    const found=await this.pageId(tenant,name,client);
-   const exists=await client.query('SELECT 1 FROM md_page_layout_versions WHERE tenant_id=$1 AND page_id=$2 AND variant=$3 AND version=$4',[tenant,found.id,variant,version]);
+   const exists=await client.query<{archived_at:Date|null}>('SELECT archived_at FROM md_page_layout_versions WHERE tenant_id=$1 AND page_id=$2 AND variant=$3 AND version=$4',[tenant,found.id,variant,version]);
    if(!exists.rowCount)throw new Error('Page layout revision not found');
+   if(exists.rows[0].archived_at)throw new Error('Unarchive the version before restoring it');
    await client.query(`UPDATE md_page_layout_heads SET draft_version=$4,updated_at=now()
     WHERE tenant_id=$1 AND page_id=$2 AND variant=$3`,[tenant,found.id,variant,version]);
    if(actor)await client.query(`INSERT INTO md_page_layout_audit
