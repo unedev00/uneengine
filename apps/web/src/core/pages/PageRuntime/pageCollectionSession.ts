@@ -9,7 +9,7 @@ const sessions=new Map<string,Registry>();
 const validName=/^[A-Za-z][A-Za-z0-9_]{0,79}$/;
 export function namedCollectionName(formula:unknown):string|undefined{
  if(typeof formula!=='string')return undefined;
- const match=/^\s*COLLECTION\s*\(\s*"([^"]+)"/i.exec(formula);
+ const match=/^\s*=?\s*COLLECTION\s*\(\s*"([^"]+)"/i.exec(formula);
  return match&&validName.test(match[1])?match[1]:undefined;
 }
 function registry(scope:string):Registry{
