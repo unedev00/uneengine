@@ -35,7 +35,7 @@
 .named-credential-form-grid .form-control { min-width: 0; width: 100%; }
 .named-credential-form-grid .named-credential-span-full { grid-column: 1 / -1; }
 .named-credential-form-grid .connector-config-fields { margin: 4px 0 !important; }
-.named-credential-form-grid .connector-config-fields .connector-config-row { grid-template-columns: minmax(120px, 1fr) minmax(0, 2fr) !important; }
+.named-credential-form-grid .connector-config-fields .connector-config-row { grid-template-columns: minmax(0, 1fr) auto; }
 .named-credential-activation { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 12px; }
 .named-credential-activation strong { margin-right: auto; }
 @media (max-width: 640px) { .named-credential-form-grid { grid-template-columns: minmax(0, 1fr); } .named-credential-modal { padding: 14px; } }
