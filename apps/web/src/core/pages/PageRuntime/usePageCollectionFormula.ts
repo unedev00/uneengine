@@ -11,7 +11,7 @@ export type PageNamedCollection={name:string;items:unknown[]};
 type SourceResult={key:string;records:Record<string,Row[]>;error?:string};
 
 export function collectionFormulaReferences(formula:string):Array<{object:string;field:string}>{
- if(!/^\s*COLLECTION\s*\(/i.test(formula))return [];
+ if(!/^\s*=?\s*COLLECTION\s*\(/i.test(formula))return [];
  const found=new Map<string,{object:string;field:string}>();
  const visit=(node:Expression):void=>{
   if(node.kind==='reference'){
@@ -21,7 +21,7 @@ export function collectionFormulaReferences(formula:string):Array<{object:string
   else if(node.kind==='unary')visit(node.value);
   else if(node.kind==='binary'){visit(node.left);visit(node.right);}
  };
- try{visit(new Parser(tokenize(formula)).parse());}catch{/* evaluator reports syntax errors */}
+ try{visit(new Parser(tokenize(formula.trim().replace(/^=\s*/,''))).parse());}catch{/* evaluator reports syntax errors */}
  return [...found.values()];
 }
 
@@ -34,7 +34,8 @@ export function usePageCollectionFormula(
  primaryObject:string,primaryRecords:readonly Row[],primaryTotal:number,
  revision:number,pageState:Readonly<Row>,sessionId:string,pageSessionKey:string,componentId:string
 ):{collection:PageNamedCollection|null;error:string|null;loading:boolean}{
- const source=typeof formula==='string'?formula.trim():'';
+ const entered=typeof formula==='string'?formula.trim():'';
+ const source=entered.startsWith('=')?entered.slice(1).trim():entered;
  const scope=pageSessionKey+'#'+sessionId;
  const registry=useSessionCollectionSnapshot(scope);
  const refs=collectionFormulaReferences(source);
@@ -66,7 +67,7 @@ export function usePageCollectionFormula(
  if(saved){
   const named=Object.entries(registry.collections).find(([name])=>name.toLowerCase()===saved[1].toLowerCase())?.[1];
   return named?{collection:named,error:null,loading:false}:
-   {collection:null,error:'Collection not found in this page session: '+saved[1],loading:false};
+   {collection:null,error:null,loading:false};
  }
  if(!/^COLLECTION\s*\(/i.test(source))
   return {collection:null,error:'Use COLLECTION("Name", values, @Object.Field)',loading:false};
