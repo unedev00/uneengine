@@ -407,8 +407,8 @@ function parse(source,record,formulaContext){
    return rows;
   };
   const isCriteriaComparison=node=>node?.kind==='binary'
-   &&['=','=='].includes(node.operator)&&Boolean(sourceField(node.left));
-  const sourceItems=(pointer,criterion,filtered)=>{
+   &&['=','==','<>','!=','<','<=','>','>='].includes(node.operator)&&Boolean(sourceField(node.left));
+  const sourceItems=(pointer,criterion,operator='')=>{
    const rows=rowsFor(pointer);
    for(const row of rows){
     if(!row||typeof row!=='object'||Array.isArray(row)
@@ -420,8 +420,7 @@ function parse(source,record,formulaContext){
      throw Error('COLLECTION field must be scalar: '+pointer.reference);
     if(id===null||id===undefined||String(id).trim()==='')
      throw Error('COLLECTION source record has no ID');
-    if(filtered&&!(hasExcelWildcardCriteria(criterion)
-      ?matchesExcelWildcard(String(value),criterion):String(value)===criterion))continue;
+    if(operator&&!matchesFormulaCollectionCriterion(value,operator+String(criterion)))continue;
     items.push({label:String(value),value:String(id),criteriaField:pointer.reference,
      criteria:String(value),record:row,objectApiName:pointer.object});
     if(items.length>200)throw Error('COLLECTION exceeds 200 entries');
@@ -450,12 +449,13 @@ function parse(source,record,formulaContext){
    }
    if(isCriteriaComparison(node)){
     const pointer=sourceField(node.left),criterion=evaluate(node.right);
-    if(typeof criterion!=='string'||!criterion.trim())
-     throw Error('COLLECTION field criterion must be a nonblank text value');
-    sourceItems(pointer,criterion,true);index++;continue;
+    if(criterion===null||!['string','number','boolean'].includes(typeof criterion)
+      ||typeof criterion==='number'&&!Number.isFinite(criterion))
+     throw Error('COLLECTION field comparison requires a scalar criterion');
+    sourceItems(pointer,criterion,node.operator);index++;continue;
    }
    const pointer=sourceField(node);
-   if(pointer){sourceItems(pointer,'',false);index++;continue;}
+   if(pointer){sourceItems(pointer,'');index++;continue;}
    const result=evaluate(node);
    if(Array.isArray(result))items.push(...result);
    else items.push(result);
