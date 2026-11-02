@@ -79,15 +79,15 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
   .map(entry=>entry.key.split('.')[0]))].map(name=>({reference:'@'+name,label:name+' Collection'}));
  const stateMentions=stateOptions.filter(entry=>entry.source==='PageState')
   .map(entry=>({reference:'@state.'+entry.key,label:entry.label+' Page State'}));
- const filtered=matches?(objects.length&&sourceRoots.length
-  ?relationshipFormulaFields(objects,sourceRoots,matches.query,mentionKind,singleFieldOnly).slice(0,200)
-  :fields.filter(field=>(!singleFieldOnly||/^(Checkbox|Boolean)$/i.test(field.dataType))&&
-    (field.apiName.toLowerCase().includes(matches.query.toLowerCase())||
-     field.label.toLowerCase().includes(matches.query.toLowerCase()))).slice(0,200)
-    .map(field=>({reference:'@'+field.apiName,label:field.label})))
-    .concat(collectionMentions,collectionNames,stateMentions)
-    .filter(item=>item.reference.toLowerCase().includes('@'+matches.query.toLowerCase()))
-    .slice(0,200) : [];
+ const recordMentions:{reference:string;label:string}[]=objects.length&&sourceRoots.length
+  ?relationshipFormulaFields(objects,sourceRoots,matches?.query??'',mentionKind,singleFieldOnly)
+    .map(({reference,label})=>({reference,label}))
+  :fields.filter(field=>(!singleFieldOnly||/^(Checkbox|Boolean)$/i.test(field.dataType)))
+    .map(field=>({reference:'@'+field.apiName,label:field.label}));
+ const filtered=matches?[...recordMentions,...collectionMentions,...collectionNames,...stateMentions]
+    .filter(item=>item.reference.toLowerCase().includes('@'+matches.query.toLowerCase())||
+      item.label.toLowerCase().includes(matches.query.toLowerCase()))
+    .slice(0,200):[];
  const errorFor=(next:string):string|null=>{
   const custom=validate?.(next);
   if(custom)return custom;
