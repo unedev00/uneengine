@@ -71,6 +71,14 @@ function compile(node:Expression,fields:ReadonlyArray<FieldMetadata>,state:Reado
   if(typeof condition!=='boolean')throw Error('IF condition must return TRUE or FALSE');
   return compile(condition?node.args[1]:node.args[2],fields,state);
  }
+ if(node.kind==='call'&&node.name==='MATCHES'&&node.args.length===2){
+  const field=simpleField(node.args[0],fields);
+  if(!field||!/^(Text|Email|Phone|Url|Picklist)(\\(|$)/i.test(field.dataType))
+   throw Error('MATCHES requires a directly readable text field');
+  const value=asState(node.args[1],state);
+  if(typeof value!=='string')throw Error('MATCHES requires a text pattern');
+  return {filters:[{field:field.apiName,operator:'matches',value}],logic:'1'};
+ }
  if(node.kind==='binary'&&(node.operator==='AND'||node.operator==='OR'))
   return both(node.operator,compile(node.left,fields,state),compile(node.right,fields,state));
  if(node.kind==='call'&&(node.name==='AND'||node.name==='OR')&&node.args.length>=2
@@ -99,7 +107,7 @@ function compile(node:Expression,fields:ReadonlyArray<FieldMetadata>,state:Reado
   }
   return {filters:[{field:field.apiName,operator:opNames[op],value:String(value)}],logic:'1'};
  }
- throw Error('Filter formula must use IF, ISBLANK, AND/OR and supported @Field comparisons');
+ throw Error('Filter formula must use IF, ISBLANK, AND/OR, MATCHES and supported @Field comparisons');
 }
 export function compileRecordFilterFormula(formula:unknown,fields:ReadonlyArray<FieldMetadata>,
  state:Readonly<Record<string,unknown>>={}):CompiledFilterFormula{
