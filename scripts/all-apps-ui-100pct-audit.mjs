@@ -45,6 +45,28 @@ const screens=[
 const source=readFileSync('apps/web/src/core/metadata/Definitions/metadata.ts','utf8');
 const declared=source.match(/export type WorkspaceId =([\s\S]*?);/)?.[1]??'';
 const declaredWorkspaces=[...declared.matchAll(/'([^']+)'/g)].map(x=>x[1]);
+const navigationSource=source.slice(source.indexOf('export const setupNavigation = ['),source.indexOf('];',source.indexOf('export const setupNavigation = ['))+2);
+const setupDestinations=[...navigationSource.matchAll(/items: \[([^\]]+)\]/g)]
+  .flatMap(group=>[...group[1].matchAll(/'([^']+)'/g)].map(label=>label[1]));
+// Full route states are never equated with thin component fixtures.
+const setupRouteRepresentation={
+  'Tenant Management':['tenants','partial'],
+  'Company Settings':['company','partial'],
+  'Security & Recovery':['governance','partial'],
+  'Connected Apps':['oauth','partial'],
+  'Audit Trail':['security-history','partial'],
+  'Setup Home':['setup-home','fixture'],
+  'Object Manager':['schema','partial'],
+  'Page Builder':['floating-canvas-actions','partial'],
+  'Named Credentials':['credentials','fixture'],
+  'Webhook Endpoints':['credentials','partial'],
+  'Flows':['flows','partial'],
+  'Dashboards':['dashboard','partial']
+};
+const setupCoverage=setupDestinations.map(label=>({
+  label,fixture:setupRouteRepresentation[label]?.[0]??null,
+  level:setupRouteRepresentation[label]?.[1]??'unverified'
+}));
 const browser=await chromium.launch({headless:true,...(process.env.CHROME_EXECUTABLE?{
   executablePath:process.env.CHROME_EXECUTABLE,
   args:['--no-sandbox','--disable-dev-shm-usage']
@@ -136,7 +158,7 @@ const counts={screens:screens.length,viewports:sizes.length,
 const report={
   heading:'100%-zoom source-backed fixture audit (NOT full authenticated tenant coverage)',
   generatedAt:new Date().toISOString(),browser:'Chromium / Playwright',zoomPercent:100,
-  declaredWorkspaces,applications:[...new Set(screens.map(s=>s.app))],
+  declaredWorkspaces,setupCoverage,applications:[...new Set(screens.map(s=>s.app))],
   tenantPagesAudited:false,metadataPublishedPagesAudited:false,
   counts,results
 };
@@ -152,7 +174,9 @@ const md=[
   '- Screenshots: '+counts.captures,
   '- Rendered without automated findings: '+counts.rendered,
   '- Requires visual/code review: '+counts.review,
-  '- Declared Setup workspace routes: '+declaredWorkspaces.length+' (not all mounted in fixtures)',
+  '- Declared Setup workspace IDs: '+declaredWorkspaces.length,
+  '- Setup navigation destinations: '+setupCoverage.length,
+  '- Setup navigation destinations without a fixture: '+setupCoverage.filter(x=>x.level==='unverified').length,
   '',
   '| Application | Screen | Desktop | Laptop | Phone |',
   '|---|---|---|---|---|'
@@ -164,6 +188,8 @@ for(const screen of screens){
   });
   md.push('| '+screen.app+' | '+screen.title+' | '+cells.join(' | ')+' |');
 }
+md.push('','## Source navigation inventory (screen state coverage)','','| Setup menu destination | Representative fixture | Coverage |','|---|---|---|');
+for(const item of setupCoverage)md.push('| '+item.label+' | '+(item.fixture??'—')+' | '+item.level+' |');
 md.push('','## Findings');
 for(const item of results.filter(x=>x.issues.length)){
   md.push('- '+item.application+' / '+item.screen+' @ '+item.viewport+': '+item.issues.join('; '));
