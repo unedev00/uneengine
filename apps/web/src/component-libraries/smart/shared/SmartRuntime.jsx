@@ -260,9 +260,11 @@ function SmartTabs({p,record,fire}){
   }
   if(index!==0)autoSelected.current=null;
  };
- const firstItemId=tabs.length?(hasCollection
-  ?tabs[0]?.record?.Id??tabs[0]?.record?.id??tabs[0]?.value:tabs[0]?.id
-  :tabs[0]?.id):null;
+ let firstItemId=null;
+ if(tabs.length){
+  if(hasCollection)firstItemId=tabs[0]?.record?.Id??tabs[0]?.record?.id??tabs[0]?.value;
+  else firstItemId=tabs[0]?.id;
+ }
  // Publishing the first selection matters: a visual highlight alone leaves
  // Collection State blank, so dependent components cannot filter correctly.
  React.useEffect(()=>{
