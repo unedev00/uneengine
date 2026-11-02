@@ -131,7 +131,8 @@ export function usePageCollectionFormula(
     items:filteredCollectionItems(criteria,rows)},error:null,loading:false};
  }
  const resolved=evaluateCollectionFormula(source,sources,{state:pageState,session:{id:sessionId},
-   primaryObject,namedCollections:registry.collections});
+   primaryObject,record:primaryRecords.length===1?primaryRecords[0]:{},
+   namedCollections:registry.collections});
  const value=resolved.value as PageNamedCollection|null;
  return {collection:value?{...value,key:formulaCollectionReferenceKey(value.name)}:null,
    error:resolved.error??null,loading:false};
