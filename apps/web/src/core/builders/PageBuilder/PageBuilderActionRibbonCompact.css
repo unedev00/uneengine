@@ -2,11 +2,11 @@
    one Formula Bar row plus two rows per section. Styles are scoped to the
    builder; horizontally scroll only when actual contents exceed the viewport. */
 .office-builder-ribbon[aria-label="Page Builder ribbon"]:not(.is-interactive-preview)
- #page-builder-tab-content.office-ribbon-content[aria-label="Component Action"]{
+ #page-builder-tab-content.office-ribbon-content[aria-label="Component Action"].office-ribbon-content{
  --page-ribbon-scroll-strip-height:127px;
 }
 .office-builder-ribbon:not(.is-interactive-preview)
- #page-builder-tab-content.office-ribbon-content>.page-action-compact-workspace{
+ #page-builder-tab-content.office-ribbon-content>.page-action-ribbon-workspace.page-action-compact-workspace{
  box-sizing:border-box!important;display:flex!important;flex-direction:row!important;
  align-items:stretch!important;flex:0 0 auto!important;width:max-content!important;
  min-width:100%!important;height:114px!important;min-height:114px!important;
