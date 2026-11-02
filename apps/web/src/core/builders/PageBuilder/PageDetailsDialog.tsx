@@ -4,7 +4,7 @@ import type {LightningPageMetadata,LightningAppMetadata} from '../../metadata/De
 import './PageDetailsDialog.css';
 
 type Variant='Desktop'|'Tablet'|'Mobile'|'Custom';
-type Version={version:number;createdAt:string;published:boolean;draft:boolean};
+type Version={version:number;createdAt:string;published:boolean;draft:boolean;archived:boolean};
 const variants:Variant[]=['Desktop','Tablet','Mobile','Custom'];
 
 /** Page identity, app assignment and immutable layout history.
@@ -28,6 +28,7 @@ export default function PageDetailsDialog({page,apps,disabled,request,onClose,on
  const [variant,setVariant]=useState<Variant>(page.layoutVariant??'Desktop');
  const [versions,setVersions]=useState<Version[]>([]);
  const [loading,setLoading]=useState(false);
+ const [showArchived,setShowArchived]=useState(false);
  const [preview,setPreview]=useState<{version:number;page:LightningPageMetadata}|null>(null);
  const valid=Boolean(label.trim()&&label.trim().length<=128&&
   (page.pageType!=='App Page'||apps.some(a=>a.apiName===appApiName)));
@@ -73,6 +74,19 @@ export default function PageDetailsDialog({page,apps,disabled,request,onClose,on
    onClose();
    onOpenDesign(page.apiName);
   }catch(e){setError(e instanceof Error?e.message:'Unable to restore version')}
+  finally{setBusy(false)}
+ };
+ const archiveVersion=async(version:number,archived:boolean)=>{
+  if(busy||disabled)return;
+  if(archived&&!window.confirm('Archive version v'+version+'? It will be hidden from the default list but can be restored later.'))return;
+  setBusy(true);setError('');
+  try{
+   const result=await request<{versions:Version[]}>(base+'/versions/'+version+'/archive',{
+    method:'PATCH',body:JSON.stringify({archived})
+   });
+   setVersions(result.versions);
+   if(archived&&preview?.version===version)setPreview(null);
+  }catch(e){setError(e instanceof Error?e.message:'Unable to update version archive')}
   finally{setBusy(false)}
  };
  const design=()=>{onClose();onOpenDesign(page.apiName)};
@@ -144,28 +158,37 @@ export default function PageDetailsDialog({page,apps,disabled,request,onClose,on
         {variants.map(v=><option key={v}>{v}</option>)}
        </select>
       </label>
+      <label className="page-details-archived-toggle">
+       <input type="checkbox" checked={showArchived} onChange={e=>setShowArchived(e.target.checked)}/>
+       Show archived
+      </label>
      </div>
      <p className="page-details-help">Historical versions are immutable and preserved by layout. Opening a version shows a read-only snapshot; restoring copies it into the editable draft without changing the live page.</p>
      <div className="page-details-table-scroll">
       <table className="records-table page-details-version-table" aria-label="Page version history">
        <thead><tr><th>Version</th><th>Created</th><th>Status</th><th>Actions</th></tr></thead>
-       <tbody>{versions.map(v=><tr key={v.version}>
+       <tbody>{versions.filter(v=>showArchived||!v.archived).map(v=><tr key={v.version}>
         <td>v{v.version}</td>
         <td>{new Date(v.createdAt).toLocaleString()}</td>
-        <td>{v.published?'Published':v.draft?'Current draft':'Historical'}</td>
+        <td>{v.archived?'Archived':v.published?'Published':v.draft?'Current draft':'Historical'}</td>
         <td>
          <div className="page-details-row-actions">
           <button type="button" className="btn btn-small" disabled={busy} onClick={()=>void viewVersion(v.version)}>View</button>
           <button type="button" className="btn btn-small" disabled={busy||disabled||v.draft}
            title="Restore to a new editable draft. Published layouts remain unchanged."
            onClick={()=>void restoreVersion(v.version)}>Restore as draft &amp; Design</button>
-          <button type="button" className="btn btn-small" disabled
-           title="Immutable version retained for recovery">Delete</button>
+          <button type="button" className="btn btn-small"
+           disabled={busy||disabled||v.draft||v.published}
+           title={v.archived?'Restore archived version to the history list':
+            'Archive this historical version without deleting its snapshot'}
+           onClick={()=>void archiveVersion(v.version,!v.archived)}>
+           {v.archived?'Unarchive':'Archive'}</button>
          </div>
         </td>
        </tr>)}</tbody>
       </table>
       {!loading&&!versions.length&&<p>No saved versions for this layout.</p>}
+      {!loading&&versions.length>0&&!versions.some(v=>showArchived||!v.archived)&&<p>All older versions are archived. Select Show archived to manage them.</p>}
       {loading&&<p role="status">Loading versions…</p>}
      </div>
      {preview&&<section className="page-details-preview" aria-label="Read-only version preview">
