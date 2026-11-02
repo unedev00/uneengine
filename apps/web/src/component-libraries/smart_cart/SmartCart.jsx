@@ -131,6 +131,7 @@ export default function SmartCart({p,records,Picture,expression,fieldAllowed,fir
   backgroundColor:p.backgroundColor||"#fff",border:border(p.borderColor),
   borderRadius:n(p.radius,12),boxShadow:shadow(p.shadow)}}>
   <header className="smart-cart-header" style={{
+   backgroundColor:p.headerBodyColor??"#255d9d",
    height:n(p.headerBoxHeight,52,24),minHeight:n(p.headerBoxHeight,52,24),
    border:border(p.headerBorderColor),textAlign:align(p.headerAlignment),
    fontWeight:p.headerBold===false?400:700,color:p.headerTextColor||"#fff"}}>{p.label||"Smart Cart"}</header>
