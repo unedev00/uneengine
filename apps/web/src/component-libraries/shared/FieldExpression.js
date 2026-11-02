@@ -383,7 +383,8 @@ function parse(source,record,formulaContext){
  // Legacy scalar items remain supported. No source is fetched by this evaluator.
  const evaluateCriteriaCollection=args=>{
   if(!args.length)throw Error('COLLECTION requires a name');
-  const name=evaluate(args[0]),items=[];
+  const name=args[0]?.kind==='reference'&&/^[A-Za-z][A-Za-z0-9_ ]*$/.test(args[0].value)
+   ?args[0].value:evaluate(args[0]),items=[];
   const sourceField=node=>{
    if(node?.kind!=='reference')return null;
    const raw=node.value,parts=raw.split('.');
