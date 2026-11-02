@@ -45,7 +45,7 @@ export async function seedPlatformDeploymentOwner(
   // platform domain AND exactly one active *original developer role* holder
   // with OneEngine. No email, arbitrary tenant, or UI-supplied claim can
   // influence this selection. Ambiguity fails closed.
-  const {rows:identities}=exact
+  let {rows:identities}=exact
    ?await client.query<{tenant_id:string;user_id:string}>(`
      SELECT u.tenant_id,u.id AS user_id FROM md_users u
      JOIN md_tenants t ON t.id=u.tenant_id
@@ -73,6 +73,28 @@ export async function seedPlatformDeploymentOwner(
        AND r.api_name='TenantDeveloper' AND p.api_name='OneEngine'
        AND u.user_type='internal'
     `,[platformDomain]);
+  if(!exact && platformDomain && identities.length===0) {
+   // Some original platform installations registered a different tenant
+   // domain from the public web hostname. Recover only in a strictly isolated
+   // one-tenant OCI platform, with a unique enabled original admin role.
+   // This is NOT enabled on multi-tenant deployments or by OneEngine alone.
+   const {rows:counts}=await client.query<{tenant_count:number}>(
+    'SELECT count(*)::integer AS tenant_count FROM md_tenants');
+   if(counts[0]?.tenant_count===1) {
+    const original=await client.query<{tenant_id:string;user_id:string}>(`
+     SELECT DISTINCT u.tenant_id,u.id AS user_id FROM md_users u
+     JOIN md_tenants t ON t.id=u.tenant_id
+     JOIN md_user_roles ur ON ur.tenant_id=u.tenant_id AND ur.user_id=u.id
+     JOIN md_roles r ON r.tenant_id=ur.tenant_id AND r.id=ur.role_id
+     JOIN md_role_permission_sets rp ON rp.tenant_id=ur.tenant_id AND rp.role_id=ur.role_id
+     JOIN md_permission_sets p ON p.tenant_id=rp.tenant_id AND p.id=rp.permission_set_id
+     WHERE t.status='ACTIVE' AND u.enabled=true AND u.user_type='internal'
+       AND r.api_name='TenantDeveloper' AND p.api_name='OneEngine'
+       AND EXISTS(SELECT 1 FROM md_tenants HAVING count(*)=1)
+    `);
+    identities=original.rows;
+   }
+  }
   if(identities.length!==1)return 'identity-not-found';
   const {tenant_id:tenant,user_id:user}=identities[0];
 
