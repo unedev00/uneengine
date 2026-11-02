@@ -8,3 +8,7 @@
 .smart-formula-list button:hover{background:#dff0ff}
 
 .smart-formula-list{z-index:6000!important;overflow-y:auto;pointer-events:auto}
+
+.smart-formula-signature{max-width:min(650px,calc(100vw - 12px));padding:7px 10px;border-radius:5px;border:1px solid #9eb5d0;background:#fff;color:#223b5c;box-shadow:0 6px 22px #0002;font:12px/1.5 Consolas,monospace;pointer-events:none;overflow-wrap:anywhere}
+.smart-formula-signature strong{margin-right:3px;color:#1766c4}
+.smart-formula-signature .is-current{font-weight:800;color:#132b4c;background:#dcecff;border-radius:3px}
