@@ -13,6 +13,7 @@ declare const __METADRIVE_WEB_RELEASE__: { commit: string | null; builtAt: strin
 
 type ProductionStatus = {
  configured: boolean; canDeploy: boolean; latestCommit: string | null;
+ workflowUrl?: string; error?: string;
  deployedCommit: string | null; active: boolean;
  run: null | {id:number;commit:string;status:string;conclusion:string|null;createdAt:string;url:string};
 };
@@ -146,19 +147,19 @@ export function NavigationLoadTime({ routeKey, startedAt, ready, kind, authMs, r
         }
       } catch (error) {
         if (!cancelled) {
-          // This information is platform-only. Hide controls on 403 rather than
-          // exposing a misleading button to tenant administrators.
           setDeployment(null);
           setDeploymentLoading(false);
-          if (!(error instanceof Error && /403|permission|denied/i.test(error.message)))
-            setDeploymentError(error instanceof Error ? error.message : 'Deployment status unavailable');
+          setDeploymentError(error instanceof Error ? error.message : 'Deployment status unavailable');
         }
       }
     };
     void check();
-    const interval = window.setInterval(() => {void check();}, 12000);
+    // Unauthenticated GitHub reads have a low shared rate limit; poll infrequently
+    // until the protected server credential is configured.
+    const interval = window.setInterval(() => {void check();},
+      deployment?.configured ? 30_000 : 180_000);
     return () => {cancelled = true; window.clearInterval(interval);};
-  }, [open, request, requestedAfterRunId]);
+  }, [open, request, requestedAfterRunId, deployment?.configured]);
 
   const deployLatest = async () => {
     if (!request || !deployment?.canDeploy || !deployment.latestCommit ||
@@ -255,41 +256,58 @@ export function NavigationLoadTime({ routeKey, startedAt, ready, kind, authMs, r
         <div><dt>Frontend commit</dt><dd title={webRelease?.commit ?? undefined}>{webRelease?.commit?.slice(0, 12) ?? 'Not available'}</dd></div>
         <div><dt>Frontend built</dt><dd>{utcDate(webRelease?.builtAt)}</dd></div>
       </dl>
-      {deployment && <div className="navigation-deployment-control">
+      <div className="navigation-deployment-control" aria-label="Production deployment">
+        <strong className="navigation-deployment-heading">Production deployment</strong>
         <dl className="navigation-diagnostics-details">
-          <div><dt>Latest main commit</dt><dd title={deployment.latestCommit ?? undefined}>
-            {deployment.latestCommit?.slice(0,12) ?? 'Not available'}</dd></div>
-          <div><dt>Production workflow</dt><dd>
-            {deployment.active ? 'Deploying…' : deploymentRequested ? 'Request accepted' :
-              deployment.run?.status === 'completed'
-                ? deployment.run.conclusion === 'success' ? 'Last run succeeded' : 'Last run failed'
-                : 'Not running'}</dd></div>
+          <div><dt>Latest main commit</dt><dd title={deployment?.latestCommit ?? undefined}>
+            {deploymentLoading && !deployment ? 'Checking…' :
+             deployment?.latestCommit?.slice(0,12) ?? 'Unavailable'}</dd></div>
+          <div><dt>Workflow</dt><dd>
+            {deployment?.active ? 'Running' : deploymentRequested ? 'Request accepted' :
+             deployment?.run?.status === 'completed'
+              ? deployment.run.conclusion === 'success' ? 'Last run succeeded' : 'Last run failed'
+              : deploymentLoading ? 'Checking…' : deployment ? 'Not running' : 'Unavailable'}</dd></div>
         </dl>
-        {deployment.run && <a href={deployment.run.url} target="_blank" rel="noopener noreferrer"
-          className="navigation-deployment-link">View production workflow</a>}
-        {!deployment.configured && <p className="navigation-diagnostics-note">
-          Deployment control needs the server-side GitHub workflow credential.{' '}
-          <a href="https://github.com/unedev00/uneengine/actions/workflows/oracle-api-deploy.yml"
-            target="_blank" rel="noopener noreferrer">Open the protected workflow</a>.
+        <button type="button" className="btn btn-small navigation-deployment-button"
+          disabled={!request || !deployment?.canDeploy || !deployment.configured ||
+            !deployment.latestCommit || deploymentBusy || deployment.active || deploymentRequested ||
+            (deployment.latestCommit === deployment.deployedCommit &&
+             deployment.latestCommit === webRelease?.commit &&
+             deployment.run?.conclusion !== 'failure')}
+          title={!deployment?.canDeploy ? 'Platform Developer deployment permission required'
+            : !deployment.configured ? 'A protected server-side GitHub credential is required'
+            : deployment.active ? 'A deployment is already running'
+            : undefined}
+          onClick={() => {void deployLatest();}}>
+          {deploymentBusy ? 'Requesting…' : deployment?.active ? 'Deployment running' :
+           deploymentRequested ? 'Deployment requested' : 'Deploy latest'}
+        </button>
+        {deployment && !deployment.canDeploy && <p className="navigation-diagnostics-note">
+          Deploy requires Platform Developer permission and PlatformOperations manage access.
         </p>}
-        {deployment.canDeploy && deployment.configured && deployment.latestCommit &&
-          (deployment.latestCommit !== deployment.deployedCommit ||
-           deployment.latestCommit !== webRelease?.commit ||
-           deployment.run?.conclusion === 'failure') &&
-          <button type="button" className="btn btn-small navigation-deployment-button"
-            disabled={deploymentBusy || deployment.active || deploymentRequested}
-            onClick={() => {void deployLatest();}}>
-            {deploymentBusy ? 'Requesting…' : deployment.active ? 'Deployment running' :
-             deploymentRequested ? 'Deployment requested' : 'Deploy latest'}
-          </button>}
-        {deployment.active && <p className="navigation-diagnostics-note">
-          Another release is in progress. Deployment is locked until it finishes.</p>}
-        {deployment.latestCommit && deployment.latestCommit !== webRelease?.commit &&
+        {deployment && !deployment.configured && <p className="navigation-diagnostics-note">
+          One-click deployment needs a protected server-side GitHub credential.
+        </p>}
+        {deployment && deployment.canDeploy && deployment.configured &&
+          deployment.latestCommit === deployment.deployedCommit &&
+          deployment.latestCommit === webRelease?.commit &&
+          deployment.run?.conclusion !== 'failure' &&
+          <p className="navigation-diagnostics-note">Production is up to date.</p>}
+        {deployment?.error && <p className="navigation-diagnostics-note" role="alert">
+          {deployment.error}</p>}
+        {deploymentError && <p className="navigation-diagnostics-note" role="alert">
+          {deploymentError}</p>}
+        {deployment?.active && <p className="navigation-diagnostics-note">
+          Another production release is in progress.</p>}
+        {deployment?.latestCommit && deployment.latestCommit !== webRelease?.commit &&
           <p className="navigation-diagnostics-note">
-            Save unsaved changes before refreshing after the new frontend is published.</p>}
-      </div>}
-      {deploymentLoading && !deployment && <p className="navigation-diagnostics-note">Checking deployment status…</p>}
-      {deploymentError && <p className="navigation-diagnostics-note" role="alert">{deploymentError}</p>}
+            Save changes before refreshing after deployment.</p>}
+        <a href={deployment?.run?.url ??
+          deployment?.workflowUrl ??
+          'https://github.com/unedev00/uneengine/actions/workflows/oracle-api-deploy.yml'}
+          target="_blank" rel="noopener noreferrer" className="navigation-deployment-link">
+          Open production workflow</a>
+      </div>
       {oracle.status === 'error' && <p className="navigation-diagnostics-note">Oracle API could not be reached.</p>}
       {oracle.status === 'ready' && !oracle.release && <p className="navigation-diagnostics-note">This API does not report release details yet.</p>}
     </section>}

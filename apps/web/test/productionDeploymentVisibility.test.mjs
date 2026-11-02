@@ -1,0 +1,14 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+
+test('global system popup never hides deployment control after a forbidden status response',()=>{
+ const source=readFileSync('apps/web/src/core/workspace/Navigation/appNavigationView.tsx','utf8');
+ assert.match(source,/aria-label="Production deployment"/);
+ assert.match(source,/<button type="button" className="btn btn-small navigation-deployment-button"/);
+ assert.match(source,/Platform Developer deployment permission required/);
+ assert.match(source,/deploymentError && <p[^>]+role="alert"/);
+ assert.doesNotMatch(source,/\{deployment && <div className="navigation-deployment-control"/);
+ assert.doesNotMatch(source,/403\|permission\|denied/);
+ assert.match(source,/Open production workflow/);
+});

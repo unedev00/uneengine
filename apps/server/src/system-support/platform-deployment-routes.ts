@@ -1,7 +1,6 @@
 import type {Express,Request,Response,NextFunction} from 'express';
 import type {SqlPersistence} from '../system-files/sql-persistence.js';
 import type {RbacEngine} from '../system-files/rbac-engine.js';
-import type {PlatformTenantService} from '../system-files/platform-tenant-service.js';
 
 /**
  * Platform-wide production deployment control. Never exposes GitHub credentials
@@ -23,6 +22,9 @@ export class DeploymentControlError extends Error {
  constructor(message:string,readonly statusCode:number){super(message);}
 }
 const token=()=>process.env.METADRIVE_GITHUB_DEPLOY_TOKEN?.trim()??'';
+// Public repository release metadata can be read without a deploy token.
+// Only the POST dispatch requires the server-side credential.
+const workflowUrl='https://github.com/'+repository+'/actions/workflows/'+workflow;
 function productionCommit(){
  const value=process.env.METADRIVE_RELEASE_SHA??'';
  return shaPattern.test(value)?value:null;
@@ -37,11 +39,12 @@ function validRun(input:unknown):input is Run{
 }
 async function github(path:string,method:'GET'|'POST'='GET',body?:object):Promise<any>{
  const credential=token();
- if(!credential)throw new DeploymentControlError('Production deployment credential is not configured.',503);
+ if(method==='POST'&&!credential)
+  throw new DeploymentControlError('Production deployment credential is not configured.',503);
  // Fixed repository and allowlisted paths only. Never proxy arbitrary URLs.
  const response=await fetch('https://api.github.com/repos/'+repository+path,{
   method,
-  headers:{'Authorization':'Bearer '+credential,'Accept':'application/vnd.github+json',
+  headers:{...(credential?{'Authorization':'Bearer '+credential}:{}),'Accept':'application/vnd.github+json',
    'X-GitHub-Api-Version':'2022-11-28',...(body?{'Content-Type':'application/json'}:{})},
   ...(body?{body:JSON.stringify(body)}:{}),
   signal:AbortSignal.timeout(12000)
@@ -55,7 +58,8 @@ async function github(path:string,method:'GET'|'POST'='GET',body?:object):Promis
 }
 export async function readProductionDeployment():Promise<DeploymentStatus>{
  const deployedCommit=productionCommit();
- if(!token())return {configured:false,latestCommit:null,deployedCommit,active:false,run:null};
+ // Latest main SHA and workflow results are public; the missing credential
+ // disables dispatch but does not conceal the status or explanation.
  const [commit,runs]=await Promise.all([
   github('/commits/main'),
   github('/actions/workflows/'+workflow+'/runs?branch=main&per_page=15')
@@ -65,7 +69,7 @@ export async function readProductionDeployment():Promise<DeploymentStatus>{
  const matches:Array<Run>=Array.isArray(runs?.workflow_runs)
   ?runs.workflow_runs.filter((r:unknown)=>validRun(r)&&(r as Run).event!=='pull_request'): [];
  const current=matches.find(run=>activeStatuses.has(run.status))??matches[0];
- return {configured:true,latestCommit,deployedCommit,
+ return {configured:!!token(),latestCommit,deployedCommit,
   active:!!current&&activeStatuses.has(current.status),
   run:current?{id:current.id,commit:current.head_sha,status:current.status,
    conclusion:current.conclusion,createdAt:current.created_at,
@@ -114,16 +118,23 @@ function handleError(error:unknown,res:Response,next:NextFunction){
  if(error instanceof DeploymentControlError){res.status(error.statusCode).json({error:error.message});return;}
  next(error);
 }
+/**
+ * Read-only status is available to authenticated workspace users. The repository
+ * and release SHA are already public; no secret or privileged action is exposed.
+ * Mutation requires PlatformDeveloper assignment AND explicit PlatformOperations
+ * manage grant, without the unrelated Tenant OneEngine administration gate.
+ */
 export function registerPlatformDeploymentRoutes(
- app:Express,db:SqlPersistence,rbac:RbacEngine,platform:PlatformTenantService
+ app:Express,db:SqlPersistence,rbac:RbacEngine
 ){
- async function permission(req:Request,operation:'read'|'manage'){
-  const actor=(req as Request & {actor?:{tenant_id:string;user_id:string}}).actor;
-  if(!actor?.tenant_id||!actor.user_id)throw new DeploymentControlError('Authentication required.',401);
-  await platform.requirePlatform(actor.tenant_id,actor.user_id);
-  // Tenant OneEngine membership is not by itself production deployment authority.
-  // Require the separately assigned Platform Developer policy (directly or
-  // through a role/profile/group), then the revocable operations permission.
+ type Actor={tenant_id:string;user_id:string};
+ function actorOf(req:Request):Actor {
+  const actor=(req as Request & {actor?:Actor}).actor;
+  if(!actor?.tenant_id||!actor.user_id)
+   throw new DeploymentControlError('Authentication required.',401);
+  return actor;
+ }
+ async function assignedPlatformDeveloper(actor:Actor):Promise<boolean>{
   const {rows}=await db.query<{authorised:boolean}>(`
    SELECT EXISTS(
     SELECT 1 FROM md_permission_assignments a JOIN md_permission_sets p
@@ -142,35 +153,38 @@ export function registerPlatformDeploymentRoutes(
       JOIN md_permission_sets p ON p.tenant_id=gs.tenant_id AND p.id=gs.permission_set_id
       WHERE ug.tenant_id=$1 AND ug.user_id=$2 AND p.api_name='PlatformDeveloper'
    ) AS authorised`,[actor.tenant_id,actor.user_id]);
-  if(!rows[0]?.authorised)throw new DeploymentControlError('Platform deployment access denied.',403);
-  await rbac.require(actor.tenant_id,actor.user_id,'PlatformOperations',operation);
-  return actor;
+  return rows[0]?.authorised===true;
+ }
+ async function canManage(actor:Actor):Promise<boolean>{
+  // Neither policy membership nor a wildcard tenant grant may bypass the other.
+  if(!await assignedPlatformDeveloper(actor))return false;
+  return rbac.allowed(actor.tenant_id,actor.user_id,'PlatformOperations','manage');
  }
  app.get('/api/platform/production-deployment',async(req,res,next)=>{
-  try{
-   const actor=await permission(req,'read');
+  try {
+   const actor=actorOf(req);
+   const canDeploy=await canManage(actor);
    res.set('Cache-Control','private, no-store');
-   res.json({...(await readProductionDeployment()),
-    canDeploy:await rbac.allowed(actor.tenant_id,actor.user_id,'PlatformOperations','manage')});
-  }catch(error){
-   // Access-denied users must not learn GitHub release data or credential status.
-   if(error instanceof Error&&/Permission denied|permission denied/i.test(error.message)){
-    res.status(403).json({error:'Platform deployment access denied.'});return;
+   try {
+    const status=await readProductionDeployment();
+    res.json({...status,canDeploy,workflowUrl});
+   } catch(error) {
+    // Temporary rate limits/network failures must never make the control vanish.
+    // Display an actionable status and leave dispatch disabled until refreshed.
+    res.json({configured:!!token(),canDeploy:false,latestCommit:null,
+     deployedCommit:productionCommit(),active:false,run:null,workflowUrl,
+     error:error instanceof DeploymentControlError?error.message:'GitHub status unavailable.'});
    }
-   handleError(error,res,next);
-  }
+  }catch(error){handleError(error,res,next);}
  });
  app.post('/api/platform/production-deployment',async(req,res,next)=>{
   try{
-   const actor=await permission(req,'manage');
+   const actor=actorOf(req);
+   if(!await canManage(actor))
+    throw new DeploymentControlError('Platform Developer deployment permission required.',403);
    res.set('Cache-Control','private, no-store');
    const expected=(req.body as {expectedCommit?:unknown}|null)?.expectedCommit;
    res.status(202).json(await requestProductionDeployment(db,actor.tenant_id,actor.user_id,expected));
-  }catch(error){
-   if(error instanceof Error&&/Permission denied|permission denied/i.test(error.message)){
-    res.status(403).json({error:'Platform deployment access denied.'});return;
-   }
-   handleError(error,res,next);
-  }
+  }catch(error){handleError(error,res,next);}
  });
 }

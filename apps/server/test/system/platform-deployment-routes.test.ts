@@ -2,7 +2,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import type {SqlPersistence} from '../../src/system-files/sql-persistence.js';
 import type {RbacEngine} from '../../src/system-files/rbac-engine.js';
-import type {PlatformTenantService} from '../../src/system-files/platform-tenant-service.js';
 import {
  DeploymentControlError,readProductionDeployment,requestProductionDeployment,
  registerPlatformDeploymentRoutes
@@ -20,7 +19,9 @@ function fakeGithub(active=false){
   const url=String(input),method=init?.method??'GET';
   requests.push({url,method});
   assert.match(url,/^https:\/\/api\.github\.com\/repos\/unedev00\/uneengine\//);
-  assert.match(String((init?.headers as Record<string,string>)?.Authorization),/^Bearer /);
+  if(process.env.METADRIVE_GITHUB_DEPLOY_TOKEN)
+   assert.match(String((init?.headers as Record<string,string>)?.Authorization),/^Bearer /);
+  else assert.equal((init?.headers as Record<string,string>)?.Authorization,undefined);
   if(url.endsWith('/commits/main'))return json({sha:latest});
   if(url.includes('/runs?branch=main'))return json({workflow_runs:[{
    id:42,head_sha:stale,status:active?'in_progress':'completed',
@@ -45,11 +46,15 @@ function fakeDatabase(recent=false){
 }
 test('deploy control shows disabled status when secret is absent',async()=>{
  delete process.env.METADRIVE_GITHUB_DEPLOY_TOKEN;
+ const calls=fakeGithub();
  try{
   const status=await readProductionDeployment();
   assert.equal(status.configured,false);
-  assert.equal(status.latestCommit,null);
+  assert.equal(status.latestCommit,latest);
+  assert.equal(status.run?.id,42);
+  assert.equal(calls.filter(c=>c.method==='POST').length,0);
  }finally{
+  globalThis.fetch=originalFetch;
   if(originalToken===undefined)delete process.env.METADRIVE_GITHUB_DEPLOY_TOKEN;
   else process.env.METADRIVE_GITHUB_DEPLOY_TOKEN=originalToken;
  }
@@ -108,25 +113,57 @@ test('recent accepted dispatch prevents duplicate submits',async()=>{
   else process.env.METADRIVE_GITHUB_DEPLOY_TOKEN=originalToken;
  }
 });
-test('production route rejects sessions missing PlatformDeveloper policy before GitHub calls',async()=>{
+test('read-only status is visible but dispatch is denied without PlatformDeveloper',async()=>{
+ process.env.METADRIVE_GITHUB_DEPLOY_TOKEN='test-only-token';
+ const calls=fakeGithub();
  const handlers:Record<string,(req:any,res:any,next:(e?:unknown)=>void)=>Promise<void>>={};
  const app={get:(path:string,fn:any)=>{handlers['GET '+path]=fn;},
   post:(path:string,fn:any)=>{handlers['POST '+path]=fn;}} as any;
  const db={query:async()=>({rows:[{authorised:false}]})} as unknown as SqlPersistence;
- const rbac={require:async()=>{},allowed:async()=>true} as unknown as RbacEngine;
- const platform={requirePlatform:async()=>{}} as unknown as PlatformTenantService;
- registerPlatformDeploymentRoutes(app,db,rbac,platform);
- for(const method of ['GET','POST']){
-  const result:{status?:number;body?:unknown}={};
-  const res={
-   status(code:number){result.status=code;return this;},
-   json(body:unknown){result.body=body;return this;},
-   set(){return this;}
-  };
-  let nextCalled=false;
-  await handlers[method+' /api/platform/production-deployment'](
-   {actor:{tenant_id:'tenant',user_id:'user'},body:{expectedCommit:latest}},res,()=>{nextCalled=true;});
-  assert.equal(result.status,403);
-  assert.equal(nextCalled,false);
+ const rbac={allowed:async()=>true} as unknown as RbacEngine;
+ registerPlatformDeploymentRoutes(app,db,rbac);
+ try{
+  for(const method of ['GET','POST']){
+   const result:{status?:number;body?:any}={};
+   const res={
+    status(code:number){result.status=code;return this;},
+    json(body:unknown){result.body=body;return this;},
+    set(){return this;}
+   };
+   let nextCalled=false;
+   await handlers[method+' /api/platform/production-deployment'](
+    {actor:{tenant_id:'tenant',user_id:'user'},body:{expectedCommit:latest}},res,()=>{nextCalled=true;});
+   assert.equal(nextCalled,false);
+   if(method==='GET'){
+    assert.equal(result.status,undefined);
+    assert.equal(result.body.latestCommit,latest);
+    assert.equal(result.body.canDeploy,false);
+   }else assert.equal(result.status,403);
+  }
+  assert.equal(calls.filter(c=>c.method==='POST').length,0);
+ }finally{
+  globalThis.fetch=originalFetch;
+  if(originalToken===undefined)delete process.env.METADRIVE_GITHUB_DEPLOY_TOKEN;
+  else process.env.METADRIVE_GITHUB_DEPLOY_TOKEN=originalToken;
  }
+});
+test('only platform developers with manage grant can dispatch',async()=>{
+ process.env.METADRIVE_GITHUB_DEPLOY_TOKEN='test-only-token';
+ const calls=fakeGithub();
+ const handlers:Record<string,(req:any,res:any,next:(e?:unknown)=>void)=>Promise<void>>={};
+ const app={get:(path:string,fn:any)=>{handlers['GET '+path]=fn;},
+  post:(path:string,fn:any)=>{handlers['POST '+path]=fn;}} as any;
+ const {db}=fakeDatabase();
+ const rbac={allowed:async()=>false} as unknown as RbacEngine;
+ registerPlatformDeploymentRoutes(app,db,rbac);
+ const response:{status?:number;body?:any}={};
+ await handlers['POST /api/platform/production-deployment'](
+  {actor:{tenant_id:'tenant',user_id:'user'},body:{expectedCommit:latest}},
+  {status(code:number){response.status=code;return this;},json(body:unknown){response.body=body;return this;},
+   set(){return this;}},(error?:unknown)=>{throw error;});
+ assert.equal(response.status,403);
+ assert.equal(calls.filter(c=>c.method==='POST').length,0);
+ globalThis.fetch=originalFetch;
+ if(originalToken===undefined)delete process.env.METADRIVE_GITHUB_DEPLOY_TOKEN;
+ else process.env.METADRIVE_GITHUB_DEPLOY_TOKEN=originalToken;
 });

@@ -230,6 +230,7 @@
     "apps/web/test/phoneColumns.test.mjs",
     "apps/web/test/platformEventStream.test.ts",
     "apps/web/test/platformEventTarget.test.ts",
+    "apps/web/test/productionDeploymentVisibility.test.mjs",
     "apps/web/test/recordActionPlacement.test.ts",
     "apps/web/test/recordChoices.test.ts",
     "apps/web/test/recordCsvUtils.test.ts",
