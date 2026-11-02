@@ -1,12 +1,14 @@
 import {useEffect,useState} from 'react';
+import {Pencil,LayoutTemplate,History,LockKeyhole} from 'lucide-react';
 import type {LightningPageMetadata,LightningAppMetadata} from '../../metadata/Definitions/metadata';
+import './PageDetailsDialog.css';
 
 type Variant='Desktop'|'Tablet'|'Mobile'|'Custom';
 type Version={version:number;createdAt:string;published:boolean;draft:boolean};
 const variants:Variant[]=['Desktop','Tablet','Mobile','Custom'];
 
-/** Page metadata and immutable version history are separate from canvas editing.
- * Historical snapshots are read-only; restoring one changes only the draft head. */
+/** Page identity, app assignment and immutable layout history.
+ * Historical revisions can be inspected or restored to draft, never edited in place. */
 export default function PageDetailsDialog({page,apps,disabled,request,onClose,onSave,onOpenDesign,onReload}:{
  page:LightningPageMetadata;
  apps:readonly LightningAppMetadata[];
@@ -17,7 +19,6 @@ export default function PageDetailsDialog({page,apps,disabled,request,onClose,on
  onOpenDesign:(apiName:string)=>void;
  onReload:(page:LightningPageMetadata)=>void;
 }){
- const [tab,setTab]=useState<'details'|'versions'>('details');
  const [label,setLabel]=useState(page.label);
  const existing=(page.activationAssignments??[]).find(a=>a.scope==='App Default'&&a.appId)?.appId
    ??apps.find(app=>app.navigationPageApiNames.includes(page.apiName))?.apiName??'';
@@ -32,7 +33,6 @@ export default function PageDetailsDialog({page,apps,disabled,request,onClose,on
   (page.pageType!=='App Page'||apps.some(a=>a.apiName===appApiName)));
  const base=`/metadata/pages/${encodeURIComponent(page.apiName)}/layouts/${variant}`;
  useEffect(()=>{
-  if(tab!=='versions')return;
   let active=true;
   setLoading(true);setPreview(null);setError('');
   request<{versions:Version[]}>(base+'/history')
@@ -40,7 +40,7 @@ export default function PageDetailsDialog({page,apps,disabled,request,onClose,on
    .catch(err=>{if(active)setError(err instanceof Error?err.message:'Unable to load versions')})
    .finally(()=>{if(active)setLoading(false)});
   return()=>{active=false};
- },[page.apiName,variant,tab]);
+ },[page.apiName,variant,request]);
  const submit=async()=>{
   if(!valid||busy||disabled)return;
   setBusy(true);setError('');
@@ -63,7 +63,7 @@ export default function PageDetailsDialog({page,apps,disabled,request,onClose,on
  };
  const restoreVersion=async(version:number)=>{
   if(busy||disabled||!window.confirm(
-   'Restore version '+version+' to the editable draft? The published page will stay unchanged until you publish.'))return;
+   'Restore version '+version+' to the editable draft? The published page stays unchanged until you publish.'))return;
   setBusy(true);setError('');
   try{
    const response=await request<{page:LightningPageMetadata}>(base+'/restore',{
@@ -75,102 +75,118 @@ export default function PageDetailsDialog({page,apps,disabled,request,onClose,on
   }catch(e){setError(e instanceof Error?e.message:'Unable to restore version')}
   finally{setBusy(false)}
  };
+ const design=()=>{onClose();onOpenDesign(page.apiName)};
  return <div className="modal-backdrop" role="presentation">
   <section className="modal page-details-dialog" role="dialog" aria-modal="true"
-   aria-label="Edit page properties and versions"
-   style={{width:'min(920px,96vw)',maxHeight:'90vh',overflowY:'auto'}}>
-   <div className="modal-header">
-    <h2>Edit Page — {page.label}</h2>
+   aria-label="Edit page properties and versions">
+   <header className="modal-header page-details-header">
+    <h2><Pencil size={19}/> Edit Page — {page.label}</h2>
     <button type="button" className="icon-button" aria-label="Close page details"
      onClick={onClose} disabled={busy}>×</button>
-   </div>
-   <div role="tablist" aria-label="Page details sections"
-    style={{display:'flex',gap:12,padding:'12px 20px',borderBottom:'1px solid #dde4ec'}}>
-    <button type="button" role="tab" aria-selected={tab==='details'}
-     className={tab==='details'?'btn btn-brand':'btn'}
-     onClick={()=>setTab('details')}>Page properties</button>
-    <button type="button" role="tab" aria-selected={tab==='versions'}
-     className={tab==='versions'?'btn btn-brand':'btn'}
-     onClick={()=>setTab('versions')}>Versions</button>
-   </div>
-   {tab==='details'?<div className="modal-body" style={{display:'grid',gap:16,padding:20}}>
-    <label className="form-label">Page name
-     <input className="form-control" aria-label="Page name" value={label}
-      maxLength={128} onChange={e=>setLabel(e.target.value)} autoFocus/>
-    </label>
-    <label className="form-label">API name
-     <input className="form-control" aria-label="Page API name" value={page.apiName} readOnly/>
-     <small>Stable identity. Renaming an existing API name requires a separate reference-safe metadata migration; display names can be edited here.</small>
-    </label>
-    <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:14}}>
-     <div><strong>Page type</strong><div>{page.pageType}</div></div>
-     <div><strong>Status</strong><div>{page.status}</div></div>
-     <div><strong>Object</strong><div>{page.targetObject||'Not object-specific'}</div></div>
-     <div><strong>Current layout</strong><div>{page.layoutVariant??'Desktop'}</div></div>
-    </div>
-    {page.pageType==='App Page'&&<label className="form-label">Assigned application
-     <select className="form-control" aria-label="Assign page to app" value={appApiName}
-      onChange={e=>setAppApiName(e.target.value)}>
-      <option value="">Select installed app…</option>
-      {apps.map(app=><option key={app.apiName} value={app.apiName}>{app.label} ({app.apiName})</option>)}
-     </select>
-    </label>}
-    {page.pageType==='App Page'&&<small>
-     {page.status==='Active'?'An active page appears in the selected app navigation.':
-      'A draft page is assigned now; activate it to show it in the app navigation.'}
-    </small>}
-    <p className="properties-help">Canvas dimensions, component positions, nested components and appearance remain in Design. Page identity, placement and historical versions are managed here.</p>
-   </div>:<div style={{padding:20}}>
-    <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:14,flexWrap:'wrap'}}>
-     <label className="form-label">Layout version
-      <select className="form-control" value={variant} aria-label="Version layout"
-       onChange={e=>setVariant(e.target.value as Variant)}>
-       {variants.map(v=><option key={v}>{v}</option>)}
-      </select>
-     </label>
-     <small>Historical versions are immutable. Restore to draft before editing.</small>
-    </div>
-    <div style={{overflowX:'auto'}}>
-     <table className="records-table" aria-label="Page version history">
-      <thead><tr><th>Version</th><th>Created</th><th>Status</th><th>Actions</th></tr></thead>
-      <tbody>{versions.map(v=><tr key={v.version}>
-       <td>v{v.version}</td>
-       <td>{new Date(v.createdAt).toLocaleString()}</td>
-       <td>{v.published?'Published':v.draft?'Current draft':'Historical'}</td>
-       <td style={{whiteSpace:'nowrap'}}>
-        <button type="button" className="btn btn-small" disabled={busy} onClick={()=>void viewVersion(v.version)}>View</button>{' '}
-        <button type="button" className="btn btn-small" disabled={busy||disabled||v.draft}
-         title="Restore to a draft; never edit a historical version in place"
-         onClick={()=>void restoreVersion(v.version)}>Restore as draft &amp; Design</button>{' '}
-        <button type="button" className="btn btn-small" disabled
-         title="Immutable version retained for recovery">Delete</button>
-       </td>
-      </tr>)}</tbody>
-     </table>
-     {!loading&&!versions.length&&<p>No saved versions for this layout.</p>}
-     {loading&&<p role="status">Loading versions…</p>}
-    </div>
-    {preview&&<section aria-label="Read-only version preview" style={{marginTop:18,padding:12,border:'1px solid #d6e0ec',borderRadius:8}}>
-     <strong>Version v{preview.version} — read-only</strong>
-     <p>Layout: {preview.page.layoutMode} · Canvas: {preview.page.canvasWidth} × {preview.page.canvasHeight} · Components: {preview.page.components.length}</p>
-     <div style={{maxHeight:140,overflowY:'auto'}}>
-      {preview.page.components.map(c=><div key={c.id}>{c.label||c.type} · {c.type}</div>)}
+   </header>
+   <div className="page-details-body">
+    <nav className="page-details-nav" aria-label="Page edit sections">
+     <a href="#page-details-properties">Page Properties</a>
+     <a href="#page-details-history">Versions</a>
+    </nav>
+    <div id="page-details-properties" className="page-details-grid">
+     <div className="page-details-main">
+      <section className="page-details-section" aria-label="Basic Information">
+       <h3>Basic Information</h3>
+       <label className="form-label">Page Name
+        <input className="form-control" aria-label="Page name" value={label}
+         maxLength={128} onChange={e=>setLabel(e.target.value)} autoFocus/>
+       </label>
+       <label className="form-label">API Name
+        <input className="form-control" aria-label="Page API name" value={page.apiName} readOnly/>
+        <small><LockKeyhole size={12}/> Stable identity. Existing API names are protected until a dependency-safe migration is available.</small>
+       </label>
+      </section>
+      <section className="page-details-section" aria-label="Page Behaviour">
+       <h3>Page Behaviour</h3>
+       <div className="page-details-kv"><span>Page type</span><strong>{page.pageType}</strong></div>
+       <div className="page-details-kv"><span>Layout mode</span><strong>{page.layoutMode}</strong></div>
+       <div className="page-details-kv"><span>Related object</span><strong>{page.targetObject||'Not object-specific'}</strong></div>
+       <div className="page-details-kv"><span>Current layout</span><strong>{page.layoutVariant??'Desktop'}</strong></div>
+      </section>
      </div>
-    </section>}
-   </div>}
-   {error&&<p role="alert" style={{padding:'0 20px',color:'#b91c1c'}}>{error}</p>}
-   <div className="office-ribbon-modal-actions">
-    <button type="button" className="btn" disabled={busy} onClick={onClose}>Close</button>
-    {tab==='details'?<>
-     <button type="button" className="btn" disabled={busy} onClick={()=>{
-      onClose();onOpenDesign(page.apiName);
-     }}>Open Design</button>
-     <button type="button" className="btn btn-brand" disabled={busy||disabled||!valid}
-      onClick={()=>void submit()}>{busy?'Saving…':'Save page properties'}</button>
-    </>:<button type="button" className="btn btn-brand" disabled={busy} onClick={()=>{
-     onClose();onOpenDesign(page.apiName);
-    }}>Design latest draft</button>}
+     <aside className="page-details-side">
+      <section className="page-details-section" aria-label="Application Assignment">
+       <h3>Application Assignment</h3>
+       {page.pageType==='App Page'?<label className="form-label">Application
+        <select className="form-control" aria-label="Assign page to app" value={appApiName}
+         onChange={e=>setAppApiName(e.target.value)}>
+         <option value="">Select installed app…</option>
+         {apps.map(app=><option key={app.apiName} value={app.apiName}>{app.label} ({app.apiName})</option>)}
+        </select>
+       </label>:<p>Activation is managed by the shared record or home page assignment controls.</p>}
+       {page.pageType==='App Page'&&<small>
+        {page.status==='Active'?'An active page appears in the selected app navigation.':
+         'A draft page is assigned now; activate it to show it in the app navigation.'}
+       </small>}
+      </section>
+      <section className="page-details-section" aria-label="Page Display and Activation">
+       <h3>Display &amp; Activation</h3>
+       <div className="page-details-kv"><span>Status</span><strong>{page.status}</strong></div>
+       <div className="page-details-kv"><span>Desktop</span><strong>{page.devices.includes('Desktop')?'Enabled':'Disabled'}</strong></div>
+       <div className="page-details-kv"><span>Mobile</span><strong>{page.devices.includes('Phone')?'Enabled':'Disabled'}</strong></div>
+       <small>Change published layout and activation from the supported Page Builder actions.</small>
+      </section>
+     </aside>
+    </div>
+    <section id="page-details-history" className="page-details-section page-details-versions"
+     aria-label="Page Versions">
+     <div className="page-details-version-heading">
+      <h3><History size={17}/> Page Versions</h3>
+      <label className="form-label">Layout
+       <select className="form-control" value={variant} aria-label="Version layout"
+        onChange={e=>setVariant(e.target.value as Variant)}>
+        {variants.map(v=><option key={v}>{v}</option>)}
+       </select>
+      </label>
+     </div>
+     <p className="page-details-help">Version history is preserved by layout. Opening a version shows a read-only snapshot; restoring copies it into the editable draft without changing the live page.</p>
+     <div className="page-details-table-scroll">
+      <table className="records-table page-details-version-table" aria-label="Page version history">
+       <thead><tr><th>Version</th><th>Created</th><th>Status</th><th>Actions</th></tr></thead>
+       <tbody>{versions.map(v=><tr key={v.version}>
+        <td>v{v.version}</td>
+        <td>{new Date(v.createdAt).toLocaleString()}</td>
+        <td>{v.published?'Published':v.draft?'Current draft':'Historical'}</td>
+        <td>
+         <div className="page-details-row-actions">
+          <button type="button" className="btn btn-small" disabled={busy} onClick={()=>void viewVersion(v.version)}>View</button>
+          <button type="button" className="btn btn-small" disabled={busy||disabled||v.draft}
+           title="Restore to a new editable draft. Published layouts remain unchanged."
+           onClick={()=>void restoreVersion(v.version)}>Restore as draft &amp; Design</button>
+          <button type="button" className="btn btn-small" disabled
+           title="Immutable version retained for recovery">Delete</button>
+         </div>
+        </td>
+       </tr>)}</tbody>
+      </table>
+      {!loading&&!versions.length&&<p>No saved versions for this layout.</p>}
+      {loading&&<p role="status">Loading versions…</p>}
+     </div>
+     {preview&&<section className="page-details-preview" aria-label="Read-only version preview">
+      <div className="page-details-preview-heading"><LayoutTemplate size={16}/>
+       <strong>Version v{preview.version} — read-only layout summary</strong>
+       <button className="btn btn-small" type="button" onClick={()=>setPreview(null)}>Close preview</button>
+      </div>
+      <p>Layout: {preview.page.layoutMode} · Canvas: {preview.page.canvasWidth} × {preview.page.canvasHeight} · Components: {preview.page.components.length}</p>
+      <div className="page-details-preview-components">
+       {preview.page.components.map(c=><div key={c.id}>{c.label||c.type} · {c.type}</div>)}
+      </div>
+     </section>}
+    </section>
+    {error&&<p role="alert" className="page-details-error">{error}</p>}
    </div>
+   <footer className="office-ribbon-modal-actions page-details-footer">
+    <button type="button" className="btn" disabled={busy} onClick={onClose}>Cancel</button>
+    <button type="button" className="btn" disabled={busy} onClick={design}>Open Design</button>
+    <button type="button" className="btn btn-brand" disabled={busy||disabled||!valid}
+     onClick={()=>void submit()}>{busy?'Saving…':'Save Changes'}</button>
+   </footer>
   </section>
  </div>;
 }
