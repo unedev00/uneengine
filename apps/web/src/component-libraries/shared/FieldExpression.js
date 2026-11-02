@@ -320,18 +320,28 @@ function parse(source,record,formulaContext){
     const rows=sources[sourceRef[1]];
     if(!Array.isArray(rows))throw Error('COLLECTION source unavailable: '+sourceRef[1]);
     if(rows.length>200)throw Error('COLLECTION source exceeds 200 records');
-    return rows.map(row=>{
-     if(!row||typeof row!=='object'||Array.isArray(row)
-       ||!Object.prototype.hasOwnProperty.call(row,sourceRef[2]))
-      throw Error('COLLECTION field unavailable: '+reference);
+    // An accessible field with an unset value may be omitted from Object API
+    // records. Validate the field against authorised metadata (when supplied),
+    // otherwise require it on at least one row; never expose an unknown field.
+    const permitted=formulaContext.collectionSourceFields?.[sourceRef[1]];
+    const known=Array.isArray(permitted)?permitted.includes(sourceRef[2]):
+     rows.some(row=>row&&typeof row==='object'&&!Array.isArray(row)
+       &&Object.prototype.hasOwnProperty.call(row,sourceRef[2]));
+    if(!known)throw Error('COLLECTION field unavailable: '+reference);
+    return rows.flatMap(row=>{
+     if(!row||typeof row!=='object'||Array.isArray(row))
+      throw Error('Invalid COLLECTION source record');
+     if(!Object.prototype.hasOwnProperty.call(row,sourceRef[2])
+       ||row[sourceRef[2]]===null||row[sourceRef[2]]===undefined
+       ||row[sourceRef[2]]==='')return [];
      const value=row[sourceRef[2]];
      const id=row.Id??row.id;
      if(id===undefined||id===null||typeof id!=='string'&&typeof id!=='number')
       throw Error('COLLECTION source record has no ID');
      if(value!==null&&value!==undefined&&!['string','number','boolean'].includes(typeof value))
       throw Error('COLLECTION field must be scalar: '+reference);
-     return {label:value===null||value===undefined?'':String(value),
-       value:String(id),record:row,objectApiName:sourceRef[1]};
+     return [{label:String(value),
+       value:String(id),record:row,objectApiName:sourceRef[1]}];
     });
    }
   if(!record||typeof record!=='object'||Array.isArray(record))return '';
@@ -410,10 +420,16 @@ function parse(source,record,formulaContext){
    &&['=','==','<>','!=','<','<=','>','>='].includes(node.operator)&&Boolean(sourceField(node.left));
   const sourceItems=(pointer,criterion,operator='')=>{
    const rows=rowsFor(pointer);
+   const permitted=formulaContext.collectionSourceFields?.[pointer.object];
+   const known=Array.isArray(permitted)?permitted.includes(pointer.field):
+    rows.some(row=>row&&typeof row==='object'&&!Array.isArray(row)
+      &&Object.prototype.hasOwnProperty.call(row,pointer.field));
+   if(!known)throw Error('COLLECTION field unavailable: '+pointer.reference);
    for(const row of rows){
-    if(!row||typeof row!=='object'||Array.isArray(row)
-      ||!Object.prototype.hasOwnProperty.call(row,pointer.field))
-     throw Error('COLLECTION field unavailable: '+pointer.reference);
+    if(!row||typeof row!=='object'||Array.isArray(row))
+     throw Error('Invalid COLLECTION source record');
+    // Unset nullable/lookup fields are omitted by generic CRUD, not invalid.
+    if(!Object.prototype.hasOwnProperty.call(row,pointer.field))continue;
     const value=row[pointer.field],id=row.Id??row.id;
     if(value===null||value===undefined||String(value).trim()==='')continue;
     if(typeof value!=='string'&&typeof value!=='number'&&typeof value!=='boolean')
@@ -542,6 +558,7 @@ export function evaluateFieldExpressionDetailed(expression,record,options={}){
     ?parseFormulaDateTime(options.now,'UTC'):new Date(NaN);
   if(!Number.isFinite(now.getTime()))throw Error('Invalid formula evaluation time');
   const result=parse(input,record,{timeZone,now,collectionSources:options.collectionSources,
+   collectionSourceFields:options.collectionSourceFields,
    collectionResult:options.collectionResult===true,
    namedCollections:options.namedCollections,
    namedCollectionSelections:options.namedCollectionSelections,
@@ -571,8 +588,8 @@ export function evaluateCollectionFormula(formula,sourceRecords={},context={}){
  if(!source)return {value:null,error:'Enter a collection formula'};
  return evaluateFieldExpressionDetailed(source,context?.record&&typeof context.record==='object'
    &&!Array.isArray(context.record)?context.record:{},
-  {collectionSources:sourceRecords,collectionResult:true,
-   rootObjectApiName:context?.primaryObject,
+  {collectionSources:sourceRecords,collectionSourceFields:context?.collectionSourceFields,
+   collectionResult:true,rootObjectApiName:context?.primaryObject,
    namedCollections:context?.namedCollections,
    namedCollectionSelections:context?.state?.collectionSelections});
 }
