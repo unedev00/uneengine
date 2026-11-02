@@ -283,7 +283,7 @@ function parse(source,record,formulaContext){
  validateFormulaFunctions(expression,'ribbon_binding');
  const resolveReference=reference=>{
    // Collection selection values come from the authorised page-session state.
-   const selected=/^([A-Za-z][A-Za-z0-9_]{0,79})\.state\.(Id|Name|Value)$/.exec(reference);
+   const selected=/^([A-Za-z][A-Za-z0-9_]{0,79})\.state\.(Id|Name|Value|Field|Criteria)$/.exec(reference);
    if(selected){
     const selections=formulaContext.namedCollectionSelections;
     if(!selections||typeof selections!=='object'||Array.isArray(selections))return '';
