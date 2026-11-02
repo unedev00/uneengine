@@ -63,10 +63,10 @@ export async function executePageFormulaAction(
     {...payload,delta},pageState,objects,objectApiName);
   return {changes,recordChanged:true};
  }
- const key=String(binding.stateKey??'');
- if(!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(key))
+ const key=String(binding.stateKey??refs.find(name=>
+  fieldIdentifier.test(name)&&Object.prototype.hasOwnProperty.call(pageState,name))??'');
+ if(!fieldIdentifier.test(key))
   throw Error('Formula requires an authorised record or a Page State key.');
- const refs=[...formula.matchAll(/@([A-Za-z][A-Za-z0-9_.]*)/g)].map(match=>match[1]);
  if(!refs.includes(key)||refs.some(name=>
   !/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(name)||
   !Object.prototype.hasOwnProperty.call(pageState,name)||
