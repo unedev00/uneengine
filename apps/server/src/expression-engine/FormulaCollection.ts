@@ -58,10 +58,10 @@ export function createCriteriaFormulaCollection(name:unknown,items:readonly unkn
   if(!('criteriaField' in item))return item;
   const entry=item as CriteriaCollectionItem;
   if(typeof entry.label!=='string'||!entry.label.trim()
-    ||typeof entry.value!=='string'||!entry.value.trim()
-    ||typeof entry.criteria!=='string'||!entry.criteria.trim()
+    ||typeof entry.value!=='string'
+    ||typeof entry.criteria!=='string'
     ||typeof entry.criteriaField!=='string'
-    ||!/^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)?$/.test(entry.criteriaField))
+    ||(entry.criteriaField!==''&&!/^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)?$/.test(entry.criteriaField)))
    throw Error('COLLECTION entry requires a label, field and criterion');
   return item;
  });
