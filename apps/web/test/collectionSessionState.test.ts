@@ -4,7 +4,8 @@ import {formulaSignatureAt} from '../src/core/builders/PageBuilder/formulaSignat
 import {pageStateChoices} from '../src/core/builders/PageBuilder/pageStateChoices';
 import {namedCollectionName,registerSessionCollection,getSessionCollection} from '../src/core/pages/PageRuntime/pageCollectionSession';
 import {pageComponentRecordQuery,filterPageComponentRecords,resolvePageFilterValue} from '../src/core/pages/PageRuntime/pageComponentBindings';
-import {createNamedFormulaCollection} from '../../server/src/expression-engine/FormulaCollection';
+import {createNamedFormulaCollection,formulaCollectionReferenceKey} from '../../server/src/expression-engine/FormulaCollection';
+import {parseCollectionListBinding,filteredCollectionItems} from '../src/core/pages/PageRuntime/pageCollectionListBinding';
 import {evaluateFieldExpression,evaluateCollectionFormula} from '../src/component-libraries/shared/FieldExpression.js';
 
 test('Excel-style signature follows nested calls, quoted commas and any registered formula',()=>{
@@ -15,7 +16,7 @@ test('Excel-style signature follows nested calls, quoted commas and any register
  assert.equal(b?.name,'COLLECTION');
  assert.equal(b?.argument,2);
  assert.equal(b?.parameters[0].name,'name');
- assert.equal(b?.parameters[1].name,'value1');
+ assert.equal(b?.parameters[1].name,'tab_label');
  const c=formulaSignatureAt('ROUND(10,',9);
  assert.equal(c?.name,'ROUND');assert.equal(c?.argument,1);
  assert.equal(c?.parameters[1].name,'digits');
@@ -180,4 +181,53 @@ test('global Collection formula signature hints reflect repeated SUMIFS-like cla
  assert.equal(signature?.parameters[4].name,'tab_label2');
  assert.equal(signature?.parameters[5].name,'criteria_range2');
  assert.equal(signature?.argument,6);
+});
+
+test('spaced Collection names are readable and expose safe stable state references',()=>{
+ const source='=COLLECTION("test collection","All",@Name,"*","Coca",@Name,"Coca*")';
+ assert.equal(namedCollectionName(source),'test collection');
+ assert.equal(formulaCollectionReferenceKey('test collection'),'test_collection');
+ const collection=evaluateCollectionFormula(source,{
+  MenuCategory:[{Id:'1',Name:'Burgers'},{Id:'2',Name:'Coca Cola'}]
+ },{primaryObject:'MenuCategory'});
+ assert.equal(collection.error,undefined);
+ assert.equal(collection.value.name,'test collection');
+ assert.equal(collection.value.items[0].value,'*');
+ const suggestions=pageStateChoices([{id:'tabs',properties:{textSource:source}}]);
+ assert.ok(suggestions.some(item=>item.key==='test_collection.state.Id'));
+ const stop=registerSessionCollection('page#session','tabs',collection.value);
+ assert.equal(getSessionCollection('page#session','test_collection')?.name,'test collection');
+ assert.equal(getSessionCollection('other#session','test_collection'),undefined);
+ stop();
+});
+test('Collection names with aliased collisions do not overwrite existing session data',()=>{
+ const first={name:'test collection',items:['All']};
+ const second={name:'test_collection',items:['Other']};
+ const stopFirst=registerSessionCollection('alias-page','one',first);
+ const stopSecond=registerSessionCollection('alias-page','two',second);
+ assert.equal(getSessionCollection('alias-page','test_collection'),first);
+ stopSecond();stopFirst();
+});
+test('list-valued field criteria return matching names or empty rows, never Boolean captions',()=>{
+ const rows=[{Id:'1',Name:'Burgers'},{Id:'2',Name:'Desserts'},
+  {Id:'3',Name:'Drinks'},{Id:'4',Name:''}];
+ const all=parseCollectionListBinding('@Name = "*"', 'MenuCategory');
+ assert.ok(all);
+ assert.deepEqual(filteredCollectionItems(all!,rows).map(item=>item.label),
+  ['Burgers','Desserts','Drinks']);
+ const matches=parseCollectionListBinding('@Name="Dessert*"', 'MenuCategory');
+ assert.ok(matches);
+ assert.deepEqual(filteredCollectionItems(matches!,rows).map(item=>item.label),['Desserts']);
+ const none=parseCollectionListBinding('@Name="Coca*"', 'MenuCategory');
+ assert.ok(none);
+ assert.deepEqual(filteredCollectionItems(none!,rows),[]);
+ assert.equal(parseCollectionListBinding('=IF(@Name="Coca*",TRUE,FALSE)','MenuCategory'),null);
+ assert.equal(parseCollectionListBinding('=@Name','MenuCategory'),null);
+ const many=parseCollectionListBinding('=@MenuCategory.Name = "Dessert*"','MenuCategory');
+ assert.equal(many?.object,'MenuCategory');
+});
+test('spaced Collection names remain rejected if invalid or unescaped',()=>{
+ assert.throws(()=>createNamedFormulaCollection('Not.Valid',['ok']),/name/i);
+ assert.throws(()=>createNamedFormulaCollection(' bad',['ok']),/name/i);
+ assert.equal(namedCollectionName('=COLLECTION("123 bad","x")'),undefined);
 });
