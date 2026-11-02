@@ -14,6 +14,7 @@ import './SmartFormulaField.css';
 import './PageBuilderRibbonGallery.css';
 import './PageBuilderRibbonBlueprint.css';
 import './PageBuilderRibbonNonDesign.css';
+import './PageBuilderActionRibbonCompact.css';
 import './PageBuilderDesignReference.css';
 import RibbonCapabilityControls from './RibbonCapabilityControls';
 import '../../pages/TemplatePageRuntime/pageComponentAppearance.css';
