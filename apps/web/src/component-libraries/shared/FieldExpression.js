@@ -5,7 +5,7 @@ import {
  evaluateFormulaBinary,evaluateFormulaUnary,formulaTruth,Parser
 } from '../../../../server/src/expression-engine/FormulaParser.js';
 import {tokenize} from '../../../../server/src/expression-engine/FormulaTokenizer.js';
-import {mergeFormulaCollectionValues} from '../../../../server/src/expression-engine/FormulaCollection.js';
+import {createNamedFormulaCollection} from '../../../../server/src/expression-engine/FormulaCollection.js';
 import {validateFormulaFunctions} from '../../../../server/src/expression-engine/FormulaFunctionRegistry.js';
 import {roundFormulaNumber} from '../../../../server/src/expression-engine/FormulaNumeric.js';
 import {
@@ -70,7 +70,7 @@ const evaluateCall=(name,args,context)=>{
    if(name==='BEGINS')return text(args[0]).startsWith(text(args[1]));
    if(name==='CONTAINS')return text(args[0]).includes(text(args[1]));
    return text(args[0])===text(args[1]);
-  case 'COLLECTION':arity(1,20);return mergeFormulaCollectionValues(args);
+  case 'COLLECTION':arity(2,20);return createNamedFormulaCollection(args[0],args.slice(1));
    case 'CONCATENATE':arity(1,20);return args.map(text).join('');
   case 'SUBSTITUTE':arity(3,4);{
    const source=text(args[0]),search=text(args[1]),replacement=text(args[2]);
@@ -401,6 +401,12 @@ export function evaluateFieldExpressionDetailed(expression,record,options={}){
     ?parseFormulaDateTime(options.now,'UTC'):new Date(NaN);
   if(!Number.isFinite(now.getTime()))throw Error('Invalid formula evaluation time');
   const result=parse(input,record,{timeZone,now,collectionSources:options.collectionSources});
+  if(options.collectionResult===true){
+   if(!result||typeof result!=='object'||Array.isArray(result)
+     ||typeof result.name!=='string'||!Array.isArray(result.items))
+    return {value:null,error:'Collection formula must return COLLECTION("Name", ...)'}; 
+   return {value:result};
+  }
   if(typeof result==='number'&&!Number.isFinite(result))return {value:'',error:'Formula result is not finite'};
   return {value:text(result)};
  }catch(failure){
@@ -410,4 +416,12 @@ export function evaluateFieldExpressionDetailed(expression,record,options={}){
 export function evaluateFieldExpression(expression,record,options){
  const result=evaluateFieldExpressionDetailed(expression,record,options);
  return result.error?'':result.value;
+}
+
+/** Returns a named, typed collection instead of coercing it to a text field. */
+export function evaluateCollectionFormula(formula,sourceRecords={},context={}){
+ if(typeof formula!=='string'||!/^\\s*COLLECTION\\s*\\(/i.test(formula))
+  return {value:null,error:'Enter COLLECTION("Name", values, @Object.Field)'};
+ return evaluateFieldExpressionDetailed(formula,{...context},
+  {collectionSources:sourceRecords,collectionResult:true});
 }
