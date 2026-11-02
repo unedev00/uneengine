@@ -68,7 +68,7 @@ export default function PlatformWorkspaceSurface({
          {needsMetadataComponentRuntime(instance.properties)
            ?componentRuntime
              ?<MetadataBoundPageComponent {...componentRuntime} definition={component!}
-               component={instance} pageSessionKey={'platform:'+pageName}/>
+               component={instance} pageSessionKey={'platform:'+pageName} pageComponents={page.components}/>
              :<div role="alert">Page action runtime unavailable</div>
            :<RegisteredComponent definition={component!} props={instance.properties}/>}
        </div>)}
