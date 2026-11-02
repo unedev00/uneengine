@@ -27,7 +27,7 @@ export function needsMetadataComponentRuntime(properties: Record<string, unknown
   const state = properties.stateBindings;
   if(state && typeof state==='object' && !Array.isArray(state)
      && Object.keys(state).length>0)return true;
-  if(typeof properties.filterFormula==='string'&&properties.filterFormula.trim())return true;
+  if(properties.filterMode!=='Field'&&typeof properties.filterFormula==='string'&&properties.filterFormula.trim())return true;
   const bindings = properties.actionFlows;
   return Boolean(bindings && typeof bindings === 'object' && !Array.isArray(bindings)
     && Object.keys(bindings).length > 0);
@@ -90,6 +90,13 @@ export function bindPageStateProperties<T extends Record<string,unknown>>(
       next[target]=value;
   }
   return next as T;
+}
+/** An explicit editor mode determines which saved rules are active.
+ * Legacy pages without a mode retain their existing combined semantics. */
+export function activePageRecordFilters(properties:Readonly<Record<string,unknown>>):{filters:unknown;formula:unknown}{
+ if(properties.filterMode==='Formula')return {filters:[],formula:properties.filterFormula};
+ if(properties.filterMode==='Field')return {filters:properties.filters,formula:undefined};
+ return {filters:properties.filters,formula:properties.filterFormula};
 }
 export type PageFilterContext={
   pageState?:Readonly<Record<string,unknown>>;
