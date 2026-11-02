@@ -1,4 +1,5 @@
 import {namedCollectionName} from '../../pages/PageRuntime/pageCollectionSession';
+import {formulaCollectionReferenceKey} from '../../../../../server/src/expression-engine/FormulaCollection.js';
 type SourceComponent={id:string;properties:Record<string,unknown>};
 export type PageStateChoice={source:'PageState'|'CollectionState';key:string;label:string};
 /** List metadata-declared state channels, not arbitrary strings or object data.
@@ -12,7 +13,7 @@ export function pageStateChoices(components:readonly SourceComponent[]):PageStat
     &&/^=\s*COLLECTION\s*\(/i.test(value));
   const name=namedCollectionName(props.collectionFormula)||namedCollectionName(authored);
   if(name)for(const field of ['Id','Name','Value','Field','Criteria'])
-   add({source:'CollectionState',key:name+'.state.'+field,label:name+'.state.'+field});
+   add({source:'CollectionState',key:formulaCollectionReferenceKey(name)+'.state.'+field,label:name+'.state.'+field});
   const actions=props.actionFlows;
   if(actions&&typeof actions==='object'&&!Array.isArray(actions)){
    for(const config of Object.values(actions)){

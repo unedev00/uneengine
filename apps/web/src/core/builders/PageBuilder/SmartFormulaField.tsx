@@ -88,17 +88,19 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
     .filter(item=>item.reference.toLowerCase().includes('@'+matches.query.toLowerCase())||
       item.label.toLowerCase().includes(matches.query.toLowerCase()))
     .slice(0,200):[];
+ const isFormulaDraft=(source:string)=>source.startsWith('=')||
+  /^@[A-Za-z][A-Za-z0-9_.]*\s*(?:==|=|<>|!=|>=|<=|>|<)/.test(source);
  const errorFor=(next:string):string|null=>{
   const custom=validate?.(next);
   if(custom)return custom;
   const source=next.trim();
-  if(!source.startsWith('='))return null;
-  if(!source.slice(1).trim())return 'Complete the formula after =';
+  if(!isFormulaDraft(source))return null;
+  if(!source.slice(source.startsWith('=')?1:0).trim())return 'Complete the formula after =';
   const functionPrefix=/^=\s*([A-Za-z][A-Za-z0-9_]*)$/.exec(source);
   if(functionPrefix&&functions.some(name=>name.startsWith(functionPrefix[1].toUpperCase())))
     return 'Complete the function with arguments';
   try{
-   const expression=new Parser(tokenize(source.slice(1))).parse();
+   const expression=new Parser(tokenize(source.startsWith('=')?source.slice(1):source)).parse();
    validateFormulaFunctions(expression,'ribbon_binding');
    return null;
   }catch(error){return error instanceof Error?error.message:'Incomplete formula';}
@@ -141,7 +143,7 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
  const finishEdit=()=>{
   const error=errorFor(draft);
   setValidationError(error);
-  if(error&&draft.trim().startsWith('='))setConfirmIncomplete(true);
+  if(error&&isFormulaDraft(draft.trim()))setConfirmIncomplete(true);
  };
  const keyDown=(event:KeyboardEvent<HTMLInputElement>)=>{
   if(event.key==='Escape'){setMatches(null);setFunctionMatch(null);setFocused(false)}

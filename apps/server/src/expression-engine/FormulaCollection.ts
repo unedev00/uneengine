@@ -26,11 +26,17 @@ export function mergeFormulaCollectionValues(values:readonly unknown[],limit=200
  return items;
 }
 
+/** Human-readable names may contain spaces. Formula references use their stable
+ * underscore alias, e.g. "test collection" -> @test_collection.state.Id.
+ * Both spellings occupy the same unique page-session namespace. */
+export const validFormulaCollectionName=(name:unknown):name is string=>
+ typeof name==='string'&&/^[A-Za-z][A-Za-z0-9_ ]{0,79}$/.test(name)&&name.trim()===name;
+export const formulaCollectionReferenceKey=(name:string):string=>name.replace(/ +/g,'_');
 export type NamedFormulaCollection={readonly name:string;readonly items:readonly unknown[]};
 /** Name is the first argument and is not an item in the collection. */
 export function createNamedFormulaCollection(name:unknown,values:readonly unknown[]):NamedFormulaCollection{
- if(typeof name!=='string'||!/^[A-Za-z][A-Za-z0-9_]{0,79}$/.test(name))
-  throw Error('COLLECTION requires a name (letters, numbers and underscores; starts with a letter)');
+ if(!validFormulaCollectionName(name))
+  throw Error('COLLECTION name must start with a letter and contain only letters, numbers, spaces or underscores (maximum 80 characters)');
  if(!values.length)throw Error('COLLECTION requires at least one value after its name');
  return {name,items:mergeFormulaCollectionValues(values)};
 }
@@ -44,7 +50,7 @@ export type CriteriaCollectionItem={
  readonly objectApiName?:string;readonly record?:Record<string,unknown>
 };
 export function createCriteriaFormulaCollection(name:unknown,items:readonly unknown[]):NamedFormulaCollection{
- if(typeof name!=='string'||!/^[A-Za-z][A-Za-z0-9_]{0,79}$/.test(name))
+ if(!validFormulaCollectionName(name))
   throw Error('COLLECTION requires a valid name');
  if(!Array.isArray(items)||items.length>200)throw Error('COLLECTION exceeds 200 entries');
  const checked=items.map(item=>{
@@ -59,5 +65,7 @@ export function createCriteriaFormulaCollection(name:unknown,items:readonly unkn
    throw Error('COLLECTION entry requires a label, field and criterion');
   return item;
  });
- return {name,items:mergeFormulaCollectionValues(checked)};
+ // A single @Field argument can expand to 200 authorised records even though
+ // the formula itself accepts at most 19 user-authored item arguments.
+ return {name,items:mergeFormulaCollectionValues([checked])};
 }

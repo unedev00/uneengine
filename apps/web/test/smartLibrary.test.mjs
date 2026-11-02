@@ -450,7 +450,7 @@ test('Clicking canvas releases any focused ribbon formula editor and closes fiel
  assert.match(builder,/active\.closest\('\.office-builder-ribbon'\)/);
  assert.match(builder,/active\.matches\('input,textarea,select,\[contenteditable="true"\]'\)/);
  assert.match(builder,/active\.blur\(\)/);
- assert.match(formula,/if\(error&&draft\.trim\(\)\.startsWith\('='\)\)setConfirmIncomplete\(true\)/);
+ assert.match(formula,/if\(error&&isFormulaDraft\(draft\.trim\(\)\)\)setConfirmIncomplete\(true\)/);
 });
 test('Smart Event ribbon matches On Click and Qty Icon component support',()=>{
  const ribbon=read('../src/core/builders/PageBuilder/SmartEventActionsRibbon.tsx');
@@ -1112,7 +1112,7 @@ test('three shared Tab source paths preserve Object ID, custom ID and named Coll
  const sql=read('../../server/src/system-support/migrations/20270304-smart-tabs-custom-selected-value.sql');
  const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
  assert.match(runtime,/row\?\.Id\?\?row\?\.id/);
- assert.match(runtime,/collectionName:p\.dataCollection\.name/);
+ assert.match(runtime,/collectionName:p\.dataCollection\.key\?\?p\.dataCollection\.name/);
  assert.match(runtime,/const firstTabValue=firstTabCustom/);
  assert.match(runtime,/fire\("change",\{index,value:firstTabValue,isCustom:true/);
  assert.match(sql,/'firstTabValue','First Tab ID','Design','Tabs','expression'/);
