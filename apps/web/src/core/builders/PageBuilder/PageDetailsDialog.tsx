@@ -15,11 +15,13 @@ export default function PageDetailsDialog({page,apps,disabled,request,onClose,on
  disabled:boolean;
  request:<T>(path:string,init?:RequestInit)=>Promise<T>;
  onClose:()=>void;
- onSave:(apiName:string,label:string,appApiName:string|null,expectedLabel:string)=>Promise<boolean>;
+ onSave:(apiName:string,label:string,appApiName:string|null,expectedLabel:string,nextApiName?:string)=>Promise<boolean>;
  onOpenDesign:(apiName:string)=>void;
  onReload:(page:LightningPageMetadata)=>void;
 }){
  const [label,setLabel]=useState(page.label);
+ const [apiName,setApiName]=useState(page.apiName);
+ const apiNameValid=/^[a-z][a-z0-9_]{0,127}$/.test(apiName);
  const existing=(page.activationAssignments??[]).find(a=>a.scope==='App Default'&&a.appId)?.appId
    ??apps.find(app=>app.navigationPageApiNames.includes(page.apiName))?.apiName??'';
  const [appApiName,setAppApiName]=useState(existing);
@@ -30,7 +32,7 @@ export default function PageDetailsDialog({page,apps,disabled,request,onClose,on
  const [loading,setLoading]=useState(false);
  const [showArchived,setShowArchived]=useState(false);
  const [preview,setPreview]=useState<{version:number;page:LightningPageMetadata}|null>(null);
- const valid=Boolean(label.trim()&&label.trim().length<=128&&
+ const valid=Boolean(apiNameValid&&label.trim()&&label.trim().length<=128&&
   (page.pageType!=='App Page'||apps.some(a=>a.apiName===appApiName)));
  const base=`/metadata/pages/${encodeURIComponent(page.apiName)}/layouts/${variant}`;
  useEffect(()=>{
@@ -47,7 +49,7 @@ export default function PageDetailsDialog({page,apps,disabled,request,onClose,on
   setBusy(true);setError('');
   try{
    const succeeded=await onSave(page.apiName,label.trim(),
-    page.pageType==='App Page'?appApiName:null,page.label);
+    page.pageType==='App Page'?appApiName:null,page.label,apiName);
    if(succeeded)onClose();
    else setError('Could not save page details. Review the message and retry.');
   }catch(e){setError(e instanceof Error?e.message:'Unable to update page');}
@@ -112,8 +114,10 @@ export default function PageDetailsDialog({page,apps,disabled,request,onClose,on
          maxLength={128} onChange={e=>setLabel(e.target.value)} autoFocus/>
        </label>
        <label className="form-label">API Name
-        <input className="form-control" aria-label="Page API name" value={page.apiName} readOnly/>
-        <small><LockKeyhole size={12}/> Stable identity. Existing API names are protected until a dependency-safe migration is available.</small>
+        <input className="form-control" aria-label="Page API name" value={apiName}
+          maxLength={128} onChange={e=>setApiName(e.target.value.toLowerCase())}/>
+        <small><LockKeyhole size={12}/> Lowercase only. Changing an existing identifier runs a tenant-scoped reference check; referenced pages cannot be renamed until dependencies are resolved.</small>
+        {!apiNameValid&&<small role="alert">Use lowercase letters, numbers and underscores, starting with a letter.</small>}
        </label>
       </section>
       <section className="page-details-section" aria-label="Page Behaviour">
