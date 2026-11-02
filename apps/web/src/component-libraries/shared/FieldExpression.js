@@ -445,14 +445,15 @@ function parse(source,record,formulaContext){
     items.push(...selected);index+=criterion===null?1:2;continue;
    }
    // A literal caption followed by a field and explicit criterion forms a clause.
-   if(node.kind==='literal'&&typeof node.value==='string'&&
-     index+2<args.length&&sourceField(args[index+1])){
+   if(node.kind==='literal'&&typeof node.value==='string'&&index+2<args.length&&
+     (sourceField(args[index+1])||(args[index+1].kind==='literal'&&args[index+1].value===''))){
     const pointer=sourceField(args[index+1]);
     const criterion=evaluate(args[index+2]);
-    if(typeof criterion!=='string'&&typeof criterion!=='number'&&typeof criterion!=='boolean'
-      ||String(criterion).trim()==='')throw Error('COLLECTION criterion is required after '+pointer.reference);
-    items.push({label:node.value,value:String(criterion),criteriaField:pointer.reference,
-      criteria:String(criterion),objectApiName:pointer.object});
+    if(criterion!==null&&typeof criterion!=='string'&&typeof criterion!=='number'&&typeof criterion!=='boolean')
+     throw Error('Invalid COLLECTION criterion');
+    items.push({label:node.value,value:pointer?String(criterion??''):node.value,
+      criteriaField:pointer?.reference??'',criteria:String(criterion??''),
+      ...(pointer?{objectApiName:pointer.object}:{})});
     index+=3;continue;
    }
    if(isCriteriaComparison(node)){
