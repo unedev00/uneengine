@@ -5,7 +5,7 @@ import {
  evaluateFormulaBinary,evaluateFormulaUnary,formulaTruth,Parser
 } from '../../../../server/src/expression-engine/FormulaParser.js';
 import {tokenize} from '../../../../server/src/expression-engine/FormulaTokenizer.js';
-import {createNamedFormulaCollection,createCriteriaFormulaCollection,deriveFormulaCollection,sumFormulaCollection} from '../../../../server/src/expression-engine/FormulaCollection.js';
+import {createNamedFormulaCollection,createCriteriaFormulaCollection,deriveFormulaCollection,sumFormulaCollection,matchesFormulaCollectionCriterion} from '../../../../server/src/expression-engine/FormulaCollection.js';
 import {isExcelWildcardDataReference,matchesExcelWildcard,hasExcelWildcardCriteria} from '../../../../server/src/expression-engine/FormulaWildcard.js';
 import {validateFormulaFunctions} from '../../../../server/src/expression-engine/FormulaFunctionRegistry.js';
 import {roundFormulaNumber} from '../../../../server/src/expression-engine/FormulaNumeric.js';
@@ -421,9 +421,11 @@ function parse(source,record,formulaContext){
    const node=args[index];
    // A literal caption followed by a field and explicit criterion forms a clause.
    if(node.kind==='literal'&&typeof node.value==='string'&&index+2<args.length
-     &&args[index+1].kind==='literal'&&args[index+1].value===''
-     &&args[index+2].kind==='literal'&&args[index+2].value===''){
-    items.push(node.value);index+=3;continue;
+     &&args[index+1].kind==='literal'&&args[index+1].value===''){
+    // A blank Field explicitly targets the caption instead of an Object field.
+    const criterion=evaluate(args[index+2]);
+    if(matchesFormulaCollectionCriterion(node.value,criterion))items.push(node.value);
+    index+=3;continue;
    }
    if(node.kind==='literal'&&typeof node.value==='string'&&
      index+2<args.length&&sourceField(args[index+1])){
