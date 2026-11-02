@@ -407,6 +407,8 @@ export function evaluateFieldExpressionDetailed(expression,record,options={}){
     return {value:null,error:'Collection formula must return COLLECTION("Name", ...)'}; 
    return {value:result};
   }
+  if(result&&typeof result==='object'&&!Array.isArray(result)&&typeof result.name==='string'&&Array.isArray(result.items))
+   return {value:'',error:'Use a Collection source for COLLECTION() results'};
   if(typeof result==='number'&&!Number.isFinite(result))return {value:'',error:'Formula result is not finite'};
   return {value:text(result)};
  }catch(failure){
