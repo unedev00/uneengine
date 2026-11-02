@@ -450,7 +450,7 @@ test('Clicking canvas releases any focused ribbon formula editor and closes fiel
  assert.match(builder,/active\.closest\('\.office-builder-ribbon'\)/);
  assert.match(builder,/active\.matches\('input,textarea,select,\[contenteditable="true"\]'\)/);
  assert.match(builder,/active\.blur\(\)/);
- assert.match(formula,/if\(error&&draft\.trim\(\)\.startsWith\('='\)\)setConfirmIncomplete\(true\)/);
+ assert.match(formula,/if\(error&&isFormulaDraft\(draft\.trim\(\)\)\)setConfirmIncomplete\(true\)/);
 });
 test('Smart Event ribbon matches On Click and Qty Icon component support',()=>{
  const ribbon=read('../src/core/builders/PageBuilder/SmartEventActionsRibbon.tsx');
