@@ -1,6 +1,6 @@
 import {useState} from 'react';
 import {Trash2, SlidersHorizontal} from 'lucide-react';
-import type {FlowDefinitionMetadata} from '../../metadata/Definitions/metadata';
+import type {FlowDefinitionMetadata,FieldMetadata} from '../../metadata/Definitions/metadata';
 import {metadataReference,metadataSelection} from '../../metadata/Definitions/metadataReferences';
 import {supportsSmartActionEvent} from './SmartEventActionsRibbon';
 import SmartFormulaField from './SmartFormulaField';
@@ -180,7 +180,7 @@ export default function PageBuilderActionRibbon({
        <CompactActionFlowBindings
          flow={selectedFlow} enabled={canEditFlow}
          inputs={asBinding(selected.inputs)} outputs={asBinding(selected.outputs)}
-         fields={dataFields} onInputsChange={updateInput} onOutputsChange={updateOutput}/>
+         fields={dataFields.map(field=>({...field,required:false,unique:false})) as FieldMetadata[]} onInputsChange={updateInput} onOutputsChange={updateOutput}/>
      </div>
    </div>
  </div>;
