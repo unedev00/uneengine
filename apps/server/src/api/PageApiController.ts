@@ -4,7 +4,9 @@ import type {RbacEngine} from '../system-files/rbac-engine.js';
 import type {RecordEngine} from '../system-files/record-engine.js';
 import type {FlowRuntime} from '../system-files/flow-runtime.js';
 import {authenticated,wrap,api} from './ApiAuthenticationGuard.js';
+import {registerPageDetailsController} from './PageDetailsController.js';
 export function registerPageApiController(app:Express,db:SqlPersistence,rbac:RbacEngine){
+  registerPageDetailsController(app,db,rbac);
 
   // Deactivation is not a draft save: it takes a published page out of routing
   // without deleting either its draft or its published per-device snapshots.
