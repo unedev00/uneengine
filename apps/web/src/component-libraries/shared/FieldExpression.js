@@ -376,10 +376,20 @@ function parse(source,record,formulaContext){
   if(!args.length)throw Error('COLLECTION requires a name');
   const name=args[0].kind==='reference'&&/^[A-Za-z][A-Za-z0-9_]{0,79}$/.test(args[0].value)
     ?args[0].value:evaluate(args[0]),items=[];
-  if(args.length===3&&args[1].kind==='reference'
-    &&formulaContext.namedCollections&&Object.entries(formulaContext.namedCollections)
-      .some(([key])=>key.toLowerCase()===args[1].value.toLowerCase()))
-   return deriveFormulaCollection(name,evaluate(args[1]),evaluate(args[2]));
+  if(args.length===3&&args[1].kind==='reference'){
+   const sourceName=args[1].value;
+   const owned=formulaContext.namedCollections&&Object.entries(formulaContext.namedCollections)
+    .some(([key])=>key.toLowerCase()===sourceName.toLowerCase());
+   if(owned)return deriveFormulaCollection(name,evaluate(args[1]),evaluate(args[2]));
+   const root=formulaContext.rootObjectApiName;
+   const rows=root&&formulaContext.collectionSources?.[root];
+   const isField=Array.isArray(rows)&&rows.some(row=>row&&typeof row==='object'
+     &&Object.prototype.hasOwnProperty.call(row,sourceName));
+   // An unpublished/removed upstream collection must clear descendants instead
+   // of retaining a previously rendered source under legacy syntax recovery.
+   if(!isField&&/^[A-Za-z][A-Za-z0-9_]{0,79}$/.test(sourceName))
+    throw Error('Named collection source unavailable: @'+sourceName);
+  }
   const sourceField=node=>{
    if(node?.kind!=='reference')return null;
    const raw=node.value,parts=raw.split('.');
