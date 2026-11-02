@@ -35,6 +35,7 @@ import {seedConnectorAppCatalog} from '../app-seeders/connector-apps.js';
 import {seedAceChatterFlows} from '../app-seeders/acechatter-flow.js';
 import {seedAceAssistCrudFlows} from '../app-seeders/aceassist-crud-flows.js';
 import {seedMailAdminPermissions} from '../app-seeders/mail-admin-permissions.js';
+import {seedPlatformDeploymentOwner} from '../app-seeders/platform-deployment-owner.js';
 import {reconcileCoreObjectDefaults} from '../app-seeders/core-object-defaults.js';
 import {seedBundledComponentsForExistingTenants} from '../app-seeders/bundled-components.js';
 import {seedUiComponentsForExistingTenants} from '../app-seeders/ui-components.js';
@@ -2794,6 +2795,8 @@ export async function startSystemServer() {
     await seedCommunicationObjectsForExistingTenants(db);
     console.info('Core metadata seeder: existing tenants backfilled:',seededTenants);
     await bootstrapFreshTenant(db);
+    const platformOwner=await seedPlatformDeploymentOwner(db);
+    console.info('Platform deployment owner policy:',platformOwner);
     const bundledTenants=await seedBundledComponentsForExistingTenants(db);
     const uneTenants=await seedUiComponentsForExistingTenants(db);
     await seedSmartComponentsForExistingTenants(db);

@@ -2855,3 +2855,12 @@ CREATE INDEX IF NOT EXISTS md_record_values_relationship_inbound
 CREATE INDEX IF NOT EXISTS md_field_definitions_relationship_inbound
  ON md_field_definitions(tenant_id,related_object,object_api,api_name)
  WHERE data_type='reference' AND deleted_at IS NULL;
+
+-- One-time platform deployment owner bootstrap receipt. Revocations are never
+-- undone by later startup seeders; additional operators are assigned via RBAC.
+CREATE TABLE IF NOT EXISTS md_platform_deployment_owner_receipts (
+ tenant_id uuid PRIMARY KEY REFERENCES md_tenants(id),
+ user_id uuid NOT NULL,
+ created_at timestamptz NOT NULL DEFAULT now(),
+ FOREIGN KEY(tenant_id,user_id) REFERENCES md_users(tenant_id,id)
+);

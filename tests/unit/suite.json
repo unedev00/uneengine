@@ -114,6 +114,7 @@
     "apps/server/test/system/page-layout-versions.test.ts",
     "apps/server/test/system/parse-json-flow-node.test.ts",
     "apps/server/test/system/password-reset-service.test.ts",
+    "apps/server/test/system/platform-deployment-owner.test.ts",
     "apps/server/test/system/platform-deployment-routes.test.ts",
     "apps/server/test/system/platform-recovery-mailer.test.ts",
     "apps/server/test/system/product-image-field.test.ts",
