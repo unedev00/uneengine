@@ -510,4 +510,20 @@ test('COLLECTION joins selected category to nullable authorised lookups without 
   '=COLLECTION("FilteredProducts",@Product.Name)',{Product:products},context);
  assert.equal(all.error,undefined);
  assert.equal(all.value.items.length,4);
+ // All and no selection must include uncategorised rows; a literal "*" on
+ // a nullable lookup otherwise matches only populated category references.
+ const allOrSelected='=IF(OR(ISBLANK(@CatCollection.state.Id),@CatCollection.state.Id="*"),'
+  +'COLLECTION("FilteredProducts",@Product.Name),'
+  +'COLLECTION("FilteredProducts",@Product.MenuCategory=@CatCollection.state.Id))';
+ const allChoice=evaluateCollectionFormula(allOrSelected,{Product:products},{
+  ...context,state:{collectionSelections:{CatCollection:{Id:'*'}}}});
+ assert.equal(allChoice.error,undefined);
+ assert.equal(allChoice.value.items.length,4);
+ const noChoice=evaluateCollectionFormula(allOrSelected,{Product:products},{
+  ...context,state:{collectionSelections:{}}});
+ assert.equal(noChoice.error,undefined);
+ assert.equal(noChoice.value.items.length,4);
+ const categoryChoice=evaluateCollectionFormula(allOrSelected,{Product:products},context);
+ assert.equal(categoryChoice.error,undefined);
+ assert.deepEqual(categoryChoice.value.items.map((item:any)=>item.value),['p1','p3']);
 });
