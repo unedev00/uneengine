@@ -168,12 +168,12 @@ export function usePageCollectionFormula(
    if(outcome.error){formulaError=outcome.error;return false;}
    return outcome.value==='true'||outcome.value===true;
   }):visualRows;
-  const positions=new Set(kept.map(row=>row.__collectionIndex));
+  const positions=new Set(kept.map(row=>(row as Row).__collectionIndex));
   return {...result,collection:{...result.collection,
    items:result.collection.items.filter((_,index)=>positions.has(index))},
    error:formulaError??result.error};
  })();
- const recoverable=Boolean(sessionResult.error&&/^COLLECTION has a blank value|^Invalid Flow formula|^COLLECTION requires|^Unexpected|^Unterminated/.test(result.error));
+ const recoverable=Boolean(sessionResult.error&&/^COLLECTION has a blank value|^Invalid Flow formula|^COLLECTION requires|^Unexpected|^Unterminated/.test(sessionResult.error));
  // Keep the last successful rendering when legacy persisted metadata contains
  // an invalid expression. Do not turn parser errors into visible list items.
  if(sessionResult.collection&&!sessionResult.error&&sessionResult.collection.name!=='__filtered_list__')
