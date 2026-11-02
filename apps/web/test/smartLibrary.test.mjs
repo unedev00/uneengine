@@ -156,6 +156,31 @@ async function renderSmart(apiName, props) {
  return renderToStaticMarkup(React.createElement(sandbox.module.exports.default,props));
 }
 
+test('Smart Tabs use a zero-based configurable default for static, custom and collection tabs',async()=>{
+ const selected=async props=>{
+  const markup=await renderSmart('smart_tabs',props);
+  const match=markup.match(/<button\\b[^>]*aria-selected="true"[^>]*>([^<]*)<\\/button>/);
+  assert.ok(match,'A tab must be visibly selected');
+  return match[1];
+ };
+ const plain={tabs:['All','Food','Drinks'],tabCount:3};
+ assert.equal(await selected(plain),'All','legacy default is zero');
+ assert.equal(await selected({...plain,tabIndex:0}),'All');
+ assert.equal(await selected({...plain,tabIndex:2}),'Drinks');
+ assert.equal(await selected({...plain,tabIndex:9}),'Drinks','out-of-bounds defaults clamp to final tab');
+ assert.equal(await selected({...plain,tabIndex:-1}),'All','invalid index falls back to zero');
+ assert.equal(await selected({...plain,tabIndex:1.5}),'All','fractional index is invalid');
+ const custom={...plain,firstTabCustom:true,firstTabCaption:'ALL'};
+ assert.equal(await selected({...custom,tabIndex:0}),'ALL','custom first tab occupies index zero');
+ assert.equal(await selected({...custom,tabIndex:1}),'All','first record moves to index one');
+ const records=[{Id:'food',Name:'Food'},{Id:'drinks',Name:'Drinks'}];
+ const bound={records,tabCount:2,tabIndex:1,
+  dataCollection:{name:'Categories',items:records}};
+ assert.equal(await selected(bound),'Drinks','collection defaults to configured record');
+ assert.equal(await selected({...bound,pageState:{collectionSelections:{
+  Categories:{Id:'food'}}}}),'Food','existing selected record stays authoritative');
+});
+
 test('unbound Card Grid displays sample cards only in editable canvas, not live or published',async()=>{
  const props={textSource:'@Name',imageSource:'@ImageUrl',badgeVisible:true,
   badgeText:'@Price',cardsPerRow:3,records:[]};
