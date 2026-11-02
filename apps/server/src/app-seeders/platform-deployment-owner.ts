@@ -127,7 +127,50 @@ export async function seedPlatformDeploymentOwner(
     }
    }
   }
-  if(identities.length!==1)return 'identity-not-found';
+  if(identities.length!==1){
+   if(platformDomain) {
+    // Read-only diagnostic counts. Never log names, emails, identifiers,
+    // passwords or business records; operators need to know *which guard*
+    // failed before considering any privileged bootstrap.
+    const {rows}=await client.query<{
+     tenants:number;canonical_domains:number;active_internal:number;
+     direct_oneengine:number;direct_oneengine_manage:number;
+     root_direct_oneengine:number;root_direct_manage:number
+    }>(`
+     SELECT
+      (SELECT count(*)::int FROM md_tenants) AS tenants,
+      (SELECT count(*)::int FROM md_tenant_domains WHERE domain=$1) AS canonical_domains,
+      (SELECT count(*)::int FROM md_users u JOIN md_tenants t ON t.id=u.tenant_id
+       WHERE t.status='ACTIVE' AND u.enabled AND u.user_type='internal') AS active_internal,
+      (SELECT count(*)::int FROM md_users u JOIN md_tenants t ON t.id=u.tenant_id
+       WHERE t.status='ACTIVE' AND u.enabled AND u.user_type='internal'
+       AND EXISTS(SELECT 1 FROM md_permission_assignments a
+        JOIN md_permission_sets p ON p.tenant_id=a.tenant_id AND p.id=a.permission_set_id
+        WHERE a.tenant_id=u.tenant_id AND a.user_id=u.id AND p.api_name='OneEngine')) AS direct_oneengine,
+      (SELECT count(*)::int FROM md_users u JOIN md_tenants t ON t.id=u.tenant_id
+       WHERE t.status='ACTIVE' AND u.enabled AND u.user_type='internal'
+       AND EXISTS(SELECT 1 FROM md_permission_assignments a
+        JOIN md_permission_sets p ON p.tenant_id=a.tenant_id AND p.id=a.permission_set_id
+        WHERE a.tenant_id=u.tenant_id AND a.user_id=u.id AND p.api_name='OneEngine')
+       AND md_rbac_allowed(u.tenant_id,u.id,'Tenant','manage')) AS direct_oneengine_manage,
+      (SELECT count(*)::int FROM md_users u JOIN md_tenants t ON t.id=u.tenant_id
+       JOIN md_tenant_domains d ON d.tenant_id=t.id
+       WHERE d.domain=$1 AND t.status='ACTIVE' AND u.enabled AND u.user_type='internal'
+       AND EXISTS(SELECT 1 FROM md_permission_assignments a
+        JOIN md_permission_sets p ON p.tenant_id=a.tenant_id AND p.id=a.permission_set_id
+        WHERE a.tenant_id=u.tenant_id AND a.user_id=u.id AND p.api_name='OneEngine')) AS root_direct_oneengine,
+      (SELECT count(*)::int FROM md_users u JOIN md_tenants t ON t.id=u.tenant_id
+       JOIN md_tenant_domains d ON d.tenant_id=t.id
+       WHERE d.domain=$1 AND t.status='ACTIVE' AND u.enabled AND u.user_type='internal'
+       AND EXISTS(SELECT 1 FROM md_permission_assignments a
+        JOIN md_permission_sets p ON p.tenant_id=a.tenant_id AND p.id=a.permission_set_id
+        WHERE a.tenant_id=u.tenant_id AND a.user_id=u.id AND p.api_name='OneEngine')
+       AND md_rbac_allowed(u.tenant_id,u.id,'Tenant','manage')) AS root_direct_manage
+    `,[platformDomain]);
+    console.info('Platform owner eligibility counts:',JSON.stringify(rows[0]??{}));
+   }
+   return 'identity-not-found';
+  }
   const {tenant_id:tenant,user_id:user}=identities[0];
 
   // Never replace an existing platform policy or its explicit deny overrides.
