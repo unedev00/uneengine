@@ -89,7 +89,7 @@ import { isComponentVisible } from '../../components/Properties/componentVisibil
 import {behaviorValidation,behaviorAction,behaviorAppearance,behaviorInteractions,behaviorTabs,behaviorTabForChild,pageBehaviors} from './pageBehaviorRuntime';
 import { canNestComponent, componentVisualStyle, directChildren, isLayoutType, isDescendantOf, layoutTypes } from '../TemplatePageRuntime/pageComponentLayout';
 import { isCanvasLocked, wrapCanvasComponent, ungroupCanvasComponent } from '../../builders/PageBuilder/canvasInteractions';
-import { filterPageComponentRecords, pageComponentRecordQuery, bindPageStateProperties, needsMetadataComponentRuntime, resolvePageStatePath, activePageRecordFilters} from './pageComponentBindings';
+import { filterPageComponentRecords, pageComponentRecordQuery, bindPageStateProperties, needsMetadataComponentRuntime, resolvePageStatePath, activePageRecordFilters,collectionRecordFilterFormula} from './pageComponentBindings';
 import {scopedFieldAllows} from './fieldScopedRecordFilters';
 import {resolveSmartToggleFieldBinding,updateSmartToggleField} from './smartToggleFieldBinding';
 import {usePageComponentRelatedScope} from '../PageRuntime/usePageSessionRelatedQuery';
@@ -384,7 +384,11 @@ function MetadataBoundPageComponent({
   }, [pageSessionKey, sessionId]);
   const fields = objects.find((item) => item.apiName === objectApiName)?.fields ?? [];
   const selectedRecordFilters=activePageRecordFilters(properties);
-  const recordQuery=pageComponentRecordQuery(selectedRecordFilters.filters,fields,{pageState,recordId,sessionId},properties.filterLogic==='OR'?'OR':'AND',selectedRecordFilters.formula);
+ const collectionPredicate=collectionRecordFilterFormula(properties,objectApiName,fields);
+ const combinedRecordFormula=collectionPredicate
+  ?selectedRecordFilters.formula? 'AND('+String(selectedRecordFilters.formula)+','+collectionPredicate+')'
+   :collectionPredicate:selectedRecordFilters.formula;
+  const recordQuery=pageComponentRecordQuery(selectedRecordFilters.filters,fields,{pageState,recordId,sessionId},properties.filterLogic==='OR'?'OR':'AND',combinedRecordFormula);
   const relatedKey=String(properties.relatedFilterKey??'');
   const {relatedQuery,relatedField,parentId:selectedId}=usePageComponentRelatedScope(
     properties,component.type,fields,objects,pageState,sessionId,revision,
