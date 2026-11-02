@@ -14,19 +14,22 @@ const sessions=new Map<string,Registry>();
 export function namedCollectionNames(formula:unknown):string[]{
  if(typeof formula!=='string'||!formula.trim())return [];
  const found=new Set<string>();
- const visit=(node:Expression):void=>{
-  if(node.kind==='call'){
-   if(node.name==='COLLECTION'){
-    const first=node.args[0];
-    const name=first?.kind==='literal'&&typeof first.value==='string'?first.value:
-     first?.kind==='reference'&&/^[A-Za-z][A-Za-z0-9_]*$/.test(first.value)?first.value:'';
-    if(validFormulaCollectionName(name))found.add(name);
-   }
-   node.args.forEach(visit);
-  }else if(node.kind==='binary'){visit(node.left);visit(node.right);}
-  else if(node.kind==='unary')visit(node.value);
+ const outputs=(node:Expression):void=>{
+  if(node.kind!=='call')return;
+  if(node.name==='COLLECTION'){
+   const first=node.args[0];
+   const name=first?.kind==='literal'&&typeof first.value==='string'?first.value:
+    first?.kind==='reference'&&/^[A-Za-z][A-Za-z0-9_]*$/.test(first.value)?first.value:'';
+   if(validFormulaCollectionName(name))found.add(name);
+  }else if(node.name==='IF'&&node.args.length===3){
+   outputs(node.args[1]);outputs(node.args[2]);
+  }else if(node.name==='IFERROR'||node.name==='BLANKVALUE'||node.name==='NULLVALUE'){
+   node.args.forEach(outputs);
+  }else if(node.name==='CASE'){
+   node.args.slice(2).forEach((arg,index)=>{if(index%2===0||index===node.args.length-3)outputs(arg);});
+  }
  };
- try{visit(new Parser(tokenize(formula.trim())).parse());}catch{return [];}
+ try{outputs(new Parser(tokenize(formula.trim())).parse());}catch{return [];}
  return [...found];
 }
 export function namedCollectionName(formula:unknown):string|undefined{
