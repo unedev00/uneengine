@@ -559,7 +559,8 @@ export function evaluateFieldExpression(expression,record,options){
 export function evaluateCollectionFormula(formula,sourceRecords={},context={}){
  const source=typeof formula==='string'?formula.trim().replace(/^=\s*/,''):'';
  if(!source)return {value:null,error:'Enter a collection formula'};
- return evaluateFieldExpressionDetailed(source,{...context},
+ return evaluateFieldExpressionDetailed(source,context?.record&&typeof context.record==='object'
+   &&!Array.isArray(context.record)?context.record:{},
   {collectionSources:sourceRecords,collectionResult:true,
    rootObjectApiName:context?.primaryObject,
    namedCollections:context?.namedCollections,
