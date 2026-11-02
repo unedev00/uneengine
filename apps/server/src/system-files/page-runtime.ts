@@ -106,6 +106,10 @@ export class PageRuntime {
     const base=await this.metadata(tenantId,pageApi,variant);
     return this.layouts.load(tenantId,pageApi,variant,'draft',base);
   }
+  async version(tenantId:string,pageApi:string,variant:PageLayoutVariant,version:number){
+    const base=await this.metadata(tenantId,pageApi,variant);
+    return this.layouts.version(tenantId,pageApi,variant,version,base);
+  }
   async saveLayoutDraft(tenantId:string,pageApi:string,variant:PageLayoutVariant,payload:unknown,actor?:string){
     const base=await this.metadata(tenantId,pageApi,variant);
     return this.layouts.saveDraft(tenantId,pageApi,variant,payload,base,actor);
@@ -118,6 +122,27 @@ export class PageRuntime {
   async rollbackLayout(tenantId:string,pageApi:string,variant:PageLayoutVariant,version:number,actor?:string){
     await this.layouts.rollback(tenantId,pageApi,variant,version,actor);
     return this.editor(tenantId,pageApi,variant);
+  }
+  /** Copy an immutable history snapshot to a NEW draft revision, without
+   * changing published output or rewriting the original version. */
+  async copyLayoutVersion(tenantId:string,pageApi:string,variant:PageLayoutVariant,
+    version:number,actor:string){
+    const versions=await this.layouts.history(tenantId,pageApi,variant);
+    const selected=versions.find(v=>v.version===version);
+    if(!selected)throw new Error('Page layout revision not found');
+    if(selected.archived)throw new Error('Unarchive the version before copying it');
+    const [editor,source]=await Promise.all([
+      this.editor(tenantId,pageApi,variant),this.version(tenantId,pageApi,variant,version)
+    ]);
+    const copy={...editor,...source,apiName:editor.apiName,label:editor.label,
+      draftRevision:editor.draftRevision,activationAssignments:editor.activationAssignments};
+    const result=await this.saveLayoutDraft(tenantId,pageApi,variant,copy,actor);
+    return result;
+  }
+  async archiveLayout(tenantId:string,pageApi:string,variant:PageLayoutVariant,
+    version:number,archived:boolean,actor:string){
+    await this.layouts.archive(tenantId,pageApi,variant,version,archived,actor);
+    return this.layouts.history(tenantId,pageApi,variant);
   }
   async layoutHistory(tenantId:string,pageApi:string,variant:PageLayoutVariant){
     return this.layouts.history(tenantId,pageApi,variant);
@@ -196,6 +221,7 @@ export class PageRuntime {
       // Enforce this inside the transaction to avoid a separate check/write race.
       if(pageId&&createOnly)throw new Error('Page already exists');
       if(pageId){
+        if(p.apiName!==previousApiName)throw new Error('Rename this page from Page Properties');
         const managed=await client.query(
           'SELECT 1 FROM md_app_seed_pages WHERE tenant_id=$1 AND page_id=$2 LIMIT 1',[tenantId,pageId]);
         if(managed.rowCount)throw new Error('Invalid managed Page update');

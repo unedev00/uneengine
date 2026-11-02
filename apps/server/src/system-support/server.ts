@@ -1732,6 +1732,12 @@ export function createSystemServer(db:SqlPersistence) {
     const actor=req.actor!;
     await assertMetadataPackageEditable(db,actor.tenant_id,'page',req.params.apiName);
     await rbac.require(actor.tenant_id,actor.user_id,'PageDefinition','manage');
+    // Existing legacy page identities remain valid until explicitly migrated.
+    // Newly created pages must use canonical lowercase identifiers.
+    const found=await db.query('SELECT 1 FROM md_page_definitions WHERE tenant_id=$1 AND api_name=$2',
+      [actor.tenant_id,req.params.apiName]);
+    if(!found.rowCount&&(!req.body?.apiName||req.body.apiName!==String(req.body.apiName).toLowerCase()))
+      throw new Error('New Page API names must be lowercase');
     const page=await pages.save(actor.tenant_id,req.params.apiName,req.body);
     res.json({page});
   }));

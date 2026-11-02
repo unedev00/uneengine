@@ -30,7 +30,7 @@ type Props={
   nesting:Nesting;technical:Technical;
 };
 
-/** All five Advanced groups are permanent. Applicability disables controls
+/** The four component groups stay in Design; page-level activation is edited in Page Details for App Pages. Applicability disables controls
  * instead of changing the ribbon structure. The shared Page Builder handlers
  * remain responsible for mutations and permissions. */
 export default function PageBuilderAdvancedSections({
@@ -40,7 +40,7 @@ export default function PageBuilderAdvancedSections({
   // Never leave a stale portal attached after switching from another tab.
   useEffect(()=>onInspectorHost(null),[onInspectorHost]);
   return <div className="page-builder-advanced-inline" aria-label="Advanced ribbon fixed sections">
-    <section className="advanced-fixed-group advanced-activation" aria-label="Activation Assignments">
+    {assignment.enabled&&<section className="advanced-fixed-group advanced-activation" aria-label="Activation Assignments">
       <div className="advanced-fixed-field advanced-assigned">
         <label><input type="checkbox" checked={assignment.assigned} readOnly disabled
           title="Shows whether the page has activation assignments"/>Assigned</label>
@@ -66,7 +66,7 @@ export default function PageBuilderAdvancedSections({
         </select>
       </label>
       <span className="advanced-fixed-caption">Activation Assignments</span>
-    </section>
+    </section>}
     <section className="advanced-fixed-group advanced-responsive" aria-label="Responsive Settings">
       {(['Desktop','Tablet','Phone'] as const).map((factor,index)=>
         <label key={factor} className={'advanced-fixed-field advanced-device advanced-device-'+index}>

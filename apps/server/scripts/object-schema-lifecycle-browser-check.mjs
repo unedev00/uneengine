@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 
 /** Real browser Object Manager -> API -> SQL lifecycle, inside disposable tenant smoke. */
 export async function runObjectSchemaLifecycleBrowserCheck({page,origin,db,tenantId}){
- const objectApi='Browser_Lifecycle__c';
+ const objectApi='browser_lifecycle__c';
  await page.goto(origin+'/une/setup/object-manager',{waitUntil:'domcontentloaded'});
  await page.getByRole('heading',{name:'Object Manager',exact:true}).waitFor({timeout:15000});
  await page.getByRole('button',{name:'New Object',exact:true}).first().click();

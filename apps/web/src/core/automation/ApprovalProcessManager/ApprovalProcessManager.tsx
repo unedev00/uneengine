@@ -108,7 +108,7 @@ export default function ApprovalProcessManager({
           setLabel(nextLabel);
           if (isNew && !manualApiName) setApiName(generateMetadataApiName(nextLabel));
         }} /></label></PlatformPageSlot>
-        <PlatformPageSlot slotKey="field-approval-02"><details><summary>Advanced: API Name</summary><label className="form-label">Process API Name<input className="form-control" value={apiName} disabled={!canManage || saving || !isNew} onChange={(event) => {setManualApiName(true);setApiName(event.target.value);}} /></label></details>
+        <PlatformPageSlot slotKey="field-approval-02"><details><summary>Advanced: API Name</summary><label className="form-label">Process API Name<input className="form-control" value={apiName} disabled={!canManage || saving || !isNew} onChange={(event) => {setManualApiName(true);setApiName(event.target.value.toLowerCase());}} /></label></details>
         {!manualApiName&&<p className="settings-panel-copy">API Name: {apiName||'Generated from label'}</p>}
         {isNew&&metadataNameConflict(apiName,processes.map(process=>process.apiName))&&<p role="alert" className="formula-validation-error">API Name already exists.
         <button type="button" className="btn" onClick={()=>{setManualApiName(true);setApiName(suggestMetadataApiName(apiName,processes.map(process=>process.apiName)));}}>Use suggested name</button></p>}</PlatformPageSlot>

@@ -124,7 +124,7 @@ export default function GlobalValueSetManager(){
       <div className="toolbar-actions"><button className="btn" type="button"
         onClick={()=>setMode(selectedId?'view':'list')}>Cancel</button></div>
       <label className="form-label">Label<input className="form-control" maxLength={120} value={label} onChange={event=>{setLabel(event.target.value);if(!selectedId&&!manualName)setApiName(generateMetadataApiName(event.target.value));}} /></label>
-      <details><summary>Advanced: API Name</summary><label className="form-label">API Name<input className="form-control api-name" maxLength={80} value={apiName} disabled={Boolean(selectedId)} onChange={event=>{setManualName(true);setApiName(event.target.value);}} /></label></details>
+      <details><summary>Advanced: API Name</summary><label className="form-label">API Name<input className="form-control api-name" maxLength={80} value={apiName} disabled={Boolean(selectedId)} onChange={event=>{setManualName(true);setApiName(event.target.value.toLowerCase());}} /></label></details>
       {!selectedId&&<p className="permission-help">API Name: {apiName||'Generated from label'}</p>}
       {!selectedId&&metadataNameConflict(apiName,valueSets.map(item=>item.apiName))&&<p role="alert" className="form-error">API Name already exists. <button type="button" className="btn" onClick={()=>{setManualName(true);setApiName(suggestMetadataApiName(apiName,valueSets.map(item=>item.apiName)));}}>Use suggested name</button></p>}
       <label className="form-label">Description<textarea className="form-control" maxLength={4000} rows={2} value={description} onChange={event=>setDescription(event.target.value)} /></label>

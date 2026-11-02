@@ -1,4 +1,5 @@
 import {randomUUID} from 'node:crypto';
+import type {PoolClient} from 'pg';
 import type {Express} from 'express';
 import type {SqlPersistence} from '../system-files/sql-persistence.js';
 import type {RbacEngine} from '../system-files/rbac-engine.js';
@@ -6,9 +7,38 @@ import {PageRuntime} from '../system-files/page-runtime.js';
 import {assertMetadataPackageEditable} from '../system-support/metadata-package-service.js';
 import {authenticated,wrap,api} from './ApiAuthenticationGuard.js';
 
-/** Rename a page and change its App Page placement without touching canvas
- * drafts, immutable published layouts, or the page's stable API identity.
- * SQL ownership/activation and OneEngine are authoritative. */
+/** Page API names can be changed only when SQL proves there are no unresolved
+ * metadata-value references. Known navigation references are migrated atomically.
+ * Page IDs, historical layouts, drafts, component IDs and published data remain intact. */
+async function assertNoUnmanagedPageReferences(client:PoolClient,tenant:string,previous:string){
+ const {rows}=await client.query<{table_name:string;column_name:string}>(`
+   SELECT c.table_name,c.column_name FROM information_schema.columns c
+   WHERE c.table_schema='public' AND c.table_name LIKE 'md\\_%' ESCAPE '\\'
+     AND (c.column_name IN ('value_text','property_value','binding_value','page_api','page_api_name',
+       'target_page_api','navigation_page_api')
+       OR (c.column_name LIKE '%page%api%' AND c.column_name<>'api_name'))
+     AND EXISTS(SELECT 1 FROM information_schema.columns t
+       WHERE t.table_schema=c.table_schema AND t.table_name=c.table_name AND t.column_name='tenant_id')
+     AND (c.column_name LIKE '%page%api%' OR c.table_name LIKE '%\\_properties' ESCAPE '\\' OR c.table_name LIKE '%\\_bindings' ESCAPE '\\')
+     AND c.table_name NOT IN ('md_tenant_app_navigation')
+     AND c.table_name NOT LIKE '%\\_audit' ESCAPE '\\'
+   ORDER BY c.table_name,c.column_name`);
+ for(const col of rows){
+  // Identifiers come only from the SQL catalog, and are quoted defensively.
+  const table='"'+col.table_name.replace(/"/g,'""')+'"';
+  const column='"'+col.column_name.replace(/"/g,'""')+'"';
+  const valueColumn=['value_text','property_value','binding_value'].includes(col.column_name);
+  const clause=valueColumn
+    ?`position($2 in ${column})>0`
+    :`${column}=$2`;
+  const check=await client.query(`SELECT 1 FROM ${table} WHERE tenant_id=$1 AND ${clause} LIMIT 1`,
+    [tenant,previous]);
+  if(check.rowCount)throw new Error(
+    'Page API name is referenced by '+col.table_name+'. Update its dependent formulas or navigation first.');
+ }
+}
+
+/** Tenant-scoped Page Details remain separate from canvas drafts and immutable history. */
 export function registerPageDetailsController(app:Express,db:SqlPersistence,rbac:RbacEngine){
  app.patch('/api/metadata/pages/:apiName/details',wrap(async(req,res)=>{
   const actor=authenticated(req),pageApi=req.params.apiName;
@@ -16,9 +46,12 @@ export function registerPageDetailsController(app:Express,db:SqlPersistence,rbac
   const body=req.body;
   if(!body||typeof body!=='object'||Array.isArray(body))throw new Error('Invalid Page details');
   const label=body.label,appApiName=body.appApiName,expectedLabel=body.expectedLabel;
+  const nextApiName=body.nextApiName===undefined?pageApi:body.nextApiName;
   if(typeof label!=='string'||!label.trim()||label.trim().length>128
     ||typeof expectedLabel!=='string'||!expectedLabel.trim()||expectedLabel.length>128
-    ||appApiName!==null&&(typeof appApiName!=='string'||!api.test(appApiName)))
+    ||appApiName!==null&&(typeof appApiName!=='string'||!api.test(appApiName))
+    ||typeof nextApiName!=='string'||!api.test(nextApiName)
+    ||(nextApiName!==pageApi&&nextApiName!==nextApiName.toLowerCase()))
     throw new Error('Invalid Page details');
   await rbac.require(actor.tenant_id,actor.user_id,'PageDefinition','manage');
   await assertMetadataPackageEditable(db,actor.tenant_id,'page',pageApi);
@@ -49,10 +82,11 @@ export function registerPageDetailsController(app:Express,db:SqlPersistence,rbac
   const direct=await db.query<{app_api:string}>(`SELECT app_api FROM md_lightning_page_activation
    WHERE tenant_id=$1 AND page_id=$2 AND scope='App Default'`,[actor.tenant_id,page.id]);
   const assignedAppNames=direct.rows.map(row=>row.app_api).filter(Boolean);
+  const renaming=nextApiName!==pageApi;
   const appChanged=page.page_type==='App Page'&&
     (existingAppNames.length!==1||existingAppNames[0]!==appApiName
       ||assignedAppNames.length!==1||assignedAppNames[0]!==appApiName);
-  if(appChanged){
+  if(appChanged||renaming){
    await rbac.require(actor.tenant_id,actor.user_id,'AppExchange','manage');
    for(const appName of new Set([...existingAppNames,...(appApiName?[appApiName]:[])]))
     await rbac.require(actor.tenant_id,actor.user_id,'App:'+appName,'manage');
@@ -106,17 +140,28 @@ export function registerPageDetailsController(app:Express,db:SqlPersistence,rbac
      }
     }
    }
-   if(label.trim()!==row.title){
-    await client.query(`UPDATE md_page_definitions SET title=$3
-      WHERE tenant_id=$1 AND id=$2`,[actor.tenant_id,row.id,label.trim()]);
+   if(renaming){
+    const exists=await client.query(`SELECT 1 FROM md_page_definitions
+      WHERE tenant_id=$1 AND lower(api_name)=lower($2) AND id<>$3 LIMIT 1`,
+      [actor.tenant_id,nextApiName,row.id]);
+    if(exists.rowCount)throw new Error('A page already uses this API name');
+    await assertNoUnmanagedPageReferences(client,actor.tenant_id,pageApi);
+    // Navigation references are known stable relational links and safe to rewrite.
+    await client.query(`UPDATE md_tenant_app_navigation SET api_name=$3
+      WHERE tenant_id=$1 AND entry_type='App Page' AND api_name=$2`,
+      [actor.tenant_id,pageApi,nextApiName]);
    }
-   if(label.trim()!==row.title||appChanged)
+   if(label.trim()!==row.title||renaming){
+    await client.query(`UPDATE md_page_definitions SET title=$3,api_name=$4
+      WHERE tenant_id=$1 AND id=$2`,[actor.tenant_id,row.id,label.trim(),nextApiName]);
+   }
+   if(label.trim()!==row.title||appChanged||renaming)
     await client.query(`UPDATE md_lightning_page_details SET updated_at=now()
      WHERE tenant_id=$1 AND page_id=$2`,[actor.tenant_id,row.id]);
-   // The existing SQL Setup Audit triggers record the tenant, actor, old/new
-   // page title and app navigation/activation changes.
+   // Existing SQL Setup Audit triggers record tenant actor and relational changes.
+   // The version snapshots remain attached to the stable page ID.
   });
   res.setHeader('Cache-Control','private, no-store');
-  res.json({page:await new PageRuntime(db).metadata(actor.tenant_id,pageApi)});
+  res.json({page:await new PageRuntime(db).metadata(actor.tenant_id,nextApiName)});
  }));
 }

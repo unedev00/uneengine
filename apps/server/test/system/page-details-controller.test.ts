@@ -21,6 +21,9 @@ test('Page Details edit uses scoped metadata and OneEngine without rewriting a c
  assert.match(source,/md_tenant_app_navigation/);
  assert.match(source,/md_lightning_page_activation/);
  assert.match(source,/md_page_definitions SET title=/);
+ assert.match(source,/assertNoUnmanagedPageReferences/);
+ assert.match(source,/nextApiName/);
+ assert.match(source,/md_tenant_app_navigation SET api_name=/);
  assert.doesNotMatch(source,/DELETE FROM md_page_layout_versions|DELETE FROM md_lightning_page_nodes|DELETE FROM md_page_layout_version_nodes|UPDATE md_page_layout_heads/);
  assert.doesNotMatch(source,/req\.body\.tenant_id|req\.body\.app_id|const appId=req\.body/);
 });
@@ -36,11 +39,11 @@ test('Page Details dialog appears in Page Manager and editor, without changing A
  const dialog=read('../../../web/src/core/builders/PageBuilder/PageDetailsDialog.tsx');
  const presentation=read('../../../web/src/core/workspace/SetupShell/setupShellPresentation.tsx');
  const shell=read('../../../web/src/core/workspace/SetupShell/setupAppShell.tsx');
- assert.match(view,/Page details for /);
- assert.match(view,/Edit page name and app/);
+ assert.match(view,/Edit page properties for /);
+ assert.match(view,/Edit page properties and versions/);
  assert.match(view,/<PageDetailsDialog/);
  assert.match(view,/onSave=\{onUpdatePageDetails\}/);
- assert.match(dialog,/Stable identifier retained/);
+ assert.match(dialog,/Lowercase only/);
  assert.match(dialog,/page\.apiName/);
  assert.match(dialog,/Assign page to app/);
  assert.match(dialog,/page\.pageType==='App Page'/);

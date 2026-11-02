@@ -1,4 +1,4 @@
-import {useState,useRef,useEffect,useLayoutEffect,type KeyboardEvent} from 'react';
+import {useState,useRef,useEffect,useLayoutEffect,useId,type KeyboardEvent} from 'react';
 import {createPortal} from 'react-dom';
 import type {FieldMetadata,ObjectMetadata} from '../../metadata/Definitions/metadata';
 import {relationshipFormulaFields} from './relationshipFormulaFields';
@@ -41,6 +41,9 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
  const [focused,setFocused]=useState(false);
  const [confirmIncomplete,setConfirmIncomplete]=useState(false);
  const [functionMatch,setFunctionMatch]=useState<{start:number;end:number;query:string}|null>(null);
+ const [activeSuggestion,setActiveSuggestion]=useState(0);
+ const suggestionListId=useId();
+ useEffect(()=>setActiveSuggestion(0),[matches?.query,functionMatch?.query]);
  const functions=getFormulaFunctionNames('ribbon_binding');
  const functionSuggestions=functionMatch?functions.filter(name=>
    name.startsWith(functionMatch.query.toUpperCase())).slice(0,12):[];
@@ -146,16 +149,32 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
   if(error&&isFormulaDraft(draft.trim()))setConfirmIncomplete(true);
  };
  const keyDown=(event:KeyboardEvent<HTMLInputElement>)=>{
-  if(event.key==='Escape'){setMatches(null);setFunctionMatch(null);setFocused(false)}
-  if(event.key==='Enter'&&functionSuggestions.length&&functionMatch){
-    event.preventDefault();insertFunction(functionSuggestions[0]);
-  }else if(event.key==='Enter'&&filtered.length&&matches){event.preventDefault();insert(filtered[0].reference);}
-  else if(event.key==='Enter'){finishEdit();}
+  const options=functionMatch?functionSuggestions:matches?filtered:[];
+  if(event.key==='Escape'){
+   if(!functionMatch&&!matches)return;
+   event.preventDefault();setMatches(null);setFunctionMatch(null);setFocused(false);return;
+  }
+  if((event.key==='ArrowDown'||event.key==='ArrowUp')&&options.length){
+   event.preventDefault();
+   setActiveSuggestion(current=>(current+(event.key==='ArrowDown'?1:options.length-1))%options.length);
+   return;
+  }
+  if(event.key==='Enter'&&options.length){
+   event.preventDefault();
+   if(functionMatch)insertFunction(functionSuggestions[Math.min(activeSuggestion,functionSuggestions.length-1)]);
+   else if(matches)insert(filtered[Math.min(activeSuggestion,filtered.length-1)].reference);
+   return;
+  }
+  if(event.key==='Enter')finishEdit();
  };
  return <div className="smart-formula" title={singleFieldOnly?'Select a Boolean field, e.g. @IsActive':'Formula: @Field, + - * / and &; quoted symbols are text'}>
   <div className="smart-formula-highlight" aria-hidden="true">{splitSmartFormula(draft).map((part,i)=>
     <span key={i} className={'smart-formula-'+part.kind}>{part.value}</span>)}</div>
-  <input ref={input} type="text" aria-label={label} value={draft} spellCheck={false} autoComplete="off"
+  <input ref={input} type="text" role="combobox" aria-label={label} aria-autocomplete="list"
+   aria-expanded={Boolean(popup&&((functionMatch&&functionSuggestions.length)||(matches&&filtered.length)))}
+   aria-controls={suggestionListId}
+   aria-activedescendant={popup&&((functionMatch&&functionSuggestions.length)||(matches&&filtered.length))?suggestionListId+'-option-'+activeSuggestion:undefined}
+   value={draft} spellCheck={false} autoComplete="off"
    placeholder={singleFieldOnly?'@BooleanField':'@Field & "text"'} disabled={disabled} onKeyDown={keyDown}
    onFocus={e=>{setFocused(true);setCaret(e.currentTarget.selectionStart??draft.length)}}
    onClick={e=>setCaret(e.currentTarget.selectionStart??draft.length)}
@@ -185,15 +204,23 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
       }}>Discard Changes</button>
     </section>
   </div>,document.body)}
-  {functionSuggestions.length>0&&functionMatch&&popup&&createPortal(<div className="smart-formula-list"
+  {functionSuggestions.length>0&&functionMatch&&popup&&createPortal(<div id={suggestionListId} className="smart-formula-list"
     role="listbox" aria-label="Formula functions"
     style={{position:'fixed',left:popup.left,top:popup.top,minWidth:popup.width,maxHeight:200,zIndex:6000}}>
-    {functionSuggestions.map(name=><button type="button" role="option" key={name}
+    {functionSuggestions.map((name,index)=><button id={suggestionListId+'-option-'+index}
+      type="button" role="option" aria-selected={index===activeSuggestion} key={name}
+      className={index===activeSuggestion?'is-active':''}
+      ref={index===activeSuggestion?node=>node?.scrollIntoView({block:'nearest'}):undefined}
+      onMouseEnter={()=>setActiveSuggestion(index)}
       onMouseDown={event=>{event.preventDefault();insertFunction(name)}}>{name}(</button>)}
   </div>,document.body)}
-  {matches&&filtered.length>0&&popup&&createPortal(<div className="smart-formula-list" role="listbox"
+  {matches&&filtered.length>0&&popup&&createPortal(<div id={suggestionListId} className="smart-formula-list" role="listbox"
     style={{position:'fixed',left:popup.left,top:popup.top,minWidth:popup.width,maxHeight:200,zIndex:6000}}>
-   {filtered.map(item=><button key={item.reference} type="button" role="option"
+   {filtered.map((item,index)=><button key={item.reference} id={suggestionListId+'-option-'+index}
+     type="button" role="option" aria-selected={index===activeSuggestion}
+     className={index===activeSuggestion?'is-active':''}
+     ref={index===activeSuggestion?node=>node?.scrollIntoView({block:'nearest'}):undefined}
+     onMouseEnter={()=>setActiveSuggestion(index)}
      onMouseDown={e=>{e.preventDefault();insert(item.reference)}}>{item.reference} · {item.label}</button>)}
   </div>,document.body)}
  </div>;

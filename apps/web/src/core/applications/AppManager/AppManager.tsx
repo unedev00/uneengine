@@ -161,7 +161,7 @@ export default function AppManager({
     try {
       const label = draft.label.trim();
       const apiName = creating
-        ? (draft.apiName.trim() || generateMetadataApiName(label))
+        ? (draft.apiName.trim().toLowerCase() || generateMetadataApiName(label))
         : draft.apiName;
       if (creating && apps.some((app) => app.apiName.toLowerCase() === apiName.toLowerCase())) {
         throw new Error('This Developer Name is already in use. Choose another name.');
@@ -334,13 +334,13 @@ export default function AppManager({
                           ? suggestAppApiName(next, apps) : current.apiName
                       }));
                       setError(''); setNotice('');
-                    } else update(field,next);
+                    } else update(field,field==='apiName'&&creating?next.toLowerCase():next);
                   };
                   return <div className={'app-manager-identity-' + field} key={field}>
                     <AdminPropertyControl definition={definition} value={draft[field]}
                       disabled={disabled} onChange={change}/>
                     {field === 'apiName' && <small className="permission-help">
-                      Developer names start with a letter and use only letters, digits and underscores.
+                      New developer names are automatically lowercase and use letters, digits and underscores.
                       AppExchange installation keys have separate rules.
                     </small>}
                   </div>;

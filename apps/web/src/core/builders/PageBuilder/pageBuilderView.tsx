@@ -319,7 +319,7 @@ function PageBuilder({
   onPublish: (apiName:string,variant:'Mobile'|'Desktop'|'Tablet'|'Custom',draftRevision?:number)=>Promise<boolean>;
   onDeactivate: (apiName:string)=>Promise<boolean>;
   onSaveApp: (app: LightningAppMetadata, updating: boolean) => Promise<void>;
-  onUpdatePageDetails: (apiName:string,label:string,appApiName:string|null,expectedLabel:string)=>Promise<boolean>;
+  onUpdatePageDetails: (apiName:string,label:string,appApiName:string|null,expectedLabel:string,nextApiName?:string)=>Promise<boolean>;
   onDeleteApp: (apiName: string) => Promise<void>;
   onDeletePage: (apiName: string) => Promise<void>;
   onExit: () => void;
@@ -3047,15 +3047,19 @@ function PageBuilder({
             </select>
           </label>}
         </div>
-        <div className="page-manager-table-scroll"><table className="records-table page-manager-table"><thead><tr><th>Page name</th><th>API Name</th><th>Type</th><th>Related object</th><th>Device</th><th>Dimensions</th><th>Orientation</th><th>Last modified</th><th>Status</th><th>Actions</th></tr></thead>
+        <div className="page-manager-table-scroll"><table className="records-table page-manager-table"><thead><tr><th>Page name</th><th>API Name</th><th>Application</th><th>Version</th><th>Type</th><th>Related object</th><th>Device</th><th>Dimensions</th><th>Orientation</th><th>Last modified</th><th>Status</th><th>Actions</th></tr></thead>
         <tbody>{paginatedPages.map(item=><tr key={item.apiName}>
           <td><button type="button" className="page-manager-page-link" onClick={()=>selectSavedPage(item.apiName)}>{item.label}</button></td><td title={item.apiName}><code>{item.apiName}</code></td>
+          <td>{apps.find(app=>app.navigationPageApiNames.includes(item.apiName)
+            ||(item.activationAssignments??[]).some(a=>a.appId===app.apiName))?.label??'—'}</td>
+          <td>{item.publishedRevision?'v'+item.publishedRevision:'—'}</td>
           <td>{item.pageType}</td><td>{item.targetObject ? objects.find(object=>object.apiName===item.targetObject)?.label ?? item.targetObject : 'Not object-specific'}</td><td>{pageDeviceLabel(item)}</td><td>{item.canvasWidth} × {item.canvasHeight} px</td><td>{canvasOrientation(item.canvasWidth,item.canvasHeight)}</td>
           <td>{item.updatedAt ? new Date(item.updatedAt).toLocaleDateString() : '—'}</td>
           <td><span className={item.status === 'Active' ? 'page-status-badge active' : 'page-status-badge'}>{item.status}</span></td>
-          <td className="page-manager-actions"><button className="btn btn-small" type="button" aria-label={'Edit '+item.label} onClick={()=>selectSavedPage(item.apiName)}><Pencil size={14}/> Edit</button>
-          <button className="btn btn-small" type="button" disabled={saving}
-            aria-label={'Page details for '+item.label} onClick={()=>setPageDetailsApi(item.apiName)}>Details</button>
+          <td className="page-manager-actions"><button className="btn btn-small" type="button" disabled={saving}
+            aria-label={'Edit page properties for '+item.label} onClick={()=>setPageDetailsApi(item.apiName)}><Pencil size={14}/> Edit</button>
+          <button className="btn btn-small" type="button"
+            aria-label={'Design '+item.label} onClick={()=>selectSavedPage(item.apiName)}><PanelsTopLeft size={14}/> Design</button>
           <button className="btn btn-small page-manager-toggle" type="button" disabled={saving} aria-label={(item.status==='Active'?'Deactivate ':'Activate ')+item.label} onClick={()=>void(item.status==='Active'?onDeactivate(item.apiName):savePage('Active',item,true))}>{item.status==='Active'?'Deactivate':'Activate'}</button>
           <button className="btn btn-small" type="button" disabled={saving||Boolean(archivingPageApiName)}
             aria-label={'Delete '+item.label} onClick={()=>setPendingArchivePageApiName(item.apiName)}>
@@ -3072,15 +3076,16 @@ function PageBuilder({
         const detailsPage=pages.find(item=>item.apiName===pageDetailsApi)??(
           page.apiName===pageDetailsApi?page:null);
         return detailsPage?<PageDetailsDialog key={pageDetailsApi} page={detailsPage}
-          apps={apps} disabled={saving} onClose={()=>setPageDetailsApi(null)}
-          onSave={onUpdatePageDetails}/>:null;
+          apps={apps} disabled={saving} request={request}
+          onClose={()=>setPageDetailsApi(null)} onSave={onUpdatePageDetails}
+          onOpenDesign={selectSavedPage} onReload={onChange}/>:null;
       })()}
       {editorMode && <>
       <section className={`office-builder-ribbon ${previewMode ? 'is-interactive-preview' : ''}`} aria-label="Page Builder ribbon">
         <div className="office-ribbon-topbar">
           <div className="office-ribbon-topbar-back">{homeValue('backIcon')}</div>
-          <button type="button" className="office-ribbon-icon-button" aria-label="Edit page name and app"
-            title="Edit page name and app" disabled={saving||previewMode}
+          <button type="button" className="office-ribbon-icon-button" aria-label="Edit page properties and versions"
+            title="Edit page properties and versions" disabled={saving||previewMode}
             onClick={()=>setPageDetailsApi(page.apiName)}><Pencil size={16}/></button>
           <div className="office-ribbon-selection-context" title={selected?.label||selected?.type||'Welcome'}>
             {selected ? 'Page › '+(rawLayoutParentId(selected)
@@ -3198,7 +3203,7 @@ function PageBuilder({
           {ribbonTab==='Component Layout' && ribbonCatalog && (()=>{
             const pageRows=ribbonCatalog.properties.filter(row=>row.tab==='Home'&&
               ['Page','Device','Canvas','Version'].includes(row.group)&&
-              !['pageName','canvasMode'].includes(row.id));
+              !['pageName','canvasMode','selectVersion','restoreVersion'].includes(row.id));
             const groups=[...new Set(pageRows.map(row=>row.group))];
             return <div className="office-ribbon-page-layout-groups" aria-label="Page and canvas settings">
               {groups.map(group=><div key={group} className="office-ribbon-group une-sql-home-group"
@@ -3208,12 +3213,6 @@ function PageBuilder({
                   <label data-ribbon-property="deviceLayout" className="une-sql-home-control une-ribbon-page-layout">
                     <span>Layout</span>{homeValue('deviceLayout')}
                   </label>
-                  <div data-ribbon-property="selectVersion" className="une-sql-home-control une-ribbon-version-only">
-                    {homeValue('selectVersion')}
-                  </div>
-                  <div data-ribbon-property="restoreVersion" className="une-sql-home-control une-ribbon-restore-only">
-                    {homeValue('restoreVersion')}
-                  </div>
                 </>:group==='Canvas'?<>
                   <label data-ribbon-property="canvasWidth" className="une-sql-home-control une-ribbon-size-with-icon"
                     title="Canvas Width"><span className="une-ribbon-embedded-icon"><MoveHorizontal size={17}/></span>
