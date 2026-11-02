@@ -1,0 +1,103 @@
+#!/usr/bin/env bash
+# Fixed OCI production build path. Installed root-owned; no caller-supplied
+# commands, repository URLs or filesystem paths.
+set -Eeuo pipefail
+export PATH=/usr/local/bin:/usr/bin:/sbin:/bin
+umask 077
+
+[[ $EUID == 0 && $# == 1 && $1 =~ ^[0-9a-f]{40}$ ]] || exit 64
+sha=$1
+repository=https://github.com/unedev00/uneengine.git
+status_dir=/var/lib/metadrive/oci-deployment
+status_file=$status_dir/status
+stage=initialising
+workspace=''
+result=failed
+install -d -o root -g root -m 0700 "$status_dir"
+
+write_status() {
+  local state=$1 step=$2 tmp
+  tmp=$(mktemp "$status_dir/.status.XXXXXXXX")
+  {
+    printf 'state=%s\n' "$state"
+    printf 'sha=%s\n' "$sha"
+    printf 'stage=%s\n' "$step"
+    printf 'updated_at=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  } > "$tmp"
+  chmod 0600 "$tmp"
+  mv -f -- "$tmp" "$status_file"
+}
+cleanup() {
+  local code=$?
+  trap - EXIT
+  if [[ "$result" != succeeded ]]; then
+    write_status failed "$stage" || true
+  fi
+  if [[ -n "$workspace" && -d "$workspace" ]]; then
+    rm -rf --one-file-system -- "$workspace"
+  fi
+  exit "$code"
+}
+trap cleanup EXIT
+
+# No database credentials or production environment are passed into npm or git.
+# Use a dedicated identity, never the API account and never root.
+id metadrive-build >/dev/null
+workspace=$(mktemp -d /var/tmp/metadrive-oci-build.XXXXXXXX)
+chown metadrive-build:metadrive-build "$workspace"
+builder() {
+  /usr/sbin/runuser -u metadrive-build -- /usr/bin/env -i \
+    HOME="$workspace" npm_config_cache="$workspace/.npm" \
+    PATH=/usr/local/bin:/usr/bin:/bin GITHUB_SHA="$sha" \
+    "$@"
+}
+stage=fetching
+write_status running "$stage"
+builder git -C "$workspace" init --quiet
+builder git -C "$workspace" remote add origin "$repository"
+# Fetch the fixed production branch, not a caller-chosen ref or URL.
+builder git -C "$workspace" -c protocol.file.allow=never fetch --no-tags --depth=1 origin refs/heads/main
+fetched=$(builder git -C "$workspace" rev-parse FETCH_HEAD)
+[[ "$fetched" == "$sha" ]] || {
+  stage=outdated-request
+  echo 'Main changed after deployment was requested' >&2
+  exit 1
+}
+builder git -C "$workspace" checkout --quiet --force --detach "$sha"
+
+stage=validating
+write_status running "$stage"
+builder npm --prefix "$workspace" ci
+builder npm --prefix "$workspace" run check
+
+stage=building
+write_status running "$stage"
+builder npm --prefix "$workspace" run build
+
+# Do not publish if a newer main revision arrived during the build.
+stage=checking-main
+write_status running "$stage"
+remote_sha=$(builder git -C "$workspace" ls-remote origin refs/heads/main | awk '{print $1}')
+[[ "$remote_sha" == "$sha" ]] || {
+  stage=outdated-request
+  echo 'Main changed during build; refusing to publish stale release' >&2
+  exit 1
+}
+stage=deploying
+write_status running "$stage"
+# Reuse the protected existing combined SQL-backup/API/worker/frontend deployment.
+# The common full-stack lock serialises this path with the normal Actions runner.
+bash "$workspace/scripts/oracle/deploy-full-stack.sh" "$workspace" "$sha"
+
+stage=verifying
+write_status running "$stage"
+[[ "$(systemctl show metadrive-api.service -p WorkingDirectory --value)" == "/opt/metadrive/releases/gh-$sha" ]]
+[[ "$(systemctl show metadrive-worker.service -p WorkingDirectory --value)" == "/opt/metadrive/releases/gh-$sha" ]]
+test "$(cat /var/www/metadrive-frontend/current/release.json 2>/dev/null | grep -F "$sha" | wc -l)" -ge 0
+systemctl is-active --quiet metadrive-api.service
+systemctl is-active --quiet metadrive-worker.service
+systemctl is-active --quiet nginx.service
+
+result=succeeded
+write_status succeeded completed
+echo "OCI production release deployed: $sha"
