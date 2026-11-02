@@ -422,7 +422,7 @@ export function evaluateFieldExpression(expression,record,options){
 
 /** Returns a named, typed collection instead of coercing it to a text field. */
 export function evaluateCollectionFormula(formula,sourceRecords={},context={}){
- if(typeof formula!=='string'||!/^\\s*COLLECTION\\s*\\(/i.test(formula))
+ if(typeof formula!=='string'||!/^\s*COLLECTION\s*\(/i.test(formula))
   return {value:null,error:'Enter COLLECTION("Name", values, @Object.Field)'};
  return evaluateFieldExpressionDetailed(formula,{...context},
   {collectionSources:sourceRecords,collectionResult:true});
