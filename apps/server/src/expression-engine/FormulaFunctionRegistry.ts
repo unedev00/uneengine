@@ -52,7 +52,7 @@ const checkboxFunctions=new Set([
   'CONTAINS','BEGINS','ISPICKVAL','INCLUDES'
 ]);
 const explicitParameters=new Map<string,FormulaValueKind[]>([
-  ['IF',['Checkbox','Any','Any']],['IFERROR',['Any','Any']],['NOT',['Checkbox']],
+  ['COLLECTION',['Text','Any']],['IF',['Checkbox','Any','Any']],['IFERROR',['Any','Any']],['NOT',['Checkbox']],
   ['AND',['Checkbox']],['OR',['Checkbox']],['XOR',['Checkbox']],['VALUE',['Text']],
   ['LEN',['Text']],['ASCII',['Text']],['LEFT',['Text','Number']],['RIGHT',['Text','Number']],
   ['MID',['Text','Number','Number']],['FIND',['Text','Text','Number']],
@@ -83,7 +83,7 @@ const inputs:DefinitionInput[]=[
   ['ISNEW',0,0,validationAndFlow],['ISCLONE',0,0],['PRIORVALUE',1,1,validationAndFlow],
   ['BLANKVALUE',2,2],['NULLVALUE',2,2],['TEXT',1,1],['VALUE',1,1],['LEN',1,1],
   ['COLLECTIONCOUNT',1,1,flowOnly],['COLLECTIONSUM',2,2,flowOnly],
-  ['COLLECTION',1,20,['flow_formula','ribbon_binding']],['ASCII',1,1],
+  ['COLLECTION',2,20,['flow_formula','ribbon_binding']],['ASCII',1,1],
   ['LOWER',1,1],['UPPER',1,1],['PROPER',1,1],['TRIM',1,1],['LEFT',1,2],['RIGHT',1,2],
   ['MID',3,3],['FIND',2,3],['SUBSTITUTE',3,4],['CONCATENATE',1,20],['EXACT',2,2],
   ['CONTAINS',2,2],['BEGINS',2,2],['ISPICKVAL',2,2],['INCLUDES',2,2],['REPT',2,2],
