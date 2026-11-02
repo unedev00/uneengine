@@ -464,3 +464,20 @@
  box-sizing:border-box!important;flex:0 0 148px!important;
  width:148px!important;min-width:148px!important;max-width:148px!important;
 }
+
+/* Smart Tabs: the 75px index slot includes its 45px caption and one-digit editor. */
+.office-builder-ribbon #page-builder-tab-content>.smart-ribbon[data-three-row="true"]
+ .smart-ribbon-group[data-smart-tab="Layout"] .smart-property[data-property="tabIndex"]>.smart-label{
+ font-size:9px!important;letter-spacing:-.15px!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.smart-ribbon[data-three-row="true"]
+ .smart-ribbon-group[data-smart-tab="Layout"] .smart-property[data-property="tabIndex"] input.smart-office-number{
+ -moz-appearance:textfield!important;appearance:textfield!important;
+ text-align:center!important;padding:0!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.smart-ribbon[data-three-row="true"]
+ .smart-ribbon-group[data-smart-tab="Layout"] .smart-property[data-property="tabIndex"] input.smart-office-number::-webkit-inner-spin-button,
+.office-builder-ribbon #page-builder-tab-content>.smart-ribbon[data-three-row="true"]
+ .smart-ribbon-group[data-smart-tab="Layout"] .smart-property[data-property="tabIndex"] input.smart-office-number::-webkit-outer-spin-button{
+ -webkit-appearance:none!important;margin:0!important;
+}
