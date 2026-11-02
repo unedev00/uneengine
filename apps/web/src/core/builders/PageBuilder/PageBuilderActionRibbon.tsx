@@ -21,7 +21,6 @@ const componentSlots=[
  {key:'customButton2',label:'Custom Button 2'}
 ] as const;
 type CartButtonKey=(typeof componentSlots)[number]['key'];
-const visibilityProperty=(key:CartButtonKey)=>key+'Visible';
 const legacyLabels:Record<string,string>={
  Navigate:'Open another page',SetFilter:'Filter a list',
  PageState:'Update page value',AdjustNumber:'Change number'
