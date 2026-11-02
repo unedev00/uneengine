@@ -69,7 +69,7 @@ test('selected filters have independent counts and never overwrite component fil
  assert.match(ui,/selectedFieldFilterCount=selectedFieldRule\?\.filters\.length\?\?0/);
  assert.match(ui,/activeDataProperty&&selectedFieldFilterCount>0/);
  assert.match(ui,/dataFieldFilters:\{\.\.\.existing,\[id\]:\{\.\.\.previous,\.\.\.patch\}\}/);
- assert.match(ui,/activeDataProperty\?updateFieldFilter\(activeDataProperty\.id,\{filters\}\)/);
+ assert.match(ui,/scopedFilterId\?updateFieldFilter\(scopedFilterId,\{filters\}\)/);
  assert.match(ui,/contextApiName/);
  assert.doesNotMatch(ui,/apiRequest\<\{contexts:/);
 });
@@ -151,7 +151,7 @@ test('shared Filter Records editor switches between Field and Formula and expose
  assert.match(editor,/aria-label=\{title \+ ' operator '/);
  assert.match(editor,/aria-label=\{title \+ ' value source '/);
  assert.match(editorCss,/grid-template-columns:minmax\(0,320px\) minmax\(165px,210px\)/);
- assert.match(ui,/onModeChange=\{filterMode=>activeDataProperty/);
+ assert.match(ui,/onModeChange=\{filterMode=>scopedFilterId/);
  assert.match(runtime,/export function activePageRecordFilters/);
  assert.match(page,/currentQueryRecords,selectedRecordFilters.filters/);
  assert.match(bound,/sourceRecords,selectedRecordFilters.filters/);
@@ -168,4 +168,16 @@ test('Page State condition makes its optional blank behaviour visible and keeps 
  assert.match(editor,/placeholder="e\.g\. categoryId"/);
  assert.match(css,/metadata-filter-optional/);
  assert.match(validator,/Enter a Page State key/);
+});
+
+test('record filter dialog defaults to the full record list and preserves field-only rules separately',()=>{
+ assert.match(ui,/filterScope,setFilterScope/);
+ assert.match(ui,/setFilterScope\('Records'\);setFiltersOpen\(true\)/);
+ assert.match(ui,/aria-label="Filter target"/);
+ assert.match(ui,/records \(filter the list\)/);
+ assert.match(ui,/only \(filter displayed value\)/);
+ assert.match(ui,/scopedFilterId=filterScope==='SelectedValue'/);
+ assert.match(ui,/modalFieldRule\?\.filters/);
+ assert.match(ui,/onChange=\{filters=>scopedFilterId\?updateFieldFilter/);
+ assert.match(ui,/onChange\(\{\.\.\.properties,filters\}\)/);
 });
