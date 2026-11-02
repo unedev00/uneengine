@@ -1,0 +1,76 @@
+name: OCI tenant API name normalization
+
+# Deliberately manual; never runs on startup, app install or a routine push.
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Preview only or apply the existing-name conversion"
+        type: choice
+        required: true
+        default: preview
+        options:
+          - preview
+          - apply
+      tenant_uuid:
+        description: "Only required if the SQL database has more than one tenant"
+        type: string
+        required: false
+        default: ""
+      confirmation:
+        description: "For apply, type exactly: NORMALIZE TEST TENANT"
+        type: string
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+# Shared with the existing protected full-stack OCI deployment.
+concurrency:
+  group: oracle-production-release-main
+  cancel-in-progress: false
+
+jobs:
+  normalize:
+    if: github.repository == 'unedev00/uneengine' && github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, linux, ARM64, metadrive-oracle]
+    environment: oracle-production
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Validate OCI runner and requested operation
+        shell: bash
+        env:
+          MODE: ${{ inputs.mode }}
+          TENANT_UUID: ${{ inputs.tenant_uuid }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          set -Eeuo pipefail
+          test "$GITHUB_REPOSITORY" = "unedev00/uneengine"
+          test "$GITHUB_REF" = "refs/heads/main"
+          test "$(uname -m)" = "aarch64"
+          sudo -n test -r /etc/metadrive/production.env
+          sudo -n true
+          bash -n scripts/oracle/run-tenant-api-casefold-action.sh
+          [[ "$MODE" == "preview" || "$MODE" == "apply" ]]
+          if [[ "$MODE" == "apply" ]]; then
+            test "$CONFIRMATION" = "NORMALIZE TEST TENANT"
+          fi
+          if [[ -n "$TENANT_UUID" ]]; then
+            [[ "$TENANT_UUID" =~ ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$ ]]
+          fi
+      - name: Preview or apply SQL API-name conversion on OCI
+        shell: bash
+        env:
+          MODE: ${{ inputs.mode }}
+          TENANT_UUID: ${{ inputs.tenant_uuid }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          set -Eeuo pipefail
+          sudo -n env GITHUB_REPOSITORY="$GITHUB_REPOSITORY" GITHUB_REF="$GITHUB_REF" \
+            GITHUB_WORKSPACE="$GITHUB_WORKSPACE" GITHUB_SHA="$GITHUB_SHA" \
+            bash scripts/oracle/run-tenant-api-casefold-action.sh \
+            "$MODE" "$TENANT_UUID" "$CONFIRMATION"
