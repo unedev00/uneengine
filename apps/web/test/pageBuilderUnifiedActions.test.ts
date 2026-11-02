@@ -37,7 +37,9 @@ test('unusual declared events and existing custom events remain reachable',()=>{
  assert.match(html,/aria-label="Other events"/);
  assert.match(html,/When a card is selected/);
  assert.match(html,/legacyEvent/);
- assert.match(html,/Existing: Update page value/);
+ const legacy=render({legacyEvent:{actionType:'PageState',stateKey:'filterId'}},
+  'legacyEvent','smart_card_grid');
+ assert.match(legacy,/Existing: Update page value/);
 });
 test('unsupported smart component slots remain mounted disabled',()=>{
  const html=render({},'','smart_button');
