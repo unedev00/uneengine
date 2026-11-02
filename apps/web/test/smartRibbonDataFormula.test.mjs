@@ -99,7 +99,7 @@ test('filter modal is 50 percent wider, compact, four-column and not multiply sc
  const style=read('../src/core/builders/PageBuilder/SmartRibbon.css');
  assert.match(style,/z-index:2147483000!important/);
  assert.match(style,/min\(1140px,calc\(100vw - 32px\)\)/);
- assert.match(style,/grid-template-columns:repeat\(4,minmax\(0,190px\)\)/);
+ assert.match(style,/grid-template-columns:minmax\(0,1\.15fr\) minmax\(0,\.85fr\)/);
  assert.match(style,/max-height:none!important;overflow:visible!important/);
 });
 
@@ -133,4 +133,26 @@ test('Cart Summary 1–4 labels fit the existing Data ribbon controls without wi
  assert.doesNotMatch(chipSelector,/\b(?:width|min-width|max-width|padding)\s*:/);
  for(const label of ['Summary 1','Summary 2','Summary 3','Summary 4'])
   assert.ok(ui.includes("slot:'"+label+"'"),'cart summary metadata lost: '+label);
+});
+
+test('shared Filter Records editor switches between Field and Formula and exposes controls immediately',()=>{
+ const editor=read('../src/component-libraries/shared/primitives/RecordFilterEditor/RecordFilterEditor.tsx');
+ const editorCss=read('../src/component-libraries/shared/primitives/RecordFilterEditor/RecordFilterEditor.css');
+ const runtime=read('../src/core/pages/PageRuntime/pageComponentBindings.ts');
+ const page=read('../src/core/pages/PageRuntime/pageRuntimeViews.tsx');
+ const bound=read('../src/core/pages/MetadataBoundPageComponent/MetadataBoundPageComponent.tsx');
+ assert.match(editor,/aria-label="Filter method"/);
+ assert.match(editor,/onModeChange\('Field'\)/);
+ assert.match(editor,/onModeChange\('Formula'\)/);
+ assert.match(editor,/effectiveMode === 'Field' && <>/);
+ assert.match(editor,/effectiveMode === 'Formula' && onFormulaChange/);
+ assert.match(editor,/filters.length \? filters : \[\{field:/);
+ assert.match(editor,/index === filters.length && filters.length < 20/);
+ assert.match(editor,/aria-label=\{title \+ ' operator '/);
+ assert.match(editor,/aria-label=\{title \+ ' value source '/);
+ assert.match(editorCss,/grid-template-columns:minmax\(0,320px\) minmax\(165px,210px\)/);
+ assert.match(ui,/onModeChange=\{filterMode=>activeDataProperty/);
+ assert.match(runtime,/export function activePageRecordFilters/);
+ assert.match(page,/currentQueryRecords,selectedRecordFilters.filters/);
+ assert.match(bound,/sourceRecords,selectedRecordFilters.filters/);
 });
