@@ -512,7 +512,9 @@ function MetadataBoundPageComponent({
   const visibleRecords=relatedField?filterRelatedRecords(filteredRecords,selectedId,relatedField):filteredRecords;
   const namedSource=usePageCollectionFormula(properties.collectionFormula,properties,objects,
     objectApiName,visibleRecords,recordTotal,revision,pageState,sessionId,pageSessionKey,component.id);
-  const dataCollection=namedSource.collection;
+  // A configured record presenter may enforce additional channel visibility.
+  // Never replace its authorised projection with raw formula collection rows.
+  const dataCollection=properties.recordPresenterApiName?null:namedSource.collection;
   const dataCollectionRows=dataCollection?namedCollectionRows(dataCollection):null;
   const mentionContext = useRelationshipMentionContext(objects, mentionRootObjectApiName,
     recordId || explicitMentionRecordId(properties), properties, apiRequest, revision);
