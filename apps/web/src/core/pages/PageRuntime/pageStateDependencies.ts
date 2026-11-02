@@ -28,7 +28,7 @@ export function pageStateDependencies(components:readonly Component[]):PageState
   const declared=typeof props.collectionFormula==='string'?props.collectionFormula:'';
   const authored=Object.values(props).find(value=>typeof value==='string'
    &&/^\s*=\s*COLLECTION\s*\(/i.test(value));
-  const name=namedCollectionName(declared)||namedCollectionName(authored);
+  const name=namedCollectionName(authored)||namedCollectionName(declared);
   if(name)outputs.add(collection(name));
 
   const active=activePageRecordFilters(props);
@@ -58,11 +58,15 @@ export function pageStateDependencies(components:readonly Component[]):PageState
   const actions=props.actionFlows;
   if(actions&&typeof actions==='object'&&!Array.isArray(actions))
    for(const [event,raw] of Object.entries(actions)){
-    if(!['change','select','itemSelect','rowSelect'].includes(event)
+    if(!['change','select','itemSelect','rowSelect','click','itemClick','rowClick'].includes(event)
       ||!raw||typeof raw!=='object'||Array.isArray(raw))continue;
-    const action=raw as {actionType?:unknown;stateKey?:unknown;formula?:unknown};
+    const action=raw as {actionType?:unknown;stateKey?:unknown;formula?:unknown;outputs?:unknown};
     if(action.actionType==='PageState'&&typeof action.stateKey==='string'
       &&identifier.test(action.stateKey))outputs.add(state(action.stateKey));
+    if(action.actionType==='Flow'&&action.outputs&&typeof action.outputs==='object'
+      &&!Array.isArray(action.outputs))
+     for(const key of Object.values(action.outputs))
+      if(typeof key==='string'&&identifier.test(key))outputs.add(state(key));
     if(action.actionType==='Formula'&&typeof action.formula==='string'){
      const assignment=/^@state\.([A-Za-z][A-Za-z0-9_]{0,63})\s*:=/.exec(action.formula.trim());
      if(assignment)outputs.add(state(assignment[1]));
