@@ -452,7 +452,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
           {filterFormulaSelected?<SmartFormulaField key="__record_filter__"
             label="Record filter formula" value={typeof properties.filterFormula==='string'?properties.filterFormula:''}
             disabled={!object} onChange={changeRecordFilterFormula}
-            validate={value=>validateRecordFilterFormula(value.trimStart().replace(/^=\\s*/,''),object?.fields??[])}
+            validate={value=>validateRecordFilterFormula(value.trimStart().replace(/^=\s*/,''),object?.fields??[])}
             stateOptions={stateOptions}
             fields={object?.fields??[]} objects={objects} rootObjectApiName={objectName}
             selectedSourceObjects={sourceObjects}/>:
