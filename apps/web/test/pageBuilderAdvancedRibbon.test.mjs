@@ -30,7 +30,7 @@ test('Advanced is five permanently rendered ribbon groups, never button navigati
  assert.doesNotMatch(page,/modal page-builder-advanced-dialog/);
 });
 
-test('Every mock Advanced property has a fixed slot and remains visible when disabled',()=>{
+test('Advanced keeps all permanent fields in a compact responsive ribbon without horizontal scrolling',()=>{
  const fields=[
   'assigned','default','role','app',
   'device-0','device-1','device-2','breakpoint','columns',
@@ -39,16 +39,24 @@ test('Every mock Advanced property has a fixed slot and remains visible when dis
   'component-id','object','render-mode'
  ];
  for(const key of fields){
-   assert.ok(advanced.includes('advanced-'+key),key);
-   assert.match(layout,new RegExp('advanced-'+key+'[^\n]*\\{left:[0-9]+px;top:[0-9]+px;width:[0-9]+px\\}'),
-     key+' geometry');
+   assert.ok(key.startsWith('device-')?advanced.includes('advanced-device-'):
+     advanced.includes('advanced-'+key),key+' must be rendered');
+   assert.match(layout,new RegExp('advanced-'+key+'[^\\n]*\\{[^\\n]*top:(5|35|65)px'),key+' has a fixed row');
  }
  for(const group of ['activation','responsive','properties','nesting','technical'])
    assert.ok(layout.includes('advanced-fixed-group.advanced-'+group),group);
- assert.match(layout,/width:1641px!important;min-width:1641px!important;max-width:1641px!important/);
+ assert.match(layout,/grid-template-columns:minmax\(0,1\.08fr\)/);
+ assert.match(layout,/width:min\(100%,1360px\)!important;min-width:0!important;max-width:1360px!important/);
+ assert.doesNotMatch(layout,/width:1641px!important/);
+ assert.match(layout,/scrollbar-width:none!important/);
+ assert.match(layout,/\[aria-label="Advanced"\]::-webkit-scrollbar/);
+ assert.match(layout,/grid-template-columns:repeat\(6,minmax\(0,1fr\)\)!important/);
+ assert.match(layout,/grid-template-columns:minmax\(0,1fr\)!important/);
  assert.match(layout,/height:114px!important;min-height:114px!important;max-height:114px!important/);
  assert.match(layout,/top:92px;height:22px/);
  assert.match(layout,/advanced-fixed-field.*input:disabled/s);
+ assert.equal((page.match(/ribbonTab==='Advanced' && <PageBuilderAdvancedSections/g)??[]).length,1,
+   'Advanced controls are rendered only once');
 });
 
 test('Existing page handlers own assignments, visibility, grid count, and safe reparenting',()=>{
