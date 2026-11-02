@@ -10,11 +10,11 @@ export type PageNamedCollection={name:string;items:unknown[]};
 type SourceResult={key:string;records:Record<string,Row[]>;error?:string};
 
 export function collectionFormulaReferences(formula:string):Array<{object:string;field:string}>{
- if(!/^\\s*COLLECTION\\s*\\(/i.test(formula))return [];
+ if(!/^\s*COLLECTION\s*\(/i.test(formula))return [];
  const found=new Map<string,{object:string;field:string}>();
  const visit=(node:Expression):void=>{
   if(node.kind==='reference'){
-   const match=/^([A-Za-z][A-Za-z0-9_]*)\\.([A-Za-z][A-Za-z0-9_]*)$/.exec(node.value);
+   const match=/^([A-Za-z][A-Za-z0-9_]*)\.([A-Za-z][A-Za-z0-9_]*)$/.exec(node.value);
    if(match)found.set(match[0],{object:match[1],field:match[2]});
   }else if(node.kind==='call')node.args.forEach(visit);
   else if(node.kind==='unary')visit(node.value);
@@ -58,7 +58,7 @@ export function usePageCollectionFormula(
   return()=>{active=false;};
  },[key]);
  if(!source)return {collection:null,error:null,loading:false};
- if(!/^COLLECTION\\s*\\(/i.test(source))
+ if(!/^COLLECTION\s*\(/i.test(source))
   return {collection:null,error:'Use COLLECTION("Name", values, @Object.Field)',loading:false};
  const notSelected=refs.find(ref=>!selected.includes(ref.object));
  if(notSelected)return {collection:null,error:'Select Object '+notSelected.object+' in Data Source before referencing it',loading:false};
