@@ -195,3 +195,19 @@ test('ribbon exposes only the universal formula source and one filter beside the
  assert.match(workspace,/stateOptions=\{stateOptions\}/);
  assert.match(workspace,/validate=\{validateCollection\}/);
 });
+
+test('the visible ƒx bar has an explicit Record Filter target and a safe move from Text',()=>{
+ assert.match(ui,/selectedDataField==='__record_filter__'/);
+ assert.match(ui,/aria-label="Edit record filter formula"/);
+ assert.match(ui,/label="Record filter formula"/);
+ assert.match(ui,/validate=\{value=>validateRecordFilterFormula/);
+ assert.match(ui,/onChange=\{changeRecordFilterFormula\}/);
+ assert.match(ui,/moveDisplayComparisonToFilter\(properties,object\.fields/);
+ assert.match(ui,/onClick=\{moveComparison\}>Use as filter/);
+ assert.match(ui,/setSelectedDataField\('__record_filter__'\)/);
+ assert.match(ui,/textSource/);
+ const helper=read('../src/core/builders/PageBuilder/dataFormulaFilterTransfer.ts');
+ assert.match(helper,/validateRecordFilterFormula\(source,fields\)/);
+ assert.match(helper,/delete next\.filterMode/);
+ assert.match(css,/\.smart-data-record-filter-target\.is-selected/);
+});
