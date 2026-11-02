@@ -239,7 +239,9 @@ test('OCI latest deployment reuses protected runner and isolates build credentia
    const result=spawnSync('bash',['-n',fileURLToPath(item)],{encoding:'utf8'});
    assert.equal(result.status,0,item.pathname+' '+result.stderr);
   }
-  const py=spawnSync('python3',['-m','py_compile',fileURLToPath(broker)],{encoding:'utf8',
+  const py=spawnSync('python3',['-c',
+   'import ast, pathlib, sys; ast.parse(pathlib.Path(sys.argv[1]).read_text())',
+   fileURLToPath(broker)],{encoding:'utf8',
    env:{...process.env,PYTHONDONTWRITEBYTECODE:'1'}});
   assert.equal(py.status,0,py.stderr);
  }
