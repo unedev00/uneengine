@@ -205,7 +205,7 @@ export default function CustomMetadataManager({setting}:{setting:string}) {
         <label className="form-label">Language<input className="form-control" value={labelDraft.language} onChange={(event)=>setLabelDraft({...labelDraft,language:event.target.value})}/></label>
         <label className="form-label">Value<textarea className="form-control" value={labelDraft.value} onChange={(event)=>setLabelDraft({...labelDraft,value:event.target.value})} maxLength={4000} rows={3}/></label>
         {mode==='new'?<><button type="button" className="btn" onClick={()=>setAdvancedName(!advancedName)} aria-expanded={advancedName}>Advanced: API Name</button>
-          {advancedName&&<label className="form-label">API Name<input className="form-control" value={labelDraft.apiName} onChange={(event)=>{setNameEdited(true);setLabelDraft({...labelDraft,apiName:event.target.value});}}/></label>}
+          {advancedName&&<label className="form-label">API Name<input className="form-control" value={labelDraft.apiName} onChange={(event)=>{setNameEdited(true);setLabelDraft({...labelDraft,apiName:event.target.value.toLowerCase()});}}/></label>}
           {!advancedName&&<p>API Name (generated): <code>{labelDraft.apiName||'Enter a label'}</code></p>}
           {duplicate&&<p role="alert" className="formula-validation-error">API Name already exists for this language.
             {suggestion&&<button type="button" className="btn" onClick={()=>{setNameEdited(true);setLabelDraft({...labelDraft,apiName:suggestion});}}>Use {suggestion}</button>}</p>}
@@ -227,7 +227,7 @@ export default function CustomMetadataManager({setting}:{setting:string}) {
         </label>}
         <label className="form-label">Label<input className="form-control" value={definitionDraft.label} onChange={(event)=>setDefinitionDraft({...definitionDraft,label:event.target.value,apiName:nameEdited?definitionDraft.apiName:generateMetadataApiName(event.target.value)})}/></label>
         <button type="button" className="btn" onClick={()=>setAdvancedName(!advancedName)} aria-expanded={advancedName}>Advanced: API Name</button>
-        {advancedName?<label className="form-label">API Name<input className="form-control" value={definitionDraft.apiName} onChange={(event)=>{setNameEdited(true);setDefinitionDraft({...definitionDraft,apiName:event.target.value});}}/></label>:<p>API Name (generated): <code>{definitionDraft.apiName||'Enter a label'}</code></p>}
+        {advancedName?<label className="form-label">API Name<input className="form-control" value={definitionDraft.apiName} onChange={(event)=>{setNameEdited(true);setDefinitionDraft({...definitionDraft,apiName:event.target.value.toLowerCase()});}}/></label>:<p>API Name (generated): <code>{definitionDraft.apiName||'Enter a label'}</code></p>}
         {duplicate&&<p role="alert" className="formula-validation-error">API Name already exists.
           {suggestion&&<button type="button" className="btn" onClick={()=>{setNameEdited(true);setDefinitionDraft({...definitionDraft,apiName:suggestion});}}>Use {suggestion}</button>}</p>}
         <label className="form-label">Description<textarea className="form-control" value={definitionDraft.description} onChange={(event)=>setDefinitionDraft({...definitionDraft,description:event.target.value})}/></label>
