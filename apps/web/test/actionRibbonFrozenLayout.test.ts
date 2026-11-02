@@ -26,8 +26,9 @@ test('Event is exactly three rows and Component Custom exactly two rows',()=>{
     '+ Icon','− Icon','Custom Button 1','Custom Button 2']){
    assert.ok(html.includes('aria-label="'+name+' action"'),name);
   }
+  // Flow input/output declarations now belong to Flow Builder, not the action ribbon.
   for(const section of ['Flow inputs','Flow outputs'])
-   assert.ok(html.includes('aria-label="'+section+'"'));
+   assert.ok(!html.includes('aria-label="'+section+'"'));
   for(const old of ['Custom action trigger','All component actions','Show action details',
    'Number field to adjust','Minimum number after adjustment','Shared filter key',
    'Optional unit price field','Optional Page State collection to refresh'])
