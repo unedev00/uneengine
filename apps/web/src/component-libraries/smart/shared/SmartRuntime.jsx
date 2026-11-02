@@ -236,7 +236,10 @@ function SmartTabs({p,record,fire}){
        const item=recordTabs[index-(firstTabCustom?1:0)];
        const itemId=item?.record?.Id||item?.record?.id||item?.value;
        fire("change",{index,value:itemId??"",record:{
-        ...item?.record,Id:itemId??"",Name:item?.label??item?.record?.Name??""},
+        ...item?.record,Id:itemId??"",Name:item?.label??item?.record?.Name??"",
+        ...(item?.record?.__collectionCriteriaField?{
+          Field:item.record.__collectionCriteriaField,
+          Criteria:item.record.__collectionCriteria}: {})},
         collectionName:p.dataCollection.name});
       }else if(dynamic){
        const row=recordsOf(p)[index-(firstTabCustom?1:0)];
