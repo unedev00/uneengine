@@ -2194,7 +2194,7 @@ function RecordWorkspace({
                 ? <MetadataBoundPageComponent definition={definition} component={component} recordId={String(record.Id)} defaultObjectApiName={object.apiName}
                     objects={objects} apps={apps} pages={pages} currentAppId="Records"
                     pageSessionKey={'record:' + object.apiName + ':' + String(record.Id)}
-                    reports={reports} availableFlows={availableFlows} formFactor={formFactor}
+                    pageComponents={assignedPage?.components} reports={reports} availableFlows={availableFlows} formFactor={formFactor}
                     onNavigate={onNavigate} onLaunchFlow={onLaunchFlow} behaviorContext={runtimeBehaviorContext} />
                 : <RegisteredComponent definition={definition} props={{
                     ...component.properties, ...componentLayoutProps(component.properties, layoutDevice),
