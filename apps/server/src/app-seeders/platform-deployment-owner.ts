@@ -40,11 +40,11 @@ export async function seedPlatformDeploymentOwner(
   const receipt=await client.query('SELECT tenant_id,user_id FROM md_platform_deployment_owner_receipts LIMIT 1');
   if(receipt.rows.length)return 'already-provisioned';
 
-  // Prefer the exact original provisioned identity. Where the one-time
-  // bootstrap variables were removed, require the OCI-root-installed canonical
-  // platform domain AND exactly one active *original developer role* holder
-  // with OneEngine. No email, arbitrary tenant, or UI-supplied claim can
-  // influence this selection. Ambiguity fails closed.
+  // Prefer the exact original provisioned identity. Where bootstrap variables
+  // were removed, use the OCI-root-installed canonical domain and a unique
+  // original-role holder OR directly assigned OneEngine owner with effective
+  // Tenant:manage. No email or UI-supplied claim can influence this selection.
+  // Ambiguity fails closed and grants remain one-time and revocable.
   let {rows:identities}=exact
    ?await client.query<{tenant_id:string;user_id:string}>(`
      SELECT u.tenant_id,u.id AS user_id FROM md_users u
@@ -74,6 +74,23 @@ export async function seedPlatformDeploymentOwner(
        AND u.user_type='internal'
     `,[platformDomain]);
   if(!exact && platformDomain && identities.length===0) {
+   // Legacy platform owners may have OneEngine assigned directly in Users,
+   // without the seeded TenantDeveloper role. The root-installed canonical
+   // domain is an independent trust anchor; require exactly one such enabled
+   // user with effective Tenant:manage. Never pick the first of multiple users.
+   const direct=await client.query<{tenant_id:string;user_id:string}>(`
+    SELECT DISTINCT u.tenant_id,u.id AS user_id FROM md_users u
+    JOIN md_tenants t ON t.id=u.tenant_id
+    JOIN md_tenant_domains d ON d.tenant_id=t.id
+    JOIN md_permission_assignments a ON a.tenant_id=u.tenant_id AND a.user_id=u.id
+    JOIN md_permission_sets p ON p.tenant_id=a.tenant_id AND p.id=a.permission_set_id
+    WHERE d.domain=$1 AND t.status='ACTIVE' AND u.enabled=true AND u.user_type='internal'
+      AND p.api_name='OneEngine'
+      AND md_rbac_allowed(u.tenant_id,u.id,'Tenant','manage')
+   `,[platformDomain]);
+   identities=direct.rows;
+  }
+  if(!exact && platformDomain && identities.length===0) {
    // Some original platform installations registered a different tenant
    // domain from the public web hostname. Recover only in a strictly isolated
    // one-tenant OCI platform, with a unique enabled original admin role.
@@ -93,6 +110,21 @@ export async function seedPlatformDeploymentOwner(
        AND EXISTS(SELECT 1 FROM md_tenants HAVING count(*)=1)
     `);
     identities=original.rows;
+    if(identities.length===0) {
+     // Historic single-tenant setup may have only a direct OneEngine grant,
+     // with no TenantDeveloper role. Never infer an owner if two users qualify.
+     const direct=await client.query<{tenant_id:string;user_id:string}>(`
+      SELECT DISTINCT u.tenant_id,u.id AS user_id FROM md_users u
+      JOIN md_tenants t ON t.id=u.tenant_id
+      JOIN md_permission_assignments a ON a.tenant_id=u.tenant_id AND a.user_id=u.id
+      JOIN md_permission_sets p ON p.tenant_id=a.tenant_id AND p.id=a.permission_set_id
+      WHERE t.status='ACTIVE' AND u.enabled=true AND u.user_type='internal'
+        AND p.api_name='OneEngine'
+        AND md_rbac_allowed(u.tenant_id,u.id,'Tenant','manage')
+        AND (SELECT count(*) FROM md_tenants)=1
+     `);
+     identities=direct.rows;
+    }
    }
   }
   if(identities.length!==1)return 'identity-not-found';
