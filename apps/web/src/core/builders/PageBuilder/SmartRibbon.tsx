@@ -10,6 +10,7 @@ import {scopedFieldRule,type ScopedFieldFilter} from '../../pages/PageRuntime/fi
 import RecordFilterEditor from '../../../component-libraries/shared/primitives/RecordFilterEditor/RecordFilterEditor';
 import SmartFormulaField from './SmartFormulaField';
 import {validateRecordFilterFormula} from '../../pages/PageRuntime/recordFilterFormula';
+import {sessionCollectionFields} from '../../pages/PageRuntime/pageCollectionListBinding';
 import {pageStateChoices} from './pageStateChoices';
 import {namedCollectionName,namedCollectionNames} from '../../pages/PageRuntime/pageCollectionSession';
 import {formulaCollectionReferenceKey} from '../../../../../server/src/expression-engine/FormulaCollection.js';
@@ -122,6 +123,8 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
   .sort((a,b)=>sourceObjectNames.indexOf(a.apiName)-sourceObjectNames.indexOf(b.apiName));
  const objectName=sourceObjectNames[0]??'';
  const object=objects.find(o=>o.apiName===objectName);
+ const canFilterSessionCollection=stateOptions.some(item=>item.source==='CollectionState');
+ const availableFilterFields=object?.fields??(canFilterSessionCollection?sessionCollectionFields:[]);
  const update=(key:string,value:unknown)=>onChange({...properties,[key]:value});
  // Filter target comes from the originating button, not a second modal selector.
  const openFilters=(target:string,fieldId:string|null=null)=>{
@@ -423,7 +426,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
         <button type="button" className="smart-data-filter-button"
           aria-label="Configure record filters"
           title="Configure filters visually (same record filtering engine as the Formula Bar)"
-          disabled={!object}
+          disabled={!object&&!canFilterSessionCollection}
           onClick={()=>{setSelectedDataField('__record_filter__');openFilters('Record');}}
           aria-haspopup="dialog">
           <SlidersHorizontal size={16}/>{filterCount>0&&
@@ -432,10 +435,10 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
         <div className="smart-data-formula-input">
           {filterFormulaSelected?<SmartFormulaField key="__record_filter__"
             label="Record filter formula" value={typeof properties.filterFormula==='string'?properties.filterFormula:''}
-            disabled={!object} onChange={changeRecordFilterFormula}
-            validate={value=>validateRecordFilterFormula(value.trimStart().replace(/^=\s*/,''),object?.fields??[])}
+            disabled={!object&&!canFilterSessionCollection} onChange={changeRecordFilterFormula}
+            validate={value=>validateRecordFilterFormula(value.trimStart().replace(/^=\s*/,''),availableFilterFields)}
             stateOptions={stateOptions}
-            fields={object?.fields??[]} objects={objects} rootObjectApiName={objectName}
+            fields={availableFilterFields} objects={objects} rootObjectApiName={objectName}
             selectedSourceObjects={sourceObjects}/>:
           activeDataProperty?<SmartFormulaField key={activeDataProperty.id}
             label={activeDataProperty.label} value={activeDataValue}
@@ -486,10 +489,10 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
     <section className="smart-dialog smart-filter-dialog" role="dialog" aria-modal="true"
       aria-label="Record filters" onKeyDown={e=>{if(e.key==='Escape')setFiltersOpen(false);}}>
      <header><div><strong>Filter Records</strong>
-       <span>{object?.label??'Object'} · {scopedFilterId?filterTarget+' only':'All records'}</span></div>
+       <span>{object?.label??'Session Collection'} · {scopedFilterId?filterTarget+' only':'All records'}</span></div>
        <button type="button" autoFocus onClick={()=>setFiltersOpen(false)}>Done</button></header>
      <div className="smart-filter-dialog-body">
-       {object?<RecordFilterEditor compact title={scopedFilterId?filterTarget+' value':object.label+' records'} fields={object.fields??[]} objects={objects} rootObjectApiName={objectName}
+       {(object||canFilterSessionCollection)?<RecordFilterEditor compact title={scopedFilterId?filterTarget+' value':object.label+' records'} fields={availableFilterFields} objects={objects} rootObjectApiName={objectName}
          stateOptions={stateOptions}
          filters={scopedFilterId?(modalFieldRule?.filters??[]):Array.isArray(properties.filters)?properties.filters:[]}
          formula={scopedFilterId?(modalFieldRule?.filterFormula??''):typeof properties.filterFormula==='string'?properties.filterFormula:''}
@@ -504,7 +507,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
          logic={scopedFilterId?(modalFieldRule?.filterLogic??'AND'):properties.filterLogic==='OR'?'OR':'AND'}
          onLogicChange={filterLogic=>scopedFilterId?updateFieldFilter(scopedFilterId,{filterLogic}):onChange({...properties,filterLogic})}
          onChange={filters=>scopedFilterId?updateFieldFilter(scopedFilterId,{filters}):onChange({...properties,filters})}/>:
-         <p>Choose an Object first to configure the record conditions.</p>}
+         <p>Choose an Object or bind a named Collection to configure filters.</p>}
      </div>
     </section></div>,document.body)}
  </div>;
