@@ -72,6 +72,16 @@ const evaluateCall=(name,args,context)=>{
    if(name==='CONTAINS')return text(args[0]).includes(text(args[1]));
    return text(args[0])===text(args[1]);
   case 'COLLECTION':arity(2,20);return createNamedFormulaCollection(args[0],args.slice(1));
+  case 'SUM':{
+   arity(1,20);
+   const values=args.flatMap(value=>value&&typeof value==='object'&&Array.isArray(value.items)?value.items:Array.isArray(value)?value:[value]);
+   if(values.length>200)throw Error('SUM collection exceeds 200 entries');
+   return values.reduce((total,value)=>{
+    const item=value&&typeof value==='object'&&!Array.isArray(value)
+     ?(value.record&&typeof value.record==='object'?value.record[value.criteriaField?.split('.').at(-1)]:value.value):value;
+    return total+numeric(item);
+   },0);
+  }
    case 'CONCATENATE':arity(1,20);return args.map(text).join('');
   case 'SUBSTITUTE':arity(3,4);{
    const source=text(args[0]),search=text(args[1]),replacement=text(args[2]);
@@ -303,6 +313,12 @@ function parse(source,record,formulaContext){
    }
    // Object.Field collection references can use only authorised records
    // supplied by the Page Runtime; a formula never performs a database query.
+   const saved=formulaContext.namedCollections;
+   if(saved&&typeof saved==='object'&&!reference.includes('.')){
+    const collection=Object.entries(saved).find(([key,value])=>
+     key.toLowerCase()===reference.toLowerCase()||value?.name?.toLowerCase()===reference.toLowerCase())?.[1];
+    if(collection&&Array.isArray(collection.items))return collection;
+   }
    const sourceRef=/^([A-Za-z][A-Za-z0-9_]*)\.([A-Za-z][A-Za-z0-9_]*)$/.exec(reference);
    const sources=formulaContext.collectionSources;
    if(sourceRef&&formulaContext.collectionResult===true
@@ -384,6 +400,19 @@ function parse(source,record,formulaContext){
    if(rows.length>200)throw Error('COLLECTION source exceeds 200 records');
    return rows;
   };
+  const collectionItems=value=>value&&typeof value==='object'&&Array.isArray(value.items)?value.items:null;
+  const matchesCriterion=(value,criterion)=>{
+   const raw=String(criterion),comparison=/^(<>|!=|>=|<=|>|<|=)(.*)$/.exec(raw);
+   const operator=comparison?.[1]??'=',expected=comparison?comparison[2]:raw;
+   if(['>','<','>=','<='].includes(operator)){
+    const left=Number(value),right=Number(expected);
+    if(!Number.isFinite(left)||!Number.isFinite(right))return false;
+    return operator==='>'?left>right:operator==='<'?left<right:operator==='>='?left>=right:left<=right;
+   }
+   const match=hasExcelWildcardCriteria(expected)?matchesExcelWildcard(String(value),expected):String(value)===expected;
+   return operator==='!='||operator==='<>'?!match:match;
+  };
+  const labelOf=item=>item&&typeof item==='object'&&!Array.isArray(item)?item.label??item.Name??item.value:item;
   const isCriteriaComparison=node=>node?.kind==='binary'
    &&['=','=='].includes(node.operator)&&Boolean(sourceField(node.left));
   const sourceItems=(pointer,criterion,filtered)=>{
@@ -398,8 +427,7 @@ function parse(source,record,formulaContext){
      throw Error('COLLECTION field must be scalar: '+pointer.reference);
     if(id===null||id===undefined||String(id).trim()==='')
      throw Error('COLLECTION source record has no ID');
-    if(filtered&&!(hasExcelWildcardCriteria(criterion)
-      ?matchesExcelWildcard(String(value),criterion):String(value)===criterion))continue;
+    if(filtered&&!matchesCriterion(value,criterion))continue;
     items.push({label:String(value),value:String(id),criteriaField:pointer.reference,
      criteria:String(value),record:row,objectApiName:pointer.object});
     if(items.length>200)throw Error('COLLECTION exceeds 200 entries');
@@ -407,6 +435,14 @@ function parse(source,record,formulaContext){
   };
   for(let index=1;index<args.length;){
    const node=args[index];
+   // A named session collection can be reused and filtered without changing its source.
+   const sessionItems=node.kind==='reference'?collectionItems(evaluate(node)):null;
+   if(sessionItems){
+    const next=args[index+1];
+    const criterion=next&&next.kind==='literal'&&typeof next.value==='string'?next.value:null;
+    const selected=criterion===null?sessionItems:sessionItems.filter(item=>matchesCriterion(labelOf(item),criterion));
+    items.push(...selected);index+=criterion===null?1:2;continue;
+   }
    // A literal caption followed by a field and explicit criterion forms a clause.
    if(node.kind==='literal'&&typeof node.value==='string'&&
      index+2<args.length&&sourceField(args[index+1])){
@@ -462,7 +498,7 @@ function parse(source,record,formulaContext){
   }else if(node.name==='OR'){
    result=false;
    for(const argument of node.args)if(truth(evaluate(argument))){result=true;break;}
-  }else if(node.name==='COLLECTION'&&formulaContext.collectionResult===true){
+  }else if(node.name==='COLLECTION'){
    result=evaluateCriteriaCollection(node.args);
   }else if(node.name==='CASE'){
    if(node.args.length%2!==0)throw Error('CASE requires a comparison value and a default result');
@@ -514,6 +550,7 @@ export function evaluateFieldExpressionDetailed(expression,record,options={}){
   const result=parse(input,record,{timeZone,now,collectionSources:options.collectionSources,
    collectionResult:options.collectionResult===true,
    namedCollectionSelections:options.namedCollectionSelections,
+   namedCollections:options.namedCollections,
    rootObjectApiName:options.rootObjectApiName});
   if(options.collectionResult===true){
    if(!result||typeof result!=='object'||Array.isArray(result)
@@ -537,10 +574,10 @@ export function evaluateFieldExpression(expression,record,options){
 /** Returns a named, typed collection instead of coercing it to a text field. */
 export function evaluateCollectionFormula(formula,sourceRecords={},context={}){
  const source=typeof formula==='string'?formula.trim().replace(/^=\s*/,''):'';
- if(!/^COLLECTION\s*\(/i.test(source))
-  return {value:null,error:'Enter =COLLECTION("Name", values, @Object.Field)'};
+ if(!source)return {value:null,error:'Enter a collection formula'};
  return evaluateFieldExpressionDetailed(source,{...context},
   {collectionSources:sourceRecords,collectionResult:true,
    rootObjectApiName:context?.primaryObject,
-   namedCollectionSelections:context?.state?.collectionSelections});
+   namedCollectionSelections:context?.state?.collectionSelections,
+   namedCollections:context?.namedCollections});
 }
