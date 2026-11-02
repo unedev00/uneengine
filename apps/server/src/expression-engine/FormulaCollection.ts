@@ -34,3 +34,30 @@ export function createNamedFormulaCollection(name:unknown,values:readonly unknow
  if(!values.length)throw Error('COLLECTION requires at least one value after its name');
  return {name,items:mergeFormulaCollectionValues(values)};
 }
+
+/** Structured, metadata-derived Collection selections.
+ * A caption is never an implicit wildcard. Field + criterion are explicit
+ * and travel together so receiving components can choose their own filters. */
+export type CriteriaCollectionItem={
+ readonly label:string;readonly value:string;
+ readonly criteriaField:string;readonly criteria:string;
+ readonly objectApiName?:string;readonly record?:Record<string,unknown>
+};
+export function createCriteriaFormulaCollection(name:unknown,items:readonly unknown[]):NamedFormulaCollection{
+ if(typeof name!=='string'||!/^[A-Za-z][A-Za-z0-9_]{0,79}$/.test(name))
+  throw Error('COLLECTION requires a valid name');
+ if(!Array.isArray(items)||items.length>200)throw Error('COLLECTION exceeds 200 entries');
+ const checked=items.map(item=>{
+  if(!item||typeof item!=='object'||Array.isArray(item))return item;
+  if(!('criteriaField' in item))return item;
+  const entry=item as CriteriaCollectionItem;
+  if(typeof entry.label!=='string'||!entry.label.trim()
+    ||typeof entry.value!=='string'||!entry.value.trim()
+    ||typeof entry.criteria!=='string'||!entry.criteria.trim()
+    ||typeof entry.criteriaField!=='string'
+    ||!/^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)?$/.test(entry.criteriaField))
+   throw Error('COLLECTION entry requires a label, field and criterion');
+  return item;
+ });
+ return {name,items:mergeFormulaCollectionValues(checked)};
+}
