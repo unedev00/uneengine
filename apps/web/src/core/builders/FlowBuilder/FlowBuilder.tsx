@@ -10,6 +10,7 @@ import { layoutFlowGraph } from './flowGraphLayout';
 import { completeFlowEndPaths, reconcileDecisionOutcomePaths } from './flowInsertElement.mjs';
 import {canBypassFlowElement,duplicateFlowGraphElement,flowGraphDiagnostics,retargetFlowGraphConnector} from './flowGraphOperations.mjs';
 import { formulaFunctions, formulaOperators } from './flowEditorCatalog';
+import FormulaSignatureGuide from '../PageBuilder/FormulaSignatureGuide';
 import { precedingFlowSteps } from './flowReferenceCatalog';
 import { flowCreateOptions, flowElementAvailable, flowElementInToolbox, type FlowCapabilityCatalog } from './flowCapabilityCatalog';
 import { rowsFrom, outcomesFrom, screenOutcomesFrom, displayValue, type ConfigRow, type DecisionOutcome } from './flowEditorData';
@@ -228,6 +229,7 @@ export default function FlowBuilder({
   const [resourceDataType, setResourceDataType] = useState('Text');
   const [resourceValue, setResourceValue] = useState('');
   const [formulaFunction, setFormulaFunction] = useState('IF');
+  const [formulaGuide,setFormulaGuide]=useState<{key:string;caret:number}|null>(null);
   const [formulaInsertField, setFormulaInsertField] = useState('');
   const [formulaOperator, setFormulaOperator] = useState('+');
   const [credentialId, setCredentialId] = useState('');
@@ -2140,15 +2142,33 @@ export default function FlowBuilder({
               </div>
               <p className="settings-panel-copy">Insert controls add text at the cursor. Use Check to validate the expression and the rest of the Flow.</p>
             </div>}
-            <label className="form-label">{resourceType === 'Formula' ? 'Formula Expression' : resourceType === 'Text Template' ? 'Template' : resourceType === 'Choice Set' ? 'Choices (one per line)' : 'Default Value'}{resourceType === 'Formula' || resourceType === 'Text Template' || resourceType === 'Choice Set'
+            <label className="form-label"
+              onSelectCapture={event=>{const field=event.target as HTMLTextAreaElement;
+                if(resourceType==='Formula'&&typeof field.selectionStart==='number')
+                  setFormulaGuide({key:'new',caret:field.selectionStart});}}
+              onKeyUpCapture={event=>{const field=event.target as HTMLTextAreaElement;
+                if(resourceType==='Formula'&&typeof field.selectionStart==='number')
+                  setFormulaGuide({key:'new',caret:field.selectionStart});}}>
+              {resourceType === 'Formula' ? 'Formula Expression' : resourceType === 'Text Template' ? 'Template' : resourceType === 'Choice Set' ? 'Choices (one per line)' : 'Default Value'}{resourceType === 'Formula' || resourceType === 'Text Template' || resourceType === 'Choice Set'
               ? <SmartFieldInput multiline rows={resourceType === 'Text Template' ? 9 : 5} textareaRef={resourceType === 'Formula' ? formulaEditorRef : undefined} kind={resourceType === 'Formula' ? 'formula' : 'text'} objects={objects} primaryObjectApiName={flow.triggerObject ?? ''} placeholder={resourceType === 'Text Template' ? 'Write your message here. Press Enter for a new line.' : undefined} value={resourceValue} onChange={setResourceValue} />
               : <input className="form-control" value={resourceValue} onChange={(event) => setResourceValue(event.target.value)} />}</label>
+            {resourceType==='Formula'&&formulaGuide?.key==='new'&&
+              <FormulaSignatureGuide value={resourceValue} caret={formulaGuide.caret}/>}
             <button className="btn" disabled={!resourceLabel.trim()} onClick={addResource}><Plus size={13} />New Resource</button>
             {flow.resources.map((resource) => <div className="flow-resource-card" key={resource.name}>
               <strong>{resource.label}</strong><small>{resource.name} · {resource.type} · {resource.dataType}</small>
-              <label className="form-label">{resource.type === 'Formula' ? 'Formula Expression' : resource.type === 'Text Template' ? 'Template' : resource.type === 'Choice Set' ? 'Choices (one per line)' : 'Default Value'}{resource.type === 'Formula' || resource.type === 'Text Template' || resource.type === 'Choice Set'
+              <label className="form-label"
+                onSelectCapture={event=>{const field=event.target as HTMLTextAreaElement;
+                  if(resource.type==='Formula'&&typeof field.selectionStart==='number')
+                    setFormulaGuide({key:resource.name,caret:field.selectionStart});}}
+                onKeyUpCapture={event=>{const field=event.target as HTMLTextAreaElement;
+                  if(resource.type==='Formula'&&typeof field.selectionStart==='number')
+                    setFormulaGuide({key:resource.name,caret:field.selectionStart});}}>
+                {resource.type === 'Formula' ? 'Formula Expression' : resource.type === 'Text Template' ? 'Template' : resource.type === 'Choice Set' ? 'Choices (one per line)' : 'Default Value'}{resource.type === 'Formula' || resource.type === 'Text Template' || resource.type === 'Choice Set'
                 ? <SmartFieldInput multiline rows={resource.type === 'Text Template' ? 9 : 4} kind={resource.type === 'Formula' ? 'formula' : 'text'} objects={objects} primaryObjectApiName={flow.triggerObject ?? ''} value={displayValue(resource.value)} onChange={next => updateResource(resource.name, { value: next })} />
                 : <input className="form-control" value={displayValue(resource.value)} onChange={(event) => updateResource(resource.name, { value: event.target.value })} />}</label>
+              {resource.type==='Formula'&&formulaGuide?.key===resource.name&&
+                <FormulaSignatureGuide value={displayValue(resource.value)} caret={formulaGuide.caret}/>}
               <div className="form-options"><label className="checkbox-row"><input type="checkbox" checked={resource.availableForInput} disabled={!['Variable', 'Record', 'Record Collection'].includes(resource.type)} onChange={(event) => updateResource(resource.name, { availableForInput: event.target.checked })} />Available for input</label><label className="checkbox-row"><input type="checkbox" checked={resource.availableForOutput} onChange={(event) => updateResource(resource.name, { availableForOutput: event.target.checked })} />Available for output</label></div>
               <button className="text-action" onClick={() => onFlowChange({ ...flow, resources: flow.resources.filter((item) => item.name !== resource.name) })}><X size={13} />Delete Resource</button>
             </div>)}
