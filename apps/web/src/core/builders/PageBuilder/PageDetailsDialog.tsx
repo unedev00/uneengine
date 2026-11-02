@@ -7,6 +7,34 @@ type Variant='Desktop'|'Tablet'|'Mobile'|'Custom';
 type Version={version:number;createdAt:string;published:boolean;draft:boolean;archived:boolean};
 const variants:Variant[]=['Desktop','Tablet','Mobile','Custom'];
 
+/** Safe read-only canvas outline: historical metadata is never executed,
+ * so old Flows and network-bound widgets cannot run during inspection. */
+function HistoricalLayoutPreview({page}:{page:LightningPageMetadata}){
+ const width=Math.max(320,page.canvasWidth||1200),height=Math.max(320,page.canvasHeight||800);
+ const free=page.layoutMode==='free-canvas';
+ return <div className="page-details-canvas-scroll">
+  <div className={'page-details-canvas'+(free?' is-free':' is-template')}
+   role="img" aria-label={'Historical '+page.layoutVariant+' layout'}
+   style={{aspectRatio:width+'/'+height,background:page.canvasFillColor||'#ffffff'}}>
+   {page.components.map((item,index)=>{
+    const position=item.position;
+    const style=free?{
+     position:'absolute' as const,
+     left:Math.max(0,Math.min(100,((position?.x??(index%4)*200)/width)*100))+'%',
+     top:Math.max(0,Math.min(100,((position?.y??Math.floor(index/4)*130)/height)*100))+'%',
+     width:Math.max(2,Math.min(100,((position?.width??180)/width)*100))+'%',
+     height:Math.max(2,Math.min(100,((position?.height??100)/height)*100))+'%'
+    }:undefined;
+    return <div key={item.id} className={'page-details-canvas-component'+(item.visible===false?' is-hidden':'')}
+     title={item.label+' · '+item.type} style={style}>
+      <span>{item.label||item.type}</span>
+      <small>{item.type}</small>
+    </div>;
+   })}
+  </div>
+ </div>;
+}
+
 /** Page identity, app assignment and immutable layout history.
  * Historical revisions can be inspected or restored to draft, never edited in place. */
 export default function PageDetailsDialog({page,apps,disabled,request,onClose,onSave,onOpenDesign,onReload}:{
@@ -201,9 +229,8 @@ export default function PageDetailsDialog({page,apps,disabled,request,onClose,on
        <button className="btn btn-small" type="button" onClick={()=>setPreview(null)}>Close preview</button>
       </div>
       <p>Layout: {preview.page.layoutMode} · Canvas: {preview.page.canvasWidth} × {preview.page.canvasHeight} · Components: {preview.page.components.length}</p>
-      <div className="page-details-preview-components">
-       {preview.page.components.map(c=><div key={c.id}>{c.label||c.type} · {c.type}</div>)}
-      </div>
+      <HistoricalLayoutPreview page={preview.page}/>
+      <p>This is a read-only component layout outline. Restore as draft &amp; Design to open the complete page in the visual builder.</p>
      </section>}
     </section>
     {error&&<p role="alert" className="page-details-error">{error}</p>}
