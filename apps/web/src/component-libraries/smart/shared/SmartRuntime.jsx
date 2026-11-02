@@ -5,7 +5,7 @@ import {evaluateFieldExpression} from "../../shared/FieldExpression.js";
 import {useTenantImageSource} from "../../shared/TenantImage.jsx";
 const number=(v,f,min=0,max=2000)=>Number.isFinite(Number(v))?Math.max(min,Math.min(max,Number(v))):f;
 const text=(v)=>v===null||v===undefined?"":String(v);
-const expression=(v,record,pageState,objectApiName)=>{
+const expression=(v,record,pageState,objectApiName,collectionSources,namedCollections)=>{
  if(typeof v!=="string")return text(v);
  // The common bounded evaluator resolves authorised row-specific relationship
  // values via __mentionValues without turning numbers into quoted strings or
@@ -13,7 +13,7 @@ const expression=(v,record,pageState,objectApiName)=>{
  if(/^(?:https:\/\/|asset:)/i.test(v.trim()))return v;
  if(!/^\s*=/.test(v)&&!/@[A-Za-z]/.test(v)&&!/^\s*"/.test(v)&&
    !/^\s*-?(?:\d+(?:\.\d*)?|\.\d+)\s*[+\-*/&]/.test(v))return v;
- try{return text(evaluateFieldExpression(v,record||{},{namedCollectionSelections:pageState?.collectionSelections,rootObjectApiName:objectApiName}));}catch{return "";}
+ try{return text(evaluateFieldExpression(v,record||{},{namedCollectionSelections:pageState?.collectionSelections,rootObjectApiName:objectApiName,collectionSources,namedCollections}));}catch{return "";}
 };
 function SmartPicture({src,alt,loadAsset,style}){
  const source=useTenantImageSource(src,loadAsset);
@@ -32,9 +32,10 @@ const fieldAllows=(p,key,record)=>{
 };
 const scopedExpression=(p,key,source,record)=>fieldAllows(p,key,record)
  ?(key==="textSource"&&p.dataCollection&&record&&
-    /^\s*(?:=\s*COLLECTION\s*\(|=?\s*@[A-Za-z][A-Za-z0-9_]*\s*$|=?\s*@[A-Za-z][A-Za-z0-9_.]*\s*={1,2}\s*["'])/i.test(String(source??""))
+    (/(?:^|[=(,])\s*COLLECTION\s*\(/i.test(String(source??""))
+     ||/^\s*=?\s*@[A-Za-z][A-Za-z0-9_.]*(?:\s*(?:=|==|<>|!=|>=|<=|>|<)\s*.+)?\s*$/i.test(String(source??"")))
     ?text(record.__collectionLabel??record.Name??"")
-    :expression(source,record,p.pageState,p.objectApiName)):"";
+    :expression(source,record,p.pageState,p.objectApiName,p.formulaCollectionSources,p.namedCollections)):"";
 const recordOf=p=>p.objectApiName&&Array.isArray(p.records)
  ?(p.records[0]??{}):p.record&&typeof p.record==="object"&&!Array.isArray(p.record)?p.record:
  Array.isArray(p.records)&&p.records.length?p.records[0]:Array.isArray(p.items)&&p.items.length?p.items[0]:{};
@@ -56,7 +57,7 @@ const boundImage=(p,record)=>{
   const source=p.imageSource??p.src??'';
  const key=typeof source==='string'?source.replace(/^@/,''):'';
  if(key && record && Object.prototype.hasOwnProperty.call(record,key))return text(record[key]);
- return expression(source,record,p.pageState);
+ return expression(source,record,p.pageState,p.objectApiName,p.formulaCollectionSources,p.namedCollections);
 };
 function SmartCard({p,record}){
  const image=boundImage(p,record);
@@ -214,9 +215,9 @@ function SmartTabs({p,record,fire}){
  const captionContext={...(record&&typeof record==="object"&&!Array.isArray(record)?record:{}),
   state:p.pageState??{},session:{id:p.sessionId??""}};
  const firstTabCaption=firstTabCustom&&typeof p.firstTabCaption==="string"&&p.firstTabCaption.trim()
-  ?expression(p.firstTabCaption,captionContext,p.pageState)||"Custom tab":"Custom tab";
+  ?expression(p.firstTabCaption,captionContext,p.pageState,p.objectApiName,p.formulaCollectionSources,p.namedCollections)||"Custom tab":"Custom tab";
  const firstTabValue=firstTabCustom&&typeof p.firstTabValue==="string"&&p.firstTabValue.trim()
-  ?expression(p.firstTabValue,captionContext,p.pageState):"*";
+  ?expression(p.firstTabValue,captionContext,p.pageState,p.objectApiName,p.formulaCollectionSources,p.namedCollections):"*";
  const tabs=firstTabCustom?[{label:firstTabCaption,id:"__custom_first_tab__"},...recordTabs]:recordTabs;
  // The page-scoped selection is authoritative for data-backed Tabs. Clearing a
  // parent selection must not leave a dependent child visibly selected.
@@ -386,7 +387,7 @@ export default function SmartRuntime(p){
    })}
   </div>;
  }
- else if(name==="smart_cart")content=<SmartCart p={p} records={recordsOf(p)} Picture={SmartPicture} expression={(formula,row)=>expression(formula,row,p.pageState)}
+ else if(name==="smart_cart")content=<SmartCart p={p} records={recordsOf(p)} Picture={SmartPicture} expression={(formula,row)=>expression(formula,row,p.pageState,p.objectApiName,p.formulaCollectionSources,p.namedCollections)}
     fieldAllowed={(key,row)=>fieldAllows(p,key,row)} fire={fire}/>;
  else if(name==="smart_calendar")content=<SmartCalendar p={p} fire={fire}/>;
  else if(name==="smart_tabs")content=<SmartTabs p={p} record={record} fire={fire}/>;

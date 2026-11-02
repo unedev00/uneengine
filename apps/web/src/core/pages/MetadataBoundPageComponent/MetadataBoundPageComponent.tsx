@@ -563,6 +563,7 @@ export default function MetadataBoundPageComponent({
       ...(typeof properties.searchKey === 'string' && properties.searchKey ? {searchQuery:selectedCategories[properties.searchKey] ?? ''} : {}),
       label: component.label, properties: rowResolvedProperties, pageState, objects, reports, flows: availableFlows,
       dataCollection,
+      formulaCollectionSources:namedSource.formulaSources,namedCollections:namedSource.namedCollections,
       fieldAllowed:(key:string,row:Record<string,unknown>)=>scopedFieldAllows(
         properties.dataFieldFilters,key,row,filterFields,{pageState,recordId,sessionId}),
        pageSessionKey, componentId: component.id,

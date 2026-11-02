@@ -4,7 +4,7 @@ import {tokenize} from '../../../../../server/src/expression-engine/FormulaToken
 import {evaluateCollectionFormula} from '../../../component-libraries/shared/FieldExpression.js';
 import {loadFlowScreenRecordPage} from '../../authentication/Client/authClient';
 import type {ObjectMetadata} from '../../metadata/Definitions/metadata';
-import {registerSessionCollection,useSessionCollectionSnapshot} from './pageCollectionSession';
+import {namedCollectionNames,registerSessionCollection,useSessionCollectionSnapshot} from './pageCollectionSession';
 import {formulaCollectionReferenceKey} from '../../../../../server/src/expression-engine/FormulaCollection.js';
 import {parseCollectionListBinding,filteredCollectionItems} from './pageCollectionListBinding';
 
@@ -12,17 +12,24 @@ type Row=Record<string,unknown>;
 export type PageNamedCollection={name:string;key?:string;items:unknown[]};
 type SourceResult={key:string;records:Record<string,Row[]>;error?:string};
 
-export function collectionFormulaReferences(formula:string,primaryObject=''):Array<{object:string;field:string}>{
- if(!/^\s*=?\s*COLLECTION\s*\(/i.test(formula))return [];
+export function collectionFormulaReferences(formula:string,primaryObject='',knownCollections:readonly string[]=[]):Array<{object:string;field:string}>{
+ if(!/\bCOLLECTION\s*\(/i.test(formula))return [];
  const found=new Map<string,{object:string;field:string}>();
  const visit=(node:Expression):void=>{
   if(node.kind==='reference'){
    const match=/^([A-Za-z][A-Za-z0-9_]*)\.([A-Za-z][A-Za-z0-9_]*)$/.exec(node.value);
-   if(match)found.set(match[0],{object:match[1],field:match[2]});
+   if(match&&!['state','session','event'].includes(match[1].toLowerCase()))
+    found.set(match[0],{object:match[1],field:match[2]});
    else if(primaryObject&&/^[A-Za-z][A-Za-z0-9_]*$/.test(node.value)
-     &&!['state','session','event'].includes(node.value.toLowerCase()))
+     &&!knownCollections.some(name=>name.toLowerCase()===node.value.toLowerCase()))
      found.set(primaryObject+'.'+node.value,{object:primaryObject,field:node.value});
-  }else if(node.kind==='call')node.args.forEach(visit);
+  }else if(node.kind==='call'){
+   node.args.forEach((arg,index)=>{
+    if(node.name==='COLLECTION'&&index===0
+      &&arg.kind==='reference'&&/^[A-Za-z][A-Za-z0-9_]*$/.test(arg.value))return;
+    visit(arg);
+   });
+  }
   else if(node.kind==='unary')visit(node.value);
   else if(node.kind==='binary'){visit(node.left);visit(node.right);}
  };
@@ -38,15 +45,17 @@ export function usePageCollectionFormula(
  formula:unknown,properties:Readonly<Row>,objects:readonly ObjectMetadata[],
  primaryObject:string,primaryRecords:readonly Row[],primaryTotal:number,
  revision:number,pageState:Readonly<Row>,sessionId:string,pageSessionKey:string,componentId:string
-):{collection:PageNamedCollection|null;error:string|null;loading:boolean}{
+):{collection:PageNamedCollection|null;error:string|null;loading:boolean;
+   formulaSources:Readonly<Record<string,readonly Row[]>>;
+   namedCollections:Readonly<Record<string,PageNamedCollection>>}{
  const declared=typeof formula==='string'?formula.trim():'';
  // A Collection is authored in any existing formula property. The old hidden
  // collectionFormula metadata remains readable for previously published pages.
  const expressions=Object.entries(properties).filter(([key,value])=>
    key!=='collectionFormula'&&typeof value==='string').map(([,value])=>String(value).trim());
- const explicit=expressions.find(value=>/^=\s*COLLECTION\s*\(/i.test(value))
-   ??expressions.find(value=>/^=\s*@[A-Za-z][A-Za-z0-9_]{0,79}$/.test(value));
- const reference=expressions.find(value=>/^@[A-Za-z][A-Za-z0-9_]{0,79}$/.test(value));
+ const explicit=expressions.find(value=>value.startsWith('=')&&namedCollectionNames(value).length>0)
+   ??expressions.find(value=>/^=\s*@[A-Za-z][A-Za-z0-9_]{0,79}(?:\.[A-Za-z][A-Za-z0-9_]*)?$/.test(value));
+ const reference=expressions.find(value=>/^@[A-Za-z][A-Za-z0-9_]{0,79}(?:\.[A-Za-z][A-Za-z0-9_]*)?$/.test(value));
  const listExpression=expressions.find(value=>Boolean(parseCollectionListBinding(value,primaryObject)));
  // List-expression metadata is distinct from scalar Boolean expressions. A
  // source binding selects records; individual row property formulas remain scalar.
@@ -54,12 +63,32 @@ export function usePageCollectionFormula(
  const source=entered.startsWith('=')?entered.slice(1).trim():entered;
  const scope=pageSessionKey+'#'+sessionId;
  const lastValid=useRef<{object:string;collection:PageNamedCollection}|null>(null);
- const listBinding=parseCollectionListBinding(source,primaryObject);
+ const directSource=/^@([A-Za-z][A-Za-z0-9_]*)(?:\.([A-Za-z][A-Za-z0-9_]*))?$/.exec(source);
+ const directObject=directSource?.[2]?directSource[1]:primaryObject;
+ const directField=directSource?.[2]??directSource?.[1];
+ const directMetadata=directObject?objects.find(item=>item.apiName===directObject):undefined;
+ // Only a metadata-authorised Object Field can become a record-list source.
+ // A bare @name that is not a Field remains eligible as a saved named Collection.
+ const directBinding=directField&&directMetadata?.fields.some(item=>item.apiName===directField)
+  ?{object:directObject,field:directField,criterion:'*',operator:'='}:null;
+ const listBinding=parseCollectionListBinding(source,primaryObject)??directBinding;
  const registry=useSessionCollectionSnapshot(scope);
  const namedListSource=listBinding&&listBinding.object===primaryObject
-  ?registry.collections[listBinding.field]:undefined;
- const refs=listBinding&&!namedListSource?[{object:listBinding.object,field:listBinding.field}]:
-  collectionFormulaReferences(source,primaryObject);
+  ?Object.entries(registry.collections).find(([key])=>key.toLowerCase()===listBinding.field.toLowerCase())?.[1]:undefined;
+ const primaryField=Boolean(listBinding&&objects.find(o=>o.apiName===listBinding.object)
+   ?.fields.some(field=>field.apiName===listBinding.field));
+ const unresolvedNamedList=Boolean(listBinding&&!namedListSource&&!primaryField
+   &&listBinding.object===primaryObject);
+ const existingCollections=Object.keys(registry.collections);
+ const sourceRefs=unresolvedNamedList||namedListSource?[]:
+  listBinding?[{object:listBinding.object,field:listBinding.field}]:
+    collectionFormulaReferences(source,primaryObject,existingCollections);
+ // Scalar formulas may consume a Collection without themselves returning one.
+ const scalarRefs=expressions.filter(value=>/\bCOLLECTION\s*\(/i.test(value))
+  .flatMap(value=>collectionFormulaReferences(value,primaryObject,existingCollections));
+ const refs=[...new Map([...sourceRefs,...scalarRefs]
+  .map(ref=>[ref.object+'.'+ref.field,ref])).values()];
+ const referencesNamed=Boolean(namedCollectionNames(source).length);
  const selected=['objectApiName','objectApiName2','objectApiName3']
   .map(key=>String(properties[key]??'')).filter(Boolean);
  const referenced=[...new Set(refs.map(ref=>ref.object))];
@@ -68,7 +97,7 @@ export function usePageCollectionFormula(
  const [remote,setRemote]=useState<SourceResult|null>(null);
  useEffect(()=>{
   let active=true;
-  if(!source||!secondary.length){setRemote({key,records:{}});return()=>{active=false;};}
+  if(!secondary.length){setRemote({key,records:{}});return()=>{active=false;};}
   setRemote(null);
   void Promise.all(secondary.map(async name=>{
    if(!selected.includes(name)||!objects.some(o=>o.apiName===name))
@@ -87,11 +116,11 @@ export function usePageCollectionFormula(
  const saved=/^@([A-Za-z][A-Za-z0-9_]{0,79})$/.exec(source);
  if(saved){
   const named=Object.entries(registry.collections).find(([name])=>name.toLowerCase()===saved[1].toLowerCase())?.[1];
-  return named?{collection:named,error:null,loading:false}:
-   {collection:null,error:null,loading:false};
+  if(named)return {collection:named,error:null,loading:false};
+  if(!directBinding)return {collection:null,error:null,loading:false};
  }
- if(!listBinding&&!/^COLLECTION\s*\(/i.test(source))
-  return {collection:null,error:null,loading:false};
+ if(unresolvedNamedList)return {collection:null,error:null,loading:false};
+ if(!listBinding&&!referencesNamed)return {collection:null,error:null,loading:false};
  const notSelected=refs.find(ref=>!selected.includes(ref.object));
  if(notSelected)return {collection:null,error:'Select Object '+notSelected.object+' in Data Source before referencing it',loading:false};
  const missingField=refs.find(ref=>!objects.find(o=>o.apiName===ref.object)?.fields.some(f=>f.apiName===ref.field));
@@ -108,7 +137,9 @@ export function usePageCollectionFormula(
   return {collection:{name:'__filtered_list__',
     items:filteredCollectionItems(criteria,rows)},error:null,loading:false};
  }
- const resolved=evaluateCollectionFormula(source,sources,{state:pageState,session:{id:sessionId},primaryObject});
+ const resolved=evaluateCollectionFormula(source,sources,{state:pageState,session:{id:sessionId},
+   primaryObject,record:primaryRecords.length===1?primaryRecords[0]:{},
+   namedCollections:registry.collections});
  const value=resolved.value as PageNamedCollection|null;
  return {collection:value?{...value,key:formulaCollectionReferenceKey(value.name)}:null,
    error:resolved.error??null,loading:false};
@@ -120,11 +151,20 @@ export function usePageCollectionFormula(
    lastValid.current={object:primaryObject,collection:result.collection};
  const visible=recoverable?{collection:lastValid.current?.object===primaryObject
    ?lastValid.current.collection:null,error:null,loading:false}:result;
- const owned=/^COLLECTION\s*\(/i.test(source)?visible.collection:null;
+ const owned=referencesNamed?visible.collection:null;
  const identity=owned?JSON.stringify(owned):'';
  useEffect(()=>registerSessionCollection(scope,componentId,owned),[scope,componentId,identity]);
  const duplicate=registry.errors[componentId];
- return duplicate?{collection:null,error:duplicate,loading:false}:visible;
+ // Scalar formulas such as SUM(COLLECTION(...)) use these very same already
+ // authorised complete Object rows; no renderer or formula performs its own IO.
+ const complete=(!primaryObject||primaryTotal<=primaryRecords.length)
+  &&(!secondary.length||remote?.key===key)&&!remote?.error;
+ const formulaSources:Record<string,readonly Row[]>=complete?{
+  ...(remote?.key===key?remote.records:{}),
+  ...(primaryObject?{[primaryObject]:primaryRecords}:{})
+ }:{};
+ return {...(duplicate?{collection:null,error:duplicate,loading:false}:visible),
+   formulaSources,namedCollections:registry.collections};
 }
 
 /** Read-only record-shaped adapter for collection-capable Tables, Lists and Cards.

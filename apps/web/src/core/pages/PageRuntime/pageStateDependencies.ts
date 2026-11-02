@@ -1,4 +1,4 @@
-import {namedCollectionName} from './pageCollectionSession';
+import {namedCollectionNames} from './pageCollectionSession';
 import {activePageRecordFilters} from './pageComponentBindings';
 
 /** Dependency channels are derived from published Page metadata, not app names. */
@@ -9,12 +9,15 @@ const identifier=/^[A-Za-z][A-Za-z0-9_]{0,79}$/;
 const state=(name:string):Channel=>'state:'+name;
 const collection=(name:string):Channel=>'collection:'+name.toLowerCase();
 
-function references(formula:unknown,inputs:Set<Channel>):void {
+function references(formula:unknown,inputs:Set<Channel>,available:ReadonlySet<string>):void {
  if(typeof formula!=='string')return;
  for(const match of formula.matchAll(/(?:\$state\.|@state\.)([A-Za-z][A-Za-z0-9_]{0,63})\b/g))
   inputs.add(state(match[1]));
  for(const match of formula.matchAll(/@([A-Za-z][A-Za-z0-9_]{0,79})\.state\.(?:Id|Name|Value|Field|Criteria)\b/g))
   inputs.add(collection(match[1]));
+ // Direct @NamedCollection reads are dependencies too, including nested IFs.
+ for(const match of formula.matchAll(/@([A-Za-z][A-Za-z0-9_]{0,79})(?![.\w])/g))
+  if(available.has(match[1].toLowerCase()))inputs.add(collection(match[1]));
 }
 
 /** Build a directed dependency graph across any number of tabs/collection layers.
@@ -23,13 +26,18 @@ function references(formula:unknown,inputs:Set<Channel>):void {
  */
 export function pageStateDependencies(components:readonly Component[]):PageStateDependencies {
  const graph=new Map<Channel,Set<Channel>>();
+ const emitted=(props:Readonly<Record<string,unknown>>):string[]=>{
+  const authored=Object.entries(props).filter(([key])=>key!=='collectionFormula')
+   .flatMap(([,value])=>namedCollectionNames(value));
+  return authored.length?authored:namedCollectionNames(props.collectionFormula);
+ };
+ const available=new Set(components.flatMap(item=>emitted(item.properties)
+  .map(name=>name.replace(/ +/g,'_').toLowerCase())));
  for(const {properties:props} of components){
   const inputs=new Set<Channel>(),outputs=new Set<Channel>();
   const declared=typeof props.collectionFormula==='string'?props.collectionFormula:'';
-  const authored=Object.values(props).find(value=>typeof value==='string'
-   &&/^\s*=\s*COLLECTION\s*\(/i.test(value));
-  const name=namedCollectionName(authored)||namedCollectionName(declared);
-  if(name)outputs.add(collection(name));
+  const names=[...new Set(emitted(props))];
+  for(const name of names)outputs.add(collection(name));
 
   const active=activePageRecordFilters(props);
   if(Array.isArray(active.filters))for(const entry of active.filters){
@@ -45,13 +53,12 @@ export function pageStateDependencies(components:readonly Component[]):PageState
     if(match)inputs.add(collection(match[1]));
    }
   }
-  references(active.formula,inputs);
-  references(declared,inputs);
-  if(typeof authored==='string')references(authored,inputs);
+  references(active.formula,inputs,available);
+  references(declared,inputs,available);
   // A named Collection can be authored in any formula-capable Data property.
   // Dependencies on selected parent collections also work in those properties.
-  if(name)for(const [key,value] of Object.entries(props))
-   if(key!=='collectionFormula'&&key!=='filterFormula')references(value,inputs);
+  for(const [key,value] of Object.entries(props))
+   if(key!=='collectionFormula'&&key!=='filterFormula')references(value,inputs,available);
   if(typeof props.relatedFilterKey==='string'&&identifier.test(props.relatedFilterKey))
    inputs.add(state(props.relatedFilterKey));
 

@@ -10,10 +10,8 @@ import {scopedFieldRule,type ScopedFieldFilter} from '../../pages/PageRuntime/fi
 import RecordFilterEditor from '../../../component-libraries/shared/primitives/RecordFilterEditor/RecordFilterEditor';
 import SmartFormulaField from './SmartFormulaField';
 import {validateRecordFilterFormula} from '../../pages/PageRuntime/recordFilterFormula';
-import {displayComparisonFilter,moveDisplayComparisonToFilter} from './dataFormulaFilterTransfer';
-import {relationshipFormulaFields} from './relationshipFormulaFields';
 import {pageStateChoices} from './pageStateChoices';
-import {namedCollectionName} from '../../pages/PageRuntime/pageCollectionSession';
+import {namedCollectionName,namedCollectionNames} from '../../pages/PageRuntime/pageCollectionSession';
 import {formulaCollectionReferenceKey} from '../../../../../server/src/expression-engine/FormulaCollection.js';
 import SmartIconDropdown from './SmartIconDropdown';
 import SmartMultiSelect from './SmartMultiSelect';
@@ -61,30 +59,31 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
     ?'Duplicate collection name on this page: '+name:'';
  })();
  const validateCollection=(next:string):string|null=>{
-  if(!/^=\s*COLLECTION\s*\(/i.test(next.trim()))return null;
-  const name=namedCollectionName(next);
-  if(!name)return 'Enter a Collection name in quotes as the first argument';
-  const alias=formulaCollectionReferenceKey(name).toLowerCase();
-  if(pageComponents.some(item=>item.id!==componentId&&Object.values(item.properties)
-    .some(value=>{const other=namedCollectionName(value);
-      return other&&formulaCollectionReferenceKey(other).toLowerCase()===alias;})))
+  const names=namedCollectionNames(next);
+  if(!names.length)return null;
+  for(const name of names){
+   const alias=formulaCollectionReferenceKey(name).toLowerCase();
+   if(pageComponents.some(item=>item.id!==componentId&&Object.values(item.properties)
+     .some(value=>namedCollectionNames(value).some(other=>
+       formulaCollectionReferenceKey(other).toLowerCase()===alias))))
     return 'Duplicate Collection name: '+name;
-  // Detect missing separators without reporting errors for unfinished typing.
+  }
   if(/"(?:[^"]|"")*"\s*@([A-Za-z])/i.test(next))
-    return 'Missing comma before the field reference';
-  if(/,\s*(?:,|""|\))/.test(next))
-    return 'Enter a value after the comma';
+   return 'Missing comma before the field reference';
+  // Empty strings are valid explicit Field/Criteria placeholders.
+  if(/,\s*(?:,|\))/.test(next))return 'Enter a value after the comma';
   return null;
  };
+
  const [filtersOpen,setFiltersOpen]=useState(false);
  const [filterTarget,setFilterTarget]=useState('Record');
  const [filterFieldId,setFilterFieldId]=useState<string|null>(null);
- const [selectedDataField,setSelectedDataField]=useState<string|null>(null);
+ const [selectedDataField,setSelectedDataField]=useState<string|null>('__record_filter__');
  const [daysOpen,setDaysOpen]=useState(false);
  const daysButton=useRef<HTMLButtonElement>(null);
  const daysMenu=useRef<HTMLDivElement>(null);
  const [daysPosition,setDaysPosition]=useState({top:0,left:0});
- useEffect(()=>{setDaysOpen(false);setFiltersOpen(false);setSelectedDataField(null);},[tab,api]);
+ useEffect(()=>{setDaysOpen(false);setFiltersOpen(false);setSelectedDataField('__record_filter__');},[tab,api]);
  useEffect(()=>{
    if(!filtersOpen)return;
    const close=(event:globalThis.KeyboardEvent)=>{if(event.key==='Escape')setFiltersOpen(false);};
@@ -177,33 +176,12 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    (!sharedPropertyIds||sharedPropertyIds.includes(activeDataProperty.id)));
  const activeDataValue=activeDataProperty
    ?String(properties[activeDataKey]??activeDataProperty.defaultsOverrides?.[api]??activeDataProperty.default??''):'';
- const comparisonForFilter=activeDataKey==='textSource'&&activeDataProperty&&object
-   ?displayComparisonFilter(activeDataValue,object.fields??[]):null;
- const filterAlreadySet=typeof properties.filterFormula==='string'
-   &&properties.filterFormula.trim()&&properties.filterFormula.trim()!==comparisonForFilter?.formula;
  const changeRecordFilterFormula=(next:string)=>{
    if(!object)return;
    const formula=next.trimStart().startsWith('=')?next.trimStart().slice(1):next;
    // Keep ordinary saved data conditions active alongside the authored formula.
    onChange({...properties,filterFormula:formula,filterMode:undefined});
  };
- const moveComparison=()=>{
-   if(!object)return;
-   const next=moveDisplayComparisonToFilter(properties,object.fields??[]);
-   if(!next)return;
-   onChange(next);
-   setSelectedDataField('__record_filter__');
- };
- // Reuse the metadata field catalogue used by @ suggestions. The picker
- // changes only the existing binding; advanced expressions remain editable.
- const selectableDataFields=activeDataProperty
-   ?relationshipFormulaFields(objects,sourceObjectNames,'',
-      activeDataProperty.id==='imageSource'?'image':'text',
-      api==='smart_toggle'&&activeDataProperty.id==='textSource')
-   :[];
- const collectionOptions=[...new Set(stateOptions.filter(item=>item.source==='CollectionState')
-   .map(item=>item.key.split('.')[0]))].map(name=>({reference:'@'+name,label:name+' Collection'}));
- const selectableDataSources=[...selectableDataFields,...collectionOptions];
  const activeSummaryLabel=activeDataProperty&&api==='smart_cart'
    ?cartSummaryLabels[activeDataProperty.id]:undefined;
  const changeActiveDataFormula=(next:string)=>{
@@ -442,11 +420,14 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
     <div className="smart-data-workspace">
       <div className="smart-data-formula-bar" aria-label="Data expression or record filter formula">
         <span className="smart-data-fx-prefix" aria-hidden="true">ƒx</span>
-        <button type="button" className={'smart-data-record-filter-target'+(filterFormulaSelected?' is-selected':'')}
-          aria-label="Edit record filter formula" aria-pressed={filterFormulaSelected}
-          title="Filter which records are shown; this is different from a text caption formula"
-          disabled={!object} onClick={()=>setSelectedDataField('__record_filter__')}>
-          Filter records
+        <button type="button" className="smart-data-filter-button"
+          aria-label="Configure record filters"
+          title="Configure filters visually (same record filtering engine as the Formula Bar)"
+          disabled={!object}
+          onClick={()=>{setSelectedDataField('__record_filter__');openFilters('Record');}}
+          aria-haspopup="dialog">
+          <SlidersHorizontal size={16}/>{filterCount>0&&
+            <span className="smart-filter-count">{filterCount}</span>}
         </button>
         <div className="smart-data-formula-input">
           {filterFormulaSelected?<SmartFormulaField key="__record_filter__"
@@ -469,31 +450,6 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
             <input type="text" disabled aria-label="Formula (select a field first)"
               placeholder="Select a field's Fx button to edit its formula"/>}
         </div>
-        {comparisonForFilter&&!filterFormulaSelected&&
-          <button type="button" className="smart-data-move-to-filter"
-            disabled={Boolean(filterAlreadySet)}
-            title={filterAlreadySet?'An existing record filter is configured; edit it first':
-              'Move this comparison into the record filter and restore the displayed field'}
-            onClick={moveComparison}>Use as filter</button>}
-        <select className="smart-data-field-picker" aria-label="Choose display field"
-          title={filterFormulaSelected?'Record filter formulas do not replace display fields':
-            activeDataProperty?'Choose a field for '+activeDataProperty.label:'Select a Data property first'}
-          disabled={filterFormulaSelected||!activeDataEnabled||!selectableDataSources.length}
-          value={selectableDataSources.some(field=>field.reference===activeDataValue.trim())
-            ?activeDataValue.trim():''}
-          onChange={event=>{if(event.target.value)changeActiveDataFormula(event.target.value);}}>
-          <option value="">Choose field…</option>
-          {selectableDataSources.map(field=><option key={field.reference} value={field.reference}>
-            {field.label} ({field.reference})
-          </option>)}
-        </select>
-        <button type="button" className="smart-data-filter-button"
-          aria-label="Filter records for selected Data field"
-          title="Filter records for this component" disabled={!activeDataEnabled||!object}
-          onClick={()=>openFilters('Record')} aria-haspopup="dialog">
-          <SlidersHorizontal size={16}/>{filterCount>0&&
-            <span className="smart-filter-count">{filterCount}</span>}
-        </button>
         {activeSummaryLabel&&<input className="smart-data-summary-name"
           aria-label={activeSummaryLabel.slot+' cart label'} title="Edit cart summary heading"
           maxLength={64} spellCheck={false} disabled={!activeDataEnabled}

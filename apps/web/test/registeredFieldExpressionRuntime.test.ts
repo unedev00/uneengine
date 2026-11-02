@@ -88,3 +88,18 @@ test('registered bindings use authenticated global context and reject unsupporte
   assert.throws(()=>resolveRegisteredTextProperties(definitions,{text:'TODAY()'}),
     /Authenticated formula time zone is unavailable/);
 });
+
+test('registered Formula Bar evaluates numeric collections with authorised records and session values',()=>{
+ const defs=[{propertyKey:'text',kind:'TEXT'}];
+ const sources={Sale:[{Id:'one',Amount:5},{Id:'two',Amount:7},{Id:'three',Amount:-4}]};
+ const live=resolveRegisteredTextProperties(defs,{
+  text:'=SUM(COLLECTION("Amounts", "Positive", @Sale.Amount, ">0"))',
+  objectApiName:'Sale',formulaCollectionSources:sources
+ });
+ assert.equal(live.text,'12');
+ const saved=resolveRegisteredTextProperties(defs,{
+  text:'=IF(SUM(@Amounts) > 10, "High", "Low")',
+  namedCollections:{Amounts:{name:'Amounts',items:[5,7]}}
+ });
+ assert.equal(saved.text,'High');
+});

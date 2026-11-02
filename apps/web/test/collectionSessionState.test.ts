@@ -2,11 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {formulaSignatureAt} from '../src/core/builders/PageBuilder/formulaSignatureHelp';
 import {pageStateChoices} from '../src/core/builders/PageBuilder/pageStateChoices';
-import {namedCollectionName,registerSessionCollection,getSessionCollection} from '../src/core/pages/PageRuntime/pageCollectionSession';
+import {namedCollectionName,namedCollectionNames,registerSessionCollection,getSessionCollection} from '../src/core/pages/PageRuntime/pageCollectionSession';
 import {pageComponentRecordQuery,filterPageComponentRecords,resolvePageFilterValue} from '../src/core/pages/PageRuntime/pageComponentBindings';
 import {createNamedFormulaCollection,formulaCollectionReferenceKey} from '../../server/src/expression-engine/FormulaCollection';
 import {parseCollectionListBinding,filteredCollectionItems} from '../src/core/pages/PageRuntime/pageCollectionListBinding';
-import {namedCollectionRows} from '../src/core/pages/PageRuntime/usePageCollectionFormula';
+import {namedCollectionRows,collectionFormulaReferences} from '../src/core/pages/PageRuntime/usePageCollectionFormula';
 import {evaluateFieldExpression,evaluateCollectionFormula} from '../src/component-libraries/shared/FieldExpression.js';
 
 test('Excel-style signature follows nested calls, quoted commas and any registered formula',()=>{
@@ -258,4 +258,77 @@ test('a single field can expand into more than nineteen authorised Collection en
  assert.equal(result.error,undefined);
  assert.equal(result.value.items.length,35);
  assert.equal(result.value.items[34].value,'c34');
+});
+
+test('nested IF returns a typed Collection and publishes both possible output names',()=>{
+ const formula='=IF(TRUE, COLLECTION("FoodTabs", "Fruits", @MenuCategory.Name, "Fruit*", "Vegetables", @MenuCategory.Name, "Vegetable*"), COLLECTION("DrinkTabs", "Tea", "", ""))';
+ assert.deepEqual(namedCollectionNames(formula),['FoodTabs','DrinkTabs']);
+ assert.deepEqual(namedCollectionNames('=SUM(COLLECTION("Temporary", 2))'),[]);
+ const source={MenuCategory:[{Id:'a',Name:'Fruits'},{Id:'b',Name:'Vegetables'}]};
+ const result=evaluateCollectionFormula(formula,source,{primaryObject:'MenuCategory'});
+ assert.equal(result.error,undefined);
+ assert.equal(result.value.name,'FoodTabs');
+ assert.deepEqual(result.value.items.map((item:any)=>item.label),['Fruits','Vegetables']);
+ const actual=evaluateCollectionFormula('=IF(@type = "Food", COLLECTION("FoodTabs", "Pizza", @MenuCategory.Name, "Pizza*"), COLLECTION("DrinkTabs", "Tea", "", ""))',
+  source,{primaryObject:'MenuCategory',record:{type:'Food'}});
+ assert.equal(actual.error,undefined);
+ assert.equal(actual.value.name,'FoodTabs');
+ const choices=pageStateChoices([{id:'source',properties:{textSource:formula}}]);
+ assert.ok(choices.some(item=>item.key==='FoodTabs.state.Id'));
+ assert.ok(choices.some(item=>item.key==='DrinkTabs.state.Id'));
+});
+
+test('derived named collections filter labels without mutating upstream session collections',()=>{
+ const original=evaluateCollectionFormula('=COLLECTION("myfood","Fruits",@MenuCategory.Name,"Fruit*","Vegetables",@MenuCategory.Name,"Vegetable*")');
+ assert.equal(original.error,undefined);
+ const saved={myfood:original.value};
+ const result=evaluateCollectionFormula('=COLLECTION(mynewfood,@myfood,"<>Vegetables")',
+  {},{namedCollections:saved});
+ assert.equal(result.error,undefined);
+ assert.equal(result.value.name,'mynewfood');
+ assert.deepEqual(result.value.items.map((item:any)=>item.label),['Fruits']);
+ assert.deepEqual(saved.myfood.items.map((item:any)=>item.label),['Fruits','Vegetables']);
+ const removed=evaluateCollectionFormula('=COLLECTION(mynewfood,@myfood,"<>Vegetables")',{},
+  {namedCollections:{}});
+ assert.match(removed.error??'',/Named collection source unavailable/i);
+ assert.equal(removed.value,null);
+ const wildcard=evaluateCollectionFormula('=COLLECTION("matching",@myfood,"Fru*")',
+  {},{namedCollections:saved});
+ assert.equal(wildcard.error,undefined);
+ assert.deepEqual(wildcard.value.items.map((item:any)=>item.label),['Fruits']);
+});
+
+test('direct named Collection criteria can filter without requiring a selected Object',()=>{
+ const source={name:'myfood',items:[{label:'Fruits',value:'f'},{label:'Vegetables',value:'v'}]};
+ const formula=parseCollectionListBinding('@myfood <> "Vegetables"','');
+ assert.ok(formula);
+ assert.deepEqual(filteredCollectionItems({...formula!,field:'Name'},namedCollectionRows(source))
+  .map(item=>item.label),['Fruits']);
+ const prefix=parseCollectionListBinding('@myfood = "Fru*"','');
+ assert.ok(prefix);
+ assert.deepEqual(filteredCollectionItems({...prefix!,field:'Name'},namedCollectionRows(source))
+  .map(item=>item.label),['Fruits']);
+});
+
+test('SUM composes with typed numeric Collections and field/criterion clauses',()=>{
+ const rows={Order:[{Id:'1',Amount:10},{Id:'2',Amount:20},{Id:'3',Amount:-5}]};
+ const direct=evaluateFieldExpression('=SUM(COLLECTION("Prices",@Order.Amount))',{},
+  {collectionSources:rows});
+ assert.equal(direct,'25');
+ const conditional=evaluateFieldExpression('=IF(SUM(COLLECTION("Sales","Sales",@Order.Amount,">0")) > 25, "Met", "Missed")',{},
+  {collectionSources:rows});
+ assert.equal(conditional,'Met');
+ const all=evaluateCollectionFormula('=COLLECTION("Manual", "All", "", "")');
+ assert.equal(all.error,undefined);
+ assert.deepEqual(all.value.items,['All']);
+ const criteria=evaluateCollectionFormula('=COLLECTION("Manual", "Apple", "", "A*", "Banana", "", "A*")');
+ assert.equal(criteria.error,undefined);
+ assert.deepEqual(criteria.value.items,['Apple']);
+});
+
+test('scalar SUM formulas hydrate the same authorised Object fields as collection-valued formulas',()=>{
+ assert.deepEqual(collectionFormulaReferences('=SUM(COLLECTION("Amounts","Positive",@Sale.Amount,">0"))','Sale'),
+  [{object:'Sale',field:'Amount'}]);
+ assert.deepEqual(collectionFormulaReferences('=IF(TRUE,COLLECTION("Food","Pizza",@MenuCategory.Name,"Pizza*"),COLLECTION("Drinks","Tea","",""))','MenuCategory'),
+  [{object:'MenuCategory',field:'Name'}]);
 });

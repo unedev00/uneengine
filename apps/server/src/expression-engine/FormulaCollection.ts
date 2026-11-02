@@ -1,3 +1,4 @@
+import {hasExcelWildcardCriteria,matchesExcelWildcard} from './FormulaWildcard.js';
 /** One bounded collection constructor shared by Flow and component formulas.
  * Receives values already resolved from authorised contexts; performs no I/O.
  * Scalars and record entries retain their types. Nested arrays are flattened.
@@ -68,4 +69,94 @@ export function createCriteriaFormulaCollection(name:unknown,items:readonly unkn
  // A single @Field argument can expand to 200 authorised records even though
  // the formula itself accepts at most 19 user-authored item arguments.
  return {name,items:mergeFormulaCollectionValues([checked])};
+}
+
+/** Apply one Excel criterion to a scalar without coercing text into a SQL query.
+ * Used for both formula-created and session-derived collections. */
+export function matchesFormulaCollectionCriterion(value:unknown,raw:unknown):boolean{
+ if(raw===null||raw===undefined||raw==='')return true;
+ if(typeof raw!=='string'&&typeof raw!=='number'&&typeof raw!=='boolean')
+  throw Error('COLLECTION criterion must be text, number or Boolean');
+ const criterion=String(raw).trim();
+ const match=/^(<>|!=|>=|<=|>|<|==|=)?\s*(.*)$/.exec(criterion);
+ const op=match?.[1]||'=',expected=match?.[2]??criterion;
+ if(expected===''&&op==='=')return value===null||value===undefined||value==='';
+ if(value===null||value===undefined||value==='')return op==='!='||op==='<>'?expected!=='' : false;
+ const actual=String(value);
+ const expectedNumber=expected.trim()!==''?Number(expected):NaN;
+ const valueNumber=typeof value==='number'?value:NaN;
+ const comparable=Number.isFinite(expectedNumber)&&Number.isFinite(valueNumber);
+ if(op==='>'||op==='>='||op==='<'||op==='<='){
+  const order=comparable?(valueNumber<expectedNumber?-1:valueNumber>expectedNumber?1:0):
+   actual.toLocaleLowerCase('en').localeCompare(expected.toLocaleLowerCase('en'),'en');
+  if(op==='>')return order>0;
+  if(op==='>=')return order>=0;
+  if(op==='<')return order<0;
+  return order<=0;
+ }
+ const matched=hasExcelWildcardCriteria(expected)
+  ?matchesExcelWildcard(actual,expected)
+  :comparable?valueNumber===expectedNumber:actual.toLocaleLowerCase('en')===String(expected).toLocaleLowerCase('en');
+ return op==='!='||op==='<>'?!matched:matched;
+}
+
+/** A filtered collection keeps its authorised record/value metadata and never
+ * mutates the source collection owned by another page component. */
+export function deriveFormulaCollection(
+ name:unknown,source:unknown,criterion:unknown
+):NamedFormulaCollection{
+ if(!source||typeof source!=='object'||Array.isArray(source)
+  ||!Array.isArray((source as NamedFormulaCollection).items))
+  throw Error('COLLECTION source must be a named collection');
+ const items=(source as NamedFormulaCollection).items;
+ if(items.length>200)throw Error('COLLECTION source exceeds 200 entries');
+ return createCriteriaFormulaCollection(name,items.filter(item=>{
+  const value=item&&typeof item==='object'&&!Array.isArray(item)
+   ?('label' in item?item.label:'Name' in item?item.Name:'value' in item?item.value:null)
+   :item;
+  return matchesFormulaCollectionCriterion(value,criterion);
+ }));
+}
+
+/** Excel SUM over a typed collection: numbers and numeric Object fields only.
+ * Record IDs, captions and criteria strings are never treated as amounts. */
+export function sumFormulaCollection(source:unknown,
+ authorisedSources:Readonly<Record<string,readonly Record<string,unknown>[]>>={}):number{
+ const rows=Array.isArray(source)?source:
+  source&&typeof source==='object'&&!Array.isArray(source)
+   &&Array.isArray((source as NamedFormulaCollection).items)
+   ?(source as NamedFormulaCollection).items:null;
+ if(!rows||rows.length>200)throw Error('SUM requires a bounded numeric collection');
+ let total=0;
+ const add=(value:unknown):void=>{
+  if(typeof value!=='number'||!Number.isFinite(value))
+   throw Error('SUM requires finite numeric collection values');
+  total+=value;
+  if(!Number.isFinite(total))throw Error('SUM result must be finite');
+ };
+ for(const entry of rows){
+  if(!entry||typeof entry!=='object'||Array.isArray(entry)){add(entry);continue;}
+  const item=entry as Record<string,unknown>;
+  const field=typeof item.criteriaField==='string'?item.criteriaField.split('.').at(-1):null;
+  const record=item.record;
+  if(record&&typeof record==='object'&&!Array.isArray(record)&&field
+   &&Object.prototype.hasOwnProperty.call(record,field)){
+   add((record as Record<string,unknown>)[field]);continue;
+  }
+  // A caption + Field + Criterion clause represents its authorised source
+  // records; SUM aggregates matching values rather than the caption/criterion.
+  if(typeof item.objectApiName==='string'&&typeof item.criteriaField==='string'
+   &&typeof field==='string'&&Object.prototype.hasOwnProperty.call(authorisedSources,item.objectApiName)){
+   const sourceRows=authorisedSources[item.objectApiName];
+   if(!Array.isArray(sourceRows)||sourceRows.length>200)
+    throw Error('SUM source exceeds 200 authorised records');
+   for(const row of sourceRows){
+    if(!Object.prototype.hasOwnProperty.call(row,field))throw Error('SUM field is unavailable');
+    if(matchesFormulaCollectionCriterion(row[field],item.criteria))add(row[field]);
+   }
+   continue;
+  }
+  add(item.value);
+ }
+ return total;
 }
