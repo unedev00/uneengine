@@ -112,6 +112,7 @@
     "apps/server/test/system/offline-publication-contract.test.ts",
     "apps/server/test/system/onesys-namespace.test.ts",
     "apps/server/test/system/oracle-runtime-deployment.test.ts",
+    "apps/server/test/system/page-details-controller.test.ts",
     "apps/server/test/system/page-layout-versions.test.ts",
     "apps/server/test/system/parse-json-flow-node.test.ts",
     "apps/server/test/system/password-reset-service.test.ts",
