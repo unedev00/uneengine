@@ -268,7 +268,10 @@ export function NavigationLoadTime({ routeKey, startedAt, ready, kind, authMs, r
         {deployment.run && <a href={deployment.run.url} target="_blank" rel="noopener noreferrer"
           className="navigation-deployment-link">View production workflow</a>}
         {!deployment.configured && <p className="navigation-diagnostics-note">
-          Deployment control needs the server-side GitHub workflow credential.</p>}
+          Deployment control needs the server-side GitHub workflow credential.{' '}
+          <a href="https://github.com/unedev00/uneengine/actions/workflows/oracle-api-deploy.yml"
+            target="_blank" rel="noopener noreferrer">Open the protected workflow</a>.
+        </p>}
         {deployment.canDeploy && deployment.configured && deployment.latestCommit &&
           (deployment.latestCommit !== deployment.deployedCommit ||
            deployment.latestCommit !== webRelease?.commit ||
