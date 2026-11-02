@@ -45,7 +45,7 @@ test('Object Manager field wizard generates tenant-local collision-safe suffix n
     newFieldLabel:'Revenue',newFieldPicklistValues:'',newFieldControllerApiName:'',
     newFieldType:'Text',newFieldTextLength:80,newFieldHasDefault:false,newFieldLookupFilters:[]};
   const actions=createSetupObjectActions(ctx);
-  assert.equal(actions.newFieldApiName,'Revenue_3__c');
+  assert.equal(actions.newFieldApiName,'revenue_3__c');
   assert.equal(actions.newFieldConfigurationError,'');
   const special=createSetupObjectActions({...ctx,newFieldLabel:'123 Purchase'});
   assert.equal(special.newFieldApiName,'Purchase__c');
@@ -77,5 +77,5 @@ test('Object Manager creates a unique suffix-preserving API name from a duplicat
    newFieldLookupFilters:[]
  };
  await createSetupObjectActions(ctx).createObject();
- assert.deepEqual(requests,[{apiName:'Invoice_2__c',label:'123 Invoice'}]);
+ assert.deepEqual(requests,[{apiName:'invoice_2__c',label:'123 Invoice'}]);
 });
