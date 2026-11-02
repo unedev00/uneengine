@@ -590,16 +590,16 @@ function MetadataBoundPageComponent({
       detail:{pageSessionKey,componentId:component.id,event:action.event,value:action.value}
     }));
     // Every authorised selection can update a named Collection without a Flow.
-    const selected=action.value&&typeof action.value==='object'&&!Array.isArray(action.value)
+    const selectionPayload=action.value&&typeof action.value==='object'&&!Array.isArray(action.value)
       ?action.value as Record<string,unknown>:null;
-    const selectedCollection=selected?.collectionName;
+    const selectedCollection=selectionPayload?.collectionName;
     if(action.event==='change'&&typeof selectedCollection==='string'
       &&/^[A-Za-z][A-Za-z0-9_]{0,79}$/.test(selectedCollection)){
-      const record=selected?.record&&typeof selected.record==='object'&&!Array.isArray(selected.record)
-        ?selected.record as Record<string,unknown>:{};
-      window.dispatchEvent(new CustomEvent('metadrive:page-collection-selected',{detail:{
+      const record=selectionPayload?.record&&typeof selectionPayload.record==='object'&&!Array.isArray(selectionPayload.record)
+        ?selectionPayload.record as Record<string,unknown>:{};
+      window.dispatchEvent(new CustomEvent('metadrive:page-collection-selectionPayload',{detail:{
         pageSessionKey,name:selectedCollection,
-        value:{Id:String(record.Id??selected.value??''),Name:String(record.Name??''),Value:selected.value??null}
+        value:{Id:String(record.Id??selectionPayload.value??''),Name:String(record.Name??''),Value:selectionPayload.value??null}
       }}));
     }
     const config = actionFlows[action.event];
