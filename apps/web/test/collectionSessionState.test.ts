@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {formulaSignatureAt} from '../src/core/builders/PageBuilder/formulaSignatureHelp';
 import {pageStateChoices} from '../src/core/builders/PageBuilder/pageStateChoices';
 import {isCollectionSourceExpression,namedCollectionName,namedCollectionNames,registerSessionCollection,getSessionCollection} from '../src/core/pages/PageRuntime/pageCollectionSession';
@@ -383,4 +384,29 @@ test('direct collection criterion and authored filters combine without widening 
   {field:'Active',operator:'eq',value:'true'},
   {field:'Name',operator:'matches',value:'des*'}
  ]);
+});
+
+test('collection data overrides generic presenter records in both Page Runtime adapters',()=>{
+ for(const path of ['../src/core/pages/PageRuntime/pageRuntimeViews.tsx',
+  '../src/core/pages/MetadataBoundPageComponent/MetadataBoundPageComponent.tsx']){
+  const source=readFileSync(new URL(path,import.meta.url),'utf8');
+  const data=source.indexOf('...(dataCollectionRows?{records:dataCollectionRows}:{}),');
+  assert.ok(data>=0,path+' must supply typed collection rows to the component');
+  const presenter=source.lastIndexOf('...presented,',data);
+  assert.ok(presenter>=0&&data-presenter<400,
+   path+' must not overwrite filtered Collection records with default presenter rows');
+  assert.ok(!source.slice(data,data+350).includes('...presented,'),
+   path+' must preserve source priority for collection records');
+ }
+});
+
+test('session Collection visual filter and direct Formula Bar share wildcard comparisons',()=>{
+ const fields=[{apiName:'Name',label:'Caption',dataType:'Text'}] as any;
+ const saved={name:'myfood',items:['Fruits','Vegetables','Banana']};
+ const rows=namedCollectionRows(saved);
+ const visual=filterPageComponentRecords(rows,[{field:'Name',operator:'Equals',value:'B*'}],fields);
+ const direct=parseCollectionListBinding('@myfood = "B*"','');
+ assert.ok(direct);
+ const source=filteredCollectionItems({...direct!,field:'Name'},rows);
+ assert.deepEqual(visual.map(row=>row.Name),source.map(row=>row.label));
 });
