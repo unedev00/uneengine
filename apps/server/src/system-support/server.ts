@@ -103,6 +103,7 @@ import {createIntegrationCommunicationWriter,IntegrationCommunicationOutbox} fro
 import {countTenantApiRequests,registerTenantInspectionRoutes} from './tenant-inspection-routes.js';
 import {registerDurableJobAdminRoutes} from './durable-job-admin-routes.js';
 import {registerSeederManagerRoutes} from './seeder-manager-routes.js';
+import {registerPlatformDeploymentRoutes} from './platform-deployment-routes.js';
 import {assertMetadataPackageEditable,MetadataPackageService} from './metadata-package-service.js';
 import {registerPackageApiController} from '../api/PackageApiController.js';
 import {OpenApiExternalService,registerOpenApiExternalServiceRoutes} from './openapi-external-service.js';
@@ -2686,6 +2687,7 @@ export function createSystemServer(db:SqlPersistence) {
   registerOpenApiExternalServiceRoutes(app,externalServices);
   registerDurableJobAdminRoutes(app,db,rbac);
   registerSeederManagerRoutes(app,db,platformTenants);
+  registerPlatformDeploymentRoutes(app,db,rbac,platformTenants);
   registerDeclarativeRuleRoutes(app,db,rbac);
   registerMatchingRoutes(app,db,rbac);
   registerFieldExactIndexRoutes(app,db,rbac);
