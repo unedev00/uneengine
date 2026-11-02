@@ -262,7 +262,7 @@ export default function MetadataBoundPageComponent({
   },[collectionKey,currentRecords,objects,objectApiName,apiRequest]);
   const sourceRecords=collectionMentions?.key===collectionKey?collectionMentions.rows:currentRecords;
   const filteredRecords=recordQuery.filters?sourceRecords:filterPageComponentRecords(
-    sourceRecords,properties.filters,filterFields,{pageState,recordId,sessionId},properties.filterLogic==='OR'?'OR':'AND');
+    sourceRecords,selectedRecordFilters.filters,filterFields,{pageState,recordId,sessionId},properties.filterLogic==='OR'?'OR':'AND');
   const visibleRecords=relatedField?filterRelatedRecords(filteredRecords,parentId,relatedField):filteredRecords;
   const contextRecords=contextApiName
    ?currentContextRecord?[currentContextRecord]:[]:visibleRecords;
