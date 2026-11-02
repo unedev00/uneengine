@@ -10,7 +10,7 @@ const env={
 };
 const tenant='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const user='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
-function dbFixture(options:{receipt?:boolean;identity?:boolean;rootCandidates?:number}={}){
+function dbFixture(options:{receipt?:boolean;identity?:boolean;rootCandidates?:number;fallbackCandidates?:number;tenantCount?:number}={}){
  const statements:Array<{sql:string;params:unknown[]}>=[];
  const query=async(sql:string,params:unknown[]=[])=>{
   statements.push({sql,params});
@@ -18,8 +18,14 @@ function dbFixture(options:{receipt?:boolean;identity?:boolean;rootCandidates?:n
    return {rows:options.receipt?[{tenant_id:tenant,user_id:user}]:[]};
   if(sql.includes('SELECT u.tenant_id,u.id AS user_id'))
    return {rows:options.identity===false?[]:[{tenant_id:tenant,user_id:user}]};
-  if(sql.includes('SELECT DISTINCT u.tenant_id,u.id AS user_id'))
-   return {rows:Array.from({length:options.rootCandidates??1},(_,i)=>({tenant_id:tenant,user_id:user+i}))};
+  if(sql.includes('SELECT count(*)::integer AS tenant_count FROM md_tenants'))
+   return {rows:[{tenant_count:options.tenantCount??1}]};
+  if(sql.includes('SELECT DISTINCT u.tenant_id,u.id AS user_id')){
+   const count=sql.includes('WHERE d.domain=$1')
+    ?options.rootCandidates??1
+    :options.fallbackCandidates??1;
+   return {rows:Array.from({length:count},(_,i)=>({tenant_id:tenant,user_id:user+i}))};
+  }
   return {rows:[]};
  };
  const db={transaction:async(callback:(client:{query:typeof query})=>Promise<unknown>)=>callback({query})} as unknown as Pick<SqlPersistence,'transaction'>;
@@ -92,4 +98,27 @@ test('untrusted OCI domain values are rejected',async()=>{
  await assert.rejects(seedPlatformDeploymentOwner(db,{METADRIVE_PLATFORM_CANONICAL_DOMAIN:'api.bad.example'}),
   /Invalid root-installed OCI canonical domain/);
  assert.equal(statements.length,0);
+});
+
+test('legacy OCI with one tenant and exactly one original developer is bootstrapped',async()=>{
+ const {db,statements}=dbFixture({rootCandidates:0,tenantCount:1,fallbackCandidates:1});
+ assert.equal(await seedPlatformDeploymentOwner(db,{METADRIVE_PLATFORM_CANONICAL_DOMAIN:'unesolutions.co.uk'}),'granted');
+ assert.ok(statements.some(x=>x.sql.includes('SELECT count(*)::integer AS tenant_count')));
+ const fallback=statements.find(x=>x.sql.includes('SELECT DISTINCT u.tenant_id,u.id AS user_id')
+  && !x.sql.includes('WHERE d.domain=$1'));
+ assert.match(fallback!.sql,/r.api_name='TenantDeveloper'/);
+ assert.match(fallback!.sql,/p.api_name='OneEngine'/);
+ assert.match(fallback!.sql,/HAVING count\(\*\)=1/);
+ assert.ok(statements.some(x=>x.sql.includes('INSERT INTO md_permission_assignments')));
+});
+test('OCI owner recovery never assigns a platform grant to a multi-tenant service',async()=>{
+ const {db,statements}=dbFixture({rootCandidates:0,tenantCount:2,fallbackCandidates:1});
+ assert.equal(await seedPlatformDeploymentOwner(db,{METADRIVE_PLATFORM_CANONICAL_DOMAIN:'unesolutions.co.uk'}),'identity-not-found');
+ assert.ok(!statements.some(x=>x.sql.includes('INSERT INTO md_permission_assignments')));
+ assert.ok(!statements.some(x=>x.sql.includes('HAVING count(*)=1')));
+});
+test('OCI owner recovery requires a single original developer and rejects ambiguity',async()=>{
+ const {db,statements}=dbFixture({rootCandidates:0,tenantCount:1,fallbackCandidates:2});
+ assert.equal(await seedPlatformDeploymentOwner(db,{METADRIVE_PLATFORM_CANONICAL_DOMAIN:'unesolutions.co.uk'}),'identity-not-found');
+ assert.ok(!statements.some(x=>x.sql.includes('INSERT INTO md_permission_assignments')));
 });
