@@ -44,11 +44,11 @@ test('Cart Actions expose independent eye controls without editing Flow or Formu
  assert.ok(!render({},'','smart_button').includes('aria-label="Hide Custom Button 1"'));
  assert.ok(!render({},'','smart_button').includes('aria-label="Hide + Icon"'));
  const action=read('../src/core/builders/PageBuilder/PageBuilderActionRibbon.tsx');
- assert.match(action,/buttonVisibility\\?\\.\\[slot\\.key as CartButtonKey\\]===false/);
- assert.match(action,/onButtonVisibilityChange\\?\\.\\(slot\\.key as CartButtonKey/);
+ assert.match(action,/buttonVisibility\?\.\[slot\.key as CartButtonKey\]===false/);
+ assert.match(action,/onButtonVisibilityChange\?\.\(slot\.key as CartButtonKey/);
  const page=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
  assert.match(page,/applyCartButtonVisibility/);
- assert.match(page,/item\\.properties,\\[property\\]:visible/);
+ assert.match(page,/item\.properties,\[property\]:visible/);
 });
 
 test('Formula bar remains mounted and editable only for Formula action',()=>{
