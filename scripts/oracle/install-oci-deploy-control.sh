@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Install only the existing OCI operations broker binaries and the fixed
+# production deploy helper. No new sockets, services or credentials.
+set -Eeuo pipefail
+[[ $EUID == 0 ]] || exit 1
+source_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+[[ $(systemctl show metadrive-api.service -p User --value) == metadrive ]] || exit 1
+[[ $(systemctl show metadrive-api.service -p NoNewPrivileges --value) == yes ]] || exit 1
+systemctl is-active --quiet metadrive-mcp-broker.socket
+if ! id metadrive-build >/dev/null 2>&1; then
+  /usr/sbin/useradd --system --no-create-home --home-dir /nonexistent \
+    --shell /usr/sbin/nologin metadrive-build
+fi
+install -d -o root -g root -m 0700 /var/lib/metadrive/oci-deployment
+install -d -o root -g root -m 0755 /usr/local/libexec
+# Atomic updates: socket activation starts new broker instances from this path.
+install -o root -g root -m 0755 "$source_dir/metadrive-mcp-operations" /usr/local/sbin/.metadrive-mcp-operations.new
+mv -f /usr/local/sbin/.metadrive-mcp-operations.new /usr/local/sbin/metadrive-mcp-operations
+install -o root -g root -m 0755 "$source_dir/metadrive-mcp-broker.py" /usr/local/libexec/.metadrive-mcp-broker.py.new
+mv -f /usr/local/libexec/.metadrive-mcp-broker.py.new /usr/local/libexec/metadrive-mcp-broker.py
+install -o root -g root -m 0755 "$source_dir/metadrive-oci-deploy-latest" /usr/local/libexec/.metadrive-oci-deploy-latest.new
+mv -f /usr/local/libexec/.metadrive-oci-deploy-latest.new /usr/local/libexec/metadrive-oci-deploy-latest
+echo 'OCI deployment control installed with existing restricted broker.'
