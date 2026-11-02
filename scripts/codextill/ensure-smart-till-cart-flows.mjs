@@ -53,7 +53,6 @@ const graph=(apiName,label,elements,connectors,extra=[])=>({
  resources:[...resource,...extra],tests:[]
 });
 const addTotals=totals(12);
-const readTotals=totals(7);
 
 export const SMART_TILL_ADD=graph('SmartTillAddProduct','Smart Till: add selected product to cart',[
  node(1,'Start','Start'),
@@ -97,21 +96,6 @@ export const SMART_TILL_ADD=graph('SmartTillAddProduct','Smart Till: add selecte
 ],[variable('productId','Text',true),{name:'product',type:'Record',dataType:'Product'},
  variable('cartLineId','Text',false,true)]);
 
-export const SMART_TILL_READ=graph('SmartTillReadCart','Smart Till: read current cart',[
- node(1,'Start','Start'),
- decision(2,'Session supplied?',exists('{!sessionKey}')),
- readSession(3),
- decision(4,'Open session exists?',exists('{!currentSession}'),'Found'),
- node(5,'Assignment','Set CartSession ID',{
-  variable:'cartSessionId',operator:'Assign',value:'{!currentSession.Id}'}),
- readLines(6),...readTotals.elements,
- node(11,'End','Cart loaded')
-],[
- edge(1,2),edge(2,3,'Valid'),edge(2,11,'Default'),
- edge(3,4),edge(4,5,'Found'),edge(4,11,'Default'),
- edge(5,6),edge(6,7),...readTotals.links,edge(10,11)
-]);
-
 export const SMART_TILL_OUTPUTS={
  cartSessionId:'cartSessionId',cartItems:'cartItems',
  subtotal:'subtotal',total:'total'
@@ -120,11 +104,6 @@ export const SMART_TILL_CLICK={
  actionType:'Flow',flowType:'Autolaunched Flow',
  flowApiName:'SmartTillAddProduct',
  inputs:{sessionKey:'$session',productId:'$event.recordId'},
- outputs:SMART_TILL_OUTPUTS
-};
-export const SMART_TILL_START={
- actionType:'Flow',flowType:'Autolaunched Flow',
- flowApiName:'SmartTillReadCart',inputs:{sessionKey:'$session'},
  outputs:SMART_TILL_OUTPUTS
 };
 const isBound=(b,name)=>b&&typeof b==='object'&&!Array.isArray(b)&&b.flowApiName===name;
@@ -152,13 +131,18 @@ export function smartTillCartBindings(layout){
   if(c.id===cart.id){
    const actions=isObject(c.properties.actionFlows)?c.properties.actionFlows:{};
    const start=actions.start;
+   // The shared Smart Cart runtime fetches CartLine by its authorised
+   // CartSession relation. It prefers pageState.cartSessionId returned by
+   // AddProduct and resolves browser SessionKey on reload without a read Flow.
    if((!start||isBound(start,'AcetillCopilotReadCart')
-       ||isBound(start,SMART_TILL_START.flowApiName))
+       ||isBound(start,'SmartTillReadCart'))
      &&(!c.properties.relatedFilterKey||c.properties.relatedFilterKey==='cartSessionId')
      &&(!c.properties.relatedFieldApiName||c.properties.relatedFieldApiName==='CartSession')){
-    const props={...c.properties,relatedFilterKey:'cartSessionId',
-     relatedFieldApiName:'CartSession',
-     actionFlows:{...actions,start:{...start,...SMART_TILL_START}}};
+    const nextActions={...actions};
+    delete nextActions.start;
+    const props={...c.properties,autoRecordScope:true,actionFlows:nextActions};
+    delete props.relatedFilterKey;
+    delete props.relatedFieldApiName;
     if(JSON.stringify(props)!==JSON.stringify(c.properties)){
      changed=true;return {...c,properties:props};
     }
@@ -169,7 +153,7 @@ export function smartTillCartBindings(layout){
  return {changed,skipped,layout:{...layout,components}};
 }
 export function validateSmartTillGraph(){
- for(const flow of [SMART_TILL_ADD,SMART_TILL_READ]){
+ for(const flow of [SMART_TILL_ADD]){
   assert(!Object.hasOwn(flow,'appApiName'));
   assert.equal(flow.status,'Active');
   const ids=new Set(flow.elements.map(n=>n.id));
@@ -210,8 +194,10 @@ function validateBindings(){
   layout.components[0].properties.actionFlows.start);
  assert.deepEqual(first.layout.components[0].properties.actionFlows.click.inputs,
   SMART_TILL_CLICK.inputs);
- assert.equal(first.layout.components[1].properties.relatedFilterKey,'cartSessionId');
- assert.equal(first.layout.components[1].properties.relatedFieldApiName,'CartSession');
+ assert.equal(first.layout.components[1].properties.autoRecordScope,true);
+ assert.equal(first.layout.components[1].properties.relatedFilterKey,undefined);
+ assert.equal(first.layout.components[1].properties.relatedFieldApiName,undefined);
+ assert.equal(first.layout.components[1].properties.actionFlows.start,undefined);
  const again=smartTillCartBindings(first.layout);
  assert.equal(again.changed,false,'Seeder must be idempotent');
  const customised=structuredClone(layout);
@@ -219,6 +205,18 @@ function validateBindings(){
  const skipped=smartTillCartBindings(customised);
  assert.equal(skipped.layout.components[0].properties.actionFlows.click.flowApiName,'MyCustomFlow');
  assert(skipped.skipped.length>0);
+ // Do not replace a customer's separate On Start action.
+ const customCart=structuredClone(layout);
+ customCart.components[1].properties.actionFlows.start={
+  actionType:'Flow',flowApiName:'UserManagedCartFlow'};
+ const customisedCart=smartTillCartBindings(customCart);
+ assert.equal(customisedCart.layout.components[1].properties.actionFlows.start.flowApiName,
+  'UserManagedCartFlow');
+ assert(customisedCart.skipped.some(message=>message.includes('Cart')));
+ // The new Auto scope keeps all unrelated Cart metadata and is safe to
+ // reapply to an already SmartTillAddProduct-bound Card Grid.
+ assert.equal(first.layout.components[1].properties.objectApiName,'CartLine');
+ assert.deepEqual(first.layout.components[1].position,layout.components[1].position);
 }
 validateBindings();
 
@@ -256,7 +254,7 @@ try{
   for(const [object,names] of Object.entries(prerequisites))
    for(const field of names.filter(f=>f!=='Id'))
     assert(known.has(object+'.'+field),'Required shared field missing: '+object+'.'+field);
-  for(const flow of [SMART_TILL_ADD,SMART_TILL_READ]){
+  for(const flow of [SMART_TILL_ADD]){
    const existing=await client.query(`SELECT id,active FROM md_flow_definitions
     WHERE tenant_id=$1 AND api_name=$2 AND archived=false ORDER BY version DESC LIMIT 1`,
     [tenant,flow.apiName]);
@@ -285,8 +283,7 @@ try{
   // Preserve explicit OneEngine/developer/cashier permission assignments.
   // Never assign a policy to a user or bypass Object/Field/Record RBAC.
   for(const [newFlow,oldFlow] of [
-   ['SmartTillAddProduct','AcetillCopilotAddProduct'],
-   ['SmartTillReadCart','AcetillCopilotReadCart']
+   ['SmartTillAddProduct','AcetillCopilotAddProduct']
   ]){
    await client.query(`INSERT INTO md_permission_rules
     (tenant_id,permission_set_id,resource,action,effect)
@@ -314,7 +311,7 @@ try{
    if(component.id==='codextill-product-grid'||component.id==='codextill-cart')
     assert.deepEqual(component.properties.actionFlows,target.properties.actionFlows);
   }
-  console.log('Smart Till Card Grid and Cart draft actions updated; publishing remains owner-controlled');
+  console.log('Smart Till Cart auto-scope enabled, read Flow detached; draft only, publishing remains owner-controlled');
   if(patch.skipped.length)console.log('Preserved customizations: '+patch.skipped.join('; '));
  }
 }finally{await db.pool.end();}
