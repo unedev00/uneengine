@@ -176,20 +176,28 @@ export default function RecordFilterEditor({
             <button type="button" aria-pressed={effectiveMode === 'Formula'} className={effectiveMode === 'Formula' ? 'is-active' : ''}
               onClick={() => onModeChange('Formula')}>Formula</button>
           </div>}
+          {compact && effectiveMode === 'Field' && <label className="metadata-filter-logic">
+            <span>Match conditions</span>
+            <select aria-label="Filter match logic" value={logic} disabled={!onLogicChange}
+              onChange={e => onLogicChange?.(e.target.value === 'OR' ? 'OR' : 'AND')}>
+              <option value="AND">All conditions (AND)</option>
+              <option value="OR">Any condition (OR)</option>
+            </select>
+          </label>}
         </div>
         <p>{effectiveMode === 'Formula' ? 'Write a formula to filter records.' : 'Choose a field, operator and value to filter records.'}</p>
       </div>
       {effectiveMode === 'Field' && <span className="metadata-filter-count">{filters.length}/20 conditions</span>}
     </div>
     {effectiveMode === 'Field' && <>
-    <div className="metadata-filter-toolbar">
-      {!compact && <label className="metadata-filter-search">
+    {!compact && <div className="metadata-filter-toolbar">
+      <label className="metadata-filter-search">
         <span>Find a field</span>
         <span className="metadata-filter-search-input"><Search size={16} aria-hidden="true"/>
           <input type="search" value={fieldSearch} placeholder="Search available fields"
             onChange={e => setFieldSearch(e.target.value)}/>
         </span>
-      </label>}
+      </label>
       <label className="metadata-filter-logic"><span>Match conditions</span>
         <select aria-label="Filter match logic" value={logic} disabled={!onLogicChange}
           onChange={e => onLogicChange?.(e.target.value === 'OR' ? 'OR' : 'AND')}>
@@ -197,7 +205,7 @@ export default function RecordFilterEditor({
           <option value="OR">Any condition (OR)</option>
         </select>
       </label>
-    </div>
+    </div>}
     {!compact && query && <div className="metadata-filter-search-results" role="region" aria-label="Matching fields">
       {matchingFields.length ? matchingFields.map(item => <button type="button" key={item.apiName}
         disabled={filters.length >= 20} onClick={() => add(item.apiName)}>
@@ -263,22 +271,23 @@ export default function RecordFilterEditor({
             </button>}
           </div>
           <div className="metadata-filter-condition-grid">
-            <label><span>Field</span>{inlineError('field')}
-              {compact ? <FilterFieldCombobox value={fieldName} fields={fields} related={related}
+            {compact ? <div className="metadata-filter-cell"><span>Field</span>{inlineError('field')}
+              <FilterFieldCombobox value={fieldName} fields={fields} related={related}
                 label={title + ' field ' + (index + 1)}
-                onChange={next => set(index, {field: next, operator: 'Equals', value: ''})}/> :
-              <select aria-label={title + ' field ' + (index + 1)} value={fieldName}
-                onChange={e => set(index, {field: e.target.value, operator: 'Equals', value: ''})}>
-                <option value="">Choose field…</option>
-                {fieldName && !field && <option value={fieldName} disabled>Missing: {fieldName}</option>}
-                <optgroup label="Current Object">
-                  {fields.map(item => <option key={item.apiName} value={item.apiName}>{item.label}</option>)}
-                </optgroup>
-                {related.length>0&&<optgroup label="Related Lookup Fields">
-                  {related.map(item=><option key={item.apiName} value={item.apiName}>{item.label}</option>)}
-                </optgroup>}
-              </select>}
-            </label>
+                onChange={next => set(index, {field: next, operator: 'Equals', value: ''})}/>
+              </div> : <label><span>Field</span>
+                <select aria-label={title + ' field ' + (index + 1)} value={fieldName}
+                  onChange={e => set(index, {field: e.target.value, operator: 'Equals', value: ''})}>
+                  <option value="">Choose field…</option>
+                  {fieldName && !field && <option value={fieldName} disabled>Missing: {fieldName}</option>}
+                  <optgroup label="Current Object">
+                    {fields.map(item => <option key={item.apiName} value={item.apiName}>{item.label}</option>)}
+                  </optgroup>
+                  {related.length>0&&<optgroup label="Related Lookup Fields">
+                    {related.map(item=><option key={item.apiName} value={item.apiName}>{item.label}</option>)}
+                  </optgroup>}
+                </select>
+              </label>}
             <label><span>Operator</span>{inlineError('operator')}
               <select aria-label={title + ' operator ' + (index + 1)} value={operator}
                 disabled={!field} onChange={e => set(index, {operator: e.target.value, value: ''})}>
