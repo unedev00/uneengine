@@ -410,3 +410,69 @@ test('session Collection visual filter and direct Formula Bar share wildcard com
  const source=filteredCollectionItems({...direct!,field:'Name'},rows);
  assert.deepEqual(visual.map(row=>row.Name),source.map(row=>row.label));
 });
+
+test('COLLECTION composes an All tab with authorised categories excluding Offers',()=>{
+ const records=[
+  {Id:'cat-1',Name:'Offers'}, {Id:'cat-2',Name:'Desserts'},
+  {Id:'cat-3',Name:'Burgers'}, {Id:'cat-4',Name:'Chicken'}
+ ];
+ const sources={MenuCategory:records};
+ const result=evaluateCollectionFormula(
+  '=COLLECTION("mycoll","All",@Name,"*",@Name<>"Offers")',
+  sources,{primaryObject:'MenuCategory'});
+ assert.equal(result.error,undefined);
+ assert.deepEqual(result.value.items.map((item:any)=>item.label),
+  ['All','Desserts','Burgers','Chicken']);
+ assert.deepEqual(result.value.items.map((item:any)=>item.value),
+  ['*','cat-2','cat-3','cat-4']);
+ assert.equal(result.value.items[1].criteriaField,'MenuCategory.Name');
+ assert.equal(result.value.items[1].record,records[1]);
+ const filtered=evaluateCollectionFormula(
+  '=COLLECTION("notOffers",@MenuCategory.Name!="off*")',
+  sources,{primaryObject:'MenuCategory'});
+ assert.equal(filtered.error,undefined);
+ assert.deepEqual(filtered.value.items.map((item:any)=>item.label),
+  ['Desserts','Burgers','Chicken']);
+ const matching=evaluateCollectionFormula(
+  '=COLLECTION("matching",@Name="Burg*")',
+  sources,{primaryObject:'MenuCategory'});
+ assert.equal(matching.error,undefined);
+ assert.deepEqual(matching.value.items.map((item:any)=>item.label),['Burgers']);
+ assert.equal(evaluateFieldExpression('=@Name<>"Offers"',records[1]),'true');
+});
+
+test('COLLECTION shares all Excel field-comparison operators for numeric and Boolean values',()=>{
+ const numeric={
+  Product:[{Id:'1',Price:5},{Id:'2',Price:10},{Id:'3',Price:15}]
+ };
+ const comparisons:Array<[string,string,string[]]>=[
+  ['=', '10',['2']], ['==','10',['2']],
+  ['<>','10',['1','3']], ['!=','10',['1','3']],
+  ['<','10',['1']], ['<=','10',['1','2']],
+  ['>','10',['3']], ['>=','10',['2','3']]
+ ];
+ for(const [operator,limit,expected] of comparisons){
+  const result=evaluateCollectionFormula(
+   '=COLLECTION("PriceFilter",@Price'+operator+limit+')',
+   numeric,{primaryObject:'Product'});
+  assert.equal(result.error,undefined,operator);
+  assert.deepEqual(result.value.items.map((item:any)=>item.value),expected,operator);
+ }
+ const bool=evaluateCollectionFormula(
+  '=COLLECTION("Enabled",@Enabled<>FALSE)',
+  {Setting:[{Id:'a',Enabled:false},{Id:'b',Enabled:true}]},
+  {primaryObject:'Setting'});
+ assert.equal(bool.error,undefined);
+ assert.deepEqual(bool.value.items.map((item:any)=>item.value),['b']);
+ assert.equal(evaluateFieldExpression('=@Price>=10',{Price:10}),'true');
+});
+
+test('COLLECTION field comparisons fail closed on unavailable or non-scalar fields',()=>{
+ const source={MenuCategory:[{Id:'1',Name:'Offers',Details:{hidden:true}}]};
+ const missing=evaluateCollectionFormula(
+  '=COLLECTION("Missing",@Missing<>"Offers")',source,{primaryObject:'MenuCategory'});
+ assert.match(missing.error??'',/COLLECTION field unavailable: MenuCategory.Missing/);
+ const unsafe=evaluateCollectionFormula(
+  '=COLLECTION("Unsafe",@Details<>"Offers")',source,{primaryObject:'MenuCategory'});
+ assert.match(unsafe.error??'',/COLLECTION field must be scalar: MenuCategory.Details/);
+});
