@@ -288,6 +288,10 @@ test('derived named collections filter labels without mutating upstream session 
  assert.equal(result.value.name,'mynewfood');
  assert.deepEqual(result.value.items.map((item:any)=>item.label),['Fruits']);
  assert.deepEqual(saved.myfood.items.map((item:any)=>item.label),['Fruits','Vegetables']);
+ const removed=evaluateCollectionFormula('=COLLECTION(mynewfood,@myfood,"<>Vegetables")',{},
+  {namedCollections:{}});
+ assert.match(removed.error??'',/Named collection source unavailable/i);
+ assert.equal(removed.value,null);
  const wildcard=evaluateCollectionFormula('=COLLECTION("matching",@myfood,"Fru*")',
   {},{namedCollections:saved});
  assert.equal(wildcard.error,undefined);
