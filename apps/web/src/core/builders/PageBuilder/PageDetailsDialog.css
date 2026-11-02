@@ -66,3 +66,17 @@
  .page-details-version-heading{align-items:flex-start}
  .page-details-footer{padding:10px 12px;flex-wrap:wrap}
 }
+
+.page-details-archived-toggle{display:flex;align-items:center;gap:6px;font-size:12px;color:#476183}
+.page-details-canvas-scroll{max-height:420px;overflow:auto;display:flex;justify-content:center;padding:8px;
+  border:1px solid #dbe5f1;background:#edf2f8;border-radius:7px}
+.page-details-canvas{width:min(100%,780px);min-width:200px;max-height:420px;position:relative;
+  overflow:hidden;border:1px solid #bdcbe0;box-shadow:0 3px 12px #20304812}
+.page-details-canvas.is-template{display:flex;flex-wrap:wrap;align-content:start;gap:1%;padding:1%;box-sizing:border-box}
+.page-details-canvas-component{box-sizing:border-box;overflow:hidden;border:1px solid #81a9df;
+  border-radius:4px;background:#ebf4ffb0;color:#23466a;padding:4px;font-size:11px}
+.page-details-canvas.is-template>.page-details-canvas-component{width:24%;min-height:40px}
+.page-details-canvas-component>span{display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.page-details-canvas-component>small{display:block;font-size:9px;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap;opacity:.7}
+.page-details-canvas-component.is-hidden{opacity:.38;border-style:dashed}
