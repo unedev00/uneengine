@@ -735,7 +735,7 @@ test('named COLLECTION mixes manual items with authorised Object.Field values',a
   records,tabCount:5,dataCollection:value.value});
  for(const label of ['a22','none','Burgers','Drinks'])assert.match(markup,new RegExp(label));
  assert.equal((markup.match(/role="tab"/g)??[]).length,4);
- assert.ok(markup.indexOf('a22')<markup.indexOf('none'));
+ assert.ok(markup.indexOf('>a22</button>')<markup.indexOf('>none</button>'));
  const sql=read('../../server/src/system-support/migrations/20270303-universal-named-collection-formula.sql');
  assert.match(sql,/'collectionFormula','Collection','Data','Source','expression'/);
  assert.doesNotMatch(sql,/All items|MenuCategory|CODEXTILL|UPDATE md_page_/i);
