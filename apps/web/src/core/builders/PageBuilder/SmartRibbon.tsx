@@ -58,15 +58,13 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
     ?'Duplicate collection name on this page: '+name:'';
  })();
  const validateCollection=(next:string):string|null=>{
-  if(!next.trim()||/^@[A-Za-z][A-Za-z0-9_]{0,79}$/.test(next.trim()))return null;
-  if(!/^COLLECTION\s*\(/i.test(next.trim()))return 'Use COLLECTION("Name", value1, ...)';
+  if(!/^=\s*COLLECTION\s*\(/i.test(next.trim()))return null;
   const name=namedCollectionName(next);
   if(!name)return 'Collection name is required as the first argument';
-  if(pageComponents.some(item=>item.id!==componentId
-    &&namedCollectionName(item.properties.collectionFormula)?.toLowerCase()===name.toLowerCase()))
+  if(pageComponents.some(item=>item.id!==componentId&&
+    Object.values(item.properties).some(value=>namedCollectionName(value)?.toLowerCase()===name.toLowerCase())))
     return 'Duplicate Collection name: '+name;
   if(/,\s*(?:,|""|\))/.test(next))return 'Collection value is required after the comma';
-  if(!next.trim().endsWith(')'))return 'Complete the Collection formula';
   return null;
  };
  const [filtersOpen,setFiltersOpen]=useState(false);
@@ -415,6 +413,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
           {activeDataProperty?<SmartFormulaField key={activeDataProperty.id}
             label={activeDataProperty.label} value={activeDataValue}
             disabled={!activeDataEnabled} onChange={changeActiveDataFormula}
+            validate={validateCollection} stateOptions={stateOptions}
             singleFieldOnly={api==='smart_toggle'&&activeDataProperty.id==='textSource'}
             fields={api==='smart_toggle'&&activeDataProperty.id==='textSource'
               ?(object?.fields??[]).filter(field=>['Checkbox','Boolean'].includes(field.dataType))
