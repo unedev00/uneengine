@@ -690,6 +690,16 @@
 .smart-multiselect-done{align-self:flex-end;padding:3px 8px;border:1px solid #b7c9df;
  border-radius:3px;background:#fff;cursor:pointer}
 
+/* Record editing needs usable vertical workspace even with only one condition.
+   Keep this scoped to Filter Records; visibility dialogs retain intrinsic height. */
+.smart-filter-backdrop .smart-dialog.smart-record-filter-dialog{
+  height:min(72dvh,720px)!important;
+  min-height:min(520px,calc(100dvh - 24px))!important;
+}
+.smart-filter-backdrop .smart-record-filter-dialog .smart-filter-dialog-body{
+  flex:1 1 auto;min-height:0;
+}
+
 /* Shared Filter Records modal: one scroll owner, compact search, and four
    flexible field/operator/source/value columns on desktop. */
 .smart-filter-backdrop.smart-dialog-backdrop{
