@@ -2,7 +2,8 @@ import {adjustNumberRecord,type AdjustNumberBinding} from '../PageRuntime/adjust
 import {executePageFormulaAction,parseActionFormulaAssignment,resolveActionFormulaValue} from '../PageRuntime/formulaAction';
 import {resolveMetadataProperties} from '../../metadata/Definitions/metadataReferences';
 import * as React from 'react';
-import {useState,useEffect,useRef} from 'react';
+import {useState,useEffect,useRef,useMemo} from 'react';
+import {pageStateDependencies,applyPageSelection} from '../PageRuntime/pageStateDependencies';
 import {loadFlowScreenRecordPage} from '../../authentication/Client/authClient';
 // Load the browser API client only during the mounted effect, not on SSR import.
 import {presentPageRecords,type ChannelGrant} from '../../records/RecordWorkspace/recordPresentationAdapters';
@@ -23,7 +24,7 @@ import type {LibraryComponentMetadata,PageComponentMetadata,ObjectMetadata,Field
 import type {AppRoute} from '../../workspace/Navigation/appRouting';
 
 export default function MetadataBoundPageComponent({
-  apiRequest, definition, component, objects, apps, pages, currentAppId, pageSessionKey, reports, availableFlows, formFactor, onNavigate, onLaunchFlow, disableActions = false, builderPreview = false, defaultObjectApiName = '', recordId = '', behaviorContext, initialPageState, sessionIdOverride
+  apiRequest, definition, component, objects, apps, pages, currentAppId, pageSessionKey, pageComponents, reports, availableFlows, formFactor, onNavigate, onLaunchFlow, disableActions = false, builderPreview = false, defaultObjectApiName = '', recordId = '', behaviorContext, initialPageState, sessionIdOverride
 }: {
   apiRequest:<T>(path:string,init?:RequestInit)=>Promise<T>;
   definition: LibraryComponentMetadata;
@@ -44,6 +45,7 @@ export default function MetadataBoundPageComponent({
   recordId?: string;
   behaviorContext?:BehaviorContext;
   initialPageState?:Record<string,unknown>;
+  pageComponents?:readonly PageComponentMetadata[];
   sessionIdOverride?:string;
 }) {
   const properties = resolveMetadataProperties({...component.properties,objectApiName:component.properties.objectApiName||defaultObjectApiName},objects,availableFlows);
@@ -65,6 +67,7 @@ export default function MetadataBoundPageComponent({
     }
   });
   const [pageState,setPageState]=useState<Record<string,unknown>>(initialPageState??{});
+  const stateDependencies=useMemo(()=>pageStateDependencies(pageComponents??[component]),[pageComponents,component]);
   const [revision, setRevision] = useState(0);
   const contextApiName=typeof properties.contextApiName==='string'?properties.contextApiName:'';
   const [currentContextRecord,setCurrentContextRecord]=useState<Record<string,unknown>|null>(null);
@@ -86,23 +89,19 @@ export default function MetadataBoundPageComponent({
       const data=(event as CustomEvent<{pageSessionKey:string;key:string;value:unknown}>).detail;
       if(data?.pageSessionKey!==pageSessionKey
         ||!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(data.key))return;
-      setPageState(previous=>({...previous,[data.key]:data.value}));
+      setPageState(previous=>applyPageSelection(previous,{kind:'state',key:data.key,value:data.value},stateDependencies));
     };
     const select=(event:Event)=>{
       const detail=(event as CustomEvent<{pageSessionKey:string;name:string;value:Record<string,unknown>}>).detail;
       if(detail?.pageSessionKey!==pageSessionKey||
         !/^[A-Za-z][A-Za-z0-9_]{0,79}$/.test(detail.name))return;
-      setPageState(previous=>({...previous,collectionSelections:{
-       ...(previous.collectionSelections&&typeof previous.collectionSelections==='object'
-        &&!Array.isArray(previous.collectionSelections)?previous.collectionSelections as Record<string,unknown>:{}),
-       [detail.name]:detail.value
-      }}));
+      setPageState(previous=>applyPageSelection(previous,{kind:'collection',key:detail.name,value:detail.value},stateDependencies));
     };
     window.addEventListener('metadrive:page-local-state',receive);
     window.addEventListener('metadrive:page-collection-selected',select);
     return ()=>{window.removeEventListener('metadrive:page-local-state',receive);
      window.removeEventListener('metadrive:page-collection-selected',select)};
-  },[pageSessionKey]);
+  },[pageSessionKey,stateDependencies]);
   const fields = objects.find((item) => item.apiName === objectApiName)?.fields ?? [];
   // Related filter targets retain the exact relationship path; type information
   // comes from the destination's permission-scoped metadata, not a name guess.
