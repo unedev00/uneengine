@@ -52,16 +52,24 @@ export function usePageCollectionFormula(
  const expressions=Object.entries(properties).filter(([key,value])=>
    key!=='collectionFormula'&&typeof value==='string').map(([,value])=>String(value).trim());
  const explicit=expressions.find(value=>value.startsWith('=')&&namedCollectionNames(value).length>0)
-   ??expressions.find(value=>/^=\s*@[A-Za-z][A-Za-z0-9_]{0,79}$/.test(value));
- const reference=expressions.find(value=>/^@[A-Za-z][A-Za-z0-9_]{0,79}$/.test(value));
+   ??expressions.find(value=>/^=\s*@[A-Za-z][A-Za-z0-9_]{0,79}(?:\.[A-Za-z][A-Za-z0-9_]*)?$/.test(value));
+ const reference=expressions.find(value=>/^@[A-Za-z][A-Za-z0-9_]{0,79}(?:\.[A-Za-z][A-Za-z0-9_]*)?$/.test(value));
  const listExpression=expressions.find(value=>Boolean(parseCollectionListBinding(value,primaryObject)));
  // List-expression metadata is distinct from scalar Boolean expressions. A
  // source binding selects records; individual row property formulas remain scalar.
- const entered=explicit||listExpression||declared||reference||'';
+ const entered=explicit||listExpression||reference||declared||'';
  const source=entered.startsWith('=')?entered.slice(1).trim():entered;
  const scope=pageSessionKey+'#'+sessionId;
  const lastValid=useRef<{object:string;collection:PageNamedCollection}|null>(null);
- const listBinding=parseCollectionListBinding(source,primaryObject);
+ const directSource=/^@([A-Za-z][A-Za-z0-9_]*)(?:\.([A-Za-z][A-Za-z0-9_]*))?$/.exec(source);
+ const directObject=directSource?.[2]?directSource[1]:primaryObject;
+ const directField=directSource?.[2]??directSource?.[1];
+ const directMetadata=directObject?objects.find(item=>item.apiName===directObject):undefined;
+ // Only a metadata-authorised Object Field can become a record-list source.
+ // A bare @name that is not a Field remains eligible as a saved named Collection.
+ const directBinding=directField&&directMetadata?.fields.some(item=>item.apiName===directField)
+  ?{object:directObject,field:directField,criterion:'*',operator:'='}:null;
+ const listBinding=parseCollectionListBinding(source,primaryObject)??directBinding;
  const registry=useSessionCollectionSnapshot(scope);
  const namedListSource=listBinding&&listBinding.object===primaryObject
   ?Object.entries(registry.collections).find(([key])=>key.toLowerCase()===listBinding.field.toLowerCase())?.[1]:undefined;
@@ -101,8 +109,8 @@ export function usePageCollectionFormula(
  const saved=/^@([A-Za-z][A-Za-z0-9_]{0,79})$/.exec(source);
  if(saved){
   const named=Object.entries(registry.collections).find(([name])=>name.toLowerCase()===saved[1].toLowerCase())?.[1];
-  return named?{collection:named,error:null,loading:false}:
-   {collection:null,error:null,loading:false};
+  if(named)return {collection:named,error:null,loading:false};
+  if(!directBinding)return {collection:null,error:null,loading:false};
  }
  if(unresolvedNamedList)return {collection:null,error:null,loading:false};
  if(!listBinding&&!referencesNamed)return {collection:null,error:null,loading:false};
