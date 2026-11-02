@@ -365,7 +365,10 @@ export default function MetadataBoundPageComponent({
         ?selectionPayload.record as Record<string,unknown>:{};
       window.dispatchEvent(new CustomEvent('metadrive:page-collection-selected',{detail:{
         pageSessionKey,name:selectedCollection,
-        value:{Id:String(record.Id??selectionPayload?.value??''),Name:String(record.Name??''),Value:selectionPayload?.value??null}
+        value:{Id:String(record.Id??selectionPayload?.value??''),Name:String(record.Name??''),
+          Value:selectionPayload?.value??null,
+          Field:typeof record.Field==='string'?record.Field:'',
+          Criteria:typeof record.Criteria==='string'?record.Criteria:''}
       }}));
     }
     const config = actionFlows[action.event];

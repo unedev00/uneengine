@@ -1,4 +1,5 @@
 import {compileRecordFilterFormula} from './recordFilterFormula';
+import {hasExcelWildcardCriteria,matchesExcelWildcard} from '../../../../../server/src/expression-engine/FormulaWildcard.js';
 import { compareMetadataValue } from '../../metadata/Definitions/metadataValueComparison';
 import type { FieldMetadata } from '../../metadata/Definitions/metadata';
 import { examineRecordFilter, isNumericFilterField } from '../../records/RecordWorkspace/recordFilterMetadata';
@@ -233,7 +234,7 @@ export function resolvePageFilterValue(value:unknown,context:PageFilterContext):
     return resolved===null||['string','number','boolean'].includes(typeof resolved)?resolved:undefined;
   }
   if(value.source==='CollectionState'&&typeof value.key==='string'){
-    const match=/^([A-Za-z][A-Za-z0-9_]{0,79})\.state\.(Id|Name|Value)$/.exec(value.key);
+    const match=/^([A-Za-z][A-Za-z0-9_]{0,79})\.state\.(Id|Name|Value|Field|Criteria)$/.exec(value.key);
     const selections=context.pageState?.collectionSelections;
     if(!match||!selections||typeof selections!=='object'||Array.isArray(selections))return undefined;
     const record=Object.entries(selections as Record<string,unknown>).find(([key])=>key.toLowerCase()===match[1].toLowerCase())?.[1];
@@ -288,9 +289,17 @@ function pageComponentRecordQueryBase(
       serverFilterable=false;
       continue;
     }
-    serverFilters.push({field:filter.field,operator,
+    const wildcard=filter.operator==='Equals'&&hasExcelWildcardCriteria(resolved);
+    if(wildcard&&field.relationship&&resolved==='*'){
+      serverFilters.push({field:filter.field,operator:'isNotBlank',value:''});
+    }else if(wildcard){
+      if(!/^(Text|Email|Phone|Url|Picklist)(\(|$)/i.test(field.dataType))
+        return {blocked:true,serverFilterable:false};
+      serverFilters.push({field:filter.field,operator:'matches',value:String(resolved)});
+    }else serverFilters.push({field:filter.field,operator,
       value:['Is Blank','Is Not Blank'].includes(filter.operator)?'':String(resolved??'')});
-    if(logic==='AND'&&isDynamic(filter.value)&&filter.operator==='Equals'&&!first
+    if(logic==='AND'&&isDynamic(filter.value)&&filter.operator==='Equals'
+      &&!hasExcelWildcardCriteria(resolved)&&!first
       &&['string','number','boolean'].includes(typeof resolved)){
       first={field:filter.field,value:String(resolved),related:Boolean(field?.relationship)};
     }
@@ -345,6 +354,8 @@ export function comparePageFilterValue(actual:unknown,operator:string,expected:u
    }
   }
  }
+ if(operator==='Equals'&&hasExcelWildcardCriteria(expected))
+   return typeof actual==='string'&&matchesExcelWildcard(actual,expected);
  return compareMetadataValue(actual,operator,expected,true);
 }
 export function filterPageComponentRecords<T extends Record<string, unknown>>(

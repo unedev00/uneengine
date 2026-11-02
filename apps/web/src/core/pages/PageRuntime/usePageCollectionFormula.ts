@@ -10,13 +10,16 @@ type Row=Record<string,unknown>;
 export type PageNamedCollection={name:string;items:unknown[]};
 type SourceResult={key:string;records:Record<string,Row[]>;error?:string};
 
-export function collectionFormulaReferences(formula:string):Array<{object:string;field:string}>{
+export function collectionFormulaReferences(formula:string,primaryObject=''):Array<{object:string;field:string}>{
  if(!/^\s*=?\s*COLLECTION\s*\(/i.test(formula))return [];
  const found=new Map<string,{object:string;field:string}>();
  const visit=(node:Expression):void=>{
   if(node.kind==='reference'){
    const match=/^([A-Za-z][A-Za-z0-9_]*)\.([A-Za-z][A-Za-z0-9_]*)$/.exec(node.value);
    if(match)found.set(match[0],{object:match[1],field:match[2]});
+   else if(primaryObject&&/^[A-Za-z][A-Za-z0-9_]*$/.test(node.value)
+     &&!['state','session','event'].includes(node.value.toLowerCase()))
+     found.set(primaryObject+'.'+node.value,{object:primaryObject,field:node.value});
   }else if(node.kind==='call')node.args.forEach(visit);
   else if(node.kind==='unary')visit(node.value);
   else if(node.kind==='binary'){visit(node.left);visit(node.right);}
@@ -48,7 +51,7 @@ export function usePageCollectionFormula(
  const source=entered.startsWith('=')?entered.slice(1).trim():entered;
  const scope=pageSessionKey+'#'+sessionId;
  const registry=useSessionCollectionSnapshot(scope);
- const refs=collectionFormulaReferences(source);
+ const refs=collectionFormulaReferences(source,primaryObject);
  const selected=['objectApiName','objectApiName2','objectApiName3']
   .map(key=>String(properties[key]??'')).filter(Boolean);
  const referenced=[...new Set(refs.map(ref=>ref.object))];
@@ -91,7 +94,7 @@ export function usePageCollectionFormula(
  if(remote?.error)return {collection:null,error:remote.error,loading:false};
  const sources:Record<string,Row[]>={...remote?.records};
  if(primaryObject&&referenced.includes(primaryObject))sources[primaryObject]=[...primaryRecords];
- const resolved=evaluateCollectionFormula(source,sources,{state:pageState,session:{id:sessionId}});
+ const resolved=evaluateCollectionFormula(source,sources,{state:pageState,session:{id:sessionId},primaryObject});
  const value=resolved.value as PageNamedCollection|null;
  return {collection:value,error:resolved.error??null,loading:false};
  })();
@@ -112,8 +115,10 @@ export function namedCollectionRows(collection:PageNamedCollection):Row[]{
    const entry=item as {label:unknown;value:unknown;record?:unknown};
    const record=entry.record&&typeof entry.record==='object'&&!Array.isArray(entry.record)
     ?entry.record as Row:{};
-   return {...record,Name:String(entry.label??''),Id:record.Id??record.id??'',
+   return {...record,Name:String(entry.label??''),Id:record.Id??record.id??entry.value??'',
      __collectionLabel:String(entry.label??''),__collectionValue:entry.value,
+     __collectionCriteriaField:typeof (item as Row).criteriaField==='string'?(item as Row).criteriaField:'',
+     __collectionCriteria:typeof (item as Row).criteria==='string'?(item as Row).criteria:'',
      __collectionManual:!entry.record,__collectionIndex:index};
   }
   return {Id:'',Name:item===null||item===undefined?'':String(item),

@@ -11,7 +11,7 @@ export function pageStateChoices(components:readonly SourceComponent[]):PageStat
   const authored=Object.values(props).find(value=>typeof value==='string'
     &&/^=\s*COLLECTION\s*\(/i.test(value));
   const name=namedCollectionName(props.collectionFormula)||namedCollectionName(authored);
-  if(name)for(const field of ['Id','Name','Value'])
+  if(name)for(const field of ['Id','Name','Value','Field','Criteria'])
    add({source:'CollectionState',key:name+'.state.'+field,label:name+'.state.'+field});
   const actions=props.actionFlows;
   if(actions&&typeof actions==='object'&&!Array.isArray(actions)){

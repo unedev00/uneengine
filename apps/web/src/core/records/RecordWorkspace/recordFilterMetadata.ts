@@ -59,7 +59,7 @@ export function examineRecordFilter(raw: unknown, fields: ReadonlyArray<RecordFi
       return null;
     }
     if(source.source==='CollectionState'){
-      if(typeof source.key!=='string'||!/^[A-Za-z][A-Za-z0-9_]{0,79}\.state\.(Id|Name|Value)$/.test(source.key))
+      if(typeof source.key!=='string'||!/^[A-Za-z][A-Za-z0-9_]{0,79}\.state\.(Id|Name|Value|Field|Criteria)$/.test(source.key))
         return 'Choose a named Collection State value.';
       if(source.skipWhenBlank!==undefined&&typeof source.skipWhenBlank!=='boolean'
         ||source.allWhenStar!==undefined&&typeof source.allWhenStar!=='boolean')

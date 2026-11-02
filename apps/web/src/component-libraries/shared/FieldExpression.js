@@ -5,8 +5,8 @@ import {
  evaluateFormulaBinary,evaluateFormulaUnary,formulaTruth,Parser
 } from '../../../../server/src/expression-engine/FormulaParser.js';
 import {tokenize} from '../../../../server/src/expression-engine/FormulaTokenizer.js';
-import {createNamedFormulaCollection} from '../../../../server/src/expression-engine/FormulaCollection.js';
-import {isExcelWildcardDataReference} from '../../../../server/src/expression-engine/FormulaWildcard.js';
+import {createNamedFormulaCollection,createCriteriaFormulaCollection} from '../../../../server/src/expression-engine/FormulaCollection.js';
+import {isExcelWildcardDataReference,matchesExcelWildcard,hasExcelWildcardCriteria} from '../../../../server/src/expression-engine/FormulaWildcard.js';
 import {validateFormulaFunctions} from '../../../../server/src/expression-engine/FormulaFunctionRegistry.js';
 import {roundFormulaNumber} from '../../../../server/src/expression-engine/FormulaNumeric.js';
 import {
@@ -283,7 +283,7 @@ function parse(source,record,formulaContext){
  validateFormulaFunctions(expression,'ribbon_binding');
  const resolveReference=reference=>{
    // Collection selection values come from the authorised page-session state.
-   const selected=/^([A-Za-z][A-Za-z0-9_]{0,79})\.state\.(Id|Name|Value)$/.exec(reference);
+   const selected=/^([A-Za-z][A-Za-z0-9_]{0,79})\.state\.(Id|Name|Value|Field|Criteria)$/.exec(reference);
    if(selected){
     const selections=formulaContext.namedCollectionSelections;
     if(!selections||typeof selections!=='object'||Array.isArray(selections))return '';
@@ -361,6 +361,78 @@ function parse(source,record,formulaContext){
   }
   return value??'';
  };
+ // A Collection supports SUMIFS-like clauses:
+ // name, caption, @Field, criterion, caption2, @Field2, criterion2...
+ // A lone @Field or @Field = criterion expands authorised source records.
+ // Legacy scalar items remain supported. No source is fetched by this evaluator.
+ const evaluateCriteriaCollection=args=>{
+  if(!args.length)throw Error('COLLECTION requires a name');
+  const name=evaluate(args[0]),items=[];
+  const sourceField=node=>{
+   if(node?.kind!=='reference')return null;
+   const raw=node.value,parts=raw.split('.');
+   if(parts.length>2||parts.length<1||parts.some(part=>!/^[A-Za-z][A-Za-z0-9_]*$/.test(part)))return null;
+   const object=parts.length===2?parts[0]:formulaContext.rootObjectApiName;
+   const field=parts.at(-1);
+   const sources=formulaContext.collectionSources;
+   if(!object||!sources||!Object.prototype.hasOwnProperty.call(sources,object))return null;
+   return {object,field,reference:object+'.'+field};
+  };
+  const rowsFor=pointer=>{
+   const rows=formulaContext.collectionSources[pointer.object];
+   if(!Array.isArray(rows))throw Error('COLLECTION source unavailable: '+pointer.object);
+   if(rows.length>200)throw Error('COLLECTION source exceeds 200 records');
+   return rows;
+  };
+  const isCriteriaComparison=node=>node?.kind==='binary'
+   &&['=','=='].includes(node.operator)&&Boolean(sourceField(node.left));
+  const sourceItems=(pointer,criterion,filtered)=>{
+   const rows=rowsFor(pointer);
+   for(const row of rows){
+    if(!row||typeof row!=='object'||Array.isArray(row)
+      ||!Object.prototype.hasOwnProperty.call(row,pointer.field))
+     throw Error('COLLECTION field unavailable: '+pointer.reference);
+    const value=row[pointer.field],id=row.Id??row.id;
+    if(value===null||value===undefined||String(value).trim()==='')continue;
+    if(typeof value!=='string'&&typeof value!=='number'&&typeof value!=='boolean')
+     throw Error('COLLECTION field must be scalar: '+pointer.reference);
+    if(id===null||id===undefined||String(id).trim()==='')
+     throw Error('COLLECTION source record has no ID');
+    if(filtered&&!(hasExcelWildcardCriteria(criterion)
+      ?matchesExcelWildcard(String(value),criterion):String(value)===criterion))continue;
+    items.push({label:String(value),value:String(id),criteriaField:pointer.reference,
+     criteria:String(value),record:row,objectApiName:pointer.object});
+    if(items.length>200)throw Error('COLLECTION exceeds 200 entries');
+   }
+  };
+  for(let index=1;index<args.length;){
+   const node=args[index];
+   // A literal caption followed by a field and explicit criterion forms a clause.
+   if(node.kind==='literal'&&typeof node.value==='string'&&
+     index+2<args.length&&sourceField(args[index+1])){
+    const pointer=sourceField(args[index+1]);
+    const criterion=evaluate(args[index+2]);
+    if(typeof criterion!=='string'&&typeof criterion!=='number'&&typeof criterion!=='boolean'
+      ||String(criterion).trim()==='')throw Error('COLLECTION criterion is required after '+pointer.reference);
+    items.push({label:node.value,value:String(criterion),criteriaField:pointer.reference,
+      criteria:String(criterion),objectApiName:pointer.object});
+    index+=3;continue;
+   }
+   if(isCriteriaComparison(node)){
+    const pointer=sourceField(node.left),criterion=evaluate(node.right);
+    if(typeof criterion!=='string'||!criterion.trim())
+     throw Error('COLLECTION field criterion must be a nonblank text value');
+    sourceItems(pointer,criterion,true);index++;continue;
+   }
+   const pointer=sourceField(node);
+   if(pointer){sourceItems(pointer,'',false);index++;continue;}
+   const result=evaluate(node);
+   if(Array.isArray(result))items.push(...result);
+   else items.push(result);
+   index++;
+  }
+  return createCriteriaFormulaCollection(name,items);
+ };
  const evaluate=node=>{
   let result;
   if(node.kind==='literal')result=node.value;
@@ -390,6 +462,8 @@ function parse(source,record,formulaContext){
   }else if(node.name==='OR'){
    result=false;
    for(const argument of node.args)if(truth(evaluate(argument))){result=true;break;}
+  }else if(node.name==='COLLECTION'&&formulaContext.collectionResult===true){
+   result=evaluateCriteriaCollection(node.args);
   }else if(node.name==='CASE'){
    if(node.args.length%2!==0)throw Error('CASE requires a comparison value and a default result');
    const sourceValue=evaluate(node.args[0]);
@@ -467,5 +541,6 @@ export function evaluateCollectionFormula(formula,sourceRecords={},context={}){
   return {value:null,error:'Enter =COLLECTION("Name", values, @Object.Field)'};
  return evaluateFieldExpressionDetailed(source,{...context},
   {collectionSources:sourceRecords,collectionResult:true,
+   rootObjectApiName:context?.primaryObject,
    namedCollectionSelections:context?.state?.collectionSelections});
 }

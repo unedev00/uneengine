@@ -115,7 +115,7 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
  const update=(next:string,caret:number)=>{
   setDraft(next);
   const error=errorFor(next);
-  setValidationError(error);
+  setValidationError(null);
   if(!error)onChange(next);
   setCaret(caret);
   suggest(next,caret);
@@ -126,7 +126,7 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
   const end=matches.start+reference.length;
   setDraft(next);
   const error=errorFor(next);
-  setValidationError(error);
+  setValidationError(null);
   if(!error)onChange(next);
   setCaret(end);setMatches(null);setFunctionMatch(null);
   requestAnimationFrame(()=>{input.current?.focus();input.current?.setSelectionRange(end,end)});
@@ -138,11 +138,17 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
   update(next,end);setFunctionMatch(null);setMatches(null);
   requestAnimationFrame(()=>{input.current?.focus();input.current?.setSelectionRange(end,end)});
  };
+ const finishEdit=()=>{
+  const error=errorFor(draft);
+  setValidationError(error);
+  if(error&&draft.trim().startsWith('='))setConfirmIncomplete(true);
+ };
  const keyDown=(event:KeyboardEvent<HTMLInputElement>)=>{
   if(event.key==='Escape'){setMatches(null);setFunctionMatch(null);setFocused(false)}
   if(event.key==='Enter'&&functionSuggestions.length&&functionMatch){
     event.preventDefault();insertFunction(functionSuggestions[0]);
   }else if(event.key==='Enter'&&filtered.length&&matches){event.preventDefault();insert(filtered[0].reference);}
+  else if(event.key==='Enter'){finishEdit();}
  };
  return <div className="smart-formula" title={singleFieldOnly?'Select a Boolean field, e.g. @IsActive':'Formula: @Field, + - * / and &; quoted symbols are text'}>
   <div className="smart-formula-highlight" aria-hidden="true">{splitSmartFormula(draft).map((part,i)=>
@@ -152,10 +158,9 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
    onFocus={e=>{setFocused(true);setCaret(e.currentTarget.selectionStart??draft.length)}}
    onClick={e=>setCaret(e.currentTarget.selectionStart??draft.length)}
    onKeyUp={e=>setCaret(e.currentTarget.selectionStart??draft.length)}
-   onBlur={()=>{setMatches(null);setFunctionMatch(null);setFocused(false);
-     if(validationError&&draft.trim().startsWith('='))setConfirmIncomplete(true);}}
+   onBlur={()=>{setMatches(null);setFunctionMatch(null);setFocused(false);finishEdit();}}
    onChange={e=>update(e.currentTarget.value,e.currentTarget.selectionStart??e.currentTarget.value.length)}/>
-  {validationError&&<div className="smart-formula-error" role="alert">{validationError}</div>}
+
   {hint&&hintPosition&&createPortal(<div className="smart-formula-signature" role="status"
     style={{position:'fixed',top:hintPosition.top,left:hintPosition.left,zIndex:6100}}>
     <strong>{hint.name}</strong><span>(</span>

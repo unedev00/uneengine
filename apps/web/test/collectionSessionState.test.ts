@@ -107,3 +107,77 @@ test('wildcard criteria are global formula comparisons, never an unrestricted Ob
  assert.equal(evaluateFieldExpression('=@Product.Name = "Burgers*"',{Product:{Name:'Drinks'}}),'false');
  assert.equal(evaluateFieldExpression('=2*3',{}),'6','bare star remains multiplication');
 });
+
+test('COLLECTION supports SUMIFS-like repeating tab caption, source field and criterion clauses',()=>{
+ const source={MenuCategory:[
+  {Id:'22',Name:'Burgers'},{Id:'23',Name:'Coca Cola'},
+  {Id:'24',Name:'Coca Zero'},{Id:'25',Name:'Drinks'}]};
+ const formula='=COLLECTION("MyTabs", "All", @MenuCategory.Name, "*", '
+  +'"Coca", @MenuCategory.Name, "Coca*", '
+  +'"Burgers", @MenuCategory.Name, "Burgers", @MenuCategory.Name)';
+ const result=evaluateCollectionFormula(formula,source,{primaryObject:'MenuCategory'});
+ assert.equal(result.error,undefined);
+ assert.equal(result.value.name,'MyTabs');
+ const rows=result.value.items as Array<Record<string,unknown>>;
+ assert.deepEqual(rows.slice(0,3).map(row=>[row.label,row.value,row.criteriaField]),
+  [['All','*','MenuCategory.Name'],['Coca','Coca*','MenuCategory.Name'],
+   ['Burgers','Burgers','MenuCategory.Name']]);
+ assert.equal(rows[3].label,'Burgers');
+ assert.equal(rows[3].value,'22');
+ assert.equal(rows[4].value,'23');
+ assert.equal(rows.length,7);
+});
+test('unqualified @Name works with selected Object records and legacy item input without blank errors',()=>{
+ const source={MenuCategory:[{Id:'22',Name:'Burgers'},{Id:'23',Name:'Coca Cola'}]};
+ const formula='=COLLECTION("testproducts","test",@Name)';
+ const result=evaluateCollectionFormula(formula,source,{primaryObject:'MenuCategory'});
+ assert.equal(result.error,undefined);
+ assert.equal(result.value.items[0],'test');
+ assert.equal(result.value.items[1].label,'Burgers');
+ assert.equal(result.value.items[1].value,'22');
+ assert.equal(result.value.items[2].label,'Coca Cola');
+ const generated=evaluateCollectionFormula('=COLLECTION("Filtered", @Name = "Coca*")',
+  source,{primaryObject:'MenuCategory'});
+ assert.equal(generated.error,undefined);
+ assert.equal(generated.value.items.length,1);
+ assert.equal(generated.value.items[0].value,'23');
+ assert.equal(generated.value.items[0].criteriaField,'MenuCategory.Name');
+ const noMatch=evaluateCollectionFormula('=COLLECTION("Empty", @Name = "Absent*")',
+  source,{primaryObject:'MenuCategory'});
+ assert.equal(noMatch.error,undefined);
+ assert.equal(noMatch.value.items.length,0);
+});
+test('Collection state carries criterion field separately from ID and respects field-specific wildcards',()=>{
+ const fields=[{apiName:'Name',dataType:'Text',label:'Name'}] as any;
+ const chosen={field:'Name',operator:'Equals',value:{source:'CollectionState',
+  key:'MyTabs.state.Id',skipWhenBlank:true,allWhenStar:false}};
+ const context=(Id:string)=>({pageState:{collectionSelections:{
+  MyTabs:{Id,Name:'All',Criteria:Id,Field:'MenuCategory.Name'}}}});
+ assert.deepEqual(pageComponentRecordQuery([chosen],fields,context('Coca*')).filters,
+  [{field:'Name',operator:'matches',value:'Coca*'}]);
+ assert.deepEqual(pageComponentRecordQuery([chosen],fields,context('*')).filters,
+  [{field:'Name',operator:'matches',value:'*'}]);
+ const rows=[{Name:'Coca Cola'},{Name:'Drinks'}];
+ assert.deepEqual(filterPageComponentRecords(rows,[chosen],fields,context('Coca*')),[rows[0]]);
+ assert.deepEqual(filterPageComponentRecords(rows,[chosen],fields,context('*')),rows);
+ assert.equal(resolvePageFilterValue({source:'CollectionState',key:'MyTabs.state.Field'},
+  context('*')),'MenuCategory.Name');
+ assert.equal(resolvePageFilterValue({source:'CollectionState',key:'MyTabs.state.Criteria'},
+  context('Coca*')),'Coca*');
+ const names=pageStateChoices([{id:'tabs',
+  properties:{textSource:'=COLLECTION("MyTabs","All",@Name,"*")'}}]);
+ assert.ok(names.some(item=>item.key==='MyTabs.state.Criteria'));
+ assert.ok(names.some(item=>item.key==='MyTabs.state.Field'));
+});
+test('global Collection formula signature hints reflect repeated SUMIFS-like clauses',()=>{
+ const formula='=COLLECTION("MyTabs", "All", @Name, "*", "Coca", @Name, ';
+ const signature=formulaSignatureAt(formula,formula.length);
+ assert.equal(signature?.name,'COLLECTION');
+ assert.equal(signature?.parameters[0].name,'name');
+ assert.equal(signature?.parameters[1].name,'tab_label');
+ assert.equal(signature?.parameters[2].name,'criteria_range');
+ assert.equal(signature?.parameters[3].name,'criteria');
+ assert.equal(signature?.parameters[4].name,'tab_label2');
+ assert.equal(signature?.parameters[5].name,'criteria_range2');
+ assert.equal(signature?.argument,6);
+});
