@@ -597,9 +597,9 @@ function MetadataBoundPageComponent({
       &&/^[A-Za-z][A-Za-z0-9_]{0,79}$/.test(selectedCollection)){
       const record=selectionPayload?.record&&typeof selectionPayload.record==='object'&&!Array.isArray(selectionPayload.record)
         ?selectionPayload.record as Record<string,unknown>:{};
-      window.dispatchEvent(new CustomEvent('metadrive:page-collection-selectionPayload',{detail:{
+      window.dispatchEvent(new CustomEvent('metadrive:page-collection-selected',{detail:{
         pageSessionKey,name:selectedCollection,
-        value:{Id:String(record.Id??selectionPayload.value??''),Name:String(record.Name??''),Value:selectionPayload.value??null}
+        value:{Id:String(record.Id??selectionPayload?.value??''),Name:String(record.Name??''),Value:selectionPayload?.value??null}
       }}));
     }
     const config = actionFlows[action.event];
