@@ -50,7 +50,8 @@ export function registerPageDetailsController(app:Express,db:SqlPersistence,rbac
   if(typeof label!=='string'||!label.trim()||label.trim().length>128
     ||typeof expectedLabel!=='string'||!expectedLabel.trim()||expectedLabel.length>128
     ||appApiName!==null&&(typeof appApiName!=='string'||!api.test(appApiName))
-    ||typeof nextApiName!=='string'||!api.test(nextApiName)||nextApiName!==nextApiName.toLowerCase())
+    ||typeof nextApiName!=='string'||!api.test(nextApiName)
+    ||(nextApiName!==pageApi&&nextApiName!==nextApiName.toLowerCase()))
     throw new Error('Invalid Page details');
   await rbac.require(actor.tenant_id,actor.user_id,'PageDefinition','manage');
   await assertMetadataPackageEditable(db,actor.tenant_id,'page',pageApi);
