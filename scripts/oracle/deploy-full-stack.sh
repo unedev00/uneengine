@@ -2,6 +2,10 @@
 # Orchestrate the existing Oracle API and frontend deployers as one recovery unit.
 set -Eeuo pipefail
 [[ "${EUID}" == 0 ]] || { echo "Root deployment helper required" >&2; exit 1; }
+# Coordinate deployments initiated by the existing Actions runner and the
+# authenticated OCI operations broker. The API helper retains its own lock.
+exec 8>/run/lock/metadrive-full-stack.lock
+flock -n 8 || { echo "Another full-stack deployment is in progress" >&2; exit 75; }
 SOURCE="${1:?absolute repository checkout required}"
 SHA="${2:?commit SHA required}"
 [[ "$SOURCE" = /* && "$SHA" =~ ^[a-f0-9]{40}$ ]] || exit 1
