@@ -36,11 +36,11 @@ test('Page Details dialog appears in Page Manager and editor, without changing A
  const dialog=read('../../../web/src/core/builders/PageBuilder/PageDetailsDialog.tsx');
  const presentation=read('../../../web/src/core/workspace/SetupShell/setupShellPresentation.tsx');
  const shell=read('../../../web/src/core/workspace/SetupShell/setupAppShell.tsx');
- assert.match(view,/Page details for /);
- assert.match(view,/Edit page name and app/);
+ assert.match(view,/Edit page properties for /);
+ assert.match(view,/Edit page properties and versions/);
  assert.match(view,/<PageDetailsDialog/);
  assert.match(view,/onSave=\{onUpdatePageDetails\}/);
- assert.match(dialog,/Stable identifier retained/);
+ assert.match(dialog,/Stable identity/);
  assert.match(dialog,/page\.apiName/);
  assert.match(dialog,/Assign page to app/);
  assert.match(dialog,/page\.pageType==='App Page'/);
