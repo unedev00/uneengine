@@ -10,6 +10,7 @@ import {
 import './RecordFilterEditor.css';
 
 type Filter = {field: string; operator: string; value: unknown};
+type DynamicValue = {source?: string; key?: string; skipWhenBlank?: boolean};
 const isFilter = (item: unknown): item is Filter =>
   Boolean(item && typeof item === 'object' && !Array.isArray(item));
 const isBlank = (operator: string) => operator === 'Is Blank' || operator === 'Is Not Blank';
@@ -122,7 +123,7 @@ export default function RecordFilterEditor({
         const field = allFields.find(candidate => candidate.apiName === fieldName);
         const operator = typeof raw.operator === 'string' ? raw.operator : 'Equals';
         const dynamic = raw.value && typeof raw.value === 'object' && !Array.isArray(raw.value)
-          ? raw.value as {source?: string; key?: string} : undefined;
+          ? raw.value as DynamicValue : undefined;
         const source = dynamic?.source ?? 'Fixed';
         const value = dynamic ? '' : String(raw.value ?? '');
         const operators = supportedFilterOperators(field);
@@ -198,11 +199,18 @@ export default function RecordFilterEditor({
               : source === 'PageState'
               ? <label><span>Page state key</span>
                   <input aria-label={title + ' page state key ' + (index + 1)}
-                    value={dynamic?.key ?? ''} placeholder="e.g. CurrentCartId"
-                    onChange={e => set(index, {value: {source: 'PageState', key: e.target.value}})}/>
+                    value={dynamic?.key ?? ''} placeholder="e.g. categoryId"
+                    onChange={e => set(index, {value: {...dynamic,source: 'PageState', key: e.target.value}})}/>
                 </label>
               : source === 'Fixed' ? <label><span>Value</span>{valueControl}</label> : null)}
           </div>
+          {!isBlank(operator) && source === 'PageState' && <label className="metadata-filter-optional">
+            <input type="checkbox" aria-label={title + ' ignore blank page state ' + (index + 1)}
+              checked={dynamic?.skipWhenBlank === true}
+              onChange={e => set(index,{value:{...dynamic,source:'PageState',skipWhenBlank:e.target.checked}})}/>
+            <span>Ignore condition when Page State value is blank</span>
+            <small>Blank → skip this condition. With other conditions, AND/OR applies to the remaining conditions.</small>
+          </label>}
           {error && <p role="alert" className="metadata-filter-error">{error}</p>}
         </div>;
       })}

@@ -51,8 +51,13 @@ export function examineRecordFilter(raw: unknown, fields: ReadonlyArray<RecordFi
   if (filter.operator === 'Is Blank' || filter.operator === 'Is Not Blank') return null;
   if (filter.value && typeof filter.value === 'object' && !Array.isArray(filter.value)) {
     const source = filter.value as Record<string,unknown>;
-    if (source.source === 'PageState' && typeof source.key === 'string'
-      && /^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(source.key)) return null;
+    if (source.source === 'PageState') {
+      if (typeof source.key !== 'string' || !/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(source.key))
+        return 'Enter a Page State key (for example categoryId).';
+      if (source.skipWhenBlank !== undefined && typeof source.skipWhenBlank !== 'boolean')
+        return 'Invalid optional Page State setting.';
+      return null;
+    }
     if(source.source==='FieldExpression' && typeof source.key==='string'){
       const ref=source.key;
       const direct=/^@[A-Za-z][A-Za-z0-9_]*$/.test(ref)
