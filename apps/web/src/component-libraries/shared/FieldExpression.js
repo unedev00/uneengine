@@ -285,6 +285,10 @@ function parse(source,record,formulaContext){
    // supplied by the Page Runtime; a formula never performs a database query.
    const sourceRef=/^([A-Za-z][A-Za-z0-9_]*)\.([A-Za-z][A-Za-z0-9_]*)$/.exec(reference);
    const sources=formulaContext.collectionSources;
+   if(sourceRef&&formulaContext.collectionResult===true
+     &&!['state','event','session'].includes(sourceRef[1])
+     &&(!sources||!Object.prototype.hasOwnProperty.call(sources,sourceRef[1])))
+    throw Error('COLLECTION source unavailable: '+sourceRef[1]);
    if(sourceRef&&sources&&Object.prototype.hasOwnProperty.call(sources,sourceRef[1])){
     const rows=sources[sourceRef[1]];
     if(!Array.isArray(rows))throw Error('COLLECTION source unavailable: '+sourceRef[1]);
@@ -400,7 +404,8 @@ export function evaluateFieldExpressionDetailed(expression,record,options={}){
    ?new Date(options.now):typeof options.now==='string'
     ?parseFormulaDateTime(options.now,'UTC'):new Date(NaN);
   if(!Number.isFinite(now.getTime()))throw Error('Invalid formula evaluation time');
-  const result=parse(input,record,{timeZone,now,collectionSources:options.collectionSources});
+  const result=parse(input,record,{timeZone,now,collectionSources:options.collectionSources,
+   collectionResult:options.collectionResult===true});
   if(options.collectionResult===true){
    if(!result||typeof result!=='object'||Array.isArray(result)
      ||typeof result.name!=='string'||!Array.isArray(result.items))
