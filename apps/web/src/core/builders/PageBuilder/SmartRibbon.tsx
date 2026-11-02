@@ -11,7 +11,6 @@ import RecordFilterEditor from '../../../component-libraries/shared/primitives/R
 import SmartFormulaField from './SmartFormulaField';
 import {validateRecordFilterFormula} from '../../pages/PageRuntime/recordFilterFormula';
 import {displayComparisonFilter,moveDisplayComparisonToFilter} from './dataFormulaFilterTransfer';
-import {relationshipFormulaFields} from './relationshipFormulaFields';
 import {pageStateChoices} from './pageStateChoices';
 import {namedCollectionName} from '../../pages/PageRuntime/pageCollectionSession';
 import {formulaCollectionReferenceKey} from '../../../../../server/src/expression-engine/FormulaCollection.js';
@@ -194,16 +193,6 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    onChange(next);
    setSelectedDataField('__record_filter__');
  };
- // Reuse the metadata field catalogue used by @ suggestions. The picker
- // changes only the existing binding; advanced expressions remain editable.
- const selectableDataFields=activeDataProperty
-   ?relationshipFormulaFields(objects,sourceObjectNames,'',
-      activeDataProperty.id==='imageSource'?'image':'text',
-      api==='smart_toggle'&&activeDataProperty.id==='textSource')
-   :[];
- const collectionOptions=[...new Set(stateOptions.filter(item=>item.source==='CollectionState')
-   .map(item=>item.key.split('.')[0]))].map(name=>({reference:'@'+name,label:name+' Collection'}));
- const selectableDataSources=[...selectableDataFields,...collectionOptions];
  const activeSummaryLabel=activeDataProperty&&api==='smart_cart'
    ?cartSummaryLabels[activeDataProperty.id]:undefined;
  const changeActiveDataFormula=(next:string)=>{
