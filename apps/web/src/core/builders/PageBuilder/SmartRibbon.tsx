@@ -492,7 +492,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
        <span>{object?.label??'Session Collection'} · {scopedFilterId?filterTarget+' only':'All records'}</span></div>
        <button type="button" autoFocus onClick={()=>setFiltersOpen(false)}>Done</button></header>
      <div className="smart-filter-dialog-body">
-       {(object||canFilterSessionCollection)?<RecordFilterEditor compact title={scopedFilterId?filterTarget+' value':object.label+' records'} fields={availableFilterFields} objects={objects} rootObjectApiName={objectName}
+       {(object||canFilterSessionCollection)?<RecordFilterEditor compact title={scopedFilterId?filterTarget+' value':(object?.label??'Session Collection')+' records'} fields={availableFilterFields} objects={objects} rootObjectApiName={objectName}
          stateOptions={stateOptions}
          filters={scopedFilterId?(modalFieldRule?.filters??[]):Array.isArray(properties.filters)?properties.filters:[]}
          formula={scopedFilterId?(modalFieldRule?.filterFormula??''):typeof properties.filterFormula==='string'?properties.filterFormula:''}
