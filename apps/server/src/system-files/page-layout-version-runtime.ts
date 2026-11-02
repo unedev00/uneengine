@@ -276,8 +276,6 @@ export class PageLayoutVersionRuntime{
    const version=rows[0]?.draft_version;
    if(!version)throw new Error('Save a page layout draft before publishing');
    if(expected!==undefined&&version!==expected)throw new Error('Page layout draft revision conflict');
-   const revision=await client.query<VersionRow>(`SELECT page_label FROM md_page_layout_versions
-    WHERE tenant_id=$1 AND page_id=$2 AND variant=$3 AND version=$4`,[tenant,found.id,variant,version]);
    const [incoming,existing,type]=await Promise.all([
     client.query<PageActivationRow>(`SELECT assignment_id,scope,app_api,profile_id,record_type_id,desktop,phone,tablet,custom,sort_order
       FROM md_page_layout_version_activation
