@@ -60,6 +60,7 @@ jobs:
       - name: Exercise authenticated OneEngine UI through isolated SQL
         env:
           METADRIVE_BROWSER_PREBUILT: '1'
+          METADRIVE_BROWSER_TARGET: ui-route-audit
         run: |
           mkdir -p apps/server/artifacts
           node apps/server/scripts/builder-browser-smoke.mjs
@@ -68,5 +69,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: authenticated-core-ui-screenshots
-          path: apps/server/artifacts/*.png
+          path: apps/server/artifacts/
           if-no-files-found: warn
