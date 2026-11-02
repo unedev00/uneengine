@@ -225,15 +225,25 @@ function SmartTabs({p,record,fire}){
     borderColor:p.borderColor||undefined}}
     onClick={()=>{setActive(index);
       if(firstTabCustom&&index===0){
-       fire("change",{index,value:"",isCustom:true,record:{Id:"",Name:firstTabCaption}});
+       fire("change",{index,value:"*",isCustom:true,record:{Id:"*",Name:firstTabCaption},
+        ...(hasCollection?{collectionName:p.dataCollection.name}:{})});
       }else if(hasCollection){
        const item=recordTabs[index-(firstTabCustom?1:0)];
-       fire("change",{index,value:item?.value??"",record:item?.record??{},
+       const itemId=item?.record?.Id||item?.record?.id||item?.value;
+       fire("change",{index,value:itemId??"",record:{
+        ...item?.record,Id:itemId??"",Name:item?.label??item?.record?.Name??""},
         collectionName:p.dataCollection.name});
       }else if(dynamic){
        const row=recordsOf(p)[index-(firstTabCustom?1:0)];
        fire("change",{index,value:String(row?.Id??row?.id??""),record:row});
-      }else fire("change",index);
+       }else{
+       const chosen=recordTabs[index-(firstTabCustom?1:0)];
+       const identifier=chosen&&typeof chosen==='object'
+        ?chosen.id??chosen.value??chosen.label
+        :chosen;
+       fire("change",{index,value:String(identifier??""),record:{
+        Id:String(identifier??""),Name:text(chosen?.label??chosen??"")}});
+      }
      }}>{text(tab?.label??tab)}</button>)}
    {(dynamic||hasCollection)&&tabs.length===0&&<span className="smart-tabs-empty">No matching records</span>}
   </nav>
