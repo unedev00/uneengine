@@ -244,6 +244,7 @@ function SmartTabs({p,record,fire}){
   ?indexForSelection>=0?indexForSelection:tabs.length?0:-1
   :tabs.length?Math.min(active,tabs.length-1):-1;
  const autoSelected=React.useRef(null);
+ const firstTabRef=React.useRef(null);
  const selectTab=index=>{
   setActive(index);
   if(firstTabCustom&&index===0){
@@ -285,12 +286,20 @@ function SmartTabs({p,record,fire}){
   selectTab(0);
  },[indexForSelection,firstItemId,tabs.length,p.loading,p.previewOnly,p.builderPreview,
    p.pageSessionKey,p.componentId,p.onAction,hasCollection,stateKey,p.dataCollection?.name]);
+ // Give the first selected tab keyboard focus only if the page has no
+ // active control. Never steal focus from a search field or later user choice.
+ React.useEffect(()=>{
+  if(selectedTabIndex!==0||!tabs.length||p.loading||
+   p.previewOnly||p.builderPreview||typeof document==="undefined"||
+   document.activeElement!==document.body)return;
+  firstTabRef.current?.focus({preventScroll:true});
+ },[selectedTabIndex,tabs.length,p.loading,p.previewOnly,p.builderPreview]);
  React.useEffect(()=>{if(active>=tabs.length)setActive(0)},[active,tabs.length]);
  return <div className="smart-tabs-shell" style={{background:p.backgroundColor||undefined,
    display:"flex",flexDirection:"column",height:"100%",minHeight:0,width:"100%"}}>
   <nav className="smart-tabs" aria-label="Tabs" style={{
     width:"100%",height:"100%",flex:"1 1 auto",minHeight:0,alignContent:"stretch"}}>
-   {tabs.map((tab,index)=><button key={tab?.id??index} type="button" role="tab"
+   {tabs.map((tab,index)=><button key={tab?.id??index} ref={index===0?firstTabRef:null} type="button" role="tab"
     aria-selected={selectedTabIndex===index} style={{height:number(p.tabHeight,44),maxHeight:"100%",minHeight:0,flex:"1 1 auto",
      minWidth:number(p.tabWidth,120),borderRadius:number(p.radius,10),fontSize:number(p.textSize,16),textAlign:p.labelAlignment||"center",boxShadow:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none",color:p.labelColor||undefined,
      background:selectedTabIndex===index?p.selectedTabColor||"#eaf2ff":p.tabColor||"#fff",
