@@ -4,6 +4,7 @@
  * client-side filtering of a partial page and NO eval or arbitrary scripts. */
 import {Parser,type Expression} from '../../../../../server/src/expression-engine/FormulaParser.js';
 import {tokenize} from '../../../../../server/src/expression-engine/FormulaTokenizer.js';
+import {parseExcelWildcardPattern} from '../../../../../server/src/expression-engine/FormulaWildcard.js';
 import type {FieldMetadata} from '../../metadata/Definitions/metadata';
 
 export type CompiledFilterFormula={
@@ -77,6 +78,7 @@ function compile(node:Expression,fields:ReadonlyArray<FieldMetadata>,state:Reado
    throw Error('MATCHES requires a directly readable text field');
   const value=asState(node.args[1],state);
   if(typeof value!=='string')throw Error('MATCHES requires a text pattern');
+  parseExcelWildcardPattern(value);
   return {filters:[{field:field.apiName,operator:'matches',value}],logic:'1'};
  }
  if(node.kind==='binary'&&(node.operator==='AND'||node.operator==='OR'))
