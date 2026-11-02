@@ -113,34 +113,6 @@
 .office-builder-ribbon .page-action-compact-sections .page-action-compact-rows{
  grid-template-rows:repeat(2,26px);height:56px;row-gap:4px;
 }
-.office-builder-ribbon .page-action-compact-sections>.page-action-compact-flow{
- width:346px;min-width:346px;
-}
-.office-builder-ribbon .page-action-compact-sections>.page-action-compact-outputs{
- width:265px;min-width:265px;border-right:0;
-}
-.office-builder-ribbon .page-action-compact-flow .page-action-compact-rows{
- grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,26px);
- gap:4px 6px;
-}
-.office-builder-ribbon .page-action-compact-flow .page-action-compact-mapping{
- min-width:0;
-}
-.office-builder-ribbon .page-action-compact-flow .page-action-compact-mapping>span{
- flex:0 0 48px;max-width:48px;
-}
-.office-builder-ribbon .page-action-compact-flow .page-action-compact-mapping:nth-child(3){
- grid-column:1 / -1;
-}
-.office-builder-ribbon .page-action-compact-flow .page-action-compact-mapping:nth-child(3)>span{
- flex:0 0 48px;max-width:48px;
-}
-.office-builder-ribbon .page-action-compact-outputs .page-action-compact-mapping>span{
- flex:0 0 71px;max-width:71px;
-}
-.office-builder-ribbon .page-action-compact-outputs .page-action-compact-rows{
- grid-template-rows:repeat(2,26px);gap:4px;
-}
 .office-builder-ribbon .page-action-compact-sections>.page-action-compact-group:last-child{
  border-right:0!important;
 }
