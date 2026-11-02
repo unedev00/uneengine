@@ -6,7 +6,7 @@ import {useState,useEffect,useRef} from 'react';
 import {loadFlowScreenRecordPage} from '../../authentication/Client/authClient';
 // Load the browser API client only during the mounted effect, not on SSR import.
 import {presentPageRecords,type ChannelGrant} from '../../records/RecordWorkspace/recordPresentationAdapters';
-import {filterPageComponentRecords,pageComponentRecordQuery,bindPageStateProperties} from '../PageRuntime/pageComponentBindings';
+import {filterPageComponentRecords,pageComponentRecordQuery,bindPageStateProperties,activePageRecordFilters} from '../PageRuntime/pageComponentBindings';
 import {scopedFieldAllows} from '../PageRuntime/fieldScopedRecordFilters';
 import {resolveSmartToggleFieldBinding,updateSmartToggleField} from '../PageRuntime/smartToggleFieldBinding';
 import {usePageComponentRelatedScope} from '../PageRuntime/usePageSessionRelatedQuery';
@@ -117,8 +117,9 @@ export default function MetadataBoundPageComponent({
     loadFlowScreenRecordPage,
     relatedKey?selectedFilterRecords[relatedKey]?.recordId||pageState[relatedKey]:undefined,
     disableActions);
-  const recordQuery=pageComponentRecordQuery(properties.filters,filterFields,{pageState,recordId,sessionId},
-    properties.filterLogic==='OR'?'OR':'AND',properties.filterFormula);
+  const selectedRecordFilters=activePageRecordFilters(properties);
+  const recordQuery=pageComponentRecordQuery(selectedRecordFilters.filters,filterFields,{pageState,recordId,sessionId},
+    properties.filterLogic==='OR'?'OR':'AND',selectedRecordFilters.formula);
   const recordQueryKey=JSON.stringify([recordQuery,relatedQuery]);
 
   useEffect(() => {
