@@ -294,11 +294,12 @@ import {
   type WorkspaceId
 } from '../../metadata/Definitions/metadata';
 import SavedListViewPicker from './SavedListViewPicker';
+import PageDetailsDialog from './PageDetailsDialog';
 import {uneRibbonIcon} from './uneRibbonIcon';
 import RibbonImageContent from './RibbonImageContent';
 export function createPageBuilder(MetadataComponentProperties: React.ComponentType<any>, MetadataBoundPageComponent: React.ComponentType<any>, LightningAppRuntime: React.ComponentType<any>) {
 function PageBuilder({
-  page, pages, objects, apps, profiles, reports, dashboards, libraryComponents, flows, onChange, onSelectPage, onTargetObjectChange, onSave, onPublish, onDeactivate, onSaveApp, onDeleteApp, onDeletePage, onExit, onNotify, onLaunchFlow,
+  page, pages, objects, apps, profiles, reports, dashboards, libraryComponents, flows, onChange, onSelectPage, onTargetObjectChange, onSave, onPublish, onDeactivate, onSaveApp, onUpdatePageDetails, onDeleteApp, onDeletePage, onExit, onNotify, onLaunchFlow,
   preparedAppId, onPrepareApp, onAppLinked, request, canManageRoutes, editorMode, onBackToPages, recordPageContext,
   initialLayoutVariant, onLayoutVariantChange
 }: {
@@ -318,6 +319,7 @@ function PageBuilder({
   onPublish: (apiName:string,variant:'Mobile'|'Desktop'|'Tablet'|'Custom',draftRevision?:number)=>Promise<boolean>;
   onDeactivate: (apiName:string)=>Promise<boolean>;
   onSaveApp: (app: LightningAppMetadata, updating: boolean) => Promise<void>;
+  onUpdatePageDetails: (apiName:string,label:string,appApiName:string|null,expectedLabel:string)=>Promise<boolean>;
   onDeleteApp: (apiName: string) => Promise<void>;
   onDeletePage: (apiName: string) => Promise<void>;
   onExit: () => void;
@@ -430,6 +432,7 @@ function PageBuilder({
   const [pageListTypeTab, setPageListTypeTab] = useState('App Page');
   const [pageListDeviceTab, setPageListDeviceTab] = useState('all');
   const [pageListPage,setPageListPage]=useState(1);
+  const [pageDetailsApi,setPageDetailsApi]=useState<string|null>(null);
   const paletteResizeStart = useRef<{ pointerId: number; pointerX: number; width: number } | null>(null);
   const [customPropertiesDraft, setCustomPropertiesDraft] = useState('');
   const [customPropertiesError, setCustomPropertiesError] = useState('');
@@ -3051,6 +3054,8 @@ function PageBuilder({
           <td>{item.updatedAt ? new Date(item.updatedAt).toLocaleDateString() : '—'}</td>
           <td><span className={item.status === 'Active' ? 'page-status-badge active' : 'page-status-badge'}>{item.status}</span></td>
           <td className="page-manager-actions"><button className="btn btn-small" type="button" aria-label={'Edit '+item.label} onClick={()=>selectSavedPage(item.apiName)}><Pencil size={14}/> Edit</button>
+          <button className="btn btn-small" type="button" disabled={saving}
+            aria-label={'Page details for '+item.label} onClick={()=>setPageDetailsApi(item.apiName)}>Details</button>
           <button className="btn btn-small page-manager-toggle" type="button" disabled={saving} aria-label={(item.status==='Active'?'Deactivate ':'Activate ')+item.label} onClick={()=>void(item.status==='Active'?onDeactivate(item.apiName):savePage('Active',item,true))}>{item.status==='Active'?'Deactivate':'Activate'}</button>
           <button className="btn btn-small" type="button" disabled={saving||Boolean(archivingPageApiName)}
             aria-label={'Delete '+item.label} onClick={()=>setPendingArchivePageApiName(item.apiName)}>
@@ -3063,10 +3068,20 @@ function PageBuilder({
           <button className="btn" disabled={safePageListPage>=pageListPageCount} onClick={()=>setPageListPage(safePageListPage+1)}>Next</button>
         </nav>
       </section>}
+      {pageDetailsApi&&(()=>{
+        const detailsPage=pages.find(item=>item.apiName===pageDetailsApi)??(
+          page.apiName===pageDetailsApi?page:null);
+        return detailsPage?<PageDetailsDialog key={pageDetailsApi} page={detailsPage}
+          apps={apps} disabled={saving} onClose={()=>setPageDetailsApi(null)}
+          onSave={onUpdatePageDetails}/>:null;
+      })()}
       {editorMode && <>
       <section className={`office-builder-ribbon ${previewMode ? 'is-interactive-preview' : ''}`} aria-label="Page Builder ribbon">
         <div className="office-ribbon-topbar">
           <div className="office-ribbon-topbar-back">{homeValue('backIcon')}</div>
+          <button type="button" className="office-ribbon-icon-button" aria-label="Edit page name and app"
+            title="Edit page name and app" disabled={saving||previewMode}
+            onClick={()=>setPageDetailsApi(page.apiName)}><Pencil size={16}/></button>
           <div className="office-ribbon-selection-context" title={selected?.label||selected?.type||'Welcome'}>
             {selected ? 'Page › '+(rawLayoutParentId(selected)
                ? (page.components.find(component=>component.id===rawLayoutParentId(selected))?.label??'Container')+' › '

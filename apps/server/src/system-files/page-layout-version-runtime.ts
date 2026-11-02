@@ -204,7 +204,11 @@ export class PageLayoutVersionRuntime{
     canvasFillColor:base.canvasFillColor??'#ffffff',
    components:base.components,activationAssignments:base.activationAssignments,
    customTargetEnabled:false,customTargetMinWidth:320,customTargetMaxWidth:10000};
-  return {...base,...legacy,layoutVariant:variant,draftRevision:head?.draft_version??0,
+  // Page identity and App placement are SQL-owned, independently of immutable
+  // per-device canvas revisions. A future publish must not undo page details.
+  return {...base,...legacy,label:base.label,
+   ...(base.pageType==='App Page'?{activationAssignments:base.activationAssignments}:{}),
+   layoutVariant:variant,draftRevision:head?.draft_version??0,
    publishedRevision:head?.published_version??0};
  }
  async saveDraft(tenant:string,name:string,variant:PageLayoutVariant,raw:unknown,base:PageSnapshot,actor?:string){
@@ -272,8 +276,6 @@ export class PageLayoutVersionRuntime{
    const version=rows[0]?.draft_version;
    if(!version)throw new Error('Save a page layout draft before publishing');
    if(expected!==undefined&&version!==expected)throw new Error('Page layout draft revision conflict');
-   const revision=await client.query<VersionRow>(`SELECT page_label FROM md_page_layout_versions
-    WHERE tenant_id=$1 AND page_id=$2 AND variant=$3 AND version=$4`,[tenant,found.id,variant,version]);
    const [incoming,existing,type]=await Promise.all([
     client.query<PageActivationRow>(`SELECT assignment_id,scope,app_api,profile_id,record_type_id,desktop,phone,tablet,custom,sort_order
       FROM md_page_layout_version_activation
@@ -283,11 +285,13 @@ export class PageLayoutVersionRuntime{
       FOR UPDATE`,[tenant,found.id]),
     client.query<{page_type:string}>('SELECT page_type FROM md_lightning_page_details WHERE tenant_id=$1 AND page_id=$2',[tenant,found.id])
    ]);
-   const activeAssignments=mergePublishedPageActivation(existing.rows,incoming.rows,variant);
+   const activeAssignments=type.rows[0]?.page_type==='App Page'&&existing.rows.length
+    ?existing.rows:mergePublishedPageActivation(existing.rows,incoming.rows,variant);
    if(type.rows[0]?.page_type!=='App Page'&&!activeAssignments.length)
     throw new Error('Add a page activation assignment before publishing');
-   await client.query('UPDATE md_page_definitions SET title=$3 WHERE tenant_id=$1 AND id=$2',
-    [tenant,found.id,revision.rows[0].page_label]);
+   // Page name is edited separately via Page Details and remains authoritative.
+   // Immutable page_label snapshots document the historical draft, not the
+   // currently assigned Page name; publishing must never revert a rename.
    await client.query(`UPDATE md_lightning_page_details SET status='Active',revision=revision+1,updated_at=now()
     WHERE tenant_id=$1 AND page_id=$2`,[tenant,found.id]);
    await client.query('DELETE FROM md_lightning_page_activation WHERE tenant_id=$1 AND page_id=$2',[tenant,found.id]);
