@@ -10,7 +10,7 @@ const env={
 };
 const tenant='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const user='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
-function dbFixture(options:{receipt?:boolean;identity?:boolean}={}){
+function dbFixture(options:{receipt?:boolean;identity?:boolean;rootCandidates?:number}={}){
  const statements:Array<{sql:string;params:unknown[]}>=[];
  const query=async(sql:string,params:unknown[]=[])=>{
   statements.push({sql,params});
@@ -18,6 +18,8 @@ function dbFixture(options:{receipt?:boolean;identity?:boolean}={}){
    return {rows:options.receipt?[{tenant_id:tenant,user_id:user}]:[]};
   if(sql.includes('SELECT u.tenant_id,u.id AS user_id'))
    return {rows:options.identity===false?[]:[{tenant_id:tenant,user_id:user}]};
+  if(sql.includes('SELECT DISTINCT u.tenant_id,u.id AS user_id'))
+   return {rows:Array.from({length:options.rootCandidates??1},(_,i)=>({tenant_id:tenant,user_id:user+i}))};
   return {rows:[]};
  };
  const db={transaction:async(callback:(client:{query:typeof query})=>Promise<unknown>)=>callback({query})} as unknown as Pick<SqlPersistence,'transaction'>;
@@ -66,5 +68,28 @@ test('invalid configuration fails closed without querying the database',async()=
  await assert.rejects(
   seedPlatformDeploymentOwner(db,{...env,METADRIVE_BOOTSTRAP_DOMAIN:'../../untrusted'}),
   /Invalid trusted platform bootstrap identity/);
+ assert.equal(statements.length,0);
+});
+
+test('OCI canonical-domain bootstrap grants only a unique existing platform root developer',async()=>{
+ const {db,statements}=dbFixture({rootCandidates:1});
+ assert.equal(await seedPlatformDeploymentOwner(db,{METADRIVE_PLATFORM_CANONICAL_DOMAIN:'unesolutions.co.uk'}),'granted');
+ const match=statements.find(x=>x.sql.includes('SELECT DISTINCT u.tenant_id,u.id AS user_id'));
+ assert.deepEqual(match?.params,['unesolutions.co.uk']);
+ assert.match(match!.sql,/r.api_name='TenantDeveloper'/);
+ assert.match(match!.sql,/p.api_name='OneEngine'/);
+ assert.match(match!.sql,/d.domain=\$1 AND t.status='ACTIVE'/);
+ assert.match(match!.sql,/u.user_type='internal'/);
+ assert.ok(statements.some(x=>x.sql.includes('INSERT INTO md_permission_assignments')));
+});
+test('OCI root with ambiguous platform operators fails closed and grants none',async()=>{
+ const {db,statements}=dbFixture({rootCandidates:2});
+ assert.equal(await seedPlatformDeploymentOwner(db,{METADRIVE_PLATFORM_CANONICAL_DOMAIN:'unesolutions.co.uk'}),'identity-not-found');
+ assert.ok(!statements.some(x=>x.sql.includes('INSERT INTO md_permission_assignments')));
+});
+test('untrusted OCI domain values are rejected',async()=>{
+ const {db,statements}=dbFixture();
+ await assert.rejects(seedPlatformDeploymentOwner(db,{METADRIVE_PLATFORM_CANONICAL_DOMAIN:'api.bad.example'}),
+  /Invalid root-installed OCI canonical domain/);
  assert.equal(statements.length,0);
 });
