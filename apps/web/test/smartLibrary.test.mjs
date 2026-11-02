@@ -1085,7 +1085,7 @@ test('31 October ribbon consolidation scopes @ fields to three explicit objects 
  assert.match(sql,/objectApiName3/);
  assert.match(read('../src/core/builders/PageBuilder/PageBuilderRibbonLayout.css'),/--page-ribbon-content-height: 114px/);
  assert.match(styles,/gap:4px!important/);
- assert.match(read('../src/core/builders/PageBuilder/PageDetailsDialog.tsx'),/Restore as draft/);
+ assert.match(read('../src/core/builders/PageBuilder/PageDetailsDialog.tsx'),/Restore &amp; Design/);
  assert.doesNotMatch(page,/homeValue\('restoreVersion'\)/);
  assert.doesNotMatch(page,/case 'canvasMode'/);
  assert.doesNotMatch(page,/ribbonTab==='Icons'/);
