@@ -12,14 +12,15 @@ type Row=Record<string,unknown>;
 export type PageNamedCollection={name:string;key?:string;items:unknown[]};
 type SourceResult={key:string;records:Record<string,Row[]>;error?:string};
 
-export function collectionFormulaReferences(formula:string,primaryObject=''):Array<{object:string;field:string}>{
+export function collectionFormulaReferences(formula:string,primaryObject='',namedCollections:Readonly<Record<string,PageNamedCollection>>={}):Array<{object:string;field:string}>{
  if(!/\bCOLLECTION\s*\(/i.test(formula))return [];
  const found=new Map<string,{object:string;field:string}>();
  const visit=(node:Expression,insideCollection=false):void=>{
   if(node.kind==='reference'&&insideCollection){
    const match=/^([A-Za-z][A-Za-z0-9_]*)\.([A-Za-z][A-Za-z0-9_]*)$/.exec(node.value);
    if(match)found.set(match[0],{object:match[1],field:match[2]});
-   else if(primaryObject&&/^[A-Za-z][A-Za-z0-9_]*$/.test(node.value)
+   else if(primaryObject&&!Object.keys(namedCollections).some(name=>name.toLowerCase()===node.value.toLowerCase())
+     &&/^[A-Za-z][A-Za-z0-9_]*$/.test(node.value)
      &&!['state','session','event'].includes(node.value.toLowerCase()))
      found.set(primaryObject+'.'+node.value,{object:primaryObject,field:node.value});
   }else if(node.kind==='call')node.args.forEach(arg=>visit(arg,insideCollection||node.name==='COLLECTION'));
@@ -59,7 +60,7 @@ export function usePageCollectionFormula(
  const namedListSource=listBinding&&listBinding.object===primaryObject
   ?registry.collections[listBinding.field]:undefined;
  const refs=listBinding&&!namedListSource?[{object:listBinding.object,field:listBinding.field}]:
-  collectionFormulaReferences(source,primaryObject);
+  collectionFormulaReferences(source,primaryObject,registry.collections);
  const selected=['objectApiName','objectApiName2','objectApiName3']
   .map(key=>String(properties[key]??'')).filter(Boolean);
  const referenced=[...new Set(refs.map(ref=>ref.object))];
