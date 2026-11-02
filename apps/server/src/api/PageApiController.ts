@@ -6,6 +6,7 @@ import type {FlowRuntime} from '../system-files/flow-runtime.js';
 import {authenticated,wrap,api} from './ApiAuthenticationGuard.js';
 import {PageRuntime} from '../system-files/page-runtime.js';
 import {pageLayoutVariant} from '../system-files/page-layout-version-runtime.js';
+import {assertMetadataPackageEditable} from '../system-support/metadata-package-service.js';
 import {registerPageDetailsController} from './PageDetailsController.js';
 export function registerPageApiController(app:Express,db:SqlPersistence,rbac:RbacEngine){
   const pages=new PageRuntime(db);
@@ -17,6 +18,19 @@ export function registerPageApiController(app:Express,db:SqlPersistence,rbac:Rba
     if(!Number.isSafeInteger(version)||version<1)throw new Error('Invalid page revision');
     res.setHeader('Cache-Control','private, no-store');
     res.json({page:await pages.version(actor.tenant_id,name,pageLayoutVariant(req.params.variant),version)});
+  }));
+  app.patch('/api/metadata/pages/:apiName/layouts/:variant/versions/:version/archive',wrap(async(req,res)=>{
+    const actor=authenticated(req),name=req.params.apiName;
+    if(!api.test(name))throw new Error('Invalid Page API name');
+    await rbac.require(actor.tenant_id,actor.user_id,'PageDefinition','manage');
+    await assertMetadataPackageEditable(db,actor.tenant_id,'page',name);
+    const version=Number(req.params.version),archived=req.body?.archived;
+    if(!Number.isSafeInteger(version)||version<1||typeof archived!=='boolean')
+      throw new Error('Invalid Page version archive request');
+    const versions=await pages.archiveLayout(actor.tenant_id,name,pageLayoutVariant(req.params.variant),
+      version,archived,actor.user_id);
+    res.setHeader('Cache-Control','private, no-store');
+    res.json({versions});
   }));
   registerPageDetailsController(app,db,rbac);
 
