@@ -3425,7 +3425,6 @@ function PageBuilder({
                 }
                 updateComponent(selected.id,{properties:{...selected.properties,layoutContainer:value}});
               }
-            }}
             }}/>} 
 
           {ribbonTab==='Add Block' && <SmartInsertRibbon
