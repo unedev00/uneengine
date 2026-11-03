@@ -21,7 +21,7 @@ test('Smart component catalog is independent, thirteen components and SQL-owned'
  const source=JSON.parse(read('../src/component-libraries/manifest.json'));
  const names=source.components.map(p=>p.split('/')[0]).filter(name=>name.startsWith('smart_'));
  assert.deepEqual(names.sort(),['smart_button','smart_toggle','smart_lookup','smart_tabs',
-  'smart_text','smart_card_grid','smart_image','smart_calendar','smart_navigation',
+  'smart_text','smart_textbox','smart_card_grid','smart_image','smart_calendar','smart_navigation',
   'smart_container','smart_cart','smart_icon','smart_table'].sort());
  const catalog=await loadComponentCatalog();
  for(const name of names){
