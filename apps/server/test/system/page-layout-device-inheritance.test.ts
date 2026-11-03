@@ -86,3 +86,15 @@ test('Desktop parent draft/publish separation is enforced by the SQL runtime',()
  assert.match(service,/createDeviceComponentOverrides/);
  assert.match(service,/applyDeviceComponentOverrides/);
 });
+
+test('Clearing inherited extra position removes the field rather than resurrecting the Desktop value',()=>{
+ const desktop=[node('a',{backgroundColor:'white'},{
+  position:{x:20,y:30,width:300,height:180},someOtherExtra:{keep:true}
+ })];
+ const edited=[node('a',{backgroundColor:'white'},{someOtherExtra:{keep:true}})];
+ const delta=createDeviceComponentOverrides(desktop,edited);
+ const effective=applyDeviceComponentOverrides(desktop,delta);
+ assert.equal('position' in effective[0],false);
+ assert.deepEqual(effective[0].someOtherExtra,{keep:true});
+ assert.deepEqual(desktop[0].position,{x:20,y:30,width:300,height:180});
+});
