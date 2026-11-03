@@ -273,7 +273,7 @@ function SmartTabs({p,record,fire}){
   :tabs.length?Math.max(0,Math.min(active,tabs.length-1)):-1;
  const autoSelected=React.useRef(null);
  const selectedTabRef=React.useRef(null);
- const selectTab=index=>{
+ const selectTab=(index,initialisingDefault=false)=>{
   setActive(index);
   if(hasCollection){
    const item=recordTabs[index];
@@ -294,7 +294,8 @@ function SmartTabs({p,record,fire}){
    fire("change",{index,value:String(identifier??""),record:{
     Id:String(identifier??""),Name:text(chosen?.label??chosen??"")}});
   }
-  if(index!==0)autoSelected.current=null;
+  // Programmatic default initialisation must not clear its own once-only guard.
+  if(!initialisingDefault)autoSelected.current=null;
  };
  const defaultItem=tabs[defaultTabIndex];
  const defaultItemId=defaultItem
@@ -315,7 +316,7 @@ function SmartTabs({p,record,fire}){
    String(hasCollection?p.dataCollection.name:stateKey)+"|"+String(defaultTabIndex)+"|"+String(defaultItemId??"");
   if(autoSelected.current===key)return;
   autoSelected.current=key;
-  selectTab(defaultTabIndex);
+  selectTab(defaultTabIndex,true);
  },[indexForSelection,defaultItemId,defaultTabIndex,tabs.length,p.loading,p.previewOnly,p.builderPreview,
    p.pageSessionKey,p.componentId,p.onAction,hasCollection,stateKey,p.dataCollection?.name]);
  // Focus the actual selected initial tab only if no other control owns focus.
