@@ -3335,30 +3335,6 @@ function PageBuilder({
                 (page.pageType==='Record Page'?'Org Default':'App Default')),
               onAdd:()=>setPageDetailsApi(page.apiName)
             }}
-            responsive={{
-              desktop:(page.pageType==='Record Page'?recordFormFactors:homeFormFactors).includes('Desktop'),
-              tablet:(page.pageType==='Record Page'?recordFormFactors:homeFormFactors).includes('Tablet'),
-              mobile:(page.pageType==='Record Page'?recordFormFactors:homeFormFactors).includes('Phone'),
-              canAssign:page.pageType!=='App Page',
-              breakpoint:page.customTargetMinWidth??320,
-              canBreakpoint:(page.layoutVariant??'Desktop')==='Custom',
-              columns:Number(selected?.properties.cardsPerRow??0)||1,
-              canColumns:!!selected&&['Custom:smart_card_grid','Custom:smart_cart'].includes(selected.type),
-              onDevice:factor=>{
-                const toggle=(current:('Desktop'|'Tablet'|'Phone'|'Custom')[])=>
-                  current.includes(factor)?current.filter(value=>value!==factor):[...current,factor];
-                if(page.pageType==='Record Page')setRecordFormFactors(toggle);
-                else setHomeFormFactors(toggle);
-              },
-              onBreakpoint:value=>{
-                if(Number.isInteger(value)&&value>=320&&value<=(page.customTargetMaxWidth??10000))
-                  applyPage({...page,customTargetMinWidth:value});
-              },
-              onColumns:value=>{
-                if(selected&&Number.isInteger(value)&&value>=1&&value<=50)
-                  updateComponent(selected.id,{properties:{...selected.properties,cardsPerRow:value}});
-              }
-            }}
             properties={{
               selected:!!selected,apiName:selected?.type.startsWith('Custom:')?selected.type.slice(7):selected?.type??'',
               visible:selected?.visible!==false,
