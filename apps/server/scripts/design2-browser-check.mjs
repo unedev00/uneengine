@@ -105,11 +105,12 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  await design2.waitFor({state:'visible'});
  const area=page.getByLabel('Select Design 2 area');
  assert.equal(await area.inputValue(),'Body');
- await area.selectOption('Row');
+ await area.selectOption('Table');
  const row=page.locator('.smart-design2-group');
  const focus=row.locator('[data-property="selectedRowColor"]');
  await focus.waitFor();
- assert.equal(await focus.getAttribute('data-supported'),'true','Row Focused wrongly disabled');
+ assert.equal(await focus.getAttribute('data-supported'),'true','Table row Focus Fill wrongly disabled');
+ await area.selectOption('Row');
  const rowBold=row.locator('[data-property="rowBold"] button');
  await rowBold.waitFor();
  assert.equal(await rowBold.isDisabled(),false,'Row Bold should be enabled');
