@@ -408,7 +408,9 @@ test('Page Builder Office ribbon keeps each control in one permanent logical gro
 
   assert.match(builder, /'Component Style'/);
   assert.match(builder, /selectedHistoryVersion/);
-  assert.match(builder, /aria-label="Choose page layout"/);
+  const details = await readFile(new URL('PageBuilder/PageDetailsDialog.tsx', root), 'utf8');
+  assert.doesNotMatch(builder, /aria-label="Choose page layout"/);
+  assert.match(details, /aria-label="Device layout to design"/);
   assert.match(builder, /aria-label="Page width"/);
   assert.match(builder, /aria-label="Page height"/);
   assert.doesNotMatch(builder, /office-ribbon-page-controls/);
