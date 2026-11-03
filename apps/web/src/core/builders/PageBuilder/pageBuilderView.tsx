@@ -3329,14 +3329,11 @@ function PageBuilder({
           {ribbonTab==='Advanced' && <PageBuilderAdvancedSections
             section={advancedEditor} onInspectorHost={setRibbonPropertyHost}
             assignment={{
-              enabled:page.pageType!=='App Page',
+              enabled:page.pageType==='Record Page'||page.pageType==='Home Page',
               assigned:(page.activationAssignments??[]).length>0,
-              isDefault:page.pageType==='Record Page'?recordScope==='Org Default':homeScope==='App Default',
-              onDefault:value=>{
-                if(page.pageType==='Record Page')setRecordScope(value?'Org Default':'App Default');
-                else setHomeScope(value?'App Default':'App and Profile');
-              },
-              onAdd:()=>page.pageType==='Record Page'?addRecordAssignment():addHomeAssignment()
+              isDefault:(page.activationAssignments??[]).some(item=>item.scope===
+                (page.pageType==='Record Page'?'Org Default':'App Default')),
+              onAdd:()=>setPageDetailsApi(page.apiName)
             }}
             responsive={{
               desktop:(page.pageType==='Record Page'?recordFormFactors:homeFormFactors).includes('Desktop'),
