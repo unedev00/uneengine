@@ -754,7 +754,8 @@ function SetupApp({ onLogout, entryTiming }: { onLogout: () => void; entryTiming
     }
     if (item === 'Named Devices') {
       if (!readableRecordObjects.some((object) => object.apiName === 'NamedDevice__c')) {
-        setSetupAccessNotice('Named Devices requires Read access in your Profile or Permission Set. Ask your administrator to grant access to the Named Device object, then reopen Named Devices.');
+        setSetupAccessNotice('');
+        navigateRoute({kind:'setup',workspace:'named-credentials',resourceApiName:'NamedDevices'});
         return;
       }
       navigateRoute({ kind: 'record-list', objectApiName: 'NamedDevice__c' });
