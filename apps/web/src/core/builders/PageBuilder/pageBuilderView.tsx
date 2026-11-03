@@ -3055,6 +3055,7 @@ function PageBuilder({
         <header className="page-manager-header"><div><h1>{recordPageContext ? 'Record Page Editor' : 'Page Builder'}</h1><p>{recordPageContext ? 'Object-owned record pages: view, edit, activate and publish device layouts.' : 'Manage Home and App Pages. Record Pages are managed inside Object Manager.'}</p></div>
           <div className="page-manager-header-actions">
             <button className="btn btn-brand" type="button" onClick={openCreatePage}><Plus size={16}/> New Page</button>
+            <button className="btn" type="button" disabled={saving} onClick={()=>setInventoryUploadOpen(true)}><Upload size={16}/> Upload CSV</button>
           </div></header>
         {!recordPageContext && <PageManagerTabs
           type={pageListTypeTab} app={pageListAppTab} apps={pageAppTabs}
@@ -3076,6 +3077,9 @@ function PageBuilder({
               <button className="page-manager-icon-action" type="button" disabled={saving}
                 aria-label={'Edit page properties for '+item.label} title="Edit page properties"
                 onClick={()=>setPageDetailsApi(item.apiName)}><Pencil size={16}/></button>
+              <button className="page-manager-icon-action" type="button" disabled={Boolean(inventoryDownloading)}
+                aria-label={'Download component inventory for '+item.label} title="Download component inventory CSV"
+                onClick={()=>void downloadPageInventory(item)}><Download size={16}/></button>
               <button className="page-manager-icon-action" type="button"
                 aria-label={'Design '+item.label} title="Open page designer"
                 onClick={()=>selectSavedPage(item.apiName)}><PanelsTopLeft size={16}/></button>
