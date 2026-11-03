@@ -471,7 +471,7 @@ export type LightningPageMetadata = {
   customTargetMinWidth?: number;
   customTargetMaxWidth?: number;
   status: 'Draft' | 'Active';
-  devices: Array<'Desktop' | 'Phone'>;
+  devices: Array<'Desktop' | 'Tablet' | 'Phone' | 'Custom'>;
   components: PageComponentMetadata[];
   activationAssignments?: PageActivationAssignmentMetadata[];
 };
