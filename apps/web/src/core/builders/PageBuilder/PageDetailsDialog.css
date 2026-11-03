@@ -80,3 +80,18 @@
 .page-details-canvas-component>small{display:block;font-size:9px;overflow:hidden;text-overflow:ellipsis;
   white-space:nowrap;opacity:.7}
 .page-details-canvas-component.is-hidden{opacity:.38;border-style:dashed}
+
+/* Page-level activation belongs to Edit Page, not a per-component ribbon slot. */
+.page-details-assignment-editor{display:grid;gap:12px}
+.page-details-assignment-row,.page-details-assignment-new{
+ display:grid;gap:8px;border:1px solid #d7e3f2;border-radius:8px;
+ background:#fff;padding:10px;min-width:0
+}
+.page-details-assignment-row strong{font-size:12px;color:#28476b}
+.page-details-assignment-row>.btn{justify-self:start}
+.page-details-assignment-new>.btn{justify-self:start}
+.page-details-assignment-devices{display:flex;flex-wrap:wrap;gap:8px 13px}
+.page-details-assignment-devices label{display:inline-flex;align-items:center;gap:4px;
+ font-size:12px;color:#355579}
+.page-details-assignment-editor .form-label{margin:0}
+.page-details-assignment-editor .page-details-error{margin:0}
