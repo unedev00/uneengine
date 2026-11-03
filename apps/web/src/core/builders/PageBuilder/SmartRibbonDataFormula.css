@@ -9,49 +9,57 @@
   min-width:max-content;height:114px;min-height:114px;overflow:visible;
 }
 .office-builder-ribbon #page-builder-tab-content .smart-data-formula-bar{
-  box-sizing:border-box;display:flex;flex:0 0 34px;align-items:center;gap:0;
-  width:100%;height:34px;padding:2px 7px 3px;
+  box-sizing:border-box;display:flex;flex:0 0 34px;align-items:center;gap:4px;
+  width:100%;min-width:854px;height:34px;padding:4px 7px;
   border-bottom:1px solid #e0e7f0;
 }
 .office-builder-ribbon #page-builder-tab-content .smart-data-filter-button,
 .office-builder-ribbon #page-builder-tab-content .smart-data-image-upload{
   box-sizing:border-box;position:relative;display:inline-flex;align-items:center;justify-content:center;
-  flex:0 0 34px;width:34px;height:28px;padding:0;
+  flex:0 0 40px;width:40px;height:26px;min-height:26px;max-height:26px;padding:0;
   border:1px solid #b6c7de;border-radius:5px;background:#fff;color:#235a99;cursor:pointer;
 }
 .office-builder-ribbon #page-builder-tab-content .smart-data-filter-button:not(:disabled):hover{
   border-color:#2874d2;background:#eaf3ff;
 }
-.office-builder-ribbon #page-builder-tab-content .smart-data-filter-button:disabled{
+.office-builder-ribbon #page-builder-tab-content :is(.smart-data-filter-button,.smart-data-image-upload):disabled{
   opacity:.46;cursor:not-allowed;background:#f0f2f6;
+}
+.office-builder-ribbon #page-builder-tab-content .smart-data-image-upload{
+  flex:0 0 35px;width:35px;min-width:35px;max-width:35px;
+  height:26px;min-height:26px;max-height:26px;margin-left:0;
 }
 .office-builder-ribbon #page-builder-tab-content .smart-data-fx-prefix{
   box-sizing:border-box;display:flex;align-items:center;justify-content:center;
-  flex:0 0 40px;height:28px;margin-left:3px;
+  flex:0 0 34px;width:34px;height:26px;min-height:26px;max-height:26px;margin-left:0;
   border:1px solid #b6c7de;border-radius:5px 0 0 5px;
   background:#f5f7fa;color:#667487;font:italic 600 19px Georgia,serif;
 }
 .office-builder-ribbon #page-builder-tab-content .smart-data-formula-input{
-  display:flex;flex:1 1 0;min-width:140px;height:28px;
+  box-sizing:border-box;display:flex;flex:0 0 600px;width:600px;min-width:600px;max-width:600px;
+  height:26px;min-height:26px;max-height:26px;
 }
 .office-builder-ribbon #page-builder-tab-content .smart-data-formula-input>.smart-formula{
-  box-sizing:border-box;flex:1 1 auto;width:100%;min-width:0;height:28px;
+  box-sizing:border-box;flex:1 1 auto;width:100%;min-width:0;height:26px;min-height:26px;max-height:26px;
   border:1px solid #b7c9e0;border-left:0;border-radius:0 5px 5px 0;background:#fff;
 }
 .office-builder-ribbon #page-builder-tab-content .smart-data-formula-input>.smart-formula :is(input,.smart-formula-highlight){
-  box-sizing:border-box;width:100%;height:100%;padding:2px 10px;font:12px/23px Consolas,monospace;
+  box-sizing:border-box;width:100%;height:100%;padding:2px 10px;font:12px/20px Consolas,monospace;
 }
 .office-builder-ribbon #page-builder-tab-content .smart-data-formula-input>input{
-  box-sizing:border-box;width:100%;height:28px;min-width:0;padding:0 10px;
+  box-sizing:border-box;width:100%;height:26px;min-height:26px;max-height:26px;min-width:0;padding:0 10px;
   border:1px solid #becbdc;border-left:0;border-radius:0 5px 5px 0;
   color:#8895a6;background:#f2f4f8;
 }
 .office-builder-ribbon #page-builder-tab-content .smart-data-summary-name{
-  box-sizing:border-box;width:115px;height:28px;min-width:115px;margin-left:6px;
+  box-sizing:border-box;flex:0 0 115px;width:115px;min-width:115px;max-width:115px;
+  height:26px;min-height:26px;max-height:26px;margin-left:0;
   padding:0 5px;border:1px solid #b6c7de;border-radius:5px;
   font:11px "Segoe UI",sans-serif;
 }
-.office-builder-ribbon #page-builder-tab-content .smart-data-image-upload{margin-left:6px}
+.office-builder-ribbon #page-builder-tab-content .smart-data-summary-name:disabled{
+  background:#f0f2f6;color:#8795a7;cursor:not-allowed;
+}
 .office-builder-ribbon #page-builder-tab-content .smart-data-sections{
   box-sizing:border-box;display:flex;flex:1 0 auto;flex-flow:row nowrap;
   align-items:stretch;min-width:max-content;height:80px;
