@@ -77,6 +77,17 @@ export default function SmartCart({p,records,Picture,expression,fieldAllowed,fir
   Discount:money(summarySource(p.discountValue,'discountValue')),
   Tax:money(summarySource(p.taxValue,'taxValue')),
   Total:money(summarySource(p.totalValue,'totalValue'))};
+ // Design 2 nested action styling. Unset values never alter legacy Cart buttons.
+ const buttonStyle=prefix=>{
+  const shape=p[prefix+"ShapeId"];
+  const radius=shape==="shape:rectangle"?0:shape==="shape:oval"?999:
+    p[prefix+"Radius"]!==undefined?n(p[prefix+"Radius"],5,0,1200):undefined;
+  return {backgroundColor:p[prefix+"BackgroundColor"]||undefined,
+   borderColor:p[prefix+"BorderColor"]||undefined,
+   borderRadius:radius,
+   height:p[prefix+"Height"]!==undefined?n(p[prefix+"Height"],26,0,1200):undefined,
+   width:p[prefix+"Width"]!==undefined?n(p[prefix+"Width"],24,0,1200):undefined};
+ };
  const rowHeight=n(p.rowHeight,64,24);
  const rowLimit=Math.floor(n(p.cardsPerRow,5,1,50));
  const visible=Array.isArray(p.columnVisibility)
@@ -106,12 +117,12 @@ export default function SmartCart({p,records,Picture,expression,fieldAllowed,fir
   if(!numeric)return <span className="smart-cart-qty-value">{display(computed)}</span>;
   return <div className="smart-cart-qty-controls" aria-label={"Quantity controls for "+String(name||"Product")}>
    {showDecrease&&<button type="button" className="smart-cart-qty-button"
-    aria-label={"Decrease quantity for "+String(name||"Product")}
+    style={buttonStyle("cartButton3")} aria-label={"Decrease quantity for "+String(name||"Product")}
     disabled={demo||!canDecrease||payload.recordId===null||quantity===null||quantity<=0}
     onClick={()=>fire?.(actions.qtyDecrease?'qtyDecrease':'qtyIcon',{...payload,delta:-1,operation:"decrement",fieldApiName:fieldName,quantity:Number(payload.record?.[fieldName]??quantity)})}>−</button>}
    <span className="smart-cart-qty-value" aria-label={quantity===null?"Quantity not bound":"Quantity "+quantity}>{display(computed)}</span>
    {showIncrease&&<button type="button" className="smart-cart-qty-button"
-    aria-label={"Increase quantity for "+String(name||"Product")}
+    style={buttonStyle("cartButton2")} aria-label={"Increase quantity for "+String(name||"Product")}
     disabled={demo||!canIncrease||payload.recordId===null||quantity===null}
     onClick={()=>fire?.(actions.qtyIncrease?'qtyIncrease':'qtyIcon',{...payload,delta:1,operation:"increment",fieldApiName:fieldName,quantity:Number(payload.record?.[fieldName]??quantity)})}>+</button>}
   </div>;
@@ -122,11 +133,14 @@ export default function SmartCart({p,records,Picture,expression,fieldAllowed,fir
   <header className="smart-cart-header" style={{
    backgroundColor:p.headerBodyColor??"#255d9d",
    height:n(p.headerBoxHeight,52,24),minHeight:n(p.headerBoxHeight,52,24),
+   width:p.headerWidth!==undefined?n(p.headerWidth,0,0,1200):undefined,
    border:border(p.headerBorderColor),textAlign:align(p.headerAlignment),
     fontSize:n(p.headerTextSize,18,8,96),
    fontWeight:p.headerBold===false?400:700,color:p.headerTextColor||"#fff"}}>{p.label||"Smart Cart"}</header>
   <div className="smart-cart-supporting" style={{
    height:n(p.supportingBoxHeight,36,18),minHeight:n(p.supportingBoxHeight,36,18),
+   width:p.supportingWidth!==undefined?n(p.supportingWidth,0,0,1200):undefined,
+   borderRadius:p.supportingRadius!==undefined?n(p.supportingRadius,0,0,1200):undefined,
    backgroundColor:p.supportingBackgroundColor??undefined,
    fontSize:n(p.supportingTextSize,13,8,96),
    border:border(p.supportingBorderColor),textAlign:align(p.supportingAlignment),
@@ -165,6 +179,8 @@ export default function SmartCart({p,records,Picture,expression,fieldAllowed,fir
          if(event.key==="Enter"||event.key===" "){event.preventDefault();selectRow();}
         }} style={{
         minHeight:rowHeight,border:border(p.rowBorderColor),
+        width:p.rowWidth!==undefined?n(p.rowWidth,0,0,1200):undefined,
+        backgroundColor:selected?undefined:p.rowBackgroundColor||undefined,
         borderRadius:n(p.rowRadius,4),color:p.rowLabelColor||"#263b56",
          fontSize:n(p.rowTextSize,13,8,96),
          fontWeight:p.rowBold===true?700:undefined,
@@ -192,6 +208,7 @@ export default function SmartCart({p,records,Picture,expression,fieldAllowed,fir
          aria-label={"Actions for "+String(name||"selected item")}>
          {expandedActions.map(action=><button type="button" key={action.key}
           className="smart-cart-custom-action"
+          style={buttonStyle(action.key==="customButton1"?"cartButton4":"cartButton5")}
           disabled={demo||!actions[action.key]||itemId===null}
           aria-label={action.label}
           onClick={()=>fire?.(action.key,{...payload,selectedRowIndex:i})}>
@@ -216,6 +233,10 @@ export default function SmartCart({p,records,Picture,expression,fieldAllowed,fir
     <span>{summaryLabels[label]}</span><span aria-label={summaryAmounts[label]===null?summaryLabels[label]+" not bound":undefined}>{summaryAmounts[label]??"—"}</span></div>)}
    <div className="smart-cart-summary-line smart-cart-total" style={{
     fontSize:n(p.summary2TextSize,18,8,96),fontWeight:p.summary2TextWeight===false?400:700,
+    backgroundColor:p.footerBackgroundColor||undefined,
+    border:p.footerBorderColor?border(p.footerBorderColor):undefined,
+    height:p.footerHeight!==undefined?n(p.footerHeight,0,0,1200):undefined,
+    width:p.footerWidth!==undefined?n(p.footerWidth,0,0,1200):undefined,
     textAlign:p.summary2Alignment?align(p.summary2Alignment):undefined,
     justifyContent:summaryJustify(p.summary2Alignment),
     color:p.summary2TextColor||"#1c3558"}}>
