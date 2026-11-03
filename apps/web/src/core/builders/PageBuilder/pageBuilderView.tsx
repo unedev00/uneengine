@@ -1067,9 +1067,10 @@ function PageBuilder({
       .catch(error => {if(active)onNotify(error instanceof Error?error.message:'Unable to load page draft');});
     return ()=>{active=false;};
   },[editorMode,page.apiName,initialLayoutVariant]);
-  const switchLayoutVariant=async(variant:'Mobile'|'Desktop'|'Tablet'|'Custom')=>{
-    if((page.layoutVariant??'Desktop')===variant||switchingLayout)return;
-    if(undoStack.length&&!window.confirm('Discard unsaved edits on this layout? Save before switching.'))return;
+  const switchLayoutVariant=async(variant:'Mobile'|'Desktop'|'Tablet'|'Custom'):Promise<boolean>=>{
+    if((page.layoutVariant??'Desktop')===variant)return true;
+    if(switchingLayout)return false;
+    if(undoStack.length&&!window.confirm('Discard unsaved edits on this layout? Save before switching.'))return false;
     setSwitchingLayout(true);
     try {
       const {page:layout}=await request<{page:LightningPageMetadata}>(
@@ -1081,8 +1082,26 @@ function PageBuilder({
       setSelectionIds(layout.components[0]?[layout.components[0].id]:[]);
       setUndoStack([]);setRedoStack([]);setSelectionUndoStack([]);setSelectionRedoStack([]);
       setSavedFeedback(false);setShowLayoutHistory(false);setFitCanvas(true);
-    }catch(error){onNotify(error instanceof Error?error.message:'Unable to change layout');}
+      return true;
+    }catch(error){onNotify(error instanceof Error?error.message:'Unable to change layout');return false;}
     finally{setSwitchingLayout(false);}
+  };
+  /** Open selected device drafts from Page Details with the guarded shared editor. */
+  const openPageDesignLayout=async(apiName:string,variant:PageLayoutVariant):Promise<boolean>=>{
+    if(editorMode&&page.apiName===apiName)return switchLayoutVariant(variant);
+    if(!confirmDiscardPageChanges())return false;
+    try{
+      const {page:layout}=await request<{page:LightningPageMetadata}>(
+        `/metadata/pages/${encodeURIComponent(apiName)}/layouts/${variant}/editor`);
+      savedPageApiName.current=apiName;
+      onSelectPage(apiName);
+      onChange(layout);
+      onLayoutVariantChange?.(variant);
+      return true;
+    }catch(error){
+      onNotify(error instanceof Error?error.message:'Unable to open the chosen page layout');
+      return false;
+    }
   };
   const loadLayoutHistory=async()=>{
     try{
@@ -2789,12 +2808,6 @@ function PageBuilder({
       case 'backIcon':return <button type="button" title="Back to pages" aria-label="Back to pages"
         onClick={safeBackToPages}><ArrowLeft size={21}/></button>;
       
-      case 'deviceLayout':return <select aria-label="Choose page layout" value={page.layoutVariant??'Desktop'}
-        disabled={switchingLayout||saving}
-        onChange={e=>void switchLayoutVariant(e.target.value as 'Desktop'|'Tablet'|'Mobile'|'Custom')}>
-        {(['Desktop','Tablet','Mobile','Custom'] as const).map(v=><option key={v}>{v}</option>)}
-      </select>;
-      
       case 'canvasWidth':return <input aria-label="Page width" type="number" min={320} max={10000}
         disabled={page.layoutVariant!=='Custom'} value={page.canvasWidth}
         onChange={e=>{const n=Number(e.target.value);if(Number.isInteger(n)&&n>=320&&n<=10000)applyPage({...page,canvasWidth:n});}}/>;
@@ -3150,7 +3163,7 @@ function PageBuilder({
               status:current.status==='Active'&&!activationAssignments.length?'Draft':current.status},
               source.apiName,'Page activation assignments saved to the draft');
           }}
-          onOpenDesign={selectSavedPage} onReload={onChange}/>:null;
+          onOpenDesign={openPageDesignLayout} onReload={onChange}/>:null;
       })()}
       {editorMode && <>
       <section className={`office-builder-ribbon ${previewMode ? 'is-interactive-preview' : ''}`} aria-label="Page Builder ribbon">
@@ -3275,17 +3288,13 @@ function PageBuilder({
           {ribbonTab==='Component Layout' && ribbonCatalog && (()=>{
             const pageRows=ribbonCatalog.properties.filter(row=>row.tab==='Home'&&
               ['Page','Device','Canvas','Version'].includes(row.group)&&
-              !['pageName','canvasMode','selectVersion','restoreVersion'].includes(row.id));
+              !['pageName','deviceLayout','canvasMode','selectVersion','restoreVersion'].includes(row.id));
             const groups=[...new Set(pageRows.map(row=>row.group))];
             return <div className="office-ribbon-page-layout-groups" aria-label="Page and canvas settings">
               {groups.map(group=><div key={group} className="office-ribbon-group une-sql-home-group"
                 data-shared-group={group}>
                 <div className="office-ribbon-stack">
-                  {group==='Page'?<>
-                  <label data-ribbon-property="deviceLayout" className="une-sql-home-control une-ribbon-page-layout">
-                    <span>Layout</span>{homeValue('deviceLayout')}
-                  </label>
-                </>:group==='Canvas'?<>
+                  {group==='Canvas'?<>
                   <label data-ribbon-property="canvasWidth" className="une-sql-home-control une-ribbon-size-with-icon"
                     title="Canvas Width"><span className="une-ribbon-embedded-icon"><MoveHorizontal size={17}/></span>
                     {homeValue('canvasWidth')}</label>
@@ -3357,10 +3366,7 @@ function PageBuilder({
                 updateComponent(selected.id,{properties:{...selected.properties,layoutContainer:value}});
               }
             }}
-            technical={{
-              id:selected?.id??'',
-              renderMode:selected?'Page Runtime':''
-            }}/>}
+            technical={{id:selected?.id??''}}/>}
 
           {ribbonTab==='Add Block' && <SmartInsertRibbon
             items={paletteComponents}
