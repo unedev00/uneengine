@@ -223,7 +223,7 @@ test('catalogue export has the same property IDs and row counts for the same typ
  assert.match(first,/CODEXTILL,smart_cart,smartcart1,format\.fontSize,13,Design/);
  assert.doesNotMatch(first,/component\.label|navigatorName/);
  assert.doesNotMatch(second,/internalUnregistered/);
- assert.equal(first.split('\r\n')[0],'pageapi,component_name,component_property,value,ribbon_tab');
+ assert.equal(first.split('\r\n')[0],'pageapi,component_type,component_name,propertyid,value,ribbon_tab');
 });
 
 test('six-column export reimports without storing defaults or changing the draft',()=>{
