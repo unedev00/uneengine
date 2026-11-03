@@ -52,7 +52,8 @@ test('original Design is not changed or replaced',()=>{
  assert.match(builder,/'Component Properties': 'Design'/);
  assert.match(builder,/'Component Design 2': 'Design 2'/);
  assert.match(builder,/\['Add Block','Component Data','Component Properties',\s*'Component Design 2'/);
- assert.match(shared,/tab==='Design2'\?design2Properties:definitions\.filter\(p=>p\.tab===tab\)/);
+ assert.match(shared,/const visible=definitions\.filter\(p=>p\.tab===tab\)/);
+ assert.match(shared,/const contextualVisible=tab==='Design2'\?design2Properties:visible/);
  assert.match(sql,/m\.label,'Design2','Contextual'/);
  assert.doesNotMatch(sql,/SET\s+tab\s*=\s*'Design'/i);
  assert.doesNotMatch(sql,/DELETE FROM md_builder_shared_properties/i);
