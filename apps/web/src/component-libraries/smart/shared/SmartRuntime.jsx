@@ -5,15 +5,15 @@ import {evaluateFieldExpression} from "../../shared/FieldExpression.js";
 import {useTenantImageSource} from "../../shared/TenantImage.jsx";
 const number=(v,f,min=0,max=2000)=>Number.isFinite(Number(v))?Math.max(min,Math.min(max,Number(v))):f;
 const text=(v)=>v===null||v===undefined?"":String(v);
-const expression=(v,record,pageState,objectApiName,collectionSources,namedCollections,collectionRows)=>{
+const expression=(v,record,pageState,objectApiName,collectionSources,namedCollections,collectionRows,sessionId)=>{
  if(typeof v!=="string")return text(v);
  // The common bounded evaluator resolves authorised row-specific relationship
  // values via __mentionValues without turning numbers into quoted strings or
  // replacing @mentions inside quoted literals.
  if(/^(?:https:\/\/|asset:)/i.test(v.trim()))return v;
- if(!/^\s*=/.test(v)&&!/@[A-Za-z]/.test(v)&&!/^\s*"/.test(v)&&
+ if(!/^\s*=/.test(v)&&!/@[A-Za-z]/.test(v)&&!/\$(?:state\.|session\b)/.test(v)&&!/^\s*"/.test(v)&&
    !/^\s*-?(?:\d+(?:\.\d*)?|\.\d+)\s*[+\-*/&]/.test(v))return v;
- try{return text(evaluateFieldExpression(v,record||{},{namedCollectionSelections:pageState?.collectionSelections,rootObjectApiName:objectApiName,collectionSources,namedCollections,collectionRows}));}catch{return "";}
+ try{return text(evaluateFieldExpression(v,record||{},{namedCollectionSelections:pageState?.collectionSelections,rootObjectApiName:objectApiName,collectionSources,namedCollections,collectionRows,pageState,sessionId}));}catch{return "";}
 };
 function SmartPicture({src,alt,loadAsset,style}){
  const source=useTenantImageSource(src,loadAsset);
@@ -37,7 +37,7 @@ const scopedExpression=(p,key,source,record)=>fieldAllows(p,key,record)
     ?text(p.kind==="smart_card_grid"&&record.__collectionManual===false
       &&typeof record.Name==="string"&&record.Name.trim()
       ?record.Name:record.__collectionLabel??record.Name??"")
-    :expression(source,record,p.pageState,p.objectApiName,p.formulaCollectionSources,p.namedCollections)):"";
+    :expression(source,record,p.pageState,p.objectApiName,p.formulaCollectionSources,p.namedCollections,undefined,p.sessionId)):"";
 const recordOf=p=>p.objectApiName&&Array.isArray(p.records)
  ?(p.records[0]??{}):p.record&&typeof p.record==="object"&&!Array.isArray(p.record)?p.record:
  Array.isArray(p.records)&&p.records.length?p.records[0]:Array.isArray(p.items)&&p.items.length?p.items[0]:{};
@@ -59,7 +59,7 @@ const boundImage=(p,record)=>{
   const source=p.imageSource??p.src??'';
  const key=typeof source==='string'?source.replace(/^@/,''):'';
  if(key && record && Object.prototype.hasOwnProperty.call(record,key))return text(record[key]);
- return expression(source,record,p.pageState,p.objectApiName,p.formulaCollectionSources,p.namedCollections);
+ return expression(source,record,p.pageState,p.objectApiName,p.formulaCollectionSources,p.namedCollections,undefined,p.sessionId);
 };
 function SmartCard({p,record}){
  const image=boundImage(p,record);
@@ -427,7 +427,7 @@ export default function SmartRuntime(p){
   const pagination=p.recordPagination;
   const complete=!pagination||(pagination.offset===0&&pagination.total<=rows.length);
   return expression(formula,row,p.pageState,p.objectApiName,p.formulaCollectionSources,p.namedCollections,
-   complete&&rows.length<=200?rows:undefined);
+   complete&&rows.length<=200?rows:undefined,p.sessionId);
  }}
     fieldAllowed={(key,row)=>fieldAllows(p,key,row)} fire={fire}/>;
  else if(name==="smart_calendar")content=<SmartCalendar p={p} fire={fire}/>;
