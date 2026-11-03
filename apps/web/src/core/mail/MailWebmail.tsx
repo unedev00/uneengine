@@ -335,8 +335,8 @@ export default function MailWebmail(){
     </article>:
     filtered.length===0&&!busy&&!error?<div className="md-mail-empty">
      <div className="md-mail-empty-icon"><Inbox size={34}/></div>
-     <h2>{search?'No matching messages':'Nothing in '+currentName}</h2>
-     <p>{search?'Try another search. Only the 50 most recent messages in this folder are loaded.':'New messages will appear here when they arrive.'}</p>
+     <h2>{search?'No matching messages':currentName.toLowerCase()==='trash'?'Trash is empty':'Nothing in '+currentName}</h2>
+     <p>{search?'Try another search. Only the 50 most recent messages in this folder are loaded.':currentName.toLowerCase()==='trash'?'Deleted messages will appear here.':'New messages will appear here when they arrive.'}</p>
     </div>:
     <div className="md-mail-message-list" role="list">
      {filtered.map(m=><button key={m.id} type="button" role="listitem" className={'md-mail-message-row'+(m.seen?'':' is-unread')} onClick={()=>void openMessage(m)} disabled={busy} aria-label={'Open '+(m.subject||'no subject')+' from '+m.from}>
