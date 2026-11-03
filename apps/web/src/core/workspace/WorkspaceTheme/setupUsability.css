@@ -273,3 +273,27 @@
 .lightning .md-admin-tabstrip>button{min-height:32px;font-size:13px}
 .lightning .md-admin-tabstrip{scroll-margin-top:108px}
 .lightning .setup-layout{scrollbar-gutter:auto}
+
+
+/* Audited breadcrumb contrast and shared search controls across Records pages. */
+.lightning :is(.object-breadcrumb,.object-breadcrumb span,.object-breadcrumb button,
+ .record-breadcrumb,.record-breadcrumb a,.record-breadcrumb span,.tenant-breadcrumb){
+ color:var(--md-text-2,#575d66)
+}
+.lightning :is(.object-breadcrumb,.record-breadcrumb) a:hover,
+.lightning :is(.object-breadcrumb,.record-breadcrumb) button:hover{
+ color:var(--md-action-ink,#0054aa)
+}
+.lightning .workspace-records :is(.records-search,.record-search,.header-list-search input,
+ .records-search input,.records-search-input){
+ box-sizing:border-box;min-height:32px;max-width:100%;
+ font-size:13px;line-height:20px
+}
+.lightning .workspace-records :is(.records-search input,.record-search input){
+ padding-inline:8px
+}
+@media(pointer:coarse){
+ .lightning .workspace-records :is(.records-search,.record-search,.records-search input){
+  min-height:44px;font-size:16px
+ }
+}
