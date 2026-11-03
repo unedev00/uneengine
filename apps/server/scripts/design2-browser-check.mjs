@@ -49,7 +49,7 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  assert.equal(forbidden,403,'Design 2 catalog bypassed OneEngine PageDefinition RBAC');
 
  // A persisted page with two real smart components, not mocked React widgets.
- const pageName='BrowserDesign2';
+ const pageName='browserdesign2';
  const payload={
   apiName:pageName,label:'Design 2 Browser',targetObject:'',
   pageType:'App Page',layoutMode:'free-canvas',canvasWidth:1280,canvasHeight:900,
