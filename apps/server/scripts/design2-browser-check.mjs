@@ -11,13 +11,13 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  await db.query(migration);
  const listed=await db.query(`SELECT area,slot_key,property_key,row_no,order_no,width_px,height_px
    FROM md_builder_design2_slots ORDER BY area_order,row_no,order_no`);
- assert.equal(listed.rows.length,96,'Design 2 SQL slots missing or duplicated after replay');
- assert.equal(new Set(listed.rows.map(row=>row.area)).size,8,'Wrong Design 2 area count');
+ assert.equal(listed.rows.length,106,'Design 2 SQL slots missing or duplicated after replay');
+ assert.equal(new Set(listed.rows.map(row=>row.area)).size,10,'Wrong Design 2 area count');
  const slot=(area,key)=>listed.rows.find(row=>row.area===area&&row.slot_key===key);
  assert.equal(slot('Row','focused')?.property_key,'selectedRowColor');
  assert.equal(slot('Tabs','focused')?.property_key,'selectedTabColor');
  assert.equal(slot('Row','fill')?.property_key,null,'Row must inherit Table background');
- assert.equal(slot('Body','wrap')?.property_key,null,'Body Wrap Text must remain disabled');
+ assert.equal(slot('Body','wrap')?.property_key,'wrapText','Body Wrap Text must remain disabled');
  const definitions=await db.query(`SELECT property_key,tab FROM md_builder_shared_properties
    WHERE property_key IN ('backgroundColor','rowBold','summary2Alignment','tableBackgroundColor')`);
  assert.equal(definitions.rows.find(row=>row.property_key==='backgroundColor')?.tab,'Design',
@@ -37,7 +37,7 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
   return {status:response.status,body:await response.json()};
  },token);
  assert.equal(result.status,200,'OneEngine rejected authorised shared ribbon metadata');
- assert.equal(result.body.design2Slots?.length,96,'Builder endpoint did not expose Design 2 SQL metadata');
+ assert.equal(result.body.design2Slots?.length,106,'Builder endpoint did not expose Design 2 SQL metadata');
  // The catalog is SQL-backed but still protected by central OneEngine RBAC.
  const {AuthenticationService}=await import('../dist-system/system-files/authentication.js');
  const auth=new AuthenticationService(db);
