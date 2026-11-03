@@ -215,6 +215,15 @@ export default function SmartCart({p,records,Picture,expression,fieldAllowed,fir
      fontWeight:p.summaryTextWeight===true?700:400,color:p.summaryTextColor||"#52657d"}}>
     <span>{summaryLabels[label]}</span><span aria-label={summaryAmounts[label]===null?summaryLabels[label]+" not bound":undefined}>{summaryAmounts[label]??"—"}</span></div>)}
    <div className="smart-cart-summary-line smart-cart-total" style={{
+    background:p.footerShape&&p.footerShapeFill?p.footerShapeFill:p.footerBodyColor||undefined,
+    border:p.footerBorderColor?"1px solid "+p.footerBorderColor:undefined,
+    borderRadius:p.footerShape==="shape:oval"?999:
+      p.footerShape==="shape:rectangle"?0:
+      p.footerRadius===undefined?undefined:n(p.footerRadius,8,0,128),
+    minHeight:p.footerHeight===undefined?undefined:n(p.footerHeight,0,0,1200),
+    width:p.footerWidth===undefined?undefined:n(p.footerWidth,0,0,1200),
+    maxWidth:"100%",
+    whiteSpace:p.footerWrapText===false?"nowrap":p.footerWrapText===true?"pre-wrap":undefined,
     fontSize:n(p.summary2TextSize,18,8,96),fontWeight:p.summary2TextWeight===false?400:700,
     textAlign:p.summary2Alignment?align(p.summary2Alignment):undefined,
     justifyContent:summaryJustify(p.summary2Alignment),
