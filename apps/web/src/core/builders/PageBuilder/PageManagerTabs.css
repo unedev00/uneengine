@@ -65,3 +65,10 @@
     margin-left: 0;
   }
 }
+
+
+/* Page type and application filters have distinct visible hierarchy. */
+.page-manager-tab-level{display:flex;align-items:center;gap:8px;min-width:0;max-width:100%}
+.page-manager-filter-label{flex:0 0 auto;min-width:84px;font-size:13px;font-weight:600;color:var(--md-text-secondary,#475569)}
+.page-manager-tab-level>.md-admin-tabstrip{min-width:0}
+@media(max-width:640px){.page-manager-tab-level{flex-wrap:wrap}.page-manager-filter-label{width:100%}}
