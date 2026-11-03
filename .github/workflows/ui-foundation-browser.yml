@@ -6,6 +6,7 @@ on:
     paths:
       - 'apps/web/**'
       - 'scripts/setup-ux-browser-smoke.mjs'
+      - 'scripts/all-apps-ui-100pct-audit.mjs'
       - '.github/workflows/ui-foundation-browser.yml'
       - 'package.json'
       - 'package-lock.json'
@@ -59,6 +60,18 @@ jobs:
         env:
           PHASE1_SCREENSHOT_DIR: artifacts/phase1-ui
         run: node scripts/setup-ux-browser-smoke.mjs
+      - name: Audit every available React fixture at native 100% browser zoom
+        if: always()
+        env:
+          ALL_APPS_UI_AUDIT_DIR: artifacts/all-apps-ui
+        run: node scripts/all-apps-ui-100pct-audit.mjs
+      - name: Upload source-backed 100 percent zoom UI audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: all-apps-100pct-visual-audit
+          path: artifacts/all-apps-ui/
+          if-no-files-found: error
       - name: Upload before-review responsive evidence
         if: always()
         uses: actions/upload-artifact@v4

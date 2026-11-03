@@ -206,11 +206,14 @@ try{
  }else if(process.env.METADRIVE_BROWSER_TARGET==='relationship-integrity'){
   const {runRelationshipGraphBrowserCheck}=await import('./relationship-graph-browser-check.mjs');
   await runRelationshipGraphBrowserCheck({page,origin,db,tenantId,token:tokens.accessToken});
+ }else if(process.env.METADRIVE_BROWSER_TARGET==='ui-route-audit'){
+  const {auditAuthenticatedCoreRoutes}=await import('./authenticated-core-100pct-audit.mjs');
+  await auditAuthenticatedCoreRoutes({page,origin,caseId});
  }else{
  await page.goto(origin+'/une/setup/flow-builder',{waitUntil:'domcontentloaded'});
  await page.getByText('Existing flows',{exact:true}).waitFor({state:'visible',timeout:20000});
  await page.screenshot({path:new URL('../artifacts/flow-builder.png',import.meta.url).pathname});
- await page.getByRole('heading',{name:'Create a flow',exact:true}).waitFor({timeout:30000});
+ await page.getByRole('button',{name:'New Flow',exact:true}).waitFor({timeout:30000});
  const title=await page.title();
  assert.ok(title.length>0,'UI document failed to mount');
  const status=await page.evaluate(async ({token})=>{
@@ -771,7 +774,7 @@ try{
  // Flow Builder's actual list screen was captured at the initial visit.
  // Avoid reopening a lazy route solely for an extra screenshot.
  await page.goto(origin+'/une/setup/flow-builder',{waitUntil:'domcontentloaded'});
- await page.getByRole('heading',{name:'Create a flow',exact:true}).waitFor({timeout:30000});
+ await page.getByRole('button',{name:'New Flow',exact:true}).waitFor({timeout:30000});
  await page.screenshot({path:new URL('../artifacts/flow-builder.png',import.meta.url).pathname});
  // Exercise the actual permission-editor Save button, refresh and SQL round-trip.
  await page.goto(origin+'/une/setup/rbac',{waitUntil:'domcontentloaded'});

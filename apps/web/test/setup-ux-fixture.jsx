@@ -6,6 +6,9 @@ import DashboardBuilder from '../src/core/builders/DashboardBuilder/DashboardBui
 import SchemaBuilder from '../src/core/builders/SchemaBuilder/SchemaBuilder';
 import AceKiosk from '../../acekiosk/src/AceKiosk';
 import AcetillTerminal from '../../acetill/src/AcetillTerminal';
+import AceChatterRuntime from '../../acechatter/src/AceChatterRuntime';
+import {AceAssistDashboard} from '../../aceassist/src/AceAssistDashboard';
+import '../../aceassist/src/aceassist.css';
 import UiItemGrid from '../src/component-libraries/ui_item_grid/UiItemGrid';
 import OneTenantImage from '../src/component-libraries/shared/TenantImage.jsx';
 import SmartRuntime from '../src/component-libraries/smart/shared/SmartRuntime.jsx';
@@ -25,6 +28,7 @@ import TenantSessionControls from '../src/core/settings/SettingsWorkspace/Tenant
 import TenantFederationControls from '../src/core/settings/SettingsWorkspace/TenantFederationControls';
 import CompanySettingsWorkspace from '../src/core/settings/CompanySettingsWorkspace/CompanySettingsWorkspace';
 import {createSettingsViews} from '../src/core/settings/SettingsWorkspace/settingsWorkspaceViews';
+import {createSetupHome} from '../src/core/settings/SetupHome/setupHomeView';
 import '../src/core/workspace/WorkspaceTheme/design-system.css';
 import '../src/core/workspace/WorkspaceTheme/styles.css';
 import '../src/core/workspace/WorkspaceTheme/appleTheme.css';
@@ -82,7 +86,8 @@ const directoryRequest=async(path,init)=>{
  return uxRequest(path,init);
 };
 const securityViews=createSettingsViews(uxRequest,()=>null);
-const credentials=[{id:'sample',name:'Sample_Credential',label:'Sample credential',baseUrl:'https://example.com/long/integration/path',authType:'Bearer',hasSecret:true,protocol:'HTTPS',enabled:true,updatedAt:'2026-10-28T09:00:00Z',configuration:{}}];
+const SetupHome=createSetupHome(({eyebrow,title,description,actions})=><div className="page-heading"><div><small>{eyebrow}</small><h1>{title}</h1><p>{description}</p></div>{actions}</div>);
+const credentials=[{id:'sample',name:'Sample_Credential',label:'Sample credential',baseUrl:'https://example.com/long/integration/path',authType:'Bearer',hasSecret:true,protocol:'HTTPS',enabled:true,updatedAt:'2026-10-28T09:00:00Z',configuration:{public_phone_id:'1381191201740465',public_graph_version:'26.0',public_waba_id:'1061066630092612'},webhookId:'webhook-sample',webhookEnabled:true,webhookCallbackUrl:'https://example.com/api/inbound-webhooks/webhook-sample'}];
 const mediaAsset='asset:123e4567-e89b-42d3-a456-426614174000';
 const mediaPixel='iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aI1sAAAAASUVORK5CYII=';
 function MediaStabilityFixture(){
@@ -170,9 +175,12 @@ function Fixture(){
    </div>;
  }
  if(view==='kiosk')return <AceKiosk onLogout={noop}/>;
+ if(view==='chatter')return <AceChatterRuntime onLogout={noop}/>;
+ if(view==='assist-home')return <div className="lightning"><main className="workspace"><AceAssistDashboard appointments={[]} invoices={[{Id:'inv-1',Status:'Issued',Total:125,AmountPaid:0,CurrencyCode:'GBP'}]} customers={[]} actions={new Set(['AceAssistLoadAppointment','AceAssistLoadInvoice'])} timeZone="Europe/London" invoicesLoading={false} onOpen={noop} onCreate={noop} onCalendar={noop} onBilling={noop}/></main></div>;
  if(view==='till')return <AcetillTerminal/>;
  let content;
- if(view==='schema')content=<SchemaBuilder objects={[object,{...object,apiName:'Invoice',label:'Invoice',kind:'Custom Object'}]} selectedObjectApiName="Account" onOpenObject={noop} onOpenField={noop} onCreateObject={noop} onNewField={noop}/>;
+ if(view==='setup-home')content=<SetupHome onNavigate={noop} request={uxRequest} onShowShortcuts={noop}/>;
+ else if(view==='schema')content=<SchemaBuilder objects={[object,{...object,apiName:'Invoice',label:'Invoice',kind:'Custom Object'}]} selectedObjectApiName="Account" onOpenObject={noop} onOpenField={noop} onCreateObject={noop} onNewField={noop}/>;
  else if(view==='mfa')content=<TenantMfaControls request={uxRequest} canManage onReauthenticate={noop}/>;
   else if(view==='oauth')content=<TenantConnectedApps request={uxRequest}/>;
    else if(view==='oauth-directory')content=<TenantConnectedApps request={directoryRequest}/>;
@@ -192,7 +200,7 @@ function Fixture(){
  else if(view==='records-import')content=<RecordImportCheck/>;
  else if(view==='offline')content=<OfflineBriefcaseSettings request={request} permitted objects={[object]}/>;
  else if(view==='dashboard')content=<DashboardBuilder {...arrays} {...callbacks} userId="test" canCreate={params.get('allowed')==='true'} canManageAll={false} />;
- else if(view==='credentials')content=<NamedCredentials credentials={credentials} canManage encryptionReady onSave={noop} onDelete={noop}/>;
+ else if(view==='credentials'||view==='credentials-view'||view==='credentials-edit')content=<NamedCredentials credentials={credentials} canManage encryptionReady onTest={async()=>({connected:true,message:'Test available'})} onSave={noop} onDelete={noop}/>;
  else if(view==='flows')content=<FlowBuilder landing flow={defaultFlow} flows={[{...defaultFlow,apiName:'Long_Test_Flow',label:'A long automation name to verify the existing list remains readable',status:'Active'}]} libraryComponents={[]} objects={[]} users={[]} platformEvents={[]} namedCredentials={[]} emailAlerts={[]} connectorProviders={[]} integrationConnections={[]} approvalProcesses={[]} validation={{errors:[],warnings:[]}} onLoadCapabilities={async()=>({registryVersion:1,elements:[],flowTypes:[{type:'Screen Flow',description:'Guide users through a process',createEnabled:true,validateEnabled:true}]})} onLoadExternalServices={async()=>({services:[]})} onCreateFlow={(label,type)=>{window.createdFlow={label,type};}} />;
  else content=<FlowLogs logs={[{id:'run-id-with-a-very-long-identifier',flowLabel:'A long running automation with diagnostic details',flowApiName:'Long_Flow',status:'completed',flowType:'Record-Triggered Flow',startedAt:'2026-10-28T10:00:00Z',finishedAt:'2026-10-28T10:01:00Z',userId:'test-user'}]} loading={false} onOpenFlow={noop}/>;
  return <div className="lightning"><div className="setup-layout"><aside className="setup-sidebar"><button className="tree-item"><span>Tenant Management</span></button></aside><main className="workspace" style={{minWidth:0,padding:20}}>{content}</main></div></div>;

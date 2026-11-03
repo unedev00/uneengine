@@ -263,3 +263,19 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Named Credential desktop toolbar overflow repair, found by 100%-zoom browser audit. */
+@media (min-width: 900px) and (pointer: fine) {
+  .lightning .named-credentials-page .table-scroll > .slds-table {
+    min-width: 980px;
+  }
+  .lightning .named-credentials-page .slds-table :is(th,td):last-child {
+    width: 370px;
+    min-width: 370px;
+  }
+  .lightning .named-credentials-page .slds-table td:last-child .toolbar-actions {
+    flex-wrap: nowrap;
+    width: max-content;
+    min-width: max-content;
+  }
+}
