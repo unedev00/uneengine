@@ -12,14 +12,15 @@ const palette=read('../src/core/builders/PageBuilder/RibbonColorPalette.tsx');
 const matches=[...sql.matchAll(/\('([^']+)','([^']+)',(\d+),'([^']+)',([123]),([1-6]),(\d+),26,'([^']+)','([^']+)'\)/g)];
 const rows=matches.map(([,api,area,order,key,row,col,width,property,fallback])=>
  ({api,area,order:+order,key,row:+row,col:+col,width:+width,property,fallback}));
-test('Design 2 implements all 319 approved per-component positions without duplicates',()=>{
- assert.equal(rows.length,319);
+test('Design 2 implements all approved per-component positions including selected Tabs Focus Fill without duplicates',()=>{
+ assert.equal(rows.length,320);
  assert.equal(new Set(rows.map(x=>x.api)).size,13);
  assert.equal(new Set(rows.map(x=>x.api+'/'+x.area)).size,35);
- assert.equal(new Set(rows.map(x=>[x.api,x.area,x.row,x.col].join('/'))).size,319);
+ assert.equal(new Set(rows.map(x=>[x.api,x.area,x.row,x.col].join('/'))).size,320);
  assert.ok(rows.every(x=>x.width===40||x.width===80));
  assert.ok(rows.every(x=>x.row>=1&&x.row<=3));
  assert.ok(rows.some(x=>x.api==='smart_cart'&&x.area==='Button 5'));
+ assert.ok(rows.some(x=>x.api==='smart_tabs'&&x.key==='Focus Color'&&x.property==='selectedTabColor'));
  assert.ok(rows.some(x=>x.api==='smart_navigation'&&x.key==='Horizontal/Verical'));
 });
 test('Design 2 slots are isolated from original Design and enabled only with existing metadata',()=>{
