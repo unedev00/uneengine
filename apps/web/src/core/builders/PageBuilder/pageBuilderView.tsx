@@ -8,6 +8,9 @@ import './MobileBuilderReadMode.css';
 import CanvasFloatingActions from './CanvasFloatingActions';
 import CanvasFloatingResizeHandles from './CanvasFloatingResizeHandles';
 import {placeNewCanvasComponent,visibleCanvasBounds} from './canvasInsertPlacement';
+import {componentNamePattern,canonicalComponentName,componentNameStem,
+ componentInstanceNames,ensureComponentInstanceNames,nextComponentInstanceName}
+ from '../../../../../server/src/system-support/page-component-names';
 import {confirmDestructiveAction} from '../../components/ConfirmAction/confirmDestructiveAction';
 import './PageBuilderNoCode.css';
 import './SmartFormulaField.css';
@@ -1150,6 +1153,10 @@ function PageBuilder({
     onTargetObjectChange(apiName);
   };
   const applyPage = (nextPage: LightningPageMetadata) => {
+    // Assign stable, unique names to legacy and newly inserted components in the
+    // same normal metadata save path. UUID ids continue to identify runtime nodes.
+    try{nextPage={...nextPage,components:ensureComponentInstanceNames(nextPage.components)};}
+    catch(error){onNotify(error instanceof Error?error.message:'Duplicate component name');return;}
     if (JSON.stringify(page) === JSON.stringify(nextPage)) return;
     setUndoStack((current) => [...current.slice(-49), page]);
     setRedoStack([]);
@@ -1445,7 +1452,8 @@ function PageBuilder({
     return () => window.cancelAnimationFrame(frame);
   }, [page.components]);
 
-  const addComponent = (type: string, position = page.components.length, region: 'header' | 'main' | 'sidebar' = 'main', canvasPosition?: PageComponentMetadata['position'], parentId: string | null = null) => {
+  const componentNameHighWaterRef=useRef<Record<string,number>>({});
+  const addComponent = async (type: string, position = page.components.length, region: 'header' | 'main' | 'sidebar' = 'main', canvasPosition?: PageComponentMetadata['position'], parentId: string | null = null) => {
     const customApiName = type.startsWith('Custom:') ? type.slice('Custom:'.length) : '';
     const custom = findRegisteredComponent(libraryComponents, customApiName, 'page');
     const dynamicFormComponent = type === 'Field Section' && page.pageType === 'Record Page';
@@ -1453,6 +1461,22 @@ function PageBuilder({
       onNotify(`Enable the matching object feature before adding the ${type} component`);
       return;
     }
+    const stem=componentNameStem(type);
+    // SQL immutable versions retain deleted numbers. The draft revision guard
+    // prevents concurrent editors from silently overwriting another saved name.
+    let historical=0;
+    try{
+      const response=await request<{last:number}>(
+        `/metadata/pages/${encodeURIComponent(page.apiName)}/component-name-history?stem=${encodeURIComponent(stem)}`);
+      historical=Number.isSafeInteger(response.last)?response.last:0;
+    }catch(error){
+      onNotify(error instanceof Error?error.message:'Unable to allocate a component name');
+      return;
+    }
+    const allocated=nextComponentInstanceName(page.components,type,
+      Math.max(historical,componentNameHighWaterRef.current[stem]??0));
+    const parsed=Number(allocated.slice(stem.length));
+    componentNameHighWaterRef.current[stem]=Math.max(parsed,componentNameHighWaterRef.current[stem]??0);
     const id = `${type.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${crypto.randomUUID()}`;
     const components = [...page.components];
     const defaultWidth = Math.min(page.canvasWidth, custom?.resize?.defaultWidth ?? 320);
@@ -1478,16 +1502,16 @@ function PageBuilder({
     components.splice(Math.max(0, Math.min(position, components.length)), 0, {
       id, type, label: custom ? libraryComponentLabel(custom) : type,
       properties: custom
-        ? { libraryComponentId: custom.apiName,
+        ? { navigatorName:allocated,libraryComponentId: custom.apiName,
             ...(isUneBuilderApi(custom.apiName,ribbonCatalog?.components??[]) ?uneBuilderDefaults(custom.apiName,ribbonCatalog?.properties??[]):{}),
             ...Object.fromEntries((custom.propertyDefinitions??[]).filter(def=>Array.isArray(def.defaultValue)
               || (def.propertyKey==='layoutContainer'&&def.defaultValue===true))
               .map(def=>[def.propertyKey,Array.isArray(def.defaultValue)?[...def.defaultValue]:def.defaultValue])),
             ...(parentId ? { layoutParentId: parentId } : {}) }
         : type === 'Report Chart'
-          ? { reportApiName: '' }
+          ? { navigatorName:allocated,reportApiName: '' }
           : type === 'Dashboard'
-            ? { dashboardApiName: '' }
+            ? { navigatorName:allocated,dashboardApiName: '' }
           : type === 'Related List Quick Links'
             ? { relatedLists: defaultRelatedLists }
           : type === 'Rich Text'
@@ -1508,6 +1532,7 @@ function PageBuilder({
     });
     // Author a visible, editable border only for new components.
     const inserted = components.find(item => item.id === id)!;
+    inserted.properties={...inserted.properties,navigatorName:allocated};
     const authored = inserted.properties.visualStyle && typeof inserted.properties.visualStyle === 'object'
       && !Array.isArray(inserted.properties.visualStyle)
       ? inserted.properties.visualStyle as Record<string,unknown> : {};
@@ -3239,10 +3264,16 @@ function PageBuilder({
               onRename={(id,name)=>{
                 const component=page.components.find(item=>item.id===id);
                 if(!component)return;
-                const properties={...component.properties};
-                if(name)properties.navigatorName=name;
-                else delete properties.navigatorName;
-                updateComponent(id,{properties});
+                const proposed=name.trim();
+                if(!componentNamePattern.test(proposed)){
+                  onNotify('Component Name must start with a letter and contain only letters, numbers or underscores (max 80).');return;
+                }
+                const names=componentInstanceNames(page.components);
+                if([...names].some(([otherId,otherName])=>otherId!==id&&
+                  canonicalComponentName(otherName)===canonicalComponentName(proposed))){
+                  onNotify('Component Name already exists on this page layout.');return;
+                }
+                updateComponent(id,{properties:{...component.properties,navigatorName:proposed}});
               }}/>
             <span>Find</span>
           </div>}
@@ -3348,6 +3379,20 @@ function PageBuilder({
             }}
             properties={{
               selected:!!selected,apiName:selected?.type.startsWith('Custom:')?selected.type.slice(7):selected?.type??'',
+              instanceName:selected?componentInstanceNames(page.components).get(selected.id)??'':'',
+              onInstanceName:value=>{
+                if(!selected)return;
+                const name=value.trim();
+                if(!componentNamePattern.test(name)){
+                  onNotify('Component Name must start with a letter and use letters, numbers or underscores (max 80).');return;
+                }
+                const names=componentInstanceNames(page.components);
+                if([...names].some(([otherId,otherName])=>otherId!==selected.id&&
+                  canonicalComponentName(otherName)===canonicalComponentName(name))){
+                  onNotify('Component Name already exists on this page layout.');return;
+                }
+                updateComponent(selected.id,{properties:{...selected.properties,navigatorName:name}});
+              },
               visible:selected?.visible!==false,
               readOnly:selected?.properties.readOnlyOnLayout===true,
               canReadOnly:!!selected&&selected.type==='Record Field',
