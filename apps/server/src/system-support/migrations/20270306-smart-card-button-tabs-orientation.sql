@@ -8,7 +8,7 @@ spec(property_key,label,tab,section_group,control_kind,ordinal,default_json,choi
  ('cardButtonText','Button Text','Data','Card Grid','expression',3,NULL::text,'[]',2,1,144),
  ('cardButtonFill','Button Fill','Design','Button','color',4,NULL::text,'[]',1,1,40),
  ('cardButtonBorderColor','Button Border','Design','Button','color',5,NULL::text,'[]',1,2,40),
- ('cardButtonShape','Button Shape','Design','Button','choice',6,'"rounded"','["square","rounded","pill"]',2,1,108),
+ ('cardButtonShape','Button Shape','Design','Button','choice',6,'"shape:round-rectangle"','["shape:rectangle","shape:round-rectangle","shape:oval"]',2,1,94),
  ('cardButtonTextSize','Button Text Size','Design','Button','number',7,'14','[]',2,2,58),
  ('cardButtonTextColor','Button Font Color','Design','Button','color',8,NULL::text,'[]',3,1,40),
  ('tabOrientation','Orientation','Layout','Tabs','choice',9,'"horizontal"','["horizontal","vertical"]',2,2,116)
