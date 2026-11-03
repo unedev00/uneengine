@@ -53,3 +53,24 @@ test('Page Details dialog appears in Page Manager and editor, without changing A
  assert.match(shell,/setPage\(current=>current\.apiName===apiName/);
  assert.match(shell,/apiRequest<\{apps:LightningAppMetadata\[\]\}>\('\/metadata\/apps'\)/);
 });
+
+test('Page device flags are guarded SQL metadata, not component or canvas changes',()=>{
+ const api=read('../../src/api/PageDetailsController.ts');
+ const page=read('../../src/system-files/page-runtime.ts');
+ const dialog=read('../../../web/src/core/builders/PageBuilder/PageDetailsDialog.tsx');
+ const shell=read('../../../web/src/core/workspace/SetupShell/setupAppShell.tsx');
+ assert.match(api,/deviceChoices=\['Desktop','Tablet','Phone','Custom'\]/);
+ assert.match(api,/validDeviceList\(devices\)/);
+ assert.match(api,/new Set\(value\)\.size===value\.length/);
+ assert.match(api,/expectedDevices/);
+ assert.match(api,/Page device settings changed\. Reload before saving/);
+ assert.match(api,/SET devices=\$3::text\[\],updated_at=now\(\)/);
+ assert.match(api,/UPDATE md_lightning_page_activation SET/);
+ assert.match(api,/rbac\.require\(actor\.tenant_id,actor\.user_id,'PageDefinition','manage'\)/);
+ assert.match(api,/assertMetadataPackageEditable/);
+ assert.doesNotMatch(api,/DELETE FROM md_page_layout_versions/);
+ assert.match(page,/new Set\(p\.devices\)\.size!==p\.devices\.length/);
+ assert.match(dialog,/aria-label="Page enabled devices"/);
+ assert.match(dialog,/page\.devices\)/);
+ assert.match(shell,/devices:updated\.devices/);
+});
