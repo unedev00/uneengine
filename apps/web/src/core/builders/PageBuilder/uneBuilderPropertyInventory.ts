@@ -11,6 +11,7 @@ export type UneRibbonProperty={
  /** SQL-owned visual placement for the compact three-row Design and Shapes toolbars. */
  designRow?:number;designWidth?:number;designHeight?:number;designOrder?:number;
  designCaption?:string;designCaptionWidth?:number;designDisplay?:'buttons'|'dropdown';
+ design2SlotKey?:string;
  kind:RibbonControlKind;components:readonly string[];
  default?:string|number|boolean|readonly string[];
  min?:number;max?:number;choices?:readonly string[];field?:boolean;
