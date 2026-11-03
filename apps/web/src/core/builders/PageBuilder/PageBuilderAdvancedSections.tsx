@@ -89,8 +89,8 @@ export default function PageBuilderAdvancedSections({
           onChange={event=>{setComponentIdDraft(event.target.value);setComponentIdTouched(true);}}
           onBlur={commitComponentId}
           onKeyDown={event=>{
-            if(event.key==='Enter'){event.preventDefault();commitComponentId();event.currentTarget.blur();}
-            if(event.key==='Escape'){event.preventDefault();setComponentIdDraft(technical.id);setComponentIdTouched(false);event.currentTarget.blur();}
+            if(event.key==='Enter'){event.preventDefault();commitComponentId();}
+            if(event.key==='Escape'){event.preventDefault();setComponentIdDraft(technical.id);setComponentIdTouched(false);}
           }}/>
       </label>
       {idError&&componentIdTouched&&<span id="component-id-validation" role="alert"
