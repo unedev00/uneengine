@@ -65,7 +65,8 @@ test('View tab wires the navigator into existing selection, persisted rename and
   assert.match(view,/<PageComponentNavigator components=\{page.components\}/);
   assert.match(view,/setSelectedId\(id\);setSelectionIds\(\[id\]\)/);
   assert.match(view,/scrollIntoView\(\{block:'nearest'/);
-  assert.match(view,/properties.navigatorName=name/);
+  assert.match(view,/navigatorName:proposed/);
+  assert.match(view,/Component Name already exists on this page layout/);
   assert.match(view,/isDescendantOf\(page.components,selectedId,component.id\)/);
   assert.match(navigator,/setOpen\(true\)/);
   assert.match(navigator,/matches.map\(/);
