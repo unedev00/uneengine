@@ -13,6 +13,15 @@ type DeviceMarker={
  order?:number;
 };
 const MARKER='__deviceLayout';
+/** Engine wiring and bindings are inherited, never device-specific.
+ * Additional Data/Actions keys come from the SQL Ribbon property registry. */
+const sharedWiring=new Set(['actionFlows','actions','interactions','dataBindings',
+ 'dataBinding','binding','bindings','objectApiName','fieldApiName','contextApiName',
+ 'flowApiName','eventHandlers','eventBindings','pagePropertyContract',
+ 'query','recordQuery','dataSource','formula','formulaExpression']);
+const visualOnly=(properties:Record<string,unknown>,shared:ReadonlySet<string>)=>
+ Object.fromEntries(Object.entries(properties).filter(([key])=>
+  !sharedWiring.has(key)&&!shared.has(key)));
 const rootKeys=new Set(['id','type','label','region','visible','properties',MARKER]);
 const unsafe=new Set(['__proto__','prototype','constructor']);
 const record=(v:unknown):v is Record<string,unknown>=>Boolean(v)&&typeof v==='object'&&!Array.isArray(v);
@@ -60,7 +69,8 @@ function clearPaths(data:Record<string,unknown>,paths:readonly string[]=[]){
 /** Store only actual device differences. Newly added Desktop nodes are absent
  * from the delta and therefore automatically appear on every child layout. */
 export function createDeviceComponentOverrides(
- desktop:readonly InheritedComponent[],edited:readonly InheritedComponent[]
+ desktop:readonly InheritedComponent[],edited:readonly InheritedComponent[],
+ sharedPropertyKeys:ReadonlySet<string>=new Set()
 ):InheritedComponent[]{
  const parent=new Map(desktop.map(item=>[item.id,item]));
  const selected=new Map(edited.map(item=>[item.id,item]));
@@ -81,8 +91,10 @@ export function createDeviceComponentOverrides(
   }
   if(item.type!==baseline.type)throw Error('Device layout cannot change a shared component type');
   const clearedProperties:string[]=[],clearedExtra:string[]=[];
-  const props=differences(baseline.properties??{},item.properties??{},clearedProperties) as Record<string,unknown>|undefined;
-  const extra=differences(extras(baseline),extras(item),clearedExtra) as Record<string,unknown>|undefined;
+  const props=differences(visualOnly(baseline.properties??{},sharedPropertyKeys),
+   visualOnly(item.properties??{},sharedPropertyKeys),clearedProperties) as Record<string,unknown>|undefined;
+  const extra=differences(visualOnly(extras(baseline),sharedPropertyKeys),
+   visualOnly(extras(item),sharedPropertyKeys),clearedExtra) as Record<string,unknown>|undefined;
   const fields=['label','region','visible'].filter(key=>!equal(baseline[key],item[key]));
   if(!props&&!extra&&!fields.length&&!clearedProperties.length&&!clearedExtra.length&&!orderChanged)continue;
   overrides.push({
