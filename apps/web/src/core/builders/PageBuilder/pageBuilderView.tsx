@@ -3375,7 +3375,7 @@ function PageBuilder({
                 ...selected.properties,readOnlyOnLayout:value,requiredOnLayout:false}});}
             }}
             nesting={{
-
+              accepted:!!selected&&isLayoutContainer(selected),
               canChange:!!selected&&(!!selectedCustomDefinition||isLayoutContainer(selected)),
               onAccepted:value=>{
                 if(!selected)return;
