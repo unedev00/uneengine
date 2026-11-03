@@ -1,4 +1,5 @@
 import {validatePageComponentContracts} from '../system-support/component-contract-store.js';
+import {validateExplicitComponentNames} from '../system-support/page-component-names.js';
 import {requirePagePropertyContract} from '../system-support/page-property-contract.js';
 import type {PoolClient} from 'pg';
 import {encodeMetadataValue,decodeMetadataValues,type MetadataValueRow} from './component-runtime.js';
@@ -150,6 +151,8 @@ export class PageLayoutVersionRuntime{
    requirePagePropertyContract(String(component.type),component.properties);
    ids.add(component.id);
   }
+  // Enforced by the shared SQL write path, not only by the browser ribbon.
+  validateExplicitComponentNames(page.components as Array<{id:string;type:string;properties:Record<string,unknown>}>);
   const assignmentIds=new Set<string>();
   for(const a of page.activationAssignments??[]){
    if(!a||!validKey(a.id)||assignmentIds.has(a.id)
