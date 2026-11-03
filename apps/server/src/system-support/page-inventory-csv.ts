@@ -186,9 +186,10 @@ export function exportInventoryCsv(page:InventoryPage,definitions:Definitions=ne
  return inventoryCsv(rows);
 }
 type CsvRow={line:number;cells:string[]};
-function parseCsv(text:string):{rows:CsvRow[];issues:InventoryIssue[];columns:number}{
+type CsvFormat='typed'|'legacy';
+function parseCsv(text:string):{rows:CsvRow[];issues:InventoryIssue[];columns:number;format:CsvFormat}{
  const issues:InventoryIssue[]=[];
- if(text.length>1800000)return {rows:[],columns:4,issues:[{row:1,component_name:'',component_property:'',remark:'CSV exceeds the 1.8 MB import limit'}]};
+ if(text.length>1800000)return {rows:[],columns:5,format:'typed',issues:[{row:1,component_name:'',component_property:'',remark:'CSV exceeds the 1.8 MB import limit'}]};
  const rows:CsvRow[]=[],current:string[]=[];
  let cell='',quoted=false,afterQuote=false,line=1,start=1;
  const finishCell=()=>{current.push(cell);cell='';afterQuote=false;};
@@ -223,13 +224,15 @@ function parseCsv(text:string):{rows:CsvRow[];issues:InventoryIssue[];columns:nu
  if(current.length||cell)finishRow();
  if(!rows.length)issues.push({row:1,component_name:'',component_property:'',remark:'CSV is empty'});
  const header=rows[0]?.cells.map((v,i)=>i===0?v.replace(/^\uFEFF/,'').trim().toLowerCase():v.trim().toLowerCase())??[];
- const validBase=header.slice(0,4).every((value,i)=>value===INVENTORY_COLUMNS[i]);
- const columns=header.length===5&&validBase&&header[4]==='ribbon_tab'?5:4;
- if(!rows.length||!validBase||header.length!==columns||
-   columns===4&&header.length!==INVENTORY_COLUMNS.length)
-  if(rows.length)issues.push({row:rows[0].line,component_name:'',component_property:'',
-   remark:'Expected CSV columns: '+INVENTORY_COLUMNS.join(',')+'[,ribbon_tab]'});
- return {rows:rows.slice(1),issues,columns};
+ const typed=header.length>=5&&header.slice(0,5).every((value,i)=>value===INVENTORY_COLUMNS[i])&&
+  (header.length===5||header.length===6&&header[5]==='ribbon_tab');
+ const legacy=header.length>=4&&header.slice(0,4).every((value,i)=>value===LEGACY_INVENTORY_COLUMNS[i])&&
+  (header.length===4||header.length===5&&header[4]==='ribbon_tab');
+ const format:CsvFormat=typed?'typed':'legacy';
+ const columns=typed||legacy?header.length:format==='typed'?5:4;
+ if(!typed&&!legacy&&rows.length)issues.push({row:rows[0].line,component_name:'',component_property:'',
+  remark:'Expected CSV columns: '+INVENTORY_COLUMNS.join(',')+'[,ribbon_tab]'});
+ return {rows:rows.slice(1),issues,columns,format};
 }
 function lookupSchema(defs:readonly ComponentSettingDefinition[],parts:readonly string[]):ComponentSettingDefinition|undefined{
  let current=defs,found:ComponentSettingDefinition|undefined;
