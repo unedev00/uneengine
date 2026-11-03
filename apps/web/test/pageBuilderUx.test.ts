@@ -133,7 +133,9 @@ test('SQL-defined page controls move to Layout and all Quick Access commands sta
     assert.ok(sql.includes("'"+property+"'"),'Missing SQL Home control '+property);
   assert.doesNotMatch(source,/case 'pageName':/);
  assert.match(source,/id="new-lightning-page-label"/);
-  assert.match(source,/aria-label="Choose page layout"/);
+  const pageDetails=readFileSync(new URL('../src/core/builders/PageBuilder/PageDetailsDialog.tsx',import.meta.url),'utf8');
+  assert.doesNotMatch(source,/aria-label="Choose page layout"/);
+  assert.match(pageDetails,/aria-label="Device layout to design"/);
   assert.match(source,/aria-label="Cut"/);
   assert.match(source,/aria-label="Copy"/);
   assert.match(source,/aria-label="Paste"/);

@@ -35,7 +35,7 @@ test('Advanced keeps all permanent fields in a compact responsive ribbon without
   'assigned','default',
   'api-name','visible','readonly',
   'accept',
-  'component-id','render-mode'
+  'component-id'
  ];
  for(const key of fields){
    assert.ok(key.startsWith('device-')?advanced.includes('advanced-device-'):
@@ -130,4 +130,11 @@ test('Page devices are edited only in Edit Page; Advanced has no empty responsiv
  assert.match(shell,/devices:updated\.devices/);
  assert.match(smart,/cardsPerRow/);
  assert.match(page,/customTargetMinWidth/);
+});
+
+test('Render mode is not an editable or read-only Technical Details ribbon slot',()=>{
+ assert.doesNotMatch(advanced,/advanced-render-mode|Render mode/);
+ assert.doesNotMatch(layout,/advanced-render-mode/);
+ assert.match(advanced,/advanced-component-id/);
+ assert.doesNotMatch(page,/renderMode:selected\?'Page Runtime'/);
 });

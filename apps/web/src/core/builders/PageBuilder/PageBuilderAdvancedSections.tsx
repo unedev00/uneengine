@@ -14,7 +14,7 @@ type Properties={
 type Nesting={
   accepted:boolean;canChange:boolean;onAccepted:(value:boolean)=>void;
 };
-type Technical={id:string;renderMode:string};
+type Technical={id:string};
 type Props={
   section:AdvancedFeature|null;onInspectorHost:(node:HTMLDivElement|null)=>void;
   assignment:Assignment;properties:Properties;nesting:Nesting;technical:Technical;
@@ -67,9 +67,6 @@ export default function PageBuilderAdvancedSections({
     <section className="advanced-fixed-group advanced-technical" aria-label="Technical Details">
       <label className="advanced-fixed-field advanced-component-id">Component ID
         <input value={technical.id} readOnly disabled/>
-      </label>
-      <label className="advanced-fixed-field advanced-render-mode">Render mode
-        <input value={technical.renderMode} readOnly disabled/>
       </label>
       <span className="advanced-fixed-caption">Technical Details</span>
     </section>

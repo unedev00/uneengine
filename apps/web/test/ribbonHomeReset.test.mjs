@@ -47,16 +47,20 @@ test('Acetill owns its renderer identity and a separate version-3 package',()=>{
  assert.doesNotMatch(v4,/'ui_input'|'ui_search'|'ui_item_grid'|'ui_cart'|'ui_button'/);
 });
 
-test('Layout combines Device and Version in the SQL Page section without losing controls',()=>{
+test('Device layout moves to Page Details without losing version controls or SQL metadata',()=>{
  const sql=src('../../server/src/system-support/migrations/20270203-page-layout-ribbon-consolidation.sql');
  const ui=src('../src/core/builders/PageBuilder/pageBuilderView.tsx');
  const css=src('../src/core/builders/PageBuilder/PageBuilderRibbonBlueprint.css');
+ const details=src('../src/core/builders/PageBuilder/PageDetailsDialog.tsx');
+ const move=src('../../server/src/system-support/migrations/20270309-page-device-layout-page-properties.sql');
  assert.match(sql,/property_key IN \('deviceLayout','selectVersion'\)/);
  assert.match(sql,/section_group='Page'/);
  assert.match(sql,/section_group IN \('Device','Version'\)/);
  assert.doesNotMatch(sql,/DELETE FROM md_builder_shared_properties|UPDATE md_page_components|DELETE FROM md_page_components/);
  assert.doesNotMatch(ui,/case 'pageName'/);
- assert.match(ui,/case 'deviceLayout'/);
+ assert.doesNotMatch(ui,/case 'deviceLayout'/);
+ assert.match(details,/aria-label="Device layout to design"/);
+ assert.match(move,/section_group='Page Properties'/);
  assert.match(ui,/case 'selectVersion'/);
  assert.match(ui,/aria-label=\{showLayoutHistory\?'Refresh versions':'Load versions'\}/);
  assert.match(ui,/restoreLayoutVersion\(selectedHistoryVersion\)/);
