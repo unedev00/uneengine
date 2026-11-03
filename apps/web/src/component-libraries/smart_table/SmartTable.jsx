@@ -40,18 +40,21 @@ export default function SmartTable({p,records,expression,fieldAllowed,fire}){
   borderBottom:border(p.headerBorderColor),
   textAlign:p.headerAlignment||p.labelAlignment||"left",
   fontSize:finite(p.headerTextSize??p.textSize,13,9,96),
+  height:p.headerBoxHeight!==undefined?finite(p.headerBoxHeight,36,0,1200):undefined,
+  width:p.headerWidth!==undefined?finite(p.headerWidth,0,0,1200):undefined,
   fontWeight:p.headerBold===false?400:700,
   whiteSpace:p.wrapText===false?"nowrap":"normal"
  };
  const rowHeight=finite(p.rowHeight,40,22,300);
  const rowStyle=row=>({
   height:rowHeight,minHeight:rowHeight,
+  width:p.rowWidth!==undefined?finite(p.rowWidth,0,0,1200):undefined,
   color:colour(p.rowLabelColor,"#27374d"),
   fontSize:finite(p.rowTextSize,13,8,96),
   fontWeight:p.rowBold===true?700:undefined,
   textAlign:p.rowAlignment||undefined,
   background:selected!==null&&String(row.Id??row.id)===selected
-   ?colour(p.selectedRowColor,"#e7f1ff"):undefined
+   ?colour(p.selectedRowColor,"#e7f1ff"):p.rowBackgroundColor||undefined
  });
  const value=(row,column)=>{
   if(!column.override)return plain(row?.[column.key]);
