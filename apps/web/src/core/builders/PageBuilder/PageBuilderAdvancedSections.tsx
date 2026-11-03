@@ -1,4 +1,4 @@
-import {useEffect} from 'react';
+import {useEffect,useState} from 'react';
 import type {AdvancedFeature} from './PageBuilderAdvancedRibbon';
 
 type Option={value:string;label:string};
@@ -14,7 +14,8 @@ type Properties={
 type Nesting={
   accepted:boolean;canChange:boolean;onAccepted:(value:boolean)=>void;
 };
-type Technical={id:string};
+type Technical={id:string;selected:boolean;editable:boolean;
+  validate:(value:string)=>string|null;onRename:(value:string)=>void};
 type Props={
   section:AdvancedFeature|null;onInspectorHost:(node:HTMLDivElement|null)=>void;
   assignment:Assignment;properties:Properties;nesting:Nesting;technical:Technical;
@@ -29,6 +30,20 @@ export default function PageBuilderAdvancedSections({
   // The former Advanced editor portalled the entire inspector into the ribbon.
   // Never leave a stale portal attached after switching from another tab.
   useEffect(()=>onInspectorHost(null),[onInspectorHost]);
+  const [componentIdDraft,setComponentIdDraft]=useState(technical.id);
+  const [componentIdTouched,setComponentIdTouched]=useState(false);
+  useEffect(()=>{
+    setComponentIdDraft(technical.id);
+    setComponentIdTouched(false);
+  },[technical.id]);
+  const idError=technical.selected&&componentIdDraft!==technical.id
+    ?technical.validate(componentIdDraft):null;
+  const commitComponentId=()=>{
+    if(!technical.editable||componentIdDraft===technical.id)return;
+    setComponentIdTouched(true);
+    if(idError)return;
+    technical.onRename(componentIdDraft.trim());
+  };
   return <div className="page-builder-advanced-inline" aria-label="Advanced ribbon fixed sections">
     {assignment.enabled&&<section className="advanced-fixed-group advanced-activation" aria-label="Activation Assignments">
       <div className="advanced-fixed-field advanced-assigned">
@@ -66,8 +81,20 @@ export default function PageBuilderAdvancedSections({
     </section>
     <section className="advanced-fixed-group advanced-technical" aria-label="Technical Details">
       <label className="advanced-fixed-field advanced-component-id">Component ID
-        <input value={technical.id} readOnly disabled/>
+        <input aria-label="Component ID" value={componentIdDraft} maxLength={128}
+          disabled={!technical.editable} spellCheck={false}
+          aria-invalid={!!idError} aria-describedby={idError?'component-id-validation':undefined}
+          title={technical.editable?'Unique component ID on this page. Enter or leave the field to apply.':
+            'Select and unlock a component to edit its ID'}
+          onChange={event=>{setComponentIdDraft(event.target.value);setComponentIdTouched(true);}}
+          onBlur={commitComponentId}
+          onKeyDown={event=>{
+            if(event.key==='Enter'){event.preventDefault();commitComponentId();event.currentTarget.blur();}
+            if(event.key==='Escape'){event.preventDefault();setComponentIdDraft(technical.id);setComponentIdTouched(false);event.currentTarget.blur();}
+          }}/>
       </label>
+      {idError&&componentIdTouched&&<span id="component-id-validation" role="alert"
+        className="advanced-component-id-error">{idError}</span>}
       <span className="advanced-fixed-caption">Technical Details</span>
     </section>
   </div>;
