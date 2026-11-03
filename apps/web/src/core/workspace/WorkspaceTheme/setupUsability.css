@@ -297,3 +297,22 @@
   min-height:44px;font-size:16px
  }
 }
+
+
+/* Audit P2: the platform's operational badge typography uses the shared 12px
+   micro-token with text labels and sufficient foreground/background contrast. */
+.lightning :is(.page-status-badge,.tenant-pill,.tenant-pill-active,
+ .tenant-pill-suspended,.dashboard-status,.flow-status){
+  font-size:12px;line-height:1.35;font-weight:650
+}
+.lightning :is(.page-status-badge.active,.tenant-pill-active){
+ color:#22683b;background-color:#ecf8ef
+}
+.lightning .page-status-badge:not(.active){
+ color:#785515;background-color:#fff7e5
+}
+/* Distinguish secondary labels from dense body and prevent sub-12px metadata. */
+.lightning :is(.setup-card,.company-workspace,.named-credentials-page,.page-manager-view)
+ :is(.form-help,.form-description,.metadata-help,.helper-text,.section-subtitle){
+ font-size:13px;line-height:1.45;color:var(--md-text-2,#5c5c63)
+}
