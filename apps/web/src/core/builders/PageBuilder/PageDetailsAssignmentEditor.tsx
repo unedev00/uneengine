@@ -38,7 +38,7 @@ export function assignmentValidationError(page:LightningPageMetadata,assignments
   if(requiresType(assignment.scope)&&!recordTypes.some(type=>type.id===assignment.recordTypeId&&type.active))
    return 'Select an active record type for each record-type assignment.';
   if(!assignment.formFactors.length||assignment.formFactors.some(factor=>
-   !devices.includes(factor)||(['Desktop','Phone'] as Factor[]).includes(factor)&&!page.devices.includes(factor)))
+   !devices.includes(factor)||(factor==='Desktop'||factor==='Phone')&&!page.devices.includes(factor)))
    return 'Choose at least one supported device for every assignment.';
   if(assignments.some(other=>overlaps(assignment,other)))
    return 'Overlapping assignments exist for the same app, profile, record type and device.';
@@ -124,7 +124,7 @@ export default function PageDetailsAssignmentEditor({page,apps,profiles,recordTy
     </select></label>}
    <div className="page-details-assignment-devices" role="group" aria-label="Assignment devices">
     {devices.map(factor=><label key={factor}>
-     <input type="checkbox" disabled={disabled||(['Desktop','Phone'] as Factor[]).includes(factor)&&!page.devices.includes(factor)}
+     <input type="checkbox" disabled={disabled||(factor==='Desktop'||factor==='Phone')&&!page.devices.includes(factor)}
       checked={formFactors.includes(factor)}
       onChange={e=>setFormFactors(current=>e.target.checked?[...current,factor]:current.filter(item=>item!==factor))}/>
      {factor}
