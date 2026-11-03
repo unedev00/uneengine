@@ -82,7 +82,13 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
   .map(entry=>entry.key.split('.')[0]))].map(name=>({reference:'@'+name,label:name+' Collection'}));
  const stateMentions=stateOptions.filter(entry=>entry.source==='PageState')
   .map(entry=>({reference:'@state.'+entry.key,label:entry.label+' Page State'}));
- const recordMentions:{reference:string;label:string}[]=objects.length&&sourceRoots.length
+ // Inside TABLE(@Object, ...), field choices follow that Object, not the
+ // Page Builder's first object or another selected independent source.
+ const tableOpen=/\bTABLE\s*\(\s*@([A-Za-z][A-Za-z0-9_]*)\s*,([^)]*)$/i.exec(draft.slice(0,caret));
+ const tableObject=tableOpen?objects.find(object=>object.apiName===tableOpen[1]):undefined;
+ const recordMentions:{reference:string;label:string}[]=tableObject&&matches
+  ?tableObject.fields.map(field=>({reference:'@'+field.apiName,label:tableObject.label+' → '+field.label}))
+  :objects.length&&sourceRoots.length
   ?relationshipFormulaFields(objects,sourceRoots,matches?.query??'',mentionKind,singleFieldOnly)
     .map(({reference,label})=>({reference,label}))
   :fields.filter(field=>(!singleFieldOnly||/^(Checkbox|Boolean)$/i.test(field.dataType)))
@@ -112,7 +118,12 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
    const before=next.slice(0,caret);
    const openString=(before.match(/"/g)||[]).length%2===1;
    const mention=!openString?/@([A-Za-z0-9_.]*)$/.exec(before):null;
-   setMatches(mention?{start:caret-mention[0].length,end:caret,query:mention[1]}:null);
+   const tablePart=!openString&&!mention
+    ?/\bTABLE\s*\(\s*@[A-Za-z][A-Za-z0-9_]*\s*,([^)]*)$/i.exec(before):null;
+   const last=tablePart?.[1].split(',').at(-1)?.trim()??'';
+   const tableField=tablePart&&/^@?[A-Za-z0-9_]*$/.test(last)
+    ?{start:caret-last.length,end:caret,query:last.replace(/^@/,'')}:null;
+   setMatches(mention?{start:caret-mention[0].length,end:caret,query:mention[1]}:tableField);
    const name=next.trimStart().startsWith('=')&&!openString
       ?/(?:^\s*=\s*|[,()]\s*)([A-Za-z][A-Za-z0-9_]*)$/.exec(before):null;
    setFunctionMatch(name?{start:caret-name[1].length,end:caret,query:name[1]}:null);
