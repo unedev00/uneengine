@@ -192,3 +192,11 @@
  line-height:1.2;font-weight:700;text-align:center;white-space:normal;overflow-wrap:anywhere}
 .smart-card-button:disabled{opacity:.55;cursor:not-allowed}
 .smart-card-button:focus-visible{outline:2px solid var(--md-focus-ring,#2563eb);outline-offset:2px}
+
+/* Optional Design 2 Focus Fill metadata. Unset values preserve original appearance. */
+.smart-lookup[style*="--smart-lookup-focus-color"] .smart-lookup-menu button:is(:hover,:focus-visible){
+ background:var(--smart-lookup-focus-color)!important;
+}
+.smart-navigation[style*="--smart-navigation-focus-color"] .smart-navigation-item:focus-visible{
+ background:var(--smart-navigation-focus-color)!important;
+}
