@@ -17,7 +17,7 @@ const original=():InventoryPage=>({
  }]
 });
 const csv=(...rows:string[])=>['pageapi,component_name,component_property,value',...rows].join('\r\n');
-const csv5=(...rows:string[])=>['pageapi,component_type,component_name,propertyid,value,ribbon_tab',...rows].join('\r\n');
+const csv5=(...rows:string[])=>['pageapi,component_name,component_property,value,ribbon_tab',...rows].join('\r\n');
 const typedCsv=(...rows:string[])=>['pageapi,component_type,component_name,propertyid,value',...rows].join('\r\n');
 const typedCsv6=(...rows:string[])=>['pageapi,component_type,component_name,propertyid,value,ribbon_tab',...rows].join('\r\n');
 test('inventory exports editable component properties, canvas coordinates and complex values',()=>{
