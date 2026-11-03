@@ -249,7 +249,7 @@
 }
 
 /* Append-only phone pagination paints long record lists lazily while preserving DOM focus order. */
-@media (max-width:599px), (max-height:500px) and (pointer:coarse) {
+@media (max-width:599px), (max-width:1023px) and (max-height:500px) {
  .records-phone-row {content-visibility:auto;contain-intrinsic-size:auto 72px}
  .records-phone-load-sentinel {width:100%;display:flex;justify-content:center}
  .records-phone-load-sentinel button{width:100%;min-height:44px}
@@ -280,7 +280,7 @@
  .records-responsive-list .records-data-table thead th:first-child{z-index:4}
  .records-responsive-list .records-data-table td:nth-child(2){min-width:130px;white-space:normal}
 }
-@media (max-width:599px),(max-height:500px) and (pointer:coarse) {
+@media (max-width:599px),(max-width:1023px) and (max-height:500px) {
  .records-phone-row{overflow:hidden}
  .records-phone-row.swipe-open .records-phone-row-link{transform:translateX(-126px);transition:transform .2s ease-out}
  .records-phone-swipe-actions{display:flex;position:absolute;right:0;top:0;bottom:0;z-index:3}
