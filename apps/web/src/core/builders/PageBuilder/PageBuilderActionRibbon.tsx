@@ -4,6 +4,7 @@ import type {FlowDefinitionMetadata} from '../../metadata/Definitions/metadata';
 import {metadataReference,metadataSelection} from '../../metadata/Definitions/metadataReferences';
 import {supportsSmartActionEvent} from './SmartEventActionsRibbon';
 import SmartFormulaField from './SmartFormulaField';
+import type {PageStateChoice} from './pageStateChoices';
 
 type Binding=Record<string,unknown>;
 type EventOption={apiName:string;label:string};
@@ -72,12 +73,13 @@ const legacyFormula=(binding:Binding,eventName:string,field:string):string=>{
 export default function PageBuilderActionRibbon({
  actions,eventDefinitions,flows,selectedEvent,onSelectEvent,onChange,
  api='',selectedApis,dataFields=[],disabled=false,
- buttonVisibility,onButtonVisibilityChange
+ buttonVisibility,onButtonVisibilityChange,stateOptions=[]
 }:{
  actions:Binding;eventDefinitions:EventOption[];flows:FlowDefinitionMetadata[];
  selectedEvent:string;onSelectEvent:(name:string)=>void;
  onChange:(next:Binding)=>void;api?:string;selectedApis?:readonly string[];
  dataFields?:Array<{apiName:string;label:string;dataType:string}>;disabled?:boolean;
+ stateOptions?:readonly PageStateChoice[];
  buttonVisibility?:Partial<Record<CartButtonKey,boolean>>;
  onButtonVisibilityChange?:(key:CartButtonKey,visible:boolean)=>void;
  // Deprecated parameters remain optional for existing Page Builder integrations.
@@ -199,6 +201,7 @@ export default function PageBuilderActionRibbon({
        <span className="page-action-formula-symbol" aria-hidden="true"
          title={'Formula: @Quantity + 1; @state.key := @event.value; @filter.key := @event.value; @navigate.page := "App/Page"'}>ƒx</span>
        <SmartFormulaField label="Selected action formula" fields={formulaFields}
+         stateOptions={stateOptions}
          disabled={disabled||!active||selected.actionType!=='Formula'}
          value={active&&selected.actionType==='Formula'?String(selected.formula??''):''}
          onChange={value=>patch({formula:value})}/>
