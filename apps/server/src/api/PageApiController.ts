@@ -65,6 +65,165 @@ export function registerPageApiController(app:Express,db:SqlPersistence,rbac:Rba
     res.setHeader('Cache-Control','private, no-store');
     res.json({versions});
   }));
+  // Monotonic page-wide component names use existing immutable SQL history.
+  // No tenant JSON counters or extra app engine: deleted names stay reserved after saves.
+  app.get('/api/metadata/pages/:apiName/component-name-history',wrap(async(req,res)=>{
+    const actor=authenticated(req),name=req.params.apiName;
+    if(!api.test(name))throw Error('Invalid Page API name');
+    await rbac.require(actor.tenant_id,actor.user_id,'PageDefinition','read');
+    const stem=String(req.query.stem??'');
+    if(!/^[a-z][a-z0-9]{0,63}$/.test(stem))throw Error('Invalid component name prefix');
+    const result=await db.query<{last:string}>(`
+     SELECT COALESCE(MAX(SUBSTRING(LOWER(v.value_text)
+       FROM LENGTH($3::text)+1)::bigint),0)::text AS last
+     FROM md_page_layout_version_properties v
+     JOIN md_page_definitions p ON p.tenant_id=v.tenant_id AND p.id=v.page_id
+     WHERE p.tenant_id=$1 AND p.api_name=$2 AND p.enabled=true
+       AND v.property_path='/props/navigatorName'
+       AND LOWER(v.value_text) ~ ('^'||$3||'[0-9]{1,9}
+  app.get('/api/metadata/pages/:apiName/inventory',wrap(async(req,res)=>{
+    const actor=authenticated(req),name=req.params.apiName;
+    if(!api.test(name))throw new Error('Invalid Page API name');
+    await rbac.require(actor.tenant_id,actor.user_id,'PageDefinition','read');
+    const variant=pageLayoutVariant(req.query.variant??'Desktop');
+    const page=await pages.editor(actor.tenant_id,name,variant) as unknown as InventoryPage;
+    const definitions=await inventoryDefinitions(db,actor.tenant_id,page.components,variant);
+    res.setHeader('Cache-Control','private, no-store');
+    res.json({csv:exportInventoryCsv(page,definitions),variant,draftRevision:page.draftRevision??0});
+  }));
+  // Validate every row before touching SQL. The same checks are repeated on apply.
+  app.post('/api/metadata/pages/:apiName/inventory/validate',wrap(async(req,res)=>{
+    const actor=authenticated(req),name=req.params.apiName;
+    if(!api.test(name))throw new Error('Invalid Page API name');
+    await rbac.require(actor.tenant_id,actor.user_id,'PageDefinition','manage');
+    await assertMetadataPackageEditable(db,actor.tenant_id,'page',name);
+    const variant=pageLayoutVariant(req.body?.variant??'Desktop');
+    const page=await pages.editor(actor.tenant_id,name,variant) as unknown as InventoryPage;
+    const definitions=await inventoryDefinitions(db,actor.tenant_id,page.components,variant);
+    const result=await preflightInventory(actor.tenant_id,variant,
+      applyInventoryCsv(page,typeof req.body?.csv==='string'?req.body.csv:'',definitions));
+    res.setHeader('Cache-Control','private, no-store');
+    res.json({valid:result.valid,issues:result.issues,changes:result.changes,skipped:result.skipped,
+      draftRevision:page.draftRevision??0});
+  }));
+  app.post('/api/metadata/pages/:apiName/inventory/apply',wrap(async(req,res)=>{
+    const actor=authenticated(req),name=req.params.apiName;
+    if(!api.test(name))throw new Error('Invalid Page API name');
+    await rbac.require(actor.tenant_id,actor.user_id,'PageDefinition','manage');
+    await assertMetadataPackageEditable(db,actor.tenant_id,'page',name);
+    const variant=pageLayoutVariant(req.body?.variant??'Desktop');
+    const expected=req.body?.expectedDraftRevision;
+    if(!Number.isSafeInteger(expected)||expected<0)throw new Error('Invalid expected draft revision');
+    const page=await pages.editor(actor.tenant_id,name,variant) as unknown as InventoryPage;
+    if((page.draftRevision??0)!==expected)throw new Error('Page layout changed since CSV validation. Validate the file again.');
+    const definitions=await inventoryDefinitions(db,actor.tenant_id,page.components,variant);
+    const result=await preflightInventory(actor.tenant_id,variant,
+      applyInventoryCsv(page,typeof req.body?.csv==='string'?req.body.csv:'',definitions));
+    res.setHeader('Cache-Control','private, no-store');
+    if(!result.valid){res.json({valid:false,issues:result.issues,changes:0,skipped:result.skipped});return;}
+    if(!result.changes){res.json({valid:true,issues:[],changes:0,skipped:result.skipped,page});return;}
+    // saveLayoutDraft is transactional, audits the user and checks draftRevision under a lock.
+    // A rejected property or concurrent edit leaves the existing saved page unchanged.
+    const saved=await pages.saveLayoutDraft(actor.tenant_id,name,variant,result.page,actor.user_id);
+    res.json({valid:true,issues:[],changes:result.changes,skipped:result.skipped,page:saved});
+  }));
+  registerPageDetailsController(app,db,rbac);
+
+  // Deactivation is not a draft save: it takes a published page out of routing
+  // without deleting either its draft or its published per-device snapshots.
+  app.post('/api/metadata/pages/:apiName/deactivate',wrap(async(req,res)=>{
+    const actor=authenticated(req),name=req.params.apiName;
+    if(!api.test(name))throw new Error('Invalid Page API name');
+    await rbac.require(actor.tenant_id,actor.user_id,'PageDefinition','manage');
+    await db.transaction(async client=>{
+      const found=await client.query<{id:string,status:string}>(`
+        SELECT p.id,d.status FROM md_page_definitions p
+        JOIN md_lightning_page_details d ON d.tenant_id=p.tenant_id AND d.page_id=p.id
+        WHERE p.tenant_id=$1 AND p.api_name=$2 AND p.enabled=true
+        FOR UPDATE OF p,d`,[actor.tenant_id,name]);
+      const current=found.rows[0];
+      if(!current)throw new Error('Page not found');
+      const managed=await client.query('SELECT 1 FROM md_app_seed_pages WHERE tenant_id=$1 AND page_id=$2',
+        [actor.tenant_id,current.id]);
+      if(managed.rowCount)throw new Error('App-owned Page must be managed through AppExchange');
+      const appHome=await client.query('SELECT 1 FROM md_app_home_pages WHERE tenant_id=$1 AND page_id=$2',
+        [actor.tenant_id,current.id]);
+      if(appHome.rowCount)throw new Error('Reassign the App Home Page before deactivating it');
+      const kind=await client.query<{target_object:string;record_mode:string}>(`
+        SELECT target_object,record_mode FROM md_lightning_page_details
+        WHERE tenant_id=$1 AND page_id=$2 AND page_type='Record Page'`,
+        [actor.tenant_id,current.id]);
+      if(kind.rows[0]&&current.status==='Active'){
+        const replacement=await client.query<{available:boolean}>(`
+          SELECT EXISTS(SELECT 1 FROM md_lightning_page_details d
+          JOIN md_page_definitions p ON p.tenant_id=d.tenant_id AND p.id=d.page_id
+          WHERE d.tenant_id=$1 AND d.page_id<>$2 AND d.page_type='Record Page'
+            AND d.target_object=$3 AND d.record_mode=$4
+            AND d.status='Active' AND p.enabled=true) AS available`,
+          [actor.tenant_id,current.id,kind.rows[0].target_object,kind.rows[0].record_mode]);
+        if(!replacement.rows[0]?.available)
+          throw new Error('Publish a replacement Record '+kind.rows[0].record_mode+' Page before deactivating this one');
+      }
+      await client.query(`UPDATE md_lightning_page_details
+        SET status='Draft',revision=revision+1,updated_at=now()
+        WHERE tenant_id=$1 AND page_id=$2`,[actor.tenant_id,current.id]);
+      // Preserve md_page_layout_heads and all immutable versions for reactivation.
+    });
+    res.status(204).end();
+  }));
+  app.delete('/api/metadata/pages/:apiName',wrap(async(req,res)=>{
+    const actor=authenticated(req),name=req.params.apiName;
+    if(!api.test(name))throw new Error('Invalid Page API name');
+    await rbac.require(actor.tenant_id,actor.user_id,'PageDefinition','manage');
+    await db.transaction(async client=>{
+      const {rows}=await client.query<{id:string;enabled:boolean}>(`
+        SELECT id,enabled FROM md_page_definitions
+        WHERE tenant_id=$1 AND api_name=$2 FOR UPDATE`,[actor.tenant_id,name]);
+      const page=rows[0];
+      if(!page)throw new Error('Page not found');
+      const appOwned=await client.query(`
+        SELECT 1 FROM md_app_seed_pages WHERE tenant_id=$1 AND page_id=$2 LIMIT 1`,
+        [actor.tenant_id,page.id]);
+      if(appOwned.rowCount)throw new Error('App-owned Page must be managed through AppExchange');
+      const appHome=await client.query(`
+        SELECT 1 FROM md_app_home_pages WHERE tenant_id=$1 AND page_id=$2 LIMIT 1`,
+        [actor.tenant_id,page.id]);
+      if(appHome.rowCount)throw new Error('App Home Page must be reassigned before removal');
+      // Every Object retains an editable default View and Edit Page. A replacement
+      // of the same mode must be published before the last page can be archived.
+      const activeRecord=await client.query<{target_object:string;record_mode:string}>(`
+        SELECT target_object,record_mode FROM md_lightning_page_details
+        WHERE tenant_id=$1 AND page_id=$2 AND page_type='Record Page'`,
+        [actor.tenant_id,page.id]);
+      if(activeRecord.rows[0]){
+        const {rows:replacement}=await client.query<{available:boolean}>(`
+          SELECT EXISTS(SELECT 1 FROM md_lightning_page_details d
+          JOIN md_page_definitions p ON p.tenant_id=d.tenant_id AND p.id=d.page_id
+          WHERE d.tenant_id=$1 AND d.page_id<>$2 AND d.page_type='Record Page'
+            AND d.target_object=$3 AND d.record_mode=$4
+            AND d.status='Active' AND p.enabled=true) AS available`,
+          [actor.tenant_id,page.id,activeRecord.rows[0].target_object,
+            activeRecord.rows[0].record_mode]);
+        if(!replacement[0]?.available)throw new Error(
+          'Publish a replacement Record '+activeRecord.rows[0].record_mode+' Page before archiving this one');
+      }
+      // Soft-deactivate only; preserve layouts, history, component properties and business records.
+      await client.query(`
+        UPDATE md_page_definitions SET enabled=false WHERE tenant_id=$1 AND id=$2`,
+        [actor.tenant_id,page.id]);
+      await client.query(`
+        UPDATE md_lightning_page_details SET status='Draft' WHERE tenant_id=$1 AND page_id=$2`,
+        [actor.tenant_id,page.id]);
+    });
+    res.status(204).end();
+  }));
+
+}
+)`,
+     [actor.tenant_id,name,stem]);
+    res.setHeader('Cache-Control','private, no-store');
+    res.json({last:Number(result.rows[0]?.last??0)});
+  }));
   // Read saved draft component metadata, never a browser-local or published runtime approximation.
   app.get('/api/metadata/pages/:apiName/inventory',wrap(async(req,res)=>{
     const actor=authenticated(req),name=req.params.apiName;
