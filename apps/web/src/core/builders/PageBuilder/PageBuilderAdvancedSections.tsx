@@ -15,15 +15,14 @@ type Responsive={
   onBreakpoint:(value:number)=>void;onColumns:(value:number)=>void;
 };
 type Properties={
-  selected:boolean;apiName:string;cssClass:string;visible:boolean;
+  selected:boolean;apiName:string;visible:boolean;
   readOnly:boolean;canReadOnly:boolean;
   onVisible:(value:boolean)=>void;onReadOnly:(value:boolean)=>void;
 };
 type Nesting={
-  selected:boolean;accepted:boolean;canChange:boolean;parentId:string;
-  parents:Option[];onAccepted:(value:boolean)=>void;onParent:(value:string)=>void;
+  accepted:boolean;canChange:boolean;onAccepted:(value:boolean)=>void;
 };
-type Technical={id:string;objectName:string;renderMode:string};
+type Technical={id:string;renderMode:string};
 type Props={
   section:AdvancedFeature|null;onInspectorHost:(node:HTMLDivElement|null)=>void;
   assignment:Assignment;responsive:Responsive;properties:Properties;
@@ -91,10 +90,6 @@ export default function PageBuilderAdvancedSections({
       <label className="advanced-fixed-field advanced-api-name">API Name
         <input value={properties.apiName} readOnly disabled title="Component API identity is immutable"/>
       </label>
-      <label className="advanced-fixed-field advanced-css-class">CSS Class
-        <input value={properties.cssClass} readOnly disabled
-          title="Custom CSS class is not supported by the shared runtime"/>
-      </label>
       <label className="advanced-fixed-field advanced-visible">Visible
         <input type="checkbox" checked={properties.visible} disabled={!properties.selected}
           onChange={event=>properties.onVisible(event.target.checked)}/>
@@ -110,30 +105,11 @@ export default function PageBuilderAdvancedSections({
         <input type="checkbox" checked={nesting.accepted}
           disabled={!nesting.canChange} onChange={event=>nesting.onAccepted(event.target.checked)}/>
       </label>
-      <label className="advanced-fixed-field advanced-child-types">Allowed child types
-        <select disabled title="Per-container allowed child types is not supported by the shared nesting engine">
-          <option>Any component</option>
-        </select>
-      </label>
-      <label className="advanced-fixed-field advanced-max-children">Max children
-        <input type="number" value="" placeholder="—" readOnly disabled
-          title="Maximum child count is not supported by the shared nesting engine"/>
-      </label>
-      <label className="advanced-fixed-field advanced-parent">Parent container
-        <select value={nesting.parentId} disabled={!nesting.selected}
-          onChange={event=>nesting.onParent(event.target.value)}>
-          <option value="">Canvas root</option>
-          {nesting.parents.map(option=><option key={option.value} value={option.value}>{option.label}</option>)}
-        </select>
-      </label>
       <span className="advanced-fixed-caption">Component Nesting</span>
     </section>
     <section className="advanced-fixed-group advanced-technical" aria-label="Technical Details">
       <label className="advanced-fixed-field advanced-component-id">Component ID
         <input value={technical.id} readOnly disabled/>
-      </label>
-      <label className="advanced-fixed-field advanced-object">Object
-        <input value={technical.objectName} readOnly disabled/>
       </label>
       <label className="advanced-fixed-field advanced-render-mode">Render mode
         <input value={technical.renderMode} readOnly disabled/>
