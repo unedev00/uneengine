@@ -58,6 +58,20 @@ export const copilotAddProduct=graph('AcetillCopilotAddProduct','Till: add autho
  n(7,'Decision','Product eligible?',{outcomes:[{name:'Valid',label:'Valid',conditionLogic:'All',
   conditions:[{field:'{!product}',operator:'IsNotNull'},
    {field:'{!product.Price}',operator:'GreaterThanOrEqualTo',value:0}]}]}),
+ n(17,'Get Records','Find matching sale line',{
+  object:'CartLine',recordLimit:'1',outputVariable:'existingLine',
+  conditions:[{field:'CartSession',operator:'Equals',value:'{!cartSessionId}'},
+   {field:'Product',operator:'Equals',value:'{!product.Id}'},
+   {field:'Name',operator:'Equals',value:'{!product.Name}'},
+   {field:'UnitPrice',operator:'Equals',value:'{!product.Price}'},
+   {field:'OriginalUnitPrice',operator:'Equals',value:'{!product.Price}'}]}),
+ n(18,'Decision','Matching sale line exists?',{outcomes:[{
+  name:'Found',label:'Found',conditionLogic:'All',
+  conditions:[{field:'{!existingLine}',operator:'IsNotNull'}]}]}),
+ n(19,'Update Records','Increase matching quantity',{
+  object:'CartLine',recordId:'{!existingLine.Id}',
+  fieldValues:[{field:'Quantity',value:'{!mergedQuantity}'},
+   {field:'LineTotal',value:'{!mergedLineTotal}'}]}),
  n(8,'Create Records','Add basket line',{object:'CartLine',recordSource:'fields',
   resultVariable:'cartLineId',fieldValues:[
    {field:'CartSession',value:'{!cartSessionId}'},{field:'Product',value:'{!product.Id}'},
@@ -71,10 +85,16 @@ export const copilotAddProduct=graph('AcetillCopilotAddProduct','Till: add autho
  n(15,'End','Basket updated')
 ],[
  e(1,2),e(2,3),e(3,4,'Found'),e(3,5,'Default'),e(4,6),e(5,6),
- e(6,7),e(7,8,'Valid'),e(7,14,'Default'),e(8,9),e(9,10),
+ e(6,7),e(7,17,'Valid'),e(7,14,'Default'),
+ e(17,18),e(18,19,'Found'),e(18,8,'Default'),
+ e(19,9),e(8,9),e(9,10),
  ...addTotal.links,e(13,15)
 ],[variable('productId','Text',true),{name:'product',type:'Record',dataType:'Product'},
- variable('cartLineId','Text',false,true)]);
+ variable('cartLineId','Text',false,true),
+ {name:'existingLine',type:'Record',dataType:'CartLine'},
+ {name:'mergedQuantity',type:'Formula',dataType:'Number',value:'existingLine.Quantity + 1'},
+ {name:'mergedLineTotal',type:'Formula',dataType:'Number',
+  value:'mergedQuantity * existingLine.UnitPrice'}]);
 const readTotal=summaries(6);
 export const copilotReadCart=graph('AcetillCopilotReadCart','Till: read current session and total',[
  n(1,'Start','Start'),readSession,sessionChoice,
