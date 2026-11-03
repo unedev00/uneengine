@@ -76,7 +76,7 @@ export default function SmartTable({p,records,expression,fieldAllowed,fire}){
   border:border(p.summaryBorderColor),
   borderRadius:finite(p.summaryRadius,4,0,100),
   boxShadow:shadow(p.summaryShadow),
-  width:p.summaryWidth?finite(p.summaryWidth,100,10,100)+"%":"100%"
+  width:p.summaryWidth?finite(p.summaryWidth,200,20,2000)+"px":"100%"
  };
  return <section className="smart-table-root" aria-label={p.label||"Smart Table"}
   style={{background:colour(p.backgroundColor,"#fff"),border:border(p.borderColor),
