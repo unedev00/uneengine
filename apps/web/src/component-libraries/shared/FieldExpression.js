@@ -523,7 +523,16 @@ function parse(source,record,formulaContext){
     part.kind==='binary'?usesRowField(part.left)||usesRowField(part.right):
     part.kind==='call'&&part.name!=='SUM'?part.args.some(usesRowField):false;
    const direct=operand.kind==='reference'?evaluate(operand,currentRecord):null;
-   if(Array.isArray(direct)||(direct&&typeof direct==='object'&&Array.isArray(direct.items))){
+   const objectField=operand.kind==='reference'
+    ?/^([A-Za-z][A-Za-z0-9_]*)\.([A-Za-z][A-Za-z0-9_]*)$/.exec(operand.value):null;
+   if(objectField&&Array.isArray(direct)
+    &&direct.every(item=>item&&typeof item==='object'&&!Array.isArray(item)
+      &&item.objectApiName===objectField[1]&&item.record&&typeof item.record==='object')){
+    // @Object.Field was resolved against already-authorised rows and FLS.
+    // Aggregate the numeric field, never the record IDs used for selections.
+    result=sumFormulaCollection(direct.map(item=>item.record[objectField[2]]),
+     formulaContext.collectionSources);
+   }else if(Array.isArray(direct)||(direct&&typeof direct==='object'&&Array.isArray(direct.items))){
     result=sumFormulaCollection(direct,formulaContext.collectionSources);
    }else if(Array.isArray(rows)&&usesRowField(operand)){
     if(rows.length>200)throw Error('SUM requires a bounded numeric collection');
