@@ -1,0 +1,77 @@
+/* Design 2 only. Every icon, picker, spinner and toggle is still rendered
+ * by SmartRibbon's existing control engine. This file owns placement, not art.
+ * The original Design tab and its CSS remain untouched. */
+.office-builder-ribbon #page-builder-tab-content
+  >.smart-ribbon.smart-design2-ribbon[data-three-row="true"]{
+  width:max-content!important;
+  min-width:100%!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  >.smart-design2-ribbon>.smart-ribbon-group.smart-design2-group{
+  --smart-section-width:490px;
+  box-sizing:border-box!important;
+  flex:0 0 490px!important;
+  width:490px!important;
+  min-width:490px!important;
+  max-width:490px!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group>.smart-ribbon-items{
+  width:100%!important;
+  max-width:100%!important;
+  gap:4px!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-ribbon-row{
+  gap:4px!important;
+  width:max-content!important;
+  max-width:100%!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-ribbon-row.smart-design2-top-row{
+  gap:4px!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-design2-area-select{
+  box-sizing:border-box!important;
+  flex:0 0 272px!important;
+  width:272px!important;
+  min-width:272px!important;
+  max-width:272px!important;
+  height:26px!important;
+  border:1px solid #b7c9df!important;
+  border-radius:3px!important;
+  background:#fff!important;
+  color:#263b56!important;
+  padding:0 6px!important;
+  font:11px "Segoe UI",Arial,sans-serif!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-design2-visibility{
+  box-sizing:border-box!important;
+  flex:0 0 28px!important;
+  height:26px!important;
+  min-height:26px!important;
+  max-height:26px!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-design2-visibility:disabled{
+  opacity:.5!important;
+  cursor:not-allowed!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-property:is(
+    [data-property="shadow"],[data-property="tableShadow"],
+    [data-property="summaryShadow"],[data-property="labelAlignment"],
+    [data-property="headerAlignment"],[data-property="supportingAlignment"],
+    [data-property="rowAlignment"],[data-property="summaryAlignment"],
+    [data-property="summary2Alignment"]) .smart-icon-dropdown-trigger{
+  box-sizing:border-box!important;
+  width:var(--smart-control-width)!important;
+  min-width:var(--smart-control-width)!important;
+  max-width:var(--smart-control-width)!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-property.disabled{
+  opacity:.46!important;
+}
