@@ -6,19 +6,16 @@ import {brokerOperation} from './mcp-tools.js';
 /**
  * Platform-wide production deployment control. Never exposes GitHub credentials
  * to the browser and never executes shell commands from a web request.
- * The existing protected Oracle full-stack workflow owns build, tests, SQL
- * backup, deploy/rollback, concurrency and environment approvals.
+ * OCI's fixed, root-owned deployment helper fetches a pinned main revision,
+ * validates/builds it, and reuses full-stack backup/deploy/rollback and locks.
+ * GitHub provides ONLY a read-only source SHA comparison, never dispatch/status.
  */
 const repository='unedev00/uneengine';
-const workflow='oracle-api-deploy.yml';
 const shaPattern=/^[a-f0-9]{40}$/;
-const activeStatuses=new Set(['queued','in_progress','waiting','pending','requested']);
-
-type Run={id:number;head_sha:string;status:string;conclusion:string|null;created_at:string;event:string};
 type OciRelease={state:'idle'|'running'|'succeeded'|'failed';sha:string|null;stage:string|null;updatedAt:string|null};
 type DeploymentStatus={
  configured:boolean; latestCommit:string|null; deployedCommit:string|null;
- active:boolean; oci:OciRelease|null; run:null|{id:number;commit:string;status:string;conclusion:string|null;createdAt:string;url:string};
+ active:boolean; oci:OciRelease|null; error?:string;
 };
 export class DeploymentControlError extends Error {
  constructor(message:string,readonly statusCode:number){super(message);}
@@ -38,18 +35,9 @@ function parseOciStatus(text:string):OciRelease {
 }
 // GitHub serves public main branch metadata anonymously. OCI performs builds
 // through its existing root-owned operations broker; no GitHub dispatch token.
-const workflowUrl='https://github.com/'+repository+'/actions/workflows/'+workflow;
 function productionCommit(){
  const value=process.env.METADRIVE_RELEASE_SHA??'';
  return shaPattern.test(value)?value:null;
-}
-function validRun(input:unknown):input is Run{
- if(!input||typeof input!=='object')return false;
- const r=input as Record<string,unknown>;
- return Number.isSafeInteger(r.id)&&Number(r.id)>0&&typeof r.head_sha==='string'
-  &&shaPattern.test(r.head_sha)&&typeof r.status==='string'
-  &&(r.conclusion===null||typeof r.conclusion==='string')
-  &&typeof r.created_at==='string'&&typeof r.event==='string';
 }
 async function github(path:string):Promise<any>{
  // Fixed repository and allowlisted paths only. Never proxy arbitrary URLs.
@@ -65,24 +53,24 @@ async function github(path:string):Promise<any>{
 export async function readProductionDeployment(operate:OciOperation=brokerOperation):Promise<DeploymentStatus>{
  const deployedCommit=productionCommit();
  let oci:OciRelease|null=null;
+ let error:string|undefined;
  if(brokerConfigured()) {
   try {oci=parseOciStatus((await operate({action:'deploy_status',service:'api'})).output);}
-  catch { /* Do not claim OCI dispatch is ready if the installed helper is unavailable. */ }
+  catch {error='OCI deployment helper is unreachable. Check the operations socket and installed helper on OCI.';}
+ }else error='OCI deployment helper is not configured on the API host.';
+ // Source control is read only; failure to reach it must not hide OCI's own status.
+ let latestCommit:string|null=null;
+ try {
+  const commit=await github('/commits/main');
+  if(typeof commit?.sha!=='string'||!shaPattern.test(commit.sha))
+   throw new DeploymentControlError('Invalid main-branch revision.',502);
+  latestCommit=commit.sha;
+ }catch(cause){
+  const description=cause instanceof DeploymentControlError?cause.message:'Source revision lookup is unavailable.';
+  error=[error,description+' Cannot dispatch until the latest revision can be verified.'].filter(Boolean).join(' ');
  }
- const [commit,runs]=await Promise.all([
-  github('/commits/main'),
-  github('/actions/workflows/'+workflow+'/runs?branch=main&per_page=15')
- ]);
- const latestCommit=typeof commit?.sha==='string'&&shaPattern.test(commit.sha)?commit.sha:null;
- if(!latestCommit)throw new DeploymentControlError('GitHub returned an invalid main-branch revision.',502);
- const matches:Array<Run>=Array.isArray(runs?.workflow_runs)
-  ?runs.workflow_runs.filter((r:unknown)=>validRun(r)&&(r as Run).event!=='pull_request'): [];
- const current=matches.find(run=>activeStatuses.has(run.status))??matches[0];
  return {configured:oci!==null,latestCommit,deployedCommit,oci,
-  active:(!!current&&activeStatuses.has(current.status))||oci?.state==='running',
-  run:current?{id:current.id,commit:current.head_sha,status:current.status,
-   conclusion:current.conclusion,createdAt:current.created_at,
-   url:'https://github.com/'+repository+'/actions/runs/'+current.id}:null};
+  active:oci?.state==='running',...(error?{error}:{})};
 }
 async function audit(db:SqlPersistence,tenant:string,user:string,action:string,details:object){
  await db.query('INSERT INTO md_security_events(tenant_id,actor_user_id,action,details) VALUES($1,$2,$3,$4::jsonb)',
@@ -99,7 +87,7 @@ export async function requestProductionDeployment(
  try{
   await db.transaction(async client=>{
    // Cross-request serialization, including multiple API instances. Hold the lock
-   // until GitHub accepts/rejects the dispatch and the acceptance audit commits.
+   // until OCI accepts/rejects the dispatch and the acceptance audit commits.
    await client.query('SELECT pg_advisory_xact_lock(hashtext($1))',['metadrive:oracle-production:dispatch']);
    const {rows:recent}=await client.query<{exists:boolean}>(`
     SELECT EXISTS(SELECT 1 FROM md_security_events
@@ -177,17 +165,19 @@ export function registerPlatformDeploymentRoutes(
  app.get('/api/platform/production-deployment',async(req,res,next)=>{
   try {
    const actor=actorOf(req);
-   const canDeploy=await canManage(actor);
+   const hasPlatformDeveloper=await assignedPlatformDeveloper(actor);
+   const hasOperationsManage=await rbac.allowed(actor.tenant_id,actor.user_id,'PlatformOperations','manage');
+   const canDeploy=hasPlatformDeveloper&&hasOperationsManage;
+   const permission={hasPlatformDeveloper,hasOperationsManage};
    res.set('Cache-Control','private, no-store');
    try {
     const status=await readProductionDeployment();
-    res.json({...status,canDeploy,workflowUrl});
+    res.json({...status,canDeploy,permission});
    } catch(error) {
-    // Temporary rate limits/network failures must never make the control vanish.
-    // Display an actionable status and leave dispatch disabled until refreshed.
-    res.json({configured:false,canDeploy:false,latestCommit:null,
-     deployedCommit:productionCommit(),active:false,oci:null,run:null,workflowUrl,
-     error:error instanceof DeploymentControlError?error.message:'GitHub status unavailable.'});
+    // Fail closed while retaining permission diagnostics for this signed-in user.
+    res.json({configured:false,canDeploy,permission,latestCommit:null,
+     deployedCommit:productionCommit(),active:false,oci:null,
+     error:error instanceof DeploymentControlError?error.message:'OCI deployment status unavailable.'});
    }
   }catch(error){handleError(error,res,next);}
  });
