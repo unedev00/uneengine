@@ -630,7 +630,7 @@ try{
    const cell=table?.querySelector('tbody td');
    if(!shell||!heading)return {missing:true};
    const luminance=(value)=>{
-     const numbers=(value.match(/\\d+(?:\\.\\d+)?/g)||[]).map(Number);
+     const numbers=(value.match(/\d+(?:\.\d+)?/g)||[]).map(Number);
      if(numbers.length<3)return -1;
      const rgb=numbers.slice(0,3).map(v=>v/255).map(v=>v<=0.04045?v/12.92:((v+0.055)/1.055)**2.4);
      return 0.2126*rgb[0]+0.7152*rgb[1]+0.0722*rgb[2];
