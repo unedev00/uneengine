@@ -1,4 +1,5 @@
 import {validatePageComponentContracts} from '../system-support/component-contract-store.js';
+import {createDeviceComponentOverrides,applyDeviceComponentOverrides,type InheritedComponent} from './page-layout-device-inheritance.js';
 import {requirePagePropertyContract} from '../system-support/page-property-contract.js';
 import type {PoolClient} from 'pg';
 import {encodeMetadataValue,decodeMetadataValues,type MetadataValueRow} from './component-runtime.js';
@@ -7,6 +8,7 @@ import type {SqlPersistence} from './sql-persistence.js';
 export const PAGE_LAYOUT_VARIANTS=['Mobile','Desktop','Tablet','Custom'] as const;
 export type PageLayoutVariant=typeof PAGE_LAYOUT_VARIANTS[number];
 type PageSnapshot={
+ desktopDraftRevision?:number;
  apiName:string;label:string;pageType:string;targetObject:string;layoutMode:string;template?:string;
  canvasWidth:number;canvasHeight:number;canvasFillColor?:string;status:string;revision?:number;
  customTargetEnabled?:boolean;customTargetMinWidth?:number;customTargetMaxWidth?:number;
@@ -16,6 +18,7 @@ type PageSnapshot={
 type VersionRow={
  version:number;page_label:string;layout_mode:string;template:string|null;canvas_width:number;canvas_height:number;canvas_fill_color:string;
  custom_target_enabled:boolean;custom_target_min_width:number;custom_target_max_width:number;
+ inherits_desktop:boolean;canvas_fill_override:boolean;
 };
 type HeadRow={draft_version:number|null;published_version:number|null};
 type PageActivationRow={
@@ -166,7 +169,8 @@ export class PageLayoutVersionRuntime{
  private async snapshot(tenant:string,id:string,variant:PageLayoutVariant,version:number){
   const [versionRows,nodeRows,properties,assignments]=await Promise.all([
    this.db.query<VersionRow>(`SELECT version,page_label,layout_mode,template,canvas_width,canvas_height,canvas_fill_color,
-      custom_target_enabled,custom_target_min_width,custom_target_max_width
+      custom_target_enabled,custom_target_min_width,custom_target_max_width,
+      inherits_desktop,canvas_fill_override
     FROM md_page_layout_versions WHERE tenant_id=$1 AND page_id=$2 AND variant=$3 AND version=$4`,[tenant,id,variant,version]),
    this.db.query<NodeRow>(`SELECT component_key,component_type,label,region,visible FROM md_page_layout_version_nodes
     WHERE tenant_id=$1 AND page_id=$2 AND variant=$3 AND version=$4 ORDER BY sort_order`,[tenant,id,variant,version]),
@@ -179,6 +183,7 @@ export class PageLayoutVersionRuntime{
   return {label:row.page_label,layoutMode:row.layout_mode,template:row.template??undefined,
    canvasWidth:row.canvas_width,canvasHeight:row.canvas_height,canvasFillColor:row.canvas_fill_color,
    customTargetEnabled:row.custom_target_enabled,
+   inheritsDesktop:row.inherits_desktop,canvasFillOverride:row.canvas_fill_override,
    customTargetMinWidth:row.custom_target_min_width,customTargetMaxWidth:row.custom_target_max_width,
    components:nodeRows.rows.map(n=>{
     const data=decodeMetadataValues(properties.rows.filter(p=>p.component_key===n.component_key));
@@ -201,15 +206,39 @@ export class PageLayoutVersionRuntime{
   const layout=revision?await this.snapshot(tenant,id,variant,revision):null;
   const legacy=layout??{label:base.label,layoutMode:base.layoutMode,template:base.template,
    canvasWidth:widthFor(variant,base),canvasHeight:heightFor(variant,base),
-    canvasFillColor:base.canvasFillColor??'#ffffff',
+   canvasFillColor:base.canvasFillColor??'#ffffff',
    components:base.components,activationAssignments:base.activationAssignments,
    customTargetEnabled:false,customTargetMinWidth:320,customTargetMaxWidth:10000};
-  // Page identity and App placement are SQL-owned, independently of immutable
-  // per-device canvas revisions. A future publish must not undo page details.
-  return {...base,...legacy,label:base.label,
+  let effective={...legacy};
+  let desktopDraftRevision: number|undefined;
+  if(variant!=='Desktop'){
+   const {rows:desktopHeads}=await this.db.query<HeadRow>(`SELECT draft_version,published_version
+    FROM md_page_layout_heads WHERE tenant_id=$1 AND page_id=$2 AND variant='Desktop'`,[tenant,id]);
+   desktopDraftRevision=desktopHeads[0]?.draft_version??0;
+   const desktopVersion=view==='draft'?desktopHeads[0]?.draft_version:desktopHeads[0]?.published_version;
+   const parent=desktopVersion?await this.snapshot(tenant,id,'Desktop',desktopVersion):{
+    components:base.components,canvasFillColor:base.canvasFillColor??'#ffffff',
+    layoutMode:base.layoutMode,template:base.template
+   };
+   // Legacy initial copies inherit when still untouched; authored legacy
+   // versions remain intact until a user explicitly saves device overrides.
+   let untouchedSeed=!layout;
+   if(layout&&!layout.inheritsDesktop&&revision===1){
+    const initialParent=await this.snapshot(tenant,id,'Desktop',1);
+    untouchedSeed=JSON.stringify(layout.components)===JSON.stringify(initialParent.components)
+     &&layout.canvasFillColor===initialParent.canvasFillColor
+     &&layout.layoutMode===initialParent.layoutMode&&layout.template===initialParent.template;
+   }
+   if(layout?.inheritsDesktop||untouchedSeed)effective={...legacy,
+    components:applyDeviceComponentOverrides(parent.components as InheritedComponent[],
+     layout?.inheritsDesktop?layout.components as InheritedComponent[]:[]),
+    canvasFillColor:layout?.canvasFillOverride?layout.canvasFillColor:parent.canvasFillColor};
+  }
+  return {...base,...effective,label:base.label,
    ...(base.pageType==='App Page'?{activationAssignments:base.activationAssignments}:{}),
    layoutVariant:variant,draftRevision:head?.draft_version??0,
-   publishedRevision:head?.published_version??0};
+   publishedRevision:head?.published_version??0,
+   ...(variant!=='Desktop'?{desktopDraftRevision}:{})};
  }
  /** Read a historical version without changing active/draft pointers. */
  async version(tenant:string,name:string,variant:PageLayoutVariant,version:number,base:PageSnapshot){
@@ -231,6 +260,15 @@ export class PageLayoutVersionRuntime{
    const before=await client.query<HeadRow>(`SELECT draft_version,published_version FROM md_page_layout_heads
     WHERE tenant_id=$1 AND page_id=$2 AND variant=$3`,[tenant,found.id,variant]);
    await this.bootstrap(client,tenant,found.id);
+   const parentHeads=variant==='Desktop'?null:await client.query<HeadRow>(`SELECT draft_version,published_version
+    FROM md_page_layout_heads WHERE tenant_id=$1 AND page_id=$2 AND variant='Desktop' FOR SHARE`,[tenant,found.id]);
+   const parentRevision=parentHeads?.rows[0]?.draft_version??0;
+   if(variant!=='Desktop'&&page.desktopDraftRevision!==undefined&&page.desktopDraftRevision!==parentRevision)
+    throw new Error('Desktop parent changed; reload this device layout before saving');
+   const desktop=variant!=='Desktop'&&parentRevision
+    ?await this.snapshot(tenant,found.id,'Desktop',parentRevision):null;
+   const nodes=desktop?createDeviceComponentOverrides(desktop.components as InheritedComponent[],
+    page.components as InheritedComponent[]):page.components;
    const heads=await client.query<HeadRow>(`SELECT draft_version,published_version FROM md_page_layout_heads
     WHERE tenant_id=$1 AND page_id=$2 AND variant=$3 FOR UPDATE`,[tenant,found.id,variant]);
    const current=heads.rows[0]?.draft_version??0;
@@ -244,12 +282,15 @@ export class PageLayoutVersionRuntime{
    const version=(latest.rows[0]?.version??0)+1;
    await client.query(`INSERT INTO md_page_layout_versions
     (tenant_id,page_id,variant,version,page_label,layout_mode,template,canvas_width,canvas_height,
-      custom_target_enabled,custom_target_min_width,custom_target_max_width,canvas_fill_color)
-    VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,[tenant,found.id,variant,version,
+      custom_target_enabled,custom_target_min_width,custom_target_max_width,canvas_fill_color,
+      inherits_desktop,canvas_fill_override)
+    VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,[tenant,found.id,variant,version,
       page.label,page.layoutMode,page.template??null,page.canvasWidth,page.canvasHeight,
       variant==='Custom'&&page.customTargetEnabled===true,
-      page.customTargetMinWidth??320,page.customTargetMaxWidth??10000,page.canvasFillColor??'#ffffff']);
-   for(const [index,c] of page.components.entries()){
+      page.customTargetMinWidth??320,page.customTargetMaxWidth??10000,page.canvasFillColor??'#ffffff',
+      variant!=='Desktop',variant!=='Desktop'&&Boolean(desktop)&&
+       (page.canvasFillColor??'#ffffff')!==(desktop?.canvasFillColor??'#ffffff')]);
+   for(const [index,c] of nodes.entries()){
     await client.query(`INSERT INTO md_page_layout_version_nodes
      (tenant_id,page_id,variant,version,component_key,component_type,label,region,visible,sort_order)
      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
