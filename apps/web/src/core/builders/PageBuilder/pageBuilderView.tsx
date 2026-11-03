@@ -3250,10 +3250,8 @@ function PageBuilder({
             freeCanvas={page.layoutMode==='free-canvas'} hasSelection={!!selected}
             locked={ribbonSelectedMembers.some(isCanvasLocked)} selectedCount={selectionIds.length}
             canGroup={canGroupSelected}
-            canBringForward={!!selected&&canMoveCanvasLayer(page.components,selected.id,'forward')}
             canBringToFront={!!selected&&canMoveCanvasLayer(page.components,selected.id,'front')}
             canSendBackward={!!selected&&canMoveCanvasLayer(page.components,selected.id,'backward')}
-            canSendToBack={!!selected&&canMoveCanvasLayer(page.components,selected.id,'back')}
             canUngroup={!!selected&&!isCanvasLocked(selected)&&
               (canvasGroupKey(selected)
                 ? selectedGroupMembers.every(item=>!isCanvasLocked(item))
