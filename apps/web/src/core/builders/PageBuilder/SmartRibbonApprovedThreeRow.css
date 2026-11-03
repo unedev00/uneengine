@@ -464,3 +464,17 @@
  box-sizing:border-box!important;flex:0 0 148px!important;
  width:148px!important;min-width:148px!important;max-width:148px!important;
 }
+
+
+/* Eight-property Design Body ribbon trial.
+ * The shared SQL inventory sets shadow/alignment to 40px dropdown controls;
+ * the generic 35px dropdown rule above must not leave a 5px dead strip. */
+.office-builder-ribbon #page-builder-tab-content .smart-ribbon[data-three-row="true"][data-smart-api]
+  .smart-ribbon-group[data-smart-tab="Design"][aria-label="Body"]
+  .smart-property:is([data-property="shadow"],[data-property="labelAlignment"])
+  .smart-icon-dropdown-trigger{
+  box-sizing:border-box!important;
+  width:var(--smart-control-width)!important;
+  min-width:var(--smart-control-width)!important;
+  max-width:var(--smart-control-width)!important;
+}
