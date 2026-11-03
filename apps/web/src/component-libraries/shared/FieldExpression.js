@@ -514,7 +514,8 @@ function parse(source,record,formulaContext){
    const first=node.args[0];
    if(first?.kind!=='reference'||!/^[A-Za-z][A-Za-z0-9_]*$/.test(first.value))
     throw Error('TABLE first argument must be an Object source such as @Product');
-   const object=first.value;
+   const object=Object.keys(formulaContext.collectionSources??{}).find(name=>
+    name.toLowerCase()===first.value.toLowerCase())??first.value;
    const rows=formulaContext.collectionSources?.[object];
    const permitted=formulaContext.collectionSourceFields?.[object];
    if(!Array.isArray(rows)||!Array.isArray(permitted))
@@ -524,10 +525,10 @@ function parse(source,record,formulaContext){
      throw Error('TABLE columns must be Object fields');
     const reference=argument.value;
     const parts=reference.split('.');
-    if(parts.length>2||parts.length===2&&parts[0]!==object
+    if(parts.length>2||parts.length===2&&parts[0].toLowerCase()!==object.toLowerCase()
       ||parts.some(part=>!/^[A-Za-z][A-Za-z0-9_]*$/.test(part)))
      throw Error('TABLE field does not belong to source '+object);
-    return parts.at(-1);
+    return permitted.find(field=>field.toLowerCase()===parts.at(-1).toLowerCase())??parts.at(-1);
    });
    result=projectFormulaTable(object,rows,permitted,columns);
   }else if(node.name==='SUM'&&node.args.length===1){
