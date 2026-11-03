@@ -31,7 +31,7 @@ const ribbonFunctions=new Set([
   'DATEVALUE','DATETIMEVALUE','TODAY','NOW','DAY','MONTH','YEAR','HOUR','MINUTE','SECOND',
   'WEEKDAY','ISOWEEK','ISOYEAR','ADDDAYS','ADDMONTHS','TIMEVALUE','TIMENOW','SIN','COS',
   'PI','TAN','ASIN','ACOS','ATAN','ATAN2','SINH','COSH','TANH','DEGREES','RADIANS','TZOFFSET',
-  'GEOLOCATION','DISTANCE','COLLECTIONCOUNT','COLLECTIONSUM','COLLECTION','SUM','VLOOKUP'
+  'GEOLOCATION','DISTANCE','COLLECTIONCOUNT','COLLECTIONSUM','COLLECTION','SUM','TABLE','VLOOKUP'
 ]);
 const flowContextOnly=new Set(['ISCHANGED','ISNEW','PRIORVALUE']);
 const formulaAndFlowOnly=new Set(['IMAGE','CURRENCYRATE']);
@@ -52,7 +52,7 @@ const checkboxFunctions=new Set([
   'CONTAINS','BEGINS','ISPICKVAL','INCLUDES'
 ]);
 const explicitParameters=new Map<string,FormulaValueKind[]>([
-  ['COLLECTION',['Text','Any']],['SUM',['Collection']],['IF',['Checkbox','Any','Any']],['IFERROR',['Any','Any']],['NOT',['Checkbox']],
+  ['COLLECTION',['Text','Any']],['TABLE',['Collection','Any']],['SUM',['Collection']],['IF',['Checkbox','Any','Any']],['IFERROR',['Any','Any']],['NOT',['Checkbox']],
   ['AND',['Checkbox']],['OR',['Checkbox']],['XOR',['Checkbox']],['VALUE',['Text']],
   ['LEN',['Text']],['ASCII',['Text']],['LEFT',['Text','Number']],['RIGHT',['Text','Number']],
   ['MID',['Text','Number','Number']],['FIND',['Text','Text','Number']],
@@ -75,7 +75,7 @@ const returnType=(name:string):FormulaValueKind=>numberFunctions.has(name)?'Numb
     name==='DATE'||name==='TODAY'||name==='ADDDAYS'?'Date':
       name==='NOW'||name==='DATETIMEVALUE'?'DateTime':
         name==='TIMENOW'||name==='TIMEVALUE'?'Time':
-          name==='GEOLOCATION'?'Geolocation':name==='COLLECTION'?'Collection':'Any';
+          name==='GEOLOCATION'?'Geolocation':['COLLECTION','TABLE'].includes(name)?'Collection':'Any';
 
 const inputs:DefinitionInput[]=[
   ['IF',3,3],['IFERROR',2,2],['AND',1,20],['OR',1,20],['NOT',1,1],['XOR',2,20],
@@ -83,7 +83,8 @@ const inputs:DefinitionInput[]=[
   ['ISNEW',0,0,validationAndFlow],['ISCLONE',0,0],['PRIORVALUE',1,1,validationAndFlow],
   ['BLANKVALUE',2,2],['NULLVALUE',2,2],['TEXT',1,1],['VALUE',1,1],['LEN',1,1],
   ['COLLECTIONCOUNT',1,1,flowOnly],['COLLECTIONSUM',2,2,flowOnly],
-  ['COLLECTION',2,20,['flow_formula','ribbon_binding']],['SUM',1,1],['ASCII',1,1],
+  ['COLLECTION',2,20,['flow_formula','ribbon_binding']],
+  ['TABLE',1,129,['ribbon_binding']],['SUM',1,1],['ASCII',1,1],
   ['LOWER',1,1],['UPPER',1,1],['PROPER',1,1],['TRIM',1,1],['LEFT',1,2],['RIGHT',1,2],
   ['MID',3,3],['FIND',2,3],['SUBSTITUTE',3,4],['CONCATENATE',1,20],['EXACT',2,2],
   ['CONTAINS',2,2],['BEGINS',2,2],['ISPICKVAL',2,2],['INCLUDES',2,2],['REPT',2,2],

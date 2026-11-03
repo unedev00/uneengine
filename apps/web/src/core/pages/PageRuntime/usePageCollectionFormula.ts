@@ -10,8 +10,20 @@ import {parseCollectionListBinding,filteredCollectionItems,sessionCollectionFiel
 import {filterPageComponentRecords} from './pageComponentBindings';
 
 type Row=Record<string,unknown>;
-export type PageNamedCollection={name:string;key?:string;items:unknown[]};
+export type PageNamedCollection={name:string;key?:string;items:unknown[];columns?:readonly string[];objectApiName?:string};
 type SourceResult={key:string;records:Record<string,Row[]>;error?:string};
+
+/** TABLE's first argument is an Object reference, not a scalar field.
+ * Parse using the global Formula parser; never infer a source from text fragments.
+ */
+export function tableFormulaObject(formula:string):string|null{
+ try{
+  const node=new Parser(tokenize(formula.trim().replace(/^=\s*/,''))).parse();
+  const source=node.kind==='call'&&node.name==='TABLE'?node.args[0]:null;
+  return source?.kind==='reference'&&/^[A-Za-z][A-Za-z0-9_]*$/.test(source.value)
+   ?source.value:null;
+ }catch{return null;}
+}
 
 export function collectionFormulaReferences(formula:string,primaryObject='',knownCollections:readonly string[]=[],primaryFields?:readonly string[]):Array<{object:string;field:string}>{
  if(!/\bCOLLECTION\s*\(/i.test(formula))return [];
@@ -64,12 +76,25 @@ export function usePageCollectionFormula(
    ??expressions.find(value=>/^=\s*@[A-Za-z][A-Za-z0-9_]{0,79}(?:\.[A-Za-z][A-Za-z0-9_]*)?$/.test(value));
  const reference=expressions.find(value=>/^@[A-Za-z][A-Za-z0-9_]{0,79}(?:\.[A-Za-z][A-Za-z0-9_]*)?$/.test(value));
  const listExpression=expressions.find(value=>Boolean(parseCollectionListBinding(value,primaryObject)));
+ const tableExpression=expressions.find(value=>/^=?\s*TABLE\s*\(/i.test(value));
  // List-expression metadata is distinct from scalar Boolean expressions. A
  // source binding selects records; individual row property formulas remain scalar.
- const entered=explicit||listExpression||declared||reference||'';
+ const rawTextSource=typeof properties.textSource==='string'?properties.textSource.trim():'';
+ const selectedTableSource=(
+  /^=?\s*TABLE\s*\(/i.test(rawTextSource)||
+  /^=?\s*@[A-Za-z][A-Za-z0-9_]*$/.test(rawTextSource)
+   &&objects.some(object=>('@'+object.apiName).toLowerCase()===rawTextSource.replace(/^=\s*/,'').toLowerCase()))
+  ?rawTextSource:null;
+ const entered=selectedTableSource||explicit||tableExpression||listExpression||declared||reference||'';
  const source=entered.startsWith('=')?entered.slice(1).trim():entered;
  const lastValid=useRef<{object:string;collection:PageNamedCollection}|null>(null);
  const directSource=/^@([A-Za-z][A-Za-z0-9_]*)(?:\.([A-Za-z][A-Za-z0-9_]*))?$/.exec(source);
+ const tableObject=tableFormulaObject(source);
+ const fullObject=directSource&&!directSource[2]
+  ?objects.find(object=>object.apiName.toLowerCase()===directSource[1].toLowerCase())?.apiName??null:null;
+ const sourceName=tableObject??fullObject;
+ const tableSourceObject=objects.find(object=>object.apiName.toLowerCase()===sourceName?.toLowerCase())?.apiName??sourceName;
+ const isTableProjection=Boolean(tableSourceObject);
  const directObject=directSource?.[2]?directSource[1]:primaryObject;
  const directField=directSource?.[2]??directSource?.[1];
  const directMetadata=directObject?objects.find(item=>item.apiName===directObject):undefined;
@@ -95,7 +120,7 @@ export function usePageCollectionFormula(
  const referencesNamed=Boolean(namedCollectionNames(source).length);
  const selected=['objectApiName','objectApiName2','objectApiName3']
   .map(key=>String(properties[key]??'')).filter(Boolean);
- const referenced=[...new Set(refs.map(ref=>ref.object))];
+ const referenced=[...new Set([...refs.map(ref=>ref.object),...(tableSourceObject?[tableSourceObject]:[])])];
  const secondary=referenced.filter(name=>name!==primaryObject);
  const key=JSON.stringify([source,selected,secondary,revision]);
  const [remote,setRemote]=useState<SourceResult|null>(null);
@@ -121,16 +146,17 @@ export function usePageCollectionFormula(
  if(saved){
   const named=Object.entries(registry.collections).find(([name])=>name.toLowerCase()===saved[1].toLowerCase())?.[1];
   if(named)return {collection:named,error:null,loading:false};
-  if(!directBinding)return {collection:null,error:null,loading:false};
+  if(!directBinding&&!fullObject)return {collection:null,error:null,loading:false};
  }
  if(unresolvedNamedList)return {collection:null,error:null,loading:false};
- if(!listBinding&&!referencesNamed&&!isCollectionSourceExpression(source,existingCollections))
+ if(!listBinding&&!isTableProjection&&!referencesNamed&&!isCollectionSourceExpression(source,existingCollections))
   return {collection:null,error:null,loading:false};
- const notSelected=refs.find(ref=>!selected.includes(ref.object));
+ const notSelected=refs.find(ref=>!selected.includes(ref.object))
+  ??(tableSourceObject&&!selected.includes(tableSourceObject)?{object:tableSourceObject}:undefined);
  if(notSelected)return {collection:null,error:'Select Object '+notSelected.object+' in Data Source before referencing it',loading:false};
  const missingField=refs.find(ref=>!objects.find(o=>o.apiName===ref.object)?.fields.some(f=>f.apiName===ref.field));
  if(missingField)return {collection:null,error:'COLLECTION field unavailable: '+missingField.object+'.'+missingField.field,loading:false};
- if(referenced.includes(primaryObject)&&primaryTotal>primaryRecords.length)
+ if(!isTableProjection&&referenced.includes(primaryObject)&&primaryTotal>primaryRecords.length)
   return {collection:null,error:'COLLECTION primary source has more records than are loaded; narrow its filters',loading:false};
  if(secondary.length&&remote?.key!==key)return {collection:null,error:null,loading:true};
  if(remote?.error)return {collection:null,error:remote.error,loading:false};
@@ -142,7 +168,7 @@ export function usePageCollectionFormula(
   return {collection:{name:'__filtered_list__',
     items:filteredCollectionItems(criteria,rows)},error:null,loading:false};
  }
- const resolved=evaluateCollectionFormula(source,sources,{state:pageState,session:{id:sessionId},
+ const resolved=evaluateCollectionFormula(fullObject?'TABLE(@'+fullObject+')':source,sources,{state:pageState,session:{id:sessionId},
    primaryObject,record:primaryRecords.length===1?primaryRecords[0]:{},
    collectionSourceFields:Object.fromEntries(objects.map(object=>[
     object.apiName,object.fields.map(field=>field.apiName)])),
@@ -190,7 +216,7 @@ export function usePageCollectionFormula(
  const duplicate=registry.errors[componentId];
  // Scalar formulas such as SUM(COLLECTION(...)) use these very same already
  // authorised complete Object rows; no renderer or formula performs its own IO.
- const complete=(!primaryObject||primaryTotal<=primaryRecords.length)
+ const complete=(isTableProjection||!primaryObject||primaryTotal<=primaryRecords.length)
   &&(!secondary.length||remote?.key===key)&&!remote?.error;
  const formulaSources:Record<string,readonly Row[]>=complete?{
   ...(remote?.key===key?remote.records:{}),
