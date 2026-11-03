@@ -222,6 +222,8 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  // Geometry only. Keep every property, icon, dropdown and persisted value;
  // fit their existing three rows without reserving space for empty columns.
  const controlWidth=(p:UneRibbonProperty)=>{
+   // Reserve the exact SQL 30px input track; a separate 45px caption is added.
+   if(p.id==='tabIndex')return p.designWidth??30;
    // Shape's 94px SQL width is exact, unlike other compact choice tracks.
    if(p.id==='shapeId')return p.designWidth??94;
    if(p.id==='cardButtonShape')return p.designWidth??94;
@@ -301,6 +303,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    const isHeight=compactDesign&&/height/i.test(property.id);
    const hasNumericIcon=(kind==='number'||kind==='position')&&
      (isTextSize||isCorner||isWidth||isHeight);
+   const isTabIndex=property.id==='tabIndex';
    let editor;
    if(property.id==='shapeId')editor=<SmartIconGallery value={String(value||'shape:rectangle')}
      disabled={!enabled} allowIcons={(selectedApis?.length?selectedApis:[api]).every(member=>
@@ -372,10 +375,10 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
       isWidth?<span className="smart-property-glyph" title={title}><ArrowLeftRight size={17} aria-hidden="true"/></span>:
       isHeight?<span className="smart-property-glyph" title={title}><ArrowUpDown size={17} aria-hidden="true"/></span>:
       property.id==='width'?<ArrowLeftRight size={15}/>:property.id==='height'?<ArrowUpDown size={15}/>:null}
-     <input type="number" className="smart-office-number" aria-label={title} disabled={!enabled} min={property.min??0} max={property.max}
+     <input type="number" className="smart-office-number" aria-label={title} disabled={!enabled} min={property.min??0} max={property.max} step={isTabIndex?1:undefined}
        value={kind==='position'&&useCanvasPosition?position?.[property.id as keyof Position]??'':
         typeof value==='string'?Number.parseFloat(value)||'':value as number}
-       onChange={e=>{if(e.target.value!==''){const n=Number(e.target.value);if(Number.isFinite(n))write(n);}}}/>
+       onChange={e=>{if(e.target.value!==''){const n=Number(e.target.value);if(Number.isFinite(n))write(isTabIndex?Math.max(0,Math.trunc(n)):n);}}}/>
    </span>;
    else if(kind==='shadow'&&compactDesign&&property.designDisplay==='dropdown')editor=<SmartIconDropdown kind="shadow" value={String(value)} label={title} disabled={!enabled} onChange={write}/>;
    else if(kind==='shadow')editor=<div className="smart-icons" role="group" aria-label={title}>
