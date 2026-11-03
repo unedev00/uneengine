@@ -366,10 +366,14 @@
  * Each value is the complete label + control slot, not a width for its input
  * alone. Keep whole slots present when disabled so selecting another component
  * cannot move neighbouring properties. This is builder presentation only. */
-.office-builder-ribbon:not(.is-interactive-preview)
- #page-builder-tab-content.office-ribbon-content[aria-label="Advanced"]{
+.office-builder-ribbon[aria-label="Page Builder ribbon"]:not(.is-interactive-preview)
+ #page-builder-tab-content.office-ribbon-content[aria-label="Advanced"]:is([role="tabpanel"]){
  --page-ribbon-scroll-strip-height:127px;
  overflow-x:auto!important;overflow-y:hidden!important;scrollbar-width:thin!important;
+}
+.office-builder-ribbon[aria-label="Page Builder ribbon"]:not(.is-interactive-preview)
+ #page-builder-tab-content.office-ribbon-content[aria-label="Advanced"]::-webkit-scrollbar{
+ display:block!important;height:9px!important;
 }
 .office-builder-ribbon:not(.is-interactive-preview)
  #page-builder-tab-content.office-ribbon-content>.page-builder-advanced-inline{
