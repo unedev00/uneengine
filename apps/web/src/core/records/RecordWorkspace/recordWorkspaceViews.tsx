@@ -2181,6 +2181,18 @@ function RecordWorkspace({
         readableFieldApiNames: new Set(readableRecordFields.map(field => field.apiName))
       }, true)) return null;
       if (component.type === 'Record Actions') return null;
+      if (component.type === 'Custom:smart_textbox') {
+        // A restricted field must disappear as a whole two-part textbox,
+        // not leave an empty label or a gap in the reflowing record grid.
+        // The Record API has already removed unreadable field values.
+        const source=component.properties.textSource;
+        if(typeof source==='string'){
+          const available=new Set(object.fields.map(field=>field.apiName));
+          const readable=new Set(readableRecordFields.map(field=>field.apiName));
+          const referenced=[...source.matchAll(/@([A-Za-z][A-Za-z0-9_]*)/g)].map(match=>match[1]);
+          if(referenced.some(field=>available.has(field)&&!readable.has(field)))return null;
+        }
+      }
       if (component.type.startsWith('Custom:')) {
         const definition = libraryComponents.find((item) => item.apiName === component.type.slice('Custom:'.length) && item.surfaces.includes('page'));
         const children = isLayoutContainer(component)
