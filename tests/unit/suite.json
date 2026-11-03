@@ -208,6 +208,7 @@
     "apps/web/test/pageBehaviorValidation.test.ts",
     "apps/web/test/pageBuilderActionDependencies.test.ts",
     "apps/web/test/pageBuilderAdvancedRibbon.test.mjs",
+    "apps/web/test/componentIdentity.test.ts",
     "apps/web/test/pageBuilderAuditFixes.test.mjs",
     "apps/web/test/pageBuilderDesignReference.test.ts",
     "apps/web/test/pageBuilderInsertGalleryLayout.test.ts",
