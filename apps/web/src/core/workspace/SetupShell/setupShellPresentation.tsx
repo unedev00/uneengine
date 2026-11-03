@@ -154,7 +154,7 @@ export function renderSetupShell(ctx: any) {
         && !setupSidebarCollapsed && <button type="button"
         className="md-sidebar-scrim" aria-label="Close navigation"
         onClick={() => setSetupSidebarCollapsed(true)} />}
-      <main className={route.kind === 'setup' ? 'setup-layout setup-no-tabs' : 'setup-layout'}>
+      <div className={route.kind === 'setup' ? 'setup-layout setup-no-tabs' : 'setup-layout'}>
         {isRecordsRoute && readableRecordObjects.length > 1 && runtimeFormFactor !== 'Phone' && (
           <aside id="md-records-sidebar" className={setupSidebarCollapsed ? 'md-app-sidebar md-app-sidebar-collapsed' : 'md-app-sidebar'}
             aria-label="Records navigation">
