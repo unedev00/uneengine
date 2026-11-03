@@ -489,6 +489,11 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
           <SlidersHorizontal size={16}/>{filterCount>0&&
             <span className="smart-filter-count">{filterCount}</span>}
         </button>
+        <button type="button" className="smart-data-image-upload"
+          disabled={uploadBusy||!activeDataEnabled||activeDataProperty?.id!=='imageSource'||api!=='smart_image'}
+          title={activeDataProperty?.id==='imageSource'&&api==='smart_image'?'Upload image':'Select an image field to enable upload'}
+          aria-label="Upload image"
+          onClick={()=>uploadInput.current?.click()}><ImagePlus size={17}/></button>
         <div className="smart-data-formula-input">
           {filterFormulaSelected?<SmartFormulaField key="__record_filter__"
             label="Record filter formula" value={typeof properties.filterFormula==='string'?properties.filterFormula:''}
@@ -510,16 +515,13 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
             <input type="text" disabled aria-label="Formula (select a field first)"
               placeholder="Select a field's Fx button to edit its formula"/>}
         </div>
-        {activeSummaryLabel&&<input className="smart-data-summary-name"
-          aria-label={activeSummaryLabel.slot+' cart label'} title="Edit cart summary heading"
-          maxLength={64} spellCheck={false} disabled={!activeDataEnabled}
-          value={fallback(properties[activeSummaryLabel.key])}
-          placeholder={activeSummaryLabel.slot}
-          onChange={event=>update(activeSummaryLabel.key,event.target.value)}/>}
-        {activeDataProperty?.id==='imageSource'&&api==='smart_image'&&
-          <button type="button" className="smart-data-image-upload" disabled={uploadBusy||!activeDataEnabled}
-            title="Upload image" aria-label="Upload image"
-            onClick={()=>uploadInput.current?.click()}><ImagePlus size={17}/></button>}
+        <input className="smart-data-summary-name"
+          aria-label={(activeSummaryLabel?.slot??'Cart summary')+' cart label'}
+          title={activeSummaryLabel?'Edit cart summary heading':'Select a cart summary field'}
+          maxLength={64} spellCheck={false} disabled={!activeSummaryLabel||!activeDataEnabled}
+          value={activeSummaryLabel?fallback(properties[activeSummaryLabel.key]):''}
+          placeholder={activeSummaryLabel?.slot??'Cart summary'}
+          onChange={event=>{if(activeSummaryLabel)update(activeSummaryLabel.key,event.target.value);}}/>
       </div>
       <div className="smart-data-sections">
         {sections.filter(group=>group!=='Source').map(section=><section className="smart-ribbon-group"
