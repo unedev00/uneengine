@@ -103,10 +103,12 @@ export function registerPageApiController(app:Express,db:SqlPersistence,rbac:Rba
     await rbac.require(actor.tenant_id,actor.user_id,'PageDefinition','manage');
     await assertMetadataPackageEditable(db,actor.tenant_id,'page',name);
     const variant=pageLayoutVariant(req.body?.variant??'Desktop');
+    if(variant!=='Desktop')throw Error('CSV upload is supported only for the Desktop page layout');
+    const csv=typeof req.body?.csv==='string'?req.body.csv:'';
     const page=await pages.editor(actor.tenant_id,name,variant) as unknown as InventoryPage;
-    const definitions=await inventoryDefinitions(db,actor.tenant_id,page.components,variant);
+    const definitions=await inventoryDefinitions(db,actor.tenant_id,page.components,variant,inventoryRequestedTypes(csv));
     const result=await preflightInventory(actor.tenant_id,variant,
-      applyInventoryCsv(page,typeof req.body?.csv==='string'?req.body.csv:'',definitions));
+      applyInventoryCsv(page,csv,definitions));
     res.setHeader('Cache-Control','private, no-store');
     res.json({valid:result.valid,issues:result.issues,changes:result.changes,skipped:result.skipped,
       draftRevision:page.draftRevision??0});
@@ -117,13 +119,15 @@ export function registerPageApiController(app:Express,db:SqlPersistence,rbac:Rba
     await rbac.require(actor.tenant_id,actor.user_id,'PageDefinition','manage');
     await assertMetadataPackageEditable(db,actor.tenant_id,'page',name);
     const variant=pageLayoutVariant(req.body?.variant??'Desktop');
+    if(variant!=='Desktop')throw Error('CSV upload is supported only for the Desktop page layout');
     const expected=req.body?.expectedDraftRevision;
     if(!Number.isSafeInteger(expected)||expected<0)throw new Error('Invalid expected draft revision');
     const page=await pages.editor(actor.tenant_id,name,variant) as unknown as InventoryPage;
     if((page.draftRevision??0)!==expected)throw new Error('Page layout changed since CSV validation. Validate the file again.');
-    const definitions=await inventoryDefinitions(db,actor.tenant_id,page.components,variant);
+    const csv=typeof req.body?.csv==='string'?req.body.csv:'';
+    const definitions=await inventoryDefinitions(db,actor.tenant_id,page.components,variant,inventoryRequestedTypes(csv));
     const result=await preflightInventory(actor.tenant_id,variant,
-      applyInventoryCsv(page,typeof req.body?.csv==='string'?req.body.csv:'',definitions));
+      applyInventoryCsv(page,csv,definitions));
     res.setHeader('Cache-Control','private, no-store');
     if(!result.valid){res.json({valid:false,issues:result.issues,changes:0,skipped:result.skipped});return;}
     if(!result.changes){res.json({valid:true,issues:[],changes:0,skipped:result.skipped,page});return;}
