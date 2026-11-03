@@ -69,6 +69,14 @@ test('Insert Ribbon exposes visible Smart components without requiring a selecte
  assert.match(read('../src/core/builders/PageBuilder/PageBuilderRibbonLayout.css'),/> \.smart-insert-ribbon/);
 });
 
+test('Smart Textbox is discoverable by its approved name in the shared Insert gallery',()=>{
+ const builder=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const insert=read('../src/core/builders/PageBuilder/SmartInsertRibbon.tsx');
+ assert.match(builder,/component\.apiName==='smart_textbox'\?'Smart Textbox'/);
+ assert.match(insert,/compactQuery=query\.replace/);
+ assert.match(insert,/label\.replace/);
+ assert.match(insert,/filterSmartInsertItems\(items,scope,term\)/);
+});
 test('Smart visual/property fixes are registered without changing historic SQL migrations',()=>{
  const runtime=read('../src/component-libraries/smart/shared/SmartRuntime.jsx');
  const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
