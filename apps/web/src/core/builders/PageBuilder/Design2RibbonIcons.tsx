@@ -26,7 +26,7 @@ export function PlacementGlyph({value}:{value:PlacementChoice}){
  return <svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" fill="currentColor">
   {horizontal?<>{bar(2,y,20,2)}{bar(6,value==='top'?5:value==='bottom'?6:4,5,value==='middle'?16:13)}
     {bar(13,value==='top'?5:value==='bottom'?10:7,5,value==='middle'?12:9)}</>
-   :<>{bar(x,2,2,20)}{bar(value==='left'?5:value==='right'?5:4,5,value==='center'?6:13,5,5)}
+   :<>{bar(x,2,2,20)}{bar(value==='left'?5:value==='right'?5:4,5,value==='center'?6:13,5)}
     {bar(value==='left'?5:value==='right'?9:13,12,value==='center'?12:9,5)}</>}
  </svg>;
 }
