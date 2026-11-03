@@ -9,8 +9,29 @@ import {pageLayoutVariant} from '../system-files/page-layout-version-runtime.js'
 import {assertMetadataPackageEditable} from '../system-support/metadata-package-service.js';
 import {registerPageDetailsController} from './PageDetailsController.js';
 import {applyInventoryCsv,exportInventoryCsv,inventoryDefinitions,type InventoryPage} from '../system-support/page-inventory-csv.js';
+import {requirePagePropertyContract} from '../system-support/page-property-contract.js';
+import {validatePageComponentContracts} from '../system-support/component-contract-store.js';
 export function registerPageApiController(app:Express,db:SqlPersistence,rbac:RbacEngine){
   const pages=new PageRuntime(db);
+  const preflightInventory=async(tenant:string,variant:ReturnType<typeof pageLayoutVariant>,
+    result:ReturnType<typeof applyInventoryCsv>)=>{
+    if(!result.valid||!result.changes)return result;
+    for(const block of result.page.components){
+      try{requirePagePropertyContract(block.type,block.properties);}
+      catch(error){
+        result.issues.push({row:1,component_name:block.id,component_property:'pagePropertyContract',
+          remark:error instanceof Error?error.message:'Invalid Page property contract'});
+      }
+    }
+    if(result.issues.length){result.valid=false;return result;}
+    try{await validatePageComponentContracts(db,tenant,result.page.components,variant);}
+    catch(error){
+      result.issues.push({row:1,component_name:'',component_property:'',
+        remark:error instanceof Error?error.message:'Invalid component metadata'});
+      result.valid=false;
+    }
+    return result;
+  };
   app.get('/api/metadata/pages/:apiName/layouts/:variant/versions/:version',wrap(async(req,res)=>{
     const actor=authenticated(req),name=req.params.apiName;
     if(!api.test(name))throw new Error('Invalid Page API name');
@@ -64,7 +85,8 @@ export function registerPageApiController(app:Express,db:SqlPersistence,rbac:Rba
     const variant=pageLayoutVariant(req.body?.variant??'Desktop');
     const page=await pages.editor(actor.tenant_id,name,variant) as InventoryPage;
     const definitions=await inventoryDefinitions(db,actor.tenant_id,page.components,variant);
-    const result=applyInventoryCsv(page,typeof req.body?.csv==='string'?req.body.csv:'',definitions);
+    const result=await preflightInventory(actor.tenant_id,variant,
+      applyInventoryCsv(page,typeof req.body?.csv==='string'?req.body.csv:'',definitions));
     res.setHeader('Cache-Control','private, no-store');
     res.json({valid:result.valid,issues:result.issues,changes:result.changes,skipped:result.skipped,
       draftRevision:page.draftRevision??0});
@@ -80,7 +102,8 @@ export function registerPageApiController(app:Express,db:SqlPersistence,rbac:Rba
     const page=await pages.editor(actor.tenant_id,name,variant) as InventoryPage;
     if((page.draftRevision??0)!==expected)throw new Error('Page layout changed since CSV validation. Validate the file again.');
     const definitions=await inventoryDefinitions(db,actor.tenant_id,page.components,variant);
-    const result=applyInventoryCsv(page,typeof req.body?.csv==='string'?req.body.csv:'',definitions);
+    const result=await preflightInventory(actor.tenant_id,variant,
+      applyInventoryCsv(page,typeof req.body?.csv==='string'?req.body.csv:'',definitions));
     res.setHeader('Cache-Control','private, no-store');
     if(!result.valid){res.json({valid:false,issues:result.issues,changes:0,skipped:result.skipped});return;}
     if(!result.changes){res.json({valid:true,issues:[],changes:0,skipped:result.skipped,page});return;}
