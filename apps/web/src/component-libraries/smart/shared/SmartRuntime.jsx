@@ -362,6 +362,41 @@ export default function SmartRuntime(p){
    {label&&<span className="smart-button-label">{label}</span>}
  </button>;
  else if(name==="smart_toggle")content=<SmartToggle p={p} fire={fire}/>;
+ else if(name==="smart_textbox"){
+  // A single native surface composed of two independently styled halves.
+  // Reuse the shared formula and field-visibility engines, not a second binder.
+  const caption=scopedExpression(p,"label",p.properties?.label??p.label??"",record)||"";
+  const value=scopedExpression(p,"textSource",p.textSource??"",record);
+  const editable=p.readonly===false&&!p.recordId&&!p.previewOnly&&!p.builderPreview;
+  const align=choice=>["left","center","right"].includes(choice)?choice:"left";
+  const alignItems=(choice)=>choice==="right"?"flex-end":choice==="center"?"center":"flex-start";
+  content=<div className="smart-textbox-pair" role="group" aria-label={caption||"Smart Textbox"}
+   style={{borderColor:p.borderColor||"#d2dbe5",borderRadius:number(p.radius,6,0,128),
+    boxShadow:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none",
+    fontSize:number(p.textSize,14,8,96)}}>
+   <span className="smart-textbox-caption" style={{backgroundColor:p.backgroundColor||"#f1f5f9",
+     color:p.labelColor||"#334155",textAlign:align(p.labelAlignment),
+     justifyContent:alignItems(p.labelAlignment)}}>
+    {caption|| (p.builderPreview?"Caption":"")}
+   </span>
+   <div className="smart-textbox-value-panel" style={{
+    backgroundColor:p.headerBodyColor||"#fff",color:p.headerTextColor||"#1e293b",
+    justifyContent:alignItems(p.headerAlignment)}}>
+    <div key={p.textSource??""} className="smart-textbox-value" role="textbox"
+      aria-label={caption||"Value"} aria-readonly={!editable}
+      tabIndex={editable?0:undefined} contentEditable={editable}
+      suppressContentEditableWarning={editable}
+      style={{color:p.supportingTextColor||p.headerTextColor||"#1e293b",
+       fontWeight:p.supportingBold===true||p.headerBold===true?700:400,
+       borderColor:p.supportingBorderColor||"transparent",
+       textAlign:align(p.supportingAlignment||p.headerAlignment),
+       whiteSpace:p.wrapText===false?"nowrap":"pre-wrap",
+       textOverflow:p.wrapText===false?"ellipsis":undefined}}>
+      {value|| (p.builderPreview?"Text Here":"")}
+    </div>
+   </div>
+  </div>;
+ }
  else if(name==="smart_text")content=<input className="smart-input-box" type="text"
   aria-label={label||text(p.placeholder||"Input")}
   placeholder={p.builderPreview===true&&![p.placeholder,p.textSource,p.defaultValue,p.value].some(v=>v!==undefined&&v!==null&&v!=="")
