@@ -25,6 +25,19 @@ test('Mobile changes only one visual property; future Desktop changes still prop
  assert.ok(!('__deviceLayout' in effective[0]));
 });
 
+test('Data and action wiring stay shared even if a device submits changed values',()=>{
+ const parent=[node('calendar',{backgroundColor:'white',actionFlows:{click:'SharedFlow'},
+  objectApiName:'Calendar',bindFormula:'$state.selected'})];
+ const mobile=[node('calendar',{backgroundColor:'blue',actionFlows:{click:'MobileFlow'},
+  objectApiName:'DifferentObject',bindFormula:'$state.selected'})];
+ const delta=createDeviceComponentOverrides(parent,mobile,new Set(['bindFormula']));
+ assert.deepEqual(delta[0].properties,{backgroundColor:'blue'});
+ const effective=applyDeviceComponentOverrides(parent,delta);
+ assert.equal(effective[0].properties.objectApiName,'Calendar');
+ assert.deepEqual(effective[0].properties.actionFlows,{click:'SharedFlow'});
+ assert.equal(effective[0].properties.backgroundColor,'blue');
+});
+
 test('Tablet and Custom inherit parent by default; an override can be reset',()=>{
  const desktop=[node('calendar',{backgroundColor:'white',borderColor:'black'})];
  assert.deepEqual(createDeviceComponentOverrides(desktop,desktop),[]);
