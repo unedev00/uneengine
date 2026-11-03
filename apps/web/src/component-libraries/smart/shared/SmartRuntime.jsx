@@ -116,6 +116,16 @@ function SmartCard({p,record,onButtonClick,selected=false}){
   ?null:number(p.imageWidth,0,0,1200);
  const imageVisible=!grid||(horizontal?imageWidth!==0:imageHeight>0);
  const headerHeight=number(p.headerBoxHeight,44,0,1200);
+ // Optional shared Card Grid spacing keeps the historic 4px/10px layout
+ // until a tenant explicitly configures the new Card Padding control.
+ const cardPadding=grid&&p.cardPadding!==undefined&&p.cardPadding!==null&&p.cardPadding!==""
+  ?number(p.cardPadding,10,0,160):null;
+ const focused=grid&&selected;
+ const focusedWidth=number(p.focusedCardWidth,0,0,1200);
+ const focusedHeight=number(p.focusedCardHeight,0,0,1200);
+ const focusedText=focused&&p.focusedTextColor?String(p.focusedTextColor):null;
+ const focusedWeight=focused&&typeof p.focusedTextBold==="boolean"
+  ?(p.focusedTextBold?700:400):undefined;
  // Standalone Image has exactly ONE decorative stroke, on the native image.
  // A card-grid item remains a separate card with an optional image stroke.
  // Never paint an implicit card border around an independently bordered Image.
@@ -129,10 +139,15 @@ function SmartCard({p,record,onButtonClick,selected=false}){
   background:grid&&selected&&p.selectedCardColor?p.selectedCardColor:
    single?(p.imageBackgroundColor??p.backgroundColor??"transparent"):(p.backgroundColor||"#fff"),border:cardBorder,
   borderRadius:number(p.radius,12),overflow:"hidden",position:"relative",minWidth:0,
-  fontSize:number(p.textSize,16,8,96),
+  fontSize:focused&&p.focusedTextSize!==undefined&&p.focusedTextSize!==null&&p.focusedTextSize!==""
+   ?number(p.focusedTextSize,16,8,96):number(p.textSize,16,8,96),
+  color:focusedText||undefined,
   boxShadow:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none",
   ...(single?{height:"100%",minHeight:0}:{}),
   ...(grid?{height:"100%",minHeight:0}:{}),
+  ...(focused&&focusedWidth>0?{width:"min(100%, "+focusedWidth+"px)"}:{}),
+  ...(focused&&focusedHeight>0?{height:"min(100%, "+focusedHeight+"px)"}:{}),
+  ...(focused&&(focusedWidth>0||focusedHeight>0)?{margin:"auto"}:{})
  }} data-selected={selected?"true":undefined}>
   {imageVisible&&<div style={{order:["right","bottom"].includes(p.imagePlacement)?2:0,
     flex:horizontal?(grid&&imageWidth!==null?"0 0 "+imageWidth+"px":"1 1 50%"):
@@ -164,7 +179,7 @@ function SmartCard({p,record,onButtonClick,selected=false}){
   {header&&headerHeight>0&&<div className="smart-card-content" style={{
     order:1,flex:horizontal?(imageVisible?"1 1 50%":"1 1 100%"):undefined,display:"flex",alignItems:"center",
     height:headerHeight,alignSelf:horizontal?"center":undefined,flexShrink:0,
-    fontWeight:p.headerBold===false?400:700,
+    fontWeight:focusedWeight??(p.headerBold===false?400:700),
     // Standalone Image's visible caption is edited by the shared Typography
     // Label Alignment control; Card Grid retains its prior Header precedence.
     textAlign:(single?p.labelAlignment||p.headerAlignment:p.headerAlignment||p.labelAlignment)||"left",
@@ -172,14 +187,18 @@ function SmartCard({p,record,onButtonClick,selected=false}){
       (single?p.labelAlignment||p.headerAlignment:p.headerAlignment||p.labelAlignment)==="center"?"center":"flex-start",
     fontSize:single?number(p.textSize,16,8,96):undefined,
     border:p.headerBorderColor?"1px solid "+p.headerBorderColor:undefined,
-    color:single?p.labelColor||p.defaultValueColor||undefined:p.defaultValueColor||p.labelColor||undefined,
+    color:focusedText||(single?p.labelColor||p.defaultValueColor||undefined:p.defaultValueColor||p.labelColor||undefined),
     whiteSpace:p.wrapText===false?"nowrap":"normal",
-    overflow:"hidden",overflowWrap:"anywhere",padding:"4px 10px"
+    overflow:"hidden",overflowWrap:"anywhere",
+    padding:cardPadding===null?"4px 10px":cardPadding+"px"
   }}>{header}</div>}
-  {grid&&(description||value||buttonText)&&<div className="smart-card-details">
-   {description&&<span className="smart-card-description">{description}</span>}
+  {grid&&(description||value||buttonText)&&<div className="smart-card-details"
+   style={cardPadding===null?undefined:{padding:cardPadding+"px"}}>
+   {description&&<span className="smart-card-description"
+     style={{color:focusedText||undefined,fontWeight:focusedWeight}}>{description}</span>}
    {(value||buttonText)&&<div className="smart-card-footer">
-    {value&&<strong className="smart-card-value">{value}</strong>}
+    {value&&<strong className="smart-card-value"
+      style={{color:focusedText||undefined,fontWeight:focusedWeight}}>{value}</strong>}
     {buttonText&&<button type="button" className="smart-card-button"
       disabled={!onButtonClick} aria-label={buttonText}
       style={{
@@ -479,7 +498,22 @@ export default function SmartRuntime(p){
    </div>
   </div>;
  }
- else if(name==="smart_text")content=<input className="smart-input-box" type="text"
+ else if(name==="smart_text"){
+  const contentValue=scopedExpression(p,p.textSource?"textSource":"defaultValue",
+   p.textSource??p.defaultValue??p.value??p.label??"",record);
+  // Keep the existing Smart Input exactly as it was; display mode is an
+  // opt-in metadata property for labels, headings and read-only values.
+  content=p.displayMode==="display"
+   ?<div className="smart-display-text" style={{...style,...shadowStyle,
+     width:"100%",height:"100%",minWidth:0,minHeight:0,display:"flex",alignItems:"center",
+     justifyContent:p.labelAlignment==="right"?"flex-end":p.labelAlignment==="center"?"center":"flex-start",
+     padding:"8px 12px",overflow:"hidden",overflowWrap:"anywhere",
+     whiteSpace:p.wrapText===false?"nowrap":"pre-wrap",
+     fontWeight:p.headerBold===true?700:400,
+     background:p.backgroundColor||"transparent",
+     borderStyle:"solid",borderWidth:p.borderWidth===undefined?0:number(p.borderWidth,0,0,24),
+     borderColor:p.borderColor||"transparent"}}>{contentValue}</div>
+   :<input className="smart-input-box" type="text"
   aria-label={label||text(p.placeholder||"Input")}
   placeholder={p.builderPreview===true&&![p.placeholder,p.textSource,p.defaultValue,p.value].some(v=>v!==undefined&&v!==null&&v!=="")
     &&!(p.properties&&Object.prototype.hasOwnProperty.call(p.properties,"label"))
@@ -495,6 +529,7 @@ export default function SmartRuntime(p){
     background:p.backgroundColor||"#fff",
     textAlign:p.labelAlignment||"left","--smart-placeholder-color":p.labelColor||"#64748b"}}
   onChange={e=>fire("change",e.target.value)}/>;
+ }
  else if(name==="smart_lookup")content=<SmartLookup p={p} fire={fire}
    style={{...style,backgroundColor:p.backgroundColor||undefined,borderColor:p.borderColor||undefined,
     width:"100%",height:"100%",minHeight:0,color:p.labelColor||undefined,fontSize:number(p.textSize,16)}}/>;
@@ -508,7 +543,9 @@ export default function SmartRuntime(p){
   const gap=number(p.gap,12,0,160);
   const minimumCardHeight=number(p.cardMinHeight,96,96,1200);
   const boundRows=recordsOf(p);
-  const selection=p.selectedCardColor?cardSelection(p):null;
+  const selection=p.selectedCardColor||p.focusedCardWidth||p.focusedCardHeight||
+   p.focusedTextColor||p.focusedTextBold!==undefined||p.focusedTextSize
+   ?cardSelection(p):null;
   const previewRows=(p.previewOnly===true||p.builderPreview===true||p.preview===true)&&boundRows.length===0
     ?Array.from({length:columns*rows},(_,i)=>({Id:"card-preview-"+i,Name:"Sample item "+(i+1)}))
     :boundRows;
