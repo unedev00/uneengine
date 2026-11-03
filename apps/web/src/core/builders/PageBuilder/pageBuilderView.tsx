@@ -522,10 +522,10 @@ function PageBuilder({
   const [newRecordMode,setNewRecordMode]=useState<'View'|'Edit'>('View');
   const [newPageTemplate, setNewPageTemplate] = useState<LightningPageTemplate>('header-main-sidebar');
   const [newPageLayoutMode, setNewPageLayoutMode] = useState<LightningPageMetadata['layoutMode']>('free-canvas');
-  const [newPageTargetObject, setNewPageTargetObject] = useState(page.targetObject || objects[0]?.apiName || '');
+  const [newPageTargetObject, setNewPageTargetObject] = useState(recordPageContext || '');
   const [newPageAppId, setNewPageAppId] = useState('');
-  const [newPageDevices, setNewPageDevices] = useState<Array<'Desktop' | 'Phone'>>(['Desktop']);
-  const [newPageDeviceChoice, setNewPageDeviceChoice] = useState<'Desktop' | 'Tablet' | 'Phone'>('Desktop');
+  const [newPageDevices, setNewPageDevices] = useState<LightningPageMetadata['devices']>(['Desktop']);
+  const [newPageDeviceChoice, setNewPageDeviceChoice] = useState<'Desktop' | 'Tablet' | 'Phone' | 'Custom'>('Desktop');
   const [newPageCanvasWidth, setNewPageCanvasWidth] = useState(1440);
   const [newPageCanvasHeight, setNewPageCanvasHeight] = useState(900);
   const [dragOverId, setDragOverId] = useState('');
@@ -2148,7 +2148,7 @@ function PageBuilder({
     }catch(error){onNotify(error instanceof Error?error.message:'Unable to download page inventory');}
     finally{setInventoryDownloading('');}
   };
-  const openCreatePage = () => { setNewPageAppId(pageListAppTab!=='all'&&pageListAppTab!=='other'?pageListAppTab:''); setNewPageTargetObject(pageListObject || page.targetObject || objects[0]?.apiName || ''); setNewPageLayoutMode('free-canvas'); setNewPageType(recordPageContext ? 'Record Page' : 'Home Page'); setNewPageDeviceChoice('Desktop'); setNewPageDevices(['Desktop']); setNewPageCanvasWidth(1440); setNewPageCanvasHeight(900); setCreatePageOpen(true); };
+  const openCreatePage = () => { setNewPageAppId(pageListAppTab!=='all'&&pageListAppTab!=='other'?pageListAppTab:''); setNewPageTargetObject(recordPageContext || ''); setNewPageLayoutMode('free-canvas'); setNewPageType(recordPageContext ? 'Record Page' : 'Home Page'); setNewPageDeviceChoice('Desktop'); setNewPageDevices(['Desktop']); setNewPageCanvasWidth(1440); setNewPageCanvasHeight(900); setCreatePageOpen(true); };
   const createPage = async () => {
     if (saving) return;
     const label = newPageLabel.trim();
@@ -4307,86 +4307,84 @@ function PageBuilder({
         onNotify={onNotify} onClose={() => setRouteDirectoryOpen(false)} />}
       {createPageOpen && <div className="modal-backdrop" role="presentation"
         onMouseDown={event => { if (event.target === event.currentTarget) setCreatePageOpen(false); }}>
-        <section className="modal" role="dialog" aria-modal="true" aria-labelledby="create-lightning-page-title">
+        <section className="modal builder-create-page-dialog" role="dialog" aria-modal="true" aria-labelledby="create-lightning-page-title">
           <div className="modal-header">
             <h2 id="create-lightning-page-title">Create a page</h2>
-            <button className="icon-button dark" onClick={() => setCreatePageOpen(false)} aria-label="Close"><X size={18} /></button>
+            <button className="icon-button dark" type="button" onClick={() => setCreatePageOpen(false)} aria-label="Close"><X size={18} /></button>
           </div>
-          <p className="modal-copy">Start with the page you need. You can adjust its blocks and appearance later.</p>
-          <label className="form-label" htmlFor="new-lightning-page-label">Page name
-            <input id="new-lightning-page-label" className="form-control" autoFocus
-              value={newPageLabel} onChange={event => setNewPageLabel(event.target.value)}
-              onKeyDown={event => { if (event.key === 'Enter') void createPage(); }}
-              placeholder="For example, Inventory Management" />
-          </label>
-
-<fieldset className="builder-start-choices">
-            <legend>What do you want to build?</legend>
-            <div role="radiogroup" aria-label="Choose page type" className="builder-choice-grid">
-              {pageBuilderStartOptions.filter(choice => recordPageContext ? choice.type === 'Record Page' : choice.type !== 'Record Page').map(choice => <label key={choice.type} className={newPageType === choice.type ? 'builder-choice active' : 'builder-choice'}>
-                <input type="radio" name="builder-new-page-type" value={choice.type} checked={newPageType === choice.type}
-                  onChange={() => {setNewPageType(choice.type);setNewPageTemplate(choice.type === 'Record Page' ? 'header-main-sidebar' : 'main-sidebar');
-                    if(choice.type==='In-Screen Page'){setNewPageLayoutMode('free-canvas');setNewPageCanvasWidth(480);setNewPageCanvasHeight(420);}
-                    else {setNewPageCanvasWidth(1440);setNewPageCanvasHeight(900);}}}/>
-                <strong>{choice.title}</strong><span>{choice.description}</span>
-              </label>)}
+          <div className="builder-create-page-grid">
+            <div className="builder-create-page-fields">
+              <p className="modal-copy">Start with the page you need. You can adjust its blocks and appearance later.</p>
+              <label className="form-label" htmlFor="new-lightning-page-label">Page name
+                <input id="new-lightning-page-label" className="form-control" autoFocus
+                  value={newPageLabel} onChange={event => setNewPageLabel(event.target.value)}
+                  onKeyDown={event => { if (event.key === 'Enter') void createPage(); }}
+                  placeholder="For example, Inventory Management" />
+              </label>
+              <label className="form-label" htmlFor="new-lightning-page-object">Connect to data {newPageType === 'Record Page' ? '(required)' : '(optional)'}
+                <select id="new-lightning-page-object" className="form-control" value={newPageTargetObject}
+                  onChange={event => setNewPageTargetObject(event.target.value)}>
+                  {!recordPageContext && <option value="">No data object — bind later</option>}
+                  {objects.filter(object => !recordPageContext || object.apiName === recordPageContext).map(object => <option key={object.apiName} value={object.apiName}>{object.label}</option>)}
+                </select>
+              </label>
+              <label className="form-label" htmlFor="new-lightning-page-app">Application (optional)
+                <select id="new-lightning-page-app" className="form-control" value={newPageAppId}
+                  onChange={event => setNewPageAppId(event.target.value)}>
+                  <option value="">Assign later</option>
+                  {apps.map(app => <option key={app.apiName} value={app.apiName}>{app.label}</option>)}
+                </select>
+              </label>
             </div>
-          </fieldset>
-          {recordPageContext && <label className="form-label">Record operation
-            <select className="form-control" value={newRecordMode} onChange={event=>setNewRecordMode(event.target.value as 'View'|'Edit')}>
-              <option value="View">View records</option><option value="Edit">Edit records</option>
-            </select>
-          </label>}
-          <label className="form-label" htmlFor="new-lightning-page-object">Connect to data {newPageType === 'Record Page' ? '(required)' : '(optional)'}
-            <select id="new-lightning-page-object" className="form-control" value={newPageTargetObject}
-              onChange={event => setNewPageTargetObject(event.target.value)}>
-              {!recordPageContext && <option value="">No data object — bind later</option>}
-              {objects.filter(object => !recordPageContext || object.apiName === recordPageContext).map(object => <option key={object.apiName} value={object.apiName}>{object.label}</option>)}
-            </select>
-          </label>
-          <label className="form-label" htmlFor="new-lightning-page-app">Application (optional)
-            <select id="new-lightning-page-app" className="form-control" value={newPageAppId}
-              onChange={event => setNewPageAppId(event.target.value)}>
-              <option value="">Assign later</option>
-              {apps.map(app => <option key={app.apiName} value={app.apiName}>{app.label}</option>)}
-            </select>
-          </label>
-          <p className="properties-help">
-            {newPageType === 'App Page'
-              ? "When you Activate this page, it will automatically be added to the chosen application's navigation."
-              :newPageType==='In-Screen Page'?'In-screen windows are reusable and not added to navigation. Their application association controls ownership and filtering.'
-              :'For Home and Record pages, choosing an application prepares an App Default assignment. You can change it before activation.'}
-          </p>
-
-<label className="form-label">Design for
-            <select className="form-control" aria-label="Target device" value={newPageDeviceChoice} onChange={event => {
-              const target = event.target.value as 'Desktop' | 'Tablet' | 'Phone';
-              setNewPageDeviceChoice(target);
-              setNewPageDevices([target === 'Phone' ? 'Phone' : 'Desktop']);
-              const size = target === 'Phone' ? [390,844] : target === 'Tablet' ? [1024,768] : [1440,900];
-              setNewPageCanvasWidth(size[0]); setNewPageCanvasHeight(size[1]);
-            }}>
-              <option value="Desktop">Desktop</option><option value="Tablet">Tablet</option><option value="Phone">Phone</option>
-            </select>
-          </label>
-          <details className="builder-advanced-panel"><summary>Custom dimensions</summary>
-          <div className="permission-form-grid">
-            <label className="form-label">Canvas width (px)<input className="form-control" type="number" min={320} max={7680} value={newPageCanvasWidth}
-              onChange={event => setNewPageCanvasWidth(Math.min(7680, Math.max(320, Number(event.target.value) || 320)))}/></label>
-            <label className="form-label">Canvas height (px)<input className="form-control" type="number" min={320} max={7680} value={newPageCanvasHeight}
-              onChange={event => setNewPageCanvasHeight(Math.min(7680, Math.max(320, Number(event.target.value) || 320)))}/></label>
+            <div className="builder-create-page-options">
+              <p className="properties-help builder-create-page-help">
+                {newPageType === 'App Page'
+                  ? "When you activate this page, it will be added to the chosen application's navigation."
+                  :newPageType==='In-Screen Page'?'In-screen windows are reusable and not added to navigation. Their application association controls ownership and filtering.'
+                  :'For Home and Record pages, choosing an application prepares an App Default assignment. You can change it before activation.'}
+              </p>
+              <fieldset className="builder-start-choices">
+                <legend>What do you want to build?</legend>
+                <div role="radiogroup" aria-label="Choose page type" className="builder-choice-grid">
+                  {pageBuilderStartOptions.filter(choice => recordPageContext ? choice.type === 'Record Page' : choice.type !== 'Record Page').map(choice => <label key={choice.type} className={newPageType === choice.type ? 'builder-choice active' : 'builder-choice'}>
+                    <input type="radio" name="builder-new-page-type" value={choice.type} checked={newPageType === choice.type}
+                      onChange={() => {
+                        setNewPageType(choice.type);
+                        setNewPageTargetObject(choice.type === 'Record Page' ? (recordPageContext || '') : '');
+                        setNewPageTemplate(choice.type === 'Record Page' ? 'header-main-sidebar' : 'main-sidebar');
+                        setNewPageDeviceChoice('Desktop');
+                        setNewPageDevices(['Desktop']);
+                        if(choice.type==='In-Screen Page'){setNewPageLayoutMode('free-canvas');setNewPageCanvasWidth(480);setNewPageCanvasHeight(420);}
+                        else {setNewPageCanvasWidth(1440);setNewPageCanvasHeight(900);}
+                      }}/>
+                    <strong>{choice.title}</strong><span>{choice.description}</span>
+                  </label>)}
+                </div>
+              </fieldset>
+              {recordPageContext && <label className="form-label">Record operation
+                <select className="form-control" value={newRecordMode} onChange={event=>setNewRecordMode(event.target.value as 'View'|'Edit')}>
+                  <option value="View">View records</option><option value="Edit">Edit records</option>
+                </select>
+              </label>}
+              <label className="form-label">Design for
+                <select className="form-control" aria-label="Target device" value={newPageDeviceChoice} onChange={event => {
+                  const target = event.target.value as 'Desktop' | 'Tablet' | 'Phone' | 'Custom';
+                  setNewPageDeviceChoice(target);
+                  setNewPageDevices([target]);
+                  const size = target === 'Phone' ? [390,844] : target === 'Tablet' ? [1024,768]
+                    : target === 'Custom' ? [1440,900]
+                    : newPageType === 'In-Screen Page' ? [480,420] : [1440,900];
+                  setNewPageCanvasWidth(size[0]); setNewPageCanvasHeight(size[1]);
+                }}>
+                  <option value="Desktop">Desktop</option><option value="Phone">Mobile</option>
+                  <option value="Tablet">Tablet</option><option value="Custom">Custom</option>
+                </select>
+              </label>
+            </div>
           </div>
-          <div className="device-picker orientation-picker" role="group" aria-label="Page orientation">
-            {(['Portrait','Landscape'] as const).map(value => <button type="button" key={value}
-              className={canvasOrientation(newPageCanvasWidth,newPageCanvasHeight) === value ? 'device-choice active' : 'device-choice'}
-              aria-pressed={canvasOrientation(newPageCanvasWidth,newPageCanvasHeight) === value}
-              onClick={() => { const size = canvasDimensionsForOrientation(newPageCanvasWidth,newPageCanvasHeight,value); setNewPageCanvasWidth(size.width);setNewPageCanvasHeight(size.height); }}>{value}</button>)}
-          </div>
-          </details>
-          {newPageDeviceChoice === 'Tablet' && <p className="properties-help">This creates a separate Tablet layout draft. Device activation still uses the Desktop/Phone form-factor assignment.</p>}
           <div className="modal-actions">
-            <button className="btn" onClick={() => setCreatePageOpen(false)}>Cancel</button>
-            <button className="btn btn-brand"
+            <button className="btn" type="button" onClick={() => setCreatePageOpen(false)}>Cancel</button>
+            <button className="btn btn-brand" type="button"
               disabled={saving || !newPageLabel.trim() || (newPageType === 'Record Page' && !newPageTargetObject)}
               onClick={() => void createPage()}><Plus size={14} />{saving ? 'Creating…' : 'Create draft'}</button>
           </div>
