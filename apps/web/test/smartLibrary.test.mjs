@@ -68,6 +68,14 @@ test('Insert Ribbon exposes visible Smart components without requiring a selecte
  assert.match(read('../src/core/builders/PageBuilder/PageBuilderRibbonLayout.css'),/> \.smart-insert-ribbon/);
 });
 
+test('unrequested Row, Column and Card layout tiles are hidden without breaking existing pages',()=>{
+ const view=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const layouts=read('../src/core/pages/TemplatePageRuntime/pageComponentLayout.ts');
+ assert.match(view,/layoutTypes\.filter\(type=>!\['Row','Column','Card'\]\.includes\(type\)\)/);
+ assert.match(layouts,/layoutTypes = \['Container', 'Row', 'Column', 'Card', 'Grid'\]/);
+ assert.match(view,/component\.apiName==='smart_card_grid'\?'Card Grid'/);
+});
+
 test('Smart visual/property fixes are registered without changing historic SQL migrations',()=>{
  const runtime=read('../src/component-libraries/smart/shared/SmartRuntime.jsx');
  const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
