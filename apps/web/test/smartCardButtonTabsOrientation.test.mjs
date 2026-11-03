@@ -145,7 +145,7 @@ test('Card Grid selectedCardColor follows formula Page State and highlights only
   actionFlows:{click:{actionType:'Formula',formula:'@state.category := @Id'}}
  });
  assert.equal((html.match(/data-selected="true"/g)??[]).length,1);
- assert.match(html,/data-selected="true" style="[^"]*background:#d92730/);
+ assert.match(html,/background:#d92730[^"]*" data-selected="true"/);
  assert.match(html,/FOOD/);
  assert.match(html,/DRINKS/);
 });
@@ -158,14 +158,14 @@ test('Card Grid selectedCardColor follows authored PageState Name binding and na
   actionFlows:{click:{actionType:'PageState',stateKey:'categoryName',value:'$event.record.Name'}}
  });
  assert.equal((state.match(/data-selected="true"/g)??[]).length,1);
- assert.match(state,/data-selected="true" style="[^"]*background:#123456/);
+ assert.match(state,/background:#123456[^"]*" data-selected="true"/);
  const collection=await renderSmart('smart_card_grid',{
   records,textSource:'@Name',selectedCardColor:'#abcdef',
   dataCollection:{name:'Categories',items:records},
   pageState:{collectionSelections:{categories:{Id:'food'}}}
  });
  assert.equal((collection.match(/data-selected="true"/g)??[]).length,1);
- assert.match(collection,/data-selected="true" style="[^"]*background:#abcdef/);
+ assert.match(collection,/background:#abcdef[^"]*" data-selected="true"/);
  const none=await renderSmart('smart_card_grid',{
   records,textSource:'@Name',selectedCardColor:'#abcdef',
   pageState:{}
