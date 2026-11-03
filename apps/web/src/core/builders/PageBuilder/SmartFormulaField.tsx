@@ -86,7 +86,11 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
  // Page Builder's first object or another selected independent source.
  const tableOpen=/\bTABLE\s*\(\s*@([A-Za-z][A-Za-z0-9_]*)\s*,([^)]*)$/i.exec(draft.slice(0,caret));
  const tableObject=tableOpen?objects.find(object=>object.apiName===tableOpen[1]):undefined;
- const recordMentions:{reference:string;label:string}[]=tableObject&&matches
+ const tableSourcePrompt=/\bTABLE\s*\(\s*@[A-Za-z0-9_]*$/i.test(draft.slice(0,caret));
+ const tableSources=selectedSourceObjects??objects;
+ const recordMentions:{reference:string;label:string}[]=tableSourcePrompt&&matches
+  ?tableSources.map(object=>({reference:'@'+object.apiName,label:object.label+' Object source'}))
+  :tableObject&&matches
   ?tableObject.fields.map(field=>({reference:'@'+field.apiName,label:tableObject.label+' → '+field.label}))
   :objects.length&&sourceRoots.length
   ?relationshipFormulaFields(objects,sourceRoots,matches?.query??'',mentionKind,singleFieldOnly)
@@ -126,7 +130,7 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
    setMatches(mention?{start:caret-mention[0].length,end:caret,query:mention[1]}:tableField);
    const name=next.trimStart().startsWith('=')&&!openString
       ?/(?:^\s*=\s*|[,()]\s*)([A-Za-z][A-Za-z0-9_]*)$/.exec(before):null;
-   setFunctionMatch(name?{start:caret-name[1].length,end:caret,query:name[1]}:null);
+   setFunctionMatch(tablePart?null:name?{start:caret-name[1].length,end:caret,query:name[1]}:null);
  };
  const update=(next:string,caret:number)=>{
   setDraft(next);
