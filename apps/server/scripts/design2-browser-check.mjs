@@ -14,7 +14,7 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  await db.query(componentMigration);
  const listed=await db.query(`SELECT component_api,area,slot_key,property_key,row_no,column_no,width_px,height_px
    FROM md_builder_design2_component_slots ORDER BY component_api,area_order,row_no,column_no`);
- assert.equal(listed.rows.length,319,'Approved Design 2 component matrix missing or duplicated after replay');
+ assert.equal(listed.rows.length,320,'Approved Design 2 component matrix missing or duplicated after replay');
  assert.equal(new Set(listed.rows.map(row=>row.component_api)).size,13,'Wrong Smart component count');
  const slot=(api,area,row,col)=>listed.rows.find(item=>item.component_api===api&&
    item.area===area&&item.row_no===row&&item.column_no===col);
@@ -41,7 +41,7 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
   return {status:response.status,body:await response.json()};
  },token);
  assert.equal(result.status,200,'OneEngine rejected authorised shared ribbon metadata');
- assert.equal(result.body.design2Slots?.length,319,'Builder endpoint did not expose Design 2 SQL metadata');
+ assert.equal(result.body.design2Slots?.length,320,'Builder endpoint did not expose Design 2 SQL metadata');
  // The catalog is SQL-backed but still protected by central OneEngine RBAC.
  const {AuthenticationService}=await import('../dist-system/system-files/authentication.js');
  const auth=new AuthenticationService(db);
