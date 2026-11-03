@@ -890,21 +890,23 @@ function SetupApp({ onLogout, entryTiming }: { onLogout: () => void; entryTiming
     }
   };
   const updatePageDetailsFromBuilder = async (apiName:string,label:string,
-    appApiName:string|null,expectedLabel:string,nextApiName=apiName):Promise<boolean>=>{
+    appApiName:string|null,expectedLabel:string,nextApiName=apiName,
+    devices?:LightningPageMetadata['devices'],expectedDevices?:LightningPageMetadata['devices']):Promise<boolean>=>{
     try{
       const {page:updated}=await apiRequest<{page:LightningPageMetadata}>(
         `/metadata/pages/${encodeURIComponent(apiName)}/details`,{
-          method:'PATCH',body:JSON.stringify({label,appApiName,expectedLabel,nextApiName})
+          method:'PATCH',body:JSON.stringify({label,appApiName,expectedLabel,nextApiName,
+            ...(devices?{devices,expectedDevices}:{} )})
         });
       pageDefinitionCache.current.clear();
       // Keep local unsaved component edits while reconciling the canonical page
       // API name and assignment. Page layouts and history are ID-backed in SQL.
       setPage(current=>current.apiName===apiName
-        ?{...current,apiName:updated.apiName,label:updated.label,
+        ?{...current,apiName:updated.apiName,label:updated.label,devices:updated.devices,
           activationAssignments:updated.activationAssignments}
         :current);
       setPages(current=>current.map(item=>item.apiName===apiName
-        ?{...item,apiName:updated.apiName,label:updated.label,
+        ?{...item,apiName:updated.apiName,label:updated.label,devices:updated.devices,
           activationAssignments:updated.activationAssignments,updatedAt:updated.updatedAt}:item));
       if(updated.apiName!==apiName){
         pageRouteApiName.current=updated.apiName;
