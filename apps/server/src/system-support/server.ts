@@ -1555,11 +1555,11 @@ export function createSystemServer(db:SqlPersistence) {
         ORDER BY p.sort_order,r.component_api`),
       db.query<{component_api:string}>(`SELECT component_api FROM md_builder_ribbon_components
         ORDER BY component_api`),
-      db.query<{area:string;area_order:number;slot_key:string;row_no:number;
+      db.query<{component_api:string;area:string;area_order:number;slot_key:string;row_no:number;
         order_no:number;width_px:number;height_px:number;property_key:string|null;
-        fallback_key:string}>(`SELECT area,area_order,slot_key,row_no,order_no,width_px,height_px,
-          property_key,fallback_key FROM md_builder_design2_slots
-        ORDER BY area_order,row_no,order_no`)
+        fallback_key:string}>(`SELECT component_api,area,area_order,slot_key,row_no,order_no,width_px,height_px,
+          property_key,fallback_key FROM md_builder_design2_component_slots
+        ORDER BY component_api,area_order,row_no,order_no`)
     ]);
     const properties=new Map<string,Record<string,unknown>>();
     for(const row of listed.rows){
@@ -1598,7 +1598,7 @@ export function createSystemServer(db:SqlPersistence) {
     }
     res.json({components:registered.rows.map(row=>row.component_api),
       properties:[...properties.values()],design2Slots:design2Slots.rows.map(slot=>({
-        area:slot.area,areaOrder:slot.area_order,slotKey:slot.slot_key,
+        componentApi:slot.component_api,area:slot.area,areaOrder:slot.area_order,slotKey:slot.slot_key,
         row:slot.row_no,order:slot.order_no,width:slot.width_px,height:slot.height_px,
         propertyKey:slot.property_key,fallbackKey:slot.fallback_key
       }))});
