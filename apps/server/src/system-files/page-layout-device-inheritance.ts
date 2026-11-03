@@ -17,7 +17,7 @@ const MARKER='__deviceLayout';
  * Additional Data/Actions keys come from the SQL Ribbon property registry. */
 const sharedWiring=new Set(['actionFlows','actions','interactions','dataBindings',
  'dataBinding','binding','bindings','objectApiName','fieldApiName','contextApiName',
- 'flowApiName','eventHandlers','eventBindings','pagePropertyContract',
+ 'flowApiName','eventHandlers','eventBindings',
  'query','recordQuery','dataSource','formula','formulaExpression']);
 const visualOnly=(properties:Record<string,unknown>,shared:ReadonlySet<string>)=>
  Object.fromEntries(Object.entries(properties).filter(([key])=>
