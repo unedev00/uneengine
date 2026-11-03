@@ -84,3 +84,19 @@ test('Existing renderer property bindings remain available, and server uses scop
  assert.match(server,/FROM md_builder_design2_component_slots/);
  assert.match(server,/componentApi:slot\.component_api/);
 });
+
+test('Component-specific Focus Fill is persisted and applied without changing original Design',()=>{
+ const focusSql=read('../../server/src/system-support/migrations/20270321-design2-component-focus-colors.sql');
+ const runtime=read('../src/component-libraries/smart/shared/SmartRuntime.jsx');
+ const sharedCss=read('../src/component-libraries/smart/shared/smart.css');
+ for(const key of ['toggleFocusColor','lookupFocusColor','navigationFocusColor']){
+  assert.ok(focusSql.includes("'"+key+"'"),key+' is not registered');
+  assert.ok(runtime.includes('p.'+key),key+' has no runtime hook');
+ }
+ assert.match(runtime,/borderColor:p\.defaultValueColor\|\|/);
+ assert.match(focusSql,/'smart_calendar','defaultValueColor'/);
+ assert.match(focusSql,/'Design2','Contextual'/);
+ assert.doesNotMatch(focusSql,/UPDATE md_builder_shared_properties SET tab='Design'/);
+ assert.match(sharedCss,/smart-lookup-focus-color/);
+ assert.match(sharedCss,/smart-navigation-focus-color/);
+});
