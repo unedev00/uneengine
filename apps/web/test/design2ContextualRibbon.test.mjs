@@ -27,7 +27,7 @@ test('Approved Design 2 sheet creates 320 per-component 26px controls with no co
  assert.equal(rows.length,320);
  assert.equal(new Set(rows.map(x=>x.component)).size,13);
  assert.equal(new Set(rows.map(x=>[x.component,x.area,x.row,x.column].join(':'))).size,320);
- assert.equal(new Set(rows.map(x=>[x.component,x.area,x.key].join(':'))).size,319);
+ assert.equal(new Set(rows.map(x=>[x.component,x.area,x.key].join(':'))).size,320);
  assert.ok(rows.every(x=>[1,2,3].includes(x.row)&&x.column>=1&&x.column<=6));
  assert.ok(rows.every(x=>[40,80].includes(x.width)));
  assert.match(sql,/ON CONFLICT\(component_api,area,slot_key\) DO UPDATE/);
