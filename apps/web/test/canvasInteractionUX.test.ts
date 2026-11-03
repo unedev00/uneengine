@@ -710,7 +710,7 @@ test('placement controls, component finder and full-width workspace are builder-
   const navigator=await readFile(new URL('../src/core/builders/PageBuilder/PageComponentNavigator.tsx',import.meta.url),'utf8');
   const css=await readFile(new URL('../src/core/builders/PageBuilder/PageBuilderCanvasWorkspace.css',import.meta.url),'utf8');
   const arrange=await readFile(new URL('../src/core/builders/PageBuilder/ArrangeRibbon.tsx',import.meta.url),'utf8');
-  for(const action of ['Bring to front','Send to back','Group','Ungroup'])
+  for(const action of ['Bring to front','Send backward','Group','Ungroup'])
     assert.ok(arrange.includes(action),action);
   for(const action of ['Fit to Screen','ribbonTab===\'Arrange\''])
     assert.ok(builder.includes(action),action);
