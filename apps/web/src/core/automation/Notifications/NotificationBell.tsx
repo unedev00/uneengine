@@ -2,6 +2,7 @@ import './NotificationBellMobile.css';
 import * as React from 'react';
 import {useEffect,useRef,useState} from 'react';
 import {apiRequest} from '../../authentication/Client/authClient';
+import {Bell} from 'lucide-react';
 
 type Notification={id:string;title:string;body:string;createdAt:string;readAt:string|null};
 /** Existing tenant-scoped notification inbox, created by authorised metadata Flows. */
