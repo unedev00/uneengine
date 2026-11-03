@@ -7,28 +7,35 @@ import {componentInstanceNames,canonicalComponentName,componentNamePattern,ensur
 import {pagePropertyContract,conditionSettings,recordFieldSettings,recordSectionSettings} from './page-property-contract.js';
 
 /** One interoperable format for Page Builder inventory export and guarded draft import. */
-/** Keep the first four columns stable for existing imports. The fifth is a display hint. */
-export const INVENTORY_COLUMNS=['pageapi','component_name','component_property','value'] as const;
+/** Type and custom name are independent CSV identity columns. Ribbon Tab is display-only. */
+export const INVENTORY_COLUMNS=['pageapi','component_type','component_name','propertyid','value'] as const;
 export const INVENTORY_EXPORT_COLUMNS=[...INVENTORY_COLUMNS,'ribbon_tab'] as const;
-export type InventoryIssue={row:number;pageapi?:string;component_name:string;component_property:string;value?:string;remark:string};
+const LEGACY_INVENTORY_COLUMNS=['pageapi','component_name','component_property','value'] as const;
+export type InventoryIssue={row:number;pageapi?:string;component_type?:string;component_name:string;component_property:string;value?:string;remark:string};
 type Block={id:string;type:string;label:string;region?:string;visible:boolean;
  position?:{x:number;y:number;width:number;height:number};
  properties:Record<string,unknown>};
 export type InventoryPage={apiName:string;draftRevision?:number;layoutMode?:string;canvasWidth?:number;canvasHeight?:number;components:Block[];[key:string]:unknown};
 export type InventoryRibbonProperty={
  id:string;tab:string;kind:string;defaultValue?:unknown;valueKey?:string;
+ choices?:string[];min?:number;max?:number;
 };
 export type InventoryDefinitions=Map<string,ComponentSettingDefinition[]> & {
  /** Enabled SQL Ribbon rules, keyed by a published component API name. */
  ribbonProperties?:Map<string,InventoryRibbonProperty[]>;
  /** True when the complete SQL-backed property inventory has been read. */
  completeCatalog?:boolean;
+ /** Only explicitly enabled tenant component registrations can be created. */
+ installedTypes?:Set<string>;
 };
 type Definitions=InventoryDefinitions;
+const componentApi=(type:string)=>type.startsWith('Custom:')?type.slice(7):type;
+const componentType=(api:string)=>'Custom:'+api;
+const validComponentApi=(api:string)=>/^[A-Za-z][A-Za-z0-9_]{0,127}$/.test(api);
 const unsafe=new Set(['__proto__','prototype','constructor']);
 // Internal hierarchy links and obsolete Advanced placeholders are not user-editable
 // component properties. Their saved SQL values remain untouched by inventory import.
-const excludedInventoryProperties=new Set(['cssClass','allowedChildTypes','maxChildren','layoutParentId','parentId','navigatorName']);
+const excludedInventoryProperties=new Set(['cssClass','allowedChildTypes','maxChildren','layoutParentId','parentId','navigatorName','libraryComponentId']);
 const inventoryPropertyAllowed=(key:string)=>!excludedInventoryProperties.has(key);
 /** Existing shared Page Runtime metadata, present independently of a component's
  * optional SQL Ribbon slots. Do not invent per-page keys from saved values. */
@@ -85,44 +92,56 @@ function pathValue(source:Record<string,unknown>,path:string):unknown{
 const effective=(saved:unknown,defaultValue:unknown):unknown=>
  saved===undefined||saved===null||saved===''?defaultValue??saved:saved;
 
+/** SQL defines tenant availability and component/ribbon applicability.
+ * Published library contracts supplement shared UI property definitions.
+ */
 export async function inventoryDefinitions(db:SqlPersistence,tenant:string,
  components:readonly Block[],variant:PageLayoutVariant,extraTypes:readonly string[]=[]):Promise<Definitions>{
  const names=[...new Set([...components.map(c=>c.type),...extraTypes]
-   .filter(type=>/^Custom:[A-Za-z][A-Za-z0-9_]{0,127}$/.test(type))
-   .map(type=>type.slice(7)))];
+  .map(componentApi).filter(validComponentApi))];
  const definitions=new Map<string,ComponentSettingDefinition[]>() as Definitions;
  definitions.completeCatalog=true;
- if(!names.length)return definitions;
+ definitions.installedTypes=new Set();
+ if(!names.length){definitions.ribbonProperties=new Map();return definitions;}
+ const available=await db.query<{api_name:string}>(`
+  SELECT api_name FROM md_component_definitions
+  WHERE tenant_id=$1 AND enabled=true AND api_name=ANY($2::text[])`,[tenant,names]);
+ const installed=available.rows.map(row=>row.api_name);
+ definitions.installedTypes=new Set(installed.map(componentType));
+ if(!installed.length){definitions.ribbonProperties=new Map();return definitions;}
  const [published,ribbons]=await Promise.all([
-  db.query<{component_api:string;published_version:number}>(
-   'SELECT component_api,published_version FROM md_component_library_heads WHERE tenant_id=$1 AND component_api=ANY($2::text[]) AND published_version IS NOT NULL',
-   [tenant,names]),
-  // Same source as /api/metadata/builder-ribbon: global properties and only
-  // enabled rules. A disabled/unsupported control is never exported as editable.
+  db.query<{component_api:string;published_version:number}>(`
+   SELECT component_api,published_version FROM md_component_library_heads
+   WHERE tenant_id=$1 AND component_api=ANY($2::text[]) AND published_version IS NOT NULL`,
+   [tenant,installed]),
   db.query<{component_api:string;property_key:string;tab:string;kind:string;
-   default_value:unknown;value_key:string|null}>(`
+   default_value:unknown;value_key:string|null;choices:unknown;min_value:number|null;max_value:number|null}>(`
    SELECT r.component_api,p.property_key,p.tab,
      COALESCE(r.control_kind_override,p.control_kind) AS kind,
      COALESCE(r.default_value_override,p.default_value) AS default_value,
-     r.value_key
+     r.value_key,COALESCE(r.choices_override,p.choices) AS choices,p.min_value,p.max_value
    FROM md_builder_ribbon_component_rules r
    JOIN md_builder_shared_properties p ON p.property_key=r.property_key
    WHERE r.enabled=true AND p.scope='component'
+     AND p.control_kind NOT IN ('command','readonly')
      AND r.component_api=ANY($1::text[])
-   ORDER BY p.sort_order,p.property_key`,[names])
+   ORDER BY p.sort_order,p.property_key`,[installed])
  ]);
+ for(const api of installed)definitions.set(componentType(api),[]);
  for(const row of published.rows){
   const contract=await readComponentContract(db,tenant,row.component_api,row.published_version);
-  definitions.set('Custom:'+row.component_api,availableComponentSettings(
+  definitions.set(componentType(row.component_api),availableComponentSettings(
    contract.propertyDefinitions??[],variant,row.published_version));
  }
  const ribbonProperties=new Map<string,InventoryRibbonProperty[]>();
  for(const item of ribbons.rows){
-  const type='Custom:'+item.component_api;
+  const type=componentType(item.component_api);
   if(!ribbonProperties.has(type))ribbonProperties.set(type,[]);
   if(!inventoryPropertyAllowed(item.property_key))continue;
   ribbonProperties.get(type)!.push({id:item.property_key,tab:item.tab,kind:item.kind,
-   defaultValue:item.default_value??undefined,valueKey:item.value_key??undefined});
+   defaultValue:item.default_value??undefined,valueKey:item.value_key??undefined,
+   choices:Array.isArray(item.choices)?item.choices.filter((x):x is string=>typeof x==='string'):[],
+   min:item.min_value??undefined,max:item.max_value??undefined});
  }
  definitions.ribbonProperties=ribbonProperties;
  return definitions;
@@ -134,8 +153,6 @@ export function exportInventoryCsv(page:InventoryPage,definitions:Definitions=ne
  const names=componentInstanceNames(page.components);
  for(const component of page.components){
   const values=new Map<string,{value:unknown;tab:string}>([
-   ['component.id',{value:component.id,tab:'Advanced'}],
-   ['component.type',{value:component.type,tab:'Advanced'}],
    ['component.visible',{value:component.visible,tab:'View'}],
    ['component.region',{value:component.region??'main',tab:'Layout'}],
    ['component.position.x',{value:component.position?.x,tab:'Layout'}],
@@ -164,7 +181,7 @@ export function exportInventoryCsv(page:InventoryPage,definitions:Definitions=ne
     tab:descriptor.tab});
   }
   for(const [key,{value,tab}] of values)
-   rows.push([page.apiName,names.get(component.id),key,valueText(value),tab]);
+   rows.push([page.apiName,componentApi(component.type),names.get(component.id),key,valueText(value),tab]);
  }
  return inventoryCsv(rows);
 }
