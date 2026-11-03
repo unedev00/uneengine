@@ -201,17 +201,16 @@
 .office-builder-ribbon .advanced-activation .advanced-default{left:50%;top:5px;right:8px}
 /* Group 3: x=630-916 */
 .office-builder-ribbon .advanced-properties .advanced-api-name{left:8px;right:8px;top:5px}
-.office-builder-ribbon .advanced-properties .advanced-instance-name{left:8px;right:8px;top:35px}
-.office-builder-ribbon .advanced-properties .advanced-visible{left:8px;top:65px;width:calc(50% - 12px)}
-.office-builder-ribbon .advanced-properties .advanced-readonly{left:50%;top:65px;right:8px}
+.office-builder-ribbon .advanced-properties .advanced-visible{left:8px;top:35px;width:calc(50% - 12px)}
+.office-builder-ribbon .advanced-properties .advanced-readonly{left:50%;top:35px;right:8px}
 /* Group 4: x=917-1294 */
 .office-builder-ribbon .advanced-nesting .advanced-accept{left:8px;right:8px;top:5px}
 /* Group 5: x=1295-1640 */
-.office-builder-ribbon .advanced-technical .advanced-component-id{left:8px;right:8px;top:5px}
-.office-builder-ribbon .advanced-technical .advanced-component-id>input[aria-invalid="true"]{
+.office-builder-ribbon .advanced-technical .advanced-component-name{left:8px;right:8px;top:5px}
+.office-builder-ribbon .advanced-technical .advanced-component-name>input[aria-invalid="true"]{
   border-color:#bc2e37;outline:1px solid #bc2e37;
 }
-.office-builder-ribbon .advanced-technical .advanced-component-id-error{
+.office-builder-ribbon .advanced-technical .advanced-component-name-error{
   position:absolute;top:35px;left:8px;right:8px;max-height:48px;
   overflow:hidden;color:#a21b29;font:11px/15px "Segoe UI",Arial,sans-serif;
   white-space:normal;overflow-wrap:anywhere;
