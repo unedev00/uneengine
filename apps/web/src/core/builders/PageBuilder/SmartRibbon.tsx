@@ -484,7 +484,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
         {(()=>{
           const badge=activeDesign2Area==='Badge'&&
             definitions.some(p=>p.id==='badgeVisible'&&p.components.includes(api));
-          const visible=badge?properties.badgeVisible!==false:componentVisible;
+          const visible=badge?properties.badgeVisible===true:componentVisible;
           const change=badge?()=>update('badgeVisible',!visible):
             onVisibleChange?()=>onVisibleChange(!componentVisible):undefined;
           return <button type="button" className="smart-icon-toggle smart-design2-visibility"
