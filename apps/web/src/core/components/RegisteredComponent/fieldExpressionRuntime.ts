@@ -84,7 +84,15 @@ export function resolveRegisteredTextProperties(
  context?:FormulaBindingContext
 ):Record<string,unknown>{
   const baseContext=context??getAuthenticatedFormulaBindingContext()??undefined;
+  // Shared formula aggregation may consume only a complete, already-authorised
+  // renderer row set. Do not calculate misleading totals from a paged subset.
+  const rows=Array.isArray(properties.records)?properties.records:null;
+  const pagination=properties.recordPagination as {offset?:number;total?:number}|undefined;
+  const completeRows=rows&&rows.length<=200&&
+    (!pagination||(pagination.offset===0&&typeof pagination.total==='number'&&pagination.total<=rows.length))
+    ?rows as Record<string,unknown>[]:undefined;
   const formulaContext={...(baseContext??{}),now:baseContext?.now??new Date(),
+    ...(completeRows?{collectionRows:completeRows}:{}),
     ...(properties.formulaCollectionSources&&typeof properties.formulaCollectionSources==='object'
       ?{collectionSources:properties.formulaCollectionSources as FormulaBindingContext['collectionSources']}:{}),
     ...(properties.namedCollections&&typeof properties.namedCollections==='object'
