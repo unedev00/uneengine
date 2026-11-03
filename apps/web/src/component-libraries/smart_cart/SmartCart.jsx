@@ -1,4 +1,5 @@
 /** Cart is presentation-only; expressions and actions use the existing shared runtimes. */
+import {groupCartRows} from './cartGrouping.js';
 const n=(v,f,min=0,max=2000)=>v!==null&&v!==undefined&&v!==""&&Number.isFinite(Number(v))?Math.max(min,Math.min(max,Number(v))):f;
 const shadow=v=>v==="large"?"0 8px 20px #0003":v==="medium"?"0 3px 9px #0003":"none";
 const border=v=>v?"1px solid "+v:"1px solid transparent";
@@ -20,7 +21,10 @@ export default function SmartCart({p,records,Picture,expression,fieldAllowed,fir
  const showDecrease=p.qtyDecreaseVisible!==false;
  const canIncrease=showIncrease&&Boolean(actions.qtyIncrease||actions.qtyIcon)&&!p.previewOnly&&!p.builderPreview;
  const canDecrease=showDecrease&&Boolean(actions.qtyDecrease||actions.qtyIcon)&&!p.previewOnly&&!p.builderPreview;
- const rows=demo?Array.from({length:3},(_,i)=>({id:"preview-"+i,Quantity:1,__preview:true})):records.slice(0,200);
+ // Group the full authorised collection before limiting the visible rows.
+ // Preserve the source records: row actions still use their real record IDs.
+ const rows=demo?Array.from({length:3},(_,i)=>({id:"preview-"+i,Quantity:1,__preview:true}))
+   :groupCartRows(records).slice(0,200);
  // Select the most recently appended item by default. Preserve a manually
  // selected row until it is removed, and automatically follow newly added rows.
  const rowKeys=rows.map((row,i)=>String(row?.Id??row?.id??i));
@@ -139,7 +143,7 @@ export default function SmartCart({p,records,Picture,expression,fieldAllowed,fir
    height:n(p.supportingBoxHeight,36,18),minHeight:n(p.supportingBoxHeight,36,18),
    border:border(p.supportingBorderColor),textAlign:align(p.supportingAlignment),
    fontWeight:p.supportingBold===true?700:400,color:p.supportingTextColor||"#586a81"}}>
-   {demo?"Preview items (3)":rows.length+" items"}
+   {demo?"Preview items (3)":rows.reduce((sum,row)=>sum+Number(row.Quantity||0),0)+" items"}
   </div>
   <div className="smart-cart-table" style={{
    backgroundColor:p.tableBackgroundColor||"#fff",border:border(p.tableBorderColor),
@@ -154,7 +158,10 @@ export default function SmartCart({p,records,Picture,expression,fieldAllowed,fir
       const name=demo?"Sample item "+(i+1):(p.textSource?fieldExpression('textSource',p.textSource,record):"Product "+(i+1));
       const src=p.imageSource?fieldExpression('imageSource',p.imageSource,record):"";
       const itemId=record?.Id??record?.id??null;
-      const payload={record,recordId:itemId};
+      // Target an actual persisted line; never pass a synthetic merged ID to a Flow.
+      const actionRecord=record.__cartSourceRows?.[0]??record;
+      const payload={record:actionRecord,recordId:actionRecord?.Id??actionRecord?.id??null,
+       groupedRecord:record,groupedQuantity:record.Quantity};
       const rowKey=rowKeys[i];
       const selected=selectedKey===rowKey;
       const selectRow=()=>setSelectedKey(rowKey);
