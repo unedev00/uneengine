@@ -66,7 +66,7 @@ test('Existing page handlers own assignments, visibility, grid count, and safe r
   'setRecordAppId(value)','setHomeAppId(value)',
   'setRecordFormFactors(toggle)','setHomeFormFactors(toggle)',
   'cardsPerRow:value','visible:value','readOnlyOnLayout:value',
-  'layoutContainer:value','canNest(page.components,draggedId,parentId)',
+  'layoutContainer:value','canNest(page.components, draggedId, parentId)',
   'reparentComponent(components, draggedId, parentId)',
   'customTargetMinWidth:value'
  ])assert.ok(page.includes(action),action);
