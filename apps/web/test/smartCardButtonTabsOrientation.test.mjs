@@ -90,7 +90,7 @@ test('one SQL ribbon inventory owns new Data fx, Button Design and orientation c
 test('Smart Tabs Tab Index selects the correct zero-based default without altering vertical mode',async()=>{
  const selected=async props=>{
   const html=await renderSmart('smart_tabs',props);
-  const match=html.match(/<button\\b[^>]*aria-selected="true"[^>]*>([^<]*)<\\/button>/);
+  const match=html.match(/<button\b[^>]*aria-selected="true"[^>]*>([^<]*)<\/button>/);
   assert.ok(match,'One tab must be selected');
   return match[1];
  };
@@ -122,15 +122,16 @@ test('SQL Tab Index owns one non-overlapping Layout slot with Orientation and pr
  assert.match(sql,/'smart_tabs','tabIndex',true,NULL,NULL,NULL,NULL/);
  for(const [key,row,col] of [['tabWidth',1,1],['tabHeight',1,2],['tabIndex',2,1],['tabCount',3,1]])
   assert.ok(sql.includes("('"+key+"',"+row+","+col+","),'wrong or overlapping slot '+key);
- assert.match(orientation,/'tabOrientation','Orientation','Layout','Tabs','choice',9,[^\\n]*,2,2,116/);
- assert.match(sql,/ON CONFLICT\\(property_key\\) DO NOTHING/);
- assert.match(sql,/ON CONFLICT\\(component_api,property_key\\) DO NOTHING/);
+ assert.match(orientation,/'tabOrientation','Orientation','Layout','Tabs','choice',9,[^\n]*,2,2,116/);
+ assert.match(sql,/ON CONFLICT\(property_key\) DO NOTHING/);
+ assert.match(sql,/ON CONFLICT\(component_api,property_key\) DO NOTHING/);
  assert.doesNotMatch(sql,/UPDATE md_page_|DELETE FROM md_page_|DROP TABLE/i);
- assert.match(ribbon,/if\\(p\\.id==='tabIndex'\\)return p\\.designWidth\\?\\?30/);
- assert.match(ribbon,/step=\\{isTabIndex\\?1:undefined\\}/);
+ assert.match(ribbon,/if\(p\.id==='tabIndex'\)return p\.designWidth\?\?30/);
+ assert.match(ribbon,/step=\{isTabIndex\?1:undefined\}/);
  assert.match(css,/data-property="tabIndex"/);
- assert.match(runtime,/indexForSelection>=0\\?indexForSelection:defaultTabIndex/);
- assert.match(runtime,/selectTab\\(defaultTabIndex\\)/);
- assert.match(runtime,/changeAction\\.actionType!=="PageState"/);
+ assert.match(runtime,/indexForSelection>=0\?indexForSelection:defaultTabIndex/);
+ assert.match(runtime,/selectTab\(defaultTabIndex,true\)/);
+ assert.match(runtime,/if\(!initialisingDefault\)autoSelected\.current=null/);
+ assert.match(runtime,/changeAction\.actionType!=="PageState"/);
  assert.doesNotMatch(runtime,/firstTabCustom/,'do not restore removed synthetic leading-tab logic');
 });
