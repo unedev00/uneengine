@@ -44,7 +44,7 @@ export default function TenantMfaControls({request,canManage,onReauthenticate}:{
   })}>Disable authenticator and sign out</button>}
   {canManage&&<div><h3>Administrator MFA recovery</h3><p>Reset another user's authenticators, backup codes and passkeys. This signs them out and invalidates pending recovery challenges. A required-MFA tenant will require enrollment on their next login. Your current password and fresh authenticator code above are required.</p>
    <label className="form-label">User needing recovery<select className="form-control mfa-recovery-user-select" value={target} onChange={e=>setTarget(e.target.value)}><option value="">Choose user</option>{users.map(u=><option key={u.id} value={u.id}>{u.name} ({u.email})</option>)}</select></label>
-   <button type="button" className="btn" disabled={busy||!target||!password||code.length!==6} onClick={()=>void run(async()=>{
+   <button type="button" className="btn btn-danger" disabled={busy||!target||!password||code.length!==6} onClick={()=>void run(async()=>{
     await post('/auth/mfa/admin-reset',{userId:target,password,code});setCode('');setPassword('');setTarget('');setMessage('User MFA factors reset and sessions revoked.');
    })}>Reset selected user's MFA factors</button></div>}
   {message&&<p role="status">{message}</p>}
