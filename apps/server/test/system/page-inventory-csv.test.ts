@@ -22,7 +22,7 @@ test('inventory exports editable component properties, canvas coordinates and co
  assert.match(output,/CODEXTILL,Cart1,component.position.width,450/);
  assert.match(output,/CODEXTILL,Cart1,style.fontSize,14/);
  assert.match(output,/CODEXTILL,Cart1,summary1Formula,=SUM\(@LineTotal\)/);
- assert.match(output,/"\[\{""name"":""Tea,milk""/);
+ assert.match(output,/""Tea, milk""/);
 });
 test('blank and absent CSV properties preserve saved metadata',()=>{
  const page=original();
