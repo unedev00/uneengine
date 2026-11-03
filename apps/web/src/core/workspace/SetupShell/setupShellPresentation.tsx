@@ -28,6 +28,8 @@ export function renderSetupShell(ctx: any) {
         .filter(Boolean)
     : [];
   const openInstalledApp = (value: string) => {
+    if(value === '__mail__'){window.location.assign('/mail');return;}
+    if(value === '__mail_admin__'){window.location.assign('/mail-admin');return;}
     if (value === '__home__') { openSetupWorkspace('home'); return; }
     if (value === '__records__') {
       const targetObject = route.kind === 'record-list' || route.kind === 'record-detail'
@@ -67,11 +69,14 @@ export function renderSetupShell(ctx: any) {
           <select aria-label="Open installed app" value="" onChange={(event) => openInstalledApp(event.target.value)}>
             <option value="">Open app…</option>
             <option value="__home__">Home</option>
+            <option value="__mail__">Mail</option>
+            <option value="__mail_admin__">Mail Administration</option>
             {readableRecordObjects.length > 0 && <option value="__records__">Records</option>}
             {apps.filter((app) => app.apiName !== 'Records').map(app=><option key={app.apiName} value={app.apiName}>{app.label}</option>)}
           </select>
         </label>
-        <MobileAppLauncher apps={apps} showRecords={readableRecordObjects.length > 0} onOpenApp={openInstalledApp} />
+        <MobileAppLauncher apps={[...apps, {apiName:'__mail__',label:'Mail'}, {apiName:'__mail_admin__',label:'Mail Administration'}]}
+          showRecords={readableRecordObjects.length > 0} onOpenApp={openInstalledApp} />
         <div className="header-searches">
           <GlobalRecordSearch objects={readableRecordObjects}
             searchObject={(apiName, term) => apiRequest<{ records: RecordData[] }>(
