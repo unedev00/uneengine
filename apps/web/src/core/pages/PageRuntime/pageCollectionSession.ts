@@ -44,7 +44,7 @@ export function isCollectionSourceExpression(formula:unknown,knownCollections:re
  const returnsCollection=(node:Expression):boolean=>{
   if(node.kind==='reference')return names.has(node.value.toLowerCase());
   if(node.kind!=='call')return false;
-  if(node.name==='COLLECTION')return true;
+  if(node.name==='COLLECTION'||node.name==='TABLE')return true;
   if(node.name==='IF'&&node.args.length===3)
    return returnsCollection(node.args[1])||returnsCollection(node.args[2]);
   if(['IFERROR','BLANKVALUE','NULLVALUE'].includes(node.name))
