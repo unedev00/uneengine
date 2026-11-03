@@ -26,28 +26,29 @@ function canonical(value){
   }
   return value;
 }
-const qtyOf=row=>{
-  const raw=row?.Quantity??row?.quantity??row?.Qty??row?.qty??1;
+const qtyOf=(row,quantityField)=>{
+  const raw=(quantityField&&row?.[quantityField])??row?.Quantity??row?.quantity??row?.Qty??row?.qty??1;
   const count=Number(raw);
   return Number.isFinite(count)&&count>0?count:0;
 };
-const identityOf=row=>{
+const identityOf=(row,quantityField)=>{
   const own=Object.entries(row||{})
-    .filter(([key])=>!nonIdentity.has(key.toLowerCase())&&!key.startsWith('__'))
+    .filter(([key])=>key!==quantityField&&!nonIdentity.has(key.toLowerCase())&&!key.startsWith('__'))
     .sort(([a],[b])=>a.localeCompare(b));
   // Keep missing, false, null and the empty string distinct, and never
   // collapse different product/batch/price/custom-selection values.
   return JSON.stringify(canonical(Object.fromEntries(own)));
 };
-export function groupCartRows(records){
+export function groupCartRows(records,{quantityField='Quantity'}={}){
   const output=[];
   const index=new Map();
   for(const source of Array.isArray(records)?records:[]){
     if(!source||typeof source!=='object'||Array.isArray(source))continue;
-    const key=identityOf(source);
-    const count=qtyOf(source);
+    const key=identityOf(source,quantityField);
+    const count=qtyOf(source,quantityField);
     if(!index.has(key)){
       const row={...source,Quantity:count,__cartSourceRows:[source]};
+      if(quantityField&&Object.hasOwn(source,quantityField))row[quantityField]=count;
       if(Object.hasOwn(source,'LineTotal')&&Number.isFinite(Number(source.LineTotal)))
         row.LineTotal=Number(source.LineTotal);
       index.set(key,output.length);
@@ -56,6 +57,8 @@ export function groupCartRows(records){
     }
     const row=output[index.get(key)];
     row.Quantity+=count;
+    if(quantityField&&quantityField!=='Quantity'&&Object.hasOwn(row,quantityField))
+      row[quantityField]=row.Quantity;
     row.__cartSourceRows.push(source);
     if(Object.hasOwn(row,'LineTotal')&&Number.isFinite(Number(source.LineTotal)))
       row.LineTotal=Number(row.LineTotal)+Number(source.LineTotal);
