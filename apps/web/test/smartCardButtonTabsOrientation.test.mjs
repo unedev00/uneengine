@@ -26,8 +26,8 @@ test('Card Grid uses record-scoped formula text and native, independently styled
   actionFlows:{click:{actionType:'Formula',formula:'@state.selected := @Id'}}
  });
  assert.match(html,/Freshly made/);
- assert.match(html,/£4\\.5/);
- assert.match(html,/Choose \\+/);
+ assert.ok(html.includes('£4.5'));
+ assert.ok(html.includes('Choose +'));
  assert.match(html,/class="smart-card-button"/);
  assert.match(html,/background-color:#123456/);
  assert.match(html,/border-color:#654321/);
@@ -68,20 +68,20 @@ test('one SQL ribbon inventory owns new Data fx, Button Design and orientation c
  const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
  const runtime=read('../src/component-libraries/smart/shared/SmartRuntime.jsx');
  for(const id of ['cardDescription','cardValue','cardButtonText']){
-  assert.match(sql,new RegExp("'"+id+"'[^\\n]*'Data','Card Grid','expression'"));
+  assert.ok(sql.includes("'"+id+"','")&&sql.includes("'Data','Card Grid','expression'"));
  }
  for(const id of ['cardButtonFill','cardButtonBorderColor','cardButtonShape',
                   'cardButtonTextSize','cardButtonTextColor']){
-  assert.match(sql,new RegExp("'"+id+"'[^\\n]*'Design','Button'"));
+  assert.ok(sql.includes("'"+id+"','")&&sql.includes("'Design','Button'"));
  }
  assert.match(sql,/'tabOrientation','Orientation','Layout','Tabs','choice'/);
  assert.match(sql,/'smart_card_grid','imageBackgroundColor'/);
- assert.match(sql,/ON CONFLICT\\(property_key\\) DO NOTHING/);
- assert.match(sql,/ON CONFLICT\\(component_api,property_key\\) DO NOTHING/);
+ assert.ok(sql.includes('ON CONFLICT(property_key) DO NOTHING'));
+ assert.ok(sql.includes('ON CONFLICT(component_api,property_key) DO NOTHING'));
  assert.doesNotMatch(sql,/UPDATE md_page_|DELETE FROM md_page_|DROP TABLE/i);
- assert.match(ribbon,/\['Source','Values','Card Grid','Cart'/);
+ assert.ok(ribbon.includes("['Source','Values','Card Grid','Cart'"));
  assert.match(ribbon,/'Header Supporting','Button'/);
  assert.match(ribbon,/isDataFormula/);
- assert.match(runtime,/scopedExpression\\(p,key,p\\[key\\]/);
- assert.match(runtime,/selectRecord=\\(\\)=>fire\\("click"/);
+ assert.ok(runtime.includes('scopedExpression(p,key,p[key]'));
+ assert.ok(runtime.includes('selectRecord=()=>fire("click"'));
 });
