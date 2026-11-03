@@ -7,7 +7,8 @@ type Assignment={
   onAdd:()=>void;
 };
 type Properties={
-  selected:boolean;apiName:string;visible:boolean;
+  selected:boolean;apiName:string;instanceName:string;visible:boolean;
+  onInstanceName:(value:string)=>void;
   readOnly:boolean;canReadOnly:boolean;
   onVisible:(value:boolean)=>void;onReadOnly:(value:boolean)=>void;
 };
@@ -30,6 +31,8 @@ export default function PageBuilderAdvancedSections({
   // The former Advanced editor portalled the entire inspector into the ribbon.
   // Never leave a stale portal attached after switching from another tab.
   useEffect(()=>onInspectorHost(null),[onInspectorHost]);
+  const [nameDraft,setNameDraft]=useState(properties.instanceName);
+  useEffect(()=>setNameDraft(properties.instanceName),[properties.instanceName]);
   const [componentIdDraft,setComponentIdDraft]=useState(technical.id);
   const [componentIdTouched,setComponentIdTouched]=useState(false);
   useEffect(()=>{
@@ -61,6 +64,12 @@ export default function PageBuilderAdvancedSections({
     <section className="advanced-fixed-group advanced-properties" aria-label="Advanced Properties">
       <label className="advanced-fixed-field advanced-api-name">API Name
         <input value={properties.apiName} readOnly disabled title="Component API identity is immutable"/>
+      </label>
+      <label className="advanced-fixed-field advanced-instance-name">Component Name
+        <input aria-label="Component Name" value={nameDraft} maxLength={80}
+          disabled={!properties.selected} onChange={event=>setNameDraft(event.target.value)}
+          onBlur={()=>{if(nameDraft!==properties.instanceName)properties.onInstanceName(nameDraft);}}
+          onKeyDown={event=>{if(event.key==='Enter')event.currentTarget.blur();}}/>
       </label>
       <label className="advanced-fixed-field advanced-visible">Visible
         <input type="checkbox" checked={properties.visible} disabled={!properties.selected}

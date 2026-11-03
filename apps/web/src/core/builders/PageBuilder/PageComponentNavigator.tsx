@@ -82,7 +82,7 @@ export default function PageComponentNavigator({
     setRenameValue(item.customName ? String(components.find(component=>component.id===item.id)?.properties.navigatorName ?? '') : item.baseName);
   };
   const finishRename=(commit:boolean)=>{
-    if (commit && renamingId) onRename(renamingId,renameValue.trim().slice(0,110));
+    if (commit && renamingId) onRename(renamingId,renameValue.trim().slice(0,80));
     setRenamingId('');
   };
   const onSearchKeyDown=(event:React.KeyboardEvent<HTMLInputElement>)=>{
@@ -141,7 +141,7 @@ export default function PageComponentNavigator({
         {matches.map((item,index)=><div key={item.id} data-navigator-id={item.id}
           className={'page-navigator-row'+(item.id===selectedId?' is-selected':'')+(active?.id===item.id?' is-active':'')}>
           {renamingId===item.id ? <div className="page-navigator-rename">
-            <input autoFocus aria-label="Component navigator name" maxLength={110}
+            <input autoFocus aria-label="Component name" maxLength={80}
               value={renameValue} onChange={event=>setRenameValue(event.target.value)}
               onKeyDown={event=>{
                 if(event.key==='Escape'){event.preventDefault();finishRename(false);}
@@ -164,7 +164,7 @@ export default function PageComponentNavigator({
               {item.locked && <LockKeyhole size={13} aria-label="Locked" />}
             </button>
             <button type="button" className="page-navigator-rename-button"
-              aria-label={'Rename '+item.name+' in navigator'} title="Rename in navigator"
+              aria-label={'Rename '+item.name+' in navigator'} title="Rename component (unique within the page layout)"
               disabled={item.locked} onClick={()=>startRename(item)}><Pencil size={13}/></button>
           </>}
         </div>)}
