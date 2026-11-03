@@ -31,8 +31,17 @@ jobs:
           cache: npm
       - name: Install locked platform dependencies
         run: npm ci
-      - name: Install test-only browser dependency
-        run: npm install --no-save --no-package-lock playwright
+      # Install the test runner outside the workspace: npm install in the root
+      # re-resolves optional Expo/mobile packages and can fail on an unrelated
+      # unpublished @expo/inline-modules tarball even after npm ci passed.
+      - name: Install isolated Playwright browser dependency
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/metadrive-phase1-playwright
+          npm install --prefix /tmp/metadrive-phase1-playwright --no-save --no-package-lock playwright
+          ln -s /tmp/metadrive-phase1-playwright/node_modules/playwright node_modules/playwright
+          ln -s /tmp/metadrive-phase1-playwright/node_modules/playwright-core node_modules/playwright-core
       - name: Install Chromium and OS dependencies
         run: npx playwright install --with-deps chromium
       - name: Start isolated Vite fixture server
