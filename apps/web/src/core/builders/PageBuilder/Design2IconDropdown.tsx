@@ -47,7 +47,7 @@ export default function Design2IconDropdown({mode,label,value,disabled,onChange,
  const [position,setPosition]=useState({top:0,left:0});
  const trigger=useRef<HTMLButtonElement>(null);
  const popup=useRef<HTMLDivElement>(null);
- const list=items(mode).filter(item=>!allowed?.length||allowed.includes(item.value));
+ const list=items(mode);
  const selected=list.find(item=>item.value===value)??list[0];
  useEffect(()=>{
   if(!open)return;
@@ -83,12 +83,16 @@ export default function Design2IconDropdown({mode,label,value,disabled,onChange,
   </button>
   {open&&createPortal(<div ref={popup} className="design2-icon-popup" role="menu"
     aria-label={label} style={{top:position.top,left:position.left}}>
-   {list.map(option=><button key={option.value} type="button" role="menuitemradio"
-     className={option.value===value?'is-selected':''}
-     aria-label={label+': '+option.label} aria-checked={option.value===value}
-     onClick={()=>{onChange(option.value);setOpen(false);trigger.current?.focus();}}>
-    {option.icon}<span>{option.label}</span>
-   </button>)}
+   {list.map(option=>{
+    const permitted=!allowed?.length||allowed.includes(option.value);
+    return <button key={option.value} type="button" role="menuitemradio"
+      className={option.value===value?'is-selected':''}
+      disabled={!permitted} title={permitted?option.label:option.label+' (not supported)'}
+      aria-label={label+': '+option.label} aria-checked={option.value===value}
+      onClick={()=>{if(!permitted)return;onChange(option.value);setOpen(false);trigger.current?.focus();}}>
+     {option.icon}<span>{option.label}</span>
+    </button>;
+   })}
   </div>,document.body)}
  </>;
 }
