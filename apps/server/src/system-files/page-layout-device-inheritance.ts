@@ -133,7 +133,10 @@ export function applyDeviceComponentOverrides(
   }
  }
  const order=[...result.values()];
- if(preferred.size)order.sort((a,b)=>(preferred.get(a.id)??(desktop.length+order.indexOf(a)))
-  -(preferred.get(b.id)??(desktop.length+order.indexOf(b))));
+ if(preferred.size){
+  const original=new Map(order.map((component,index)=>[component.id,index]));
+  order.sort((a,b)=>(preferred.get(a.id)??(desktop.length+(original.get(a.id)??0)))
+   -(preferred.get(b.id)??(desktop.length+(original.get(b.id)??0))));
+ }
  return order;
 }
