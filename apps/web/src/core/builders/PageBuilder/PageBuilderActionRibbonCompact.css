@@ -143,3 +143,29 @@
 .office-builder-ribbon .page-action-slot>select:disabled{
  background:#eff2f7;color:#98a5b3;cursor:not-allowed;
 }
+
+/* Fixed 3 November property slots. Preserve every action/event option and
+ * existing bindings; style alone cannot remove a supported interaction. */
+.office-builder-ribbon .page-action-compact-event{
+  width:241px;min-width:241px;max-width:241px;
+}
+.office-builder-ribbon .page-action-slot{
+  width:225px;min-width:225px;max-width:225px;
+  height:26px;min-height:26px;max-height:26px;
+}
+.office-builder-ribbon .page-action-compact-workspace .page-action-formula-bar{
+  padding:0 7px;
+}
+.office-builder-ribbon .page-action-compact-workspace .page-action-formula-bar>.smart-formula{
+  box-sizing:border-box;flex:0 0 225px;width:225px;min-width:225px;max-width:225px;
+  height:34px;min-height:34px;max-height:34px;
+}
+.office-builder-ribbon .page-action-compact-workspace .page-action-formula-bar .smart-formula input{
+  box-sizing:border-box;width:100%;height:32px;padding:2px 8px;
+}
+.office-builder-ribbon .page-action-compact-sections>.page-action-compact-custom{
+  width:472px;min-width:472px;max-width:472px;
+}
+.office-builder-ribbon .page-action-compact-custom-grid{
+  grid-template-columns:repeat(2,225px);
+}
