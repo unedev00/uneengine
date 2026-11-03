@@ -9,7 +9,7 @@ const builder = readFileSync(new URL('../src/core/builders/PageBuilder/pageBuild
 test('Page Builder uses Company Settings-style primary tab strip and conditional app sub-tabs', () => {
   assert.match(tabs, /md-admin-tabstrip/);
   for (const label of ['Home', 'App', 'Record', 'In-Screen']) assert.match(tabs, new RegExp("label: '"+label+"'"));
-  assert.match(tabs, /type === 'App Page' && <TabBar/);
+  assert.match(tabs, /type === 'App Page' && <div className="page-manager-tab-level">/);
   assert.match(tabs, /label="Pages by application"/);
   assert.match(tabs, /\{ value: 'all', label: 'All Apps' \}/);
   assert.match(tabs, /apps\.map\(item =>/);
