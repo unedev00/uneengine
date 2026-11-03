@@ -3,10 +3,8 @@ import type {AdvancedFeature} from './PageBuilderAdvancedRibbon';
 
 type Option={value:string;label:string};
 type Assignment={
-  enabled:boolean;assigned:boolean;isDefault:boolean;role:string;app:string;
-  roles:Option[];apps:Option[];
-  onRole:(value:string)=>void;onApp:(value:string)=>void;
-  onDefault:(value:boolean)=>void;onAdd:()=>void;
+  enabled:boolean;assigned:boolean;isDefault:boolean;
+  onAdd:()=>void;
 };
 type Responsive={
   desktop:boolean;tablet:boolean;mobile:boolean;canAssign:boolean;
@@ -44,25 +42,11 @@ export default function PageBuilderAdvancedSections({
         <label><input type="checkbox" checked={assignment.assigned} readOnly disabled
           title="Shows whether the page has activation assignments"/>Assigned</label>
         <button type="button" disabled={!assignment.enabled} onClick={assignment.onAdd}
-          title="Add an activation assignment with selected settings" aria-label="Add activation assignment">+</button>
+          title="Edit activation assignments in Page Properties" aria-label="Edit activation assignments">Edit</button>
       </div>
       <label className="advanced-fixed-field advanced-default">Default
-        <input type="checkbox" checked={assignment.isDefault} disabled={!assignment.enabled}
-          onChange={event=>assignment.onDefault(event.target.checked)}/>
-      </label>
-      <label className="advanced-fixed-field advanced-role">Role
-        <select value={assignment.role} disabled={!assignment.enabled}
-          onChange={event=>assignment.onRole(event.target.value)}>
-          <option value="">All profiles</option>
-          {assignment.roles.map(option=><option key={option.value} value={option.value}>{option.label}</option>)}
-        </select>
-      </label>
-      <label className="advanced-fixed-field advanced-app">App
-        <select value={assignment.app} disabled={!assignment.enabled}
-          onChange={event=>assignment.onApp(event.target.value)}>
-          <option value="">Select app…</option>
-          {assignment.apps.map(option=><option key={option.value} value={option.value}>{option.label}</option>)}
-        </select>
+        <input type="checkbox" checked={assignment.isDefault} readOnly disabled
+          title="Default assignment status is edited in Page Properties"/>
       </label>
       <span className="advanced-fixed-caption">Activation Assignments</span>
     </section>}

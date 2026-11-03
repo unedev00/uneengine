@@ -186,7 +186,7 @@
   display:flex;align-items:center;gap:6px;margin:0;white-space:nowrap;
 }
 .office-builder-ribbon .page-builder-advanced-inline .advanced-assigned>button{
-  width:24px;height:24px;border:1px solid #b8c9dc;border-radius:4px;
+  width:42px;height:24px;border:1px solid #b8c9dc;border-radius:4px;
   background:#fff;color:#185da8;cursor:pointer;font-size:16px;
 }
 .office-builder-ribbon .page-builder-advanced-inline .advanced-assigned>button:disabled{opacity:.4;cursor:not-allowed}
@@ -200,8 +200,6 @@
 /* Group 1: x=0-285 */
 .office-builder-ribbon .advanced-activation .advanced-assigned{left:8px;top:5px;width:calc(50% - 12px)}
 .office-builder-ribbon .advanced-activation .advanced-default{left:50%;top:5px;right:8px}
-.office-builder-ribbon .advanced-activation .advanced-role{left:8px;right:8px;top:35px}
-.office-builder-ribbon .advanced-activation .advanced-app{left:8px;right:8px;top:65px}
 /* Group 2: x=286-629 */
 .office-builder-ribbon .advanced-responsive .advanced-device-0{left:8px;top:5px;width:calc(40% - 8px)}
 .office-builder-ribbon .advanced-responsive .advanced-device-1{left:8px;top:35px;width:calc(40% - 8px)}

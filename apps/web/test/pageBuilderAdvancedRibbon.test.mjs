@@ -32,7 +32,7 @@ test('Advanced is five permanently rendered ribbon groups, never button navigati
 
 test('Advanced keeps all permanent fields in a compact responsive ribbon without horizontal scrolling',()=>{
  const fields=[
-  'assigned','default','role','app',
+  'assigned','default',
   'device-0','device-1','device-2','breakpoint','columns',
   'api-name','visible','readonly',
   'accept',
@@ -62,8 +62,8 @@ test('Advanced keeps all permanent fields in a compact responsive ribbon without
 test('Existing page handlers own assignments, visibility, grid count, and safe reparenting',()=>{
  for(const action of [
   'addRecordAssignment()','addHomeAssignment()',
-  'setRecordProfileId(value)','setHomeProfileId(value)',
-  'setRecordAppId(value)','setHomeAppId(value)',
+  'setRecordProfileId(event.target.value)','setHomeProfileId(event.target.value)',
+  'setRecordAppId(event.target.value)','setHomeAppId(event.target.value)',
   'setRecordFormFactors(toggle)','setHomeFormFactors(toggle)',
   'cardsPerRow:value','visible:value','readOnlyOnLayout:value',
   'layoutContainer:value','canNest(page.components, draggedId, parentId)',
@@ -95,4 +95,24 @@ test('Obsolete Advanced inputs do not appear in component ribbon or leak duplica
   assert.ok(!advanced.includes('>'+label+'<'),label);
  assert.doesNotMatch(advanced,/advanced-object/);
  assert.ok(page.includes('objectApiName||page.targetObject'),'Data object selection remains usable');
+});
+
+test('App and Profile assignment selectors live in Page Details, not the Advanced ribbon',()=>{
+ const pageDetails=read('../src/core/builders/PageBuilder/PageDetailsDialog.tsx');
+ const assignmentEditor=read('../src/core/builders/PageBuilder/PageDetailsAssignmentEditor.tsx');
+ for(const slot of ['advanced-role','advanced-app']){
+  assert.ok(!advanced.includes(slot),'old ribbon slot '+slot);
+  assert.ok(!layout.includes(slot),'old CSS slot '+slot);
+ }
+ assert.match(advanced,/Edit activation assignments in Page Properties/);
+ assert.match(page,/onAdd:\(\)=>setPageDetailsApi\(page\.apiName\)/);
+ assert.match(pageDetails,/<PageDetailsAssignmentEditor/);
+ assert.match(pageDetails,/onSaveAssignments\(page,assignments\)/);
+ assert.match(assignmentEditor,/New assignment app/);
+ assert.match(assignmentEditor,/Role \/ Profile/);
+ assert.match(assignmentEditor,/Assignment profile/);
+ assert.match(assignmentEditor,/assignmentValidationError/);
+ assert.match(page,/\/layouts\/\$\{source\.layoutVariant\?\?'Desktop'\}\/editor/);
+ assert.match(page,/JSON\.stringify\(current\.activationAssignments/);
+ assert.match(page,/onSave\(\{\.\.\.current,activationAssignments/);
 });
