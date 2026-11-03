@@ -37,7 +37,7 @@ export function getAuthenticatedFormulaBindingContext():FormulaBindingContext|nu
 function isFieldExpression(value:string):boolean{
   const input=value.trim().replace(/^=\s*/,'');
   return /^(?:TRUE|FALSE|NULL|PI)$/i.test(input)||input.startsWith('(')||/^[+-]\d/.test(input)
-    ||input.startsWith('@')||input.startsWith('{!')||/^"(?:[^"]|"")*"\s*&/.test(input)
+    ||input.startsWith('@')||input.startsWith('{!')||/^\$(?:state\.|session$)/.test(input)||/^"(?:[^"]|"")*"\s*&/.test(input)
     ||/^(?:\d+(?:\.\d+)?\s*[+\-*/%^<>]|"(?:[^"]|"")*"\s*(?:&|=|<>|!=|<=|>=|<|>))/.test(input)
     ||/^(?:IF|IFERROR|CASE|AND|OR|NOT|XOR|ISBLANK|ISNULL|ISNUMBER|BLANKVALUE|NULLVALUE|TEXT|VALUE|ASCII|LOWER|UPPER|PROPER|INITCAP|LEN|TRIM|LEFT|RIGHT|MID|FIND|BEGINS|CONTAINS|EXACT|ISPICKVAL|INCLUDES|CONCATENATE|SUBSTITUTE|REPT|REVERSE|ENCODEURL|URLENCODE|URLDECODE|LPAD|RPAD|REPLACE|CHAR|CASESAFEID|T|COLLECTION|COLLECTIONCOUNT|COLLECTIONSUM|SUM|VLOOKUP|ABS|ROUND|ROUNDUP|ROUNDDOWN|TRUNC|SIGN|MIN|MAX|MOD|SQRT|POWER|CEILING|FLOOR|MCEILING|MFLOOR|EXP|LN|LOG|SIN|COS|TAN|ASIN|ACOS|ATAN|ATAN2|SINH|COSH|TANH|DEGREES|RADIANS|DATE|DATEVALUE|DATETIMEVALUE|TODAY|NOW|DAY|MONTH|YEAR|HOUR|MINUTE|SECOND|TIMEVALUE|TIMENOW|TZOFFSET|WEEKDAY|ISOWEEK|ISOYEAR|ADDDAYS|ADDMONTHS|GEOLOCATION|DISTANCE)\s*\(/i.test(input);
 }
@@ -99,7 +99,9 @@ export function resolveRegisteredTextProperties(
       ?{namedCollections:properties.namedCollections as FormulaBindingContext['namedCollections']}:{}),
     ...(typeof properties.objectApiName==='string'?{rootObjectApiName:properties.objectApiName}:{}),
     ...(properties.pageState&&typeof properties.pageState==='object'&&!Array.isArray(properties.pageState)
-      ?{namedCollectionSelections:(properties.pageState as Record<string,unknown>).collectionSelections as FormulaBindingContext['namedCollectionSelections']}: {})};
+      ?{pageState:properties.pageState as FormulaBindingContext['pageState'],
+        namedCollectionSelections:(properties.pageState as Record<string,unknown>).collectionSelections as FormulaBindingContext['namedCollectionSelections']}: {}),
+    ...(typeof properties.sessionId==='string'?{sessionId:properties.sessionId}: {})};
   const record=properties.record??properties.currentRecord??properties.recordData;
   const hasRecord=Boolean(record&&typeof record==='object'&&!Array.isArray(record));
   const resolvedContext=withRecordTypeContext(formulaContext,record,properties.object);
