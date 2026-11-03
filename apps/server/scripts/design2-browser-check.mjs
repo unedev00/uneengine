@@ -32,6 +32,19 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  },token);
  assert.equal(result.status,200,'OneEngine rejected authorised shared ribbon metadata');
  assert.equal(result.body.design2Slots?.length,96,'Builder endpoint did not expose Design 2 SQL metadata');
+ // The catalog is SQL-backed but still protected by central OneEngine RBAC.
+ const {AuthenticationService}=await import('../dist-system/system-files/authentication.js');
+ const auth=new AuthenticationService(db);
+ const guestHash=await auth.hashPassword('Design2LeastPrivilege!2026');
+ const guest=await db.query(`INSERT INTO md_users(tenant_id,email,password_hash)
+   VALUES($1,$2,$3) RETURNING id`,[tenantId,'design2-restricted@example.invalid',guestHash]);
+ assert.ok(guest.rows[0]?.id);
+ const guestToken=(await auth.signIn(tenantId,'design2-restricted@example.invalid',
+  'Design2LeastPrivilege!2026')).accessToken;
+ const forbidden=await page.evaluate(async token=>(await fetch('/api/metadata/builder-ribbon',{
+  headers:{Authorization:'Bearer '+token}
+ })).status,guestToken);
+ assert.equal(forbidden,403,'Design 2 catalog bypassed OneEngine PageDefinition RBAC');
 
  // A persisted page with two real smart components, not mocked React widgets.
  const pageName='BrowserDesign2';
