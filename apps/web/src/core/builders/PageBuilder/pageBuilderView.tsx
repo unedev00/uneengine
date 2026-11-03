@@ -3127,11 +3127,27 @@ function PageBuilder({
           setInventoryUploadOpen(false);
         }}/>}
       {pageDetailsApi&&(()=>{
-        const detailsPage=pages.find(item=>item.apiName===pageDetailsApi)??(
-          page.apiName===pageDetailsApi?page:null);
+        const detailsPage=page.apiName===pageDetailsApi?page:
+          pages.find(item=>item.apiName===pageDetailsApi)??null;
         return detailsPage?<PageDetailsDialog key={pageDetailsApi} page={detailsPage}
-          apps={apps} disabled={saving} request={request}
+          apps={apps} profiles={profiles}
+          recordTypes={objects.find(item=>item.apiName===detailsPage.targetObject)?.recordTypes??[]}
+          disabled={saving} request={request}
           onClose={()=>setPageDetailsApi(null)} onSave={onUpdatePageDetails}
+          onSaveAssignments={async (source,activationAssignments)=>{
+            // Load the current full SQL draft for pages outside the active canvas; never
+            // write an old Page Manager list snapshot over a newer component layout.
+            const current=editorMode&&page.apiName===source.apiName?page:
+              (await request<{page:LightningPageMetadata}>(
+                `/metadata/pages/${encodeURIComponent(source.apiName)}/layouts/${source.layoutVariant??'Desktop'}/editor`)).page;
+            if(JSON.stringify(current.activationAssignments??[])!==JSON.stringify(source.activationAssignments??[])){
+              onNotify('Page activation assignments changed. Reload Page Details before saving.');
+              return false;
+            }
+            return onSave({...current,activationAssignments,
+              status:current.status==='Active'&&!activationAssignments.length?'Draft':current.status},
+              source.apiName,'Page activation assignments saved to the draft');
+          }}
           onOpenDesign={selectSavedPage} onReload={onChange}/>:null;
       })()}
       {editorMode && <>
@@ -3316,25 +3332,6 @@ function PageBuilder({
               enabled:page.pageType!=='App Page',
               assigned:(page.activationAssignments??[]).length>0,
               isDefault:page.pageType==='Record Page'?recordScope==='Org Default':homeScope==='App Default',
-              role:page.pageType==='Record Page'?recordProfileId:homeProfileId,
-              app:page.pageType==='Record Page'?recordAppId:homeAppId,
-              roles:profiles.map(profile=>({value:profile.id,label:profile.label})),
-              apps:apps.map(app=>({value:app.apiName,label:app.label})),
-              onRole:value=>{
-                if(page.pageType==='Record Page'){
-                  setRecordProfileId(value);
-                  if(value&&recordScope==='App Default')setRecordScope('App and Profile');
-                }else{
-                  setHomeProfileId(value);
-                  if(value)setHomeScope('App and Profile');
-                }
-              },
-              onApp:value=>{
-                if(page.pageType==='Record Page'){
-                  setRecordAppId(value);
-                  if(value&&recordScope==='Org Default')setRecordScope('App Default');
-                }else setHomeAppId(value);
-              },
               onDefault:value=>{
                 if(page.pageType==='Record Page')setRecordScope(value?'Org Default':'App Default');
                 else setHomeScope(value?'App Default':'App and Profile');
