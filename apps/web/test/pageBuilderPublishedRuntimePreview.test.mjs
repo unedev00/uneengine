@@ -25,6 +25,24 @@ test('preview renders draft metadata without fetching or caching a published pag
   assert.match(runtime, /if\(previewPage\)return;[\s\S]*?const cachedPage=readPageDefinitionCache/);
 });
 
+
+test('unbound Image and Smart Image load the same tenant assets in preview and published runtime', () => {
+  const runtime = source('../src/core/pages/PageRuntime/pageRuntimeViews.tsx');
+  const builder = source('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+  const tenantImage = source('../src/component-libraries/shared/TenantImage.jsx');
+  assert.match(runtime, /const loadPageMediaAsset = \(id:string\) =>/);
+  assert.match(runtime, /Promise.reject\(new Error\('Invalid media asset ID'\)\)/);
+  assert.match(runtime, /apiRequest<\{contentType:string;contentBase64:string\}>\('\/media-assets\/'\+id\)/);
+  assert.match(runtime, /loadAsset: loadPageMediaAsset, viewRevision: revision/);
+  const start = runtime.indexOf('const content = needsMetadataComponentRuntime(component.properties)');
+  const end = runtime.indexOf('const rendered = nestedChildren?.length', start);
+  assert.ok(start >= 0 && end > start, 'unbound custom component renderer exists');
+  const customRuntime = runtime.slice(start, end);
+  assert.match(customRuntime, /:\s*<RegisteredComponent definition=\{definition\} layoutTransparent props=\{\{[\s\S]*?loadAsset: loadPageMediaAsset/);
+  assert.match(builder, /loadAsset:\(id:string\)=>request/);
+  assert.match(tenantImage, /loader\.current\(match\[1\]\)/);
+});
+
 test('live preview has no editor drag and resize handlers or canvas movement cursor', () => {
   const builder = source('../src/core/builders/PageBuilder/pageBuilderView.tsx');
   const css = source('../src/core/builders/PageBuilder/PageBuilderCanvasWorkspace.css');
