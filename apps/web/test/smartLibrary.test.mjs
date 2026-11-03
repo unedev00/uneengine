@@ -332,6 +332,19 @@ test('Smart Tabs, Input Box, Lookup and Toggle edit visible control styles',asyn
  const css=read('../src/core/builders/PageBuilder/SmartRibbon.css');
  assert.match(css,/\.smart-formula input/);
 });
+test('Smart Input Box has a complete four-sided border with metadata-controlled width',async()=>{
+ const fallback=await renderSmart('smart_text',{});
+ assert.match(fallback,/border-style:solid/);
+ assert.match(fallback,/border-width:1px/);
+ assert.match(fallback,/border-color:#b8c7d7/i);
+ const authored=await renderSmart('smart_text',{borderColor:'#123456',borderWidth:3});
+ assert.match(authored,/border-style:solid/);
+ assert.match(authored,/border-width:3px/);
+ assert.match(authored,/border-color:#123456/i);
+ const borderless=await renderSmart('smart_text',{borderWidth:0});
+ assert.match(borderless,/border-width:0(?:;|")/);
+});
+
 test('Smart Design Body, Header, Badge and Image match approved three-row positions',()=>{
  const css=read('../src/core/builders/PageBuilder/SmartRibbon.css');
  const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
