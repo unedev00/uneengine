@@ -69,3 +69,28 @@ test('Cart keeps historical labels and does not render partial or invalid sums',
   subtotalValue:'SUM(@Price)'});
  assert.match(bad,/>Subtotal<\/span><span aria-label="Subtotal not bound">—<\/span>/);
 });
+
+
+test('Cart uses the universal Formula Engine for =SUM of line totals and row expressions',async()=>{
+ const html=await cartMarkup({
+  records:[{Id:'a',LineTotal:6,Price:3,Quantity:2},{Id:'b',LineTotal:10,Price:5,Quantity:2}],
+  subtotalValue:'=SUM(@LineTotal)',
+  discountValue:'SUM(@Price * @Quantity)',
+  taxValue:0,totalValue:16,currencyCode:'GBP'
+ });
+ assert.match(html,/>Subtotal<\/span><span>£16\.00<\/span>/);
+ assert.match(html,/>Discount<\/span><span>£16\.00<\/span>/);
+ const cart=read('../src/component-libraries/smart_cart/SmartCart.jsx');
+ assert.doesNotMatch(cart,/const sum=|for\(const record of records\)/);
+});
+
+test('Universal SUM handles authorised row expressions, explicit markers and bounded failures',async()=>{
+ const {evaluateFieldExpressionDetailed:evaluate}=await import('../src/component-libraries/shared/FieldExpression.js');
+ const rows=[{LineTotal:6,Price:3,Quantity:2},{LineTotal:10,Price:5,Quantity:2}];
+ assert.equal(evaluate('=SUM(@LineTotal)',{}, {collectionRows:rows}).value,'16');
+ assert.equal(evaluate('SUM(@Price * @Quantity)',{}, {collectionRows:rows}).value,'16');
+ assert.equal(evaluate('SUM(@Values)',{Values:[4,7]}, {collectionRows:rows}).value,'11');
+ assert.match(evaluate('SUM(@LineTotal)',rows[0]).error,/bounded numeric collection/);
+ assert.match(evaluate('SUM(@LineTotal)',{}, {collectionRows:[...rows,{LineTotal:'bad'}]}).error,/finite numeric/);
+ assert.match(evaluate('SUM(@LineTotal)',{}, {collectionRows:Array.from({length:201},()=>({LineTotal:1}))}).error,/bounded numeric/);
+});
