@@ -18,8 +18,8 @@ test('View owns visibility conditions and reuses the record filter dialog shell'
  assert.match(dialog,/validateVisibilityRule\(rules/);
 });
 
-test('Advanced is five permanently rendered ribbon groups, never button navigation or modal inspector',()=>{
- for(const section of ['Activation Assignments','Responsive Settings','Advanced Properties','Component Nesting','Technical Details'])
+test('Advanced keeps only purposeful sections; page device controls live in Edit Page',()=>{
+ for(const section of ['Activation Assignments','Advanced Properties','Component Nesting','Technical Details'])
    assert.ok(advanced.includes('aria-label="'+section+'"'),section);
  assert.match(page,/ribbonTab==='Advanced' && <PageBuilderAdvancedSections/);
  assert.doesNotMatch(advanced,/<button[^>]+onClick=\{\(\)=>onSelect/);
@@ -33,7 +33,6 @@ test('Advanced is five permanently rendered ribbon groups, never button navigati
 test('Advanced keeps all permanent fields in a compact responsive ribbon without horizontal scrolling',()=>{
  const fields=[
   'assigned','default',
-  'device-0','device-1','device-2','breakpoint','columns',
   'api-name','visible','readonly',
   'accept',
   'component-id','render-mode'
@@ -43,7 +42,7 @@ test('Advanced keeps all permanent fields in a compact responsive ribbon without
      advanced.includes('advanced-'+key),key+' must be rendered');
    assert.match(layout,new RegExp('advanced-'+key+'[^\\n]*\\{[^\\n]*top:(5|35|65)px'),key+' has a fixed row');
  }
- for(const group of ['activation','responsive','properties','nesting','technical'])
+ for(const group of ['activation','properties','nesting','technical'])
    assert.ok(layout.includes('advanced-fixed-group.advanced-'+group),group);
  assert.match(layout,/grid-template-columns:minmax\(0,1\.08fr\)/);
  assert.match(layout,/width:min\(100%,1360px\)!important;min-width:0!important;max-width:1360px!important/);
@@ -64,14 +63,11 @@ test('Existing page handlers own assignments, visibility, grid count, and safe r
   'addRecordAssignment()','addHomeAssignment()',
   'setRecordProfileId(event.target.value)','setHomeProfileId(event.target.value)',
   'setRecordAppId(event.target.value)','setHomeAppId(event.target.value)',
-  'setRecordFormFactors(toggle)','setHomeFormFactors(toggle)',
-  'cardsPerRow:value','visible:value','readOnlyOnLayout:value',
+  'visible:value','readOnlyOnLayout:value',
   'layoutContainer:value','canNest(page.components, draggedId, parentId)',
   'reparentComponent(components, draggedId, parentId)',
   'customTargetMinWidth:value'
  ])assert.ok(page.includes(action),action);
- assert.match(advanced,/disabled=\{!responsive\.canBreakpoint\}/);
- assert.match(advanced,/disabled=\{!responsive\.canColumns\}/);
  assert.match(advanced,/disabled=\{!nesting\.canChange\}/);
  // Only meaningful Advanced controls are exposed; technical/parent metadata stays internal.
  for(const removed of ['advanced-css-class','advanced-child-types','advanced-max-children',
@@ -115,4 +111,23 @@ test('App and Profile assignment selectors live in Page Details, not the Advance
  assert.match(page,/\/layouts\/\$\{source\.layoutVariant\?\?'Desktop'\}\/editor/);
  assert.match(page,/JSON\.stringify\(current\.activationAssignments/);
  assert.match(page,/onSave\(\{\.\.\.current,activationAssignments/);
+});
+
+test('Page devices are edited only in Edit Page; Advanced has no empty responsive section',()=>{
+ const dialog=read('../src/core/builders/PageBuilder/PageDetailsDialog.tsx');
+ const controller=read('../../server/src/api/PageDetailsController.ts');
+ const shell=read('../src/core/workspace/SetupShell/setupAppShell.tsx');
+ const smart=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
+ assert.doesNotMatch(advanced,/advanced-responsive|advanced-device|advanced-breakpoint|advanced-columns/);
+ assert.doesNotMatch(layout,/advanced-responsive|advanced-device|advanced-breakpoint|advanced-columns/);
+ assert.doesNotMatch(page,/responsive=\{\{/);
+ for(const label of ['Desktop enabled','Tablet enabled','Mobile enabled'])
+  assert.ok(dialog.includes(label),label);
+ assert.match(dialog,/aria-label="Page enabled devices"/);
+ assert.match(dialog,/onSave\(page\.apiName,label\.trim\(\)/);
+ assert.match(controller,/expectedDevices/);
+ assert.match(controller,/devices=\$3::text\[\]/);
+ assert.match(shell,/devices:updated\.devices/);
+ assert.match(smart,/cardsPerRow/);
+ assert.match(page,/customTargetMinWidth/);
 });
