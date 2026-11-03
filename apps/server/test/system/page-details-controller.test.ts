@@ -77,3 +77,13 @@ test('Page device flags are guarded SQL metadata, not component or canvas change
  assert.match(dialog,/page\.devices\)/);
  assert.match(shell,/devices:updated\.devices/);
 });
+
+test('Disabled page devices are excluded from resolved routes without deleting assignments',()=>{
+ const pages=read('../../src/system-files/page-runtime.ts');
+ const apps=read('../../src/system-files/app-runtime.ts');
+ for(const factor of ['\\$6=ANY\\(d\\.devices\\)','\\$4=ANY\\(d\\.devices\\)'])
+  assert.match(pages,new RegExp(factor));
+ assert.match(apps,/=ANY\(d\.devices\)/);
+ assert.match(apps,/=ANY\(home_detail\.devices\)/);
+ assert.doesNotMatch(apps,/DELETE FROM md_lightning_page_activation/);
+});
