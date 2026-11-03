@@ -127,6 +127,17 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  // Area switching must not change the selected component or old Design view.
  await area.selectOption('Table');
  assert.equal(await row.locator('[data-property="tableBackgroundColor"]').getAttribute('data-supported'),'true');
+ await area.selectOption('Footer');
+ assert.equal(await row.locator('[data-property="footerBackgroundColor"]').getAttribute('data-supported'),'true',
+  'Grand total Footer needs a dedicated enabled colour');
+ assert.equal(await row.locator('[data-property="footerWidth"]').getAttribute('data-supported'),'true',
+  'Footer width must not edit the whole Summary');
+ await area.selectOption('Button 2');
+ assert.equal(await row.locator('[data-property="cartButton2BackgroundColor"]').getAttribute('data-supported'),'true',
+  'Selected row plus button needs its own fill');
+ await area.selectOption('Button 5');
+ assert.equal(await row.locator('[data-property="cartButton5BackgroundColor"]').getAttribute('data-supported'),'true',
+  'Second custom button must be Button 5 and independently styleable');
  await area.selectOption('Body');
  assert.equal(await row.locator('[data-property="wrapText"]').count(),0,
   'Body Wrap Text was not requested in the approved matrix');
