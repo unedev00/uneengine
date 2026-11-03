@@ -239,7 +239,7 @@ export function renderSetupShell(ctx: any) {
                           || (workspace === 'app-manager' && item === 'App Manager')
                           || (workspace === 'app-exchange' && item === 'AppExchange')
                           || (workspace === 'tenant-management' && item === 'Tenant Management')
-                          || (workspace === 'named-credentials' && item === (route.kind === 'setup' && route.resourceApiName === 'Webhooks' ? 'Webhook Endpoints' : 'Named Credentials'))
+                          || (workspace === 'named-credentials' && item === (route.kind === 'setup' && route.resourceApiName === 'NamedDevices' ? 'Named Devices' : route.kind === 'setup' && route.resourceApiName === 'Webhooks' ? 'Webhook Endpoints' : 'Named Credentials'))
                                                     || (workspace === 'flow-interviews' && item === 'Paused and Waiting Interviews')
                           || (workspace === 'scheduled-flows' && item === 'Scheduled Flows')
                           || (workspace === 'flow-logs' && item === 'Flow History')) ? 'tree-item selected' : 'tree-item'}
