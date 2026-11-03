@@ -55,10 +55,10 @@ test('rename updates page key, nested parents and declared interaction target re
  assert.equal(renamed[0].properties.objectApiName,'img');
  assert.equal((renamed[1].properties.actionFlows as any).click.caption,'img');
  assert.equal(renamed[2].properties.dataSource,'img');
- assert.equal(renamed[2].properties.stateBindings!.myId,'img');
+ assert.equal((renamed[2].properties.stateBindings as any).myId,'img');
  assert.equal(renamed[2].parentId,'table');
  assert.equal(renamed[2].properties.layoutParentId,'table');
- assert.equal(renamed[0].properties.pagePropertyContract,source[0].properties.pagePropertyContract === renamed[0].properties.pagePropertyContract?undefined:renamed[0].properties.pagePropertyContract);
+ assert.notEqual(renamed[0].properties.pagePropertyContract,source[0].properties.pagePropertyContract);
  assert.deepEqual(renamePageComponentId(renamed,'logo1','logo1'),renamed);
  assert.throws(()=>renamePageComponentId(renamed,'logo1','TABLE'),/already used/);
  assert.throws(()=>renamePageComponentId(renamed,'missing','other'),/no longer exists/);
