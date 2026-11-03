@@ -14,6 +14,8 @@ export type UneRibbonProperty={
  kind:RibbonControlKind;components:readonly string[];
  default?:string|number|boolean|readonly string[];
  min?:number;max?:number;choices?:readonly string[];field?:boolean;
+ /** Conditional editability supplied by the shared SQL property contract. */
+ enabledWhen?:{property:string;in:readonly string[]};
  kindOverrides?:Record<string,RibbonControlKind>;
  defaultsOverrides?:Record<string,string|number|boolean>;
  choicesOverrides?:Record<string,readonly string[]>;

@@ -1537,12 +1537,13 @@ export function createSystemServer(db:SqlPersistence) {
         default_value:unknown;choices:unknown;component_api:string|null;
         control_kind_override:string|null;value_key:string|null;
         default_value_override:unknown;choices_override:unknown;min_value:number|null;
+        enabled_when:unknown;
         max_value:number|null;field_select:boolean;
         design_row:number|null;design_width:number|null;design_height:number|null;design_order:number|null;
         design_caption:string|null;design_caption_width:number|null;design_display:string|null;
       }>(`SELECT p.property_key AS id,p.label,p.tab,p.section_group AS group_name,
           p.control_kind AS kind,p.sort_order,p.default_value,p.choices,
-          p.min_value,p.max_value,p.field_select,
+          p.min_value,p.max_value,p.field_select,p.enabled_when,
           p.design_row,p.design_width,p.design_height,p.design_order,
           p.design_caption,p.design_caption_width,p.design_display,
           r.component_api,r.control_kind_override,r.value_key,
@@ -1569,6 +1570,16 @@ export function createSystemServer(db:SqlPersistence) {
           components:[] as string[],default:row.default_value??undefined,
           choices:row.choices??[],min:row.min_value??undefined,max:row.max_value??undefined,
           field:row.field_select,designRow:row.design_row??undefined,
+          enabledWhen:(()=>{
+            const rule=row.enabled_when;
+            if(!rule||typeof rule!=='object'||Array.isArray(rule))return undefined;
+            const condition=rule as Record<string,unknown>;
+            return typeof condition.property==='string'&&
+              /^[A-Za-z][A-Za-z0-9_]*$/.test(condition.property)&&
+              Array.isArray(condition.in)&&condition.in.length>0&&condition.in.length<=20&&
+              condition.in.every(value=>typeof value==='string'&&value.length<=128)
+              ?{property:condition.property,in:condition.in}:undefined;
+          })(),
           designWidth:row.design_width??undefined,designHeight:row.design_height??undefined,
           designOrder:row.design_order??undefined,
           designCaption:row.design_caption??undefined,

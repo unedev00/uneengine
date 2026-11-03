@@ -178,7 +178,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  const groupOrder=tab==='Design2'?[activeDesign2Area]
   :tab==='Data'?['Source','Values','Cart','Cart columns','Cart totals','Card Grid']
   :tab==='Design'?['Body','Shape','Typography','Tabs','Header','Badge','Header Supporting','Button',
-    'Table','Row','Summary','Summary 2']
+    'Table','Row','Summary','Summary 2','Card Grid']
   :tab==='Layout'?['Size & Position','Tabs','Cards','Navigation','Calendar','Image','Icon']
   :[];
  const sections=[...groupOrder.filter(group=>groups.includes(group)),
@@ -262,7 +262,13 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    const key=api==='smart_calendar'&&property.id==='shadow'?'shadow':property.valueKeys?.[api]??property.id;
    const isSize=property.id==='width'||property.id==='height';
    const useCanvasPosition=layoutMode==='free-canvas'&&Boolean(position&&onPositionChange);
-   const enabled=supported&&(kind!=='position'||isSize||useCanvasPosition);
+   const condition=property.enabledWhen;
+   const conditionValue=condition?properties[condition.property]??(
+     definitions.find(p=>p.id===condition.property)?.defaultsOverrides?.[api]??
+     definitions.find(p=>p.id===condition.property)?.default
+   ):undefined;
+   const enabled=supported&&(kind!=='position'||isSize||useCanvasPosition)&&
+     (!condition||condition.in.includes(String(conditionValue??'')));
    const value=mixedPropertyIds?.includes(property.id)?'':properties[key]??property.defaultsOverrides?.[api]??property.default??'';
    const options=property.choicesOverrides?.[api]??property.choices??[];
    const write=(v:unknown)=>{
