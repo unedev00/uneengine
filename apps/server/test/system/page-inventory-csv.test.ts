@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {applyInventoryCsv,exportInventoryCsv,inventoryRequestedTypes,type InventoryPage} from '../../src/system-support/page-inventory-csv.js';
+import {applyInventoryCsv,exportInventoryCsv,inventoryRequestedTypes,inventoryDefinitions,type InventoryPage} from '../../src/system-support/page-inventory-csv.js';
 import {componentInstanceNames,nextComponentInstanceName,validateExplicitComponentNames} from '../../src/system-support/page-component-names.js';
 import type {ComponentSettingDefinition} from '../../src/system-support/component-property-contract.js';
 
@@ -17,12 +17,13 @@ const original=():InventoryPage=>({
  }]
 });
 const csv=(...rows:string[])=>['pageapi,component_name,component_property,value',...rows].join('\r\n');
+const csv5=(...rows:string[])=>['pageapi,component_type,component_name,propertyid,value',...rows].join('\r\n');
 test('inventory exports editable component properties, canvas coordinates and complex values',()=>{
  const output=exportInventoryCsv(original());
- assert.match(output,/CODEXTILL,smartcart1,width,100/);
- assert.match(output,/CODEXTILL,smartcart1,component.position.width,450/);
- assert.match(output,/CODEXTILL,smartcart1,style.fontSize,14/);
- assert.match(output,/CODEXTILL,smartcart1,summary1Formula,=SUM\(@LineTotal\)/);
+ assert.match(output,/CODEXTILL,smart_cart,smartcart1,width,100/);
+ assert.match(output,/CODEXTILL,smart_cart,smartcart1,component.position.width,450/);
+ assert.match(output,/CODEXTILL,smart_cart,smartcart1,style.fontSize,14/);
+ assert.match(output,/CODEXTILL,smart_cart,smartcart1,summary1Formula,=SUM\(@LineTotal\)/);
  assert.match(output,/""Tea, milk""/);
 });
 test('blank and absent CSV properties preserve saved metadata',()=>{
@@ -62,7 +63,7 @@ test('unknown current property may be filled only when published metadata declar
   {propertyKey:'captionColor',label:'Caption colour',kind:'COLOR'}
  ]]]);
  const page=original();
- assert.match(exportInventoryCsv(page,definitions),/CODEXTILL,smartcart1,captionColor,\r\n/);
+ assert.match(exportInventoryCsv(page,definitions),/CODEXTILL,smart_cart,smartcart1,captionColor,\r\n/);
  const imported=applyInventoryCsv(page,csv('CODEXTILL,Cart1,captionColor,#ff0000'),definitions);
  assert.equal(imported.valid,true);
  assert.equal(imported.page.components[0].properties.captionColor,'#ff0000');
@@ -90,7 +91,7 @@ test('Advanced placeholder and parent-link keys stay persisted but are omitted f
  const exported=exportInventoryCsv(page,defs);
  for(const excluded of ['cssClass','allowedChildTypes','maxChildren','layoutParentId','parentId'])
   assert.ok(!exported.includes(','+excluded+','),excluded+' should not appear in inventory');
- assert.ok(exported.includes('CODEXTILL,smartcart1,objectApiName,Inventory'));
+ assert.ok(exported.includes('CODEXTILL,smart_cart,smartcart1,objectApiName,Inventory'));
  assert.deepEqual(page.components[0].properties.layoutParentId,'Group1',
   'hiding a structural property must not modify page metadata');
  const importable=applyInventoryCsv(page,csv('CODEXTILL,Cart1,width,110'),defs);
@@ -113,16 +114,17 @@ test('CSV cannot override internal parent structure or retired Advanced properti
  assert.equal(result.page.components[0].properties.cssClass,'old');
 });
 
-test('component_name is readable; type/id are explicit immutable metadata rows',()=>{
+test('component type has its own CSV column; custom name is the lookup key',()=>{
  const output=exportInventoryCsv(original());
- assert.match(output,/CODEXTILL,smartcart1,component\.id,Cart1/);
- assert.match(output,/CODEXTILL,smartcart1,component\.type,Custom:smart_cart/);
- assert.match(output,/CODEXTILL,smarttabs1,component\.type,Custom:smart_tabs/);
- assert.doesNotMatch(output,/CODEXTILL,Cart1,component\.label/);
- const imported=applyInventoryCsv(original(),csv('CODEXTILL,smartcart1,width,35'));
+ assert.match(output,/^pageapi,component_type,component_name,propertyid,value\r\n/);
+ assert.match(output,/CODEXTILL,smart_cart,smartcart1,component\.label,Cart/);
+ assert.match(output,/CODEXTILL,smart_tabs,smarttabs1,component\.label,Tabs/);
+ assert.doesNotMatch(output,/component\.type|component\.id|navigatorName/);
+ const imported=applyInventoryCsv(original(),csv5('CODEXTILL,smart_cart,smartcart1,width,35'));
  assert.equal(imported.valid,true);
  assert.equal(imported.page.components[0].properties.width,35);
 });
+
 test('sequence skips deleted numbers, retains historical high water, and names are unique',()=>{
  const components=[{id:'a',type:'Custom:smart_image',properties:{navigatorName:'smartimage1'}},
   {id:'c',type:'Custom:smart_image',properties:{navigatorName:'smartimage3'}}];
@@ -177,4 +179,112 @@ test('upsert rejects unknown type, missing type, conflicting ID, invalid values 
  assert.ok(invalid.issues.some(x=>x.remark.includes('Duplicate')));
  assert.ok(invalid.issues.some(x=>x.remark.includes('numeric')));
  assert.equal(page.components.length,2,'invalid imports never mutate input page');
+});
+
+test('typed CSV creates a named installed Smart component without a component.type row',()=>{
+ const page=original();page.layoutMode='free-canvas';page.canvasWidth=1440;page.canvasHeight=900;
+ const defs=new Map<string,ComponentSettingDefinition[]>([['Custom:smart_card_grid',[
+  {propertyKey:'cardsPerRow',label:'Columns',kind:'NUMBER'},
+  {propertyKey:'cardButtonText',label:'Button Text',kind:'TEXT'},
+  {propertyKey:'cardButtonFill',label:'Fill',kind:'COLOR'}
+ ]]]);
+ const file=csv5(
+  'CODEXTILL,smart_card_grid,productgrid,cardsPerRow,4',
+  'CODEXTILL,smart_card_grid,productgrid,cardButtonText,"CHOOSE +"',
+  'CODEXTILL,smart_card_grid,productgrid,cardButtonFill,#E4002B',
+  'CODEXTILL,smart_card_grid,productgrid,component.position.x,260',
+  'CODEXTILL,smart_cart,smartcart1,component.visible,false');
+ assert.deepEqual(inventoryRequestedTypes(file),['Custom:smart_card_grid','Custom:smart_cart']);
+ const result=applyInventoryCsv(page,file,defs);
+ assert.equal(result.valid,true,JSON.stringify(result.issues));
+ assert.equal(result.page.components.length,3);
+ assert.equal(result.page.components[2].type,'Custom:smart_card_grid');
+ assert.equal(result.page.components[2].properties.navigatorName,'productgrid');
+ assert.equal(result.page.components[2].properties.cardsPerRow,4);
+ assert.equal(result.page.components[2].properties.cardButtonText,'CHOOSE +');
+ assert.equal(result.page.components[2].properties.cardButtonFill,'#E4002B');
+ assert.equal(result.page.components[2].position?.x,260);
+ assert.equal(result.page.components[0].visible,false);
+ assert.equal(page.components.length,2,'validation must never edit the original');
+ const repeated=applyInventoryCsv(result.page,file,defs);
+ assert.equal(repeated.valid,true,JSON.stringify(repeated.issues));
+ assert.equal(repeated.changes,0,'importing the same file cannot create duplicates');
+ assert.equal(repeated.page.components.length,3);
+});
+
+test('typed CSV updates by case-insensitive custom name while preserving component ID',()=>{
+ const page=original();
+ page.components[0].properties.navigatorName='My Cart Name';
+ const imported=applyInventoryCsv(page,csv5(
+  'CODEXTILL,smart_cart,MY CART NAME,width,375',
+  'CODEXTILL,smart_cart,my cart name,component.visible,false'));
+ assert.equal(imported.valid,true,JSON.stringify(imported.issues));
+ assert.equal(imported.page.components.length,2);
+ assert.equal(imported.page.components[0].id,'Cart1');
+ assert.equal(imported.page.components[0].properties.width,375);
+ assert.equal(imported.page.components[0].properties.summary1Formula,'=SUM(@LineTotal)');
+ assert.equal(imported.page.components[0].visible,false);
+});
+
+test('typed CSV rejects mismatched type, uninstalled type, duplicates and invalid properties',()=>{
+ const page=original();page.layoutMode='free-canvas';
+ const defs=new Map<string,ComponentSettingDefinition[]>([['Custom:smart_card_grid',[
+  {propertyKey:'cardsPerRow',label:'Columns',kind:'NUMBER'},
+  {propertyKey:'cardButtonText',label:'Button Text',kind:'TEXT'}
+ ]]]);
+ const input=csv5('CODEXTILL,smart_tabs,smartcart1,component.visible,false',
+  'CODEXTILL,smart_not_installed,missing,component.visible,true',
+  'CODEXTILL,smart_card_grid,newgrid,cardsPerRow,not-a-number',
+  'CODEXTILL,smart_card_grid,newgrid,unknownField,anything',
+  'CODEXTILL,smart_card_grid,newgrid,cardButtonText,"CHOOSE +"',
+  'CODEXTILL,smart_card_grid,newgrid,cardButtonText,Duplicate');
+ const result=applyInventoryCsv(page,input,defs);
+ assert.equal(result.valid,false);
+ assert.ok(result.issues.some(i=>i.remark.includes('type mismatch')));
+ assert.ok(result.issues.some(i=>i.remark.includes('not enabled')));
+ assert.ok(result.issues.some(i=>i.remark.includes('numeric')));
+ assert.ok(result.issues.some(i=>i.remark.includes('Unknown component metadata')));
+ assert.ok(result.issues.some(i=>i.remark.includes('Duplicate')));
+ assert.equal(page.components.length,2,'rejected CSV must not edit the draft');
+});
+
+test('typed CSV applies SQL property ID aliases and validates numeric bounds',()=>{
+ const page=original();page.layoutMode='free-canvas';
+ const defs=new Map<string,ComponentSettingDefinition[]>([['Custom:smart_cart',[
+  {propertyKey:'radius',label:'Radius',kind:'NUMBER',min:0,max:100},
+  {propertyKey:'shapeFill',label:'Shape Fill',kind:'COLOR',valueKey:'backgroundColor'}
+ ] as ComponentSettingDefinition[]]]);
+ const result=applyInventoryCsv(page,csv5(
+  'CODEXTILL,smart_cart,smartcart1,radius,14',
+  'CODEXTILL,smart_cart,smartcart1,shapeFill,#cafe00'),defs);
+ assert.equal(result.valid,true,JSON.stringify(result.issues));
+ assert.equal(result.page.components[0].properties.radius,14);
+ assert.equal(result.page.components[0].properties.backgroundColor,'#cafe00');
+ const rejected=applyInventoryCsv(page,csv5('CODEXTILL,smart_cart,smartcart1,radius,999'),defs);
+ assert.equal(rejected.valid,false);
+ assert.ok(rejected.issues[0].remark.includes('within the allowed range'));
+});
+
+test('SQL inventory definitions use tenant-installed components and enabled shared ribbon rules',async()=>{
+ const queries:Array<{sql:string;args:readonly unknown[]}>= [];
+ const db={query:async(sql:string,args:readonly unknown[])=>{
+  queries.push({sql,args});
+  if(sql.includes('FROM md_component_definitions'))return {rows:[{api_name:'smart_card_grid'}]};
+  if(sql.includes('FROM md_builder_ribbon_component_rules'))return {rows:[
+   {component_api:'smart_card_grid',property_key:'cardButtonText',label:'Button Text',
+    control_kind:'expression',value_key:'cardButtonText',default_value:null,choices:[],min_value:null,max_value:null},
+   {component_api:'smart_card_grid',property_key:'cardsPerRow',label:'Columns',
+    control_kind:'number',value_key:'cardsPerRow',default_value:3,choices:[],min_value:1,max_value:6}
+  ]};
+  if(sql.includes('FROM md_component_library_heads'))return {rows:[]};
+  throw Error('Unexpected SQL');
+ }} as unknown as Parameters<typeof inventoryDefinitions>[0];
+ const def=await inventoryDefinitions(db,'tenant-1',[],'Desktop',['Custom:smart_card_grid','Custom:smart_uninstalled']);
+ assert.equal(def.has('Custom:smart_uninstalled'),false);
+ assert.equal(def.get('Custom:smart_card_grid')?.find(v=>v.propertyKey==='cardButtonText')?.kind,'TEXT');
+ assert.equal(def.get('Custom:smart_card_grid')?.find(v=>v.propertyKey==='cardsPerRow')?.kind,'NUMBER');
+ assert.equal(def.get('Custom:smart_card_grid')?.find(v=>v.propertyKey==='cardsPerRow')?.defaultValue,3);
+ assert.ok(queries[0].sql.includes('tenant_id=$1 AND enabled=true'));
+ assert.deepEqual(queries[0].args[0],'tenant-1');
+ assert.ok(queries.some(q=>q.sql.includes("r.enabled=true AND p.scope='component'")));
 });
