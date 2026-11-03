@@ -11,6 +11,7 @@ export type UneRibbonProperty={
  /** SQL-owned visual placement for the compact three-row Design and Shapes toolbars. */
  designRow?:number;designWidth?:number;designHeight?:number;designOrder?:number;
  designCaption?:string;designCaptionWidth?:number;designDisplay?:'buttons'|'dropdown';
+ designColumn?:number;designSlotKey?:string;
  kind:RibbonControlKind;components:readonly string[];
  default?:string|number|boolean|readonly string[];
  min?:number;max?:number;choices?:readonly string[];field?:boolean;
@@ -22,8 +23,9 @@ export type UneRibbonProperty={
  valueKeys?:Record<string,string>;
 };
 export type Design2Slot={
- area:string;areaOrder:number;slotKey:string;row:number;order:number;
- width:number;height:number;propertyKey:string|null;fallbackKey:string;
+ componentApi:string;area:string;areaOrder:number;slotKey:string;
+ row:number;column:number;order:number;width:number;height:number;
+ propertyKey:string|null;fallbackKey:string;
 };
 export type SharedRibbonCatalog={
  components:string[];
