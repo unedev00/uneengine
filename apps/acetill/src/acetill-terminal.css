@@ -252,9 +252,9 @@
 .acetill-terminal :is(.acetill-category-tabs button,.acetill-quick-actions button,.acetill-charge){min-height:56px}
 @media(pointer:coarse){.acetill-terminal :is(button,input){min-height:44px;touch-action:manipulation}}
 @media(prefers-color-scheme:dark){
- .acetill-terminal:not([data-theme="light"]){color-scheme:dark;--till-surface:#2c2c2e;--till-ink:#f5f5f7;--till-muted:#c2c2c8;--till-line:rgb(84 84 88 / 55%)}
+ :root[data-theme="system"] .acetill-terminal:not([data-theme="light"]), .acetill-terminal[data-theme="system"]{color-scheme:dark;--till-surface:#2c2c2e;--till-ink:#f5f5f7;--till-muted:#c2c2c8;--till-line:rgb(84 84 88 / 55%)}
 }
-.acetill-terminal[data-theme="dark"]{color-scheme:dark;--till-surface:#2c2c2e;--till-ink:#f5f5f7;--till-muted:#c2c2c8;--till-line:rgb(84 84 88 / 55%)}
+:root[data-theme="dark"] .acetill-terminal:not([data-theme="light"]), .acetill-terminal[data-theme="dark"]{color-scheme:dark;--till-surface:#2c2c2e;--till-ink:#f5f5f7;--till-muted:#c2c2c8;--till-line:rgb(84 84 88 / 55%)}
 
 /* Readable secondary text and tappable action contrast in both appearances. */
 .acetill-terminal{
@@ -266,9 +266,9 @@
 }
 .acetill-terminal :is(.acetill-category-tabs button.selected,.acetill-quick-actions button){color:var(--till-action-ink)}
 @media(prefers-color-scheme:dark){
- .acetill-terminal:not([data-theme="light"]){--till-action-ink:#82beff}
+ :root[data-theme="system"] .acetill-terminal:not([data-theme="light"]), .acetill-terminal[data-theme="system"]{--till-action-ink:#82beff}
 }
-.acetill-terminal[data-theme="dark"]{--till-action-ink:#82beff}
+:root[data-theme="dark"] .acetill-terminal:not([data-theme="light"]), .acetill-terminal[data-theme="dark"]{--till-action-ink:#82beff}
 
 
 /* Filled POS action background must contrast with white text at 4.5:1. */
