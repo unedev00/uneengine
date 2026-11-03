@@ -109,7 +109,7 @@ export function resolveRegisteredTextProperties(
     const value=properties[definition.propertyKey];
     if(typeof value!=='string'||!isFieldExpression(value))continue;
     if(!hasRecord&&/@[A-Za-z]/.test(value)&&!formulaContext.namedCollections
-      &&!formulaContext.collectionSources)continue;
+      &&!formulaContext.collectionSources&&!formulaContext.collectionRows?.length)continue;
     if(!resolvedContext?.timeZone&&requiresAuthenticatedTimeZone(value,record))
       throw new FieldExpressionEvaluationError('Authenticated formula time zone is unavailable');
     if(next===properties)next={...properties};
