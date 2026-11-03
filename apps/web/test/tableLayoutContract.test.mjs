@@ -17,7 +17,7 @@ test('workspace table behaviour is shared and lazy, without changing record-spec
   assert.match(css, /overflow-x: auto/);
 });
 
-test('page list has a compact leading Actions column without a frozen edge', () => {
+test('page list has a compact trailing Actions column with a visible edge', () => {
   const styles = source('core/workspace/WorkspaceTheme/styles.css');
   const css = source('core/workspace/WorkspaceTheme/adminTableControls.css');
   const pages = source('core/builders/PageBuilder/pageBuilderView.tsx');
