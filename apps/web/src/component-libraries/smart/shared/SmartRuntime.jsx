@@ -143,7 +143,8 @@ function SmartCard({p,record,onButtonClick}){
       style={{
        backgroundColor:p.cardButtonFill||p.accentColor||"#2563eb",
        borderColor:p.cardButtonBorderColor||p.cardButtonFill||p.accentColor||"#2563eb",
-       borderRadius:p.cardButtonShape==="square"?0:p.cardButtonShape==="pill"?999:8,
+       ...smartShapeAppearance(p.cardButtonShape||"shape:round-rectangle",
+        p.cardButtonShape==="shape:rectangle"?0:8),
        color:p.cardButtonTextColor||"#fff",
        fontSize:number(p.cardButtonTextSize,14,8,48)
       }}
