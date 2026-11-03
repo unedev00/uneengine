@@ -241,3 +241,8 @@
   border-radius: var(--md-radius-md, 8px);
 }
 /* Shared SettingsViewRow geometry is owned by grokUiPolish.css. */
+
+
+/* Audit DEF-025/026: field widths are driven by data shape, not full form columns. */
+.lightning .currency-iso-code-input { width: min(100%, 180px); max-width: 180px; }
+.lightning .mfa-recovery-user-select { width: min(100%, 440px); max-width: 440px; }
