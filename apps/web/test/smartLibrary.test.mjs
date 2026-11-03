@@ -71,7 +71,10 @@ test('Insert Ribbon exposes visible Smart components without requiring a selecte
 test('unrequested Row, Column and Card layout tiles are hidden without breaking existing pages',()=>{
  const view=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
  const layouts=read('../src/core/pages/TemplatePageRuntime/pageComponentLayout.ts');
- assert.match(view,/layoutTypes\.filter\(type=>!\['Row','Column','Card'\]\.includes\(type\)\)/);
+ assert.match(view,/layoutTypes\.filter\(type=>!\['Row','Column','Card','Container'\]\.includes\(type\)\)/);
+ const manifest=JSON.parse(read('../src/component-libraries/manifest.json'));
+ assert.equal(manifest.components.filter(path=>path==='smart_container/component.json').length,1);
+ assert.match(view,/component\.apiName\.startsWith\('smart_'\)/);
  assert.match(layouts,/layoutTypes = \['Container', 'Row', 'Column', 'Card', 'Grid'\]/);
  assert.match(view,/component\.apiName==='smart_card_grid'\?'Card Grid'/);
 });
