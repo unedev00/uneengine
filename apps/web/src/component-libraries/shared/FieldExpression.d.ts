@@ -9,6 +9,8 @@ export type FormulaBindingContext={
   recordType?:Record<string,unknown>;
   permissions?:Readonly<Record<string,boolean>>;
   collectionSources?:Readonly<Record<string,ReadonlyArray<Record<string,unknown>>>>;
+  /** Bounded, permission-checked rows available for aggregate expressions such as SUM(@Price * @Quantity). */
+  collectionRows?:ReadonlyArray<Record<string,unknown>>;
   collectionSourceFields?:Readonly<Record<string,ReadonlyArray<string>>>;
   namedCollections?:Readonly<Record<string,{name:string;items:unknown[]}>>;
   rootObjectApiName?:string;
