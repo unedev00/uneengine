@@ -2,7 +2,7 @@ import {useMemo,useState} from 'react';
 import type {LightningPageMetadata,PageLayoutVariant} from '../../metadata/Definitions/metadata';
 import './PageInventoryImportDialog.css';
 
-type Issue={row:number;component_name:string;component_property:string;remark:string};
+type Issue={row:number;pageapi?:string;component_name:string;component_property:string;value?:string;remark:string};
 type Preview={valid:boolean;issues:Issue[];changes:number;skipped:number;draftRevision:number};
 type ApplyResult=Preview&{page?:LightningPageMetadata};
 type Props={
@@ -18,8 +18,8 @@ const csvEscape=(value:unknown)=>{
  return /[",\r\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;
 };
 function downloadErrors(issues:Issue[],name:string){
- const csv=[['row','component_name','component_property','error_remarks'],
-  ...issues.map(item=>[item.row,item.component_name,item.component_property,item.remark])]
+ const csv=[['row','pageapi','component_name','component_property','value','error_remarks'],
+  ...issues.map(item=>[item.row,item.pageapi,item.component_name,item.component_property,item.value,item.remark])]
   .map(row=>row.map(csvEscape).join(',')).join('\r\n')+'\r\n';
  const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
  const anchor=document.createElement('a');
@@ -130,10 +130,10 @@ export default function PageInventoryImportDialog({pages,initialPageApi,request,
      </div>
      <div className="page-inventory-error-table">
       <table className="records-table">
-       <thead><tr><th>Row</th><th>Component</th><th>Property</th><th>Error remarks</th></tr></thead>
+       <thead><tr><th>Row</th><th>Component</th><th>Property</th><th>Value</th><th>Error remarks</th></tr></thead>
        <tbody>{preview.issues.map((item,index)=><tr key={index}>
         <td>{item.row}</td><td>{item.component_name||'—'}</td>
-        <td>{item.component_property||'—'}</td><td>{item.remark}</td>
+        <td>{item.component_property||'—'}</td><td>{item.value??'—'}</td><td>{item.remark}</td>
        </tr>)}</tbody>
       </table>
      </div>
