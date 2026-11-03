@@ -103,7 +103,7 @@ export default function PageInventoryImportDialog({pages,initialPageApi,request,
      <input id="page-inventory-csv" type="file" accept=".csv,text/csv" disabled={busy}
       onChange={e=>void loadFile(e.target.files?.[0])}/>
      <p className="page-inventory-file-name">{fileName||'No file selected'}</p>
-     <p className="page-inventory-help">Expected: pageapi, component_name, component_property, value.</p>
+     <p className="page-inventory-help">Expected: pageapi, component_name, component_property, value, ribbon_tab (optional). The Ribbon Tab column is for reference only; imports use component_property IDs.</p>
      <p className="page-inventory-help">Use unique names such as smartimage1. For a new name, add
       component.type = Custom:smart_image and leave component.id blank. Only the Desktop draft is modified.</p>
      <p className="page-inventory-help">Selected page: {selectedPage?.apiName??'None'}</p>

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {applyInventoryCsv,exportInventoryCsv,inventoryRequestedTypes,type InventoryPage} from '../../src/system-support/page-inventory-csv.js';
+import {applyInventoryCsv,exportInventoryCsv,inventoryRequestedTypes,inventoryDefinitions,type InventoryPage,type InventoryDefinitions} from '../../src/system-support/page-inventory-csv.js';
 import {componentInstanceNames,nextComponentInstanceName,validateExplicitComponentNames} from '../../src/system-support/page-component-names.js';
 import type {ComponentSettingDefinition} from '../../src/system-support/component-property-contract.js';
 
@@ -17,6 +17,7 @@ const original=():InventoryPage=>({
  }]
 });
 const csv=(...rows:string[])=>['pageapi,component_name,component_property,value',...rows].join('\r\n');
+const csv5=(...rows:string[])=>['pageapi,component_name,component_property,value,ribbon_tab',...rows].join('\r\n');
 test('inventory exports editable component properties, canvas coordinates and complex values',()=>{
  const output=exportInventoryCsv(original());
  assert.match(output,/CODEXTILL,smartcart1,width,100/);
@@ -62,7 +63,7 @@ test('unknown current property may be filled only when published metadata declar
   {propertyKey:'captionColor',label:'Caption colour',kind:'COLOR'}
  ]]]);
  const page=original();
- assert.match(exportInventoryCsv(page,definitions),/CODEXTILL,smartcart1,captionColor,\r\n/);
+ assert.match(exportInventoryCsv(page,definitions),/CODEXTILL,smartcart1,captionColor,,Advanced\r\n/);
  const imported=applyInventoryCsv(page,csv('CODEXTILL,Cart1,captionColor,#ff0000'),definitions);
  assert.equal(imported.valid,true);
  assert.equal(imported.page.components[0].properties.captionColor,'#ff0000');
@@ -177,4 +178,109 @@ test('upsert rejects unknown type, missing type, conflicting ID, invalid values 
  assert.ok(invalid.issues.some(x=>x.remark.includes('Duplicate')));
  assert.ok(invalid.issues.some(x=>x.remark.includes('numeric')));
  assert.equal(page.components.length,2,'invalid imports never mutate input page');
+});
+
+const ribbonDefinitions=():InventoryDefinitions=>{
+ const defs=new Map<string,ComponentSettingDefinition[]>([
+  ['Custom:smart_cart',[
+   {propertyKey:'customCaption',label:'Caption',kind:'TEXT',defaultValue:'Untitled',section:'Data'},
+   {propertyKey:'format',label:'Format',kind:'GROUP',section:'Design',fields:[
+    {propertyKey:'fontSize',label:'Font size',kind:'NUMBER',defaultValue:13}
+   ]}
+  ]]
+ ]) as InventoryDefinitions;
+ defs.completeCatalog=true;
+ defs.ribbonProperties=new Map([['Custom:smart_cart',[
+  {id:'backgroundColor',kind:'color',tab:'Design',defaultValue:'#ffffff'},
+  {id:'textSize',kind:'number',tab:'Design',defaultValue:16},
+  {id:'wrapText',kind:'boolean',tab:'Design',defaultValue:true},
+  {id:'shadow',kind:'shadow',tab:'Design',valueKey:'calendarShadowColor',defaultValue:'none'},
+  {id:'textSource',kind:'expression',tab:'Data'}
+ ]]]);
+ return defs;
+};
+
+test('catalogue export has the same property IDs and row counts for the same type on different pages',()=>{
+ const a=original();
+ a.components=[a.components[0]];
+ const b=original();
+ b.apiName='OTHERPAGE';
+ b.components=[{...b.components[0],id:'Other1',label:'Different',
+  position:undefined,properties:{textSize:19,calendarShadowColor:'medium',
+   navigatorName:'smartcart2',internalUnregistered:'not a Ribbon property'}}];
+ const defs=ribbonDefinitions();
+ const first=exportInventoryCsv(a,defs),second=exportInventoryCsv(b,defs);
+ const parsed=(output:string)=>output.trim().split('\r\n').slice(1).map(row=>row.split(',')[2]);
+ assert.deepEqual(parsed(first),parsed(second));
+ assert.match(first,/CODEXTILL,smartcart1,backgroundColor,#ffffff,Design/);
+ assert.match(first,/CODEXTILL,smartcart1,textSize,16,Design/);
+ assert.match(first,/CODEXTILL,smartcart1,wrapText,true,Design/);
+ assert.match(second,/OTHERPAGE,smartcart2,textSize,19,Design/);
+ assert.match(first,/CODEXTILL,smartcart1,customCaption,Untitled,Data/);
+ assert.match(first,/CODEXTILL,smartcart1,format\.fontSize,13,Design/);
+ assert.doesNotMatch(first,/component\.label|navigatorName/);
+ assert.doesNotMatch(second,/internalUnregistered/);
+ assert.equal(first.split('\r\n')[0],'pageapi,component_name,component_property,value,ribbon_tab');
+});
+
+test('five-column export reimports without storing defaults or changing the draft',()=>{
+ const page=original();page.components=[page.components[0]];
+ const defs=ribbonDefinitions();
+ const downloaded=exportInventoryCsv(page,defs);
+ const result=applyInventoryCsv(page,downloaded,defs);
+ assert.equal(result.valid,true,JSON.stringify(result.issues));
+ assert.equal(result.changes,0,'effective defaults do not become explicit page overrides');
+ assert.deepEqual(result.page,page);
+});
+
+test('CSV ignores Ribbon Tab values, validates by ID, and saves correctly typed properties',()=>{
+ const defs=ribbonDefinitions();
+ const page=original();
+ const rows=csv5('CODEXTILL,smartcart1,textSize,22,Completely Incorrect Tab',
+  'CODEXTILL,smartcart1,wrapText,false,Another arbitrary label',
+  'CODEXTILL,smartcart1,shadow,large,Data',
+  'CODEXTILL,smartcart1,customCaption,Named By User,Design');
+ const result=applyInventoryCsv(page,rows,defs);
+ assert.equal(result.valid,true,JSON.stringify(result.issues));
+ assert.equal(result.page.components[0].properties.textSize,22);
+ assert.equal(result.page.components[0].properties.wrapText,false);
+ assert.equal(result.page.components[0].properties.calendarShadowColor,'large');
+ assert.equal(result.page.components[0].properties.customCaption,'Named By User');
+ assert.deepEqual(inventoryRequestedTypes(csv5('CODEXTILL,smartbox4,component.type,Custom:smart_image,Ignored')),
+  ['Custom:smart_image']);
+});
+
+test('four-column CSV remains valid, incorrect extra headers and wrong row widths fail closed',()=>{
+ const page=original();
+ assert.equal(applyInventoryCsv(page,csv('CODEXTILL,Cart1,width,122')).valid,true);
+ const badHeader='pageapi,component_name,component_property,value,surprise\r\n'+
+  'CODEXTILL,Cart1,width,122,Design';
+ assert.equal(applyInventoryCsv(page,badHeader).valid,false);
+ const missingCell=csv5('CODEXTILL,Cart1,width,122');
+ const result=applyInventoryCsv(page,missingCell);
+ assert.equal(result.valid,false);
+ assert.match(result.issues[0].remark,/5 CSV columns/);
+});
+
+test('tenant SQL Ribbon applicability and default overrides come from the existing shared registry',async()=>{
+ const queries:string[]=[];
+ const db={query:async(sql:string)=>{
+  queries.push(sql);
+  if(sql.includes('md_component_library_heads'))return {rows:[]};
+  if(sql.includes('md_builder_ribbon_component_rules'))return {rows:[
+   {component_api:'smart_cart',property_key:'textSize',tab:'Design',kind:'number',
+    default_value:18,value_key:null},
+   {component_api:'smart_cart',property_key:'shadow',tab:'Design',kind:'shadow',
+    default_value:'medium',value_key:'calendarShadowColor'}
+  ]};
+  throw Error('Unexpected SQL query');
+ }} as unknown as Parameters<typeof inventoryDefinitions>[0];
+ const defs=await inventoryDefinitions(db,'tenant-1',original().components,'Desktop');
+ assert.equal(defs.completeCatalog,true);
+ assert.deepEqual(defs.ribbonProperties?.get('Custom:smart_cart')?.map(x=>x.id),['textSize','shadow']);
+ assert.match(queries[1],/r\.enabled=true/);
+ assert.match(queries[1],/p\.scope='component'/);
+ const output=exportInventoryCsv(original(),defs);
+ assert.match(output,/CODEXTILL,smartcart1,textSize,18,Design/);
+ assert.match(output,/CODEXTILL,smartcart1,shadow,medium,Design/);
 });
