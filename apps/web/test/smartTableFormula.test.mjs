@@ -86,7 +86,7 @@ test('Smart Table renders exactly the TABLE columns and metadata-driven buttons'
 
 test('Smart Table metadata extends shared ribbon instead of duplicating properties or engines',()=>{
  const sql=read('../../server/src/system-support/migrations/20270308-smart-table-shared-ribbon.sql');
- const runtime=read('../src/component-libraries/smart/shared/SmartRuntime.jsx');
+ const runtime=read('../src/component-libraries/smart_table/SmartComponent.jsx');
  const editor=read('../src/core/builders/PageBuilder/SmartFormulaField.tsx');
  const source=read('../src/core/pages/PageRuntime/usePageCollectionFormula.ts');
  for(const key of ['textSource','objectApiName','objectApiName2','objectApiName3',
@@ -95,7 +95,8 @@ test('Smart Table metadata extends shared ribbon instead of duplicating properti
   'headerBodyColor','width','height','x','y'])
   assert.ok(sql.includes("('"+key+"')"),key+' missing shared rule');
  assert.doesNotMatch(sql,/INSERT INTO md_builder_shared_properties/);
- assert.match(runtime,/name==="smart_table"/);
+ assert.match(runtime,/evaluateFieldExpression/);
+ assert.doesNotMatch(runtime,/SmartRuntime/);
  assert.match(editor,/tableSources\.map/);
  assert.match(editor,/tableObject\.fields\.map/);
  assert.match(source,/tableFormulaObject\(source\)/);
