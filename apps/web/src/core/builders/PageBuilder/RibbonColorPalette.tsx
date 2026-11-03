@@ -1,6 +1,7 @@
 import {useEffect,useRef,useState} from 'react';
 import {createPortal} from 'react-dom';
 import {Baseline,ChevronDown,PaintBucket,Square} from 'lucide-react';
+import {ShapeFillGlyph,FocusFillGlyph} from './Design2RibbonIcons';
 
 type ColourKind='text'|'fill'|'border';
 const themeColumns=[
@@ -17,16 +18,17 @@ const themeColumns=[
 ];
 const standard=['#c00000','#ff0000','#ffc000','#ffff00','#92d050','#00b050','#00b0f0','#0070c0','#002060','#7030a0'];
 
-export default function RibbonColorPalette({kind,label,value,onChange,variant='icon',disabled=false}:{
+export default function RibbonColorPalette({kind,label,value,onChange,variant='icon',iconVariant,disabled=false}:{
   kind:ColourKind;label:string;value:string;onChange:(color:string)=>void;
-  variant?:'icon'|'capability'|'property';disabled?:boolean;
+  variant?:'icon'|'capability'|'property';iconVariant?:'shape'|'focus';disabled?:boolean;
 }){
   const [open,setOpen]=useState(false);
   const [customHex,setCustomHex]=useState(value);
   const [position,setPosition]=useState({top:0,left:0});
   const trigger=useRef<HTMLButtonElement>(null);
   const popup=useRef<HTMLDivElement>(null);
-  const icon=kind==='text'?<Baseline size={17}/>:kind==='fill'?<PaintBucket size={17}/>:<Square size={17}/>;
+  const icon=iconVariant==='shape'?<ShapeFillGlyph/>:iconVariant==='focus'?<FocusFillGlyph/>:
+    kind==='text'?<Baseline size={17}/>:kind==='fill'?<PaintBucket size={17}/>:<Square size={17}/>;
   const choose=(colour:string)=>{onChange(colour);setOpen(false);trigger.current?.focus();};
   useEffect(()=>setCustomHex(value),[value]);
   const toggle=()=>{
