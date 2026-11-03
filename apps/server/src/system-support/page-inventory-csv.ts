@@ -6,13 +6,20 @@ import {randomUUID} from 'node:crypto';
 import {componentInstanceNames,canonicalComponentName,componentNamePattern,ensureComponentInstanceNames} from './page-component-names.js';
 
 /** One interoperable format for Page Builder inventory export and guarded draft import. */
-export const INVENTORY_COLUMNS=['pageapi','component_name','component_property','value'] as const;
-export type InventoryIssue={row:number;pageapi?:string;component_name:string;component_property:string;value?:string;remark:string};
+export const INVENTORY_COLUMNS=['pageapi','component_type','component_name','propertyid','value'] as const;
+const LEGACY_INVENTORY_COLUMNS=['pageapi','component_name','component_property','value'] as const;
+export type InventoryIssue={row:number;pageapi?:string;component_type?:string;component_name:string;component_property:string;value?:string;remark:string};
 type Block={id:string;type:string;label:string;region?:string;visible:boolean;
  position?:{x:number;y:number;width:number;height:number};
  properties:Record<string,unknown>};
 export type InventoryPage={apiName:string;draftRevision?:number;layoutMode?:string;canvasWidth?:number;canvasHeight?:number;components:Block[];[key:string]:unknown};
-type Definitions=Map<string,ComponentSettingDefinition[]>;
+export type InventorySettingDefinition=ComponentSettingDefinition&{valueKey?:string};
+type Definitions=Map<string,InventorySettingDefinition[]>;
+const componentApi=(type:string)=>type.startsWith('Custom:')?type.slice(7):type;
+const componentType=(api:string)=>'Custom:'+api;
+const validComponentApi=(api:string)=>/^[A-Za-z][A-Za-z0-9_]{0,127}$/.test(api);
+const settingsFor=(definitions:Definitions,type:string)=>
+ definitions.get(type)??definitions.get(componentType(componentApi(type)))??[];
 const unsafe=new Set(['__proto__','prototype','constructor']);
 // Internal hierarchy links and obsolete Advanced placeholders are not user-editable
 // component properties. Their saved SQL values remain untouched by inventory import.
@@ -39,38 +46,89 @@ function flatten(out:Map<string,string>,prefix:string,value:unknown):void{
   for(const [key,child] of Object.entries(value))flatten(out,prefix+'.'+key,child);
  }else out.set(prefix,valueText(value));
 }
-function schemaLeaves(out:Map<string,string>,definitions:readonly ComponentSettingDefinition[],
- prefix=''):void{
+function schemaLeaves(out:Map<string,string>,definitions:readonly InventorySettingDefinition[],
+ instance:Record<string,unknown>,prefix=''):void{
  for(const item of definitions){
   if(!prefix&&!inventoryPropertyAllowed(item.propertyKey))continue;
   const key=prefix+item.propertyKey;
-  if(item.kind==='GROUP'&&item.fields?.length)schemaLeaves(out,item.fields,key+'.');
-  else if(!out.has(key))out.set(key,'');
+  if(item.kind==='GROUP'&&item.fields?.length)
+   schemaLeaves(out,item.fields as InventorySettingDefinition[],
+    isPlain(instance[item.valueKey??item.propertyKey])?instance[item.valueKey??item.propertyKey] as Record<string,unknown>:{},key+'.');
+  else if(!out.has(key))
+   out.set(key,valueText(instance[item.valueKey??item.propertyKey]??item.defaultValue));
  }
 }
+/** Installed tenant components and SQL-enabled shared ribbon rules form the import contract.
+ * A published tenant library contract supplements these definitions, never grants
+ * access to a disabled/uninstalled standard component. No app-specific inventory.
+ */
 export async function inventoryDefinitions(db:SqlPersistence,tenant:string,
  components:readonly Block[],variant:PageLayoutVariant,extraTypes:readonly string[]=[]):Promise<Definitions>{
- const names=[...new Set([...components.map(c=>c.type),...extraTypes]
-   .filter(type=>/^Custom:[A-Za-z][A-Za-z0-9_]{0,127}$/.test(type))
-   .map(type=>type.slice(7)))];
+ const names=[...new Set([...components.map(c=>c.type),...extraTypes].map(componentApi)
+  .filter(validComponentApi))];
  if(!names.length)return new Map();
- const result=await db.query<{component_api:string;published_version:number}>(
-  'SELECT component_api,published_version FROM md_component_library_heads WHERE tenant_id=$1 AND component_api=ANY($2::text[]) AND published_version IS NOT NULL',
-  [tenant,names]);
- const entries=await Promise.all(result.rows.map(async row=>{
+ const available=await db.query<{api_name:string}>(`
+  SELECT api_name FROM md_component_definitions
+  WHERE tenant_id=$1 AND enabled=true AND api_name=ANY($2::text[])`,[tenant,names]);
+ const installed=available.rows.map(row=>row.api_name);
+ if(!installed.length)return new Map();
+ const [shared,published]=await Promise.all([
+  db.query<{component_api:string;property_key:string;label:string;control_kind:string;
+    value_key:string;default_value:unknown;choices:unknown;min_value:number|null;max_value:number|null}>(`
+   SELECT r.component_api,p.property_key,p.label,
+    COALESCE(r.control_kind_override,p.control_kind) AS control_kind,
+    COALESCE(r.value_key,p.property_key) AS value_key,
+    COALESCE(r.default_value_override,p.default_value) AS default_value,
+    COALESCE(r.choices_override,p.choices) AS choices,p.min_value,p.max_value
+   FROM md_builder_ribbon_component_rules r
+   JOIN md_builder_shared_properties p ON p.property_key=r.property_key
+   WHERE r.enabled=true AND p.scope='component' AND r.component_api=ANY($1::text[])
+   ORDER BY p.sort_order`,[installed]),
+  db.query<{component_api:string;published_version:number}>(`
+   SELECT component_api,published_version FROM md_component_library_heads
+   WHERE tenant_id=$1 AND component_api=ANY($2::text[]) AND published_version IS NOT NULL`,
+   [tenant,installed])
+ ]);
+ const entries=await Promise.all(published.rows.map(async row=>{
   const contract=await readComponentContract(db,tenant,row.component_api,row.published_version);
-  return ['Custom:'+row.component_api,availableComponentSettings(
-   contract.propertyDefinitions??[],variant,row.published_version)] as const;
+  return [row.component_api,availableComponentSettings(
+    contract.propertyDefinitions??[],variant,row.published_version)] as const;
  }));
- return new Map(entries);
+ const publishedByApi=new Map(entries);
+ const result=new Map<string,InventorySettingDefinition[]>();
+ for(const api of installed){
+  const definitions=new Map<string,InventorySettingDefinition>(
+   (publishedByApi.get(api)??[]).map(def=>[def.propertyKey,def]));
+  for(const prop of shared.rows.filter(row=>row.component_api===api)){
+   const choices=Array.isArray(prop.choices)
+    ?prop.choices.filter((value):value is string=>typeof value==='string'):[];
+   const kind:ComponentSettingDefinition['kind']=
+    prop.control_kind==='number'||prop.control_kind==='position'?'NUMBER':
+    prop.control_kind==='boolean'?'BOOLEAN':
+    prop.control_kind==='color'?'COLOR':
+    prop.control_kind==='object'?'OBJECT':
+    prop.control_kind==='weekdays'?'STRING_LIST':
+    prop.control_kind==='choice'&&choices.length?'SELECT':'TEXT';
+   const def:InventorySettingDefinition={
+    propertyKey:prop.property_key,label:prop.label,kind,valueKey:prop.value_key,
+    ...(prop.default_value!==null?{defaultValue:prop.default_value as ComponentSettingDefinition['defaultValue']}:{ }),
+    ...(kind==='SELECT'?{choices:choices.map(key=>({key,label:key}))}:{ }),
+    ...(kind==='NUMBER'&&prop.min_value!==null?{min:prop.min_value}:{ }),
+    ...(kind==='NUMBER'&&prop.max_value!==null?{max:prop.max_value}:{ })
+   };
+   definitions.set(def.propertyKey,def);
+  }
+  const items=[...definitions.values()];
+  result.set(componentType(api),items);
+  result.set(api,items);
+ }
+ return result;
 }
 export function exportInventoryCsv(page:InventoryPage,definitions:Definitions=new Map()):string{
  const rows:unknown[][]=[[...INVENTORY_COLUMNS]];
  const names=componentInstanceNames(page.components);
  for(const component of page.components){
   const values=new Map<string,string>([
-   ['component.id',component.id],
-   ['component.type',component.type],
    ['component.label',component.label],
    ['component.visible',String(component.visible)],
    ['component.region',component.region??'main'],
@@ -82,9 +140,9 @@ export function exportInventoryCsv(page:InventoryPage,definitions:Definitions=ne
   for(const [key,value] of Object.entries(component.properties??{})){
    if(inventoryPropertyAllowed(key))flatten(values,key,value);
   }
-  schemaLeaves(values,definitions.get(component.type)??[]);
+  schemaLeaves(values,settingsFor(definitions,component.type),component.properties??{});
   for(const [key,value] of values)
-   rows.push([page.apiName,names.get(component.id),key,value]);
+   rows.push([page.apiName,componentApi(component.type),names.get(component.id),key,value]);
  }
  return inventoryCsv(rows);
 }
