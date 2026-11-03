@@ -1,0 +1,52 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const read=path=>readFileSync(new URL(path,import.meta.url),'utf8');
+const sql=read('../../server/src/system-support/migrations/20270313-design2-component-ribbon-matrix.sql');
+const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
+const server=read('../../server/src/system-support/server.ts');
+const css=read('../src/core/builders/PageBuilder/SmartRibbonDesign2.css');
+const drop=read('../src/core/builders/PageBuilder/Design2ChoiceDropdown.tsx');
+const icons=read('../src/core/builders/PageBuilder/Design2RibbonIcons.tsx');
+const palette=read('../src/core/builders/PageBuilder/RibbonColorPalette.tsx');
+const matches=[...sql.matchAll(/\('([^']+)','([^']+)',(\d+),'([^']+)',([123]),([1-6]),(\d+),26,'([^']+)','([^']+)'\)/g)];
+const rows=matches.map(([,api,area,order,key,row,col,width,property,fallback])=>
+ ({api,area,order:+order,key,row:+row,col:+col,width:+width,property,fallback}));
+test('Design 2 implements all 319 approved per-component positions without duplicates',()=>{
+ assert.equal(rows.length,319);
+ assert.equal(new Set(rows.map(x=>x.api)).size,13);
+ assert.equal(new Set(rows.map(x=>x.api+'/'+x.area)).size,35);
+ assert.equal(new Set(rows.map(x=>[x.api,x.area,x.row,x.col].join('/'))).size,319);
+ assert.ok(rows.every(x=>x.width===40||x.width===80));
+ assert.ok(rows.every(x=>x.row>=1&&x.row<=3));
+ assert.ok(rows.some(x=>x.api==='smart_cart'&&x.area==='Button 5'));
+ assert.ok(rows.some(x=>x.api==='smart_navigation'&&x.key==='Horizontal/Verical'));
+});
+test('Design 2 slots are isolated from original Design and enabled only with existing metadata',()=>{
+ assert.match(sql,/CREATE TABLE IF NOT EXISTS md_builder_design2_component_slots/);
+ assert.match(sql,/LEFT JOIN md_builder_ribbon_component_rules r/);
+ assert.match(sql,/CASE WHEN r\.enabled=true THEN p\.property_key ELSE NULL END/);
+ assert.doesNotMatch(sql,/UPDATE md_builder_shared_properties/);
+ assert.doesNotMatch(sql,/DELETE FROM md_builder_shared_properties/);
+ assert.match(server,/FROM md_builder_design2_component_slots/);
+ assert.match(server,/componentApi:slot\.component_api/);
+ assert.match(ribbon,/componentDesign2Slots=design2Slots\.filter\(slot=>slot\.componentApi===api\)/);
+ assert.match(ribbon,/const visible=definitions\.filter\(p=>p\.tab===tab\)/);
+ assert.match(ribbon,/\[1,2,3\]\.map\(row/);
+ assert.doesNotMatch(ribbon,/<span aria-hidden="true">Select it<\/span>/);
+ assert.match(ribbon,/<span aria-hidden="true">Select<\/span>/);
+ assert.match(css,/:has\(#page-builder-tab-content>\.smart-design2-ribbon\)/);
+});
+test('Design 2 uses distinct shape and focus fills, existing text-size and text-colour icons',()=>{
+ assert.match(icons,/function ShapeFillGlyph/);
+ assert.match(icons,/function FocusFillGlyph/);
+ assert.match(icons,/function PlacementGlyph/);
+ for(const value of ['top','middle','bottom','left','center','right'])assert.ok(icons.includes("'"+value+"'"));
+ assert.match(palette,/iconVariant==='shape'/);
+ assert.match(palette,/iconVariant==='focus'/);
+ assert.match(ribbon,/RibbonTextSizeIcon/);
+ assert.match(ribbon,/Design2ChoiceDropdown/);
+ assert.match(drop,/role="menuitemradio"/);
+ assert.match(drop,/choices\.length\?choices:options/);
+ assert.doesNotMatch(drop,/<Italic|<Underline/);
+});
