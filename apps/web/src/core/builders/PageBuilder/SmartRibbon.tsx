@@ -176,8 +176,8 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    !(tab==='Data'&&p.id==='contextApiName'));
  const groups=[...new Set(displayProperties.map(p=>p.group))];
  const groupOrder=tab==='Design2'?[activeDesign2Area]
-  :tab==='Data'?['Source','Values','Cart','Cart columns','Cart totals']
-  :tab==='Design'?['Body','Shape','Typography','Tabs','Header','Badge','Header Supporting',
+  :tab==='Data'?['Source','Values','Cart','Cart columns','Cart totals','Card Grid']
+  :tab==='Design'?['Body','Shape','Typography','Tabs','Header','Badge','Header Supporting','Button',
     'Table','Row','Summary','Summary 2']
   :tab==='Layout'?['Size & Position','Tabs','Cards','Navigation','Calendar','Image','Icon']
   :[];
@@ -224,6 +224,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  const controlWidth=(p:UneRibbonProperty)=>{
    // Shape's 94px SQL width is exact, unlike other compact choice tracks.
    if(p.id==='shapeId')return p.designWidth??94;
+   if(p.id==='cardButtonShape')return p.designWidth??94;
    // Shadow/Alignment icon dropdowns must remain at least 35px wide.
    if(p.designDisplay==='dropdown'&&(p.kind==='shadow'||p.kind==='align'))
      return Math.max(35,p.designWidth??0);
@@ -294,7 +295,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
        </span>
      </div>;
    }
-   const isTextSize=compactDesign&&/^(textSize|badgeTextSize|summary2?TextSize|placeholderSize|headerTextSize|supportingTextSize|rowTextSize)$/.test(property.id);
+   const isTextSize=compactDesign&&/^(textSize|badgeTextSize|cardButtonTextSize|summary2?TextSize|placeholderSize|headerTextSize|supportingTextSize|rowTextSize)$/.test(property.id);
    const isCorner=compactDesign&&/radius/i.test(property.id);
    const isWidth=compactDesign&&/width/i.test(property.id);
    const isHeight=compactDesign&&/height/i.test(property.id);
@@ -305,6 +306,9 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
      disabled={!enabled} allowIcons={(selectedApis?.length?selectedApis:[api]).every(member=>
        (property.choicesOverrides?.[member]??property.choices??[]).includes('icons'))}
      onChange={write}/>;
+   else if(property.id==='cardButtonShape')editor=<SmartIconGallery
+     value={String(value||'shape:round-rectangle')} disabled={!enabled}
+     allowIcons={false} onChange={write}/>;
    else if(property.id==='imageSource'&&supported){
      // The source is always editable: any direct or nested lookup reference
      // is resolved by the shared metadata engine, never by an image-name list.
