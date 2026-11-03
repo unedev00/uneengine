@@ -3110,6 +3110,18 @@ function PageBuilder({
           <button className="btn" disabled={safePageListPage>=pageListPageCount} onClick={()=>setPageListPage(safePageListPage+1)}>Next</button>
         </nav>
       </section>}
+      {inventoryUploadOpen&&<PageInventoryImportDialog
+        pages={pages.filter(item=>recordPageContext
+          ? item.pageType==='Record Page'&&item.targetObject===recordPageContext
+          : item.pageType!=='Record Page')}
+        initialPageApi={page.apiName}
+        request={request}
+        onClose={()=>setInventoryUploadOpen(false)}
+        onApplied={(updated,changes)=>{
+          if(updated.apiName===page.apiName&&(updated.layoutVariant??'Desktop')===(page.layoutVariant??'Desktop'))onChange(updated);
+          onNotify(changes+' component metadata properties updated in the saved draft of '+updated.apiName+'. Publish the layout when ready.');
+          setInventoryUploadOpen(false);
+        }}/>}
       {pageDetailsApi&&(()=>{
         const detailsPage=pages.find(item=>item.apiName===pageDetailsApi)??(
           page.apiName===pageDetailsApi?page:null);
