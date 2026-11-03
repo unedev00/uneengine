@@ -1,6 +1,7 @@
 name: Design 2 SQL and Page Builder browser E2E
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     branches: [main]
     paths:
       - 'apps/server/src/system-support/migrations/20270309-design2-contextual-ribbon.sql'
