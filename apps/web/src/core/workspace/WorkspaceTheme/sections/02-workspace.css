@@ -79,7 +79,7 @@
 .dashboard-builder-header { min-height: 74px; display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 11px 20px; border-bottom: 1px solid var(--md-border,#e0e5eb); background: white; }
 .dashboard-builder-heading { min-width: 0; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .dashboard-builder-heading .eyebrow { width: 100%; margin: 0; }
-.dashboard-name-input { width: min(420px, 46vw); padding: 0; border: 0; outline: 0; background: transparent; color: #181818; font-size: 20px; font-weight: 700; }
+.dashboard-name-input { box-sizing: border-box; width: min(420px, 46vw); min-height: 36px; padding: 7px 10px; border: 1px solid var(--md-border,#dce3eb); border-radius: 8px; outline: 0; background: var(--md-surface,#fff); color: var(--md-text,#192230); font-size: 14px; line-height: 20px; font-weight: 600; }
 .dashboard-name-input:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
 .dashboard-viewer-title { margin: 0; color: #181818; font-size: 20px; line-height: 1.3; }
 .dashboard-viewer-mode .dashboard-builder-layout { min-height: calc(100vh - 180px); min-height: calc(100dvh - 180px); }
