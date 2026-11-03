@@ -37,7 +37,7 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  const pageName='BrowserDesign2';
  const payload={
   apiName:pageName,label:'Design 2 Browser',targetObject:'',
-  pageType:'Home Page',layoutMode:'free-canvas',canvasWidth:1280,canvasHeight:900,
+  pageType:'App Page',layoutMode:'free-canvas',canvasWidth:1280,canvasHeight:900,
   status:'Draft',devices:['Desktop'],activationAssignments:[],
   components:[
    {id:'browser-design2-cart',type:'Custom:smart_cart',label:'E2E Cart',
