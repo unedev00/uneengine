@@ -1,7 +1,55 @@
 import type { PageComponentMetadata } from '../../metadata/Definitions/metadata';
 import { rawLayoutParentId } from '../../pages/TemplatePageRuntime/pageComponentLayout';
+import { isCanvasLocked } from './canvasInteractions';
 
 export type ComponentClipboard = { rootId: string; components: PageComponentMetadata[] };
+
+/**
+ * Remove all selected components in one draft edit. Locked items block the
+ * entire operation (never delete only part of an intended multi-selection).
+ * Surviving children of removed containers retain the closest surviving parent
+ * and their canvas coordinates are translated into that parent's space.
+ */
+export function removePageComponentSelection(
+  components: readonly PageComponentMetadata[],
+  ids: readonly string[]
+): { components: PageComponentMetadata[]; removed: number; locked: PageComponentMetadata[] } {
+  const selected = new Set(ids);
+  const targets = components.filter(item => selected.has(item.id));
+  if (!targets.length) return { components: [...components], removed: 0, locked: [] };
+  const locked = targets.filter(isCanvasLocked);
+  if (locked.length) return { components: [...components], removed: 0, locked };
+  const removed = new Set(targets.map(item => item.id));
+  const originals = new Map(components.map(item => [item.id,item]));
+  const survivors = components.filter(item => !removed.has(item.id)).map(item => {
+    let parent = rawLayoutParentId(item);
+    if (!parent || !removed.has(parent)) return item;
+    let offsetX = 0, offsetY = 0;
+    const traversed = new Set<string>();
+    while (parent && removed.has(parent) && !traversed.has(parent)) {
+      traversed.add(parent);
+      const ancestor = originals.get(parent);
+      if (!ancestor) { parent = undefined; break; }
+      if (ancestor.position) {
+        offsetX += ancestor.position.x;
+        offsetY += ancestor.position.y;
+      }
+      parent = rawLayoutParentId(ancestor);
+    }
+    if (parent && removed.has(parent)) parent = undefined;
+    const properties = { ...item.properties };
+    if (parent) properties.layoutParentId = parent;
+    else delete properties.layoutParentId;
+    return {
+      ...item, parentId: parent ?? undefined, properties,
+      ...(item.position ? { position: {
+        ...item.position, x: item.position.x + offsetX, y: item.position.y + offsetY
+      } } : {})
+    };
+  });
+  return { components: survivors, removed: targets.length, locked: [] };
+}
+
 
 export function remapComponentInteractionTargets<T extends PageComponentMetadata>(
   components:readonly T[],ids:ReadonlyMap<string,string>
