@@ -905,7 +905,7 @@ function PageBuilder({
       &&component.status!=='Draft'&&!RETIRED_UNE_PAGE_BUILDER_COMPONENTS.has(component.apiName)).map(component=>({
       id:'Custom:'+component.apiName,
       type:'Custom:'+component.apiName,
-      label:component.apiName==='smart_card_grid'?'Card Grid':component.apiName==='smart_lookup'?'Lookup Record':
+      label:component.apiName==='smart_textbox'?'Smart Textbox':component.apiName==='smart_card_grid'?'Card Grid':component.apiName==='smart_lookup'?'Lookup Record':
         component.apiName==='smart_text'?'Input Box':component.apiName==='smart_navigation'?'Navigation Bar':
         component.apiName.startsWith('smart_')?component.apiName.slice(6).split('_').map(word=>word[0].toUpperCase()+word.slice(1)).join(' '):component.label,
       description:component.description,
@@ -3409,11 +3409,18 @@ function PageBuilder({
                 updateComponent(selected.id,{properties:{...selected.properties,navigatorName:value.trim()}});
               },
               visible:selected?.visible!==false,
-              readOnly:selected?.properties.readOnlyOnLayout===true,
-              canReadOnly:!!selected&&selected.type==='Record Field',
+              readOnly:!!selected&&(selectedCustomDefinition?.propertyDefinitions?.some(def=>def.propertyKey==='readonly')
+                ?selected.properties.readonly!==false:selected.properties.readOnlyOnLayout===true),
+              canReadOnly:!!selected&&(selected.type==='Record Field'
+                ||Boolean(selectedCustomDefinition?.propertyDefinitions?.some(def=>def.propertyKey==='readonly'))),
               onVisible:value=>{if(selected)updateComponent(selected.id,{visible:value});},
-              onReadOnly:value=>{if(selected)updateComponent(selected.id,{properties:{
-                ...selected.properties,readOnlyOnLayout:value,requiredOnLayout:false}});}
+              onReadOnly:value=>{
+                if(!selected)return;
+                const metadataReadonly=selectedCustomDefinition?.propertyDefinitions?.some(def=>def.propertyKey==='readonly');
+                updateComponent(selected.id,{properties:metadataReadonly
+                  ?{...selected.properties,readonly:value}
+                  :{...selected.properties,readOnlyOnLayout:value,requiredOnLayout:false}});
+              }
             }}
             nesting={{
               accepted:!!selected&&isLayoutContainer(selected),
