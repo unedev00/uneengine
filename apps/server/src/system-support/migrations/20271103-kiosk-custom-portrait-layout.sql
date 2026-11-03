@@ -24,7 +24,7 @@ DECLARE
   next_revision integer;
   updated_pages integer := 0;
 BEGIN
-  SELECT count(*)::integer,min(found.tenant_id)
+  SELECT count(*)::integer,(array_agg(found.tenant_id))[1]
     INTO candidate_tenants,target_tenant
   FROM (
     SELECT p.tenant_id
