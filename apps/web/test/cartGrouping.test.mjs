@@ -35,6 +35,17 @@ test('ignores audit identifiers and order of nested custom fields, not actual di
  const result=groupCartRows([first,second,third]);
  assert.deepEqual(result.map(r=>r.Quantity),[2,1]);
 });
+test('custom quantity fields group without relying on the CartLine source schema',()=>{
+ const records=[
+  {id:'1',SKU:'banana',Batch:'A',Pieces:2,Price:1.75},
+  {id:'2',SKU:'banana',Batch:'A',Pieces:3,Price:1.75},
+  {id:'3',SKU:'banana',Batch:'B',Pieces:1,Price:1.75},
+ ];
+ const groups=groupCartRows(records,{quantityField:'Pieces'});
+ assert.deepEqual(groups.map(row=>row.Pieces),[5,1]);
+ assert.deepEqual(groups.map(row=>row.Quantity),[5,1]);
+ assert.deepEqual(records.map(row=>row.Pieces),[2,3,1]);
+});
 test('keeps zero, missing, false, null and empty choices distinct',()=>{
  const result=groupCartRows([line({Choice:0}),line({}),line({Choice:false}),
   line({Choice:null}),line({Choice:''})]);
@@ -48,7 +59,7 @@ test('honours pre-existing quantities and never changes the input array',()=>{
 });
 test('Smart Cart renders grouped records before limiting, retaining backing record IDs',()=>{
  const source=readFileSync(new URL('../src/component-libraries/smart_cart/SmartCart.jsx',import.meta.url),'utf8');
- assert.match(source,/groupCartRows\(records\)\.slice\(0,200\)/);
+ assert.match(source,/groupCartRows\(records,\{quantityField:directField\(p\.column3Source\)\|\|'Quantity'\}\)\.slice\(0,200\)/);
  assert.match(source,/record\.__cartSourceRows\?\.\[0\]/);
  assert.match(source,/groupedQuantity:record\.Quantity/);
 });
