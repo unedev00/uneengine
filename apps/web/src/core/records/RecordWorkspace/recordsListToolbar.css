@@ -68,7 +68,14 @@
   padding:3px 7px; border-radius:6px; cursor:pointer; font-size:12px;
 }
 .records-view-checkbox-list label:hover { background:var(--md-surface-soft,#f1f5fb); }
-.records-view-checkbox-list input[type="checkbox"] { width:15px; height:15px; accent-color:var(--md-primary,#2454df); }
+.records-view-checkbox-list input[type="checkbox"] {
+  width:24px; height:24px; flex:0 0 24px;
+  accent-color:var(--md-primary,#2454df);
+}
+.records-table-wrap .records-data-table input[type="checkbox"] {
+  width:24px; height:24px; min-width:24px; min-height:24px;
+  accent-color:var(--md-primary,#2454df);
+}
 .records-view-settings-panel .records-view-checkbox-list { max-height:175px; }
 .records-view-panel-heading { display:flex; align-items:center; justify-content:space-between; }
 .records-view-menu-actions { display:flex; gap:7px; flex-wrap:wrap; border-top:1px solid var(--md-border,#e6eaf0); padding-top:12px; }
