@@ -1,7 +1,7 @@
 /** Types only. Global shared property definitions and enablement are read from
  * SQL via /api/metadata/builder-ribbon. Never duplicate the inventory in TS.
  */
-export type UneBuilderTab='Data'|'Design'|'Shapes'|'Layout';
+export type UneBuilderTab='Data'|'Design'|'Design2'|'Shapes'|'Layout';
 export type RibbonTab=UneBuilderTab|'Home';
 export type RibbonControlKind='color'|'shadow'|'expression'|'align'|'number'|'position'|
  'boolean'|'choice'|'object'|'weekdays'|'command'|'readonly';
@@ -19,9 +19,14 @@ export type UneRibbonProperty={
  choicesOverrides?:Record<string,readonly string[]>;
  valueKeys?:Record<string,string>;
 };
+export type Design2Slot={
+ area:string;areaOrder:number;slotKey:string;row:number;order:number;
+ width:number;height:number;propertyKey:string|null;fallbackKey:string;
+};
 export type SharedRibbonCatalog={
  components:string[];
  properties:UneRibbonProperty[];
+ design2Slots?:Design2Slot[];
 };
 export const sharedPropertyGroups=(properties:readonly UneRibbonProperty[],tab:UneBuilderTab)=>
  [...new Set(properties.filter(p=>p.tab===tab).map(p=>p.group))];
