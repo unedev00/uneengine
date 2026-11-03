@@ -41,9 +41,10 @@ export function ensureComponentInstanceNames<T extends NamedComponent>(component
  const names=componentInstanceNames(components);
  return components.map(item=>{
   const assigned=names.get(item.id)!;
-  // Never overwrite a user's pre-existing navigator label, even from older
-  // versions with more permissive naming rules.
-  return typeof item.properties.navigatorName==='string'&&item.properties.navigatorName.trim()?item:
+  // Preserve the first valid user-defined name. Repair only unnamed, invalid,
+  // or duplicate legacy aliases so the visible name and CSV identity cannot diverge.
+  const saved=item.properties?.navigatorName;
+  return typeof saved==='string'&&canonicalComponentName(saved)===canonicalComponentName(assigned)?item:
    {...item,properties:{...item.properties,navigatorName:assigned}};
  });
 }

@@ -70,6 +70,8 @@ test('View tab wires the navigator into existing selection, persisted rename and
   assert.match(view,/isDescendantOf\(page.components,selectedId,component.id\)/);
   assert.match(navigator,/setOpen\(true\)/);
   assert.match(navigator,/matches.map\(/);
+  assert.match(navigator,/componentInstanceNames\(components\)/);
+  assert.match(navigator,/const name=names\.get\(entry\.id\)\?\?entry\.name/);
   assert.match(navigator,/onKeyDown=\{onSearchKeyDown\}/);
   assert.doesNotMatch(navigator,/query.trim\(\)\s*&&\s*createPortal/);
 });

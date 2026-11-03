@@ -4,6 +4,7 @@ import {ChevronDown, EyeOff, Layers3, LockKeyhole, Pencil, Search, X} from 'luci
 import type {LibraryComponentMetadata, PageComponentMetadata} from '../../metadata/Definitions/metadata';
 import {libraryComponentLabel} from '../../components/Registry/componentLibraryDiscovery';
 import {buildPageNavigatorEntries, filterPageNavigatorEntries} from './pageComponentNavigatorModel.mjs';
+import {componentInstanceNames} from '../../../../../server/src/system-support/page-component-names';
 import './PageComponentNavigator.css';
 
 type NavigatorEntry = ReturnType<typeof buildPageNavigatorEntries>[number];
@@ -32,8 +33,16 @@ export default function PageComponentNavigator({
   const labels=React.useMemo(()=>Object.fromEntries(libraryComponents.map(item=>[
     item.apiName, libraryComponentLabel(item)
   ])),[libraryComponents]);
-  const entries:NavigatorEntry[]=React.useMemo(
-    ()=>buildPageNavigatorEntries(components,labels),[components,labels]);
+  const entries:NavigatorEntry[]=React.useMemo(()=>{
+    // Display exactly the same per-page identity as CSV export, including legacy
+    // components whose name has not yet been persisted to metadata.
+    const names=componentInstanceNames(components);
+    return buildPageNavigatorEntries(components,labels).map(entry=>{
+      const name=names.get(entry.id)??entry.name;
+      return {...entry,name,baseName:name,customName:true,
+        searchText:entry.searchText+' '+name.toLocaleLowerCase()};
+    });
+  },[components,labels]);
   const types=React.useMemo(()=>[...new Set(entries.map(item=>item.type))].sort(),[entries]);
   const matches=React.useMemo(
     ()=>filterPageNavigatorEntries(entries,query,typeFilter),[entries,query,typeFilter]);
@@ -79,7 +88,7 @@ export default function PageComponentNavigator({
   };
   const startRename=(item:NavigatorEntry)=>{
     setRenamingId(item.id);
-    setRenameValue(item.customName ? String(components.find(component=>component.id===item.id)?.properties.navigatorName ?? '') : item.baseName);
+    setRenameValue(item.name);
   };
   const finishRename=(commit:boolean)=>{
     if (commit && renamingId) onRename(renamingId,renameValue.trim().slice(0,80));

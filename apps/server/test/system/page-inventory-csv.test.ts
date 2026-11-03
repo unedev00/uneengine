@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {applyInventoryCsv,exportInventoryCsv,inventoryCsv,inventoryRequestedTypes,inventoryDefinitions,type InventoryPage,type InventoryDefinitions} from '../../src/system-support/page-inventory-csv.js';
-import {componentInstanceNames,nextComponentInstanceName,validateExplicitComponentNames} from '../../src/system-support/page-component-names.js';
+import {componentInstanceNames,nextComponentInstanceName,ensureComponentInstanceNames,validateExplicitComponentNames} from '../../src/system-support/page-component-names.js';
 import type {ComponentSettingDefinition} from '../../src/system-support/component-property-contract.js';
 
 const original=():InventoryPage=>({
@@ -136,6 +136,24 @@ test('sequence skips deleted numbers, retains historical high water, and names a
  assert.throws(()=>validateExplicitComponentNames(components),/Duplicate component name/);
  assert.equal(new Set([...componentInstanceNames(components).values()].map(x=>x.toLowerCase())).size,3);
 });
+test('legacy colliding names repair to unique persisted names used consistently in CSV',()=>{
+ const page=original();
+ page.components[0].properties.navigatorName='PrintBill';
+ page.components[1].properties.navigatorName='printbill';
+ const repaired=ensureComponentInstanceNames(page.components);
+ assert.equal(repaired[0].properties.navigatorName,'PrintBill');
+ assert.notEqual(String(repaired[1].properties.navigatorName).toLowerCase(),'printbill');
+ assert.doesNotThrow(()=>validateExplicitComponentNames(repaired));
+ const saved={...page,components:repaired};
+ const download=exportInventoryCsv(saved);
+ assert.match(download,/CODEXTILL,smart_cart,PrintBill,component\.visible/);
+ const update=applyInventoryCsv(saved,typedCsv('CODEXTILL,smart_cart,printbill,width,385'));
+ assert.equal(update.valid,true,JSON.stringify(update.issues));
+ assert.equal(update.page.components[0].id,page.components[0].id);
+ assert.equal(update.page.components[0].properties.width,385);
+ assert.equal(update.page.components.length,2);
+});
+
 test('Desktop CSV upsert creates a missing named published Smart component with typed properties',()=>{
  const page=original();
  page.layoutMode='free-canvas';page.canvasWidth=1440;page.canvasHeight=900;

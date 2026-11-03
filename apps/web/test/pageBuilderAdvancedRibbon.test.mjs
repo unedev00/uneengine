@@ -19,7 +19,7 @@ test('View owns visibility conditions and reuses the record filter dialog shell'
 });
 
 test('Advanced keeps only purposeful sections; page device controls live in Edit Page',()=>{
- for(const section of ['Activation Assignments','Advanced Properties','Component Nesting','Technical Details'])
+ for(const section of ['Activation Assignments','Advanced Properties','Component Nesting','Component Identity'])
    assert.ok(advanced.includes('aria-label="'+section+'"'),section);
  assert.match(page,/ribbonTab==='Advanced' && <PageBuilderAdvancedSections/);
  assert.doesNotMatch(advanced,/<button[^>]+onClick=\{\(\)=>onSelect/);
@@ -35,7 +35,7 @@ test('Advanced keeps all permanent fields in a compact responsive ribbon without
   'assigned','default',
   'api-name','visible','readonly',
   'accept',
-  'component-id'
+  'component-name'
  ];
  for(const key of fields){
    assert.ok(key.startsWith('device-')?advanced.includes('advanced-device-'):
@@ -135,6 +135,21 @@ test('Page devices are edited only in Edit Page; Advanced has no empty responsiv
 test('Render mode is not an editable or read-only Technical Details ribbon slot',()=>{
  assert.doesNotMatch(advanced,/advanced-render-mode|Render mode/);
  assert.doesNotMatch(layout,/advanced-render-mode/);
- assert.match(advanced,/advanced-component-id/);
+ assert.match(advanced,/advanced-component-name/);
+ assert.doesNotMatch(advanced,/aria-label="Component ID"/);
+ assert.equal((advanced.match(/aria-label="Component Name"/g)??[]).length,1);
  assert.doesNotMatch(page,/renderMode:selected\?'Page Runtime'/);
+});
+
+test('Component Identity edits the same unique name used for CSV upsert; technical ID stays internal',()=>{
+ assert.match(advanced,/aria-label="Component Identity"/);
+ assert.match(advanced,/aria-label="Component Name"/);
+ assert.match(advanced,/validateInstanceName\(nameDraft\)/);
+ assert.match(advanced,/aria-invalid=\{!!nameError\}/);
+ assert.match(advanced,/onBlur=\{commitName\}/);
+ assert.doesNotMatch(advanced,/Component ID|componentIdDraft|technical\.onRename/);
+ assert.match(page,/validateInstanceName:\s*value=>selected\?validateInstanceName\(selected\.id,value\)/);
+ assert.match(page,/canonicalComponentName\(otherName\)===canonicalComponentName\(name\)/);
+ assert.match(page,/navigatorName:value\.trim\(\)/);
+ assert.doesNotMatch(page,/renameComponentId\(/);
 });
