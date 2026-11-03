@@ -637,7 +637,7 @@ function CompanySettings({ canManage, section = 'general' }: { canManage: boolea
               ? <div className="settings-edit-row" key={`currency-edit-${index}`}>
                   <div className="settings-edit-row-grid">
                     <PlatformPageSlot slotKey="field-settings-16"><label className="form-label">Currency Code
-                      <input autoFocus className="form-control" value={currency.currencyIsoCode} maxLength={3}
+                      <input autoFocus className="form-control currency-iso-code-input" value={currency.currencyIsoCode} maxLength={3}
                         disabled={currency.currencyIsoCode === draft.corporateCurrency}
                         onChange={(event) => {
                           const currencyIsoCode = event.target.value.toUpperCase();
