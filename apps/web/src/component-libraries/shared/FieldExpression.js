@@ -282,7 +282,7 @@ const evaluateCall=(name,args,context)=>{
 function parse(source,record,formulaContext){
  const expression=new Parser(tokenize(source)).parse();
  validateFormulaFunctions(expression,'ribbon_binding');
- const resolveReference=reference=>{
+ const resolveReference=(reference,currentRecord=record)=>{
    const named=formulaContext.namedCollections;
    if(named&&typeof named==='object'&&!Array.isArray(named)&&!reference.includes('.')){
     const collection=Object.entries(named).find(([key])=>key.toLowerCase()===reference.toLowerCase())?.[1];
@@ -344,7 +344,7 @@ function parse(source,record,formulaContext){
        value:String(id),record:row,objectApiName:sourceRef[1]}];
     });
    }
-  if(!record||typeof record!=='object'||Array.isArray(record))return '';
+  if(!currentRecord||typeof currentRecord!=='object'||Array.isArray(currentRecord))return '';
   const parts=reference.split('.');
  if(parts.some(part=>!part||['__proto__','prototype','constructor'].includes(part)))throw Error('Invalid formula token');
   const ownValue=(source,key)=>{
@@ -355,7 +355,7 @@ function parse(source,record,formulaContext){
   // Related values have been hydrated against Object Manager metadata and
   // read permissions by the Page Runtime; they are not arbitrary JS traversal.
   if(reference.includes('.')){
-   const mentions=ownValue(record,'__mentionValues');
+   const mentions=ownValue(currentRecord,'__mentionValues');
    if(mentions&&typeof mentions==='object'&&!Array.isArray(mentions)
     &&Object.getPrototypeOf(mentions)===Object.prototype){
     const resolved=ownValue(mentions,'@'+reference);
@@ -365,12 +365,12 @@ function parse(source,record,formulaContext){
    }
   }
   // The selected Object can be addressed as @Object.Field as well as @Field;
-  // both read the same authorised record and do not execute another query.
+  // both read the same authorised currentRecord and do not execute another query.
   if(sourceRef&&sourceRef[1]===formulaContext.rootObjectApiName
-    &&Object.prototype.hasOwnProperty.call(record,sourceRef[2]))
-   return ownValue(record,sourceRef[2])??'';
-  if(Object.prototype.hasOwnProperty.call(record,reference))return ownValue(record,reference)??'';
-  let value=record;
+    &&Object.prototype.hasOwnProperty.call(currentRecord,sourceRef[2]))
+   return ownValue(currentRecord,sourceRef[2])??'';
+  if(Object.prototype.hasOwnProperty.call(currentRecord,reference))return ownValue(currentRecord,reference)??'';
+  let value=currentRecord;
   for(const part of parts){
    if(!value||typeof value!=='object'||Array.isArray(value)
     ||!Object.prototype.hasOwnProperty.call(value,part))return '';
@@ -479,49 +479,74 @@ function parse(source,record,formulaContext){
   }
   return createCriteriaFormulaCollection(name,items);
  };
- const evaluate=node=>{
+ const evaluate=(node,currentRecord=record)=>{
   let result;
   if(node.kind==='literal')result=node.value;
-  else if(node.kind==='reference')result=resolveReference(node.value);
-  else if(node.kind==='unary')result=evaluateFormulaUnary(node.operator,evaluate(node.value));
+  else if(node.kind==='reference')result=resolveReference(node.value,currentRecord);
+  else if(node.kind==='unary')result=evaluateFormulaUnary(node.operator,evaluate(node.value,currentRecord));
   else if(node.kind==='binary'){
-   const left=evaluate(node.left);
+   const left=evaluate(node.left,currentRecord);
    if(node.operator==='AND'&&!truth(left))return false;
    if(node.operator==='OR'&&truth(left))return true;
-   const right=evaluate(node.right);
+   const right=evaluate(node.right,currentRecord);
    const temporal=evaluateFormulaDateBinary(node.operator,left,right,formulaContext.timeZone);
    result=temporal.handled?temporal.value:evaluateFormulaBinary(node.operator,left,right,
     node.left.kind==='reference'&&isExcelWildcardDataReference(node.left.value));
   }else if(node.name==='IF'){
-   result=truth(evaluate(node.args[0]))?evaluate(node.args[1]):evaluate(node.args[2]);
+   result=truth(evaluate(node.args[0],currentRecord))?evaluate(node.args[1],currentRecord):evaluate(node.args[2],currentRecord);
   }else if(node.name==='NOT'){
-   result=!truth(evaluate(node.args[0]));
+   result=!truth(evaluate(node.args[0],currentRecord));
   }else if(node.name==='IFERROR'){
-   try{result=evaluate(node.args[0]);}catch{result=evaluate(node.args[1]);}
+   try{result=evaluate(node.args[0],currentRecord);}catch{result=evaluate(node.args[1],currentRecord);}
   }else if(node.name==='BLANKVALUE'||node.name==='NULLVALUE'){
-   const value=evaluate(node.args[0]);
+   const value=evaluate(node.args[0],currentRecord);
    result=value===null||value===undefined||node.name==='BLANKVALUE'&&value===''?
-    evaluate(node.args[1]):value;
+    evaluate(node.args[1],currentRecord):value;
   }else if(node.name==='AND'){
    result=true;
-   for(const argument of node.args)if(!truth(evaluate(argument))){result=false;break;}
+   for(const argument of node.args)if(!truth(evaluate(argument,currentRecord))){result=false;break;}
   }else if(node.name==='OR'){
    result=false;
-   for(const argument of node.args)if(truth(evaluate(argument))){result=true;break;}
+   for(const argument of node.args)if(truth(evaluate(argument,currentRecord))){result=true;break;}
   }else if(node.name==='COLLECTION'){
    result=evaluateCriteriaCollection(node.args);
+  }else if(node.name==='SUM'&&node.args.length===1){
+   const operand=node.args[0];
+   const rows=formulaContext.collectionRows;
+   // A single row-field (or row expression) sums over the bounded, authorised
+   // collection passed by the page runtime. This is universal, not Cart logic.
+   const rowField=reference=>/^[A-Za-z][A-Za-z0-9_]*$/.test(reference)
+    &&Array.isArray(rows)&&rows.some(row=>row&&typeof row==='object'
+      &&Object.prototype.hasOwnProperty.call(row,reference));
+   const usesRowField=part=>part.kind==='reference'?rowField(part.value):
+    part.kind==='unary'?usesRowField(part.value):
+    part.kind==='binary'?usesRowField(part.left)||usesRowField(part.right):
+    part.kind==='call'&&part.name!=='SUM'?part.args.some(usesRowField):false;
+   if(Array.isArray(rows)&&usesRowField(operand)){
+    if(rows.length>200)throw Error('SUM requires a bounded numeric collection');
+    const values=rows.map(row=>{
+     const value=evaluate(operand,row);
+     const number=typeof value==='number'?value:
+      typeof value==='string'&&value.trim()?Number(value):NaN;
+     if(!Number.isFinite(number))throw Error('SUM requires finite numeric collection values');
+     return number;
+    });
+    result=sumFormulaCollection(values,formulaContext.collectionSources);
+   }else{
+    result=evaluateCall('SUM',[evaluate(operand,currentRecord)],formulaContext);
+   }
   }else if(node.name==='CASE'){
    if(node.args.length%2!==0)throw Error('CASE requires a comparison value and a default result');
-   const sourceValue=evaluate(node.args[0]);
+   const sourceValue=evaluate(node.args[0],currentRecord);
    let matched=false;
    for(let index=1;index<node.args.length-1;index+=2){
-    if(sourceValue===evaluate(node.args[index])){
-     result=evaluate(node.args[index+1]);matched=true;break;
+    if(sourceValue===evaluate(node.args[index],currentRecord)){
+     result=evaluate(node.args[index+1],currentRecord);matched=true;break;
     }
    }
    if(!matched)result=evaluate(node.args[node.args.length-1]);
   }else if(node.kind==='call'){
-   result=evaluateCall(node.name,node.args.map(evaluate),formulaContext);
+   result=evaluateCall(node.name,node.args.map(argument=>evaluate(argument,currentRecord)),formulaContext);
   }else throw Error('Invalid formula syntax');
   if(typeof result==='number'&&!Number.isFinite(result))
    throw Error('Formula result must be finite');
@@ -562,6 +587,7 @@ export function evaluateFieldExpressionDetailed(expression,record,options={}){
    collectionResult:options.collectionResult===true,
    namedCollections:options.namedCollections,
    namedCollectionSelections:options.namedCollectionSelections,
+   collectionRows:options.collectionRows,
    rootObjectApiName:options.rootObjectApiName});
   if(options.collectionResult===true){
    if(!result||typeof result!=='object'||Array.isArray(result)
