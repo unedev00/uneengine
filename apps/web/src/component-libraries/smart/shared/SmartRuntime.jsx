@@ -61,12 +61,18 @@ const boundImage=(p,record)=>{
  if(key && record && Object.prototype.hasOwnProperty.call(record,key))return text(record[key]);
  return expression(source,record,p.pageState,p.objectApiName,p.formulaCollectionSources,p.namedCollections,undefined,p.sessionId);
 };
-function SmartCard({p,record}){
+const gridText=(p,key,record)=>p.kind==="smart_card_grid"
+ ?scopedExpression(p,key,p[key]??"",record):"";
+function SmartCard({p,record,onButtonClick}){
  const image=boundImage(p,record);
  const preview=p.previewOnly===true||p.builderPreview===true||p.preview===true;
  const sample=Boolean(p.builderPreview===true&&record?.__builderSample===true);
  const header=scopedExpression(p,"textSource",p.textSource??p.title??p.label??"",record)||(sample?"Product Name":p.kind==="smart_card_grid"&&preview?"Text here":"");
  const badge=scopedExpression(p,"badgeText",p.badgeText??"",record)||(sample?"Price":preview&&p.badgeVisible===true?"Badge":"");
+ // Card Grid uses the same record-scoped, permission-aware formula evaluation as other Data fields.
+ const description=gridText(p,"cardDescription",record);
+ const value=gridText(p,"cardValue",record);
+ const buttonText=gridText(p,"cardButtonText",record);
  const horizontal=["left","right"].includes(p.imagePlacement);
  const single=p.kind==="smart_image";
  const grid=p.kind==="smart_card_grid";
@@ -93,7 +99,8 @@ function SmartCard({p,record}){
     flex:horizontal?"1 1 50%":single?"1 1 auto":grid?"1 1 "+imageHeight+"px":undefined,
     minWidth:0,minHeight:0,
     ...(single?{display:"flex"}:{}),
-    ...(grid?{overflow:"hidden",maxHeight:horizontal?undefined:imageHeight}:{} )}}>
+    ...(grid?{overflow:"hidden",maxHeight:horizontal?undefined:imageHeight,
+      backgroundColor:p.imageBackgroundColor||undefined}:{} )}}>
    {single&&p.builderPreview&&!image
      ?<div className="smart-image-empty smart-editor-image-placeholder" aria-label="Image Here"
         style={{height:"100%",width:"100%",border:nativeImageBorder,
@@ -127,6 +134,22 @@ function SmartCard({p,record}){
     whiteSpace:p.wrapText===false?"nowrap":"normal",
     overflow:"hidden",overflowWrap:"anywhere",padding:"4px 10px"
   }}>{header}</div>}
+  {grid&&(description||value||buttonText)&&<div className="smart-card-details">
+   {description&&<span className="smart-card-description">{description}</span>}
+   {(value||buttonText)&&<div className="smart-card-footer">
+    {value&&<strong className="smart-card-value">{value}</strong>}
+    {buttonText&&<button type="button" className="smart-card-button"
+      disabled={!onButtonClick} aria-label={buttonText}
+      style={{
+       backgroundColor:p.cardButtonFill||p.accentColor||"#2563eb",
+       borderColor:p.cardButtonBorderColor||p.cardButtonFill||p.accentColor||"#2563eb",
+       borderRadius:p.cardButtonShape==="square"?0:p.cardButtonShape==="pill"?999:8,
+       color:p.cardButtonTextColor||"#fff",
+       fontSize:number(p.cardButtonTextSize,14,8,48)
+      }}
+      onClick={event=>{event.stopPropagation();onButtonClick?.();}}>{buttonText}</button>}
+   </div>}
+  </div>}
   {p.badgeVisible===true&&Boolean(badge)&&<span className={"smart-badge "+(p.badgeAlignment||"image-top-right")}
    style={{fontWeight:p.badgeBold===false?400:700,fontSize:number(p.badgeTextSize,12),
    color:p.badgeTextColor||"#fff",background:p.badgeBodyColor||"#2563eb"}}>{badge}</span>}
@@ -202,6 +225,7 @@ function SmartLookup({p,style,fire}){
 }
 function SmartTabs({p,record,fire}){
  const [active,setActive]=React.useState(0);
+ const vertical=p.tabOrientation==="vertical";
  const count=number(p.tabCount,3,1,20);
  // When bound to an Object, the shared Page Runtime supplies only filtered,
  // permission-checked records. Never generate unlimited tabs from raw records.
@@ -299,11 +323,19 @@ function SmartTabs({p,record,fire}){
  React.useEffect(()=>{if(active>=tabs.length)setActive(0)},[active,tabs.length]);
  return <div className="smart-tabs-shell" style={{background:p.backgroundColor||undefined,
    display:"flex",flexDirection:"column",height:"100%",minHeight:0,width:"100%"}}>
-  <nav className="smart-tabs" aria-label="Tabs" style={{
-    width:"100%",height:"100%",flex:"1 1 auto",minHeight:0,alignContent:"stretch"}}>
+  <nav className="smart-tabs" role="tablist" aria-label="Tabs"
+   aria-orientation={vertical?"vertical":"horizontal"} style={{
+    width:"100%",height:"100%",flex:"1 1 auto",minHeight:0,
+    flexDirection:vertical?"column":"row",flexWrap:vertical?"nowrap":"wrap",
+    alignItems:vertical?"stretch":undefined,alignContent:vertical?"flex-start":"stretch",
+    overflowY:vertical?"auto":undefined,overflowX:vertical?"hidden":undefined}}>
    {tabs.map((tab,index)=><button key={tab?.id??index} ref={index===0?firstTabRef:null} type="button" role="tab"
-    aria-selected={selectedTabIndex===index} style={{height:number(p.tabHeight,44),maxHeight:"100%",minHeight:0,flex:"1 1 auto",
-     minWidth:number(p.tabWidth,120),borderRadius:number(p.radius,10),fontSize:number(p.textSize,16),textAlign:p.labelAlignment||"center",boxShadow:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none",color:p.labelColor||undefined,
+    aria-selected={selectedTabIndex===index} style={{height:number(p.tabHeight,44),
+     maxHeight:vertical?undefined:"100%",minHeight:vertical?number(p.tabHeight,44):0,
+     flex:vertical?"0 0 auto":"1 1 auto",
+     width:vertical?"100%":undefined,minWidth:vertical?0:number(p.tabWidth,120),
+     borderLeft:vertical?"4px solid "+(selectedTabIndex===index?(p.selectedTabColor||"#2563eb"):"transparent"):undefined,
+     borderRadius:number(p.radius,10),fontSize:number(p.textSize,16),textAlign:p.labelAlignment||"center",boxShadow:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none",color:p.labelColor||undefined,
      background:selectedTabIndex===index?p.selectedTabColor||"#eaf2ff":p.tabColor||"#fff",
     borderColor:p.borderColor||undefined}}
     tabIndex={selectedTabIndex===index?0:-1}
@@ -411,13 +443,17 @@ export default function SmartRuntime(p){
    alignContent:"start"
   }}>
    {previewRows.map((r,i)=>{
-    const card=<SmartCard p={p} record={r}/>;
-    // Published metadata decides if the card is actionable. Never fabricate
-    // an Add To Cart operation: the bound Flow owns persistence and RBAC.
-    return p.actionFlows?.click&&!p.previewOnly&&!p.builderPreview
+    // One shared click event handles either the authored card button or the
+    // legacy whole-card selection. Never nest an actionable button in a button.
+    const actionable=Boolean(p.actionFlows?.click&&!p.previewOnly&&!p.builderPreview);
+    const hasButton=typeof p.cardButtonText==="string"&&p.cardButtonText.trim()!=="";
+    const selectRecord=()=>fire("click",{record:r,recordId:r?.Id??r?.id??null});
+    const card=<SmartCard p={p} record={r}
+      onButtonClick={actionable?selectRecord:null}/>;
+    return actionable&&!hasButton
       ?<button key={r?.Id??r?.id??i} type="button" className="smart-grid-action"
         aria-label={"Select "+text(r?.Name??r?.name??r?.label??"product")}
-        onClick={()=>fire("click",{record:r,recordId:r?.Id??r?.id??null})}>{card}</button>
+        onClick={selectRecord}>{card}</button>
       :<React.Fragment key={r?.Id??r?.id??i}>{card}</React.Fragment>;
    })}
   </div>;
