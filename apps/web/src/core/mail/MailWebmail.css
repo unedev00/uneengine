@@ -462,3 +462,13 @@
 .md-mail-message-row.is-unread:hover:not(:disabled) { background: var(--mail-hover-bg); }
 .md-mail-header .md-mail-icon-button,
 .md-mail-compose-footer .md-mail-icon-button { color: var(--mail-muted); }
+
+
+/* Chronological mailbox grouping, distinct from message rows. */
+.md-mail-day-separator{
+ padding:10px 24px 7px;
+ font-size:12px;font-weight:650;color:var(--mail-muted,#52677b);
+ background:var(--mail-surface-soft,#f8fafc);
+ border-bottom:1px solid var(--mail-line,#e3e9ef);
+}
+.md-mail-row-date,.md-mail-message-row.is-unread .md-mail-row-date{font-weight:500}
