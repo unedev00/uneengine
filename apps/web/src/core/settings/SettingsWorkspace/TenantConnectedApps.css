@@ -35,3 +35,8 @@
 .connected-apps-group>.form-label{max-width:min(100%,450px)}
 .oauth-scope-option code,.oauth-scope-option em{font-size:12px}
 @media(max-width:700px){.connected-apps-directory{padding:10px}.connected-apps-directory-grid{grid-template-columns:minmax(0,1fr)}}
+
+
+/* Let installed-app tiles use the width of their parent directory. */
+.connected-apps-directory-grid{grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr))}
+.connected-apps-directory-item{min-width:0}
