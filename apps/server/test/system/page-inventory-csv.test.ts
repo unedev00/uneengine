@@ -175,6 +175,6 @@ test('upsert rejects unknown type, missing type, conflicting ID, invalid values 
  assert.equal(invalid.valid,false);
  assert.ok(invalid.issues.some(x=>x.remark.includes('ID is immutable')));
  assert.ok(invalid.issues.some(x=>x.remark.includes('Duplicate')));
- assert.ok(invalid.issues.some(x=>x.remark.includes('number')));
+ assert.ok(invalid.issues.some(x=>x.remark.includes('numeric')));
  assert.equal(page.components.length,2,'invalid imports never mutate input page');
 });
