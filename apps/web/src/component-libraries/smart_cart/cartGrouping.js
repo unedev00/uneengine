@@ -8,7 +8,7 @@
  * authorisation, persistence and accounting.
  */
 const nonIdentity=new Set([
-  'id','quantity','qty','linetotal','lineamount',
+  'id','quantity','qty',
   'createddate','createdat','createdby','createdbyid',
   'ownerid','recordtypeid',
   'lastmodifieddate','lastmodifiedat','lastmodifiedby','lastmodifiedbyid',
@@ -32,9 +32,14 @@ const qtyOf=(row,quantityField)=>{
   const count=Number(raw);
   return Number.isFinite(count)&&count>0?count:0;
 };
-const identityOf=(row,quantityField)=>{
+const amountFields=new Set(['linetotal','lineamount']);
+const numericAmount=value=>(typeof value==='number'||typeof value==='string'&&value.trim()!=='')
+  &&Number.isFinite(Number(value));
+const identityOf=(row,quantityField,count)=>{
   const own=Object.entries(row||{})
     .filter(([key])=>key!==quantityField&&!nonIdentity.has(key.toLowerCase())&&!key.startsWith('__'))
+    .map(([key,value])=>[key,amountFields.has(key.toLowerCase())&&numericAmount(value)
+      ?{unitAmount:Math.round(Number(value)/count*1e8)/1e8}:value])
     .sort(([a],[b])=>a.localeCompare(b));
   // Keep missing, false, null and the empty string distinct, and never
   // collapse different product/batch/price/custom-selection values.
@@ -45,15 +50,16 @@ export function groupCartRows(records,{quantityField='Quantity'}={}){
   const index=new Map();
   for(const source of Array.isArray(records)?records:[]){
     if(!source||typeof source!=='object'||Array.isArray(source))continue;
-    const key=identityOf(source,quantityField);
     const count=qtyOf(source,quantityField);
+    const key=identityOf(source,quantityField,count);
     // A zero/negative line was removed from the basket, not a visible item.
     if(count<=0)continue;
     if(!index.has(key)){
       const row={...source,Quantity:count,__cartSourceRows:[source]};
       if(quantityField&&Object.hasOwn(source,quantityField))row[quantityField]=count;
-      if(Object.hasOwn(source,'LineTotal')&&Number.isFinite(Number(source.LineTotal)))
-        row.LineTotal=Number(source.LineTotal);
+      for(const field of Object.keys(source))
+        if(amountFields.has(field.toLowerCase())&&numericAmount(source[field]))
+          row[field]=Number(source[field]);
       index.set(key,output.length);
       output.push(row);
       continue;
@@ -63,9 +69,12 @@ export function groupCartRows(records,{quantityField='Quantity'}={}){
     if(quantityField&&quantityField!=='Quantity'&&Object.hasOwn(row,quantityField))
       row[quantityField]=row.Quantity;
     row.__cartSourceRows.push(source);
-    if(Object.hasOwn(row,'LineTotal')&&Number.isFinite(Number(source.LineTotal)))
-      row.LineTotal=Number(row.LineTotal)+Number(source.LineTotal);
-    else delete row.LineTotal;
+    for(const field of Object.keys(source))
+      if(amountFields.has(field.toLowerCase())){
+        if(numericAmount(row[field])&&numericAmount(source[field]))
+          row[field]=Number(row[field])+Number(source[field]);
+        else delete row[field];
+      }
   }
   return output;
 }
