@@ -225,7 +225,11 @@ function SmartLookup({p,style,fire}){
  </div>;
 }
 function SmartTabs({p,record,fire}){
- const [active,setActive]=React.useState(0);
+ // Zero-based default; invalid/fractional values revert to the legacy first tab.
+ const configuredTabIndex=Number.isInteger(Number(p.tabIndex))&&Number(p.tabIndex)>=0
+  ?Number(p.tabIndex):0;
+ const [active,setActive]=React.useState(configuredTabIndex);
+ React.useEffect(()=>setActive(configuredTabIndex),[configuredTabIndex]);
  const vertical=p.tabOrientation==="vertical";
  const count=number(p.tabCount,3,1,20);
  // When bound to an Object, the shared Page Runtime supplies only filtered,
@@ -261,13 +265,14 @@ function SmartTabs({p,record,fire}){
    const id=hasCollection?tab?.record?.Id??tab?.record?.id??tab?.value:tab?.id;
    return String(id??"")===String(selectedId);
   });
- // Always default to the FIRST actual tab, regardless of its caption or ID.
- // Existing explicit selections still take priority when changing tabs.
+ // Default index is bounded by the filtered, permission-checked tab list.
+ // An existing explicit PageState/Collection selection always has priority.
+ const defaultTabIndex=tabs.length?Math.min(configuredTabIndex,tabs.length-1):-1;
  const selectedTabIndex=(hasCollection||stateKey)
-  ?indexForSelection>=0?indexForSelection:tabs.length?0:-1
-  :tabs.length?Math.min(active,tabs.length-1):-1;
+  ?indexForSelection>=0?indexForSelection:defaultTabIndex
+  :tabs.length?Math.max(0,Math.min(active,tabs.length-1)):-1;
  const autoSelected=React.useRef(null);
- const firstTabRef=React.useRef(null);
+ const selectedTabRef=React.useRef(null);
  const selectTab=index=>{
   setActive(index);
   if(hasCollection){
@@ -291,13 +296,13 @@ function SmartTabs({p,record,fire}){
   }
   if(index!==0)autoSelected.current=null;
  };
- let firstItemId=null;
- if(tabs.length){
-  if(hasCollection)firstItemId=tabs[0]?.record?.Id??tabs[0]?.record?.id??tabs[0]?.value;
-  else firstItemId=tabs[0]?.id;
- }
- // Publishing the first selection matters: a visual highlight alone leaves
- // Collection State blank, so dependent components cannot filter correctly.
+ const defaultItem=tabs[defaultTabIndex];
+ const defaultItemId=defaultItem
+  ?hasCollection?defaultItem?.record?.Id??defaultItem?.record?.id??defaultItem?.value
+   :defaultItem?.id??defaultItem?.value
+  :null;
+ // Publish the selected default into the already-authorised state pathway;
+ // never execute arbitrary Flows or side-effecting Actions during page load.
  React.useEffect(()=>{
   if(!tabs.length||p.loading||p.previewOnly||p.builderPreview||
     !(hasCollection||stateKey)||typeof p.onAction!=="function")return;
@@ -307,21 +312,22 @@ function SmartTabs({p,record,fire}){
     !(changeAction.actionType==="Formula"&&formulaStateKey))return;
   if(indexForSelection>=0){autoSelected.current=null;return;}
   const key=String(p.pageSessionKey??"")+"|"+String(p.componentId??"")+"|"+
-   String(hasCollection?p.dataCollection.name:stateKey)+"|"+String(firstItemId??"");
+   String(hasCollection?p.dataCollection.name:stateKey)+"|"+String(defaultTabIndex)+"|"+String(defaultItemId??"");
   if(autoSelected.current===key)return;
   autoSelected.current=key;
-  selectTab(0);
- },[indexForSelection,firstItemId,tabs.length,p.loading,p.previewOnly,p.builderPreview,
+  selectTab(defaultTabIndex);
+ },[indexForSelection,defaultItemId,defaultTabIndex,tabs.length,p.loading,p.previewOnly,p.builderPreview,
    p.pageSessionKey,p.componentId,p.onAction,hasCollection,stateKey,p.dataCollection?.name]);
- // Give the first selected tab keyboard focus only if the page has no
- // active control. Never steal focus from a search field or later user choice.
+ // Focus the actual selected initial tab only if no other control owns focus.
  React.useEffect(()=>{
-  if(selectedTabIndex!==0||!tabs.length||p.loading||
+  if(selectedTabIndex<0||!tabs.length||p.loading||
    p.previewOnly||p.builderPreview||typeof document==="undefined"||
    document.activeElement!==document.body)return;
-  firstTabRef.current?.focus({preventScroll:true});
+  selectedTabRef.current?.focus({preventScroll:true});
  },[selectedTabIndex,tabs.length,p.loading,p.previewOnly,p.builderPreview]);
- React.useEffect(()=>{if(active>=tabs.length)setActive(0)},[active,tabs.length]);
+ React.useEffect(()=>{
+  if(tabs.length&&active>=tabs.length)setActive(defaultTabIndex);
+ },[active,tabs.length,defaultTabIndex]);
  return <div className="smart-tabs-shell" style={{background:p.backgroundColor||undefined,
    display:"flex",flexDirection:"column",height:"100%",minHeight:0,width:"100%"}}>
   <nav className="smart-tabs" role="tablist" aria-label="Tabs"
@@ -330,7 +336,7 @@ function SmartTabs({p,record,fire}){
     flexDirection:vertical?"column":"row",flexWrap:vertical?"nowrap":"wrap",
     alignItems:vertical?"stretch":undefined,alignContent:vertical?"flex-start":"stretch",
     overflowY:vertical?"auto":undefined,overflowX:vertical?"hidden":undefined}}>
-   {tabs.map((tab,index)=><button key={tab?.id??index} ref={index===0?firstTabRef:null} type="button" role="tab"
+   {tabs.map((tab,index)=><button key={tab?.id??index} ref={index===selectedTabIndex?selectedTabRef:null} type="button" role="tab"
     aria-selected={selectedTabIndex===index} style={{height:number(p.tabHeight,44),
      maxHeight:vertical?undefined:"100%",minHeight:vertical?number(p.tabHeight,44):0,
      flex:vertical?"0 0 auto":"1 1 auto",
