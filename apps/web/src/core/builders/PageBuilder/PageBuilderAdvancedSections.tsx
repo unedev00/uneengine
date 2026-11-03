@@ -1,4 +1,4 @@
-import {useEffect} from 'react';
+import {useEffect,useState} from 'react';
 import type {AdvancedFeature} from './PageBuilderAdvancedRibbon';
 
 type Option={value:string;label:string};
@@ -30,6 +30,8 @@ export default function PageBuilderAdvancedSections({
   // The former Advanced editor portalled the entire inspector into the ribbon.
   // Never leave a stale portal attached after switching from another tab.
   useEffect(()=>onInspectorHost(null),[onInspectorHost]);
+  const [nameDraft,setNameDraft]=useState(properties.instanceName);
+  useEffect(()=>setNameDraft(properties.instanceName),[properties.instanceName]);
   return <div className="page-builder-advanced-inline" aria-label="Advanced ribbon fixed sections">
     {assignment.enabled&&<section className="advanced-fixed-group advanced-activation" aria-label="Activation Assignments">
       <div className="advanced-fixed-field advanced-assigned">
@@ -49,9 +51,11 @@ export default function PageBuilderAdvancedSections({
         <input value={properties.apiName} readOnly disabled title="Component API identity is immutable"/>
       </label>
       <label className="advanced-fixed-field advanced-instance-name">Component Name
-        <input aria-label="Component Name" value={properties.instanceName}
+        <input aria-label="Component Name" value={nameDraft}
           maxLength={80} disabled={!properties.selected}
-          onChange={event=>properties.onInstanceName(event.target.value)}/>
+          onChange={event=>setNameDraft(event.target.value)}
+          onBlur={()=>{if(nameDraft!==properties.instanceName)properties.onInstanceName(nameDraft);}}
+          onKeyDown={event=>{if(event.key==='Enter')event.currentTarget.blur();}}/>
       </label>
       <label className="advanced-fixed-field advanced-visible">Visible
         <input type="checkbox" checked={properties.visible} disabled={!properties.selected}
