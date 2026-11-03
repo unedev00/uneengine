@@ -66,6 +66,9 @@ test('Page device flags are guarded SQL metadata, not component or canvas change
  assert.match(api,/Page device settings changed\. Reload before saving/);
  assert.match(api,/SET devices=\$3::text\[\],updated_at=now\(\)/);
  assert.match(api,/UPDATE md_lightning_page_activation SET/);
+ assert.match(api,/page\.page_type==='App Page'&&deviceChangeRequested/);
+ assert.match(api,/'AppExchange','manage'/);
+ assert.match(api,/'App:'\+appName,'manage'/);
  assert.match(api,/rbac\.require\(actor\.tenant_id,actor\.user_id,'PageDefinition','manage'\)/);
  assert.match(api,/assertMetadataPackageEditable/);
  assert.doesNotMatch(api,/DELETE FROM md_page_layout_versions/);
