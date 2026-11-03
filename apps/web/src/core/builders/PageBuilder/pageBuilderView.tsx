@@ -3367,7 +3367,6 @@ function PageBuilder({
             }}
             properties={{
               selected:!!selected,apiName:selected?.type.startsWith('Custom:')?selected.type.slice(7):selected?.type??'',
-              cssClass:String(selected?.properties.cssClass??''),
               visible:selected?.visible!==false,
               readOnly:selected?.properties.readOnlyOnLayout===true,
               canReadOnly:!!selected&&selected.type==='Record Field',
@@ -3376,31 +3375,18 @@ function PageBuilder({
                 ...selected.properties,readOnlyOnLayout:value,requiredOnLayout:false}});}
             }}
             nesting={{
-              selected:!!selected,
               accepted:!!selected&&isLayoutContainer(selected),
               canChange:!!selected&&(!!selectedCustomDefinition||isLayoutContainer(selected)),
-              parentId:selected?rawLayoutParentId(selected)??'':'',
-              parents:selected?page.components.filter(item=>canNest(page.components,selected.id,item.id))
-                .map(item=>({value:item.id,label:item.label})):[],
               onAccepted:value=>{
                 if(!selected)return;
                 if(!value&&childrenOf(page.components,selected.id).length){
                   onNotify('Move children out before disabling nesting.');return;
                 }
                 updateComponent(selected.id,{properties:{...selected.properties,layoutContainer:value}});
-              },
-              onParent:value=>{
-                if(!selected)return;
-                const parent=value||null;
-                if(!canNest(page.components,selected.id,parent)){
-                  onNotify('A component cannot be nested inside itself or a descendant.');return;
-                }
-                applyPage({...page,components:reparentComponent(page.components,selected.id,parent)});
               }
             }}
             technical={{
               id:selected?.id??'',
-              objectName:String(selected?.properties.objectApiName??page.targetObject??''),
               renderMode:selected?'Page Runtime':''
             }}/>}
 
