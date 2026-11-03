@@ -208,6 +208,14 @@
 .office-builder-ribbon .advanced-nesting .advanced-accept{left:8px;right:8px;top:5px}
 /* Group 5: x=1295-1640 */
 .office-builder-ribbon .advanced-technical .advanced-component-id{left:8px;right:8px;top:5px}
+.office-builder-ribbon .advanced-technical .advanced-component-id>input[aria-invalid="true"]{
+  border-color:#bc2e37;outline:1px solid #bc2e37;
+}
+.office-builder-ribbon .advanced-technical .advanced-component-id-error{
+  position:absolute;top:35px;left:8px;right:8px;max-height:48px;
+  overflow:hidden;color:#a21b29;font:11px/15px "Segoe UI",Arial,sans-serif;
+  white-space:normal;overflow-wrap:anywhere;
+}
 
 
 /* The Advanced tab does not reserve or show a horizontal scrollbar. */

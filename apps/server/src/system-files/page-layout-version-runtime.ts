@@ -147,9 +147,9 @@ export class PageLayoutVersionRuntime{
   const ids=new Set<string>();
   for(const component of page.components){
    if(!component||!validKey(component.id)||!validKey(component.type)||typeof component.label!=='string'
-      ||component.label.length>200||ids.has(component.id))throw new Error('Invalid Page layout block');
+      ||component.label.length>200||ids.has(String(component.id).toLowerCase()))throw new Error('Invalid Page layout block or duplicate Component ID');
    requirePagePropertyContract(String(component.type),component.properties);
-   ids.add(component.id);
+   ids.add(String(component.id).toLowerCase());
   }
   // Enforced by the shared SQL write path, not only by the browser ribbon.
   validateExplicitComponentNames(page.components as Array<{id:string;type:string;properties:Record<string,unknown>}>);
