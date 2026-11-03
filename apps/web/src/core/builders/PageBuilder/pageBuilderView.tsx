@@ -3349,11 +3349,18 @@ function PageBuilder({
             properties={{
               selected:!!selected,apiName:selected?.type.startsWith('Custom:')?selected.type.slice(7):selected?.type??'',
               visible:selected?.visible!==false,
-              readOnly:selected?.properties.readOnlyOnLayout===true,
-              canReadOnly:!!selected&&selected.type==='Record Field',
+              readOnly:!!selected&&(selectedCustomDefinition?.propertyDefinitions?.some(def=>def.propertyKey==='readonly')
+                ?selected.properties.readonly!==false:selected.properties.readOnlyOnLayout===true),
+              canReadOnly:!!selected&&(selected.type==='Record Field'
+                ||Boolean(selectedCustomDefinition?.propertyDefinitions?.some(def=>def.propertyKey==='readonly'))),
               onVisible:value=>{if(selected)updateComponent(selected.id,{visible:value});},
-              onReadOnly:value=>{if(selected)updateComponent(selected.id,{properties:{
-                ...selected.properties,readOnlyOnLayout:value,requiredOnLayout:false}});}
+              onReadOnly:value=>{
+                if(!selected)return;
+                const metadataReadonly=selectedCustomDefinition?.propertyDefinitions?.some(def=>def.propertyKey==='readonly');
+                updateComponent(selected.id,{properties:metadataReadonly
+                  ?{...selected.properties,readonly:value}
+                  :{...selected.properties,readOnlyOnLayout:value,requiredOnLayout:false}});
+              }
             }}
             nesting={{
               accepted:!!selected&&isLayoutContainer(selected),
