@@ -707,17 +707,17 @@
  .custom-assist .custom-day{min-width:105px}
 }
 @media(prefers-color-scheme:dark){
- .custom-assist:not([data-theme="light"]){color-scheme:dark;--assist-surface:#2c2c2e;--assist-ink:#f5f5f7;--assist-muted:#c2c2c8;--assist-border:rgb(84 84 88 / 55%)}
+ :root[data-theme="system"] .custom-assist:not([data-theme="light"]), .custom-assist[data-theme="system"]{color-scheme:dark;--assist-surface:#2c2c2e;--assist-ink:#f5f5f7;--assist-muted:#c2c2c8;--assist-border:rgb(84 84 88 / 55%)}
 }
-.custom-assist[data-theme="dark"]{color-scheme:dark;--assist-surface:#2c2c2e;--assist-ink:#f5f5f7;--assist-muted:#c2c2c8;--assist-border:rgb(84 84 88 / 55%)}
+:root[data-theme="dark"] .custom-assist:not([data-theme="light"]), .custom-assist[data-theme="dark"]{color-scheme:dark;--assist-surface:#2c2c2e;--assist-ink:#f5f5f7;--assist-muted:#c2c2c8;--assist-border:rgb(84 84 88 / 55%)}
 
 
 /* Appointment dark scheme must apply to the page, not only its inner cards. */
 .custom-assist{--assist-bg:var(--md-bg,#f5f5f7);background:var(--assist-bg)}
 @media(prefers-color-scheme:dark){
- .custom-assist:not([data-theme="light"]){--assist-bg:#1c1c1e}
+ :root[data-theme="system"] .custom-assist:not([data-theme="light"]), .custom-assist[data-theme="system"]{--assist-bg:#1c1c1e}
 }
-.custom-assist[data-theme="dark"]{--assist-bg:#1c1c1e}
+:root[data-theme="dark"] .custom-assist:not([data-theme="light"]), .custom-assist[data-theme="dark"]{--assist-bg:#1c1c1e}
 
 /* Readable appointment status typography across phone and desktop. */
 .custom-aceassist .assist-next small { font-size:12px; }
