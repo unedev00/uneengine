@@ -615,6 +615,9 @@ CREATE TABLE IF NOT EXISTS md_page_layout_versions (
  template text,
  canvas_width integer NOT NULL CHECK(canvas_width BETWEEN 320 AND 10000),
  canvas_height integer NOT NULL CHECK(canvas_height BETWEEN 320 AND 10000),
+ inherits_desktop boolean NOT NULL DEFAULT false,
+ canvas_fill_override boolean NOT NULL DEFAULT false,
+ desktop_base_version integer,
  created_at timestamptz NOT NULL DEFAULT now(),
  PRIMARY KEY(tenant_id,page_id,variant,version),
  FOREIGN KEY(tenant_id,page_id) REFERENCES md_lightning_page_details(tenant_id,page_id) ON DELETE CASCADE
