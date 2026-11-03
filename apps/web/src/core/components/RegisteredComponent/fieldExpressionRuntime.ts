@@ -108,8 +108,15 @@ export function resolveRegisteredTextProperties(
     if(!['TEXT','LONG_TEXT','TEXTAREA','STRING'].includes(definition.kind))continue;
     const value=properties[definition.propertyKey];
     if(typeof value!=='string'||!isFieldExpression(value))continue;
-    if(!hasRecord&&/@[A-Za-z]/.test(value)&&!formulaContext.namedCollections
-      &&!formulaContext.collectionSources&&!formulaContext.collectionRows?.length)continue;
+    const localRefs=[...value.matchAll(/@([A-Za-z][A-Za-z0-9_]*)/g)].map(match=>match[1]);
+    const localSum=/^=?\s*SUM\s*\(/i.test(value.trim())&&rows?.some(row=>
+      row&&typeof row==='object'&&!Array.isArray(row)&&localRefs.some(key=>Object.hasOwn(row,key)));
+    if(localSum&&!completeRows)continue; // Never evaluate totals from an incomplete page.
+    const hasNamed=Boolean(formulaContext.namedCollections&&Object.keys(formulaContext.namedCollections).length);
+    const hasSources=Boolean(formulaContext.collectionSources&&Object.values(formulaContext.collectionSources)
+      .some(value=>Array.isArray(value)&&value.length>0));
+    if(!hasRecord&&/@[A-Za-z]/.test(value)&&!hasNamed&&!hasSources
+      &&!formulaContext.collectionRows?.length)continue;
     if(!resolvedContext?.timeZone&&requiresAuthenticatedTimeZone(value,record))
       throw new FieldExpressionEvaluationError('Authenticated formula time zone is unavailable');
     if(next===properties)next={...properties};
