@@ -22,8 +22,8 @@ const context={primaryObject:'Product',collectionSourceFields:{Product:fields}};
 test('Global TABLE formula is in the shared function registry and returns ordered typed rows',()=>{
  assert.ok(getFormulaFunctionNames('ribbon_binding').includes('TABLE'));
  assert.ok(!getFormulaFunctionNames('validation_rule').includes('TABLE'));
- validateFormulaFunctions(new Parser(tokenize('=TABLE(@Product,@Name,@Price,@Category)')).parse(),'ribbon_binding');
- const result=evaluateCollectionFormula('=TABLE(@Product,@Name,@Price,@Category)',source,context);
+ validateFormulaFunctions(new Parser(tokenize('=TABLE(@Product, Name, Price, Category)')).parse(),'ribbon_binding');
+ const result=evaluateCollectionFormula('=TABLE(@Product, Name, Price, Category)',source,context);
  assert.equal(result.error,undefined);
  assert.deepEqual(Array.from(result.value.columns),['Name','Price','Category']);
  assert.equal(result.value.objectApiName,'Product');
@@ -37,21 +37,21 @@ test('Global TABLE formula is in the shared function registry and returns ordere
 test('TABLE supports all authorised Object fields, bare names and typed errors',()=>{
  const all=evaluateCollectionFormula('TABLE(@Product)',source,context);
  assert.deepEqual(Array.from(all.value.columns),fields);
- const bare=evaluateCollectionFormula('=TABLE(@Product,Name,Price)',source,context);
+ const bare=evaluateCollectionFormula('=TABLE(@Product, Name, Price)',source,context);
  assert.deepEqual(Array.from(bare.value.columns),['Name','Price']);
- const lower=evaluateCollectionFormula('=TABLE(@product,name,price)',source,context);
+ const lower=evaluateCollectionFormula('=TABLE(@product, name, price)',source,context);
  assert.deepEqual(Array.from(lower.value.columns),['Name','Price']);
- const qualified=evaluateCollectionFormula('TABLE(@Product,@Product.Name,@Product.Price)',source,context);
+ const qualified=evaluateCollectionFormula('TABLE(@Product, @Product.Name, @Product.Price)',source,context);
  assert.equal(qualified.value.items[1].record.Price,3);
- const denied=evaluateCollectionFormula('TABLE(@Product,@Secret)',source,context);
+ const denied=evaluateCollectionFormula('TABLE(@Product, Secret)',source,context);
  assert.match(denied.error,/TABLE field is unavailable or not permitted/);
- const cross=evaluateCollectionFormula('TABLE(@Product,@Customer.Name)',source,context);
+ const cross=evaluateCollectionFormula('TABLE(@Product, Customer.Name)',source,context);
  assert.match(cross.error,/does not belong/);
- const duplicate=evaluateCollectionFormula('TABLE(@Product,@Name,@Name)',source,context);
+ const duplicate=evaluateCollectionFormula('TABLE(@Product, Name, Name)',source,context);
  assert.match(duplicate.error,/must be unique/);
- const missing=evaluateCollectionFormula('TABLE(@Customer,@Name)',source,context);
+ const missing=evaluateCollectionFormula('TABLE(@Customer, Name)',source,context);
  assert.match(missing.error,/not authorised/);
- const large=evaluateCollectionFormula('TABLE(@Product,@Price)',{
+ const large=evaluateCollectionFormula('TABLE(@Product, Price)',{
   Product:Array.from({length:201},(_,i)=>({Id:String(i),Price:1}))
  },context);
  assert.match(large.error,/maximum 200/);
@@ -65,7 +65,7 @@ test('Smart Table renders exactly the TABLE columns and metadata-driven buttons'
  const built=await buildBundledComponent(definition);
  const sandbox={React,module:{exports:{}},Date,Intl,URL,crypto:globalThis.crypto};
  vm.runInNewContext(built.compiledJs,sandbox);
- const table=evaluateCollectionFormula('TABLE(@Product,@Name,@Price)',source,context).value;
+ const table=evaluateCollectionFormula('TABLE(@Product, Name, Price)',source,context).value;
  const records=table.items.map(item=>({...item.record,Id:item.record.Id??item.value}));
  const html=renderToStaticMarkup(React.createElement(sandbox.module.exports.default,{
   dataCollection:table,records,objectApiName:'Product',
@@ -99,7 +99,9 @@ test('Smart Table metadata extends shared ribbon instead of duplicating properti
  assert.match(runtime,/evaluateFieldExpression/);
  assert.doesNotMatch(runtime,/SmartRuntime/);
  assert.match(editor,/tableSources\.map/);
- assert.match(editor,/tableObject\.fields\.map/);
+ assert.match(editor,/tableObject\.fields\.map\(field=>\(\{reference:field\.apiName/);
+ assert.doesNotMatch(editor,/tableObject\.fields\.map\(field=>\(\{reference:'@'/);
+ assert.match(editor,/const tableArg=Boolean\(tableSourcePrompt\|\|tableObject\)/);
  assert.match(source,/tableFormulaObject\(source\)/);
  assert.match(source,/selectedTableSource/);
 });

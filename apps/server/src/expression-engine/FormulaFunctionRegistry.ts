@@ -110,7 +110,8 @@ for(const [name,minimumArguments,maximumArguments,contextOverride] of inputs){
       serverContexts);
   const declaredParameters=explicitParameters.get(name)??[];
   const parameters=Array.from({length:maximumArguments},(_,index)=>({
-    name:'argument'+(index+1),type:declaredParameters[index]??'Any' as const,
+    name:name==='TABLE'?(index===0?'source':'column'+index):'argument'+(index+1),
+    type:declaredParameters[index]??'Any' as const,
     optional:index>=minimumArguments
   }));
   definitions.set(name,Object.freeze({
