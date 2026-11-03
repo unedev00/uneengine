@@ -4,6 +4,7 @@ const n=(v,f,min=0,max=2000)=>v!==null&&v!==undefined&&v!==""&&Number.isFinite(N
 const shadow=v=>v==="large"?"0 8px 20px #0003":v==="medium"?"0 3px 9px #0003":"none";
 const border=v=>v?"1px solid "+v:"1px solid transparent";
 const align=v=>["left","center","right"].includes(v)?v:"left";
+const summaryJustify=v=>v==="left"?"flex-start":v==="center"?"center":v==="right"?"flex-end":undefined;
 const names=['Column 1','Column 2','Column 3','Column 4','Column 5'];
 const headings=['Product','Unit price','Quantity','Total','Discount'];
 const tracks=['minmax(0,2.2fr)','minmax(0,1fr)','minmax(78px,1.35fr)','minmax(0,1fr)','minmax(0,1fr)'];
@@ -210,11 +211,13 @@ export default function SmartCart({p,records,Picture,expression,fieldAllowed,fir
    {["Subtotal","Discount","Tax"].map(label=><div key={label} className="smart-cart-summary-line"
     style={{fontSize:n(p.summaryTextSize,14,8,96),
      textAlign:p.summaryAlignment?align(p.summaryAlignment):undefined,
+     justifyContent:summaryJustify(p.summaryAlignment),
      fontWeight:p.summaryTextWeight===true?700:400,color:p.summaryTextColor||"#52657d"}}>
     <span>{summaryLabels[label]}</span><span aria-label={summaryAmounts[label]===null?summaryLabels[label]+" not bound":undefined}>{summaryAmounts[label]??"—"}</span></div>)}
    <div className="smart-cart-summary-line smart-cart-total" style={{
     fontSize:n(p.summary2TextSize,18,8,96),fontWeight:p.summary2TextWeight===false?400:700,
     textAlign:p.summary2Alignment?align(p.summary2Alignment):undefined,
+    justifyContent:summaryJustify(p.summary2Alignment),
     color:p.summary2TextColor||"#1c3558"}}>
     <span>{summaryLabels.Total}</span><span aria-label={summaryAmounts.Total===null?summaryLabels.Total+" not bound":undefined}>{summaryAmounts.Total??"—"}</span>
    </div>
