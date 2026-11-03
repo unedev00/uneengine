@@ -1,99 +1,141 @@
-/* Design 2 only. Every icon, picker, spinner and toggle is still rendered
- * by SmartRibbon's existing control engine. This file owns placement, not art.
- * The original Design tab and its CSS remain untouched. */
-.office-builder-ribbon #page-builder-tab-content
-  >.smart-ribbon.smart-design2-ribbon[data-three-row="true"]{
-  width:max-content!important;
-  min-width:100%!important;
+/* Design 2 only: the original Design tab and its geometry are untouched.
+ * The approved section selector sits ABOVE three independent 26px property rows.
+ * SQL provides per-component slot order and each control's width. */
+.office-builder-ribbon:has(#page-builder-tab-content>.smart-design2-ribbon){
+ --page-ribbon-content-height:137px;
+ --page-ribbon-scroll-strip-height:150px;
 }
 .office-builder-ribbon #page-builder-tab-content
-  >.smart-design2-ribbon>.smart-ribbon-group.smart-design2-group{
-  --smart-section-width:490px;
-  box-sizing:border-box!important;
-  flex:0 0 490px!important;
-  width:490px!important;
-  min-width:490px!important;
-  max-width:490px!important;
+ >.smart-ribbon.smart-design2-ribbon[data-three-row="true"]{
+ box-sizing:border-box!important;
+ display:flex!important;flex-wrap:nowrap!important;
+ width:max-content!important;min-width:100%!important;
+ height:137px!important;min-height:137px!important;max-height:137px!important;
 }
 .office-builder-ribbon #page-builder-tab-content
-  .smart-design2-group>.smart-ribbon-items{
-  width:100%!important;
-  max-width:100%!important;
-  gap:4px!important;
+ >.smart-design2-ribbon>.smart-ribbon-group.smart-design2-group{
+ --smart-section-width:490px;
+ box-sizing:border-box!important;
+ display:flex!important;flex-direction:column!important;align-items:flex-start!important;
+ flex:0 0 490px!important;width:490px!important;min-width:490px!important;max-width:490px!important;
+ height:137px!important;min-height:137px!important;max-height:137px!important;
+ padding:5px 7px 1px!important;
+ gap:4px!important;overflow:visible!important;
 }
 .office-builder-ribbon #page-builder-tab-content
-  .smart-design2-group .smart-ribbon-row{
-  gap:4px!important;
-  width:max-content!important;
-  max-width:100%!important;
+ .smart-design2-group>.smart-design2-heading{
+ box-sizing:border-box!important;display:flex!important;flex:0 0 26px!important;
+ align-items:center!important;gap:14px!important;
+ width:100%!important;height:26px!important;min-height:26px!important;max-height:26px!important;
 }
 .office-builder-ribbon #page-builder-tab-content
-  .smart-design2-group .smart-ribbon-row.smart-design2-top-row{
-  gap:4px!important;
+ .smart-design2-group .smart-design2-area-picker{
+ box-sizing:border-box!important;display:flex!important;align-items:center!important;
+ flex:0 0 284px!important;width:284px!important;height:26px!important;
+ border:1px solid #b7c9df!important;border-radius:4px!important;
+ background:#fff!important;overflow:hidden!important;
 }
 .office-builder-ribbon #page-builder-tab-content
-  .smart-design2-group .smart-design2-area-picker{
-  box-sizing:border-box!important;
-  display:flex!important;
-  flex:0 0 272px!important;
-  width:272px!important;
-  height:26px!important;
-  align-items:center!important;
-  border:1px solid #b7c9df!important;
-  border-radius:3px!important;
-  background:#fff!important;
-  overflow:hidden!important;
+ .smart-design2-group .smart-design2-area-picker>span{
+ box-sizing:border-box!important;flex:0 0 80px!important;width:80px!important;
+ padding:0 10px!important;color:#8aa0b7!important;
+ font:13px "Segoe UI",Arial,sans-serif!important;
 }
 .office-builder-ribbon #page-builder-tab-content
-  .smart-design2-group .smart-design2-area-picker>span{
-  box-sizing:border-box!important;
-  flex:0 0 86px!important;
-  width:86px!important;
-  padding:0 8px!important;
-  color:#91a5bd!important;
-  font:11px "Segoe UI",Arial,sans-serif!important;
+ .smart-design2-group .smart-design2-area-select{
+ box-sizing:border-box!important;flex:1 1 auto!important;
+ min-width:0!important;width:0!important;max-width:none!important;
+ height:24px!important;border:0!important;border-radius:0!important;
+ background:#fff!important;color:#263b56!important;
+ padding:0 7px!important;font:12px "Segoe UI",Arial,sans-serif!important;
 }
 .office-builder-ribbon #page-builder-tab-content
-  .smart-design2-group .smart-design2-area-select{
-  box-sizing:border-box!important;
-  flex:1 1 auto!important;
-  width:0!important;
-  min-width:0!important;
-  max-width:none!important;
-  height:24px!important;
-  border:0!important;
-  border-radius:0!important;
-  background:#fff!important;
-  color:#263b56!important;
-  padding:0 6px!important;
-  font:11px "Segoe UI",Arial,sans-serif!important;
+ .smart-design2-group .smart-design2-visibility{
+ box-sizing:border-box!important;display:inline-flex!important;justify-content:center!important;
+ align-items:center!important;flex:0 0 44px!important;
+ width:44px!important;min-width:44px!important;max-width:44px!important;
+ height:26px!important;min-height:26px!important;max-height:26px!important;
+ border:1px solid #7aaae6!important;border-radius:4px!important;
+ background:#dcecff!important;color:#1467bc!important;
 }
 .office-builder-ribbon #page-builder-tab-content
-  .smart-design2-group .smart-design2-visibility{
-  box-sizing:border-box!important;
-  flex:0 0 28px!important;
-  height:26px!important;
-  min-height:26px!important;
-  max-height:26px!important;
+ .smart-design2-group .smart-design2-visibility:disabled{
+ opacity:.5!important;cursor:not-allowed!important;
 }
 .office-builder-ribbon #page-builder-tab-content
-  .smart-design2-group .smart-design2-visibility:disabled{
-  opacity:.5!important;
-  cursor:not-allowed!important;
+ .smart-design2-group>.smart-ribbon-items{
+ box-sizing:border-box!important;display:flex!important;flex:0 0 86px!important;
+ flex-direction:column!important;align-items:flex-start!important;gap:4px!important;
+ width:max-content!important;min-width:0!important;max-width:none!important;
+ height:86px!important;min-height:86px!important;max-height:86px!important;
+ padding:0!important;margin:0!important;overflow:visible!important;
 }
 .office-builder-ribbon #page-builder-tab-content
-  .smart-design2-group .smart-property:is(
-    [data-property="shadow"],[data-property="tableShadow"],
-    [data-property="summaryShadow"],[data-property="labelAlignment"],
-    [data-property="headerAlignment"],[data-property="supportingAlignment"],
-    [data-property="rowAlignment"],[data-property="summaryAlignment"],
-    [data-property="summary2Alignment"]) .smart-icon-dropdown-trigger{
-  box-sizing:border-box!important;
-  width:var(--smart-control-width)!important;
-  min-width:var(--smart-control-width)!important;
-  max-width:var(--smart-control-width)!important;
+ .smart-design2-group>.smart-ribbon-items>.smart-ribbon-row{
+ box-sizing:border-box!important;display:flex!important;flex:0 0 26px!important;
+ align-items:center!important;justify-content:flex-start!important;
+ gap:4px!important;width:max-content!important;max-width:none!important;
+ height:26px!important;min-height:26px!important;max-height:26px!important;
+ margin:0!important;padding:0!important;white-space:nowrap!important;
 }
 .office-builder-ribbon #page-builder-tab-content
-  .smart-design2-group .smart-property.disabled{
-  opacity:.46!important;
+ .smart-design2-group>.smart-ribbon-caption{display:none!important}
+.office-builder-ribbon #page-builder-tab-content
+ .smart-design2-group .smart-ribbon-row>.smart-property{
+ box-sizing:border-box!important;
+ flex:0 0 var(--smart-control-width)!important;width:var(--smart-control-width)!important;
+ min-width:var(--smart-control-width)!important;max-width:var(--smart-control-width)!important;
+ height:26px!important;min-height:26px!important;max-height:26px!important;
 }
+.office-builder-ribbon #page-builder-tab-content
+ .smart-design2-group .smart-property :is(
+  .office-ribbon-colour-property,.smart-icon-dropdown-trigger,
+  .smart-icon-toggle,.smart-visible-toggle,.design2-choice-trigger,
+  .smart-shapes-trigger,.smart-select){
+ box-sizing:border-box!important;display:inline-flex!important;
+ align-items:center!important;justify-content:center!important;
+ flex:0 0 100%!important;width:100%!important;min-width:0!important;max-width:100%!important;
+ height:26px!important;min-height:26px!important;max-height:26px!important;
+ margin:0!important;gap:3px!important;padding:1px 3px!important;
+ border:1px solid #b7c9df!important;border-radius:4px!important;
+ background:#fff!important;color:#26476b!important;cursor:pointer;
+}
+.office-builder-ribbon #page-builder-tab-content
+ .smart-design2-group .smart-property .smart-shapes-trigger>span{display:none!important}
+.office-builder-ribbon #page-builder-tab-content
+ .smart-design2-group .smart-property .smart-shapes-trigger>svg{flex:0 0 15px!important;width:15px!important;height:15px!important}
+.office-builder-ribbon #page-builder-tab-content
+ .smart-design2-group .smart-property .smart-icon-gallery{
+ width:100%!important;min-width:0!important;max-width:100%!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+ .smart-design2-group .smart-property .office-ribbon-colour-property .office-ribbon-command-glyph>svg{
+ width:19px!important;height:19px!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+ .smart-design2-group .smart-property.disabled{
+ opacity:.46!important;filter:grayscale(.6)!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+ .smart-design2-group .smart-property.disabled :is(button,input,select){
+ cursor:not-allowed!important;
+}
+.design2-choice-popup{
+ box-sizing:border-box;position:fixed;z-index:100000;
+ display:flex;flex-direction:column;gap:1px;min-width:154px;
+ padding:4px;border:1px solid #b7c9df;border-radius:5px;
+ background:#fff;box-shadow:0 5px 18px #2038503b;
+}
+.design2-choice-popup>button{
+ display:flex;align-items:center;gap:8px;
+ min-height:31px;padding:4px 7px;
+ background:#fff;color:#233d5b;border:0;border-radius:3px;
+ text-align:left;font:12px "Segoe UI",Arial,sans-serif;cursor:pointer;
+}
+.design2-choice-popup>button>span{flex:1}
+.design2-choice-popup>button[aria-checked=true]{
+ background:#dcecff;color:#115aab;
+}
+.design2-choice-popup>button:hover:not(:disabled){background:#edf5ff}
+.design2-choice-popup>button:disabled{opacity:.35;cursor:not-allowed}
+.design2-choice-popup>button>svg:first-child{flex:0 0 19px}
