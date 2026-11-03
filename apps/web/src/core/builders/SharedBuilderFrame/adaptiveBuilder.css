@@ -240,7 +240,8 @@
   max-height:min(450px,40dvh);border-radius:var(--md-radius-xl) var(--md-radius-xl) 0 0;
  }
 }
-@media(max-width:1023px){
+/* Audit DEF-069: use the existing accessible settings picker on iPad landscape too. */
+@media(max-width:1199px){
  .lightning .md-object-editor-split{display:block;padding:0 8px 18px}
  .lightning .md-object-editor-split .object-subnav{display:none}
  .lightning .md-object-settings-picker{display:grid;gap:6px;font-size:13px;font-weight:600;padding:8px 0 12px}
