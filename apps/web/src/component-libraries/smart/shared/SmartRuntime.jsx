@@ -124,7 +124,7 @@ function SmartCard({p,record,onButtonClick,selected=false}){
  const nativeImageBorder=imageStroke&&strokeWidth>0?strokeWidth+"px solid "+imageStroke:undefined;
  const cardBorder=single?"none":strokeWidth===0?"none":
   (strokeWidth+"px solid "+(p.borderColor||"#e2e8f0"));
- return <article className="smart-card" data-selected={selected?"true":undefined} style={{
+ return <article className="smart-card" style={{
   display:"flex",flexDirection:horizontal?"row":"column",
   background:grid&&selected&&p.selectedCardColor?p.selectedCardColor:
    single?(p.imageBackgroundColor??p.backgroundColor??"transparent"):(p.backgroundColor||"#fff"),border:cardBorder,
@@ -133,7 +133,7 @@ function SmartCard({p,record,onButtonClick,selected=false}){
   boxShadow:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none",
   ...(single?{height:"100%",minHeight:0}:{}),
   ...(grid?{height:"100%",minHeight:0}:{}),
- }}>
+ }} data-selected={selected?"true":undefined}>
   {imageVisible&&<div style={{order:["right","bottom"].includes(p.imagePlacement)?2:0,
     flex:horizontal?(grid&&imageWidth!==null?"0 0 "+imageWidth+"px":"1 1 50%"):
       single?"1 1 auto":grid?"1 1 "+imageHeight+"px":undefined,
