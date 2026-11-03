@@ -7,28 +7,35 @@ import {componentInstanceNames,canonicalComponentName,componentNamePattern,ensur
 import {pagePropertyContract,conditionSettings,recordFieldSettings,recordSectionSettings} from './page-property-contract.js';
 
 /** One interoperable format for Page Builder inventory export and guarded draft import. */
-/** Keep the first four columns stable for existing imports. The fifth is a display hint. */
-export const INVENTORY_COLUMNS=['pageapi','component_name','component_property','value'] as const;
+/** Type and custom name are independent CSV identity columns. Ribbon Tab is display-only. */
+export const INVENTORY_COLUMNS=['pageapi','component_type','component_name','propertyid','value'] as const;
 export const INVENTORY_EXPORT_COLUMNS=[...INVENTORY_COLUMNS,'ribbon_tab'] as const;
-export type InventoryIssue={row:number;pageapi?:string;component_name:string;component_property:string;value?:string;remark:string};
+const LEGACY_INVENTORY_COLUMNS=['pageapi','component_name','component_property','value'] as const;
+export type InventoryIssue={row:number;pageapi?:string;component_type?:string;component_name:string;component_property:string;value?:string;remark:string};
 type Block={id:string;type:string;label:string;region?:string;visible:boolean;
  position?:{x:number;y:number;width:number;height:number};
  properties:Record<string,unknown>};
 export type InventoryPage={apiName:string;draftRevision?:number;layoutMode?:string;canvasWidth?:number;canvasHeight?:number;components:Block[];[key:string]:unknown};
 export type InventoryRibbonProperty={
  id:string;tab:string;kind:string;defaultValue?:unknown;valueKey?:string;
+ choices?:string[];min?:number;max?:number;
 };
 export type InventoryDefinitions=Map<string,ComponentSettingDefinition[]> & {
  /** Enabled SQL Ribbon rules, keyed by a published component API name. */
  ribbonProperties?:Map<string,InventoryRibbonProperty[]>;
  /** True when the complete SQL-backed property inventory has been read. */
  completeCatalog?:boolean;
+ /** Only explicitly enabled tenant component registrations can be created. */
+ installedTypes?:Set<string>;
 };
 type Definitions=InventoryDefinitions;
+const componentApi=(type:string)=>type.startsWith('Custom:')?type.slice(7):type;
+const componentType=(api:string)=>'Custom:'+api;
+const validComponentApi=(api:string)=>/^[A-Za-z][A-Za-z0-9_]{0,127}$/.test(api);
 const unsafe=new Set(['__proto__','prototype','constructor']);
 // Internal hierarchy links and obsolete Advanced placeholders are not user-editable
 // component properties. Their saved SQL values remain untouched by inventory import.
-const excludedInventoryProperties=new Set(['cssClass','allowedChildTypes','maxChildren','layoutParentId','parentId','navigatorName']);
+const excludedInventoryProperties=new Set(['cssClass','allowedChildTypes','maxChildren','layoutParentId','parentId','navigatorName','libraryComponentId']);
 const inventoryPropertyAllowed=(key:string)=>!excludedInventoryProperties.has(key);
 /** Existing shared Page Runtime metadata, present independently of a component's
  * optional SQL Ribbon slots. Do not invent per-page keys from saved values. */
@@ -85,44 +92,56 @@ function pathValue(source:Record<string,unknown>,path:string):unknown{
 const effective=(saved:unknown,defaultValue:unknown):unknown=>
  saved===undefined||saved===null||saved===''?defaultValue??saved:saved;
 
+/** SQL defines tenant availability and component/ribbon applicability.
+ * Published library contracts supplement shared UI property definitions.
+ */
 export async function inventoryDefinitions(db:SqlPersistence,tenant:string,
  components:readonly Block[],variant:PageLayoutVariant,extraTypes:readonly string[]=[]):Promise<Definitions>{
  const names=[...new Set([...components.map(c=>c.type),...extraTypes]
-   .filter(type=>/^Custom:[A-Za-z][A-Za-z0-9_]{0,127}$/.test(type))
-   .map(type=>type.slice(7)))];
+  .map(componentApi).filter(validComponentApi))];
  const definitions=new Map<string,ComponentSettingDefinition[]>() as Definitions;
  definitions.completeCatalog=true;
- if(!names.length)return definitions;
+ definitions.installedTypes=new Set();
+ if(!names.length){definitions.ribbonProperties=new Map();return definitions;}
+ const available=await db.query<{api_name:string}>(`
+  SELECT api_name FROM md_component_definitions
+  WHERE tenant_id=$1 AND enabled=true AND api_name=ANY($2::text[])`,[tenant,names]);
+ const installed=available.rows.map(row=>row.api_name);
+ definitions.installedTypes=new Set(installed.map(componentType));
+ if(!installed.length){definitions.ribbonProperties=new Map();return definitions;}
  const [published,ribbons]=await Promise.all([
-  db.query<{component_api:string;published_version:number}>(
-   'SELECT component_api,published_version FROM md_component_library_heads WHERE tenant_id=$1 AND component_api=ANY($2::text[]) AND published_version IS NOT NULL',
-   [tenant,names]),
-  // Same source as /api/metadata/builder-ribbon: global properties and only
-  // enabled rules. A disabled/unsupported control is never exported as editable.
+  db.query<{component_api:string;published_version:number}>(`
+   SELECT component_api,published_version FROM md_component_library_heads
+   WHERE tenant_id=$1 AND component_api=ANY($2::text[]) AND published_version IS NOT NULL`,
+   [tenant,installed]),
   db.query<{component_api:string;property_key:string;tab:string;kind:string;
-   default_value:unknown;value_key:string|null}>(`
+   default_value:unknown;value_key:string|null;choices:unknown;min_value:number|null;max_value:number|null}>(`
    SELECT r.component_api,p.property_key,p.tab,
      COALESCE(r.control_kind_override,p.control_kind) AS kind,
      COALESCE(r.default_value_override,p.default_value) AS default_value,
-     r.value_key
+     r.value_key,COALESCE(r.choices_override,p.choices) AS choices,p.min_value,p.max_value
    FROM md_builder_ribbon_component_rules r
    JOIN md_builder_shared_properties p ON p.property_key=r.property_key
    WHERE r.enabled=true AND p.scope='component'
+     AND p.control_kind NOT IN ('command','readonly')
      AND r.component_api=ANY($1::text[])
-   ORDER BY p.sort_order,p.property_key`,[names])
+   ORDER BY p.sort_order,p.property_key`,[installed])
  ]);
+ for(const api of installed)definitions.set(componentType(api),[]);
  for(const row of published.rows){
   const contract=await readComponentContract(db,tenant,row.component_api,row.published_version);
-  definitions.set('Custom:'+row.component_api,availableComponentSettings(
+  definitions.set(componentType(row.component_api),availableComponentSettings(
    contract.propertyDefinitions??[],variant,row.published_version));
  }
  const ribbonProperties=new Map<string,InventoryRibbonProperty[]>();
  for(const item of ribbons.rows){
-  const type='Custom:'+item.component_api;
+  const type=componentType(item.component_api);
   if(!ribbonProperties.has(type))ribbonProperties.set(type,[]);
   if(!inventoryPropertyAllowed(item.property_key))continue;
   ribbonProperties.get(type)!.push({id:item.property_key,tab:item.tab,kind:item.kind,
-   defaultValue:item.default_value??undefined,valueKey:item.value_key??undefined});
+   defaultValue:item.default_value??undefined,valueKey:item.value_key??undefined,
+   choices:Array.isArray(item.choices)?item.choices.filter((x):x is string=>typeof x==='string'):[],
+   min:item.min_value??undefined,max:item.max_value??undefined});
  }
  definitions.ribbonProperties=ribbonProperties;
  return definitions;
@@ -134,8 +153,6 @@ export function exportInventoryCsv(page:InventoryPage,definitions:Definitions=ne
  const names=componentInstanceNames(page.components);
  for(const component of page.components){
   const values=new Map<string,{value:unknown;tab:string}>([
-   ['component.id',{value:component.id,tab:'Advanced'}],
-   ['component.type',{value:component.type,tab:'Advanced'}],
    ['component.visible',{value:component.visible,tab:'View'}],
    ['component.region',{value:component.region??'main',tab:'Layout'}],
    ['component.position.x',{value:component.position?.x,tab:'Layout'}],
@@ -164,14 +181,15 @@ export function exportInventoryCsv(page:InventoryPage,definitions:Definitions=ne
     tab:descriptor.tab});
   }
   for(const [key,{value,tab}] of values)
-   rows.push([page.apiName,names.get(component.id),key,valueText(value),tab]);
+   rows.push([page.apiName,componentApi(component.type),names.get(component.id),key,valueText(value),tab]);
  }
  return inventoryCsv(rows);
 }
 type CsvRow={line:number;cells:string[]};
-function parseCsv(text:string):{rows:CsvRow[];issues:InventoryIssue[];columns:number}{
+type CsvFormat='typed'|'legacy';
+function parseCsv(text:string):{rows:CsvRow[];issues:InventoryIssue[];columns:number;format:CsvFormat}{
  const issues:InventoryIssue[]=[];
- if(text.length>1800000)return {rows:[],columns:4,issues:[{row:1,component_name:'',component_property:'',remark:'CSV exceeds the 1.8 MB import limit'}]};
+ if(text.length>1800000)return {rows:[],columns:5,format:'typed',issues:[{row:1,component_name:'',component_property:'',remark:'CSV exceeds the 1.8 MB import limit'}]};
  const rows:CsvRow[]=[],current:string[]=[];
  let cell='',quoted=false,afterQuote=false,line=1,start=1;
  const finishCell=()=>{current.push(cell);cell='';afterQuote=false;};
@@ -206,13 +224,15 @@ function parseCsv(text:string):{rows:CsvRow[];issues:InventoryIssue[];columns:nu
  if(current.length||cell)finishRow();
  if(!rows.length)issues.push({row:1,component_name:'',component_property:'',remark:'CSV is empty'});
  const header=rows[0]?.cells.map((v,i)=>i===0?v.replace(/^\uFEFF/,'').trim().toLowerCase():v.trim().toLowerCase())??[];
- const validBase=header.slice(0,4).every((value,i)=>value===INVENTORY_COLUMNS[i]);
- const columns=header.length===5&&validBase&&header[4]==='ribbon_tab'?5:4;
- if(!rows.length||!validBase||header.length!==columns||
-   columns===4&&header.length!==INVENTORY_COLUMNS.length)
-  if(rows.length)issues.push({row:rows[0].line,component_name:'',component_property:'',
-   remark:'Expected CSV columns: '+INVENTORY_COLUMNS.join(',')+'[,ribbon_tab]'});
- return {rows:rows.slice(1),issues,columns};
+ const typed=header.length>=5&&header.slice(0,5).every((value,i)=>value===INVENTORY_COLUMNS[i])&&
+  (header.length===5||header.length===6&&header[5]==='ribbon_tab');
+ const legacy=header.length>=4&&header.slice(0,4).every((value,i)=>value===LEGACY_INVENTORY_COLUMNS[i])&&
+  (header.length===4||header.length===5&&header[4]==='ribbon_tab');
+ const format:CsvFormat=typed?'typed':'legacy';
+ const columns=typed||legacy?header.length:format==='typed'?5:4;
+ if(!typed&&!legacy&&rows.length)issues.push({row:rows[0].line,component_name:'',component_property:'',
+  remark:'Expected CSV columns: '+INVENTORY_COLUMNS.join(',')+'[,ribbon_tab]'});
+ return {rows:rows.slice(1),issues,columns,format};
 }
 function lookupSchema(defs:readonly ComponentSettingDefinition[],parts:readonly string[]):ComponentSettingDefinition|undefined{
  let current=defs,found:ComponentSettingDefinition|undefined;
@@ -250,130 +270,163 @@ function parsedValue(input:string,original:unknown,kind?:string):unknown{
  }
  return input;
 }
-/** Only published library types explicitly declared by a CSV can create instances. */
+/** Resolve installed component APIs ahead of importer validation. */
 export function inventoryRequestedTypes(csv:string):string[]{
- const {rows,columns,issues}=parseCsv(csv);
+ const {rows,columns,issues,format}=parseCsv(csv);
  if(issues.length)return [];
- return [...new Set(rows.filter(r=>r.cells.length===columns&&r.cells[2].trim()==='component.type')
-  .map(r=>r.cells[3].trim()).filter(v=>/^Custom:[A-Za-z][A-Za-z0-9_]{0,127}$/.test(v)))].slice(0,100);
+ const candidates=rows.filter(row=>row.cells.length===columns);
+ const types=format==='typed'?candidates.map(row=>row.cells[1].trim()):
+  candidates.filter(row=>row.cells[2].trim()==='component.type').map(row=>row.cells[3].trim());
+ return [...new Set(types.map(componentApi).filter(validComponentApi).map(componentType))].slice(0,100);
 }
+type ImportedRow={row:CsvRow;api:string;type:string;name:string;property:string;value:string};
 export function applyInventoryCsv(page:InventoryPage,csv:string,definitions:Definitions=new Map()){
- const {rows,issues,columns}=parseCsv(csv);
+ const {rows,issues,columns,format}=parseCsv(csv);
+ const entries:ImportedRow[]=rows.map(row=>({
+  row,api:row.cells[0]??'',type:format==='typed'?row.cells[1]??'':'',
+  name:row.cells[format==='typed'?2:1]??'',
+  property:row.cells[format==='typed'?3:2]??'',
+  value:row.cells[format==='typed'?4:3]??''
+ }));
  const copy=structuredClone(page);
  const names=componentInstanceNames(copy.components);
  const byName=new Map([...copy.components].map(c=>[canonicalComponentName(names.get(c.id)!),c]));
  const byId=new Map(copy.components.map(c=>[c.id,c]));
- const seen=new Set<string>();
+ const seen=new Set<string>(),rejectedNames=new Set<string>();
  let changes=0,skipped=0;
- const report=(row:CsvRow,remark:string)=>issues.push({
-  row:row.line,pageapi:row.cells[0]??'',component_name:row.cells[1]??'',
-  component_property:row.cells[2]??'',value:row.cells[3]??'',remark
+ const report=(entry:ImportedRow,remark:string)=>issues.push({
+  row:entry.row.line,pageapi:entry.api,component_type:entry.type,
+  component_name:entry.name,component_property:entry.property,value:entry.value,remark
  });
- // Resolve every intended upsert before interpreting its individual properties.
- // A missing name requires an explicit published component.type declaration.
- for(const row of rows){
+ const legacyTypes=new Map<string,string>();
+ if(format==='legacy')for(const entry of entries){
+  if(entry.property.trim()==='component.type'){
+   const key=canonicalComponentName(entry.name),previous=legacyTypes.get(key);
+   if(previous&&previous!==entry.value.trim())report(entry,'Conflicting component types for one name');
+   else legacyTypes.set(key,entry.value.trim());
+  }
+ }
+ // Resolve every instance once before applying properties. Order is irrelevant.
+ for(const entry of entries){
   if(issues.length>=500)break;
-  const [api,name]=row.cells;
-  if(row.cells.length!==columns||api?.trim()!==page.apiName||!name?.trim())continue;
-  const key=canonicalComponentName(name);
-  if(byId.has(name)||byName.has(key))continue;
-  if(!componentNamePattern.test(name)){
-   report(row,'New component names must start with a letter and use letters, numbers or underscores (max 80)');
-   continue;
+  if(entry.row.cells.length!==columns||entry.api.trim()!==page.apiName||!entry.name.trim())continue;
+  const key=canonicalComponentName(entry.name);
+  if(byName.has(key)||format==='legacy'&&byId.has(entry.name)||rejectedNames.has(key))continue;
+  if(!componentNamePattern.test(entry.name)){
+   report(entry,'New component name must begin with a letter (max 80 characters)');
+   rejectedNames.add(key);continue;
   }
-  const declared=rows.filter(candidate=>candidate.cells.length===columns&&candidate.cells[0].trim()===page.apiName
-   &&canonicalComponentName(candidate.cells[1])===key&&candidate.cells[2].trim()==='component.type');
-  if(!declared.length){report(row,'Component does not exist. Add a component.type row with a published Custom: component type to create it.');continue;}
-  const type=declared[0].cells[3].trim();
-  if(!/^Custom:[A-Za-z][A-Za-z0-9_]{0,127}$/.test(type)||!definitions.has(type)){
-   report(declared[0],'Cannot create component: component.type is not a published tenant component');
-   continue;
+  const rawType=format==='typed'?entry.type.trim():legacyTypes.get(key)??'';
+  const api=componentApi(rawType);
+  if(!rawType||!validComponentApi(api)){
+   report(entry,format==='legacy'
+    ?'Component does not exist. Add a component.type row with a valid Custom: component type.'
+    :'Component type is missing or invalid');
+   rejectedNames.add(key);continue;
   }
-  if(copy.components.length>=400){report(row,'This Page layout cannot contain more than 400 components');continue;}
+  const type=componentType(api);
+  if(!definitions.has(type)||(definitions.completeCatalog&&definitions.installedTypes&&
+      !definitions.installedTypes.has(type))){
+   report(entry,'Component type is not enabled for this tenant or has no installed metadata');
+   rejectedNames.add(key);continue;
+  }
+  if(copy.components.length>=400){
+   report(entry,'Page layout cannot contain more than 400 components');rejectedNames.add(key);continue;
+  }
   const canvas=page.layoutMode==='free-canvas';
-  const component:Block={
-   id:'import-'+randomUUID(),type,label:type.slice(7),region:'main',visible:true,
-   properties:{navigatorName:name,libraryComponentId:type.slice(7)},
+  const component:Block={id:'import-'+randomUUID(),type,label:api,region:'main',visible:true,
+   properties:{navigatorName:entry.name,libraryComponentId:api},
    ...(canvas?{position:{x:0,y:0,width:Math.min(page.canvasWidth??1440,320),
     height:Math.min(page.canvasHeight??900,180)}}:{})
   };
-  copy.components.push(component);
-  byName.set(key,component);byId.set(component.id,component);changes++;
+  copy.components.push(component);byName.set(key,component);byId.set(component.id,component);changes++;
  }
- for(const row of rows){
+ for(const entry of entries){
   if(issues.length>=500)break;
-  const [api,componentName,rawProperty,value]=row.cells;
-  if(row.cells.length!==columns){report(row,'Expected '+columns+' CSV columns');continue;}
-  if(api?.trim()!==page.apiName){report(row,'Page API does not match selected page: '+page.apiName);continue;}
-  const component=byId.get(componentName)??byName.get(canonicalComponentName(componentName));
+  if(entry.row.cells.length!==columns){report(entry,'Expected '+columns+' CSV columns');continue;}
+  if(entry.api.trim()!==page.apiName){report(entry,'Page API does not match selected page: '+page.apiName);continue;}
+  const component=byName.get(canonicalComponentName(entry.name))??
+   (format==='legacy'?byId.get(entry.name):undefined);
   if(!component){
-   // The pre-pass already provided the most useful missing/create error.
-   if(!issues.some(issue=>issue.component_name===componentName))
-    report(row,'Component not found or could not be created: '+componentName);
+   if(!issues.some(issue=>issue.component_name===entry.name))
+    report(entry,'Component not found or could not be created: '+entry.name);
    continue;
   }
-  const property=rawProperty?.trim();
-  if(!property){report(row,'Component property is required');continue;}
+  if(format==='typed'){
+   const requested=componentApi(entry.type.trim());
+   if(requested!==componentApi(component.type)){
+    report(entry,'Component type mismatch: existing instance is '+componentApi(component.type));continue;
+   }
+  }
+  const property=entry.property.trim();
+  if(!property){report(entry,'Property ID is required');continue;}
   const pair=component.id+'\u0000'+property;
-  if(seen.has(pair)){report(row,'Duplicate component property in CSV');continue;}
+  if(seen.has(pair)){report(entry,'Duplicate component property in CSV');continue;}
   seen.add(pair);
-  // Blank cells and missing property rows do not change existing metadata.
-  if(value.trim()===''){skipped++;continue;}
+  if(entry.value.trim()===''){skipped++;continue;}
+  const value=entry.value;
   if(property.startsWith('component.')){
    const name=property.slice('component.'.length);
    if(name==='type'){
-    if(value!==component.type)report(row,'Component type cannot be changed. Use the published type when creating a component.');
+    if(format==='typed')report(entry,'Component type belongs in component_type, not propertyid');
+    else if(value!==component.type)report(entry,'Component type cannot be changed');
    }else if(name==='id'){
-    if(value!==component.id)report(row,'Component ID is immutable. Clear component.id when copying rows to create a new component.');
+    if(format==='typed')report(entry,'Component ID is immutable; use the custom component name');
+    else if(value!==component.id)report(entry,'Component ID is immutable');
    }else if(name==='label'){
-    if(value.length>200){report(row,'Component label exceeds 200 characters');continue;}
+    if(value.length>200){report(entry,'Component label exceeds 200 characters');continue;}
     if(component.label!==value){component.label=value;changes++;}
    }else if(name==='visible'){
-    if(!/^(true|false)$/i.test(value.trim())){report(row,'Visibility must be true or false');continue;}
+    if(!/^(true|false)$/i.test(value.trim())){report(entry,'Visibility must be true or false');continue;}
     const next=value.trim().toLowerCase()==='true';
     if(component.visible!==next){component.visible=next;changes++;}
    }else if(name==='region'){
-    if(!['header','main','sidebar'].includes(value.trim())){report(row,'Invalid component region');continue;}
+    if(!['header','main','sidebar'].includes(value.trim())){report(entry,'Invalid component region');continue;}
     if(component.region!==value.trim()){component.region=value.trim();changes++;}
    }else if(name.startsWith('position.')){
     const coord=name.slice('position.'.length);
-    if(!['x','y','width','height'].includes(coord)){report(row,'Unknown component position property');continue;}
-    if(!component.position){report(row,'Component has no editable canvas position on this layout');continue;}
+    if(!['x','y','width','height'].includes(coord)){report(entry,'Unknown canvas position property');continue;}
+    if(!component.position){report(entry,'Component has no editable canvas position on this layout');continue;}
     const number=Number(value.trim());
     if(!Number.isFinite(number)||Math.abs(number)>100000||(['width','height'].includes(coord)&&number<=0)){
-     report(row,'Canvas position must be a finite number; width and height must be positive');continue;
+     report(entry,'Canvas position must be a finite number; width and height must be positive');continue;
     }
     const pos=component.position as unknown as Record<string,number>;
     if(pos[coord]!==number){pos[coord]=number;changes++;}
-   }else report(row,'Unknown or protected component property');
+   }else report(entry,'Unknown or protected component property');
    continue;
   }
   const path=property.startsWith('properties.')?property.slice(11):property;
   const parts=safeParts(path);
-  if(!parts){report(row,'Invalid property path');continue;}
+  if(!parts){report(entry,'Invalid property path');continue;}
   if(!inventoryPropertyAllowed(parts[0])){
-   report(row,'This property is internal or retired and cannot be changed by CSV');continue;
+   report(entry,'This property is internal or retired and cannot be changed by CSV');continue;
   }
   const schema=lookupSchema([
    ...(definitions.get(component.type)??[]),...pageSettingsFor(component.type)],parts);
   const ribbon=parts.length===1?definitions.ribbonProperties?.get(component.type)?.find(item=>item.id===parts[0]):undefined;
-  // Stable CSV ID -> one shared Ribbon rule -> actual saved property key.
   const storageParts=ribbon?.valueKey?safeParts(ribbon.valueKey):parts;
-  if(!storageParts){report(row,'Invalid shared Ribbon property storage path');continue;}
+  if(!storageParts){report(entry,'Invalid shared Ribbon property storage path');continue;}
   const original=pathValue(component.properties??{},storageParts.join('.'));
   const hasPublishedCatalog=Boolean(definitions.completeCatalog&&component.type.startsWith('Custom:')&&
-    ((definitions.ribbonProperties?.get(component.type)?.length??0)>0||
-     (definitions.get(component.type)?.length??0)>0));
+   ((definitions.ribbonProperties?.get(component.type)?.length??0)>0||
+    (definitions.get(component.type)?.length??0)>0));
   if(!schema&&!ribbon&&(original===undefined||hasPublishedCatalog)){
-   report(row,'Unknown or disabled component metadata property');continue;
+   report(entry,'Unknown or disabled component metadata property');continue;
   }
   try{
    const next=parsedValue(value,original,schema?.kind??ribbon?.kind);
    const schemaIssue=schema?componentSettingIssues(schema,next,property)[0]:undefined;
-   if(schemaIssue){report(row,schemaIssue.path+': '+schemaIssue.message);continue;}
+   if(schemaIssue){report(entry,schemaIssue.path+': '+schemaIssue.message);continue;}
+   if(ribbon?.choices?.length&&!ribbon.choices.includes(String(next))){
+    report(entry,'Choose a listed option for '+property);continue;
+   }
+   if((ribbon?.kind==='number'||ribbon?.kind==='position')&&typeof next==='number'&&
+      (ribbon.min!==undefined&&next<ribbon.min||ribbon.max!==undefined&&next>ribbon.max)){
+    report(entry,'Enter a number within the allowed range');continue;
+   }
    const defaultValue=ribbon?.defaultValue??schema?.defaultValue;
-   // A downloaded effective default is not an authored override.
-   // Check BEFORE creating nested parents to keep a no-op import truly pure.
+   // Importing a complete export must not turn defaults into explicit overrides.
    if((original===undefined||original===null||original==='')&&
     defaultValue!==undefined&&JSON.stringify(next)===JSON.stringify(defaultValue)){
     skipped++;continue;
@@ -387,9 +440,9 @@ export function applyInventoryCsv(page:InventoryPage,csv:string,definitions:Defi
     else if(!isPlain(candidate)){missingParent=true;break;}
     target=target[segment] as Record<string,unknown>;
    }
-   if(missingParent){report(row,'Nested component property does not exist');continue;}
+   if(missingParent){report(entry,'Nested component property does not exist');continue;}
    target[storageParts[storageParts.length-1]]=next;changes++;
-  }catch(error){report(row,error instanceof Error?error.message:'Invalid component property value');}
+  }catch(error){report(entry,error instanceof Error?error.message:'Invalid component property value');}
  }
  if(issues.length===0&&changes>0)copy.components=ensureComponentInstanceNames(copy.components);
  issues.sort((a,b)=>a.row-b.row);

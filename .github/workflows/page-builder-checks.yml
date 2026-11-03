@@ -6,6 +6,9 @@ on:
     paths:
       - 'apps/web/**'
       - 'apps/acetill/**'
+      - 'apps/server/src/system-support/page-inventory-csv.ts'
+      - 'apps/server/src/api/PageApiController.ts'
+      - 'apps/server/test/system/page-inventory-csv.test.ts'
       - 'scripts/**'
       - 'package.json'
       - 'package-lock.json'
@@ -16,6 +19,9 @@ on:
     paths:
       - 'apps/web/**'
       - 'apps/acetill/**'
+      - 'apps/server/src/system-support/page-inventory-csv.ts'
+      - 'apps/server/src/api/PageApiController.ts'
+      - 'apps/server/test/system/page-inventory-csv.test.ts'
       - 'scripts/**'
       - 'package.json'
       - 'package-lock.json'
@@ -49,6 +55,10 @@ jobs:
         run: npm run audit:architecture
       - name: Check Page Builder and UNE component contracts
         run: npm run test:components
+      - name: Check page inventory CSV upsert contracts
+        run: npx tsx --test apps/server/test/system/page-inventory-csv.test.ts
+      - name: Build production server
+        run: npm run build --workspace apps/server
       - name: Check metadata binding regressions
         run: npm run test:metadata
       - name: Check shared canvas movement, resize and overflow regressions
