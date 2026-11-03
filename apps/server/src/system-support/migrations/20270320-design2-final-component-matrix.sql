@@ -47,6 +47,7 @@ VALUES
  ('smart_lookup','Body',1,'bold_3_3',3,3,40,26,'headerBold','headerBold'),
  ('smart_tabs','Body',1,'body_color_1_1',1,1,40,26,'tabColor','backgroundColor'),
  ('smart_tabs','Body',1,'label_color_3_1',3,1,40,26,'labelColor','labelColor'),
+ ('smart_tabs','Body',1,'focus_color_2_1',2,1,40,26,'selectedTabColor','selectedRowColor'),
  ('smart_tabs','Body',1,'shadow_2_2',2,2,40,26,'shadow','shadow'),
  ('smart_tabs','Body',1,'border_color_1_2',1,2,40,26,'borderColor','borderColor'),
  ('smart_tabs','Body',1,'corner_radius_1_5',1,5,80,26,'radius','radius'),
