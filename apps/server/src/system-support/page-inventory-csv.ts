@@ -152,9 +152,9 @@ export function exportInventoryCsv(page:InventoryPage,definitions:Definitions=ne
  return inventoryCsv(rows);
 }
 type CsvRow={line:number;cells:string[]};
-function parseCsv(text:string):{rows:CsvRow[];issues:InventoryIssue[]}{
+function parseCsv(text:string):{rows:CsvRow[];issues:InventoryIssue[];columns:number}{
  const issues:InventoryIssue[]=[];
- if(text.length>700000)return {rows:[],issues:[{row:1,component_name:'',component_property:'',remark:'CSV exceeds the 700 KB import limit'}]};
+ if(text.length>700000)return {rows:[],columns:4,issues:[{row:1,component_name:'',component_property:'',remark:'CSV exceeds the 700 KB import limit'}]};
  const rows:CsvRow[]=[],current:string[]=[];
  let cell='',quoted=false,afterQuote=false,line=1,start=1;
  const finishCell=()=>{current.push(cell);cell='';afterQuote=false;};
@@ -188,13 +188,14 @@ function parseCsv(text:string):{rows:CsvRow[];issues:InventoryIssue[]}{
  if(quoted)issues.push({row:start,component_name:'',component_property:'',remark:'Unclosed quoted CSV value'});
  if(current.length||cell)finishRow();
  if(!rows.length)issues.push({row:1,component_name:'',component_property:'',remark:'CSV is empty'});
- else{
-  const header=rows[0].cells.map((v,i)=>i===0?v.replace(/^\uFEFF/,'').trim().toLowerCase():v.trim().toLowerCase());
-  if(header.length!==4||header.some((value,i)=>value!==INVENTORY_COLUMNS[i]))
-   issues.push({row:rows[0].line,component_name:'',component_property:'',
-    remark:'Expected CSV columns: '+INVENTORY_COLUMNS.join(',')});
- }
- return {rows:rows.slice(1),issues};
+ const header=rows[0]?.cells.map((v,i)=>i===0?v.replace(/^\uFEFF/,'').trim().toLowerCase():v.trim().toLowerCase())??[];
+ const validBase=header.slice(0,4).every((value,i)=>value===INVENTORY_COLUMNS[i]);
+ const columns=header.length===5&&validBase&&header[4]==='ribbon_tab'?5:4;
+ if(!rows.length||!validBase||header.length!==columns||
+   columns===4&&header.length!==INVENTORY_COLUMNS.length)
+  if(rows.length)issues.push({row:rows[0].line,component_name:'',component_property:'',
+   remark:'Expected CSV columns: '+INVENTORY_COLUMNS.join(',')+'[,ribbon_tab]'});
+ return {rows:rows.slice(1),issues,columns};
 }
 function lookupSchema(defs:readonly ComponentSettingDefinition[],parts:readonly string[]):ComponentSettingDefinition|undefined{
  let current=defs,found:ComponentSettingDefinition|undefined;
@@ -210,18 +211,19 @@ function lookupSchema(defs:readonly ComponentSettingDefinition[],parts:readonly 
 }
 function parsedValue(input:string,original:unknown,kind?:string):unknown{
  const trimmed=input.trim();
- if(typeof original==='number'||kind==='NUMBER'||kind==='CURRENCY'){
+ if(typeof original==='number'||kind==='NUMBER'||kind==='CURRENCY'||kind==='number'){
   const number=Number(trimmed);
   if(!trimmed||!Number.isFinite(number))throw Error('Enter a finite numeric value');
   return number;
  }
- if(typeof original==='boolean'||kind==='BOOLEAN'){
+ if(kind==='position'&&trimmed&&Number.isFinite(Number(trimmed)))return Number(trimmed);
+ if(typeof original==='boolean'||kind==='BOOLEAN'||kind==='boolean'){
   if(trimmed.toLowerCase()==='true')return true;
   if(trimmed.toLowerCase()==='false')return false;
   throw Error('Enter true or false');
  }
  const list=['COLLECTION','STRING_LIST','FIELD_LIST','COLUMNS','OPTIONS','RECORD_LIST'];
- if(Array.isArray(original)||kind&&list.includes(kind)){
+ if(Array.isArray(original)||kind==='weekdays'||kind&&list.includes(kind)){
   try{const value=JSON.parse(input);if(Array.isArray(value))return value;}catch{}
   throw Error('Enter a valid JSON array');
  }
@@ -233,12 +235,13 @@ function parsedValue(input:string,original:unknown,kind?:string):unknown{
 }
 /** Only published library types explicitly declared by a CSV can create instances. */
 export function inventoryRequestedTypes(csv:string):string[]{
- const {rows}=parseCsv(csv);
- return [...new Set(rows.filter(r=>r.cells.length===4&&r.cells[2].trim()==='component.type')
+ const {rows,columns,issues}=parseCsv(csv);
+ if(issues.length)return [];
+ return [...new Set(rows.filter(r=>r.cells.length===columns&&r.cells[2].trim()==='component.type')
   .map(r=>r.cells[3].trim()).filter(v=>/^Custom:[A-Za-z][A-Za-z0-9_]{0,127}$/.test(v)))].slice(0,100);
 }
 export function applyInventoryCsv(page:InventoryPage,csv:string,definitions:Definitions=new Map()){
- const {rows,issues}=parseCsv(csv);
+ const {rows,issues,columns}=parseCsv(csv);
  const copy=structuredClone(page);
  const names=componentInstanceNames(copy.components);
  const byName=new Map([...copy.components].map(c=>[canonicalComponentName(names.get(c.id)!),c]));
@@ -254,14 +257,14 @@ export function applyInventoryCsv(page:InventoryPage,csv:string,definitions:Defi
  for(const row of rows){
   if(issues.length>=500)break;
   const [api,name]=row.cells;
-  if(row.cells.length!==4||api?.trim()!==page.apiName||!name?.trim())continue;
+  if(row.cells.length!==columns||api?.trim()!==page.apiName||!name?.trim())continue;
   const key=canonicalComponentName(name);
   if(byId.has(name)||byName.has(key))continue;
   if(!componentNamePattern.test(name)){
    report(row,'New component names must start with a letter and use letters, numbers or underscores (max 80)');
    continue;
   }
-  const declared=rows.filter(candidate=>candidate.cells.length===4&&candidate.cells[0].trim()===page.apiName
+  const declared=rows.filter(candidate=>candidate.cells.length===columns&&candidate.cells[0].trim()===page.apiName
    &&canonicalComponentName(candidate.cells[1])===key&&candidate.cells[2].trim()==='component.type');
   if(!declared.length){report(row,'Component does not exist. Add a component.type row with a published Custom: component type to create it.');continue;}
   const type=declared[0].cells[3].trim();
@@ -283,7 +286,7 @@ export function applyInventoryCsv(page:InventoryPage,csv:string,definitions:Defi
  for(const row of rows){
   if(issues.length>=500)break;
   const [api,componentName,rawProperty,value]=row.cells;
-  if(row.cells.length!==4){report(row,'Expected exactly four CSV columns');continue;}
+  if(row.cells.length!==columns){report(row,'Expected '+columns+' CSV columns');continue;}
   if(api?.trim()!==page.apiName){report(row,'Page API does not match selected page: '+page.apiName);continue;}
   const component=byId.get(componentName)??byName.get(canonicalComponentName(componentName));
   if(!component){
@@ -335,26 +338,39 @@ export function applyInventoryCsv(page:InventoryPage,csv:string,definitions:Defi
    report(row,'This property is internal or retired and cannot be changed by CSV');continue;
   }
   const schema=lookupSchema(definitions.get(component.type)??[],parts);
+  const ribbon=parts.length===1?definitions.ribbonProperties?.get(component.type)?.find(item=>item.id===parts[0]):undefined;
+  // CSV always addresses the stable Ribbon property ID. The existing Ribbon
+  // rule decides the saved value key (e.g. a component-specific alias).
+  const storageParts=ribbon?.valueKey?safeParts(ribbon.valueKey):parts;
+  if(!storageParts){report(row,'Invalid shared Ribbon property storage path');continue;}
   let target:Record<string,unknown>=component.properties??(component.properties={});
   let missingParent=false;
-  for(const segment of parts.slice(0,-1)){
+  for(const segment of storageParts.slice(0,-1)){
    const candidate=target[segment];
    if(candidate===undefined){
-    if(!schema){missingParent=true;break;}
+    if(!schema&&!ribbon){missingParent=true;break;}
     target[segment]={};
    }else if(!isPlain(candidate)){missingParent=true;break;}
    target=target[segment] as Record<string,unknown>;
   }
   if(missingParent){report(row,'Nested component property does not exist');continue;}
-  const key=parts[parts.length-1];
-  if(!Object.prototype.hasOwnProperty.call(target,key)&&!schema){
+  const key=storageParts[storageParts.length-1];
+  if(!Object.prototype.hasOwnProperty.call(target,key)&&!schema&&!ribbon){
    report(row,'Unknown component metadata property');continue;
   }
   try{
-   const next=parsedValue(value,target[key],schema?.kind);
+   const original=target[key];
+   const next=parsedValue(value,original,schema?.kind??ribbon?.kind);
    const schemaIssue=schema?componentSettingIssues(schema,next,property)[0]:undefined;
    if(schemaIssue){report(row,schemaIssue.path+': '+schemaIssue.message);continue;}
-   if(JSON.stringify(target[key])!==JSON.stringify(next)){target[key]=next;changes++;}
+   const defaultValue=ribbon?.defaultValue??schema?.defaultValue;
+   // Re-importing an untouched export must not convert inherited defaults
+   // into explicit overrides. The runtime remains the source of defaults.
+   if((original===undefined||original===null||original==='')&&
+     defaultValue!==undefined&&JSON.stringify(next)===JSON.stringify(defaultValue)){
+    skipped++;continue;
+   }
+   if(JSON.stringify(original)!==JSON.stringify(next)){target[key]=next;changes++;}
   }catch(error){report(row,error instanceof Error?error.message:'Invalid component property value');}
  }
  if(issues.length===0&&changes>0)copy.components=ensureComponentInstanceNames(copy.components);
