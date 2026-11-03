@@ -528,6 +528,13 @@ export function renderSetupShell(ctx: any) {
             onNotify={notify}
           />)}
           {route.kind === 'setup' && workspace === 'named-credentials' && (
+            route.resourceApiName==='NamedDevices'
+              ? <section className="setup-card md-access-locked" role="alert" aria-label="Named Devices access required">
+                  <h1>Named Devices</h1>
+                  <p>This workspace requires Read access to the Named Device object through your Profile or Permission Set.</p>
+                  <p>Contact your administrator to request access, then open Named Devices again.</p>
+                  <button type="button" className="btn" onClick={()=>navigateRoute({kind:'setup',workspace:'home'})}>Back to Setup</button>
+                </section> :
             !namedCredentialsLoaded ? <section className="setup-card" role="status">Loading live named credentials…</section> :
             namedCredentialsError && namedCredentials.length===0
               ? <section className="setup-card" role="alert">Named Credentials could not be verified: {namedCredentialsError}</section> :
