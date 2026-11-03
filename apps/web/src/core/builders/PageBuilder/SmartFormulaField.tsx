@@ -91,14 +91,20 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
  const recordMentions:{reference:string;label:string}[]=tableSourcePrompt&&matches
   ?tableSources.map(object=>({reference:'@'+object.apiName,label:object.label+' Object source'}))
   :tableObject&&matches
-  ?tableObject.fields.map(field=>({reference:'@'+field.apiName,label:tableObject.label+' → '+field.label}))
+  ?tableObject.fields.map(field=>({reference:field.apiName,label:tableObject.label+' → '+field.label}))
   :objects.length&&sourceRoots.length
   ?relationshipFormulaFields(objects,sourceRoots,matches?.query??'',mentionKind,singleFieldOnly)
     .map(({reference,label})=>({reference,label}))
   :fields.filter(field=>(!singleFieldOnly||/^(Checkbox|Boolean)$/i.test(field.dataType)))
     .map(field=>({reference:'@'+field.apiName,label:field.label}));
- const filtered=matches?[...recordMentions,...collectionMentions,...collectionNames,...stateMentions]
-    .filter(item=>item.reference.toLowerCase().includes('@'+matches.query.toLowerCase())||
+ // TABLE's first argument is an @Object. Subsequent arguments are bare
+ // field API names: TABLE(@Product,Name,Price). Do not show unrelated mentions.
+ const tableArg=Boolean(tableSourcePrompt||tableObject);
+ const availableMentions=tableArg?recordMentions:
+  [...recordMentions,...collectionMentions,...collectionNames,...stateMentions];
+ const filtered=matches?availableMentions
+    .filter(item=>item.reference.toLowerCase().includes(
+       (tableArg?'':'@')+matches.query.toLowerCase())||
       item.label.toLowerCase().includes(matches.query.toLowerCase()))
     .slice(0,200):[];
  const isFormulaDraft=(source:string)=>source.startsWith('=')||
@@ -125,6 +131,8 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
    const tablePart=!openString&&!mention
     ?/\bTABLE\s*\(\s*@[A-Za-z][A-Za-z0-9_]*\s*,([^)]*)$/i.exec(before):null;
    const last=tablePart?.[1].split(',').at(-1)?.trim()??'';
+   // Existing @Field spellings can still be edited, but selection inserts
+   // the canonical bare field name with no @.
    const tableField=tablePart&&/^@?[A-Za-z0-9_]*$/.test(last)
     ?{start:caret-last.length,end:caret,query:last.replace(/^@/,'')}:null;
    setMatches(mention?{start:caret-mention[0].length,end:caret,query:mention[1]}:tableField);
