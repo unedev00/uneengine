@@ -1,4 +1,4 @@
--- Design 2 ONLY: contextual property inventory transcribed from the approved 319-row
+-- Design 2 ONLY: contextual property inventory transcribed from the approved 319-row plus clarified selected tab Focus Fill
 -- specification. Design, Layout, renderer property values and tenant pages are unchanged.
 -- All 26px controls preserve the row/column/width from the provided spreadsheet.
 -- Unsupported runtime properties are visible but disabled rather than writing a
@@ -51,8 +51,9 @@ WITH input(component_api,area,area_order,slot_key,row_no,order_no,width_px,heigh
  ('smart_lookup','Body',1,'Shape',1,3,40,26,'shapeId','shapeId'),
  ('smart_lookup','Body',1,'Focus',2,1,40,26,'selectedRowColor','selectedRowColor'),
  ('smart_lookup','Body',1,'Bold',3,3,40,26,'headerBold','headerBold'),
- ('smart_tabs','Body',1,'Body Color',1,1,40,26,'backgroundColor','backgroundColor'),
+ ('smart_tabs','Body',1,'Body Color',1,1,40,26,'tabColor','backgroundColor'),
  ('smart_tabs','Body',1,'Label Color',3,1,40,26,'labelColor','labelColor'),
+ ('smart_tabs','Body',1,'Focus Color',2,1,40,26,'selectedTabColor','selectedRowColor'),
  ('smart_tabs','Body',1,'Shadow',2,2,40,26,'shadow','shadow'),
  ('smart_tabs','Body',1,'Border color',1,2,40,26,'borderColor','borderColor'),
  ('smart_tabs','Body',1,'Corner Radius',1,5,80,26,'radius','radius'),
