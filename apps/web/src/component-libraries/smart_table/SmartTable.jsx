@@ -39,7 +39,7 @@ export default function SmartTable({p,records,expression,fieldAllowed,fire}){
   color:colour(p.headerTextColor,p.defaultValueColor||"#172a45"),
   borderBottom:border(p.headerBorderColor),
   textAlign:p.headerAlignment||p.labelAlignment||"left",
-  fontSize:finite(p.textSize,13,9,96),
+  fontSize:finite(p.headerTextSize??p.textSize,13,9,96),
   fontWeight:p.headerBold===false?400:700,
   whiteSpace:p.wrapText===false?"nowrap":"normal"
  };
@@ -47,7 +47,9 @@ export default function SmartTable({p,records,expression,fieldAllowed,fire}){
  const rowStyle=row=>({
   height:rowHeight,minHeight:rowHeight,
   color:colour(p.rowLabelColor,"#27374d"),
-  fontSize:13,
+  fontSize:finite(p.rowTextSize,13,8,96),
+  fontWeight:p.rowBold===true?700:undefined,
+  textAlign:p.rowAlignment||undefined,
   background:selected!==null&&String(row.Id??row.id)===selected
    ?colour(p.selectedRowColor,"#e7f1ff"):undefined
  });
@@ -75,6 +77,7 @@ export default function SmartTable({p,records,expression,fieldAllowed,fire}){
   minHeight:finite(p.summaryHeight,36,22,300),
   fontSize:finite(p.summaryTextSize,12,9,96),
   fontWeight:p.summaryTextWeight===true?700:400,
+  textAlign:p.summaryAlignment||undefined,
   border:border(p.summaryBorderColor),
   borderRadius:finite(p.summaryRadius,4,0,100),
   boxShadow:shadow(p.summaryShadow),
@@ -111,7 +114,7 @@ export default function SmartTable({p,records,expression,fieldAllowed,fire}){
           borderBottomLeftRadius:i===0?finite(p.rowRadius,0,0,100):undefined,
           borderTopRightRadius:i===columns.length-1&&!actions.length?finite(p.rowRadius,0,0,100):undefined,
           borderBottomRightRadius:i===columns.length-1&&!actions.length?finite(p.rowRadius,0,0,100):undefined,
-          textAlign:"left",height:rowHeight}}>
+          textAlign:p.rowAlignment||"left",height:rowHeight}}>
          {value(row,col)}</td>)}
        {actions.length>0&&<td className="smart-table-actions"
          style={{borderBottom:border(borderColor),
