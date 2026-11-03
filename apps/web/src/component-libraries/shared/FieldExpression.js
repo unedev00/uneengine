@@ -522,7 +522,10 @@ function parse(source,record,formulaContext){
     part.kind==='unary'?usesRowField(part.value):
     part.kind==='binary'?usesRowField(part.left)||usesRowField(part.right):
     part.kind==='call'&&part.name!=='SUM'?part.args.some(usesRowField):false;
-   if(Array.isArray(rows)&&usesRowField(operand)){
+   const direct=operand.kind==='reference'?evaluate(operand,currentRecord):null;
+   if(Array.isArray(direct)||(direct&&typeof direct==='object'&&Array.isArray(direct.items))){
+    result=sumFormulaCollection(direct,formulaContext.collectionSources);
+   }else if(Array.isArray(rows)&&usesRowField(operand)){
     if(rows.length>200)throw Error('SUM requires a bounded numeric collection');
     const values=rows.map(row=>{
      const value=evaluate(operand,row);
