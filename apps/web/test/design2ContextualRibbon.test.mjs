@@ -61,15 +61,18 @@ test('original Design is not changed or replaced',()=>{
  assert.doesNotMatch(sql,/DELETE FROM md_builder_shared_properties/i);
 });
 
-test('Design 2 uses current icon widgets, not alternate icons',()=>{
+test('Design 2 uses approved artwork and one three-row contextual layout',()=>{
  for(const component of ['RibbonColorPalette','SmartIconDropdown','SmartIconGallery','RibbonTextSizeIcon','RibbonCornerRadiusIcon'])
   assert.ok(shared.includes(component),component);
  assert.match(shared,/smart-design2-area-picker/);
- assert.match(shared,/<span aria-hidden="true">Select it<\/span>/);
- assert.match(shared,/\['shapeId','shapeFill'\]/);
+ assert.match(shared,/<span aria-hidden="true">Select<\/span>/);
+ assert.match(shared,/componentDesign2Slots=design2Slots.filter\(slot=>slot.componentApi===api\)/);
+ assert.match(shared,/\[1,2,3\]\.map\(row/);
  assert.match(shared,/sectionRow\(activeDesign2Area,row\)\.map\(controls\)/);
  assert.match(css,/smart-design2-ribbon/);
  assert.match(css,/26px/);
+ assert.match(css,/smart-design2-heading/);
+ assert.match(css,/design2-choice-popup/);
 });
 
 test('all newly exposed controls have real Cart/Table renderer hooks',()=>{
