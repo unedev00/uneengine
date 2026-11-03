@@ -354,7 +354,7 @@ export function applyInventoryCsv(page:InventoryPage,csv:string,definitions:Defi
   }
   if(format==='typed'){
    const requested=componentApi(entry.type.trim());
-   if(!validComponentApi(requested)||requested!==componentApi(component.type)){
+   if(requested!==componentApi(component.type)){
     report(entry,'Component type mismatch: existing instance is '+componentApi(component.type));continue;
    }
   }
