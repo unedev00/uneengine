@@ -246,7 +246,7 @@ test('CSV ignores Ribbon Tab values, validates by ID, and saves correctly typed 
  assert.equal(result.page.components[0].properties.wrapText,false);
  assert.equal(result.page.components[0].properties.calendarShadowColor,'large');
  assert.equal(result.page.components[0].properties.customCaption,'Named By User');
- assert.equal(inventoryRequestedTypes(csv5('CODEXTILL,smartbox4,component.type,Custom:smart_image,Ignored')),
+ assert.deepEqual(inventoryRequestedTypes(csv5('CODEXTILL,smartbox4,component.type,Custom:smart_image,Ignored')),
   ['Custom:smart_image']);
 });
 
