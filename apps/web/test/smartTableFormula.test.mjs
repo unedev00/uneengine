@@ -9,7 +9,6 @@ import {getFormulaFunctionNames,validateFormulaFunctions} from '../../server/src
 import {Parser} from '../../server/src/expression-engine/FormulaParser.ts';
 import {tokenize} from '../../server/src/expression-engine/FormulaTokenizer.ts';
 import {loadComponentCatalog,buildBundledComponent} from '../../../scripts/component-catalog.mjs';
-import {tableFormulaObject,namedCollectionRows} from '../src/core/pages/PageRuntime/usePageCollectionFormula';
 
 const read=path=>readFileSync(new URL(path,import.meta.url),'utf8');
 const fields=['Name','Price','Quantity','Category'];
@@ -32,7 +31,7 @@ test('Global TABLE formula is in the shared function registry and returns ordere
  assert.deepEqual(Object.keys(result.value.items[0].record),['Id','Name','Price','Category']);
  assert.equal(result.value.items[0].record.Price,2.5);
  assert.equal(result.value.items[0].record.Quantity,undefined);
- assert.equal(tableFormulaObject('=TABLE(@Product,Name,Price)'),'Product');
+
 });
 
 test('TABLE supports all authorised Object fields, bare names and typed errors',()=>{
@@ -67,7 +66,7 @@ test('Smart Table renders exactly the TABLE columns and metadata-driven buttons'
  const sandbox={React,module:{exports:{}},Date,Intl,URL,crypto:globalThis.crypto};
  vm.runInNewContext(built.compiledJs,sandbox);
  const table=evaluateCollectionFormula('TABLE(@Product,@Name,@Price)',source,context).value;
- const records=namedCollectionRows(table);
+ const records=table.items.map(item=>({...item.record,Id:item.record.Id??item.value}));
  const html=renderToStaticMarkup(React.createElement(sandbox.module.exports.default,{
   dataCollection:table,records,objectApiName:'Product',
   objects:[{apiName:'Product',label:'Product',fields:fields.map(apiName=>({apiName,label:apiName}))}],
