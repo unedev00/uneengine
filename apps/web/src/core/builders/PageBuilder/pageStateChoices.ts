@@ -22,6 +22,17 @@ export function pageStateChoices(components:readonly SourceComponent[]):PageStat
     const key=binding.actionType==='PageState'?binding.stateKey:undefined;
     if(typeof key==='string'&&/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(key))
       add({source:'PageState',key,label:key});
+    // Formula actions and Flow outputs also create declared page-state channels.
+    // Surface the same keys in the Formula Bar without exposing live values.
+    const formula=typeof binding.formula==='string'?binding.formula.trim():'';
+    const assigned=/^@state\.([A-Za-z][A-Za-z0-9_]{0,63})\s*:=/.exec(formula);
+    if(binding.actionType==='Formula'&&assigned)
+     add({source:'PageState',key:assigned[1],label:assigned[1]});
+    const outputs=binding.outputs;
+    if(outputs&&typeof outputs==='object'&&!Array.isArray(outputs))
+     for(const target of Object.values(outputs))
+      if(typeof target==='string'&&/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(target))
+       add({source:'PageState',key:target,label:target});
    }
   }
   const bindings=props.stateBindings;

@@ -289,7 +289,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
        <span className="smart-formula-prefix" title={title}>{shortLabel}</span>
        <SmartFormulaField value={String(value)} label={title} disabled={!enabled}
          fields={object?.fields??[]} objects={objects} rootObjectApiName={objectName}
-         selectedSourceObjects={sourceObjects} mentionKind="image"
+         selectedSourceObjects={sourceObjects} mentionKind="image" stateOptions={stateOptions}
          onChange={source=>{if(enabled)onChange({...properties,imageSource:source,imageSourceMode:'field'});}}/>
        {api==='smart_image'&&<button type="button" className="smart-filter-trigger"
          title="Upload image from this computer" aria-label="Upload image" disabled={uploadBusy||!enabled}

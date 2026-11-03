@@ -7,6 +7,7 @@ export default function SmartComponent(p){
  const expression=(value,row)=>typeof value==='string'
   ?evaluateFieldExpression(value,row,{
    rootObjectApiName:p.objectApiName,
+   pageState:p.pageState,sessionId:p.sessionId,
    collectionSources:p.formulaCollectionSources,
    namedCollections:p.namedCollections,
    namedCollectionSelections:p.pageState?.collectionSelections

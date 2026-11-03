@@ -2,6 +2,7 @@ import {useState,useRef,useEffect,useLayoutEffect,useId,type KeyboardEvent} from
 import {createPortal} from 'react-dom';
 import type {FieldMetadata,ObjectMetadata} from '../../metadata/Definitions/metadata';
 import {relationshipFormulaFields} from './relationshipFormulaFields';
+import {formulaDollarSuggestions} from './formulaDollarSuggestions';
 import {formulaSignatureAt} from './formulaSignatureHelp';
 import {Parser} from '../../../../../server/src/expression-engine/FormulaParser.js';
 import {tokenize} from '../../../../../server/src/expression-engine/FormulaTokenizer.js';
@@ -14,12 +15,12 @@ import type {MentionKind} from '../../../component-libraries/shared/primitives/S
  */
 export function splitSmartFormula(value:string){
  const parts:{value:string;kind:'field'|'string'|'operator'|'text'}[]=[];
- const token=/("(?:[^"]|"")*"|@[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)*|[+*\/&-])/g;
+ const token=/("(?:[^"]|"")*"|@[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)*|\$state\.[A-Za-z][A-Za-z0-9_]*|\$session|[+*\/&-])/g;
  let cursor=0;let match:RegExpExecArray|null;
  while((match=token.exec(value))){
   if(match.index>cursor)parts.push({value:value.slice(cursor,match.index),kind:'text'});
   parts.push({value:match[0],kind:match[0].startsWith('"')?'string':
-   match[0].startsWith('@')?'field':'operator'});
+   (match[0].startsWith('@')||match[0].startsWith('$'))?'field':'operator'});
   cursor=match.index+match[0].length;
  }
  if(cursor<value.length)parts.push({value:value.slice(cursor),kind:'text'});
@@ -35,7 +36,7 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
  const [draft,setDraft]=useState(value);
  const [validationError,setValidationError]=useState<string|null>(null);
  useEffect(()=>{setDraft(value);setValidationError(null)},[value]);
- const [matches,setMatches]=useState<{start:number;end:number;query:string}|null>(null);
+ const [matches,setMatches]=useState<{start:number;end:number;query:string;prefix:'@'|'$'|''}|null>(null);
  const [popup,setPopup]=useState<{top:number;left:number;width:number;above:boolean}|null>(null);
  const [caret,setCaret]=useState(value.length);
  const [focused,setFocused]=useState(false);
@@ -80,8 +81,8 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
   .map(entry=>({reference:'@'+entry.key,label:entry.label}));
  const collectionNames=[...new Set(stateOptions.filter(entry=>entry.source==='CollectionState')
   .map(entry=>entry.key.split('.')[0]))].map(name=>({reference:'@'+name,label:name+' Collection'}));
- const stateMentions=stateOptions.filter(entry=>entry.source==='PageState')
-  .map(entry=>({reference:'@state.'+entry.key,label:entry.label+' Page State'}));
+ const dollarMentions=matches?.prefix==='$'
+  ?formulaDollarSuggestions(stateOptions,matches.query):[];
  // Inside TABLE(@Object, ...), field choices follow that Object, not the
  // Page Builder's first object or another selected independent source.
  const tableOpen=/\bTABLE\s*\(\s*@([A-Za-z][A-Za-z0-9_]*)\s*,([^)]*)$/i.exec(draft.slice(0,caret));
@@ -100,14 +101,16 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
  // TABLE's first argument is an @Object. Subsequent arguments are bare
  // field API names: TABLE(@Product,Name,Price). Do not show unrelated mentions.
  const tableArg=Boolean(tableSourcePrompt||tableObject);
- const availableMentions=tableArg?recordMentions:
-  [...recordMentions,...collectionMentions,...collectionNames,...stateMentions];
+ const availableMentions=matches?.prefix==='$'
+  ?tableArg?[]:dollarMentions
+  :tableArg?recordMentions:[...recordMentions,...collectionMentions,...collectionNames];
  const filtered=matches?availableMentions
     .filter(item=>item.reference.toLowerCase().includes(
-       (tableArg?'':'@')+matches.query.toLowerCase())||
+       (matches.prefix==='$'?'$':tableArg?'':'@')+matches.query.toLowerCase())||
       item.label.toLowerCase().includes(matches.query.toLowerCase()))
     .slice(0,200):[];
  const isFormulaDraft=(source:string)=>source.startsWith('=')||
+  /^\$(?:state\.|session(?:\b|\.))/.test(source)||
   /^@[A-Za-z][A-Za-z0-9_.]*\s*(?:==|=|<>|!=|>=|<=|>|<)/.test(source);
  const errorFor=(next:string):string|null=>{
   const custom=validate?.(next);
@@ -128,6 +131,7 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
    const before=next.slice(0,caret);
    const openString=(before.match(/"/g)||[]).length%2===1;
    const mention=!openString?/@([A-Za-z0-9_.]*)$/.exec(before):null;
+   const dollar=!openString&&!mention?/\$([A-Za-z0-9_.]*)$/.exec(before):null;
    const tablePart=!openString&&!mention
     ?/\bTABLE\s*\(\s*@[A-Za-z][A-Za-z0-9_]*\s*,([^)]*)$/i.exec(before):null;
    const last=tablePart?.[1].split(',').at(-1)?.trim()??'';
@@ -135,7 +139,9 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
    // the canonical bare field name with no @.
    const tableField=tablePart&&/^@?[A-Za-z0-9_]*$/.test(last)
     ?{start:caret-last.length,end:caret,query:last.replace(/^@/,'')}:null;
-   setMatches(mention?{start:caret-mention[0].length,end:caret,query:mention[1]}:tableField);
+   setMatches(mention?{start:caret-mention[0].length,end:caret,query:mention[1],prefix:'@'}:
+    dollar?{start:caret-dollar[0].length,end:caret,query:dollar[1],prefix:'$'}:
+    tableField?{...tableField,prefix:''}:null);
    const name=next.trimStart().startsWith('=')&&!openString
       ?/(?:^\s*=\s*|[,()]\s*)([A-Za-z][A-Za-z0-9_]*)$/.exec(before):null;
    setFunctionMatch(tablePart?null:name?{start:caret-name[1].length,end:caret,query:name[1]}:null);

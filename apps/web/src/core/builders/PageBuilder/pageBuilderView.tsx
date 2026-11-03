@@ -159,6 +159,7 @@ import PageComponentNavigator from './PageComponentNavigator';
 import PageBuilderVisibilityDialog from './PageBuilderVisibilityDialog';
 import type {ComponentVisibilityRule} from '../../components/Properties/componentVisibility';
 import PageBuilderActionRibbon from './PageBuilderActionRibbon';
+import {pageStateChoices} from './pageStateChoices';
 import PageBuilderRibbonMetadataPager from './PageBuilderRibbonMetadataPager';
 import UniversalRibbonInventory from './UniversalRibbonInventory';
 import UneBuilderRibbon from './UneBuilderRibbon';
@@ -3393,6 +3394,7 @@ function PageBuilder({
               api={selected?.type.startsWith('Custom:')?selected.type.slice(7):selected?.type??''}
               selectedApis={actionMembers.map(item=>item.type.startsWith('Custom:')?item.type.slice(7):item.type)}
               actions={selectedActions} eventDefinitions={actionOptions} flows={flows}
+              stateOptions={pageStateChoices(page.components)}
               dataFields={objects.find(item=>item.apiName===
                 String(selected?.properties.objectApiName||page.targetObject||''))?.fields??[]}
               selectedEvent={activeActionEvent} disabled={!selected||actionSelectionDisabled}

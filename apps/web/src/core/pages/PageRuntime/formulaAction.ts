@@ -23,7 +23,7 @@ export function resolveActionFormulaValue(expression:string,payload:Record<strin
  if(expression.length>300)throw Error('Action formula expression is too long.');
  const evaluated=evaluateFieldExpressionDetailed(expression,{
   state:pageState,event:payload,session:{id:sessionId}
- });
+ },{pageState,sessionId});
  if(evaluated.error)throw Error('Invalid action formula: '+evaluated.error);
  return evaluated.value;
 }

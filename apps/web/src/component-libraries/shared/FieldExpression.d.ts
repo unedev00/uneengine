@@ -1,6 +1,10 @@
 export type FormulaBindingContext={
   timeZone?:string;
   now?:Date|string;
+  /** Already-authorised page-local scalar state values. */
+  pageState?:Readonly<Record<string,unknown>>;
+  /** Active Page Runtime session identifier. */
+  sessionId?:string;
   locale?:string;
   currencyIsoCode?:string|null;
   user?:Record<string,unknown>;
