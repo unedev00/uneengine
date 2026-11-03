@@ -62,22 +62,6 @@ export default function SmartCart({p,records,Picture,expression,fieldAllowed,fir
    return p.pageState&&Object.prototype.hasOwnProperty.call(p.pageState,key)
     ?p.pageState[key]:null;
   }
-  // SUM(@Price * @Quantity) is a display-only aggregation over the
-  // authorised loaded cart records. Never silently sum a truncated set.
-  const sum=typeof source==='string'?/^SUM\s*\(([\s\S]+)\)$/i.exec(source.trim()):null;
-  if(sum){
-   const term=sum[1].trim();
-   if(!term||term.length>500||!records.length||records.length>200)return null;
-   let total=0;
-   for(const record of records){
-    const raw=expression(term,record);
-    const value=(typeof raw==='number'||typeof raw==='string'&&raw.trim())?Number(raw):NaN;
-    if(!Number.isFinite(value))return null;
-    total+=value;
-    if(!Number.isFinite(total))return null;
-   }
-   return total;
-  }
   return expression(source,summaryRecord);
  };
  const summaryLabel=(key,fallback)=>typeof p[key]==='string'&&p[key].trim()

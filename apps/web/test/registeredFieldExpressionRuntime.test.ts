@@ -103,3 +103,19 @@ test('registered Formula Bar evaluates numeric collections with authorised recor
  });
  assert.equal(saved.text,'High');
 });
+
+
+test('registered formula bindings aggregate only complete authorised row sets',()=>{
+ const definitions=[{propertyKey:'subtotalValue',kind:'TEXT'}];
+ const records=[{Id:'a',LineTotal:6},{Id:'b',LineTotal:10}];
+ const input={subtotalValue:'=SUM(@LineTotal)',records,
+  recordPagination:{offset:0,total:2}};
+ const resolved=resolveRegisteredTextProperties(definitions,input);
+ assert.equal(resolved.subtotalValue,'16');
+ assert.equal(input.subtotalValue,'=SUM(@LineTotal)');
+ const partial=resolveRegisteredTextProperties(definitions,{
+  subtotalValue:'=SUM(@LineTotal)',record:records[0],records:records.slice(0,1),
+  formulaCollectionSources:{},recordPagination:{offset:0,total:2}
+ });
+ assert.equal(partial.subtotalValue,'=SUM(@LineTotal)');
+});
