@@ -619,6 +619,42 @@ try{
  const {mkdir}=await import('node:fs/promises');
  await mkdir(new URL('../artifacts/',import.meta.url),{recursive:true});
  await page.screenshot({path:new URL('../artifacts/page-builder.png',import.meta.url).pathname});
+
+ // Guard against OS-dark CSS pairing a dark table with light-mode text (or
+ // light table with dark-mode text) on the actual authenticated Page Builder.
+ await page.emulateMedia({colorScheme:'dark'});
+ const pageBuilderDarkOsContrast=await page.evaluate(()=>{
+   const shell=document.querySelector('.lightning.md-setup-light');
+   const table=document.querySelector('.page-manager-table');
+   const heading=table?.querySelector('thead th');
+   const cell=table?.querySelector('tbody td');
+   if(!shell||!heading)return {missing:true};
+   const luminance=(value)=>{
+     const numbers=(value.match(/\\d+(?:\\.\\d+)?/g)||[]).map(Number);
+     if(numbers.length<3)return -1;
+     const rgb=numbers.slice(0,3).map(v=>v/255).map(v=>v<=0.04045?v/12.92:((v+0.055)/1.055)**2.4);
+     return 0.2126*rgb[0]+0.7152*rgb[1]+0.0722*rgb[2];
+   };
+   const contrast=(element)=>{
+     const style=getComputedStyle(element);
+     const fg=luminance(style.color),bg=luminance(style.backgroundColor);
+     return fg<0||bg<0?0:(Math.max(fg,bg)+0.05)/(Math.min(fg,bg)+0.05);
+   };
+   return {missing:false,scheme:getComputedStyle(shell).colorScheme,
+     surface:getComputedStyle(shell).getPropertyValue('--md-surface').trim(),
+     headingRatio:contrast(heading),cellRatio:cell?contrast(cell):null};
+ });
+ assert.equal(pageBuilderDarkOsContrast.missing,false,
+   'Authenticated Page Builder page list was missing');
+ assert.equal(pageBuilderDarkOsContrast.scheme,'light',
+   'OS dark preference unexpectedly recoloured Setup');
+ assert.ok(pageBuilderDarkOsContrast.headingRatio>=4.5,
+   'Page Builder column heading is unreadable under OS dark preference: '+JSON.stringify(pageBuilderDarkOsContrast));
+ assert.ok(pageBuilderDarkOsContrast.cellRatio===null||pageBuilderDarkOsContrast.cellRatio>=4.5,
+   'Page Builder table cells are unreadable under OS dark preference: '+JSON.stringify(pageBuilderDarkOsContrast));
+ await page.screenshot({path:new URL('../artifacts/page-builder-dark-os.png',import.meta.url).pathname});
+ await page.emulateMedia({colorScheme:'light'});
+
  // Record Page ownership is Object Manager only. The general Page Builder
  // must not offer Record Page creation, while the shared editor remains reusable.
  assert.equal(await page.getByRole('radio',{name:/Record Page/i}).count(),0,
