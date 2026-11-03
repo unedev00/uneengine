@@ -459,14 +459,17 @@ test('Smart Cart ribbon is SQL-driven and visual preview defers cart data and ac
  assert.ok(bundled.compiledJs.length>0);
 });
 
-test('Quick Access Delete uses existing guarded draft-component removal',()=>{
+test('Quick Access Delete uses one guarded removal for all selected draft components',()=>{
  const builder=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
  assert.match(builder,/case 'delete':return <button/);
  assert.match(builder,/aria-label="Delete selected component"/);
- assert.match(builder,/disabled=\{!selected\|\|previewMode\|\|isCanvasLocked\(selected\)\}/);
+ assert.match(builder,/disabled=\{!selected\|\|previewMode\|\|deleteBlockedByLock\}/);
  assert.match(builder,/onClick=\{removeSelected\}/);
  assert.match(builder,/quickAccessOrder=\['save','activate','preview','exitPreview','resetIcon','undo','redo','cut','copy','paste','delete'\]/);
- assert.match(builder,/confirmDestructiveAction\('Delete', 'Page component/);
+ assert.match(builder,/const deleteTargetIds = selectionIds.length > 1 \? selectionIds : selected \? \[selected.id\] : \[\]/);
+ assert.match(builder,/removePageComponentSelection\(page.components, deleteTargetIds\)/);
+ assert.match(builder,/if \(!confirmDestructiveAction\('Delete'/);
+ assert.match(builder,/setSelectionIds\(\[\]\)/);
 });
 test('Clicking canvas releases any focused ribbon formula editor and closes field suggestions',()=>{
  const builder=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
