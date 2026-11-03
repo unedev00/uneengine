@@ -1,5 +1,5 @@
 import {useMemo,useState} from 'react';
-import type {LightningPageMetadata,PageLayoutVariant} from '../../metadata/Definitions/metadata';
+import type {LightningPageMetadata} from '../../metadata/Definitions/metadata';
 import './PageInventoryImportDialog.css';
 
 type Issue={row:number;pageapi?:string;component_name:string;component_property:string;value?:string;remark:string};
@@ -12,7 +12,6 @@ type Props={
  onClose:()=>void;
  onApplied:(page:LightningPageMetadata,changes:number)=>void;
 };
-const devices:PageLayoutVariant[]=['Desktop','Tablet','Mobile','Custom'];
 const csvEscape=(value:unknown)=>{
  const s=String(value??'');
  return /[",\r\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;
@@ -29,7 +28,6 @@ function downloadErrors(issues:Issue[],name:string){
 export default function PageInventoryImportDialog({pages,initialPageApi,request,onClose,onApplied}:Props){
  const [search,setSearch]=useState('');
  const [pageApi,setPageApi]=useState(initialPageApi);
- const [variant,setVariant]=useState<PageLayoutVariant>('Desktop');
  const [fileName,setFileName]=useState('');
  const [csv,setCsv]=useState('');
  const [preview,setPreview]=useState<Preview|null>(null);
@@ -41,9 +39,6 @@ export default function PageInventoryImportDialog({pages,initialPageApi,request,
  const selectedPage=pages.find(item=>item.apiName===pageApi);
  const changePage=(next:string)=>{
   setPageApi(next);setPreview(null);setError('');
- };
- const changeVariant=(next:PageLayoutVariant)=>{
-  setVariant(next);setPreview(null);setError('');
  };
  const loadFile=async(file:File|undefined)=>{
   setCsv('');setFileName(file?.name??'');setPreview(null);setError('');
@@ -58,7 +53,7 @@ export default function PageInventoryImportDialog({pages,initialPageApi,request,
   try{
    const result=await request<Preview>(
     '/metadata/pages/'+encodeURIComponent(pageApi)+'/inventory/validate',
-    {method:'POST',body:JSON.stringify({variant,csv})});
+    {method:'POST',body:JSON.stringify({variant:'Desktop',csv})});
    setPreview(result);
   }catch(failure){setError(failure instanceof Error?failure.message:'Unable to validate the CSV file.');}
   finally{setBusy(false);}
@@ -69,7 +64,7 @@ export default function PageInventoryImportDialog({pages,initialPageApi,request,
   try{
    const result=await request<ApplyResult>(
     '/metadata/pages/'+encodeURIComponent(pageApi)+'/inventory/apply',
-    {method:'POST',body:JSON.stringify({variant,csv,expectedDraftRevision:preview.draftRevision})});
+    {method:'POST',body:JSON.stringify({variant:'Desktop',csv,expectedDraftRevision:preview.draftRevision})});
    if(!result.valid){setPreview({...result,draftRevision:preview.draftRevision});return;}
    if(!result.page)throw Error('Server did not return the updated page draft');
    onApplied(result.page,result.changes);
@@ -87,8 +82,9 @@ export default function PageInventoryImportDialog({pages,initialPageApi,request,
     <h2 id="page-inventory-import-title">Upload component inventory CSV</h2>
     <button className="btn btn-small" type="button" onClick={onClose} disabled={busy}>Close</button>
    </div>
-   <p className="modal-copy">Update the saved draft of one page layout. Missing rows and blank values are ignored.
-    Every component, property and value is checked before any update is saved.</p>
+   <p className="modal-copy">Import into the Desktop page draft only. Existing component names update; missing names
+    create new instances when component.type declares a published tenant component. Blank values and omitted rows
+    are ignored. Every row is checked before anything is saved.</p>
    <div className="page-inventory-import-fields">
     <div className="page-inventory-picker">
      <label className="form-label" htmlFor="page-inventory-page-search">Search pages</label>
@@ -102,23 +98,21 @@ export default function PageInventoryImportDialog({pages,initialPageApi,request,
      {!filtered.length&&<p role="status">No matching pages.</p>}
     </div>
     <div className="page-inventory-file">
-     <label className="form-label" htmlFor="page-inventory-layout">Device layout</label>
-     <select id="page-inventory-layout" className="form-control" value={variant}
-      disabled={busy} onChange={e=>changeVariant(e.target.value as PageLayoutVariant)}>
-      {devices.map(item=><option key={item} value={item}>{item}</option>)}
-     </select>
+     <p className="page-inventory-help"><strong>Device layout: Desktop only</strong></p>
      <label className="form-label" htmlFor="page-inventory-csv">Choose CSV file</label>
      <input id="page-inventory-csv" type="file" accept=".csv,text/csv" disabled={busy}
       onChange={e=>void loadFile(e.target.files?.[0])}/>
      <p className="page-inventory-file-name">{fileName||'No file selected'}</p>
      <p className="page-inventory-help">Expected: pageapi, component_name, component_property, value.</p>
+     <p className="page-inventory-help">Use unique names such as smartimage1. For a new name, add
+      component.type = Custom:smart_image and leave component.id blank. Only the Desktop draft is modified.</p>
      <p className="page-inventory-help">Selected page: {selectedPage?.apiName??'None'}</p>
     </div>
    </div>
    {error&&<p className="page-inventory-error" role="alert">{error}</p>}
    {preview&&<div className="page-inventory-validation" aria-live="polite">
     <p className={preview.valid?'page-inventory-valid':'page-inventory-error'}>
-     {preview.valid?'Validation passed':'Validation failed'} · {preview.changes} properties to update ·
+     {preview.valid?'Validation passed':'Validation failed'} · {preview.changes} changes or new components ·
      {' '}{preview.skipped} blank rows ignored · {preview.issues.length} errors
     </p>
     {preview.issues.length>0&&<>
@@ -144,7 +138,7 @@ export default function PageInventoryImportDialog({pages,initialPageApi,request,
     <button className="btn" type="button" onClick={()=>void validate()}
      disabled={busy||!pageApi||!csv}>{busy?'Checking…':'Validate CSV'}</button>
     <button className="btn btn-brand" type="button" onClick={()=>void apply()}
-     disabled={busy||!preview?.valid||!preview.changes}>Apply validated updates</button>
+     disabled={busy||!preview?.valid||!preview.changes}>Apply validated upsert</button>
    </div>
   </section>
  </div>;
