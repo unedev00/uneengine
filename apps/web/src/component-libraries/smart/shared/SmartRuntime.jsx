@@ -262,6 +262,7 @@ function SmartCalendar({p,fire}){
 function SmartLookup({p,style,fire}){
  const [query,setQuery]=React.useState("");
  const [opened,setOpened]=React.useState(false);
+ const [focusedIndex,setFocusedIndex]=React.useState(-1);
  const candidates=recordsOf(p).slice(0,200).filter(item=>item&&typeof item==="object");
  const display=row=>scopedExpression(p,"textSource",p.textSource??row.Name??row.name??row.label??row.title??row.id??"",row);
  const matches=candidates.filter(row=>display(row).toLowerCase().includes(query.toLowerCase())).slice(0,20);
@@ -278,7 +279,12 @@ function SmartLookup({p,style,fire}){
    onChange={event=>{setQuery(event.target.value);setOpened(true);fire("change",event.target.value)}}/>
   {opened&&query&&matches.length>0&&<div id="smart-lookup-suggestions" className="smart-lookup-menu" role="listbox" style={{textAlign:p.labelAlignment||"left",fontSize:number(p.textSize,16)}}>
    {matches.map((record,i)=><button type="button" key={text(record.id??i)} role="option"
-    aria-selected={false} style={{textAlign:"inherit",fontSize:"inherit"}} onMouseDown={event=>event.preventDefault()}
+    aria-selected={focusedIndex===i}
+    style={{textAlign:"inherit",fontSize:"inherit",
+     backgroundColor:focusedIndex===i?p.focusColor||undefined:undefined}}
+    onMouseEnter={()=>setFocusedIndex(i)} onMouseLeave={()=>setFocusedIndex(-1)}
+    onFocus={()=>setFocusedIndex(i)} onBlur={()=>setFocusedIndex(-1)}
+    onMouseDown={event=>event.preventDefault()}
     onClick={()=>{setQuery(display(record));setOpened(false);fire("select",{record,value:record.id??null})}}>
      {display(record)}
    </button>)}
@@ -433,7 +439,7 @@ function SmartToggle({p,fire}){
  return <label className="smart-switch" title={p.toggleFieldError||undefined}>
   <input type="checkbox" role="switch" aria-label={p.toggleFieldError||"Toggle"}
    aria-busy={saving} checked={checked} disabled={disabled} onChange={change}/>
-  <span className="smart-switch-track" style={{background:checked?(p.backgroundColor||"#34c759"):"#e5e5ea",
+  <span className="smart-switch-track" style={{background:checked?(p.focusColor||p.backgroundColor||"#34c759"):"#e5e5ea",
    border:p.borderColor?"1px solid "+p.borderColor:undefined,
    ...smartShapeAppearance(p.shapeId,p.shapeId==='shape:rectangle'?0:number(p.radius,999)),
    boxShadow:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none"}}>
