@@ -1,5 +1,5 @@
 .page-inventory-import-dialog{width:min(760px,calc(100vw - 32px));max-height:90vh;overflow-y:auto}
-.page-inventory-import-fields{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px}
+.page-inventory-import-fields{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
 .page-inventory-picker,.page-inventory-file{min-width:0;display:flex;flex-direction:column;gap:8px}
 .page-inventory-picker select{min-height:150px;max-height:210px;font-size:13px}
 .page-inventory-file input[type=file]{width:100%;font:inherit}

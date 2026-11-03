@@ -1,16 +1,15 @@
-import {useMemo,useState} from 'react';
+import {useState} from 'react';
 import type {LightningPageMetadata} from '../../metadata/Definitions/metadata';
 import './PageInventoryImportDialog.css';
 
 type Issue={row:number;pageapi?:string;component_type?:string;component_name:string;component_property:string;value?:string;remark:string};
-type Preview={valid:boolean;issues:Issue[];changes:number;skipped:number;draftRevision:number};
-type ApplyResult=Preview&{page?:LightningPageMetadata};
+type Preview={valid:boolean;issues:Issue[];changes:number;skipped:number;
+ draftRevisions:Record<string,number>;pageCount:number};
+type ApplyResult=Preview&{updatedPages:LightningPageMetadata[]};
 type Props={
- pages:LightningPageMetadata[];
- initialPageApi:string;
  request:<T>(path:string,init?:RequestInit)=>Promise<T>;
  onClose:()=>void;
- onApplied:(page:LightningPageMetadata,changes:number)=>void;
+ onApplied:(pages:LightningPageMetadata[],changes:number)=>void;
 };
 const csvEscape=(value:unknown)=>{
  const s=String(value??'');
@@ -25,21 +24,12 @@ function downloadErrors(issues:Issue[],name:string){
  anchor.href=url;anchor.download=name+'_inventory_errors.csv';document.body.append(anchor);
  anchor.click();anchor.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
-export default function PageInventoryImportDialog({pages,initialPageApi,request,onClose,onApplied}:Props){
- const [search,setSearch]=useState('');
- const [pageApi,setPageApi]=useState(initialPageApi);
+export default function PageInventoryImportDialog({request,onClose,onApplied}:Props){
  const [fileName,setFileName]=useState('');
  const [csv,setCsv]=useState('');
  const [preview,setPreview]=useState<Preview|null>(null);
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState('');
- const filtered=useMemo(()=>pages.filter(page=>
-  (page.label+' '+page.apiName).toLowerCase().includes(search.toLowerCase().trim()))
-  .sort((a,b)=>a.label.localeCompare(b.label)),[pages,search]);
- const selectedPage=pages.find(item=>item.apiName===pageApi);
- const changePage=(next:string)=>{
-  setPageApi(next);setPreview(null);setError('');
- };
  const loadFile=async(file:File|undefined)=>{
   setCsv('');setFileName(file?.name??'');setPreview(null);setError('');
   if(!file)return;
@@ -48,26 +38,26 @@ export default function PageInventoryImportDialog({pages,initialPageApi,request,
   try{setCsv(await file.text());}catch{setError('Unable to read the CSV file.');}
  };
  const validate=async()=>{
-  if(!pageApi||!csv||busy)return;
+  if(!csv||busy)return;
   setBusy(true);setError('');setPreview(null);
   try{
    const result=await request<Preview>(
-    '/metadata/pages/'+encodeURIComponent(pageApi)+'/inventory/validate',
+    '/metadata/pages/inventory/batch/validate',
     {method:'POST',body:JSON.stringify({variant:'Desktop',csv})});
    setPreview(result);
   }catch(failure){setError(failure instanceof Error?failure.message:'Unable to validate the CSV file.');}
   finally{setBusy(false);}
  };
  const apply=async()=>{
-  if(!pageApi||!csv||!preview?.valid||!preview.changes||busy)return;
+  if(!csv||!preview?.valid||!preview.changes||busy)return;
   setBusy(true);setError('');
   try{
    const result=await request<ApplyResult>(
-    '/metadata/pages/'+encodeURIComponent(pageApi)+'/inventory/apply',
-    {method:'POST',body:JSON.stringify({variant:'Desktop',csv,expectedDraftRevision:preview.draftRevision})});
-   if(!result.valid){setPreview({...result,draftRevision:preview.draftRevision});return;}
-   if(!result.page)throw Error('Server did not return the updated page draft');
-   onApplied(result.page,result.changes);
+    '/metadata/pages/inventory/batch/apply',
+    {method:'POST',body:JSON.stringify({variant:'Desktop',csv,expectedDraftRevisions:preview.draftRevisions})});
+   if(!result.valid){setPreview(result);return;}
+   if(!Array.isArray(result.updatedPages))throw Error('Server did not return the updated page drafts');
+   onApplied(result.updatedPages,result.changes);
   }catch(failure){
    setPreview(null);
    setError(failure instanceof Error?failure.message:'Unable to apply CSV updates. Validate again.');
@@ -82,45 +72,34 @@ export default function PageInventoryImportDialog({pages,initialPageApi,request,
     <h2 id="page-inventory-import-title">Upload component inventory CSV</h2>
     <button className="btn btn-small" type="button" onClick={onClose} disabled={busy}>Close</button>
    </div>
-   <p className="modal-copy">Import into the Desktop page draft only. A custom component name updates its existing
-    instance, or creates a new instance of the installed standard component type when missing.
-    Blank values preserve saved settings. Every row is checked before saving.</p>
+   <p className="modal-copy">The CSV pageapi column selects each existing page automatically, including multiple pages in one upload.
+    Missing pages cause a validation error and are never created. Existing component names update their properties;
+    missing component names create instances of installed component types. All pages validate before any change is saved.</p>
    <div className="page-inventory-import-fields">
-    <div className="page-inventory-picker">
-     <label className="form-label" htmlFor="page-inventory-page-search">Search pages</label>
-     <input id="page-inventory-page-search" className="form-control" type="search"
-      placeholder="Search page name or API name" value={search} onChange={e=>setSearch(e.target.value)}/>
-     <label className="form-label" htmlFor="page-inventory-page-select">Select page</label>
-     <select id="page-inventory-page-select" className="form-control" size={6} value={pageApi}
-      onChange={e=>changePage(e.target.value)} disabled={busy}>
-      {filtered.map(item=><option key={item.apiName} value={item.apiName}>{item.label} ({item.apiName})</option>)}
-     </select>
-     {!filtered.length&&<p role="status">No matching pages.</p>}
-    </div>
     <div className="page-inventory-file">
-     <p className="page-inventory-help"><strong>Device layout: Desktop only</strong></p>
+     <p className="page-inventory-help"><strong>Device layout: Desktop drafts · Multiple existing pages supported</strong></p>
      <label className="form-label" htmlFor="page-inventory-csv">Choose CSV file</label>
      <input id="page-inventory-csv" type="file" accept=".csv,text/csv" disabled={busy}
       onChange={e=>void loadFile(e.target.files?.[0])}/>
      <p className="page-inventory-file-name">{fileName||'No file selected'}</p>
      <p className="page-inventory-help">Expected: pageapi, component_type, component_name, propertyid, value, ribbon_tab (optional).
       Ribbon Tab is a reference column and ignored during upload.</p>
-     <p className="page-inventory-help">Example: ACEKIOSK,smart_cart,mycartname,backgroundColor,#ffffff.
-      The component type must be installed, and existing names must match their current type.
-      Only the Desktop draft is modified.</p>
-     <p className="page-inventory-help">Selected page: {selectedPage?.apiName??'None'}</p>
+     <p className="page-inventory-help">Example rows: ACEKIOSK,smart_cart,mycartname,backgroundColor,#ffffff
+      and SMARTTILL,smart_button,PrintBill,label,Print Bill. Every page API must already exist.
+      Component types must be installed and existing names must match their current types.</p>
     </div>
    </div>
    {error&&<p className="page-inventory-error" role="alert">{error}</p>}
    {preview&&<div className="page-inventory-validation" aria-live="polite">
     <p className={preview.valid?'page-inventory-valid':'page-inventory-error'}>
-     {preview.valid?'Validation passed':'Validation failed'} · {preview.changes} changes or new components ·
-     {' '}{preview.skipped} blank rows ignored · {preview.issues.length} errors
+     {preview.valid?'Validation passed':'Validation failed'} · {preview.pageCount} pages ·
+     {' '}{preview.changes} changes or new components · {preview.skipped} blank rows ignored ·
+     {' '}{preview.issues.length} errors
     </p>
     {preview.issues.length>0&&<>
      <div className="page-inventory-issue-heading">
       <strong>CSV errors — no changes saved</strong>
-      <button className="btn btn-small" type="button" onClick={()=>downloadErrors(preview.issues,pageApi)}>
+      <button className="btn btn-small" type="button" onClick={()=>downloadErrors(preview.issues,'multipage')}>
        Download error report CSV
       </button>
      </div>
@@ -138,7 +117,7 @@ export default function PageInventoryImportDialog({pages,initialPageApi,request,
    <div className="modal-actions">
     <button className="btn" type="button" onClick={onClose} disabled={busy}>Cancel</button>
     <button className="btn" type="button" onClick={()=>void validate()}
-     disabled={busy||!pageApi||!csv}>{busy?'Checking…':'Validate CSV'}</button>
+     disabled={busy||!csv}>{busy?'Checking…':'Validate CSV'}</button>
     <button className="btn btn-brand" type="button" onClick={()=>void apply()}
      disabled={busy||!preview?.valid||!preview.changes}>Apply validated upsert</button>
    </div>

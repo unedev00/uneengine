@@ -234,6 +234,61 @@ function parseCsv(text:string):{rows:CsvRow[];issues:InventoryIssue[];columns:nu
   remark:'Expected CSV columns: '+INVENTORY_COLUMNS.join(',')+'[,ribbon_tab]'});
  return {rows:rows.slice(1),issues,columns,format};
 }
+/**
+ * Partition a downloaded inventory CSV by its authored pageapi column.
+ * Each partition is passed to the existing validated, per-page upsert engine.
+ * Preserve original CSV line numbers in error reports, including quoted line breaks.
+ */
+export type InventoryCsvPageGroup={
+ pageapi:string; csv:string; originalLines:Record<number,number>; firstRow:number
+};
+export function inventoryCsvPageGroups(text:string):{
+ groups:InventoryCsvPageGroup[];issues:InventoryIssue[]
+}{
+ const parsed=parseCsv(text);
+ const issues=[...parsed.issues];
+ if(issues.length)return {groups:[],issues};
+ const header=parsed.format==='typed'
+  ?parsed.columns===6?INVENTORY_EXPORT_COLUMNS:INVENTORY_COLUMNS
+  :parsed.columns===5?[...LEGACY_INVENTORY_COLUMNS,'ribbon_tab']:LEGACY_INVENTORY_COLUMNS;
+ const grouped=new Map<string,{pageapi:string;rows:string[][];originalLines:Record<number,number>;
+  nextLine:number;firstRow:number}>();
+ for(const row of parsed.rows){
+  const pageapi=(row.cells[0]??'').trim();
+  if(!pageapi||!validComponentApi(pageapi)){
+   issues.push({row:row.line,pageapi,component_name:row.cells[parsed.format==='typed'?2:1]??'',
+    component_property:row.cells[parsed.format==='typed'?3:2]??'',
+    remark:pageapi?'Invalid Page API name':'Page API is required'});
+   continue;
+  }
+  let entry=grouped.get(pageapi);
+  if(!entry){
+   if(grouped.size>=50){
+    issues.push({row:row.line,pageapi,component_name:'',component_property:'',
+      remark:'CSV may reference at most 50 existing pages'});
+    continue;
+   }
+   entry={pageapi,rows:[],originalLines:{},nextLine:2,firstRow:row.line};
+   grouped.set(pageapi,entry);
+  }
+  entry.originalLines[entry.nextLine]=row.line;
+  entry.rows.push(row.cells);
+  const serialized=inventoryCsv([row.cells]);
+  // Same newline accounting as parseCsv for quoted multi-line values.
+  entry.nextLine+=(serialized.match(/\r\n|\r|\n/g)??[]).length;
+ }
+ return {groups:[...grouped.values()].map(group=>({
+  pageapi:group.pageapi,csv:inventoryCsv([header,...group.rows]),
+  originalLines:group.originalLines,firstRow:group.firstRow
+ })),issues};
+}
+export function originalInventoryIssue(group:InventoryCsvPageGroup,issue:InventoryIssue):InventoryIssue{
+ const candidate=Object.keys(group.originalLines).map(Number)
+  .filter(line=>line<=issue.row).sort((a,b)=>b-a)[0];
+ return {...issue,pageapi:group.pageapi,
+  row:candidate===undefined?group.firstRow:group.originalLines[candidate]};
+}
+
 function lookupSchema(defs:readonly ComponentSettingDefinition[],parts:readonly string[]):ComponentSettingDefinition|undefined{
  let current=defs,found:ComponentSettingDefinition|undefined;
  for(let i=0;i<parts.length;i++){

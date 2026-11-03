@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {applyInventoryCsv,exportInventoryCsv,inventoryCsv,inventoryRequestedTypes,inventoryDefinitions,type InventoryPage,type InventoryDefinitions} from '../../src/system-support/page-inventory-csv.js';
+import {readFileSync} from 'node:fs';
+import {applyInventoryCsv,exportInventoryCsv,inventoryCsv,inventoryRequestedTypes,inventoryDefinitions,inventoryCsvPageGroups,originalInventoryIssue,type InventoryPage,type InventoryDefinitions} from '../../src/system-support/page-inventory-csv.js';
 import {componentInstanceNames,nextComponentInstanceName,ensureComponentInstanceNames,validateExplicitComponentNames} from '../../src/system-support/page-component-names.js';
 import type {ComponentSettingDefinition} from '../../src/system-support/component-property-contract.js';
 
@@ -526,4 +527,72 @@ test('installed SQL property metadata sets choice options, bounds and defaults w
  assert.equal(bad.valid,false);
  assert.ok(bad.issues.some(issue=>issue.remark.includes('listed option')));
  assert.ok(bad.issues.some(issue=>issue.remark.includes('allowed range')));
+});
+
+
+test('one CSV groups multiple existing Page APIs without losing row identity',()=>{
+ const all=typedCsv6(
+  'CODEXTILL,smart_cart,PrintBill,width,450,Layout',
+  'ACEKIOSK,smart_button,PayNow,label,Pay,Data',
+  'CODEXTILL,smart_cart,PrintBill,component.visible,false,View',
+  'ACEKIOSK,smart_button,PayNow,backgroundColor,#ffffff,Design'
+ );
+ const split=inventoryCsvPageGroups(all);
+ assert.equal(split.issues.length,0);
+ assert.deepEqual(split.groups.map(group=>group.pageapi),['CODEXTILL','ACEKIOSK']);
+ assert.match(split.groups[0].csv,/CODEXTILL,smart_cart,PrintBill,width,450/);
+ assert.doesNotMatch(split.groups[0].csv,/ACEKIOSK/);
+ assert.match(split.groups[1].csv,/ACEKIOSK,smart_button,PayNow,label,Pay/);
+ assert.deepEqual(split.groups[0].originalLines,{2:2,3:4});
+ assert.deepEqual(split.groups[1].originalLines,{2:3,3:5});
+ const issue=originalInventoryIssue(split.groups[1],{
+  row:3,component_name:'PayNow',component_property:'backgroundColor',
+  remark:'Unknown component property'
+ });
+ assert.equal(issue.row,5);
+ assert.equal(issue.pageapi,'ACEKIOSK');
+});
+test('grouped CSV preserves original line numbers for quoted multi-line values',()=>{
+ const content=inventoryCsv([
+  ['pageapi','component_type','component_name','propertyid','value'],
+  ['CODEXTILL','smart_cart','PrintBill','caption','Line one\nLine two'],
+  ['OTHERPAGE','smart_button','PayNow','label','Pay'],
+  ['CODEXTILL','smart_cart','PrintBill','component.visible','false']
+ ]);
+ const parsed=inventoryCsvPageGroups(content);
+ assert.deepEqual(parsed.issues,[]);
+ assert.deepEqual(parsed.groups[0].originalLines,{2:2,4:5});
+ assert.equal(originalInventoryIssue(parsed.groups[0],{
+  row:4,component_name:'PrintBill',component_property:'component.visible',remark:'Bad value'
+ }).row,5);
+ assert.equal(parsed.groups[1].firstRow,4);
+});
+test('missing and malformed pageapi are rejected before any multi-page import',()=>{
+ const all=typedCsv(
+  ',smart_button,PayNow,label,Pay',
+  'Bad/Page,smart_button,PayNow,label,Pay',
+  'CODEXTILL,smart_cart,PrintBill,width,350'
+ );
+ const split=inventoryCsvPageGroups(all);
+ assert.equal(split.issues.length,2);
+ assert.deepEqual(split.issues.map(issue=>issue.row),[2,3]);
+ assert.deepEqual(split.groups.map(group=>group.pageapi),['CODEXTILL']);
+ const badHeader=inventoryCsvPageGroups('not_a_csv,pageapi\\r\\nfoo,bar');
+ assert.equal(badHeader.groups.length,0);
+ assert.ok(badHeader.issues.length);
+});
+test('batch API enforces existing tenant pages, preflight and a single SQL transaction',()=>{
+ const controller=readFileSync(new URL('../../src/api/PageApiController.ts',import.meta.url),'utf8');
+ const dialog=readFileSync(new URL('../../../web/src/core/builders/PageBuilder/PageInventoryImportDialog.tsx',import.meta.url),'utf8');
+ assert.match(controller,/\/api\/metadata\/pages\/inventory\/batch\/validate/);
+ assert.match(controller,/\/api\/metadata\/pages\/inventory\/batch\/apply/);
+ assert.match(controller,/p\.tenant_id=\$1 AND p\.enabled=true AND p\.api_name=ANY/);
+ assert.match(controller,/remark:'Page API not found: '/);
+ assert.match(controller,/await db\.transaction\(async\(\)=>\{/);
+ assert.match(controller,/await pages\.saveLayoutDraft\(/);
+ assert.match(controller,/await preflightInventory\(/);
+ assert.match(controller,/expectedDraftRevisions/);
+ assert.doesNotMatch(dialog,/Select page|page-inventory-page-select|initialPageApi/);
+ assert.match(dialog,/\/metadata\/pages\/inventory\/batch\/validate/);
+ assert.match(dialog,/\/metadata\/pages\/inventory\/batch\/apply/);
 });
