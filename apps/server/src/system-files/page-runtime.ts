@@ -178,8 +178,9 @@ export class PageRuntime {
       ||Number(p.canvasWidth)<320||Number(p.canvasWidth)>10000
       ||Number(p.canvasHeight)<320||Number(p.canvasHeight)>10000
        ||(p.canvasFillColor!==undefined&&(typeof p.canvasFillColor!=='string'||!/^#[0-9a-fA-F]{6}$/.test(p.canvasFillColor)))
-      ||!Array.isArray(p.devices)||!p.devices.length||p.devices.length>2
-      ||p.devices.some(v=>v!=='Desktop'&&v!=='Phone')
+      ||!Array.isArray(p.devices)||!p.devices.length||p.devices.length>4
+      ||new Set(p.devices).size!==p.devices.length
+      ||p.devices.some(v=>!['Desktop','Tablet','Phone','Custom'].includes(String(v)))
       ||!Array.isArray(p.components)||p.components.length>400
       ||!Array.isArray(p.activationAssignments??[])||(p.activationAssignments as unknown[]).length>200)
       throw new Error('Invalid Page metadata');
