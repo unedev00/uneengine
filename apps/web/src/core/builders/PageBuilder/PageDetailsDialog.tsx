@@ -1,6 +1,7 @@
 import {useEffect,useState} from 'react';
 import {Pencil,LayoutTemplate,History,LockKeyhole} from 'lucide-react';
-import type {LightningPageMetadata,LightningAppMetadata} from '../../metadata/Definitions/metadata';
+import type {LightningPageMetadata,LightningAppMetadata,PageActivationAssignmentMetadata,ProfileMetadata} from '../../metadata/Definitions/metadata';
+import PageDetailsAssignmentEditor,{assignmentValidationError} from './PageDetailsAssignmentEditor';
 import './PageDetailsDialog.css';
 
 type Variant='Desktop'|'Tablet'|'Mobile'|'Custom';
@@ -37,13 +38,16 @@ function HistoricalLayoutPreview({page}:{page:LightningPageMetadata}){
 
 /** Page identity, app assignment and immutable layout history.
  * Historical revisions can be inspected or restored to draft, never edited in place. */
-export default function PageDetailsDialog({page,apps,disabled,request,onClose,onSave,onOpenDesign,onReload}:{
+export default function PageDetailsDialog({page,apps,profiles,recordTypes,disabled,request,onClose,onSave,onSaveAssignments,onOpenDesign,onReload}:{
  page:LightningPageMetadata;
  apps:readonly LightningAppMetadata[];
+ profiles:readonly ProfileMetadata[];
+ recordTypes:readonly {id:string;label:string;active:boolean}[];
  disabled:boolean;
  request:<T>(path:string,init?:RequestInit)=>Promise<T>;
  onClose:()=>void;
  onSave:(apiName:string,label:string,appApiName:string|null,expectedLabel:string,nextApiName?:string)=>Promise<boolean>;
+ onSaveAssignments:(page:LightningPageMetadata,assignments:PageActivationAssignmentMetadata[])=>Promise<LightningPageMetadata|false>;
  onOpenDesign:(apiName:string)=>void;
  onReload:(page:LightningPageMetadata)=>void;
 }){
@@ -53,6 +57,10 @@ export default function PageDetailsDialog({page,apps,disabled,request,onClose,on
  const existing=(page.activationAssignments??[]).find(a=>a.scope==='App Default'&&a.appId)?.appId
    ??apps.find(app=>app.navigationPageApiNames.includes(page.apiName))?.apiName??'';
  const [appApiName,setAppApiName]=useState(existing);
+ const [assignments,setAssignments]=useState<PageActivationAssignmentMetadata[]>(page.activationAssignments??[]);
+ const changedAssignments=page.pageType!=='App Page'&&page.pageType!=='In-Screen Page'
+  &&JSON.stringify(assignments)!==JSON.stringify(page.activationAssignments??[]);
+ const assignmentError=changedAssignments?assignmentValidationError(page,assignments,apps,profiles,recordTypes):'';
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState('');
  const [variant,setVariant]=useState<Variant>(page.layoutVariant??'Desktop');
@@ -61,7 +69,7 @@ export default function PageDetailsDialog({page,apps,disabled,request,onClose,on
  const [showArchived,setShowArchived]=useState(false);
  const [preview,setPreview]=useState<{version:number;page:LightningPageMetadata}|null>(null);
  const valid=Boolean(apiNameValid&&label.trim()&&label.trim().length<=128&&
-  (page.pageType!=='App Page'||apps.some(a=>a.apiName===appApiName)));
+  !assignmentError&&(page.pageType!=='App Page'||apps.some(a=>a.apiName===appApiName)));
  const base=`/metadata/pages/${encodeURIComponent(page.apiName)}/layouts/${variant}`;
  useEffect(()=>{
   let active=true;
@@ -76,6 +84,11 @@ export default function PageDetailsDialog({page,apps,disabled,request,onClose,on
   if(!valid||busy||disabled)return;
   setBusy(true);setError('');
   try{
+   if(changedAssignments){
+    const saved=await onSaveAssignments(page,assignments);
+    if(!saved)throw new Error('Could not save activation assignments. Reload the page and retry.');
+    onReload(saved);
+   }
    const succeeded=await onSave(page.apiName,label.trim(),
     page.pageType==='App Page'?appApiName:null,page.label,apiName);
    if(succeeded)onClose();
@@ -178,7 +191,11 @@ export default function PageDetailsDialog({page,apps,disabled,request,onClose,on
          <option value="">Select installed app…</option>
          {apps.map(app=><option key={app.apiName} value={app.apiName}>{app.label} ({app.apiName})</option>)}
         </select>
-       </label>:<p>Activation is managed by the shared record or home page assignment controls.</p>}
+       </label>:page.pageType==='Record Page'||page.pageType==='Home Page'
+        ?<PageDetailsAssignmentEditor page={page} apps={apps} profiles={profiles}
+          recordTypes={recordTypes} assignments={assignments} onChange={setAssignments}
+          disabled={disabled||busy}/>
+        :<p>Activation is not configured for this page type.</p>}
        {page.pageType==='App Page'&&<small>
         {page.status==='Active'?'An active page appears in the selected app navigation.':
          'A draft page is assigned now; activate it to show it in the app navigation.'}
@@ -249,7 +266,7 @@ export default function PageDetailsDialog({page,apps,disabled,request,onClose,on
       <p>This is a read-only component layout outline. Restore as draft &amp; Design to open the complete page in the visual builder.</p>
      </section>}
     </section>
-    {error&&<p role="alert" className="page-details-error">{error}</p>}
+    {(error||assignmentError)&&<p role="alert" className="page-details-error">{error||assignmentError}</p>}
    </div>
    <footer className="office-ribbon-modal-actions page-details-footer">
     <button type="button" className="btn" disabled={busy} onClick={onClose}>Cancel</button>
