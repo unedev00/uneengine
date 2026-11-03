@@ -173,7 +173,7 @@ import ArrangeRibbon from './ArrangeRibbon';
 import type {AdvancedFeature} from './PageBuilderAdvancedRibbon';
 import './PageBuilderAdvancedRibbon.css';
 import PageBuilderAdvancedSections from './PageBuilderAdvancedSections';
-import {renamePageComponentId,validateComponentId,duplicatePageComponentId} from './componentIdentity';
+import {duplicatePageComponentId} from './componentIdentity';
 import SmartIconGallery from './SmartIconGallery';
 import {isUneBuilderApi,uneBuilderDefaults,type SharedRibbonCatalog,type UneBuilderApi} from './uneBuilderPropertyInventory';
 import './UniversalRibbonInventory.css';
@@ -1189,29 +1189,6 @@ function PageBuilder({
       ?{...nextUpdate,position:constrainCanvasRect(nextUpdate.position,
         {width:page.canvasWidth,height:page.canvasHeight})}:nextUpdate;
     applyPage({ ...page, components: page.components.map((component) => component.id === id ? { ...component, ...bounded } : component) });
-  };
-  /** Change the actual page component key and all declared component references
-   * as one undoable draft edit. Component renderer/API identity stays unchanged. */
-  const renameComponentId=(oldId:string,newId:string)=>{
-    const selectedComponent=page.components.find(item=>item.id===oldId);
-    if(!selectedComponent||isCanvasLocked(selectedComponent)){
-      onNotify('Select and unlock a component before changing its ID.');
-      return;
-    }
-    try{
-      const changed=renamePageComponentId(page.components,oldId,newId);
-      if(newId.trim()===oldId)return;
-      applyPage({...page,components:changed});
-      setSelectedId(current=>current===oldId?newId.trim():current);
-      setSelectionIds(current=>current.map(id=>id===oldId?newId.trim():id));
-      setOpenBuilderTabs(current=>{
-        if(!Object.prototype.hasOwnProperty.call(current,oldId))return current;
-        const next={...current,[newId.trim()]:current[oldId]};
-        delete next[oldId];return next;
-      });
-    }catch(error){
-      onNotify(error instanceof Error?error.message:'Invalid Component ID');
-    }
   };
   const moveLayer = (id: string, offset: -1 | 1) => {
     applyPage({...page,components:shiftCanvasLayer(page.components,id,offset)});
@@ -3419,6 +3396,19 @@ function PageBuilder({
             properties={{
               selected:!!selected,apiName:selected?.type.startsWith('Custom:')?selected.type.slice(7):selected?.type??'',
               instanceName:selected?componentInstanceNames(page.components).get(selected.id)??'':'',
+              validateInstanceName:value=>{
+                if(!selected)return 'Select a component';
+                const name=value.trim();
+                if(!componentNamePattern.test(name)){
+                  return 'Component Name must start with a letter and use letters, numbers, spaces, underscores or hyphens (max 80).';
+                }
+                const names=componentInstanceNames(page.components);
+                if([...names].some(([otherId,otherName])=>otherId!==selected.id&&
+                  canonicalComponentName(otherName)===canonicalComponentName(name))){
+                  return 'Component Name already exists on this page layout.';
+                }
+                return null;
+              },
               onInstanceName:value=>{
                 if(!selected)return;
                 const name=value.trim();
@@ -3458,9 +3448,7 @@ function PageBuilder({
               }
             }}
             technical={{
-              id:selected?.id??'',selected:!!selected,editable:!!selected&&!isCanvasLocked(selected),
-              validate:value=>validateComponentId(value,page.components,selected?.id??''),
-              onRename:value=>{if(selected)renameComponentId(selected.id,value);}
+              selected:!!selected,editable:!!selected&&!isCanvasLocked(selected)
             }}/>}
 
           {ribbonTab==='Add Block' && <SmartInsertRibbon
