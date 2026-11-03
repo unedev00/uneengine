@@ -84,7 +84,7 @@ const inputs:DefinitionInput[]=[
   ['BLANKVALUE',2,2],['NULLVALUE',2,2],['TEXT',1,1],['VALUE',1,1],['LEN',1,1],
   ['COLLECTIONCOUNT',1,1,flowOnly],['COLLECTIONSUM',2,2,flowOnly],
   ['COLLECTION',2,20,['flow_formula','ribbon_binding']],
-  ['TABLE',1,65,['ribbon_binding']],['SUM',1,1],['ASCII',1,1],
+  ['TABLE',1,129,['ribbon_binding']],['SUM',1,1],['ASCII',1,1],
   ['LOWER',1,1],['UPPER',1,1],['PROPER',1,1],['TRIM',1,1],['LEFT',1,2],['RIGHT',1,2],
   ['MID',3,3],['FIND',2,3],['SUBSTITUTE',3,4],['CONCATENATE',1,20],['EXACT',2,2],
   ['CONTAINS',2,2],['BEGINS',2,2],['ISPICKVAL',2,2],['INCLUDES',2,2],['REPT',2,2],
