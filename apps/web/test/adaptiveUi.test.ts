@@ -59,16 +59,16 @@ test('all workspace routes default to White regardless of OS preference', () => 
   const common = file('src/core/workspace/WorkspaceTheme/design-system.css');
   const accents = file('src/core/workspace/WorkspaceTheme/sections/07-workspace.css');
   const records = file('src/core/records/RecordWorkspace/recordsListToolbar.css');
-  assert.match(theme, /:root \\{\\s*\\/\\* Workspace defaults to White[\\s\\S]*?color-scheme: light/);
-  assert.match(theme, /@media \\(prefers-color-scheme: dark\\) \\{\\s*:root\\[data-theme="system"\\]/);
-  assert.doesNotMatch(theme, /:root:not\\(\\[data-theme="light"\\]\\)/,
+  assert.match(theme, /:root \{\s*\/\* Workspace defaults to White[\s\S]*?color-scheme: light/);
+  assert.match(theme, /@media \(prefers-color-scheme: dark\) \{\s*:root\[data-theme="system"\]/);
+  assert.doesNotMatch(theme, /:root:not\(\[data-theme="light"\]\)/,
     'OS preference must never turn a workspace dark by default');
-  assert.match(theme, /:root\\[data-theme="dark"\\], \\.lightning\\[data-theme="dark"\\]/);
-  assert.match(common, /:root\\[data-theme="system"\\] \\.lightning/);
-  assert.match(common, /:root\\[data-theme="dark"\\] \\.lightning/);
-  assert.match(accents, /:root\\[data-theme="system"\\] \\.lightning/);
-  assert.doesNotMatch(accents, /:root:not\\(\\[data-theme="light"\\]\\)/);
-  assert.match(records, /\\.records-record-card \\{[^}]*background:var\\(--md-surface,#fff\\)/s);
+  assert.match(theme, /:root\[data-theme="dark"\], \.lightning\[data-theme="dark"\]/);
+  assert.match(common, /:root\[data-theme="system"\] \.lightning/);
+  assert.match(common, /:root\[data-theme="dark"\] \.lightning/);
+  assert.match(accents, /:root\[data-theme="system"\] \.lightning/);
+  assert.doesNotMatch(accents, /:root:not\(\[data-theme="light"\]\)/);
+  assert.match(records, /\.records-record-card \{[^}]*background:var\(--md-surface,#fff\)/s);
 });
 
 test('iPad supports rotation and the adaptive theme stays out of marketing startup', () => {
