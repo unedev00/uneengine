@@ -17,6 +17,28 @@ test('identical products form one row with summed quantity and monetary line tot
  assert.equal(result[0].__cartSourceRows.length,3);
  assert.deepEqual(records.map(r=>r.Quantity),[1,1,1],'do not mutate backing lines');
 });
+test('compares effective per-unit line amount, not only nominal unit price',()=>{
+ const rows=[
+  line({Quantity:2,LineTotal:10.98}),
+  line({Quantity:1,LineTotal:5.49}),
+  line({Quantity:1,LineTotal:4.99})
+ ];
+ const grouped=groupCartRows(rows);
+ assert.deepEqual(grouped.map(row=>row.Quantity),[3,1]);
+ assert.ok(Math.abs(grouped[0].LineTotal-16.47)<0.001);
+ assert.equal(grouped[1].LineTotal,4.99);
+ assert.equal(groupCartRows([line({LineTotal:5.49}),line({LineTotal:null})]).length,2);
+});
+test('aggregates the alternate LineAmount total for metadata-driven data sources',()=>{
+ const rows=[
+  {id:'a',SKU:'sku1',Price:5,Quantity:2,LineAmount:10},
+  {id:'b',SKU:'sku1',Price:5,Quantity:1,LineAmount:5},
+  {id:'c',SKU:'sku1',Price:5,Quantity:1,LineAmount:4}
+ ];
+ const grouped=groupCartRows(rows);
+ assert.deepEqual(grouped.map(row=>row.Quantity),[3,1]);
+ assert.equal(grouped[0].LineAmount,15);
+});
 test('distinguishes selections, inventory batches and prices across any data source',()=>{
  const records=[
   line({Selection:'Yes'}),line({Selection:'Yes'}),
