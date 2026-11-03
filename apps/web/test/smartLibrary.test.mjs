@@ -1248,3 +1248,33 @@ test('Smart Textbox SQL enables only approved properties and User pilot requires
  assert.match(runtime,/component\.type === 'Custom:smart_textbox'/);
  assert.match(runtime,/if\(referenced\.some\(field=>available\.has\(field\)&&!readable\.has\(field\)\)\)return null/);
 });
+
+
+test('Data ribbon keeps image, formula and cart summary slots stable without injecting properties',()=>{
+ const markup=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
+ const css=read('../src/core/builders/PageBuilder/SmartRibbonDataFormula.css');
+ const filter=markup.indexOf('className="smart-data-filter-button"');
+ const upload=markup.indexOf('className="smart-data-image-upload"');
+ const formula=markup.indexOf('className="smart-data-formula-input"');
+ const summary=markup.indexOf('className="smart-data-summary-name"');
+ assert.ok(filter>=0&&upload>filter&&formula>upload&&summary>formula);
+ assert.match(markup,/disabled=\{uploadBusy\|\|!activeDataEnabled\|\|activeDataProperty\?\.id!=='imageSource'\|\|api!=='smart_image'\}/);
+ assert.match(markup,/disabled=\{!activeSummaryLabel\|\|!activeDataEnabled\}/);
+ for(const width of ['34px','40px','35px','600px','115px'])
+  assert.ok(css.includes(width),'Missing specified Data slot width '+width);
+});
+test('Action ribbon retains all existing supported events while fixing component slot widths',()=>{
+ const markup=read('../src/core/builders/PageBuilder/PageBuilderActionRibbon.tsx');
+ const css=read('../src/core/builders/PageBuilder/PageBuilderActionRibbonCompact.css');
+ for(const event of ["key:'click'","key:'change'","key:'start'","key:'qtyIncrease'","key:'qtyDecrease'"])
+  assert.ok(markup.includes(event),'Supported action removed: '+event);
+ assert.match(markup,/Other supported event/,'Do not remove existing generic events without approval');
+ assert.match(css,/width:225px;min-width:225px;max-width:225px/);
+ assert.match(css,/grid-template-columns:repeat\(2,225px\)/);
+});
+test('Visibility ribbon keeps disabled controls in place without a selected component',()=>{
+ const markup=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ assert.match(markup,/checked=\{selected\?\.visible\?\?false\} disabled=\{!selected\}/);
+ assert.match(markup,/title="Edit conditional visibility" disabled=\{!selected\}/);
+ assert.match(markup,/<button type="button" disabled=\{!selected\} onClick=\{openVisibilityEditor\}>Conditions<\/button>/);
+});
