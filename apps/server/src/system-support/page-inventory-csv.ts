@@ -197,14 +197,14 @@ function parseCsv(text:string):{rows:CsvRow[];issues:InventoryIssue[];format:Inv
  }
  return {rows:rows.slice(1),issues,format};
 }
-function lookupSchema(defs:readonly ComponentSettingDefinition[],parts:readonly string[]):ComponentSettingDefinition|undefined{
- let current=defs,found:ComponentSettingDefinition|undefined;
+function lookupSchema(defs:readonly InventorySettingDefinition[],parts:readonly string[]):InventorySettingDefinition|undefined{
+ let current=defs,found:InventorySettingDefinition|undefined;
  for(let i=0;i<parts.length;i++){
   found=current.find(d=>d.propertyKey===parts[i]);
   if(!found)return;
   if(i!==parts.length-1){
    if(found.kind!=='GROUP'||!found.fields)return;
-   current=found.fields as ComponentSettingDefinition[];
+   current=found.fields as InventorySettingDefinition[];
   }
  }
  return found;
