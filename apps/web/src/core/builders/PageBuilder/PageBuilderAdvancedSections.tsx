@@ -3,9 +3,7 @@ import type {AdvancedFeature} from './PageBuilderAdvancedRibbon';
 
 type Option={value:string;label:string};
 type Assignment={
-  enabled:boolean;assigned:boolean;isDefault:boolean;role:string;app:string;
-  roles:Option[];apps:Option[];
-  onRole:(value:string)=>void;onApp:(value:string)=>void;
+  enabled:boolean;assigned:boolean;isDefault:boolean;
   onDefault:(value:boolean)=>void;onAdd:()=>void;
 };
 type Responsive={
@@ -49,20 +47,6 @@ export default function PageBuilderAdvancedSections({
       <label className="advanced-fixed-field advanced-default">Default
         <input type="checkbox" checked={assignment.isDefault} disabled={!assignment.enabled}
           onChange={event=>assignment.onDefault(event.target.checked)}/>
-      </label>
-      <label className="advanced-fixed-field advanced-role">Role
-        <select value={assignment.role} disabled={!assignment.enabled}
-          onChange={event=>assignment.onRole(event.target.value)}>
-          <option value="">All profiles</option>
-          {assignment.roles.map(option=><option key={option.value} value={option.value}>{option.label}</option>)}
-        </select>
-      </label>
-      <label className="advanced-fixed-field advanced-app">App
-        <select value={assignment.app} disabled={!assignment.enabled}
-          onChange={event=>assignment.onApp(event.target.value)}>
-          <option value="">Select app…</option>
-          {assignment.apps.map(option=><option key={option.value} value={option.value}>{option.label}</option>)}
-        </select>
       </label>
       <span className="advanced-fixed-caption">Activation Assignments</span>
     </section>}
