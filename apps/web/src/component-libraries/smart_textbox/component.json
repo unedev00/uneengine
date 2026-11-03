@@ -18,15 +18,6 @@
     "minWidth": 140,
     "minHeight": 34
   },
-  "propertyDefinitions": [
-    {
-      "propertyKey": "readonly",
-      "label": "Readonly",
-      "kind": "BOOLEAN",
-      "defaultValue": true,
-      "section": "Advanced",
-      "group": "Advanced Properties"
-    }
-  ],
+  "propertyDefinitions": [],
   "eventDefinitions": []
 }
