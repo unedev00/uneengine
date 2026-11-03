@@ -122,9 +122,12 @@ export default function SmartCart({p,records,Picture,expression,fieldAllowed,fir
    backgroundColor:p.headerBodyColor??"#255d9d",
    height:n(p.headerBoxHeight,52,24),minHeight:n(p.headerBoxHeight,52,24),
    border:border(p.headerBorderColor),textAlign:align(p.headerAlignment),
+    fontSize:n(p.headerTextSize,18,8,96),
    fontWeight:p.headerBold===false?400:700,color:p.headerTextColor||"#fff"}}>{p.label||"Smart Cart"}</header>
   <div className="smart-cart-supporting" style={{
    height:n(p.supportingBoxHeight,36,18),minHeight:n(p.supportingBoxHeight,36,18),
+   backgroundColor:p.supportingBackgroundColor??undefined,
+   fontSize:n(p.supportingTextSize,13,8,96),
    border:border(p.supportingBorderColor),textAlign:align(p.supportingAlignment),
    fontWeight:p.supportingBold===true?700:400,color:p.supportingTextColor||"#586a81"}}>
    {demo?"Preview items (3)":rows.reduce((sum,row)=>sum+Number(row.Quantity||0),0)+" items"}
@@ -161,7 +164,10 @@ export default function SmartCart({p,records,Picture,expression,fieldAllowed,fir
          if(event.key==="Enter"||event.key===" "){event.preventDefault();selectRow();}
         }} style={{
         minHeight:rowHeight,border:border(p.rowBorderColor),
-        borderRadius:n(p.rowRadius,4),color:p.rowLabelColor||"#263b56"}}>
+        borderRadius:n(p.rowRadius,4),color:p.rowLabelColor||"#263b56",
+         fontSize:n(p.rowTextSize,13,8,96),
+         fontWeight:p.rowBold===true?700:undefined,
+         textAlign:p.rowAlignment?align(p.rowAlignment):undefined}}>
        {visible.map(index=>{
         if(index===0)return <div key={index} className={"smart-cart-product "+(p.imagePlacement==="right"?"image-right":"image-left")}>
          <Picture src={src} alt={String(name||"Product")} loadAsset={p.loadAsset}
@@ -203,10 +209,12 @@ export default function SmartCart({p,records,Picture,expression,fieldAllowed,fir
    width:p.summaryWidth?n(p.summaryWidth,600,1,10000):"100%",maxWidth:"100%"}}>
    {["Subtotal","Discount","Tax"].map(label=><div key={label} className="smart-cart-summary-line"
     style={{fontSize:n(p.summaryTextSize,14,8,96),
+     textAlign:p.summaryAlignment?align(p.summaryAlignment):undefined,
      fontWeight:p.summaryTextWeight===true?700:400,color:p.summaryTextColor||"#52657d"}}>
     <span>{summaryLabels[label]}</span><span aria-label={summaryAmounts[label]===null?summaryLabels[label]+" not bound":undefined}>{summaryAmounts[label]??"—"}</span></div>)}
    <div className="smart-cart-summary-line smart-cart-total" style={{
     fontSize:n(p.summary2TextSize,18,8,96),fontWeight:p.summary2TextWeight===false?400:700,
+    textAlign:p.summary2Alignment?align(p.summary2Alignment):undefined,
     color:p.summary2TextColor||"#1c3558"}}>
     <span>{summaryLabels.Total}</span><span aria-label={summaryAmounts.Total===null?summaryLabels.Total+" not bound":undefined}>{summaryAmounts.Total??"—"}</span>
    </div>
