@@ -34,9 +34,9 @@ test('Advanced keeps all permanent fields in a compact responsive ribbon without
  const fields=[
   'assigned','default','role','app',
   'device-0','device-1','device-2','breakpoint','columns',
-  'api-name','css-class','visible','readonly',
-  'accept','child-types','max-children','parent',
-  'component-id','object','render-mode'
+  'api-name','visible','readonly',
+  'accept',
+  'component-id','render-mode'
  ];
  for(const key of fields){
    assert.ok(key.startsWith('device-')?advanced.includes('advanced-device-'):
@@ -66,20 +66,33 @@ test('Existing page handlers own assignments, visibility, grid count, and safe r
   'setRecordAppId(value)','setHomeAppId(value)',
   'setRecordFormFactors(toggle)','setHomeFormFactors(toggle)',
   'cardsPerRow:value','visible:value','readOnlyOnLayout:value',
-  'layoutContainer:value','canNest(page.components,selected.id,parent)',
-  'reparentComponent(page.components,selected.id,parent)',
+  'layoutContainer:value','canNest(page.components,draggedId,parentId)',
+  'reparentComponent(components, draggedId, parentId)',
   'customTargetMinWidth:value'
  ])assert.ok(page.includes(action),action);
  assert.match(advanced,/disabled=\{!responsive\.canBreakpoint\}/);
  assert.match(advanced,/disabled=\{!responsive\.canColumns\}/);
  assert.match(advanced,/disabled=\{!nesting\.canChange\}/);
- assert.match(advanced,/disabled title="Custom CSS class is not supported/);
- assert.match(advanced,/disabled title="Per-container allowed child types is not supported/);
- assert.match(advanced,/disabled\s+title="Maximum child count is not supported/);
+ // Only meaningful Advanced controls are exposed; technical/parent metadata stays internal.
+ for(const removed of ['advanced-css-class','advanced-child-types','advanced-max-children',
+   'advanced-parent','advanced-object']) {
+   assert.ok(!advanced.includes(removed),removed+' must be removed from the ribbon');
+   assert.ok(!layout.includes(removed),removed+' must not reserve a layout slot');
+ }
+ assert.match(advanced,/Accept nested components/);
+ assert.match(page,/reparentComponent\(page\.components,draggedId,parentId\)/);
+ assert.match(page,/selected\?\.properties\.objectApiName\|\|page\.targetObject/);
  assert.doesNotMatch(advanced,/fetch\(|request\(|localStorage|INSERT INTO/);
 });
 
 test('Arrange nesting activates Advanced tab without a popup',()=>{
  assert.match(page,/onNesting=\{\(\)=>openAdvanced\('nesting'\)\}/);
  assert.match(page,/setRibbonTab\('Advanced'\);\s*setAdvancedEditor\(feature\)/);
+});
+
+test('Obsolete Advanced inputs do not appear in component ribbon or leak duplicate Object binding',()=>{
+ for(const label of ['CSS Class','Allowed child types','Max children','Parent container'])
+  assert.ok(!advanced.includes('>'+label+'<'),label);
+ assert.doesNotMatch(advanced,/advanced-object/);
+ assert.ok(page.includes('objectApiName||page.targetObject'),'Data object selection remains usable');
 });
