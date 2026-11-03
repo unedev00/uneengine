@@ -262,3 +262,20 @@ test('every Setup route has a reusable coloured PWA icon on desktop and mobile',
   assert.match(mobile, /<SettingsNavigationIcon group=\{group\} label=\{label\}/);
   assert.match(shell, /<SettingsNavigationIcon group=\{group.group\} label=\{item\}/);
 });
+
+
+test('OS dark preference cannot reintroduce dark tokens on light Setup / Page Builder', () => {
+  const css = file('src/core/workspace/WorkspaceTheme/settingsAppearance.css');
+  const setupStart=css.indexOf('/* MetaDrive Setup uses the light');
+  assert.ok(setupStart>=0,'Setup light surface definition must remain present');
+  const scoped=css.slice(setupStart);
+  assert.match(scoped, /:root:not\\(\\[data-theme="dark"\\]\\) \\.lightning\\.md-setup-light:not\\(\\[data-theme="dark"\\]\\)/);
+  assert.match(scoped, /color-scheme: light/);
+  assert.match(scoped, /--md-surface: #ffffff/);
+  assert.match(scoped, /--md-text: #1d1d1f/);
+  assert.match(scoped, /\\.page-manager-table thead th/);
+  assert.match(scoped, /\\.page-manager-table tbody td/);
+  assert.doesNotMatch(scoped,
+    /@media\\s*\\(\\s*prefers-color-scheme\\s*:\\s*dark\\s*\\)[\\s\\S]*?\\.lightning\\.md-setup-light/,
+    'Automatic OS dark mode must not overwrite the explicitly light Setup palette');
+});
