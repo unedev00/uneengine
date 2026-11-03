@@ -296,6 +296,7 @@ import {
 } from '../../metadata/Definitions/metadata';
 import SavedListViewPicker from './SavedListViewPicker';
 import PageDetailsDialog from './PageDetailsDialog';
+import PageInventoryImportDialog from './PageInventoryImportDialog';
 import {uneRibbonIcon} from './uneRibbonIcon';
 import RibbonImageContent from './RibbonImageContent';
 export function createPageBuilder(MetadataComponentProperties: React.ComponentType<any>, MetadataBoundPageComponent: React.ComponentType<any>, LightningAppRuntime: React.ComponentType<any>) {
