@@ -65,8 +65,8 @@ export function registerPageDetailsController(app:Express,db:SqlPersistence,rbac
     throw new Error('Invalid Page details');
   await rbac.require(actor.tenant_id,actor.user_id,'PageDefinition','manage');
   await assertMetadataPackageEditable(db,actor.tenant_id,'page',pageApi);
-  const current=await db.query<{id:string;title:string;page_type:string}>(`
-   SELECT p.id,p.title,d.page_type FROM md_page_definitions p
+  const current=await db.query<{id:string;title:string;page_type:string;devices:string[]}>(`
+   SELECT p.id,p.title,d.page_type,d.devices FROM md_page_definitions p
    JOIN md_lightning_page_details d ON d.tenant_id=p.tenant_id AND d.page_id=p.id
    WHERE p.tenant_id=$1 AND p.api_name=$2 AND p.enabled=true
   `,[actor.tenant_id,pageApi]);
@@ -96,7 +96,11 @@ export function registerPageDetailsController(app:Express,db:SqlPersistence,rbac
   const appChanged=page.page_type==='App Page'&&
     (existingAppNames.length!==1||existingAppNames[0]!==appApiName
       ||assignedAppNames.length!==1||assignedAppNames[0]!==appApiName);
-  if(appChanged||renaming){
+  const deviceChangeRequested=validDeviceList(devices)&&
+   (devices.length!==page.devices.length||devices.some(v=>!page.devices.includes(v)));
+  // A device change to an App Page changes its default activation factors.
+  // Keep this subject to the same app-level grants as application reassignment.
+  if(appChanged||renaming||(page.page_type==='App Page'&&deviceChangeRequested)){
    await rbac.require(actor.tenant_id,actor.user_id,'AppExchange','manage');
    for(const appName of new Set([...existingAppNames,...(appApiName?[appApiName]:[])]))
     await rbac.require(actor.tenant_id,actor.user_id,'App:'+appName,'manage');
