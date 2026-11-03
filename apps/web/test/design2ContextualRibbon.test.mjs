@@ -26,6 +26,8 @@ test('Design 2 slots are SQL backed, complete, unique and have fixed 26px contro
  assert.equal(rows.filter(row=>row.row===2).length,56);
  assert.equal(rows.filter(row=>row.row===3).length,40);
  assert.match(sql,/ON CONFLICT\(area,slot_key\) DO NOTHING/);
+ assert.equal((sql.match(/REFERENCES md_builder_shared_properties\(property_key\) ON DELETE CASCADE/g)||[]).length,2,
+  'SQL slot FKs must allow shared metadata cleanup and replay');
  assert.doesNotMatch(rows.map(row=>row.area).join(' '),/Actions|Selected Row/i);
 });
 
