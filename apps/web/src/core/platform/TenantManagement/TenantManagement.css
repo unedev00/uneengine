@@ -95,3 +95,15 @@
   max-width: 320px;
   margin: 0 auto;
 }
+
+
+/* Audited tenant directory: fill its card without 69px empty rows. */
+.tenant-table {table-layout:auto;width:100%;min-width:500px}
+.tenant-table th,.tenant-table td {padding:8px 12px;height:44px;vertical-align:middle}
+.tenant-table th {height:40px;font-size:12px}
+.tenant-table :is(th,td):nth-child(2){overflow-wrap:anywhere}
+.tenant-table :is(th,td):first-child{width:27%}
+.tenant-table :is(th,td):nth-child(2){width:29%}
+.tenant-table :is(th,td):last-child{white-space:nowrap}
+.tenant-placeholder p{max-width:44ch;margin-inline:auto}
+@media(max-width:600px){.tenant-table{min-width:580px}}
