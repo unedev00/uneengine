@@ -79,11 +79,12 @@ export function usePageCollectionFormula(
  const tableExpression=expressions.find(value=>/^=?\s*TABLE\s*\(/i.test(value));
  // List-expression metadata is distinct from scalar Boolean expressions. A
  // source binding selects records; individual row property formulas remain scalar.
- const selectedTableSource=typeof properties.textSource==='string'&&(
-  /^=?\s*TABLE\s*\(/i.test(properties.textSource.trim())||
-  /^=?\s*@[A-Za-z][A-Za-z0-9_]*$/.test(properties.textSource.trim())
-   &&objects.some(object=>('@'+object.apiName).toLowerCase()===properties.textSource.trim().replace(/^=\s*/,'').toLowerCase()))
-  ?properties.textSource.trim():null;
+ const rawTextSource=typeof properties.textSource==='string'?properties.textSource.trim():'';
+ const selectedTableSource=(
+  /^=?\s*TABLE\s*\(/i.test(rawTextSource)||
+  /^=?\s*@[A-Za-z][A-Za-z0-9_]*$/.test(rawTextSource)
+   &&objects.some(object=>('@'+object.apiName).toLowerCase()===rawTextSource.replace(/^=\s*/,'').toLowerCase()))
+  ?rawTextSource:null;
  const entered=selectedTableSource||explicit||tableExpression||listExpression||declared||reference||'';
  const source=entered.startsWith('=')?entered.slice(1).trim():entered;
  const lastValid=useRef<{object:string;collection:PageNamedCollection}|null>(null);
