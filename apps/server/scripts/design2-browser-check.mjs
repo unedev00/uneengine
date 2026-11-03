@@ -130,7 +130,7 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  const save=page.waitForResponse(response=>response.url().includes(
   '/api/metadata/pages/'+pageName+'/layouts/Desktop/draft')&&response.request().method()==='PUT',
   {timeout:10000}).catch(()=>null);
- await page.getByRole('button',{name:'Save page'}).click();
+ await page.getByRole('button',{name:'Save',exact:true}).click();
  const savedResponse=await save;
  page.off('response',captureSave);
  assert.ok(savedResponse,'Design 2 Save did not reach SQL draft. Requests: '+
