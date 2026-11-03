@@ -160,3 +160,54 @@ export function sumFormulaCollection(source:unknown,
  }
  return total;
 }
+
+
+/** Universal TABLE dataset projection over rows already authorised by the Object API.
+ * No querying, component-specific formatting or client-side permission bypasses.
+ * Column order follows the formula, or the authorised metadata for @Object.
+ */
+export type FormulaTableCollection=NamedFormulaCollection&{
+ readonly columns:readonly string[];
+ readonly objectApiName:string;
+};
+export function projectFormulaTable(
+ objectApiName:string,
+ rows:readonly Record<string,unknown>[],
+ permittedFields:readonly string[],
+ selectedFields:readonly string[]=[]
+):FormulaTableCollection{
+ if(!/^[A-Za-z][A-Za-z0-9_]*$/.test(objectApiName))
+  throw Error('TABLE requires a selected Object source');
+ if(!Array.isArray(rows)||rows.length>200)
+  throw Error('TABLE requires a complete bounded authorised source (maximum 200 rows)');
+ if(!Array.isArray(permittedFields)||!permittedFields.every(field=>
+   typeof field==='string'&&/^[A-Za-z][A-Za-z0-9_]*$/.test(field)))
+  throw Error('TABLE source field metadata is unavailable');
+ const available=new Set(permittedFields);
+ const columns=selectedFields.length?[...selectedFields]:[...permittedFields].filter(key=>
+   key!=='Id'&&key!=='id');
+ if(!columns.length||columns.length>128)
+  throw Error('TABLE requires 1–128 fields');
+ if(columns.some(field=>!available.has(field)||field==='__proto__'||field==='constructor'
+   ||field==='prototype'))
+  throw Error('TABLE field is unavailable or not permitted');
+ if(new Set(columns).size!==columns.length)
+  throw Error('TABLE fields must be unique');
+ const items=rows.map(row=>{
+  if(!row||typeof row!=='object'||Array.isArray(row))
+   throw Error('Invalid TABLE source record');
+  const id=row.Id??row.id;
+  if(id===undefined||id===null||String(id)==='')
+   throw Error('TABLE source record is missing its ID');
+  const record:Record<string,unknown>={Id:id};
+  for(const column of columns){
+   if(!Object.prototype.hasOwnProperty.call(row,column))continue;
+   const value=row[column];
+   if(value!==null&&value!==undefined&&!['string','number','boolean'].includes(typeof value))
+    throw Error('TABLE field must be scalar: '+column);
+   record[column]=value;
+  }
+  return {label:String(record.Name??id),value:String(id),record,objectApiName};
+ });
+ return {name:'__table__',objectApiName,columns,items};
+}
