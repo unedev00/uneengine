@@ -7,7 +7,8 @@ type Assignment={
   onAdd:()=>void;
 };
 type Properties={
-  selected:boolean;apiName:string;visible:boolean;
+  selected:boolean;apiName:string;instanceName:string;visible:boolean;
+  onInstanceName:(value:string)=>void;
   readOnly:boolean;canReadOnly:boolean;
   onVisible:(value:boolean)=>void;onReadOnly:(value:boolean)=>void;
 };
@@ -46,6 +47,11 @@ export default function PageBuilderAdvancedSections({
     <section className="advanced-fixed-group advanced-properties" aria-label="Advanced Properties">
       <label className="advanced-fixed-field advanced-api-name">API Name
         <input value={properties.apiName} readOnly disabled title="Component API identity is immutable"/>
+      </label>
+      <label className="advanced-fixed-field advanced-instance-name">Component Name
+        <input aria-label="Component Name" value={properties.instanceName}
+          maxLength={80} disabled={!properties.selected}
+          onChange={event=>properties.onInstanceName(event.target.value)}/>
       </label>
       <label className="advanced-fixed-field advanced-visible">Visible
         <input type="checkbox" checked={properties.visible} disabled={!properties.selected}
