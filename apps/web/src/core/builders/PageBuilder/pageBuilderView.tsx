@@ -870,9 +870,10 @@ function PageBuilder({
   const selectedMigrationLayout = pageLayouts.find((layout) => layout.id === migrationLayoutId) ?? assignedMigrationLayout;
   const dynamicFormsEnabled = page.components.some((component) => component.type === 'Field Section' || component.type === 'Record Field');
   const paletteComponents = [
-    // Row, Column and Card are legacy layout renderers, not approved Insert components.
+    // Legacy Row, Column, Card and Container are renderers, not additional Insert components.
+    // Keep the registered Smart Container as the single new Container choice.
     // Preserve their runtime support for existing pages; do not offer new instances.
-    ...layoutTypes.filter(type=>!['Row','Column','Card'].includes(type)).map((type) => ({ id: type, type, label: type, description: `Nest components inside a ${type.toLowerCase()} layout.`, categories: ['Layout'] as (typeof pageBuilderPaletteCategories)[number][] })),
+    ...layoutTypes.filter(type=>!['Row','Column','Card','Container'].includes(type)).map((type) => ({ id: type, type, label: type, description: `Nest components inside a ${type.toLowerCase()} layout.`, categories: ['Layout'] as (typeof pageBuilderPaletteCategories)[number][] })),
     ...(page.layoutMode === 'template' ? standardPageComponents
       .filter((component) => availableComponents.includes(component.apiName))
       .map((component) => ({
