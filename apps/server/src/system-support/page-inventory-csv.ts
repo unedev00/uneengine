@@ -82,7 +82,8 @@ export async function inventoryDefinitions(db:SqlPersistence,tenant:string,
     COALESCE(r.choices_override,p.choices) AS choices,p.min_value,p.max_value
    FROM md_builder_ribbon_component_rules r
    JOIN md_builder_shared_properties p ON p.property_key=r.property_key
-   WHERE r.enabled=true AND p.scope='component' AND r.component_api=ANY($1::text[])
+   WHERE r.enabled=true AND p.scope='component' AND p.control_kind NOT IN ('command','readonly')
+    AND r.component_api=ANY($1::text[])
    ORDER BY p.sort_order`,[installed]),
   db.query<{component_api:string;published_version:number}>(`
    SELECT component_api,published_version FROM md_component_library_heads
