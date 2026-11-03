@@ -21,6 +21,21 @@ export function validateComponentId(
  return null;
 }
 
+/** Final save guard also covers imported or externally modified page drafts. */
+export function duplicatePageComponentId(
+ components:readonly Pick<PageComponentMetadata,'id'>[]
+):string|null{
+ const ids=new Set<string>();
+ for(const component of components){
+  if(typeof component.id!=='string'||!component.id.trim())
+   return 'Every component must have an ID.';
+  const key=component.id.toLowerCase();
+  if(ids.has(key))return 'Duplicate Component ID on this page: '+component.id;
+  ids.add(key);
+ }
+ return null;
+}
+
 const referenceKeys=new Set([
  'parentId','layoutParentId','targetComponentId','sourceComponentId','componentId'
 ]);
