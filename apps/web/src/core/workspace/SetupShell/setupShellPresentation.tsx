@@ -263,7 +263,7 @@ export function renderSetupShell(ctx: any) {
           </aside>
         )}
 
-        <section className={`workspace ${route.kind !== 'setup' ? 'workspace-records' : ''} ${workspace === 'flow-builder' ? 'workspace-flow' : ''}`}>
+        <main className={`workspace ${route.kind !== 'setup' ? 'workspace-records' : ''} ${workspace === 'flow-builder' ? 'workspace-flow' : ''}`}>
           {setupAccessNotice && <div className="info-callout" role="alert">{setupAccessNotice}</div>}
           {route.kind === 'setup' && runtimeFormFactor === 'Phone' && workspace !== 'home' && !route.dashboardView &&
             <nav className="mobile-settings-back-bar" aria-label="Settings navigation">
