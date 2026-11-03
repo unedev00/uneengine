@@ -206,10 +206,10 @@
 .properties-section-title { color: #504e48; }
 .welcome-quick button,
 .shortcut-title { color: #075c9a; }
-/* The static light-theme contrast ink is too dark on dark surfaces.
- * Keep explicitly light Setup chrome legible even if the OS prefers dark. */
+/* Contrast ink follows an explicitly selected System theme, not the OS alone.
+ * White is the workspace default even when the operating system is dark. */
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .lightning:not(.md-setup-light):not([data-theme="light"]) :is(.welcome-quick button,.shortcut-title) {
+  :root[data-theme="system"] .lightning:not(.md-setup-light):not([data-theme="light"]) :is(.welcome-quick button,.shortcut-title) {
     color: #8cc5ff;
   }
 }
