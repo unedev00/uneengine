@@ -196,6 +196,11 @@ import {
 
 
 export function createPageRuntimeViews(apiRequest: <T>(path:string, init?:RequestInit) => Promise<T>) {
+// Shared authenticated loader for both record-bound and unbound registered components.
+// Tenant isolation and access checks remain on the existing media endpoint.
+const loadPageMediaAsset = (id:string) => /^[0-9a-f-]{36}$/i.test(id)
+  ? apiRequest<{contentType:string;contentBase64:string}>('/media-assets/'+id)
+  : Promise.reject(new Error('Invalid media asset ID'));
 function RuntimeReportChart({ report, objects, recordContext }: {
   report: ReportMetadata | undefined; objects: ObjectMetadata[];
   recordContext?: {objectApiName:string;recordId:string;relationshipFieldApiName?:string};
@@ -860,9 +865,7 @@ function MetadataBoundPageComponent({
        pageSessionKey, componentId: component.id,
       device: formFactor, onNavigate, onLaunchFlow, onAction, actionError,
       disabled:behaviorAction(properties,'click',{formFactor})!=='enabled',
-      loadAsset: (id:string) => /^[0-9a-f-]{36}$/i.test(id)
-        ? apiRequest<{contentType:string;contentBase64:string}>('/media-assets/'+id)
-        : Promise.reject(new Error('Invalid media asset ID')), viewRevision: revision,
+      loadAsset: loadPageMediaAsset, viewRevision: revision,
       loadCompanySettings: () => apiRequest('/metadata/currencies'),
       onChange: (value: unknown) => {
         if (actionFlows.change || (Array.isArray(pageBehaviors(properties)?.interactions)
@@ -1120,7 +1123,8 @@ function LightningAppRuntime({
               ? component.properties.label : component.label,
             properties: component.properties,
             pageSessionKey: appId + ':' + page.apiName, componentId: component.id,
-            device: layoutDevice, children: nestedChildren
+            device: layoutDevice, children: nestedChildren,
+            loadAsset: loadPageMediaAsset
           }} />;
       const rendered = nestedChildren?.length && definition.trustedBundled !== true
         ? <div className="metadata-nested-host" data-nested-host={component.id}>{content}{nestedChildren}</div>
