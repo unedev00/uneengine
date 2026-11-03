@@ -5,7 +5,7 @@ import type {PageLayoutVariant} from '../system-files/page-layout-version-runtim
 
 /** One interoperable format for Page Builder inventory export and guarded draft import. */
 export const INVENTORY_COLUMNS=['pageapi','component_name','component_property','value'] as const;
-export type InventoryIssue={row:number;component_name:string;component_property:string;remark:string};
+export type InventoryIssue={row:number;pageapi?:string;component_name:string;component_property:string;value?:string;remark:string};
 type Block={id:string;type:string;label:string;region?:string;visible:boolean;
  position?:{x:number;y:number;width:number;height:number};
  properties:Record<string,unknown>};
@@ -164,8 +164,8 @@ export function applyInventoryCsv(page:InventoryPage,csv:string,definitions:Defi
  for(const row of rows){
   if(issues.length>=500)break;
   const [api,componentName,rawProperty,value]=row.cells;
-  const report=(remark:string)=>issues.push({row:row.line,component_name:componentName??'',
-   component_property:rawProperty??'',remark});
+  const report=(remark:string)=>issues.push({row:row.line,pageapi:api??'',component_name:componentName??'',
+   component_property:rawProperty??'',value:value??'',remark});
   if(row.cells.length!==4){report('Expected exactly four CSV columns');continue;}
   if(api?.trim()!==page.apiName){report('Page API does not match selected page: '+page.apiName);continue;}
   const component=byName.get(componentName);
