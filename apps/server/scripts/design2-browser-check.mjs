@@ -24,6 +24,10 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
   'Original Design property moved during Design 2 migration');
  assert.equal(definitions.rows.find(row=>row.property_key==='rowBold')?.tab,'Design2');
  console.info('Design 2 SQL migration replay, legacy Design isolation and Focused mapping verified');
+ await db.query(`INSERT INTO md_component_definitions (tenant_id,api_name,renderer_key,enabled)
+ VALUES ($1,'smart_cart','one-bundled:smart_cart',true),
+        ($1,'smart_tabs','one-bundled:smart_tabs',true)
+ ON CONFLICT (tenant_id,api_name) DO NOTHING`,[tenantId]);
 
  // The real authenticated Builder Catalog endpoint must expose SQL slots and enforce RBAC.
  // Navigate to the compiled frontend before using browser-relative /api URLs.
