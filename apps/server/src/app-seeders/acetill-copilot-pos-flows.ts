@@ -64,7 +64,10 @@ export const copilotAddProduct=graph('AcetillCopilotAddProduct','Till: add autho
    {field:'Product',operator:'Equals',value:'{!product.Id}'},
    {field:'Name',operator:'Equals',value:'{!product.Name}'},
    {field:'UnitPrice',operator:'Equals',value:'{!product.Price}'},
-   {field:'OriginalUnitPrice',operator:'Equals',value:'{!product.Price}'}]}),
+   {field:'OriginalUnitPrice',operator:'Equals',value:'{!product.Price}'},
+   {field:'DiscountAmount',operator:'IsNull'},
+   {field:'Status',operator:'IsNull'},
+   {field:'Cart',operator:'IsNull'}]}),
  n(18,'Decision','Matching sale line exists?',{outcomes:[{
   name:'Found',label:'Found',conditionLogic:'All',
   conditions:[{field:'{!existingLine}',operator:'IsNotNull'}]}]}),
