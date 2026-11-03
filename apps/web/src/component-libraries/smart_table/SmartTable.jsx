@@ -46,8 +46,8 @@ export default function SmartTable({p,records,expression,fieldAllowed,fire}){
  const rowHeight=finite(p.rowHeight,40,22,300);
  const rowStyle=row=>({
   height:rowHeight,minHeight:rowHeight,
-  color:colour(p.rowLabelColor,p.defaultValueColor||"#27374d"),
-  fontSize:finite(p.textSize,13,9,96),
+  color:colour(p.rowLabelColor,"#27374d"),
+  fontSize:13,
   background:selected!==null&&String(row.Id??row.id)===selected
    ?colour(p.selectedRowColor,"#e7f1ff"):undefined
  });
@@ -108,7 +108,7 @@ export default function SmartTable({p,records,expression,fieldAllowed,fire}){
          style={{borderBottom:border(borderColor),
           borderTop:active?border(borderColor):undefined,
           borderRadius:i===0?finite(p.rowRadius,0,0,100):undefined,
-          textAlign:p.labelAlignment||"left",height:rowHeight}}>
+          textAlign:"left",height:rowHeight}}>
          {value(row,col)}</td>)}
        {actions.length>0&&<td className="smart-table-actions"
          style={{borderBottom:border(borderColor)}}>
