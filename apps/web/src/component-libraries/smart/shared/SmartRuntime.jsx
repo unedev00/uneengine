@@ -178,7 +178,8 @@ function SmartCard({p,record,onButtonClick,selected=false}){
   </div>}
   {header&&headerHeight>0&&<div className="smart-card-content" style={{
     order:1,flex:horizontal?(imageVisible?"1 1 50%":"1 1 100%"):undefined,display:"flex",alignItems:"center",
-    height:headerHeight,alignSelf:horizontal?"center":undefined,flexShrink:0,
+    height:headerHeight,width:p.headerWidth!==undefined&&p.headerWidth!==null?number(p.headerWidth,0,0,1200):undefined,
+     alignSelf:horizontal?"center":undefined,flexShrink:0,
     fontWeight:focusedWeight??(p.headerBold===false?400:700),
     // Standalone Image's visible caption is edited by the shared Typography
     // Label Alignment control; Card Grid retains its prior Header precedence.
@@ -214,7 +215,11 @@ function SmartCard({p,record,onButtonClick,selected=false}){
   </div>}
   {p.badgeVisible===true&&Boolean(badge)&&<span className={"smart-badge "+(p.badgeAlignment||"image-top-right")}
    style={{fontWeight:p.badgeBold===false?400:700,fontSize:number(p.badgeTextSize,12),
-   color:p.badgeTextColor||"#fff",background:p.badgeBodyColor||"#2563eb"}}>{badge}</span>}
+   color:p.badgeTextColor||"#fff",background:p.badgeBodyColor||"#2563eb",
+   border:p.badgeBorderColor?"1px solid "+p.badgeBorderColor:undefined,
+   borderRadius:p.badgeRadius!==undefined?number(p.badgeRadius,0,0,1200):undefined,
+   height:p.badgeHeight!==undefined?number(p.badgeHeight,0,0,1200):undefined,
+   width:p.badgeWidth!==undefined?number(p.badgeWidth,0,0,1200):undefined}}>{badge}</span>}
  </article>;
 }
 function SmartCalendar({p,fire}){
@@ -488,6 +493,7 @@ export default function SmartRuntime(p){
    </span>
    <div className="smart-textbox-value-panel" style={{
     backgroundColor:p.headerBodyColor||"#fff",color:p.headerTextColor||"#1e293b",
+    width:p.headerWidth!==undefined?number(p.headerWidth,0,0,1200):undefined,
     justifyContent:alignItems(p.headerAlignment)}}>
     <div key={p.textSource??""} className="smart-textbox-value" role="textbox"
       aria-label={caption||"Value"} aria-readonly={!editable}
