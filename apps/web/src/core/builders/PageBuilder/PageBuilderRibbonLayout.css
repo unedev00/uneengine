@@ -361,3 +361,128 @@
   width:max-content!important;min-width:100%!important;
   height:150px!important;min-height:150px!important;max-height:150px!important;
 }
+
+/* Fixed grouped-property geometry for the Page Builder ribbon.
+ * Each value is the complete label + control slot, not a width for its input
+ * alone. Keep whole slots present when disabled so selecting another component
+ * cannot move neighbouring properties. This is builder presentation only. */
+.office-builder-ribbon:not(.is-interactive-preview)
+ #page-builder-tab-content.office-ribbon-content[aria-label="Advanced"]{
+ --page-ribbon-scroll-strip-height:127px;
+ overflow-x:auto!important;overflow-y:hidden!important;scrollbar-width:thin!important;
+}
+.office-builder-ribbon:not(.is-interactive-preview)
+ #page-builder-tab-content.office-ribbon-content>.page-builder-advanced-inline{
+ display:flex!important;flex:0 0 auto!important;flex-flow:row nowrap!important;
+ width:max-content!important;min-width:max-content!important;max-width:none!important;
+ height:114px!important;min-height:114px!important;max-height:114px!important;
+ overflow:visible!important;
+}
+.office-builder-ribbon .page-builder-advanced-inline>.advanced-fixed-group{
+ flex:0 0 auto!important;grid-column:auto!important;
+ height:114px!important;min-height:114px!important;max-height:114px!important;
+}
+.office-builder-ribbon .page-builder-advanced-inline>.advanced-activation{
+ width:260px!important;min-width:260px!important;max-width:260px!important;
+}
+.office-builder-ribbon .page-builder-advanced-inline>.advanced-properties{
+ width:616px!important;min-width:616px!important;max-width:616px!important;
+}
+.office-builder-ribbon .page-builder-advanced-inline>.advanced-nesting,
+.office-builder-ribbon .page-builder-advanced-inline>.advanced-technical{
+ width:316px!important;min-width:316px!important;max-width:316px!important;
+}
+.office-builder-ribbon .page-builder-advanced-inline
+ :is(.advanced-api-name,.advanced-visible,.advanced-readonly,.advanced-accept,.advanced-component-id){
+ box-sizing:border-box!important;width:300px!important;min-width:300px!important;
+ max-width:300px!important;height:26px!important;min-height:26px!important;max-height:26px!important;
+ right:auto!important;
+}
+.office-builder-ribbon .page-builder-advanced-inline .advanced-api-name{left:8px!important;top:5px!important}
+.office-builder-ribbon .page-builder-advanced-inline .advanced-visible{left:8px!important;top:35px!important}
+.office-builder-ribbon .page-builder-advanced-inline .advanced-readonly{left:316px!important;top:35px!important}
+.office-builder-ribbon .page-builder-advanced-inline .advanced-accept{left:8px!important;top:5px!important}
+.office-builder-ribbon .page-builder-advanced-inline .advanced-component-id{left:8px!important;top:5px!important}
+.office-builder-ribbon .page-builder-advanced-inline .advanced-fixed-field>input:not([type=checkbox]){
+ flex:1 1 0!important;width:0!important;min-width:0!important;max-width:none!important;
+}
+
+/* View: Search and Canvas are 300px units. The three zoom buttons are each
+ * 100px. Conditional Visibility is one 300px unit (checkbox + filter + dialog),
+ * never three competing widths. */
+.office-builder-ribbon #page-builder-tab-content.office-ribbon-content[aria-label="Preview"]
+ >.canvas-preview-selector-group,
+.office-builder-ribbon #page-builder-tab-content.office-ribbon-content[aria-label="Preview"]
+ >.ribbon-view-canvas,
+.office-builder-ribbon #page-builder-tab-content.office-ribbon-content[aria-label="Preview"]
+ >.preview-visibility-group{
+ box-sizing:border-box!important;flex:0 0 316px!important;
+ width:316px!important;min-width:316px!important;max-width:316px!important;
+ padding:3px 8px 17px!important;
+}
+.office-builder-ribbon #page-builder-tab-content .page-component-navigator{
+ box-sizing:border-box!important;width:300px!important;min-width:300px!important;max-width:300px!important;
+}
+.office-builder-ribbon #page-builder-tab-content .page-component-navigator .ribbon-view-search{
+ box-sizing:border-box!important;flex:0 0 300px!important;
+ width:300px!important;min-width:300px!important;max-width:300px!important;
+ height:26px!important;min-height:26px!important;max-height:26px!important;
+}
+.office-builder-ribbon #page-builder-tab-content.office-ribbon-content[aria-label="Preview"]>.ribbon-view-zoom{
+ box-sizing:border-box!important;flex:0 0 324px!important;
+ width:324px!important;min-width:324px!important;max-width:324px!important;
+ padding:3px 8px 17px!important;
+}
+.office-builder-ribbon #page-builder-tab-content .ribbon-view-zoom-buttons>button{
+ box-sizing:border-box!important;flex:0 0 100px!important;
+ width:100px!important;min-width:100px!important;max-width:100px!important;
+ height:26px!important;min-height:26px!important;max-height:26px!important;
+ padding:0 3px!important;
+}
+.office-builder-ribbon #page-builder-tab-content .ribbon-view-canvas .office-ribbon-stack>span{
+ display:flex;align-items:center;justify-content:center;
+ box-sizing:border-box;width:300px;height:26px;min-height:26px;max-height:26px;
+}
+.office-builder-ribbon #page-builder-tab-content .preview-visibility-controls{
+ box-sizing:border-box!important;display:flex!important;flex-flow:row nowrap!important;
+ align-items:center!important;gap:4px!important;
+ flex:0 0 300px!important;width:300px!important;min-width:300px!important;
+ max-width:300px!important;height:26px!important;min-height:26px!important;max-height:26px!important;
+}
+.office-builder-ribbon #page-builder-tab-content .preview-visibility-controls>.ribbon-small-checkbox{
+ box-sizing:border-box!important;display:flex!important;align-items:center!important;
+ gap:5px!important;flex:0 0 168px!important;width:168px!important;
+ min-width:168px!important;max-width:168px!important;
+ height:26px!important;min-height:26px!important;max-height:26px!important;
+ margin:0!important;white-space:nowrap!important;font-size:11px!important;
+}
+.office-builder-ribbon #page-builder-tab-content .preview-visibility-controls>.office-ribbon-icon-button{
+ box-sizing:border-box!important;display:flex!important;align-items:center!important;
+ justify-content:center!important;flex:0 0 30px!important;width:30px!important;
+ min-width:30px!important;max-width:30px!important;
+ height:26px!important;min-height:26px!important;max-height:26px!important;padding:0!important;
+}
+.office-builder-ribbon #page-builder-tab-content .preview-visibility-controls>button:last-child{
+ box-sizing:border-box!important;flex:0 0 94px!important;width:94px!important;
+ min-width:94px!important;max-width:94px!important;
+ height:26px!important;min-height:26px!important;max-height:26px!important;
+ padding:0 4px!important;white-space:nowrap!important;
+}
+.office-builder-ribbon #page-builder-tab-content .preview-visibility-controls>button:disabled{
+ opacity:.45!important;cursor:not-allowed!important;
+}
+
+/* Actions: the selected formula editor is exactly 225 × 34px; no inherited
+ * legacy flex-grow rule may stretch it with the ribbon workspace. */
+.office-builder-ribbon #page-builder-tab-content .page-action-compact-workspace .page-action-formula-bar{
+ box-sizing:border-box!important;flex:0 0 34px!important;height:34px!important;
+ min-height:34px!important;max-height:34px!important;padding:0 7px!important;
+}
+.office-builder-ribbon #page-builder-tab-content .page-action-compact-workspace .page-action-formula-bar>.smart-formula{
+ box-sizing:border-box!important;flex:0 0 225px!important;width:225px!important;
+ min-width:225px!important;max-width:225px!important;
+ height:34px!important;min-height:34px!important;max-height:34px!important;
+}
+.office-builder-ribbon #page-builder-tab-content .page-action-compact-workspace .page-action-formula-bar .smart-formula input{
+ box-sizing:border-box!important;height:32px!important;min-height:32px!important;max-height:32px!important;
+}

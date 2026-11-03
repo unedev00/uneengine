@@ -18,7 +18,9 @@
  align-items:stretch;justify-content:flex-start;height:100%;min-height:0;
  padding:5px 8px 20px;border-right:1px solid #cbd6e2;
 }
-.office-builder-ribbon .page-action-compact-event{width:275px;min-width:275px;height:114px;}
+.office-builder-ribbon .page-action-compact-event{
+ width:241px;min-width:241px;max-width:241px;height:114px;
+}
 .office-builder-ribbon .page-action-compact-event-rows,
 .office-builder-ribbon .page-action-compact-rows{
  box-sizing:border-box;display:grid;grid-template-rows:repeat(3,26px);
@@ -27,7 +29,8 @@
 .office-builder-ribbon .page-action-slot,
 .office-builder-ribbon .page-action-compact-mapping{
  display:flex;box-sizing:border-box;align-items:center;gap:2px;
- height:26px;min-height:26px;max-height:26px;min-width:0;position:relative;
+ width:225px;min-width:225px;max-width:225px;
+ height:26px;min-height:26px;max-height:26px;position:relative;
  font:11px "Segoe UI",Arial,sans-serif;
 }
 .office-builder-ribbon .page-action-slot>label,
@@ -88,7 +91,7 @@
 .office-builder-ribbon .page-action-compact-workspace .page-action-formula-bar{
  box-sizing:border-box;display:flex;flex:0 0 34px;height:34px;min-height:34px;
  align-items:center;gap:3px;width:100%;min-width:320px;
- padding:3px 7px 3px;border-bottom:1px solid #d6e1ee;
+ padding:0 7px;border-bottom:1px solid #d6e1ee;
  background:#f5f8fd;
 }
 .office-builder-ribbon .page-action-compact-workspace .page-action-formula-bar
@@ -98,12 +101,13 @@
  border:1px solid #ccd9e8;border-radius:4px;background:#fff;color:#304b71;
 }
 .office-builder-ribbon .page-action-compact-workspace .page-action-formula-bar>.smart-formula{
- display:block;box-sizing:border-box;flex:1 1 0;
- width:100%;min-width:130px;height:27px;border:1px solid #ccd9e8;
+ display:block;box-sizing:border-box;flex:0 0 225px;
+ width:225px;min-width:225px;max-width:225px;height:34px;min-height:34px;max-height:34px;
+ border:1px solid #ccd9e8;
  border-radius:4px;background:#fff;
 }
 .office-builder-ribbon .page-action-compact-workspace .page-action-formula-bar .smart-formula input{
- box-sizing:border-box;width:100%;height:25px;padding:2px 8px;
+ box-sizing:border-box;width:100%;height:32px;padding:2px 8px;
  color:#304b71;font:12px Consolas,monospace;
 }
 .office-builder-ribbon .page-action-compact-sections{
@@ -115,10 +119,10 @@
  padding:3px 8px 20px;gap:0!important;
 }
 .office-builder-ribbon .page-action-compact-sections>.page-action-compact-custom{
- width:524px;min-width:524px;
+ width:472px;min-width:472px;max-width:472px;
 }
 .office-builder-ribbon .page-action-compact-custom-grid{
- display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ display:grid;grid-template-columns:repeat(2,225px);
  grid-template-rows:repeat(2,26px);grid-auto-flow:column;
  gap:4px 6px;align-content:start;height:56px;
 }
