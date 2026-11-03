@@ -159,7 +159,8 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    ...activeDesign2Slots.filter(slot=>slot.column===index+1).map(slot=>slot.width)));
  const design2Properties=tab==='Design2'?activeDesign2Slots.map(slot=>{
    const original=definitions.find(p=>p.id===slot.propertyKey)
-     ??definitions.find(p=>p.id===slot.fallbackKey);
+     ??definitions.find(p=>p.id===slot.fallbackKey)
+     ??definitions.find(p=>p.id==='backgroundColor');
    if(!original)return null;
    const valid=slot.propertyKey===original.id&&original.components.includes(api);
    return {...original,
@@ -480,12 +481,19 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
             {design2Areas.map(area=><option value={area} key={area}>{area}</option>)}
           </select>
         </label>
-        <button type="button" className="smart-icon-toggle smart-design2-visibility"
-          aria-label="Component visibility" title="Component visibility"
-          aria-pressed={componentVisible} disabled={!onVisibleChange}
-          onClick={()=>onVisibleChange?.(!componentVisible)}>
-          {componentVisible?<Eye size={17}/>:<EyeOff size={17}/>}
-        </button>
+        {(()=>{
+          const badge=activeDesign2Area==='Badge'&&
+            definitions.some(p=>p.id==='badgeVisible'&&p.components.includes(api));
+          const visible=badge?properties.badgeVisible!==false:componentVisible;
+          const change=badge?()=>update('badgeVisible',!visible):
+            onVisibleChange?()=>onVisibleChange(!componentVisible):undefined;
+          return <button type="button" className="smart-icon-toggle smart-design2-visibility"
+            aria-label={badge?'Badge visibility':'Component visibility'}
+            title={badge?'Badge visibility':'Component visibility'}
+            aria-pressed={visible} disabled={!change} onClick={change}>
+            {visible?<Eye size={17}/>:<EyeOff size={17}/>}
+          </button>;
+        })()}
       </div>
       {[1,2,3].map(row=><div key={row} className="smart-ribbon-row smart-design2-property-row"
         style={{gridTemplateColumns:design2Columns.map(width=>width+'px').join(' ')}} data-design-row={row}>
