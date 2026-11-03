@@ -1,5 +1,4 @@
 import SmartCart from "../../smart_cart/SmartCart.jsx";
-import SmartTable from "../../smart_table/SmartTable.jsx";
 import icons from "../../smart_icon/iconCatalog.json";
 import {smartShapeAppearance} from "./SmartShapeAppearance.js";
 import {evaluateFieldExpression} from "../../shared/FieldExpression.js";
@@ -430,10 +429,6 @@ export default function SmartRuntime(p){
   return expression(formula,row,p.pageState,p.objectApiName,p.formulaCollectionSources,p.namedCollections,
    complete&&rows.length<=200?rows:undefined);
  }}
-    fieldAllowed={(key,row)=>fieldAllows(p,key,row)} fire={fire}/>;
- else if(name==="smart_table")content=<SmartTable p={p} records={recordsOf(p)}
-    expression={(formula,row)=>expression(formula,row,p.pageState,p.objectApiName,
-     p.formulaCollectionSources,p.namedCollections)}
     fieldAllowed={(key,row)=>fieldAllows(p,key,row)} fire={fire}/>;
  else if(name==="smart_calendar")content=<SmartCalendar p={p} fire={fire}/>;
  else if(name==="smart_tabs")content=<SmartTabs p={p} record={record} fire={fire}/>;
