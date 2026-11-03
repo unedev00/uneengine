@@ -65,7 +65,9 @@ export default function SmartTable({p,records,expression,fieldAllowed,fire}){
  };
  const total=typeof p.recordPagination?.total==="number"
   ?p.recordPagination.total:realRows.length;
- const footerText=total===1?"1 record":total+" records";
+ const shown=realRows.length;
+ const footerText=total>shown
+  ?shown+" of "+total+" records":total===1?"1 record":total+" records";
  const footerStyle={
   backgroundColor:colour(p.summaryBackgroundColor,"#f5f7fa"),
   color:colour(p.summaryTextColor,"#33445d"),
