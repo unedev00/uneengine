@@ -10,7 +10,10 @@ test('global system popup never hides deployment control after a forbidden statu
  assert.match(source,/deploymentError && <p[^>]+role="alert"/);
  assert.doesNotMatch(source,/\{deployment && <div className="navigation-deployment-control"/);
  assert.doesNotMatch(source,/403\|permission\|denied/);
- assert.match(source,/Open GitHub workflow history/);
+ assert.doesNotMatch(source,/Open GitHub workflow history/);
+ assert.match(source,/Deploy latest to OCI/);
+ assert.match(source,/OCI deployment failed at stage/);
+ assert.match(source,/PlatformOperations manage permission is missing/);
  assert.match(source,/OCI deployment/);
  assert.doesNotMatch(source,/GitHub credential is required/);
 });

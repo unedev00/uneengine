@@ -13,10 +13,10 @@ declare const __METADRIVE_WEB_RELEASE__: { commit: string | null; builtAt: strin
 
 type ProductionStatus = {
  configured: boolean; canDeploy: boolean; latestCommit: string | null;
- workflowUrl?: string; error?: string;
+ error?: string;
+ permission?: {hasPlatformDeveloper:boolean;hasOperationsManage:boolean};
  oci?: {state:'idle'|'running'|'succeeded'|'failed';sha:string|null;stage:string|null;updatedAt:string|null}|null;
  deployedCommit: string | null; active: boolean;
- run: null | {id:number;commit:string;status:string;conclusion:string|null;createdAt:string;url:string};
 };
 type DeploymentRequest = <T>(path:string,init?:RequestInit)=>Promise<T>;
 
@@ -47,7 +47,8 @@ export function NavigationLoadTime({ routeKey, startedAt, ready, kind, authMs, r
   const [deploymentBusy, setDeploymentBusy] = useState(false);
   const [deploymentLoading, setDeploymentLoading] = useState(false);
   const [deploymentRequested, setDeploymentRequested] = useState(false);
-  const [requestedAfterRunId, setRequestedAfterRunId] = useState<number | null>(null);
+  const [requestedCommit, setRequestedCommit] = useState<string | null>(null);
+  const [refreshDeployment, setRefreshDeployment] = useState(0);
   const [oracle, setOracle] = useState<{ status: OracleStatus; release: OracleRelease | null }>({ status: 'idle', release: null });
   const containerRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -138,13 +139,11 @@ export function NavigationLoadTime({ routeKey, startedAt, ready, kind, authMs, r
           setDeployment(status);
           setDeploymentError('');
           setDeploymentLoading(false);
-          // A workflow_dispatch may take time to appear in GitHub. An older
-          // completed run must not re-enable the button after acceptance.
-          if (requestedAfterRunId !== null && (status.oci?.state === 'running' ||
-            status.oci?.state === 'succeeded' || status.oci?.state === 'failed') &&
-            status.oci.sha === status.latestCommit) {
+          // Keep the accepted request visible until OCI reports that same commit.
+          if (requestedCommit !== null && status.oci?.sha === requestedCommit &&
+            ['running','succeeded','failed'].includes(status.oci.state)) {
             setDeploymentRequested(false);
-            setRequestedAfterRunId(null);
+            setRequestedCommit(null);
           }
         }
       } catch (error) {
@@ -156,24 +155,23 @@ export function NavigationLoadTime({ routeKey, startedAt, ready, kind, authMs, r
       }
     };
     void check();
-    // Read-only GitHub metadata is public and rate limited. Allow OCI job
-    // progress to update without refreshing the page after a deployment request.
+    // Poll OCI status without relying on GitHub Actions run state.
     const interval = window.setInterval(() => {void check();},
       deployment?.active || deploymentRequested ? 30_000 : 180_000);
     return () => {cancelled = true; window.clearInterval(interval);};
-  }, [open, request, requestedAfterRunId, deployment?.active, deploymentRequested]);
+  }, [open, request, requestedCommit, deployment?.active, deploymentRequested, refreshDeployment]);
 
   const deployLatest = async () => {
     if (!request || !deployment?.canDeploy || !deployment.latestCommit ||
       deployment.active || deploymentBusy || deploymentRequested) return;
     if (!window.confirm('Deploy latest main commit ' + deployment.latestCommit.slice(0,12) +
-      ' to production? This runs the existing validation, SQL backup and full-stack release workflow.')) return;
+      ' to OCI production? OCI will validate, build, back up SQL, deploy and verify the release.')) return;
     setDeploymentBusy(true);
     setDeploymentError('');
     try {
       await request('/platform/production-deployment', {method:'POST',
         body:JSON.stringify({expectedCommit:deployment.latestCommit})});
-      setRequestedAfterRunId(deployment.run?.id ?? 0);
+      setRequestedCommit(deployment.latestCommit);
       setDeploymentRequested(true);
     } catch (error) {
       setDeploymentError(error instanceof Error ? error.message : 'Deployment request failed');
@@ -259,64 +257,76 @@ export function NavigationLoadTime({ routeKey, startedAt, ready, kind, authMs, r
         <div><dt>Frontend built</dt><dd>{utcDate(webRelease?.builtAt)}</dd></div>
       </dl>
       <div className="navigation-deployment-control" aria-label="Production deployment">
-        <strong className="navigation-deployment-heading">Production deployment</strong>
+        <strong className="navigation-deployment-heading">OCI production deployment</strong>
         <dl className="navigation-diagnostics-details">
-          <div><dt>Latest main commit</dt><dd title={deployment?.latestCommit ?? undefined}>
+          <div><dt>Latest main commit (source only)</dt><dd title={deployment?.latestCommit ?? undefined}>
             {deploymentLoading && !deployment ? 'Checking…' :
              deployment?.latestCommit?.slice(0,12) ?? 'Unavailable'}</dd></div>
+          <div><dt>Deployed OCI API</dt><dd title={deployment?.deployedCommit ?? undefined}>
+            {deployment?.deployedCommit?.slice(0,12) ?? 'Unavailable'}</dd></div>
           <div><dt>OCI deployment</dt><dd>
-            {deployment?.oci?.state === 'running'
-              ? 'Running: '+(deployment.oci.stage ?? 'preparing')
-              : deployment?.oci?.state === 'succeeded' ? 'Last OCI run succeeded'
-              : deployment?.oci?.state === 'failed' ? 'Last OCI run failed'
-              : deploymentRequested ? 'Request accepted' : 'Idle'}</dd></div>
-          <div><dt>GitHub workflow</dt><dd>
-            {deployment?.active && deployment.run && deployment.run.status !== 'completed'
-              ? 'Running' :
-             deploymentRequested ? 'Checking…' :
-             deployment?.run?.status === 'completed'
-              ? deployment.run.conclusion === 'success' ? 'Last run succeeded' : 'Last run failed'
-              : deploymentLoading ? 'Checking…' : deployment ? 'Not running' : 'Unavailable'}</dd></div>
+            {!deployment?.configured ? 'Unavailable' :
+             deployment.oci?.state === 'running' ? 'Running: '+(deployment.oci.stage ?? 'preparing') :
+             deployment.oci?.state === 'succeeded' ? 'Last run succeeded' :
+             deployment.oci?.state === 'failed' ? 'Failed: '+(deployment.oci.stage ?? 'unknown stage') :
+             deploymentRequested ? 'Request accepted' : 'Idle'}</dd></div>
+          {deployment?.oci?.sha && <div><dt>OCI job commit</dt><dd title={deployment.oci.sha}>
+            {deployment.oci.sha.slice(0,12)}</dd></div>}
+          {deployment?.oci?.updatedAt && <div><dt>OCI status updated</dt>
+            <dd>{utcDate(deployment.oci.updatedAt)}</dd></div>}
         </dl>
         <button type="button" className="btn btn-small navigation-deployment-button"
           disabled={!request || !deployment?.canDeploy || !deployment.configured ||
             !deployment.latestCommit || deploymentBusy || deployment.active || deploymentRequested ||
             (deployment.latestCommit === deployment.deployedCommit &&
-             deployment.latestCommit === webRelease?.commit &&
-             deployment.run?.conclusion !== 'failure')}
+             deployment.latestCommit === webRelease?.commit)}
           title={!deployment?.canDeploy ? 'Platform Developer deployment permission required'
-            : !deployment.configured ? 'The OCI deployment broker is unavailable'
-            : deployment.active ? 'A deployment is already running'
+            : !deployment.configured ? 'The OCI deployment helper is unavailable'
+            : deployment.active ? 'An OCI deployment is running'
             : undefined}
           onClick={() => {void deployLatest();}}>
-          {deploymentBusy ? 'Requesting…' : deployment?.active ? 'Deployment running' :
-           deploymentRequested ? 'Deployment requested' : 'Deploy latest'}
+          {deploymentBusy ? 'Requesting…' : deployment?.active ? 'OCI deployment running' :
+           deploymentRequested ? 'OCI deployment requested' : 'Deploy latest to OCI'}
         </button>
-        {deployment && !deployment.canDeploy && <p className="navigation-diagnostics-note">
-          Deploy requires Platform Developer permission and PlatformOperations manage access.
+        <button type="button" className="btn btn-small"
+          disabled={deploymentLoading} onClick={() => setRefreshDeployment(x => x + 1)}>
+          {deploymentLoading ? 'Checking…' : 'Refresh status'}
+        </button>
+        {deployment && !deployment.canDeploy && <p className="navigation-diagnostics-note" role="alert">
+          Deployment blocked: {!deployment.permission?.hasPlatformDeveloper
+            ? 'Platform Developer policy is not assigned to your account. '
+            : ''}{!deployment.permission?.hasOperationsManage
+            ? 'PlatformOperations manage permission is missing. '
+            : ''}An authorised platform administrator must grant the missing access through OneEngine.
         </p>}
-        {deployment && !deployment.configured && <p className="navigation-diagnostics-note">
-          OCI deployment helper is unavailable. Production operators can inspect the existing OCI operations service.
+        {deployment && !deployment.configured && <p className="navigation-diagnostics-note" role="alert">
+          OCI deployment helper unavailable. Check the OCI operations socket, API configuration and installed helper.
+        </p>}
+        {deployment?.oci?.state === 'failed' && <p className="navigation-diagnostics-note" role="alert">
+          OCI deployment failed at stage: {deployment.oci.stage ?? 'unknown'}.
+          {deployment.oci.stage === 'outdated-request'
+            ? ' Main changed during deployment; refresh the source commit and retry.'
+            : deployment.oci.stage === 'validating'
+            ? ' Build checks failed on OCI; inspect the deployment service journal.'
+            : deployment.oci.stage === 'building'
+            ? ' The build failed on OCI; inspect the deployment service journal.'
+            : deployment.oci.stage === 'verifying'
+            ? ' Release verification failed; inspect OCI API, worker and frontend health.'
+            : ' Inspect the OCI deployment service journal for the failure details.'}
         </p>}
         {deployment && deployment.canDeploy && deployment.configured &&
           deployment.latestCommit === deployment.deployedCommit &&
           deployment.latestCommit === webRelease?.commit &&
-          deployment.run?.conclusion !== 'failure' &&
-          <p className="navigation-diagnostics-note">Production is up to date.</p>}
+          <p className="navigation-diagnostics-note">OCI production is up to date.</p>}
         {deployment?.error && <p className="navigation-diagnostics-note" role="alert">
           {deployment.error}</p>}
         {deploymentError && <p className="navigation-diagnostics-note" role="alert">
           {deploymentError}</p>}
         {deployment?.active && <p className="navigation-diagnostics-note">
-          Another production release is in progress.</p>}
+          An OCI production release is in progress.</p>}
         {deployment?.latestCommit && deployment.latestCommit !== webRelease?.commit &&
           <p className="navigation-diagnostics-note">
             Save changes before refreshing after deployment.</p>}
-        <a href={deployment?.run?.url ??
-          deployment?.workflowUrl ??
-          'https://github.com/unedev00/uneengine/actions/workflows/oracle-api-deploy.yml'}
-          target="_blank" rel="noopener noreferrer" className="navigation-deployment-link">
-          Open GitHub workflow history</a>
       </div>
       {oracle.status === 'error' && <p className="navigation-diagnostics-note">Oracle API could not be reached.</p>}
       {oracle.status === 'ready' && !oracle.release && <p className="navigation-diagnostics-note">This API does not report release details yet.</p>}

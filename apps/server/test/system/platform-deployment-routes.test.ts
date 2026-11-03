@@ -35,7 +35,7 @@ function reset(){
  }
 }
 function json(value:unknown){return new Response(JSON.stringify(value),{status:200});}
-function fakeGithub(active=false){
+function fakeGithub(){
  const calls:string[]=[];
  globalThis.fetch=async(input:RequestInfo|URL,init?:RequestInit)=>{
   const url=String(input);
@@ -45,10 +45,6 @@ function fakeGithub(active=false){
    'No GitHub deploy credential or authenticated GitHub API call');
   assert.match(url,/^https:\/\/api\.github\.com\/repos\/unedev00\/uneengine\//);
   if(url.endsWith('/commits/main'))return json({sha:latest});
-  if(url.includes('/runs?branch=main'))return json({workflow_runs:[{
-   id:42,head_sha:stale,status:active?'in_progress':'completed',
-   conclusion:active?null:'success',created_at:'2026-11-02T13:25:00Z',event:'push'
-  }]});
   throw Error('Unexpected GitHub request '+url);
  };
  return calls;
@@ -88,7 +84,7 @@ test('OCI is optional for public status, but is required for dispatch',async()=>
   assert.equal(status.configured,false);
   assert.equal(status.latestCommit,latest);
   assert.equal(status.oci,null);
-  assert.equal(calls.length,2);
+  assert.equal(calls.length,1);
   await assert.rejects(requestProductionDeployment(fakeDatabase().db,'tenant','user',latest),
    (e:unknown)=>e instanceof DeploymentControlError&&e.statusCode===503);
  }finally{reset();}
@@ -104,7 +100,8 @@ test('OCI deploy dispatch pins main and audits without GitHub write API',async()
   assert.equal(status.configured,true);
   assert.equal(status.oci?.state,'idle');
   assert.equal(status.deployedCommit,stale);
-  assert.equal(status.run?.id,42);
+  assert.equal(status.active,false);
+  assert.equal(calls.length,1);
   const accepted=await requestProductionDeployment(db,'tenant','user',latest,oci.operate);
   assert.deepEqual(accepted,{accepted:true,targetCommit:latest});
   assert.equal(oci.calls.filter(x=>x.action==='deploy_latest').length,1);
@@ -115,7 +112,7 @@ test('OCI deploy dispatch pins main and audits without GitHub write API',async()
   assert.ok(calls.every(url=>!url.includes('/dispatches')));
  }finally{reset();}
 });
-test('OCI running, concurrent workflow, stale commit and duplicates refuse dispatch',async()=>{
+test('OCI running, stale commit and duplicate dispatches are refused',async()=>{
  enableOci();
  fakeGithub();
  const {db}=fakeDatabase();
@@ -158,6 +155,7 @@ test('read-only status is visible without platform policy but dispatch is forbid
     assert.equal(response.status,undefined);
     assert.equal(response.body.latestCommit,latest);
     assert.equal(response.body.canDeploy,false);
+    assert.deepEqual(response.body.permission,{hasPlatformDeveloper:false,hasOperationsManage:true});
    }else assert.equal(response.status,403);
   }
   assert.ok(calls.every(url=>!url.includes('/dispatches')));
@@ -178,4 +176,18 @@ test('separate PlatformOperations permission is mandatory even with platform pol
   (error?:unknown)=>{throw error;});
  assert.equal(status,403);
  reset();
+});
+
+test('GitHub lookup failures retain OCI failure stage and block dispatch',async()=>{
+ enableOci();
+ globalThis.fetch=async()=>new Response('unavailable',{status:503});
+ const oci=fakeOci('failed');
+ try{
+  const status=await readProductionDeployment(oci.operate);
+  assert.equal(status.configured,true);
+  assert.equal(status.oci?.state,'failed');
+  assert.equal(status.oci?.stage,'building');
+  assert.equal(status.latestCommit,null);
+  assert.match(status.error??'',/Cannot dispatch/);
+ }finally{reset();}
 });
