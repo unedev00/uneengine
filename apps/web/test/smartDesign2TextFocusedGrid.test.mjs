@@ -48,7 +48,7 @@ test('Card Grid uses existing textSize and gap with optional content padding',as
  assert.doesNotMatch(padded,/padding:4px 10px/);
  const zero=await render('smart_card_grid',{...props,cardPadding:0,gap:0});
  assert.match(zero,/padding:0px/);
- assert.match(zero,/gap:0px/);
+ assert.match(zero,/gap:0(?:;|\")/);
 });
 
 test('Focused style applies to only the selected Card Grid record and preserves cell bounds',async()=>{
