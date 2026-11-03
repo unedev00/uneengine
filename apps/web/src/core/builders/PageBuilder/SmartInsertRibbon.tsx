@@ -17,8 +17,12 @@ export function isSmartInsertItem(item:SmartInsertItem){
 }
 export function filterSmartInsertItems(items:readonly SmartInsertItem[],scope:SmartInsertScope,term:string){
  const query=term.trim().toLowerCase();
+ const compactQuery=query.replace(/[\\s_-]+/g,'');
  return items.filter(item=>(scope==='all'||(scope==='smart')===isSmartInsertItem(item))
-   &&(!query||[item.type,item.label,item.description??''].some(text=>text.toLowerCase().includes(query))));
+   &&(!query||[item.type,item.label,item.description??''].some(text=>{
+     const label=text.toLowerCase();
+     return label.includes(query)||label.replace(/[\\s_-]+/g,'').includes(compactQuery);
+   })));
 }
 export default function SmartInsertRibbon({items,onInsert,renderIcon}:{
  items:readonly SmartInsertItem[];
