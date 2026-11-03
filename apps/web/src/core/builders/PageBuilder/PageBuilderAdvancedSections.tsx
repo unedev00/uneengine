@@ -4,7 +4,7 @@ import type {AdvancedFeature} from './PageBuilderAdvancedRibbon';
 type Option={value:string;label:string};
 type Assignment={
   enabled:boolean;assigned:boolean;isDefault:boolean;
-  onDefault:(value:boolean)=>void;onAdd:()=>void;
+  onAdd:()=>void;
 };
 type Responsive={
   desktop:boolean;tablet:boolean;mobile:boolean;canAssign:boolean;
@@ -42,11 +42,11 @@ export default function PageBuilderAdvancedSections({
         <label><input type="checkbox" checked={assignment.assigned} readOnly disabled
           title="Shows whether the page has activation assignments"/>Assigned</label>
         <button type="button" disabled={!assignment.enabled} onClick={assignment.onAdd}
-          title="Add an activation assignment with selected settings" aria-label="Add activation assignment">+</button>
+          title="Edit activation assignments in Page Properties" aria-label="Edit activation assignments">Edit</button>
       </div>
       <label className="advanced-fixed-field advanced-default">Default
-        <input type="checkbox" checked={assignment.isDefault} disabled={!assignment.enabled}
-          onChange={event=>assignment.onDefault(event.target.checked)}/>
+        <input type="checkbox" checked={assignment.isDefault} readOnly disabled
+          title="Default assignment status is edited in Page Properties"/>
       </label>
       <span className="advanced-fixed-caption">Activation Assignments</span>
     </section>}
