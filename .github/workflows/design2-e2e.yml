@@ -1,0 +1,72 @@
+name: Design 2 SQL and Page Builder browser E2E
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [main]
+    paths:
+      - 'apps/server/src/system-support/migrations/20270309-design2-contextual-ribbon.sql'
+      - 'apps/server/src/system-support/server.ts'
+      - 'apps/server/scripts/design2-browser-check.mjs'
+      - 'apps/server/scripts/builder-browser-smoke.mjs'
+      - 'apps/web/src/core/builders/PageBuilder/**'
+      - 'apps/web/src/component-libraries/smart_cart/**'
+      - 'apps/web/src/component-libraries/smart_table/**'
+      - '.github/workflows/design2-e2e.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser-sql:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: metadrive_design2_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d metadrive_design2_e2e"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      METADRIVE_SQL_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/metadrive_design2_e2e
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Build server and apply real migrations
+        run: npm run build:system --workspace apps/server
+      - name: Build production Page Builder
+        env:
+          GITHUB_PAGES: 'true'
+          GITHUB_PAGES_BASE_PATH: '/'
+          VITE_API_BASE_URL: /api
+        run: npm run build --workspace apps/web
+      - name: Install isolated Chromium
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Exercise SQL replay, metadata endpoint, Design 2 editor and persisted styles
+        env:
+          METADRIVE_BROWSER_PREBUILT: '1'
+          METADRIVE_BROWSER_TARGET: design2
+        run: |
+          mkdir -p apps/server/artifacts
+          node apps/server/scripts/builder-browser-smoke.mjs
+      - name: Upload Design 2 screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: design2-browser-e2e
+          path: apps/server/artifacts/design2-contextual-ribbon.png
+          if-no-files-found: ignore

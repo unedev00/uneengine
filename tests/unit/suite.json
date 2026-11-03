@@ -179,6 +179,7 @@
     "apps/web/test/componentPropertySchema.test.ts",
     "apps/web/test/connectedAppsScopes.test.mjs",
     "apps/web/test/desktopDensity.test.mjs",
+    "apps/web/test/design2ContextualRibbon.test.mjs",
     "apps/web/test/destructiveConfirmation.test.ts",
     "apps/web/test/dynamicChunkRecovery.test.ts",
     "apps/web/test/filterRelatedRecords.test.ts",

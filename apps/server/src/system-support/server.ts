@@ -1531,7 +1531,7 @@ export function createSystemServer(db:SqlPersistence) {
   app.get('/api/metadata/builder-ribbon',route(async(req,res)=>{
     const actor=req.actor!;
     await rbac.require(actor.tenant_id,actor.user_id,'PageDefinition','read');
-    const [listed,registered]=await Promise.all([
+    const [listed,registered,design2Slots]=await Promise.all([
       db.query<{
         id:string;label:string;tab:string;group_name:string;kind:string;sort_order:number;
         default_value:unknown;choices:unknown;component_api:string|null;
@@ -1553,7 +1553,12 @@ export function createSystemServer(db:SqlPersistence) {
         WHERE p.property_key NOT IN ('firstTabCustom','firstTabCaption','firstTabValue')
         ORDER BY p.sort_order,r.component_api`),
       db.query<{component_api:string}>(`SELECT component_api FROM md_builder_ribbon_components
-        ORDER BY component_api`)
+        ORDER BY component_api`),
+      db.query<{area:string;area_order:number;slot_key:string;row_no:number;
+        order_no:number;width_px:number;height_px:number;property_key:string|null;
+        fallback_key:string}>(`SELECT area,area_order,slot_key,row_no,order_no,width_px,height_px,
+          property_key,fallback_key FROM md_builder_design2_slots
+        ORDER BY area_order,row_no,order_no`)
     ]);
     const properties=new Map<string,Record<string,unknown>>();
     for(const row of listed.rows){
@@ -1580,7 +1585,12 @@ export function createSystemServer(db:SqlPersistence) {
       if(row.default_value_override!==null)(item.defaultsOverrides as Record<string,unknown>)[row.component_api]=row.default_value_override;
       if(row.choices_override!==null)(item.choicesOverrides as Record<string,unknown>)[row.component_api]=row.choices_override;
     }
-    res.json({components:registered.rows.map(row=>row.component_api),properties:[...properties.values()]});
+    res.json({components:registered.rows.map(row=>row.component_api),
+      properties:[...properties.values()],design2Slots:design2Slots.rows.map(slot=>({
+        area:slot.area,areaOrder:slot.area_order,slotKey:slot.slot_key,
+        row:slot.row_no,order:slot.order_no,width:slot.width_px,height:slot.height_px,
+        propertyKey:slot.property_key,fallbackKey:slot.fallback_key
+      }))});
   }));
   app.get('/api/component-library',route(async(req,res)=>{
     const actor=req.actor!;

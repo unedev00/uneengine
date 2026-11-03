@@ -17,6 +17,18 @@ const [{SqlPersistence},{AuthenticationService},{createSystemServer}]=await Prom
 const url=process.env.METADRIVE_SQL_TEST_DATABASE_URL;
 if(!url)throw new Error('SQL test database is required');
 const db=new SqlPersistence(url);
+// The Design 2 smoke owns a disposable PostgreSQL database. Run the same
+// authoritative SQL bootstrap and idempotent migrations as other SQL E2E
+// workflows before inserting fixture users and opening the browser.
+if(process.env.METADRIVE_BROWSER_TARGET==='design2'){
+ const {readFileSync}=await import('node:fs');
+ const {applySystemMigrations}=await import(new URL('system-migrations.js',support).href);
+ const schema=readFileSync(new URL('../src/system-files/schema.sql',import.meta.url),'utf8');
+ await db.query(schema);
+ await applySystemMigrations(db);
+ await applySystemMigrations(db);
+ await db.verifySchema();
+}
 const api=createSystemServer(db),listener=api.listen(0,'127.0.0.1');
 let frontend,browser,page;
 try{
@@ -182,7 +194,10 @@ try{
   await page.getByRole('button',{name:'User profile'}).waitFor({timeout:15000});
   console.info('Production frontend login form authenticated into CI SQL tenant');
  }
- if(process.env.METADRIVE_BROWSER_TARGET==='object-lifecycle'){
+ if(process.env.METADRIVE_BROWSER_TARGET==='design2'){
+  const {runDesign2BrowserCheck}=await import('./design2-browser-check.mjs');
+  await runDesign2BrowserCheck({page,origin,db,tenantId,token:tokens.accessToken});
+ }else if(process.env.METADRIVE_BROWSER_TARGET==='object-lifecycle'){
   const {runObjectSchemaLifecycleBrowserCheck}=await import('./object-schema-lifecycle-browser-check.mjs');
   await runObjectSchemaLifecycleBrowserCheck({page,origin,db,tenantId});
  }else if(process.env.METADRIVE_BROWSER_TARGET==='field-catalogue'){
