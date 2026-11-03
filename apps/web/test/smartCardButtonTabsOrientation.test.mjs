@@ -135,3 +135,84 @@ test('SQL Tab Index owns one non-overlapping Layout slot with Orientation and pr
  assert.match(runtime,/changeAction\.actionType!=="PageState"/);
  assert.doesNotMatch(runtime,/firstTabCustom/,'do not restore removed synthetic leading-tab logic');
 });
+
+test('Card Grid selectedCardColor follows formula Page State and highlights only its selected row',async()=>{
+ const records=[{Id:'cat-food',Name:'FOOD'},{Id:'cat-drinks',Name:'DRINKS'}];
+ const html=await renderSmart('smart_card_grid',{
+  records,textSource:'@Name',cardsPerRow:1,cardsPerColumn:2,
+  imageHeight:0,selectedCardColor:'#d92730',backgroundColor:'#ffffff',
+  pageState:{category:'cat-drinks'},
+  actionFlows:{click:{actionType:'Formula',formula:'@state.category := @Id'}}
+ });
+ assert.equal((html.match(/data-selected="true"/g)??[]).length,1);
+ assert.match(html,/data-selected="true" style="[^"]*background:#d92730/);
+ assert.match(html,/FOOD/);
+ assert.match(html,/DRINKS/);
+});
+
+test('Card Grid selectedCardColor follows authored PageState Name binding and named Collection selection',async()=>{
+ const records=[{Id:'food',Name:'FOOD'},{Id:'drink',Name:'DRINKS'}];
+ const state=await renderSmart('smart_card_grid',{
+  records,textSource:'@Name',selectedCardColor:'#123456',
+  pageState:{categoryName:'DRINKS'},
+  actionFlows:{click:{actionType:'PageState',stateKey:'categoryName',value:'$event.record.Name'}}
+ });
+ assert.equal((state.match(/data-selected="true"/g)??[]).length,1);
+ assert.match(state,/data-selected="true" style="[^"]*background:#123456/);
+ const collection=await renderSmart('smart_card_grid',{
+  records,textSource:'@Name',selectedCardColor:'#abcdef',
+  dataCollection:{name:'Categories',items:records},
+  pageState:{collectionSelections:{categories:{Id:'food'}}}
+ });
+ assert.equal((collection.match(/data-selected="true"/g)??[]).length,1);
+ assert.match(collection,/data-selected="true" style="[^"]*background:#abcdef/);
+ const none=await renderSmart('smart_card_grid',{
+  records,textSource:'@Name',selectedCardColor:'#abcdef',
+  pageState:{}
+ });
+ assert.doesNotMatch(none,/data-selected="true"/);
+});
+
+test('Card Grid imageWidth applies in left/right mode only, bounded to preserve content',async()=>{
+ const common={records:[{Id:'id-1',Name:'Food',ImageUrl:'https://example.com/food.png'}],
+  textSource:'@Name',imageSource:'@ImageUrl',imageHeight:100,
+  imageWidth:150,headerBoxHeight:44,cardsPerRow:1,cardsPerColumn:1};
+ for(const placement of ['left','right']){
+  const html=await renderSmart('smart_card_grid',{...common,imagePlacement:placement});
+  assert.match(html,/flex:0 0 150px/);
+  assert.match(html,/max-width:calc\(100% - 96px\)/);
+ }
+ for(const placement of ['top','bottom']){
+  const html=await renderSmart('smart_card_grid',{...common,imagePlacement:placement});
+  assert.match(html,/flex:1 1 100px/);
+  assert.doesNotMatch(html,/flex:0 0 150px/);
+  assert.doesNotMatch(html,/max-width:calc\(100% - 96px\)/);
+ }
+ const horizontalWithoutWidth=await renderSmart('smart_card_grid',{...common,imageWidth:undefined,imagePlacement:'left'});
+ assert.match(horizontalWithoutWidth,/flex:1 1 50%/,'default side split is preserved');
+ const heightZero=await renderSmart('smart_card_grid',{...common,imageHeight:0,imagePlacement:'left'});
+ assert.match(heightZero,/flex:0 0 150px/,'imageHeight is ignored for side images');
+ const widthZero=await renderSmart('smart_card_grid',{...common,imageWidth:0,imagePlacement:'left'});
+ assert.doesNotMatch(widthZero,/flex:0 0 0px/,'zero side width hides only that image');
+ assert.match(widthZero,/flex:1 1 100%/,'label retains the full width');
+});
+
+test('Card Grid selection and imageWidth use shared SQL Ribbon metadata, no custom toolbar',()=>{
+ const sql=read('../../server/src/system-support/migrations/20270311-smart-card-grid-selection-image-width.sql');
+ const server=read('../../server/src/system-support/server.ts');
+ const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
+ const catalog=read('../src/core/builders/PageBuilder/uneBuilderPropertyInventory.ts');
+ for(const property of ['selectedCardColor','imageWidth']){
+  assert.match(sql,new RegExp("'"+property+"'"));
+  assert.ok(sql.includes("'smart_card_grid'"),'only shared Card Grid applicability');
+ }
+ assert.match(sql,/'Design','Card Grid'/);
+ assert.match(sql,/"property":"imagePlacement","in":\["left","right"\]/);
+ assert.match(sql,/ON CONFLICT\(property_key\) DO NOTHING/);
+ assert.match(sql,/ON CONFLICT\(component_api,property_key\) DO NOTHING/);
+ assert.doesNotMatch(sql,/DELETE FROM md_page_|UPDATE md_page_|DROP TABLE/i);
+ assert.match(server,/p\.enabled_when/);
+ assert.match(ribbon,/condition\.in\.includes/);
+ assert.match(catalog,/enabledWhen\?:/);
+ assert.match(ribbon,/'Summary 2','Card Grid'/);
+});
