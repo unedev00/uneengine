@@ -23,7 +23,7 @@ async function readModularCss(url: URL): Promise<string> {
 
 import { pageAppearanceTarget, pageAppearanceStyleKeys, resolvePageComponentStyle, visualDefaults } from '../src/core/pages/TemplatePageRuntime/pageComponentLayout';
 import { snapCanvasPosition, snapCanvasSize, wrapCanvasComponent, ungroupCanvasComponent, alignCanvasComponents, distributeCanvasComponents } from '../src/core/builders/PageBuilder/canvasInteractions';
-import { copyComponentTree, cloneComponentTree, remapComponentInteractionTargets, assignTabOnReparent } from '../src/core/builders/PageBuilder/pageComponentTree';
+import { copyComponentTree, cloneComponentTree, remapComponentInteractionTargets, assignTabOnReparent, removePageComponentSelection } from '../src/core/builders/PageBuilder/pageComponentTree';
 import {canvasGroupKey, canvasGroupBounds, canvasGroupMembers, groupCanvasSelection, ungroupCanvasSelection, moveCanvasLayer, shiftCanvasLayer, canMoveCanvasLayer, canvasSiblingLayerIndex, scaleCanvasGroup} from '../src/core/builders/PageBuilder/canvasLayerGroups';
 import type {PageComponentMetadata} from '../src/core/metadata/Definitions/metadata';
 import type {UneRibbonProperty} from '../src/core/builders/PageBuilder/uneBuilderPropertyInventory';
@@ -887,4 +887,58 @@ test('Group icon picker and group locking share edits instead of updating only t
  assert.match(view,/const changed=\[\.\.\.new Set\(\[\.\.\.Object\.keys\(selectedActions\)/);
  assert.match(view,/const actionMembers=ribbonSelectedMembers\.length/);
   assert.match(view,/const applyActionFlows=/);
+});
+
+test('Page Builder bulk delete removes the complete selection in one immutable update', () => {
+  const source:PageComponentMetadata[]=['one','two','three','four'].map((id,index)=>({
+    id,type:'Custom:smart_text',label:id,visible:true,region:'main',
+    position:{x:index*20,y:0,width:20,height:20},properties:{label:id}
+  }));
+  const result=removePageComponentSelection(source,['one','two','four']);
+  assert.equal(result.removed,3);
+  assert.deepEqual(result.locked,[]);
+  assert.deepEqual(result.components.map(item=>item.id),['three']);
+  assert.equal(source.length,4,'Undo needs the untouched original draft snapshot');
+  assert.equal(source[0].properties.label,'one','original properties must remain unchanged');
+  assert.deepEqual(removePageComponentSelection(source,['nonexistent']).components,source);
+});
+
+test('Page Builder bulk delete is atomic when a locked component is selected', () => {
+  const source:PageComponentMetadata[]=[
+    {id:'free',type:'Text',label:'Free',visible:true,properties:{}},
+    {id:'locked',type:'Text',label:'Locked',visible:false,properties:{editorLocked:true}},
+    {id:'other',type:'Text',label:'Other',visible:true,properties:{}}
+  ];
+  const result=removePageComponentSelection(source,['free','locked']);
+  assert.equal(result.removed,0);
+  assert.deepEqual(result.components,source);
+  assert.deepEqual(result.locked.map(item=>item.id),['locked']);
+  const permitted=removePageComponentSelection(source,['free','other']);
+  assert.equal(permitted.removed,2);
+  assert.deepEqual(permitted.components.map(item=>item.id),['locked']);
+});
+
+test('Page Builder bulk delete preserves unselected nested children and repairs parent references', () => {
+  const p=(id:string,x:number,y:number,parent?:string):PageComponentMetadata=>({
+    id,type:'Container',label:id,visible:true,
+    position:{x,y,width:80,height:80},parentId:parent,
+    properties:parent?{layoutParentId:parent}:{}
+  });
+  const source=[p('root',100,200),p('middle',20,30,'root'),
+    p('selected',5,7,'middle'),p('survivor',2,3,'selected'),p('sibling',6,8,'root')];
+  const result=removePageComponentSelection(source,['root','middle','selected']);
+  assert.equal(result.removed,3);
+  assert.deepEqual(result.components.map(item=>item.id),['survivor','sibling']);
+  const survivor=result.components[0];
+  assert.equal(survivor.parentId,undefined);
+  assert.equal(survivor.properties.layoutParentId,undefined);
+  assert.deepEqual(survivor.position,{x:127,y:240,width:80,height:80});
+  const sibling=result.components[1];
+  assert.equal(sibling.parentId,undefined);
+  assert.deepEqual(sibling.position,{x:106,y:208,width:80,height:80});
+  const childOnly=removePageComponentSelection(source,['middle']);
+  assert.equal(childOnly.components.find(item=>item.id==='selected')?.parentId,'root');
+  assert.equal(childOnly.components.find(item=>item.id==='selected')?.properties.layoutParentId,'root');
+  assert.deepEqual(childOnly.components.find(item=>item.id==='selected')?.position,
+    {x:25,y:37,width:80,height:80});
 });
