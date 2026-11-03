@@ -49,3 +49,16 @@ test('Advanced and View use complete, fixed-width grouped ribbon properties',()=
   assert.match(view,/title="Edit conditional visibility" disabled=\{!selected\} onClick=\{openVisibilityEditor\}/);
   assert.match(view,/<button type="button" disabled=\{!selected\} onClick=\{openVisibilityEditor\}>Conditions<\/button>/);
 });
+
+test('Actions ribbon has no redundant Other events selector or mapping',()=>{
+  const actions=read('PageBuilderActionRibbon.tsx');
+  const styles=read('PageBuilderActionRibbonCompact.css');
+  assert.doesNotMatch(actions,/Other supported event|Other events|otherEvents|selectedOther|setOtherEvent|page-action-compact-extra/);
+  assert.doesNotMatch(styles,/page-action-compact-(extra|mapping|rows)/);
+  assert.match(actions,/eventSlots\.map\(slot=>slotPicker\(slot\)\)/);
+  assert.match(actions,/componentSlots\.map\(slot=>slotPicker\(slot\)\)/);
+  // Existing metadata bindings remain available to the selected-action editor;
+  // only the redundant selector and mapping section are removed.
+  assert.match(actions,/Object\.prototype\.hasOwnProperty\.call\(actions,selectedEvent\)/);
+  assert.match(actions,/onChange\(\{\.\.\.actions,\[selectedEvent\]:\{\.\.\.selected,\.\.\.change\}\}\)/);
+});

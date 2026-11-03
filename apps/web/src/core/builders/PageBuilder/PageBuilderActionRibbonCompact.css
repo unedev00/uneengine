@@ -21,27 +21,23 @@
 .office-builder-ribbon .page-action-compact-event{
  width:241px;min-width:241px;max-width:241px;height:114px;
 }
-.office-builder-ribbon .page-action-compact-event-rows,
-.office-builder-ribbon .page-action-compact-rows{
+.office-builder-ribbon .page-action-compact-event-rows{
  box-sizing:border-box;display:grid;grid-template-rows:repeat(3,26px);
  grid-auto-flow:row;row-gap:4px;align-items:start;
 }
-.office-builder-ribbon .page-action-slot,
-.office-builder-ribbon .page-action-compact-mapping{
+.office-builder-ribbon .page-action-slot{
  display:flex;box-sizing:border-box;align-items:center;gap:2px;
  width:225px;min-width:225px;max-width:225px;
  height:26px;min-height:26px;max-height:26px;position:relative;
  font:11px "Segoe UI",Arial,sans-serif;
 }
-.office-builder-ribbon .page-action-slot>label,
-.office-builder-ribbon .page-action-compact-mapping>span{
+.office-builder-ribbon .page-action-slot>label{
  box-sizing:border-box;display:inline-flex;align-items:center;
  flex:0 0 97px;min-width:0;max-width:97px;
  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
  color:#29476a;font-size:11px;
 }
-.office-builder-ribbon .page-action-slot>select,
-.office-builder-ribbon .page-action-compact-mapping>:is(input,select){
+.office-builder-ribbon .page-action-slot>select{
  box-sizing:border-box;flex:1 1 auto;min-width:0!important;max-width:100%!important;
  height:26px!important;min-height:26px!important;width:0!important;
  padding:3px 5px;border:1px solid #b7c9df;border-radius:4px;
@@ -129,12 +125,6 @@
 .office-builder-ribbon .page-action-compact-custom .page-action-slot>label{
  flex-basis:99px;max-width:99px;
 }
-.office-builder-ribbon .page-action-compact-sections>.page-action-compact-extra{
- width:265px;min-width:265px;
-}
-.office-builder-ribbon .page-action-compact-sections .page-action-compact-rows{
- grid-template-rows:repeat(2,26px);height:56px;row-gap:4px;
-}
 .office-builder-ribbon .page-action-compact-sections>.page-action-compact-group:last-child{
  border-right:0!important;
 }
@@ -143,7 +133,6 @@
  background:#fff1f1;color:#9f2138;font-size:10px;
  border:1px solid #f0b6bd;padding:1px 4px;
 }
-.office-builder-ribbon .page-action-compact-mapping :is(input,select):disabled,
 .office-builder-ribbon .page-action-slot>select:disabled{
  background:#eff2f7;color:#98a5b3;cursor:not-allowed;
 }

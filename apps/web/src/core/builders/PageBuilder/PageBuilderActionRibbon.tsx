@@ -1,4 +1,3 @@
-import {useState} from 'react';
 import {Trash2, SlidersHorizontal, Eye, EyeOff} from 'lucide-react';
 import type {FlowDefinitionMetadata} from '../../metadata/Definitions/metadata';
 import {metadataReference,metadataSelection} from '../../metadata/Definitions/metadataReferences';
@@ -92,20 +91,11 @@ export default function PageBuilderActionRibbon({
  const formulaFields=numericFields.map(field=>({...field,required:false,unique:false}));
  const availableFlows=flows.filter(flow=>flow.status==='Active'&&
   ['Autolaunched Flow','Screen Flow','In-Screen Flow'].includes(flow.flowType));
- const eventLabels=new Map(eventDefinitions.map(item=>[item.apiName,item.label]));
  const members=selectedApis?.length?selectedApis:[api];
  const isCartSelection=members.length>0&&members.every(member=>member==='smart_cart');
  const supports=(key:string)=>members.every(member=>member.startsWith('smart_')
    ?supportsSmartActionEvent(member,key)
    :eventDefinitions.some(item=>item.apiName===key));
- const otherEvents=[...new Set([
-   ...eventDefinitions.map(item=>item.apiName),
-   ...Object.keys(actions)
- ])].filter(key=>!eventSlots.some(slot=>slot.key===key)&&
-   !componentSlots.some(slot=>slot.key===key));
- const [otherEvent,setOtherEvent]=useState('');
- const selectedOther=otherEvents.includes(selectedEvent)?selectedEvent:
-   otherEvents.includes(otherEvent)?otherEvent:otherEvents[0]??'';
  const patch=(change:Binding)=>{
    if(disabled||!active)return;
    onChange({...actions,[selectedEvent]:{...selected,...change}});
@@ -213,18 +203,6 @@ export default function PageBuilderActionRibbon({
          </div>
          <span className="page-action-section-caption">Component Custom</span>
        </section>
-       {otherEvents.length>0&&<section className="page-action-compact-group page-action-compact-extra" aria-label="Other events">
-         <div className="page-action-compact-rows">
-           <label className="page-action-compact-mapping">
-             <span>Event</span><select aria-label="Other supported event" disabled={disabled}
-               value={selectedOther} onChange={event=>{setOtherEvent(event.target.value);onSelectEvent(event.target.value);}}>
-               {otherEvents.map(key=><option key={key} value={key}>{eventLabels.get(key)??key}</option>)}
-             </select>
-           </label>
-           {selectedOther&&slotPicker({key:selectedOther,label:'Action'})}
-         </div>
-         <span className="page-action-section-caption">Other events</span>
-       </section>}
      </div>
    </div>
  </div>;
