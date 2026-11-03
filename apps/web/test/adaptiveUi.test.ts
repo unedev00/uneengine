@@ -71,6 +71,24 @@ test('all workspace routes default to White regardless of OS preference', () => 
   assert.match(records, /\.records-record-card \{[^}]*background:var\(--md-surface,#fff\)/s);
 });
 
+test('independent app surfaces also respect the global White default', () => {
+  const surfaces = [
+    ['../aceassist/src/aceassist.css', 'custom-assist'],
+    ['../acetill/src/acetill-terminal.css', 'acetill-terminal'],
+    ['../acekiosk/src/acekiosk.css', 'ak-shell'],
+    ['src/core/mail/MailWebmail.css', 'md-mail']
+  ] as const;
+  for (const [path, className] of surfaces) {
+    const css = file(path);
+    assert.ok(css.includes(`:root[data-theme="system"] .${className}:not([data-theme="light"])`),
+      `${path} should only follow OS dark when System theme is selected`);
+    assert.ok(css.includes(`:root[data-theme="dark"] .${className}:not([data-theme="light"])`),
+      `${path} should honour an explicit global Dark theme`);
+    assert.ok(css.includes(`.${className}[data-theme="dark"]`),
+      `${path} should preserve its independent explicit Dark override`);
+  }
+});
+
 test('iPad supports rotation and the adaptive theme stays out of marketing startup', () => {
   const app = JSON.parse(readFileSync(new URL('../mobile/app.json', documentRoot), 'utf8'));
   assert.equal(app.expo.orientation, 'default');
