@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 import {visibleCanvasBounds,placeNewCanvasComponent} from '../src/core/builders/PageBuilder/canvasInsertPlacement';
 import {childrenOf,isLayoutContainer} from '../src/core/pages/TemplatePageRuntime/pageComponentLayout';
 import {copyComponentTree,cloneComponentTree} from '../src/core/builders/PageBuilder/pageComponentTree';
+import {componentInstanceNames,ensureComponentInstanceNames} from '../../server/src/system-support/page-component-names';
 import type {PageComponentMetadata} from '../src/core/metadata/Definitions/metadata';
 const read=(path:string)=>readFileSync(new URL(path,import.meta.url),'utf8');
 
@@ -100,4 +101,21 @@ test('Smart Container accepts palette inserts and cut/paste children without cha
  const builder=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
  assert.match(builder,/isLayoutContainer\(selected\) \? selected.id : rawLayoutParentId\(selected\)/);
  assert.match(builder,/assignTabOnReparent\(components,cloned.rootId,parentId/);
+});
+
+test('duplicating custom-named components allocates unique CSV names without changing internal IDs',()=>{
+ const original:PageComponentMetadata={id:'original-button-uuid',type:'Custom:smart_button',
+   label:'Button',visible:true,region:'main',properties:{navigatorName:'PrintBill'}};
+ const clipboard=copyComponentTree([original],original.id);
+ const duplicate=cloneComponentTree(clipboard,null,()=>'new-button-uuid');
+ assert.equal(duplicate.components[0].properties.navigatorName,undefined,'clone must not inherit the name');
+ const first=ensureComponentInstanceNames([original,...duplicate.components]);
+ assert.equal(componentInstanceNames(first).get('original-button-uuid'),'PrintBill');
+ assert.equal(componentInstanceNames(first).get('new-button-uuid'),'smartbutton1');
+ assert.equal(first[1].properties.navigatorName,'smartbutton1');
+ assert.equal(first[1].id,'new-button-uuid','internal key stays stable');
+ const secondClone=cloneComponentTree(copyComponentTree(first,first[1].id),null,()=>'third-button-uuid');
+ const second=ensureComponentInstanceNames([...first,...secondClone.components]);
+ assert.equal(componentInstanceNames(second).get('third-button-uuid'),'smartbutton2');
+ assert.equal(new Set([...componentInstanceNames(second).values()].map(v=>v.toLowerCase())).size,3);
 });
