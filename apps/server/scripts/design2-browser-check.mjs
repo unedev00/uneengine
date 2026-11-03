@@ -167,5 +167,24 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  const {mkdir}=await import('node:fs/promises');
  await mkdir(new URL('../artifacts/',import.meta.url),{recursive:true});
  await page.screenshot({path:new URL('../artifacts/design2-contextual-ribbon.png',import.meta.url).pathname});
- console.info('Design 2 browser E2E: original Design preserved; Row Bold edited, rendered, saved, reloaded; Focused Row and Tabs correctly scoped');
+
+ // Ctrl+A, Delete and Undo must agree on the exact multi-selection. A single
+ // confirmation removes the full active layout selection, never just selectedId.
+ await page.locator('[data-component-id="browser-design2-cart"]').first().click({position:{x:18,y:18}});
+ await page.keyboard.press('Control+a');
+ assert.equal(await page.locator('.record-component.multi-selected').count(),2,
+  'Both Page Builder components must be selected before bulk Delete');
+ const dialogs=[];
+ page.once('dialog',dialog=>{dialogs.push(dialog.message());void dialog.accept();});
+ await page.keyboard.press('Delete');
+ await page.waitForFunction(()=>document.querySelectorAll('[data-component-id="browser-design2-cart"],[data-component-id="browser-design2-tabs"]').length===0);
+ assert.equal(dialogs.length,1,'Bulk Delete must require one confirmation');
+ assert.match(dialogs[0],/2 selected page components/);
+ await page.keyboard.press('Control+z');
+ await page.locator('[data-component-id="browser-design2-cart"]').first().waitFor({state:'visible'});
+ await page.locator('[data-component-id="browser-design2-tabs"]').first().waitFor({state:'visible'});
+ assert.equal(await page.locator('[data-component-id="browser-design2-cart"],[data-component-id="browser-design2-tabs"]').count(),2,
+  'A single Undo must restore all deleted components');
+
+ console.info('Design 2 browser E2E: original Design preserved; Row Bold persisted; Ctrl+A/Delete removes all selected, one Undo restores all');
 }

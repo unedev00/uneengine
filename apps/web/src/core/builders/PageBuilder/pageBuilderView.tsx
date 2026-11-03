@@ -198,7 +198,7 @@ import {canvasGroupKey, canvasGroupMembers, groupCanvasSelection, ungroupCanvasS
 import {canvasScrollbarHit,constrainCanvasRect} from './canvasPointerInteractions';
 import {isSharedCanvasProperty,mixedCanvasPropertyIds,updateSharedCanvasProperties,updateSharedCanvasPositions} from './canvasSharedRibbonProperties';
 import {useCanvasGroupGestures} from './useCanvasGroupGestures';
-import { copyComponentTree, cloneComponentTree, remapComponentInteractionTargets, assignTabOnReparent, type ComponentClipboard } from './pageComponentTree';
+import { copyComponentTree, cloneComponentTree, remapComponentInteractionTargets, assignTabOnReparent, removePageComponentSelection, type ComponentClipboard } from './pageComponentTree';
 import { filterPageComponentRecords, needsMetadataComponentRuntime } from '../../pages/PageRuntime/pageComponentBindings';
 import { childrenOf, canNest, componentLayoutProps, hasPageComponentAppearance, isLayoutContainer, rawLayoutParentId, reparentComponent, resolvePageComponentStyle, type LayoutDevice } from '../../pages/TemplatePageRuntime/pageComponentLayout';
 import AppExchange from '../../applications/AppExchange/AppExchange';
@@ -1685,30 +1685,33 @@ function PageBuilder({
       ...recordPageRelatedSettings,[name]:{...(recordPageRelatedSettings[name]??{}),...settings}
     }});
   };
+  const deleteTargetIds = selectionIds.length > 1 ? selectionIds : selected ? [selected.id] : [];
+  const deleteTargets = page.components.filter(component => deleteTargetIds.includes(component.id));
+  const deleteBlockedByLock = deleteTargets.some(isCanvasLocked);
   const removeSelected = () => {
-    if (!selected) {
+    if (!deleteTargets.length) {
       onNotify('Select a component to remove');
       return;
     }
-    if (isCanvasLocked(selected)) {
-      onNotify('Unlock this component before deleting it');
+    const result = removePageComponentSelection(page.components, deleteTargetIds);
+    if (result.locked.length) {
+      onNotify('Unlock all '+result.locked.length+' locked selected component(s) before deleting. Nothing was removed.');
       return;
     }
-    if (!confirmDestructiveAction('Delete', 'Page component "'+selected.label+'"',
-      'The component will be removed from this layout draft. Save and publish to make the change live.')) return;
-    const parentId = rawLayoutParentId(selected);
-    // Preserve children of deleted layout containers by updating both metadata
-    // parent references. A stale parentId otherwise leaves orphaned components.
-    const remaining = page.components.filter((component) => component.id !== selected.id)
-      .map((component) => rawLayoutParentId(component) === selected.id
-        ? { ...component, parentId: parentId ?? undefined, properties: {
-            ...component.properties, layoutParentId: parentId ?? undefined
-          } }
-        : component);
-    applyPage({ ...page, components: remaining });
+    if (!result.removed) return;
+    const plural = result.removed > 1;
+    if (!confirmDestructiveAction('Delete',
+      plural ? result.removed+' selected page components' : 'Page component "'+deleteTargets[0].label+'"',
+      (plural ? 'All selected components' : 'The component')+
+      ' will be removed from this layout draft. Save and publish to make the change live.')) return;
+    // One history snapshot and one change, so Undo restores the whole selection.
+    applyPage({ ...page, components: result.components });
+    setSelectionIds([]);
     setSelectedId('');
+    setSelectedRegion(null);
     setComponentMenuId('');
-    onNotify('Component removed from draft. Save the page to keep this change.');
+    onNotify((plural ? result.removed+' components' : 'Component')+
+      ' removed from draft. Save the page to keep this change.');
   };
   const addRecordAssignment = () => {
     const needsApp = recordScope !== 'Org Default';
@@ -1903,7 +1906,7 @@ function PageBuilder({
       } else if (command && key === 'd' && selected && !previewMode) {
         event.preventDefault(); duplicateSelected();
       } else if (!command && (event.key === 'Delete' || event.key === 'Backspace')
-        && selected && !previewMode && !isCanvasLocked(selected)) {
+        && selected && !previewMode) {
         event.preventDefault(); removeSelected();
       } else if (command && key === 'g' && !previewMode && page.layoutMode === 'free-canvas') {
         event.preventDefault();
@@ -2919,8 +2922,9 @@ function PageBuilder({
       case 'paste':return <button className="office-ribbon-icon-button" aria-label="Paste" title="Paste"
         disabled={!componentClipboard} onClick={pasteComponent}><ClipboardPaste size={17}/></button>;
       case 'delete':return <button type="button" className="office-ribbon-icon-button"
-        aria-label="Delete selected component" title="Delete selected component"
-        disabled={!selected||previewMode||isCanvasLocked(selected)}
+        aria-label="Delete selected component"
+        title={deleteTargets.length>1?'Delete '+deleteTargets.length+' selected components':'Delete selected component'}
+        disabled={!selected||previewMode||deleteBlockedByLock}
         onClick={removeSelected}><Trash2 size={17}/></button>;
       case 'undo':return <button className="office-ribbon-icon-button" aria-label="Undo" title="Undo"
         disabled={!undoStack.length} onClick={undo}><Undo2 size={17}/></button>;
