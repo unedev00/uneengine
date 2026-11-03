@@ -95,3 +95,13 @@
  font-size:12px;color:#355579}
 .page-details-assignment-editor .form-label{margin:0}
 .page-details-assignment-editor .page-details-error{margin:0}
+
+/* Page-level form factors: compact, accessible toggles rather than component ribbon fields. */
+.page-details-device-options{display:grid;gap:0;margin:7px 0}
+.page-details-device-option{display:flex;align-items:center;justify-content:space-between;
+ gap:12px;padding:8px 2px;border-bottom:1px solid #e7edf6;
+ color:#344866;font-size:12px;font-weight:600}
+.page-details-device-option:last-child{border-bottom:0}
+.page-details-device-option input[type=checkbox]{width:17px;height:17px;flex-shrink:0;
+ accent-color:#176cd1;cursor:pointer}
+.page-details-device-option input[type=checkbox]:disabled{cursor:not-allowed}

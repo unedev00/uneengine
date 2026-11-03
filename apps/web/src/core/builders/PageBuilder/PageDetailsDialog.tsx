@@ -46,7 +46,8 @@ export default function PageDetailsDialog({page,apps,profiles,recordTypes,disabl
  disabled:boolean;
  request:<T>(path:string,init?:RequestInit)=>Promise<T>;
  onClose:()=>void;
- onSave:(apiName:string,label:string,appApiName:string|null,expectedLabel:string,nextApiName?:string)=>Promise<boolean>;
+ onSave:(apiName:string,label:string,appApiName:string|null,expectedLabel:string,nextApiName?:string,
+  devices?:LightningPageMetadata['devices'],expectedDevices?:LightningPageMetadata['devices'])=>Promise<boolean>;
  onSaveAssignments:(page:LightningPageMetadata,assignments:PageActivationAssignmentMetadata[])=>Promise<LightningPageMetadata|false>;
  onOpenDesign:(apiName:string)=>void;
  onReload:(page:LightningPageMetadata)=>void;
@@ -57,6 +58,13 @@ export default function PageDetailsDialog({page,apps,profiles,recordTypes,disabl
  const existing=(page.activationAssignments??[]).find(a=>a.scope==='App Default'&&a.appId)?.appId
    ??apps.find(app=>app.navigationPageApiNames.includes(page.apiName))?.apiName??'';
  const [appApiName,setAppApiName]=useState(existing);
+ const [devices,setDevices]=useState<LightningPageMetadata['devices']>([...page.devices]);
+ const deviceOptions=[{value:'Desktop',label:'Desktop enabled'},
+  {value:'Tablet',label:'Tablet enabled'},{value:'Phone',label:'Mobile enabled'}] as const;
+ const toggleDevice=(factor:LightningPageMetadata['devices'][number],enabled:boolean)=>
+  setDevices(current=>enabled
+   ?([...current,factor] as LightningPageMetadata['devices'])
+   :current.filter(item=>item!==factor));
  const [assignments,setAssignments]=useState<PageActivationAssignmentMetadata[]>(page.activationAssignments??[]);
  const changedAssignments=page.pageType!=='App Page'&&page.pageType!=='In-Screen Page'
   &&JSON.stringify(assignments)!==JSON.stringify(page.activationAssignments??[]);
@@ -68,7 +76,7 @@ export default function PageDetailsDialog({page,apps,profiles,recordTypes,disabl
  const [loading,setLoading]=useState(false);
  const [showArchived,setShowArchived]=useState(false);
  const [preview,setPreview]=useState<{version:number;page:LightningPageMetadata}|null>(null);
- const valid=Boolean(apiNameValid&&label.trim()&&label.trim().length<=128&&
+ const valid=Boolean(apiNameValid&&label.trim()&&label.trim().length<=128&&devices.length>0&&
   !assignmentError&&(page.pageType!=='App Page'||apps.some(a=>a.apiName===appApiName)));
  const base=`/metadata/pages/${encodeURIComponent(page.apiName)}/layouts/${variant}`;
  useEffect(()=>{
@@ -90,7 +98,7 @@ export default function PageDetailsDialog({page,apps,profiles,recordTypes,disabl
     onReload(saved);
    }
    const succeeded=await onSave(page.apiName,label.trim(),
-    page.pageType==='App Page'?appApiName:null,page.label,apiName);
+    page.pageType==='App Page'?appApiName:null,page.label,apiName,devices,page.devices);
    if(succeeded)onClose();
    else setError('Could not save page details. Review the message and retry.');
   }catch(e){setError(e instanceof Error?e.message:'Unable to update page');}
@@ -204,9 +212,16 @@ export default function PageDetailsDialog({page,apps,profiles,recordTypes,disabl
       <section className="page-details-section" aria-label="Page Display and Activation">
        <h3>Display &amp; Activation</h3>
        <div className="page-details-kv"><span>Status</span><strong>{page.status}</strong></div>
-       <div className="page-details-kv"><span>Desktop</span><strong>{page.devices.includes('Desktop')?'Enabled':'Disabled'}</strong></div>
-       <div className="page-details-kv"><span>Mobile</span><strong>{page.devices.includes('Phone')?'Enabled':'Disabled'}</strong></div>
-       <small>Change published layout and activation from the supported Page Builder actions.</small>
+       <div className="page-details-device-options" role="group" aria-label="Page enabled devices">
+        {deviceOptions.map(factor=><label key={factor.value} className="page-details-device-option">
+         <span>{factor.label}</span>
+         <input type="checkbox" aria-label={factor.label} checked={devices.includes(factor.value)}
+          disabled={disabled||busy} onChange={e=>toggleDevice(factor.value,e.target.checked)}/>
+        </label>)}
+       </div>
+       {devices.includes('Custom')&&<small>Custom layout remains enabled and is configured independently.</small>}
+       {!devices.length&&<small role="alert">Enable at least one device before saving.</small>}
+       <small>Device eligibility is stored with the page. Layouts, publishing, and profile activation assignments remain independently managed.</small>
       </section>
      </aside>
     </div>

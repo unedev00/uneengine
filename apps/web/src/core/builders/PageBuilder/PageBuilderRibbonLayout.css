@@ -139,13 +139,13 @@
 }
 .office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content
   .smart-insert-tile { height: 55px !important; }
-/* Advanced ribbon: five purposeful groups without unsupported placeholder fields.
+/* Advanced ribbon: only the purposeful groups remain; all device flags live in Edit Page.
  * Fluid group widths replace the fixed 1641px scroll lane. The three property
  * rows and bottom captions keep the same 114px vertical footprint. */
 .office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content
   > .page-builder-advanced-inline {
   box-sizing:border-box!important;display:grid!important;flex:0 1 1360px!important;
-  grid-template-columns:minmax(0,1.08fr) minmax(0,1fr) minmax(0,1.02fr) minmax(0,1.42fr) minmax(0,1.02fr)!important;
+  grid-template-columns:minmax(0,1.08fr) minmax(0,1.12fr) minmax(0,1.06fr) minmax(0,1fr)!important;
   grid-template-rows:114px!important;
   align-items:stretch!important;
   width:min(100%,1360px)!important;min-width:0!important;max-width:1360px!important;
@@ -158,7 +158,6 @@
   background:#fbfcfe;color:#263950;
 }
 .office-builder-ribbon .advanced-fixed-group.advanced-activation{min-width:0;width:auto}
-.office-builder-ribbon .advanced-fixed-group.advanced-responsive{min-width:0;width:auto}
 .office-builder-ribbon .advanced-fixed-group.advanced-properties{min-width:0;width:auto}
 .office-builder-ribbon .advanced-fixed-group.advanced-nesting{min-width:0;width:auto}
 .office-builder-ribbon .advanced-fixed-group.advanced-technical{min-width:0;width:auto}
@@ -200,12 +199,6 @@
 /* Group 1: x=0-285 */
 .office-builder-ribbon .advanced-activation .advanced-assigned{left:8px;top:5px;width:calc(50% - 12px)}
 .office-builder-ribbon .advanced-activation .advanced-default{left:50%;top:5px;right:8px}
-/* Group 2: x=286-629 */
-.office-builder-ribbon .advanced-responsive .advanced-device-0{left:8px;top:5px;width:calc(40% - 8px)}
-.office-builder-ribbon .advanced-responsive .advanced-device-1{left:8px;top:35px;width:calc(40% - 8px)}
-.office-builder-ribbon .advanced-responsive .advanced-device-2{left:8px;top:65px;width:calc(40% - 8px)}
-.office-builder-ribbon .advanced-responsive .advanced-breakpoint{left:40%;right:8px;top:5px}
-.office-builder-ribbon .advanced-responsive .advanced-columns{left:40%;right:8px;top:35px}
 /* Group 3: x=630-916 */
 .office-builder-ribbon .advanced-properties .advanced-api-name{left:8px;right:8px;top:5px}
 .office-builder-ribbon .advanced-properties .advanced-visible{left:8px;top:35px;width:calc(50% - 12px)}

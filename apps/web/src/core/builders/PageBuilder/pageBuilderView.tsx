@@ -324,7 +324,8 @@ function PageBuilder({
   onPublish: (apiName:string,variant:'Mobile'|'Desktop'|'Tablet'|'Custom',draftRevision?:number)=>Promise<boolean>;
   onDeactivate: (apiName:string)=>Promise<boolean>;
   onSaveApp: (app: LightningAppMetadata, updating: boolean) => Promise<void>;
-  onUpdatePageDetails: (apiName:string,label:string,appApiName:string|null,expectedLabel:string,nextApiName?:string)=>Promise<boolean>;
+  onUpdatePageDetails: (apiName:string,label:string,appApiName:string|null,expectedLabel:string,nextApiName?:string,
+    devices?:LightningPageMetadata['devices'],expectedDevices?:LightningPageMetadata['devices'])=>Promise<boolean>;
   onDeleteApp: (apiName: string) => Promise<void>;
   onDeletePage: (apiName: string) => Promise<void>;
   onExit: () => void;
@@ -3335,30 +3336,6 @@ function PageBuilder({
               isDefault:(page.activationAssignments??[]).some(item=>item.scope===
                 (page.pageType==='Record Page'?'Org Default':'App Default')),
               onAdd:()=>setPageDetailsApi(page.apiName)
-            }}
-            responsive={{
-              desktop:(page.pageType==='Record Page'?recordFormFactors:homeFormFactors).includes('Desktop'),
-              tablet:(page.pageType==='Record Page'?recordFormFactors:homeFormFactors).includes('Tablet'),
-              mobile:(page.pageType==='Record Page'?recordFormFactors:homeFormFactors).includes('Phone'),
-              canAssign:page.pageType!=='App Page',
-              breakpoint:page.customTargetMinWidth??320,
-              canBreakpoint:(page.layoutVariant??'Desktop')==='Custom',
-              columns:Number(selected?.properties.cardsPerRow??0)||1,
-              canColumns:!!selected&&['Custom:smart_card_grid','Custom:smart_cart'].includes(selected.type),
-              onDevice:factor=>{
-                const toggle=(current:('Desktop'|'Tablet'|'Phone'|'Custom')[])=>
-                  current.includes(factor)?current.filter(value=>value!==factor):[...current,factor];
-                if(page.pageType==='Record Page')setRecordFormFactors(toggle);
-                else setHomeFormFactors(toggle);
-              },
-              onBreakpoint:value=>{
-                if(Number.isInteger(value)&&value>=320&&value<=(page.customTargetMaxWidth??10000))
-                  applyPage({...page,customTargetMinWidth:value});
-              },
-              onColumns:value=>{
-                if(selected&&Number.isInteger(value)&&value>=1&&value<=50)
-                  updateComponent(selected.id,{properties:{...selected.properties,cardsPerRow:value}});
-              }
             }}
             properties={{
               selected:!!selected,apiName:selected?.type.startsWith('Custom:')?selected.type.slice(7):selected?.type??'',

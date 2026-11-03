@@ -6,12 +6,6 @@ type Assignment={
   enabled:boolean;assigned:boolean;isDefault:boolean;
   onAdd:()=>void;
 };
-type Responsive={
-  desktop:boolean;tablet:boolean;mobile:boolean;canAssign:boolean;
-  breakpoint:number;canBreakpoint:boolean;columns:number;canColumns:boolean;
-  onDevice:(factor:'Desktop'|'Tablet'|'Phone')=>void;
-  onBreakpoint:(value:number)=>void;onColumns:(value:number)=>void;
-};
 type Properties={
   selected:boolean;apiName:string;visible:boolean;
   readOnly:boolean;canReadOnly:boolean;
@@ -23,15 +17,14 @@ type Nesting={
 type Technical={id:string;renderMode:string};
 type Props={
   section:AdvancedFeature|null;onInspectorHost:(node:HTMLDivElement|null)=>void;
-  assignment:Assignment;responsive:Responsive;properties:Properties;
-  nesting:Nesting;technical:Technical;
+  assignment:Assignment;properties:Properties;nesting:Nesting;technical:Technical;
 };
 
-/** The four component groups stay in Design; page-level activation is edited in Page Details for App Pages. Applicability disables controls
- * instead of changing the ribbon structure. The shared Page Builder handlers
- * remain responsible for mutations and permissions. */
+/** Advanced contains only component controls and a link to page activation.
+ * Page device eligibility belongs to Edit Page; component columns and custom
+ * viewport breakpoints retain their dedicated metadata editors. */
 export default function PageBuilderAdvancedSections({
-  onInspectorHost,assignment,responsive,properties,nesting,technical
+  onInspectorHost,assignment,properties,nesting,technical
 }:Props){
   // The former Advanced editor portalled the entire inspector into the ribbon.
   // Never leave a stale portal attached after switching from another tab.
@@ -50,26 +43,6 @@ export default function PageBuilderAdvancedSections({
       </label>
       <span className="advanced-fixed-caption">Activation Assignments</span>
     </section>}
-    <section className="advanced-fixed-group advanced-responsive" aria-label="Responsive Settings">
-      {(['Desktop','Tablet','Phone'] as const).map((factor,index)=>
-        <label key={factor} className={'advanced-fixed-field advanced-device advanced-device-'+index}>
-          {factor==='Phone'?'Mobile':factor}
-          <input type="checkbox" checked={factor==='Desktop'?responsive.desktop:
-            factor==='Tablet'?responsive.tablet:responsive.mobile}
-            disabled={!responsive.canAssign} onChange={()=>responsive.onDevice(factor)}/>
-        </label>)}
-      <label className="advanced-fixed-field advanced-breakpoint">Breakpoint
-        <input type="number" min={320} max={10000} value={responsive.breakpoint}
-          disabled={!responsive.canBreakpoint}
-          onChange={event=>responsive.onBreakpoint(Number(event.target.value))}/>
-      </label>
-      <label className="advanced-fixed-field advanced-columns">Columns
-        <input type="number" min={1} max={50} value={responsive.columns}
-          disabled={!responsive.canColumns}
-          onChange={event=>responsive.onColumns(Number(event.target.value))}/>
-      </label>
-      <span className="advanced-fixed-caption">Responsive Settings</span>
-    </section>
     <section className="advanced-fixed-group advanced-properties" aria-label="Advanced Properties">
       <label className="advanced-fixed-field advanced-api-name">API Name
         <input value={properties.apiName} readOnly disabled title="Component API identity is immutable"/>
