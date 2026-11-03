@@ -201,8 +201,9 @@
 .office-builder-ribbon .advanced-activation .advanced-default{left:50%;top:5px;right:8px}
 /* Group 3: x=630-916 */
 .office-builder-ribbon .advanced-properties .advanced-api-name{left:8px;right:8px;top:5px}
-.office-builder-ribbon .advanced-properties .advanced-visible{left:8px;top:35px;width:calc(50% - 12px)}
-.office-builder-ribbon .advanced-properties .advanced-readonly{left:50%;top:35px;right:8px}
+.office-builder-ribbon .advanced-properties .advanced-instance-name{left:8px;right:8px;top:35px}
+.office-builder-ribbon .advanced-properties .advanced-visible{left:8px;top:65px;width:calc(50% - 12px)}
+.office-builder-ribbon .advanced-properties .advanced-readonly{left:50%;top:65px;right:8px}
 /* Group 4: x=917-1294 */
 .office-builder-ribbon .advanced-nesting .advanced-accept{left:8px;right:8px;top:5px}
 /* Group 5: x=1295-1640 */
