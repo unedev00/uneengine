@@ -1,6 +1,6 @@
 import type {SqlPersistence} from '../system-files/sql-persistence.js';
 import {readComponentContract} from './component-contract-store.js';
-import {availableComponentSettings,type ComponentSettingDefinition} from './component-property-contract.js';
+import {availableComponentSettings,componentSettingIssues,type ComponentSettingDefinition} from './component-property-contract.js';
 import type {PageLayoutVariant} from '../system-files/page-layout-version-runtime.js';
 
 /** One interoperable format for Page Builder inventory export and guarded draft import. */
@@ -197,7 +197,7 @@ export function applyInventoryCsv(page:InventoryPage,csv:string,definitions:Defi
     if(!Number.isFinite(number)||Math.abs(number)>100000||(['width','height'].includes(coord)&&number<=0)){
      report('Canvas position must be a finite number; width and height must be positive');continue;
     }
-    const pos=component.position as Record<string,number>;
+    const pos=component.position as unknown as Record<string,number>;
     if(pos[coord]!==number){pos[coord]=number;changes++;}
    }else report('Unknown or protected component property');
    continue;
@@ -223,6 +223,8 @@ export function applyInventoryCsv(page:InventoryPage,csv:string,definitions:Defi
   }
   try{
    const next=parsedValue(value,target[key],schema?.kind);
+   const schemaIssue=schema?componentSettingIssues(schema,next,property)[0]:undefined;
+   if(schemaIssue){report(schemaIssue.path+': '+schemaIssue.message);continue;}
    if(JSON.stringify(target[key])!==JSON.stringify(next)){target[key]=next;changes++;}
   }catch(error){report(error instanceof Error?error.message:'Invalid component property value');}
  }
