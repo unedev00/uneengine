@@ -1,5 +1,6 @@
 import type { PageComponentMetadata } from '../../metadata/Definitions/metadata';
 import { rawLayoutParentId } from '../../pages/TemplatePageRuntime/pageComponentLayout';
+import {componentNameStem,nextComponentInstanceName} from '../../../../../server/src/system-support/page-component-names';
 
 export type ComponentClipboard = { rootId: string; components: PageComponentMetadata[] };
 
@@ -72,6 +73,24 @@ export function cloneComponentTree(
     };
   });
   return { rootId: ids.get(snapshot.rootId)!, components: remapComponentInteractionTargets(cloned,ids) };
+}
+
+/** Assign page-unique, user-facing names to duplicated/pasted components.
+ * Preserve runtime IDs, original names, nested links and historical sequence.
+ * Reuses the same shared component naming engine as Insert and CSV upsert. */
+export function nameCopiedComponentTree<T extends PageComponentMetadata>(
+  existing:readonly T[],clones:readonly T[],highWater:Record<string,number>={}
+):T[]{
+ const allocated=[...existing];
+ return clones.map(component=>{
+  const stem=componentNameStem(component.type);
+  const name=nextComponentInstanceName(allocated,component.type,highWater[stem]??0);
+  const numeric=Number(name.slice(stem.length));
+  if(Number.isFinite(numeric))highWater[stem]=Math.max(highWater[stem]??0,numeric);
+  const named={...component,properties:{...component.properties,navigatorName:name}};
+  allocated.push(named);
+  return named;
+ });
 }
 
 /** Dropping into a tab also establishes the selected tab, not just parentId. */
