@@ -1214,10 +1214,6 @@
  width:185px;max-width:185px;
 }
 .office-builder-ribbon .office-ribbon-page-layout-groups
-  .une-sql-home-group[data-shared-group="Page"] [data-ribbon-property="deviceLayout"]>select {
- width:122px;max-width:122px;
-}
-.office-builder-ribbon .office-ribbon-page-layout-groups
   .une-sql-home-group[data-shared-group="Page"] [data-ribbon-property="selectVersion"] {
  align-items:center;
 }
