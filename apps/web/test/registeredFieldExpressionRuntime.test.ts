@@ -114,8 +114,8 @@ test('registered formula bindings aggregate only complete authorised row sets',(
  assert.equal(resolved.subtotalValue,'16');
  assert.equal(input.subtotalValue,'=SUM(@LineTotal)');
  const partial=resolveRegisteredTextProperties(definitions,{
-  subtotalValue:'=SUM(@LineTotal)',records:records.slice(0,1),
-  recordPagination:{offset:0,total:2}
+  subtotalValue:'=SUM(@LineTotal)',record:records[0],records:records.slice(0,1),
+  formulaCollectionSources:{},recordPagination:{offset:0,total:2}
  });
  assert.equal(partial.subtotalValue,'=SUM(@LineTotal)');
 });
