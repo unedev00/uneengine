@@ -22,7 +22,7 @@ test('Card Grid uses record-scoped formula text and native, independently styled
   imageBackgroundColor:'#eeeeee',cardDescription:'@Description',
   cardValue:'"£" & @Price',cardButtonText:'"Choose +"',
   cardButtonFill:'#123456',cardButtonBorderColor:'#654321',
-  cardButtonShape:'pill',cardButtonTextSize:18,cardButtonTextColor:'#ffffff',
+  cardButtonShape:'shape:oval',cardButtonTextSize:18,cardButtonTextColor:'#ffffff',
   actionFlows:{click:{actionType:'Formula',formula:'@state.selected := @Id'}}
  });
  assert.match(html,/Freshly made/);
@@ -31,7 +31,7 @@ test('Card Grid uses record-scoped formula text and native, independently styled
  assert.match(html,/class="smart-card-button"/);
  assert.match(html,/background-color:#123456/);
  assert.match(html,/border-color:#654321/);
- assert.match(html,/border-radius:999px/);
+ assert.match(html,/border-radius:50%/);
  assert.match(html,/font-size:18px/);
  assert.match(html,/color:#ffffff/);
  assert.match(html,/background-color:#eeeeee/);
