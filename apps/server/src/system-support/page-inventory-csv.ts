@@ -12,6 +12,10 @@ type Block={id:string;type:string;label:string;region?:string;visible:boolean;
 export type InventoryPage={apiName:string;draftRevision?:number;components:Block[];[key:string]:unknown};
 type Definitions=Map<string,ComponentSettingDefinition[]>;
 const unsafe=new Set(['__proto__','prototype','constructor']);
+// Internal hierarchy links and obsolete Advanced placeholders are not user-editable
+// component properties. Their saved SQL values remain untouched by inventory import.
+const excludedInventoryProperties=new Set(['cssClass','allowedChildTypes','maxChildren','layoutParentId','parentId']);
+const inventoryPropertyAllowed=(key:string)=>!excludedInventoryProperties.has(key);
 const isPlain=(value:unknown):value is Record<string,unknown>=>value!==null
  &&typeof value==='object'&&!Array.isArray(value);
 const safeParts=(path:string):string[]|null=>{
@@ -36,6 +40,7 @@ function flatten(out:Map<string,string>,prefix:string,value:unknown):void{
 function schemaLeaves(out:Map<string,string>,definitions:readonly ComponentSettingDefinition[],
  prefix=''):void{
  for(const item of definitions){
+  if(!prefix&&!inventoryPropertyAllowed(item.propertyKey))continue;
   const key=prefix+item.propertyKey;
   if(item.kind==='GROUP'&&item.fields?.length)schemaLeaves(out,item.fields,key+'.');
   else if(!out.has(key))out.set(key,'');
@@ -68,7 +73,9 @@ export function exportInventoryCsv(page:InventoryPage,definitions:Definitions=ne
    ['component.position.width',valueText(component.position?.width)],
    ['component.position.height',valueText(component.position?.height)]
   ]);
-  for(const [key,value] of Object.entries(component.properties??{}))flatten(values,key,value);
+  for(const [key,value] of Object.entries(component.properties??{})){
+   if(inventoryPropertyAllowed(key))flatten(values,key,value);
+  }
   schemaLeaves(values,definitions.get(component.type)??[]);
   for(const [key,value] of values)
    rows.push([page.apiName,component.id,key,value]);
@@ -205,6 +212,9 @@ export function applyInventoryCsv(page:InventoryPage,csv:string,definitions:Defi
   const path=property.startsWith('properties.')?property.slice(11):property;
   const parts=safeParts(path);
   if(!parts){report('Invalid property path');continue;}
+  if(!inventoryPropertyAllowed(parts[0])){
+   report('This property is internal or retired and cannot be changed by CSV');continue;
+  }
   const schema=lookupSchema(definitions.get(component.type)??[],parts);
   let target:Record<string,unknown>=component.properties??(component.properties={});
   let missingParent=false;
