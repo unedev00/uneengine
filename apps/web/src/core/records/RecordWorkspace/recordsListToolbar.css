@@ -184,7 +184,7 @@
 
 /* Dedicated phone record rows replace the many-column CSS table-card hack. */
 .records-phone-rows, .records-phone-selection-actions, .records-phone-pagination, .records-phone-title-actions { display: none; }
-@media (max-width: 599px), (max-height: 500px) and (pointer: coarse) {
+@media (max-width: 599px), (max-width: 1023px) and (max-height: 500px) {
   .records-main-toolbar { grid-template-columns: minmax(0,1fr); grid-template-areas: "title" "search" "views"; padding: 16px 14px 10px; row-gap: 12px; }
   .records-main-toolbar > .records-phone-title-line {
     grid-area: title; display: flex; align-items: center; justify-content: space-between; gap: 12px;
