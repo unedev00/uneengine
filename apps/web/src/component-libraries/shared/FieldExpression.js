@@ -283,6 +283,26 @@ function parse(source,record,formulaContext){
  const expression=new Parser(tokenize(source)).parse();
  validateFormulaFunctions(expression,'ribbon_binding');
  const resolveReference=(reference,currentRecord=record)=>{
+   // Page-local globals are scoped inputs; never read storage or arbitrary records.
+   if(reference==='$session')return typeof formulaContext.sessionId==='string'
+    ?formulaContext.sessionId:'';
+   if(reference.startsWith('$state.')){
+    const key=reference.slice(7);
+    if(!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(key))
+     throw Error('Invalid Page State reference');
+    const state=formulaContext.pageState;
+    if(!state||typeof state!=='object'||Array.isArray(state))return '';
+    const descriptor=Object.getOwnPropertyDescriptor(state,key);
+    if(!descriptor||!Object.prototype.hasOwnProperty.call(descriptor,'value')
+      ||descriptor.value===undefined||descriptor.value===null)return '';
+    const value=descriptor.value;
+    if(!['string','number','boolean'].includes(typeof value)
+      ||typeof value==='number'&&!Number.isFinite(value))
+     throw Error('Page State formula value must be a finite scalar');
+    return value;
+   }
+   if(reference==='$state'||reference.startsWith('$session.'))
+    throw Error('Unsupported Page State or session reference: '+reference);
    const named=formulaContext.namedCollections;
    if(named&&typeof named==='object'&&!Array.isArray(named)&&!reference.includes('.')){
     const collection=Object.entries(named).find(([key])=>key.toLowerCase()===reference.toLowerCase())?.[1];
@@ -601,7 +621,7 @@ export function evaluateFieldExpressionDetailed(expression,record,options={}){
  if(explicit&&!input)return {value:'',error:'Complete the formula after ='};
  if(!explicit&&!options?.collectionResult&&/^COLLECTION\s*\(/i.test(input))
   return {value:expression};
- if(!/^(?:TRUE|FALSE|NULL|PI)$/i.test(input)&&!/@[A-Za-z]/.test(input)&&!input.startsWith('@')&&!/^[A-Za-z][A-Za-z0-9_]*\s*\(/.test(input)
+ if(!/^(?:TRUE|FALSE|NULL|PI)$/i.test(input)&&!/@[A-Za-z]/.test(input)&&!input.startsWith('@')&&!/^\$(?:state\.|session$)/.test(input)&&!/^[A-Za-z][A-Za-z0-9_]*\s*\(/.test(input)
   &&!/^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)+(?:\s*\(|$)/.test(input)
   &&!/^(?:["(]|[-+]?\d+(?:\.\d+)?\s*[+*\/%^<>=!-])/.test(input)
   &&!/\s(?:[&+*/%^<>=!]|AND\b|OR\b)\s/i.test(input))return {value:expression};
@@ -621,6 +641,7 @@ export function evaluateFieldExpressionDetailed(expression,record,options={}){
    namedCollections:options.namedCollections,
    namedCollectionSelections:options.namedCollectionSelections,
    collectionRows:options.collectionRows,
+   pageState:options.pageState,sessionId:options.sessionId,
    rootObjectApiName:options.rootObjectApiName});
   if(options.collectionResult===true){
    if(!result||typeof result!=='object'||Array.isArray(result)
@@ -650,5 +671,6 @@ export function evaluateCollectionFormula(formula,sourceRecords={},context={}){
   {collectionSources:sourceRecords,collectionSourceFields:context?.collectionSourceFields,
    collectionResult:true,rootObjectApiName:context?.primaryObject,
    namedCollections:context?.namedCollections,
+   pageState:context?.state,sessionId:context?.session?.id,
    namedCollectionSelections:context?.state?.collectionSelections});
 }
