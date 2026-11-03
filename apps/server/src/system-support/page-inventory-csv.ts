@@ -171,7 +171,7 @@ export function exportInventoryCsv(page:InventoryPage,definitions:Definitions=ne
 type CsvRow={line:number;cells:string[]};
 function parseCsv(text:string):{rows:CsvRow[];issues:InventoryIssue[];columns:number}{
  const issues:InventoryIssue[]=[];
- if(text.length>700000)return {rows:[],columns:4,issues:[{row:1,component_name:'',component_property:'',remark:'CSV exceeds the 700 KB import limit'}]};
+ if(text.length>1800000)return {rows:[],columns:4,issues:[{row:1,component_name:'',component_property:'',remark:'CSV exceeds the 1.8 MB import limit'}]};
  const rows:CsvRow[]=[],current:string[]=[];
  let cell='',quoted=false,afterQuote=false,line=1,start=1;
  const finishCell=()=>{current.push(cell);cell='';afterQuote=false;};
@@ -197,8 +197,8 @@ function parseCsv(text:string):{rows:CsvRow[];issues:InventoryIssue[];columns:nu
   }else if(ch==='"'){
    issues.push({row:start,component_name:'',component_property:'',remark:'Unexpected quote in CSV value'});
   }else cell+=ch;
-  if(rows.length>25000){
-   issues.push({row:line,component_name:'',component_property:'',remark:'CSV exceeds 25,000 rows'});
+  if(rows.length>50000){
+   issues.push({row:line,component_name:'',component_property:'',remark:'CSV exceeds 50,000 rows'});
    break;
   }
  }
@@ -361,8 +361,11 @@ export function applyInventoryCsv(page:InventoryPage,csv:string,definitions:Defi
   const storageParts=ribbon?.valueKey?safeParts(ribbon.valueKey):parts;
   if(!storageParts){report(row,'Invalid shared Ribbon property storage path');continue;}
   const original=pathValue(component.properties??{},storageParts.join('.'));
-  if(original===undefined&&!schema&&!ribbon){
-   report(row,'Unknown component metadata property');continue;
+  const hasPublishedCatalog=Boolean(definitions.completeCatalog&&component.type.startsWith('Custom:')&&
+    ((definitions.ribbonProperties?.get(component.type)?.length??0)>0||
+     (definitions.get(component.type)?.length??0)>0));
+  if(!schema&&!ribbon&&(original===undefined||hasPublishedCatalog)){
+   report(row,'Unknown or disabled component metadata property');continue;
   }
   try{
    const next=parsedValue(value,original,schema?.kind??ribbon?.kind);
