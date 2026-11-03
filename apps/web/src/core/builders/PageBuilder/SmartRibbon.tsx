@@ -15,6 +15,7 @@ import {pageStateChoices} from './pageStateChoices';
 import {namedCollectionName,namedCollectionNames} from '../../pages/PageRuntime/pageCollectionSession';
 import {formulaCollectionReferenceKey} from '../../../../../server/src/expression-engine/FormulaCollection.js';
 import SmartIconDropdown from './SmartIconDropdown';
+import Design2ChoiceDropdown from './Design2ChoiceDropdown';
 import SmartMultiSelect from './SmartMultiSelect';
 import SmartIconGallery from './SmartIconGallery';
 import './SmartRibbon.css';
@@ -149,16 +150,17 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  const compactDesign=true;
  // Independent SQL-planned view over shared controls and persisted property keys.
  // A null property key displays the fallback glyph, always disabled.
- const design2Areas=[...new Map(design2Slots.map(slot=>[slot.area,slot.areaOrder])).entries()]
+ const componentDesign2Slots=design2Slots.filter(slot=>slot.componentApi===api);
+ const design2Areas=[...new Map(componentDesign2Slots.map(slot=>[slot.area,slot.areaOrder])).entries()]
    .sort((a,b)=>a[1]-b[1]).map(([area])=>area);
  const activeDesign2Area=design2Areas.includes(design2Area)?design2Area:design2Areas[0]??'Body';
- const design2Properties=tab==='Design2'?design2Slots
+ const design2Properties=tab==='Design2'?componentDesign2Slots
    .filter(slot=>slot.area===activeDesign2Area)
    .map(slot=>{
      const original=definitions.find(p=>p.id===(slot.propertyKey??slot.fallbackKey));
      if(!original)return null;
-     return {...original,label:slot.slotKey==='focused'?'Focused Color':original.label,
-       tab:'Design2' as const,group:activeDesign2Area,
+     return {...original,label:slot.slotKey==='Horizontal/Verical'?'Orientation':slot.slotKey==='Fill'?'Image Fill':slot.slotKey,
+       design2SlotKey:slot.slotKey,tab:'Design2' as const,group:activeDesign2Area,
        components:slot.propertyKey?original.components:[],
        designRow:slot.row,designOrder:slot.order,
        designWidth:slot.width,designHeight:slot.height,designCaptionWidth:0,
@@ -222,6 +224,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  // Geometry only. Keep every property, icon, dropdown and persisted value;
  // fit their existing three rows without reserving space for empty columns.
  const controlWidth=(p:UneRibbonProperty)=>{
+   if(tab==='Design2')return p.designWidth??40;
    // Reserve the exact SQL 30px input track; a separate 45px caption is added.
    if(p.id==='tabIndex')return p.designWidth??30;
    // Shape's 94px SQL width is exact, unlike other compact choice tracks.
@@ -366,8 +369,10 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
      onChange={e=>write(e.target.value)}><option value="">Select Object</option>
      {objects.map(o=><option key={o.apiName} value={o.apiName}>{o.label}</option>)}</select>;
    else if(kind==='color')editor=<RibbonColorPalette variant="property"
-     kind={/border/i.test(property.id)?'border':property.id==='iconFillColor'||/label|text|value/i.test(property.id)?'text':'fill'}
-     label={title} value={String(value)} disabled={!enabled} onChange={write}/>;
+      iconVariant={tab==='Design2'&&property.design2SlotKey==='Shape Fill'?'shape':
+       tab==='Design2'&&/^(Focus|Focus Color)$/.test(property.design2SlotKey??'')?'focus':undefined}
+      kind={/border/i.test(property.id)?'border':property.id==='iconFillColor'||/label|text|value/i.test(property.id)?'text':'fill'}
+      label={title} value={String(value)} disabled={!enabled} onChange={write}/>;
    else if(tab==='Layout'&&['cardsPerRow','cardsPerColumn'].includes(property.id))
      editor=<select className="smart-select" aria-label={title} disabled={!enabled}
        value={String(Number(value)||1)} onChange={event=>write(Number(event.target.value))}>
@@ -427,14 +432,21 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
      onClick={()=>write(!(value===true||value==='true'))}>
      <span className="smart-default-check-thumb" aria-hidden="true"/>
    </button>;
-   else if(kind==='choice'&&Array.isArray(value))editor=<SmartMultiSelect
+   else if(tab==='Design2'&&kind==='choice'&&
+      ['Placement','Fill','Horizontal/Verical'].includes(property.design2SlotKey??''))
+      editor=<Design2ChoiceDropdown
+       kind={property.design2SlotKey==='Placement'?'placement':
+        property.design2SlotKey==='Fill'?'imageFill':'orientation'}
+       label={title} value={String(value)} choices={options} disabled={!enabled} onChange={write}/>;
+    else if(kind==='choice'&&Array.isArray(value))editor=<SmartMultiSelect
       label={title} choices={options} value={value.filter((item):item is string=>typeof item==='string')}
       disabled={!enabled} onChange={write}/>;
     else if(kind==='choice')editor=<select className="smart-select" aria-label={title}
      title={value?title+': '+String(value):title} disabled={!enabled}
      value={String(value)} onChange={e=>write(e.target.value)}><option value="">Select</option>
      {options.map(s=><option value={s} key={s}>{s.replaceAll('-',' ')}</option>)}</select>;
-   return <div key={property.id} className={'smart-property'+(!enabled?' disabled':'')} data-property={property.id}
+   return <div key={tab==='Design2'?property.id+'-'+property.designRow+'-'+property.designOrder:property.id}
+        className={'smart-property'+(!enabled?' disabled':'')} data-property={property.id}
        data-supported={supported} data-kind={kind} data-numeric-icon={hasNumericIcon?'true':'false'}
        data-design-caption={compactDesign&&Boolean(property.designCaptionWidth)?'true':'false'}
        style={compactDesign?{'--smart-control-width':controlWidth(property)+'px',
@@ -451,34 +463,27 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
     onChange={event=>void selectLocalImage(event)} />
   {uploadError&&<div className="smart-upload-error" role="alert" title={uploadError}>{uploadError}</div>}
   {tab==='Design2'?<section className="smart-ribbon-group smart-design2-group"
-      data-design-three-row="true" data-smart-tab="Design2" aria-label="Design 2 contextual properties">
-    <div className="smart-ribbon-items">
-      <div className="smart-ribbon-row smart-design2-top-row" data-design-row={1}>
-        <label className="smart-design2-area-picker">
-          <span aria-hidden="true">Select it</span>
-          <select className="smart-design2-area-select" aria-label="Select Design 2 area"
-            value={activeDesign2Area} onChange={event=>setDesign2Area(event.target.value)}>
-            {design2Areas.map(area=><option value={area} key={area}>{area}</option>)}
-          </select>
-        </label>
-        <button type="button" className="smart-icon-toggle smart-design2-visibility"
-          aria-label="Component visibility" title="Component visibility"
-          aria-pressed={componentVisible} disabled={!onVisibleChange}
-          onClick={()=>onVisibleChange?.(!componentVisible)}>
-          {componentVisible?<Eye size={17}/>:<EyeOff size={17}/>}
-        </button>
-        {(['shapeId','shapeFill'] as const).map((id,index)=>{
-          const original=definitions.find(property=>property.id===id);
-          return original?controls({...original,tab:'Design2',group:'Shape',
-            designRow:1,designOrder:index+1,designWidth:id==='shapeId'?94:40,
-            designHeight:26,designCaptionWidth:0}):null;
-        })}
-      </div>
-      {[2,3].map(row=><div key={row} className="smart-ribbon-row"
-        data-design-row={row}>{sectionRow(activeDesign2Area,row).map(controls)}</div>)}
-    </div>
-    <span className="smart-ribbon-caption">{activeDesign2Area}</span>
-  </section>:tab==='Data'?<>
+       data-design-three-row="true" data-smart-tab="Design2" aria-label="Design 2 contextual properties">
+     <div className="smart-design2-heading">
+       <label className="smart-design2-area-picker">
+         <span aria-hidden="true">Select</span>
+         <select className="smart-design2-area-select" aria-label="Select Design 2 area"
+           value={activeDesign2Area} onChange={event=>setDesign2Area(event.target.value)}>
+           {design2Areas.map(area=><option value={area} key={area}>{area}</option>)}
+         </select>
+       </label>
+       <button type="button" className="smart-icon-toggle smart-design2-visibility"
+         aria-label="Component visibility" title="Component visibility"
+         aria-pressed={componentVisible} disabled={!onVisibleChange}
+         onClick={()=>onVisibleChange?.(!componentVisible)}>
+         {componentVisible?<Eye size={17}/>:<EyeOff size={17}/>}
+       </button>
+     </div>
+     <div className="smart-ribbon-items">
+       {[1,2,3].map(row=><div key={row} className="smart-ribbon-row"
+         data-design-row={row}>{sectionRow(activeDesign2Area,row).map(controls)}</div>)}
+     </div>
+     <span className="smart-ribbon-caption">Design 2</span></section>:tab==='Data'?<>
     {sections.filter(group=>group==='Source').map(section=><section className="smart-ribbon-group" key={section}
       data-design-three-row="true" data-smart-tab={tab} aria-label={section}
       style={{'--smart-section-width':sectionWidth(section)+'px'} as CSSProperties}>
