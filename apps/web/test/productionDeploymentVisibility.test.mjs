@@ -14,6 +14,9 @@ test('global system popup never hides deployment control after a forbidden statu
  assert.match(source,/Deploy latest to OCI/);
  assert.match(source,/OCI deployment failed at stage/);
  assert.match(source,/PlatformOperations manage permission is missing/);
+ assert.match(source,/OneEngine permission set is not assigned/);
+ assert.match(source,/Deployment is restricted to the platform tenant/);
+ assert.doesNotMatch(source,/Platform Developer deployment permission required/);
  assert.match(source,/OCI deployment/);
  assert.doesNotMatch(source,/GitHub credential is required/);
 });
