@@ -17,13 +17,15 @@ const original=():InventoryPage=>({
  }]
 });
 const csv=(...rows:string[])=>['pageapi,component_name,component_property,value',...rows].join('\r\n');
-const csv5=(...rows:string[])=>['pageapi,component_name,component_property,value,ribbon_tab',...rows].join('\r\n');
+const csv5=(...rows:string[])=>['pageapi,component_type,component_name,propertyid,value,ribbon_tab',...rows].join('\r\n');
+const typedCsv=(...rows:string[])=>['pageapi,component_type,component_name,propertyid,value',...rows].join('\r\n');
+const typedCsv6=(...rows:string[])=>['pageapi,component_type,component_name,propertyid,value,ribbon_tab',...rows].join('\r\n');
 test('inventory exports editable component properties, canvas coordinates and complex values',()=>{
  const output=exportInventoryCsv(original());
- assert.match(output,/CODEXTILL,smartcart1,width,100/);
- assert.match(output,/CODEXTILL,smartcart1,component.position.width,450/);
- assert.match(output,/CODEXTILL,smartcart1,style.fontSize,14/);
- assert.match(output,/CODEXTILL,smartcart1,summary1Formula,=SUM\(@LineTotal\)/);
+ assert.match(output,/CODEXTILL,smart_cart,smartcart1,width,100/);
+ assert.match(output,/CODEXTILL,smart_cart,smartcart1,component.position.width,450/);
+ assert.match(output,/CODEXTILL,smart_cart,smartcart1,style.fontSize,14/);
+ assert.match(output,/CODEXTILL,smart_cart,smartcart1,summary1Formula,=SUM\(@LineTotal\)/);
  assert.match(output,/""Tea, milk""/);
 });
 test('blank and absent CSV properties preserve saved metadata',()=>{
@@ -63,7 +65,7 @@ test('unknown current property may be filled only when published metadata declar
   {propertyKey:'captionColor',label:'Caption colour',kind:'COLOR'}
  ]]]);
  const page=original();
- assert.match(exportInventoryCsv(page,definitions),/CODEXTILL,smartcart1,captionColor,,Advanced\r\n/);
+ assert.match(exportInventoryCsv(page,definitions),/CODEXTILL,smart_cart,smartcart1,captionColor,,Advanced\r\n/);
  const imported=applyInventoryCsv(page,csv('CODEXTILL,Cart1,captionColor,#ff0000'),definitions);
  assert.equal(imported.valid,true);
  assert.equal(imported.page.components[0].properties.captionColor,'#ff0000');
@@ -91,7 +93,7 @@ test('Advanced placeholder and parent-link keys stay persisted but are omitted f
  const exported=exportInventoryCsv(page,defs);
  for(const excluded of ['cssClass','allowedChildTypes','maxChildren','layoutParentId','parentId'])
   assert.ok(!exported.includes(','+excluded+','),excluded+' should not appear in inventory');
- assert.ok(exported.includes('CODEXTILL,smartcart1,objectApiName,Inventory'));
+ assert.ok(exported.includes('CODEXTILL,smart_cart,smartcart1,objectApiName,Inventory'));
  assert.deepEqual(page.components[0].properties.layoutParentId,'Group1',
   'hiding a structural property must not modify page metadata');
  const importable=applyInventoryCsv(page,csv('CODEXTILL,Cart1,width,110'),defs);
@@ -114,16 +116,17 @@ test('CSV cannot override internal parent structure or retired Advanced properti
  assert.equal(result.page.components[0].properties.cssClass,'old');
 });
 
-test('component_name is readable; type/id are explicit immutable metadata rows',()=>{
+test('component_type column is the standard type and custom name is the lookup identity',()=>{
  const output=exportInventoryCsv(original());
- assert.match(output,/CODEXTILL,smartcart1,component\.id,Cart1/);
- assert.match(output,/CODEXTILL,smartcart1,component\.type,Custom:smart_cart/);
- assert.match(output,/CODEXTILL,smarttabs1,component\.type,Custom:smart_tabs/);
- assert.doesNotMatch(output,/CODEXTILL,Cart1,component\.label/);
- const imported=applyInventoryCsv(original(),csv('CODEXTILL,smartcart1,width,35'));
+ assert.match(output,/^pageapi,component_type,component_name,propertyid,value,ribbon_tab\r\n/);
+ assert.match(output,/CODEXTILL,smart_cart,smartcart1,component\.visible,true,View/);
+ assert.match(output,/CODEXTILL,smart_tabs,smarttabs1,component\.visible,true,View/);
+ assert.doesNotMatch(output,/component\.type|component\.id|navigatorName/);
+ const imported=applyInventoryCsv(original(),typedCsv('CODEXTILL,smart_cart,smartcart1,width,35'));
  assert.equal(imported.valid,true);
  assert.equal(imported.page.components[0].properties.width,35);
 });
+
 test('sequence skips deleted numbers, retains historical high water, and names are unique',()=>{
  const components=[{id:'a',type:'Custom:smart_image',properties:{navigatorName:'smartimage1'}},
   {id:'c',type:'Custom:smart_image',properties:{navigatorName:'smartimage3'}}];
@@ -210,20 +213,20 @@ test('catalogue export has the same property IDs and row counts for the same typ
    navigatorName:'smartcart2',internalUnregistered:'not a Ribbon property'}}];
  const defs=ribbonDefinitions();
  const first=exportInventoryCsv(a,defs),second=exportInventoryCsv(b,defs);
- const parsed=(output:string)=>output.trim().split('\r\n').slice(1).map(row=>row.split(',')[2]);
+ const parsed=(output:string)=>output.trim().split('\r\n').slice(1).map(row=>row.split(',')[3]);
  assert.deepEqual(parsed(first),parsed(second));
- assert.match(first,/CODEXTILL,smartcart1,backgroundColor,#ffffff,Design/);
- assert.match(first,/CODEXTILL,smartcart1,textSize,16,Design/);
- assert.match(first,/CODEXTILL,smartcart1,wrapText,true,Design/);
- assert.match(second,/OTHERPAGE,smartcart2,textSize,19,Design/);
- assert.match(first,/CODEXTILL,smartcart1,customCaption,Untitled,Data/);
- assert.match(first,/CODEXTILL,smartcart1,format\.fontSize,13,Design/);
+ assert.match(first,/CODEXTILL,smart_cart,smartcart1,backgroundColor,#ffffff,Design/);
+ assert.match(first,/CODEXTILL,smart_cart,smartcart1,textSize,16,Design/);
+ assert.match(first,/CODEXTILL,smart_cart,smartcart1,wrapText,true,Design/);
+ assert.match(second,/OTHERPAGE,smart_cart,smartcart2,textSize,19,Design/);
+ assert.match(first,/CODEXTILL,smart_cart,smartcart1,customCaption,Untitled,Data/);
+ assert.match(first,/CODEXTILL,smart_cart,smartcart1,format\.fontSize,13,Design/);
  assert.doesNotMatch(first,/component\.label|navigatorName/);
  assert.doesNotMatch(second,/internalUnregistered/);
  assert.equal(first.split('\r\n')[0],'pageapi,component_name,component_property,value,ribbon_tab');
 });
 
-test('five-column export reimports without storing defaults or changing the draft',()=>{
+test('six-column export reimports without storing defaults or changing the draft',()=>{
  const page=original();page.components=[page.components[0]];
  const defs=ribbonDefinitions();
  const downloaded=exportInventoryCsv(page,defs);
@@ -266,6 +269,7 @@ test('tenant SQL Ribbon applicability and default overrides come from the existi
  const queries:string[]=[];
  const db={query:async(sql:string)=>{
   queries.push(sql);
+  if(sql.includes('FROM md_component_definitions'))return {rows:[{api_name:'smart_cart'},{api_name:'smart_tabs'}]};
   if(sql.includes('md_component_library_heads'))return {rows:[]};
   if(sql.includes('md_builder_ribbon_component_rules'))return {rows:[
    {component_api:'smart_cart',property_key:'textSize',tab:'Design',kind:'number',
@@ -281,6 +285,6 @@ test('tenant SQL Ribbon applicability and default overrides come from the existi
  assert.match(queries[1],/r\.enabled=true/);
  assert.match(queries[1],/p\.scope='component'/);
  const output=exportInventoryCsv(original(),defs);
- assert.match(output,/CODEXTILL,smartcart1,textSize,18,Design/);
- assert.match(output,/CODEXTILL,smartcart1,shadow,medium,Design/);
+ assert.match(output,/CODEXTILL,smart_cart,smartcart1,textSize,18,Design/);
+ assert.match(output,/CODEXTILL,smart_cart,smartcart1,shadow,medium,Design/);
 });
