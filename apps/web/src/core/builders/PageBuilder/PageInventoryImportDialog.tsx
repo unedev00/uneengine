@@ -2,7 +2,7 @@ import {useMemo,useState} from 'react';
 import type {LightningPageMetadata} from '../../metadata/Definitions/metadata';
 import './PageInventoryImportDialog.css';
 
-type Issue={row:number;pageapi?:string;component_name:string;component_property:string;value?:string;remark:string};
+type Issue={row:number;pageapi?:string;component_type?:string;component_name:string;component_property:string;value?:string;remark:string};
 type Preview={valid:boolean;issues:Issue[];changes:number;skipped:number;draftRevision:number};
 type ApplyResult=Preview&{page?:LightningPageMetadata};
 type Props={
@@ -17,8 +17,8 @@ const csvEscape=(value:unknown)=>{
  return /[",\r\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;
 };
 function downloadErrors(issues:Issue[],name:string){
- const csv=[['row','pageapi','component_name','component_property','value','error_remarks'],
-  ...issues.map(item=>[item.row,item.pageapi,item.component_name,item.component_property,item.value,item.remark])]
+ const csv=[['row','pageapi','component_type','component_name','propertyid','value','error_remarks'],
+  ...issues.map(item=>[item.row,item.pageapi,item.component_type,item.component_name,item.component_property,item.value,item.remark])]
   .map(row=>row.map(csvEscape).join(',')).join('\r\n')+'\r\n';
  const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
  const anchor=document.createElement('a');
@@ -82,9 +82,9 @@ export default function PageInventoryImportDialog({pages,initialPageApi,request,
     <h2 id="page-inventory-import-title">Upload component inventory CSV</h2>
     <button className="btn btn-small" type="button" onClick={onClose} disabled={busy}>Close</button>
    </div>
-   <p className="modal-copy">Import into the Desktop page draft only. Existing component names update; missing names
-    create new instances when component.type declares a published tenant component. Blank values and omitted rows
-    are ignored. Every row is checked before anything is saved.</p>
+   <p className="modal-copy">Import into the Desktop page draft only. Match a custom component name
+    to update its existing instance, or create an installed component of the declared standard type
+    when the name is missing. Blank values preserve existing settings. Every row is validated before saving.</p>
    <div className="page-inventory-import-fields">
     <div className="page-inventory-picker">
      <label className="form-label" htmlFor="page-inventory-page-search">Search pages</label>
@@ -103,9 +103,10 @@ export default function PageInventoryImportDialog({pages,initialPageApi,request,
      <input id="page-inventory-csv" type="file" accept=".csv,text/csv" disabled={busy}
       onChange={e=>void loadFile(e.target.files?.[0])}/>
      <p className="page-inventory-file-name">{fileName||'No file selected'}</p>
-     <p className="page-inventory-help">Expected: pageapi, component_name, component_property, value.</p>
-     <p className="page-inventory-help">Use unique names such as smartimage1. For a new name, add
-      component.type = Custom:smart_image and leave component.id blank. Only the Desktop draft is modified.</p>
+     <p className="page-inventory-help">Expected: pageapi, component_type, component_name, propertyid, value.</p>
+     <p className="page-inventory-help">Example: ACEKIOSK,smart_cart,mycartname,backgroundColor,#ffffff.
+      The component type must be installed for this tenant. Names are unique per page and updates
+      must use the same type. Only the Desktop draft is modified.</p>
      <p className="page-inventory-help">Selected page: {selectedPage?.apiName??'None'}</p>
     </div>
    </div>
@@ -124,9 +125,9 @@ export default function PageInventoryImportDialog({pages,initialPageApi,request,
      </div>
      <div className="page-inventory-error-table">
       <table className="records-table">
-       <thead><tr><th>Row</th><th>Component</th><th>Property</th><th>Value</th><th>Error remarks</th></tr></thead>
+       <thead><tr><th>Row</th><th>Type</th><th>Component</th><th>Property</th><th>Value</th><th>Error remarks</th></tr></thead>
        <tbody>{preview.issues.map((item,index)=><tr key={index}>
-        <td>{item.row}</td><td>{item.component_name||'—'}</td>
+        <td>{item.row}</td><td>{item.component_type||'—'}</td><td>{item.component_name||'—'}</td>
         <td>{item.component_property||'—'}</td><td>{item.value??'—'}</td><td>{item.remark}</td>
        </tr>)}</tbody>
       </table>
