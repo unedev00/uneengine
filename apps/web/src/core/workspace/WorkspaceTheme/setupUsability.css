@@ -246,3 +246,30 @@
 /* Audit DEF-025/026: field widths are driven by data shape, not full form columns. */
 .lightning .currency-iso-code-input { width: min(100%, 180px); max-width: 180px; }
 .lightning .mfa-recovery-user-select { width: min(100%, 440px); max-width: 440px; }
+
+
+/* Audited setup layout: no clipped recent activity on mobile. */
+@media(max-width:640px){
+ .lightning .home-content,.lightning .home-lower-grid,.lightning .recent-surface,.lightning .help-surface,
+ .lightning .recent-row,.lightning .recent-row>div,.lightning .workspace{max-width:100%;min-width:0}
+ .lightning .home-lower-grid{grid-template-columns:minmax(0,1fr)}
+ .lightning .recent-row{display:grid;grid-template-columns:29px minmax(0,1fr);align-items:center;gap:4px 10px;padding:10px 0}
+ .lightning .recent-row>.recent-icon{grid-column:1;grid-row:1 / span 2}
+ .lightning .recent-row>div{grid-column:2;overflow-wrap:anywhere}
+ .lightning .recent-row>time{grid-column:2;margin:0;text-align:left;white-space:normal;overflow-wrap:anywhere}
+ .lightning :is(.recent-row,.home-lower-grid,.workspace)>*{min-width:0}
+ .lightning :is(.home-content,.recent-row,.home-lower-grid) :is(button,a){min-height:24px}
+}
+/* Audit navigation at 1024-1199px: retain a readable, scrollable setup rail. */
+@media(min-width:1024px) and (max-width:1199px){
+ .lightning .setup-layout{min-width:0;grid-template-columns:minmax(0,224px) minmax(0,1fr)}
+ .lightning .setup-sidebar{min-width:0;width:224px;max-width:224px;overflow-x:hidden}
+ .lightning .setup-sidebar .tree-item{max-width:100%;white-space:normal;overflow-wrap:anywhere}
+ .lightning .setup-layout>.workspace{min-width:0}
+}
+/* Denser security-page navigation and pagination, preserving accessible target heights. */
+.lightning .md-security-history-filters+.md-admin-actions button,
+.lightning .md-admin-actions[aria-label="Security event pages"] button{min-width:86px}
+.lightning .md-admin-tabstrip>button{min-height:32px;font-size:13px}
+.lightning .md-admin-tabstrip{scroll-margin-top:108px}
+.lightning .setup-layout{scrollbar-gutter:auto}
