@@ -73,3 +73,41 @@ test('quoted commas and escaped quotes round-trip without mis-parsing',()=>{
  assert.equal(result.valid,true);
  assert.equal(result.changes,0);
 });
+
+test('Advanced placeholder and parent-link keys stay persisted but are omitted from inventory',()=>{
+ const page=original();
+ Object.assign(page.components[0].properties,{
+   cssClass:'not-used',allowedChildTypes:['Button'],maxChildren:2,
+   layoutParentId:'Group1',parentId:'Group1',objectApiName:'Inventory'
+ });
+ const defs=new Map<string,ComponentSettingDefinition[]>([['Custom:smart_cart',[
+  {propertyKey:'cssClass',label:'Legacy CSS class',kind:'TEXT'},
+  {propertyKey:'maxChildren',label:'Legacy max children',kind:'NUMBER'},
+  {propertyKey:'layoutParentId',label:'Parent link',kind:'TEXT'},
+  {propertyKey:'objectApiName',label:'Source Object',kind:'OBJECT'}
+ ]]]);
+ const exported=exportInventoryCsv(page,defs);
+ for(const excluded of ['cssClass','allowedChildTypes','maxChildren','layoutParentId','parentId'])
+  assert.ok(!exported.includes(','+excluded+','),excluded+' should not appear in inventory');
+ assert.ok(exported.includes('CODEXTILL,Cart1,objectApiName,Inventory'));
+ assert.deepEqual(page.components[0].properties.layoutParentId,'Group1',
+  'hiding a structural property must not modify page metadata');
+ const importable=applyInventoryCsv(page,csv('CODEXTILL,Cart1,width,110'),defs);
+ assert.equal(importable.valid,true);
+ assert.equal(importable.page.components[0].properties.layoutParentId,'Group1');
+ assert.equal(importable.page.components[0].properties.cssClass,'not-used');
+ assert.equal(importable.page.components[0].properties.objectApiName,'Inventory');
+});
+test('CSV cannot override internal parent structure or retired Advanced properties',()=>{
+ const page=original();
+ page.components[0].properties.layoutParentId='Group1';
+ page.components[0].properties.cssClass='old';
+ const rows=['layoutParentId','cssClass','maxChildren','allowedChildTypes','parentId']
+  .map(key=>'CODEXTILL,Cart1,'+key+',changed');
+ const result=applyInventoryCsv(page,csv(...rows));
+ assert.equal(result.valid,false);
+ assert.equal(result.issues.length,rows.length);
+ assert.deepEqual(result.issues.map(issue=>issue.row),[2,3,4,5,6]);
+ assert.equal(result.page.components[0].properties.layoutParentId,'Group1');
+ assert.equal(result.page.components[0].properties.cssClass,'old');
+});
