@@ -63,7 +63,40 @@ const boundImage=(p,record)=>{
 };
 const gridText=(p,key,record)=>p.kind==="smart_card_grid"
  ?scopedExpression(p,key,p[key]??"",record):"";
-function SmartCard({p,record,onButtonClick}){
+// A card's selection follows its authored Page State action (or named Collection).
+// This shares the existing session binding: no separate Card Grid selection store.
+const cardSelection=p=>{
+ const action=p.actionFlows?.click;
+ const formula=action?.actionType==="Formula"&&typeof action.formula==="string"
+  ?/^@state\.([A-Za-z][A-Za-z0-9_]{0,63})\s*:=\s*([\s\S]+)$/.exec(action.formula.trim()):null;
+ const stateKey=action?.actionType==="PageState"&&typeof action.stateKey==="string"
+  ?action.stateKey:formula?.[1];
+ const rhs=formula?.[2]?.trim();
+ const source=rhs? /^@([A-Za-z][A-Za-z0-9_]*)$/.exec(rhs)?.[1]:null;
+ const pageValue=stateKey?p.pageState?.[stateKey]:undefined;
+ if(pageValue!==undefined&&pageValue!==null&&pageValue!==""){
+  const value=action?.actionType==="PageState"?String(action.value??""):"";
+  const eventField=/^\$event\.record\.([A-Za-z][A-Za-z0-9_]*)$/.exec(value)?.[1];
+  return {field:source||eventField||"Id",value:pageValue};
+ }
+ const collectionName=p.dataCollection?.name;
+ const selected=collectionName&&p.pageState?.collectionSelections&&
+  Object.entries(p.pageState.collectionSelections).find(([name])=>
+   name.toLowerCase()===collectionName.toLowerCase())?.[1];
+ return selected?{field:"Id",value:selected}:null;
+};
+const selectedCard=(selection,record)=>{
+ if(!selection||!record)return false;
+ const field=selection.field;
+ const raw=selection.value;
+ const value=raw&&typeof raw==="object"
+  ?(raw.record?.[field]??raw[field]??(field==="Id"?raw.recordId??raw.id:undefined)??raw.value)
+  :raw;
+ const rowValue=record[field]??(field==="Id"?record.id:undefined);
+ return value!==null&&value!==undefined&&value!==""&&
+  rowValue!==null&&rowValue!==undefined&&String(value)===String(rowValue);
+};
+function SmartCard({p,record,onButtonClick,selected=false}){
  const image=boundImage(p,record);
  const preview=p.previewOnly===true||p.builderPreview===true||p.preview===true;
  const sample=Boolean(p.builderPreview===true&&record?.__builderSample===true);
@@ -77,6 +110,11 @@ function SmartCard({p,record,onButtonClick}){
  const single=p.kind==="smart_image";
  const grid=p.kind==="smart_card_grid";
  const imageHeight=number(p.imageHeight,220,0,1200);
+ // Keep the historical 50/50 horizontal split until an imageWidth is authored.
+ // Vertical cards continue to use imageHeight only.
+ const imageWidth=p.imageWidth===undefined||p.imageWidth===null||p.imageWidth===""
+  ?null:number(p.imageWidth,0,0,1200);
+ const imageVisible=!grid||(horizontal?imageWidth!==0:imageHeight>0);
  const headerHeight=number(p.headerBoxHeight,44,0,1200);
  // Standalone Image has exactly ONE decorative stroke, on the native image.
  // A card-grid item remains a separate card with an optional image stroke.
@@ -86,17 +124,21 @@ function SmartCard({p,record,onButtonClick}){
  const nativeImageBorder=imageStroke&&strokeWidth>0?strokeWidth+"px solid "+imageStroke:undefined;
  const cardBorder=single?"none":strokeWidth===0?"none":
   (strokeWidth+"px solid "+(p.borderColor||"#e2e8f0"));
- return <article className="smart-card" style={{
+ return <article className="smart-card" data-selected={selected?"true":undefined} style={{
   display:"flex",flexDirection:horizontal?"row":"column",
-  background:single?(p.imageBackgroundColor??p.backgroundColor??"transparent"):(p.backgroundColor||"#fff"),border:cardBorder,
+  background:grid&&selected&&p.selectedCardColor?p.selectedCardColor:
+   single?(p.imageBackgroundColor??p.backgroundColor??"transparent"):(p.backgroundColor||"#fff"),border:cardBorder,
   borderRadius:number(p.radius,12),overflow:"hidden",position:"relative",minWidth:0,
   fontSize:number(p.textSize,16,8,96),
   boxShadow:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none",
   ...(single?{height:"100%",minHeight:0}:{}),
   ...(grid?{height:"100%",minHeight:0}:{}),
  }}>
-  {(!grid||imageHeight>0)&&<div style={{order:["right","bottom"].includes(p.imagePlacement)?2:0,
-    flex:horizontal?"1 1 50%":single?"1 1 auto":grid?"1 1 "+imageHeight+"px":undefined,
+  {imageVisible&&<div style={{order:["right","bottom"].includes(p.imagePlacement)?2:0,
+    flex:horizontal?(grid&&imageWidth!==null?"0 0 "+imageWidth+"px":"1 1 50%"):
+      single?"1 1 auto":grid?"1 1 "+imageHeight+"px":undefined,
+    // A user-defined side image cannot squeeze the text to zero or exceed the card.
+    maxWidth:grid&&horizontal&&imageWidth!==null?"calc(100% - 96px)":undefined,
     minWidth:0,minHeight:0,
     ...(single?{display:"flex"}:{}),
     ...(grid?{overflow:"hidden",maxHeight:horizontal?undefined:imageHeight,
@@ -120,7 +162,7 @@ function SmartCard({p,record,onButtonClick}){
        border:nativeImageBorder}}/>}
   </div>}
   {header&&headerHeight>0&&<div className="smart-card-content" style={{
-    order:1,flex:horizontal?"1 1 50%":undefined,display:"flex",alignItems:"center",
+    order:1,flex:horizontal?(imageVisible?"1 1 50%":"1 1 100%"):undefined,display:"flex",alignItems:"center",
     height:headerHeight,alignSelf:horizontal?"center":undefined,flexShrink:0,
     fontWeight:p.headerBold===false?400:700,
     // Standalone Image's visible caption is edited by the shared Typography
@@ -461,6 +503,7 @@ export default function SmartRuntime(p){
   const gap=number(p.gap,12,0,160);
   const minimumCardHeight=number(p.cardMinHeight,96,96,1200);
   const boundRows=recordsOf(p);
+  const selection=p.selectedCardColor?cardSelection(p):null;
   const previewRows=(p.previewOnly===true||p.builderPreview===true||p.preview===true)&&boundRows.length===0
     ?Array.from({length:columns*rows},(_,i)=>({Id:"card-preview-"+i,Name:"Sample item "+(i+1)}))
     :boundRows;
@@ -491,7 +534,7 @@ export default function SmartRuntime(p){
     const actionable=Boolean(p.actionFlows?.click&&!p.previewOnly&&!p.builderPreview);
     const hasButton=typeof p.cardButtonText==="string"&&p.cardButtonText.trim()!=="";
     const selectRecord=()=>fire("click",{record:r,recordId:r?.Id??r?.id??null});
-    const card=<SmartCard p={p} record={r}
+    const card=<SmartCard p={p} record={r} selected={selectedCard(selection,r)}
       onButtonClick={actionable?selectRecord:null}/>;
     return actionable&&!hasButton
       ?<button key={r?.Id??r?.id??i} type="button" className="smart-grid-action"
