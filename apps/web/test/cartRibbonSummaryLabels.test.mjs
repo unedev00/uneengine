@@ -90,6 +90,10 @@ test('Universal SUM handles authorised row expressions, explicit markers and bou
  assert.equal(evaluate('=SUM(@LineTotal)',{}, {collectionRows:rows}).value,'16');
  assert.equal(evaluate('SUM(@Price * @Quantity)',{}, {collectionRows:rows}).value,'16');
  assert.equal(evaluate('SUM(@Values)',{Values:[4,7]}, {collectionRows:rows}).value,'11');
+ assert.equal(evaluate('=SUM(@Sale.LineTotal)',{}, {
+  collectionSources:{Sale:[{Id:'a',LineTotal:6},{Id:'b',LineTotal:10}]},
+  collectionSourceFields:{Sale:['LineTotal']}
+ }).value,'16');
  assert.match(evaluate('SUM(@LineTotal)',rows[0]).error,/bounded numeric collection/);
  assert.match(evaluate('SUM(@LineTotal)',{}, {collectionRows:[...rows,{LineTotal:'bad'}]}).error,/finite numeric/);
  assert.match(evaluate('SUM(@LineTotal)',{}, {collectionRows:Array.from({length:201},()=>({LineTotal:1}))}).error,/bounded numeric/);
