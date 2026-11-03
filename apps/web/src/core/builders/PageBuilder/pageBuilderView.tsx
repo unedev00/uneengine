@@ -170,6 +170,7 @@ import ArrangeRibbon from './ArrangeRibbon';
 import type {AdvancedFeature} from './PageBuilderAdvancedRibbon';
 import './PageBuilderAdvancedRibbon.css';
 import PageBuilderAdvancedSections from './PageBuilderAdvancedSections';
+import {renamePageComponentId,validateComponentId,duplicatePageComponentId} from './componentIdentity';
 import SmartIconGallery from './SmartIconGallery';
 import {isUneBuilderApi,uneBuilderDefaults,type SharedRibbonCatalog,type UneBuilderApi} from './uneBuilderPropertyInventory';
 import './UniversalRibbonInventory.css';
@@ -1171,6 +1172,29 @@ function PageBuilder({
         {width:page.canvasWidth,height:page.canvasHeight})}:nextUpdate;
     applyPage({ ...page, components: page.components.map((component) => component.id === id ? { ...component, ...bounded } : component) });
   };
+  /** Change the actual page component key and all declared component references
+   * as one undoable draft edit. Component renderer/API identity stays unchanged. */
+  const renameComponentId=(oldId:string,newId:string)=>{
+    const selectedComponent=page.components.find(item=>item.id===oldId);
+    if(!selectedComponent||isCanvasLocked(selectedComponent)){
+      onNotify('Select and unlock a component before changing its ID.');
+      return;
+    }
+    try{
+      const changed=renamePageComponentId(page.components,oldId,newId);
+      if(newId.trim()===oldId)return;
+      applyPage({...page,components:changed});
+      setSelectedId(current=>current===oldId?newId.trim():current);
+      setSelectionIds(current=>current.map(id=>id===oldId?newId.trim():id));
+      setOpenBuilderTabs(current=>{
+        if(!Object.prototype.hasOwnProperty.call(current,oldId))return current;
+        const next={...current,[newId.trim()]:current[oldId]};
+        delete next[oldId];return next;
+      });
+    }catch(error){
+      onNotify(error instanceof Error?error.message:'Invalid Component ID');
+    }
+  };
   const moveLayer = (id: string, offset: -1 | 1) => {
     applyPage({...page,components:shiftCanvasLayer(page.components,id,offset)});
   };
@@ -1878,6 +1902,8 @@ function PageBuilder({
     return () => window.removeEventListener('keydown', onKey, true);
   });
   const savePage = async (status?: 'Active' | 'Draft', candidate: LightningPageMetadata = page, returnToList = false) => {
+    const duplicateId=duplicatePageComponentId(candidate.components);
+    if(duplicateId){onNotify(duplicateId);return;}
     const propertyIssues=candidate.components.flatMap(c=>{
       const definition=c.type.startsWith('Custom:')?findRegisteredComponent(libraryComponents,c.type.slice(7),'page'):undefined;
       const definitions=availableComponentSettings(definition?.propertyDefinitions??[],candidate.layoutVariant??'Desktop',definition?.version);
@@ -3366,7 +3392,11 @@ function PageBuilder({
                 updateComponent(selected.id,{properties:{...selected.properties,layoutContainer:value}});
               }
             }}
-            technical={{id:selected?.id??''}}/>}
+            technical={{
+              id:selected?.id??'',selected:!!selected,editable:!!selected&&!isCanvasLocked(selected),
+              validate:value=>validateComponentId(value,page.components,selected?.id??''),
+              onRename:value=>{if(selected)renameComponentId(selected.id,value);}
+            }}/>}
 
           {ribbonTab==='Add Block' && <SmartInsertRibbon
             items={paletteComponents}
