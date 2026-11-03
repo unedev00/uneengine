@@ -51,6 +51,15 @@ test('keeps zero, missing, false, null and empty choices distinct',()=>{
   line({Choice:null}),line({Choice:''})]);
  assert.equal(result.length,5);
 });
+test('zero and negative quantity items do not leave empty cart rows',()=>{
+ const result=groupCartRows([
+  line({Quantity:0,LineTotal:0}),
+  line({Quantity:-1,LineTotal:-5.49}),
+  line({Quantity:1}),
+ ]);
+ assert.equal(result.length,1);
+ assert.equal(result[0].Quantity,1);
+});
 test('honours pre-existing quantities and never changes the input array',()=>{
  const records=[line({Quantity:2,LineTotal:10.98}),line({Quantity:3,LineTotal:16.47})];
  const result=groupCartRows(records);
