@@ -210,6 +210,7 @@
     "apps/web/test/pageBuilderAdvancedRibbon.test.mjs",
     "apps/web/test/pageBuilderAuditFixes.test.mjs",
     "apps/web/test/pageBuilderDesignReference.test.ts",
+    "apps/web/test/pageBuilderFixedRibbonProperties.test.mjs",
     "apps/web/test/pageBuilderInsertGalleryLayout.test.ts",
     "apps/web/test/pageBuilderLayoutRibbonDensity.test.mjs",
     "apps/web/test/pageBuilderMergeRegressions.test.ts",
