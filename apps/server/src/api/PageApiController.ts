@@ -68,6 +68,23 @@ export function registerPageApiController(app:Express,db:SqlPersistence,rbac:Rba
     res.setHeader('Cache-Control','private, no-store');
     res.json({versions});
   }));
+  app.get('/api/metadata/pages/:apiName/component-name-history',wrap(async(req,res)=>{
+    const actor=authenticated(req),name=req.params.apiName;
+    if(!api.test(name))throw Error('Invalid Page API name');
+    await rbac.require(actor.tenant_id,actor.user_id,'PageDefinition','read');
+    const stem=String(req.query.stem??'');
+    if(!/^[a-z][a-z0-9]{0,63}$/.test(stem))throw Error('Invalid component name prefix');
+    const result=await db.query<{last:string}>(`
+      SELECT COALESCE(MAX(SUBSTRING(LOWER(v.value_text) FROM LENGTH($3::text)+1)::bigint),0)::text AS last
+      FROM md_page_layout_version_properties v
+      JOIN md_page_definitions p ON p.tenant_id=v.tenant_id AND p.id=v.page_id
+      WHERE p.tenant_id=$1 AND p.api_name=$2 AND p.enabled=true
+        AND v.property_path='/props/navigatorName'
+        AND LOWER(v.value_text) ~ ('^'||$3||'[0-9]{1,9}$')`,
+      [actor.tenant_id,name,stem]);
+    res.setHeader('Cache-Control','private, no-store');
+    res.json({last:Number(result.rows[0]?.last??0)});
+  }));
   // Read saved draft component metadata, never a browser-local or published runtime approximation.
   app.get('/api/metadata/pages/:apiName/inventory',wrap(async(req,res)=>{
     const actor=authenticated(req),name=req.params.apiName;
