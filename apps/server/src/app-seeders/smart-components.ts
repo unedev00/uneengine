@@ -2,7 +2,7 @@ import {createHash} from 'node:crypto';
 import type {PoolClient} from 'pg';
 import type {SqlPersistence} from '../system-files/sql-persistence.js';
 /** Independent, upgrade-safe Smart component registrations; no app data is altered. */
-export const SMART_COMPONENTS=["smart_button","smart_toggle","smart_lookup","smart_tabs","smart_text","smart_card_grid","smart_image","smart_calendar","smart_navigation","smart_container","smart_cart","smart_icon","smart_table"] as const;
+export const SMART_COMPONENTS=["smart_button","smart_toggle","smart_lookup","smart_tabs","smart_text","smart_textbox","smart_card_grid","smart_image","smart_calendar","smart_navigation","smart_container","smart_cart","smart_icon","smart_table"] as const;
 export const SMART_COMPONENT_SEED_VERSION='core-smart-components-v4';
 export async function seedFreshSmartComponents(client:Pick<PoolClient,'query'>,tenantId:string){
  for(const api of SMART_COMPONENTS)await client.query(
