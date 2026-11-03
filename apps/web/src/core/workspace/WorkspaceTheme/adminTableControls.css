@@ -1,5 +1,4 @@
-/* Page list: retain its bounded scroll area and sticky header but let every
- * column, including the leading Actions column, scroll normally. */
+/* Page list: bounded scroll area with trailing, keyboard-accessible actions. */
 .lightning {
   --md-actions-col-width: 152px;
 }
@@ -21,7 +20,7 @@
   background: var(--md-surface-2, #f6f8fb);
 }
 
-/* A narrow, non-frozen first column with four borderless icon actions. */
+/* A compact trailing actions column that remains reachable during horizontal scrolling. */
 .lightning .page-manager-table :is(th.page-manager-actions-heading, td.page-manager-actions) {
   box-sizing: border-box;
   width: var(--md-actions-col-width);
@@ -87,3 +86,11 @@
 .lightning .page-manager-table code {
   font-size: .92em;
 }
+
+/* Ensure trailing actions stay available when the wide table scrolls horizontally. */
+.lightning .page-manager-table th.page-manager-actions-heading,
+.lightning .page-manager-table td.page-manager-actions{
+ position:sticky;right:0;z-index:2;background:var(--md-surface,#fff);
+ box-shadow:-1px 0 0 var(--md-border,#e0e5eb)
+}
+.lightning .page-manager-table th.page-manager-actions-heading{z-index:4;background:var(--md-surface-2,#f6f8fb)}
