@@ -200,7 +200,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  // fit their existing three rows without reserving space for empty columns.
  const controlWidth=(p:UneRibbonProperty)=>{
    // Shape's 94px SQL width is exact, unlike other compact choice tracks.
-   if(p.id==='shapeId')return p.designWidth??94;
+   if(p.id==='shapeId'||p.id==='cardButtonShape')return p.designWidth??94;
    // Shadow/Alignment icon dropdowns must remain at least 35px wide.
    if(p.designDisplay==='dropdown'&&(p.kind==='shadow'||p.kind==='align'))
      return Math.max(35,p.designWidth??0);
@@ -278,8 +278,8 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    const hasNumericIcon=(kind==='number'||kind==='position')&&
      (isTextSize||isCorner||isWidth||isHeight);
    let editor;
-   if(property.id==='shapeId')editor=<SmartIconGallery value={String(value||'shape:rectangle')}
-     disabled={!enabled} allowIcons={(selectedApis?.length?selectedApis:[api]).every(member=>
+   if(property.id==='shapeId'||property.id==='cardButtonShape')editor=<SmartIconGallery value={String(value||'shape:rectangle')}
+     disabled={!enabled} allowIcons={property.id==='shapeId'&&(selectedApis?.length?selectedApis:[api]).every(member=>
        (property.choicesOverrides?.[member]??property.choices??[]).includes('icons'))}
      onChange={write}/>;
    else if(property.id==='imageSource'&&supported){
