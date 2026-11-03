@@ -62,12 +62,12 @@ function fakeOci(state:'idle'|'running'|'succeeded'|'failed'='idle'){
  };
  return {operate,calls};
 }
-function fakeDatabase(recent=false,authorised=true){
+function fakeDatabase(recent=false,oneEngine=true,platformTenant=true){
  const actions:string[]=[];
  const query=async(sql:string,params?:unknown[])=>{
   if(sql.includes('md_security_events'))actions.push(String(params?.[2]??'query'));
   if(sql.includes('AS exists'))return {rows:[{exists:recent}]};
-  if(sql.includes('AS authorised'))return {rows:[{authorised}]};
+  if(sql.includes('AS has_oneengine'))return {rows:[{has_oneengine:oneEngine,has_platform_tenant:platformTenant}]};
   return {rows:[]};
  };
  const client={query};
@@ -129,7 +129,7 @@ test('OCI running, stale commit and duplicate dispatches are refused',async()=>{
   assert.equal(oci.calls.length,0);
  }finally{reset();}
 });
-test('read-only status is visible without platform policy but dispatch is forbidden',async()=>{
+test('read-only status is visible without OneEngine but dispatch is forbidden',async()=>{
  disableOci();
  const calls=fakeGithub();
  const handlers:Record<string,(req:any,res:any,next:(e?:unknown)=>void)=>Promise<void>>={};
@@ -155,13 +155,13 @@ test('read-only status is visible without platform policy but dispatch is forbid
     assert.equal(response.status,undefined);
     assert.equal(response.body.latestCommit,latest);
     assert.equal(response.body.canDeploy,false);
-    assert.deepEqual(response.body.permission,{hasPlatformDeveloper:false,hasOperationsManage:true});
+    assert.deepEqual(response.body.permission,{hasOneEngine:false,hasPlatformTenant:true,hasOperationsManage:true});
    }else assert.equal(response.status,403);
   }
   assert.ok(calls.every(url=>!url.includes('/dispatches')));
  }finally{reset();}
 });
-test('separate PlatformOperations permission is mandatory even with platform policy',async()=>{
+test('separate PlatformOperations permission is mandatory even with OneEngine',async()=>{
  disableOci();
  const handlers:Record<string,any>={};
  const app={get:(p:string,f:any)=>{handlers['GET '+p]=f;},
@@ -189,5 +189,44 @@ test('GitHub lookup failures retain OCI failure stage and block dispatch',async(
   assert.equal(status.oci?.stage,'building');
   assert.equal(status.latestCommit,null);
   assert.match(status.error??'',/Cannot dispatch/);
+ }finally{reset();}
+});
+
+test('OneEngine in the canonical tenant with operations grant can deploy',async()=>{
+ disableOci();
+ const handlers:Record<string,any>={};
+ const app={get:(p:string,f:any)=>{handlers['GET '+p]=f;},
+  post:(p:string,f:any)=>{handlers['POST '+p]=f;}} as any;
+ const {db}=fakeDatabase(false,true,true);
+ const rbac={allowed:async()=>true} as unknown as RbacEngine;
+ registerPlatformDeploymentRoutes(app,db,rbac);
+ fakeGithub();
+ try{
+  const response:{body?:any}={};
+  await handlers['GET /api/platform/production-deployment'](
+   {actor:{tenant_id:'tenant',user_id:'user'}},
+   {set(){return this;},json(v:unknown){response.body=v;return this;}},
+   (e?:unknown)=>{throw e;});
+  assert.equal(response.body.canDeploy,true);
+  assert.deepEqual(response.body.permission,
+   {hasOneEngine:true,hasPlatformTenant:true,hasOperationsManage:true});
+ }finally{reset();}
+});
+test('customer tenant OneEngine cannot trigger global OCI deployment',async()=>{
+ disableOci();
+ const handlers:Record<string,any>={};
+ const app={get:(p:string,f:any)=>{handlers['GET '+p]=f;},
+  post:(p:string,f:any)=>{handlers['POST '+p]=f;}} as any;
+ const {db}=fakeDatabase(false,true,false);
+ const rbac={allowed:async()=>true} as unknown as RbacEngine;
+ registerPlatformDeploymentRoutes(app,db,rbac);
+ fakeGithub();
+ try{
+  let status=0;
+  await handlers['POST /api/platform/production-deployment'](
+   {actor:{tenant_id:'customer',user_id:'user'},body:{expectedCommit:latest}},
+   {status(code:number){status=code;return this;},json(){return this;},set(){return this;}},
+   (e?:unknown)=>{throw e;});
+  assert.equal(status,403);
  }finally{reset();}
 });
