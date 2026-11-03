@@ -5,7 +5,7 @@ import {evaluateFieldExpression} from "../../shared/FieldExpression.js";
 import {useTenantImageSource} from "../../shared/TenantImage.jsx";
 const number=(v,f,min=0,max=2000)=>Number.isFinite(Number(v))?Math.max(min,Math.min(max,Number(v))):f;
 const text=(v)=>v===null||v===undefined?"":String(v);
-const expression=(v,record,pageState,objectApiName,collectionSources,namedCollections)=>{
+const expression=(v,record,pageState,objectApiName,collectionSources,namedCollections,collectionRows)=>{
  if(typeof v!=="string")return text(v);
  // The common bounded evaluator resolves authorised row-specific relationship
  // values via __mentionValues without turning numbers into quoted strings or
@@ -13,7 +13,7 @@ const expression=(v,record,pageState,objectApiName,collectionSources,namedCollec
  if(/^(?:https:\/\/|asset:)/i.test(v.trim()))return v;
  if(!/^\s*=/.test(v)&&!/@[A-Za-z]/.test(v)&&!/^\s*"/.test(v)&&
    !/^\s*-?(?:\d+(?:\.\d*)?|\.\d+)\s*[+\-*/&]/.test(v))return v;
- try{return text(evaluateFieldExpression(v,record||{},{namedCollectionSelections:pageState?.collectionSelections,rootObjectApiName:objectApiName,collectionSources,namedCollections}));}catch{return "";}
+ try{return text(evaluateFieldExpression(v,record||{},{namedCollectionSelections:pageState?.collectionSelections,rootObjectApiName:objectApiName,collectionSources,namedCollections,collectionRows}));}catch{return "";}
 };
 function SmartPicture({src,alt,loadAsset,style}){
  const source=useTenantImageSource(src,loadAsset);
@@ -422,7 +422,13 @@ export default function SmartRuntime(p){
    })}
   </div>;
  }
- else if(name==="smart_cart")content=<SmartCart p={p} records={recordsOf(p)} Picture={SmartPicture} expression={(formula,row)=>expression(formula,row,p.pageState,p.objectApiName,p.formulaCollectionSources,p.namedCollections)}
+ else if(name==="smart_cart")content=<SmartCart p={p} records={recordsOf(p)} Picture={SmartPicture} expression={(formula,row)=>{
+  const rows=recordsOf(p);
+  const pagination=p.recordPagination;
+  const complete=!pagination||(pagination.offset===0&&pagination.total<=rows.length);
+  return expression(formula,row,p.pageState,p.objectApiName,p.formulaCollectionSources,p.namedCollections,
+   complete&&rows.length<=200?rows:undefined);
+ }}
     fieldAllowed={(key,row)=>fieldAllows(p,key,row)} fire={fire}/>;
  else if(name==="smart_calendar")content=<SmartCalendar p={p} fire={fire}/>;
  else if(name==="smart_tabs")content=<SmartTabs p={p} record={record} fire={fire}/>;
