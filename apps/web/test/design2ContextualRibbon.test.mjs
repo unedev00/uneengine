@@ -23,10 +23,10 @@ const rows=[...sql.matchAll(match)].map(([,component,area,areaOrder,key,row,colu
 const slot=(component,area,row,column)=>rows.find(item=>item.component===component&&
  item.area===area&&item.row===row&&item.column===column);
 
-test('Approved Design 2 sheet creates 319 per-component 26px controls with no collisions',()=>{
- assert.equal(rows.length,319);
+test('Approved Design 2 sheet creates 320 per-component 26px controls with no collisions',()=>{
+ assert.equal(rows.length,320);
  assert.equal(new Set(rows.map(x=>x.component)).size,13);
- assert.equal(new Set(rows.map(x=>[x.component,x.area,x.row,x.column].join(':'))).size,319);
+ assert.equal(new Set(rows.map(x=>[x.component,x.area,x.row,x.column].join(':'))).size,320);
  assert.equal(new Set(rows.map(x=>[x.component,x.area,x.key].join(':'))).size,319);
  assert.ok(rows.every(x=>[1,2,3].includes(x.row)&&x.column>=1&&x.column<=6));
  assert.ok(rows.every(x=>[40,80].includes(x.width)));
@@ -38,6 +38,7 @@ test('Exact sheet placements cover all contextual controls and renamed cart butt
  assert.equal(slot('smart_cart','Footer',3,5)?.property,'summary2TextSize');
  assert.equal(slot('smart_image','Image',2,6)?.property,'imagePlacement');
  assert.equal(slot('smart_image','Image',3,6)?.property,'imageFill');
+ assert.equal(slot('smart_tabs','Body',2,1)?.property,'selectedTabColor');
  assert.equal(slot('smart_tabs','Body',1,6)?.property,'tabOrientation');
  assert.equal(slot('smart_navigation','Body',1,6)?.property,'navigationDirection');
  assert.ok(rows.some(x=>x.component==='smart_cart'&&x.area==='Button 4'));
