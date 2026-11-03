@@ -17,17 +17,18 @@ test('Smart Formula uses Excel semantics for maths, literals, fields and &',()=>
  for(const operator of ['+','-','*','/','&'])
    assert.equal(evaluateFieldExpression('"'+operator+'"',row),operator);
 });
-test('Smart component catalog is independent, thirteen components and SQL-owned',async()=>{
+test('Smart component catalog is independent, fourteen components and SQL-owned',async()=>{
  const source=JSON.parse(read('../src/component-libraries/manifest.json'));
  const names=source.components.map(p=>p.split('/')[0]).filter(name=>name.startsWith('smart_'));
  assert.deepEqual(names.sort(),['smart_button','smart_toggle','smart_lookup','smart_tabs',
-  'smart_text','smart_card_grid','smart_image','smart_calendar','smart_navigation',
+  'smart_text','smart_textbox','smart_card_grid','smart_image','smart_calendar','smart_navigation',
   'smart_container','smart_cart','smart_icon','smart_table'].sort());
  const catalog=await loadComponentCatalog();
  for(const name of names){
   const c=catalog.components.find(c=>c.apiName===name);
   assert.ok(c);
-  assert.deepEqual(c.propertyDefinitions,[]);
+  if(name==='smart_textbox')assert.ok(c.propertyDefinitions.some(p=>p.propertyKey==='readonly'&&p.kind==='BOOLEAN'));
+  else assert.deepEqual(c.propertyDefinitions,[]);
  }
 });
 test('Smart registry remains enabled through Core bundled-component cleanup',()=>{
@@ -609,7 +610,7 @@ test('Smart Icon SQL enables only approved appearance and layout properties',()=
  assert.doesNotMatch(sql,/UPDATE\s+md_page_|DELETE\s+FROM\s+md_builder_shared_properties/i);
  const seeder=read('../../server/src/app-seeders/smart-components.ts');
  assert.match(seeder,/"smart_icon"/);
- assert.match(seeder,/core-smart-components-v4/);
+ assert.match(seeder,/core-smart-components-v5/);
 });
 
 
@@ -1194,4 +1195,56 @@ test('collection-driven Smart Card Grid renders authorised record title and othe
  assert.match(html,/1\.25/);
  assert.match(html,/cola\.png/);
  assert.doesNotMatch(html,/>drinks<\/span>/,'Category ID must never replace the product title');
+});
+
+test('Smart Textbox is discoverable by exact user-facing name and compact search',()=>{
+ const view=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const insert=read('../src/core/builders/PageBuilder/SmartInsertRibbon.tsx');
+ assert.match(view,/component\.apiName==='smart_textbox'\?'Smart Textbox'/);
+ assert.match(insert,/compactQuery=query\.replace/);
+ assert.match(insert,/label\.replace/);
+});
+
+test('Smart Textbox renders one left caption and one right field value using remarks styling',async()=>{
+ const html=await renderSmart('smart_textbox',{
+  label:'Email',textSource:'@Email',record:{Email:'person@example.com'},
+  readonly:true,backgroundColor:'#112233',labelColor:'#ccddee',
+  headerBodyColor:'#fefefe',headerTextColor:'#112244',headerAlignment:'center',
+  headerBold:true,supportingBorderColor:'#334455',supportingTextColor:'#445566',
+  supportingBold:true,supportingAlignment:'right',borderColor:'#556677',
+  radius:9,textSize:15,wrapText:true
+ });
+ assert.match(html,/smart-textbox-pair/);
+ assert.match(html,/smart-textbox-caption/);
+ assert.match(html,/smart-textbox-value-panel/);
+ assert.match(html,/smart-textbox-value/);
+ assert.match(html,/person@example\.com/);
+ assert.match(html,/Email/);
+ assert.match(html,/aria-readonly="true"/);
+ for(const colour of ['#112233','#ccddee','#fefefe','#334455','#445566','#556677'])
+  assert.ok(html.includes(colour),colour+' should be rendered');
+ assert.doesNotMatch(html,/onchange=|onclick=/i);
+});
+test('Smart Textbox SQL enables only approved properties and User pilot requires explicit single-tenant opt-in',()=>{
+ const sql=read('../../server/src/system-support/migrations/20270309-smart-textbox-shared-ribbon.sql');
+ const allowed=['label','textSource','backgroundColor','labelColor','shadow','borderColor','radius',
+  'wrapText','headerTextColor','headerAlignment','headerBodyColor','headerBold',
+  'supportingBorderColor','supportingBold','supportingTextColor','supportingAlignment',
+  'labelAlignment','textSize','width','height','x','y'];
+ for(const key of allowed)assert.ok(sql.includes("('"+key+"')"),key+' must be enabled');
+ for(const key of ['customButton1','customButton2','column2Source','objectApiName',
+  'defaultValue','badgeText','headerBorderColor','rowHeight','tabCount'])
+  assert.ok(!sql.includes("('"+key+"')"),key+' must stay disabled');
+ const pilot=read('../../../scripts/pilots/user-smart-textbox-record-view.sql');
+ assert.match(pilot,/current_setting\('metadrive\.pilot_tenant_id',true\)/);
+ assert.match(pilot,/ORDER BY d\.page_id LIMIT 1/);
+ assert.match(pilot,/RAISE EXCEPTION/);
+ assert.match(pilot,/d\.target_object='User'|d\.target_object='User'/);
+ assert.match(pilot,/d\.record_mode='View'/);
+ assert.match(pilot,/published_version=excluded\.published_version/);
+ assert.match(pilot,/NOT EXISTS \(SELECT 1 FROM md_page_layout_audit/);
+ assert.match(pilot,/Custom:smart_textbox/);
+ const runtime=read('../src/core/records/RecordWorkspace/recordWorkspaceViews.tsx');
+ assert.match(runtime,/component\.type === 'Custom:smart_textbox'/);
+ assert.match(runtime,/if\(referenced\.some\(field=>available\.has\(field\)&&!readable\.has\(field\)\)\)return null/);
 });
