@@ -1,6 +1,8 @@
 /** Shared, per-page component instance names; IDs remain immutable runtime keys. */
 export type NamedComponent={id:string;type:string;properties:Record<string,unknown>};
-export const componentNamePattern=/^[A-Za-z][A-Za-z0-9_]{0,79}$/;
+// Simple newly authored names can include readable spaces and hyphens.
+export const componentNamePattern=/^[A-Za-z][A-Za-z0-9_ -]{0,79}$/;
+const validSavedName=(name:string)=>name.length<=110&&!/[\u0000-\u001f\u007f]/.test(name);
 export const canonicalComponentName=(name:string)=>name.trim().toLocaleLowerCase('en');
 export function componentNameStem(type:string):string{
  const api=type.startsWith('Custom:')?type.slice(7):type;
@@ -14,7 +16,7 @@ export function componentInstanceNames(components:readonly NamedComponent[]):Map
   if(typeof raw!=='string'||!raw.trim())continue;
   const name=raw.trim(),key=canonicalComponentName(name);
   // Legacy duplicate aliases receive distinct virtual names until renamed.
-  if(!componentNamePattern.test(name)||explicit.has(key))continue;
+  if(!validSavedName(name)||explicit.has(key))continue;
   explicit.add(key);result.set(item.id,name);
  }
  const used=new Set(explicit),lastByStem=new Map<string,number>();
@@ -39,7 +41,9 @@ export function ensureComponentInstanceNames<T extends NamedComponent>(component
  const names=componentInstanceNames(components);
  return components.map(item=>{
   const assigned=names.get(item.id)!;
-  return item.properties.navigatorName===assigned?item:
+  // Never overwrite a user's pre-existing navigator label, even from older
+  // versions with more permissive naming rules.
+  return typeof item.properties.navigatorName==='string'&&item.properties.navigatorName.trim()?item:
    {...item,properties:{...item.properties,navigatorName:assigned}};
  });
 }
@@ -62,7 +66,7 @@ export function validateExplicitComponentNames(components:readonly NamedComponen
   const raw=item.properties?.navigatorName;
   if(typeof raw!=='string'||!raw.trim())continue;
   const name=raw.trim(),key=canonicalComponentName(name);
-  if(!componentNamePattern.test(name))throw Error('Invalid component name: '+name);
+  if(!validSavedName(name))throw Error('Invalid component name: '+name);
   if(seen.has(key))throw Error('Duplicate component name: '+name);
   seen.add(key);
  }
