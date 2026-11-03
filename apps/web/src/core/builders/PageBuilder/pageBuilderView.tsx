@@ -4352,10 +4352,12 @@ function PageBuilder({
                         setNewPageType(choice.type);
                         setNewPageTargetObject(choice.type === 'Record Page' ? (recordPageContext || '') : '');
                         setNewPageTemplate(choice.type === 'Record Page' ? 'header-main-sidebar' : 'main-sidebar');
-                        setNewPageDeviceChoice('Desktop');
-                        setNewPageDevices(['Desktop']);
-                        if(choice.type==='In-Screen Page'){setNewPageLayoutMode('free-canvas');setNewPageCanvasWidth(480);setNewPageCanvasHeight(420);}
-                        else {setNewPageCanvasWidth(1440);setNewPageCanvasHeight(900);}
+                        if(choice.type==='In-Screen Page')setNewPageLayoutMode('free-canvas');
+                        const size = newPageDeviceChoice === 'Phone' ? [390,844]
+                          : newPageDeviceChoice === 'Tablet' ? [1024,768]
+                          : newPageDeviceChoice === 'Custom' ? [1440,900]
+                          : choice.type === 'In-Screen Page' ? [480,420] : [1440,900];
+                        setNewPageCanvasWidth(size[0]);setNewPageCanvasHeight(size[1]);
                       }}/>
                     <strong>{choice.title}</strong><span>{choice.description}</span>
                   </label>)}
