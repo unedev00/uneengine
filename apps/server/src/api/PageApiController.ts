@@ -8,7 +8,7 @@ import {PageRuntime} from '../system-files/page-runtime.js';
 import {pageLayoutVariant} from '../system-files/page-layout-version-runtime.js';
 import {assertMetadataPackageEditable} from '../system-support/metadata-package-service.js';
 import {registerPageDetailsController} from './PageDetailsController.js';
-import {applyInventoryCsv,exportInventoryCsv,inventoryDefinitions,inventoryRequestedTypes,type InventoryPage} from '../system-support/page-inventory-csv.js';
+import {applyInventoryCsv,exportInventoryCsv,inventoryDefinitions,inventoryRequestedTypes,inventoryCsvPageGroups,originalInventoryIssue,type InventoryPage,type InventoryCsvPageGroup,type InventoryIssue} from '../system-support/page-inventory-csv.js';
 import {validateExplicitComponentNames} from '../system-support/page-component-names.js';
 import {requirePagePropertyContract} from '../system-support/page-property-contract.js';
 import {validatePageComponentContracts} from '../system-support/component-contract-store.js';
@@ -95,6 +95,102 @@ export function registerPageApiController(app:Express,db:SqlPersistence,rbac:Rba
     const definitions=await inventoryDefinitions(db,actor.tenant_id,page.components,variant);
     res.setHeader('Cache-Control','private, no-store');
     res.json({csv:exportInventoryCsv(page,definitions),variant,draftRevision:page.draftRevision??0});
+  }));
+  /**
+   * Multi-page CSV upsert: pageapi is the sole page locator. Existing page drafts
+   * only; no page creation, hidden page fallback or cross-tenant lookup.
+   * All groups are preflighted before an outer transaction writes any page.
+   */
+  const prepareInventoryBatch=async(tenant:string,csv:string)=>{
+    const {groups,issues}=inventoryCsvPageGroups(csv);
+    const draftRevisions:Record<string,number>={};
+    const prepared:Array<{group:InventoryCsvPageGroup;page:InventoryPage;
+      result:ReturnType<typeof applyInventoryCsv>}>=[];
+    let changes=0,skipped=0;
+    if(!groups.length&&!issues.length)issues.push({
+      row:1,component_name:'',component_property:'pageapi',remark:'CSV has no page rows'});
+    if(issues.length)return {groups,prepared,issues,changes,skipped,draftRevisions};
+    const existing=await db.query<{api_name:string}>(`
+      SELECT p.api_name FROM md_page_definitions p
+      JOIN md_lightning_page_details d ON d.tenant_id=p.tenant_id AND d.page_id=p.id
+      WHERE p.tenant_id=$1 AND p.enabled=true AND p.api_name=ANY($2::text[])`,
+      [tenant,groups.map(group=>group.pageapi)]);
+    const found=new Set(existing.rows.map(row=>row.api_name));
+    for(const group of groups){
+      if(!found.has(group.pageapi)){
+        issues.push({row:group.firstRow,pageapi:group.pageapi,component_name:'',
+          component_property:'pageapi',remark:'Page API not found: '+group.pageapi});
+        continue;
+      }
+      try{
+        await assertMetadataPackageEditable(db,tenant,'page',group.pageapi);
+        const page=await pages.editor(tenant,group.pageapi,'Desktop') as unknown as InventoryPage;
+        const definitions=await inventoryDefinitions(db,tenant,page.components,'Desktop',
+          inventoryRequestedTypes(group.csv));
+        const result=await preflightInventory(tenant,'Desktop',
+          applyInventoryCsv(page,group.csv,definitions));
+        draftRevisions[group.pageapi]=page.draftRevision??0;
+        changes+=result.changes;skipped+=result.skipped;
+        for(const issue of result.issues)issues.push(originalInventoryIssue(group,issue));
+        if(result.valid)prepared.push({group,page,result});
+      }catch(error){
+        issues.push({row:group.firstRow,pageapi:group.pageapi,component_name:'',
+          component_property:'pageapi',
+          remark:error instanceof Error?error.message:'Page could not be validated'});
+      }
+    }
+    return {groups,prepared,issues,changes,skipped,draftRevisions};
+  };
+  app.post('/api/metadata/pages/inventory/batch/validate',wrap(async(req,res)=>{
+    const actor=authenticated(req);
+    await rbac.require(actor.tenant_id,actor.user_id,'PageDefinition','manage');
+    const variant=pageLayoutVariant(req.body?.variant??'Desktop');
+    if(variant!=='Desktop')throw Error('CSV upload is supported only for the Desktop page layout');
+    const csv=typeof req.body?.csv==='string'?req.body.csv:'';
+    const batch=await prepareInventoryBatch(actor.tenant_id,csv);
+    res.setHeader('Cache-Control','private, no-store');
+    res.json({valid:batch.issues.length===0,issues:batch.issues,changes:batch.changes,
+      skipped:batch.skipped,draftRevisions:batch.draftRevisions,
+      pageCount:batch.groups.length});
+  }));
+  app.post('/api/metadata/pages/inventory/batch/apply',wrap(async(req,res)=>{
+    const actor=authenticated(req);
+    await rbac.require(actor.tenant_id,actor.user_id,'PageDefinition','manage');
+    const variant=pageLayoutVariant(req.body?.variant??'Desktop');
+    if(variant!=='Desktop')throw Error('CSV upload is supported only for the Desktop page layout');
+    const csv=typeof req.body?.csv==='string'?req.body.csv:'';
+    const batch=await prepareInventoryBatch(actor.tenant_id,csv);
+    res.setHeader('Cache-Control','private, no-store');
+    if(batch.issues.length){
+      res.json({valid:false,issues:batch.issues,changes:0,skipped:batch.skipped,
+        draftRevisions:batch.draftRevisions,pageCount:batch.groups.length});
+      return;
+    }
+    const expected=req.body?.expectedDraftRevisions;
+    if(!expected||typeof expected!=='object'||Array.isArray(expected))
+      throw Error('Validate the CSV before applying changes');
+    for(const group of batch.groups){
+      const number=(expected as Record<string,unknown>)[group.pageapi];
+      if(!Number.isSafeInteger(number)||number!==batch.draftRevisions[group.pageapi])
+        throw Error('Page layout '+group.pageapi+' changed since CSV validation. Validate again.');
+    }
+    const updatedPages:InventoryPage[]=[];
+    // SqlPersistence uses one ambient transaction across nested saveLayoutDraft
+    // calls. Any failed revision/permission/contract write rolls back ALL pages.
+    await db.transaction(async()=>{
+      for(const {group,page,result} of batch.prepared){
+        const latest=await pages.editor(actor.tenant_id,group.pageapi,'Desktop') as unknown as InventoryPage;
+        if((latest.draftRevision??0)!==page.draftRevision)
+          throw Error('Page layout '+group.pageapi+' changed during import. Validate again.');
+        if(!result.changes)continue;
+        const saved=await pages.saveLayoutDraft(actor.tenant_id,group.pageapi,'Desktop',
+          result.page,actor.user_id) as unknown as InventoryPage;
+        updatedPages.push(saved);
+      }
+    });
+    res.json({valid:true,issues:[] as InventoryIssue[],changes:batch.changes,
+      skipped:batch.skipped,pageCount:batch.groups.length,updatedPages,
+      draftRevisions:batch.draftRevisions});
   }));
   // Validate every row before touching SQL. The same checks are repeated on apply.
   app.post('/api/metadata/pages/:apiName/inventory/validate',wrap(async(req,res)=>{
