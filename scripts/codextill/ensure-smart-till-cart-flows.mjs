@@ -73,6 +73,20 @@ export const SMART_TILL_ADD=graph('SmartTillAddProduct','Smart Till: add selecte
   uniqueInputGuard:{field:'SessionKey'},
   fieldValues:[{field:'Name',value:'Smart Till cart'},
    {field:'SessionKey',value:'{!sessionKey}'},{field:'Status',value:'Open'}]}),
+ // Only identical sale terms merge. Do not merge separate batch, selection
+ // or pricing variants once the CartLine flow supports those fields.
+ node(21,'Get Records','Find same item at same sale terms',{
+  object:'CartLine',recordLimit:'1',outputVariable:'existingLine',
+  conditions:[{field:'CartSession',operator:'Equals',value:'{!cartSessionId}'},
+   {field:'Product',operator:'Equals',value:'{!product.Id}'},
+   {field:'Name',operator:'Equals',value:'{!product.Name}'},
+   {field:'UnitPrice',operator:'Equals',value:'{!product.Price}'},
+   {field:'OriginalUnitPrice',operator:'Equals',value:'{!product.Price}'}]}),
+ decision(22,'Same sale line exists?',exists('{!existingLine}'),'Found'),
+ node(23,'Update Records','Increase matching quantity',{
+  object:'CartLine',recordId:'{!existingLine.Id}',
+  fieldValues:[{field:'Quantity',value:'{!mergedQuantity}'},
+   {field:'LineTotal',value:'{!mergedLineTotal}'}]}),
  node(10,'Create Records','Create CartLine for clicked product',{
   object:'CartLine',recordSource:'fields',resultVariable:'cartLineId',
   fieldValues:[{field:'CartSession',value:'{!cartSessionId}'},
@@ -91,10 +105,15 @@ export const SMART_TILL_ADD=graph('SmartTillAddProduct','Smart Till: add selecte
  edge(3,4),edge(4,5,'Found'),edge(4,20,'Default'),
  edge(5,6,'Valid'),edge(5,20,'Default'),
  edge(6,7),edge(7,8,'Found'),edge(7,9,'Default'),
- edge(8,10),edge(9,10),edge(10,11),edge(11,12),
+ edge(8,21),edge(9,21),edge(21,22),edge(22,23,'Found'),
+ edge(22,10,'Default'),edge(23,11),edge(10,11),edge(11,12),
  ...addTotals.links,edge(15,16)
 ],[variable('productId','Text',true),{name:'product',type:'Record',dataType:'Product'},
- variable('cartLineId','Text',false,true)]);
+ variable('cartLineId','Text',false,true),
+ {name:'existingLine',type:'Record',dataType:'CartLine'},
+ {name:'mergedQuantity',type:'Formula',dataType:'Number',value:'existingLine.Quantity + 1'},
+ {name:'mergedLineTotal',type:'Formula',dataType:'Number',
+  value:'mergedQuantity * existingLine.UnitPrice'}]);
 
 export const SMART_TILL_OUTPUTS={
  cartSessionId:'cartSessionId',cartItems:'cartItems',
