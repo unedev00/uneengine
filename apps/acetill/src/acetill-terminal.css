@@ -5,7 +5,16 @@
 .acetill-category-tabs button{border:0;background:transparent;color:#4b5565;padding:11px 13px;white-space:nowrap;border-bottom:3px solid transparent;font-size:14px;font-weight:650;cursor:pointer}
 .acetill-category-tabs button.selected{color:#1163d7;border-bottom-color:#1665e8}
 .acetill-search{display:flex;align-items:center;gap:8px;border:1px solid #e3e8f0;border-radius:12px;padding:8px 12px;background:#fff;max-width:225px}
-.acetill-search span{font-size:22px}.acetill-search input{width:100%;min-width:30px;border:0;background:transparent;outline:none}
+.acetill-search span{font-size:18px}
+.acetill-search input{
+  width:100%;min-width:30px;min-height:32px;
+  border:0;background:transparent;outline:none;
+  font-size:14px;line-height:20px;
+}
+@media (pointer:coarse) {
+  .acetill-search{min-height:44px}
+  .acetill-search input{min-height:40px;font-size:16px}
+}
 .acetill-product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:15px;align-content:start;flex:1}
 .acetill-product{padding:7px;background:#fff;border:1px solid #e4e8ee;border-radius:18px;text-align:left;display:flex;flex-direction:column;gap:8px;cursor:pointer;min-width:0;box-shadow:0 2px 10px #15294d08;color:inherit}
 .acetill-product:hover{border-color:#1971e9;box-shadow:0 7px 22px #15294d16;transform:translateY(-1px)}
