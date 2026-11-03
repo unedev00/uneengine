@@ -3,7 +3,7 @@ import {createPortal} from 'react-dom';
 import {AlignLeft,AlignCenter,AlignRight,Bold,WrapText,ArrowLeftRight,ArrowUpDown,ImagePlus,SlidersHorizontal,Eye,EyeOff} from 'lucide-react';
 import {RibbonTextSizeIcon,RibbonCornerRadiusIcon} from './SmartRibbonIcons';
 import type {ObjectMetadata} from '../../metadata/Definitions/metadata';
-import type {UneRibbonProperty,UneBuilderTab} from './uneBuilderPropertyInventory';
+import type {UneRibbonProperty,UneBuilderTab,Design2Slot} from './uneBuilderPropertyInventory';
 import RibbonColorPalette from './RibbonColorPalette';
 import {uploadTenantImageFile} from '../ComponentProperties/TenantMediaPicker';
 import {scopedFieldRule,type ScopedFieldFilter} from '../../pages/PageRuntime/fieldScopedRecordFilters';
@@ -20,13 +20,16 @@ import SmartIconGallery from './SmartIconGallery';
 import './SmartRibbon.css';
 import './SmartRibbonApprovedThreeRow.css';
 import './SmartRibbonDataFormula.css';
+import './SmartRibbonDesign2.css';
 type Position={x:number;y:number;width:number;height:number};
 type Props={tab:UneBuilderTab;api:string;definitions:readonly UneRibbonProperty[];properties:Record<string,unknown>;
  onChange:(next:Record<string,unknown>)=>void;objects:readonly ObjectMetadata[];pageObjectApiName?:string;
  position?:Position;onPositionChange?:(next:Position)=>void;layoutMode:string;
  /** For grouped/multiple components, expose only the intersection of SQL properties. */
  sharedPropertyIds?:readonly string[];mixedPropertyIds?:readonly string[];selectedApis?:readonly string[];
- pageComponents?:readonly {id:string;properties:Record<string,unknown>}[];componentId?:string};
+ pageComponents?:readonly {id:string;properties:Record<string,unknown>}[];componentId?:string;
+ design2Slots?:readonly Design2Slot[];componentVisible?:boolean;
+ onVisibleChange?:(visible:boolean)=>void;};
 const weekdays=[['sun','Sun'],['mon','Mon'],['tue','Tue'],['wed','Wed'],['thu','Thu'],['fri','Fri'],['sat','Sat']] as const;
 const fallback=(value:unknown)=>typeof value==='string'?value:'';
 const cartSummaryLabels:Record<string,{key:string;slot:string}>={
@@ -35,7 +38,7 @@ const cartSummaryLabels:Record<string,{key:string;slot:string}>={
  taxValue:{key:'taxLabel',slot:'Summary 3'},
  discountValue:{key:'discountLabel',slot:'Summary 4'}
 };
-export default function SmartRibbon({tab,api,definitions,properties,onChange,objects,pageObjectApiName='',position,onPositionChange,layoutMode,sharedPropertyIds,mixedPropertyIds,selectedApis,pageComponents=[],componentId=''}:Props){
+export default function SmartRibbon({tab,api,definitions,properties,onChange,objects,pageObjectApiName='',position,onPositionChange,layoutMode,sharedPropertyIds,mixedPropertyIds,selectedApis,pageComponents=[],componentId='',design2Slots=[],componentVisible=true,onVisibleChange}:Props){
  const uploadInput=useRef<HTMLInputElement>(null);
  const [uploadBusy,setUploadBusy]=useState(false);
  const [uploadError,setUploadError]=useState('');
@@ -76,6 +79,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
   return null;
  };
 
+ const [design2Area,setDesign2Area]=useState('Body');
  const [filtersOpen,setFiltersOpen]=useState(false);
  const [filterTarget,setFilterTarget]=useState('Record');
  const [filterFieldId,setFilterFieldId]=useState<string|null>(null);
@@ -143,7 +147,23 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  // Keep the global property inventory visible for every selected component.
  // Unsupported controls are disabled by the per-property `supported` check below.
  const compactDesign=true;
- const visible=definitions.filter(p=>p.tab===tab);
+ // Independent SQL-planned view over shared controls and persisted property keys.
+ // A null property key displays the fallback glyph, always disabled.
+ const design2Areas=[...new Map(design2Slots.map(slot=>[slot.area,slot.areaOrder])).entries()]
+   .sort((a,b)=>a[1]-b[1]).map(([area])=>area);
+ const activeDesign2Area=design2Areas.includes(design2Area)?design2Area:design2Areas[0]??'Body';
+ const design2Properties=tab==='Design2'?design2Slots
+   .filter(slot=>slot.area===activeDesign2Area)
+   .map(slot=>{
+     const original=definitions.find(p=>p.id===(slot.propertyKey??slot.fallbackKey));
+     if(!original)return null;
+     return {...original,tab:'Design2' as const,group:activeDesign2Area,
+       components:slot.propertyKey?original.components:[],
+       designRow:slot.row,designOrder:slot.order,
+       designWidth:slot.width,designHeight:slot.height,designCaptionWidth:0,
+       designDisplay:original.kind==='align'||original.kind==='shadow'?'dropdown' as const:original.designDisplay};
+   }).filter((p):p is NonNullable<typeof p>=>p!==null):[];
+ const visible=tab==='Design2'?design2Properties:definitions.filter(p=>p.tab===tab);
  // Keep active-record scope metadata and persisted settings intact, but do not
  // surface its automatic binding switch in any visible ribbon section.
  // A formula-created Collection now owns every tab; retired synthetic
@@ -153,7 +173,8 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    p.id!=='autoRecordScope'&&p.id!=='collectionFormula'&&
    !(tab==='Data'&&p.id==='contextApiName'));
  const groups=[...new Set(displayProperties.map(p=>p.group))];
- const groupOrder=tab==='Data'?['Source','Values','Cart','Cart columns','Cart totals']
+ const groupOrder=tab==='Design2'?[activeDesign2Area]
+  :tab==='Data'?['Source','Values','Cart','Cart columns','Cart totals']
   :tab==='Design'?['Body','Shape','Typography','Tabs','Header','Badge','Header Supporting',
     'Table','Row','Summary','Summary 2']
   :tab==='Layout'?['Size & Position','Tabs','Cards','Navigation','Calendar','Image','Icon']
@@ -271,7 +292,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
        </span>
      </div>;
    }
-   const isTextSize=compactDesign&&/^(textSize|badgeTextSize|summary2?TextSize|placeholderSize)$/.test(property.id);
+   const isTextSize=compactDesign&&/^(textSize|badgeTextSize|summary2?TextSize|placeholderSize|headerTextSize|supportingTextSize|rowTextSize)$/.test(property.id);
    const isCorner=compactDesign&&/radius/i.test(property.id);
    const isWidth=compactDesign&&/width/i.test(property.id);
    const isHeight=compactDesign&&/height/i.test(property.id);
@@ -368,7 +389,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
        editor=<button type="button" className="smart-visible-toggle" disabled={!enabled}
          role="switch" aria-label={title} title={title} aria-checked={value===true}
          onClick={()=>write(value!==true)}><Icon size={16} aria-hidden="true"/></button>;
-     }else if(['headerBold','badgeBold','supportingBold','summaryTextWeight','summary2TextWeight','wrapText'].includes(property.id)){
+     }else if(['headerBold','badgeBold','supportingBold','rowBold','summaryTextWeight','summary2TextWeight','wrapText'].includes(property.id)){
        const Icon=property.id==='wrapText'?WrapText:Bold;
        editor=<button className="smart-icon-toggle" type="button" disabled={!enabled}
          aria-label={title} title={title} aria-pressed={value===true} onClick={()=>write(value!==true)}><Icon size={17}/></button>;
@@ -407,14 +428,39 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
        title={!enabled?'Applies to: '+property.components.map(api=>api.replace(/^smart_/,'' )).join(', '):title}>
        <span className="smart-label">{shortLabel}</span>{editor}</div>;
  };
- return <div className="smart-ribbon" data-smart-api={api}
+ return <div className={'smart-ribbon'+(tab==='Design2'?' smart-design2-ribbon':'')} data-smart-api={api}
   data-compact-design={compactDesign?'true':'false'}
   data-three-row={compactDesign?'true':'false'} aria-label="Smart shared property ribbon">
   <input ref={uploadInput} className="smart-hidden-upload" type="file"
     accept="image/png,image/jpeg,image/gif,image/webp" aria-label="Select local image"
     onChange={event=>void selectLocalImage(event)} />
   {uploadError&&<div className="smart-upload-error" role="alert" title={uploadError}>{uploadError}</div>}
-  {tab==='Data'?<>
+  {tab==='Design2'?<section className="smart-ribbon-group smart-design2-group"
+      data-design-three-row="true" data-smart-tab="Design2" aria-label="Design 2 contextual properties">
+    <div className="smart-ribbon-items">
+      <div className="smart-ribbon-row smart-design2-top-row" data-design-row={1}>
+        <select className="smart-design2-area-select" aria-label="Select Design 2 area"
+          value={activeDesign2Area} onChange={event=>setDesign2Area(event.target.value)}>
+          {design2Areas.map(area=><option value={area} key={area}>{area}</option>)}
+        </select>
+        <button type="button" className="smart-icon-toggle smart-design2-visibility"
+          aria-label="Component visibility" title="Component visibility"
+          aria-pressed={componentVisible} disabled={!onVisibleChange}
+          onClick={()=>onVisibleChange?.(!componentVisible)}>
+          {componentVisible?<Eye size={17}/>:<EyeOff size={17}/>}
+        </button>
+        {(['shapeId','shapeFill'] as const).map((id,index)=>{
+          const original=definitions.find(property=>property.id===id);
+          return original?controls({...original,tab:'Design2',group:'Shape',
+            designRow:1,designOrder:index+1,designWidth:id==='shapeId'?94:40,
+            designHeight:26,designCaptionWidth:0}):null;
+        })}
+      </div>
+      {[2,3].map(row=><div key={row} className="smart-ribbon-row"
+        data-design-row={row}>{sectionRow(activeDesign2Area,row).map(controls)}</div>)}
+    </div>
+    <span className="smart-ribbon-caption">{activeDesign2Area}</span>
+  </section>:tab==='Data'?<>
     {sections.filter(group=>group==='Source').map(section=><section className="smart-ribbon-group" key={section}
       data-design-three-row="true" data-smart-tab={tab} aria-label={section}
       style={{'--smart-section-width':sectionWidth(section)+'px'} as CSSProperties}>
