@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {visibleCanvasBounds,placeNewCanvasComponent} from '../src/core/builders/PageBuilder/canvasInsertPlacement';
 import {childrenOf,isLayoutContainer} from '../src/core/pages/TemplatePageRuntime/pageComponentLayout';
-import {copyComponentTree,cloneComponentTree} from '../src/core/builders/PageBuilder/pageComponentTree';
+import {copyComponentTree,cloneComponentTree,nameCopiedComponentTree} from '../src/core/builders/PageBuilder/pageComponentTree';
 import type {PageComponentMetadata} from '../src/core/metadata/Definitions/metadata';
 const read=(path:string)=>readFileSync(new URL(path,import.meta.url),'utf8');
 
@@ -100,4 +100,32 @@ test('Smart Container accepts palette inserts and cut/paste children without cha
  const builder=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
  assert.match(builder,/isLayoutContainer\(selected\) \? selected.id : rawLayoutParentId\(selected\)/);
  assert.match(builder,/assignTabOnReparent\(components,cloned.rootId,parentId/);
+});
+
+
+test('paste and duplicate assign monotonic unique names including children and preserve UUID links',()=>{
+ const parent:PageComponentMetadata={id:'parent',type:'Custom:smart_container',
+  label:'Basket',visible:true,region:'main',properties:{navigatorName:'smartcontainer2'}};
+ const button:PageComponentMetadata={id:'child',type:'Custom:smart_button',
+  label:'Print',visible:true,region:'main',parentId:'parent',
+  properties:{navigatorName:'PrintBill',layoutParentId:'parent'}};
+ const snapshot=copyComponentTree([parent,button],parent.id);
+ const cloned=cloneComponentTree(snapshot,null,(()=>{let index=0;return ()=>'clone-'+(++index);})());
+ const used:Record<string,number>={smartbutton:7,smartcontainer:2};
+ const named=nameCopiedComponentTree([parent,button],cloned.components,used);
+ assert.equal(named.length,2);
+ assert.deepEqual(named.map(x=>x.properties.navigatorName),['smartcontainer3','smartbutton8']);
+ assert.equal(named[1].parentId,named[0].id);
+ assert.equal(named[1].properties.layoutParentId,named[0].id);
+ assert.equal(parent.properties.navigatorName,'smartcontainer2');
+ assert.equal(button.properties.navigatorName,'PrintBill');
+ assert.equal(used.smartbutton,8);
+ const again=nameCopiedComponentTree([parent,button,...named],
+  cloneComponentTree(snapshot,null,(()=>{let index=2;return ()=>'clone-'+(++index);})()).components,used);
+ assert.deepEqual(again.map(x=>x.properties.navigatorName),['smartcontainer4','smartbutton9']);
+ const all=[parent,button,...named,...again];
+ assert.equal(new Set([...componentInstanceNames(all).values()].map(v=>v.toLowerCase())).size,all.length);
+ const builder=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ assert.match(builder,/nameCopiedComponentTree\(page\.components,cloned\.components,componentNameHighWaterRef\.current\)/);
+ assert.match(builder,/nameCopiedComponentTree\(page\.components,clone\.components,componentNameHighWaterRef\.current\)/);
 });
