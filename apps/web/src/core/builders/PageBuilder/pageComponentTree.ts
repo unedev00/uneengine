@@ -29,14 +29,14 @@ export function removePageComponentSelection(
     while (parent && removed.has(parent) && !traversed.has(parent)) {
       traversed.add(parent);
       const ancestor = originals.get(parent);
-      if (!ancestor) { parent = undefined; break; }
+      if (!ancestor) { parent = null; break; }
       if (ancestor.position) {
         offsetX += ancestor.position.x;
         offsetY += ancestor.position.y;
       }
       parent = rawLayoutParentId(ancestor);
     }
-    if (parent && removed.has(parent)) parent = undefined;
+    if (parent && removed.has(parent)) parent = null;
     const properties = { ...item.properties };
     if (parent) properties.layoutParentId = parent;
     else delete properties.layoutParentId;
