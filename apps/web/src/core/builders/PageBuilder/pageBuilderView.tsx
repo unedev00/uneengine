@@ -69,6 +69,8 @@ import {
   Eye,
   EyeOff,
   FileText,
+  Download,
+  Upload,
   Filter,
   Grid2X2,
   Type,
@@ -599,6 +601,8 @@ function PageBuilder({
   const [homeProfileId, setHomeProfileId] = useState('');
   const [homeFormFactors, setHomeFormFactors] = useState<Array<'Desktop' | 'Phone' | 'Tablet' | 'Custom'>>(['Desktop']);
   const [saving, setSaving] = useState(false);
+  const [inventoryUploadOpen,setInventoryUploadOpen] = useState(false);
+  const [inventoryDownloading,setInventoryDownloading] = useState('');
   const [archivingPageApiName, setArchivingPageApiName] = useState('');
   const [pendingArchivePageApiName, setPendingArchivePageApiName] = useState('');
   const [switchingLayout, setSwitchingLayout] = useState(false);
