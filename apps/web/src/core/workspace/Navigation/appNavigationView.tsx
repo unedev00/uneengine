@@ -14,7 +14,7 @@ declare const __METADRIVE_WEB_RELEASE__: { commit: string | null; builtAt: strin
 type ProductionStatus = {
  configured: boolean; canDeploy: boolean; latestCommit: string | null;
  error?: string;
- permission?: {hasPlatformDeveloper:boolean;hasOperationsManage:boolean};
+ permission?: {hasOneEngine:boolean;hasPlatformTenant:boolean;hasOperationsManage:boolean};
  oci?: {state:'idle'|'running'|'succeeded'|'failed';sha:string|null;stage:string|null;updatedAt:string|null}|null;
  deployedCommit: string | null; active: boolean;
 };
@@ -280,7 +280,7 @@ export function NavigationLoadTime({ routeKey, startedAt, ready, kind, authMs, r
             !deployment.latestCommit || deploymentBusy || deployment.active || deploymentRequested ||
             (deployment.latestCommit === deployment.deployedCommit &&
              deployment.latestCommit === webRelease?.commit)}
-          title={!deployment?.canDeploy ? 'Platform Developer deployment permission required'
+          title={!deployment?.canDeploy ? 'Platform OneEngine deployment permission required'
             : !deployment.configured ? 'The OCI deployment helper is unavailable'
             : deployment.active ? 'An OCI deployment is running'
             : undefined}
@@ -293,11 +293,13 @@ export function NavigationLoadTime({ routeKey, startedAt, ready, kind, authMs, r
           {deploymentLoading ? 'Checking…' : 'Refresh status'}
         </button>
         {deployment && !deployment.canDeploy && <p className="navigation-diagnostics-note" role="alert">
-          Deployment blocked: {!deployment.permission?.hasPlatformDeveloper
-            ? 'Platform Developer policy is not assigned to your account. '
+          Deployment blocked: {!deployment.permission?.hasPlatformTenant
+            ? 'Deployment is restricted to the platform tenant. '
+            : ''}{!deployment.permission?.hasOneEngine
+            ? 'OneEngine permission set is not assigned to your account. '
             : ''}{!deployment.permission?.hasOperationsManage
-            ? 'PlatformOperations manage permission is missing. '
-            : ''}An authorised platform administrator must grant the missing access through OneEngine.
+            ? 'PlatformOperations manage permission is missing or denied in OneEngine RBAC. '
+            : ''}An authorised administrator can manage these grants through OneEngine.
         </p>}
         {deployment && !deployment.configured && <p className="navigation-diagnostics-note" role="alert">
           OCI deployment helper unavailable. Check the OCI operations socket, API configuration and installed helper.

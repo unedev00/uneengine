@@ -123,8 +123,9 @@ function handleError(error:unknown,res:Response,next:NextFunction){
 /**
  * Read-only status is available to authenticated workspace users. The repository
  * and release SHA are already public; no secret or privileged action is exposed.
- * Mutation requires PlatformDeveloper assignment AND explicit PlatformOperations
- * manage grant, without the unrelated Tenant OneEngine administration gate.
+ * Deployment requires OneEngine membership in the canonical OCI platform tenant
+ * AND effective PlatformOperations:manage through central, revocable SQL RBAC.
+ * A customer tenant OneEngine user cannot deploy the shared platform host.
  */
 export function registerPlatformDeploymentRoutes(
  app:Express,db:SqlPersistence,rbac:RbacEngine
@@ -136,39 +137,46 @@ export function registerPlatformDeploymentRoutes(
    throw new DeploymentControlError('Authentication required.',401);
   return actor;
  }
- async function assignedPlatformDeveloper(actor:Actor):Promise<boolean>{
-  const {rows}=await db.query<{authorised:boolean}>(`
+ async function platformOneEngine(actor:Actor):Promise<{hasOneEngine:boolean;hasPlatformTenant:boolean}>{
+  // This fixed, verified platform domain bounds shared OCI deployment authority.
+  // Permission-set membership can be direct, role, profile or group based.
+  const {rows}=await db.query<{has_oneengine:boolean;has_platform_tenant:boolean}>(`
    SELECT EXISTS(
     SELECT 1 FROM md_permission_assignments a JOIN md_permission_sets p
-      ON p.tenant_id=a.tenant_id AND p.id=a.permission_set_id
-      WHERE a.tenant_id=$1 AND a.user_id=$2 AND p.api_name='PlatformDeveloper'
+     ON p.tenant_id=a.tenant_id AND p.id=a.permission_set_id
+     WHERE a.tenant_id=$1 AND a.user_id=$2 AND p.api_name='OneEngine'
     UNION ALL SELECT 1 FROM md_user_roles ur JOIN md_role_permission_sets rp
-      ON rp.tenant_id=ur.tenant_id AND rp.role_id=ur.role_id
-      JOIN md_permission_sets p ON p.tenant_id=rp.tenant_id AND p.id=rp.permission_set_id
-      WHERE ur.tenant_id=$1 AND ur.user_id=$2 AND p.api_name='PlatformDeveloper'
+     ON rp.tenant_id=ur.tenant_id AND rp.role_id=ur.role_id
+     JOIN md_permission_sets p ON p.tenant_id=rp.tenant_id AND p.id=rp.permission_set_id
+     WHERE ur.tenant_id=$1 AND ur.user_id=$2 AND p.api_name='OneEngine'
     UNION ALL SELECT 1 FROM md_user_profiles up JOIN md_profile_permission_sets pp
-      ON pp.tenant_id=up.tenant_id AND pp.profile_id=up.profile_id
-      JOIN md_permission_sets p ON p.tenant_id=pp.tenant_id AND p.id=pp.permission_set_id
-      WHERE up.tenant_id=$1 AND up.user_id=$2 AND p.api_name='PlatformDeveloper'
+     ON pp.tenant_id=up.tenant_id AND pp.profile_id=up.profile_id
+     JOIN md_permission_sets p ON p.tenant_id=pp.tenant_id AND p.id=pp.permission_set_id
+     WHERE up.tenant_id=$1 AND up.user_id=$2 AND p.api_name='OneEngine'
     UNION ALL SELECT 1 FROM md_user_permission_groups ug JOIN md_permission_group_sets gs
-      ON gs.tenant_id=ug.tenant_id AND gs.group_id=ug.group_id
-      JOIN md_permission_sets p ON p.tenant_id=gs.tenant_id AND p.id=gs.permission_set_id
-      WHERE ug.tenant_id=$1 AND ug.user_id=$2 AND p.api_name='PlatformDeveloper'
-   ) AS authorised`,[actor.tenant_id,actor.user_id]);
-  return rows[0]?.authorised===true;
+     ON gs.tenant_id=ug.tenant_id AND gs.group_id=ug.group_id
+     JOIN md_permission_sets p ON p.tenant_id=gs.tenant_id AND p.id=gs.permission_set_id
+     WHERE ug.tenant_id=$1 AND ug.user_id=$2 AND p.api_name='OneEngine'
+   ) AS has_oneengine,
+   EXISTS(
+    SELECT 1 FROM md_tenant_domains d JOIN md_tenants t ON t.id=d.tenant_id
+    JOIN md_users u ON u.tenant_id=t.id AND u.id=$2
+    WHERE d.tenant_id=$1 AND d.domain='unesolutions.co.uk'
+      AND t.status='ACTIVE' AND u.enabled=true AND u.user_type='internal'
+   ) AS has_platform_tenant`,[actor.tenant_id,actor.user_id]);
+  return {hasOneEngine:rows[0]?.has_oneengine===true,
+   hasPlatformTenant:rows[0]?.has_platform_tenant===true};
  }
- async function canManage(actor:Actor):Promise<boolean>{
-  // Neither policy membership nor a wildcard tenant grant may bypass the other.
-  if(!await assignedPlatformDeveloper(actor))return false;
-  return rbac.allowed(actor.tenant_id,actor.user_id,'PlatformOperations','manage');
+ async function deploymentPermission(actor:Actor){
+  const scope=await platformOneEngine(actor);
+  const hasOperationsManage=await rbac.allowed(actor.tenant_id,actor.user_id,'PlatformOperations','manage');
+  return {...scope,hasOperationsManage,
+   canDeploy:scope.hasPlatformTenant&&scope.hasOneEngine&&hasOperationsManage};
  }
  app.get('/api/platform/production-deployment',async(req,res,next)=>{
   try {
    const actor=actorOf(req);
-   const hasPlatformDeveloper=await assignedPlatformDeveloper(actor);
-   const hasOperationsManage=await rbac.allowed(actor.tenant_id,actor.user_id,'PlatformOperations','manage');
-   const canDeploy=hasPlatformDeveloper&&hasOperationsManage;
-   const permission={hasPlatformDeveloper,hasOperationsManage};
+   const {canDeploy,...permission}=await deploymentPermission(actor);
    res.set('Cache-Control','private, no-store');
    try {
     const status=await readProductionDeployment();
@@ -184,8 +192,8 @@ export function registerPlatformDeploymentRoutes(
  app.post('/api/platform/production-deployment',async(req,res,next)=>{
   try{
    const actor=actorOf(req);
-   if(!await canManage(actor))
-    throw new DeploymentControlError('Platform Developer deployment permission required.',403);
+   if(!(await deploymentPermission(actor)).canDeploy)
+    throw new DeploymentControlError('OCI deployment requires OneEngine and PlatformOperations manage permission in the platform tenant.',403);
    res.set('Cache-Control','private, no-store');
    const expected=(req.body as {expectedCommit?:unknown}|null)?.expectedCommit;
    res.status(202).json(await requestProductionDeployment(db,actor.tenant_id,actor.user_id,expected));
