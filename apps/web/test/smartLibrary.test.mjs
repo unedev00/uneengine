@@ -1216,7 +1216,7 @@ test('Smart Textbox SQL enables only approved properties and User pilot requires
  for(const key of ['customButton1','customButton2','column2Source','objectApiName',
   'defaultValue','badgeText','headerBorderColor','rowHeight','tabCount'])
   assert.ok(!sql.includes("('"+key+"')"),key+' must stay disabled');
- const pilot=read('../../../../scripts/pilots/user-smart-textbox-record-view.sql');
+ const pilot=read('../../../scripts/pilots/user-smart-textbox-record-view.sql');
  assert.match(pilot,/current_setting\('metadrive\.pilot_tenant_id',true\)/);
  assert.match(pilot,/ORDER BY d\.page_id LIMIT 1/);
  assert.match(pilot,/RAISE EXCEPTION/);
