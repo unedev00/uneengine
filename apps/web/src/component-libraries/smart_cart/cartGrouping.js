@@ -10,6 +10,7 @@
 const nonIdentity=new Set([
   'id','quantity','qty','linetotal','lineamount',
   'createddate','createdat','createdby','createdbyid',
+  'ownerid','recordtypeid',
   'lastmodifieddate','lastmodifiedat','lastmodifiedby','lastmodifiedbyid',
   'systemmodstamp','updatedat','updatedby','rowversion','version',
   '__typename','attributes'
