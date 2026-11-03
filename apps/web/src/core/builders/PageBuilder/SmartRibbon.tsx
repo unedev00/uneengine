@@ -320,8 +320,8 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
      (isTextSize||isCorner||isWidth||isHeight);
    const isTabIndex=property.id==='tabIndex';
    let editor;
-   if(property.id==='shapeId')editor=<SmartIconGallery value={String(value||'shape:rectangle')}
-     disabled={!enabled} allowIcons={(selectedApis?.length?selectedApis:[api]).every(member=>
+   if(property.id==='shapeId'||(tab==='Design2'&&property.id==='footerShape'))editor=<SmartIconGallery value={String(value||'shape:rectangle')}
+     disabled={!enabled} allowIcons={property.id==='footerShape'?false:(selectedApis?.length?selectedApis:[api]).every(member=>
        (property.choicesOverrides?.[member]??property.choices??[]).includes('icons'))}
      onChange={write}/>;
    else if(property.id==='cardButtonShape')editor=<SmartIconGallery
@@ -376,7 +376,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
      {objects.map(o=><option key={o.apiName} value={o.apiName}>{o.label}</option>)}</select>;
    else if(kind==='color')editor=<RibbonColorPalette variant="property"
      kind={/border/i.test(property.id)?'border':property.id==='iconFillColor'||/label|text|value/i.test(property.id)?'text':'fill'}
-     iconVariant={tab==='Design2'&&property.id==='shapeFill'?'shape':
+     iconVariant={tab==='Design2'&&(property.id==='shapeFill'||/^shape_fill/.test(property.designSlotKey??''))?'shape':
        tab==='Design2'&&/^focus/.test(property.designSlotKey??'')?'focus':undefined}
      label={title} value={String(value)} disabled={!enabled} onChange={write}/>;
    else if(tab==='Layout'&&['cardsPerRow','cardsPerColumn'].includes(property.id))
