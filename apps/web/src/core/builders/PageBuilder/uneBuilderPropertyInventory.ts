@@ -22,7 +22,7 @@ export type UneRibbonProperty={
  valueKeys?:Record<string,string>;
 };
 export type Design2Slot={
- area:string;areaOrder:number;slotKey:string;row:number;order:number;
+ componentApi:string;area:string;areaOrder:number;slotKey:string;row:number;order:number;
  width:number;height:number;propertyKey:string|null;fallbackKey:string;
 };
 export type SharedRibbonCatalog={
