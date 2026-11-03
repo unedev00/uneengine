@@ -57,6 +57,9 @@ export function cloneComponentTree(
     const originalParent = rawLayoutParentId(item);
     const parent = root ? rootParentId : ids.get(originalParent ?? '') ?? null;
     const properties = structuredClone(item.properties);
+    // A clone is a new instance: the copied display name must not collide.
+    // The insertion path allocates a new unique name via the shared engine.
+    delete properties.navigatorName;
     if (parent) properties.layoutParentId = parent;
     else delete properties.layoutParentId;
     return {
