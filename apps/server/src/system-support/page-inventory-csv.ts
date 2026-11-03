@@ -295,5 +295,6 @@ export function applyInventoryCsv(page:InventoryPage,csv:string,definitions:Defi
   }catch(error){report(row,error instanceof Error?error.message:'Invalid component property value');}
  }
  if(issues.length===0&&changes>0)copy.components=ensureComponentInstanceNames(copy.components);
+ issues.sort((a,b)=>a.row-b.row);
  return {valid:issues.length===0,issues,changes,skipped,page:copy};
 }
