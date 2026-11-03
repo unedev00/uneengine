@@ -2,6 +2,8 @@ import type {SqlPersistence} from '../system-files/sql-persistence.js';
 import {readComponentContract} from './component-contract-store.js';
 import {availableComponentSettings,componentSettingIssues,type ComponentSettingDefinition} from './component-property-contract.js';
 import type {PageLayoutVariant} from '../system-files/page-layout-version-runtime.js';
+import {randomUUID} from 'node:crypto';
+import {componentInstanceNames,canonicalComponentName,componentNamePattern,ensureComponentInstanceNames} from './page-component-names.js';
 
 /** One interoperable format for Page Builder inventory export and guarded draft import. */
 export const INVENTORY_COLUMNS=['pageapi','component_name','component_property','value'] as const;
@@ -9,12 +11,12 @@ export type InventoryIssue={row:number;pageapi?:string;component_name:string;com
 type Block={id:string;type:string;label:string;region?:string;visible:boolean;
  position?:{x:number;y:number;width:number;height:number};
  properties:Record<string,unknown>};
-export type InventoryPage={apiName:string;draftRevision?:number;components:Block[];[key:string]:unknown};
+export type InventoryPage={apiName:string;draftRevision?:number;layoutMode?:string;canvasWidth?:number;canvasHeight?:number;components:Block[];[key:string]:unknown};
 type Definitions=Map<string,ComponentSettingDefinition[]>;
 const unsafe=new Set(['__proto__','prototype','constructor']);
 // Internal hierarchy links and obsolete Advanced placeholders are not user-editable
 // component properties. Their saved SQL values remain untouched by inventory import.
-const excludedInventoryProperties=new Set(['cssClass','allowedChildTypes','maxChildren','layoutParentId','parentId']);
+const excludedInventoryProperties=new Set(['cssClass','allowedChildTypes','maxChildren','layoutParentId','parentId','navigatorName']);
 const inventoryPropertyAllowed=(key:string)=>!excludedInventoryProperties.has(key);
 const isPlain=(value:unknown):value is Record<string,unknown>=>value!==null
  &&typeof value==='object'&&!Array.isArray(value);
@@ -47,9 +49,10 @@ function schemaLeaves(out:Map<string,string>,definitions:readonly ComponentSetti
  }
 }
 export async function inventoryDefinitions(db:SqlPersistence,tenant:string,
- components:readonly Block[],variant:PageLayoutVariant):Promise<Definitions>{
- const names=[...new Set(components.filter(c=>c.type.startsWith('Custom:'))
-   .map(c=>c.type.slice(7)))];
+ components:readonly Block[],variant:PageLayoutVariant,extraTypes:readonly string[]=[]):Promise<Definitions>{
+ const names=[...new Set([...components.map(c=>c.type),...extraTypes]
+   .filter(type=>/^Custom:[A-Za-z][A-Za-z0-9_]{0,127}$/.test(type))
+   .map(type=>type.slice(7)))];
  if(!names.length)return new Map();
  const result=await db.query<{component_api:string;published_version:number}>(
   'SELECT component_api,published_version FROM md_component_library_heads WHERE tenant_id=$1 AND component_api=ANY($2::text[]) AND published_version IS NOT NULL',
@@ -63,8 +66,11 @@ export async function inventoryDefinitions(db:SqlPersistence,tenant:string,
 }
 export function exportInventoryCsv(page:InventoryPage,definitions:Definitions=new Map()):string{
  const rows:unknown[][]=[[...INVENTORY_COLUMNS]];
+ const names=componentInstanceNames(page.components);
  for(const component of page.components){
   const values=new Map<string,string>([
+   ['component.id',component.id],
+   ['component.type',component.type],
    ['component.label',component.label],
    ['component.visible',String(component.visible)],
    ['component.region',component.region??'main'],
@@ -78,7 +84,7 @@ export function exportInventoryCsv(page:InventoryPage,definitions:Definitions=ne
   }
   schemaLeaves(values,definitions.get(component.type)??[]);
   for(const [key,value] of values)
-   rows.push([page.apiName,component.id,key,value]);
+   rows.push([page.apiName,names.get(component.id),key,value]);
  }
  return inventoryCsv(rows);
 }
