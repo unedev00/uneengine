@@ -286,7 +286,7 @@ export function applyInventoryCsv(page:InventoryPage,csv:string,definitions:Defi
   const rawType=format==='typed'?entry.type.trim():legacyTypes.get(key)??'';
   const api=componentApi(rawType);
   if(!validComponentApi(api)||!rawType){
-   report(entry,'Component type is missing or invalid');rejectedNames.add(key);continue;
+   report(entry,format==='legacy'?'Component does not exist. Add a component.type row with a valid Custom: component type.':'Component type is missing or invalid');rejectedNames.add(key);continue;
   }
   const type=componentType(api);
   if(!definitions.has(type)&&!definitions.has(api)){
