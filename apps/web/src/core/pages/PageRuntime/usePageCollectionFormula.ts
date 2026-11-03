@@ -82,7 +82,7 @@ export function usePageCollectionFormula(
  const selectedTableSource=typeof properties.textSource==='string'&&(
   /^=?\s*TABLE\s*\(/i.test(properties.textSource.trim())||
   /^=?\s*@[A-Za-z][A-Za-z0-9_]*$/.test(properties.textSource.trim())
-   &&objects.some(object=>'@'+object.apiName===properties.textSource.trim().replace(/^=\s*/,'')))
+   &&objects.some(object=>('@'+object.apiName).toLowerCase()===properties.textSource.trim().replace(/^=\s*/,'').toLowerCase()))
   ?properties.textSource.trim():null;
  const entered=selectedTableSource||explicit||tableExpression||listExpression||declared||reference||'';
  const source=entered.startsWith('=')?entered.slice(1).trim():entered;
@@ -90,8 +90,9 @@ export function usePageCollectionFormula(
  const directSource=/^@([A-Za-z][A-Za-z0-9_]*)(?:\.([A-Za-z][A-Za-z0-9_]*))?$/.exec(source);
  const tableObject=tableFormulaObject(source);
  const fullObject=directSource&&!directSource[2]
-   &&objects.some(object=>object.apiName===directSource[1])?directSource[1]:null;
- const tableSourceObject=tableObject??fullObject;
+  ?objects.find(object=>object.apiName.toLowerCase()===directSource[1].toLowerCase())?.apiName??null:null;
+ const sourceName=tableObject??fullObject;
+ const tableSourceObject=objects.find(object=>object.apiName.toLowerCase()===sourceName?.toLowerCase())?.apiName??sourceName;
  const isTableProjection=Boolean(tableSourceObject);
  const directObject=directSource?.[2]?directSource[1]:primaryObject;
  const directField=directSource?.[2]??directSource?.[1];
