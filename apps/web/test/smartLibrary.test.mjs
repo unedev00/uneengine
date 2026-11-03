@@ -1206,7 +1206,7 @@ test('Smart Textbox renders one left caption and one right field value using rem
   assert.ok(html.includes(colour),colour+' should be rendered');
  assert.doesNotMatch(html,/onchange=|onclick=/i);
 });
-test('Smart Textbox SQL enables only requested reusable Ribbon properties and User pilot is published',()=>{
+test('Smart Textbox SQL enables only approved properties and User pilot requires explicit single-tenant opt-in',()=>{
  const sql=read('../../server/src/system-support/migrations/20270309-smart-textbox-shared-ribbon.sql');
  const allowed=['label','textSource','backgroundColor','labelColor','shadow','borderColor','radius',
   'wrapText','headerTextColor','headerAlignment','headerBodyColor','headerBold',
@@ -1216,7 +1216,10 @@ test('Smart Textbox SQL enables only requested reusable Ribbon properties and Us
  for(const key of ['customButton1','customButton2','column2Source','objectApiName',
   'defaultValue','badgeText','headerBorderColor','rowHeight','tabCount'])
   assert.ok(!sql.includes("('"+key+"')"),key+' must stay disabled');
- const pilot=read('../../server/src/system-support/migrations/20270310-user-smart-textbox-record-view-trial.sql');
+ const pilot=read('../../../../scripts/pilots/user-smart-textbox-record-view.sql');
+ assert.match(pilot,/current_setting\('metadrive\.pilot_tenant_id',true\)/);
+ assert.match(pilot,/ORDER BY d\.page_id LIMIT 1/);
+ assert.match(pilot,/RAISE EXCEPTION/);
  assert.match(pilot,/d\.target_object='User'|d\.target_object='User'/);
  assert.match(pilot,/d\.record_mode='View'/);
  assert.match(pilot,/published_version=excluded\.published_version/);
