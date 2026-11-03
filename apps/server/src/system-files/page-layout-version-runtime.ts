@@ -267,8 +267,13 @@ export class PageLayoutVersionRuntime{
     throw new Error('Desktop parent changed; reload this device layout before saving');
    const desktop=variant!=='Desktop'&&parentRevision
     ?await this.snapshot(tenant,found.id,'Desktop',parentRevision):null;
+   // One SQL-owned Ribbon inventory classifies Data/Actions keys globally.
+   // The device snapshot only saves presentation overrides.
+   const shared=desktop?await client.query<{property_key:string}>(`SELECT property_key
+    FROM md_builder_shared_properties WHERE tab IN ('Data','Actions') AND scope='component'`):null;
+   const sharedKeys=new Set((shared?.rows??[]).map(item=>item.property_key));
    const nodes=desktop?createDeviceComponentOverrides(desktop.components as InheritedComponent[],
-    page.components as InheritedComponent[]):page.components;
+    page.components as InheritedComponent[],sharedKeys):page.components;
    const heads=await client.query<HeadRow>(`SELECT draft_version,published_version FROM md_page_layout_heads
     WHERE tenant_id=$1 AND page_id=$2 AND variant=$3 FOR UPDATE`,[tenant,found.id,variant]);
    const current=heads.rows[0]?.draft_version??0;
