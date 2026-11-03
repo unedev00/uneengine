@@ -26,7 +26,19 @@
 .flow-logs-table details[open], .flow-existing-table details[open] { white-space: normal; min-width: 220px; max-width: 360px; }
 .flow-logs-table dd, .flow-existing-table dd { margin: 0 0 8px; overflow-wrap: anywhere; }
 .flow-logs-table dt, .flow-existing-table dt { font-weight: 600; }
-.company-workspace-tabs { position: sticky; top: 0; z-index: 3; }
+/* Audit DEF-013: keep settings tabs below the sticky workspace header. */
+.lightning .company-workspace-tabs {
+  position: sticky;
+  top: 50px;
+  z-index: 71;
+  scroll-margin-top: 62px;
+}
+.lightning .company-workspace :is(.md-admin-tabstrip, .md-admin-tabpanel, .md-security-content) {
+  scroll-margin-top: 110px;
+}
+@media (max-width: 599px) {
+  .lightning .company-workspace-tabs { top: 44px; }
+}
 @media (min-width:900px) {
   .lightning .setup-sidebar.setup-sidebar-collapsed { width:58px; min-width:58px; }
   .lightning .named-credentials-page .slds-table { table-layout:fixed; }
