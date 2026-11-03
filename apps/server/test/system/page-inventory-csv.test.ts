@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {applyInventoryCsv,exportInventoryCsv,inventoryRequestedTypes,inventoryDefinitions,type InventoryPage,type InventoryDefinitions} from '../../src/system-support/page-inventory-csv.js';
+import {applyInventoryCsv,exportInventoryCsv,inventoryCsv,inventoryRequestedTypes,inventoryDefinitions,type InventoryPage,type InventoryDefinitions} from '../../src/system-support/page-inventory-csv.js';
 import {componentInstanceNames,nextComponentInstanceName,validateExplicitComponentNames} from '../../src/system-support/page-component-names.js';
 import type {ComponentSettingDefinition} from '../../src/system-support/component-property-contract.js';
 
@@ -362,6 +362,89 @@ test('type plus custom name can update a saved component without changing immuta
  assert.equal(result.page.components[0].properties.width,375);
  assert.equal(result.page.components[0].visible,false);
  assert.equal(result.page.components[0].properties.summary1Formula,'=SUM(@LineTotal)');
+});
+
+test('Smart Cart columnVisibility downloaded JSON list reimports unchanged and copies to a fresh page',()=>{
+ const defs=ribbonDefinitions();
+ defs.ribbonProperties!.get('Custom:smart_cart')!.push({
+  id:'columnVisibility',kind:'choice',tab:'Data',
+  defaultValue:['Column 1','Column 2','Column 3','Column 4','Column 5'],
+  choices:['Column 1','Column 2','Column 3','Column 4','Column 5']
+ });
+ const source=original();
+ source.components[0].properties.columnVisibility=['Column 1','Column 2','Column 3','Column 4'];
+ const downloaded=exportInventoryCsv(source,defs);
+ assert.ok(downloaded.includes('columnVisibility,"[""Column 1"",""Column 2"",""Column 3"",""Column 4""]"'),
+  'CSV exports the actual JSON array as one correctly quoted cell');
+ const same=applyInventoryCsv(source,downloaded,defs);
+ assert.equal(same.valid,true,JSON.stringify(same.issues));
+ assert.equal(same.changes,0,'a same-page download/upload must remain a no-op');
+ assert.deepEqual(same.page,source);
+ const target=original(); // Same component type, but columnVisibility has never been saved.
+ const copied=applyInventoryCsv(target,downloaded,defs);
+ assert.equal(copied.valid,true,JSON.stringify(copied.issues));
+ assert.deepEqual(copied.page.components[0].properties.columnVisibility,
+  ['Column 1','Column 2','Column 3','Column 4'],
+  'column selection must remain an array after import');
+ assert.equal(target.components[0].properties.columnVisibility,undefined,
+  'preflight must not change the original page');
+ const replay=applyInventoryCsv(copied.page,downloaded,defs);
+ assert.equal(replay.valid,true,JSON.stringify(replay.issues));
+ assert.equal(replay.changes,0,'repeated import must be idempotent');
+});
+
+test('SQL-backed multi-select validates every column option and preserves scalar choices',()=>{
+ const defs=ribbonDefinitions();
+ defs.ribbonProperties!.get('Custom:smart_cart')!.push(
+  {id:'columnVisibility',kind:'choice',tab:'Data',
+   defaultValue:['Column 1','Column 2','Column 3','Column 4','Column 5'],
+   choices:['Column 1','Column 2','Column 3','Column 4','Column 5']},
+  {id:'cartDisplayMode',kind:'choice',tab:'Design',defaultValue:'compact',
+   choices:['compact','spacious']}
+ );
+ const make=(key:string,value:string)=>inventoryCsv([
+  ['pageapi','component_type','component_name','propertyid','value','ribbon_tab'],
+  ['CODEXTILL','smart_cart','smartcart1',key,value,'Ignored']
+ ]);
+ const page=original();
+ for(const bad of [
+  '["Column 1","Not a column"]',
+  '["Column 1",17]',
+  '[1,2,3]',
+  '["Column 1"',
+  'compact'
+ ]){
+  const result=applyInventoryCsv(page,make('columnVisibility',bad),defs);
+  assert.equal(result.valid,false,'must reject '+bad);
+  assert.equal(page.components[0].properties.columnVisibility,undefined);
+ }
+ const scalar=applyInventoryCsv(page,make('cartDisplayMode','spacious'),defs);
+ assert.equal(scalar.valid,true,JSON.stringify(scalar.issues));
+ assert.equal(scalar.page.components[0].properties.cartDisplayMode,'spacious');
+ assert.equal(applyInventoryCsv(page,make('cartDisplayMode','missing'),defs).valid,false);
+});
+
+test('newly added Smart Cart instance accepts valid JSON multi-select with SQL default shape',()=>{
+ const defs=ribbonDefinitions();
+ defs.completeCatalog=true;
+ defs.installedTypes=new Set(['Custom:smart_cart']);
+ defs.ribbonProperties!.get('Custom:smart_cart')!.push({
+  id:'columnVisibility',kind:'choice',tab:'Data',
+  defaultValue:['Column 1','Column 2','Column 3','Column 4','Column 5'],
+  choices:['Column 1','Column 2','Column 3','Column 4','Column 5']
+ });
+ const file=inventoryCsv([
+  ['pageapi','component_type','component_name','propertyid','value'],
+  ['CODEXTILL','smart_cart','NewCustomerCart','columnVisibility','["Column 1","Column 4"]']
+ ]);
+ const added=applyInventoryCsv(original(),file,defs);
+ assert.equal(added.valid,true,JSON.stringify(added.issues));
+ assert.equal(added.page.components.length,3);
+ assert.deepEqual(added.page.components[2].properties.columnVisibility,['Column 1','Column 4']);
+ const again=applyInventoryCsv(added.page,file,defs);
+ assert.equal(again.valid,true,JSON.stringify(again.issues));
+ assert.equal(again.changes,0);
+ assert.equal(again.page.components.length,3);
 });
 
 test('sixth Ribbon Tab column is ignored while five-column typed imports remain accepted',()=>{
