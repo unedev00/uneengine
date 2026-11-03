@@ -5,7 +5,7 @@ import {
  evaluateFormulaBinary,evaluateFormulaUnary,formulaTruth,Parser
 } from '../../../../server/src/expression-engine/FormulaParser.js';
 import {tokenize} from '../../../../server/src/expression-engine/FormulaTokenizer.js';
-import {createNamedFormulaCollection,createCriteriaFormulaCollection,deriveFormulaCollection,sumFormulaCollection,matchesFormulaCollectionCriterion} from '../../../../server/src/expression-engine/FormulaCollection.js';
+import {createNamedFormulaCollection,createCriteriaFormulaCollection,deriveFormulaCollection,sumFormulaCollection,projectFormulaTable,matchesFormulaCollectionCriterion} from '../../../../server/src/expression-engine/FormulaCollection.js';
 import {isExcelWildcardDataReference,matchesExcelWildcard,hasExcelWildcardCriteria} from '../../../../server/src/expression-engine/FormulaWildcard.js';
 import {validateFormulaFunctions} from '../../../../server/src/expression-engine/FormulaFunctionRegistry.js';
 import {roundFormulaNumber} from '../../../../server/src/expression-engine/FormulaNumeric.js';
@@ -510,6 +510,26 @@ function parse(source,record,formulaContext){
    for(const argument of node.args)if(truth(evaluate(argument,currentRecord))){result=true;break;}
   }else if(node.name==='COLLECTION'){
    result=evaluateCriteriaCollection(node.args);
+  }else if(node.name==='TABLE'){
+   const first=node.args[0];
+   if(first?.kind!=='reference'||!/^[A-Za-z][A-Za-z0-9_]*$/.test(first.value))
+    throw Error('TABLE first argument must be an Object source such as @Product');
+   const object=first.value;
+   const rows=formulaContext.collectionSources?.[object];
+   const permitted=formulaContext.collectionSourceFields?.[object];
+   if(!Array.isArray(rows)||!Array.isArray(permitted))
+    throw Error('TABLE source is unavailable or not authorised: '+object);
+   const columns=node.args.slice(1).map(argument=>{
+    if(argument.kind!=='reference')
+     throw Error('TABLE columns must be Object fields');
+    const reference=argument.value;
+    const parts=reference.split('.');
+    if(parts.length>2||parts.length===2&&parts[0]!==object
+      ||parts.some(part=>!/^[A-Za-z][A-Za-z0-9_]*$/.test(part)))
+     throw Error('TABLE field does not belong to source '+object);
+    return parts.at(-1);
+   });
+   result=projectFormulaTable(object,rows,permitted,columns);
   }else if(node.name==='SUM'&&node.args.length===1){
    const operand=node.args[0];
    const rows=formulaContext.collectionRows;
@@ -604,11 +624,11 @@ export function evaluateFieldExpressionDetailed(expression,record,options={}){
   if(options.collectionResult===true){
    if(!result||typeof result!=='object'||Array.isArray(result)
      ||typeof result.name!=='string'||!Array.isArray(result.items))
-    return {value:null,error:'Collection formula must return COLLECTION("Name", ...)'}; 
+    return {value:null,error:'Collection formula must return a TABLE() or COLLECTION() dataset'}; 
    return {value:result};
   }
   if(result&&typeof result==='object'&&!Array.isArray(result)&&typeof result.name==='string'&&Array.isArray(result.items))
-   return {value:'',error:'Use a Collection source for COLLECTION() results'};
+   return {value:'',error:'Use a dataset source for TABLE() or COLLECTION() results'};
   if(typeof result==='number'&&!Number.isFinite(result))return {value:'',error:'Formula result is not finite'};
   return {value:text(result)};
  }catch(failure){
