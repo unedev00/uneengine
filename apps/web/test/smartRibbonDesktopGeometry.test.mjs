@@ -69,11 +69,11 @@ test('edited Design and Layout placements are applied through SQL without recolo
   assert.match(placement,/SET design_row=placement\.row_no,design_order=placement\.order_no/);
   assert.doesNotMatch(placement,/\b(?:background_color|text_color|default_value|UPDATE md_page_components)\b/i);
   const view=source('pageBuilderView.tsx');
-  const pageGroup=view.slice(view.indexOf("group==='Page'?<>"),view.indexOf("</>:group==='Canvas'?"));
-  assert.ok(pageGroup.indexOf('data-ribbon-property="deviceLayout"') <
-    pageGroup.indexOf('data-ribbon-property="selectVersion"'));
-  assert.ok(pageGroup.indexOf('data-ribbon-property="selectVersion"') <
-    pageGroup.indexOf('data-ribbon-property="restoreVersion"'));
+  const details=source('PageDetailsDialog.tsx');
+  assert.doesNotMatch(view,/data-ribbon-property="deviceLayout"/);
+  assert.match(details,/aria-label="Device layout to design"/);
+  assert.match(view,/case 'selectVersion'/);
+  assert.match(view,/restoreLayoutVersion\(selectedHistoryVersion\)/);
   const css=source('SmartRibbonApprovedThreeRow.css');
   assert.match(css,/\.une-ribbon-restore-only>button/);
 });
