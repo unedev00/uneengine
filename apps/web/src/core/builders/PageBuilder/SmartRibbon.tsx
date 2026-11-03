@@ -164,13 +164,14 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
        designWidth:slot.width,designHeight:slot.height,designCaptionWidth:0,
        designDisplay:original.kind==='align'||original.kind==='shadow'?'dropdown' as const:original.designDisplay};
    }).filter((p):p is NonNullable<typeof p>=>p!==null):[];
- const visible=tab==='Design2'?design2Properties:definitions.filter(p=>p.tab===tab);
+ const visible=definitions.filter(p=>p.tab===tab);
+ const contextualVisible=tab==='Design2'?design2Properties:visible;
  // Keep active-record scope metadata and persisted settings intact, but do not
  // surface its automatic binding switch in any visible ribbon section.
  // A formula-created Collection now owns every tab; retired synthetic
  // leading-tab controls must not appear even with an older metadata snapshot.
  const retiredTabs=new Set(['firstTabCustom','firstTabCaption','firstTabValue']);
- const displayProperties=visible.filter(p=>!retiredTabs.has(p.id)&&
+ const displayProperties=contextualVisible.filter(p=>!retiredTabs.has(p.id)&&
    p.id!=='autoRecordScope'&&p.id!=='collectionFormula'&&
    !(tab==='Data'&&p.id==='contextApiName'));
  const groups=[...new Set(displayProperties.map(p=>p.group))];
