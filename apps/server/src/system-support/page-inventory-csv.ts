@@ -415,17 +415,24 @@ export function applyInventoryCsv(page:InventoryPage,csv:string,definitions:Defi
    report(entry,'Unknown or disabled component metadata property');continue;
   }
   try{
-   const next=parsedValue(value,original,schema?.kind??ribbon?.kind);
+   // A Ribbon choice can represent a multi-select when SQL stores an array
+   // default (e.g. Smart Cart columnVisibility). An unsaved target instance
+   // must inherit that value shape just as an exported source instance does.
+   const defaultValue=ribbon?.defaultValue??schema?.defaultValue;
+   const valueShape=original===undefined||original===null||original===''?defaultValue:original;
+   const next=parsedValue(value,valueShape,schema?.kind??ribbon?.kind);
    const schemaIssue=schema?componentSettingIssues(schema,next,property)[0]:undefined;
    if(schemaIssue){report(entry,schemaIssue.path+': '+schemaIssue.message);continue;}
-   if(ribbon?.choices?.length&&!ribbon.choices.includes(String(next))){
+   const choices=ribbon?.choices??[];
+   if(choices.length&&(Array.isArray(next)
+    ?next.some(item=>typeof item!=='string'||!choices.includes(item))
+    :!choices.includes(String(next)))){
     report(entry,'Choose a listed option for '+property);continue;
    }
    if((ribbon?.kind==='number'||ribbon?.kind==='position')&&typeof next==='number'&&
       (ribbon.min!==undefined&&next<ribbon.min||ribbon.max!==undefined&&next>ribbon.max)){
     report(entry,'Enter a number within the allowed range');continue;
    }
-   const defaultValue=ribbon?.defaultValue??schema?.defaultValue;
    // Importing a complete export must not turn defaults into explicit overrides.
    if((original===undefined||original===null||original==='')&&
     defaultValue!==undefined&&JSON.stringify(next)===JSON.stringify(defaultValue)){
