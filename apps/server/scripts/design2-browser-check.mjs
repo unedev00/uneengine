@@ -121,10 +121,21 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
   'Design 2 properties leaked into original Design tab');
 
  // Persist, reload and check that Design 2 is editing the same component SQL values.
+ const saveResponses=[];
+ const captureSave=response=>{
+  if(response.url().includes('/api/metadata/pages/'+pageName))
+   saveResponses.push({url:response.url(),method:response.request().method(),status:response.status()});
+ };
+ page.on('response',captureSave);
  const save=page.waitForResponse(response=>response.url().includes(
-  '/api/metadata/pages/'+pageName+'/layouts/Desktop/draft')&&response.request().method()==='PUT');
+  '/api/metadata/pages/'+pageName+'/layouts/Desktop/draft')&&response.request().method()==='PUT',
+  {timeout:10000}).catch(()=>null);
  await page.getByRole('button',{name:'Save page'}).click();
- assert.equal((await save).status(),200,'Design 2 edit failed SQL draft save');
+ const savedResponse=await save;
+ page.off('response',captureSave);
+ assert.ok(savedResponse,'Design 2 Save did not reach SQL draft. Requests: '+
+  JSON.stringify(saveResponses)+' UI: '+(await page.locator('body').innerText()).slice(-1000));
+ assert.equal(savedResponse.status(),200,'Design 2 edit failed SQL draft save');
  const {PageRuntime}=await import('../dist-system/system-files/page-runtime.js');
  const runtime=new PageRuntime(db);
  const draft=await runtime.editor(tenantId,pageName,'Desktop');
