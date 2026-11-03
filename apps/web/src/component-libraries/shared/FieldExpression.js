@@ -544,7 +544,7 @@ function parse(source,record,formulaContext){
      result=evaluate(node.args[index+1],currentRecord);matched=true;break;
     }
    }
-   if(!matched)result=evaluate(node.args[node.args.length-1]);
+   if(!matched)result=evaluate(node.args[node.args.length-1],currentRecord);
   }else if(node.kind==='call'){
    result=evaluateCall(node.name,node.args.map(argument=>evaluate(argument,currentRecord)),formulaContext);
   }else throw Error('Invalid formula syntax');
