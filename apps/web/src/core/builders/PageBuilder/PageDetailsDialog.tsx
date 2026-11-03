@@ -49,7 +49,7 @@ export default function PageDetailsDialog({page,apps,profiles,recordTypes,disabl
  onSave:(apiName:string,label:string,appApiName:string|null,expectedLabel:string,nextApiName?:string,
   devices?:LightningPageMetadata['devices'],expectedDevices?:LightningPageMetadata['devices'])=>Promise<boolean>;
  onSaveAssignments:(page:LightningPageMetadata,assignments:PageActivationAssignmentMetadata[])=>Promise<LightningPageMetadata|false>;
- onOpenDesign:(apiName:string)=>void;
+ onOpenDesign:(apiName:string,layout:Variant)=>Promise<boolean>|boolean;
  onReload:(page:LightningPageMetadata)=>void;
 }){
  const [label,setLabel]=useState(page.label);
@@ -72,6 +72,8 @@ export default function PageDetailsDialog({page,apps,profiles,recordTypes,disabl
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState('');
  const [variant,setVariant]=useState<Variant>(page.layoutVariant??'Desktop');
+ // Choosing a design layout is navigation, not a mutation of published metadata.
+ const [designVariant,setDesignVariant]=useState<Variant>(page.layoutVariant??'Desktop');
  const [versions,setVersions]=useState<Version[]>([]);
  const [loading,setLoading]=useState(false);
  const [showArchived,setShowArchived]=useState(false);
@@ -122,8 +124,7 @@ export default function PageDetailsDialog({page,apps,profiles,recordTypes,disabl
     method:'POST',body:JSON.stringify({version})
    });
    onReload(response.page);
-   onClose();
-   onOpenDesign(page.apiName);
+   if(await onOpenDesign(page.apiName,variant)!==false)onClose();
   }catch(e){setError(e instanceof Error?e.message:'Unable to restore version')}
   finally{setBusy(false)}
  };
@@ -136,7 +137,7 @@ export default function PageDetailsDialog({page,apps,profiles,recordTypes,disabl
     method:'POST'
    });
    onReload(result.page);
-   onClose();onOpenDesign(page.apiName);
+   if(await onOpenDesign(page.apiName,variant)!==false)onClose();
   }catch(e){setError(e instanceof Error?e.message:'Unable to copy this version')}
   finally{setBusy(false)}
  };
@@ -153,7 +154,14 @@ export default function PageDetailsDialog({page,apps,profiles,recordTypes,disabl
   }catch(e){setError(e instanceof Error?e.message:'Unable to update version archive')}
   finally{setBusy(false)}
  };
- const design=()=>{onClose();onOpenDesign(page.apiName)};
+ const design=async()=>{
+  if(busy)return;
+  setBusy(true);setError('');
+  try{
+   if(await onOpenDesign(page.apiName,designVariant)!==false)onClose();
+  }catch(e){setError(e instanceof Error?e.message:'Unable to open the selected layout')}
+  finally{setBusy(false)}
+ };
  return <div className="modal-backdrop" role="presentation">
   <section className="modal page-details-dialog" role="dialog" aria-modal="true"
    aria-label="Edit page properties and versions">
@@ -187,7 +195,14 @@ export default function PageDetailsDialog({page,apps,profiles,recordTypes,disabl
        <div className="page-details-kv"><span>Page type</span><strong>{page.pageType}</strong></div>
        <div className="page-details-kv"><span>Layout mode</span><strong>{page.layoutMode}</strong></div>
        <div className="page-details-kv"><span>Related object</span><strong>{page.targetObject||'Not object-specific'}</strong></div>
-       <div className="page-details-kv"><span>Current layout</span><strong>{page.layoutVariant??'Desktop'}</strong></div>
+       <label className="form-label">Device layout
+        <select className="form-control" aria-label="Device layout to design"
+         value={designVariant} disabled={busy}
+         onChange={e=>setDesignVariant(e.target.value as Variant)}>
+         {variants.map(item=><option key={item} value={item}>{item}</option>)}
+        </select>
+        <small>Choose the layout to open in Design. Each device keeps its own draft, components and published version.</small>
+       </label>
       </section>
      </div>
      <aside className="page-details-side">
@@ -285,7 +300,8 @@ export default function PageDetailsDialog({page,apps,profiles,recordTypes,disabl
    </div>
    <footer className="office-ribbon-modal-actions page-details-footer">
     <button type="button" className="btn" disabled={busy} onClick={onClose}>Cancel</button>
-    <button type="button" className="btn" disabled={busy} onClick={design}>Open Design</button>
+    <button type="button" className="btn" disabled={busy}
+     onClick={()=>void design()}>Open {designVariant} Design</button>
     <button type="button" className="btn btn-brand" disabled={busy||disabled||!valid}
      onClick={()=>void submit()}>{busy?'Saving…':'Save Changes'}</button>
    </footer>
