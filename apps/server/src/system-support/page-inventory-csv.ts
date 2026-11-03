@@ -151,7 +151,7 @@ type InventoryCsvFormat='typed'|'legacy';
 function parseCsv(text:string):{rows:CsvRow[];issues:InventoryIssue[];format:InventoryCsvFormat}{
  let format:InventoryCsvFormat='typed';
  const issues:InventoryIssue[]=[];
- if(text.length>700000)return {rows:[],issues:[{row:1,component_name:'',component_property:'',remark:'CSV exceeds the 700 KB import limit'}]};
+ if(text.length>700000)return {rows:[],issues:[{row:1,component_name:'',component_property:'',remark:'CSV exceeds the 700 KB import limit'}],format};
  const rows:CsvRow[]=[],current:string[]=[];
  let cell='',quoted=false,afterQuote=false,line=1,start=1;
  const finishCell=()=>{current.push(cell);cell='';afterQuote=false;};
