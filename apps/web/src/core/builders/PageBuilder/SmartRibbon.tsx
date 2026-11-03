@@ -157,7 +157,8 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    .map(slot=>{
      const original=definitions.find(p=>p.id===(slot.propertyKey??slot.fallbackKey));
      if(!original)return null;
-     return {...original,tab:'Design2' as const,group:activeDesign2Area,
+     return {...original,label:slot.slotKey==='focused'?'Focused Color':original.label,
+       tab:'Design2' as const,group:activeDesign2Area,
        components:slot.propertyKey?original.components:[],
        designRow:slot.row,designOrder:slot.order,
        designWidth:slot.width,designHeight:slot.height,designCaptionWidth:0,
@@ -439,10 +440,13 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
       data-design-three-row="true" data-smart-tab="Design2" aria-label="Design 2 contextual properties">
     <div className="smart-ribbon-items">
       <div className="smart-ribbon-row smart-design2-top-row" data-design-row={1}>
-        <select className="smart-design2-area-select" aria-label="Select Design 2 area"
-          value={activeDesign2Area} onChange={event=>setDesign2Area(event.target.value)}>
-          {design2Areas.map(area=><option value={area} key={area}>{area}</option>)}
-        </select>
+        <label className="smart-design2-area-picker">
+          <span aria-hidden="true">Select it</span>
+          <select className="smart-design2-area-select" aria-label="Select Design 2 area"
+            value={activeDesign2Area} onChange={event=>setDesign2Area(event.target.value)}>
+            {design2Areas.map(area=><option value={area} key={area}>{area}</option>)}
+          </select>
+        </label>
         <button type="button" className="smart-icon-toggle smart-design2-visibility"
           aria-label="Component visibility" title="Component visibility"
           aria-pressed={componentVisible} disabled={!onVisibleChange}
