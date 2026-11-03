@@ -573,7 +573,7 @@ function PageBuilder({
   const ribbonStripRef=useRef<HTMLDivElement|null>(null);
   const [selectedConversationPart,setSelectedConversationPart]=useState('parent');
   useEffect(()=>setSelectedConversationPart('parent'),[selectedId]);
-  const [ribbonTab, setRibbonTab] = useState<'Add Block' | 'Component Content' | 'Component Properties' | 'Component Style' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Component Responsive' | 'Preview' | 'Filters' | 'Source' | 'Arrange' | 'Advanced'>('Add Block');
+  const [ribbonTab, setRibbonTab] = useState<'Add Block' | 'Component Content' | 'Component Properties' | 'Component Design 2' | 'Component Style' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Component Responsive' | 'Preview' | 'Filters' | 'Source' | 'Arrange' | 'Advanced'>('Add Block');
   const componentNeedsData = (type: string) => {
     const metadata = type.startsWith('Custom:') ? findRegisteredComponent(libraryComponents,type.slice('Custom:'.length),'page') : undefined;
     return Boolean(type.startsWith('Custom:')&&isUneBuilderApi(type.slice(7),ribbonCatalog?.components??[])
@@ -588,7 +588,7 @@ function PageBuilder({
     if (tab === 'Component Layout' || tab === 'Arrange' || tab === 'Advanced') { setPageSettingsOpen(false); }
     if (tab === 'Advanced') setAdvancedEditor('assignments');
     else setAdvancedEditor(null);
-    const inspector = { 'Component Properties': 'Design', 'Arrange': 'Position', 'Component Style': 'Design', 'Component Data': 'Data & Actions', 'Component Content': 'Data & Actions', 'Component Action': 'Visibility', 'Component Layout': 'Position', 'Component Responsive': 'Position' } as const;
+    const inspector = { 'Component Properties': 'Design', 'Component Design 2': 'Design', 'Arrange': 'Position', 'Component Style': 'Design', 'Component Data': 'Data & Actions', 'Component Content': 'Data & Actions', 'Component Action': 'Visibility', 'Component Layout': 'Position', 'Component Responsive': 'Position' } as const;
     if (tab in inspector) { setPageSettingsOpen(false); openComponentInspector(inspector[tab as keyof typeof inspector]); }
   };
   useEffect(()=>{
@@ -630,13 +630,21 @@ function PageBuilder({
         ? selectedGroupMembers.some(member=>member.id===item.id)
         : item.id===selected.id))
     : [];
+  // Virtual copies serve multi-selection only; shared Design definitions stay intact.
+  const design2SharedDefinitions=ribbonCatalog?.properties.filter(property=>
+    property.id==='shapeId'||property.id==='shapeFill'||
+    ribbonCatalog.design2Slots?.some(slot=>slot.propertyKey===property.id))
+    .map(property=>({...property,tab:'Design2' as const}))??[];
+  const sharedRibbonDefinitions=ribbonCatalog
+    ?[...ribbonCatalog.properties,...design2SharedDefinitions]:[];
   const ribbonSharedPropertyIds = ribbonSelectedMembers.length>1&&ribbonCatalog
     ? ribbonCatalog.properties.filter(property=>isSharedCanvasProperty(property,ribbonSelectedMembers))
       .map(property=>property.id)
     : undefined;
   const ribbonMixedPropertyIds = ribbonSelectedMembers.length>1&&ribbonCatalog
-    ? mixedCanvasPropertyIds(ribbonCatalog.properties,
-      ribbonTab==='Component Layout'?'Layout':ribbonTab==='Component Data'?'Data':'Design',
+    ? mixedCanvasPropertyIds(sharedRibbonDefinitions,
+      ribbonTab==='Component Layout'?'Layout':ribbonTab==='Component Data'?'Data':
+      ribbonTab==='Component Design 2'?'Design2':'Design',
       ribbonSelectedMembers)
     : undefined;
   const groupCandidates=page.components.filter(item=>selectionIds.includes(item.id));
@@ -2933,7 +2941,7 @@ function PageBuilder({
   };
   const quickAccessOrder=['save','activate','preview','exitPreview','resetIcon','undo','redo','cut','copy','paste','delete'] as const;
   const journeyTabs: Array<typeof ribbonTab> = ['Add Block','Component Data','Component Properties',
-    'Component Layout','Arrange','Component Action','Advanced','Preview'];
+    'Component Design 2','Component Layout','Arrange','Component Action','Advanced','Preview'];
   const ribbonTabsVisible: Array<typeof ribbonTab> = [...journeyTabs];
 
 
@@ -3236,6 +3244,7 @@ function PageBuilder({
                   'Component Data': Database,
                   'Component Content': Type,
                   'Component Properties': SlidersHorizontal,
+                  'Component Design 2': SlidersHorizontal,
 
                   Arrange: Layers3, Advanced: SlidersHorizontal,
                   'Component Style': Type,
@@ -3249,6 +3258,7 @@ function PageBuilder({
                   'Component Data': 'Data',
                   'Component Content': 'Content',
                   'Component Properties': 'Design',
+                  'Component Design 2': 'Design 2',
 
                   Arrange: 'Arrange', Advanced: 'Advanced',
                   'Component Style': 'Format',
@@ -3476,20 +3486,32 @@ function PageBuilder({
                 }else updateComponent(selected.id,{properties:{...selected.properties,iconId}});
               }}/>}
           {selectedNewUne && selected && ribbonCatalog &&
-            (ribbonTab==='Component Data'||ribbonTab==='Component Properties'||ribbonTab==='Component Layout') &&
+            (ribbonTab==='Component Data'||ribbonTab==='Component Properties'||
+             ribbonTab==='Component Design 2'||ribbonTab==='Component Layout') &&
             <SmartRibbon
-              tab={ribbonTab==='Component Data'?'Data':ribbonTab==='Component Layout'?'Layout':'Design'}
+              tab={ribbonTab==='Component Data'?'Data':ribbonTab==='Component Layout'?'Layout':
+                ribbonTab==='Component Design 2'?'Design2':'Design'}
               api={selected.type.slice(7)} definitions={ribbonCatalog.properties}
+              design2Slots={ribbonCatalog.design2Slots}
               properties={selected.properties} objects={objects} pageObjectApiName={page.targetObject}
               componentId={selected.id} pageComponents={page.components}
               sharedPropertyIds={ribbonSharedPropertyIds} mixedPropertyIds={ribbonMixedPropertyIds}
               selectedApis={ribbonSelectedMembers.map(item=>item.type.startsWith('Custom:')?item.type.slice(7):item.type)}
               onChange={(properties:Record<string,unknown>)=>{
                 if(ribbonSelectedMembers.length>1){
-                  const tab=ribbonTab==='Component Data'?'Data':ribbonTab==='Component Layout'?'Layout':'Design';
+                  const tab=ribbonTab==='Component Data'?'Data':ribbonTab==='Component Layout'?'Layout':
+                    ribbonTab==='Component Design 2'?'Design2':'Design';
                   applyPage({...page,components:updateSharedCanvasProperties(
-                    page.components,selected.id,ribbonSelectedMembers,ribbonCatalog.properties,tab,properties)});
+                    page.components,selected.id,ribbonSelectedMembers,sharedRibbonDefinitions,tab,properties)});
                 }else updateComponent(selected.id,{properties});
+              }}
+              componentVisible={selected.visible!==false}
+              onVisibleChange={visible=>{
+                if(ribbonSelectedMembers.length>1){
+                  const ids=new Set(ribbonSelectedMembers.map(item=>item.id));
+                  applyPage({...page,components:page.components.map(item=>
+                    ids.has(item.id)?{...item,visible}:item)});
+                }else updateComponent(selected.id,{visible});
               }}
               position={selected.position} layoutMode={page.layoutMode}
               onPositionChange={position=>{
