@@ -27,7 +27,8 @@ test('Smart component catalog is independent, fourteen components and SQL-owned'
  for(const name of names){
   const c=catalog.components.find(c=>c.apiName===name);
   assert.ok(c);
-  assert.deepEqual(c.propertyDefinitions,[]);
+  if(name==='smart_textbox')assert.ok(c.propertyDefinitions.some(p=>p.propertyKey==='readonly'&&p.kind==='BOOLEAN'));
+  else assert.deepEqual(c.propertyDefinitions,[]);
  }
 });
 test('Smart registry remains enabled through Core bundled-component cleanup',()=>{
