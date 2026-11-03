@@ -775,11 +775,13 @@ test('UI Image obeys free-canvas frame resizing in edit and published runtime wi
     'published record-bound UI Image must fill its saved canvas box');
 });
 
-test('Arrange respects topmost DOM order and directional single-step commands',async()=>{
+test('Arrange offers front and backward controls without duplicate order buttons',async()=>{
  const ribbon=await readFile(new URL('../src/core/builders/PageBuilder/ArrangeRibbon.tsx',import.meta.url),'utf8');
  const view=await readFile(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
  const css=await readFile(new URL('../src/core/builders/PageBuilder/SmartCanvasHandles.css',import.meta.url),'utf8');
- assert.match(ribbon,/Bring forward'[^\n]*onMove\(1\)/);
+ assert.doesNotMatch(ribbon,/label:'Bring forward'/);
+ assert.doesNotMatch(ribbon,/label:'Send to back'/);
+ assert.match(ribbon,/Bring to front'[^\n]*onPlace\('front'\)/);
  assert.match(ribbon,/Send backward'[^\n]*onMove\(-1\)/);
  assert.match(view,/'--canvas-layer-order':canvasSiblingLayerIndex\(page\.components,component\.id\)/);
  assert.match(css,/z-index:var\(--canvas-layer-order,0\)!important/);
