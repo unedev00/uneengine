@@ -13,8 +13,9 @@ export function componentInstanceNames(components:readonly NamedComponent[]):Map
   const raw=item.properties?.navigatorName;
   if(typeof raw!=='string'||!raw.trim())continue;
   const name=raw.trim(),key=canonicalComponentName(name);
-  if(!componentNamePattern.test(name))throw Error('Invalid component name: '+name);
-  if(explicit.has(key))throw Error('Duplicate component name: '+name);
+  // Legacy drafts may already contain duplicate navigator aliases. Never crash
+  // the editor: give ambiguous instances a distinct virtual name until renamed.
+  if(!componentNamePattern.test(name)||explicit.has(key))continue;
   explicit.add(key);result.set(item.id,name);
  }
  const used=new Set(explicit);
@@ -50,5 +51,13 @@ export function nextComponentInstanceName(components:readonly NamedComponent[],t
  return candidate;
 }
 export function validateExplicitComponentNames(components:readonly NamedComponent[]):void{
- componentInstanceNames(components);
+ const seen=new Set<string>();
+ for(const item of components){
+  const raw=item.properties?.navigatorName;
+  if(typeof raw!=='string'||!raw.trim())continue;
+  const name=raw.trim(),key=canonicalComponentName(name);
+  if(!componentNamePattern.test(name))throw Error('Invalid component name: '+name);
+  if(seen.has(key))throw Error('Duplicate component name: '+name);
+  seen.add(key);
+ }
 }
