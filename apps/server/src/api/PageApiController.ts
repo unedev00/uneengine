@@ -71,7 +71,7 @@ export function registerPageApiController(app:Express,db:SqlPersistence,rbac:Rba
     if(!api.test(name))throw new Error('Invalid Page API name');
     await rbac.require(actor.tenant_id,actor.user_id,'PageDefinition','read');
     const variant=pageLayoutVariant(req.query.variant??'Desktop');
-    const page=await pages.editor(actor.tenant_id,name,variant) as InventoryPage;
+    const page=await pages.editor(actor.tenant_id,name,variant) as unknown as InventoryPage;
     const definitions=await inventoryDefinitions(db,actor.tenant_id,page.components,variant);
     res.setHeader('Cache-Control','private, no-store');
     res.json({csv:exportInventoryCsv(page,definitions),variant,draftRevision:page.draftRevision??0});
@@ -83,7 +83,7 @@ export function registerPageApiController(app:Express,db:SqlPersistence,rbac:Rba
     await rbac.require(actor.tenant_id,actor.user_id,'PageDefinition','manage');
     await assertMetadataPackageEditable(db,actor.tenant_id,'page',name);
     const variant=pageLayoutVariant(req.body?.variant??'Desktop');
-    const page=await pages.editor(actor.tenant_id,name,variant) as InventoryPage;
+    const page=await pages.editor(actor.tenant_id,name,variant) as unknown as InventoryPage;
     const definitions=await inventoryDefinitions(db,actor.tenant_id,page.components,variant);
     const result=await preflightInventory(actor.tenant_id,variant,
       applyInventoryCsv(page,typeof req.body?.csv==='string'?req.body.csv:'',definitions));
@@ -99,7 +99,7 @@ export function registerPageApiController(app:Express,db:SqlPersistence,rbac:Rba
     const variant=pageLayoutVariant(req.body?.variant??'Desktop');
     const expected=req.body?.expectedDraftRevision;
     if(!Number.isSafeInteger(expected)||expected<0)throw new Error('Invalid expected draft revision');
-    const page=await pages.editor(actor.tenant_id,name,variant) as InventoryPage;
+    const page=await pages.editor(actor.tenant_id,name,variant) as unknown as InventoryPage;
     if((page.draftRevision??0)!==expected)throw new Error('Page layout changed since CSV validation. Validate the file again.');
     const definitions=await inventoryDefinitions(db,actor.tenant_id,page.components,variant);
     const result=await preflightInventory(actor.tenant_id,variant,
