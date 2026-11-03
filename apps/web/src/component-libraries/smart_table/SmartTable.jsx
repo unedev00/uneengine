@@ -107,11 +107,16 @@ export default function SmartTable({p,records,expression,fieldAllowed,fire}){
        {columns.map((col,i)=><td key={col.key}
          style={{borderBottom:border(borderColor),
           borderTop:active?border(borderColor):undefined,
-          borderRadius:i===0?finite(p.rowRadius,0,0,100):undefined,
+          borderTopLeftRadius:i===0?finite(p.rowRadius,0,0,100):undefined,
+          borderBottomLeftRadius:i===0?finite(p.rowRadius,0,0,100):undefined,
+          borderTopRightRadius:i===columns.length-1&&!actions.length?finite(p.rowRadius,0,0,100):undefined,
+          borderBottomRightRadius:i===columns.length-1&&!actions.length?finite(p.rowRadius,0,0,100):undefined,
           textAlign:"left",height:rowHeight}}>
          {value(row,col)}</td>)}
        {actions.length>0&&<td className="smart-table-actions"
-         style={{borderBottom:border(borderColor)}}>
+         style={{borderBottom:border(borderColor),
+          borderTopRightRadius:finite(p.rowRadius,0,0,100),
+          borderBottomRightRadius:finite(p.rowRadius,0,0,100)}}>
          {actions.map(action=><button type="button" key={action.event}
            aria-label={action.label+" "+id}
            disabled={preview||p.previewOnly===true||!p.actionFlows?.[action.event]}
