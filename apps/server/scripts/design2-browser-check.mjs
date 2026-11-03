@@ -26,6 +26,8 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  console.info('Design 2 SQL migration replay, legacy Design isolation and Focused mapping verified');
 
  // The real authenticated Builder Catalog endpoint must expose SQL slots and enforce RBAC.
+ // Navigate to the compiled frontend before using browser-relative /api URLs.
+ await page.goto(origin+'/une/setup/page-builder',{waitUntil:'domcontentloaded'});
  const result=await page.evaluate(async token=>{
   const response=await fetch('/api/metadata/builder-ribbon',{headers:{Authorization:'Bearer '+token}});
   return {status:response.status,body:await response.json()};
