@@ -4,6 +4,7 @@ import {availableComponentSettings,componentSettingIssues,type ComponentSettingD
 import type {PageLayoutVariant} from '../system-files/page-layout-version-runtime.js';
 import {randomUUID} from 'node:crypto';
 import {componentInstanceNames,canonicalComponentName,componentNamePattern,ensureComponentInstanceNames} from './page-component-names.js';
+import {pagePropertyContract,conditionSettings,recordFieldSettings,recordSectionSettings} from './page-property-contract.js';
 
 /** One interoperable format for Page Builder inventory export and guarded draft import. */
 /** Keep the first four columns stable for existing imports. The fifth is a display hint. */
@@ -29,6 +30,20 @@ const unsafe=new Set(['__proto__','prototype','constructor']);
 // component properties. Their saved SQL values remain untouched by inventory import.
 const excludedInventoryProperties=new Set(['cssClass','allowedChildTypes','maxChildren','layoutParentId','parentId','navigatorName']);
 const inventoryPropertyAllowed=(key:string)=>!excludedInventoryProperties.has(key);
+/** Existing shared Page Runtime metadata, present independently of a component's
+ * optional SQL Ribbon slots. Do not invent per-page keys from saved values. */
+const sharedPageSettings:ComponentSettingDefinition[]=[
+ {...pagePropertyContract,section:'Advanced'},
+ {propertyKey:'visibilityRules',label:'Visibility conditions',kind:'GROUP',
+  fields:conditionSettings,section:'View'},
+ {propertyKey:'actionFlows',label:'Configured Actions',kind:'GROUP',section:'Actions'},
+ {propertyKey:'editorLocked',label:'Lock component in designer',kind:'BOOLEAN',
+  defaultValue:false,section:'Arrange'}
+];
+const pageSettingsFor=(type:string):ComponentSettingDefinition[]=>[
+ ...sharedPageSettings,
+ ...(type==='Record Field'?recordFieldSettings:type==='Field Section'?recordSectionSettings:[])
+];
 const isPlain=(value:unknown):value is Record<string,unknown>=>value!==null
  &&typeof value==='object'&&!Array.isArray(value);
 const safeParts=(path:string):string[]|null=>{
@@ -133,9 +148,11 @@ export function exportInventoryCsv(page:InventoryPage,definitions:Definitions=ne
   for(const item of definitions.ribbonProperties?.get(component.type)??[])
    published.set(item.id,{tab:item.tab,defaultValue:item.defaultValue,kind:item.kind});
   schemaLeaves(published,definitions.get(component.type)??[]);
+  schemaLeaves(published,pageSettingsFor(component.type));
   // Old call sites with no SQL catalogue retain their saved-property export.
   // Real API downloads always supply completeCatalog and use the stable list.
-  if(!definitions.completeCatalog){
+  if(!definitions.completeCatalog||(!component.type.startsWith('Custom:')&&
+    !(definitions.get(component.type)?.length||definitions.ribbonProperties?.get(component.type)?.length))){
    const legacy=new Map<string,string>();
    for(const [key,value] of Object.entries(properties))
     if(inventoryPropertyAllowed(key))flatten(legacy,key,value);
@@ -337,40 +354,38 @@ export function applyInventoryCsv(page:InventoryPage,csv:string,definitions:Defi
   if(!inventoryPropertyAllowed(parts[0])){
    report(row,'This property is internal or retired and cannot be changed by CSV');continue;
   }
-  const schema=lookupSchema(definitions.get(component.type)??[],parts);
+  const schema=lookupSchema([
+   ...(definitions.get(component.type)??[]),...pageSettingsFor(component.type)],parts);
   const ribbon=parts.length===1?definitions.ribbonProperties?.get(component.type)?.find(item=>item.id===parts[0]):undefined;
-  // CSV always addresses the stable Ribbon property ID. The existing Ribbon
-  // rule decides the saved value key (e.g. a component-specific alias).
+  // Stable CSV ID -> one shared Ribbon rule -> actual saved property key.
   const storageParts=ribbon?.valueKey?safeParts(ribbon.valueKey):parts;
   if(!storageParts){report(row,'Invalid shared Ribbon property storage path');continue;}
-  let target:Record<string,unknown>=component.properties??(component.properties={});
-  let missingParent=false;
-  for(const segment of storageParts.slice(0,-1)){
-   const candidate=target[segment];
-   if(candidate===undefined){
-    if(!schema&&!ribbon){missingParent=true;break;}
-    target[segment]={};
-   }else if(!isPlain(candidate)){missingParent=true;break;}
-   target=target[segment] as Record<string,unknown>;
-  }
-  if(missingParent){report(row,'Nested component property does not exist');continue;}
-  const key=storageParts[storageParts.length-1];
-  if(!Object.prototype.hasOwnProperty.call(target,key)&&!schema&&!ribbon){
+  const original=pathValue(component.properties??{},storageParts.join('.'));
+  if(original===undefined&&!schema&&!ribbon){
    report(row,'Unknown component metadata property');continue;
   }
   try{
-   const original=target[key];
    const next=parsedValue(value,original,schema?.kind??ribbon?.kind);
    const schemaIssue=schema?componentSettingIssues(schema,next,property)[0]:undefined;
    if(schemaIssue){report(row,schemaIssue.path+': '+schemaIssue.message);continue;}
    const defaultValue=ribbon?.defaultValue??schema?.defaultValue;
-   // Re-importing an untouched export must not convert inherited defaults
-   // into explicit overrides. The runtime remains the source of defaults.
+   // A downloaded effective default is not an authored override.
+   // Check BEFORE creating nested parents to keep a no-op import truly pure.
    if((original===undefined||original===null||original==='')&&
-     defaultValue!==undefined&&JSON.stringify(next)===JSON.stringify(defaultValue)){
+    defaultValue!==undefined&&JSON.stringify(next)===JSON.stringify(defaultValue)){
     skipped++;continue;
    }
-   if(JSON.stringify(original)!==JSON.stringify(next)){target[key]=next;changes++;}
+   if(JSON.stringify(original)===JSON.stringify(next))continue;
+   let target:Record<string,unknown>=component.properties??(component.properties={});
+   let missingParent=false;
+   for(const segment of storageParts.slice(0,-1)){
+    const candidate=target[segment];
+    if(candidate===undefined){if(!schema&&!ribbon){missingParent=true;break;}target[segment]={};}
+    else if(!isPlain(candidate)){missingParent=true;break;}
+    target=target[segment] as Record<string,unknown>;
+   }
+   if(missingParent){report(row,'Nested component property does not exist');continue;}
+   target[storageParts[storageParts.length-1]]=next;changes++;
   }catch(error){report(row,error instanceof Error?error.message:'Invalid component property value');}
  }
  if(issues.length===0&&changes>0)copy.components=ensureComponentInstanceNames(copy.components);
