@@ -147,7 +147,9 @@ export function exportInventoryCsv(page:InventoryPage,definitions:Definitions=ne
  return inventoryCsv(rows);
 }
 type CsvRow={line:number;cells:string[]};
-function parseCsv(text:string):{rows:CsvRow[];issues:InventoryIssue[]}{
+type InventoryCsvFormat='typed'|'legacy';
+function parseCsv(text:string):{rows:CsvRow[];issues:InventoryIssue[];format:InventoryCsvFormat}{
+ let format:InventoryCsvFormat='typed';
  const issues:InventoryIssue[]=[];
  if(text.length>700000)return {rows:[],issues:[{row:1,component_name:'',component_property:'',remark:'CSV exceeds the 700 KB import limit'}]};
  const rows:CsvRow[]=[],current:string[]=[];
@@ -185,11 +187,14 @@ function parseCsv(text:string):{rows:CsvRow[];issues:InventoryIssue[]}{
  if(!rows.length)issues.push({row:1,component_name:'',component_property:'',remark:'CSV is empty'});
  else{
   const header=rows[0].cells.map((v,i)=>i===0?v.replace(/^\uFEFF/,'').trim().toLowerCase():v.trim().toLowerCase());
-  if(header.length!==4||header.some((value,i)=>value!==INVENTORY_COLUMNS[i]))
-   issues.push({row:rows[0].line,component_name:'',component_property:'',
+  const isTyped=header.length===INVENTORY_COLUMNS.length&&header.every((value,i)=>value===INVENTORY_COLUMNS[i]);
+  const isLegacy=header.length===LEGACY_INVENTORY_COLUMNS.length&&
+   header.every((value,i)=>value===LEGACY_INVENTORY_COLUMNS[i]);
+  if(isLegacy)format='legacy';
+  if(!isTyped&&!isLegacy)issues.push({row:rows[0].line,component_name:'',component_property:'',
     remark:'Expected CSV columns: '+INVENTORY_COLUMNS.join(',')});
  }
- return {rows:rows.slice(1),issues};
+ return {rows:rows.slice(1),issues,format};
 }
 function lookupSchema(defs:readonly ComponentSettingDefinition[],parts:readonly string[]):ComponentSettingDefinition|undefined{
  let current=defs,found:ComponentSettingDefinition|undefined;
