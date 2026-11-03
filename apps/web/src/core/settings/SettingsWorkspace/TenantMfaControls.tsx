@@ -39,7 +39,7 @@ export default function TenantMfaControls({request,canManage,onReauthenticate}:{
    await post('/auth/passkeys/remove',{id:k.credential_id,password});onReauthenticate();
   })}>Remove and sign out</button></div>)}
   <p>Passkeys require HTTPS. Trusted IP addresses do not bypass MFA. Backup codes require an enrolled authenticator to generate.</p>
-  {status?.mode!=='Required'&&<button type="button" className="btn" disabled={busy||!password||code.length!==6} onClick={()=>void run(async()=>{
+  {status?.mode!=='Required'&&<button type="button" className="btn btn-danger" disabled={busy||!password||code.length!==6} onClick={()=>void run(async()=>{
    await post('/auth/mfa/disable',{password,code});onReauthenticate();
   })}>Disable authenticator and sign out</button>}
   {canManage&&<div><h3>Administrator MFA recovery</h3><p>Reset another user's authenticators, backup codes and passkeys. This signs them out and invalidates pending recovery challenges. A required-MFA tenant will require enrollment on their next login. Your current password and fresh authenticator code above are required.</p>
