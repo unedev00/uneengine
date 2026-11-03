@@ -323,7 +323,8 @@ function PageBuilder({
   onPublish: (apiName:string,variant:'Mobile'|'Desktop'|'Tablet'|'Custom',draftRevision?:number)=>Promise<boolean>;
   onDeactivate: (apiName:string)=>Promise<boolean>;
   onSaveApp: (app: LightningAppMetadata, updating: boolean) => Promise<void>;
-  onUpdatePageDetails: (apiName:string,label:string,appApiName:string|null,expectedLabel:string,nextApiName?:string)=>Promise<boolean>;
+  onUpdatePageDetails: (apiName:string,label:string,appApiName:string|null,expectedLabel:string,nextApiName?:string,
+    devices?:LightningPageMetadata['devices'],expectedDevices?:LightningPageMetadata['devices'])=>Promise<boolean>;
   onDeleteApp: (apiName: string) => Promise<void>;
   onDeletePage: (apiName: string) => Promise<void>;
   onExit: () => void;
