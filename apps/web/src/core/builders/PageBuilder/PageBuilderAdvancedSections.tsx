@@ -7,7 +7,8 @@ type Assignment={
   onAdd:()=>void;
 };
 type Properties={
-  selected:boolean;apiName:string;instanceName:string;visible:boolean;
+  selected:boolean;nameEditable:boolean;apiName:string;instanceName:string;visible:boolean;
+  validateInstanceName:(value:string)=>string|null;
   onInstanceName:(value:string)=>void;
   readOnly:boolean;canReadOnly:boolean;
   onVisible:(value:boolean)=>void;onReadOnly:(value:boolean)=>void;
@@ -15,37 +16,30 @@ type Properties={
 type Nesting={
   accepted:boolean;canChange:boolean;onAccepted:(value:boolean)=>void;
 };
-type Technical={id:string;selected:boolean;editable:boolean;
-  validate:(value:string)=>string|null;onRename:(value:string)=>void};
 type Props={
   section:AdvancedFeature|null;onInspectorHost:(node:HTMLDivElement|null)=>void;
-  assignment:Assignment;properties:Properties;nesting:Nesting;technical:Technical;
+  assignment:Assignment;properties:Properties;nesting:Nesting;
 };
 
 /** Advanced contains only component controls and a link to page activation.
  * Page device eligibility belongs to Edit Page; component columns and custom
  * viewport breakpoints retain their dedicated metadata editors. */
 export default function PageBuilderAdvancedSections({
-  onInspectorHost,assignment,properties,nesting,technical
+  onInspectorHost,assignment,properties,nesting
 }:Props){
   // The former Advanced editor portalled the entire inspector into the ribbon.
   // Never leave a stale portal attached after switching from another tab.
   useEffect(()=>onInspectorHost(null),[onInspectorHost]);
   const [nameDraft,setNameDraft]=useState(properties.instanceName);
-  useEffect(()=>setNameDraft(properties.instanceName),[properties.instanceName]);
-  const [componentIdDraft,setComponentIdDraft]=useState(technical.id);
-  const [componentIdTouched,setComponentIdTouched]=useState(false);
-  useEffect(()=>{
-    setComponentIdDraft(technical.id);
-    setComponentIdTouched(false);
-  },[technical.id]);
-  const idError=technical.selected&&componentIdDraft!==technical.id
-    ?technical.validate(componentIdDraft):null;
-  const commitComponentId=()=>{
-    if(!technical.editable||componentIdDraft===technical.id)return;
-    setComponentIdTouched(true);
-    if(idError)return;
-    technical.onRename(componentIdDraft.trim());
+  const [nameTouched,setNameTouched]=useState(false);
+  useEffect(()=>{setNameDraft(properties.instanceName);setNameTouched(false);},[properties.instanceName]);
+  const nameError=properties.selected&&nameDraft!==properties.instanceName
+    ?properties.validateInstanceName(nameDraft):null;
+  const commitName=()=>{
+    if(!properties.nameEditable||nameDraft===properties.instanceName)return;
+    setNameTouched(true);
+    if(nameError)return;
+    properties.onInstanceName(nameDraft.trim());
   };
   return <div className="page-builder-advanced-inline" aria-label="Advanced ribbon fixed sections">
     {assignment.enabled&&<section className="advanced-fixed-group advanced-activation" aria-label="Activation Assignments">
@@ -65,12 +59,6 @@ export default function PageBuilderAdvancedSections({
       <label className="advanced-fixed-field advanced-api-name">API Name
         <input value={properties.apiName} readOnly disabled title="Component API identity is immutable"/>
       </label>
-      <label className="advanced-fixed-field advanced-instance-name">Component Name
-        <input aria-label="Component Name" value={nameDraft} maxLength={80}
-          disabled={!properties.selected} onChange={event=>setNameDraft(event.target.value)}
-          onBlur={()=>{if(nameDraft!==properties.instanceName)properties.onInstanceName(nameDraft);}}
-          onKeyDown={event=>{if(event.key==='Enter')event.currentTarget.blur();}}/>
-      </label>
       <label className="advanced-fixed-field advanced-visible">Visible
         <input type="checkbox" checked={properties.visible} disabled={!properties.selected}
           onChange={event=>properties.onVisible(event.target.checked)}/>
@@ -88,23 +76,23 @@ export default function PageBuilderAdvancedSections({
       </label>
       <span className="advanced-fixed-caption">Component Nesting</span>
     </section>
-    <section className="advanced-fixed-group advanced-technical" aria-label="Technical Details">
-      <label className="advanced-fixed-field advanced-component-id">Component ID
-        <input aria-label="Component ID" value={componentIdDraft} maxLength={128}
-          disabled={!technical.editable} spellCheck={false}
-          aria-invalid={!!idError} aria-describedby={idError?'component-id-validation':undefined}
-          title={technical.editable?'Unique component ID on this page. Enter or leave the field to apply.':
-            'Select and unlock a component to edit its ID'}
-          onChange={event=>{setComponentIdDraft(event.target.value);setComponentIdTouched(true);}}
-          onBlur={commitComponentId}
+    <section className="advanced-fixed-group advanced-technical" aria-label="Component Identity">
+      <label className="advanced-fixed-field advanced-component-name">Component Name
+        <input aria-label="Component Name" value={nameDraft} maxLength={80}
+          disabled={!properties.nameEditable} spellCheck={false}
+          aria-invalid={!!nameError}
+          aria-describedby={nameError&&nameTouched?'component-name-validation':undefined}
+          title="Unique name on this page, also used by component CSV export and upload"
+          onChange={event=>{setNameDraft(event.target.value);setNameTouched(true);}}
+          onBlur={commitName}
           onKeyDown={event=>{
-            if(event.key==='Enter'){event.preventDefault();commitComponentId();}
-            if(event.key==='Escape'){event.preventDefault();setComponentIdDraft(technical.id);setComponentIdTouched(false);}
+            if(event.key==='Enter'){event.preventDefault();event.currentTarget.blur();}
+            if(event.key==='Escape'){event.preventDefault();setNameDraft(properties.instanceName);setNameTouched(false);}
           }}/>
       </label>
-      {idError&&componentIdTouched&&<span id="component-id-validation" role="alert"
-        className="advanced-component-id-error">{idError}</span>}
-      <span className="advanced-fixed-caption">Technical Details</span>
+      {nameError&&nameTouched&&<span id="component-name-validation" role="alert"
+        className="advanced-component-name-error">{nameError}</span>}
+      <span className="advanced-fixed-caption">Component Identity</span>
     </section>
   </div>;
 }
