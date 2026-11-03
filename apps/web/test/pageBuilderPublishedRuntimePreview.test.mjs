@@ -30,7 +30,8 @@ test('unbound Image and Smart Image load the same tenant assets in preview and p
   const runtime = source('../src/core/pages/PageRuntime/pageRuntimeViews.tsx');
   const builder = source('../src/core/builders/PageBuilder/pageBuilderView.tsx');
   const tenantImage = source('../src/component-libraries/shared/TenantImage.jsx');
-  assert.match(runtime, /const loadPageMediaAsset = \(id:string\) => \^\[0-9a-f-\]\{36\}\$\/i\.test\(id\)/);
+  assert.match(runtime, /const loadPageMediaAsset = \(id:string\) =>/);
+  assert.match(runtime, /Promise.reject\(new Error\('Invalid media asset ID'\)\)/);
   assert.match(runtime, /apiRequest<\{contentType:string;contentBase64:string\}>\('\/media-assets\/'\+id\)/);
   assert.match(runtime, /loadAsset: loadPageMediaAsset, viewRevision: revision/);
   const start = runtime.indexOf('const content = needsMetadataComponentRuntime(component.properties)');
