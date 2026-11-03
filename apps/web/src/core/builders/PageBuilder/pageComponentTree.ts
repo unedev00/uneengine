@@ -56,6 +56,9 @@ export function cloneComponentTree(
     const originalParent = rawLayoutParentId(item);
     const parent = root ? rootParentId : ids.get(originalParent ?? '') ?? null;
     const properties = structuredClone(item.properties);
+    // A clone is a new page instance. Its original CSV-facing name is never reused.
+    // The page's shared naming allocator assigns the next free type-based name.
+    delete properties.navigatorName;
     if (parent) properties.layoutParentId = parent;
     else delete properties.layoutParentId;
     return {
