@@ -194,9 +194,9 @@ export class PageRuntime {
     const keys=new Set<string>();
     for(const c of components){
       if(!c||typeof c!=='object'||Array.isArray(c)||!id(c.id)||!id(c.type)
-        ||typeof c.label!=='string'||c.label.length>200||keys.has(c.id))throw new Error('Invalid Page component');
+        ||typeof c.label!=='string'||c.label.length>200||keys.has(String(c.id).toLowerCase()))throw new Error('Invalid Page component or duplicate Component ID');
       requirePagePropertyContract(String(c.type),c.properties);
-      keys.add(c.id);
+      keys.add(String(c.id).toLowerCase());
     }
     await validatePageComponentContracts(this.db,tenantId,components);
     const assignments=p.activationAssignments as Array<Record<string,unknown>>|undefined ?? [];
