@@ -454,7 +454,7 @@ export default function SmartRuntime(p){
     return actionable&&!hasButton
       ?<button key={r?.Id??r?.id??i} type="button" className="smart-grid-action"
         aria-label={"Select "+text(r?.Name??r?.name??r?.label??"product")}
-        onClick={selectRecord}>{card}</button>
+        onClick={()=>fire("click",{record:r,recordId:r?.Id??r?.id??null})}>{card}</button>
       :<React.Fragment key={r?.Id??r?.id??i}>{card}</React.Fragment>;
    })}
   </div>;
