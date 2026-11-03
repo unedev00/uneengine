@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {applyInventoryCsv,exportInventoryCsv,inventoryCsv,inventoryRequestedTypes,inventoryDefinitions,inventoryCsvPageGroups,originalInventoryIssue,type InventoryPage,type InventoryDefinitions} from '../../src/system-support/page-inventory-csv.js';
 import {componentInstanceNames,nextComponentInstanceName,ensureComponentInstanceNames,validateExplicitComponentNames} from '../../src/system-support/page-component-names.js';
 import type {ComponentSettingDefinition} from '../../src/system-support/component-property-contract.js';
