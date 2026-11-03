@@ -9,15 +9,19 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  // Replay explicitly to validate upgrade idempotency, not just presence in source.
  await db.query(migration);
  await db.query(migration);
- const listed=await db.query(`SELECT area,slot_key,property_key,row_no,order_no,width_px,height_px
-   FROM md_builder_design2_slots ORDER BY area_order,row_no,order_no`);
- assert.equal(listed.rows.length,106,'Design 2 SQL slots missing or duplicated after replay');
- assert.equal(new Set(listed.rows.map(row=>row.area)).size,10,'Wrong Design 2 area count');
- const slot=(area,key)=>listed.rows.find(row=>row.area===area&&row.slot_key===key);
- assert.equal(slot('Row','focused')?.property_key,'selectedRowColor');
- assert.equal(slot('Tabs','focused')?.property_key,'selectedTabColor');
- assert.equal(slot('Row','fill')?.property_key,null,'Row must inherit Table background');
- assert.equal(slot('Body','wrap')?.property_key,'wrapText','Body Wrap Text must remain disabled');
+ const componentMigration=await readFile(new URL('../src/system-support/migrations/20270320-design2-final-component-matrix.sql',import.meta.url),'utf8');
+ await db.query(componentMigration);
+ await db.query(componentMigration);
+ const listed=await db.query(`SELECT component_api,area,slot_key,property_key,row_no,column_no,width_px,height_px
+   FROM md_builder_design2_component_slots ORDER BY component_api,area_order,row_no,column_no`);
+ assert.equal(listed.rows.length,319,'Approved Design 2 component matrix missing or duplicated after replay');
+ assert.equal(new Set(listed.rows.map(row=>row.component_api)).size,13,'Wrong Smart component count');
+ const slot=(api,area,row,col)=>listed.rows.find(item=>item.component_api===api&&
+   item.area===area&&item.row_no===row&&item.column_no===col);
+ assert.equal(slot('smart_cart','Table',2,1)?.property_key,'selectedRowColor');
+ assert.equal(slot('smart_tabs','Body',2,1)?.property_key,'selectedTabColor');
+ assert.equal(slot('smart_image','Image',2,6)?.property_key,'imagePlacement');
+ assert.equal(slot('smart_cart','Footer',3,5)?.property_key,'summary2TextSize');
  const definitions=await db.query(`SELECT property_key,tab FROM md_builder_shared_properties
    WHERE property_key IN ('backgroundColor','rowBold','summary2Alignment','tableBackgroundColor')`);
  assert.equal(definitions.rows.find(row=>row.property_key==='backgroundColor')?.tab,'Design',
@@ -37,7 +41,7 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
   return {status:response.status,body:await response.json()};
  },token);
  assert.equal(result.status,200,'OneEngine rejected authorised shared ribbon metadata');
- assert.equal(result.body.design2Slots?.length,106,'Builder endpoint did not expose Design 2 SQL metadata');
+ assert.equal(result.body.design2Slots?.length,319,'Builder endpoint did not expose Design 2 SQL metadata');
  // The catalog is SQL-backed but still protected by central OneEngine RBAC.
  const {AuthenticationService}=await import('../dist-system/system-files/authentication.js');
  const auth=new AuthenticationService(db);
@@ -102,9 +106,11 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  assert.equal(await area.inputValue(),'Body');
  await area.selectOption('Row');
  const row=page.locator('.smart-design2-group');
+ await area.selectOption('Table');
  const focus=row.locator('[data-property="selectedRowColor"]');
  await focus.waitFor();
- assert.equal(await focus.getAttribute('data-supported'),'true','Row Focused wrongly disabled');
+ assert.equal(await focus.getAttribute('data-supported'),'true','Table Focus Fill wrongly disabled');
+ await area.selectOption('Row');
  const rowBold=row.locator('[data-property="rowBold"] button');
  await rowBold.waitFor();
  assert.equal(await rowBold.isDisabled(),false,'Row Bold should be enabled');
@@ -122,7 +128,8 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  await area.selectOption('Table');
  assert.equal(await row.locator('[data-property="tableBackgroundColor"]').getAttribute('data-supported'),'true');
  await area.selectOption('Body');
- assert.equal(await row.locator('[data-property="wrapText"]').getAttribute('data-supported'),'false');
+ assert.equal(await row.locator('[data-property="wrapText"]').count(),0,
+   'Unrequested Body Wrap Text leaked into Design 2');
  await page.getByRole('tab',{name:'Design',exact:true}).click();
  await page.locator('.smart-ribbon-group[aria-label="Row"] [data-property="rowLabelColor"]').waitFor();
  assert.equal(await page.locator('.smart-ribbon-group[aria-label="Row"] [data-property="rowBold"]').count(),0,
@@ -158,12 +165,11 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
 
  // Smart Tabs uses the very same Focused icon slot with a different existing key.
  await page.locator('[data-component-id="browser-design2-tabs"]').first().click({position:{x:18,y:18}});
- await page.getByLabel('Select Design 2 area').selectOption('Tabs');
+ await page.getByLabel('Select Design 2 area').selectOption('Body');
  assert.equal(await row.locator('[data-property="selectedTabColor"]').getAttribute('data-supported'),'true',
-  'Tabs Focused does not bind the existing selected-tab colour');
- await page.getByLabel('Select Design 2 area').selectOption('Row');
- assert.equal(await row.locator('[data-property="selectedRowColor"]').getAttribute('data-supported'),'false',
-  'Smart Tabs should not enable selected-row colour');
+  'Tabs Focus Fill does not bind existing selected-tab colour');
+ assert.equal(await page.getByLabel('Select Design 2 area').locator('option').allTextContents()
+  .then(list=>list.includes('Row')),false,'Tabs must not expose Cart Row sections');
  const {mkdir}=await import('node:fs/promises');
  await mkdir(new URL('../artifacts/',import.meta.url),{recursive:true});
  await page.screenshot({path:new URL('../artifacts/design2-contextual-ribbon.png',import.meta.url).pathname});
