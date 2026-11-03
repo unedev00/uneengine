@@ -2062,6 +2062,22 @@ function PageBuilder({
   const pageListPageCount=Math.max(1,Math.ceil(visiblePages.length/50));
   const safePageListPage=Math.min(pageListPage,pageListPageCount);
   const paginatedPages=visiblePages.slice((safePageListPage-1)*50,safePageListPage*50);
+  const downloadPageInventory = async (item:LightningPageMetadata) => {
+    if(inventoryDownloading)return;
+    const variant:PageLayoutVariant=pageListDeviceTab==='all'
+      ? item.layoutVariant??'Desktop' : pageListDeviceTab as PageLayoutVariant;
+    setInventoryDownloading(item.apiName);
+    try{
+      const {csv}=await request<{csv:string}>(
+        '/metadata/pages/'+encodeURIComponent(item.apiName)+'/inventory?variant='+variant);
+      const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+      const link=document.createElement('a');
+      link.href=url;link.download=item.apiName+'_'+variant+'_component_inventory.csv';
+      document.body.append(link);link.click();link.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),1000);
+    }catch(error){onNotify(error instanceof Error?error.message:'Unable to download page inventory');}
+    finally{setInventoryDownloading('');}
+  };
   const openCreatePage = () => { setNewPageAppId(pageListAppTab!=='all'&&pageListAppTab!=='other'?pageListAppTab:''); setNewPageTargetObject(pageListObject || page.targetObject || objects[0]?.apiName || ''); setNewPageLayoutMode('free-canvas'); setNewPageType(recordPageContext ? 'Record Page' : 'Home Page'); setNewPageDeviceChoice('Desktop'); setNewPageDevices(['Desktop']); setNewPageCanvasWidth(1440); setNewPageCanvasHeight(900); setCreatePageOpen(true); };
   const createPage = async () => {
     if (saving) return;
