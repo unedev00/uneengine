@@ -621,7 +621,7 @@ export function evaluateFieldExpressionDetailed(expression,record,options={}){
  if(explicit&&!input)return {value:'',error:'Complete the formula after ='};
  if(!explicit&&!options?.collectionResult&&/^COLLECTION\s*\(/i.test(input))
   return {value:expression};
- if(!/^(?:TRUE|FALSE|NULL|PI)$/i.test(input)&&!/@[A-Za-z]/.test(input)&&!input.startsWith('@')&&!/^\$(?:state\.|session$)/.test(input)&&!/^[A-Za-z][A-Za-z0-9_]*\s*\(/.test(input)
+ if(!/^(?:TRUE|FALSE|NULL|PI)$/i.test(input)&&!/@[A-Za-z]/.test(input)&&!input.startsWith('@')&&!/^\$(?:state|session)(?:\.|$)/.test(input)&&!/^[A-Za-z][A-Za-z0-9_]*\s*\(/.test(input)
   &&!/^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)+(?:\s*\(|$)/.test(input)
   &&!/^(?:["(]|[-+]?\d+(?:\.\d+)?\s*[+*\/%^<>=!-])/.test(input)
   &&!/\s(?:[&+*/%^<>=!]|AND\b|OR\b)\s/i.test(input))return {value:expression};
