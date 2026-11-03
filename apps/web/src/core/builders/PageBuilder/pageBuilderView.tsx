@@ -603,6 +603,7 @@ function PageBuilder({
   const [saving, setSaving] = useState(false);
   const [inventoryUploadOpen,setInventoryUploadOpen] = useState(false);
   const [inventoryDownloading,setInventoryDownloading] = useState('');
+  const [inventoryExportVariant,setInventoryExportVariant] = useState<PageLayoutVariant>('Desktop');
   const [archivingPageApiName, setArchivingPageApiName] = useState('');
   const [pendingArchivePageApiName, setPendingArchivePageApiName] = useState('');
   const [switchingLayout, setSwitchingLayout] = useState(false);
@@ -2064,8 +2065,7 @@ function PageBuilder({
   const paginatedPages=visiblePages.slice((safePageListPage-1)*50,safePageListPage*50);
   const downloadPageInventory = async (item:LightningPageMetadata) => {
     if(inventoryDownloading)return;
-    const variant:PageLayoutVariant=pageListDeviceTab==='all'
-      ? item.layoutVariant??'Desktop' : pageListDeviceTab as PageLayoutVariant;
+    const variant=inventoryExportVariant;
     setInventoryDownloading(item.apiName);
     try{
       const {csv}=await request<{csv:string}>(
@@ -3056,6 +3056,10 @@ function PageBuilder({
           <div className="page-manager-header-actions">
             <button className="btn btn-brand" type="button" onClick={openCreatePage}><Plus size={16}/> New Page</button>
             <button className="btn" type="button" disabled={saving} onClick={()=>setInventoryUploadOpen(true)}><Upload size={16}/> Upload CSV</button>
+            <select className="form-control" aria-label="Inventory CSV device layout" title="Layout used by page inventory downloads"
+              style={{width:148}} value={inventoryExportVariant} onChange={event=>setInventoryExportVariant(event.target.value as PageLayoutVariant)}>
+              {(['Desktop','Tablet','Mobile','Custom'] as const).map(device=><option key={device} value={device}>CSV: {device}</option>)}
+            </select>
           </div></header>
         {!recordPageContext && <PageManagerTabs
           type={pageListTypeTab} app={pageListAppTab} apps={pageAppTabs}
