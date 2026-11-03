@@ -69,6 +69,8 @@ import {
   Eye,
   EyeOff,
   FileText,
+  Download,
+  Upload,
   Filter,
   Grid2X2,
   Type,
@@ -296,6 +298,7 @@ import {
 } from '../../metadata/Definitions/metadata';
 import SavedListViewPicker from './SavedListViewPicker';
 import PageDetailsDialog from './PageDetailsDialog';
+import PageInventoryImportDialog from './PageInventoryImportDialog';
 import {uneRibbonIcon} from './uneRibbonIcon';
 import RibbonImageContent from './RibbonImageContent';
 export function createPageBuilder(MetadataComponentProperties: React.ComponentType<any>, MetadataBoundPageComponent: React.ComponentType<any>, LightningAppRuntime: React.ComponentType<any>) {
@@ -598,6 +601,9 @@ function PageBuilder({
   const [homeProfileId, setHomeProfileId] = useState('');
   const [homeFormFactors, setHomeFormFactors] = useState<Array<'Desktop' | 'Phone' | 'Tablet' | 'Custom'>>(['Desktop']);
   const [saving, setSaving] = useState(false);
+  const [inventoryUploadOpen,setInventoryUploadOpen] = useState(false);
+  const [inventoryDownloading,setInventoryDownloading] = useState('');
+  const [inventoryExportVariant,setInventoryExportVariant] = useState<PageLayoutVariant>('Desktop');
   const [archivingPageApiName, setArchivingPageApiName] = useState('');
   const [pendingArchivePageApiName, setPendingArchivePageApiName] = useState('');
   const [switchingLayout, setSwitchingLayout] = useState(false);
@@ -2057,6 +2063,21 @@ function PageBuilder({
   const pageListPageCount=Math.max(1,Math.ceil(visiblePages.length/50));
   const safePageListPage=Math.min(pageListPage,pageListPageCount);
   const paginatedPages=visiblePages.slice((safePageListPage-1)*50,safePageListPage*50);
+  const downloadPageInventory = async (item:LightningPageMetadata) => {
+    if(inventoryDownloading)return;
+    const variant=inventoryExportVariant;
+    setInventoryDownloading(item.apiName);
+    try{
+      const {csv}=await request<{csv:string}>(
+        '/metadata/pages/'+encodeURIComponent(item.apiName)+'/inventory?variant='+variant);
+      const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+      const link=document.createElement('a');
+      link.href=url;link.download=item.apiName+'_'+variant+'_component_inventory.csv';
+      document.body.append(link);link.click();link.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),1000);
+    }catch(error){onNotify(error instanceof Error?error.message:'Unable to download page inventory');}
+    finally{setInventoryDownloading('');}
+  };
   const openCreatePage = () => { setNewPageAppId(pageListAppTab!=='all'&&pageListAppTab!=='other'?pageListAppTab:''); setNewPageTargetObject(pageListObject || page.targetObject || objects[0]?.apiName || ''); setNewPageLayoutMode('free-canvas'); setNewPageType(recordPageContext ? 'Record Page' : 'Home Page'); setNewPageDeviceChoice('Desktop'); setNewPageDevices(['Desktop']); setNewPageCanvasWidth(1440); setNewPageCanvasHeight(900); setCreatePageOpen(true); };
   const createPage = async () => {
     if (saving) return;
@@ -3034,6 +3055,11 @@ function PageBuilder({
         <header className="page-manager-header"><div><h1>{recordPageContext ? 'Record Page Editor' : 'Page Builder'}</h1><p>{recordPageContext ? 'Object-owned record pages: view, edit, activate and publish device layouts.' : 'Manage Home and App Pages. Record Pages are managed inside Object Manager.'}</p></div>
           <div className="page-manager-header-actions">
             <button className="btn btn-brand" type="button" onClick={openCreatePage}><Plus size={16}/> New Page</button>
+            <button className="btn" type="button" disabled={saving} onClick={()=>setInventoryUploadOpen(true)}><Upload size={16}/> Upload CSV</button>
+            <select className="form-control" aria-label="Inventory CSV device layout" title="Layout used by page inventory downloads"
+              style={{width:148}} value={inventoryExportVariant} onChange={event=>setInventoryExportVariant(event.target.value as PageLayoutVariant)}>
+              {(['Desktop','Tablet','Mobile','Custom'] as const).map(device=><option key={device} value={device}>CSV: {device}</option>)}
+            </select>
           </div></header>
         {!recordPageContext && <PageManagerTabs
           type={pageListTypeTab} app={pageListAppTab} apps={pageAppTabs}
@@ -3055,6 +3081,9 @@ function PageBuilder({
               <button className="page-manager-icon-action" type="button" disabled={saving}
                 aria-label={'Edit page properties for '+item.label} title="Edit page properties"
                 onClick={()=>setPageDetailsApi(item.apiName)}><Pencil size={16}/></button>
+              <button className="page-manager-icon-action" type="button" disabled={Boolean(inventoryDownloading)}
+                aria-label={'Download component inventory for '+item.label} title="Download component inventory CSV"
+                onClick={()=>void downloadPageInventory(item)}><Download size={16}/></button>
               <button className="page-manager-icon-action" type="button"
                 aria-label={'Design '+item.label} title="Open page designer"
                 onClick={()=>selectSavedPage(item.apiName)}><PanelsTopLeft size={16}/></button>
@@ -3085,6 +3114,18 @@ function PageBuilder({
           <button className="btn" disabled={safePageListPage>=pageListPageCount} onClick={()=>setPageListPage(safePageListPage+1)}>Next</button>
         </nav>
       </section>}
+      {inventoryUploadOpen&&<PageInventoryImportDialog
+        pages={pages.filter(item=>recordPageContext
+          ? item.pageType==='Record Page'&&item.targetObject===recordPageContext
+          : item.pageType!=='Record Page')}
+        initialPageApi={page.apiName}
+        request={request}
+        onClose={()=>setInventoryUploadOpen(false)}
+        onApplied={(updated,changes)=>{
+          if(updated.apiName===page.apiName&&(updated.layoutVariant??'Desktop')===(page.layoutVariant??'Desktop'))onChange(updated);
+          onNotify(changes+' component metadata properties updated in the saved draft of '+updated.apiName+'. Publish the layout when ready.');
+          setInventoryUploadOpen(false);
+        }}/>}
       {pageDetailsApi&&(()=>{
         const detailsPage=pages.find(item=>item.apiName===pageDetailsApi)??(
           page.apiName===pageDetailsApi?page:null);
