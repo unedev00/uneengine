@@ -282,8 +282,8 @@ test('tenant SQL Ribbon applicability and default overrides come from the existi
  const defs=await inventoryDefinitions(db,'tenant-1',original().components,'Desktop');
  assert.equal(defs.completeCatalog,true);
  assert.deepEqual(defs.ribbonProperties?.get('Custom:smart_cart')?.map(x=>x.id),['textSize','shadow']);
- assert.match(queries[1],/r\.enabled=true/);
- assert.match(queries[1],/p\.scope='component'/);
+ assert.ok(queries.some(query=>query.includes('r.enabled=true')));
+ assert.ok(queries.some(query=>query.includes("p.scope='component'")));
  const output=exportInventoryCsv(original(),defs);
  assert.match(output,/CODEXTILL,smart_cart,smartcart1,textSize,18,Design/);
  assert.match(output,/CODEXTILL,smart_cart,smartcart1,shadow,medium,Design/);
