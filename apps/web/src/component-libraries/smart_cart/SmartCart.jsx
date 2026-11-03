@@ -24,7 +24,7 @@ export default function SmartCart({p,records,Picture,expression,fieldAllowed,fir
  // Group the full authorised collection before limiting the visible rows.
  // Preserve the source records: row actions still use their real record IDs.
  const rows=demo?Array.from({length:3},(_,i)=>({id:"preview-"+i,Quantity:1,__preview:true}))
-   :groupCartRows(records).slice(0,200);
+   :groupCartRows(records,{quantityField:directField(p.column3Source)||'Quantity'}).slice(0,200);
  // Select the most recently appended item by default. Preserve a manually
  // selected row until it is removed, and automatically follow newly added rows.
  const rowKeys=rows.map((row,i)=>String(row?.Id??row?.id??i));
