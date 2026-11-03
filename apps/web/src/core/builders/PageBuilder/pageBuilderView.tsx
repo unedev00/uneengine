@@ -880,7 +880,7 @@ function PageBuilder({
       &&component.status!=='Draft'&&!RETIRED_UNE_PAGE_BUILDER_COMPONENTS.has(component.apiName)).map(component=>({
       id:'Custom:'+component.apiName,
       type:'Custom:'+component.apiName,
-      label:component.apiName==='smart_card_grid'?'Card Grid':component.apiName==='smart_lookup'?'Lookup Record':
+      label:component.apiName==='smart_textbox'?'Smart Textbox':component.apiName==='smart_card_grid'?'Card Grid':component.apiName==='smart_lookup'?'Lookup Record':
         component.apiName==='smart_text'?'Input Box':component.apiName==='smart_navigation'?'Navigation Bar':
         component.apiName.startsWith('smart_')?component.apiName.slice(6).split('_').map(word=>word[0].toUpperCase()+word.slice(1)).join(' '):component.label,
       description:component.description,
