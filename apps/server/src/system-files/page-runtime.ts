@@ -300,6 +300,7 @@ export class PageRuntime {
       JOIN md_lightning_page_activation a ON a.tenant_id=p.tenant_id AND a.page_id=p.id
       WHERE p.tenant_id=$1 AND p.enabled=true AND d.status='Active'
         AND d.page_type='Record Page' AND d.target_object=$2 AND d.record_mode=$7
+        AND $6=ANY(d.devices)
         AND (NOT $8::boolean OR a.custom)
         AND (($6='Desktop' AND a.desktop) OR ($6='Phone' AND a.phone)
           OR ($6='Tablet' AND (a.tablet OR a.desktop))
@@ -333,6 +334,7 @@ export class PageRuntime {
       JOIN md_app_entitlements e ON e.tenant_id=i.tenant_id AND e.app_id=i.app_id AND e.active=true
       WHERE p.tenant_id=$1 AND p.api_name=$3 AND p.enabled=true
         AND d.page_type='In-Screen Page' AND d.status='Active'
+        AND $4=ANY(d.devices)
         AND COALESCE(m.api_name,a.api_name)=$2
         AND (e.expires_at IS NULL OR e.expires_at>now())
         AND (EXISTS(
@@ -372,6 +374,7 @@ export class PageRuntime {
             JOIN md_lightning_page_activation x ON x.tenant_id=d.tenant_id AND x.page_id=d.page_id
             WHERE d.tenant_id=p.tenant_id AND d.page_id=p.id
               AND d.status='Active' AND d.page_type='App Page' AND x.app_api=$2
+              AND $4=ANY(d.devices)
               AND (NOT $5::boolean OR x.custom)
               AND (($4='Desktop' AND x.desktop) OR ($4='Phone' AND x.phone)
                 OR ($4='Tablet' AND (x.tablet OR x.desktop))
