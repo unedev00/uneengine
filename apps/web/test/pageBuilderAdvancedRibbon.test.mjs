@@ -80,7 +80,7 @@ test('Existing page handlers own assignments, visibility, grid count, and safe r
    assert.ok(!layout.includes(removed),removed+' must not reserve a layout slot');
  }
  assert.match(advanced,/Accept nested components/);
- assert.match(page,/reparentComponent\(page\.components,draggedId,parentId\)/);
+ assert.match(page,/reparentComponent\(page\.components,\s*draggedId,\s*parentId\)/);
  assert.match(page,/selected\?\.properties\.objectApiName\|\|page\.targetObject/);
  assert.doesNotMatch(advanced,/fetch\(|request\(|localStorage|INSERT INTO/);
 });
