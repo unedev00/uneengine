@@ -87,6 +87,14 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  const cart=page.locator('[data-component-id="browser-design2-cart"]').first();
  await cart.waitFor({state:'visible'});
  await cart.click({position:{x:18,y:18}});
+ // Ctrl+A is a canvas selection command, never browser text selection or a
+ // metadata edit. Verify the real editor selects both existing page blocks.
+ await page.keyboard.press('Control+a');
+ assert.equal(await page.locator('.record-component.multi-selected').count(),2,
+  'Ctrl+A should select both components on the active page');
+ await cart.click({position:{x:18,y:18}});
+ assert.equal(await page.locator('.record-component.multi-selected').count(),1,
+  'A normal click should restore single-component selection after Ctrl+A');
  await page.getByRole('tab',{name:'Design 2',exact:true}).click();
  const design2=page.locator('.smart-design2-ribbon');
  await design2.waitFor({state:'visible'});

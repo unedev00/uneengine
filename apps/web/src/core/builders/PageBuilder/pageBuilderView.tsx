@@ -1876,7 +1876,20 @@ function PageBuilder({
         (['INPUT','TEXTAREA','SELECT'].includes(target.tagName) || target.isContentEditable))) return;
       const command = event.metaKey || event.ctrlKey;
       const key = event.key.toLowerCase();
-      if (command && key === 'z') {
+      if (command && key === 'a' && !event.altKey && !event.shiftKey &&
+        !previewMode && page.components.length > 0 &&
+        !(target instanceof HTMLElement && target.closest('[role="dialog"],[aria-modal="true"]'))) {
+        // Select every component in the active layout (including nested, hidden,
+        // and locked components) through the existing multi-selection state.
+        // No page metadata is changed, and text editors keep native Ctrl/Cmd+A.
+        event.preventDefault();
+        const allIds = page.components.map(component => component.id);
+        setSelectionIds(allIds);
+        setSelectedId(current => allIds.includes(current) ? current : allIds[0]);
+        setSelectedRegion(null);
+        setPageSettingsOpen(false);
+        setComponentMenuId('');
+      } else if (command && key === 'z') {
         event.preventDefault();
         if (event.shiftKey) redo(); else undo();
       } else if (command && key === 'y') {

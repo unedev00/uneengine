@@ -201,3 +201,22 @@ test('Quick Access commands are real buttons, remain on the top rail, and Layout
  assert.match(css,/\.office-ribbon-quick-access/);
  assert.match(css,/\.office-ribbon-page-layout-groups/);
 });
+
+test('Ctrl/Cmd+A selects every component in the active Page Builder layout without editing metadata', () => {
+  const view=readFileSync(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+  const handler=view.slice(view.indexOf('const onKey = (event: KeyboardEvent) => {'),
+    view.indexOf("window.addEventListener('keydown', onKey, true);"));
+  assert.ok(handler.length>0);
+  assert.match(handler,/if\(!editorMode\)return/);
+  assert.match(handler,/INPUT','TEXTAREA','SELECT/);
+  assert.match(handler,/target\.isContentEditable/);
+  assert.match(handler,/event\.metaKey \|\| event\.ctrlKey/);
+  assert.match(handler,/command && key === 'a'[\s\S]*?!previewMode && page\.components\.length > 0/);
+  assert.match(handler,/target\.closest\('\[role="dialog"\],\[aria-modal="true"\]'\)/);
+  assert.match(handler,/const allIds = page\.components\.map\(component => component\.id\)/);
+  assert.match(handler,/setSelectionIds\(allIds\)/);
+  assert.match(handler,/setSelectedId\(current => allIds\.includes\(current\) \? current : allIds\[0\]\)/);
+  assert.match(handler,/setSelectedRegion\(null\)/);
+  assert.match(handler,/setPageSettingsOpen\(false\)/);
+  assert.match(view,/selectionIds\.includes\(component\.id\) && !previewMode && !libraryPreview \? 'multi-selected'/);
+});
