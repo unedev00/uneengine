@@ -131,6 +131,9 @@ export function applyDeviceComponentOverrides(
    const nextExtra=overlay(extras(parent),extras(change)) as Record<string,unknown>;
    clearPaths(merged.properties,marker.clearedProperties);
    clearPaths(nextExtra,marker.clearedExtra);
+   // Clearing an inherited extra (such as a canvas position) must really
+   // remove it; assigning onto the parent would retain the old value.
+   for(const key of Object.keys(extras(parent)))delete merged[key];
    Object.assign(merged,nextExtra);
    for(const field of marker.fields??[]){
     if(!['label','region','visible'].includes(field))throw Error('Invalid device layout override field');
