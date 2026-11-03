@@ -64,21 +64,20 @@ test('rename updates page key, nested parents and declared interaction target re
  assert.throws(()=>renamePageComponentId(renamed,'missing','other'),/no longer exists/);
 });
 
-test('Advanced Ribbon supports editing and server rejects duplicate IDs on draft/publish',()=>{
+test('Technical IDs remain immutable in ribbon while component name is validated for CSV',()=>{
  const advanced=read('../src/core/builders/PageBuilder/PageBuilderAdvancedSections.tsx');
  const page=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
  const layout=read('../src/core/builders/PageBuilder/PageBuilderRibbonLayout.css');
  const draft=read('../../server/src/system-files/page-layout-version-runtime.ts');
  const legacy=read('../../server/src/system-files/page-runtime.ts');
- assert.match(advanced,/aria-label="Component ID"/);
- assert.match(advanced,/onBlur=\{commitComponentId\}/);
- assert.match(advanced,/aria-invalid=\{!!idError\}/);
- assert.match(advanced,/onKeyDown=\{event=>/);
- assert.doesNotMatch(advanced,/<input value=\{technical\.id\} readOnly disabled/);
- assert.match(page,/renamePageComponentId\(page\.components,oldId,newId\)/);
+ assert.match(advanced,/aria-label="Component Name"/);
+ assert.match(advanced,/validateInstanceName\(nameDraft\)/);
+ assert.match(advanced,/onBlur=\{commitName\}/);
+ assert.doesNotMatch(advanced,/aria-label="Component ID"/);
+ assert.doesNotMatch(advanced,/technical\.onRename/);
  assert.match(page,/duplicatePageComponentId\(candidate\.components\)/);
- assert.match(page,/setSelectedId\(current=>current===oldId/);
- assert.match(layout,/advanced-component-id-error/);
+ assert.match(page,/canonicalComponentName\(otherName\)===canonicalComponentName\(name\)/);
+ assert.match(layout,/advanced-component-name-error/);
  assert.match(draft,/ids\.has\(String\(component\.id\)\.toLowerCase\(\)\)/);
  assert.match(legacy,/keys\.has\(String\(c\.id\)\.toLowerCase\(\)\)/);
 });
