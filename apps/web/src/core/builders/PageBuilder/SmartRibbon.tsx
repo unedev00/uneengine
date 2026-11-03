@@ -153,8 +153,8 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    p.id!=='autoRecordScope'&&p.id!=='collectionFormula'&&
    !(tab==='Data'&&p.id==='contextApiName'));
  const groups=[...new Set(displayProperties.map(p=>p.group))];
- const groupOrder=tab==='Data'?['Source','Values','Cart','Cart columns','Cart totals']
-  :tab==='Design'?['Body','Shape','Typography','Tabs','Header','Badge','Header Supporting',
+ const groupOrder=tab==='Data'?['Source','Values','Card Grid','Cart','Cart columns','Cart totals']
+  :tab==='Design'?['Body','Shape','Typography','Tabs','Header','Badge','Header Supporting','Button',
     'Table','Row','Summary','Summary 2']
   :tab==='Layout'?['Size & Position','Tabs','Cards','Navigation','Calendar','Image','Icon']
   :[];
@@ -271,7 +271,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
        </span>
      </div>;
    }
-   const isTextSize=compactDesign&&/^(textSize|badgeTextSize|summary2?TextSize|placeholderSize)$/.test(property.id);
+   const isTextSize=compactDesign&&/^(textSize|badgeTextSize|cardButtonTextSize|summary2?TextSize|placeholderSize)$/.test(property.id);
    const isCorner=compactDesign&&/radius/i.test(property.id);
    const isWidth=compactDesign&&/width/i.test(property.id);
    const isHeight=compactDesign&&/height/i.test(property.id);
