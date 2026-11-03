@@ -51,9 +51,9 @@ export function groupCartRows(records,{quantityField='Quantity'}={}){
   for(const source of Array.isArray(records)?records:[]){
     if(!source||typeof source!=='object'||Array.isArray(source))continue;
     const count=qtyOf(source,quantityField);
-    const key=identityOf(source,quantityField,count);
     // A zero/negative line was removed from the basket, not a visible item.
     if(count<=0)continue;
+    const key=identityOf(source,quantityField,count);
     if(!index.has(key)){
       const row={...source,Quantity:count,__cartSourceRows:[source]};
       if(quantityField&&Object.hasOwn(source,quantityField))row[quantityField]=count;
