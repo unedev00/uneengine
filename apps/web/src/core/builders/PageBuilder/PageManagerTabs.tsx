@@ -50,9 +50,15 @@ export default function PageManagerTabs({ type, app, apps, onTypeChange, onAppCh
     { value: 'other', label: 'Other' },
   ];
   return <div className="page-manager-tab-groups">
-    <TabBar label="Page types" className="page-manager-main-tabs" tabs={pageTypes}
-      selected={type} onSelect={onTypeChange} />
-    {type === 'App Page' && <TabBar label="Pages by application" className="page-manager-app-tabs"
-      tabs={appTabs} selected={app} onSelect={onAppChange} />}
+    <div className="page-manager-tab-level">
+      <span className="page-manager-filter-label">Page type</span>
+      <TabBar label="Page types" className="page-manager-main-tabs" tabs={pageTypes}
+        selected={type} onSelect={onTypeChange} />
+    </div>
+    {type === 'App Page' && <div className="page-manager-tab-level">
+      <span className="page-manager-filter-label">Application</span>
+      <TabBar label="Pages by application" className="page-manager-app-tabs"
+        tabs={appTabs} selected={app} onSelect={onAppChange} />
+    </div>}
   </div>;
 }

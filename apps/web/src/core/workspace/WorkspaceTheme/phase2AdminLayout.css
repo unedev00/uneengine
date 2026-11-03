@@ -279,3 +279,15 @@
     min-width: max-content;
   }
 }
+
+
+/* Audit events: right gutter, actor readability, non-truncated identifiers. */
+.lightning .md-admin-table-wrap:has(.md-audit-table){
+  max-width:100%;overflow-x:auto;padding-right:24px;box-sizing:border-box
+}
+@media(min-width:701px){
+ .lightning .md-audit-table{min-width:920px;width:100%;table-layout:auto}
+ .lightning .md-audit-table :is(th,td):nth-child(2){min-width:140px;overflow-wrap:anywhere}
+ .lightning .md-audit-table :is(th,td):nth-child(5){min-width:185px}
+ .lightning .md-audit-table td[data-long-id]{max-width:none;white-space:normal;overflow-wrap:anywhere;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
+}

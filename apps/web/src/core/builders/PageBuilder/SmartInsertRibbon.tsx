@@ -36,6 +36,14 @@ export default function SmartInsertRibbon({items,onInsert,renderIcon}:{
  const [arrows,setArrows]=useState({left:false,right:false});
  const smartCount=items.filter(isSmartInsertItem).length;
  const visible=useMemo(()=>filterSmartInsertItems(items,scope,term),[items,scope,term]);
+ const duplicateLabels=useMemo(()=>{
+   const count=new Map<string,number>();
+   items.forEach(item=>count.set(item.label.toLocaleLowerCase(),(count.get(item.label.toLocaleLowerCase())??0)+1));
+   return new Set([...count].filter(([,value])=>value>1).map(([key])=>key));
+ },[items]);
+ const visibleLabel=(item:SmartInsertItem)=>duplicateLabels.has(item.label.toLocaleLowerCase())
+   ?item.label+' · '+(isSmartInsertItem(item)?'Smart':item.type.startsWith('Custom:')?'App':'Standard')
+   :item.label;
  const measure=()=>{
   const node=scroll.current;
   if(!node)return;
@@ -64,10 +72,10 @@ export default function SmartInsertRibbon({items,onInsert,renderIcon}:{
       onClick={()=>move(-500)}><ChevronLeft size={16}/></button>}
     <div className="smart-insert-tiles" ref={scroll} onScroll={measure} key={scope+'-'+term}>
      {visible.map(item=><button className="smart-insert-tile" type="button"
-       key={item.type} title={'Insert '+item.label+(item.description?': '+item.description:'')}
+       key={item.type} title={'Insert '+visibleLabel(item)+(item.description?': '+item.description:'')}
        onClick={()=>onInsert(item.type)}>
        <span className="smart-insert-tile-icon">{renderIcon(item)}</span>
-       <span className="smart-insert-tile-label">{item.label}</span>
+       <span className="smart-insert-tile-label">{visibleLabel(item)}</span>
 
      </button>)}
      {visible.length===0&&<div role="status" className="smart-insert-empty">

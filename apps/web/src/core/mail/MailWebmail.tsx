@@ -55,6 +55,15 @@ function dateLabel(value:string){
   ?parsed.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'})
   :parsed.toLocaleDateString(undefined,{month:'short',day:'numeric',year:parsed.getFullYear()===today.getFullYear()?undefined:'numeric'});
 }
+function messageDateGroup(value:string):string {
+ const parsed=new Date(value);
+ if(Number.isNaN(parsed.getTime()))return 'Unknown date';
+ const today=new Date();const midnight=new Date(today.getFullYear(),today.getMonth(),today.getDate());
+ const yesterday=new Date(midnight);yesterday.setDate(yesterday.getDate()-1);
+ if(parsed>=midnight)return 'Today';
+ if(parsed>=yesterday)return 'Yesterday';
+ return parsed.toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'short',year:'numeric'});
+}
 function iconForFolder(name:string){
  const kind=folderKind(name);
  return kind==='inbox'?<Inbox size={18}/>:kind==='sent'?<Send size={18}/>:kind==='drafts'?<FilePenLine size={18}/>:<Folder size={18}/>;
@@ -335,16 +344,19 @@ export default function MailWebmail(){
     </article>:
     filtered.length===0&&!busy&&!error?<div className="md-mail-empty">
      <div className="md-mail-empty-icon"><Inbox size={34}/></div>
-     <h2>{search?'No matching messages':'Nothing in '+currentName}</h2>
-     <p>{search?'Try another search. Only the 50 most recent messages in this folder are loaded.':'New messages will appear here when they arrive.'}</p>
+     <h2>{search?'No matching messages':currentName.toLowerCase()==='trash'?'Trash is empty':'Nothing in '+currentName}</h2>
+     <p>{search?'Try another search. Only the 50 most recent messages in this folder are loaded.':currentName.toLowerCase()==='trash'?'Deleted messages will appear here.':'New messages will appear here when they arrive.'}</p>
     </div>:
     <div className="md-mail-message-list" role="list">
-     {filtered.map(m=><button key={m.id} type="button" role="listitem" className={'md-mail-message-row'+(m.seen?'':' is-unread')} onClick={()=>void openMessage(m)} disabled={busy} aria-label={'Open '+(m.subject||'no subject')+' from '+m.from}>
+     {filtered.map((m,index)=><React.Fragment key={m.id}>
+      {(index===0||messageDateGroup(filtered[index-1].date)!==messageDateGroup(m.date))&&
+       <div className="md-mail-day-separator" role="separator" aria-label={messageDateGroup(m.date)}>{messageDateGroup(m.date)}</div>}
+      <button type="button" role="listitem" className={'md-mail-message-row'+(m.seen?'':' is-unread')} onClick={()=>void openMessage(m)} disabled={busy} aria-label={'Open '+(m.subject||'no subject')+' from '+m.from}>
       <span className="md-mail-row-avatar">{senderName(m.from).slice(0,1).toUpperCase()}</span>
       <span className="md-mail-row-sender">{folderKind(currentName)==='sent'?'To: '+senderName(m.to):senderName(m.from)}</span>
       <span className="md-mail-row-content"><strong>{m.subject||'(no subject)'}</strong></span>
       <time className="md-mail-row-date">{dateLabel(m.date)}</time>
-     </button>)}
+     </button></React.Fragment>)}
     </div>}
    </section>
   </div>

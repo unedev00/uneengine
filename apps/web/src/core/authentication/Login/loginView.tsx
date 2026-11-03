@@ -35,6 +35,7 @@ export function createLoginView(logoUrl: string) {
     const [password, setPassword] = useState('');
     const [passwordVisible, setPasswordVisible] = useState(false);
     const [message, setMessage] = useState(error ?? '');
+    const [fieldErrors, setFieldErrors] = useState<{email?:string;password?:string;code?:string}>({});
     const [submitting, setSubmitting] = useState(false);
     const [mailAdminLogin] = useState(() => {
       try { return window.sessionStorage.getItem('md_auth_return_to') === '/mail-admin'; }
@@ -104,11 +105,23 @@ export function createLoginView(logoUrl: string) {
     const loginStyle=branding?{'--standalone-accent':branding.accent} as CSSProperties:undefined;
     if(recovering)return <main className={branding?'auth-screen auth-screen--standalone':'auth-screen'} style={loginStyle}><div className="auth-card"><LoginRecovery onClose={()=>setRecovering(false)}/></div></main>;
     return <main className={branding?'auth-screen auth-screen--standalone':'auth-screen'} style={loginStyle}>
-      <form className="auth-card" onSubmit={(event) => void signIn(event)}>
+      <form className="auth-card" onSubmit={(event) => void signIn(event)}
+        onInvalid={(event) => {
+          event.preventDefault();
+          const input = event.target as HTMLInputElement;
+          if (input.id === 'login-email') {
+            setFieldErrors(current => ({...current, email: input.validity.typeMismatch ? 'Enter a valid email address.' : 'Email is required.'}));
+          } else if (input.id === 'login-password') {
+            setFieldErrors(current => ({...current, password: 'Password is required.'}));
+          } else if (input.id === 'login-mfa') {
+            setFieldErrors(current => ({...current, code: 'Enter your authenticator or backup code.'}));
+          }
+          setMessage('Correct the highlighted fields to continue.');
+        }}>
         {branding && <div className="auth-product-identity"><div className="auth-product-monogram" aria-hidden="true">{branding.label.slice(0,1)}</div><div><div className="eyebrow">{branding.eyebrow}</div><h1>{branding.label}</h1></div></div>}
         {!branding && <UneBrandLogo className="auth-brand-logo" src={logoUrl} />}
         {!branding && <div className="eyebrow">UNEENGINE WORKSPACE</div>}
-        {branding ? <><h2 className="auth-product-heading">Welcome back</h2><p>{branding.signInDescription}</p></> : <><h1>Welcome back</h1><p>{mailAdminLogin?'Sign in to Mail Administration.':'Sign in to manage your organization&apos;s metadata and workflows.'}</p></>}
+        {branding ? <><h2 className="auth-product-heading">Welcome back</h2><p>{branding.signInDescription}</p></> : <><h1>Welcome back</h1><p>{mailAdminLogin?'Sign in to Mail Administration.':"Sign in to manage your organization’s metadata and workflows."}</p></>}
         {branding && <div className="auth-product-subline">{branding.tagline}</div>}
         {message && <div className="auth-error" role="alert">
           {message}{onRetry && <button type="button" className="text-action" onClick={onRetry}>Retry connection</button>}
@@ -117,17 +130,23 @@ export function createLoginView(logoUrl: string) {
           <h2>{challenge.enrollment_required?'Set up your authenticator':'Verify your login'}</h2>
           {challenge.setup_secret&&<p>Add this key to your authenticator app: <code>{challenge.setup_secret}</code></p>}
           <label className="form-label" htmlFor="login-mfa">Authenticator or backup code</label>
-          <input className="form-control" id="login-mfa" autoComplete="one-time-code" value={code} onChange={e=>setCode(e.target.value)} required maxLength={23}/>
+          <input className="form-control" id="login-mfa" autoComplete="one-time-code" value={code} onChange={e=>{setCode(e.target.value);setFieldErrors(current=>({...current,code:undefined}));}} required maxLength={23}
+            aria-invalid={Boolean(fieldErrors.code)} aria-describedby={fieldErrors.code?'login-mfa-error':undefined}/>
+          {fieldErrors.code&&<small id="login-mfa-error" className="auth-field-error" role="alert">{fieldErrors.code}</small>}
           {!challenge.enrollment_required&&<button type="button" className="btn" disabled={submitting} onClick={()=>void passkey()}>Use a passkey</button>}
           <button type="button" className="text-action" onClick={()=>{setChallenge(null);setCode('');setMessage('');}}>Start again</button>
         </>:<>
         <label className="form-label" htmlFor="login-email">Email</label>
         <input className="form-control" id="login-email" name="email" type="email" value={email}
-          onChange={(event) => setEmail(event.target.value)} autoComplete="username" required />
+          onChange={(event) => {setEmail(event.target.value);setFieldErrors(current=>({...current,email:undefined}));}} autoComplete="username" required
+          aria-invalid={Boolean(fieldErrors.email)} aria-describedby={fieldErrors.email?'login-email-error':undefined}/>
+        {fieldErrors.email&&<small id="login-email-error" className="auth-field-error" role="alert">{fieldErrors.email}</small>}
         <label className="form-label" htmlFor="login-password">Password</label>
         <input className="form-control" id="login-password" name="password"
           type={passwordVisible ? 'text' : 'password'} value={password}
-          onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" required />
+          onChange={(event) => {setPassword(event.target.value);setFieldErrors(current=>({...current,password:undefined}));}} autoComplete="current-password" required
+          aria-invalid={Boolean(fieldErrors.password)} aria-describedby={fieldErrors.password?'login-password-error':undefined}/>
+        {fieldErrors.password&&<small id="login-password-error" className="auth-field-error" role="alert">{fieldErrors.password}</small>}
         <div className="auth-inline-actions">
           <button className="text-action" type="button" aria-controls="login-password" onClick={(event) => {
             const field = event.currentTarget.form?.elements.namedItem('password');

@@ -316,7 +316,7 @@ export default function NamedCredentials({
       </table>
     </div>
     {!embedded && <div className="section-toolbar md-admin-pagination">
-      <span>{visibleCredentials.length} credentials · Page {currentPage + 1} of {totalPages}</span>
+      <span>{visibleCredentials.length===0?'No credentials':totalPages===1?`${visibleCredentials.length} credential${visibleCredentials.length===1?'':'s'} · showing all`:`Showing ${currentPage*50+1}–${Math.min((currentPage+1)*50,visibleCredentials.length)} of ${visibleCredentials.length} credentials · Page ${currentPage+1} of ${totalPages}`}</span>
       <div className="toolbar-actions">
         <button className="btn btn-small" disabled={currentPage === 0} onClick={() => setPage(0)}>First</button>
         <button className="btn btn-small" disabled={currentPage === 0} onClick={() => setPage(currentPage - 1)}>Previous</button>

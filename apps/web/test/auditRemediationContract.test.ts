@@ -69,3 +69,42 @@ test('Assist small captions and Report/Object Manager data grids have accessibil
    assert.match(source,/scope="col"/);
  }
 });
+
+test('audit login issues: text, persistent field errors and readable copy',()=>{
+ const login=read('../src/core/authentication/Login/loginView.tsx');
+ const css=read('../src/core/authentication/Login/standaloneLogin.css');
+ assert.doesNotMatch(login,/organization&apos;s/);
+ assert.match(login,/organization’s metadata/);
+ assert.match(login,/onInvalid=\{/);
+ for(const id of ['login-email-error','login-password-error','login-mfa-error'])assert.ok(login.includes(id));
+ assert.match(login,/aria-invalid=\{Boolean\(fieldErrors\.email\)\}/);
+ assert.match(css,/\.auth-field-error/);
+ assert.match(css,/font-size:\s*14px/);
+});
+test('landscape-phone and tablet object navigation use accessible layouts',()=>{
+ const factor=read('../src/core/workspace/Responsive/useFormFactor.ts');
+ const records=read('../src/core/records/RecordWorkspace/recordsListToolbar.css');
+ const objects=read('../src/core/builders/SharedBuilderFrame/adaptiveBuilder.css');
+ assert.match(factor,/\(max-width: 1023px\) and \(max-height: 500px\)/);
+ assert.match(records,/\(max-width: 1023px\) and \(max-height: 500px\)/);
+ assert.match(records,/\.records-phone-rows\s*\{\s*display:\s*grid/);
+ assert.match(objects,/@media\(max-width:1199px\)\{\s*\.lightning \.md-object-editor-split\{/);
+ assert.match(objects,/\.md-object-settings-picker\{display:grid/);
+});
+test('shared administrative copy, icons, and input targets address the audit',()=>{
+ const mail=read('../src/core/mail/MailWebmail.tsx');
+ const credentials=read('../src/core/integrations/NamedCredentials/NamedCredentials.tsx');
+ const bell=read('../src/core/automation/Notifications/NotificationBell.tsx');
+ const records=read('../src/core/records/RecordWorkspace/recordsListToolbar.css');
+ const settings=read('../src/core/workspace/WorkspaceTheme/setupUsability.css');
+ const dashboard=read('../src/core/workspace/WorkspaceTheme/sections/02-workspace.css');
+ const till=read('../../acetill/src/acetill-terminal.css');
+ assert.match(mail,/Trash is empty/);
+ assert.match(credentials,/credential\$\{visibleCredentials\.length===1\?'':'s'\}/);
+ assert.match(bell,/<Bell size=\{20\}/);
+ assert.doesNotMatch(bell,/🔔/);
+ assert.match(records,/records-data-table input\[type="checkbox"\]/);
+ assert.match(settings,/\.company-workspace-tabs\s*\{[\s\S]*?top:\s*50px/);
+ assert.match(dashboard,/dashboard-name-input\s*\{[^}]*font-size:\s*14px/);
+ assert.match(till,/\.acetill-search input\{[\s\S]*?min-height:32px/);
+});

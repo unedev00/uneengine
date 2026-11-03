@@ -240,7 +240,8 @@
   max-height:min(450px,40dvh);border-radius:var(--md-radius-xl) var(--md-radius-xl) 0 0;
  }
 }
-@media(max-width:1023px){
+/* Audit DEF-069: use the existing accessible settings picker on iPad landscape too. */
+@media(max-width:1199px){
  .lightning .md-object-editor-split{display:block;padding:0 8px 18px}
  .lightning .md-object-editor-split .object-subnav{display:none}
  .lightning .md-object-settings-picker{display:grid;gap:6px;font-size:13px;font-weight:600;padding:8px 0 12px}
@@ -308,4 +309,16 @@
 }
 @media(prefers-reduced-motion:reduce){
  .lightning :is(.builder-page,.flow-builder,.dashboard-builder-layout,.report-builder-layout) :is(button,.component-panel,.properties-panel,.flow-settings,.flow-toolbox){scroll-behavior:auto;transition-duration:0s}
+}
+
+
+/* Object Manager lists / record-page introduction stay inside the editor grid. */
+.lightning .md-object-editor-main,.lightning .md-object-editor-main>*{min-width:0;max-width:100%}
+.lightning .md-object-editor-main :is(.slds-table,.data-table){width:100%}
+.lightning .md-object-editor-main :is(.table-scroll,.object-setting-surface,.section-toolbar){max-width:100%;min-width:0}
+.lightning .md-object-editor-main :is(.records-empty,.empty-state,.object-page-empty,.object-setting-surface) :is(h2,p){
+  max-width:100%;min-width:0;overflow-wrap:anywhere
+}
+@media(min-width:1200px){
+ .lightning .md-object-editor-split .object-subnav button{min-height:40px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 }

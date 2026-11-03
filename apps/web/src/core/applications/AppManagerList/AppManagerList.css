@@ -39,3 +39,19 @@
  .app-manager-list-search { width:100%; }
  .app-manager-list-actions button { min-height:44px; }
 }
+
+
+/* Compact application list: long descriptions never make 61px+ rows. */
+.app-manager-list-table{table-layout:fixed}
+.app-manager-list-table th,.app-manager-list-table td{padding:9px 12px}
+.app-manager-list-table tbody tr{height:48px}
+.app-manager-list-table :is(th,td):nth-child(1){width:18%}
+.app-manager-list-table :is(th,td):nth-child(2){width:18%}
+.app-manager-list-table :is(th,td):nth-child(3){width:26%}
+.app-manager-list-table :is(th,td):nth-child(4){width:11%}
+.app-manager-list-table :is(th,td):nth-child(5){width:11%}
+.app-manager-list-table :is(th,td):nth-child(6){width:16%}
+.app-manager-list-table td{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.app-manager-list-table .app-manager-list-name{min-width:0;align-items:center}
+.app-manager-list-table .app-manager-list-name strong{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:800px){.app-manager-list-table{min-width:900px}}

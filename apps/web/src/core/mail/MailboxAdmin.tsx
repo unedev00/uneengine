@@ -210,11 +210,16 @@ export default function MailboxAdmin({onLogout}:Props){
        {apiName:'description',label:'Description',phoneRole:'subtitle',render:m=>m.description||'—'},
        {apiName:'used',label:'Storage used',phoneRole:'badge',render:m=>fmtBytes(m.usedDiskQuota)},
        {apiName:'created',label:'Created',phoneRole:'trailing',render:m=>m.createdAt?new Date(m.createdAt).toLocaleDateString():'—'},
-       {apiName:'actions',label:'Actions',render:m=><div style={{display:'flex',flexWrap:'wrap',gap:8}}>
-         <button style={primary} disabled={busy} onClick={()=>void openMailbox(m)}>Open Mailbox</button>
-         <button style={button} disabled={busy} onClick={()=>{setEditId(m.id);setEditDescription(m.description);setResetId('');}}>Edit</button>
-         <button style={button} disabled={busy} onClick={()=>{setResetId(m.id);setResetPassword('');setEditId('');}}>Reset password</button>
-         <button style={{...button,color:'#a32222'}} disabled={busy} onClick={()=>void remove(m)}>Delete</button>
+       {apiName:'actions',label:'Actions',render:m=><div className="md-mail-admin-row-actions">
+        <button type="button" style={{...primary,minHeight:32}} disabled={busy} onClick={()=>void openMailbox(m)}>Open</button>
+        <details className="md-mail-admin-actions-menu">
+          <summary aria-label={'More actions for '+(m.emailAddress||m.name)}>More actions</summary>
+          <div className="md-mail-admin-actions-list">
+            <button type="button" disabled={busy} onClick={()=>{setEditId(m.id);setEditDescription(m.description);setResetId('');}}>Edit</button>
+            <button type="button" disabled={busy} onClick={()=>{setResetId(m.id);setResetPassword('');setEditId('');}}>Reset password</button>
+            <button type="button" className="danger" disabled={busy} onClick={()=>void remove(m)}>Delete</button>
+          </div>
+        </details>
        </div>}
      ]}/>
    <div className="md-mobile-table-replaced" style={{overflowX:'auto'}}><table style={{width:'100%',borderCollapse:'collapse',textAlign:'left',minWidth:720}}>
@@ -224,12 +229,17 @@ export default function MailboxAdmin({onLogout}:Props){
      <td style={{padding:'14px 10px',borderBottom:'1px solid #edf1f5',color:'#52677b'}}>{m.description||'—'}</td>
      <td style={{padding:'14px 10px',borderBottom:'1px solid #edf1f5'}}>{fmtBytes(m.usedDiskQuota)}</td>
      <td style={{padding:'14px 10px',borderBottom:'1px solid #edf1f5',color:'#52677b'}}>{m.createdAt?new Date(m.createdAt).toLocaleDateString():'—'}</td>
-     <td style={{padding:'14px 10px',borderBottom:'1px solid #edf1f5'}}><div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
-      <button style={primary} disabled={busy} onClick={()=>void openMailbox(m)}>Open Mailbox</button>
-      <button style={button} disabled={busy} onClick={()=>{setEditId(m.id);setEditDescription(m.description);setResetId('');}}>Edit</button>
-      <button style={button} disabled={busy} onClick={()=>{setResetId(m.id);setResetPassword('');setEditId('');}}>Reset password</button>
-      <button style={{...button,color:'#a32222',borderColor:'#e4b5b5'}} disabled={busy} onClick={()=>void remove(m)}>Delete</button>
-     </div></td>
+     <td style={{padding:'14px 10px',borderBottom:'1px solid #edf1f5'}}><div className="md-mail-admin-row-actions">
+        <button type="button" style={{...primary,minHeight:32}} disabled={busy} onClick={()=>void openMailbox(m)}>Open</button>
+        <details className="md-mail-admin-actions-menu">
+          <summary aria-label={'More actions for '+(m.emailAddress||m.name)}>More actions</summary>
+          <div className="md-mail-admin-actions-list">
+            <button type="button" disabled={busy} onClick={()=>{setEditId(m.id);setEditDescription(m.description);setResetId('');}}>Edit</button>
+            <button type="button" disabled={busy} onClick={()=>{setResetId(m.id);setResetPassword('');setEditId('');}}>Reset password</button>
+            <button type="button" className="danger" disabled={busy} onClick={()=>void remove(m)}>Delete</button>
+          </div>
+        </details>
+       </div></td>
     </tr>)}</tbody>
    </table></div></>}
   </section>

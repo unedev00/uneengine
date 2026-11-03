@@ -169,3 +169,25 @@
 .office-builder-ribbon .page-action-compact-custom-grid{
   grid-template-columns:repeat(2,225px);
 }
+
+
+/* Audit DEF-043: reserve an actual text track for 'On Session Start' and
+   ensure the adjacent selector is reachable without overlapping labels. */
+.office-builder-ribbon .page-action-compact-event{width:325px;min-width:325px}
+.office-builder-ribbon .page-action-compact-event .page-action-slot>label{
+  flex:0 0 128px;min-width:128px;max-width:128px;
+  white-space:nowrap;overflow:visible;text-overflow:clip
+}
+.office-builder-ribbon .page-action-compact-event .page-action-slot>select{
+  min-width:140px!important;flex:1 1 140px!important
+}
+.office-builder-ribbon .page-action-compact-sections>.page-action-compact-custom{
+  width:562px;min-width:562px
+}
+.office-builder-ribbon .page-action-compact-custom .page-action-slot>label{
+  flex:0 0 117px;min-width:117px;max-width:117px;
+  white-space:nowrap;overflow:visible;text-overflow:clip
+}
+.office-builder-ribbon .page-action-compact-sections>.page-action-compact-extra{
+  width:290px;min-width:290px
+}

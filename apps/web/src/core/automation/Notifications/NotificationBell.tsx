@@ -2,6 +2,7 @@ import './NotificationBellMobile.css';
 import * as React from 'react';
 import {useEffect,useRef,useState} from 'react';
 import {apiRequest} from '../../authentication/Client/authClient';
+import {Bell} from 'lucide-react';
 
 type Notification={id:string;title:string;body:string;createdAt:string;readAt:string|null};
 /** Existing tenant-scoped notification inbox, created by authorised metadata Flows. */
@@ -54,7 +55,7 @@ export default function NotificationBell(){
  return <div className="assist-notifications" ref={panelRef}>
   <button type="button" aria-label={'Notifications, '+unread+' unread'} aria-expanded={open}
    onClick={()=>{setOpen(x=>!x);setLatest(null);}} className="assist-bell">
-   <span aria-hidden="true">🔔</span>{unread>0&&<b>{unread}</b>}
+   <Bell size={20} aria-hidden="true"/>{unread>0&&<b>{unread}</b>}
   </button>
   {latest&&!open&&<div className="assist-notice-toast" role="status">
    <strong>{latest.title}</strong><p>{latest.body}</p>

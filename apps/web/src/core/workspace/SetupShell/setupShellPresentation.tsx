@@ -28,6 +28,8 @@ export function renderSetupShell(ctx: any) {
         .filter(Boolean)
     : [];
   const openInstalledApp = (value: string) => {
+    if(value === '__mail__'){window.location.assign('/mail');return;}
+    if(value === '__mail_admin__'){window.location.assign('/mail-admin');return;}
     if (value === '__home__') { openSetupWorkspace('home'); return; }
     if (value === '__records__') {
       const targetObject = route.kind === 'record-list' || route.kind === 'record-detail'
@@ -67,11 +69,14 @@ export function renderSetupShell(ctx: any) {
           <select aria-label="Open installed app" value="" onChange={(event) => openInstalledApp(event.target.value)}>
             <option value="">Open app…</option>
             <option value="__home__">Home</option>
+            <option value="__mail__">Mail</option>
+            <option value="__mail_admin__">Mail Administration</option>
             {readableRecordObjects.length > 0 && <option value="__records__">Records</option>}
             {apps.filter((app) => app.apiName !== 'Records').map(app=><option key={app.apiName} value={app.apiName}>{app.label}</option>)}
           </select>
         </label>
-        <MobileAppLauncher apps={apps} showRecords={readableRecordObjects.length > 0} onOpenApp={openInstalledApp} />
+        <MobileAppLauncher apps={[...apps, {apiName:'__mail__',label:'Mail'}, {apiName:'__mail_admin__',label:'Mail Administration'}]}
+          showRecords={readableRecordObjects.length > 0} onOpenApp={openInstalledApp} />
         <div className="header-searches">
           <GlobalRecordSearch objects={readableRecordObjects}
             searchObject={(apiName, term) => apiRequest<{ records: RecordData[] }>(
@@ -149,7 +154,7 @@ export function renderSetupShell(ctx: any) {
         && !setupSidebarCollapsed && <button type="button"
         className="md-sidebar-scrim" aria-label="Close navigation"
         onClick={() => setSetupSidebarCollapsed(true)} />}
-      <main className={route.kind === 'setup' ? 'setup-layout setup-no-tabs' : 'setup-layout'}>
+      <div className={route.kind === 'setup' ? 'setup-layout setup-no-tabs' : 'setup-layout'}>
         {isRecordsRoute && readableRecordObjects.length > 1 && runtimeFormFactor !== 'Phone' && (
           <aside id="md-records-sidebar" className={setupSidebarCollapsed ? 'md-app-sidebar md-app-sidebar-collapsed' : 'md-app-sidebar'}
             aria-label="Records navigation">
@@ -234,7 +239,7 @@ export function renderSetupShell(ctx: any) {
                           || (workspace === 'app-manager' && item === 'App Manager')
                           || (workspace === 'app-exchange' && item === 'AppExchange')
                           || (workspace === 'tenant-management' && item === 'Tenant Management')
-                          || (workspace === 'named-credentials' && item === (route.kind === 'setup' && route.resourceApiName === 'Webhooks' ? 'Webhook Endpoints' : 'Named Credentials'))
+                          || (workspace === 'named-credentials' && item === (route.kind === 'setup' && route.resourceApiName === 'NamedDevices' ? 'Named Devices' : route.kind === 'setup' && route.resourceApiName === 'Webhooks' ? 'Webhook Endpoints' : 'Named Credentials'))
                                                     || (workspace === 'flow-interviews' && item === 'Paused and Waiting Interviews')
                           || (workspace === 'scheduled-flows' && item === 'Scheduled Flows')
                           || (workspace === 'flow-logs' && item === 'Flow History')) ? 'tree-item selected' : 'tree-item'}
@@ -258,7 +263,7 @@ export function renderSetupShell(ctx: any) {
           </aside>
         )}
 
-        <section className={`workspace ${route.kind !== 'setup' ? 'workspace-records' : ''} ${workspace === 'flow-builder' ? 'workspace-flow' : ''}`}>
+        <main className={`workspace ${route.kind !== 'setup' ? 'workspace-records' : ''} ${workspace === 'flow-builder' ? 'workspace-flow' : ''}`}>
           {setupAccessNotice && <div className="info-callout" role="alert">{setupAccessNotice}</div>}
           {route.kind === 'setup' && runtimeFormFactor === 'Phone' && workspace !== 'home' && !route.dashboardView &&
             <nav className="mobile-settings-back-bar" aria-label="Settings navigation">
@@ -523,6 +528,13 @@ export function renderSetupShell(ctx: any) {
             onNotify={notify}
           />)}
           {route.kind === 'setup' && workspace === 'named-credentials' && (
+            route.resourceApiName==='NamedDevices'
+              ? <section className="setup-card md-access-locked" role="alert" aria-label="Named Devices access required">
+                  <h1>Named Devices</h1>
+                  <p>This workspace requires Read access to the Named Device object through your Profile or Permission Set.</p>
+                  <p>Contact your administrator to request access, then open Named Devices again.</p>
+                  <button type="button" className="btn" onClick={()=>navigateRoute({kind:'setup',workspace:'home'})}>Back to Setup</button>
+                </section> :
             !namedCredentialsLoaded ? <section className="setup-card" role="status">Loading live named credentials…</section> :
             namedCredentialsError && namedCredentials.length===0
               ? <section className="setup-card" role="alert">Named Credentials could not be verified: {namedCredentialsError}</section> :
@@ -722,8 +734,8 @@ export function renderSetupShell(ctx: any) {
             onNotify={notify}
             onOpenUserRecords={() => navigateRoute({kind:'record-list',objectApiName:'User'})}
           /></PlatformWorkspaceSurface>)}
-        </section>
-      </main>
+        </main>
+      </div>
       {showNewField && <React.Suspense fallback={null}><FieldWizardModal context={{ X, addField, formulaEditorRef, insertFormulaText, newFieldAllowReparenting, newFieldApiName, newFieldCaseSensitive, newFieldChildRelationshipName, newFieldConfigurationError, newFieldController, newFieldControllerApiName, newFieldControllerValues, newFieldDefaultValue, newFieldDeleteBehavior, newFieldDescription, newFieldExternalId, newFieldFormula, newFieldFormulaValidation, newFieldHasDefault, newFieldHelpText, newFieldLabel, newFieldLayoutIds, newFieldLookupFilterLogic, newFieldLookupFilters, newFieldPicklistOptions, newFieldPicklistRestricted, newFieldPicklistValues, newFieldPrecision, newFieldRelationshipName, newFieldRelationshipTarget, newFieldRequired, newFieldReturnType, newFieldScale, newFieldStage, newFieldTextLength, newFieldType, newFieldUnique, newFieldValueSettings, object, objects, relatedLookupFilterOperators, resetNewFieldDraft, setNewFieldAllowReparenting, setNewFieldCaseSensitive, setNewFieldChildRelationshipName, setNewFieldControllerApiName, setNewFieldDefaultValue, setNewFieldDeleteBehavior, setNewFieldDescription, setNewFieldExternalId, setNewFieldFormula, setNewFieldFormulaValidation, setNewFieldHasDefault, setNewFieldHelpText, setNewFieldLabel, setNewFieldLayoutIds, setNewFieldLookupFilterLogic, setNewFieldLookupFilters, setNewFieldPicklistRestricted, setNewFieldPicklistValues, setNewFieldPrecision, setNewFieldRelationshipName, setNewFieldRelationshipTarget, setNewFieldRequired, setNewFieldReturnType, setNewFieldScale, setNewFieldStage, setNewFieldTextLength, setNewFieldType, setNewFieldUnique, setNewFieldValueSettings, setShowNewField, showNewField, validateNewFieldFormula }} /></React.Suspense>}
       {(showNewObject || showCustomTabWizard) && <React.Suspense fallback={null}><SetupObjectDialogs context={{ showNewObject, setShowNewObject, setShowCustomTabWizard, newObjectLabel, setNewObjectLabel, newObjectPluralLabel, setNewObjectPluralLabel, newObjectRecordNameLabel, setNewObjectRecordNameLabel, newObjectSettings, setNewObjectSettings, newObjectDescription, setNewObjectDescription, launchCustomTabWizard, setLaunchCustomTabWizard, createObject, showCustomTabWizard, customTabObject, setCustomTabObject, customTabStyle, setCustomTabStyle, customTabStyles, customTabAppIds, setCustomTabAppIds, apps, saveCustomTab }} /></React.Suspense>}
       {(flowRun || flowDebug) && <React.Suspense fallback={null}><SetupFlowDialogs context={{ flowRun, setFlowRun, flowRunnerError, setFlowRunnerError, submitFlowScreen, goBackFlowScreen, flowRunnerSubmitting, flowDebug, setFlowDebug, runFlowDebug, libraryComponents, loadFlowScreenRecords,

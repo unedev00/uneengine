@@ -5,7 +5,8 @@ import { useEffect, useState } from 'react';
  */
 export type SizeClass = 'Compact' | 'RegularNarrow' | 'Regular' | 'Wide';
 export type FormFactor = 'Phone' | 'Tablet' | 'Desktop';
-const PHONE_QUERY = '(max-width: 599px), (max-height: 500px) and (pointer: coarse)';
+// Landscape-phone dimensions must remain Compact even when a test browser or attached pointer reports fine input.
+const PHONE_QUERY = '(max-width: 599px), (max-width: 1023px) and (max-height: 500px)';
 const NARROW_QUERY = '(max-width: 1023px)';
 const REGULAR_QUERY = '(max-width: 1439px)';
 

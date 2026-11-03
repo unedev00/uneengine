@@ -55,3 +55,27 @@
     outline-color: Highlight;
   }
 }
+
+
+/* Native details menu keeps secondary mailbox actions out of table rows. */
+.md-mail-admin-row-actions{display:flex;align-items:center;gap:8px;min-width:0}
+.md-mail-admin-actions-menu{position:relative;min-width:0}
+.md-mail-admin-actions-menu>summary{
+  list-style:none;display:inline-flex;align-items:center;justify-content:center;
+  min-height:32px;padding:5px 10px;white-space:nowrap;
+  border:1px solid #c5d1dc;border-radius:7px;color:#29435b;background:#fff;
+  cursor:pointer;font-size:13px
+}
+.md-mail-admin-actions-menu>summary::-webkit-details-marker{display:none}
+.md-mail-admin-actions-menu[open]>summary{background:#eef3f9}
+.md-mail-admin-actions-list{
+  display:grid;gap:2px;position:absolute;right:0;top:calc(100% + 4px);
+  min-width:168px;z-index:10;padding:5px;border:1px solid #d3dde8;
+  background:#fff;box-shadow:0 8px 18px #15294d20;border-radius:8px
+}
+.md-mail-admin-actions-list button{
+  min-height:32px;width:100%;padding:5px 8px;text-align:left;white-space:nowrap;
+  background:#fff;color:#29435b;border:0;border-radius:5px;cursor:pointer
+}
+.md-mail-admin-actions-list button:hover{background:#eef3f9}
+.md-mail-admin-actions-list button.danger{color:#a32222}
