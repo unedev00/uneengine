@@ -40,6 +40,8 @@ test('TABLE supports all authorised Object fields, bare names and typed errors',
  assert.deepEqual(Array.from(all.value.columns),fields);
  const bare=evaluateCollectionFormula('=TABLE(@Product,Name,Price)',source,context);
  assert.deepEqual(Array.from(bare.value.columns),['Name','Price']);
+ const lower=evaluateCollectionFormula('=TABLE(@product,name,price)',source,context);
+ assert.deepEqual(Array.from(lower.value.columns),['Name','Price']);
  const qualified=evaluateCollectionFormula('TABLE(@Product,@Product.Name,@Product.Price)',source,context);
  assert.equal(qualified.value.items[1].record.Price,3);
  const denied=evaluateCollectionFormula('TABLE(@Product,@Secret)',source,context);
