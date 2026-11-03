@@ -2,6 +2,8 @@
 -- Reuses existing editor/icon components and existing property value keys.
 -- One property can appear in multiple area/slot rows without duplicating its definition.
 -- Idempotent: existing tenant-edited placements are not overwritten.
+-- Dependent slot rows cascade on shared-property cleanup; a complete metadata
+-- migration replay then re-seeds the slot inventory without blocking recovery.
 ALTER TABLE md_builder_shared_properties
  DROP CONSTRAINT IF EXISTS md_builder_shared_properties_tab_check;
 ALTER TABLE md_builder_shared_properties
@@ -64,8 +66,8 @@ CREATE TABLE IF NOT EXISTS md_builder_design2_slots (
  order_no smallint NOT NULL CHECK(order_no>0),
  width_px smallint NOT NULL CHECK(width_px BETWEEN 20 AND 300),
  height_px smallint NOT NULL CHECK(height_px=26),
- property_key text REFERENCES md_builder_shared_properties(property_key),
- fallback_key text NOT NULL REFERENCES md_builder_shared_properties(property_key),
+ property_key text REFERENCES md_builder_shared_properties(property_key) ON DELETE CASCADE,
+ fallback_key text NOT NULL REFERENCES md_builder_shared_properties(property_key) ON DELETE CASCADE,
  PRIMARY KEY(area,slot_key),
  UNIQUE(area,row_no,order_no)
 );
