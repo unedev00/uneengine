@@ -280,18 +280,28 @@ export class AppRuntime {
   }
   async homePage(tenantId:string,appApi:string,formFactor:string,profileId='') {
     const {rows}=await this.db.query<{api_name:string|null}>(`
-      SELECT COALESCE(home.api_name,p.api_name) AS api_name FROM md_apps a
+      SELECT COALESCE(home.api_name,
+        CASE WHEN home_detail.page_id IS NULL OR
+          (CASE $3 WHEN 'desktop' THEN 'Desktop'
+            WHEN 'tablet' THEN 'Tablet' WHEN 'phone' THEN 'Phone'
+            WHEN 'custom' THEN 'Custom' ELSE '' END)=ANY(home_detail.devices)
+        THEN p.api_name ELSE NULL END) AS api_name FROM md_apps a
       JOIN md_app_installations i ON i.app_id=a.id AND i.tenant_id=$1
       JOIN md_app_entitlements e ON e.app_id=a.id AND e.tenant_id=$1
       LEFT JOIN md_tenant_app_metadata m ON m.app_id=a.id AND m.tenant_id=$1
       LEFT JOIN md_app_home_pages h ON h.tenant_id=$1 AND h.app_id=a.id AND h.form_factor=$3
       LEFT JOIN md_page_definitions p ON p.id=h.page_id AND p.tenant_id=$1 AND p.enabled=true
+      LEFT JOIN md_lightning_page_details home_detail ON home_detail.tenant_id=p.tenant_id
+        AND home_detail.page_id=p.id
       LEFT JOIN LATERAL (
         SELECT hp.api_name FROM md_lightning_page_activation x
         JOIN md_lightning_page_details d ON d.tenant_id=x.tenant_id AND d.page_id=x.page_id
         JOIN md_page_definitions hp ON hp.tenant_id=d.tenant_id AND hp.id=d.page_id
         WHERE x.tenant_id=$1 AND x.app_api=$2 AND d.status='Active'
           AND d.page_type='Home Page' AND hp.enabled=true
+          AND (CASE $3 WHEN 'desktop' THEN 'Desktop'
+            WHEN 'tablet' THEN 'Tablet' WHEN 'phone' THEN 'Phone'
+            WHEN 'custom' THEN 'Custom' ELSE '' END)=ANY(d.devices)
           AND ((x.scope='App Default') OR (x.scope='App and Profile' AND x.profile_id=$4))
           AND (($3='desktop' AND x.desktop) OR ($3='tablet' AND x.tablet) OR ($3='phone' AND x.phone) OR ($3='custom' AND x.custom))
         ORDER BY CASE x.scope WHEN 'App and Profile' THEN 2 ELSE 1 END DESC,
