@@ -69,3 +69,31 @@
 .builder-connect-steps button.active {color:var(--md-primary,#1d4ed8);background:var(--md-primary-light,#eef2ff);
  border-color:var(--md-primary,#1d4ed8);}
 .metadata-component-properties section[hidden] {display:none!important;}
+
+/* Two-column page wizard: compact choices, with canvas dimensions edited in Design. */
+.builder-create-page-dialog {width:min(720px,100%);padding:18px 20px 16px;}
+.builder-create-page-grid {display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  column-gap:28px;align-items:start;margin-top:12px;}
+.builder-create-page-fields,.builder-create-page-options {display:flex;flex-direction:column;gap:14px;min-width:0;}
+.builder-create-page-dialog .modal-copy {margin:0;line-height:1.45;}
+.builder-create-page-dialog .form-label {margin:0;min-width:0;}
+.builder-create-page-dialog .form-control {width:100%;min-width:0;}
+.builder-create-page-dialog .builder-create-page-help {min-height:36px;margin:0;font-size:11px;line-height:1.4;}
+.builder-create-page-dialog .builder-start-choices {margin:0;}
+.builder-create-page-dialog .builder-start-choices legend {margin-bottom:8px;}
+.builder-create-page-dialog .builder-choice-grid {grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;}
+.builder-create-page-dialog .builder-choice {min-height:112px;padding:9px;gap:5px;}
+.builder-create-page-dialog .builder-choice strong {font-size:11px;}
+.builder-create-page-dialog .builder-choice span {font-size:10px;line-height:1.35;}
+.builder-create-page-dialog .builder-choice input[type="radio"] {margin:0 0 2px;}
+.builder-create-page-dialog .modal-actions {margin-top:16px;padding-top:12px;}
+@media (max-width:720px) {
+  .builder-create-page-grid {grid-template-columns:minmax(0,1fr);row-gap:18px;}
+  .builder-create-page-dialog .builder-create-page-help {min-height:0;}
+  .builder-create-page-dialog .builder-choice-grid {grid-template-columns:repeat(3,minmax(0,1fr));}
+  .builder-create-page-dialog .builder-choice {min-height:96px;}
+}
+@media (max-width:420px) {
+  .builder-create-page-dialog {padding:14px;}
+  .builder-create-page-dialog .builder-choice {padding:7px;}
+}
