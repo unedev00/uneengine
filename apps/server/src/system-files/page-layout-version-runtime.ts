@@ -210,7 +210,16 @@ export class PageLayoutVersionRuntime{
    canvasFillColor:base.canvasFillColor??'#ffffff',
    components:base.components,activationAssignments:base.activationAssignments,
    customTargetEnabled:false,customTargetMinWidth:320,customTargetMaxWidth:10000};
-  let effective={...legacy};
+  // Effective layouts always contain complete components, even when their
+  // immutable device revision stores only sparse inherited overrides.
+  let effective:{
+   label:string;layoutMode:string;template?:string;
+   canvasWidth:number;canvasHeight:number;canvasFillColor?:string;
+   customTargetEnabled?:boolean;customTargetMinWidth?:number;customTargetMaxWidth?:number;
+   components:Array<Record<string,unknown>>;
+   activationAssignments?:Array<Record<string,unknown>>;
+   inheritsDesktop?:boolean;canvasFillOverride?:boolean;desktopBaseVersion?:number|null;
+  }={...legacy};
   let desktopDraftRevision: number|undefined;
   if(variant!=='Desktop'){
    const {rows:desktopHeads}=await this.db.query<HeadRow>(`SELECT draft_version,published_version
@@ -247,7 +256,7 @@ export class PageLayoutVersionRuntime{
   const found=await this.db.query<{id:string}>('SELECT id FROM md_page_definitions WHERE tenant_id=$1 AND api_name=$2 AND enabled=true',[tenant,name]);
   const id=found.rows[0]?.id;if(!id)throw new Error('Page not found');
   const snapshot=await this.snapshot(tenant,id,variant,version);
-  let historical=snapshot;
+  let historical:Omit<typeof snapshot,'components'> & {components:Array<Record<string,unknown>>}=snapshot;
   if(variant!=='Desktop'&&snapshot.inheritsDesktop&&snapshot.desktopBaseVersion){
    const desktop=await this.snapshot(tenant,id,'Desktop',snapshot.desktopBaseVersion);
    historical={...snapshot,components:applyDeviceComponentOverrides(
