@@ -487,7 +487,12 @@ export default function SmartRuntime(p){
   defaultValue={scopedExpression(p,p.textSource?"textSource":"defaultValue",p.textSource??p.defaultValue??p.value??"",record)}
   style={{...style,...shadowStyle,...smartShapeAppearance(p.shapeId,number(p.radius,12)),width:"100%",height:"100%",minWidth:0,minHeight:0,
     fontSize:number(p.textSize,16),color:p.defaultValueColor||p.labelColor||undefined,
-    borderColor:p.borderColor||undefined,background:p.backgroundColor||"#fff",
+    // Explicit solid border on every side instead of the browser's native inset border.
+    // A configured zero border width intentionally removes the visible outline.
+    borderStyle:"solid",
+    borderWidth:p.borderWidth===undefined||p.borderWidth===null||p.borderWidth===""?1:number(p.borderWidth,1,0,24),
+    borderColor:p.borderColor||"#b8c7d7",padding:"8px 12px",
+    background:p.backgroundColor||"#fff",
     textAlign:p.labelAlignment||"left","--smart-placeholder-color":p.labelColor||"#64748b"}}
   onChange={e=>fire("change",e.target.value)}/>;
  else if(name==="smart_lookup")content=<SmartLookup p={p} fire={fire}
