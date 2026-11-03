@@ -198,7 +198,7 @@ import {canvasGroupKey, canvasGroupMembers, groupCanvasSelection, ungroupCanvasS
 import {canvasScrollbarHit,constrainCanvasRect} from './canvasPointerInteractions';
 import {isSharedCanvasProperty,mixedCanvasPropertyIds,updateSharedCanvasProperties,updateSharedCanvasPositions} from './canvasSharedRibbonProperties';
 import {useCanvasGroupGestures} from './useCanvasGroupGestures';
-import { copyComponentTree, cloneComponentTree, remapComponentInteractionTargets, assignTabOnReparent, type ComponentClipboard } from './pageComponentTree';
+import { copyComponentTree, cloneComponentTree, nameCopiedComponentTree, remapComponentInteractionTargets, assignTabOnReparent, type ComponentClipboard } from './pageComponentTree';
 import { filterPageComponentRecords, needsMetadataComponentRuntime } from '../../pages/PageRuntime/pageComponentBindings';
 import { childrenOf, canNest, componentLayoutProps, hasPageComponentAppearance, isLayoutContainer, rawLayoutParentId, reparentComponent, resolvePageComponentStyle, type LayoutDevice } from '../../pages/TemplatePageRuntime/pageComponentLayout';
 import AppExchange from '../../applications/AppExchange/AppExchange';
@@ -1778,7 +1778,8 @@ function PageBuilder({
       return;
     }
     const cloned=cloneComponentTree(componentClipboard,parentId);
-    const root=cloned.components.find(item=>item.id===cloned.rootId)!;
+    const renamed=nameCopiedComponentTree(page.components,cloned.components,componentNameHighWaterRef.current);
+    const root=renamed.find(item=>item.id===cloned.rootId)!;
     const position=root.position ? {
       ...root.position,
       // Nested content flows inside the container, not at its former page
@@ -1786,7 +1787,7 @@ function PageBuilder({
       x:parentId?16:Math.max(0,Math.min(page.canvasWidth-root.position.width,root.position.x+24)),
       y:parentId?16:Math.max(0,Math.min(page.canvasHeight-root.position.height,root.position.y+24))
     }:undefined;
-    const inserted=cloned.components.map(item=>item.id===root.id?{...item,position,region:selected?.region??item.region}:item);
+    const inserted=renamed.map(item=>item.id===root.id?{...item,position,region:selected?.region??item.region}:item);
     const originalIndex=selected?page.components.findIndex(item=>item.id===selected.id):-1;
     const components=[...page.components];
     components.splice(originalIndex<0?components.length:originalIndex+1,0,...inserted);
@@ -1805,7 +1806,7 @@ function PageBuilder({
     const ids=new Set(snapshot.components.map(item=>item.id));
     const lastIndex=page.components.reduce((last,item,index)=>ids.has(item.id)?index:last,-1);
     const components=[...page.components];
-    components.splice(lastIndex+1,0,...clone.components);
+    components.splice(lastIndex+1,0,...nameCopiedComponentTree(page.components,clone.components,componentNameHighWaterRef.current));
     applyPage({...page,components});
     setSelectedId(clone.rootId);
     setSelectionIds([clone.rootId]);
