@@ -321,6 +321,10 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    else if(property.id==='cardButtonShape')editor=<SmartIconGallery
      value={String(value||'shape:round-rectangle')} disabled={!enabled}
      allowIcons={false} onChange={write}/>;
+   else if(tab==='Design2'&&property.design2SlotKey==='Shape'&&
+     /^cartButton[2345]ShapeId$/.test(property.id))
+     editor=<SmartIconGallery value={String(value||'shape:round-rectangle')}
+       disabled={!enabled} allowIcons={false} onChange={write}/>;
    else if(property.id==='imageSource'&&supported){
      // The source is always editable: any direct or nested lookup reference
      // is resolved by the shared metadata engine, never by an image-name list.
