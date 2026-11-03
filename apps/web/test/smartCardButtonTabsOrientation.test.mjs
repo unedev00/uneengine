@@ -79,7 +79,7 @@ test('one SQL ribbon inventory owns new Data fx, Button Design and orientation c
  assert.ok(sql.includes('ON CONFLICT(property_key) DO NOTHING'));
  assert.ok(sql.includes('ON CONFLICT(component_api,property_key) DO NOTHING'));
  assert.doesNotMatch(sql,/UPDATE md_page_|DELETE FROM md_page_|DROP TABLE/i);
- assert.ok(ribbon.includes("['Source','Values','Card Grid','Cart'"));
+ assert.ok(ribbon.includes("['Source','Values','Cart','Cart columns','Cart totals','Card Grid']"));
  assert.match(ribbon,/'Header Supporting','Button'/);
  assert.match(ribbon,/isDataFormula/);
  assert.ok(runtime.includes('scopedExpression(p,key,p[key]'));
