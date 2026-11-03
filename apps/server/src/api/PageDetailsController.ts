@@ -46,6 +46,16 @@ export function registerPageDetailsController(app:Express,db:SqlPersistence,rbac
   const body=req.body;
   if(!body||typeof body!=='object'||Array.isArray(body))throw new Error('Invalid Page details');
   const label=body.label,appApiName=body.appApiName,expectedLabel=body.expectedLabel;
+  // Page device support is relational metadata, not a component setting.
+  const deviceChoices=['Desktop','Tablet','Phone','Custom'] as const;
+  const devices=body.devices as unknown;
+  const expectedDevices=body.expectedDevices as unknown;
+  const validDeviceList=(value:unknown):value is string[]=>
+   Array.isArray(value)&&value.length>=1&&value.length<=4
+   &&value.every(v=>typeof v==='string'&&deviceChoices.some(choice=>choice===v))
+   &&new Set(value).size===value.length;
+  if(devices!==undefined&&(!validDeviceList(devices)||!validDeviceList(expectedDevices)))
+   throw new Error('Invalid Page device settings or missing expected devices');
   const nextApiName=body.nextApiName===undefined?pageApi:body.nextApiName;
   if(typeof label!=='string'||!label.trim()||label.trim().length>128
     ||typeof expectedLabel!=='string'||!expectedLabel.trim()||expectedLabel.length>128
@@ -94,14 +104,20 @@ export function registerPageDetailsController(app:Express,db:SqlPersistence,rbac
   await db.transaction(async client=>{
    await client.query(`SELECT set_config('metadrive.actor_tenant',$1,true),
      set_config('metadrive.actor_user',$2,true)`,[actor.tenant_id,actor.user_id]);
-   const locked=await client.query<{id:string;title:string;page_type:string;status:string}>(`
-    SELECT p.id,p.title,d.page_type,d.status FROM md_page_definitions p
+   const locked=await client.query<{id:string;title:string;page_type:string;status:string;devices:string[]}>(`
+    SELECT p.id,p.title,d.page_type,d.status,d.devices FROM md_page_definitions p
     JOIN md_lightning_page_details d ON d.tenant_id=p.tenant_id AND d.page_id=p.id
     WHERE p.tenant_id=$1 AND p.api_name=$2 AND p.enabled=true
     FOR UPDATE OF p,d`,[actor.tenant_id,pageApi]);
    const row=locked.rows[0];
    if(!row||row.id!==page.id||row.title!==expectedLabel||row.page_type!==page.page_type)
     throw new Error('Page details changed. Reload before saving.');
+   const deviceChanged=devices!==undefined&&validDeviceList(devices)
+    &&(devices.length!==row.devices.length||devices.some(v=>!row.devices.includes(v)));
+   if(devices!==undefined&&validDeviceList(expectedDevices)&&
+     (expectedDevices.length!==row.devices.length||expectedDevices.some(v=>!row.devices.includes(v))))
+    throw new Error('Page device settings changed. Reload before saving.');
+   const nextDevices=deviceChanged?devices as string[]:row.devices;
    if(page.page_type==='App Page'){
     if(!appApiName)throw new Error('Choose an installed application');
     const appRecord=await client.query<{id:string}>(`
@@ -121,10 +137,10 @@ export function registerPageDetailsController(app:Express,db:SqlPersistence,rbac
      await client.query(`INSERT INTO md_lightning_page_activation
       (tenant_id,page_id,assignment_id,scope,app_api,desktop,phone,tablet,custom,sort_order)
       SELECT $1,$2,$3,'App Default',$4,
-        'Desktop'=ANY(d.devices),'Phone'=ANY(d.devices),
-        false,false,0
+        'Desktop'=ANY($5::text[]),'Phone'=ANY($5::text[]),
+        'Tablet'=ANY($5::text[]),'Custom'=ANY($5::text[]),0
       FROM md_lightning_page_details d WHERE d.tenant_id=$1 AND d.page_id=$2`,
-      [actor.tenant_id,page.id,randomUUID(),appApiName]);
+      [actor.tenant_id,page.id,randomUUID(),appApiName,nextDevices]);
      await client.query(`DELETE FROM md_tenant_app_navigation
       WHERE tenant_id=$1 AND entry_type='App Page' AND api_name=$2`,
       [actor.tenant_id,pageApi]);
@@ -139,6 +155,14 @@ export function registerPageDetailsController(app:Express,db:SqlPersistence,rbac
        [actor.tenant_id,appRecord.rows[0].id,pageApi]);
      }
     }
+    // App Page default assignment follows device eligibility without touching
+    // tenant-specific Record/Home profile assignments or customer layouts.
+    if(deviceChanged&&!appChanged)await client.query(`
+     UPDATE md_lightning_page_activation SET
+      desktop='Desktop'=ANY($3::text[]),phone='Phone'=ANY($3::text[]),
+      tablet='Tablet'=ANY($3::text[]),custom='Custom'=ANY($3::text[])
+     WHERE tenant_id=$1 AND page_id=$2 AND scope='App Default'`,
+     [actor.tenant_id,page.id,nextDevices]);
    }
    if(renaming){
     const exists=await client.query(`SELECT 1 FROM md_page_definitions
@@ -155,7 +179,11 @@ export function registerPageDetailsController(app:Express,db:SqlPersistence,rbac
     await client.query(`UPDATE md_page_definitions SET title=$3,api_name=$4
       WHERE tenant_id=$1 AND id=$2`,[actor.tenant_id,row.id,label.trim(),nextApiName]);
    }
-   if(label.trim()!==row.title||appChanged||renaming)
+   if(deviceChanged)
+    await client.query(`UPDATE md_lightning_page_details
+     SET devices=$3::text[],updated_at=now()
+     WHERE tenant_id=$1 AND page_id=$2`,[actor.tenant_id,row.id,nextDevices]);
+   else if(label.trim()!==row.title||appChanged||renaming)
     await client.query(`UPDATE md_lightning_page_details SET updated_at=now()
      WHERE tenant_id=$1 AND page_id=$2`,[actor.tenant_id,row.id]);
    // Existing SQL Setup Audit triggers record tenant actor and relational changes.
