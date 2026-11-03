@@ -180,7 +180,7 @@ WITH input(component_api,area,area_order,slot_key,row_no,order_no,width_px,heigh
  ('smart_calendar','Body',1,'Text Size',3,5,80,26,'textSize','textSize'),
  ('smart_calendar','Body',1,'Height',2,3,80,26,'height','height'),
  ('smart_calendar','Body',1,'Width',2,4,80,26,'width','width'),
- ('smart_calendar','Body',1,'Focus Color',2,1,40,26,'selectedRowColor','selectedRowColor'),
+ ('smart_calendar','Body',1,'Focus Color',2,1,40,26,'defaultValueColor','defaultValueColor'),
  ('smart_calendar','Body',1,'Bold',3,3,40,26,'headerBold','headerBold'),
  ('smart_cart','Body',1,'Body Color',1,1,40,26,'backgroundColor','backgroundColor'),
  ('smart_cart','Body',1,'Shadow',2,2,40,26,'shadow','shadow'),
