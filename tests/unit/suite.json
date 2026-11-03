@@ -119,6 +119,7 @@
     "apps/server/test/system/password-reset-service.test.ts",
     "apps/server/test/system/platform-deployment-owner.test.ts",
     "apps/server/test/system/platform-deployment-routes.test.ts",
+    "apps/server/test/system/platform-oneengine-deployment.test.ts",
     "apps/server/test/system/platform-recovery-mailer.test.ts",
     "apps/server/test/system/product-image-field.test.ts",
     "apps/server/test/system/quick-action-email-queue.test.ts",
