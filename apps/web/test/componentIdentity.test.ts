@@ -64,20 +64,21 @@ test('rename updates page key, nested parents and declared interaction target re
  assert.throws(()=>renamePageComponentId(renamed,'missing','other'),/no longer exists/);
 });
 
-test('Advanced Ribbon supports editing and server rejects duplicate IDs on draft/publish',()=>{
+test('Advanced Ribbon uses unique CSV component names while IDs remain private runtime keys',()=>{
  const advanced=read('../src/core/builders/PageBuilder/PageBuilderAdvancedSections.tsx');
  const page=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
  const layout=read('../src/core/builders/PageBuilder/PageBuilderRibbonLayout.css');
  const draft=read('../../server/src/system-files/page-layout-version-runtime.ts');
  const legacy=read('../../server/src/system-files/page-runtime.ts');
- assert.match(advanced,/aria-label="Component ID"/);
- assert.match(advanced,/onBlur=\{commitComponentId\}/);
- assert.match(advanced,/aria-invalid=\{!!idError\}/);
- assert.match(advanced,/onKeyDown=\{event=>/);
- assert.doesNotMatch(advanced,/<input value=\{technical\.id\} readOnly disabled/);
- assert.match(page,/renamePageComponentId\(page\.components,oldId,newId\)/);
+ assert.match(advanced,/aria-label="Component Name"/);
+ assert.match(advanced,/onBlur=\{commitComponentName\}/);
+ assert.match(advanced,/aria-invalid=\{!!nameError\}/);
+ assert.match(advanced,/validateInstanceName\(nameDraft\)/);
+ assert.doesNotMatch(advanced,/aria-label="Component ID"|value=\{technical\.id\}/);
+ assert.doesNotMatch(page,/renamePageComponentId\(page\.components,oldId,newId\)/);
+ assert.match(page,/componentInstanceNames\(page\.components\)/);
+ assert.match(page,/canonicalComponentName\(otherName\)===canonicalComponentName\(name\)/);
  assert.match(page,/duplicatePageComponentId\(candidate\.components\)/);
- assert.match(page,/setSelectedId\(current=>current===oldId/);
  assert.match(layout,/advanced-component-id-error/);
  assert.match(draft,/ids\.has\(String\(component\.id\)\.toLowerCase\(\)\)/);
  assert.match(legacy,/keys\.has\(String\(c\.id\)\.toLowerCase\(\)\)/);
