@@ -85,7 +85,7 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
  // Inside TABLE(@Object, ...), field choices follow that Object, not the
  // Page Builder's first object or another selected independent source.
  const tableOpen=/\bTABLE\s*\(\s*@([A-Za-z][A-Za-z0-9_]*)\s*,([^)]*)$/i.exec(draft.slice(0,caret));
- const tableObject=tableOpen?objects.find(object=>object.apiName===tableOpen[1]):undefined;
+ const tableObject=tableOpen?objects.find(object=>object.apiName.toLowerCase()===tableOpen[1].toLowerCase()):undefined;
  const tableSourcePrompt=/\bTABLE\s*\(\s*@[A-Za-z0-9_]*$/i.test(draft.slice(0,caret));
  const tableSources=selectedSourceObjects??objects;
  const recordMentions:{reference:string;label:string}[]=tableSourcePrompt&&matches
