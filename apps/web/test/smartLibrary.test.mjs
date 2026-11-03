@@ -1160,13 +1160,13 @@ test('Smart Tabs starts on first actual tab and keeps explicit selections across
   pageState:{collectionSelections:{}}});
  assert.doesNotMatch(empty,/aria-selected="true"/);
  const runtime=read('../src/component-libraries/smart/shared/SmartRuntime.jsx');
- assert.match(runtime,/React\.useEffect\(\(\)=>\{[\s\S]*?selectTab\(0\)/);
+ assert.match(runtime,/React\.useEffect\(\(\)=>\{[\s\S]*?selectTab\(defaultTabIndex,true\)/);
  assert.match(runtime,/if\(!tabs\.length\|\|p\.loading\|\|p\.previewOnly\|\|p\.builderPreview/);
  assert.match(runtime,/if\(indexForSelection>=0\)\{autoSelected\.current=null;return;/);
  assert.match(runtime,/if\(autoSelected\.current===key\)return;/);
  assert.match(runtime,/changeAction\.actionType!=="PageState"/);
  assert.match(runtime,/changeAction\.actionType==="Formula"&&formulaStateKey/);
- assert.match(runtime,/firstTabRef\.current\?\.focus\(\{preventScroll:true\}\)/);
+ assert.match(runtime,/selectedTabRef\.current\?\.focus\(\{preventScroll:true\}\)/);
  assert.match(runtime,/document\.activeElement!==document\.body/);
 });
  

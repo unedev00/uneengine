@@ -85,3 +85,53 @@ test('one SQL ribbon inventory owns new Data fx, Button Design and orientation c
  assert.ok(runtime.includes('scopedExpression(p,key,p[key]'));
  assert.ok(runtime.includes('selectRecord=()=>fire("click"'));
 });
+
+
+test('Smart Tabs Tab Index selects the correct zero-based default without altering vertical mode',async()=>{
+ const selected=async props=>{
+  const html=await renderSmart('smart_tabs',props);
+  const match=html.match(/<button\b[^>]*aria-selected="true"[^>]*>([^<]*)<\/button>/);
+  assert.ok(match,'One tab must be selected');
+  return match[1];
+ };
+ const tabs={tabs:['ALL','FOOD','DRINKS'],tabCount:3};
+ assert.equal(await selected(tabs),'ALL','legacy default stays zero');
+ assert.equal(await selected({...tabs,tabIndex:0}),'ALL');
+ assert.equal(await selected({...tabs,tabIndex:1}),'FOOD');
+ assert.equal(await selected({...tabs,tabIndex:2}),'DRINKS');
+ assert.equal(await selected({...tabs,tabIndex:99}),'DRINKS','out-of-range clamped');
+ assert.equal(await selected({...tabs,tabIndex:-1}),'ALL','negative index rejected');
+ assert.equal(await selected({...tabs,tabIndex:1.5}),'ALL','fractional index rejected');
+ assert.equal(await selected({...tabs,tabIndex:1,tabOrientation:'vertical'}),'FOOD');
+ const records=[{Id:'food',Name:'Food'},{Id:'drinks',Name:'Drinks'}];
+ const collection={records,tabCount:2,tabIndex:1,dataCollection:{name:'Categories',items:records}};
+ assert.equal(await selected(collection),'Drinks','collections default to the configured actual tab');
+ assert.equal(await selected({...collection,pageState:{collectionSelections:{
+  Categories:{Id:'food'}
+ }}}),'Food','explicit PageState selection always wins');
+});
+
+test('SQL Tab Index owns one non-overlapping Layout slot with Orientation and preserves records',()=>{
+ const sql=read('../../server/src/system-support/migrations/20270310-smart-tabs-default-index.sql');
+ const orientation=read('../../server/src/system-support/migrations/20270306-smart-card-button-tabs-orientation.sql');
+ const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
+ const runtime=read('../src/component-libraries/smart/shared/SmartRuntime.jsx');
+ const css=read('../src/core/builders/PageBuilder/SmartRibbonApprovedThreeRow.css');
+ assert.match(sql,/'tabIndex','Tab Index','Layout','Tabs','number'/);
+ assert.match(sql,/'0'::jsonb,0,20/);
+ assert.match(sql,/'smart_tabs','tabIndex',true,NULL,NULL,NULL,NULL/);
+ for(const [key,row,col] of [['tabWidth',1,1],['tabHeight',1,2],['tabIndex',2,1],['tabCount',3,1]])
+  assert.ok(sql.includes("('"+key+"',"+row+","+col+","),'wrong or overlapping slot '+key);
+ assert.match(orientation,/'tabOrientation','Orientation','Layout','Tabs','choice',9,[^\n]*,2,2,116/);
+ assert.match(sql,/ON CONFLICT\(property_key\) DO NOTHING/);
+ assert.match(sql,/ON CONFLICT\(component_api,property_key\) DO NOTHING/);
+ assert.doesNotMatch(sql,/UPDATE md_page_|DELETE FROM md_page_|DROP TABLE/i);
+ assert.match(ribbon,/if\(p\.id==='tabIndex'\)return p\.designWidth\?\?30/);
+ assert.match(ribbon,/step=\{isTabIndex\?1:undefined\}/);
+ assert.match(css,/data-property="tabIndex"/);
+ assert.match(runtime,/indexForSelection>=0\?indexForSelection:defaultTabIndex/);
+ assert.match(runtime,/selectTab\(defaultTabIndex,true\)/);
+ assert.match(runtime,/if\(!initialisingDefault\)autoSelected\.current=null/);
+ assert.match(runtime,/changeAction\.actionType!=="PageState"/);
+ assert.doesNotMatch(runtime,/firstTabCustom/,'do not restore removed synthetic leading-tab logic');
+});
