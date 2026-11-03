@@ -3179,15 +3179,14 @@ function PageBuilder({
         </nav>
       </section>}
       {inventoryUploadOpen&&<PageInventoryImportDialog
-        pages={pages.filter(item=>recordPageContext
-          ? item.pageType==='Record Page'&&item.targetObject===recordPageContext
-          : item.pageType!=='Record Page')}
-        initialPageApi={page.apiName}
         request={request}
         onClose={()=>setInventoryUploadOpen(false)}
-        onApplied={(updated,changes)=>{
-          if(updated.apiName===page.apiName&&(updated.layoutVariant??'Desktop')===(page.layoutVariant??'Desktop'))onChange(updated);
-          onNotify(changes+' component metadata properties updated in the saved draft of '+updated.apiName+'. Publish the layout when ready.');
+        onApplied={(updatedPages,changes)=>{
+          const current=updatedPages.find(updated=>updated.apiName===page.apiName
+            &&(updated.layoutVariant??'Desktop')===(page.layoutVariant??'Desktop'));
+          if(current)onChange(current);
+          onNotify(changes+' component metadata changes saved across '+
+            updatedPages.length+' existing page drafts. Publish each updated layout when ready.');
           setInventoryUploadOpen(false);
         }}/>}
       {pageDetailsApi&&(()=>{
