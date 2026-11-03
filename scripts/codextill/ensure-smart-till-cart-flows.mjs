@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import {SqlPersistence} from '../../apps/server/dist-system/system-files/sql-persistence.js';
 import {PageRuntime} from '../../apps/server/dist-system/system-files/page-runtime.js';
-import {encodeMetadataValue} from '../../apps/server/dist-system/system-files/component-runtime.js';
+import {encodeMetadataValue,decodeMetadataValues} from '../../apps/server/dist-system/system-files/component-runtime.js';
 
 // Tenant-owned, no-code-editable Flow metadata. Not an Acetill AppExchange
 // resource: uninstalling Acetill must not remove Smart Till's cart operations.
-const VERSION=1;
+const VERSION=2;
 const node=(id,type,label,config={})=>({id,type,label,config});
 const edge=(from,to,label='Next')=>({from,to,kind:'normal',label});
 const variable=(name,dataType='Text',input=false,output=false)=>({
@@ -115,6 +115,24 @@ export const SMART_TILL_ADD=graph('SmartTillAddProduct','Smart Till: add selecte
  {name:'mergedLineTotal',type:'Formula',dataType:'Number',
   value:'mergedQuantity * existingLine.UnitPrice'}]);
 
+// Reconstruct the exact, previously installed v1 graph for a safe upgrade.
+// Tenant-edited flows must never be replaced based only on their API name.
+function originalSmartTillGraph(){
+ const legacy=structuredClone(SMART_TILL_ADD);
+ legacy.version=1;
+ legacy.elements=legacy.elements.filter(node=>![21,22,23].includes(node.id));
+ legacy.resources=legacy.resources.filter(resource=>
+  !['existingLine','mergedQuantity','mergedLineTotal'].includes(resource.name));
+ const oldEdges=legacy.connectors.filter(edge=>
+  ![21,22,23].includes(edge.from)&&![21,22,23].includes(edge.to));
+ const insertAt=oldEdges.findIndex(edge=>edge.from===10&&edge.to===11);
+ oldEdges.splice(insertAt,0,edge(8,10),edge(9,10));
+ legacy.connectors=oldEdges;
+ return legacy;
+}
+const stable=value=>JSON.stringify(value,(_key,v)=>
+ v&&typeof v==='object'&&!Array.isArray(v)
+  ?Object.fromEntries(Object.entries(v).sort(([a],[b])=>a.localeCompare(b))):v);
 export const SMART_TILL_OUTPUTS={
  cartSessionId:'cartSessionId',cartItems:'cartItems',
  subtotal:'subtotal',total:'total'
@@ -172,7 +190,7 @@ export function smartTillCartBindings(layout){
  return {changed,skipped,layout:{...layout,components}};
 }
 export function validateSmartTillGraph(){
- for(const flow of [SMART_TILL_ADD]){
+ for(const flow of [SMART_TILL_ADD,originalSmartTillGraph()]){
   assert(!Object.hasOwn(flow,'appApiName'));
   assert.equal(flow.status,'Active');
   const ids=new Set(flow.elements.map(n=>n.id));
@@ -185,6 +203,11 @@ export function validateSmartTillGraph(){
  assert.deepEqual(product.config.conditions,[{field:'Id',operator:'Equals',value:'{!productId}'}]);
  assert.equal(SMART_TILL_CLICK.inputs.productId,'$event.recordId');
  assert.equal(SMART_TILL_CLICK.inputs.sessionKey,'$session');
+ const legacy=originalSmartTillGraph();
+ assert.equal(legacy.version,1);
+ assert(legacy.elements.every(n=>![21,22,23].includes(n.id)));
+ assert(legacy.connectors.some(e=>e.from===8&&e.to===10));
+ assert(legacy.connectors.some(e=>e.from===9&&e.to===10));
 }
 validateSmartTillGraph();
 
@@ -274,17 +297,32 @@ try{
    for(const field of names.filter(f=>f!=='Id'))
     assert(known.has(object+'.'+field),'Required shared field missing: '+object+'.'+field);
   for(const flow of [SMART_TILL_ADD]){
-   const existing=await client.query(`SELECT id,active FROM md_flow_definitions
+   const existing=await client.query(`SELECT id,active,version FROM md_flow_definitions
     WHERE tenant_id=$1 AND api_name=$2 AND archived=false ORDER BY version DESC LIMIT 1`,
     [tenant,flow.apiName]);
    if(existing.rows.length){
-    assert(existing.rows[0].active===true,'Existing Smart Till Flow is inactive: '+flow.apiName);
+    const prior=existing.rows[0];
+    assert(prior.active===true,'Existing Smart Till Flow is inactive: '+flow.apiName);
     const owner=await client.query(`SELECT value_text FROM md_flow_editor_values
       WHERE tenant_id=$1 AND flow_id=$2 AND property_path='/builder/appApiName'`,
-      [tenant,existing.rows[0].id]);
+      [tenant,prior.id]);
     assert(!owner.rows[0]?.value_text,'Existing Smart Till Flow is app-owned: '+flow.apiName);
-    console.log(flow.apiName+': existing tenant customisation retained');
-    continue;
+    if(Number(prior.version)!==1){
+      console.log(flow.apiName+': existing version '+prior.version+' retained');
+      continue;
+    }
+    const stored=await client.query(`SELECT property_path,value_kind,value_text
+      FROM md_flow_editor_values WHERE tenant_id=$1 AND flow_id=$2`,[tenant,prior.id]);
+    const current=decodeMetadataValues(stored.rows).builder;
+    if(!current||stable(current)!==stable(originalSmartTillGraph())){
+      console.log(flow.apiName+': tenant-authored Flow differs from original v1; retained');
+      continue;
+    }
+    // Preserve immutable v1 for audit/rollback, and activate a separate v2.
+    // The transaction and advisory lock prevent two upgraders from racing.
+    await client.query(`UPDATE md_flow_definitions SET active=false
+      WHERE tenant_id=$1 AND id=$2`,[tenant,prior.id]);
+    console.log(flow.apiName+': upgrading untouched v1 to v2');
    }
    const inserted=await client.query(`INSERT INTO md_flow_definitions
     (tenant_id,api_name,label,flow_type,version,active)
