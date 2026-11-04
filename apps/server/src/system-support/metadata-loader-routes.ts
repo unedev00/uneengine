@@ -352,7 +352,13 @@ export function registerMetadataLoaderRoutes(app:Express,db:SqlPersistence,rbac:
       if(deleted){
        if(i.action==='Create')throw Error('Object is soft-deleted; use Upsert');
        await lifecycle.restore(actor.tenant_id,i.objectApi);
-       await updateObject(actor,await definitions.get(actor.tenant_id,i.objectApi),i.cells);
+       try{
+        await updateObject(actor,await definitions.get(actor.tenant_id,i.objectApi),i.cells);
+       }catch(error){
+        const refreshed=await definitions.get(actor.tenant_id,i.objectApi);
+        await lifecycle.delete(actor.tenant_id,i.objectApi,Number(refreshed.revision??0));
+        throw error;
+       }
       }else{
        const cell=i.cells,settings=objectSettings(cell);
        await definitions.create(actor.tenant_id,i.objectApi,value(cell,'Label'),[
