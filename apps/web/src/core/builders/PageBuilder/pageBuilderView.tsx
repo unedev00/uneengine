@@ -311,6 +311,7 @@ import {
 import SavedListViewPicker from './SavedListViewPicker';
 import PageDetailsDialog from './PageDetailsDialog';
 import PageInventoryImportDialog from './PageInventoryImportDialog';
+import {designedPageLayouts,pageLayoutOptionLabel,primaryPageLayout,PAGE_LAYOUT_ORDER,type PageLayoutSummary} from './pageLayoutSummary';
 import {uneRibbonIcon} from './uneRibbonIcon';
 import RibbonImageContent from './RibbonImageContent';
 export function createPageBuilder(MetadataComponentProperties: React.ComponentType<any>, MetadataBoundPageComponent: React.ComponentType<any>, LightningAppRuntime: React.ComponentType<any>) {
@@ -353,7 +354,8 @@ function PageBuilder({
   recordPageContext?: string;
   /** Initial device layout from an Object Manager deep link. */
   initialLayoutVariant?: PageLayoutVariant;
-  onLayoutVariantChange?: (variant:PageLayoutVariant) => void;
+  /** apiName is given when opening another page's layout (e.g. from the page list). */
+  onLayoutVariantChange?: (variant:PageLayoutVariant,apiName?:string) => void;
 }) {
   const isPhoneBuilder = useFormFactor() === 'Phone';
   const [builderAppApiName, setBuilderAppApiName] = useState(preparedAppId);
@@ -639,7 +641,26 @@ function PageBuilder({
   const [saving, setSaving] = useState(false);
   const [inventoryUploadOpen,setInventoryUploadOpen] = useState(false);
   const [inventoryDownloading,setInventoryDownloading] = useState('');
-  const [inventoryExportVariant,setInventoryExportVariant] = useState<PageLayoutVariant>('Desktop');
+  // 'Auto' downloads each page's own layout (the one Design opens).
+  const [inventoryExportVariant,setInventoryExportVariant] = useState<PageLayoutVariant|'Auto'>('Auto');
+  /** Device layouts each page has designed, keyed by page API name. */
+  const [layoutSummaries,setLayoutSummaries] = useState<Record<string,PageLayoutSummary>>({});
+  const [layoutCopySource,setLayoutCopySource] = useState<PageLayoutVariant|''>('');
+  const fetchLayoutSummaries=useCallback(async(names:readonly string[])=>{
+    const unique=[...new Set(names)].filter(Boolean).slice(0,500);
+    if(!unique.length)return [] as PageLayoutSummary[];
+    try{
+      const result=await request<{pages:PageLayoutSummary[]}>(
+        '/metadata/page-layout-summaries?pages='+unique.map(encodeURIComponent).join(','));
+      setLayoutSummaries(current=>{
+        const next={...current};
+        for(const name of unique)delete next[name];
+        for(const summary of result.pages)next[summary.apiName]=summary;
+        return next;
+      });
+      return result.pages;
+    }catch{return [] as PageLayoutSummary[];} // A hint only: Design still opens Desktop.
+  },[request]);
   const [archivingPageApiName, setArchivingPageApiName] = useState('');
   const [pendingArchivePageApiName, setPendingArchivePageApiName] = useState('');
   const [switchingLayout, setSwitchingLayout] = useState(false);
@@ -1152,7 +1173,7 @@ function PageBuilder({
       savedPageApiName.current=apiName;
       onSelectPage(apiName);
       onChange(layout);
-      onLayoutVariantChange?.(variant);
+      onLayoutVariantChange?.(variant,apiName);
       return true;
     }catch(error){
       onNotify(error instanceof Error?error.message:'Unable to open the chosen page layout');
@@ -2180,9 +2201,47 @@ function PageBuilder({
   const pageListPageCount=Math.max(1,Math.ceil(visiblePages.length/50));
   const safePageListPage=Math.min(pageListPage,pageListPageCount);
   const paginatedPages=visiblePages.slice((safePageListPage-1)*50,safePageListPage*50);
+  const paginatedPageNames=paginatedPages.map(item=>item.apiName).join(',');
+  useEffect(()=>{
+    if(editorMode||!paginatedPageNames)return;
+    void fetchLayoutSummaries(paginatedPageNames.split(','));
+  },[editorMode,paginatedPageNames,fetchLayoutSummaries]);
+  // The open page: refresh after every switch or save so counts stay current.
+  useEffect(()=>{
+    if(!editorMode||!page.apiName)return;
+    void fetchLayoutSummaries([page.apiName]);
+  },[editorMode,page.apiName,page.layoutVariant,page.draftRevision,fetchLayoutSummaries]);
+  /** Design opens the layout the page was designed in; Desktop-only pages are unchanged. */
+  const openPageDesign=async(apiName:string)=>{
+    const summary=layoutSummaries[apiName]??(await fetchLayoutSummaries([apiName]))
+      .find(item=>item.apiName===apiName);
+    const variant=primaryPageLayout(summary);
+    if(variant==='Desktop'){selectSavedPage(apiName);return;}
+    await openPageDesignLayout(apiName,variant);
+  };
+  const layoutBadges=(item:LightningPageMetadata)=>designedPageLayouts(layoutSummaries[item.apiName])
+    .filter(layout=>layout.variant!=='Desktop'||designedPageLayouts(layoutSummaries[item.apiName]).length>1)
+    .map(layout=><span key={layout.variant} className="page-layout-badge"
+      title={layout.variant+' layout: '+layout.components+' components'}>{layout.variant} · {layout.components}</span>);
+  /** Replace this layout's components with another layout's, as one undoable unsaved edit. */
+  const copyLayoutFrom=async(source:PageLayoutVariant)=>{
+    const current=page.layoutVariant??'Desktop';
+    if(!source||source===current)return;
+    try{
+      const {page:from}=await request<{page:LightningPageMetadata}>(
+        `/metadata/pages/${encodeURIComponent(page.apiName)}/layouts/${source}/editor`);
+      if(!from.components.length){onNotify(source+' layout has no components to copy.');return;}
+      if(page.components.length&&!window.confirm('Replace the '+page.components.length+' components on '+current+
+        ' with the '+from.components.length+' from '+source+'? Nothing is saved until you Save; Undo reverts it.'))return;
+      applyPage({...page,components:structuredClone(from.components)});
+      setLayoutCopySource('');
+      onNotify('Copied '+from.components.length+' components from '+source+'. Review positions for this canvas, then Save.');
+    }catch(error){onNotify(error instanceof Error?error.message:'Unable to copy the layout');}
+  };
   const downloadPageInventory = async (item:LightningPageMetadata) => {
     if(inventoryDownloading)return;
-    const variant=inventoryExportVariant;
+    const variant=inventoryExportVariant==='Auto'
+      ?primaryPageLayout(layoutSummaries[item.apiName]):inventoryExportVariant;
     setInventoryDownloading(item.apiName);
     try{
       const {csv}=await request<{csv:string}>(
@@ -3257,7 +3316,8 @@ function PageBuilder({
             <button className="btn btn-brand" type="button" onClick={openCreatePage}><Plus size={16}/> New Page</button>
             <button className="btn" type="button" disabled={saving} onClick={()=>setInventoryUploadOpen(true)}><Upload size={16}/> Upload CSV</button>
             <select className="form-control" aria-label="Inventory CSV device layout" title="Layout used by page inventory downloads"
-              style={{width:148}} value={inventoryExportVariant} onChange={event=>setInventoryExportVariant(event.target.value as PageLayoutVariant)}>
+              style={{width:172}} value={inventoryExportVariant} onChange={event=>setInventoryExportVariant(event.target.value as PageLayoutVariant|'Auto')}>
+              <option value="Auto">CSV: Page’s layout</option>
               {(['Desktop','Tablet','Mobile','Custom'] as const).map(device=><option key={device} value={device}>CSV: {device}</option>)}
             </select>
           </div></header>
@@ -3276,16 +3336,16 @@ function PageBuilder({
         </div>
         <ResponsiveDataList rows={paginatedPages} includeTablet getId={item=>item.apiName}
           label="Page Manager pages" emptyText="No pages match the selected filters"
-          onOpen={item=>selectSavedPage(item.apiName)} openLabel="Open page designer"
+          onOpen={item=>void openPageDesign(item.apiName)} openLabel="Open page designer"
           columns={[
             {apiName:'label',label:'Page',phoneRole:'title',render:item=>item.label},
             {apiName:'api',label:'API name',phoneRole:'subtitle',render:item=>item.apiName},
             {apiName:'status',label:'Status',phoneRole:'badge',render:item=>item.status},
             {apiName:'type',label:'Type',render:item=>item.pageType},
-            {apiName:'device',label:'Devices',phoneRole:'trailing',render:item=>pageDeviceLabel(item)},
+            {apiName:'device',label:'Devices',phoneRole:'trailing',render:item=><>{pageDeviceLabel(item)}{layoutBadges(item)}</>},
             {apiName:'actions',label:'Actions',render:item=><div className="page-manager-mobile-actions">
               <button type="button" className="btn" disabled={saving} onClick={()=>setPageDetailsApi(item.apiName)}>Page properties</button>
-              <button type="button" className="btn" onClick={()=>selectSavedPage(item.apiName)}>Design</button>
+              <button type="button" className="btn" onClick={()=>void openPageDesign(item.apiName)}>Design</button>
               <button type="button" className="btn" disabled={saving} onClick={()=>void(item.status==='Active'?onDeactivate(item.apiName):savePage('Active',item,true))}>{item.status==='Active'?'Deactivate':'Activate'}</button>
               <button type="button" className="btn" disabled={saving||Boolean(archivingPageApiName)} onClick={()=>setPendingArchivePageApiName(item.apiName)}>Delete</button>
             </div>}
@@ -3301,8 +3361,8 @@ function PageBuilder({
                 aria-label={'Download component inventory for '+item.label} title="Download component inventory CSV"
                 onClick={()=>void downloadPageInventory(item)}><Download size={16}/></button>
               <button className="page-manager-icon-action" type="button"
-                aria-label={'Design '+item.label} title="Open page designer"
-                onClick={()=>selectSavedPage(item.apiName)}><PanelsTopLeft size={16}/></button>
+                aria-label={'Design '+item.label} title="Open page designer (the layout it was designed in)"
+                onClick={()=>void openPageDesign(item.apiName)}><PanelsTopLeft size={16}/></button>
               <button className={'page-manager-icon-action page-manager-toggle'+(item.status==='Active'?' is-active':'')} type="button"
                 disabled={saving} aria-pressed={item.status==='Active'}
                 aria-label={(item.status==='Active'?'Deactivate ':'Activate ')+item.label}
@@ -3315,11 +3375,11 @@ function PageBuilder({
                 onClick={()=>setPendingArchivePageApiName(item.apiName)}><Trash2 size={16}/></button>
             </div>
           </td>
-          <td><button type="button" className="page-manager-page-link" onClick={()=>selectSavedPage(item.apiName)}>{item.label}</button></td><td title={item.apiName}><code>{item.apiName}</code></td>
+          <td><button type="button" className="page-manager-page-link" onClick={()=>void openPageDesign(item.apiName)}>{item.label}</button></td><td title={item.apiName}><code>{item.apiName}</code></td>
           <td>{apps.find(app=>app.navigationPageApiNames.includes(item.apiName)
             ||(item.activationAssignments??[]).some(a=>a.appId===app.apiName))?.label??'—'}</td>
           <td>{item.publishedRevision?'v'+item.publishedRevision:'—'}</td>
-          <td>{item.pageType}</td><td>{item.targetObject ? objects.find(object=>object.apiName===item.targetObject)?.label ?? item.targetObject : 'Not object-specific'}</td><td>{pageDeviceLabel(item)}</td><td>{item.canvasWidth} × {item.canvasHeight} px</td><td>{canvasOrientation(item.canvasWidth,item.canvasHeight)}</td>
+          <td>{item.pageType}</td><td>{item.targetObject ? objects.find(object=>object.apiName===item.targetObject)?.label ?? item.targetObject : 'Not object-specific'}</td><td>{pageDeviceLabel(item)}{layoutBadges(item)}</td><td>{item.canvasWidth} × {item.canvasHeight} px</td><td>{canvasOrientation(item.canvasWidth,item.canvasHeight)}</td>
           <td>{item.updatedAt ? new Date(item.updatedAt).toLocaleDateString() : '—'}</td>
           <td><span className={item.status === 'Active' ? 'page-status-badge active' : 'page-status-badge'}>{item.status}</span></td>
 
@@ -3342,9 +3402,12 @@ function PageBuilder({
           setInventoryUploadOpen(false);
         }}/>}
       {pageDetailsApi&&(()=>{
-        const detailsPage=page.apiName===pageDetailsApi?page:
-          pages.find(item=>item.apiName===pageDetailsApi)??null;
+        // In the builder the open layout is the context; from the page list,
+        // use the listed page so Edit Page defaults to the page's own layout.
+        const detailsPage=editorMode&&page.apiName===pageDetailsApi?page:
+          pages.find(item=>item.apiName===pageDetailsApi)??(page.apiName===pageDetailsApi?page:null);
         return detailsPage?<PageDetailsDialog key={pageDetailsApi} page={detailsPage}
+          layoutSummary={layoutSummaries[detailsPage.apiName]??null}
           apps={apps} profiles={profiles}
           recordTypes={objects.find(item=>item.apiName===detailsPage.targetObject)?.recordTypes??[]}
           disabled={saving} request={request}
@@ -3534,6 +3597,16 @@ function PageBuilder({
           {ribbonTab==='Arrange' && <ArrangeRibbon {...canvasArrangeProps}/>}
           {ribbonTab==='Advanced' && <PageBuilderAdvancedSections
             section={advancedEditor} onInspectorHost={setRibbonPropertyHost}
+            layout={{
+              current:page.layoutVariant??'Desktop',
+              options:PAGE_LAYOUT_ORDER.map(variant=>({value:variant,
+                label:pageLayoutOptionLabel(variant,layoutSummaries[page.apiName])})),
+              busy:switchingLayout||saving,
+              onSwitch:variant=>void switchLayoutVariant(variant as PageLayoutVariant),
+              copySource:layoutCopySource,
+              onCopySource:variant=>setLayoutCopySource(variant as PageLayoutVariant|''),
+              onCopy:()=>{if(layoutCopySource)void copyLayoutFrom(layoutCopySource);}
+            }}
             assignment={{
               enabled:page.pageType==='Record Page'||page.pageType==='Home Page',
               assigned:(page.activationAssignments??[]).length>0,

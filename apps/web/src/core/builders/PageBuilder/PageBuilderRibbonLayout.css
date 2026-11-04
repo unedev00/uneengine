@@ -144,11 +144,11 @@
  * rows and bottom captions keep the same 114px vertical footprint. */
 .office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content
   > .page-builder-advanced-inline {
-  box-sizing:border-box!important;display:grid!important;flex:0 1 1360px!important;
-  grid-template-columns:minmax(0,1.08fr) minmax(0,1.12fr) minmax(0,1.06fr) minmax(0,1fr)!important;
+  box-sizing:border-box!important;display:grid!important;flex:0 1 1640px!important;
+  grid-template-columns:minmax(0,1.08fr) minmax(0,1.12fr) minmax(0,1.06fr) minmax(0,1fr) minmax(0,1.1fr)!important;
   grid-template-rows:114px!important;
   align-items:stretch!important;
-  width:min(100%,1360px)!important;min-width:0!important;max-width:1360px!important;
+  width:min(100%,1640px)!important;min-width:0!important;max-width:1640px!important;
   height:114px!important;min-height:114px!important;max-height:114px!important;
   gap:0!important;overflow:hidden!important;
 }
@@ -161,6 +161,7 @@
 .office-builder-ribbon .advanced-fixed-group.advanced-properties{min-width:0;width:auto}
 .office-builder-ribbon .advanced-fixed-group.advanced-nesting{min-width:0;width:auto}
 .office-builder-ribbon .advanced-fixed-group.advanced-technical{min-width:0;width:auto}
+.office-builder-ribbon .advanced-fixed-group.advanced-layout{min-width:0;width:auto}
 .office-builder-ribbon .page-builder-advanced-inline .advanced-fixed-field{
   box-sizing:border-box;position:absolute;display:flex;align-items:center;
   justify-content:space-between;gap:4px;margin:0;padding:0 3px;
@@ -205,6 +206,15 @@
 .office-builder-ribbon .advanced-properties .advanced-readonly{left:50%;top:35px;right:8px}
 /* Group 4: x=917-1294 */
 .office-builder-ribbon .advanced-nesting .advanced-accept{left:8px;right:8px;top:5px}
+/* Device Layout: open another layout (row 1) or fill this one from another (row 2). */
+.office-builder-ribbon .advanced-layout .advanced-layout-open{left:8px;right:8px;top:5px}
+.office-builder-ribbon .advanced-layout .advanced-layout-copy{left:8px;right:8px;top:35px}
+.office-builder-ribbon .page-builder-advanced-inline .advanced-layout-copy>select{flex:1 1 auto;max-width:none}
+.office-builder-ribbon .page-builder-advanced-inline .advanced-layout-copy>button{
+  flex:0 0 auto;height:24px;padding:0 8px;border:1px solid #b8c9dc;border-radius:4px;
+  background:#fff;color:#185da8;cursor:pointer;font:11px "Segoe UI",Arial,sans-serif;
+}
+.office-builder-ribbon .page-builder-advanced-inline .advanced-layout-copy>button:disabled{opacity:.4;cursor:not-allowed}
 /* Group 5: x=1295-1640 */
 .office-builder-ribbon .advanced-technical .advanced-component-name{left:8px;right:8px;top:5px}
 .office-builder-ribbon .advanced-technical .advanced-component-name>input[aria-invalid="true"]{

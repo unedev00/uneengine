@@ -3,6 +3,7 @@ import {Pencil,LayoutTemplate,History,LockKeyhole} from 'lucide-react';
 import type {LightningPageMetadata,LightningAppMetadata,PageActivationAssignmentMetadata,ProfileMetadata} from '../../metadata/Definitions/metadata';
 import PageDetailsAssignmentEditor,{assignmentValidationError} from './PageDetailsAssignmentEditor';
 import './PageDetailsDialog.css';
+import {pageLayoutOptionLabel,primaryPageLayout,type PageLayoutSummary} from './pageLayoutSummary';
 
 type Variant='Desktop'|'Tablet'|'Mobile'|'Custom';
 type Version={version:number;createdAt:string;published:boolean;draft:boolean;archived:boolean};
@@ -38,7 +39,7 @@ function HistoricalLayoutPreview({page}:{page:LightningPageMetadata}){
 
 /** Page identity, app assignment and immutable layout history.
  * Historical revisions can be inspected or restored to draft, never edited in place. */
-export default function PageDetailsDialog({page,apps,profiles,recordTypes,disabled,request,onClose,onSave,onSaveAssignments,onOpenDesign,onReload}:{
+export default function PageDetailsDialog({page,apps,profiles,recordTypes,disabled,request,onClose,onSave,onSaveAssignments,onOpenDesign,onReload,layoutSummary}:{
  page:LightningPageMetadata;
  apps:readonly LightningAppMetadata[];
  profiles:readonly ProfileMetadata[];
@@ -51,6 +52,8 @@ export default function PageDetailsDialog({page,apps,profiles,recordTypes,disabl
  onSaveAssignments:(page:LightningPageMetadata,assignments:PageActivationAssignmentMetadata[])=>Promise<LightningPageMetadata|false>;
  onOpenDesign:(apiName:string,layout:Variant)=>Promise<boolean>|boolean;
  onReload:(page:LightningPageMetadata)=>void;
+ /** Which layouts the page has designed; the default opens the page's own layout. */
+ layoutSummary?:PageLayoutSummary|null;
 }){
  const [label,setLabel]=useState(page.label);
  const [apiName,setApiName]=useState(page.apiName);
@@ -71,9 +74,18 @@ export default function PageDetailsDialog({page,apps,profiles,recordTypes,disabl
  const assignmentError=changedAssignments?assignmentValidationError(page,assignments,apps,profiles,recordTypes):'';
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState('');
- const [variant,setVariant]=useState<Variant>(page.layoutVariant??'Desktop');
+ // An open builder layout wins; from the page list, open the layout the page was designed in.
+ const initialVariant:Variant=page.layoutVariant??primaryPageLayout(layoutSummary);
+ const [variant,setVariant]=useState<Variant>(initialVariant);
  // Choosing a design layout is navigation, not a mutation of published metadata.
- const [designVariant,setDesignVariant]=useState<Variant>(page.layoutVariant??'Desktop');
+ const [designVariant,setDesignVariant]=useState<Variant>(initialVariant);
+ // The summary may arrive after the dialog opens; follow it until the user picks.
+ const [designTouched,setDesignTouched]=useState(false);
+ useEffect(()=>{
+  if(designTouched||page.layoutVariant)return;
+  const primary=primaryPageLayout(layoutSummary);
+  setDesignVariant(primary);setVariant(primary);
+ },[layoutSummary,designTouched,page.layoutVariant]);
  const [versions,setVersions]=useState<Version[]>([]);
  const [loading,setLoading]=useState(false);
  const [showArchived,setShowArchived]=useState(false);
@@ -195,13 +207,13 @@ export default function PageDetailsDialog({page,apps,profiles,recordTypes,disabl
        <div className="page-details-kv"><span>Page type</span><strong>{page.pageType}</strong></div>
        <div className="page-details-kv"><span>Layout mode</span><strong>{page.layoutMode}</strong></div>
        <div className="page-details-kv"><span>Related object</span><strong>{page.targetObject||'Not object-specific'}</strong></div>
-       <label className="form-label">Device layout
+       <label className="form-label">Open layout
         <select className="form-control" aria-label="Device layout to design"
          value={designVariant} disabled={busy}
-         onChange={e=>setDesignVariant(e.target.value as Variant)}>
-         {variants.map(item=><option key={item} value={item}>{item}</option>)}
+         onChange={e=>{setDesignTouched(true);setDesignVariant(e.target.value as Variant);}}>
+         {variants.map(item=><option key={item} value={item}>{pageLayoutOptionLabel(item,layoutSummary)}</option>)}
         </select>
-        <small>Choose the layout to open in Design. Each device keeps its own draft, components and published version.</small>
+        <small>Not a page setting: picks which layout the “Open … Design” button opens. Each layout keeps its own draft, components and published version. Switch layouts any time in the builder: Advanced › Device Layout.</small>
        </label>
       </section>
      </div>

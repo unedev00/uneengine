@@ -72,3 +72,7 @@
 .page-manager-filter-label{flex:0 0 auto;min-width:84px;font-size:13px;font-weight:600;color:var(--md-text-secondary,#475569)}
 .page-manager-tab-level>.md-admin-tabstrip{min-width:0}
 @media(max-width:640px){.page-manager-tab-level{flex-wrap:wrap}.page-manager-filter-label{width:100%}}
+/* Device layouts a page has designed (e.g. "Custom · 26"), beside its device. */
+.page-layout-badge{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:10px;
+  border:1px solid #c9d7ea;background:#eef4fc;color:#1d4f8f;font-size:11px;line-height:16px;
+  font-weight:600;white-space:nowrap;vertical-align:middle}

@@ -490,7 +490,11 @@ export function renderSetupShell(ctx: any) {
                 }}>Open Record Page in Object Manager</button></section>;
             })()}
           {route.kind === 'setup' && workspace === 'page-builder' && advancedMetadataLoaded &&
-            (!route.resourceApiName || pages.some((item) => item.apiName === route.resourceApiName && item.pageType !== 'Record Page')) && <PageBuilder key={route.resourceApiName ?? 'page-list'} editorMode={Boolean(route.resourceApiName)} onBackToPages={() => { setPage(pages.find(item => item.apiName === page.apiName) ?? page); navigateRoute({ kind: 'setup', workspace: 'page-builder' }); }} page={page} pages={pages}
+            (!route.resourceApiName || pages.some((item) => item.apiName === route.resourceApiName && item.pageType !== 'Record Page')) && <PageBuilder key={route.resourceApiName ?? 'page-list'} editorMode={Boolean(route.resourceApiName)}
+              // The layout being designed is part of the route (/page-builder/<page>/<layout>), so opening a
+              // Custom layout survives the route's page selection and a browser refresh.
+              initialLayoutVariant={(['Desktop','Tablet','Mobile','Custom'] as const).find(variant=>variant===route.resourceId)}
+              onLayoutVariantChange={(variant:'Desktop'|'Tablet'|'Mobile'|'Custom',apiName?:string)=>{ const target=apiName??route.resourceApiName; if(target) navigateRoute({kind:'setup',workspace:'page-builder',resourceApiName:target,resourceId:variant}); }} onBackToPages={() => { setPage(pages.find(item => item.apiName === page.apiName) ?? page); navigateRoute({ kind: 'setup', workspace: 'page-builder' }); }} page={page} pages={pages}
             preparedAppId={pageCreationAppContext[page.apiName] ?? ''}
             dashboards={dashboards}
             onPrepareApp={(pageApiName: string, appId: string) => setPageCreationAppContext(current => ({

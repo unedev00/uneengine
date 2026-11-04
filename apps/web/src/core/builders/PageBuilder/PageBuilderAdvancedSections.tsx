@@ -16,16 +16,22 @@ type Properties={
 type Nesting={
   accepted:boolean;canChange:boolean;onAccepted:(value:boolean)=>void;
 };
+/** Switch the open device layout, or fill it from another layout. */
+type LayoutSwitch={
+  current:string;options:Option[];busy:boolean;
+  onSwitch:(variant:string)=>void;
+  copySource:string;onCopySource:(variant:string)=>void;onCopy:()=>void;
+};
 type Props={
   section:AdvancedFeature|null;onInspectorHost:(node:HTMLDivElement|null)=>void;
-  assignment:Assignment;properties:Properties;nesting:Nesting;
+  assignment:Assignment;properties:Properties;nesting:Nesting;layout?:LayoutSwitch;
 };
 
 /** Advanced contains only component controls and a link to page activation.
  * Page device eligibility belongs to Edit Page; component columns and custom
  * viewport breakpoints retain their dedicated metadata editors. */
 export default function PageBuilderAdvancedSections({
-  onInspectorHost,assignment,properties,nesting
+  onInspectorHost,assignment,properties,nesting,layout
 }:Props){
   // The former Advanced editor portalled the entire inspector into the ribbon.
   // Never leave a stale portal attached after switching from another tab.
@@ -94,5 +100,26 @@ export default function PageBuilderAdvancedSections({
         className="advanced-component-name-error">{nameError}</span>}
       <span className="advanced-fixed-caption">Component Identity</span>
     </section>
+    {layout&&<section className="advanced-fixed-group advanced-layout" aria-label="Device Layout">
+      <label className="advanced-fixed-field advanced-layout-open">Layout
+        <select aria-label="Open device layout" value={layout.current} disabled={layout.busy}
+          title="Switch the layout you are designing. Save first: unsaved edits are not carried over."
+          onChange={event=>layout.onSwitch(event.target.value)}>
+          {layout.options.map(option=><option key={option.value} value={option.value}>{option.label}</option>)}
+        </select>
+      </label>
+      <label className="advanced-fixed-field advanced-layout-copy">Copy from
+        <select aria-label="Copy components from layout" value={layout.copySource} disabled={layout.busy}
+          title="Fill this layout with another layout’s components (unsaved, undoable)"
+          onChange={event=>layout.onCopySource(event.target.value)}>
+          <option value="">Choose…</option>
+          {layout.options.filter(option=>option.value!==layout.current)
+            .map(option=><option key={option.value} value={option.value}>{option.label}</option>)}
+        </select>
+        <button type="button" aria-label="Copy layout components" disabled={layout.busy||!layout.copySource}
+          onClick={layout.onCopy}>Copy</button>
+      </label>
+      <span className="advanced-fixed-caption">Device Layout</span>
+    </section>}
   </div>;
 }

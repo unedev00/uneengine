@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {readFileSync} from 'node:fs';
 import { pageBuilderPaletteCategories } from '../src/core/builders/PageBuilder/pageBuilderPalette';
+import {designedPageLayouts,pageLayoutOptionLabel,primaryPageLayout,type PageLayoutSummary} from '../src/core/builders/PageBuilder/pageLayoutSummary';
 import {
   addRecentPageBlock, describeBuilderFilters, loadRecentPageBlocks, pageBuilderCategoryLabels, pageBuilderStartOptions
 } from '../src/core/builders/PageBuilder/pageBuilderUx';
@@ -219,4 +220,48 @@ test('Ctrl/Cmd+A selects every component in the active Page Builder layout witho
   assert.match(handler,/setSelectedRegion\(null\)/);
   assert.match(handler,/setPageSettingsOpen\(false\)/);
   assert.match(view,/selectionIds\.includes\(component\.id\) && !previewMode && !libraryPreview \? 'multi-selected'/);
+});
+
+const kioskSummary:PageLayoutSummary={apiName:'smart_kiosk_review',primary:'Custom',layouts:[
+  {variant:'Desktop',components:0,authored:true,published:false,updatedAt:'2026-11-01T10:00:00Z'},
+  {variant:'Custom',components:26,authored:true,published:false,updatedAt:'2026-11-04T20:40:00Z'},
+  {variant:'Tablet',components:0,authored:false,published:false,updatedAt:null},
+  {variant:'Mobile',components:0,authored:false,published:false,updatedAt:null}]};
+test('layout labels say what each layout holds and which one a page opens in',()=>{
+  assert.equal(pageLayoutOptionLabel('Custom',kioskSummary),'Custom (26)');
+  assert.equal(pageLayoutOptionLabel('Desktop',kioskSummary),'Desktop (empty)');
+  assert.equal(pageLayoutOptionLabel('Tablet',kioskSummary),'Tablet (follows Desktop)');
+  assert.equal(pageLayoutOptionLabel('Desktop',null),'Desktop');
+  assert.equal(primaryPageLayout(kioskSummary),'Custom');
+  assert.equal(primaryPageLayout(undefined),'Desktop');
+  assert.deepEqual(designedPageLayouts(kioskSummary).map(item=>item.variant),['Custom']);
+});
+test('Design opens the page\'s own layout and the layout is kept in the route',()=>{
+  const read=(path:string)=>readFileSync(new URL(path,import.meta.url),'utf8');
+  const builder=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+  const shell=read('../src/core/workspace/SetupShell/setupShellPresentation.tsx');
+  const details=read('../src/core/builders/PageBuilder/PageDetailsDialog.tsx');
+  const advanced=read('../src/core/builders/PageBuilder/PageBuilderAdvancedSections.tsx');
+  // Page list: icon, name link, mobile list and button all open the designed layout.
+  assert.equal((builder.match(/openPageDesign\(item\.apiName\)/g)??[]).length,4);
+  assert.doesNotMatch(builder,/selectSavedPage\(item\.apiName\)/);
+  assert.match(builder,/if\(variant==='Desktop'\)\{selectSavedPage\(apiName\);return;\}/);
+  assert.match(builder,/onLayoutVariantChange\?\.\(variant,apiName\)/);
+  assert.match(builder,/'\/metadata\/page-layout-summaries\?pages='/);
+  // The route carries the layout so the route's page selection cannot reset it to Desktop.
+  assert.match(shell,/initialLayoutVariant=\{\(\['Desktop','Tablet','Mobile','Custom'\] as const\)\.find\(variant=>variant===route\.resourceId\)\}/);
+  assert.match(shell,/workspace:'page-builder',resourceApiName:target,resourceId:variant/);
+  // Edit Page names the control for what it does and defaults to the designed layout.
+  assert.match(details,/>Open layout/);
+  assert.match(details,/page\.layoutVariant\?\?primaryPageLayout\(layoutSummary\)/);
+  assert.match(details,/pageLayoutOptionLabel\(item,layoutSummary\)/);
+  // Advanced ribbon: switch layout, or copy another layout's components (unsaved, undoable).
+  assert.match(advanced,/aria-label="Device Layout"/);
+  assert.match(advanced,/aria-label="Open device layout"/);
+  assert.match(advanced,/aria-label="Copy components from layout"/);
+  assert.match(builder,/onSwitch:variant=>void switchLayoutVariant\(variant as PageLayoutVariant\)/);
+  assert.match(builder,/applyPage\(\{\.\.\.page,components:structuredClone\(from\.components\)\}\)/);
+  // CSV download defaults to each page's own layout.
+  assert.match(builder,/useState<PageLayoutVariant\|'Auto'>\('Auto'\)/);
+  assert.match(builder,/CSV: Page’s layout/);
 });
