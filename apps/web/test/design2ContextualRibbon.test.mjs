@@ -314,3 +314,63 @@ test('fixed SQL columns override legacy flex and grid-area:auto important rules'
  assert.match(css,/grid-column:var\(--smart-slot-column,1\) \/ span 1!important/);
  assert.match(css,/width:380px!important/);
 });
+
+
+test('Badge Visible is a Layout property for Smart Card Grid and Smart Image',()=>{
+ const migration=read('../../server/src/system-support/migrations/20271109-badge-visibility-layout.sql');
+ const catalog=read('../../server/src/system-support/migrations/20270124-smart-component-library.sql');
+ assert.match(migration,/UPDATE md_builder_shared_properties/);
+ assert.match(migration,/SET tab='Layout',section_group='Badge'/);
+ assert.match(migration,/WHERE property_key='badgeVisible'/);
+ assert.match(catalog,/\('smart_card_grid','badgeVisible',true/);
+ assert.match(catalog,/\('smart_image','badgeVisible',true/);
+ assert.match(shared,/const visible=definitions\.filter\(p=>p\.tab===tab\)/);
+ assert.match(shared,/Badge visibility/,'Design 2 Badge-area Eye remains independently functional');
+});
+
+test('Design 2 R0 C7-C20 has 14 fixed 40x26 actions for every selected component',()=>{
+ const actions=read('../src/core/builders/PageBuilder/Design2CanvasActions.tsx');
+ const labels=[
+  'Align left','Align centre','Align right','Align top','Align middle','Align bottom',
+  'Distribute horizontally','Distribute vertically','Bring to front','Send backward',
+  'Group','Ungroup','Lock / Unlock component','Component nesting'
+ ];
+ for(const label of labels)assert.ok(actions.includes(label),'Missing '+label);
+ assert.match(actions,/data-design-column=\{index\+7\}/);
+ assert.match(actions,/data-design-row="0"/);
+ assert.match(actions,/data-design-columns="7-20"/);
+ assert.match(actions,/const body=props\.area==='Body'/);
+ assert.match(actions,/disabled=\{!item\.enabled\}/);
+ assert.match(actions,/arrange\?\.onAlign/);
+ assert.match(actions,/arrange\?\.onDistribute/);
+ assert.match(actions,/arrange\?\.onPlace/);
+ assert.match(actions,/arrange\?\.onMove/);
+ assert.match(actions,/arrange\?\.onGroup/);
+ assert.match(actions,/arrange\?\.onUngroup/);
+ assert.match(actions,/arrange\?\.onLock/);
+ assert.match(actions,/arrange\?\.onNesting/);
+ assert.match(shared,/data-design-column="5"/);
+ assert.match(shared,/data-design-column="6"/);
+ assert.match(shared,/<Design2CanvasActions area=\{activeDesign2Area\} arrange=\{design2Arrange\}/);
+ assert.match(builder,/design2Arrange=\{canvasArrangeProps\}/);
+ assert.match(builder,/!selectedNewUne && ribbonTab==='Component Design 2'/);
+ assert.match(css,/grid-template-columns:repeat\(14,40px\)!important/);
+ assert.match(css,/grid-template-rows:26px!important/);
+ assert.match(css,/\.smart-design2-arrange-action\{/);
+ assert.match(css,/width:40px!important/);
+ assert.match(css,/height:26px!important/);
+});
+
+test('Design 2 R0 command actions share the exact Arrange callbacks and their disabled rules',()=>{
+ const actions=read('../src/core/builders/PageBuilder/Design2CanvasActions.tsx');
+ assert.match(builder,/const canvasArrangeProps:ArrangeRibbonProps=/);
+ assert.match(builder,/<ArrangeRibbon \{\.\.\.canvasArrangeProps\}/);
+ assert.match(actions,/const movable=body&&arrange\?\.freeCanvas&&arrange\?\.hasSelection&&!arrange\?\.locked/);
+ assert.match(actions,/const hasThree=movable&&\(arrange\?\.selectedCount\?\?0\)>=3/);
+ assert.match(actions,/arrange\?\.canGroup/);
+ assert.match(actions,/arrange\?\.canUngroup/);
+ assert.match(actions,/arrange\?\.canBringToFront/);
+ assert.match(actions,/arrange\?\.canSendBackward/);
+ assert.match(builder,/onNesting:\(\)=>openAdvanced\('nesting'\)/);
+ assert.match(builder,/onLock:\(\)=>/);
+});
