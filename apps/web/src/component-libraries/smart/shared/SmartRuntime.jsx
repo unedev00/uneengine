@@ -370,7 +370,7 @@ function SmartTabs({p,record,fire}){
    label:"Tab "+(i+1),id:"editor-tab-"+i
   })):recordsOf(p).slice(0,200).map(row=>({
    label:scopedExpression(p,"textSource",p.textSource,row),id:row?.Id??row?.id
-  })):Array.from({length:count},(_,i)=>Array.isArray(p.tabs)&&p.tabs[i]!==undefined
+  }))):Array.from({length:count},(_,i)=>Array.isArray(p.tabs)&&p.tabs[i]!==undefined
    ?p.tabs[i]:i===0&&typeof p.label==="string"&&p.label&&!p.label.startsWith("@")
      ?p.label:"Tab "+(i+1)));
  // Static captions are formulas on stable tab identities, never independent records.
