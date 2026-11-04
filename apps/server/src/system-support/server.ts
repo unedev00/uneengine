@@ -1713,7 +1713,7 @@ export function createSystemServer(db:SqlPersistence) {
     const actor=req.actor!;
     await rbac.require(actor.tenant_id,actor.user_id,'PageDefinition','manage');
     const name=req.body?.apiName;
-    if(typeof name!=='string'||!api.test(name)||name!==name.toLowerCase())
+    if(typeof name!=='string'||!/^[A-Za-z][A-Za-z0-9_]*$/.test(name)||name!==name.toLowerCase())
       throw new Error('New Page API names must be lowercase');
     if(req.body?.status!=='Draft')throw new Error('New Pages must start as Draft');
     await assertMetadataPackageEditable(db,actor.tenant_id,'page',name);
