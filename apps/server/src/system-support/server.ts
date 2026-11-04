@@ -2788,7 +2788,7 @@ export function createSystemServer(db:SqlPersistence) {
       res.status(409).json({error:err.message});
     else if(/^(Field datatype|Field datatype conversion|Existing value|Numeric value|Only ISO|Migration to Rich Text|Required field migration)/.test(err.message))
       res.status(400).json({error:err.message});
-    else if(err.message==='Field already exists'||err.message==='Object already exists'||err.message==='Page layout revision conflict'||err.message==='Page layout draft revision conflict'||err.message==='Page revision conflict'||err.message==='Record has changed since it was loaded')res.status(409).json({error:err.message});
+    else if(err.message==='Page already exists'||err.message==='Page API name already exists (archived)'||err.message==='Field already exists'||err.message==='Object already exists'||err.message==='Page layout revision conflict'||err.message==='Page layout draft revision conflict'||err.message==='Page revision conflict'||err.message==='Record has changed since it was loaded')res.status(409).json({error:err.message});
     else if(err.message==='API Name already exists'||err.message==='API Name already exists for this language')res.status(409).json({error:err.message});
     else if((err as Error&{code?:string;constraint?:string}).code==='23505' && /_api_(?:name|version)_ci_uq$|_id_ci_uq$/.test((err as Error&{constraint?:string}).constraint??''))res.status(409).json({error:'API Name already exists'});
     else if(['23503','23505'].includes((err as Error&{code?:string}).code??''))res.status(409).json({error:'Policy dependency or duplicate identity conflict'});
