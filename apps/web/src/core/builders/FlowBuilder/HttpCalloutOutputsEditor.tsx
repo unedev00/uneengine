@@ -32,17 +32,17 @@ export default function HttpCalloutOutputsEditor({ flow, elementId, onFlowChange
   const unlisted = Object.entries(mapping).filter(([, path]) => !parsed.fields.some(field => field.path === path));
   return <section className="flow-config-list flow-http-outputs" aria-label="HTTP Callout outputs">
     <strong>Outputs for next steps</strong>
-    <p className="settings-panel-copy">Tick what you need. Each output appears in later steps under <b>#</b>,
+    <p className="settings-panel-copy">Tick what you need. Each output appears in later steps under <b>!</b>,
       like a named cell in Excel.</p>
     <label className="form-label flow-http-output-row">
       <input type="checkbox" checked={Boolean(statusName)}
         onChange={event => apply(() => toggleHttpStandardOutput(flow, elementId, 'status', event.target.checked))} />
-      Status code (200 = OK) {statusName && <code>#{statusName}</code>}
+      Status code (200 = OK) {statusName && <code>!{statusName}</code>}
     </label>
     <label className="form-label flow-http-output-row">
       <input type="checkbox" checked={Boolean(bodyName)}
         onChange={event => apply(() => toggleHttpStandardOutput(flow, elementId, 'body', event.target.checked))} />
-      Full response text {bodyName && <code>#{bodyName}</code>}
+      Full response text {bodyName && <code>!{bodyName}</code>}
     </label>
     <details open={!Object.keys(mapping).length || Boolean(sample)}>
       <summary>Pick fields from a sample response</summary>
@@ -59,14 +59,14 @@ export default function HttpCalloutOutputsEditor({ flow, elementId, onFlowChange
               onChange={event => apply(() => toggleHttpResponseField(flow, elementId, field, event.target.checked))} />
             <span>{field.path}</span>
             <small className="flow-reference-type">{field.dataType}{field.sample ? ' · e.g. ' + field.sample.slice(0, 40) : ''}</small>
-            {name && <code>#{name}</code>}
+            {name && <code>!{name}</code>}
           </label>;
         })}
       </div>}
     </details>
     {unlisted.length > 0 && <div className="flow-config-list" aria-label="Selected response fields">
       {unlisted.map(([name, path]) => <div key={name} className="flow-http-output-row">
-        <span>{path}</span><small className="flow-reference-type">{typeOf(name)}</small><code>#{name}</code>
+        <span>{path}</span><small className="flow-reference-type">{typeOf(name)}</small><code>!{name}</code>
         <button type="button" className="row-menu" aria-label={'Remove output ' + name}
           onClick={() => apply(() => toggleHttpResponseField(flow, elementId,
             { path, sample: '', dataType: 'Text' }, false))}>×</button>

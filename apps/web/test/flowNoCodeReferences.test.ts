@@ -28,27 +28,33 @@ function flow():FlowDefinitionMetadata {
   };
 }
 
-test('@ is record data, $ is user/system, # is a Flow value',()=>{
+test('@ is record data, $ is user/system, ! is a Flow value',()=>{
   assert.equal(flowReferenceSymbol('{!$Record.Email}'),'@');
   assert.equal(flowReferenceSymbol('{!$Record__Prior.Email}'),'@');
   assert.equal(flowReferenceSymbol('{!record3.Id}'),'@');
   assert.equal(flowReferenceSymbol('{!$User.Id}'),'$');
   assert.equal(flowReferenceSymbol('{!$Flow.FaultMessage}'),'$');
-  assert.equal(flowReferenceSymbol('{!Counter}'),'#');
+  assert.equal(flowReferenceSymbol('{!Counter}'),'!');
 });
 
 test('typing a shortcut at the cursor is detected, but prices and order numbers stay text',()=>{
   assert.deepEqual(flowReferenceTokenAt('Hi @Rec',7),{start:3,symbol:'@',query:'Rec'});
-  assert.deepEqual(flowReferenceTokenAt('#',1),{start:0,symbol:'#',query:''});
+  assert.deepEqual(flowReferenceTokenAt('!',1),{start:0,symbol:'!',query:''});
+  assert.deepEqual(flowReferenceTokenAt('Total = !Am',11),{start:8,symbol:'!',query:'Am'});
+  // Typed in quotes, after a letter, or doubled, the symbol stays plain text.
+  assert.equal(flowReferenceTokenAt('Say "!',6),null);
+  assert.equal(flowReferenceTokenAt('Say "@',6),null);
+  assert.equal(flowReferenceTokenAt('Hello!',6),null);
+  assert.equal(flowReferenceTokenAt('Wow !!',6),null);
   assert.deepEqual(flowReferenceTokenAt('v1/$Us',6),{start:3,symbol:'$',query:'Us'});
   assert.equal(flowReferenceTokenAt('Cost $5',7),null);
-  assert.equal(flowReferenceTokenAt('Order #12',9),null);
+  assert.equal(flowReferenceTokenAt('Order !12',9),null);
   assert.equal(flowReferenceTokenAt('mail@example',12),null);
   assert.deepEqual(insertFlowReference('Hi @Em!',3,6,'{!$Record.Email}'),
     {value:'Hi {!$Record.Email}!',cursor:19});
 });
 
-test('ticking HTTP outputs declares typed variables the next step can pick with #',()=>{
+test('ticking HTTP outputs declares typed variables the next step can pick with !',()=>{
   const fields=httpSampleFields('{"payment":{"id":"P1","amount":12.5,"paid":true},"items":[{"sku":"A"}]}');
   assert.deepEqual(fields.map(field=>[field.path,field.dataType]),[
     ['payment.id','Text'],['payment.amount','Number'],['payment.paid','Boolean'],['items[0].sku','Text']]);
@@ -59,12 +65,12 @@ test('ticking HTTP outputs declares typed variables the next step can pick with 
   assert.equal(next.resources.find(item=>item.name==='Get_Payment_payment_amount')?.dataType,'Number');
   const later=flowReferenceChoices(next,3,[order]);
   const amount=later.find(choice=>choice.reference==='{!Get_Payment_payment_amount}');
-  assert.equal(amount?.symbol,'#');
+  assert.equal(amount?.symbol,'!');
   assert.equal(amount?.category,'Earlier steps');
   assert.match(amount?.label??'',/^Get Payment → /);
   // The callout's own outputs are not offered before it runs.
   assert.ok(!flowReferenceChoices(next,2,[order]).some(choice=>choice.reference==='{!Get_Payment_Status}'));
-  const hash=flowReferenceBrowserGroups(next,3,[order],undefined,undefined,'#');
+  const hash=flowReferenceBrowserGroups(next,3,[order],undefined,undefined,'!');
   assert.ok(hash.directOptions.some(option=>option.reference==='{!Get_Payment_Status}'));
   assert.ok(hash.groups.every(group=>!group.path.startsWith('$Record')));
   // Unticking removes the mapping and the unused auto-declared variable.

@@ -4,7 +4,7 @@ import { jsonSampleScalarPaths } from './jsonSampleScalarPaths';
 /** One-click HTTP Callout outputs for no-code builders.
  * Ticking an output declares a typed Flow Variable and wires it into the
  * existing statusVariable / responseVariable / responseMapping runtime contract,
- * so later steps can pick it with # without creating variables by hand. */
+ * so later steps can pick it with ! without creating variables by hand. */
 export type HttpSampleField = { path: string; sample: string; dataType: 'Text' | 'Number' | 'Boolean' };
 type Element = FlowDefinitionMetadata['elements'][number];
 

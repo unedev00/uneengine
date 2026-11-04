@@ -2,19 +2,19 @@ import type { FieldMetadata, FlowDefinitionMetadata, ObjectMetadata } from '../.
 
 /** No-code typing shortcuts shared with the Page Builder formula bar:
  * @ = record data fields, $ = signed-in user, session and system values,
- * # = values created inside this Flow (variables, formulas and step outputs).
+ * ! = values created inside this Flow (variables, formulas and step outputs).
  * The stored runtime syntax stays {!Name}; the symbol is only how users find it. */
-export type FlowReferenceSymbol = '@' | '$' | '#';
+export type FlowReferenceSymbol = '@' | '$' | '!';
 export const flowReferenceSymbols: ReadonlyArray<{symbol:FlowReferenceSymbol;label:string;hint:string}> = [
   {symbol:'@',label:'Record fields',hint:'Trigger record, records found or created by earlier steps, loop items'},
   {symbol:'$',label:'User & system',hint:'Signed-in user and error details on fault paths'},
-  {symbol:'#',label:'Flow values',hint:'Variables, formulas, screen inputs and outputs of earlier steps'}
+  {symbol:'!',label:'Flow values',hint:'Variables, formulas, screen inputs and outputs of earlier steps'}
 ];
 export function flowReferenceSymbol(reference:string):FlowReferenceSymbol {
   const name=/^\{!?([A-Za-z_$][A-Za-z0-9_$.]*)\}$/.exec(reference.trim())?.[1]??'';
   if(/^\$Record(?:__Prior)?\./.test(name))return '@';
   if(name.startsWith('$'))return '$';
-  return name.includes('.')?'@':'#';
+  return name.includes('.')?'@':'!';
 }
 
 export type FlowReferenceChoice = {

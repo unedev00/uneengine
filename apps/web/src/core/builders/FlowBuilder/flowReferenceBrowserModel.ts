@@ -7,7 +7,7 @@ export function flowReferenceBrowserGroups(
   flow: FlowDefinitionMetadata, elementId: number, objects: readonly ObjectMetadata[],
   target?: FieldMetadata, targetObjectApiName?: string, symbol?: FlowReferenceSymbol
 ): {groups: ReferenceGroup[]; directOptions: ReferenceOption[]} {
-  // Typing @, $ or # narrows the picker to that family of values.
+  // Typing @, $ or ! narrows the picker to that family of values.
   const catalog=flowReferenceChoices(flow,elementId,objects)
     .filter(choice=>!symbol||choice.symbol===symbol);
   const groups=new Map<string,ReferenceGroup>();

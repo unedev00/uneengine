@@ -22,7 +22,7 @@ type Props = {
   multiline?: boolean;
 };
 
-/** Flow values use the existing {!Resource.Field} runtime syntax; @ $ # are only the no-code entry points. */
+/** Flow values use the existing {!Resource.Field} runtime syntax; @ $ ! are only the no-code entry points. */
 export default function FlowReferenceInput({
   value,onChange,flow,elementId,objects,field,targetObjectApiName,ariaLabel,placeholder,multiline=false
 }:Props) {
@@ -70,7 +70,7 @@ export default function FlowReferenceInput({
   };
   const common={
     className:'form-control','aria-label':ariaLabel,'aria-invalid':badReference,
-    placeholder:placeholder??'Type a value, or @ record field · $ user/system · # flow value',
+    placeholder:placeholder??'Type a value, or @ record field · $ user/system · ! flow value',
     value,
     ref:(node:HTMLInputElement|HTMLTextAreaElement|null)=>{inputRef.current=node},
     onChange:(event:{target:HTMLInputElement|HTMLTextAreaElement})=>
@@ -88,7 +88,7 @@ export default function FlowReferenceInput({
     {selected && <small className="flow-reference-value-hint">
       {selected.symbol} {selected.label} <span className="flow-reference-type">{selected.dataType}</span></small>}
     {badReference && <small className="flow-reference-error" role="status">
-      This value is not available here. Type @, $ or # to choose one from the list.
+      This value is not available here. Type @, $ or ! to choose one from the list.
     </small>}
     {open && <>
       <div className="flow-reference-symbols" role="tablist" aria-label="Value type">
@@ -100,7 +100,7 @@ export default function FlowReferenceInput({
       <ReferenceBrowser id={id} groups={groups}
         directOptions={directOptions} query={search} onQueryChange={setSearch}
         onChoose={pick} onClose={close}
-        emptyHint={symbol==='#'
+        emptyHint={symbol==='!'
           ?'No flow values yet. Earlier steps (HTTP Callout, Parse JSON, Actions) list their outputs here once configured, or add a Variable in Resources.'
           :'No matching available value. Check the Loop collection, selected Object, relationship metadata and Get Records fields to store.'}/>
     </>}
