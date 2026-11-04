@@ -137,3 +137,15 @@ export function shiftCanvasLayer(
   let cursor=0;
   return components.map(item=>parentId(item)===parentId(selected)?ordered[cursor++]:item);
 }
+
+/** Explicit no-code sizing action; never infer a background or rescale siblings. */
+export function fitCanvasComponentToPage(
+  components: readonly PageComponentMetadata[],id:string,canvas:{width:number;height:number}
+):PageComponentMetadata[] {
+  const item=components.find(component=>component.id===id);
+  if(!item?.position||parentId(item)||canvasGroupKey(item)||
+    item.properties.editorLocked===true||!Number.isFinite(canvas.width)||
+    !Number.isFinite(canvas.height)||canvas.width<=0||canvas.height<=0)return [...components];
+  return components.map(component=>component.id===id
+    ?{...component,position:{x:0,y:0,width:canvas.width,height:canvas.height}}:component);
+}

@@ -1,6 +1,6 @@
 import {AlignHorizontalJustifyStart,AlignHorizontalJustifyCenter,AlignHorizontalJustifyEnd,
  AlignVerticalJustifyStart,AlignVerticalJustifyCenter,AlignVerticalJustifyEnd,
- ArrowLeftRight,ArrowUpDown,ArrowDown,Layers3,Group,Ungroup,Lock,Unlock,Boxes} from 'lucide-react';
+ ArrowLeftRight,ArrowUpDown,ArrowDown,Layers3,Group,Ungroup,Lock,Unlock,Boxes,Maximize} from 'lucide-react';
 import './ArrangeRibbon.css';
 
 type Axis='x'|'y';
@@ -8,10 +8,10 @@ type Anchor='start'|'center'|'end';
 export type ArrangeRibbonProps={
  freeCanvas:boolean;hasSelection:boolean;locked:boolean;selectedCount:number;
  canGroup:boolean;canUngroup:boolean;
- canBringToFront:boolean;canSendBackward:boolean;
+ canBringToFront:boolean;canSendBackward:boolean;canFitToCanvas:boolean;
  onAlign:(axis:Axis,anchor:Anchor)=>void;onDistribute:(axis:Axis)=>void;
  onMove:(offset:-1|1)=>void;onPlace:(edge:'front'|'back')=>void;
- onGroup:()=>void;onUngroup:()=>void;onLock:()=>void;onNesting:()=>void;
+ onGroup:()=>void;onUngroup:()=>void;onLock:()=>void;onNesting:()=>void;onFitToCanvas:()=>void;
 };
 /** Pure presentation: the existing page-builder handlers own every command. */
 export default function ArrangeRibbon(props:ArrangeRibbonProps){
@@ -35,7 +35,8 @@ export default function ArrangeRibbon(props:ArrangeRibbonProps){
     {label:'Ungroup',icon:Ungroup,disabled:!props.freeCanvas||!props.canUngroup,run:props.onUngroup}],
    [{label:props.locked?'Unlock component':'Lock component',icon:props.locked?Unlock:Lock,
      disabled:!props.freeCanvas||!props.hasSelection,run:props.onLock},
-    {label:'Component nesting',icon:Boxes,disabled:!props.hasSelection,run:props.onNesting}]]}
+    {label:'Component nesting',icon:Boxes,disabled:!props.hasSelection,run:props.onNesting},
+     {label:'Fill canvas',icon:Maximize,disabled:!allowed||!props.canFitToCanvas,run:props.onFitToCanvas}]]}
  ];
  return <div className="arrange-ribbon" aria-label="Arrange components">
   {groups.map(group=><section key={group.name} className="arrange-ribbon-group" aria-label={group.name}>
