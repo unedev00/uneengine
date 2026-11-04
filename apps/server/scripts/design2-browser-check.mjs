@@ -163,6 +163,37 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  assert.equal(await rowStyle.evaluate(element=>getComputedStyle(element).fontWeight),'700',
   'Cart row does not visually apply Row Bold');
 
+ // R3C2 Alignment is a real ICON dropdown, not a text select.
+ await area.selectOption('Header');
+ const alignCell=row.locator('[data-design-row="3"] [data-design-slot="alignment"]');
+ assert.equal(await alignCell.getAttribute('data-design-column'),'2');
+ assert.equal(await alignCell.getAttribute('data-supported'),'true');
+ const alignTrigger=alignCell.locator('.smart-icon-dropdown-trigger');
+ await alignTrigger.click();
+ await page.getByRole('menuitemradio',{name:'Header Alignment: Right'}).click();
+ assert.match(await alignTrigger.getAttribute('aria-label')??'',/Right/);
+ assert.equal(await cart.locator('.smart-cart-header').evaluate(element=>
+   getComputedStyle(element).textAlign),'right','R3C2 alignment did not update the Cart header');
+
+ // In the approved Image area R2C6 Placement and R3C6 Fill must both
+ // have icon-based menus, including the existing Fit/Fill/Stretch choices.
+ await area.selectOption('Image');
+ const imagePlacement=row.locator('[data-design-row="2"] [data-design-slot="placement"]');
+ const imageFill=row.locator('[data-design-row="3"] [data-design-slot="imageFill"]');
+ assert.equal(await imagePlacement.getAttribute('data-design-column'),'6');
+ assert.equal(await imageFill.getAttribute('data-design-column'),'6');
+ assert.equal(await imagePlacement.getAttribute('data-supported'),'true');
+ assert.equal(await imageFill.getAttribute('data-supported'),'true');
+ assert.equal(await imagePlacement.locator('.smart-icon-dropdown-trigger').count(),1,
+   'R2C6 image placement must be an icon dropdown');
+ assert.equal(await imageFill.locator('.smart-icon-dropdown-trigger').count(),1,
+   'R3C6 image fit must be an icon dropdown');
+ await imagePlacement.locator('.smart-icon-dropdown-trigger').click();
+ await page.getByRole('menuitemradio',{name:'Image Placement: Left'}).click();
+ await imageFill.locator('.smart-icon-dropdown-trigger').click();
+ await page.getByRole('menuitemradio',{name:'Image Fill: Fit'}).click();
+ assert.match(await imageFill.locator('.smart-icon-dropdown-trigger').getAttribute('aria-label')??'',/Fit/);
+
  // Area switching must not change the selected component or old Design view.
  await area.selectOption('Table');
  assert.equal(await row.locator('[data-property="tableBackgroundColor"]').getAttribute('data-supported'),'true');
@@ -197,6 +228,12 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  const draft=await runtime.editor(tenantId,pageName,'Desktop');
  assert.equal(draft.components.find(item=>item.id==='browser-design2-cart')?.properties.rowBold,true,
   'Row Bold did not survive SQL save');
+ assert.equal(draft.components.find(item=>item.id==='browser-design2-cart')?.properties.headerAlignment,'right',
+  'Design 2 R3C2 alignment icon dropdown did not persist');
+ assert.equal(draft.components.find(item=>item.id==='browser-design2-cart')?.properties.imagePlacement,'left',
+  'Design 2 R2C6 image placement icon dropdown did not persist');
+ assert.equal(draft.components.find(item=>item.id==='browser-design2-cart')?.properties.imageFill,'fit',
+  'Design 2 R3C6 image fit icon dropdown did not persist');
  assert.equal(draft.components.find(item=>item.id==='browser-design2-cart')?.position?.x,64,
   'Design 2 R0 X position did not survive SQL save');
  assert.equal(draft.components.find(item=>item.id==='browser-design2-cart')?.position?.y,68,
