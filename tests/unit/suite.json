@@ -217,6 +217,7 @@
     "apps/web/test/pageBuilderActionDependencies.test.ts",
     "apps/web/test/pageBuilderAdvancedRibbon.test.mjs",
     "apps/web/test/pageBuilderAuditFixes.test.mjs",
+    "apps/web/test/pageBuilderCustomDesktopCanvas.test.ts",
     "apps/web/test/pageBuilderDesignReference.test.ts",
     "apps/web/test/pageBuilderInsertGalleryLayout.test.ts",
     "apps/web/test/pageBuilderLayoutDesignParity.test.ts",
