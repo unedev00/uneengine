@@ -61,6 +61,12 @@ const request=async(path,init)=>{
  if(init?.method==='PUT'){window.savedSelections=JSON.parse(init.body);return {briefcase:JSON.parse(init.body)};}
  return {briefcase:{selections:[]}};
 };
+const capIds=Array.from({length:49},(_,i)=>'00000000-0000-0000-0000-'+String(i+1).padStart(12,'0'));
+const capRequest=async (path,init)=>{
+ if(path==='/tenant/offline-briefcase')return {briefcase:{selections:[{objectApi:'Account',recordIds:capIds}]}};
+ if(path.startsWith('/records/'))return {records:Array.from({length:52},(_,i)=>({Id:'00000000-0000-0000-0000-'+String(i+1).padStart(12,'0'),Name:'Bulk record '+String(i+1)}))};
+ return {};
+};
 const uxRequest=async (path,init)=>{
  if(path.startsWith('/auth/security-events?')){window.securityEventQuery=path;const offset=Number(new URLSearchParams(path.split('?')[1]).get('offset')||0);return {events:[{id:'event-'+offset,at:'2026-10-30T10:00:00Z',actorUserId:'user-1',loginIdentifier:'operator@example.com',sourceIp:'192.0.2.4',action:'login.success',details:{}}],nextOffset:offset===0?25:null};}
  if(path==='/tenant/company-profile')throw new Error('HTTP 502: upstream service unavailable');
@@ -210,6 +216,7 @@ function Fixture(){
    sessions={<p>Sessions</p>} audit={<p>Audit</p>}/>;
   else if(view==='tenants')content=<TenantManagement request={request} permitted/>;
  else if(view==='records-import')content=<RecordImportCheck/>;
+ else if(view==='offline-cap')content=<OfflineBriefcaseSettings request={capRequest} permitted objects={[object]}/>;
  else if(view==='offline')content=<OfflineBriefcaseSettings request={request} permitted objects={[object]}/>;
  else if(view==='dashboard')content=<DashboardBuilder {...arrays} {...callbacks} userId="test" canCreate={params.get('allowed')==='true'} canManageAll={false} />;
  else if(view==='credentials'||view==='credentials-view'||view==='credentials-edit')content=<NamedCredentials credentials={credentials} canManage encryptionReady onTest={async()=>({connected:true,message:'Test available'})} onSave={noop} onDelete={noop}/>;
