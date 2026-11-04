@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 
 const read=path=>readFileSync(new URL(path,import.meta.url),'utf8');
 const sql=read('../../server/src/system-support/migrations/20270309-design2-contextual-ribbon.sql');
+const approved=read('../../server/src/system-support/migrations/20271104-zz-design2-exact-approved-matrix.sql');
 const shared=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
 const builder=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
 const css=read('../src/core/builders/PageBuilder/SmartRibbonDesign2.css');
@@ -17,6 +18,11 @@ const rows=[...sql.matchAll(slotPattern)].map(([,area,areaOrder,slot,row,order,w
  key:key==='NULL'?null:key.slice(1,-1),fallback
 }));
 const lookup=(area,slot)=>rows.find(entry=>entry.area===area&&entry.slot===slot);
+const fixedRows=[...approved.matchAll(/ \('([^']+)',(\d+),'([^']+)',([123]),(\d+),(\d+),26,'([^']+)','([^']+)'\)/g)]
+ .map(([,area,areaOrder,slot,row,order,width,key,fallback])=>({
+  area,areaOrder:+areaOrder,slot,row:+row,order:+order,width:+width,key,fallback
+ }));
+const fixed=(area,slot)=>fixedRows.find(entry=>entry.area===area&&entry.slot===slot);
 
 test('Design 2 slots are SQL backed, complete, unique and have fixed 26px controls',()=>{
  assert.equal(rows.length,96);
@@ -40,11 +46,13 @@ test('Focused has one reusable icon mapped to selected row or selected tab',()=>
  assert.match(shared,/components:assigned\?assigned\.components:\[\]/);
 });
 
-test('Body never wraps and Row background is inherited from Table',()=>{
- assert.equal(lookup('Body','wrap').key,null);
- assert.equal(lookup('Row','fill').key,null);
- assert.equal(lookup('Table','fill').key,'tableBackgroundColor');
- assert.equal(lookup('Row','text').key,'rowLabelColor');
+test('approved Body Wrap, Row Fill and Table Focus keep their fixed slots',()=>{
+ assert.equal(fixed('Body','wrap').row,3);
+ assert.equal(fixed('Body','wrap').order,4);
+ assert.equal(fixed('Row','fill').row,1);
+ assert.equal(fixed('Row','fill').order,1);
+ assert.equal(fixed('Table','focused').row,2);
+ assert.equal(fixed('Table','focused').order,1);
  assert.match(cart,/backgroundColor:p\.tableBackgroundColor/);
  assert.match(table,/background:colour\(p\.tableBackgroundColor/);
 });
@@ -66,7 +74,8 @@ test('Design 2 uses current icon widgets, not alternate icons',()=>{
   assert.ok(shared.includes(component),component);
  assert.match(shared,/smart-design2-area-picker/);
  assert.match(shared,/<span aria-hidden="true">Select it<\/span>/);
- assert.match(shared,/\['shapeId','shapeFill'\]/);
+ assert.match(shared,/\[1,2,3\]\.map\(row/);
+ assert.match(shared,/smart-design2-context/);
  assert.match(shared,/sectionRow\(activeDesign2Area,row\)\.map\(controls\)/);
  assert.match(css,/smart-design2-ribbon/);
  assert.match(css,/26px/);
@@ -91,7 +100,8 @@ test('Design 2 edits share the normal single and multi selection update routes',
 
 test('Design 2 keeps every SQL R/C slot even when unsupported or metadata is absent',()=>{
  // Disabled properties are placeholders, not omitted/reordered into the next cell.
- assert.match(shared,/const assigned=slot\.propertyKey\?definitions\.find/);
+ assert.match(shared,/const assigned=propertyKey\?definitions\.find/);
+ assert.match(shared,/approvedMatrixAreas\.has\(slot\.area\)/);
  assert.match(shared,/const original:UneRibbonProperty=assigned\?\?fallbackDefinition\?\?\{/);
  assert.match(shared,/components:assigned\?assigned\.components:\[\]/);
  assert.match(shared,/data-design-slot=\{slotPlacement\?\.slotKey\}/);
@@ -100,11 +110,15 @@ test('Design 2 keeps every SQL R/C slot even when unsupported or metadata is abs
 });
 
 test('Design 2 SQL widths and column positions are never dynamically compacted',()=>{
- assert.equal(lookup('Body','fill').row,2);
- assert.equal(lookup('Body','fill').order,1);
- assert.equal(lookup('Body','fill').width,40);
- assert.equal(lookup('Header','height').order,4);
- assert.equal(lookup('Header','height').width,58);
+ assert.equal(fixed('Body','fill').row,1);
+ assert.equal(fixed('Body','fill').order,1);
+ assert.equal(fixed('Body','fill').width,40);
+ assert.equal(fixed('Body','radius').row,1);
+ assert.equal(fixed('Body','radius').order,5);
+ assert.equal(fixed('Body','radius').width,80);
+ assert.equal(fixed('Header','height').row,2);
+ assert.equal(fixed('Header','height').order,3);
+ assert.equal(fixed('Header','height').width,80);
  assert.match(shared,/if\(tab==='Design2'&&p\.designWidth!==undefined\)return p\.designWidth/);
  assert.match(shared,/gridTemplateColumns:design2GridColumns\(row\)/);
  assert.match(shared,/--smart-slot-column/);
@@ -113,4 +127,27 @@ test('Design 2 SQL widths and column positions are never dynamically compacted',
  assert.match(css,/grid-column-start:var\(--smart-slot-column,auto\)!important/);
  assert.match(css,/width:var\(--smart-control-width\)!important/);
  assert.match(css,/height:var\(--smart-control-height,26px\)!important/);
+});
+
+test('approved table has 118 unique fixed slots in 13 areas and 313 component rules',()=>{
+ assert.equal(fixedRows.length,118);
+ assert.equal(new Set(fixedRows.map(s=>s.area)).size,13);
+ assert.equal(new Set(fixedRows.map(s=>s.area+':'+s.row+':'+s.order)).size,118);
+ const ruleRows=[...approved.matchAll(/ \('(smart_[^']+)','([^']+)','([^']+)','([^']+)'\)/g)];
+ assert.equal(ruleRows.length,313);
+ const ruleKeys=new Set(ruleRows.map(r=>r[1]+':'+r[2]+':'+r[3]));
+ assert.equal(ruleKeys.size,313);
+ assert.ok(ruleKeys.has('smart_card_grid:Body:fill'));
+ assert.ok(ruleKeys.has('smart_card_grid:Header:fill'));
+ assert.ok(ruleKeys.has('smart_card_grid:Badge:fill'));
+ assert.ok(ruleKeys.has('smart_cart:Header:fill'));
+ assert.equal(fixed('Body','orientation').row,1);
+ assert.equal(fixed('Body','orientation').order,6);
+ assert.equal(fixed('Image','placement').row,2);
+ assert.equal(fixed('Image','placement').order,6);
+ assert.equal(fixed('Image','imageFill').row,3);
+ assert.equal(fixed('Image','imageFill').order,6);
+ assert.match(approved,/CHECK\(row_no IN \(1,2,3\)\)/);
+ assert.match(shared,/design2SlotRules\.find\(rule=>/);
+ assert.match(builder,/design2SlotRules=\{ribbonCatalog\.design2SlotRules\}/);
 });
