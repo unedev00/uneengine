@@ -2211,10 +2211,11 @@ function PageBuilder({
     try {
       // Persist first: the route resolver must never replace a new unsaved page
       // with the previously selected page on its next metadata refresh.
-      if (newPageAppId&&newPageType!=='In-Screen Page') onPrepareApp(apiName,newPageAppId);
       const saved = await onSave(nextPage, apiName, 'Lightning page draft created');
-      if (!saved) { onAppLinked(apiName); return; }
-      savedPageApiName.current = apiName;
+      if (!saved) return;
+      if(saved.apiName!==apiName) onNotify('Page API name already reserved; created as '+saved.apiName);
+      if (newPageAppId&&newPageType!=='In-Screen Page') onPrepareApp(saved.apiName,newPageAppId);
+      savedPageApiName.current = saved.apiName;
       if (newPageAppId) setBuilderAppApiName(newPageAppId);
       setSelectedId('');
       setPageSettingsOpen(true);
