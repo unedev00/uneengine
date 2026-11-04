@@ -25,7 +25,7 @@ export function useSetupMetadata(ctx: any) {
   const permissionRequestStarted = useRef(false);
   useEffect(() => {
     const needsPermissionSnapshot = route.kind === 'setup' &&
-      ['rbac', 'object-manager', 'page-builder', 'report-builder', 'dashboard-builder', 'flow-builder']
+      ['rbac', 'object-manager', 'data-loader', 'page-builder', 'report-builder', 'dashboard-builder', 'flow-builder']
         .includes(workspace);
     if (!needsPermissionSnapshot || permissionRequestStarted.current) return;
     permissionRequestStarted.current = true;

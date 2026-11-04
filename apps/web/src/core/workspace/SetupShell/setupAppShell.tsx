@@ -768,6 +768,7 @@ function SetupApp({ onLogout, entryTiming }: { onLogout: () => void; entryTiming
       navigateRoute({kind:'setup', workspace:'named-credentials', ...(item === 'Webhook Endpoints' ? {resourceApiName:'Webhooks'} : {})});
       return;
     }
+    if (item === 'Universal Data Loader') {openSetupWorkspace('data-loader');return;}
     if (item === 'Object Manager' || item === 'Objects' || objectSettings.includes(item)) {
       navigateRoute({
         kind: 'setup',
