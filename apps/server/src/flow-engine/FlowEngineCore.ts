@@ -779,6 +779,9 @@ export class FlowRuntime {
         const name=separator<0?reference:reference.slice(0,separator);
         const field=separator<0?undefined:reference.slice(separator+1);
         if(reference==='$User.Id')return userId;
+        // Fault paths store the failed step's error as flat $Flow.* values.
+        if(/^\$Flow\.Fault(?:Message|Code)$/.test(reference))
+          return Object.hasOwn(vars,reference)?vars[reference]:null;
         if(!Object.hasOwn(vars,name)){
           if(name==='$Record__Prior'){
             if(active.flow_type!=='Record-Triggered Flow')

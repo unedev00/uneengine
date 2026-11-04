@@ -1,10 +1,28 @@
 import type { FieldMetadata, FlowDefinitionMetadata, ObjectMetadata } from '../../metadata/Definitions/metadata';
 
+/** No-code typing shortcuts shared with the Page Builder formula bar:
+ * @ = record data fields, $ = signed-in user, session and system values,
+ * # = values created inside this Flow (variables, formulas and step outputs).
+ * The stored runtime syntax stays {!Name}; the symbol is only how users find it. */
+export type FlowReferenceSymbol = '@' | '$' | '#';
+export const flowReferenceSymbols: ReadonlyArray<{symbol:FlowReferenceSymbol;label:string;hint:string}> = [
+  {symbol:'@',label:'Record fields',hint:'Trigger record, records found or created by earlier steps, loop items'},
+  {symbol:'$',label:'User & system',hint:'Signed-in user and error details on fault paths'},
+  {symbol:'#',label:'Flow values',hint:'Variables, formulas, screen inputs and outputs of earlier steps'}
+];
+export function flowReferenceSymbol(reference:string):FlowReferenceSymbol {
+  const name=/^\{!?([A-Za-z_$][A-Za-z0-9_$.]*)\}$/.exec(reference.trim())?.[1]??'';
+  if(/^\$Record(?:__Prior)?\./.test(name))return '@';
+  if(name.startsWith('$'))return '$';
+  return name.includes('.')?'@':'#';
+}
+
 export type FlowReferenceChoice = {
   reference: string;
   label: string;
   detail: string;
-  category: 'Earlier steps' | 'Flow inputs and variables' | 'Trigger record';
+  category: 'Earlier steps' | 'Flow inputs and variables' | 'Trigger record' | 'User and system';
+  symbol?: FlowReferenceSymbol;
   dataType: string;
   targetObject?: string;
   unavailableReason?: string;
@@ -105,14 +123,26 @@ export function flowReferenceChoices(flow:FlowDefinitionMetadata,elementId:numbe
     {reference:'{!$User.ManagerId}',label:'Current user reporting manager'}
   ]){
     const choice:FlowReferenceChoice={...field,detail:field.reference.slice(2,-1)+' · User',
-      category:'Flow inputs and variables',dataType:'Id',targetObject:'User'};
+      category:'User and system',dataType:'Id',targetObject:'User'};
     if(compatibleFlowValue(choice,target,targetObjectApiName))result.push(choice);
   }
   if(flow.triggerObject && ['Record-Triggered Flow','Schedule-Triggered Flow'].includes(flow.flowType))
     recordChoices('$Record','Trigger record',flow.triggerObject,'Trigger record');
   if(flow.triggerObject&&flow.flowType==='Record-Triggered Flow')
     recordChoices('$Record__Prior','Prior trigger record',flow.triggerObject,'Trigger record');
+  // A variable filled only by a step that has not run yet is not offered here.
+  const earlierSteps=precedingFlowSteps(flow,elementId);
+  const pendingOutputs=new Set<string>();
+  const readyOutputs=new Set<string>();
+  for(const element of flow.elements){
+    if(element.type==='Assignment')for(const name of JSON.stringify(element.config).match(/[A-Za-z][A-Za-z0-9_]*/g)??[])
+      readyOutputs.add(name);
+    for(const output of flowStepOutputs(element,flow.resources))
+      (earlierSteps.has(element.id)?readyOutputs:pendingOutputs).add(output.name);
+  }
   for(const resource of flow.resources){
+    if(pendingOutputs.has(resource.name)&&!readyOutputs.has(resource.name)
+      &&resource.value===undefined&&!resource.availableForInput)continue;
     if(resource.type==='Record'){
       if(resource.availableForInput)recordChoices(resource.name,resource.label,resource.dataType,'Flow inputs and variables');
     }else if(resource.type!=='Record Collection'){
@@ -175,9 +205,64 @@ export function flowReferenceChoices(flow:FlowDefinitionMetadata,elementId:numbe
           ?getSource.config.fields.filter((f):f is string=>typeof f==='string'):undefined);
     }
   }
+  for(const element of flow.elements){
+    if(!earlier.has(element.id))continue;
+    for(const output of flowStepOutputs(element,flow.resources)){
+      const choice:FlowReferenceChoice={reference:`{!${output.name}}`,
+        label:element.label+' → '+output.label,
+        detail:output.name+' · '+output.dataType+' · output of '+element.label,
+        category:'Earlier steps',dataType:output.dataType};
+      if(compatibleFlowValue(choice,target,targetObjectApiName))result.push(choice);
+    }
+  }
+  // Fault connectors expose the error text of the failed step.
+  for(const [name,label] of [['FaultMessage','Error message'],['FaultCode','Error code']]){
+    const choice:FlowReferenceChoice={reference:`{!$Flow.${name}}`,label:'Flow error → '+label,
+      detail:'$Flow.'+name+' · Text · set on fault paths',category:'User and system',dataType:'Text'};
+    if(compatibleFlowValue(choice,target,targetObjectApiName))result.push(choice);
+  }
   const unique=new Map<string,FlowReferenceChoice>();
-  for(const choice of result)unique.set(choice.reference,choice);
+  for(const choice of result)unique.set(choice.reference,{...choice,symbol:flowReferenceSymbol(choice.reference)});
   return [...unique.values()];
+}
+
+/** Values a step writes for later steps, read from the step's own metadata. */
+export function flowStepOutputs(element:FlowDefinitionMetadata['elements'][number],
+  resources:FlowDefinitionMetadata['resources']):Array<{name:string;label:string;dataType:string}>{
+  const config=element.config;
+  const outputs:Array<{name:string;label:string}>=[];
+  const add=(name:unknown,label:string)=>{
+    const value=typeof name==='string'?name.replace(/^\{!?|\}$/g,'').replace(/^@/,'').trim():'';
+    if(/^[A-Za-z][A-Za-z0-9_]*$/.test(value))outputs.push({name:value,label});
+  };
+  add(config.statusVariable,element.type==='HTTP Callout'?'Status code':'Status');
+  add(config.responseVariable,'Full response');
+  add(config.outputVariable,'Result');
+  if(typeof config.responseMapping==='string'&&config.responseMapping.trim()){
+    try{
+      const mapping=JSON.parse(config.responseMapping) as unknown;
+      if(mapping&&typeof mapping==='object'&&!Array.isArray(mapping))
+        for(const [name,path] of Object.entries(mapping))add(name,'Response → '+String(path));
+    }catch{/* An unfinished mapping simply has no outputs yet. */}
+  }
+  if(Array.isArray(config.assignments))for(const item of config.assignments){
+    if(item&&typeof item==='object'&&!Array.isArray(item)){
+      const row=item as Record<string,unknown>;
+      add(row.outputVariable,'JSON → '+String(row.path??''));
+    }
+  }
+  if(typeof config.outputValues==='string')for(const line of config.outputValues.split(/\r?\n/)){
+    const separator=line.indexOf('=');
+    if(separator>0)add(line.slice(separator+1),'Subflow → '+line.slice(0,separator).trim());
+  }
+  const seen=new Set<string>();
+  return outputs.flatMap(output=>{
+    const resource=resources.find(item=>item.name===output.name);
+    if(seen.has(output.name)||!resource||resource.isCollection
+      ||resource.type==='Record'||resource.type==='Record Collection')return [];
+    seen.add(output.name);
+    return [{...output,dataType:resource.dataType}];
+  });
 }
 
 export const flowReferencePattern=/^\{!?([A-Za-z_$][A-Za-z0-9_$.]*)\}$/;

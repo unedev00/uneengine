@@ -23,3 +23,10 @@
 @media(pointer:coarse){.flow-reference-input-row>button,.flow-reference-option{min-height:var(--md-control-touch,44px)}}
 
 .flow-reference-input-row>button:focus-visible,.flow-reference-option:focus-visible{outline:2px solid var(--md-focus-ring,var(--md-primary,#1d4ed8));outline-offset:2px}
+.flow-reference-input-row textarea.form-control{width:100%;padding-right:38px;min-width:0}
+.flow-reference-input-row textarea+button{top:6px;transform:none}
+.flow-reference-type{color:#6a798b;margin-left:4px}
+.flow-reference-symbols{display:flex;flex-wrap:wrap;gap:4px;padding:5px 0}
+.flow-reference-symbols button{border:1px solid #cdd5e0;background:var(--surface,#fff);border-radius:999px;padding:3px 10px;font-size:12px;cursor:pointer;color:inherit;min-height:28px}
+.flow-reference-symbols button[aria-selected="true"]{background:#eaf3ff;border-color:var(--md-primary,#1d4ed8);color:var(--md-primary,#1d4ed8)}
+.flow-reference-symbols b{font-weight:700}
