@@ -346,7 +346,7 @@
 
 /* FIX: The older three-row ribbon has a MORE SPECIFIC display:flex!important
  * selector and grid-area:auto!important on child properties. Those two rules
- * silently collapsed SQL R2C6/R3C6 image slots into C1. Override them ONLY
+ * silently collapsed SQL R2C5/R3C6 image slots into C1. Override them ONLY
  * inside Design 2 with a higher-specificity fixed six-column CSS grid.
  * Columns and per-cell width still come from the approved SQL slot metadata.
  */
@@ -391,7 +391,7 @@
  min-height:26px!important;
  max-height:26px!important;
 }
-/* These 40px icon pickers are children of the fixed SQL C6 cell.
+/* These 40px icon pickers are children of the SQL C5/C6 cells.
  * Prevent generic (144px) Image dropdown styles from widening them. */
 .office-builder-ribbon #page-builder-tab-content
  >.smart-ribbon.smart-design2-ribbon[data-three-row="true"]
