@@ -87,3 +87,30 @@ test('Design 2 edits share the normal single and multi selection update routes',
  assert.match(builder,/onVisibleChange=\{visible=>/);
  assert.match(shared,/update\(key,v\)/);
 });
+
+
+test('Design 2 keeps every SQL R/C slot even when unsupported or metadata is absent',()=>{
+ // Disabled properties are placeholders, not omitted/reordered into the next cell.
+ assert.match(shared,/const assigned=slot\.propertyKey\?definitions\.find/);
+ assert.match(shared,/const original:UneRibbonProperty=assigned\?\?fallbackDefinition\?\?\{/);
+ assert.match(shared,/components:assigned\?assigned\.components:\[\]/);
+ assert.match(shared,/data-design-slot=\{slotPlacement\?\.slotKey\}/);
+ assert.match(shared,/data-design-column=\{slotPlacement\?\.order\}/);
+ assert.doesNotMatch(shared,/\.filter\(\(p\):p is NonNullable<typeof p>=>p!==null\)/);
+});
+
+test('Design 2 SQL widths and column positions are never dynamically compacted',()=>{
+ assert.equal(lookup('Body','fill').row,2);
+ assert.equal(lookup('Body','fill').order,1);
+ assert.equal(lookup('Body','fill').width,40);
+ assert.equal(lookup('Header','height').order,4);
+ assert.equal(lookup('Header','height').width,58);
+ assert.match(shared,/if\(tab==='Design2'&&p\.designWidth!==undefined\)return p\.designWidth/);
+ assert.match(shared,/gridTemplateColumns:design2GridColumns\(row\)/);
+ assert.match(shared,/--smart-slot-column/);
+ assert.match(css,/\.smart-ribbon-row:not\(\.smart-design2-top-row\)/);
+ assert.match(css,/display:grid!important/);
+ assert.match(css,/grid-column-start:var\(--smart-slot-column,auto\)!important/);
+ assert.match(css,/width:var\(--smart-control-width\)!important/);
+ assert.match(css,/height:var\(--smart-control-height,26px\)!important/);
+});
