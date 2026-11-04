@@ -93,6 +93,7 @@
     "apps/server/test/system/legacy-une-tenant-retirement.test.ts",
     "apps/server/test/system/login-password-policy.test.ts",
     "apps/server/test/system/mail-inbox-communication-sync.test.ts",
+    "apps/server/test/system/metadata-loader-xlsx.test.ts",
     "apps/server/test/system/metadata-name-guard.test.ts",
     "apps/server/test/system/metadata-package.test.ts",
     "apps/server/test/system/mfa-refresh-assurance.test.ts",

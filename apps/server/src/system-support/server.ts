@@ -78,6 +78,7 @@ import {ExternalIdUpsert} from '../system-files/external-id-upsert.js';
 import {DuplicateMatchError} from '../system-files/record-matching.js';
 import {registerMatchingRoutes} from './matching-rule-routes.js';
 import {registerFieldExactIndexRoutes} from './field-exact-index-routes.js';
+import {registerMetadataLoaderRoutes} from './metadata-loader-routes.js';
 import {registerBusinessProcessRoutes} from './business-process-routes.js';
 import {registerObjectLabelTranslationRoutes,applyObjectLabelTranslations,requestedLabelLanguage} from './object-label-translation-routes.js';
 import {parseRecordCursor,parseRecordFilters} from '../system-files/record-query.js';
@@ -208,6 +209,8 @@ export function createSystemServer(db:SqlPersistence) {
   let adminMailAccess:MailAdminAccess|undefined;
   registerDockerMailWebRoutes(app,undefined,undefined,undefined,()=>adminMailAccess);
   app.use('/api/media-assets',express.json({limit:'8mb'}));
+  // XLSX is carried as base64 JSON; bound this route separately from ordinary API payloads.
+  app.use('/api/metadata/loader',express.json({limit:'15mb'}));
   app.use(express.json({limit:'2mb',verify:(req,_res,bytes)=>{
     if((req.url??'').startsWith('/api/inbound-webhooks/') && bytes.length<=262144)
       (req as Request & {rawWebhookBody?:Buffer}).rawWebhookBody=Buffer.from(bytes);
@@ -2720,6 +2723,7 @@ export function createSystemServer(db:SqlPersistence) {
   registerDeclarativeRuleRoutes(app,db,rbac);
   registerMatchingRoutes(app,db,rbac);
   registerFieldExactIndexRoutes(app,db,rbac);
+  registerMetadataLoaderRoutes(app,db,rbac,definitions,objectManagerMetadata,objectLifecycle);
   registerBusinessProcessRoutes(app,db,rbac);
   registerObjectLabelTranslationRoutes(app,db,rbac);
   registerVersionedApiRoutes(app,records,definitions,rbac,db);
