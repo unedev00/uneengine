@@ -98,7 +98,8 @@ export default function CanvasDataBindingIcons({componentId,api,definitions,acti
     const clipped=clipRect(element,host);
     if(!clipped)continue;
     const caption=textRect(element);
-    const anchor=caption&&validRect(caption)?caption:clipped;
+    const anchor=element.dataset.mdBind==='tabCaptionFormula'?clipped:
+     caption&&validRect(caption)?caption:clipped;
     const properties=(element.dataset.mdBind??'').trim().split(/\s+/).filter(Boolean);
     properties.forEach((propertyKey,index)=>{
      const label=allowed.get(propertyKey);
