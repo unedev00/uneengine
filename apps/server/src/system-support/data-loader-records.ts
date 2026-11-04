@@ -48,7 +48,7 @@ function report(table:LoaderTable,items:Item[]){
 const summary=(items:Item[])=>({total:items.length,valid:items.filter(i=>i.status==='Valid').length,
  success:items.filter(i=>i.status==='Success').length,error:items.filter(i=>i.status==='Error').length,
  skipped:items.filter(i=>i.status==='Skipped').length});
-type Field={apiName:string;dataType:string;required:boolean;externalId?:boolean;picklistRestricted?:boolean;picklistValues?:string[]};
+type Field={apiName:string;dataType:string;required:boolean;externalId?:boolean;caseSensitive?:boolean;picklistRestricted?:boolean;picklistValues?:string[]};
 function convert(raw:string,field:Field):unknown{
  if(raw==='<CLEAR>')return null;
  const type=field.dataType.toLowerCase();
@@ -115,9 +115,16 @@ export function registerDataLoaderRecordRoutes(app:Express,records:RecordEngine,
  app.post('/api/data-loader/records/export',route(async(req,res)=>{
   const actor=req.actor!,objectApi=trim(req.body?.objectApi);
   const obj=await meta(actor,objectApi);
-  const fields=[] as typeof obj.fields;
+  const readable=[] as typeof obj.fields,fields=[] as typeof obj.fields;
   for(const field of obj.fields){
-   if(await rbac.allowed(actor.tenant_id,actor.user_id,objectApi+'.'+field.apiName,'read'))fields.push(field);
+   const resource=objectApi+'.'+field.apiName;
+   if(!await rbac.allowed(actor.tenant_id,actor.user_id,resource,'read'))continue;
+   readable.push(field);
+   // The editable Records tab must remain round-trip safe: computed and inaccessible
+   // fields belong in the guide, never in a writable upload row.
+   if(!isComputed(field.dataType)
+     &&(await rbac.allowed(actor.tenant_id,actor.user_id,resource,'edit')
+       ||await rbac.allowed(actor.tenant_id,actor.user_id,resource,'create')))fields.push(field);
   }
   const selected=req.body?.ids;
   if(selected!==undefined&&(!Array.isArray(selected)||selected.length>4000
@@ -139,7 +146,7 @@ export function registerDataLoaderRecordRoutes(app:Express,records:RecordEngine,
    if(page.records.length<100)break;
   }
   const columns=['Action','Id',...fields.map(f=>f.apiName)];
-  const guide=fields.map(f=>({FieldApiName:f.apiName,Label:f.label,DataType:f.dataType,
+  const guide=readable.map(f=>({FieldApiName:f.apiName,Label:f.label,DataType:f.dataType,
    Required:String(f.required),ExternalId:String(f.externalId===true),Writable:String(!isComputed(f.dataType)),
    PicklistValues:(f.picklistValues??[]).join(';')}));
   const result=writeLoaderWorkbook([
@@ -167,7 +174,7 @@ export function registerDataLoaderRecordRoutes(app:Express,records:RecordEngine,
     if(i.action==='Update'||i.action==='Delete')if(!i.id)throw Error(i.action+' requires Id');
     if(i.action==='Create'&&i.id)throw Error('Create must leave Id blank');
     const key=i.id?'id:'+i.id.toLowerCase():externalField&&trim(i.cells[externalField])
-     ?'external:'+trim(i.cells[externalField]).toLowerCase():'';
+     ?'external:'+(matchField?.caseSensitive?trim(i.cells[externalField]):trim(i.cells[externalField]).toLowerCase()):'';
     if(key){if(keys.has(key))throw Error('Duplicate match key in workbook');keys.add(key);}
     const create=!i.id&&(i.action==='Create'||i.action==='Upsert');
     const values=i.action==='Delete'?{}:typedValues(i.cells,object.fields,data.table.columns,false);
