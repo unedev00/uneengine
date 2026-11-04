@@ -37,3 +37,20 @@
 
 .header-installed-apps :is(button,select):focus-visible,.header-page-action:focus-visible{outline:2px solid var(--md-focus-ring,var(--md-primary,#1d4ed8));outline-offset:2px}
 @media(max-width:320px){.header-page-context{min-width:0;max-width:100%}.header-page-tabs{min-width:0}}
+
+/* Keep selected app readable rather than squeezing the picker to 44px. */
+.header-installed-apps{flex:0 0 auto;min-width:160px}
+.header-installed-apps select{min-width:160px;max-width:200px;color:var(--md-text,#192230)}
+.header-mobile-app-name{display:none}
+@media(min-width:641px) and (max-width:900px){
+  .header-installed-apps{min-width:160px}
+  .header-installed-apps select{min-width:160px;max-width:170px}
+}
+@media(max-width:640px){
+  .header-installed-apps{display:none}
+  .header-mobile-app-name{
+    display:block;flex:0 1 auto;min-width:0;max-width:120px;
+    overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+    font-weight:600;font-size:12px;color:var(--md-text,#192230)
+  }
+}
