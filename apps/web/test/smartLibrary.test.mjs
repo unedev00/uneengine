@@ -61,10 +61,14 @@ test('Insert Ribbon exposes visible Smart components without requiring a selecte
  assert.match(view,/onInsert=\{addPaletteComponent\}/);
  assert.match(view,/setSelectedId\(id\)/);
  assert.match(insert,/onClick=\{\(\)=>onInsert\(item.type\)\}/);
- assert.match(insert,/filterSmartInsertItems\(items,scope,term\)/);
- assert.match(insert,/aria-label="Search Insert components"/);
+ assert.match(insert,/const visible=items\.filter\(isSmartInsertItem\)/);
+ assert.match(insert,/\^Custom:smart_/);
+ assert.doesNotMatch(insert,/Search Insert components|Find a component|Component sources|smart-insert-browser|smart-insert-categories|<select/);
  assert.doesNotMatch(insert,/Open full library/);
  assert.match(insert,/No Smart components are installed for this tenant/);
+ assert.match(css,/display:flex!important;flex-direction:row!important/);
+ assert.doesNotMatch(css,/smart-insert-browser|smart-insert-categories|grid-template-columns:170px/);
+ assert.match(css,/grid-template-rows:repeat\(2,55px\)/);
  assert.match(read('../src/core/builders/PageBuilder/PageBuilderRibbonLayout.css'),/grid-template-rows: repeat\(2,55px\)/);
  assert.match(read('../src/core/builders/PageBuilder/PageBuilderRibbonLayout.css'),/> \.smart-insert-ribbon/);
 });
