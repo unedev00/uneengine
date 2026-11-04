@@ -16,8 +16,8 @@ export const numeric=(type:string)=>/^(Number|Currency|Percent)(?:\(|$)/i.test(t
 export function convert(field:Field,raw:string):unknown{
  if(raw==='<CLEAR>')return null;
  if(/^(Checkbox|Boolean)$/i.test(field.dataType)){
-  if(!/^(true|false)$/i.test(raw.trim()))throw Error(field.apiName+' must be TRUE or FALSE');
-  return raw.trim().toLowerCase()==='true';
+  if(!/^(true|false|1|0)$/i.test(raw.trim()))throw Error(field.apiName+' must be TRUE or FALSE');
+  return /^(true|1)$/i.test(raw.trim());
  }
  if(numeric(field.dataType)){
   if(!raw.trim()||!Number.isFinite(Number(raw)))throw Error(field.apiName+' must be a finite number');
@@ -28,8 +28,14 @@ export function convert(field:Field,raw:string):unknown{
   if(!parsed||typeof parsed!=='object'||Array.isArray(parsed))throw Error(field.apiName+' requires a JSON object');
   return parsed;
  }
- if(/^(Date|Date\/Time|DateTime)$/i.test(field.dataType)&&!Number.isFinite(Date.parse(raw)))
-  throw Error(field.apiName+' requires a valid date');
+ if(/^(Date|Date\/Time|DateTime)$/i.test(field.dataType)){
+  if(/^[0-9]{4,5}(?:\.[0-9]+)?$/.test(raw)){
+   const time=Date.UTC(1899,11,30)+Math.round(Number(raw)*86400000);
+   if(Number.isFinite(time)&&new Date(time).getUTCFullYear()>=1900&&new Date(time).getUTCFullYear()<=2100)
+    return /^(Date)$/i.test(field.dataType)?new Date(time).toISOString().slice(0,10):new Date(time).toISOString();
+  }
+  if(!Number.isFinite(Date.parse(raw)))throw Error(field.apiName+' requires an ISO date');
+ }
  if(field.dataType==='Picklist'&&field.picklistRestricted!==false&&Array.isArray(field.picklistValues)
   &&field.picklistValues.length&&!field.picklistValues.includes(raw))
   throw Error('Unknown picklist value: '+field.apiName);
