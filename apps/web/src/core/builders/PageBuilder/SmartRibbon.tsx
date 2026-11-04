@@ -162,7 +162,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  const approvedMatrixAreas=new Set(design2SlotRules.map(rule=>rule.area));
  // A SINGLE ribbon scaffold for all Design 2 sections and all components.
  // Body owns the approved R1-R3 visual icon matrix; the two Image icons
- // occupy their fixed R2C6/R3C6 positions on EVERY section (disabled when
+ // occupy their fixed R2C5/R3C6 positions on EVERY section (disabled when
  // the current area/component has no matching supported property).
  // Existing SQL still owns each selected area's semantic property binding.
  const design2TemplateSlots=[
@@ -214,13 +214,13 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  // R1C3 Shape and R3C3 Bold are 40px, so their C4 neighbours must start
  // 44px later, while R2C3 Height (80px) needs an 84px step to R2C4.
  // Preserve every SQL C1..C6 index, including empty leading cells for
- // Image R2C6 / R3C6; never repack enabled controls to the left.
+ // Image R2C5 / R3C6; never repack enabled controls to the left.
  const design2GridColumns=(row:number)=>{
    const slots=design2TemplateSlots.filter(slot=>slot.row===row);
    return Array.from({length:6},(_,index)=>{
      const slot=slots.find(item=>item.order===index+1);
      // Fixed across every dropdown, including disabled/unsupported cells.
-     // A vacant R2C5 reserves the width specified by the approved layout.
+     // The Image Placement slot is 40px wide at R2C5, adjacent to Width.
      return (slot?.width??(index>=2&&index<=4?80:40))+'px';
    }).join(' ');
  };
