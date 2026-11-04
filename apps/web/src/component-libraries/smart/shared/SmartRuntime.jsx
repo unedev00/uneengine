@@ -464,6 +464,16 @@ export default function SmartRuntime(p){
  const name=p.kind||"smart_text",record=recordOf(p),label=scopedExpression(p,"label",p.label||"",record);
  const style={fontSize:number(p.textSize,16),color:p.labelColor||undefined,textAlign:p.labelAlignment||"left",borderRadius:number(p.radius,12)};
  const buttonIcon=name==="smart_button"?icons.find(icon=>icon.id===p.shapeId):null;
+ const [gridSelectedIds,setGridSelectedIds]=React.useState([]);
+ const gridRowIds=name==="smart_card_grid"?recordsOf(p).map(row=>String(row?.Id??row?.id??"")):[];
+ const gridRowSignature=gridRowIds.join("\\u001f");
+ React.useEffect(()=>{
+  if(name!=="smart_card_grid")return;
+  setGridSelectedIds(current=>{
+   const next=current.filter(id=>gridRowIds.includes(id));
+   return next.length===current.length?current:next;
+  });
+ },[name,gridRowSignature]);
  const shadowStyle={boxShadow:p.calendarShadowColor?"0 4px 10px "+p.calendarShadowColor:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none",borderRadius:number(p.radius,12)};
  const fire=(event,value)=>{if(p.previewOnly||p.builderPreview)return;
   if(typeof p.onAction==="function")void Promise.resolve(p.onAction({event,value})).catch(()=>{});
@@ -564,9 +574,10 @@ export default function SmartRuntime(p){
   const gap=number(p.gap,12,0,160);
   const minimumCardHeight=number(p.cardMinHeight,96,96,1200);
   const boundRows=recordsOf(p);
-  const selection=p.selectedCardColor||p.focusedCardWidth||p.focusedCardHeight||
+  const selection=p.selectedCardColor||p.focusedCardWidth||p.focusedCardHeight||p.focusedCardBorderColor||p.focusedCardShadow||
    p.focusedTextColor||p.focusedTextBold!==undefined||p.focusedTextSize
    ?cardSelection(p):null;
+  const selectable=p.selectionMode==="single"||p.selectionMode==="multiple";
   const previewRows=(p.previewOnly===true||p.builderPreview===true||p.preview===true)&&boundRows.length===0
     ?Array.from({length:columns*rows},(_,i)=>({Id:"card-preview-"+i,Name:"Sample item "+(i+1)}))
     :boundRows;
@@ -596,13 +607,33 @@ export default function SmartRuntime(p){
     // legacy whole-card selection. Never nest an actionable button in a button.
     const actionable=Boolean(p.actionFlows?.click&&!p.previewOnly&&!p.builderPreview);
     const hasButton=typeof p.cardButtonText==="string"&&p.cardButtonText.trim()!=="";
-    const selectRecord=()=>fire("click",{record:r,recordId:r?.Id??r?.id??null});
-    const card=<SmartCard p={p} record={r} selected={selectedCard(selection,r)}
-      onButtonClick={actionable?selectRecord:null}/>;
-    return actionable&&!hasButton
+    const hasCustomButton=["customButton1","customButton2"].some(key=>
+     p[key+"Visible"]!==false&&Boolean(p.actionFlows?.[key]||
+      typeof p[key+"Label"]==="string"&&p[key+"Label"].trim()));
+    const recordId=r?.Id??r?.id??null,recordKey=recordId===null?null:String(recordId);
+    const isSelected=selectable&&recordKey!==null
+     ?gridSelectedIds.includes(recordKey)||(gridSelectedIds.length===0&&p.selectionMode==="single"&&selectedCard(selection,r))
+     :selectedCard(selection,r);
+    const selectRecord=()=>{
+     const payload={record:r,recordId};
+     if(selectable&&recordKey!==null){
+      const next=p.selectionMode==="multiple"
+       ?gridSelectedIds.includes(recordKey)?gridSelectedIds.filter(id=>id!==recordKey):[...gridSelectedIds,recordKey]
+       :[recordKey];
+      setGridSelectedIds(next);
+      fire("change",{...payload,selectedRecordIds:next});
+     }
+     if(actionable)fire("click",payload);
+    };
+    const legacyWrapper=actionable&&!hasButton&&!hasCustomButton&&!selectable;
+    const card=<SmartCard p={p} record={r} selected={isSelected}
+      onSelect={!legacyWrapper&&(actionable||selectable)?selectRecord:null}
+      onButtonClick={actionable?selectRecord:null}
+      onCustomButton={key=>fire(key,{record:r,recordId})}/>;
+    return legacyWrapper
       ?<button key={r?.Id??r?.id??i} type="button" className="smart-grid-action"
         aria-label={"Select "+text(r?.Name??r?.name??r?.label??"product")}
-        onClick={()=>fire("click",{record:r,recordId:r?.Id??r?.id??null})}>{card}</button>
+        onClick={selectRecord}>{card}</button>
       :<React.Fragment key={r?.Id??r?.id??i}>{card}</React.Fragment>;
    })}
   </div>;
