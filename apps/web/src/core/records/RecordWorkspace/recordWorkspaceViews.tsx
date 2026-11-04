@@ -683,8 +683,11 @@ function RecordWorkspace({
   const [previewListColumns,setPreviewListColumns]=useState<string[]|null>(null);
   const draggedListColumn=useRef<string|null>(null);
   const [previewPhoneRoles,setPreviewPhoneRoles]=useState<SavedRecordListView['phoneRoles']|null>(null);
-  const [recordListLayout,setRecordListLayout]=useState<'table'|'cards'|'checklist'|'compact'>('table');
-  useEffect(()=>{setPreviewListColumns(null);setPreviewPhoneRoles(null);},[route.objectApiName]);
+  const [recordListLayout,setRecordListLayout]=useState<'table'|'cards'|'checklist'|'compact'>(()=>
+    route.objectApiName==='Product'&&typeof window!=='undefined'&&window.innerWidth<=1200?'cards':'table');
+  useEffect(()=>{setPreviewListColumns(null);setPreviewPhoneRoles(null);
+    setRecordListLayout(route.objectApiName==='Product'&&viewportWidth<=1200?'cards':'table');
+  },[route.objectApiName]);
   const listPageSize = 50;
   const [refreshKey, setRefreshKey] = useState(0);
   const [fieldHistory, setFieldHistory] = useState<Array<Record<string, unknown>>>([]);
@@ -3016,7 +3019,7 @@ function RecordWorkspace({
             style={columnWidths[field.apiName] ? {width:columnWidths[field.apiName],minWidth:columnWidths[field.apiName],maxWidth:columnWidths[field.apiName]} : undefined}>
             <span className="records-table-cell-value" title={typeof item[field.apiName] === 'string' && field.dataType !== 'Rich Text Area' ? String(item[field.apiName]) : undefined}>
               {index === 0
-                ? <a href={appRoutePath({ kind: 'record-detail', objectApiName: object.apiName, recordId: item.Id, appId: route.appId })} onClick={(event) => { if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); if (viewportFactor === 'Tablet') onNavigate({kind:'record-detail',objectApiName:object.apiName,recordId:item.Id,appId:route.appId}); else setOverlayRecordId(item.Id); }}>{formatFieldValue(field, item[field.apiName] ?? item.Id)}</a>
+                ? <a href={appRoutePath({ kind: 'record-detail', objectApiName: object.apiName, recordId: item.Id, appId: route.appId })} onClick={(event) => { if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); if (viewportWidth<=1200) onNavigate({kind:'record-detail',objectApiName:object.apiName,recordId:item.Id,appId:route.appId}); else setOverlayRecordId(item.Id); }}>{formatFieldValue(field, item[field.apiName] ?? item.Id)}</a>
                 : formatFieldValue(field, item[field.apiName])}
             </span>
           </td>)}{(canEdit || canDelete || canChangeOwner) && <td><div className="record-row-actions">
@@ -3125,7 +3128,7 @@ function RecordWorkspace({
                 onClick={event=>{
                   if(event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
                   event.preventDefault();
-                  if (viewportFactor === 'Tablet') onNavigate({kind:'record-detail',objectApiName:object.apiName,recordId:item.Id,appId:route.appId});
+                  if (viewportWidth<=1200) onNavigate({kind:'record-detail',objectApiName:object.apiName,recordId:item.Id,appId:route.appId});
                   else setOverlayRecordId(item.Id);
                 }}>{String(item.Name??item[listFields[0]?.apiName]??item.Id)}</a>
             </header>
@@ -3145,7 +3148,7 @@ function RecordWorkspace({
         })}
       </div>}
       {!error && formFactor !== 'Phone' && listTotal > 0 && <nav aria-label="Record list pagination" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '12px 16px' }}>
-        <span>{listOffset + 1}–{Math.min(listOffset + records.length, listTotal)} of {listTotal}</span>
+        <span>{loading ? 'Loading records…' : records.length===0 ? `0–0 of ${listTotal}` : `${listOffset+1}–${Math.min(listOffset+records.length,listTotal)} of ${listTotal}`}</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button className="btn" aria-label="First page" disabled={loading || listOffset === 0} onClick={() => setListOffset(0)}>First</button>
           <button className="btn" aria-label="Previous page" disabled={loading || listOffset === 0} onClick={() => setListOffset((v) => Math.max(0, v - listPageSize))}>Previous</button>
@@ -3209,7 +3212,7 @@ function RecordWorkspace({
       label={`${object.label} actions`} onClose={()=>setContextRecord(null)}
       actions={[
         {id:'open',label:'Open record',onSelect:()=>{
-          if(viewportFactor==='Desktop')setOverlayRecordId(contextRecord.item.Id);
+          if(viewportWidth>1200)setOverlayRecordId(contextRecord.item.Id);
           else onNavigate({kind:'record-detail',objectApiName:object.apiName,recordId:contextRecord.item.Id,appId:route.appId});
         }},
         {id:'copy',label:'Copy record link',onSelect:()=>{
