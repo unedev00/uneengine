@@ -136,7 +136,7 @@ export default function MailboxAdmin({onLogout}:Props){
   }finally{setBusy(false);}
  };
  const remove=async(mailbox:Mailbox)=>{
-  if(!window.confirm('Permanently delete '+mailbox.emailAddress+' and its mailbox data from Docker Mailserver? This cannot be undone.'))return;
+  if(!window.confirm('Permanently delete '+mailbox.emailAddress+' and its mailbox data from the tenant mail server? This cannot be undone.'))return;
   setBusy(true);setError('');setNotice('');
   try{
    await apiRequest('/mail/mailboxes/'+encodeURIComponent(mailbox.id),{method:'DELETE'});
@@ -147,7 +147,7 @@ export default function MailboxAdmin({onLogout}:Props){
  return <main className="md-mail-admin" style={{minHeight:'100vh',background:'#f4f7fb',color:'#172b3f',colorScheme:'light',fontFamily:'Inter,system-ui,sans-serif',padding:'28px clamp(16px,4vw,56px)',boxSizing:'border-box'}}>
   <header style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:16,flexWrap:'wrap',marginBottom:24}}>
    <div><p style={{margin:'0 0 5px',color:'#52677b',fontSize:12,fontWeight:700,letterSpacing:1.2}}>METADRIVE · ADMINISTRATION</p>
-    <h1 style={{margin:0,fontSize:30}}>Mailboxes</h1><p style={{margin:'8px 0 0',color:'#52677b'}}>Manage tenant mail accounts on Docker Mailserver Mail.</p></div>
+    <h1 style={{margin:0,fontSize:30}}>Mailboxes</h1><p style={{margin:'8px 0 0',color:'#52677b'}}>Manage tenant mail accounts, access and mailbox settings.</p></div>
    <div style={{display:'flex',gap:8,flexWrap:'wrap'}}><button style={button} onClick={()=>window.location.assign('/une/setup/home')}>Back to workspace</button><button style={button} onClick={onLogout}>Sign out</button></div>
   </header>
   {error&&<div role="alert" style={{...panel,borderColor:'#d97777',color:'#9b1c1c',marginBottom:16}}>{error}</div>}
