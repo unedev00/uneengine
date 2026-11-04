@@ -101,6 +101,10 @@ try {
  assert.equal(await page.getByRole('button',{name:'Security & Recovery'}).getAttribute('aria-current'),'page',
   'Deep-linked company security settings must open directly');
  await screenshot('company-security-deeplink');
+ await open('company-profile-fail');
+ await page.getByText('Company data could not be loaded.',{exact:false}).waitFor();
+ assert.equal(await page.getByRole('button',{name:'Edit logo'}).count(),0,'Failed company read must never expose blank-default editing');
+ await page.getByRole('button',{name:'Retry loading company details'}).waitFor();
  await open('monitoring');
  await page.getByRole('tab',{name:'Monitoring'}).waitFor();
  assert.equal(await page.getByRole('tab',{name:'Monitoring'}).getAttribute('aria-selected'),'true');
