@@ -704,7 +704,7 @@ function RecordWorkspace({
       : 50;
     if (total === 0) return null;
     return <nav aria-label={`${name} pagination`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, padding: 12 }}>
-      <span>{offset + 1}–{Math.min(offset + loaded, total)} of {total}</span>
+      <span>{loaded === 0 ? `0–0 of ${total}` : `${offset + 1}–${Math.min(offset + loaded, total)} of ${total}`}</span>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
         <button className="btn" disabled={offset === 0} onClick={() => changeRelatedPage(name, 0)}>First</button>
         <button className="btn" disabled={offset === 0} onClick={() => changeRelatedPage(name, offset - pageSize)}>Previous</button>
