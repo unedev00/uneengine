@@ -3511,22 +3511,6 @@ function PageBuilder({
             </div>
             <span>Conditional visibility</span>
           </div>}
-          {ribbonTab==='Component Design 2' && <div className="office-ribbon-group une-sql-home-group design-canvas-settings"
-            aria-label="Canvas" data-shared-group="Canvas">
-            <div className="office-ribbon-stack">
-              <label data-ribbon-property="canvasWidth" className="une-sql-home-control une-ribbon-size-with-icon"
-                title="Canvas Width"><span className="une-ribbon-embedded-icon"><MoveHorizontal size={17}/></span>
-                {homeValue('canvasWidth')}</label>
-              <label data-ribbon-property="canvasHeight" className="une-sql-home-control une-ribbon-size-with-icon"
-                title="Canvas Height"><span className="une-ribbon-embedded-icon"><MoveVertical size={17}/></span>
-                {homeValue('canvasHeight')}</label>
-              <div data-ribbon-property="canvasFillColor" className="une-sql-home-control une-ribbon-canvas-colour">
-                <RibbonColorPalette variant="property" kind="fill" label="Canvas Fill Color"
-                  value={page.canvasFillColor??'#ffffff'}
-                  onChange={colour=>applyPage({...page,canvasFillColor:colour})}/>
-              </div>
-            </div><span>Canvas</span>
-          </div>}
           {ribbonTab==='Arrange' && <ArrangeRibbon {...canvasArrangeProps}/>}
           {ribbonTab==='Advanced' && <PageBuilderAdvancedSections
             section={advancedEditor} onInspectorHost={setRibbonPropertyHost}
@@ -3607,6 +3591,22 @@ function PageBuilder({
                 }else updateComponent(selected.id,{properties:{...selected.properties,iconId}});
               }}/>}
           {!designInPanel && smartRibbonElement}
+          {ribbonTab==='Component Design 2' && <div className="office-ribbon-group une-sql-home-group design-canvas-settings"
+            aria-label="Canvas" data-shared-group="Canvas">
+            <div className="office-ribbon-stack">
+              <label data-ribbon-property="canvasWidth" className="une-sql-home-control une-ribbon-size-with-icon"
+                title="Canvas Width"><span className="une-ribbon-embedded-icon"><MoveHorizontal size={17}/></span>
+                {homeValue('canvasWidth')}</label>
+              <label data-ribbon-property="canvasHeight" className="une-sql-home-control une-ribbon-size-with-icon"
+                title="Canvas Height"><span className="une-ribbon-embedded-icon"><MoveVertical size={17}/></span>
+                {homeValue('canvasHeight')}</label>
+              <div data-ribbon-property="canvasFillColor" className="une-sql-home-control une-ribbon-canvas-colour">
+                <RibbonColorPalette variant="property" kind="fill" label="Canvas Fill Color"
+                  value={page.canvasFillColor??'#ffffff'}
+                  onChange={colour=>applyPage({...page,canvasFillColor:colour})}/>
+              </div>
+            </div><span>Canvas</span>
+          </div>}
         </div>
       </section>
       {visibilityEditorOpen && selected && <PageBuilderVisibilityDialog
