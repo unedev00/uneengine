@@ -219,6 +219,7 @@
     "apps/web/test/pageBuilderAuditFixes.test.mjs",
     "apps/web/test/pageBuilderDesignReference.test.ts",
     "apps/web/test/pageBuilderInsertGalleryLayout.test.ts",
+    "apps/web/test/pageBuilderLayoutDesignParity.test.ts",
     "apps/web/test/pageBuilderLayoutRibbonDensity.test.mjs",
     "apps/web/test/pageBuilderMergeRegressions.test.ts",
     "apps/web/test/pageBuilderNonDesignRibbonRequirements.test.ts",
