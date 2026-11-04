@@ -73,8 +73,9 @@ test('Insert Ribbon exposes visible Smart components without requiring a selecte
  assert.match(read('../src/core/builders/PageBuilder/PageBuilderRibbonLayout.css'),/> \.smart-insert-ribbon/);
 });
 
-test('Layout omits only properties with an exact Design 2 binding',()=>{
+test('Layout hides exact Design 2 duplicates and retired ribbon-only colours',()=>{
  const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
+ const visibility=read('../src/core/builders/PageBuilder/layoutRibbonVisibility.ts');
  const matrix=read('../../server/src/system-support/migrations/20271104-zz-design2-exact-approved-matrix.sql');
  const parity=read('../../server/src/system-support/migrations/20271106-design2-functional-control-parity.sql');
  const imageParity=read('../../server/src/system-support/migrations/20271108-design2-four-control-parity.sql');
@@ -83,22 +84,17 @@ test('Layout omits only properties with an exact Design 2 binding',()=>{
  const registered=['smart_button','smart_toggle','smart_lookup','smart_tabs','smart_text',
    'smart_textbox','smart_card_grid','smart_image','smart_calendar','smart_navigation',
    'smart_container','smart_cart','smart_icon','smart_table'];
- assert.ok(ribbon.includes('const alreadyInDesign2=(p:UneRibbonProperty)=>'));
- assert.ok(ribbon.includes('rule.componentApi===api&&rule.area===matchingSlot.area'));
- assert.ok(ribbon.includes('rule.slotKey===matchingSlot.slotKey&&rule.propertyKey===p.id'));
- assert.ok(ribbon.includes("if(p.id==='x'||p.id==='y')return p.components.includes(api)"));
- assert.ok(ribbon.includes('!alreadyInDesign2(p)'));
- assert.ok(ribbon.includes("imagePlacement:{area:'Image',slotKey:'placement'}"));
- assert.ok(ribbon.includes("imageFill:{area:'Image',slotKey:'imageFill'}"));
- const start=ribbon.indexOf('const design2LayoutSlots:');
- const end=ribbon.indexOf('const displayProperties=',start);
- assert.ok(start>=0&&end>start);
- const excluded=ribbon.slice(start,end);
- for(const unique of ['imageBorderColor','iconFillColor','imageHeight','headerBoxHeight'])
-  assert.ok(!excluded.includes(unique),'Do not remove unique Layout field '+unique);
+ assert.ok(ribbon.includes('!HIDDEN_RIBBON_PROPERTY_KEYS.has(p.id)'));
+ assert.ok(ribbon.includes("tab==='Layout'&&hasDesign2LayoutEquivalent("));
+ assert.ok(visibility.includes("propertyKey==='x'||propertyKey==='y'"));
+ assert.ok(visibility.includes("propertyKey==='badgeVisible'"));
+ assert.ok(visibility.includes('rule.componentApi===api&&rule.propertyKey===propertyKey'));
+ assert.ok(visibility.includes('slots.some(slot=>slot.area===rule.area&&slot.slotKey===rule.slotKey)'));
+ for(const removed of ['imageBorderColor','iconFillColor'])
+  assert.ok(visibility.includes("'"+removed+"'"),'Retired ribbon control '+removed);
  for(const api of registered){
   for(const size of ['width','height'])
-   assert.ok((matrix+'\n'+parity).includes("('"+api+"','Body','"+size+"','"+size+"')"),
+   assert.ok((matrix+'\\n'+parity).includes("('"+api+"','Body','"+size+"','"+size+"')"),
      api+' must provide Design 2 '+size+' before Layout hides it');
   assert.ok(rowZero.includes("('"+api+"')"),api+' must support Design 2 X/Y');
  }
@@ -107,6 +103,7 @@ test('Layout omits only properties with an exact Design 2 binding',()=>{
    assert.ok(matrix.includes("('"+api+"','Image','"+slot+"','"+key+"')"),
      api+' must provide Design 2 '+key);
  assert.ok(imageParity.includes("('smart_navigation','Image','imageFill','imageFill')"));
+ // Runtime support and saved metadata are deliberately preserved.
  assert.ok(inventory.includes("('imageBorderColor','Image Border'"));
  assert.ok(inventory.includes("('smart_image','imageBorderColor',true"));
 });
