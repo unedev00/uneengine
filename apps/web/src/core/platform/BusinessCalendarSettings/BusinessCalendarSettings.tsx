@@ -205,7 +205,7 @@ export default function BusinessCalendarSettings({ request, permitted }: {
       // A running calendar in this browser can re-read the new tenant setting.
       window.dispatchEvent(new Event('metadrive:business-calendar-saved'));
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Unable to save business calendar');
+      setError(businessCalendarFailure(cause,'Unable to save business calendar'));
     } finally { setSaving(false); }
   };
 
