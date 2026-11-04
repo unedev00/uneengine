@@ -616,7 +616,7 @@ function PageBuilder({
     setRibbonTab(tab);
     setPageSettingsDialogOpen(false);
     if (tab === 'Add Block') { setPageSettingsOpen(false); openPalette('Components', 'All Components'); }
-    if (tab === 'Component Layout' || tab === 'Arrange' || tab === 'Advanced') { setPageSettingsOpen(false); }
+    if (tab === 'Arrange' || tab === 'Advanced') { setPageSettingsOpen(false); }
     if (tab === 'Advanced') setAdvancedEditor('assignments');
     else setAdvancedEditor(null);
     const inspector = { 'Component Design 2': 'Design', 'Arrange': 'Position', 'Component Style': 'Design', 'Component Data': 'Data & Actions', 'Component Content': 'Data & Actions', 'Component Action': 'Visibility', 'Component Layout': 'Position', 'Component Responsive': 'Position' } as const;
