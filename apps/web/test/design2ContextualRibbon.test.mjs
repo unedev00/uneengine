@@ -58,11 +58,12 @@ test('approved Body Wrap, Row Fill and Table Focus keep their fixed slots',()=>{
  assert.match(table,/background:colour\(p\.tableBackgroundColor/);
 });
 
-test('original Design is not changed or replaced',()=>{
+test('Design 2 replaces the retired Design tab and is labelled Design',()=>{
  assert.match(inventory,/Design2/);
- assert.match(builder,/'Component Properties': 'Design'/);
- assert.match(builder,/'Component Design 2': 'Design 2'/);
- assert.match(builder,/\['Add Block','Component Data','Component Properties',\s*'Component Design 2'/);
+ assert.doesNotMatch(builder,/'Component Properties'/);
+ assert.match(builder,/'Component Design 2': 'Design',/);
+ assert.match(builder,/\['Add Block','Component Data',\s*'Component Design 2'/);
+ assert.match(builder,/'Component Data':'Component Design 2'/);
  assert.match(shared,/const visible=definitions\.filter\(p=>p\.tab===tab\)/);
  assert.match(shared,/const contextualVisible=tab==='Design2'\?design2Properties:visible/);
  assert.match(sql,/m\.label,'Design2','Contextual'/);

@@ -573,7 +573,7 @@ function PageBuilder({
   const ribbonStripRef=useRef<HTMLDivElement|null>(null);
   const [selectedConversationPart,setSelectedConversationPart]=useState('parent');
   useEffect(()=>setSelectedConversationPart('parent'),[selectedId]);
-  const [ribbonTab, setRibbonTab] = useState<'Add Block' | 'Component Content' | 'Component Properties' | 'Component Design 2' | 'Component Style' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Component Responsive' | 'Preview' | 'Filters' | 'Source' | 'Arrange' | 'Advanced'>('Add Block');
+  const [ribbonTab, setRibbonTab] = useState<'Add Block' | 'Component Content' | 'Component Design 2' | 'Component Style' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Component Responsive' | 'Preview' | 'Filters' | 'Source' | 'Arrange' | 'Advanced'>('Add Block');
   const componentNeedsData = (type: string) => {
     const metadata = type.startsWith('Custom:') ? findRegisteredComponent(libraryComponents,type.slice('Custom:'.length),'page') : undefined;
     return Boolean(type.startsWith('Custom:')&&isUneBuilderApi(type.slice(7),ribbonCatalog?.components??[])
@@ -588,7 +588,7 @@ function PageBuilder({
     if (tab === 'Component Layout' || tab === 'Arrange' || tab === 'Advanced') { setPageSettingsOpen(false); }
     if (tab === 'Advanced') setAdvancedEditor('assignments');
     else setAdvancedEditor(null);
-    const inspector = { 'Component Properties': 'Design', 'Component Design 2': 'Design', 'Arrange': 'Position', 'Component Style': 'Design', 'Component Data': 'Data & Actions', 'Component Content': 'Data & Actions', 'Component Action': 'Visibility', 'Component Layout': 'Position', 'Component Responsive': 'Position' } as const;
+    const inspector = { 'Component Design 2': 'Design', 'Arrange': 'Position', 'Component Style': 'Design', 'Component Data': 'Data & Actions', 'Component Content': 'Data & Actions', 'Component Action': 'Visibility', 'Component Layout': 'Position', 'Component Responsive': 'Position' } as const;
     if (tab in inspector) { setPageSettingsOpen(false); openComponentInspector(inspector[tab as keyof typeof inspector]); }
   };
   useEffect(()=>{
@@ -1571,7 +1571,7 @@ function PageBuilder({
     setPageSettingsOpen(false);
     setActivePanel('properties');
     setInspectorTab(componentNeedsData(type)?'Data & Actions':'Design');
-    setRibbonTab(componentNeedsData(type)?'Component Data':'Component Properties');
+    setRibbonTab(componentNeedsData(type)?'Component Data':'Component Design 2');
     onNotify(`${custom?libraryComponentLabel(custom):type} added and selected`);
   };
   const addField = (fieldApiName: string) => {
@@ -2509,7 +2509,7 @@ function PageBuilder({
           setFocusedCardMapping(mapping);
         }else setFocusedCardMapping('');
         setPageSettingsOpen(false); setComponentMenuId('');
-        if (!(event.shiftKey && page.layoutMode === 'free-canvas') && ribbonTab==='Add Block') { setRibbonTab(componentNeedsData(component.type)?'Component Data':'Component Properties'); openComponentInspector(componentNeedsData(component.type)?'Data & Actions':'Design'); }
+        if (!(event.shiftKey && page.layoutMode === 'free-canvas') && ribbonTab==='Add Block') { setRibbonTab(componentNeedsData(component.type)?'Component Data':'Component Design 2'); openComponentInspector(componentNeedsData(component.type)?'Data & Actions':'Design'); }
 
     };
     const selectOnlyInDesigner = !previewMode && !libraryPreview;
@@ -2566,7 +2566,7 @@ function PageBuilder({
             event.stopPropagation();
             selectCanvasComponent(event);
           } : undefined}
-      onDoubleClick={!libraryPreview ? event => { event.stopPropagation(); if (!previewMode) { setSelectedRegion(null); setSelectedId(component.id); selectRibbonTab(componentNeedsData(component.type)?'Component Data':'Component Properties'); } } : undefined}
+      onDoubleClick={!libraryPreview ? event => { event.stopPropagation(); if (!previewMode) { setSelectedRegion(null); setSelectedId(component.id); selectRibbonTab(componentNeedsData(component.type)?'Component Data':'Component Design 2'); } } : undefined}
       onContextMenu={!libraryPreview && !previewMode ? event => { event.preventDefault(); event.stopPropagation(); setSelectedRegion(null); setSelectedId(component.id); setComponentMenuId(component.id); } : undefined}
       onPointerDown={!previewMode && !libraryPreview && page.layoutMode === 'free-canvas' && !nested ? event => {
         // A scrollable component is still a movable shape. Only native scrollbar
@@ -2621,7 +2621,7 @@ function PageBuilder({
           onPointerCancel={event => endCanvasMove(event, true)}
           onLostPointerCapture={event => endCanvasMove(event, true)}
           onClick={event => event.stopPropagation()}><Move size={15}/></button>}
-        <button type="button" onClick={() => selectRibbonTab('Component Properties')} title="Edit block"><Pencil size={15}/> Edit</button>
+        <button type="button" onClick={() => selectRibbonTab('Component Design 2')} title="Edit block"><Pencil size={15}/> Edit</button>
         {page.layoutMode === 'free-canvas' && <button type="button" onClick={() => selectRibbonTab('Component Layout')} title="Position and size"><Maximize2 size={15}/> Position</button>}
         <button type="button" onClick={duplicateSelected} disabled={isCanvasLocked(component)} title="Duplicate"><Copy size={16}/></button>
         <button type="button" onClick={() => setComponentMenuId(current => current === component.id ? '' : component.id)}
@@ -2980,7 +2980,8 @@ function PageBuilder({
     onNesting:()=>openAdvanced('nesting')
   };
   const quickAccessOrder=['save','activate','preview','exitPreview','resetIcon','undo','redo','cut','copy','paste','delete'] as const;
-  const journeyTabs: Array<typeof ribbonTab> = ['Add Block','Component Data','Component Properties',
+  const journeyTabs: Array<typeof ribbonTab> = // The legacy Design tab is retired; Design 2 is the only Design ribbon.
+  ['Add Block','Component Data',
     'Component Design 2','Component Layout','Arrange','Component Action','Advanced','Preview'];
   const ribbonTabsVisible: Array<typeof ribbonTab> = [...journeyTabs];
 
@@ -3282,7 +3283,6 @@ function PageBuilder({
                   'Add Block': Puzzle,
                   'Component Data': Database,
                   'Component Content': Type,
-                  'Component Properties': SlidersHorizontal,
                   'Component Design 2': SlidersHorizontal,
 
                   Arrange: Layers3, Advanced: SlidersHorizontal,
@@ -3296,8 +3296,7 @@ function PageBuilder({
                   'Add Block': 'Insert',
                   'Component Data': 'Data',
                   'Component Content': 'Content',
-                  'Component Properties': 'Design',
-                  'Component Design 2': 'Design 2',
+                  'Component Design 2': 'Design',
 
                   Arrange: 'Arrange', Advanced: 'Advanced',
                   'Component Style': 'Format',
@@ -3495,7 +3494,7 @@ function PageBuilder({
                 }else updateComponent(selected.id,{properties:{...selected.properties,iconId}});
               }}/>}
           {selected && ribbonCatalog &&
-            ((selectedNewUne && (ribbonTab==='Component Data'||ribbonTab==='Component Properties'||
+            ((selectedNewUne && (ribbonTab==='Component Data'||
               ribbonTab==='Component Design 2'||ribbonTab==='Component Layout'))
               ||(!selectedNewUne && ribbonTab==='Component Design 2')) &&
             <SmartRibbon

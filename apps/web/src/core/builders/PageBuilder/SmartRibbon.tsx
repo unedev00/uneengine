@@ -336,7 +336,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    const key=api==='smart_calendar'&&property.id==='shadow'?'shadow':property.valueKeys?.[api]??property.id;
    const isSize=property.id==='width'||property.id==='height';
    const useCanvasPosition=layoutMode==='free-canvas'&&Boolean(position&&onPositionChange);
-   const condition=property.enabledWhen;
+   const condition=property.enabledWhenOverrides?.[api]??property.enabledWhen;
    const conditionValue=condition?properties[condition.property]??(
      definitions.find(p=>p.id===condition.property)?.defaultsOverrides?.[api]??
      definitions.find(p=>p.id===condition.property)?.default
