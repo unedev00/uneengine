@@ -420,3 +420,15 @@
  .standalone-product .acetill-receipt-panel h1{font-size:24px}
 }
 @media(prefers-reduced-motion:reduce){.acetill-terminal :is(button,.acetill-product){transition:none;animation:none;transform:none}}
+
+/* Product imagery should degrade to an intentional named tile, not an empty checkbox. */
+.acetill-photo-placeholder{width:100%;height:100%;min-height:120px;display:flex;flex-direction:column;gap:8px;align-items:center;justify-content:center;background:linear-gradient(140deg,#edf2f7,#e1e9f3);color:#455d77}
+.acetill-photo-placeholder span{font-size:34px;line-height:1;color:#637d99}
+.acetill-photo-placeholder small{font-size:12px;font-weight:600}
+@media(max-width:600px){
+ .acetill-topline{display:grid;grid-template-columns:minmax(0,1fr);align-items:stretch;gap:12px}
+ .acetill-category-tabs{width:100%;max-width:100%;min-width:0;display:flex;flex-wrap:wrap;overflow:visible;gap:5px}
+ .acetill-category-tabs button{min-height:44px;padding:10px 12px;font-size:13px;white-space:normal;border-radius:9px;border:1px solid #d8e3f0}
+ .acetill-category-tabs button.selected{background:#eaf2ff;border-color:#1e64c8}
+ .acetill-search{max-width:none;width:100%;box-sizing:border-box}
+}

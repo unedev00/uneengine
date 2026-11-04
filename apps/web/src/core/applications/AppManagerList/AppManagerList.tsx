@@ -28,7 +28,7 @@ export default function AppManagerList({apps, busy, onEdit, onClone}: Props) {
           onChange={event => setSearch(event.target.value)} placeholder="Search apps…"/>
       </label>
     </div>
-    <ResponsiveDataList rows={filtered} getId={app=>app.apiName} label="Applications"
+    <ResponsiveDataList rows={filtered} includeTablet getId={app=>app.apiName} label="Applications"
       onOpen={app=>onEdit(app)} openLabel="Edit application"
       columns={[
         {apiName:'name',label:'Application',phoneRole:'title',render:app=>app.label},
@@ -41,7 +41,7 @@ export default function AppManagerList({apps, busy, onEdit, onClone}: Props) {
          <button type="button" className="btn" disabled={busy} onClick={()=>onClone(app)}>Clone</button>
         </div>}
       ]}/>
-    <div className="app-manager-list-scroll md-mobile-table-replaced">
+    <div className="app-manager-list-scroll md-mobile-table-replaced md-tablet-table-replaced">
       <table className="app-manager-list-table">
         <thead><tr>
           <th scope="col">App</th>

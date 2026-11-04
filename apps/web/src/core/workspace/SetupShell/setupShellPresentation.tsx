@@ -1,4 +1,5 @@
 // @ts-nocheck
+import SetupLoadingState from './SetupLoadingState';
 import { UneBrandLogo } from '../../branding/UneBrandLogo';
 import CompanySettingsWorkspace from '../../settings/CompanySettingsWorkspace/CompanySettingsWorkspace';
 import MobileSettingsHome from '../../settings/MobileSettingsHome';
@@ -28,7 +29,14 @@ export function renderSetupShell(ctx: any) {
           page.apiName === entry.apiName && page.pageType === 'App Page' && page.status === 'Active'))
         .filter(Boolean)
     : [];
+  const installedAppValue=route.kind==='record-list'||route.kind==='record-detail'?'__records__'
+    : route.kind==='app-page'||route.kind==='app-home'?(route.appId==='Records'?'__records__':route.appId)
+    : route.kind==='setup'?'__setup__':'';
+  const installedAppLabel=installedAppValue==='__records__'?'Records'
+    :installedAppValue==='__setup__'?'Setup'
+    :apps.find((item:LightningAppMetadata)=>item.apiName===installedAppValue)?.label??'Apps';
   const openInstalledApp = (value: string) => {
+    if(value==='__setup__')return;
     if(value === '__mail__'){window.location.assign('/mail');return;}
     if(value === '__mail_admin__'){window.location.assign('/mail-admin');return;}
     if (value === '__home__') { openSetupWorkspace('home'); return; }
@@ -67,8 +75,9 @@ export function renderSetupShell(ctx: any) {
         <button type="button" className="brand brand-home-button" aria-label="Go to home" title="Home" onClick={() => openSetupWorkspace('home')}><UneBrandLogo className="brand-logo" src={uneSolutionsLogoUrl} decorative /></button>
         <label className="header-installed-apps">
           <span>Apps</span>
-          <select aria-label="Open installed app" value="" onChange={(event) => openInstalledApp(event.target.value)}>
-            <option value="">Open app…</option>
+          <select aria-label="Open installed app" value={installedAppValue} onChange={(event) => openInstalledApp(event.target.value)}>
+            <option value="" disabled>Select app…</option>
+            <option value="__setup__">Setup</option>
             <option value="__home__">Home</option>
             <option value="__mail__">Mail</option>
             <option value="__mail_admin__">Mail Administration</option>
@@ -76,6 +85,7 @@ export function renderSetupShell(ctx: any) {
             {apps.filter((app) => app.apiName !== 'Records').map(app=><option key={app.apiName} value={app.apiName}>{app.label}</option>)}
           </select>
         </label>
+        <span className="header-mobile-app-name" aria-label="Current application">{installedAppLabel}</span>
         <MobileAppLauncher apps={[...apps, {apiName:'__mail__',label:'Mail'}, {apiName:'__mail_admin__',label:'Mail Administration'}]}
           showRecords={readableRecordObjects.length > 0} onOpenApp={openInstalledApp} />
         <div className="header-searches">
@@ -293,10 +303,14 @@ export function renderSetupShell(ctx: any) {
             formFactor={runtimeFormFactor} profileId={currentProfileId} pageDefinitionCache={pageDefinitionCache.current} onNavigate={navigateRoute}
             onLaunchFlow={(apiName: string, inputs: Record<string, unknown>,context?:{requestId?:string}) => void runFlow(apiName, inputs,context)} onStandaloneModeChange={setStandalonePageMode} />}
           {route.kind === 'setup' && workspace === 'home' && (runtimeFormFactor === 'Phone'
-            ? <MobileSettingsHome
+            ? route.resourceApiName==='overview'?
+              <section className="mobile-setup-overview"><button type="button" className="btn" onClick={()=>navigateRoute({kind:'setup',workspace:'home'})}><ChevronLeft size={16}/>Back to Settings</button>
+                <SetupHome onNavigate={openSetupWorkspace} request={apiRequest} onShowShortcuts={()=>setShortcutHelpOpen(true)}/></section>
+              : <MobileSettingsHome
                 request={apiRequest}
                 loading={!metadataLoaded}
                 onOpen={navigateSetupItem}
+                onOpenOverview={()=>navigateRoute({kind:'setup',workspace:'home',resourceApiName:'overview'})}
                 rights={{
                   viewMetadata:canReadMetadata, editMetadata:canManageApps,
                   viewSecurity:canReadSecurity, manageSecurity:canManageUserIdentities,
@@ -493,7 +507,7 @@ export function renderSetupShell(ctx: any) {
             onOpenWorkspace={(destination) => navigateRoute({kind:'setup', workspace:destination})} /></PlatformWorkspaceSurface>}
           {route.kind === 'setup' && workspace === 'dashboard-builder' && (
             dashboardsError ? <section className="setup-card" role="alert">Unable to load dashboards: {dashboardsError}</section> :
-            !dashboardsLoaded || !advancedMetadataLoaded ? <section className="setup-card" role="status">Loading live dashboards…</section> :
+            !dashboardsLoaded || !advancedMetadataLoaded ? <SetupLoadingState label="Dashboards" /> :
             <DashboardBuilder
             dashboards={dashboards}
             dashboardFolders={dashboardFolders}
@@ -615,7 +629,9 @@ export function renderSetupShell(ctx: any) {
             <ReportBuilder reports={reports} reportFolders={reportFolders} canManageReportFolders={canManageReportFolders} accessControl={accessControl} objects={objects} onSave={saveReport} onSaveFolder={saveReportFolder} onDelete={deleteReport} onRun={runReport} onPreview={previewReport} onNotify={notify} />)}
           {route.kind === 'setup' && workspace === 'scheduled-flows' && (
             flowDefinitionsError ? <section className="setup-card" role="alert">Unable to load saved flows: {flowDefinitionsError}</section> :
-            <ScheduledFlows flows={flows} objects={objects} loading={!flowDefinitionsLoaded || !advancedMetadataLoaded} onEdit={selectFlow} />
+            <ScheduledFlows flows={flows} objects={objects} loading={!flowDefinitionsLoaded || !advancedMetadataLoaded} onEdit={selectFlow}
+               initialView={route.resourceApiName==='triggers'?'triggers':'scheduled'}
+               onViewChange={view=>navigateRoute({kind:'setup',workspace:'scheduled-flows',...(view==='triggers'?{resourceApiName:'triggers'}:{})})}/>
           )}
           {route.kind === 'setup' && workspace === 'flow-interviews' && (
             <FlowInterviews
@@ -634,9 +650,14 @@ export function renderSetupShell(ctx: any) {
               onLoadMore={ctx.loadMoreFlowHistory} />
           )}
           {route.kind === 'setup' && workspace === 'automation-settings' && <PlatformWorkspaceSurface workspace="automation-settings" componentRuntime={protectedPageRuntime} permitted={canReadMetadata} resolving={!sessionPermissionsLoaded} pages={pages} libraryComponents={libraryComponents} device={runtimeFormFactor} canEditSystemPage={canManagePlatformTenants} onEditSystemPage={(apiName: string)=>{const selected=pages.find(p=>p.apiName===apiName);if(selected)setPage(selected);navigateRoute({kind:'setup',workspace:'page-builder',resourceApiName:apiName});}}><PlatformPageSlot slotKey="automation-policy"><AutomationSettingsWorkspace canManage={canManageFlows} /></PlatformPageSlot></PlatformWorkspaceSurface>}
+          {route.kind === 'setup' && workspace === 'flow-builder' && !route.resourceApiName &&
+            <nav className="flow-builder-related-actions" aria-label="Flow management tools">
+              <button type="button" className="btn" onClick={()=>navigateRoute({kind:'setup',workspace:'scheduled-flows',resourceApiName:'triggers'})}>Flow Trigger Explorer</button>
+              <button type="button" className="btn" onClick={()=>navigateRoute({kind:'setup',workspace:'flow-logs'})}>Execution History</button>
+            </nav>}
           {route.kind === 'setup' && workspace === 'flow-builder' && (
             flowDefinitionsError ? <section className="setup-card" role="alert">Unable to load flows: {flowDefinitionsError}</section> :
-            !flowDefinitionsLoaded || !advancedMetadataLoaded ? <section className="setup-card" role="status">Loading live flow definitions…</section> :
+            !flowDefinitionsLoaded || !advancedMetadataLoaded ? <SetupLoadingState label="Flows" /> :
             <FlowBuilderWorkspace
               landing={!route.resourceApiName}
               flow={flow}
@@ -698,7 +719,11 @@ export function renderSetupShell(ctx: any) {
               onNotify={notify}
             />
           )}
-          {route.kind === 'setup' && workspace === 'company-settings' && <PlatformWorkspaceSurface workspace="company-settings" componentRuntime={protectedPageRuntime} permitted={canReadMetadata} resolving={!sessionPermissionsLoaded} pages={pages} libraryComponents={libraryComponents} device={runtimeFormFactor} canEditSystemPage={canManagePlatformTenants} onEditSystemPage={(apiName: string)=>{const selected=pages.find(p=>p.apiName===apiName);if(selected)setPage(selected);navigateRoute({kind:'setup',workspace:'page-builder',resourceApiName:apiName});}} ><CompanySettingsWorkspace objects={readableRecordObjects} mobile={runtimeFormFactor === 'Phone'} initialSection={route.resourceApiName === 'security' ? 'security' : undefined} onNavigateDeveloper={(target: string) => navigateRoute({kind:'setup',workspace:target})} developerAccess={{metadata:canReadMetadata,apps:canManageApps,flows:canManageFlows,dashboards:canManageDashboards,reports:canReadMetadata,approvals:canManageApprovalProcesses,security:canReadSecurity}} company={<CompanySettings canManage={canManageUserIdentities} />} domains={<PlatformPageSlot slotKey="domains"><TenantDomains request={apiRequest} permitted={canManageUserIdentities} /></PlatformPageSlot>} developer={<PlatformPageSlot slotKey="developer-accounts"><DeveloperAccountSettings request={apiRequest} permitted={canManageUserIdentities} /></PlatformPageSlot>} usage={<PlatformPageSlot slotKey="usage"><TenantUsagePanel request={apiRequest} permitted={canManageUserIdentities} /></PlatformPageSlot>} recovery={<PlatformPageSlot slotKey="recovery"><TenantRecoveryPanel request={apiRequest} operator={false} permitted={canManageUserIdentities} /></PlatformPageSlot>} mfa={<PlatformPageSlot slotKey="mfa"><TenantMfaSettings onReauthenticate={onLogout} canManage={canManageUserIdentities} governanceTab={route.resourceId === 'connected-apps' ? 'connected apps' : 'audit'} governanceFocus={route.resourceId === 'connected-apps' || route.resourceId === 'audit-trail'} /></PlatformPageSlot>} emailRecovery={<PlatformPageSlot slotKey="email-recovery"><TenantEmailRecoverySettings canManage={canManageUserIdentities} /></PlatformPageSlot>} locks={<PlatformPageSlot slotKey="locks"><TenantUserLockSettings /></PlatformPageSlot>} sessions={<PlatformPageSlot slotKey="sessions"><AccountSessionSecurity onReauthenticate={onLogout} /></PlatformPageSlot>} audit={<PlatformPageSlot slotKey="audit"><TenantSecurityAudit /></PlatformPageSlot>} /></PlatformWorkspaceSurface>}
+          {route.kind === 'setup' && workspace === 'company-settings' && <PlatformWorkspaceSurface workspace="company-settings" componentRuntime={protectedPageRuntime} permitted={canReadMetadata} resolving={!sessionPermissionsLoaded} pages={pages} libraryComponents={libraryComponents} device={runtimeFormFactor} canEditSystemPage={canManagePlatformTenants} onEditSystemPage={(apiName: string)=>{const selected=pages.find(p=>p.apiName===apiName);if(selected)setPage(selected);navigateRoute({kind:'setup',workspace:'page-builder',resourceApiName:apiName});}} ><CompanySettingsWorkspace objects={readableRecordObjects} mobile={runtimeFormFactor === 'Phone'} initialSection={route.resourceApiName}
+securitySubsection={route.resourceId}
+onSelectSection={(section)=>navigateRoute({kind:'setup',workspace:'company-settings',...(section?{resourceApiName:section}:{})})}
+onSelectSecurityArea={area=>navigateRoute({kind:'setup',workspace:'company-settings',resourceApiName:'security',resourceId:area})}
+onNavigateDeveloper={(target: string) => navigateRoute({kind:'setup',workspace:target})} developerAccess={{metadata:canReadMetadata,apps:canManageApps,flows:canManageFlows,dashboards:canManageDashboards,reports:canReadMetadata,approvals:canManageApprovalProcesses,security:canReadSecurity}} company={<CompanySettings canManage={canManageUserIdentities} />} domains={<PlatformPageSlot slotKey="domains"><TenantDomains request={apiRequest} permitted={canManageUserIdentities} /></PlatformPageSlot>} developer={<PlatformPageSlot slotKey="developer-accounts"><DeveloperAccountSettings request={apiRequest} permitted={canManageUserIdentities} /></PlatformPageSlot>} usage={<PlatformPageSlot slotKey="usage"><TenantUsagePanel request={apiRequest} permitted={canManageUserIdentities} /></PlatformPageSlot>} recovery={<PlatformPageSlot slotKey="recovery"><TenantRecoveryPanel request={apiRequest} operator={false} permitted={canManageUserIdentities} /></PlatformPageSlot>} mfa={<PlatformPageSlot slotKey="mfa"><TenantMfaSettings onReauthenticate={onLogout} canManage={canManageUserIdentities} governanceTab={route.resourceId === 'connected-apps' ? 'connected apps' : 'audit'} governanceFocus={route.resourceId === 'connected-apps' || route.resourceId === 'audit-trail'} /></PlatformPageSlot>} emailRecovery={<PlatformPageSlot slotKey="email-recovery"><TenantEmailRecoverySettings canManage={canManageUserIdentities} /></PlatformPageSlot>} locks={<PlatformPageSlot slotKey="locks"><TenantUserLockSettings /></PlatformPageSlot>} sessions={<PlatformPageSlot slotKey="sessions"><AccountSessionSecurity onReauthenticate={onLogout} /></PlatformPageSlot>} audit={<PlatformPageSlot slotKey="audit"><TenantSecurityAudit /></PlatformPageSlot>} /></PlatformWorkspaceSurface>}
           {route.kind === 'setup' && workspace === 'tenant-management' && !sessionPermissionsLoaded && <section className="setup-card" role="status">Checking access…</section>}
           {route.kind === 'setup' && workspace === 'tenant-management' && sessionPermissionsLoaded && !canManagePlatformTenants && <PlatformWorkspaceSurface
             workspace="company-settings" componentRuntime={protectedPageRuntime}

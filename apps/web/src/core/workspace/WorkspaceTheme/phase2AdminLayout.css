@@ -291,3 +291,182 @@
  .lightning .md-audit-table :is(th,td):nth-child(5){min-width:185px}
  .lightning .md-audit-table td[data-long-id]{max-width:none;white-space:normal;overflow-wrap:anywhere;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
 }
+
+/* Audit 2026-11-04: secondary security tabs must expose every route on phones. */
+@media (max-width: 700px) {
+  .lightning .company-workspace .md-admin-tabstrip {
+    flex-wrap: wrap;
+    overflow: visible;
+    gap: 5px;
+  }
+  .lightning .company-workspace .md-admin-tabstrip > button {
+    flex: 1 1 auto;
+    min-height: 44px;
+    white-space: normal;
+    text-align: center;
+  }
+}
+/* Preserve row identity when scanning long setup/security tables horizontally. */
+@media (min-width: 701px) {
+  .lightning .md-admin-table-wrap:has(.md-audit-table) {
+    position: relative;
+    padding-right: 12px;
+    scrollbar-width: thin;
+  }
+  .lightning .md-audit-table :is(th,td):first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: var(--md-surface,#fff);
+    min-width: 145px;
+    box-shadow: 2px 0 4px rgba(18,35,60,.08);
+  }
+  .lightning .md-audit-table th:first-child {z-index: 3;background:var(--md-surface-2,#f8fafc);}
+}
+
+/* Permission Sets: one task at a time on small screens, instead of stacking
+   the entire selector and the multi-thousand-pixel editor. */
+.lightning .md-permission-sets-mobile-back {display:none}
+@media (max-width: 1023px) {
+  .lightning .permissions-page .permission-workspace.md-permission-sets-list-mode,
+  .lightning .permissions-page .permission-workspace.md-permission-sets-detail-mode {display:block;min-width:0}
+  .lightning .permissions-page .md-permission-sets-list-mode .permission-editor {display:none}
+  .lightning .permissions-page .md-permission-sets-detail-mode .permission-list {display:none}
+  .lightning .permissions-page .md-permission-sets-list-mode .permission-list {
+    max-height:min(70dvh,700px);height:auto;width:100%;overflow:auto;border-right:0
+  }
+  .lightning .permissions-page .md-permission-sets-detail-mode .permission-editor {min-width:0;overflow:visible}
+  .lightning .md-permission-sets-mobile-back {display:inline-flex;min-height:44px;margin-bottom:12px}
+  .lightning .md-permission-mobile-save {
+    display:flex;position:sticky;bottom:0;z-index:6;justify-content:flex-end;
+    background:var(--md-surface,#fff);padding:12px 4px;border-top:1px solid var(--md-border,#e0e5eb)
+  }
+  .lightning .md-permission-mobile-save>.btn {min-height:44px}
+}
+@media (min-width: 1024px) {.lightning .md-permission-mobile-save{display:none}}
+/* RBAC tabs keep their reading order on small phones. */
+@media (max-width: 599px) {
+  .lightning .permissions-page .permission-tabs {
+    display:flex;flex-wrap:wrap;justify-content:flex-start;gap:5px;
+    max-width:100%;overflow:visible
+  }
+  .lightning .permissions-page .permission-tabs>button {
+    flex:1 1 auto;max-width:100%;min-height:44px;white-space:normal;text-align:center
+  }
+}
+
+/* Accordion grouping for long permission-set editors.
+   Default collapse below 1024 is controlled by the editor, not global zoom. */
+.lightning .permissions-page .md-permission-collapsible {
+  min-width:0;margin:10px 0;border:1px solid var(--md-border,#e0e5eb);
+  border-radius:var(--md-radius-md,8px);padding:8px 12px;
+}
+.lightning .permissions-page .md-permission-collapsible>summary {
+  cursor:pointer;min-height:40px;display:list-item;list-style:disclosure-closed inside;
+  font-weight:650;font-size:14px;padding:9px 0;
+}
+.lightning .permissions-page .md-permission-collapsible[open]>summary {list-style:disclosure-open inside}
+.lightning .permissions-page .md-permission-collapsible>summary:focus-visible {
+  outline:2px solid var(--md-primary,#1d4ed8);outline-offset:2px;
+}
+@media (max-width:1023px) {
+  .lightning .permissions-page .md-permission-collapsible>summary {min-height:44px}
+}
+
+/* One primary navigation affordance on narrow RBAC screens; no column-major 3×3 tab matrix. */
+.lightning .permissions-page .permission-area-select{display:none}
+.lightning .permissions-page .md-permission-list-pagination{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px}
+.lightning .permissions-page .md-permission-list-pagination .btn{min-height:40px}
+.lightning .permissions-page .permission-list-item .md-user-role-label{
+ display:inline-flex;width:max-content;max-width:100%;padding:2px 8px;margin-top:4px;
+ font-size:12px;background:var(--md-surface-2,#eef3f9);color:var(--md-text,#192230);border-radius:99px
+}
+.lightning .permissions-page .md-sharing-defaults{
+ min-width:0;max-width:100%;border:1px solid var(--md-border,#e0e5eb);
+ border-radius:8px;margin-bottom:12px;padding:12px
+}
+.lightning .permissions-page .md-sharing-defaults>summary{
+ cursor:pointer;min-height:44px;font-weight:600;display:list-item;padding:10px 4px
+}
+.lightning .permissions-page .md-sharing-mobile-heading{display:none}
+.lightning .permissions-page .md-permission-mobile-save{gap:12px;align-items:center}
+.lightning .permissions-page .md-permission-save-state{margin-right:auto;font-size:12px;color:var(--md-muted,#596579)}
+@media(max-width:1023px){
+ .lightning .permissions-page .md-sharing-mobile-heading{display:block}
+ .lightning .permissions-page .md-sharing-defaults .permission-table-wrap{overflow-x:auto;max-width:100%}
+ .lightning .permissions-page .md-permission-mobile-save{
+  position:sticky;bottom:0;z-index:8;background:var(--md-surface,#fff);
+  display:flex;align-items:center;flex-wrap:wrap;padding:10px;
+  border-top:1px solid var(--md-border,#e0e5eb);margin-top:16px
+ }
+}
+@media(min-width:1024px){
+ .lightning .permissions-page .md-permission-mobile-save{
+  display:flex;position:sticky;bottom:0;z-index:8;align-items:center;gap:12px;
+  padding:12px 15px;border-top:1px solid var(--md-border,#dce3eb);
+  background:var(--md-surface,#fff);margin-top:12px
+ }
+}
+@media(max-width:599px){
+ .lightning .permissions-page .permission-area-select{
+  display:grid;gap:6px;padding:10px 14px;background:var(--md-surface-2,#f5f7fa);
+  border:1px solid var(--md-border,#e0e5eb);border-radius:9px;margin:0 0 12px
+ }
+ .lightning .permissions-page .permission-area-select select{min-height:44px;width:100%}
+ .lightning .permissions-page .permission-tabs{display:none}
+ .lightning .permissions-page .md-permission-mobile-save .btn{min-height:44px}
+}
+
+
+/* Desktop table scanability: pinned identity/actions and an explicit scroll cue. */
+@media(min-width:1024px) {
+ .lightning .page-manager-table-scroll,.lightning .records-table-wrap.records-responsive-list{
+  max-width:100%;position:relative;overflow-x:auto;scrollbar-width:thin;
+  scrollbar-color:var(--md-scroll-thumb,#9baac0) transparent
+ }
+ .lightning .page-manager-table :is(th,td):first-child{
+  position:sticky;left:0;z-index:3;background:var(--md-surface,#fff);min-width:180px;
+  box-shadow:2px 0 5px rgba(15,23,42,.1)
+ }
+ .lightning .page-manager-table :is(th,td):nth-child(2){
+  position:sticky;left:180px;z-index:2;background:var(--md-surface,#fff);min-width:150px;
+  box-shadow:2px 0 5px rgba(15,23,42,.08)
+ }
+ .lightning .page-manager-table thead th:first-child,
+ .lightning .page-manager-table thead th:nth-child(2){z-index:5;background:var(--md-surface-2,#f8fafc)}
+ .lightning .records-data-table :is(th,td):first-child{
+  position:sticky;left:0;z-index:2;background:var(--md-surface,#fff);box-shadow:2px 0 6px rgba(15,23,42,.1)
+ }
+ .lightning .records-data-table:has(th:first-child input[type="checkbox"]) :is(th,td):first-child{min-width:40px}
+ .lightning .records-data-table:has(th:first-child input[type="checkbox"]) :is(th,td):nth-child(2){
+  position:sticky;z-index:2;background:var(--md-surface,#fff);left:40px;min-width:145px;box-shadow:2px 0 6px rgba(15,23,42,.08)
+ }
+ .lightning .records-data-table thead :is(th:first-child,th:nth-child(2)){z-index:4;background:var(--md-surface-2,#f8fafc)}
+}
+@media(max-width:1023px){
+ .lightning .page-manager-mobile-actions{display:flex;flex-wrap:wrap;gap:6px}
+ .lightning .page-manager-mobile-actions>.btn{min-height:44px}
+ .lightning .flow-history-pagination{flex-wrap:wrap}
+}
+.lightning .flow-history-pagination{display:flex;align-items:center;gap:10px;padding:12px 15px}
+.lightning .flow-history-pagination>span{margin-right:auto;font-size:13px}
+
+/* Short, predictable RBAC editing: user detail is selected from the list,
+   and every permission group starts collapsed on desktop as well. */
+.lightning .permissions-page .md-permission-collapsible{scroll-margin-top:80px}
+.lightning .permissions-page .md-permission-list-pagination{flex-wrap:wrap}
+.lightning .permissions-page .permission-user-card{min-width:0;max-width:100%}
+.lightning .permissions-page .permission-user-card summary{min-height:44px}
+
+/* A compact section index for mobile sharing settings. */
+.lightning .permissions-page .md-sharing-advanced{
+ margin:10px 0 16px;max-width:100%;min-width:0;
+ border:1px solid var(--md-border,#e0e5eb);border-radius:9px;padding:8px 12px
+}
+.lightning .permissions-page .md-sharing-advanced>summary{
+ cursor:pointer;font-weight:600;min-height:44px;padding:10px 4px
+}
+.lightning .permissions-page .md-sharing-advanced>summary:focus-visible,
+.lightning .permissions-page .md-sharing-defaults>summary:focus-visible{
+ outline:2px solid var(--md-primary,#1d4ed8);outline-offset:2px
+}

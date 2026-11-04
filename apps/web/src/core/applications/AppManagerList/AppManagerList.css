@@ -55,3 +55,17 @@
 .app-manager-list-table .app-manager-list-name{min-width:0;align-items:center}
 .app-manager-list-table .app-manager-list-name strong{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media(max-width:800px){.app-manager-list-table{min-width:900px}}
+
+
+/* Compact list appears immediately; tablet cards replace the very wide table. */
+@media (min-width:1024px){
+ .app-manager-list-table :is(th,td):first-child{position:sticky;left:0;z-index:2;background:var(--surface,#fff);box-shadow:2px 0 5px rgba(20,30,50,.1)}
+ .app-manager-list-table th:first-child{background:#f8fafc;z-index:3}
+}
+@media (max-width:1023px){
+ .app-manager-list .md-responsive-rows{margin:0;padding:0}
+ .app-manager-list-head{margin:0;padding:12px;gap:10px;flex-wrap:wrap}
+ .app-manager-list-head p{margin-top:4px}
+ .app-manager-list-search{min-height:44px}
+}
+@media(max-width:640px){.app-manager-workspace .page-heading.app-manager-top{padding-bottom:8px;margin-bottom:8px;min-height:auto}}

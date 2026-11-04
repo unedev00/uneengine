@@ -18,15 +18,16 @@ type Props<T> = {
   onOpen?: (record: T) => void;
   openLabel?: string;
   loading?: boolean;
+  includeTablet?: boolean;
   emptyText?: string;
 };
 /** Phone presentation only; keep the caller's existing tablet/desktop table and operations.
  * All text comes from already-authorised caller data; permission filtering remains upstream.
  */
-export default function ResponsiveDataList<T>({rows,columns,getId,label,onOpen,openLabel='Open',loading=false,emptyText='No records'}: Props<T>) {
+export default function ResponsiveDataList<T>({rows,columns,getId,label,onOpen,openLabel='Open',loading=false,emptyText='No records',includeTablet=false}: Props<T>) {
   const formFactor=useFormFactor();
   const roles=resolvePhoneColumns(columns);
-  if(formFactor!=='Phone')return null;
+  if(formFactor!=='Phone' && !(includeTablet && formFactor==='Tablet'))return null;
   if(loading)return <div className="md-responsive-rows" role="status" aria-label={'Loading '+label}>
     {Array.from({length:5},(_,i)=><div className="md-responsive-skeleton" key={i} aria-hidden="true"><i/><i/></div>)}
   </div>;

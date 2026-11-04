@@ -81,7 +81,7 @@ export default function OfflineBriefcaseSettings({ request, permitted, objects }
     {notice && <p role="status">{notice}</p>}
     <form onSubmit={event => void save(event)}>
       {selections.map((selection, index) => <fieldset className="offline-briefcase-selection" key={index}>
-        <legend>Object selection {index + 1}</legend>
+        <legend>{selection.objectApi ? (objects.find(object=>object.apiName===selection.objectApi)?.label??selection.objectApi) : `Object selection ${index+1}`} · {selection.recordIdsText.split(/[\s,]+/).filter(Boolean).length} selected</legend>
         <label>Object
           <select required value={selection.objectApi} disabled={loading || saving} onChange={event => setSelections(value => value.map((item, itemIndex) => itemIndex === index ? {objectApi:event.target.value,recordIdsText:''} : item))}>
             <option value="">Choose an object</option>

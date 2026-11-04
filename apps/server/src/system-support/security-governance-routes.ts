@@ -24,10 +24,10 @@ export function registerConnectedPublicRoutes(app:Express,connected:ConnectedApp
 export function registerGovernanceRoutes(app:Express,db:SqlPersistence,rbac:RbacEngine,_auth:AuthenticationService,connected:ConnectedAppService,monitor:SecurityMonitorService){
  const audit=new SetupAuditService(db,rbac),licenses=new LicenseService(db,rbac);
  app.get('/api/security/permissions',route(async(req,res)=>{const a=req.actor!;res.json({permissions:await audit.catalogue(a.tenant_id,a.user_id)});}));
- app.get('/api/security/audit',route(async(req,res)=>{const a=req.actor!;res.json(await audit.list(a.tenant_id,a.user_id,{before:req.query.before,table:req.query.table,global:req.query.global==='true'}));}));
+ app.get('/api/security/audit',route(async(req,res)=>{const a=req.actor!;res.json(await audit.list(a.tenant_id,a.user_id,{before:req.query.before,table:req.query.table,actor:req.query.actor,from:req.query.from,to:req.query.to,limit:req.query.limit,global:req.query.global==='true'}));}));
  app.get('/api/security/audit/coverage',route(async(req,res)=>{const a=req.actor!;res.json({tables:await audit.coverage(a.tenant_id,a.user_id)});}));
  app.get('/api/security/audit/export',route(async(req,res)=>{
-  const a=req.actor!,page=await audit.list(a.tenant_id,a.user_id,{before:req.query.before,table:req.query.table,global:req.query.global==='true',export:true,limit:5000});
+  const a=req.actor!,page=await audit.list(a.tenant_id,a.user_id,{before:req.query.before,table:req.query.table,actor:req.query.actor,from:req.query.from,to:req.query.to,global:req.query.global==='true',export:true,limit:5000});
   // JSON envelope keeps the next cursor available to the authenticated downloader.
   res.setHeader('Cache-Control','no-store');res.json({csv:auditCsv(page.events),nextCursor:page.nextCursor});
  }));
@@ -36,10 +36,11 @@ export function registerGovernanceRoutes(app:Express,db:SqlPersistence,rbac:Rbac
  app.put('/api/security/licenses/assignment',route(async(req,res)=>{const a=req.actor!;res.json(await licenses.assign(a.tenant_id,a.user_id,req.body));}));
  app.put('/api/security/licenses/requirement',route(async(req,res)=>{const a=req.actor!;res.json(await licenses.requirement(a.tenant_id,a.user_id,req.body));}));
  app.post('/api/security/licenses/issue',route(async(req,res)=>{const a=req.actor!;res.json(await licenses.issue(a.tenant_id,a.user_id,req.body));}));
- app.get('/api/security/monitoring',route(async(req,res)=>{const a=req.actor!;res.json(await monitor.describe(a.tenant_id,a.user_id,req.query.before));}));
+ app.get('/api/security/monitoring',route(async(req,res)=>{const a=req.actor!;res.json(await monitor.describe(a.tenant_id,a.user_id,req.query.before,req.query.limit));}));
  app.put('/api/security/monitoring',route(async(req,res)=>{const a=req.actor!;res.json(await monitor.configure(a.tenant_id,a.user_id,req.body));}));
  app.put('/api/security/monitoring/rules',route(async(req,res)=>{const a=req.actor!;res.json(await monitor.saveRule(a.tenant_id,a.user_id,req.body));}));
- app.post('/api/security/monitoring/prune',route(async(req,res)=>{const a=req.actor!;res.json(await monitor.prune(a.tenant_id,a.user_id));}));
+ app.get('/api/security/monitoring/prune-preview',route(async(req,res)=>{const a=req.actor!;res.setHeader('Cache-Control','private, no-store');res.json(await monitor.prunePreview(a.tenant_id,a.user_id));}));
+ app.post('/api/security/monitoring/prune',route(async(req,res)=>{const a=req.actor!;res.json(await monitor.prune(a.tenant_id,a.user_id,req.body?.confirmation,req.body?.expectedRetentionDays));}));
  app.get('/api/security/connected-apps',route(async(req,res)=>{const a=req.actor!;res.json(await connected.describe(a.tenant_id,a.user_id));}));
  app.put('/api/security/connected-apps',route(async(req,res)=>{const a=req.actor!;res.setHeader('Cache-Control','no-store');res.json(await connected.save(a.tenant_id,a.user_id,req.body));}));
  app.post('/api/security/connected-apps/rotate-secret',route(async(req,res)=>{const a=req.actor!;res.setHeader('Cache-Control','no-store');res.json(await connected.rotateSecret(a.tenant_id,a.user_id,req.body?.id));}));

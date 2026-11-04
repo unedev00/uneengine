@@ -105,3 +105,17 @@
 .page-details-device-option input[type=checkbox]{width:17px;height:17px;flex-shrink:0;
  accent-color:#176cd1;cursor:pointer}
 .page-details-device-option input[type=checkbox]:disabled{cursor:not-allowed}
+
+/* At tablet widths the page editor is a single-column task. */
+@media (min-width:601px) and (max-width:899px) {
+  .page-details-dialog{
+    width:min(100%,calc(100vw - 24px))!important;
+    max-height:calc(100dvh - 24px);
+  }
+  .page-details-grid{grid-template-columns:minmax(0,1fr);gap:12px}
+  .page-details-main,.page-details-side{min-width:0}
+  .page-details-nav{gap:12px;flex-wrap:wrap}
+  .page-details-section{padding:12px;overflow-wrap:anywhere}
+  .page-details-section .form-label{min-width:0}
+  .page-details-header,.page-details-footer{padding:12px 14px}
+}

@@ -27,7 +27,11 @@ test('Security deep links preserve destination in the existing metadata route',(
  assert.equal(path,'/une/setup/company-settings/security/connected-apps');
  const source=read('../src/core/workspace/SetupShell/setupAppShell.tsx');
  assert.match(source,/resourceId:'connected-apps'/);
- assert.match(nav,/initialSection=\{route\.resourceApiName === 'security'/);
+ assert.match(nav,/initialSection=\{route\.resourceApiName\}/);
+ assert.match(nav,/onSelectSection=\{\(section\)=>navigateRoute/);
+ for(const section of ['general','currency','branding','business','contacts','mobile','integrations','security','developer']) {
+  assert.equal(appRoutePathWithoutBase({kind:'setup',workspace:'company-settings',resourceApiName:section}),'/une/setup/company-settings/'+section);
+ }
  assert.match(nav,/governanceTab=\{route\.resourceId === 'connected-apps'/);
  const governance=read('../src/core/settings/SettingsWorkspace/TenantGovernance.tsx');
  assert.match(governance,/useEffect\(\(\)=>setTab\(initialTab\),\[initialTab\]\)/);

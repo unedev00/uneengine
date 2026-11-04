@@ -1,5 +1,5 @@
 .md-responsive-rows,.md-responsive-empty{display:none}
-@media (max-width:599px), (max-height:500px) and (pointer:coarse) {
+@media (max-width:1023px), (max-height:500px) and (pointer:coarse) {
  .md-responsive-rows{display:block;margin:10px 0;background:var(--md-ios-surface,#fff);border-radius:13px;overflow:hidden}
  .md-responsive-item{border-bottom:.5px solid var(--md-ios-separator,#d1d5db);background:var(--md-ios-surface,#fff);color:var(--md-ios-text,#1c1c1e)}
  .md-responsive-item>summary{min-height:64px;display:flex;align-items:center;gap:10px;padding:10px 14px;list-style:none;cursor:pointer;touch-action:manipulation}
@@ -21,7 +21,8 @@
  .md-responsive-skeleton{padding:15px;display:grid;gap:8px;border-bottom:.5px solid var(--md-ios-separator,#d1d5db)}
  .md-responsive-skeleton i{height:12px;border-radius:8px;background:var(--md-ios-group,#f2f2f7);width:64%}
  .md-responsive-skeleton i:last-child{width:36%}
- .md-mobile-table-replaced{display:none!important}
 }
+@media(max-width:599px), (max-height:500px) and (pointer:coarse){.md-mobile-table-replaced{display:none!important}}
+@media(min-width:600px) and (max-width:1023px){.md-tablet-table-replaced{display:none!important}}
 @media print {.md-responsive-rows{display:none!important}.md-mobile-table-replaced{display:block!important}}
 @media(prefers-reduced-motion:reduce){.md-responsive-chevron{transition:none}}

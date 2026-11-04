@@ -1,4 +1,5 @@
 import {generateMetadataApiName} from '../../metadata/Definitions/metadataApiNames';
+import {useViewportWidth} from '../../workspace/Responsive/useViewportWidth';
 import { useCallback, useEffect, useState } from 'react';
 import { Download, PackageCheck, RefreshCw, Upload } from 'lucide-react';
 import './MetadataPackageManager.css';
@@ -29,6 +30,7 @@ export default function MetadataPackageManager({ request, permitted, canManage }
   permitted: boolean;
   canManage: boolean;
 }) {
+  const viewportWidth=useViewportWidth();
   const [objects, setObjects] = useState<Choice[]>([]);
   const [pages, setPages] = useState<Choice[]>([]);
   const [components, setComponents] = useState<Choice[]>([]);
@@ -53,6 +55,8 @@ export default function MetadataPackageManager({ request, permitted, canManage }
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [optionalCatalogError, setOptionalCatalogError] = useState('');
+  const [selectorQuery,setSelectorQuery]=useState<Record<string,string>>({});
+  const [selectorPages,setSelectorPages]=useState<Record<string,number>>({});
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -169,15 +173,35 @@ export default function MetadataPackageManager({ request, permitted, canManage }
   };
 
   if (!permitted) return null;
-  const selector = (title: string, rows: Choice[], selected: string[], setSelected: (next: string[]) => void) =>
-    <fieldset className="metadata-package-selector"><legend>{title}</legend>
-      {rows.length ? rows.map(item => <label key={item.apiName}>
+  const selector = (title: string, rows: Choice[], selected: string[], setSelected: (next: string[]) => void) => {
+    const search=(selectorQuery[title]??'').trim().toLowerCase();
+    const matches=rows.filter(item=>!search||(`${item.label} ${item.apiName}`).toLowerCase().includes(search));
+    const shown=matches.slice(0,Math.max(1,selectorPages[title]??1)*25);
+    const matchingIds=matches.map(item=>item.apiName);
+    return <details className="metadata-package-selector-group" open={viewportWidth>600}>
+      <summary>{title} ({selected.length} selected)</summary>
+      <fieldset className="metadata-package-selector">
+       <legend className="sr-only">{title} choices</legend>
+      {rows.length>25 && <label className="form-label">Find {title.toLowerCase()}
+        <input type="search" className="form-control" value={selectorQuery[title]??''}
+          onChange={event=>{setSelectorQuery(prev=>({...prev,[title]:event.target.value}));setSelectorPages(prev=>({...prev,[title]:1}));}}
+          placeholder="Filter by label or API name"/>
+      </label>}
+      {matches.length>0 && <div className="md-admin-actions">
+        <button type="button" className="btn" onClick={()=>setSelected([...new Set([...selected,...matchingIds])])}>Select matching</button>
+        <button type="button" className="btn" onClick={()=>setSelected(selected.filter(id=>!matchingIds.includes(id)))}>Clear matching</button>
+        <small>{matches.length} matching · showing {shown.length}</small>
+      </div>}
+      {shown.length ? shown.map(item => <label key={item.apiName}>
         <input type="checkbox" checked={selected.includes(item.apiName)}
           onChange={event => setSelected(event.target.checked
             ? [...selected, item.apiName] : selected.filter(value => value !== item.apiName))} />
         <span>{item.label}<small>{item.apiName}</small></span>
-      </label>) : <p>No packageable {title.toLowerCase()} found.</p>}
-    </fieldset>;
+      </label>) : <p>{rows.length?'No matching entries. Clear the search to see all items.':`No packageable ${title.toLowerCase()} found.`}</p>}
+      {matches.length>shown.length&&<button type="button" className="btn" onClick={()=>setSelectorPages(prev=>({...prev,[title]:(prev[title]??1)+1}))}>Show next 25</button>}
+      </fieldset>
+    </details>;
+  };
 
   return <section className="metadata-package-manager" aria-label="Metadata packages">
     <header><div><h2>Metadata packages &amp; change sets</h2>
@@ -212,6 +236,7 @@ export default function MetadataPackageManager({ request, permitted, canManage }
         {selector('Flows (deploy as Draft)', flows, selectedFlows, setSelectedFlows)}
         {selector('Permission sets', permissionSets, selectedPermissionSets, setSelectedPermissionSets)}
         {optionalCatalogError && <p className="metadata-package-error" role="status">{optionalCatalogError}</p>}
+        <p className="permission-help">Export requires a package label, a valid API name, and at least one selected item. Unavailable choices require metadata read permissions.</p>
         <button className="btn btn-primary" type="button" disabled={busy || !permitted
           || !packageApi.trim() || !packageLabel.trim() || !Number.isSafeInteger(packageVersion)
           || packageVersion < 1 || !selectedObjects.length && !selectedObjectConfigurations.length

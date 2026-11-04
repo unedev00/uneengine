@@ -14,18 +14,26 @@ const sections:ReadonlyArray<{id:Section;label:string}>=[
 {id:'contacts',label:'Contacts'},{id:'mobile',label:'Mobile & Offline'},{id:'integrations',label:'Integrations'},
 {id:'security',label:'Security & Recovery'},{id:'developer',label:'Developer'}];
 /** Presentation only: retains existing OneEngine-protected runtime controls and slots. */
-export default function CompanySettingsWorkspace({company,domains,developer,usage,calendar,recovery,mfa,emailRecovery,locks,sessions,audit,onNavigateDeveloper,developerAccess,objects=[],mobile=false,initialSection}:{
+export default function CompanySettingsWorkspace({company,domains,developer,usage,calendar,recovery,mfa,emailRecovery,locks,sessions,audit,onNavigateDeveloper,developerAccess,objects=[],mobile=false,initialSection,onSelectSection,securitySubsection,onSelectSecurityArea}:{
 objects?:ObjectMetadata[];company:ReactNode;domains:ReactNode;developer:ReactNode;usage:ReactNode;calendar?:ReactNode;
 recovery:ReactNode;mfa:ReactNode;emailRecovery:ReactNode;locks:ReactNode;sessions:ReactNode;audit:ReactNode;
  onNavigateDeveloper?:(workspace:string)=>void;
  developerAccess?:{metadata:boolean;apps:boolean;packages?:boolean;flows:boolean;dashboards:boolean;reports:boolean;approvals:boolean;security:boolean};
- mobile?:boolean; initialSection?:Section;
+ mobile?:boolean; initialSection?:string; onSelectSection?:(section:Section|null)=>void;
+ securitySubsection?:string;onSelectSecurityArea?:(area:'access'|'recovery'|'history')=>void;
 }){
- const [active,setActive]=useState<Section>(initialSection??'general');
- const [securityView,setSecurityView]=useState<'access'|'recovery'|'history'>('access');
- const [mobileSection,setMobileSection]=useState<Section|null>(mobile&&initialSection?initialSection:null);
- useEffect(()=>{if(initialSection){setActive(initialSection);if(mobile)setMobileSection(initialSection);}},[initialSection,mobile]);
+ const resolvedInitialSection=sections.find(item=>item.id===initialSection)?.id;
+ const [active,setActive]=useState<Section>(resolvedInitialSection??'general');
+ const validSecurityArea=(securitySubsection==='recovery'||securitySubsection==='history')?securitySubsection:'access';
+ const [securityView,setSecurityView]=useState<'access'|'recovery'|'history'>(validSecurityArea);
+ useEffect(()=>setSecurityView(validSecurityArea),[securitySubsection]);
+ const [mobileSection,setMobileSection]=useState<Section|null>(mobile?(resolvedInitialSection??null):null);
+ useEffect(()=>{setActive(resolvedInitialSection??'general');if(mobile)setMobileSection(resolvedInitialSection??null);},[resolvedInitialSection,mobile]);
  const currentSection=mobile ? mobileSection : active;
+ const sectionTitle=active==='security'&&securitySubsection==='connected-apps'?'Connected Apps'
+  :active==='security'&&securitySubsection==='audit-trail'?'Audit Trail'
+  :resolvedInitialSection?sections.find(item=>item.id===active)?.label??'Company Settings':'Company Settings';
+ const sectionPath=resolvedInitialSection?('Setup / Organisation / '+(active==='security'?'Security & Recovery':sectionTitle)):'Setup / Organisation';
  const rights=developerAccess;
  const destinations:DeveloperDestination[]=[
   {label:'Object Manager',workspace:'object-manager',description:'Objects, fields and relationships',allowed:!!rights?.metadata},
@@ -48,17 +56,17 @@ recovery:ReactNode;mfa:ReactNode;emailRecovery:ReactNode;locks:ReactNode;session
  return <div className={mobile?'company-workspace company-workspace-mobile':'company-workspace'}>
    <header className="company-workspace-heading">
      {mobile && mobileSection && <button type="button" className="company-workspace-mobile-back"
-       onClick={()=>setMobileSection(null)}><ChevronLeft size={19} aria-hidden="true" /> Company Settings</button>}
-     <div><p className="company-workspace-eyebrow">Setup / Organisation</p>
-     <h1>{mobile && mobileSection ? visibleSections.find(item=>item.id===mobileSection)?.label : 'Company Settings'}</h1>
+       onClick={()=>{setMobileSection(null);onSelectSection?.(null);}}><ChevronLeft size={19} aria-hidden="true" /> Company Settings</button>}
+     <div><p className="company-workspace-eyebrow">{sectionPath}</p>
+     <h1>{mobile&&mobileSection?securitySubsection==='connected-apps'?'Connected Apps':securitySubsection==='audit-trail'?'Audit Trail':visibleSections.find(item=>item.id===mobileSection)?.label:sectionTitle}</h1>
      {!mobileSection && <p>Manage your organisation, currency, branding and security settings.</p>}</div>
    </header>
    <nav className="company-workspace-tabs" aria-label="Company settings sections">
      {visibleSections.map(section=><button key={section.id} type="button" className={active===section.id?'active':''}
-       aria-current={active===section.id?'page':undefined} onClick={()=>setActive(section.id)}>{section.label}</button>)}
+       aria-current={active===section.id?'page':undefined} onClick={()=>{setActive(section.id);onSelectSection?.(section.id);}}>{section.label}</button>)}
    </nav>
    {mobile && mobileSection===null && <nav className="company-workspace-mobile-menu" aria-label="Company settings sections">
-     {visibleSections.map(section=><button key={section.id} type="button" onClick={()=>setMobileSection(section.id)}>
+     {visibleSections.map(section=><button key={section.id} type="button" onClick={()=>{setMobileSection(section.id);setActive(section.id);onSelectSection?.(section.id);}}>
        <span className="company-workspace-mobile-section-icon"><Settings2 size={17} aria-hidden="true" /></span>
        <span>{section.label}</span><ChevronRight size={18} aria-hidden="true" />
      </button>)}
@@ -73,7 +81,7 @@ recovery:ReactNode;mfa:ReactNode;emailRecovery:ReactNode;locks:ReactNode;session
        {([{id:'access',label:'Sign-in and access'},{id:'recovery',label:'Account recovery'},{id:'history',label:'Login activity'}] as const).map(item=>
         <button key={item.id} type="button" role="tab" id={'company-security-tab-'+item.id}
          aria-controls={'company-security-panel-'+item.id} aria-selected={securityView===item.id}
-         onClick={()=>setSecurityView(item.id)}>{item.label}</button>)}
+         onClick={()=>{setSecurityView(item.id);onSelectSecurityArea?.(item.id);}}>{item.label}</button>)}
       </nav>
       <div role="tabpanel" id={'company-security-panel-'+securityView}
        aria-labelledby={'company-security-tab-'+securityView} className="md-security-content">

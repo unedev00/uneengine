@@ -316,3 +316,137 @@
  :is(.form-help,.form-description,.metadata-help,.helper-text,.section-subtitle){
  font-size:13px;line-height:1.45;color:var(--md-text-2,#5c5c63)
 }
+
+/* 390px task sheets: fixed titles/actions and scrollable content instead of
+   placing all choices below the fold. */
+.flow-start-modal-header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex:0 0 auto}
+.flow-start-modal-header h2{margin:0;font-size:18px}
+@media(max-width:599px){
+ .lightning .modal-backdrop>.flow-create-dialog[role="dialog"]{
+  display:flex!important;flex-direction:column!important;min-height:90dvh!important;
+  height:90dvh!important;max-height:90dvh!important;overflow:hidden!important;
+  box-sizing:border-box!important;padding:16px!important;
+  border-radius:16px 16px 0 0!important
+ }
+ .lightning .flow-create-dialog .flow-start-modal-header{
+  position:sticky;top:0;z-index:3;background:var(--md-surface,#fff);
+  min-height:52px;padding-bottom:10px;border-bottom:1px solid var(--md-border,#dce3eb)
+ }
+ .lightning .flow-create-dialog .flow-start-modal-header .btn{min-height:44px}
+ .lightning .flow-create-dialog .flow-start-types{
+  flex:1 1 auto;min-height:0;overflow-y:auto!important;overscroll-behavior:contain;
+  display:flex;flex-direction:column;gap:8px;padding:8px 0 16px
+ }
+ .lightning .flow-create-dialog .flow-start-types>.flow-start-type{
+  display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-height:62px;
+  padding:10px 12px;flex-shrink:0;text-align:left
+ }
+ .lightning .flow-create-dialog .flow-start-name-step{
+  position:sticky;bottom:0;flex:0 0 auto;margin:0;padding:12px 0
+ }
+ .lightning .named-credential-modal[role="dialog"]{
+  height:90dvh!important;min-height:90dvh!important;max-height:90dvh!important;
+  padding:12px 16px!important;display:flex!important;flex-direction:column!important;
+  overflow-y:auto!important;overscroll-behavior:contain
+ }
+ .lightning .named-credential-modal .modal-header{
+  position:sticky!important;top:0!important;flex:0 0 auto;min-height:56px;
+  background:var(--md-surface,#fff);z-index:9
+ }
+ .lightning .named-credential-modal .modal-actions{
+  position:sticky!important;bottom:0!important;z-index:8;
+  flex:0 0 auto;background:var(--md-surface,#fff);padding:12px 0;
+  border-top:1px solid var(--md-border,#dce3eb);margin-top:auto
+ }
+ .lightning .named-credential-modal .modal-actions>.btn{min-height:44px}
+}
+
+@media(min-width:600px) and (max-width:900px){
+ .lightning .shortcut-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+}
+@media(max-width:599px){
+ .lightning .mobile-setup-overview{display:grid;gap:12px;padding:12px;max-width:100%;min-width:0}
+ .lightning .mobile-setup-overview .home-content{min-width:0;max-width:100%;padding:0}
+ .lightning .mobile-setup-overview .shortcut-grid{display:grid;grid-template-columns:minmax(0,1fr)}
+ .lightning .mobile-setup-overview .home-lower-grid{display:grid;grid-template-columns:minmax(0,1fr)}
+ .lightning .mobile-setup-overview>.btn{justify-self:start;min-height:44px}
+}
+
+/* Scoped branding and contact details: no wall of 'Not provided' labels. */
+.lightning .company-profile-section .company-brand-preview{
+ display:grid;gap:8px;max-width:460px;margin:14px 0 18px;
+ border:1px solid var(--md-border,#d5dfeb);border-radius:12px;background:var(--md-surface-2,#f5f8fc);padding:16px
+}
+.lightning .company-brand-preview>small{font-size:12px;color:var(--md-muted,#596579)}
+.lightning .company-brand-preview>div{display:grid;justify-items:center;align-content:center;gap:10px;min-height:150px;padding:18px;background:#fff;border-radius:9px}
+.lightning .company-brand-preview img{width:auto;max-width:min(180px,100%);height:auto;max-height:70px;object-fit:contain}
+.lightning .company-brand-preview strong{font-size:17px;text-align:center;color:#21344d}
+.lightning .company-brand-preview>div>span{font-size:13px;color:#4b6280}
+.lightning .company-contacts-empty{padding:14px 16px;background:var(--md-surface-2,#f6f9fd);border:1px dashed var(--md-border,#cedbea);border-radius:9px;color:var(--md-text,#192230)}
+@media(min-width:600px) and (max-width:900px) {
+ .lightning .company-workspace-section-business .md-admin-table-wrap {max-width:100%;overflow-x:auto}
+ .lightning .company-workspace-section-business .md-admin-form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+/* Remaining audit layout details, scoped to the affected surfaces. */
+.lightning .object-manager-pagination{display:flex;align-items:center;flex-wrap:wrap;gap:10px;padding:12px 4px;font-size:13px;color:var(--md-muted,#596579)}
+.lightning .object-manager-pagination>span:first-child{margin-right:auto}
+.lightning .object-manager-pagination .btn{min-height:40px}
+.lightning .flow-back-to-list{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.lightning .flow-back-to-list>span{display:none}
+@media(max-width:599px){.lightning .flow-back-to-list>span{display:inline;font-size:12px}}
+@media(min-width:600px) and (max-width:1023px){
+ .lightning .named-credentials-page>.section-toolbar{display:flex;align-items:flex-start;flex-wrap:wrap;gap:12px}
+ .lightning .named-credentials-page>.section-toolbar>div{flex:1 1 100%;min-width:0}
+ .lightning .named-credentials-page .record-type-create{width:100%;max-width:100%!important;min-width:0}
+ .lightning .named-credentials-page .record-type-create>input{width:100%;box-sizing:border-box}
+}
+@media(max-width:599px){
+ .lightning .named-credentials-page>.section-toolbar>div>p{
+  display:block;white-space:normal;overflow:visible;max-width:100%;line-height:1.5;
+  -webkit-line-clamp:unset;line-clamp:unset
+ }
+ .lightning .named-credentials-page .record-type-create{width:100%;max-width:100%!important}
+ .lightning .named-credentials-page .record-type-create input{width:100%;min-height:44px}
+}
+@media(min-width:900px){
+ .lightning .palette-dialog{width:min(760px,calc(100vw - 40px))}
+}
+.lightning .palette-results>button{max-width:100%;min-width:0;align-items:flex-start;white-space:normal}
+.lightning .palette-results>button>strong{flex:1 1 auto;min-width:0;overflow-wrap:anywhere}
+.lightning .palette-results>button>small{flex:0 1 38%;min-width:0;white-space:normal;overflow-wrap:anywhere;text-align:left;line-height:1.4}
+
+/* Recovery Flow edits: 18 fields become four discoverable sections. */
+.lightning .md-recovery-editor{display:grid;gap:10px}
+.lightning .md-recovery-config-group{
+ display:block;min-width:0;max-width:100%;padding:8px 12px;
+ border:1px solid var(--md-border,#d2dfea);border-radius:9px;background:var(--md-surface,#fff)
+}
+.lightning .md-recovery-config-group>summary{
+ cursor:pointer;display:list-item;min-height:44px;padding:10px 2px;
+ font-size:14px;font-weight:650
+}
+.lightning .md-recovery-config-group>summary:focus-visible{
+ outline:2px solid var(--md-primary,#1d4ed8);outline-offset:2px
+}
+.lightning .md-recovery-config-group[open]{padding-bottom:16px}
+.lightning .md-recovery-config-group[open]>summary{margin-bottom:12px;border-bottom:1px solid var(--md-border,#dce3eb)}
+.lightning .md-recovery-save-bar{
+ position:sticky;bottom:0;z-index:5;display:flex;flex-wrap:wrap;gap:10px;
+ background:var(--md-surface,#fff);padding:12px 10px;
+ border-top:1px solid var(--md-border,#d2dfea);margin-top:12px
+}
+.lightning .md-recovery-save-bar>span{margin-right:auto;color:var(--md-muted,#596579);font-size:12px}
+.lightning .md-recovery-save-bar>.btn{min-height:44px}
+
+/* Builder landing pages: show flow list before wide desktop metadata columns. */
+.lightning .flow-existing-type-select{display:none}
+@media(max-width:1023px){
+ .lightning .flow-start-existing{min-width:0;overflow:visible}
+ .lightning .flow-existing-type-tabs{display:none!important}
+ .lightning .flow-existing-type-select{display:grid;gap:6px;padding:8px 0;width:100%;max-width:440px}
+ .lightning .flow-existing-type-select .form-control{min-height:44px;width:100%}
+ .lightning .flow-existing-controls{min-width:0;max-width:100%}
+ .lightning .flow-existing-pagination{display:flex;flex-wrap:wrap;gap:8px}
+ .lightning .flow-existing-pagination .btn{min-height:44px}
+}

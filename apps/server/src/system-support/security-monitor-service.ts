@@ -49,16 +49,19 @@ export class SecurityMonitorService{
  async complete(tenant:string,id:string,status:number,elapsed:number){
   await this.db.query('UPDATE md_monitor_events SET status_code=$3,elapsed_ms=$4 WHERE tenant_id=$1 AND id=$2',[tenant,id,status,Math.min(2147483647,Math.max(0,Math.floor(elapsed)))]);
  }
- async describe(tenant:string,user:string,before?:unknown){
+ async describe(tenant:string,user:string,before?:unknown,requestedLimit?:unknown){
   await this.rbac.require(tenant,user,'SecurityMonitoring','read');
+  const limit=Number(requestedLimit??100);
+  if(!Number.isSafeInteger(limit)||limit<1||limit>200)throw Error('Invalid monitoring page size');
   const parts=typeof before==='string'?before.split('|'):[];
   if(before!==undefined&&(parts.length!==2||!Number.isFinite(Date.parse(parts[0]))||!z.string().uuid().safeParse(parts[1]).success))throw Error('Invalid monitoring cursor');
   const [events,rules,settings,totals]=await Promise.all([
-   this.db.query('SELECT id,actor_user_id,correlation_id,event_type,resource,method,status_code,elapsed_ms,source_ip,created_at,created_at::text AS cursor_time FROM md_monitor_events WHERE tenant_id=$1 AND ($2::timestamptz IS NULL OR (created_at,id)<($2::timestamptz,$3::uuid)) ORDER BY created_at DESC,id DESC LIMIT 100',[tenant,parts[0]??null,parts[1]??null]),
+   this.db.query('SELECT id,actor_user_id,correlation_id,event_type,resource,method,status_code,elapsed_ms,source_ip,created_at,created_at::text AS cursor_time FROM md_monitor_events WHERE tenant_id=$1 AND ($2::timestamptz IS NULL OR (created_at,id)<($2::timestamptz,$3::uuid)) ORDER BY created_at DESC,id DESC LIMIT $4',[tenant,parts[0]??null,parts[1]??null,limit+1]),
    this.db.query('SELECT id,label,enabled,event_type,method,path_prefix,threshold,window_seconds,response,flow_api,service_user_id FROM md_transaction_security_rules WHERE tenant_id=$1 ORDER BY label',[tenant]),
    this.db.query('SELECT enabled,retention_days FROM md_monitor_settings WHERE tenant_id=$1',[tenant]),
    this.db.query("SELECT count(*)::integer AS requests,count(*) FILTER(WHERE status_code>=400)::integer AS errors,COALESCE(avg(elapsed_ms),0)::integer AS average_ms FROM md_monitor_events WHERE tenant_id=$1 AND created_at>now()-interval '24 hours'",[tenant])]);
-  return {events:events.rows,rules:rules.rows,settings:settings.rows[0]??{enabled:true,retention_days:365},summary:totals.rows[0],nextCursor:events.rows.length===100?String(events.rows.at(-1)?.cursor_time)+'|'+String(events.rows.at(-1)?.id):null};
+  const page=events.rows.slice(0,limit);
+  return {events:page,rules:rules.rows,settings:settings.rows[0]??{enabled:true,retention_days:365},summary:totals.rows[0],nextCursor:events.rows.length>limit?String(page.at(-1)?.cursor_time)+'|'+String(page.at(-1)?.id):null};
  }
  async saveRule(tenant:string,user:string,input:unknown){
   await this.rbac.require(tenant,user,'SecurityMonitoring','manage');
@@ -87,8 +90,28 @@ export class SecurityMonitorService{
   if(!p.success)throw Error('Invalid monitoring settings');
   await this.db.query('INSERT INTO md_monitor_settings VALUES($1,$2,$3) ON CONFLICT(tenant_id) DO UPDATE SET enabled=$2,retention_days=$3',[tenant,p.data.enabled,p.data.retention_days]);return {saved:true};
  }
- async prune(tenant:string,user:string){
+ async prunePreview(tenant:string,user:string){
   await this.rbac.require(tenant,user,'SecurityMonitoring','manage');
-  const result=await this.db.query(`DELETE FROM md_monitor_events WHERE tenant_id=$1 AND created_at<now()-(COALESCE((SELECT retention_days FROM md_monitor_settings WHERE tenant_id=$1),365)*interval '1 day')`,[tenant]);return {removed:result.rowCount??0};
+  const result=await this.db.query<{eligible:string;retention_days:number}>(`
+    SELECT count(e.id)::text AS eligible,
+      COALESCE((SELECT retention_days FROM md_monitor_settings WHERE tenant_id=$1),365)::integer AS retention_days
+    FROM md_monitor_events e
+    WHERE e.tenant_id=$1
+      AND e.created_at<now()-(COALESCE((SELECT retention_days FROM md_monitor_settings WHERE tenant_id=$1),365)*interval '1 day')`,[tenant]);
+  return {eligible:Number(result.rows[0]?.eligible??0),retentionDays:Number(result.rows[0]?.retention_days??365)};
+ }
+ async prune(tenant:string,user:string,confirmation?:unknown,expectedRetentionDays?:unknown){
+  await this.rbac.require(tenant,user,'SecurityMonitoring','manage');
+  if(confirmation!=='PRUNE'||typeof expectedRetentionDays!=='number'||!Number.isSafeInteger(expectedRetentionDays)
+   ||expectedRetentionDays<90||expectedRetentionDays>3650)
+   throw new Error('Explicit retention cleanup confirmation is required');
+  return this.db.transaction(async c=>{
+   const policy=await c.query<{retention_days:number}>('SELECT retention_days FROM md_monitor_settings WHERE tenant_id=$1 FOR SHARE',[tenant]);
+   const days=Number(policy.rows[0]?.retention_days??365);
+   if(days!==expectedRetentionDays)throw new Error('Retention policy changed; review the cleanup preview again');
+   const result=await c.query(`DELETE FROM md_monitor_events
+     WHERE tenant_id=$1 AND created_at<now()-($2*interval '1 day')`,[tenant,days]);
+   return {removed:result.rowCount??0};
+  });
  }
 }

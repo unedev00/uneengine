@@ -1,3 +1,4 @@
+import ResponsiveDataList from '../../records/ResponsiveDataList/ResponsiveDataList';
 import {useModalAccessibility} from '../../accessibility/Modal/useModalAccessibility';
 import {generateMetadataApiName,metadataNameConflict,suggestMetadataApiName} from '../../metadata/Definitions/metadataApiNames';
 import {useFormFactor} from '../../workspace/Responsive/useFormFactor';
@@ -1879,8 +1880,8 @@ export default function FlowBuilder({
     </div>
     <div className="flow-start-panels">
     {showCreateFlow && <div className="modal-backdrop"><section ref={createFlowDialog} tabIndex={-1} className="modal flow-create-dialog" role="dialog" aria-modal="true" aria-labelledby="flow-start-types" onKeyDown={event => { if (event.key === 'Escape') setShowCreateFlow(false); }}>
-      <button type="button" className="btn" autoFocus onClick={() => setShowCreateFlow(false)}>Cancel</button>
-      <h2 id="flow-start-types">Create a flow</h2>
+      <header className="flow-start-modal-header"><h2 id="flow-start-types">Create a flow</h2>
+       <button type="button" className="btn" autoFocus onClick={() => setShowCreateFlow(false)}>Cancel</button></header>
       <div className="flow-start-types">
         {flowTypeOptions.map((option) => <button type="button" key={option.type}
           className={newFlowType === option.type ? 'flow-start-type selected' : 'flow-start-type'}
@@ -1910,7 +1911,7 @@ export default function FlowBuilder({
     </section></div>}
     <section className="flow-start-existing surface" aria-labelledby="flow-start-existing-title">
       <h2 id="flow-start-existing-title">Existing flows</h2>
-      <nav aria-label="Flows by type" style={{display:'flex',gap:6,flexWrap:'wrap',padding:'10px 0'}}>
+      <nav className="flow-existing-type-tabs" aria-label="Flows by type" style={{display:'flex',gap:6,flexWrap:'wrap',padding:'10px 0'}}>
         {[{type:'all',label:'All Flows'},...flowTypeOptions.map(option=>({type:option.type,label:option.type})),
           ...(['Screen Flow','In-Screen Flow','Autolaunched Flow','Record-Triggered Flow','Schedule-Triggered Flow','Platform Event-Triggered Flow','Flow Orchestration'] as const)
             .filter(type=>!flowTypeOptions.some(option=>option.type===type)).map(type=>({type,label:type}))].map(option=>
@@ -1918,6 +1919,14 @@ export default function FlowBuilder({
             key={option.type} aria-pressed={existingFlowTypeTab===option.type}
             onClick={()=>{setExistingFlowTypeTab(option.type);setExistingFlowPage(1);setRemoteFlowResults(null);}}>{option.label}</button>)}
       </nav>
+      <label className="form-label flow-existing-type-select">Flow type
+       <select className="form-control" aria-label="Filter flows by type" value={existingFlowTypeTab}
+        onChange={e=>{setExistingFlowTypeTab(e.target.value);setExistingFlowPage(1);setRemoteFlowResults(null);}}>
+        {[{type:'all',label:'All Flows'},...flowTypeOptions.map(option=>({type:option.type,label:option.type})),
+          ...(['Screen Flow','In-Screen Flow','Autolaunched Flow','Record-Triggered Flow','Schedule-Triggered Flow','Platform Event-Triggered Flow','Flow Orchestration'] as const)
+           .filter(type=>!flowTypeOptions.some(option=>option.type===type)).map(type=>({type,label:type}))].map(item=><option key={item.type} value={item.type}>{item.label}</option>)}
+       </select>
+      </label>
       <div className="flow-existing-controls">
         <label className="form-label" htmlFor="existing-flow-search">Search Flows
           <input id="existing-flow-search" className="form-control" type="search" placeholder="Search by flow name, type or status"
@@ -1925,7 +1934,18 @@ export default function FlowBuilder({
         </label>
       </div>
       {remoteFlowLoading && <p role="status" className="settings-panel-copy">Loading flows…</p>}
-      {totalFlowCount ? <div className="flow-existing-table-scroll">
+      {totalFlowCount ? <>
+        <ResponsiveDataList rows={displayedFlows} includeTablet getId={item=>item.apiName}
+         label="Existing Flows" onOpen={item=>onSelectFlow(item.apiName)} openLabel="Edit Flow"
+         columns={[
+          {apiName:'label',label:'Flow',phoneRole:'title',render:item=>item.label},
+          {apiName:'flowType',label:'Type',phoneRole:'subtitle',render:item=>item.flowType},
+          {apiName:'status',label:'Status',phoneRole:'badge',render:item=>item.status},
+          {apiName:'version',label:'Version',phoneRole:'trailing',render:item=>'v'+item.versionNumber},
+          {apiName:'apiName',label:'API Name',render:item=>item.apiName},
+          {apiName:'modified',label:'Modified',render:item=>item.lastModifiedAt?new Date(item.lastModifiedAt).toLocaleString():'—'}
+         ]}/>
+        <div className="flow-existing-table-scroll md-mobile-table-replaced md-tablet-table-replaced">
         <table className="flow-existing-table">
           <thead><tr><th aria-label="Edit flow">Edit</th><th>Flow Name</th><th>Flow Type</th><th>Status</th><th>Version</th><th>Details</th></tr></thead>
           <tbody>{displayedFlows.map((candidate) =>
@@ -1936,7 +1956,7 @@ export default function FlowBuilder({
               <td><details><summary>View details</summary><dl><dt>Created by</dt><dd>{candidate.createdBy || '—'}</dd><dt>Created</dt><dd>{candidate.createdAt ? new Date(candidate.createdAt).toLocaleString() : '—'}</dd><dt>Modified by</dt><dd>{candidate.lastModifiedBy || '—'}</dd><dt>Modified</dt><dd>{candidate.lastModifiedAt ? new Date(candidate.lastModifiedAt).toLocaleString() : '—'}</dd></dl></details></td>
             </tr>)}</tbody>
         </table>
-      </div> : <p className="settings-panel-copy">No matching flows found.</p>}
+      </div></> : <p className="settings-panel-copy">No matching flows found.</p>}
       <nav aria-label="Flow list pagination" className="flow-existing-pagination">
         <span>{totalFlowCount} flow{totalFlowCount === 1 ? '' : 's'} · Page {safeFlowPage} of {flowPageCount}</span>
         <button className="btn" disabled={safeFlowPage === 1} onClick={() => setExistingFlowPage(1)}>First</button>
@@ -1957,7 +1977,7 @@ export default function FlowBuilder({
   </div>;
   return <div className={phoneFlow?'flow-builder flow-mobile-builder':'flow-builder'}>
     <div className="flow-topbar">
-      <button className="icon-button subtle" aria-label="Back to setup" onClick={onOpenFlowList}><ArrowLeft size={17} /></button>
+      <button type="button" className="icon-button subtle flow-back-to-list" aria-label="Back to flows" onClick={onOpenFlowList}><ArrowLeft size={17}/><span>Flows</span></button>
       <div className="flow-name"><input aria-label="Flow label" value={flow.label} onChange={(event) => onFlowChange({ ...flow, label: event.target.value })} /><span className="flow-type-pill">{flow.status} · v{flow.versionNumber}</span><span className={`flow-save-state ${isDirty ? 'dirty' : ''}`} role="status">{isDirty ? 'Unsaved changes' : 'Saved'}</span><ChevronDown size={13} /></div>
       <div className="flow-toolbar-actions">
         <button className="icon-button subtle" title="Undo" aria-label="Undo" onClick={onUndo} disabled={!canUndo}><Undo2 size={15} /></button>

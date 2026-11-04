@@ -26,6 +26,14 @@ try {
  await page.getByRole('button',{name:'Add object'}).click();
  await page.getByRole('combobox').selectOption('Account');
  await page.getByRole('checkbox',{name:'Acme Corporation'}).check();
+ const recordSearch=page.getByRole('searchbox',{name:'Find records'});
+ await recordSearch.fill('unavailable');
+ await page.getByRole('alert').getByText('Record search is temporarily unavailable.',{exact:false}).waitFor();
+ assert.equal(await page.getByText('SQL service unavailable').count(),0,'Never expose SQL errors in offline records');
+ assert.equal(await page.getByRole('checkbox',{name:'Acme Corporation'}).count(),1,'Retain previous results during outage');
+ await page.getByRole('button',{name:'Retry record search'}).click();
+ await recordSearch.fill('');
+ await page.getByRole('checkbox',{name:'Acme Corporation'}).waitFor();
  assert.equal(await save.isEnabled(),true);
  await save.click();
  await page.getByRole('status').filter({hasText:'selections saved'}).waitFor();
@@ -93,11 +101,24 @@ try {
  assert.equal(await page.getByRole('button',{name:'Security & Recovery'}).getAttribute('aria-current'),'page',
   'Deep-linked company security settings must open directly');
  await screenshot('company-security-deeplink');
+ await open('company-profile-fail');
+ await page.getByText('Company data could not be loaded.',{exact:false}).waitFor();
+ assert.equal(await page.getByRole('button',{name:'Edit logo'}).count(),0,'Failed company read must never expose blank-default editing');
+ await page.getByRole('button',{name:'Retry loading company details'}).waitFor();
  await open('monitoring');
  await page.getByRole('tab',{name:'Monitoring'}).waitFor();
  assert.equal(await page.getByRole('tab',{name:'Monitoring'}).getAttribute('aria-selected'),'true');
  await page.getByText('180 requests',{exact:false}).waitFor();
  assert.equal(await page.locator('.md-admin-settings-block .md-admin-form-grid').first().evaluate(el=>getComputedStyle(el).display),'grid');
+ assert.equal(await page.getByRole('button',{name:'Save rule'}).isDisabled(),true,'Blank transaction rule must not be saved');
+ const requestFilter=page.getByRole('searchbox',{name:'Filter loaded requests'});
+ await requestFilter.fill('reports');
+ await page.getByText('1 matching of 3 loaded requests').waitFor();
+ await page.getByRole('combobox',{name:'Monitoring event status'}).selectOption('errors');
+ await page.getByRole('cell',{name:'/api/reports',exact:false}).waitFor();
+ await page.getByRole('combobox',{name:'Monitoring event status'}).selectOption('all');
+ await requestFilter.fill('');
+ await page.getByText('3 matching of 3 loaded requests').waitFor();
  await screenshot('phase2-monitoring');
  await open('licenses');
  const licencesTab=page.getByRole('tab',{name:'Licences'});
@@ -229,6 +250,10 @@ try {
  await page.setViewportSize({width:1365,height:768});
  await open('oauth-directory');
  await page.getByRole('button',{name:/Payroll connector/}).waitFor();
+ await page.getByRole('button',{name:'New connected app'}).click();
+ assert.equal(await page.getByRole('button',{name:'Save connected app'}).isDisabled(),true,
+  'Creating a connected app with no name/redirect must not enable Save');
+ await page.getByRole('button',{name:'Cancel / Discard'}).click();
  await page.getByLabel('Find connected app').fill('unmatched');
  await page.getByText('No matching applications.').waitFor();
  await page.getByLabel('Find connected app').fill('payroll');
@@ -236,7 +261,9 @@ try {
  await page.getByLabel('Find user').fill('operator9');
  assert.equal(await page.locator('.connected-apps-checklist input[type=checkbox]').count(),1);
  await page.getByLabel('Find user').fill('');
- await page.getByLabel('Name',{exact:true}).fill('Payroll connector updated');
+ const appName=page.getByLabel('Name (required)',{exact:true});
+  assert.equal(await appName.getAttribute('required')!==null,true,'Connected app name must be explicitly required');
+  await appName.fill('Payroll connector updated');
  page.once('dialog',async dialog=>{assert.match(dialog.message(),/consents will be revoked/);await dialog.accept();});
  await page.getByRole('button',{name:'Save connected app'}).click();
  await page.getByText('Saved',{exact:true}).waitFor();
@@ -251,12 +278,20 @@ try {
  assert.match(await page.evaluate(()=>window.securityEventQuery),/action=login/);
  await screenshot('audit-verified-security-history');
  await page.setViewportSize({width:390,height:844});
+ await open('security-history');
+ await page.getByRole('button',{name:'Next'}).click();
+ assert.match(await page.evaluate(()=>window.securityEventQuery),/limit=10&offset=10/,'Phone security event paging must fetch ten at a time');
  await open('governance');
  await page.getByRole('tab',{name:'Audit Trail'}).click();
  const mobileAudit=page.getByRole('region',{name:'Setup audit events'});
  await mobileAudit.waitFor();
  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1),'Mobile audit must not overflow the viewport');
  await screenshot('audit-verified-mobile-audit-cards');
+ assert.equal(await page.getByRole('button',{name:'Next 10'}).count(),1,
+  'Phone setup audit must use 10-event pages');
+ await page.getByRole('tab',{name:'Monitoring'}).click();
+ assert.equal(await page.getByRole('button',{name:'Next 10'}).count(),1,
+  'Phone monitoring must use 10-event pages');
  await page.setViewportSize({width:1365,height:768});
  await open('till');
  await page.getByRole('button',{name:'Set till PIN'}).click();

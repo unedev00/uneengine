@@ -304,6 +304,9 @@ function ObjectManager({
   onNotify: (message: string) => void;
 }) {
   const [viewMode, setViewMode] = useState<'All Objects' | 'Standard Objects' | 'Custom Objects'>('All Objects');
+  const [objectListPage,setObjectListPage]=useState(0);
+  const objectPageSize=20;
+  useEffect(()=>setObjectListPage(0),[viewMode,search]);
   const [sectionMode, setSectionMode] = useState<'list' | 'view' | 'edit'>('list');
   const [selectedMetadataId, setSelectedMetadataId] = useState('');
   const [previewFieldApiName, setPreviewFieldApiName] = useState('');
@@ -520,6 +523,9 @@ function ObjectManager({
     || (viewMode === 'Custom Objects' ? item.kind === 'Custom Object' : item.kind === 'Standard Object'))
     && `${item.label} ${item.apiName}`.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()));
   const sortedVisibleObjects = [...visibleObjects].sort((a, b) => a.label.localeCompare(b.label));
+  const objectPageCount=Math.max(1,Math.ceil(sortedVisibleObjects.length/objectPageSize));
+  const currentObjectPage=Math.min(objectListPage,objectPageCount-1);
+  const paginatedObjects=sortedVisibleObjects.slice(currentObjectPage*objectPageSize,(currentObjectPage+1)*objectPageSize);
   const loadDeletedFields = async () => {
     setDeletedFieldsLoading(true);
     try {
@@ -2008,20 +2014,26 @@ function ObjectManager({
       </div>
       <div className="table-scroll object-manager-desktop-list"><table className="slds-table">
         <thead><tr><th>Object label</th><th>API name</th><th>Type</th><th>Description</th><th>Deployment</th><th>Fields</th><th>Action</th></tr></thead>
-        <tbody>{sortedVisibleObjects.map(item => <tr key={item.apiName}>
+        <tbody>{paginatedObjects.map(item => <tr key={item.apiName}>
           <td><button type="button" className="field-link" onClick={()=>onObjectSelect(item)}>{item.label}</button></td>
           <td className="api-name">{item.apiName}</td><td>{item.kind}</td><td>{item.description || "—"}</td><td>{item.settings?.deploymentStatus ?? "Deployed"}</td><td>{item.fields.length}</td>
           <td><button className="btn" type="button" onClick={()=>onObjectSelect(item)}>View</button></td>
         </tr>)}</tbody></table></div>
       <div className="object-manager-mobile-list" role="list" aria-label="Objects">
-        {sortedVisibleObjects.map(item => <div role="listitem" key={item.apiName}>
+        {paginatedObjects.map(item => <div role="listitem" key={item.apiName}>
           <button type="button" className="object-manager-mobile-row" onClick={() => onObjectSelect(item)}>
             <span className="object-manager-mobile-row-labels"><strong>{item.label}</strong><small>{item.apiName}</small></span>
             <ChevronRight size={20} aria-hidden="true" />
           </button>
         </div>)}
       </div>
-      {!visibleObjects.length && <div className="empty-state">No objects match this search.</div>}
+      {!visibleObjects.length && <div className="empty-state">No objects match this search. Clear the search or select a different object type.</div>}
+      <nav className="object-manager-pagination" aria-label="Object Manager pages">
+        <span>{sortedVisibleObjects.length?currentObjectPage*objectPageSize+1:0}–{Math.min((currentObjectPage+1)*objectPageSize,sortedVisibleObjects.length)} of {sortedVisibleObjects.length} objects</span>
+        <button type="button" className="btn" disabled={currentObjectPage===0} onClick={()=>setObjectListPage(p=>Math.max(0,p-1))}>Previous</button>
+        <span>Page {currentObjectPage+1} of {objectPageCount}</span>
+        <button type="button" className="btn" disabled={currentObjectPage>=objectPageCount-1} onClick={()=>setObjectListPage(p=>Math.min(objectPageCount-1,p+1))}>Next</button>
+      </nav>
     </section></PlatformPageSlot>
   );
   return (

@@ -390,7 +390,12 @@ export default function AceChatterRuntime({onLogout}:{onLogout:()=>void}) {
           if(followLatestRef.current)setNewMessages(false);
         }
       }}>
-        {!selectedRow?<div className="ace-chat-welcome"><span aria-hidden="true">◉</span><h2>WhatsApp inbox</h2><p>Choose a chat to read messages from Communication records, filtered by the sender's WhatsApp number.</p><button onClick={openNewChat} disabled={!newChatFlow}>＋ New chat</button></div>:
+        {!selectedRow?<div className="ace-chat-welcome"><span aria-hidden="true">◉</span><h2>WhatsApp inbox</h2>
+         <p>Choose a conversation from the left, or start a new customer chat to view authorised Communication messages.</p>
+         <div className="ace-chat-welcome-actions"><button type="button" onClick={openNewChat} disabled={!newChatFlow}>＋ New chat</button>
+          <button type="button" className="ace-chat-welcome-secondary" onClick={()=>setRefresh(n=>n+1)} disabled={busy}>Refresh inbox</button></div>
+         {!newChatFlow&&<p className="ace-chat-welcome-help">New chat requires an active, authorised messaging Flow.</p>}
+        </div>:
          !loadCommunications?<p className="ace-chat-hint">Activate the authorised Communication-loading Flow in MetaDrive Flow Builder.</p>:
          visibleMessages.length===0?<p className="ace-chat-thread-empty">No messages visible for this WhatsApp number.</p>:
          visibleMessages.map((row,index)=><div key={identify(row)||index} className={String(pick(row,'Direction','MessageDirection')??'').toLowerCase().includes('out')?'ace-chat-bubble outgoing':'ace-chat-bubble'}>

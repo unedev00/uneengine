@@ -626,3 +626,14 @@
 .lightning .modal[aria-labelledby="new-object-title"] input[type="checkbox"]{
   width:24px;height:24px;min-width:24px;flex:0 0 24px;accent-color:var(--md-primary,#1d4ed8)
 }
+
+/* Search palette: long navigation/object metadata must wrap instead of clipping. */
+.palette-results > button{flex-wrap:wrap;min-width:0}
+.palette-results > button > strong{flex:1 1 180px;min-width:0;overflow-wrap:anywhere}
+.palette-results > button > small{
+ flex:0 1 auto;min-width:0;max-width:44%;text-align:right;
+ white-space:normal;overflow-wrap:anywhere;line-height:1.35
+}
+@media(max-width:600px){
+ .palette-results > button > small{flex-basis:100%;max-width:100%;text-align:left}
+}

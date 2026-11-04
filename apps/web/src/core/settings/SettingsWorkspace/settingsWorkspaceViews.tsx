@@ -1,4 +1,5 @@
 import TenantGovernance from './TenantGovernance';
+import {useViewportWidth} from '../../workspace/Responsive/useViewportWidth';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Save, Trash2, Plus, Lock, Unlock } from 'lucide-react';
 import {confirmDestructiveAction} from '../../components/ConfirmAction/confirmDestructiveAction';
@@ -176,6 +177,13 @@ function TenantEmailRecoverySettings({canManage}:{canManage:boolean}){
  const [credentials,setCredentials]=useState<Array<{id:string;name:string;protocol:string;enabled:boolean}>>([]);
  const [serviceUsers,setServiceUsers]=useState<Array<{id:string;email:string;enabled:boolean}>>([]);
  const [editing,setEditing]=useState(false),[busy,setBusy]=useState(false),[message,setMessage]=useState('');
+ const [recoverySection,setRecoverySection]=useState<'otp'|'email'|'whatsapp'|'sms'>('otp');
+ const recoveryEditorRef=useRef<HTMLDivElement>(null);
+ useEffect(()=>{
+   if(!editing)return;
+   const activeGroup=recoveryEditorRef.current?.querySelector<HTMLElement>('details[open] > summary');
+   activeGroup?.scrollIntoView({block:'start',behavior:'auto'});
+ },[editing,recoverySection]);
  const snapshot=useRef<RecoveryFlow|null>(null);
  useEffect(()=>{
   let active=true;
@@ -189,16 +197,20 @@ function TenantEmailRecoverySettings({canManage}:{canManage:boolean}){
   return()=>{active=false;};
  },[]);
  if(!flow)return null;
+ const recoveryDirty=editing&&snapshot.current!==null&&JSON.stringify(flow)!==JSON.stringify(snapshot.current);
+ const recoveryReady=(['whatsapp','sms'] as const).every(channel=>!flow.channels[channel].enabled
+  ||Boolean(flow.channels[channel].flowServiceUserId&&flow.channels[channel].credentialId
+   &&flow.channels[channel].messageTemplate.trim()&&flow.channels[channel].calloutPath.startsWith('/')));
  const change=(patch:Partial<RecoveryFlow>)=>setFlow(value=>value?{...value,...patch}:value);
  const changeChannel=(channel:RecoveryChannel,patch:Partial<RecoveryAction>)=>
   setFlow(value=>value?{...value,channels:{...value.channels,
    [channel]:{...value.channels[channel],...patch}}}:value);
- const begin=()=>{if(canManage&&!busy){snapshot.current=JSON.parse(JSON.stringify(flow)) as RecoveryFlow;
+ const begin=(section:'otp'|'email'|'whatsapp'|'sms')=>{if(canManage&&!busy){setRecoverySection(section);snapshot.current=JSON.parse(JSON.stringify(flow)) as RecoveryFlow;
   setEditing(true);setMessage('');}};
  const cancel=()=>{if(busy)return;if(snapshot.current)setFlow(snapshot.current);
   snapshot.current=null;setEditing(false);setMessage('');};
  const save=async()=>{
-  if(!canManage||!editing||busy)return;
+  if(!canManage||!editing||busy||!recoveryDirty||!recoveryReady)return;
   setBusy(true);setMessage('');
   try{const result=await apiRequest<RecoverySettings>('/auth/password-recovery/settings',{
    method:'PUT',body:JSON.stringify({flow,revision})
@@ -214,8 +226,10 @@ function TenantEmailRecoverySettings({canManage}:{canManage:boolean}){
   <p>Security-critical verification is enforced by Core; templates and HTTP Callout actions are editable here without code.</p>
   {!deliveryReady&&<p role="alert" className="permission-help">Platform recovery email is not configured.</p>}
   {flow.method==='LINK'&&!linkReady&&<p role="alert">Configure a trusted HTTPS reset link origin.</p>}
-  {editing?<div className="settings-read-first-section">
-   <h3>Generate OTP</h3>
+  {editing?<div ref={recoveryEditorRef} className="settings-read-first-section md-recovery-editor">
+   <p className="permission-help">Open only the section you need to edit. Changes are saved together when you choose Save Flow.</p>
+   <details className="md-recovery-config-group" open={recoverySection==='otp'}>
+    <summary>Generate OTP and verification limits</summary>
    <label className="form-label">Recovery method<select className="form-control" value={flow.method}
     onChange={event=>change({method:event.target.value as 'OTP'|'LINK'})}>
     <option value="OTP">Numeric code</option><option value="LINK">Email reset link (legacy)</option>
@@ -231,16 +245,19 @@ function TenantEmailRecoverySettings({canManage}:{canManage:boolean}){
    <label className="form-label">Maximum attempts<input className="form-control" type="number"
     min={3} max={flow.otpLength===4?3:5} value={flow.maxAttempts}
     onChange={event=>change({maxAttempts:Number(event.target.value)})}/></label>
-   <h3>Email action</h3>
+   </details>
+   <details className="md-recovery-config-group" open={recoverySection==='email'}>
+    <summary>Email delivery template</summary>
    <p>Sender: {fromEmail||'noreply@unesolutions.co.uk (configure platform mail transport)'}</p>
    <label className="form-label">Subject template<input className="form-control"
     value={flow.emailSubject} onChange={event=>change({emailSubject:event.target.value})}/></label>
    <label className="form-label">Email template<textarea className="form-control" rows={4}
     value={flow.emailTemplate} onChange={event=>change({emailTemplate:event.target.value})}/></label>
+   </details>
    {(['whatsapp','sms'] as const).map(channel=>{
     const action=flow.channels[channel];
-    return <div key={channel} className="settings-read-first-section">
-     <h3>{channel==='whatsapp'?'WhatsApp':'SMSGate'} HTTP Callout</h3>
+    return <details key={channel} className="settings-read-first-section md-recovery-config-group" open={recoverySection===channel}>
+     <summary>{channel==='whatsapp'?'WhatsApp':'SMS'} HTTP Callout</summary>
      <label className="checkbox-row"><input type="checkbox" checked={action.enabled}
       disabled={flow.method==='LINK'}
       onChange={event=>changeChannel(channel,{enabled:event.target.checked})}/>
@@ -268,23 +285,25 @@ function TenantEmailRecoverySettings({canManage}:{canManage:boolean}){
        value={action.calloutBody}
        onChange={event=>changeChannel(channel,{calloutBody:event.target.value})}/></label>
      </details>
-     <p>Requires verified account phone, authorized service user and configured Named Credential.</p>
-    </div>;
+     <p>Requires verified account phone, authorised service user and configured Named Credential.</p>
+    </details>;
    })}
   </div>:<div className="settings-read-first-section">
    <SettingsViewRow label="Flow revision" value={String(revision)} canEdit={false} onEdit={()=>undefined}/>
-   <SettingsViewRow label="OTP length" value={flow.otpLength+' digits'} canEdit={canManage} onEdit={begin}/>
-   <SettingsViewRow label="Expiry" value={flow.expiryMinutes+' minutes'} canEdit={canManage} onEdit={begin}/>
-   <SettingsViewRow label="Platform email" value={deliveryReady?'Configured':'Not configured'} canEdit={canManage} onEdit={begin}/>
-   <SettingsViewRow label="WhatsApp HTTP Callout" value={flow.channels.whatsapp.enabled?'Enabled':'Not configured'} canEdit={canManage} onEdit={begin}/>
-   <SettingsViewRow label="SMSGate HTTP Callout" value={flow.channels.sms.enabled?'Enabled':'Not configured'} canEdit={canManage} onEdit={begin}/>
+   <SettingsViewRow label="OTP length" value={flow.otpLength+' digits'} canEdit={canManage} onEdit={()=>begin('otp')}/>
+   <SettingsViewRow label="Expiry" value={flow.expiryMinutes+' minutes'} canEdit={canManage} onEdit={()=>begin('otp')}/>
+   <SettingsViewRow label="Platform email" value={deliveryReady?'Configured':'Not configured'} canEdit={canManage} onEdit={()=>begin('email')}/>
+   <SettingsViewRow label="WhatsApp HTTP Callout" value={flow.channels.whatsapp.enabled?'Enabled':'Not configured'} canEdit={canManage} onEdit={()=>begin('whatsapp')}/>
+   <SettingsViewRow label="SMSGate HTTP Callout" value={flow.channels.sms.enabled?'Enabled':'Not configured'} canEdit={canManage} onEdit={()=>begin('sms')}/>
   </div>}
-  {editing&&canManage&&<div className="settings-read-first-toolbar">
+  {editing&&canManage&&<div className="settings-read-first-toolbar md-recovery-save-bar">
+   <span>{recoveryDirty?'Unsaved recovery Flow changes':'No unsaved changes'}</span>
    <button className="btn" type="button" disabled={busy} onClick={cancel}>Cancel</button>
-   <button className="btn btn-brand" type="button" disabled={busy} onClick={()=>void save()}>
+   <button className="btn btn-brand" type="button" disabled={busy||!recoveryDirty||!recoveryReady} onClick={()=>void save()}>
     <Save size={14}/>{busy?'Saving…':'Save Flow'}
    </button>
   </div>}
+  {editing&&!recoveryReady&&<p role="alert" className="form-error">For each enabled WhatsApp or SMS channel, select a service user and Named Credential and supply a message and relative endpoint before saving.</p>}
   {message&&<p role="status">{message}</p>}
  </section>;
 }
@@ -349,37 +368,46 @@ type SecurityEvent={id:string;at:string;actorUserId:string|null;action:string;lo
 type SecurityEventFilters={action:string;identifier:string;ip:string;from:string;to:string};
 const emptySecurityEventFilters=():SecurityEventFilters=>({action:'',identifier:'',ip:'',from:'',to:''});
 function TenantSecurityAudit() {
+ const viewportWidth=useViewportWidth();
+ const pageSize=viewportWidth>0&&viewportWidth<=600?10:25;
  const [events,setEvents]=useState<SecurityEvent[]>([]);
  const [draft,setDraft]=useState<SecurityEventFilters>(emptySecurityEventFilters);
  const [filters,setFilters]=useState<SecurityEventFilters>(emptySecurityEventFilters);
  const [page,setPage]=useState(0);
+ useEffect(()=>setPage(0),[pageSize]);
  const [hasNext,setHasNext]=useState(false);
  const [permitted,setPermitted]=useState(false);
  const [busy,setBusy]=useState(true);
  const [error,setError]=useState('');
+ const [filterError,setFilterError]=useState('');
  useEffect(()=>{
   let active=true;
   setBusy(true);
-  const query=new URLSearchParams({limit:'25',offset:String(page*25)});
+  const query=new URLSearchParams({limit:String(pageSize),offset:String(page*pageSize)});
   for(const [key,value] of Object.entries(filters))if(value.trim())query.set(key,value.trim());
   void apiRequest<{events:SecurityEvent[];nextOffset:number|null}>('/auth/security-events?'+query.toString())
    .then(response=>{if(active){setEvents(response.events);setHasNext(response.nextOffset!==null);setPermitted(true);setError('');}})
    .catch(cause=>{if(active){setError(cause instanceof Error?cause.message:String(cause));setEvents([]);setHasNext(false);}})
    .finally(()=>{if(active)setBusy(false);});
   return()=>{active=false;};
- },[filters,page]);
+ },[filters,page,pageSize]);
  const field=(key:keyof SecurityEventFilters,label:string,type='search')=><label className="form-label" key={key}>{label}
   <input className="form-control" type={type} value={draft[key]} onChange={event=>setDraft(previous=>({...previous,[key]:event.target.value}))}/>
  </label>;
  return <section className="surface permission-section">
   <h2>Login history and security activity</h2>
   <p>Tenant security events. Access requires the server-enforced Security read permission.</p>
-  <form className="md-admin-form-grid md-security-history-filters" onSubmit={event=>{event.preventDefault();setPage(0);setFilters({...draft});}}>
+  <form className="md-admin-form-grid md-security-history-filters" onSubmit={event=>{
+    event.preventDefault();
+    if(draft.from&&draft.to&&draft.from>draft.to){setFilterError('From date must not be later than Before date.');return;}
+    setFilterError('');setPage(0);setFilters({...draft});
+  }}>
    {field('action','Event action')}{field('identifier','Account / login identifier')}{field('ip','Source IP address')}
    {field('from','From date','date')}{field('to','Before date','date')}
    <div className="md-admin-actions"><button type="submit" className="btn btn-brand" disabled={busy}>Apply filters</button>
-    <button type="button" className="btn" disabled={busy} onClick={()=>{setDraft(emptySecurityEventFilters());setFilters(emptySecurityEventFilters());setPage(0);}}>Clear</button></div>
+    <button type="button" className="btn" disabled={busy} onClick={()=>{setDraft(emptySecurityEventFilters());setFilters(emptySecurityEventFilters());setFilterError('');setPage(0);}}>Clear</button></div>
   </form>
+  {filterError&&<p role="alert" className="form-error">{filterError}</p>}
   {busy&&<p role="status">Loading security history…</p>}
   {error&&<p role="alert">Unable to load security events: {error}</p>}
   {!busy&&!error&&permitted&&<div className="md-admin-table-wrap" role="region" aria-label="Login security history" tabIndex={0}>
@@ -387,9 +415,11 @@ function TenantSecurityAudit() {
     <thead><tr><th scope="col">Time</th><th scope="col">Action</th><th scope="col">Login</th><th scope="col">IP address</th><th scope="col">Changes</th></tr></thead>
     <tbody>{events.map(event=><tr key={event.id}>
      <td data-label="Time">{new Date(event.at).toLocaleString()}</td>
-     <td data-label="Action">{event.action}</td><td data-label="Login">{event.loginIdentifier||event.actorUserId||'—'}</td>
+     <td data-label="Action">{event.action.replaceAll('_',' ').replace(/\b\w/g,letter=>letter.toUpperCase())}</td><td data-label="Login">{event.loginIdentifier||event.actorUserId||'—'}</td>
      <td data-label="IP address">{event.sourceIp||'—'}</td>
-     <td data-label="Changes">{event.details?.from&&event.details?.to?event.details.from+' → '+event.details.to:'—'}</td>
+     <td data-label="Changes">{event.details?.from&&event.details?.to?event.details.from+' → '+event.details.to
+  :event.details&&Object.keys(event.details).length>0?Object.entries(event.details).filter(([key])=>!/secret|token|password/i.test(key)).slice(0,3).map(([key,value])=>key+': '+String(value).slice(0,80)).join(', ')||'No changes recorded'
+  :'No changes recorded'}</td>
     </tr>)}{!events.length&&<tr><td colSpan={5}>No matching security activity.</td></tr>}</tbody>
    </table>
   </div>}
@@ -436,10 +466,25 @@ function CompanySettings({ canManage, section = 'general' }: { canManage: boolea
   const [companyBeforeEdit,setCompanyBeforeEdit]=useState<CompanyProfile|null>(null);
   const [companyEditing,setCompanyEditing]=useState(false);
   const [companyLoading,setCompanyLoading]=useState(true);
+  const [companyReady,setCompanyReady]=useState(false);
   const [companySaving,setCompanySaving]=useState(false);
   const [companyError,setCompanyError]=useState('');
   const [companyNotice,setCompanyNotice]=useState('');
   const [logoReading,setLogoReading]=useState(false);
+  const contactFieldKeys=['website','phone','email','addressLine1','addressLine2','city','postcode','country'];
+  const brandFieldKeys=['tradingName','website'];
+  const visibleCompanyFields=companyFields.filter(field=>section==='contacts'?contactFieldKeys.includes(field.key)
+    :section==='branding'?brandFieldKeys.includes(field.key)
+      :!contactFieldKeys.includes(field.key)||field.key==='email');
+  const shownCompanyFields=companyEditing?visibleCompanyFields:visibleCompanyFields.filter(field=>section!=='contacts'||Boolean(company[field.key]?.trim()));
+  const contactsConfigured=contactFieldKeys.some(key=>Boolean(company[key as keyof CompanyProfile]?.trim()));
+  const companyDirty=companyBeforeEdit!==null&&JSON.stringify(company)!==JSON.stringify(companyBeforeEdit);
+  const saveCompanyAllowed=companyReady&&companyDirty;
+  const companyFailureMessage=(failure:unknown)=>{
+    const detail=failure instanceof Error?failure.message:String(failure);
+    return /non-JSON|SQL service unavailable|HTTP 50[0234]|API /i.test(detail)
+      ?'Company settings are temporarily unavailable. Please retry.':detail;
+  };
   const selectCompanyLogo=async(file?:File)=>{
     if(!file)return;
     if(!['image/png','image/jpeg','image/webp'].includes(file.type)){setCompanyError('Choose a PNG, JPG or WebP image.');return;}
@@ -451,15 +496,19 @@ function CompanySettings({ canManage, section = 'general' }: { canManage: boolea
     }catch(error){setCompanyError(error instanceof Error?error.message:String(error));}
     finally{setLogoReading(false)}
   };
-  useEffect(()=>{let active=true;void apiRequest<{profile:CompanyProfile|null}>('/tenant/company-profile')
-   .then(value=>{if(active)setCompany({...blankCompanyProfile,...(value.profile??{})});})
-   .catch(error=>{if(active)setCompanyError(error instanceof Error?error.message:String(error));})
-   .finally(()=>{if(active)setCompanyLoading(false)});return()=>{active=false}},[]);
-  const saveCompany=async()=>{if(!canManage||companySaving||logoReading)return;
+  const reloadCompany=async()=>{
+    setCompanyLoading(true);setCompanyReady(false);setCompanyError('');
+    try{const value=await apiRequest<{profile:CompanyProfile|null}>('/tenant/company-profile');
+      setCompany({...blankCompanyProfile,...(value.profile??{})});setCompanyReady(true);}
+    catch(error){setCompanyReady(false);setCompanyError(companyFailureMessage(error));}
+    finally{setCompanyLoading(false);}
+  };
+  useEffect(()=>{void reloadCompany();},[]);
+  const saveCompany=async()=>{if(!canManage||!companyReady||companySaving||logoReading||!saveCompanyAllowed)return;
     setCompanySaving(true);setCompanyError('');setCompanyNotice('');
     try{const saved=await apiRequest<{profile:CompanyProfile}>('/tenant/company-profile',{method:'PUT',body:JSON.stringify(company)});
-      setCompany(saved.profile);setCompanyEditing(false);setCompanyBeforeEdit(null);setCompanyNotice('Company details saved.');}
-    catch(error){setCompanyError(error instanceof Error?error.message:String(error));}
+      setCompany(saved.profile);setCompanyEditing(false);setCompanyBeforeEdit(null);setCompanyNotice(section==='branding'?'Company logo saved.':'Company details saved.');}
+    catch(error){setCompanyError(companyFailureMessage(error));}
     finally{setCompanySaving(false)}
   };
   const [draft, setDraft] = useState<CurrencySettingsMetadata>({
@@ -544,6 +593,14 @@ function CompanySettings({ canManage, section = 'general' }: { canManage: boolea
       setError('Standard VAT rate must be between 0 and 100 percent.');
       return;
     }
+
+    const currencyCodes=draft.currencies.map(currency=>currency.currencyIsoCode.trim().toUpperCase());
+    if(currencyCodes.some(code=>!/^[A-Z]{3}$/.test(code))||new Set(currencyCodes).size!==currencyCodes.length){
+      setError('Use a unique three-letter ISO currency code for each active currency.');return;
+    }
+    if(draft.currencies.some(currency=>!Number.isFinite(currency.conversionRate)||currency.conversionRate<=0)){
+      setError('Every conversion rate must be greater than zero.');return;
+    }
     const hasCorporateCurrency = draft.currencies.some((currency) => currency.currencyIsoCode === normalizedCorporateCode);
     const settings: CurrencySettingsMetadata = {
       corporateCurrency: normalizedCorporateCode,
@@ -583,22 +640,30 @@ function CompanySettings({ canManage, section = 'general' }: { canManage: boolea
 
   return <div className="home-content settings-read-first-page company-settings-page">
     <PageHeading eyebrow="Company Settings" title="Company Settings"
-      description="Manage your organisation settings, base currency, VAT and exchange rates in one workspace." />
-    <section className="surface permission-section company-profile-section" aria-label={sectionTitle}>
-      <div className="section-toolbar"><div><h2>{sectionTitle}</h2><p>Organisation, contact and regional information.</p></div>
-      {canManage&&!companyEditing&&!companyLoading&&<button type="button" className="btn" onClick={()=>{setCompanyBeforeEdit({...company});setCompanyEditing(true);}}>{section === 'branding' ? 'Edit logo' : section === 'contacts' ? 'Edit contacts' : 'Edit details'}</button>}</div>
-      {companyLoading?<p>Loading company details…</p>:<><div className="company-profile-logo">{(company.logoUrl?.startsWith("data:image/")||company.logoUrl?.startsWith("https://"))?<img src={company.logoUrl} alt="Company logo" />:<span aria-label="No logo configured">No logo</span>}</div><div className="company-profile-grid">{companyEditing&&<div className="company-profile-field" data-company-field="logoUrl"><label htmlFor="company-logo-upload">Company logo</label><input id="company-logo-upload" type="file" accept="image/png,image/jpeg,image/webp" disabled={companySaving||logoReading} onChange={event=>{void selectCompanyLogo(event.target.files?.[0]);event.target.value='';}}/><small>PNG, JPG or WebP · maximum 128 KB</small>{company.logoUrl&&<button className="btn" type="button" disabled={companySaving||logoReading} onClick={()=>{ if (!confirmDestructiveAction('Remove','company logo','Save company settings to apply the removal.')) return; setCompany(previous=>({...previous,logoUrl:''})); }}>Remove logo</button>}</div>}
-      {companyFields.map(field=><div className="company-profile-field" data-company-field={field.key} key={field.key}><label htmlFor={'company-'+field.key}>{field.label}</label>
+      description={section==='currency'?'Review your corporate currency, VAT and exchange rates.':section==='contacts'?'Manage how customers and partners contact your organisation.':section==='branding'?'Review and update your organisation logo and public identity.':'Manage your organisation details.'} />
+    {section!=='currency'&&<section className="surface permission-section company-profile-section" aria-label={sectionTitle}>
+      <div className="section-toolbar"><div><h2>{sectionTitle}</h2><p>{section==='branding'?'Upload a PNG, JPG or WebP logo (up to 128 KB). Preview the current logo below.':'Organisation, contact and regional information.'}</p></div>
+      {canManage&&companyReady&&!companyEditing&&!companyLoading&&<button type="button" className="btn" onClick={()=>{setCompanyBeforeEdit({...company});setCompanyEditing(true);}}>{section === 'branding' ? 'Edit logo' : section === 'contacts' ? contactsConfigured?'Edit contacts':'Add contact details' : 'Edit details'}</button>}</div>
+      {companyError&&!companyEditing&&<button type="button" className="btn" disabled={companyLoading} onClick={()=>void reloadCompany()}>Retry loading company details</button>}
+      {companyLoading?<p>Loading company details…</p>:companyReady?<>{!companyEditing&&section==='contacts'&&!contactsConfigured&&<p className="company-contacts-empty">No contact details configured yet. Select Add contact details to enter an email, telephone, website or address.</p>}
+       {(section==='branding'||section==='general')&&<div className="company-profile-logo">{(company.logoUrl?.startsWith("data:image/")||company.logoUrl?.startsWith("https://"))?<img src={company.logoUrl} alt="Company logo" />:<span aria-label="No logo configured">No logo</span>}</div>}
+       {section==='branding'&&<div className="company-brand-preview" aria-label="Illustrative sign-in preview">
+        <small>Sign-in preview (illustrative)</small>
+        <div>{company.logoUrl?.startsWith('data:image/')||company.logoUrl?.startsWith('https://')?<img src={company.logoUrl} alt="Current company logo" />:<span>No logo configured</span>}
+         <strong>{company.tradingName||company.legalName||'Your organisation'}</strong><span>Sign in</span></div>
+       </div>}
+       <div className="company-profile-grid">{companyEditing&&(section==='branding'||section==='general')&&<div className="company-profile-field" data-company-field="logoUrl"><label htmlFor="company-logo-upload">Company logo</label><input id="company-logo-upload" type="file" accept="image/png,image/jpeg,image/webp" disabled={companySaving||logoReading} onChange={event=>{void selectCompanyLogo(event.target.files?.[0]);event.target.value='';}}/><small>PNG, JPG or WebP · maximum 128 KB</small>{company.logoUrl&&<button className="btn" type="button" disabled={companySaving||logoReading} onClick={()=>{ if (!confirmDestructiveAction('Remove','company logo','Save company settings to apply the removal.')) return; setCompany(previous=>({...previous,logoUrl:''})); }}>Remove logo</button>}</div>}
+      {shownCompanyFields.map(field=><div className="company-profile-field" data-company-field={field.key} key={field.key}><label htmlFor={'company-'+field.key}>{field.label}</label>
         {companyEditing?<input id={'company-'+field.key} className="form-control" value={company[field.key]}
           onChange={event=>setCompany(previous=>({...previous,[field.key]:event.target.value}))}/>
-        :<p>{company[field.key]||'Not provided'}</p>}</div> )}</div></>}
+        :<p>{company[field.key]||'Not provided'}</p>}</div> )}</div></>:<p role="status">Company data could not be loaded. Editing is unavailable until a successful retry.</p>}
       {companyEditing&&<div className="settings-read-first-toolbar">
         <button type="button" className="btn" disabled={companySaving} onClick={()=>{setCompany(companyBeforeEdit??blankCompanyProfile);setCompanyEditing(false);setCompanyBeforeEdit(null);}}>Cancel</button>
-        <button type="button" className="btn btn-brand" disabled={companySaving||logoReading} onClick={()=>void saveCompany()}>{companySaving?'Saving…':'Save details'}</button></div>}
+        <button type="button" className="btn btn-brand" disabled={companySaving||logoReading||!saveCompanyAllowed} onClick={()=>void saveCompany()}>{companySaving?'Saving…':'Save details'}</button></div>}
       {companyError&&<p className="form-error" role="alert">{companyError}</p>}
       {companyNotice&&<p className="form-success" role="status">{companyNotice}</p>}
-    </section>
-    <section className="surface permission-section">
+    </section>}
+    {section==='currency'&&<section className="surface permission-section">
       <div className="section-toolbar">
         <div><h2>Currency & Tax</h2>
           <p>Rates express units of corporate currency per one unit of the active currency.</p></div>
@@ -648,7 +713,7 @@ function CompanySettings({ canManage, section = 'general' }: { canManage: boolea
                         }} />
                     </label></PlatformPageSlot>
                     <PlatformPageSlot slotKey="field-settings-17"><label className="form-label">Conversion Rate
-                      <input className="form-control" type="number" min="0" step="any"
+                      <input className="form-control" type="number" min="0.00000001" step="any"
                         value={currency.currencyIsoCode === draft.corporateCurrency ? 1 : currency.conversionRate}
                         disabled={currency.currencyIsoCode === draft.corporateCurrency}
                         onChange={(event) => {
@@ -672,7 +737,7 @@ function CompanySettings({ canManage, section = 'general' }: { canManage: boolea
                 </div>
               : <SettingsViewRow key={`currency-view-${index}`}
                   label={currency.currencyIsoCode || 'New currency'}
-                  value={`Conversion rate: ${currency.currencyIsoCode === draft.corporateCurrency ? 1 : currency.conversionRate}`}
+                  value={`Conversion rate: ${currency.currencyIsoCode === draft.corporateCurrency ? 1 : currency.conversionRate}${currency.currencyIsoCode !== draft.corporateCurrency && currency.conversionRate === 1 ? " (verify rate)" : ""}`}
                   canEdit={canManage && !editingRow && currency.currencyIsoCode !== draft.corporateCurrency}
                   onEdit={() => beginEdit(`currency-${index}`)} />
           ))}
@@ -689,7 +754,7 @@ function CompanySettings({ canManage, section = 'general' }: { canManage: boolea
       </> : null}
       {error && <p className="form-error" role="alert">{error}</p>}
       {notice && <p className="form-success" role="status">{notice}</p>}
-    </section>
+    </section>}
   </div>;
 }
 

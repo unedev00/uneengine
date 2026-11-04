@@ -51,12 +51,17 @@ const callbacks=Object.fromEntries(['Select','OpenViewer','ExitViewer','Notify',
 const object={apiName:'Account',label:'Account',pluralLabel:'Accounts',kind:'Standard Object',fields:[],compactLayout:{fieldApiNames:['Name']}};
 const request=async(path,init)=>{
  if(path.startsWith('/platform/tenants'))return {tenants:[],total:0};
- if(path.startsWith('/records/'))return {records:[{Id:'00000000-0000-0000-0000-000000000001',Name:'Acme Corporation'}]};
+ if(path.startsWith('/records/')){
+  if(new URL(path,'https://example.invalid').searchParams.get('search')==='unavailable')
+    throw new Error('SQL service unavailable');
+  return {records:[{Id:'00000000-0000-0000-0000-000000000001',Name:'Acme Corporation'}]};
+ }
  if(init?.method==='PUT'){window.savedSelections=JSON.parse(init.body);return {briefcase:JSON.parse(init.body)};}
  return {briefcase:{selections:[]}};
 };
 const uxRequest=async (path,init)=>{
  if(path.startsWith('/auth/security-events?')){window.securityEventQuery=path;const offset=Number(new URLSearchParams(path.split('?')[1]).get('offset')||0);return {events:[{id:'event-'+offset,at:'2026-10-30T10:00:00Z',actorUserId:'user-1',loginIdentifier:'operator@example.com',sourceIp:'192.0.2.4',action:'login.success',details:{}}],nextOffset:offset===0?25:null};}
+ if(path==='/tenant/company-profile')throw new Error('HTTP 502: upstream service unavailable');
  if(path==='/auth/mfa/status')return {mode:'Off',enrolled:false};
  if(path==='/auth/passkeys')return {credentials:[]};
  if(path==='/auth/user-locks')return {users:[{id:'user-1',name:'Test operator',email:'test.operator@example.com'}]};
@@ -67,7 +72,11 @@ const uxRequest=async (path,init)=>{
  if(path==='/security/licenses/tenants')return {tenants:[]};
  if(path==='/security/licenses')return {entitlements:Array.from({length:8},(_,i)=>({id:'lic-'+i,label:'Licence '+(i+1),kind:i<4?'User':'PermissionSet',enabled:true,used_seats:2,seat_limit:10,expires_at:null})),users:[{id:'user-1',email:'test.operator@example.com'}],permissionSets:[{id:'set-1',api_name:'OneEngine'}],assignments:[],requirements:[]};
  if(path==='/metadata/flows/list?page=1&search=')return {flows:[]};
- if(path.startsWith('/security/monitoring'))return {events:[],rules:[],settings:{enabled:true,retention_days:365},summary:{requests:180,errors:5,average_ms:62},nextCursor:null};
+ if(path.startsWith('/security/monitoring'))return {events:[
+  {id:'mon-1',created_at:'2026-11-04T10:00:00Z',event_type:'api',resource:'/api/records/Product',method:'GET',status_code:200,elapsed_ms:25},
+  {id:'mon-2',created_at:'2026-11-04T10:01:00Z',event_type:'api',resource:'/api/reports',method:'POST',status_code:500,elapsed_ms:120},
+  {id:'mon-3',created_at:'2026-11-04T10:02:00Z',event_type:'login',resource:'/api/auth/login',method:'POST',status_code:401,elapsed_ms:12}
+ ],rules:[],settings:{enabled:true,retention_days:365},summary:{requests:180,errors:5,average_ms:62},nextCursor:null};
  if(path==='/security/connected-apps')return {clients:[],
   users:Array.from({length:9},(_,i)=>({id:'user-'+i,email:'operator'+(i+1)+'@example.com'})),
   scopes:['records:read','records:write','metadata:read','metadata:write','records:import','mcp:access'],
@@ -185,6 +194,7 @@ function Fixture(){
   else if(view==='oauth')content=<TenantConnectedApps request={uxRequest}/>;
    else if(view==='oauth-directory')content=<TenantConnectedApps request={directoryRequest}/>;
    else if(view==='security-history')content=<securityViews.TenantSecurityAudit/>;
+   else if(view==='company-profile-fail')content=<securityViews.CompanySettings canManage section="branding"/>;
    else if(view==='assist-document')content=<FinancialDocumentEditor type="Invoice" operation="Create" document={null} storedLines={[]} metadataFields={[{apiName:'Customer',label:'Customer',type:'Lookup'}]} customers={[]} products={[]} busy={false} error="" onCancel={noop} onSave={async()=>{}} onCreateCustomer={async customer=>({Id:'test-customer',...customer})}/>;
   else if(view==='governance')content=<TenantGovernance request={uxRequest} canManage/>;
    else if(view==='monitoring')content=<TenantGovernance request={uxRequest} canManage initialTab="monitoring"/>;
