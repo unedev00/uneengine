@@ -301,7 +301,7 @@ function SmartCalendar({p,fire}){
  return <div className="smart-calendar" style={{borderRadius:number(p.radius,12),
   borderColor:p.borderColor||undefined,background:p.backgroundColor||undefined,
   boxShadow:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none"}}>
-  <strong data-md-bind={p.builderPreview?"selectedDate defaultValue":undefined}>{selected.toLocaleString("en-GB",{month:"long",year:"numeric"})}</strong>
+  <strong data-md-bind={p.builderPreview?"selectedDate":undefined}>{selected.toLocaleString("en-GB",{month:"long",year:"numeric"})}</strong>
   {indices.length===0?<p>No days selected for display</p>:<div className="smart-calendar-grid" style={{gridTemplateColumns:"repeat("+indices.length+",minmax(0,1fr))"}}>
    {indices.map(i=><b key={"day"+i}>{dayNames[i]}</b>)}
    {Array.from({length:weeks},(_,week)=>indices.map(i=>{
@@ -328,7 +328,7 @@ function SmartLookup({p,style,fire}){
  const candidates=recordsOf(p).slice(0,200).filter(item=>item&&typeof item==="object");
  const display=row=>scopedExpression(p,"textSource",p.textSource??row.Name??row.name??row.label??row.title??row.id??"",row);
  const matches=candidates.filter(row=>display(row).toLowerCase().includes(query.toLowerCase())).slice(0,20);
- return <div data-md-bind={p.builderPreview?"collectionFormula":undefined} className="smart-lookup" style={{...style,"--smart-placeholder-color":p.labelColor||"#64748b"}}>
+ return <div data-md-bind={p.builderPreview&&p.collectionFormula?"collectionFormula":undefined} className="smart-lookup" style={{...style,"--smart-placeholder-color":p.labelColor||"#64748b"}}>
   <input data-md-bind={p.builderPreview?"label lookupValueFormula":undefined} className="smart-search" type="search" role="combobox"
    aria-label={text(placeholder||"Search records")}
    aria-expanded={opened&&matches.length>0} aria-controls="smart-lookup-suggestions"
@@ -458,7 +458,7 @@ function SmartTabs({p,record,fire}){
  React.useEffect(()=>{
   if(tabs.length&&active>=tabs.length)setActive(defaultTabIndex);
  },[active,tabs.length,defaultTabIndex]);
- return <div data-md-bind={p.builderPreview?"collectionFormula":undefined} className="smart-tabs-shell" style={{background:p.backgroundColor||undefined,
+ return <div data-md-bind={p.builderPreview&&p.collectionFormula&&(dynamic||hasCollection)?"collectionFormula":undefined} className="smart-tabs-shell" style={{background:p.backgroundColor||undefined,
    display:"flex",flexDirection:"column",height:"100%",minHeight:0,width:"100%"}}>
   <nav className="smart-tabs" role="tablist" aria-label="Tabs"
    aria-orientation={vertical?"vertical":"horizontal"} style={{
@@ -466,7 +466,7 @@ function SmartTabs({p,record,fire}){
     flexDirection:vertical?"column":"row",flexWrap:vertical?"nowrap":"wrap",
     alignItems:vertical?"stretch":undefined,alignContent:vertical?"flex-start":"stretch",
     overflowY:vertical?"auto":undefined,overflowX:vertical?"hidden":undefined}}>
-   {tabs.map((tab,index)=><button data-md-bind={p.builderPreview?(dynamic||hasCollection?"textSource":"tabCaptionFormula"):undefined} data-md-bind-index={p.builderPreview?index:undefined} data-md-bind-item={p.builderPreview&&typeof tab?.id==="string"?tab.id:undefined} key={tab?.id??index} ref={index===selectedTabIndex?selectedTabRef:null} type="button" role="tab"
+   {tabs.map((tab,index)=><button data-md-bind={p.builderPreview?(dynamic||hasCollection?"textSource":"tabCaptionFormula"):undefined} data-md-bind-index={p.builderPreview&&!(dynamic||hasCollection)?index:undefined} data-md-bind-item={p.builderPreview&&typeof tab?.id==="string"?tab.id:undefined} key={tab?.id??index} ref={index===selectedTabIndex?selectedTabRef:null} type="button" role="tab"
     aria-selected={selectedTabIndex===index} style={{height:number(p.tabHeight,44),
      maxHeight:vertical?undefined:"100%",minHeight:vertical?number(p.tabHeight,44):0,
      flex:vertical?"0 0 auto":"1 1 auto",
@@ -582,7 +582,7 @@ export default function SmartRuntime(p){
   // Keep the existing Smart Input exactly as it was; display mode is an
   // opt-in metadata property for labels, headings and read-only values.
   content=name==="smart_label"||p.displayMode==="display"
-   ?<div data-md-bind={p.builderPreview?"label textSource":undefined} className="smart-display-text" style={{...style,...shadowStyle,
+   ?<div data-md-bind={p.builderPreview?(p.textSource?"textSource":p.defaultValue!==undefined?"defaultValue":"label"):undefined} className="smart-display-text" style={{...style,...shadowStyle,
      ...(name==="smart_label"?smartShapeAppearance(p.shapeId,number(p.radius,12)):{}),
      width:"100%",height:"100%",minWidth:0,minHeight:0,display:"flex",alignItems:"center",
      justifyContent:p.labelAlignment==="right"?"flex-end":p.labelAlignment==="center"?"center":"flex-start",
@@ -592,7 +592,7 @@ export default function SmartRuntime(p){
      background:p.backgroundColor||"transparent",
      borderStyle:"solid",borderWidth:p.borderWidth===undefined?(name==="smart_label"&&p.borderColor?1:0):number(p.borderWidth,0,0,24),
      borderColor:p.borderColor||"transparent"}}>{contentValue||(name==="smart_label"&&p.builderPreview?"Label":"")}</div>
-   :<input data-md-bind={p.builderPreview?"label textSource":undefined} className="smart-input-box" type="text"
+   :<input data-md-bind={p.builderPreview?(p.textSource?"textSource":p.defaultValue!==undefined?"defaultValue":"label"):undefined} className="smart-input-box" type="text"
   aria-label={label||text(p.placeholder||"Input")}
   placeholder={p.builderPreview===true&&![p.placeholder,p.textSource,p.defaultValue,p.value].some(v=>v!==undefined&&v!==null&&v!=="")
     &&!(p.properties&&Object.prototype.hasOwnProperty.call(p.properties,"label"))
@@ -629,7 +629,7 @@ export default function SmartRuntime(p){
   const previewRows=(p.previewOnly===true||p.builderPreview===true||p.preview===true)&&boundRows.length===0
     ?Array.from({length:columns*rows},(_,i)=>({Id:"card-preview-"+i,Name:"Sample item "+(i+1)}))
     :boundRows;
-  content=<div data-md-bind={p.builderPreview?"collectionFormula":undefined} className="smart-grid" role="region" aria-label="Product cards" tabIndex={0}
+  content=<div data-md-bind={p.builderPreview&&p.collectionFormula?"collectionFormula":undefined} className="smart-grid" role="region" aria-label="Product cards" tabIndex={0}
    onKeyDown={event=>{
      // The inner grid is an independent keyboard scroller. Never steal
      // arrow/action keys from a focused card or from the Page Builder.
@@ -707,13 +707,13 @@ export default function SmartRuntime(p){
     return text(item);
   };
   const fit=p.imageFill==="fit"?"contain":p.imageFill==="stretch"?"fill":"cover";
-  content=<nav data-md-bind={p.builderPreview?"collectionFormula":undefined} className="smart-navigation" style={{width:"100%",height:"100%",
+  content=<nav data-md-bind={p.builderPreview&&p.collectionFormula?"collectionFormula":undefined} className="smart-navigation" style={{width:"100%",height:"100%",
    minWidth:0,minHeight:0,overflow:"auto",flexWrap:"nowrap",alignItems:"flex-start",flexDirection:p.navigationDirection==="vertical"?"column":"row"}}>
     {entries.map((item,i)=>{
       const label=labelOf(item);
       const src=item&&typeof item==="object"?item.imageSrc??item.imageUrl:null;
       const safeSrc=typeof src==="string"&&/^https:\/\//i.test(src)?src:null;
-      return <button data-md-bind={p.builderPreview?"textSource":undefined} key={item?.id??i} type="button" className="smart-navigation-item"
+      return <button data-md-bind={p.builderPreview&&p.textSource&&!(item&&typeof item==="object"&&item.label)?"textSource":undefined} key={item?.id??i} type="button" className="smart-navigation-item"
         style={{flex:"0 0 auto",height:32,maxHeight:"100%",minHeight:0,color:p.labelColor||undefined,background:p.backgroundColor||"#fff",
           boxShadow:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none",
           borderColor:p.borderColor||undefined,borderRadius:number(p.radius,4),fontSize:number(p.textSize,16)}}
