@@ -63,6 +63,26 @@ test('Smart Tabs supports vertical list and retains horizontal default',async()=
  assert.doesNotMatch(horizontal,/border-left:4px solid/);
 });
 
+test('Tab count controls only unbound tabs; bound records determine the count',async()=>{
+ const total=async props=>{
+  const html=await renderSmart('smart_tabs',props);
+  return (html.match(/role="tab"/g)??[]).length;
+ };
+ const staticTabs={tabs:['All','Desserts','Wraps','Buckets']};
+ assert.equal(await total({...staticTabs,tabCount:2}),2);
+ assert.equal(await total({...staticTabs,tabCount:4}),4);
+ assert.equal(await total({...staticTabs,tabCount:5}),5,
+   'Increasing manual count creates a default caption');
+ assert.equal(await total(staticTabs),4,
+   'Existing explicitly configured tabs remain intact if count was not set');
+ const records=[{Id:'1',Name:'All'},{Id:'2',Name:'Desserts'},
+   {Id:'3',Name:'Wraps'},{Id:'4',Name:'Buckets'}];
+ assert.equal(await total({objectApiName:'MenuCategory',textSource:'@Name',records,tabCount:1}),4,
+   'An Object binding must not be limited by disabled manual count');
+ assert.equal(await total({dataCollection:{name:'Categories',items:records},
+   records,tabCount:1}),4,'A Collection binding must drive the number of tabs');
+});
+
 test('one SQL ribbon inventory owns new Data fx, Button Design and orientation controls',()=>{
  const sql=read('../../server/src/system-support/migrations/20270306-smart-card-button-tabs-orientation.sql');
  const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
