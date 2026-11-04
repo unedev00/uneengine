@@ -14,16 +14,30 @@ export default function TenantGovernance({request,canManage,initialTab='audit',f
 }
 function AuditTrail({request}:{request:Request}){
  const [page,setPage]=useState(0);
+ const [auditDraft,setAuditDraft]=useState({actor:'',from:'',to:''});
+ const [auditFilters,setAuditFilters]=useState({actor:'',from:'',to:''});
+ const [auditFilterError,setAuditFilterError]=useState('');
  const [events,setEvents]=useState<Audit[]>([]),[next,setNext]=useState<string|null>(null),[exportCursor,setExportCursor]=useState<string|null>(null),[table,setTable]=useState(''),[global,setGlobal]=useState(false),[tables,setTables]=useState<{table_name:string}[]>([]),[message,setMessage]=useState('');
- const params=()=>new URLSearchParams({...table?{table}:{},...global?{global:'true'}:{}});
+ const params=(forExport=false)=>new URLSearchParams({...table?{table}:{},...global?{global:'true'}:{},...auditFilters.actor?{actor:auditFilters.actor}:{},...auditFilters.from?{from:auditFilters.from}:{},...auditFilters.to?{to:auditFilters.to}:{},...forExport?{}:{limit:'25'}});
+ const applyAuditFilters=()=>{
+  if(auditDraft.from&&auditDraft.to&&auditDraft.from>auditDraft.to){setAuditFilterError('From date must be on or before To date.');return;}
+  if(auditDraft.actor.trim()&&!/^[a-f0-9-]{2,36}$/i.test(auditDraft.actor.trim())){setAuditFilterError('Enter part of an actor user ID (at least 2 hexadecimal characters).');return;}
+  setAuditFilterError('');setAuditFilters({...auditDraft,actor:auditDraft.actor.trim()});
+ };
  const load=async(before?:string)=>{const p=params();if(before)p.set('before',before);const r=await request<{events:Audit[];nextCursor:string|null}>('/security/audit?'+p);setEvents(before?[...events,...r.events]:r.events);setNext(r.nextCursor);};
  useEffect(()=>{void request<{tables:typeof tables}>('/security/audit/coverage').then(r=>setTables(r.tables)).catch(e=>setMessage(String(e)));},[]);
- useEffect(()=>{setExportCursor(null);setPage(0);void load().catch(e=>setMessage(String(e)));},[table,global]);
- const download=async()=>{const p=params();if(exportCursor)p.set('before',exportCursor);const r=await request<{csv:string;nextCursor:string|null}>('/security/audit/export?'+p);const url=URL.createObjectURL(new Blob([r.csv],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='setup-audit.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);setExportCursor(r.nextCursor);setMessage(r.nextCursor?'More export rows are available. Download the next page.':'Export complete for this page range.');};
+ useEffect(()=>{setExportCursor(null);setPage(0);void load().catch(e=>setMessage(String(e)));},[table,global,auditFilters]);
+ const download=async()=>{const p=params(true);if(exportCursor)p.set('before',exportCursor);const r=await request<{csv:string;nextCursor:string|null}>('/security/audit/export?'+p);const url=URL.createObjectURL(new Blob([r.csv],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='setup-audit.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);setExportCursor(r.nextCursor);setMessage(r.nextCursor?'More export rows are available. Download the next page.':'Export complete for this page range.');};
  return <><h3>Setup Audit Trail</h3><p>Append-only history of setup row changes. Values and secrets are excluded. Each change records its actor and correlation ID; background and migration changes can have no user actor.</p>
  <div className="md-admin-toolbar"><label className="form-label md-admin-field-medium">Setup table<select className="form-control" value={table} onChange={e=>setTable(e.target.value)}><option value="">All setup tables</option>{tables.map(t=><option key={t.table_name}>{t.table_name}</option>)}</select></label>
  <label className="checkbox-row"><input type="checkbox" checked={global} onChange={e=>setGlobal(e.target.checked)}/>Global setup (platform permission required)</label>
+ <label className="form-label md-admin-field-medium">Actor ID<input className="form-control" type="search" placeholder="Filter by user ID" value={auditDraft.actor} onChange={e=>setAuditDraft(p=>({...p,actor:e.target.value}))}/></label>
+ <label className="form-label">From date<input type="date" className="form-control" value={auditDraft.from} onChange={e=>setAuditDraft(p=>({...p,from:e.target.value}))}/></label>
+ <label className="form-label">To date<input type="date" className="form-control" value={auditDraft.to} onChange={e=>setAuditDraft(p=>({...p,to:e.target.value}))}/></label>
+ <button type="button" className="btn btn-brand" onClick={applyAuditFilters}>Apply filters</button>
+ <button type="button" className="btn" onClick={()=>{const blank={actor:'',from:'',to:''};setAuditDraft(blank);setAuditFilters(blank);setAuditFilterError('');}}>Clear</button>
  <button type="button" className="btn" onClick={()=>void download().catch(e=>setMessage(String(e)))}>{exportCursor?'Download next 5,000 CSV rows':'Export CSV (up to 5,000 rows)'}</button></div>
+ {auditFilterError&&<p role="alert" className="form-error">{auditFilterError}</p>}
  {message&&<p role="status">{message}</p>}<div className="md-admin-table-wrap" role="region" aria-label="Setup audit events" tabIndex={0}><table className="data-table md-admin-table md-audit-table"><thead><tr><th scope="col">Time</th><th scope="col">Actor</th><th scope="col">Setup table</th><th scope="col">Operation</th><th scope="col">Row</th><th scope="col">Changed fields</th></tr></thead><tbody>{events.slice(page*25,(page+1)*25).map(e=><tr key={e.id}><td data-label="Time">{new Date(e.created_at).toLocaleString()}</td><td data-label="Actor">{e.actor_user_id??'System'}</td><td data-label="Setup table">{e.table_name}</td><td data-label="Operation">{e.operation}</td><td data-label="Row" data-long-id title={e.row_identifier}>{e.row_identifier}</td><td data-label="Changed fields">{e.changed_fields.join(', ')}</td></tr>)}{events.length===0&&<tr><td colSpan={6} className="md-admin-empty-row">No setup changes match these filters.</td></tr>}</tbody></table></div>
  <div className="md-admin-pagination" role="group" aria-label="Audit event pages">
   <button type="button" className="btn" disabled={page===0} onClick={()=>setPage(p=>Math.max(0,p-1))}>Previous 25</button>
