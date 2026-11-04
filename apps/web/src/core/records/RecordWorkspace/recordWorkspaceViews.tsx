@@ -1162,7 +1162,12 @@ function RecordWorkspace({
           }
         }
       } catch (failure) {
-        if (active) setError(failure instanceof Error ? failure.message : 'Unable to load records');
+        if (active) {
+          const detail=failure instanceof Error?failure.message:String(failure);
+          setError(/SQL service unavailable|non-JSON|HTTP 50[0234]|database connection|ECONNRESET/i.test(detail)
+            ?'Records are temporarily unavailable. Retry loading to restore the latest authorised data.'
+            :detail||'Unable to load records');
+        }
       } finally {
         if (active) setLoading(false);
       }
@@ -2028,7 +2033,9 @@ function RecordWorkspace({
         <div className="record-breadcrumb">{object.label} <ChevronRight size={13} /> {route.recordId}</div>
       </div>
       {loading && <div className="records-loading">Loading record…</div>}
-      {!loading && error && <div className="records-message" role="alert">{error}</div>}
+      {!loading && error && <div className="records-message" role="alert">{error}
+        <button type="button" className="btn" onClick={()=>setRefreshKey(current=>current+1)}>Retry loading</button>
+      </div>}
     </div>;
     const recordName = String(record?.Name ?? record?.Id ?? route.recordId);
     const recordTypeId = String(record?.RecordTypeId ?? defaultRecordTypeId);
@@ -2569,7 +2576,9 @@ function RecordWorkspace({
         <div className="record-breadcrumb">{object.label} <ChevronRight size={13} /> {recordName}</div>
       </div>
       {loading && <div className="records-loading">Loading record…</div>}
-      {!loading && error && <div className="records-message" role="alert">{error}</div>}
+      {!loading && error && <div className="records-message" role="alert">{error}
+        <button type="button" className="btn" onClick={()=>setRefreshKey(current=>current+1)}>Retry loading</button>
+      </div>}
       {!loading && !error && record && <>
         <section className="record-detail-heading surface">
           <div className="record-object-icon"><Database size={18} /></div>
@@ -2945,7 +2954,9 @@ function RecordWorkspace({
       </div>}
       {listNotice && <div className="records-notice" role="status">{listNotice}</div>}
       {exportError && <div className="records-message" role="alert">{exportError}</div>}
-      {error && <div className="records-message" role="alert">{error}</div>}
+      {error && <div className="records-message" role="alert">{error}
+        <button type="button" className="btn" onClick={()=>setRefreshKey(current=>current+1)}>Retry loading</button>
+      </div>}
       {!error && !loading && listTotal === 0 && !debouncedSearch && <div className="records-empty records-empty-action"><strong>No {object.pluralLabel.toLocaleLowerCase()} found.</strong>{canCreate && <button className="btn btn-brand" type="button" onClick={openCreateForm}>New {object.label}</button>}</div>}
       {!error && !loading && records.length === 0 && Boolean(debouncedSearch) && <div className="records-empty">No records match “{search}”.</div>}
       {!error && formFactor !== 'Phone' && (loading || records.length > 0) && (recordListLayout==='table'||recordListLayout==='compact') && <div className={`records-table-wrap records-responsive-list ${recordListLayout==='compact'?'records-table-compact':''}`} data-row-density={object.apiName==='Communication'?'80':'100'} role="region" aria-label={`${object.pluralLabel} records`} tabIndex={0} style={{ maxHeight: viewportFactor==='Tablet'?undefined:'65vh', overflowX: 'auto', overflowY: viewportFactor==='Tablet'?'visible':'auto', maxWidth: '100%' }}><table className="slds-table records-table records-data-table" style={{ minWidth: 'max-content' }}>
@@ -3164,7 +3175,6 @@ function RecordWorkspace({
             {loading ? 'Loading more…' : 'Load more'}
           </button>
         </div>}
-        {error && <button type="button" onClick={() => setRefreshKey(current=>current+1)}>Retry loading</button>}
       </nav>}
     </section>
     {overlayRecordId && viewportFactor === 'Desktop' && <div className="md-records-split-handle"
