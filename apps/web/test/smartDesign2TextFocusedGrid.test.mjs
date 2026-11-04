@@ -160,7 +160,7 @@ test('Design 2 Badge and Card Grid primary button dimensions affect actual rende
  assert.match(html,/width:130px/);
  assert.match(html,/height:42px/);
  assert.match(html,/font-weight:700/);
- assert.match(html,/class="smart-badge"/);
+ assert.match(html,/class="smart-badge /);
  assert.match(html,/width:82px/);
  assert.match(html,/height:29px/);
  assert.match(html,/border:1px solid #123abc/);
@@ -176,7 +176,7 @@ test('Design 2 Cart and Table table, row and footer size properties have rendere
  assert.match(cart,/width:360px/);
  assert.match(cart,/height:166px/);
  assert.match(cart,/width:290px/);
- assert.match(cart,/class="smart-cart-total"/);
+ assert.match(cart,/class="smart-cart-summary-line smart-cart-total"/);
  assert.match(cart,/width:175px/);
  assert.match(cart,/min-height:44px/);
  assert.match(cart,/background-color:#123abc/);
