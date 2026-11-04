@@ -1,6 +1,7 @@
 import SmartCart from "../../smart_cart/SmartCart.jsx";
 import icons from "../../smart_icon/iconCatalog.json";
 import {smartShapeAppearance} from "./SmartShapeAppearance.js";
+import {smartCustomButtonAppearance} from "./SmartCustomButtonAppearance.js";
 import {evaluateFieldExpression} from "../../shared/FieldExpression.js";
 import {useTenantImageSource} from "../../shared/TenantImage.jsx";
 const number=(v,f,min=0,max=2000)=>Number.isFinite(Number(v))?Math.max(min,Math.min(max,Number(v))):f;
@@ -96,7 +97,7 @@ const selectedCard=(selection,record)=>{
  return value!==null&&value!==undefined&&value!==""&&
   rowValue!==null&&rowValue!==undefined&&String(value)===String(rowValue);
 };
-function SmartCard({p,record,onButtonClick,selected=false}){
+function SmartCard({p,record,onButtonClick,onCustomButton,onSelect,selected=false}){
  const image=boundImage(p,record);
  const preview=p.previewOnly===true||p.builderPreview===true||p.preview===true;
  const sample=Boolean(p.builderPreview===true&&record?.__builderSample===true);
@@ -106,6 +107,9 @@ function SmartCard({p,record,onButtonClick,selected=false}){
  const description=gridText(p,"cardDescription",record);
  const value=gridText(p,"cardValue",record);
  const buttonText=gridText(p,"cardButtonText",record);
+ const customButtons=["customButton1","customButton2"].filter(key=>
+  p[key+"Visible"]!==false&&Boolean(p.actionFlows?.[key]||
+   typeof p[key+"Label"]==="string"&&p[key+"Label"].trim()));
  const horizontal=["left","right"].includes(p.imagePlacement);
  const single=p.kind==="smart_image";
  const grid=p.kind==="smart_card_grid";
@@ -132,17 +136,27 @@ function SmartCard({p,record,onButtonClick,selected=false}){
  const strokeWidth=p.borderWidth===undefined?1:number(p.borderWidth,1,0,24);
  const imageStroke=p.imageBorderColor||(single?p.borderColor:undefined);
  const nativeImageBorder=imageStroke&&strokeWidth>0?strokeWidth+"px solid "+imageStroke:undefined;
+ const activeShadow=focused&&p.focusedCardShadow!==undefined&&p.focusedCardShadow!==null
+  ?p.focusedCardShadow:p.shadow;
  const cardBorder=single?"none":strokeWidth===0?"none":
   (strokeWidth+"px solid "+(p.borderColor||"#e2e8f0"));
- return <article className="smart-card" style={{
+ return <article className="smart-card"
+  onClick={onSelect?event=>{if(event.target.closest("button"))return;onSelect();}:undefined}
+  onKeyDown={onSelect?event=>{
+   if(event.target!==event.currentTarget)return;
+   if(event.key==="Enter"||event.key===" "){event.preventDefault();onSelect();}
+  }:undefined}
+  role={onSelect?"button":undefined} tabIndex={onSelect?0:undefined} style={{
   display:"flex",flexDirection:horizontal?"row":"column",
   background:grid&&selected&&p.selectedCardColor?p.selectedCardColor:
-   single?(p.imageBackgroundColor??p.backgroundColor??"transparent"):(p.backgroundColor||"#fff"),border:cardBorder,
+   single?(p.imageBackgroundColor??p.backgroundColor??"transparent"):(p.backgroundColor||"#fff"),
+  border:focused&&p.focusedCardBorderColor&&strokeWidth>0
+   ?strokeWidth+"px solid "+p.focusedCardBorderColor:cardBorder,
   borderRadius:number(p.radius,12),overflow:"hidden",position:"relative",minWidth:0,
   fontSize:focused&&p.focusedTextSize!==undefined&&p.focusedTextSize!==null&&p.focusedTextSize!==""
    ?number(p.focusedTextSize,16,8,96):number(p.textSize,16,8,96),
   color:focusedText||undefined,
-  boxShadow:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none",
+  boxShadow:activeShadow==="large"?"0 8px 20px #0003":activeShadow==="medium"?"0 3px 9px #0003":"none",
   ...(single?{height:"100%",minHeight:0}:{}),
   ...(grid?{height:"100%",minHeight:0}:{}),
   ...(focused&&focusedWidth>0?{width:"min(100%, "+focusedWidth+"px)"}:{}),
@@ -192,11 +206,11 @@ function SmartCard({p,record,onButtonClick,selected=false}){
     overflow:"hidden",overflowWrap:"anywhere",
     padding:cardPadding===null?"4px 10px":cardPadding+"px"
   }}>{header}</div>}
-  {grid&&(description||value||buttonText)&&<div className="smart-card-details"
+  {grid&&(description||value||buttonText||customButtons.length>0)&&<div className="smart-card-details"
    style={cardPadding===null?undefined:{padding:cardPadding+"px"}}>
    {description&&<span className="smart-card-description"
      style={{color:focusedText||undefined,fontWeight:focusedWeight}}>{description}</span>}
-   {(value||buttonText)&&<div className="smart-card-footer">
+   {(value||buttonText||customButtons.length>0)&&<div className="smart-card-footer">
     {value&&<strong className="smart-card-value"
       style={{color:focusedText||undefined,fontWeight:focusedWeight}}>{value}</strong>}
     {buttonText&&<button type="button" className="smart-card-button"
@@ -210,6 +224,13 @@ function SmartCard({p,record,onButtonClick,selected=false}){
        fontSize:number(p.cardButtonTextSize,14,8,48)
       }}
       onClick={event=>{event.stopPropagation();onButtonClick?.();}}>{buttonText}</button>}
+    {customButtons.map(key=>{
+     const label=gridText(p,key+"Label",record)||(key==="customButton1"?"+":"−");
+     return <button key={key} type="button" className="smart-card-button smart-card-custom-action"
+      style={smartCustomButtonAppearance(p,key)} disabled={!p.actionFlows?.[key]||!onCustomButton}
+      aria-label={label}
+      onClick={event=>{event.stopPropagation();onCustomButton?.(key);}}>{label}</button>;
+    })}
    </div>}
   </div>}
   {p.badgeVisible===true&&Boolean(badge)&&<span className={"smart-badge "+(p.badgeAlignment||"image-top-right")}
