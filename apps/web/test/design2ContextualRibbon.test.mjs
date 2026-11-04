@@ -248,3 +248,36 @@ test('footer alignment menus target renderer keys rather than unused aliases',()
  assert.match(runtime,/textAlign:\["left","center","right"\]\.includes\(p\.cardButtonAlignment\)/);
  assert.match(runtime,/justifyContent:p\.cardButtonAlignment==="left"\?"flex-start"/);
 });
+
+
+test('original Excel keeps Image dropdown slots at R2C6 and R3C6 for the three image-capable components',()=>{
+ const rules=[...approved.matchAll(/\('(smart_[a-z_]+)','Image','(placement|imageFill)','([^']+)'\)/g)];
+ const required=['smart_image','smart_cart','smart_card_grid'];
+ for(const api of required){
+  assert.ok(rules.some(m=>m[1]===api&&m[2]==='placement'&&m[3]==='imagePlacement'),
+   api+' Image > Placement rule missing');
+  assert.ok(rules.some(m=>m[1]===api&&m[2]==='imageFill'&&m[3]==='imageFill'),
+   api+' Image > Fill rule missing');
+ }
+ assert.equal(fixed('Image','placement').row,2);
+ assert.equal(fixed('Image','placement').order,6);
+ assert.equal(fixed('Image','placement').width,40);
+ assert.equal(fixed('Image','imageFill').row,3);
+ assert.equal(fixed('Image','imageFill').order,6);
+ assert.equal(fixed('Image','imageFill').width,40);
+ assert.ok(!rules.some(m=>m[2]==='Body'),'Image controls must stay in the Excel Image area');
+});
+
+test('image-placement and fit use reference-style icons but do not change persisted enum values',()=>{
+ assert.match(iconDropdown,/function ImagePlacementIcon\(\{value\}/);
+ assert.match(iconDropdown,/function ImageFitIcon\(\{value\}/);
+ for(const value of ['top','bottom','left','right'])
+  assert.match(iconDropdown,new RegExp('ImagePlacementIcon value="'+value+'"'));
+ for(const value of ['fill','fit','stretch'])
+  assert.match(iconDropdown,new RegExp('ImageFitIcon value="'+value+'"'));
+ assert.match(iconDropdown,/data-icon-kind=\{kind\}/);
+ assert.match(iconDropdown,/allowedValues\?:readonly string\[\]/);
+ assert.match(iconDropdown,/allOptions\.filter\(option=>allowedValues\.includes\(option\.value\)\)/);
+ assert.match(shared,/allowedValues=\{options\}/);
+ assert.match(shared,/tab==='Design2'&&kind==='choice'/);
+});
