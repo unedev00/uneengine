@@ -16,6 +16,31 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  const parity=await readFile(new URL('../src/system-support/migrations/20271106-design2-functional-control-parity.sql',import.meta.url),'utf8');
  await db.query(parity);
  await db.query(parity);
+ // After replaying the older exact matrix, restore these four component-specific
+ // semantic mappings. Replaying twice proves the migration is idempotent.
+ const fourControls=await readFile(new URL('../src/system-support/migrations/20271108-design2-four-control-parity.sql',import.meta.url),'utf8');
+ await db.query(fourControls);
+ await db.query(fourControls);
+ const fourRows=await db.query(`SELECT r.component_api,r.area,r.slot_key,r.property_key,
+        COALESCE(component.enabled,false) enabled
+   FROM md_builder_design2_slot_rules r
+   JOIN md_builder_ribbon_component_rules component
+     ON component.component_api=r.component_api AND component.property_key=r.property_key
+   WHERE (r.component_api,r.area,r.slot_key) IN (
+     ('smart_calendar','Body','focused'),
+     ('smart_card_grid','Body','wrap'),
+     ('smart_navigation','Image','imageFill'),
+     ('smart_toggle','Body','shape'))`);
+ for(const [api,area,slot,key] of [
+   ['smart_calendar','Body','focused','defaultValueColor'],
+   ['smart_card_grid','Body','wrap','wrapText'],
+   ['smart_navigation','Image','imageFill','imageFill'],
+   ['smart_toggle','Body','shape','shapeId']
+ ]){
+   const found=fourRows.rows.find(row=>row.component_api===api&&row.area===area&&row.slot_key===slot);
+   assert.equal(found?.property_key,key,api+' must edit the existing renderer property');
+   assert.equal(found?.enabled,true,api+' must be enabled in the shared ribbon');
+ }
  const actualTargets=await db.query(`SELECT component_api,area,slot_key,property_key
    FROM md_builder_design2_slot_rules
    WHERE (component_api='smart_tabs' AND area='Body' AND slot_key='fill')
@@ -65,7 +90,11 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  console.info('Design 2 SQL migration replay, legacy Design isolation and Focused mapping verified');
  await db.query(`INSERT INTO md_component_definitions (tenant_id,api_name,renderer_key,enabled)
  VALUES ($1,'smart_cart','one-bundled:smart_cart',true),
-        ($1,'smart_tabs','one-bundled:smart_tabs',true)
+        ($1,'smart_tabs','one-bundled:smart_tabs',true),
+        ($1,'smart_calendar','one-bundled:smart_calendar',true),
+        ($1,'smart_card_grid','one-bundled:smart_card_grid',true),
+        ($1,'smart_navigation','one-bundled:smart_navigation',true),
+        ($1,'smart_toggle','one-bundled:smart_toggle',true)
  ON CONFLICT (tenant_id,api_name) DO NOTHING`,[tenantId]);
 
  // The real authenticated Builder Catalog endpoint must expose SQL slots and enforce RBAC.
@@ -364,6 +393,124 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  await page.locator('[data-component-id="browser-design2-tabs"]').first().waitFor({state:'visible'});
  assert.equal(await page.locator('[data-component-id="browser-design2-cart"],[data-component-id="browser-design2-tabs"]').count(),2,
   'A single Undo must restore all deleted components');
+
+
+ // Four controls must be editable on a REAL persisted Page Builder page, with
+ // the original icons, fixed SQL coordinates, rendered effect and SQL save.
+ const fourPageName='browserdesign2four';
+ const fourPayload={
+  apiName:fourPageName,label:'Design 2 Four Control',targetObject:'',
+  pageType:'App Page',layoutMode:'free-canvas',canvasWidth:1280,canvasHeight:900,
+  status:'Draft',devices:['Desktop'],activationAssignments:[],
+  components:[
+   {id:'four-calendar',type:'Custom:smart_calendar',label:'Focus calendar',
+    region:'main',visible:true,
+    properties:{selectedDate:'2026-11-04',defaultValueColor:'#2563eb'},
+    position:{x:28,y:32,width:330,height:280}},
+   {id:'four-grid',type:'Custom:smart_card_grid',label:'Wrap card',
+    region:'main',visible:true,
+    properties:{textSource:'"Two line card header"',imageHeight:0,wrapText:false},
+    position:{x:402,y:32,width:350,height:280}},
+   {id:'four-nav',type:'Custom:smart_navigation',label:'Image navigation',
+    region:'main',visible:true,properties:{imageFill:'fill',
+     items:[{id:'one',label:'Menu',imageSrc:'https://example.com/menu.png'}]},
+    position:{x:28,y:360,width:460,height:128}},
+   {id:'four-toggle',type:'Custom:smart_toggle',label:'Shape toggle',
+    region:'main',visible:true,properties:{shapeId:'shape:rectangle'},
+    position:{x:540,y:360,width:150,height:100}}
+  ]
+ };
+ const fourCreate=await page.evaluate(async({token,payload})=>{
+  const response=await fetch('/api/metadata/pages/'+payload.apiName,{
+   method:'PUT',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
+   body:JSON.stringify(payload)
+  });
+  return {status:response.status,body:await response.json().catch(()=>null)};
+ },{token,payload:fourPayload});
+ assert.equal(fourCreate.status,200,'Cannot seed four-control E2E page: '+
+   JSON.stringify(fourCreate.body));
+ await page.goto(origin+'/une/setup/page-builder',{waitUntil:'domcontentloaded'});
+ await page.getByLabel('Search pages').fill('Design 2 Four Control');
+ await page.getByRole('button',{name:'Design Design 2 Four Control',exact:true}).click();
+ await page.getByRole('tab',{name:'Design 2',exact:true}).waitFor({timeout:20000});
+ const selectFour=async(id,area)=>{
+  const block=page.locator('[data-component-id="'+id+'"]').first();
+  await block.waitFor({state:'visible'});
+  await block.click({position:{x:8,y:8}});
+  await page.getByRole('tab',{name:'Design 2',exact:true}).click();
+  await page.getByLabel('Select Design 2 area').selectOption(area);
+  return block;
+ };
+ const fourRibbon=page.locator('.smart-design2-group');
+
+ const calendarBlock=await selectFour('four-calendar','Body');
+ const focus=fourRibbon.locator('[data-design-row="2"] [data-design-slot="focused"]');
+ assert.equal(await focus.getAttribute('data-property'),'defaultValueColor');
+ assert.equal(await focus.getAttribute('data-design-column'),'1');
+ assert.equal(await focus.getAttribute('data-supported'),'true');
+ const focusTrigger=focus.locator('button.office-ribbon-colour-property');
+ assert.equal(await focusTrigger.isDisabled(),false,'Calendar Focus icon must be enabled');
+ assert.ok(await focusTrigger.locator('svg').count(),'Calendar Focus must use the palette icon');
+ await focusTrigger.click();
+ const palette=page.locator('.office-ribbon-colour-palette');
+ await palette.getByRole('textbox',{name:'HEX for Focused Color'}).fill('#126abc');
+ await palette.getByRole('button',{name:'Apply',exact:true}).click();
+ const focusedDay=calendarBlock.locator('.smart-calendar-selected-day');
+ await focusedDay.waitFor({state:'visible'});
+ assert.equal(await focusedDay.evaluate(element=>getComputedStyle(element).backgroundColor),
+  'rgb(18, 106, 188)','Calendar Focus must paint the selected day');
+
+ const gridBlock=await selectFour('four-grid','Body');
+ const wrap=fourRibbon.locator('[data-design-row="3"] [data-design-slot="wrap"]');
+ assert.equal(await wrap.getAttribute('data-property'),'wrapText');
+ assert.equal(await wrap.getAttribute('data-design-column'),'4');
+ assert.equal(await wrap.getAttribute('data-supported'),'true');
+ const wrapToggle=wrap.getByRole('button',{name:'Wrap Text'});
+ assert.equal(await wrapToggle.isDisabled(),false,'Card Grid Wrap must be editable');
+ await wrapToggle.click();
+ assert.equal(await wrapToggle.getAttribute('aria-pressed'),'true');
+ assert.equal(await gridBlock.locator('.smart-card-content').first().evaluate(element=>
+  getComputedStyle(element).whiteSpace),'normal','Card Grid Wrap must change header wrapping');
+
+ const navBlock=await selectFour('four-nav','Image');
+ const navFit=fourRibbon.locator('[data-design-row="3"] [data-design-slot="imageFill"]');
+ assert.equal(await navFit.getAttribute('data-property'),'imageFill');
+ assert.equal(await navFit.getAttribute('data-design-column'),'6');
+ assert.equal(await navFit.getAttribute('data-supported'),'true');
+ const navFitTrigger=navFit.locator('.design2-icon-trigger');
+ assert.equal(await navFitTrigger.isDisabled(),false,'Navigation image fit icon disabled');
+ await navFitTrigger.click();
+ assert.deepEqual(await page.locator('.design2-icon-popup [role="menuitemradio"]:not([disabled])')
+  .evaluateAll(buttons=>buttons.map(button=>button.title)),['Fill','Fit','Stretch']);
+ await page.locator('.design2-icon-popup button[title="Fit"]').click();
+ assert.equal(await navBlock.locator('.smart-navigation-item img').first().evaluate(element=>
+  getComputedStyle(element).objectFit),'contain','Navigation Fit must update image object-fit');
+
+ const toggleBlock=await selectFour('four-toggle','Body');
+ const shape=fourRibbon.locator('[data-design-row="1"] [data-design-slot="shape"]');
+ assert.equal(await shape.getAttribute('data-property'),'shapeId');
+ assert.equal(await shape.getAttribute('data-design-column'),'3');
+ assert.equal(await shape.getAttribute('data-supported'),'true');
+ const shapeTrigger=shape.locator('button.smart-shapes-trigger');
+ assert.equal(await shapeTrigger.isDisabled(),false,'Toggle Shape gallery disabled');
+ await shapeTrigger.click();
+ await page.getByRole('dialog',{name:'Choose shape or icon'}).getByRole('button',{name:'Oval',exact:true}).click();
+ assert.equal(await toggleBlock.locator('.smart-switch-track').evaluate(element=>
+  getComputedStyle(element).borderRadius),'50%',
+  'Toggle Shape must visibly change the switch track');
+
+ const fourSaved=page.waitForResponse(response=>response.url().includes(
+  '/api/metadata/pages/'+fourPageName+'/layouts/Desktop/draft')&&
+  response.request().method()==='PUT',{timeout:10000});
+ await page.getByRole('button',{name:'Save',exact:true}).click();
+ assert.equal((await fourSaved).status(),200,'Four control Design 2 save failed');
+ const fourDraft=await runtime.editor(tenantId,fourPageName,'Desktop');
+ const fourProps=id=>fourDraft.components.find(item=>item.id===id)?.properties;
+ assert.equal(fourProps('four-calendar')?.defaultValueColor,'#126abc');
+ assert.equal(fourProps('four-grid')?.wrapText,true);
+ assert.equal(fourProps('four-nav')?.imageFill,'fit');
+ assert.equal(fourProps('four-toggle')?.shapeId,'shape:oval');
+ console.info('Four Design 2 icon controls: enabled, edited, visibly applied and saved in SQL');
 
  console.info('Design 2 browser E2E: original Design preserved; Row Bold persisted; Ctrl+A/Delete removes all selected, one Undo restores all');
 }

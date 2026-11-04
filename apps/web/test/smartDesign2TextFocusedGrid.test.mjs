@@ -192,3 +192,50 @@ test('Design 2 Cart and Table table, row and footer size properties have rendere
  assert.match(table,/background-color:#abc123/);
  assert.match(table,/color:#112233/);
 });
+
+
+test('Calendar Focus Color, Card Grid Body Wrap, Navigation Image Fit and Toggle Shape share renderer keys',async()=>{
+ const sql=read('../../server/src/system-support/migrations/20271108-design2-four-control-parity.sql');
+ for(const [api,area,slot,key] of [
+  ['smart_calendar','Body','focused','defaultValueColor'],
+  ['smart_card_grid','Body','wrap','wrapText'],
+  ['smart_navigation','Image','imageFill','imageFill'],
+  ['smart_toggle','Body','shape','shapeId']
+ ])assert.ok(sql.includes("('"+api+"','"+area+"','"+slot+"','"+key+"')"),
+   'Design 2 control has no exact renderer-key mapping: '+api+' '+area+' '+slot);
+ const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
+ assert.ok(ribbon.includes("slotPlacement?.slotKey==='focused'"),
+   'Calendar focused cell must reuse the existing Focus Color palette icon');
+ assert.ok(ribbon.includes("property.id==='imageFill'?'imageFill'"),
+   'Navigation image fill must reuse the existing Fill/Fit/Stretch icon dropdown');
+
+ const calendar=await render('smart_calendar',{selectedDate:'2026-11-04',defaultValueColor:'#126abc'});
+ assert.match(calendar,/smart-calendar-selected-day/);
+ assert.match(calendar,/border-color:#126abc/);
+ assert.match(calendar,/background:#126abc/);
+
+ const card=await render('smart_card_grid',{
+  records:[{Id:'c1',Name:'Two line card title'}],textSource:'@Name',imageHeight:0,wrapText:false
+ });
+ assert.match(card,/class="smart-card-content"[^>]*white-space:nowrap/);
+ const wrapped=await render('smart_card_grid',{
+  records:[{Id:'c1',Name:'Two line card title'}],textSource:'@Name',imageHeight:0,wrapText:true
+ });
+ assert.match(wrapped,/class="smart-card-content"[^>]*white-space:normal/);
+
+ const nav=await render('smart_navigation',{
+  items:[{id:'one',label:'Menu',imageSrc:'https://example.com/menu.png'}],imageFill:'fit'
+ });
+ assert.ok(nav.includes('src="https://example.com/menu.png"'),
+   'Navigation item must render its HTTPS image');
+ assert.match(nav,/object-fit:contain/);
+ const stretch=await render('smart_navigation',{
+  items:[{id:'one',label:'Menu',imageSrc:'https://example.com/menu.png'}],imageFill:'stretch'
+ });
+ assert.match(stretch,/object-fit:fill/);
+
+ const oval=await render('smart_toggle',{shapeId:'shape:oval'});
+ assert.match(oval,/smart-switch-track[^>]*border-radius:50%/);
+ const rectangle=await render('smart_toggle',{shapeId:'shape:rectangle'});
+ assert.match(rectangle,/smart-switch-track[^>]*border-radius:0/);
+});
