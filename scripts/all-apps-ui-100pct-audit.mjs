@@ -35,6 +35,7 @@ const screens=[
   {app:'MetaDrive Security',view:'password',title:'Password policies'},
   {app:'MetaDrive Security',view:'sessions',title:'Session controls'},
   {app:'MetaDrive Security',view:'company',title:'Company settings'},
+  {app:'MetaDrive Security',view:'company-profile-fail',title:'Company data read error'},
   {app:'AceAssist',view:'assist-home',title:'Dashboard'},
   {app:'AceAssist',view:'assist-document',title:'Financial document editor'},
   {app:'AceChatter',view:'chatter',title:'Conversation inbox'},
