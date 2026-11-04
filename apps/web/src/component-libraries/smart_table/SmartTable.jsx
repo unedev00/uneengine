@@ -110,7 +110,8 @@ export default function SmartTable({p,records,expression,fieldAllowed,fire}){
     <tbody>{rows.map((row,index)=>{
      const id=String(row?.Id??row?.id??index);
      const active=selected===id;
-     const borderColor=active?p.selectedRowBorderColor||p.rowBorderColor:p.rowBorderColor;
+     // Selected Row Border is retired: a selected row keeps its normal border.
+     const borderColor=p.rowBorderColor;
      return <tr key={id} tabIndex={0} aria-selected={active}
        style={rowStyle(row)} onClick={()=>pick(row)}
        onKeyDown={event=>{if(event.key==="Enter"||event.key===" "){

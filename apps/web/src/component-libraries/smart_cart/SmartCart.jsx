@@ -165,8 +165,8 @@ export default function SmartCart({p,records,Picture,expression,fieldAllowed,fir
        style={{
         ...(p.rowWidth!==undefined&&p.rowWidth!==null&&p.rowWidth!==""
          ?{width:n(p.rowWidth,0,0,10000)+"px",maxWidth:"100%"}:{}),
-        ...(selected?{backgroundColor:p.selectedRowColor??"#f2f7ff",
-         borderColor:p.selectedRowBorderColor??"#8badde"}:{})
+        // Selected Row Border is retired: a selected row keeps its normal border.
+        ...(selected?{backgroundColor:p.selectedRowColor??"#f2f7ff"}:{})
        }}>
        <div className="smart-cart-row" role="button" tabIndex={0}
         aria-selected={selected} aria-expanded={selected}

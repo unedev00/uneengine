@@ -162,6 +162,16 @@ async function assertChangedPackagePermissionSetsEditable(db:SqlPersistence,
       await assertMetadataPackageEditable(db,tenant,'permission-set',apiName);
   }
 }
+/** Validated SQL edit condition for a shared ribbon property. */
+const builderEnabledWhen=(rule:unknown):{property:string;in:string[]}|undefined=>{
+  if(!rule||typeof rule!=='object'||Array.isArray(rule))return undefined;
+  const condition=rule as Record<string,unknown>;
+  return typeof condition.property==='string'&&
+    /^[A-Za-z][A-Za-z0-9_]*$/.test(condition.property)&&
+    Array.isArray(condition.in)&&condition.in.length>0&&condition.in.length<=20&&
+    condition.in.every(value=>typeof value==='string'&&value.length<=128)
+    ?{property:condition.property,in:condition.in as string[]}:undefined;
+};
 const tokenCookie='md_refresh';
 const getCookie=(req:Request):string|undefined=>{
   const encoded=(req.get('cookie')??'').split(';').map(x=>x.trim()).find(x=>x.startsWith(tokenCookie+'='));
@@ -1543,7 +1553,7 @@ export function createSystemServer(db:SqlPersistence) {
         default_value:unknown;choices:unknown;component_api:string|null;
         control_kind_override:string|null;value_key:string|null;
         default_value_override:unknown;choices_override:unknown;min_value:number|null;
-        enabled_when:unknown;
+        enabled_when:unknown;enabled_when_override:unknown;
         max_value:number|null;field_select:boolean;
         design_row:number|null;design_width:number|null;design_height:number|null;design_order:number|null;
         design_caption:string|null;design_caption_width:number|null;design_display:string|null;
@@ -1553,7 +1563,7 @@ export function createSystemServer(db:SqlPersistence) {
           p.design_row,p.design_width,p.design_height,p.design_order,
           p.design_caption,p.design_caption_width,p.design_display,
           r.component_api,r.control_kind_override,r.value_key,
-          r.default_value_override,r.choices_override
+          r.default_value_override,r.choices_override,r.enabled_when_override
         FROM md_builder_shared_properties p
         LEFT JOIN md_builder_ribbon_component_rules r
           ON r.property_key=p.property_key AND COALESCE(
@@ -1582,22 +1592,13 @@ export function createSystemServer(db:SqlPersistence) {
           components:[] as string[],default:row.default_value??undefined,
           choices:row.choices??[],min:row.min_value??undefined,max:row.max_value??undefined,
           field:row.field_select,designRow:row.design_row??undefined,
-          enabledWhen:(()=>{
-            const rule=row.enabled_when;
-            if(!rule||typeof rule!=='object'||Array.isArray(rule))return undefined;
-            const condition=rule as Record<string,unknown>;
-            return typeof condition.property==='string'&&
-              /^[A-Za-z][A-Za-z0-9_]*$/.test(condition.property)&&
-              Array.isArray(condition.in)&&condition.in.length>0&&condition.in.length<=20&&
-              condition.in.every(value=>typeof value==='string'&&value.length<=128)
-              ?{property:condition.property,in:condition.in}:undefined;
-          })(),
+          enabledWhen:builderEnabledWhen(row.enabled_when),
           designWidth:row.design_width??undefined,designHeight:row.design_height??undefined,
           designOrder:row.design_order??undefined,
           designCaption:row.design_caption??undefined,
           designCaptionWidth:row.design_caption_width??undefined,
            designDisplay:row.design_display??'buttons',
-          kindOverrides:{},defaultsOverrides:{},choicesOverrides:{},valueKeys:{}
+          kindOverrides:{},defaultsOverrides:{},choicesOverrides:{},valueKeys:{},enabledWhenOverrides:{}
         };
         properties.set(row.id,item);
       }
@@ -1607,6 +1608,9 @@ export function createSystemServer(db:SqlPersistence) {
       if(row.value_key)(item.valueKeys as Record<string,string>)[row.component_api]=row.value_key;
       if(row.default_value_override!==null)(item.defaultsOverrides as Record<string,unknown>)[row.component_api]=row.default_value_override;
       if(row.choices_override!==null)(item.choicesOverrides as Record<string,unknown>)[row.component_api]=row.choices_override;
+      // Per-component edit condition, e.g. Card Grid image height only for top/bottom.
+      const enabledWhenOverride=builderEnabledWhen(row.enabled_when_override);
+      if(enabledWhenOverride)(item.enabledWhenOverrides as Record<string,unknown>)[row.component_api]=enabledWhenOverride;
     }
     res.json({components:registered.rows.map(row=>row.component_api),
       properties:[...properties.values()],design2Slots:design2Slots.rows.map(slot=>({

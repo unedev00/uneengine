@@ -36,21 +36,17 @@ test('Cart selected-row colours appear only for Cart, at Design Row R2/C2 and R3
  ])assert.ok(geometry.includes("('"+key+"','Row',"+row+","+col+","+width+")"),key+' existing slot');
 });
 
-test('Cart selection retains old colours and uses saved fill/border metadata',()=>{
+test('Cart selection uses saved fill; Selected Row Border is retired (no border override)',()=>{
  const original=selectedStyle(render('smart_cart'));
  assert.match(original,/background-color:#f2f7ff/i);
- assert.match(original,/border-color:#8badde/i);
+ assert.doesNotMatch(original,/border-color/i);
  const changed=selectedStyle(render('smart_cart',{
   selectedRowColor:'#abc123',selectedRowBorderColor:'#123abc'
  }));
  assert.match(changed,/background-color:#abc123/i);
- assert.match(changed,/border-color:#123abc/i);
- assert.doesNotMatch(changed,/#f2f7ff|#8badde/i);
- const transparent=selectedStyle(render('smart_cart',{
-  selectedRowColor:'transparent',selectedRowBorderColor:'transparent'
- }));
+ assert.doesNotMatch(changed,/border-color|#123abc|#f2f7ff/i);
+ const transparent=selectedStyle(render('smart_cart',{selectedRowColor:'transparent'}));
  assert.match(transparent,/background-color:transparent/i);
- assert.match(transparent,/border-color:transparent/i);
 });
 
 test('Image caption reuses shared Design controls, without duplicate property definitions',()=>{
