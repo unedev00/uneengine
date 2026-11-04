@@ -188,6 +188,7 @@
     "apps/web/test/filterRelatedRecords.test.ts",
     "apps/web/test/flowCapabilityCatalog.test.ts",
     "apps/web/test/flowEndElement.test.mjs",
+    "apps/web/test/flowExcelUploader.test.ts",
     "apps/web/test/flowGraphOperations.test.mjs",
     "apps/web/test/flowReferenceCatalog.test.ts",
     "apps/web/test/flowScreenRuntimeUtils.test.ts",

@@ -210,8 +210,8 @@ export function previewFlowExcel(tables:FlowWorkbookTable[],original:FlowDefinit
     if(!sheet||JSON.stringify(sheet[0])!==JSON.stringify(columns[name]))throw Error(name+' columns were changed. Restore the original template.');
     return sheet.slice(1).filter(row=>row.some(value=>value.trim()));
   };
-  const draft:FlowDefinitionMetadata={...original,elements:original.elements.map(n=>({...n,config:{...n.config}})),
-    connectors:original.connectors.map(e=>({...e})),resources:original.resources.map(r=>({...r})),status:'Draft'};
+  const draft:FlowDefinitionMetadata={...original,elements:structuredClone(original.elements),
+    connectors:structuredClone(original.connectors),resources:structuredClone(original.resources),status:'Draft'};
   const aliases=new Map<string,number>();
   let newId=Math.max(0,...draft.elements.map(node=>node.id));
   const resolve=(value:string)=>aliases.get(value)??numericId(value);
