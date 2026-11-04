@@ -59,6 +59,7 @@
     "smart_tabs/component.json",
     "smart_text/component.json",
     "smart_textbox/component.json",
+    "smart_label/component.json",
     "smart_card_grid/component.json",
     "smart_image/component.json",
     "smart_calendar/component.json",

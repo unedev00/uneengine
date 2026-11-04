@@ -77,14 +77,14 @@ export default function PageInventoryImportDialog({request,onClose,onApplied}:Pr
     missing component names create instances of installed component types. All pages validate before any change is saved.</p>
    <div className="page-inventory-import-fields">
     <div className="page-inventory-file">
-     <p className="page-inventory-help"><strong>Device layout: Desktop drafts · Multiple existing pages supported</strong></p>
+     <p className="page-inventory-help"><strong>Layout column picks Desktop, Tablet, Mobile or Custom drafts · Multiple existing pages supported</strong></p>
      <label className="form-label" htmlFor="page-inventory-csv">Choose CSV file</label>
      <input id="page-inventory-csv" type="file" accept=".csv,text/csv" disabled={busy}
       onChange={e=>void loadFile(e.target.files?.[0])}/>
      <p className="page-inventory-file-name">{fileName||'No file selected'}</p>
-     <p className="page-inventory-help">Expected: pageapi, component_type, component_name, propertyid, value, ribbon_tab (optional).
-      Ribbon Tab is a reference column and ignored during upload.</p>
-     <p className="page-inventory-help">Example rows: ACEKIOSK,smart_cart,mycartname,backgroundColor,#ffffff
+     <p className="page-inventory-help">Expected: pageapi, component_type, component_name, propertyid, value, layout (optional), ribbon_tab (optional).
+      A blank or missing layout means Desktop. Ribbon Tab is a reference column and ignored during upload.</p>
+     <p className="page-inventory-help">Example rows: ACEKIOSK,smart_cart,mycartname,backgroundColor,#ffffff,Custom
       and SMARTTILL,smart_button,PrintBill,label,Print Bill. Every page API must already exist.
       Component types must be installed and existing names must match their current types.</p>
     </div>
@@ -92,7 +92,7 @@ export default function PageInventoryImportDialog({request,onClose,onApplied}:Pr
    {error&&<p className="page-inventory-error" role="alert">{error}</p>}
    {preview&&<div className="page-inventory-validation" aria-live="polite">
     <p className={preview.valid?'page-inventory-valid':'page-inventory-error'}>
-     {preview.valid?'Validation passed':'Validation failed'} · {preview.pageCount} pages ·
+     {preview.valid?'Validation passed':'Validation failed'} · {preview.pageCount} page layouts ·
      {' '}{preview.changes} changes or new components · {preview.skipped} blank rows ignored ·
      {' '}{preview.issues.length} errors
     </p>

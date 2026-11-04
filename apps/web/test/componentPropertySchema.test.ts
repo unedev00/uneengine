@@ -21,8 +21,8 @@ test('all retained bundled descriptor definitions remain compatible',async()=>{
  // Keep system compatibility definitions and app-private renderer identities distinct.
  assert.equal(catalog.components.filter(c=>c.apiName.startsWith('ui_')).length,34);
  assert.equal(catalog.components.filter(c=>/^(acetill|aceassist|onechatter|uneacechatter)_/.test(c.apiName)).length,17);
- assert.equal(catalog.components.length,67); // 34 UI + 17 app-owned + 14 Smart + 2 Core
- assert.equal(catalog.components.filter(c=>c.apiName.startsWith('smart_')).length,14); // Includes Smart Textbox, Icon and Table
+ assert.equal(catalog.components.length,68); // 34 UI + 17 app-owned + 15 Smart + 2 Core
+ assert.equal(catalog.components.filter(c=>c.apiName.startsWith('smart_')).length,15); // Includes Smart Textbox, Label, Icon and Table
  for(const component of catalog.components)assert.deepEqual(validateComponentDefinitions(component.propertyDefinitions??[]),[],component.apiName);
 });
 const definitions:ComponentSettingDefinition[]=[{propertyKey:'layout',label:'Layout',kind:'GROUP',fields:[

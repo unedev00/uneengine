@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {applyInventoryCsv,exportInventoryCsv,inventoryCsv,inventoryRequestedTypes,inventoryDefinitions,inventoryCsvPageGroups,originalInventoryIssue,type InventoryPage,type InventoryDefinitions} from '../../src/system-support/page-inventory-csv.js';
+import {applyInventoryCsv,exportInventoryCsv,inventoryCsv,inventoryRequestedTypes,inventoryDefinitions,inventoryCsvPageGroups,originalInventoryIssue,inventoryChoiceAllowed,inventoryLayout,type InventoryPage,type InventoryDefinitions} from '../../src/system-support/page-inventory-csv.js';
 import {componentInstanceNames,nextComponentInstanceName,ensureComponentInstanceNames,validateExplicitComponentNames} from '../../src/system-support/page-component-names.js';
 import type {ComponentSettingDefinition} from '../../src/system-support/component-property-contract.js';
 
@@ -66,7 +66,7 @@ test('unknown current property may be filled only when published metadata declar
   {propertyKey:'captionColor',label:'Caption colour',kind:'COLOR'}
  ]]]);
  const page=original();
- assert.match(exportInventoryCsv(page,definitions),/CODEXTILL,smart_cart,smartcart1,captionColor,,Advanced\r\n/);
+ assert.match(exportInventoryCsv(page,definitions),/CODEXTILL,smart_cart,smartcart1,captionColor,,Desktop,Advanced\r\n/);
  const imported=applyInventoryCsv(page,csv('CODEXTILL,Cart1,captionColor,#ff0000'),definitions);
  assert.equal(imported.valid,true);
  assert.equal(imported.page.components[0].properties.captionColor,'#ff0000');
@@ -119,9 +119,9 @@ test('CSV cannot override internal parent structure or retired Advanced properti
 
 test('component_type column is the standard type and custom name is the lookup identity',()=>{
  const output=exportInventoryCsv(original());
- assert.match(output,/^pageapi,component_type,component_name,propertyid,value,ribbon_tab\r\n/);
- assert.match(output,/CODEXTILL,smart_cart,smartcart1,component\.visible,true,View/);
- assert.match(output,/CODEXTILL,smart_tabs,smarttabs1,component\.visible,true,View/);
+ assert.match(output,/^pageapi,component_type,component_name,propertyid,value,layout,ribbon_tab\r\n/);
+ assert.match(output,/CODEXTILL,smart_cart,smartcart1,component\.visible,true,Desktop,View/);
+ assert.match(output,/CODEXTILL,smart_tabs,smarttabs1,component\.visible,true,Desktop,View/);
  assert.doesNotMatch(output,/component\.type|component\.id|navigatorName/);
  const imported=applyInventoryCsv(original(),typedCsv('CODEXTILL,smart_cart,smartcart1,width,35'));
  assert.equal(imported.valid,true);
@@ -234,15 +234,15 @@ test('catalogue export has the same property IDs and row counts for the same typ
  const first=exportInventoryCsv(a,defs),second=exportInventoryCsv(b,defs);
  const parsed=(output:string)=>output.trim().split('\r\n').slice(1).map(row=>row.split(',')[3]);
  assert.deepEqual(parsed(first),parsed(second));
- assert.match(first,/CODEXTILL,smart_cart,smartcart1,backgroundColor,#ffffff,Design/);
- assert.match(first,/CODEXTILL,smart_cart,smartcart1,textSize,16,Design/);
- assert.match(first,/CODEXTILL,smart_cart,smartcart1,wrapText,true,Design/);
- assert.match(second,/OTHERPAGE,smart_cart,smartcart2,textSize,19,Design/);
- assert.match(first,/CODEXTILL,smart_cart,smartcart1,customCaption,Untitled,Data/);
- assert.match(first,/CODEXTILL,smart_cart,smartcart1,format\.fontSize,13,Design/);
+ assert.match(first,/CODEXTILL,smart_cart,smartcart1,backgroundColor,#ffffff,Desktop,Design/);
+ assert.match(first,/CODEXTILL,smart_cart,smartcart1,textSize,16,Desktop,Design/);
+ assert.match(first,/CODEXTILL,smart_cart,smartcart1,wrapText,true,Desktop,Design/);
+ assert.match(second,/OTHERPAGE,smart_cart,smartcart2,textSize,19,Desktop,Design/);
+ assert.match(first,/CODEXTILL,smart_cart,smartcart1,customCaption,Untitled,Desktop,Data/);
+ assert.match(first,/CODEXTILL,smart_cart,smartcart1,format\.fontSize,13,Desktop,Design/);
  assert.doesNotMatch(first,/component\.label|navigatorName/);
  assert.doesNotMatch(second,/internalUnregistered/);
- assert.equal(first.split('\r\n')[0],'pageapi,component_type,component_name,propertyid,value,ribbon_tab');
+ assert.equal(first.split('\r\n')[0],'pageapi,component_type,component_name,propertyid,value,layout,ribbon_tab');
 });
 
 test('six-column export reimports without storing defaults or changing the draft',()=>{
@@ -304,8 +304,8 @@ test('tenant SQL Ribbon applicability and default overrides come from the existi
  assert.ok(queries.some(query=>query.includes('r.enabled=true')));
  assert.ok(queries.some(query=>query.includes("p.scope='component'")));
  const output=exportInventoryCsv(original(),defs);
- assert.match(output,/CODEXTILL,smart_cart,smartcart1,textSize,18,Design/);
- assert.match(output,/CODEXTILL,smart_cart,smartcart1,shadow,medium,Design/);
+ assert.match(output,/CODEXTILL,smart_cart,smartcart1,textSize,18,Desktop,Design/);
+ assert.match(output,/CODEXTILL,smart_cart,smartcart1,shadow,medium,Desktop,Design/);
 });
 
 test('typed CSV creates missing instance once and updates it by custom name on repeat',()=>{
@@ -485,7 +485,7 @@ test('non-Smart existing page node types still round-trip, but are not creatable
  page.components=[{id:'field1',type:'Record Field',label:'Field',region:'main',
   visible:true,properties:{label:'Name',fieldApiName:'Name'}}];
  const downloaded=exportInventoryCsv(page);
- assert.match(downloaded,/CODEXTILL,Record Field,recordfield1,component.visible,true,View/);
+ assert.match(downloaded,/CODEXTILL,Record Field,recordfield1,component.visible,true,Desktop,View/);
  assert.equal(applyInventoryCsv(page,downloaded).valid,true);
  const attempted=applyInventoryCsv(page,typedCsv('CODEXTILL,Record Field,newfield,component.visible,true'));
  assert.equal(attempted.valid,false);
@@ -595,4 +595,65 @@ test('batch API enforces existing tenant pages, preflight and a single SQL trans
  assert.doesNotMatch(dialog,/Select page|page-inventory-page-select|initialPageApi/);
  assert.match(dialog,/\/metadata\/pages\/inventory\/batch\/validate/);
  assert.match(dialog,/\/metadata\/pages\/inventory\/batch\/apply/);
+});
+
+test('Layout column selects Desktop, Tablet, Mobile or Custom drafts per page',()=>{
+ const all=['pageapi,component_type,component_name,propertyid,value,layout,ribbon_tab',
+  'KIOSK,smart_button,PayNow,label,Pay,Custom,Data',
+  'KIOSK,smart_button,PayNow,label,Pay,,Data',
+  'KIOSK,smart_button,PayNow,label,Pay,phone,Data',
+  'OTHER,smart_button,Go,label,Go,tablet,Data'].join('\r\n');
+ const split=inventoryCsvPageGroups(all);
+ assert.deepEqual(split.issues,[]);
+ assert.deepEqual(split.groups.map(g=>[g.pageapi,g.variant,g.key]),[
+  ['KIOSK','Custom','KIOSK|Custom'],['KIOSK','Desktop','KIOSK'],
+  ['KIOSK','Mobile','KIOSK|Mobile'],['OTHER','Tablet','OTHER|Tablet']]);
+ // Each group reaches the per-page engine without the Layout column.
+ assert.match(split.groups[0].csv,/^pageapi,component_type,component_name,propertyid,value,ribbon_tab\r\n/);
+ assert.match(split.groups[0].csv,/KIOSK,smart_button,PayNow,label,Pay,Data/);
+ assert.deepEqual(split.groups[0].originalLines,{2:2});
+ assert.deepEqual(split.groups[1].originalLines,{2:3});
+ // Without the column, the request default is used.
+ assert.equal(inventoryCsvPageGroups(typedCsv('KIOSK,smart_button,PayNow,label,Pay'),'Custom').groups[0].variant,'Custom');
+ const bad=inventoryCsvPageGroups(['pageapi,component_type,component_name,propertyid,value,layout',
+  'KIOSK,smart_button,PayNow,label,Pay,Watch'].join('\r\n'));
+ assert.equal(bad.groups.length,0);
+ assert.match(bad.issues[0].remark,/Layout must be Desktop, Tablet, Mobile or Custom/);
+ assert.equal(inventoryLayout('CUSTOM'),'Custom');
+ assert.equal(inventoryLayout(''),'Desktop');
+ assert.equal(inventoryLayout('Watch'),null);
+});
+test('export writes the layout it was downloaded from and single-page upload rejects another layout',()=>{
+ const page=original();page.components=[page.components[0]];
+ const custom=exportInventoryCsv(page,new Map(),'Custom');
+ assert.match(custom,/^pageapi,component_type,component_name,propertyid,value,layout,ribbon_tab\r\n/);
+ assert.match(custom,/CODEXTILL,smart_cart,smartcart1,component\.position\.x,10,Custom,Layout/);
+ const changed=custom.replace('component.position.x,10,Custom','component.position.x,55,Custom');
+ const ok=applyInventoryCsv(page,changed,new Map(),'Custom');
+ assert.deepEqual(ok.issues,[]);
+ assert.equal(ok.page.components[0].position?.x,55);
+ const wrong=applyInventoryCsv(page,changed,new Map(),'Desktop');
+ assert.ok(wrong.issues.some(issue=>/Layout does not match the selected layout: Desktop/.test(issue.remark)));
+});
+test('Shape and icon gallery markers accept well-formed catalogue ids',()=>{
+ assert.equal(inventoryChoiceAllowed(['shapes'],'shape:oval'),true);
+ assert.equal(inventoryChoiceAllowed(['shapes'],'shape:round-rectangle'),true);
+ assert.equal(inventoryChoiceAllowed(['shapes'],'arrow-left'),false);
+ assert.equal(inventoryChoiceAllowed(['shapes','icons'],'arrow-left'),true);
+ assert.equal(inventoryChoiceAllowed(['shapes','icons'],'Bad Icon'),false);
+ assert.equal(inventoryChoiceAllowed(['shapes','icons'],'shapes'),true);
+ assert.equal(inventoryChoiceAllowed(['left','right'],'top'),false);
+ const page=original();page.components=[{id:'B1',type:'Custom:smart_button',label:'Button',region:'main',
+  visible:true,position:{x:0,y:0,width:100,height:40},properties:{}}];
+ const defs=new Map([['Custom:smart_button',[]]]) as InventoryDefinitions;
+ defs.completeCatalog=true;defs.installedTypes=new Set(['Custom:smart_button']);
+ defs.ribbonProperties=new Map([['Custom:smart_button',[
+  {id:'shapeId',kind:'choice',tab:'Design',defaultValue:'shape:rectangle',choices:['shapes','icons']}]]]);
+ const result=applyInventoryCsv(page,typedCsv('CODEXTILL,smart_button,smartbutton1,shapeId,shape:oval'),defs);
+ assert.deepEqual(result.issues,[]);
+ assert.equal(result.page.components[0].properties.shapeId,'shape:oval');
+ const icon=applyInventoryCsv(page,typedCsv('CODEXTILL,smart_button,smartbutton1,shapeId,arrow-left'),defs);
+ assert.equal(icon.page.components[0].properties.shapeId,'arrow-left');
+ const invalid=applyInventoryCsv(page,typedCsv('CODEXTILL,smart_button,smartbutton1,shapeId,not valid'),defs);
+ assert.ok(invalid.issues.some(issue=>/Choose a listed option for shapeId/.test(issue.remark)));
 });

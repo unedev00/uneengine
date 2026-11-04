@@ -17,11 +17,11 @@ test('Smart Formula uses Excel semantics for maths, literals, fields and &',()=>
  for(const operator of ['+','-','*','/','&'])
    assert.equal(evaluateFieldExpression('"'+operator+'"',row),operator);
 });
-test('Smart component catalog is independent, fourteen components and SQL-owned',async()=>{
+test('Smart component catalog is independent, fifteen components and SQL-owned',async()=>{
  const source=JSON.parse(read('../src/component-libraries/manifest.json'));
  const names=source.components.map(p=>p.split('/')[0]).filter(name=>name.startsWith('smart_'));
  assert.deepEqual(names.sort(),['smart_button','smart_toggle','smart_lookup','smart_tabs',
-  'smart_text','smart_textbox','smart_card_grid','smart_image','smart_calendar','smart_navigation',
+  'smart_text','smart_textbox','smart_label','smart_card_grid','smart_image','smart_calendar','smart_navigation',
   'smart_container','smart_cart','smart_icon','smart_table'].sort());
  const catalog=await loadComponentCatalog();
  for(const name of names){
@@ -387,6 +387,36 @@ test('Smart Input Box has a complete four-sided border with metadata-controlled 
  assert.match(borderless,/border-width:0(?:;|")/);
 });
 
+test('Smart Label is a read-only Smart Input Box with the same binding and styling',async()=>{
+ const label=await renderSmart('smart_label',{
+  record:{Name:'BiteBurst Classic'},textSource:'@Name',
+  labelColor:'#8b0000',backgroundColor:'#fff4cc',textSize:22,headerBold:true,labelAlignment:'center'
+ });
+ assert.match(label,/BiteBurst Classic/);
+ assert.doesNotMatch(label,/<input/);
+ assert.doesNotMatch(label,/contenteditable/i);
+ assert.match(label,/smart-display-text/);
+ assert.match(label,/color:#8b0000/i);
+ assert.match(label,/background:#fff4cc/i);
+ assert.match(label,/font-size:22px/);
+ assert.match(label,/font-weight:700/);
+ assert.match(label,/justify-content:center/);
+ const staticText=await renderSmart('smart_label',{label:'Welcome'});
+ assert.match(staticText,/>Welcome</);
+ const pill=await renderSmart('smart_label',{label:'Bestseller',shapeId:'shape:oval',borderColor:'#f5b700'});
+ assert.match(pill,/border-radius:50%/);
+ assert.match(pill,/border-width:1px/);
+ assert.match(await renderSmart('smart_label',{builderPreview:true}),/>Label</);
+ assert.doesNotMatch(await renderSmart('smart_label',{}),/>Label</);
+ // The existing Smart Input Box is unchanged.
+ assert.match(await renderSmart('smart_text',{label:'Name'}),/<input/);
+ const sql=read('../../server/src/system-support/migrations/20271112-smart-label-component.sql');
+ assert.match(sql,/WHERE r\.component_api='smart_text' AND r\.property_key<>'displayMode'/);
+ assert.match(sql,/'one-bundled:smart_label'/);
+ assert.doesNotMatch(sql,/DELETE\s+FROM/i);
+ assert.match(read('../../server/src/app-seeders/smart-components.ts'),/"smart_label"/);
+});
+
 test('Smart Design Body, Header, Badge and Image match approved three-row positions',()=>{
  const css=read('../src/core/builders/PageBuilder/SmartRibbon.css');
  const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
@@ -541,7 +571,7 @@ test('Smart Event ribbon matches On Click and Qty Icon component support',()=>{
  }
  const cart=JSON.parse(read('../src/component-libraries/smart_cart/component.json'));
  assert.ok(cart.eventDefinitions.some(e=>e.apiName==='qtyIcon'));
- for(const name of ['smart_lookup','smart_tabs','smart_text',
+ for(const name of ['smart_lookup','smart_tabs','smart_text','smart_label',
   'smart_image','smart_navigation','smart_container','smart_icon']){
   const descriptor=JSON.parse(read('../src/component-libraries/'+name+'/component.json'));
   assert.ok(!descriptor.eventDefinitions.some(e=>e.apiName==='click'),name);
@@ -614,10 +644,10 @@ test('Smart Cart renders configured ribbon styles in the actual component output
  assert.match(html,/not bound/);
 });
 
-test('Smart Icon has 50 local monochrome SVG assets and a safe persisted icon selector',async()=>{
+test('Smart Icon has 71 local monochrome SVG assets and a safe persisted icon selector',async()=>{
  const icons=JSON.parse(read('../src/component-libraries/smart_icon/iconCatalog.json'));
- assert.equal(icons.length,50);
- assert.equal(new Set(icons.map(icon=>icon.id)).size,50);
+ assert.equal(icons.length,71);
+ assert.equal(new Set(icons.map(icon=>icon.id)).size,71);
  assert.deepEqual([...new Set(icons.map(icon=>icon.category))],[
   'Navigation & interface','Security & accounts','Commerce & analytics',
   'Communication','Productivity & files']);
@@ -628,7 +658,10 @@ test('Smart Icon has 50 local monochrome SVG assets and a safe persisted icon se
   assert.match(svg,/stroke="currentColor"/);
   assert.doesNotMatch(svg,/<script|onload=|<foreignObject/i);
  }
- for(const name of ['lock','settings','shopping-cart','message-circle','house'])
+ for(const name of ['lock','settings','shopping-cart','message-circle','house',
+  'globe','circle-help','chevron-right','chevron-down','chevron-up','x','minus','utensils','car',
+  'hamburger','sliders-horizontal','gift','star','crown','flame','timer','printer','qr-code',
+  'smartphone','contactless','info'])
   assert.ok(icons.some(icon=>icon.id===name),name);
  const manifest=JSON.parse(read('../src/component-libraries/smart_icon/component.json'));
  assert.equal(manifest.apiName,'smart_icon');
@@ -668,7 +701,7 @@ test('Smart Icon SQL enables only approved appearance and layout properties',()=
  assert.doesNotMatch(sql,/UPDATE\s+md_page_|DELETE\s+FROM\s+md_builder_shared_properties/i);
  const seeder=read('../../server/src/app-seeders/smart-components.ts');
  assert.match(seeder,/"smart_icon"/);
- assert.match(seeder,/core-smart-components-v5/);
+ assert.match(seeder,/core-smart-components-v6/);
 });
 
 
@@ -885,7 +918,7 @@ test('Image source is editable @ text, with upload only for the Image component'
  assert.match(proxy,/client_max_body_size 8m/);
 });
 test('Shared Smart runtime leaves no decorative surrounding selection container',async()=>{
- const names=['smart_button','smart_text','smart_lookup','smart_tabs',
+ const names=['smart_button','smart_text','smart_label','smart_lookup','smart_tabs',
   'smart_toggle','smart_image','smart_card_grid','smart_calendar',
   'smart_navigation','smart_cart','smart_container'];
  const props={width:260,height:120,label:'Example',tabs:['A','B']};
@@ -1336,4 +1369,49 @@ test('Visibility ribbon keeps disabled controls in place without a selected comp
  assert.match(markup,/checked=\{selected\?\.visible\?\?false\} disabled=\{!selected\}/);
  assert.match(markup,/title="Edit conditional visibility" disabled=\{!selected\}/);
  assert.match(markup,/<button type="button" disabled=\{!selected\} onClick=\{openVisibilityEditor\}>Conditions<\/button>/);
+});
+
+test('Smart Button Bold and icon side follow text alignment',async()=>{
+ const left=await renderSmart('smart_button',{label:'Start Order',shapeId:'arrow-right',labelAlignment:'left',headerBold:true});
+ assert.match(left,/data-icon-side="end"/);
+ assert.match(left,/order:2;margin-left:auto/);
+ assert.match(left,/font-weight:700/);
+ const right=await renderSmart('smart_button',{label:'Back',shapeId:'arrow-left',labelAlignment:'right'});
+ assert.match(right,/data-icon-side="start"/);
+ assert.match(right,/margin-right:auto/);
+ const centre=await renderSmart('smart_button',{label:'Help',shapeId:'circle-help',labelAlignment:'center',headerBold:false});
+ assert.doesNotMatch(centre,/data-icon-side/);
+ assert.match(centre,/font-weight:400/);
+ // Unchanged when nothing is configured.
+ const plain=await renderSmart('smart_button',{label:'Save',shapeId:'check'});
+ assert.doesNotMatch(plain,/data-icon-side|font-weight/);
+ assert.ok(plain.indexOf('smart-button-glyph')<plain.indexOf('smart-button-label'));
+});
+test('Card Grid description uses Header Supporting text and price uses Footer text',async()=>{
+ const html=await renderSmart('smart_card_grid',{records:[{Id:'p1',Name:'Fries',Desc:'Crispy',Price:'$2.99'}],
+  textSource:'@Name',cardDescription:'@Desc',cardValue:'@Price',
+  supportingTextColor:'#5b5b5b',supportingTextSize:18,supportingBold:false,supportingAlignment:'center',
+  footerTextColor:'#c8102e',footerTextSize:34,footerBold:true});
+ assert.match(html,/class="smart-card-description" style="color:#5b5b5b;font-weight:400;font-size:18px;text-align:center"/);
+ assert.match(html,/class="smart-card-value" style="color:#c8102e;font-weight:700;font-size:34px"/);
+ const plain=await renderSmart('smart_card_grid',{records:[{Id:'p1',Name:'Fries',Desc:'Crispy',Price:'$2.99'}],
+  textSource:'@Name',cardDescription:'@Desc',cardValue:'@Price'});
+ assert.match(plain,/<span class="smart-card-description">Crispy<\/span>/);
+ assert.match(plain,/<strong class="smart-card-value">\$2\.99<\/strong>/);
+});
+test('Smart Cart quantity buttons take shape and colour from Button 2/3 properties',async()=>{
+ const sql=read('../../server/src/system-support/migrations/20271113-kiosk-text-button-ribbon-extensions.sql');
+ for(const key of ['qtyIncreaseFill','qtyDecreaseShape','qtyIncreaseTextColor','customButton1Radius'])
+  assert.match(sql,new RegExp("'"+key+"'"));
+ assert.match(sql,/\('smart_cart','Button 2','text','qtyIncreaseTextColor'\)/);
+ assert.match(sql,/\('smart_card_grid','Header Supporting','text','supportingTextColor'\)/);
+ assert.match(sql,/\('smart_button','Body','bold','headerBold'\)/);
+ assert.doesNotMatch(sql,/DELETE\s+FROM|UPDATE\s+md_page_/i);
+ const cart=read('../src/component-libraries/smart_cart/SmartCart.jsx');
+ assert.match(cart,/smartCustomButtonAppearance\(p,"qtyDecrease"\)/);
+ assert.match(cart,/smartCustomButtonAppearance\(p,"qtyIncrease"\)/);
+ const {smartCustomButtonAppearance}=await import('../src/component-libraries/smart/shared/SmartCustomButtonAppearance.js');
+ assert.deepEqual(smartCustomButtonAppearance({qtyIncreaseFill:'#fff3c9',qtyIncreaseTextColor:'#f28c28',
+  qtyIncreaseShape:'shape:oval'},'qtyIncrease'),{backgroundColor:'#fff3c9',borderRadius:'50%',color:'#f28c28'});
+ assert.deepEqual(smartCustomButtonAppearance({customButton1Radius:20},'customButton1'),{borderRadius:20});
 });

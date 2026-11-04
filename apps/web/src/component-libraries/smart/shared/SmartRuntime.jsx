@@ -209,10 +209,17 @@ function SmartCard({p,record,onButtonClick,onCustomButton,onSelect,selected=fals
   {grid&&(description||value||buttonText||customButtons.length>0)&&<div className="smart-card-details"
    style={cardPadding===null?undefined:{padding:cardPadding+"px"}}>
    {description&&<span className="smart-card-description"
-     style={{color:focusedText||undefined,fontWeight:focusedWeight}}>{description}</span>}
+     style={{color:focusedText||p.supportingTextColor||undefined,
+      fontWeight:focusedWeight??(typeof p.supportingBold==="boolean"?(p.supportingBold?700:400):undefined),
+      fontSize:p.supportingTextSize!==undefined&&p.supportingTextSize!==null&&p.supportingTextSize!==""
+       ?number(p.supportingTextSize,14,8,96):undefined,
+      textAlign:["left","center","right"].includes(p.supportingAlignment)?p.supportingAlignment:undefined}}>{description}</span>}
    {(value||buttonText||customButtons.length>0)&&<div className="smart-card-footer">
     {value&&<strong className="smart-card-value"
-      style={{color:focusedText||undefined,fontWeight:focusedWeight}}>{value}</strong>}
+      style={{color:focusedText||p.footerTextColor||undefined,
+       fontWeight:focusedWeight??(typeof p.footerBold==="boolean"?(p.footerBold?700:400):undefined),
+       fontSize:p.footerTextSize!==undefined&&p.footerTextSize!==null&&p.footerTextSize!==""
+        ?number(p.footerTextSize,19,8,96):undefined}}>{value}</strong>}
     {buttonText&&<button type="button" className="smart-card-button"
       disabled={!onButtonClick} aria-label={buttonText}
       style={{
@@ -498,17 +505,23 @@ export default function SmartRuntime(p){
   if(typeof p.onAction==="function")void Promise.resolve(p.onAction({event,value})).catch(()=>{});
  };
  let content;
+ // Icon side follows an explicit text alignment: left text puts the icon at the
+ // far right (e.g. "Start Order  →"), right text puts it at the far left, and
+ // centred or unset text keeps the icon just before the caption.
+ const iconSide=buttonIcon&&label?(p.labelAlignment==="left"?"end":p.labelAlignment==="right"?"start":"inline"):"inline";
  if(name==="smart_button")content=<button type="button" className="smart-button"
    title={label||"Button"} aria-label={label||buttonIcon?.label||"Button"}
-   onClick={()=>fire("click",record)}
+   onClick={()=>fire("click",record)} data-icon-side={iconSide==="inline"?undefined:iconSide}
    style={{...style,...shadowStyle,...smartShapeAppearance(p.shapeId,number(p.radius,12)),
     padding:buttonIcon&&!label?"4px":undefined,
     justifyContent:label?(p.labelAlignment==="right"?"flex-end":p.labelAlignment==="center"?"center":"flex-start"):"center",
+    fontWeight:typeof p.headerBold==="boolean"?(p.headerBold?700:400):undefined,
     background:p.backgroundColor||"#2267bc",color:p.labelColor||"#fff",borderColor:p.borderColor}}>
    {buttonIcon&&<span className="smart-button-glyph" aria-hidden="true" style={{
      backgroundColor:p.iconFillColor||p.labelColor||"#fff",
      WebkitMaskImage:'url(/smart-icons/'+buttonIcon.id+'.svg)',
-     maskImage:'url(/smart-icons/'+buttonIcon.id+'.svg)'
+     maskImage:'url(/smart-icons/'+buttonIcon.id+'.svg)',
+     ...(iconSide==="end"?{order:2,marginLeft:"auto"}:iconSide==="start"?{marginRight:"auto"}:{})
    }}/>}
    {label&&<span className="smart-button-label">{label}</span>}
  </button>;
@@ -548,21 +561,24 @@ export default function SmartRuntime(p){
    </div>
   </div>;
  }
- else if(name==="smart_text"){
+ else if(name==="smart_text"||name==="smart_label"){
   const contentValue=scopedExpression(p,p.textSource?"textSource":"defaultValue",
    p.textSource??p.defaultValue??p.value??p.label??"",record);
+  // Smart Label is the Smart Input Box's display surface: same binding,
+  // same styling properties, never an editable control.
   // Keep the existing Smart Input exactly as it was; display mode is an
   // opt-in metadata property for labels, headings and read-only values.
-  content=p.displayMode==="display"
+  content=name==="smart_label"||p.displayMode==="display"
    ?<div className="smart-display-text" style={{...style,...shadowStyle,
+     ...(name==="smart_label"?smartShapeAppearance(p.shapeId,number(p.radius,12)):{}),
      width:"100%",height:"100%",minWidth:0,minHeight:0,display:"flex",alignItems:"center",
      justifyContent:p.labelAlignment==="right"?"flex-end":p.labelAlignment==="center"?"center":"flex-start",
      padding:"8px 12px",overflow:"hidden",overflowWrap:"anywhere",
      whiteSpace:p.wrapText===false?"nowrap":"pre-wrap",
      fontWeight:p.headerBold===true?700:400,
      background:p.backgroundColor||"transparent",
-     borderStyle:"solid",borderWidth:p.borderWidth===undefined?0:number(p.borderWidth,0,0,24),
-     borderColor:p.borderColor||"transparent"}}>{contentValue}</div>
+     borderStyle:"solid",borderWidth:p.borderWidth===undefined?(name==="smart_label"&&p.borderColor?1:0):number(p.borderWidth,0,0,24),
+     borderColor:p.borderColor||"transparent"}}>{contentValue||(name==="smart_label"&&p.builderPreview?"Label":"")}</div>
    :<input className="smart-input-box" type="text"
   aria-label={label||text(p.placeholder||"Input")}
   placeholder={p.builderPreview===true&&![p.placeholder,p.textSource,p.defaultValue,p.value].some(v=>v!==undefined&&v!==null&&v!=="")
