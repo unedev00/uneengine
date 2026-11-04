@@ -30,6 +30,10 @@ recovery:ReactNode;mfa:ReactNode;emailRecovery:ReactNode;locks:ReactNode;session
  const [mobileSection,setMobileSection]=useState<Section|null>(mobile?(resolvedInitialSection??null):null);
  useEffect(()=>{setActive(resolvedInitialSection??'general');if(mobile)setMobileSection(resolvedInitialSection??null);},[resolvedInitialSection,mobile]);
  const currentSection=mobile ? mobileSection : active;
+ const sectionTitle=active==='security'&&securitySubsection==='connected-apps'?'Connected Apps'
+  :active==='security'&&securitySubsection==='audit-trail'?'Audit Trail'
+  :resolvedInitialSection?sections.find(item=>item.id===active)?.label??'Company Settings':'Company Settings';
+ const sectionPath=resolvedInitialSection?('Setup / Organisation / '+(active==='security'?'Security & Recovery':sectionTitle)):'Setup / Organisation';
  const rights=developerAccess;
  const destinations:DeveloperDestination[]=[
   {label:'Object Manager',workspace:'object-manager',description:'Objects, fields and relationships',allowed:!!rights?.metadata},
@@ -53,8 +57,8 @@ recovery:ReactNode;mfa:ReactNode;emailRecovery:ReactNode;locks:ReactNode;session
    <header className="company-workspace-heading">
      {mobile && mobileSection && <button type="button" className="company-workspace-mobile-back"
        onClick={()=>{setMobileSection(null);onSelectSection?.(null);}}><ChevronLeft size={19} aria-hidden="true" /> Company Settings</button>}
-     <div><p className="company-workspace-eyebrow">Setup / Organisation</p>
-     <h1>{mobile && mobileSection ? visibleSections.find(item=>item.id===mobileSection)?.label : 'Company Settings'}</h1>
+     <div><p className="company-workspace-eyebrow">{sectionPath}</p>
+     <h1>{mobile&&mobileSection?securitySubsection==='connected-apps'?'Connected Apps':securitySubsection==='audit-trail'?'Audit Trail':visibleSections.find(item=>item.id===mobileSection)?.label:sectionTitle}</h1>
      {!mobileSection && <p>Manage your organisation, currency, branding and security settings.</p>}</div>
    </header>
    <nav className="company-workspace-tabs" aria-label="Company settings sections">
