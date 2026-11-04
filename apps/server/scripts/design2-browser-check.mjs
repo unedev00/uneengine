@@ -149,7 +149,7 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  await page.goto(origin+'/une/setup/page-builder',{waitUntil:'domcontentloaded'});
  await page.getByLabel('Search pages').fill('Design 2 Browser');
  await page.getByRole('button',{name:'Design Design 2 Browser',exact:true}).click();
- await page.getByRole('tab',{name:'Design 2',exact:true}).waitFor({timeout:20000});
+ await page.getByRole('tab',{name:'Design',exact:true}).waitFor({timeout:20000});
 
  // Select a real cart canvas component. The selected component is the editing target.
  const cart=page.locator('[data-component-id="browser-design2-cart"]').first();
@@ -163,7 +163,7 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  await cart.click({position:{x:18,y:18}});
  assert.equal(await page.locator('.record-component.multi-selected').count(),1,
   'A normal click should restore single-component selection after Ctrl+A');
- await page.getByRole('tab',{name:'Design 2',exact:true}).click();
+ await page.getByRole('tab',{name:'Design',exact:true}).click();
  const design2=page.locator('.smart-design2-ribbon');
  await design2.waitFor({state:'visible'});
  const area=page.getByLabel('Select Design 2 area');
@@ -366,10 +366,9 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
   'Cart Body Wrap is not approved: show it disabled, do not hide it');
  assert.equal(await cartBodyWrapSlot.locator('button.smart-icon-toggle').count(),1,
   'Wrap must render its disabled icon after Bold');
- await page.getByRole('tab',{name:'Design',exact:true}).click();
- await page.locator('.smart-ribbon-group[aria-label="Row"] [data-property="rowLabelColor"]').waitFor();
- assert.equal(await page.locator('.smart-ribbon-group[aria-label="Row"] [data-property="rowBold"]').count(),0,
-  'Design 2 properties leaked into original Design tab');
+ // The legacy Design tab is retired: Design 2 is the only Design tab.
+ assert.equal(await page.getByRole('tab',{name:'Design 2',exact:true}).count(),0,
+  'Retired legacy Design tab must not return beside Design 2');
 
  // Persist, reload and check that Design 2 is editing the same component SQL values.
  const saveResponses=[];
@@ -408,7 +407,7 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
   'Design 2 must not duplicate canvas Y in properties.y');
  await page.reload({waitUntil:'domcontentloaded'});
  await page.locator('[data-component-id="browser-design2-cart"]').first().click({position:{x:18,y:18}});
- await page.getByRole('tab',{name:'Design 2',exact:true}).click();
+ await page.getByRole('tab',{name:'Design',exact:true}).click();
  await page.getByLabel('Select Design 2 area').selectOption('Row');
  assert.equal(await page.locator('.smart-design2-group [data-property="rowBold"] button')
   .getAttribute('aria-pressed'),'true','Design 2 saved value did not reload');
@@ -499,12 +498,12 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  await page.goto(origin+'/une/setup/page-builder',{waitUntil:'domcontentloaded'});
  await page.getByLabel('Search pages').fill('Design 2 Four Control');
  await page.getByRole('button',{name:'Design Design 2 Four Control',exact:true}).click();
- await page.getByRole('tab',{name:'Design 2',exact:true}).waitFor({timeout:20000});
+ await page.getByRole('tab',{name:'Design',exact:true}).waitFor({timeout:20000});
  const selectFour=async(id,area)=>{
   const block=page.locator('[data-component-id="'+id+'"]').first();
   await block.waitFor({state:'visible'});
   await block.click({position:{x:8,y:8}});
-  await page.getByRole('tab',{name:'Design 2',exact:true}).click();
+  await page.getByRole('tab',{name:'Design',exact:true}).click();
   await page.getByLabel('Select Design 2 area').selectOption(area);
   return block;
  };
@@ -607,7 +606,7 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  const arrangeOne=page.locator('[data-component-id="arrange-one"]').first();
  await arrangeOne.waitFor({state:'visible'});
  await arrangeOne.click({position:{x:18,y:18}});
- await page.getByRole('tab',{name:'Design 2',exact:true}).click();
+ await page.getByRole('tab',{name:'Design',exact:true}).click();
  const areaArrange=page.getByLabel('Select Design 2 area');
  await areaArrange.selectOption('Body');
  const actionRow=page.locator('.smart-design2-arrange-actions');
