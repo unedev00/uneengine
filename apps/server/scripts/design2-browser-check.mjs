@@ -121,6 +121,30 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  const area=page.getByLabel('Select Design 2 area');
  assert.equal(await area.inputValue(),'Body');
  await area.selectOption('Row');
+ // Row 0: fixed C1 selector, C2 eye, C3 X and C4 Y. Values edit the real
+ // free-canvas component.position, not a duplicate properties.x/y field.
+ const rowZero=design2.locator('.smart-design2-context[data-design-row="0"]');
+ const xCell=rowZero.locator('[data-property="x"]');
+ const yCell=rowZero.locator('[data-property="y"]');
+ await xCell.waitFor({state:'visible'});
+ await yCell.waitFor({state:'visible'});
+ assert.equal(await xCell.getAttribute('data-design-column'),'3');
+ assert.equal(await yCell.getAttribute('data-design-column'),'4');
+ const xInput=xCell.getByRole('spinbutton',{name:'X Position'});
+ const yInput=yCell.getByRole('spinbutton',{name:'Y Position'});
+ assert.equal(await xInput.inputValue(),'24');
+ assert.equal(await yInput.inputValue(),'28');
+ for(const cell of [xCell,yCell]){
+  const bounds=await cell.boundingBox();
+  assert.ok(bounds&&Math.abs(bounds.width-80)<1&&Math.abs(bounds.height-26)<1,
+   'R0 coordinate controls must be exactly 80x26px');
+ }
+ await xInput.fill('64');
+ await yInput.fill('68');
+ assert.equal(await cart.evaluate(element=>Number.parseFloat(element.style.left)),64,
+  'R0 X did not reposition component on canvas');
+ assert.equal(await cart.evaluate(element=>Number.parseFloat(element.style.top)),68,
+  'R0 Y did not reposition component on canvas');
  const row=page.locator('.smart-design2-group');
  const rowFill=row.locator('[data-design-row="1"] [data-design-slot="fill"]');
  await rowFill.waitFor();
@@ -138,6 +162,37 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  await rowStyle.waitFor({state:'visible'});
  assert.equal(await rowStyle.evaluate(element=>getComputedStyle(element).fontWeight),'700',
   'Cart row does not visually apply Row Bold');
+
+ // R3C2 Alignment is a real ICON dropdown, not a text select.
+ await area.selectOption('Header');
+ const alignCell=row.locator('[data-design-row="3"] [data-design-slot="alignment"]');
+ assert.equal(await alignCell.getAttribute('data-design-column'),'2');
+ assert.equal(await alignCell.getAttribute('data-supported'),'true');
+ const alignTrigger=alignCell.locator('.smart-icon-dropdown-trigger');
+ await alignTrigger.click();
+ await page.locator('.smart-icon-dropdown-popup [role="menuitemradio"]').nth(2).click();
+ assert.match(await alignTrigger.getAttribute('aria-label')??'',/Right/);
+ assert.equal(await cart.locator('.smart-cart-header').evaluate(element=>
+   getComputedStyle(element).textAlign),'right','R3C2 alignment did not update the Cart header');
+
+ // In the approved Image area R2C6 Placement and R3C6 Fill must both
+ // have icon-based menus, including the existing Fit/Fill/Stretch choices.
+ await area.selectOption('Image');
+ const imagePlacement=row.locator('[data-design-row="2"] [data-design-slot="placement"]');
+ const imageFill=row.locator('[data-design-row="3"] [data-design-slot="imageFill"]');
+ assert.equal(await imagePlacement.getAttribute('data-design-column'),'6');
+ assert.equal(await imageFill.getAttribute('data-design-column'),'6');
+ assert.equal(await imagePlacement.getAttribute('data-supported'),'true');
+ assert.equal(await imageFill.getAttribute('data-supported'),'true');
+ assert.equal(await imagePlacement.locator('.smart-icon-dropdown-trigger').count(),1,
+   'R2C6 image placement must be an icon dropdown');
+ assert.equal(await imageFill.locator('.smart-icon-dropdown-trigger').count(),1,
+   'R3C6 image fit must be an icon dropdown');
+ await imagePlacement.locator('.smart-icon-dropdown-trigger').click();
+ await page.locator('.smart-icon-dropdown-popup [role="menuitemradio"]').nth(1).click();
+ await imageFill.locator('.smart-icon-dropdown-trigger').click();
+ await page.locator('.smart-icon-dropdown-popup [role="menuitemradio"]').nth(1).click();
+ assert.match(await imageFill.locator('.smart-icon-dropdown-trigger').getAttribute('aria-label')??'',/Fit/);
 
  // Area switching must not change the selected component or old Design view.
  await area.selectOption('Table');
@@ -173,6 +228,20 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  const draft=await runtime.editor(tenantId,pageName,'Desktop');
  assert.equal(draft.components.find(item=>item.id==='browser-design2-cart')?.properties.rowBold,true,
   'Row Bold did not survive SQL save');
+ assert.equal(draft.components.find(item=>item.id==='browser-design2-cart')?.properties.headerAlignment,'right',
+  'Design 2 R3C2 alignment icon dropdown did not persist');
+ assert.equal(draft.components.find(item=>item.id==='browser-design2-cart')?.properties.imagePlacement,'left',
+  'Design 2 R2C6 image placement icon dropdown did not persist');
+ assert.equal(draft.components.find(item=>item.id==='browser-design2-cart')?.properties.imageFill,'fit',
+  'Design 2 R3C6 image fit icon dropdown did not persist');
+ assert.equal(draft.components.find(item=>item.id==='browser-design2-cart')?.position?.x,64,
+  'Design 2 R0 X position did not survive SQL save');
+ assert.equal(draft.components.find(item=>item.id==='browser-design2-cart')?.position?.y,68,
+  'Design 2 R0 Y position did not survive SQL save');
+ assert.equal(draft.components.find(item=>item.id==='browser-design2-cart')?.properties.x,undefined,
+  'Design 2 must not duplicate canvas X in properties.x');
+ assert.equal(draft.components.find(item=>item.id==='browser-design2-cart')?.properties.y,undefined,
+  'Design 2 must not duplicate canvas Y in properties.y');
  await page.reload({waitUntil:'domcontentloaded'});
  await page.locator('[data-component-id="browser-design2-cart"]').first().click({position:{x:18,y:18}});
  await page.getByRole('tab',{name:'Design 2',exact:true}).click();

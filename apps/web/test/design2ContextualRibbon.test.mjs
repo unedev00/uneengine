@@ -11,6 +11,7 @@ const css=read('../src/core/builders/PageBuilder/SmartRibbonDesign2.css');
 const cart=read('../src/component-libraries/smart_cart/SmartCart.jsx');
 const table=read('../src/component-libraries/smart_table/SmartTable.jsx');
 const inventory=read('../src/core/builders/PageBuilder/uneBuilderPropertyInventory.ts');
+const iconDropdown=read('../src/core/builders/PageBuilder/SmartIconDropdown.tsx');
 
 const slotPattern=/\('([^']+)',(\d+),'([^']+)',([23]),(\d+),(\d+),26,(NULL|'[^']+'),'([^']+)'\)/g;
 const rows=[...sql.matchAll(slotPattern)].map(([,area,areaOrder,slot,row,order,width,key,fallback])=>({
@@ -105,7 +106,7 @@ test('Design 2 keeps every SQL R/C slot even when unsupported or metadata is abs
  assert.match(shared,/const original:UneRibbonProperty=assigned\?\?fallbackDefinition\?\?\{/);
  assert.match(shared,/components:assigned\?assigned\.components:\[\]/);
  assert.match(shared,/data-design-slot=\{slotPlacement\?\.slotKey\}/);
- assert.match(shared,/data-design-column=\{slotPlacement\?\.order\}/);
+ assert.match(shared,/data-design-column=\{tab==='Design2'&&property\.designRow===0\?property\.designOrder:slotPlacement\?\.order\}/);
  assert.doesNotMatch(shared,/\.filter\(\(p\):p is NonNullable<typeof p>=>p!==null\)/);
 });
 
@@ -180,4 +181,70 @@ test('all 319 source properties appear, including missing Cart Button 5',()=>{
  for(const key of ['removeButtonFill','qtyIncreaseFill','qtyDecreaseFill',
   'customButton1Fill','customButton2Fill'])
   assert.ok(extension.includes("'"+key+"'"),key);
+});
+
+
+test('R0 C3/C4 reuses canvas x/y for all 15 requested Smart component APIs',()=>{
+ const migration=read('../../server/src/system-support/migrations/20271106-design2-row0-xy-position.sql');
+ const required=['smart_button','smart_calendar','smart_card_grid','smart_cart',
+  'smart_container','smart_icon','smart_image','smart_lookup','smart_navigation',
+  'smart_table','smart_tabs','smart_text','smart_textbox','smart_toggle','smart_input'];
+ const listed=[...migration.matchAll(/^\s*\('(smart_[a-z_]+)'\)/gm)].map(match=>match[1]);
+ assert.deepEqual(listed,required,'only the 15 explicitly requested component APIs');
+ assert.match(migration,/p\.property_key IN \('x','y'\)/);
+ assert.match(migration,/p\.control_kind='position'/);
+ assert.match(migration,/ON CONFLICT\(component_api,property_key\) DO UPDATE SET enabled=true/);
+ assert.doesNotMatch(migration,/INSERT INTO md_builder_shared_properties/);
+ assert.doesNotMatch(migration,/UPDATE md_builder_design2_slots/);
+ assert.match(shared,/const property=definitions\.find\(entry=>entry\.id===id\)/);
+ assert.match(shared,/property&&property\.components\.includes\(api\)/);
+ assert.match(shared,/designRow:0,designOrder:index\+3,designWidth:80,designHeight:26/);
+ assert.match(shared,/kind==='position'&&useCanvasPosition&&position&&onPositionChange/);
+ assert.match(shared,/onPositionChange\(\{\.\.\.position,\[property\.id\]:v\}\)/);
+ assert.match(shared,/data-design-column=\{tab==='Design2'&&property\.designRow===0/);
+ assert.match(shared,/isCanvasAxis/);
+ assert.match(builder,/onPositionChange=\{position=>\{/);
+});
+
+test('Design 2 R0 X/Y has exact 80x26 geometry without shifting property rows',()=>{
+ assert.match(css,/smart-design2-context\[data-design-row="0"\]>.smart-property\{/);
+ assert.match(css,/flex:0 0 80px!important/);
+ assert.match(css,/width:80px!important/);
+ assert.match(css,/height:26px!important/);
+ assert.match(css,/width:472px!important/);
+ assert.match(shared,/\[1,2,3\]\.map\(row/);
+ assert.match(shared,/gridTemplateColumns:design2GridColumns\(\)/);
+});
+
+
+test('approved R3C2 alignment and R2/R3C6 image controls use icon dropdowns',()=>{
+ assert.equal(fixed('Body','alignment').row,3);
+ assert.equal(fixed('Body','alignment').order,2);
+ assert.equal(fixed('Body','alignment').width,40);
+ assert.equal(fixed('Image','placement').row,2);
+ assert.equal(fixed('Image','placement').order,6);
+ assert.equal(fixed('Image','placement').width,40);
+ assert.equal(fixed('Image','imageFill').row,3);
+ assert.equal(fixed('Image','imageFill').order,6);
+ assert.equal(fixed('Image','imageFill').width,40);
+ assert.match(shared,/kind==='align'&&compactDesign&&property\.designDisplay==='dropdown'/);
+ assert.match(shared,/\['imageFill','imagePlacement','badgeAlignment'\]\.includes\(property\.id\)/);
+ assert.match(shared,/editor=<SmartIconDropdown kind=\{property\.id as/);
+ assert.match(iconDropdown,/type IconKind='align'\|'shadow'\|'imageFill'\|'imagePlacement'\|'badgeAlignment'/);
+ for(const value of ["'fill'","'fit'","'stretch'","'top'","'left'","'right'","'bottom'"])
+  assert.ok(iconDropdown.includes('value:'+value),value+' missing from actual icon menu');
+ assert.match(iconDropdown,/aria-haspopup="menu"/);
+ assert.match(iconDropdown,/role="menuitemradio"/);
+ assert.match(iconDropdown,/onChange\(option\.value\)/);
+});
+
+test('footer alignment menus target renderer keys rather than unused aliases',()=>{
+ const migration=read('../../server/src/system-support/migrations/20271107-design2-alignment-icon-bindings.sql');
+ const runtime=read('../src/component-libraries/smart/shared/SmartRuntime.jsx');
+ assert.match(migration,/\('smart_cart','Footer','alignment','summary2Alignment'\)/);
+ assert.match(migration,/\('smart_table','Footer','alignment','summaryAlignment'\)/);
+ assert.match(migration,/'cardButtonAlignment','Button Alignment','Design2','Button','align'/);
+ assert.match(migration,/WHERE c\.component_api='smart_card_grid'/);
+ assert.match(runtime,/textAlign:\["left","center","right"\]\.includes\(p\.cardButtonAlignment\)/);
+ assert.match(runtime,/justifyContent:p\.cardButtonAlignment==="left"\?"flex-start"/);
 });

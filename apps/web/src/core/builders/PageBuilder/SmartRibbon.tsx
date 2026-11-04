@@ -346,8 +346,10 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    const isCorner=compactDesign&&/radius/i.test(property.id);
    const isWidth=compactDesign&&/width/i.test(property.id);
    const isHeight=compactDesign&&/height/i.test(property.id);
+   const isCanvasAxis=tab==='Design2'&&property.designRow===0&&
+     (property.id==='x'||property.id==='y');
    const hasNumericIcon=(kind==='number'||kind==='position')&&
-     (isTextSize||isCorner||isWidth||isHeight);
+     (isTextSize||isCorner||isWidth||isHeight||isCanvasAxis);
    const isTabIndex=property.id==='tabIndex';
    let editor;
    if(property.id==='shapeId')editor=<SmartIconGallery value={String(value||'shape:rectangle')}
@@ -419,6 +421,10 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
       isCorner?<span className="smart-property-glyph" title={title}><RibbonCornerRadiusIcon/></span>:
       isWidth?<span className="smart-property-glyph" title={title}><ArrowLeftRight size={17} aria-hidden="true"/></span>:
       isHeight?<span className="smart-property-glyph" title={title}><ArrowUpDown size={17} aria-hidden="true"/></span>:
+      isCanvasAxis?<span className="smart-property-glyph" title={title}>
+        {property.id==='x'?<ArrowLeftRight size={17} aria-hidden="true"/>:
+          <ArrowUpDown size={17} aria-hidden="true"/>}
+      </span>:
       property.id==='width'?<ArrowLeftRight size={15}/>:property.id==='height'?<ArrowUpDown size={15}/>:null}
      <input type="number" className="smart-office-number" aria-label={title} disabled={!enabled} min={property.min??0} max={property.max} step={isTabIndex?1:undefined}
        value={kind==='position'&&useCanvasPosition?position?.[property.id as keyof Position]??'':
@@ -466,6 +472,12 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
      onClick={()=>write(!(value===true||value==='true'))}>
      <span className="smart-default-check-thumb" aria-hidden="true"/>
    </button>;
+   // The R3C2 alignment and R2C6/R3C6 image controls in the approved
+   // Design 2 matrix are ICON dropdowns. Legacy Design remains unchanged.
+   else if(tab==='Design2'&&kind==='choice'&&
+     ['imageFill','imagePlacement','badgeAlignment'].includes(property.id))
+     editor=<SmartIconDropdown kind={property.id as 'imageFill'|'imagePlacement'|'badgeAlignment'}
+       value={String(value)} label={title} disabled={!enabled} onChange={write}/>;
    else if(kind==='choice'&&Array.isArray(value))editor=<SmartMultiSelect
       label={title} choices={options} value={value.filter((item):item is string=>typeof item==='string')}
       disabled={!enabled} onChange={write}/>;
@@ -475,7 +487,8 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
      {options.map(s=><option value={s} key={s}>{s.replaceAll('-',' ')}</option>)}</select>;
    return <div key={slotPlacement?slotPlacement.area+':'+slotPlacement.slotKey:property.id}
        className={'smart-property'+(!enabled?' disabled':'')} data-property={property.id}
-       data-design-slot={slotPlacement?.slotKey} data-design-column={slotPlacement?.order}
+       data-design-slot={slotPlacement?.slotKey}
+       data-design-column={tab==='Design2'&&property.designRow===0?property.designOrder:slotPlacement?.order}
        data-supported={supported} data-kind={kind} data-numeric-icon={hasNumericIcon?'true':'false'}
        data-design-caption={compactDesign&&Boolean(property.designCaptionWidth)?'true':'false'}
        style={compactDesign?{'--smart-control-width':controlWidth(property)+'px',
@@ -509,6 +522,16 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
           onClick={()=>onVisibleChange?.(!componentVisible)}>
           {componentVisible?<Eye size={17}/>:<EyeOff size={17}/>}
         </button>
+        {(['x','y'] as const).map((id,index)=>{
+          // Row 0 C3/C4 edits the SAME canvas position used by Layout.
+          // No duplicate instance properties or separate position state.
+          const property=definitions.find(entry=>entry.id===id);
+          return property&&property.components.includes(api)
+            ?controls({...property,tab:'Design2',group:'Position',
+                designRow:0,designOrder:index+3,designWidth:80,designHeight:26,
+                designCaptionWidth:0})
+            :null;
+        })}
       </div>
       <div className="smart-ribbon-items">
         {[1,2,3].map(row=><div key={row} className="smart-ribbon-row"
