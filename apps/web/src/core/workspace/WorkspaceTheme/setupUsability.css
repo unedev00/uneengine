@@ -415,3 +415,26 @@
 .lightning .palette-results>button{max-width:100%;min-width:0;align-items:flex-start;white-space:normal}
 .lightning .palette-results>button>strong{flex:1 1 auto;min-width:0;overflow-wrap:anywhere}
 .lightning .palette-results>button>small{flex:0 1 38%;min-width:0;white-space:normal;overflow-wrap:anywhere;text-align:left;line-height:1.4}
+
+/* Recovery Flow edits: 18 fields become four discoverable sections. */
+.lightning .md-recovery-editor{display:grid;gap:10px}
+.lightning .md-recovery-config-group{
+ display:block;min-width:0;max-width:100%;padding:8px 12px;
+ border:1px solid var(--md-border,#d2dfea);border-radius:9px;background:var(--md-surface,#fff)
+}
+.lightning .md-recovery-config-group>summary{
+ cursor:pointer;display:list-item;min-height:44px;padding:10px 2px;
+ font-size:14px;font-weight:650
+}
+.lightning .md-recovery-config-group>summary:focus-visible{
+ outline:2px solid var(--md-primary,#1d4ed8);outline-offset:2px
+}
+.lightning .md-recovery-config-group[open]{padding-bottom:16px}
+.lightning .md-recovery-config-group[open]>summary{margin-bottom:12px;border-bottom:1px solid var(--md-border,#dce3eb)}
+.lightning .md-recovery-save-bar{
+ position:sticky;bottom:0;z-index:5;display:flex;flex-wrap:wrap;gap:10px;
+ background:var(--md-surface,#fff);padding:12px 10px;
+ border-top:1px solid var(--md-border,#d2dfea);margin-top:12px
+}
+.lightning .md-recovery-save-bar>span{margin-right:auto;color:var(--md-muted,#596579);font-size:12px}
+.lightning .md-recovery-save-bar>.btn{min-height:44px}
