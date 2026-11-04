@@ -18,6 +18,8 @@ import SmartIconDropdown from './SmartIconDropdown';
 import Design2IconDropdown from './Design2IconDropdown';
 import SmartMultiSelect from './SmartMultiSelect';
 import SmartIconGallery from './SmartIconGallery';
+import Design2CanvasActions from './Design2CanvasActions';
+import type {ArrangeRibbonProps} from './ArrangeRibbon';
 import './SmartRibbon.css';
 import './SmartRibbonApprovedThreeRow.css';
 import './SmartRibbonDataFormula.css';
@@ -30,7 +32,8 @@ type Props={tab:UneBuilderTab;api:string;definitions:readonly UneRibbonProperty[
  sharedPropertyIds?:readonly string[];mixedPropertyIds?:readonly string[];selectedApis?:readonly string[];
  pageComponents?:readonly {id:string;properties:Record<string,unknown>}[];componentId?:string;
  design2Slots?:readonly Design2Slot[];design2SlotRules?:readonly Design2SlotRule[];componentVisible?:boolean;
- onVisibleChange?:(visible:boolean)=>void;};
+ onVisibleChange?:(visible:boolean)=>void;
+ design2Arrange?:ArrangeRibbonProps;};
 const weekdays=[['sun','Sun'],['mon','Mon'],['tue','Tue'],['wed','Wed'],['thu','Thu'],['fri','Fri'],['sat','Sat']] as const;
 const fallback=(value:unknown)=>typeof value==='string'?value:'';
 const cartSummaryLabels:Record<string,{key:string;slot:string}>={
@@ -39,7 +42,7 @@ const cartSummaryLabels:Record<string,{key:string;slot:string}>={
  taxValue:{key:'taxLabel',slot:'Summary 3'},
  discountValue:{key:'discountLabel',slot:'Summary 4'}
 };
-export default function SmartRibbon({tab,api,definitions,properties,onChange,objects,pageObjectApiName='',position,onPositionChange,layoutMode,sharedPropertyIds,mixedPropertyIds,selectedApis,pageComponents=[],componentId='',design2Slots=[],design2SlotRules=[],componentVisible=true,onVisibleChange}:Props){
+export default function SmartRibbon({tab,api,definitions,properties,onChange,objects,pageObjectApiName='',position,onPositionChange,layoutMode,sharedPropertyIds,mixedPropertyIds,selectedApis,pageComponents=[],componentId='',design2Slots=[],design2SlotRules=[],componentVisible=true,onVisibleChange,design2Arrange}:Props){
  const uploadInput=useRef<HTMLInputElement>(null);
  const [uploadBusy,setUploadBusy]=useState(false);
  const [uploadError,setUploadError]=useState('');
@@ -549,8 +552,13 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
             ?controls({...property,tab:'Design2',group:'Position',
                 designRow:0,designOrder:index+3,designWidth:80,designHeight:26,
                 designCaptionWidth:0})
-            :null;
+            :<span key={id} className="smart-design2-empty-position"
+               data-design-row="0" data-design-column={index+3}
+               aria-hidden="true"/>;
         })}
+        <span className="smart-design2-r0-gap" data-design-column="5" aria-hidden="true"/>
+        <span className="smart-design2-r0-gap" data-design-column="6" aria-hidden="true"/>
+        <Design2CanvasActions area={activeDesign2Area} arrange={design2Arrange}/>
       </div>
       <div className="smart-ribbon-items">
         {[1,2,3].map(row=><div key={row} className="smart-ribbon-row"
