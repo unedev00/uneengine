@@ -5,7 +5,13 @@ type Entitlement={id:string;label:string;kind:string;enabled:boolean;used_seats:
 type Data={entitlements:Entitlement[];users:{id:string;email:string}[];permissionSets:{id:string;api_name:string}[];assignments:{user_id:string;entitlement_id:string}[];requirements:{permission_set_id:string;entitlement_id:string}[]};
 export default function TenantLicenses({request,canManage}:{request:Request;canManage:boolean}){
  const [data,setData]=useState<Data|null>(null),[user,setUser]=useState(''),[set,setSet]=useState(''),[message,setMessage]=useState(''),[busy,setBusy]=useState(false);
- const load=()=>request<Data>('/security/licenses').then(setData);
+ const load=()=>request<Data>('/security/licenses').then(result=>setData({
+  entitlements:Array.isArray(result?.entitlements)?result.entitlements:[],
+  users:Array.isArray(result?.users)?result.users:[],
+  permissionSets:Array.isArray(result?.permissionSets)?result.permissionSets:[],
+  assignments:Array.isArray(result?.assignments)?result.assignments:[],
+  requirements:Array.isArray(result?.requirements)?result.requirements:[]
+ }));
  useEffect(()=>{void load().catch(e=>setMessage(String(e)));},[]);
  const save=(path:string,value:unknown)=>{setBusy(true);setMessage('');void request('/security/licenses/'+path,{method:'PUT',body:JSON.stringify(value)}).then(load).then(()=>setMessage('Saved. Affected user sessions must sign in again.')).catch(e=>setMessage(String(e))).finally(()=>setBusy(false));};
  return <section className="surface permission-section"><h2>User and permission-set licences</h2><p>Licences limit access; permission sets grant access separately. Disabled or expired licences stop access immediately. Only platform administrators can issue licence pools.</p>
@@ -31,9 +37,9 @@ export default function TenantLicenses({request,canManage}:{request:Request;canM
 function PlatformLicenseIssuer({request}:{request:Request}){
  const [capabilitySearch,setCapabilitySearch]=useState(''),[issuing,setIssuing]=useState(false);
  const [tenants,setTenants]=useState<{id:string;name:string;slug:string}[]>([]),[tenant,setTenant]=useState(''),[label,setLabel]=useState(''),[key,setKey]=useState(''),[kind,setKind]=useState('User'),[seats,setSeats]=useState(''),[expiry,setExpiry]=useState(''),[auto,setAuto]=useState(false),[capabilities,setCapabilities]=useState<{permission_key:string;label:string;resource:string;action:string}[]>([]),[selected,setSelected]=useState<string[]>([]),[message,setMessage]=useState('');
- useEffect(()=>{void request<{tenants:{id:string;name:string;slug:string}[]}>('/security/licenses/tenants').then(r=>setTenants(r.tenants)).catch(()=>{});void request<{permissions:typeof capabilities}>('/security/permissions').then(r=>setCapabilities(r.permissions)).catch(()=>{});},[]);
+ useEffect(()=>{void request<{tenants:{id:string;name:string;slug:string}[]}>('/security/licenses/tenants').then(r=>setTenants(Array.isArray(r?.tenants)?r.tenants:[])).catch(e=>setMessage('Unable to load tenant licence catalog: '+String(e)));void request<{permissions:typeof capabilities}>('/security/permissions').then(r=>setCapabilities(Array.isArray(r?.permissions)?r.permissions:[])).catch(()=>setCapabilities([]));},[]);
  const [pools,setPools]=useState<Array<Entitlement&{license_key:string;auto_assign:boolean;capabilities:{resource:string;action:string}[]}>>([]),[poolId,setPoolId]=useState(''),[enabled,setEnabled]=useState(true),[customCaps,setCustomCaps]=useState<{resource:string;action:string}[]>([]);
- useEffect(()=>{setPools([]);setPoolId('');if(tenant)void request<{entitlements:typeof pools}>('/security/licenses/tenants?tenant='+encodeURIComponent(tenant)).then(r=>setPools(r.entitlements)).catch(e=>setMessage(String(e)));},[tenant]);
+ useEffect(()=>{setPools([]);setPoolId('');if(tenant)void request<{entitlements:typeof pools}>('/security/licenses/tenants?tenant='+encodeURIComponent(tenant)).then(r=>setPools(Array.isArray(r?.entitlements)?r.entitlements:[])).catch(e=>setMessage(String(e)));},[tenant]);
  const validPool=Boolean(tenant.trim()&&label.trim()&&/^[A-Za-z][A-Za-z0-9_-]{0,127}$/.test(key.trim())
   &&(seats===''||(Number.isInteger(Number(seats))&&Number(seats)>=0))
   &&(!expiry||Number.isFinite(Date.parse(expiry))));
@@ -43,7 +49,7 @@ function PlatformLicenseIssuer({request}:{request:Request}){
   if(!validPool||issuing)return;setIssuing(true);setMessage('');
   const caps=selected.includes('*')?[{resource:'*',action:'*'}]:capabilities.filter(p=>selected.includes(p.permission_key)).map(p=>({resource:p.resource,action:p.action}));
   try{await request('/security/licenses/issue',{method:'POST',body:JSON.stringify({...(poolId?{id:poolId}:{}),tenantId:tenant,license_key:key.trim(),label:label.trim(),kind,enabled,seat_limit:seats===''?null:Number(seats),expires_at:expiry?new Date(expiry).toISOString():null,auto_assign:auto,capabilities:[...caps,...customCaps]})});
-   setMessage('Licence pool saved.');const response=await request<{entitlements:typeof pools}>('/security/licenses/tenants?tenant='+encodeURIComponent(tenant));setPools(response.entitlements);
+   setMessage('Licence pool saved.');const response=await request<{entitlements:typeof pools}>('/security/licenses/tenants?tenant='+encodeURIComponent(tenant));setPools(Array.isArray(response?.entitlements)?response.entitlements:[]);
   }catch(e){setMessage(e instanceof Error?e.message:String(e));}
   finally{setIssuing(false);}
  };
