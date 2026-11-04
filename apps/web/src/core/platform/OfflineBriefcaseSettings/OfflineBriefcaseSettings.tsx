@@ -26,6 +26,7 @@ export default function OfflineBriefcaseSettings({ request, permitted, objects }
 }) {
   const [selections, setSelections] = useState<DraftSelection[]>([]);
   const [loading, setLoading] = useState(false);
+  const [ready, setReady] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -36,13 +37,14 @@ export default function OfflineBriefcaseSettings({ request, permitted, objects }
     if (!permitted) return;
     let active = true;
     setLoading(true);
+    setReady(false);
     setError('');
     void request<{ briefcase: { selections: Selection[] } }>('/tenant/offline-briefcase')
       .then(({ briefcase }) => {
-        if (active) { const rows = (briefcase?.selections ?? []).map(toDraft); setSelections(rows); setSaved(JSON.stringify(rows)); }
+        if (active) { const rows = (briefcase?.selections ?? []).map(toDraft); setSelections(rows); setSaved(JSON.stringify(rows)); setReady(true); }
       })
       .catch((cause: unknown) => {
-        if (active) setError(briefcaseFailureMessage(cause, 'Unable to load offline briefcase settings'));
+        if (active) { setReady(false); setError(briefcaseFailureMessage(cause, 'Unable to load offline briefcase settings')); }
       })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
@@ -50,7 +52,7 @@ export default function OfflineBriefcaseSettings({ request, permitted, objects }
 
   const save = async (event: FormEvent) => {
     event.preventDefault();
-    if (saving || !valid || !dirty) return;
+    if (!ready || saving || !valid || !dirty) return;
     setSaving(true);
     setError('');
     setNotice('');
@@ -75,7 +77,7 @@ export default function OfflineBriefcaseSettings({ request, permitted, objects }
   const selectedCount = selections.reduce((count, selection) =>
     count + selection.recordIdsText.split(/[\s,]+/).filter(Boolean).length, 0);
   const dirty = JSON.stringify(selections) !== saved;
-  const valid = selectedCount <= 100 && selections.length <= 20 && selections.every(row => {
+  const valid = ready && selectedCount <= 100 && selections.length <= 20 && selections.every(row => {
     const ids = row.recordIdsText.split(/[\s,]+/).filter(Boolean);
     return row.objectApi && ids.length >= 1 && ids.length <= 50 && new Set(ids).size === ids.length;
   }) && new Set(selections.map(row => row.objectApi)).size === selections.length;
@@ -88,7 +90,7 @@ export default function OfflineBriefcaseSettings({ request, permitted, objects }
     {loading && <p role="status">Loading offline briefcase settings…</p>}
     {error && <p className="offline-briefcase-error" role="alert">{error}</p>}
     {notice && <p role="status">{notice}</p>}
-    <form onSubmit={event => void save(event)}>
+    {ready && <form onSubmit={event => void save(event)}>
       {selections.map((selection, index) => <fieldset className="offline-briefcase-selection" key={index}>
         <legend>{selection.objectApi ? (objects.find(object=>object.apiName===selection.objectApi)?.label??selection.objectApi) : `Object selection ${index+1}`} · {selection.recordIdsText.split(/[\s,]+/).filter(Boolean).length} selected</legend>
         <label>Object
@@ -126,7 +128,7 @@ export default function OfflineBriefcaseSettings({ request, permitted, objects }
           {saving ? 'Saving…' : 'Save selections'}
         </button>
       </div>
-    </form>
+    </form>}
   </section>;
 }
 
