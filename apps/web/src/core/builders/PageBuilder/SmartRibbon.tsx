@@ -581,14 +581,10 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
           </select>
         </label>
         {(()=>{
-          const badge=activeDesign2Area==='Badge'&&
-            definitions.some(p=>p.id==='badgeVisible'&&p.components.includes(api));
-          const shown=badge?properties.badgeVisible===true:componentVisible;
-          const toggle=badge?()=>update('badgeVisible',!shown):
-            onVisibleChange?()=>onVisibleChange(!componentVisible):undefined;
+          const shown=componentVisible;
+          const toggle=onVisibleChange?()=>onVisibleChange(!componentVisible):undefined;
           return <button type="button" className="smart-icon-toggle smart-design2-visibility"
-            aria-label={badge?'Badge visibility':'Component visibility'}
-            title={badge?'Badge visibility':'Component visibility'}
+            aria-label="Component visibility" title="Component visibility"
             aria-pressed={shown} disabled={!toggle} onClick={toggle}>
             {shown?<Eye size={17}/>:<EyeOff size={17}/>}
           </button>;
