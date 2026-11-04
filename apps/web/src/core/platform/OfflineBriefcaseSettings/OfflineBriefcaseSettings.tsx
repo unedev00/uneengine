@@ -8,6 +8,12 @@ type Selection = { objectApi: string; recordIds: string[] };
 type DraftSelection = { objectApi: string; recordIdsText: string };
 type Request = <T>(path: string, init?: RequestInit) => Promise<T>;
 
+const briefcaseFailureMessage = (cause: unknown, fallback: string): string => {
+  const detail = cause instanceof Error ? cause.message : fallback;
+  return /SQL|database|postgres|non-JSON|HTTP 50[0234]|upstream|relation .+ does not exist/i.test(detail)
+    ? 'Offline briefcase service is temporarily unavailable. Please retry.' : detail;
+};
+
 const toDraft = (selection: Selection): DraftSelection => ({
   objectApi: selection.objectApi,
   recordIdsText: selection.recordIds.join('\n')
@@ -36,7 +42,7 @@ export default function OfflineBriefcaseSettings({ request, permitted, objects }
         if (active) { const rows = (briefcase?.selections ?? []).map(toDraft); setSelections(rows); setSaved(JSON.stringify(rows)); }
       })
       .catch((cause: unknown) => {
-        if (active) setError(cause instanceof Error ? cause.message : 'Unable to load offline briefcase settings');
+        if (active) setError(briefcaseFailureMessage(cause, 'Unable to load offline briefcase settings'));
       })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
@@ -61,7 +67,7 @@ export default function OfflineBriefcaseSettings({ request, permitted, objects }
       setSaved(JSON.stringify(briefcase.selections.map(toDraft)));
       setNotice('Offline briefcase selections saved.');
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Unable to save offline briefcase settings');
+      setError(briefcaseFailureMessage(cause, 'Unable to save offline briefcase settings'));
     } finally { setSaving(false); }
   };
 
