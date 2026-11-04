@@ -6,7 +6,7 @@ type Row={sheet:string;excelRow:number;objectApi:string;fieldApi?:string;action:
 type Report={digest?:string;summary:{total:number;valid?:number;success?:number;error:number;skipped:number};
  rows:Row[];report:string};
 type Props={apiRequest:<T>(path:string,init?:RequestInit)=>Promise<T>;currentObject:string;onClose:()=>void;
- onChanged:()=>void};
+ onChanged:()=>void;inline?:boolean};
 function saveXlsx(base64:string,filename:string){
  const bytes=atob(base64);const data=new Uint8Array(bytes.length);
  for(let i=0;i<bytes.length;i++)data[i]=bytes.charCodeAt(i);
@@ -14,7 +14,7 @@ function saveXlsx(base64:string,filename:string){
  const anchor=document.createElement('a');anchor.href=url;anchor.download=filename;
  document.body.appendChild(anchor);anchor.click();anchor.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
-export default function UniversalMetadataLoader({apiRequest,currentObject,onClose,onChanged}:Props){
+export default function UniversalMetadataLoader({apiRequest,currentObject,onClose,onChanged,inline=false}:Props){
  const [workbook,setWorkbook]=useState(''),[fileName,setFileName]=useState('');
  const [validation,setValidation]=useState<Report|null>(null);
  const [execution,setExecution]=useState<Report|null>(null);
@@ -66,15 +66,15 @@ export default function UniversalMetadataLoader({apiRequest,currentObject,onClos
   }catch(e){setError(e instanceof Error?e.message:'Unable to export metadata');}
   finally{setBusy(false);}
  };
- return <div role="dialog" aria-modal="true" aria-label="Universal Data Loader"
-  style={{position:'fixed',inset:0,zIndex:10020,background:'rgba(15,23,42,.55)',display:'grid',
-   placeItems:'center',padding:16}}>
-  <section className="surface" style={{width:'min(1040px,100%)',maxHeight:'94vh',overflowY:'auto',padding:24,
+ return <div role={inline?'region':'dialog'} aria-modal={inline?undefined:true} aria-label="Object Metadata Loader"
+  style={inline?{width:'100%'}:{position:'fixed',inset:0,zIndex:10020,
+   background:'rgba(15,23,42,.55)',display:'grid',placeItems:'center',padding:16}}>
+  <section className="surface" style={{width:inline?'100%':'min(1040px,100%)',maxHeight:inline?undefined:'94vh',overflowY:'auto',padding:24,
    background:'var(--surface,#fff)',borderRadius:12,boxShadow:'0 12px 48px #0004'}}>
    <div className="section-toolbar" style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12}}>
     <div><h2>Universal Data Loader — Objects &amp; Fields</h2>
      <p>Export, edit, validate, then upsert or delete metadata with row-wise results.</p></div>
-    <button className="btn" type="button" aria-label="Close loader" onClick={onClose}><X size={18}/></button>
+    {!inline&&<button className="btn" type="button" aria-label="Close loader" onClick={onClose}><X size={18}/></button>}
    </div>
    <section className="metadata-card" style={{marginBottom:16}}>
     <h3><Download size={17}/> Download existing metadata</h3>
