@@ -35,8 +35,8 @@ export default function ScheduledFlows({ flows, objects, loading, onEdit }: Sche
         </div>
       </div>
       <div className="flow-config-row" role="group" aria-label="Automation explorer views" style={{ marginBottom: 12 }}>
-        <button type="button" className={view === 'scheduled' ? 'btn btn-brand' : 'btn'} onClick={() => setView('scheduled')}>Scheduled Flows</button>
-        <button type="button" className={view === 'triggers' ? 'btn btn-brand' : 'btn'} onClick={() => setView('triggers')}>Flow Trigger Explorer</button>
+        <button type="button" aria-current={view==='scheduled'?'page':undefined} className={view === 'scheduled' ? 'btn btn-brand' : 'btn'} onClick={() => setView('scheduled')}>Scheduled Flows</button>
+        <button type="button" aria-current={view==='triggers'?'page':undefined} className={view === 'triggers' ? 'btn btn-brand' : 'btn btn-link'} onClick={() => setView('triggers')}>Flow Trigger Explorer</button>
       </div>
       {view === 'triggers' ? <FlowTriggerExplorer flows={flows} objects={objects} loading={loading} onEdit={onEdit} /> : <section className="surface scheduled-flows-surface">
         <div className="list-view-header">
@@ -55,7 +55,7 @@ export default function ScheduledFlows({ flows, objects, loading, onEdit }: Sche
             />
           </label>
         </div>
-        <ResponsiveDataList rows={scheduledFlows} getId={flow=>flow.apiName}
+        <ResponsiveDataList rows={scheduledFlows} includeTablet getId={flow=>flow.apiName}
           label="Scheduled flows" loading={loading} onOpen={flow=>onEdit(flow.apiName)} openLabel="Edit Flow"
           columns={[
             {apiName:'label',label:'Flow',phoneRole:'title',render:flow=>flow.label},
@@ -65,7 +65,7 @@ export default function ScheduledFlows({ flows, objects, loading, onEdit }: Sche
             {apiName:'start',label:'Start',render:flow=>[configText(flow.startConfig.startDate),configText(flow.startConfig.startTime)].filter(Boolean).join(' · ')||'Not configured'},
             {apiName:'frequency',label:'Frequency',phoneRole:'trailing',render:flow=>configText(flow.startConfig.frequency)||'Not configured'}
           ]}/>
-        <div className="table-scroll md-mobile-table-replaced" role="region" aria-label="Scheduled flows results" tabIndex={0}>
+        <div className="table-scroll md-mobile-table-replaced md-tablet-table-replaced" role="region" aria-label="Scheduled flows results" tabIndex={0}>
           <table className="slds-table scheduled-flows-table">
             <thead>
               <tr>
