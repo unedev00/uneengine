@@ -448,6 +448,13 @@ function CompanySettings({ canManage, section = 'general' }: { canManage: boolea
   const [companyError,setCompanyError]=useState('');
   const [companyNotice,setCompanyNotice]=useState('');
   const [logoReading,setLogoReading]=useState(false);
+  const contactFieldKeys=['website','phone','email','addressLine1','addressLine2','city','postcode','country'];
+  const brandFieldKeys=['tradingName','website'];
+  const visibleCompanyFields=companyFields.filter(field=>section==='contacts'?contactFieldKeys.includes(field.key)
+    :section==='branding'?brandFieldKeys.includes(field.key)
+      :!contactFieldKeys.includes(field.key)||field.key==='email');
+  const shownCompanyFields=companyEditing?visibleCompanyFields:visibleCompanyFields.filter(field=>section!=='contacts'||Boolean(company[field.key]?.trim()));
+  const contactsConfigured=contactFieldKeys.some(key=>Boolean(company[key as keyof CompanyProfile]?.trim()));
   const companyDirty=companyBeforeEdit!==null&&JSON.stringify(company)!==JSON.stringify(companyBeforeEdit);
   const logoDirty=companyBeforeEdit!==null&&company.logoUrl!==companyBeforeEdit.logoUrl;
   const saveCompanyAllowed=companyDirty&&(section!=='branding'||logoDirty);
@@ -611,13 +618,20 @@ function CompanySettings({ canManage, section = 'general' }: { canManage: boolea
 
   return <div className="home-content settings-read-first-page company-settings-page">
     <PageHeading eyebrow="Company Settings" title="Company Settings"
-      description="Manage your organisation settings, base currency, VAT and exchange rates in one workspace." />
-    <section className="surface permission-section company-profile-section" aria-label={sectionTitle}>
+      description={section==='currency'?'Review your corporate currency, VAT and exchange rates.':section==='contacts'?'Manage how customers and partners contact your organisation.':section==='branding'?'Review and update your organisation logo and public identity.':'Manage your organisation details.'} />
+    {section!=='currency'&&<section className="surface permission-section company-profile-section" aria-label={sectionTitle}>
       <div className="section-toolbar"><div><h2>{sectionTitle}</h2><p>{section==='branding'?'Upload a PNG, JPG or WebP logo (up to 128 KB). Preview the current logo below.':'Organisation, contact and regional information.'}</p></div>
-      {canManage&&!companyEditing&&!companyLoading&&<button type="button" className="btn" onClick={()=>{setCompanyBeforeEdit({...company});setCompanyEditing(true);}}>{section === 'branding' ? 'Edit logo' : section === 'contacts' ? 'Edit contacts' : 'Edit details'}</button>}</div>
+      {canManage&&!companyEditing&&!companyLoading&&<button type="button" className="btn" onClick={()=>{setCompanyBeforeEdit({...company});setCompanyEditing(true);}}>{section === 'branding' ? 'Edit logo' : section === 'contacts' ? contactsConfigured?'Edit contacts':'Add contact details' : 'Edit details'}</button>}</div>
       {companyError&&!companyEditing&&<button type="button" className="btn" disabled={companyLoading} onClick={()=>void reloadCompany()}>Retry loading company details</button>}
-      {companyLoading?<p>Loading company details…</p>:<><div className="company-profile-logo">{(company.logoUrl?.startsWith("data:image/")||company.logoUrl?.startsWith("https://"))?<img src={company.logoUrl} alt="Company logo" />:<span aria-label="No logo configured">No logo</span>}</div><div className="company-profile-grid">{companyEditing&&<div className="company-profile-field" data-company-field="logoUrl"><label htmlFor="company-logo-upload">Company logo</label><input id="company-logo-upload" type="file" accept="image/png,image/jpeg,image/webp" disabled={companySaving||logoReading} onChange={event=>{void selectCompanyLogo(event.target.files?.[0]);event.target.value='';}}/><small>PNG, JPG or WebP · maximum 128 KB</small>{company.logoUrl&&<button className="btn" type="button" disabled={companySaving||logoReading} onClick={()=>{ if (!confirmDestructiveAction('Remove','company logo','Save company settings to apply the removal.')) return; setCompany(previous=>({...previous,logoUrl:''})); }}>Remove logo</button>}</div>}
-      {companyFields.map(field=><div className="company-profile-field" data-company-field={field.key} key={field.key}><label htmlFor={'company-'+field.key}>{field.label}</label>
+      {companyLoading?<p>Loading company details…</p>:<>{!companyEditing&&section==='contacts'&&!contactsConfigured&&<p className="company-contacts-empty">No contact details configured yet. Select Add contact details to enter an email, telephone, website or address.</p>}
+       {(section==='branding'||section==='general')&&<div className="company-profile-logo">{(company.logoUrl?.startsWith("data:image/")||company.logoUrl?.startsWith("https://"))?<img src={company.logoUrl} alt="Company logo" />:<span aria-label="No logo configured">No logo</span>}</div>}
+       {section==='branding'&&<div className="company-brand-preview" aria-label="Illustrative sign-in preview">
+        <small>Sign-in preview (illustrative)</small>
+        <div>{company.logoUrl?.startsWith('data:image/')||company.logoUrl?.startsWith('https://')?<img src={company.logoUrl} alt="Current company logo" />:<span>No logo configured</span>}
+         <strong>{company.tradingName||company.legalName||'Your organisation'}</strong><span>Sign in</span></div>
+       </div>}
+       <div className="company-profile-grid">{companyEditing&&<div className="company-profile-field" data-company-field="logoUrl"><label htmlFor="company-logo-upload">Company logo</label><input id="company-logo-upload" type="file" accept="image/png,image/jpeg,image/webp" disabled={companySaving||logoReading} onChange={event=>{void selectCompanyLogo(event.target.files?.[0]);event.target.value='';}}/><small>PNG, JPG or WebP · maximum 128 KB</small>{company.logoUrl&&<button className="btn" type="button" disabled={companySaving||logoReading} onClick={()=>{ if (!confirmDestructiveAction('Remove','company logo','Save company settings to apply the removal.')) return; setCompany(previous=>({...previous,logoUrl:''})); }}>Remove logo</button>}</div>}
+      {shownCompanyFields.map(field=><div className="company-profile-field" data-company-field={field.key} key={field.key}><label htmlFor={'company-'+field.key}>{field.label}</label>
         {companyEditing?<input id={'company-'+field.key} className="form-control" value={company[field.key]}
           onChange={event=>setCompany(previous=>({...previous,[field.key]:event.target.value}))}/>
         :<p>{company[field.key]||'Not provided'}</p>}</div> )}</div></>}
@@ -626,8 +640,8 @@ function CompanySettings({ canManage, section = 'general' }: { canManage: boolea
         <button type="button" className="btn btn-brand" disabled={companySaving||logoReading||!saveCompanyAllowed} onClick={()=>void saveCompany()}>{companySaving?'Saving…':'Save details'}</button></div>}
       {companyError&&<p className="form-error" role="alert">{companyError}</p>}
       {companyNotice&&<p className="form-success" role="status">{companyNotice}</p>}
-    </section>
-    <section className="surface permission-section">
+    </section>}
+    {section==='currency'&&<section className="surface permission-section">
       <div className="section-toolbar">
         <div><h2>Currency & Tax</h2>
           <p>Rates express units of corporate currency per one unit of the active currency.</p></div>
@@ -718,7 +732,7 @@ function CompanySettings({ canManage, section = 'general' }: { canManage: boolea
       </> : null}
       {error && <p className="form-error" role="alert">{error}</p>}
       {notice && <p className="form-success" role="status">{notice}</p>}
-    </section>
+    </section>}
   </div>;
 }
 
