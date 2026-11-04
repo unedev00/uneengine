@@ -1707,6 +1707,25 @@ export function createSystemServer(db:SqlPersistence) {
     res.setHeader('Cache-Control','private, no-store');
     res.json({styles:await saveAcetillVisualStyles(db,actor.tenant_id,req.body?.styles)});
   }));
+  // New pages are created exactly once, including their first immutable draft.
+  // No existing (including archived) page may be overwritten or resurrected.
+  app.post('/api/metadata/pages',route(async(req,res)=>{
+    const actor=req.actor!;
+    await rbac.require(actor.tenant_id,actor.user_id,'PageDefinition','manage');
+    const name=req.body?.apiName;
+    if(typeof name!=='string'||!api.test(name)||name!==name.toLowerCase())
+      throw new Error('New Page API names must be lowercase');
+    if(req.body?.status!=='Draft')throw new Error('New Pages must start as Draft');
+    await assertMetadataPackageEditable(db,actor.tenant_id,'page',name);
+    const variant=pageLayoutVariant(req.body?.layoutVariant??'Desktop');
+    const page=await db.transaction(async()=>{
+      await pages.save(actor.tenant_id,name,req.body,true);
+      return pages.saveLayoutDraft(actor.tenant_id,name,variant,
+        {...req.body,draftRevision:0,revision:undefined},actor.user_id);
+    });
+    res.setHeader('Cache-Control','private, no-store');
+    res.status(201).json({page});
+  }));
   app.get('/api/metadata/pages',route(async(req,res)=>{
     const actor=req.actor!;
     await rbac.require(actor.tenant_id,actor.user_id,'PageDefinition','read');
