@@ -177,6 +177,12 @@ function TenantEmailRecoverySettings({canManage}:{canManage:boolean}){
  const [serviceUsers,setServiceUsers]=useState<Array<{id:string;email:string;enabled:boolean}>>([]);
  const [editing,setEditing]=useState(false),[busy,setBusy]=useState(false),[message,setMessage]=useState('');
  const [recoverySection,setRecoverySection]=useState<'otp'|'email'|'whatsapp'|'sms'>('otp');
+ const recoveryEditorRef=useRef<HTMLDivElement>(null);
+ useEffect(()=>{
+   if(!editing)return;
+   const activeGroup=recoveryEditorRef.current?.querySelector<HTMLElement>('details[open] > summary');
+   activeGroup?.scrollIntoView({block:'start',behavior:'auto'});
+ },[editing,recoverySection]);
  const snapshot=useRef<RecoveryFlow|null>(null);
  useEffect(()=>{
   let active=true;
@@ -219,7 +225,7 @@ function TenantEmailRecoverySettings({canManage}:{canManage:boolean}){
   <p>Security-critical verification is enforced by Core; templates and HTTP Callout actions are editable here without code.</p>
   {!deliveryReady&&<p role="alert" className="permission-help">Platform recovery email is not configured.</p>}
   {flow.method==='LINK'&&!linkReady&&<p role="alert">Configure a trusted HTTPS reset link origin.</p>}
-  {editing?<div className="settings-read-first-section md-recovery-editor">
+  {editing?<div ref={recoveryEditorRef} className="settings-read-first-section md-recovery-editor">
    <p className="permission-help">Open only the section you need to edit. Changes are saved together when you choose Save Flow.</p>
    <details className="md-recovery-config-group" open={recoverySection==='otp'}>
     <summary>Generate OTP and verification limits</summary>
