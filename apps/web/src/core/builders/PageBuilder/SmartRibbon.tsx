@@ -150,12 +150,11 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  const compactDesign=true;
  // Independent SQL-planned view over shared controls and persisted property keys.
  // A null property key displays the fallback glyph, always disabled.
- // Dropdown contains only sections explicitly listed for this component
- // in the approved SQL Yes/No matrix. Legacy areas are not silently added.
- const design2Areas=[...new Set(design2SlotRules
-   .filter(rule=>rule.componentApi===api).map(rule=>rule.area))]
-   .sort((a,b)=>(design2Slots.find(slot=>slot.area===a)?.areaOrder??999)-
-                (design2Slots.find(slot=>slot.area===b)?.areaOrder??999));
+ // All Excel-defined sections stay visible for every component. No per-API
+ // filtering of the section dropdown; unsupported slots remain disabled.
+ const design2Areas=[...new Map(design2Slots
+   .map(slot=>[slot.area,slot.areaOrder] as const)).entries()]
+   .sort((a,b)=>a[1]-b[1]).map(([area])=>area);
  const activeDesign2Area=design2Areas.includes(design2Area)?design2Area:design2Areas[0]??'Body';
  const approvedMatrixAreas=new Set(design2SlotRules.map(rule=>rule.area));
  // A SQL slot owns its position even when its property is unavailable.
