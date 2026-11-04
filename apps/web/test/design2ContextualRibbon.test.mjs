@@ -298,7 +298,7 @@ test('Design 2 icon palettes and choice controls preserve R0 and the approved SQ
  const icons=read('../src/core/builders/PageBuilder/Design2IconDropdown.tsx');
  assert.match(ribbon,/Design2IconDropdown/);
  assert.match(ribbon,/iconVariant=\{tab==='Design2'/);
- assert.match(ribbon,/Badge visibility/);
+ assert.match(ribbon,/aria-label="Component visibility"/);
  assert.match(ribbon,/\['x','y'\] as const/);
  assert.match(ribbon,/smart-design2-workbench/);
  assert.match(palette,/iconVariant/);
@@ -356,7 +356,7 @@ test('Body R1C3 Shape to R1C4 Shape Fill has no empty 80px phantom column',()=>{
  assert.match(shared,/components:assigned\?assigned\.components:\[\]/);
 });
 
-test('Badge Visible is a Layout property for Smart Card Grid and Smart Image',()=>{
+test('Badge visibility is derived from badge text and no longer has a ribbon switch',()=>{
  const migration=read('../../server/src/system-support/migrations/20271109-badge-visibility-layout.sql');
  const catalog=read('../../server/src/system-support/migrations/20270124-smart-component-library.sql');
  assert.match(migration,/UPDATE md_builder_shared_properties/);
@@ -365,7 +365,8 @@ test('Badge Visible is a Layout property for Smart Card Grid and Smart Image',()
  assert.match(catalog,/\('smart_card_grid','badgeVisible',true/);
  assert.match(catalog,/\('smart_image','badgeVisible',true/);
  assert.match(shared,/const visible=definitions\.filter\(p=>p\.tab===tab\)/);
- assert.match(shared,/Badge visibility/,'Design 2 Badge-area Eye remains independently functional');
+ assert.doesNotMatch(shared,/title=\{badge\?'Badge visibility'/,'Badge-area eye must not toggle badge visibility');
+ assert.match(shared,/aria-label="Component visibility"/);
 });
 
 test('Design 2 R0 C7-C21 has 15 fixed 40x26 actions for every selected component',()=>{
@@ -435,7 +436,7 @@ test('all Design 2 areas project the same fixed Body+Image icon scaffold',()=>{
  assert.match(shared,/slot\.area==='Image'&&/);
  assert.match(shared,/const design2RenderedSlots:Design2Slot\[\]=design2TemplateSlots\.map/);
  assert.match(shared,/const actual=areaSlots\.find\(slot=>slot\.slotKey===template\.slotKey\)/);
- assert.match(shared,/propertyKey:actual\?\.propertyKey\?\?null/);
+ assert.match(shared,/propertyKey:bodyImagePlacement\?'imagePlacement':actual\?\.propertyKey\?\?null/);
  assert.match(shared,/const design2Properties=tab==='Design2'\?design2RenderedSlots/);
  assert.match(shared,/const slots=design2TemplateSlots\.filter\(slot=>slot\.row===row\)/);
  assert.match(shared,/const slotPlacement=tab==='Design2'\?design2RenderedSlots\.find/);
