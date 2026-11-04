@@ -169,6 +169,7 @@
  box-sizing:border-box!important;display:flex!important;flex-flow:row wrap!important;
  align-content:flex-start!important;align-items:center!important;
  width:420px!important;min-width:420px!important;max-width:420px!important;
+ flex:none!important;height:auto!important;min-height:0!important;max-height:none!important;
  gap:6px 4px!important;position:relative!important;
  padding:23px 0 0!important;margin:0!important;
  border-top:1px solid #ccd2dd!important;
