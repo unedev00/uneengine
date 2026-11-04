@@ -74,7 +74,7 @@ function writeReport(tables:LoaderTable[],items:Item[]):Buffer{
 function objectExport(o:MetadataObject,config:Record<string,unknown>){
  const s=(config.settings??{}) as Record<string,unknown>;
  return {Action:'Upsert',ApiName:o.apiName,Label:o.label,PluralLabel:config.pluralLabel??o.label,
-  Kind:o.isSystem?'Standard Object':'Custom Object',Description:config.description,HelpText:config.helpText,Revision:(o as {revision?:number}).revision??'',
+  Kind:o.kind,Description:config.description,HelpText:config.helpText,Revision:(o as {revision?:number}).revision??'',
   AllowReports:s.allowReports,AllowActivities:s.allowActivities,TrackFieldHistory:s.trackFieldHistory,
   AllowInChatter:s.allowInChatter,AllowSearch:s.allowSearch,DeploymentStatus:s.deploymentStatus,
   RecordNameType:s.recordNameType,RecordNameFormat:s.recordNameFormat};
@@ -227,7 +227,7 @@ export function registerMetadataLoaderRoutes(app:Express,db:SqlPersistence,rbac:
       i.sheet==='Objects'?[actor.tenant_id,i.objectApi]:[actor.tenant_id,i.objectApi,i.fieldApi]);
      if(!deleted.rowCount)throw Error('Hard Delete requires a previously soft-deleted definition');
     }
-    if(i.sheet==='Objects'&&obj?.isSystem&&['Delete','HardDelete'].includes(i.action))
+    if(i.sheet==='Objects'&&obj?.kind==='Standard Object'&&['Delete','HardDelete'].includes(i.action))
      throw Error('Standard objects cannot be deleted');
     if(i.sheet==='Fields'&&!obj&&!planned.has(i.objectApi.toLowerCase()))
      throw Error('Parent object does not exist or is not in the workbook');
@@ -280,9 +280,7 @@ export function registerMetadataLoaderRoutes(app:Express,db:SqlPersistence,rbac:
   }
   const workbook=writeLoaderWorkbook([{name:'Objects',columns:objectColumns,rows:objectRows},
    {name:'Fields',columns:fieldColumns,rows:fieldRows}]);
-  res.set('Content-Type','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-  res.set('Content-Disposition','attachment; filename="MetaDrive_Metadata_Export.xlsx"');
-  res.set('Cache-Control','private, no-store');res.send(workbook);
+  res.set('Cache-Control','private, no-store');res.json({workbook:workbook.toString('base64')});
  }));
  app.post('/api/metadata/loader/validate',route(async(req,res)=>{
   const actor=req.actor!,buffer=parse(req),data=await prepared(actor,buffer);
