@@ -69,10 +69,13 @@ export default function OfflineBriefcaseSettings({ request, permitted, objects }
   const selectedCount = selections.reduce((count, selection) =>
     count + selection.recordIdsText.split(/[\s,]+/).filter(Boolean).length, 0);
   const dirty = JSON.stringify(selections) !== saved;
-  const valid = selectedCount <= 100 && selections.every(row => row.objectApi && row.recordIdsText.trim()) && new Set(selections.map(row => row.objectApi)).size === selections.length;
+  const valid = selectedCount <= 100 && selections.length <= 20 && selections.every(row => {
+    const ids = row.recordIdsText.split(/[\\s,]+/).filter(Boolean);
+    return row.objectApi && ids.length >= 1 && ids.length <= 50 && new Set(ids).size === ids.length;
+  }) && new Set(selections.map(row => row.objectApi)).size === selections.length;
   return <section className="offline-briefcase surface permission-section" aria-label="Mobile offline briefcase">
     <header><div><h2>Mobile offline briefcase</h2>
-      <p>Choose up to 100 records that signed-in users can sync for read-only offline access.</p></div>
+      <p>Choose up to 100 records across no more than 20 objects (50 records maximum per object) for read-only offline access.</p></div>
       <button type="button" className="btn" disabled={loading || saving}
         onClick={() => setRevision(value => value + 1)}><RefreshCw size={14} /> Refresh</button>
     </header>
@@ -89,14 +92,14 @@ export default function OfflineBriefcaseSettings({ request, permitted, objects }
             {objects.filter(object => object.apiName === selection.objectApi || !selections.some(row => row.objectApi === object.apiName)).map(object => <option key={object.apiName} value={object.apiName}>{object.label}</option>)}
           </select>
         </label>
-        <OfflineRecordPicker key={selection.objectApi} request={request} objectApi={selection.objectApi} nameField={objects.find(object => object.apiName === selection.objectApi)?.compactLayout?.fieldApiNames[0] ?? 'Name'} selected={selection.recordIdsText.split(/[\s,]+/).filter(Boolean)} disabled={loading || saving} remaining={100-selectedCount} onChange={ids => setSelections(value => value.map((item,itemIndex) => itemIndex === index ? {...item, recordIdsText:ids.join('\n')} : item))} />
+        <OfflineRecordPicker key={selection.objectApi} request={request} objectApi={selection.objectApi} nameField={objects.find(object => object.apiName === selection.objectApi)?.compactLayout?.fieldApiNames[0] ?? 'Name'} selected={selection.recordIdsText.split(/[\s,]+/).filter(Boolean)} disabled={loading || saving} remaining={Math.min(100-selectedCount, 50-selection.recordIdsText.split(/[\s,]+/).filter(Boolean).length)} onChange={ids => setSelections(value => value.map((item,itemIndex) => itemIndex === index ? {...item, recordIdsText:ids.join('\n')} : item))} />
         <button type="button" className="btn btn-secondary" onClick={() =>
           setSelections(value => value.filter((_, itemIndex) => itemIndex !== index))}>
           Remove object
         </button>
       </fieldset>)}
       <p className="offline-briefcase-count" aria-live="polite">{selectedCount} of 100 records selected</p>
-      {!valid && <p role="status">Choose an object and at least one record for each selection, up to 100 records total.</p>}
+      {!valid && <p role="status">Choose an object and 1–50 unique records per object, with no more than 20 objects or 100 records in total.</p>}
       <div className="offline-briefcase-actions">
         <button type="button" className="btn btn-secondary" disabled={loading || selections.length >= 20 || saving}
           onClick={() => setSelections(value => [...value, { objectApi: '', recordIdsText: '' }])}>
