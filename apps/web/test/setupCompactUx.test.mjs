@@ -36,3 +36,15 @@ test('Setup menu retains readable full-text tooltip when a label cannot fit on o
   assert.match(navigation, /title=\{item\}/);
   assert.match(navigation, /<SettingsNavigationIcon group=\{group\.group\} label=\{item\}/);
 });
+
+test('tablet app selector retains the selected name rather than collapsing into a 44px icon', () => {
+  const headerCss=read('../src/core/workspace/WorkspaceTheme/sections/09-workspace.css');
+  const tablet=headerCss.slice(headerCss.indexOf('/* Tablet header: retain a single 56px row'));
+  assert.match(tablet,/\.lightning \.header-installed-apps \{[^}]*min-width: 160px/);
+  assert.match(tablet,/\.lightning \.header-installed-apps select \{[^}]*min-width: 160px/);
+  assert.match(tablet,/\.lightning \.header-installed-apps::after \{ content: none; \}/);
+  const compact=headerCss.slice(headerCss.indexOf('/* Compact, stable phone header'),headerCss.indexOf('/* Tablet Setup:'));
+  assert.match(compact,/\.header-installed-apps select \{[^}]*min-width:160px/);
+  assert.match(navigation,/value=\{installedAppValue\}/);
+  assert.match(navigation,/installedAppLabel/);
+});

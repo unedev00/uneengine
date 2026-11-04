@@ -50,6 +50,11 @@ const parseTime = (value: string) => {
   return `${String(hour).padStart(2, '0')}:${match[2]}`;
 };
 const timePattern = '(?:0?[1-9]|1[0-2]):[0-5][0-9]\\s*[AaPp][Mm]|(?:[01]?[0-9]|2[0-3]):[0-5][0-9]';
+const businessCalendarFailure=(cause:unknown,fallback:string):string=>{
+  const message=cause instanceof Error?cause.message:fallback;
+  return /SQL|database|postgres|non-JSON|HTTP 50[0234]|upstream|relation .+ does not exist/i.test(message)
+    ?'Business calendar service is temporarily unavailable. Please retry.':message;
+};
 const suggestedCalendar = (): BusinessCalendar => ({
   fiscalYearStart: { month: 4, day: 6 },
   timezone: 'Europe/London',
@@ -129,7 +134,7 @@ export default function BusinessCalendarSettings({ request, permitted }: {
         }
       })
       .catch((cause: unknown) => {
-        if (active) setError(cause instanceof Error ? cause.message : 'Unable to load business calendar');
+        if (active) setError(businessCalendarFailure(cause,'Unable to load business calendar'));
       })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
@@ -200,7 +205,7 @@ export default function BusinessCalendarSettings({ request, permitted }: {
       // A running calendar in this browser can re-read the new tenant setting.
       window.dispatchEvent(new Event('metadrive:business-calendar-saved'));
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Unable to save business calendar');
+      setError(businessCalendarFailure(cause,'Unable to save business calendar'));
     } finally { setSaving(false); }
   };
 
@@ -229,6 +234,7 @@ export default function BusinessCalendarSettings({ request, permitted }: {
       </div>
     </header>
     {loading && <p role="status">Loading business calendar…</p>}
+    {!loading&&!loaded&&<button type="button" className="btn" onClick={()=>setRevision(value=>value+1)}>Retry loading business calendar</button>}
     {error && <p className="business-calendar-error" role="alert">{error}</p>}
     {notice && <p role="status">{notice}</p>}
     {!loading && loaded && !configured &&
