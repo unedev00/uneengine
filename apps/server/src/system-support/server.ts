@@ -1553,9 +1553,12 @@ export function createSystemServer(db:SqlPersistence) {
           r.default_value_override,r.choices_override
         FROM md_builder_shared_properties p
         LEFT JOIN md_builder_ribbon_component_rules r
-          ON r.property_key=p.property_key AND r.enabled=true
+          ON r.property_key=p.property_key AND COALESCE(
+            (SELECT v.enabled FROM md_data_loader_ribbon_visibility v
+             WHERE v.tenant_id=$1 AND v.component_api=r.component_api
+               AND v.property_key=r.property_key),r.enabled)=true
         WHERE p.property_key NOT IN ('firstTabCustom','firstTabCaption','firstTabValue')
-        ORDER BY p.sort_order,r.component_api`),
+        ORDER BY p.sort_order,r.component_api`,[actor.tenant_id]),
       db.query<{component_api:string}>(`SELECT component_api FROM md_builder_ribbon_components
         ORDER BY component_api`),
       db.query<{area:string;area_order:number;slot_key:string;row_no:number;
