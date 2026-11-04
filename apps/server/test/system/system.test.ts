@@ -642,6 +642,22 @@ test('Tenant company settings save validated SQL JSON under the authenticated te
  await assert.rejects(()=>svc.saveSetting('tenant','user','company-profile',{password:'not-a-setting'}),/Invalid company profile/);
  assert.equal(queries.length,1);
 });
+test('Legacy HTTPS company logos survive edits without allowing unsafe URL schemes',async()=>{
+ const {PlatformTenantService}=await import('../../src/system-files/platform-tenant-service.js');
+ let writes=0;
+ const db={query:async()=>{writes++;return {rows:[{properties:{legalName:'Example',logoUrl:'https://cdn.example.com/logo.png'}}]};}} as unknown as SqlPersistence;
+ const rbac={require:async()=>{}} as unknown as RbacEngine;
+ const svc=new PlatformTenantService(db,rbac);
+ await svc.saveSetting('tenant','user','company-profile',{
+  legalName:'Example',logoUrl:'https://cdn.example.com/logo.png'});
+ assert.equal(writes,1);
+ for(const url of ['http://cdn.example.com/logo.png','javascript:alert(1)',
+  'https://admin:pass@cdn.example.com/logo.png','https://localhost/logo.png']){
+  await assert.rejects(()=>svc.saveSetting('tenant','user','company-profile',{logoUrl:url}),/Invalid company logo/);
+ }
+ assert.equal(writes,1,'Invalid logo URLs must be rejected before a database write');
+});
+
 test('Tenant currency validation rejects duplicate ISO codes and invalid rates before SQL writes',async()=>{
  const {PlatformTenantService}=await import('../../src/system-files/platform-tenant-service.js');
  const db={query:async()=>{throw Error('No database write expected')}} as unknown as SqlPersistence;
