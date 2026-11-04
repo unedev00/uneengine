@@ -131,8 +131,8 @@ export default function SmartCart({p,records,Picture,expression,fieldAllowed,fir
    height:n(p.headerBoxHeight,52,24),minHeight:n(p.headerBoxHeight,52,24),
    border:border(p.headerBorderColor),textAlign:align(p.headerAlignment),
     fontSize:n(p.headerTextSize,18,8,96),
-   fontWeight:p.headerBold===false?400:700,color:p.headerTextColor||"#fff"}}><span data-md-bind={p.builderPreview?"collectionFormula label":undefined}>{displayFormula("label",p.label,"Smart Cart")}</span></header>
-  <div data-md-bind={p.builderPreview?"cartSupportingSource":undefined} className="smart-cart-supporting" style={{
+   fontWeight:p.headerBold===false?400:700,color:p.headerTextColor||"#fff"}}><span data-md-bind={p.builderPreview?"label":undefined} data-md-bind-titles={p.builderPreview?"Cart heading":undefined}>{displayFormula("label",p.label,"Smart Cart")}</span></header>
+  <div data-md-bind={p.builderPreview?"cartSupportingSource":undefined} data-md-bind-titles={p.builderPreview?"Item count or supporting text":undefined} className="smart-cart-supporting" style={{
    height:n(p.supportingBoxHeight,36,18),minHeight:n(p.supportingBoxHeight,36,18),
    backgroundColor:p.supportingBackgroundColor??undefined,
    fontSize:n(p.supportingTextSize,13,8,96),
@@ -189,18 +189,18 @@ export default function SmartCart({p,records,Picture,expression,fieldAllowed,fir
          textAlign:p.rowAlignment?align(p.rowAlignment):undefined}}>
        {visible.map(index=>{
         if(index===0)return <div key={index} className={"smart-cart-product "+(p.imagePlacement==="right"?"image-right":"image-left")}>
-         <span data-md-bind={p.builderPreview?"imageSource":undefined} className="smart-cart-image-binding"><Picture src={src} alt={String(name||"Product")} loadAsset={p.loadAsset}
+         <span data-md-bind={p.builderPreview?"imageSource":undefined} data-md-bind-titles={p.builderPreview?"Product image":undefined} className="smart-cart-image-binding"><Picture src={src} alt={String(name||"Product")} loadAsset={p.loadAsset}
           style={{width:n(p.imageHeight,44,16),height:n(p.imageHeight,44,16),
            border:border(p.imageBorderColor),borderRadius:4,
            objectFit:p.imageFill==="fit"?"contain":p.imageFill==="stretch"?"fill":"cover",
            flex:"0 0 auto",overflow:"hidden"}}/></span>
          <div className="smart-cart-product-text">
           {canClick&&!demo&&itemId!==null?
-           <button data-md-bind={p.builderPreview?"textSource":undefined} type="button" className="smart-cart-product-name smart-cart-product-click"
+           <button data-md-bind={p.builderPreview?"textSource":undefined} data-md-bind-titles={p.builderPreview?"Product name":undefined} type="button" className="smart-cart-product-name smart-cart-product-click"
             aria-label={"Select "+String(name||"Product")} onClick={()=>fire?.("click",payload)}>{name||"Product"}</button>:
-           <span data-md-bind={p.builderPreview?"textSource":undefined} className="smart-cart-product-name">{name||"Product"}</span>}
+           <span data-md-bind={p.builderPreview?"textSource":undefined} data-md-bind-titles={p.builderPreview?"Product name":undefined} className="smart-cart-product-name">{name||"Product"}</span>}
           {rowSupporting!==null&&rowSupporting!==undefined&&rowSupporting!==""&&
-           <span data-md-bind={p.builderPreview?"rowSupportingSource":undefined} className="smart-cart-row-supporting" style={{
+           <span data-md-bind={p.builderPreview?"rowSupportingSource":undefined} data-md-bind-titles={p.builderPreview?"Product supporting text":undefined} className="smart-cart-row-supporting" style={{
             backgroundColor:p.rowSupportingBackgroundColor??undefined,
             border:p.rowSupportingBorderColor?"1px solid "+p.rowSupportingBorderColor:undefined,
             borderRadius:n(p.rowSupportingRadius,0,0,128),
@@ -215,7 +215,7 @@ export default function SmartCart({p,records,Picture,expression,fieldAllowed,fir
            }}>{rowSupporting}</span>}
          </div>
         </div>;
-        if(index===2)return <div data-md-bind={p.builderPreview?"column3Source":undefined} key={index} className="smart-cart-cell-qty">
+        if(index===2)return <div data-md-bind={p.builderPreview?"column3Source":undefined} data-md-bind-titles={p.builderPreview?"Quantity value":undefined} key={index} className="smart-cart-cell-qty">
          {renderQuantity(record,name,payload)}</div>;
         const value=demo||!sources[index]?"—":fieldExpression('column'+(index+1)+'Source',sources[index],record);
         return <span data-md-bind={p.builderPreview?("column"+(index+1)+"Source"):undefined} key={index} className="smart-cart-cell" aria-label={value==="—"?headings[index]+" not bound":undefined}>
@@ -229,7 +229,7 @@ export default function SmartCart({p,records,Picture,expression,fieldAllowed,fir
           const label=typeof raw==="string"&&raw.trim()
            ?fieldExpression(action.key+"Label",raw,record)
            :action.label;
-          return <button data-md-bind={p.builderPreview?(action.key+"Label"):undefined} type="button" key={action.key}
+          return <button data-md-bind={p.builderPreview?(action.key+"Label"):undefined} data-md-bind-titles={p.builderPreview?"Custom action text":undefined} type="button" key={action.key}
            className="smart-cart-custom-action"
            style={smartCustomButtonAppearance(p,action.key)}
            disabled={demo||!actions[action.key]||itemId===null}
@@ -254,7 +254,7 @@ export default function SmartCart({p,records,Picture,expression,fieldAllowed,fir
      textAlign:p.summaryAlignment?align(p.summaryAlignment):undefined,
      justifyContent:summaryJustify(p.summaryAlignment),
      fontWeight:p.summaryTextWeight===true?700:400,color:p.summaryTextColor||"#52657d"}}>
-    <span data-md-bind={p.builderPreview?(label.toLowerCase()+"Label"):undefined}>{summaryLabels[label]}</span><span data-md-bind={p.builderPreview?(label.toLowerCase()+"Value"):undefined} aria-label={summaryAmounts[label]===null?summaryLabels[label]+" not bound":undefined}>{summaryAmounts[label]??"—"}</span></div>)}
+    <span data-md-bind={p.builderPreview?(label.toLowerCase()+"Label"):undefined} data-md-bind-titles={p.builderPreview?(label+" heading"):undefined}>{summaryLabels[label]}</span><span data-md-bind={p.builderPreview?(label.toLowerCase()+"Value"):undefined} data-md-bind-titles={p.builderPreview?(label+" amount"):undefined} aria-label={summaryAmounts[label]===null?summaryLabels[label]+" not bound":undefined}>{summaryAmounts[label]??"—"}</span></div>)}
    <div className="smart-cart-summary-line smart-cart-total" style={{
     fontSize:n(p.footerTextSize,p.summary2TextSize===undefined?18:n(p.summary2TextSize,18,8,96),8,96),
     fontWeight:typeof p.footerBold==="boolean"?(p.footerBold?700:400):
@@ -271,7 +271,7 @@ export default function SmartCart({p,records,Picture,expression,fieldAllowed,fir
     ...(p.footerHeight!==undefined&&p.footerHeight!==null&&p.footerHeight!==""
      ?{minHeight:n(p.footerHeight,0,0,10000)+"px"}:{})
    }}>
-    <span data-md-bind={p.builderPreview?"totalLabel":undefined}>{summaryLabels.Total}</span><span data-md-bind={p.builderPreview?"totalValue":undefined} aria-label={summaryAmounts.Total===null?summaryLabels.Total+" not bound":undefined}>{summaryAmounts.Total??"—"}</span>
+    <span data-md-bind={p.builderPreview?"totalLabel":undefined} data-md-bind-titles={p.builderPreview?"Total heading":undefined}>{summaryLabels.Total}</span><span data-md-bind={p.builderPreview?"totalValue":undefined} data-md-bind-titles={p.builderPreview?"Total amount":undefined} aria-label={summaryAmounts.Total===null?summaryLabels.Total+" not bound":undefined}>{summaryAmounts.Total??"—"}</span>
    </div>
   </section>
   {(p.builderPreview||p.previewOnly)&&<div className="smart-cart-preview-note">Visual preview — totals and actions are configured separately</div>}
