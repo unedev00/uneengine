@@ -16,6 +16,7 @@
 .smart-cart-row{box-sizing:border-box;padding:7px 8px;margin:3px 0;font-size:13px}
 .smart-cart-row>span{justify-self:end;font-variant-numeric:tabular-nums}
 .smart-cart-product{min-width:0;display:flex;align-items:center;gap:8px}
+.smart-cart-image-binding{display:inline-flex;flex:0 0 auto;min-width:0;max-width:100%;align-items:center}
 .smart-cart-product.image-right{flex-direction:row-reverse;justify-content:flex-end}
 .smart-cart-product .smart-image-empty{font-size:9px;text-align:center;line-height:1.1;word-break:break-word}
 .smart-cart-product-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

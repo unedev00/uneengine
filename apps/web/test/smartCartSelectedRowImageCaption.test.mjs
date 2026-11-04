@@ -68,7 +68,7 @@ test('Image caption uses Label Color, Label Alignment and Text Size independentl
   labelColor:'#1a2b3c',labelAlignment:'right',textSize:24,
   headerAlignment:'left',defaultValueColor:'#abcdef'
  });
- const caption=html.match(/<div class="smart-card-content" style="([^"]+)">Photo caption<\/div>/);
+ const caption=html.match(/<div(?: data-md-bind="textSource")? class="smart-card-content" style="([^"]+)">Photo caption<\/div>/);
  assert.ok(caption,'Image caption must render from textSource');
  assert.match(caption[1],/color:#1a2b3c/i);
  assert.match(caption[1],/text-align:right/);
@@ -83,7 +83,7 @@ test('Card Grid keeps its existing Header Alignment and Default Value Color prec
   records:[{Id:'1',Name:'Desk'}],textSource:'@Name',cardsPerRow:1,cardsPerColumn:1,
   headerAlignment:'left',labelAlignment:'right',defaultValueColor:'#abc123',labelColor:'#123abc'
  });
- const caption=html.match(/<div class="smart-card-content" style="([^"]+)">Desk<\/div>/);
+ const caption=html.match(/<div(?: data-md-bind="textSource")? class="smart-card-content" style="([^"]+)">Desk<\/div>/);
  assert.ok(caption,'Card Grid header must render');
  assert.match(caption[1],/text-align:left/);
  assert.match(caption[1],/color:#abc123/i);

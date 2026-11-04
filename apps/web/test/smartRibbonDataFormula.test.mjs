@@ -7,28 +7,27 @@ const ui=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
 const css=read('../src/core/builders/PageBuilder/SmartRibbonDataFormula.css');
 const sql=read('../../server/src/system-support/migrations/20270216-data-selected-field-formula-ribbon.sql');
 
-test('Data has a single selected-field formula bar above its two-row sections',()=>{
+test('Data retains Source and one formula bar controlled by selected canvas binding',()=>{
  assert.match(ui,/selectedDataField,setSelectedDataField/);
  assert.match(ui,/smart-data-formula-bar/);
  assert.match(ui,/smart-data-workspace/);
- assert.match(ui,/smart-data-sections/);
+ assert.match(ui,/formulaInputHost/);
  assert.match(ui,/activeDataProperty\?<SmartFormulaField/);
- assert.match(ui,/changeActiveDataFormula/);
- assert.match(ui,/setSelectedDataField\(property\.id\)/);
- assert.match(ui,/aria-pressed=\{selected\}/);
- assert.match(ui,/dataSectionRow\(section,row\)/);
+ assert.match(ui,/readCanvasBinding/);
+ assert.match(ui,/writeCanvasBinding/);
+ assert.match(ui,/canvasBinding\?\.componentId===componentId/);
  assert.match(ui,/sections\.filter\(group=>group==='Source'\)/);
- assert.match(ui,/sections\.filter\(group=>group!=='Source'\)/);
- assert.match(ui,/\[1,2,3\]\.map\(row/);
- assert.match(ui,/\[1,2\]\.map\(row/);
+ assert.doesNotMatch(ui,/<div className="smart-data-sections">/);
+ assert.doesNotMatch(ui,/sections\.filter\(group=>group!=='Source'\)\.map/);
  assert.match(ui,/selectedSourceObjects=\{sourceObjects\}/);
  assert.match(ui,/activeDataProperty\.id==='imageSource'\?'image':'text'/);
 });
-test('only the selected formula edit writes the existing metadata property',()=>{
+test('selected canvas formula writes its existing property or stable nested tab caption',()=>{
+ const helper=read('../src/core/builders/PageBuilder/canvasDataBindingTargets.ts');
  assert.match(ui,/activeDataProperty\?\.valueKeys\?\.\[api\]/);
- assert.match(ui,/onChange\(\{\.\.\.properties,\[activeDataKey\]:next/);
- assert.match(ui,/imageSourceMode:'field'/);
- assert.match(ui,/activeSummaryLabel\.key/);
+ assert.match(ui,/writeCanvasBinding\(properties/);
+ assert.match(helper,/imageSourceMode:'field'/);
+ assert.match(helper,/tabs\[index\]=\{\.\.\.tabs\[index\],label:value\}/);
  assert.match(ui,/disabled=\{!activeDataEnabled\}/);
  assert.match(ui,/RecordFilterEditor/);
  assert.ok(ui.includes("openFilters('Record')"));

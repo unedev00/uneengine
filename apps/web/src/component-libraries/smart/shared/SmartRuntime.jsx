@@ -163,7 +163,7 @@ function SmartCard({p,record,onButtonClick,onCustomButton,onSelect,selected=fals
   ...(focused&&focusedHeight>0?{height:"min(100%, "+focusedHeight+"px)"}:{}),
   ...(focused&&(focusedWidth>0||focusedHeight>0)?{margin:"auto"}:{})
  }} data-selected={selected?"true":undefined}>
-  {imageVisible&&<div style={{order:["right","bottom"].includes(p.imagePlacement)?2:0,
+  {imageVisible&&<div data-md-bind={p.builderPreview?"imageSource":undefined} style={{order:["right","bottom"].includes(p.imagePlacement)?2:0,
     flex:horizontal?(grid&&imageWidth!==null?"0 0 "+imageWidth+"px":"1 1 50%"):
       single?"1 1 auto":grid?"1 1 "+imageHeight+"px":undefined,
     // A user-defined side image cannot squeeze the text to zero or exceed the card.
@@ -190,7 +190,7 @@ function SmartCard({p,record,onButtonClick,onCustomButton,onSelect,selected=fals
        boxSizing:"border-box",borderRadius:single?number(p.radius,12):undefined,
        border:nativeImageBorder}}/>}
   </div>}
-  {header&&headerHeight>0&&<div className="smart-card-content" style={{
+  {header&&headerHeight>0&&<div data-md-bind={p.builderPreview?"textSource":undefined} className="smart-card-content" style={{
     order:1,flex:horizontal?(imageVisible?"1 1 50%":"1 1 100%"):undefined,display:"flex",alignItems:"center",
     height:headerHeight,alignSelf:horizontal?"center":undefined,flexShrink:0,
     fontWeight:focusedWeight??(p.headerBold===false?400:700),
@@ -208,19 +208,19 @@ function SmartCard({p,record,onButtonClick,onCustomButton,onSelect,selected=fals
   }}>{header}</div>}
   {grid&&(description||value||buttonText||customButtons.length>0)&&<div className="smart-card-details"
    style={cardPadding===null?undefined:{padding:cardPadding+"px"}}>
-   {description&&<span className="smart-card-description"
+   {description&&<span data-md-bind={p.builderPreview?"cardDescription":undefined} className="smart-card-description"
      style={{color:focusedText||p.supportingTextColor||undefined,
       fontWeight:focusedWeight??(typeof p.supportingBold==="boolean"?(p.supportingBold?700:400):undefined),
       fontSize:p.supportingTextSize!==undefined&&p.supportingTextSize!==null&&p.supportingTextSize!==""
        ?number(p.supportingTextSize,14,8,96):undefined,
       textAlign:["left","center","right"].includes(p.supportingAlignment)?p.supportingAlignment:undefined}}>{description}</span>}
    {(value||buttonText||customButtons.length>0)&&<div className="smart-card-footer">
-    {value&&<strong className="smart-card-value"
+    {value&&<strong data-md-bind={p.builderPreview?"cardValue":undefined} className="smart-card-value"
       style={{color:focusedText||p.footerTextColor||undefined,
        fontWeight:focusedWeight??(typeof p.footerBold==="boolean"?(p.footerBold?700:400):undefined),
        fontSize:p.footerTextSize!==undefined&&p.footerTextSize!==null&&p.footerTextSize!==""
         ?number(p.footerTextSize,19,8,96):undefined}}>{value}</strong>}
-    {buttonText&&<button type="button" className="smart-card-button"
+    {buttonText&&<button data-md-bind={p.builderPreview?"cardButtonText":undefined} type="button" className="smart-card-button"
       disabled={!onButtonClick} aria-label={buttonText}
       style={{
        backgroundColor:p.cardButtonFill||p.accentColor||"#2563eb",
@@ -248,14 +248,14 @@ function SmartCard({p,record,onButtonClick,onCustomButton,onSelect,selected=fals
       onClick={event=>{event.stopPropagation();onButtonClick?.();}}>{buttonText}</button>}
     {customButtons.map(key=>{
      const label=gridText(p,key+"Label",record)||(key==="customButton1"?"+":"−");
-     return <button key={key} type="button" className="smart-card-button smart-card-custom-action"
+     return <button key={key} data-md-bind={p.builderPreview?(key+"Label"):undefined} type="button" className="smart-card-button smart-card-custom-action"
       style={smartCustomButtonAppearance(p,key)} disabled={!p.actionFlows?.[key]||!onCustomButton||p.previewOnly||p.builderPreview}
       aria-label={label}
       onClick={event=>{event.stopPropagation();onCustomButton?.(key);}}>{label}</button>;
     })}
    </div>}
   </div>}
-  {p.badgeVisible===true&&Boolean(badge)&&<span className={"smart-badge "+(p.badgeAlignment||"image-top-right")}
+  {p.badgeVisible===true&&Boolean(badge)&&<span data-md-bind={p.builderPreview?"badgeText":undefined} className={"smart-badge "+(p.badgeAlignment||"image-top-right")}
    style={{fontWeight:p.badgeBold===false?400:700,fontSize:number(p.badgeTextSize,12),
    color:p.badgeTextColor||"#fff",background:p.badgeBodyColor||"#2563eb",
    border:p.badgeBorderColor?"1px solid "+p.badgeBorderColor:undefined,
@@ -281,8 +281,13 @@ function SmartCalendar({p,fire}){
    }
    return new Date();
  };
- const [selected,setSelected]=React.useState(()=>resolveDate(p.selectedDate??p.defaultValue));
- React.useEffect(()=>setSelected(resolveDate(p.selectedDate??p.defaultValue)),[p.selectedDate,p.defaultValue]);
+ const dateSource=p.selectedDate??p.defaultValue;
+ const resolvedDate=typeof dateSource==='string'
+  ?/^\d{4}-\d{2}-\d{2}$/.test(dateSource.trim())?dateSource.trim():
+   scopedExpression(p,p.selectedDate!==undefined?'selectedDate':'defaultValue',dateSource,recordOf(p))
+  :dateSource;
+ const [selected,setSelected]=React.useState(()=>resolveDate(resolvedDate));
+ React.useEffect(()=>setSelected(resolveDate(resolvedDate)),[resolvedDate]);
  const year=selected.getFullYear(),month=selected.getMonth();
  const dayNames=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
  const first=Math.max(0,["sun","mon","tue","wed","thu","fri","sat"].indexOf(p.firstDay||"mon"));
@@ -296,7 +301,7 @@ function SmartCalendar({p,fire}){
  return <div className="smart-calendar" style={{borderRadius:number(p.radius,12),
   borderColor:p.borderColor||undefined,background:p.backgroundColor||undefined,
   boxShadow:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none"}}>
-  <strong>{selected.toLocaleString("en-GB",{month:"long",year:"numeric"})}</strong>
+  <strong data-md-bind={p.builderPreview?"selectedDate defaultValue":undefined}>{selected.toLocaleString("en-GB",{month:"long",year:"numeric"})}</strong>
   {indices.length===0?<p>No days selected for display</p>:<div className="smart-calendar-grid" style={{gridTemplateColumns:"repeat("+indices.length+",minmax(0,1fr))"}}>
    {indices.map(i=><b key={"day"+i}>{dayNames[i]}</b>)}
    {Array.from({length:weeks},(_,week)=>indices.map(i=>{
@@ -315,16 +320,19 @@ function SmartCalendar({p,fire}){
  </div>;
 }
 function SmartLookup({p,style,fire}){
- const [query,setQuery]=React.useState("");
+ const querySource=scopedExpression(p,"lookupValueFormula",p.lookupValueFormula??"",recordOf(p));
+ const [query,setQuery]=React.useState(querySource);
+ React.useEffect(()=>setQuery(querySource),[querySource]);
+ const placeholder=scopedExpression(p,"label",p.placeholder??p.label??"Search records…",recordOf(p));
  const [opened,setOpened]=React.useState(false);
  const candidates=recordsOf(p).slice(0,200).filter(item=>item&&typeof item==="object");
  const display=row=>scopedExpression(p,"textSource",p.textSource??row.Name??row.name??row.label??row.title??row.id??"",row);
  const matches=candidates.filter(row=>display(row).toLowerCase().includes(query.toLowerCase())).slice(0,20);
- return <div className="smart-lookup" style={{...style,"--smart-placeholder-color":p.labelColor||"#64748b"}}>
-  <input className="smart-search" type="search" role="combobox"
-   aria-label={text(p.placeholder||p.label||"Search records")}
+ return <div data-md-bind={p.builderPreview?"collectionFormula":undefined} className="smart-lookup" style={{...style,"--smart-placeholder-color":p.labelColor||"#64748b"}}>
+  <input data-md-bind={p.builderPreview?"label lookupValueFormula":undefined} className="smart-search" type="search" role="combobox"
+   aria-label={text(placeholder||"Search records")}
    aria-expanded={opened&&matches.length>0} aria-controls="smart-lookup-suggestions"
-   placeholder={text(p.placeholder||p.label||"Search records…")}
+   placeholder={text(placeholder||"Search records…")}
    style={{textAlign:p.labelAlignment||"left",fontSize:number(p.textSize,16),color:p.labelColor||undefined,
     boxShadow:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none",
     background:p.backgroundColor||"#fff",borderColor:p.borderColor||undefined,
@@ -354,7 +362,7 @@ function SmartTabs({p,record,fire}){
  const hasCollection=p.dataCollection&&typeof p.dataCollection.name==='string'
   &&Array.isArray(p.dataCollection.items);
  const collectionTabs=hasCollection?recordsOf(p).slice(0,count).map((row,index)=>({
-  label:String(row.__collectionLabel??row.Name??''),value:row.__collectionValue,
+  label:p.textSource?scopedExpression(p,"textSource",p.textSource,row):String(row.__collectionLabel??row.Name??''),value:row.__collectionValue,
   id:'collection-'+index,record:row
  })):null;
  const recordTabs=collectionTabs??(dynamic?(isBuilderEmpty(p)?Array.from({length:Math.min(count,5)},(_,i)=>({
@@ -362,9 +370,14 @@ function SmartTabs({p,record,fire}){
   })):recordsOf(p).slice(0,count).map(row=>({
    label:scopedExpression(p,"textSource",p.textSource,row),id:row?.Id??row?.id
   }))):Array.isArray(p.tabs)?p.tabs:Array.from({length:count},(_,i)=>i===0&&typeof p.label==="string"&&p.label&&!p.label.startsWith("@")?p.label:"Tab "+(i+1)));
- // Named collections and ordinary authorised Object rows both supply their
- // tab captions and IDs. No synthetic leading tab is inserted by properties.
- const tabs=recordTabs;
+ // Static captions are formulas on stable tab identities, never independent records.
+ // Collection and Object captions still share the one textSource mapping.
+ const tabs=dynamic||hasCollection?recordTabs:recordTabs.map((item,index)=>{
+  const row=item&&typeof item==='object'?item:null;
+  const source=row?row.label??'':item;
+  return {...(row||{}),id:typeof row?.id==='string'&&row.id?row.id:'static-tab-'+index,
+   label:scopedExpression(p,'tabCaptionFormula',String(source??''),recordOf(p))};
+ });
  // The page-scoped selection is authoritative for data-backed Tabs. Clearing a
  // parent selection must not leave a dependent child visibly selected.
  const changeAction=p.actionFlows?.change;
@@ -445,7 +458,7 @@ function SmartTabs({p,record,fire}){
  React.useEffect(()=>{
   if(tabs.length&&active>=tabs.length)setActive(defaultTabIndex);
  },[active,tabs.length,defaultTabIndex]);
- return <div className="smart-tabs-shell" style={{background:p.backgroundColor||undefined,
+ return <div data-md-bind={p.builderPreview?"collectionFormula":undefined} className="smart-tabs-shell" style={{background:p.backgroundColor||undefined,
    display:"flex",flexDirection:"column",height:"100%",minHeight:0,width:"100%"}}>
   <nav className="smart-tabs" role="tablist" aria-label="Tabs"
    aria-orientation={vertical?"vertical":"horizontal"} style={{
@@ -453,7 +466,7 @@ function SmartTabs({p,record,fire}){
     flexDirection:vertical?"column":"row",flexWrap:vertical?"nowrap":"wrap",
     alignItems:vertical?"stretch":undefined,alignContent:vertical?"flex-start":"stretch",
     overflowY:vertical?"auto":undefined,overflowX:vertical?"hidden":undefined}}>
-   {tabs.map((tab,index)=><button key={tab?.id??index} ref={index===selectedTabIndex?selectedTabRef:null} type="button" role="tab"
+   {tabs.map((tab,index)=><button data-md-bind={p.builderPreview?(dynamic||hasCollection?"textSource":"tabCaptionFormula"):undefined} data-md-bind-index={p.builderPreview?index:undefined} data-md-bind-item={p.builderPreview&&typeof tab?.id==="string"?tab.id:undefined} key={tab?.id??index} ref={index===selectedTabIndex?selectedTabRef:null} type="button" role="tab"
     aria-selected={selectedTabIndex===index} style={{height:number(p.tabHeight,44),
      maxHeight:vertical?undefined:"100%",minHeight:vertical?number(p.tabHeight,44):0,
      flex:vertical?"0 0 auto":"1 1 auto",
@@ -485,7 +498,7 @@ function SmartToggle({p,fire}){
    .catch(()=>setChecked(asBoolean(p.value??false)))
    .finally(()=>setSaving(false));
  };
- return <label className="smart-switch" title={p.toggleFieldError||undefined}>
+ return <label data-md-bind={p.builderPreview?"textSource":undefined} className="smart-switch" title={p.toggleFieldError||undefined}>
   <input type="checkbox" role="switch" aria-label={p.toggleFieldError||"Toggle"}
    aria-busy={saving} checked={checked} disabled={disabled} onChange={change}/>
   <span className="smart-switch-track" style={{background:checked?(p.backgroundColor||"#34c759"):"#e5e5ea",
@@ -509,7 +522,7 @@ export default function SmartRuntime(p){
  // far right (e.g. "Start Order  →"), right text puts it at the far left, and
  // centred or unset text keeps the icon just before the caption.
  const iconSide=buttonIcon&&label?(p.labelAlignment==="left"?"end":p.labelAlignment==="right"?"start":"inline"):"inline";
- if(name==="smart_button")content=<button type="button" className="smart-button"
+ if(name==="smart_button")content=<button data-md-bind={p.builderPreview?"label":undefined} type="button" className="smart-button"
    title={label||"Button"} aria-label={label||buttonIcon?.label||"Button"}
    onClick={()=>fire("click",record)} data-icon-side={iconSide==="inline"?undefined:iconSide}
    style={{...style,...shadowStyle,...smartShapeAppearance(p.shapeId,number(p.radius,12)),
@@ -538,7 +551,7 @@ export default function SmartRuntime(p){
    style={{borderColor:p.borderColor||"#d2dbe5",borderRadius:number(p.radius,6,0,128),
     boxShadow:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none",
     fontSize:number(p.textSize,14,8,96)}}>
-   <span className="smart-textbox-caption" style={{backgroundColor:p.backgroundColor||"#f1f5f9",
+   <span data-md-bind={p.builderPreview?"label":undefined} className="smart-textbox-caption" style={{backgroundColor:p.backgroundColor||"#f1f5f9",
      color:p.labelColor||"#334155",textAlign:align(p.labelAlignment),
      justifyContent:alignItems(p.labelAlignment)}}>
     {caption|| (p.builderPreview?"Caption":"")}
@@ -546,7 +559,7 @@ export default function SmartRuntime(p){
    <div className="smart-textbox-value-panel" style={{
     backgroundColor:p.headerBodyColor||"#fff",color:p.headerTextColor||"#1e293b",
     justifyContent:alignItems(p.headerAlignment)}}>
-    <div key={p.textSource??""} className="smart-textbox-value" role="textbox"
+    <div key={p.textSource??""} className="smart-textbox-value" data-md-bind={p.builderPreview?"textSource":undefined} role="textbox"
       aria-label={caption||"Value"} aria-readonly={!editable}
       tabIndex={editable?0:undefined} contentEditable={editable}
       suppressContentEditableWarning={editable}
@@ -569,7 +582,7 @@ export default function SmartRuntime(p){
   // Keep the existing Smart Input exactly as it was; display mode is an
   // opt-in metadata property for labels, headings and read-only values.
   content=name==="smart_label"||p.displayMode==="display"
-   ?<div className="smart-display-text" style={{...style,...shadowStyle,
+   ?<div data-md-bind={p.builderPreview?"label textSource":undefined} className="smart-display-text" style={{...style,...shadowStyle,
      ...(name==="smart_label"?smartShapeAppearance(p.shapeId,number(p.radius,12)):{}),
      width:"100%",height:"100%",minWidth:0,minHeight:0,display:"flex",alignItems:"center",
      justifyContent:p.labelAlignment==="right"?"flex-end":p.labelAlignment==="center"?"center":"flex-start",
@@ -579,7 +592,7 @@ export default function SmartRuntime(p){
      background:p.backgroundColor||"transparent",
      borderStyle:"solid",borderWidth:p.borderWidth===undefined?(name==="smart_label"&&p.borderColor?1:0):number(p.borderWidth,0,0,24),
      borderColor:p.borderColor||"transparent"}}>{contentValue||(name==="smart_label"&&p.builderPreview?"Label":"")}</div>
-   :<input className="smart-input-box" type="text"
+   :<input data-md-bind={p.builderPreview?"label textSource":undefined} className="smart-input-box" type="text"
   aria-label={label||text(p.placeholder||"Input")}
   placeholder={p.builderPreview===true&&![p.placeholder,p.textSource,p.defaultValue,p.value].some(v=>v!==undefined&&v!==null&&v!=="")
     &&!(p.properties&&Object.prototype.hasOwnProperty.call(p.properties,"label"))
@@ -616,7 +629,7 @@ export default function SmartRuntime(p){
   const previewRows=(p.previewOnly===true||p.builderPreview===true||p.preview===true)&&boundRows.length===0
     ?Array.from({length:columns*rows},(_,i)=>({Id:"card-preview-"+i,Name:"Sample item "+(i+1)}))
     :boundRows;
-  content=<div className="smart-grid" role="region" aria-label="Product cards" tabIndex={0}
+  content=<div data-md-bind={p.builderPreview?"collectionFormula":undefined} className="smart-grid" role="region" aria-label="Product cards" tabIndex={0}
    onKeyDown={event=>{
      // The inner grid is an independent keyboard scroller. Never steal
      // arrow/action keys from a focused card or from the Page Builder.
@@ -694,13 +707,13 @@ export default function SmartRuntime(p){
     return text(item);
   };
   const fit=p.imageFill==="fit"?"contain":p.imageFill==="stretch"?"fill":"cover";
-  content=<nav className="smart-navigation" style={{width:"100%",height:"100%",
+  content=<nav data-md-bind={p.builderPreview?"collectionFormula":undefined} className="smart-navigation" style={{width:"100%",height:"100%",
    minWidth:0,minHeight:0,overflow:"auto",flexWrap:"nowrap",alignItems:"flex-start",flexDirection:p.navigationDirection==="vertical"?"column":"row"}}>
     {entries.map((item,i)=>{
       const label=labelOf(item);
       const src=item&&typeof item==="object"?item.imageSrc??item.imageUrl:null;
       const safeSrc=typeof src==="string"&&/^https:\/\//i.test(src)?src:null;
-      return <button key={item?.id??i} type="button" className="smart-navigation-item"
+      return <button data-md-bind={p.builderPreview?"textSource":undefined} key={item?.id??i} type="button" className="smart-navigation-item"
         style={{flex:"0 0 auto",height:32,maxHeight:"100%",minHeight:0,color:p.labelColor||undefined,background:p.backgroundColor||"#fff",
           boxShadow:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none",
           borderColor:p.borderColor||undefined,borderRadius:number(p.radius,4),fontSize:number(p.textSize,16)}}

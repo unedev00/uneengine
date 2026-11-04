@@ -170,6 +170,7 @@
     "apps/web/test/authentication/standalone-entry.test.mjs",
     "apps/web/test/authentication/une-brand-logo.test.mjs",
     "apps/web/test/bundledRegistryClient.test.ts",
+    "apps/web/test/canvasDataBindingTargets.test.ts",
     "apps/web/test/canvasInteractionUX.test.ts",
     "apps/web/test/canvasSharedGestureGeometry.test.ts",
     "apps/web/test/cardGridScrollContract.test.ts",
