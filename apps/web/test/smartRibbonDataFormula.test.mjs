@@ -210,16 +210,16 @@ test('one icon opens visual filters while the same Formula Bar edits record pred
 
 test('forward metadata correction restores compact Data matrix without changing bindings',()=>{
  const correction=read('../../server/src/system-support/migrations/20271112-restore-compact-data-ribbon.sql');
- const slots=[...correction.matchAll(/\\('([^']+)','([^']+)',(\\d+),(\\d+),(\\d+),(\\d+)\\)/g)];
+ const slots=[...correction.matchAll(/\('([^']+)','([^']+)',(\d+),(\d+),(\d+),(\d+)\)/g)];
  assert.equal(slots.length,24);
  assert.ok(slots.every(slot=>Number(slot[3])<=3));
  for(const slot of slots.filter(slot=>slot[2]!=='Source'))
    assert.ok(Number(slot[3])<=2,'Data section control must fit into two rows: '+slot[1]);
  assert.match(correction,/design_caption_width=v.caption_px/);
- assert.doesNotMatch(correction,/\\b(?:DELETE|TRUNCATE|DROP|INSERT INTO md_builder_shared_properties|UPDATE md_page_components)\\b/i);
+ assert.doesNotMatch(correction,/\b(?:DELETE|TRUNCATE|DROP|INSERT INTO md_builder_shared_properties|UPDATE md_page_components)\b/i);
  const layout=read('../src/core/builders/PageBuilder/PageBuilderRibbonLayout.css');
  assert.doesNotMatch(layout,/--page-ribbon-content-height:140px/);
  assert.match(css,/height:114px!important/);
- assert.match(ui,/sections\\.filter\\(group=>group==='Source'\\)/);
- assert.match(ui,/sections\\.filter\\(group=>group!=='Source'\\)/);
+ assert.match(ui,/sections\.filter\(group=>group==='Source'\)/);
+ assert.match(ui,/sections\.filter\(group=>group!=='Source'\)/);
 });
