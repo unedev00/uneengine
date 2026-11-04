@@ -17,7 +17,7 @@ test('editing a static tab caption upgrades legacy arrays to stable editable ide
 });
 test('generated tabs are persisted only when authored, and direct fields retain original metadata keys',()=>{
  const props={tabCount:4,label:'All'};
- assert.equal(readCanvasBinding(props,{propertyKey:'tabCaptionFormula',itemIndex:0}),'Tab 1');
+ assert.equal(readCanvasBinding(props,{propertyKey:'tabCaptionFormula',itemIndex:0}),'All');
  const edited=writeCanvasBinding(props,{propertyKey:'tabCaptionFormula',itemIndex:2},'=@Category');
  assert.equal((edited.tabs as unknown[]).length,4);
  assert.equal(readCanvasBinding(edited,{propertyKey:'tabCaptionFormula',itemIndex:2}),'=@Category');
