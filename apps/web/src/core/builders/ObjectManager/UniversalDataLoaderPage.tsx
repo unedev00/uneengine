@@ -175,7 +175,7 @@ export default function UniversalDataLoaderPage({apiRequest,objects,onChanged}:P
     </>}
    </section>
    <p className="properties-help">{mode==='ribbon'?
-    'Changes use global SQL applicability and require BuilderRibbon / manage permission. Reload Page Builder to see the updated controls.':
+    'Changes override SQL ribbon applicability for this tenant and require BuilderRibbon / manage permission. Reload Page Builder to see the updated controls.':
     'Record operations include Create, Update, Upsert, Delete, and Restore. All writes use OneEngine record and field permissions; this screen does not permit hard deletion.'}</p>
   </>}
  </section>;
