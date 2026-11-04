@@ -652,7 +652,8 @@ test('Legacy HTTPS company logos survive edits without allowing unsafe URL schem
   legalName:'Example',logoUrl:'https://cdn.example.com/logo.png'});
  assert.equal(writes,1);
  for(const url of ['http://cdn.example.com/logo.png','javascript:alert(1)',
-  'https://admin:pass@cdn.example.com/logo.png','https://localhost/logo.png']){
+  'https://admin:pass@cdn.example.com/logo.png','https://localhost/logo.png',
+  'https://192.168.1.5/logo.png','https://intranet.local/logo.png']){
   await assert.rejects(()=>svc.saveSetting('tenant','user','company-profile',{logoUrl:url}),/Invalid company logo/);
  }
  assert.equal(writes,1,'Invalid logo URLs must be rejected before a database write');
