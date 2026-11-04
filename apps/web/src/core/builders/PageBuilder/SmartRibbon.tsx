@@ -87,6 +87,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  };
 
  const [design2Area,setDesign2Area]=useState('Body');
+ const [countKey,setCountKey]=useState<'cardsPerRow'|'cardsPerColumn'>('cardsPerRow');
  const [filtersOpen,setFiltersOpen]=useState(false);
  const [filterTarget,setFilterTarget]=useState('Record');
  const [filterFieldId,setFilterFieldId]=useState<string|null>(null);
@@ -171,6 +172,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  const design2Areas=[...new Map(design2Slots
    .map(slot=>[slot.area,slot.areaOrder] as const)).entries()]
    .sort((a,b)=>a[1]-b[1]).map(([area])=>area);
+ if(api==='smart_calendar'&&!design2Areas.includes('Calendar'))design2Areas.push('Calendar');
  const activeDesign2Area=design2Areas.includes(design2Area)?design2Area:design2Areas[0]??'Body';
  const approvedMatrixAreas=new Set(design2SlotRules.map(rule=>rule.area));
  // A SINGLE ribbon scaffold for all Design 2 sections and all components.
@@ -189,9 +191,11 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    // metadata areas used R2 for Fill and R3C3 for Text Size; those should
    // no longer shift the whole ribbon when the section changes.
    const actual=areaSlots.find(slot=>slot.slotKey===template.slotKey);
+   const bodyImagePlacement=activeDesign2Area==='Body'&&template.slotKey==='placement'&&
+     ['smart_card_grid','smart_image','smart_cart'].includes(api);
    return {
      ...template,area:activeDesign2Area,
-     propertyKey:actual?.propertyKey??null,
+     propertyKey:bodyImagePlacement?'imagePlacement':actual?.propertyKey??null,
      fallbackKey:actual?.fallbackKey??template.fallbackKey
    };
  });
@@ -201,8 +205,13 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
        rule.componentApi===api&&rule.area===slot.area&&rule.slotKey===slot.slotKey);
      // In specified areas ONLY the explicit Yes cells may be enabled.
      // A missing Yes rule leaves an inert glyph occupying the SAME R/C position.
-     const propertyKey=approvedMatrixAreas.has(slot.area)
-       ?approved?.propertyKey:slot.propertyKey;
+     const migratedBodyKey=slot.area==='Body'&&api==='smart_tabs'&&
+       (slot.slotKey==='width'||slot.slotKey==='height')
+         ?(slot.slotKey==='width'?'tabWidth':'tabHeight'):
+       slot.area==='Body'&&slot.slotKey==='placement'&&
+         ['smart_card_grid','smart_image','smart_cart'].includes(api)?'imagePlacement':null;
+     const propertyKey=migratedBodyKey??(approvedMatrixAreas.has(slot.area)
+       ?approved?.propertyKey:slot.propertyKey);
      const assigned=propertyKey?definitions.find(p=>p.id===propertyKey):undefined;
      const fallbackDefinition=definitions.find(p=>p.id===slot.fallbackKey);
      const fallbackKind:UneRibbonProperty['kind']=
@@ -605,6 +614,44 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
           data-design-row={row} style={{gridTemplateColumns:design2GridColumns(row)}}>
           {sectionRow(activeDesign2Area,row).map(controls)}</div>)}
       </div>
+      {activeDesign2Area==='Body'&&['smart_tabs','smart_card_grid','smart_cart'].includes(api)&&(()=>{
+        const keys=api==='smart_tabs'?['tabCount']:api==='smart_cart'?['cardsPerRow']:['cardsPerRow','cardsPerColumn'];
+        const key=keys.includes(countKey)?countKey:keys[0];
+        const property=definitions.find(p=>p.id===key);
+        const enabled=Boolean(property?.components.includes(api)&&
+          (!sharedPropertyIds||sharedPropertyIds.includes(key)));
+        const raw=properties[property?.valueKeys?.[api]??key]??property?.defaultsOverrides?.[api]??property?.default??1;
+        return <div className="smart-design2-count" role="group" aria-label="Count controls">
+          <Hand size={16} aria-hidden="true"/>
+          {keys.length>1&&<select aria-label="Count property" value={key}
+            onChange={event=>setCountKey(event.target.value as 'cardsPerRow'|'cardsPerColumn')}>
+            <option value="cardsPerRow">Columns</option><option value="cardsPerColumn">Rows</option>
+          </select>}
+          <input type="number" aria-label={property?.label??key} title={property?.label??key}
+            min={property?.min??1} max={property?.max??(key==='tabCount'?20:50)}
+            disabled={!enabled} value={Number(raw)||1}
+            onChange={event=>{const number=Number(event.target.value);
+              if(enabled&&Number.isInteger(number)&&number>=1)
+                onChange({...properties,[property!.valueKeys?.[api]??key]:number});}}/>
+        </div>;
+      })()}
+      {activeDesign2Area==='Calendar'&&api==='smart_calendar'&&
+        <div className="smart-design2-calendar-controls" role="group" aria-label="Calendar settings">
+          {(['showDays','firstDay'] as const).map(id=>{
+            const property=definitions.find(p=>p.id===id);
+            return property?.components.includes(api)?controls({...property,tab:'Design2',
+              group:'Calendar',designWidth:id==='showDays'?80:110,designRow:0,
+              designOrder:id==='showDays'?1:2}):null;
+          })}
+        </div>}
+      {activeDesign2Area==='Image'&&api==='smart_card_grid'&&(()=>{
+        const property=definitions.find(p=>p.id==='imageBorderColor'&&p.components.includes(api));
+        return property?<div className="smart-design2-image-border">
+          <RibbonColorPalette variant="property" kind="border" label="Image Border Color"
+            value={String(properties.imageBorderColor??'')}
+            onChange={value=>onChange({...properties,imageBorderColor:value})}/>
+        </div>:null;
+      })()}
     </div>
   </section>:tab==='Data'?<>
     {sections.filter(group=>group==='Source').map(section=><section className="smart-ribbon-group" key={section}
