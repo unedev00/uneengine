@@ -1415,3 +1415,64 @@ test('Smart Cart quantity buttons take shape and colour from Button 2/3 properti
   qtyIncreaseShape:'shape:oval'},'qtyIncrease'),{backgroundColor:'#fff3c9',borderRadius:'50%',color:'#f28c28'});
  assert.deepEqual(smartCustomButtonAppearance({customButton1Radius:20},'customButton1'),{borderRadius:20});
 });
+
+
+test('all 15 Smart components expose only their real fields in selected Builder preview',async()=>{
+ const cases=[
+  {api:'smart_button',p:{label:'Pay'},must:['label']},
+  {api:'smart_toggle',p:{textSource:'@Enabled'},must:['textSource']},
+  {api:'smart_lookup',p:{label:'Search products',textSource:'@Name'},must:['label','lookupValueFormula','textSource']},
+  {api:'smart_tabs',p:{tabs:['All','Desserts','Drinks'],tabCount:3},must:['tabCaptionFormula'],not:['label','collectionFormula']},
+  {api:'smart_text',p:{label:'Search',textSource:'@Name'},must:['label','textSource']},
+  {api:'smart_textbox',p:{label:'Caption',textSource:'@Name'},must:['label','textSource']},
+  {api:'smart_label',p:{label:'Title',textSource:'@Name'},must:['label','textSource']},
+  {api:'smart_card_grid',p:{textSource:'@Name',imageSource:'@ImageUrl',cardButtonText:'Add',
+    badgeVisible:true,badgeText:'New',cardsPerRow:2,cardsPerColumn:1},must:['imageSource','textSource','cardButtonText']},
+  {api:'smart_image',p:{textSource:'Image caption',imageSource:'@ImageUrl'},must:['imageSource','textSource']},
+  {api:'smart_calendar',p:{selectedDate:'2026-11-04'},must:['selectedDate']},
+  {api:'smart_navigation',p:{items:['Home','Products'],textSource:'@Name'},must:['textSource']},
+  {api:'smart_container',p:{},must:[]},
+  {api:'smart_cart',p:{label:'Current order',textSource:'@Name',imageSource:'@ImageUrl',
+    column2Source:'@UnitPrice',column3Source:'@Quantity',
+    subtotalValue:'@Subtotal',totalValue:'@Total'},must:['label','cartSupportingSource','cartColumn1Header',
+    'textSource','imageSource','column2Source','subtotalLabel','subtotalValue','totalValue']},
+  {api:'smart_icon',p:{},must:[]},
+  {api:'smart_table',p:{objectApiName:'Product',column2Source:'@Price',
+    objects:[{apiName:'Product',fields:[{apiName:'Name',label:'Name'},{apiName:'Price',label:'Price'}]}],
+    records:[{Id:'p1',Name:'Cola',Price:5}]},must:['column2Source'],not:['textSource']}
+ ];
+ assert.equal(cases.length,15);
+ for(const spec of cases){
+  const markup=await renderSmart(spec.api,{...spec.p,builderPreview:true});
+  const bindings=[...markup.matchAll(/data-md-bind="([^"]+)"/g)]
+   .flatMap(match=>match[1].split(/\s+/));
+  for(const key of spec.must)assert.ok(bindings.includes(key),
+   spec.api+' must visibly anchor '+key);
+  for(const key of spec.not??[])assert.ok(!bindings.includes(key),
+   spec.api+' should not expose unrelated '+key);
+  if(spec.must.length===0)assert.equal(bindings.length,0,
+   spec.api+' should not invent fields without a visible binding');
+  const published=await renderSmart(spec.api,{...spec.p,builderPreview:false});
+  assert.doesNotMatch(published,/data-md-bind(?:-titles|-index|-item)?=/,
+   spec.api+' must not emit Builder binding metadata in published mode');
+ }
+});
+test('static Tabs attach one caption icon per rendered tab; collection is Source-only',async()=>{
+ const html=await renderSmart('smart_tabs',{
+  tabs:['All','Desserts','Drinks','Chicken'],tabCount:4,builderPreview:true
+ });
+ assert.equal((html.match(/data-md-bind="tabCaptionFormula"/g)||[]).length,4);
+ assert.equal((html.match(/data-md-bind-titles="Tab caption"/g)||[]).length,4);
+ assert.doesNotMatch(html,/data-md-bind="label"|data-md-bind="collectionFormula"/);
+ const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
+ assert.match(ribbon,/Select items source formula/);
+ assert.match(ribbon,/setSelectedDataField\('collectionFormula'\)/);
+});
+test('empty Cart exposes its row bindings against product and column headers, not a corner grid',()=>{
+ const cart=read('../src/component-libraries/smart_cart/SmartCart.jsx');
+ const icons=read('../src/core/builders/PageBuilder/CanvasDataBindingIcons.tsx');
+ assert.match(cart,/const pending=rows\.length===0/);
+ assert.match(cart,/Product heading\|Product image\|Product name\|Product supporting text/);
+ assert.match(cart,/data-md-bind-titles=\{p\.builderPreview\?\(names\[index\]\):undefined\}/);
+ assert.doesNotMatch(icons,/missing=|fallback:|unrendered:|is-fallback/);
+});
