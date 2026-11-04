@@ -23,7 +23,7 @@ const summary=(rows:Item[])=>({total:rows.length,valid:rows.filter(x=>x.status==
  skipped:rows.filter(x=>x.status==='Skipped').length});
 function report(source:LoaderTable,rows:Item[]){
  const original=source.columns.filter(c=>!['Status','Message','Result'].includes(c));
- const all=rows.map(row=>({...row.cells,ExcelRow:String(row.excelRow),Status:row.status,
+ const all:Record<string,string>[]=rows.map(row=>({...row.cells,ExcelRow:String(row.excelRow),Status:row.status,
   Message:row.message,Result:row.result}));
  const mini=['ExcelRow','Action','ComponentApi','PropertyKey','Enabled','Status','Result','Message'];
  const filtered=(subset:typeof all)=>subset.map(row=>Object.fromEntries(mini.map(c=>[c,row[c]??''])));
