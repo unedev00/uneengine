@@ -47,7 +47,7 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
   return {status:response.status,body:await response.json()};
  },token);
  assert.equal(result.status,200,'OneEngine rejected authorised shared ribbon metadata');
- assert.equal(result.body.design2Slots?.length,106,'Builder endpoint did not expose Design 2 SQL metadata');
+ assert.equal(result.body.design2Slots?.length,listed.rows.length,'Builder endpoint did not expose Design 2 SQL metadata');
  // The catalog is SQL-backed but still protected by central OneEngine RBAC.
  const {AuthenticationService}=await import('../dist-system/system-files/authentication.js');
  const auth=new AuthenticationService(db);
