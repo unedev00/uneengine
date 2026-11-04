@@ -467,8 +467,7 @@ function CompanySettings({ canManage, section = 'general' }: { canManage: boolea
   const shownCompanyFields=companyEditing?visibleCompanyFields:visibleCompanyFields.filter(field=>section!=='contacts'||Boolean(company[field.key]?.trim()));
   const contactsConfigured=contactFieldKeys.some(key=>Boolean(company[key as keyof CompanyProfile]?.trim()));
   const companyDirty=companyBeforeEdit!==null&&JSON.stringify(company)!==JSON.stringify(companyBeforeEdit);
-  const logoDirty=companyBeforeEdit!==null&&company.logoUrl!==companyBeforeEdit.logoUrl;
-  const saveCompanyAllowed=companyDirty&&(section!=='branding'||logoDirty);
+  const saveCompanyAllowed=companyDirty;
   const companyFailureMessage=(failure:unknown)=>{
     const detail=failure instanceof Error?failure.message:String(failure);
     return /non-JSON|SQL service unavailable|HTTP 50[0234]|API /i.test(detail)
