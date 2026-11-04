@@ -18,3 +18,9 @@
 .metadata-package-installed li{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--md-border,#e0e5eb)}
 .metadata-package-error{color:var(--md-danger,#b42318)!important}
 @media(max-width:600px){.metadata-package-manager{padding:12px}.metadata-package-columns{grid-template-columns:minmax(0,1fr)}}
+
+/* Metadata package picker: keep hundreds of permissions behind accessible sections on phones. */
+.metadata-package-selector-group {margin:12px 0;border:1px solid var(--md-border,#e0e5eb);border-radius:8px;min-width:0;}
+.metadata-package-selector-group>summary {cursor:pointer;min-height:44px;padding:12px;font-size:13px;font-weight:700;}
+.metadata-package-selector-group>summary:focus-visible {outline:2px solid var(--md-primary,#1d4ed8);outline-offset:2px;}
+.metadata-package-selector-group>.metadata-package-selector{margin:0 8px 10px;max-height:220px;}
