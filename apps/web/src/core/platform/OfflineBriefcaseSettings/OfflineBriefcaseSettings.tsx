@@ -92,7 +92,18 @@ export default function OfflineBriefcaseSettings({ request, permitted, objects }
             {objects.filter(object => object.apiName === selection.objectApi || !selections.some(row => row.objectApi === object.apiName)).map(object => <option key={object.apiName} value={object.apiName}>{object.label}</option>)}
           </select>
         </label>
-        <OfflineRecordPicker key={selection.objectApi} request={request} objectApi={selection.objectApi} nameField={objects.find(object => object.apiName === selection.objectApi)?.compactLayout?.fieldApiNames[0] ?? 'Name'} selected={selection.recordIdsText.split(/[\s,]+/).filter(Boolean)} disabled={loading || saving} remaining={Math.min(100-selectedCount, 50-selection.recordIdsText.split(/[\s,]+/).filter(Boolean).length)} onChange={ids => setSelections(value => value.map((item,itemIndex) => itemIndex === index ? {...item, recordIdsText:ids.join('\n')} : item))} />
+        <OfflineRecordPicker key={selection.objectApi} request={request} objectApi={selection.objectApi} nameField={objects.find(object => object.apiName === selection.objectApi)?.compactLayout?.fieldApiNames[0] ?? 'Name'} selected={selection.recordIdsText.split(/[\s,]+/).filter(Boolean)} disabled={loading || saving} remaining={Math.min(100-selectedCount, 50-selection.recordIdsText.split(/[\s,]+/).filter(Boolean).length)} onToggle={(id,checked) => setSelections(value => {
+          const total = value.reduce((count,item) => count + item.recordIdsText.split(/[\s,]+/).filter(Boolean).length,0);
+          return value.map((item,itemIndex) => {
+            if(itemIndex !== index)return item;
+            const ids = item.recordIdsText.split(/[\s,]+/).filter(Boolean);
+            if(checked){
+              if(ids.includes(id) || ids.length>=50 || total>=100)return item;
+              return {...item,recordIdsText:[...ids,id].join('\n')};
+            }
+            return {...item,recordIdsText:ids.filter(value=>value!==id).join('\n')};
+          });
+        })} />
         <button type="button" className="btn btn-secondary" onClick={() =>
           setSelections(value => value.filter((_, itemIndex) => itemIndex !== index))}>
           Remove object
