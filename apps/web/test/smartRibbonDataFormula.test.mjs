@@ -7,7 +7,7 @@ const ui=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
 const css=read('../src/core/builders/PageBuilder/SmartRibbonDataFormula.css');
 const sql=read('../../server/src/system-support/migrations/20270216-data-selected-field-formula-ribbon.sql');
 
-test('Data has a single selected-field formula bar above its two-row sections',()=>{
+test('Data keeps a formula-only first row above every metadata section',()=>{
  assert.match(ui,/selectedDataField,setSelectedDataField/);
  assert.match(ui,/smart-data-formula-bar/);
  assert.match(ui,/smart-data-workspace/);
@@ -17,10 +17,17 @@ test('Data has a single selected-field formula bar above its two-row sections',(
  assert.match(ui,/setSelectedDataField\(property\.id\)/);
  assert.match(ui,/aria-pressed=\{selected\}/);
  assert.match(ui,/dataSectionRow\(section,row\)/);
- assert.match(ui,/sections\.filter\(group=>group==='Source'\)/);
- assert.match(ui,/sections\.filter\(group=>group!=='Source'\)/);
+ assert.match(ui,/tab==='Data'\?<div className="smart-data-workspace"/);
+ assert.match(ui,/\{sections\.map\(section=><section className="smart-ribbon-group"/);
  assert.match(ui,/\[1,2,3\]\.map\(row/);
- assert.match(ui,/\[1,2\]\.map\(row/);
+ assert.match(ui,/const dataSectionRow=\(group:string,row:number\)=>sectionRow\(group,row\)/);
+ assert.doesNotMatch(ui,/sections\.filter\(group=>group==='Source'\)/);
+ const formulaStart=ui.indexOf('<div className="smart-data-formula-bar"');
+ const formulaEnd=ui.indexOf('<div className="smart-data-sections"',formulaStart);
+ assert.ok(formulaStart>0&&formulaEnd>formulaStart);
+ assert.doesNotMatch(ui.slice(formulaStart,formulaEnd),/smart-data-summary-name|objectApiName/);
+ const cartLabel=ui.indexOf('className="smart-data-summary-name"');
+ assert.ok(cartLabel>formulaEnd,'Cart summary label belongs beneath the formula row');
  assert.match(ui,/selectedSourceObjects=\{sourceObjects\}/);
  assert.match(ui,/activeDataProperty\.id==='imageSource'\?'image':'text'/);
 });
@@ -52,13 +59,14 @@ test('SQL placements keep Source intact and display all Value and Cart bindings'
  assert.doesNotMatch(sql,/\('objectApiName'/);
  assert.doesNotMatch(sql,/\b(?:DELETE|TRUNCATE|DROP|ALTER TABLE|UPDATE md_page_components)\b/i);
 });
-test('Data styling is scoped; the full-width formula row stays above two 26px chip rows',()=>{
+test('Data styling makes room for three 26px metadata rows below the formula',()=>{
  assert.match(css,/smart-data-workspace/);
  assert.match(css,/smart-data-fx-prefix/);
  assert.match(css,/smart-data-filter-button/);
  assert.match(css,/smart-data-field-fx\.is-selected/);
  assert.match(css,/smart-data-sections/);
- assert.match(css,/height:80px/);
+ assert.match(css,/height:106px/);
+ assert.match(css,/height:86px/);
  assert.match(css,/height:26px/);
  assert.doesNotMatch(css,/\.office-builder-ribbon\s*\{\s*height/);
 });
@@ -114,7 +122,9 @@ test('Cart Data geometry uses 10 percent wider true control tracks and two-pixel
  assert.match(migration,/ELSE 110/);
  assert.match(migration,/section_group IN \('Values','Cart','Cart columns','Cart totals'\)/);
  assert.doesNotMatch(migration,/objectApiName|DELETE FROM|TRUNCATE|md_page_components/);
- assert.match(ui,/properties\.length-1\)\*\(tab==='Data'&&group!=='Source'\?2:4\)/);
+ assert.match(ui,/properties\.length\+extra-1\)\*\(tab==='Data'\?2:4\)/);
+ assert.match(ui,/dataChipWidth\(p\.group\)/);
+ assert.match(ui,/Math\.max\(210,p\.designWidth\?\?0\)/);
  assert.match(dataCss,/smart-data-sections[\s\S]*?\.smart-ribbon-row\{[\s\S]*?column-gap:2px!important/);
  assert.match(dataCss,/\.smart-ribbon-group\[aria-label="Cart"\]/);
  assert.match(dataCss,/\.smart-ribbon-group:last-child\{/);
@@ -123,6 +133,22 @@ test('Cart Data geometry uses 10 percent wider true control tracks and two-pixel
  assert.match(pageLayout,/overflow-x: auto !important/);
 });
 
+
+test('Data metadata widths are equal in Values and prevent Cart and Source collision',()=>{
+ const next=read('../../server/src/system-support/migrations/20271110-data-ribbon-formula-row-equal-widths.sql');
+ const layout=read('../src/core/builders/PageBuilder/PageBuilderRibbonLayout.css');
+ assert.match(next,/SET design_width=210, design_height=26/);
+ assert.match(next,/SET design_width=160, design_height=26/);
+ assert.match(next,/property_key='columnVisibility' THEN 171 ELSE 160/);
+ assert.match(next,/WHERE tab='Data' AND section_group='Values'/);
+ assert.match(next,/WHERE tab='Data' AND section_group='Cart'/);
+ assert.doesNotMatch(next,/DELETE|TRUNCATE|UPDATE md_page_components/i);
+ assert.match(layout,/aria-label="Component Data"/);
+ assert.match(layout,/--page-ribbon-content-height:140px/);
+ assert.match(css,/smart-data-summary-slot/);
+ assert.match(css,/--smart-data-chip-width/);
+ assert.doesNotMatch(css,/display:none!important[^}]*smart-data-summary-name/);
+});
 
 test('Cart Summary 1–4 labels fit the existing Data ribbon controls without width changes',()=>{
  const chipSelector=css.slice(css.indexOf('/* Only Cart Summary 1'));
