@@ -6,9 +6,12 @@ import {readFile} from 'node:fs/promises';
  */
 export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  const migration=await readFile(new URL('../src/system-support/migrations/20270309-design2-contextual-ribbon.sql',import.meta.url),'utf8');
- // Replay explicitly to validate upgrade idempotency, not just presence in source.
+ const approved=await readFile(new URL('../src/system-support/migrations/20271104-zz-design2-exact-approved-matrix.sql',import.meta.url),'utf8');
+ // Legacy replay followed by the exact approved matrix must be idempotent.
  await db.query(migration);
  await db.query(migration);
+ await db.query(approved);
+ await db.query(approved);
  const listed=await db.query(`SELECT area,slot_key,property_key,row_no,order_no,width_px,height_px
    FROM md_builder_design2_slots ORDER BY area_order,row_no,order_no`);
  // Shared areas are extensible: retain the legacy baseline and enforce unique SQL slots.
