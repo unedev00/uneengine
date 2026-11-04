@@ -215,12 +215,16 @@ export class PageRuntime {
       assignmentIds.add(a.id);
     }
     await this.db.transaction(async client=>{
-      const existing=await client.query<{id:string}>(
-        'SELECT id FROM md_page_definitions WHERE tenant_id=$1 AND api_name=$2 FOR UPDATE',[tenantId,previousApiName]);
+      const existing=await client.query<{id:string;enabled:boolean}>(
+        'SELECT id,enabled FROM md_page_definitions WHERE tenant_id=$1 AND api_name=$2 FOR UPDATE',[tenantId,previousApiName]);
       let pageId=existing.rows[0]?.id;
       // MCP create_page must never overwrite an existing tenant-authored Page.
       // Enforce this inside the transaction to avoid a separate check/write race.
       if(pageId&&createOnly)throw new Error('Page already exists');
+      // Archived pages retain their identity and immutable history. They must
+      // never be silently updated or resurrected by a new-page request.
+      if(pageId&&existing.rows[0]?.enabled===false)
+        throw new Error('Page API name already exists (archived)');
       if(pageId){
         if(p.apiName!==previousApiName)throw new Error('Rename this page from Page Properties');
         const managed=await client.query(
@@ -231,10 +235,16 @@ export class PageRuntime {
       }else{
         if(p.apiName!==previousApiName)throw new Error('Page not found');
         await requireAvailableMetadataName(client,tenantId,'page',String(p.apiName));
-        const inserted=await client.query<{id:string}>(
-          'INSERT INTO md_page_definitions(tenant_id,api_name,title,enabled) VALUES($1,$2,$3,true) RETURNING id',
-          [tenantId,p.apiName,p.label]);
-        pageId=inserted.rows[0].id;
+        try{
+          const inserted=await client.query<{id:string}>(
+            'INSERT INTO md_page_definitions(tenant_id,api_name,title,enabled) VALUES($1,$2,$3,true) RETURNING id',
+            [tenantId,p.apiName,p.label]);
+          pageId=inserted.rows[0].id;
+        }catch(error){
+          // A concurrent create may reserve this name after the availability check.
+          if((error as {code?:string}).code==='23505')throw new Error('Page already exists');
+          throw error;
+        }
       }
       const before=await client.query<{revision:number}>(
         'SELECT revision FROM md_lightning_page_details WHERE tenant_id=$1 AND page_id=$2 FOR UPDATE',[tenantId,pageId]);
