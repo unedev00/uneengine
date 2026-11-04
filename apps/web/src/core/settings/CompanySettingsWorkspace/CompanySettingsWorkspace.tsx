@@ -63,7 +63,7 @@ recovery:ReactNode;mfa:ReactNode;emailRecovery:ReactNode;locks:ReactNode;session
    </header>
    <nav className="company-workspace-tabs" aria-label="Company settings sections">
      {visibleSections.map(section=><button key={section.id} type="button" className={active===section.id?'active':''}
-       aria-current={active===section.id?'page':undefined} onClick={()=>{setActive(section.id);onSelectSection?.(section.id);}}>{section.label}</button>)}
+       aria-current={active===section.id?'page':undefined} onClick={()=>{setActive(section.id);if(mobile)setMobileSection(section.id);onSelectSection?.(section.id);}}>{section.label}</button>)}
    </nav>
    {mobile && mobileSection===null && <nav className="company-workspace-mobile-menu" aria-label="Company settings sections">
      {visibleSections.map(section=><button key={section.id} type="button" onClick={()=>{setMobileSection(section.id);setActive(section.id);onSelectSection?.(section.id);}}>

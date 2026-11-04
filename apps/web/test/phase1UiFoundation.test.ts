@@ -75,3 +75,58 @@ test('Audit tables and quick-find keep keyboard and long-identifier access',()=>
  assert.match(nav,/matching settings/);
  assert.match(nav,/Clear search/);
 });
+
+test('Offline briefcase enforces server caps with correct whitespace parsing',()=>{
+ const offline=read('../src/core/platform/OfflineBriefcaseSettings/OfflineBriefcaseSettings.tsx');
+ const picker=read('../src/core/platform/OfflineBriefcaseSettings/OfflineRecordPicker.tsx');
+ assert.ok(offline.includes(String.raw`row.recordIdsText.split(/[\s,]+/)`),
+  'Record IDs separated by newlines must be counted as separate selections');
+ assert.ok(!offline.includes(String.raw`row.recordIdsText.split(/[\\s,]+/)`),
+  'Do not match literal backslashes in record ID validation');
+ assert.match(offline,/ids\.length <= 50/);
+ assert.match(offline,/total>=100/);
+ assert.match(picker,/onToggle\(record\.Id, event\.target\.checked\)/);
+});
+
+test('Related records and recycle bin never render inverted ranges on empty pages',()=>{
+ const records=read('../src/core/records/RecordWorkspace/recordWorkspaceViews.tsx');
+ assert.match(records,/loaded === 0 \? `0–0 of \$\{total\}`/);
+ assert.match(records,/recycleRows\.length === 0 \? `0–0 of \$\{recycleTotal\}`/);
+});
+
+test('Mobile permission list and detail follow addressable routes',()=>{
+ const permissions=read('../src/core/security/Permissions/permissionsView.tsx');
+ assert.match(permissions,/setMobilePermissionDetail\(Boolean\(routeResourceId\)\)/);
+ assert.match(permissions,/\[routeResourceApiName,routeResourceId\]/);
+ assert.match(permissions,/viewportWidth < 1024 && \(nextTab==='sets'\|\|nextTab==='users'\) \? undefined : initialId/);
+});
+
+test('Mobile Flow Builder provides an explicit way back to the flow list',()=>{
+ const flow=read('../src/core/builders/FlowBuilder/FlowBuilder.tsx');
+ const scheduled=read('../src/core/automation/ScheduledFlows/ScheduledFlows.tsx');
+ assert.match(flow, /flow-phone-top-actions[\s\S]*onClick=\{onOpenFlowList\}[\s\S]*Back to flows/);
+ assert.match(scheduled, /className="btn btn-link" onClick=\{\(\) => selectView\('triggers'\)\}/);
+ assert.match(scheduled, /view === 'triggers' \? 'Flow Trigger Explorer' : 'Scheduled Flows'/);
+});
+
+test('Company currency settings can retry failed loads without leaking SQL errors',()=>{
+ const settings=read('../src/core/settings/SettingsWorkspace/settingsWorkspaceViews.tsx');
+ assert.match(settings,/const \[currencyRetry,setCurrencyRetry\]=useState\(0\)/);
+ assert.match(settings,/\}, \[currencyRetry\]\)/);
+ assert.match(settings,/Retry loading currency settings/);
+ assert.match(settings,/currencyFailureMessage\(saveError\)/);
+});
+
+test('Phone Flow Builder controls wrap instead of clipping at 390px',()=>{
+ const css=read('../src/core/builders/FlowBuilder/FlowBuilderMobile.css');
+ assert.match(css,/\.flow-phone-top-actions\{[^}]*flex-wrap:wrap/);
+ assert.match(css,/\.flow-phone-top-actions p\{[^}]*flex:1 0 100%/);
+ assert.match(css,/\.flow-phone-top-actions button\{[^}]*flex:1 1 120px/);
+});
+
+test('Permission Save remains disabled after a user restores the original draft',()=>{
+ const src=read('../src/core/security/Permissions/permissionsView.tsx');
+ assert.match(src,/const permissionDirty=useMemo\(\(\)=>JSON\.stringify\(draft\)!==JSON\.stringify\(savedDraft\)/);
+ assert.doesNotMatch(src,/draft===savedDraft/);
+ assert.match(src,/disabled=\{saving \|\| !permissionDirty \|\| Boolean\(accessControlError\)\}/);
+});

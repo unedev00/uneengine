@@ -144,7 +144,7 @@ test('record search and saved view migration use weighted SQL indexes and relati
   assert.match(migration,/USING gin\(search_vector\)/);
   assert.match(migration,/md_record_policies_share_target/);
   assert.match(migration,/md_record_policies_restriction_subject/);
-  assert.match(query,/setweight\(qv\.search_vector,qv\.weight\)/);
+  assert.match(query,/setweight\(qv\.search_vector,qv\.weight::"char"\)/);
 });
 
 test('record pages emit and consume a deterministic sort keyset cursor',async()=>{

@@ -2044,6 +2044,7 @@ export default function FlowBuilder({
     </div>
     {phoneFlow && <div className="flow-phone-top-actions">
       <p>Full editor works best on a tablet or larger. Tap a step to inspect its properties.</p>
+      <button type="button" className="btn" onClick={onOpenFlowList}><ArrowLeft size={15} aria-hidden="true" /> Back to flows</button>
       <button type="button" className="btn" aria-expanded={toolboxExpanded} onClick={()=>setToolboxExpanded(current=>!current)}>
         {toolboxExpanded?'Close elements':'Add step'}
       </button>

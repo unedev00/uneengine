@@ -1137,7 +1137,7 @@ export class RecordEngine {
       const rankFieldsParam=`$${params.length-1}`;
       const rankTermParam=`$${params.length}`;
       sortJoin=`CROSS JOIN LATERAL (
-        SELECT max(ts_rank_cd(setweight(qv.search_vector,qv.weight),
+        SELECT max(ts_rank_cd(setweight(qv.search_vector,qv.weight::"char"),
           websearch_to_tsquery('simple',${rankTermParam}))) AS score
         FROM md_record_search_values qv
         WHERE qv.tenant_id=r.tenant_id AND qv.record_id=r.id AND qv.object_api=r.object_api

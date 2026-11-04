@@ -27,7 +27,7 @@ export default function FlowLogs({ logs, loading, loadingMore, hasMore, onLoadMo
   const filteredLogs = useMemo(() => {
     const query = search.trim().toLocaleLowerCase();
     return logs.filter(log => {
-      const actualStatus = log.status ?? 'failed';
+      const actualStatus = log.status ?? 'unknown';
       return (status === 'all' || status === actualStatus) &&
         (!query || (log.flowLabel + ' ' + log.flowApiName + ' ' + actualStatus + ' ' + (log.error ?? ''))
           .toLocaleLowerCase().includes(query));
@@ -74,9 +74,9 @@ export default function FlowLogs({ logs, loading, loadingMore, hasMore, onLoadMo
           columns={[
             {apiName:'flow',label:'Flow',phoneRole:'title',render:log=>log.flowLabel},
             {apiName:'apiName',label:'API Name',render:log=>log.flowApiName},
-            {apiName:'status',label:'Status',phoneRole:'badge',render:log=>log.status??'failed'},
+            {apiName:'status',label:'Status',phoneRole:'badge',render:log=>log.status??'unknown'},
             {apiName:'started',label:'Started',phoneRole:'trailing',render:log=>formatTime(log.startedAt??log.failedAt)},
-            {apiName:'type',label:'Flow type',phoneRole:'subtitle',render:log=>(log.flowType??log.trigger) + (log.versionNumber?' · v'+log.versionNumber:'')},
+            {apiName:'type',label:'Flow type',phoneRole:'subtitle',render:log=>(log.flowType??log.trigger??'Unknown flow type') + (log.versionNumber?' · v'+log.versionNumber:'')},
             {apiName:'finished',label:'Finished',render:log=>formatTime(log.finishedAt??null)},
             {apiName:'duration',label:'Duration',render:log=>log.durationMs==null?'—':(log.durationMs/1000).toFixed(2)+'s'},
             {apiName:'error',label:'Error',render:log=>log.error??'—'},
@@ -105,8 +105,8 @@ export default function FlowLogs({ logs, loading, loadingMore, hasMore, onLoadMo
                     </button>
                   </td>
                   <td title={log.flowApiName}><code>{log.flowApiName}</code></td>
-                  <td>{log.status ?? 'failed'}</td>
-                  <td>{log.flowType ?? log.trigger}{log.versionNumber ? ' · v' + log.versionNumber : ''}</td>
+                  <td>{log.status ?? 'unknown'}</td>
+                  <td>{log.flowType ?? log.trigger ?? 'Unknown flow type'}{log.versionNumber ? ' · v' + log.versionNumber : ''}</td>
                   <td>{formatTime(log.startedAt ?? log.failedAt)}</td>
                                     <td>{log.durationMs == null ? '—' : (log.durationMs / 1000).toFixed(2) + ' s'}</td>
                   <td><details><summary>Run details</summary><dl><dt>Run ID</dt><dd>{log.id}</dd><dt>Finished</dt><dd>{formatTime(log.finishedAt ?? (log.status ? null : log.failedAt))}</dd><dt>User</dt><dd>{log.userId ?? 'System'}</dd><dt>Error</dt><dd>{log.error ?? 'None'}</dd></dl></details></td>

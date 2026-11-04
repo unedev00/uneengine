@@ -38,6 +38,36 @@ try {
  await save.click();
  await page.getByRole('status').filter({hasText:'selections saved'}).waitFor();
  assert.equal((await page.evaluate(()=>window.savedSelections)).selections[0].recordIds[0],'00000000-0000-0000-0000-000000000001');
+ assert.equal(await page.getByRole('checkbox',{name:'Acme Corporation'}).isChecked(),true,
+  'Saved offline selection must remain selected before the next search');
+ await open('offline-cap');
+ await page.getByText('49 of 100 records selected').waitFor();
+ await page.getByRole('checkbox',{name:'Bulk record 50',exact:true}).check();
+ await page.getByText('50 of 100 records selected').waitFor();
+ assert.equal(await page.getByRole('checkbox',{name:'Bulk record 51',exact:true}).isDisabled(),true,
+  'Offline briefcase must stop at 50 records per object');
+ assert.equal(await page.getByRole('button',{name:'Save selections'}).isEnabled(),true,
+  '50 records per object must remain valid for saving');
+ await page.getByRole('checkbox',{name:'Bulk record 50',exact:true}).uncheck();
+ await page.getByText('49 of 100 records selected').waitFor();
+ assert.equal(await page.getByRole('checkbox',{name:'Bulk record 51',exact:true}).isEnabled(),true,
+  'Removing one selection restores capacity');
+ await open('offline-load-error');
+ await page.getByRole('alert').getByText('Offline briefcase service is temporarily unavailable. Please retry.').waitFor();
+ assert.equal(await page.getByText('SQL relation md_tenant_settings',{exact:false}).count(),0,
+  'Offline load failures must not leak database internals');
+ assert.equal(await page.getByRole('button',{name:'Add object'}).count(),0,
+  'Failed offline reads must not expose a blank editable draft');
+ assert.equal(await page.getByRole('button',{name:'Refresh'}).isEnabled(),true,
+  'Failed offline reads must allow retry');
+ await open('offline-save-error');
+ await page.getByRole('button',{name:'Add object'}).click();
+ await page.getByRole('combobox').selectOption('Account');
+ await page.getByRole('checkbox',{name:'Acme Corporation'}).check();
+ await page.getByRole('button',{name:'Save selections'}).click();
+ await page.getByRole('alert').getByText('Offline briefcase service is temporarily unavailable. Please retry.').waitFor();
+ assert.equal(await page.getByText('SQL service unavailable',{exact:false}).count(),0,
+  'Offline save failures must not leak database internals');
  await open('tenants');
  await page.getByRole('button',{name:'New tenant',exact:true}).click();
  const tenantForm=page.getByRole('form',{name:'New tenant draft'});
@@ -101,6 +131,17 @@ try {
  assert.equal(await page.getByRole('button',{name:'Security & Recovery'}).getAttribute('aria-current'),'page',
   'Deep-linked company security settings must open directly');
  await screenshot('company-security-deeplink');
+ await page.setViewportSize({width:390,height:844});
+ await open('company');
+ await page.getByRole('button',{name:'Company Settings',exact:true}).click();
+ await page.getByRole('navigation',{name:'Company settings sections'}).last().getByRole('button',{name:'Branding'}).click();
+ assert.equal(await page.locator('.company-workspace-section-branding').count(),1,
+  'Mobile Company Settings drill-down must display Branding');
+ await page.getByRole('button',{name:'Company Settings',exact:true}).click();
+ await page.getByRole('navigation',{name:'Company settings sections'}).last().getByRole('button',{name:'Contacts'}).click();
+ assert.equal(await page.locator('.company-workspace-section-contacts').count(),1,
+  'Mobile Company Settings drill-down must display Contacts');
+ await page.setViewportSize({width:1365,height:768});
  await open('company-profile-fail');
  await page.getByText('Company data could not be loaded.',{exact:false}).waitFor();
  assert.equal(await page.getByRole('button',{name:'Edit logo'}).count(),0,'Failed company read must never expose blank-default editing');

@@ -704,7 +704,7 @@ function RecordWorkspace({
       : 50;
     if (total === 0) return null;
     return <nav aria-label={`${name} pagination`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, padding: 12 }}>
-      <span>{offset + 1}–{Math.min(offset + loaded, total)} of {total}</span>
+      <span>{loaded === 0 ? `0–0 of ${total}` : `${offset + 1}–${Math.min(offset + loaded, total)} of ${total}`}</span>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
         <button className="btn" disabled={offset === 0} onClick={() => changeRelatedPage(name, 0)}>First</button>
         <button className="btn" disabled={offset === 0} onClick={() => changeRelatedPage(name, offset - pageSize)}>Previous</button>
@@ -2855,7 +2855,7 @@ function RecordWorkspace({
         </tr>)}</tbody></table></div>}
       {recycleTotal>25 && <nav aria-label="Recycle Bin pagination" className="records-list-actions" style={{padding:12}}>
         <button className="btn" disabled={recycleBusy||recycleOffset===0} onClick={() => void loadRecycleBin(Math.max(0,recycleOffset-25))}>Previous</button>
-        <span>{recycleOffset+1}–{Math.min(recycleOffset+recycleRows.length,recycleTotal)} of {recycleTotal}</span>
+        <span>{recycleRows.length === 0 ? `0–0 of ${recycleTotal}` : `${recycleOffset+1}–${Math.min(recycleOffset+recycleRows.length,recycleTotal)} of ${recycleTotal}`}</span>
         <button className="btn" disabled={recycleBusy||recycleOffset+25>=recycleTotal} onClick={() => void loadRecycleBin(recycleOffset+25)}>Next</button>
       </nav>}
     </section>}

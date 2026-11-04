@@ -58,10 +58,14 @@ test('independent values have independent labelled table columns', () => {
   assert.match(routes, /<th>Destination<\/th><th>Type<\/th><th>Destination API Name<\/th>/);
   const logs = source('core/automation/FlowLogs/FlowLogs.tsx');
   assert.match(logs, /<th scope="col">Flow<\/th>\s*<th scope="col">API Name<\/th>/);
+  assert.doesNotMatch(logs, /log\.status\s*\?\?\s*'failed'/);
+  assert.match(logs, /log\.status\s*\?\?\s*'unknown'/);
   const triggers = source('core/automation/FlowTriggerExplorer/FlowTriggerExplorer.tsx');
   assert.match(triggers, /<th scope="col">Flow<\/th><th scope="col">API Name<\/th>/);
   const permissions = source('core/security/Permissions/permissionsView.tsx');
   assert.match(permissions, /<th scope="col">Object<\/th><th scope="col">API Name<\/th><th scope="col">Policy status<\/th>/);
   assert.match(permissions, /<th scope="col">Field<\/th><th scope="col">API Name<\/th>/);
+  assert.match(permissions, /<th scope="col">Mute Create<\/th><th scope="col">Mute Read<\/th><th scope="col">Mute Edit<\/th><th scope="col">Mute Delete<\/th>/);
+  assert.match(permissions, /\(\['create', 'read', 'edit', 'delete'\] as const\)\.map\(\(permission\)/);
   assert.doesNotMatch(permissions, /<td><strong>\{field\.label\}<\/strong><small>\{field\.apiName\}<\/small>/);
 });

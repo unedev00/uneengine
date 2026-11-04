@@ -226,7 +226,12 @@ function Permissions({
   const permissionSectionsExpanded=false;
   const [draft, setDraft] = useState(accessControl);
   const [savedDraft, setSavedDraft] = useState(accessControl);
+  const permissionDirty=useMemo(()=>JSON.stringify(draft)!==JSON.stringify(savedDraft),[draft,savedDraft]);
   const [mobilePermissionDetail, setMobilePermissionDetail] = useState(Boolean(routeResourceId));
+  useEffect(()=>{
+    if(routeResourceApiName==='PermissionSets'||routeResourceApiName==='Users')
+      setMobilePermissionDetail(Boolean(routeResourceId));
+  },[routeResourceApiName,routeResourceId]);
   const [permissionListPage,setPermissionListPage]=useState(0);
   const permissionListPageSize=25;
   const [newRoleId, setNewRoleId] = useState<string | null>(null);
@@ -337,7 +342,7 @@ function Permissions({
             : nextTab === 'publicGroups' ? draft.publicGroups[0]?.id
               : nextTab === 'queues' ? draft.queues[0]?.id
               : nextTab === 'sharingRules' ? draft.sharingRules[0]?.id : draft.users[0]?.id;
-    onRouteResourceChange(resourceApiName, initialId);
+    onRouteResourceChange(resourceApiName, viewportWidth < 1024 && (nextTab==='sets'||nextTab==='users') ? undefined : initialId);
     if (nextTab === 'profiles') setSelectedId(draft.profiles[0]?.id ?? '');
     else if (nextTab === 'sets') setSelectedId(draft.permissionSets[0]?.id ?? '');
     else if (nextTab === 'groups') setSelectedId(draft.permissionSetGroups[0]?.id ?? '');
@@ -563,7 +568,7 @@ function Permissions({
       {tab === 'publicGroups' && <button className="btn btn-brand" onClick={createPublicGroup} disabled={Boolean(accessControlError)}><Plus size={14} />New Public Group</button>}
       {tab === 'queues' && <button className="btn btn-brand" onClick={createQueue} disabled={Boolean(accessControlError) || !objects.some((object) => object.fields.some((field) => field.apiName === 'OwnerId'))}><Plus size={14} />New Queue</button>}
       {tab === 'sharingRules' && <button className="btn btn-brand" onClick={createSharingRule} disabled={Boolean(accessControlError) || (!draft.publicGroups.length || !objects.length)}><Plus size={14} />New Sharing Rule</button>}
-      <button className="btn" onClick={() => void saveDraft()} disabled={saving || draft===savedDraft || Boolean(accessControlError)}><Save size={14} />{saving ? 'Saving…' : 'Save Changes'}</button>
+      <button className="btn" onClick={() => void saveDraft()} disabled={saving || !permissionDirty || Boolean(accessControlError)}><Save size={14} />{saving ? 'Saving…' : 'Save Changes'}</button>
     </>} />
     {tab === 'sharingRules' && !draft.publicGroups.length && <p className="info-callout">Create a Public Group first to provide a sharing-rule recipient. <button type="button" className="text-action" onClick={() => changeTab('publicGroups')}>Open Public Groups</button></p>}
     {accessControlError && <div className="auth-error" role="alert">Unable to load access-control metadata: {accessControlError}</div>}
@@ -962,7 +967,7 @@ function Permissions({
             return <tr key={key}><td><strong>{recordType.label}</strong></td><td title={recordType.developerName}><code>{recordType.developerName}</code></td><td><input type="checkbox" aria-label={`Mute ${object.label} ${recordType.label}`} checked={Boolean(selectedGroup.mutedRecordTypePermissions[key])} onChange={() => patchGroup(selectedGroup.id, { mutedRecordTypePermissions: { ...selectedGroup.mutedRecordTypePermissions, [key]: !selectedGroup.mutedRecordTypePermissions[key] } })} /></td></tr>;
           })}</tbody></table></div>)}
           <h3 className="permission-section-heading">Muted Field Permissions</h3>
-          {objects.map((object) => <details className="permission-field-group" key={object.apiName}><summary>{object.label} ({object.fields.length} fields)</summary><div className="permission-table-wrap" role="region" aria-label="Record and field access settings" tabIndex={0}><table className="slds-table permission-matrix"><thead><tr><th scope="col">Field</th><th scope="col">API Name</th><th scope="col">Mute Read</th><th scope="col">Mute Edit</th></tr></thead><tbody>{object.fields.map((field) => {
+          {objects.map((object) => <details className="permission-field-group" key={object.apiName}><summary>{object.label} ({object.fields.length} fields)</summary><div className="permission-table-wrap" role="region" aria-label="Record and field access settings" tabIndex={0}><table className="slds-table permission-matrix"><thead><tr><th scope="col">Field</th><th scope="col">API Name</th><th scope="col">Mute Create</th><th scope="col">Mute Read</th><th scope="col">Mute Edit</th><th scope="col">Mute Delete</th></tr></thead><tbody>{object.fields.map((field) => {
             const fieldName = `${object.apiName}.${field.apiName}`;
             const permissions = selectedGroup.mutedFieldPermissions[fieldName] ?? {};
             return <tr key={fieldName}><td><strong>{field.label}</strong></td><td title={field.apiName}><code>{field.apiName}</code></td>{(['create', 'read', 'edit', 'delete'] as const).map((permission) => <td key={permission}><input type="checkbox" aria-label={`Mute ${object.label}.${field.label} ${permission}`} checked={Boolean(permissions[permission])} onChange={() => patchGroup(selectedGroup.id, { mutedFieldPermissions: { ...selectedGroup.mutedFieldPermissions, [fieldName]: { ...permissions, [permission]: !permissions[permission] } } })} /></td>)}</tr>;
@@ -987,7 +992,7 @@ function Permissions({
         {tab === 'profiles' && !selectedProfile && <div className="empty-state">Select a profile or create one to get started.</div>}
         {tab === 'sets' && !selectedSet && <div className="empty-state">Select a permission set or create one to get started.</div>}
         {tab === 'groups' && !selectedGroup && visibleGroups.length>0 && <div className="empty-state">Select a permission set group to edit it.</div>}
-        {(tab === 'sharing' || tab==='users'||tab==='roles'||tab==='profiles'||tab==='groups'||tab==='publicGroups'||tab==='queues'||tab==='sharingRules'||(tab==='sets'&&!!selectedSet)) && <div className="md-permission-mobile-save"><span className="md-permission-save-state">{draft===savedDraft?'No unsaved changes':'Unsaved permission changes'}</span><button type="button" className="btn btn-brand" onClick={()=>void saveDraft()} disabled={saving || draft===savedDraft || Boolean(accessControlError)}><Save size={14}/>{saving?'Saving…':'Save Changes'}</button></div>}
+        {(tab === 'sharing' || tab==='users'||tab==='roles'||tab==='profiles'||tab==='groups'||tab==='publicGroups'||tab==='queues'||tab==='sharingRules'||(tab==='sets'&&!!selectedSet)) && <div className="md-permission-mobile-save"><span className="md-permission-save-state">{!permissionDirty?'No unsaved changes':'Unsaved permission changes'}</span><button type="button" className="btn btn-brand" onClick={()=>void saveDraft()} disabled={saving || !permissionDirty || Boolean(accessControlError)}><Save size={14}/>{saving?'Saving…':'Save Changes'}</button></div>}
       </div></PlatformPageSlot>
     </section>
     <PlatformPageSlot slotKey="rbac-help"><div className="permission-info"><ShieldCheck size={17} /><span>Tenant-scoped grants are evaluated by the API. Permission-set groups combine their member grants and can mute group-contributed system and object permissions; direct assignments are unaffected by group muting.</span></div></PlatformPageSlot>
