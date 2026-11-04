@@ -227,6 +227,8 @@ function Permissions({
   const [draft, setDraft] = useState(accessControl);
   const [savedDraft, setSavedDraft] = useState(accessControl);
   const [mobilePermissionDetail, setMobilePermissionDetail] = useState(Boolean(routeResourceId));
+  const [permissionListPage,setPermissionListPage]=useState(0);
+  const permissionListPageSize=25;
   const [newRoleId, setNewRoleId] = useState<string | null>(null);
   const [tab, setTab] = useState<'profiles' | 'sets' | 'groups' | 'users' | 'sharing' | 'roles' | 'publicGroups' | 'queues' | 'sharingRules'>(() =>
     routeResourceApiName === 'Users' ? 'users'
@@ -321,6 +323,7 @@ function Permissions({
   const changeTab = (nextTab: 'profiles' | 'sets' | 'groups' | 'users' | 'sharing' | 'roles' | 'publicGroups' | 'queues' | 'sharingRules') => {
     setTab(nextTab);
     setMobilePermissionDetail(false);
+    setPermissionListPage(0);
     const resourceApiName = nextTab === 'profiles' ? 'Profiles' : nextTab === 'sets' ? 'PermissionSets'
       : nextTab === 'groups' ? 'PermissionSetGroups' : nextTab === 'sharing' ? 'SharingSettings'
         : nextTab === 'roles' ? 'Roles' : nextTab === 'publicGroups' ? 'PublicGroups' : nextTab === 'queues' ? 'Queues'
@@ -351,6 +354,9 @@ function Permissions({
   const normalizedQuery = query.trim().toLowerCase();
   const visibleProfiles = draft.profiles.filter((item) => `${item.label} ${item.apiName}`.toLowerCase().includes(normalizedQuery));
   const visibleSets = draft.permissionSets.filter((item) => `${item.label} ${item.apiName}`.toLowerCase().includes(normalizedQuery));
+  const totalSetPages=Math.max(1,Math.ceil(visibleSets.length/permissionListPageSize));
+  const currentSetPage=Math.min(permissionListPage,totalSetPages-1);
+  const pagedSets=visibleSets.slice(currentSetPage*permissionListPageSize,(currentSetPage+1)*permissionListPageSize);
   const visibleGroups = draft.permissionSetGroups.filter((item) => `${item.label} ${item.apiName}`.toLowerCase().includes(normalizedQuery));
   const visibleSharingObjects = objects.filter((item) => `${item.label} ${item.apiName}`.toLowerCase().includes(normalizedQuery));
   const visibleRoles = draft.roles.filter((item) => `${item.name} ${item.apiName}`.toLowerCase().includes(normalizedQuery));
@@ -562,7 +568,15 @@ function Permissions({
     {tab === 'sharingRules' && !draft.publicGroups.length && <p className="info-callout">Create a Public Group first to provide a sharing-rule recipient. <button type="button" className="text-action" onClick={() => changeTab('publicGroups')}>Open Public Groups</button></p>}
     {accessControlError && <div className="auth-error" role="alert">Unable to load access-control metadata: {accessControlError}</div>}
     {error && <div className="auth-error" role="alert">{error}</div>}
-    <PlatformPageSlot slotKey="rbac-tabs"><div className="permission-tabs">
+    <PlatformPageSlot slotKey="rbac-tabs"><>
+    <label className="permission-area-select form-label">Permission area
+      <select className="form-control" aria-label="Permission area" value={tab} onChange={event=>changeTab(event.target.value as typeof tab)}>
+        <optgroup label="Users and identity"><option value="users">Users &amp; Assignments</option><option value="roles">Roles</option><option value="profiles">Profiles</option></optgroup>
+        <optgroup label="Access grants"><option value="sets">Permission Sets</option><option value="groups">Permission Set Groups</option></optgroup>
+        <optgroup label="Sharing"><option value="sharing">Sharing Settings</option><option value="publicGroups">Public Groups</option><option value="queues">Queues</option><option value="sharingRules">Sharing Rules</option></optgroup>
+      </select>
+    </label>
+    <div className="permission-tabs">
       <button className={tab === 'profiles' ? 'active' : ''} onClick={() => changeTab('profiles')}>Profiles</button>
       <button className={tab === 'sets' ? 'active' : ''} onClick={() => changeTab('sets')}>Permission Sets</button>
       <button className={tab === 'groups' ? 'active' : ''} onClick={() => changeTab('groups')}>Permission Set Groups</button>
@@ -572,21 +586,26 @@ function Permissions({
       <button className={tab === 'publicGroups' ? 'active' : ''} onClick={() => changeTab('publicGroups')}>Public Groups</button>
       <button className={tab === 'queues' ? 'active' : ''} onClick={() => changeTab('queues')}>Queues</button>
       <button className={tab === 'sharingRules' ? 'active' : ''} onClick={() => changeTab('sharingRules')}>Sharing Rules</button>
-    </div></PlatformPageSlot>
+    </div></></PlatformPageSlot>
     <section className={`surface permission-workspace${tab === 'sharing' ? ' sharing-full-width' : ''}${tab === 'sets' ? mobilePermissionDetail ? ' md-permission-sets-detail-mode' : ' md-permission-sets-list-mode' : ''}`} style={tab === 'sharing' ? {gridTemplateColumns: 'minmax(0, 1fr)'} : undefined}>
       {tab !== 'sharing' && <PlatformPageSlot slotKey="rbac-list"><aside className="permission-list">
-        <div className="mini-search"><Search size={13} /><input placeholder={`Search ${tabLabel.toLowerCase()}…`} aria-label={`Search ${tabLabel}`} value={query} onChange={(event) => setQuery(event.target.value)} /></div>
+        <div className="mini-search"><Search size={13} /><input placeholder={`Search ${tabLabel.toLowerCase()}…`} aria-label={`Search ${tabLabel}`} value={query} onChange={(event) => {setQuery(event.target.value);setPermissionListPage(0);}} /></div>
         {tab === 'profiles' && visibleProfiles.map((item) => <button key={item.id} className={`permission-list-item ${item.id === selectedId ? 'selected' : ''}`} onClick={() => { setSelectedId(item.id); onRouteResourceChange('Profiles', item.apiName); }}><strong>{item.label}</strong><small>{item.apiName} · {item.license}</small></button>)}
-        {tab === 'sets' && visibleSets.map((item) => <button key={item.id} className={`permission-list-item ${item.id === selectedId ? 'selected' : ''}`} onClick={() => { setSelectedId(item.id); setMobilePermissionDetail(true); onRouteResourceChange('PermissionSets', item.apiName); }}><strong>{item.label}</strong><small>{item.apiName}</small></button>)}
+        {tab === 'sets' && pagedSets.map((item) => <button key={item.id} className={`permission-list-item ${item.id === selectedId ? 'selected' : ''}`} onClick={() => { setSelectedId(item.id); setMobilePermissionDetail(true); onRouteResourceChange('PermissionSets', item.apiName); }}><strong>{item.label}</strong><small>{item.apiName}</small></button>)}
+        {tab === 'sets' && visibleSets.length>permissionListPageSize && <nav className="md-permission-list-pagination" aria-label="Permission set pages">
+          <button type="button" className="btn" disabled={currentSetPage===0} onClick={()=>setPermissionListPage(p=>Math.max(0,p-1))}>Previous</button>
+          <span>Page {currentSetPage+1} of {totalSetPages}</span>
+          <button type="button" className="btn" disabled={currentSetPage>=totalSetPages-1} onClick={()=>setPermissionListPage(p=>Math.min(totalSetPages-1,p+1))}>Next</button>
+        </nav>}
         {tab === 'groups' && visibleGroups.map((item) => <button key={item.id} className={`permission-list-item ${item.id === selectedId ? 'selected' : ''}`} onClick={() => { setSelectedId(item.id); onRouteResourceChange('PermissionSetGroups', item.apiName); }}><strong>{item.label}</strong><small>{item.apiName} · {item.permissionSetIds.length} sets</small></button>)}
-        {tab === 'users' && draft.users.filter((item) => `${item.name} ${item.username} ${item.role}`.toLowerCase().includes(normalizedQuery)).map((item) => <button key={item.id} className={`permission-list-item ${item.id === selectedId ? 'selected' : ''}`} onClick={() => { setSelectedId(item.id); onRouteResourceChange('Users', item.id); }}><strong>{item.name}</strong><small>{item.username} · {item.role}</small></button>)}
+        {tab === 'users' && draft.users.filter((item) => `${item.name} ${item.username} ${item.role}`.toLowerCase().includes(normalizedQuery)).map((item) => <button key={item.id} className={`permission-list-item ${item.id === selectedId ? 'selected' : ''}`} onClick={() => { setSelectedId(item.id); onRouteResourceChange('Users', item.id); }}><strong>{item.name?.trim() || item.username}</strong><small>{item.name?.trim() !== item.username ? item.username : 'Display name not set'}</small><span className="md-user-role-label">Role: {draft.roles.find(role=>role.id===item.roleId)?.name??item.role??'None'}</span></button>)}
         {tab === 'roles' && visibleRoles.map((item) => <button key={item.id} className={`permission-list-item ${item.id === selectedId ? 'selected' : ''}`} onClick={() => { setSelectedId(item.id); onRouteResourceChange('Roles', item.id); }}><strong>{item.name}{item.id === newRoleId ? ' · Unsaved draft' : ''}</strong><small>{item.apiName} · {item.parentRoleId ? draft.roles.find((role) => role.id === item.parentRoleId)?.name ?? 'Unknown parent' : 'Top level'}</small></button>)}
         {tab === 'publicGroups' && visiblePublicGroups.map((item) => <button key={item.id} className={`permission-list-item ${item.id === selectedId ? 'selected' : ''}`} onClick={() => { setSelectedId(item.id); onRouteResourceChange('PublicGroups', item.id); }}><strong>{item.label}</strong><small>{item.apiName} · {item.userIds.length + item.roleIds.length + item.roleAndSubordinateIds.length + item.groupIds.length} members</small></button>)}
         {tab === 'queues' && visibleQueues.map((item) => <button key={item.id} className={`permission-list-item ${item.id === selectedId ? 'selected' : ''}`} onClick={() => { setSelectedId(item.id); onRouteResourceChange('Queues', item.id); }}><strong>{item.label}</strong><small>{item.apiName} · {item.supportedObjectApiNames.length} object types</small></button>)}
         {tab === 'sharingRules' && visibleSharingRules.map((item) => <button key={item.id} className={`permission-list-item ${item.id === selectedId ? 'selected' : ''}`} onClick={() => { setSelectedId(item.id); onRouteResourceChange('SharingRules', item.id); }}><strong>{item.label}</strong><small>{item.objectApiName} · {item.type === 'OwnerBased' ? 'Owner-based' : 'Criteria-based'}</small></button>)}
         {tab === 'profiles' && visibleProfiles.length === 0 && <div className="empty-state">No profiles found.</div>}
         {tab === 'sets' && visibleSets.length === 0 && <div className="empty-state">No permission sets found.</div>}
-        {tab === 'groups' && visibleGroups.length === 0 && <div className="empty-state">No permission set groups found.</div>}
+        {tab === 'groups' && visibleGroups.length === 0 && <div className="empty-state">No permission set groups found. Use New Permission Set Group to create one.</div>}
         {tab === 'users' && draft.users.length === 0 && <div className="empty-state">No users are available for assignment.</div>}
         {tab === 'roles' && visibleRoles.length === 0 && <div className="empty-state">No roles found.</div>}
         {tab === 'publicGroups' && visiblePublicGroups.length === 0 && <div className="empty-state">No public groups found.</div>}
@@ -596,6 +615,16 @@ function Permissions({
       <PlatformPageSlot slotKey="rbac-editor"><div className="permission-editor">
         {tab === 'sets' && <button type="button" className="btn md-permission-sets-mobile-back" onClick={() => {setMobilePermissionDetail(false);onRouteResourceChange('PermissionSets');}}>← All permission sets</button>}
         {tab === 'sharing' && <>
+          <div className="md-sharing-mobile-heading">
+            <label className="form-label">Configure sharing for object
+             <select className="form-control" aria-label="Select object for advanced sharing" value={selectedId&&objects.some(item=>item.apiName===selectedId)?selectedId:''}
+              onChange={event=>{setSelectedId(event.target.value);onRouteResourceChange('SharingSettings',event.target.value);}}>
+              <option value="">Choose an object</option>{objects.map(object=><option key={object.apiName} value={object.apiName}>{object.label}</option>)}
+             </select>
+            </label>
+          </div>
+          <details className="md-sharing-defaults" open={viewportWidth>=1024}>
+          <summary>Organisation-wide sharing defaults</summary>
           <div className="section-toolbar"><div><h2>Organization-Wide Defaults</h2><p>Set baseline record visibility per object. Inherited defaults are private until configured; Profiles and Permission Sets control object and field permissions.</p></div><div className="mini-search"><Search size={13}/><input aria-label="Search sharing settings" placeholder="Search objects…" value={query} onChange={event=>setQuery(event.target.value)}/></div></div>
           <div className="permission-table-wrap" role="region" aria-label="Record and field access settings" tabIndex={0}><table className="slds-table permission-matrix"><thead><tr><th scope="col">Object</th><th scope="col">API Name</th><th scope="col">Policy status</th><th scope="col">Default Internal Access</th><th scope="col">Grant Access Using Hierarchies</th></tr></thead><tbody>{visibleSharingObjects.map((object) => {
             const setting = draft.sharingSettings[object.apiName] ?? { defaultAccess: 'Private' as const, grantAccessUsingHierarchies: true };
@@ -610,6 +639,7 @@ function Permissions({
               sharingSettings: { ...current.sharingSettings, [object.apiName]: { ...setting, grantAccessUsingHierarchies: event.target.checked } }
             }))} /></td></tr>;
           })}</tbody></table></div>
+          </details>
           <p className="permission-help">Select an object name to configure advanced sharing rules. Changing a fallback value creates an explicit setting when saved. Private records are visible to their owner and users with explicit sharing or View All/Modify All access. Object and field permissions still apply.</p>
           {visibleSharingObjects.length > 0 && selectedId && visibleSharingObjects.some(item=>item.apiName===selectedId) && (() => {
             const object = visibleSharingObjects.find((item) => item.apiName === selectedId)!;
@@ -953,8 +983,8 @@ function Permissions({
         </>}
         {tab === 'profiles' && !selectedProfile && <div className="empty-state">Select a profile or create one to get started.</div>}
         {tab === 'sets' && !selectedSet && <div className="empty-state">Select a permission set or create one to get started.</div>}
-        {tab === 'groups' && !selectedGroup && <div className="empty-state">Select a permission set group or create one to get started.</div>}
-        {tab === 'sets' && mobilePermissionDetail && <div className="md-permission-mobile-save"><button type="button" className="btn btn-brand" onClick={()=>void saveDraft()} disabled={saving || draft===savedDraft || Boolean(accessControlError)}><Save size={14}/>{saving?'Saving…':'Save Changes'}</button></div>}
+        {tab === 'groups' && !selectedGroup && visibleGroups.length>0 && <div className="empty-state">Select a permission set group to edit it.</div>}
+        {(tab === 'sharing' || tab==='users'||tab==='roles'||tab==='profiles'||tab==='groups'||tab==='publicGroups'||tab==='queues'||tab==='sharingRules'||(tab==='sets'&&mobilePermissionDetail)) && <div className="md-permission-mobile-save"><span className="md-permission-save-state">{draft===savedDraft?'No unsaved changes':'Unsaved permission changes'}</span><button type="button" className="btn btn-brand" onClick={()=>void saveDraft()} disabled={saving || draft===savedDraft || Boolean(accessControlError)}><Save size={14}/>{saving?'Saving…':'Save Changes'}</button></div>}
       </div></PlatformPageSlot>
     </section>
     <PlatformPageSlot slotKey="rbac-help"><div className="permission-info"><ShieldCheck size={17} /><span>Tenant-scoped grants are evaluated by the API. Permission-set groups combine their member grants and can mute group-contributed system and object permissions; direct assignments are unaffected by group muting.</span></div></PlatformPageSlot>
