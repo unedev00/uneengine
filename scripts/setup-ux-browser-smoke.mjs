@@ -52,6 +52,18 @@ try {
  await page.getByText('49 of 100 records selected').waitFor();
  assert.equal(await page.getByRole('checkbox',{name:'Bulk record 51',exact:true}).isEnabled(),true,
   'Removing one selection restores capacity');
+ await open('offline-load-error');
+ await page.getByRole('alert').getByText('Offline briefcase service is temporarily unavailable. Please retry.').waitFor();
+ assert.equal(await page.getByText('SQL relation md_tenant_settings',{exact:false}).count(),0,
+  'Offline load failures must not leak database internals');
+ await open('offline-save-error');
+ await page.getByRole('button',{name:'Add object'}).click();
+ await page.getByRole('combobox').selectOption('Account');
+ await page.getByRole('checkbox',{name:'Acme Corporation'}).check();
+ await page.getByRole('button',{name:'Save selections'}).click();
+ await page.getByRole('alert').getByText('Offline briefcase service is temporarily unavailable. Please retry.').waitFor();
+ assert.equal(await page.getByText('SQL service unavailable',{exact:false}).count(),0,
+  'Offline save failures must not leak database internals');
  await open('tenants');
  await page.getByRole('button',{name:'New tenant',exact:true}).click();
  const tenantForm=page.getByRole('form',{name:'New tenant draft'});
