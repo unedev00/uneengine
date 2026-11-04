@@ -40,7 +40,7 @@ export default function ScheduledFlows({ flows, objects, loading, onEdit, initia
       </div>
       <div className="flow-config-row" role="group" aria-label="Automation explorer views" style={{ marginBottom: 12 }}>
         <button type="button" aria-current={view==='scheduled'?'page':undefined} className={view === 'scheduled' ? 'btn btn-brand' : 'btn'} onClick={() => selectView('scheduled')}>Scheduled Flows</button>
-        <button type="button" aria-current={view==='triggers'?'page':undefined} className={view === 'triggers' ? 'btn btn-brand' : 'btn btn-link'} onClick={() => selectView('triggers')}>Flow Trigger Explorer</button>
+        <button type="button" aria-current={view==='triggers'?'page':undefined} className="btn btn-link" onClick={() => selectView('triggers')}>Flow Trigger Explorer</button>
       </div>
       {view === 'triggers' ? <FlowTriggerExplorer flows={flows} objects={objects} loading={loading} onEdit={onEdit} /> : <section className="surface scheduled-flows-surface">
         <div className="list-view-header">
