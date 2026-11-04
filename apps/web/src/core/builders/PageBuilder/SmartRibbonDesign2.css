@@ -186,3 +186,30 @@
   padding:0!important;
   margin:0!important;
 }
+
+/* Original R1C3 shape is a 40px icon, not a 94px text/gallery button. */
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-property[data-design-slot="shape"] .smart-icon-gallery{
+  box-sizing:border-box!important;flex:0 0 40px!important;
+  width:40px!important;min-width:40px!important;max-width:40px!important;
+  height:26px!important;padding:0!important;margin:0!important;border:0!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-property[data-design-slot="shape"] .smart-shapes-trigger{
+  box-sizing:border-box!important;display:flex!important;
+  width:40px!important;min-width:40px!important;max-width:40px!important;
+  height:26px!important;padding:1px 2px!important;gap:1px!important;
+  justify-content:center!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-property[data-design-slot="shape"] .smart-shapes-trigger>span{
+  display:none!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-property[data-design-slot="shape"] .smart-shapes-trigger>svg:first-child{
+  width:17px!important;min-width:17px!important;height:17px!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-property[data-design-slot="shape"] .smart-shapes-trigger>svg:last-child{
+  width:10px!important;min-width:10px!important;height:12px!important;
+}
