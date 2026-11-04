@@ -66,7 +66,7 @@ export function updateSharedCanvasPositions(
   if(!primary?.position||members.length<2)return [...components];
   const fields=(['x','y','width','height'] as const).filter(field=>
     next[field]!==primary.position![field] &&
-    definitions.some(p=>p.tab==='Layout'&&p.id===field&&isSharedCanvasProperty(p,members)));
+    definitions.some(p=>(p.tab==='Layout'||p.tab==='Design2')&&p.id===field&&isSharedCanvasProperty(p,members)));
   if(!fields.length)return [...components];
   const ids=new Set(members.map(item=>item.id));
   return components.map(item=>{
