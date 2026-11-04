@@ -350,3 +350,19 @@
 .ace-chat :is(button,input,select,textarea):focus-visible{outline:3px solid var(--md-focus-ring,#419d96);outline-offset:2px}
 @media(max-width:760px){.ace-chat-sidebar{flex:1 1 100%;max-width:100%}.ace-chat .ace-chat-modal{width:100%;max-width:100%;height:100dvh;max-height:100dvh}.ace-chat .ace-chat-bubble{max-width:92%}.ace-chat .ace-chat-top{padding:8px 12px}}
 @media(prefers-reduced-motion:reduce){.ace-chat *{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+
+/* Desktop empty inbox is a focused task card, not a huge blank conversation. */
+@media(min-width:1024px){
+ .ace-chat:not(.has-selected-chat) .ace-chat-welcome{
+  width:min(100%,520px);max-width:520px;box-sizing:border-box;
+  padding:32px 28px;margin:auto;border:1px solid var(--chat-border,#d7e1df);
+  border-radius:18px;background:var(--chat-paper,#fff);
+  box-shadow:0 16px 38px rgba(21,39,42,.08)
+ }
+}
+.ace-chat-welcome-actions{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:10px}
+.ace-chat-welcome-actions button{min-height:44px;margin:8px 0 0}
+.ace-chat-welcome-actions .ace-chat-welcome-secondary{
+ color:var(--chat-link,#087d70);background:transparent!important;border:1px solid currentColor
+}
+.ace-chat-welcome-help{font-size:12px;max-width:350px;color:var(--chat-muted,#647775)}
