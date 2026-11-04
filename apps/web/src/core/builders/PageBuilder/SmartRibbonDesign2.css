@@ -343,3 +343,66 @@
 }
 .design2-icon-popup>button:is(:hover,.is-selected){background:#daebfe;}
 .design2-icon-popup>button:focus-visible{outline:2px solid #1e79cb}
+
+/* FIX: The older three-row ribbon has a MORE SPECIFIC display:flex!important
+ * selector and grid-area:auto!important on child properties. Those two rules
+ * silently collapsed SQL R2C6/R3C6 image slots into C1. Override them ONLY
+ * inside Design 2 with a higher-specificity fixed six-column CSS grid.
+ * Columns and per-cell width still come from the approved SQL slot metadata.
+ */
+.office-builder-ribbon #page-builder-tab-content
+ >.smart-ribbon.smart-design2-ribbon[data-three-row="true"]
+ >.smart-ribbon-group.smart-design2-group
+ .smart-design2-workbench>.smart-ribbon-items
+ >.smart-ribbon-row[data-design-row]{
+ display:grid!important;
+ grid-auto-flow:row!important;
+ grid-template-rows:26px!important;
+ grid-auto-rows:26px!important;
+ column-gap:4px!important;
+ row-gap:0!important;
+ justify-content:start!important;
+ align-items:center!important;
+ flex:0 0 26px!important;
+ box-sizing:border-box!important;
+ width:380px!important;
+ min-width:380px!important;
+ max-width:380px!important;
+ height:26px!important;
+ min-height:26px!important;
+ max-height:26px!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+ >.smart-ribbon.smart-design2-ribbon[data-three-row="true"]
+ >.smart-ribbon-group.smart-design2-group
+ .smart-design2-workbench>.smart-ribbon-items
+ >.smart-ribbon-row[data-design-row]>.smart-property{
+ /* Explicitly override the legacy grid-area:auto!important declaration.
+    Each row has six fixed tracks, even where C1-C5 are empty. */
+ grid-area:1 / var(--smart-slot-column,1) / span 1 / span 1!important;
+ grid-column:var(--smart-slot-column,1) / span 1!important;
+ grid-row:1 / span 1!important;
+ justify-self:start!important;
+ box-sizing:border-box!important;
+ width:var(--smart-control-width)!important;
+ min-width:var(--smart-control-width)!important;
+ max-width:var(--smart-control-width)!important;
+ height:26px!important;
+ min-height:26px!important;
+ max-height:26px!important;
+}
+/* These 40px icon pickers are children of the fixed SQL C6 cell.
+ * Prevent generic (144px) Image dropdown styles from widening them. */
+.office-builder-ribbon #page-builder-tab-content
+ >.smart-ribbon.smart-design2-ribbon[data-three-row="true"]
+ .smart-design2-group .smart-ribbon-row[data-design-row]>.smart-property
+ .design2-icon-trigger{
+ box-sizing:border-box!important;
+ flex:0 0 var(--smart-control-width)!important;
+ width:var(--smart-control-width)!important;
+ min-width:var(--smart-control-width)!important;
+ max-width:var(--smart-control-width)!important;
+ height:26px!important;
+ min-height:26px!important;
+ max-height:26px!important;
+}
