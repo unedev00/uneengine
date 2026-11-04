@@ -100,3 +100,10 @@ test('Mobile permission list and detail follow addressable routes',()=>{
  assert.match(permissions,/\[routeResourceApiName,routeResourceId\]/);
  assert.match(permissions,/viewportWidth < 1024 && \(nextTab==='sets'\|\|nextTab==='users'\) \? undefined : initialId/);
 });
+
+test('Mobile Flow Builder provides an explicit way back to the flow list',()=>{
+ const flow=read('../src/core/builders/FlowBuilder/FlowBuilder.tsx');
+ const scheduled=read('../src/core/automation/ScheduledFlows/ScheduledFlows.tsx');
+ assert.match(flow, /flow-phone-top-actions[\s\S]*onClick=\{onOpenFlowList\}[\s\S]*Back to flows/);
+ assert.match(scheduled, /className="btn btn-link" onClick=\{\(\) => selectView\('triggers'\)\}/);
+});
