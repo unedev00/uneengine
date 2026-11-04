@@ -286,12 +286,12 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
   assert.ok(Math.abs(first.width-40)<1&&Math.abs(second.width-40)<1,
    description+' must remain 40px wide as in Excel');
  }
- assert.equal(await cartBodyShapeFillSlot.getAttribute('data-supported'),'false',
-  'Cart Body Shape Fill is not approved: show it disabled, do not hide it');
+ assert.equal(await cartBodyShapeFillSlot.getAttribute('data-supported'),'true',
+  'Cart Body Shape Fill is approved; keep its existing enabled status');
  assert.equal(await shapeFill.getAttribute('data-kind'),'color',
   'Unsupported Shape Fill must keep its colour icon, not become a blank number input');
  assert.equal(await cartBodyShapeFillSlot.locator('.office-ribbon-colour-property').count(),1,
-  'Shape Fill must render the disabled icon after Shape');
+  'Shape Fill colour icon must render after Shape');
  assert.equal(await cartBodyWrapSlot.getAttribute('data-supported'),'false',
   'Cart Body Wrap is not approved: show it disabled, do not hide it');
  assert.equal(await cartBodyWrapSlot.locator('button.smart-icon-toggle').count(),1,
