@@ -120,3 +120,11 @@ test('cash/card payment Flow graphs use server Product prices and create both In
  assert.match(ui,/requestId:paymentRequestId.current/);
  assert.doesNotMatch(ui,/db\.query|\/records\//);
 });
+
+test('missing product photos use a recognisable placeholder, never the checkbox-like square',()=>{
+ const ui=readFileSync(fileURLToPath(new URL('../src/AcetillTerminal.tsx',import.meta.url)),'utf8');
+ assert.match(ui,/acetill-photo-placeholder/);
+ assert.match(ui,/<svg aria-hidden="true"/);
+ assert.doesNotMatch(ui,/▧/);
+ assert.match(ui,/alt=\{name\}/);
+});
