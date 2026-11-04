@@ -372,15 +372,33 @@ export function registerMetadataLoaderRoutes(app:Express,db:SqlPersistence,rbac:
     }else{
      if(i.action==='Delete'){await definitions.deleteField(actor.tenant_id,i.objectApi,i.fieldApi!);}
      else if(i.action==='HardDelete'){
-      await db.transaction(async client=>{
-       await client.query('DELETE FROM md_record_history WHERE tenant_id=$1 AND object_api=$2 AND field_api=$3',
-        [actor.tenant_id,i.objectApi,i.fieldApi]);
-       await client.query('DELETE FROM md_record_values WHERE tenant_id=$1 AND object_api=$2 AND field_api=$3',
-        [actor.tenant_id,i.objectApi,i.fieldApi]);
-       const result=await client.query('DELETE FROM md_field_definitions WHERE tenant_id=$1 AND object_api=$2 AND api_name=$3 AND deleted_at IS NOT NULL',
-        [actor.tenant_id,i.objectApi,i.fieldApi]);
-       if(!result.rowCount)throw Error('Field not previously deleted');
-      });
+      const deletedNow=Boolean(existing);
+      if(deletedNow)await definitions.deleteField(actor.tenant_id,i.objectApi,i.fieldApi!);
+      try{
+       await db.transaction(async client=>{
+        const ids=await client.query<{id:string}>(
+         'SELECT id FROM md_field_definitions WHERE tenant_id=$1 AND object_api=$2 AND api_name=$3 AND deleted_at IS NOT NULL FOR UPDATE',
+         [actor.tenant_id,i.objectApi,i.fieldApi]);
+        if(!ids.rows[0])throw Error('Field was not soft-deleted');
+        await client.query('DELETE FROM md_record_history WHERE tenant_id=$1 AND object_api=$2 AND field_api=$3',
+         [actor.tenant_id,i.objectApi,i.fieldApi]);
+        await client.query('DELETE FROM md_record_values WHERE tenant_id=$1 AND object_api=$2 AND field_api=$3',
+         [actor.tenant_id,i.objectApi,i.fieldApi]);
+        await client.query('DELETE FROM md_object_page_layout_fields WHERE tenant_id=$1 AND object_api=$2 AND field_api=$3',
+         [actor.tenant_id,i.objectApi,i.fieldApi]);
+        await client.query('DELETE FROM md_object_record_type_values WHERE tenant_id=$1 AND object_api=$2 AND field_api=$3',
+         [actor.tenant_id,i.objectApi,i.fieldApi]);
+        await client.query('DELETE FROM md_page_component_properties WHERE tenant_id=$1 AND field_id=$2',
+         [actor.tenant_id,ids.rows[0].id]);
+        const result=await client.query(
+         'DELETE FROM md_field_definitions WHERE tenant_id=$1 AND object_api=$2 AND api_name=$3 AND deleted_at IS NOT NULL',
+         [actor.tenant_id,i.objectApi,i.fieldApi]);
+        if(!result.rowCount)throw Error('Field was not soft-deleted');
+       });
+      }catch(error){
+       if(deletedNow)await definitions.restoreField(actor.tenant_id,i.objectApi,i.fieldApi!);
+       throw error;
+      }
      }else{
       let target=existing;
       if(!target){
