@@ -161,3 +161,19 @@ test('Profile permission editors collapse all long tables and preserve underlyin
  assert.match(profile,/selectedProfile\.recordTypePermissions/);
  assert.match(profile,/selectedProfile\.fieldPermissions/);
 });
+
+test('Laptop record rows prioritise identity and a compact action menu',()=>{
+ const records=read('../src/core/records/RecordWorkspace/recordWorkspaceViews.tsx');
+ const styles=read('../src/core/records/RecordWorkspace/recordsListToolbar.css');
+ assert.match(records,/viewportWidth>0&&viewportWidth<=1200\)\)\?listFields\.slice\(0,5\)/);
+ assert.match(records,/viewportWidth>0&&viewportWidth<=1200\s*\?\s*<details className="record-row-actions-menu">/);
+ assert.match(records,/aria-label=\{`Actions for \$\{String\(item\.Name \?\? item\.Id\)\}`\}/);
+ assert.match(styles,/\.record-row-actions-menu>summary/);
+ assert.match(styles,/\.record-row-actions-menu>div>button/);
+});
+test('Tablet security and setup audit rows are labelled cards with no clipped 920px table',()=>{
+ const styles=read('../src/core/workspace/WorkspaceTheme/phase2AdminLayout.css');
+ assert.match(styles,/@media\(max-width:899px\)\{\s*\.lightning \.md-admin-table-wrap:has\(\.md-audit-table\)/);
+ assert.match(styles,/@media\(min-width:900px\)\{\s*\.lightning \.md-audit-table\{min-width:920px/);
+ assert.match(styles,/\.md-audit-table td::before\{content:attr\(data-label\)/);
+});
