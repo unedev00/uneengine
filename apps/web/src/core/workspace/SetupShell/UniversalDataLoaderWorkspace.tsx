@@ -1,4 +1,4 @@
-import {useMemo,useState,type ChangeEvent} from 'react';
+import {useEffect,useMemo,useState,type ChangeEvent} from 'react';
 import {Download,Upload,CheckCircle2,AlertTriangle,Database,Table2,SlidersHorizontal} from 'lucide-react';
 import UniversalMetadataLoader from '../../builders/ObjectManager/UniversalMetadataLoader';
 
@@ -126,11 +126,13 @@ export default function UniversalDataLoaderWorkspace({apiRequest,objects,onMetad
  apiRequest:Api;objects:ObjectInfo[];onMetadataChanged?:()=>void;
 }){
  const [tab,setTab]=useState<'objects'|'records'|'ribbon'>('objects');
+ const [objectList,setObjectList]=useState(objects);
+ useEffect(()=>setObjectList(objects),[objects]);
  const [objectApi,setObjectApi]=useState('');
  const [externalField,setExternalField]=useState('');
  const [componentApi,setComponentApi]=useState('smart_cart');
- const active=useMemo(()=>objects.find(x=>x.apiName===objectApi)??objects[0],
-  [objectApi,objects]);
+ const active=useMemo(()=>objectList.find(x=>x.apiName===objectApi)??objectList[0],
+  [objectApi,objectList]);
  const selectedObject=active?.apiName??'';
  const externalIds=active?.fields.filter(f=>f.externalId)??[];
  return <div className="object-manager surface" aria-label="Universal Data Loader" style={{padding:24}}>
@@ -149,13 +151,16 @@ export default function UniversalDataLoaderWorkspace({apiRequest,objects,onMetad
   </nav>
   <div style={{maxWidth:1100}}>
    {tab==='objects'&&<UniversalMetadataLoader inline apiRequest={apiRequest}
-    currentObject={selectedObject} onClose={()=>{}} onChanged={()=>onMetadataChanged?.()}/>}
+    currentObject={selectedObject} onClose={()=>{}} onChanged={()=>{
+     void apiRequest<{objects:ObjectInfo[]}>('/metadata/objects').then(result=>setObjectList(result.objects.filter(o=>o.apiName!=='User')));
+     onMetadataChanged?.();
+    }}/>}
    {tab==='records'&&<>
     <section className="metadata-card" style={{marginBottom:16}}>
      <h3>Record Data</h3>
      <label className="form-label">Choose object
       <select className="form-control" value={selectedObject} onChange={e=>{setObjectApi(e.target.value);setExternalField('');}}>
-       {objects.map(o=><option key={o.apiName} value={o.apiName}>{o.label} ({o.apiName})</option>)}
+       {objectList.map(o=><option key={o.apiName} value={o.apiName}>{o.label} ({o.apiName})</option>)}
       </select>
      </label>
      <label className="form-label">Upsert matching
