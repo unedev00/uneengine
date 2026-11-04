@@ -9,7 +9,7 @@ type Req=Request & {actor?:Actor};
 type Rule={component_api:string;property_key:string;label:string;tab:string;section_group:string;
  control_kind:string;enabled:boolean;scope:string};
 const keys=['ComponentApi','PropertyKey','Enabled','CurrentEnabled','PropertyLabel','Tab','Section','ControlKind'];
-const boolean=(value:string)=>/^(true|false)$/i.test(value)?value.toLowerCase()==='true':null;
+const boolean=(value:string)=>/^(true|false|1|0)$/i.test(value)?/^(true|1)$/i.test(value):null;
 const identity=(r:{component_api:string;property_key:string})=>r.component_api+'|'+r.property_key;
 const rowKey=(row:Record<string,string>)=>String(row.ComponentApi??'')+'|'+String(row.PropertyKey??'');
 const errors=(e:unknown)=>e instanceof Error?e.message:String(e);
