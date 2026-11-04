@@ -106,7 +106,7 @@ test('Design 2 keeps every SQL R/C slot even when unsupported or metadata is abs
  assert.match(shared,/const original:UneRibbonProperty=assigned\?\?fallbackDefinition\?\?\{/);
  assert.match(shared,/components:assigned\?assigned\.components:\[\]/);
  assert.match(shared,/data-design-slot=\{slotPlacement\?\.slotKey\}/);
- assert.match(shared,/data-design-column=\{slotPlacement\?\.order\}/);
+ assert.match(shared,/data-design-column=\{tab==='Design2'&&property\.designRow===0\?property\.designOrder:slotPlacement\?\.order\}/);
  assert.doesNotMatch(shared,/\.filter\(\(p\):p is NonNullable<typeof p>=>p!==null\)/);
 });
 
