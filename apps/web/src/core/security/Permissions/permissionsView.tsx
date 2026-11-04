@@ -937,23 +937,26 @@ function Permissions({
           </div>
           <h3 className="permission-section-heading">Permission Sets in Group</h3>
           <div className="permission-check-grid">{draft.permissionSets.map((permissionSet) => <label className="checkbox-row" key={permissionSet.id}><input type="checkbox" checked={selectedGroup.permissionSetIds.includes(permissionSet.id)} onChange={() => patchGroup(selectedGroup.id, { permissionSetIds: toggleString(selectedGroup.permissionSetIds, permissionSet.id) })} />{permissionSet.label}</label>)}</div>
-          <h3 className="permission-section-heading">Muted System Permissions</h3>
+          <details className="md-permission-collapsible md-permission-group-advanced"><summary>Muted System Permissions</summary>
           <p className="permission-help">Muted permissions remove grants contributed by this group; direct permission-set assignments remain in effect.</p>
           <div className="permission-check-grid">{allSystemPermissions.map(([key, label]) => <label className="checkbox-row" key={key}><input type="checkbox" checked={selectedGroup.mutedSystemPermissions.includes(key)} onChange={() => patchGroup(selectedGroup.id, { mutedSystemPermissions: toggleString(selectedGroup.mutedSystemPermissions, key) })} />{label}</label>)}</div>
           
-          <h3 className="permission-section-heading">Muted Application Access</h3>
+          </details>
+          <details className="md-permission-collapsible md-permission-group-advanced"><summary>Muted Application Access</summary>
           <div className="permission-check-grid">{navigationApps.map((app) => <label className="checkbox-row" key={app.apiName}>
             <input type="checkbox" checked={Boolean(selectedGroup.mutedAppPermissions?.[app.apiName])}
               onChange={(event) => patchGroup(selectedGroup.id, { mutedAppPermissions: { ...selectedGroup.mutedAppPermissions, [app.apiName]: event.target.checked } })} />
             {app.label}
           </label>)}</div>
-          <h3 className="permission-section-heading">Muted Tab Visibility</h3>
+          </details>
+          <details className="md-permission-collapsible md-permission-group-advanced"><summary>Muted Tab Visibility</summary>
           <div className="permission-check-grid">{objects.map((object) => <label className="checkbox-row" key={object.apiName}>
             <input type="checkbox" checked={Boolean(selectedGroup.mutedTabPermissions?.[object.apiName])}
               onChange={(event) => patchGroup(selectedGroup.id, { mutedTabPermissions: { ...selectedGroup.mutedTabPermissions, [object.apiName]: event.target.checked } })} />
             {object.label}
           </label>)}</div>
-          <h3 className="permission-section-heading">Muted Object Permissions</h3>
+          </details>
+          <details className="md-permission-collapsible md-permission-group-advanced"><summary>Muted Object Permissions</summary>
           <ObjectPermissionPhoneList objects={objects} values={selectedGroup.mutedObjectPermissions}
             subject={'Muted '+selectedGroup.label} onToggle={(objectApi,permission)=>{
               patchGroup(selectedGroup.id,{mutedObjectPermissions:{...selectedGroup.mutedObjectPermissions,
@@ -961,17 +964,20 @@ function Permissions({
                   [permission]:!selectedGroup.mutedObjectPermissions[objectApi]?.[permission]}}});
             }}/>
           <div className="permission-table-wrap permission-desktop-matrix" role="region" aria-label="Object permission matrix" tabIndex={0}><table className="slds-table permission-matrix"><thead><tr><th scope="col">Object</th><th scope="col">API Name</th>{(['read', 'create', 'edit', 'delete', 'viewAll', 'modifyAll'] as const).map((permission) => <th scope="col" key={permission}>{permission === 'viewAll' ? 'View All' : permission === 'modifyAll' ? 'Modify All' : permission[0].toUpperCase() + permission.slice(1)}</th>)}</tr></thead><tbody>{objects.map((object) => <tr key={object.apiName}><td><strong>{object.label}</strong></td><td title={object.apiName}><code>{object.apiName}</code></td>{(['read', 'create', 'edit', 'delete', 'viewAll', 'modifyAll'] as const).map((permission) => <td key={permission}><input type="checkbox" aria-label={`Mute ${object.label} ${permission}`} checked={Boolean(selectedGroup.mutedObjectPermissions[object.apiName]?.[permission])} onChange={() => patchGroup(selectedGroup.id, { mutedObjectPermissions: { ...selectedGroup.mutedObjectPermissions, [object.apiName]: { ...selectedGroup.mutedObjectPermissions[object.apiName], [permission]: !selectedGroup.mutedObjectPermissions[object.apiName]?.[permission] } } })} /></td>)}</tr>)}</tbody></table></div>
-          <h3 className="permission-section-heading">Muted Record Type Access</h3>
+          </details>
+          <details className="md-permission-collapsible md-permission-group-advanced"><summary>Muted Record Type Access</summary>
           {objects.filter((object) => object.recordTypes?.length).map((object) => <div className="permission-table-wrap" role="region" aria-label={`Record type permissions for ${object.label}`} tabIndex={0} key={object.apiName}><table className="slds-table permission-matrix"><thead><tr><th scope="col">{object.label}</th><th scope="col">Developer Name</th><th scope="col">Mute Access</th></tr></thead><tbody>{object.recordTypes?.filter((recordType) => recordType.active).map((recordType) => {
             const key = `${object.apiName}.${recordType.id}`;
             return <tr key={key}><td><strong>{recordType.label}</strong></td><td title={recordType.developerName}><code>{recordType.developerName}</code></td><td><input type="checkbox" aria-label={`Mute ${object.label} ${recordType.label}`} checked={Boolean(selectedGroup.mutedRecordTypePermissions[key])} onChange={() => patchGroup(selectedGroup.id, { mutedRecordTypePermissions: { ...selectedGroup.mutedRecordTypePermissions, [key]: !selectedGroup.mutedRecordTypePermissions[key] } })} /></td></tr>;
           })}</tbody></table></div>)}
-          <h3 className="permission-section-heading">Muted Field Permissions</h3>
+          </details>
+          <details className="md-permission-collapsible md-permission-group-advanced"><summary>Muted Field Permissions</summary>
           {objects.map((object) => <details className="permission-field-group" key={object.apiName}><summary>{object.label} ({object.fields.length} fields)</summary><div className="permission-table-wrap" role="region" aria-label="Record and field access settings" tabIndex={0}><table className="slds-table permission-matrix"><thead><tr><th scope="col">Field</th><th scope="col">API Name</th><th scope="col">Mute Create</th><th scope="col">Mute Read</th><th scope="col">Mute Edit</th><th scope="col">Mute Delete</th></tr></thead><tbody>{object.fields.map((field) => {
             const fieldName = `${object.apiName}.${field.apiName}`;
             const permissions = selectedGroup.mutedFieldPermissions[fieldName] ?? {};
             return <tr key={fieldName}><td><strong>{field.label}</strong></td><td title={field.apiName}><code>{field.apiName}</code></td>{(['create', 'read', 'edit', 'delete'] as const).map((permission) => <td key={permission}><input type="checkbox" aria-label={`Mute ${object.label}.${field.label} ${permission}`} checked={Boolean(permissions[permission])} onChange={() => patchGroup(selectedGroup.id, { mutedFieldPermissions: { ...selectedGroup.mutedFieldPermissions, [fieldName]: { ...permissions, [permission]: !permissions[permission] } } })} /></td>)}</tr>;
           })}</tbody></table></div></details>)}
+          </details>
         </>}
         {tab === 'users' && <>
           <div className="section-toolbar"><div><h2>User Assignments</h2><p>Direct permission-set and permission-set-group memberships for this tenant.</p></div><button className="btn btn-brand" onClick={onOpenUserRecords}>Manage Users (CRUD)</button></div>
