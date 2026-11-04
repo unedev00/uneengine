@@ -288,27 +288,11 @@
     scrollbar-width: none;
   }
   .lightning .header-page-tab { min-height: 40px; }
-  .lightning .header-installed-apps { position: relative; width: 44px; min-width: 44px; padding: 0; }
-  .lightning .header-installed-apps select {
-    appearance: none;
-    width: 44px;
-    min-width: 44px;
-    max-width: 44px;
-    height: 44px;
-    padding: 0;
-    font-size: 0;
-  }
-  .lightning .header-installed-apps select option { font-size: 14px; }
-  .lightning .header-installed-apps::after {
-    content: "▦";
-    position: absolute;
-    inset: 0;
-    display: grid;
-    place-items: center;
-    pointer-events: none;
-    color: var(--md-text,#192230);
-    font-size: 20px;
-  }
+  /* On phones the grid launcher replaces the selector. The 641-700px range
+     still uses the selector, so its current app label must remain visible. */
+  .lightning .header-installed-apps { position: relative; flex:0 0 160px; width:160px; min-width:160px; padding:0; }
+  .lightning .header-installed-apps select { appearance:auto; width:160px; min-width:160px; max-width:160px; height:44px; padding:0 8px; font-size:13px; }
+  .lightning .header-installed-apps::after { content:none; }
   .lightning .header-searches { flex: 0 0 auto; min-width: 0; }
   .lightning .global-record-search {
     width: 44px;
