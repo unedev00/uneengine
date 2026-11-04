@@ -116,3 +116,10 @@ test('Company currency settings can retry failed loads without leaking SQL error
  assert.match(settings,/Retry loading currency settings/);
  assert.match(settings,/currencyFailureMessage\(saveError\)/);
 });
+
+test('Phone Flow Builder controls wrap instead of clipping at 390px',()=>{
+ const css=read('../src/core/builders/FlowBuilder/FlowBuilderMobile.css');
+ assert.match(css,/\.flow-phone-top-actions\{[^}]*flex-wrap:wrap/);
+ assert.match(css,/\.flow-phone-top-actions p\{[^}]*flex:1 0 100%/);
+ assert.match(css,/\.flow-phone-top-actions button\{[^}]*flex:1 1 120px/);
+});
