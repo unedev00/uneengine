@@ -7,6 +7,7 @@ import '../SharedBuilderFrame/adaptiveBuilder.css';
 import { uniqueLibraryComponents, libraryComponentLabel } from '../../components/Registry/componentLibraryDiscovery';
 import { FlowPropertiesResizeHandle, useFlowPropertiesWidth } from './FlowPropertiesResizeHandle';
 import { layoutFlowGraph } from './flowGraphLayout';
+import {downloadFlowExcel, previewFlowExcel, type FlowImportPreview} from './flowExcelWorkbook';
 import { completeFlowEndPaths, reconcileDecisionOutcomePaths } from './flowInsertElement.mjs';
 import {canBypassFlowElement,duplicateFlowGraphElement,flowGraphDiagnostics,retargetFlowGraphConnector} from './flowGraphOperations.mjs';
 import { formulaFunctions, formulaOperators } from './flowEditorCatalog';
@@ -145,6 +146,8 @@ export default function FlowBuilder({
   const flowComponents = uniqueLibraryComponents(libraryComponents, 'flow').map(component => ({ ...component, label: libraryComponentLabel(component) }));
   const [capabilityCatalog, setCapabilityCatalog] = useState<FlowCapabilityCatalog | null>(null);
   const [capabilityError, setCapabilityError] = useState('');
+  const [excelPreview,setExcelPreview]=useState<FlowImportPreview|null>(null);
+  const [excelError,setExcelError]=useState('');
   const [externalServices, setExternalServices] = useState<ExternalServiceMetadata[]>([]);
   const [externalServiceError, setExternalServiceError] = useState('');
   const [newExternalServiceApiName, setNewExternalServiceApiName] = useState('');
@@ -2054,7 +2057,26 @@ export default function FlowBuilder({
                   onClick={() => onRestoreFlowVersion(version)}>Restore as Draft</button>
               </div>)
             : <p className="empty-list">No saved versions yet.</p>}</div>
-          <div className="toolbox-group"><h3>Flow Portability</h3><button className="btn" onClick={onExportFlow}>Export Flow JSON</button><label className="form-label">Import Flow JSON<input className="form-control" type="file" accept=".json,application/json" onChange={(event) => {
+          <div className="toolbox-group"><h3>Excel Node Upsert (Existing Flow Only)</h3>
+<button className="btn" type="button" disabled={!flow.id||isDirty} onClick={()=>downloadFlowExcel(flow)}>Download Excel</button>
+<label className="form-label">Upload edited Excel (.xls)<input className="form-control" type="file"
+ accept=".xls,application/vnd.ms-excel,text/xml,application/xml" disabled={!flow.id||isDirty||!capabilityCatalog}
+ onChange={event=>{const file=event.target.files?.[0];event.target.value='';setExcelPreview(null);setExcelError('');
+ if(file)void file.text().then(source=>setExcelPreview(previewFlowExcel(source,flow,
+ flowElementMetadata.filter(element=>element.builderFlowTypes.includes(flow.flowType)).map(element=>element.type))))
+ .catch(error=>setExcelError(error instanceof Error?error.message:'Unable to read workbook.'));}}/></label>
+<p className="settings-panel-copy">Download a saved flow, edit nodes, inputs, resources and connections. Preview and apply changes to the draft, then use Flow Builder Validate and Save. No flow creation or automatic publishing.</p>
+{excelError&&<p role="alert" className="info-callout">{excelError}</p>}
+{excelPreview&&<div className="metadata-card">
+<p>{excelPreview.changes.length} row operations · {excelPreview.errors.length} errors</p>
+{excelPreview.errors.map((error,i)=><p role="alert" key={i}>{error}</p>)}
+{excelPreview.changes.slice(0,20).map((change,i)=><p key={i}>{change}</p>)}
+{excelPreview.changes.length>20&&<p>+ {excelPreview.changes.length-20} more operations</p>}
+<button type="button" className="btn" onClick={()=>setExcelPreview(null)}>Cancel</button>
+<button type="button" className="btn" disabled={excelPreview.errors.length>0||isDirty}
+ onClick={()=>{if(excelPreview.errors.length)return;onFlowChange(excelPreview.draft);setExcelPreview(null);onNotify('Excel changes applied to draft. Validate and Save.');}}>Apply to Draft</button>
+</div>}</div>
+<div className="toolbox-group"><h3>Flow Portability</h3><button className="btn" onClick={onExportFlow}>Export Flow JSON</button><label className="form-label">Import Flow JSON<input className="form-control" type="file" accept=".json,application/json" onChange={(event) => {
             const file = event.target.files?.[0];
             if (file) onImportFlow(file);
             event.target.value = '';
