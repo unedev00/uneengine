@@ -1,4 +1,5 @@
 import {useEffect,useRef,useState} from 'react';
+import {useViewportWidth} from '../../workspace/Responsive/useViewportWidth';
 import TenantConnectedApps from './TenantConnectedApps';
 import TenantLicenses from './TenantLicenses';
 type Request=<T>(path:string,init?:RequestInit)=>Promise<T>;
@@ -13,12 +14,14 @@ export default function TenantGovernance({request,canManage,initialTab='audit',f
  </section>;
 }
 function AuditTrail({request}:{request:Request}){
+ const width=useViewportWidth();
+ const pageSize=width>0&&width<=600?10:25;
  const [page,setPage]=useState(0);
  const [auditDraft,setAuditDraft]=useState({actor:'',from:'',to:''});
  const [auditFilters,setAuditFilters]=useState({actor:'',from:'',to:''});
  const [auditFilterError,setAuditFilterError]=useState('');
  const [events,setEvents]=useState<Audit[]>([]),[next,setNext]=useState<string|null>(null),[exportCursor,setExportCursor]=useState<string|null>(null),[table,setTable]=useState(''),[global,setGlobal]=useState(false),[tables,setTables]=useState<{table_name:string}[]>([]),[message,setMessage]=useState('');
- const params=(forExport=false)=>new URLSearchParams({...table?{table}:{},...global?{global:'true'}:{},...auditFilters.actor?{actor:auditFilters.actor}:{},...auditFilters.from?{from:auditFilters.from}:{},...auditFilters.to?{to:auditFilters.to}:{},...forExport?{}:{limit:'25'}});
+ const params=(forExport=false)=>new URLSearchParams({...table?{table}:{},...global?{global:'true'}:{},...auditFilters.actor?{actor:auditFilters.actor}:{},...auditFilters.from?{from:auditFilters.from}:{},...auditFilters.to?{to:auditFilters.to}:{},...forExport?{}:{limit:String(pageSize)}});
  const applyAuditFilters=()=>{
   if(auditDraft.from&&auditDraft.to&&auditDraft.from>auditDraft.to){setAuditFilterError('From date must be on or before To date.');return;}
   if(auditDraft.actor.trim()&&!/^[a-f0-9-]{2,36}$/i.test(auditDraft.actor.trim())){setAuditFilterError('Enter part of an actor user ID (at least 2 hexadecimal characters).');return;}
@@ -26,7 +29,7 @@ function AuditTrail({request}:{request:Request}){
  };
  const load=async(before?:string)=>{const p=params();if(before)p.set('before',before);const r=await request<{events:Audit[];nextCursor:string|null}>('/security/audit?'+p);setEvents(before?[...events,...r.events]:r.events);setNext(r.nextCursor);};
  useEffect(()=>{void request<{tables:typeof tables}>('/security/audit/coverage').then(r=>setTables(r.tables)).catch(e=>setMessage(String(e)));},[]);
- useEffect(()=>{setExportCursor(null);setPage(0);void load().catch(e=>setMessage(String(e)));},[table,global,auditFilters]);
+ useEffect(()=>{setExportCursor(null);setPage(0);void load().catch(e=>setMessage(String(e)));},[table,global,auditFilters,pageSize]);
  const download=async()=>{const p=params(true);if(exportCursor)p.set('before',exportCursor);const r=await request<{csv:string;nextCursor:string|null}>('/security/audit/export?'+p);const url=URL.createObjectURL(new Blob([r.csv],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='setup-audit.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);setExportCursor(r.nextCursor);setMessage(r.nextCursor?'More export rows are available. Download the next page.':'Export complete for this page range.');};
  return <><h3>Setup Audit Trail</h3><p>Append-only history of setup row changes. Values and secrets are excluded. Each change records its actor and correlation ID; background and migration changes can have no user actor.</p>
  <div className="md-admin-toolbar"><label className="form-label md-admin-field-medium">Setup table<select className="form-control" value={table} onChange={e=>setTable(e.target.value)}><option value="">All setup tables</option>{tables.map(t=><option key={t.table_name}>{t.table_name}</option>)}</select></label>
@@ -38,19 +41,22 @@ function AuditTrail({request}:{request:Request}){
  <button type="button" className="btn" onClick={()=>{const blank={actor:'',from:'',to:''};setAuditDraft(blank);setAuditFilters(blank);setAuditFilterError('');}}>Clear</button>
  <button type="button" className="btn" onClick={()=>void download().catch(e=>setMessage(String(e)))}>{exportCursor?'Download next 5,000 CSV rows':'Export CSV (up to 5,000 rows)'}</button></div>
  {auditFilterError&&<p role="alert" className="form-error">{auditFilterError}</p>}
- {message&&<p role="status">{message}</p>}<div className="md-admin-table-wrap" role="region" aria-label="Setup audit events" tabIndex={0}><table className="data-table md-admin-table md-audit-table"><thead><tr><th scope="col">Time</th><th scope="col">Actor</th><th scope="col">Setup table</th><th scope="col">Operation</th><th scope="col">Row</th><th scope="col">Changed fields</th></tr></thead><tbody>{events.slice(page*25,(page+1)*25).map(e=><tr key={e.id}><td data-label="Time">{new Date(e.created_at).toLocaleString()}</td><td data-label="Actor">{e.actor_user_id??'System'}</td><td data-label="Setup table">{e.table_name}</td><td data-label="Operation">{e.operation}</td><td data-label="Row" data-long-id title={e.row_identifier}>{e.row_identifier}</td><td data-label="Changed fields">{e.changed_fields.join(', ')}</td></tr>)}{events.length===0&&<tr><td colSpan={6} className="md-admin-empty-row">No setup changes match these filters.</td></tr>}</tbody></table></div>
+ {message&&<p role="status">{message}</p>}<div className="md-admin-table-wrap" role="region" aria-label="Setup audit events" tabIndex={0}><table className="data-table md-admin-table md-audit-table"><thead><tr><th scope="col">Time</th><th scope="col">Actor</th><th scope="col">Setup table</th><th scope="col">Operation</th><th scope="col">Row</th><th scope="col">Changed fields</th></tr></thead><tbody>{events.slice(page*pageSize,(page+1)*pageSize).map(e=><tr key={e.id}><td data-label="Time">{new Date(e.created_at).toLocaleString()}</td><td data-label="Actor">{e.actor_user_id??'System'}</td><td data-label="Setup table">{e.table_name}</td><td data-label="Operation">{e.operation}</td><td data-label="Row" data-long-id title={e.row_identifier}>{e.row_identifier}</td><td data-label="Changed fields">{e.changed_fields.join(', ')}</td></tr>)}{events.length===0&&<tr><td colSpan={6} className="md-admin-empty-row">No setup changes match these filters.</td></tr>}</tbody></table></div>
  <div className="md-admin-pagination" role="group" aria-label="Audit event pages">
-  <button type="button" className="btn" disabled={page===0} onClick={()=>setPage(p=>Math.max(0,p-1))}>Previous 25</button>
+  <button type="button" className="btn" disabled={page===0} onClick={()=>setPage(p=>Math.max(0,p-1))}>Previous {pageSize}</button>
   <span>Page {page+1} · {events.length} events loaded</span>
-  <button type="button" className="btn" disabled={(page+1)*25>=events.length&&!next}
-   onClick={()=>{if((page+1)*25<events.length)setPage(p=>p+1);else if(next)void load(next).then(()=>setPage(p=>p+1)).catch(e=>setMessage(String(e)));}}>Next 25</button>
+  <button type="button" className="btn" disabled={(page+1)*pageSize>=events.length&&!next}
+   onClick={()=>{if((page+1)*pageSize<events.length)setPage(p=>p+1);else if(next)void load(next).then(()=>setPage(p=>p+1)).catch(e=>setMessage(String(e)));}}>Next {pageSize}</button>
  </div></>;
 }
 type Rule={id?:string;label:string;enabled:boolean;event_type:string;method:string;path_prefix:string;threshold:number;window_seconds:number;response:string;flow_api:string|null;service_user_id:string|null};
 type Monitor={events:{id:string;created_at:string;event_type:string;resource:string;method:string;status_code:number;elapsed_ms:number}[];rules:Rule[];settings:{enabled:boolean;retention_days:number};summary:{requests:number;errors:number;average_ms:number};nextCursor:string|null};
 const emptyRule=():Rule=>({label:'',enabled:false,event_type:'api',method:'*',path_prefix:'/api',threshold:100,window_seconds:60,response:'Block',flow_api:null,service_user_id:null});
 function Monitoring({request}:{request:Request}){
+ const width=useViewportWidth();
+ const pageSize=width>0&&width<=600?10:25;
  const [page,setPage]=useState(0);
+ useEffect(()=>setPage(0),[pageSize]);
  const [eventQuery,setEventQuery]=useState('');
  const [eventStatus,setEventStatus]=useState('all');
  const [ruleBusy,setRuleBusy]=useState(false);
@@ -77,7 +83,7 @@ function Monitoring({request}:{request:Request}){
    return !eventFilter||[event.event_type,event.resource,event.method,String(event.status_code)]
     .some(value=>value.toLocaleLowerCase().includes(eventFilter));
  });
- const visibleEvents=filteredEvents.slice(page*25,(page+1)*25);
+ const visibleEvents=filteredEvents.slice(page*pageSize,(page+1)*pageSize);
  const ruleValid=draft.label.trim().length>0&&draft.path_prefix.startsWith('/')&&Number.isFinite(draft.threshold)&&draft.threshold>=1
   &&Number.isFinite(draft.window_seconds)&&draft.window_seconds>=1
   &&(draft.response!=='Flow'||Boolean(draft.flow_api&&draft.service_user_id));
@@ -131,10 +137,10 @@ function Monitoring({request}:{request:Request}){
  </div>
  <div className="md-admin-table-wrap" role="region" aria-label="Security monitoring events" tabIndex={0}><table className="data-table md-admin-table md-audit-table"><thead><tr><th scope="col">Time</th><th scope="col">Event</th><th scope="col">Request</th><th scope="col">Status</th><th scope="col">Milliseconds</th></tr></thead><tbody>{visibleEvents.map(e=><tr key={e.id}><td data-label="Time">{new Date(e.created_at).toLocaleString()}</td><td data-label="Event">{e.event_type}</td><td data-label="Request">{e.method} {e.resource}</td><td data-label="Status">{e.status_code||'In progress'}</td><td data-label="Milliseconds">{e.elapsed_ms}</td></tr>)}{visibleEvents.length===0&&<tr><td colSpan={5} className="md-admin-empty-row">{data.events.length===0?'No recent requests recorded.':'No loaded requests match these filters.'}</td></tr>}</tbody></table></div>
  <div className="md-admin-pagination" role="group" aria-label="Monitoring event pages">
-   <button type="button" className="btn" disabled={page===0} onClick={()=>setPage(p=>Math.max(0,p-1))}>Previous 25</button>
+   <button type="button" className="btn" disabled={page===0} onClick={()=>setPage(p=>Math.max(0,p-1))}>Previous {pageSize}</button>
    <span>Page {page+1} · {filteredEvents.length} matching loaded requests</span>
-   <button type="button" className="btn" disabled={(page+1)*25>=filteredEvents.length}
-    onClick={()=>setPage(p=>p+1)}>Next 25</button>
+   <button type="button" className="btn" disabled={(page+1)*pageSize>=filteredEvents.length}
+    onClick={()=>setPage(p=>p+1)}>Next {pageSize}</button>
    {data.nextCursor&&<button type="button" className="btn" onClick={()=>void load(data.nextCursor!).catch(e=>setMessage(String(e)))}>Load older requests</button>}
   </div></>}
  </>;
