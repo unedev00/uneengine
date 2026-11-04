@@ -457,3 +457,16 @@
 .lightning .permissions-page .md-permission-list-pagination{flex-wrap:wrap}
 .lightning .permissions-page .permission-user-card{min-width:0;max-width:100%}
 .lightning .permissions-page .permission-user-card summary{min-height:44px}
+
+/* A compact section index for mobile sharing settings. */
+.lightning .permissions-page .md-sharing-advanced{
+ margin:10px 0 16px;max-width:100%;min-width:0;
+ border:1px solid var(--md-border,#e0e5eb);border-radius:9px;padding:8px 12px
+}
+.lightning .permissions-page .md-sharing-advanced>summary{
+ cursor:pointer;font-weight:600;min-height:44px;padding:10px 4px
+}
+.lightning .permissions-page .md-sharing-advanced>summary:focus-visible,
+.lightning .permissions-page .md-sharing-defaults>summary:focus-visible{
+ outline:2px solid var(--md-primary,#1d4ed8);outline-offset:2px
+}
