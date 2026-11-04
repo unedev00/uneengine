@@ -40,7 +40,7 @@ test('security settings no longer load a monolithic stack; mobile audit has labe
  assert.match(tables,/data-label="Changed fields"/);
  assert.match(tables,/data-label="Milliseconds"/);
  const css=read('../src/core/workspace/WorkspaceTheme/phase2AdminLayout.css');
- assert.match(css,/@media\(max-width:700px\)/);
+ assert.match(css,/@media\s*\(\s*max-width:\s*700px\s*\)/);
  assert.match(css,/\.md-audit-table td::before/);
 });
 test('Till secondary display inherits appearance; all modal types use shared focus management',()=>{
