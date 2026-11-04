@@ -318,3 +318,10 @@
 .scheduled-flows-table td:last-child, .scheduled-flows-table th:last-child { width: 42px; text-align: center; }
 .scheduled-flows-empty { height: 72px !important; color: var(--md-muted,#596579) !important; text-align: center; white-space: normal !important; }
 .flow-logs-page { max-width: 1500px; margin: 0 auto; padding: 24px 30px 36px; }
+/* Report type category choices must remain reachable at 390px. */
+@media(max-width:640px) {
+  .report-type-modal{max-width:100%;box-sizing:border-box;max-height:calc(100dvh - 24px);overflow:hidden}
+  .report-type-categories{display:flex;flex-wrap:wrap;gap:6px;max-width:100%}
+  .report-type-categories>button{white-space:normal;max-width:100%;min-height:38px;text-align:center}
+  .report-type-options{min-height:100px;overflow-y:auto}
+}
