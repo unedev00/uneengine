@@ -174,7 +174,7 @@ import CanvasDataBindingIcons from './CanvasDataBindingIcons';
 import type {CanvasBindingTarget} from './canvasDataBindingTargets';
 import {supportsSmartActionEvent} from './SmartEventActionsRibbon';
 import SmartInsertRibbon from './SmartInsertRibbon';
-import ArrangeRibbon,{type ArrangeRibbonProps} from './ArrangeRibbon';
+import type {ArrangeRibbonProps} from './ArrangeRibbon';
 import type {AdvancedFeature} from './PageBuilderAdvancedRibbon';
 import './PageBuilderAdvancedRibbon.css';
 import PageBuilderAdvancedSections from './PageBuilderAdvancedSections';
@@ -612,7 +612,7 @@ function PageBuilder({
     openComponentInspector('Data & Actions');
   };
   const selectRibbonTab = (tab: typeof ribbonTab) => {
-    if(tab==='Component Layout')tab='Component Design 2';
+    if(tab==='Component Layout'||tab==='Arrange')tab='Component Design 2';
     setRibbonTab(tab);
     setPageSettingsDialogOpen(false);
     if (tab === 'Add Block') { setPageSettingsOpen(false); openPalette('Components', 'All Components'); }
@@ -3027,7 +3027,7 @@ function PageBuilder({
   const quickAccessOrder=['save','activate','preview','exitPreview','resetIcon','undo','redo','cut','copy','paste','delete'] as const;
   const journeyTabs: Array<typeof ribbonTab> = // The legacy Design tab is retired; Design 2 is the only Design ribbon.
   ['Add Block','Component Data',
-    'Component Design 2','Arrange','Component Action','Advanced','Preview'];
+    'Component Design 2','Component Action','Advanced','Preview'];
   const ribbonTabsVisible: Array<typeof ribbonTab> = [...journeyTabs];
 
 
@@ -3511,7 +3511,7 @@ function PageBuilder({
             </div>
             <span>Conditional visibility</span>
           </div>}
-          {ribbonTab==='Arrange' && <ArrangeRibbon {...canvasArrangeProps}/>}
+
           {ribbonTab==='Advanced' && <PageBuilderAdvancedSections
             section={advancedEditor} onInspectorHost={setRibbonPropertyHost}
             assignment={{
