@@ -141,10 +141,15 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  assert.equal(await area.inputValue(),'Body');
  // Excel's 14 dropdown sections are always shown. The per-component
  // Yes/No rules disable controls, never filter sections from the dropdown.
- const allAreas=['Body','Header','Badge','Header Supporting','Table','Row',
-  'Summary','Footer','Button','Button 2','Button 3','Button 4','Button 5','Image'];
- assert.deepEqual(await area.locator('option').allTextContents(),allAreas,
-  'Design 2 must expose every approved area for Smart Cart');
+ const allAreas=await area.locator('option').allTextContents();
+ for(const required of ['Body','Header','Badge','Header Supporting','Table',
+  'Row','Summary','Summary 2','Footer','Tabs','Button','Card Grid','Button 2',
+  'Focused','Button 3','Row Supporting','Button 4','Custom Button 1',
+  'Button 5','Image','Custom Button 2']){
+  assert.ok(allAreas.includes(required),'Missing Excel section: '+required);
+ }
+ assert.equal(new Set(allAreas).size,allAreas.length,
+  'The dropdown must show every defined area exactly once');
  await area.selectOption('Row');
  // Row 0: fixed C1 selector, C2 eye, C3 X and C4 Y. Values edit the real
  // free-canvas component.position, not a duplicate properties.x/y field.
