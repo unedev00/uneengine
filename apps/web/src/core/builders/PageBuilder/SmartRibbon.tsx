@@ -87,7 +87,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  };
 
  const [design2Area,setDesign2Area]=useState('Body');
- const [countKey,setCountKey]=useState<'cardsPerRow'|'cardsPerColumn'>('cardsPerRow');
+ const [countKey,setCountKey]=useState<'tabCount'|'tabIndex'|'cardsPerRow'|'cardsPerColumn'>('tabCount');
  const [filtersOpen,setFiltersOpen]=useState(false);
  const [filterTarget,setFilterTarget]=useState('Record');
  const [filterFieldId,setFilterFieldId]=useState<string|null>(null);
@@ -617,7 +617,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
           {sectionRow(activeDesign2Area,row).map(controls)}</div>)}
       </div>
       {activeDesign2Area==='Body'&&['smart_tabs','smart_card_grid','smart_cart'].includes(api)&&(()=>{
-        const keys=api==='smart_tabs'?['tabCount']:api==='smart_cart'?['cardsPerRow']:['cardsPerRow','cardsPerColumn'];
+        const keys=api==='smart_tabs'?['tabCount','tabIndex']:api==='smart_cart'?['cardsPerRow']:['cardsPerRow','cardsPerColumn'];
         const key=keys.includes(countKey)?countKey:keys[0];
         const property=definitions.find(p=>p.id===key);
         const enabled=Boolean(property?.components.includes(api)&&
@@ -626,14 +626,15 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
         return <div className="smart-design2-count" role="group" aria-label="Count controls">
           <Hand size={16} aria-hidden="true"/>
           {keys.length>1&&<select aria-label="Count property" value={key}
-            onChange={event=>setCountKey(event.target.value as 'cardsPerRow'|'cardsPerColumn')}>
-            <option value="cardsPerRow">Columns</option><option value="cardsPerColumn">Rows</option>
+            onChange={event=>setCountKey(event.target.value as 'tabCount'|'tabIndex'|'cardsPerRow'|'cardsPerColumn')}>
+            {api==='smart_tabs'?<><option value="tabCount">Count</option><option value="tabIndex">Initial tab</option></>:
+            <><option value="cardsPerRow">{api==='smart_cart'?'Items':'Columns'}</option><option value="cardsPerColumn">Rows</option></>}
           </select>}
           <input type="number" aria-label={property?.label??key} title={property?.label??key}
-            min={property?.min??1} max={property?.max??(key==='tabCount'?20:50)}
-            disabled={!enabled} value={Number(raw)||1}
+            min={property?.min??(key==='tabIndex'?0:1)} max={property?.max??(key==='tabCount'||key==='tabIndex'?20:50)}
+            disabled={!enabled} value={Number(raw)||0}
             onChange={event=>{const number=Number(event.target.value);
-              if(enabled&&Number.isInteger(number)&&number>=1)
+              if(enabled&&Number.isInteger(number)&&number>=(key==='tabIndex'?0:1))
                 onChange({...properties,[property!.valueKeys?.[api]??key]:number});}}/>
         </div>;
       })()}
