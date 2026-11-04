@@ -80,11 +80,14 @@ test('publishing Tablet or Custom changes only its own activation target, not De
  }
 });
 
-test('first-time Page Builder activation must create an unpublished SQL draft first',()=>{
+test('first-time Page Builder creation is create-only and saves an unpublished SQL draft atomically',()=>{
  const setup=readFileSync(new URL('../../../web/src/core/workspace/SetupShell/setupAppShell.tsx',import.meta.url),'utf8');
  assert.match(setup,/if \(!existing\) \{/);
- assert.match(setup,/body: JSON\.stringify\(\{\.\.\.nextPage,status:'Draft',revision:undefined/);
- assert.match(setup,/draftRevision:0,revision:undefined/);
+ assert.match(setup,/method:'POST',body:JSON\.stringify\(\{\.\.\.nextPage,apiName:name,status:'Draft'/);
+ assert.match(server,/app\.post\('\/api\/metadata\/pages'/);
+ assert.match(server,/await pages\.save\(actor\.tenant_id,name,req\.body,true\)/);
+ assert.match(server,/return pages\.saveLayoutDraft\(actor\.tenant_id,name,variant,/);
+ assert.match(server,/draftRevision:0,revision:undefined/);
  assert.match(setup,/\/layouts\/\$\{variant\}\/draft/);
 });
 

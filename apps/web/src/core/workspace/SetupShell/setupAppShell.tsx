@@ -940,22 +940,38 @@ function SetupApp({ onLogout, entryTiming }: { onLogout: () => void; entryTiming
     try {
       const existing = pages.some(item => item.apiName === previousApiName);
       const variant = nextPage.layoutVariant ?? 'Desktop';
-      // Only initial page identity creation uses the legacy endpoint. Always create
-      // it as Draft, even when the user clicks Activate on a brand-new page.
-      // Publishing requires an immutable SQL layout revision, not live legacy rows.
+      // Create is a separate atomic operation. Existing/archived Page identities
+      // must never be updated when the user clicked "Create draft".
       if (!existing) {
-        const created=await apiRequest<{page:LightningPageMetadata}>(
-          `/metadata/pages/${encodeURIComponent(previousApiName)}`, {
-            method: 'PUT',
-            body: JSON.stringify({...nextPage,status:'Draft',revision:undefined,
-              draftRevision:undefined,publishedRevision:undefined})
-          });
-        // Creation and revision save are separate requests. Preserve the Draft
-        // identity in the list so a failed revision save can be retried safely.
-        setPages(current=>[...current.filter(item=>item.apiName!==created.page.apiName),created.page]);
+        let created:LightningPageMetadata|undefined;
+        for(let attempt=1;attempt<=50;attempt++){
+          const suffix=attempt===1?'':'_'+attempt;
+          const name=nextPage.apiName.slice(0,80-suffix.length).replace(/_+$/g,'')+suffix;
+          try {
+            const response=await apiRequest<{page:LightningPageMetadata}>('/metadata/pages',{
+              method:'POST',body:JSON.stringify({...nextPage,apiName:name,status:'Draft',
+                revision:undefined,draftRevision:undefined,publishedRevision:undefined})
+            });
+            created=response.page;
+            break;
+          }catch(error){
+            // An archived page or concurrent create can reserve a name not in
+            // the visible Page Manager list. Choose a new API name, never revive it.
+            if(error instanceof Error && /^(Page already exists|API Name already exists)/i.test(error.message))
+              continue;
+            throw error;
+          }
+        }
+        if(!created)throw new Error('Unable to allocate a new Page API name');
+        const savedNewPage=created;
+        setPage(savedNewPage);
+        setPages(current=>[...current.filter(item=>item.apiName!==savedNewPage.apiName),savedNewPage]);
+        pageDefinitionCache.current.clear();
+        notify(successMessage ?? 'Page draft created');
+        return created;
       }
       const draftUrl=`/metadata/pages/${encodeURIComponent(previousApiName)}/layouts/${variant}/draft`;
-      const draftBody=existing?nextPage:{...nextPage,status:'Draft',draftRevision:0,revision:undefined};
+      const draftBody=nextPage;
       let payload:{page:LightningPageMetadata};
       try {
         payload=await apiRequest<{page:LightningPageMetadata}>(draftUrl,{
@@ -978,10 +994,9 @@ function SetupApp({ onLogout, entryTiming }: { onLogout: () => void; entryTiming
         });
       }
       setPage(payload.page);
-      if (!existing) setPages(current => [...current.filter(item =>
-        item.apiName !== previousApiName && item.apiName !== payload.page.apiName), payload.page]);
+
       pageDefinitionCache.current.clear();
-      notify(successMessage ?? (existing ? 'Page draft saved; publish to make changes visible' : 'Page draft created'));
+      notify(successMessage ?? 'Page draft saved; publish to make changes visible');
       return payload.page;
     } catch (error) {
       notify(error instanceof Error ? error.message : 'Unable to save page draft');
