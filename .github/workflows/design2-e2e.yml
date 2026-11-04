@@ -68,5 +68,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: design2-browser-e2e
-          path: apps/server/artifacts/design2-contextual-ribbon.png
+          path: |
+            apps/server/artifacts/design2-contextual-ribbon.png
+            apps/server/artifacts/design2-left-dock.png
+            apps/server/artifacts/design2-left-dock-ribbon-collapsed.png
           if-no-files-found: ignore
