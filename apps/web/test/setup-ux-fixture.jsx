@@ -61,6 +61,7 @@ const request=async(path,init)=>{
 };
 const uxRequest=async (path,init)=>{
  if(path.startsWith('/auth/security-events?')){window.securityEventQuery=path;const offset=Number(new URLSearchParams(path.split('?')[1]).get('offset')||0);return {events:[{id:'event-'+offset,at:'2026-10-30T10:00:00Z',actorUserId:'user-1',loginIdentifier:'operator@example.com',sourceIp:'192.0.2.4',action:'login.success',details:{}}],nextOffset:offset===0?25:null};}
+ if(path==='/tenant/company-profile')throw new Error('HTTP 502: upstream service unavailable');
  if(path==='/auth/mfa/status')return {mode:'Off',enrolled:false};
  if(path==='/auth/passkeys')return {credentials:[]};
  if(path==='/auth/user-locks')return {users:[{id:'user-1',name:'Test operator',email:'test.operator@example.com'}]};
@@ -193,6 +194,7 @@ function Fixture(){
   else if(view==='oauth')content=<TenantConnectedApps request={uxRequest}/>;
    else if(view==='oauth-directory')content=<TenantConnectedApps request={directoryRequest}/>;
    else if(view==='security-history')content=<securityViews.TenantSecurityAudit/>;
+   else if(view==='company-profile-fail')content=<securityViews.CompanySettings canManage section="branding"/>;
    else if(view==='assist-document')content=<FinancialDocumentEditor type="Invoice" operation="Create" document={null} storedLines={[]} metadataFields={[{apiName:'Customer',label:'Customer',type:'Lookup'}]} customers={[]} products={[]} busy={false} error="" onCancel={noop} onSave={async()=>{}} onCreateCustomer={async customer=>({Id:'test-customer',...customer})}/>;
   else if(view==='governance')content=<TenantGovernance request={uxRequest} canManage/>;
    else if(view==='monitoring')content=<TenantGovernance request={uxRequest} canManage initialTab="monitoring"/>;
