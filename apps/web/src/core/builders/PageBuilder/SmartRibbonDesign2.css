@@ -214,9 +214,8 @@
   width:10px!important;min-width:10px!important;height:12px!important;
 }
 
-/* Approved layout: the dropdown and eye occupy row 0, ABOVE the R1–R3
- * property matrix. The 26px × 4 rows need 116px plus the group caption.
- * Only Design 2 grows; Design, Data, Arrange and Layout keep 114px. */
+/* Design area selector and eye stay in row 0, above fixed R1-R3 controls.
+ * No duplicate area-name footer: four active rows fit the shared 114px height. */
 .office-builder-ribbon[aria-label="Page Builder ribbon"]:not(.is-interactive-preview)
   #page-builder-tab-content.office-ribbon-content[aria-label="Component Design 2"]{
   --page-ribbon-content-height:114px;
