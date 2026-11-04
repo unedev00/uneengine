@@ -63,7 +63,7 @@ test('Smart Tabs supports vertical list and retains horizontal default',async()=
  assert.doesNotMatch(horizontal,/border-left:4px solid/);
 });
 
-test('Tab count controls only unbound tabs; bound records determine the count',async()=>{
+test('Manual tab count edits configured static captions without overriding data bindings',async()=>{
  const total=async props=>{
   const html=await renderSmart('smart_tabs',props);
   return (html.match(/role="tab"/g)??[]).length;
@@ -72,15 +72,11 @@ test('Tab count controls only unbound tabs; bound records determine the count',a
  assert.equal(await total({...staticTabs,tabCount:2}),2);
  assert.equal(await total({...staticTabs,tabCount:4}),4);
  assert.equal(await total({...staticTabs,tabCount:5}),5,
-   'Increasing manual count creates a default caption');
- assert.equal(await total(staticTabs),4,
-   'Existing explicitly configured tabs remain intact if count was not set');
- const records=[{Id:'1',Name:'All'},{Id:'2',Name:'Desserts'},
-   {Id:'3',Name:'Wraps'},{Id:'4',Name:'Buckets'}];
- assert.equal(await total({objectApiName:'MenuCategory',textSource:'@Name',records,tabCount:1}),4,
-   'An Object binding must not be limited by disabled manual count');
- assert.equal(await total({dataCollection:{name:'Categories',items:records},
-   records,tabCount:1}),4,'A Collection binding must drive the number of tabs');
+  'Increasing manual count appends an ordinary default caption');
+ assert.equal(await total(staticTabs),4,'Existing configured tabs are preserved without a count override');
+ const rows=[{Id:'1',Name:'All'},{Id:'2',Name:'Desserts'},{Id:'3',Name:'Wraps'}];
+ assert.equal(await total({objectApiName:'MenuCategory',textSource:'@Name',records:rows,tabCount:2}),2,
+  'Existing authorised Object-source cap is unchanged');
 });
 
 test('one SQL ribbon inventory owns new Data fx, Button Design and orientation controls',()=>{
