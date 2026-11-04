@@ -56,6 +56,10 @@ try {
  await page.getByRole('alert').getByText('Offline briefcase service is temporarily unavailable. Please retry.').waitFor();
  assert.equal(await page.getByText('SQL relation md_tenant_settings',{exact:false}).count(),0,
   'Offline load failures must not leak database internals');
+ assert.equal(await page.getByRole('button',{name:'Add object'}).count(),0,
+  'Failed offline reads must not expose a blank editable draft');
+ assert.equal(await page.getByRole('button',{name:'Refresh'}).isEnabled(),true,
+  'Failed offline reads must allow retry');
  await open('offline-save-error');
  await page.getByRole('button',{name:'Add object'}).click();
  await page.getByRole('combobox').selectOption('Account');
