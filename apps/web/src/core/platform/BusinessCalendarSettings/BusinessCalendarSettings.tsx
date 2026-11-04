@@ -234,7 +234,7 @@ export default function BusinessCalendarSettings({ request, permitted }: {
       </div>
     </header>
     {loading && <p role="status">Loading business calendar…</p>}
-    {!loading&&!loaded&&<button type="button" className="btn" onClick={()=>setRevision(value=>value+1)}>Retry loading business calendar</button>
+    {!loading&&!loaded&&<button type="button" className="btn" onClick={()=>setRevision(value=>value+1)}>Retry loading business calendar</button>}
     {error && <p className="business-calendar-error" role="alert">{error}</p>}
     {notice && <p role="status">{notice}</p>}
     {!loading && loaded && !configured &&
