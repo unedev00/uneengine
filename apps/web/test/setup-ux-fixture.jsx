@@ -67,7 +67,11 @@ const uxRequest=async (path,init)=>{
  if(path==='/security/licenses/tenants')return {tenants:[]};
  if(path==='/security/licenses')return {entitlements:Array.from({length:8},(_,i)=>({id:'lic-'+i,label:'Licence '+(i+1),kind:i<4?'User':'PermissionSet',enabled:true,used_seats:2,seat_limit:10,expires_at:null})),users:[{id:'user-1',email:'test.operator@example.com'}],permissionSets:[{id:'set-1',api_name:'OneEngine'}],assignments:[],requirements:[]};
  if(path==='/metadata/flows/list?page=1&search=')return {flows:[]};
- if(path.startsWith('/security/monitoring'))return {events:[],rules:[],settings:{enabled:true,retention_days:365},summary:{requests:180,errors:5,average_ms:62},nextCursor:null};
+ if(path.startsWith('/security/monitoring'))return {events:[
+  {id:'mon-1',created_at:'2026-11-04T10:00:00Z',event_type:'api',resource:'/api/records/Product',method:'GET',status_code:200,elapsed_ms:25},
+  {id:'mon-2',created_at:'2026-11-04T10:01:00Z',event_type:'api',resource:'/api/reports',method:'POST',status_code:500,elapsed_ms:120},
+  {id:'mon-3',created_at:'2026-11-04T10:02:00Z',event_type:'login',resource:'/api/auth/login',method:'POST',status_code:401,elapsed_ms:12}
+ ],rules:[],settings:{enabled:true,retention_days:365},summary:{requests:180,errors:5,average_ms:62},nextCursor:null};
  if(path==='/security/connected-apps')return {clients:[],
   users:Array.from({length:9},(_,i)=>({id:'user-'+i,email:'operator'+(i+1)+'@example.com'})),
   scopes:['records:read','records:write','metadata:read','metadata:write','records:import','mcp:access'],
