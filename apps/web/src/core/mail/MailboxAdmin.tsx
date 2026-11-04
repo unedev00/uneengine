@@ -183,7 +183,7 @@ export default function MailboxAdmin({onLogout}:Props){
   </section>
   {resetId&&<ActionDialog title="Reset mailbox password" onClose={()=>{if(!busy){setResetId('');setResetPassword('');}}}>
    <form onSubmit={reset}>
-    <p style={{color:'#52677b'}}>Use a new password of at least 12 characters. Docker Mailserver may reject this operation if the account has additional credentials that cannot safely be preserved.</p>
+    <p style={{color:'#52677b'}}>Use a new password of at least 12 characters. The tenant mail server may reject this operation if the account has additional credentials that cannot safely be preserved.</p>
     <div style={field}><label htmlFor="reset-password">New password</label><input id="reset-password" type="password" autoComplete="new-password" required minLength={12} maxLength={256} value={resetPassword} onChange={e=>setResetPassword(e.target.value)} style={input}/></div>
     <div style={{display:'flex',gap:8,flexWrap:'wrap'}}><button style={primary} disabled={busy}>{busy?'Saving…':'Reset password'}</button><button type="button" style={button} disabled={busy} onClick={()=>{setResetId('');setResetPassword('');}}>Cancel</button></div>
    </form>
