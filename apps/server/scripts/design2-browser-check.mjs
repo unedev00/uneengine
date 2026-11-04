@@ -5,11 +5,10 @@ import {readFile} from 'node:fs/promises';
  * Uses only disposable CI tenant data from builder-browser-smoke.mjs.
  */
 export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
- const migration=await readFile(new URL('../src/system-support/migrations/20270309-design2-contextual-ribbon.sql',import.meta.url),'utf8');
  const approved=await readFile(new URL('../src/system-support/migrations/20271104-zz-design2-exact-approved-matrix.sql',import.meta.url),'utf8');
- // Legacy replay followed by the exact approved matrix must be idempotent.
- await db.query(migration);
- await db.query(migration);
+ // Production applies the legacy migration before this corrective migration.
+ // Replay the CURRENT contract, not a superseded positional insert which can
+ // collide with the exact R1..R3 unique-position constraint.
  await db.query(approved);
  await db.query(approved);
  const listed=await db.query(`SELECT area,slot_key,property_key,row_no,order_no,width_px,height_px
