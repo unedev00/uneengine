@@ -129,7 +129,7 @@ export default function UniversalMetadataLoader({apiRequest,currentObject,onClos
     </div>
     {execution&&<p className="properties-help">Executed rows are listed above and in the Excel report. Refresh Object Manager to see newly created definitions.</p>}
    </section>}
-   <p className="properties-help">Hard Delete requires a separate OneEngine RBAC grant, an exported revision, and a previously soft-deleted definition. Dependent metadata may prevent permanent deletion.</p>
+   <p className="properties-help">Hard Delete requires a separate OneEngine RBAC grant, an exported revision, and dependency checks. Dependent metadata may prevent permanent deletion.</p>
   </section>
  </div>;
 }
