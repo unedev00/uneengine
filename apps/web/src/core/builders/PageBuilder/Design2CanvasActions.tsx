@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import type {ArrangeRibbonProps} from './ArrangeRibbon';
 
-type Props={area:string;arrange?:ArrangeRibbonProps};
+type Props={area:string;arrange?:ArrangeRibbonProps;section?:'dimensions'|'alignment'|'arrangement'};
 
 /** Row 0 C7-C21: fixed, always-present canvas commands.
  * The Arrange ribbon's existing Page Builder callbacks remain the single
@@ -49,9 +49,16 @@ export default function Design2CanvasActions(props:Props){
   {label:'Fill canvas',Icon:Maximize,enabled:movable&&arrange?.canFitToCanvas,
    action:()=>arrange?.onFitToCanvas()}
  ];
+ const indices=props.section==='alignment'?[0,1,2,3,4,5]:
+  props.section==='arrangement'?[6,7,8,9,10,11]:
+  props.section==='dimensions'?[12,13,14]:actions.map((_,i)=>i);
  return <div className="smart-design2-arrange-actions"
-   role="group" aria-label="Design 2 canvas actions" data-design-columns="7-21">
-   {actions.map((item,index)=><button key={index} type="button"
+   data-design-section={props.section??'all'}
+   role="group" aria-label={props.section==='alignment'?'Alignment':
+    props.section==='arrangement'?'Arrangement':
+    props.section==='dimensions'?'Dimension actions':'Design 2 canvas actions'}
+   data-design-columns="7-21">
+   {indices.map(index=>{const item=actions[index];return <button key={index} type="button"
      className="smart-design2-arrange-action"
      data-design-row="0" data-design-column={index+7}
      data-supported={item.enabled?'true':'false'}
@@ -59,6 +66,6 @@ export default function Design2CanvasActions(props:Props){
      aria-pressed={index===12?arrange?.locked:undefined}
      disabled={!item.enabled} onClick={item.action}>
      <item.Icon size={16} aria-hidden="true"/>
-   </button>)}
+   </button>;})}
  </div>;
 }
