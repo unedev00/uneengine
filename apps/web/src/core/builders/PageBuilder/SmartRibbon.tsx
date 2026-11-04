@@ -278,9 +278,9 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    onChange({...properties,[activeDataKey]:next,
      ...(activeDataProperty.id==='imageSource'?{imageSourceMode:'field'}:{})});
  };
- // Equal-width Value and Cart chips. Read SQL widths, with a safe minimum
- // for tenants where a previous compact-width migration has not run yet.
- const dataChipWidth=(group:string)=>Math.max(160,...displayProperties
+ // Equal-width metadata tracks within Data sections; the compact matrix
+ // uses three Values and four Cart controls per row.
+ const dataChipWidth=(group:string)=>Math.max(120,...displayProperties
    .filter(p=>p.group===group&&p.id!=='columnVisibility')
    .map(p=>p.designWidth??0));
  const controlWidth=(p:UneRibbonProperty)=>{
@@ -288,9 +288,9 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    if(tab==='Design2'&&p.designWidth!==undefined)return p.designWidth;
    if(tab==='Data'){
      if(p.group==='Source'&&/^objectApiName[23]?$/.test(p.id))
-       return Math.max(210,p.designWidth??0);
-     if(p.group==='Values'||p.group==='Cart')
-       return p.id==='columnVisibility'?Math.max(171,p.designWidth??0):dataChipWidth(p.group);
+       return Math.max(165,p.designWidth??0);
+     if(['Values','Cart','Card Grid'].includes(p.group))
+       return dataChipWidth(p.group);
    }
    // Reserve the exact SQL 30px input track; a separate 45px caption is added.
    if(p.id==='tabIndex')return p.designWidth??30;
@@ -321,7 +321,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
      const properties=dataSectionRow(group,row);
      const extra=tab==='Data'&&group==='Cart'&&row===3?1:0;
      return properties.reduce((sum,p)=>sum+controlWidth(p)+
-       (tab==='Data'&&isDataFormula(p)?0:(p.designCaptionWidth??0)),0)
+       (tab==='Data'&&(isDataFormula(p)||group==='Source')?0:(p.designCaptionWidth??0)),0)
        +(extra?dataChipWidth('Cart'):0)
        +Math.max(0,properties.length+extra-1)*(tab==='Data'?2:4);
    }))+15,
@@ -642,7 +642,6 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
             '--smart-data-chip-width':dataChipWidth(section)+'px'} as CSSProperties}>
           <div className="smart-ribbon-items">{[1,2,3].map(row=><div className="smart-ribbon-row"
             data-design-row={row} key={row}>
-            {dataSectionRow(section,row).map(controls)}
             {section==='Cart'&&row===3&&<span className="smart-data-summary-slot">
               <input className="smart-data-summary-name"
           aria-label={(activeSummaryLabel?.slot??'Cart summary')+' cart label'}
@@ -652,6 +651,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
           placeholder={activeSummaryLabel?.slot??'Cart summary'}
           onChange={event=>{if(activeSummaryLabel)update(activeSummaryLabel.key,event.target.value);}}/>
             </span>}
+            {dataSectionRow(section,row).map(controls)}
           </div>)}</div>
           <span className="smart-ribbon-caption">{section}</span>
         </section>)}
