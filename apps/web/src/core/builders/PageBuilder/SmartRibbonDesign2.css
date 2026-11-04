@@ -152,12 +152,12 @@
   box-sizing:border-box!important;
   display:flex!important;
   flex-flow:column nowrap!important;
-  gap:4px!important;
+  gap:2px!important;
   align-items:flex-start!important;
   width:380px!important;
-  height:116px!important;
-  min-height:116px!important;
-  max-height:116px!important;
+  height:110px!important;
+  min-height:110px!important;
+  max-height:110px!important;
 }
 .office-builder-ribbon #page-builder-tab-content
   .smart-design2-group .smart-design2-context{
@@ -177,12 +177,12 @@
   flex-flow:column nowrap!important;
   align-items:flex-start!important;
   justify-content:flex-start!important;
-  gap:4px!important;
+  gap:2px!important;
   flex:0 0 auto!important;
   width:max-content!important;
   min-width:0!important;
   max-width:none!important;
-  height:86px!important;
+  height:82px!important;
   padding:0!important;
   margin:0!important;
 }
@@ -219,17 +219,17 @@
  * Only Design 2 grows; Design, Data, Arrange and Layout keep 114px. */
 .office-builder-ribbon[aria-label="Page Builder ribbon"]:not(.is-interactive-preview)
   #page-builder-tab-content.office-ribbon-content[aria-label="Component Design 2"]{
-  --page-ribbon-content-height:146px;
-  --page-ribbon-scroll-strip-height:159px;
+  --page-ribbon-content-height:114px;
+  --page-ribbon-scroll-strip-height:127px;
 }
 .office-builder-ribbon #page-builder-tab-content
   >.smart-ribbon.smart-design2-ribbon[data-three-row="true"]{
-  height:146px!important;min-height:146px!important;max-height:146px!important;
+  height:114px!important;min-height:114px!important;max-height:114px!important;
 }
 .office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content
   >.smart-ribbon.smart-design2-ribbon[data-three-row="true"]>.smart-ribbon-group.smart-design2-group[data-design-three-row="true"]{
-  height:146px!important;min-height:146px!important;max-height:146px!important;
-  padding-top:6px!important;
+  height:114px!important;min-height:114px!important;max-height:114px!important;
+  padding-top:2px!important;
 }
 .office-builder-ribbon #page-builder-tab-content
   .smart-design2-group .smart-design2-context[data-design-row="0"]{
