@@ -150,7 +150,22 @@ export default function SmartCart({p,records,Picture,expression,fieldAllowed,fir
    }}>
    {visible.length===0?<p className="smart-cart-no-columns">No columns selected</p>:<>
     <div className="smart-cart-columns" aria-label="Cart columns">
-     {visible.map(index=><span data-md-bind={p.builderPreview?("cartColumn"+(index+1)+"Header"):undefined} key={index}>{columnHeadings[index]}</span>)}
+     {visible.map(index=>{
+      const heading='cartColumn'+(index+1)+'Header';
+      // Empty carts still have a visible column header. It is the exact
+      // anchor for the corresponding row-value formula until rows exist.
+      const pending=rows.length===0
+        ?index===0?' imageSource textSource rowSupportingSource':' column'+(index+1)+'Source'
+        :'';
+      const titles=[
+       'Product heading|Product image|Product name|Product supporting text',
+       'Unit price heading|Unit price value','Quantity heading|Quantity value',
+       'Total heading|Row total value','Discount heading|Discount value'
+      ];
+      return <span data-md-bind={p.builderPreview?heading+pending:undefined}
+       data-md-bind-titles={p.builderPreview?titles[index]:undefined}
+       key={index}>{columnHeadings[index]}</span>;
+     })}
     </div>
     <div className="smart-cart-rows" role="region" tabIndex={0} aria-label="Cart item rows"
      style={{maxHeight:rowLimit*(effectiveRowHeight+6)}}>
