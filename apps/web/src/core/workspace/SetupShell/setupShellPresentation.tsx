@@ -28,7 +28,14 @@ export function renderSetupShell(ctx: any) {
           page.apiName === entry.apiName && page.pageType === 'App Page' && page.status === 'Active'))
         .filter(Boolean)
     : [];
+  const installedAppValue=route.kind==='record-list'||route.kind==='record-detail'?'__records__'
+    : route.kind==='app-page'||route.kind==='app-home'?route.appId
+    : route.kind==='setup'?'__setup__':'';
+  const installedAppLabel=installedAppValue==='__records__'?'Records'
+    :installedAppValue==='__setup__'?'Setup'
+    :apps.find((item:LightningAppMetadata)=>item.apiName===installedAppValue)?.label??'Apps';
   const openInstalledApp = (value: string) => {
+    if(value==='__setup__')return;
     if(value === '__mail__'){window.location.assign('/mail');return;}
     if(value === '__mail_admin__'){window.location.assign('/mail-admin');return;}
     if (value === '__home__') { openSetupWorkspace('home'); return; }
@@ -67,8 +74,9 @@ export function renderSetupShell(ctx: any) {
         <button type="button" className="brand brand-home-button" aria-label="Go to home" title="Home" onClick={() => openSetupWorkspace('home')}><UneBrandLogo className="brand-logo" src={uneSolutionsLogoUrl} decorative /></button>
         <label className="header-installed-apps">
           <span>Apps</span>
-          <select aria-label="Open installed app" value="" onChange={(event) => openInstalledApp(event.target.value)}>
-            <option value="">Open app…</option>
+          <select aria-label="Open installed app" value={installedAppValue} onChange={(event) => openInstalledApp(event.target.value)}>
+            <option value="" disabled>Select app…</option>
+            <option value="__setup__">Setup</option>
             <option value="__home__">Home</option>
             <option value="__mail__">Mail</option>
             <option value="__mail_admin__">Mail Administration</option>
@@ -76,6 +84,7 @@ export function renderSetupShell(ctx: any) {
             {apps.filter((app) => app.apiName !== 'Records').map(app=><option key={app.apiName} value={app.apiName}>{app.label}</option>)}
           </select>
         </label>
+        <span className="header-mobile-app-name" aria-label="Current application">{installedAppLabel}</span>
         <MobileAppLauncher apps={[...apps, {apiName:'__mail__',label:'Mail'}, {apiName:'__mail_admin__',label:'Mail Administration'}]}
           showRecords={readableRecordObjects.length > 0} onOpenApp={openInstalledApp} />
         <div className="header-searches">
