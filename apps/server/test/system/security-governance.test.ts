@@ -43,6 +43,23 @@ test('invalid transaction rules and monitoring retention fail before SQL',async(
  await assert.rejects(()=>monitor.prune('t','u','PRUNE',0),/Explicit retention cleanup confirmation/);
  await assert.rejects(()=>monitor.prune('t','u','PRUNE',3651),/Explicit retention cleanup confirmation/);
 });
+test('retention cleanup checks saved cutoff before the DELETE',async()=>{
+ const statements:string[]=[];
+ const query=async(sql:string)=>{
+  statements.push(sql);
+  if(sql.includes('count(e.id)'))return {rows:[{eligible:'7',retention_days:365}]};
+  if(sql.includes('SELECT retention_days'))return {rows:[{retention_days:365}]};
+  if(sql.includes('DELETE FROM md_monitor_events'))return {rows:[],rowCount:7};
+  throw Error('Unexpected SQL');
+ };
+ const db={query,transaction:async(work:(client:{query:typeof query})=>Promise<unknown>)=>work({query})} as unknown as SqlPersistence;
+ const monitor=new SecurityMonitorService(db,{require:async()=>{}} as unknown as RbacEngine);
+ assert.deepEqual(await monitor.prunePreview('t','u'),{eligible:7,retentionDays:365});
+ await assert.rejects(()=>monitor.prune('t','u','PRUNE',90),/Retention policy changed/);
+ assert.equal(statements.filter(sql=>sql.includes('DELETE FROM md_monitor_events')).length,0);
+ assert.deepEqual(await monitor.prune('t','u','PRUNE',365),{removed:7});
+ assert.equal(statements.filter(sql=>sql.includes('DELETE FROM md_monitor_events')).length,1);
+});
 test('connected apps reject insecure redirects and unsupported grants before SQL',async()=>{
  const connected=new ConnectedAppService({} as SqlPersistence,{} as AuthenticationService,{require:async()=>{}} as unknown as RbacEngine);
  await assert.rejects(()=>connected.save('t','u',{label:'bad',enabled:false,client_type:'public',require_mfa:true,redirects:['http://client.test/callback'],scopes:['records:read'],users:[]}),/Invalid connected app/);
