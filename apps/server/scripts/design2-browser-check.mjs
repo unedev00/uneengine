@@ -632,7 +632,12 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  await buttons.nth(10).click();
  assert.equal(await buttons.nth(11).isDisabled(),false,'Ungroup must enable for a persisted canvas group');
  await buttons.nth(11).click();
- assert.equal(await buttons.nth(10).isDisabled(),false,'Ungroup must restore grouping eligibility');
+ assert.equal(await buttons.nth(11).isDisabled(),true,'Ungroup must clear the canvas group');
+ assert.equal(await buttons.nth(10).isDisabled(),true,
+  'Ungroup correctly resets multi-selection to the chosen component');
+ await page.keyboard.press('Control+a');
+ assert.equal(await buttons.nth(10).isDisabled(),false,
+  'Selecting the three ungrouped siblings must re-enable Group');
  assert.equal(await buttons.nth(13).isDisabled(),false,'Nesting action should be enabled');
  await buttons.nth(13).click();
  assert.equal(await page.getByRole('tab',{name:'Advanced',exact:true}).getAttribute('aria-selected'),'true',
