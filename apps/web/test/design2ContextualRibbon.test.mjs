@@ -237,3 +237,14 @@ test('approved R3C2 alignment and R2/R3C6 image controls use icon dropdowns',()=
  assert.match(iconDropdown,/role="menuitemradio"/);
  assert.match(iconDropdown,/onChange\(option\.value\)/);
 });
+
+test('footer alignment menus target renderer keys rather than unused aliases',()=>{
+ const migration=read('../../server/src/system-support/migrations/20271107-design2-alignment-icon-bindings.sql');
+ const runtime=read('../src/component-libraries/smart/shared/SmartRuntime.jsx');
+ assert.match(migration,/\('smart_cart','Footer','alignment','summary2Alignment'\)/);
+ assert.match(migration,/\('smart_table','Footer','alignment','summaryAlignment'\)/);
+ assert.match(migration,/'cardButtonAlignment','Button Alignment','Design2','Button','align'/);
+ assert.match(migration,/WHERE c\.component_api='smart_card_grid'/);
+ assert.match(runtime,/textAlign:\["left","center","right"\]\.includes\(p\.cardButtonAlignment\)/);
+ assert.match(runtime,/justifyContent:p\.cardButtonAlignment==="left"\?"flex-start"/);
+});
