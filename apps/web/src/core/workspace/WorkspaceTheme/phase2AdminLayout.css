@@ -354,3 +354,21 @@
     flex:1 1 auto;max-width:100%;min-height:44px;white-space:normal;text-align:center
   }
 }
+
+/* Accordion grouping for long permission-set editors.
+   Default collapse below 1024 is controlled by the editor, not global zoom. */
+.lightning .permissions-page .md-permission-collapsible {
+  min-width:0;margin:10px 0;border:1px solid var(--md-border,#e0e5eb);
+  border-radius:var(--md-radius-md,8px);padding:8px 12px;
+}
+.lightning .permissions-page .md-permission-collapsible>summary {
+  cursor:pointer;min-height:40px;display:list-item;list-style:disclosure-closed inside;
+  font-weight:650;font-size:14px;padding:9px 0;
+}
+.lightning .permissions-page .md-permission-collapsible[open]>summary {list-style:disclosure-open inside}
+.lightning .permissions-page .md-permission-collapsible>summary:focus-visible {
+  outline:2px solid var(--md-primary,#1d4ed8);outline-offset:2px;
+}
+@media (max-width:1023px) {
+  .lightning .permissions-page .md-permission-collapsible>summary {min-height:44px}
+}
