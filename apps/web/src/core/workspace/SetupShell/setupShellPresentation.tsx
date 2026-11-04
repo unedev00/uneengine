@@ -29,7 +29,7 @@ export function renderSetupShell(ctx: any) {
         .filter(Boolean)
     : [];
   const installedAppValue=route.kind==='record-list'||route.kind==='record-detail'?'__records__'
-    : route.kind==='app-page'||route.kind==='app-home'?route.appId
+    : route.kind==='app-page'||route.kind==='app-home'?(route.appId==='Records'?'__records__':route.appId)
     : route.kind==='setup'?'__setup__':'';
   const installedAppLabel=installedAppValue==='__records__'?'Records'
     :installedAppValue==='__setup__'?'Setup'
