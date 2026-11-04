@@ -126,3 +126,69 @@ test('New Design2 slots have unique positions and fit three-row shared ribbon',(
   assert.ok(key.length);
  }
 });
+
+
+test('Design 2 exact Body Fill, Wrap and supporting alignment use their real component keys',async()=>{
+ const sql=read('../../server/src/system-support/migrations/20271106-design2-functional-control-parity.sql');
+ assert.ok(sql.includes("SET property_key='backgroundColor'"));
+ assert.ok(sql.includes("('smart_textbox','Body','wrap','wrapText')"));
+ assert.ok(sql.includes("('smart_textbox','Header Supporting','alignment','supportingAlignment')"));
+ assert.ok(sql.includes("('smart_icon','Body','height','height')"));
+ assert.ok(sql.includes("('smart_toggle','Body','width','width')"));
+ const tabs=await render('smart_tabs',{
+  backgroundColor:'#123456',tabColor:'#fedcba',items:['One','Two'],tabCount:2
+ });
+ assert.match(tabs,/background:#123456/,'Body Fill must style the tab shell');
+ assert.match(tabs,/background:#fedcba/,'Tabs Fill must style individual tabs');
+ const textbox=await render('smart_textbox',{
+  label:'Caption',textSource:'"A longer value"',labelAlignment:'left',
+  supportingAlignment:'right',wrapText:false
+ });
+ assert.match(textbox,/class="smart-textbox-value"/);
+ assert.match(textbox,/text-align:right/,'Supporting Alignment must align the textbox value');
+ assert.match(textbox,/white-space:nowrap/,'Body Wrap must affect textbox value wrapping');
+});
+
+test('Design 2 Badge and Card Grid primary button dimensions affect actual rendered surfaces',async()=>{
+ const html=await render('smart_card_grid',{
+  records:[{Id:'1',Name:'Burger',Price:12}],textSource:'@Name',badgeText:'"SALE"',
+  badgeVisible:true,imageHeight:0,cardButtonText:'"Add"',
+  cardButtonWidth:130,cardButtonHeight:42,cardButtonBold:true,
+  badgeWidth:82,badgeHeight:29,badgeBorderColor:'#123abc',badgeRadius:8
+ });
+ assert.match(html,/class="smart-card-button"/);
+ assert.match(html,/width:130px/);
+ assert.match(html,/height:42px/);
+ assert.match(html,/font-weight:700/);
+ assert.match(html,/class="smart-badge /);
+ assert.match(html,/width:82px/);
+ assert.match(html,/height:29px/);
+ assert.match(html,/border:1px solid #123abc/);
+});
+
+test('Design 2 Cart and Table table, row and footer size properties have renderer hooks',async()=>{
+ const cart=await render('smart_cart',{
+  records:[{Id:'1',Name:'Burger',Quantity:2}],textSource:'@Name',
+  tableWidth:360,tableHeight:166,rowWidth:290,
+  footerWidth:175,footerHeight:44,footerBackgroundColor:'#123abc'
+ });
+ assert.match(cart,/class="smart-cart-table"/);
+ assert.match(cart,/width:360px/);
+ assert.match(cart,/height:166px/);
+ assert.match(cart,/width:290px/);
+ assert.match(cart,/class="smart-cart-summary-line smart-cart-total"/);
+ assert.match(cart,/width:175px/);
+ assert.match(cart,/min-height:44px/);
+ assert.match(cart,/background-color:#123abc/);
+ const table=await render('smart_table',{
+  records:[{Id:'1',Name:'Burger'}],rowWidth:290,footerWidth:178,
+  footerHeight:45,footerBackgroundColor:'#abc123',footerTextColor:'#112233'
+ });
+ assert.match(table,/class="smart-table-native"/);
+ assert.match(table,/width:290px/);
+ assert.match(table,/class="smart-table-footer"/);
+ assert.match(table,/height:45px/);
+ assert.match(table,/width:178px/);
+ assert.match(table,/background-color:#abc123/);
+ assert.match(table,/color:#112233/);
+});

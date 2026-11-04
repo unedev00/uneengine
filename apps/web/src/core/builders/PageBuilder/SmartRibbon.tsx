@@ -449,8 +449,11 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
        editor=<button type="button" className="smart-visible-toggle" disabled={!enabled}
          role="switch" aria-label={title} title={title} aria-checked={value===true}
          onClick={()=>write(value!==true)}><Icon size={16} aria-hidden="true"/></button>;
-     }else if(['headerBold','badgeBold','supportingBold','rowBold','summaryTextWeight','summary2TextWeight','focusedTextBold','rowSupportingBold','wrapText','rowSupportingWrapText'].includes(property.id)){
-       const Icon=['wrapText','rowSupportingWrapText'].includes(property.id)?WrapText:Bold;
+     }else if(['headerBold','badgeBold','supportingBold','rowBold','summaryTextWeight','summary2TextWeight',
+       'focusedTextBold','rowSupportingBold','footerBold','cardButtonBold',
+       'wrapText','rowWrapText','summaryWrapText','footerWrapText',
+       'cardButtonWrapText','rowSupportingWrapText'].includes(property.id)){
+       const Icon=property.id.toLowerCase().includes('wrap')?WrapText:Bold;
        editor=<button className="smart-icon-toggle" type="button" disabled={!enabled}
          aria-label={title} title={title} aria-pressed={value===true} onClick={()=>write(value!==true)}><Icon size={17}/></button>;
      }else editor=<input type="checkbox" aria-label={title} disabled={!enabled}
