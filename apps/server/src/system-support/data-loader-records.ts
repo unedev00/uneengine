@@ -183,11 +183,22 @@ export function registerDataLoaderRecordRoutes(app:Express,records:RecordEngine,
     if(i.action==='Upsert'&&!i.id&&externalField&&!trim(i.cells[externalField]))
      throw Error('External ID value is missing (or select no matching field for create-only)');
     if(i.action!=='Delete'){
-     const operation=i.action==='Create'?'create':i.action==='Update'?'edit':
-      i.id?'edit':externalField?'create':'create';
-     await rbac.require(actor.tenant_id,actor.user_id,objectApi,operation);
-     for(const field of Object.keys(values))
-      await rbac.require(actor.tenant_id,actor.user_id,objectApi+'.'+field,operation);
+     const operation=i.action==='Create'?'create':i.action==='Update'||i.id?'edit':'create';
+     // An External ID upsert may update or create: the atomic engine resolves the
+     // actual match at execution time and checks the exact operation permissions.
+     if(i.action==='Upsert'&&!i.id&&externalField){
+      const operations=['create','edit'] as const;
+      if(!(await Promise.all(operations.map(x=>rbac.allowed(actor.tenant_id,actor.user_id,objectApi,x)))).some(Boolean))
+       throw Error('Permission denied');
+      for(const field of Object.keys(values)){
+       if(!(await Promise.all(operations.map(x=>rbac.allowed(actor.tenant_id,actor.user_id,objectApi+'.'+field,x)))).some(Boolean))
+        throw Error('Permission denied on '+field);
+      }
+     }else{
+      await rbac.require(actor.tenant_id,actor.user_id,objectApi,operation);
+      for(const field of Object.keys(values))
+       await rbac.require(actor.tenant_id,actor.user_id,objectApi+'.'+field,operation);
+     }
     }else await rbac.require(actor.tenant_id,actor.user_id,objectApi,'delete');
     i.result=create?'Create':i.action;i.message='Validated (database rules rechecked on execution)';
    }catch(e){i.status='Error';i.message=e instanceof Error?e.message:String(e);}
