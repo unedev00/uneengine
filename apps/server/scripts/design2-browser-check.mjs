@@ -99,7 +99,16 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
         ($1,'smart_calendar','one-bundled:smart_calendar',true),
         ($1,'smart_card_grid','one-bundled:smart_card_grid',true),
         ($1,'smart_navigation','one-bundled:smart_navigation',true),
-        ($1,'smart_toggle','one-bundled:smart_toggle',true)
+        ($1,'smart_toggle','one-bundled:smart_toggle',true),
+        ($1,'smart_button','one-bundled:smart_button',true),
+        ($1,'smart_text','one-bundled:smart_text',true),
+        ($1,'smart_textbox','one-bundled:smart_textbox',true),
+        ($1,'smart_image','one-bundled:smart_image',true),
+        ($1,'smart_lookup','one-bundled:smart_lookup',true),
+        ($1,'smart_table','one-bundled:smart_table',true),
+        ($1,'smart_label','one-bundled:smart_label',true),
+        ($1,'smart_container','one-bundled:smart_container',true),
+        ($1,'smart_icon','one-bundled:smart_icon',true)
  ON CONFLICT (tenant_id,api_name) DO NOTHING`,[tenantId]);
 
  // The real authenticated Builder Catalog endpoint must expose SQL slots and enforce RBAC.
@@ -660,6 +669,55 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  assert.equal(fourProps('four-nav')?.imageFill,'fit');
  assert.equal(fourProps('four-toggle')?.shapeId,'shape:oval');
  console.info('Four Design 2 icon controls: enabled, edited, visibly applied and saved in SQL');
+
+ // Audit every other Smart component family in this authenticated SQL Builder.
+ // Fields without visible anchors must never generate unpositioned icons.
+ const bindingsPageName='browserallsmartbindings';
+ const families=[
+  ['smart_button',{label:'Start order'},['label']],
+  ['smart_text',{textSource:'"Product text"'},['textSource']],
+  ['smart_textbox',{label:'Product name',textSource:'"Sample"'},['label','textSource']],
+  ['smart_image',{imageHeight:80},['imageSource']],
+  ['smart_lookup',{placeholder:'Search products',lookupValueFormula:'"test"'},['label','lookupValueFormula']],
+  ['smart_label',{label:'Smart caption'},['label']],
+  ['smart_table',{textSource:'"Name"'},['textSource']],
+  ['smart_container',{},[]],
+  ['smart_icon',{},[]]
+ ];
+ const bindingPayload={...payload,apiName:bindingsPageName,label:'All Smart Data Bindings',
+  canvasWidth:1320,canvasHeight:1750,
+  components:families.map(([api,properties],i)=>({
+   id:'binding-'+api,type:'Custom:'+api,label:api,region:'main',visible:true,
+   properties,position:{x:24+(i%3)*426,y:24+Math.floor(i/3)*520,width:390,height:440}
+  }))};
+ const bindingCreate=await page.evaluate(async({token,payload})=>{
+  const response=await fetch('/api/metadata/pages/'+payload.apiName,{
+   method:'PUT',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
+   body:JSON.stringify(payload)
+  });
+  return {status:response.status,body:await response.json().catch(()=>null)};
+ },{token,payload:bindingPayload});
+ assert.equal(bindingCreate.status,200,'Cannot seed all-Smart data audit page: '+
+  JSON.stringify(bindingCreate.body));
+ await page.goto(origin+'/une/setup/page-builder',{waitUntil:'domcontentloaded'});
+ await page.getByLabel('Search pages').fill('All Smart Data Bindings');
+ await page.getByRole('button',{name:'Design All Smart Data Bindings',exact:true}).click();
+ for(const [api,,expected] of families){
+  const root=page.locator('[data-component-id="binding-'+api+'"]').first();
+  await root.waitFor({state:'visible'});
+  await root.click({position:{x:12,y:12}});
+  if(!expected.length){
+   assert.equal(await root.locator('.canvas-data-icon-button').count(),0,
+    api+' must not invent icons for unbound visual fields');
+   continue;
+  }
+  const keys=await auditBindings('binding-'+api);
+  for(const key of expected)assert.ok(keys.includes(key),
+   api+' must display an icon beside '+key+' when selected: '+keys.join(','));
+  assert.equal(await root.locator('.canvas-data-icon-button.is-fallback').count(),0,
+   api+' must never render a bottom-right fallback grid');
+ }
+ console.info('All Smart families: no icon piles; every displayed icon is field-anchored');
 
  // The shared Arrange handlers must also work from the fixed Design 2 R0
  // commands on a REAL three-component SQL draft. Single selection aligns to
