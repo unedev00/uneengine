@@ -320,3 +320,26 @@
   min-height:24px!important;
   max-height:24px!important;
 }
+
+/* Design 2 contextual icon menus; no changes to the approved grid geometry. */
+.office-builder-ribbon #page-builder-tab-content
+ .smart-design2-group .design2-icon-trigger{
+ box-sizing:border-box;display:flex;align-items:center;justify-content:center;
+ gap:1px;padding:1px;min-width:0;width:100%;height:26px;
+ border:1px solid #afc5df;border-radius:4px;background:#fff;
+ color:#163e63;cursor:pointer;
+}
+.office-builder-ribbon #page-builder-tab-content
+ .smart-design2-group .design2-icon-trigger:disabled{opacity:.45;cursor:not-allowed}
+.design2-icon-popup{
+ position:fixed;z-index:10000;display:flex;flex-direction:column;
+ min-width:130px;gap:2px;padding:3px;border:1px solid #b7c9df;
+ border-radius:4px;background:#fff;box-shadow:0 6px 18px #1e375433;
+}
+.design2-icon-popup>button{
+ box-sizing:border-box;display:flex;align-items:center;gap:10px;text-align:left;
+ width:100%;min-height:30px;padding:4px 8px;border:0;border-radius:3px;
+ background:#fff;color:#213c5c;cursor:pointer;font:12px "Segoe UI",Arial,sans-serif;
+}
+.design2-icon-popup>button:is(:hover,.is-selected){background:#daebfe;}
+.design2-icon-popup>button:focus-visible{outline:2px solid #1e79cb}

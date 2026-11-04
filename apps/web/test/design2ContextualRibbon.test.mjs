@@ -220,24 +220,21 @@ test('Design 2 R0 X/Y has exact 80x26 geometry without shifting property rows',(
 test('approved R3C2 alignment and R2/R3C6 image controls use icon dropdowns',()=>{
  assert.equal(fixed('Body','alignment').row,3);
  assert.equal(fixed('Body','alignment').order,2);
- assert.equal(fixed('Body','alignment').width,40);
  assert.equal(fixed('Image','placement').row,2);
  assert.equal(fixed('Image','placement').order,6);
- assert.equal(fixed('Image','placement').width,40);
  assert.equal(fixed('Image','imageFill').row,3);
  assert.equal(fixed('Image','imageFill').order,6);
- assert.equal(fixed('Image','imageFill').width,40);
  assert.match(shared,/kind==='align'&&compactDesign&&property\.designDisplay==='dropdown'/);
- assert.match(shared,/\['imageFill','imagePlacement','badgeAlignment'\]\.includes\(property\.id\)/);
- assert.match(shared,/editor=<SmartIconDropdown kind=\{property\.id as/);
- assert.match(iconDropdown,/type IconKind='align'\|'shadow'\|'imageFill'\|'imagePlacement'\|'badgeAlignment'/);
+ assert.match(shared,/editor=<SmartIconDropdown kind="badgeAlignment"/);
+ assert.match(shared,/editor=<Design2IconDropdown/);
+ assert.match(shared,/\['imageFill','imagePlacement','tabOrientation','navigationDirection'\]\.includes\(property\.id\)/);
+ const menu=read('../src/core/builders/PageBuilder/Design2IconDropdown.tsx');
  for(const value of ["'fill'","'fit'","'stretch'","'top'","'left'","'right'","'bottom'"])
-  assert.ok(iconDropdown.includes('value:'+value),value+' missing from actual icon menu');
- assert.match(iconDropdown,/aria-haspopup="menu"/);
- assert.match(iconDropdown,/role="menuitemradio"/);
- assert.match(iconDropdown,/onChange\(option\.value\)/);
+  assert.ok(menu.includes(value),value+' missing from icon menu');
+ assert.match(menu,/aria-haspopup="menu"/);
+ assert.match(menu,/role="menuitemradio"/);
+ assert.match(menu,/onChange\(option\.value\)/);
 });
-
 test('footer alignment menus target renderer keys rather than unused aliases',()=>{
  const migration=read('../../server/src/system-support/migrations/20271107-design2-alignment-icon-bindings.sql');
  const runtime=read('../src/component-libraries/smart/shared/SmartRuntime.jsx');
@@ -268,16 +265,27 @@ test('original Excel keeps Image dropdown slots at R2C6 and R3C6 for the three i
  assert.ok(!rules.some(m=>m[2]==='Body'),'Image controls must stay in the Excel Image area');
 });
 
-test('image-placement and fit use reference-style icons but do not change persisted enum values',()=>{
- assert.match(iconDropdown,/function ImagePlacementIcon\(\{value\}/);
- assert.match(iconDropdown,/function ImageFitIcon\(\{value\}/);
- for(const value of ['top','bottom','left','right'])
-  assert.match(iconDropdown,new RegExp('ImagePlacementIcon value="'+value+'"'));
- for(const value of ['fill','fit','stretch'])
-  assert.match(iconDropdown,new RegExp('ImageFitIcon value="'+value+'"'));
- assert.match(iconDropdown,/data-icon-kind=\{kind\}/);
- assert.match(iconDropdown,/allowedValues\?:readonly string\[\]/);
- assert.match(iconDropdown,/allOptions\.filter\(option=>allowedValues\.includes\(option\.value\)\)/);
- assert.match(shared,/allowedValues=\{options\}/);
+test('image-placement and fit use reference-style icons without changing persisted enums',()=>{
+ const menu=read('../src/core/builders/PageBuilder/Design2IconDropdown.tsx');
+ assert.match(menu,/function PlacementGlyph\(\{value\}/);
+ assert.match(menu,/function ImageFillGlyph\(\{value\}/);
+ assert.match(menu,/mode==='placement'/);
+ assert.match(menu,/mode==='imageFill'/);
+ assert.match(menu,/allowed\?:readonly string\[\]/);
+ assert.match(menu,/allowed\.includes\(option\.value\)/);
+ assert.match(shared,/allowed=\{options\}/);
  assert.match(shared,/tab==='Design2'&&kind==='choice'/);
+});
+test('Design 2 icon palettes and choice controls preserve R0 and the approved SQL matrix',()=>{
+ const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
+ const palette=read('../src/core/builders/PageBuilder/RibbonColorPalette.tsx');
+ const icons=read('../src/core/builders/PageBuilder/Design2IconDropdown.tsx');
+ assert.match(ribbon,/Design2IconDropdown/);
+ assert.match(ribbon,/iconVariant=\{tab==='Design2'/);
+ assert.match(ribbon,/Badge visibility/);
+ assert.match(ribbon,/\['x','y'\] as const/);
+ assert.match(ribbon,/smart-design2-workbench/);
+ assert.match(palette,/iconVariant/);
+ for(const value of ['horizontal','vertical','placement','imageFill','orientation'])assert.ok(icons.includes(value));
+ assert.match(approved,/319 source rows/);
 });

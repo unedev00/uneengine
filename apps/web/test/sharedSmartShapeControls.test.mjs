@@ -24,7 +24,7 @@ test('global Shape is SQL owned, enabled only for requested components, and icon
  assert.doesNotMatch(sql,/DELETE FROM md_page_|DELETE FROM md_component_definitions/i);
  const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
  assert.match(ribbon,/property.id==='shapeId'/);
- assert.match(ribbon,/allowIcons=\{\(selectedApis\?\.length\?selectedApis:\[api\]\)\.every/);
+ assert.match(ribbon,/allowIcons=\{property\.id==='footerShape'\?false:\(selectedApis\?\.length\?selectedApis:\[api\]\)\.every/);
  assert.match(ribbon,/choicesOverrides\?\.\[member\]/);
  const gallery=read('../src/core/builders/PageBuilder/SmartIconGallery.tsx');
  assert.match(gallery,/allowIcons&&<section><strong>Icons<\/strong>/);

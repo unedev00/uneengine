@@ -15,6 +15,7 @@ import {pageStateChoices} from './pageStateChoices';
 import {namedCollectionName,namedCollectionNames} from '../../pages/PageRuntime/pageCollectionSession';
 import {formulaCollectionReferenceKey} from '../../../../../server/src/expression-engine/FormulaCollection.js';
 import SmartIconDropdown from './SmartIconDropdown';
+import Design2IconDropdown from './Design2IconDropdown';
 import SmartMultiSelect from './SmartMultiSelect';
 import SmartIconGallery from './SmartIconGallery';
 import './SmartRibbon.css';
@@ -352,8 +353,8 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
      (isTextSize||isCorner||isWidth||isHeight||isCanvasAxis);
    const isTabIndex=property.id==='tabIndex';
    let editor;
-   if(property.id==='shapeId')editor=<SmartIconGallery value={String(value||'shape:rectangle')}
-     disabled={!enabled} allowIcons={(selectedApis?.length?selectedApis:[api]).every(member=>
+   if(property.id==='shapeId'||(tab==='Design2'&&property.id==='footerShape'))editor=<SmartIconGallery value={String(value||'shape:rectangle')}
+     disabled={!enabled} allowIcons={property.id==='footerShape'?false:(selectedApis?.length?selectedApis:[api]).every(member=>
        (property.choicesOverrides?.[member]??property.choices??[]).includes('icons'))}
      onChange={write}/>;
    else if(['cardButtonShape','customButton1Shape','customButton2Shape'].includes(property.id))editor=<SmartIconGallery
@@ -408,6 +409,8 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
      {objects.map(o=><option key={o.apiName} value={o.apiName}>{o.label}</option>)}</select>;
    else if(kind==='color')editor=<RibbonColorPalette variant="property"
      kind={/border/i.test(property.id)?'border':property.id==='iconFillColor'||/label|text|value/i.test(property.id)?'text':'fill'}
+     iconVariant={tab==='Design2'&&(property.id==='shapeFill'||slotPlacement?.slotKey==='shape_fill')?'shape':
+       tab==='Design2'&&(slotPlacement?.slotKey==='focused'||/^focus/i.test(property.id))?'focus':undefined}
      label={title} value={String(value)} disabled={!enabled} onChange={write}/>;
    else if(tab==='Layout'&&['cardsPerRow','cardsPerColumn'].includes(property.id))
      editor=<select className="smart-select" aria-label={title} disabled={!enabled}
@@ -477,11 +480,13 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    </button>;
    // The R3C2 alignment and R2C6/R3C6 image controls in the approved
    // Design 2 matrix are ICON dropdowns. Legacy Design remains unchanged.
+   else if(tab==='Design2'&&kind==='choice'&&property.id==='badgeAlignment')
+     editor=<SmartIconDropdown kind="badgeAlignment" value={String(value)} label={title} disabled={!enabled} onChange={write}/>;
    else if(tab==='Design2'&&kind==='choice'&&
-     ['imageFill','imagePlacement','badgeAlignment'].includes(property.id))
-     editor=<SmartIconDropdown kind={property.id as 'imageFill'|'imagePlacement'|'badgeAlignment'}
-       value={String(value)} label={title} disabled={!enabled} onChange={write}
-       allowedValues={options}/>;
+     ['imageFill','imagePlacement','tabOrientation','navigationDirection'].includes(property.id))
+     editor=<Design2IconDropdown
+       mode={property.id==='imagePlacement'?'placement':property.id==='imageFill'?'imageFill':'orientation'}
+       value={String(value)} label={title} disabled={!enabled} allowed={options} onChange={write}/>;
    else if(kind==='choice'&&Array.isArray(value))editor=<SmartMultiSelect
       label={title} choices={options} value={value.filter((item):item is string=>typeof item==='string')}
       disabled={!enabled} onChange={write}/>;
@@ -520,12 +525,19 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
             {design2Areas.map(area=><option value={area} key={area}>{area}</option>)}
           </select>
         </label>
-        <button type="button" className="smart-icon-toggle smart-design2-visibility"
-          aria-label="Component visibility" title="Component visibility"
-          aria-pressed={componentVisible} disabled={!onVisibleChange}
-          onClick={()=>onVisibleChange?.(!componentVisible)}>
-          {componentVisible?<Eye size={17}/>:<EyeOff size={17}/>}
-        </button>
+        {(()=>{
+          const badge=activeDesign2Area==='Badge'&&
+            definitions.some(p=>p.id==='badgeVisible'&&p.components.includes(api));
+          const shown=badge?properties.badgeVisible===true:componentVisible;
+          const toggle=badge?()=>update('badgeVisible',!shown):
+            onVisibleChange?()=>onVisibleChange(!componentVisible):undefined;
+          return <button type="button" className="smart-icon-toggle smart-design2-visibility"
+            aria-label={badge?'Badge visibility':'Component visibility'}
+            title={badge?'Badge visibility':'Component visibility'}
+            aria-pressed={shown} disabled={!toggle} onClick={toggle}>
+            {shown?<Eye size={17}/>:<EyeOff size={17}/>}
+          </button>;
+        })()}
         {(['x','y'] as const).map((id,index)=>{
           // Row 0 C3/C4 edits the SAME canvas position used by Layout.
           // No duplicate instance properties or separate position state.

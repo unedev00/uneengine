@@ -17,16 +17,27 @@ const themeColumns=[
 ];
 const standard=['#c00000','#ff0000','#ffc000','#ffff00','#92d050','#00b050','#00b0f0','#0070c0','#002060','#7030a0'];
 
-export default function RibbonColorPalette({kind,label,value,onChange,variant='icon',disabled=false}:{
+export default function RibbonColorPalette({kind,label,value,onChange,variant='icon',iconVariant,disabled=false}:{
   kind:ColourKind;label:string;value:string;onChange:(color:string)=>void;
-  variant?:'icon'|'capability'|'property';disabled?:boolean;
+  variant?:'icon'|'capability'|'property';iconVariant?:'shape'|'focus';disabled?:boolean;
 }){
   const [open,setOpen]=useState(false);
   const [customHex,setCustomHex]=useState(value);
   const [position,setPosition]=useState({top:0,left:0});
   const trigger=useRef<HTMLButtonElement>(null);
   const popup=useRef<HTMLDivElement>(null);
-  const icon=kind==='text'?<Baseline size={17}/>:kind==='fill'?<PaintBucket size={17}/>:<Square size={17}/>;
+  // The original Design tab keeps its existing glyphs. Only Design 2 passes iconVariant.
+  const icon=iconVariant==='shape'
+    ?<svg width="19" height="19" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+       <circle cx="7" cy="7" r="5" stroke="#254566" strokeWidth="1.6"/>
+       <rect x="7" y="7" width="10" height="10" rx="1.6" fill="#9fcbf8"
+         stroke="#254566" strokeWidth="1.5"/></svg>
+    :iconVariant==='focus'
+    ?<svg width="19" height="19" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+       <rect x="4" y="4" width="12" height="12" rx="3" fill="#9bcdf8"/>
+       <path d="M2 6V4a2 2 0 0 1 2-2h2M14 2h2a2 2 0 0 1 2 2v2M18 14v2a2 2 0 0 1-2 2h-2M6 18H4a2 2 0 0 1-2-2v-2"
+         stroke="#1668be" strokeWidth="1.8" strokeLinecap="round"/></svg>
+    :kind==='text'?<Baseline size={17}/>:kind==='fill'?<PaintBucket size={17}/>:<Square size={17}/>;
   const choose=(colour:string)=>{onChange(colour);setOpen(false);trigger.current?.focus();};
   useEffect(()=>setCustomHex(value),[value]);
   const toggle=()=>{
