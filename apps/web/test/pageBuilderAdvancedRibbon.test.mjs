@@ -9,7 +9,7 @@ const layout=read('../src/core/builders/PageBuilder/PageBuilderRibbonLayout.css'
 const dialog=read('../src/core/builders/PageBuilder/PageBuilderVisibilityDialog.tsx');
 
 test('View owns visibility conditions and reuses the record filter dialog shell',()=>{
- assert.match(page,/'Component Layout','Arrange','Component Action','Advanced','Preview'/);
+ assert.match(page,/'Component Design 2','Arrange','Component Action','Advanced','Preview'/);
  assert.match(page,/aria-label="Edit conditional visibility"/);
  assert.match(page,/onClick=\{openVisibilityEditor\}/);
  assert.match(page,/<PageBuilderVisibilityDialog/);
