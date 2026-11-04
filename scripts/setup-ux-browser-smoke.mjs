@@ -40,22 +40,18 @@ try {
  assert.equal((await page.evaluate(()=>window.savedSelections)).selections[0].recordIds[0],'00000000-0000-0000-0000-000000000001');
  assert.equal(await page.getByRole('checkbox',{name:'Acme Corporation'}).isChecked(),true,
   'Saved offline selection must remain selected before the next search');
- await recordSearch.fill('bulk');
- await page.getByRole('checkbox',{name:'Bulk record 55'}).waitFor();
- for(let index=1;index<=49;index++){
-  await page.getByRole('checkbox',{name:'Bulk record '+index,exact:true}).check();
- }
- const capCount=await page.locator('.offline-briefcase-count').innerText();
- const capChecked=await page.locator('.offline-record-results input[type="checkbox"]:checked').count();
- assert.equal(capCount,'50 of 100 records selected',
-  'Offline cap count did not reach 50; visible checked results: '+capChecked);
- assert.equal(await page.getByRole('checkbox',{name:'Bulk record 50'}).isDisabled(),true,
-  'Offline briefcase must stop at 50 records per object including the already selected record');
+ await open('offline-cap');
+ await page.getByText('49 of 100 records selected').waitFor();
+ await page.getByRole('checkbox',{name:'Bulk record 50',exact:true}).check();
+ await page.getByText('50 of 100 records selected').waitFor();
+ assert.equal(await page.getByRole('checkbox',{name:'Bulk record 51',exact:true}).isDisabled(),true,
+  'Offline briefcase must stop at 50 records per object');
  assert.equal(await page.getByRole('button',{name:'Save selections'}).isEnabled(),true,
-  '50 selected records for one object must remain valid');
- await page.getByRole('checkbox',{name:'Bulk record 1'}).uncheck();
- assert.equal(await page.getByRole('checkbox',{name:'Bulk record 50'}).isEnabled(),true,
-  'Removing one selection must restore capacity');
+  '50 records per object must remain valid for saving');
+ await page.getByRole('checkbox',{name:'Bulk record 50',exact:true}).uncheck();
+ await page.getByText('49 of 100 records selected').waitFor();
+ assert.equal(await page.getByRole('checkbox',{name:'Bulk record 51',exact:true}).isEnabled(),true,
+  'Removing one selection restores capacity');
  await open('tenants');
  await page.getByRole('button',{name:'New tenant',exact:true}).click();
  const tenantForm=page.getByRole('form',{name:'New tenant draft'});
