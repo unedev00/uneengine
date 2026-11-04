@@ -587,6 +587,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
             {design2Areas.map(area=><option value={area} key={area}>{area}</option>)}
           </select>
         </label>
+        <div className="smart-design2-dimensions" role="group" aria-label="Dimensions">
         {(()=>{
           const shown=componentVisible;
           const toggle=onVisibleChange?()=>onVisibleChange(!componentVisible):undefined;
@@ -610,7 +611,10 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
         })}
         <span className="smart-design2-r0-gap" data-design-column="5" aria-hidden="true"/>
         <span className="smart-design2-r0-gap" data-design-column="6" aria-hidden="true"/>
-        <Design2CanvasActions area={activeDesign2Area} arrange={design2Arrange}/>
+        </div>
+        <Design2CanvasActions area={activeDesign2Area} arrange={design2Arrange} section="alignment"/>
+        <Design2CanvasActions area={activeDesign2Area} arrange={design2Arrange} section="arrangement"/>
+        <Design2CanvasActions area={activeDesign2Area} arrange={design2Arrange} section="dimensions"/>
       </div>
       <div className="smart-ribbon-items">
         {[1,2,3].map(row=><div key={row} className="smart-ribbon-row"
