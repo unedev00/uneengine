@@ -93,3 +93,10 @@ test('Related records and recycle bin never render inverted ranges on empty page
  assert.match(records,/loaded === 0 \? `0–0 of \$\{total\}`/);
  assert.match(records,/recycleRows\.length === 0 \? `0–0 of \$\{recycleTotal\}`/);
 });
+
+test('Mobile permission list and detail follow addressable routes',()=>{
+ const permissions=read('../src/core/security/Permissions/permissionsView.tsx');
+ assert.match(permissions,/setMobilePermissionDetail\(Boolean\(routeResourceId\)\)/);
+ assert.match(permissions,/\[routeResourceApiName,routeResourceId\]/);
+ assert.match(permissions,/viewportWidth < 1024 && \(nextTab==='sets'\|\|nextTab==='users'\) \? undefined : initialId/);
+});
