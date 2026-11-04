@@ -686,7 +686,10 @@ function PageBuilder({
   const selectedGroupBounds = canvasGroupBounds(selectedGroupMembers);
   // Shift selection and persisted canvas groups use one shared-property context.
   const ribbonSelectedMembers = selected
-    ? page.components.filter(item=>(selectionIds.length>1
+    ? canvasBinding?.componentId===selected.id&&ribbonTab==='Component Data'
+      // Field icons edit just their component, even inside a grouped selection.
+      ? [selected]
+      : page.components.filter(item=>(selectionIds.length>1
       ? selectionIds.includes(item.id)
       : selectedGroupMembers.length>1
         ? selectedGroupMembers.some(member=>member.id===item.id)
@@ -2883,8 +2886,10 @@ function PageBuilder({
         && !['Tabs','Accordion'].includes(component.type)
         && <div className="canvas-design-interaction-shield" aria-hidden="true" data-canvas-select-only="true"/>}
       </ContentHost>
+      {/* Grouping is a canvas move/arrange context, not a reason to hide
+          the selected component's independent Data Source icons. */}
       {!previewMode&&!libraryPreview&&selectedId===component.id&&
-        ribbonSelectedMembers.length===1&&ribbonCatalog&&customDefinition?.apiName&&
+        ribbonCatalog&&customDefinition?.apiName&&
         ribbonCatalog.components.includes(customDefinition.apiName)&&
         <CanvasDataBindingIcons componentId={component.id} api={customDefinition.apiName}
           definitions={ribbonCatalog.properties} active={canvasBinding}
