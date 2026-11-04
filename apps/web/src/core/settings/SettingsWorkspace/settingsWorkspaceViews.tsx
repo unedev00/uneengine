@@ -374,6 +374,7 @@ function TenantSecurityAudit() {
  const [draft,setDraft]=useState<SecurityEventFilters>(emptySecurityEventFilters);
  const [filters,setFilters]=useState<SecurityEventFilters>(emptySecurityEventFilters);
  const [page,setPage]=useState(0);
+ useEffect(()=>setPage(0),[pageSize]);
  const [hasNext,setHasNext]=useState(false);
  const [permitted,setPermitted]=useState(false);
  const [busy,setBusy]=useState(true);
