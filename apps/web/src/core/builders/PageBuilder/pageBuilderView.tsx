@@ -1,3 +1,4 @@
+import ResponsiveDataList from '../../records/ResponsiveDataList/ResponsiveDataList';
 import {conversationPartSlots,conversationRootDefinition,conversationPartDefinition,conversationPartEditorProperties,updateConversationPartProperties} from '../../../component-libraries/ui_conversation/conversationParts.mjs';
 import {availableComponentSettings,resolveComponentSettings,validateComponentSettings} from '../../components/Properties/componentSettingDefinitions';
 import {pagePropertyIssues} from '../../components/Properties/pagePropertyContract';
@@ -3189,7 +3190,23 @@ function PageBuilder({
             </select>
           </label>}
         </div>
-        <div className="page-manager-table-scroll"><table className="records-table page-manager-table"><thead><tr><th scope="col" className="page-manager-actions-heading">Actions</th><th>Page name</th><th>API Name</th><th>Application</th><th>Version</th><th>Type</th><th>Related object</th><th>Device</th><th>Dimensions</th><th>Orientation</th><th>Last modified</th><th>Status</th></tr></thead>
+        <ResponsiveDataList rows={paginatedPages} includeTablet getId={item=>item.apiName}
+          label="Page Manager pages" emptyText="No pages match the selected filters"
+          onOpen={item=>selectSavedPage(item.apiName)} openLabel="Open page designer"
+          columns={[
+            {apiName:'label',label:'Page',phoneRole:'title',render:item=>item.label},
+            {apiName:'api',label:'API name',phoneRole:'subtitle',render:item=>item.apiName},
+            {apiName:'status',label:'Status',phoneRole:'badge',render:item=>item.status},
+            {apiName:'type',label:'Type',render:item=>item.pageType},
+            {apiName:'device',label:'Devices',phoneRole:'trailing',render:item=>pageDeviceLabel(item)},
+            {apiName:'actions',label:'Actions',render:item=><div className="page-manager-mobile-actions">
+              <button type="button" className="btn" disabled={saving} onClick={()=>setPageDetailsApi(item.apiName)}>Page properties</button>
+              <button type="button" className="btn" onClick={()=>selectSavedPage(item.apiName)}>Design</button>
+              <button type="button" className="btn" disabled={saving} onClick={()=>void(item.status==='Active'?onDeactivate(item.apiName):savePage('Active',item,true))}>{item.status==='Active'?'Deactivate':'Activate'}</button>
+              <button type="button" className="btn" disabled={saving||Boolean(archivingPageApiName)} onClick={()=>setPendingArchivePageApiName(item.apiName)}>Delete</button>
+            </div>}
+          ]}/>
+        <div className="page-manager-table-scroll md-mobile-table-replaced md-tablet-table-replaced"><table className="records-table page-manager-table"><thead><tr><th scope="col" className="page-manager-actions-heading">Actions</th><th>Page name</th><th>API Name</th><th>Application</th><th>Version</th><th>Type</th><th>Related object</th><th>Device</th><th>Dimensions</th><th>Orientation</th><th>Last modified</th><th>Status</th></tr></thead>
         <tbody>{paginatedPages.map(item=><tr key={item.apiName}>
           <td className="page-manager-actions">
             <div className="page-manager-action-icons" role="group" aria-label={'Actions for '+item.label}>
