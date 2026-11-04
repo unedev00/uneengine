@@ -5,7 +5,7 @@ import './ArrangeRibbon.css';
 
 type Axis='x'|'y';
 type Anchor='start'|'center'|'end';
-type Props={
+export type ArrangeRibbonProps={
  freeCanvas:boolean;hasSelection:boolean;locked:boolean;selectedCount:number;
  canGroup:boolean;canUngroup:boolean;
  canBringToFront:boolean;canSendBackward:boolean;
@@ -14,7 +14,7 @@ type Props={
  onGroup:()=>void;onUngroup:()=>void;onLock:()=>void;onNesting:()=>void;
 };
 /** Pure presentation: the existing page-builder handlers own every command. */
-export default function ArrangeRibbon(props:Props){
+export default function ArrangeRibbon(props:ArrangeRibbonProps){
  const allowed=props.freeCanvas&&props.hasSelection&&!props.locked;
  const groups=[
   {name:'Align',rows:[
