@@ -407,6 +407,7 @@ export function registerMetadataLoaderRoutes(app:Express,db:SqlPersistence,rbac:
       }
      }else{
       let target=existing;
+      let restoredNow=false;
       if(!target){
        const deleted=(await db.query('SELECT 1 FROM md_field_definitions WHERE tenant_id=$1 AND object_api=$2 AND api_name=$3 AND deleted_at IS NOT NULL',
         [actor.tenant_id,i.objectApi,i.fieldApi])).rowCount;
@@ -414,6 +415,7 @@ export function registerMetadataLoaderRoutes(app:Express,db:SqlPersistence,rbac:
         if(i.action==='Create')throw Error('Field is soft-deleted; use Upsert');
         const restored=await definitions.restoreField(actor.tenant_id,i.objectApi,i.fieldApi!);
         target=restored.fields.find(f=>f.apiName===i.fieldApi);
+        restoredNow=true;
        }
       }
       if(!target){
@@ -430,9 +432,13 @@ export function registerMetadataLoaderRoutes(app:Express,db:SqlPersistence,rbac:
         if(key==='label'||key==='apiName')continue;
         if(JSON.stringify((target as unknown as Record<string,unknown>)[key])!==JSON.stringify(v))changed[key]=v;
        }
-       if(Object.keys(changed).length>2)
-        await definitions.updateField(actor.tenant_id,i.objectApi,i.fieldApi!,changed,actor.user_id);
-       else i.result='Unchanged';
+       if(Object.keys(changed).length>2){
+        try{await definitions.updateField(actor.tenant_id,i.objectApi,i.fieldApi!,changed,actor.user_id);}
+        catch(error){
+         if(restoredNow)await definitions.deleteField(actor.tenant_id,i.objectApi,i.fieldApi!);
+         throw error;
+        }
+       }else i.result='Unchanged';
       }
      }
     }
