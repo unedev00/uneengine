@@ -14,16 +14,19 @@ const sections:ReadonlyArray<{id:Section;label:string}>=[
 {id:'contacts',label:'Contacts'},{id:'mobile',label:'Mobile & Offline'},{id:'integrations',label:'Integrations'},
 {id:'security',label:'Security & Recovery'},{id:'developer',label:'Developer'}];
 /** Presentation only: retains existing OneEngine-protected runtime controls and slots. */
-export default function CompanySettingsWorkspace({company,domains,developer,usage,calendar,recovery,mfa,emailRecovery,locks,sessions,audit,onNavigateDeveloper,developerAccess,objects=[],mobile=false,initialSection,onSelectSection}:{
+export default function CompanySettingsWorkspace({company,domains,developer,usage,calendar,recovery,mfa,emailRecovery,locks,sessions,audit,onNavigateDeveloper,developerAccess,objects=[],mobile=false,initialSection,onSelectSection,securitySubsection,onSelectSecurityArea}:{
 objects?:ObjectMetadata[];company:ReactNode;domains:ReactNode;developer:ReactNode;usage:ReactNode;calendar?:ReactNode;
 recovery:ReactNode;mfa:ReactNode;emailRecovery:ReactNode;locks:ReactNode;sessions:ReactNode;audit:ReactNode;
  onNavigateDeveloper?:(workspace:string)=>void;
  developerAccess?:{metadata:boolean;apps:boolean;packages?:boolean;flows:boolean;dashboards:boolean;reports:boolean;approvals:boolean;security:boolean};
  mobile?:boolean; initialSection?:string; onSelectSection?:(section:Section|null)=>void;
+ securitySubsection?:string;onSelectSecurityArea?:(area:'access'|'recovery'|'history')=>void;
 }){
  const resolvedInitialSection=sections.find(item=>item.id===initialSection)?.id;
  const [active,setActive]=useState<Section>(resolvedInitialSection??'general');
- const [securityView,setSecurityView]=useState<'access'|'recovery'|'history'>('access');
+ const validSecurityArea=(securitySubsection==='recovery'||securitySubsection==='history')?securitySubsection:'access';
+ const [securityView,setSecurityView]=useState<'access'|'recovery'|'history'>(validSecurityArea);
+ useEffect(()=>setSecurityView(validSecurityArea),[securitySubsection]);
  const [mobileSection,setMobileSection]=useState<Section|null>(mobile?(resolvedInitialSection??null):null);
  useEffect(()=>{setActive(resolvedInitialSection??'general');if(mobile)setMobileSection(resolvedInitialSection??null);},[resolvedInitialSection,mobile]);
  const currentSection=mobile ? mobileSection : active;
@@ -56,7 +59,7 @@ recovery:ReactNode;mfa:ReactNode;emailRecovery:ReactNode;locks:ReactNode;session
    </header>
    <nav className="company-workspace-tabs" aria-label="Company settings sections">
      {visibleSections.map(section=><button key={section.id} type="button" className={active===section.id?'active':''}
-       aria-current={active===section.id?'page':undefined} onClick={()=>setActive(section.id)}>{section.label}</button>)}
+       aria-current={active===section.id?'page':undefined} onClick={()=>{setActive(section.id);onSelectSection?.(section.id);}}>{section.label}</button>)}
    </nav>
    {mobile && mobileSection===null && <nav className="company-workspace-mobile-menu" aria-label="Company settings sections">
      {visibleSections.map(section=><button key={section.id} type="button" onClick={()=>{setMobileSection(section.id);setActive(section.id);onSelectSection?.(section.id);}}>
@@ -74,7 +77,7 @@ recovery:ReactNode;mfa:ReactNode;emailRecovery:ReactNode;locks:ReactNode;session
        {([{id:'access',label:'Sign-in and access'},{id:'recovery',label:'Account recovery'},{id:'history',label:'Login activity'}] as const).map(item=>
         <button key={item.id} type="button" role="tab" id={'company-security-tab-'+item.id}
          aria-controls={'company-security-panel-'+item.id} aria-selected={securityView===item.id}
-         onClick={()=>setSecurityView(item.id)}>{item.label}</button>)}
+         onClick={()=>{setSecurityView(item.id);onSelectSecurityArea?.(item.id);}}>{item.label}</button>)}
       </nav>
       <div role="tabpanel" id={'company-security-panel-'+securityView}
        aria-labelledby={'company-security-tab-'+securityView} className="md-security-content">
