@@ -13,10 +13,21 @@ const columns={
   Resources:['Action','Name','Label','Type','Data Type','Collection','Input','Output','Value (JSON)']
 };
 type SheetName=keyof typeof columns;
-const stable=(flow:FlowDefinitionMetadata)=>JSON.stringify({
-  apiName:flow.apiName,versionNumber:flow.versionNumber,
+const canonical=(value:unknown):unknown=>Array.isArray(value)?value.map(canonical):
+ value&&typeof value==='object'?Object.fromEntries(Object.entries(value as Record<string,unknown>)
+ .sort(([a],[b])=>a.localeCompare(b)).map(([key,entry])=>[key,canonical(entry)])):value;
+const stable=(flow:FlowDefinitionMetadata)=>JSON.stringify(canonical({
+  apiName:flow.apiName,versionNumber:flow.versionNumber,flowType:flow.flowType,
+  status:flow.status,startConfig:flow.startConfig??{},
   elements:flow.elements,connectors:flow.connectors,resources:flow.resources
-});
+}));
+export const flowExcelFingerprint=(flow:FlowDefinitionMetadata)=>digest(stable(flow));
+export async function ensureFlowUnchanged(flow:FlowDefinitionMetadata):Promise<void>{
+ const {apiRequest}=await import('../../authentication/Client/authClient');
+ const response=await apiRequest<{flow:FlowDefinitionMetadata}>('/metadata/flows/'+encodeURIComponent(flow.apiName));
+ if(flowExcelFingerprint(response.flow)!==flowExcelFingerprint(flow))
+  throw Error('Existing flow changed on the server. Reload the flow and download a fresh Excel workbook.');
+}
 function digest(source:string) {
   let value=2166136261;
   for(let i=0;i<source.length;i++) {value^=source.charCodeAt(i);value=Math.imul(value,16777619);}
@@ -51,17 +62,17 @@ export async function encodeFlowWorkbook(file:File):Promise<string>{
 export async function downloadFlowExcel(flow:FlowDefinitionMetadata) {
  const {apiRequest}=await import('../../authentication/Client/authClient');
  const result=await apiRequest<{workbook:string}>('/metadata/loader/flow-excel/write',{
-  method:'POST',body:JSON.stringify({tables:flowWorkbookTables(flow)})});
+  method:'POST',body:JSON.stringify({flowApi:flow.apiName,tables:flowWorkbookTables(flow)})});
  const bytes=decodeFlowWorkbook(result.workbook);
  const url=URL.createObjectURL(new Blob([bytes.buffer as ArrayBuffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
  const anchor=document.createElement('a');anchor.href=url;anchor.download=flow.apiName+'_nodes.xlsx';anchor.click();
  setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
-export async function readFlowExcel(file:File):Promise<FlowWorkbookTable[]> {
+export async function readFlowExcel(file:File,flowApi:string):Promise<FlowWorkbookTable[]> {
  if(!/\\.xlsx$/i.test(file.name))throw Error('Only .xlsx files downloaded from Flow Builder are supported.');
  const {apiRequest}=await import('../../authentication/Client/authClient');
  const result=await apiRequest<{tables:FlowWorkbookTable[]}>('/metadata/loader/flow-excel/read',{
-  method:'POST',body:JSON.stringify({workbook:await encodeFlowWorkbook(file)})});
+  method:'POST',body:JSON.stringify({flowApi,workbook:await encodeFlowWorkbook(file)})});
  return result.tables;
 }
 function parseSheets(tables:FlowWorkbookTable[]):Map<string,Row[]>{

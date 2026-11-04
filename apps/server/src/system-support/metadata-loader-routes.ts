@@ -201,12 +201,22 @@ export function registerMetadataLoaderRoutes(app:Express,db:SqlPersistence,rbac:
  app.post('/api/metadata/loader/flow-excel/write',route(async(req,res)=>{
    const actor=req.actor!;
    await rbac.require(actor.tenant_id,actor.user_id,'FlowDefinition','read');
+   const flowApi=req.body?.flowApi;
+   if(typeof flowApi!=='string'||!/^[A-Za-z][A-Za-z0-9_]*$/.test(flowApi))
+     throw Error('Existing flow API name is required');
+   const existing=await db.query<{id:string}>(
+     'SELECT id FROM md_flow_definitions WHERE tenant_id=$1 AND api_name=$2 AND archived=false ORDER BY version DESC LIMIT 1',
+     [actor.tenant_id,flowApi]);
+   if(!existing.rows[0])throw Error('Flow does not exist. Create it in Flow Builder first.');
    const tables=req.body?.tables;
    if(!Array.isArray(tables)||tables.length!==5||tables.some((t:unknown)=>{
      if(!t||typeof t!=='object')return true;
      const v=t as Record<string,unknown>;
      return typeof v.name!=='string'||!Array.isArray(v.columns)||!Array.isArray(v.rows)||v.rows.length>10000;
    }))throw Error('Invalid flow workbook tables');
+   const manifest=(tables[0] as LoaderTable);
+   if(manifest?.name!=='Manifest'||manifest.rows?.[0]?.['Flow API']!==flowApi)
+     throw Error('Workbook target must match selected existing flow');
    const data=JSON.stringify(tables);
    if(data.length>1_000_000)throw Error('Flow workbook exceeds 1 MB');
    const buffer=writeLoaderWorkbook(tables as LoaderTable[]);
@@ -216,10 +226,19 @@ export function registerMetadataLoaderRoutes(app:Express,db:SqlPersistence,rbac:
  app.post('/api/metadata/loader/flow-excel/read',route(async(req,res)=>{
    const actor=req.actor!;
    await rbac.require(actor.tenant_id,actor.user_id,'FlowDefinition','manage');
+   const flowApi=req.body?.flowApi;
+   if(typeof flowApi!=='string'||!/^[A-Za-z][A-Za-z0-9_]*$/.test(flowApi))
+     throw Error('Existing flow API name is required');
+   const existing=await db.query<{id:string}>(
+     'SELECT id FROM md_flow_definitions WHERE tenant_id=$1 AND api_name=$2 AND archived=false ORDER BY version DESC LIMIT 1',
+     [actor.tenant_id,flowApi]);
+   if(!existing.rows[0])throw Error('Flow does not exist. Create it in Flow Builder first.');
    const buffer=parse(req);
    if(buffer.length>5_000_000)throw Error('Flow workbook exceeds 5 MB');
    const tables=readLoaderWorkbook(buffer);
    if(tables.length!==5)throw Error('Flow Excel workbook requires 5 worksheets');
+   if(tables[0]?.name!=='Manifest'||tables[0].rows[0]?.['Flow API']!==flowApi)
+     throw Error('Workbook belongs to another flow');
    res.set('Cache-Control','private, no-store');
    res.json({tables});
  }));

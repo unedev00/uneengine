@@ -7,7 +7,7 @@ import '../SharedBuilderFrame/adaptiveBuilder.css';
 import { uniqueLibraryComponents, libraryComponentLabel } from '../../components/Registry/componentLibraryDiscovery';
 import { FlowPropertiesResizeHandle, useFlowPropertiesWidth } from './FlowPropertiesResizeHandle';
 import { layoutFlowGraph } from './flowGraphLayout';
-import {downloadFlowExcel, readFlowExcel, previewFlowExcel, type FlowImportPreview} from './flowExcelWorkbook';
+import {downloadFlowExcel, readFlowExcel, previewFlowExcel, ensureFlowUnchanged, type FlowImportPreview} from './flowExcelWorkbook';
 import { completeFlowEndPaths, reconcileDecisionOutcomePaths } from './flowInsertElement.mjs';
 import {canBypassFlowElement,duplicateFlowGraphElement,flowGraphDiagnostics,retargetFlowGraphConnector} from './flowGraphOperations.mjs';
 import { formulaFunctions, formulaOperators } from './flowEditorCatalog';
@@ -2060,15 +2060,16 @@ export default function FlowBuilder({
               </div>)
             : <p className="empty-list">No saved versions yet.</p>}</div>
           <div className="toolbox-group"><h3>Excel Node Upsert (Existing Flow Only)</h3>
-<button className="btn" type="button" disabled={!flow.id||isDirty} onClick={()=>{void downloadFlowExcel(flow).catch(error=>setExcelError(error instanceof Error?error.message:'Download failed'));}}>Download Excel (.xlsx)</button>
+<button className="btn" type="button" disabled={!flow.apiName||isDirty} onClick={()=>{void (async()=>{try{await ensureFlowUnchanged(flow);await downloadFlowExcel(flow);}catch(error){setExcelError(error instanceof Error?error.message:'Download failed');}})();}}>Download Excel (.xlsx)</button>
 <label className="form-label">Upload edited Excel (.xlsx)<input className="form-control" type="file"
- accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" disabled={!flow.id||isDirty||!capabilityCatalog||excelValidating}
+ accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" disabled={!flow.apiName||isDirty||!capabilityCatalog||excelValidating}
  onChange={event=>{
  const file=event.target.files?.[0];event.target.value='';setExcelPreview(null);setExcelError('');setExcelSkipErrors(false);
  if(file)void (async()=>{
    setExcelValidating(true);
    try{
-    const tables=await readFlowExcel(file);
+    await ensureFlowUnchanged(flow);
+    const tables=await readFlowExcel(file,flow.apiName);
     const allowed=flowElementMetadata.filter(element=>element.builderFlowTypes.includes(flow.flowType))
        .map(element=>element.type);
     const preview=previewFlowExcel(tables,flow,allowed);
@@ -2102,7 +2103,13 @@ export default function FlowBuilder({
 <button type="button" className="btn" disabled={isDirty||excelValidating||
  (excelPreview.errors.length>0&&(!excelSkipErrors||excelPreview.errors.some(error=>/^(Graph:|Server validation:)/.test(error))))}
  onClick={()=>{if(excelPreview.errors.some(error=>/^(Graph:|Server validation:)/.test(error)))return;
- onFlowChange(excelPreview.draft);setExcelPreview(null);onNotify('Excel changes applied to draft. Validate and Save.');}}>Apply to Draft</button>
+ setExcelValidating(true);
+ void ensureFlowUnchanged(flow).then(()=>{
+   onFlowChange(excelPreview.draft);setExcelPreview(null);
+   onNotify('Excel changes applied to draft. Validate and Save.');
+ }).catch(error=>setExcelError(error instanceof Error?error.message:'Flow changed on server.'))
+ .finally(()=>setExcelValidating(false));
+ }}>Apply to Draft</button>
 </div>}</div>
 <div className="toolbox-group"><h3>Flow Portability</h3><button className="btn" onClick={onExportFlow}>Export Flow JSON</button><label className="form-label">Import Flow JSON<input className="form-control" type="file" accept=".json,application/json" onChange={(event) => {
             const file = event.target.files?.[0];
