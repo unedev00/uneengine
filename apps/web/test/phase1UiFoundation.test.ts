@@ -142,3 +142,11 @@ test('Permission Set Group advanced muting editors are six independent collapsib
  assert.match(group,/ObjectPermissionPhoneList/);
  assert.match(group,/selectedGroup\.mutedFieldPermissions/);
 });
+
+test('Business calendar load failures are safe and can be retried without saving defaults',()=>{
+ const calendar=read('../src/core/platform/BusinessCalendarSettings/BusinessCalendarSettings.tsx');
+ assert.match(calendar,/businessCalendarFailure\(cause,'Unable to load business calendar'\)/);
+ assert.match(calendar,/!loading&&!loaded&&<button type="button" className="btn" onClick=\{\(\)=>setRevision\(value=>value\+1\)\}/);
+ assert.match(calendar,/Retry loading business calendar/);
+ assert.match(calendar,/!loading && loaded && !configured/);
+});
