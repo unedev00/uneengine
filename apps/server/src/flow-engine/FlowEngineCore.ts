@@ -254,8 +254,8 @@ export class FlowRuntime {
     await this.db.transaction(async client=>{
       await client.query('SELECT pg_advisory_xact_lock(hashtext($1))',
         [tenantId+':flow:'+apiName]);
-      const latest=await client.query<{id:string;version:number;active:boolean;flow_type:string}>(`
-        SELECT id,version,active,flow_type FROM md_flow_definitions
+      const latest=await client.query<{id:string;version:number;active:boolean}>(`
+        SELECT id,version,active FROM md_flow_definitions
         WHERE tenant_id=$1 AND api_name=$2 AND archived=false ORDER BY version DESC LIMIT 1 FOR UPDATE
       `,[tenantId,apiName]);
       const last=latest.rows[0];
@@ -268,7 +268,7 @@ export class FlowRuntime {
         if(!doc)throw Error('Legacy Flow must first be saved through Flow Builder before Excel upsert');
         const actual=this.excelGraphFingerprint({
           ...doc,apiName,versionNumber:last.version,
-          flowType:last.flow_type,status:last.active?'Active':'Draft'
+          flowType:doc.flowType,status:last.active?'Active':'Draft'
         });
         if(actual!==excelExpectedSnapshot)
           throw Error('Flow changed after Excel download; reload and download a fresh workbook');
