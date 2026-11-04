@@ -467,7 +467,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
        style={compactDesign?{'--smart-control-width':controlWidth(property)+'px',
          '--smart-caption-width':(property.designCaptionWidth??0)+'px',
          '--smart-control-height':(property.designHeight??26)+'px',
-         ...(slotPlacement?{gridColumnStart:slotPlacement.order}: {})} as CSSProperties:undefined}
+         ...(slotPlacement?{'--smart-slot-column':slotPlacement.order}: {})} as CSSProperties:undefined}
        title={!enabled?'Applies to: '+property.components.map(api=>api.replace(/^smart_/,'' )).join(', '):title}>
        <span className="smart-label">{shortLabel}</span>{editor}</div>;
  };
