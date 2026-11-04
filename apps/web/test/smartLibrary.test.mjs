@@ -61,12 +61,54 @@ test('Insert Ribbon exposes visible Smart components without requiring a selecte
  assert.match(view,/onInsert=\{addPaletteComponent\}/);
  assert.match(view,/setSelectedId\(id\)/);
  assert.match(insert,/onClick=\{\(\)=>onInsert\(item.type\)\}/);
- assert.match(insert,/filterSmartInsertItems\(items,scope,term\)/);
- assert.match(insert,/aria-label="Search Insert components"/);
+ assert.match(insert,/const visible=items\.filter\(isSmartInsertItem\)/);
+ assert.match(insert,/\^Custom:smart_/);
+ assert.doesNotMatch(insert,/Search Insert components|Find a component|Component sources|smart-insert-browser|smart-insert-categories|<select/);
  assert.doesNotMatch(insert,/Open full library/);
  assert.match(insert,/No Smart components are installed for this tenant/);
+ assert.match(css,/display:flex!important;flex-direction:row!important/);
+ assert.doesNotMatch(css,/smart-insert-browser|smart-insert-categories|grid-template-columns:170px/);
+ assert.match(css,/grid-template-rows:repeat\(2,55px\)/);
  assert.match(read('../src/core/builders/PageBuilder/PageBuilderRibbonLayout.css'),/grid-template-rows: repeat\(2,55px\)/);
  assert.match(read('../src/core/builders/PageBuilder/PageBuilderRibbonLayout.css'),/> \.smart-insert-ribbon/);
+});
+
+test('Layout omits only properties with an exact Design 2 binding',()=>{
+ const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
+ const matrix=read('../../server/src/system-support/migrations/20271104-zz-design2-exact-approved-matrix.sql');
+ const parity=read('../../server/src/system-support/migrations/20271106-design2-functional-control-parity.sql');
+ const imageParity=read('../../server/src/system-support/migrations/20271108-design2-four-control-parity.sql');
+ const rowZero=read('../../server/src/system-support/migrations/20271106-design2-row0-xy-position.sql');
+ const inventory=read('../../server/src/system-support/migrations/20270124-smart-component-library.sql');
+ const registered=['smart_button','smart_toggle','smart_lookup','smart_tabs','smart_text',
+   'smart_textbox','smart_card_grid','smart_image','smart_calendar','smart_navigation',
+   'smart_container','smart_cart','smart_icon','smart_table'];
+ assert.ok(ribbon.includes('const alreadyInDesign2=(p:UneRibbonProperty)=>'));
+ assert.ok(ribbon.includes('rule.componentApi===api&&rule.area===matchingSlot.area'));
+ assert.ok(ribbon.includes('rule.slotKey===matchingSlot.slotKey&&rule.propertyKey===p.id'));
+ assert.ok(ribbon.includes("if(p.id==='x'||p.id==='y')return p.components.includes(api)"));
+ assert.ok(ribbon.includes('!alreadyInDesign2(p)'));
+ assert.ok(ribbon.includes("imagePlacement:{area:'Image',slotKey:'placement'}"));
+ assert.ok(ribbon.includes("imageFill:{area:'Image',slotKey:'imageFill'}"));
+ const start=ribbon.indexOf('const design2LayoutSlots:');
+ const end=ribbon.indexOf('const displayProperties=',start);
+ assert.ok(start>=0&&end>start);
+ const excluded=ribbon.slice(start,end);
+ for(const unique of ['imageBorderColor','iconFillColor','imageHeight','headerBoxHeight'])
+  assert.ok(!excluded.includes(unique),'Do not remove unique Layout field '+unique);
+ for(const api of registered){
+  for(const size of ['width','height'])
+   assert.ok((matrix+'\n'+parity).includes("('"+api+"','Body','"+size+"','"+size+"')"),
+     api+' must provide Design 2 '+size+' before Layout hides it');
+  assert.ok(rowZero.includes("('"+api+"')"),api+' must support Design 2 X/Y');
+ }
+ for(const api of ['smart_image','smart_card_grid','smart_cart'])
+  for(const [slot,key] of [['placement','imagePlacement'],['imageFill','imageFill']])
+   assert.ok(matrix.includes("('"+api+"','Image','"+slot+"','"+key+"')"),
+     api+' must provide Design 2 '+key);
+ assert.ok(imageParity.includes("('smart_navigation','Image','imageFill','imageFill')"));
+ assert.ok(inventory.includes("('imageBorderColor','Image Border'"));
+ assert.ok(inventory.includes("('smart_image','imageBorderColor',true"));
 });
 
 test('unrequested Row, Column and Card layout tiles are hidden without breaking existing pages',()=>{
@@ -1213,12 +1255,13 @@ test('collection-driven Smart Card Grid renders authorised record title and othe
  assert.doesNotMatch(html,/>drinks<\/span>/,'Category ID must never replace the product title');
 });
 
-test('Smart Textbox is discoverable by exact user-facing name and compact search',()=>{
+test('Smart Textbox stays directly visible in the Insert gallery without a search control',()=>{
  const view=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
  const insert=read('../src/core/builders/PageBuilder/SmartInsertRibbon.tsx');
  assert.match(view,/component\.apiName==='smart_textbox'\?'Smart Textbox'/);
- assert.match(insert,/compactQuery=query\.replace/);
- assert.match(insert,/label\.replace/);
+ assert.match(insert,/const visible=items\.filter\(isSmartInsertItem\)/);
+ assert.match(insert,/<span className="smart-insert-tile-label">\{item\.label\}<\/span>/);
+ assert.doesNotMatch(insert,/compactQuery|Search Insert components|<select/);
 });
 
 test('Smart Textbox renders one left caption and one right field value using remarks styling',async()=>{
