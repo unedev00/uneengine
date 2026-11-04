@@ -197,6 +197,8 @@ try{
  if(process.env.METADRIVE_BROWSER_TARGET==='design2'){
   const {runDesign2BrowserCheck}=await import('./design2-browser-check.mjs');
   await runDesign2BrowserCheck({page,origin,db,tenantId,token:tokens.accessToken});
+  const {runDataSourceIconCatalogCheck}=await import('./data-source-icon-catalog-browser-check.mjs');
+  await runDataSourceIconCatalogCheck({page,origin,db,tenantId,token:tokens.accessToken});
   const {runPageCreateBrowserCheck}=await import('./page-create-browser-check.mjs');
   await runPageCreateBrowserCheck({page,origin,db,tenantId,token:tokens.accessToken});
  }else if(process.env.METADRIVE_BROWSER_TARGET==='object-lifecycle'){
