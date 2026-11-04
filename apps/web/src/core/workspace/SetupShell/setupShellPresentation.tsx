@@ -309,7 +309,7 @@ export function renderSetupShell(ctx: any) {
            <React.Suspense fallback={<section className="setup-card">Loading Universal Data Loader…</section>}>
             <UniversalDataLoaderWorkspace apiRequest={apiRequest}
              objects={objects.filter((item:ObjectMetadata)=>item.apiName!=='User')}
-             onMetadataChanged={()=>{void window.location.reload();}}/>
+             onMetadataChanged={()=>{}}/>
            </React.Suspense>}
           {route.kind === 'setup' && workspace === 'object-manager' && (
             !advancedMetadataLoaded ? <section className="setup-card" role="status">Loading live object definitions…</section> :
