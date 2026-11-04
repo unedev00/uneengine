@@ -1534,7 +1534,7 @@ export function createSystemServer(db:SqlPersistence) {
   app.get('/api/metadata/builder-ribbon',route(async(req,res)=>{
     const actor=req.actor!;
     await rbac.require(actor.tenant_id,actor.user_id,'PageDefinition','read');
-    const [listed,registered,design2Slots]=await Promise.all([
+    const [listed,registered,design2Slots,design2SlotRules]=await Promise.all([
       db.query<{
         id:string;label:string;tab:string;group_name:string;kind:string;sort_order:number;
         default_value:unknown;choices:unknown;component_api:string|null;
@@ -1562,7 +1562,10 @@ export function createSystemServer(db:SqlPersistence) {
         order_no:number;width_px:number;height_px:number;property_key:string|null;
         fallback_key:string}>(`SELECT area,area_order,slot_key,row_no,order_no,width_px,height_px,
           property_key,fallback_key FROM md_builder_design2_slots
-        ORDER BY area_order,row_no,order_no`)
+        ORDER BY area_order,row_no,order_no`),
+      db.query<{component_api:string;area:string;slot_key:string;property_key:string}>(
+        `SELECT component_api,area,slot_key,property_key
+         FROM md_builder_design2_slot_rules ORDER BY component_api,area,slot_key`)
     ]);
     const properties=new Map<string,Record<string,unknown>>();
     for(const row of listed.rows){
@@ -1604,6 +1607,9 @@ export function createSystemServer(db:SqlPersistence) {
         area:slot.area,areaOrder:slot.area_order,slotKey:slot.slot_key,
         row:slot.row_no,order:slot.order_no,width:slot.width_px,height:slot.height_px,
         propertyKey:slot.property_key,fallbackKey:slot.fallback_key
+      })),design2SlotRules:design2SlotRules.rows.map(rule=>({
+        componentApi:rule.component_api,area:rule.area,slotKey:rule.slot_key,
+        propertyKey:rule.property_key
       }))});
   }));
   app.get('/api/component-library',route(async(req,res)=>{
