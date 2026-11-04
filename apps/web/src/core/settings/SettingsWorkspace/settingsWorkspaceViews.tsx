@@ -445,7 +445,7 @@ function CompanySettings({ canManage, section = 'general' }: { canManage: boolea
   const saveCompanyAllowed=companyDirty&&(section!=='branding'||logoDirty);
   const companyFailureMessage=(failure:unknown)=>{
     const detail=failure instanceof Error?failure.message:String(failure);
-    return /non-JSON|SQL service unavailable|\\bHTTP 50[0234]\\b|API \\//i.test(detail)
+    return /non-JSON|SQL service unavailable|HTTP 50[0234]|API /i.test(detail)
       ?'Company settings are temporarily unavailable. Please retry.':detail;
   };
   const selectCompanyLogo=async(file?:File)=>{
