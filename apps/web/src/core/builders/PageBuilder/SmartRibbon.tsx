@@ -205,11 +205,17 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
        rule.componentApi===api&&rule.area===slot.area&&rule.slotKey===slot.slotKey);
      // In specified areas ONLY the explicit Yes cells may be enabled.
      // A missing Yes rule leaves an inert glyph occupying the SAME R/C position.
+     const imageApi=['smart_card_grid','smart_image','smart_cart'].includes(api);
      const migratedBodyKey=slot.area==='Body'&&api==='smart_tabs'&&
        (slot.slotKey==='width'||slot.slotKey==='height')
          ?(slot.slotKey==='width'?'tabWidth':'tabHeight'):
-       slot.area==='Body'&&slot.slotKey==='placement'&&
-         ['smart_card_grid','smart_image','smart_cart'].includes(api)?'imagePlacement':null;
+       slot.area==='Body'&&slot.slotKey==='placement'&&imageApi?'imagePlacement':
+       slot.area==='Image'&&imageApi&&slot.slotKey==='height'?'imageHeight':
+       slot.area==='Image'&&imageApi&&slot.slotKey==='placement'?'imagePlacement':
+       slot.area==='Image'&&['smart_card_grid','smart_image','smart_cart','smart_navigation'].includes(api)&&
+         slot.slotKey==='imageFill'?'imageFill':
+       slot.area==='Header'&&imageApi&&slot.slotKey==='height'?'headerBoxHeight':
+       slot.area==='Header Supporting'&&api==='smart_cart'&&slot.slotKey==='height'?'supportingBoxHeight':null;
      const propertyKey=migratedBodyKey??(approvedMatrixAreas.has(slot.area)
        ?approved?.propertyKey:slot.propertyKey);
      const assigned=propertyKey?definitions.find(p=>p.id===propertyKey):undefined;
