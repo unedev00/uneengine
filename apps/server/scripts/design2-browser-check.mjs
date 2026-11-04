@@ -670,6 +670,20 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  assert.equal(fourProps('four-toggle')?.shapeId,'shape:oval');
  console.info('Four Design 2 icon controls: enabled, edited, visibly applied and saved in SQL');
 
+ // Exercise the remaining already seeded types under the same geometry test.
+ for(const [id,required] of [
+  ['four-calendar',['selectedDate']],['four-grid',['textSource']],
+  ['four-nav',[]],['four-toggle',['textSource']]
+ ]){
+  const component=page.locator('[data-component-id="'+id+'"]').first();
+  await component.click({position:{x:10,y:10}});
+  if(!required.length){
+   assert.equal(await component.locator('.canvas-data-icon-button').count(),0);
+   continue;
+  }
+  const keys=await auditBindings(id);
+  for(const key of required)assert.ok(keys.includes(key),id+' missing '+key);
+ }
  // Audit every other Smart component family in this authenticated SQL Builder.
  // Fields without visible anchors must never generate unpositioned icons.
  const bindingsPageName='browserallsmartbindings';
