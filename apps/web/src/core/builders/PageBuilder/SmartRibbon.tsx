@@ -266,7 +266,8 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    .filter(p=>p.group===group&&((p.designRow??2)>=1&&(p.designRow??2)<=3?p.designRow??2:2)===row)
    .sort((a,b)=>(a.designOrder??999)-(b.designOrder??999));
  // Keep the metadata Data rows intact; never merge row three into row two.
- const dataSectionRow=(group:string,row:number)=>sectionRow(group,row);
+ const dataSectionRow=(group:string,row:number)=>tab==='Data'&&group!=='Source'&&row===2
+   ?[...sectionRow(group,2),...sectionRow(group,3)]:sectionRow(group,row);
  const isDataFormula=(p:UneRibbonProperty)=>p.group!=='Source'&&
    (p.kindOverrides?.[api]??p.kind)==='expression';
  // The same visible ƒx editor can edit a display binding or the source filter.
@@ -297,20 +298,11 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    onChange({...properties,[activeDataKey]:next,
      ...(activeDataProperty.id==='imageSource'?{imageSourceMode:'field'}:{})});
  };
- // Equal-width metadata tracks within Data sections; the compact matrix
- // uses three Values and four Cart controls per row.
- const dataChipWidth=(group:string)=>Math.max(120,...displayProperties
-   .filter(p=>p.group===group&&p.id!=='columnVisibility')
-   .map(p=>p.designWidth??0));
+ // Geometry only. Keep every property, icon, dropdown and persisted value;
+ // fit their existing three rows without reserving space for empty columns.
  const controlWidth=(p:UneRibbonProperty)=>{
    // Design 2 slot dimensions are exact SQL instructions, never normalized to 64px.
    if(tab==='Design2'&&p.designWidth!==undefined)return p.designWidth;
-   if(tab==='Data'){
-     if(p.group==='Source'&&/^objectApiName[23]?$/.test(p.id))
-       return Math.max(165,p.designWidth??0);
-     if(['Values','Cart','Card Grid'].includes(p.group))
-       return dataChipWidth(p.group);
-   }
    // Reserve the exact SQL 30px input track; a separate 45px caption is added.
    if(p.id==='tabIndex')return p.designWidth??30;
    // Shape's 94px SQL width is exact, unlike other compact choice tracks.
@@ -336,13 +328,11 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  // spacing used by the other tabs and the three-row Source selectors.
  // SQL supplies each control width, including Column Visibility's native dropdown.
  const sectionWidth=(group:string)=>Math.ceil(Math.max(
-   Math.max(0,...[1,2,3].map(row=>{
+   Math.max(0,...(tab==='Data'&&group!=='Source'?[1,2]:[1,2,3]).map(row=>{
      const properties=dataSectionRow(group,row);
-     const extra=tab==='Data'&&group==='Cart'&&row===3?1:0;
      return properties.reduce((sum,p)=>sum+controlWidth(p)+
-       (tab==='Data'&&(isDataFormula(p)||group==='Source')?0:(p.designCaptionWidth??0)),0)
-       +(extra?dataChipWidth('Cart'):0)
-       +Math.max(0,properties.length+extra-1)*(tab==='Data'?2:4);
+       (tab==='Data'&&isDataFormula(p)?0:(p.designCaptionWidth??0)),0)
+       +Math.max(0,properties.length-1)*(tab==='Data'&&group!=='Source'?2:4);
    }))+15,
    group.length*5.5+16
  ));
@@ -613,8 +603,15 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
           {sectionRow(activeDesign2Area,row).map(controls)}</div>)}
       </div>
     </div>
-    <span className="smart-ribbon-caption">{activeDesign2Area}</span>
-  </section>:tab==='Data'?<div className="smart-data-workspace">
+  </section>:tab==='Data'?<>
+    {sections.filter(group=>group==='Source').map(section=><section className="smart-ribbon-group" key={section}
+      data-design-three-row="true" data-smart-tab={tab} aria-label={section}
+      style={{'--smart-section-width':sectionWidth(section)+'px'} as CSSProperties}>
+      <div className="smart-ribbon-items">{[1,2,3].map(row=><div className="smart-ribbon-row"
+        data-design-row={row} key={row}>{sectionRow(section,row).map(controls)}</div>)}</div>
+      <span className="smart-ribbon-caption">{section}</span>
+    </section>)}
+    <div className="smart-data-workspace">
       <div className="smart-data-formula-bar" aria-label="Data expression or record filter formula">
         <span className="smart-data-fx-prefix" aria-hidden="true">ƒx</span>
         <button type="button" className="smart-data-filter-button"
@@ -652,31 +649,25 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
             <input type="text" disabled aria-label="Formula (select a field first)"
               placeholder="Select a field's Fx button to edit its formula"/>}
         </div>
-        
-      </div>
-            <div className="smart-data-sections">
-        {sections.map(section=><section className="smart-ribbon-group"
-          key={section} data-smart-tab={tab} aria-label={section}
-          style={{'--smart-section-width':sectionWidth(section)+'px',
-            '--smart-data-chip-width':dataChipWidth(section)+'px'} as CSSProperties}>
-          <div className="smart-ribbon-items">{[1,2,3].map(row=><div className="smart-ribbon-row"
-            data-design-row={row} key={row}>
-            {section==='Cart'&&row===3&&<span className="smart-data-summary-slot">
-              <input className="smart-data-summary-name"
+        <input className="smart-data-summary-name"
           aria-label={(activeSummaryLabel?.slot??'Cart summary')+' cart label'}
           title={activeSummaryLabel?'Edit cart summary heading':'Select a cart summary field'}
           maxLength={64} spellCheck={false} disabled={!activeSummaryLabel||!activeDataEnabled}
           value={activeSummaryLabel?fallback(properties[activeSummaryLabel.key]):''}
           placeholder={activeSummaryLabel?.slot??'Cart summary'}
           onChange={event=>{if(activeSummaryLabel)update(activeSummaryLabel.key,event.target.value);}}/>
-            </span>}
-            {dataSectionRow(section,row).map(controls)}
-          </div>)}</div>
+      </div>
+      <div className="smart-data-sections">
+        {sections.filter(group=>group!=='Source').map(section=><section className="smart-ribbon-group"
+          key={section} data-smart-tab={tab} aria-label={section}
+          style={{'--smart-section-width':sectionWidth(section)+'px'} as CSSProperties}>
+          <div className="smart-ribbon-items">{[1,2].map(row=><div className="smart-ribbon-row"
+            data-design-row={row} key={row}>{dataSectionRow(section,row).map(controls)}</div>)}</div>
           <span className="smart-ribbon-caption">{section}</span>
         </section>)}
       </div>
     </div>
-  :sections.map(section=><section className="smart-ribbon-group" key={section}
+  </>:sections.map(section=><section className="smart-ribbon-group" key={section}
      data-design-three-row={compactDesign?'true':undefined} data-smart-tab={tab} aria-label={section}
      style={compactDesign?{'--smart-section-width':sectionWidth(section)+'px'} as CSSProperties:undefined}>
    <div className="smart-ribbon-items">
