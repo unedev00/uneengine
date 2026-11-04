@@ -1,6 +1,6 @@
 import ResponsiveDataList from '../../records/ResponsiveDataList/ResponsiveDataList';
 import { Pencil, Search } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import FlowTriggerExplorer from '../FlowTriggerExplorer/FlowTriggerExplorer';
 import type { FlowDefinitionMetadata, ObjectMetadata } from '../../metadata/Definitions/metadata';
 
@@ -9,15 +9,19 @@ type ScheduledFlowsProps = {
   objects: ObjectMetadata[];
   loading: boolean;
   onEdit: (apiName: string) => void;
+  initialView?: 'scheduled'|'triggers';
+  onViewChange?: (view:'scheduled'|'triggers')=>void;
 };
 
 function configText(value: unknown): string {
   return typeof value === 'string' || typeof value === 'number' ? String(value) : '';
 }
 
-export default function ScheduledFlows({ flows, objects, loading, onEdit }: ScheduledFlowsProps) {
+export default function ScheduledFlows({ flows, objects, loading, onEdit, initialView='scheduled', onViewChange }: ScheduledFlowsProps) {
   const [search, setSearch] = useState('');
-  const [view, setView] = useState<'scheduled' | 'triggers'>('scheduled');
+  const [view, setView] = useState<'scheduled' | 'triggers'>(initialView);
+  useEffect(()=>setView(initialView),[initialView]);
+  const selectView=(next:'scheduled'|'triggers')=>{setView(next);onViewChange?.(next);};
   const scheduledFlows = useMemo(() => {
     const query = search.trim().toLocaleLowerCase();
     return flows
@@ -35,8 +39,8 @@ export default function ScheduledFlows({ flows, objects, loading, onEdit }: Sche
         </div>
       </div>
       <div className="flow-config-row" role="group" aria-label="Automation explorer views" style={{ marginBottom: 12 }}>
-        <button type="button" aria-current={view==='scheduled'?'page':undefined} className={view === 'scheduled' ? 'btn btn-brand' : 'btn'} onClick={() => setView('scheduled')}>Scheduled Flows</button>
-        <button type="button" aria-current={view==='triggers'?'page':undefined} className={view === 'triggers' ? 'btn btn-brand' : 'btn btn-link'} onClick={() => setView('triggers')}>Flow Trigger Explorer</button>
+        <button type="button" aria-current={view==='scheduled'?'page':undefined} className={view === 'scheduled' ? 'btn btn-brand' : 'btn'} onClick={() => selectView('scheduled')}>Scheduled Flows</button>
+        <button type="button" aria-current={view==='triggers'?'page':undefined} className={view === 'triggers' ? 'btn btn-brand' : 'btn btn-link'} onClick={() => selectView('triggers')}>Flow Trigger Explorer</button>
       </div>
       {view === 'triggers' ? <FlowTriggerExplorer flows={flows} objects={objects} loading={loading} onEdit={onEdit} /> : <section className="surface scheduled-flows-surface">
         <div className="list-view-header">
