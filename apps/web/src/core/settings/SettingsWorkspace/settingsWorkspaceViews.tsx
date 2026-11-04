@@ -440,6 +440,14 @@ function CompanySettings({ canManage, section = 'general' }: { canManage: boolea
   const [companyError,setCompanyError]=useState('');
   const [companyNotice,setCompanyNotice]=useState('');
   const [logoReading,setLogoReading]=useState(false);
+  const companyDirty=companyBeforeEdit!==null&&JSON.stringify(company)!==JSON.stringify(companyBeforeEdit);
+  const logoDirty=companyBeforeEdit!==null&&company.logoUrl!==companyBeforeEdit.logoUrl;
+  const saveCompanyAllowed=companyDirty&&(section!=='branding'||logoDirty);
+  const companyFailureMessage=(failure:unknown)=>{
+    const detail=failure instanceof Error?failure.message:String(failure);
+    return /non-JSON|SQL service unavailable|\\bHTTP 50[0234]\\b|API \\//i.test(detail)
+      ?'Company settings are temporarily unavailable. Please retry.':detail;
+  };
   const selectCompanyLogo=async(file?:File)=>{
     if(!file)return;
     if(!['image/png','image/jpeg','image/webp'].includes(file.type)){setCompanyError('Choose a PNG, JPG or WebP image.');return;}
@@ -451,15 +459,19 @@ function CompanySettings({ canManage, section = 'general' }: { canManage: boolea
     }catch(error){setCompanyError(error instanceof Error?error.message:String(error));}
     finally{setLogoReading(false)}
   };
-  useEffect(()=>{let active=true;void apiRequest<{profile:CompanyProfile|null}>('/tenant/company-profile')
-   .then(value=>{if(active)setCompany({...blankCompanyProfile,...(value.profile??{})});})
-   .catch(error=>{if(active)setCompanyError(error instanceof Error?error.message:String(error));})
-   .finally(()=>{if(active)setCompanyLoading(false)});return()=>{active=false}},[]);
-  const saveCompany=async()=>{if(!canManage||companySaving||logoReading)return;
+  const reloadCompany=async()=>{
+    setCompanyLoading(true);setCompanyError('');
+    try{const value=await apiRequest<{profile:CompanyProfile|null}>('/tenant/company-profile');
+      setCompany({...blankCompanyProfile,...(value.profile??{})});}
+    catch(error){setCompanyError(companyFailureMessage(error));}
+    finally{setCompanyLoading(false);}
+  };
+  useEffect(()=>{void reloadCompany();},[]);
+  const saveCompany=async()=>{if(!canManage||companySaving||logoReading||!saveCompanyAllowed)return;
     setCompanySaving(true);setCompanyError('');setCompanyNotice('');
     try{const saved=await apiRequest<{profile:CompanyProfile}>('/tenant/company-profile',{method:'PUT',body:JSON.stringify(company)});
-      setCompany(saved.profile);setCompanyEditing(false);setCompanyBeforeEdit(null);setCompanyNotice('Company details saved.');}
-    catch(error){setCompanyError(error instanceof Error?error.message:String(error));}
+      setCompany(saved.profile);setCompanyEditing(false);setCompanyBeforeEdit(null);setCompanyNotice(section==='branding'?'Company logo saved.':'Company details saved.');}
+    catch(error){setCompanyError(companyFailureMessage(error));}
     finally{setCompanySaving(false)}
   };
   const [draft, setDraft] = useState<CurrencySettingsMetadata>({
@@ -544,6 +556,14 @@ function CompanySettings({ canManage, section = 'general' }: { canManage: boolea
       setError('Standard VAT rate must be between 0 and 100 percent.');
       return;
     }
+
+    const currencyCodes=draft.currencies.map(currency=>currency.currencyIsoCode.trim().toUpperCase());
+    if(currencyCodes.some(code=>!/^[A-Z]{3}$/.test(code))||new Set(currencyCodes).size!==currencyCodes.length){
+      setError('Use a unique three-letter ISO currency code for each active currency.');return;
+    }
+    if(draft.currencies.some(currency=>!Number.isFinite(currency.conversionRate)||currency.conversionRate<=0)){
+      setError('Every conversion rate must be greater than zero.');return;
+    }
     const hasCorporateCurrency = draft.currencies.some((currency) => currency.currencyIsoCode === normalizedCorporateCode);
     const settings: CurrencySettingsMetadata = {
       corporateCurrency: normalizedCorporateCode,
@@ -585,8 +605,9 @@ function CompanySettings({ canManage, section = 'general' }: { canManage: boolea
     <PageHeading eyebrow="Company Settings" title="Company Settings"
       description="Manage your organisation settings, base currency, VAT and exchange rates in one workspace." />
     <section className="surface permission-section company-profile-section" aria-label={sectionTitle}>
-      <div className="section-toolbar"><div><h2>{sectionTitle}</h2><p>Organisation, contact and regional information.</p></div>
+      <div className="section-toolbar"><div><h2>{sectionTitle}</h2><p>{section==='branding'?'Upload a PNG, JPG or WebP logo (up to 128 KB). Preview the current logo below.':'Organisation, contact and regional information.'}</p></div>
       {canManage&&!companyEditing&&!companyLoading&&<button type="button" className="btn" onClick={()=>{setCompanyBeforeEdit({...company});setCompanyEditing(true);}}>{section === 'branding' ? 'Edit logo' : section === 'contacts' ? 'Edit contacts' : 'Edit details'}</button>}</div>
+      {companyError&&!companyEditing&&<button type="button" className="btn" disabled={companyLoading} onClick={()=>void reloadCompany()}>Retry loading company details</button>}
       {companyLoading?<p>Loading company details…</p>:<><div className="company-profile-logo">{(company.logoUrl?.startsWith("data:image/")||company.logoUrl?.startsWith("https://"))?<img src={company.logoUrl} alt="Company logo" />:<span aria-label="No logo configured">No logo</span>}</div><div className="company-profile-grid">{companyEditing&&<div className="company-profile-field" data-company-field="logoUrl"><label htmlFor="company-logo-upload">Company logo</label><input id="company-logo-upload" type="file" accept="image/png,image/jpeg,image/webp" disabled={companySaving||logoReading} onChange={event=>{void selectCompanyLogo(event.target.files?.[0]);event.target.value='';}}/><small>PNG, JPG or WebP · maximum 128 KB</small>{company.logoUrl&&<button className="btn" type="button" disabled={companySaving||logoReading} onClick={()=>{ if (!confirmDestructiveAction('Remove','company logo','Save company settings to apply the removal.')) return; setCompany(previous=>({...previous,logoUrl:''})); }}>Remove logo</button>}</div>}
       {companyFields.map(field=><div className="company-profile-field" data-company-field={field.key} key={field.key}><label htmlFor={'company-'+field.key}>{field.label}</label>
         {companyEditing?<input id={'company-'+field.key} className="form-control" value={company[field.key]}
@@ -594,7 +615,7 @@ function CompanySettings({ canManage, section = 'general' }: { canManage: boolea
         :<p>{company[field.key]||'Not provided'}</p>}</div> )}</div></>}
       {companyEditing&&<div className="settings-read-first-toolbar">
         <button type="button" className="btn" disabled={companySaving} onClick={()=>{setCompany(companyBeforeEdit??blankCompanyProfile);setCompanyEditing(false);setCompanyBeforeEdit(null);}}>Cancel</button>
-        <button type="button" className="btn btn-brand" disabled={companySaving||logoReading} onClick={()=>void saveCompany()}>{companySaving?'Saving…':'Save details'}</button></div>}
+        <button type="button" className="btn btn-brand" disabled={companySaving||logoReading||!saveCompanyAllowed} onClick={()=>void saveCompany()}>{companySaving?'Saving…':'Save details'}</button></div>}
       {companyError&&<p className="form-error" role="alert">{companyError}</p>}
       {companyNotice&&<p className="form-success" role="status">{companyNotice}</p>}
     </section>
@@ -648,7 +669,7 @@ function CompanySettings({ canManage, section = 'general' }: { canManage: boolea
                         }} />
                     </label></PlatformPageSlot>
                     <PlatformPageSlot slotKey="field-settings-17"><label className="form-label">Conversion Rate
-                      <input className="form-control" type="number" min="0" step="any"
+                      <input className="form-control" type="number" min="0.00000001" step="any"
                         value={currency.currencyIsoCode === draft.corporateCurrency ? 1 : currency.conversionRate}
                         disabled={currency.currencyIsoCode === draft.corporateCurrency}
                         onChange={(event) => {
@@ -672,7 +693,7 @@ function CompanySettings({ canManage, section = 'general' }: { canManage: boolea
                 </div>
               : <SettingsViewRow key={`currency-view-${index}`}
                   label={currency.currencyIsoCode || 'New currency'}
-                  value={`Conversion rate: ${currency.currencyIsoCode === draft.corporateCurrency ? 1 : currency.conversionRate}`}
+                  value={`Conversion rate: ${currency.currencyIsoCode === draft.corporateCurrency ? 1 : currency.conversionRate}${currency.currencyIsoCode !== draft.corporateCurrency && currency.conversionRate === 1 ? " (verify rate)" : ""}`}
                   canEdit={canManage && !editingRow && currency.currencyIsoCode !== draft.corporateCurrency}
                   onEdit={() => beginEdit(`currency-${index}`)} />
           ))}
