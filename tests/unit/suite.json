@@ -154,6 +154,7 @@
     "apps/server/test/system/typed-runtime-contract.test.ts",
     "apps/server/test/system/une-acechatter-app.test.ts",
     "apps/server/test/system/une-app-home-layout-resolution.test.ts",
+    "apps/server/test/system/universal-data-loader.test.ts",
     "apps/server/test/system/user-account-lock-contract.test.ts",
     "apps/server/test/system/whatsapp-communication-status.test.ts",
     "apps/server/test/system/whatsapp-named-credential.test.ts",
