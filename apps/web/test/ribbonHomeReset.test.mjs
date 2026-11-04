@@ -5,7 +5,8 @@ const src=path=>readFileSync(new URL(path,import.meta.url),'utf8');
 
 test('page-level handlers remain intact in topbar and Layout while Smart Insert stays functional',()=>{
  const page=src('../src/core/builders/PageBuilder/pageBuilderView.tsx');
- const marker=page.indexOf('id="page-builder-tab-content"');
+ // Top ribbon tab panel (its id moves to the left Design dock while Design is docked).
+ const marker=page.indexOf('ref={ribbonStripRef}');
  const end=page.indexOf('{visibilityEditorOpen && selected && <PageBuilderVisibilityDialog',marker);
  const body=page.slice(marker,end);
  assert.ok(marker>0&&end>marker);

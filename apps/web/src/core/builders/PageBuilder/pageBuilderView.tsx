@@ -60,6 +60,7 @@ import {
   CalendarDays,
   Check,
   ChevronDown,
+  ChevronUp,
   ChevronLeft,
   ChevronRight,
   CircleHelp,
@@ -116,6 +117,7 @@ import {
   Wifi,
   WifiOff,
   PanelLeft,
+  Pin,
   PanelRight,
   Layers3,
   AlignHorizontalJustifyStart,
@@ -185,6 +187,7 @@ import './PageBuilderEditorPreview.css';
 import './SmartCanvasHandles.css';
 // Single owner for ribbon height, overflow and scrollbar geometry.
 import './PageBuilderRibbonLayout.css';
+import './PageBuilderDesignDock.css';
 import RibbonFieldExpressionInput from './RibbonFieldExpressionInput';
 import {RibbonResponsive} from './PageBuilderRibbonStyle';
 import PageBuilderAdvancedStyle from './PageBuilderAdvancedStyle';
@@ -436,6 +439,22 @@ function PageBuilder({
     try { window.localStorage.setItem('metadrive:page-builder:panel', activePanel === null ? 'collapsed' : 'expanded'); }
     catch { /* Optional browser preference, not page metadata. */ }
   }, [activePanel]);
+  // Trial layout: Excel-style collapsible ribbon and an optional left-docked Design panel.
+  // Browser preferences only (like the panel state above), never page metadata.
+  const [ribbonCollapsed, setRibbonCollapsed] = useState<boolean>(() => {
+    try { return window.localStorage.getItem('metadrive:page-builder:ribbon') === 'collapsed'; }
+    catch { return false; }
+  });
+  const [designDockedLeft, setDesignDockedLeft] = useState<boolean>(() => {
+    try { return window.localStorage.getItem('metadrive:page-builder:design-dock') === 'left'; }
+    catch { return false; }
+  });
+  useEffect(() => {
+    try {
+      window.localStorage.setItem('metadrive:page-builder:ribbon', ribbonCollapsed ? 'collapsed' : 'pinned');
+      window.localStorage.setItem('metadrive:page-builder:design-dock', designDockedLeft ? 'left' : 'ribbon');
+    } catch { /* Optional browser preference, not page metadata. */ }
+  }, [ribbonCollapsed, designDockedLeft]);
   const [pageListObject, setPageListObject] = useState('');
   const [pageListSearch, setPageListSearch] = useState('');
   const [pageListAppTab, setPageListAppTab] = useState('all');
@@ -2993,6 +3012,46 @@ function PageBuilder({
     addComponent(type, paletteInsertRegion ? page.components.length : selectedIndex >= 0 ? selectedIndex + 1 : page.components.length, selectedRegion, undefined, parentId);
     setPaletteInsertRegion(null);
   };
+  // The SmartRibbon is built once. For Design it renders either in the top ribbon
+  // strip or docked in the left Design panel (never both at the same time).
+  const smartRibbonElement = (selected && ribbonCatalog && ((selectedNewUne && (ribbonTab==='Component Data'|| ribbonTab==='Component Design 2'||ribbonTab==='Component Layout')) ||(!selectedNewUne && ribbonTab==='Component Design 2'))) ? (
+              <SmartRibbon
+                tab={ribbonTab==='Component Data'?'Data':ribbonTab==='Component Layout'?'Layout':
+                  ribbonTab==='Component Design 2'?'Design2':'Design'}
+                api={selected.type.startsWith('Custom:')?selected.type.slice(7):selected.type}
+                definitions={ribbonCatalog.properties}
+                design2Slots={ribbonCatalog.design2Slots}
+                design2SlotRules={ribbonCatalog.design2SlotRules}
+                design2Arrange={canvasArrangeProps}
+                properties={selected.properties} objects={objects} pageObjectApiName={page.targetObject}
+                componentId={selected.id} pageComponents={page.components}
+                sharedPropertyIds={ribbonSharedPropertyIds} mixedPropertyIds={ribbonMixedPropertyIds}
+                selectedApis={ribbonSelectedMembers.map(item=>item.type.startsWith('Custom:')?item.type.slice(7):item.type)}
+                onChange={(properties:Record<string,unknown>)=>{
+                  if(ribbonSelectedMembers.length>1){
+                    const tab=ribbonTab==='Component Data'?'Data':ribbonTab==='Component Layout'?'Layout':
+                      ribbonTab==='Component Design 2'?'Design2':'Design';
+                    applyPage({...page,components:updateSharedCanvasProperties(
+                      page.components,selected.id,ribbonSelectedMembers,sharedRibbonDefinitions,tab,properties)});
+                  }else updateComponent(selected.id,{properties});
+                }}
+                componentVisible={selected.visible!==false}
+                onVisibleChange={visible=>{
+                  if(ribbonSelectedMembers.length>1){
+                    const ids=new Set(ribbonSelectedMembers.map(item=>item.id));
+                    applyPage({...page,components:page.components.map(item=>
+                      ids.has(item.id)?{...item,visible}:item)});
+                  }else updateComponent(selected.id,{visible});
+                }}
+                position={selected.position} layoutMode={page.layoutMode}
+                onPositionChange={position=>{
+                  if(ribbonSelectedMembers.length>1)
+                    applyPage({...page,components:updateSharedCanvasPositions(
+                      page.components,selected.id,ribbonSelectedMembers,ribbonCatalog.properties,position)});
+                  else updateComponent(selected.id,{position});
+                }}/>
+  ) : null;
+  const designInPanel = designDockedLeft && ribbonTab==='Component Design 2' && !previewMode && smartRibbonElement!==null;
   return (
     <div className={`builder-page ${editorMode ? "builder-editor-mode" : "builder-list-mode"} ${isPhoneBuilder ? 'builder-phone-read-mode' : ''} ${previewMode ? 'builder-interactive-preview' : ''}`}>
       {editorMode&&selected?.type==='Related List'&&(()=>{
@@ -3265,7 +3324,7 @@ function PageBuilder({
           onOpenDesign={openPageDesignLayout} onReload={onChange}/>:null;
       })()}
       {editorMode && <>
-      <section className={`office-builder-ribbon ${previewMode ? 'is-interactive-preview' : ''}`} aria-label="Page Builder ribbon">
+      <section className={`office-builder-ribbon ${previewMode ? 'is-interactive-preview' : ''} ${ribbonCollapsed ? 'is-ribbon-collapsed' : ''} ${designInPanel ? 'is-design-docked' : ''}`} aria-label="Page Builder ribbon">
         <div className="office-ribbon-topbar">
           <div className="office-ribbon-topbar-back">{homeValue('backIcon')}</div>
           <button type="button" className="office-ribbon-icon-button" aria-label="Edit page properties and versions"
@@ -3313,6 +3372,20 @@ function PageBuilder({
                 </button>;
               })}
             </nav>
+            <div className="office-ribbon-layout-toggles" role="group" aria-label="Ribbon layout">
+              <button type="button" className={'office-ribbon-layout-toggle'+(designDockedLeft?' is-on':'')}
+                aria-pressed={designDockedLeft}
+                title={designDockedLeft?'Show Design in the ribbon':'Show Design in a left panel'}
+                aria-label={designDockedLeft?'Show Design in the ribbon':'Show Design in a left panel'}
+                onClick={()=>setDesignDockedLeft(value=>!value)}><PanelLeft size={16} aria-hidden="true"/></button>
+              <button type="button" className="office-ribbon-layout-toggle"
+                aria-pressed={!ribbonCollapsed}
+                title={ribbonCollapsed?'Pin the ribbon':'Collapse the ribbon'}
+                aria-label={ribbonCollapsed?'Pin the ribbon':'Collapse the ribbon'}
+                onClick={()=>setRibbonCollapsed(value=>!value)}>
+                {ribbonCollapsed?<Pin size={16} aria-hidden="true"/>:<ChevronUp size={16} aria-hidden="true"/>}
+              </button>
+            </div>
 </div>
           <div className="office-ribbon-quick-access" role="group" aria-label="Quick Access Toolbar">
             {quickAccessOrder.map(key=><span key={key} className={'office-ribbon-quick-action office-ribbon-quick-'+key}>
@@ -3320,7 +3393,9 @@ function PageBuilder({
             </span>)}
           </div>
         </div>
-        <div id="page-builder-tab-content" ref={ribbonStripRef}
+        {/* While Design is docked left, the left panel owns the shared #page-builder-tab-content
+            id so every existing Design 2 ribbon style applies there unchanged. */}
+        <div id={designInPanel ? undefined : 'page-builder-tab-content'} ref={ribbonStripRef}
           className="office-ribbon-content" role="tabpanel" aria-hidden={previewMode} aria-label={ribbonTab}
           aria-labelledby={`page-builder-tab-${Math.max(0,ribbonTabsVisible.indexOf(ribbonTab))}`}>
           {ribbonTab==='Preview' && <div className="office-ribbon-group canvas-preview-selector-group" aria-label="Find">
@@ -3493,45 +3568,7 @@ function PageBuilder({
                     ?{...item,properties:{...item.properties,iconId}}:item)});
                 }else updateComponent(selected.id,{properties:{...selected.properties,iconId}});
               }}/>}
-          {selected && ribbonCatalog &&
-            ((selectedNewUne && (ribbonTab==='Component Data'||
-              ribbonTab==='Component Design 2'||ribbonTab==='Component Layout'))
-              ||(!selectedNewUne && ribbonTab==='Component Design 2')) &&
-            <SmartRibbon
-              tab={ribbonTab==='Component Data'?'Data':ribbonTab==='Component Layout'?'Layout':
-                ribbonTab==='Component Design 2'?'Design2':'Design'}
-              api={selected.type.startsWith('Custom:')?selected.type.slice(7):selected.type}
-              definitions={ribbonCatalog.properties}
-              design2Slots={ribbonCatalog.design2Slots}
-              design2SlotRules={ribbonCatalog.design2SlotRules}
-              design2Arrange={canvasArrangeProps}
-              properties={selected.properties} objects={objects} pageObjectApiName={page.targetObject}
-              componentId={selected.id} pageComponents={page.components}
-              sharedPropertyIds={ribbonSharedPropertyIds} mixedPropertyIds={ribbonMixedPropertyIds}
-              selectedApis={ribbonSelectedMembers.map(item=>item.type.startsWith('Custom:')?item.type.slice(7):item.type)}
-              onChange={(properties:Record<string,unknown>)=>{
-                if(ribbonSelectedMembers.length>1){
-                  const tab=ribbonTab==='Component Data'?'Data':ribbonTab==='Component Layout'?'Layout':
-                    ribbonTab==='Component Design 2'?'Design2':'Design';
-                  applyPage({...page,components:updateSharedCanvasProperties(
-                    page.components,selected.id,ribbonSelectedMembers,sharedRibbonDefinitions,tab,properties)});
-                }else updateComponent(selected.id,{properties});
-              }}
-              componentVisible={selected.visible!==false}
-              onVisibleChange={visible=>{
-                if(ribbonSelectedMembers.length>1){
-                  const ids=new Set(ribbonSelectedMembers.map(item=>item.id));
-                  applyPage({...page,components:page.components.map(item=>
-                    ids.has(item.id)?{...item,visible}:item)});
-                }else updateComponent(selected.id,{visible});
-              }}
-              position={selected.position} layoutMode={page.layoutMode}
-              onPositionChange={position=>{
-                if(ribbonSelectedMembers.length>1)
-                  applyPage({...page,components:updateSharedCanvasPositions(
-                    page.components,selected.id,ribbonSelectedMembers,ribbonCatalog.properties,position)});
-                else updateComponent(selected.id,{position});
-              }}/>}
+          {!designInPanel && smartRibbonElement}
         </div>
       </section>
       {visibilityEditorOpen && selected && <PageBuilderVisibilityDialog
@@ -3549,8 +3586,24 @@ function PageBuilder({
       </div>}
 
 
-      <div className={`page-builder-layout canvas-unified-builder reference-builder-layout ${page.layoutMode === 'free-canvas' ? 'modern-canvas-builder' : ''} ${activePanel === null ? 'unified-panel-collapsed' : ''}`}
+      <div className={`page-builder-layout canvas-unified-builder reference-builder-layout ${page.layoutMode === 'free-canvas' ? 'modern-canvas-builder' : ''} ${activePanel === null ? 'unified-panel-collapsed' : ''} ${designInPanel ? 'has-design-dock' : ''}`}
         style={{ '--component-panel-width': `${componentPanelWidth}px` } as React.CSSProperties}>
+        {designInPanel && <aside className="page-builder-design-dock" aria-label="Design panel">
+          <div className="page-builder-design-dock-header">
+            <SlidersHorizontal size={16} aria-hidden="true"/><span>Design</span>
+            <button type="button" className="office-ribbon-layout-toggle"
+              title="Show Design in the ribbon" aria-label="Show Design in the ribbon"
+              onClick={()=>setDesignDockedLeft(false)}><X size={16} aria-hidden="true"/></button>
+          </div>
+          {/* Same ribbon classes and tabpanel id as the top strip, so the light grey
+              ribbon styling, controls and Design 2 slot matrix are reused, not copied. */}
+          <section className="office-builder-ribbon page-builder-design-dock-ribbon" aria-label="Design properties">
+            <div id="page-builder-tab-content" className="office-ribbon-content" role="tabpanel"
+              aria-label={ribbonTab} aria-labelledby={`page-builder-tab-${Math.max(0,ribbonTabsVisible.indexOf(ribbonTab))}`}>
+              {smartRibbonElement}
+            </div>
+          </section>
+        </aside>}
         <div className="page-preview-area" ref={pagePreviewAreaRef}>
           <div className="page-stage" key={canvasRefreshKey}
             onPointerDownCapture={() => {
