@@ -9,7 +9,8 @@ const root=process.env.ALL_APPS_UI_AUDIT_DIR || 'artifacts/all-apps-ui';
 const base=process.env.SETUP_UX_BASE_URL || 'http://127.0.0.1:5173';
 const sizes=[
   {name:'desktop',width:1440,height:900},
-  {name:'laptop',width:1280,height:800},
+  {name:'laptop',width:1024,height:768},
+  {name:'tablet',width:768,height:1024},
   {name:'phone',width:390,height:844}
 ];
 const screens=[
