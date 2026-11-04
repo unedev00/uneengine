@@ -141,29 +141,29 @@
  * The user-approved R1C1..R3C6 cells belong to properties, not the selector. */
 .office-builder-ribbon #page-builder-tab-content
   >.smart-design2-ribbon>.smart-ribbon-group.smart-design2-group{
-  --smart-section-width:644px!important;
-  flex:0 0 644px!important;
-  width:644px!important;
-  min-width:644px!important;
-  max-width:644px!important;
+  --smart-section-width:400px!important;
+  flex:0 0 400px!important;
+  width:400px!important;
+  min-width:400px!important;
+  max-width:400px!important;
 }
 .office-builder-ribbon #page-builder-tab-content
   .smart-design2-group .smart-design2-workbench{
   box-sizing:border-box!important;
   display:flex!important;
-  flex-flow:row nowrap!important;
-  gap:8px!important;
-  align-items:start!important;
-  width:max-content!important;
-  height:86px!important;
-  min-height:86px!important;
-  max-height:86px!important;
+  flex-flow:column nowrap!important;
+  gap:4px!important;
+  align-items:flex-start!important;
+  width:380px!important;
+  height:116px!important;
+  min-height:116px!important;
+  max-height:116px!important;
 }
 .office-builder-ribbon #page-builder-tab-content
   .smart-design2-group .smart-design2-context{
   box-sizing:border-box!important;
   display:flex!important;
-  flex:0 0 304px!important;
+  flex:0 0 26px!important;
   flex-flow:row nowrap!important;
   align-items:center!important;
   gap:4px!important;
@@ -212,4 +212,43 @@
 .office-builder-ribbon #page-builder-tab-content
   .smart-design2-group .smart-property[data-design-slot="shape"] .smart-shapes-trigger>svg:last-child{
   width:10px!important;min-width:10px!important;height:12px!important;
+}
+
+/* Approved layout: the dropdown and eye occupy row 0, ABOVE the R1–R3
+ * property matrix. The 26px × 4 rows need 116px plus the group caption.
+ * Only Design 2 grows; Design, Data, Arrange and Layout keep 114px. */
+.office-builder-ribbon[aria-label="Page Builder ribbon"]:not(.is-interactive-preview)
+  #page-builder-tab-content.office-ribbon-content[aria-label="Component Design 2"]{
+  --page-ribbon-content-height:146px;
+  --page-ribbon-scroll-strip-height:159px;
+}
+.office-builder-ribbon #page-builder-tab-content
+  >.smart-ribbon.smart-design2-ribbon[data-three-row="true"]{
+  height:146px!important;min-height:146px!important;max-height:146px!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  >.smart-design2-ribbon>.smart-ribbon-group.smart-design2-group{
+  height:146px!important;min-height:146px!important;max-height:146px!important;
+  padding-top:6px!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-design2-context[data-design-row="0"]{
+  flex:0 0 26px!important;height:26px!important;
+  min-height:26px!important;max-height:26px!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-ribbon-row:not([data-design-row="0"]){
+  grid-template-rows:26px!important;
+  width:380px!important;
+  min-width:380px!important;
+  max-width:380px!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-property .smart-icon-dropdown-trigger{
+  box-sizing:border-box!important;
+  flex:0 0 var(--smart-control-width)!important;
+  width:var(--smart-control-width)!important;
+  min-width:var(--smart-control-width)!important;
+  max-width:var(--smart-control-width)!important;
+  height:26px!important;
 }
