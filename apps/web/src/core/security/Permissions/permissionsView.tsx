@@ -646,11 +646,14 @@ function Permissions({
             const setting = draft.sharingSettings[object.apiName] ?? {
               defaultAccess: 'Private' as const, grantAccessUsingHierarchies: true
             };
-            return <AdvancedSharingSettings tenantId={draft.tenantId ?? ''} object={object}
-              setting={setting} users={draft.users} roles={draft.roles}
-              onChange={(next) => setDraft((current) => ({
-                ...current, sharingSettings: { ...current.sharingSettings, [object.apiName]: next }
-              }))} />;
+            return <details className="md-sharing-advanced" open={viewportWidth>=1024}>
+              <summary>Advanced sharing for {object.label}</summary>
+              <AdvancedSharingSettings tenantId={draft.tenantId ?? ''} object={object}
+               setting={setting} users={draft.users} roles={draft.roles}
+               onChange={(next) => setDraft((current) => ({
+                 ...current, sharingSettings: { ...current.sharingSettings, [object.apiName]: next }
+               }))} />
+             </details>;
           })()}
         </>}
         {tab === 'publicGroups' && (() => {
