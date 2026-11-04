@@ -1879,8 +1879,8 @@ export default function FlowBuilder({
     </div>
     <div className="flow-start-panels">
     {showCreateFlow && <div className="modal-backdrop"><section ref={createFlowDialog} tabIndex={-1} className="modal flow-create-dialog" role="dialog" aria-modal="true" aria-labelledby="flow-start-types" onKeyDown={event => { if (event.key === 'Escape') setShowCreateFlow(false); }}>
-      <button type="button" className="btn" autoFocus onClick={() => setShowCreateFlow(false)}>Cancel</button>
-      <h2 id="flow-start-types">Create a flow</h2>
+      <header className="flow-start-modal-header"><h2 id="flow-start-types">Create a flow</h2>
+       <button type="button" className="btn" autoFocus onClick={() => setShowCreateFlow(false)}>Cancel</button></header>
       <div className="flow-start-types">
         {flowTypeOptions.map((option) => <button type="button" key={option.type}
           className={newFlowType === option.type ? 'flow-start-type selected' : 'flow-start-type'}
