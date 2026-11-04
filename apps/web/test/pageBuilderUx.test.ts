@@ -191,9 +191,9 @@ test('Quick Access commands are real buttons, remain on the top rail, and Layout
  }
  assert.match(view,/quickAccessOrder\.map\(key=>/);
  assert.match(view,/aria-label="Quick Access Toolbar"/);
- assert.match(view,/ribbonTab==='Component Layout' && ribbonCatalog/);
- for(const group of ['Page','Device','Canvas','Version'])
-  assert.ok(view.includes("'"+group+"'"),group+' remains in Layout');
+ assert.match(view,/design-canvas-settings/);
+ for(const key of ['canvasWidth','canvasHeight','canvasFillColor'])
+  assert.ok(view.includes('data-ribbon-property="'+key+'"'),key+' is in Design');
  assert.doesNotMatch(view,/Unsaved edits/);
  assert.match(view,/rawLayoutParentId\(selected\)/);
  assert.match(view,/Page › /);
