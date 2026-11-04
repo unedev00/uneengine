@@ -184,14 +184,14 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  assert.equal(await imageFill.getAttribute('data-design-column'),'6');
  assert.equal(await imagePlacement.getAttribute('data-supported'),'true');
  assert.equal(await imageFill.getAttribute('data-supported'),'true');
- assert.equal(await imagePlacement.locator('.smart-icon-dropdown-trigger').count(),1,
+ assert.equal(await imagePlacement.locator('.design2-icon-trigger').count(),1,
    'R2C6 image placement must be an icon dropdown');
- assert.equal(await imageFill.locator('.smart-icon-dropdown-trigger').count(),1,
+ assert.equal(await imageFill.locator('.design2-icon-trigger').count(),1,
    'R3C6 image fit must be an icon dropdown');
  // Geometry is Excel-owned and remains at 40x26px, not enlarged by
  // the earlier Design tab's wider select CSS.
- const placementRect=await imagePlacement.locator('.smart-icon-dropdown-trigger').boundingBox();
- const fillRect=await imageFill.locator('.smart-icon-dropdown-trigger').boundingBox();
+ const placementRect=await imagePlacement.locator('.design2-icon-trigger').boundingBox();
+ const fillRect=await imageFill.locator('.design2-icon-trigger').boundingBox();
  for(const bounds of [placementRect,fillRect]){
   assert.ok(bounds&&Math.abs(bounds.width-40)<1&&Math.abs(bounds.height-26)<1,
     'Image icon dropdown must occupy exactly 40x26 px at its R/C position');
@@ -199,20 +199,20 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  assert.ok(Math.abs(placementRect.x-fillRect.x)<1,
    'Image Placement R2C6 and Image Fill R3C6 must share column C6');
 
- const placementTrigger=imagePlacement.locator('.smart-icon-dropdown-trigger');
- const fillTrigger=imageFill.locator('.smart-icon-dropdown-trigger');
+ const placementTrigger=imagePlacement.locator('.design2-icon-trigger');
+ const fillTrigger=imageFill.locator('.design2-icon-trigger');
  assert.equal(await placementTrigger.getAttribute('data-icon-kind'),'imagePlacement');
  assert.equal(await fillTrigger.getAttribute('data-icon-kind'),'imageFill');
  await placementTrigger.click();
  // Cart's pre-existing contract allows ONLY Left and Right, whereas Card
  // Grid and Smart Image offer all four. Do not offer unsupported Top/Bottom.
- assert.deepEqual(await page.locator('.smart-icon-dropdown-popup [role="menuitemradio"]')
+ assert.deepEqual(await page.locator('.design2-icon-popup [role="menuitemradio"]:not([disabled])')
    .evaluateAll(buttons=>buttons.map(button=>button.title)),['Left','Right']);
- await page.locator('.smart-icon-dropdown-popup button[title="Left"]').click();
+ await page.locator('.design2-icon-popup button[title="Left"]').click();
  await fillTrigger.click();
- assert.deepEqual(await page.locator('.smart-icon-dropdown-popup [role="menuitemradio"]')
+ assert.deepEqual(await page.locator('.design2-icon-popup [role="menuitemradio"]:not([disabled])')
    .evaluateAll(buttons=>buttons.map(button=>button.title)),['Fill','Fit','Stretch']);
- await page.locator('.smart-icon-dropdown-popup button[title="Fit"]').click();
+ await page.locator('.design2-icon-popup button[title="Fit"]').click();
  assert.match(await fillTrigger.getAttribute('aria-label')??'',/Fit/);
 
  // Area switching must not change the selected component or old Design view.

@@ -76,6 +76,7 @@ export default function Design2IconDropdown({mode,label,value,disabled,onChange,
  },[open]);
  return <>
   <button type="button" ref={trigger} className="design2-icon-trigger"
+    data-icon-kind={mode==='placement'?'imagePlacement':mode==='imageFill'?'imageFill':mode}
     aria-label={label+': '+(selected?.label??'Select')} title={label+': '+(selected?.label??'Select')}
     aria-haspopup="menu" aria-expanded={open} disabled={disabled||!selected}
     onClick={()=>setOpen(current=>!current)}>
