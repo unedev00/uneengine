@@ -187,9 +187,8 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  assert.equal(await row.locator('[data-property="selectedTabColor"]').getAttribute('data-supported'),'true',
   'Tabs Focused does not bind the existing selected-tab colour');
  await page.getByLabel('Select Design 2 area').selectOption('Row');
- assert.equal(await row.locator('[data-design-row="2"] [data-design-slot="focused"]')
-   .getAttribute('data-supported'),'false',
-  'Smart Tabs must not enable Row Focus that was not approved');
+ assert.equal(await row.locator('[data-design-row="2"] [data-design-slot="focused"]').count(),0,
+  'Row Focus was not approved for any component and must not be invented');
  const {mkdir}=await import('node:fs/promises');
  await mkdir(new URL('../artifacts/',import.meta.url),{recursive:true});
  await page.screenshot({path:new URL('../artifacts/design2-contextual-ribbon.png',import.meta.url).pathname});
