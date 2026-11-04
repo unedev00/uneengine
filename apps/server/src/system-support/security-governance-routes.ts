@@ -24,10 +24,10 @@ export function registerConnectedPublicRoutes(app:Express,connected:ConnectedApp
 export function registerGovernanceRoutes(app:Express,db:SqlPersistence,rbac:RbacEngine,_auth:AuthenticationService,connected:ConnectedAppService,monitor:SecurityMonitorService){
  const audit=new SetupAuditService(db,rbac),licenses=new LicenseService(db,rbac);
  app.get('/api/security/permissions',route(async(req,res)=>{const a=req.actor!;res.json({permissions:await audit.catalogue(a.tenant_id,a.user_id)});}));
- app.get('/api/security/audit',route(async(req,res)=>{const a=req.actor!;res.json(await audit.list(a.tenant_id,a.user_id,{before:req.query.before,table:req.query.table,global:req.query.global==='true'}));}));
+ app.get('/api/security/audit',route(async(req,res)=>{const a=req.actor!;res.json(await audit.list(a.tenant_id,a.user_id,{before:req.query.before,table:req.query.table,actor:req.query.actor,from:req.query.from,to:req.query.to,limit:req.query.limit,global:req.query.global==='true'}));}));
  app.get('/api/security/audit/coverage',route(async(req,res)=>{const a=req.actor!;res.json({tables:await audit.coverage(a.tenant_id,a.user_id)});}));
  app.get('/api/security/audit/export',route(async(req,res)=>{
-  const a=req.actor!,page=await audit.list(a.tenant_id,a.user_id,{before:req.query.before,table:req.query.table,global:req.query.global==='true',export:true,limit:5000});
+  const a=req.actor!,page=await audit.list(a.tenant_id,a.user_id,{before:req.query.before,table:req.query.table,actor:req.query.actor,from:req.query.from,to:req.query.to,global:req.query.global==='true',export:true,limit:5000});
   // JSON envelope keeps the next cursor available to the authenticated downloader.
   res.setHeader('Cache-Control','no-store');res.json({csv:auditCsv(page.events),nextCursor:page.nextCursor});
  }));
