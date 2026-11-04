@@ -420,3 +420,15 @@
 .profile-password-dialog .form-label { display: grid; gap: 7px; }
 .profile-password-dialog .form-control { width: 100%; box-sizing: border-box; }
 .profile-password-dialog .toolbar-actions { display: flex; justify-content: flex-end; gap: 8px; }
+/* At 768px, AppExchange detail panels need one readable column, not two narrow columns. */
+@media(min-width:701px) and (max-width:900px){
+ .exchange-detail,.exchange-confirm{
+  width:min(640px,calc(100vw - 32px));max-height:calc(100dvh - 32px);
+  padding:20px;box-sizing:border-box;
+ }
+ .exchange-detail-columns{grid-template-columns:minmax(0,1fr);gap:14px}
+ .exchange-detail-head{min-width:0}
+ .exchange-detail-head>div{min-width:0;overflow-wrap:anywhere}
+ .exchange-detail-footer{flex-wrap:wrap}
+ .exchange-detail-footer .btn{min-height:44px}
+}
