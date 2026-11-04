@@ -38,6 +38,18 @@ try {
  await save.click();
  await page.getByRole('status').filter({hasText:'selections saved'}).waitFor();
  assert.equal((await page.evaluate(()=>window.savedSelections)).selections[0].recordIds[0],'00000000-0000-0000-0000-000000000001');
+ await recordSearch.fill('bulk');
+ await page.getByRole('checkbox',{name:'Bulk record 55'}).waitFor();
+ for(let index=1;index<=49;index++){
+  await page.getByRole('checkbox',{name:'Bulk record '+index,exact:true}).check();
+ }
+ assert.equal(await page.getByRole('checkbox',{name:'Bulk record 50'}).isDisabled(),true,
+  'Offline briefcase must stop at 50 records per object including the already selected record');
+ assert.equal(await page.getByRole('button',{name:'Save selections'}).isEnabled(),true,
+  '50 selected records for one object must remain valid');
+ await page.getByRole('checkbox',{name:'Bulk record 1'}).uncheck();
+ assert.equal(await page.getByRole('checkbox',{name:'Bulk record 50'}).isEnabled(),true,
+  'Removing one selection must restore capacity');
  await open('tenants');
  await page.getByRole('button',{name:'New tenant',exact:true}).click();
  const tenantForm=page.getByRole('form',{name:'New tenant draft'});
@@ -101,6 +113,15 @@ try {
  assert.equal(await page.getByRole('button',{name:'Security & Recovery'}).getAttribute('aria-current'),'page',
   'Deep-linked company security settings must open directly');
  await screenshot('company-security-deeplink');
+ await page.setViewportSize({width:390,height:844});
+ await open('company');
+ await page.getByRole('button',{name:'Branding',exact:true}).first().click();
+ assert.equal(await page.locator('.company-workspace-section-branding').count(),1,
+  'Mobile Company Settings tabs must switch visible content, not only active styling');
+ await page.getByRole('button',{name:'Contacts',exact:true}).first().click();
+ assert.equal(await page.locator('.company-workspace-section-contacts').count(),1,
+  'Mobile Company Settings tabs must update the selected section');
+ await page.setViewportSize({width:1365,height:768});
  await open('company-profile-fail');
  await page.getByText('Company data could not be loaded.',{exact:false}).waitFor();
  assert.equal(await page.getByRole('button',{name:'Edit logo'}).count(),0,'Failed company read must never expose blank-default editing');
