@@ -54,6 +54,8 @@ const request=async(path,init)=>{
  if(path.startsWith('/records/')){
   if(new URL(path,'https://example.invalid').searchParams.get('search')==='unavailable')
     throw new Error('SQL service unavailable');
+  if(new URL(path,'https://example.invalid').searchParams.get('search')==='bulk')
+    return {records:Array.from({length:55},(_,i)=>({Id:'00000000-0000-0000-0000-'+String(i+1).padStart(12,'0'),Name:'Bulk record '+String(i+1)}))};
   return {records:[{Id:'00000000-0000-0000-0000-000000000001',Name:'Acme Corporation'}]};
  }
  if(init?.method==='PUT'){window.savedSelections=JSON.parse(init.body);return {briefcase:JSON.parse(init.body)};}
