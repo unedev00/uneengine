@@ -2786,7 +2786,7 @@ function RecordWorkspace({
     ?[...listFieldsBase.slice(0,5),{apiName:'Id',label:'Id',dataType:'Text'} as FieldMetadata,...listFieldsBase.slice(5)]
     :listFieldsBase;
   const phoneColumns = resolvePhoneColumns(listFields,previewPhoneRoles ?? activeListView?.phoneRoles ?? {});
-  const tableFields=viewportFactor==='Tablet'?listFields.slice(0,5):listFields;
+  const tableFields=(viewportFactor==='Tablet'||(viewportWidth>0&&viewportWidth<=1200))?listFields.slice(0,5):listFields;
   const selectableRecordIds = (canMassDelete || canBulkUpdate || canChangeOwner) ? visibleRecords.flatMap((item) => {
     const recordTypeId = String(item.RecordTypeId ?? defaultRecordTypeId);
     const recordLayout = pageLayoutForRecord(object, recordTypeId, profileId);
