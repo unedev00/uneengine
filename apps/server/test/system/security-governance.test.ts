@@ -37,6 +37,11 @@ test('invalid transaction rules and monitoring retention fail before SQL',async(
  for(const input of [{enabled:true,retention_days:1},{enabled:true,retention_days:3651}])await assert.rejects(()=>monitor.configure('t','u',input),/Invalid monitoring/);
  await assert.rejects(()=>monitor.saveRule('t','u',{label:'bad',enabled:true,event_type:'api',method:'GET',path_prefix:'https://other.test',threshold:0,window_seconds:60,response:'Block'}),/Invalid transaction/);
  await assert.rejects(()=>monitor.describe('t','u','2026-01-01'),/Invalid monitoring cursor/);
+ await assert.rejects(()=>monitor.describe('t','u',undefined,0),/Invalid monitoring page size/);
+ await assert.rejects(()=>monitor.describe('t','u',undefined,201),/Invalid monitoring page size/);
+ await assert.rejects(()=>monitor.prune('t','u'),/Explicit retention cleanup confirmation/);
+ await assert.rejects(()=>monitor.prune('t','u','PRUNE',0),/Explicit retention cleanup confirmation/);
+ await assert.rejects(()=>monitor.prune('t','u','PRUNE',3651),/Explicit retention cleanup confirmation/);
 });
 test('connected apps reject insecure redirects and unsupported grants before SQL',async()=>{
  const connected=new ConnectedAppService({} as SqlPersistence,{} as AuthenticationService,{require:async()=>{}} as unknown as RbacEngine);
