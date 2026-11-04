@@ -19,6 +19,7 @@ export default function TenantLicenses({request,canManage}:{request:Request;canM
       {apiName:'expiry',label:'Expires',render:e=>e.expires_at?new Date(e.expires_at).toLocaleDateString():'No expiry'}
     ]}/>
   <div className="md-mobile-table-replaced md-admin-table-wrap" role="region" aria-label="Licence pools" tabIndex={0}><table className="data-table md-admin-table"><thead><tr><th>Licence</th><th>Type</th><th>Seats used</th><th>Expires</th><th>Status</th></tr></thead><tbody>{data.entitlements.map(e=><tr key={e.id}><td>{e.label}</td><td>{e.kind}</td><td>{e.used_seats} / {e.seat_limit??'Unlimited'}</td><td>{e.expires_at?new Date(e.expires_at).toLocaleString():'No expiry'}</td><td>{e.enabled?'Enabled':'Disabled'}</td></tr>)}</tbody></table></div>
+  <p className="permission-help">Select a user or permission set, then check the appropriate licence. Each checkbox saves immediately and may require affected users to sign in again.</p>
   <div className="md-admin-licence-assignments"><section className="md-admin-settings-block" aria-label="User licence assignments"><label className="form-label md-admin-field-medium">User<select className="form-control" value={user} onChange={e=>setUser(e.target.value)}><option value="">Select user</option>{data.users.map(u=><option key={u.id} value={u.id}>{u.email}</option>)}</select></label>
   {user&&<div className="md-admin-checkbox-grid">{data.entitlements.map(e=><label className="checkbox-row" key={e.id}><input type="checkbox" disabled={!canManage||busy} checked={data.assignments.some(a=>a.user_id===user&&a.entitlement_id===e.id)} onChange={v=>save('assignment',{user_id:user,entitlement_id:e.id,assigned:v.target.checked})}/>{e.label}</label>)}</div>}</section>
   <section className="md-admin-settings-block" aria-label="Permission-set licence requirements"><label className="form-label md-admin-field-medium">Permission set<select className="form-control" value={set} onChange={e=>setSet(e.target.value)}><option value="">Select permission set</option>{data.permissionSets.map(p=><option key={p.id} value={p.id}>{p.api_name}</option>)}</select></label>
@@ -28,10 +29,24 @@ export default function TenantLicenses({request,canManage}:{request:Request;canM
  </section>;
 }
 function PlatformLicenseIssuer({request}:{request:Request}){
+ const [capabilitySearch,setCapabilitySearch]=useState(''),[issuing,setIssuing]=useState(false);
  const [tenants,setTenants]=useState<{id:string;name:string;slug:string}[]>([]),[tenant,setTenant]=useState(''),[label,setLabel]=useState(''),[key,setKey]=useState(''),[kind,setKind]=useState('User'),[seats,setSeats]=useState(''),[expiry,setExpiry]=useState(''),[auto,setAuto]=useState(false),[capabilities,setCapabilities]=useState<{permission_key:string;label:string;resource:string;action:string}[]>([]),[selected,setSelected]=useState<string[]>([]),[message,setMessage]=useState('');
  useEffect(()=>{void request<{tenants:{id:string;name:string;slug:string}[]}>('/security/licenses/tenants').then(r=>setTenants(r.tenants)).catch(()=>{});void request<{permissions:typeof capabilities}>('/security/permissions').then(r=>setCapabilities(r.permissions)).catch(()=>{});},[]);
  const [pools,setPools]=useState<Array<Entitlement&{license_key:string;auto_assign:boolean;capabilities:{resource:string;action:string}[]}>>([]),[poolId,setPoolId]=useState(''),[enabled,setEnabled]=useState(true),[customCaps,setCustomCaps]=useState<{resource:string;action:string}[]>([]);
  useEffect(()=>{setPools([]);setPoolId('');if(tenant)void request<{entitlements:typeof pools}>('/security/licenses/tenants?tenant='+encodeURIComponent(tenant)).then(r=>setPools(r.entitlements)).catch(e=>setMessage(String(e)));},[tenant]);
+ const validPool=Boolean(tenant.trim()&&label.trim()&&/^[A-Za-z][A-Za-z0-9_-]{0,127}$/.test(key.trim())
+  &&(seats===''||(Number.isInteger(Number(seats))&&Number(seats)>=0))
+  &&(!expiry||Number.isFinite(Date.parse(expiry))));
+ const displayedCapabilities=capabilities.filter(p=>(p.label+' '+p.permission_key).toLowerCase().includes(capabilitySearch.trim().toLowerCase()));
+ const toggleVisible=(add:boolean)=>setSelected(prev=>add?[...new Set([...prev,...displayedCapabilities.map(p=>p.permission_key)])]:prev.filter(k=>!displayedCapabilities.some(p=>p.permission_key===k)));
+ const issue=async()=>{
+  if(!validPool||issuing)return;setIssuing(true);setMessage('');
+  const caps=selected.includes('*')?[{resource:'*',action:'*'}]:capabilities.filter(p=>selected.includes(p.permission_key)).map(p=>({resource:p.resource,action:p.action}));
+  try{await request('/security/licenses/issue',{method:'POST',body:JSON.stringify({...(poolId?{id:poolId}:{}),tenantId:tenant,license_key:key.trim(),label:label.trim(),kind,enabled,seat_limit:seats===''?null:Number(seats),expires_at:expiry?new Date(expiry).toISOString():null,auto_assign:auto,capabilities:[...caps,...customCaps]})});
+   setMessage('Licence pool saved.');const response=await request<{entitlements:typeof pools}>('/security/licenses/tenants?tenant='+encodeURIComponent(tenant));setPools(response.entitlements);
+  }catch(e){setMessage(e instanceof Error?e.message:String(e));}
+  finally{setIssuing(false);}
+ };
  if(!tenants.length)return null;
  return <details className="md-admin-issuer"><summary>Platform: issue licence pool</summary><p>For restricted user licences, choose the permitted system operations. Object and field access is still limited by permission sets. A full platform licence permits all resource types.</p>
  <div className="md-admin-form-grid"><label className="form-label">Tenant<select className="form-control" value={tenant} onChange={e=>setTenant(e.target.value)}><option value="">Select tenant</option>{tenants.map(t=><option key={t.id} value={t.id}>{t.name||t.slug}</option>)}</select></label>
@@ -42,8 +57,15 @@ function PlatformLicenseIssuer({request}:{request:Request}){
  <label className="form-label">Seat limit (blank means unlimited)<input type="number" min="0" className="form-control" value={seats} onChange={e=>setSeats(e.target.value)}/></label>
  <label className="form-label">Expiry (optional)<input type="datetime-local" className="form-control" value={expiry} onChange={e=>setExpiry(e.target.value)}/></label>
  <label className="checkbox-row md-admin-span-all"><input type="checkbox" checked={auto} onChange={e=>setAuto(e.target.checked)}/>Automatically assign new users</label></div>
- <fieldset><legend>Permitted operations (user licence)</legend><div className="md-admin-checkbox-grid">{[{permission_key:'*',label:'Full platform resource coverage',resource:'*',action:'*'},...capabilities].map(p=><label className="checkbox-row" key={p.permission_key}><input type="checkbox" checked={selected.includes(p.permission_key)} onChange={()=>setSelected(selected.includes(p.permission_key)?selected.filter(v=>v!==p.permission_key):[...selected,p.permission_key])}/>{p.label}</label>)}</div></fieldset>
+ <fieldset><legend>Permitted operations (user licence)</legend>
+ <label className="form-label">Find permitted operations<input className="form-control" type="search" value={capabilitySearch} placeholder="Search 300+ available permissions" onChange={e=>setCapabilitySearch(e.target.value)}/></label>
+ <div className="md-admin-actions">
+  <button type="button" className="btn" disabled={!displayedCapabilities.length} onClick={()=>toggleVisible(true)}>Select matching permissions</button>
+  <button type="button" className="btn" disabled={!displayedCapabilities.length} onClick={()=>toggleVisible(false)}>Clear matching permissions</button>
+  <span>{selected.length} selected</span>
+ </div>
+ <div className="md-admin-checkbox-grid md-admin-capability-options">{[{permission_key:'*',label:'Full platform resource coverage',resource:'*',action:'*'},...displayedCapabilities].map(p=><label className="checkbox-row" key={p.permission_key}><input type="checkbox" checked={selected.includes(p.permission_key)} onChange={()=>setSelected(selected.includes(p.permission_key)?selected.filter(v=>v!==p.permission_key):[...selected,p.permission_key])}/>{p.label}</label>)}</div></fieldset>
  {customCaps.map((c,i)=><p key={c.resource+':'+c.action}>Additional coverage: {c.resource} / {c.action} <button className="btn" onClick={()=>setCustomCaps(customCaps.filter((_,n)=>n!==i))}>Remove coverage</button></p>)}
- <div className="md-admin-actions"><button type="button" className="btn btn-brand" onClick={()=>{const caps=selected.includes('*')?[{resource:'*',action:'*'}]:capabilities.filter(p=>selected.includes(p.permission_key)).map(p=>({resource:p.resource,action:p.action}));void request('/security/licenses/issue',{method:'POST',body:JSON.stringify({...(poolId?{id:poolId}:{}),tenantId:tenant,license_key:key,label,kind,enabled,seat_limit:seats===''?null:Number(seats),expires_at:expiry?new Date(expiry).toISOString():null,auto_assign:auto,capabilities:[...caps,...customCaps]})}).then(()=>setMessage('Licence pool saved; refresh to view it.')).catch(e=>setMessage(String(e)));}}>Save licence pool</button></div>{message&&<p role="status">{message}</p>}
+ <div className="md-admin-actions"><button type="button" className="btn btn-brand" disabled={!validPool||issuing} onClick={()=>void issue()}>{issuing?'Saving…':'Save licence pool'}</button></div>{message&&<p role="status">{message}</p>}
  </details>;
 }
