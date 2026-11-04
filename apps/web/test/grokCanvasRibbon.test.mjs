@@ -5,7 +5,7 @@ const page=readFileSync(new URL('../src/core/builders/PageBuilder/pageBuilderVie
 
 test('Arrange replaces the old Grok and Advanced canvas commands without changing their handlers',()=>{
  const arrange=readFileSync(new URL('../src/core/builders/PageBuilder/ArrangeRibbon.tsx',import.meta.url),'utf8');
- assert.match(page,/'Component Layout','Arrange','Component Action','Advanced','Preview'/);
+ assert.match(page,/'Component Design 2','Arrange','Component Action','Advanced','Preview'/);
  assert.doesNotMatch(page,/ribbonTab==='Grok'/);
  assert.match(page,/<ArrangeRibbon/);
  assert.match(page,/onAlign=\\{alignSelected\\}/);
