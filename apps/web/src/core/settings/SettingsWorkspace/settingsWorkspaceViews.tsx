@@ -357,6 +357,7 @@ function TenantSecurityAudit() {
  const [permitted,setPermitted]=useState(false);
  const [busy,setBusy]=useState(true);
  const [error,setError]=useState('');
+ const [filterError,setFilterError]=useState('');
  useEffect(()=>{
   let active=true;
   setBusy(true);
@@ -374,12 +375,17 @@ function TenantSecurityAudit() {
  return <section className="surface permission-section">
   <h2>Login history and security activity</h2>
   <p>Tenant security events. Access requires the server-enforced Security read permission.</p>
-  <form className="md-admin-form-grid md-security-history-filters" onSubmit={event=>{event.preventDefault();setPage(0);setFilters({...draft});}}>
+  <form className="md-admin-form-grid md-security-history-filters" onSubmit={event=>{
+    event.preventDefault();
+    if(draft.from&&draft.to&&draft.from>draft.to){setFilterError('From date must not be later than Before date.');return;}
+    setFilterError('');setPage(0);setFilters({...draft});
+  }}>
    {field('action','Event action')}{field('identifier','Account / login identifier')}{field('ip','Source IP address')}
    {field('from','From date','date')}{field('to','Before date','date')}
    <div className="md-admin-actions"><button type="submit" className="btn btn-brand" disabled={busy}>Apply filters</button>
-    <button type="button" className="btn" disabled={busy} onClick={()=>{setDraft(emptySecurityEventFilters());setFilters(emptySecurityEventFilters());setPage(0);}}>Clear</button></div>
+    <button type="button" className="btn" disabled={busy} onClick={()=>{setDraft(emptySecurityEventFilters());setFilters(emptySecurityEventFilters());setFilterError('');setPage(0);}}>Clear</button></div>
   </form>
+  {filterError&&<p role="alert" className="form-error">{filterError}</p>}
   {busy&&<p role="status">Loading security history…</p>}
   {error&&<p role="alert">Unable to load security events: {error}</p>}
   {!busy&&!error&&permitted&&<div className="md-admin-table-wrap" role="region" aria-label="Login security history" tabIndex={0}>
@@ -387,9 +393,11 @@ function TenantSecurityAudit() {
     <thead><tr><th scope="col">Time</th><th scope="col">Action</th><th scope="col">Login</th><th scope="col">IP address</th><th scope="col">Changes</th></tr></thead>
     <tbody>{events.map(event=><tr key={event.id}>
      <td data-label="Time">{new Date(event.at).toLocaleString()}</td>
-     <td data-label="Action">{event.action}</td><td data-label="Login">{event.loginIdentifier||event.actorUserId||'—'}</td>
+     <td data-label="Action">{event.action.replaceAll('_',' ').replace(/\b\w/g,letter=>letter.toUpperCase())}</td><td data-label="Login">{event.loginIdentifier||event.actorUserId||'—'}</td>
      <td data-label="IP address">{event.sourceIp||'—'}</td>
-     <td data-label="Changes">{event.details?.from&&event.details?.to?event.details.from+' → '+event.details.to:'—'}</td>
+     <td data-label="Changes">{event.details?.from&&event.details?.to?event.details.from+' → '+event.details.to
+  :event.details&&Object.keys(event.details).length>0?Object.entries(event.details).filter(([key])=>!/secret|token|password/i.test(key)).slice(0,3).map(([key,value])=>key+': '+String(value).slice(0,80)).join(', ')||'No changes recorded'
+  :'No changes recorded'}</td>
     </tr>)}{!events.length&&<tr><td colSpan={5}>No matching security activity.</td></tr>}</tbody>
    </table>
   </div>}
