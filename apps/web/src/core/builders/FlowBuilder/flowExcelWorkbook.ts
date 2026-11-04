@@ -1,4 +1,3 @@
-import {apiRequest} from '../../authentication/Client/authClient';
 import type {FlowDefinitionMetadata} from '../../metadata/Definitions/metadata';
 import {flowGraphDiagnostics} from './flowGraphOperations.mjs';
 
@@ -50,6 +49,7 @@ export async function encodeFlowWorkbook(file:File):Promise<string>{
  return btoa(result);
 }
 export async function downloadFlowExcel(flow:FlowDefinitionMetadata) {
+ const {apiRequest}=await import('../../authentication/Client/authClient');
  const result=await apiRequest<{workbook:string}>('/metadata/loader/flow-excel/write',{
   method:'POST',body:JSON.stringify({tables:flowWorkbookTables(flow)})});
  const bytes=decodeFlowWorkbook(result.workbook);
@@ -59,6 +59,7 @@ export async function downloadFlowExcel(flow:FlowDefinitionMetadata) {
 }
 export async function readFlowExcel(file:File):Promise<FlowWorkbookTable[]> {
  if(!/\\.xlsx$/i.test(file.name))throw Error('Only .xlsx files downloaded from Flow Builder are supported.');
+ const {apiRequest}=await import('../../authentication/Client/authClient');
  const result=await apiRequest<{tables:FlowWorkbookTable[]}>('/metadata/loader/flow-excel/read',{
   method:'POST',body:JSON.stringify({workbook:await encodeFlowWorkbook(file)})});
  return result.tables;
@@ -98,6 +99,7 @@ export function previewFlowExcel(tables:FlowWorkbookTable[],original:FlowDefinit
   let newId=Math.max(0,...draft.elements.map(node=>node.id));
   const resolve=(value:string)=>aliases.get(value)??numericId(value);
   const seenNodes=new Set<string>();
+  const pendingNodeDeletes:string[]=[];
   rows('Nodes').forEach((r,i)=>{try{
     const [action,id,type,label]=r; if(!id)throw Error('Node ID is required.');
     if(seenNodes.has(id))throw Error('Duplicate node row: '+id);seenNodes.add(id);
@@ -106,11 +108,9 @@ export function previewFlowExcel(tables:FlowWorkbookTable[],original:FlowDefinit
     if(action==='DELETE'){
       if(!node)throw Error('Node not found: '+id);
       if(node.type==='Start'||node.type==='End')throw Error('Start and End cannot be deleted.');
-      if(draft.connectors.some(e=>e.from===node!.id||e.to===node!.id))
-        throw Error('Disconnect all connections before deleting '+id);
-      draft.elements=draft.elements.filter(n=>n.id!==node!.id);changes.push('Delete node '+id);return;
+      pendingNodeDeletes.push(id);return;
     }
-    if(node){if(type!==node.type)throw Error('Existing node type cannot change.');node.label=label;changes.push('Update node '+id);}
+    if(node){if(type!==node.type)throw Error('Existing node type cannot change.');if(node.label!==label){node.label=label;changes.push('Update node '+id);}}
     else {
       if(!id.startsWith('NEW_'))throw Error('New nodes require IDs starting NEW_.');
       if(!allowedTypes.includes(type))throw Error('Node type not enabled: '+type);
@@ -123,7 +123,7 @@ export function previewFlowExcel(tables:FlowWorkbookTable[],original:FlowDefinit
     if(!node)throw Error('Node not found: '+id);
     if(!key||['__proto__','constructor','prototype'].includes(key))throw Error('Invalid config property.');
     if(action==='DELETE'){delete node.config[key];changes.push('Delete input '+id+'.'+key);}
-    else if(action==='UPSERT'){node.config[key]=parseJson(raw);changes.push('Upsert input '+id+'.'+key);}
+    else if(action==='UPSERT'){const value=parseJson(raw);if(JSON.stringify(node.config[key])!==JSON.stringify(value)){node.config[key]=value;changes.push('Upsert input '+id+'.'+key);}}
     else throw Error('Action must be UPSERT or DELETE.');
   }catch(e){errors.push('Inputs row '+(i+2)+': '+String(e instanceof Error?e.message:e));}});
   const seenEdges=new Set<string>();
@@ -139,9 +139,18 @@ export function previewFlowExcel(tables:FlowWorkbookTable[],original:FlowDefinit
     if(!draft.elements.some(n=>n.id===fromId)||!draft.elements.some(n=>n.id===toId))throw Error('Connection references missing node.');
     const path=scheduled?parseJson(scheduled):undefined;
     const updated={id,from:fromId,to:toId,label,kind:kind as 'normal'|'fault'|'scheduled'|'async',...(path?{scheduledPath:path}:{})};
-    if(existing)Object.assign(existing,updated);else draft.connectors.push(updated);
-    changes.push((existing?'Update':'Add')+' connection '+id);
+    if(existing){if(JSON.stringify(existing)!==JSON.stringify(updated)){Object.assign(existing,updated);changes.push('Update connection '+id);}}
+    else {draft.connectors.push(updated);changes.push('Add connection '+id);}
   }catch(e){errors.push('Connections row '+(i+2)+': '+String(e instanceof Error?e.message:e));}});
+  for(const id of pendingNodeDeletes) {
+    const number=numericId(id);
+    if(draft.connectors.some(e=>e.from===number||e.to===number)) {
+      errors.push('Nodes DELETE '+id+': Remove or DELETE every connected edge in the same workbook.');
+    }else {
+      draft.elements=draft.elements.filter(node=>node.id!==number);
+      changes.push('Delete node '+id);
+    }
+  }
   const seenResources=new Set<string>();
   rows('Resources').forEach((r,i)=>{try{
     const [action,name,label,type,dataType,collection,input,output,value]=r;
@@ -153,11 +162,12 @@ export function previewFlowExcel(tables:FlowWorkbookTable[],original:FlowDefinit
     const next={name,label,type:type as FlowDefinitionMetadata['resources'][number]['type'],dataType,
       isCollection:bool(collection),availableForInput:bool(input),availableForOutput:bool(output),
       ...(value?{value:parseJson(value)}:{})};
-    if(existing)Object.assign(existing,next);else draft.resources.push(next);
-    changes.push((existing?'Update':'Create')+' resource '+name);
+    if(existing){if(JSON.stringify(existing)!==JSON.stringify(next)){Object.assign(existing,next);changes.push('Update resource '+name);}}
+    else {draft.resources.push(next);changes.push('Create resource '+name);}
   }catch(e){errors.push('Resources row '+(i+2)+': '+String(e instanceof Error?e.message:e));}});
   for(const p of flowGraphDiagnostics(draft))errors.push('Graph: '+p.description);
   if(draft.elements.filter(node=>node.type==='Start').length!==1)errors.push('Graph must have exactly one Start node.');
   if(draft.elements.some(node=>node.type!=='Start'&&node.type!=='End'&&!allowedTypes.includes(node.type)))errors.push('Flow contains node types unavailable in current capability catalogue.');
+  if(changes.length===0)draft.status=original.status;
   return {draft,changes,errors};
 }
