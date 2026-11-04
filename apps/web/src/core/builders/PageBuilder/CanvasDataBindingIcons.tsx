@@ -1,7 +1,7 @@
 import {useLayoutEffect,useRef,useState} from 'react';
 import {Database} from 'lucide-react';
 import type {UneRibbonProperty} from './uneBuilderPropertyInventory';
-import type {CanvasBindingTarget} from './canvasDataBindingTargets';
+import {bindingDisplayLabel,type CanvasBindingTarget} from './canvasDataBindingTargets';
 import './CanvasDataBindingIcons.css';
 
 type Target=Pick<CanvasBindingTarget,'propertyKey'|'itemIndex'|'itemId'>;
@@ -9,17 +9,6 @@ type IconPosition=Target&{key:string;label:string;x:number;y:number};
 type Rect={left:number;top:number;right:number;bottom:number;width:number;height:number};
 const ICON_SIZE=22;
 const SPACING=4;
-const labels:Record<string,Record<string,string>>={
- smart_tabs:{tabCaptionFormula:'Tab caption',textSource:'Tab caption',collectionFormula:'Tabs data source'},
- smart_lookup:{label:'Search placeholder',lookupValueFormula:'Search value',textSource:'Result text',
-  collectionFormula:'Lookup results source'},
- smart_cart:{label:'Cart title',collectionFormula:'Cart items source',textSource:'Product name',
-  imageSource:'Product image',cartSupportingSource:'Item count / supporting text'},
- smart_calendar:{selectedDate:'Selected date'},
- smart_card_grid:{collectionFormula:'Product items source',textSource:'Product title'},
- smart_table:{textSource:'Table data source'},
- smart_navigation:{collectionFormula:'Navigation items source',textSource:'Item caption'}
-};
 const validRect=(r:Rect)=>Number.isFinite(r.left)&&Number.isFinite(r.top)&&r.width>0&&r.height>0;
 const overlaps=(a:{x:number;y:number},b:{x:number;y:number})=>
  Math.abs(a.x-b.x)<ICON_SIZE+SPACING&&Math.abs(a.y-b.y)<ICON_SIZE+SPACING;
@@ -84,7 +73,7 @@ export default function CanvasDataBindingIcons({componentId,api,definitions,acti
   if(!host)return;
   const allowed=new Map(definitions.filter(p=>p.tab==='Data'&&p.components.includes(api)&&
    (p.kindOverrides?.[api]??p.kind)==='expression')
-   .map(p=>[p.id,labels[api]?.[p.id]??p.label]));
+   .map(p=>[p.id,bindingDisplayLabel(api,p.id,p.label)]));
   let frame=0;
   const position=()=>{
    frame=0;
