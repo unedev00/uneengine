@@ -464,16 +464,8 @@ export default function SmartRuntime(p){
  const name=p.kind||"smart_text",record=recordOf(p),label=scopedExpression(p,"label",p.label||"",record);
  const style={fontSize:number(p.textSize,16),color:p.labelColor||undefined,textAlign:p.labelAlignment||"left",borderRadius:number(p.radius,12)};
  const buttonIcon=name==="smart_button"?icons.find(icon=>icon.id===p.shapeId):null;
+ // Preserve selections when a data-driven category filter temporarily hides records.
  const [gridSelectedIds,setGridSelectedIds]=React.useState([]);
- const gridRowIds=name==="smart_card_grid"?recordsOf(p).map(row=>String(row?.Id??row?.id??"")):[];
- const gridRowSignature=gridRowIds.join("\\u001f");
- React.useEffect(()=>{
-  if(name!=="smart_card_grid")return;
-  setGridSelectedIds(current=>{
-   const next=current.filter(id=>gridRowIds.includes(id));
-   return next.length===current.length?current:next;
-  });
- },[name,gridRowSignature]);
  const shadowStyle={boxShadow:p.calendarShadowColor?"0 4px 10px "+p.calendarShadowColor:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none",borderRadius:number(p.radius,12)};
  const fire=(event,value)=>{if(p.previewOnly||p.builderPreview)return;
   if(typeof p.onAction==="function")void Promise.resolve(p.onAction({event,value})).catch(()=>{});
