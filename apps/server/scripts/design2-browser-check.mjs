@@ -21,6 +21,11 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  const fourControls=await readFile(new URL('../src/system-support/migrations/20271108-design2-four-control-parity.sql',import.meta.url),'utf8');
  await db.query(fourControls);
  await db.query(fourControls);
+ // The replayed approved baseline resets Image Placement to R2C6. Reapply
+ // the latest forward-only geometry fix before testing the browser contract.
+ const placementGap=await readFile(new URL('../src/system-support/migrations/20271112-design2-image-placement-gap.sql',import.meta.url),'utf8');
+ await db.query(placementGap);
+ await db.query(placementGap);
  const fourRows=await db.query(`SELECT r.component_api,r.area,r.slot_key,r.property_key,
         COALESCE(component.enabled,false) enabled
    FROM md_builder_design2_slot_rules r
