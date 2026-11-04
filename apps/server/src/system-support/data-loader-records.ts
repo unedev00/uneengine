@@ -133,9 +133,10 @@ export function registerDataLoaderRecordRoutes(app:Express,records:RecordEngine,
   const selectedIds=selected?.length?new Set<string>(selected as string[]):null;
   const limit=Number(req.body?.limit??4000);
   if(!Number.isInteger(limit)||limit<1||limit>4000)throw Error('Invalid export limit');
-  const rows:ExcelRow[]=[];
+  const rows:ExcelRow[]=[];let total=0;
   for(let pageNo=0;pageNo<40&&rows.length<limit;pageNo++){
    const page=await records.list(actor.tenant_id,actor.user_id,objectApi,100,pageNo*100);
+   if(pageNo===0)total=page.total;
    for(const record of page.records){
     if(selectedIds&&!selectedIds.has(String(record.Id)))continue;
     rows.push(Object.fromEntries([['Action','Upsert'],['Id',String(record.Id??'')],
@@ -154,7 +155,7 @@ export function registerDataLoaderRecordRoutes(app:Express,records:RecordEngine,
    {name:'Field Guide',columns:['FieldApiName','Label','DataType','Required','ExternalId','Writable','PicklistValues'],
     rows:guide},
   ]);
-  res.set('Cache-Control','private, no-store');res.json({workbook:result.toString('base64'),count:rows.length,
+  res.set('Cache-Control','private, no-store');res.json({workbook:result.toString('base64'),count:rows.length,total,truncated:!selectedIds&&total>rows.length,
    filename:objectApi+'_Records.xlsx',mime:xlsxMime});
  }));
  const prepare=async(actor:Actor,objectApi:string,bytes:Buffer,externalField:string)=>{
