@@ -210,3 +210,20 @@
  overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
  padding:0 7px;font:600 11px "Segoe UI",sans-serif;color:#355678;
 }
+
+/* An optional collection is a SOURCE, not a visual field caption.
+   The Source controls remain three rows; this fits their existing footer. */
+.office-builder-ribbon #page-builder-tab-content
+ .smart-ribbon-group[data-smart-tab="Data"] .smart-ribbon-caption:has(.smart-data-items-source){
+ display:flex;align-items:center;justify-content:center;gap:7px;line-height:19px;
+}
+.office-builder-ribbon #page-builder-tab-content .smart-data-items-source{
+ box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;
+ height:16px;padding:0 5px;max-width:84px;white-space:nowrap;
+ font:600 9px/14px "Segoe UI",Arial,sans-serif;
+ border:1px solid #bccbe0;border-radius:3px;background:#f0f5fd;color:#28517c;
+ cursor:pointer;
+}
+.office-builder-ribbon #page-builder-tab-content .smart-data-items-source[aria-pressed="true"]{
+ background:#dceafa;border-color:#4b83bc;color:#153e71;
+}
