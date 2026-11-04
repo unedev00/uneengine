@@ -75,3 +75,15 @@ test('Audit tables and quick-find keep keyboard and long-identifier access',()=>
  assert.match(nav,/matching settings/);
  assert.match(nav,/Clear search/);
 });
+
+test('Offline briefcase enforces server caps with correct whitespace parsing',()=>{
+ const offline=read('../src/core/platform/OfflineBriefcaseSettings/OfflineBriefcaseSettings.tsx');
+ const picker=read('../src/core/platform/OfflineBriefcaseSettings/OfflineRecordPicker.tsx');
+ assert.ok(offline.includes(String.raw`row.recordIdsText.split(/[\s,]+/)`),
+  'Record IDs separated by newlines must be counted as separate selections');
+ assert.ok(!offline.includes(String.raw`row.recordIdsText.split(/[\\s,]+/)`),
+  'Do not match literal backslashes in record ID validation');
+ assert.match(offline,/ids\.length <= 50/);
+ assert.match(offline,/total>=100/);
+ assert.match(picker,/onToggle\(record\.Id, event\.target\.checked\)/);
+});
