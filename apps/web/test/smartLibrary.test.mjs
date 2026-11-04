@@ -1278,7 +1278,7 @@ test('Data ribbon reserves its first row for formula controls and keeps Cart sum
  assert.match(markup,/section==='Cart'&&row===3/);
  assert.match(markup,/disabled=\{uploadBusy\|\|!activeDataEnabled\|\|activeDataProperty\?\.id!=='imageSource'\|\|api!=='smart_image'\}/);
  assert.match(markup,/disabled=\{!activeSummaryLabel\|\|!activeDataEnabled\}/);
- for(const width of ['34px','40px','35px','600px','160px'])
+ for(const width of ['34px','40px','35px','600px','120px','115px'])
   assert.ok(css.includes(width),'Missing Data control minimum width '+width);
 });
 test('Action ribbon retains all existing supported events while fixing component slot widths',()=>{
