@@ -70,7 +70,7 @@ export default function OfflineBriefcaseSettings({ request, permitted, objects }
     count + selection.recordIdsText.split(/[\s,]+/).filter(Boolean).length, 0);
   const dirty = JSON.stringify(selections) !== saved;
   const valid = selectedCount <= 100 && selections.length <= 20 && selections.every(row => {
-    const ids = row.recordIdsText.split(/[\\s,]+/).filter(Boolean);
+    const ids = row.recordIdsText.split(/[\s,]+/).filter(Boolean);
     return row.objectApi && ids.length >= 1 && ids.length <= 50 && new Set(ids).size === ids.length;
   }) && new Set(selections.map(row => row.objectApi)).size === selections.length;
   return <section className="offline-briefcase surface permission-section" aria-label="Mobile offline briefcase">
