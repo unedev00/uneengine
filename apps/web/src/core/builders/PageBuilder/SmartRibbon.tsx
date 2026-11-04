@@ -101,7 +101,9 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  const daysButton=useRef<HTMLButtonElement>(null);
  const daysMenu=useRef<HTMLDivElement>(null);
  const [daysPosition,setDaysPosition]=useState({top:0,left:0});
- useEffect(()=>{
+ useLayoutEffect(()=>{
+  // Canvas field selection must settle before the Formula Bar paints.
+  // A passive effect allows the previous Record filter to flash or capture input.
   setDaysOpen(false);setFiltersOpen(false);
   setSelectedDataField(tab==='Data'&&canvasBinding?.componentId===componentId
    ?canvasBinding.propertyKey:'__record_filter__');
@@ -273,10 +275,17 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  // The same visible ƒx editor can edit a display binding or the source filter.
  // The source filter is an explicit mode, never inferred from the caption text.
  const filterFormulaSelected=tab==='Data'&&selectedDataField==='__record_filter__';
+ const hasItemsSource=definitions.some(p=>p.id==='collectionFormula'&&
+   p.tab==='Data'&&p.components.includes(api)&&(p.kindOverrides?.[api]??p.kind)==='expression');
  const activeDataProperty=tab==='Data'
    ?definitions.find(p=>p.tab==='Data'&&p.id===selectedDataField&&
      p.components.includes(api)&&(p.kindOverrides?.[api]??p.kind)==='expression'):undefined;
  const activeDataKey=activeDataProperty?.valueKeys?.[api]??activeDataProperty?.id??'';
+ const activeDataTitle=activeDataProperty?.id==='collectionFormula'?'Items source':
+  activeDataProperty&&canvasBinding?.componentId===componentId&&
+  canvasBinding.propertyKey===activeDataProperty.id
+   ?canvasBinding.displayLabel||activeDataProperty.label
+   :activeDataProperty?.label??'Record filter';
  const selectedFieldRule=activeDataProperty?fieldFilterRule(activeDataProperty.id):undefined;
  // Record filtering and output-only visibility are different operations.
  const scopedFilterId=filterFieldId&&activeDataProperty?.id===filterFieldId?filterFieldId:null;
@@ -612,7 +621,16 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
       style={{'--smart-section-width':sectionWidth(section)+'px'} as CSSProperties}>
       <div className="smart-ribbon-items">{[1,2,3].map(row=><div className="smart-ribbon-row"
         data-design-row={row} key={row}>{sectionRow(section,row).map(controls)}</div>)}</div>
-      <span className="smart-ribbon-caption">{section}</span>
+      <span className="smart-ribbon-caption">{section}
+        {hasItemsSource&&<button type="button" className="smart-data-items-source"
+          aria-label="Select items source formula"
+          title="Items source: optional formula that supplies records for this component"
+          aria-pressed={selectedDataField==='collectionFormula'}
+          onClick={()=>{setSelectedDataField('collectionFormula');
+            requestAnimationFrame(()=>formulaInputHost.current?.querySelector('input')?.focus());}}>
+          Items source
+        </button>}
+      </span>
     </section>)}
     <div className="smart-data-workspace">
       <div className="smart-data-formula-bar" aria-label="Data expression or record filter formula">
@@ -632,7 +650,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
           aria-label="Upload image"
           onClick={()=>uploadInput.current?.click()}><ImagePlus size={17}/></button>
         <span className="smart-data-active-binding" aria-live="polite">
-          {activeDataProperty?.label??'Record filter'}
+          {activeDataTitle}
         </span>
         <div ref={formulaInputHost} className="smart-data-formula-input">
           {filterFormulaSelected?<SmartFormulaField key="__record_filter__"
@@ -643,7 +661,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
             fields={availableFilterFields} objects={objects} rootObjectApiName={objectName}
             selectedSourceObjects={sourceObjects}/>:
           activeDataProperty?<SmartFormulaField key={activeDataProperty.id+':'+(canvasBinding?.itemId??canvasBinding?.itemIndex??'')}
-            label={activeDataProperty.label} value={activeDataValue}
+            label={activeDataTitle} value={activeDataValue}
             disabled={!activeDataEnabled} onChange={changeActiveDataFormula}
             validate={validateCollection} stateOptions={stateOptions}
             singleFieldOnly={api==='smart_toggle'&&activeDataProperty.id==='textSource'}
@@ -653,7 +671,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
             objects={objects} rootObjectApiName={objectName} selectedSourceObjects={sourceObjects}
             mentionKind={activeDataProperty.id==='imageSource'?'image':'text'}/>:
             <input type="text" disabled aria-label="Formula (select a field first)"
-              placeholder="Select a field's Fx button to edit its formula"/>}
+              placeholder="Select a yellow data icon or Items source to edit its formula"/>}
         </div>
 
       </div>
