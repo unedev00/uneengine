@@ -197,10 +197,11 @@ import PageBuilderRibbonContent from './PageBuilderRibbonContent';
 import { canNestComponent, pageAppearanceTarget, pageAppearanceStyleKeys, updateLayoutSettings, type LayoutSettingKey, directChildren, isLayoutType, isDescendantOf, layoutTypes } from '../../pages/TemplatePageRuntime/pageComponentLayout';
 import PageComponentStyleEditor from '../ComponentStyleEditor/PageComponentStyleEditor';
 import { isCanvasLocked, ungroupCanvasComponent, snapCanvasPosition, alignCanvasComponents, distributeCanvasComponents } from './canvasInteractions';
-import {canvasGroupKey, canvasGroupMembers, groupCanvasSelection, ungroupCanvasSelection, moveCanvasLayer, shiftCanvasLayer, canMoveCanvasLayer, canvasSiblingLayerIndex, canvasGroupBounds} from './canvasLayerGroups';
+import {canvasGroupKey, canvasGroupMembers, groupCanvasSelection, ungroupCanvasSelection, moveCanvasLayer, shiftCanvasLayer, canMoveCanvasLayer, canvasSiblingLayerIndex, canvasGroupBounds, fitCanvasComponentToPage} from './canvasLayerGroups';
 import {canvasScrollbarHit,constrainCanvasRect} from './canvasPointerInteractions';
 import {isSharedCanvasProperty,mixedCanvasPropertyIds,updateSharedCanvasProperties,updateSharedCanvasPositions} from './canvasSharedRibbonProperties';
 import {useCanvasGroupGestures} from './useCanvasGroupGestures';
+import {pageBuilderPreviewDevice} from './pageBuilderPreviewDevice';
 import { copyComponentTree, cloneComponentTree, remapComponentInteractionTargets, assignTabOnReparent, removePageComponentSelection, type ComponentClipboard } from './pageComponentTree';
 import { filterPageComponentRecords, needsMetadataComponentRuntime } from '../../pages/PageRuntime/pageComponentBindings';
 import { childrenOf, canNest, componentLayoutProps, hasPageComponentAppearance, isLayoutContainer, rawLayoutParentId, reparentComponent, resolvePageComponentStyle, type LayoutDevice } from '../../pages/TemplatePageRuntime/pageComponentLayout';
@@ -416,8 +417,7 @@ function PageBuilder({
     setSelectionIds(current => selectedId && current.includes(selectedId) ? current : selectedId ? [selectedId] : []);
   }, [selectedId]);
   const savedPageApiName = useRef(page.apiName);
-  const device: 'Desktop' | 'Tablet' | 'Phone' = page.devices.length === 1 && page.devices[0] === 'Phone' || page.canvasWidth <= 600
-    ? 'Phone' : page.canvasWidth < 1400 ? 'Tablet' : 'Desktop';
+  const device = pageBuilderPreviewDevice(page);
   const orientation = canvasOrientation(page.canvasWidth, page.canvasHeight);
   const [paletteTab, setPaletteTab] = useState<'Components' | 'Fields' | 'Layers'>('Components');
   const [paletteSearch, setPaletteSearch] = useState('');
@@ -2977,6 +2977,8 @@ function PageBuilder({
     canGroup:canGroupSelected,
     canBringToFront:!!selected&&canMoveCanvasLayer(page.components,selected.id,'front'),
     canSendBackward:!!selected&&canMoveCanvasLayer(page.components,selected.id,'backward'),
+    canFitToCanvas:!!selected&&selectionIds.length<=1&&!!selected.position&&
+      !rawLayoutParentId(selected)&&!canvasGroupKey(selected)&&!isCanvasLocked(selected),
     canUngroup:!!selected&&!isCanvasLocked(selected)&&
       (canvasGroupKey(selected)
         ?selectedGroupMembers.every(item=>!isCanvasLocked(item))
@@ -2996,7 +2998,12 @@ function PageBuilder({
       applyPage({...page,components:page.components.map(item=>ids.has(item.id)
         ?{...item,properties:{...item.properties,editorLocked:nextLocked}}:item)});
     },
-    onNesting:()=>openAdvanced('nesting')
+    onNesting:()=>openAdvanced('nesting'),
+    onFitToCanvas:()=>{
+      if(!selected)return;
+      applyPage({...page,components:fitCanvasComponentToPage(page.components,selected.id,
+        {width:page.canvasWidth,height:page.canvasHeight})});
+    }
   };
   const quickAccessOrder=['save','activate','preview','exitPreview','resetIcon','undo','redo','cut','copy','paste','delete'] as const;
   const journeyTabs: Array<typeof ribbonTab> = // The legacy Design tab is retired; Design 2 is the only Design ribbon.
