@@ -39,3 +39,19 @@
  .business-calendar-day .business-calendar-readonly-hours{grid-column:1/-1}
  .business-calendar-day .business-calendar-time-field{grid-column:1/-1;grid-template-columns:74px minmax(0,1fr)}
 }
+
+/* Four-viewport audit: keep business hours readable in the narrow setup rail.
+ * Desktop retains the inline timetable; tablet/laptop prioritise day and hours. */
+.business-calendar-day :is(label,input,select,span){font-size:max(13px,0.8125rem)}
+.business-calendar-day{min-width:0}
+@media(max-width:1100px){
+ .business-calendar-day{
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:10px 16px;align-items:start;padding:12px 4px
+ }
+ .business-calendar-day>strong{grid-column:1;align-self:center}
+ .business-calendar-closed{grid-column:2;justify-self:end}
+ .business-calendar-readonly-hours{grid-column:1/-1}
+ .business-calendar-time-field{grid-column:1/-1;min-width:0}
+ .business-calendar-time-separator{display:none}
+}
