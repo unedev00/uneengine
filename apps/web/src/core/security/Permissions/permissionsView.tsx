@@ -227,6 +227,10 @@ function Permissions({
   const [draft, setDraft] = useState(accessControl);
   const [savedDraft, setSavedDraft] = useState(accessControl);
   const [mobilePermissionDetail, setMobilePermissionDetail] = useState(Boolean(routeResourceId));
+  useEffect(()=>{
+    if(routeResourceApiName==='PermissionSets'||routeResourceApiName==='Users')
+      setMobilePermissionDetail(Boolean(routeResourceId));
+  },[routeResourceApiName,routeResourceId]);
   const [permissionListPage,setPermissionListPage]=useState(0);
   const permissionListPageSize=25;
   const [newRoleId, setNewRoleId] = useState<string | null>(null);
@@ -337,7 +341,7 @@ function Permissions({
             : nextTab === 'publicGroups' ? draft.publicGroups[0]?.id
               : nextTab === 'queues' ? draft.queues[0]?.id
               : nextTab === 'sharingRules' ? draft.sharingRules[0]?.id : draft.users[0]?.id;
-    onRouteResourceChange(resourceApiName, initialId);
+    onRouteResourceChange(resourceApiName, viewportWidth < 1024 && (nextTab==='sets'||nextTab==='users') ? undefined : initialId);
     if (nextTab === 'profiles') setSelectedId(draft.profiles[0]?.id ?? '');
     else if (nextTab === 'sets') setSelectedId(draft.permissionSets[0]?.id ?? '');
     else if (nextTab === 'groups') setSelectedId(draft.permissionSetGroups[0]?.id ?? '');
