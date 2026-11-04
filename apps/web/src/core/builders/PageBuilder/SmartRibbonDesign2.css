@@ -252,3 +252,71 @@
   max-width:var(--smart-control-width)!important;
   height:26px!important;
 }
+
+/* Row 0's prescribed four fixed cells: area selector (C1), eye (C2),
+ * X Position (C3 80x26), Y Position (C4 80x26). Nothing is auto-packed.
+ * R1-R3 retain their independent 380px property grid and SQL geometry. */
+.office-builder-ribbon #page-builder-tab-content
+  >.smart-design2-ribbon>.smart-ribbon-group.smart-design2-group{
+  --smart-section-width:500px!important;
+  flex:0 0 500px!important;
+  width:500px!important;
+  min-width:500px!important;
+  max-width:500px!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-design2-workbench{
+  width:480px!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-design2-context[data-design-row="0"]{
+  width:472px!important;
+  min-width:472px!important;
+  max-width:472px!important;
+  justify-content:flex-start!important;
+  gap:4px!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-design2-context[data-design-row="0"]>.smart-property{
+  box-sizing:border-box!important;
+  display:inline-flex!important;
+  flex:0 0 80px!important;
+  width:80px!important;
+  min-width:80px!important;
+  max-width:80px!important;
+  height:26px!important;
+  min-height:26px!important;
+  max-height:26px!important;
+  margin:0!important;
+  padding:0!important;
+  align-items:center!important;
+  overflow:hidden!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-design2-context[data-design-row="0"]>.smart-property>.smart-label{
+  display:none!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-design2-context[data-design-row="0"]>.smart-property .smart-numeric{
+  box-sizing:border-box!important;
+  flex:0 0 80px!important;
+  width:80px!important;
+  min-width:80px!important;
+  max-width:80px!important;
+  height:26px!important;
+  min-height:26px!important;
+  max-height:26px!important;
+  margin:0!important;
+  padding:0!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-design2-context[data-design-row="0"]>.smart-property .smart-numeric input.smart-office-number{
+  box-sizing:border-box!important;
+  flex:1 1 auto!important;
+  width:100%!important;
+  min-width:0!important;
+  max-width:100%!important;
+  height:24px!important;
+  min-height:24px!important;
+  max-height:24px!important;
+}
