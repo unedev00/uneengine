@@ -55,7 +55,7 @@ test('Mixed selection only suppresses Layout when every component has Design cov
  assert.equal(matches('width',['smart_image','smart_cart'],['smart_image']),false);
 });
 
-test('Image Border Color and Icon Fill Color are absent from every ribbon tab',()=>{
+test('Only Card Grid has a contextual Image Border editor; Icon Fill stays hidden',()=>{
  assert.equal(HIDDEN_RIBBON_PROPERTY_KEYS.has('imageBorderColor'),true);
  assert.equal(HIDDEN_RIBBON_PROPERTY_KEYS.has('iconFillColor'),true);
  assert.equal(HIDDEN_RIBBON_PROPERTY_KEYS.has('borderColor'),false);
@@ -64,4 +64,5 @@ test('Image Border Color and Icon Fill Color are absent from every ribbon tab',(
  assert.match(ribbon,/!HIDDEN_RIBBON_PROPERTY_KEYS\.has\(p\.id\)/);
  assert.match(ribbon,/hasDesign2LayoutEquivalent\(/);
  assert.match(ribbon,/tab==='Layout'&&hasDesign2LayoutEquivalent/);
+ assert.match(ribbon,/activeDesign2Area==='Image'&&api==='smart_card_grid'/);
 });
