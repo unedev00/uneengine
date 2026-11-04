@@ -12,21 +12,6 @@
   --page-ribbon-scrollbar-height: 9px;
   --page-ribbon-scroll-strip-height: 127px;
 }
-/* Data reserves a formula-only row above its full metadata section matrix.
-   Other tabs keep the existing 114px layout. */
-.office-builder-ribbon[aria-label="Page Builder ribbon"]:not(.is-interactive-preview)
-  #page-builder-tab-content.office-ribbon-content[aria-label="Component Data"]{
-  --page-ribbon-content-height:140px;
-  --page-ribbon-scroll-strip-height:153px;
-}
-.office-builder-ribbon[aria-label="Page Builder ribbon"]:not(.is-interactive-preview)
-  #page-builder-tab-content.office-ribbon-content[aria-label="Component Data"]
-  >.smart-ribbon[data-smart-tab="Data"]{
-  height:var(--page-ribbon-content-height)!important;
-  min-height:var(--page-ribbon-content-height)!important;
-  max-height:var(--page-ribbon-content-height)!important;
-}
-
 .office-builder-ribbon[aria-label="Page Builder ribbon"]:not(.is-interactive-preview)
   #page-builder-tab-content.office-ribbon-content:is([role="tabpanel"]) {
   box-sizing: border-box !important;
