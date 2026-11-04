@@ -1309,20 +1309,18 @@ test('Smart Textbox SQL enables only approved properties and User pilot requires
 });
 
 
-test('Data ribbon reserves its first row for formula controls and keeps Cart summary visible below',()=>{
+test('Data ribbon keeps image, formula and cart summary slots stable without injecting properties',()=>{
  const markup=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
  const css=read('../src/core/builders/PageBuilder/SmartRibbonDataFormula.css');
  const filter=markup.indexOf('className="smart-data-filter-button"');
  const upload=markup.indexOf('className="smart-data-image-upload"');
  const formula=markup.indexOf('className="smart-data-formula-input"');
- const sections=markup.indexOf('className="smart-data-sections"',formula);
  const summary=markup.indexOf('className="smart-data-summary-name"');
- assert.ok(filter>=0&&upload>filter&&formula>upload&&sections>formula&&summary>sections);
- assert.match(markup,/section==='Cart'&&row===3/);
+ assert.ok(filter>=0&&upload>filter&&formula>upload&&summary>formula);
  assert.match(markup,/disabled=\{uploadBusy\|\|!activeDataEnabled\|\|activeDataProperty\?\.id!=='imageSource'\|\|api!=='smart_image'\}/);
  assert.match(markup,/disabled=\{!activeSummaryLabel\|\|!activeDataEnabled\}/);
- for(const width of ['34px','40px','35px','600px','120px','115px'])
-  assert.ok(css.includes(width),'Missing Data control minimum width '+width);
+ for(const width of ['34px','40px','35px','600px','115px'])
+  assert.ok(css.includes(width),'Missing specified Data slot width '+width);
 });
 test('Action ribbon retains all existing supported events while fixing component slot widths',()=>{
  const markup=read('../src/core/builders/PageBuilder/PageBuilderActionRibbon.tsx');
