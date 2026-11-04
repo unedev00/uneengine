@@ -202,7 +202,7 @@ function Fixture(){
    else if(view==='federation')content=<TenantFederationControls request={uxRequest} canManage/>;
    else if(view==='password')content=<TenantPasswordPolicy request={uxRequest} canManage/>;
    else if(view==='sessions')content=<TenantSessionControls request={uxRequest} canManage/>;
-  else if(view==='company')content=<CompanySettingsWorkspace initialSection="security" company={<p>Company</p>}
+  else if(view==='company')content=<CompanySettingsWorkspace mobile={window.innerWidth<=600} initialSection="security" company={<p>Company</p>}
    domains={<p>Domains</p>} developer={<p>Developer</p>} usage={<p>Usage</p>} recovery={<p>Recovery</p>}
    mfa={<TenantGovernance request={uxRequest} canManage initialTab="connected apps" focusOnMount/>} emailRecovery={<p>Email recovery</p>} locks={<p>Locks</p>}
    sessions={<p>Sessions</p>} audit={<p>Audit</p>}/>;
