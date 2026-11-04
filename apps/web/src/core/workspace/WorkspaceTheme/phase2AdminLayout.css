@@ -431,12 +431,9 @@
  .lightning .records-data-table :is(th,td):first-child{
   position:sticky;left:0;z-index:2;background:var(--md-surface,#fff);box-shadow:2px 0 6px rgba(15,23,42,.1)
  }
- .lightning .records-data-table :is(th,td):nth-child(2){
-  position:sticky;left:0;z-index:2;background:var(--md-surface,#fff)
- }
  .lightning .records-data-table:has(th:first-child input[type="checkbox"]) :is(th,td):first-child{min-width:40px}
  .lightning .records-data-table:has(th:first-child input[type="checkbox"]) :is(th,td):nth-child(2){
-  left:40px;min-width:145px;box-shadow:2px 0 6px rgba(15,23,42,.08)
+  position:sticky;z-index:2;background:var(--md-surface,#fff);left:40px;min-width:145px;box-shadow:2px 0 6px rgba(15,23,42,.08)
  }
  .lightning .records-data-table thead :is(th:first-child,th:nth-child(2)){z-index:4;background:var(--md-surface-2,#f8fafc)}
 }
