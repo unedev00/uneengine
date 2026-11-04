@@ -1,0 +1,123 @@
+/* Trial layout: Excel-style ribbon collapse/pin and a left-docked Design panel.
+ * Placement only. Colours, borders and control art come from the existing
+ * ribbon and Design 2 styles, because the dock reuses .office-builder-ribbon and
+ * #page-builder-tab-content. Row 0 wraps into four rows; R1-R3 keep the SQL matrix. */
+
+/* Topbar toggles (dock Design left, collapse/pin ribbon). */
+.office-builder-ribbon .office-ribbon-layout-toggles{
+  display:inline-flex;align-items:center;gap:2px;flex:0 0 auto;margin-left:4px;
+}
+.office-ribbon-layout-toggle{
+  box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;
+  width:30px;height:30px;padding:0;border:0;border-radius:4px;
+  background:transparent;color:#eef5ff;cursor:pointer;
+}
+.office-ribbon-layout-toggle:hover,
+.office-ribbon-layout-toggle.is-on{background:#2c6097;color:#fff}
+.office-ribbon-layout-toggle:focus-visible{outline:2px solid #9dccff;outline-offset:1px}
+
+/* Collapsed ribbon: tabs stay, the property strip hides (like Excel). While Design is
+ * docked left the top strip is empty for the Design tab, so it hides too. */
+.office-builder-ribbon[aria-label="Page Builder ribbon"].is-ribbon-collapsed>.office-ribbon-content,
+.office-builder-ribbon[aria-label="Page Builder ribbon"].is-design-docked>.office-ribbon-content{
+  display:none!important;
+}
+
+/* Canvas area: dock on the left, canvas fills the rest. */
+.builder-page .page-builder-layout.canvas-unified-builder.has-design-dock{
+  display:flex!important;align-items:flex-start!important;
+}
+.builder-page .page-builder-layout.canvas-unified-builder.has-design-dock>.page-preview-area{
+  flex:1 1 0!important;width:auto!important;min-width:0!important;
+}
+.page-builder-design-dock{
+  box-sizing:border-box;flex:0 0 440px;width:440px;
+  position:sticky;top:0;max-height:calc(100vh - 96px);overflow:auto;
+  background:#f4f5f7;border-right:1px solid #ccd2dd;color:#25344c;
+}
+.page-builder-design-dock-header{
+  display:flex;align-items:center;gap:6px;height:34px;padding:0 6px 0 10px;
+  border-bottom:1px solid #ccd2dd;font:600 12px/1 "Segoe UI",Arial,sans-serif;color:#183b68;
+}
+.page-builder-design-dock-header>span{flex:1 1 auto}
+.page-builder-design-dock-header .office-ribbon-layout-toggle{color:#315577}
+.page-builder-design-dock-header .office-ribbon-layout-toggle:hover{background:#e9f2fc;color:#183b68}
+.page-builder-design-dock .page-builder-design-dock-ribbon{border-bottom:0}
+
+/* Dock tab panel: vertical, no fixed ribbon height, no horizontal scroll. */
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content.office-ribbon-content{
+  display:block!important;box-sizing:border-box!important;
+  width:440px!important;height:auto!important;min-height:0!important;max-height:none!important;
+  padding:10px!important;overflow:visible!important;
+}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+  >.smart-ribbon.smart-design2-ribbon[data-three-row="true"]{
+  width:420px!important;min-width:0!important;max-width:420px!important;
+  height:auto!important;min-height:0!important;max-height:none!important;
+}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content.office-ribbon-content
+  >.smart-ribbon.smart-design2-ribbon[data-three-row="true"]
+  >.smart-ribbon-group.smart-design2-group[data-design-three-row="true"]{
+  flex:none!important;width:420px!important;min-width:0!important;max-width:420px!important;
+  height:auto!important;min-height:0!important;max-height:none!important;
+  padding:0!important;border:0!important;
+}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-design2-workbench{
+  width:420px!important;min-width:0!important;max-width:420px!important;
+  height:auto!important;min-height:0!important;max-height:none!important;
+  gap:10px!important;
+}
+
+/* Row 0 wraps by width: area picker / eye X Y lock nesting / 6 align / 6 arrange. */
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-design2-context[data-design-row="0"]{
+  flex:none!important;flex-wrap:wrap!important;align-content:flex-start!important;
+  width:420px!important;min-width:0!important;max-width:420px!important;
+  height:auto!important;min-height:0!important;max-height:none!important;
+  gap:6px 4px!important;
+}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-design2-area-picker{
+  order:0!important;flex:0 0 420px!important;width:420px!important;height:30px!important;
+}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-design2-area-select{height:28px!important}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-design2-visibility{
+  order:1!important;flex:0 0 44px!important;width:44px!important;
+}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-design2-context[data-design-row="0"]>:is(.smart-property,.smart-design2-empty-position){
+  order:2!important;flex:0 0 120px!important;width:120px!important;min-width:120px!important;max-width:120px!important;
+}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-design2-context[data-design-row="0"]>.smart-property .smart-numeric{
+  flex:0 0 120px!important;width:120px!important;min-width:120px!important;max-width:120px!important;
+}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-design2-r0-gap{display:none!important}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-design2-arrange-actions{display:contents!important}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-design2-arrange-action{
+  order:5!important;width:66px!important;min-width:66px!important;max-width:66px!important;
+}
+/* Lock (C19) and nesting (C20) sit on the eye/X/Y line. */
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-design2-arrange-action:is([data-design-column="19"],[data-design-column="20"]){
+  order:3!important;width:58px!important;min-width:58px!important;max-width:58px!important;
+}
+/* Alignment (C7-C12) before distribute/layer/group (C13-C18). */
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-design2-arrange-action:is([data-design-column="7"],[data-design-column="8"],
+    [data-design-column="9"],[data-design-column="10"],[data-design-column="11"],[data-design-column="12"]){
+  order:4!important;
+}
+
+/* R1-R3: unchanged SQL slot grid, stacked under row 0. */
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-design2-workbench>.smart-ribbon-items{
+  height:auto!important;gap:6px!important;padding-top:8px!important;
+  border-top:1px solid #ccd2dd!important;width:420px!important;
+}
