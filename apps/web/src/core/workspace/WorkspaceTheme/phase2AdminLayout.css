@@ -323,3 +323,34 @@
   }
   .lightning .md-audit-table th:first-child {z-index: 3;background:var(--md-surface-2,#f8fafc);}
 }
+
+/* Permission Sets: one task at a time on small screens, instead of stacking
+   the entire selector and the multi-thousand-pixel editor. */
+.lightning .md-permission-sets-mobile-back {display:none}
+@media (max-width: 1023px) {
+  .lightning .permissions-page .permission-workspace.md-permission-sets-list-mode,
+  .lightning .permissions-page .permission-workspace.md-permission-sets-detail-mode {display:block;min-width:0}
+  .lightning .permissions-page .md-permission-sets-list-mode .permission-editor {display:none}
+  .lightning .permissions-page .md-permission-sets-detail-mode .permission-list {display:none}
+  .lightning .permissions-page .md-permission-sets-list-mode .permission-list {
+    max-height:min(70dvh,700px);height:auto;width:100%;overflow:auto;border-right:0
+  }
+  .lightning .permissions-page .md-permission-sets-detail-mode .permission-editor {min-width:0;overflow:visible}
+  .lightning .md-permission-sets-mobile-back {display:inline-flex;min-height:44px;margin-bottom:12px}
+  .lightning .md-permission-mobile-save {
+    display:flex;position:sticky;bottom:0;z-index:6;justify-content:flex-end;
+    background:var(--md-surface,#fff);padding:12px 4px;border-top:1px solid var(--md-border,#e0e5eb)
+  }
+  .lightning .md-permission-mobile-save>.btn {min-height:44px}
+}
+@media (min-width: 1024px) {.lightning .md-permission-mobile-save{display:none}}
+/* RBAC tabs keep their reading order on small phones. */
+@media (max-width: 599px) {
+  .lightning .permissions-page .permission-tabs {
+    display:flex;flex-wrap:wrap;justify-content:flex-start;gap:5px;
+    max-width:100%;overflow:visible
+  }
+  .lightning .permissions-page .permission-tabs>button {
+    flex:1 1 auto;max-width:100%;min-height:44px;white-space:normal;text-align:center
+  }
+}
