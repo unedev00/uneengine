@@ -39,7 +39,8 @@ export function registerGovernanceRoutes(app:Express,db:SqlPersistence,rbac:Rbac
  app.get('/api/security/monitoring',route(async(req,res)=>{const a=req.actor!;res.json(await monitor.describe(a.tenant_id,a.user_id,req.query.before,req.query.limit));}));
  app.put('/api/security/monitoring',route(async(req,res)=>{const a=req.actor!;res.json(await monitor.configure(a.tenant_id,a.user_id,req.body));}));
  app.put('/api/security/monitoring/rules',route(async(req,res)=>{const a=req.actor!;res.json(await monitor.saveRule(a.tenant_id,a.user_id,req.body));}));
- app.post('/api/security/monitoring/prune',route(async(req,res)=>{const a=req.actor!;res.json(await monitor.prune(a.tenant_id,a.user_id));}));
+ app.get('/api/security/monitoring/prune-preview',route(async(req,res)=>{const a=req.actor!;res.setHeader('Cache-Control','private, no-store');res.json(await monitor.prunePreview(a.tenant_id,a.user_id));}));
+ app.post('/api/security/monitoring/prune',route(async(req,res)=>{const a=req.actor!;res.json(await monitor.prune(a.tenant_id,a.user_id,req.body?.confirmation,req.body?.expectedRetentionDays));}));
  app.get('/api/security/connected-apps',route(async(req,res)=>{const a=req.actor!;res.json(await connected.describe(a.tenant_id,a.user_id));}));
  app.put('/api/security/connected-apps',route(async(req,res)=>{const a=req.actor!;res.setHeader('Cache-Control','no-store');res.json(await connected.save(a.tenant_id,a.user_id,req.body));}));
  app.post('/api/security/connected-apps/rotate-secret',route(async(req,res)=>{const a=req.actor!;res.setHeader('Cache-Control','no-store');res.json(await connected.rotateSecret(a.tenant_id,a.user_id,req.body?.id));}));
