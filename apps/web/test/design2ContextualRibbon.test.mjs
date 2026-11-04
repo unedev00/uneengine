@@ -11,6 +11,7 @@ const css=read('../src/core/builders/PageBuilder/SmartRibbonDesign2.css');
 const cart=read('../src/component-libraries/smart_cart/SmartCart.jsx');
 const table=read('../src/component-libraries/smart_table/SmartTable.jsx');
 const inventory=read('../src/core/builders/PageBuilder/uneBuilderPropertyInventory.ts');
+const iconDropdown=read('../src/core/builders/PageBuilder/SmartIconDropdown.tsx');
 
 const slotPattern=/\('([^']+)',(\d+),'([^']+)',([23]),(\d+),(\d+),26,(NULL|'[^']+'),'([^']+)'\)/g;
 const rows=[...sql.matchAll(slotPattern)].map(([,area,areaOrder,slot,row,order,width,key,fallback])=>({
@@ -213,4 +214,26 @@ test('Design 2 R0 X/Y has exact 80x26 geometry without shifting property rows',(
  assert.match(css,/width:472px!important/);
  assert.match(shared,/\[1,2,3\]\.map\(row/);
  assert.match(shared,/gridTemplateColumns:design2GridColumns\(\)/);
+});
+
+
+test('approved R3C2 alignment and R2/R3C6 image controls use icon dropdowns',()=>{
+ assert.equal(fixed('Body','alignment').row,3);
+ assert.equal(fixed('Body','alignment').order,2);
+ assert.equal(fixed('Body','alignment').width,40);
+ assert.equal(fixed('Image','placement').row,2);
+ assert.equal(fixed('Image','placement').order,6);
+ assert.equal(fixed('Image','placement').width,40);
+ assert.equal(fixed('Image','imageFill').row,3);
+ assert.equal(fixed('Image','imageFill').order,6);
+ assert.equal(fixed('Image','imageFill').width,40);
+ assert.match(shared,/kind==='align'&&compactDesign&&property\.designDisplay==='dropdown'/);
+ assert.match(shared,/\['imageFill','imagePlacement','badgeAlignment'\]\.includes\(property\.id\)/);
+ assert.match(shared,/editor=<SmartIconDropdown kind=\{property\.id as/);
+ assert.match(iconDropdown,/type IconKind='align'\|'shadow'\|'imageFill'\|'imagePlacement'\|'badgeAlignment'/);
+ for(const value of ["'fill'","'fit'","'stretch'","'top'","'left'","'right'","'bottom'"])
+  assert.ok(iconDropdown.includes('value:'+value),value+' missing from actual icon menu');
+ assert.match(iconDropdown,/aria-haspopup="menu"/);
+ assert.match(iconDropdown,/role="menuitemradio"/);
+ assert.match(iconDropdown,/onChange\(option\.value\)/);
 });
