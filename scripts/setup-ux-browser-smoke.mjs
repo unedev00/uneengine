@@ -26,6 +26,14 @@ try {
  await page.getByRole('button',{name:'Add object'}).click();
  await page.getByRole('combobox').selectOption('Account');
  await page.getByRole('checkbox',{name:'Acme Corporation'}).check();
+ const recordSearch=page.getByRole('searchbox',{name:'Find records'});
+ await recordSearch.fill('unavailable');
+ await page.getByRole('alert').getByText('Record search is temporarily unavailable.',{exact:false}).waitFor();
+ assert.equal(await page.getByText('SQL service unavailable').count(),0,'Never expose SQL errors in offline records');
+ assert.equal(await page.getByRole('checkbox',{name:'Acme Corporation'}).count(),1,'Retain previous results during outage');
+ await page.getByRole('button',{name:'Retry record search'}).click();
+ await recordSearch.fill('');
+ await page.getByRole('checkbox',{name:'Acme Corporation'}).waitFor();
  assert.equal(await save.isEnabled(),true);
  await save.click();
  await page.getByRole('status').filter({hasText:'selections saved'}).waitFor();
