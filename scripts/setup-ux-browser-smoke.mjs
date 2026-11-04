@@ -110,9 +110,9 @@ try {
  const requestFilter=page.getByRole('searchbox',{name:'Filter loaded requests'});
  await requestFilter.fill('reports');
  await page.getByText('1 matching of 3 loaded requests').waitFor();
- await page.getByLabel('Status',{exact:true}).selectOption('errors');
+ await page.getByRole('combobox',{name:'Monitoring event status'}).selectOption('errors');
  await page.getByRole('cell',{name:'/api/reports',exact:false}).waitFor();
- await page.getByLabel('Status',{exact:true}).selectOption('all');
+ await page.getByRole('combobox',{name:'Monitoring event status'}).selectOption('all');
  await requestFilter.fill('');
  await page.getByText('3 matching of 3 loaded requests').waitFor();
  await screenshot('phase2-monitoring');
