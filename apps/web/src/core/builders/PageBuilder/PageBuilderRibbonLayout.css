@@ -325,13 +325,8 @@
   box-sizing:border-box!important;flex:0 0 47px!important;width:47px!important;
   min-width:47px!important;max-width:47px!important;
 }
-/* Preserve Column Visibility's metadata, width and location. Only extend the
- * gap AFTER it to align Summary 3 beneath Column 5 (225px first track). */
-.office-builder-ribbon #page-builder-tab-content .smart-ribbon[data-three-row="true"]
-  .smart-ribbon-group[data-smart-tab="Data"][aria-label="Cart"]
-  .smart-ribbon-row[data-design-row="3"]>.smart-property[data-property="columnVisibility"]{
-  margin-right:80px!important;
-}
+/* Data positions now follow the three-row SQL grid; never insert phantom
+ * margin after Column Visibility or any other Cart control. */
 
 /* Design: 125px Badge Alignment with a single shared bordered
  * "Alignment | value" field, preserving the existing choices and binding. */

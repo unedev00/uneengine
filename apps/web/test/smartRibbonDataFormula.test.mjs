@@ -124,9 +124,9 @@ test('Cart Data geometry uses 10 percent wider true control tracks and two-pixel
  assert.doesNotMatch(migration,/objectApiName|DELETE FROM|TRUNCATE|md_page_components/);
  assert.match(ui,/properties\.length\+extra-1\)\*\(tab==='Data'\?2:4\)/);
  assert.match(ui,/dataChipWidth\(p\.group\)/);
- assert.match(ui,/Math\.max\(210,p\.designWidth\?\?0\)/);
+ assert.match(ui,/Math\.max\(165,p\.designWidth\?\?0\)/);
  assert.match(dataCss,/smart-data-sections[\s\S]*?\.smart-ribbon-row\{[\s\S]*?column-gap:2px!important/);
- assert.match(dataCss,/\.smart-ribbon-group\[aria-label="Cart"\]/);
+ assert.doesNotMatch(dataCss,/\.smart-ribbon-group\[aria-label="Cart"\]/);
  assert.match(dataCss,/\.smart-ribbon-group:last-child\{/);
  assert.match(dataCss,/data-property="columnVisibility"\] \.smart-multiselect-trigger/);
  assert.match(dataCss,/width:100%!important;min-width:0!important;max-width:100%!important/);
@@ -148,6 +148,51 @@ test('Data metadata widths are equal in Values and prevent Cart and Source colli
  assert.match(css,/smart-data-summary-slot/);
  assert.match(css,/--smart-data-chip-width/);
  assert.doesNotMatch(css,/display:none!important[^}]*smart-data-summary-name/);
+});
+
+test('approved compact three-row Data matrix matches all screenshot controls',()=>{
+ const approved=read('../../server/src/system-support/migrations/20271111-data-ribbon-approved-compact-three-rows.sql');
+ const placements=[...approved.matchAll(/\('([^']+)','([^']+)',(\d+),(\d+),(\d+)\)/g)]
+  .map(match=>({key:match[1],group:match[2],row:+match[3],col:+match[4],width:+match[5]}));
+ const expected={
+  Source:[['objectApiName'],['objectApiName2'],['objectApiName3']],
+  Values:[['imageSource','textSource','label'],
+          ['badgeText','customButton1Label','customButton2Label'],
+          ['defaultValue','defaultCheck']],
+  Cart:[['column2Source','column3Source','subtotalValue','taxValue'],
+        ['column4Source','rowSupportingSource','column5Source','totalValue'],
+        [null,'discountValue','columnVisibility']],
+  'Card Grid':[['cardDescription'],['cardButtonText'],['cardValue']]
+ };
+ assert.equal(placements.length,24,'no existing control omitted or duplicated');
+ for(const [group,rows] of Object.entries(expected)){
+  rows.forEach((row,r)=>row.forEach((key,c)=>{
+   if(key===null)return; // The persisted Cart summary label editor is inline at R3C1.
+   const matching=placements.filter(slot=>slot.key===key);
+   assert.equal(matching.length,1,key+' must appear exactly once');
+   assert.deepEqual(matching[0],{key,group,row:r+1,col:c+1,width:group==='Source'?165:120});
+  }));
+ }
+ assert.match(ui,/section==='Cart'&&row===3&&<span className="smart-data-summary-slot">/);
+ const inline=ui.indexOf('section===\'Cart\'&&row===3');
+ const fields=ui.indexOf('{dataSectionRow(section,row).map(controls)}',inline);
+ assert.ok(inline>0&&fields>inline,'inline Cart summary must precede R3C2 Summary 4');
+ assert.match(ui,/const dataChipWidth=\(group:string\)=>Math.max\(120/);
+ assert.match(ui,/group==='Source'\)\?0:/);
+ assert.match(ui,/\['Values','Cart','Card Grid'\]\.includes\(p\.group\)/);
+ assert.doesNotMatch(approved,/\b(?:DELETE|TRUNCATE|INSERT INTO md_builder_shared_properties|UPDATE md_page_components)\b/i);
+});
+
+test('Source field width uses one label and 115px selector, without phantom Cart gap',()=>{
+ const css=read('../src/core/builders/PageBuilder/SmartRibbonDataFormula.css');
+ const layout=read('../src/core/builders/PageBuilder/PageBuilderRibbonLayout.css');
+ assert.match(css,/flex:0 0 115px!important/);
+ assert.match(css,/width:115px!important;min-width:115px!important;max-width:115px!important/);
+ assert.match(css,/\.smart-ribbon\[data-three-row="true"\] \.smart-data-sections/);
+ assert.doesNotMatch(layout,/margin-right:80px!important/);
+ assert.match(layout,/overflow-x: auto !important/);
+ assert.match(css,/smart-data-summary-slot/);
+ assert.match(css,/--smart-data-chip-width,120px/);
 });
 
 test('Cart Summary 1–4 labels fit the existing Data ribbon controls without width changes',()=>{

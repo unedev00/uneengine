@@ -58,8 +58,8 @@
   font:11px "Segoe UI",sans-serif;
 }
 .office-builder-ribbon #page-builder-tab-content .smart-data-summary-slot{
-  box-sizing:border-box;display:inline-flex;flex:0 0 var(--smart-data-chip-width,160px);
-  width:var(--smart-data-chip-width,160px);height:26px;min-width:0;max-width:none;
+  box-sizing:border-box;display:inline-flex;flex:0 0 var(--smart-data-chip-width,120px);
+  width:var(--smart-data-chip-width,120px);height:26px;min-width:0;max-width:none;
 }
 .office-builder-ribbon #page-builder-tab-content .smart-data-summary-name:disabled{
   background:#f0f2f6;color:#8795a7;cursor:not-allowed;
@@ -142,10 +142,14 @@
   box-sizing:border-box!important;display:inline-flex!important;
   flex:0 0 47px!important;width:47px!important;
 }
-.office-builder-ribbon #page-builder-tab-content .smart-data-sections
+/* Extra specificity overrides the old fixed 150px selector in the global
+   ribbon CSS. No spare 80px/52px track after the object selector. */
+.office-builder-ribbon #page-builder-tab-content
+  .smart-ribbon[data-three-row="true"] .smart-data-sections
+  .smart-ribbon-group[data-smart-tab="Data"]
   .smart-property[data-property^="objectApiName"] .smart-select{
-  box-sizing:border-box!important;flex:0 0 150px!important;
-  width:150px!important;min-width:150px!important;max-width:150px!important;
+  box-sizing:border-box!important;flex:0 0 115px!important;
+  width:115px!important;min-width:115px!important;max-width:115px!important;
 }
 /* Density follows the SQL section geometry; do not clip or hide overflow. */
 .office-builder-ribbon #page-builder-tab-content .smart-data-sections
@@ -165,10 +169,8 @@
   flex:0 0 auto!important;margin-left:auto!important;
 }
 
-/* Cart's final boundary is not a section separator. Keep the Source and
- * Values separators, but never draw a trailing rule after Cart. */
-.office-builder-ribbon #page-builder-tab-content .smart-data-sections
-  >.smart-ribbon-group[aria-label="Cart"],
+/* Every section keeps its dividing border; only the final section omits it.
+   This includes the boundary between Cart and Card Grid. */
 .office-builder-ribbon #page-builder-tab-content .smart-data-sections
   >.smart-ribbon-group:last-child{
   border-right:0!important;
