@@ -128,11 +128,11 @@ function Monitoring({request}:{request:Request}){
  <div className="md-admin-toolbar">
   <label className="form-label">Filter loaded requests<input type="search" className="form-control" value={eventQuery}
     placeholder="Path, method, status or event" onChange={e=>{setEventQuery(e.target.value);setPage(0);}}/></label>
-  <label className="form-label">Status<select className="form-control" value={eventStatus}
+  <label className="form-label" htmlFor="monitoring-event-status-filter">Status</label><select id="monitoring-event-status-filter" aria-label="Monitoring event status" className="form-control" value={eventStatus}
     onChange={e=>{setEventStatus(e.target.value);setPage(0);}}>
     <option value="all">All loaded statuses</option><option value="errors">Errors (400+)</option>
     <option value="success">Successful (200–399)</option>
-   </select></label>
+   </select>
   <span role="status">{filteredEvents.length} matching of {data.events.length} loaded requests</span>
  </div>
  <div className="md-admin-table-wrap" role="region" aria-label="Security monitoring events" tabIndex={0}><table className="data-table md-admin-table md-audit-table"><thead><tr><th scope="col">Time</th><th scope="col">Event</th><th scope="col">Request</th><th scope="col">Status</th><th scope="col">Milliseconds</th></tr></thead><tbody>{visibleEvents.map(e=><tr key={e.id}><td data-label="Time">{new Date(e.created_at).toLocaleString()}</td><td data-label="Event">{e.event_type}</td><td data-label="Request">{e.method} {e.resource}</td><td data-label="Status">{e.status_code||'In progress'}</td><td data-label="Milliseconds">{e.elapsed_ms}</td></tr>)}{visibleEvents.length===0&&<tr><td colSpan={5} className="md-admin-empty-row">{data.events.length===0?'No recent requests recorded.':'No loaded requests match these filters.'}</td></tr>}</tbody></table></div>
