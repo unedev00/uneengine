@@ -58,3 +58,10 @@ ON CONFLICT(component_api,area,slot_key) DO NOTHING;
 UPDATE md_builder_ribbon_component_rules
 SET enabled_when_override='{"property":"imagePlacement","in":["","top","bottom"]}'::jsonb
 WHERE component_api='smart_card_grid' AND property_key='imageHeight';
+
+-- Default Value Color is retired for Smart Table: it only backed up the header
+-- text colour, which Header R3C1 (headerTextColor) already controls.
+-- Smart Calendar keeps using it (Body Focus R2C1).
+UPDATE md_builder_ribbon_component_rules
+SET enabled=false
+WHERE property_key='defaultValueColor' AND component_api='smart_table';

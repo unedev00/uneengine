@@ -30,7 +30,7 @@ test('Smart Button confines overlarge labels and retains full accessible tooltip
 
 test('Floating canvas editor commands open the ribbon tabs that actually render those properties',()=>{
  const view=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
- assert.match(view,/onClick=\{\(\) => selectRibbonTab\('Component Properties'\)\} title="Edit block"/);
+ assert.match(view,/onClick=\{\(\) => selectRibbonTab\('Component Design 2'\)\} title="Edit block"/);
  assert.match(view,/onClick=\{\(\) => selectRibbonTab\('Component Layout'\)\} title="Position and size"/);
  assert.match(view,/onClick=\{\(\) => selectRibbonTab\('Component Layout'\)\}>Align and position/);
  assert.match(view,/onClick=\{\(\) => selectRibbonTab\('Component Data'\)\}>Data, links and actions/);

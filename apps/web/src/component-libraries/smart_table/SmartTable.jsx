@@ -36,7 +36,8 @@ export default function SmartTable({p,records,expression,fieldAllowed,fire}){
  const border=value=>value?"1px solid "+value:"1px solid transparent";
  const headingStyle={
   backgroundColor:colour(p.headerBodyColor,"#f3f6fb"),
-  color:colour(p.headerTextColor,p.defaultValueColor||"#172a45"),
+  // Default Value Color is retired for Smart Table; Header Label Color owns this.
+  color:colour(p.headerTextColor,"#172a45"),
   borderBottom:border(p.headerBorderColor),
   textAlign:p.headerAlignment||p.labelAlignment||"left",
   fontSize:finite(p.headerTextSize??p.textSize,13,9,96),
