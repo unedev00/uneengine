@@ -55,7 +55,10 @@ export function registerUniversalLoaderRibbonRoutes(app:Express,db:SqlPersistenc
  };
  app.post('/api/data-loader/ribbon/export',route(async(req,res)=>{
   const actor=req.actor!;await access(actor);
-  const rules=await available();
+  const scope=String(req.body?.componentApi??'');
+  if(scope&&!/^[A-Za-z][A-Za-z0-9_]*$/.test(scope))throw Error('Invalid component name');
+  const rules=(await available()).filter(rule=>!scope||rule.component_api===scope);
+  if(scope&&!rules.length)throw Error('Smart component not found');
   const rows=rules.map(row=>({
    ComponentApi:row.component_api,PropertyKey:row.property_key,
    Enabled:String(row.enabled).toUpperCase(),CurrentEnabled:String(row.enabled).toUpperCase(),
