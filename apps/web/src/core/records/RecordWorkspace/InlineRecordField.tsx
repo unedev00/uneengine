@@ -1,4 +1,5 @@
 import {useState,type ReactNode} from 'react';
+import './InlineRecordField.css';
 import type {FieldMetadata} from '../../metadata/Definitions/metadata';
 
 const numericTypes=new Set(['Number','Currency','Percent']);
@@ -55,10 +56,10 @@ export default function InlineRecordField({
     }finally{setWorking(false);}
   };
   return <div className="record-inline-field">
-    {!editing?<><span>{display}</span>
-      {direct&&<button type="button" className="text-action"
+    {!editing?<><span className="record-inline-value">{display}</span>
+      {direct&&<button type="button" className="text-action record-inline-edit"
         aria-label={'Edit '+field.label} onClick={start}>Edit</button>}
-      {canOpenFull&&<button type="button" className="text-action"
+      {canOpenFull&&<button type="button" className="text-action record-inline-edit"
         aria-label={'Edit '+field.label+' in full editor'} onClick={onEditFull}>
         Edit
       </button>}
