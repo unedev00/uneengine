@@ -106,4 +106,5 @@ test('Mobile Flow Builder provides an explicit way back to the flow list',()=>{
  const scheduled=read('../src/core/automation/ScheduledFlows/ScheduledFlows.tsx');
  assert.match(flow, /flow-phone-top-actions[\s\S]*onClick=\{onOpenFlowList\}[\s\S]*Back to flows/);
  assert.match(scheduled, /className="btn btn-link" onClick=\{\(\) => selectView\('triggers'\)\}/);
+ assert.match(scheduled, /view === 'triggers' \? 'Flow Trigger Explorer' : 'Scheduled Flows'/);
 });
