@@ -14,12 +14,19 @@ BEGIN
      'imageHeight','headerBoxHeight','supportingBoxHeight',
      'navigationDirection','showDays','firstDay',
      'imageFill','imagePlacement','imageBorderColor','imageBackgroundColor',
-     'iconFillColor','badgeVisible'
+     'iconFillColor','badgeVisible',
+     'defaultCheck','columnVisibility'
    );
  IF unexpected IS NOT NULL THEN
    RAISE EXCEPTION 'Layout cannot retire: unmapped component properties: %', unexpected;
  END IF;
 END $$;
+
+-- Explicitly retire the two unwanted controls from ALL component ribbon
+-- applicability rules. Keep definitions and saved values for runtime compatibility.
+UPDATE md_builder_ribbon_component_rules
+SET enabled=false
+WHERE property_key IN ('defaultCheck','columnVisibility');
 
 -- Move remaining component metadata without deleting or renaming properties.
 -- Design 2 owns canonical shared keys, component enablement, and current values.
