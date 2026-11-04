@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import type {ArrangeRibbonProps} from './ArrangeRibbon';
 
-type Props=ArrangeRibbonProps&{area:string};
+type Props={area:string;arrange?:ArrangeRibbonProps};
 
 /** Row 0 C7-C20: fixed, always-present canvas commands.
  * The Arrange ribbon's existing Page Builder callbacks remain the single
@@ -14,37 +14,38 @@ type Props=ArrangeRibbonProps&{area:string};
  */
 export default function Design2CanvasActions(props:Props){
  const body=props.area==='Body';
- const movable=body&&props.freeCanvas&&props.hasSelection&&!props.locked;
- const hasThree=movable&&props.selectedCount>=3;
+ const arrange=props.arrange;
+ const movable=body&&arrange?.freeCanvas&&arrange?.hasSelection&&!arrange?.locked;
+ const hasThree=movable&&(arrange?.selectedCount??0)>=3;
  const actions=[
   {label:'Align left',Icon:AlignHorizontalJustifyStart,enabled:movable,
-   action:()=>props.onAlign('x','start')},
+   action:()=>arrange?.onAlign('x','start')},
   {label:'Align centre',Icon:AlignHorizontalJustifyCenter,enabled:movable,
-   action:()=>props.onAlign('x','center')},
+   action:()=>arrange?.onAlign('x','center')},
   {label:'Align right',Icon:AlignHorizontalJustifyEnd,enabled:movable,
-   action:()=>props.onAlign('x','end')},
+   action:()=>arrange?.onAlign('x','end')},
   {label:'Align top',Icon:AlignVerticalJustifyStart,enabled:movable,
-   action:()=>props.onAlign('y','start')},
+   action:()=>arrange?.onAlign('y','start')},
   {label:'Align middle',Icon:AlignVerticalJustifyCenter,enabled:movable,
-   action:()=>props.onAlign('y','center')},
+   action:()=>arrange?.onAlign('y','center')},
   {label:'Align bottom',Icon:AlignVerticalJustifyEnd,enabled:movable,
-   action:()=>props.onAlign('y','end')},
+   action:()=>arrange?.onAlign('y','end')},
   {label:'Distribute horizontally',Icon:ArrowLeftRight,enabled:hasThree,
-   action:()=>props.onDistribute('x')},
+   action:()=>arrange?.onDistribute('x')},
   {label:'Distribute vertically',Icon:ArrowUpDown,enabled:hasThree,
-   action:()=>props.onDistribute('y')},
-  {label:'Bring to front',Icon:Layers3,enabled:movable&&props.canBringToFront,
-   action:()=>props.onPlace('front')},
-  {label:'Send backward',Icon:ArrowDown,enabled:movable&&props.canSendBackward,
-   action:()=>props.onMove(-1)},
-  {label:'Group',Icon:Group,enabled:movable&&props.canGroup,
-   action:props.onGroup},
-  {label:'Ungroup',Icon:Ungroup,enabled:movable&&props.canUngroup,
-   action:props.onUngroup},
-  {label:props.locked?'Unlock component':'Lock / Unlock component',Icon:props.locked?Unlock:Lock,
-   enabled:body&&props.freeCanvas&&props.hasSelection,action:props.onLock},
-  {label:'Component nesting',Icon:Boxes,enabled:body&&props.hasSelection,
-   action:props.onNesting}
+   action:()=>arrange?.onDistribute('y')},
+  {label:'Bring to front',Icon:Layers3,enabled:movable&&arrange?.canBringToFront,
+   action:()=>arrange?.onPlace('front')},
+  {label:'Send backward',Icon:ArrowDown,enabled:movable&&arrange?.canSendBackward,
+   action:()=>arrange?.onMove(-1)},
+  {label:'Group',Icon:Group,enabled:movable&&arrange?.canGroup,
+   action:()=>arrange?.onGroup()},
+  {label:'Ungroup',Icon:Ungroup,enabled:movable&&arrange?.canUngroup,
+   action:()=>arrange?.onUngroup()},
+  {label:arrange?.locked?'Unlock component':'Lock / Unlock component',Icon:arrange?.locked?Unlock:Lock,
+   enabled:body&&arrange?.freeCanvas&&arrange?.hasSelection,action:()=>arrange?.onLock()},
+  {label:'Component nesting',Icon:Boxes,enabled:body&&arrange?.hasSelection,
+   action:()=>arrange?.onNesting()}
  ];
  return <div className="smart-design2-arrange-actions"
    role="group" aria-label="Design 2 canvas actions" data-design-columns="7-20">
@@ -53,7 +54,7 @@ export default function Design2CanvasActions(props:Props){
      data-design-row="0" data-design-column={index+7}
      data-supported={item.enabled?'true':'false'}
      title={item.label} aria-label={item.label}
-     aria-pressed={index===12?props.locked:undefined}
+     aria-pressed={index===12?arrange?.locked:undefined}
      disabled={!item.enabled} onClick={item.action}>
      <item.Icon size={16} aria-hidden="true"/>
    </button>)}
