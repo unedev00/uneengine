@@ -169,7 +169,7 @@ import UneBuilderRibbon from './UneBuilderRibbon';
 import SmartRibbon from './SmartRibbon';
 import {supportsSmartActionEvent} from './SmartEventActionsRibbon';
 import SmartInsertRibbon from './SmartInsertRibbon';
-import ArrangeRibbon from './ArrangeRibbon';
+import ArrangeRibbon,{type ArrangeRibbonProps} from './ArrangeRibbon';
 import type {AdvancedFeature} from './PageBuilderAdvancedRibbon';
 import './PageBuilderAdvancedRibbon.css';
 import PageBuilderAdvancedSections from './PageBuilderAdvancedSections';
@@ -2948,6 +2948,37 @@ function PageBuilder({
     setRibbonTab('Advanced');
     setAdvancedEditor(feature);
   };
+  // One callback/availability contract serves Arrange and the Design 2 fixed
+  // R0 C7-C20 command row. Both edit the same page and Undo history.
+  const canvasArrangeProps:ArrangeRibbonProps={
+    freeCanvas:page.layoutMode==='free-canvas',
+    hasSelection:!!selected,
+    locked:ribbonSelectedMembers.some(isCanvasLocked),
+    selectedCount:selectionIds.length,
+    canGroup:canGroupSelected,
+    canBringToFront:!!selected&&canMoveCanvasLayer(page.components,selected.id,'front'),
+    canSendBackward:!!selected&&canMoveCanvasLayer(page.components,selected.id,'backward'),
+    canUngroup:!!selected&&!isCanvasLocked(selected)&&
+      (canvasGroupKey(selected)
+        ?selectedGroupMembers.every(item=>!isCanvasLocked(item))
+        :selected.type==='Container'&&childrenOf(page.components,selected.id).length>0
+          &&childrenOf(page.components,selected.id).every(item=>!isCanvasLocked(item))),
+    onAlign:alignSelected,
+    onDistribute:distributeSelected,
+    onMove:moveSelected,
+    onPlace:placeSelectedLayer,
+    onGroup:wrapSelectedInContainer,
+    onUngroup:ungroupSelected,
+    onLock:()=>{
+      if(!selected)return;
+      const members=ribbonSelectedMembers.length?ribbonSelectedMembers:[selected];
+      const nextLocked=!members.some(isCanvasLocked);
+      const ids=new Set(members.map(item=>item.id));
+      applyPage({...page,components:page.components.map(item=>ids.has(item.id)
+        ?{...item,properties:{...item.properties,editorLocked:nextLocked}}:item)});
+    },
+    onNesting:()=>openAdvanced('nesting')
+  };
   const quickAccessOrder=['save','activate','preview','exitPreview','resetIcon','undo','redo','cut','copy','paste','delete'] as const;
   const journeyTabs: Array<typeof ribbonTab> = ['Add Block','Component Data','Component Properties',
     'Component Design 2','Component Layout','Arrange','Component Action','Advanced','Preview'];
@@ -3384,29 +3415,7 @@ function PageBuilder({
               </div>)}
             </div>;
           })()}
-          {ribbonTab==='Arrange' && <ArrangeRibbon
-            freeCanvas={page.layoutMode==='free-canvas'} hasSelection={!!selected}
-            locked={ribbonSelectedMembers.some(isCanvasLocked)} selectedCount={selectionIds.length}
-            canGroup={canGroupSelected}
-            canBringToFront={!!selected&&canMoveCanvasLayer(page.components,selected.id,'front')}
-            canSendBackward={!!selected&&canMoveCanvasLayer(page.components,selected.id,'backward')}
-            canUngroup={!!selected&&!isCanvasLocked(selected)&&
-              (canvasGroupKey(selected)
-                ? selectedGroupMembers.every(item=>!isCanvasLocked(item))
-                : selected.type==='Container'&&childrenOf(page.components,selected.id).length>0
-                  &&childrenOf(page.components,selected.id).every(item=>!isCanvasLocked(item)))}
-            onAlign={alignSelected} onDistribute={distributeSelected}
-            onMove={moveSelected} onPlace={placeSelectedLayer}
-            onGroup={wrapSelectedInContainer} onUngroup={ungroupSelected}
-            onLock={()=>{
-              if(!selected)return;
-              const members=ribbonSelectedMembers.length?ribbonSelectedMembers:[selected];
-              const nextLocked=!members.some(isCanvasLocked);
-              const ids=new Set(members.map(item=>item.id));
-              applyPage({...page,components:page.components.map(item=>ids.has(item.id)
-                ?{...item,properties:{...item.properties,editorLocked:nextLocked}}:item)});
-            }}
-            onNesting={()=>openAdvanced('nesting')}/>}
+          {ribbonTab==='Arrange' && <ArrangeRibbon {...canvasArrangeProps}/>}
           {ribbonTab==='Advanced' && <PageBuilderAdvancedSections
             section={advancedEditor} onInspectorHost={setRibbonPropertyHost}
             assignment={{
@@ -3485,15 +3494,18 @@ function PageBuilder({
                     ?{...item,properties:{...item.properties,iconId}}:item)});
                 }else updateComponent(selected.id,{properties:{...selected.properties,iconId}});
               }}/>}
-          {selectedNewUne && selected && ribbonCatalog &&
-            (ribbonTab==='Component Data'||ribbonTab==='Component Properties'||
-             ribbonTab==='Component Design 2'||ribbonTab==='Component Layout') &&
+          {selected && ribbonCatalog &&
+            ((selectedNewUne && (ribbonTab==='Component Data'||ribbonTab==='Component Properties'||
+              ribbonTab==='Component Design 2'||ribbonTab==='Component Layout'))
+              ||(!selectedNewUne && ribbonTab==='Component Design 2')) &&
             <SmartRibbon
               tab={ribbonTab==='Component Data'?'Data':ribbonTab==='Component Layout'?'Layout':
                 ribbonTab==='Component Design 2'?'Design2':'Design'}
-              api={selected.type.slice(7)} definitions={ribbonCatalog.properties}
+              api={selected.type.startsWith('Custom:')?selected.type.slice(7):selected.type}
+              definitions={ribbonCatalog.properties}
               design2Slots={ribbonCatalog.design2Slots}
               design2SlotRules={ribbonCatalog.design2SlotRules}
+              design2Arrange={canvasArrangeProps}
               properties={selected.properties} objects={objects} pageObjectApiName={page.targetObject}
               componentId={selected.id} pageComponents={page.components}
               sharedPropertyIds={ribbonSharedPropertyIds} mixedPropertyIds={ribbonMixedPropertyIds}
