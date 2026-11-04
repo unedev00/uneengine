@@ -512,5 +512,110 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  assert.equal(fourProps('four-toggle')?.shapeId,'shape:oval');
  console.info('Four Design 2 icon controls: enabled, edited, visibly applied and saved in SQL');
 
+
+ // The shared Arrange handlers must also work from the fixed Design 2 R0
+ // commands on a REAL three-component SQL draft. Single selection aligns to
+ // canvas edges; multi selection distributes, groups and unlocks normally.
+ const arrangePageName='browserdesign2arrange';
+ const arrangePayload={...payload,apiName:arrangePageName,label:'Design 2 Arrange',
+  components:[
+   {...payload.components[0],id:'arrange-one',label:'Arrange One',
+    position:{x:50,y:40,width:160,height:160}},
+   {...payload.components[1],id:'arrange-two',label:'Arrange Two',
+    position:{x:250,y:70,width:160,height:160}},
+   {...payload.components[1],id:'arrange-three',label:'Arrange Three',
+    position:{x:590,y:100,width:160,height:160}}
+  ]};
+ const arrangeCreated=await page.evaluate(async({token,payload})=>{
+  const response=await fetch('/api/metadata/pages/'+payload.apiName,{
+   method:'PUT',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
+   body:JSON.stringify(payload)
+  });
+  return {status:response.status,body:await response.json().catch(()=>null)};
+ },{token,payload:arrangePayload});
+ assert.equal(arrangeCreated.status,200,'Arrange E2E page was not seeded: '+
+  JSON.stringify(arrangeCreated.body));
+ await page.goto(origin+'/une/setup/page-builder',{waitUntil:'domcontentloaded'});
+ await page.getByLabel('Search pages').fill('Design 2 Arrange');
+ await page.getByRole('button',{name:'Design Design 2 Arrange',exact:true}).click();
+ const arrangeOne=page.locator('[data-component-id="arrange-one"]').first();
+ await arrangeOne.waitFor({state:'visible'});
+ await arrangeOne.click({position:{x:18,y:18}});
+ await page.getByRole('tab',{name:'Design 2',exact:true}).click();
+ const areaArrange=page.getByLabel('Select Design 2 area');
+ await areaArrange.selectOption('Body');
+ const actionRow=page.locator('.smart-design2-arrange-actions');
+ const buttons=actionRow.locator('button.smart-design2-arrange-action');
+ assert.equal(await buttons.count(),14,'Exactly 14 R0 Arrange actions are required');
+ const actionLabels=['Align left','Align centre','Align right','Align top','Align middle',
+   'Align bottom','Distribute horizontally','Distribute vertically','Bring to front',
+   'Send backward','Group','Ungroup','Lock / Unlock component','Component nesting'];
+ for(let i=0;i<14;i++){
+  const button=buttons.nth(i);
+  assert.equal(await button.getAttribute('data-design-row'),'0');
+  assert.equal(await button.getAttribute('data-design-column'),String(i+7));
+  assert.equal(await button.getAttribute('title'),actionLabels[i]);
+  const rect=await button.boundingBox();
+  assert.ok(rect&&Math.abs(rect.width-40)<1&&Math.abs(rect.height-26)<1,
+   'R0 C'+(i+7)+' action must measure exactly 40×26px');
+ }
+ const firstAction=await buttons.first().boundingBox();
+ const selectorRect=await page.locator('.smart-design2-area-picker').boundingBox();
+ assert.ok(firstAction&&selectorRect&&Math.abs(firstAction.x-selectorRect.x-564)<2,
+  'C7 must start after the exact C1–C6 slots, including empty C5/C6');
+ for(let i=1;i<14;i++){
+  const prev=await buttons.nth(i-1).boundingBox(),next=await buttons.nth(i).boundingBox();
+  assert.ok(prev&&next&&Math.abs(next.x-prev.x-44)<1,
+   'R0 Arrange icons must retain their fixed 40px width and 4px gap');
+ }
+ assert.equal(await buttons.nth(0).isDisabled(),false,'Align left must work for a single component');
+ assert.equal(await buttons.nth(6).isDisabled(),true,'Distribute needs three selected components');
+ assert.equal(await buttons.nth(10).isDisabled(),true,'Group needs multiple selected components');
+ await areaArrange.selectOption('Header');
+ assert.equal(await buttons.count(),14,'All icons remain rendered outside Body');
+ assert.equal(await buttons.evaluateAll(list=>list.every(button=>button.disabled)),true,
+  'All fourteen actions must be disabled outside the Body dropdown');
+ await areaArrange.selectOption('Body');
+ const coord=async(axis)=>arrangeOne.evaluate((node,axis)=>
+  Number.parseFloat(axis==='x'?node.style.left:node.style.top),axis);
+ for(const [index,axis,expected] of [
+   [0,'x',0],[1,'x',560],[2,'x',1120],
+   [3,'y',0],[4,'y',370],[5,'y',740]
+ ]){
+  assert.equal(await buttons.nth(index).isDisabled(),false,'Alignment action is disabled');
+  await buttons.nth(index).click();
+  assert.equal(await coord(axis),expected,
+   actionLabels[index]+' did not reposition the selected canvas component');
+ }
+ assert.equal(await buttons.nth(8).isDisabled(),false,'Bring to front should be available');
+ await buttons.nth(8).click();
+ assert.equal(await buttons.nth(9).isDisabled(),false,'Send backward should be available after moving to front');
+ await buttons.nth(9).click();
+ assert.equal(await buttons.nth(12).isDisabled(),false,'Lock must be usable in Body');
+ await buttons.nth(12).click();
+ assert.equal(await buttons.nth(12).getAttribute('aria-pressed'),'true');
+ assert.equal(await buttons.nth(0).isDisabled(),true,'Locked component must not align');
+ assert.equal(await buttons.nth(12).getAttribute('title'),'Unlock component');
+ await buttons.nth(12).click();
+ assert.equal(await buttons.nth(12).getAttribute('aria-pressed'),'false');
+ assert.equal(await buttons.nth(0).isDisabled(),false,'Unlocked component must align again');
+ await page.keyboard.press('Control+a');
+ assert.equal(await page.locator('.record-component.multi-selected').count(),3,
+  'All three page components must be selected for distribution and grouping');
+ assert.equal(await buttons.nth(6).isDisabled(),false,'Horizontal distribution must enable with three');
+ assert.equal(await buttons.nth(7).isDisabled(),false,'Vertical distribution must enable with three');
+ await buttons.nth(6).click();
+ await buttons.nth(7).click();
+ assert.equal(await buttons.nth(10).isDisabled(),false,'Group must enable with three unlocked siblings');
+ await buttons.nth(10).click();
+ assert.equal(await buttons.nth(11).isDisabled(),false,'Ungroup must enable for a persisted canvas group');
+ await buttons.nth(11).click();
+ assert.equal(await buttons.nth(10).isDisabled(),false,'Ungroup must restore grouping eligibility');
+ assert.equal(await buttons.nth(13).isDisabled(),false,'Nesting action should be enabled');
+ await buttons.nth(13).click();
+ assert.equal(await page.getByRole('tab',{name:'Advanced',exact:true}).getAttribute('aria-selected'),'true',
+  'Component nesting must open the existing Advanced nesting editor');
+ console.info('Design 2 R0 C7–C20 browser: fixed geometry, Body-only enablement and all 14 commands verified');
+
  console.info('Design 2 browser E2E: original Design preserved; Row Bold persisted; Ctrl+A/Delete removes all selected, one Undo restores all');
 }
