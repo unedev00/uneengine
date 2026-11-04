@@ -37,7 +37,7 @@ test('Focused has one reusable icon mapped to selected row or selected tab',()=>
  for(const area of ['Body','Header','Header Supporting','Table','Summary','Summary 2'])
   assert.equal(lookup(area,'focused').key,null);
  assert.match(shared,/slot\.slotKey==='focused'\?'Focused Color'/);
- assert.match(shared,/components:slot\.propertyKey\?original\.components:\[\]/);
+ assert.match(shared,/components:assigned\?assigned\.components:\[\]/);
 });
 
 test('Body never wraps and Row background is inherited from Table',()=>{
