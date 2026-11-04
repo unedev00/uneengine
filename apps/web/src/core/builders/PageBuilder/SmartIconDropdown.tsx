@@ -81,7 +81,9 @@ export default function SmartIconDropdown({kind,value,label,disabled,onChange,al
  const allOptions=choices(kind);
  const options=allowedValues?.length
    ?allOptions.filter(option=>allowedValues.includes(option.value)):allOptions;
- const selected=options.find(item=>item.value===value)??options[0];
+ const selected=options.find(item=>item.value===value)??options[0]??{
+   value:'',label:'Unavailable',icon:<span aria-hidden="true">—</span>
+ };
  const widePopup=options.length>4;
  const popupWidth=widePopup?148:Math.max(102,options.length*34+10);
  useEffect(()=>{
