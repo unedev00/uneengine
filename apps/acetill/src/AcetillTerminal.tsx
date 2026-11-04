@@ -28,7 +28,7 @@ function product(row:Row):Item|null {
   const name=asText(row.Name??row.name);
   const price=Number(row.OriginalUnitPrice??row.Price??row.UnitPrice??row.SalePrice);
   if(!id||!name||!Number.isFinite(price)||price<0||row.Active===false||row.Active==='false'||row.IsVisiblePOS===false||row.IsVisiblePOS==='false')return null;
-  return {id,name,price,image:asText(row.ImageUrl??row.ImageURL??row.Image_Url??row.ThumbnailUrl??row.PhotoUrl??row.ProductPhotoUrl??row.ProductImageUrl??row.Image??row.ProductImage),category:asText(row.CategoryName??row.Category??row.ProductCategory??''),categoryId:asText(row.MenuCategory??row.MenuCategoryId??row.CategoryId),quantity:Math.max(1,Number(row.Quantity??1)),ageRestricted:row.AgeRestricted===true||row.AgeRestricted==='true'||Number(row.MinimumAge??0)>0};
+  return {id,name,price,image:[row.ImageUrl,row.Image_URL__c,row.ImageURL,row.Image_Url,row.ThumbnailUrl,row.PhotoUrl,row.ProductPhotoUrl,row.ProductImageUrl,row.Image,row.ProductImage].map(asText).find(value=>value.trim().length>0)??'',category:asText(row.CategoryName??row.Category??row.ProductCategory??''),categoryId:asText(row.MenuCategory??row.MenuCategoryId??row.CategoryId),quantity:Math.max(1,Number(row.Quantity??1)),ageRestricted:row.AgeRestricted===true||row.AgeRestricted==='true'||Number(row.MinimumAge??0)>0};
 }
 function parseCategory(row:Row):Category|null {
   const id=asText(row.Id??row.id??row.CategoryId);
