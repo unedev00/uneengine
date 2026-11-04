@@ -26,7 +26,6 @@ import CustomMetadataManager from './CustomMetadataManager';
 import * as React from 'react';
 const MatchingRulesPanel = React.lazy(() => import('./MatchingRulesPanel'));
 const FieldExactIndexesPanel=React.lazy(()=>import('./FieldExactIndexesPanel'));
-const UniversalMetadataLoader=React.lazy(()=>import('./UniversalMetadataLoader'));
 
 const ObjectChangeHistory = React.lazy(() => import('./ObjectChangeHistory'));
 const BusinessProcessesPanel=React.lazy(()=>import('./BusinessProcessesPanel'));
@@ -315,7 +314,6 @@ function ObjectManager({
     setEditingField(null);
   }, [object.apiName, selectedSetting, selectedFieldApiName]);
   const [showObjectActionsMenu, setShowObjectActionsMenu] = useState(false);
-  const [showMetadataLoader,setShowMetadataLoader] = useState(false);
   const [fieldSearch, setFieldSearch] = useState('');
   const [draft, setDraft] = useState(object);
   const [selectedLayoutId, setSelectedLayoutId] = useState('');
@@ -1984,12 +1982,9 @@ function ObjectManager({
         <div className="toolbar-actions">
           <button className="btn" type="button" onClick={()=>void showDeletedObjects()} disabled={deletedObjectsBusy}>
             {deletedObjectsOpen?'Hide Deleted Objects':'Deleted Objects'}</button>
-          <button className="btn" type="button" onClick={()=>setShowMetadataLoader(true)}><Upload size={14}/>Universal Data Loader</button>
+          <a className="btn" href="/une/setup/data-loader"><Upload size={14}/>Universal Data Loader</a>
           <button className="btn btn-brand" type="button" onClick={onCreateObject}><Plus size={14}/>New Object</button>
         </div></div>
-      {showMetadataLoader&&<React.Suspense fallback={<p>Loading Data Loader…</p>}><UniversalMetadataLoader
-        apiRequest={apiRequest} currentObject={object.apiName} onClose={()=>setShowMetadataLoader(false)}
-        onChanged={()=>{void onRefreshObject(object.apiName).then(updated=>setDraft(updated)).catch(()=>onNotify('Refresh Object Manager to see the changes'));}}/></React.Suspense>}
       {deletedObjectsOpen&&<section className="metadata-card" aria-label="Deleted objects">
         <h2>Deleted Objects</h2>
         {!deletedObjects.length?<p>No deleted custom objects.</p>:<div className="table-scroll"><table className="slds-table">
