@@ -410,3 +410,40 @@
  .lightning .permissions-page .permission-tabs{display:none}
  .lightning .permissions-page .md-permission-mobile-save .btn{min-height:44px}
 }
+
+
+/* Desktop table scanability: pinned identity/actions and an explicit scroll cue. */
+@media(min-width:1024px) {
+ .lightning .page-manager-table-scroll,.lightning .records-table-wrap.records-responsive-list{
+  max-width:100%;position:relative;overflow-x:auto;scrollbar-width:thin;
+  scrollbar-color:var(--md-scroll-thumb,#9baac0) transparent
+ }
+ .lightning .page-manager-table :is(th,td):first-child{
+  position:sticky;left:0;z-index:3;background:var(--md-surface,#fff);min-width:180px;
+  box-shadow:2px 0 5px rgba(15,23,42,.1)
+ }
+ .lightning .page-manager-table :is(th,td):nth-child(2){
+  position:sticky;left:180px;z-index:2;background:var(--md-surface,#fff);min-width:150px;
+  box-shadow:2px 0 5px rgba(15,23,42,.08)
+ }
+ .lightning .page-manager-table thead th:first-child,
+ .lightning .page-manager-table thead th:nth-child(2){z-index:5;background:var(--md-surface-2,#f8fafc)}
+ .lightning .records-data-table :is(th,td):first-child{
+  position:sticky;left:0;z-index:2;background:var(--md-surface,#fff);box-shadow:2px 0 6px rgba(15,23,42,.1)
+ }
+ .lightning .records-data-table :is(th,td):nth-child(2){
+  position:sticky;left:0;z-index:2;background:var(--md-surface,#fff)
+ }
+ .lightning .records-data-table:has(th:first-child input[type="checkbox"]) :is(th,td):first-child{min-width:40px}
+ .lightning .records-data-table:has(th:first-child input[type="checkbox"]) :is(th,td):nth-child(2){
+  left:40px;min-width:145px;box-shadow:2px 0 6px rgba(15,23,42,.08)
+ }
+ .lightning .records-data-table thead :is(th:first-child,th:nth-child(2)){z-index:4;background:var(--md-surface-2,#f8fafc)}
+}
+@media(max-width:1023px){
+ .lightning .page-manager-mobile-actions{display:flex;flex-wrap:wrap;gap:6px}
+ .lightning .page-manager-mobile-actions>.btn{min-height:44px}
+ .lightning .flow-history-pagination{flex-wrap:wrap}
+}
+.lightning .flow-history-pagination{display:flex;align-items:center;gap:10px;padding:12px 15px}
+.lightning .flow-history-pagination>span{margin-right:auto;font-size:13px}
