@@ -63,8 +63,18 @@ function Monitoring({request}:{request:Request}){
  const [pruneOpen,setPruneOpen]=useState(false),[pruneConfirmation,setPruneConfirmation]=useState(''),[pruning,setPruning]=useState(false);
  const [persistedSettings,setPersistedSettings]=useState<Monitor['settings']|null>(null);
  const [data,setData]=useState<Monitor|null>(null),[draft,setDraft]=useState<Rule>(emptyRule),[message,setMessage]=useState(''),[users,setUsers]=useState<{id:string;email:string}[]>([]),[flows,setFlows]=useState<{apiName:string;label:string}[]>([]);
- const load=async(before?:string)=>{const r=await request<Monitor>('/security/monitoring'+(before?'?before='+encodeURIComponent(before):''));setData(before&&data?{...r,events:[...data.events,...r.events]}:r);if(!before){setPage(0);setPersistedSettings(r.settings);}};
- useEffect(()=>{void load().catch(e=>setMessage(String(e)));void request<{users:typeof users}>('/security/licenses').then(r=>setUsers(r.users)).catch(()=>{});void request<{flows:typeof flows}>('/metadata/flows/list?page=1&search=').then(r=>setFlows(r.flows)).catch(()=>{});},[]);
+ const load=async(before?:string)=>{
+   const params=new URLSearchParams({limit:String(pageSize)});
+   if(before)params.set('before',before);
+   const result=await request<Monitor>('/security/monitoring?'+params);
+   setData(previous=>before&&previous?{...result,events:[...previous.events,...result.events]}:result);
+   if(!before){setPage(0);setPersistedSettings(result.settings);}
+  };
+ useEffect(()=>{void load().catch(e=>setMessage(String(e)));},[pageSize]);
+ useEffect(()=>{
+   void request<{users:typeof users}>('/security/licenses').then(r=>setUsers(Array.isArray(r?.users)?r.users:[])).catch(()=>setUsers([]));
+   void request<{flows:typeof flows}>('/metadata/flows/list?page=1&search=').then(r=>setFlows(Array.isArray(r?.flows)?r.flows:[])).catch(()=>setFlows([]));
+ },[]);
  const save=(path:string,input:unknown)=>{setMessage('');void request(path,{method:'PUT',body:JSON.stringify(input)}).then(()=>load()).then(()=>setMessage('Saved')).catch(e=>setMessage(String(e)));};
  const savedRule=data?.rules.find(item=>item.id===draft.id);
  const ruleChanged=!savedRule||JSON.stringify(savedRule)!==JSON.stringify(draft);
