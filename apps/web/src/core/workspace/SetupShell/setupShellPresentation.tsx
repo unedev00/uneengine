@@ -624,7 +624,9 @@ export function renderSetupShell(ctx: any) {
             <ReportBuilder reports={reports} reportFolders={reportFolders} canManageReportFolders={canManageReportFolders} accessControl={accessControl} objects={objects} onSave={saveReport} onSaveFolder={saveReportFolder} onDelete={deleteReport} onRun={runReport} onPreview={previewReport} onNotify={notify} />)}
           {route.kind === 'setup' && workspace === 'scheduled-flows' && (
             flowDefinitionsError ? <section className="setup-card" role="alert">Unable to load saved flows: {flowDefinitionsError}</section> :
-            <ScheduledFlows flows={flows} objects={objects} loading={!flowDefinitionsLoaded || !advancedMetadataLoaded} onEdit={selectFlow} />
+            <ScheduledFlows flows={flows} objects={objects} loading={!flowDefinitionsLoaded || !advancedMetadataLoaded} onEdit={selectFlow}
+               initialView={route.resourceApiName==='triggers'?'triggers':'scheduled'}
+               onViewChange={view=>navigateRoute({kind:'setup',workspace:'scheduled-flows',...(view==='triggers'?{resourceApiName:'triggers'}:{})})}/>
           )}
           {route.kind === 'setup' && workspace === 'flow-interviews' && (
             <FlowInterviews
@@ -643,6 +645,11 @@ export function renderSetupShell(ctx: any) {
               onLoadMore={ctx.loadMoreFlowHistory} />
           )}
           {route.kind === 'setup' && workspace === 'automation-settings' && <PlatformWorkspaceSurface workspace="automation-settings" componentRuntime={protectedPageRuntime} permitted={canReadMetadata} resolving={!sessionPermissionsLoaded} pages={pages} libraryComponents={libraryComponents} device={runtimeFormFactor} canEditSystemPage={canManagePlatformTenants} onEditSystemPage={(apiName: string)=>{const selected=pages.find(p=>p.apiName===apiName);if(selected)setPage(selected);navigateRoute({kind:'setup',workspace:'page-builder',resourceApiName:apiName});}}><PlatformPageSlot slotKey="automation-policy"><AutomationSettingsWorkspace canManage={canManageFlows} /></PlatformPageSlot></PlatformWorkspaceSurface>}
+          {route.kind === 'setup' && workspace === 'flow-builder' && !route.resourceApiName &&
+            <nav className="flow-builder-related-actions" aria-label="Flow management tools">
+              <button type="button" className="btn" onClick={()=>navigateRoute({kind:'setup',workspace:'scheduled-flows',resourceApiName:'triggers'})}>Flow Trigger Explorer</button>
+              <button type="button" className="btn" onClick={()=>navigateRoute({kind:'setup',workspace:'flow-logs'})}>Execution History</button>
+            </nav>}
           {route.kind === 'setup' && workspace === 'flow-builder' && (
             flowDefinitionsError ? <section className="setup-card" role="alert">Unable to load flows: {flowDefinitionsError}</section> :
             !flowDefinitionsLoaded || !advancedMetadataLoaded ? <section className="setup-card" role="status">Loading live flow definitions…</section> :
