@@ -1,0 +1,23 @@
+/* Builder-only layer; published components never load this stylesheet. */
+.modern-canvas-builder .record-component.selected:not(.free-canvas-component):has(>.canvas-data-bindings){
+ position:relative;
+}
+.modern-canvas-builder .record-component.selected>.canvas-data-bindings{
+ position:absolute;inset:0;z-index:176;pointer-events:none;
+ overflow:visible;contain:none;
+}
+.modern-canvas-builder .record-component.selected .canvas-data-icon-button{
+ position:absolute;display:inline-flex;align-items:center;justify-content:center;
+ width:24px;height:24px;min-width:24px;min-height:24px;padding:0;
+ border:1px solid #c89104;border-radius:6px;
+ background:#ffdc58;color:#263446;box-shadow:0 1px 3px #0002;
+ pointer-events:auto;cursor:pointer;touch-action:manipulation;
+}
+.modern-canvas-builder .record-component.selected .canvas-data-icon-button:hover,
+.modern-canvas-builder .record-component.selected .canvas-data-icon-button:focus-visible,
+.modern-canvas-builder .record-component.selected .canvas-data-icon-button.is-active{
+ background:#ffc92b;border-color:#9c7200;outline:2px solid #fff;outline-offset:1px;
+}
+@media (prefers-reduced-motion:no-preference){
+ .modern-canvas-builder .canvas-data-icon-button{transition:background-color .12s,border-color .12s}
+}
