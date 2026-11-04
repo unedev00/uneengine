@@ -51,7 +51,11 @@ const callbacks=Object.fromEntries(['Select','OpenViewer','ExitViewer','Notify',
 const object={apiName:'Account',label:'Account',pluralLabel:'Accounts',kind:'Standard Object',fields:[],compactLayout:{fieldApiNames:['Name']}};
 const request=async(path,init)=>{
  if(path.startsWith('/platform/tenants'))return {tenants:[],total:0};
- if(path.startsWith('/records/'))return {records:[{Id:'00000000-0000-0000-0000-000000000001',Name:'Acme Corporation'}]};
+ if(path.startsWith('/records/')){
+  if(new URL(path,'https://example.invalid').searchParams.get('search')==='unavailable')
+    throw new Error('SQL service unavailable');
+  return {records:[{Id:'00000000-0000-0000-0000-000000000001',Name:'Acme Corporation'}]};
+ }
  if(init?.method==='PUT'){window.savedSelections=JSON.parse(init.body);return {briefcase:JSON.parse(init.body)};}
  return {briefcase:{selections:[]}};
 };
