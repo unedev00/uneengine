@@ -4,6 +4,7 @@ import type {RbacEngine} from '../system-files/rbac-engine.js';
 import type {ObjectDefinitionService} from '../system-files/object-definition.js';
 import type {RecordEngine} from '../system-files/record-engine.js';
 import type {ExternalIdUpsert} from '../system-files/external-id-upsert.js';
+import {parseRecordCursor} from '../system-files/record-query.js';
 import {decodeLoaderWorkbook,digestWorkbook,loaderFile,loaderReport,loaderResult}
  from './universal-loader-common.js';
 import {context,validateRows,payload,apiPattern,text,uuid,type Actor}
@@ -30,9 +31,11 @@ export function registerUniversalLoaderRecordRoutes(app:Express,db:SqlPersistenc
   const fields=[...ctx.writable.values()];
   const columns=['Action','ObjectApiName','Id','LastModifiedDate','RecordTypeId',...fields.map(f=>f.apiName)];
   const rows:Record<string,string>[]=[],seen=new Set<string>();let total=0;
-  for(let at=offset;rows.length<pageSize;at+=100){
+  let cursor:string|undefined;
+  while(rows.length<pageSize){
    const page=await records.list(actor.tenant_id,actor.user_id,objectApi,
-    Math.min(100,pageSize-rows.length),at);
+    Math.min(100,pageSize-rows.length),cursor?0:offset,
+    cursor?{cursor:parseRecordCursor(cursor),scope:'all'}:{scope:'all'});
    total=page.total;
    if(!page.records.length)break;
    for(const record of page.records){
@@ -43,7 +46,9 @@ export function registerUniversalLoaderRecordRoutes(app:Express,db:SqlPersistenc
       record[column] instanceof Date?(record[column] as Date).toISOString():
       typeof record[column]==='object'&&record[column]!==null?JSON.stringify(record[column]):text(record[column])])));
    }
-   if(at+page.records.length>=total)break;
+   if(offset+rows.length>=total)break;
+   if(!page.nextCursor)throw Error('Record cursor expired; retry export');
+   cursor=page.nextCursor;
   }
   const guide:Record<string,string>[]=[];
   for(const field of ctx.object.fields){
