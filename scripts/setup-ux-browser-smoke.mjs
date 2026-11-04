@@ -229,6 +229,10 @@ try {
  await page.setViewportSize({width:1365,height:768});
  await open('oauth-directory');
  await page.getByRole('button',{name:/Payroll connector/}).waitFor();
+ await page.getByRole('button',{name:'New connected app'}).click();
+ assert.equal(await page.getByRole('button',{name:'Save connected app'}).isDisabled(),true,
+  'Creating a connected app with no name/redirect must not enable Save');
+ await page.getByRole('button',{name:'Cancel / Discard'}).click();
  await page.getByLabel('Find connected app').fill('unmatched');
  await page.getByText('No matching applications.').waitFor();
  await page.getByLabel('Find connected app').fill('payroll');
