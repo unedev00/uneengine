@@ -1,5 +1,5 @@
-import SetupLoadingState from './SetupLoadingState';
 // @ts-nocheck
+import SetupLoadingState from './SetupLoadingState';
 import { UneBrandLogo } from '../../branding/UneBrandLogo';
 import CompanySettingsWorkspace from '../../settings/CompanySettingsWorkspace/CompanySettingsWorkspace';
 import MobileSettingsHome from '../../settings/MobileSettingsHome';
