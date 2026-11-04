@@ -91,7 +91,7 @@ export default function SmartTable({p,records,expression,fieldAllowed,fire}){
    p.summaryWidth?finite(p.summaryWidth,200,20,2000)+"px":"100%",
   maxWidth:"100%"
  };
- return <section className="smart-table-root" aria-label={p.label||"Smart Table"}
+ return <section data-md-bind={p.builderPreview?"textSource":undefined} className="smart-table-root" aria-label={p.label||"Smart Table"}
   style={{background:colour(p.backgroundColor,"#fff"),border:border(p.borderColor),
    boxShadow:shadow(p.shadow),borderRadius:finite(p.radius,10,0,100),
    padding:0}}>
@@ -118,7 +118,7 @@ export default function SmartTable({p,records,expression,fieldAllowed,fire}){
        onKeyDown={event=>{if(event.key==="Enter"||event.key===" "){
         event.preventDefault();pick(row);
        }}}>
-       {columns.map((col,i)=><td key={col.key}
+       {columns.map((col,i)=><td data-md-bind={p.builderPreview?(i>0&&i<5?"column"+(i+1)+"Source":undefined):undefined} key={col.key}
          style={{borderBottom:border(borderColor),
           borderTop:active?border(borderColor):undefined,
           borderTopLeftRadius:i===0?finite(p.rowRadius,0,0,100):undefined,
