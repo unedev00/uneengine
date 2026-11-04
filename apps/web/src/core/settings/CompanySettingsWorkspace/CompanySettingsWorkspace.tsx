@@ -14,17 +14,18 @@ const sections:ReadonlyArray<{id:Section;label:string}>=[
 {id:'contacts',label:'Contacts'},{id:'mobile',label:'Mobile & Offline'},{id:'integrations',label:'Integrations'},
 {id:'security',label:'Security & Recovery'},{id:'developer',label:'Developer'}];
 /** Presentation only: retains existing OneEngine-protected runtime controls and slots. */
-export default function CompanySettingsWorkspace({company,domains,developer,usage,calendar,recovery,mfa,emailRecovery,locks,sessions,audit,onNavigateDeveloper,developerAccess,objects=[],mobile=false,initialSection}:{
+export default function CompanySettingsWorkspace({company,domains,developer,usage,calendar,recovery,mfa,emailRecovery,locks,sessions,audit,onNavigateDeveloper,developerAccess,objects=[],mobile=false,initialSection,onSelectSection}:{
 objects?:ObjectMetadata[];company:ReactNode;domains:ReactNode;developer:ReactNode;usage:ReactNode;calendar?:ReactNode;
 recovery:ReactNode;mfa:ReactNode;emailRecovery:ReactNode;locks:ReactNode;sessions:ReactNode;audit:ReactNode;
  onNavigateDeveloper?:(workspace:string)=>void;
  developerAccess?:{metadata:boolean;apps:boolean;packages?:boolean;flows:boolean;dashboards:boolean;reports:boolean;approvals:boolean;security:boolean};
- mobile?:boolean; initialSection?:Section;
+ mobile?:boolean; initialSection?:string; onSelectSection?:(section:Section|null)=>void;
 }){
- const [active,setActive]=useState<Section>(initialSection??'general');
+ const resolvedInitialSection=sections.find(item=>item.id===initialSection)?.id;
+ const [active,setActive]=useState<Section>(resolvedInitialSection??'general');
  const [securityView,setSecurityView]=useState<'access'|'recovery'|'history'>('access');
- const [mobileSection,setMobileSection]=useState<Section|null>(mobile&&initialSection?initialSection:null);
- useEffect(()=>{if(initialSection){setActive(initialSection);if(mobile)setMobileSection(initialSection);}},[initialSection,mobile]);
+ const [mobileSection,setMobileSection]=useState<Section|null>(mobile?(resolvedInitialSection??null):null);
+ useEffect(()=>{setActive(resolvedInitialSection??'general');if(mobile)setMobileSection(resolvedInitialSection??null);},[resolvedInitialSection,mobile]);
  const currentSection=mobile ? mobileSection : active;
  const rights=developerAccess;
  const destinations:DeveloperDestination[]=[
@@ -48,7 +49,7 @@ recovery:ReactNode;mfa:ReactNode;emailRecovery:ReactNode;locks:ReactNode;session
  return <div className={mobile?'company-workspace company-workspace-mobile':'company-workspace'}>
    <header className="company-workspace-heading">
      {mobile && mobileSection && <button type="button" className="company-workspace-mobile-back"
-       onClick={()=>setMobileSection(null)}><ChevronLeft size={19} aria-hidden="true" /> Company Settings</button>}
+       onClick={()=>{setMobileSection(null);onSelectSection?.(null);}}><ChevronLeft size={19} aria-hidden="true" /> Company Settings</button>}
      <div><p className="company-workspace-eyebrow">Setup / Organisation</p>
      <h1>{mobile && mobileSection ? visibleSections.find(item=>item.id===mobileSection)?.label : 'Company Settings'}</h1>
      {!mobileSection && <p>Manage your organisation, currency, branding and security settings.</p>}</div>
@@ -58,7 +59,7 @@ recovery:ReactNode;mfa:ReactNode;emailRecovery:ReactNode;locks:ReactNode;session
        aria-current={active===section.id?'page':undefined} onClick={()=>setActive(section.id)}>{section.label}</button>)}
    </nav>
    {mobile && mobileSection===null && <nav className="company-workspace-mobile-menu" aria-label="Company settings sections">
-     {visibleSections.map(section=><button key={section.id} type="button" onClick={()=>setMobileSection(section.id)}>
+     {visibleSections.map(section=><button key={section.id} type="button" onClick={()=>{setMobileSection(section.id);setActive(section.id);onSelectSection?.(section.id);}}>
        <span className="company-workspace-mobile-section-icon"><Settings2 size={17} aria-hidden="true" /></span>
        <span>{section.label}</span><ChevronRight size={18} aria-hidden="true" />
      </button>)}
