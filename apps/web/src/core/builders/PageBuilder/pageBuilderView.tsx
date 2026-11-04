@@ -4363,14 +4363,15 @@ function PageBuilder({
           <div className="builder-create-page-grid">
             <div className="builder-create-page-fields">
               <p className="modal-copy">Start with the page you need. You can adjust its blocks and appearance later.</p>
-              <label className="form-label" htmlFor="new-lightning-page-label">Page name
-                <input id="new-lightning-page-label" className="form-control" autoFocus
+              <label className="form-label" htmlFor="new-lightning-page-label">Page name (required)
+                <input id="new-lightning-page-label" className="form-control" required autoFocus
                   value={newPageLabel} onChange={event => setNewPageLabel(event.target.value)}
                   onKeyDown={event => { if (event.key === 'Enter') void createPage(); }}
                   placeholder="For example, Inventory Management" />
+                {!newPageLabel.trim()&&<small className="builder-create-page-required-hint">Enter a page name to enable Create draft.</small>}
               </label>
               <label className="form-label" htmlFor="new-lightning-page-object">Connect to data {newPageType === 'Record Page' ? '(required)' : '(optional)'}
-                <select id="new-lightning-page-object" className="form-control" value={newPageTargetObject}
+                <select id="new-lightning-page-object" className="form-control" required={newPageType==='Record Page'} value={newPageTargetObject}
                   onChange={event => setNewPageTargetObject(event.target.value)}>
                   {!recordPageContext && <option value="">No data object — bind later</option>}
                   {objects.filter(object => !recordPageContext || object.apiName === recordPageContext).map(object => <option key={object.apiName} value={object.apiName}>{object.label}</option>)}
@@ -4432,7 +4433,8 @@ function PageBuilder({
               </label>
             </div>
           </div>
-          <div className="modal-actions">
+          <div className="modal-actions builder-create-page-actions">
+            {newPageType==='Record Page'&&!newPageTargetObject&&<small role="status">Choose a data object to create this Record Page.</small>}
             <button className="btn" type="button" onClick={() => setCreatePageOpen(false)}>Cancel</button>
             <button className="btn btn-brand" type="button"
               disabled={saving || !newPageLabel.trim() || (newPageType === 'Record Page' && !newPageTargetObject)}
