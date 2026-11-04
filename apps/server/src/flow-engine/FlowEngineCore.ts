@@ -187,12 +187,30 @@ export class FlowRuntime {
         OR label ILIKE $2 ESCAPE '\\')`,[tenantId,query,flowType])).rows[0]?.total??'0';
     return {flows,total:Number(total),page:index,pageSize:50};
   }
+  private excelGraphFingerprint(snapshot:Record<string,unknown>):string {
+    const canonical=(value:unknown):unknown=>Array.isArray(value)?value.map(canonical):
+      value&&typeof value==='object'?Object.fromEntries(Object.entries(value as Record<string,unknown>)
+        .sort(([a],[b])=>a.localeCompare(b)).map(([key,entry])=>[key,canonical(entry)])):value;
+    const source=JSON.stringify(canonical({
+      apiName:snapshot.apiName,versionNumber:snapshot.versionNumber,flowType:snapshot.flowType,
+      status:snapshot.status,startConfig:snapshot.startConfig??{},
+      elements:snapshot.elements,connectors:snapshot.connectors,resources:snapshot.resources
+    }));
+    let hash=2166136261;
+    for(let i=0;i<source.length;i++){hash^=source.charCodeAt(i);hash=Math.imul(hash,16777619);}
+    return (hash>>>0).toString(16).padStart(8,'0');
+  }
   async saveEditor(tenantId:string,userId:string,apiName:string,raw:unknown,createOnly=false) {
     if(!this.rbac)throw new Error('Flow permissions not configured');
     await this.rbac.require(tenantId,userId,'FlowDefinition','manage');
     if(!/^[A-Za-z][A-Za-z0-9_]*$/.test(apiName)||!raw||typeof raw!=='object'||Array.isArray(raw))
       throw new Error('Invalid Flow metadata');
     const input=raw as Record<string,unknown>;
+    const excelExpectedSnapshot=input.__excelExpectedFingerprint;
+    if(excelExpectedSnapshot!==undefined
+      &&(typeof excelExpectedSnapshot!=='string'||!/^[a-f0-9]{8}$/.test(excelExpectedSnapshot)))
+      throw Error('Invalid Excel flow snapshot');
+    delete input.__excelExpectedFingerprint;
     if(input.apiName!==apiName||typeof input.label!=='string'||!input.label.trim()||input.label.length>200
       ||!['Screen Flow','In-Screen Flow','Record-Triggered Flow','Autolaunched Flow','Flow Orchestration',
         'Schedule-Triggered Flow','Platform Event-Triggered Flow'].includes(String(input.flowType))
@@ -236,11 +254,25 @@ export class FlowRuntime {
     await this.db.transaction(async client=>{
       await client.query('SELECT pg_advisory_xact_lock(hashtext($1))',
         [tenantId+':flow:'+apiName]);
-      const latest=await client.query<{id:string;version:number;active:boolean}>(`
-        SELECT id,version,active FROM md_flow_definitions
+      const latest=await client.query<{id:string;version:number;active:boolean;flow_type:string}>(`
+        SELECT id,version,active,flow_type FROM md_flow_definitions
         WHERE tenant_id=$1 AND api_name=$2 AND archived=false ORDER BY version DESC LIMIT 1 FOR UPDATE
       `,[tenantId,apiName]);
       const last=latest.rows[0];
+      if(excelExpectedSnapshot!==undefined){
+        if(!last)throw Error('Excel upload cannot create a Flow; existing Flow was deleted');
+        const persisted=await client.query<MetadataValueRow>(
+          'SELECT property_path,value_kind,value_text FROM md_flow_editor_values WHERE tenant_id=$1 AND flow_id=$2',
+          [tenantId,last.id]);
+        const doc=decodeMetadataValues(persisted.rows).builder as Record<string,unknown>|undefined;
+        if(!doc)throw Error('Legacy Flow must first be saved through Flow Builder before Excel upsert');
+        const actual=this.excelGraphFingerprint({
+          ...doc,apiName,versionNumber:last.version,
+          flowType:last.flow_type,status:last.active?'Active':'Draft'
+        });
+        if(actual!==excelExpectedSnapshot)
+          throw Error('Flow changed after Excel download; reload and download a fresh workbook');
+      }
       // MCP may author only a missing Flow; never replace a tenant Flow by
       // guessing its identity or racing a parallel Builder save.
       if(createOnly&&last)throw new Error('Flow already exists');

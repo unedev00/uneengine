@@ -7,7 +7,7 @@ import '../SharedBuilderFrame/adaptiveBuilder.css';
 import { uniqueLibraryComponents, libraryComponentLabel } from '../../components/Registry/componentLibraryDiscovery';
 import { FlowPropertiesResizeHandle, useFlowPropertiesWidth } from './FlowPropertiesResizeHandle';
 import { layoutFlowGraph } from './flowGraphLayout';
-import {downloadFlowExcel, readFlowExcel, previewFlowExcel, ensureFlowUnchanged, type FlowImportPreview} from './flowExcelWorkbook';
+import {downloadFlowExcel, readFlowExcel, previewFlowExcel, ensureFlowUnchanged, flowExcelFingerprint, type FlowImportPreview} from './flowExcelWorkbook';
 import { completeFlowEndPaths, reconcileDecisionOutcomePaths } from './flowInsertElement.mjs';
 import {canBypassFlowElement,duplicateFlowGraphElement,flowGraphDiagnostics,retargetFlowGraphConnector} from './flowGraphOperations.mjs';
 import { formulaFunctions, formulaOperators } from './flowEditorCatalog';
@@ -2091,7 +2091,12 @@ export default function FlowBuilder({
 {excelPreview.changes.slice(0,20).map((change,i)=><p key={i}>{change}</p>)}
 {excelPreview.changes.length>20&&<p>+ {excelPreview.changes.length-20} more operations</p>}
 {excelPreview.errors.length>0&&<button type="button" className="btn" onClick={()=>{
- const csv=['Status,Message',...excelPreview.errors.map(error=>'Error,"'+error.replace(/"/g,'""')+'"')].join('\\r\\n');
+ const csv=['Sheet,Row,Status,Message',...excelPreview.errors.map(error=>{
+   const row=/^(Nodes|Inputs|Connections|Resources) row (\\d+):/.exec(error);
+   const section=row?.[1]??(error.startsWith('Graph:')?'Graph':'Server');
+   const fields=[section,row?.[2]??'','Error',error];
+   return fields.map(value=>'"'+value.replace(/"/g,'""')+'"').join(',');
+ })].join('\\r\\n');
  const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
  const a=document.createElement('a');a.href=url;a.download=flow.apiName+'_excel_errors.csv';a.click();
  setTimeout(()=>URL.revokeObjectURL(url),1000);
@@ -2100,12 +2105,12 @@ export default function FlowBuilder({
 <label><input type="checkbox" checked={excelSkipErrors} onChange={event=>setExcelSkipErrors(event.target.checked)}/>
  Skip invalid individual rows and apply only verified valid changes</label>}
 <button type="button" className="btn" onClick={()=>setExcelPreview(null)}>Cancel</button>
-<button type="button" className="btn" disabled={isDirty||excelValidating||
+<button type="button" className="btn" disabled={isDirty||excelValidating||excelPreview.changes.length===0||
  (excelPreview.errors.length>0&&(!excelSkipErrors||excelPreview.errors.some(error=>/^(Graph:|Server validation:)/.test(error))))}
  onClick={()=>{if(excelPreview.errors.some(error=>/^(Graph:|Server validation:)/.test(error)))return;
  setExcelValidating(true);
  void ensureFlowUnchanged(flow).then(()=>{
-   onFlowChange(excelPreview.draft);setExcelPreview(null);
+   onFlowChange({...excelPreview.draft,__excelExpectedFingerprint:flowExcelFingerprint(flow)} as FlowDefinitionMetadata);setExcelPreview(null);
    onNotify('Excel changes applied to draft. Validate and Save.');
  }).catch(error=>setExcelError(error instanceof Error?error.message:'Flow changed on server.'))
  .finally(()=>setExcelValidating(false));
