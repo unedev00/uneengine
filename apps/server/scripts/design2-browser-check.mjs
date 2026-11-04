@@ -463,6 +463,68 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  await page.getByRole('button',{name:'Show Design in the ribbon'}).first().click();
  await page.locator('.office-builder-ribbon[aria-label="Page Builder ribbon"] .smart-design2-ribbon').waitFor({state:'visible'});
 
+ // Verify real selected-component binding icon geometry in Chromium, not
+ // just the existence of SQL properties or hard-coded source attributes.
+ const auditBindings=async(id)=>{
+  const root=page.locator('[data-component-id="'+id+'"]').first();
+  await root.locator('.canvas-data-icon-button').first().waitFor({state:'visible'});
+  const result=await root.evaluate(host=>{
+   const icons=[...host.querySelectorAll('.canvas-data-icon-button')];
+   const anchors=[...host.querySelectorAll('[data-md-bind]')];
+   const bounds=host.getBoundingClientRect(),errors=[];
+   for(const icon of icons){
+    const key=icon.dataset.bindingProperty;
+    const fields=anchors.filter(el=>(el.getAttribute('data-md-bind')||'').split(/\\s+/).includes(key));
+    if(!fields.length){errors.push('No field: '+key);continue;}
+    const rect=icon.getBoundingClientRect();
+    if(rect.left<bounds.left-2||rect.top<bounds.top-2||
+      rect.right>bounds.right+2||rect.bottom>bounds.bottom+2)errors.push('Outside: '+key);
+    const distance=Math.min(...fields.map(field=>{
+     const a=field.getBoundingClientRect();
+     return Math.hypot(Math.max(a.left-rect.right,rect.left-a.right,0),
+      Math.max(a.top-rect.bottom,rect.top-a.bottom,0));
+    }));
+    if(distance>32)errors.push('Detached: '+key+' '+distance);
+   }
+   for(let i=0;i<icons.length;i++)for(let j=i+1;j<icons.length;j++){
+    const a=icons[i].getBoundingClientRect(),b=icons[j].getBoundingClientRect();
+    if(Math.min(a.right,b.right)-Math.max(a.left,b.left)>1&&
+     Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>1)
+     errors.push('Overlapping: '+icons[i].dataset.bindingProperty+'/'+icons[j].dataset.bindingProperty);
+   }
+   return {errors,properties:icons.map(el=>el.dataset.bindingProperty)};
+  });
+  assert.deepEqual(result.errors,[],'Misplaced '+id+' binding icons: '+JSON.stringify(result));
+  return result.properties;
+ };
+ const tabCanvas=page.locator('[data-component-id="browser-design2-tabs"]').first();
+ await tabCanvas.click({position:{x:10,y:10}});
+ const tabKeys=await auditBindings('browser-design2-tabs');
+ assert.equal(tabKeys.filter(key=>key==='tabCaptionFormula').length,2,
+  'One independently editable caption per visible static tab');
+ assert.ok(!tabKeys.includes('label'),'Tabs must not expose an unrelated Label icon');
+ assert.ok(!tabKeys.includes('collectionFormula'),'Static tabs must not show a collection icon');
+ await tabCanvas.locator('[data-binding-property="tabCaptionFormula"]').nth(1).click();
+ await page.locator('.smart-data-active-binding').getByText('Tab caption').waitFor({state:'visible'});
+ const formulaInput=page.locator('.smart-data-formula-input input').first();
+ await formulaInput.waitFor({state:'visible'});
+ assert.equal(await formulaInput.inputValue(),'Tab 2',
+  'Second tab icon must select its actual caption');
+ assert.ok(await formulaInput.evaluate(el=>document.activeElement===el),
+  'The existing Formula Bar must be focused after clicking an icon');
+ const cartCanvas=page.locator('[data-component-id="browser-design2-cart"]').first();
+ await cartCanvas.click({position:{x:10,y:10}});
+ const cartKeys=await auditBindings('browser-design2-cart');
+ for(const key of ['cartColumn1Header','cartColumn2Header','cartColumn3Header',
+  'cartColumn4Header','subtotalLabel','subtotalValue','totalLabel','totalValue'])
+  assert.ok(cartKeys.includes(key),'Missing Cart visual binding '+key);
+ assert.equal(await tabCanvas.locator('.canvas-data-icon-button').count(),0,
+  'Unselected components must not show data icons');
+ await cartCanvas.locator('[data-binding-property="cartColumn2Header"]').click();
+ await page.locator('.smart-data-active-binding').getByText('Unit price heading')
+  .waitFor({state:'visible'});
+ await page.screenshot({path:new URL('../artifacts/selected-cart-field-binding-icons.png',import.meta.url).pathname});
+
  // Ctrl+A, Delete and Undo must agree on the exact multi-selection. A single
  // confirmation removes the full active layout selection, never just selectedId.
  await page.locator('[data-component-id="browser-design2-cart"]').first().click({position:{x:18,y:18}});
