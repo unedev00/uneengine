@@ -63,5 +63,7 @@ test('independent values have independent labelled table columns', () => {
   const permissions = source('core/security/Permissions/permissionsView.tsx');
   assert.match(permissions, /<th scope="col">Object<\/th><th scope="col">API Name<\/th><th scope="col">Policy status<\/th>/);
   assert.match(permissions, /<th scope="col">Field<\/th><th scope="col">API Name<\/th>/);
+  assert.match(permissions, /<th scope="col">Mute Create<\/th><th scope="col">Mute Read<\/th><th scope="col">Mute Edit<\/th><th scope="col">Mute Delete<\/th>/);
+  assert.match(permissions, /\(\['create', 'read', 'edit', 'delete'\] as const\)\.map\(\(permission\)/);
   assert.doesNotMatch(permissions, /<td><strong>\{field\.label\}<\/strong><small>\{field\.apiName\}<\/small>/);
 });
