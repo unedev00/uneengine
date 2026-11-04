@@ -1,3 +1,4 @@
+import {apiRequest} from '../../authentication/Client/authClient';
 import type {FlowDefinitionMetadata} from '../../metadata/Definitions/metadata';
 import {flowGraphDiagnostics} from './flowGraphOperations.mjs';
 
@@ -13,7 +14,6 @@ const columns={
   Resources:['Action','Name','Label','Type','Data Type','Collection','Input','Output','Value (JSON)']
 };
 type SheetName=keyof typeof columns;
-const escapeXml=(value:string)=>value.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');
 const stable=(flow:FlowDefinitionMetadata)=>JSON.stringify({
   apiName:flow.apiName,versionNumber:flow.versionNumber,
   elements:flow.elements,connectors:flow.connectors,resources:flow.resources
@@ -23,7 +23,6 @@ function digest(source:string) {
   for(let i=0;i<source.length;i++) {value^=source.charCodeAt(i);value=Math.imul(value,16777619);}
   return (value>>>0).toString(16).padStart(8,'0');
 }
-function asCell(value:unknown):string {return value===undefined?'':String(value);}
 function makeSheets(flow:FlowDefinitionMetadata):Sheet[] {
   const data:Record<SheetName,Row[]>={
     Manifest:[[flow.apiName,String(flow.versionNumber),digest(stable(flow)),'FlowExcelV1']],
@@ -34,46 +33,43 @@ function makeSheets(flow:FlowDefinitionMetadata):Sheet[] {
   };
   return (Object.keys(columns) as SheetName[]).map(name=>({name,rows:[columns[name],...data[name]]}));
 }
-export function downloadFlowExcel(flow:FlowDefinitionMetadata) {
-  const sheets=makeSheets(flow);
-  const content='<?xml version="1.0" encoding="UTF-8"?>'+
-    '<?mso-application progid="Excel.Sheet"?>'+
-    '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">'+
-    sheets.map(sheet=>'<Worksheet ss:Name="'+escapeXml(sheet.name)+'"><Table>'+
-      sheet.rows.map(row=>'<Row>'+row.map(cell=>'<Cell><Data ss:Type="String">'+escapeXml(asCell(cell))+'</Data></Cell>').join('')+'</Row>').join('')+
-      '</Table></Worksheet>').join('')+'</Workbook>';
-  const url=URL.createObjectURL(new Blob([content],{type:'application/vnd.ms-excel'}));
-  const anchor=document.createElement('a');
-  anchor.href=url;anchor.download=flow.apiName+'_nodes.xls';anchor.click();
-  setTimeout(()=>URL.revokeObjectURL(url),1000);
+export type FlowWorkbookTable={name:string;columns:string[];rows:Record<string,string>[]};
+export function flowWorkbookTables(flow:FlowDefinitionMetadata):FlowWorkbookTable[]{
+ return makeSheets(flow).map(sheet=>({name:sheet.name,columns:sheet.rows[0],
+  rows:sheet.rows.slice(1).map(row=>Object.fromEntries(sheet.rows[0].map((heading,index)=>[heading,row[index]??''])))}));
 }
-function parseSheets(source:string):Map<string,Row[]> {
-  if(source.length>5_000_000)throw Error('Workbook is too large (5 MB limit).');
-  const xml=new DOMParser().parseFromString(source,'application/xml');
-  if(xml.getElementsByTagName('parsererror').length)throw Error('Invalid Excel XML. Download a fresh workbook and edit it in Excel.');
-  const namespace='urn:schemas-microsoft-com:office:spreadsheet';
-  const worksheets=Array.from(xml.getElementsByTagNameNS(namespace,'Worksheet'));
-  if(!worksheets.length)throw Error('Only Excel XML (.xls) workbooks downloaded from Flow Builder are supported.');
-  const result=new Map<string,Row[]>();
-  for(const sheet of worksheets){
-    const name=sheet.getAttributeNS(namespace,'Name')||'';
-    const table=sheet.getElementsByTagNameNS(namespace,'Table')[0];
-    const rows=table?Array.from(table.getElementsByTagNameNS(namespace,'Row')):[];
-    result.set(name,rows.map(row=>{
-      const output:string[]=[];
-      for(const cell of Array.from(row.children).filter(child=>child.localName==='Cell')){
-        const position=cell.getAttributeNS(namespace,'Index');
-        if(position) {
-          const index=Number(position);
-          if(!Number.isInteger(index)||index<1||index>100)throw Error('Invalid cell index.');
-          while(output.length<index-1)output.push('');
-        }
-        output.push(cell.getElementsByTagNameNS(namespace,'Data')[0]?.textContent??'');
-      }
-      return output;
-    }));
-  }
-  return result;
+export function decodeFlowWorkbook(base64:string):Uint8Array {
+ const raw=atob(base64);const bytes=new Uint8Array(raw.length);
+ for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);
+ return bytes;
+}
+export async function encodeFlowWorkbook(file:File):Promise<string>{
+ const bytes=new Uint8Array(await file.arrayBuffer());
+ if(bytes.length>5_000_000)throw Error('Excel exceeds 5 MB');
+ let result='';for(let i=0;i<bytes.length;i+=8192)result+=String.fromCharCode(...bytes.subarray(i,i+8192));
+ return btoa(result);
+}
+export async function downloadFlowExcel(flow:FlowDefinitionMetadata) {
+ const result=await apiRequest<{workbook:string}>('/metadata/loader/flow-excel/write',{
+  method:'POST',body:JSON.stringify({tables:flowWorkbookTables(flow)})});
+ const bytes=decodeFlowWorkbook(result.workbook);
+ const url=URL.createObjectURL(new Blob([bytes.buffer as ArrayBuffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
+ const anchor=document.createElement('a');anchor.href=url;anchor.download=flow.apiName+'_nodes.xlsx';anchor.click();
+ setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+export async function readFlowExcel(file:File):Promise<FlowWorkbookTable[]> {
+ if(!/\\.xlsx$/i.test(file.name))throw Error('Only .xlsx files downloaded from Flow Builder are supported.');
+ const result=await apiRequest<{tables:FlowWorkbookTable[]}>('/metadata/loader/flow-excel/read',{
+  method:'POST',body:JSON.stringify({workbook:await encodeFlowWorkbook(file)})});
+ return result.tables;
+}
+function parseSheets(tables:FlowWorkbookTable[]):Map<string,Row[]>{
+ const result=new Map<string,Row[]>();
+ for(const table of tables) {
+  if(result.has(table.name))throw Error('Duplicate worksheet: '+table.name);
+  result.set(table.name,[table.columns,...table.rows.map(row=>table.columns.map(heading=>row[heading]??''))]);
+ }
+ return result;
 }
 const bool=(value:string)=>{if(value!=='true'&&value!=='false')throw Error('Expected true or false, got '+value);return value==='true';};
 const parseJson=(value:string)=>{try{return JSON.parse(value);}catch{throw Error('Invalid JSON value: '+value.slice(0,50));}};
@@ -83,9 +79,9 @@ function numericId(value:string){
   return number;
 }
 export type FlowImportPreview={draft:FlowDefinitionMetadata;changes:string[];errors:string[]};
-export function previewFlowExcel(source:string,original:FlowDefinitionMetadata,allowedTypes:string[]):FlowImportPreview {
+export function previewFlowExcel(tables:FlowWorkbookTable[],original:FlowDefinitionMetadata,allowedTypes:string[]):FlowImportPreview {
   const errors:string[]=[];const changes:string[]=[];
-  const sheets=parseSheets(source);
+  const sheets=parseSheets(tables);
   const manifest=sheets.get('Manifest');
   if(!manifest||manifest.length<2||manifest[1][3]!=='FlowExcelV1')throw Error('Invalid or unsupported Flow Excel template.');
   if(manifest[1][0]!==original.apiName)throw Error('Workbook belongs to another flow. Open that flow instead.');
