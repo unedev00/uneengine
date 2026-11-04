@@ -62,7 +62,7 @@ test('Design and Design 2 remain independent, with exact control sizing',()=>{
 test('Focused, shape fill, alignment, orientation, image placement and image fill have icon controls',()=>{
  assert.match(colours,/iconVariant==='shape'/);
  assert.match(colours,/iconVariant==='focus'/);
- assert.match(ribbon,/tab==='Design2'&&property\.id==='shapeFill'/);
+ assert.match(ribbon,/tab==='Design2'&&\(property\.id==='shapeFill'\|\|\/\^shape_fill/);
  assert.match(ribbon,/mode="horizontal"/);
  assert.match(ribbon,/mode=\{property\.id==='imagePlacement'\?'placement'/);
  for(const token of ['top','middle','bottom','left','center','right','stretch'])
