@@ -2,10 +2,11 @@ import {useLayoutEffect,useRef,useState} from 'react';
 import {Database} from 'lucide-react';
 import type {UneRibbonProperty} from './uneBuilderPropertyInventory';
 import type {CanvasBindingTarget} from './canvasDataBindingTargets';
+import {bindingAnchorPosition,bindingTargetIdentity,type BindingRect} from './canvasBindingIconLayout';
 import './CanvasDataBindingIcons.css';
 
-type IconPosition={key:string;propertyKey:string;label:string;x:number;y:number;itemIndex?:number;itemId?:string;fallback?:boolean};
-/** One editor-only overlay for every component. The runtime never imports it. */
+type IconPosition={key:string;propertyKey:string;label:string;x:number;y:number;itemIndex?:number;itemId?:string};
+/** Builder-only: icons attach to rendered fields, never to missing metadata. */
 export default function CanvasDataBindingIcons({componentId,api,definitions,active,onChoose}:{
  componentId:string;api:string;definitions:readonly UneRibbonProperty[];
  active?:CanvasBindingTarget|null;
@@ -14,7 +15,7 @@ export default function CanvasDataBindingIcons({componentId,api,definitions,acti
  const root=useRef<HTMLDivElement>(null);
  const [icons,setIcons]=useState<IconPosition[]>([]);
  useLayoutEffect(()=>{
-  const overlay=root.current,host=overlay?.closest<HTMLElement>('[data-component-id]');
+  const host=root.current?.closest<HTMLElement>('[data-component-id]');
   if(!host)return;
   const allowed=new Map(definitions.filter(p=>p.tab==='Data'&&p.components.includes(api)&&
    (p.kindOverrides?.[api]??p.kind)==='expression').map(p=>[p.id,p.label]));
@@ -24,15 +25,15 @@ export default function CanvasDataBindingIcons({componentId,api,definitions,acti
   let frame=0;
   const position=()=>{
    frame=0;
-   const rect=host.getBoundingClientRect();
+   const hostRect=host.getBoundingClientRect() as BindingRect;
    const next:IconPosition[]=[];
-   const encountered=new Set<string>();
+   const seen=new Set<string>();
    for(const element of host.querySelectorAll<HTMLElement>('[data-md-bind]')){
     if(element.closest('[data-component-id]')!==host)continue;
-    const bounds=element.getBoundingClientRect();
-    if(!bounds.width||!bounds.height||bounds.bottom<=rect.top||
-       bounds.top>=rect.bottom||bounds.right<=rect.left||bounds.left>=rect.right)continue;
-    // A scrolled-out row must not leak an icon into a clipped Cart/Grid viewport.
+    const bounds=element.getBoundingClientRect() as BindingRect;
+    if(!bounds.width||!bounds.height||bounds.bottom<=hostRect.top||
+       bounds.top>=hostRect.bottom||bounds.right<=hostRect.left||bounds.left>=hostRect.right)continue;
+    // Do not place icons for rows that are scrolled or clipped out of view.
     let clipped=false;
     for(let ancestor=element.parentElement;ancestor&&ancestor!==host;ancestor=ancestor.parentElement){
      const computed=getComputedStyle(ancestor);
@@ -42,45 +43,36 @@ export default function CanvasDataBindingIcons({componentId,api,definitions,acti
         bounds.right<=clip.left||bounds.left>=clip.right){clipped=true;break;}
     }
     if(clipped)continue;
-    const tokens=(element.dataset.mdBind||'').trim().split(/\s+/);
-    for(const key of tokens)if(allowed.has(key))encountered.add(key);
+    const tokens=(element.dataset.mdBind||'').trim().split(/\s+/).filter(Boolean);
+    const titles=(element.dataset.mdBindTitles||'').split('|');
+    const itemIndex=element.dataset.mdBindIndex===undefined?undefined:Number(element.dataset.mdBindIndex);
+    const itemId=element.dataset.mdBindItem||undefined;
+    const placement=element.dataset.mdBindPosition==='top-right'?'top-right':'inline';
+    let slot=0;
     tokens.forEach((propertyKey,index)=>{
-     const label=allowed.get(propertyKey);
-     if(!label)return;
-     const itemIndex=element.dataset.mdBindIndex===undefined?undefined:Number(element.dataset.mdBindIndex);
-     const itemId=element.dataset.mdBindItem||undefined;
-     const wide=bounds.width>rect.width*.8;
-     // Full-width surfaces anchor within the selected frame; text spans anchor beside text.
-     const x=Math.max(2,Math.min(rect.width-27,
-       wide?rect.width-28-index*27:bounds.right-rect.left+3+index*25));
-     const y=Math.max(2,Math.min(rect.height-26,
-       (wide?bounds.top-rect.top+5:bounds.top-rect.top+(bounds.height-23)/2)));
-     next.push({key:propertyKey+':'+(itemId??itemIndex??'')+':'+next.length,
-       propertyKey,label,x,y,itemIndex:Number.isFinite(itemIndex)?itemIndex:undefined,itemId});
+     if(!allowed.has(propertyKey))return;
+     const identity=bindingTargetIdentity({propertyKey,itemId,itemIndex});
+     // One icon per shared row/column formula; one per independently editable tab.
+     if(seen.has(identity))return;
+     const position=bindingAnchorPosition(hostRect,{rect:bounds,slot,placement});
+     if(!position)return;
+     seen.add(identity);slot+=1;
+     const label=titles[index]?.trim()||allowed.get(propertyKey)||propertyKey;
+     next.push({key:identity,propertyKey,label,...position,
+      itemIndex:Number.isInteger(itemIndex)?itemIndex:undefined,itemId});
     });
    }
-   // Some formula fields have no visible element until authored (e.g. card
-   // buttons and supporting text). Keep them accessible without reviving a ribbon.
-   const missing=[...allowed].filter(([key])=>!encountered.has(key));
-   const columns=Math.max(1,Math.min(6,Math.floor(Math.max(rect.width,28)/28)));
-   missing.forEach(([propertyKey,label],index)=>{
-    const col=index%columns,row=Math.floor(index/columns);
-    next.push({key:'unrendered:'+propertyKey,propertyKey,label,
-     x:Math.max(2,rect.width-28-col*27),y:Math.max(2,rect.height-28-row*27),
-     fallback:true});
-   });
    setIcons(current=>JSON.stringify(current)===JSON.stringify(next)?current:next);
   };
-  const schedule=()=>{
-   if(!frame)frame=requestAnimationFrame(position);
-  };
+  const schedule=()=>{if(!frame)frame=requestAnimationFrame(position);};
   schedule();
   const resize=typeof ResizeObserver!=='undefined'?new ResizeObserver(schedule):null;
   resize?.observe(host);
   if(content!==host)resize?.observe(content);
   const observer=typeof MutationObserver!=='undefined'&&content!==host
    ?new MutationObserver(schedule):null;
-  observer?.observe(content,{childList:true,subtree:true,characterData:true});
+  observer?.observe(content,{childList:true,subtree:true,characterData:true,attributes:true,
+   attributeFilter:['data-md-bind','data-md-bind-item','data-md-bind-index','data-md-bind-titles','class','style']});
   host.addEventListener('scroll',schedule,true);
   window.addEventListener('resize',schedule);
   return ()=>{
@@ -91,14 +83,16 @@ export default function CanvasDataBindingIcons({componentId,api,definitions,acti
  },[componentId,api,definitions]);
  return <div ref={root} className="canvas-data-bindings" role="group" aria-label="Selected component data bindings">
   {icons.map(icon=><button key={icon.key} type="button"
-   className={'canvas-data-icon-button'+(icon.fallback?' is-fallback':'')+(active?.componentId===componentId&&
-     active.propertyKey===icon.propertyKey&&active.itemIndex===icon.itemIndex
+   data-binding-property={icon.propertyKey} data-binding-item={icon.itemId}
+   className={'canvas-data-icon-button'+(active?.componentId===componentId&&
+     active.propertyKey===icon.propertyKey&&
+     (icon.propertyKey!=='tabCaptionFormula'||active.itemId===icon.itemId&&active.itemIndex===icon.itemIndex)
      ?' is-active':'')}
    style={{left:icon.x,top:icon.y}} title={'Edit '+icon.label+' in Data formula bar'}
    aria-label={'Edit '+icon.label+' data source'} onPointerDown={event=>event.stopPropagation()}
    onClick={event=>{event.preventDefault();event.stopPropagation();
-     onChoose({propertyKey:icon.propertyKey,itemIndex:icon.itemIndex,itemId:icon.itemId});}}>
-   <Database aria-hidden="true" size={14}/>
+     onChoose({propertyKey:icon.propertyKey,itemIndex:icon.itemIndex,itemId:icon.itemId,displayLabel:icon.label});}}>
+   <Database aria-hidden="true" size={13}/>
   </button>)}
  </div>;
 }
