@@ -714,8 +714,9 @@ test('placement controls, component finder and full-width workspace are builder-
   const arrange=await readFile(new URL('../src/core/builders/PageBuilder/ArrangeRibbon.tsx',import.meta.url),'utf8');
   for(const action of ['Bring to front','Send backward','Group','Ungroup'])
     assert.ok(arrange.includes(action),action);
-  for(const action of ['Fit to Screen','ribbonTab===\'Arrange\''])
-    assert.ok(builder.includes(action),action);
+  assert.ok(builder.includes('Fit to Screen'));
+  assert.ok(builder.includes("if(tab==='Component Layout'||tab==='Arrange')tab='Component Design 2'"));
+  assert.ok(builder.includes('design2Arrange={canvasArrangeProps}'));
   assert.ok(navigator.includes('aria-label="Find a component"'));
   assert.match(builder,/borderWidth:1,borderColor:'#000000'/);
   assert.match(builder,/canvasGroupKey\(component\) \|\| previewMode/, 'grouped components move through the shared group gesture');
