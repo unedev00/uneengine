@@ -1,6 +1,6 @@
 /** Builder-only targets. The persisted component stays the single source of truth. */
 export type CanvasBindingTarget={
- componentId:string;propertyKey:string;itemIndex?:number;itemId?:string;requestId:number;
+ componentId:string;propertyKey:string;itemIndex?:number;itemId?:string;displayLabel?:string;requestId:number;
 };
 type Props=Record<string,unknown>;
 type Tab={id:string;label:string;[key:string]:unknown};
