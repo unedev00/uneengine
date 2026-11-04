@@ -123,3 +123,10 @@ test('Phone Flow Builder controls wrap instead of clipping at 390px',()=>{
  assert.match(css,/\.flow-phone-top-actions p\{[^}]*flex:1 0 100%/);
  assert.match(css,/\.flow-phone-top-actions button\{[^}]*flex:1 1 120px/);
 });
+
+test('Permission Save remains disabled after a user restores the original draft',()=>{
+ const src=read('../src/core/security/Permissions/permissionsView.tsx');
+ assert.match(src,/const permissionDirty=useMemo\(\(\)=>JSON\.stringify\(draft\)!==JSON\.stringify\(savedDraft\)/);
+ assert.doesNotMatch(src,/draft===savedDraft/);
+ assert.match(src,/disabled=\{saving \|\| !permissionDirty \|\| Boolean\(accessControlError\)\}/);
+});
