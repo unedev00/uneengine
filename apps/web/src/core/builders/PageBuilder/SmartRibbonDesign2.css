@@ -414,3 +414,86 @@
 .smart-icon-dropdown-popup{
  z-index:12000!important;
 }
+
+
+/* R0 C1-C20 is ONE fixed horizontal row. C5/C6 are deliberately reserved.
+ * The fourteen Arrange controls are C7-C20 at exactly 40x26px each.
+ * The ribbon's existing horizontal scroll handles narrower viewports;
+ * no auto-wrapping, collapsed controls, or rearranging by enabled state. */
+.office-builder-ribbon #page-builder-tab-content
+  >.smart-design2-ribbon>.smart-ribbon-group.smart-design2-group{
+  --smart-section-width:1200px!important;
+  flex:0 0 1200px!important;
+  width:1200px!important;
+  min-width:1200px!important;
+  max-width:1200px!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-design2-workbench{
+  width:1176px!important;
+  min-width:1176px!important;
+  max-width:1176px!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-design2-context[data-design-row="0"]{
+  box-sizing:border-box!important;
+  width:1176px!important;
+  min-width:1176px!important;
+  max-width:1176px!important;
+  flex-wrap:nowrap!important;
+  overflow:visible!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-design2-r0-gap{
+  box-sizing:border-box!important;
+  display:block!important;
+  flex:0 0 40px!important;
+  width:40px!important;min-width:40px!important;max-width:40px!important;
+  height:26px!important;min-height:26px!important;max-height:26px!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-design2-empty-position{
+  box-sizing:border-box!important;
+  display:block!important;
+  flex:0 0 80px!important;
+  width:80px!important;min-width:80px!important;max-width:80px!important;
+  height:26px!important;min-height:26px!important;max-height:26px!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-design2-arrange-actions{
+  box-sizing:border-box!important;
+  display:grid!important;
+  flex:0 0 612px!important;
+  grid-template-columns:repeat(14,40px)!important;
+  grid-template-rows:26px!important;
+  column-gap:4px!important;
+  row-gap:0!important;
+  width:612px!important;min-width:612px!important;max-width:612px!important;
+  height:26px!important;min-height:26px!important;max-height:26px!important;
+  padding:0!important;margin:0!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-design2-arrange-action{
+  box-sizing:border-box!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:40px!important;min-width:40px!important;max-width:40px!important;
+  height:26px!important;min-height:26px!important;max-height:26px!important;
+  padding:2px!important;margin:0!important;
+  border:1px solid #b7c9df!important;border-radius:3px!important;
+  background:#fff!important;color:#315577!important;
+  cursor:pointer!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-design2-arrange-action:disabled{
+  opacity:.42!important;cursor:not-allowed!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-design2-arrange-action:not(:disabled):hover{
+  background:#e9f2fc!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-design2-arrange-action[aria-pressed="true"]{
+  background:#d8eafa!important;border-color:#5c91cf!important;
+}
