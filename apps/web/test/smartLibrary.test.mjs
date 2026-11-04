@@ -797,7 +797,7 @@ test('Smart Tabs uses first actual Object tab rather than deprecated synthetic f
  const runtime=read('../src/component-libraries/smart/shared/SmartRuntime.jsx');
  for(const property of ['firstTabCustom','firstTabCaption','firstTabValue'])
   assert.doesNotMatch(runtime,new RegExp(property));
- assert.match(runtime,/const tabs=recordTabs;/);
+ assert.match(runtime,/const tabs=dynamic\|\|hasCollection\?recordTabs:recordTabs\.map/);
 });
 test('SQL and ribbon retire the three first-tab properties without deleting saved metadata',()=>{
  const sql=read('../../server/src/system-support/migrations/20270305-retire-smart-tabs-custom-first-tab.sql');
@@ -1339,18 +1339,21 @@ test('Smart Textbox SQL enables only approved properties and User pilot requires
 });
 
 
-test('Data ribbon keeps image, formula and cart summary slots stable without injecting properties',()=>{
+test('Data ribbon retains Source, filtering and image upload with one Formula Bar',()=>{
  const markup=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
  const css=read('../src/core/builders/PageBuilder/SmartRibbonDataFormula.css');
+ const cart=read('../src/component-libraries/smart_cart/SmartCart.jsx');
  const filter=markup.indexOf('className="smart-data-filter-button"');
  const upload=markup.indexOf('className="smart-data-image-upload"');
  const formula=markup.indexOf('className="smart-data-formula-input"');
- const summary=markup.indexOf('className="smart-data-summary-name"');
- assert.ok(filter>=0&&upload>filter&&formula>upload&&summary>formula);
+ assert.ok(filter>=0&&upload>filter&&formula>upload);
  assert.match(markup,/disabled=\{uploadBusy\|\|!activeDataEnabled\|\|activeDataProperty\?\.id!=='imageSource'\|\|api!=='smart_image'\}/);
- assert.match(markup,/disabled=\{!activeSummaryLabel\|\|!activeDataEnabled\}/);
- for(const width of ['34px','40px','35px','600px','115px'])
-  assert.ok(css.includes(width),'Missing specified Data slot width '+width);
+ assert.doesNotMatch(markup,/className="smart-data-summary-name"/);
+ assert.match(cart,/data-md-bind=\{p\.builderPreview\?"totalLabel":undefined\}/);
+ assert.match(cart,/data-md-bind=\{p\.builderPreview\?"totalValue":undefined\}/);
+ for(const width of ['34px','40px','35px'])
+  assert.ok(css.includes(width),'Missing retained Data control width '+width);
+ assert.match(css,/smart-data-active-binding/);
 });
 test('Action ribbon retains all existing supported events while fixing component slot widths',()=>{
  const markup=read('../src/core/builders/PageBuilder/PageBuilderActionRibbon.tsx');
