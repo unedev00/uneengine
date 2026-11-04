@@ -136,7 +136,12 @@ export default function SmartCart({p,records,Picture,expression,fieldAllowed,fir
   </div>
   <div className="smart-cart-table" style={{
    backgroundColor:p.tableBackgroundColor||"#fff",border:border(p.tableBorderColor),
-   borderRadius:n(p.tableRadius,8),boxShadow:shadow(p.tableShadow),'--smart-cart-columns':columns}}>
+   borderRadius:n(p.tableRadius,8),boxShadow:shadow(p.tableShadow),'--smart-cart-columns':columns,
+   ...(p.tableWidth!==undefined&&p.tableWidth!==null&&p.tableWidth!==""
+     ?{width:n(p.tableWidth,0,0,10000)+"px",maxWidth:"100%",alignSelf:"flex-start"}:{}),
+   ...(p.tableHeight!==undefined&&p.tableHeight!==null&&p.tableHeight!==""
+     ?{height:n(p.tableHeight,0,0,10000)+"px",flex:"0 0 auto"}:{})
+   }}>
    {visible.length===0?<p className="smart-cart-no-columns">No columns selected</p>:<>
     <div className="smart-cart-columns" aria-label="Cart columns">
      {visible.map(index=><span key={index}>{headings[index]}</span>)}
@@ -157,8 +162,12 @@ export default function SmartCart({p,records,Picture,expression,fieldAllowed,fir
       const selected=selectedKey===rowKey;
       const selectRow=()=>setSelectedKey(rowKey);
       return <div key={rowKey} className={"smart-cart-row-wrap"+(selected?" is-selected":"")}
-       style={selected?{backgroundColor:p.selectedRowColor??"#f2f7ff",
-        borderColor:p.selectedRowBorderColor??"#8badde"}:undefined}>
+       style={{
+        ...(p.rowWidth!==undefined&&p.rowWidth!==null&&p.rowWidth!==""
+         ?{width:n(p.rowWidth,0,0,10000)+"px",maxWidth:"100%"}:{}),
+        ...(selected?{backgroundColor:p.selectedRowColor??"#f2f7ff",
+         borderColor:p.selectedRowBorderColor??"#8badde"}:{})
+       }}>
        <div className="smart-cart-row" role="button" tabIndex={0}
         aria-selected={selected} aria-expanded={selected}
         aria-label={"Select cart row "+String(name||i+1)}
@@ -241,19 +250,21 @@ export default function SmartCart({p,records,Picture,expression,fieldAllowed,fir
      fontWeight:p.summaryTextWeight===true?700:400,color:p.summaryTextColor||"#52657d"}}>
     <span>{summaryLabels[label]}</span><span aria-label={summaryAmounts[label]===null?summaryLabels[label]+" not bound":undefined}>{summaryAmounts[label]??"—"}</span></div>)}
    <div className="smart-cart-summary-line smart-cart-total" style={{
-    background:p.footerShape&&p.footerShapeFill?p.footerShapeFill:p.footerBodyColor||undefined,
-    border:p.footerBorderColor?"1px solid "+p.footerBorderColor:undefined,
-    borderRadius:p.footerShape==="shape:oval"?999:
-      p.footerShape==="shape:rectangle"?0:
-      p.footerRadius===undefined?undefined:n(p.footerRadius,8,0,128),
-    minHeight:p.footerHeight===undefined?undefined:n(p.footerHeight,0,0,1200),
-    width:p.footerWidth===undefined?undefined:n(p.footerWidth,0,0,1200),
-    maxWidth:"100%",
-    whiteSpace:p.footerWrapText===false?"nowrap":p.footerWrapText===true?"pre-wrap":undefined,
-    fontSize:n(p.summary2TextSize,18,8,96),fontWeight:p.summary2TextWeight===false?400:700,
-    textAlign:p.summary2Alignment?align(p.summary2Alignment):undefined,
-    justifyContent:summaryJustify(p.summary2Alignment),
-    color:p.summary2TextColor||"#1c3558"}}>
+    fontSize:n(p.footerTextSize,p.summary2TextSize===undefined?18:n(p.summary2TextSize,18,8,96),8,96),
+    fontWeight:typeof p.footerBold==="boolean"?(p.footerBold?700:400):
+      p.summary2TextWeight===false?400:700,
+    textAlign:p.footerAlignment?align(p.footerAlignment):
+      p.summary2Alignment?align(p.summary2Alignment):undefined,
+    justifyContent:summaryJustify(p.footerAlignment||p.summary2Alignment),
+    color:p.footerTextColor||p.summary2TextColor||"#1c3558",
+    backgroundColor:p.footerBackgroundColor||undefined,
+    borderTopColor:p.footerBorderColor||undefined,
+    whiteSpace:p.footerWrapText===false?"nowrap":undefined,
+    ...(p.footerWidth!==undefined&&p.footerWidth!==null&&p.footerWidth!==""
+     ?{width:n(p.footerWidth,0,0,10000)+"px",maxWidth:"100%"}:{}),
+    ...(p.footerHeight!==undefined&&p.footerHeight!==null&&p.footerHeight!==""
+     ?{minHeight:n(p.footerHeight,0,0,10000)+"px"}:{})
+   }}>
     <span>{summaryLabels.Total}</span><span aria-label={summaryAmounts.Total===null?summaryLabels.Total+" not bound":undefined}>{summaryAmounts.Total??"—"}</span>
    </div>
   </section>

@@ -219,9 +219,18 @@ function SmartCard({p,record,onButtonClick,onCustomButton,onSelect,selected=fals
        backgroundColor:p.cardButtonFill||p.accentColor||"#2563eb",
        borderColor:p.cardButtonBorderColor||p.cardButtonFill||p.accentColor||"#2563eb",
        ...smartShapeAppearance(p.cardButtonShape||"shape:round-rectangle",
-        p.cardButtonShape==="shape:rectangle"?0:8),
+        p.cardButtonRadius!==undefined&&p.cardButtonRadius!==null&&p.cardButtonRadius!==""
+         ?number(p.cardButtonRadius,8,0,200)
+         :p.cardButtonShape==="shape:rectangle"?0:8),
        color:p.cardButtonTextColor||"#fff",
        fontSize:number(p.cardButtonTextSize,14,8,48),
+       width:p.cardButtonWidth!==undefined&&p.cardButtonWidth!==null&&p.cardButtonWidth!==""
+        ?number(p.cardButtonWidth,0,0,1200)+"px":undefined,
+       height:p.cardButtonHeight!==undefined&&p.cardButtonHeight!==null&&p.cardButtonHeight!==""
+        ?number(p.cardButtonHeight,0,0,1200)+"px":undefined,
+       fontWeight:typeof p.cardButtonBold==="boolean"?(p.cardButtonBold?700:400):undefined,
+       whiteSpace:p.cardButtonWrapText===false?"nowrap":
+        p.cardButtonWrapText===true?"normal":undefined,
        // Design 2 Button R3C2 aligns the button caption, not the card header.
        textAlign:["left","center","right"].includes(p.cardButtonAlignment)
         ?p.cardButtonAlignment:undefined,
@@ -241,7 +250,19 @@ function SmartCard({p,record,onButtonClick,onCustomButton,onSelect,selected=fals
   </div>}
   {p.badgeVisible===true&&Boolean(badge)&&<span className={"smart-badge "+(p.badgeAlignment||"image-top-right")}
    style={{fontWeight:p.badgeBold===false?400:700,fontSize:number(p.badgeTextSize,12),
-   color:p.badgeTextColor||"#fff",background:p.badgeBodyColor||"#2563eb"}}>{badge}</span>}
+   color:p.badgeTextColor||"#fff",background:p.badgeBodyColor||"#2563eb",
+   border:p.badgeBorderColor?"1px solid "+p.badgeBorderColor:undefined,
+   borderRadius:p.badgeRadius!==undefined&&p.badgeRadius!==null&&p.badgeRadius!==""
+    ?number(p.badgeRadius,0,0,200):undefined,
+   width:p.badgeWidth!==undefined&&p.badgeWidth!==null&&p.badgeWidth!==""
+    ?number(p.badgeWidth,0,0,1200)+"px":undefined,
+   height:p.badgeHeight!==undefined&&p.badgeHeight!==null&&p.badgeHeight!==""
+    ?number(p.badgeHeight,0,0,1200)+"px":undefined,
+   boxSizing:"border-box",
+   ...(p.badgeWidth!==undefined&&p.badgeWidth!==null&&p.badgeWidth!==""||
+       p.badgeHeight!==undefined&&p.badgeHeight!==null&&p.badgeHeight!==""
+       ?{display:"inline-flex",alignItems:"center",justifyContent:"center"}:{})
+   }}>{badge}</span>}
  </article>;
 }
 function SmartCalendar({p,fire}){
@@ -292,8 +313,7 @@ function SmartLookup({p,style,fire}){
  const candidates=recordsOf(p).slice(0,200).filter(item=>item&&typeof item==="object");
  const display=row=>scopedExpression(p,"textSource",p.textSource??row.Name??row.name??row.label??row.title??row.id??"",row);
  const matches=candidates.filter(row=>display(row).toLowerCase().includes(query.toLowerCase())).slice(0,20);
- return <div className="smart-lookup" style={{...style,"--smart-placeholder-color":p.labelColor||"#64748b",
-   "--smart-lookup-focus-color":p.lookupFocusColor||undefined}}>
+ return <div className="smart-lookup" style={{...style,"--smart-placeholder-color":p.labelColor||"#64748b"}}>
   <input className="smart-search" type="search" role="combobox"
    aria-label={text(p.placeholder||p.label||"Search records")}
    aria-expanded={opened&&matches.length>0} aria-controls="smart-lookup-suggestions"
@@ -461,7 +481,7 @@ function SmartToggle({p,fire}){
  return <label className="smart-switch" title={p.toggleFieldError||undefined}>
   <input type="checkbox" role="switch" aria-label={p.toggleFieldError||"Toggle"}
    aria-busy={saving} checked={checked} disabled={disabled} onChange={change}/>
-  <span className="smart-switch-track" style={{background:checked?(p.toggleFocusColor||p.backgroundColor||"#34c759"):"#e5e5ea",
+  <span className="smart-switch-track" style={{background:checked?(p.backgroundColor||"#34c759"):"#e5e5ea",
    border:p.borderColor?"1px solid "+p.borderColor:undefined,
    ...smartShapeAppearance(p.shapeId,p.shapeId==='shape:rectangle'?0:number(p.radius,999)),
    boxShadow:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none"}}>
@@ -659,9 +679,7 @@ export default function SmartRuntime(p){
   };
   const fit=p.imageFill==="fit"?"contain":p.imageFill==="stretch"?"fill":"cover";
   content=<nav className="smart-navigation" style={{width:"100%",height:"100%",
-   minWidth:0,minHeight:0,overflow:"auto",flexWrap:"nowrap",alignItems:"flex-start",
-    "--smart-navigation-focus-color":p.navigationFocusColor||undefined,
-    flexDirection:p.navigationDirection==="vertical"?"column":"row"}}>
+   minWidth:0,minHeight:0,overflow:"auto",flexWrap:"nowrap",alignItems:"flex-start",flexDirection:p.navigationDirection==="vertical"?"column":"row"}}>
     {entries.map((item,i)=>{
       const label=labelOf(item);
       const src=item&&typeof item==="object"?item.imageSrc??item.imageUrl:null;

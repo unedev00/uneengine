@@ -11,6 +11,25 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  // collide with the exact R1..R3 unique-position constraint.
  await db.query(approved);
  await db.query(approved);
+ // The exact-matrix replay replaces approved property targets. Reapply its
+ // later semantic fix so this browser test exercises the actual latest schema.
+ const parity=await readFile(new URL('../src/system-support/migrations/20271106-design2-functional-control-parity.sql',import.meta.url),'utf8');
+ await db.query(parity);
+ await db.query(parity);
+ const actualTargets=await db.query(`SELECT component_api,area,slot_key,property_key
+   FROM md_builder_design2_slot_rules
+   WHERE (component_api='smart_tabs' AND area='Body' AND slot_key='fill')
+      OR (component_api='smart_textbox' AND area='Body' AND slot_key='wrap')
+      OR (component_api='smart_textbox' AND area='Header Supporting' AND slot_key='alignment')
+      OR (component_api='smart_icon' AND area='Body' AND slot_key='height')`);
+ for(const [component,area,slot,property] of [
+   ['smart_tabs','Body','fill','backgroundColor'],
+   ['smart_textbox','Body','wrap','wrapText'],
+   ['smart_textbox','Header Supporting','alignment','supportingAlignment'],
+   ['smart_icon','Body','height','height']
+ ])assert.ok(actualTargets.rows.some(row=>row.component_api===component&&row.area===area&&
+    row.slot_key===slot&&row.property_key===property),
+   'Design 2 semantic target missing: '+component+' '+area+' '+slot);
  const listed=await db.query(`SELECT area,slot_key,property_key,row_no,order_no,width_px,height_px
    FROM md_builder_design2_slots ORDER BY area_order,row_no,order_no`);
  // Shared areas are extensible: retain the legacy baseline and enforce unique SQL slots.

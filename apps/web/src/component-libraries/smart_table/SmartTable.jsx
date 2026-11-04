@@ -40,6 +40,8 @@ export default function SmartTable({p,records,expression,fieldAllowed,fire}){
   borderBottom:border(p.headerBorderColor),
   textAlign:p.headerAlignment||p.labelAlignment||"left",
   fontSize:finite(p.headerTextSize??p.textSize,13,9,96),
+  height:p.headerBoxHeight!==undefined&&p.headerBoxHeight!==null&&p.headerBoxHeight!==""
+   ?finite(p.headerBoxHeight,0,0,2000):undefined,
   fontWeight:p.headerBold===false?400:700,
   whiteSpace:p.wrapText===false?"nowrap":"normal"
  };
@@ -71,17 +73,22 @@ export default function SmartTable({p,records,expression,fieldAllowed,fire}){
  const footerText=total>shown
   ?shown+" of "+total+" records":total===1?"1 record":total+" records";
  const footerStyle={
-  backgroundColor:colour(p.summaryBackgroundColor,"#f5f7fa"),
-  color:colour(p.summaryTextColor,"#33445d"),
-  height:finite(p.summaryHeight,36,22,300),
-  minHeight:finite(p.summaryHeight,36,22,300),
-  fontSize:finite(p.summaryTextSize,12,9,96),
-  fontWeight:p.summaryTextWeight===true?700:400,
-  textAlign:p.summaryAlignment||undefined,
-  border:border(p.summaryBorderColor),
+  backgroundColor:colour(p.footerBackgroundColor??p.summaryBackgroundColor,"#f5f7fa"),
+  color:colour(p.footerTextColor??p.summaryTextColor,"#33445d"),
+  height:finite(p.footerHeight??p.summaryHeight,36,22,300),
+  minHeight:finite(p.footerHeight??p.summaryHeight,36,22,300),
+  fontSize:finite(p.footerTextSize??p.summaryTextSize,12,9,96),
+  fontWeight:typeof p.footerBold==="boolean"?(p.footerBold?700:400):
+   p.summaryTextWeight===true?700:400,
+  textAlign:p.footerAlignment??p.summaryAlignment??undefined,
+  border:border(p.footerBorderColor??p.summaryBorderColor),
   borderRadius:finite(p.summaryRadius,4,0,100),
   boxShadow:shadow(p.summaryShadow),
-  width:p.summaryWidth?finite(p.summaryWidth,200,20,2000)+"px":"100%"
+  whiteSpace:p.footerWrapText===false?"nowrap":undefined,
+  width:p.footerWidth!==undefined&&p.footerWidth!==null&&p.footerWidth!==""
+   ?finite(p.footerWidth,0,0,10000)+"px":
+   p.summaryWidth?finite(p.summaryWidth,200,20,2000)+"px":"100%",
+  maxWidth:"100%"
  };
  return <section className="smart-table-root" aria-label={p.label||"Smart Table"}
   style={{background:colour(p.backgroundColor,"#fff"),border:border(p.borderColor),
@@ -93,7 +100,9 @@ export default function SmartTable({p,records,expression,fieldAllowed,fire}){
     border:border(p.tableBorderColor),borderRadius:finite(p.tableRadius,4,0,100),
     boxShadow:shadow(p.tableShadow),
     "--smart-table-selected-row":colour(p.selectedRowColor,"#e7f1ff")}}>
-   {columns.length?<table className="smart-table-native">
+   {columns.length?<table className="smart-table-native"
+    style={p.rowWidth!==undefined&&p.rowWidth!==null&&p.rowWidth!==""
+     ?{width:finite(p.rowWidth,0,0,10000)+"px",minWidth:0}:undefined}>
     <thead><tr>{columns.map(col=><th scope="col" key={col.key}
       style={headingStyle}>{col.label}</th>)}
       {actions.length>0&&<th scope="col" style={headingStyle}>Actions</th>}
