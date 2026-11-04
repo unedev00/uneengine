@@ -828,6 +828,31 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  await buttons.nth(7).click();
  assert.equal(await buttons.nth(10).isDisabled(),false,'Group must enable with three unlocked siblings');
  await buttons.nth(10).click();
+ // Regression: selecting a grouped Cart must still expose its own field icons.
+ // Earlier code suppressed ALL icons whenever ribbonSelectedMembers.length > 1.
+ const groupedCart=page.locator('[data-component-id="arrange-one"]').first();
+ await groupedCart.click({position:{x:18,y:18}});
+ assert.equal(await page.locator('.record-component.multi-selected').count(),3,
+  'Clicking a grouped component must retain its grouped canvas selection');
+ const groupedLabelIcon=groupedCart.locator('.canvas-data-icon-button[data-binding-property="label"]');
+ await groupedLabelIcon.waitFor({state:'visible'});
+ assert.ok(await groupedCart.locator('.canvas-data-icon-button').count()>1,
+  'Grouped Smart Cart must keep its field-specific yellow icons');
+ await groupedLabelIcon.click();
+ await page.locator('.smart-data-active-binding').getByText('Cart title').waitFor({state:'visible'});
+ const groupedFormula=page.locator('.smart-data-formula-input input').first();
+ await groupedFormula.waitFor({state:'visible'});
+ assert.equal(await groupedFormula.inputValue(),'E2E Cart',
+  'Grouped Cart title icon must open its own label formula');
+ assert.equal(await groupedFormula.isDisabled(),false,
+  'Group selection must not disable the selected Cart field editor');
+ await groupedFormula.fill('= "Group cart only"');
+ // Updates must change the selected cart only, not grouped Smart Tabs siblings.
+ const stagedGroupTitle=await page.locator('[data-component-id="arrange-one"] .smart-cart-header').innerText();
+ assert.ok(stagedGroupTitle.includes('Group cart only'),
+  'Selected Cart title must update without applying to grouped siblings');
+ await page.getByRole('tab',{name:'Design',exact:true}).click();
+ await page.getByLabel('Select Design 2 area').selectOption('Body');
  assert.equal(await buttons.nth(11).isDisabled(),false,'Ungroup must enable for a persisted canvas group');
  await buttons.nth(11).click();
  assert.equal(await buttons.nth(11).isDisabled(),true,'Ungroup must clear the canvas group');

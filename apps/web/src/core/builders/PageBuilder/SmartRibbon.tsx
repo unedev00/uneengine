@@ -102,7 +102,8 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  const daysButton=useRef<HTMLButtonElement>(null);
  const daysMenu=useRef<HTMLDivElement>(null);
  const [daysPosition,setDaysPosition]=useState({top:0,left:0});
- useEffect(()=>{
+ useLayoutEffect(()=>{
+  // Select the clicked Data binding before the Formula Bar paints or focuses.
   setDaysOpen(false);setFiltersOpen(false);
   setSelectedDataField(tab==='Data'&&canvasBinding?.componentId===componentId
    ?canvasBinding.propertyKey:'__record_filter__');
