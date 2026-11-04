@@ -5,16 +5,25 @@
 
 /* Topbar toggles (dock Design left, collapse/pin ribbon). */
 .office-builder-ribbon .office-ribbon-layout-toggles{
-  display:inline-flex;align-items:center;gap:2px;flex:0 0 auto;margin-left:4px;
+  display:inline-flex!important;align-items:center!important;gap:4px!important;
+  flex:0 0 auto!important;margin-left:6px!important;
 }
+/* The topbar is the light Blueprint tab rail (#f6f9fd), so toggles use the tab text
+ * colour and the Design 2 arrange-button hover/pressed blues. */
+.office-builder-ribbon .office-ribbon-topbar .office-ribbon-layout-toggle,
 .office-ribbon-layout-toggle{
-  box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;
-  width:30px;height:30px;padding:0;border:0;border-radius:4px;
-  background:transparent;color:#eef5ff;cursor:pointer;
+  box-sizing:border-box!important;display:inline-flex!important;align-items:center!important;
+  justify-content:center!important;width:28px!important;height:26px!important;padding:0!important;
+  border:1px solid #b7c9df!important;border-radius:3px!important;
+  background:#fff!important;color:#253c5b!important;cursor:pointer!important;
 }
-.office-ribbon-layout-toggle:hover,
-.office-ribbon-layout-toggle.is-on{background:#2c6097;color:#fff}
-.office-ribbon-layout-toggle:focus-visible{outline:2px solid #9dccff;outline-offset:1px}
+.office-builder-ribbon .office-ribbon-topbar .office-ribbon-layout-toggle svg,
+.office-ribbon-layout-toggle svg{display:block!important;width:16px!important;height:16px!important}
+.office-builder-ribbon .office-ribbon-topbar .office-ribbon-layout-toggle:hover,
+.office-ribbon-layout-toggle:hover{background:#e9f2fc!important}
+.office-builder-ribbon .office-ribbon-topbar .office-ribbon-layout-toggle.is-on,
+.office-ribbon-layout-toggle.is-on{background:#d8eafa!important;border-color:#5c91cf!important;color:#0869dc!important}
+.office-ribbon-layout-toggle:focus-visible{outline:2px solid #1e79cb;outline-offset:1px}
 
 /* Collapsed ribbon: tabs stay, the property strip hides (like Excel). While Design is
  * docked left the top strip is empty for the Design tab, so it hides too. */
@@ -40,8 +49,6 @@
   border-bottom:1px solid #ccd2dd;font:600 12px/1 "Segoe UI",Arial,sans-serif;color:#183b68;
 }
 .page-builder-design-dock-header>span{flex:1 1 auto}
-.page-builder-design-dock-header .office-ribbon-layout-toggle{color:#315577}
-.page-builder-design-dock-header .office-ribbon-layout-toggle:hover{background:#e9f2fc;color:#183b68}
 .page-builder-design-dock .page-builder-design-dock-ribbon{border-bottom:0}
 
 /* Dock tab panel: vertical, no fixed ribbon height, no horizontal scroll. */

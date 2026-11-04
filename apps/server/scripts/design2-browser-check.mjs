@@ -446,6 +446,23 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  await mkdir(new URL('../artifacts/',import.meta.url),{recursive:true});
  await page.screenshot({path:new URL('../artifacts/design2-contextual-ribbon.png',import.meta.url).pathname});
 
+ // Trial left Design dock: the topbar toggle moves the same Design 2 controls into a
+ // left panel; the collapse toggle hides the ribbon strip. Both must return to normal.
+ await page.locator('[data-component-id="browser-design2-cart"]').first().click({position:{x:18,y:18}});
+ await page.getByLabel('Select Design 2 area').selectOption('Body');
+ const dockToggle=page.getByRole('button',{name:'Show Design in a left panel'});
+ await dockToggle.waitFor({state:'visible'});
+ await dockToggle.click();
+ const dock=page.locator('.page-builder-design-dock');
+ await dock.locator('.smart-design2-area-select').waitFor({state:'visible'});
+ assert.equal(await page.locator('.smart-design2-ribbon').count(),1,'Design 2 must render once, in the dock');
+ await page.screenshot({path:new URL('../artifacts/design2-left-dock.png',import.meta.url).pathname});
+ await page.getByRole('button',{name:'Collapse the ribbon'}).click();
+ await page.screenshot({path:new URL('../artifacts/design2-left-dock-ribbon-collapsed.png',import.meta.url).pathname});
+ await page.getByRole('button',{name:'Pin the ribbon'}).click();
+ await page.getByRole('button',{name:'Show Design in the ribbon'}).first().click();
+ await page.locator('.office-builder-ribbon[aria-label="Page Builder ribbon"] .smart-design2-ribbon').waitFor({state:'visible'});
+
  // Ctrl+A, Delete and Undo must agree on the exact multi-selection. A single
  // confirmation removes the full active layout selection, never just selectedId.
  await page.locator('[data-component-id="browser-design2-cart"]').first().click({position:{x:18,y:18}});
