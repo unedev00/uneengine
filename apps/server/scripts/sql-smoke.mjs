@@ -99,6 +99,19 @@ try{
  await db.query(`INSERT INTO md_record_values
   (tenant_id,record_id,object_api,field_api,value_text)
   VALUES($1,$2,'AuditItem__c','Name','Original customer')`,[tenantId,fieldRecordId]);
+ // PostgreSQL full-text ranking uses internal "char", not SQL character(1).
+ // Exercise the same expression used by RecordEngine.list against a populated
+ // tenant-scoped search index, not just source-string assertions.
+ const fullTextRank=await db.query(`SELECT max(ts_rank_cd(
+    setweight(qv.search_vector,qv.weight::"char"),
+    websearch_to_tsquery('simple',$3))) AS score
+   FROM md_record_search_values qv
+   WHERE qv.tenant_id=$1 AND qv.object_api=$2
+     AND qv.search_vector @@ websearch_to_tsquery('simple',$3)`,
+   [tenantId,'AuditItem__c','Original customer']);
+ assert.ok(Number(fullTextRank.rows[0]?.score)>0,
+   'Weighted SQL search must rank indexed records without a PostgreSQL type error');
+ console.info('Weighted SQL record search ranking: passed');
  const inactive=await db.query(`SELECT count(*)::integer AS count FROM md_field_exact_index_entries
   WHERE tenant_id=$1 AND object_api='AuditItem__c' AND field_api='Name'`,[tenantId]);
  assert.equal(inactive.rows[0].count,0,'Unconfigured fields must not create index entries');
