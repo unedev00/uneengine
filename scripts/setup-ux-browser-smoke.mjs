@@ -43,7 +43,7 @@ try {
  for(let index=1;index<=49;index++){
   await page.getByRole('checkbox',{name:'Bulk record '+index,exact:true}).check();
  }
- console.log('Offline cap diagnostic:',await page.locator('.offline-briefcase-count').allTextContents(),await page.locator('.offline-record-picker [type="checkbox"]:checked').count(),await page.getByRole('checkbox',{name:'Acme Corporation'}).isChecked());
+ await page.getByText('50 of 100 records selected').waitFor();
  assert.equal(await page.getByRole('checkbox',{name:'Bulk record 50'}).isDisabled(),true,
   'Offline briefcase must stop at 50 records per object including the already selected record');
  assert.equal(await page.getByRole('button',{name:'Save selections'}).isEnabled(),true,
