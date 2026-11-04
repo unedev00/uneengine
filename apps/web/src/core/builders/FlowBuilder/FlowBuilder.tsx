@@ -7,6 +7,7 @@ import '../SharedBuilderFrame/adaptiveBuilder.css';
 import { uniqueLibraryComponents, libraryComponentLabel } from '../../components/Registry/componentLibraryDiscovery';
 import { FlowPropertiesResizeHandle, useFlowPropertiesWidth } from './FlowPropertiesResizeHandle';
 import { layoutFlowGraph } from './flowGraphLayout';
+import {downloadFlowExcel, readFlowExcel, previewFlowExcel, ensureFlowUnchanged, flowExcelFingerprint, type FlowImportPreview} from './flowExcelWorkbook';
 import { completeFlowEndPaths, reconcileDecisionOutcomePaths } from './flowInsertElement.mjs';
 import {canBypassFlowElement,duplicateFlowGraphElement,flowGraphDiagnostics,retargetFlowGraphConnector} from './flowGraphOperations.mjs';
 import { formulaFunctions, formulaOperators } from './flowEditorCatalog';
@@ -145,6 +146,10 @@ export default function FlowBuilder({
   const flowComponents = uniqueLibraryComponents(libraryComponents, 'flow').map(component => ({ ...component, label: libraryComponentLabel(component) }));
   const [capabilityCatalog, setCapabilityCatalog] = useState<FlowCapabilityCatalog | null>(null);
   const [capabilityError, setCapabilityError] = useState('');
+  const [excelPreview,setExcelPreview]=useState<FlowImportPreview|null>(null);
+  const [excelError,setExcelError]=useState('');
+  const [excelSkipErrors,setExcelSkipErrors]=useState(false);
+  const [excelValidating,setExcelValidating]=useState(false);
   const [externalServices, setExternalServices] = useState<ExternalServiceMetadata[]>([]);
   const [externalServiceError, setExternalServiceError] = useState('');
   const [newExternalServiceApiName, setNewExternalServiceApiName] = useState('');
@@ -2054,7 +2059,64 @@ export default function FlowBuilder({
                   onClick={() => onRestoreFlowVersion(version)}>Restore as Draft</button>
               </div>)
             : <p className="empty-list">No saved versions yet.</p>}</div>
-          <div className="toolbox-group"><h3>Flow Portability</h3><button className="btn" onClick={onExportFlow}>Export Flow JSON</button><label className="form-label">Import Flow JSON<input className="form-control" type="file" accept=".json,application/json" onChange={(event) => {
+          <div className="toolbox-group"><h3>Excel Node Upsert (Existing Flow Only)</h3>
+<button className="btn" type="button" disabled={!flow.apiName||isDirty} onClick={()=>{void (async()=>{try{await ensureFlowUnchanged(flow);await downloadFlowExcel(flow,{nodeTypes:flowElementMetadata.filter(item=>item.builderFlowTypes.includes(flow.flowType)).map(item=>item.type),objects});}catch(error){setExcelError(error instanceof Error?error.message:'Download failed');}})();}}>Download Excel (.xlsx)</button>
+<label className="form-label">Upload edited Excel (.xlsx)<input className="form-control" type="file"
+ accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" disabled={!flow.apiName||isDirty||!capabilityCatalog||excelValidating}
+ onChange={event=>{
+ const file=event.target.files?.[0];event.target.value='';setExcelPreview(null);setExcelError('');setExcelSkipErrors(false);
+ if(file)void (async()=>{
+   setExcelValidating(true);
+   try{
+    await ensureFlowUnchanged(flow);
+    const tables=await readFlowExcel(file,flow.apiName);
+    const allowed=flowElementMetadata.filter(element=>element.builderFlowTypes.includes(flow.flowType))
+       .map(element=>element.type);
+    const preview=previewFlowExcel(tables,flow,allowed);
+    const verification=await apiRequest<{valid:boolean;errors:string[];warnings:string[]}>(
+      '/metadata/flows/'+encodeURIComponent(flow.apiName)+'/validate',{
+      method:'POST',body:JSON.stringify(preview.draft)});
+    if(!verification.valid)preview.errors.push(...(verification.errors??[]).map(error=>'Server validation: '+error));
+    setExcelPreview(preview);
+   }catch(error){setExcelError(error instanceof Error?error.message:'Unable to read workbook.');}
+   finally{setExcelValidating(false);}
+ })();
+ }}/></label>
+<p className="settings-panel-copy">Existing saved flows only. Edit nodes, inputs, resources, connections and canvas metadata. Changes apply to the editor draft, not a published flow.</p>
+{excelValidating&&<p>Checking uploaded workbook and server metadata…</p>}
+{excelError&&<p role="alert" className="info-callout">{excelError}</p>}
+{excelPreview&&<div className="metadata-card">
+<p>{excelPreview.changes.length} row operations · {excelPreview.errors.length} errors</p>
+{excelPreview.errors.map((error,i)=><p role="alert" key={i}>{error}</p>)}
+{excelPreview.changes.slice(0,20).map((change,i)=><p key={i}>{change}</p>)}
+{excelPreview.changes.length>20&&<p>+ {excelPreview.changes.length-20} more operations</p>}
+{excelPreview.errors.length>0&&<button type="button" className="btn" onClick={()=>{
+ const csv=['Sheet,Row,Status,Message',...excelPreview.errors.map(error=>{
+   const row=/^(Nodes|Inputs|Connections|Resources) row (\\d+):/.exec(error);
+   const section=row?.[1]??(error.startsWith('Graph:')?'Graph':'Server');
+   const fields=[section,row?.[2]??'','Error',error];
+   return fields.map(value=>'"'+value.replace(/"/g,'""')+'"').join(',');
+ })].join('\\r\\n');
+ const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+ const a=document.createElement('a');a.href=url;a.download=flow.apiName+'_excel_errors.csv';a.click();
+ setTimeout(()=>URL.revokeObjectURL(url),1000);
+}}>Download Error Report</button>}
+{excelPreview.errors.length>0&&!excelPreview.errors.some(error=>/^(Graph:|Server validation:)/.test(error))&&
+<label><input type="checkbox" checked={excelSkipErrors} onChange={event=>setExcelSkipErrors(event.target.checked)}/>
+ Skip invalid individual rows and apply only verified valid changes</label>}
+<button type="button" className="btn" onClick={()=>setExcelPreview(null)}>Cancel</button>
+<button type="button" className="btn" disabled={isDirty||excelValidating||excelPreview.changes.length===0||
+ (excelPreview.errors.length>0&&(!excelSkipErrors||excelPreview.errors.some(error=>/^(Graph:|Server validation:)/.test(error))))}
+ onClick={()=>{if(excelPreview.errors.some(error=>/^(Graph:|Server validation:)/.test(error)))return;
+ setExcelValidating(true);
+ void ensureFlowUnchanged(flow).then(()=>{
+   onFlowChange({...excelPreview.draft,__excelExpectedFingerprint:flowExcelFingerprint(flow)} as FlowDefinitionMetadata);setExcelPreview(null);
+   onNotify('Excel changes applied to draft. Validate and Save.');
+ }).catch(error=>setExcelError(error instanceof Error?error.message:'Flow changed on server.'))
+ .finally(()=>setExcelValidating(false));
+ }}>Apply to Draft</button>
+</div>}</div>
+<div className="toolbox-group"><h3>Flow Portability</h3><button className="btn" onClick={onExportFlow}>Export Flow JSON</button><label className="form-label">Import Flow JSON<input className="form-control" type="file" accept=".json,application/json" onChange={(event) => {
             const file = event.target.files?.[0];
             if (file) onImportFlow(file);
             event.target.value = '';
