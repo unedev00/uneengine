@@ -39,12 +39,18 @@ test('tab bounds stay visible in short containers while preserving configured ta
  assert.match(smartCss,/\.smart-container\{[^}]*min-height:0;max-height:100%/);
 });
 
-test('data ribbon exposes existing metadata fields without new binding properties',()=>{
- assert.match(ribbon,/import \{relationshipFormulaFields\} from '\.\/relationshipFormulaFields'/);
- assert.match(ribbon,/relationshipFormulaFields\(objects,sourceObjectNames/);
- assert.match(ribbon,/className="smart-data-field-picker"/);
- assert.match(ribbon,/aria-label="Choose display field"/);
- assert.match(ribbon,/onChange=\{event=>\{if\(event\.target\.value\)changeActiveDataFormula\(event\.target\.value\);\}\}/);
- assert.match(ribbon,/onChange\(\{\.\.\.properties,\[activeDataKey\]:next/);
- assert.match(formulaCss,/\.smart-data-field-picker\{/);
+test('data binding uses one selected-only canvas overlay and existing Formula Bar',()=>{
+ const icons=read('../src/core/builders/PageBuilder/CanvasDataBindingIcons.tsx');
+ const bindings=read('../src/core/builders/PageBuilder/canvasDataBindingTargets.ts');
+ assert.match(builder,/selectedId===component\.id&&/);
+ assert.match(builder,/<CanvasDataBindingIcons/);
+ assert.match(builder,/if\(hit\.closest\('\.canvas-data-bindings'\)\)return/);
+ assert.match(builder,/canvasBinding=\{canvasBinding\}/);
+ assert.match(ribbon,/writeCanvasBinding\(properties/);
+ assert.match(ribbon,/ref=\{formulaInputHost\}/);
+ assert.doesNotMatch(ribbon,/<div className="smart-data-sections">/);
+ assert.match(icons,/p\.tab==='Data'&&p\.components\.includes\(api\)/);
+ assert.match(icons,/data-md-bind/);
+ assert.match(bindings,/tabCaptionIndex/);
+ assert.match(formulaCss,/smart-data-formula-input/);
 });
