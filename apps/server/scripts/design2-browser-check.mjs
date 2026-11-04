@@ -139,6 +139,12 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  await design2.waitFor({state:'visible'});
  const area=page.getByLabel('Select Design 2 area');
  assert.equal(await area.inputValue(),'Body');
+ // Excel's 14 dropdown sections are always shown. The per-component
+ // Yes/No rules disable controls, never filter sections from the dropdown.
+ const allAreas=['Body','Header','Badge','Header Supporting','Table','Row',
+  'Summary','Footer','Button','Button 2','Button 3','Button 4','Button 5','Image'];
+ assert.deepEqual(await area.locator('option').allTextContents(),allAreas,
+  'Design 2 must expose every approved area for Smart Cart');
  await area.selectOption('Row');
  // Row 0: fixed C1 selector, C2 eye, C3 X and C4 Y. Values edit the real
  // free-canvas component.position, not a duplicate properties.x/y field.
@@ -217,6 +223,18 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  }
  assert.ok(Math.abs(placementRect.x-fillRect.x)<1,
    'Image Placement R2C6 and Image Fill R3C6 must share column C6');
+ // Old flex!important plus grid-area:auto!important rendered SQL C6 as C1.
+ const firstImageCell=row.locator('[data-design-row="1"] [data-design-slot="fill"]');
+ const firstRect=await firstImageCell.boundingBox();
+ assert.ok(firstRect&&Math.abs(placementRect.x-firstRect.x-340)<1,
+   'Image R2C6 is not physically at C6 (340px right of R1C1)');
+ assert.ok(firstRect&&Math.abs(fillRect.x-firstRect.x-340)<1,
+   'Image R3C6 is not physically at C6 (340px right of R1C1)');
+ for(const index of [1,2,3]){
+  assert.equal(await row.locator('[data-design-row="'+index+'"]').evaluate(
+    element=>getComputedStyle(element).display),'grid',
+    'Property row '+index+' must render as grid, not flex');
+ }
 
  const placementTrigger=imagePlacement.locator('.design2-icon-trigger');
  const fillTrigger=imageFill.locator('.design2-icon-trigger');
@@ -289,14 +307,25 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  assert.equal(await page.locator('.smart-design2-group [data-property="rowBold"] button')
   .getAttribute('aria-pressed'),'true','Design 2 saved value did not reload');
 
- // Approved Yes/No sections are component-specific. The legacy "Tabs"
- // section is not in the user's Smart Tabs Design 2 matrix.
+ // All sections stay visible for Smart Tabs, too. The unsupported Image
+ // controls occupy the exact same R/C cells but cannot be edited.
  await page.locator('[data-component-id="browser-design2-tabs"]').first().click({position:{x:18,y:18}});
  const tabsAreas=await page.getByLabel('Select Design 2 area').locator('option').allTextContents();
- assert.deepEqual(tabsAreas,['Body'],'Smart Tabs should show only its approved Body area');
+ assert.deepEqual(tabsAreas,allAreas,'All Excel areas must be visible for Smart Tabs');
+ await page.getByLabel('Select Design 2 area').selectOption('Image');
+ for(const [slotKey,rowNumber,column] of [['fill',1,1],['placement',2,6],['imageFill',3,6]]){
+  const control=row.locator('[data-design-row="'+rowNumber+'"] [data-design-slot="'+slotKey+'"]');
+  assert.equal(await control.count(),1,'Unsupported Image slot must remain visible');
+  assert.equal(await control.getAttribute('data-design-column'),String(column));
+  assert.equal(await control.getAttribute('data-supported'),'false',
+   'Unsupported Image control must not become editable for Smart Tabs');
+  assert.ok((await control.getAttribute('class'))?.includes('disabled'),
+   'Unsupported Image slot must remain disabled');
+ }
+ await page.getByLabel('Select Design 2 area').selectOption('Body');
  const tabsFocus=row.locator('[data-design-row="2"] [data-design-slot="focused"]');
  assert.equal(await tabsFocus.getAttribute('data-supported'),'false',
-   'Do not enable an unapproved Focus Color for Smart Tabs');
+   'Do not enable unapproved Focus Color for Smart Tabs');
  await page.locator('[data-component-id="browser-design2-cart"]').first().click({position:{x:18,y:18}});
  await page.getByLabel('Select Design 2 area').selectOption('Row');
  assert.equal(await row.locator('[data-design-row="2"] [data-design-slot="focused"]').count(),0,
