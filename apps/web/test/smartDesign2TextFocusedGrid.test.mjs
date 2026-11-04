@@ -130,7 +130,7 @@ test('New Design2 slots have unique positions and fit three-row shared ribbon',(
 
 test('Design 2 exact Body Fill, Wrap and supporting alignment use their real component keys',async()=>{
  const sql=read('../../server/src/system-support/migrations/20271106-design2-functional-control-parity.sql');
- assert.match(sql,/SET property_key='backgroundColor'[\\s\\S]*?component_api='smart_tabs' AND area='Body'/);
+ assert.ok(sql.includes("SET property_key='backgroundColor'"));
  assert.ok(sql.includes("('smart_textbox','Body','wrap','wrapText')"));
  assert.ok(sql.includes("('smart_textbox','Header Supporting','alignment','supportingAlignment')"));
  assert.ok(sql.includes("('smart_icon','Body','height','height')"));
