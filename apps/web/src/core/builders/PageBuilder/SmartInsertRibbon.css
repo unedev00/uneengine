@@ -1,107 +1,67 @@
-/* Outer ribbon height/overflow/scrollbar geometry is owned by PageBuilderRibbonLayout.css. */
-/* Compact Office-like Insert controls, independent from legacy UNE library.
- * The Home and shared Smart property ribbon styles are deliberately unchanged. */
-
-.office-builder-ribbon .smart-insert-ribbon {
- display:grid!important;grid-template-columns:168px minmax(0,1fr)!important;gap:8px;
- flex:1 1 auto;min-width:0;width:100%;height:108px;align-items:stretch;
+/* Insert is a full-width gallery of the tenant's registered Smart components.
+   The search/category browser is intentionally absent. Outer ribbon height and
+   horizontal scrolling are governed by PageBuilderRibbonLayout.css. */
+.office-builder-ribbon .smart-insert-ribbon{
+ box-sizing:border-box!important;display:flex!important;flex-direction:row!important;
+ flex:1 1 auto;min-width:0;width:100%;height:114px!important;
+ align-items:stretch!important;gap:0!important;
  font-family:"Segoe UI",Arial,sans-serif;color:#283c55;
 }
-.office-builder-ribbon .smart-insert-browser {
- display:flex;flex-direction:column;min-width:0;gap:4px;
- border-right:1px solid #d7dfeb;padding:3px 8px 4px 0;
+.office-builder-ribbon .smart-insert-gallery{
+ box-sizing:border-box;display:flex;flex:1 1 auto;flex-direction:column;
+ min-width:0;min-height:0;width:100%;height:114px!important;
 }
-.office-builder-ribbon .smart-insert-search {
- border:1px solid #c8d5e6;border-radius:4px;background:#fff;
- display:flex;flex-direction:row;align-items:center;gap:5px;padding:2px 5px;height:26px;
+.office-builder-ribbon .smart-insert-gallery-row{
+ box-sizing:border-box;display:flex;flex:1 1 auto;flex-direction:row;
+ align-items:center;gap:3px;min-width:0;min-height:0;height:114px!important;
 }
-.office-builder-ribbon .smart-insert-search input {
- flex:1 1 auto;min-width:0;width:100%;height:21px;max-width:none!important;
- border:0!important;outline:0;background:transparent;font-size:11px;
- padding:0!important;box-shadow:none!important;
+.office-builder-ribbon .smart-insert-pager{
+ box-sizing:border-box;display:flex;flex:0 0 24px;
+ align-items:center;justify-content:center;
+ width:24px;min-width:24px;height:32px;
+ padding:0;background:transparent;border:1px solid transparent;
+ border-radius:3px;color:#315783;cursor:pointer;
 }
-.office-builder-ribbon .smart-insert-categories {
- display:flex;flex-direction:column;gap:1px;overflow-y:auto;min-height:0;
+.office-builder-ribbon .smart-insert-pager:hover:not(:disabled){
+ background:#e0edff;border-color:#c5d9f5;
 }
-.office-builder-ribbon .smart-insert-categories button {
- display:flex;justify-content:space-between;align-items:center;gap:5px;
- border:0;border-radius:3px;background:transparent;color:inherit;
- font-size:11px;padding:4px 7px;cursor:pointer;text-align:left;white-space:nowrap;
-}
-.office-builder-ribbon .smart-insert-categories button[aria-pressed=true],
-.office-builder-ribbon .smart-insert-categories button:hover {background:#e0edff;color:#075bbb}
-.office-builder-ribbon .smart-insert-categories button span {color:#53677f;font-variant-numeric:tabular-nums}
-.office-builder-ribbon .smart-insert-gallery {display:flex;flex-direction:column;min-width:0;min-height:0}
-.office-builder-ribbon .smart-insert-gallery-row {
- display:flex;flex-direction:row;align-items:center;gap:3px;flex:1 1 auto;min-width:0;min-height:0
-}
-.office-builder-ribbon .smart-insert-pager {
- background:transparent;border:1px solid transparent;display:flex;align-items:center;
- justify-content:center;width:24px;min-width:24px;height:32px;border-radius:3px;color:#315783;cursor:pointer;
-}
-.office-builder-ribbon .smart-insert-pager:hover:not(:disabled) {background:#e0edff;border-color:#c5d9f5}
-.office-builder-ribbon .smart-insert-pager:disabled {opacity:.25;cursor:default}
-.office-builder-ribbon .smart-insert-tiles {
- display:grid;grid-template-rows:repeat(3,27px);grid-auto-flow:column;grid-auto-columns:148px;
- flex:1 1 auto;gap:3px 6px;min-width:0;min-height:0;max-height:87px;
- overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;align-content:center;
-}
-.office-builder-ribbon .smart-insert-tile {
- width:148px;min-width:0;height:27px;display:flex;flex-direction:row;align-items:center;
- gap:6px;padding:4px 5px;border:1px solid #dee6ef;border-radius:4px;
- background:#fff;color:#283c55;font:500 11px/1.2 "Segoe UI",Arial,sans-serif;
- cursor:pointer;text-align:left;overflow:hidden;white-space:nowrap;
-}
-.office-builder-ribbon .smart-insert-tile:hover,
-.office-builder-ribbon .smart-insert-tile:focus-visible {background:#edf5ff;border-color:#3987ec}
-.office-builder-ribbon .smart-insert-tile-icon {display:flex;align-items:center;justify-content:center;
- flex:0 0 18px;color:#1268d3;}
-.office-builder-ribbon .smart-insert-tile-icon :is(svg,img) {width:17px!important;height:17px!important;}
-.office-builder-ribbon .smart-insert-tile-label {flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
-.office-builder-ribbon .smart-insert-tile-add {flex:0 0 12px;color:#4782c5}
-.office-builder-ribbon .smart-insert-empty {display:flex;align-items:center;gap:8px;color:#687992;
- font-size:12px;min-width:310px;padding:12px}
-.office-builder-ribbon .smart-insert-footer {display:flex;justify-content:space-between;align-items:center;
- height:17px;flex:0 0 17px;font-size:10px;color:#60718a;padding:0 4px;}
-.office-builder-ribbon .smart-insert-footer button {border:0;background:transparent;color:#0a64c4;
- display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer;padding:1px 4px}
-.office-builder-ribbon .smart-insert-footer button:hover {text-decoration:underline}
-@media(max-width:700px){.office-builder-ribbon .smart-insert-ribbon{grid-template-columns:115px minmax(0,1fr)!important}
-.office-builder-ribbon .smart-insert-tiles{grid-auto-columns:126px}
-.office-builder-ribbon .smart-insert-tile{width:126px}}
-
-/* Eight-tab Insert geometry. Render the current registered icons, not mockup drawings. */
-
-.office-builder-ribbon .smart-insert-ribbon{
- grid-template-columns:170px minmax(0,1fr)!important;
- height:116px!important;gap:8px!important;
-}
-.office-builder-ribbon .smart-insert-browser{padding:1px 8px 1px 0!important;gap:4px!important}
-.office-builder-ribbon .smart-insert-categories{
- overflow:visible!important;display:block!important;height:26px!important;
-}
-.office-builder-ribbon .smart-insert-categories>select{
- box-sizing:border-box;width:100%;height:26px;border:1px solid #c3cad4;
- border-radius:5px;background:#fff;color:#29476a;font:11px "Segoe UI",Arial,sans-serif;
-}
-.office-builder-ribbon .smart-insert-gallery{height:116px!important;min-height:116px!important}
-.office-builder-ribbon .smart-insert-gallery-row{height:116px!important;min-height:116px!important}
+.office-builder-ribbon .smart-insert-pager:disabled{opacity:.25;cursor:default}
 .office-builder-ribbon .smart-insert-tiles{
- grid-template-rows:repeat(2,56px)!important;grid-auto-columns:76px!important;
- gap:4px!important;max-height:116px!important;height:116px!important;
+ box-sizing:border-box;display:grid;grid-template-rows:repeat(2,55px)!important;
+ grid-auto-flow:column;grid-auto-columns:76px!important;
+ flex:1 1 auto;gap:4px!important;align-content:center;
+ min-width:0;min-height:0;max-height:114px!important;height:114px!important;
  overflow-x:auto!important;overflow-y:hidden!important;scrollbar-width:none!important;
 }
 .office-builder-ribbon .smart-insert-tiles::-webkit-scrollbar{display:none}
 .office-builder-ribbon .smart-insert-tile{
- box-sizing:border-box;flex-direction:column!important;align-items:center!important;
- justify-content:center!important;gap:4px!important;
- width:76px!important;height:56px!important;padding:3px!important;
+ box-sizing:border-box;display:flex;flex-direction:column!important;
+ align-items:center!important;justify-content:center!important;
+ gap:4px!important;width:76px!important;height:55px!important;
+ min-width:0;padding:3px!important;
  border:1px solid #c3cad4!important;border-radius:5px!important;
- background:#fff!important;text-align:center!important;
+ background:#fff!important;color:#283c55;
+ font:500 11px/1.2 "Segoe UI",Arial,sans-serif;
+ text-align:center!important;cursor:pointer;overflow:hidden;white-space:nowrap;
 }
-.office-builder-ribbon .smart-insert-tile-icon{flex:0 0 24px!important;color:#1f5fa8!important}
-.office-builder-ribbon .smart-insert-tile-icon :is(svg,img){width:24px!important;height:24px!important}
+.office-builder-ribbon .smart-insert-tile:hover,
+.office-builder-ribbon .smart-insert-tile:focus-visible{
+ background:#edf5ff!important;border-color:#3987ec!important;
+}
+.office-builder-ribbon .smart-insert-tile-icon{
+ display:flex;align-items:center;justify-content:center;
+ flex:0 0 24px!important;color:#1f5fa8!important;
+}
+.office-builder-ribbon .smart-insert-tile-icon :is(svg,img){
+ width:24px!important;height:24px!important;
+}
 .office-builder-ribbon .smart-insert-tile-label{
- flex:0 0 auto!important;width:100%;font-size:11px!important;line-height:13px!important;
- text-align:center!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;
+ box-sizing:border-box;flex:0 0 auto!important;
+ min-width:0;width:100%;font-size:11px!important;line-height:13px!important;
+ text-align:center!important;overflow:hidden!important;
+ text-overflow:ellipsis!important;white-space:nowrap!important;
+}
+.office-builder-ribbon .smart-insert-empty{
+ display:flex;align-items:center;gap:8px;
+ color:#687992;font-size:12px;min-width:310px;padding:12px;
 }
