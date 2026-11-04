@@ -44,3 +44,19 @@ export function writeCanvasBinding(properties:Props,target:Pick<CanvasBindingTar
  tabs[index]={...tabs[index],label:value};
  return {...properties,tabs};
 }
+
+/** A single user-facing name for each metadata binding, shared by the selected
+ * field icon and the existing Data ribbon. Property IDs remain unchanged. */
+const bindingLabels:Record<string,Record<string,string>>={
+ smart_tabs:{tabCaptionFormula:'Tab caption',textSource:'Tab caption',collectionFormula:'Tabs data source'},
+ smart_lookup:{label:'Search placeholder',lookupValueFormula:'Search value',textSource:'Result text',
+  collectionFormula:'Lookup results source'},
+ smart_cart:{label:'Cart title',collectionFormula:'Cart items source',textSource:'Product name',
+  imageSource:'Product image',cartSupportingSource:'Item count / supporting text'},
+ smart_calendar:{selectedDate:'Selected date'},
+ smart_card_grid:{collectionFormula:'Product items source',textSource:'Product title'},
+ smart_table:{textSource:'Table data source'},
+ smart_navigation:{collectionFormula:'Navigation items source',textSource:'Item caption'}
+};
+export const bindingDisplayLabel=(api:string,propertyKey:string,fallback:string)=>
+ bindingLabels[api]?.[propertyKey]??fallback;
