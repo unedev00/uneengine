@@ -477,7 +477,8 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    else if(tab==='Design2'&&kind==='choice'&&
      ['imageFill','imagePlacement','badgeAlignment'].includes(property.id))
      editor=<SmartIconDropdown kind={property.id as 'imageFill'|'imagePlacement'|'badgeAlignment'}
-       value={String(value)} label={title} disabled={!enabled} onChange={write}/>;
+       value={String(value)} label={title} disabled={!enabled} onChange={write}
+       allowedValues={options}/>;
    else if(kind==='choice'&&Array.isArray(value))editor=<SmartMultiSelect
       label={title} choices={options} value={value.filter((item):item is string=>typeof item==='string')}
       disabled={!enabled} onChange={write}/>;
