@@ -15,7 +15,7 @@ test('Retire Layout only after remapping all component property definitions to D
  assert.match(migration,/SET tab='Design2'/);
  assert.match(migration,/WHERE tab='Layout' AND scope='component'/);
  assert.doesNotMatch(page,/['"]Component Design 2['"],['"]Component Layout['"],['"]Arrange['"]/);
- assert.match(page,/if\(tab==='Component Layout'\)tab='Component Design 2'/);
+ assert.match(page,/if\(tab==='Component Layout'\|\|tab==='Arrange'\)tab='Component Design 2'/);
  assert.match(page,/design-canvas-settings/);
  for(const key of ['canvasWidth','canvasHeight','canvasFillColor'])
    assert.match(page,new RegExp('data-ribbon-property="'+key+'"'));
