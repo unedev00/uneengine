@@ -1,9 +1,37 @@
--- Retire the component Layout ribbon after its supported controls have
--- Design 2 editors. The canonical property keys and component rules stay
--- unchanged, preserving all existing page values and formulas.
---
--- Design 2 renders its own fixed slot matrix plus contextual count, calendar,
--- image and canvas controls. No separate Layout property tab is needed.
+-- Retire Layout only when every known component Layout property has a Design 2
+-- editor or an explicitly requested removal. Preserve keys, rules and saved values.
+-- Fail safely if future/unreviewed Layout properties exist.
+DO $$
+DECLARE unexpected text;
+BEGIN
+ SELECT string_agg(property_key, ', ' ORDER BY property_key) INTO unexpected
+ FROM md_builder_shared_properties
+ WHERE tab='Layout' AND scope='component'
+   AND property_key NOT IN (
+     'width','height','x','y',
+     'tabWidth','tabHeight','tabCount','tabIndex','tabOrientation',
+     'cardsPerRow','cardsPerColumn',
+     'imageHeight','headerBoxHeight','supportingBoxHeight',
+     'navigationDirection','showDays','firstDay',
+     'imageFill','imagePlacement','imageBorderColor','imageBackgroundColor',
+     'iconFillColor','badgeVisible'
+   );
+ IF unexpected IS NOT NULL THEN
+   RAISE EXCEPTION 'Layout cannot retire: unmapped component properties: %', unexpected;
+ END IF;
+END $$;
+
+-- Move remaining component metadata without deleting or renaming properties.
+-- Design 2 owns canonical shared keys, component enablement, and current values.
 UPDATE md_builder_shared_properties
 SET tab='Design2'
 WHERE tab='Layout' AND scope='component';
+
+-- Verify Layout is empty before the retired navigation is allowed to ship.
+DO $$
+BEGIN
+ IF EXISTS(SELECT 1 FROM md_builder_shared_properties
+           WHERE tab='Layout' AND scope='component') THEN
+   RAISE EXCEPTION 'Layout retirement failed: component metadata remains';
+ END IF;
+END $$;
