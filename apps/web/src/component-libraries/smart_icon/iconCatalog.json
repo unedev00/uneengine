@@ -50,6 +50,51 @@
     "category": "Navigation & interface"
   },
   {
+    "id": "globe",
+    "label": "Language",
+    "category": "Navigation & interface"
+  },
+  {
+    "id": "circle-help",
+    "label": "Help",
+    "category": "Navigation & interface"
+  },
+  {
+    "id": "info",
+    "label": "Info",
+    "category": "Navigation & interface"
+  },
+  {
+    "id": "chevron-right",
+    "label": "Chevron right",
+    "category": "Navigation & interface"
+  },
+  {
+    "id": "chevron-down",
+    "label": "Chevron down",
+    "category": "Navigation & interface"
+  },
+  {
+    "id": "chevron-up",
+    "label": "Chevron up",
+    "category": "Navigation & interface"
+  },
+  {
+    "id": "x",
+    "label": "Close",
+    "category": "Navigation & interface"
+  },
+  {
+    "id": "minus",
+    "label": "Minus",
+    "category": "Navigation & interface"
+  },
+  {
+    "id": "sliders-horizontal",
+    "label": "Customise",
+    "category": "Navigation & interface"
+  },
+  {
     "id": "lock",
     "label": "Lock",
     "category": "Security & accounts"
@@ -150,6 +195,56 @@
     "category": "Commerce & analytics"
   },
   {
+    "id": "utensils",
+    "label": "Eat in",
+    "category": "Commerce & analytics"
+  },
+  {
+    "id": "car",
+    "label": "Car",
+    "category": "Commerce & analytics"
+  },
+  {
+    "id": "hamburger",
+    "label": "Burger",
+    "category": "Commerce & analytics"
+  },
+  {
+    "id": "gift",
+    "label": "Gift",
+    "category": "Commerce & analytics"
+  },
+  {
+    "id": "star",
+    "label": "Star",
+    "category": "Commerce & analytics"
+  },
+  {
+    "id": "crown",
+    "label": "Crown",
+    "category": "Commerce & analytics"
+  },
+  {
+    "id": "flame",
+    "label": "Flame",
+    "category": "Commerce & analytics"
+  },
+  {
+    "id": "printer",
+    "label": "Printer",
+    "category": "Commerce & analytics"
+  },
+  {
+    "id": "qr-code",
+    "label": "QR code",
+    "category": "Commerce & analytics"
+  },
+  {
+    "id": "contactless",
+    "label": "Contactless",
+    "category": "Commerce & analytics"
+  },
+  {
     "id": "message-circle",
     "label": "Chat",
     "category": "Communication"
@@ -200,6 +295,11 @@
     "category": "Communication"
   },
   {
+    "id": "smartphone",
+    "label": "Smartphone",
+    "category": "Communication"
+  },
+  {
     "id": "calendar-days",
     "label": "Calendar",
     "category": "Productivity & files"
@@ -247,6 +347,11 @@
   {
     "id": "folder",
     "label": "Folder",
+    "category": "Productivity & files"
+  },
+  {
+    "id": "timer",
+    "label": "Timer",
     "category": "Productivity & files"
   }
 ]

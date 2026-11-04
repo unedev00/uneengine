@@ -1,15 +1,33 @@
 import type {SqlPersistence} from '../system-files/sql-persistence.js';
 import {readComponentContract} from './component-contract-store.js';
 import {availableComponentSettings,componentSettingIssues,type ComponentSettingDefinition} from './component-property-contract.js';
-import type {PageLayoutVariant} from '../system-files/page-layout-version-runtime.js';
+import {PAGE_LAYOUT_VARIANTS,type PageLayoutVariant} from '../system-files/page-layout-version-runtime.js';
 import {randomUUID} from 'node:crypto';
 import {componentInstanceNames,canonicalComponentName,componentNamePattern,ensureComponentInstanceNames} from './page-component-names.js';
 import {pagePropertyContract,conditionSettings,recordFieldSettings,recordSectionSettings} from './page-property-contract.js';
 
 /** One interoperable format for Page Builder inventory export and guarded draft import. */
-/** Type and custom name are independent CSV identity columns. Ribbon Tab is display-only. */
+/** Type and custom name are independent CSV identity columns. Ribbon Tab is display-only.
+ * Layout selects the device layout draft (Desktop, Tablet, Mobile or Custom); a file
+ * without the column, or a blank cell, keeps the historical Desktop behaviour. */
 export const INVENTORY_COLUMNS=['pageapi','component_type','component_name','propertyid','value'] as const;
-export const INVENTORY_EXPORT_COLUMNS=[...INVENTORY_COLUMNS,'ribbon_tab'] as const;
+export const INVENTORY_EXPORT_COLUMNS=[...INVENTORY_COLUMNS,'layout','ribbon_tab'] as const;
+/** Optional trailing columns accepted after the five identity/value columns. */
+const OPTIONAL_TYPED_TAILS=[[],['ribbon_tab'],['layout'],['layout','ribbon_tab']] as const;
+/** SQL Shape choices store the gallery markers "shapes" and "icons", not every id.
+ * Accept a well-formed id from the marked gallery; the renderer ignores unknown ids. */
+export function inventoryChoiceAllowed(choices:readonly string[],value:string):boolean{
+ if(choices.includes(value))return true;
+ if(choices.includes('shapes')&&/^shape:[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value))return true;
+ return choices.includes('icons')&&/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value)&&value!=='shapes'&&value!=='icons';
+}
+/** Case-insensitive layout cell; "Phone" is the runtime alias of Mobile. */
+export function inventoryLayout(value:string|undefined,fallback:PageLayoutVariant='Desktop'):PageLayoutVariant|null{
+ const text=String(value??'').trim().toLowerCase();
+ if(!text)return fallback;
+ if(text==='phone')return 'Mobile';
+ return PAGE_LAYOUT_VARIANTS.find(variant=>variant.toLowerCase()===text)??null;
+}
 const LEGACY_INVENTORY_COLUMNS=['pageapi','component_name','component_property','value'] as const;
 export type InventoryIssue={row:number;pageapi?:string;component_type?:string;component_name:string;component_property:string;value?:string;remark:string};
 type Block={id:string;type:string;label:string;region?:string;visible:boolean;
@@ -148,7 +166,8 @@ export async function inventoryDefinitions(db:SqlPersistence,tenant:string,
 }
 /** A stable, metadata-complete list per component type, independent of how many
  * instance keys happen to have been saved. Never writes defaults back to SQL. */
-export function exportInventoryCsv(page:InventoryPage,definitions:Definitions=new Map()):string{
+export function exportInventoryCsv(page:InventoryPage,definitions:Definitions=new Map(),
+ variant:PageLayoutVariant='Desktop'):string{
  const rows:unknown[][]=[[...INVENTORY_EXPORT_COLUMNS]];
  const names=componentInstanceNames(page.components);
  for(const component of page.components){
@@ -181,15 +200,16 @@ export function exportInventoryCsv(page:InventoryPage,definitions:Definitions=ne
     tab:descriptor.tab});
   }
   for(const [key,{value,tab}] of values)
-   rows.push([page.apiName,componentApi(component.type),names.get(component.id),key,valueText(value),tab]);
+   rows.push([page.apiName,componentApi(component.type),names.get(component.id),key,valueText(value),variant,tab]);
  }
  return inventoryCsv(rows);
 }
 type CsvRow={line:number;cells:string[]};
 type CsvFormat='typed'|'legacy';
-function parseCsv(text:string):{rows:CsvRow[];issues:InventoryIssue[];columns:number;format:CsvFormat}{
+function parseCsv(text:string):{rows:CsvRow[];issues:InventoryIssue[];columns:number;format:CsvFormat;
+ layoutIndex:number;header:string[]}{
  const issues:InventoryIssue[]=[];
- if(text.length>1800000)return {rows:[],columns:5,format:'typed',issues:[{row:1,component_name:'',component_property:'',remark:'CSV exceeds the 1.8 MB import limit'}]};
+ if(text.length>1800000)return {rows:[],columns:5,format:'typed',layoutIndex:-1,header:[],issues:[{row:1,component_name:'',component_property:'',remark:'CSV exceeds the 1.8 MB import limit'}]};
  const rows:CsvRow[]=[],current:string[]=[];
  let cell='',quoted=false,afterQuote=false,line=1,start=1;
  const finishCell=()=>{current.push(cell);cell='';afterQuote=false;};
@@ -225,14 +245,15 @@ function parseCsv(text:string):{rows:CsvRow[];issues:InventoryIssue[];columns:nu
  if(!rows.length)issues.push({row:1,component_name:'',component_property:'',remark:'CSV is empty'});
  const header=rows[0]?.cells.map((v,i)=>i===0?v.replace(/^\uFEFF/,'').trim().toLowerCase():v.trim().toLowerCase())??[];
  const typed=header.length>=5&&header.slice(0,5).every((value,i)=>value===INVENTORY_COLUMNS[i])&&
-  (header.length===5||header.length===6&&header[5]==='ribbon_tab');
+  OPTIONAL_TYPED_TAILS.some(tail=>tail.length===header.length-5&&tail.every((value,i)=>header[5+i]===value));
  const legacy=header.length>=4&&header.slice(0,4).every((value,i)=>value===LEGACY_INVENTORY_COLUMNS[i])&&
   (header.length===4||header.length===5&&header[4]==='ribbon_tab');
  const format:CsvFormat=typed?'typed':'legacy';
  const columns=typed||legacy?header.length:format==='typed'?5:4;
  if(!typed&&!legacy&&rows.length)issues.push({row:rows[0].line,component_name:'',component_property:'',
-  remark:'Expected CSV columns: '+INVENTORY_COLUMNS.join(',')+'[,ribbon_tab]'});
- return {rows:rows.slice(1),issues,columns,format};
+  remark:'Expected CSV columns: '+INVENTORY_COLUMNS.join(',')+'[,layout][,ribbon_tab]'});
+ return {rows:rows.slice(1),issues,columns,format,layoutIndex:typed?header.indexOf('layout'):-1,
+  header:typed||legacy?header:[]};
 }
 /**
  * Partition a downloaded inventory CSV by its authored pageapi column.
@@ -240,19 +261,24 @@ function parseCsv(text:string):{rows:CsvRow[];issues:InventoryIssue[];columns:nu
  * Preserve original CSV line numbers in error reports, including quoted line breaks.
  */
 export type InventoryCsvPageGroup={
- pageapi:string; csv:string; originalLines:Record<number,number>; firstRow:number
+ pageapi:string; variant:PageLayoutVariant; key:string;
+ csv:string; originalLines:Record<number,number>; firstRow:number
 };
-export function inventoryCsvPageGroups(text:string):{
+/** Draft-revision key of one page layout in a batch. Desktop keeps the plain page API. */
+export const inventoryGroupKey=(pageapi:string,variant:PageLayoutVariant)=>
+ variant==='Desktop'?pageapi:pageapi+'|'+variant;
+export function inventoryCsvPageGroups(text:string,defaultVariant:PageLayoutVariant='Desktop'):{
  groups:InventoryCsvPageGroup[];issues:InventoryIssue[]
 }{
  const parsed=parseCsv(text);
  const issues=[...parsed.issues];
  if(issues.length)return {groups:[],issues};
- const header=parsed.format==='typed'
-  ?parsed.columns===6?INVENTORY_EXPORT_COLUMNS:INVENTORY_COLUMNS
-  :parsed.columns===5?[...LEGACY_INVENTORY_COLUMNS,'ribbon_tab']:LEGACY_INVENTORY_COLUMNS;
- const grouped=new Map<string,{pageapi:string;rows:string[][];originalLines:Record<number,number>;
-  nextLine:number;firstRow:number}>();
+ // The per-page engine receives the same columns without Layout: each group is one layout.
+ const layoutIndex=parsed.layoutIndex;
+ const withoutLayout=<T,>(cells:readonly T[])=>layoutIndex<0?[...cells]:cells.filter((_,i)=>i!==layoutIndex);
+ const header=withoutLayout(parsed.header);
+ const grouped=new Map<string,{pageapi:string;variant:PageLayoutVariant;rows:string[][];
+  originalLines:Record<number,number>;nextLine:number;firstRow:number}>();
  for(const row of parsed.rows){
   const pageapi=(row.cells[0]??'').trim();
   if(!pageapi||!validComponentApi(pageapi)){
@@ -261,24 +287,33 @@ export function inventoryCsvPageGroups(text:string):{
     remark:pageapi?'Invalid Page API name':'Page API is required'});
    continue;
   }
-  let entry=grouped.get(pageapi);
+  const variant=inventoryLayout(layoutIndex<0?'':row.cells[layoutIndex],defaultVariant);
+  if(!variant){
+   issues.push({row:row.line,pageapi,component_type:row.cells[1]??'',component_name:row.cells[2]??'',
+    component_property:row.cells[3]??'',value:row.cells[layoutIndex]??'',
+    remark:'Layout must be Desktop, Tablet, Mobile or Custom'});
+   continue;
+  }
+  const key=inventoryGroupKey(pageapi,variant);
+  let entry=grouped.get(key);
   if(!entry){
    if(grouped.size>=50){
     issues.push({row:row.line,pageapi,component_name:'',component_property:'',
-      remark:'CSV may reference at most 50 existing pages'});
+      remark:'CSV may reference at most 50 existing page layouts'});
     continue;
    }
-   entry={pageapi,rows:[],originalLines:{},nextLine:2,firstRow:row.line};
-   grouped.set(pageapi,entry);
+   entry={pageapi,variant,rows:[],originalLines:{},nextLine:2,firstRow:row.line};
+   grouped.set(key,entry);
   }
+  const cells=withoutLayout(row.cells);
   entry.originalLines[entry.nextLine]=row.line;
-  entry.rows.push(row.cells);
-  const serialized=inventoryCsv([row.cells]);
+  entry.rows.push(cells);
+  const serialized=inventoryCsv([cells]);
   // Same newline accounting as parseCsv for quoted multi-line values.
   entry.nextLine+=(serialized.match(/\r\n|\r|\n/g)??[]).length;
  }
- return {groups:[...grouped.values()].map(group=>({
-  pageapi:group.pageapi,csv:inventoryCsv([header,...group.rows]),
+ return {groups:[...grouped.entries()].map(([key,group])=>({
+  pageapi:group.pageapi,variant:group.variant,key,csv:inventoryCsv([header,...group.rows]),
   originalLines:group.originalLines,firstRow:group.firstRow
  })),issues};
 }
@@ -335,8 +370,11 @@ export function inventoryRequestedTypes(csv:string):string[]{
  return [...new Set(types.map(componentApi).filter(validComponentApi).map(componentType))].slice(0,100);
 }
 type ImportedRow={row:CsvRow;api:string;type:string;name:string;property:string;value:string};
-export function applyInventoryCsv(page:InventoryPage,csv:string,definitions:Definitions=new Map()){
- const {rows,issues,columns,format}=parseCsv(csv);
+export function applyInventoryCsv(page:InventoryPage,csv:string,definitions:Definitions=new Map(),
+ variant:PageLayoutVariant='Desktop'){
+ const {rows,issues,columns,format,layoutIndex}=parseCsv(csv);
+ // A single-page upload may carry the Layout column; it must name the layout being edited.
+ const layoutMatches=(row:CsvRow)=>layoutIndex<0||inventoryLayout(row.cells[layoutIndex],variant)===variant;
  const entries:ImportedRow[]=rows.map(row=>({
   row,api:row.cells[0]??'',type:format==='typed'?row.cells[1]??'':'',
   name:row.cells[format==='typed'?2:1]??'',
@@ -364,7 +402,7 @@ export function applyInventoryCsv(page:InventoryPage,csv:string,definitions:Defi
  // Resolve every instance once before applying properties. Order is irrelevant.
  for(const entry of entries){
   if(issues.length>=500)break;
-  if(entry.row.cells.length!==columns||entry.api.trim()!==page.apiName||!entry.name.trim())continue;
+  if(entry.row.cells.length!==columns||entry.api.trim()!==page.apiName||!entry.name.trim()||!layoutMatches(entry.row))continue;
   const key=canonicalComponentName(entry.name);
   if(byName.has(key)||format==='legacy'&&byId.has(entry.name)||rejectedNames.has(key))continue;
   if(!componentNamePattern.test(entry.name)){
@@ -399,6 +437,7 @@ export function applyInventoryCsv(page:InventoryPage,csv:string,definitions:Defi
  for(const entry of entries){
   if(issues.length>=500)break;
   if(entry.row.cells.length!==columns){report(entry,'Expected '+columns+' CSV columns');continue;}
+  if(!layoutMatches(entry.row)){report(entry,'Layout does not match the selected layout: '+variant);continue;}
   if(entry.api.trim()!==page.apiName){report(entry,'Page API does not match selected page: '+page.apiName);continue;}
   const component=byName.get(canonicalComponentName(entry.name))??
    (format==='legacy'?byId.get(entry.name):undefined);
@@ -480,8 +519,8 @@ export function applyInventoryCsv(page:InventoryPage,csv:string,definitions:Defi
    if(schemaIssue){report(entry,schemaIssue.path+': '+schemaIssue.message);continue;}
    const choices=ribbon?.choices??[];
    if(choices.length&&(Array.isArray(next)
-    ?next.some(item=>typeof item!=='string'||!choices.includes(item))
-    :!choices.includes(String(next)))){
+    ?next.some(item=>typeof item!=='string'||!inventoryChoiceAllowed(choices,item))
+    :!inventoryChoiceAllowed(choices,String(next)))){
     report(entry,'Choose a listed option for '+property);continue;
    }
    if((ribbon?.kind==='number'||ribbon?.kind==='position')&&typeof next==='number'&&

@@ -172,7 +172,8 @@
 }
 .smart-button-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .smart-button-glyph{
-  display:block;flex:0 0 auto;width:min(65%,24px);height:min(65%,24px);
+  /* 24px for ordinary text; grows with large kiosk captions (1.1em). */
+  display:block;flex:0 0 auto;width:min(65%,max(24px,1.1em));height:min(65%,max(24px,1.1em));
   -webkit-mask-size:contain;mask-size:contain;
   -webkit-mask-position:center;mask-position:center;
   -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;

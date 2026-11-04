@@ -94,15 +94,17 @@ export function registerPageApiController(app:Express,db:SqlPersistence,rbac:Rba
     const page=await pages.editor(actor.tenant_id,name,variant) as unknown as InventoryPage;
     const definitions=await inventoryDefinitions(db,actor.tenant_id,page.components,variant);
     res.setHeader('Cache-Control','private, no-store');
-    res.json({csv:exportInventoryCsv(page,definitions),variant,draftRevision:page.draftRevision??0});
+    res.json({csv:exportInventoryCsv(page,definitions,variant),variant,draftRevision:page.draftRevision??0});
   }));
   /**
    * Multi-page CSV upsert: pageapi is the sole page locator. Existing page drafts
    * only; no page creation, hidden page fallback or cross-tenant lookup.
    * All groups are preflighted before an outer transaction writes any page.
    */
-  const prepareInventoryBatch=async(tenant:string,csv:string)=>{
-    const {groups,issues}=inventoryCsvPageGroups(csv);
+  const prepareInventoryBatch=async(tenant:string,csv:string,
+    defaultVariant:ReturnType<typeof pageLayoutVariant>='Desktop')=>{
+    // The CSV Layout column selects each page's layout draft; blank cells use the default.
+    const {groups,issues}=inventoryCsvPageGroups(csv,defaultVariant);
     const draftRevisions:Record<string,number>={};
     const prepared:Array<{group:InventoryCsvPageGroup;page:InventoryPage;
       result:ReturnType<typeof applyInventoryCsv>}>=[];
@@ -124,12 +126,12 @@ export function registerPageApiController(app:Express,db:SqlPersistence,rbac:Rba
       }
       try{
         await assertMetadataPackageEditable(db,tenant,'page',group.pageapi);
-        const page=await pages.editor(tenant,group.pageapi,'Desktop') as unknown as InventoryPage;
-        const definitions=await inventoryDefinitions(db,tenant,page.components,'Desktop',
+        const page=await pages.editor(tenant,group.pageapi,group.variant) as unknown as InventoryPage;
+        const definitions=await inventoryDefinitions(db,tenant,page.components,group.variant,
           inventoryRequestedTypes(group.csv));
-        const result=await preflightInventory(tenant,'Desktop',
-          applyInventoryCsv(page,group.csv,definitions));
-        draftRevisions[group.pageapi]=page.draftRevision??0;
+        const result=await preflightInventory(tenant,group.variant,
+          applyInventoryCsv(page,group.csv,definitions,group.variant));
+        draftRevisions[group.key]=page.draftRevision??0;
         changes+=result.changes;skipped+=result.skipped;
         for(const issue of result.issues)issues.push(originalInventoryIssue(group,issue));
         if(result.valid)prepared.push({group,page,result});
@@ -145,9 +147,8 @@ export function registerPageApiController(app:Express,db:SqlPersistence,rbac:Rba
     const actor=authenticated(req);
     await rbac.require(actor.tenant_id,actor.user_id,'PageDefinition','manage');
     const variant=pageLayoutVariant(req.body?.variant??'Desktop');
-    if(variant!=='Desktop')throw Error('CSV upload is supported only for the Desktop page layout');
     const csv=typeof req.body?.csv==='string'?req.body.csv:'';
-    const batch=await prepareInventoryBatch(actor.tenant_id,csv);
+    const batch=await prepareInventoryBatch(actor.tenant_id,csv,variant);
     res.setHeader('Cache-Control','private, no-store');
     res.json({valid:batch.issues.length===0,issues:batch.issues,changes:batch.changes,
       skipped:batch.skipped,draftRevisions:batch.draftRevisions,
@@ -157,9 +158,8 @@ export function registerPageApiController(app:Express,db:SqlPersistence,rbac:Rba
     const actor=authenticated(req);
     await rbac.require(actor.tenant_id,actor.user_id,'PageDefinition','manage');
     const variant=pageLayoutVariant(req.body?.variant??'Desktop');
-    if(variant!=='Desktop')throw Error('CSV upload is supported only for the Desktop page layout');
     const csv=typeof req.body?.csv==='string'?req.body.csv:'';
-    const batch=await prepareInventoryBatch(actor.tenant_id,csv);
+    const batch=await prepareInventoryBatch(actor.tenant_id,csv,variant);
     res.setHeader('Cache-Control','private, no-store');
     if(batch.issues.length){
       res.json({valid:false,issues:batch.issues,changes:0,skipped:batch.skipped,
@@ -170,20 +170,20 @@ export function registerPageApiController(app:Express,db:SqlPersistence,rbac:Rba
     if(!expected||typeof expected!=='object'||Array.isArray(expected))
       throw Error('Validate the CSV before applying changes');
     for(const group of batch.groups){
-      const number=(expected as Record<string,unknown>)[group.pageapi];
-      if(!Number.isSafeInteger(number)||number!==batch.draftRevisions[group.pageapi])
-        throw Error('Page layout '+group.pageapi+' changed since CSV validation. Validate again.');
+      const number=(expected as Record<string,unknown>)[group.key];
+      if(!Number.isSafeInteger(number)||number!==batch.draftRevisions[group.key])
+        throw Error('Page layout '+group.pageapi+' ('+group.variant+') changed since CSV validation. Validate again.');
     }
     const updatedPages:InventoryPage[]=[];
     // SqlPersistence uses one ambient transaction across nested saveLayoutDraft
     // calls. Any failed revision/permission/contract write rolls back ALL pages.
     await db.transaction(async()=>{
       for(const {group,page,result} of batch.prepared){
-        const latest=await pages.editor(actor.tenant_id,group.pageapi,'Desktop') as unknown as InventoryPage;
+        const latest=await pages.editor(actor.tenant_id,group.pageapi,group.variant) as unknown as InventoryPage;
         if((latest.draftRevision??0)!==page.draftRevision)
           throw Error('Page layout '+group.pageapi+' changed during import. Validate again.');
         if(!result.changes)continue;
-        const saved=await pages.saveLayoutDraft(actor.tenant_id,group.pageapi,'Desktop',
+        const saved=await pages.saveLayoutDraft(actor.tenant_id,group.pageapi,group.variant,
           result.page,actor.user_id) as unknown as InventoryPage;
         updatedPages.push(saved);
       }
@@ -199,12 +199,11 @@ export function registerPageApiController(app:Express,db:SqlPersistence,rbac:Rba
     await rbac.require(actor.tenant_id,actor.user_id,'PageDefinition','manage');
     await assertMetadataPackageEditable(db,actor.tenant_id,'page',name);
     const variant=pageLayoutVariant(req.body?.variant??'Desktop');
-    if(variant!=='Desktop')throw Error('CSV upload is supported only for the Desktop page layout');
     const csv=typeof req.body?.csv==='string'?req.body.csv:'';
     const page=await pages.editor(actor.tenant_id,name,variant) as unknown as InventoryPage;
     const definitions=await inventoryDefinitions(db,actor.tenant_id,page.components,variant,inventoryRequestedTypes(csv));
     const result=await preflightInventory(actor.tenant_id,variant,
-      applyInventoryCsv(page,csv,definitions));
+      applyInventoryCsv(page,csv,definitions,variant));
     res.setHeader('Cache-Control','private, no-store');
     res.json({valid:result.valid,issues:result.issues,changes:result.changes,skipped:result.skipped,
       draftRevision:page.draftRevision??0});
@@ -215,7 +214,6 @@ export function registerPageApiController(app:Express,db:SqlPersistence,rbac:Rba
     await rbac.require(actor.tenant_id,actor.user_id,'PageDefinition','manage');
     await assertMetadataPackageEditable(db,actor.tenant_id,'page',name);
     const variant=pageLayoutVariant(req.body?.variant??'Desktop');
-    if(variant!=='Desktop')throw Error('CSV upload is supported only for the Desktop page layout');
     const expected=req.body?.expectedDraftRevision;
     if(!Number.isSafeInteger(expected)||expected<0)throw new Error('Invalid expected draft revision');
     const page=await pages.editor(actor.tenant_id,name,variant) as unknown as InventoryPage;
@@ -223,7 +221,7 @@ export function registerPageApiController(app:Express,db:SqlPersistence,rbac:Rba
     const csv=typeof req.body?.csv==='string'?req.body.csv:'';
     const definitions=await inventoryDefinitions(db,actor.tenant_id,page.components,variant,inventoryRequestedTypes(csv));
     const result=await preflightInventory(actor.tenant_id,variant,
-      applyInventoryCsv(page,csv,definitions));
+      applyInventoryCsv(page,csv,definitions,variant));
     res.setHeader('Cache-Control','private, no-store');
     if(!result.valid){res.json({valid:false,issues:result.issues,changes:0,skipped:result.skipped});return;}
     if(!result.changes){res.json({valid:true,issues:[],changes:0,skipped:result.skipped,page});return;}

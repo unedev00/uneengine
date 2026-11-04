@@ -106,12 +106,12 @@ export default function SmartCart({p,records,Picture,expression,fieldAllowed,fir
     ?Number(computed):null;
   if(!numeric)return <span className="smart-cart-qty-value">{display(computed)}</span>;
   return <div className="smart-cart-qty-controls" aria-label={"Quantity controls for "+String(name||"Product")}>
-   {showDecrease&&<button type="button" className="smart-cart-qty-button"
+   {showDecrease&&<button type="button" className="smart-cart-qty-button" style={smartCustomButtonAppearance(p,"qtyDecrease")}
     aria-label={"Decrease quantity for "+String(name||"Product")}
     disabled={demo||!canDecrease||payload.recordId===null||quantity===null||quantity<=0}
     onClick={()=>fire?.(actions.qtyDecrease?'qtyDecrease':'qtyIcon',{...payload,delta:-1,operation:"decrement",fieldApiName:fieldName,quantity:Number(payload.record?.[fieldName]??quantity)})}>−</button>}
    <span className="smart-cart-qty-value" aria-label={quantity===null?"Quantity not bound":"Quantity "+quantity}>{display(computed)}</span>
-   {showIncrease&&<button type="button" className="smart-cart-qty-button"
+   {showIncrease&&<button type="button" className="smart-cart-qty-button" style={smartCustomButtonAppearance(p,"qtyIncrease")}
     aria-label={"Increase quantity for "+String(name||"Product")}
     disabled={demo||!canIncrease||payload.recordId===null||quantity===null}
     onClick={()=>fire?.(actions.qtyIncrease?'qtyIncrease':'qtyIcon',{...payload,delta:1,operation:"increment",fieldApiName:fieldName,quantity:Number(payload.record?.[fieldName]??quantity)})}>+</button>}
