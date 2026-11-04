@@ -4,6 +4,7 @@ import {AlignLeft,AlignCenter,AlignRight,Bold,WrapText,ArrowLeftRight,ArrowUpDow
 import {RibbonTextSizeIcon,RibbonCornerRadiusIcon} from './SmartRibbonIcons';
 import type {ObjectMetadata} from '../../metadata/Definitions/metadata';
 import type {UneRibbonProperty,UneBuilderTab,Design2Slot,Design2SlotRule} from './uneBuilderPropertyInventory';
+import {HIDDEN_RIBBON_PROPERTY_KEYS,hasDesign2LayoutEquivalent} from './layoutRibbonVisibility';
 import RibbonColorPalette from './RibbonColorPalette';
 import {uploadTenantImageFile} from '../ComponentProperties/TenantMediaPicker';
 import {scopedFieldRule,type ScopedFieldFilter} from '../../pages/PageRuntime/fieldScopedRecordFilters';
@@ -231,28 +232,15 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  // A formula-created Collection now owns every tab; retired synthetic
  // leading-tab controls must not appear even with an older metadata snapshot.
  const retiredTabs=new Set(['firstTabCustom','firstTabCaption','firstTabValue']);
- // Layout should not repeat controls that edit the SAME property in Design 2.
- // Use the actual enabled SQL slot rule for this component, not a blanket
- // section hide: Image Border is a distinct value and remains in Layout.
- const design2LayoutSlots:Record<string,{area:string;slotKey:string}>={
-   width:{area:'Body',slotKey:'width'},
-   height:{area:'Body',slotKey:'height'},
-   imagePlacement:{area:'Image',slotKey:'placement'},
-   imageFill:{area:'Image',slotKey:'imageFill'}
- };
- const alreadyInDesign2=(p:UneRibbonProperty)=>{
-   if(tab!=='Layout')return false;
-   // Design 2 renders x/y directly in its first row from these same keys.
-   if(p.id==='x'||p.id==='y')return p.components.includes(api);
-   const matchingSlot=design2LayoutSlots[p.id];
-   return Boolean(matchingSlot&&design2SlotRules.some(rule=>
-     rule.componentApi===api&&rule.area===matchingSlot.area&&
-     rule.slotKey===matchingSlot.slotKey&&rule.propertyKey===p.id));
- };
+ // Design 2 owns shared design/position properties. Remove Layout duplicates
+ // only where every selected component has an enabled, reachable Design control.
+ const selectedComponentApis=selectedApis?.length?selectedApis:[api];
  const displayProperties=contextualVisible.filter(p=>!retiredTabs.has(p.id)&&
+   !HIDDEN_RIBBON_PROPERTY_KEYS.has(p.id)&&
    p.id!=='autoRecordScope'&&p.id!=='collectionFormula'&&
    !(tab==='Data'&&p.id==='contextApiName')&&
-   !alreadyInDesign2(p));
+   !(tab==='Layout'&&hasDesign2LayoutEquivalent(
+     p.id,selectedComponentApis,p.components,design2Slots,design2SlotRules)));
  const groups=[...new Set(displayProperties.map(p=>p.group))];
  const groupOrder=tab==='Design2'?[activeDesign2Area]
   :tab==='Data'?['Source','Values','Cart','Cart columns','Cart totals','Card Grid']
