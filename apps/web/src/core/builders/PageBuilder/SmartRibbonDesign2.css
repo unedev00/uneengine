@@ -136,3 +136,53 @@
   min-height:var(--smart-control-height,26px)!important;
   max-height:var(--smart-control-height,26px)!important;
 }
+
+/* Area selector is OUTSIDE the numbered property grid.
+ * The user-approved R1C1..R3C6 cells belong to properties, not the selector. */
+.office-builder-ribbon #page-builder-tab-content
+  >.smart-design2-ribbon>.smart-ribbon-group.smart-design2-group{
+  --smart-section-width:644px!important;
+  flex:0 0 644px!important;
+  width:644px!important;
+  min-width:644px!important;
+  max-width:644px!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-design2-workbench{
+  box-sizing:border-box!important;
+  display:flex!important;
+  flex-flow:row nowrap!important;
+  gap:8px!important;
+  align-items:start!important;
+  width:max-content!important;
+  height:86px!important;
+  min-height:86px!important;
+  max-height:86px!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-design2-context{
+  box-sizing:border-box!important;
+  display:flex!important;
+  flex:0 0 304px!important;
+  flex-flow:row nowrap!important;
+  align-items:center!important;
+  gap:4px!important;
+  width:304px!important;
+  height:26px!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-design2-workbench>.smart-ribbon-items{
+  box-sizing:border-box!important;
+  display:flex!important;
+  flex-flow:column nowrap!important;
+  align-items:flex-start!important;
+  justify-content:flex-start!important;
+  gap:4px!important;
+  flex:0 0 auto!important;
+  width:max-content!important;
+  min-width:0!important;
+  max-width:none!important;
+  height:86px!important;
+  padding:0!important;
+  margin:0!important;
+}
