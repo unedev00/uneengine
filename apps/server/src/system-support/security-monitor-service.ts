@@ -90,8 +90,28 @@ export class SecurityMonitorService{
   if(!p.success)throw Error('Invalid monitoring settings');
   await this.db.query('INSERT INTO md_monitor_settings VALUES($1,$2,$3) ON CONFLICT(tenant_id) DO UPDATE SET enabled=$2,retention_days=$3',[tenant,p.data.enabled,p.data.retention_days]);return {saved:true};
  }
- async prune(tenant:string,user:string){
+ async prunePreview(tenant:string,user:string){
   await this.rbac.require(tenant,user,'SecurityMonitoring','manage');
-  const result=await this.db.query(`DELETE FROM md_monitor_events WHERE tenant_id=$1 AND created_at<now()-(COALESCE((SELECT retention_days FROM md_monitor_settings WHERE tenant_id=$1),365)*interval '1 day')`,[tenant]);return {removed:result.rowCount??0};
+  const result=await this.db.query<{eligible:string;retention_days:number}>(`
+    SELECT count(e.id)::text AS eligible,
+      COALESCE((SELECT retention_days FROM md_monitor_settings WHERE tenant_id=$1),365)::integer AS retention_days
+    FROM md_monitor_events e
+    WHERE e.tenant_id=$1
+      AND e.created_at<now()-(COALESCE((SELECT retention_days FROM md_monitor_settings WHERE tenant_id=$1),365)*interval '1 day')`,[tenant]);
+  return {eligible:Number(result.rows[0]?.eligible??0),retentionDays:Number(result.rows[0]?.retention_days??365)};
+ }
+ async prune(tenant:string,user:string,confirmation?:unknown,expectedRetentionDays?:unknown){
+  await this.rbac.require(tenant,user,'SecurityMonitoring','manage');
+  if(confirmation!=='PRUNE'||!Number.isSafeInteger(expectedRetentionDays)
+   ||Number(expectedRetentionDays)<90||Number(expectedRetentionDays)>3650)
+   throw new Error('Explicit retention cleanup confirmation is required');
+  return this.db.transaction(async c=>{
+   const policy=await c.query<{retention_days:number}>('SELECT retention_days FROM md_monitor_settings WHERE tenant_id=$1 FOR SHARE',[tenant]);
+   const days=Number(policy.rows[0]?.retention_days??365);
+   if(days!==expectedRetentionDays)throw new Error('Retention policy changed; review the cleanup preview again');
+   const result=await c.query(`DELETE FROM md_monitor_events
+     WHERE tenant_id=$1 AND created_at<now()-($2*interval '1 day')`,[tenant,days]);
+   return {removed:result.rowCount??0};
+  });
  }
 }
