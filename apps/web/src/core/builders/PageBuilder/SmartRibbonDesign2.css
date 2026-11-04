@@ -406,3 +406,11 @@
  min-height:26px!important;
  max-height:26px!important;
 }
+
+/* Both Design 2 image/orientation and alignment menus use body-level portals.
+ * The canvas floating action toolbar has z-index:11000; the old 10000 popup
+ * was behind it, so Top/Left/Right/Bottom choices could not be clicked. */
+.design2-icon-popup,
+.smart-icon-dropdown-popup{
+ z-index:12000!important;
+}
