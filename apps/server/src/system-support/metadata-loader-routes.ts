@@ -239,7 +239,7 @@ export function registerMetadataLoaderRoutes(app:Express,db:SqlPersistence,rbac:
      const target=value(i.cells,'TargetObject').toLowerCase();
      if(!existing.has(target)&&!planned.has(target))throw Error('Related object does not exist');
     }
-    if(i.action!=='HardDelete')validRevision(i,obj);
+    validRevision(i,obj);
     if(i.sheet==='Objects'&&['Delete'].includes(i.action)){
      const impact=await lifecycle.impact(actor.tenant_id,i.objectApi);
      if(impact.blockers.length)throw Error('Object has dependencies: '+impact.blockers.map(b=>b.kind).join(', '));
@@ -324,14 +324,28 @@ export function registerMetadataLoaderRoutes(app:Express,db:SqlPersistence,rbac:
      if(i.action==='Delete'){if(!o)throw Error('Object not found');await lifecycle.delete(actor.tenant_id,i.objectApi,Number((o as {revision?:number}).revision??0));}
      else if(i.action==='HardDelete'){
       const impact=await lifecycle.impact(actor.tenant_id,i.objectApi);
-      if(!impact.deleted||impact.isSystem||impact.blockers.length||impact.recordCount)
+      if(impact.isSystem||impact.blockers.length||impact.recordCount)
        throw Error('Hard Delete blocked: object has records or dependencies');
-      await db.transaction(async client=>{
-       // A physical delete is intentionally FK-restricted: dependent metadata must be removed first.
-       await client.query('DELETE FROM md_field_definitions WHERE tenant_id=$1 AND object_api=$2',[actor.tenant_id,i.objectApi]);
-       await client.query('DELETE FROM md_object_definitions WHERE tenant_id=$1 AND api_name=$2 AND is_system=false AND deleted_at IS NOT NULL',
-        [actor.tenant_id,i.objectApi]);
-      });
+      const deletedNow=!impact.deleted;
+      if(deletedNow){
+       if(!o)throw Error('Object not available for deletion');
+       await lifecycle.delete(actor.tenant_id,i.objectApi,Number(o.revision??0));
+      }
+      try{
+       await db.transaction(async client=>{
+        await client.query('DELETE FROM md_object_page_layouts WHERE tenant_id=$1 AND object_api=$2',
+         [actor.tenant_id,i.objectApi]);
+        await client.query('DELETE FROM md_field_definitions WHERE tenant_id=$1 AND object_api=$2',
+         [actor.tenant_id,i.objectApi]);
+        const result=await client.query(
+         'DELETE FROM md_object_definitions WHERE tenant_id=$1 AND api_name=$2 AND is_system=false AND deleted_at IS NOT NULL',
+         [actor.tenant_id,i.objectApi]);
+        if(!result.rowCount)throw Error('Object was not soft-deleted');
+       });
+      }catch(error){
+       if(deletedNow)await lifecycle.restore(actor.tenant_id,i.objectApi);
+       throw error;
+      }
      }else if(!o){
       const deleted=(await db.query('SELECT 1 FROM md_object_definitions WHERE tenant_id=$1 AND api_name=$2 AND deleted_at IS NOT NULL',
        [actor.tenant_id,i.objectApi])).rowCount;
