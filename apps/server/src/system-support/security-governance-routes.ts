@@ -36,7 +36,7 @@ export function registerGovernanceRoutes(app:Express,db:SqlPersistence,rbac:Rbac
  app.put('/api/security/licenses/assignment',route(async(req,res)=>{const a=req.actor!;res.json(await licenses.assign(a.tenant_id,a.user_id,req.body));}));
  app.put('/api/security/licenses/requirement',route(async(req,res)=>{const a=req.actor!;res.json(await licenses.requirement(a.tenant_id,a.user_id,req.body));}));
  app.post('/api/security/licenses/issue',route(async(req,res)=>{const a=req.actor!;res.json(await licenses.issue(a.tenant_id,a.user_id,req.body));}));
- app.get('/api/security/monitoring',route(async(req,res)=>{const a=req.actor!;res.json(await monitor.describe(a.tenant_id,a.user_id,req.query.before));}));
+ app.get('/api/security/monitoring',route(async(req,res)=>{const a=req.actor!;res.json(await monitor.describe(a.tenant_id,a.user_id,req.query.before,req.query.limit));}));
  app.put('/api/security/monitoring',route(async(req,res)=>{const a=req.actor!;res.json(await monitor.configure(a.tenant_id,a.user_id,req.body));}));
  app.put('/api/security/monitoring/rules',route(async(req,res)=>{const a=req.actor!;res.json(await monitor.saveRule(a.tenant_id,a.user_id,req.body));}));
  app.post('/api/security/monitoring/prune',route(async(req,res)=>{const a=req.actor!;res.json(await monitor.prune(a.tenant_id,a.user_id));}));
