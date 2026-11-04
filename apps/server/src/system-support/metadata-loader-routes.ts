@@ -167,7 +167,10 @@ function typedValidation(item:Item){
 async function permitted(rbac:RbacEngine,actor:Actor,i:Item,exists:boolean){
  const t=actor.tenant_id,u=actor.user_id;
  if(i.sheet==='Objects'){
-  if(i.action==='HardDelete')await rbac.require(t,u,'ObjectDefinition','hard-delete');
+  if(i.action==='HardDelete'){
+   await rbac.require(t,u,'ObjectDefinition','hard-delete');
+   await rbac.require(t,u,i.objectApi,'edit');
+  }
   else if(i.action==='Create'||i.action==='Upsert'&&!exists)await rbac.require(t,u,'ObjectDefinition','create');
   else{await rbac.require(t,u,'ObjectDefinition','manage');await rbac.require(t,u,i.objectApi,'edit');}
  }else{
@@ -364,7 +367,8 @@ export function registerMetadataLoaderRoutes(app:Express,db:SqlPersistence,rbac:
        await definitions.create(actor.tenant_id,i.objectApi,value(cell,'Label'),[
         {apiName:'Name',label:value(cell,'Label')+' Name',
          dataType:value(cell,'RecordNameType')==='Auto Number'?'AutoNumber':'Text(80)',
-         required:true,autoNumberFormat:value(cell,'RecordNameFormat')||'REC-{0000}'}
+         required:true,...(value(cell,'RecordNameType')==='Auto Number'
+          ?{autoNumberFormat:value(cell,'RecordNameFormat')||'REC-{0000}'}:{})}
        ],async(client:PoolClient)=>{
         await metadata.persistWithin(client,actor.tenant_id,i.objectApi,{
          pluralLabel:value(cell,'PluralLabel')||value(cell,'Label'),description:value(cell,'Description'),
