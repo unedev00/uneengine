@@ -246,6 +246,14 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  assert.equal(await placementTrigger.getAttribute('data-icon-kind'),'imagePlacement');
  assert.equal(await fillTrigger.getAttribute('data-icon-kind'),'imageFill');
  await placementTrigger.click();
+ // The popup portal must be ABOVE the canvas actions portal (z-index 11000),
+ // otherwise the "Left" choice appears but the floating toolbar steals clicks.
+ const dropdownLayer=await page.locator('.design2-icon-popup').evaluate(element=>
+  Number(getComputedStyle(element).zIndex));
+ const canvasLayer=await page.locator('.canvas-floating-actions-host').first().evaluate(element=>
+  Number(getComputedStyle(element).zIndex));
+ assert.ok(dropdownLayer>canvasLayer,
+  'Design 2 icon popup must stay clickable above the canvas floating toolbar');
  // Cart's pre-existing contract allows ONLY Left and Right, whereas Card
  // Grid and Smart Image offer all four. Do not offer unsupported Top/Bottom.
  assert.deepEqual(await page.locator('.design2-icon-popup [role="menuitemradio"]:not([disabled])')
