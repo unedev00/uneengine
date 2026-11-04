@@ -16,11 +16,12 @@ type Rights = {
 type Request = <T>(path: string, init?: RequestInit) => Promise<T>;
 type Group = {group: string; items: string[]};
 /** Navigation only: reuse the Setup registry and existing routes; APIs remain the RBAC authority. */
-export default function MobileSettingsHome({rights, request, loading, onOpen}:{
+export default function MobileSettingsHome({rights, request, loading, onOpen, onOpenOverview}:{
   rights: Rights;
   request: Request;
   loading: boolean;
   onOpen: (label: string) => void;
+  onOpenOverview:()=>void;
 }) {
   const [query, setQuery] = useState('');
   const [credentialAccess, setCredentialAccess] = useState(false);
@@ -64,6 +65,10 @@ export default function MobileSettingsHome({rights, request, loading, onOpen}:{
       <h1>Settings</h1>
       <p>Manage your organisation and apps</p>
     </div>
+    <button type="button" className="mobile-settings-overview" onClick={onOpenOverview}>
+      <span><strong>Setup dashboard</strong><small>Quick actions, setup progress and platform status</small></span>
+      <ChevronRight size={20} aria-hidden="true"/>
+    </button>
     <label className="mobile-settings-search">
       <Search size={19} aria-hidden="true" />
       <input type="search" aria-label="Search settings" placeholder="Search settings" value={query}
