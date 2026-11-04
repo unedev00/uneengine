@@ -387,3 +387,31 @@
  .lightning .company-workspace-section-business .md-admin-table-wrap {max-width:100%;overflow-x:auto}
  .lightning .company-workspace-section-business .md-admin-form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+
+/* Remaining audit layout details, scoped to the affected surfaces. */
+.lightning .object-manager-pagination{display:flex;align-items:center;flex-wrap:wrap;gap:10px;padding:12px 4px;font-size:13px;color:var(--md-muted,#596579)}
+.lightning .object-manager-pagination>span:first-child{margin-right:auto}
+.lightning .object-manager-pagination .btn{min-height:40px}
+.lightning .flow-back-to-list{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.lightning .flow-back-to-list>span{display:none}
+@media(max-width:599px){.lightning .flow-back-to-list>span{display:inline;font-size:12px}}
+@media(min-width:600px) and (max-width:1023px){
+ .lightning .named-credentials-page>.section-toolbar{display:flex;align-items:flex-start;flex-wrap:wrap;gap:12px}
+ .lightning .named-credentials-page>.section-toolbar>div{flex:1 1 100%;min-width:0}
+ .lightning .named-credentials-page .record-type-create{width:100%;max-width:100%!important;min-width:0}
+ .lightning .named-credentials-page .record-type-create>input{width:100%;box-sizing:border-box}
+}
+@media(max-width:599px){
+ .lightning .named-credentials-page>.section-toolbar>div>p{
+  display:block;white-space:normal;overflow:visible;max-width:100%;line-height:1.5;
+  -webkit-line-clamp:unset;line-clamp:unset
+ }
+ .lightning .named-credentials-page .record-type-create{width:100%;max-width:100%!important}
+ .lightning .named-credentials-page .record-type-create input{width:100%;min-height:44px}
+}
+@media(min-width:900px){
+ .lightning .palette-dialog{width:min(760px,calc(100vw - 40px))}
+}
+.lightning .palette-results>button{max-width:100%;min-width:0;align-items:flex-start;white-space:normal}
+.lightning .palette-results>button>strong{flex:1 1 auto;min-width:0;overflow-wrap:anywhere}
+.lightning .palette-results>button>small{flex:0 1 38%;min-width:0;white-space:normal;overflow-wrap:anywhere;text-align:left;line-height:1.4}
