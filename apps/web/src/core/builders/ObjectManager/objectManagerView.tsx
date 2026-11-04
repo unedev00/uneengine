@@ -26,6 +26,8 @@ import CustomMetadataManager from './CustomMetadataManager';
 import * as React from 'react';
 const MatchingRulesPanel = React.lazy(() => import('./MatchingRulesPanel'));
 const FieldExactIndexesPanel=React.lazy(()=>import('./FieldExactIndexesPanel'));
+const UniversalMetadataLoader=React.lazy(()=>import('./UniversalMetadataLoader'));
+
 const ObjectChangeHistory = React.lazy(() => import('./ObjectChangeHistory'));
 const BusinessProcessesPanel=React.lazy(()=>import('./BusinessProcessesPanel'));
 const ObjectLabelsPanel=React.lazy(()=>import('./ObjectLabelsPanel'));
