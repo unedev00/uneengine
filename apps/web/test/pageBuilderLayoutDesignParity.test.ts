@@ -8,9 +8,9 @@ import type {Design2Slot,Design2SlotRule} from
 
 const file=(path:string)=>readFileSync(new URL(path,import.meta.url),'utf8');
 const matrix=file('../../server/src/system-support/migrations/20271104-zz-design2-exact-approved-matrix.sql');
-const slots:Design2Slot=[...matrix.matchAll(/\('([^']+)',\d+,'([^']+)',\d+,\d+,\d+,\d+,'[^']+','[^']+'\)/g)]
+const slots:Design2Slot[]=[...matrix.matchAll(/\('([^']+)',\d+,'([^']+)',\d+,\d+,\d+,\d+,'[^']+','[^']+'\)/g)]
  .map(([,area,slotKey])=>({area,slotKey,areaOrder:0,row:1,order:1,width:40,height:26,propertyKey:null,fallbackKey:''}));
-const rules:Design2SlotRule=[...matrix.matchAll(/\('(smart_[^']+)','([^']+)','([^']+)','([^']+)'\)/g)]
+const rules:Design2SlotRule[]=[...matrix.matchAll(/\('(smart_[^']+)','([^']+)','([^']+)','([^']+)'\)/g)]
  .map(([,componentApi,area,slotKey,propertyKey])=>({componentApi,area,slotKey,propertyKey}));
 const matches=(key:string,apis:string[],supported=apis)=>
  hasDesign2LayoutEquivalent(key,apis,supported,slots,rules);
