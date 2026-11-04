@@ -67,6 +67,15 @@ const capRequest=async (path,init)=>{
  if(path.startsWith('/records/'))return {records:Array.from({length:52},(_,i)=>({Id:'00000000-0000-0000-0000-'+String(i+1).padStart(12,'0'),Name:'Bulk record '+String(i+1)}))};
  return {};
 };
+const failingBriefcaseRequest=async(path,init)=>{
+ if(path==='/tenant/offline-briefcase')throw new Error('SQL relation md_tenant_settings does not exist');
+ return request(path,init);
+};
+const failingBriefcaseSaveRequest=async(path,init)=>{
+ if(path==='/tenant/offline-briefcase'&&init?.method==='PUT')
+  throw new Error('SQL service unavailable: database timeout');
+ return request(path,init);
+};
 const uxRequest=async (path,init)=>{
  if(path.startsWith('/auth/security-events?')){window.securityEventQuery=path;const offset=Number(new URLSearchParams(path.split('?')[1]).get('offset')||0);return {events:[{id:'event-'+offset,at:'2026-10-30T10:00:00Z',actorUserId:'user-1',loginIdentifier:'operator@example.com',sourceIp:'192.0.2.4',action:'login.success',details:{}}],nextOffset:offset===0?25:null};}
  if(path==='/tenant/company-profile')throw new Error('HTTP 502: upstream service unavailable');
@@ -217,6 +226,8 @@ function Fixture(){
   else if(view==='tenants')content=<TenantManagement request={request} permitted/>;
  else if(view==='records-import')content=<RecordImportCheck/>;
  else if(view==='offline-cap')content=<OfflineBriefcaseSettings request={capRequest} permitted objects={[object]}/>;
+ else if(view==='offline-load-error')content=<OfflineBriefcaseSettings request={failingBriefcaseRequest} permitted objects={[object]}/>;
+ else if(view==='offline-save-error')content=<OfflineBriefcaseSettings request={failingBriefcaseSaveRequest} permitted objects={[object]}/>;
  else if(view==='offline')content=<OfflineBriefcaseSettings request={request} permitted objects={[object]}/>;
  else if(view==='dashboard')content=<DashboardBuilder {...arrays} {...callbacks} userId="test" canCreate={params.get('allowed')==='true'} canManageAll={false} />;
  else if(view==='credentials'||view==='credentials-view'||view==='credentials-edit')content=<NamedCredentials credentials={credentials} canManage encryptionReady onTest={async()=>({connected:true,message:'Test available'})} onSave={noop} onDelete={noop}/>;
