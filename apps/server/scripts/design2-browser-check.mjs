@@ -90,7 +90,11 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  console.info('Design 2 SQL migration replay, legacy Design isolation and Focused mapping verified');
  await db.query(`INSERT INTO md_component_definitions (tenant_id,api_name,renderer_key,enabled)
  VALUES ($1,'smart_cart','one-bundled:smart_cart',true),
-        ($1,'smart_tabs','one-bundled:smart_tabs',true)
+        ($1,'smart_tabs','one-bundled:smart_tabs',true),
+        ($1,'smart_calendar','one-bundled:smart_calendar',true),
+        ($1,'smart_card_grid','one-bundled:smart_card_grid',true),
+        ($1,'smart_navigation','one-bundled:smart_navigation',true),
+        ($1,'smart_toggle','one-bundled:smart_toggle',true)
  ON CONFLICT (tenant_id,api_name) DO NOTHING`,[tenantId]);
 
  // The real authenticated Builder Catalog endpoint must expose SQL slots and enforce RBAC.
