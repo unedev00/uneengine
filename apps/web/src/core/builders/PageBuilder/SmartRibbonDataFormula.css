@@ -191,3 +191,22 @@
   font-size:10px!important;
 }
 
+
+/* Selected-canvas binding UI: Source and one Formula Bar, without Values/Cart chips. */
+.office-builder-ribbon #page-builder-tab-content>.smart-ribbon:has(>.smart-data-workspace){
+ width:100%!important;min-width:680px!important;
+}
+.office-builder-ribbon #page-builder-tab-content>.smart-ribbon>.smart-data-workspace{
+ min-width:0;flex:1 1 auto;width:auto;
+}
+.office-builder-ribbon #page-builder-tab-content .smart-data-formula-bar{
+ min-width:0;width:100%;
+}
+.office-builder-ribbon #page-builder-tab-content .smart-data-formula-input{
+ flex:1 1 250px;width:auto;min-width:220px;max-width:none;
+}
+.office-builder-ribbon #page-builder-tab-content .smart-data-active-binding{
+ display:inline-flex;flex:0 0 auto;align-items:center;max-width:145px;
+ overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+ padding:0 7px;font:600 11px "Segoe UI",sans-serif;color:#355678;
+}
