@@ -71,8 +71,8 @@ test('every Smart binding icon is field-anchored, never positioned in an arbitra
  assert.match(icons,/propertyKey==='tabCaptionFormula'/);
  assert.match(icons,/return null; \/\/ Never manufacture a grid/);
  assert.doesNotMatch(icons,/is-fallback|unrendered:|const missing=|missing\.forEach/);
- assert.match(icons,/smart_tabs:\{tabCaptionFormula:'Tab caption'/);
- assert.match(icons,/smart_cart:\{label:'Cart title',collectionFormula:'Cart items source'/);
+ assert.match(source('../src/core/builders/PageBuilder/canvasDataBindingTargets.ts'),/smart_tabs:\{tabCaptionFormula:'Tab caption'/);
+ assert.match(source('../src/core/builders/PageBuilder/canvasDataBindingTargets.ts'),/smart_cart:\{label:'Cart title',collectionFormula:'Cart items source'/);
  assert.match(css,/\.builder-page \.record-component\.selected/);
  assert.doesNotMatch(css,/\.modern-canvas-builder .*\.canvas-data-icon-button/);
  assert.match(runtime,/p\.builderPreview&&p\.collectionFormula&&\(dynamic\|\|hasCollection\)/);
