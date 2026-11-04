@@ -357,18 +357,17 @@ function SmartTabs({p,record,fire}){
  const vertical=p.tabOrientation==="vertical";
  const count=number(p.tabCount,Array.isArray(p.tabs)?Math.max(1,p.tabs.length):3,1,20);
  // When bound to an Object, the shared Page Runtime supplies only filtered,
- // permission-checked records. Data-backed tabs follow the bounded source,
-  // not a disabled manual tabCount; guard rendering to at most 200 source rows.
+ // permission-checked records. Never generate unlimited tabs from raw records.
  const dynamic=Boolean(p.objectApiName&&p.textSource);
  const hasCollection=p.dataCollection&&typeof p.dataCollection.name==='string'
   &&Array.isArray(p.dataCollection.items);
- const collectionTabs=hasCollection?recordsOf(p).slice(0,200).map((row,index)=>({
+ const collectionTabs=hasCollection?recordsOf(p).slice(0,count).map((row,index)=>({
   label:p.textSource?scopedExpression(p,"textSource",p.textSource,row):String(row.__collectionLabel??row.Name??''),value:row.__collectionValue,
   id:'collection-'+index,record:row
  })):null;
- const recordTabs=collectionTabs??(dynamic?(isBuilderEmpty(p)?Array.from({length:3},(_,i)=>({
+ const recordTabs=collectionTabs??(dynamic?(isBuilderEmpty(p)?Array.from({length:Math.min(count,5)},(_,i)=>({
    label:"Tab "+(i+1),id:"editor-tab-"+i
-  })):recordsOf(p).slice(0,200).map(row=>({
+  })):recordsOf(p).slice(0,count).map(row=>({
    label:scopedExpression(p,"textSource",p.textSource,row),id:row?.Id??row?.id
   }))):Array.from({length:count},(_,i)=>Array.isArray(p.tabs)&&p.tabs[i]!==undefined
    ?p.tabs[i]:i===0&&typeof p.label==="string"&&p.label&&!p.label.startsWith("@")
