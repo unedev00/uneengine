@@ -167,7 +167,8 @@ test('the six fixed C1-C6 tracks are shared across all property rows',()=>{
  assert.match(shared,/const design2GridColumns=\(\)=>/);
  assert.match(shared,/Array\.from\(\{length:6\}/);
  assert.match(shared,/Math\.max\(column===2\|\|column===3\|\|column===4\?80:40/);
- assert.match(shared,/\.filter\(rule=>rule\.componentApi===api\)/);
+ assert.match(shared,/new Map\(design2Slots/);
+ assert.doesNotMatch(shared,/\.filter\(rule=>rule\.componentApi===api\)\.map\(rule=>rule\.area\)/);
  assert.match(css,/width:380px!important/);
 });
 
@@ -288,4 +289,28 @@ test('Design 2 icon palettes and choice controls preserve R0 and the approved SQ
  assert.match(palette,/iconVariant/);
  for(const value of ['horizontal','vertical','placement','imageFill','orientation'])assert.ok(icons.includes(value));
  assert.match(approved,/319 source rows/);
+});
+
+
+test('all 14 approved dropdown areas remain visible, regardless of component API',()=>{
+ const extension=read('../../server/src/system-support/migrations/20271104-zzz-design2-row-zero-button-matrix-corrections.sql');
+ assert.match(extension,/\('Button 5',13,'fill',1,1,40,26/);
+ assert.match(shared,/const design2Areas=\[\.\.\.new Map\(design2Slots/);
+ assert.match(shared,/\.map\(slot=>\[slot\.area,slot\.areaOrder\] as const\)/);
+ assert.match(shared,/\.sort\(\(a,b\)=>a\[1\]-b\[1\]\)\.map\(\(\[area\]\)=>area\)/);
+ assert.match(shared,/const approved=design2SlotRules\.find\(rule=>/);
+ assert.match(shared,/components:assigned\?assigned\.components:\[\]/);
+});
+
+test('fixed SQL columns override legacy flex and grid-area:auto important rules',()=>{
+ const oldLayout=read('../src/core/builders/PageBuilder/SmartRibbonApprovedThreeRow.css');
+ assert.match(oldLayout,/display:flex!important;flex:0 0 26px!important/);
+ assert.match(oldLayout,/grid-area:auto!important/);
+ assert.match(css,/\.smart-ribbon\.smart-design2-ribbon\[data-three-row="true"\]/);
+ assert.match(css,/\.smart-design2-workbench>\.smart-ribbon-items/);
+ assert.match(css,/>.smart-ribbon-row\[data-design-row\]\{/);
+ assert.match(css,/display:grid!important/);
+ assert.match(css,/grid-area:1 \/ var\(--smart-slot-column,1\) \/ span 1 \/ span 1!important/);
+ assert.match(css,/grid-column:var\(--smart-slot-column,1\) \/ span 1!important/);
+ assert.match(css,/width:380px!important/);
 });
