@@ -13,6 +13,7 @@ import {
 export type WorkspaceId =
   | 'home'
   | 'object-manager'
+  | 'data-loader'
   | 'page-builder'
   | 'dashboard-builder'
   | 'report-builder'
@@ -1037,6 +1038,7 @@ export type WorkspaceMetadata = {
 export const workspaces: WorkspaceMetadata[] = [
   { id: 'home', label: 'Setup Home', icon: LayoutTemplate },
   { id: 'object-manager', label: 'Object Manager', icon: Database },
+  { id: 'data-loader', label: 'Universal Data Loader', icon: Database },
   { id: 'page-builder', label: 'Page Builder', icon: LayoutTemplate },
   { id: 'dashboard-builder', label: 'Dashboards', icon: BarChart3 },
   { id: 'report-builder', label: 'Reports', icon: FileText },
@@ -1053,7 +1055,7 @@ export const workspaces: WorkspaceMetadata[] = [
 export const setupNavigation = [
   { group: 'Platform Administration', items: ['Tenant Management'] },
   { group: 'Company Settings', items: ['Company Settings', 'Security & Recovery', 'Connected Apps', 'Audit Trail'] },
-  { group: 'Platform Tools', items: ['Setup Home', 'Object Manager', 'Page Builder', 'App Manager', 'AppExchange'] },
+  { group: 'Platform Tools', items: ['Setup Home', 'Object Manager', 'Universal Data Loader', 'Page Builder', 'App Manager', 'AppExchange'] },
   { group: 'Integrations', items: ['Named Credentials', 'Webhook Endpoints', 'Named Devices'] },
   { group: 'Automation', items: ['Flows', 'Paused and Waiting Interviews', 'Scheduled Flows', 'Flow History', 'Process Automation Settings'] },
   { group: 'Analytics', items: ['Reports', 'Dashboards'] },
