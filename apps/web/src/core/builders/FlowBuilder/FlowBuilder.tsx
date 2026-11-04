@@ -1957,7 +1957,7 @@ export default function FlowBuilder({
   </div>;
   return <div className={phoneFlow?'flow-builder flow-mobile-builder':'flow-builder'}>
     <div className="flow-topbar">
-      <button className="icon-button subtle" aria-label="Back to setup" onClick={onOpenFlowList}><ArrowLeft size={17} /></button>
+      <button type="button" className="icon-button subtle flow-back-to-list" aria-label="Back to flows" onClick={onOpenFlowList}><ArrowLeft size={17}/><span>Flows</span></button>
       <div className="flow-name"><input aria-label="Flow label" value={flow.label} onChange={(event) => onFlowChange({ ...flow, label: event.target.value })} /><span className="flow-type-pill">{flow.status} · v{flow.versionNumber}</span><span className={`flow-save-state ${isDirty ? 'dirty' : ''}`} role="status">{isDirty ? 'Unsaved changes' : 'Saved'}</span><ChevronDown size={13} /></div>
       <div className="flow-toolbar-actions">
         <button className="icon-button subtle" title="Undo" aria-label="Undo" onClick={onUndo} disabled={!canUndo}><Undo2 size={15} /></button>
