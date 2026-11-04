@@ -23,17 +23,7 @@ VALUES
   ('smart_icon','Body','width','width'),
   ('smart_icon','Body','height','height'),
   ('smart_toggle','Body','width','width'),
-  ('smart_toggle','Body','height','height'),
-  -- Body Fill is the tab-bar shell; Tabs Fill styles the tab buttons.
-  ('smart_tabs','Tabs','fill','tabColor'),
-  ('smart_tabs','Tabs','focused','selectedTabColor'),
-  ('smart_tabs','Tabs','height','tabHeight'),
-  ('smart_tabs','Tabs','width','tabWidth'),
-  ('smart_tabs','Tabs','text','labelColor'),
-  ('smart_tabs','Tabs','alignment','labelAlignment'),
-  ('smart_tabs','Tabs','size','textSize'),
-  ('smart_tabs','Tabs','border','borderColor'),
-  ('smart_tabs','Tabs','radius','radius')
+  ('smart_toggle','Body','height','height')
 ON CONFLICT(component_api,area,slot_key)
 DO UPDATE SET property_key=EXCLUDED.property_key;
 
@@ -82,7 +72,7 @@ SELECT DISTINCT rules.component_api,rules.property_key,true
 FROM md_builder_design2_slot_rules rules
 JOIN md_builder_shared_properties property ON property.property_key=rules.property_key
 WHERE
- (rules.component_api='smart_tabs' AND rules.area IN ('Body','Tabs'))
+ (rules.component_api='smart_tabs' AND rules.area='Body')
  OR (rules.component_api='smart_textbox' AND
       (rules.area='Body' AND rules.slot_key='wrap'
        OR rules.area='Header Supporting'))
