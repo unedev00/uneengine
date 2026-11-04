@@ -26,6 +26,8 @@ export function readCanvasBinding(properties:Props,target:Pick<CanvasBindingTarg
  const index=tabCaptionIndex(properties,target);
  if(index<0)return '';
  const raw=Array.isArray(properties.tabs)?properties.tabs[index]:undefined;
+ if(raw===undefined&&index===0&&typeof properties.label==='string'&&
+  properties.label&&!properties.label.startsWith('@'))return properties.label;
  return asTab(raw,index).label;
 }
 export function writeCanvasBinding(properties:Props,target:Pick<CanvasBindingTarget,'propertyKey'|'itemId'|'itemIndex'>,value:string,valueKey?:string):Props{
