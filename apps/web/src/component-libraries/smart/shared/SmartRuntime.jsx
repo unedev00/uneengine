@@ -219,9 +219,18 @@ function SmartCard({p,record,onButtonClick,onCustomButton,onSelect,selected=fals
        backgroundColor:p.cardButtonFill||p.accentColor||"#2563eb",
        borderColor:p.cardButtonBorderColor||p.cardButtonFill||p.accentColor||"#2563eb",
        ...smartShapeAppearance(p.cardButtonShape||"shape:round-rectangle",
-        p.cardButtonShape==="shape:rectangle"?0:8),
+        p.cardButtonRadius!==undefined&&p.cardButtonRadius!==null&&p.cardButtonRadius!==""
+         ?number(p.cardButtonRadius,8,0,200)
+         :p.cardButtonShape==="shape:rectangle"?0:8),
        color:p.cardButtonTextColor||"#fff",
        fontSize:number(p.cardButtonTextSize,14,8,48),
+       width:p.cardButtonWidth!==undefined&&p.cardButtonWidth!==null&&p.cardButtonWidth!==""
+        ?number(p.cardButtonWidth,0,0,1200)+"px":undefined,
+       height:p.cardButtonHeight!==undefined&&p.cardButtonHeight!==null&&p.cardButtonHeight!==""
+        ?number(p.cardButtonHeight,0,0,1200)+"px":undefined,
+       fontWeight:typeof p.cardButtonBold==="boolean"?(p.cardButtonBold?700:400):undefined,
+       whiteSpace:p.cardButtonWrapText===false?"nowrap":
+        p.cardButtonWrapText===true?"normal":undefined,
        // Design 2 Button R3C2 aligns the button caption, not the card header.
        textAlign:["left","center","right"].includes(p.cardButtonAlignment)
         ?p.cardButtonAlignment:undefined,
@@ -241,7 +250,19 @@ function SmartCard({p,record,onButtonClick,onCustomButton,onSelect,selected=fals
   </div>}
   {p.badgeVisible===true&&Boolean(badge)&&<span className={"smart-badge "+(p.badgeAlignment||"image-top-right")}
    style={{fontWeight:p.badgeBold===false?400:700,fontSize:number(p.badgeTextSize,12),
-   color:p.badgeTextColor||"#fff",background:p.badgeBodyColor||"#2563eb"}}>{badge}</span>}
+   color:p.badgeTextColor||"#fff",background:p.badgeBodyColor||"#2563eb",
+   border:p.badgeBorderColor?"1px solid "+p.badgeBorderColor:undefined,
+   borderRadius:p.badgeRadius!==undefined&&p.badgeRadius!==null&&p.badgeRadius!==""
+    ?number(p.badgeRadius,0,0,200):undefined,
+   width:p.badgeWidth!==undefined&&p.badgeWidth!==null&&p.badgeWidth!==""
+    ?number(p.badgeWidth,0,0,1200)+"px":undefined,
+   height:p.badgeHeight!==undefined&&p.badgeHeight!==null&&p.badgeHeight!==""
+    ?number(p.badgeHeight,0,0,1200)+"px":undefined,
+   boxSizing:"border-box",
+   ...(p.badgeWidth!==undefined&&p.badgeWidth!==null&&p.badgeWidth!==""||
+       p.badgeHeight!==undefined&&p.badgeHeight!==null&&p.badgeHeight!==""
+       ?{display:"inline-flex",alignItems:"center",justifyContent:"center"}:{})
+   }}>{badge}</span>}
  </article>;
 }
 function SmartCalendar({p,fire}){
