@@ -5,6 +5,7 @@ import {readFileSync} from 'node:fs';
 const read=path=>readFileSync(new URL(path,import.meta.url),'utf8');
 const sql=read('../../server/src/system-support/migrations/20270309-design2-contextual-ribbon.sql');
 const approved=read('../../server/src/system-support/migrations/20271104-zz-design2-exact-approved-matrix.sql');
+const imageGapMigration=read('../../server/src/system-support/migrations/20271112-design2-image-placement-gap.sql');
 const shared=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
 const builder=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
 const css=read('../src/core/builders/PageBuilder/SmartRibbonDesign2.css');
@@ -152,6 +153,17 @@ test('approved table has 118 unique fixed slots in 13 areas and 313 component ru
  assert.match(approved,/CHECK\(row_no IN \(1,2,3\)\)/);
  assert.match(shared,/design2SlotRules\.find\(rule=>/);
  assert.match(builder,/design2SlotRules=\{ribbonCatalog\.design2SlotRules\}/);
+});
+
+test('Image Placement uses the adjacent SQL R2C5 cell after Width without growing the ribbon',()=>{
+ assert.equal(fixed('Body','width').row,2);
+ assert.equal(fixed('Body','width').order,4);
+ assert.equal(fixed('Body','width').width,80);
+ assert.equal(fixed('Image','placement').row,2);
+ assert.equal(fixed('Image','placement').order,6,'baseline before the forward-only fix');
+ assert.equal(fixedRows.some(slot=>slot.area==='Image'&&slot.row===2&&slot.order===5),false);
+ assert.match(imageGapMigration,/UPDATE md_builder_design2_slots\s+SET order_no\s*=\s*5\s+WHERE area\s*=\s*'Image'\s+AND slot_key\s*=\s*'placement'\s+AND row_no\s*=\s*2\s+AND order_no\s*=\s*6/);
+ assert.doesNotMatch(imageGapMigration,/height_px|md_builder_shared_properties|md_builder_design2_slot_rules|md_page_components/i);
 });
 
 test('Design 2 selector and eye occupy row 0 alone',()=>{
