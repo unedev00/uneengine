@@ -97,3 +97,42 @@
   .smart-design2-group .smart-property.disabled{
   opacity:.46!important;
 }
+
+/* Design 2 is a fixed SQL row/column matrix. Disabled slots retain their
+ * reserved cell instead of flex-compacting the enabled controls to the left. */
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-ribbon-row:not(.smart-design2-top-row){
+  display:grid!important;
+  grid-auto-flow:row!important;
+  grid-auto-rows:26px!important;
+  align-items:center!important;
+  justify-content:start!important;
+  column-gap:4px!important;
+  row-gap:0!important;
+  width:max-content!important;
+  max-width:none!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-ribbon-row:not(.smart-design2-top-row)>.smart-property{
+  grid-column-start:var(--smart-slot-column,auto)!important;
+  grid-column-end:span 1!important;
+  width:var(--smart-control-width)!important;
+  min-width:var(--smart-control-width)!important;
+  max-width:var(--smart-control-width)!important;
+  height:var(--smart-control-height,26px)!important;
+  min-height:var(--smart-control-height,26px)!important;
+  max-height:var(--smart-control-height,26px)!important;
+}
+/* The colour selector's inherited 44px/28px rules cannot enlarge a
+ * SQL-planned 40px/26px Design 2 cell. */
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-property .office-ribbon-colour-property{
+  box-sizing:border-box!important;
+  flex:0 0 var(--smart-control-width)!important;
+  width:var(--smart-control-width)!important;
+  min-width:var(--smart-control-width)!important;
+  max-width:var(--smart-control-width)!important;
+  height:var(--smart-control-height,26px)!important;
+  min-height:var(--smart-control-height,26px)!important;
+  max-height:var(--smart-control-height,26px)!important;
+}
