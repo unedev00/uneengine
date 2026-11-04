@@ -139,7 +139,7 @@
 /* Do not force 940px audit tables on a phone: accessible row cards retain headers in the DOM. */
 .lightning .md-security-history-filters{margin:14px 0;gap:10px 14px}
 .lightning .md-security-history-filters>.md-admin-actions{align-self:end;margin:0;gap:8px}
-@media(max-width:700px){
+@media(max-width:899px){
  .lightning .md-admin-table-wrap:has(.md-audit-table){overflow:visible}
  .lightning .md-audit-table{min-width:0;width:100%;border-spacing:0}
  .lightning .md-audit-table thead{display:none}
@@ -285,7 +285,7 @@
 .lightning .md-admin-table-wrap:has(.md-audit-table){
   max-width:100%;overflow-x:auto;padding-right:24px;box-sizing:border-box
 }
-@media(min-width:701px){
+@media(min-width:900px){
  .lightning .md-audit-table{min-width:920px;width:100%;table-layout:auto}
  .lightning .md-audit-table :is(th,td):nth-child(2){min-width:140px;overflow-wrap:anywhere}
  .lightning .md-audit-table :is(th,td):nth-child(5){min-width:185px}
@@ -307,7 +307,7 @@
   }
 }
 /* Preserve row identity when scanning long setup/security tables horizontally. */
-@media (min-width: 701px) {
+@media (min-width: 900px) {
   .lightning .md-admin-table-wrap:has(.md-audit-table) {
     position: relative;
     padding-right: 12px;
@@ -469,4 +469,13 @@
 .lightning .permissions-page .md-sharing-advanced>summary:focus-visible,
 .lightning .permissions-page .md-sharing-defaults>summary:focus-visible{
  outline:2px solid var(--md-primary,#1d4ed8);outline-offset:2px
+}
+
+/* Audit and monitoring tables become accessible labelled row cards through tablet portrait.
+   Override the legacy full-width scrollport declaration at this breakpoint. */
+@media (max-width:899px) {
+  .lightning .md-admin-table-wrap:has(.md-audit-table){
+    overflow:visible; padding-right:0; border:0; max-width:100%;
+  }
+  .lightning .md-admin-table-wrap .md-audit-table{min-width:0;width:100%;table-layout:auto}
 }

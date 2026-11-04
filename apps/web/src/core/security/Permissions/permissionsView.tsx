@@ -788,7 +788,7 @@ function Permissions({
           </div>,document.body);
         })()}
         {tab === 'profiles' && selectedProfile && <>
-          <AdvancedPermissionRules actionOptions={actionPermissionOptions} systemPermissionKeys={allSystemPermissions.map(([key])=>key)} policy={selectedProfile} onChange={patch=>patchProfile(selectedProfile.id,patch)}/>
+          <details className="md-permission-collapsible md-profile-advanced"><summary>Advanced permission rules</summary><AdvancedPermissionRules actionOptions={actionPermissionOptions} systemPermissionKeys={allSystemPermissions.map(([key])=>key)} policy={selectedProfile} onChange={patch=>patchProfile(selectedProfile.id,patch)}/></details>
           <div className="section-toolbar"><div><h2>{selectedProfile.label}</h2><p>Profile · {selectedProfile.apiName}{selectedProfile.isStandard ? ' · Standard' : ''}</p></div><button className="btn" onClick={() => {
             if (selectedProfile.isStandard || draft.users.some((user) => user.profileId === selectedProfile.id)) return;
             if (!confirmDestructiveAction('Delete', 'Profile "'+selectedProfile.label+'"')) return;
@@ -802,23 +802,26 @@ function Permissions({
             <PlatformPageSlot slotKey="field-rbac-21"><label className="form-label">Description<input className="form-control" value={selectedProfile.description} onChange={(event) => patchProfile(selectedProfile.id, { description: event.target.value })} /></label></PlatformPageSlot>
           </div>
           <p className="permission-help">Inherited permission sets: {(selectedProfile.inheritedPermissionSetIds??[]).map(id=>draft.permissionSets.find(s=>s.id===id)?.label??id).join(', ')||'None'}</p>
-          <h3 className="permission-section-heading">System Permissions</h3>
+          <details className="md-permission-collapsible md-profile-advanced"><summary>System Permissions</summary>
           <div className="permission-check-grid">{allSystemPermissions.map(([key, label]) => <label className="checkbox-row" key={key}><input type="checkbox" checked={selectedProfile.systemPermissions.includes(key)} onChange={() => patchProfile(selectedProfile.id, { systemPermissions: toggleString(selectedProfile.systemPermissions, key) })} />{label}</label>)}</div>
           
-          <h3 className="permission-section-heading">Application Access</h3>
+          </details>
+          <details className="md-permission-collapsible md-profile-advanced"><summary>Application Access</summary>
           <p className="permission-help">Navigation access does not grant underlying data permissions.</p>
           <div className="permission-check-grid">{navigationApps.map((app) => <label className="checkbox-row" key={app.apiName}>
             <input type="checkbox" checked={Boolean(selectedProfile.appPermissions?.[app.apiName])}
               onChange={(event) => patchProfile(selectedProfile.id, { appPermissions: { ...selectedProfile.appPermissions, [app.apiName]: event.target.checked } })} />
             {app.label}
           </label>)}</div>
-          <h3 className="permission-section-heading">Tab Visibility</h3>
+          </details>
+          <details className="md-permission-collapsible md-profile-advanced"><summary>Tab Visibility</summary>
           <div className="permission-check-grid">{objects.map((object) => <label className="checkbox-row" key={object.apiName}>
             <input type="checkbox" checked={Boolean(selectedProfile.tabPermissions?.[object.apiName])}
               onChange={(event) => patchProfile(selectedProfile.id, { tabPermissions: { ...selectedProfile.tabPermissions, [object.apiName]: event.target.checked } })} />
             {object.label}
           </label>)}</div>
-          <h3 className="permission-section-heading">Object Permissions</h3>
+          </details>
+          <details className="md-permission-collapsible md-profile-advanced"><summary>Object Permissions</summary>
           <ObjectPermissionPhoneList objects={objects} values={selectedProfile.objectPermissions}
             subject={selectedProfile.label} onToggle={(objectApi,permission)=>{
               const current=selectedProfile.objectPermissions[objectApi]??{read:false,create:false,edit:false,delete:false,viewAll:false,modifyAll:false};
@@ -829,12 +832,14 @@ function Permissions({
             const current = selectedProfile.objectPermissions[object.apiName] ?? { read: false, create: false, edit: false, delete: false, viewAll: false, modifyAll: false };
             patchProfile(selectedProfile.id, { objectPermissions: { ...selectedProfile.objectPermissions, [object.apiName]: { ...current, [permission]: !current[permission] } } });
           }} /></td>)}</tr>)}</tbody></table></div>
-          <h3 className="permission-section-heading">Record Type Access</h3>
+          </details>
+          <details className="md-permission-collapsible md-profile-advanced"><summary>Record Type Access</summary>
           {objects.filter((object) => object.recordTypes?.length).map((object) => <div className="permission-table-wrap" role="region" aria-label={`Record type permissions for ${object.label}`} tabIndex={0} key={object.apiName}><table className="slds-table permission-matrix"><thead><tr><th scope="col">{object.label}</th><th scope="col">Developer Name</th><th scope="col">Available</th></tr></thead><tbody>{object.recordTypes?.filter((recordType) => recordType.active).map((recordType) => {
             const key = `${object.apiName}.${recordType.id}`;
             return <tr key={key}><td><strong>{recordType.label}</strong></td><td title={recordType.developerName}><code>{recordType.developerName}</code></td><td><input type="checkbox" aria-label={`${selectedProfile.label} ${object.label} ${recordType.label} available`} checked={selectedProfile.recordTypePermissions[key] !== false} onChange={() => patchProfile(selectedProfile.id, { recordTypePermissions: { ...selectedProfile.recordTypePermissions, [key]: selectedProfile.recordTypePermissions[key] === false } })} /></td></tr>;
           })}</tbody></table></div>)}
-          <h3 className="permission-section-heading">Field Permissions</h3>
+          </details>
+          <details className="md-permission-collapsible md-profile-advanced"><summary>Field Permissions</summary>
           <FieldSecurityWizard objects={objects} policyName={selectedProfile.label}
            fieldPermissions={selectedProfile.fieldPermissions}
            onApply={fieldPermissions=>patchProfile(selectedProfile.id,{fieldPermissions})}/>
@@ -843,6 +848,7 @@ function Permissions({
             const permissions = selectedProfile.fieldPermissions[fieldName] ?? { read: false, edit: false };
             return <tr key={fieldName}><td><strong>{field.label}</strong></td><td title={field.apiName}><code>{field.apiName}</code></td>{(['create', 'read', 'edit', 'delete'] as const).map((permission) => <td key={permission}><input type="checkbox" aria-label={`${selectedProfile.label} ${object.label}.${field.label} ${permission}`} checked={Boolean(permissions[permission])} onChange={() => patchProfile(selectedProfile.id, { fieldPermissions: { ...selectedProfile.fieldPermissions, [fieldName]: { ...permissions, [permission]: !permissions[permission] } } })} /></td>)}</tr>;
           })}</tbody></table></div></details>)}
+          </details>
         </>}
         {tab === 'sets' && selectedSet && <>
           <details className="md-permission-collapsible" open={permissionSectionsExpanded}><summary>Advanced permission rules</summary>

@@ -2786,7 +2786,7 @@ function RecordWorkspace({
     ?[...listFieldsBase.slice(0,5),{apiName:'Id',label:'Id',dataType:'Text'} as FieldMetadata,...listFieldsBase.slice(5)]
     :listFieldsBase;
   const phoneColumns = resolvePhoneColumns(listFields,previewPhoneRoles ?? activeListView?.phoneRoles ?? {});
-  const tableFields=viewportFactor==='Tablet'?listFields.slice(0,5):listFields;
+  const tableFields=(viewportFactor==='Tablet'||(viewportWidth>0&&viewportWidth<=1200))?listFields.slice(0,5):listFields;
   const selectableRecordIds = (canMassDelete || canBulkUpdate || canChangeOwner) ? visibleRecords.flatMap((item) => {
     const recordTypeId = String(item.RecordTypeId ?? defaultRecordTypeId);
     const recordLayout = pageLayoutForRecord(object, recordTypeId, profileId);
@@ -3033,11 +3033,20 @@ function RecordWorkspace({
                 ? <a href={appRoutePath({ kind: 'record-detail', objectApiName: object.apiName, recordId: item.Id, appId: route.appId })} onClick={(event) => { if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); if (viewportWidth<=1200) onNavigate({kind:'record-detail',objectApiName:object.apiName,recordId:item.Id,appId:route.appId}); else setOverlayRecordId(item.Id); }}>{formatFieldValue(field, item[field.apiName] ?? item.Id)}</a>
                 : formatFieldValue(field, item[field.apiName])}
             </span>
-          </td>)}{(canEdit || canDelete || canChangeOwner) && <td><div className="record-row-actions">
-            {canEdit && rowAllowsEdit && <button className="text-action" onClick={() => openEditForm(item)}><Pencil size={13} />Edit</button>}
-            {canDelete && rowAllowsDelete && <button className="text-action" aria-label={`Delete ${String(item.Name ?? item.Id)}`} onClick={() => void deleteListRecord(item)}><Trash2 size={13} />Delete</button>}
-            {canChangeOwner && rowAllowsEdit && <button className="text-action" onClick={() => openChangeOwner(item)}>Change Owner</button>}
-          </div></td>}</tr>;
+          </td>)}{(canEdit || canDelete || canChangeOwner) && <td data-label="Actions">{viewportWidth>0&&viewportWidth<=1200
+            ?<details className="record-row-actions-menu">
+              <summary aria-label={`Actions for ${String(item.Name ?? item.Id)}`}><Ellipsis size={18} aria-hidden="true"/> Actions</summary>
+              <div>
+                {canEdit && rowAllowsEdit && <button type="button" onClick={() => openEditForm(item)}>Edit</button>}
+                {canDelete && rowAllowsDelete && <button type="button" onClick={() => void deleteListRecord(item)}>Delete</button>}
+                {canChangeOwner && rowAllowsEdit && <button type="button" onClick={() => openChangeOwner(item)}>Change Owner</button>}
+              </div>
+            </details>
+            :<div className="record-row-actions">
+              {canEdit && rowAllowsEdit && <button className="text-action" onClick={() => openEditForm(item)}><Pencil size={13} />Edit</button>}
+              {canDelete && rowAllowsDelete && <button className="text-action" aria-label={`Delete ${String(item.Name ?? item.Id)}`} onClick={() => void deleteListRecord(item)}><Trash2 size={13} />Delete</button>}
+              {canChangeOwner && rowAllowsEdit && <button className="text-action" onClick={() => openChangeOwner(item)}>Change Owner</button>}
+            </div>}</td>}</tr>;
         })}</tbody>
       </table></div>}
       {(!error || records.length > 0) && formFactor === 'Phone' && (recordListLayout === 'table' || recordListLayout === 'compact') &&
