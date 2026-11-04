@@ -10,6 +10,7 @@ import {uploadTenantImageFile} from '../ComponentProperties/TenantMediaPicker';
 import {scopedFieldRule,type ScopedFieldFilter} from '../../pages/PageRuntime/fieldScopedRecordFilters';
 import RecordFilterEditor from '../../../component-libraries/shared/primitives/RecordFilterEditor/RecordFilterEditor';
 import SmartFormulaField from './SmartFormulaField';
+import {readCanvasBinding,writeCanvasBinding,type CanvasBindingTarget} from './canvasDataBindingTargets';
 import {validateRecordFilterFormula} from '../../pages/PageRuntime/recordFilterFormula';
 import {sessionCollectionFields} from '../../pages/PageRuntime/pageCollectionListBinding';
 import {pageStateChoices} from './pageStateChoices';
@@ -32,6 +33,7 @@ type Props={tab:UneBuilderTab;api:string;definitions:readonly UneRibbonProperty[
  /** For grouped/multiple components, expose only the intersection of SQL properties. */
  sharedPropertyIds?:readonly string[];mixedPropertyIds?:readonly string[];selectedApis?:readonly string[];
  pageComponents?:readonly {id:string;properties:Record<string,unknown>}[];componentId?:string;
+ canvasBinding?:CanvasBindingTarget|null;
  design2Slots?:readonly Design2Slot[];design2SlotRules?:readonly Design2SlotRule[];componentVisible?:boolean;
  onVisibleChange?:(visible:boolean)=>void;
  design2Arrange?:ArrangeRibbonProps;};
@@ -43,7 +45,7 @@ const cartSummaryLabels:Record<string,{key:string;slot:string}>={
  taxValue:{key:'taxLabel',slot:'Summary 3'},
  discountValue:{key:'discountLabel',slot:'Summary 4'}
 };
-export default function SmartRibbon({tab,api,definitions,properties,onChange,objects,pageObjectApiName='',position,onPositionChange,layoutMode,sharedPropertyIds,mixedPropertyIds,selectedApis,pageComponents=[],componentId='',design2Slots=[],design2SlotRules=[],componentVisible=true,onVisibleChange,design2Arrange}:Props){
+export default function SmartRibbon({tab,api,definitions,properties,onChange,objects,pageObjectApiName='',position,onPositionChange,layoutMode,sharedPropertyIds,mixedPropertyIds,selectedApis,pageComponents=[],componentId='',canvasBinding=null,design2Slots=[],design2SlotRules=[],componentVisible=true,onVisibleChange,design2Arrange}:Props){
  const uploadInput=useRef<HTMLInputElement>(null);
  const [uploadBusy,setUploadBusy]=useState(false);
  const [uploadError,setUploadError]=useState('');
@@ -89,11 +91,21 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  const [filterTarget,setFilterTarget]=useState('Record');
  const [filterFieldId,setFilterFieldId]=useState<string|null>(null);
  const [selectedDataField,setSelectedDataField]=useState<string|null>('__record_filter__');
+ const formulaInputHost=useRef<HTMLDivElement>(null);
+ useLayoutEffect(()=>{
+  if(tab!=='Data'||canvasBinding?.componentId!==componentId||
+    selectedDataField!==canvasBinding.propertyKey)return;
+  formulaInputHost.current?.querySelector<HTMLInputElement>('.smart-formula input')?.focus();
+ },[tab,componentId,selectedDataField,canvasBinding?.requestId]);
  const [daysOpen,setDaysOpen]=useState(false);
  const daysButton=useRef<HTMLButtonElement>(null);
  const daysMenu=useRef<HTMLDivElement>(null);
  const [daysPosition,setDaysPosition]=useState({top:0,left:0});
- useEffect(()=>{setDaysOpen(false);setFiltersOpen(false);setSelectedDataField('__record_filter__');},[tab,api]);
+ useEffect(()=>{
+  setDaysOpen(false);setFiltersOpen(false);
+  setSelectedDataField(tab==='Data'&&canvasBinding?.componentId===componentId
+   ?canvasBinding.propertyKey:'__record_filter__');
+ },[tab,api,componentId,canvasBinding?.requestId]);
  useEffect(()=>{
    if(!filtersOpen)return;
    const close=(event:globalThis.KeyboardEvent)=>{if(event.key==='Escape')setFiltersOpen(false);};
@@ -262,7 +274,8 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  // The source filter is an explicit mode, never inferred from the caption text.
  const filterFormulaSelected=tab==='Data'&&selectedDataField==='__record_filter__';
  const activeDataProperty=tab==='Data'
-   ?displayProperties.find(p=>p.id===selectedDataField&&isDataFormula(p)):undefined;
+   ?definitions.find(p=>p.tab==='Data'&&p.id===selectedDataField&&
+     p.components.includes(api)&&(p.kindOverrides?.[api]??p.kind)==='expression'):undefined;
  const activeDataKey=activeDataProperty?.valueKeys?.[api]??activeDataProperty?.id??'';
  const selectedFieldRule=activeDataProperty?fieldFilterRule(activeDataProperty.id):undefined;
  // Record filtering and output-only visibility are different operations.
@@ -272,19 +285,21 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  const activeDataEnabled=Boolean(activeDataProperty&&activeDataProperty.components.includes(api)&&
    (!sharedPropertyIds||sharedPropertyIds.includes(activeDataProperty.id)));
  const activeDataValue=activeDataProperty
-   ?String(properties[activeDataKey]??activeDataProperty.defaultsOverrides?.[api]??activeDataProperty.default??''):'';
+   ?readCanvasBinding(properties,activeDataProperty.id==='tabCaptionFormula'&&
+     canvasBinding?.componentId===componentId?canvasBinding:
+     {propertyKey:activeDataProperty.id},activeDataKey)
+     ||String(activeDataProperty.defaultsOverrides?.[api]??activeDataProperty.default??''):'';
  const changeRecordFilterFormula=(next:string)=>{
    if(!object)return;
    const formula=next.trimStart().startsWith('=')?next.trimStart().slice(1):next;
    // Keep ordinary saved data conditions active alongside the authored formula.
    onChange({...properties,filterFormula:formula,filterMode:undefined});
  };
- const activeSummaryLabel=activeDataProperty&&api==='smart_cart'
-   ?cartSummaryLabels[activeDataProperty.id]:undefined;
  const changeActiveDataFormula=(next:string)=>{
    if(!activeDataEnabled||!activeDataProperty)return;
-   onChange({...properties,[activeDataKey]:next,
-     ...(activeDataProperty.id==='imageSource'?{imageSourceMode:'field'}:{})});
+   onChange(writeCanvasBinding(properties,activeDataProperty.id==='tabCaptionFormula'&&
+     canvasBinding?.componentId===componentId?canvasBinding:
+     {propertyKey:activeDataProperty.id},next,activeDataKey));
  };
  // Geometry only. Keep every property, icon, dropdown and persisted value;
  // fit their existing three rows without reserving space for empty columns.
@@ -616,7 +631,10 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
           title={activeDataProperty?.id==='imageSource'&&api==='smart_image'?'Upload image':'Select an image field to enable upload'}
           aria-label="Upload image"
           onClick={()=>uploadInput.current?.click()}><ImagePlus size={17}/></button>
-        <div className="smart-data-formula-input">
+        <span className="smart-data-active-binding" aria-live="polite">
+          {activeDataProperty?.label??'Record filter'}
+        </span>
+        <div ref={formulaInputHost} className="smart-data-formula-input">
           {filterFormulaSelected?<SmartFormulaField key="__record_filter__"
             label="Record filter formula" value={typeof properties.filterFormula==='string'?properties.filterFormula:''}
             disabled={!object&&!canFilterSessionCollection} onChange={changeRecordFilterFormula}
@@ -624,7 +642,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
             stateOptions={stateOptions}
             fields={availableFilterFields} objects={objects} rootObjectApiName={objectName}
             selectedSourceObjects={sourceObjects}/>:
-          activeDataProperty?<SmartFormulaField key={activeDataProperty.id}
+          activeDataProperty?<SmartFormulaField key={activeDataProperty.id+':'+(canvasBinding?.itemId??canvasBinding?.itemIndex??'')}
             label={activeDataProperty.label} value={activeDataValue}
             disabled={!activeDataEnabled} onChange={changeActiveDataFormula}
             validate={validateCollection} stateOptions={stateOptions}
@@ -637,23 +655,9 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
             <input type="text" disabled aria-label="Formula (select a field first)"
               placeholder="Select a field's Fx button to edit its formula"/>}
         </div>
-        <input className="smart-data-summary-name"
-          aria-label={(activeSummaryLabel?.slot??'Cart summary')+' cart label'}
-          title={activeSummaryLabel?'Edit cart summary heading':'Select a cart summary field'}
-          maxLength={64} spellCheck={false} disabled={!activeSummaryLabel||!activeDataEnabled}
-          value={activeSummaryLabel?fallback(properties[activeSummaryLabel.key]):''}
-          placeholder={activeSummaryLabel?.slot??'Cart summary'}
-          onChange={event=>{if(activeSummaryLabel)update(activeSummaryLabel.key,event.target.value);}}/>
+
       </div>
-      <div className="smart-data-sections">
-        {sections.filter(group=>group!=='Source').map(section=><section className="smart-ribbon-group"
-          key={section} data-smart-tab={tab} aria-label={section}
-          style={{'--smart-section-width':sectionWidth(section)+'px'} as CSSProperties}>
-          <div className="smart-ribbon-items">{[1,2].map(row=><div className="smart-ribbon-row"
-            data-design-row={row} key={row}>{dataSectionRow(section,row).map(controls)}</div>)}</div>
-          <span className="smart-ribbon-caption">{section}</span>
-        </section>)}
-      </div>
+
     </div>
   </>:sections.map(section=><section className="smart-ribbon-group" key={section}
      data-design-three-row={compactDesign?'true':undefined} data-smart-tab={tab} aria-label={section}
