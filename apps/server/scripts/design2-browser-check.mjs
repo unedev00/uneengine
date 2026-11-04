@@ -170,7 +170,7 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  assert.equal(await alignCell.getAttribute('data-supported'),'true');
  const alignTrigger=alignCell.locator('.smart-icon-dropdown-trigger');
  await alignTrigger.click();
- await page.getByRole('menuitemradio',{name:'Header Alignment: Right'}).click();
+ await page.locator('.smart-icon-dropdown-popup [role="menuitemradio"]').nth(2).click();
  assert.match(await alignTrigger.getAttribute('aria-label')??'',/Right/);
  assert.equal(await cart.locator('.smart-cart-header').evaluate(element=>
    getComputedStyle(element).textAlign),'right','R3C2 alignment did not update the Cart header');
@@ -189,9 +189,9 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  assert.equal(await imageFill.locator('.smart-icon-dropdown-trigger').count(),1,
    'R3C6 image fit must be an icon dropdown');
  await imagePlacement.locator('.smart-icon-dropdown-trigger').click();
- await page.getByRole('menuitemradio',{name:'Image Placement: Left'}).click();
+ await page.locator('.smart-icon-dropdown-popup [role="menuitemradio"]').nth(1).click();
  await imageFill.locator('.smart-icon-dropdown-trigger').click();
- await page.getByRole('menuitemradio',{name:'Image Fill: Fit'}).click();
+ await page.locator('.smart-icon-dropdown-popup [role="menuitemradio"]').nth(1).click();
  assert.match(await imageFill.locator('.smart-icon-dropdown-trigger').getAttribute('aria-label')??'',/Fit/);
 
  // Area switching must not change the selected component or old Design view.
