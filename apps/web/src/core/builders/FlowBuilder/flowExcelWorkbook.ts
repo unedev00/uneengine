@@ -33,11 +33,63 @@ function digest(source:string) {
   for(let i=0;i<source.length;i++) {value^=source.charCodeAt(i);value=Math.imul(value,16777619);}
   return (value>>>0).toString(16).padStart(8,'0');
 }
+// Each nested input/output becomes an editable Excel row; empty containers stay explicit.
+function flattenConfig(value:unknown,path=''):Array<[string,unknown]>{
+ if(value===undefined)return [];
+ if(Array.isArray(value)){
+  if(!value.length)return path?[[path,[]]]:[];
+  return value.flatMap((item,index)=>flattenConfig(item,path+'['+index+']'));
+ }
+ if(value&&typeof value==='object'){
+  const entries=Object.entries(value as Record<string,unknown>);
+  if(!entries.length)return path?[[path,{}]]:[];
+  return entries.flatMap(([key,item])=>flattenConfig(item,path?path+'.'+key:key));
+ }
+ return [[path,value]];
+}
+function parseConfigPath(path:string):Array<string|number>{
+ if(path.length>512||!path||!/^[_$a-zA-Z][\w$-]*(?:(?:\.[_$a-zA-Z][\w$-]*)|(?:\[(?:0|[1-9]\d{0,3})\]))*$/.test(path))
+  throw Error('Invalid nested property path: '+path);
+ const tokens:Array<string|number>=[];
+ for(const match of path.matchAll(/([_$a-zA-Z][\w$-]*)|\[(\d+)\]/g)){
+  const token=match[1]??Number(match[2]);
+  if(['__proto__','constructor','prototype'].includes(String(token)))throw Error('Unsafe property path');
+  tokens.push(token);
+ }
+ if(tokens.length>40)throw Error('Property path nesting limit exceeded');
+ return tokens;
+}
+function upsertConfigValue(config:Record<string,unknown>,path:string,value:unknown,remove=false):boolean{
+ const tokens=parseConfigPath(path);
+ let node:Record<string,unknown>|unknown[]=config;
+ for(let i=0;i<tokens.length-1;i++){
+  const key=tokens[i],next=tokens[i+1];
+  const current=(node as Record<string|number,unknown>)[key];
+  if(!current||typeof current!=='object'||Array.isArray(current)!==(typeof next==='number')){
+   if(remove)return false;
+   (node as Record<string|number,unknown>)[key]=typeof next==='number'?[]:{};
+  }
+  node=(node as Record<string|number,unknown>)[key] as Record<string,unknown>|unknown[];
+ }
+ const last=tokens[tokens.length-1];
+ if(remove){
+  if(Array.isArray(node)&&typeof last==='number'){
+   if(last>=node.length)return false;
+   node.splice(last,1);return true;
+  }
+  if(!Object.prototype.hasOwnProperty.call(node,last))return false;
+  delete (node as Record<string|number,unknown>)[last];return true;
+ }
+ const old=(node as Record<string|number,unknown>)[last];
+ if(JSON.stringify(old)===JSON.stringify(value))return false;
+ (node as Record<string|number,unknown>)[last]=value;
+ return true;
+}
 function makeSheets(flow:FlowDefinitionMetadata):Sheet[] {
   const data:Record<SheetName,Row[]>={
     Manifest:[[flow.apiName,String(flow.versionNumber),digest(stable(flow)),'FlowExcelV1']],
     Nodes:flow.elements.map(node=>['UPSERT',String(node.id),node.type,node.label]),
-    Inputs:flow.elements.flatMap(node=>Object.entries(node.config??{}).map(([key,value])=>['UPSERT',String(node.id),key,JSON.stringify(value)??'null'])),
+    Inputs:flow.elements.flatMap(node=>flattenConfig(node.config??{}).map(([key,value])=>['UPSERT',String(node.id),key,JSON.stringify(value)??'null'])),
     Connections:flow.connectors.map(edge=>['UPSERT',edge.id,String(edge.from),String(edge.to),edge.label,edge.kind,edge.scheduledPath?JSON.stringify(edge.scheduledPath):'']),
     Resources:flow.resources.map(r=>['UPSERT',r.name,r.label,r.type,r.dataType,String(r.isCollection),String(r.availableForInput),String(r.availableForOutput),r.value===undefined?'':JSON.stringify(r.value)])
   };
@@ -133,8 +185,8 @@ export function previewFlowExcel(tables:FlowWorkbookTable[],original:FlowDefinit
     const [action,id,key,raw]=r;const node=draft.elements.find(n=>n.id===resolve(id));
     if(!node)throw Error('Node not found: '+id);
     if(!key||['__proto__','constructor','prototype'].includes(key))throw Error('Invalid config property.');
-    if(action==='DELETE'){delete node.config[key];changes.push('Delete input '+id+'.'+key);}
-    else if(action==='UPSERT'){const value=parseJson(raw);if(JSON.stringify(node.config[key])!==JSON.stringify(value)){node.config[key]=value;changes.push('Upsert input '+id+'.'+key);}}
+    if(action==='DELETE'){if(upsertConfigValue(node.config,key,undefined,true))changes.push('Delete input '+id+'.'+key);}
+    else if(action==='UPSERT'){const value=parseJson(raw);if(upsertConfigValue(node.config,key,value))changes.push('Upsert input '+id+'.'+key);}
     else throw Error('Action must be UPSERT or DELETE.');
   }catch(e){errors.push('Inputs row '+(i+2)+': '+String(e instanceof Error?e.message:e));}});
   const seenEdges=new Set<string>();

@@ -84,8 +84,29 @@ test('invalid rows are reported and broken graph prevents applying',()=>{
 });
 test('invalid JSON settings do not overwrite existing node config',()=>{
  const base=initial(),tables=sheets(base);
- lookup(tables,'Inputs').rows.find(r=>r.Property==='inputs')!['Value (JSON)']='invalid JSON';
+ lookup(tables,'Inputs').rows.find(r=>r.Property==='inputs.Total')!['Value (JSON)']='invalid JSON';
  const result=previewFlowExcel(tables,base,types);
  assert.ok(result.errors.some(e=>e.includes('Invalid JSON')));
  assert.deepEqual(result.draft.elements.find(n=>n.id===2)?.config,base.elements.find(n=>n.id===2)?.config);
+});
+test('nested field mappings are separate rows and can be updated without editing JSON objects',()=>{
+ const base=initial(),tables=sheets(base);
+ const item=lookup(tables,'Inputs').rows.find(r=>r['Node ID']==='2'&&r.Property==='inputs.Total')!;
+ assert.equal(item['Value (JSON)'],JSON.stringify('@state.cart.total'));
+ item['Value (JSON)']=JSON.stringify('@state.cart.subtotal');
+ const result=previewFlowExcel(tables,base,types);
+ assert.deepEqual(result.errors,[]);
+ const config=result.draft.elements.find(n=>n.id===2)?.config as {inputs:{Total:string}};
+ assert.equal(config.inputs.Total,'@state.cart.subtotal');
+ assert.equal((base.elements[1].config.inputs as Record<string,string>).Total,'@state.cart.total');
+});
+test('nested array mappings remain lossless on unchanged upload',()=>{
+ const base=initial();base.elements[1].config.assignments=[{field:'Total',value:'@state.cart.total'},
+   {field:'Customer',value:'$session.customerId'}];
+ const tables=sheets(base),rows=lookup(tables,'Inputs').rows;
+ assert.ok(rows.some(r=>r.Property==='assignments[1].value'));
+ const result=previewFlowExcel(tables,base,types);
+ assert.deepEqual(result.errors,[]);
+ assert.deepEqual(result.changes,[]);
+ assert.deepEqual(result.draft,base);
 });
