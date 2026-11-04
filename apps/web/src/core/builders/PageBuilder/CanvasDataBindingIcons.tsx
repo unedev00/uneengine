@@ -72,7 +72,7 @@ export default function CanvasDataBindingIcons({componentId,api,definitions,acti
   const overlay=root.current,host=overlay?.closest<HTMLElement>('[data-component-id]');
   if(!host)return;
   const allowed=new Map(definitions.filter(p=>p.tab==='Data'&&p.components.includes(api)&&
-   (p.kindOverrides?.[api]??p.kind)==='expression')
+   p.id!=='collectionFormula'&&(p.kindOverrides?.[api]??p.kind)==='expression')
    .map(p=>[p.id,bindingDisplayLabel(api,p.id,p.label)]));
   let frame=0;
   const position=()=>{
@@ -90,9 +90,11 @@ export default function CanvasDataBindingIcons({componentId,api,definitions,acti
     const anchor=element.dataset.mdBind==='tabCaptionFormula'?clipped:
      caption&&validRect(caption)?caption:clipped;
     const properties=(element.dataset.mdBind??'').trim().split(/\s+/).filter(Boolean);
+    const titles=(element.dataset.mdBindTitles??'').split('|');
     properties.forEach((propertyKey,index)=>{
      const label=allowed.get(propertyKey);
      if(!label)return;
+     const displayLabel=titles[index]?.trim()||label;
      const indexText=element.dataset.mdBindIndex;
      const itemIndex=indexText===undefined?undefined:Number(indexText);
      const itemId=element.dataset.mdBindItem||undefined;
@@ -105,7 +107,7 @@ export default function CanvasDataBindingIcons({componentId,api,definitions,acti
      selected.add(key);
      const pos=spot(hostRect,anchor,propertyKey,index,next);
      if(!pos)return;
-     next.push({key,propertyKey,label,x:pos.x,y:pos.y,
+     next.push({key,propertyKey,label:displayLabel,x:pos.x,y:pos.y,
       ...(perItem?{itemIndex:Number.isFinite(itemIndex)?itemIndex:undefined,itemId}: {})});
     });
    }
@@ -142,7 +144,7 @@ export default function CanvasDataBindingIcons({componentId,api,definitions,acti
    aria-label={'Edit '+icon.label+' data source'}
    onPointerDown={event=>event.stopPropagation()}
    onClick={event=>{event.preventDefault();event.stopPropagation();
-    onChoose({propertyKey:icon.propertyKey,itemIndex:icon.itemIndex,itemId:icon.itemId});}}>
+    onChoose({propertyKey:icon.propertyKey,itemIndex:icon.itemIndex,itemId:icon.itemId,displayLabel:icon.label});}}>
    <Database aria-hidden="true" size={14}/>
   </button>)}
  </div>;
