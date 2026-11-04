@@ -133,7 +133,7 @@ export default function UniversalDataLoaderPage({apiRequest,objects,onChanged}:P
     </div>
     {exportInfo&&<p role="status">{exportInfo}</p>}
     <p className="properties-help">{mode==='records'?
-     'Existing records include Id and LastModifiedDate. Keep Id to update; append new rows with a blank Id. A blank field leaves existing data unchanged; <CLEAR> explicitly clears a nullable field.':
+     'Existing records include Id and LastModifiedDate. Keep Id to update; append new rows with a blank Id. A blank field leaves existing data unchanged; &lt;CLEAR&gt; explicitly clears a nullable field.':
      'Each row uses the actual component/property keys. For example smart_cart / rowBorderColor / FALSE disables its ribbon control. Existing component values are not overwritten.'}</p>
    </section>
    <section className="metadata-card" style={{padding:16}}>
