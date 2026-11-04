@@ -149,8 +149,12 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  const compactDesign=true;
  // Independent SQL-planned view over shared controls and persisted property keys.
  // A null property key displays the fallback glyph, always disabled.
- const design2Areas=[...new Map(design2Slots.map(slot=>[slot.area,slot.areaOrder])).entries()]
-   .sort((a,b)=>a[1]-b[1]).map(([area])=>area);
+ // Dropdown contains only sections explicitly listed for this component
+ // in the approved SQL Yes/No matrix. Legacy areas are not silently added.
+ const design2Areas=[...new Set(design2SlotRules
+   .filter(rule=>rule.componentApi===api).map(rule=>rule.area))]
+   .sort((a,b)=>(design2Slots.find(slot=>slot.area===a)?.areaOrder??999)-
+                (design2Slots.find(slot=>slot.area===b)?.areaOrder??999));
  const activeDesign2Area=design2Areas.includes(design2Area)?design2Area:design2Areas[0]??'Body';
  const approvedMatrixAreas=new Set(design2SlotRules.map(rule=>rule.area));
  // A SQL slot owns its position even when its property is unavailable.
@@ -186,11 +190,14 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    }):[];
  // Column positions and widths are SQL-owned, not a flex layout of the
  // controls which happen to be enabled for the current component.
- const design2GridColumns=(row:number)=>{
-   const slots=design2Slots.filter(slot=>slot.area===activeDesign2Area&&slot.row===row);
-   const count=Math.max(0,...slots.map(slot=>slot.order));
-   return Array.from({length:count},(_,index)=>
-     (slots.find(slot=>slot.order===index+1)?.width??40)+'px').join(' ');
+ const design2GridColumns=()=>{
+   // All three rows share the same C1..C6 tracks. A narrow R1C3 must
+   // NOT move R2C4 or R3C5 left when another row has an 80px control.
+   const slots=design2Slots.filter(slot=>slot.area===activeDesign2Area);
+   return Array.from({length:6},(_,column)=>{
+     const sizes=slots.filter(slot=>slot.order===column+1).map(slot=>slot.width);
+     return Math.max(column===2||column===3||column===4?80:40,...sizes)+'px';
+   }).join(' ');
  };
  const visible=definitions.filter(p=>p.tab===tab);
  const contextualVisible=tab==='Design2'?design2Properties:visible;
@@ -488,7 +495,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
   {tab==='Design2'?<section className="smart-ribbon-group smart-design2-group"
       data-design-three-row="true" data-smart-tab="Design2" aria-label="Design 2 contextual properties">
     <div className="smart-design2-workbench">
-      <div className="smart-design2-context">
+      <div className="smart-design2-context" data-design-row={0}>
         <label className="smart-design2-area-picker">
           <span aria-hidden="true">Select it</span>
           <select className="smart-design2-area-select" aria-label="Select Design 2 area"
@@ -505,7 +512,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
       </div>
       <div className="smart-ribbon-items">
         {[1,2,3].map(row=><div key={row} className="smart-ribbon-row"
-          data-design-row={row} style={{gridTemplateColumns:design2GridColumns(row)}}>
+          data-design-row={row} style={{gridTemplateColumns:design2GridColumns()}}>
           {sectionRow(activeDesign2Area,row).map(controls)}</div>)}
       </div>
     </div>

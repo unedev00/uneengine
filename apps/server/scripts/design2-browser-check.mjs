@@ -180,14 +180,18 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  assert.equal(await page.locator('.smart-design2-group [data-property="rowBold"] button')
   .getAttribute('aria-pressed'),'true','Design 2 saved value did not reload');
 
- // Smart Tabs uses the very same Focused icon slot with a different existing key.
+ // Approved Yes/No sections are component-specific. The legacy "Tabs"
+ // section is not in the user's Smart Tabs Design 2 matrix.
  await page.locator('[data-component-id="browser-design2-tabs"]').first().click({position:{x:18,y:18}});
- await page.getByLabel('Select Design 2 area').selectOption('Tabs');
- assert.equal(await row.locator('[data-property="selectedTabColor"]').getAttribute('data-supported'),'true',
-  'Tabs Focused does not bind the existing selected-tab colour');
+ const tabsAreas=await page.getByLabel('Select Design 2 area').locator('option').allTextContents();
+ assert.deepEqual(tabsAreas,['Body'],'Smart Tabs should show only its approved Body area');
+ const tabsFocus=row.locator('[data-design-row="2"] [data-design-slot="focused"]');
+ assert.equal(await tabsFocus.getAttribute('data-supported'),'false',
+   'Do not enable an unapproved Focus Color for Smart Tabs');
+ await page.locator('[data-component-id="browser-design2-cart"]').first().click({position:{x:18,y:18}});
  await page.getByLabel('Select Design 2 area').selectOption('Row');
  assert.equal(await row.locator('[data-design-row="2"] [data-design-slot="focused"]').count(),0,
-  'Row Focus was not approved for any component and must not be invented');
+   'Row Focus was not approved for Smart Cart and must not be invented');
  const {mkdir}=await import('node:fs/promises');
  await mkdir(new URL('../artifacts/',import.meta.url),{recursive:true});
  await page.screenshot({path:new URL('../artifacts/design2-contextual-ribbon.png',import.meta.url).pathname});
