@@ -38,6 +38,18 @@ try {
  await save.click();
  await page.getByRole('status').filter({hasText:'selections saved'}).waitFor();
  assert.equal((await page.evaluate(()=>window.savedSelections)).selections[0].recordIds[0],'00000000-0000-0000-0000-000000000001');
+ await recordSearch.fill('bulk');
+ await page.getByRole('checkbox',{name:'Bulk record 55'}).waitFor();
+ for(let index=1;index<=49;index++){
+  await page.getByRole('checkbox',{name:'Bulk record '+index,exact:true}).check();
+ }
+ assert.equal(await page.getByRole('checkbox',{name:'Bulk record 50'}).isDisabled(),true,
+  'Offline briefcase must stop at 50 records per object including the already selected record');
+ assert.equal(await page.getByRole('button',{name:'Save selections'}).isEnabled(),true,
+  '50 selected records for one object must remain valid');
+ await page.getByRole('checkbox',{name:'Bulk record 1'}).uncheck();
+ assert.equal(await page.getByRole('checkbox',{name:'Bulk record 50'}).isEnabled(),true,
+  'Removing one selection must restore capacity');
  await open('tenants');
  await page.getByRole('button',{name:'New tenant',exact:true}).click();
  const tenantForm=page.getByRole('form',{name:'New tenant draft'});
