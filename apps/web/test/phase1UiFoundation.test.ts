@@ -87,3 +87,9 @@ test('Offline briefcase enforces server caps with correct whitespace parsing',()
  assert.match(offline,/total>=100/);
  assert.match(picker,/onToggle\(record\.Id, event\.target\.checked\)/);
 });
+
+test('Related records and recycle bin never render inverted ranges on empty pages',()=>{
+ const records=read('../src/core/records/RecordWorkspace/recordWorkspaceViews.tsx');
+ assert.match(records,/loaded === 0 \? `0–0 of \$\{total\}`/);
+ assert.match(records,/recycleRows\.length === 0 \? `0–0 of \$\{recycleTotal\}`/);
+});
