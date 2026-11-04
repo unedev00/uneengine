@@ -524,9 +524,18 @@ function CompanySettings({ canManage, section = 'general' }: { canManage: boolea
   const previousValue = useRef<{ draft: CurrencySettingsMetadata; corporateCode: string } | null>(null);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [currencyRetry,setCurrencyRetry]=useState(0);
+  const currencyFailureMessage=(failure:unknown)=>{
+    const detail=failure instanceof Error?failure.message:String(failure);
+    return /SQL|database|postgres|non-JSON|HTTP 50[0234]|upstream|relation .+ does not exist/i.test(detail)
+      ?'Currency settings are temporarily unavailable. Please retry.':detail;
+  };
 
   useEffect(() => {
     let active = true;
+    setLoading(true);
+    setLoaded(false);
+    setError('');
     void apiRequest<CurrencySettingsMetadata>('/metadata/currencies')
       .then((settings) => {
         if (active) {
@@ -536,13 +545,13 @@ function CompanySettings({ canManage, section = 'general' }: { canManage: boolea
         }
       })
       .catch((loadError: unknown) => {
-        if (active) setError(loadError instanceof Error ? loadError.message : String(loadError));
+        if (active) setError(currencyFailureMessage(loadError));
       })
       .finally(() => {
         if (active) setLoading(false);
       });
     return () => { active = false; };
-  }, []);
+  }, [currencyRetry]);
 
   const beginEdit = (row: string) => {
     if (!canManage || saving || loading || editingRow) return;
@@ -623,7 +632,7 @@ function CompanySettings({ canManage, section = 'general' }: { canManage: boolea
       setEditingRow(null);
       setNotice('Company currency settings saved.');
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : String(saveError));
+      setError(currencyFailureMessage(saveError));
     } finally {
       setSaving(false);
     }
@@ -668,6 +677,7 @@ function CompanySettings({ canManage, section = 'general' }: { canManage: boolea
         <div><h2>Currency & Tax</h2>
           <p>Rates express units of corporate currency per one unit of the active currency.</p></div>
       </div>
+      {!loading&&!loaded&&<button type="button" className="btn" onClick={()=>setCurrencyRetry(value=>value+1)}>Retry loading currency settings</button>}
       {loading ? <p className="permission-help">Loading currency settings…</p> : loaded ? <>
         <div className="settings-read-first-section">
           {editingRow === 'corporate'
