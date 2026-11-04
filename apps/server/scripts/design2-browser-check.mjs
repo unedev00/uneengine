@@ -5,10 +5,12 @@ import {readFile} from 'node:fs/promises';
  * Uses only disposable CI tenant data from builder-browser-smoke.mjs.
  */
 export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
- const migration=await readFile(new URL('../src/system-support/migrations/20270309-design2-contextual-ribbon.sql',import.meta.url),'utf8');
- // Replay explicitly to validate upgrade idempotency, not just presence in source.
- await db.query(migration);
- await db.query(migration);
+ const approved=await readFile(new URL('../src/system-support/migrations/20271104-zz-design2-exact-approved-matrix.sql',import.meta.url),'utf8');
+ // Production applies the legacy migration before this corrective migration.
+ // Replay the CURRENT contract, not a superseded positional insert which can
+ // collide with the exact R1..R3 unique-position constraint.
+ await db.query(approved);
+ await db.query(approved);
  const listed=await db.query(`SELECT area,slot_key,property_key,row_no,order_no,width_px,height_px
    FROM md_builder_design2_slots ORDER BY area_order,row_no,order_no`);
  // Shared areas are extensible: retain the legacy baseline and enforce unique SQL slots.
@@ -19,15 +21,23 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  assert.equal(new Set(listed.rows.map(row=>row.area+'/'+row.row_no+'/'+row.order_no)).size,listed.rows.length,
   'Duplicate Design 2 ribbon positions after replay');
  const slot=(area,key)=>listed.rows.find(row=>row.area===area&&row.slot_key===key);
- assert.equal(slot('Row','focused')?.property_key,'selectedRowColor');
+ assert.equal(slot('Row','focused'),undefined,'Row Focus was not approved in the table');
+ assert.equal(slot('Table','focused')?.row_no,2,'Table Focus must be R2');
+ assert.equal(slot('Table','focused')?.order_no,1,'Table Focus must be C1');
+ assert.equal(slot('Body','fill')?.row_no,1,'Body Color must be R1');
+ assert.equal(slot('Body','fill')?.order_no,1,'Body Color must be C1');
+ assert.equal(slot('Body','radius')?.row_no,1,'Body Radius must be R1');
+ assert.equal(slot('Body','radius')?.order_no,5,'Body Radius must be C5');
+ assert.equal(slot('Body','radius')?.width_px,80,'Body Radius must be 80px');
  assert.equal(slot('Focused','selection')?.property_key,'selectionMode');
  assert.equal(slot('Row Supporting','text')?.property_key,'rowSupportingTextColor');
  assert.equal(slot('Custom Button 1','shape')?.property_key,'customButton1Shape');
  assert.equal(slot('Custom Button 2','shape')?.property_key,'customButton2Shape');
 
  assert.equal(slot('Tabs','focused')?.property_key,'selectedTabColor');
- assert.equal(slot('Row','fill')?.property_key,null,'Row must inherit Table background');
- assert.equal(slot('Body','wrap')?.property_key,'wrapText','Body Wrap Text must remain disabled');
+ assert.equal(slot('Row','fill')?.property_key,'backgroundColor',
+  'Approved Row Body Color must occupy its own fixed slot');
+ assert.equal(slot('Body','wrap')?.property_key,'wrapText','Body Wrap must occupy R3C4');
  const definitions=await db.query(`SELECT property_key,tab FROM md_builder_shared_properties
    WHERE property_key IN ('backgroundColor','rowBold','summary2Alignment','tableBackgroundColor')`);
  assert.equal(definitions.rows.find(row=>row.property_key==='backgroundColor')?.tab,'Design',
@@ -112,9 +122,10 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  assert.equal(await area.inputValue(),'Body');
  await area.selectOption('Row');
  const row=page.locator('.smart-design2-group');
- const focus=row.locator('[data-property="selectedRowColor"]');
- await focus.waitFor();
- assert.equal(await focus.getAttribute('data-supported'),'true','Row Focused wrongly disabled');
+ const rowFill=row.locator('[data-design-row="1"] [data-design-slot="fill"]');
+ await rowFill.waitFor();
+ assert.equal(await rowFill.getAttribute('data-design-column'),'1',
+  'Row Body Color must remain R1C1 even when a renderer hook is unavailable');
  const rowBold=row.locator('[data-property="rowBold"] button');
  await rowBold.waitFor();
  assert.equal(await rowBold.isDisabled(),false,'Row Bold should be enabled');
@@ -131,8 +142,11 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  // Area switching must not change the selected component or old Design view.
  await area.selectOption('Table');
  assert.equal(await row.locator('[data-property="tableBackgroundColor"]').getAttribute('data-supported'),'true');
+ assert.equal(await row.locator('[data-design-row="2"] [data-design-slot="focused"]')
+   .getAttribute('data-design-column'),'1','Table Focus must remain at R2C1');
  await area.selectOption('Body');
- assert.equal(await row.locator('[data-property="wrapText"]').getAttribute('data-supported'),'false');
+ assert.equal(await row.locator('[data-design-row="3"] [data-design-slot="wrap"]')
+   .getAttribute('data-supported'),'false','Cart Body Wrap was not approved');
  await page.getByRole('tab',{name:'Design',exact:true}).click();
  await page.locator('.smart-ribbon-group[aria-label="Row"] [data-property="rowLabelColor"]').waitFor();
  assert.equal(await page.locator('.smart-ribbon-group[aria-label="Row"] [data-property="rowBold"]').count(),0,
@@ -172,8 +186,8 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  assert.equal(await row.locator('[data-property="selectedTabColor"]').getAttribute('data-supported'),'true',
   'Tabs Focused does not bind the existing selected-tab colour');
  await page.getByLabel('Select Design 2 area').selectOption('Row');
- assert.equal(await row.locator('[data-property="selectedRowColor"]').getAttribute('data-supported'),'false',
-  'Smart Tabs should not enable selected-row colour');
+ assert.equal(await row.locator('[data-design-row="2"] [data-design-slot="focused"]').count(),0,
+  'Row Focus was not approved for any component and must not be invented');
  const {mkdir}=await import('node:fs/promises');
  await mkdir(new URL('../artifacts/',import.meta.url),{recursive:true});
  await page.screenshot({path:new URL('../artifacts/design2-contextual-ribbon.png',import.meta.url).pathname});

@@ -3493,6 +3493,7 @@ function PageBuilder({
                 ribbonTab==='Component Design 2'?'Design2':'Design'}
               api={selected.type.slice(7)} definitions={ribbonCatalog.properties}
               design2Slots={ribbonCatalog.design2Slots}
+              design2SlotRules={ribbonCatalog.design2SlotRules}
               properties={selected.properties} objects={objects} pageObjectApiName={page.targetObject}
               componentId={selected.id} pageComponents={page.components}
               sharedPropertyIds={ribbonSharedPropertyIds} mixedPropertyIds={ribbonMixedPropertyIds}

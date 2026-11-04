@@ -3,7 +3,7 @@ import {createPortal} from 'react-dom';
 import {AlignLeft,AlignCenter,AlignRight,Bold,WrapText,ArrowLeftRight,ArrowUpDown,ImagePlus,SlidersHorizontal,Eye,EyeOff} from 'lucide-react';
 import {RibbonTextSizeIcon,RibbonCornerRadiusIcon} from './SmartRibbonIcons';
 import type {ObjectMetadata} from '../../metadata/Definitions/metadata';
-import type {UneRibbonProperty,UneBuilderTab,Design2Slot} from './uneBuilderPropertyInventory';
+import type {UneRibbonProperty,UneBuilderTab,Design2Slot,Design2SlotRule} from './uneBuilderPropertyInventory';
 import RibbonColorPalette from './RibbonColorPalette';
 import {uploadTenantImageFile} from '../ComponentProperties/TenantMediaPicker';
 import {scopedFieldRule,type ScopedFieldFilter} from '../../pages/PageRuntime/fieldScopedRecordFilters';
@@ -28,7 +28,7 @@ type Props={tab:UneBuilderTab;api:string;definitions:readonly UneRibbonProperty[
  /** For grouped/multiple components, expose only the intersection of SQL properties. */
  sharedPropertyIds?:readonly string[];mixedPropertyIds?:readonly string[];selectedApis?:readonly string[];
  pageComponents?:readonly {id:string;properties:Record<string,unknown>}[];componentId?:string;
- design2Slots?:readonly Design2Slot[];componentVisible?:boolean;
+ design2Slots?:readonly Design2Slot[];design2SlotRules?:readonly Design2SlotRule[];componentVisible?:boolean;
  onVisibleChange?:(visible:boolean)=>void;};
 const weekdays=[['sun','Sun'],['mon','Mon'],['tue','Tue'],['wed','Wed'],['thu','Thu'],['fri','Fri'],['sat','Sat']] as const;
 const fallback=(value:unknown)=>typeof value==='string'?value:'';
@@ -38,7 +38,7 @@ const cartSummaryLabels:Record<string,{key:string;slot:string}>={
  taxValue:{key:'taxLabel',slot:'Summary 3'},
  discountValue:{key:'discountLabel',slot:'Summary 4'}
 };
-export default function SmartRibbon({tab,api,definitions,properties,onChange,objects,pageObjectApiName='',position,onPositionChange,layoutMode,sharedPropertyIds,mixedPropertyIds,selectedApis,pageComponents=[],componentId='',design2Slots=[],componentVisible=true,onVisibleChange}:Props){
+export default function SmartRibbon({tab,api,definitions,properties,onChange,objects,pageObjectApiName='',position,onPositionChange,layoutMode,sharedPropertyIds,mixedPropertyIds,selectedApis,pageComponents=[],componentId='',design2Slots=[],design2SlotRules=[],componentVisible=true,onVisibleChange}:Props){
  const uploadInput=useRef<HTMLInputElement>(null);
  const [uploadBusy,setUploadBusy]=useState(false);
  const [uploadError,setUploadError]=useState('');
@@ -152,18 +152,46 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  const design2Areas=[...new Map(design2Slots.map(slot=>[slot.area,slot.areaOrder])).entries()]
    .sort((a,b)=>a[1]-b[1]).map(([area])=>area);
  const activeDesign2Area=design2Areas.includes(design2Area)?design2Area:design2Areas[0]??'Body';
+ const approvedMatrixAreas=new Set(design2SlotRules.map(rule=>rule.area));
+ // A SQL slot owns its position even when its property is unavailable.
+ // Never compact away an unsupported/missing slot: the same R/C grid applies
+ // to every component, while only SQL-enabled properties can be edited.
  const design2Properties=tab==='Design2'?design2Slots
    .filter(slot=>slot.area===activeDesign2Area)
    .map(slot=>{
-     const original=definitions.find(p=>p.id===(slot.propertyKey??slot.fallbackKey));
-     if(!original)return null;
+     const approved=design2SlotRules.find(rule=>
+       rule.componentApi===api&&rule.area===slot.area&&rule.slotKey===slot.slotKey);
+     // In specified areas ONLY the explicit Yes cells may be enabled.
+     // A missing Yes rule leaves an inert glyph occupying the SAME R/C position.
+     const propertyKey=approvedMatrixAreas.has(slot.area)
+       ?approved?.propertyKey:slot.propertyKey;
+     const assigned=propertyKey?definitions.find(p=>p.id===propertyKey):undefined;
+     const fallbackDefinition=definitions.find(p=>p.id===slot.fallbackKey);
+     const fallbackKind:UneRibbonProperty['kind']=
+       ['fill','border','focused','text'].includes(slot.slotKey)?'color':
+       slot.slotKey==='alignment'?'align':
+       slot.slotKey==='shadow'?'shadow':
+       ['bold','wrap'].includes(slot.slotKey)?'boolean':
+       ['selection','shape','textMode'].includes(slot.slotKey)?'choice':'number';
+     const original:UneRibbonProperty=assigned??fallbackDefinition??{
+       id:slot.fallbackKey,label:slot.slotKey,tab:'Design2',group:activeDesign2Area,
+       kind:fallbackKind,components:[]
+     };
      return {...original,label:slot.slotKey==='focused'?'Focused Color':original.label,
        tab:'Design2' as const,group:activeDesign2Area,
-       components:slot.propertyKey?original.components:[],
+       components:assigned?assigned.components:[],
        designRow:slot.row,designOrder:slot.order,
        designWidth:slot.width,designHeight:slot.height,designCaptionWidth:0,
        designDisplay:original.kind==='align'||original.kind==='shadow'?'dropdown' as const:original.designDisplay};
-   }).filter((p):p is NonNullable<typeof p>=>p!==null):[];
+   }):[];
+ // Column positions and widths are SQL-owned, not a flex layout of the
+ // controls which happen to be enabled for the current component.
+ const design2GridColumns=(row:number)=>{
+   const slots=design2Slots.filter(slot=>slot.area===activeDesign2Area&&slot.row===row);
+   const count=Math.max(0,...slots.map(slot=>slot.order));
+   return Array.from({length:count},(_,index)=>
+     (slots.find(slot=>slot.order===index+1)?.width??40)+'px').join(' ');
+ };
  const visible=definitions.filter(p=>p.tab===tab);
  const contextualVisible=tab==='Design2'?design2Properties:visible;
  // Keep active-record scope metadata and persisted settings intact, but do not
@@ -222,6 +250,8 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  // Geometry only. Keep every property, icon, dropdown and persisted value;
  // fit their existing three rows without reserving space for empty columns.
  const controlWidth=(p:UneRibbonProperty)=>{
+   // Design 2 slot dimensions are exact SQL instructions, never normalized to 64px.
+   if(tab==='Design2'&&p.designWidth!==undefined)return p.designWidth;
    // Reserve the exact SQL 30px input track; a separate 45px caption is added.
    if(p.id==='tabIndex')return p.designWidth??30;
    // Shape's 94px SQL width is exact, unlike other compact choice tracks.
@@ -256,6 +286,8 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    group.length*5.5+16
  ));
  const controls=(property:UneRibbonProperty)=>{
+   const slotPlacement=tab==='Design2'?design2Slots.find(slot=>
+     slot.area===activeDesign2Area&&slot.row===property.designRow&&slot.order===property.designOrder):undefined;
    const supported=property.components.includes(api)&&(!sharedPropertyIds||sharedPropertyIds.includes(property.id));
    const kind=api==='smart_calendar'&&property.id==='shadow'
      ? 'shadow' : property.kindOverrides?.[api]??property.kind;
@@ -434,12 +466,15 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
      title={value?title+': '+String(value):title} disabled={!enabled}
      value={String(value)} onChange={e=>write(e.target.value)}><option value="">Select</option>
      {options.map(s=><option value={s} key={s}>{s.replaceAll('-',' ')}</option>)}</select>;
-   return <div key={property.id} className={'smart-property'+(!enabled?' disabled':'')} data-property={property.id}
+   return <div key={slotPlacement?slotPlacement.area+':'+slotPlacement.slotKey:property.id}
+       className={'smart-property'+(!enabled?' disabled':'')} data-property={property.id}
+       data-design-slot={slotPlacement?.slotKey} data-design-column={slotPlacement?.order}
        data-supported={supported} data-kind={kind} data-numeric-icon={hasNumericIcon?'true':'false'}
        data-design-caption={compactDesign&&Boolean(property.designCaptionWidth)?'true':'false'}
        style={compactDesign?{'--smart-control-width':controlWidth(property)+'px',
          '--smart-caption-width':(property.designCaptionWidth??0)+'px',
-         '--smart-control-height':(property.designHeight??26)+'px'} as CSSProperties:undefined}
+         '--smart-control-height':(property.designHeight??26)+'px',
+         ...(slotPlacement?{'--smart-slot-column':slotPlacement.order}: {})} as CSSProperties:undefined}
        title={!enabled?'Applies to: '+property.components.map(api=>api.replace(/^smart_/,'' )).join(', '):title}>
        <span className="smart-label">{shortLabel}</span>{editor}</div>;
  };
@@ -452,8 +487,8 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
   {uploadError&&<div className="smart-upload-error" role="alert" title={uploadError}>{uploadError}</div>}
   {tab==='Design2'?<section className="smart-ribbon-group smart-design2-group"
       data-design-three-row="true" data-smart-tab="Design2" aria-label="Design 2 contextual properties">
-    <div className="smart-ribbon-items">
-      <div className="smart-ribbon-row smart-design2-top-row" data-design-row={1}>
+    <div className="smart-design2-workbench">
+      <div className="smart-design2-context">
         <label className="smart-design2-area-picker">
           <span aria-hidden="true">Select it</span>
           <select className="smart-design2-area-select" aria-label="Select Design 2 area"
@@ -467,15 +502,12 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
           onClick={()=>onVisibleChange?.(!componentVisible)}>
           {componentVisible?<Eye size={17}/>:<EyeOff size={17}/>}
         </button>
-        {(['shapeId','shapeFill'] as const).map((id,index)=>{
-          const original=definitions.find(property=>property.id===id);
-          return original?controls({...original,tab:'Design2',group:'Shape',
-            designRow:1,designOrder:index+1,designWidth:id==='shapeId'?94:40,
-            designHeight:26,designCaptionWidth:0}):null;
-        })}
       </div>
-      {[2,3].map(row=><div key={row} className="smart-ribbon-row"
-        data-design-row={row}>{sectionRow(activeDesign2Area,row).map(controls)}</div>)}
+      <div className="smart-ribbon-items">
+        {[1,2,3].map(row=><div key={row} className="smart-ribbon-row"
+          data-design-row={row} style={{gridTemplateColumns:design2GridColumns(row)}}>
+          {sectionRow(activeDesign2Area,row).map(controls)}</div>)}
+      </div>
     </div>
     <span className="smart-ribbon-caption">{activeDesign2Area}</span>
   </section>:tab==='Data'?<>
