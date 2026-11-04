@@ -7,7 +7,7 @@ test('Design 2 replaces the old Arrange and Grok tabs without changing canvas co
  const arrange=readFileSync(new URL('../src/core/builders/PageBuilder/ArrangeRibbon.tsx',import.meta.url),'utf8');
  assert.match(page,/'Component Design 2','Component Action','Advanced','Preview'/);
  assert.doesNotMatch(page,/ribbonTab==='Grok'/);
- assert.match(page,/<Design2CanvasActions/);
+ assert.match(page,/design2Arrange=\{canvasArrangeProps\}/);
  assert.match(page,/onAlign=\\{alignSelected\\}/);
  assert.match(page,/onDistribute=\\{distributeSelected\\}/);
  assert.match(page,/onGroup=\\{wrapSelectedInContainer\\}/);
