@@ -169,6 +169,8 @@ import PageBuilderRibbonMetadataPager from './PageBuilderRibbonMetadataPager';
 import UniversalRibbonInventory from './UniversalRibbonInventory';
 import UneBuilderRibbon from './UneBuilderRibbon';
 import SmartRibbon from './SmartRibbon';
+import CanvasDataBindingIcons from './CanvasDataBindingIcons';
+import type {CanvasBindingTarget} from './canvasDataBindingTargets';
 import {supportsSmartActionEvent} from './SmartEventActionsRibbon';
 import SmartInsertRibbon from './SmartInsertRibbon';
 import ArrangeRibbon,{type ArrangeRibbonProps} from './ArrangeRibbon';
@@ -592,6 +594,7 @@ function PageBuilder({
   const ribbonStripRef=useRef<HTMLDivElement|null>(null);
   const [selectedConversationPart,setSelectedConversationPart]=useState('parent');
   useEffect(()=>setSelectedConversationPart('parent'),[selectedId]);
+  const [canvasBinding,setCanvasBinding]=useState<CanvasBindingTarget|null>(null);
   const [ribbonTab, setRibbonTab] = useState<'Add Block' | 'Component Content' | 'Component Design 2' | 'Component Style' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Component Responsive' | 'Preview' | 'Filters' | 'Source' | 'Arrange' | 'Advanced'>('Add Block');
   const componentNeedsData = (type: string) => {
     const metadata = type.startsWith('Custom:') ? findRegisteredComponent(libraryComponents,type.slice('Custom:'.length),'page') : undefined;
@@ -599,6 +602,13 @@ function PageBuilder({
       &&(ribbonCatalog?.properties??[]).some(row=>row.tab==='Data'&&row.components.includes(type.slice(7) as UneBuilderApi)))
       || Boolean(metadata?.propertyDefinitions?.some(definition=>definition.kind==='OBJECT'||definition.kind==='OBJECT_FIELD'))
       || /^(?:Record Field|Record Detail|Related List|List View|Report Chart|Dashboard)$/.test(type);
+  };
+  const selectCanvasDataBinding=(componentId:string,target:Omit<CanvasBindingTarget,'componentId'|'requestId'>)=>{
+    setSelectedId(componentId);setSelectionIds([componentId]);setSelectedRegion(null);
+    setCanvasBinding(previous=>({...target,componentId,requestId:(previous?.requestId??0)+1}));
+    setRibbonCollapsed(false);
+    setRibbonTab('Component Data');setPageSettingsOpen(false);
+    openComponentInspector('Data & Actions');
   };
   const selectRibbonTab = (tab: typeof ribbonTab) => {
     setRibbonTab(tab);
@@ -2538,6 +2548,7 @@ function PageBuilder({
     const contentHostProps = ContentHost === 'div' ? {className:'free-canvas-content-viewport'} : {};
     return <div
       key={component.id}
+      data-component-id={component.id}
       data-builder-editor={!previewMode&&!libraryPreview?'true':undefined}
       data-page-appearance={isLayoutType(component.type) ? 'layout' : pageAppearanceTarget(component.type)}
       data-page-style={pageAppearanceStyleKeys(visualStyle)}
@@ -2576,6 +2587,7 @@ function PageBuilder({
             const hit=event.target as HTMLElement;
             // Nested components select themselves. The builder's own toolbar,
             // resize handles and drop zones must retain their editing controls.
+            if(hit.closest('.canvas-data-bindings'))return;
             if(hit.closest('[data-component-id]')!==event.currentTarget
               ||hit===event.currentTarget
               ||hit.closest('.canvas-element-actions,.canvas-drop-zone,.free-canvas-resize-handle,.template-component-resize-handle,.template-placement-handle'))return;
@@ -2811,6 +2823,12 @@ function PageBuilder({
         && !['Tabs','Accordion'].includes(component.type)
         && <div className="canvas-design-interaction-shield" aria-hidden="true" data-canvas-select-only="true"/>}
       </ContentHost>
+      {!previewMode&&!libraryPreview&&selectedId===component.id&&
+        ribbonSelectedMembers.length===1&&ribbonCatalog&&customDefinition?.apiName&&
+        ribbonCatalog.components.includes(customDefinition.apiName)&&
+        <CanvasDataBindingIcons componentId={component.id} api={customDefinition.apiName}
+          definitions={ribbonCatalog.properties} active={canvasBinding}
+          onChoose={target=>selectCanvasDataBinding(component.id,target)}/>}
       {!libraryPreview && page.layoutMode === 'template' && selectedId === component.id && !previewMode && !isCanvasLocked(component)
         && (['move', 'rotate'] as const).map(mode => <button key={mode} type="button"
           className={`template-placement-handle template-placement-${mode}`}
@@ -3025,6 +3043,7 @@ function PageBuilder({
                 design2Arrange={canvasArrangeProps}
                 properties={selected.properties} objects={objects} pageObjectApiName={page.targetObject}
                 componentId={selected.id} pageComponents={page.components}
+                canvasBinding={canvasBinding}
                 sharedPropertyIds={ribbonSharedPropertyIds} mixedPropertyIds={ribbonMixedPropertyIds}
                 selectedApis={ribbonSelectedMembers.map(item=>item.type.startsWith('Custom:')?item.type.slice(7):item.type)}
                 onChange={(properties:Record<string,unknown>)=>{
