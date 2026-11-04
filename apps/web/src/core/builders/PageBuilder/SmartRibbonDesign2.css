@@ -98,75 +98,6 @@
   opacity:.46!important;
 }
 
-/* Four compact lines (section picker + the three approved property rows), scoped to Design 2.
-   Keep all original Design tab selectors and dimensions exactly as they were. */
-.office-builder-ribbon:has(.smart-design2-ribbon){
- --page-ribbon-content-height:146px;
- --page-ribbon-scroll-strip-height:159px;
-}
-.office-builder-ribbon #page-builder-tab-content>.smart-ribbon.smart-design2-ribbon[data-three-row="true"]{
- height:146px!important;min-height:146px!important;max-height:146px!important;
-}
-.office-builder-ribbon #page-builder-tab-content
- >.smart-ribbon.smart-design2-ribbon>.smart-ribbon-group.smart-design2-group{
- --smart-section-width:410px;
- box-sizing:border-box!important;flex:0 0 410px!important;
- width:410px!important;min-width:410px!important;max-width:410px!important;
- height:146px!important;min-height:146px!important;max-height:146px!important;
-}
-.office-builder-ribbon #page-builder-tab-content
- .smart-design2-group>.smart-ribbon-items{
- height:116px!important;min-height:116px!important;max-height:116px!important;
- gap:4px!important;
-}
-.office-builder-ribbon #page-builder-tab-content
- .smart-design2-group .smart-design2-toolbar-header{
- display:flex;flex:0 0 26px;align-items:center;gap:14px;
- height:26px;min-height:26px;max-height:26px;width:max-content;
-}
-.office-builder-ribbon #page-builder-tab-content
- .smart-design2-group .smart-design2-area-picker{
- flex:0 0 284px!important;width:284px!important;
-}
-.office-builder-ribbon #page-builder-tab-content
- .smart-design2-group .smart-design2-visibility{
- flex:0 0 40px!important;width:40px!important;max-width:40px!important;
- border:1px solid #a5c3ed!important;border-radius:4px!important;
- background:#dceeff!important;color:#1c65ad!important;
-}
-.office-builder-ribbon #page-builder-tab-content
- .smart-design2-group .smart-ribbon-row.smart-design2-property-row{
- display:grid!important;flex:0 0 26px!important;grid-template-rows:26px!important;
- align-items:center!important;justify-content:start!important;
- column-gap:4px!important;row-gap:0!important;max-width:none!important;
- width:max-content!important;
-}
-.office-builder-ribbon #page-builder-tab-content
- .smart-design2-group .smart-design2-property-row>.smart-property{
- grid-row:1!important;justify-self:start!important;
-}
-.office-builder-ribbon #page-builder-tab-content
- .smart-design2-group .design2-icon-trigger{
- box-sizing:border-box;display:flex;align-items:center;justify-content:center;
- gap:1px;padding:1px;min-width:0;width:100%;height:26px;
- border:1px solid #afc5df;border-radius:4px;background:#fff;
- color:#163e63;cursor:pointer;
-}
-.office-builder-ribbon #page-builder-tab-content
- .smart-design2-group .design2-icon-trigger:disabled{opacity:.45;cursor:not-allowed}
-.design2-icon-popup{
- position:fixed;z-index:10000;display:flex;flex-direction:column;
- min-width:130px;gap:2px;padding:3px;border:1px solid #b7c9df;
- border-radius:4px;background:#fff;box-shadow:0 6px 18px #1e375433;
-}
-.design2-icon-popup>button{
- box-sizing:border-box;display:flex;align-items:center;gap:10px;text-align:left;
- width:100%;min-height:30px;padding:4px 8px;border:0;border-radius:3px;
- background:#fff;color:#213c5c;cursor:pointer;font:12px "Segoe UI",Arial,sans-serif;
-}
-.design2-icon-popup>button:is(:hover,.is-selected){background:#daebfe;}
-.design2-icon-popup>button:focus-visible{outline:2px solid #1e79cb}
-
 /* Design 2 is a fixed SQL row/column matrix. Disabled slots retain their
  * reserved cell instead of flex-compacting the enabled controls to the left. */
 .office-builder-ribbon #page-builder-tab-content
@@ -389,3 +320,26 @@
   min-height:24px!important;
   max-height:24px!important;
 }
+
+/* Design 2 contextual icon menus; no changes to the approved grid geometry. */
+.office-builder-ribbon #page-builder-tab-content
+ .smart-design2-group .design2-icon-trigger{
+ box-sizing:border-box;display:flex;align-items:center;justify-content:center;
+ gap:1px;padding:1px;min-width:0;width:100%;height:26px;
+ border:1px solid #afc5df;border-radius:4px;background:#fff;
+ color:#163e63;cursor:pointer;
+}
+.office-builder-ribbon #page-builder-tab-content
+ .smart-design2-group .design2-icon-trigger:disabled{opacity:.45;cursor:not-allowed}
+.design2-icon-popup{
+ position:fixed;z-index:10000;display:flex;flex-direction:column;
+ min-width:130px;gap:2px;padding:3px;border:1px solid #b7c9df;
+ border-radius:4px;background:#fff;box-shadow:0 6px 18px #1e375433;
+}
+.design2-icon-popup>button{
+ box-sizing:border-box;display:flex;align-items:center;gap:10px;text-align:left;
+ width:100%;min-height:30px;padding:4px 8px;border:0;border-radius:3px;
+ background:#fff;color:#213c5c;cursor:pointer;font:12px "Segoe UI",Arial,sans-serif;
+}
+.design2-icon-popup>button:is(:hover,.is-selected){background:#daebfe;}
+.design2-icon-popup>button:focus-visible{outline:2px solid #1e79cb}
