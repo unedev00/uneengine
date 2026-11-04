@@ -4,8 +4,74 @@ import type {UneRibbonProperty} from './uneBuilderPropertyInventory';
 import type {CanvasBindingTarget} from './canvasDataBindingTargets';
 import './CanvasDataBindingIcons.css';
 
-type IconPosition={key:string;propertyKey:string;label:string;x:number;y:number;itemIndex?:number;itemId?:string;fallback?:boolean};
-/** One editor-only overlay for every component. The runtime never imports it. */
+type Target=Pick<CanvasBindingTarget,'propertyKey'|'itemIndex'|'itemId'>;
+type IconPosition=Target&{key:string;label:string;x:number;y:number};
+type Rect={left:number;top:number;right:number;bottom:number;width:number;height:number};
+const ICON_SIZE=22;
+const SPACING=4;
+const labels:Record<string,Record<string,string>>={
+ smart_tabs:{tabCaptionFormula:'Tab caption',textSource:'Tab caption',collectionFormula:'Tabs data source'},
+ smart_lookup:{label:'Search placeholder',lookupValueFormula:'Search value',textSource:'Result text',
+  collectionFormula:'Lookup results source'},
+ smart_cart:{label:'Cart title',collectionFormula:'Cart items source',textSource:'Product name',
+  imageSource:'Product image',cartSupportingSource:'Item count / supporting text'},
+ smart_calendar:{selectedDate:'Selected date'},
+ smart_card_grid:{collectionFormula:'Product items source',textSource:'Product title'},
+ smart_table:{textSource:'Table data source'},
+ smart_navigation:{collectionFormula:'Navigation items source',textSource:'Item caption'}
+};
+const validRect=(r:Rect)=>Number.isFinite(r.left)&&Number.isFinite(r.top)&&r.width>0&&r.height>0;
+const overlaps=(a:{x:number;y:number},b:{x:number;y:number})=>
+ Math.abs(a.x-b.x)<ICON_SIZE+SPACING&&Math.abs(a.y-b.y)<ICON_SIZE+SPACING;
+function clipRect(element:HTMLElement,host:HTMLElement):Rect|null{
+ const actual=element.getBoundingClientRect();
+ if(!validRect(actual))return null;
+ let left=actual.left,top=actual.top,right=actual.right,bottom=actual.bottom;
+ for(let node=element.parentElement;node&&node!==host;node=node.parentElement){
+  const style=getComputedStyle(node);
+  if(!/(auto|scroll|hidden|clip)/.test(style.overflowX+' '+style.overflowY))continue;
+  const clip=node.getBoundingClientRect();
+  left=Math.max(left,clip.left);top=Math.max(top,clip.top);
+  right=Math.min(right,clip.right);bottom=Math.min(bottom,clip.bottom);
+ }
+ if(right-left<8||bottom-top<8)return null;
+ return {left,top,right,bottom,width:right-left,height:bottom-top};
+}
+function textRect(element:HTMLElement):Rect|null{
+ // Bind an icon to the visible caption, rather than the far edge of a large
+ // card, column or container. Inputs have no measurable caption text nodes.
+ for(const node of element.childNodes){
+  if(node.nodeType!==Node.TEXT_NODE||!(node.textContent??'').trim())continue;
+  const range=document.createRange();
+  range.selectNodeContents(node);
+  const rect=range.getBoundingClientRect();
+  if(validRect(rect))return rect;
+ }
+ return null;
+}
+function spot(rect:Rect,anchor:Rect,propertyKey:string,index:number,used:IconPosition[]){
+ const top=anchor.top-rect.top;
+ const middle=top+(anchor.height-ICON_SIZE)/2;
+ const right=anchor.right-rect.left;
+ const left=anchor.left-rect.left;
+ const candidates:{x:number;y:number}[]=[
+  // Tabs always keep their source icon in their own caption box.
+  ...(propertyKey==='tabCaptionFormula'?[{x:right-ICON_SIZE-2,y:top+2}]:[]),
+  {x:right+SPACING+index*(ICON_SIZE+SPACING),y:middle},
+  {x:right-ICON_SIZE-2-index*(ICON_SIZE+SPACING),y:top+2},
+  {x:left-ICON_SIZE-SPACING-index*(ICON_SIZE+SPACING),y:middle},
+  {x:left+2+index*(ICON_SIZE+SPACING),y:top+2}
+ ];
+ for(const candidate of candidates){
+  if(candidate.x<2||candidate.y<2||candidate.x+ICON_SIZE>rect.width-2||
+     candidate.y+ICON_SIZE>rect.height-2)continue;
+  if(used.some(other=>overlaps(other,candidate)))continue;
+  return candidate;
+ }
+ return null; // Never manufacture a grid of unanchored fallback icons.
+}
+/** Builder-only overlay. Metadata selects eligible properties; visible runtime
+ * field anchors select their actual positions. No icon exists without a field. */
 export default function CanvasDataBindingIcons({componentId,api,definitions,active,onChoose}:{
  componentId:string;api:string;definitions:readonly UneRibbonProperty[];
  active?:CanvasBindingTarget|null;
@@ -17,87 +83,75 @@ export default function CanvasDataBindingIcons({componentId,api,definitions,acti
   const overlay=root.current,host=overlay?.closest<HTMLElement>('[data-component-id]');
   if(!host)return;
   const allowed=new Map(definitions.filter(p=>p.tab==='Data'&&p.components.includes(api)&&
-   (p.kindOverrides?.[api]??p.kind)==='expression').map(p=>[p.id,p.label]));
-  const content=host.querySelector<HTMLElement>('.free-canvas-content-viewport')||
-   host.querySelector<HTMLElement>('.smart-runtime')||
-   host.querySelector<HTMLElement>('.smart-table-root')||host;
+   (p.kindOverrides?.[api]??p.kind)==='expression')
+   .map(p=>[p.id,labels[api]?.[p.id]??p.label]));
   let frame=0;
   const position=()=>{
    frame=0;
-   const rect=host.getBoundingClientRect();
+   const hostRect=host.getBoundingClientRect();
+   if(!validRect(hostRect)){setIcons([]);return;}
    const next:IconPosition[]=[];
-   const encountered=new Set<string>();
+   const selected=new Set<string>();
    for(const element of host.querySelectorAll<HTMLElement>('[data-md-bind]')){
+    // Nested components manage their own bindings when selected.
     if(element.closest('[data-component-id]')!==host)continue;
-    const bounds=element.getBoundingClientRect();
-    if(!bounds.width||!bounds.height||bounds.bottom<=rect.top||
-       bounds.top>=rect.bottom||bounds.right<=rect.left||bounds.left>=rect.right)continue;
-    // A scrolled-out row must not leak an icon into a clipped Cart/Grid viewport.
-    let clipped=false;
-    for(let ancestor=element.parentElement;ancestor&&ancestor!==host;ancestor=ancestor.parentElement){
-     const computed=getComputedStyle(ancestor);
-     if(!/(auto|scroll|hidden|clip)/.test(computed.overflowX+' '+computed.overflowY))continue;
-     const clip=ancestor.getBoundingClientRect();
-     if(bounds.bottom<=clip.top||bounds.top>=clip.bottom||
-        bounds.right<=clip.left||bounds.left>=clip.right){clipped=true;break;}
-    }
-    if(clipped)continue;
-    const tokens=(element.dataset.mdBind||'').trim().split(/\s+/);
-    for(const key of tokens)if(allowed.has(key))encountered.add(key);
-    tokens.forEach((propertyKey,index)=>{
+    const clipped=clipRect(element,host);
+    if(!clipped)continue;
+    const caption=textRect(element);
+    const anchor=caption&&validRect(caption)?caption:clipped;
+    const properties=(element.dataset.mdBind??'').trim().split(/\s+/).filter(Boolean);
+    properties.forEach((propertyKey,index)=>{
      const label=allowed.get(propertyKey);
      if(!label)return;
-     const itemIndex=element.dataset.mdBindIndex===undefined?undefined:Number(element.dataset.mdBindIndex);
+     const indexText=element.dataset.mdBindIndex;
+     const itemIndex=indexText===undefined?undefined:Number(indexText);
      const itemId=element.dataset.mdBindItem||undefined;
-     const wide=bounds.width>rect.width*.8;
-     // Full-width surfaces anchor within the selected frame; text spans anchor beside text.
-     const x=Math.max(2,Math.min(rect.width-27,
-       wide?rect.width-28-index*27:bounds.right-rect.left+3+index*25));
-     const y=Math.max(2,Math.min(rect.height-26,
-       (wide?bounds.top-rect.top+5:bounds.top-rect.top+(bounds.height-23)/2)));
-     next.push({key:propertyKey+':'+(itemId??itemIndex??'')+':'+next.length,
-       propertyKey,label,x,y,itemIndex:Number.isFinite(itemIndex)?itemIndex:undefined,itemId});
+     // Repeated record rows are ONE binding. Static tabs instead have one
+     // independent caption formula per tab (stable item identity).
+     const perItem=propertyKey==='tabCaptionFormula';
+     const identity=perItem?itemId??String(itemIndex??0):'shared';
+     const key=propertyKey+':'+identity;
+     if(selected.has(key))return;
+     selected.add(key);
+     const pos=spot(hostRect,anchor,propertyKey,index,next);
+     if(!pos)return;
+     next.push({key,propertyKey,label,x:pos.x,y:pos.y,
+      ...(perItem?{itemIndex:Number.isFinite(itemIndex)?itemIndex:undefined,itemId}: {})});
     });
    }
-   // Some formula fields have no visible element until authored (e.g. card
-   // buttons and supporting text). Keep them accessible without reviving a ribbon.
-   const missing=[...allowed].filter(([key])=>!encountered.has(key));
-   const columns=Math.max(1,Math.min(6,Math.floor(Math.max(rect.width,28)/28)));
-   missing.forEach(([propertyKey,label],index)=>{
-    const col=index%columns,row=Math.floor(index/columns);
-    next.push({key:'unrendered:'+propertyKey,propertyKey,label,
-     x:Math.max(2,rect.width-28-col*27),y:Math.max(2,rect.height-28-row*27),
-     fallback:true});
-   });
-   setIcons(current=>JSON.stringify(current)===JSON.stringify(next)?current:next);
+   setIcons(old=>JSON.stringify(old)===JSON.stringify(next)?old:next);
   };
-  const schedule=()=>{
-   if(!frame)frame=requestAnimationFrame(position);
-  };
-  schedule();
-  const resize=typeof ResizeObserver!=='undefined'?new ResizeObserver(schedule):null;
-  resize?.observe(host);
-  if(content!==host)resize?.observe(content);
-  const observer=typeof MutationObserver!=='undefined'&&content!==host
-   ?new MutationObserver(schedule):null;
-  observer?.observe(content,{childList:true,subtree:true,characterData:true});
+  const schedule=()=>{if(!frame)frame=requestAnimationFrame(position);};
+  const resize=new ResizeObserver(schedule);
+  resize.observe(host);
+  const observer=new MutationObserver(mutations=>{
+   // Moving one of our own buttons must not trigger a re-render feedback loop.
+   if(mutations.every(change=>change.target instanceof Element&&
+     change.target.closest('.canvas-data-bindings')))return;
+   schedule();
+  });
+  observer.observe(host,{childList:true,subtree:true,characterData:true});
   host.addEventListener('scroll',schedule,true);
   window.addEventListener('resize',schedule);
+  schedule();
   return ()=>{
    if(frame)cancelAnimationFrame(frame);
-   resize?.disconnect();observer?.disconnect();
-   host.removeEventListener('scroll',schedule,true);window.removeEventListener('resize',schedule);
+   resize.disconnect();observer.disconnect();
+   host.removeEventListener('scroll',schedule,true);
+   window.removeEventListener('resize',schedule);
   };
  },[componentId,api,definitions]);
  return <div ref={root} className="canvas-data-bindings" role="group" aria-label="Selected component data bindings">
   {icons.map(icon=><button key={icon.key} type="button"
-   className={'canvas-data-icon-button'+(icon.fallback?' is-fallback':'')+(active?.componentId===componentId&&
-     active.propertyKey===icon.propertyKey&&active.itemIndex===icon.itemIndex
-     ?' is-active':'')}
-   style={{left:icon.x,top:icon.y}} title={'Edit '+icon.label+' in Data formula bar'}
-   aria-label={'Edit '+icon.label+' data source'} onPointerDown={event=>event.stopPropagation()}
+   className={'canvas-data-icon-button'+(active?.componentId===componentId&&
+    active.propertyKey===icon.propertyKey&&active.itemId===icon.itemId&&
+    active.itemIndex===icon.itemIndex?' is-active':'')}
+   style={{left:icon.x,top:icon.y}}
+   title={'Edit '+icon.label+' in Data formula bar'}
+   aria-label={'Edit '+icon.label+' data source'}
+   onPointerDown={event=>event.stopPropagation()}
    onClick={event=>{event.preventDefault();event.stopPropagation();
-     onChoose({propertyKey:icon.propertyKey,itemIndex:icon.itemIndex,itemId:icon.itemId});}}>
+    onChoose({propertyKey:icon.propertyKey,itemIndex:icon.itemIndex,itemId:icon.itemId});}}>
    <Database aria-hidden="true" size={14}/>
   </button>)}
  </div>;
