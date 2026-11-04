@@ -186,8 +186,8 @@ const parseJson=(value:string)=>{
  const clean=value.trim();
  if(!clean)throw Error('Input value is missing');
  try{return JSON.parse(clean);}catch{
-  // Excel dropdowns supply plain object/field/resource names; preserve these as strings.
-  if(!/[{}\\[\\]\"\\r\\n]/.test(clean))return clean;
+  // Dropdowns return plain object, field, or resource names.
+  if(!/[{}\[\]"\r\n]/.test(clean))return clean;
   throw Error('Invalid JSON value: '+value.slice(0,50));
  }
 };
