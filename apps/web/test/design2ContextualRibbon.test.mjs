@@ -121,7 +121,7 @@ test('Design 2 SQL widths and column positions are never dynamically compacted',
  assert.equal(fixed('Header','height').order,3);
  assert.equal(fixed('Header','height').width,80);
  assert.match(shared,/if\(tab==='Design2'&&p\.designWidth!==undefined\)return p\.designWidth/);
- assert.match(shared,/gridTemplateColumns:design2GridColumns\(\)/);
+ assert.match(shared,/gridTemplateColumns:design2GridColumns\(row\)/);
  assert.match(shared,/--smart-slot-column/);
  assert.match(css,/\.smart-ribbon-row:not\(\.smart-design2-top-row\)/);
  assert.match(css,/display:grid!important/);
@@ -164,9 +164,9 @@ test('Design 2 selector and eye occupy row 0 alone',()=>{
 });
 
 test('the six fixed C1-C6 tracks are shared across all property rows',()=>{
- assert.match(shared,/const design2GridColumns=\(\)=>/);
+ assert.match(shared,/const design2GridColumns=\(row:number\)=>/);
  assert.match(shared,/Array\.from\(\{length:6\}/);
- assert.match(shared,/Math\.max\(column===2\|\|column===3\|\|column===4\?80:40/);
+ assert.match(shared,/slot\?\.width\?\?\(index>=2&&index<=4\?80:40\)/);
  assert.match(shared,/new Map\(design2Slots/);
  assert.doesNotMatch(shared,/\.filter\(rule=>rule\.componentApi===api\)\.map\(rule=>rule\.area\)/);
  assert.match(css,/width:380px!important/);
@@ -214,7 +214,7 @@ test('Design 2 R0 X/Y has exact 80x26 geometry without shifting property rows',(
  assert.match(css,/height:26px!important/);
  assert.match(css,/width:472px!important/);
  assert.match(shared,/\[1,2,3\]\.map\(row/);
- assert.match(shared,/gridTemplateColumns:design2GridColumns\(\)/);
+ assert.match(shared,/gridTemplateColumns:design2GridColumns\(row\)/);
 });
 
 
@@ -313,4 +313,30 @@ test('fixed SQL columns override legacy flex and grid-area:auto important rules'
  assert.match(css,/grid-area:1 \/ var\(--smart-slot-column,1\) \/ span 1 \/ span 1!important/);
  assert.match(css,/grid-column:var\(--smart-slot-column,1\) \/ span 1!important/);
  assert.match(css,/width:380px!important/);
+});
+
+
+test('Body R1C3 Shape to R1C4 Shape Fill has no empty 80px phantom column',()=>{
+ assert.equal(fixed('Body','shape').row,1);
+ assert.equal(fixed('Body','shape').order,3);
+ assert.equal(fixed('Body','shape').width,40);
+ assert.equal(fixed('Body','shapeFill').row,1);
+ assert.equal(fixed('Body','shapeFill').order,4);
+ assert.equal(fixed('Body','shapeFill').width,40);
+ assert.equal(fixed('Body','bold').row,3);
+ assert.equal(fixed('Body','bold').order,3);
+ assert.equal(fixed('Body','bold').width,40);
+ assert.equal(fixed('Body','wrap').row,3);
+ assert.equal(fixed('Body','wrap').order,4);
+ assert.equal(fixed('Body','wrap').width,40);
+ assert.match(shared,/const design2GridColumns=\(row:number\)=>/);
+ assert.match(shared,/slot\?\.width\?\?\(index>=2&&index<=4\?80:40\)/);
+ assert.match(shared,/gridTemplateColumns:design2GridColumns\(row\)/);
+ assert.match(shared,/'shapeFill','shape_fill'\]\.includes\(slot\.slotKey\)\?'color'/);
+ assert.match(shared,/'orientation','placement','imageFill'\]\.includes\(slot\.slotKey\)\?'choice'/);
+ // All dropdown sections stay visible and per-component enablement stays
+ // controlled only by SQL yes/no rules. No metadata mutation.
+ assert.match(shared,/const design2Areas=\[\.\.\.new Map\(design2Slots/);
+ assert.match(shared,/const approved=design2SlotRules\.find\(rule=>/);
+ assert.match(shared,/components:assigned\?assigned\.components:\[\]/);
 });

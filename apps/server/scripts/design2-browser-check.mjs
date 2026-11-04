@@ -300,8 +300,31 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  assert.equal(await row.locator('[data-design-row="2"] [data-design-slot="focused"]')
    .getAttribute('data-design-column'),'1','Table Focus must remain at R2C1');
  await area.selectOption('Body');
- assert.equal(await row.locator('[data-design-row="3"] [data-design-slot="wrap"]')
-   .getAttribute('data-supported'),'false','Cart Body Wrap was not approved');
+ // Both user-reported "blank spaces" must contain the actual DISABLED icons,
+ // immediately after their 40px predecessor, not a phantom 80px C3 track.
+ // Body R1C3 Shape -> R1C4 Shape Fill, R3C3 Bold -> R3C4 Wrap.
+ const cartBodyShapeSlot=row.locator('[data-design-row="1"] [data-design-slot="shape"]');
+ const cartBodyShapeFillSlot=row.locator('[data-design-row="1"] [data-design-slot="shapeFill"]');
+ const cartBodyBoldSlot=row.locator('[data-design-row="3"] [data-design-slot="bold"]');
+ const cartBodyWrapSlot=row.locator('[data-design-row="3"] [data-design-slot="wrap"]');
+ for(const [a,b,description] of [[cartBodyShapeSlot,cartBodyShapeFillSlot,'Shape/Shape Fill'],
+   [cartBodyBoldSlot,cartBodyWrapSlot,'Bold/Wrap']]){
+  const first=await a.boundingBox(),second=await b.boundingBox();
+  assert.ok(first&&second&&Math.abs(second.x-first.x-44)<1,
+   description+' must be consecutive fixed 40px icons (+4px gap)');
+  assert.ok(Math.abs(first.width-40)<1&&Math.abs(second.width-40)<1,
+   description+' must remain 40px wide as in Excel');
+ }
+ assert.equal(await cartBodyShapeFillSlot.getAttribute('data-supported'),'true',
+  'Cart Body Shape Fill is approved; keep its existing enabled status');
+ assert.equal(await cartBodyShapeFillSlot.getAttribute('data-kind'),'color',
+  'Unsupported Shape Fill must keep its colour icon, not become a blank number input');
+ assert.equal(await cartBodyShapeFillSlot.locator('.office-ribbon-colour-property').count(),1,
+  'Shape Fill colour icon must render after Shape');
+ assert.equal(await cartBodyWrapSlot.getAttribute('data-supported'),'false',
+  'Cart Body Wrap is not approved: show it disabled, do not hide it');
+ assert.equal(await cartBodyWrapSlot.locator('button.smart-icon-toggle').count(),1,
+  'Wrap must render its disabled icon after Bold');
  await page.getByRole('tab',{name:'Design',exact:true}).click();
  await page.locator('.smart-ribbon-group[aria-label="Row"] [data-property="rowLabelColor"]').waitFor();
  assert.equal(await page.locator('.smart-ribbon-group[aria-label="Row"] [data-property="rowBold"]').count(),0,
