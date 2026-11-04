@@ -101,3 +101,16 @@ test('Component-specific Focus Fill is persisted and applied without changing or
  assert.match(sharedCss,/smart-lookup-focus-color/);
  assert.match(sharedCss,/smart-navigation-focus-color/);
 });
+
+test('Smart Cart Footer controls target grand total line instead of whole summary',()=>{
+ const footerSql=read('../../server/src/system-support/migrations/20270322-design2-smart-cart-footer.sql');
+ for(const key of ['footerBodyColor','footerBorderColor','footerRadius','footerHeight',
+                    'footerWidth','footerShape','footerShapeFill','footerWrapText']){
+  assert.ok(footerSql.includes("'"+key+"'"),key+' not registered');
+  assert.ok(cart.includes('p.'+key),key+' not used by SmartCart');
+ }
+ assert.match(cart,/className="smart-cart-summary-line smart-cart-total"/);
+ assert.match(cart,/background:p\.footerShape&&p\.footerShapeFill/);
+ assert.match(footerSql,/'Design2','Contextual'/);
+ assert.doesNotMatch(footerSql,/SET\s+tab\s*=\s*'Design'/);
+});
