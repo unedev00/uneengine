@@ -16,7 +16,12 @@ function ProductArtwork({url,name}:{url:string;name:string}){
  return <div className="acetill-product-art">
   {imageAllowed&&!failed?<img src={url} alt={name} loading="lazy" onError={()=>setFailed(true)}/>:
    <div className="acetill-photo-placeholder" role="img" aria-label={name+' — product photo not available'}>
-    <span aria-hidden="true">▧</span><small>Photo unavailable</small>
+    <svg aria-hidden="true" width="38" height="38" viewBox="0 0 40 40" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+     <rect x="5" y="7" width="30" height="26" rx="4"/>
+     <circle cx="14" cy="16" r="3"/>
+     <path d="m7 30 10-10 7 7 5-5 5 5"/>
+     <path d="M6 34 34 6"/>
+    </svg><small>Photo unavailable</small>
    </div>}
  </div>;
 }
