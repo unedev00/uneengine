@@ -214,12 +214,33 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
   }).sort((a,b)=>a.row-b.row||a.column-b.column));
  const template=await design2GridFingerprint();
  assert.equal(template.length,17,'The approved R1-R3 fixed ribbon must have 17 icon controls');
+ const countBox=page.locator('.smart-design2-count');
+ const countInput=countBox.locator('input.smart-office-number');
+ assert.equal(await countBox.count(),1,'The hand count box must always be mounted');
+ assert.equal(await countBox.locator('.smart-design2-count-field svg').count(),1,
+  'The hand icon must be inside the same bordered numeric field');
+ assert.equal(await countInput.getAttribute('type'),'number');
+ assert.equal(await countInput.getAttribute('step'),'1','Count must have native spinner arrows');
+ const firstHand=await countBox.boundingBox();
+ const horizontalVertical=page.locator('.smart-design2-group [data-design-row="1"] [data-design-slot="orientation"]');
+ if(await horizontalVertical.count()){
+  const hv=await horizontalVertical.boundingBox();
+  assert.ok(hv&&firstHand&&firstHand.x>=hv.x+hv.width-2&&
+   firstHand.x-(hv.x+hv.width)<16,
+   'Hand control must be immediately beside H/V without a wide gap');
+ }
  assert.ok(template.every(item=>item.visible&&item.hasEditor),
   'Every fixed cell must show its real control, even when disabled');
  for(const section of allAreas){
   await area.selectOption(section);
   assert.deepEqual(await design2GridFingerprint(),template,
    'Switching to '+section+' changed the R/C icon layout instead of only enable/disable');
+  assert.equal(await countBox.count(),1,'Hand box disappeared in '+section);
+  const hand=await countBox.boundingBox();
+  assert.ok(hand&&firstHand&&Math.abs(hand.x-firstHand.x)<1,
+   'Hand box moved when selecting '+section);
+  assert.equal(await countInput.isDisabled(),section!=='Body',
+   'Count must be disabled outside a supported Body context');
  }
  await area.selectOption('Table');
  const inactiveShape=page.locator('.smart-design2-group [data-design-row="1"] [data-design-slot="shape"]');
