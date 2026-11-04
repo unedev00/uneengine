@@ -221,7 +221,10 @@ function SmartCard({p,record,onButtonClick,onCustomButton,onSelect,selected=fals
        ...smartShapeAppearance(p.cardButtonShape||"shape:round-rectangle",
         p.cardButtonShape==="shape:rectangle"?0:8),
        color:p.cardButtonTextColor||"#fff",
-       fontSize:number(p.cardButtonTextSize,14,8,48)
+       fontSize:number(p.cardButtonTextSize,14,8,48),
+       // Design 2 Button R3C2 aligns the button caption, not the card header.
+       textAlign:["left","center","right"].includes(p.cardButtonAlignment)
+        ?p.cardButtonAlignment:undefined
       }}
       onClick={event=>{event.stopPropagation();onButtonClick?.();}}>{buttonText}</button>}
     {customButtons.map(key=>{
