@@ -30,7 +30,7 @@ export function loaderSummary(rows:LoaderRow[]){
 }
 export function loaderReport(original:LoaderTable,rows:LoaderRow[]):string{
  const base=original.columns.filter(c=>!['Status','Result','Message'].includes(c));
- const enriched=rows.map(r=>({...r.cells,Status:r.status,Result:r.result,Message:r.message}));
+ const enriched:Record<string,string>[]=rows.map(r=>({...r.cells,Status:r.status,Result:r.result,Message:r.message}));
  const allColumns=['Sheet','ExcelRow',...base,'Status','Result','Message'];
  const all=enriched.map((r,index)=>Object.fromEntries(allColumns.map(c=>[c,c==='Sheet'?rows[index].sheet:
   c==='ExcelRow'?String(rows[index].excelRow):r[c]??''])));
