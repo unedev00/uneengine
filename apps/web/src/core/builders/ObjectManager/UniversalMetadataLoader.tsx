@@ -60,8 +60,8 @@ export default function UniversalMetadataLoader({apiRequest,currentObject,onClos
  const exportWorkbook=async()=>{
   setBusy(true);setError('');
   try{
-   const params=exportMode==='current'?'?objects='+encodeURIComponent(currentObject):'';
-   const result=await apiRequest<{workbook:string}>('/metadata/loader/export'+params);
+   const result=await apiRequest<{workbook:string}>('/metadata/loader/export',{
+    method:'POST',body:JSON.stringify({objects:exportMode==='current'?[currentObject]:[]})});
    saveXlsx(result.workbook,exportMode==='current'?'MetaDrive_'+currentObject+'_Metadata.xlsx':'MetaDrive_All_Metadata.xlsx');
   }catch(e){setError(e instanceof Error?e.message:'Unable to export metadata');}
   finally{setBusy(false);}
