@@ -147,7 +147,8 @@ export default function CanvasDataBindingIcons({componentId,api,definitions,acti
    className={'canvas-data-icon-button'+(active?.componentId===componentId&&
     active.propertyKey===icon.propertyKey&&active.itemId===icon.itemId&&
     active.itemIndex===icon.itemIndex?' is-active':'')}
-   style={{left:icon.x,top:icon.y}}
+   style={{left:icon.x,top:icon.y}} data-binding-property={icon.propertyKey}
+   data-binding-item={icon.itemId??icon.itemIndex}
    title={'Edit '+icon.label+' in Data formula bar'}
    aria-label={'Edit '+icon.label+' data source'}
    onPointerDown={event=>event.stopPropagation()}
