@@ -256,11 +256,11 @@ export function registerMetadataLoaderRoutes(app:Express,db:SqlPersistence,rbac:
  const summary=(items:Item[])=>({total:items.length,valid:items.filter(i=>i.status==='Valid').length,
   success:items.filter(i=>i.status==='Success').length,error:items.filter(i=>i.status==='Error').length,
   skipped:items.filter(i=>i.status==='Skipped').length});
- app.get('/api/metadata/loader/export',route(async(req,res)=>{
+ app.post('/api/metadata/loader/export',route(async(req,res)=>{
   const actor=req.actor!;
   await rbac.require(actor.tenant_id,actor.user_id,'ObjectDefinition','read');
   await rbac.require(actor.tenant_id,actor.user_id,'FieldDefinition','read');
-  const selected=typeof req.query.objects==='string'?req.query.objects.split(',').map(s=>s.trim()).filter(Boolean):[];
+  const selected=Array.isArray(req.body?.objects)?req.body.objects.filter((s:unknown)=>typeof s==='string'&&namePattern.test(s)) as string[]:[];
   if(selected.length>100)throw Error('Maximum 100 selected objects');
   const all=await definitions.list(actor.tenant_id);
   const objects=[] as typeof all;
