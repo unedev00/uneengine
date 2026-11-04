@@ -9,6 +9,7 @@ const css=read('../src/core/builders/PageBuilder/SmartRibbonDesign2.css');
 const migration=read('../../server/src/system-support/migrations/20271114-page-builder-retire-layout-ribbon.sql');
 const card=read('../src/component-libraries/shared/CardCore.jsx');
 const runtime=read('../src/component-libraries/smart/shared/SmartRuntime.jsx');
+const visibility=read('../src/core/builders/PageBuilder/layoutRibbonVisibility.ts');
 
 test('Retire Layout only after remapping all component property definitions to Design2',()=>{
  assert.match(migration,/SET tab='Design2'/);
@@ -49,4 +50,15 @@ test('Badge visibility follows rendered nonempty text, including spaces',()=>{
  assert.match(runtime,/\{Boolean\(badge\)&&<span/);
  assert.doesNotMatch(runtime,/p\.badgeVisible===true&&Boolean\(badge\)/);
  assert.doesNotMatch(design,/const badge=activeDesign2Area==='Badge'/);
+});
+
+test('Removed defaultCheck and columnVisibility stay out of all ribbons',()=>{
+ for(const property of ['defaultCheck','columnVisibility']){
+   assert.match(migration,new RegExp("'"+property+"'"));
+   assert.match(visibility,new RegExp("'"+property+"'"));
+ }
+ assert.match(migration,/UPDATE md_builder_ribbon_component_rules/);
+ assert.match(migration,/SET enabled=false/);
+ assert.match(migration,/WHERE property_key IN \('defaultCheck','columnVisibility'\)/);
+ assert.match(migration,/RAISE EXCEPTION 'Layout retirement failed: component metadata remains'/);
 });
