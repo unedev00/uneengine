@@ -1,6 +1,6 @@
 import ResponsiveDataList from '../../records/ResponsiveDataList/ResponsiveDataList';
 import { Search } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { FlowExecutionLogMetadata } from '../../metadata/Definitions/metadata';
 
 type FlowLogsProps = {
@@ -21,6 +21,9 @@ function formatTime(value?: string | null): string {
 export default function FlowLogs({ logs, loading, loadingMore, hasMore, onLoadMore, onOpenFlow }: FlowLogsProps) {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('all');
+  const [page,setPage]=useState(0);
+  const pageSize=25;
+  useEffect(()=>setPage(0),[search,status]);
   const filteredLogs = useMemo(() => {
     const query = search.trim().toLocaleLowerCase();
     return logs.filter(log => {
@@ -31,6 +34,9 @@ export default function FlowLogs({ logs, loading, loadingMore, hasMore, onLoadMo
     });
   }, [logs, search, status]);
 
+  const pageCount=Math.max(1,Math.ceil(filteredLogs.length/pageSize));
+  const currentPage=Math.min(page,pageCount-1);
+  const visibleLogs=filteredLogs.slice(currentPage*pageSize,(currentPage+1)*pageSize);
   return (
     <div className="flow-logs-page">
       <div className="page-heading">
@@ -64,7 +70,7 @@ export default function FlowLogs({ logs, loading, loadingMore, hasMore, onLoadMo
             </select>
           </label>
         </div>
-        <ResponsiveDataList rows={filteredLogs} getId={log=>log.id}
+        <ResponsiveDataList rows={visibleLogs} includeTablet getId={log=>log.id}
           columns={[
             {apiName:'flow',label:'Flow',phoneRole:'title',render:log=>log.flowLabel},
             {apiName:'apiName',label:'API Name',render:log=>log.flowApiName},
@@ -77,7 +83,7 @@ export default function FlowLogs({ logs, loading, loadingMore, hasMore, onLoadMo
             {apiName:'user',label:'User',render:log=>log.userId??'System'}
           ]} label="Flow execution history" loading={loading} emptyText="No matching Flow runs"
           onOpen={log=>onOpenFlow(log.flowApiName)} openLabel="Open Flow"/>
-        <div className="table-scroll md-mobile-table-replaced">
+        <div className="table-scroll md-mobile-table-replaced md-tablet-table-replaced">
           <table className="slds-table flow-logs-table">
             <thead>
               <tr>
@@ -91,7 +97,7 @@ export default function FlowLogs({ logs, loading, loadingMore, hasMore, onLoadMo
               </tr>
             </thead>
             <tbody>
-              {filteredLogs.map(log => (
+              {visibleLogs.map(log => (
                 <tr key={log.id}>
                   <td>
                     <button className="flow-log-link" type="button" onClick={() => onOpenFlow(log.flowApiName)}>
@@ -114,8 +120,13 @@ export default function FlowLogs({ logs, loading, loadingMore, hasMore, onLoadMo
             </tbody>
           </table>
         </div>
-        {hasMore && <button type="button" className="btn" onClick={onLoadMore}
-          disabled={loading || loadingMore}>{loadingMore ? 'Loading…' : 'Load more runs'}</button>}
+        <nav className="flow-history-pagination" aria-label="Flow history pages">
+          <span>Page {currentPage+1} of {pageCount} loaded · {filteredLogs.length} matching runs</span>
+          <button type="button" className="btn" disabled={currentPage===0} onClick={()=>setPage(p=>Math.max(0,p-1))}>Previous</button>
+          <button type="button" className="btn" disabled={currentPage>=pageCount-1} onClick={()=>setPage(p=>Math.min(pageCount-1,p+1))}>Next</button>
+          {hasMore && <button type="button" className="btn" onClick={onLoadMore}
+            disabled={loading || loadingMore}>{loadingMore?'Loading…':'Load older runs'}</button>}
+        </nav>
       </section>
     </div>
   );
