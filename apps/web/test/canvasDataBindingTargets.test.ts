@@ -52,8 +52,42 @@ test('one builder-only overlay routes selected icons to SQL-approved expressions
  assert.doesNotMatch(ribbon,/<div className="smart-data-sections">/);
  for(const key of ['cartSupportingSource','cartColumn1Header','subtotalLabel',
   'lookupValueFormula','selectedDate','tabCaptionFormula'])assert.ok(sql.includes("'"+key+"'"));
- for(const attr of ['"collectionFormula label"','"imageSource"','"totalLabel"','"totalValue"'])
+ for(const attr of ['"label"','"imageSource"','"totalLabel"','"totalValue"'])
   assert.ok(cart.includes('data-md-bind={p.builderPreview?'+attr+':undefined}'),attr);
- for(const attr of ['"selectedDate defaultValue"','"collectionFormula"','"label lookupValueFormula"'])
-  assert.ok(runtime.includes('data-md-bind={p.builderPreview?'+attr+':undefined}'),attr);
+ for(const attr of ['"selectedDate"','"label lookupValueFormula textSource"','"tabCaptionFormula"'])
+  assert.ok(runtime.includes(attr),attr);
+ assert.match(ribbon,/hasItemsSource&&<button/);
+ assert.match(ribbon,/Select items source formula/);
+ const overlay=source('../src/core/builders/PageBuilder/CanvasDataBindingIcons.tsx');
+ assert.doesNotMatch(overlay,/fallback|unrendered|const missing=/i);
+ assert.match(overlay,/bindingTargetIdentity/);
+ assert.match(overlay,/data-md-bind/);
+});
+
+test('field anchoring is stable, contextual and never a fallback icon grid',async()=>{
+ const {bindingAnchorPosition,bindingTargetIdentity,ICON_SIZE}=
+  await import('../src/core/builders/PageBuilder/canvasBindingIconLayout');
+ const host={left:0,top:0,right:500,bottom:300,width:500,height:300};
+ const col={left:20,top:30,right:180,bottom:62,width:160,height:32};
+ const summary={left:350,top:200,right:480,bottom:220,width:130,height:20};
+ const fields=Array.from({length:4},(_,slot)=>bindingAnchorPosition(host,{rect:col,slot}));
+ assert.equal(new Set(fields.map(v=>v?.x+':'+v?.y)).size,4,'four Cart bindings keep separate anchors');
+ assert.ok(fields.every(p=>p&&p.y>=30&&p.y<65),'Cart bindings remain at their own heading');
+ const end=bindingAnchorPosition(host,{rect:summary,slot:0});
+ assert.ok(end&&end.y>=195&&end.y<=225,'summary amount stays next to its own value');
+ assert.equal(bindingAnchorPosition(host,{rect:{...col,width:0,right:20},slot:0}),null);
+ assert.equal(bindingAnchorPosition(host,{rect:{...col,top:400,bottom:420},slot:0}),null);
+ assert.equal(bindingTargetIdentity({propertyKey:'textSource',itemIndex:0}),
+              bindingTargetIdentity({propertyKey:'textSource',itemIndex:8}),
+              'repeating card/record values share one formula');
+ assert.notEqual(bindingTargetIdentity({propertyKey:'tabCaptionFormula',itemId:'t1'}),
+                 bindingTargetIdentity({propertyKey:'tabCaptionFormula',itemId:'t2'}),
+                 'separate tab captions have separate formulas');
+ const narrow={left:0,top:0,right:48,bottom:40,width:48,height:40};
+ const small=Array.from({length:4},(_,slot)=>bindingAnchorPosition(narrow,{
+  rect:{left:0,top:0,right:48,bottom:40,width:48,height:40},slot
+ }));
+ assert.equal(new Set(small.map(v=>v?.x+':'+v?.y)).size,4,
+  'even a narrow control cannot collapse multiple bindings into one position');
+ assert.equal(ICON_SIZE,20);
 });
