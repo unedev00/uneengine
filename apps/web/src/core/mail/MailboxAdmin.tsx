@@ -204,7 +204,7 @@ export default function MailboxAdmin({onLogout}:Props){
   </ActionDialog>}
   <section style={panel}>
    {loading?<p role="status">Loading mailboxes…</p>:mailboxes.length===0?<div style={{padding:'24px 8px',textAlign:'center'}}><h3 style={{margin:'0 0 8px'}}>No mailboxes yet</h3><p style={{margin:0,color:'#52677b'}}>Create a mailbox to get started, once a domain is configured for this integration.</p></div>:
-   <><ResponsiveDataList rows={mailboxes} getId={m=>m.id} label="Mailboxes"
+   <><ResponsiveDataList rows={mailboxes} includeTablet getId={m=>m.id} label="Mailboxes"
      columns={[
        {apiName:'email',label:'Email address',phoneRole:'title',render:m=>m.emailAddress||m.name},
        {apiName:'description',label:'Description',phoneRole:'subtitle',render:m=>m.description||'—'},
@@ -222,7 +222,7 @@ export default function MailboxAdmin({onLogout}:Props){
         </details>
        </div>}
      ]}/>
-   <div className="md-mobile-table-replaced" style={{overflowX:'auto'}}><table style={{width:'100%',borderCollapse:'collapse',textAlign:'left',minWidth:720}}>
+   <div className="md-mobile-table-replaced md-tablet-table-replaced md-mail-admin-table-wrap" style={{overflowX:'auto'}}><table style={{width:'100%',borderCollapse:'collapse',textAlign:'left',tableLayout:'fixed'}}>
     <thead><tr>{['Email address','Description','Storage used','Created','Actions'].map(x=><th key={x} style={{padding:'12px 10px',borderBottom:'1px solid #dce3ea',color:'#52677b',fontSize:12,textTransform:'uppercase',letterSpacing:.5}}>{x}</th>)}</tr></thead>
     <tbody>{mailboxes.map(m=><tr key={m.id}>
      <td style={{padding:'14px 10px',borderBottom:'1px solid #edf1f5',fontWeight:650}}>{m.emailAddress||m.name}</td>
@@ -243,6 +243,6 @@ export default function MailboxAdmin({onLogout}:Props){
     </tr>)}</tbody>
    </table></div></>}
   </section>
-  <p style={{fontSize:12,color:'#617589',marginTop:16}}>Mail server credentials are kept server-side. This screen never receives the Docker Mailserver management API key.</p>
+  <p style={{fontSize:12,color:'#617589',marginTop:16}}>Mail server credentials are kept server-side. This screen never receives the private mail administration API key.</p>
  </main>;
 }
