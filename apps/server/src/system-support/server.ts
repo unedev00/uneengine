@@ -1555,10 +1555,18 @@ export function createSystemServer(db:SqlPersistence) {
           r.component_api,r.control_kind_override,r.value_key,
           r.default_value_override,r.choices_override
         FROM md_builder_shared_properties p
-        LEFT JOIN md_builder_ribbon_component_rules r
-          ON r.property_key=p.property_key AND r.enabled=true
+        LEFT JOIN LATERAL (
+          SELECT c.component_api,rule.control_kind_override,rule.value_key,
+            rule.default_value_override,rule.choices_override
+          FROM md_builder_ribbon_components c
+          LEFT JOIN md_builder_ribbon_component_rules rule
+            ON rule.component_api=c.component_api AND rule.property_key=p.property_key
+          LEFT JOIN md_builder_ribbon_tenant_overrides t
+            ON t.tenant_id=$1 AND t.component_api=c.component_api AND t.property_key=p.property_key
+          WHERE p.scope='component' AND COALESCE(t.enabled,rule.enabled,false)=true
+        ) r ON true
         WHERE p.property_key NOT IN ('firstTabCustom','firstTabCaption','firstTabValue')
-        ORDER BY p.sort_order,r.component_api`),
+        ORDER BY p.sort_order,r.component_api`,[actor.tenant_id]),
       db.query<{component_api:string}>(`SELECT component_api FROM md_builder_ribbon_components
         ORDER BY component_api`),
       db.query<{area:string;area_order:number;slot_key:string;row_no:number;
