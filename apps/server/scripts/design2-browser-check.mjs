@@ -288,7 +288,7 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  }
  assert.equal(await cartBodyShapeFillSlot.getAttribute('data-supported'),'true',
   'Cart Body Shape Fill is approved; keep its existing enabled status');
- assert.equal(await shapeFill.getAttribute('data-kind'),'color',
+ assert.equal(await cartBodyShapeFillSlot.getAttribute('data-kind'),'color',
   'Unsupported Shape Fill must keep its colour icon, not become a blank number input');
  assert.equal(await cartBodyShapeFillSlot.locator('.office-ribbon-colour-property').count(),1,
   'Shape Fill colour icon must render after Shape');
