@@ -1,3 +1,4 @@
+import SetupLoadingState from './SetupLoadingState';
 // @ts-nocheck
 import { UneBrandLogo } from '../../branding/UneBrandLogo';
 import CompanySettingsWorkspace from '../../settings/CompanySettingsWorkspace/CompanySettingsWorkspace';
@@ -502,7 +503,7 @@ export function renderSetupShell(ctx: any) {
             onOpenWorkspace={(destination) => navigateRoute({kind:'setup', workspace:destination})} /></PlatformWorkspaceSurface>}
           {route.kind === 'setup' && workspace === 'dashboard-builder' && (
             dashboardsError ? <section className="setup-card" role="alert">Unable to load dashboards: {dashboardsError}</section> :
-            !dashboardsLoaded || !advancedMetadataLoaded ? <section className="setup-card" role="status">Loading live dashboards…</section> :
+            !dashboardsLoaded || !advancedMetadataLoaded ? <SetupLoadingState label="Dashboards" /> :
             <DashboardBuilder
             dashboards={dashboards}
             dashboardFolders={dashboardFolders}
@@ -652,7 +653,7 @@ export function renderSetupShell(ctx: any) {
             </nav>}
           {route.kind === 'setup' && workspace === 'flow-builder' && (
             flowDefinitionsError ? <section className="setup-card" role="alert">Unable to load flows: {flowDefinitionsError}</section> :
-            !flowDefinitionsLoaded || !advancedMetadataLoaded ? <section className="setup-card" role="status">Loading live flow definitions…</section> :
+            !flowDefinitionsLoaded || !advancedMetadataLoaded ? <SetupLoadingState label="Flows" /> :
             <FlowBuilderWorkspace
               landing={!route.resourceApiName}
               flow={flow}
