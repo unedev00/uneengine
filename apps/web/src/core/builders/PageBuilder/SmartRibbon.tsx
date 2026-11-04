@@ -10,7 +10,7 @@ import {uploadTenantImageFile} from '../ComponentProperties/TenantMediaPicker';
 import {scopedFieldRule,type ScopedFieldFilter} from '../../pages/PageRuntime/fieldScopedRecordFilters';
 import RecordFilterEditor from '../../../component-libraries/shared/primitives/RecordFilterEditor/RecordFilterEditor';
 import SmartFormulaField from './SmartFormulaField';
-import {readCanvasBinding,writeCanvasBinding,type CanvasBindingTarget} from './canvasDataBindingTargets';
+import {bindingDisplayLabel,readCanvasBinding,writeCanvasBinding,type CanvasBindingTarget} from './canvasDataBindingTargets';
 import {validateRecordFilterFormula} from '../../pages/PageRuntime/recordFilterFormula';
 import {sessionCollectionFields} from '../../pages/PageRuntime/pageCollectionListBinding';
 import {pageStateChoices} from './pageStateChoices';
@@ -632,7 +632,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
           aria-label="Upload image"
           onClick={()=>uploadInput.current?.click()}><ImagePlus size={17}/></button>
         <span className="smart-data-active-binding" aria-live="polite">
-          {activeDataProperty?.label??'Record filter'}
+          {activeDataProperty?bindingDisplayLabel(api,activeDataProperty.id,activeDataProperty.label):'Record filter'}
         </span>
         <div ref={formulaInputHost} className="smart-data-formula-input">
           {filterFormulaSelected?<SmartFormulaField key="__record_filter__"
@@ -643,7 +643,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
             fields={availableFilterFields} objects={objects} rootObjectApiName={objectName}
             selectedSourceObjects={sourceObjects}/>:
           activeDataProperty?<SmartFormulaField key={activeDataProperty.id+':'+(canvasBinding?.itemId??canvasBinding?.itemIndex??'')}
-            label={activeDataProperty.label} value={activeDataValue}
+            label={bindingDisplayLabel(api,activeDataProperty.id,activeDataProperty.label)} value={activeDataValue}
             disabled={!activeDataEnabled} onChange={changeActiveDataFormula}
             validate={validateCollection} stateOptions={stateOptions}
             singleFieldOnly={api==='smart_toggle'&&activeDataProperty.id==='textSource'}

@@ -99,7 +99,16 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
         ($1,'smart_calendar','one-bundled:smart_calendar',true),
         ($1,'smart_card_grid','one-bundled:smart_card_grid',true),
         ($1,'smart_navigation','one-bundled:smart_navigation',true),
-        ($1,'smart_toggle','one-bundled:smart_toggle',true)
+        ($1,'smart_toggle','one-bundled:smart_toggle',true),
+        ($1,'smart_button','one-bundled:smart_button',true),
+        ($1,'smart_text','one-bundled:smart_text',true),
+        ($1,'smart_textbox','one-bundled:smart_textbox',true),
+        ($1,'smart_image','one-bundled:smart_image',true),
+        ($1,'smart_lookup','one-bundled:smart_lookup',true),
+        ($1,'smart_table','one-bundled:smart_table',true),
+        ($1,'smart_label','one-bundled:smart_label',true),
+        ($1,'smart_container','one-bundled:smart_container',true),
+        ($1,'smart_icon','one-bundled:smart_icon',true)
  ON CONFLICT (tenant_id,api_name) DO NOTHING`,[tenantId]);
 
  // The real authenticated Builder Catalog endpoint must expose SQL slots and enforce RBAC.
@@ -463,6 +472,68 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  await page.getByRole('button',{name:'Show Design in the ribbon'}).first().click();
  await page.locator('.office-builder-ribbon[aria-label="Page Builder ribbon"] .smart-design2-ribbon').waitFor({state:'visible'});
 
+ // Verify real selected-component binding icon geometry in Chromium, not
+ // just the existence of SQL properties or hard-coded source attributes.
+ const auditBindings=async(id)=>{
+  const root=page.locator('[data-component-id="'+id+'"]').first();
+  await root.locator('.canvas-data-icon-button').first().waitFor({state:'visible'});
+  const result=await root.evaluate(host=>{
+   const icons=[...host.querySelectorAll('.canvas-data-icon-button')];
+   const anchors=[...host.querySelectorAll('[data-md-bind]')];
+   const bounds=host.getBoundingClientRect(),errors=[];
+   for(const icon of icons){
+    const key=icon.dataset.bindingProperty;
+    const fields=anchors.filter(el=>(el.getAttribute('data-md-bind')||'').split(/\s+/).includes(key));
+    if(!fields.length){errors.push('No field: '+key);continue;}
+    const rect=icon.getBoundingClientRect();
+    if(rect.left<bounds.left-2||rect.top<bounds.top-2||
+      rect.right>bounds.right+2||rect.bottom>bounds.bottom+2)errors.push('Outside: '+key);
+    const distance=Math.min(...fields.map(field=>{
+     const a=field.getBoundingClientRect();
+     return Math.hypot(Math.max(a.left-rect.right,rect.left-a.right,0),
+      Math.max(a.top-rect.bottom,rect.top-a.bottom,0));
+    }));
+    if(distance>32)errors.push('Detached: '+key+' '+distance);
+   }
+   for(let i=0;i<icons.length;i++)for(let j=i+1;j<icons.length;j++){
+    const a=icons[i].getBoundingClientRect(),b=icons[j].getBoundingClientRect();
+    if(Math.min(a.right,b.right)-Math.max(a.left,b.left)>1&&
+     Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>1)
+     errors.push('Overlapping: '+icons[i].dataset.bindingProperty+'/'+icons[j].dataset.bindingProperty);
+   }
+   return {errors,properties:icons.map(el=>el.dataset.bindingProperty)};
+  });
+  assert.deepEqual(result.errors,[],'Misplaced '+id+' binding icons: '+JSON.stringify(result));
+  return result.properties;
+ };
+ const tabCanvas=page.locator('[data-component-id="browser-design2-tabs"]').first();
+ await tabCanvas.click({position:{x:10,y:10}});
+ const tabKeys=await auditBindings('browser-design2-tabs');
+ assert.equal(tabKeys.filter(key=>key==='tabCaptionFormula').length,2,
+  'One independently editable caption per visible static tab');
+ assert.ok(!tabKeys.includes('label'),'Tabs must not expose an unrelated Label icon');
+ assert.ok(!tabKeys.includes('collectionFormula'),'Static tabs must not show a collection icon');
+ await tabCanvas.locator('[data-binding-property="tabCaptionFormula"]').nth(1).click();
+ await page.locator('.smart-data-active-binding').getByText('Tab caption').waitFor({state:'visible'});
+ const formulaInput=page.locator('.smart-data-formula-input input').first();
+ await formulaInput.waitFor({state:'visible'});
+ assert.equal(await formulaInput.inputValue(),'Tab 2',
+  'Second tab icon must select its actual caption');
+ assert.ok(await formulaInput.evaluate(el=>document.activeElement===el),
+  'The existing Formula Bar must be focused after clicking an icon');
+ const cartCanvas=page.locator('[data-component-id="browser-design2-cart"]').first();
+ await cartCanvas.click({position:{x:10,y:10}});
+ const cartKeys=await auditBindings('browser-design2-cart');
+ for(const key of ['cartColumn1Header','cartColumn2Header','cartColumn3Header',
+  'cartColumn4Header','subtotalLabel','subtotalValue','totalLabel','totalValue'])
+  assert.ok(cartKeys.includes(key),'Missing Cart visual binding '+key);
+ assert.equal(await tabCanvas.locator('.canvas-data-icon-button').count(),0,
+  'Unselected components must not show data icons');
+ await cartCanvas.locator('[data-binding-property="cartColumn2Header"]').click();
+ await page.locator('.smart-data-active-binding').getByText('Unit price heading')
+  .waitFor({state:'visible'});
+ await page.screenshot({path:new URL('../artifacts/selected-cart-field-binding-icons.png',import.meta.url).pathname});
+
  // Ctrl+A, Delete and Undo must agree on the exact multi-selection. A single
  // confirmation removes the full active layout selection, never just selectedId.
  await page.locator('[data-component-id="browser-design2-cart"]').first().click({position:{x:18,y:18}});
@@ -598,6 +669,69 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  assert.equal(fourProps('four-nav')?.imageFill,'fit');
  assert.equal(fourProps('four-toggle')?.shapeId,'shape:oval');
  console.info('Four Design 2 icon controls: enabled, edited, visibly applied and saved in SQL');
+
+ // Exercise the remaining already seeded types under the same geometry test.
+ for(const [id,required] of [
+  ['four-calendar',['selectedDate']],['four-grid',['textSource']],
+  ['four-nav',[]],['four-toggle',['textSource']]
+ ]){
+  const component=page.locator('[data-component-id="'+id+'"]').first();
+  await component.click({position:{x:10,y:10}});
+  if(!required.length){
+   assert.equal(await component.locator('.canvas-data-icon-button').count(),0);
+   continue;
+  }
+  const keys=await auditBindings(id);
+  for(const key of required)assert.ok(keys.includes(key),id+' missing '+key);
+ }
+ // Audit every other Smart component family in this authenticated SQL Builder.
+ // Fields without visible anchors must never generate unpositioned icons.
+ const bindingsPageName='browserallsmartbindings';
+ const families=[
+  ['smart_button',{label:'Start order'},['label']],
+  ['smart_text',{textSource:'"Product text"'},['textSource']],
+  ['smart_textbox',{label:'Product name',textSource:'"Sample"'},['label','textSource']],
+  ['smart_image',{imageHeight:80},['imageSource']],
+  ['smart_lookup',{placeholder:'Search products',lookupValueFormula:'"test"'},['label','lookupValueFormula']],
+  ['smart_label',{label:'Smart caption'},['label']],
+  ['smart_table',{textSource:'"Name"'},['textSource']],
+  ['smart_container',{},[]],
+  ['smart_icon',{},[]]
+ ];
+ const bindingPayload={...payload,apiName:bindingsPageName,label:'All Smart Data Bindings',
+  canvasWidth:1320,canvasHeight:1750,
+  components:families.map(([api,properties],i)=>({
+   id:'binding-'+api,type:'Custom:'+api,label:api,region:'main',visible:true,
+   properties,position:{x:24+(i%3)*426,y:24+Math.floor(i/3)*520,width:390,height:440}
+  }))};
+ const bindingCreate=await page.evaluate(async({token,payload})=>{
+  const response=await fetch('/api/metadata/pages/'+payload.apiName,{
+   method:'PUT',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
+   body:JSON.stringify(payload)
+  });
+  return {status:response.status,body:await response.json().catch(()=>null)};
+ },{token,payload:bindingPayload});
+ assert.equal(bindingCreate.status,200,'Cannot seed all-Smart data audit page: '+
+  JSON.stringify(bindingCreate.body));
+ await page.goto(origin+'/une/setup/page-builder',{waitUntil:'domcontentloaded'});
+ await page.getByLabel('Search pages').fill('All Smart Data Bindings');
+ await page.getByRole('button',{name:'Design All Smart Data Bindings',exact:true}).click();
+ for(const [api,,expected] of families){
+  const root=page.locator('[data-component-id="binding-'+api+'"]').first();
+  await root.waitFor({state:'visible'});
+  await root.click({position:{x:12,y:12}});
+  if(!expected.length){
+   assert.equal(await root.locator('.canvas-data-icon-button').count(),0,
+    api+' must not invent icons for unbound visual fields');
+   continue;
+  }
+  const keys=await auditBindings('binding-'+api);
+  for(const key of expected)assert.ok(keys.includes(key),
+   api+' must display an icon beside '+key+' when selected: '+keys.join(','));
+  assert.equal(await root.locator('.canvas-data-icon-button.is-fallback').count(),0,
+   api+' must never render a bottom-right fallback grid');
+ }
+ console.info('All Smart families: no icon piles; every displayed icon is field-anchored');
 
  // The shared Arrange handlers must also work from the fixed Design 2 R0
  // commands on a REAL three-component SQL draft. Single selection aligns to
