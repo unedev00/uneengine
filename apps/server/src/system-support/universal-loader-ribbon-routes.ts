@@ -16,14 +16,16 @@ const errors=(e:unknown)=>e instanceof Error?e.message:String(e);
 export function registerUniversalLoaderRibbonRoutes(app:Express,db:SqlPersistence,rbac:RbacEngine){
  const route=(fn:(req:Req,res:Response)=>Promise<void>)=>(req:Request,res:Response,next:NextFunction)=>
   void fn(req as Req,res).catch(next);
- const available=async()=> {
-  const result=await db.query<Rule>(
-   'SELECT c.component_api,p.property_key,p.label,p.tab,p.section_group,p.control_kind, '+
-   'p.scope,COALESCE(r.enabled,false) AS enabled '+
-   'FROM md_builder_ribbon_components c CROSS JOIN md_builder_shared_properties p '+
-   'LEFT JOIN md_builder_ribbon_component_rules r '+
-   'ON r.component_api=c.component_api AND r.property_key=p.property_key '+
-   "WHERE p.scope='component' ORDER BY c.component_api,p.sort_order");
+ const effectiveSql='SELECT c.component_api,p.property_key,p.label,p.tab,p.section_group,p.control_kind, '+
+  'p.scope,COALESCE(t.enabled,r.enabled,false) AS enabled '+
+  'FROM md_builder_ribbon_components c CROSS JOIN md_builder_shared_properties p '+
+  'LEFT JOIN md_builder_ribbon_component_rules r '+
+  'ON r.component_api=c.component_api AND r.property_key=p.property_key '+
+  'LEFT JOIN md_builder_ribbon_tenant_overrides t '+
+  'ON t.tenant_id=$1 AND t.component_api=c.component_api AND t.property_key=p.property_key ';
+ const available=async(tenantId:string)=> {
+  const result=await db.query<Rule>(effectiveSql+
+   "WHERE p.scope='component' ORDER BY c.component_api,p.sort_order",[tenantId]);
   return result.rows;
  };
  const access=async(actor:Actor,write=false)=>{
@@ -33,7 +35,7 @@ export function registerUniversalLoaderRibbonRoutes(app:Express,db:SqlPersistenc
  const validate=async(actor:Actor,buffer:Buffer)=>{
   await access(actor,true);
   const sheet=requireLoaderSheet(buffer,'RibbonProperties',['ComponentApi','PropertyKey','Enabled','CurrentEnabled']);
-  const existing=new Map((await available()).map(row=>[identity(row),row]));
+  const existing=new Map((await available(actor.tenant_id)).map(row=>[identity(row),row]));
   const rows=loaderRows(sheet),seen=new Set<string>();
   for(const row of rows){
    try{
@@ -57,7 +59,7 @@ export function registerUniversalLoaderRibbonRoutes(app:Express,db:SqlPersistenc
   const actor=req.actor!;await access(actor);
   const scope=String(req.body?.componentApi??'');
   if(scope&&!/^[A-Za-z][A-Za-z0-9_]*$/.test(scope))throw Error('Invalid component name');
-  const rules=(await available()).filter(rule=>!scope||rule.component_api===scope);
+  const rules=(await available(actor.tenant_id)).filter(rule=>!scope||rule.component_api===scope);
   if(scope&&!rules.length)throw Error('Smart component not found');
   const rows=rules.map(row=>({
    ComponentApi:row.component_api,PropertyKey:row.property_key,
@@ -84,18 +86,18 @@ export function registerUniversalLoaderRibbonRoutes(app:Express,db:SqlPersistenc
     await access(actor,true);
     const c=row.cells,enabled=boolean(c.Enabled)!,expected=boolean(c.CurrentEnabled)!;
     if(enabled!==expected)await db.transaction(async client=>{
-     const result=await client.query<{enabled:boolean}>(
-      'SELECT enabled FROM md_builder_ribbon_component_rules '+
-      'WHERE component_api=$1 AND property_key=$2 FOR UPDATE',[c.ComponentApi,c.PropertyKey]);
-     if((result.rows[0]?.enabled??false)!==expected)
-      throw Error('Ribbon rule changed after validation');
-     if(result.rowCount){
-      await client.query('UPDATE md_builder_ribbon_component_rules SET enabled=$3 '+
-       'WHERE component_api=$1 AND property_key=$2',[c.ComponentApi,c.PropertyKey,enabled]);
-     }else{
-      await client.query('INSERT INTO md_builder_ribbon_component_rules(component_api,property_key,enabled) '+
-       'VALUES($1,$2,$3)',[c.ComponentApi,c.PropertyKey,enabled]);
-     }
+     // Transaction lock serializes concurrent Excel uploads for this tenant and rule.
+     await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1,65))',
+      [actor.tenant_id+'|'+c.ComponentApi+'|'+c.PropertyKey]);
+     const current=await client.query<{enabled:boolean}>(effectiveSql+
+      'WHERE c.component_api=$2 AND p.property_key=$3',
+      [actor.tenant_id,c.ComponentApi,c.PropertyKey]);
+     if(current.rows[0]?.enabled!==expected)throw Error('Rule changed after validation');
+     await client.query('INSERT INTO md_builder_ribbon_tenant_overrides '+
+      '(tenant_id,component_api,property_key,enabled) VALUES($1,$2,$3,$4) '+
+      'ON CONFLICT(tenant_id,component_api,property_key) DO UPDATE '+
+      'SET enabled=EXCLUDED.enabled,updated_at=now()',
+      [actor.tenant_id,c.ComponentApi,c.PropertyKey,enabled]);
     });
     row.status='Success';row.message='Applied';
    }catch(e){row.status='Error';row.message=errors(e);}
