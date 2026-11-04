@@ -60,7 +60,7 @@ function parseWorkbook(buffer:Buffer):{tables:LoaderTable[];items:Item[]}{
  return {tables,items};
 }
 function writeReport(tables:LoaderTable[],items:Item[]):Buffer{
- const result=items.map(i=>({...i.cells,Sheet:i.sheet,ExcelRow:String(i.excelRow),Status:i.status,Result:i.result??'',Message:i.message}));
+ const result:Record<string,string>[]=items.map(i=>({...i.cells,Sheet:i.sheet,ExcelRow:String(i.excelRow),Status:i.status,Result:i.result??'',Message:i.message}));
  const cols=['Sheet','ExcelRow','Action','ObjectApiName','ApiName','Status','Result','Message'];
  const reportRows=(filtered:typeof result)=>filtered.map(r=>Object.fromEntries(cols.map(c=>[c,r[c]??(c==='ObjectApiName'?r.Sheet==='Objects'?r.ApiName:'':'')])));
  const formatted:LoaderTable[]=[...tables.map(t=>({name:t.name,columns:[...t.columns.filter(c=>!['Status','Message','Result'].includes(c)),'Status','Result','Message'],
@@ -340,7 +340,7 @@ export function registerMetadataLoaderRoutes(app:Express,db:SqlPersistence,rbac:
        settings:objectSettings(cell,cfg.settings as unknown as Record<string,unknown>)};
       await assertMetadataPackageEditable(db,actor.tenant_id,'object-config',i.objectApi);
       await definitions.replaceLayouts(actor.tenant_id,i.objectApi,draft,Number((o as {revision?:number}).revision??0),
-       actor.user_id,async(client:PoolClient)=>metadata.persistWithin(client,actor.tenant_id,i.objectApi,draft));
+       actor.user_id,async(client:PoolClient)=>{await metadata.persistWithin(client,actor.tenant_id,i.objectApi,draft);});
      }
     }else{
      if(i.action==='Delete'){await definitions.deleteField(actor.tenant_id,i.objectApi,i.fieldApi!);}
