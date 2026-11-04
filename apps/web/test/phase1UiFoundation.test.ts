@@ -151,3 +151,13 @@ test('Business calendar load failures are safe and can be retried without saving
  assert.match(calendar,/Retry loading business calendar/);
  assert.match(calendar,/!loading && loaded && !configured/);
 });
+
+test('Profile permission editors collapse all long tables and preserve underlying policy controls',()=>{
+ const src=read('../src/core/security/Permissions/permissionsView.tsx');
+ const profile=src.split("{tab === 'profiles' && selectedProfile && <>")[1]?.split("{tab === 'sets' && selectedSet && <>")[0]??'';
+ const groups=[...profile.matchAll(/<details className="md-permission-collapsible md-profile-advanced"><summary>([^<]+)<\/summary>/g)].map(match=>match[1]);
+ assert.deepEqual(groups,['Advanced permission rules','System Permissions','Application Access','Tab Visibility','Object Permissions','Record Type Access','Field Permissions']);
+ assert.match(profile,/selectedProfile\.objectPermissions/);
+ assert.match(profile,/selectedProfile\.recordTypePermissions/);
+ assert.match(profile,/selectedProfile\.fieldPermissions/);
+});
