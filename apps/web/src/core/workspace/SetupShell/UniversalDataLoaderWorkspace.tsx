@@ -39,9 +39,11 @@ function ExcelWorkflow({apiRequest,category,options,filename,onSuccess}:{
  const exportSheet=async()=>{
   setBusy(true);setError('');
   try{
-   const result=await apiRequest<{workbook:string;filename?:string}>('/data-loader/'+category+'/export',{
-    method:'POST',body:JSON.stringify(options)});
+   const result=await apiRequest<{workbook:string;filename?:string;count?:number;total?:number;truncated?:boolean}>(
+    '/data-loader/'+category+'/export',{method:'POST',body:JSON.stringify(options)});
    saveXlsx(result.workbook,result.filename??filename);
+   if(result.truncated)setError('Export contains '+result.count+' of '+result.total+
+    ' records (the maximum per file). The workbook is incomplete; do not treat it as a full backup.');
   }catch(e){setError(e instanceof Error?e.message:'Export failed');}
   finally{setBusy(false);}
  };
