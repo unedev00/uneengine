@@ -130,3 +130,15 @@ test('Permission Save remains disabled after a user restores the original draft'
  assert.doesNotMatch(src,/draft===savedDraft/);
  assert.match(src,/disabled=\{saving \|\| !permissionDirty \|\| Boolean\(accessControlError\)\}/);
 });
+
+test('Permission Set Group advanced muting editors are six independent collapsible sections',()=>{
+ const permissions=read('../src/core/security/Permissions/permissionsView.tsx');
+ const group=permissions.split("{tab === 'groups' && selectedGroup && <>")[1]?.split("{tab === 'users' && <>")[0]??'';
+ const summaries=[...group.matchAll(/<details className="md-permission-collapsible md-permission-group-advanced"><summary>([^<]+)<\/summary>/g)].map(match=>match[1]);
+ assert.deepEqual(summaries,[
+  'Muted System Permissions','Muted Application Access','Muted Tab Visibility',
+  'Muted Object Permissions','Muted Record Type Access','Muted Field Permissions'
+ ]);
+ assert.match(group,/ObjectPermissionPhoneList/);
+ assert.match(group,/selectedGroup\.mutedFieldPermissions/);
+});
