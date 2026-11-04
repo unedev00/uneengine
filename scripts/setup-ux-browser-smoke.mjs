@@ -236,7 +236,9 @@ try {
  await page.getByLabel('Find user').fill('operator9');
  assert.equal(await page.locator('.connected-apps-checklist input[type=checkbox]').count(),1);
  await page.getByLabel('Find user').fill('');
- await page.getByLabel('Name',{exact:true}).fill('Payroll connector updated');
+ const appName=page.getByLabel('Name (required)',{exact:true});
+  assert.equal(await appName.getAttribute('required')!==null,true,'Connected app name must be explicitly required');
+  await appName.fill('Payroll connector updated');
  page.once('dialog',async dialog=>{assert.match(dialog.message(),/consents will be revoked/);await dialog.accept();});
  await page.getByRole('button',{name:'Save connected app'}).click();
  await page.getByText('Saved',{exact:true}).waitFor();
