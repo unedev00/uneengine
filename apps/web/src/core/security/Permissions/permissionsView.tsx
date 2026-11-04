@@ -226,6 +226,7 @@ function Permissions({
   const permissionSectionsExpanded=false;
   const [draft, setDraft] = useState(accessControl);
   const [savedDraft, setSavedDraft] = useState(accessControl);
+  const permissionDirty=useMemo(()=>JSON.stringify(draft)!==JSON.stringify(savedDraft),[draft,savedDraft]);
   const [mobilePermissionDetail, setMobilePermissionDetail] = useState(Boolean(routeResourceId));
   useEffect(()=>{
     if(routeResourceApiName==='PermissionSets'||routeResourceApiName==='Users')
@@ -567,7 +568,7 @@ function Permissions({
       {tab === 'publicGroups' && <button className="btn btn-brand" onClick={createPublicGroup} disabled={Boolean(accessControlError)}><Plus size={14} />New Public Group</button>}
       {tab === 'queues' && <button className="btn btn-brand" onClick={createQueue} disabled={Boolean(accessControlError) || !objects.some((object) => object.fields.some((field) => field.apiName === 'OwnerId'))}><Plus size={14} />New Queue</button>}
       {tab === 'sharingRules' && <button className="btn btn-brand" onClick={createSharingRule} disabled={Boolean(accessControlError) || (!draft.publicGroups.length || !objects.length)}><Plus size={14} />New Sharing Rule</button>}
-      <button className="btn" onClick={() => void saveDraft()} disabled={saving || draft===savedDraft || Boolean(accessControlError)}><Save size={14} />{saving ? 'Saving…' : 'Save Changes'}</button>
+      <button className="btn" onClick={() => void saveDraft()} disabled={saving || !permissionDirty || Boolean(accessControlError)}><Save size={14} />{saving ? 'Saving…' : 'Save Changes'}</button>
     </>} />
     {tab === 'sharingRules' && !draft.publicGroups.length && <p className="info-callout">Create a Public Group first to provide a sharing-rule recipient. <button type="button" className="text-action" onClick={() => changeTab('publicGroups')}>Open Public Groups</button></p>}
     {accessControlError && <div className="auth-error" role="alert">Unable to load access-control metadata: {accessControlError}</div>}
@@ -991,7 +992,7 @@ function Permissions({
         {tab === 'profiles' && !selectedProfile && <div className="empty-state">Select a profile or create one to get started.</div>}
         {tab === 'sets' && !selectedSet && <div className="empty-state">Select a permission set or create one to get started.</div>}
         {tab === 'groups' && !selectedGroup && visibleGroups.length>0 && <div className="empty-state">Select a permission set group to edit it.</div>}
-        {(tab === 'sharing' || tab==='users'||tab==='roles'||tab==='profiles'||tab==='groups'||tab==='publicGroups'||tab==='queues'||tab==='sharingRules'||(tab==='sets'&&!!selectedSet)) && <div className="md-permission-mobile-save"><span className="md-permission-save-state">{draft===savedDraft?'No unsaved changes':'Unsaved permission changes'}</span><button type="button" className="btn btn-brand" onClick={()=>void saveDraft()} disabled={saving || draft===savedDraft || Boolean(accessControlError)}><Save size={14}/>{saving?'Saving…':'Save Changes'}</button></div>}
+        {(tab === 'sharing' || tab==='users'||tab==='roles'||tab==='profiles'||tab==='groups'||tab==='publicGroups'||tab==='queues'||tab==='sharingRules'||(tab==='sets'&&!!selectedSet)) && <div className="md-permission-mobile-save"><span className="md-permission-save-state">{!permissionDirty?'No unsaved changes':'Unsaved permission changes'}</span><button type="button" className="btn btn-brand" onClick={()=>void saveDraft()} disabled={saving || !permissionDirty || Boolean(accessControlError)}><Save size={14}/>{saving?'Saving…':'Save Changes'}</button></div>}
       </div></PlatformPageSlot>
     </section>
     <PlatformPageSlot slotKey="rbac-help"><div className="permission-info"><ShieldCheck size={17} /><span>Tenant-scoped grants are evaluated by the API. Permission-set groups combine their member grants and can mute group-contributed system and object permissions; direct assignments are unaffected by group muting.</span></div></PlatformPageSlot>
