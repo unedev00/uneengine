@@ -87,11 +87,11 @@ test('Conditional Visibility and Canvas Tools are direct ribbon sections',()=>{
  const advanced=src('../src/core/builders/PageBuilder/PageBuilderAdvancedRibbon.tsx');
  assert.ok(ui.includes('preview-visibility-group'));
  assert.ok(ui.includes('onClick={openVisibilityEditor}'));
- assert.ok(ui.includes("ribbonTab==='Arrange' && <ArrangeRibbon"));
+ assert.ok(!ui.includes("ribbonTab==='Arrange' && <ArrangeRibbon"));
  assert.ok(ui.includes('const canvasArrangeProps:ArrangeRibbonProps='));
  assert.ok(ui.includes('onAlign:alignSelected,')&&ui.includes('onDistribute:distributeSelected,'));
  assert.ok(ui.includes('onGroup:wrapSelectedInContainer,')&&ui.includes('onUngroup:ungroupSelected,'));
- assert.ok(ui.includes('<ArrangeRibbon {...canvasArrangeProps}/>'));
+ assert.ok(ui.includes('design2Arrange={canvasArrangeProps}'));
  assert.ok(ui.includes('design2Arrange={canvasArrangeProps}'));
  assert.ok(advanced.includes('page-builder-canvas-ribbon-group'));
  for(const feature of ["key:'visibility'","key:'canvas'","key:'preview'"])assert.ok(!advanced.includes(feature),feature);
