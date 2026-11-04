@@ -51,12 +51,33 @@ type Monitor={events:{id:string;created_at:string;event_type:string;resource:str
 const emptyRule=():Rule=>({label:'',enabled:false,event_type:'api',method:'*',path_prefix:'/api',threshold:100,window_seconds:60,response:'Block',flow_api:null,service_user_id:null});
 function Monitoring({request}:{request:Request}){
  const [page,setPage]=useState(0);
+ const [eventQuery,setEventQuery]=useState('');
+ const [eventStatus,setEventStatus]=useState('all');
+ const [ruleBusy,setRuleBusy]=useState(false);
  const [pruneOpen,setPruneOpen]=useState(false),[pruneConfirmation,setPruneConfirmation]=useState(''),[pruning,setPruning]=useState(false);
  const [persistedSettings,setPersistedSettings]=useState<Monitor['settings']|null>(null);
  const [data,setData]=useState<Monitor|null>(null),[draft,setDraft]=useState<Rule>(emptyRule),[message,setMessage]=useState(''),[users,setUsers]=useState<{id:string;email:string}[]>([]),[flows,setFlows]=useState<{apiName:string;label:string}[]>([]);
  const load=async(before?:string)=>{const r=await request<Monitor>('/security/monitoring'+(before?'?before='+encodeURIComponent(before):''));setData(before&&data?{...r,events:[...data.events,...r.events]}:r);if(!before){setPage(0);setPersistedSettings(r.settings);}};
  useEffect(()=>{void load().catch(e=>setMessage(String(e)));void request<{users:typeof users}>('/security/licenses').then(r=>setUsers(r.users)).catch(()=>{});void request<{flows:typeof flows}>('/metadata/flows/list?page=1&search=').then(r=>setFlows(r.flows)).catch(()=>{});},[]);
  const save=(path:string,input:unknown)=>{setMessage('');void request(path,{method:'PUT',body:JSON.stringify(input)}).then(()=>load()).then(()=>setMessage('Saved')).catch(e=>setMessage(String(e)));};
+ const savedRule=data?.rules.find(item=>item.id===draft.id);
+ const ruleChanged=!savedRule||JSON.stringify(savedRule)!==JSON.stringify(draft);
+ const saveRule=async()=>{
+  if(ruleBusy||!ruleValid||!ruleChanged)return;
+  setRuleBusy(true);setMessage('');
+  try{await request('/security/monitoring/rules',{method:'PUT',body:JSON.stringify(draft)});
+   await load();setMessage('Transaction rule saved.');}
+  catch(e){setMessage('Unable to save transaction rule: '+String(e));}
+  finally{setRuleBusy(false);}
+ };
+ const eventFilter=eventQuery.trim().toLocaleLowerCase();
+ const filteredEvents=(data?.events??[]).filter(event=>{
+   if(eventStatus==='errors'&&event.status_code<400)return false;
+   if(eventStatus==='success'&&(event.status_code<200||event.status_code>=400))return false;
+   return !eventFilter||[event.event_type,event.resource,event.method,String(event.status_code)]
+    .some(value=>value.toLocaleLowerCase().includes(eventFilter));
+ });
+ const visibleEvents=filteredEvents.slice(page*25,(page+1)*25);
  const ruleValid=draft.label.trim().length>0&&draft.path_prefix.startsWith('/')&&Number.isFinite(draft.threshold)&&draft.threshold>=1
   &&Number.isFinite(draft.window_seconds)&&draft.window_seconds>=1
   &&(draft.response!=='Flow'||Boolean(draft.flow_api&&draft.service_user_id));
@@ -96,13 +117,24 @@ function Monitoring({request}:{request:Request}){
  <label className="form-label">Request path prefix (must start with /)<input className="form-control" required value={draft.path_prefix} onChange={e=>setDraft({...draft,path_prefix:e.target.value})}/></label>
  {(['threshold','window_seconds'] as const).map((key,i)=><label className="form-label" key={key}>{['Request threshold','Window in seconds'][i]}<input className="form-control" type="number" min="1" value={draft[key]} onChange={e=>setDraft({...draft,[key]:Number(e.target.value)})}/></label>)}
  {draft.response==='Flow'&&<><label className="form-label">Published Flow<select className="form-control" value={draft.flow_api??''} onChange={e=>setDraft({...draft,flow_api:e.target.value||null})}><option value="">Select Flow</option>{flows.map(f=><option key={f.apiName} value={f.apiName}>{f.label||f.apiName}</option>)}</select></label><label className="form-label">Service user<select className="form-control" value={draft.service_user_id??''} onChange={e=>setDraft({...draft,service_user_id:e.target.value||null})}><option value="">Select user</option>{users.map(u=><option key={u.id} value={u.id}>{u.email}</option>)}</select></label></>}
- </div><div className="md-admin-actions"><button type="button" className="btn btn-brand" disabled={!ruleValid} onClick={()=>save('/security/monitoring/rules',draft)}>Save rule</button></div><h4 className="md-admin-subheading">Recent requests</h4>
- <div className="md-admin-table-wrap" role="region" aria-label="Security monitoring events" tabIndex={0}><table className="data-table md-admin-table md-audit-table"><thead><tr><th scope="col">Time</th><th scope="col">Event</th><th scope="col">Request</th><th scope="col">Status</th><th scope="col">Milliseconds</th></tr></thead><tbody>{data.events.slice(page*25,(page+1)*25).map(e=><tr key={e.id}><td data-label="Time">{new Date(e.created_at).toLocaleString()}</td><td data-label="Event">{e.event_type}</td><td data-label="Request">{e.method} {e.resource}</td><td data-label="Status">{e.status_code||'In progress'}</td><td data-label="Milliseconds">{e.elapsed_ms}</td></tr>)}{data.events.length===0&&<tr><td colSpan={5} className="md-admin-empty-row">No recent requests recorded.</td></tr>}</tbody></table></div>
+ </div><div className="md-admin-actions"><button type="button" className="btn btn-brand" disabled={!ruleValid||!ruleChanged||ruleBusy} onClick={()=>void saveRule()}>{ruleBusy?'Saving…':'Save rule'}</button></div><h4 className="md-admin-subheading">Recent requests</h4>
+ <p className="permission-help">Filters below apply to requests already loaded on this page. Use Next to load older requests.</p>
+ <div className="md-admin-toolbar">
+  <label className="form-label">Filter loaded requests<input type="search" className="form-control" value={eventQuery}
+    placeholder="Path, method, status or event" onChange={e=>{setEventQuery(e.target.value);setPage(0);}}/></label>
+  <label className="form-label">Status<select className="form-control" value={eventStatus}
+    onChange={e=>{setEventStatus(e.target.value);setPage(0);}}>
+    <option value="all">All loaded statuses</option><option value="errors">Errors (400+)</option>
+    <option value="success">Successful (200–399)</option>
+   </select></label>
+  <span role="status">{filteredEvents.length} matching of {data.events.length} loaded requests</span>
+ </div>
+ <div className="md-admin-table-wrap" role="region" aria-label="Security monitoring events" tabIndex={0}><table className="data-table md-admin-table md-audit-table"><thead><tr><th scope="col">Time</th><th scope="col">Event</th><th scope="col">Request</th><th scope="col">Status</th><th scope="col">Milliseconds</th></tr></thead><tbody>{visibleEvents.map(e=><tr key={e.id}><td data-label="Time">{new Date(e.created_at).toLocaleString()}</td><td data-label="Event">{e.event_type}</td><td data-label="Request">{e.method} {e.resource}</td><td data-label="Status">{e.status_code||'In progress'}</td><td data-label="Milliseconds">{e.elapsed_ms}</td></tr>)}{visibleEvents.length===0&&<tr><td colSpan={5} className="md-admin-empty-row">{data.events.length===0?'No recent requests recorded.':'No loaded requests match these filters.'}</td></tr>}</tbody></table></div>
  <div className="md-admin-pagination" role="group" aria-label="Monitoring event pages">
    <button type="button" className="btn" disabled={page===0} onClick={()=>setPage(p=>Math.max(0,p-1))}>Previous 25</button>
-   <span>Page {page+1} · {data.events.length} events loaded</span>
-   <button type="button" className="btn" disabled={(page+1)*25>=data.events.length&&!data.nextCursor}
-    onClick={()=>{if((page+1)*25<data.events.length)setPage(p=>p+1);else if(data.nextCursor)void load(data.nextCursor).then(()=>setPage(p=>p+1)).catch(e=>setMessage(String(e)));}}>Next 25</button>
+   <span>Page {page+1} · {filteredEvents.length} matching loaded requests</span>
+   <button type="button" className="btn" disabled={(page+1)*25>=filteredEvents.length&&!data.nextCursor}
+    onClick={()=>{if((page+1)*25<filteredEvents.length)setPage(p=>p+1);else if(data.nextCursor)void load(data.nextCursor).then(()=>setPage(p=>p+1)).catch(e=>setMessage(String(e)));}}>Next 25</button>
   </div></>}
  </>;
 }
