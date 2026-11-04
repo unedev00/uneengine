@@ -524,6 +524,13 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  const cartCanvas=page.locator('[data-component-id="browser-design2-cart"]').first();
  await cartCanvas.click({position:{x:10,y:10}});
  const cartKeys=await auditBindings('browser-design2-cart');
+ assert.ok(!cartKeys.includes('collectionFormula'),
+  'Cart items source belongs to Source, never a visual field icon');
+ await page.getByRole('button',{name:'Select items source formula'}).click();
+ await page.locator('.smart-data-active-binding').getByText('Items source')
+  .waitFor({state:'visible'});
+ assert.equal(await page.locator('.smart-data-formula-input input').count(),1,
+  'Items source must use the same Formula Bar');
  for(const key of ['cartColumn1Header','cartColumn2Header','cartColumn3Header',
   'cartColumn4Header','subtotalLabel','subtotalValue','totalLabel','totalValue'])
   assert.ok(cartKeys.includes(key),'Missing Cart visual binding '+key);
