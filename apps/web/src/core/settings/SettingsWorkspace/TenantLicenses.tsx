@@ -44,11 +44,23 @@ function PlatformLicenseIssuer({request}:{request:Request}){
   &&(seats===''||(Number.isInteger(Number(seats))&&Number(seats)>=0))
   &&(!expiry||Number.isFinite(Date.parse(expiry))));
  const displayedCapabilities=capabilities.filter(p=>(p.label+' '+p.permission_key).toLowerCase().includes(capabilitySearch.trim().toLowerCase()));
+ const chosenCapabilities=selected.includes('*')?[{resource:'*',action:'*'}]
+  :capabilities.filter(p=>selected.includes(p.permission_key)).map(p=>({resource:p.resource,action:p.action}));
+ const effectiveCapabilities=[...chosenCapabilities,...customCaps];
+ const existingPool=pools.find(p=>p.id===poolId);
+ const compareCapabilities=(list:Array<{resource:string;action:string}>)=>
+  [...new Set(list.map(c=>c.resource+':'+c.action))].sort().join('|');
+ const poolChanged=!existingPool||existingPool.label!==label.trim()
+  ||existingPool.kind!==kind||existingPool.enabled!==enabled
+  ||existingPool.seat_limit!==(seats===''?null:Number(seats))
+  ||(existingPool.expires_at?Date.parse(existingPool.expires_at):null)!==(expiry?Date.parse(expiry):null)
+  ||existingPool.auto_assign!==auto
+  ||compareCapabilities(Array.isArray(existingPool.capabilities)?existingPool.capabilities:[])!==compareCapabilities(effectiveCapabilities);
  const toggleVisible=(add:boolean)=>setSelected(prev=>add?[...new Set([...prev,...displayedCapabilities.map(p=>p.permission_key)])]:prev.filter(k=>!displayedCapabilities.some(p=>p.permission_key===k)));
  const issue=async()=>{
-  if(!validPool||issuing)return;setIssuing(true);setMessage('');
-  const caps=selected.includes('*')?[{resource:'*',action:'*'}]:capabilities.filter(p=>selected.includes(p.permission_key)).map(p=>({resource:p.resource,action:p.action}));
-  try{await request('/security/licenses/issue',{method:'POST',body:JSON.stringify({...(poolId?{id:poolId}:{}),tenantId:tenant,license_key:key.trim(),label:label.trim(),kind,enabled,seat_limit:seats===''?null:Number(seats),expires_at:expiry?new Date(expiry).toISOString():null,auto_assign:auto,capabilities:[...caps,...customCaps]})});
+  if(!validPool||!poolChanged||issuing)return;setIssuing(true);setMessage('');
+  const caps=effectiveCapabilities;
+  try{await request('/security/licenses/issue',{method:'POST',body:JSON.stringify({...(poolId?{id:poolId}:{}),tenantId:tenant,license_key:key.trim(),label:label.trim(),kind,enabled,seat_limit:seats===''?null:Number(seats),expires_at:expiry?new Date(expiry).toISOString():null,auto_assign:auto,capabilities:caps})});
    setMessage('Licence pool saved.');const response=await request<{entitlements:typeof pools}>('/security/licenses/tenants?tenant='+encodeURIComponent(tenant));setPools(Array.isArray(response?.entitlements)?response.entitlements:[]);
   }catch(e){setMessage(e instanceof Error?e.message:String(e));}
   finally{setIssuing(false);}
@@ -72,6 +84,6 @@ function PlatformLicenseIssuer({request}:{request:Request}){
  </div>
  <div className="md-admin-checkbox-grid md-admin-capability-options">{[{permission_key:'*',label:'Full platform resource coverage',resource:'*',action:'*'},...displayedCapabilities].map(p=><label className="checkbox-row" key={p.permission_key}><input type="checkbox" checked={selected.includes(p.permission_key)} onChange={()=>setSelected(selected.includes(p.permission_key)?selected.filter(v=>v!==p.permission_key):[...selected,p.permission_key])}/>{p.label}</label>)}</div></fieldset>
  {customCaps.map((c,i)=><p key={c.resource+':'+c.action}>Additional coverage: {c.resource} / {c.action} <button className="btn" onClick={()=>setCustomCaps(customCaps.filter((_,n)=>n!==i))}>Remove coverage</button></p>)}
- <div className="md-admin-actions"><button type="button" className="btn btn-brand" disabled={!validPool||issuing} onClick={()=>void issue()}>{issuing?'Saving…':'Save licence pool'}</button></div>{message&&<p role="status">{message}</p>}
+ <div className="md-admin-actions"><button type="button" className="btn btn-brand" disabled={!validPool||!poolChanged||issuing} onClick={()=>void issue()}>{issuing?'Saving…':'Save licence pool'}</button></div>{message&&<p role="status">{message}</p>}
  </details>;
 }
