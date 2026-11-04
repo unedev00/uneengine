@@ -179,6 +179,41 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  }
  assert.equal(new Set(allAreas).size,allAreas.length,
   'The dropdown must show every defined area exactly once');
+ // FIXED TEMPLATE CONTRACT: The actual on-screen 17 control icons must
+ // occupy exactly the same R/C cells with identical dimensions and relative
+ // pixel locations in EVERY dropdown. Only enabled/disabled may change.
+ const design2GridFingerprint=()=>page.locator('.smart-design2-group .smart-design2-workbench > .smart-ribbon-items > .smart-ribbon-row > .smart-property')
+  .evaluateAll(elements=>elements.map(element=>{
+   const row=element.closest('.smart-ribbon-row');
+   const box=element.getBoundingClientRect();
+   const rowBox=row.getBoundingClientRect();
+   return {
+    row:Number(row.dataset.designRow),
+    column:Number(element.dataset.designColumn),
+    slot:element.dataset.designSlot,
+    width:Math.round(box.width),
+    height:Math.round(box.height),
+    x:Math.round(box.x-rowBox.x),
+    visible:getComputedStyle(element).display!=='none',
+    hasEditor:!!element.querySelector('button,select,input')
+   };
+  }).sort((a,b)=>a.row-b.row||a.column-b.column));
+ const template=await design2GridFingerprint();
+ assert.equal(template.length,17,'The approved R1-R3 fixed ribbon must have 17 icon controls');
+ assert.ok(template.every(item=>item.visible&&item.hasEditor),
+  'Every fixed cell must show its real control, even when disabled');
+ for(const section of allAreas){
+  await area.selectOption(section);
+  assert.deepEqual(await design2GridFingerprint(),template,
+   'Switching to '+section+' changed the R/C icon layout instead of only enable/disable');
+ }
+ await area.selectOption('Table');
+ const inactiveShape=page.locator('.smart-design2-group [data-design-row="1"] [data-design-slot="shape"]');
+ assert.equal(await inactiveShape.count(),1,'Table R1C3 Shape must remain visible');
+ assert.equal(await inactiveShape.getAttribute('data-supported'),'false',
+  'Table R1C3 must be disabled, not hidden');
+ assert.equal(await inactiveShape.locator('button').first().isDisabled(),true,
+  'Unsupported Table R1C3 must be an actual disabled control');
  await area.selectOption('Row');
  // Row 0: fixed C1 selector, C2 eye, C3 X and C4 Y. Values edit the real
  // free-canvas component.position, not a duplicate properties.x/y field.
@@ -255,15 +290,21 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
   assert.ok(bounds&&Math.abs(bounds.width-40)<1&&Math.abs(bounds.height-26)<1,
     'Image icon dropdown must occupy exactly 40x26 px at its R/C position');
  }
- assert.ok(Math.abs(placementRect.x-fillRect.x)<1,
-   'Image Placement R2C6 and Image Fill R3C6 must share column C6');
+ // C6 stays at the same pixel x as the corresponding Body C6 cell;
+ // row-specific widths from Excel mean R2 and R3 may differ horizontally.
+ assert.equal(Math.round(placementRect.x),Math.round(
+   template.find(item=>item.row===2&&item.column===6).x+
+   (await row.locator('[data-design-row="2"]').boundingBox()).x));
+ assert.equal(Math.round(fillRect.x),Math.round(
+   template.find(item=>item.row===3&&item.column===6).x+
+   (await row.locator('[data-design-row="3"]').boundingBox()).x));
  // Old flex!important plus grid-area:auto!important rendered SQL C6 as C1.
  const firstImageCell=row.locator('[data-design-row="1"] [data-design-slot="fill"]');
  const firstRect=await firstImageCell.boundingBox();
- assert.ok(firstRect&&Math.abs(placementRect.x-firstRect.x-340)<1,
-   'Image R2C6 is not physically at C6 (340px right of R1C1)');
- assert.ok(firstRect&&Math.abs(fillRect.x-firstRect.x-340)<1,
-   'Image R3C6 is not physically at C6 (340px right of R1C1)');
+ assert.ok(firstRect&&placementRect.x>firstRect.x+200,
+   'Image R2C6 appears at C1 instead of the fixed C6 position');
+ assert.ok(firstRect&&fillRect.x>firstRect.x+200,
+   'Image R3C6 appears at C1 instead of the fixed C6 position');
  for(const index of [1,2,3]){
   assert.equal(await row.locator('[data-design-row="'+index+'"]').evaluate(
     element=>getComputedStyle(element).display),'grid',
@@ -393,8 +434,11 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
    'Do not enable unapproved Focus Color for Smart Tabs');
  await page.locator('[data-component-id="browser-design2-cart"]').first().click({position:{x:18,y:18}});
  await page.getByLabel('Select Design 2 area').selectOption('Row');
- assert.equal(await row.locator('[data-design-row="2"] [data-design-slot="focused"]').count(),0,
-   'Row Focus was not approved for Smart Cart and must not be invented');
+ assert.equal(await row.locator('[data-design-row="2"] [data-design-slot="focused"]').count(),1,
+   'Row Focus must remain visible, even when not approved');
+ assert.equal(await row.locator('[data-design-row="2"] [data-design-slot="focused"]')
+   .getAttribute('data-supported'),'false',
+   'Unsupported Row Focus must remain disabled');
  const {mkdir}=await import('node:fs/promises');
  await mkdir(new URL('../artifacts/',import.meta.url),{recursive:true});
  await page.screenshot({path:new URL('../artifacts/design2-contextual-ribbon.png',import.meta.url).pathname});

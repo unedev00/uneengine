@@ -160,11 +160,29 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    .sort((a,b)=>a[1]-b[1]).map(([area])=>area);
  const activeDesign2Area=design2Areas.includes(design2Area)?design2Area:design2Areas[0]??'Body';
  const approvedMatrixAreas=new Set(design2SlotRules.map(rule=>rule.area));
- // A SQL slot owns its position even when its property is unavailable.
- // Never compact away an unsupported/missing slot: the same R/C grid applies
- // to every component, while only SQL-enabled properties can be edited.
- const design2Properties=tab==='Design2'?design2Slots
-   .filter(slot=>slot.area===activeDesign2Area)
+ // A SINGLE ribbon scaffold for all Design 2 sections and all components.
+ // Body owns the approved R1-R3 visual icon matrix; the two Image icons
+ // occupy their fixed R2C6/R3C6 positions on EVERY section (disabled when
+ // the current area/component has no matching supported property).
+ // Existing SQL still owns each selected area's semantic property binding.
+ const design2TemplateSlots=[
+   ...design2Slots.filter(slot=>slot.area==='Body'),
+   ...design2Slots.filter(slot=>slot.area==='Image'&&
+     (slot.slotKey==='placement'||slot.slotKey==='imageFill'))
+ ].sort((a,b)=>a.row-b.row||a.order-b.order);
+ const areaSlots=design2Slots.filter(slot=>slot.area===activeDesign2Area);
+ const design2RenderedSlots:Design2Slot[]=design2TemplateSlots.map(template=>{
+   // Match the semantic slot, not the old section-local position. Older
+   // metadata areas used R2 for Fill and R3C3 for Text Size; those should
+   // no longer shift the whole ribbon when the section changes.
+   const actual=areaSlots.find(slot=>slot.slotKey===template.slotKey);
+   return {
+     ...template,area:activeDesign2Area,
+     propertyKey:actual?.propertyKey??null,
+     fallbackKey:actual?.fallbackKey??template.fallbackKey
+   };
+ });
+ const design2Properties=tab==='Design2'?design2RenderedSlots
    .map(slot=>{
      const approved=design2SlotRules.find(rule=>
        rule.componentApi===api&&rule.area===slot.area&&rule.slotKey===slot.slotKey);
@@ -198,11 +216,11 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  // Preserve every SQL C1..C6 index, including empty leading cells for
  // Image R2C6 / R3C6; never repack enabled controls to the left.
  const design2GridColumns=(row:number)=>{
-   const slots=design2Slots.filter(slot=>slot.area===activeDesign2Area&&slot.row===row);
+   const slots=design2TemplateSlots.filter(slot=>slot.row===row);
    return Array.from({length:6},(_,index)=>{
      const slot=slots.find(item=>item.order===index+1);
-     // An empty C3-C5 reserves its previous 80px track (Image C6
-     // therefore remains at x=340), but an actual 40px icon uses 40px.
+     // Fixed across every dropdown, including disabled/unsupported cells.
+     // A vacant R2C5 reserves the width specified by the approved layout.
      return (slot?.width??(index>=2&&index<=4?80:40))+'px';
    }).join(' ');
  };
@@ -300,7 +318,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    group.length*5.5+16
  ));
  const controls=(property:UneRibbonProperty)=>{
-   const slotPlacement=tab==='Design2'?design2Slots.find(slot=>
+   const slotPlacement=tab==='Design2'?design2RenderedSlots.find(slot=>
      slot.area===activeDesign2Area&&slot.row===property.designRow&&slot.order===property.designOrder):undefined;
    const supported=property.components.includes(api)&&(!sharedPropertyIds||sharedPropertyIds.includes(property.id));
    const kind=api==='smart_calendar'&&property.id==='shadow'

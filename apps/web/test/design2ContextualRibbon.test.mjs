@@ -399,3 +399,31 @@ test('Design 2 R0 command actions share the exact Arrange callbacks and their di
  assert.match(builder,/onNesting:\(\)=>openAdvanced\('nesting'\)/);
  assert.match(builder,/onLock:\(\)=>/);
 });
+
+
+test('all Design 2 areas project the same fixed Body+Image icon scaffold',()=>{
+ const body=fixedRows.filter(item=>item.area==='Body');
+ const image=fixedRows.filter(item=>item.area==='Image'&&
+  (item.slot==='placement'||item.slot==='imageFill'));
+ assert.equal(body.length,15);
+ assert.equal(image.length,2);
+ const canonical=[...body,...image].sort((a,b)=>a.row-b.row||a.order-b.order);
+ assert.equal(canonical.length,17);
+ assert.equal(new Set(canonical.map(slot=>slot.row+':'+slot.order)).size,17);
+ assert.equal(canonical.find(slot=>slot.row===1&&slot.order===3)?.slot,'shape');
+ assert.equal(canonical.find(slot=>slot.row===1&&slot.order===4)?.slot,'shapeFill');
+ assert.equal(canonical.find(slot=>slot.row===2&&slot.order===6)?.slot,'placement');
+ assert.equal(canonical.find(slot=>slot.row===3&&slot.order===6)?.slot,'imageFill');
+ assert.match(shared,/const design2TemplateSlots=\[/);
+ assert.match(shared,/design2Slots\.filter\(slot=>slot\.area==='Body'\)/);
+ assert.match(shared,/slot\.area==='Image'&&/);
+ assert.match(shared,/const design2RenderedSlots:Design2Slot\[\]=design2TemplateSlots\.map/);
+ assert.match(shared,/const actual=areaSlots\.find\(slot=>slot\.slotKey===template\.slotKey\)/);
+ assert.match(shared,/propertyKey:actual\?\.propertyKey\?\?null/);
+ assert.match(shared,/const design2Properties=tab==='Design2'\?design2RenderedSlots/);
+ assert.match(shared,/const slots=design2TemplateSlots\.filter\(slot=>slot\.row===row\)/);
+ assert.match(shared,/const slotPlacement=tab==='Design2'\?design2RenderedSlots\.find/);
+ assert.match(shared,/const approved=design2SlotRules\.find\(rule=>/);
+ assert.match(shared,/components:assigned\?assigned\.components:\[\]/);
+ assert.match(shared,/design2Areas=\[\.\.\.new Map\(design2Slots/);
+});
