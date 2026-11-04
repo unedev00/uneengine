@@ -181,3 +181,36 @@ test('all 319 source properties appear, including missing Cart Button 5',()=>{
   'customButton1Fill','customButton2Fill'])
   assert.ok(extension.includes("'"+key+"'"),key);
 });
+
+
+test('R0 C3/C4 reuses canvas x/y for all 15 requested Smart component APIs',()=>{
+ const migration=read('../../server/src/system-support/migrations/20271106-design2-row0-xy-position.sql');
+ const required=['smart_button','smart_calendar','smart_card_grid','smart_cart',
+  'smart_container','smart_icon','smart_image','smart_lookup','smart_navigation',
+  'smart_table','smart_tabs','smart_text','smart_textbox','smart_toggle','smart_input'];
+ const listed=[...migration.matchAll(/^\s*\('(smart_[a-z_]+)'\)/gm)].map(match=>match[1]);
+ assert.deepEqual(listed,required,'only the 15 explicitly requested component APIs');
+ assert.match(migration,/p\.property_key IN \('x','y'\)/);
+ assert.match(migration,/p\.control_kind='position'/);
+ assert.match(migration,/ON CONFLICT\(component_api,property_key\) DO UPDATE SET enabled=true/);
+ assert.doesNotMatch(migration,/INSERT INTO md_builder_shared_properties/);
+ assert.doesNotMatch(migration,/UPDATE md_builder_design2_slots/);
+ assert.match(shared,/const property=definitions\.find\(entry=>entry\.id===id\)/);
+ assert.match(shared,/property&&property\.components\.includes\(api\)/);
+ assert.match(shared,/designRow:0,designOrder:index\+3,designWidth:80,designHeight:26/);
+ assert.match(shared,/kind==='position'&&useCanvasPosition&&position&&onPositionChange/);
+ assert.match(shared,/onPositionChange\(\{\.\.\.position,\[property\.id\]:v\}\)/);
+ assert.match(shared,/data-design-column=\{tab==='Design2'&&property\.designRow===0/);
+ assert.match(shared,/isCanvasAxis/);
+ assert.match(builder,/onPositionChange=\{position=>\{/);
+});
+
+test('Design 2 R0 X/Y has exact 80x26 geometry without shifting property rows',()=>{
+ assert.match(css,/smart-design2-context\[data-design-row="0"\]>.smart-property\{/);
+ assert.match(css,/flex:0 0 80px!important/);
+ assert.match(css,/width:80px!important/);
+ assert.match(css,/height:26px!important/);
+ assert.match(css,/width:472px!important/);
+ assert.match(shared,/\[1,2,3\]\.map\(row/);
+ assert.match(shared,/gridTemplateColumns:design2GridColumns\(\)/);
+});
