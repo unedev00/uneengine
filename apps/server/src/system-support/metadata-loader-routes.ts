@@ -293,6 +293,17 @@ export function registerMetadataLoaderRoutes(app:Express,db:SqlPersistence,rbac:
     action:i.action,status:i.status,result:i.result,message:i.message})),
    report:writeReport(data.tables,data.items).toString('base64')});
  }));
+ const updateObject=async(actor:Actor,o:MetadataObject,cell:Record<string,string>)=>{
+  const cfg=await metadata.load(actor.tenant_id,actor.user_id,o.apiName);
+  const draft={...o,...cfg,label:value(cell,'Label')||o.label,
+   pluralLabel:value(cell,'PluralLabel')||cfg.pluralLabel,
+   description:value(cell,'Description')==='<CLEAR>'?'':value(cell,'Description')||cfg.description,
+   helpText:value(cell,'HelpText')==='<CLEAR>'?'':value(cell,'HelpText')||cfg.helpText,
+   settings:objectSettings(cell,cfg.settings as unknown as Record<string,unknown>)};
+  await assertMetadataPackageEditable(db,actor.tenant_id,'object-config',o.apiName);
+  await definitions.replaceLayouts(actor.tenant_id,o.apiName,draft,Number(o.revision??0),actor.user_id,
+   async(client:PoolClient)=>{await metadata.persistWithin(client,actor.tenant_id,o.apiName,draft);});
+ };
  app.post('/api/metadata/loader/execute',route(async(req,res)=>{
   const actor=req.actor!,buffer=parse(req),digest=createHash('sha256').update(buffer).digest('hex');
   if(req.body?.digest!==digest||req.body?.confirmation!=='PROCEED_EXCLUDING_ERRORS')
@@ -322,27 +333,27 @@ export function registerMetadataLoaderRoutes(app:Express,db:SqlPersistence,rbac:
         [actor.tenant_id,i.objectApi]);
       });
      }else if(!o){
-      const cell=i.cells,settings=objectSettings(cell);
-      await definitions.create(actor.tenant_id,i.objectApi,value(cell,'Label'),[
-       {apiName:'Name',label:value(cell,'Label')+' Name',dataType:value(cell,'RecordNameType')==='Auto Number'?'AutoNumber':'Text(80)',
-        required:true,autoNumberFormat:value(cell,'RecordNameFormat')||'REC-{0000}'}
-      ],async(client:PoolClient)=>{
-       await metadata.persistWithin(client,actor.tenant_id,i.objectApi,{
-        pluralLabel:value(cell,'PluralLabel')||value(cell,'Label'),description:value(cell,'Description'),
-        helpText:value(cell,'HelpText'),settings});
-      });
+      const deleted=(await db.query('SELECT 1 FROM md_object_definitions WHERE tenant_id=$1 AND api_name=$2 AND deleted_at IS NOT NULL',
+       [actor.tenant_id,i.objectApi])).rowCount;
+      if(deleted){
+       if(i.action==='Create')throw Error('Object is soft-deleted; use Upsert');
+       await lifecycle.restore(actor.tenant_id,i.objectApi);
+       await updateObject(actor,await definitions.get(actor.tenant_id,i.objectApi),i.cells);
+      }else{
+       const cell=i.cells,settings=objectSettings(cell);
+       await definitions.create(actor.tenant_id,i.objectApi,value(cell,'Label'),[
+        {apiName:'Name',label:value(cell,'Label')+' Name',
+         dataType:value(cell,'RecordNameType')==='Auto Number'?'AutoNumber':'Text(80)',
+         required:true,autoNumberFormat:value(cell,'RecordNameFormat')||'REC-{0000}'}
+       ],async(client:PoolClient)=>{
+        await metadata.persistWithin(client,actor.tenant_id,i.objectApi,{
+         pluralLabel:value(cell,'PluralLabel')||value(cell,'Label'),description:value(cell,'Description'),
+         helpText:value(cell,'HelpText'),settings});
+       });
+      }
      }else{
       if(i.action==='Create')throw Error('Object already exists');
-      const cfg=await metadata.load(actor.tenant_id,actor.user_id,i.objectApi);
-      const cell=i.cells;
-      const draft={...o,...cfg,label:value(cell,'Label')||o.label,
-       pluralLabel:value(cell,'PluralLabel')||cfg.pluralLabel,
-       description:value(cell,'Description')==='<CLEAR>'?'':value(cell,'Description')||cfg.description,
-       helpText:value(cell,'HelpText')==='<CLEAR>'?'':value(cell,'HelpText')||cfg.helpText,
-       settings:objectSettings(cell,cfg.settings as unknown as Record<string,unknown>)};
-      await assertMetadataPackageEditable(db,actor.tenant_id,'object-config',i.objectApi);
-      await definitions.replaceLayouts(actor.tenant_id,i.objectApi,draft,Number((o as {revision?:number}).revision??0),
-       actor.user_id,async(client:PoolClient)=>{await metadata.persistWithin(client,actor.tenant_id,i.objectApi,draft);});
+      await updateObject(actor,o,i.cells);
      }
     }else{
      if(i.action==='Delete'){await definitions.deleteField(actor.tenant_id,i.objectApi,i.fieldApi!);}
@@ -356,22 +367,35 @@ export function registerMetadataLoaderRoutes(app:Express,db:SqlPersistence,rbac:
         [actor.tenant_id,i.objectApi,i.fieldApi]);
        if(!result.rowCount)throw Error('Field not previously deleted');
       });
-     }else if(!existing){
-      const field=fieldInput(i.cells);
-      if(typeof field.dataType!=='string'||typeof field.label!=='string'||!field.label)throw Error('New field needs Label and DataType');
-      await definitions.addField(actor.tenant_id,i.objectApi,i.fieldApi!,field.dataType,
-       (field.relationship as {targetObject?:string}|undefined)?.targetObject,field.label,field);
      }else{
-      if(i.action==='Create')throw Error('Field already exists');
-      const proposal=fieldInput(i.cells,existing);
-      if(!proposal.label)throw Error('Field label is missing');
-      const changed:Record<string,unknown>={label:proposal.label,apiName:i.fieldApi};
-      for(const [key,v] of Object.entries(proposal)){
-       if(key==='label'||key==='apiName')continue;
-       if(JSON.stringify((existing as unknown as Record<string,unknown>)[key])!==JSON.stringify(v))changed[key]=v;
+      let target=existing;
+      if(!target){
+       const deleted=(await db.query('SELECT 1 FROM md_field_definitions WHERE tenant_id=$1 AND object_api=$2 AND api_name=$3 AND deleted_at IS NOT NULL',
+        [actor.tenant_id,i.objectApi,i.fieldApi])).rowCount;
+       if(deleted){
+        if(i.action==='Create')throw Error('Field is soft-deleted; use Upsert');
+        const restored=await definitions.restoreField(actor.tenant_id,i.objectApi,i.fieldApi!);
+        target=restored.fields.find(f=>f.apiName===i.fieldApi);
+       }
       }
-      if(Object.keys(changed).length>2)await definitions.updateField(actor.tenant_id,i.objectApi,i.fieldApi!,changed,actor.user_id);
-      else i.result='Unchanged';
+      if(!target){
+       const field=fieldInput(i.cells);
+       if(typeof field.dataType!=='string'||typeof field.label!=='string'||!field.label)throw Error('New field needs Label and DataType');
+       await definitions.addField(actor.tenant_id,i.objectApi,i.fieldApi!,field.dataType,
+        (field.relationship as {targetObject?:string}|undefined)?.targetObject,field.label,field);
+      }else{
+       if(i.action==='Create')throw Error('Field already exists');
+       const proposal=fieldInput(i.cells,target);
+       if(!proposal.label)throw Error('Field label is missing');
+       const changed:Record<string,unknown>={label:proposal.label,apiName:i.fieldApi};
+       for(const [key,v] of Object.entries(proposal)){
+        if(key==='label'||key==='apiName')continue;
+        if(JSON.stringify((target as unknown as Record<string,unknown>)[key])!==JSON.stringify(v))changed[key]=v;
+       }
+       if(Object.keys(changed).length>2)
+        await definitions.updateField(actor.tenant_id,i.objectApi,i.fieldApi!,changed,actor.user_id);
+       else i.result='Unchanged';
+      }
      }
     }
     i.status='Success';i.message='Executed';if(!i.result)i.result=i.action;
