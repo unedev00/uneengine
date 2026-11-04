@@ -17,6 +17,7 @@ import { precedingFlowSteps } from './flowReferenceCatalog';
 import { flowCreateOptions, flowElementAvailable, flowElementInToolbox, type FlowCapabilityCatalog } from './flowCapabilityCatalog';
 import { rowsFrom, outcomesFrom, screenOutcomesFrom, displayValue, type ConfigRow, type DecisionOutcome } from './flowEditorData';
 import HttpCalloutFieldEditor from './HttpCalloutFieldEditor';
+import HttpCalloutOutputsEditor from './HttpCalloutOutputsEditor';
 import {apiRequest} from '../../authentication/Client/authClient';
 import ParseJsonConfigEditor from './ParseJsonConfigEditor';
 import { flowCanvasBounds, moveFlowPosition, storedFlowPosition } from './flowCanvasLayout.mjs';
@@ -891,12 +892,14 @@ export default function FlowBuilder({
             ? { ...element, config: { ...element.config, eventApiName: event.target.value, fieldValues: [] } }
             : element)
         })}><option value="">Select platform event</option>{platformEvents.map((event) => <option key={event.apiName} value={event.apiName}>{event.label} ({event.apiName})</option>)}</select></label>
-        <p className="settings-panel-copy">Map event fields to literal values or Flow resource references such as {'{!$Record.Id}'}.</p>
+        <p className="settings-panel-copy">Type a value, or @ record field · $ user/system · ! flow value.</p>
         <div className="flow-config-list">{fieldValues.map((fieldValue, index) => <div className="flow-config-row" key={`platform-event-field-${index}`}>
           <select className="form-control" aria-label="Platform event field" value={displayValue(fieldValue.field)} onChange={(event) => setConfig('fieldValues', fieldValues.map((item, itemIndex) => itemIndex === index ? { ...item, field: event.target.value } : item))}>
             <option value="">Select event field</option>{platformEvent?.fields.map((field) => <option key={field.apiName} value={field.apiName}>{field.label}</option>)}
           </select>
-          <input className="form-control" aria-label="Platform event value" placeholder="Value or resource" value={displayValue(fieldValue.value)} onChange={(event) => setConfig('fieldValues', fieldValues.map((item, itemIndex) => itemIndex === index ? { ...item, value: event.target.value } : item))} />
+          <FlowReferenceInput ariaLabel="Platform event value" value={displayValue(fieldValue.value)}
+            flow={flow} elementId={selected.id} objects={objects}
+            onChange={value => setConfig('fieldValues', fieldValues.map((item, itemIndex) => itemIndex === index ? { ...item, value } : item))} />
           <button className="row-menu" aria-label="Remove event field mapping" onClick={() => setConfig('fieldValues', fieldValues.filter((_, itemIndex) => itemIndex !== index))}><X size={14} /></button>
         </div>)}
           {platformEvent && <button className="text-action" onClick={() => setConfig('fieldValues', [...fieldValues, { field: '', value: '' }])}><Plus size={13} />Add Field</button>}
@@ -1227,9 +1230,9 @@ export default function FlowBuilder({
             <option value="filter">Records matching conditions</option>
           </select></label>
           {mutationSource === 'id'
-            && <label className="form-label">Record ID / Flow Resource<input className="form-control"
-              value={displayValue(selected.config.recordId)} placeholder="{!recordId}"
-              onChange={(event) => setConfig('recordId', event.target.value)} /></label>}
+            && <label className="form-label">Record ID / Flow Resource<FlowReferenceInput ariaLabel="Record ID" value={displayValue(selected.config.recordId)}
+          flow={flow} elementId={selected.id} objects={objects}
+          onChange={value=>setConfig('recordId',value)}/></label>}
           {(displayValue(selected.config.recordSource) === 'record') && <label className="form-label">Record Variable<select
             className="form-control" value={displayValue(selected.config.recordVariable)}
             onChange={(event) => setConfig('recordVariable', event.target.value)}>
@@ -1503,11 +1506,15 @@ export default function FlowBuilder({
         if (process) setConfig('objectApiName', process.objectApiName);
       }}><option value="">Use direct approvers</option>{approvalProcesses.filter((item) => item.active).map((item) => <option key={item.apiName} value={item.apiName}>{item.label} · {item.objectApiName}</option>)}</select></label>
       <label className="form-label">Target Object<select className="form-control" value={displayValue(selected.config.objectApiName)} onChange={(event) => setConfig('objectApiName', event.target.value)}><option value="">Select object</option>{objects.filter((item) => item.apiName !== 'User').map((item) => <option key={item.apiName} value={item.apiName}>{item.label}</option>)}</select></label>
-      <label className="form-label">Record ID / Flow Reference<input className="form-control" value={displayValue(selected.config.recordId)} onChange={(event) => setConfig('recordId', event.target.value)} placeholder="{!$Record.Id}" /></label>
+      <label className="form-label">Record ID / Flow Reference<FlowReferenceInput ariaLabel="Record ID" value={displayValue(selected.config.recordId)}
+          flow={flow} elementId={selected.id} objects={objects}
+          onChange={value=>setConfig('recordId',value)}/></label>
       {!displayValue(selected.config.approvalProcessApiName) && <label className="form-label">Approver Users<select className="form-control" multiple size={Math.min(6, Math.max(3, users.length))} value={displayValue(selected.config.approverIds).split(/[;,\r\n]+/).map((id) => id.trim()).filter(Boolean)} onChange={(event) => setConfig('approverIds', Array.from(event.currentTarget.selectedOptions, (option) => option.value).join(', '))}>{users.map((user) => <option key={user.id} value={user.id}>{user.name} · {user.username}</option>)}</select></label>}
       <label className="form-label">Approval Rule<select className="form-control" value={displayValue(selected.config.approvalMode) || 'ANY'} onChange={(event) => setConfig('approvalMode', event.target.value)}><option value="ANY">Any one approver</option><option value="ALL">All approvers must approve</option></select></label>
       <label className="form-label">Status Output Variable<select className="form-control" value={displayValue(selected.config.statusVariable)} onChange={(event) => setConfig('statusVariable', event.target.value)}><option value="">No output variable</option>{flow.resources.filter((resource) => resource.type === 'Variable' && resource.dataType === 'Text' && !resource.isCollection).map((resource) => <option key={resource.name} value={resource.name}>{resource.label} · {resource.name}</option>)}</select></label>
-      <label className="form-label">Request Comments<textarea className="form-control" rows={3} maxLength={2000} value={displayValue(selected.config.comments)} onChange={(event) => setConfig('comments', event.target.value)} /></label>
+      <label className="form-label">Request Comments<FlowReferenceInput ariaLabel="Comments" multiline value={displayValue(selected.config.comments)}
+          flow={flow} elementId={selected.id} objects={objects}
+          onChange={value=>setConfig('comments',value)}/></label>
       <div className="settings-panel-copy">Create exactly two normal connectors labeled Approved and Rejected. Work items appear in the approvers' existing inbox, and Pending Work shows paused stages. Canceling the interview also cancels unfinished approval requests.</div>
     </>;
     if (selected.type === 'Action') return <>
@@ -1577,12 +1584,12 @@ export default function FlowBuilder({
                 {parameter.location === 'body' ? 'JSON Request Body' : `${parameter.location === 'path' ? 'Path' : 'Query'} · ${parameter.name}`}
                 {parameter.required ? ' *' : ''}
                 {parameter.location === 'body'
-                  ? <textarea className="form-control" rows={5} value={displayValue(inputs[parameter.name])}
-                    placeholder='{"recordId":"{!$Record.Id}"}'
-                    onChange={(event) => updateInput(parameter.name, event.target.value)} />
-                  : <input className="form-control" value={displayValue(inputs[parameter.name])}
-                    placeholder={parameter.valueType === 'string' ? '{!$Record.Id} or a literal' : 'Value or Flow reference'}
-                    onChange={(event) => updateInput(parameter.name, event.target.value)} />}
+                  ? <FlowReferenceInput multiline ariaLabel={parameter.name} value={displayValue(inputs[parameter.name])}
+                    flow={flow} elementId={selected.id} objects={objects}
+                    onChange={value => updateInput(parameter.name, value)} />
+                  : <FlowReferenceInput ariaLabel={parameter.name} value={displayValue(inputs[parameter.name])}
+                    flow={flow} elementId={selected.id} objects={objects}
+                    onChange={value => updateInput(parameter.name, value)} />}
               </label>
             ))}</div>
             <div className="info-callout">This Action queues a durable HTTPS callout through the selected Named Credential. Execution requires Flow permissions and HTTP Callout execution permission. Responses are not returned to the Flow.</div>
@@ -1610,25 +1617,45 @@ export default function FlowBuilder({
         <div className="info-callout">Generates a cryptographically secure 4- or 6-digit numeric OTP as text, preserving leading zeroes. Store it securely and implement expiry, attempt limits and single-use verification in your Flow.</div>
             </> : displayValue(selected.config.actionType) === 'Create Task' ? <>
         <label className="form-label">Target Object<select className="form-control" value={displayValue(selected.config.objectApiName)} onChange={(event) => setConfig('objectApiName', event.target.value)}><option value="">Select an object</option>{objects.filter((object) => object.apiName !== 'User').map((object) => <option key={object.apiName} value={object.apiName}>{object.label}</option>)}</select></label>
-        <label className="form-label">Target Record ID<input className="form-control" maxLength={512} value={displayValue(selected.config.recordId)} onChange={(event) => setConfig('recordId', event.target.value)} placeholder="{!$Record.Id}" /></label>
-        <label className="form-label">Subject<input className="form-control" maxLength={200} value={displayValue(selected.config.subject)} onChange={(event) => setConfig('subject', event.target.value)} /></label>
-        <label className="form-label">Description<textarea className="form-control" rows={4} maxLength={10000} value={displayValue(selected.config.description)} onChange={(event) => setConfig('description', event.target.value)} /></label>
-        <label className="form-label">Due Date (ISO 8601)<input className="form-control" maxLength={128} value={displayValue(selected.config.dueAt)} onChange={(event) => setConfig('dueAt', event.target.value)} placeholder="2026-05-01T09:00:00Z or {!DueDate}" /></label>
+        <label className="form-label">Target Record ID<FlowReferenceInput ariaLabel="Record ID" value={displayValue(selected.config.recordId)}
+          flow={flow} elementId={selected.id} objects={objects}
+          onChange={value=>setConfig('recordId',value)}/></label>
+        <label className="form-label">Subject<FlowReferenceInput ariaLabel="Subject" value={displayValue(selected.config.subject)}
+          flow={flow} elementId={selected.id} objects={objects}
+          onChange={value=>setConfig('subject',value)}/></label>
+        <label className="form-label">Description<FlowReferenceInput ariaLabel="Description" multiline value={displayValue(selected.config.description)}
+          flow={flow} elementId={selected.id} objects={objects}
+          onChange={value=>setConfig('description',value)}/></label>
+        <label className="form-label">Due Date (ISO 8601)<FlowReferenceInput ariaLabel="Due date" value={displayValue(selected.config.dueAt)}
+          flow={flow} elementId={selected.id} objects={objects}
+          onChange={value=>setConfig('dueAt',value)}/></label>
         <div className="info-callout">Creates a Task activity on the target record in the Flow transaction. The running user needs edit access to the target record.</div>
       </> : displayValue(selected.config.actionType) === 'Quick Actions' ? <>
         <label className="form-label">Target Object<select className="form-control" value={displayValue(selected.config.objectApiName)} onChange={(event) => { setConfig('objectApiName', event.target.value); setConfig('quickActionId', ''); }}><option value="">Select an object</option>{objects.filter((object) => object.apiName !== 'User').map((object) => <option key={object.apiName} value={object.apiName}>{object.label}</option>)}</select></label>
         <label className="form-label">Quick Action<select className="form-control" value={displayValue(selected.config.quickActionId)} onChange={(event) => setConfig('quickActionId', event.target.value)}><option value="">Select an enabled action</option>{objects.find((object) => object.apiName === displayValue(selected.config.objectApiName))?.actions?.filter((action) => action.type === 'Custom' && action.enabled && action.behavior === 'Set Field Value').map((action) => <option key={action.id} value={action.id}>{action.label}</option>)}</select></label>
-        <label className="form-label">Target Record ID<input className="form-control" maxLength={512} value={displayValue(selected.config.recordId)} onChange={(event) => setConfig('recordId', event.target.value)} placeholder="{!$Record.Id}" /></label>
+        <label className="form-label">Target Record ID<FlowReferenceInput ariaLabel="Record ID" value={displayValue(selected.config.recordId)}
+          flow={flow} elementId={selected.id} objects={objects}
+          onChange={value=>setConfig('recordId',value)}/></label>
         <div className="info-callout">Runs the enabled metadata-defined Set Field Value action against the selected record in the Flow transaction. The running user needs object, record, and target-field edit access.</div>
       </> : displayValue(selected.config.actionType) === 'Post to Chatter' ? <>
         <label className="form-label">Target Object<select className="form-control" value={displayValue(selected.config.objectApiName)} onChange={(event) => setConfig('objectApiName', event.target.value)}><option value="">Select an object</option>{objects.filter((object) => object.apiName !== 'User').map((object) => <option key={object.apiName} value={object.apiName}>{object.label}</option>)}</select></label>
-        <label className="form-label">Target Record ID<input className="form-control" value={displayValue(selected.config.recordId)} onChange={(event) => setConfig('recordId', event.target.value)} placeholder="{!$Record.Id}" /></label>
-        <label className="form-label">Message<textarea className="form-control" rows={5} value={displayValue(selected.config.message)} onChange={(event) => setConfig('message', event.target.value)} placeholder="Hello {!$User.Name}" /></label>
+        <label className="form-label">Target Record ID<FlowReferenceInput ariaLabel="Record ID" value={displayValue(selected.config.recordId)}
+          flow={flow} elementId={selected.id} objects={objects}
+          onChange={value=>setConfig('recordId',value)}/></label>
+        <label className="form-label">Message<FlowReferenceInput ariaLabel="Message" multiline value={displayValue(selected.config.message)}
+          flow={flow} elementId={selected.id} objects={objects}
+          onChange={value=>setConfig('message',value)}/></label>
         <div className="info-callout">Post to Chatter adds a message to a record feed when the running user has edit access and Chatter is enabled for the target object.</div>
       </> : displayValue(selected.config.actionType) === 'Custom Notification' ? <>
-        <label className="form-label">Recipient User IDs (comma or newline separated)<textarea className="form-control" rows={3} value={displayValue(selected.config.recipientIds)} onChange={(event) => setConfig('recipientIds', event.target.value)} placeholder="{!$User.Id}" /></label>
-        <label className="form-label">Title<input className="form-control" maxLength={120} value={displayValue(selected.config.title)} onChange={(event) => setConfig('title', event.target.value)} placeholder="Flow notification" /></label>
-        <label className="form-label">Message<textarea className="form-control" rows={4} maxLength={2000} value={displayValue(selected.config.messageBody)} onChange={(event) => setConfig('messageBody', event.target.value)} placeholder="Hello {!$User.Name}" /></label>
+        <label className="form-label">Recipient User IDs (comma or newline separated)<FlowReferenceInput ariaLabel="Recipient user IDs" multiline value={displayValue(selected.config.recipientIds)}
+          flow={flow} elementId={selected.id} objects={objects}
+          onChange={value=>setConfig('recipientIds',value)}/></label>
+        <label className="form-label">Title<FlowReferenceInput ariaLabel="Title" value={displayValue(selected.config.title)}
+          flow={flow} elementId={selected.id} objects={objects}
+          onChange={value=>setConfig('title',value)}/></label>
+        <label className="form-label">Message<FlowReferenceInput ariaLabel="Message" multiline value={displayValue(selected.config.messageBody)}
+          flow={flow} elementId={selected.id} objects={objects}
+          onChange={value=>setConfig('messageBody',value)}/></label>
         <div className="info-callout">Delivers a persistent notification to each active user in this tenant. The running user needs the Send Custom Notifications permission; recipients can view and mark their own notifications as read.</div>
       </> : displayValue(selected.config.actionType) === 'Outbound Message' ? <>
         <div className="info-callout">Deliver SMS, WhatsApp or other messages through an activated provider operation or tenant HTTPS Named Credential. Messages are queued in the encrypted SQL outbox; provider activation, HTTPS credentials and execution permissions are required. Configure destination, sender and any consent fields using the provider's expected request mapping.</div>
@@ -1667,13 +1694,14 @@ export default function FlowBuilder({
             </select>
           </label>
           <label className="form-label">Relative POST Endpoint
-            <input className="form-control" value={displayValue(selected.config.path)}
-              onChange={(event)=>setConfig('path',event.target.value)} placeholder="v1/messages" />
+            <FlowReferenceInput ariaLabel="Relative POST endpoint" value={displayValue(selected.config.path)}
+          flow={flow} elementId={selected.id} objects={objects}
+          onChange={value=>setConfig('path',value)}/>
           </label>
         </>}
         <HttpCalloutFieldEditor label="Message Request Fields" mode="body"
           value={displayValue(selected.config.body)} onChange={(value)=>setConfig('body',value)}
-          resources={flow.resources} fields={selectedObject?.fields??[]} />
+          resources={flow.resources} fields={selectedObject?.fields??[]} picker={{flow,elementId:selected.id,objects}} />
         <p className="settings-panel-copy">The published Flow sends the mapped JSON to the provider using durable delivery. Use a Decision element to enforce verified contact and opt-in rules before this action. Protected password-recovery messaging remains separate.</p>
       </> : displayValue(selected.config.actionType) === 'Submit for Approval' ? <>
         <label className="form-label">Approval Process<select className="form-control" value={displayValue(selected.config.approvalProcessApiName)} onChange={(event) => {
@@ -1682,9 +1710,13 @@ export default function FlowBuilder({
           if (process) setConfig('objectApiName', process.objectApiName);
         }}><option value="">Select an approval process</option>{approvalProcesses.filter((process) => process.active).map((process) => <option key={process.apiName} value={process.apiName}>{process.label} · {process.objectApiName}</option>)}</select></label>
         <label className="form-label">Target Object<select className="form-control" value={displayValue(selected.config.objectApiName)} onChange={(event) => setConfig('objectApiName', event.target.value)}><option value="">Select an object</option>{objects.filter((object) => object.apiName !== 'User').map((object) => <option key={object.apiName} value={object.apiName}>{object.label}</option>)}</select></label>
-        <label className="form-label">Target Record ID<input className="form-control" value={displayValue(selected.config.recordId)} onChange={(event) => setConfig('recordId', event.target.value)} placeholder="{!$Record.Id}" /></label>
+        <label className="form-label">Target Record ID<FlowReferenceInput ariaLabel="Record ID" value={displayValue(selected.config.recordId)}
+          flow={flow} elementId={selected.id} objects={objects}
+          onChange={value=>setConfig('recordId',value)}/></label>
         {!displayValue(selected.config.approvalProcessApiName) && <label className="form-label">Approvers<select className="form-control" multiple size={Math.min(6, Math.max(3, users.length))} value={displayValue(selected.config.approverIds).split(/[;,\r\n]+/).map((id) => id.trim()).filter(Boolean)} onChange={(event) => setConfig('approverIds', Array.from(event.currentTarget.selectedOptions, (option) => option.value).join(', '))}>{users.map((user) => <option key={user.id} value={user.id}>{user.name} · {user.username}</option>)}</select></label>}
-        <label className="form-label">Submission Comments<textarea className="form-control" rows={3} maxLength={2000} value={displayValue(selected.config.comments)} onChange={(event) => setConfig('comments', event.target.value)} /></label>
+        <label className="form-label">Submission Comments<FlowReferenceInput ariaLabel="Comments" multiline value={displayValue(selected.config.comments)}
+          flow={flow} elementId={selected.id} objects={objects}
+          onChange={value=>setConfig('comments',value)}/></label>
         <div className="info-callout">{displayValue(selected.config.approvalProcessApiName) ? 'Submits through the selected reusable approval process.' : 'Select an approval process or use the direct approver list.'} The submitter needs record edit access. Each approver must be enabled, have approval rights and be able to read the record. Approvers decide from the notification center.</div>
       </> : displayValue(selected.config.actionType) === 'Email Alert' ? <>
         <label className="form-label">Email Alert<select className="form-control" value={displayValue(selected.config.emailAlertId)} onChange={(event) => setConfig('emailAlertId', event.target.value)}><option value="">Select a saved Email Alert</option>{emailAlerts.filter((alert) => flow.flowType === 'Record-Triggered Flow' && alert.objectApiName === flow.triggerObject).map((alert) => <option key={alert.id} value={alert.id}>{alert.label} · {alert.objectApiName}</option>)}</select></label>
@@ -1694,9 +1726,15 @@ export default function FlowBuilder({
       </> : <>
         <label className="form-label">SMTP Named Credential<select className="form-control" value={displayValue(selected.config.namedCredentialId)} onChange={(event) => setConfig('namedCredentialId', event.target.value)}><option value="">Select an SMTP credential</option>{namedCredentials.filter((credential) => credential.protocol === 'SMTP').map((credential) => <option key={credential.id} value={credential.id}>{credential.label}</option>)}</select></label>
         <label className="form-label">From Email<input className="form-control" type="email" value={displayValue(selected.config.fromEmail)} onChange={(event) => setConfig('fromEmail', event.target.value)} /></label>
-        <label className="form-label">Recipients (comma separated)<input className="form-control" value={displayValue(selected.config.recipients)} onChange={(event) => setConfig('recipients', event.target.value)} placeholder="person@example.com, {!$Record.Email}" /></label>
-        <label className="form-label">Subject<input className="form-control" value={displayValue(selected.config.subject)} onChange={(event) => setConfig('subject', event.target.value)} /></label>
-        <label className="form-label">Message Body<textarea className="form-control" rows={5} value={displayValue(selected.config.body)} onChange={(event) => setConfig('body', event.target.value)} placeholder="Hello {!$Record.Name}" /></label>
+        <label className="form-label">Recipients (comma separated)<FlowReferenceInput ariaLabel="Recipients" value={displayValue(selected.config.recipients)}
+          flow={flow} elementId={selected.id} objects={objects}
+          onChange={value=>setConfig('recipients',value)}/></label>
+        <label className="form-label">Subject<FlowReferenceInput ariaLabel="Subject" value={displayValue(selected.config.subject)}
+          flow={flow} elementId={selected.id} objects={objects}
+          onChange={value=>setConfig('subject',value)}/></label>
+        <label className="form-label">Message Body<FlowReferenceInput ariaLabel="Message body" multiline value={displayValue(selected.config.body)}
+          flow={flow} elementId={selected.id} objects={objects}
+          onChange={value=>setConfig('body',value)}/></label>
         <div className="info-callout">Send Email delivers through the selected tenant SMTP credential. Configure an SMTP Named Credential in Manager first.</div>
       </>}
     </>;
@@ -1736,9 +1774,13 @@ export default function FlowBuilder({
           }
         }}><option value="">Choose an operation (or configure a path below)</option>{Object.entries(selectedProvider.operations).map(([name, operation]) => <option key={name} value={name}>{name} · {operation.method} {operation.path}</option>)}</select></label>}
         <label className="form-label">Method<select className="form-control" value={displayValue(selected.config.method) || 'GET'} onChange={(event) => setConfig('method', event.target.value)}>{['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].map((method) => <option key={method}>{method}</option>)}</select></label>
-        <label className="form-label">Relative Path<input className="form-control" value={displayValue(selected.config.path)} onChange={(event) => setConfig('path', event.target.value)} placeholder="v1/resources/{!$Record.Id}" /></label>
-        <label className="form-label">Headers<textarea className="form-control" rows={3} value={displayValue(selected.config.headers)} onChange={(event) => setConfig('headers', event.target.value)} placeholder="Header-Name: value" /></label>
-        <HttpCalloutFieldEditor label="Query Parameters" mode="query" value={displayValue(selected.config.queryParameters)} onChange={(value) => setConfig('queryParameters', value)} resources={flow.resources} fields={selectedObject?.fields ?? []} />
+        <label className="form-label">Relative Path<FlowReferenceInput ariaLabel="Relative path" value={displayValue(selected.config.path)}
+          flow={flow} elementId={selected.id} objects={objects}
+          onChange={value=>setConfig('path',value)}/></label>
+        <label className="form-label">Headers (one per line, Name: value)<FlowReferenceInput multiline ariaLabel="Headers" value={displayValue(selected.config.headers)}
+          flow={flow} elementId={selected.id} objects={objects}
+          onChange={value => setConfig('headers', value)} /></label>
+        <HttpCalloutFieldEditor label="Query Parameters" mode="query" value={displayValue(selected.config.queryParameters)} onChange={(value) => setConfig('queryParameters', value)} resources={flow.resources} fields={selectedObject?.fields ?? []} picker={{flow,elementId:selected.id,objects}} />
         {typeof selected.config.messageTextField==='string' && (() => {
           const fieldPath=displayValue(selected.config.messageTextField).split('.');
           const validPath=fieldPath.length>0&&fieldPath.length<=3
@@ -1770,7 +1812,7 @@ export default function FlowBuilder({
             <span className="settings-panel-copy">Edit only the message here. Recipient, channel and protected credential settings are preserved.</span>
           </label>;
         })()}
-        <HttpCalloutFieldEditor label="Request Body" mode="body" value={displayValue(selected.config.body)} onChange={(value) => setConfig('body', value)} resources={flow.resources} fields={selectedObject?.fields ?? []} />
+        <HttpCalloutFieldEditor label="Request Body" mode="body" value={displayValue(selected.config.body)} onChange={(value) => setConfig('body', value)} resources={flow.resources} fields={selectedObject?.fields ?? []} picker={{flow,elementId:selected.id,objects}} />
         <label className="form-label">Timeout (milliseconds)<input className="form-control" type="number" min={1000} max={30000} value={displayValue(selected.config.timeoutMs)} onChange={(event) => setConfig('timeoutMs', event.target.value)} placeholder={selectedProvider ? String(selectedProvider.timeoutMs) : '15000'} /></label>
         {displayValue(selected.config.deliveryMode) === 'DURABLE_ASYNC' && <label className="form-label">Maximum Retry Attempts<input className="form-control" type="number" min={1} max={5} step={1}
           value={displayValue(selected.config.maxAttempts)}
@@ -1786,22 +1828,25 @@ export default function FlowBuilder({
               setConfig('statusVariable', '');
             }
           }}>
-          <option value="SYNC">Synchronous HTTP Callout</option>
-          <option value="DURABLE_ASYNC">Durable Async · SQL Outbox</option>
+          <option value="SYNC">Wait for reply and use it (synchronous)</option>
+          <option value="DURABLE_ASYNC">Send in background, retry if it fails (durable async)</option>
         </select></label>
         <div className="info-callout">Durable Async stores an encrypted, tenant-scoped job in PostgreSQL and returns HTTP 202 to the Flow. The server worker retries failed delivery up to the configured maximum using a stable Idempotency-Key. Async callouts do not provide response mappings or output variables; a terminal failure is retained with the job.</div>
-                <label className="form-label">Idempotency Key (optional)<input className="form-control"
-          maxLength={200} value={displayValue(selected.config.idempotencyKey)}
-          onChange={event=>setConfig('idempotencyKey',event.target.value)}
-          placeholder="{!PaymentAttemptId}" /></label>
+                <label className="form-label">Idempotency Key (optional)<FlowReferenceInput ariaLabel="Unique ID so it is never sent twice" value={displayValue(selected.config.idempotencyKey)}
+          flow={flow} elementId={selected.id} objects={objects}
+          onChange={value=>setConfig('idempotencyKey',value)}/></label>
         <div className="info-callout">For a retryable payment, select an existing stable attempt ID
           using a Flow resource reference. The same attempt must reuse the same key across retries;
           a new attempt must use a new key. Leave blank only for non-retryable calls.</div>
-        {displayValue(selected.config.deliveryMode) !== 'DURABLE_ASYNC' && <>
+        {displayValue(selected.config.deliveryMode) !== 'DURABLE_ASYNC' ? <>
+          <HttpCalloutOutputsEditor flow={flow} elementId={selected.id} onFlowChange={onFlowChange} onNotify={onNotify} />
+          <details className="flow-advanced-settings">
+            <summary>Advanced: map outputs to existing variables</summary>
           <HttpCalloutFieldEditor label="Response Mapping" mode="response" value={displayValue(selected.config.responseMapping)} onChange={(value) => setConfig('responseMapping', value)} resources={flow.resources} fields={selectedObject?.fields ?? []} />
           <label className="form-label">Response Variable<select className="form-control" value={displayValue(selected.config.responseVariable)} onChange={(event) => setConfig('responseVariable', event.target.value)}><option value="">Do not store response</option>{flow.resources.filter((resource) => resource.type !== 'Constant').map((resource) => <option key={resource.name} value={resource.name}>{resource.label} · {resource.name}</option>)}</select></label>
           <label className="form-label">Status Code Variable<select className="form-control" value={displayValue(selected.config.statusVariable)} onChange={(event) => setConfig('statusVariable', event.target.value)}><option value="">Do not store status</option>{flow.resources.filter((resource) => resource.type !== 'Constant').map((resource) => <option key={resource.name} value={resource.name}>{resource.label} · {resource.name}</option>)}</select></label>
-        </>}
+          </details>
+        </> : <div className="info-callout">Background sending does not return a reply to this Flow. Choose "Wait for reply and use it" to use the response in the next steps.</div>}
         <label className="form-label">{displayValue(selected.config.deliveryMode) === 'DURABLE_ASYNC' ? 'On Queue Error' : 'On Error'}<select className="form-control" value={displayValue(selected.config.onError) || 'FAULT_PATH'} onChange={(event) => setConfig('onError', event.target.value)}><option value="FAULT_PATH">FAULT_PATH</option><option value="FAIL">FAIL</option><option value="CONTINUE">CONTINUE</option></select></label>
         <div className="info-callout">Select a tenant Named Credential or Integration Connection above. The Flow stores only the metadata reference; secrets, tokens, and authentication values remain protected in credential metadata and are never exposed as Flow variables.</div>
         <details className="flow-advanced-settings">

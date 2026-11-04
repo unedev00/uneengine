@@ -1,13 +1,15 @@
 import type { FieldMetadata, FlowDefinitionMetadata, ObjectMetadata } from '../../metadata/Definitions/metadata';
 import type { ReferenceGroup, ReferenceOption } from '../../../component-libraries/shared/primitives/ReferenceBrowser/ReferenceBrowser';
-import { compatibleFlowValue, flowReferenceChoices, referenceName } from './flowReferenceCatalog';
+import { compatibleFlowValue, flowReferenceChoices, referenceName, type FlowReferenceSymbol } from './flowReferenceCatalog';
 
 /** One metadata-backed catalog for Flow's @ picker, not a POS-specific field list. */
 export function flowReferenceBrowserGroups(
   flow: FlowDefinitionMetadata, elementId: number, objects: readonly ObjectMetadata[],
-  target?: FieldMetadata, targetObjectApiName?: string
+  target?: FieldMetadata, targetObjectApiName?: string, symbol?: FlowReferenceSymbol
 ): {groups: ReferenceGroup[]; directOptions: ReferenceOption[]} {
-  const catalog=flowReferenceChoices(flow,elementId,objects);
+  // Typing @, $ or ! narrows the picker to that family of values.
+  const catalog=flowReferenceChoices(flow,elementId,objects)
+    .filter(choice=>!symbol||choice.symbol===symbol);
   const groups=new Map<string,ReferenceGroup>();
   const directOptions:ReferenceOption[]=[];
   for(const choice of catalog){
@@ -18,7 +20,7 @@ export function flowReferenceBrowserGroups(
     const option:ReferenceOption={
       reference:choice.reference,
       label:parts.length>1?choice.label.split(' → ').slice(1).join(' → ')||parts.at(-1)!:choice.label,
-      detail:choice.detail,
+      detail:(choice.symbol?choice.symbol+' ':'')+choice.detail,
       dataType:choice.dataType,
       disabled:!compatible||Boolean(choice.unavailableReason),
       reason:choice.unavailableReason||(!compatible

@@ -192,6 +192,7 @@
     "apps/web/test/flowExcelUploader.test.ts",
     "apps/web/test/flowGraphOperations.test.mjs",
     "apps/web/test/flowReferenceCatalog.test.ts",
+    "apps/web/test/flowNoCodeReferences.test.ts",
     "apps/web/test/flowScreenRuntimeUtils.test.ts",
     "apps/web/test/flowSubflowMappings.test.ts",
     "apps/web/test/formulaAction.test.ts",

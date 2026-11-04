@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import type { FlowResourceMetadata, ObjectMetadata } from '../../metadata/Definitions/metadata';
+import type { FlowDefinitionMetadata, FlowResourceMetadata, ObjectMetadata } from '../../metadata/Definitions/metadata';
+import FlowReferenceInput from '../FlowReferenceInput/FlowReferenceInput';
 
 type Mode = 'query' | 'body' | 'response';
 type Row = { path: string; value: string; type: 'Text' | 'Number' | 'Boolean' | 'Null' | 'Resource' };
@@ -10,6 +11,8 @@ type Props = {
   onChange: (value: string) => void;
   resources: FlowResourceMetadata[];
   fields: ObjectMetadata['fields'];
+  /** When given, text values accept @ $ ! like every other Flow value box. */
+  picker?: { flow: FlowDefinitionMetadata; elementId: number; objects: readonly ObjectMetadata[] };
 };
 
 function flatten(value: unknown, prefix = ''): Row[] {
@@ -47,7 +50,7 @@ function toObject(rows: Row[], mode: Mode): Record<string, unknown> {
   return result;
 }
 
-export default function HttpCalloutFieldEditor({ label, mode, value, onChange, resources, fields }: Props) {
+export default function HttpCalloutFieldEditor({ label, mode, value, onChange, resources, fields, picker }: Props) {
   const [search, setSearch] = useState('');
   const [advanced, setAdvanced] = useState(false);
   let rows: Row[] = [];
@@ -87,7 +90,7 @@ export default function HttpCalloutFieldEditor({ label, mode, value, onChange, r
           <option value="">Select a field or resource</option>
           {row.value && !choices.some((choice) => choice.value === row.value) && <option value={row.value}>{row.value}</option>}
           {choices.map((choice) => <option key={choice.value} value={choice.value}>{choice.label}</option>)}
-        </select> : row.type === 'Boolean' && mode !== 'response' ? <select className="form-control" aria-label={`${label} value`} value={row.value} onChange={(event) => update(rows.map((item, i) => i === index ? { ...item, value: event.target.value } : item))}><option value="false">False</option><option value="true">True</option></select> : row.type === 'Null' && mode !== 'response' ? <span>Null</span> : <input className="form-control" aria-label={`${label} value`} placeholder={mode === 'response' ? 'Response field path, e.g. messages[0].id' : 'Value'} value={row.value} onChange={(event) => update(rows.map((item, i) => i === index ? { ...item, value: event.target.value } : item))} />}
+        </select> : row.type === 'Boolean' && mode !== 'response' ? <select className="form-control" aria-label={`${label} value`} value={row.value} onChange={(event) => update(rows.map((item, i) => i === index ? { ...item, value: event.target.value } : item))}><option value="false">False</option><option value="true">True</option></select> : row.type === 'Null' && mode !== 'response' ? <span>Null</span> : picker && mode !== 'response' && row.type === 'Text' ? <FlowReferenceInput ariaLabel={`${label} value`} value={row.value} flow={picker.flow} elementId={picker.elementId} objects={picker.objects} onChange={(next) => update(rows.map((item, i) => i === index ? { ...item, value: next } : item))} /> : <input className="form-control" aria-label={`${label} value`} placeholder={mode === 'response' ? 'Response field path, e.g. messages[0].id' : 'Value'} value={row.value} onChange={(event) => update(rows.map((item, i) => i === index ? { ...item, value: event.target.value } : item))} />}
         <button className="row-menu" type="button" aria-label="Remove field" onClick={() => update(rows.filter((_, i) => i !== index))}>×</button>
       </div>)}
       <button className="text-action" type="button" onClick={() => update([...rows, { path: mode==='response' ? resources.find(r=>r.type==='Variable'&&!r.isCollection&&!rows.some(row=>row.path===r.name))?.name??'' : `field_${rows.length + 1}`, value: '', type: 'Text' }])}>+ Add Field</button>
