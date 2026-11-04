@@ -64,7 +64,8 @@ export class PlatformTenantService {
         const host=parsed.hostname.toLowerCase();
         if(logo.length>2048||parsed.protocol!=='https:'||parsed.username||parsed.password
           ||parsed.hash||!host||host==='localhost'||host.endsWith('.localhost')
-          ||host==='127.0.0.1'||host==='[::1]'||!host.includes('.'))
+          ||host==='127.0.0.1'||host==='[::1]'||host.includes(':')
+          ||/^(?:\d{1,3}\.){3}\d{1,3}$/.test(host)||host.endsWith('.local')||!host.includes('.'))
           throw new Error('Invalid company logo URL');
       }else{
         const match=/^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/]+={0,2})$/.exec(logo);
