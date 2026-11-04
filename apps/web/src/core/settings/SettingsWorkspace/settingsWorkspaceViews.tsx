@@ -1,4 +1,5 @@
 import TenantGovernance from './TenantGovernance';
+import {useViewportWidth} from '../../workspace/Responsive/useViewportWidth';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Save, Trash2, Plus, Lock, Unlock } from 'lucide-react';
 import {confirmDestructiveAction} from '../../components/ConfirmAction/confirmDestructiveAction';
@@ -367,6 +368,8 @@ type SecurityEvent={id:string;at:string;actorUserId:string|null;action:string;lo
 type SecurityEventFilters={action:string;identifier:string;ip:string;from:string;to:string};
 const emptySecurityEventFilters=():SecurityEventFilters=>({action:'',identifier:'',ip:'',from:'',to:''});
 function TenantSecurityAudit() {
+ const viewportWidth=useViewportWidth();
+ const pageSize=viewportWidth>0&&viewportWidth<=600?10:25;
  const [events,setEvents]=useState<SecurityEvent[]>([]);
  const [draft,setDraft]=useState<SecurityEventFilters>(emptySecurityEventFilters);
  const [filters,setFilters]=useState<SecurityEventFilters>(emptySecurityEventFilters);
@@ -379,14 +382,14 @@ function TenantSecurityAudit() {
  useEffect(()=>{
   let active=true;
   setBusy(true);
-  const query=new URLSearchParams({limit:'25',offset:String(page*25)});
+  const query=new URLSearchParams({limit:String(pageSize),offset:String(page*pageSize)});
   for(const [key,value] of Object.entries(filters))if(value.trim())query.set(key,value.trim());
   void apiRequest<{events:SecurityEvent[];nextOffset:number|null}>('/auth/security-events?'+query.toString())
    .then(response=>{if(active){setEvents(response.events);setHasNext(response.nextOffset!==null);setPermitted(true);setError('');}})
    .catch(cause=>{if(active){setError(cause instanceof Error?cause.message:String(cause));setEvents([]);setHasNext(false);}})
    .finally(()=>{if(active)setBusy(false);});
   return()=>{active=false;};
- },[filters,page]);
+ },[filters,page,pageSize]);
  const field=(key:keyof SecurityEventFilters,label:string,type='search')=><label className="form-label" key={key}>{label}
   <input className="form-control" type={type} value={draft[key]} onChange={event=>setDraft(previous=>({...previous,[key]:event.target.value}))}/>
  </label>;
