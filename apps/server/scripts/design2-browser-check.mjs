@@ -701,7 +701,7 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
   ['smart_image',{imageHeight:80},['imageSource']],
   ['smart_lookup',{placeholder:'Search products',lookupValueFormula:'"test"'},['label','lookupValueFormula']],
   ['smart_label',{label:'Smart caption'},['label']],
-  ['smart_table',{textSource:'"Name"'},['textSource']],
+  ['smart_table',{textSource:'"Name"'},['column2Source','column3Source']],
   ['smart_container',{},[]],
   ['smart_icon',{},[]]
  ];
