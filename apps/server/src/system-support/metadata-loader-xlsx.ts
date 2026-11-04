@@ -3,7 +3,7 @@
  */
 import {inflateRawSync} from 'node:zlib';
 
-export type LoaderTable={name:string;columns:string[];rows:Record<string,string>[]};
+export type LoaderTable={name:string;columns:string[];rows:Record<string,string>[];validations?:Array<{cells:string;choices:string[]}>};
 const encoder=(value:unknown)=>String(value??'');
 const escapeXml=(value:unknown)=>encoder(value).replace(/&/g,'&amp;').replace(/</g,'&lt;')
  .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');
@@ -72,6 +72,23 @@ function readZip(buffer:Buffer):Map<string,string>{
  }
  return result;
 }
+function excelValidationXml(table:LoaderTable){
+ const requested=table.validations??[];
+ if(requested.length>1000)throw Error('Too many Excel dropdowns');
+ const rules=requested.map(entry=>{
+  if(!/^[A-Z]{1,2}[1-9]\d{0,4}(?::[A-Z]{1,2}[1-9]\d{0,4})?$/.test(entry.cells)
+   ||!Array.isArray(entry.choices)||!entry.choices.length||entry.choices.length>100)
+   throw Error('Invalid Excel validation definition');
+  const options=[...new Set(entry.choices)];
+  if(options.some(option=>typeof option!=='string'||option.length>100
+    ||/[",\r\n]/.test(option)))throw Error('Unsafe Excel validation choice');
+  const csv=options.join(',');
+  if(csv.length>255)return '';
+  return '<dataValidation type="list" allowBlank="1" showErrorMessage="0" showDropDown="0" sqref="'
+   +escapeXml(entry.cells)+'"><formula1>"'+escapeXml(csv)+'"</formula1></dataValidation>';
+ }).filter(Boolean);
+ return rules.length?'<dataValidations count="'+rules.length+'">'+rules.join('')+'</dataValidations>':'';
+}
 function sheetXml(table:LoaderTable){
  const rows=[table.columns.map(encoder),...table.rows.map(row=>table.columns.map(c=>encoder(row[c])))];
  const body=rows.map((cells,i)=>'<row r="'+(i+1)+'">'+cells.map((v,j)=>{
@@ -79,7 +96,8 @@ function sheetXml(table:LoaderTable){
   return '<c r="'+columnName(j)+(i+1)+'" t="inlineStr"><is><t xml:space="preserve">'+escapeXml(v)+'</t></is></c>';
  }).join('')+'</row>').join('');
  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-  +'<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>'+body+'</sheetData></worksheet>';
+  +'<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>'+body+'</sheetData>'
+  +excelValidationXml(table)+'</worksheet>';
 }
 export function writeLoaderWorkbook(tables:LoaderTable[]):Buffer{
  if(tables.length<1||tables.length>20||tables.some(t=>t.columns.length>80||t.rows.length>10000))throw Error('Invalid workbook size');

@@ -209,7 +209,7 @@ export function registerMetadataLoaderRoutes(app:Express,db:SqlPersistence,rbac:
      [actor.tenant_id,flowApi]);
    if(!existing.rows[0])throw Error('Flow does not exist. Create it in Flow Builder first.');
    const tables=req.body?.tables;
-   if(!Array.isArray(tables)||tables.length!==5||tables.some((t:unknown)=>{
+   if(!Array.isArray(tables)||tables.length!==6||tables.some((t:unknown)=>{
      if(!t||typeof t!=='object')return true;
      const v=t as Record<string,unknown>;
      return typeof v.name!=='string'||!Array.isArray(v.columns)||!Array.isArray(v.rows)||v.rows.length>10000;
@@ -236,7 +236,7 @@ export function registerMetadataLoaderRoutes(app:Express,db:SqlPersistence,rbac:
    const buffer=parse(req);
    if(buffer.length>5_000_000)throw Error('Flow workbook exceeds 5 MB');
    const tables=readLoaderWorkbook(buffer);
-   if(tables.length!==5)throw Error('Flow Excel workbook requires 5 worksheets');
+   if(tables.length!==6)throw Error('Flow Excel workbook requires 6 worksheets');
    if(tables[0]?.name!=='Manifest'||tables[0].rows[0]?.['Flow API']!==flowApi)
      throw Error('Workbook belongs to another flow');
    res.set('Cache-Control','private, no-store');

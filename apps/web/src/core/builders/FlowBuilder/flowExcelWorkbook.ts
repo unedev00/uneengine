@@ -95,10 +95,56 @@ function makeSheets(flow:FlowDefinitionMetadata):Sheet[] {
   };
   return (Object.keys(columns) as SheetName[]).map(name=>({name,rows:[columns[name],...data[name]]}));
 }
-export type FlowWorkbookTable={name:string;columns:string[];rows:Record<string,string>[]};
-export function flowWorkbookTables(flow:FlowDefinitionMetadata):FlowWorkbookTable[]{
- return makeSheets(flow).map(sheet=>({name:sheet.name,columns:sheet.rows[0],
+export type FlowWorkbookTable={name:string;columns:string[];rows:Record<string,string>[];
+ validations?:Array<{cells:string;choices:string[]}>};
+export type FlowExcelCatalog={
+ nodeTypes:string[];
+ objects:Array<{apiName:string;label:string;fields:Array<{apiName:string;label:string;dataType:string}>}>;
+};
+export function flowWorkbookTables(flow:FlowDefinitionMetadata,catalog?:FlowExcelCatalog):FlowWorkbookTable[]{
+ const tables:FlowWorkbookTable[]=makeSheets(flow).map(sheet=>({name:sheet.name,columns:sheet.rows[0],
   rows:sheet.rows.slice(1).map(row=>Object.fromEntries(sheet.rows[0].map((heading,index)=>[heading,row[index]??''])))}));
+ const actions=[{cells:'A2:A10000',choices:['UPSERT','DELETE']}];
+ const types=[...new Set(catalog?.nodeTypes??flow.elements.map(node=>node.type))].filter(Boolean);
+ tables.find(t=>t.name==='Nodes')!.validations=[...actions,{cells:'C2:C10000',choices:types.slice(0,100)}];
+ tables.find(t=>t.name==='Inputs')!.validations=[...actions];
+ tables.find(t=>t.name==='Connections')!.validations=[...actions,
+  {cells:'F2:F10000',choices:['normal','fault','scheduled','async']}];
+ tables.find(t=>t.name==='Resources')!.validations=[...actions,
+  {cells:'D2:D10000',choices:['Variable','Record','Record Collection','Formula','Constant','Choice','Choice Set','Text Template']},
+  ...['F','G','H'].map(col=>({cells:col+'2:'+col+'10000',choices:['true','false']}))];
+ const objs=catalog?.objects??[];
+ const allFields=objs.flatMap(obj=>obj.fields.map(field=>({
+  Category:'Field','Object API':obj.apiName,'API Name':field.apiName,Label:field.label,
+  'Data Type':field.dataType
+ })));
+ const catalogRows:Record<string,string>[]=[
+  ...types.map(type=>({Category:'Node Type','Object API':'','API Name':type,Label:type,'Data Type':''})),
+  ...objs.map(obj=>({Category:'Object','Object API':obj.apiName,'API Name':obj.apiName,Label:obj.label,'Data Type':''})),
+  ...allFields,
+  ...flow.resources.map(resource=>({Category:'Resource','Object API':'','API Name':resource.name,
+    Label:resource.label,'Data Type':resource.dataType}))
+ ];
+ tables.push({name:'Catalog',columns:['Category','Object API','API Name','Label','Data Type'],
+  rows:catalogRows.slice(0,9000)});
+ const inputs=tables.find(t=>t.name==='Inputs')!;
+ const byNode=new Map(flow.elements.map(node=>[String(node.id),node]));
+ const objectNames=objs.map(obj=>obj.apiName);
+ inputs.rows.forEach((row,index)=>{
+  const path=row.Property;
+  let options:string[]=[];
+  if(path==='object'||path==='objectApiName'||path.endsWith('.objectApiName'))
+   options=objectNames;
+  else if(/(?:fieldApiName|field)$/.test(path)){
+   const node=byNode.get(row['Node ID']);
+   const objectName=String(node?.config?.object??node?.config?.objectApiName??'');
+   options=objs.find(obj=>obj.apiName===objectName)?.fields.map(field=>field.apiName)??[];
+  }else if(/(?:outputVariable|resourceName)$/.test(path))
+   options=flow.resources.map(resource=>resource.name);
+  if(options.length>0&&options.length<=100)
+   inputs.validations!.push({cells:'D'+(index+2),choices:options});
+ });
+ return tables;
 }
 export function decodeFlowWorkbook(base64:string):Uint8Array {
  const raw=atob(base64);const bytes=new Uint8Array(raw.length);
@@ -111,10 +157,10 @@ export async function encodeFlowWorkbook(file:File):Promise<string>{
  let result='';for(let i=0;i<bytes.length;i+=8192)result+=String.fromCharCode(...bytes.subarray(i,i+8192));
  return btoa(result);
 }
-export async function downloadFlowExcel(flow:FlowDefinitionMetadata) {
+export async function downloadFlowExcel(flow:FlowDefinitionMetadata,catalog?:FlowExcelCatalog) {
  const {apiRequest}=await import('../../authentication/Client/authClient');
  const result=await apiRequest<{workbook:string}>('/metadata/loader/flow-excel/write',{
-  method:'POST',body:JSON.stringify({flowApi:flow.apiName,tables:flowWorkbookTables(flow)})});
+  method:'POST',body:JSON.stringify({flowApi:flow.apiName,tables:flowWorkbookTables(flow,catalog)})});
  const bytes=decodeFlowWorkbook(result.workbook);
  const url=URL.createObjectURL(new Blob([bytes.buffer as ArrayBuffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
  const anchor=document.createElement('a');anchor.href=url;anchor.download=flow.apiName+'_nodes.xlsx';anchor.click();
@@ -136,7 +182,15 @@ function parseSheets(tables:FlowWorkbookTable[]):Map<string,Row[]>{
  return result;
 }
 const bool=(value:string)=>{if(value!=='true'&&value!=='false')throw Error('Expected true or false, got '+value);return value==='true';};
-const parseJson=(value:string)=>{try{return JSON.parse(value);}catch{throw Error('Invalid JSON value: '+value.slice(0,50));}};
+const parseJson=(value:string)=>{
+ const clean=value.trim();
+ if(!clean)throw Error('Input value is missing');
+ try{return JSON.parse(clean);}catch{
+  // Excel dropdowns supply plain object/field/resource names; preserve these as strings.
+  if(!/[{}\\[\\]\"\\r\\n]/.test(clean))return clean;
+  throw Error('Invalid JSON value: '+value.slice(0,50));
+ }
+};
 function numericId(value:string){
   const number=Number(value);
   if(!Number.isSafeInteger(number)||number<0)throw Error('Invalid numeric node ID: '+value);

@@ -84,7 +84,7 @@ test('invalid rows are reported and broken graph prevents applying',()=>{
 });
 test('invalid JSON settings do not overwrite existing node config',()=>{
  const base=initial(),tables=sheets(base);
- lookup(tables,'Inputs').rows.find(r=>r.Property==='inputs.Total')!['Value (JSON)']='invalid JSON';
+ lookup(tables,'Inputs').rows.find(r=>r.Property==='inputs.Total')!['Value (JSON)']='{invalid JSON';
  const result=previewFlowExcel(tables,base,types);
  assert.ok(result.errors.some(e=>e.includes('Invalid JSON')));
  assert.deepEqual(result.draft.elements.find(n=>n.id===2)?.config,base.elements.find(n=>n.id===2)?.config);
@@ -109,4 +109,21 @@ test('nested array mappings remain lossless on unchanged upload',()=>{
  assert.deepEqual(result.errors,[]);
  assert.deepEqual(result.changes,[]);
  assert.deepEqual(result.draft,base);
+});
+test('Catalog contains live objects and Excel dropdown choices for node selection',()=>{
+ const base=initial();
+ const tables=flowWorkbookTables(base,{nodeTypes:['CreateRecord','Assignment'],
+  objects:[{apiName:'Invoice',label:'Invoice',fields:[{apiName:'Total',label:'Total',dataType:'Number'}]}]});
+ assert.ok(tables.find(t=>t.name==='Catalog')?.rows.some(row=>row.Category==='Field'
+  &&row['API Name']==='Total'));
+ assert.ok(tables.find(t=>t.name==='Nodes')?.validations?.some(rule=>rule.cells==='C2:C10000'));
+});
+test('plain Excel dropdown selection is accepted as text while JSON scalar values retain types',()=>{
+ const base=initial();base.elements[1].config.object='Invoice';
+ const tables=sheets(base);
+ const row=lookup(tables,'Inputs').rows.find(r=>r.Property==='object')!;
+ row['Value (JSON)']='Payment';
+ const preview=previewFlowExcel(tables,base,types);
+ assert.deepEqual(preview.errors,[]);
+ assert.equal(preview.draft.elements.find(n=>n.id===2)?.config.object,'Payment');
 });

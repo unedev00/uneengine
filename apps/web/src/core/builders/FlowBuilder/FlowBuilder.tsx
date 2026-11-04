@@ -2060,7 +2060,7 @@ export default function FlowBuilder({
               </div>)
             : <p className="empty-list">No saved versions yet.</p>}</div>
           <div className="toolbox-group"><h3>Excel Node Upsert (Existing Flow Only)</h3>
-<button className="btn" type="button" disabled={!flow.apiName||isDirty} onClick={()=>{void (async()=>{try{await ensureFlowUnchanged(flow);await downloadFlowExcel(flow);}catch(error){setExcelError(error instanceof Error?error.message:'Download failed');}})();}}>Download Excel (.xlsx)</button>
+<button className="btn" type="button" disabled={!flow.apiName||isDirty} onClick={()=>{void (async()=>{try{await ensureFlowUnchanged(flow);await downloadFlowExcel(flow,{nodeTypes:flowElementMetadata.filter(item=>item.builderFlowTypes.includes(flow.flowType)).map(item=>item.type),objects});}catch(error){setExcelError(error instanceof Error?error.message:'Download failed');}})();}}>Download Excel (.xlsx)</button>
 <label className="form-label">Upload edited Excel (.xlsx)<input className="form-control" type="file"
  accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" disabled={!flow.apiName||isDirty||!capabilityCatalog||excelValidating}
  onChange={event=>{
