@@ -159,9 +159,11 @@ test('Design 2 selector and eye occupy row 0 alone',()=>{
  assert.match(shared,/className="smart-icon-toggle smart-design2-visibility"/);
  assert.match(shared,/\[1,2,3\]\.map\(row/);
  assert.match(css,/flex-flow:column nowrap!important/);
- assert.match(css,/height:116px!important/);
+ assert.match(css,/height:110px!important/);
  assert.match(css,/\[aria-label="Component Design 2"\]/);
- assert.match(css,/--page-ribbon-content-height:146px/);
+ assert.match(css,/--page-ribbon-content-height:114px/);
+ assert.match(css,/--page-ribbon-scroll-strip-height:127px/);
+ assert.doesNotMatch(shared,/<span className="smart-ribbon-caption">\{activeDesign2Area\}<\/span>/);
 });
 
 test('the six fixed C1-C6 tracks are shared across all property rows',()=>{
