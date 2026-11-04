@@ -126,10 +126,9 @@ export function registerDataLoaderRecordRoutes(app:Express,records:RecordEngine,
   const selectedIds=selected?.length?new Set<string>(selected as string[]):null;
   const limit=Number(req.body?.limit??4000);
   if(!Number.isInteger(limit)||limit<1||limit>4000)throw Error('Invalid export limit');
-  const rows:ExcelRow[]=[];let cursor:string|undefined;
-  for(let pageNo=0;pageNo<41&&rows.length<limit;pageNo++){
-   const page=await records.list(actor.tenant_id,actor.user_id,objectApi,100,0,
-    cursor?{cursor}:{}); // server-managed cursor and per-record/field access
+  const rows:ExcelRow[]=[];
+  for(let pageNo=0;pageNo<40&&rows.length<limit;pageNo++){
+   const page=await records.list(actor.tenant_id,actor.user_id,objectApi,100,pageNo*100);
    for(const record of page.records){
     if(selectedIds&&!selectedIds.has(String(record.Id)))continue;
     rows.push(Object.fromEntries([['Action','Upsert'],['Id',String(record.Id??'')],
@@ -137,8 +136,7 @@ export function registerDataLoaderRecordRoutes(app:Express,records:RecordEngine,
        :typeof record[f.apiName]==='object'?JSON.stringify(record[f.apiName]):String(record[f.apiName])])]));
     if(rows.length>=limit)break;
    }
-   if(!page.nextCursor||page.records.length<100||page.nextCursor===cursor)break;
-   cursor=page.nextCursor;
+   if(page.records.length<100)break;
   }
   const columns=['Action','Id',...fields.map(f=>f.apiName)];
   const guide=fields.map(f=>({FieldApiName:f.apiName,Label:f.label,DataType:f.dataType,
