@@ -47,7 +47,7 @@ test('every native appearance category preserves its own authored border and rad
   }
   assert.match(appearance, /\[data-page-appearance="image"\]\[data-page-style~="border"\] \.registered-component img/);
   assert.match(appearance, /\[data-page-appearance="image"\]\[data-page-style~="radius"\] \.registered-component img/);
-  assert.match(smart, /<article className="smart-card" style=\{\{/);
+  assert.match(smart, /<article className="smart-card"[\s\S]*?style=\{\{/);
   assert.match(smart, /borderRadius:number\(p\.radius,12\)/);
   assert.match(smart, /const cardBorder=single\?"none"/,
     'standalone Image must not paint a second outer card stroke');

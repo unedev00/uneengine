@@ -95,6 +95,8 @@ export default function PageBuilderActionRibbon({
  const eventLabels=new Map(eventDefinitions.map(item=>[item.apiName,item.label]));
  const members=selectedApis?.length?selectedApis:[api];
  const isCartSelection=members.length>0&&members.every(member=>member==='smart_cart');
+  const hasCustomButtons=members.length>0&&members.every(member=>
+   member==='smart_cart'||member==='smart_card_grid');
  const supports=(key:string)=>members.every(member=>member.startsWith('smart_')
    ?supportsSmartActionEvent(member,key)
    :eventDefinitions.some(item=>item.apiName===key));
@@ -170,7 +172,7 @@ export default function PageBuilderActionRibbon({
        {type==='Flow'&&flowName&&!availableFlows.some(item=>item.apiName===flowName)&&
          <option value={'flow:'+flowName}>{flowName} (saved/unavailable)</option>}
      </select>
-     {isCartSelection&&componentSlots.some(item=>item.key===slot.key)&&
+     {(isCartSelection||hasCustomButtons&&slot.key.startsWith('customButton'))&&componentSlots.some(item=>item.key===slot.key)&&
        <button type="button" className="page-action-visibility-toggle"
          aria-label={(buttonVisibility?.[slot.key as CartButtonKey]===false?'Show ':'Hide ')+slot.label}
          aria-pressed={buttonVisibility?.[slot.key as CartButtonKey]!==false}

@@ -226,7 +226,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    if(p.id==='tabIndex')return p.designWidth??30;
    // Shape's 94px SQL width is exact, unlike other compact choice tracks.
    if(p.id==='shapeId')return p.designWidth??94;
-   if(p.id==='cardButtonShape')return p.designWidth??94;
+   if(['cardButtonShape','customButton1Shape','customButton2Shape'].includes(p.id))return p.designWidth??94;
    // Shadow/Alignment icon dropdowns must remain at least 35px wide.
    if(p.designDisplay==='dropdown'&&(p.kind==='shadow'||p.kind==='align'))
      return Math.max(35,p.designWidth??0);
@@ -303,7 +303,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
        </span>
      </div>;
    }
-   const isTextSize=compactDesign&&/^(textSize|badgeTextSize|cardButtonTextSize|summary2?TextSize|placeholderSize|headerTextSize|supportingTextSize|rowTextSize|focusedTextSize)$/.test(property.id);
+   const isTextSize=compactDesign&&/^(textSize|badgeTextSize|cardButtonTextSize|summary2?TextSize|rowSupportingTextSize|customButton[12]TextSize|placeholderSize|headerTextSize|supportingTextSize|rowTextSize|focusedTextSize)$/.test(property.id);
    const isCorner=compactDesign&&/radius/i.test(property.id);
    const isWidth=compactDesign&&/width/i.test(property.id);
    const isHeight=compactDesign&&/height/i.test(property.id);
@@ -315,7 +315,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
      disabled={!enabled} allowIcons={(selectedApis?.length?selectedApis:[api]).every(member=>
        (property.choicesOverrides?.[member]??property.choices??[]).includes('icons'))}
      onChange={write}/>;
-   else if(property.id==='cardButtonShape')editor=<SmartIconGallery
+   else if(['cardButtonShape','customButton1Shape','customButton2Shape'].includes(property.id))editor=<SmartIconGallery
      value={String(value||'shape:round-rectangle')} disabled={!enabled}
      allowIcons={false} onChange={write}/>;
    else if(property.id==='imageSource'&&supported){
@@ -404,8 +404,8 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
        editor=<button type="button" className="smart-visible-toggle" disabled={!enabled}
          role="switch" aria-label={title} title={title} aria-checked={value===true}
          onClick={()=>write(value!==true)}><Icon size={16} aria-hidden="true"/></button>;
-     }else if(['headerBold','badgeBold','supportingBold','rowBold','summaryTextWeight','summary2TextWeight','focusedTextBold','wrapText'].includes(property.id)){
-       const Icon=property.id==='wrapText'?WrapText:Bold;
+     }else if(['headerBold','badgeBold','supportingBold','rowBold','summaryTextWeight','summary2TextWeight','focusedTextBold','rowSupportingBold','wrapText','rowSupportingWrapText'].includes(property.id)){
+       const Icon=['wrapText','rowSupportingWrapText'].includes(property.id)?WrapText:Bold;
        editor=<button className="smart-icon-toggle" type="button" disabled={!enabled}
          aria-label={title} title={title} aria-pressed={value===true} onClick={()=>write(value!==true)}><Icon size={17}/></button>;
      }else editor=<input type="checkbox" aria-label={title} disabled={!enabled}

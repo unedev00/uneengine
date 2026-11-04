@@ -768,11 +768,12 @@ function PageBuilder({
       })});
     }else updateComponent(selected.id,{properties:{...selected.properties,actionFlows}});
   };
-  // Cart visibility is component metadata, independent of the configured event.
+  // Cart and Card Grid button visibility is component metadata, independent of the configured event.
   // Preserve other instance properties and any existing Flow/Formula bindings.
   const applyCartButtonVisibility=(key:'qtyIncrease'|'qtyDecrease'|'customButton1'|'customButton2',visible:boolean)=>{
     if(!selected||actionSelectionDisabled||!actionMembers.length||
-      actionMembers.some(member=>member.type!=='Custom:smart_cart'))return;
+      actionMembers.some(member=>member.type!=='Custom:smart_cart'&&
+        !(member.type==='Custom:smart_card_grid'&&key.startsWith('customButton'))))return;
     const property=key+'Visible';
     if(actionMembers.length>1){
       const ids=new Set(actionMembers.map(item=>item.id));
