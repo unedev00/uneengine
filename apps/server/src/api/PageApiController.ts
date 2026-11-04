@@ -12,6 +12,7 @@ import {applyInventoryCsv,exportInventoryCsv,inventoryDefinitions,inventoryReque
 import {validateExplicitComponentNames} from '../system-support/page-component-names.js';
 import {requirePagePropertyContract} from '../system-support/page-property-contract.js';
 import {validatePageComponentContracts} from '../system-support/component-contract-store.js';
+import {loadPageLayoutSummaries} from '../system-support/page-layout-summary.js';
 export function registerPageApiController(app:Express,db:SqlPersistence,rbac:RbacEngine){
   const pages=new PageRuntime(db);
   const preflightInventory=async(tenant:string,variant:ReturnType<typeof pageLayoutVariant>,
@@ -84,6 +85,17 @@ export function registerPageApiController(app:Express,db:SqlPersistence,rbac:Rba
       [actor.tenant_id,name,stem]);
     res.setHeader('Cache-Control','private, no-store');
     res.json({last:Number(result.rows[0]?.last??0)});
+  }));
+  /** Which device layouts each page has designed, and the one it opens in.
+   * Read-only, tenant-scoped; pages the tenant does not have are omitted. */
+  app.get('/api/metadata/page-layout-summaries',wrap(async(req,res)=>{
+    const actor=authenticated(req);
+    await rbac.require(actor.tenant_id,actor.user_id,'PageDefinition','read');
+    const names=String(req.query.pages??'').split(',').map(name=>name.trim()).filter(Boolean);
+    if(names.length>500)throw Error('Request at most 500 pages');
+    if(names.some(name=>!api.test(name)))throw Error('Invalid Page API name');
+    res.setHeader('Cache-Control','private, no-store');
+    res.json({pages:await loadPageLayoutSummaries(db,actor.tenant_id,names)});
   }));
   // Read saved draft component metadata, never a browser-local or published runtime approximation.
   app.get('/api/metadata/pages/:apiName/inventory',wrap(async(req,res)=>{

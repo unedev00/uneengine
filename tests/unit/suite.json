@@ -116,6 +116,7 @@
     "apps/server/test/system/oracle-runtime-deployment.test.ts",
     "apps/server/test/system/page-details-controller.test.ts",
     "apps/server/test/system/page-inventory-csv.test.ts",
+    "apps/server/test/system/page-layout-summary.test.ts",
     "apps/server/test/system/page-layout-device-inheritance.test.ts",
     "apps/server/test/system/page-layout-versions.test.ts",
     "apps/server/test/system/parse-json-flow-node.test.ts",

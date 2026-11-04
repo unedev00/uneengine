@@ -35,17 +35,18 @@ test('Advanced keeps all permanent fields in a compact responsive ribbon without
   'assigned','default',
   'api-name','visible','readonly',
   'accept',
-  'component-name'
+  'component-name',
+  'layout-open','layout-copy'
  ];
  for(const key of fields){
    assert.ok(key.startsWith('device-')?advanced.includes('advanced-device-'):
      advanced.includes('advanced-'+key),key+' must be rendered');
    assert.match(layout,new RegExp('advanced-'+key+'[^\\n]*\\{[^\\n]*top:(5|35|65)px'),key+' has a fixed row');
  }
- for(const group of ['activation','properties','nesting','technical'])
+ for(const group of ['activation','properties','nesting','technical','layout'])
    assert.ok(layout.includes('advanced-fixed-group.advanced-'+group),group);
  assert.match(layout,/grid-template-columns:minmax\(0,1\.08fr\)/);
- assert.match(layout,/width:min\(100%,1360px\)!important;min-width:0!important;max-width:1360px!important/);
+ assert.match(layout,/width:min\(100%,1640px\)!important;min-width:0!important;max-width:1640px!important/);
  assert.doesNotMatch(layout,/width:1641px!important/);
  assert.match(layout,/scrollbar-width:none!important/);
  assert.match(layout,/\[aria-label="Advanced"\]::-webkit-scrollbar/);
