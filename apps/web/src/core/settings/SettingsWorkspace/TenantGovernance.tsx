@@ -61,6 +61,7 @@ function Monitoring({request}:{request:Request}){
  const [eventStatus,setEventStatus]=useState('all');
  const [ruleBusy,setRuleBusy]=useState(false);
  const [pruneOpen,setPruneOpen]=useState(false),[pruneConfirmation,setPruneConfirmation]=useState(''),[pruning,setPruning]=useState(false);
+ const [prunePreview,setPrunePreview]=useState<{eligible:number;retentionDays:number}|null>(null);
  const [persistedSettings,setPersistedSettings]=useState<Monitor['settings']|null>(null);
  const [data,setData]=useState<Monitor|null>(null),[draft,setDraft]=useState<Rule>(emptyRule),[message,setMessage]=useState(''),[users,setUsers]=useState<{id:string;email:string}[]>([]),[flows,setFlows]=useState<{apiName:string;label:string}[]>([]);
  const load=async(before?:string)=>{
@@ -102,12 +103,13 @@ function Monitoring({request}:{request:Request}){
  const settingsChanged=Boolean(data&&persistedSettings&&(data.settings.enabled!==persistedSettings.enabled
   ||data.settings.retention_days!==persistedSettings.retention_days));
  const prune=async()=>{
-  if(pruning||pruneConfirmation!=='PRUNE'||!persistedSettings)return;
+  if(pruning||pruneConfirmation!=='PRUNE'||!prunePreview)return;
   setPruning(true);setMessage('');
   try{
-   await request('/security/monitoring/prune',{method:'POST'});
+   await request('/security/monitoring/prune',{method:'POST',
+    body:JSON.stringify({confirmation:'PRUNE',expectedRetentionDays:prunePreview.retentionDays})});
    await load();setMessage('Retention cleanup completed. Events older than the saved retention policy were removed.');
-   setPruneOpen(false);setPruneConfirmation('');
+   setPruneOpen(false);setPruneConfirmation('');setPrunePreview(null);
   }catch(e){setMessage('Unable to remove older events: '+String(e));}
   finally{setPruning(false);}
  };
@@ -115,15 +117,20 @@ function Monitoring({request}:{request:Request}){
  {data&&<><p>Last 24 hours: {data.summary.requests} requests, {data.summary.errors} errors, average {data.summary.average_ms} ms</p>
  <div className="md-admin-settings-block"><div className="md-admin-form-grid"><label className="checkbox-row md-admin-span-all"><input type="checkbox" checked={data.settings.enabled} onChange={e=>setData({...data,settings:{...data.settings,enabled:e.target.checked}})}/>Record request events (rules remain enforced)</label>
  <label className="form-label md-admin-field-short">Event retention days<input className="form-control" type="number" min="90" max="3650" value={data.settings.retention_days} onChange={e=>setData({...data,settings:{...data.settings,retention_days:Number(e.target.value)}})}/></label>
- </div><div className="md-admin-actions"><button type="button" className="btn btn-brand" disabled={!settingsValid||!settingsChanged||pruning} onClick={()=>save('/security/monitoring',data.settings)}>Save monitoring settings</button><button type="button" className="btn" disabled={pruning} onClick={()=>{setPruneConfirmation('');setPruneOpen(true);}}>Remove events older than retention</button></div>
+ </div><div className="md-admin-actions"><button type="button" className="btn btn-brand" disabled={!settingsValid||!settingsChanged||pruning} onClick={()=>save('/security/monitoring',data.settings)}>Save monitoring settings</button><button type="button" className="btn" disabled={pruning} onClick={()=>{
+   setPruneConfirmation('');setPruneOpen(true);setPrunePreview(null);
+   void request<{eligible:number;retentionDays:number}>('/security/monitoring/prune-preview')
+     .then(setPrunePreview).catch(e=>{setMessage('Could not load cleanup preview: '+String(e));setPruneOpen(false);});
+  }}>Remove events older than retention</button></div>
  {pruneOpen&&<div className="md-prune-confirmation" role="group" aria-label="Confirm removal of old security events">
   <strong>Confirm permanent event removal</strong>
-  <p>This removes security events older than {persistedSettings?.retention_days??data.settings.retention_days} days
-   (before {new Date(Date.now()-(persistedSettings?.retention_days??data.settings.retention_days)*86400000).toLocaleDateString()}).
+  <p>{prunePreview
+     ?`${prunePreview.eligible.toLocaleString()} security events older than ${prunePreview.retentionDays} days (before ${new Date(Date.now()-prunePreview.retentionDays*86400000).toLocaleDateString()}) will be permanently removed.`
+     :'Loading the saved retention policy and event count…'}
    This cannot be undone. Unsaved retention changes do not affect the cutoff.</p>
   <label className="form-label">Type PRUNE to confirm<input className="form-control" value={pruneConfirmation} disabled={pruning} onChange={e=>setPruneConfirmation(e.target.value)}/></label>
   <div className="md-admin-actions"><button type="button" className="btn" disabled={pruning} onClick={()=>{setPruneOpen(false);setPruneConfirmation('');}}>Cancel</button>
-   <button type="button" className="btn btn-danger" disabled={pruning||pruneConfirmation!=='PRUNE'} onClick={()=>void prune()}>{pruning?'Removing…':'Remove old events'}</button>
+   <button type="button" className="btn btn-danger" disabled={pruning||!prunePreview||pruneConfirmation!=='PRUNE'} onClick={()=>void prune()}>{pruning?'Removing…':'Remove old events'}</button>
   </div>
  </div>}</div><h4 className="md-admin-subheading">Transaction rule</h4><div className="md-admin-form-grid">
  <label className="form-label">Transaction rule<select className="form-control" value={draft.id??''} onChange={e=>setDraft(data.rules.find(r=>r.id===e.target.value)??emptyRule())}><option value="">New rule</option>{data.rules.map(r=><option key={r.id} value={r.id}>{r.label}</option>)}</select></label>
