@@ -172,11 +172,11 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
      const assigned=propertyKey?definitions.find(p=>p.id===propertyKey):undefined;
      const fallbackDefinition=definitions.find(p=>p.id===slot.fallbackKey);
      const fallbackKind:UneRibbonProperty['kind']=
-       ['fill','border','focused','text'].includes(slot.slotKey)?'color':
+       ['fill','border','focused','text','shapeFill','shape_fill'].includes(slot.slotKey)?'color':
        slot.slotKey==='alignment'?'align':
        slot.slotKey==='shadow'?'shadow':
        ['bold','wrap'].includes(slot.slotKey)?'boolean':
-       ['selection','shape','textMode'].includes(slot.slotKey)?'choice':'number';
+       ['selection','shape','textMode','orientation','placement','imageFill'].includes(slot.slotKey)?'choice':'number';
      const original:UneRibbonProperty=assigned??fallbackDefinition??{
        id:slot.fallbackKey,label:slot.slotKey,tab:'Design2',group:activeDesign2Area,
        kind:fallbackKind,components:[]
@@ -188,15 +188,19 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
        designWidth:slot.width,designHeight:slot.height,designCaptionWidth:0,
        designDisplay:original.kind==='align'||original.kind==='shadow'?'dropdown' as const:original.designDisplay};
    }):[];
- // Column positions and widths are SQL-owned, not a flex layout of the
- // controls which happen to be enabled for the current component.
- const design2GridColumns=()=>{
-   // All three rows share the same C1..C6 tracks. A narrow R1C3 must
-   // NOT move R2C4 or R3C5 left when another row has an 80px control.
-   const slots=design2Slots.filter(slot=>slot.area===activeDesign2Area);
-   return Array.from({length:6},(_,column)=>{
-     const sizes=slots.filter(slot=>slot.order===column+1).map(slot=>slot.width);
-     return Math.max(column===2||column===3||column===4?80:40,...sizes)+'px';
+ // The Excel specifies the WIDTH of each control at its R/C coordinate,
+ // NOT one uniform 80px column width shared across all three rows.
+ // R1C3 Shape and R3C3 Bold are 40px, so their C4 neighbours must start
+ // 44px later, while R2C3 Height (80px) needs an 84px step to R2C4.
+ // Preserve every SQL C1..C6 index, including empty leading cells for
+ // Image R2C6 / R3C6; never repack enabled controls to the left.
+ const design2GridColumns=(row:number)=>{
+   const slots=design2Slots.filter(slot=>slot.area===activeDesign2Area&&slot.row===row);
+   return Array.from({length:6},(_,index)=>{
+     const slot=slots.find(item=>item.order===index+1);
+     // An empty C3-C5 reserves its previous 80px track (Image C6
+     // therefore remains at x=340), but an actual 40px icon uses 40px.
+     return (slot?.width??(index>=2&&index<=4?80:40))+'px';
    }).join(' ');
  };
  const visible=definitions.filter(p=>p.tab===tab);
@@ -550,7 +554,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
       </div>
       <div className="smart-ribbon-items">
         {[1,2,3].map(row=><div key={row} className="smart-ribbon-row"
-          data-design-row={row} style={{gridTemplateColumns:design2GridColumns()}}>
+          data-design-row={row} style={{gridTemplateColumns:design2GridColumns(row)}}>
           {sectionRow(activeDesign2Area,row).map(controls)}</div>)}
       </div>
     </div>
