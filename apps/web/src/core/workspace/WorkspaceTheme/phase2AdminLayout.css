@@ -400,7 +400,13 @@
   border-top:1px solid var(--md-border,#e0e5eb);margin-top:16px
  }
 }
-@media(min-width:1024px){.lightning .permissions-page .md-permission-mobile-save{display:none}}
+@media(min-width:1024px){
+ .lightning .permissions-page .md-permission-mobile-save{
+  display:flex;position:sticky;bottom:0;z-index:8;align-items:center;gap:12px;
+  padding:12px 15px;border-top:1px solid var(--md-border,#dce3eb);
+  background:var(--md-surface,#fff);margin-top:12px
+ }
+}
 @media(max-width:599px){
  .lightning .permissions-page .permission-area-select{
   display:grid;gap:6px;padding:10px 14px;background:var(--md-surface-2,#f5f7fa);
@@ -444,3 +450,10 @@
 }
 .lightning .flow-history-pagination{display:flex;align-items:center;gap:10px;padding:12px 15px}
 .lightning .flow-history-pagination>span{margin-right:auto;font-size:13px}
+
+/* Short, predictable RBAC editing: user detail is selected from the list,
+   and every permission group starts collapsed on desktop as well. */
+.lightning .permissions-page .md-permission-collapsible{scroll-margin-top:80px}
+.lightning .permissions-page .md-permission-list-pagination{flex-wrap:wrap}
+.lightning .permissions-page .permission-user-card{min-width:0;max-width:100%}
+.lightning .permissions-page .permission-user-card summary{min-height:44px}
