@@ -45,7 +45,10 @@ try {
  for(let index=1;index<=49;index++){
   await page.getByRole('checkbox',{name:'Bulk record '+index,exact:true}).check();
  }
- await page.getByText('50 of 100 records selected').waitFor();
+ const capCount=await page.locator('.offline-briefcase-count').innerText();
+ const capChecked=await page.locator('.offline-record-results input[type="checkbox"]:checked').count();
+ assert.equal(capCount,'50 of 100 records selected',
+  'Offline cap count did not reach 50; visible checked results: '+capChecked);
  assert.equal(await page.getByRole('checkbox',{name:'Bulk record 50'}).isDisabled(),true,
   'Offline briefcase must stop at 50 records per object including the already selected record');
  assert.equal(await page.getByRole('button',{name:'Save selections'}).isEnabled(),true,
