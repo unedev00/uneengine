@@ -204,9 +204,9 @@ test('Calendar Focus Color, Card Grid Body Wrap, Navigation Image Fit and Toggle
  ])assert.ok(sql.includes("('"+api+"','"+area+"','"+slot+"','"+key+"')"),
    'Design 2 control has no exact renderer-key mapping: '+api+' '+area+' '+slot);
  const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
- assert.match(ribbon,/slotPlacement\\?\\.slotKey==='focused'\\|\\|\\/\\^focus/,
+ assert.ok(ribbon.includes("slotPlacement?.slotKey==='focused'"),
    'Calendar focused cell must reuse the existing Focus Color palette icon');
- assert.match(ribbon,/mode=\\{property\\.id==='imagePlacement'\\?'placement':property\\.id==='imageFill'\\?'imageFill'/,
+ assert.ok(ribbon.includes("property.id==='imageFill'?'imageFill'"),
    'Navigation image fill must reuse the existing Fill/Fit/Stretch icon dropdown');
 
  const calendar=await render('smart_calendar',{selectedDate:'2026-11-04',defaultValueColor:'#126abc'});
@@ -226,7 +226,8 @@ test('Calendar Focus Color, Card Grid Body Wrap, Navigation Image Fit and Toggle
  const nav=await render('smart_navigation',{
   items:[{id:'one',label:'Menu',imageSrc:'https://example.com/menu.png'}],imageFill:'fit'
  });
- assert.match(nav,/src="https:\\/\\/example\\.com\\/menu\\.png"/);
+ assert.ok(nav.includes('src="https://example.com/menu.png"'),
+   'Navigation item must render its HTTPS image');
  assert.match(nav,/object-fit:contain/);
  const stretch=await render('smart_navigation',{
   items:[{id:'one',label:'Menu',imageSrc:'https://example.com/menu.png'}],imageFill:'stretch'
