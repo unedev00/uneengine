@@ -120,7 +120,7 @@ test('Design 2 SQL widths and column positions are never dynamically compacted',
  assert.equal(fixed('Header','height').order,3);
  assert.equal(fixed('Header','height').width,80);
  assert.match(shared,/if\(tab==='Design2'&&p\.designWidth!==undefined\)return p\.designWidth/);
- assert.match(shared,/gridTemplateColumns:design2GridColumns\(row\)/);
+ assert.match(shared,/gridTemplateColumns:design2GridColumns\(\)/);
  assert.match(shared,/--smart-slot-column/);
  assert.match(css,/\.smart-ribbon-row:not\(\.smart-design2-top-row\)/);
  assert.match(css,/display:grid!important/);
@@ -150,4 +150,34 @@ test('approved table has 118 unique fixed slots in 13 areas and 313 component ru
  assert.match(approved,/CHECK\(row_no IN \(1,2,3\)\)/);
  assert.match(shared,/design2SlotRules\.find\(rule=>/);
  assert.match(builder,/design2SlotRules=\{ribbonCatalog\.design2SlotRules\}/);
+});
+
+test('Design 2 selector and eye occupy row 0 alone',()=>{
+ assert.match(shared,/className="smart-design2-context" data-design-row=\{0\}/);
+ assert.match(shared,/className="smart-icon-toggle smart-design2-visibility"/);
+ assert.match(shared,/\[1,2,3\]\.map\(row/);
+ assert.match(css,/flex-flow:column nowrap!important/);
+ assert.match(css,/height:116px!important/);
+ assert.match(css,/\[aria-label="Component Design 2"\]/);
+ assert.match(css,/--page-ribbon-content-height:146px/);
+});
+
+test('the six fixed C1-C6 tracks are shared across all property rows',()=>{
+ assert.match(shared,/const design2GridColumns=\(\)=>/);
+ assert.match(shared,/Array\.from\(\{length:6\}/);
+ assert.match(shared,/Math\.max\(column===2\|\|column===3\|\|column===4\?80:40/);
+ assert.match(shared,/\.filter\(rule=>rule\.componentApi===api\)/);
+ assert.match(css,/width:380px!important/);
+});
+
+test('all 319 source properties appear, including missing Cart Button 5',()=>{
+ const extension=read('../../server/src/system-support/migrations/20271104-zzz-design2-row-zero-button-matrix-corrections.sql');
+ const slotRows=[...extension.matchAll(/\('Button 5',13,'([^']+)',([123]),(\d+),(\d+),26/g)];
+ assert.equal(slotRows.length,6);
+ assert.equal(fixedRows.length+slotRows.length,124);
+ const ruleRows=[...approved.matchAll(/ \('(smart_[^']+)','([^']+)','([^']+)','([^']+)'\)/g)];
+ assert.equal(ruleRows.length+slotRows.length,319);
+ for(const key of ['removeButtonFill','qtyIncreaseFill','qtyDecreaseFill',
+  'customButton1Fill','customButton2Fill'])
+  assert.ok(extension.includes("'"+key+"'"),key);
 });
