@@ -303,10 +303,14 @@ export function renderSetupShell(ctx: any) {
             formFactor={runtimeFormFactor} profileId={currentProfileId} pageDefinitionCache={pageDefinitionCache.current} onNavigate={navigateRoute}
             onLaunchFlow={(apiName: string, inputs: Record<string, unknown>,context?:{requestId?:string}) => void runFlow(apiName, inputs,context)} onStandaloneModeChange={setStandalonePageMode} />}
           {route.kind === 'setup' && workspace === 'home' && (runtimeFormFactor === 'Phone'
-            ? <MobileSettingsHome
+            ? route.resourceApiName==='overview'?
+              <section className="mobile-setup-overview"><button type="button" className="btn" onClick={()=>navigateRoute({kind:'setup',workspace:'home'})}><ChevronLeft size={16}/>Back to Settings</button>
+                <SetupHome onNavigate={openSetupWorkspace} request={apiRequest} onShowShortcuts={()=>setShortcutHelpOpen(true)}/></section>
+              : <MobileSettingsHome
                 request={apiRequest}
                 loading={!metadataLoaded}
                 onOpen={navigateSetupItem}
+                onOpenOverview={()=>navigateRoute({kind:'setup',workspace:'home',resourceApiName:'overview'})}
                 rights={{
                   viewMetadata:canReadMetadata, editMetadata:canManageApps,
                   viewSecurity:canReadSecurity, manageSecurity:canManageUserIdentities,
