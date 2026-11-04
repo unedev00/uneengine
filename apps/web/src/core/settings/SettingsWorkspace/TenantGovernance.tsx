@@ -133,8 +133,9 @@ function Monitoring({request}:{request:Request}){
  <div className="md-admin-pagination" role="group" aria-label="Monitoring event pages">
    <button type="button" className="btn" disabled={page===0} onClick={()=>setPage(p=>Math.max(0,p-1))}>Previous 25</button>
    <span>Page {page+1} · {filteredEvents.length} matching loaded requests</span>
-   <button type="button" className="btn" disabled={(page+1)*25>=filteredEvents.length&&!data.nextCursor}
-    onClick={()=>{if((page+1)*25<filteredEvents.length)setPage(p=>p+1);else if(data.nextCursor)void load(data.nextCursor).then(()=>setPage(p=>p+1)).catch(e=>setMessage(String(e)));}}>Next 25</button>
+   <button type="button" className="btn" disabled={(page+1)*25>=filteredEvents.length}
+    onClick={()=>setPage(p=>p+1)}>Next 25</button>
+   {data.nextCursor&&<button type="button" className="btn" onClick={()=>void load(data.nextCursor!).catch(e=>setMessage(String(e)))}>Load older requests</button>}
   </div></>}
  </>;
 }
