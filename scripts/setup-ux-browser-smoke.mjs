@@ -283,6 +283,11 @@ try {
  await mobileAudit.waitFor();
  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1),'Mobile audit must not overflow the viewport');
  await screenshot('audit-verified-mobile-audit-cards');
+ assert.equal(await page.getByRole('button',{name:'Next 10'}).count(),1,
+  'Phone setup audit must use 10-event pages');
+ await page.getByRole('tab',{name:'Monitoring'}).click();
+ assert.equal(await page.getByRole('button',{name:'Next 10'}).count(),1,
+  'Phone monitoring must use 10-event pages');
  await page.setViewportSize({width:1365,height:768});
  await open('till');
  await page.getByRole('button',{name:'Set till PIN'}).click();
