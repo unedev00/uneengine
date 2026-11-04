@@ -78,6 +78,15 @@ async function matchExternal(db:SqlPersistence,actor:Actor,ctx:Context,key:strin
  if(rows.length>1)throw Error('Multiple records match the External ID');
  return rows[0]?.id??null;
 }
+function sameValue(current:unknown,next:unknown){
+ if((current===null||current===undefined)&&(next===null||next===undefined))return true;
+ if(current instanceof Date)return Number.isFinite(Date.parse(text(next)))
+  &&Math.abs(current.getTime()-Date.parse(text(next)))<1000;
+ if(typeof next==='number'&&current!==null&&current!==undefined&&current!=='')
+  return Number(current)===next;
+ if(typeof next==='object'&&next!==null)return JSON.stringify(current)===JSON.stringify(next);
+ return String(current??'')===String(next??'');
+}
 export async function validateRows(db:SqlPersistence,definitions:ObjectDefinitionService,
  rbac:RbacEngine,records:RecordEngine,actor:Actor,buffer:Buffer,objectApi:string,matchField:string){
  const ctx=await context(definitions,rbac,actor,objectApi,matchField);
@@ -133,6 +142,10 @@ export async function validateRows(db:SqlPersistence,definitions:ObjectDefinitio
     const updated=Date.parse(text(prior.LastModifiedDate)),expected=Date.parse(cells.LastModifiedDate);
     if(!Number.isFinite(updated)||!Number.isFinite(expected)||updated>expected+999)
      throw Error('Record changed since export');
+   }
+   if(prior&&['Upsert','Update'].includes(action)
+    &&Object.entries(values).every(([name,v])=>sameValue(prior[name],v))){
+    row.status='Skipped';row.result='Unchanged';row.message='No changes to apply';continue;
    }
    row.result=action==='Delete'?'Delete':prior?'Update':'Create';row.message='Validated';
   }catch(e){row.status='Error';row.message=errorText(e);}
