@@ -189,6 +189,10 @@ function TenantEmailRecoverySettings({canManage}:{canManage:boolean}){
   return()=>{active=false;};
  },[]);
  if(!flow)return null;
+ const recoveryDirty=editing&&snapshot.current!==null&&JSON.stringify(flow)!==JSON.stringify(snapshot.current);
+ const recoveryReady=(['whatsapp','sms'] as const).every(channel=>!flow.channels[channel].enabled
+  ||Boolean(flow.channels[channel].flowServiceUserId&&flow.channels[channel].credentialId
+   &&flow.channels[channel].messageTemplate.trim()&&flow.channels[channel].calloutPath.startsWith('/')));
  const change=(patch:Partial<RecoveryFlow>)=>setFlow(value=>value?{...value,...patch}:value);
  const changeChannel=(channel:RecoveryChannel,patch:Partial<RecoveryAction>)=>
   setFlow(value=>value?{...value,channels:{...value.channels,
@@ -198,7 +202,7 @@ function TenantEmailRecoverySettings({canManage}:{canManage:boolean}){
  const cancel=()=>{if(busy)return;if(snapshot.current)setFlow(snapshot.current);
   snapshot.current=null;setEditing(false);setMessage('');};
  const save=async()=>{
-  if(!canManage||!editing||busy)return;
+  if(!canManage||!editing||busy||!recoveryDirty||!recoveryReady)return;
   setBusy(true);setMessage('');
   try{const result=await apiRequest<RecoverySettings>('/auth/password-recovery/settings',{
    method:'PUT',body:JSON.stringify({flow,revision})
@@ -214,8 +218,10 @@ function TenantEmailRecoverySettings({canManage}:{canManage:boolean}){
   <p>Security-critical verification is enforced by Core; templates and HTTP Callout actions are editable here without code.</p>
   {!deliveryReady&&<p role="alert" className="permission-help">Platform recovery email is not configured.</p>}
   {flow.method==='LINK'&&!linkReady&&<p role="alert">Configure a trusted HTTPS reset link origin.</p>}
-  {editing?<div className="settings-read-first-section">
-   <h3>Generate OTP</h3>
+  {editing?<div className="settings-read-first-section md-recovery-editor">
+   <p className="permission-help">Open only the section you need to edit. Changes are saved together when you choose Save Flow.</p>
+   <details className="md-recovery-config-group">
+    <summary>Generate OTP and verification limits</summary>
    <label className="form-label">Recovery method<select className="form-control" value={flow.method}
     onChange={event=>change({method:event.target.value as 'OTP'|'LINK'})}>
     <option value="OTP">Numeric code</option><option value="LINK">Email reset link (legacy)</option>
@@ -231,16 +237,19 @@ function TenantEmailRecoverySettings({canManage}:{canManage:boolean}){
    <label className="form-label">Maximum attempts<input className="form-control" type="number"
     min={3} max={flow.otpLength===4?3:5} value={flow.maxAttempts}
     onChange={event=>change({maxAttempts:Number(event.target.value)})}/></label>
-   <h3>Email action</h3>
+   </details>
+   <details className="md-recovery-config-group">
+    <summary>Email delivery template</summary>
    <p>Sender: {fromEmail||'noreply@unesolutions.co.uk (configure platform mail transport)'}</p>
    <label className="form-label">Subject template<input className="form-control"
     value={flow.emailSubject} onChange={event=>change({emailSubject:event.target.value})}/></label>
    <label className="form-label">Email template<textarea className="form-control" rows={4}
     value={flow.emailTemplate} onChange={event=>change({emailTemplate:event.target.value})}/></label>
+   </details>
    {(['whatsapp','sms'] as const).map(channel=>{
     const action=flow.channels[channel];
-    return <div key={channel} className="settings-read-first-section">
-     <h3>{channel==='whatsapp'?'WhatsApp':'SMSGate'} HTTP Callout</h3>
+    return <details key={channel} className="settings-read-first-section md-recovery-config-group">
+     <summary>{channel==='whatsapp'?'WhatsApp':'SMS'} HTTP Callout</summary>
      <label className="checkbox-row"><input type="checkbox" checked={action.enabled}
       disabled={flow.method==='LINK'}
       onChange={event=>changeChannel(channel,{enabled:event.target.checked})}/>
@@ -268,8 +277,8 @@ function TenantEmailRecoverySettings({canManage}:{canManage:boolean}){
        value={action.calloutBody}
        onChange={event=>changeChannel(channel,{calloutBody:event.target.value})}/></label>
      </details>
-     <p>Requires verified account phone, authorized service user and configured Named Credential.</p>
-    </div>;
+     <p>Requires verified account phone, authorised service user and configured Named Credential.</p>
+    </details>;
    })}
   </div>:<div className="settings-read-first-section">
    <SettingsViewRow label="Flow revision" value={String(revision)} canEdit={false} onEdit={()=>undefined}/>
@@ -279,12 +288,14 @@ function TenantEmailRecoverySettings({canManage}:{canManage:boolean}){
    <SettingsViewRow label="WhatsApp HTTP Callout" value={flow.channels.whatsapp.enabled?'Enabled':'Not configured'} canEdit={canManage} onEdit={begin}/>
    <SettingsViewRow label="SMSGate HTTP Callout" value={flow.channels.sms.enabled?'Enabled':'Not configured'} canEdit={canManage} onEdit={begin}/>
   </div>}
-  {editing&&canManage&&<div className="settings-read-first-toolbar">
+  {editing&&canManage&&<div className="settings-read-first-toolbar md-recovery-save-bar">
+   <span>{recoveryDirty?'Unsaved recovery Flow changes':'No unsaved changes'}</span>
    <button className="btn" type="button" disabled={busy} onClick={cancel}>Cancel</button>
-   <button className="btn btn-brand" type="button" disabled={busy} onClick={()=>void save()}>
+   <button className="btn btn-brand" type="button" disabled={busy||!recoveryDirty||!recoveryReady} onClick={()=>void save()}>
     <Save size={14}/>{busy?'Saving…':'Save Flow'}
    </button>
   </div>}
+  {editing&&!recoveryReady&&<p role="alert" className="form-error">For each enabled WhatsApp or SMS channel, select a service user and Named Credential and supply a message and relative endpoint before saving.</p>}
   {message&&<p role="status">{message}</p>}
  </section>;
 }
