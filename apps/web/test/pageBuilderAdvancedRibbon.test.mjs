@@ -9,7 +9,7 @@ const layout=read('../src/core/builders/PageBuilder/PageBuilderRibbonLayout.css'
 const dialog=read('../src/core/builders/PageBuilder/PageBuilderVisibilityDialog.tsx');
 
 test('View owns visibility conditions and reuses the record filter dialog shell',()=>{
- assert.match(page,/'Component Layout','Arrange','Component Action','Advanced','Preview'/);
+ assert.match(page,/'Component Design 2','Component Action','Advanced','Preview'/);
  assert.match(page,/aria-label="Edit conditional visibility"/);
  assert.match(page,/onClick=\{openVisibilityEditor\}/);
  assert.match(page,/<PageBuilderVisibilityDialog/);
@@ -82,7 +82,7 @@ test('Existing page handlers own assignments, visibility, grid count, and safe r
  assert.doesNotMatch(advanced,/fetch\(|request\(|localStorage|INSERT INTO/);
 });
 
-test('Arrange nesting activates Advanced tab without a popup',()=>{
+test('Design 2 nesting activates Advanced tab without a popup',()=>{
  assert.match(page,/onNesting=\{\(\)=>openAdvanced\('nesting'\)\}/);
  assert.match(page,/setRibbonTab\('Advanced'\);\s*setAdvancedEditor\(feature\)/);
 });

@@ -174,7 +174,7 @@ import CanvasDataBindingIcons from './CanvasDataBindingIcons';
 import type {CanvasBindingTarget} from './canvasDataBindingTargets';
 import {supportsSmartActionEvent} from './SmartEventActionsRibbon';
 import SmartInsertRibbon from './SmartInsertRibbon';
-import ArrangeRibbon,{type ArrangeRibbonProps} from './ArrangeRibbon';
+import type {ArrangeRibbonProps} from './ArrangeRibbon';
 import type {AdvancedFeature} from './PageBuilderAdvancedRibbon';
 import './PageBuilderAdvancedRibbon.css';
 import PageBuilderAdvancedSections from './PageBuilderAdvancedSections';
@@ -614,10 +614,11 @@ function PageBuilder({
     openComponentInspector('Data & Actions');
   };
   const selectRibbonTab = (tab: typeof ribbonTab) => {
+    if(tab==='Component Layout'||tab==='Arrange')tab='Component Design 2';
     setRibbonTab(tab);
     setPageSettingsDialogOpen(false);
     if (tab === 'Add Block') { setPageSettingsOpen(false); openPalette('Components', 'All Components'); }
-    if (tab === 'Component Layout' || tab === 'Arrange' || tab === 'Advanced') { setPageSettingsOpen(false); }
+    if (tab === 'Advanced') { setPageSettingsOpen(false); }
     if (tab === 'Advanced') setAdvancedEditor('assignments');
     else setAdvancedEditor(null);
     const inspector = { 'Component Design 2': 'Design', 'Arrange': 'Position', 'Component Style': 'Design', 'Component Data': 'Data & Actions', 'Component Content': 'Data & Actions', 'Component Action': 'Visibility', 'Component Layout': 'Position', 'Component Responsive': 'Position' } as const;
@@ -3085,7 +3086,7 @@ function PageBuilder({
   const quickAccessOrder=['save','activate','preview','exitPreview','resetIcon','undo','redo','cut','copy','paste','delete'] as const;
   const journeyTabs: Array<typeof ribbonTab> = // The legacy Design tab is retired; Design 2 is the only Design ribbon.
   ['Add Block','Component Data',
-    'Component Design 2','Component Layout','Arrange','Component Action','Advanced','Preview'];
+    'Component Design 2','Component Action','Advanced','Preview'];
   const ribbonTabsVisible: Array<typeof ribbonTab> = [...journeyTabs];
 
 
@@ -3113,7 +3114,19 @@ function PageBuilder({
                 sharedPropertyIds={ribbonSharedPropertyIds} mixedPropertyIds={ribbonMixedPropertyIds}
                 selectedApis={ribbonSelectedMembers.map(item=>item.type.startsWith('Custom:')?item.type.slice(7):item.type)}
                 onChange={(properties:Record<string,unknown>)=>{
-                  if(ribbonSelectedMembers.length>1){
+                  // Tabs' Body Width/Height edit individual tabs; resize the frame in lockstep.
+                  if(selected.type==='Custom:smart_tabs'&&ribbonSelectedMembers.length===1&&
+                    ['tabWidth','tabHeight','tabCount','tabOrientation'].some(key=>
+                      properties[key]!==selected.properties[key])){
+                    const size=(key:string,fallback:number)=>Math.max(1,Number(properties[key]??selected.properties[key]??fallback)||fallback);
+                    const count=Math.max(1,Math.floor(size('tabCount',3)));
+                    const vertical=properties.tabOrientation==='vertical';
+                    const gap=Math.max(0,Number(properties.tabGap??0)||0);
+                    const width=Math.round(vertical?size('tabWidth',120):size('tabWidth',120)*count+gap*(count-1));
+                    const height=Math.round(vertical?size('tabHeight',44)*count+gap*(count-1):size('tabHeight',44));
+                    const position=selected.position?{...selected.position,width,height}:undefined;
+                    updateComponent(selected.id,{properties,...(position?{position}:{})});
+                  }else if(ribbonSelectedMembers.length>1){
                     const tab=ribbonTab==='Component Data'?'Data':ribbonTab==='Component Layout'?'Layout':
                       ribbonTab==='Component Design 2'?'Design2':'Design';
                     applyPage({...page,components:updateSharedCanvasProperties(
@@ -3561,40 +3574,7 @@ function PageBuilder({
             </div>
             <span>Conditional visibility</span>
           </div>}
-          {ribbonTab==='Component Layout' && !ribbonCatalog &&
-            <div role="status" className="une-ribbon-catalog-status">
-              {ribbonCatalogError?'Shared SQL property library unavailable: '+ribbonCatalogError:'Loading shared property library…'}
-            </div>}
-          {ribbonTab==='Component Layout' && ribbonCatalog && (()=>{
-            const pageRows=ribbonCatalog.properties.filter(row=>row.tab==='Home'&&
-              ['Page','Device','Canvas','Version'].includes(row.group)&&
-              !['pageName','deviceLayout','canvasMode','selectVersion','restoreVersion'].includes(row.id));
-            const groups=[...new Set(pageRows.map(row=>row.group))];
-            return <div className="office-ribbon-page-layout-groups" aria-label="Page and canvas settings">
-              {groups.map(group=><div key={group} className="office-ribbon-group une-sql-home-group"
-                data-shared-group={group}>
-                <div className="office-ribbon-stack">
-                  {group==='Canvas'?<>
-                  <label data-ribbon-property="canvasWidth" className="une-sql-home-control une-ribbon-size-with-icon"
-                    title="Canvas Width"><span className="une-ribbon-embedded-icon"><MoveHorizontal size={17}/></span>
-                    {homeValue('canvasWidth')}</label>
-                  <label data-ribbon-property="canvasHeight" className="une-sql-home-control une-ribbon-size-with-icon"
-                    title="Canvas Height"><span className="une-ribbon-embedded-icon"><MoveVertical size={17}/></span>
-                    {homeValue('canvasHeight')}</label>
-                  <div data-ribbon-property="canvasFillColor" className="une-sql-home-control une-ribbon-canvas-colour">
-                    <RibbonColorPalette variant="property" kind="fill" label="Canvas Fill Color"
-                      value={page.canvasFillColor??'#ffffff'}
-                      onChange={colour=>applyPage({...page,canvasFillColor:colour})}/>
-                  </div>
-                </>:pageRows.filter(row=>row.group===group).map(row=><label key={row.id}
-                  data-ribbon-property={row.id} className="une-sql-home-control">
-                  {row.kind!=='command'&&<span>{row.label}</span>}{homeValue(row.id)}
-                </label>)}
-                </div><span>{group}</span>
-              </div>)}
-            </div>;
-          })()}
-          {ribbonTab==='Arrange' && <ArrangeRibbon {...canvasArrangeProps}/>}
+
           {ribbonTab==='Advanced' && <PageBuilderAdvancedSections
             section={advancedEditor} onInspectorHost={setRibbonPropertyHost}
             layout={{
@@ -3673,7 +3653,7 @@ function PageBuilder({
                 customButton2:selected?.properties.customButton2Visible!==false
               }}
               onButtonVisibilityChange={applyCartButtonVisibility}/>}
-          {selected?.type==='Custom:smart_icon' && ribbonTab==='Component Layout' &&
+          {selected?.type==='Custom:smart_icon' && ribbonTab==='Component Design 2' &&
             <SmartIconGallery value={String(selected.properties.iconId??'house')}
               disabled={ribbonSelectedMembers.some(item=>item.type!=='Custom:smart_icon'||isCanvasLocked(item))}
               onChange={iconId=>{
@@ -3684,6 +3664,22 @@ function PageBuilder({
                 }else updateComponent(selected.id,{properties:{...selected.properties,iconId}});
               }}/>}
           {!designInPanel && smartRibbonElement}
+          {ribbonTab==='Component Design 2' && <div className="office-ribbon-group une-sql-home-group design-canvas-settings"
+            aria-label="Canvas" data-shared-group="Canvas">
+            <div className="office-ribbon-stack">
+              <label data-ribbon-property="canvasWidth" className="une-sql-home-control une-ribbon-size-with-icon"
+                title="Canvas Width"><span className="une-ribbon-embedded-icon"><MoveHorizontal size={17}/></span>
+                {homeValue('canvasWidth')}</label>
+              <label data-ribbon-property="canvasHeight" className="une-sql-home-control une-ribbon-size-with-icon"
+                title="Canvas Height"><span className="une-ribbon-embedded-icon"><MoveVertical size={17}/></span>
+                {homeValue('canvasHeight')}</label>
+              <div data-ribbon-property="canvasFillColor" className="une-sql-home-control une-ribbon-canvas-colour">
+                <RibbonColorPalette variant="property" kind="fill" label="Canvas Fill Color"
+                  value={page.canvasFillColor??'#ffffff'}
+                  onChange={colour=>applyPage({...page,canvasFillColor:colour})}/>
+              </div>
+            </div><span>Canvas</span>
+          </div>}
         </div>
       </section>
       {visibilityEditorOpen && selected && <PageBuilderVisibilityDialog
@@ -3692,7 +3688,7 @@ function PageBuilder({
         profiles={profiles.map(profile=>({id:profile.id,label:profile.label}))}
         recordTypes={(targetObject?.recordTypes??[]).map(type=>({id:type.id,label:type.label}))}
         onApply={applyVisibilityEditor} onClose={()=>setVisibilityEditorOpen(false)}/>}
-      {ribbonTab==='Component Layout' && pageSettingsDialogOpen && <div className="modal-backdrop office-ribbon-modal-backdrop" role="presentation">
+      {ribbonTab==='Component Design 2' && pageSettingsDialogOpen && <div className="modal-backdrop office-ribbon-modal-backdrop" role="presentation">
         <section className="modal office-ribbon-config-modal office-ribbon-page-settings-modal" role="dialog" aria-modal="true" aria-label="Page settings">
           <div className="modal-header"><h2>Page settings</h2><button type="button" className="icon-button" aria-label="Close page settings" onClick={()=>setPageSettingsDialogOpen(false)}><X size={16}/></button></div>
           <div className="office-ribbon-modal-content"><div className="office-ribbon-inspector-host" ref={setRibbonPropertyHost} aria-label="Page settings editor"/></div>

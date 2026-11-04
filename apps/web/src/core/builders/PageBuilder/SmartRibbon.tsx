@@ -1,6 +1,6 @@
 import {useState,useRef,useEffect,useLayoutEffect,type ChangeEvent,type CSSProperties} from 'react';
 import {createPortal} from 'react-dom';
-import {AlignLeft,AlignCenter,AlignRight,Bold,WrapText,ArrowLeftRight,ArrowUpDown,ImagePlus,SlidersHorizontal,Eye,EyeOff} from 'lucide-react';
+import {AlignLeft,AlignCenter,AlignRight,Bold,WrapText,ArrowLeftRight,ArrowUpDown,ImagePlus,SlidersHorizontal,Eye,EyeOff,Hand} from 'lucide-react';
 import {RibbonTextSizeIcon,RibbonCornerRadiusIcon} from './SmartRibbonIcons';
 import type {ObjectMetadata} from '../../metadata/Definitions/metadata';
 import type {UneRibbonProperty,UneBuilderTab,Design2Slot,Design2SlotRule} from './uneBuilderPropertyInventory';
@@ -87,6 +87,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  };
 
  const [design2Area,setDesign2Area]=useState('Body');
+ const [countKey,setCountKey]=useState<'tabCount'|'tabIndex'|'cardsPerRow'|'cardsPerColumn'>('tabCount');
  const [filtersOpen,setFiltersOpen]=useState(false);
  const [filterTarget,setFilterTarget]=useState('Record');
  const [filterFieldId,setFilterFieldId]=useState<string|null>(null);
@@ -171,6 +172,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  const design2Areas=[...new Map(design2Slots
    .map(slot=>[slot.area,slot.areaOrder] as const)).entries()]
    .sort((a,b)=>a[1]-b[1]).map(([area])=>area);
+ if(api==='smart_calendar'&&!design2Areas.includes('Calendar'))design2Areas.push('Calendar');
  const activeDesign2Area=design2Areas.includes(design2Area)?design2Area:design2Areas[0]??'Body';
  const approvedMatrixAreas=new Set(design2SlotRules.map(rule=>rule.area));
  // A SINGLE ribbon scaffold for all Design 2 sections and all components.
@@ -189,9 +191,11 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    // metadata areas used R2 for Fill and R3C3 for Text Size; those should
    // no longer shift the whole ribbon when the section changes.
    const actual=areaSlots.find(slot=>slot.slotKey===template.slotKey);
+   const bodyImagePlacement=activeDesign2Area==='Body'&&template.slotKey==='placement'&&
+     ['smart_card_grid','smart_image','smart_cart'].includes(api);
    return {
      ...template,area:activeDesign2Area,
-     propertyKey:actual?.propertyKey??null,
+     propertyKey:bodyImagePlacement?'imagePlacement':actual?.propertyKey??null,
      fallbackKey:actual?.fallbackKey??template.fallbackKey
    };
  });
@@ -201,8 +205,19 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
        rule.componentApi===api&&rule.area===slot.area&&rule.slotKey===slot.slotKey);
      // In specified areas ONLY the explicit Yes cells may be enabled.
      // A missing Yes rule leaves an inert glyph occupying the SAME R/C position.
-     const propertyKey=approvedMatrixAreas.has(slot.area)
-       ?approved?.propertyKey:slot.propertyKey;
+     const imageApi=['smart_card_grid','smart_image','smart_cart'].includes(api);
+     const migratedBodyKey=slot.area==='Body'&&api==='smart_tabs'&&
+       (slot.slotKey==='width'||slot.slotKey==='height')
+         ?(slot.slotKey==='width'?'tabWidth':'tabHeight'):
+       slot.area==='Body'&&slot.slotKey==='placement'&&imageApi?'imagePlacement':
+       slot.area==='Image'&&imageApi&&slot.slotKey==='height'?'imageHeight':
+       slot.area==='Image'&&imageApi&&slot.slotKey==='placement'?'imagePlacement':
+       slot.area==='Image'&&['smart_card_grid','smart_image','smart_cart','smart_navigation'].includes(api)&&
+         slot.slotKey==='imageFill'?'imageFill':
+       slot.area==='Header'&&imageApi&&slot.slotKey==='height'?'headerBoxHeight':
+       slot.area==='Header Supporting'&&api==='smart_cart'&&slot.slotKey==='height'?'supportingBoxHeight':null;
+     const propertyKey=migratedBodyKey??(approvedMatrixAreas.has(slot.area)
+       ?approved?.propertyKey:slot.propertyKey);
      const assigned=propertyKey?definitions.find(p=>p.id===propertyKey):undefined;
      const fallbackDefinition=definitions.find(p=>p.id===slot.fallbackKey);
      const fallbackKind:UneRibbonProperty['kind']=
@@ -572,14 +587,10 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
           </select>
         </label>
         {(()=>{
-          const badge=activeDesign2Area==='Badge'&&
-            definitions.some(p=>p.id==='badgeVisible'&&p.components.includes(api));
-          const shown=badge?properties.badgeVisible===true:componentVisible;
-          const toggle=badge?()=>update('badgeVisible',!shown):
-            onVisibleChange?()=>onVisibleChange(!componentVisible):undefined;
+          const shown=componentVisible;
+          const toggle=onVisibleChange?()=>onVisibleChange(!componentVisible):undefined;
           return <button type="button" className="smart-icon-toggle smart-design2-visibility"
-            aria-label={badge?'Badge visibility':'Component visibility'}
-            title={badge?'Badge visibility':'Component visibility'}
+            aria-label="Component visibility" title="Component visibility"
             aria-pressed={shown} disabled={!toggle} onClick={toggle}>
             {shown?<Eye size={17}/>:<EyeOff size={17}/>}
           </button>;
@@ -605,6 +616,45 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
           data-design-row={row} style={{gridTemplateColumns:design2GridColumns(row)}}>
           {sectionRow(activeDesign2Area,row).map(controls)}</div>)}
       </div>
+      {activeDesign2Area==='Body'&&['smart_tabs','smart_card_grid','smart_cart'].includes(api)&&(()=>{
+        const keys=api==='smart_tabs'?['tabCount','tabIndex']:api==='smart_cart'?['cardsPerRow']:['cardsPerRow','cardsPerColumn'];
+        const key=keys.includes(countKey)?countKey:keys[0];
+        const property=definitions.find(p=>p.id===key);
+        const enabled=Boolean(property?.components.includes(api)&&
+          (!sharedPropertyIds||sharedPropertyIds.includes(key)));
+        const raw=properties[property?.valueKeys?.[api]??key]??property?.defaultsOverrides?.[api]??property?.default??1;
+        return <div className="smart-design2-count" role="group" aria-label="Count controls">
+          <Hand size={16} aria-hidden="true"/>
+          {keys.length>1&&<select aria-label="Count property" value={key}
+            onChange={event=>setCountKey(event.target.value as 'tabCount'|'tabIndex'|'cardsPerRow'|'cardsPerColumn')}>
+            {api==='smart_tabs'?<><option value="tabCount">Count</option><option value="tabIndex">Initial tab</option></>:
+            <><option value="cardsPerRow">{api==='smart_cart'?'Items':'Columns'}</option><option value="cardsPerColumn">Rows</option></>}
+          </select>}
+          <input type="number" aria-label={property?.label??key} title={property?.label??key}
+            min={property?.min??(key==='tabIndex'?0:1)} max={property?.max??(key==='tabCount'||key==='tabIndex'?20:50)}
+            disabled={!enabled} value={Number(raw)||0}
+            onChange={event=>{const number=Number(event.target.value);
+              if(enabled&&Number.isInteger(number)&&number>=(key==='tabIndex'?0:1))
+                onChange({...properties,[property!.valueKeys?.[api]??key]:number});}}/>
+        </div>;
+      })()}
+      {activeDesign2Area==='Calendar'&&api==='smart_calendar'&&
+        <div className="smart-design2-calendar-controls" role="group" aria-label="Calendar settings">
+          {(['showDays','firstDay'] as const).map(id=>{
+            const property=definitions.find(p=>p.id===id);
+            return property?.components.includes(api)?controls({...property,tab:'Design2',
+              group:'Calendar',designWidth:id==='showDays'?80:110,designRow:0,
+              designOrder:id==='showDays'?1:2}):null;
+          })}
+        </div>}
+      {activeDesign2Area==='Image'&&api==='smart_card_grid'&&(()=>{
+        const property=definitions.find(p=>p.id==='imageBorderColor'&&p.components.includes(api));
+        return property?<div className="smart-design2-image-border">
+          <RibbonColorPalette variant="property" kind="border" label="Image Border Color"
+            value={String(properties.imageBorderColor??'')}
+            onChange={value=>onChange({...properties,imageBorderColor:value})}/>
+        </div>:null;
+      })()}
     </div>
   </section>:tab==='Data'?<>
     {sections.filter(group=>group==='Source').map(section=><section className="smart-ribbon-group" key={section}

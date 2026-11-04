@@ -230,6 +230,7 @@
     "apps/web/test/pageBuilderNumericControlStandard.test.ts",
     "apps/web/test/pageBuilderPresentationProperties.test.mjs",
     "apps/web/test/pageBuilderPublishedRuntimePreview.test.mjs",
+    "apps/web/test/pageBuilderRetiredLayoutRibbon.test.mjs",
     "apps/web/test/pageBuilderRibbonBlueprint.test.ts",
     "apps/web/test/pageBuilderSessionOverflowRegression.test.mjs",
     "apps/web/test/pageBuilderSharedCanvasAndFields.test.mjs",

@@ -102,7 +102,7 @@ function SmartCard({p,record,onButtonClick,onCustomButton,onSelect,selected=fals
  const preview=p.previewOnly===true||p.builderPreview===true||p.preview===true;
  const sample=Boolean(p.builderPreview===true&&record?.__builderSample===true);
  const header=scopedExpression(p,"textSource",p.textSource??p.title??p.label??"",record)||(sample?"Product Name":p.kind==="smart_card_grid"&&preview?"Text here":"");
- const badge=scopedExpression(p,"badgeText",p.badgeText??"",record)||(sample?"Price":preview&&p.badgeVisible===true?"Badge":"");
+ const badge=scopedExpression(p,"badgeText",p.badgeText??"",record);
  // Card Grid uses the same record-scoped, permission-aware formula evaluation as other Data fields.
  const description=gridText(p,"cardDescription",record);
  const value=gridText(p,"cardValue",record);
@@ -255,7 +255,7 @@ function SmartCard({p,record,onButtonClick,onCustomButton,onSelect,selected=fals
     })}
    </div>}
   </div>}
-  {p.badgeVisible===true&&Boolean(badge)&&<span data-md-bind={p.builderPreview?"badgeText":undefined} className={"smart-badge "+(p.badgeAlignment||"image-top-right")}
+  {Boolean(badge)&&<span data-md-bind={p.builderPreview?"badgeText":undefined} className={"smart-badge "+(p.badgeAlignment||"image-top-right")}
    style={{fontWeight:p.badgeBold===false?400:700,fontSize:number(p.badgeTextSize,12),
    color:p.badgeTextColor||"#fff",background:p.badgeBodyColor||"#2563eb",
    border:p.badgeBorderColor?"1px solid "+p.badgeBorderColor:undefined,

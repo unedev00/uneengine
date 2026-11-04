@@ -25,7 +25,7 @@ export default function OneCardCore({source,header,badge,props:p={},loadAsset,
  const valid=showImage&&imageUrl(source);
  const horizontal=p.imagePlacement==="left"||p.imagePlacement==="right";
  const showHeader=horizontal||p.headerBoxHeight===undefined||safeNum(p.headerBoxHeight,0,0,1200)>0;
- const badgeEnabled=p.badgeVisible===undefined?Boolean(badge):p.badgeVisible===true&&(Boolean(badge)||designer);
+ const badgeEnabled=Boolean(badge);
  const placement=["top","left","right","bottom"].includes(p.imagePlacement)?p.imagePlacement:"top";
  const imageOrder=placement==="bottom"||placement==="right"?2:0;
  const fit=p.imageFill==="fit"?"contain":p.imageFill==="stretch"?"fill":p.imageFill==="fill"?"cover":p.imageFit||"cover";

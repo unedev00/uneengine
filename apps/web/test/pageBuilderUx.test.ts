@@ -60,7 +60,7 @@ test('ribbon inline labels wrap and controls stay within their group dividers',(
 
 test('ribbon keeps accessible component tabs without Home and Parity',()=>{
   const source=readFileSync(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
-  for(const label of ['Insert','Data','Design','Layout','Arrange','Actions','Advanced','View'])
+  for(const label of ['Insert','Data','Design','Actions','Advanced','View'])
     assert.ok(source.includes(`'${label}'`),label+' tab label remains available');
   for(const icon of ['Puzzle','Database','Type','SlidersHorizontal','Layers3','Smartphone','Workflow','Eye'])
     assert.ok(source.includes(icon),icon+' tab icon remains available');
@@ -116,7 +116,7 @@ test('Card Grid Add button remains compatible with saved values without exposing
   assert.match(runtime,/onKeyDown=\{event=>/);
 });
 
-test('SQL-defined page controls move to Layout and all Quick Access commands stay on topbar',()=>{
+test('Page canvas controls live in Design and Quick Access stays on topbar',()=>{
   const source=readFileSync(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
   const content=source.slice(source.indexOf('className="office-ribbon-topbar"'),source.indexOf('id="page-builder-tab-content"'));
   assert.doesNotMatch(content,/aria-label="Page name"/);
@@ -124,9 +124,9 @@ test('SQL-defined page controls move to Layout and all Quick Access commands sta
   assert.match(content,/quickAccessOrder\.map\(key=>/);
   for(const key of ['save','activate','resetIcon','undo','redo','cut','copy','paste'])
     assert.match(source,new RegExp("case '"+key+"'"));
-  assert.match(source,/data-shared-group=\{group\}/);
-  assert.match(source,/ribbonCatalog\.properties\.filter\(row=>row\.tab==='Home'&&/);
-  assert.match(source,/office-ribbon-page-layout-groups/);
+  assert.match(source,/data-shared-group="Canvas"/);
+  assert.match(source,/ribbonTab==='Component Design 2' && <div className="office-ribbon-group une-sql-home-group design-canvas-settings"/);
+  assert.doesNotMatch(source,/className="office-ribbon-page-layout-groups"/);
   const sql=readFileSync(new URL('../../server/src/system-support/migrations/20270122-global-shared-builder-ribbon.sql',import.meta.url),'utf8');
   assert.match(sql,/md_builder_shared_properties/);
   for(const property of ['backIcon','pageName','deviceLayout','canvasMode','canvasWidth','canvasHeight',
@@ -192,9 +192,9 @@ test('Quick Access commands are real buttons, remain on the top rail, and Layout
  }
  assert.match(view,/quickAccessOrder\.map\(key=>/);
  assert.match(view,/aria-label="Quick Access Toolbar"/);
- assert.match(view,/ribbonTab==='Component Layout' && ribbonCatalog/);
- for(const group of ['Page','Device','Canvas','Version'])
-  assert.ok(view.includes("'"+group+"'"),group+' remains in Layout');
+ assert.match(view,/design-canvas-settings/);
+ for(const key of ['canvasWidth','canvasHeight','canvasFillColor'])
+  assert.ok(view.includes('data-ribbon-property="'+key+'"'),key+' is in Design');
  assert.doesNotMatch(view,/Unsaved edits/);
  assert.match(view,/rawLayoutParentId\(selected\)/);
  assert.match(view,/Page › /);

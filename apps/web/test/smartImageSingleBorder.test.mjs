@@ -68,7 +68,7 @@ test('Smart Card Grid keeps every record and derives card height from configured
   }
 });
 
-test('Card Grid preview shows image, title and badge placeholders but published records do not', () => {
+test('Card Grid preview shows image and title placeholders but hides blank badges', () => {
   const preview=renderToStaticMarkup(React.createElement(SmartRuntime,{
     kind:'smart_card_grid',records:[],cardsPerRow:3,cardsPerColumn:2,
     width:640,height:400,previewOnly:true,badgeVisible:true
@@ -76,7 +76,7 @@ test('Card Grid preview shows image, title and badge placeholders but published 
   assert.equal((preview.split('<article').length-1),6);
   assert.equal((preview.split('Image Here').length-1),6);
   assert.equal((preview.split('Text here').length-1),6);
-  assert.equal((preview.split('>Badge</span>').length-1),6);
+  assert.equal((preview.split('>Badge</span>').length-1),0);
   const published=renderToStaticMarkup(React.createElement(SmartRuntime,{
     kind:'smart_card_grid',records:[],cardsPerRow:3,cardsPerColumn:2
   }));

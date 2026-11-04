@@ -46,7 +46,7 @@ test('Smart SQL library matches approved table and retains Home',()=>{
  assert.doesNotMatch(migration,/DELETE\s+FROM\s+md_page_(?:definitions|components)/i);
  assert.doesNotMatch(migration,/DELETE\s+FROM\s+md_builder_shared_properties\s+WHERE\s+tab='Home'/i);
  const ui=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
- assert.match(ui,/ribbonTab==='Component Layout' && ribbonCatalog/);
+ assert.match(ui,/design-canvas-settings/);
  assert.match(ui,/office-ribbon-quick-access/);
  assert.match(ui,/<SmartRibbon/);
 });
@@ -1070,13 +1070,13 @@ test('SQL-backed eight-tab ribbon retains existing controls and correct geometry
  const insert=read('../src/core/builders/PageBuilder/SmartInsertRibbon.tsx');
  const arrange=read('../src/core/builders/PageBuilder/ArrangeRibbon.tsx');
  const visual=read('../src/core/builders/PageBuilder/PageBuilderEightTabRibbon.css');
- assert.match(view,/'Component Layout','Arrange','Component Action','Advanced','Preview'/);
+ assert.match(view,/'Component Design 2','Component Action','Advanced','Preview'/);
  assert.match(view,/Preview: 'View'/);
  assert.doesNotMatch(view,/Shapes: 'Shapes'/);
  assert.doesNotMatch(view,/Grok: 'Grok'/);
  assert.match(view,/ribbonTab==='Preview' && <div className="office-ribbon-group preview-visibility-group"/);
  assert.match(view,/<PageBuilderVisibilityDialog/);
- assert.match(view,/<ArrangeRibbon/);
+ assert.match(view,/design2Arrange=\{canvasArrangeProps\}/);
  assert.match(arrange,/onAlign/);
  assert.match(arrange,/onNesting/);
  assert.match(insert,/onClick=\{\(\)=>onInsert\(item.type\)\}/);
