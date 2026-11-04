@@ -108,3 +108,11 @@ test('Mobile Flow Builder provides an explicit way back to the flow list',()=>{
  assert.match(scheduled, /className="btn btn-link" onClick=\{\(\) => selectView\('triggers'\)\}/);
  assert.match(scheduled, /view === 'triggers' \? 'Flow Trigger Explorer' : 'Scheduled Flows'/);
 });
+
+test('Company currency settings can retry failed loads without leaking SQL errors',()=>{
+ const settings=read('../src/core/settings/SettingsWorkspace/settingsWorkspaceViews.tsx');
+ assert.match(settings,/const \[currencyRetry,setCurrencyRetry\]=useState\(0\)/);
+ assert.match(settings,/\}, \[currencyRetry\]\)/);
+ assert.match(settings,/Retry loading currency settings/);
+ assert.match(settings,/currencyFailureMessage\(saveError\)/);
+});
