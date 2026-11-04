@@ -150,8 +150,8 @@ function SmartCard({p,record,onButtonClick,onCustomButton,onSelect,selected=fals
   display:"flex",flexDirection:horizontal?"row":"column",
   background:grid&&selected&&p.selectedCardColor?p.selectedCardColor:
    single?(p.imageBackgroundColor??p.backgroundColor??"transparent"):(p.backgroundColor||"#fff"),
-  border:focused&&p.focusedCardBorderColor&&strokeWidth>0
-   ?strokeWidth+"px solid "+p.focusedCardBorderColor:cardBorder,
+  border:focused&&p.focusedCardBorderColor
+   ?Math.max(1,strokeWidth)+"px solid "+p.focusedCardBorderColor:cardBorder,
   borderRadius:number(p.radius,12),overflow:"hidden",position:"relative",minWidth:0,
   fontSize:focused&&p.focusedTextSize!==undefined&&p.focusedTextSize!==null&&p.focusedTextSize!==""
    ?number(p.focusedTextSize,16,8,96):number(p.textSize,16,8,96),
@@ -227,7 +227,7 @@ function SmartCard({p,record,onButtonClick,onCustomButton,onSelect,selected=fals
     {customButtons.map(key=>{
      const label=gridText(p,key+"Label",record)||(key==="customButton1"?"+":"−");
      return <button key={key} type="button" className="smart-card-button smart-card-custom-action"
-      style={smartCustomButtonAppearance(p,key)} disabled={!p.actionFlows?.[key]||!onCustomButton}
+      style={smartCustomButtonAppearance(p,key)} disabled={!p.actionFlows?.[key]||!onCustomButton||p.previewOnly||p.builderPreview}
       aria-label={label}
       onClick={event=>{event.stopPropagation();onCustomButton?.(key);}}>{label}</button>;
     })}
@@ -627,7 +627,7 @@ export default function SmartRuntime(p){
     };
     const legacyWrapper=actionable&&!hasButton&&!hasCustomButton&&!selectable;
     const card=<SmartCard p={p} record={r} selected={isSelected}
-      onSelect={!legacyWrapper&&(actionable||selectable)?selectRecord:null}
+      onSelect={!legacyWrapper&&(selectable||!hasButton&&hasCustomButton&&actionable)?selectRecord:null}
       onButtonClick={actionable?selectRecord:null}
       onCustomButton={key=>fire(key,{record:r,recordId})}/>;
     return legacyWrapper
