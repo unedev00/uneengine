@@ -27,10 +27,10 @@ test('Data uses 225px formula controls, 150px object selectors and leaves Visibi
   ['taxValue',3,2],['discountValue',3,3]])
   geometry(data,key,'Cart',row,col,225);
  assert.doesNotMatch(sql,/\('columnVisibility',/);
- assert.match(css,/\[data-property="columnVisibility"\]\{\s*margin-right:80px!important/);
+ assert.doesNotMatch(css,/margin-right:80px!important/);
  assert.match(sql,/'imageSource','Values',1,2,225,'Image'/);
  assert.match(sql,/'textSource','Values',2,2,225,'Text'/);
- assert.match(ui,/displayProperties=visible\.filter\(p=>p\.id!=='autoRecordScope'/);
+ assert.match(ui,/const displayProperties=contextualVisible\.filter/);
  assert.match(ui,/tab==='Data'&&p\.id==='contextApiName'/);
  assert.match(css,/\[data-property="defaultCheck"\]>.smart-label/);
 });
