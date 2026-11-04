@@ -548,21 +548,24 @@ export default function SmartRuntime(p){
    </div>
   </div>;
  }
- else if(name==="smart_text"){
+ else if(name==="smart_text"||name==="smart_label"){
   const contentValue=scopedExpression(p,p.textSource?"textSource":"defaultValue",
    p.textSource??p.defaultValue??p.value??p.label??"",record);
+  // Smart Label is the Smart Input Box's display surface: same binding,
+  // same styling properties, never an editable control.
   // Keep the existing Smart Input exactly as it was; display mode is an
   // opt-in metadata property for labels, headings and read-only values.
-  content=p.displayMode==="display"
+  content=name==="smart_label"||p.displayMode==="display"
    ?<div className="smart-display-text" style={{...style,...shadowStyle,
+     ...(name==="smart_label"?smartShapeAppearance(p.shapeId,number(p.radius,12)):{}),
      width:"100%",height:"100%",minWidth:0,minHeight:0,display:"flex",alignItems:"center",
      justifyContent:p.labelAlignment==="right"?"flex-end":p.labelAlignment==="center"?"center":"flex-start",
      padding:"8px 12px",overflow:"hidden",overflowWrap:"anywhere",
      whiteSpace:p.wrapText===false?"nowrap":"pre-wrap",
      fontWeight:p.headerBold===true?700:400,
      background:p.backgroundColor||"transparent",
-     borderStyle:"solid",borderWidth:p.borderWidth===undefined?0:number(p.borderWidth,0,0,24),
-     borderColor:p.borderColor||"transparent"}}>{contentValue}</div>
+     borderStyle:"solid",borderWidth:p.borderWidth===undefined?(name==="smart_label"&&p.borderColor?1:0):number(p.borderWidth,0,0,24),
+     borderColor:p.borderColor||"transparent"}}>{contentValue||(name==="smart_label"&&p.builderPreview?"Label":"")}</div>
    :<input className="smart-input-box" type="text"
   aria-label={label||text(p.placeholder||"Input")}
   placeholder={p.builderPreview===true&&![p.placeholder,p.textSource,p.defaultValue,p.value].some(v=>v!==undefined&&v!==null&&v!=="")

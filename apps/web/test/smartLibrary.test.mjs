@@ -17,11 +17,11 @@ test('Smart Formula uses Excel semantics for maths, literals, fields and &',()=>
  for(const operator of ['+','-','*','/','&'])
    assert.equal(evaluateFieldExpression('"'+operator+'"',row),operator);
 });
-test('Smart component catalog is independent, fourteen components and SQL-owned',async()=>{
+test('Smart component catalog is independent, fifteen components and SQL-owned',async()=>{
  const source=JSON.parse(read('../src/component-libraries/manifest.json'));
  const names=source.components.map(p=>p.split('/')[0]).filter(name=>name.startsWith('smart_'));
  assert.deepEqual(names.sort(),['smart_button','smart_toggle','smart_lookup','smart_tabs',
-  'smart_text','smart_textbox','smart_card_grid','smart_image','smart_calendar','smart_navigation',
+  'smart_text','smart_textbox','smart_label','smart_card_grid','smart_image','smart_calendar','smart_navigation',
   'smart_container','smart_cart','smart_icon','smart_table'].sort());
  const catalog=await loadComponentCatalog();
  for(const name of names){
@@ -387,6 +387,36 @@ test('Smart Input Box has a complete four-sided border with metadata-controlled 
  assert.match(borderless,/border-width:0(?:;|")/);
 });
 
+test('Smart Label is a read-only Smart Input Box with the same binding and styling',async()=>{
+ const label=await renderSmart('smart_label',{
+  record:{Name:'BiteBurst Classic'},textSource:'@Name',
+  labelColor:'#8b0000',backgroundColor:'#fff4cc',textSize:22,headerBold:true,labelAlignment:'center'
+ });
+ assert.match(label,/BiteBurst Classic/);
+ assert.doesNotMatch(label,/<input/);
+ assert.doesNotMatch(label,/contenteditable/i);
+ assert.match(label,/smart-display-text/);
+ assert.match(label,/color:#8b0000/i);
+ assert.match(label,/background:#fff4cc/i);
+ assert.match(label,/font-size:22px/);
+ assert.match(label,/font-weight:700/);
+ assert.match(label,/justify-content:center/);
+ const staticText=await renderSmart('smart_label',{label:'Welcome'});
+ assert.match(staticText,/>Welcome</);
+ const pill=await renderSmart('smart_label',{label:'Bestseller',shapeId:'shape:oval',borderColor:'#f5b700'});
+ assert.match(pill,/border-radius:50%/);
+ assert.match(pill,/border-width:1px/);
+ assert.match(await renderSmart('smart_label',{builderPreview:true}),/>Label</);
+ assert.doesNotMatch(await renderSmart('smart_label',{}),/>Label</);
+ // The existing Smart Input Box is unchanged.
+ assert.match(await renderSmart('smart_text',{label:'Name'}),/<input/);
+ const sql=read('../../server/src/system-support/migrations/20271112-smart-label-component.sql');
+ assert.match(sql,/WHERE r\.component_api='smart_text' AND r\.property_key<>'displayMode'/);
+ assert.match(sql,/'one-bundled:smart_label'/);
+ assert.doesNotMatch(sql,/DELETE\s+FROM/i);
+ assert.match(read('../../server/src/app-seeders/smart-components.ts'),/"smart_label"/);
+});
+
 test('Smart Design Body, Header, Badge and Image match approved three-row positions',()=>{
  const css=read('../src/core/builders/PageBuilder/SmartRibbon.css');
  const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
@@ -541,7 +571,7 @@ test('Smart Event ribbon matches On Click and Qty Icon component support',()=>{
  }
  const cart=JSON.parse(read('../src/component-libraries/smart_cart/component.json'));
  assert.ok(cart.eventDefinitions.some(e=>e.apiName==='qtyIcon'));
- for(const name of ['smart_lookup','smart_tabs','smart_text',
+ for(const name of ['smart_lookup','smart_tabs','smart_text','smart_label',
   'smart_image','smart_navigation','smart_container','smart_icon']){
   const descriptor=JSON.parse(read('../src/component-libraries/'+name+'/component.json'));
   assert.ok(!descriptor.eventDefinitions.some(e=>e.apiName==='click'),name);
@@ -668,7 +698,7 @@ test('Smart Icon SQL enables only approved appearance and layout properties',()=
  assert.doesNotMatch(sql,/UPDATE\s+md_page_|DELETE\s+FROM\s+md_builder_shared_properties/i);
  const seeder=read('../../server/src/app-seeders/smart-components.ts');
  assert.match(seeder,/"smart_icon"/);
- assert.match(seeder,/core-smart-components-v5/);
+ assert.match(seeder,/core-smart-components-v6/);
 });
 
 
@@ -885,7 +915,7 @@ test('Image source is editable @ text, with upload only for the Image component'
  assert.match(proxy,/client_max_body_size 8m/);
 });
 test('Shared Smart runtime leaves no decorative surrounding selection container',async()=>{
- const names=['smart_button','smart_text','smart_lookup','smart_tabs',
+ const names=['smart_button','smart_text','smart_label','smart_lookup','smart_tabs',
   'smart_toggle','smart_image','smart_card_grid','smart_calendar',
   'smart_navigation','smart_cart','smart_container'];
  const props={width:260,height:120,label:'Example',tabs:['A','B']};
