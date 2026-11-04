@@ -9,6 +9,17 @@ type Row=Record<string,unknown>;
 type Action={apiName:string;label:string};
 type Item={id:string;name:string;price:number;image:string;category:string;categoryId:string;quantity:number;ageRestricted:boolean;maxReturn?:number};
 type Category={id:string;name:string;order:number};
+function ProductArtwork({url,name}:{url:string;name:string}){
+ const [failed,setFailed]=React.useState(false);
+ React.useEffect(()=>setFailed(false),[url]);
+ const imageAllowed=/^(https?:\/\/|\/|data:image\/(?:png|jpeg|webp|gif);base64,)/i.test(url);
+ return <div className="acetill-product-art">
+  {imageAllowed&&!failed?<img src={url} alt={name} loading="lazy" onError={()=>setFailed(true)}/>:
+   <div className="acetill-photo-placeholder" role="img" aria-label={name+' — product photo not available'}>
+    <span aria-hidden="true">▧</span><small>Photo unavailable</small>
+   </div>}
+ </div>;
+}
 type Result={outputs?:Row;records?:Row[];interviewId?:string;completed?:boolean};
 const asText=(v:unknown)=>v==null?'':String(v);
 const amount=(v:number)=>new Intl.NumberFormat('en-GB',{style:'currency',currency:'GBP'}).format(v);
@@ -17,7 +28,7 @@ function product(row:Row):Item|null {
   const name=asText(row.Name??row.name);
   const price=Number(row.OriginalUnitPrice??row.Price??row.UnitPrice??row.SalePrice);
   if(!id||!name||!Number.isFinite(price)||price<0||row.Active===false||row.Active==='false'||row.IsVisiblePOS===false||row.IsVisiblePOS==='false')return null;
-  return {id,name,price,image:asText(row.ImageUrl??row.Image??row.PhotoUrl??row.ProductImage),category:asText(row.CategoryName??row.Category??row.ProductCategory??''),categoryId:asText(row.MenuCategory??row.MenuCategoryId??row.CategoryId),quantity:Math.max(1,Number(row.Quantity??1)),ageRestricted:row.AgeRestricted===true||row.AgeRestricted==='true'||Number(row.MinimumAge??0)>0};
+  return {id,name,price,image:asText(row.ImageUrl??row.ImageURL??row.Image_Url??row.ThumbnailUrl??row.PhotoUrl??row.ProductPhotoUrl??row.ProductImageUrl??row.Image??row.ProductImage),category:asText(row.CategoryName??row.Category??row.ProductCategory??''),categoryId:asText(row.MenuCategory??row.MenuCategoryId??row.CategoryId),quantity:Math.max(1,Number(row.Quantity??1)),ageRestricted:row.AgeRestricted===true||row.AgeRestricted==='true'||Number(row.MinimumAge??0)>0};
 }
 function parseCategory(row:Row):Category|null {
   const id=asText(row.Id??row.id??row.CategoryId);
@@ -456,7 +467,7 @@ export default function AcetillTerminal({editorStyles}: {editorStyles?:AcetillVi
       {catalogueLoading&&<p role="status" className="acetill-state">Loading products…</p>}
       <div className="acetill-product-grid" data-acetill-element="products">
         {shown.map(p=><button type="button" key={p.id} className="acetill-product" onClick={()=>selectProduct(p)} disabled={busy}>
-          <div className="acetill-product-art">{p.image?<img src={p.image} alt="" loading="lazy"/>:<span aria-hidden="true">◻</span>}</div>
+          <ProductArtwork url={p.image} name={p.name}/>
           <div className="acetill-product-meta"><strong>{p.name}</strong><span>{amount(p.price)}</span></div>
         </button>)}
       </div>
