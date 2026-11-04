@@ -274,6 +274,9 @@ try {
  assert.match(await page.evaluate(()=>window.securityEventQuery),/action=login/);
  await screenshot('audit-verified-security-history');
  await page.setViewportSize({width:390,height:844});
+ await open('security-history');
+ await page.getByRole('button',{name:'Next'}).click();
+ assert.match(await page.evaluate(()=>window.securityEventQuery),/limit=10&offset=10/,'Phone security event paging must fetch ten at a time');
  await open('governance');
  await page.getByRole('tab',{name:'Audit Trail'}).click();
  const mobileAudit=page.getByRole('region',{name:'Setup audit events'});
