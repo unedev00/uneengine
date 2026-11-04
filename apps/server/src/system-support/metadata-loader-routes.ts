@@ -217,22 +217,24 @@ export function registerMetadataLoaderRoutes(app:Express,db:SqlPersistence,rbac:
     const obj=existing.get(i.objectApi.toLowerCase());
     const field=obj?.fields.find(f=>f.apiName.toLowerCase()===i.fieldApi?.toLowerCase());
     const exists=i.sheet==='Objects'?Boolean(obj):Boolean(field);
-    await permitted(rbac,actor,i,exists);
-    if(i.action==='Create'&&exists)throw Error('Already exists; use Upsert');
+    const deleted=exists?false:Boolean((await db.query<{id:string}>(i.sheet==='Objects'
+     ?'SELECT id FROM md_object_definitions WHERE tenant_id=$1 AND api_name=$2 AND deleted_at IS NOT NULL'
+     :'SELECT id FROM md_field_definitions WHERE tenant_id=$1 AND object_api=$2 AND api_name=$3 AND deleted_at IS NOT NULL',
+     i.sheet==='Objects'?[actor.tenant_id,i.objectApi]:[actor.tenant_id,i.objectApi,i.fieldApi])).rowCount);
+    await permitted(rbac,actor,i,exists||deleted);
+    if(i.action==='Create'&&(exists||deleted))throw Error('Already exists or is soft-deleted; use Upsert');
     if(['Update','Delete'].includes(i.action)&&!exists)throw Error('Not found');
-    if(i.action==='HardDelete'){
-     const deleted=await db.query<{id:string}>(i.sheet==='Objects'
-      ?'SELECT id FROM md_object_definitions WHERE tenant_id=$1 AND api_name=$2 AND deleted_at IS NOT NULL'
-      :'SELECT id FROM md_field_definitions WHERE tenant_id=$1 AND object_api=$2 AND api_name=$3 AND deleted_at IS NOT NULL',
-      i.sheet==='Objects'?[actor.tenant_id,i.objectApi]:[actor.tenant_id,i.objectApi,i.fieldApi]);
-     if(!deleted.rowCount)throw Error('Hard Delete requires a previously soft-deleted definition');
-    }
+    if(i.action==='HardDelete'&&!exists&&!deleted)throw Error('Definition not found');
+    if(i.sheet==='Objects'&&!exists&&!deleted&&['Create','Upsert'].includes(i.action)
+      &&!value(i.cells,'Label'))throw Error('Object Label is required');
+    if(i.sheet==='Fields'&&!exists&&!deleted&&['Create','Upsert'].includes(i.action)
+      &&!value(i.cells,'Label'))throw Error('Field Label is required');
     if(i.sheet==='Objects'&&obj?.kind==='Standard Object'&&['Delete','HardDelete'].includes(i.action))
      throw Error('Standard objects cannot be deleted');
     if(i.sheet==='Fields'&&!obj&&!planned.has(i.objectApi.toLowerCase()))
      throw Error('Parent object does not exist or is not in the workbook');
     if(i.sheet==='Fields'&&i.action==='Create'&&!value(i.cells,'DataType'))throw Error('DataType is required');
-    if(i.sheet==='Fields'&&i.action==='Upsert'&&!field&&!value(i.cells,'DataType'))throw Error('DataType is required for new fields');
+    if(i.sheet==='Fields'&&i.action==='Upsert'&&!field&&!deleted&&!value(i.cells,'DataType'))throw Error('DataType is required for new fields');
     if(i.sheet==='Fields'&&value(i.cells,'TargetObject')){
      const target=value(i.cells,'TargetObject').toLowerCase();
      if(!existing.has(target)&&!planned.has(target))throw Error('Related object does not exist');
@@ -244,7 +246,7 @@ export function registerMetadataLoaderRoutes(app:Express,db:SqlPersistence,rbac:
     }
     if(obj&&(i.action==='Delete'||i.action==='Update'||i.action==='Upsert'||i.action==='HardDelete'))
      await assertMetadataPackageEditable(db,actor.tenant_id,'object',i.objectApi);
-    i.result=i.action==='Upsert'?(exists?'Update':'Create'):i.action;
+    i.result=i.action==='Upsert'?(exists?'Update':deleted?'Restore + Update':'Create'):i.action;
     i.message='Validated';
    }catch(e){i.status='Error';i.message=e instanceof Error?e.message:String(e);}
   }
