@@ -466,6 +466,7 @@ function CompanySettings({ canManage, section = 'general' }: { canManage: boolea
   const [companyBeforeEdit,setCompanyBeforeEdit]=useState<CompanyProfile|null>(null);
   const [companyEditing,setCompanyEditing]=useState(false);
   const [companyLoading,setCompanyLoading]=useState(true);
+  const [companyReady,setCompanyReady]=useState(false);
   const [companySaving,setCompanySaving]=useState(false);
   const [companyError,setCompanyError]=useState('');
   const [companyNotice,setCompanyNotice]=useState('');
@@ -478,7 +479,7 @@ function CompanySettings({ canManage, section = 'general' }: { canManage: boolea
   const shownCompanyFields=companyEditing?visibleCompanyFields:visibleCompanyFields.filter(field=>section!=='contacts'||Boolean(company[field.key]?.trim()));
   const contactsConfigured=contactFieldKeys.some(key=>Boolean(company[key as keyof CompanyProfile]?.trim()));
   const companyDirty=companyBeforeEdit!==null&&JSON.stringify(company)!==JSON.stringify(companyBeforeEdit);
-  const saveCompanyAllowed=companyDirty;
+  const saveCompanyAllowed=companyReady&&companyDirty;
   const companyFailureMessage=(failure:unknown)=>{
     const detail=failure instanceof Error?failure.message:String(failure);
     return /non-JSON|SQL service unavailable|HTTP 50[0234]|API /i.test(detail)
@@ -496,14 +497,14 @@ function CompanySettings({ canManage, section = 'general' }: { canManage: boolea
     finally{setLogoReading(false)}
   };
   const reloadCompany=async()=>{
-    setCompanyLoading(true);setCompanyError('');
+    setCompanyLoading(true);setCompanyReady(false);setCompanyError('');
     try{const value=await apiRequest<{profile:CompanyProfile|null}>('/tenant/company-profile');
-      setCompany({...blankCompanyProfile,...(value.profile??{})});}
-    catch(error){setCompanyError(companyFailureMessage(error));}
+      setCompany({...blankCompanyProfile,...(value.profile??{})});setCompanyReady(true);}
+    catch(error){setCompanyReady(false);setCompanyError(companyFailureMessage(error));}
     finally{setCompanyLoading(false);}
   };
   useEffect(()=>{void reloadCompany();},[]);
-  const saveCompany=async()=>{if(!canManage||companySaving||logoReading||!saveCompanyAllowed)return;
+  const saveCompany=async()=>{if(!canManage||!companyReady||companySaving||logoReading||!saveCompanyAllowed)return;
     setCompanySaving(true);setCompanyError('');setCompanyNotice('');
     try{const saved=await apiRequest<{profile:CompanyProfile}>('/tenant/company-profile',{method:'PUT',body:JSON.stringify(company)});
       setCompany(saved.profile);setCompanyEditing(false);setCompanyBeforeEdit(null);setCompanyNotice(section==='branding'?'Company logo saved.':'Company details saved.');}
@@ -642,9 +643,9 @@ function CompanySettings({ canManage, section = 'general' }: { canManage: boolea
       description={section==='currency'?'Review your corporate currency, VAT and exchange rates.':section==='contacts'?'Manage how customers and partners contact your organisation.':section==='branding'?'Review and update your organisation logo and public identity.':'Manage your organisation details.'} />
     {section!=='currency'&&<section className="surface permission-section company-profile-section" aria-label={sectionTitle}>
       <div className="section-toolbar"><div><h2>{sectionTitle}</h2><p>{section==='branding'?'Upload a PNG, JPG or WebP logo (up to 128 KB). Preview the current logo below.':'Organisation, contact and regional information.'}</p></div>
-      {canManage&&!companyEditing&&!companyLoading&&<button type="button" className="btn" onClick={()=>{setCompanyBeforeEdit({...company});setCompanyEditing(true);}}>{section === 'branding' ? 'Edit logo' : section === 'contacts' ? contactsConfigured?'Edit contacts':'Add contact details' : 'Edit details'}</button>}</div>
+      {canManage&&companyReady&&!companyEditing&&!companyLoading&&<button type="button" className="btn" onClick={()=>{setCompanyBeforeEdit({...company});setCompanyEditing(true);}}>{section === 'branding' ? 'Edit logo' : section === 'contacts' ? contactsConfigured?'Edit contacts':'Add contact details' : 'Edit details'}</button>}</div>
       {companyError&&!companyEditing&&<button type="button" className="btn" disabled={companyLoading} onClick={()=>void reloadCompany()}>Retry loading company details</button>}
-      {companyLoading?<p>Loading company details…</p>:<>{!companyEditing&&section==='contacts'&&!contactsConfigured&&<p className="company-contacts-empty">No contact details configured yet. Select Add contact details to enter an email, telephone, website or address.</p>}
+      {companyLoading?<p>Loading company details…</p>:companyReady?<>{!companyEditing&&section==='contacts'&&!contactsConfigured&&<p className="company-contacts-empty">No contact details configured yet. Select Add contact details to enter an email, telephone, website or address.</p>}
        {(section==='branding'||section==='general')&&<div className="company-profile-logo">{(company.logoUrl?.startsWith("data:image/")||company.logoUrl?.startsWith("https://"))?<img src={company.logoUrl} alt="Company logo" />:<span aria-label="No logo configured">No logo</span>}</div>}
        {section==='branding'&&<div className="company-brand-preview" aria-label="Illustrative sign-in preview">
         <small>Sign-in preview (illustrative)</small>
@@ -655,7 +656,7 @@ function CompanySettings({ canManage, section = 'general' }: { canManage: boolea
       {shownCompanyFields.map(field=><div className="company-profile-field" data-company-field={field.key} key={field.key}><label htmlFor={'company-'+field.key}>{field.label}</label>
         {companyEditing?<input id={'company-'+field.key} className="form-control" value={company[field.key]}
           onChange={event=>setCompany(previous=>({...previous,[field.key]:event.target.value}))}/>
-        :<p>{company[field.key]||'Not provided'}</p>}</div> )}</div></>}
+        :<p>{company[field.key]||'Not provided'}</p>}</div> )}</div></>:<p role="status">Company data could not be loaded. Editing is unavailable until a successful retry.</p>}
       {companyEditing&&<div className="settings-read-first-toolbar">
         <button type="button" className="btn" disabled={companySaving} onClick={()=>{setCompany(companyBeforeEdit??blankCompanyProfile);setCompanyEditing(false);setCompanyBeforeEdit(null);}}>Cancel</button>
         <button type="button" className="btn btn-brand" disabled={companySaving||logoReading||!saveCompanyAllowed} onClick={()=>void saveCompany()}>{companySaving?'Saving…':'Save details'}</button></div>}
