@@ -36,7 +36,6 @@ function ExcelWorkflow({apiRequest,category,options,filename,onSuccess}:{
  const [execution,setExecution]=useState<Report|null>(null);
  const [busy,setBusy]=useState(false),[error,setError]=useState('');
  const report=execution??validation;
- const optionsKey=JSON.stringify(options);
  const exportSheet=async()=>{
   setBusy(true);setError('');
   try{
