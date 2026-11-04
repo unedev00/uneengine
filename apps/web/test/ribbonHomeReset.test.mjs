@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const src=path=>readFileSync(new URL(path,import.meta.url),'utf8');
 
-test('page-level handlers remain intact in topbar and Layout while Smart Insert stays functional',()=>{
+test('page-level handlers remain intact in topbar and Design while Smart Insert stays functional',()=>{
  const page=src('../src/core/builders/PageBuilder/pageBuilderView.tsx');
  // Top ribbon tab panel (its id moves to the left Design dock while Design is docked).
  const marker=page.indexOf('ref={ribbonStripRef}');
@@ -17,7 +17,8 @@ test('page-level handlers remain intact in topbar and Layout while Smart Insert 
  assert.match(body,/ribbonTab==='Add Block' && <SmartInsertRibbon/);
  assert.match(body,/onInsert=\{addPaletteComponent\}/);
  assert.doesNotMatch(body,/onOpenLibrary=\{\(\)=>openAddBlocks\(\)\}/);
- assert.match(body,/ribbonTab==='Component Layout' && ribbonCatalog/);
+ assert.match(body,/ribbonTab==='Component Design 2' && <div className="office-ribbon-group une-sql-home-group design-canvas-settings"/);
+ assert.doesNotMatch(page,/\x27Component Design 2\x27,\x27Component Layout\x27,\x27Arrange\x27/);
  assert.match(page,/office-ribbon-quick-access/);
  assert.match(page,/const quickAccessOrder=\['save','activate','preview','exitPreview','resetIcon','undo','redo','cut','copy','paste','delete'\]/);
 });
