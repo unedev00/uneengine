@@ -483,7 +483,7 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
    const bounds=host.getBoundingClientRect(),errors=[];
    for(const icon of icons){
     const key=icon.dataset.bindingProperty;
-    const fields=anchors.filter(el=>(el.getAttribute('data-md-bind')||'').split(/\\s+/).includes(key));
+    const fields=anchors.filter(el=>(el.getAttribute('data-md-bind')||'').split(/\s+/).includes(key));
     if(!fields.length){errors.push('No field: '+key);continue;}
     const rect=icon.getBoundingClientRect();
     if(rect.left<bounds.left-2||rect.top<bounds.top-2||
