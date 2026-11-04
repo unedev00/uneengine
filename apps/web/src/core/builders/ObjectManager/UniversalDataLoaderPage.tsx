@@ -97,9 +97,14 @@ export default function UniversalDataLoaderPage({apiRequest,objects,onChanged}:P
      className={mode===id?'btn btn-brand':'btn'} onClick={()=>chooseMode(id)} type="button">
      <Icon size={16}/> {label}</button>)}
   </div>
-  {mode==='metadata'&&<UniversalMetadataLoader embedded apiRequest={apiRequest}
-   currentObject={object?.apiName??''} onClose={()=>chooseMode('records')}
-   onChanged={()=>onChanged?.()}/>}
+  {mode==='metadata'&&<>
+   <label style={{display:'block',marginBottom:12}}>Object to export <select className="form-control"
+    value={object?.apiName??''} onChange={event=>setObjectApi(event.target.value)}>
+    {objects.map(o=><option key={o.apiName} value={o.apiName}>{o.label} ({o.apiName})</option>)}
+   </select></label>
+   <UniversalMetadataLoader embedded apiRequest={apiRequest}
+    currentObject={object?.apiName??''} onClose={()=>chooseMode('records')}
+    onChanged={()=>onChanged?.()}/></>}
   {mode!=='metadata'&&<>
    <section className="metadata-card" style={{marginBottom:16,padding:16}}>
     <h2>{mode==='records'?'Record Excel export':'Shared ribbon property export'}</h2>
