@@ -102,8 +102,8 @@ export class SecurityMonitorService{
  }
  async prune(tenant:string,user:string,confirmation?:unknown,expectedRetentionDays?:unknown){
   await this.rbac.require(tenant,user,'SecurityMonitoring','manage');
-  if(confirmation!=='PRUNE'||!Number.isSafeInteger(expectedRetentionDays)
-   ||Number(expectedRetentionDays)<90||Number(expectedRetentionDays)>3650)
+  if(confirmation!=='PRUNE'||typeof expectedRetentionDays!=='number'||!Number.isSafeInteger(expectedRetentionDays)
+   ||expectedRetentionDays<90||expectedRetentionDays>3650)
    throw new Error('Explicit retention cleanup confirmation is required');
   return this.db.transaction(async c=>{
    const policy=await c.query<{retention_days:number}>('SELECT retention_days FROM md_monitor_settings WHERE tenant_id=$1 FOR SHARE',[tenant]);
