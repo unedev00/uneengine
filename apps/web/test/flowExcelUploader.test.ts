@@ -20,7 +20,6 @@ const initial=():FlowDefinitionMetadata=>({
     {id:'create-end',from:2,to:3,label:'',kind:'normal'}
   ]
 });
-const copy=(flow:FlowDefinitionMetadata)=>structuredClone(flow);
 const sheets=(flow:FlowDefinitionMetadata)=>flowWorkbookTables(flow);
 const lookup=(tables:ReturnType<typeof sheets>,name:string)=>tables.find(t=>t.name===name)!;
 const types=['CreateRecord','Assignment','Decision'];
@@ -76,7 +75,12 @@ test('invalid rows are reported and broken graph prevents applying',()=>{
  lookup(tables,'Connections').rows.find(r=>r['Connection ID']==='create-end')!['To Node']='999';
  const result=previewFlowExcel(tables,base,types);
  assert.ok(result.errors.some(e=>e.includes('Connections row')));
- assert.ok(result.errors.some(e=>e.includes('Graph:')));
+ // A rejected row leaves the original valid edge intact.
+ assert.deepEqual(result.draft.connectors,base.connectors);
+ const broken=sheets(base);
+ lookup(broken,'Connections').rows.find(r=>r['Connection ID']==='create-end')!.Action='DELETE';
+ const invalidGraph=previewFlowExcel(broken,base,types);
+ assert.ok(invalidGraph.errors.some(e=>e.includes('Graph:')));
 });
 test('invalid JSON settings do not overwrite existing node config',()=>{
  const base=initial(),tables=sheets(base);
