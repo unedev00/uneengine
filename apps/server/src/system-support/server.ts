@@ -209,6 +209,8 @@ export function createSystemServer(db:SqlPersistence) {
   let adminMailAccess:MailAdminAccess|undefined;
   registerDockerMailWebRoutes(app,undefined,undefined,undefined,()=>adminMailAccess);
   app.use('/api/media-assets',express.json({limit:'8mb'}));
+  // XLSX is carried as base64 JSON; bound this route separately from ordinary API payloads.
+  app.use('/api/metadata/loader',express.json({limit:'15mb'}));
   app.use(express.json({limit:'2mb',verify:(req,_res,bytes)=>{
     if((req.url??'').startsWith('/api/inbound-webhooks/') && bytes.length<=262144)
       (req as Request & {rawWebhookBody?:Buffer}).rawWebhookBody=Buffer.from(bytes);
