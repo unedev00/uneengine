@@ -28,6 +28,14 @@ export default function TenantConnectedApps({request}:{request:Request}){
    .some(v=>v.toLocaleLowerCase().includes(search)))
  })).filter(group=>group.scopes.length>0);
  const selectedTotal=draft.scopes.length;
+ const existingClient=data?.clients.find(client=>client.id===draft.id);
+ const changed=!existingClient||JSON.stringify(existingClient)!==JSON.stringify(draft);
+ const redirectsValid=draft.redirects.length>0&&draft.redirects.every(value=>{
+   try {const parsed=new URL(value.trim());return parsed.protocol==='https:'&&Boolean(parsed.hostname)&&!parsed.username&&!parsed.password;}
+   catch {return false;}
+ });
+ const canSave=draft.label.trim().length>0&&redirectsValid&&changed&&!busy;
+ const discard=()=>{if(changed&&draft.label.trim()&&!window.confirm('Discard unsaved connected app changes?'))return;setDraft(fresh());setDirectoryOpen(true);setMessage('');setSecret('');};
  const matchingClients=(data?.clients??[]).filter(c=>[c.label,c.id,c.client_type].some(v=>v?.toLowerCase().includes(appSearch.trim().toLowerCase())));
  const matchingUsers=(data?.users??[]).filter(u=>u.email.toLowerCase().includes(userSearch.trim().toLowerCase()));
  const selectApp=(client:Client)=>{setDraft({...client});setDirectoryOpen(false);setSecret('');setMessage('');};
@@ -39,7 +47,7 @@ export default function TenantConnectedApps({request}:{request:Request}){
   {data&&<>
   {data.clients.length>0&&<div className="connected-apps-directory" aria-label="Existing OAuth applications">
    <div className="md-admin-actions"><button type="button" className="btn btn-brand" onClick={()=>{setDraft(fresh());setDirectoryOpen(false);setSecret('');}}>New connected app</button>
-    {!directoryOpen&&<button type="button" className="btn" onClick={()=>setDirectoryOpen(true)}>Browse applications</button>}</div>
+    {!directoryOpen&&<button type="button" className="btn" onClick={discard}>Browse applications</button>}</div>
    {directoryOpen&&<><label className="form-label">Find connected app
     <input className="form-control" type="search" value={appSearch} onChange={e=>setAppSearch(e.target.value)} placeholder="Search by app name or client ID"/>
    </label><div className="connected-apps-directory-grid">{matchingClients.map(client=><button type="button" className="connected-apps-directory-item" key={client.id} onClick={()=>selectApp(client)}>
@@ -59,8 +67,8 @@ export default function TenantConnectedApps({request}:{request:Request}){
       Rotate client secret and revoke consents
     </button>
   )}
-  <div className="md-admin-form-grid"><label className="form-label">Name
-    <input className="form-control" value={draft.label} onChange={e=>setDraft({...draft,label:e.target.value})}/>
+  <div className="md-admin-form-grid"><label className="form-label">Name (required)
+    <input className="form-control" required value={draft.label} onChange={e=>setDraft({...draft,label:e.target.value})}/>
   </label>
   <label className="form-label">Client type
     <select className="form-control" disabled={Boolean(draft.id)} value={draft.client_type} onChange={e=>setDraft({...draft,client_type:e.target.value as Client['client_type']})}>
@@ -69,8 +77,9 @@ export default function TenantConnectedApps({request}:{request:Request}){
     </select>
   </label></div>
   <label className="form-label">Exact HTTPS redirect URLs, one per line
-    <textarea className="form-control" value={draft.redirects.join('\n')} onChange={e=>setDraft({...draft,redirects:e.target.value.split('\n')})} rows={3}/>
+    <textarea className="form-control" required value={draft.redirects.join('\n')} onChange={e=>setDraft({...draft,redirects:e.target.value.split('\n')})} rows={3}/>
   </label>
+  {!redirectsValid&&<p className="permission-help">Enter at least one valid HTTPS redirect URL. Each URL must be on its own line.</p>}
   <div className="connected-apps-toggles">
     <label className="checkbox-row"><input type="checkbox" checked={draft.enabled} onChange={e=>setDraft({...draft,enabled:e.target.checked})}/>Enabled</label>
     <label className="checkbox-row"><input type="checkbox" checked={draft.require_mfa} onChange={e=>setDraft({...draft,require_mfa:e.target.checked})}/>Require MFA at consent</label>
@@ -119,7 +128,8 @@ export default function TenantConnectedApps({request}:{request:Request}){
     </div>{matchingUsers.length===0&&<p role="status">No matching users.</p>}
   </div>
   <div className="connected-apps-actions">
-    <button type="button" className="btn btn-brand" disabled={busy} onClick={()=>{if(draft.id&&data.clients.some(client=>client.id===draft.id)&&JSON.stringify(data.clients.find(client=>client.id===draft.id))!==JSON.stringify(draft)&&!window.confirm('Save changes to this app? Existing user consents will be revoked and users must reauthorise.'))return;setBusy(true);setMessage('');void request<{id:string;clientSecret?:string}>('/security/connected-apps',{method:'PUT',body:JSON.stringify(draft)}).then(async r=>{setDraft({...draft,id:r.id});setSecret(r.clientSecret??'');setMessage('Saved');await load();}).catch(e=>setMessage(String(e))).finally(()=>setBusy(false));}}>
+    <button type="button" className="btn" disabled={busy} onClick={discard}>Cancel / Discard</button>
+    <button type="button" className="btn btn-brand" disabled={!canSave} onClick={()=>{if(draft.id&&data.clients.some(client=>client.id===draft.id)&&JSON.stringify(data.clients.find(client=>client.id===draft.id))!==JSON.stringify(draft)&&!window.confirm('Save changes to this app? Existing user consents will be revoked and users must reauthorise.'))return;setBusy(true);setMessage('');void request<{id:string;clientSecret?:string}>('/security/connected-apps',{method:'PUT',body:JSON.stringify(draft)}).then(async r=>{setDraft({...draft,id:r.id});setSecret(r.clientSecret??'');setMessage('Saved');await load();}).catch(e=>setMessage(String(e))).finally(()=>setBusy(false));}}>
       Save connected app
     </button>
   </div>
