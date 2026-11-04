@@ -24,9 +24,16 @@ test('Retire Layout only after remapping all component property definitions to D
 test('Hand control edits the existing count metadata, not a new counter',()=>{
  assert.match(design,/<Hand size=\{16\}/);
  assert.match(design,/['"]tabCount['"]/);
- assert.match(design,/['"]cardsPerRow['"],['"]cardsPerColumn['"]/);
- assert.match(design,/\[property!\.valueKeys\?\.\[api\]\?\?key\]:number/);
+ for(const key of ['cardsPerRow','cardsPerColumn'])
+  assert.ok(design.includes(key),key+' remains supported');
+ assert.match(design,/\[property!\.valueKeys\?\.\[api\]\?\?key\]:next/);
  assert.match(css,/smart-design2-count/);
+ assert.match(css,/left:298px;top:30px/);
+ assert.match(design,/className="smart-design2-count-field"/);
+ assert.match(design,/className="smart-office-number" step=\{1\}/);
+ assert.doesNotMatch(design,/value="tabIndex"/);
+ assert.match(design,/data-source-bound=\{sourceBound\?'true':'false'\}/);
+ assert.match(design,/activeDesign2Area==='Body'&&supported&&!sourceBound/);
 });
 
 test('Tab dimensions, orientation and count resize canvas frame together',()=>{
