@@ -54,6 +54,27 @@ test('one builder-only overlay routes selected icons to SQL-approved expressions
   'lookupValueFormula','selectedDate','tabCaptionFormula'])assert.ok(sql.includes("'"+key+"'"));
  for(const attr of ['"collectionFormula label"','"imageSource"','"totalLabel"','"totalValue"'])
   assert.ok(cart.includes('data-md-bind={p.builderPreview?'+attr+':undefined}'),attr);
- for(const attr of ['"selectedDate defaultValue"','"collectionFormula"','"label lookupValueFormula"'])
+ for(const attr of ['"selectedDate"','"label lookupValueFormula"'])
   assert.ok(runtime.includes('data-md-bind={p.builderPreview?'+attr+':undefined}'),attr);
+ assert.ok(runtime.includes('data-md-bind={p.builderPreview&&p.collectionFormula?'));
+
+});
+
+test('every Smart binding icon is field-anchored, never positioned in an arbitrary bottom grid',()=>{
+ const icons=source('../src/core/builders/PageBuilder/CanvasDataBindingIcons.tsx');
+ const css=source('../src/core/builders/PageBuilder/CanvasDataBindingIcons.css');
+ const runtime=source('../src/component-libraries/smart/shared/SmartRuntime.jsx');
+ assert.match(icons,/querySelectorAll<HTMLElement>\('\[data-md-bind\]'\)/);
+ assert.match(icons,/const clipped=clipRect\(element,host\)/);
+ assert.match(icons,/if\(!clipped\)continue/);
+ assert.match(icons,/const selected=new Set<string>\(\)/);
+ assert.match(icons,/propertyKey==='tabCaptionFormula'/);
+ assert.match(icons,/return null; \/\/ Never manufacture a grid/);
+ assert.doesNotMatch(icons,/is-fallback|unrendered:|const missing=|missing\.forEach/);
+ assert.match(icons,/smart_tabs:\{tabCaptionFormula:'Tab caption'/);
+ assert.match(icons,/smart_cart:\{label:'Cart title',collectionFormula:'Cart items source'/);
+ assert.match(css,/\.builder-page \.record-component\.selected/);
+ assert.doesNotMatch(css,/\.modern-canvas-builder .*\.canvas-data-icon-button/);
+ assert.match(runtime,/p\.builderPreview&&p\.collectionFormula&&\(dynamic\|\|hasCollection\)/);
+ assert.match(runtime,/dynamic\|\|hasCollection\?"textSource":"tabCaptionFormula"/);
 });
