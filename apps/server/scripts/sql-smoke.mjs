@@ -212,6 +212,40 @@ try{
  console.info('Object layout history restore, immutable revisions and Field preservation: passed');
 
  const pageService=new PageRuntime(db);
+ // Regression: Page Manager hides archived pages, but their API names remain
+ // reserved. Creating with the same label must never update an archived row.
+ const pageDraftInput={apiName:'smart_kiosk_customise',label:'SMART KIOSK CUSTOMISE',
+   targetObject:'',pageType:'App Page',layoutMode:'free-canvas',
+   canvasWidth:1440,canvasHeight:900,status:'Draft',devices:['Desktop'],
+   components:[],activationAssignments:[]};
+ const createdDraft=await db.transaction(async()=>{
+   await pageService.save(tenantId,pageDraftInput.apiName,pageDraftInput,true);
+   return pageService.saveLayoutDraft(tenantId,pageDraftInput.apiName,'Desktop',
+     {...pageDraftInput,draftRevision:0},userId);
+ });
+ assert.equal(createdDraft.apiName,pageDraftInput.apiName);
+ assert.ok(createdDraft.draftRevision>0,'create-only path saves a new draft');
+ await assert.rejects(()=>pageService.save(tenantId,pageDraftInput.apiName,
+   pageDraftInput,true),/Page already exists/);
+ const archivedId=(await db.query(`SELECT id FROM md_page_definitions
+   WHERE tenant_id=$1 AND api_name=$2`,[tenantId,pageDraftInput.apiName])).rows[0].id;
+ await db.query(`UPDATE md_page_definitions SET enabled=false
+   WHERE tenant_id=$1 AND id=$2`,[tenantId,archivedId]);
+ await assert.rejects(()=>pageService.save(tenantId,pageDraftInput.apiName,
+   {...pageDraftInput,label:'Should not overwrite an archived page'},true),/Page already exists/);
+ await assert.rejects(()=>pageService.save(tenantId,pageDraftInput.apiName,
+   {...pageDraftInput,label:'Should not overwrite an archived page'}),/archived/);
+ const preserved=(await db.query(`SELECT id,enabled,title FROM md_page_definitions
+   WHERE tenant_id=$1 AND api_name=$2`,[tenantId,pageDraftInput.apiName])).rows[0];
+ assert.equal(preserved.id,archivedId);
+ assert.equal(preserved.enabled,false);
+ assert.equal(preserved.title,pageDraftInput.label);
+ const replacement={...pageDraftInput,apiName:'smart_kiosk_customise_2'};
+ const freshPage=await pageService.save(tenantId,replacement.apiName,replacement,true);
+ assert.equal(freshPage.apiName,replacement.apiName);
+ assert.notEqual((await db.query(`SELECT id FROM md_page_definitions
+   WHERE tenant_id=$1 AND api_name=$2`,[tenantId,replacement.apiName])).rows[0].id,archivedId);
+ console.info('Create-only Page drafts, archived API identity and fresh-name retry: passed');
  const defaultEdit=await pageService.resolveRecordPage(tenantId,'AuditItem__c','Records','','master','Desktop','Edit');
  assert.equal(defaultEdit?.recordMode,'Edit');
  assert.equal(defaultEdit?.pageType,'Record Page');

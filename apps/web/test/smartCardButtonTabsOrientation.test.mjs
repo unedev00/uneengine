@@ -83,7 +83,7 @@ test('one SQL ribbon inventory owns new Data fx, Button Design and orientation c
  assert.match(ribbon,/'Header Supporting','Button'/);
  assert.match(ribbon,/isDataFormula/);
  assert.ok(runtime.includes('scopedExpression(p,key,p[key]'));
- assert.ok(runtime.includes('selectRecord=()=>fire("click"'));
+ assert.ok(runtime.includes('if(actionable)fire("click",payload);'));
 });
 
 

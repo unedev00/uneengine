@@ -768,11 +768,12 @@ function PageBuilder({
       })});
     }else updateComponent(selected.id,{properties:{...selected.properties,actionFlows}});
   };
-  // Cart visibility is component metadata, independent of the configured event.
+  // Cart and Card Grid button visibility is component metadata, independent of the configured event.
   // Preserve other instance properties and any existing Flow/Formula bindings.
   const applyCartButtonVisibility=(key:'qtyIncrease'|'qtyDecrease'|'customButton1'|'customButton2',visible:boolean)=>{
     if(!selected||actionSelectionDisabled||!actionMembers.length||
-      actionMembers.some(member=>member.type!=='Custom:smart_cart'))return;
+      actionMembers.some(member=>member.type!=='Custom:smart_cart'&&
+        !(member.type==='Custom:smart_card_grid'&&key.startsWith('customButton'))))return;
     const property=key+'Visible';
     if(actionMembers.length>1){
       const ids=new Set(actionMembers.map(item=>item.id));
@@ -2210,10 +2211,11 @@ function PageBuilder({
     try {
       // Persist first: the route resolver must never replace a new unsaved page
       // with the previously selected page on its next metadata refresh.
-      if (newPageAppId&&newPageType!=='In-Screen Page') onPrepareApp(apiName,newPageAppId);
       const saved = await onSave(nextPage, apiName, 'Lightning page draft created');
-      if (!saved) { onAppLinked(apiName); return; }
-      savedPageApiName.current = apiName;
+      if (!saved) return;
+      if(saved.apiName!==apiName) onNotify('Page API name already reserved; created as '+saved.apiName);
+      if (newPageAppId&&newPageType!=='In-Screen Page') onPrepareApp(saved.apiName,newPageAppId);
+      savedPageApiName.current = saved.apiName;
       if (newPageAppId) setBuilderAppApiName(newPageAppId);
       setSelectedId('');
       setPageSettingsOpen(true);
@@ -3491,6 +3493,7 @@ function PageBuilder({
                 ribbonTab==='Component Design 2'?'Design2':'Design'}
               api={selected.type.slice(7)} definitions={ribbonCatalog.properties}
               design2Slots={ribbonCatalog.design2Slots}
+              design2SlotRules={ribbonCatalog.design2SlotRules}
               properties={selected.properties} objects={objects} pageObjectApiName={page.targetObject}
               componentId={selected.id} pageComponents={page.components}
               sharedPropertyIds={ribbonSharedPropertyIds} mixedPropertyIds={ribbonMixedPropertyIds}

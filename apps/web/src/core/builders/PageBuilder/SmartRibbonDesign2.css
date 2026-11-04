@@ -166,3 +166,226 @@
 }
 .design2-icon-popup>button:is(:hover,.is-selected){background:#daebfe;}
 .design2-icon-popup>button:focus-visible{outline:2px solid #1e79cb}
+
+/* Design 2 is a fixed SQL row/column matrix. Disabled slots retain their
+ * reserved cell instead of flex-compacting the enabled controls to the left. */
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-ribbon-row:not(.smart-design2-top-row){
+  display:grid!important;
+  grid-auto-flow:row!important;
+  grid-auto-rows:26px!important;
+  align-items:center!important;
+  justify-content:start!important;
+  column-gap:4px!important;
+  row-gap:0!important;
+  width:max-content!important;
+  max-width:none!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-ribbon-row:not(.smart-design2-top-row)>.smart-property{
+  grid-column-start:var(--smart-slot-column,auto)!important;
+  grid-column-end:span 1!important;
+  width:var(--smart-control-width)!important;
+  min-width:var(--smart-control-width)!important;
+  max-width:var(--smart-control-width)!important;
+  height:var(--smart-control-height,26px)!important;
+  min-height:var(--smart-control-height,26px)!important;
+  max-height:var(--smart-control-height,26px)!important;
+}
+/* The colour selector's inherited 44px/28px rules cannot enlarge a
+ * SQL-planned 40px/26px Design 2 cell. */
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-property .office-ribbon-colour-property{
+  box-sizing:border-box!important;
+  flex:0 0 var(--smart-control-width)!important;
+  width:var(--smart-control-width)!important;
+  min-width:var(--smart-control-width)!important;
+  max-width:var(--smart-control-width)!important;
+  height:var(--smart-control-height,26px)!important;
+  min-height:var(--smart-control-height,26px)!important;
+  max-height:var(--smart-control-height,26px)!important;
+}
+
+/* Area selector is OUTSIDE the numbered property grid.
+ * The user-approved R1C1..R3C6 cells belong to properties, not the selector. */
+.office-builder-ribbon #page-builder-tab-content
+  >.smart-design2-ribbon>.smart-ribbon-group.smart-design2-group{
+  --smart-section-width:400px!important;
+  flex:0 0 400px!important;
+  width:400px!important;
+  min-width:400px!important;
+  max-width:400px!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-design2-workbench{
+  box-sizing:border-box!important;
+  display:flex!important;
+  flex-flow:column nowrap!important;
+  gap:4px!important;
+  align-items:flex-start!important;
+  width:380px!important;
+  height:116px!important;
+  min-height:116px!important;
+  max-height:116px!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-design2-context{
+  box-sizing:border-box!important;
+  display:flex!important;
+  flex:0 0 26px!important;
+  flex-flow:row nowrap!important;
+  align-items:center!important;
+  gap:4px!important;
+  width:304px!important;
+  height:26px!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-design2-workbench>.smart-ribbon-items{
+  box-sizing:border-box!important;
+  display:flex!important;
+  flex-flow:column nowrap!important;
+  align-items:flex-start!important;
+  justify-content:flex-start!important;
+  gap:4px!important;
+  flex:0 0 auto!important;
+  width:max-content!important;
+  min-width:0!important;
+  max-width:none!important;
+  height:86px!important;
+  padding:0!important;
+  margin:0!important;
+}
+
+/* Original R1C3 shape is a 40px icon, not a 94px text/gallery button. */
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-property[data-design-slot="shape"] .smart-icon-gallery{
+  box-sizing:border-box!important;flex:0 0 40px!important;
+  width:40px!important;min-width:40px!important;max-width:40px!important;
+  height:26px!important;padding:0!important;margin:0!important;border:0!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-property[data-design-slot="shape"] .smart-shapes-trigger{
+  box-sizing:border-box!important;display:flex!important;
+  width:40px!important;min-width:40px!important;max-width:40px!important;
+  height:26px!important;padding:1px 2px!important;gap:1px!important;
+  justify-content:center!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-property[data-design-slot="shape"] .smart-shapes-trigger>span{
+  display:none!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-property[data-design-slot="shape"] .smart-shapes-trigger>svg:first-child{
+  width:17px!important;min-width:17px!important;height:17px!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-property[data-design-slot="shape"] .smart-shapes-trigger>svg:last-child{
+  width:10px!important;min-width:10px!important;height:12px!important;
+}
+
+/* Approved layout: the dropdown and eye occupy row 0, ABOVE the R1–R3
+ * property matrix. The 26px × 4 rows need 116px plus the group caption.
+ * Only Design 2 grows; Design, Data, Arrange and Layout keep 114px. */
+.office-builder-ribbon[aria-label="Page Builder ribbon"]:not(.is-interactive-preview)
+  #page-builder-tab-content.office-ribbon-content[aria-label="Component Design 2"]{
+  --page-ribbon-content-height:146px;
+  --page-ribbon-scroll-strip-height:159px;
+}
+.office-builder-ribbon #page-builder-tab-content
+  >.smart-ribbon.smart-design2-ribbon[data-three-row="true"]{
+  height:146px!important;min-height:146px!important;max-height:146px!important;
+}
+.office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content
+  >.smart-ribbon.smart-design2-ribbon[data-three-row="true"]>.smart-ribbon-group.smart-design2-group[data-design-three-row="true"]{
+  height:146px!important;min-height:146px!important;max-height:146px!important;
+  padding-top:6px!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-design2-context[data-design-row="0"]{
+  flex:0 0 26px!important;height:26px!important;
+  min-height:26px!important;max-height:26px!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-ribbon-row:not([data-design-row="0"]){
+  grid-template-rows:26px!important;
+  width:380px!important;
+  min-width:380px!important;
+  max-width:380px!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-property .smart-icon-dropdown-trigger{
+  box-sizing:border-box!important;
+  flex:0 0 var(--smart-control-width)!important;
+  width:var(--smart-control-width)!important;
+  min-width:var(--smart-control-width)!important;
+  max-width:var(--smart-control-width)!important;
+  height:26px!important;
+}
+
+/* Row 0's prescribed four fixed cells: area selector (C1), eye (C2),
+ * X Position (C3 80x26), Y Position (C4 80x26). Nothing is auto-packed.
+ * R1-R3 retain their independent 380px property grid and SQL geometry. */
+.office-builder-ribbon #page-builder-tab-content
+  >.smart-design2-ribbon>.smart-ribbon-group.smart-design2-group{
+  --smart-section-width:500px!important;
+  flex:0 0 500px!important;
+  width:500px!important;
+  min-width:500px!important;
+  max-width:500px!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-design2-workbench{
+  width:480px!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-design2-context[data-design-row="0"]{
+  width:472px!important;
+  min-width:472px!important;
+  max-width:472px!important;
+  justify-content:flex-start!important;
+  gap:4px!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-design2-context[data-design-row="0"]>.smart-property{
+  box-sizing:border-box!important;
+  display:inline-flex!important;
+  flex:0 0 80px!important;
+  width:80px!important;
+  min-width:80px!important;
+  max-width:80px!important;
+  height:26px!important;
+  min-height:26px!important;
+  max-height:26px!important;
+  margin:0!important;
+  padding:0!important;
+  align-items:center!important;
+  overflow:hidden!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-design2-context[data-design-row="0"]>.smart-property>.smart-label{
+  display:none!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-design2-context[data-design-row="0"]>.smart-property .smart-numeric{
+  box-sizing:border-box!important;
+  flex:0 0 80px!important;
+  width:80px!important;
+  min-width:80px!important;
+  max-width:80px!important;
+  height:26px!important;
+  min-height:26px!important;
+  max-height:26px!important;
+  margin:0!important;
+  padding:0!important;
+}
+.office-builder-ribbon #page-builder-tab-content
+  .smart-design2-group .smart-design2-context[data-design-row="0"]>.smart-property .smart-numeric input.smart-office-number{
+  box-sizing:border-box!important;
+  flex:1 1 auto!important;
+  width:100%!important;
+  min-width:0!important;
+  max-width:100%!important;
+  height:24px!important;
+  min-height:24px!important;
+  max-height:24px!important;
+}

@@ -1,5 +1,6 @@
 /** Cart is presentation-only; expressions and actions use the existing shared runtimes. */
 import {groupCartRows} from './cartGrouping.js';
+import {smartCustomButtonAppearance} from '../smart/shared/SmartCustomButtonAppearance.js';
 const n=(v,f,min=0,max=2000)=>v!==null&&v!==undefined&&v!==""&&Number.isFinite(Number(v))?Math.max(min,Math.min(max,Number(v))):f;
 const shadow=v=>v==="large"?"0 8px 20px #0003":v==="medium"?"0 3px 9px #0003":"none";
 const border=v=>v?"1px solid "+v:"1px solid transparent";
@@ -145,6 +146,8 @@ export default function SmartCart({p,records,Picture,expression,fieldAllowed,fir
      {rows.map((record,i)=>{
       const name=demo?"Sample item "+(i+1):(p.textSource?fieldExpression('textSource',p.textSource,record):"Product "+(i+1));
       const src=p.imageSource?fieldExpression('imageSource',p.imageSource,record):"";
+      const rowSupporting=!demo&&p.rowSupportingSource
+       ?fieldExpression('rowSupportingSource',p.rowSupportingSource,record):"";
       const itemId=record?.Id??record?.id??null;
       // Target an actual persisted line; never pass a synthetic merged ID to a Flow.
       const actionRecord=record.__cartSourceRows?.[0]??record;
@@ -176,10 +179,26 @@ export default function SmartCart({p,records,Picture,expression,fieldAllowed,fir
            border:border(p.imageBorderColor),borderRadius:4,
            objectFit:p.imageFill==="fit"?"contain":p.imageFill==="stretch"?"fill":"cover",
            flex:"0 0 auto",overflow:"hidden"}}/>
-         {canClick&&!demo&&itemId!==null?
-          <button type="button" className="smart-cart-product-name smart-cart-product-click"
-           aria-label={"Select "+String(name||"Product")} onClick={()=>fire?.("click",payload)}>{name||"Product"}</button>:
-          <span className="smart-cart-product-name">{name||"Product"}</span>}
+         <div className="smart-cart-product-text">
+          {canClick&&!demo&&itemId!==null?
+           <button type="button" className="smart-cart-product-name smart-cart-product-click"
+            aria-label={"Select "+String(name||"Product")} onClick={()=>fire?.("click",payload)}>{name||"Product"}</button>:
+           <span className="smart-cart-product-name">{name||"Product"}</span>}
+          {rowSupporting!==null&&rowSupporting!==undefined&&rowSupporting!==""&&
+           <span className="smart-cart-row-supporting" style={{
+            backgroundColor:p.rowSupportingBackgroundColor??undefined,
+            border:p.rowSupportingBorderColor?"1px solid "+p.rowSupportingBorderColor:undefined,
+            borderRadius:n(p.rowSupportingRadius,0,0,128),
+            minHeight:p.rowSupportingHeight===undefined?undefined:n(p.rowSupportingHeight,0,0,600),
+            boxShadow:p.rowSupportingShadow?shadow(p.rowSupportingShadow):undefined,
+            color:p.rowSupportingTextColor||undefined,
+            fontSize:n(p.rowSupportingTextSize,11,8,96),
+            fontWeight:p.rowSupportingBold===true?700:400,
+            textAlign:align(p.rowSupportingAlignment),
+            whiteSpace:p.rowSupportingWrapText===false?"nowrap":"normal",
+            overflowWrap:"anywhere"
+           }}>{rowSupporting}</span>}
+         </div>
         </div>;
         if(index===2)return <div key={index} className="smart-cart-cell-qty">
          {renderQuantity(record,name,payload)}</div>;
@@ -190,13 +209,20 @@ export default function SmartCart({p,records,Picture,expression,fieldAllowed,fir
        </div>
        {selected&&expandedActions.length>0&&<div className="smart-cart-expanded-actions" role="group"
          aria-label={"Actions for "+String(name||"selected item")}>
-         {expandedActions.map(action=><button type="button" key={action.key}
-          className="smart-cart-custom-action"
-          disabled={demo||!actions[action.key]||itemId===null}
-          aria-label={action.label}
-          onClick={()=>fire?.(action.key,{...payload,selectedRowIndex:i})}>
-          {action.label}
-         </button>)}
+         {expandedActions.map(action=>{
+          const raw=p[action.key+"Label"];
+          const label=typeof raw==="string"&&raw.trim()
+           ?(/^[@"']/.test(raw.trim())?fieldExpression(action.key+"Label",raw,record):raw)
+           :action.label;
+          return <button type="button" key={action.key}
+           className="smart-cart-custom-action"
+           style={smartCustomButtonAppearance(p,action.key)}
+           disabled={demo||!actions[action.key]||itemId===null}
+           aria-label={String(label||action.label)}
+           onClick={()=>fire?.(action.key,{...payload,selectedRowIndex:i})}>
+           {label||action.label}
+          </button>;
+         })}
        </div>}
       </div>;
      })}

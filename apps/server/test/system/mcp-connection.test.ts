@@ -171,8 +171,8 @@ test('PageRuntime create-only writes refuse existing pages without modifying the
  let writes=0;
  const db={transaction:async(fn:(client:unknown)=>Promise<unknown>)=>fn({
   query:async(sql:string)=>{
-   if(sql.startsWith('SELECT id FROM md_page_definitions'))
-    return {rows:[{id:'existing-page'}],rowCount:1};
+   if(sql.startsWith('SELECT id,enabled FROM md_page_definitions'))
+    return {rows:[{id:'existing-page',enabled:true}],rowCount:1};
    writes++;throw Error('Unexpected write');
   }
  })} as unknown as SqlPersistence;

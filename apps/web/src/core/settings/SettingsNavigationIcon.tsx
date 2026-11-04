@@ -30,6 +30,7 @@ const items: Record<string, NavigationAppearance> = {
   'Audit Trail': {icon: History, tone: 'coral'},
   'Setup Home': {icon: LayoutDashboard, tone: 'blue'},
   'Object Manager': {icon: Database, tone: 'cobalt'},
+  'Universal Data Loader': {icon: Database, tone: 'teal'},
   'Page Builder': {icon: LayoutTemplate, tone: 'violet'},
   'App Manager': {icon: AppWindow, tone: 'purple'},
   'AppExchange': {icon: ShoppingBag, tone: 'pink'},

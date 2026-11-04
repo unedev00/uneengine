@@ -197,6 +197,8 @@ try{
  if(process.env.METADRIVE_BROWSER_TARGET==='design2'){
   const {runDesign2BrowserCheck}=await import('./design2-browser-check.mjs');
   await runDesign2BrowserCheck({page,origin,db,tenantId,token:tokens.accessToken});
+  const {runPageCreateBrowserCheck}=await import('./page-create-browser-check.mjs');
+  await runPageCreateBrowserCheck({page,origin,db,tenantId,token:tokens.accessToken});
  }else if(process.env.METADRIVE_BROWSER_TARGET==='object-lifecycle'){
   const {runObjectSchemaLifecycleBrowserCheck}=await import('./object-schema-lifecycle-browser-check.mjs');
   await runObjectSchemaLifecycleBrowserCheck({page,origin,db,tenantId});
@@ -654,6 +656,9 @@ try{
    'Page Builder table cells are unreadable under OS dark preference: '+JSON.stringify(pageBuilderDarkOsContrast));
  await page.screenshot({path:new URL('../artifacts/page-builder-dark-os.png',import.meta.url).pathname});
  await page.emulateMedia({colorScheme:'light'});
+
+ const {runPageCreateBrowserCheck}=await import('./page-create-browser-check.mjs');
+ await runPageCreateBrowserCheck({page,origin,db,tenantId,token:tokens.accessToken});
 
  // Record Page ownership is Object Manager only. The general Page Builder
  // must not offer Record Page creation, while the shared editor remains reusable.

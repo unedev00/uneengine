@@ -5,23 +5,39 @@ import {readFile} from 'node:fs/promises';
  * Uses only disposable CI tenant data from builder-browser-smoke.mjs.
  */
 export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
- const migration=await readFile(new URL('../src/system-support/migrations/20270309-design2-contextual-ribbon.sql',import.meta.url),'utf8');
- // Replay explicitly to validate upgrade idempotency, not just presence in source.
- await db.query(migration);
- await db.query(migration);
- const componentMigration=await readFile(new URL('../src/system-support/migrations/20270320-design2-final-component-matrix.sql',import.meta.url),'utf8');
- await db.query(componentMigration);
- await db.query(componentMigration);
- const listed=await db.query(`SELECT component_api,area,slot_key,property_key,row_no,column_no,width_px,height_px
-   FROM md_builder_design2_component_slots ORDER BY component_api,area_order,row_no,column_no`);
- assert.equal(listed.rows.length,320,'Approved Design 2 component matrix missing or duplicated after replay');
- assert.equal(new Set(listed.rows.map(row=>row.component_api)).size,13,'Wrong Smart component count');
- const slot=(api,area,row,col)=>listed.rows.find(item=>item.component_api===api&&
-   item.area===area&&item.row_no===row&&item.column_no===col);
- assert.equal(slot('smart_cart','Table',2,1)?.property_key,'selectedRowColor');
- assert.equal(slot('smart_tabs','Body',2,1)?.property_key,'selectedTabColor');
- assert.equal(slot('smart_image','Image',2,6)?.property_key,'imagePlacement');
- assert.equal(slot('smart_cart','Footer',3,5)?.property_key,'summary2TextSize');
+ const approved=await readFile(new URL('../src/system-support/migrations/20271104-zz-design2-exact-approved-matrix.sql',import.meta.url),'utf8');
+ // Production applies the legacy migration before this corrective migration.
+ // Replay the CURRENT contract, not a superseded positional insert which can
+ // collide with the exact R1..R3 unique-position constraint.
+ await db.query(approved);
+ await db.query(approved);
+ const listed=await db.query(`SELECT area,slot_key,property_key,row_no,order_no,width_px,height_px
+   FROM md_builder_design2_slots ORDER BY area_order,row_no,order_no`);
+ // Shared areas are extensible: retain the legacy baseline and enforce unique SQL slots.
+ assert.ok(listed.rows.length>=106,'Design 2 SQL slots missing after replay');
+ assert.ok(new Set(listed.rows.map(row=>row.area)).size>=10,'Legacy Design 2 areas missing');
+ assert.equal(new Set(listed.rows.map(row=>row.area+'/'+row.slot_key)).size,listed.rows.length,
+  'Duplicate Design 2 slot keys after replay');
+ assert.equal(new Set(listed.rows.map(row=>row.area+'/'+row.row_no+'/'+row.order_no)).size,listed.rows.length,
+  'Duplicate Design 2 ribbon positions after replay');
+ const slot=(area,key)=>listed.rows.find(row=>row.area===area&&row.slot_key===key);
+ assert.equal(slot('Row','focused'),undefined,'Row Focus was not approved in the table');
+ assert.equal(slot('Table','focused')?.row_no,2,'Table Focus must be R2');
+ assert.equal(slot('Table','focused')?.order_no,1,'Table Focus must be C1');
+ assert.equal(slot('Body','fill')?.row_no,1,'Body Color must be R1');
+ assert.equal(slot('Body','fill')?.order_no,1,'Body Color must be C1');
+ assert.equal(slot('Body','radius')?.row_no,1,'Body Radius must be R1');
+ assert.equal(slot('Body','radius')?.order_no,5,'Body Radius must be C5');
+ assert.equal(slot('Body','radius')?.width_px,80,'Body Radius must be 80px');
+ assert.equal(slot('Focused','selection')?.property_key,'selectionMode');
+ assert.equal(slot('Row Supporting','text')?.property_key,'rowSupportingTextColor');
+ assert.equal(slot('Custom Button 1','shape')?.property_key,'customButton1Shape');
+ assert.equal(slot('Custom Button 2','shape')?.property_key,'customButton2Shape');
+
+ assert.equal(slot('Tabs','focused')?.property_key,'selectedTabColor');
+ assert.equal(slot('Row','fill')?.property_key,'backgroundColor',
+  'Approved Row Body Color must occupy its own fixed slot');
+ assert.equal(slot('Body','wrap')?.property_key,'wrapText','Body Wrap must occupy R3C4');
  const definitions=await db.query(`SELECT property_key,tab FROM md_builder_shared_properties
    WHERE property_key IN ('backgroundColor','rowBold','summary2Alignment','tableBackgroundColor')`);
  assert.equal(definitions.rows.find(row=>row.property_key==='backgroundColor')?.tab,'Design',
@@ -41,7 +57,7 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
   return {status:response.status,body:await response.json()};
  },token);
  assert.equal(result.status,200,'OneEngine rejected authorised shared ribbon metadata');
- assert.equal(result.body.design2Slots?.length,320,'Builder endpoint did not expose Design 2 SQL metadata');
+ assert.equal(result.body.design2Slots?.length,listed.rows.length,'Builder endpoint did not expose Design 2 SQL metadata');
  // The catalog is SQL-backed but still protected by central OneEngine RBAC.
  const {AuthenticationService}=await import('../dist-system/system-files/authentication.js');
  const auth=new AuthenticationService(db);
@@ -105,12 +121,35 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  const area=page.getByLabel('Select Design 2 area');
  assert.equal(await area.inputValue(),'Body');
  await area.selectOption('Row');
+ // Row 0: fixed C1 selector, C2 eye, C3 X and C4 Y. Values edit the real
+ // free-canvas component.position, not a duplicate properties.x/y field.
+ const rowZero=design2.locator('.smart-design2-context[data-design-row="0"]');
+ const xCell=rowZero.locator('[data-property="x"]');
+ const yCell=rowZero.locator('[data-property="y"]');
+ await xCell.waitFor({state:'visible'});
+ await yCell.waitFor({state:'visible'});
+ assert.equal(await xCell.getAttribute('data-design-column'),'3');
+ assert.equal(await yCell.getAttribute('data-design-column'),'4');
+ const xInput=xCell.getByRole('spinbutton',{name:'X Position'});
+ const yInput=yCell.getByRole('spinbutton',{name:'Y Position'});
+ assert.equal(await xInput.inputValue(),'24');
+ assert.equal(await yInput.inputValue(),'28');
+ for(const cell of [xCell,yCell]){
+  const bounds=await cell.boundingBox();
+  assert.ok(bounds&&Math.abs(bounds.width-80)<1&&Math.abs(bounds.height-26)<1,
+   'R0 coordinate controls must be exactly 80x26px');
+ }
+ await xInput.fill('64');
+ await yInput.fill('68');
+ assert.equal(await cart.evaluate(element=>Number.parseFloat(element.style.left)),64,
+  'R0 X did not reposition component on canvas');
+ assert.equal(await cart.evaluate(element=>Number.parseFloat(element.style.top)),68,
+  'R0 Y did not reposition component on canvas');
  const row=page.locator('.smart-design2-group');
- await area.selectOption('Table');
- const focus=row.locator('[data-property="selectedRowColor"]');
- await focus.waitFor();
- assert.equal(await focus.getAttribute('data-supported'),'true','Table Focus Fill wrongly disabled');
- await area.selectOption('Row');
+ const rowFill=row.locator('[data-design-row="1"] [data-design-slot="fill"]');
+ await rowFill.waitFor();
+ assert.equal(await rowFill.getAttribute('data-design-column'),'1',
+  'Row Body Color must remain R1C1 even when a renderer hook is unavailable');
  const rowBold=row.locator('[data-property="rowBold"] button');
  await rowBold.waitFor();
  assert.equal(await rowBold.isDisabled(),false,'Row Bold should be enabled');
@@ -124,12 +163,66 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  assert.equal(await rowStyle.evaluate(element=>getComputedStyle(element).fontWeight),'700',
   'Cart row does not visually apply Row Bold');
 
+ // R3C2 Alignment is a real ICON dropdown, not a text select.
+ await area.selectOption('Header');
+ const alignCell=row.locator('[data-design-row="3"] [data-design-slot="alignment"]');
+ assert.equal(await alignCell.getAttribute('data-design-column'),'2');
+ assert.equal(await alignCell.getAttribute('data-supported'),'true');
+ const alignTrigger=alignCell.locator('.smart-icon-dropdown-trigger');
+ await alignTrigger.click();
+ await page.locator('.smart-icon-dropdown-popup [role="menuitemradio"]').nth(2).click();
+ assert.match(await alignTrigger.getAttribute('aria-label')??'',/Right/);
+ assert.equal(await cart.locator('.smart-cart-header').evaluate(element=>
+   getComputedStyle(element).textAlign),'right','R3C2 alignment did not update the Cart header');
+
+ // In the approved Image area R2C6 Placement and R3C6 Fill must both
+ // have icon-based menus, including the existing Fit/Fill/Stretch choices.
+ await area.selectOption('Image');
+ const imagePlacement=row.locator('[data-design-row="2"] [data-design-slot="placement"]');
+ const imageFill=row.locator('[data-design-row="3"] [data-design-slot="imageFill"]');
+ assert.equal(await imagePlacement.getAttribute('data-design-column'),'6');
+ assert.equal(await imageFill.getAttribute('data-design-column'),'6');
+ assert.equal(await imagePlacement.getAttribute('data-supported'),'true');
+ assert.equal(await imageFill.getAttribute('data-supported'),'true');
+ assert.equal(await imagePlacement.locator('.smart-icon-dropdown-trigger').count(),1,
+   'R2C6 image placement must be an icon dropdown');
+ assert.equal(await imageFill.locator('.smart-icon-dropdown-trigger').count(),1,
+   'R3C6 image fit must be an icon dropdown');
+ // Geometry is Excel-owned and remains at 40x26px, not enlarged by
+ // the earlier Design tab's wider select CSS.
+ const placementRect=await imagePlacement.locator('.smart-icon-dropdown-trigger').boundingBox();
+ const fillRect=await imageFill.locator('.smart-icon-dropdown-trigger').boundingBox();
+ for(const bounds of [placementRect,fillRect]){
+  assert.ok(bounds&&Math.abs(bounds.width-40)<1&&Math.abs(bounds.height-26)<1,
+    'Image icon dropdown must occupy exactly 40x26 px at its R/C position');
+ }
+ assert.ok(Math.abs(placementRect.x-fillRect.x)<1,
+   'Image Placement R2C6 and Image Fill R3C6 must share column C6');
+
+ const placementTrigger=imagePlacement.locator('.smart-icon-dropdown-trigger');
+ const fillTrigger=imageFill.locator('.smart-icon-dropdown-trigger');
+ assert.equal(await placementTrigger.getAttribute('data-icon-kind'),'imagePlacement');
+ assert.equal(await fillTrigger.getAttribute('data-icon-kind'),'imageFill');
+ await placementTrigger.click();
+ // Cart's pre-existing contract allows ONLY Left and Right, whereas Card
+ // Grid and Smart Image offer all four. Do not offer unsupported Top/Bottom.
+ assert.deepEqual(await page.locator('.smart-icon-dropdown-popup [role="menuitemradio"]')
+   .evaluateAll(buttons=>buttons.map(button=>button.title)),['Left','Right']);
+ await page.locator('.smart-icon-dropdown-popup button[title="Left"]').click();
+ await fillTrigger.click();
+ assert.deepEqual(await page.locator('.smart-icon-dropdown-popup [role="menuitemradio"]')
+   .evaluateAll(buttons=>buttons.map(button=>button.title)),['Fill','Fit','Stretch']);
+ await page.locator('.smart-icon-dropdown-popup button[title="Fit"]').click();
+ assert.match(await fillTrigger.getAttribute('aria-label')??'',/Fit/);
+
  // Area switching must not change the selected component or old Design view.
  await area.selectOption('Table');
  assert.equal(await row.locator('[data-property="tableBackgroundColor"]').getAttribute('data-supported'),'true');
+ assert.equal(await row.locator('[data-design-row="2"] [data-design-slot="focused"]')
+   .getAttribute('data-design-column'),'1','Table Focus must remain at R2C1');
  await area.selectOption('Body');
- assert.equal(await row.locator('[data-property="wrapText"]').count(),0,
-   'Unrequested Body Wrap Text leaked into Design 2');
+ assert.equal(await row.locator('[data-design-row="3"] [data-design-slot="wrap"]')
+   .getAttribute('data-supported'),'false','Cart Body Wrap was not approved');
  await page.getByRole('tab',{name:'Design',exact:true}).click();
  await page.locator('.smart-ribbon-group[aria-label="Row"] [data-property="rowLabelColor"]').waitFor();
  assert.equal(await page.locator('.smart-ribbon-group[aria-label="Row"] [data-property="rowBold"]').count(),0,
@@ -156,6 +249,20 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  const draft=await runtime.editor(tenantId,pageName,'Desktop');
  assert.equal(draft.components.find(item=>item.id==='browser-design2-cart')?.properties.rowBold,true,
   'Row Bold did not survive SQL save');
+ assert.equal(draft.components.find(item=>item.id==='browser-design2-cart')?.properties.headerAlignment,'right',
+  'Design 2 R3C2 alignment icon dropdown did not persist');
+ assert.equal(draft.components.find(item=>item.id==='browser-design2-cart')?.properties.imagePlacement,'left',
+  'Design 2 R2C6 image placement icon dropdown did not persist');
+ assert.equal(draft.components.find(item=>item.id==='browser-design2-cart')?.properties.imageFill,'fit',
+  'Design 2 R3C6 image fit icon dropdown did not persist');
+ assert.equal(draft.components.find(item=>item.id==='browser-design2-cart')?.position?.x,64,
+  'Design 2 R0 X position did not survive SQL save');
+ assert.equal(draft.components.find(item=>item.id==='browser-design2-cart')?.position?.y,68,
+  'Design 2 R0 Y position did not survive SQL save');
+ assert.equal(draft.components.find(item=>item.id==='browser-design2-cart')?.properties.x,undefined,
+  'Design 2 must not duplicate canvas X in properties.x');
+ assert.equal(draft.components.find(item=>item.id==='browser-design2-cart')?.properties.y,undefined,
+  'Design 2 must not duplicate canvas Y in properties.y');
  await page.reload({waitUntil:'domcontentloaded'});
  await page.locator('[data-component-id="browser-design2-cart"]').first().click({position:{x:18,y:18}});
  await page.getByRole('tab',{name:'Design 2',exact:true}).click();
@@ -163,13 +270,18 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  assert.equal(await page.locator('.smart-design2-group [data-property="rowBold"] button')
   .getAttribute('aria-pressed'),'true','Design 2 saved value did not reload');
 
- // Smart Tabs uses the very same Focused icon slot with a different existing key.
+ // Approved Yes/No sections are component-specific. The legacy "Tabs"
+ // section is not in the user's Smart Tabs Design 2 matrix.
  await page.locator('[data-component-id="browser-design2-tabs"]').first().click({position:{x:18,y:18}});
- await page.getByLabel('Select Design 2 area').selectOption('Body');
- assert.equal(await row.locator('[data-property="selectedTabColor"]').getAttribute('data-supported'),'true',
-  'Tabs Focus Fill does not bind existing selected-tab colour');
- assert.equal(await page.getByLabel('Select Design 2 area').locator('option').allTextContents()
-  .then(list=>list.includes('Row')),false,'Tabs must not expose Cart Row sections');
+ const tabsAreas=await page.getByLabel('Select Design 2 area').locator('option').allTextContents();
+ assert.deepEqual(tabsAreas,['Body'],'Smart Tabs should show only its approved Body area');
+ const tabsFocus=row.locator('[data-design-row="2"] [data-design-slot="focused"]');
+ assert.equal(await tabsFocus.getAttribute('data-supported'),'false',
+   'Do not enable an unapproved Focus Color for Smart Tabs');
+ await page.locator('[data-component-id="browser-design2-cart"]').first().click({position:{x:18,y:18}});
+ await page.getByLabel('Select Design 2 area').selectOption('Row');
+ assert.equal(await row.locator('[data-design-row="2"] [data-design-slot="focused"]').count(),0,
+   'Row Focus was not approved for Smart Cart and must not be invented');
  const {mkdir}=await import('node:fs/promises');
  await mkdir(new URL('../artifacts/',import.meta.url),{recursive:true});
  await page.screenshot({path:new URL('../artifacts/design2-contextual-ribbon.png',import.meta.url).pathname});

@@ -3,7 +3,7 @@ import {createPortal} from 'react-dom';
 import {AlignLeft,AlignCenter,AlignRight,Bold,WrapText,ArrowLeftRight,ArrowUpDown,ImagePlus,SlidersHorizontal,Eye,EyeOff} from 'lucide-react';
 import {RibbonTextSizeIcon,RibbonCornerRadiusIcon} from './SmartRibbonIcons';
 import type {ObjectMetadata} from '../../metadata/Definitions/metadata';
-import type {UneRibbonProperty,UneBuilderTab,Design2Slot} from './uneBuilderPropertyInventory';
+import type {UneRibbonProperty,UneBuilderTab,Design2Slot,Design2SlotRule} from './uneBuilderPropertyInventory';
 import RibbonColorPalette from './RibbonColorPalette';
 import {uploadTenantImageFile} from '../ComponentProperties/TenantMediaPicker';
 import {scopedFieldRule,type ScopedFieldFilter} from '../../pages/PageRuntime/fieldScopedRecordFilters';
@@ -29,7 +29,7 @@ type Props={tab:UneBuilderTab;api:string;definitions:readonly UneRibbonProperty[
  /** For grouped/multiple components, expose only the intersection of SQL properties. */
  sharedPropertyIds?:readonly string[];mixedPropertyIds?:readonly string[];selectedApis?:readonly string[];
  pageComponents?:readonly {id:string;properties:Record<string,unknown>}[];componentId?:string;
- design2Slots?:readonly Design2Slot[];componentVisible?:boolean;
+ design2Slots?:readonly Design2Slot[];design2SlotRules?:readonly Design2SlotRule[];componentVisible?:boolean;
  onVisibleChange?:(visible:boolean)=>void;};
 const weekdays=[['sun','Sun'],['mon','Mon'],['tue','Tue'],['wed','Wed'],['thu','Thu'],['fri','Fri'],['sat','Sat']] as const;
 const fallback=(value:unknown)=>typeof value==='string'?value:'';
@@ -39,7 +39,7 @@ const cartSummaryLabels:Record<string,{key:string;slot:string}>={
  taxValue:{key:'taxLabel',slot:'Summary 3'},
  discountValue:{key:'discountLabel',slot:'Summary 4'}
 };
-export default function SmartRibbon({tab,api,definitions,properties,onChange,objects,pageObjectApiName='',position,onPositionChange,layoutMode,sharedPropertyIds,mixedPropertyIds,selectedApis,pageComponents=[],componentId='',design2Slots=[],componentVisible=true,onVisibleChange}:Props){
+export default function SmartRibbon({tab,api,definitions,properties,onChange,objects,pageObjectApiName='',position,onPositionChange,layoutMode,sharedPropertyIds,mixedPropertyIds,selectedApis,pageComponents=[],componentId='',design2Slots=[],design2SlotRules=[],componentVisible=true,onVisibleChange}:Props){
  const uploadInput=useRef<HTMLInputElement>(null);
  const [uploadBusy,setUploadBusy]=useState(false);
  const [uploadError,setUploadError]=useState('');
@@ -150,28 +150,56 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  const compactDesign=true;
  // Independent SQL-planned view over shared controls and persisted property keys.
  // A null property key displays the fallback glyph, always disabled.
- const componentDesign2Slots=design2Slots.filter(slot=>slot.componentApi===api);
- const design2Areas=[...new Map(componentDesign2Slots.map(slot=>[slot.area,slot.areaOrder])).entries()]
-  .sort((a,b)=>a[1]-b[1]).map(([area])=>area);
+ // Dropdown contains only sections explicitly listed for this component
+ // in the approved SQL Yes/No matrix. Legacy areas are not silently added.
+ const design2Areas=[...new Set(design2SlotRules
+   .filter(rule=>rule.componentApi===api).map(rule=>rule.area))]
+   .sort((a,b)=>(design2Slots.find(slot=>slot.area===a)?.areaOrder??999)-
+                (design2Slots.find(slot=>slot.area===b)?.areaOrder??999));
  const activeDesign2Area=design2Areas.includes(design2Area)?design2Area:design2Areas[0]??'Body';
- const activeDesign2Slots=componentDesign2Slots.filter(slot=>slot.area===activeDesign2Area);
- const design2Columns=Array.from({length:6},(_,index)=>Math.max(40,
-   ...activeDesign2Slots.filter(slot=>slot.column===index+1).map(slot=>slot.width)));
- const design2Properties=tab==='Design2'?activeDesign2Slots.map(slot=>{
-   const original=definitions.find(p=>p.id===slot.propertyKey)
-     ??definitions.find(p=>p.id===slot.fallbackKey)
-     ??definitions.find(p=>p.id==='backgroundColor');
-   if(!original)return null;
-   const valid=slot.propertyKey===original.id&&original.components.includes(api);
-   return {...original,
-     label:/^focus(?:_color)?_/i.test(slot.slotKey)?'Focus Fill':original.label,
-     tab:'Design2' as const,group:activeDesign2Area,
-     components:valid?original.components:[],
-     designRow:slot.row,designColumn:slot.column,designSlotKey:slot.slotKey,
-     designOrder:slot.column,designWidth:slot.width,designHeight:slot.height,
-     designCaptionWidth:0,
-     designDisplay:original.kind==='align'||original.kind==='shadow'?'dropdown' as const:original.designDisplay};
- }).filter((p):p is NonNullable<typeof p>=>p!==null):[];
+ const approvedMatrixAreas=new Set(design2SlotRules.map(rule=>rule.area));
+ // A SQL slot owns its position even when its property is unavailable.
+ // Never compact away an unsupported/missing slot: the same R/C grid applies
+ // to every component, while only SQL-enabled properties can be edited.
+ const design2Properties=tab==='Design2'?design2Slots
+   .filter(slot=>slot.area===activeDesign2Area)
+   .map(slot=>{
+     const approved=design2SlotRules.find(rule=>
+       rule.componentApi===api&&rule.area===slot.area&&rule.slotKey===slot.slotKey);
+     // In specified areas ONLY the explicit Yes cells may be enabled.
+     // A missing Yes rule leaves an inert glyph occupying the SAME R/C position.
+     const propertyKey=approvedMatrixAreas.has(slot.area)
+       ?approved?.propertyKey:slot.propertyKey;
+     const assigned=propertyKey?definitions.find(p=>p.id===propertyKey):undefined;
+     const fallbackDefinition=definitions.find(p=>p.id===slot.fallbackKey);
+     const fallbackKind:UneRibbonProperty['kind']=
+       ['fill','border','focused','text'].includes(slot.slotKey)?'color':
+       slot.slotKey==='alignment'?'align':
+       slot.slotKey==='shadow'?'shadow':
+       ['bold','wrap'].includes(slot.slotKey)?'boolean':
+       ['selection','shape','textMode'].includes(slot.slotKey)?'choice':'number';
+     const original:UneRibbonProperty=assigned??fallbackDefinition??{
+       id:slot.fallbackKey,label:slot.slotKey,tab:'Design2',group:activeDesign2Area,
+       kind:fallbackKind,components:[]
+     };
+     return {...original,label:slot.slotKey==='focused'?'Focused Color':original.label,
+       tab:'Design2' as const,group:activeDesign2Area,
+       components:assigned?assigned.components:[],
+       designRow:slot.row,designOrder:slot.order,
+       designWidth:slot.width,designHeight:slot.height,designCaptionWidth:0,
+       designDisplay:original.kind==='align'||original.kind==='shadow'?'dropdown' as const:original.designDisplay};
+   }):[];
+ // Column positions and widths are SQL-owned, not a flex layout of the
+ // controls which happen to be enabled for the current component.
+ const design2GridColumns=()=>{
+   // All three rows share the same C1..C6 tracks. A narrow R1C3 must
+   // NOT move R2C4 or R3C5 left when another row has an 80px control.
+   const slots=design2Slots.filter(slot=>slot.area===activeDesign2Area);
+   return Array.from({length:6},(_,column)=>{
+     const sizes=slots.filter(slot=>slot.order===column+1).map(slot=>slot.width);
+     return Math.max(column===2||column===3||column===4?80:40,...sizes)+'px';
+   }).join(' ');
+ };
  const visible=definitions.filter(p=>p.tab===tab);
  const contextualVisible=tab==='Design2'?design2Properties:visible;
  // Keep active-record scope metadata and persisted settings intact, but do not
@@ -230,12 +258,13 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  // Geometry only. Keep every property, icon, dropdown and persisted value;
  // fit their existing three rows without reserving space for empty columns.
  const controlWidth=(p:UneRibbonProperty)=>{
-  if(tab==='Design2')return p.designWidth??40;
+   // Design 2 slot dimensions are exact SQL instructions, never normalized to 64px.
+   if(tab==='Design2'&&p.designWidth!==undefined)return p.designWidth;
    // Reserve the exact SQL 30px input track; a separate 45px caption is added.
    if(p.id==='tabIndex')return p.designWidth??30;
    // Shape's 94px SQL width is exact, unlike other compact choice tracks.
    if(p.id==='shapeId')return p.designWidth??94;
-   if(p.id==='cardButtonShape')return p.designWidth??94;
+   if(['cardButtonShape','customButton1Shape','customButton2Shape'].includes(p.id))return p.designWidth??94;
    // Shadow/Alignment icon dropdowns must remain at least 35px wide.
    if(p.designDisplay==='dropdown'&&(p.kind==='shadow'||p.kind==='align'))
      return Math.max(35,p.designWidth??0);
@@ -265,6 +294,8 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    group.length*5.5+16
  ));
  const controls=(property:UneRibbonProperty)=>{
+   const slotPlacement=tab==='Design2'?design2Slots.find(slot=>
+     slot.area===activeDesign2Area&&slot.row===property.designRow&&slot.order===property.designOrder):undefined;
    const supported=property.components.includes(api)&&(!sharedPropertyIds||sharedPropertyIds.includes(property.id));
    const kind=api==='smart_calendar'&&property.id==='shadow'
      ? 'shadow' : property.kindOverrides?.[api]??property.kind;
@@ -312,19 +343,21 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
        </span>
      </div>;
    }
-   const isTextSize=compactDesign&&/^(textSize|badgeTextSize|cardButtonTextSize|summary2?TextSize|placeholderSize|headerTextSize|supportingTextSize|rowTextSize|focusedTextSize)$/.test(property.id);
+   const isTextSize=compactDesign&&/^(textSize|badgeTextSize|cardButtonTextSize|summary2?TextSize|rowSupportingTextSize|customButton[12]TextSize|placeholderSize|headerTextSize|supportingTextSize|rowTextSize|focusedTextSize)$/.test(property.id);
    const isCorner=compactDesign&&/radius/i.test(property.id);
    const isWidth=compactDesign&&/width/i.test(property.id);
    const isHeight=compactDesign&&/height/i.test(property.id);
+   const isCanvasAxis=tab==='Design2'&&property.designRow===0&&
+     (property.id==='x'||property.id==='y');
    const hasNumericIcon=(kind==='number'||kind==='position')&&
-     (isTextSize||isCorner||isWidth||isHeight);
+     (isTextSize||isCorner||isWidth||isHeight||isCanvasAxis);
    const isTabIndex=property.id==='tabIndex';
    let editor;
    if(property.id==='shapeId'||(tab==='Design2'&&property.id==='footerShape'))editor=<SmartIconGallery value={String(value||'shape:rectangle')}
      disabled={!enabled} allowIcons={property.id==='footerShape'?false:(selectedApis?.length?selectedApis:[api]).every(member=>
        (property.choicesOverrides?.[member]??property.choices??[]).includes('icons'))}
      onChange={write}/>;
-   else if(property.id==='cardButtonShape')editor=<SmartIconGallery
+   else if(['cardButtonShape','customButton1Shape','customButton2Shape'].includes(property.id))editor=<SmartIconGallery
      value={String(value||'shape:round-rectangle')} disabled={!enabled}
      allowIcons={false} onChange={write}/>;
    else if(property.id==='imageSource'&&supported){
@@ -376,8 +409,8 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
      {objects.map(o=><option key={o.apiName} value={o.apiName}>{o.label}</option>)}</select>;
    else if(kind==='color')editor=<RibbonColorPalette variant="property"
      kind={/border/i.test(property.id)?'border':property.id==='iconFillColor'||/label|text|value/i.test(property.id)?'text':'fill'}
-     iconVariant={tab==='Design2'&&(property.id==='shapeFill'||/^shape_fill/.test(property.designSlotKey??''))?'shape':
-       tab==='Design2'&&/^focus/.test(property.designSlotKey??'')?'focus':undefined}
+     iconVariant={tab==='Design2'&&(property.id==='shapeFill'||slotPlacement?.slotKey==='shape_fill')?'shape':
+       tab==='Design2'&&(slotPlacement?.slotKey==='focused'||/^focus/i.test(property.id))?'focus':undefined}
      label={title} value={String(value)} disabled={!enabled} onChange={write}/>;
    else if(tab==='Layout'&&['cardsPerRow','cardsPerColumn'].includes(property.id))
      editor=<select className="smart-select" aria-label={title} disabled={!enabled}
@@ -391,6 +424,10 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
       isCorner?<span className="smart-property-glyph" title={title}><RibbonCornerRadiusIcon/></span>:
       isWidth?<span className="smart-property-glyph" title={title}><ArrowLeftRight size={17} aria-hidden="true"/></span>:
       isHeight?<span className="smart-property-glyph" title={title}><ArrowUpDown size={17} aria-hidden="true"/></span>:
+      isCanvasAxis?<span className="smart-property-glyph" title={title}>
+        {property.id==='x'?<ArrowLeftRight size={17} aria-hidden="true"/>:
+          <ArrowUpDown size={17} aria-hidden="true"/>}
+      </span>:
       property.id==='width'?<ArrowLeftRight size={15}/>:property.id==='height'?<ArrowUpDown size={15}/>:null}
      <input type="number" className="smart-office-number" aria-label={title} disabled={!enabled} min={property.min??0} max={property.max} step={isTabIndex?1:undefined}
        value={kind==='position'&&useCanvasPosition?position?.[property.id as keyof Position]??'':
@@ -403,9 +440,6 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
        aria-label={title+' '+opt} aria-pressed={value===opt} onClick={()=>write(opt)}><span
          style={{boxShadow:i===0?'none':i===1?'1px 2px 3px #64748b':'2px 4px 8px #64748b'}}/></button>)}
    </div>;
-   else if(tab==='Design2'&&kind==='align')editor=<Design2IconDropdown
-     mode="horizontal" value={String(value)} label={title} disabled={!enabled}
-     allowed={options} onChange={write}/>;
    else if(kind==='align'&&compactDesign&&property.designDisplay==='dropdown')editor=<SmartIconDropdown kind="align" value={String(value)} label={title} disabled={!enabled} onChange={write}/>;
    else if(kind==='align')editor=<div className="smart-icons" role="group" aria-label={title}>
      {([['left',AlignLeft],['center',AlignCenter],['right',AlignRight]] as const).map(([opt,Icon])=>
@@ -418,8 +452,8 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
        editor=<button type="button" className="smart-visible-toggle" disabled={!enabled}
          role="switch" aria-label={title} title={title} aria-checked={value===true}
          onClick={()=>write(value!==true)}><Icon size={16} aria-hidden="true"/></button>;
-     }else if(['headerBold','badgeBold','supportingBold','rowBold','summaryTextWeight','summary2TextWeight','focusedTextBold','wrapText'].includes(property.id)){
-       const Icon=property.id==='wrapText'?WrapText:Bold;
+     }else if(['headerBold','badgeBold','supportingBold','rowBold','summaryTextWeight','summary2TextWeight','focusedTextBold','rowSupportingBold','wrapText','rowSupportingWrapText'].includes(property.id)){
+       const Icon=['wrapText','rowSupportingWrapText'].includes(property.id)?WrapText:Bold;
        editor=<button className="smart-icon-toggle" type="button" disabled={!enabled}
          aria-label={title} title={title} aria-pressed={value===true} onClick={()=>write(value!==true)}><Icon size={17}/></button>;
      }else editor=<input type="checkbox" aria-label={title} disabled={!enabled}
@@ -441,8 +475,12 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
      onClick={()=>write(!(value===true||value==='true'))}>
      <span className="smart-default-check-thumb" aria-hidden="true"/>
    </button>;
+   // The R3C2 alignment and R2C6/R3C6 image controls in the approved
+   // Design 2 matrix are ICON dropdowns. Legacy Design remains unchanged.
+   else if(tab==='Design2'&&kind==='choice'&&property.id==='badgeAlignment')
+     editor=<SmartIconDropdown kind="badgeAlignment" value={String(value)} label={title} disabled={!enabled} onChange={write}/>;
    else if(tab==='Design2'&&kind==='choice'&&
-     ['imagePlacement','imageFill','tabOrientation','navigationDirection'].includes(property.id))
+     ['imageFill','imagePlacement','tabOrientation','navigationDirection'].includes(property.id))
      editor=<Design2IconDropdown
        mode={property.id==='imagePlacement'?'placement':property.id==='imageFill'?'imageFill':'orientation'}
        value={String(value)} label={title} disabled={!enabled} allowed={options} onChange={write}/>;
@@ -453,13 +491,16 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
      title={value?title+': '+String(value):title} disabled={!enabled}
      value={String(value)} onChange={e=>write(e.target.value)}><option value="">Select</option>
      {options.map(s=><option value={s} key={s}>{s.replaceAll('-',' ')}</option>)}</select>;
-   return <div key={property.id} className={'smart-property'+(!enabled?' disabled':'')} data-property={property.id}
+   return <div key={slotPlacement?slotPlacement.area+':'+slotPlacement.slotKey:property.id}
+       className={'smart-property'+(!enabled?' disabled':'')} data-property={property.id}
+       data-design-slot={slotPlacement?.slotKey}
+       data-design-column={tab==='Design2'&&property.designRow===0?property.designOrder:slotPlacement?.order}
        data-supported={supported} data-kind={kind} data-numeric-icon={hasNumericIcon?'true':'false'}
        data-design-caption={compactDesign&&Boolean(property.designCaptionWidth)?'true':'false'}
        style={compactDesign?{'--smart-control-width':controlWidth(property)+'px',
          '--smart-caption-width':(property.designCaptionWidth??0)+'px',
          '--smart-control-height':(property.designHeight??26)+'px',
-         ...(tab==='Design2'?{gridColumn:String(property.designColumn??1)}:{})} as CSSProperties:undefined}
+         ...(slotPlacement?{'--smart-slot-column':slotPlacement.order}: {})} as CSSProperties:undefined}
        title={!enabled?'Applies to: '+property.components.map(api=>api.replace(/^smart_/,'' )).join(', '):title}>
        <span className="smart-label">{shortLabel}</span>{editor}</div>;
  };
@@ -472,10 +513,10 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
   {uploadError&&<div className="smart-upload-error" role="alert" title={uploadError}>{uploadError}</div>}
   {tab==='Design2'?<section className="smart-ribbon-group smart-design2-group"
       data-design-three-row="true" data-smart-tab="Design2" aria-label="Design 2 contextual properties">
-    <div className="smart-ribbon-items">
-      <div className="smart-design2-toolbar-header">
+    <div className="smart-design2-workbench">
+      <div className="smart-design2-context" data-design-row={0}>
         <label className="smart-design2-area-picker">
-          <span aria-hidden="true">Select</span>
+          <span aria-hidden="true">Select it</span>
           <select className="smart-design2-area-select" aria-label="Select Design 2 area"
             value={activeDesign2Area} onChange={event=>setDesign2Area(event.target.value)}>
             {design2Areas.map(area=><option value={area} key={area}>{area}</option>)}
@@ -484,20 +525,32 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
         {(()=>{
           const badge=activeDesign2Area==='Badge'&&
             definitions.some(p=>p.id==='badgeVisible'&&p.components.includes(api));
-          const visible=badge?properties.badgeVisible===true:componentVisible;
-          const change=badge?()=>update('badgeVisible',!visible):
+          const shown=badge?properties.badgeVisible===true:componentVisible;
+          const toggle=badge?()=>update('badgeVisible',!shown):
             onVisibleChange?()=>onVisibleChange(!componentVisible):undefined;
           return <button type="button" className="smart-icon-toggle smart-design2-visibility"
             aria-label={badge?'Badge visibility':'Component visibility'}
             title={badge?'Badge visibility':'Component visibility'}
-            aria-pressed={visible} disabled={!change} onClick={change}>
-            {visible?<Eye size={17}/>:<EyeOff size={17}/>}
+            aria-pressed={shown} disabled={!toggle} onClick={toggle}>
+            {shown?<Eye size={17}/>:<EyeOff size={17}/>}
           </button>;
         })()}
+        {(['x','y'] as const).map((id,index)=>{
+          // Row 0 C3/C4 edits the SAME canvas position used by Layout.
+          // No duplicate instance properties or separate position state.
+          const property=definitions.find(entry=>entry.id===id);
+          return property&&property.components.includes(api)
+            ?controls({...property,tab:'Design2',group:'Position',
+                designRow:0,designOrder:index+3,designWidth:80,designHeight:26,
+                designCaptionWidth:0})
+            :null;
+        })}
       </div>
-      {[1,2,3].map(row=><div key={row} className="smart-ribbon-row smart-design2-property-row"
-        style={{gridTemplateColumns:design2Columns.map(width=>width+'px').join(' ')}} data-design-row={row}>
-        {sectionRow(activeDesign2Area,row).map(controls)}</div>)}
+      <div className="smart-ribbon-items">
+        {[1,2,3].map(row=><div key={row} className="smart-ribbon-row"
+          data-design-row={row} style={{gridTemplateColumns:design2GridColumns()}}>
+          {sectionRow(activeDesign2Area,row).map(controls)}</div>)}
+      </div>
     </div>
     <span className="smart-ribbon-caption">{activeDesign2Area}</span>
   </section>:tab==='Data'?<>

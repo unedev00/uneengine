@@ -78,6 +78,9 @@ import {ExternalIdUpsert} from '../system-files/external-id-upsert.js';
 import {DuplicateMatchError} from '../system-files/record-matching.js';
 import {registerMatchingRoutes} from './matching-rule-routes.js';
 import {registerFieldExactIndexRoutes} from './field-exact-index-routes.js';
+import {registerMetadataLoaderRoutes} from './metadata-loader-routes.js';
+import {registerDataLoaderRecordRoutes} from './data-loader-records.js';
+import {registerDataLoaderRibbonRoutes} from './data-loader-ribbon.js';
 import {registerBusinessProcessRoutes} from './business-process-routes.js';
 import {registerObjectLabelTranslationRoutes,applyObjectLabelTranslations,requestedLabelLanguage} from './object-label-translation-routes.js';
 import {parseRecordCursor,parseRecordFilters} from '../system-files/record-query.js';
@@ -208,6 +211,9 @@ export function createSystemServer(db:SqlPersistence) {
   let adminMailAccess:MailAdminAccess|undefined;
   registerDockerMailWebRoutes(app,undefined,undefined,undefined,()=>adminMailAccess);
   app.use('/api/media-assets',express.json({limit:'8mb'}));
+  // XLSX is carried as base64 JSON; bound this route separately from ordinary API payloads.
+  app.use('/api/metadata/loader',express.json({limit:'15mb'}));
+  app.use('/api/data-loader',express.json({limit:'15mb'}));
   app.use(express.json({limit:'2mb',verify:(req,_res,bytes)=>{
     if((req.url??'').startsWith('/api/inbound-webhooks/') && bytes.length<=262144)
       (req as Request & {rawWebhookBody?:Buffer}).rawWebhookBody=Buffer.from(bytes);
@@ -1531,7 +1537,7 @@ export function createSystemServer(db:SqlPersistence) {
   app.get('/api/metadata/builder-ribbon',route(async(req,res)=>{
     const actor=req.actor!;
     await rbac.require(actor.tenant_id,actor.user_id,'PageDefinition','read');
-    const [listed,registered,design2Slots]=await Promise.all([
+    const [listed,registered,design2Slots,design2SlotRules]=await Promise.all([
       db.query<{
         id:string;label:string;tab:string;group_name:string;kind:string;sort_order:number;
         default_value:unknown;choices:unknown;component_api:string|null;
@@ -1550,17 +1556,22 @@ export function createSystemServer(db:SqlPersistence) {
           r.default_value_override,r.choices_override
         FROM md_builder_shared_properties p
         LEFT JOIN md_builder_ribbon_component_rules r
-          ON r.property_key=p.property_key AND r.enabled=true
+          ON r.property_key=p.property_key AND COALESCE(
+            (SELECT v.enabled FROM md_data_loader_ribbon_visibility v
+             WHERE v.tenant_id=$1 AND v.component_api=r.component_api
+               AND v.property_key=r.property_key),r.enabled)=true
         WHERE p.property_key NOT IN ('firstTabCustom','firstTabCaption','firstTabValue')
-        ORDER BY p.sort_order,r.component_api`),
+        ORDER BY p.sort_order,r.component_api`,[actor.tenant_id]),
       db.query<{component_api:string}>(`SELECT component_api FROM md_builder_ribbon_components
         ORDER BY component_api`),
-      db.query<{component_api:string;area:string;area_order:number;slot_key:string;
-        row_no:number;column_no:number;width_px:number;height_px:number;
-        property_key:string|null;fallback_key:string}>(`SELECT component_api,area,area_order,
-          slot_key,row_no,column_no,width_px,height_px,property_key,fallback_key
-        FROM md_builder_design2_component_slots
-        ORDER BY component_api,area_order,row_no,column_no`)
+      db.query<{area:string;area_order:number;slot_key:string;row_no:number;
+        order_no:number;width_px:number;height_px:number;property_key:string|null;
+        fallback_key:string}>(`SELECT area,area_order,slot_key,row_no,order_no,width_px,height_px,
+          property_key,fallback_key FROM md_builder_design2_slots
+        ORDER BY area_order,row_no,order_no`),
+      db.query<{component_api:string;area:string;slot_key:string;property_key:string}>(
+        `SELECT component_api,area,slot_key,property_key
+         FROM md_builder_design2_slot_rules ORDER BY component_api,area,slot_key`)
     ]);
     const properties=new Map<string,Record<string,unknown>>();
     for(const row of listed.rows){
@@ -1599,10 +1610,12 @@ export function createSystemServer(db:SqlPersistence) {
     }
     res.json({components:registered.rows.map(row=>row.component_api),
       properties:[...properties.values()],design2Slots:design2Slots.rows.map(slot=>({
-        componentApi:slot.component_api,area:slot.area,areaOrder:slot.area_order,
-        slotKey:slot.slot_key,row:slot.row_no,column:slot.column_no,
-        order:slot.column_no,width:slot.width_px,height:slot.height_px,
+        area:slot.area,areaOrder:slot.area_order,slotKey:slot.slot_key,
+        row:slot.row_no,order:slot.order_no,width:slot.width_px,height:slot.height_px,
         propertyKey:slot.property_key,fallbackKey:slot.fallback_key
+      })),design2SlotRules:design2SlotRules.rows.map(rule=>({
+        componentApi:rule.component_api,area:rule.area,slotKey:rule.slot_key,
+        propertyKey:rule.property_key
       }))});
   }));
   app.get('/api/component-library',route(async(req,res)=>{
@@ -1705,6 +1718,25 @@ export function createSystemServer(db:SqlPersistence) {
     await rbac.require(actor.tenant_id,actor.user_id,'PageDefinition','manage');
     res.setHeader('Cache-Control','private, no-store');
     res.json({styles:await saveAcetillVisualStyles(db,actor.tenant_id,req.body?.styles)});
+  }));
+  // New pages are created exactly once, including their first immutable draft.
+  // No existing (including archived) page may be overwritten or resurrected.
+  app.post('/api/metadata/pages',route(async(req,res)=>{
+    const actor=req.actor!;
+    await rbac.require(actor.tenant_id,actor.user_id,'PageDefinition','manage');
+    const name=req.body?.apiName;
+    if(typeof name!=='string'||!/^[A-Za-z][A-Za-z0-9_]*$/.test(name)||name!==name.toLowerCase())
+      throw new Error('New Page API names must be lowercase');
+    if(req.body?.status!=='Draft')throw new Error('New Pages must start as Draft');
+    await assertMetadataPackageEditable(db,actor.tenant_id,'page',name);
+    const variant=pageLayoutVariant(req.body?.layoutVariant??'Desktop');
+    const page=await db.transaction(async()=>{
+      await pages.save(actor.tenant_id,name,req.body,true);
+      return pages.saveLayoutDraft(actor.tenant_id,name,variant,
+        {...req.body,draftRevision:0,revision:undefined},actor.user_id);
+    });
+    res.setHeader('Cache-Control','private, no-store');
+    res.status(201).json({page});
   }));
   app.get('/api/metadata/pages',route(async(req,res)=>{
     const actor=req.actor!;
@@ -2722,6 +2754,9 @@ export function createSystemServer(db:SqlPersistence) {
   registerDeclarativeRuleRoutes(app,db,rbac);
   registerMatchingRoutes(app,db,rbac);
   registerFieldExactIndexRoutes(app,db,rbac);
+  registerMetadataLoaderRoutes(app,db,rbac,definitions,objectManagerMetadata,objectLifecycle);
+  registerDataLoaderRecordRoutes(app,records,definitions,rbac,externalIdUpsert);
+  registerDataLoaderRibbonRoutes(app,db,rbac);
   registerBusinessProcessRoutes(app,db,rbac);
   registerObjectLabelTranslationRoutes(app,db,rbac);
   registerVersionedApiRoutes(app,records,definitions,rbac,db);
@@ -2767,7 +2802,7 @@ export function createSystemServer(db:SqlPersistence) {
       res.status(409).json({error:err.message});
     else if(/^(Field datatype|Field datatype conversion|Existing value|Numeric value|Only ISO|Migration to Rich Text|Required field migration)/.test(err.message))
       res.status(400).json({error:err.message});
-    else if(err.message==='Field already exists'||err.message==='Object already exists'||err.message==='Page layout revision conflict'||err.message==='Page layout draft revision conflict'||err.message==='Page revision conflict'||err.message==='Record has changed since it was loaded')res.status(409).json({error:err.message});
+    else if(err.message==='Page already exists'||err.message==='Page API name already exists (archived)'||err.message==='Field already exists'||err.message==='Object already exists'||err.message==='Page layout revision conflict'||err.message==='Page layout draft revision conflict'||err.message==='Page revision conflict'||err.message==='Record has changed since it was loaded')res.status(409).json({error:err.message});
     else if(err.message==='API Name already exists'||err.message==='API Name already exists for this language')res.status(409).json({error:err.message});
     else if((err as Error&{code?:string;constraint?:string}).code==='23505' && /_api_(?:name|version)_ci_uq$|_id_ci_uq$/.test((err as Error&{constraint?:string}).constraint??''))res.status(409).json({error:'API Name already exists'});
     else if(['23503','23505'].includes((err as Error&{code?:string}).code??''))res.status(409).json({error:'Policy dependency or duplicate identity conflict'});

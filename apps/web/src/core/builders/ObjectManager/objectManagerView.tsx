@@ -26,6 +26,7 @@ import CustomMetadataManager from './CustomMetadataManager';
 import * as React from 'react';
 const MatchingRulesPanel = React.lazy(() => import('./MatchingRulesPanel'));
 const FieldExactIndexesPanel=React.lazy(()=>import('./FieldExactIndexesPanel'));
+
 const ObjectChangeHistory = React.lazy(() => import('./ObjectChangeHistory'));
 const BusinessProcessesPanel=React.lazy(()=>import('./BusinessProcessesPanel'));
 const ObjectLabelsPanel=React.lazy(()=>import('./ObjectLabelsPanel'));
@@ -81,6 +82,7 @@ import {
   SlidersHorizontal,
   Star,
   Undo2,
+  Upload,
   Redo2,
   Trash2,
   Tablet,
@@ -1980,6 +1982,7 @@ function ObjectManager({
         <div className="toolbar-actions">
           <button className="btn" type="button" onClick={()=>void showDeletedObjects()} disabled={deletedObjectsBusy}>
             {deletedObjectsOpen?'Hide Deleted Objects':'Deleted Objects'}</button>
+          <a className="btn" href="/une/setup/data-loader"><Upload size={14}/>Universal Data Loader</a>
           <button className="btn btn-brand" type="button" onClick={onCreateObject}><Plus size={14}/>New Object</button>
         </div></div>
       {deletedObjectsOpen&&<section className="metadata-card" aria-label="Deleted objects">

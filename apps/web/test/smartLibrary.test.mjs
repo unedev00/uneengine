@@ -961,7 +961,7 @@ test('Smart dynamic content scrolls only when the rendered component overflows',
  assert.doesNotMatch(runtime,/recordsOf\(p\)\.slice\(0,200\)\.map/);
  assert.match(runtime,/p\.cardsPerRow/);
  assert.match(runtime,/p\.actionFlows\?\.click/);
- assert.match(runtime,/onClick=\{\(\)=>fire\("click",\{record:r,recordId:/);
+ assert.match(runtime,/onClick=\{selectRecord\}/);
  assert.doesNotMatch(css,/grid-auto-rows:minmax\(160px,auto\)!important/);
  assert.doesNotMatch(css,/min-height:160px!important/);
  assert.match(css,/\.smart-runtime\.smart_navigation>\.smart-navigation/);

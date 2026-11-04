@@ -27,6 +27,14 @@
     {
       "apiName": "click",
       "label": "When a card is selected"
+    },
+    {
+      "apiName": "customButton1",
+      "label": "Custom Button 1"
+    },
+    {
+      "apiName": "customButton2",
+      "label": "Custom Button 2"
     }
   ]
 }
