@@ -11,10 +11,20 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  await db.query(migration);
  const listed=await db.query(`SELECT area,slot_key,property_key,row_no,order_no,width_px,height_px
    FROM md_builder_design2_slots ORDER BY area_order,row_no,order_no`);
- assert.equal(listed.rows.length,106,'Design 2 SQL slots missing or duplicated after replay');
- assert.equal(new Set(listed.rows.map(row=>row.area)).size,10,'Wrong Design 2 area count');
+ // Shared areas are extensible: retain the legacy baseline and enforce unique SQL slots.
+ assert.ok(listed.rows.length>=106,'Design 2 SQL slots missing after replay');
+ assert.ok(new Set(listed.rows.map(row=>row.area)).size>=10,'Legacy Design 2 areas missing');
+ assert.equal(new Set(listed.rows.map(row=>row.area+'/'+row.slot_key)).size,listed.rows.length,
+  'Duplicate Design 2 slot keys after replay');
+ assert.equal(new Set(listed.rows.map(row=>row.area+'/'+row.row_no+'/'+row.order_no)).size,listed.rows.length,
+  'Duplicate Design 2 ribbon positions after replay');
  const slot=(area,key)=>listed.rows.find(row=>row.area===area&&row.slot_key===key);
  assert.equal(slot('Row','focused')?.property_key,'selectedRowColor');
+ assert.equal(slot('Focused','selection')?.property_key,'selectionMode');
+ assert.equal(slot('Row Supporting','text')?.property_key,'rowSupportingTextColor');
+ assert.equal(slot('Custom Button 1','shape')?.property_key,'customButton1Shape');
+ assert.equal(slot('Custom Button 2','shape')?.property_key,'customButton2Shape');
+
  assert.equal(slot('Tabs','focused')?.property_key,'selectedTabColor');
  assert.equal(slot('Row','fill')?.property_key,null,'Row must inherit Table background');
  assert.equal(slot('Body','wrap')?.property_key,'wrapText','Body Wrap Text must remain disabled');
