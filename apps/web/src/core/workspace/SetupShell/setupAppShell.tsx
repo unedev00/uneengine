@@ -962,8 +962,9 @@ function SetupApp({ onLogout, entryTiming }: { onLogout: () => void; entryTiming
           }
         }
         if(!created)throw new Error('Unable to allocate a new Page API name');
-        setPage(created);
-        setPages(current=>[...current.filter(item=>item.apiName!==created.apiName),created]);
+        const savedNewPage=created;
+        setPage(savedNewPage);
+        setPages(current=>[...current.filter(item=>item.apiName!==savedNewPage.apiName),savedNewPage]);
         pageDefinitionCache.current.clear();
         notify(successMessage ?? 'Page draft created');
         return created;
