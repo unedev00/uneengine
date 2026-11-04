@@ -43,6 +43,8 @@ test('tablet app selector retains the selected name rather than collapsing into 
   assert.match(tablet,/\.lightning \.header-installed-apps \{[^}]*min-width: 160px/);
   assert.match(tablet,/\.lightning \.header-installed-apps select \{[^}]*min-width: 160px/);
   assert.match(tablet,/\.lightning \.header-installed-apps::after \{ content: none; \}/);
+  const compact=headerCss.slice(headerCss.indexOf('/* Compact, stable phone header'),headerCss.indexOf('/* Tablet Setup:'));
+  assert.match(compact,/\.header-installed-apps select \{[^}]*min-width:160px/);
   assert.match(navigation,/value=\{installedAppValue\}/);
   assert.match(navigation,/installedAppLabel/);
 });
