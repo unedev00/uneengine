@@ -1,4 +1,5 @@
 import {ObjectPermissionPhoneList} from './ObjectPermissionPhoneList';
+import {useViewportWidth} from '../../workspace/Responsive/useViewportWidth';
 import { createObjectManager } from '../../builders/ObjectManager/objectManagerView';
 import { createSetupHome } from '../../settings/SetupHome/setupHomeView';
 import { createSettingsViews } from '../../settings/SettingsWorkspace/settingsWorkspaceViews';
@@ -221,6 +222,8 @@ function Permissions({
   onSave: (accessControl: AccessControlMetadata) => Promise<void>;
   onNotify: (message: string) => void;
 }) {
+  const viewportWidth=useViewportWidth();
+  const permissionSectionsExpanded=viewportWidth>=1024;
   const [draft, setDraft] = useState(accessControl);
   const [savedDraft, setSavedDraft] = useState(accessControl);
   const [mobilePermissionDetail, setMobilePermissionDetail] = useState(Boolean(routeResourceId));
@@ -804,7 +807,8 @@ function Permissions({
           })}</tbody></table></div></details>)}
         </>}
         {tab === 'sets' && selectedSet && <>
-          <AdvancedPermissionRules actionOptions={actionPermissionOptions} systemPermissionKeys={allSystemPermissions.map(([key])=>key)} policy={selectedSet} onChange={patch=>patchSet(selectedSet.id,patch)}/>
+          <details className="md-permission-collapsible" open={permissionSectionsExpanded}><summary>Advanced permission rules</summary>
+           <AdvancedPermissionRules actionOptions={actionPermissionOptions} systemPermissionKeys={allSystemPermissions.map(([key])=>key)} policy={selectedSet} onChange={patch=>patchSet(selectedSet.id,patch)}/></details>
           <div className="section-toolbar"><div><h2>{selectedSet.label}</h2><p>Permission Set · {selectedSet.apiName}</p></div><button className="btn" onClick={() => {
             if (selectedSet.id === 'system-administrator'
               || draft.users.some((user) => user.permissionSetIds.includes(selectedSet.id))
@@ -819,27 +823,35 @@ function Permissions({
             <PlatformPageSlot slotKey="field-rbac-24"><label className="form-label">License<input className="form-control" value={selectedSet.license} onChange={(event) => patchSet(selectedSet.id, { license: event.target.value })} /></label></PlatformPageSlot>
             <PlatformPageSlot slotKey="field-rbac-25"><label className="form-label">Description<input className="form-control" value={selectedSet.description} onChange={(event) => patchSet(selectedSet.id, { description: event.target.value })} /></label></PlatformPageSlot>
           </div>
-          <h3 className="permission-section-heading">System Permissions</h3>
+          <details className="md-permission-collapsible" open={permissionSectionsExpanded}><summary>System Permissions</summary>
+
           <div className="permission-check-grid">{allSystemPermissions.map(([key, label]) => <label className="checkbox-row" key={key}><input type="checkbox" checked={selectedSet.systemPermissions.includes(key)} onChange={() => patchSet(selectedSet.id, { systemPermissions: toggleString(selectedSet.systemPermissions, key) })} />{label}</label>)}</div>
-          
-          <h3 className="permission-section-heading">Application Access</h3>
+          </details>
+          <details className="md-permission-collapsible" open={permissionSectionsExpanded}><summary>Application Access</summary>
+
           <p className="permission-help">Navigation access does not grant underlying data permissions.</p>
           <div className="permission-check-grid">{navigationApps.map((app) => <label className="checkbox-row" key={app.apiName}>
             <input type="checkbox" checked={Boolean(selectedSet.appPermissions?.[app.apiName])}
               onChange={(event) => patchSet(selectedSet.id, { appPermissions: { ...selectedSet.appPermissions, [app.apiName]: event.target.checked } })} />
             {app.label}
           </label>)}</div>
-          <h3 className="permission-section-heading">Tab Visibility</h3>
+          </details>
+          <details className="md-permission-collapsible" open={permissionSectionsExpanded}><summary>Tab Visibility</summary>
+
           <div className="permission-check-grid">{objects.map((object) => <label className="checkbox-row" key={object.apiName}>
             <input type="checkbox" checked={Boolean(selectedSet.tabPermissions?.[object.apiName])}
               onChange={(event) => patchSet(selectedSet.id, { tabPermissions: { ...selectedSet.tabPermissions, [object.apiName]: event.target.checked } })} />
             {object.label}
           </label>)}</div>
-          <h3 className="permission-section-heading">Object Permissions</h3>
+          </details>
+          <details className="md-permission-collapsible" open={permissionSectionsExpanded}><summary>Object Permissions</summary>
+
           <ObjectPermissionPhoneList objects={objects} values={selectedSet.objectPermissions}
             subject={selectedSet.label} onToggle={(objectApi,permission)=>toggleObjectPermission(selectedSet,objectApi,permission)}/>
           <div className="permission-table-wrap permission-desktop-matrix" role="region" aria-label="Object permission matrix" tabIndex={0}><table className="slds-table permission-matrix"><thead><tr><th scope="col">Object</th><th scope="col">API Name</th>{(['read', 'create', 'edit', 'delete', 'viewAll', 'modifyAll'] as const).map((permission) => <th scope="col" key={permission}>{permission === 'viewAll' ? 'View All' : permission === 'modifyAll' ? 'Modify All' : permission[0].toUpperCase() + permission.slice(1)}</th>)}</tr></thead><tbody>{objects.map((object) => <tr key={object.apiName}><td><strong>{object.label}</strong></td><td title={object.apiName}><code>{object.apiName}</code></td>{(['read', 'create', 'edit', 'delete', 'viewAll', 'modifyAll'] as const).map((permission) => <td key={permission}><input type="checkbox" aria-label={`${object.label} ${permission}`} checked={Boolean(selectedSet.objectPermissions[object.apiName]?.[permission])} onChange={() => toggleObjectPermission(selectedSet, object.apiName, permission)} /></td>)}</tr>)}</tbody></table></div>
-          <h3 className="permission-section-heading">User reporting data scopes</h3>
+          </details>
+          <details className="md-permission-collapsible" open={permissionSectionsExpanded}><summary>User reporting data scopes</summary>
+
           <p className="permission-help">For each Object, decide whether this permission set can access own records, descendants' records or all users' records. The tree follows Reports To, never role or job title. All scopes still require Object permissions and honour explicit denials.</p>
           <div className="permission-form-grid">{objects.map(object => <label key={object.apiName} className="form-label">{object.label}
             <select className="form-control" value={selectedSet.recordDataScopes?.[object.apiName]??''}
@@ -855,11 +867,14 @@ function Permissions({
               <option value="all">All Users (tenant-wide)</option>
             </select>
           </label>)}</div>
-          <h3 className="permission-section-heading">Record Type Access</h3>
+          </details>
+          <details className="md-permission-collapsible" open={permissionSectionsExpanded}><summary>Record Type Access</summary>
+
           {objects.filter((object) => object.recordTypes?.length).map((object) => <div className="permission-table-wrap" role="region" aria-label={`Record type permissions for ${object.label}`} tabIndex={0} key={object.apiName}><table className="slds-table permission-matrix"><thead><tr><th scope="col">{object.label}</th><th scope="col">Developer Name</th><th scope="col">Available</th></tr></thead><tbody>{object.recordTypes?.filter((recordType) => recordType.active).map((recordType) => {
             const key = `${object.apiName}.${recordType.id}`;
             return <tr key={key}><td><strong>{recordType.label}</strong></td><td title={recordType.developerName}><code>{recordType.developerName}</code></td><td><input type="checkbox" aria-label={`${selectedSet.label} ${object.label} ${recordType.label} available`} checked={selectedSet.recordTypePermissions[key] === true} onChange={() => patchSet(selectedSet.id, { recordTypePermissions: { ...selectedSet.recordTypePermissions, [key]: selectedSet.recordTypePermissions[key] !== true } })} /></td></tr>;
           })}</tbody></table></div>)}
+          </details>
           <h3 className="permission-section-heading">Field Permissions</h3>
           <FieldSecurityWizard objects={objects} policyName={selectedSet.label}
            fieldPermissions={selectedSet.fieldPermissions}
