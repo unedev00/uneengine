@@ -34,7 +34,7 @@ function readRows(bytes:Buffer){
 }
 function report(table:LoaderTable,items:Item[]){
  const original=table.columns.filter(c=>!['Status','Result','Message'].includes(c));
- const rows=items.map(i=>({...i.cells,Status:i.status,Result:i.result,Message:i.message,ExcelRow:String(i.excelRow)}));
+ const rows:Record<string,string>[]=items.map(i=>({...i.cells,Status:i.status,Result:i.result,Message:i.message,ExcelRow:String(i.excelRow)}));
  const summaryCols=['ExcelRow','Action','Id','Status','Result','Message'];
  const all=(array:typeof rows)=>array.map(r=>Object.fromEntries(summaryCols.map(c=>[c,r[c]??''])));
  return writeLoaderWorkbook([
