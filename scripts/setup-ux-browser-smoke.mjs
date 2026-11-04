@@ -38,6 +38,8 @@ try {
  await save.click();
  await page.getByRole('status').filter({hasText:'selections saved'}).waitFor();
  assert.equal((await page.evaluate(()=>window.savedSelections)).selections[0].recordIds[0],'00000000-0000-0000-0000-000000000001');
+ assert.equal(await page.getByRole('checkbox',{name:'Acme Corporation'}).isChecked(),true,
+  'Saved offline selection must remain selected before the next search');
  await recordSearch.fill('bulk');
  await page.getByRole('checkbox',{name:'Bulk record 55'}).waitFor();
  for(let index=1;index<=49;index++){
