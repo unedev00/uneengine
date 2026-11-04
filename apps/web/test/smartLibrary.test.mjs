@@ -1255,12 +1255,13 @@ test('collection-driven Smart Card Grid renders authorised record title and othe
  assert.doesNotMatch(html,/>drinks<\/span>/,'Category ID must never replace the product title');
 });
 
-test('Smart Textbox is discoverable by exact user-facing name and compact search',()=>{
+test('Smart Textbox stays directly visible in the Insert gallery without a search control',()=>{
  const view=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
  const insert=read('../src/core/builders/PageBuilder/SmartInsertRibbon.tsx');
  assert.match(view,/component\.apiName==='smart_textbox'\?'Smart Textbox'/);
- assert.match(insert,/compactQuery=query\.replace/);
- assert.match(insert,/label\.replace/);
+ assert.match(insert,/const visible=items\.filter\(isSmartInsertItem\)/);
+ assert.match(insert,/<span className="smart-insert-tile-label">\{item\.label\}<\/span>/);
+ assert.doesNotMatch(insert,/compactQuery|Search Insert components|<select/);
 });
 
 test('Smart Textbox renders one left caption and one right field value using remarks styling',async()=>{
