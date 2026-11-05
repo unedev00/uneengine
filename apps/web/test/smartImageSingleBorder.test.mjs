@@ -127,6 +127,47 @@ test('Card Grid handles every image placement, zero-height image/header and blan
  assert.doesNotMatch(collapsed,/<img /);
 });
 
+
+test('Smart Image uses the requested 122px caption size without a 44px clipping mask',()=>{
+  const html=render({textSource:'"Eat in"',textSize:122,headerBoxHeight:44,
+    imagePlacement:'left',imageWidth:165,wrapText:true});
+  const article=native(html,'article');
+  const caption=html.match(/<div[^>]*class="smart-card-content"[^>]*>/)?.[0]??'';
+  assert.ok(caption,'Smart Image caption was not rendered');
+  assert.match(article,/font-size:122px/,'Editor font size must equal rendered size');
+  assert.match(article,/overflow-y:auto/,'Oversized card content must remain reachable');
+  assert.match(caption,/height:44px/,'Existing Header Box Height is preserved');
+  assert.match(caption,/min-height:max-content/,'Header height must grow with its text');
+  assert.match(caption,/font-size:122px/);
+  assert.match(caption,/overflow:visible/,'Text cannot be hidden by its caption wrapper');
+  assert.match(caption,/align-self:safe center/,'A tall side caption cannot overflow above the card');
+});
+
+test('Card Grid applies large and focused caption sizes without clipping or disabling Wrap Text',()=>{
+  for(const focused of [false,true]){
+    const html=renderToStaticMarkup(React.createElement(SmartRuntime,{
+      kind:'smart_card_grid',records:[{Id:'one',Name:'Two line card header'}],
+      textSource:'@Name',imageHeight:0,cardsPerRow:1,cardsPerColumn:1,
+      textSize:122,headerBoxHeight:44,wrapText:true,
+      ...(focused?{
+        focusedTextSize:144,pageState:{selected:'one'},
+        actionFlows:{click:{actionType:'Formula',formula:'@state.selected := @Id'}}
+      }:{})
+    }));
+    const caption=html.match(/<div[^>]*class="smart-card-content"[^>]*>/)?.[0]??'';
+    assert.ok(caption,'Card Grid caption must be rendered');
+    assert.match(native(html,'article'),new RegExp('font-size:'+(focused?144:122)+'px'));
+    assert.match(native(html,'article'),/overflow-y:auto/);
+    assert.match(caption,/height:44px/);
+    assert.match(caption,/min-height:max-content/);
+    assert.match(caption,/white-space:normal/);
+    assert.match(caption,/overflow:visible/);
+  }
+  const noWrap=render({textSource:'"A very long caption"',textSize:122,wrapText:false});
+  assert.match(noWrap,/class="smart-card-content"[^>]*white-space:nowrap;overflow:auto/,
+    'No-wrap titles need a horizontal scroll path rather than silent clipping');
+});
+
 test('Smart Image preview placeholder shares native image radius and clips all four corners',()=>{
   const html=render({imageSource:'',builderPreview:true,radius:18,
     imageBorderColor:'#123456',borderWidth:1});

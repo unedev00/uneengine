@@ -718,7 +718,8 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
     position:{x:28,y:32,width:330,height:280}},
    {id:'four-grid',type:'Custom:smart_card_grid',label:'Wrap card',
     region:'main',visible:true,
-    properties:{textSource:'"Two line card header"',imageHeight:0,wrapText:false},
+    properties:{textSource:'"Two line card header"',imageHeight:0,wrapText:false,
+     textSize:122,headerBoxHeight:44},
     position:{x:402,y:32,width:350,height:280}},
    {id:'four-nav',type:'Custom:smart_navigation',label:'Image navigation',
     region:'main',visible:true,properties:{imageFill:'fill',
@@ -726,7 +727,13 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
     position:{x:28,y:360,width:460,height:128}},
    {id:'four-toggle',type:'Custom:smart_toggle',label:'Shape toggle',
     region:'main',visible:true,properties:{shapeId:'shape:rectangle'},
-    position:{x:540,y:360,width:150,height:100}}
+    position:{x:540,y:360,width:150,height:100}},
+   // Large-title regression: same shared card renderer as the Card Grid.
+   {id:'four-large-image',type:'Custom:smart_image',label:'Large title image',
+    region:'main',visible:true,properties:{
+     textSource:'"Eat in"',imageSource:'',imagePlacement:'left',imageWidth:165,
+     textSize:122,headerBoxHeight:44,wrapText:true},
+    position:{x:760,y:32,width:480,height:180}}
   ]
  };
  const fourCreate=await page.evaluate(async({token,payload})=>{
@@ -780,6 +787,34 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  assert.equal(await wrapToggle.getAttribute('aria-pressed'),'true');
  assert.equal(await gridBlock.locator('.smart-card-content').first().evaluate(element=>
   getComputedStyle(element).whiteSpace),'normal','Card Grid Wrap must change header wrapping');
+
+ // Measure the REAL card DOM in Chromium; both components share SmartCard.
+ const checkLargeCardTitle=async(id)=>{
+  const metric=await page.locator('[data-component-id="'+id+'"] .smart-card-content').first().evaluate(caption=>{
+   const card=caption.closest('.smart-card');
+   const rect=caption.getBoundingClientRect();
+   return {fontSize:getComputedStyle(caption).fontSize,
+     height:rect.height,boxHeight:caption.style.height,
+     minHeight:getComputedStyle(caption).minHeight,
+     contentHeight:caption.scrollHeight,clientHeight:caption.clientHeight,
+     cardScrollHeight:card.scrollHeight,cardClientHeight:card.clientHeight,
+     cardOverflow:getComputedStyle(card).overflowY};
+  });
+  assert.equal(metric.fontSize,'122px',id+' did not render the editor font size');
+  assert.equal(metric.boxHeight,'44px',id+' lost Header Box Height metadata');
+  assert.ok(metric.height>44,id+' still clips large text into the default 44px header: '+JSON.stringify(metric));
+  assert.equal(metric.minHeight,'max-content',id+' caption must grow with its contents');
+  assert.equal(metric.cardOverflow,'auto',id+' card must scroll if content exceeds its frame');
+  assert.ok(metric.contentHeight<=metric.clientHeight+2,
+   id+' still clips content within its caption: '+JSON.stringify(metric));
+  if(metric.cardScrollHeight>metric.cardClientHeight+2){
+   const scrolled=await page.locator('[data-component-id="'+id+'"] .smart-card').first()
+    .evaluate(card=>{card.scrollTop=card.scrollHeight;return card.scrollTop;});
+   assert.ok(scrolled>0,id+' bottom text cannot be reached by scrolling');
+  }
+ };
+ await checkLargeCardTitle('four-grid');
+ await checkLargeCardTitle('four-large-image');
 
  const navBlock=await selectFour('four-nav','Image');
  const navFit=fourRibbon.locator('[data-design-row="3"] [data-design-slot="imageFill"]');

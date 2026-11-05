@@ -161,9 +161,12 @@ function SmartCard({p,record,onButtonClick,onCustomButton,onSelect,selected=fals
    single?(p.imageBackgroundColor??p.backgroundColor??"transparent"):(p.backgroundColor||"#fff"),
   border:focused&&p.focusedCardBorderColor
    ?Math.max(1,strokeWidth)+"px solid "+p.focusedCardBorderColor:cardBorder,
-  borderRadius:number(p.radius,12),overflow:"hidden",position:"relative",minWidth:0,
+  // A font size entered in Design must not be silently reduced to 96px.
+  // Scroll the card only when its configured frame cannot contain the text;
+  // the article still clips decorative borders to its rounded corners.
+  borderRadius:number(p.radius,12),overflow:"hidden",overflowY:"auto",position:"relative",minWidth:0,
   fontSize:focused&&p.focusedTextSize!==undefined&&p.focusedTextSize!==null&&p.focusedTextSize!==""
-   ?number(p.focusedTextSize,16,8,96):number(p.textSize,16,8,96),
+   ?number(p.focusedTextSize,16,8):number(p.textSize,16,8),
   color:focusedText||undefined,
   boxShadow:activeShadow==="large"?"0 8px 20px #0003":activeShadow==="medium"?"0 3px 9px #0003":"none",
   ...(single?{height:"100%",minHeight:0}:{}),
@@ -206,18 +209,20 @@ function SmartCard({p,record,onButtonClick,onCustomButton,onSelect,selected=fals
   </div>}
   {header&&headerHeight>0&&<div data-md-bind={p.builderPreview?"textSource":undefined} data-md-bind-titles={p.builderPreview?"Card title":undefined} className="smart-card-content" style={{
     order:1,flex:horizontal?(imageVisible?"1 1 50%":"1 1 100%"):undefined,display:"flex",alignItems:"center",
-    height:headerHeight,alignSelf:horizontal?"center":undefined,flexShrink:0,
+    // Header Box Height is a minimum, not a text clipping mask: wrapped or
+    // enlarged captions grow to their intrinsic height inside the card scroller.
+    height:headerHeight,minHeight:"max-content",alignSelf:horizontal?"safe center":undefined,flexShrink:0,
     fontWeight:focusedWeight??(p.headerBold===false?400:700),
     // Standalone Image's visible caption is edited by the shared Typography
     // Label Alignment control; Card Grid retains its prior Header precedence.
     textAlign:(single?p.labelAlignment||p.headerAlignment:p.headerAlignment||p.labelAlignment)||"left",
     justifyContent:(single?p.labelAlignment||p.headerAlignment:p.headerAlignment||p.labelAlignment)==="right"?"flex-end":
       (single?p.labelAlignment||p.headerAlignment:p.headerAlignment||p.labelAlignment)==="center"?"center":"flex-start",
-    fontSize:single?number(p.textSize,16,8,96):undefined,
+    fontSize:single?number(p.textSize,16,8):undefined,
     border:p.headerBorderColor?"1px solid "+p.headerBorderColor:undefined,
     color:focusedText||(single?p.labelColor||p.defaultValueColor||undefined:p.defaultValueColor||p.labelColor||undefined),
     whiteSpace:p.wrapText===false?"nowrap":"normal",
-    overflow:"hidden",overflowWrap:"anywhere",
+    overflow:p.wrapText===false?"auto":"visible",overflowWrap:"anywhere",
     padding:cardPadding===null?"4px 10px":cardPadding+"px"
   }}>{header}</div>}
   {grid&&(description||value||buttonText||customButtons.length>0)&&<div className="smart-card-details"
