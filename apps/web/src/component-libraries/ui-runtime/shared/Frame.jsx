@@ -19,15 +19,15 @@ export function uneProps(p,kind){
    "clearLabel","totalLabel","emptyBasketText","nextTransactionLabel"];
   for(const key of textKeys){
    const raw=result[key];
-   if(typeof raw==="string"&&(/@(?:[A-Za-z][A-Za-z0-9_]*)/.test(raw)||/^\s*[A-Za-z]+\s*\(/.test(raw)))
-    result[key]=evaluateFieldExpression(raw,record);
+   if(typeof raw==="string"&&(raw.startsWith('$component.')||/@(?:[A-Za-z][A-Za-z0-9_]*)/.test(raw)||/^\s*[A-Za-z]+\s*\(/.test(raw)))
+    result[key]=evaluateFieldExpression(raw,record,{readComponent:p.readComponent});
   }
  }
  // Data > Text Source is an app-owned expression property; the evaluated
  // display value uses the same record context as other text fields.
  if(record&&typeof p.textSource==="string"&&p.textSource.trim()&&
     ["Input","Lookup","Tabs"].includes(kind)){
-   const resolved=evaluateFieldExpression(p.textSource,record);
+   const resolved=evaluateFieldExpression(p.textSource,record,{readComponent:p.readComponent});
    if(kind==="Input"||kind==="Lookup")result.value=resolved;
    else result.label=resolved;
  }

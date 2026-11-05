@@ -6,7 +6,7 @@ export default function SmartComponent(p){
  const records=Array.isArray(p.records)?p.records:Array.isArray(p.items)?p.items:[];
  const expression=(value,row)=>typeof value==='string'
   ?evaluateFieldExpression(value,row,{
-   rootObjectApiName:p.objectApiName,
+   readComponent:p.readComponent,rootObjectApiName:p.objectApiName,
    pageState:p.pageState,sessionId:p.sessionId,
    collectionSources:p.formulaCollectionSources,
    namedCollections:p.namedCollections,

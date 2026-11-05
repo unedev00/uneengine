@@ -1,3 +1,4 @@
+import {PageFormulaScope} from '../../components/RegisteredComponent/PageFormulaScope';
 import ResponsiveDataList from '../../records/ResponsiveDataList/ResponsiveDataList';
 import {conversationPartSlots,conversationRootDefinition,conversationPartDefinition,conversationPartEditorProperties,updateConversationPartProperties} from '../../../component-libraries/ui_conversation/conversationParts.mjs';
 import {availableComponentSettings,resolveComponentSettings,validateComponentSettings} from '../../components/Properties/componentSettingDefinitions';
@@ -2860,7 +2861,7 @@ function PageBuilder({
                         onNavigate={(route:AppRoute)=>{if(previewMode)window.open(appRoutePath(route),'_blank','noopener,noreferrer');}}
                          onLaunchFlow={(flowApiName: string, inputs: Record<string, unknown>) => { onLaunchFlow(flowApiName, inputs); externalPreviewWindowRef.current?.opener?.focus?.(); }} disableActions={!previewMode} builderPreview={!previewMode} />
                   : customDefinition
-                    ? <RegisteredComponent definition={customDefinition} layoutTransparent props={libraryPreview ? customPreviewProps : {
+                    ? <RegisteredComponent formulaInstanceId={component.id} definition={customDefinition} layoutTransparent props={libraryPreview ? customPreviewProps : {
                       ...component.properties,
                       ...componentLayoutProps(component.properties, device),
                       ...(customDefinition.apiName.startsWith('smart_') && component.position && page.layoutMode==='free-canvas'
@@ -3157,7 +3158,7 @@ function PageBuilder({
   ) : null;
   const designInPanel = designDockedLeft && ribbonTab==='Component Design 2' && !previewMode && smartRibbonElement!==null;
   return (
-    <div className={`builder-page ${editorMode ? "builder-editor-mode" : "builder-list-mode"} ${isPhoneBuilder ? 'builder-phone-read-mode' : ''} ${previewMode ? 'builder-interactive-preview' : ''}`}>
+    <PageFormulaScope key={page?.apiName} components={page?.components} catalog={libraryComponents}><div className={`builder-page ${editorMode ? "builder-editor-mode" : "builder-list-mode"} ${isPhoneBuilder ? 'builder-phone-read-mode' : ''} ${previewMode ? 'builder-interactive-preview' : ''}`}>
       {editorMode&&selected?.type==='Related List'&&(()=>{
         const names=Array.isArray(selected.properties.relatedLists)
           ?selected.properties.relatedLists.filter((name):name is string=>typeof name==='string'):[];
@@ -4595,7 +4596,7 @@ function PageBuilder({
           </div>
         </section>
       </div>}
-    </div>
+    </div></PageFormulaScope>
   );
 }
 return PageBuilder;

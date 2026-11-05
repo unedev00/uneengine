@@ -279,11 +279,17 @@ const evaluateCall=(name,args,context)=>{
   default:throw Error(`Unsupported formula function: ${name}`);
  }
 };
+export const componentReaderKey=Symbol.for('metadrive.pageFormulaComponentReader');
 function parse(source,record,formulaContext){
  const expression=new Parser(tokenize(source)).parse();
  validateFormulaFunctions(expression,'ribbon_binding');
  const resolveReference=(reference,currentRecord=record)=>{
    // Page-local globals are scoped inputs; never read storage or arbitrary records.
+   if(reference.startsWith('$component.')){
+    const parts=reference.split('.');
+    if(parts.length!==3||!formulaContext.readComponent)throw Error('Invalid component reference or missing page context');
+    return formulaContext.readComponent(parts[1],parts[2]);
+   }
    if(reference==='$session')return typeof formulaContext.sessionId==='string'
     ?formulaContext.sessionId:'';
    if(reference.startsWith('$state.')){
@@ -621,7 +627,7 @@ export function evaluateFieldExpressionDetailed(expression,record,options={}){
  if(explicit&&!input)return {value:'',error:'Complete the formula after ='};
  if(!explicit&&!options?.collectionResult&&/^COLLECTION\s*\(/i.test(input))
   return {value:expression};
- if(!/^(?:TRUE|FALSE|NULL|PI)$/i.test(input)&&!/@[A-Za-z]/.test(input)&&!input.startsWith('@')&&!/^\$(?:state|session)(?:\.|$)/.test(input)&&!/^[A-Za-z][A-Za-z0-9_]*\s*\(/.test(input)
+ if(!/^(?:TRUE|FALSE|NULL|PI)$/i.test(input)&&!/@[A-Za-z]/.test(input)&&!input.startsWith('@')&&!/^\$(?:component|state|session)(?:\.|$)/.test(input)&&!/^[A-Za-z][A-Za-z0-9_]*\s*\(/.test(input)
   &&!/^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)+(?:\s*\(|$)/.test(input)
   &&!/^(?:["(]|[-+]?\d+(?:\.\d+)?\s*[+*\/%^<>=!-])/.test(input)
   &&!/\s(?:[&+*/%^<>=!]|AND\b|OR\b)\s/i.test(input))return {value:expression};
@@ -641,7 +647,7 @@ export function evaluateFieldExpressionDetailed(expression,record,options={}){
    namedCollections:options.namedCollections,
    namedCollectionSelections:options.namedCollectionSelections,
    collectionRows:options.collectionRows,
-   pageState:options.pageState,sessionId:options.sessionId,
+   readComponent:options.readComponent??options.pageState?.[componentReaderKey],pageState:options.pageState,sessionId:options.sessionId,
    rootObjectApiName:options.rootObjectApiName});
   if(options.collectionResult===true){
    if(!result||typeof result!=='object'||Array.isArray(result)

@@ -1,3 +1,4 @@
+import {useComponentFormulaState} from '../../components/RegisteredComponent/PageFormulaScope';
 import {adjustNumberRecord,type AdjustNumberBinding} from '../PageRuntime/adjustNumberRecord';
 import {executePageFormulaAction,parseActionFormulaAssignment,resolveActionFormulaValue} from '../PageRuntime/formulaAction';
 import {resolveMetadataProperties} from '../../metadata/Definitions/metadataReferences';
@@ -66,7 +67,8 @@ export default function MetadataBoundPageComponent({
       return crypto.randomUUID();
     }
   });
-  const [pageState,setPageState]=useState<Record<string,unknown>>(initialPageState??{});
+  const [storedPageState,setPageState]=useState<Record<string,unknown>>(initialPageState??{});
+  const pageState=useComponentFormulaState(storedPageState);
   const stateDependencies=useMemo(()=>pageStateDependencies(pageComponents??[component]),[pageComponents,component]);
   const [revision, setRevision] = useState(0);
   const contextApiName=typeof properties.contextApiName==='string'?properties.contextApiName:'';
@@ -557,7 +559,7 @@ export default function MetadataBoundPageComponent({
     {!objectApiName && !properties.collectionFormula && <div className="records-message" role="alert">Select a bound object to load records for this component.</div>}
     {dataError && !contextApiName && <div className="records-message" role="alert">{dataError}</div>}
      {namedSource.error && <div className="records-message" role="alert">{namedSource.error}</div>}
-    <RegisteredComponent definition={definition} layoutTransparent={smartCanvas} editorPreview={builderPreview===true&&disableActions} props={{
+    <RegisteredComponent formulaInstanceId={component.id} definition={definition} layoutTransparent={smartCanvas} editorPreview={builderPreview===true&&disableActions} props={{
       ...rowResolvedProperties, ...componentLayoutProps(properties, formFactor),
       ...(smartCanvas?{canvasFrameSized:true}:{}),
       ...(boundedCardGrid?{boundedViewport:true}:{}),

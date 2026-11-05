@@ -2,6 +2,7 @@
  * server filters before pagination. This intentionally accepts only expressions
  * that can be represented exactly by the existing Record API; there is NO
  * client-side filtering of a partial page and NO eval or arbitrary scripts. */
+import {componentReaderKey,type FormulaBindingContext} from '../../../component-libraries/shared/FieldExpression.js';
 import {Parser,type Expression} from '../../../../../server/src/expression-engine/FormulaParser.js';
 import {tokenize} from '../../../../../server/src/expression-engine/FormulaTokenizer.js';
 import {hasExcelWildcardCriteria,parseExcelWildcardPattern} from '../../../../../server/src/expression-engine/FormulaWildcard.js';
@@ -18,6 +19,12 @@ const stateName=(node:Expression):string|null=>
   ?node.value.slice(7):null;
 const asState=(node:Expression,state:Readonly<Record<string,unknown>>):unknown=>{
  if(node.kind==='literal')return node.value;
+ if(node.kind==='reference'&&node.value.startsWith('$component.')){
+  const parts=node.value.split('.');
+  const reader=(state as {[componentReaderKey]?:FormulaBindingContext['readComponent']})[componentReaderKey];
+  if(parts.length!==3||!reader)throw Error('Select a component and property on this page');
+  return reader(parts[1],parts[2]);
+ }
  const key=stateName(node);
  if(key!==null){const value=state[key];
   if(value===undefined||value===null||['string','number','boolean'].includes(typeof value))return value;
@@ -128,8 +135,9 @@ export function validateRecordFilterFormula(formula:string,fields:ReadonlyArray<
  if(!formula.trim())return null;
  const keys=Array.from(new Set([...formula.matchAll(/\$state\.([A-Za-z][A-Za-z0-9_]{0,63})/g)].map(m=>m[1])));
  if(keys.length>12)return 'Too many Page State references';
- for(const state of [{},Object.fromEntries(keys.map(key=>[key,'test-id']))]){
-  const result=compileRecordFilterFormula(formula,fields,state);
+ for(const selected of [false,true]){
+  const state=selected?Object.fromEntries(keys.map(key=>[key,'test-id'])):{};
+  const result=compileRecordFilterFormula(formula,fields,{...state,[componentReaderKey]:()=>selected?'test-id':''});
   if(result.error)return result.error;
  }
  return null;

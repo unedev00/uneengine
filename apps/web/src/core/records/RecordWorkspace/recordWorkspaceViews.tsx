@@ -1,3 +1,4 @@
+import {PageFormulaScope} from '../../components/RegisteredComponent/PageFormulaScope';
 import CrossObjectRecordField from './CrossObjectRecordField';
 import {resolveHighlightFields} from './highlightFieldSelection';
 import {behaviorAppearanceLabel} from '../../pages/PageRuntime/pageBehaviorRuntime';
@@ -2218,7 +2219,7 @@ function RecordWorkspace({
                     pageSessionKey={'record:' + object.apiName + ':' + String(record.Id)}
                     pageComponents={assignedPage?.components} reports={reports} availableFlows={availableFlows} formFactor={formFactor}
                     onNavigate={onNavigate} onLaunchFlow={onLaunchFlow} behaviorContext={runtimeBehaviorContext} />
-                : <RegisteredComponent definition={definition} props={{
+                : <RegisteredComponent formulaInstanceId={component.id} definition={definition} props={{
                     ...component.properties, ...componentLayoutProps(component.properties, layoutDevice),
                     label: component.label, properties: component.properties,
                     record, recordId: record.Id, object, formFactor, children,
@@ -2569,7 +2570,7 @@ function RecordWorkspace({
       return action.behavior==='Log Call'||action.behavior==='Set Field Value'
         &&Boolean(action.fieldApiName&&fieldAccess[`${object.apiName}.${action.fieldApiName}`]?.edit);
     });
-    return <div className="records-page">
+    return <PageFormulaScope key={recordSessionKey} components={assignedPage?.components} catalog={libraryComponents}><div className="records-page">
       {(offlineItems.length>0 || !navigator.onLine) && renderOfflineQueue()}
       <div className="record-detail-top">
         <button className="text-action" onClick={openList}><ArrowLeft size={14} />Back to {object.pluralLabel}</button>
@@ -2763,7 +2764,7 @@ function RecordWorkspace({
         {lookupError && <div className="records-message surface" role="alert">Some related record names could not be resolved: {lookupError}</div>}
       </>}
       
-    </div>;
+    </div></PageFormulaScope>;
   }
   const readableFields = object.fields.filter((field) => fieldAccess[`${object.apiName}.${field.apiName}`]?.read);
   const hasConfiguredSearchResults = object.searchLayouts?.searchResults !== undefined;
