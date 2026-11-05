@@ -49,6 +49,7 @@ export function createLoginView(logoUrl: string) {
     useEffect(()=>{const onPopState=()=>{const q=new URLSearchParams(window.location.search);setRecovering(q.has('recover')||q.has('resetToken'));setPassword('');setPasswordVisible(false);};window.addEventListener('popstate',onPopState);return()=>window.removeEventListener('popstate',onPopState);},[]);
     const openRecovery=()=>{setRecovering(true);setPassword('');setPasswordVisible(false);window.history.pushState(null,'','/login?recover=1');};
     const closeRecovery=()=>{setRecovering(false);setPassword('');setPasswordVisible(false);window.history.replaceState(null,'','/login');};
+    useEffect(()=>{const previous=document.title;document.title=recovering?'Recover your password | Une Solutions':'Sign in | Une Solutions';return()=>{document.title=previous;};},[recovering]);
     const accept=(session:{access_token?:string;landing?:LandingBootstrap;landingAppApi?:string;mfa_required?:boolean;challenge_token?:string;setup_secret?:string;enrollment_required?:boolean},startedAt:number)=>{
       if(session.mfa_required&&session.challenge_token){setPassword('');setChallenge({...session,challenge_token:session.challenge_token});return;}
       if(!session.access_token)throw Error('Authentication did not return an access token');
