@@ -26,24 +26,45 @@ export function normalizeFlowCalls(node:Expression):Expression {
 }
 
 export const actionFunctionNames=[...actionFormulaFunctions].filter(name=>name!=='AS');
-export const isActionPlan=(source:string)=>/^\s*=?\s*(?:ACTIONS|CREATERECORD|UPDATERECORD|DELETERECORD|PRINT|CREATEPDF|WAIT|EMAIL|WHATSAPP|SMS)\s*\(/i.test(source);
-export type ActionStep={name:string;object:string;id?:Expression;values?:Expression[];fields:Map<string,Expression>;alias?:string};
+export const isActionPlan=(source:string):boolean=>{
+ if(/^\\s*=?\\s*(?:ACTIONS|CREATERECORD|UPDATERECORD|DELETERECORD|PRINT|CREATEPDF|WAIT|EMAIL|WHATSAPP|SMS)\\s*\\(/i.test(source))return true;
+ if(!/^\\s*=?\\s*IF\\s*\\(/i.test(source))return false;
+ try{
+  const root=new Parser(tokenize(source)).parse();
+  const hasAction=(node:Expression):boolean=>node.kind==='call'?
+   actionFunctionNames.includes(node.name)||node.args.some(hasAction):
+   node.kind==='binary'?hasAction(node.left)||hasAction(node.right):
+   node.kind==='unary'?hasAction(node.value):false;
+  return hasAction(root);
+ }catch{return false;}
+};
+export type ActionStep={
+ name:string;object:string;id?:Expression;values?:Expression[];fields:Map<string,Expression>;alias?:string;
+ guards?:readonly {condition:Expression;expected:boolean}[]
+};
 
 export function compileActionPlan(source:string):ActionStep[] {
  const steps:ActionStep[]=[];
  const aliases=new Set<string>();
- function add(node:Expression){
+ function add(node:Expression,guards:ActionStep['guards']=[]){
+  if(node.kind==='call'&&node.name==='IF'){
+   if(node.args.length!==3)throw Error('IF requires condition, true action and false action');
+   validateFormulaFunctions(node.args[0],'ribbon_binding');
+   add(node.args[1],[...(guards??[]),{condition:node.args[0],expected:true}]);
+   add(node.args[2],[...(guards??[]),{condition:node.args[0],expected:false}]);
+   return;
+  }
   if(node.kind!=='call'||!actionFunctionNames.includes(node.name))throw Error('Expected an action formula');
   const args=[...node.args];
   if(node.name==='ACTIONS'){
    if(!args.length)throw Error('ACTIONS requires at least one action');
-   args.forEach(add);
+   args.forEach(arg=>add(arg,guards));
    return;
   }
   if(node.name==='WAIT'){
    if(args.length!==2)throw Error('WAIT requires minutes and seconds');
    args.forEach(arg=>validateFormulaFunctions(arg,'ribbon_binding'));
-   steps.push({name:'WAIT',object:'',values:args,fields:new Map()});
+   steps.push({name:'WAIT',object:'',values:args,fields:new Map(),guards});
    return;
   }
   const object=nameOf(args.shift(),'object API name');
@@ -53,7 +74,7 @@ export function compileActionPlan(source:string):ActionStep[] {
    if(args.length<min||args.length>max)throw Error('Invalid '+node.name+' arguments');
    args.forEach(arg=>validateFormulaFunctions(arg,'ribbon_binding'));
    if(node.name==='SCREEN'&&args.length)nameOf(args[0],'screen mode');
-   steps.push({name:node.name,object,values:args,fields:new Map()});
+   steps.push({name:node.name,object,values:args,fields:new Map(),guards});
    return;
   }
   const id=node.name==='CREATERECORD'?undefined:args.shift();
@@ -82,7 +103,7 @@ export function compileActionPlan(source:string):ActionStep[] {
    validateFormulaFunctions(args[i+1],'ribbon_binding');
    fields.set(field,args[i+1]);
   }
-  steps.push({name:node.name,object,id,fields,alias});
+  steps.push({name:node.name,object,id,fields,alias,guards});
  }
  add(new Parser(tokenize(source)).parse());
  return steps;
@@ -123,6 +144,7 @@ export async function executeActionPlan(formula:string,record:Record<string,unkn
    try{
     const scope={...record,...variables};
     const evaluate=(node:Expression):unknown=>evaluateValue(node,scope);
+    if(step.guards?.some(guard=>Boolean(evaluate(guard.condition))!==guard.expected))continue;
     if(step.name==='WAIT'){
      const [minutes,seconds]=(step.values??[]).map(evaluate);
      if(typeof minutes!=='number'||typeof seconds!=='number'||
