@@ -464,6 +464,29 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  await dockToggle.click();
  const dock=page.locator('.page-builder-design-dock');
  await dock.locator('.smart-design2-area-select').waitFor({state:'visible'});
+ // Existing handlers remain a 15-button set; the left dock adds only headings.
+ const dockGroups=await dock.evaluate(root=>
+  [['Dimensions','.smart-design2-dimensions',0],
+   ['Alignment','[data-design-section="alignment"]',6],
+   ['Arrangement','[data-design-section="arrangement"]',6],
+   [null,'[data-design-section="dimensions"]',3]].map(([heading,selector,expected])=>{
+    const el=root.querySelector(selector);
+    const actual=el?.querySelectorAll('.smart-design2-arrange-action').length??-1;
+    const css=el?getComputedStyle(el):null;
+    return {heading,expected,actual,display:css?.display,
+     before:heading&&el?getComputedStyle(el,'::before').content:null};
+  })
+ );
+ assert.equal(dockGroups.length,4);
+ for(const g of dockGroups){
+  assert.equal(g.display,'flex','Dock section must remain visible: '+g.heading);
+  assert.equal(g.actual,g.expected,'Dock section must preserve original actions: '+g.heading);
+  if(g.heading)assert.ok(g.before?.includes(g.heading),'Missing dock heading '+g.heading);
+ }
+ assert.equal(await dock.locator('.smart-design2-arrange-action').count(),15,
+  'Dock groups must not duplicate or remove Design commands');
+
+
  assert.equal(await page.locator('.smart-design2-ribbon').count(),1,'Design 2 must render once, in the dock');
  await page.screenshot({path:new URL('../artifacts/design2-left-dock.png',import.meta.url).pathname});
  await page.getByRole('button',{name:'Collapse the ribbon'}).click();
