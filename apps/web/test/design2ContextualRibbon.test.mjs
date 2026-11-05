@@ -77,10 +77,10 @@ test('Design 2 uses current icon widgets, not alternate icons',()=>{
  for(const component of ['RibbonColorPalette','SmartIconDropdown','SmartIconGallery','RibbonTextSizeIcon','RibbonCornerRadiusIcon'])
   assert.ok(shared.includes(component),component);
  assert.match(shared,/smart-design2-area-section/);
- assert.match(shared,/<span aria-hidden="true">Select it<\/span>/);
+ assert.match(shared,/smart-inspector-section-toggle/);
  assert.match(shared,/\[1,2,3\]\.map\(row/);
  assert.match(shared,/smart-design2-context/);
- assert.match(shared,/sectionRow\(activeDesign2Area,row\)\.map\(controls\)/);
+ assert.match(shared,/sectionRow\(area,row\)\.map\(controls\)/);
  assert.match(css,/smart-design2-ribbon/);
  assert.match(css,/26px/);
 });
@@ -435,7 +435,7 @@ test('all Design 2 areas project the same fixed Body+Image icon scaffold',()=>{
  assert.match(shared,/const design2TemplateSlots=\[/);
  assert.match(shared,/design2Slots\.filter\(slot=>slot\.area==='Body'\)/);
  assert.match(shared,/slot\.area==='Image'&&/);
- assert.match(shared,/const design2RenderedSlots:Design2Slot\[\]=design2TemplateSlots\.map/);
+ assert.match(shared,/const design2RenderedSlots:Design2Slot\[\]=design2Areas\.flatMap/);
  assert.match(shared,/const actual=areaSlots\.find\(slot=>slot\.slotKey===template\.slotKey\)/);
  assert.match(shared,/propertyKey:bodyImagePlacement\?'imagePlacement':actual\?\.propertyKey\?\?null/);
  assert.match(shared,/const design2Properties=tab==='Design2'\?design2RenderedSlots/);
