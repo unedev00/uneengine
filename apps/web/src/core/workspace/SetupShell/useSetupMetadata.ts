@@ -13,7 +13,7 @@ export function shouldLoadFlowDefinitions(isAdmin: boolean, workspace: string, r
 }
 
 export function useSetupMetadata(ctx: any) {
-  const { setSessionPermissionsLoaded, advancedMetadataLoaded, apiRequest, approvalProcesses, apps, currentAppId, dashboards, emailAlerts, entryTiming, flowSnapshots, flows, isAuthErrorMessage, object, objects, page, pages, platformEvents, reports, route, saveVerifiedMetadata, setAccessControl, setAccessControlError, setAccessControlLoaded, setAdvancedMetadataLoaded, setApprovalProcesses, setApps, setCanCreateDashboards, setCanManageApprovalProcesses, setCanManageApps, setCanReadMetadata, setCanReadSecurity, setCanManageDashboardTerritories, setCanManageDashboards, setCanManageFlows, setCanManageLibrary, setCanManagePlatformLicences, setCanManagePlatformTenants, setCanManageReportFolders, setCanManageUserIdentities, setCanRunFlows, setCanScheduleDashboards, setConnectorProviders, setCurrentAppId, setCurrentFieldAccess, setCurrentProfileId, setCurrentRecordTypeAccess, setDashboardFolders, setDashboardRunningUserIds, setDashboardTerritories, setDashboardUserId, setDashboards, setEmailAlerts, setFlow, setFlows, setFlowDefinitionsLoaded, setFlowDefinitionsError, setReportsLoaded, setReportsError, setDashboardsLoaded, setDashboardsError, setIntegrationConnections, setLibraryComponents, setMetadataLoadError, setMetadataLoaded, setObject, setObjects, setPage, setPages, setPlatformEvents, setReportFolders, setReports, setSelectedFlowId, setToast, toast, workspace } = ctx;
+  const { setSetupPermissions, setSessionPermissionsLoaded, advancedMetadataLoaded, apiRequest, approvalProcesses, apps, currentAppId, dashboards, emailAlerts, entryTiming, flowSnapshots, flows, isAuthErrorMessage, object, objects, page, pages, platformEvents, reports, route, saveVerifiedMetadata, setAccessControl, setAccessControlError, setAccessControlLoaded, setAdvancedMetadataLoaded, setApprovalProcesses, setApps, setCanCreateDashboards, setCanManageApprovalProcesses, setCanManageApps, setCanReadMetadata, setCanReadSecurity, setCanManageDashboardTerritories, setCanManageDashboards, setCanManageFlows, setCanManageLibrary, setCanManagePlatformLicences, setCanManagePlatformTenants, setCanManageReportFolders, setCanManageUserIdentities, setCanRunFlows, setCanScheduleDashboards, setConnectorProviders, setCurrentAppId, setCurrentFieldAccess, setCurrentProfileId, setCurrentRecordTypeAccess, setDashboardFolders, setDashboardRunningUserIds, setDashboardTerritories, setDashboardUserId, setDashboards, setEmailAlerts, setFlow, setFlows, setFlowDefinitionsLoaded, setFlowDefinitionsError, setReportsLoaded, setReportsError, setDashboardsLoaded, setDashboardsError, setIntegrationConnections, setLibraryComponents, setMetadataLoadError, setMetadataLoaded, setObject, setObjects, setPage, setPages, setPlatformEvents, setReportFolders, setReports, setSelectedFlowId, setToast, toast, workspace } = ctx;
   // Optional business metadata is resolved only for the active screen or page dependencies.
   // Tenant installation, entitlement and OneEngine access are always checked by the APIs.
   // Load tenant permissions as soon as a screen needs them, without waiting for
@@ -216,6 +216,7 @@ export function useSetupMetadata(ctx: any) {
           setPages(displayPages);
           setApps(displayApps);
           setCurrentAppId(current=>reconcileCurrentAppId(current,displayApps));
+          setSetupPermissions(firstSession.user.permissions);
           setCurrentProfileId(firstSession.user.profileId);
           setCurrentFieldAccess(firstSession.user.fieldAccess);
           setCurrentRecordTypeAccess(firstSession.user.recordTypeAccess);
@@ -239,6 +240,7 @@ export function useSetupMetadata(ctx: any) {
         const sessionRequest = recover<{ user: { id?: string; tenantId?: string; profileId: string; permissions: string[]; fieldAccess: Record<string, { read: boolean; edit: boolean }>; recordTypeAccess: Record<string, boolean> } }>('/auth/me', { user: { profileId: '', permissions: [], fieldAccess: {}, recordTypeAccess: {} } });
         void sessionRequest.then(({user}) => {
           setAuthenticatedFormulaBindingContext(user);
+          setSetupPermissions(user.permissions);
           setCurrentProfileId(user.profileId);
           setCanManageUserIdentities(user.permissions.includes('security:manage'));
           setCanReadSecurity(user.permissions.includes('security:read') || user.permissions.includes('security:manage'));
@@ -303,7 +305,8 @@ export function useSetupMetadata(ctx: any) {
         setDashboardUserId(dashboardPayload.userId);
         setDashboardRunningUserIds(dashboardPayload.runningUserIds);
         setAuthenticatedFormulaBindingContext(sessionPayload.user);
-        setCurrentProfileId(sessionPayload.user.profileId);
+        setSetupPermissions(sessionPayload.user.permissions);
+          setCurrentProfileId(sessionPayload.user.profileId);
         setCanManageUserIdentities(sessionPayload.user.permissions.includes('security:manage'));
         setCanManageApprovalProcesses(sessionPayload.user.permissions.includes('security:manage')
           || sessionPayload.user.permissions.includes('metadata:write'));
