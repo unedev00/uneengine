@@ -318,7 +318,7 @@
  background:#fff!important;box-shadow:none!important;
 }
 .office-builder-ribbon .office-ribbon-page-layout-groups .une-ribbon-size-with-icon input:focus-visible{
- outline:0!important;box-shadow:none!important;caret-color:transparent!important;
+ outline:0!important;box-shadow:none!important;caret-color:auto!important;cursor:text!important;
 }
 .office-builder-ribbon .office-ribbon-page-layout-groups .une-ribbon-size-with-icon:focus-within{
  outline:2px solid #2377c9!important;outline-offset:0!important;
