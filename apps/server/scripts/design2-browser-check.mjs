@@ -886,6 +886,40 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  await buttons.nth(13).click();
  assert.equal(await page.getByRole('tab',{name:'Advanced',exact:true}).getAttribute('aria-selected'),'true',
   'Component nesting must open the existing Advanced nesting editor');
+
+ // Vertical Design dock uses a real seventh grid column, not a fixed
+ // top-ribbon pixel offset. Its controls must fit the dock without x-scroll.
+ await page.getByRole('tab',{name:'Design',exact:true}).click();
+ await page.getByRole('button',{name:'Show Design in a left panel'}).click();
+ const dock=page.locator('.page-builder-design-dock');
+ await dock.waitFor({state:'visible'});
+ const dockArea=dock.getByLabel('Select Design 2 area');
+ const dockHand=dock.locator('.smart-design2-count-field');
+ const dockCount=dock.locator('.smart-design2-count');
+ const dockOrientation=dock.locator('[data-design-row="1"] [data-design-slot="orientation"]');
+ const assertDockGeometry=async(section)=>{
+  const h=await dockHand.boundingBox(),hv=await dockOrientation.boundingBox();
+  assert.ok(h&&hv,'Hand and H/V must be visible in '+section);
+  assert.ok(Math.abs(h.x-(hv.x+hv.width+4))<=3,
+   'Hand must sit directly beside H/V in '+section+
+   ', received '+JSON.stringify({hand:h,hv}));
+  assert.ok(Math.abs(h.y-hv.y)<=2,'Hand must share the H/V row in '+section);
+  const extent=await dock.evaluate(node=>({
+   scrollWidth:node.scrollWidth,clientWidth:node.clientWidth,
+   overflowX:getComputedStyle(node).overflowX
+  }));
+  assert.ok(extent.scrollWidth<=extent.clientWidth+2,
+   'Vertical Design dock must have no horizontally overflowing controls in '+
+    section+': '+JSON.stringify(extent));
+  assert.equal(extent.overflowX,'hidden','Vertical dock must not display x-scroll');
+ };
+ for(const section of ['Body','Header','Image','Badge']){
+  await dockArea.selectOption(section);
+  assert.equal(await dockCount.count(),1,'Hand disappeared in vertical '+section);
+  await assertDockGeometry(section);
+ }
+ await page.getByRole('button',{name:'Show Design in the ribbon'}).click();
+
  console.info('Design 2 R0 C7–C21 browser: fixed geometry, Body-only enablement and all 15 commands verified');
 
  console.info('Design 2 browser E2E: original Design preserved; Row Bold persisted; Ctrl+A/Delete removes all selected, one Undo restores all');
