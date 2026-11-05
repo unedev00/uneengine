@@ -1,4 +1,4 @@
-import {Parser,type Expression} from './FormulaParser.js';
+import {Parser,formulaTruth,type Expression} from './FormulaParser.js';
 import {tokenize} from './FormulaTokenizer.js';
 import {validateFormulaFunctions} from './FormulaFunctionRegistry.js';
 import {actionFormulaFunctions} from './FormulaCategories.js';
@@ -27,8 +27,8 @@ export function normalizeFlowCalls(node:Expression):Expression {
 
 export const actionFunctionNames=[...actionFormulaFunctions].filter(name=>name!=='AS');
 export const isActionPlan=(source:string):boolean=>{
- if(/^\\s*=?\\s*(?:ACTIONS|CREATERECORD|UPDATERECORD|DELETERECORD|PRINT|CREATEPDF|WAIT|EMAIL|WHATSAPP|SMS)\\s*\\(/i.test(source))return true;
- if(!/^\\s*=?\\s*IF\\s*\\(/i.test(source))return false;
+ if(/^\s*=?\s*(?:ACTIONS|CREATERECORD|UPDATERECORD|DELETERECORD|PRINT|CREATEPDF|WAIT|EMAIL|WHATSAPP|SMS)\s*\(/i.test(source))return true;
+ if(!/^\s*=?\s*IF\s*\(/i.test(source))return false;
  try{
   const root=new Parser(tokenize(source)).parse();
   const hasAction=(node:Expression):boolean=>node.kind==='call'?
@@ -82,9 +82,6 @@ export function compileActionPlan(source:string):ActionStep[] {
   if(id)validateFormulaFunctions(id,'ribbon_binding');
   const last=args.at(-1);
   let alias:string|undefined;
-  if(['PRINT','CREATEPDF'].includes(node.name)&&args.length)
-   throw Error(node.name+' requires template and record ID'+(node.name==='CREATEPDF'?' and optional AS(variable)':''));
-  if(node.name==='DELETERECORD'&&args.length)throw Error('DELETERECORD requires object and ID');
   if(last?.kind==='call'&&last.name==='AS'){
    if(last.args.length!==1)throw Error('AS requires one variable');
    alias=nameOf(last.args[0],'result variable');
@@ -93,6 +90,9 @@ export function compileActionPlan(source:string):ActionStep[] {
    aliases.add(alias);
    args.pop();
   }
+  if(['PRINT','CREATEPDF','DELETERECORD'].includes(node.name)&&args.length)
+   throw Error('Unexpected extra arguments for '+node.name);
+  if(node.name==='PRINT'&&alias)throw Error('PRINT does not capture a result; use CREATEPDF');
   if(!['PRINT','CREATEPDF','DELETERECORD'].includes(node.name)
      &&(args.length%2||(!args.length&&node.name==='UPDATERECORD')))
     throw Error('Expected field and value pairs');
@@ -144,7 +144,7 @@ export async function executeActionPlan(formula:string,record:Record<string,unkn
    try{
     const scope={...record,...variables};
     const evaluate=(node:Expression):unknown=>evaluateValue(node,scope);
-    if(step.guards?.some(guard=>Boolean(evaluate(guard.condition))!==guard.expected))continue;
+    if(step.guards?.some(guard=>formulaTruth(evaluate(guard.condition))!==guard.expected))continue;
     if(step.name==='WAIT'){
      const [minutes,seconds]=(step.values??[]).map(evaluate);
      if(typeof minutes!=='number'||typeof seconds!=='number'||
