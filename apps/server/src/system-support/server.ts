@@ -107,6 +107,7 @@ import {registerInboundWebhookPublicRoutes,registerInboundWebhookAdminRoutes} fr
 import {createIntegrationCommunicationWriter,IntegrationCommunicationOutbox} from './integration-api-log.js';
 import {countTenantApiRequests,registerTenantInspectionRoutes} from './tenant-inspection-routes.js';
 import {registerDurableJobAdminRoutes} from './durable-job-admin-routes.js';
+import {registerScheduledActionRoutes} from './scheduled-action-routes.js';
 import {registerSeederManagerRoutes} from './seeder-manager-routes.js';
 import {registerPlatformDeploymentRoutes} from './platform-deployment-routes.js';
 import {assertMetadataPackageEditable,MetadataPackageService} from './metadata-package-service.js';
@@ -2809,6 +2810,7 @@ export function createSystemServer(db:SqlPersistence) {
   registerPackageApiController(app,metadataPackages);
   registerOpenApiExternalServiceRoutes(app,externalServices);
   registerDurableJobAdminRoutes(app,db,rbac);
+  registerScheduledActionRoutes(app,db,rbac);
   registerSeederManagerRoutes(app,db,platformTenants);
   registerPlatformDeploymentRoutes(app,db,rbac);
   registerDeclarativeRuleRoutes(app,db,rbac);
