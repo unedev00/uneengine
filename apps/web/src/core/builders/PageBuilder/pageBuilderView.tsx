@@ -310,6 +310,7 @@ import {
 } from '../../metadata/Definitions/metadata';
 import SavedListViewPicker from './SavedListViewPicker';
 import PageDetailsDialog from './PageDetailsDialog';
+import PageDesignSplitAction from './PageDesignSplitAction';
 import PageInventoryImportDialog from './PageInventoryImportDialog';
 import {designedPageLayouts,pageLayoutOptionLabel,primaryPageLayout,PAGE_LAYOUT_ORDER,type PageLayoutSummary} from './pageLayoutSummary';
 import {uneRibbonIcon} from './uneRibbonIcon';
@@ -3378,9 +3379,9 @@ function PageBuilder({
               <button className="page-manager-icon-action" type="button" disabled={Boolean(inventoryDownloading)}
                 aria-label={'Download component inventory for '+item.label} title="Download component inventory CSV"
                 onClick={()=>void downloadPageInventory(item)}><Download size={16}/></button>
-              <button className="page-manager-icon-action" type="button"
-                aria-label={'Design '+item.label} title="Open page designer (the layout it was designed in)"
-                onClick={()=>void openPageDesign(item.apiName)}><PanelsTopLeft size={16}/></button>
+              <PageDesignSplitAction label={item.label} summary={layoutSummaries[item.apiName]}
+                onOpenDefault={()=>void openPageDesign(item.apiName)}
+                onOpenLayout={variant=>void openPageDesignLayout(item.apiName,variant)}/>
               <button className={'page-manager-icon-action page-manager-toggle'+(item.status==='Active'?' is-active':'')} type="button"
                 disabled={saving} aria-pressed={item.status==='Active'}
                 aria-label={(item.status==='Active'?'Deactivate ':'Activate ')+item.label}
