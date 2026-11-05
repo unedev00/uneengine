@@ -809,6 +809,7 @@ export class RecordEngine {
     return prepared;
   }
   async create(tenantId:string,userId:string,objectApi:string,values:Record<string,unknown>) {
+    if(objectApi==='Scheduledaction')throw Error('Scheduledaction records are system-managed');
     return this.createRecord(tenantId,userId,objectApi,values,false);
   }
   private async createRecord(tenantId:string,userId:string,objectApi:string,
@@ -1414,6 +1415,7 @@ export class RecordEngine {
     ifUnmodifiedSince?:string,client?:PoolClient,runTriggers=false) {
     if(!uuid.test(id))throw new Error('Invalid record ID');
     if(objectApi==='CashLedger')throw new Error('CashLedger entries are immutable; post a reversal');
+    if(objectApi==='Scheduledaction')throw Error('Scheduledaction records are system-managed');
     const checkDate=ifUnmodifiedSince?new Date(ifUnmodifiedSince):null;
     if(checkDate&&!Number.isFinite(checkDate.getTime()))throw new Error('Invalid record modification precondition');
     await this.rbac.require(tenantId,userId,objectApi,'edit');
@@ -1653,6 +1655,7 @@ export class RecordEngine {
   private async removeRecordTree(client:PoolClient,tenantId:string,userId:string,objectApi:string,id:string,
     root:boolean,visiting:Set<string>,deletionGroupId:string,rootId:string){
     if(objectApi==='CashLedger')throw Error('CashLedger entries cannot be deleted; post a reversal');
+    if(objectApi==='Scheduledaction')throw Error('Scheduledaction records are system-managed');
     await this.lockObjectForWrite(client,tenantId,objectApi);
     const recordKey=JSON.stringify([objectApi,id]);
     if(visiting.has(recordKey))throw new Error('Cascading relationship record cycle detected');
