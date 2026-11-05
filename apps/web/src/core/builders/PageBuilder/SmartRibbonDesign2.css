@@ -497,20 +497,50 @@
   background:#d8eafa!important;border-color:#5c91cf!important;
 }
 
-/* Contextual Layout retirement: a single count box beside the H/V cell. */
+/* One stable hand/count field directly beside the existing H/V icon.
+ * Keep its dimensions, native spinner and position unchanged in every area. */
 .office-builder-ribbon .smart-design2-group .smart-design2-workbench{position:relative!important;}
 .office-builder-ribbon .smart-design2-group .smart-design2-count{
- position:absolute;left:382px;top:30px;display:flex;align-items:center;gap:3px;
- height:26px;padding:1px 4px;border:1px solid #b7c9df;border-radius:3px;
- background:#fff;color:#1d4266;z-index:2;
+ position:relative;grid-column:7;grid-row:1;
+ box-sizing:border-box;display:flex;align-items:center;gap:4px;
+ height:26px;min-height:26px;max-height:26px;
+ margin:0;padding:0;background:transparent;color:#1d4266;z-index:2;
 }
-.office-builder-ribbon .smart-design2-group .smart-design2-count select{
- max-width:85px;width:78px;height:23px;border:0;background:#fff;color:inherit;font-size:11px;
+.office-builder-ribbon .smart-design2-group .smart-design2-count-field{
+ box-sizing:border-box;display:inline-flex;align-items:center;gap:2px;
+ flex:0 0 79px;width:79px;min-width:79px;max-width:79px;
+ height:26px;min-height:26px;max-height:26px;
+ padding:0 3px;border:1px solid #b7c9df;border-radius:3px;background:#fff;
 }
-.office-builder-ribbon .smart-design2-group .smart-design2-count input{
- width:46px;height:23px;min-width:0;border:0;background:#fff;color:inherit;
- font:11px "Segoe UI",Arial,sans-serif;text-align:center;
+.office-builder-ribbon .smart-design2-group .smart-design2-count-field>svg{
+ flex:0 0 16px;width:16px;height:16px;
 }
+.office-builder-ribbon .smart-design2-group .smart-design2-count-field input.smart-office-number{
+ box-sizing:border-box!important;flex:1 1 auto!important;
+ width:50px!important;min-width:0!important;max-width:50px!important;
+ height:24px!important;min-height:24px!important;max-height:24px!important;
+ margin:0!important;padding:0 1px!important;
+ border:0!important;border-radius:0!important;background:transparent!important;
+ color:inherit;text-align:center;font:12px/22px "Segoe UI",Arial,sans-serif!important;
+ font-variant-numeric:tabular-nums;
+ appearance:auto!important;-moz-appearance:auto!important;
+}
+.office-builder-ribbon .smart-design2-group .smart-design2-count-field
+ input.smart-office-number::-webkit-inner-spin-button,
+.office-builder-ribbon .smart-design2-group .smart-design2-count-field
+ input.smart-office-number::-webkit-outer-spin-button{
+ -webkit-appearance:auto!important;opacity:1!important;margin:0!important;
+}
+.office-builder-ribbon .smart-design2-group .smart-design2-count[data-supported="false"]
+ .smart-design2-count-field{
+ opacity:.45;cursor:not-allowed;
+}
+.office-builder-ribbon.smart-design2-group .smart-design2-count-choice{
+ box-sizing:border-box;width:74px;height:26px;min-width:74px;max-width:74px;
+ border:1px solid #b7c9df;border-radius:3px;background:#fff;color:#1d4266;
+ font:11px "Segoe UI",Arial,sans-serif;
+}
+
 .office-builder-ribbon .smart-design2-group .smart-design2-calendar-controls,
 .office-builder-ribbon .smart-design2-group .smart-design2-image-border{
  position:absolute;left:382px;top:30px;display:flex;gap:5px;align-items:center;height:26px;
