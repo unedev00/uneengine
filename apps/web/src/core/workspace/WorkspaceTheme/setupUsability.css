@@ -450,3 +450,12 @@
  .lightning .flow-existing-pagination{display:flex;flex-wrap:wrap;gap:8px}
  .lightning .flow-existing-pagination .btn{min-height:44px}
 }
+
+/* Audit responsive baseline for reported Setup workspace screens. */
+html,body{min-width:0!important;max-width:100%}
+.lightning .setup-layout,.lightning .setup-layout>.workspace,.lightning .home-content{min-width:0;max-width:100%}
+.lightning .object-manager input[type=file],.lightning .object-manager .metadata-card{min-width:0;max-width:100%;box-sizing:border-box}
+.lightning .home-content .welcome-banner{min-height:0;max-width:100%;box-sizing:border-box}
+.lightning .home-content .shortcut-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));max-width:100%;min-width:0}
+.lightning .home-content .shortcut-card{min-width:0;box-sizing:border-box}
+@media(max-width:600px){.lightning .home-content{padding-inline:12px!important}.lightning .home-content .welcome-banner{padding:14px!important;gap:8px;min-height:0}.lightning .home-content .welcome-art{display:none}.lightning .home-content .shortcut-grid{grid-template-columns:1fr}}
