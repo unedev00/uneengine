@@ -515,10 +515,10 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  // left panel; the collapse toggle hides the ribbon strip. Both must return to normal.
  await page.locator('[data-component-id="browser-design2-cart"]').first().click({position:{x:18,y:18}});
  await page.getByLabel('Select Design 2 area').selectOption('Body');
- const dockToggle=page.getByRole('button',{name:'Show Design in a left panel'});
- await dockToggle.waitFor({state:'visible'});
- await dockToggle.click();
+ // Initial dock mode is already active for fresh preferences.
  const dock=page.locator('.page-builder-design-dock');
+ if(!await dock.isVisible())
+  await page.getByRole('button',{name:'Show tabs in the left panel'}).click();
  await dock.locator('.smart-design2-area-select').waitFor({state:'visible'});
  // Existing handlers remain a 15-button set; the left dock adds only headings.
  const dockGroups=await dock.evaluate(root=>
@@ -548,7 +548,7 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  await page.getByRole('button',{name:'Collapse the ribbon'}).click();
  await page.screenshot({path:new URL('../artifacts/design2-left-dock-ribbon-collapsed.png',import.meta.url).pathname});
  await page.getByRole('button',{name:'Pin the ribbon'}).click();
- await page.getByRole('button',{name:'Show Design in the ribbon'}).first().click();
+ await page.getByRole('button',{name:'Show tabs in the top ribbon'}).first().click();
  await page.locator('.office-builder-ribbon[aria-label="Page Builder ribbon"] .smart-design2-ribbon').waitFor({state:'visible'});
 
  // Verify real selected-component binding icon geometry in Chromium, not
@@ -954,7 +954,7 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  // Vertical Design dock uses a real seventh grid column, not a fixed
  // top-ribbon pixel offset. Its controls must fit the dock without x-scroll.
  await page.getByRole('tab',{name:'Design',exact:true}).click();
- await page.getByRole('button',{name:'Show Design in a left panel'}).click();
+ await page.getByRole('button',{name:'Show tabs in the left panel'}).click();
  await dock.waitFor({state:'visible'});
  const dockArea=dock.getByLabel('Select Design 2 area');
  const dockHand=dock.locator('.smart-design2-count-field');
@@ -981,7 +981,7 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
   assert.equal(await dockCount.count(),1,'Hand disappeared in vertical '+section);
   await assertDockGeometry(section);
  }
- await page.getByRole('button',{name:'Show Design in the ribbon'}).first().click();
+ await page.getByRole('button',{name:'Show tabs in the top ribbon'}).first().click();
 
  console.info('Design 2 R0 C7–C21 browser: fixed geometry, Body-only enablement and all 15 commands verified');
 

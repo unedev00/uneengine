@@ -118,7 +118,7 @@ test('Card Grid Add button remains compatible with saved values without exposing
 
 test('Page canvas controls live in Design and Quick Access stays on topbar',()=>{
   const source=readFileSync(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
-  const content=source.slice(source.indexOf('className="office-ribbon-topbar"'),source.indexOf('id="page-builder-tab-content"'));
+  const content=source.slice(source.indexOf('className="office-ribbon-topbar"'),source.indexOf('{!designInPanel && renderRibbonPanel()}'));
   assert.doesNotMatch(content,/aria-label="Page name"/);
   assert.match(content,/office-ribbon-quick-access/);
   assert.match(content,/quickAccessOrder\.map\(key=>/);

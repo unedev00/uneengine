@@ -14,8 +14,9 @@ test('page-level handlers remain intact in topbar and Design while Smart Insert 
   assert.ok(page.includes(name),name);
  assert.doesNotMatch(body,/<UneBuilderRibbon|<UniversalRibbonInventory|<PageBuilderRibbonData|ribbonTab==='Parity'/);
  assert.match(body,/ribbonTab==='Preview' && <div className="office-ribbon-group canvas-preview-selector-group"/, 'Preview selector is a first-class ribbon group');
- assert.match(body,/ribbonTab==='Add Block' && <SmartInsertRibbon/);
- assert.match(body,/onInsert=\{addPaletteComponent\}/);
+ assert.match(body,/ribbonTab==='Add Block' && insertRibbon/);
+ assert.match(page,/const insertRibbon = \(<SmartInsertRibbon/);
+ assert.match(page,/onInsert=\{addPaletteComponent\}/);
  assert.doesNotMatch(body,/onOpenLibrary=\{\(\)=>openAddBlocks\(\)\}/);
  assert.match(body,/ribbonTab==='Component Design 2' && <div className="office-ribbon-group une-sql-home-group design-canvas-settings"/);
  assert.doesNotMatch(page,/\x27Component Design 2\x27,\x27Component Layout\x27,\x27Arrange\x27/);
