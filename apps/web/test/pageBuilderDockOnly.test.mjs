@@ -29,6 +29,8 @@ test('Left Insert gallery expands to show all registered Smart component tiles',
  assert.match(leftGrid,/grid-auto-flow:row!important/);
  assert.match(leftGrid,/grid-template-rows:none!important/);
  assert.match(leftGrid,/grid-auto-rows:55px/);
+ assert.ok(insertCss.includes('grid-template-columns:repeat(3,minmax(0,1fr))!important'));
+ assert.match(insertCss,/grid-auto-rows:64px!important/);
  assert.match(leftGrid,/height:auto!important;max-height:none!important/);
  assert.match(leftGrid,/overflow:visible!important/);
  const topInsertRules=ribbonLayoutCss.slice(

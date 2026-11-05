@@ -40,7 +40,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p /tmp/metadrive-phase1-playwright
-          npm install --prefix /tmp/metadrive-phase1-playwright --no-save --no-package-lock playwright
+          npm install --prefix /tmp/metadrive-phase1-playwright --no-save --no-package-lock playwright@1.64.1
           ln -s /tmp/metadrive-phase1-playwright/node_modules/playwright node_modules/playwright
           ln -s /tmp/metadrive-phase1-playwright/node_modules/playwright-core node_modules/playwright-core
       - name: Install Chromium and OS dependencies

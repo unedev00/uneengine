@@ -198,12 +198,14 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  const compactDesign=true;
  // Independent SQL-planned view over shared controls and persisted property keys.
  // A null property key displays the fallback glyph, always disabled.
- // All Excel-defined sections stay visible for every component. No per-API
- // filtering of the section dropdown; unsupported slots remain disabled.
+ // SQL supplies the shared area order. Retired aliases cannot return from
+ // an older cached catalog during rolling deployment.
+ const retiredDesign2Areas=new Set(['Tabs','Card Grid','Focused',
+   'Custom Button 1','Custom Button 2','Calendar']);
  const design2Areas=[...new Map(design2Slots
+   .filter(slot=>!retiredDesign2Areas.has(slot.area))
    .map(slot=>[slot.area,slot.areaOrder] as const)).entries()]
    .sort((a,b)=>a[1]-b[1]).map(([area])=>area);
- if(api==='smart_calendar'&&!design2Areas.includes('Calendar'))design2Areas.push('Calendar');
  const activeDesign2Area=expandedInspector&&design2Areas.includes(expandedInspector)?expandedInspector:'Body';
  const approvedMatrixAreas=new Set(design2SlotRules.map(rule=>rule.area));
  // A SINGLE ribbon scaffold for all Design 2 sections and all components.
@@ -212,7 +214,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  // the current area/component has no matching supported property).
  // Existing SQL still owns each selected area's semantic property binding.
  const design2TemplateSlots=[
-   ...design2Slots.filter(slot=>slot.area==='Body'),
+   ...design2Slots.filter(slot=>slot.area==='Body'&&!slot.slotKey.startsWith('extra_')),
    ...design2Slots.filter(slot=>slot.area==='Image'&&
      (slot.slotKey==='placement'||slot.slotKey==='imageFill'))
  ].sort((a,b)=>a.row-b.row||a.order-b.order);
@@ -264,6 +266,19 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
        designRow:slot.row,designOrder:slot.order,
        designWidth:slot.width,designHeight:slot.height,designCaptionWidth:0,
        designDisplay:original.kind==='align'||original.kind==='shadow'?'dropdown' as const:original.designDisplay};
+   }):[];
+ // Independent properties from legacy areas stay editable below the same
+ // 17-cell Body icon matrix; SQL owns their types, values and eligibility.
+ const design2SupplementalProperties:UneRibbonProperty[]=tab==='Design2'?design2Slots
+   .filter(slot=>slot.area==='Body'&&slot.slotKey.startsWith('extra_'))
+   .sort((a,b)=>a.order-b.order)
+   .flatMap(slot=>{
+     const rule=design2SlotRules.find(item=>item.componentApi===api&&
+       item.area===slot.area&&item.slotKey===slot.slotKey);
+     const property=definitions.find(item=>item.id===rule?.propertyKey);
+     return property?.components.includes(api)?[{...property,
+       tab:'Design2' as const,group:'Body',designRow:slot.row,designOrder:slot.order,
+       designWidth:slot.width,designHeight:slot.height,designCaptionWidth:0}]:[];
    }):[];
  // The Excel specifies the WIDTH of each control at its R/C coordinate,
  // NOT one uniform 80px column width shared across all three rows.
@@ -711,14 +726,13 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
           </div>)}
       </div>
 
-      {area==='Calendar'&&api==='smart_calendar'&&
-        <div className="smart-design2-calendar-controls" role="group" aria-label="Calendar settings">
-          {(['showDays','firstDay'] as const).map(id=>{
-            const property=definitions.find(p=>p.id===id);
-            return property?.components.includes(api)?controls({...property,tab:'Design2',
-              group:'Calendar',designWidth:id==='showDays'?80:110,designRow:0,
-              designOrder:id==='showDays'?1:2}):null;
-          })}
+      {area==='Body'&&design2SupplementalProperties.length>0&&
+        <div className="smart-design2-supplemental" role="group" aria-label="Additional body settings">
+          {design2SupplementalProperties.map(property=>
+            <div className="smart-design2-supplemental-setting" key={property.id}>
+              <span className="smart-design2-supplemental-label" title={property.label}>{property.label}</span>
+              {controls(property)}
+            </div>)}
         </div>}
       {area==='Image'&&api==='smart_card_grid'&&(()=>{
         const property=definitions.find(p=>p.id==='imageBorderColor'&&p.components.includes(api));

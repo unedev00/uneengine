@@ -433,7 +433,7 @@ test('all Design 2 areas project the same fixed Body+Image icon scaffold',()=>{
  assert.equal(canonical.find(slot=>slot.row===2&&slot.order===6)?.slot,'placement');
  assert.equal(canonical.find(slot=>slot.row===3&&slot.order===6)?.slot,'imageFill');
  assert.match(shared,/const design2TemplateSlots=\[/);
- assert.match(shared,/design2Slots\.filter\(slot=>slot\.area==='Body'\)/);
+ assert.match(shared,/design2Slots\.filter\(slot=>slot\.area==='Body'&&!slot\.slotKey\.startsWith\('extra_'\)\)/);
  assert.match(shared,/slot\.area==='Image'&&/);
  assert.match(shared,/const design2RenderedSlots:Design2Slot\[\]=design2Areas\.flatMap/);
  assert.match(shared,/const actual=areaSlots\.find\(slot=>slot\.slotKey===template\.slotKey\)/);
