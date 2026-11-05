@@ -467,3 +467,17 @@ test('left Design dock groups existing controls without changing button identiti
  assert.match(dock,/flex:0 0 80px!important/);
  assert.match(dock,/flex:0 0 120px!important/);
 });
+
+test('all shared numeric editors show a text caret without losing spinner or draft edits',()=>{
+ const css=read('../src/core/builders/PageBuilder/SmartRibbonApprovedThreeRow.css');
+ const editor=read('../src/core/builders/PageBuilder/BuilderNumberInput.tsx');
+ const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
+ assert.match(css,/caret-color:#263b56!important/);
+ assert.doesNotMatch(css,/caret-color:transparent/);
+ assert.match(css,/user-select:text!important/);
+ assert.match(css,/cursor:text!important/);
+ assert.match(editor,/type="number"/);
+ assert.match(editor,/value=\{draft\?\?String\(value\?\?''\)\}/);
+ assert.match(editor,/setDraft\(raw\)/);
+ assert.match(ribbon,/<BuilderNumberInput key=\{componentId\+':'\+property.id\}/);
+});
