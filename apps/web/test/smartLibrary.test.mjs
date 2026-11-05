@@ -55,7 +55,8 @@ test('Insert Ribbon exposes visible Smart components without requiring a selecte
  const view=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
  const insert=read('../src/core/builders/PageBuilder/SmartInsertRibbon.tsx');
  const css=read('../src/core/builders/PageBuilder/SmartInsertRibbon.css');
- assert.match(view,/ribbonTab==='Add Block' && <SmartInsertRibbon/);
+ assert.match(view,/ribbonTab==='Add Block' && insertRibbon/);
+ assert.match(view,/const insertRibbon = \(<SmartInsertRibbon/);
  assert.doesNotMatch(view,/selectedNewUne && ribbonTab==='Add Block'/);
  assert.match(view,/items=\{paletteComponents\}/);
  assert.match(view,/onInsert=\{addPaletteComponent\}/);
