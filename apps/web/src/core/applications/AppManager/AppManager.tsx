@@ -434,7 +434,7 @@ export default function AppManager({
             <span>{draft.navigationItems.length} navigation items · {draft.navigationPageApiNames.length} App Pages</span>
           </div>
           <PlatformPageSlot slotKey="actions"><div className="app-manager-actions">
-            {creating && <button className="btn" type="button" disabled={busy} onClick={cancel}>Cancel</button>}
+            {!embedded && <button className="btn" type="button" disabled={busy} onClick={returnToList}>Cancel</button>}
             {!creating && <button className="btn" type="button" disabled={busy || apps.length <= 1}
               onClick={() => void remove()}><Trash2 size={14}/>Delete App</button>}
             <button className="btn btn-brand" type="submit"
