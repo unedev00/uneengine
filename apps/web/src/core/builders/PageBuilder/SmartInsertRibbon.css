@@ -66,13 +66,6 @@
  color:#687992;font-size:12px;min-width:310px;padding:12px;
 }
 
-.builder-dock-tabs { display:flex; gap:4px; }
-.builder-dock-tabs button {
- background:transparent; border:0; border-bottom:2px solid transparent;
- color:inherit; font:inherit; padding:4px 10px; cursor:pointer;
-}
-.builder-dock-tabs button[aria-pressed="true"] { border-bottom-color:#2878db; }
-.builder-dock-tabs button:disabled { opacity:.5; cursor:default; }
 .page-builder-design-dock .office-builder-ribbon :is(.smart-insert-ribbon,.smart-insert-gallery,.smart-insert-gallery-row,.smart-insert-tiles) {
  height:auto!important; max-height:none!important;
 }
