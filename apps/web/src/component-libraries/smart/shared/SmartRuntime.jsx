@@ -355,7 +355,7 @@ function SmartTabs({p,record,fire}){
  const [active,setActive]=React.useState(configuredTabIndex);
  React.useEffect(()=>setActive(configuredTabIndex),[configuredTabIndex]);
  const vertical=p.tabOrientation==="vertical";
- const count=number(p.tabCount,3,1,20);
+ const count=number(p.tabCount,Array.isArray(p.tabs)?Math.max(1,p.tabs.length):3,1,20);
  // When bound to an Object, the shared Page Runtime supplies only filtered,
  // permission-checked records. Never generate unlimited tabs from raw records.
  const dynamic=Boolean(p.objectApiName&&p.textSource);
@@ -369,7 +369,9 @@ function SmartTabs({p,record,fire}){
    label:"Tab "+(i+1),id:"editor-tab-"+i
   })):recordsOf(p).slice(0,count).map(row=>({
    label:scopedExpression(p,"textSource",p.textSource,row),id:row?.Id??row?.id
-  }))):Array.isArray(p.tabs)?p.tabs:Array.from({length:count},(_,i)=>i===0&&typeof p.label==="string"&&p.label&&!p.label.startsWith("@")?p.label:"Tab "+(i+1)));
+  }))):Array.from({length:count},(_,i)=>Array.isArray(p.tabs)&&p.tabs[i]!==undefined
+   ?p.tabs[i]:i===0&&typeof p.label==="string"&&p.label&&!p.label.startsWith("@")
+     ?p.label:"Tab "+(i+1)));
  // Static captions are formulas on stable tab identities, never independent records.
  // Collection and Object captions still share the one textSource mapping.
  const tabs=dynamic||hasCollection?recordTabs:recordTabs.map((item,index)=>{
