@@ -459,3 +459,15 @@ html,body{min-width:0!important;max-width:100%}
 .lightning .home-content .shortcut-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));max-width:100%;min-width:0}
 .lightning .home-content .shortcut-card{min-width:0;box-sizing:border-box}
 @media(max-width:600px){.lightning .home-content{padding-inline:12px!important}.lightning .home-content .welcome-banner{padding:14px!important;gap:8px;min-height:0}.lightning .home-content .welcome-art{display:none}.lightning .home-content .shortcut-grid{grid-template-columns:1fr}}
+
+/* Object Manager audit: document scrolling, sticky labels and readable actions. */
+.lightning .object-manager.object-setting-surface{min-width:0;max-width:100%;box-sizing:border-box;overflow:visible}
+.lightning .object-manager .object-manager-desktop-list{max-height:none!important;height:auto!important;overflow-y:visible!important;max-width:100%}
+.lightning .object-manager .object-manager-desktop-list thead th{position:sticky;top:0;z-index:2;background:var(--md-surface,#fff)}
+.lightning .workspace:has(.object-manager-desktop-list){overflow-y:auto!important}
+.lightning .object-manager.object-setting-surface .section-toolbar h1{font-size:26px!important;line-height:1.25}
+.lightning .object-manager.object-setting-surface .section-toolbar .toolbar-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;min-width:0}
+.lightning .object-manager .field-list-actions select{min-width:120px}
+.lightning .object-manager .object-sort-button{font:inherit;font-weight:600;color:inherit;padding:3px 0;border:0;background:transparent;cursor:pointer;text-align:left}
+.lightning .object-manager .object-sort-button:focus-visible{outline:2px solid var(--md-primary,#1d4ed8);outline-offset:2px}
+@media(max-width:760px){.lightning .object-manager.object-setting-surface .section-toolbar{display:flex;flex-direction:column;align-items:stretch}.lightning .object-manager.object-setting-surface .section-toolbar .toolbar-actions{justify-content:flex-start}.lightning .object-manager.object-setting-surface .section-toolbar .btn-brand{order:-1}.lightning .object-manager .field-list-actions{min-width:0;flex-wrap:wrap}.lightning .object-manager .field-list-actions select{flex:1;min-width:120px}}
