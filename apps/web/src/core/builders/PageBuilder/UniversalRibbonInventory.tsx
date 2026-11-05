@@ -2,6 +2,7 @@ import {useMemo,useState} from 'react';
 import {auditUniversalRibbonCoverage} from './universalRibbonCoverage.mjs';
 import {createPortal} from 'react-dom';
 import RibbonColorPalette from './RibbonColorPalette';
+import BuilderNumberInput from './BuilderNumberInput';
 import type {LibraryComponentMetadata,ObjectMetadata,FlowDefinitionMetadata} from '../../metadata/Definitions/metadata';
 import CustomComponentPropertyEditor from '../ComponentProperties/CustomComponentPropertyEditor';
 import {metadataFieldObject,metadataSelection,metadataReference} from '../../metadata/Definitions/metadataReferences';
@@ -119,9 +120,6 @@ function PropertyEditor({definition,enabled,reviewOnly=false,properties,onChange
 }){
  const [mediaOpen,setMediaOpen]=useState(false);
  const [jsonError,setJsonError]=useState('');
- // Hold the literal edit while typing, including the empty value and partial numbers.
- // Otherwise replacing 16 with 22 immediately reinstates the default after Delete.
- const [numberDraft,setNumberDraft]=useState<string|null>(null);
  const key=definition.propertyKey;
  const label=definition.label||key.replace(/([a-z])([A-Z])/g,'$1 $2');
  const unitMatch=/^(.*?)\s*\((px|%|ms|s|columns|rows|lines|deg)\)\s*$/i.exec(label);
@@ -137,17 +135,9 @@ function PropertyEditor({definition,enabled,reviewOnly=false,properties,onChange
    <option value="">Default</option>{(definition.choices??[]).map(choice=><option key={choice.key} value={choice.key}>{choice.label}</option>)}
  </select>;
  else if(definition.kind==='NUMBER'||definition.kind==='CURRENCY'){
-   const field=<input {...props} type="number" min={definition.min} max={definition.max}
-     value={numberDraft??(typeof value==='number'?String(value):'')}
-     onChange={e=>{
-       const raw=e.target.value;
-       setNumberDraft(raw);
-       if(raw.trim()==='')return;
-       const parsed=Number(raw);
-       if(Number.isFinite(parsed)&&(definition.min===undefined||parsed>=definition.min)
-         &&(definition.max===undefined||parsed<=definition.max))update(parsed);
-     }}
-     onBlur={()=>setNumberDraft(null)}/>;
+   const field=<BuilderNumberInput {...props} key={key}
+     min={definition.min} max={definition.max}
+     value={typeof value==='number'?value:''} onValueChange={update}/>;
    editor=unit?<span className="une-unit-field" data-unit={unit}>{field}</span>:field;
  }
  else if(definition.kind==='IMAGE')editor=<><button type="button" disabled={!enabled} title={tip} onClick={()=>setMediaOpen(true)}>Choose / Upload</button>

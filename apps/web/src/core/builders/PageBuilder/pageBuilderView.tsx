@@ -171,6 +171,7 @@ import PageBuilderRibbonMetadataPager from './PageBuilderRibbonMetadataPager';
 import UniversalRibbonInventory from './UniversalRibbonInventory';
 import UneBuilderRibbon from './UneBuilderRibbon';
 import SmartRibbon from './SmartRibbon';
+import BuilderNumberInput from './BuilderNumberInput';
 import CanvasDataBindingIcons from './CanvasDataBindingIcons';
 import type {CanvasBindingTarget} from './canvasDataBindingTargets';
 import {supportsSmartActionEvent} from './SmartEventActionsRibbon';
@@ -2992,15 +2993,17 @@ function PageBuilder({
       case 'backIcon':return <button type="button" title="Back to pages" aria-label="Back to pages"
         onClick={safeBackToPages}><ArrowLeft size={21}/></button>;
       
-      case 'canvasWidth':return <input aria-label="Page width" type="number" min={320} max={10000}
+      case 'canvasWidth':return <BuilderNumberInput key={page.apiName+':'+page.layoutVariant+':width'}
+        aria-label="Page width" min={320} max={10000} step={1} integer
         disabled={page.layoutVariant!=='Custom'} value={page.canvasWidth}
-        onChange={e=>{const n=Number(e.target.value);if(Number.isInteger(n)&&n>=320&&n<=10000)applyPage({...page,canvasWidth:n});}}/>;
+        onValueChange={n=>applyPage({...page,canvasWidth:n})}/>;
       case 'canvasFillColor':return <input aria-label="Canvas Fill Color" type="color"
          value={/^#[0-9a-fA-F]{6}$/.test(page.canvasFillColor??'')?page.canvasFillColor:'#ffffff'}
          onChange={e=>applyPage({...page,canvasFillColor:e.target.value})}/>;
-       case 'canvasHeight':return <input aria-label="Page height" type="number" min={320} max={10000}
+       case 'canvasHeight':return <BuilderNumberInput key={page.apiName+':'+page.layoutVariant+':height'}
+        aria-label="Page height" min={320} max={10000} step={1} integer
         disabled={page.layoutVariant!=='Custom'} value={page.canvasHeight}
-        onChange={e=>{const n=Number(e.target.value);if(Number.isInteger(n)&&n>=320&&n<=10000)applyPage({...page,canvasHeight:n});}}/>;
+        onValueChange={n=>applyPage({...page,canvasHeight:n})}/>;
       case 'restoreVersion':return <button type="button" aria-label="Restore version" title="Restore selected version"
         disabled={saving||selectedHistoryVersion===null||
          layoutVersions.find(v=>v.version===selectedHistoryVersion)?.draft===true}

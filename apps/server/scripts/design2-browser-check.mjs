@@ -1,3 +1,4 @@
+import {checkFormulaTooltipPlacement} from './formula-overlay-browser-check.mjs';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 
@@ -542,6 +543,43 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  assert.equal(await dock.locator('.smart-design2-arrange-action').count(),15,
   'Dock groups must not duplicate or remove Design commands');
 
+ // Typing must survive intermediate empty/out-of-range values. This reproduces
+ // the reported failure: replacing a multi-digit number one key at a time.
+ const replaceNumeric=async(input,next)=>{
+  await input.focus();
+  await input.press('ControlOrMeta+a');
+  await input.press('Backspace');
+  assert.equal(await input.inputValue(),'','Deleting a number must leave an editable empty draft');
+  await input.pressSequentially(next);
+  assert.equal(await input.inputValue(),next,'The editor lost keyboard input while typing '+next);
+  await input.blur();
+  assert.equal(await input.inputValue(),next,'Valid numeric draft did not persist on blur');
+ };
+ const dockX=dock.locator('.smart-design2-dimensions [data-property="x"] input');
+ const dockY=dock.locator('.smart-design2-dimensions [data-property="y"] input');
+ await replaceNumeric(dockX,'120');
+ assert.equal(await cart.evaluate(element=>Number.parseFloat(element.style.left)),120,
+  'Dock X edit did not update the same canvas position');
+ await replaceNumeric(dockX,'64');
+ await replaceNumeric(dockY,'140');
+ assert.equal(await cart.evaluate(element=>Number.parseFloat(element.style.top)),140,
+  'Dock Y edit did not update the same canvas position');
+ await replaceNumeric(dockY,'68');
+ const dockCountInput=dock.locator('.smart-design2-count input.smart-office-number');
+ if(!await dockCountInput.isDisabled()){
+  const original=await dockCountInput.inputValue();
+  const replacement=original==='3'?'4':'3';
+  await replaceNumeric(dockCountInput,replacement);
+  await replaceNumeric(dockCountInput,original);
+ }
+ const editableBodyNumber=dock.locator('.smart-ribbon-row .smart-property[data-kind="number"] input:not([disabled])').first();
+ if(await editableBodyNumber.count()){
+  const original=await editableBodyNumber.inputValue();
+  if(original){
+   await replaceNumeric(editableBodyNumber,'18');
+   await replaceNumeric(editableBodyNumber,original);
+  }
+ }
 
  assert.equal(await page.locator('.smart-design2-ribbon').count(),1,'Design 2 must render once, in the dock');
  await page.screenshot({path:new URL('../artifacts/design2-left-dock.png',import.meta.url).pathname});
@@ -600,6 +638,9 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
   'Second tab icon must select its actual caption');
  assert.ok(await formulaInput.evaluate(el=>document.activeElement===el),
   'The existing Formula Bar must be focused after clicking an icon');
+
+ await checkFormulaTooltipPlacement({page,formulaInput});
+
  const cartCanvas=page.locator('[data-component-id="browser-design2-cart"]').first();
  await cartCanvas.click({position:{x:10,y:10}});
  const cartKeys=await auditBindings('browser-design2-cart');
