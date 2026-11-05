@@ -134,6 +134,49 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  })).status,guestToken);
  assert.equal(forbidden,403,'Design 2 catalog bypassed OneEngine PageDefinition RBAC');
 
+ // TEMP DIAGNOSTIC: Card Grid data icons (bound + unbound). Logs only, never fails.
+ try{
+  const objects=await db.query(`SELECT api_name FROM md_object_definitions WHERE tenant_id=$1 ORDER BY api_name LIMIT 5`,[tenantId]).catch(e=>({rows:[],error:String(e)}));
+  console.log('DIAG objects',JSON.stringify(objects.rows),objects.error??'');
+  const bound=objects.rows[0]?.api_name??'';
+  const diag={apiName:'browserdiaggrid',label:'Diag Grid',targetObject:'',pageType:'App Page',
+   layoutMode:'free-canvas',canvasWidth:1280,canvasHeight:900,status:'Draft',devices:['Desktop'],
+   activationAssignments:[],components:[
+    {id:'diag-unbound',type:'Custom:smart_card_grid',label:'Unbound grid',region:'main',visible:true,
+     properties:{},position:{x:20,y:20,width:600,height:300}},
+    {id:'diag-bound',type:'Custom:smart_card_grid',label:'Bound grid',region:'main',visible:true,
+     properties:{objectApiName:bound,textSource:'@Name'},position:{x:20,y:360,width:900,height:300}}]};
+  const made=await page.evaluate(async({token,payload})=>{const r=await fetch('/api/metadata/pages/'+payload.apiName,{method:'PUT',
+   headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify(payload)});
+   return r.status;},{token,payload:diag});
+  console.log('DIAG page',made);
+  page.on('console',message=>{if(message.type()==='error')console.log('DIAG console error',message.text().slice(0,300));});
+  await page.goto(origin+'/une/setup/page-builder',{waitUntil:'domcontentloaded'});
+  await page.getByLabel('Search pages').fill('Diag Grid');
+  await page.getByRole('button',{name:'Design Diag Grid',exact:true}).click();
+  await page.getByRole('tab',{name:'Design',exact:true}).waitFor({timeout:20000});
+  for(const id of ['diag-unbound','diag-bound']){
+   const block=page.locator('[data-component-id="'+id+'"]').first();
+   await block.waitFor({state:'visible',timeout:15000});
+   await block.click({position:{x:6,y:6}});
+   await page.waitForTimeout(2500);
+   const info=await page.evaluate(id=>{
+    const h=document.querySelector('[data-component-id="'+id+'"]');
+    const r=h?.getBoundingClientRect();
+    return {cls:h?.className,host:r&&[r.width,r.height,h.offsetWidth,h.offsetHeight],
+     layer:!!h?.querySelector(':scope>.canvas-data-bindings'),
+     layerAny:!!h?.querySelector('.canvas-data-bindings'),
+     icons:[...(h?.querySelectorAll('.canvas-data-icon-button')||[])].map(b=>[b.dataset.bindingProperty,b.style.left,b.style.top,getComputedStyle(b).display,getComputedStyle(b).visibility]),
+     markers:[...(h?.querySelectorAll('[data-md-bind]')||[])].slice(0,6).map(e=>{const q=e.getBoundingClientRect();
+      return [e.dataset.mdBind,Math.round(q.width),Math.round(q.height),e.closest('[data-component-id]')===h,(e.textContent||'').slice(0,20)];}),
+     cards:h?.querySelectorAll('.smart-card').length,
+     text:(h?.innerText||'').slice(0,160)};
+   },id);
+   console.log('DIAG',id,JSON.stringify(info));
+   await page.screenshot({path:new URL('../artifacts/diag-'+id+'.png',import.meta.url).pathname}).catch(()=>{});
+  }
+ }catch(error){console.log('DIAG failed',String(error).slice(0,500));}
+
  // A persisted page with two real smart components, not mocked React widgets.
  const pageName='browserdesign2';
  const payload={
