@@ -532,3 +532,36 @@
  * existing ribbon fallback instead of deleting or altering their behavior. */
 .page-builder-design-dock .office-builder-ribbon #page-builder-tab-content[aria-label="Component Action"]
   .page-action-compact-sections { display:none!important; }
+
+/* Canvas Width, Height and Fill are existing Page-level Design controls.
+ * Keep the very same mounted control group available when Design is docked. */
+.page-builder-design-dock .office-builder-ribbon
+  #page-builder-tab-content.office-ribbon-content[aria-label="Component Design 2"] > .design-canvas-settings {
+  display:flex!important;flex-direction:column!important;position:relative!important;
+  box-sizing:border-box!important;align-items:stretch!important;justify-content:flex-start!important;
+  flex:0 0 auto!important;width:100%!important;min-width:0!important;max-width:100%!important;
+  height:auto!important;min-height:0!important;max-height:none!important;
+  margin:12px 0 0!important;padding:27px 9px 12px!important;
+  border:0!important;border-top:1px solid #ccd2dd!important;
+  background:transparent!important;box-shadow:none!important;gap:7px!important;
+}
+.page-builder-design-dock .office-builder-ribbon
+  #page-builder-tab-content[aria-label="Component Design 2"] > .design-canvas-settings > span:last-child {
+  position:absolute!important;top:4px!important;left:9px!important;right:9px!important;
+  width:auto!important;height:18px!important;min-height:18px!important;
+  margin:0!important;text-align:left!important;
+  color:#183b68!important;font:600 12px/18px "Segoe UI",Arial,sans-serif!important;
+}
+.page-builder-design-dock .office-builder-ribbon
+  #page-builder-tab-content[aria-label="Component Design 2"] > .design-canvas-settings > .office-ribbon-stack {
+  display:flex!important;flex-direction:row!important;flex-wrap:wrap!important;
+  align-items:center!important;justify-content:flex-start!important;align-content:flex-start!important;
+  box-sizing:border-box!important;width:100%!important;min-width:0!important;max-width:100%!important;
+  height:auto!important;min-height:0!important;max-height:none!important;
+  padding:0!important;gap:7px!important;
+}
+.page-builder-design-dock .office-builder-ribbon
+  #page-builder-tab-content[aria-label="Component Design 2"] > .design-canvas-settings
+  .une-sql-home-control {
+  box-sizing:border-box!important;max-width:100%!important;
+}
