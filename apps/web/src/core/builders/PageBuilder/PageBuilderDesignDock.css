@@ -448,3 +448,35 @@
  max-width:var(--smart-control-width)!important;
  height:26px!important;min-height:26px!important;max-height:26px!important;
 }
+
+
+/* Requested blank-line gaps between the compact collapsible section groups. */
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ .smart-design2-area-list > .smart-design2-area-section:is(
+ [data-design-area="Body"],[data-design-area="Badge"],
+ [data-design-area="Header"],[data-design-area="Table"],
+ [data-design-area="Button"]) {
+ margin-top:12px!important;
+}
+/* Moved legacy properties stay in Body below the unchanged 17-icon grid. */
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ .smart-design2-supplemental {
+ box-sizing:border-box!important;display:grid!important;
+ grid-template-columns:repeat(2,minmax(0,1fr))!important;
+ gap:6px 8px!important;width:420px!important;max-width:420px!important;
+ padding:10px 6px 2px!important;border-top:1px solid #d6e0eb!important;
+}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ .smart-design2-supplemental-setting {
+ display:flex!important;align-items:center!important;justify-content:space-between!important;
+ gap:5px!important;min-width:0!important;min-height:26px!important;
+}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ .smart-design2-supplemental-label {
+ overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+ color:#253c5b;font:11px/16px "Segoe UI",Arial,sans-serif;
+}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ .smart-design2-supplemental-setting > .smart-property {
+ flex:0 0 auto!important;min-width:0!important;
+}
