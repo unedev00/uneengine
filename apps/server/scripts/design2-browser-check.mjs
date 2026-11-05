@@ -27,6 +27,12 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  const placementGap=await readFile(new URL('../src/system-support/migrations/20271112-design2-image-placement-gap.sql',import.meta.url),'utf8');
  await db.query(placementGap);
  await db.query(placementGap);
+ // The replayed legacy matrix replaces the current SQL inspector mappings.
+ // Restore the final migration twice to verify upgrade-safe idempotence before
+ // testing the authenticated editor and persisted values.
+ const consolidated=await readFile(new URL('../src/system-support/migrations/20271116-page-builder-inspector-consolidation.sql',import.meta.url),'utf8');
+ await db.query(consolidated);
+ await db.query(consolidated);
  const fourRows=await db.query(`SELECT r.component_api,r.area,r.slot_key,r.property_key,
         COALESCE(component.enabled,false) enabled
    FROM md_builder_design2_slot_rules r
