@@ -230,12 +230,7 @@ export default function AppManager({
     setError(''); setNotice('');
   };
   const returnToList = () => {
-    const original = apps.find(app => app.apiName === selectedApiName);
-    const changed = creating
-      ? Boolean(draft.label || draft.apiName || draft.description ||
-          draft.navigationItems.length || draft.navigationPageApiNames.length)
-      : Boolean(original && JSON.stringify(appDraftFromMetadata(original)) !== JSON.stringify(draft));
-    if (changed && !window.confirm('Discard unsaved app changes and return to the app list?')) return;
+    // Explicit Cancel discards only the local draft; no persisted metadata is changed.
     cancel();
   };
   const cloneApp = (source: AppDraft) => {
@@ -278,7 +273,7 @@ export default function AppManager({
       <AppManagerList apps={apps} busy={busy} onEdit={editApp} onClone={cloneApp}/>
     </> : <>
     <nav className="app-manager-stepper" aria-label="Application setup steps">
-      {steps.map((step, index) => <a href={'#' + step.id} key={step.id} className={'app-manager-step' + (index === activeStep ? ' is-first' : '')} aria-current={activeStep === index ? 'step' : undefined}
+      {steps.map((step, index) => <a href={'#' + step.id} key={step.id} className={'app-manager-step' + (index === activeStep ? ' is-first' : '')} aria-current={activeStep === index ? 'step' : undefined} aria-label={'Step '+(index+1)+' of '+steps.length+': '+step.name}
         onClick={event => {
           event.preventDefault();
           setActiveStep(index);
@@ -405,7 +400,7 @@ export default function AppManager({
                 <legend>Utility Bar</legend>
                 <div className="app-manager-checks">
                   {(['Notes','History'] as const).map(item => <label key={item}>
-                    <input type="checkbox" checked={draft.utilityItems.includes(item)}
+                    <input type="checkbox" aria-label={item} checked={draft.utilityItems.includes(item)}
                       onChange={event => update('utilityItems',event.target.checked
                         ? [...draft.utilityItems,item]
                         : draft.utilityItems.filter(utility => utility !== item))}/>{item}
