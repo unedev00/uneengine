@@ -45,9 +45,10 @@ test('one builder-only overlay routes selected icons to SQL-approved expressions
  assert.match(ribbon,/setSelectedDataField\('collectionFormula'\)/);
  assert.match(icons,/onPointerDown=\{event=>event\.stopPropagation\(\)\}/);
  assert.match(builder,/!previewMode&&!libraryPreview&&selectedId===component\.id/);
- assert.match(builder,/setRibbonTab\('Component Data'\)/);
+ // The Data tab is retired: field icons feed the always-visible topbar Formula Bar.
+ assert.match(builder,/tab==='Component Data'\)tab='Component Design 2'/);
+ assert.match(builder,/dataRibbon\('formulaBar'\)/);
  assert.match(builder,/data-component-id=\{libraryPreview \? undefined : component\.id\}/);
- assert.match(builder,/setRibbonCollapsed\(false\)/);
  assert.match(builder,/canvasBinding=\{canvasBinding\}/);
  assert.match(builder,/const smartRibbonElement =/);
  assert.match(ribbon,/canvasBinding\?\.requestId/);
