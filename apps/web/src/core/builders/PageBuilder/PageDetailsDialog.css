@@ -119,3 +119,11 @@
   .page-details-section .form-label{min-width:0}
   .page-details-header,.page-details-footer{padding:12px 14px}
 }
+
+/* Bounded page editor and accessible tab state. */
+.page-details-dialog{width:min(960px,calc(100vw - 32px))!important;max-height:calc(100dvh - 32px)!important}
+.page-details-dialog [hidden]{display:none!important}
+.page-details-nav button{background:transparent;border:0;border-bottom:2px solid transparent;padding:5px 10px 10px;font-size:13px;font-weight:600;line-height:1.4;font-family:inherit;color:#355579;cursor:pointer;min-height:40px}
+.page-details-nav button[aria-selected=true],.page-details-nav button:hover{border-color:#2563eb;color:#1e40af}
+.page-details-nav button:focus-visible{outline:2px solid #2563eb;outline-offset:-2px}
+@media(max-width:760px){.page-details-dialog{width:calc(100vw - 20px)!important;max-height:calc(100dvh - 20px)!important}.page-details-footer .btn{min-height:44px}}
