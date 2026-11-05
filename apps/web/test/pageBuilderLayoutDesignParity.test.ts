@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {HIDDEN_RIBBON_PROPERTY_KEYS,hasDesign2LayoutEquivalent} from
  '../src/core/builders/PageBuilder/layoutRibbonVisibility';
+import {smartTabsHaveDataSource} from '../src/core/builders/PageBuilder/smartTabsCountSource';
 import type {Design2Slot,Design2SlotRule} from
  '../src/core/builders/PageBuilder/uneBuilderPropertyInventory';
 
@@ -58,6 +59,7 @@ test('Mixed selection only suppresses Layout when every component has Design cov
 test('Only Card Grid has a contextual Image Border editor; Icon Fill stays hidden',()=>{
  assert.equal(HIDDEN_RIBBON_PROPERTY_KEYS.has('imageBorderColor'),true);
  assert.equal(HIDDEN_RIBBON_PROPERTY_KEYS.has('iconFillColor'),true);
+ assert.equal(HIDDEN_RIBBON_PROPERTY_KEYS.has('tabIndex'),true);
  assert.equal(HIDDEN_RIBBON_PROPERTY_KEYS.has('borderColor'),false);
  assert.equal(HIDDEN_RIBBON_PROPERTY_KEYS.has('imageBackgroundColor'),false);
  const ribbon=file('../src/core/builders/PageBuilder/SmartRibbon.tsx');
@@ -65,4 +67,15 @@ test('Only Card Grid has a contextual Image Border editor; Icon Fill stays hidde
  assert.match(ribbon,/hasDesign2LayoutEquivalent\(/);
  assert.match(ribbon,/tab==='Layout'&&hasDesign2LayoutEquivalent/);
  assert.match(ribbon,/activeDesign2Area==='Image'&&api==='smart_card_grid'/);
+});
+
+test('Manual tab count disables for any real Tabs Object or Collection source',()=>{
+ assert.equal(smartTabsHaveDataSource({}),false);
+ assert.equal(smartTabsHaveDataSource({objectApiName:'   ',collectionFormula:'  '}),false);
+ assert.equal(smartTabsHaveDataSource({tabs:['All','Desserts'],tabCount:2}),false);
+ assert.equal(smartTabsHaveDataSource({objectApiName:'MenuCategory'}),true);
+ assert.equal(smartTabsHaveDataSource({objectApiName:'MenuCategory',textSource:'@Name'}),true);
+ assert.equal(smartTabsHaveDataSource({collectionFormula:'=COLLECTION("Categories")'}),true);
+ assert.equal(smartTabsHaveDataSource({dataCollection:{name:'Categories',items:[]}}),true);
+ assert.equal(smartTabsHaveDataSource({dataSource:'Collection:Categories'}),true);
 });

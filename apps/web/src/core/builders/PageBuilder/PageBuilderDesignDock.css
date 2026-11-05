@@ -41,7 +41,7 @@
 }
 .page-builder-design-dock{
   box-sizing:border-box;flex:0 0 440px;width:440px;
-  position:sticky;top:0;max-height:calc(100vh - 96px);overflow:auto;
+  position:sticky;top:0;max-height:calc(100vh - 96px);overflow-x:hidden;overflow-y:auto;
   background:#f4f5f7;border-right:1px solid #ccd2dd;color:#25344c;
 }
 .page-builder-design-dock-header{
@@ -226,3 +226,34 @@
  .smart-design2-group .smart-ribbon-row[data-design-row="2"]::before{content:"Position"}
 .page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
  .smart-design2-group .smart-ribbon-row[data-design-row="3"]::before{content:"Typography"}
+
+/* Vertical Design uses the SAME seventh grid cell beside R1C6 H/V.
+ * It does not inherit any horizontal position from top-ribbon coordinates.
+ * No control is moved offscreen to manufacture a scrollbar-free dock. */
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ .smart-design2-group .smart-design2-count{
+ position:relative!important;grid-column:7!important;grid-row:1!important;
+ left:auto!important;top:auto!important;
+ flex:0 0 79px!important;min-width:79px!important;width:79px!important;
+ max-width:79px!important;margin:0!important;
+}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ .smart-design2-group .smart-design2-count-choice{
+ position:absolute!important;top:28px!important;right:0!important;
+ left:auto!important;z-index:3!important;
+}
+/* The optional Calendar/Image contextual editors occupy their own next line
+ * in the dock. They cannot extend the panel's horizontal scroll width. */
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ .smart-design2-group :is(.smart-design2-calendar-controls,.smart-design2-image-border){
+ position:static!important;box-sizing:border-box!important;
+ flex:0 0 auto!important;max-width:100%!important;
+ height:auto!important;min-height:26px!important;
+ flex-wrap:wrap!important;margin:4px 0 0!important;
+}
+/* Fixed 420px Design matrix fits the 440px dock including its 10px padding.
+ * Preserve vertical scrolling for taller content but never scroll sideways. */
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ >.smart-ribbon.smart-design2-ribbon{
+ box-sizing:border-box!important;max-width:100%!important;
+}
