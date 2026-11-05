@@ -62,7 +62,6 @@ import {
   CalendarDays,
   Check,
   ChevronDown,
-  ChevronUp,
   ChevronLeft,
   ChevronRight,
   CircleHelp,
@@ -119,7 +118,6 @@ import {
   Wifi,
   WifiOff,
   PanelLeft,
-  Pin,
   PanelRight,
   Layers3,
   AlignHorizontalJustifyStart,
@@ -450,22 +448,7 @@ function PageBuilder({
     try { window.localStorage.setItem('metadrive:page-builder:panel', activePanel === null ? 'collapsed' : 'expanded'); }
     catch { /* Optional browser preference, not page metadata. */ }
   }, [activePanel]);
-  // Trial layout: Excel-style collapsible ribbon and an optional left-docked Design panel.
-  // Browser preferences only (like the panel state above), never page metadata.
-  const [ribbonCollapsed, setRibbonCollapsed] = useState<boolean>(() => {
-    try { return window.localStorage.getItem('metadrive:page-builder:ribbon') === 'collapsed'; }
-    catch { return false; }
-  });
-  const [designDockedLeft, setDesignDockedLeft] = useState<boolean>(() => {
-    try { return window.localStorage.getItem('metadrive:page-builder:design-dock') !== 'ribbon'; }
-    catch { return false; }
-  });
-  useEffect(() => {
-    try {
-      window.localStorage.setItem('metadrive:page-builder:ribbon', ribbonCollapsed ? 'collapsed' : 'pinned');
-      window.localStorage.setItem('metadrive:page-builder:design-dock', designDockedLeft ? 'left' : 'ribbon');
-    } catch { /* Optional browser preference, not page metadata. */ }
-  }, [ribbonCollapsed, designDockedLeft]);
+  // The shared Page Builder controls live in a single persistent left dock.
   const [pageListObject, setPageListObject] = useState('');
   const [pageListSearch, setPageListSearch] = useState('');
   const [pageListAppTab, setPageListAppTab] = useState('all');
@@ -3117,8 +3100,7 @@ function PageBuilder({
     addComponent(type, paletteInsertRegion ? page.components.length : selectedIndex >= 0 ? selectedIndex + 1 : page.components.length, selectedRegion, undefined, parentId);
     setPaletteInsertRegion(null);
   };
-  // The SmartRibbon is built once. For Design it renders either in the top ribbon
-  // strip or docked in the left Design panel (never both at the same time).
+  // The existing SmartRibbon is hosted only by the left editor dock.
   const selectedRibbonApi = selected ? (selected.type.startsWith('Custom:')?selected.type.slice(7):selected.type) : '';
   const selectedHasDataRibbon = Boolean(selected && ribbonCatalog && selectedNewUne &&
     ribbonCatalog.properties.some(property=>property.tab==='Data'&&
@@ -3198,7 +3180,7 @@ function PageBuilder({
             items={paletteComponents}
             onInsert={addPaletteComponent}
             renderIcon={renderPaletteIcon}/>);
-  const designInPanel = designDockedLeft && !previewMode;
+  const designInPanel = !previewMode;
   const ribbonNavigation = (<nav className="office-ribbon-tabs" role="tablist" aria-label="Page Builder tabs">
               {ribbonTabsVisible.map((tab,index) => {
                 const Icon = {
@@ -3692,7 +3674,7 @@ function PageBuilder({
           onOpenDesign={openPageDesignLayout} onReload={onChange}/>:null;
       })()}
       {editorMode && <>
-      <section className={`office-builder-ribbon ${previewMode ? 'is-interactive-preview' : ''} ${ribbonCollapsed ? 'is-ribbon-collapsed' : ''} ${designInPanel ? 'is-design-docked' : ''}`} aria-label="Page Builder ribbon">
+      <section className={`office-builder-ribbon ${previewMode ? 'is-interactive-preview' : ''}`} aria-label="Page Builder toolbar">
         <div className="office-ribbon-topbar">
           <div className="office-ribbon-topbar-back">{homeValue('backIcon')}</div>
           <button type="button" className="office-ribbon-icon-button" aria-label="Edit page properties and versions"
@@ -3703,23 +3685,6 @@ function PageBuilder({
                ? (page.components.find(component=>component.id===rawLayoutParentId(selected))?.label??'Container')+' › '
                : '')+(selected.label||selected.type) : 'Welcome'}
           </div>
-          <div className="office-ribbon-navigation">
-            {!designInPanel && ribbonNavigation}
-            <div className="office-ribbon-layout-toggles" role="group" aria-label="Ribbon layout">
-              <button type="button" className={'office-ribbon-layout-toggle'+(designDockedLeft?' is-on':'')}
-                aria-pressed={designDockedLeft}
-                title={designDockedLeft?'Show tabs in the top ribbon':'Show tabs in the left panel'}
-                aria-label={designDockedLeft?'Show tabs in the top ribbon':'Show tabs in the left panel'}
-                onClick={()=>setDesignDockedLeft(value=>!value)}><PanelLeft size={16} aria-hidden="true"/></button>
-              <button type="button" className="office-ribbon-layout-toggle"
-                aria-pressed={!ribbonCollapsed}
-                title={ribbonCollapsed?'Pin the ribbon':'Collapse the ribbon'}
-                aria-label={ribbonCollapsed?'Pin the ribbon':'Collapse the ribbon'}
-                onClick={()=>setRibbonCollapsed(value=>!value)}>
-                {ribbonCollapsed?<Pin size={16} aria-hidden="true"/>:<ChevronUp size={16} aria-hidden="true"/>}
-              </button>
-            </div>
-</div>
           {/* Always-on Formula Bar (filter, image upload, ƒx and the formula) for the
               selected component's data bindings; disabled when nothing is bindable. */}
           <div className="office-ribbon-topbar-formula" role="group" aria-label="Formula Bar">
@@ -3736,9 +3701,6 @@ function PageBuilder({
             </span>)}
           </div>
         </div>
-        {/* While Design is docked left, the left panel owns the shared #page-builder-tab-content
-            id so every existing Design 2 ribbon style applies there unchanged. */}
-        {!designInPanel && renderRibbonPanel()}
       </section>
       {visibilityEditorOpen && selected && <PageBuilderVisibilityDialog
         label={selected.label||selected.type} rules={visibilityDraft} onChange={setVisibilityDraft}
@@ -3760,12 +3722,8 @@ function PageBuilder({
         {designInPanel && <aside className="page-builder-design-dock" aria-label="Page Builder panel">
           <div className="page-builder-design-dock-header">
             {ribbonNavigation}
-            <button type="button" className="office-ribbon-layout-toggle"
-              title="Show tabs in the top ribbon" aria-label="Show tabs in the top ribbon"
-              onClick={()=>setDesignDockedLeft(false)}><X size={16} aria-hidden="true"/></button>
           </div>
-          {/* Same ribbon classes and tabpanel id as the top strip, so the light grey
-              ribbon styling, controls and Design 2 slot matrix are reused, not copied. */}
+          {/* Reuse the shared ribbon editor and SQL-backed Design 2 slot matrix in the left dock. */}
           <section className="office-builder-ribbon page-builder-design-dock-ribbon" aria-label="Page Builder panel controls">
             {renderRibbonPanel()}
           </section>

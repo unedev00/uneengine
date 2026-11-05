@@ -5,7 +5,8 @@
 /* ---------- Topbar Formula Bar: compact, always visible ---------- */
 .office-builder-ribbon .office-ribbon-topbar-formula{
   box-sizing:border-box;display:flex;align-items:center;
-  flex:0 1 440px;min-width:240px;max-width:440px;height:28px;margin:0 6px;overflow:visible;
+  /* 200% of the original 440px target; shrinks beside Quick Access on narrow screens. */
+  flex:1 1 880px;min-width:0;max-width:880px;height:28px;margin:0 0 0 4px;overflow:visible;
 }
 .office-builder-ribbon .office-ribbon-topbar-formula>.smart-ribbon.smart-topbar-formula{
   display:flex!important;align-items:center!important;flex:1 1 auto!important;
