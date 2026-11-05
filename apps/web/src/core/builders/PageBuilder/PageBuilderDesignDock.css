@@ -448,3 +448,11 @@
  max-width:var(--smart-control-width)!important;
  height:26px!important;min-height:26px!important;max-height:26px!important;
 }
+
+/* Object Source is now the FIRST accordion, for every selected component.
+ * Suppress the retired after-Typography gap without affecting icon geometry. */
+.page-builder-design-dock .office-builder-ribbon
+ #page-builder-tab-content.office-ribbon-content
+ >.smart-ribbon.smart-design-source{
+ margin:0!important;
+}
