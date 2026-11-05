@@ -471,3 +471,10 @@ html,body{min-width:0!important;max-width:100%}
 .lightning .object-manager .object-sort-button{font:inherit;font-weight:600;color:inherit;padding:3px 0;border:0;background:transparent;cursor:pointer;text-align:left}
 .lightning .object-manager .object-sort-button:focus-visible{outline:2px solid var(--md-primary,#1d4ed8);outline-offset:2px}
 @media(max-width:760px){.lightning .object-manager.object-setting-surface .section-toolbar{display:flex;flex-direction:column;align-items:stretch}.lightning .object-manager.object-setting-surface .section-toolbar .toolbar-actions{justify-content:flex-start}.lightning .object-manager.object-setting-surface .section-toolbar .btn-brand{order:-1}.lightning .object-manager .field-list-actions{min-width:0;flex-wrap:wrap}.lightning .object-manager .field-list-actions select{flex:1;min-width:120px}}
+
+/* Admin audit: tablet cards instead of squeezed object tables. */
+@media(max-width:1023px){.lightning .object-manager .object-manager-desktop-list{display:none!important}.lightning .object-manager .object-manager-mobile-list{display:block!important;min-width:0;width:100%;box-sizing:border-box}.lightning .object-manager .object-manager-mobile-row{min-height:60px}}
+@media(max-width:430px){.lightning .object-manager .field-list-toolbar{display:flex;flex-wrap:wrap;gap:10px}.lightning .object-manager .field-list-actions{flex-wrap:wrap;gap:8px;width:100%}.lightning .object-manager .field-list-actions .mini-search{flex:1 1 100%;min-width:0}.lightning .object-manager .field-list-actions select{flex:1 1 100%;min-height:44px}}
+/* One documented title hierarchy for setup list pages at any breakpoint. */
+.lightning .page-manager-header h1,.lightning .page-manager-view h1{font-size:26px!important;line-height:1.2!important}
+.lightning .app-manager-list-search input{min-height:40px!important}
