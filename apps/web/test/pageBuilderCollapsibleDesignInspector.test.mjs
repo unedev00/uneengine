@@ -52,3 +52,20 @@ test('Any added Object source is available to formulas through the existing RBAC
  assert.match(runtime,/loadFlowScreenRecordPage\(name/);
  assert.match(ribbon,/selectedSourceObjects=\{sourceObjects\}/);
 });
+
+test('Object Source is always present on Design, including components without Data capability',()=>{
+ assert.match(builder,/\(part==='source'\|\|selectedHasDataRibbon\)/);
+ assert.match(builder,/ribbonTab==='Component Design 2'&&dataRibbon\('source'\)/);
+ assert.doesNotMatch(builder,/selectedHasSourceRibbon/);
+ assert.match(ribbon,/sections\.filter\(group=>group==='Source'\)/);
+ assert.match(ribbon,/disabled=\{!canAddSources\|\|sourceCount>=100\}/);
+ assert.match(dock,/smart-ribbon\.smart-design-source\{\s*margin:0!important/);
+});
+
+test('Fit Width accounts for the actual scroll viewport padding and ignores subpixel scale jitter',()=>{
+ assert.match(builder,/window\.getComputedStyle\(previewArea\)/);
+ assert.match(builder,/previewArea\.clientWidth-horizontalInset-2/);
+ assert.match(builder,/previewArea\.clientHeight-verticalInset-2/);
+ assert.match(builder,/Math\.abs\(previous-nextScale\)<0\.0005\?previous:nextScale/);
+ assert.doesNotMatch(builder,/previewArea\.clientWidth - 8/);
+});
