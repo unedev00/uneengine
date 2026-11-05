@@ -132,3 +132,8 @@
 .lightning .page-manager-table .page-manager-design-layout-select:hover {
   background: color-mix(in srgb, var(--md-primary, #1d4ed8) 9%, transparent);
 }
+
+.lightning .page-manager-table .page-manager-design-layout-select option {
+  color: var(--md-text-primary, #1f2937);
+  background: var(--md-surface, #ffffff);
+}
