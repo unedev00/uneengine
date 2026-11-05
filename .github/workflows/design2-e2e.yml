@@ -54,7 +54,7 @@ jobs:
         run: npm run build --workspace apps/web
       - name: Install isolated Chromium
         run: |
-          npm install --no-save playwright
+          npm install --no-save playwright@1.64.1
           npx playwright install --with-deps chromium
       - name: Exercise SQL replay, metadata endpoint, Design 2 editor and persisted styles
         env:
