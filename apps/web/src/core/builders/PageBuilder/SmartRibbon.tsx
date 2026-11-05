@@ -617,7 +617,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
         {[1,2,3].map(row=><div key={row} className="smart-ribbon-row"
           data-design-row={row} style={{gridTemplateColumns:design2GridColumns(row)+(row===1?' 79px':'')}}>
           {sectionRow(activeDesign2Area,row).map(controls)}
-          {row===1&&{(()=>{
+          {row===1&&(()=>{
         const key=api==='smart_tabs'?'tabCount':
           api==='smart_cart'?'cardsPerRow':
           api==='smart_card_grid'&&countKey==='cardsPerColumn'?'cardsPerColumn':'cardsPerRow';
@@ -659,7 +659,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
             <option value="cardsPerColumn">Rows</option>
           </select>}
         </div>;
-      })()}}
+      })()}
           </div>)}
       </div>
 
