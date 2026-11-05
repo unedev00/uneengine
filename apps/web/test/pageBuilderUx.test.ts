@@ -40,7 +40,7 @@ test('journey mounts record filters inline and saves draft separately from publi
   assert.match(source,/ribbonTab==='Component Action' &&\s*<PageBuilderActionRibbon/);
   assert.doesNotMatch(source,/inlineActionSettingsOpen|page-builder-inline-actions/);
   assert.doesNotMatch(source,/ribbonTab==='Component Data' &&.*page-ribbon-expanded-editor/);
-  assert.match(source,/ribbonTab==='Component Data'/);
+  assert.match(source,/dataRibbon\('formulaBar'\)/);
   assert.match(source,/<SmartRibbon/);
   assert.match(source,/ribbonTab==='Advanced'/);
   assert.match(source,/ribbonFilterDraft/);
