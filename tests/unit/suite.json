@@ -222,6 +222,7 @@
     "apps/web/test/pageBuilderActionDependencies.test.ts",
     "apps/web/test/pageBuilderAdvancedRibbon.test.mjs",
     "apps/web/test/pageBuilderAuditFixes.test.mjs",
+    "apps/web/test/pageBuilderCollapsibleDesignInspector.test.mjs",
     "apps/web/test/pageBuilderCustomDesktopCanvas.test.ts",
     "apps/web/test/pageBuilderDesignReference.test.ts",
     "apps/web/test/pageBuilderDockOnly.test.mjs",
