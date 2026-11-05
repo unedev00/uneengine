@@ -702,7 +702,7 @@ function MetadataBoundPageComponent({
         },onNavigate});
       }
       const result=await executePageFormulaAction(apiRequest,binding,payload,
-        pageState,objects,objectApiName,sessionId,(template,id)=>previewPrintTemplate(template,id,pageSessionKey,sessionId),
+        pageState,objects,objectApiName,sessionId,(template,id)=>previewPrintTemplate(template,id,pageSessionKey,sessionId,currentAppId),
         async(name,target,mode)=>{
           if(name==='SCREEN')return openFormulaScreen('SCREEN('+target+(mode?','+mode:'')+')',{
             objects,apps,pages,currentAppId,defaultObjectApiName:objectApiName

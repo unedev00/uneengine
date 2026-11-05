@@ -14,7 +14,7 @@ export function openFormulaScreen(source:string,context:PageActionRoutingContext
   const handled=!window.dispatchEvent(new CustomEvent('metadrive:open-formula-screen',{
    detail:{parentKey,screen},cancelable:true
   }));
-  if(!handled)throw Error('This page has no popup host');
+  if(!handled&&window.dispatchEvent(new CustomEvent('metadrive:workspace-formula-screen',{cancelable:true,detail:{appId:context.currentAppId,screen}})))throw Error('This page has no popup host');
  }else if(route){
   if(mode==='current')onNavigate(route);
   else window.open(appRoutePath(route),'_blank','noopener');
@@ -22,10 +22,11 @@ export function openFormulaScreen(source:string,context:PageActionRoutingContext
  return {navigated:true};
 }
 
-export function previewPrintTemplate(page:string,recordId:string,parentKey:string,sessionId:string){
+export function previewPrintTemplate(page:string,recordId:string,parentKey:string,sessionId:string,appId:string){
  return new Promise<void>((ready,failed)=>{
   const screen:PopupScreen={page,recordId,sessionId,instance:crypto.randomUUID(),inScreen:false,print:true,ready,failed};
-  if(window.dispatchEvent(new CustomEvent('metadrive:open-formula-screen',{detail:{parentKey,screen},cancelable:true})))
+  if(window.dispatchEvent(new CustomEvent('metadrive:open-formula-screen',{detail:{parentKey,screen},cancelable:true}))&&
+     window.dispatchEvent(new CustomEvent('metadrive:workspace-formula-screen',{detail:{appId,screen},cancelable:true})))
    failed(Error('This page has no print preview host'));
  });
 }

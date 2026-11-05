@@ -142,10 +142,23 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
   const custom=validate?.(next);
   if(custom)return custom;
   if(flowReferences&&isScreenAction(next)){
-   try{parseScreenAction(next);return null;}catch(error){return error instanceof Error?error.message:'Invalid screen';}
+   try{const {page,mode}=parseScreenAction(next);
+    if(!actionPages.some(item=>item.apiName===page&&item.status==='Active'&&(item.pageType==='App Page'||mode==='popup'&&item.pageType==='In-Screen Page')))return 'Choose a published page available for this window mode';
+    return null;}catch(error){return error instanceof Error?error.message:'Invalid screen';}
   }
   if(flowReferences&&isActionPlan(next)){
-   try{compileActionPlan(next);return null;}catch(error){return error instanceof Error?error.message:'Invalid action';}
+   try{
+    for(const step of compileActionPlan(next)){
+     if(['CREATERECORD','UPDATERECORD','DELETERECORD'].includes(step.name)){
+      const object=objects.find(item=>item.apiName===step.object);
+      if(!object)return 'Unknown object: '+step.object;
+      for(const field of step.fields.keys())if(!object.fields.some(item=>item.apiName===field))return 'Unknown field: '+step.object+'.'+field;
+     }
+     if(step.name==='PRINT'&&!actionPages.some(item=>item.apiName===step.object&&item.pageType==='Print Template'&&item.status==='Active'))return 'Unknown published Print Template: '+step.object;
+     if(step.name==='FLOW'&&!flowReferences.some(item=>item.apiName===step.object))return 'Unknown active Flow: '+step.object;
+     if(['EMAIL','SMS','WHATSAPP'].includes(step.name)&&!actionCredentials.some(item=>item.apiName===step.object))return 'Choose an enabled Named Credential';
+    }
+    return null;}catch(error){return error instanceof Error?error.message:'Invalid action';}
   }
   const source=next.trim();
   if(!isFormulaDraft(source))return null;
