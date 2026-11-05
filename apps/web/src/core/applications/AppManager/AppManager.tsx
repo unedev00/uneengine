@@ -1,5 +1,6 @@
 import {generateMetadataApiName} from '../../metadata/Definitions/metadataApiNames';
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
+import {useModalAccessibility} from '../../accessibility/Modal/useModalAccessibility';
 import { ArrowDown, ArrowLeft, ArrowUp, Plus, Save, Trash2 } from 'lucide-react';
 import AppManagerList from '../AppManagerList/AppManagerList';
 import { cloneAppConfiguration } from './appCloneConfiguration';
@@ -79,6 +80,8 @@ export default function AppManager({
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
+  const deleteConfirmRef=useRef<HTMLElement>(null);
+  useModalAccessibility(deleteConfirmationOpen,deleteConfirmRef,()=>setDeleteConfirmationOpen(false));
   const [activeStep, setActiveStep] = useState(0);
   const assignedPages = pages.filter((page) => page.status === 'Active'
     && (page.activationAssignments ?? []).some((assignment) => assignment.appId === selectedApiName));
@@ -459,7 +462,7 @@ export default function AppManager({
     </div>
     </>}
     {deleteConfirmationOpen && <div className="app-manager-confirm-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) setDeleteConfirmationOpen(false); }}>
-      <section role="alertdialog" aria-modal="true" aria-labelledby="app-delete-title" aria-describedby="app-delete-description" className="app-manager-confirm" onKeyDown={event => { if (event.key === 'Escape') {event.stopPropagation(); setDeleteConfirmationOpen(false);} }}>
+      <section ref={deleteConfirmRef} role="alertdialog" aria-modal="true" aria-labelledby="app-delete-title" aria-describedby="app-delete-description" className="app-manager-confirm" onKeyDown={event => { if (event.key === 'Escape') {event.stopPropagation(); setDeleteConfirmationOpen(false);} }}>
         <h2 id="app-delete-title">Delete {draft.label}?</h2>
         <p id="app-delete-description">This removes application configuration. Objects, Pages and records are not deleted.</p>
         <div className="toolbar-actions"><button type="button" className="btn" autoFocus onClick={() => setDeleteConfirmationOpen(false)}>Cancel</button>
