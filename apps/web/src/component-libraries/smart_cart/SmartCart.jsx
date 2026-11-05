@@ -131,7 +131,7 @@ export default function SmartCart({p,records,Picture,expression,fieldAllowed,fir
    height:n(p.headerBoxHeight,52,24),minHeight:n(p.headerBoxHeight,52,24),
    border:border(p.headerBorderColor),textAlign:align(p.headerAlignment),
     fontSize:n(p.headerTextSize,18,8,96),
-   fontWeight:p.headerBold===false?400:700,color:p.headerTextColor||"#fff"}}><span data-md-bind={p.builderPreview?"label":undefined} data-md-bind-titles={p.builderPreview?"Cart heading":undefined}>{displayFormula("label",p.label,"Smart Cart")}</span></header>
+   fontWeight:p.headerBold===false?400:700,color:p.headerTextColor||"#fff"}}><span data-md-bind={p.builderPreview?"label":undefined} data-md-bind-titles={p.builderPreview?"Cart title":undefined}>{displayFormula("label",p.label,"Smart Cart")}</span></header>
   <div data-md-bind={p.builderPreview?"cartSupportingSource":undefined} data-md-bind-titles={p.builderPreview?"Item count or supporting text":undefined} className="smart-cart-supporting" style={{
    height:n(p.supportingBoxHeight,36,18),minHeight:n(p.supportingBoxHeight,36,18),
    backgroundColor:p.supportingBackgroundColor??undefined,
