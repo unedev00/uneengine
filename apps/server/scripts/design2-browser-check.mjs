@@ -487,7 +487,13 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  await page.locator('[data-component-id="browser-design2-cart"]').first().click({position:{x:18,y:18}});
  await page.getByRole('tab',{name:'Design',exact:true}).click();
  await chooseArea('Row');
- assert.equal(await page.locator('.smart-design2-group [data-property="rowBold"] button')
+ // SQL draft is already verified above. The editor may still be hydrating its
+ // selected-component metadata after navigation; wait for that same saved
+ // value to render instead of asserting against the intermediate default.
+ await page.waitForFunction(()=>
+  document.querySelector('.smart-design2-ribbon[data-smart-api="smart_cart"] [data-property="rowBold"] button')
+   ?.getAttribute('aria-pressed')==='true',undefined,{timeout:10000});
+ assert.equal(await page.locator('.smart-design2-ribbon[data-smart-api="smart_cart"] [data-property="rowBold"] button')
   .getAttribute('aria-pressed'),'true','Design 2 saved value did not reload');
 
  // All sections stay visible for Smart Tabs, too. The unsupported Image
@@ -935,6 +941,34 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
   const root=page.locator('[data-component-id="binding-'+api+'"]').first();
   await root.waitFor({state:'visible'});
   await root.click({position:{x:12,y:12}});
+  if(api==='smart_button'){
+   // A Smart Button may not have a Source grant; its inspector section must
+   // still be discoverable with the selector disabled by SQL when unsupported.
+   const sourceSection=page.locator('.smart-source-section');
+   await sourceSection.waitFor({state:'visible'});
+   const sourceToggle=sourceSection.locator('button.smart-inspector-section-toggle');
+   assert.match(await sourceToggle.innerText(),/Object Source \(1\)/);
+   const canvasViewport=page.locator('.page-preview-area');
+   const measureCanvas=()=>canvasViewport.evaluate(viewport=>{
+    const canvas=viewport.querySelector('.record-preview.free-canvas-preview');
+    return {width:canvas?.getBoundingClientRect().width??0,
+     viewportWidth:viewport.clientWidth,scrollWidth:viewport.scrollWidth};
+   });
+   const before=await measureCanvas();
+   await sourceToggle.click();
+   assert.equal(await sourceToggle.getAttribute('aria-expanded'),'true');
+   assert.equal(await sourceSection.getByRole('combobox',{name:'Object 1'}).count(),1);
+   assert.equal(await sourceSection.locator('button.smart-source-add').count(),1);
+   assert.equal(await sourceSection.locator('button.smart-source-add-label').count(),1);
+   const after=await measureCanvas();
+   assert.ok(Math.abs(after.width-before.width)<1,
+    'Expanding Object Source must not alter canvas zoom or width');
+   assert.ok(after.scrollWidth<=after.viewportWidth+2,
+    'Fit Width must not create a horizontal canvas scrollbar: '+JSON.stringify(after));
+   await chooseArea('Body');
+   assert.equal(await sourceToggle.getAttribute('aria-expanded'),'false',
+    'Object Source must collapse when another Design section opens');
+  }
   if(!expected.length){
    assert.equal(await root.locator('.canvas-data-icon-button').count(),0,
     api+' must not invent icons for unbound visual fields');

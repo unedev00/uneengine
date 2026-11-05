@@ -1119,10 +1119,21 @@ function PageBuilder({
       return;
     }
     const updateScale = () => {
-      const availableWidth = Math.max(1, previewArea.clientWidth - 8);
-      const widthScale = canvasScaleToFitWidth(page.canvasWidth,availableWidth);
-      const heightScale = Math.min(1,Math.max(0.01,(previewArea.clientHeight-8)/page.canvasHeight));
-      setFitScale(fitFullPage ? Math.min(widthScale,heightScale) : widthScale);
+      // clientWidth includes padding but excludes a vertical scrollbar.
+      // The viewport has 6px padding on each side: subtract the real insets,
+      // not the old 8px constant, or Fit Width creates a horizontal scrollbar.
+      // That scrollbar changes available height/width and makes the canvas jump.
+      const style=window.getComputedStyle(previewArea);
+      const horizontalInset=(Number.parseFloat(style.paddingLeft)||0)+
+        (Number.parseFloat(style.paddingRight)||0);
+      const verticalInset=(Number.parseFloat(style.paddingTop)||0)+
+        (Number.parseFloat(style.paddingBottom)||0);
+      const availableWidth=Math.max(1,previewArea.clientWidth-horizontalInset-2);
+      const availableHeight=Math.max(1,previewArea.clientHeight-verticalInset-2);
+      const widthScale=canvasScaleToFitWidth(page.canvasWidth,availableWidth);
+      const heightScale=Math.min(1,Math.max(0.01,availableHeight/page.canvasHeight));
+      const nextScale=fitFullPage?Math.min(widthScale,heightScale):widthScale;
+      setFitScale(previous=>Math.abs(previous-nextScale)<0.0005?previous:nextScale);
     };
     updateScale();
     const observer = new ResizeObserver(updateScale);
@@ -3110,11 +3121,12 @@ function PageBuilder({
   const selectedHasDataRibbon = Boolean(selected && ribbonCatalog && selectedNewUne &&
     ribbonCatalog.properties.some(property=>property.tab==='Data'&&
       property.components.includes(selectedRibbonApi as UneBuilderApi)));
-  const selectedHasSourceRibbon = selectedHasDataRibbon && Boolean(ribbonCatalog?.properties.some(property=>
-    property.tab==='Data'&&property.group==='Source'&&property.components.includes(selectedRibbonApi as UneBuilderApi)));
-  // One Data engine, two placements: the Formula Bar in the topbar and the Source
-  // object selectors after Typography in Design. The Data tab itself is retired.
-  const dataRibbon = (part:'formulaBar'|'source') => selected && ribbonCatalog && selectedHasDataRibbon ? (
+  // Keep Object Source available for every Design-selected component. Existing SQL
+  // property grants still decide whether an Object selector and the + action are
+  // enabled; unsupported components show the same collapsed, disabled controls.
+  // The Formula Bar remains conditional on real data-binding capabilities.
+  const dataRibbon = (part:'formulaBar'|'source') => selected && ribbonCatalog &&
+    (part==='source'||selectedHasDataRibbon) ? (
     <SmartRibbon key={'smart-data-'+part} tab="Data" part={part} api={selectedRibbonApi}
       inspectorSection={inspectorSection} onInspectorSectionChange={setInspectorSection}
       definitions={ribbonCatalog.properties}
@@ -3132,7 +3144,7 @@ function PageBuilder({
       position={selected.position} layoutMode={page.layoutMode}/>
   ) : null;
   const smartRibbonElement = (selected && ribbonCatalog && ((selectedNewUne && (ribbonTab==='Component Design 2'||ribbonTab==='Component Layout')) ||(!selectedNewUne && ribbonTab==='Component Design 2'))) ? (<>
-              {ribbonTab==='Component Design 2'&&selectedHasSourceRibbon&&dataRibbon('source')}
+              {ribbonTab==='Component Design 2'&&dataRibbon('source')}
               <SmartRibbon
                 tab={ribbonTab==='Component Layout'?'Layout':
                   ribbonTab==='Component Design 2'?'Design2':'Design'}
