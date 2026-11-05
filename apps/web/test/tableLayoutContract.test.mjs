@@ -26,7 +26,7 @@ test('page list has a compact leading Actions column without a frozen edge', () 
   assert.match(css, /\.page-manager-table-scroll\s*\{[^}]*max-height/);
   assert.match(css, /thead th\s*\{[^}]*position:\s*sticky/);
   assert.doesNotMatch(css, /:last-child\s*\{[^}]*position:\s*sticky/);
-  assert.match(css, /--md-actions-col-width:\s*152px/);
+  assert.match(css, /width:\s*200px;\s*min-width:\s*200px;\s*max-width:\s*200px/);
   assert.match(css, /\.page-manager-icon-action\s*\{[^}]*width:\s*32px/);
   assert.match(css, /\.page-status-badge\s*\{[^}]*min-width[^}]*height/);
   assert.match(pages, /<thead><tr><th scope="col" className="page-manager-actions-heading">Actions<\/th><th>Page name<\/th>/);
@@ -34,7 +34,10 @@ test('page list has a compact leading Actions column without a frozen edge', () 
   assert.match(pages, /<div className="page-manager-action-icons" role="group" aria-label=/);
   assert.match(pages, /aria-pressed=\{item\.status==='Active'\}/);
   assert.match(pages, /<Pencil size=\{16\}\/>/);
-  assert.match(pages, /<PanelsTopLeft size=\{16\}\/>/);
+  assert.match(pages, /<PageDesignSplitAction label=\{item\.label\}/);
+  const split = source('core/builders/PageBuilder/PageDesignSplitAction.tsx');
+  assert.match(split, /<PanelsTopLeft size=\{16\}\/>/);
+  assert.match(split, /page-manager-design-layout-select/);
   assert.match(pages, /<Power size=\{16\}\/>/);
   assert.match(pages, /<Trash2 size=\{16\}\/>/);
 });
