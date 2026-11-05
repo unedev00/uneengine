@@ -260,7 +260,6 @@
     "apps/web/test/productionDeploymentVisibility.test.mjs",
     "apps/web/test/recordActionPlacement.test.ts",
     "apps/web/test/recordChoices.test.ts",
-    "apps/web/test/tenantImageTextField.test.ts",
     "apps/web/test/recordCsvUtils.test.ts",
     "apps/web/test/recordCustomLinks.test.ts",
     "apps/web/test/recordInlineFieldRules.test.ts",
@@ -273,8 +272,8 @@
     "apps/web/test/safeRichText.test.ts",
     "apps/web/test/schemaBuilder.test.ts",
     "apps/web/test/setupCompactUx.test.mjs",
-    "apps/web/test/setupMetadataDependencies.test.ts",
     "apps/web/test/setupMenuRbac.test.ts",
+    "apps/web/test/setupMetadataDependencies.test.ts",
     "apps/web/test/setupObjectActions.test.ts",
     "apps/web/test/sharedSmartShapeControls.test.mjs",
     "apps/web/test/smartButtonCompactResize.test.mjs",
@@ -296,6 +295,7 @@
     "apps/web/test/tabKeyboardNavigation.test.ts",
     "apps/web/test/tableLayoutContract.test.mjs",
     "apps/web/test/tenantBrandingLayout.test.mjs",
+    "apps/web/test/tenantImageTextField.test.ts",
     "apps/web/test/uiAuditRegression.test.mjs",
     "apps/web/test/uneBindingRouting.test.ts",
     "apps/web/test/uneBuilderRibbonV2.test.mjs",
@@ -314,6 +314,7 @@
     "apps/web/test/visibilityExpression.test.ts",
     "apps/web/test/visiblePolling.test.ts",
     "apps/web/test/workspaceContrastRepair.test.mjs",
+    "apps/web/test/workspaceFormulaScreen.test.ts",
     "apps/web/test/workspaceThemeContrast.test.mjs"
   ]
 }
