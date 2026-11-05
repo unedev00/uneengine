@@ -118,7 +118,11 @@ export function usePageCollectionFormula(
  const refs=[...new Map([...sourceRefs,...scalarRefs]
   .map(ref=>[ref.object+'.'+ref.field,ref])).values()];
  const referencesNamed=Boolean(namedCollectionNames(source).length);
- const selected=['objectApiName','objectApiName2','objectApiName3']
+ // Source slots are metadata properties, not a fixed three-object limit.
+ // The same RBAC-protected Object API read is used for every selected source.
+ const selected=Object.keys(properties).filter(key=>/^objectApiName(?:[2-9][0-9]*)?$/.test(key))
+  .sort((a,b)=>(a==='objectApiName'?1:Number(a.slice(13)))-
+    (b==='objectApiName'?1:Number(b.slice(13))))
   .map(key=>String(properties[key]??'')).filter(Boolean);
  const referenced=[...new Set([...refs.map(ref=>ref.object),...(tableSourceObject?[tableSourceObject]:[])])];
  const secondary=referenced.filter(name=>name!==primaryObject);
