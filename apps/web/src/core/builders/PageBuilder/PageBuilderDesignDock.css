@@ -1,36 +1,6 @@
-/* Trial layout: Excel-style ribbon collapse/pin and a left-docked Design panel.
- * Placement only. Colours, borders and control art come from the existing
- * ribbon and Design 2 styles, because the dock reuses .office-builder-ribbon and
- * #page-builder-tab-content. Row 0 wraps into four rows; R1-R3 keep the SQL matrix. */
-
-/* Topbar toggles (dock Design left, collapse/pin ribbon). */
-.office-builder-ribbon .office-ribbon-layout-toggles{
-  display:inline-flex!important;align-items:center!important;gap:4px!important;
-  flex:0 0 auto!important;margin-left:6px!important;
-}
-/* The topbar is the light Blueprint tab rail (#f6f9fd), so toggles use the tab text
- * colour and the Design 2 arrange-button hover/pressed blues. */
-.office-builder-ribbon .office-ribbon-topbar .office-ribbon-layout-toggle,
-.office-ribbon-layout-toggle{
-  box-sizing:border-box!important;display:inline-flex!important;align-items:center!important;
-  justify-content:center!important;width:28px!important;height:26px!important;padding:0!important;
-  border:1px solid #b7c9df!important;border-radius:3px!important;
-  background:#fff!important;color:#253c5b!important;cursor:pointer!important;
-}
-.office-builder-ribbon .office-ribbon-topbar .office-ribbon-layout-toggle svg,
-.office-ribbon-layout-toggle svg{display:block!important;width:16px!important;height:16px!important}
-.office-builder-ribbon .office-ribbon-topbar .office-ribbon-layout-toggle:hover,
-.office-ribbon-layout-toggle:hover{background:#e9f2fc!important}
-.office-builder-ribbon .office-ribbon-topbar .office-ribbon-layout-toggle.is-on,
-.office-ribbon-layout-toggle.is-on{background:#d8eafa!important;border-color:#5c91cf!important;color:#0869dc!important}
-.office-ribbon-layout-toggle:focus-visible{outline:2px solid #1e79cb;outline-offset:1px}
-
-/* Collapsed ribbon: tabs stay, the property strip hides (like Excel). While Design is
- * docked left the top strip is empty for the Design tab, so it hides too. */
-.office-builder-ribbon[aria-label="Page Builder ribbon"].is-ribbon-collapsed>.office-ribbon-content,
-.office-builder-ribbon[aria-label="Page Builder ribbon"].is-design-docked>.office-ribbon-content{
-  display:none!important;
-}
+/* Permanent Page Builder left dock. The metadata-driven property editor and
+ * Insert gallery use the existing shared renderer, with no duplicate top ribbon.
+ * The dock scrolls vertically rather than clipping extra controls. */
 
 /* Canvas area: dock on the left, canvas fills the rest. */
 .builder-page .page-builder-layout.canvas-unified-builder.has-design-dock{

@@ -70,8 +70,14 @@
  height:auto!important; max-height:none!important;
 }
 .page-builder-design-dock .office-builder-ribbon .smart-insert-tiles {
- grid-auto-flow:row; grid-template-columns:repeat(auto-fill,minmax(min(100%,76px),1fr));
- grid-template-rows:none!important; grid-auto-rows:55px; align-content:start;
+ /* The default horizontal ribbon clips after two rows. In the left dock,
+    each registered Smart component must be reachable by vertical scrolling. */
+ display:grid!important;flex:0 0 auto!important;
+ grid-auto-flow:row!important;
+ grid-template-columns:repeat(auto-fill,minmax(min(100%,76px),1fr));
+ grid-template-rows:none!important;grid-auto-rows:55px;
+ align-content:start!important;height:auto!important;max-height:none!important;
+ overflow:visible!important;
 }
 .page-builder-design-dock .office-builder-ribbon .smart-insert-tile { width:100%!important; }
 .page-builder-design-dock .smart-insert-empty { grid-column:1/-1; min-width:0; }
