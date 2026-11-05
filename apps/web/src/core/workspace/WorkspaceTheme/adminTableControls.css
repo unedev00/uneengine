@@ -109,8 +109,13 @@
   border: 0;
   border-radius: 4px;
   background: transparent;
-  color: transparent;
-  font-size: 12px;
+  /* Hide the selected option text entirely; keep the native dropdown clickable.
+     Workspace-wide select rules otherwise render a clipped "Des..." label. */
+  color: transparent !important;
+  font-size: 0 !important;
+  opacity: 0 !important;
+  position: relative;
+  z-index: 1;
   cursor: pointer;
 }
 .lightning .page-manager-table .page-manager-design-split::after {
@@ -125,12 +130,14 @@
   border-bottom: 1.5px solid var(--md-text-secondary, #475569);
   transform: rotate(45deg);
 }
-.lightning .page-manager-table .page-manager-design-layout-select:focus-visible {
+.lightning .page-manager-table .page-manager-design-split:focus-within {
   outline: 2px solid var(--md-focus-ring, var(--md-primary, #1d4ed8));
-  outline-offset: -2px;
+  outline-offset: -1px;
+  border-radius: 6px;
 }
-.lightning .page-manager-table .page-manager-design-layout-select:hover {
+.lightning .page-manager-table .page-manager-design-split:hover {
   background: color-mix(in srgb, var(--md-primary, #1d4ed8) 9%, transparent);
+  border-radius: 6px;
 }
 
 .lightning .page-manager-table .page-manager-design-layout-select option {
