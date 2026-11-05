@@ -817,8 +817,14 @@ function SetupApp({ onLogout, entryTiming }: { onLogout: () => void; entryTiming
     else if (item === 'Scheduled Flows') openSetupWorkspace('scheduled-flows');
     else if (item === 'Flow History') openSetupWorkspace('flow-logs');
     else if (item === 'Process Automation Settings') openSetupWorkspace('automation-settings');
-    else if (item === 'Reports') openSetupWorkspace('report-builder');
-    else if (item === 'Dashboards') openSetupWorkspace('dashboard-builder');
+    else if (item === 'Reports') {
+      if (canSeeSetupItem('Reports Builder',setupPermissions)) openSetupWorkspace('report-builder');
+      else navigateRoute({kind:'setup',workspace:'report-builder',resourceApiName:'viewer'});
+    }
+    else if (item === 'Dashboards') {
+      if (canSeeSetupItem('Dashboard Builder',setupPermissions)) openSetupWorkspace('dashboard-builder');
+      else navigateRoute({kind:'setup',workspace:'dashboard-builder',resourceApiName:'viewer'});
+    }
     else if (['Users', 'Roles', 'Public Groups', 'Queues', 'Permission Sets', 'Permission Set Groups', 'Profiles', 'Sharing Settings', 'Sharing Rules'].includes(item)) {
       const resourceApiName = item === 'Users' ? 'Users' : item === 'Permission Set Groups' ? 'PermissionSetGroups' : item.replace(/[^A-Za-z0-9]/g, '');
       navigateRoute({ kind: 'setup', workspace: 'rbac', resourceApiName });
