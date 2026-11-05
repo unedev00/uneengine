@@ -1,7 +1,10 @@
+import {UNIVERSAL_FORMULA_FUNCTIONS} from './FormulaUniversal.js';
+import {DATA_FORMULA_FUNCTIONS} from './FormulaData.js';
+import {ACTION_FORMULA_DECLARATIONS,validateActionFormulaTree} from './FormulaActions.js';
 import type {Expression} from './FormulaParser.js';
 
 export type FormulaExpressionContext='formula_field'|'validation_rule'|'flow_formula'
-  |'component_visibility'|'record_filter'|'ribbon_binding';
+  |'component_visibility'|'record_filter'|'ribbon_binding'|'action_formula'|'data_binding';
 type FormulaValueKind='Any'|'Number'|'Text'|'Checkbox'|'Date'|'DateTime'|'Time'
   |'Picklist'|'MultiPicklist'|'Geolocation'|'Collection';
 type FormulaFunctionParameter={name:string;type:FormulaValueKind;optional:boolean};
@@ -119,11 +122,38 @@ for(const [name,minimumArguments,maximumArguments,contextOverride] of inputs){
     signature:Object.freeze({
       parameters:Object.freeze(parameters),minimumArguments,maximumArguments,returnType:returnType(name)
     }),
-    allowedContexts:Object.freeze(ribbonFunctions.has(name)
-      ?[...allowedContexts,'ribbon_binding' as const]:[...allowedContexts])
+    allowedContexts:Object.freeze([
+      ...allowedContexts,
+      ...(ribbonFunctions.has(name)?['ribbon_binding' as const,'data_binding' as const]:[]),
+      ...(ribbonFunctions.has(name)||UNIVERSAL_FORMULA_FUNCTIONS.has(name)
+        ?['action_formula' as const]:[])
+    ])
   }));
 }
 
+// Action formulas share the tokenizer/parser but are never exposed to data binding.
+for(const action of ACTION_FORMULA_DECLARATIONS){
+  const parameters=Array.from({length:action.max},(_,index)=>({
+    name:action.parameters[index]??'argument'+(index+1),
+    type:'Any' as const,optional:index>=action.min
+  }));
+  definitions.set(action.name,Object.freeze({
+    name:action.name,
+    signature:Object.freeze({
+      parameters:Object.freeze(parameters),minimumArguments:action.min,
+      maximumArguments:action.max,returnType:'Any' as const
+    }),
+    allowedContexts:Object.freeze(['action_formula' as const])
+  }));
+}
+export type FormulaFunctionCategory='universal'|'data'|'action';
+export function formulaFunctionCategory(name:string):FormulaFunctionCategory|undefined {
+  const normalized=name.toUpperCase();
+  if(UNIVERSAL_FORMULA_FUNCTIONS.has(normalized))return 'universal';
+  if(DATA_FORMULA_FUNCTIONS.has(normalized))return 'data';
+  if(definitions.get(normalized)?.allowedContexts.includes('action_formula'))return 'action';
+  return undefined;
+}
 export const formulaFunctionCatalog:ReadonlyMap<string,FormulaFunctionDefinition>=definitions;
 export const supportedFunctions:ReadonlySet<string>=new Set(definitions.keys());
 export function getFormulaFunctionNames(context:FormulaExpressionContext):string[] {
@@ -150,4 +180,5 @@ export function validateFormulaFunctions(expression:Expression,context:FormulaEx
     else if(node.kind==='binary'){visit(node.left);visit(node.right);}
   };
   visit(expression);
+  if(context==='action_formula')validateActionFormulaTree(expression);
 }

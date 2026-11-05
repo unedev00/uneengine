@@ -53,9 +53,10 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
  const [activeSuggestion,setActiveSuggestion]=useState(0);
  const suggestionListId=useId();
  useEffect(()=>setActiveSuggestion(0),[matches?.query,functionMatch?.query]);
- const functions=getFormulaFunctionNames('ribbon_binding');
+ const formulaContext=flowReferences!==undefined?'action_formula':'ribbon_binding';
+ const functions=getFormulaFunctionNames(formulaContext);
  const functionSuggestions=functionMatch?functions.filter(name=>
-   name.startsWith(functionMatch.query.toUpperCase())).slice(0,12):[];
+   name.includes(functionMatch.query.toUpperCase())).slice(0,12):[];
  const [hintPosition,setHintPosition]=useState<{top:number;left:number;above:boolean}|null>(null);
  const hint=focused?formulaSignatureAt(draft,caret):null;
  useLayoutEffect(()=>{
@@ -146,7 +147,7 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
     return 'Complete the function with arguments';
   try{
    const expression=new Parser(tokenize(source.startsWith('=')?source.slice(1):source)).parse();
-   validateFormulaFunctions(expression,'ribbon_binding');
+   validateFormulaFunctions(expression,formulaContext);
    return null;
   }catch(error){return error instanceof Error?error.message:'Incomplete formula';}
  };
