@@ -9,19 +9,21 @@ function SetupHome({ onNavigate, request, onShowShortcuts }: { onNavigate: (work
   const [loading,setLoading] = useState(true);
   const [error,setError] = useState('');
   const [helpOpen,setHelpOpen] = useState(false);
+  const [refreshed,setRefreshed] = useState(false);
   const reload = useCallback(() => {
     let active = true;
-    setLoading(true);setError('');
+    setLoading(true);setError('');setRefreshed(false);
     void request<{events:SecurityEvent[]}>('/auth/security-events?limit=3')
       .then(result => {if(active)setEvents(result.events ?? []);})
       .catch(() => {if(active){setError('Security activity unavailable for this user.');setEvents([]);}})
-      .finally(() => {if(active)setLoading(false);});
+      .finally(() => {if(active){setLoading(false);setRefreshed(true);}});
     return () => {active=false;};
   },[request]);
   useEffect(() => reload(), [reload]);
   return (
     <div className="home-content">
-      <Heading eyebrow="Setup" title="Setup Home" description="Configure and manage your organization." actions={<button className="btn" onClick={reload} disabled={loading}><RefreshCw size={14} />Refresh</button>} />
+      <Heading eyebrow="Setup" title="Setup Home" description="Configure and manage your organization." actions={<button className="btn" onClick={reload} disabled={loading}><RefreshCw size={14} />{loading?'Refreshing…':'Refresh'}</button>} />
+      {refreshed&&!error&&<span className="sr-only" role="status">Setup data refreshed.</span>}
       <div className="welcome-banner">
         <div className="welcome-art"><div className="art-orbit orbit-one" /><div className="art-orbit orbit-two" /><div className="art-sphere"><Settings2 size={27} /></div></div>
         <div className="welcome-copy"><div className="eyebrow">YOUR ORGANIZATION</div><h2>Welcome to Setup</h2><p>Find the tools you need to customize your org and support your users.</p><button className="text-action" onClick={() => onNavigate('object-manager')}>Explore Setup <ArrowRight size={15} /></button></div>
@@ -42,8 +44,8 @@ function SetupHome({ onNavigate, request, onShowShortcuts }: { onNavigate: (work
               const failed=/(failed|denied|blocked|rejected)/i.test(event.action);
               return <div className="recent-row" key={event.id}>
                 <span className={'recent-icon '+(failed?'red':'green')}>{failed?<AlertCircle size={16}/>:<ShieldCheck size={16}/>}</span>
-                <div><strong>{event.action.replace(/([a-z])([A-Z])/g,'$1 $2')}</strong><small>Tenant security event</small></div>
-                <time>{new Date(event.at).toLocaleString()}</time>
+                <div><strong>{event.action.replace(/([a-z])([A-Z])/g,'$1 $2')}</strong><small>Security activity</small></div>
+                <time dateTime={event.at}>{new Date(event.at).toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'})}</time>
               </div>;
             })}
         </section>
