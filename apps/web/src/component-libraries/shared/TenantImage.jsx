@@ -19,7 +19,9 @@ export function useTenantImageSource(src,loadAsset) {
     }).catch(()=>{if(active)setLoaded({src,url:""});});
     return ()=>{active=false;};
   },[src]);
-  const external=typeof src==="string"&&/^https:\/\//i.test(src);
+  // https URLs and inline raster images (e.g. the tenant logo from $tenant.logo) need no media request.
+  const external=typeof src==="string"&&(/^https:\/\//i.test(src)
+   ||/^data:image\/(?:png|jpeg|webp|gif);base64,[A-Za-z0-9+/]+={0,2}$/i.test(src));
   // Never flash a previous asset while a different image is being requested.
   const source=external?src:loaded.src===src?loaded.url:"";
   return source;

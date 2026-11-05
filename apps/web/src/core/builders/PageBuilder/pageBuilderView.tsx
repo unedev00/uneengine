@@ -313,6 +313,7 @@ import SavedListViewPicker from './SavedListViewPicker';
 import PageDetailsDialog from './PageDetailsDialog';
 import PageDesignSplitAction from './PageDesignSplitAction';
 import PageInventoryImportDialog from './PageInventoryImportDialog';
+import {ensureTenantBrand} from '../../branding/tenantBrandLoader';
 import {designedPageLayouts,pageLayoutOptionLabel,primaryPageLayout,PAGE_LAYOUT_ORDER,type PageLayoutSummary} from './pageLayoutSummary';
 import {uneRibbonIcon} from './uneRibbonIcon';
 import RibbonImageContent from './RibbonImageContent';
@@ -359,6 +360,8 @@ function PageBuilder({
   /** apiName is given when opening another page's layout (e.g. from the page list). */
   onLayoutVariantChange?: (variant:PageLayoutVariant,apiName?:string) => void;
 }) {
+  // $tenant.name / $tenant.logo formulas: load the signed-in tenant's brand once.
+  useEffect(()=>{void ensureTenantBrand();},[]);
   const isPhoneBuilder = useFormFactor() === 'Phone';
   const [builderAppApiName, setBuilderAppApiName] = useState(preparedAppId);
   useEffect(() => {
