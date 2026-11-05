@@ -14,7 +14,7 @@ export type PageLayoutSummaryItem={
 export type PageLayoutSummary={apiName:string;primary:PageLayoutVariant;layouts:PageLayoutSummaryItem[]};
 
 export type PageLayoutSummaryRow={
- api_name:string;variant:string;draft_version:number|null;published_version:number|null;
+ api_name:string;variant:string;creation_layout_variant?:string|null;draft_version:number|null;published_version:number|null;
  inherits_desktop:boolean|null;draft_created_at:Date|string|null;nodes:number|string|null;
 };
 const ORDER:readonly PageLayoutVariant[]=['Desktop','Custom','Tablet','Mobile'];
@@ -42,7 +42,8 @@ export function summarisePageLayouts(apiName:string,rows:readonly PageLayoutSumm
  });
  const candidates=layouts.filter(item=>item.authored&&item.components>0)
   .sort((a,b)=>(b.updatedAt??'').localeCompare(a.updatedAt??'')||ORDER.indexOf(a.variant)-ORDER.indexOf(b.variant));
- return {apiName,primary:candidates[0]?.variant??'Desktop',
+ const savedOriginal=rows.find(row=>PAGE_LAYOUT_VARIANTS.includes(row.creation_layout_variant as PageLayoutVariant))?.creation_layout_variant as PageLayoutVariant|undefined;
+ return {apiName,primary:savedOriginal??candidates[0]?.variant??'Desktop',
   layouts:[...layouts].sort((a,b)=>ORDER.indexOf(a.variant)-ORDER.indexOf(b.variant))};
 }
 
@@ -52,13 +53,14 @@ export async function loadPageLayoutSummaries(db:SqlPersistence,tenant:string,
  const names=[...new Set(apiNames)].slice(0,500);
  if(!names.length)return [];
  const {rows}=await db.query<PageLayoutSummaryRow>(`
-  SELECT p.api_name,h.variant,h.draft_version,h.published_version,
+  SELECT p.api_name,h.variant,h.draft_version,h.published_version,d.creation_layout_variant,
    v.inherits_desktop,v.created_at AS draft_created_at,
    (SELECT COUNT(*) FROM md_page_layout_version_nodes n
      WHERE n.tenant_id=h.tenant_id AND n.page_id=h.page_id AND n.variant=h.variant
        AND n.version=h.draft_version)::integer AS nodes
   FROM md_page_definitions p
   JOIN md_page_layout_heads h ON h.tenant_id=p.tenant_id AND h.page_id=p.id
+  JOIN md_lightning_page_details d ON d.tenant_id=p.tenant_id AND d.page_id=p.id
   LEFT JOIN md_page_layout_versions v ON v.tenant_id=h.tenant_id AND v.page_id=h.page_id
    AND v.variant=h.variant AND v.version=h.draft_version
   WHERE p.tenant_id=$1 AND p.enabled=true AND p.api_name=ANY($2::text[])`,[tenant,names]);

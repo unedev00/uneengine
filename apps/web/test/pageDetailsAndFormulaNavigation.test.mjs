@@ -6,7 +6,12 @@ const read=(path)=>readFileSync(new URL(path,import.meta.url),'utf8');
 test('Page Manager exposes different Edit and Design actions',()=>{
  const builder=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
  assert.match(builder,/aria-label=\{'Edit page properties for '/);
- assert.match(builder,/aria-label=\{'Design '\+item\.label\}/);
+ const split=read('../src/core/builders/PageBuilder/PageDesignSplitAction.tsx');
+ assert.match(builder,/PageDesignSplitAction label=\{item\.label\}/);
+ assert.match(split,/aria-label=\{'Design '\+label\}/);
+ assert.match(split,/const ordered=\[primary,/);
+ assert.match(split,/onClick=\{onOpenDefault\}/);
+ assert.match(split,/onChange=\{event=>onOpenLayout/);
  assert.match(builder,/onOpenDesign=\{openPageDesignLayout\}/);
 });
 test('page details uses immutable, permission-checked history endpoints',()=>{
