@@ -6,7 +6,7 @@ import type {FlowRuntime} from '../system-files/flow-runtime.js';
 import type {DurableJobWorker,ClaimedJob} from './durable-job-worker.js';
 import {DurableJobService} from './durable-job-service.js';
 import {compileActionPlan,type ActionStep} from '../expression-engine/ActionFormulas.js';
-import type {Expression} from '../expression-engine/FormulaParser.js';
+import {formulaTruth,type Expression} from '../expression-engine/FormulaParser.js';
 import {evaluateFlowFormula} from '../system-files/flow-formula-runtime.js';
 
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -16,6 +16,7 @@ const own=(value:unknown):value is Record<string,unknown>=>
 function bounded(value:unknown,depth=0):unknown {
  if(depth>3)throw Error('Action snapshot nesting limit exceeded');
  if(value===null||typeof value==='boolean')return value;
+ if(value instanceof Date)return value.toISOString();
  if(typeof value==='number'&&Number.isFinite(value))return value;
  if(typeof value==='string'&&value.length<=4096)return value;
  if(Array.isArray(value)&&value.length<=100)return value.map(item=>bounded(item,depth+1));
@@ -45,9 +46,9 @@ function expressionSource(node:Expression):string{
  }
 }
 function lookup(source:Record<string,unknown>,reference:string):unknown{
- const normalized=reference.replace(/^\\$state\\./,'state.')
-  .replace(/^\\$event\\./,'event.')
-  .replace(/^\\$session$/,'sessionId');
+ const normalized=reference.replace(/^\$state\./,'state.')
+  .replace(/^\$event\./,'event.')
+  .replace(/^\$session$/,'sessionId');
  const segments=normalized.replace(/^@/,'').split('.');
  let value:unknown=source;
  for(const key of segments){
@@ -241,7 +242,7 @@ export function registerScheduledActionWorker(worker:DurableJobWorker,db:SqlPers
     const step=steps[i];
     const values={...scope,...variables};
     const evalNode=(node:Expression)=>evaluate(node,values);
-    if(step.guards?.some(guard=>Boolean(evalNode(guard.condition))!==guard.expected)){
+    if(step.guards?.some(guard=>formulaTruth(evalNode(guard.condition))!==guard.expected)){
      await service.progress(row,i+1,variables,step.name+' (skipped)');
      continue;
     }
