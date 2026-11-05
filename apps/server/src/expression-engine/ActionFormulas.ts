@@ -25,7 +25,7 @@ export function normalizeFlowCalls(node:Expression):Expression {
  return node;
 }
 
-export const actionFunctionNames=[...actionFormulaFunctions].filter(name=>name!=='AS');
+export const actionFunctionNames:readonly string[]=[...actionFormulaFunctions].filter(name=>name!=='AS');
 export const isActionPlan=(source:string):boolean=>{
  if(/^\s*=?\s*(?:ACTIONS|CREATERECORD|UPDATERECORD|DELETERECORD|PRINT|CREATEPDF|WAIT|EMAIL|WHATSAPP|SMS)\s*\(/i.test(source))return true;
  if(!/^\s*=?\s*IF\s*\(/i.test(source))return false;
