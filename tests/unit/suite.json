@@ -40,6 +40,7 @@
     "apps/server/test/system/credential-types-parity.test.ts",
     "apps/server/test/system/credential-webhook.test.ts",
     "apps/server/test/system/custom-metadata-service.test.ts",
+    "apps/server/test/system/data-loader-records.test.ts",
     "apps/server/test/system/declarative-rules.test.ts",
     "apps/server/test/system/docker-mail-bridge.test.ts",
     "apps/server/test/system/docker-mail-communication.test.ts",
