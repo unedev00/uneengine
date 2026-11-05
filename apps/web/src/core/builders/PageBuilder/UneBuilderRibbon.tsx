@@ -4,6 +4,7 @@ import type {ObjectMetadata} from '../../metadata/Definitions/metadata';
 import {sharedPropertyGroups,type UneBuilderApi,type UneBuilderTab,type UneRibbonProperty} from './uneBuilderPropertyInventory';
 import UneExpressionEditor from './UneExpressionEditor';
 import RibbonColorPalette from './RibbonColorPalette';
+import BuilderNumberInput from './BuilderNumberInput';
 import './UneBuilderRibbon.css';
 
 const WEEKDAYS=[['sun','Sun'],['mon','Mon'],['tue','Tue'],['wed','Wed'],['thu','Thu'],['fri','Fri'],['sat','Sat']] as const;
@@ -93,10 +94,11 @@ export default function UneBuilderRibbon({tab,api,definitions,properties,onChang
        label={name} value={typeof v==='string'?v:''} disabled={!enabled}
        onChange={next=>write(next)}/>;
   else if(kind==='number'||kind==='position')
-    editor=<input className="une-v2-number" type="number" aria-label={name} disabled={!enabled}
+    editor=<BuilderNumberInput key={api+':'+property.id}
+      className="une-v2-number" aria-label={name} disabled={!enabled}
       min={property.min??0} max={property.max}
       value={kind==='position'?number(position?.[property.id as keyof Position]):v===null||v===''?'':String(v)}
-      onChange={e=>{if(e.target.value!==''){const n=Number(e.target.value);if(Number.isFinite(n))write(n);}}}/>;
+      onValueChange={write}/>;
   else if(kind==='boolean')
     editor=<input type="checkbox" aria-label={name} disabled={!enabled}
       checked={v===true} onChange={e=>write(e.target.checked)}/>;
