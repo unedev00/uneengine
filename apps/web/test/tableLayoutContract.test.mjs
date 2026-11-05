@@ -29,10 +29,12 @@ test('page list has a compact leading Actions column without a frozen edge', () 
   assert.match(css, /width:\s*200px;\s*min-width:\s*200px;\s*max-width:\s*200px/);
   assert.match(css, /\.page-manager-icon-action\s*\{[^}]*width:\s*32px/);
   assert.match(css, /\.page-status-badge\s*\{[^}]*min-width[^}]*height/);
-  assert.match(pages, /<thead><tr><th scope="col" className="page-manager-actions-heading">Actions<\/th><th>Page name<\/th>/);
+  assert.match(pages, /<thead><tr><th scope="col" className="page-manager-actions-heading">Actions<\/th><th aria-sort=\{pageListSort.key===/);
+  assert.match(pages, /className="page-manager-sort" onClick=\{\(\)=>togglePageSort\('label'\)\}>Page name<\/button>/);
   assert.match(pages, /<tbody>\{paginatedPages\.map\(item=><tr key=\{item\.apiName\}>\s*<td className="page-manager-actions">/);
   assert.match(pages, /<div className="page-manager-action-icons" role="group" aria-label=/);
-  assert.match(pages, /aria-pressed=\{item\.status==='Active'\}/);
+  assert.doesNotMatch(pages, /aria-pressed=\{item\.status==='Active'\}/);
+  assert.match(pages, /aria-label=\{\(item\.status==='Active'\?'Deactivate ':'Activate '\)/);
   assert.match(pages, /<Pencil size=\{16\}\/>/);
   assert.match(pages, /<PageDesignSplitAction label=\{item\.label\}/);
   const split = source('core/builders/PageBuilder/PageDesignSplitAction.tsx');
@@ -79,11 +81,12 @@ test('left-docked Page Builder tabs have a light rail and readable active and in
 
 test('independent values have independent labelled table columns', () => {
   const pages = source('core/builders/PageBuilder/pageBuilderView.tsx');
-  assert.match(pages, /<th>Page name<\/th><th>API Name<\/th>/);
+  assert.match(pages, /togglePageSort\('label'\)\}>Page name<\/button><\/th><th aria-sort=\{pageListSort.key==='apiName'/);
   assert.doesNotMatch(pages, /page-manager-page-link[^\n]*<small>\{item\.apiName\}/);
 
   const apps = source('core/applications/AppManagerList/AppManagerList.tsx');
-  assert.match(apps, /<th scope="col">Description<\/th>/);
+  assert.match(apps, /<th scope="col" aria-sort=\{sort.key==='description'/);
+  assert.match(apps, /sortBy\('description'\)\}>Description/);
   assert.doesNotMatch(apps, /<small>\{app\.description\}/);
 
   const tenants = source('core/platform/TenantManagement/TenantManagement.tsx');
