@@ -81,3 +81,23 @@ test('shared Formula Bar keeps @ fields and TABLE column suggestions separate fr
   .filter(part=>part.kind==='field').map(part=>part.value),
   ['@Name','$state.item','$session']);
 });
+
+
+test('tenant brand loader retries failed requests and refreshes formulas when company settings are saved',()=>{
+  const loader=files('../src/core/branding/tenantBrandLoader.ts');
+  const settings=files('../src/core/settings/SettingsWorkspace/settingsWorkspaceViews.tsx');
+  const brand=files('../src/component-libraries/shared/TenantBrand.js');
+  const runtime=files('../src/component-libraries/smart/shared/SmartRuntime.jsx');
+  assert.match(loader,/export const ensureTenantBrand=.*loadTenantBrand\(false\)/);
+  assert.match(loader,/export const refreshTenantBrand=.*loadTenantBrand\(true\)/);
+  assert.match(loader,/if\(!force&&loaded\)return Promise\.resolve\(\)/);
+  assert.match(loader,/if\(!force&&pending\)return pending/);
+  assert.match(loader,/for\(let attempt=0;attempt<3;attempt\+\+\)/);
+  assert.match(loader,/if\(attempt===2\)\{\s*loaded=false/);
+  assert.match(loader,/requestGeneration===generation&&loadedFor===token/);
+  assert.match(settings,/import \{refreshTenantBrand\} from '\.\.\/\.\.\/branding\/tenantBrandLoader'/);
+  assert.match(settings,/await apiRequest<\{profile:CompanyProfile\}>\('\/tenant\/company-profile',\{method:'PUT'/);
+  assert.match(settings,/setCompany\(saved\.profile\)[\s\S]*?void refreshTenantBrand\(\)/);
+  assert.match(brand,/for\(const listener of \[\.\.\.state\.listeners\]\)listener\(\)/);
+  assert.match(runtime,/React\.useSyncExternalStore\(subscribeTenantBrand,getTenantBrand,getTenantBrand\)/);
+});
