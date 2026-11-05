@@ -107,3 +107,23 @@
 .tenant-table :is(th,td):last-child{white-space:nowrap}
 .tenant-placeholder p{max-width:44ch;margin-inline:auto}
 @media(max-width:600px){.tenant-table{min-width:580px}}
+
+/* Tenant details must show ALL tabs: wrap within their own panel instead of
+ * an inaccessible horizontal tab strip, including when the Setup nav is open. */
+.tenant-detail-tabs{
+ display:grid;
+ grid-template-columns:repeat(auto-fit,minmax(min(100%,110px),1fr));
+ gap:4px;
+ overflow:visible;
+ mask-image:none;
+}
+.tenant-detail-tabs button{
+ box-sizing:border-box;
+ min-width:0;
+ width:100%;
+ padding:9px 10px;
+ white-space:normal;
+ text-align:center;
+}
+.tenant-columns>.tenant-panel,.tenant-columns>[data-platform-slot]{min-width:0}
+@media(max-width:700px){.tenant-detail-tabs{mask-image:none}}
