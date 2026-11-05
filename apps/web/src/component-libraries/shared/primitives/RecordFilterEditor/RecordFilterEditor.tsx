@@ -255,12 +255,12 @@ export default function RecordFilterEditor({
     </>}
     {effectiveMode === 'Formula' && onFormulaChange && <section className="metadata-filter-formula" aria-label="Record filter formula">
       <label><strong>Filter Formula</strong>
-        <textarea rows={3} spellCheck={false} value={formula}
-          onSelect={event=>setFormulaCaret(event.currentTarget.selectionStart)}
-          onKeyUp={event=>setFormulaCaret(event.currentTarget.selectionStart)}
-          aria-label={title+' filter formula'}
-          placeholder={'IF(ISBLANK($state.categoryId), TRUE, @MenuCategory = $state.categoryId)'}
-          onChange={event=>onFormulaChange(event.target.value)}/>
+        <span onSelectCapture={event=>setFormulaCaret((event.target as HTMLTextAreaElement).selectionStart)}
+          onKeyUpCapture={event=>setFormulaCaret((event.target as HTMLTextAreaElement).selectionStart)}>
+          <SmartFieldInput multiline rows={3} kind="formula" formulaContext="ribbon_binding" objects={objects}
+            primaryObjectApiName={rootObjectApiName} value={formula} onChange={onFormulaChange}
+            ariaLabel={title+' filter formula'} placeholder={'IF(ISBLANK($state.categoryId), TRUE, @MenuCategory = $state.categoryId)'}/>
+        </span>
       </label>
       <FormulaSignatureGuide value={formula} caret={formulaCaret}/>
       <small>Use @Field, $state.key, IF, ISBLANK and AND/OR. The formula is applied to authorised records before pagination.</small>

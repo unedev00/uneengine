@@ -69,7 +69,7 @@ export default function PageDetailsDialog({page,apps,profiles,recordTypes,disabl
    ?([...current,factor] as LightningPageMetadata['devices'])
    :current.filter(item=>item!==factor));
  const [assignments,setAssignments]=useState<PageActivationAssignmentMetadata[]>(page.activationAssignments??[]);
- const changedAssignments=page.pageType!=='App Page'&&page.pageType!=='In-Screen Page'
+ const changedAssignments=page.pageType!=='App Page'&&page.pageType!=='In-Screen Page'&&page.pageType!=='Print Template'
   &&JSON.stringify(assignments)!==JSON.stringify(page.activationAssignments??[]);
  const assignmentError=changedAssignments?assignmentValidationError(page,assignments,apps,profiles,recordTypes):'';
  const [busy,setBusy]=useState(false);

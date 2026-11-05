@@ -171,7 +171,7 @@ export class PageRuntime {
     const p=raw as Record<string,unknown>;
     const id=(v:unknown):v is string=>typeof v==='string'&&v.length>0&&v.length<=128;
     if(!id(p.apiName)||!/^[A-Za-z][A-Za-z0-9_]*$/.test(p.apiName)
-      ||!id(p.label)||!['Record Page','App Page','Home Page','In-Screen Page'].includes(String(p.pageType))
+      ||!id(p.label)||!['Record Page','App Page','Home Page','In-Screen Page','Print Template'].includes(String(p.pageType))
       ||!['template','free-canvas'].includes(String(p.layoutMode))
       ||!['Active','Draft'].includes(String(p.status))||typeof p.targetObject!=='string'
       ||!Number.isInteger(p.canvasWidth)||!Number.isInteger(p.canvasHeight)
@@ -200,7 +200,7 @@ export class PageRuntime {
     }
     await validatePageComponentContracts(this.db,tenantId,components);
     const assignments=p.activationAssignments as Array<Record<string,unknown>>|undefined ?? [];
-    if(p.status==='Active'&&!['App Page','In-Screen Page'].includes(String(p.pageType))&&!assignments.length)
+    if(p.status==='Active'&&!['App Page','In-Screen Page','Print Template'].includes(String(p.pageType))&&!assignments.length)
       throw new Error('Invalid Page activation');
     const assignmentIds=new Set<string>();
     for(const a of assignments){
@@ -330,7 +330,7 @@ export class PageRuntime {
     return rows[0]?this.metadata(tenantId,rows[0].api_name,runtimeLayoutVariant(device)):null;
   }
   /** Published in-screen surfaces never enter normal application navigation. */
-  async resolveInScreenPage(tenantId:string,appId:string,pageApi:string,device:string):
+  async resolveInScreenPage(tenantId:string,appId:string,pageApi:string,device:string,pageType:'In-Screen Page'|'Print Template'='In-Screen Page'):
     Promise<Awaited<ReturnType<PageRuntime['load']>>|null>{
     if(!['Desktop','Phone','Mobile','Tablet','Custom'].includes(device))
       throw new Error('Invalid in-screen page device');
@@ -344,7 +344,7 @@ export class PageRuntime {
       LEFT JOIN md_tenant_app_metadata m ON m.tenant_id=i.tenant_id AND m.app_id=i.app_id
       JOIN md_app_entitlements e ON e.tenant_id=i.tenant_id AND e.app_id=i.app_id AND e.active=true
       WHERE p.tenant_id=$1 AND p.api_name=$3 AND p.enabled=true
-        AND d.page_type='In-Screen Page' AND d.status='Active'
+        AND d.page_type=$5 AND d.status='Active'
         AND $4=ANY(d.devices)
         AND COALESCE(m.api_name,a.api_name)=$2
         AND (e.expires_at IS NULL OR e.expires_at>now())
@@ -358,7 +358,7 @@ export class PageRuntime {
           SELECT 1 FROM md_lightning_page_activation x
           WHERE x.tenant_id=p.tenant_id AND x.page_id=p.id AND x.app_api IS NOT NULL
         ))
-      LIMIT 1`,[tenantId,appId,pageApi,factor]);
+      LIMIT 1`,[tenantId,appId,pageApi,factor,pageType]);
     return rows[0]?this.load(tenantId,rows[0].api_name,runtimeLayoutVariant(device)):null;
   }
 

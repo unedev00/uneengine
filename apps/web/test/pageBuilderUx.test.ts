@@ -17,7 +17,7 @@ test('all builder palette groups have short non-technical display labels', () =>
 
 test('reused page types remain metadata-backed and human-readable', () => {
   assert.deepEqual(pageBuilderStartOptions.map(option => option.type), [
-    'Home Page', 'Record Page', 'App Page', 'In-Screen Page'
+    'Home Page', 'Record Page', 'App Page', 'Print Template', 'In-Screen Page'
   ]);
   for (const choice of pageBuilderStartOptions) {
     assert.ok(choice.title.length > 0 && choice.description.length > 0);

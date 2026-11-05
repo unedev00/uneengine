@@ -1,3 +1,4 @@
+import {compileActionPlan,isActionPlan,isScreenAction,parseScreenAction} from '../expression-engine/ActionFormulas.js';
 import {type ComponentSettingDefinition,validateComponentSettings,isPropertyRecord} from './component-property-contract.js';
 const text=(propertyKey:string,label:string,required=false):ComponentSettingDefinition=>({propertyKey,label,kind:'TEXT',required});
 const choice=(propertyKey:string,label:string,values:string[]):ComponentSettingDefinition=>({propertyKey,label,kind:'SELECT',choices:values.map(key=>({key,label:key}))});
@@ -112,6 +113,13 @@ export function pagePropertyIssues(type:string,properties:unknown){
  return [...validateComponentSettings(definitions,properties),...nestedConditionIssues(properties)];
 }
 export function requirePagePropertyContract(type:string,properties:unknown){
+ if(isPropertyRecord(properties)&&isPropertyRecord(properties.actionFlows)){
+  for(const binding of Object.values(properties.actionFlows)){
+   if(!isPropertyRecord(binding)||binding.actionType!=='Formula'||typeof binding.formula!=='string')continue;
+   if(isActionPlan(binding.formula))compileActionPlan(binding.formula);
+   else if(isScreenAction(binding.formula))parseScreenAction(binding.formula);
+  }
+ }
  const issues=pagePropertyIssues(type,properties);
  if(issues.length)throw Error('Invalid Page properties: '+issues.map(x=>x.path+': '+x.message).join('; '));
 }

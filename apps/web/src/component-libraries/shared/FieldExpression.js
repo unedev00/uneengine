@@ -1,3 +1,4 @@
+import {executeActionPlan,normalizeFlowCalls} from '../../../../server/src/expression-engine/ActionFormulas.js';
 /** Bounded browser formula evaluator shared by page bindings and UNE renderers.
  * It reads only own properties of the already-authorised record and never evals code.
  */
@@ -282,7 +283,11 @@ const evaluateCall=(name,args,context)=>{
 };
 export const componentReaderKey=Symbol.for('metadrive.pageFormulaComponentReader');
 function parse(source,record,formulaContext){
- const expression=new Parser(tokenize(source)).parse();
+ const parsed=new Parser(tokenize(source)).parse();
+ const expression=formulaContext.flowReferences?normalizeFlowCalls(parsed):parsed;
+ return evaluateParsedExpression(expression,record,formulaContext);
+}
+export function evaluateParsedExpression(expression,record,formulaContext){
  validateFormulaFunctions(expression,'ribbon_binding');
  const resolveReference=(reference,currentRecord=record)=>{
    // Page-local globals are scoped inputs; never read storage or arbitrary records.
@@ -702,4 +707,9 @@ export function evaluateCollectionFormula(formula,sourceRecords={},context={}){
    namedCollections:context?.namedCollections,
    pageState:context?.state,sessionId:context?.session?.id,
    namedCollectionSelections:context?.state?.collectionSelections});
+}
+
+/** Explicit action entry point. Ordinary field evaluation remains side-effect free. */
+export function executeActionFormula(formula,record,context,services){
+ return executeActionPlan(formula,record,(node,scope)=>evaluateParsedExpression(node,scope,context),services);
 }

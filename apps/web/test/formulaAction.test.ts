@@ -96,3 +96,59 @@ test('Page State formula assignment updates its chosen target without a Record A
  },{value:'Food'},{},[],'' );
  assert.deepEqual(result,{changes:[{key:'categoryId',value:'Food'}],recordChanged:false});
 });
+
+test('record actions await results, preserve value types and stop after a failure',async()=>{
+ const calls:Array<{path:string;init?:RequestInit}>=[];
+ const request=async<T>(path:string,init?:RequestInit):Promise<T>=>{
+  calls.push({path,init});
+  if(calls.length===2)throw Error('Access denied');
+  return {record:{Id:rowId}} as T;
+ };
+ const formula='=ACTIONS(CREATERECORD(Item, Amount, $state.total, AS(item)), UPDATERECORD(Item, item.Id, Amount, 2), DELETERECORD(Item, item.Id))';
+ await assert.rejects(executePageFormulaAction(request,{formula},{},{total:12},[],'Item'),/after 1 confirmed.*Access denied/);
+ assert.deepEqual(calls.map(call=>call.path),['/records/Item','/records/Item/'+rowId]);
+ assert.deepEqual(JSON.parse(String(calls[0].init?.body)),{Amount:12});
+});
+
+test('create, print and communication share sequential results',async()=>{
+ const events:string[]=[];
+ const request=async<T>(path:string,options?:RequestInit):Promise<T>=>{
+  if(path==='/records/Booking'){events.push('create');return {record:{Id:'booking-1'}} as T;}
+  const body=JSON.parse(String(options?.body));
+  assert.deepEqual(body,{channel:'SMS',credential:'MyProvider',values:['447000','booking-1']});
+  events.push('sms');return {} as T;
+ };
+ const formula='=ACTIONS(CREATERECORD(Booking, Name, "Test", AS(row)),PRINT(BookingForm, row.Id),SMS(MyProvider,"447000",row.Id))';
+ await executePageFormulaAction(request,{formula},{},{},[],'','',async(template,id)=>{
+  assert.deepEqual([template,id],['BookingForm','booking-1']);events.push('print');
+ });
+ assert.deepEqual(events,['create','print','sms']);
+});
+
+test('invalid final action fails before the first mutation',async()=>{
+ let requests=0;
+ const request=async<T>():Promise<T>=>{requests++;return {} as T;};
+ await assert.rejects(executePageFormulaAction(request,{formula:'ACTIONS(CREATERECORD(Item),SMS(Provider,"recipient"))'},{},{},[],''),/Invalid SMS/);
+ assert.equal(requests,0);
+});
+
+test('AS fields beyond Id use the authorised record response including generated defaults',async()=>{
+ const paths:string[]=[];
+ const request=async<T>(path:string,init?:RequestInit):Promise<T>=>{
+  paths.push(path);
+  if(!init)return {record:{Id:rowId,Name:'Generated'}} as T;
+  if(path==='/records/Child')assert.equal(JSON.parse(String(init.body)).Name,'Generated');
+  return {record:{Id:rowId}} as T;
+ };
+ await executePageFormulaAction(request,{formula:'ACTIONS(CREATERECORD(Parent,AS(parent)),CREATERECORD(Child,Name,parent.Name))'},{},{},[],'');
+ assert.deepEqual(paths,['/records/Parent','/records/Parent/'+rowId,'/records/Child']);
+});
+
+test('print templates fetch all bounded pages and reject a shifting dataset',async()=>{
+ const {printRecordPages}=await import('../src/core/pages/PageRuntime/printRecordPages');
+ const first={records:[{Id:'a'}],total:2};
+ assert.equal((await printRecordPages(first,async offset=>{
+  assert.equal(offset,1);return {records:[{Id:'b'}],total:2};
+ },()=>true)).records.length,2);
+ await assert.rejects(printRecordPages(first,async()=>first,()=>true),/changed/);
+});

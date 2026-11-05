@@ -1,3 +1,4 @@
+import {formulaFlowReferences} from './actionFlowFormula';
 import {resolveMetadataProperties} from '../../metadata/Definitions/metadataReferences';
 import { resolvePageActionRoute } from './pageActionRouting';
 import { componentApiNameFromMetadata, findRegisteredComponentForInstance } from '../../components/Registry/componentRegistryLookup';
@@ -110,11 +111,11 @@ export function inspectPageDependencies(page: LightningPageMetadata, scope: Depe
 
       // A Formula action may choose Flows: IF(..., $flow.A, $flow.B). Each one is a dependency.
       if (binding.actionType === 'Formula' && typeof binding.formula === 'string') {
-        for (const match of binding.formula.matchAll(/\$flow\.([A-Za-z][A-Za-z0-9_]{0,79})/gi)) {
-          const flow = scope.flows.find(item => item.apiName.toLowerCase() === match[1].toLowerCase());
+        for (const name of formulaFlowReferences(binding.formula)) {
+          const flow = scope.flows.find(item => item.apiName.toLowerCase() === name.toLowerCase());
           const executable = flow?.status === 'Active'
             && ['Screen Flow', 'Autolaunched Flow', 'In-Screen Flow'].includes(flow.flowType);
-          add('Flow', flow?.apiName ?? match[1], component.id,
+          add('Flow', flow?.apiName ?? name, component.id,
             !flow ? 'Missing' : executable ? 'Ready' : 'Inactive',
             'Component event formula: ' + event);
         }
