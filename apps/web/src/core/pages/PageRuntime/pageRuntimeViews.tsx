@@ -658,7 +658,7 @@ function MetadataBoundPageComponent({
       return {updated:true};
     }
     if(binding.actionType==='Formula' &&
-      /\\b(?:ACTIONS|CREATERECORD|UPDATERECORD|DELETERECORD|CREATEPDF|WAIT|EMAIL|WHATSAPP|SMS|FLOW)\\s*\\(/i
+      /\b(?:ACTIONS|CREATERECORD|UPDATERECORD|DELETERECORD|CREATEPDF|WAIT|EMAIL|WHATSAPP|SMS|FLOW)\s*\(/i
         .test(String(binding.formula??''))){
       const payload=action.value&&typeof action.value==='object'&&!Array.isArray(action.value)
         ?action.value as Record<string,unknown>:{value:action.value};

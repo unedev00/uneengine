@@ -7,6 +7,7 @@ import {NamedCredentialService} from './named-credential-service.js';
 import {DurableJobService} from './durable-job-service.js';
 import {DurableJobWorker,type ClaimedJob} from './durable-job-worker.js';
 import {registerFlowJobHandler} from './flow-job-handler.js';
+import {registerScheduledActionJobHandler} from './scheduled-action-worker.js';
 import {FlowRecordTriggers} from '../system-files/flow-record-triggers.js';
 import {ScheduledFlowDispatcher} from './scheduled-flow-dispatcher.js';
 import {PlatformEventDispatcher} from './platform-event-dispatcher.js';
@@ -68,7 +69,9 @@ export async function startDurableJobWorker(env:NodeJS.ProcessEnv=process.env) {
    'metadrive-'+randomUUID());
   const authorizeFlow=registerFlowJobHandler(worker,db,rbac,flows,flowTriggers);
   const authorizeWebhook=registerOutboundWebhookJobHandler(worker,db,rbac,credentials);
-  authorize=job=>job.job_type==='webhook.deliver'?authorizeWebhook(job):authorizeFlow(job);
+  const authorizeAction=registerScheduledActionJobHandler(worker,db,rbac,records,flows);
+  authorize=job=>job.job_type==='webhook.deliver'?authorizeWebhook(job):
+    job.job_type==='action.resume'?authorizeAction(job):authorizeFlow(job);
   const interval=Number(env.METADRIVE_WORKER_POLL_MS??'5000');
   if(!Number.isInteger(interval)||interval<1000||interval>60000)throw new Error('Invalid worker poll interval');
   let running=true;
