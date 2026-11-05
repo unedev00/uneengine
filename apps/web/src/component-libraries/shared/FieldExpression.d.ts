@@ -5,6 +5,8 @@ export type FormulaBindingContext={
   now?:Date|string;
   /** Already-authorised page-local scalar state values. */
   pageState?:Readonly<Record<string,unknown>>;
+  /** Tenant brand for $tenant.name / $tenant.logo; defaults to the signed-in tenant. */
+  tenant?:{readonly name:string;readonly logo:string};
   /** Active Page Runtime session identifier. */
   sessionId?:string;
   locale?:string;

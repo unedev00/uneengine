@@ -715,7 +715,7 @@ test('placement controls, component finder and full-width workspace are builder-
   for(const action of ['Bring to front','Send backward','Group','Ungroup'])
     assert.ok(arrange.includes(action),action);
   assert.ok(builder.includes('Fit to Screen'));
-  assert.ok(builder.includes("if(tab==='Component Layout'||tab==='Arrange')tab='Component Design 2'"));
+  assert.ok(builder.includes("if(tab==='Component Layout'||tab==='Arrange'||tab==='Component Data')tab='Component Design 2'"));
   assert.ok(builder.includes('design2Arrange={canvasArrangeProps}'));
   assert.ok(navigator.includes('aria-label="Find a component"'));
   assert.match(builder,/borderWidth:1,borderColor:'#000000'/);

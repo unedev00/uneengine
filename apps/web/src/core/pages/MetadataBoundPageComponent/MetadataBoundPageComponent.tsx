@@ -4,6 +4,7 @@ import {executePageFormulaAction,parseActionFormulaAssignment,resolveActionFormu
 import {resolveMetadataProperties} from '../../metadata/Definitions/metadataReferences';
 import * as React from 'react';
 import {useState,useEffect,useRef,useMemo} from 'react';
+import {ensureTenantBrand} from '../../branding/tenantBrandLoader';
 import {pageStateDependencies,applyPageSelection} from '../PageRuntime/pageStateDependencies';
 import {loadFlowScreenRecordPage} from '../../authentication/Client/authClient';
 // Load the browser API client only during the mounted effect, not on SSR import.
@@ -49,6 +50,8 @@ export default function MetadataBoundPageComponent({
   pageComponents?:readonly PageComponentMetadata[];
   sessionIdOverride?:string;
 }) {
+  // $tenant.name / $tenant.logo formulas: load the signed-in tenant's brand once.
+  useEffect(()=>{void ensureTenantBrand();},[]);
   const properties = resolveMetadataProperties({...component.properties,objectApiName:component.properties.objectApiName||defaultObjectApiName},objects,availableFlows);
   const objectApiName = String(properties.objectApiName || defaultObjectApiName || '');
   const mentionRootObjectApiName = defaultObjectApiName || objectApiName;

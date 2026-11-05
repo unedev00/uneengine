@@ -203,6 +203,10 @@ async function renderSmart(apiName, props) {
  const descriptor=JSON.parse(read('../src/component-libraries/'+apiName+'/component.json'));
  const built=await buildBundledComponent(descriptor);
  const sandbox={React,module:{exports:{}},Date,Intl,URL,crypto:globalThis.crypto};
+ // The app runs bundles with new Function in the page's own global, so they share the
+ // tenant brand key; this isolated VM gets the same shared object explicitly.
+ const brandKey=Symbol.for('une.tenantBrand');
+ if(globalThis[brandKey])sandbox[brandKey]=globalThis[brandKey];
  vm.runInNewContext(built.compiledJs,sandbox);
  return renderToStaticMarkup(React.createElement(sandbox.module.exports.default,props));
 }
@@ -1414,4 +1418,34 @@ test('Smart Cart quantity buttons take shape and colour from Button 2/3 properti
  assert.deepEqual(smartCustomButtonAppearance({qtyIncreaseFill:'#fff3c9',qtyIncreaseTextColor:'#f28c28',
   qtyIncreaseShape:'shape:oval'},'qtyIncrease'),{backgroundColor:'#fff3c9',borderRadius:'50%',color:'#f28c28'});
  assert.deepEqual(smartCustomButtonAppearance({customButton1Radius:20},'customButton1'),{borderRadius:20});
+});
+
+test('$tenant.name and $tenant.logo read the signed-in tenant brand in formulas and images',async()=>{
+ const brand=await import('../src/component-libraries/shared/TenantBrand.js');
+ const logo='data:image/png;base64,iVBORw0KGgo=';
+ brand.setTenantBrand({name:'BiteBurst',logo});
+ assert.equal(evaluateFieldExpression('$tenant.name',{}),'BiteBurst');
+ assert.equal(evaluateFieldExpression('="Welcome to " & $tenant.name',{}),'Welcome to BiteBurst');
+ assert.equal(evaluateFieldExpression('$tenant.logo',{}),logo);
+ const detailed=await import('../src/component-libraries/shared/FieldExpression.js');
+ assert.match(detailed.evaluateFieldExpressionDetailed('$tenant.email',{}).error,/Unsupported tenant reference: \$tenant\.email/);
+ // A component context can supply its own brand (e.g. a tenant preview).
+ assert.equal(evaluateFieldExpression('$tenant.name',{},{tenant:{name:'Other',logo:''}}),'Other');
+ const label=await renderSmart('smart_label',{textSource:'$tenant.name'});
+ assert.match(label,/>BiteBurst</);
+ const image=await renderSmart('smart_image',{imageSource:'$tenant.logo'});
+ assert.match(image,/<img src="data:image\/png;base64,iVBORw0KGgo="/);
+ // Only safe logo values are kept.
+ brand.setTenantBrand({name:'X',logo:'javascript:alert(1)'});
+ assert.equal(brand.getTenantBrand().logo,'');
+ brand.setTenantBrand({name:'X',logo:'https://cdn.example.com/logo.png'});
+ assert.equal(brand.getTenantBrand().logo,'https://cdn.example.com/logo.png');
+ brand.clearTenantBrand();
+ assert.equal(evaluateFieldExpression('$tenant.name',{}),'');
+ // Live bundles share the page global (new Function), which holds the one brand store.
+ assert.match(read('../src/core/components/RegisteredComponent/componentRuntimeModule.ts'),/new Function\('React', 'module', 'exports', compiledJs\)/);
+ const server=read('../../server/src/system-support/server.ts');
+ assert.match(server,/app\.get\('\/api\/tenant\/brand',route\(/);
+ assert.match(server,/name:text\(values\.tradingName\)\|\|text\(values\.legalName\)\|\|text\(tenant\.rows\[0\]\?\.name\)/);
+ assert.match(read('../src/core/branding/tenantBrandLoader.ts'),/apiRequest<\{name\?:unknown;logo\?:unknown\}>\('\/tenant\/brand'\)/);
 });

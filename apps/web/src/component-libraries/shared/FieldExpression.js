@@ -5,6 +5,7 @@ import {
  evaluateFormulaBinary,evaluateFormulaUnary,formulaTruth,Parser
 } from '../../../../server/src/expression-engine/FormulaParser.js';
 import {tokenize} from '../../../../server/src/expression-engine/FormulaTokenizer.js';
+import {getTenantBrand} from './TenantBrand.js';
 import {createNamedFormulaCollection,createCriteriaFormulaCollection,deriveFormulaCollection,sumFormulaCollection,projectFormulaTable,matchesFormulaCollectionCriterion} from '../../../../server/src/expression-engine/FormulaCollection.js';
 import {isExcelWildcardDataReference,matchesExcelWildcard,hasExcelWildcardCriteria} from '../../../../server/src/expression-engine/FormulaWildcard.js';
 import {validateFormulaFunctions} from '../../../../server/src/expression-engine/FormulaFunctionRegistry.js';
@@ -307,6 +308,15 @@ function parse(source,record,formulaContext){
      throw Error('Page State formula value must be a finite scalar');
     return value;
    }
+   // The signed-in tenant's public brand (Company Settings trading name and logo).
+   if(reference.toLowerCase()==='$tenant.name'||reference.toLowerCase()==='$tenant.logo'){
+    const tenant=formulaContext.tenant&&typeof formulaContext.tenant==='object'
+     ?formulaContext.tenant:getTenantBrand();
+    const value=reference.toLowerCase()==='$tenant.name'?tenant.name:tenant.logo;
+    return typeof value==='string'?value:'';
+   }
+   if(/^\$tenant(?:\.|$)/i.test(reference))
+    throw Error('Unsupported tenant reference: '+reference+' (use $tenant.name or $tenant.logo)');
    if(reference==='$state'||reference.startsWith('$session.'))
     throw Error('Unsupported Page State or session reference: '+reference);
    const named=formulaContext.namedCollections;
@@ -627,7 +637,7 @@ export function evaluateFieldExpressionDetailed(expression,record,options={}){
  if(explicit&&!input)return {value:'',error:'Complete the formula after ='};
  if(!explicit&&!options?.collectionResult&&/^COLLECTION\s*\(/i.test(input))
   return {value:expression};
- if(!/^(?:TRUE|FALSE|NULL|PI)$/i.test(input)&&!/@[A-Za-z]/.test(input)&&!input.startsWith('@')&&!/^\$(?:component|state|session)(?:\.|$)/.test(input)&&!/^[A-Za-z][A-Za-z0-9_]*\s*\(/.test(input)
+ if(!/^(?:TRUE|FALSE|NULL|PI)$/i.test(input)&&!/@[A-Za-z]/.test(input)&&!input.startsWith('@')&&!/^\$(?:component|state|session|tenant)(?:\.|$)/i.test(input)&&!/^[A-Za-z][A-Za-z0-9_]*\s*\(/.test(input)
   &&!/^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)+(?:\s*\(|$)/.test(input)
   &&!/^(?:["(]|[-+]?\d+(?:\.\d+)?\s*[+*\/%^<>=!-])/.test(input)
   &&!/\s(?:[&+*/%^<>=!]|AND\b|OR\b)\s/i.test(input))return {value:expression};
@@ -647,7 +657,8 @@ export function evaluateFieldExpressionDetailed(expression,record,options={}){
    namedCollections:options.namedCollections,
    namedCollectionSelections:options.namedCollectionSelections,
    collectionRows:options.collectionRows,
-   readComponent:options.readComponent??options.pageState?.[componentReaderKey],pageState:options.pageState,sessionId:options.sessionId,
+   readComponent:options.readComponent??options.pageState?.[componentReaderKey],
+   pageState:options.pageState,sessionId:options.sessionId,tenant:options.tenant,
    rootObjectApiName:options.rootObjectApiName});
   if(options.collectionResult===true){
    if(!result||typeof result!=='object'||Array.isArray(result)

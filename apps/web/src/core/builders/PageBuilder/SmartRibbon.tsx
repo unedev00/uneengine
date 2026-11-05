@@ -37,7 +37,10 @@ type Props={tab:UneBuilderTab;api:string;definitions:readonly UneRibbonProperty[
  canvasBinding?:CanvasBindingTarget|null;
  design2Slots?:readonly Design2Slot[];design2SlotRules?:readonly Design2SlotRule[];componentVisible?:boolean;
  onVisibleChange?:(visible:boolean)=>void;
- design2Arrange?:ArrangeRibbonProps;};
+ design2Arrange?:ArrangeRibbonProps;
+ /** Data only: 'formulaBar' renders just the Formula Bar (topbar); 'source' just the
+  * Source object selectors (end of Design). Both reuse this single Data engine. */
+ part?:'formulaBar'|'source';};
 const weekdays=[['sun','Sun'],['mon','Mon'],['tue','Tue'],['wed','Wed'],['thu','Thu'],['fri','Fri'],['sat','Sat']] as const;
 const fallback=(value:unknown)=>typeof value==='string'?value:'';
 const cartSummaryLabels:Record<string,{key:string;slot:string}>={
@@ -46,7 +49,7 @@ const cartSummaryLabels:Record<string,{key:string;slot:string}>={
  taxValue:{key:'taxLabel',slot:'Summary 3'},
  discountValue:{key:'discountLabel',slot:'Summary 4'}
 };
-export default function SmartRibbon({tab,api,definitions,properties,onChange,objects,pageObjectApiName='',position,onPositionChange,layoutMode,sharedPropertyIds,mixedPropertyIds,selectedApis,pageComponents=[],componentId='',canvasBinding=null,design2Slots=[],design2SlotRules=[],componentVisible=true,onVisibleChange,design2Arrange}:Props){
+export default function SmartRibbon({tab,api,definitions,properties,onChange,objects,pageObjectApiName='',position,onPositionChange,layoutMode,sharedPropertyIds,mixedPropertyIds,selectedApis,pageComponents=[],componentId='',canvasBinding=null,design2Slots=[],design2SlotRules=[],componentVisible=true,onVisibleChange,design2Arrange,part}:Props){
  const uploadInput=useRef<HTMLInputElement>(null);
  const [uploadBusy,setUploadBusy]=useState(false);
  const [uploadError,setUploadError]=useState('');
@@ -572,7 +575,9 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
        title={!enabled?'Applies to: '+property.components.map(api=>api.replace(/^smart_/,'' )).join(', '):title}>
        <span className="smart-label">{shortLabel}</span>{editor}</div>;
  };
- return <div className={'smart-ribbon'+(tab==='Design2'?' smart-design2-ribbon':'')} data-smart-tab={tab} data-smart-api={api}
+ return <div className={'smart-ribbon'+(tab==='Design2'?' smart-design2-ribbon':'')+
+   (part==='formulaBar'?' smart-topbar-formula':part==='source'?' smart-design-source':'')}
+  data-smart-tab={tab} data-smart-api={api} data-smart-part={part}
   data-compact-design={compactDesign?'true':'false'}
   data-three-row={compactDesign?'true':'false'} aria-label="Smart shared property ribbon">
   <input ref={uploadInput} className="smart-hidden-upload" type="file"
@@ -688,24 +693,24 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
       })()}
     </div>
   </section>:tab==='Data'?<>
-    {sections.filter(group=>group==='Source').map(section=><section className="smart-ribbon-group" key={section}
+    {part!=='formulaBar'&&sections.filter(group=>group==='Source').map(section=><section className="smart-ribbon-group" key={section}
       data-design-three-row="true" data-smart-tab={tab} aria-label={section}
       style={{'--smart-section-width':sectionWidth(section)+'px'} as CSSProperties}>
       <div className="smart-ribbon-items">{[1,2,3].map(row=><div className="smart-ribbon-row"
         data-design-row={row} key={row}>{sectionRow(section,row).map(controls)}</div>)}</div>
-      <span className="smart-ribbon-caption">{section}
+      <span className="smart-ribbon-caption">{section}</span>
+    </section>)}
+    {part!=='source'&&<div className="smart-data-workspace">
+      <div className="smart-data-formula-bar" aria-label="Data expression or record filter formula">
+        {/* An optional collection is a SOURCE of records, edited in this same bar. */}
         {hasItemsSource&&<button type="button" className="smart-data-items-source"
           aria-label="Select items source formula"
           title="Items source: optional formula supplying the component's records"
           aria-pressed={selectedDataField==='collectionFormula'}
           onClick={()=>{setSelectedDataField('collectionFormula');
             requestAnimationFrame(()=>formulaInputHost.current?.querySelector('input')?.focus());}}>
-          Items source
+          Items
         </button>}
-      </span>
-    </section>)}
-    <div className="smart-data-workspace">
-      <div className="smart-data-formula-bar" aria-label="Data expression or record filter formula">
         <span className="smart-data-fx-prefix" aria-hidden="true">ƒx</span>
         <button type="button" className="smart-data-filter-button"
           aria-label="Configure record filters"
@@ -748,7 +753,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
 
       </div>
 
-    </div>
+    </div>}
   </>:sections.map(section=><section className="smart-ribbon-group" key={section}
      data-design-three-row={compactDesign?'true':undefined} data-smart-tab={tab} aria-label={section}
      style={compactDesign?{'--smart-section-width':sectionWidth(section)+'px'} as CSSProperties:undefined}>

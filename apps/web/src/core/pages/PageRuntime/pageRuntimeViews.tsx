@@ -25,6 +25,7 @@ import { queueOfflineRecord, listOfflineRecords, markOfflineRecord, removeOfflin
 import * as React from 'react';
 import { createPortal } from 'react-dom';
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import {ensureTenantBrand} from '../../branding/tenantBrandLoader';
 import {
   Activity,
   ArrowDown,
@@ -973,6 +974,8 @@ function LightningAppRuntime({
   /** Match the device selected in the builder instead of the admin window width. */
   previewLayoutDevice?: 'Desktop' | 'Tablet' | 'Phone';
 }) {
+  // $tenant.name / $tenant.logo formulas: load the signed-in tenant's brand once.
+  useEffect(()=>{void ensureTenantBrand();},[]);
   const detectedLayoutDevice = usePageLayoutDevice();
   const layoutDevice = previewLayoutDevice ?? detectedLayoutDevice;
   const viewportWidth=useViewportWidth();

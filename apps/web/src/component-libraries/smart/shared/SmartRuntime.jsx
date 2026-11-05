@@ -4,6 +4,7 @@ import {smartShapeAppearance} from "./SmartShapeAppearance.js";
 import {smartCustomButtonAppearance} from "./SmartCustomButtonAppearance.js";
 import {evaluateFieldExpression} from "../../shared/FieldExpression.js";
 import {useTenantImageSource} from "../../shared/TenantImage.jsx";
+import {getTenantBrand,subscribeTenantBrand} from "../../shared/TenantBrand.js";
 const number=(v,f,min=0,max=2000)=>Number.isFinite(Number(v))?Math.max(min,Math.min(max,Number(v))):f;
 const text=(v)=>v===null||v===undefined?"":String(v);
 const expression=(v,record,pageState,objectApiName,collectionSources,namedCollections,collectionRows,sessionId,readComponent)=>{
@@ -11,8 +12,8 @@ const expression=(v,record,pageState,objectApiName,collectionSources,namedCollec
  // The common bounded evaluator resolves authorised row-specific relationship
  // values via __mentionValues without turning numbers into quoted strings or
  // replacing @mentions inside quoted literals.
- if(/^(?:https:\/\/|asset:)/i.test(v.trim()))return v;
- if(!/^\s*=/.test(v)&&!/@[A-Za-z]/.test(v)&&!/\$(?:component\.|state\.|session\b)/.test(v)&&!/^\s*"/.test(v)&&
+ if(/^(?:https:\/\/|asset:|data:image\/)/i.test(v.trim()))return v;
+ if(!/^\s*=/.test(v)&&!/@[A-Za-z]/.test(v)&&!/\$(?:component\.|state\.|session\b|tenant\.)/i.test(v)&&!/^\s*"/.test(v)&&
    !/^\s*-?(?:\d+(?:\.\d*)?|\.\d+)\s*[+\-*/&]/.test(v))return v;
  try{return text(evaluateFieldExpression(v,record||{},{readComponent,namedCollectionSelections:pageState?.collectionSelections,rootObjectApiName:objectApiName,collectionSources,namedCollections,collectionRows,pageState,sessionId}));}catch{return "";}
 };
@@ -181,7 +182,9 @@ function SmartCard({p,record,onButtonClick,onCustomButton,onSelect,selected=fals
           borderRadius:number(p.radius,12),boxSizing:"border-box",overflow:"hidden"}}>
         <span>Image Here</span>
       </div>
-     :grid&&preview&&!image&&(sample||p.builderPreview!==true)
+     // Builder only: an unbound image keeps a visible "Image Here" box on real
+     // rows too, so its Data Source icon stays reachable after an object is chosen.
+     :grid&&preview&&!image&&(sample||p.builderPreview!==true||!String(p.imageSource??p.src??"").trim())
     ?<div className="smart-card-image-placeholder" aria-hidden="true" style={{
        height:"100%",minHeight:0,display:"grid",placeItems:"center",
        background:"var(--md-card-placeholder,#edf2f7)",color:"#526276",fontSize:12
@@ -513,6 +516,8 @@ function SmartToggle({p,fire}){
    <span className="smart-switch-thumb"/></span></label>;
 }
 export default function SmartRuntime(p){
+ // Re-render when the tenant brand arrives so $tenant.name / $tenant.logo show without a reload.
+ React.useSyncExternalStore(subscribeTenantBrand,getTenantBrand,getTenantBrand);
  const name=p.kind||"smart_text",record=recordOf(p),label=scopedExpression(p,"label",p.label||"",record);
  const style={fontSize:number(p.textSize,16),color:p.labelColor||undefined,textAlign:p.labelAlignment||"left",borderRadius:number(p.radius,12)};
  const buttonIcon=name==="smart_button"?icons.find(icon=>icon.id===p.shapeId):null;
