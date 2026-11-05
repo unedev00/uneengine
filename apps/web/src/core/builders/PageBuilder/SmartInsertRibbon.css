@@ -65,3 +65,21 @@
  display:flex;align-items:center;gap:8px;
  color:#687992;font-size:12px;min-width:310px;padding:12px;
 }
+
+.builder-dock-tabs { display:flex; gap:4px; }
+.builder-dock-tabs button {
+ background:transparent; border:0; border-bottom:2px solid transparent;
+ color:inherit; font:inherit; padding:4px 10px; cursor:pointer;
+}
+.builder-dock-tabs button[aria-pressed="true"] { border-bottom-color:#2878db; }
+.builder-dock-tabs button:disabled { opacity:.5; cursor:default; }
+.page-builder-design-dock .office-builder-ribbon :is(.smart-insert-ribbon,.smart-insert-gallery,.smart-insert-gallery-row,.smart-insert-tiles) {
+ height:auto!important; max-height:none!important;
+}
+.page-builder-design-dock .office-builder-ribbon .smart-insert-tiles {
+ grid-auto-flow:row; grid-template-columns:repeat(auto-fill,minmax(min(100%,76px),1fr));
+ grid-template-rows:none!important; grid-auto-rows:55px; align-content:start;
+}
+.page-builder-design-dock .office-builder-ribbon .smart-insert-tile { width:100%!important; }
+.page-builder-design-dock .smart-insert-empty { grid-column:1/-1; min-width:0; }
+.page-builder-design-dock .smart-insert-pager { display:none; }
