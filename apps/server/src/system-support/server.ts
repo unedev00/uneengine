@@ -93,6 +93,7 @@ import {RecordListViewService,type ViewInput} from './record-list-view-service.j
 import {RecordFileService} from '../system-files/record-file-service.js';
 import {TenantMediaService} from '../system-files/tenant-media-service.js';
 import {registerDynamicApiRoutes} from './dynamic-api-routes.js';
+import {placeNewFieldOnRecordPages} from './record-page-field-placement.js';
 import {registerDeclarativeRuleRoutes} from './declarative-rule-routes.js';
 import {DeclarativeRuleError} from '../system-files/declarative-rules.js';
 import {registerVersionedApiRoutes} from './versioned-api-routes.js';
@@ -1554,9 +1555,12 @@ export function createSystemServer(db:SqlPersistence) {
       typeof field.label==='string'?field.label:undefined,field,
       lookupConfiguration?async client=>persistObjectLookupFilters(client,actor.tenant_id,
         req.params.apiName,lookupConfiguration!):undefined);
+    // "Add to Page Layouts": record forms render from the object's Record Edit/View pages.
+    const recordPagePlacement=Array.isArray(req.body?.pageLayoutIds)&&req.body.pageLayoutIds.length
+      ?await placeNewFieldOnRecordPages(pages,rbac,actor.tenant_id,actor.user_id,req.params.apiName,apiName):[];
     const object=await definitions.get(actor.tenant_id,req.params.apiName);
     const configuration=await objectManagerMetadata.load(actor.tenant_id,actor.user_id,req.params.apiName);
-    res.status(201).json({object:{...object,...configuration}});
+    res.status(201).json({object:{...object,...configuration},recordPagePlacement});
   }));
   // Read-only single source of truth for the Page Builder ribbon. Property
   // definitions are global SQL records; applicability is one mapping per
