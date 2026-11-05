@@ -21,6 +21,7 @@ import Design2IconDropdown from './Design2IconDropdown';
 import SmartMultiSelect from './SmartMultiSelect';
 import SmartIconGallery from './SmartIconGallery';
 import Design2CanvasActions from './Design2CanvasActions';
+import BuilderNumberInput from './BuilderNumberInput';
 import {smartTabsHaveDataSource} from './smartTabsCountSource';
 import type {ArrangeRibbonProps} from './ArrangeRibbon';
 import './SmartRibbon.css';
@@ -497,10 +498,13 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
           <ArrowUpDown size={17} aria-hidden="true"/>}
       </span>:
       property.id==='width'?<ArrowLeftRight size={15}/>:property.id==='height'?<ArrowUpDown size={15}/>:null}
-     <input type="number" className="smart-office-number" aria-label={title} disabled={!enabled} min={property.min??0} max={property.max} step={isTabIndex?1:undefined}
+     <BuilderNumberInput key={componentId+':'+property.id}
+       className="smart-office-number" aria-label={title} disabled={!enabled}
+       min={property.min??0} max={property.max} step={isTabIndex?1:undefined}
+       integer={isTabIndex}
        value={kind==='position'&&useCanvasPosition?position?.[property.id as keyof Position]??'':
         typeof value==='string'?Number.parseFloat(value)||'':value as number}
-       onChange={e=>{if(e.target.value!==''){const n=Number(e.target.value);if(Number.isFinite(n))write(isTabIndex?Math.max(0,Math.trunc(n)):n);}}}/>
+       onValueChange={n=>write(isTabIndex?Math.max(0,Math.trunc(n)):n)}/>
    </span>;
    else if(kind==='shadow'&&compactDesign&&property.designDisplay==='dropdown')editor=<SmartIconDropdown kind="shadow" value={String(value)} label={title} disabled={!enabled} onChange={write}/>;
    else if(kind==='shadow')editor=<div className="smart-icons" role="group" aria-label={title}>
@@ -650,15 +654,13 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
           data-source-bound={sourceBound?'true':'false'}>
           <span className="smart-design2-count-field" title={title}>
             <Hand size={16} aria-hidden="true"/>
-            <input type="number" className="smart-office-number" step={1}
+            <BuilderNumberInput key={componentId+':'+key}
+              className="smart-office-number" step={1} integer
               aria-label={api==='smart_tabs'?'Number of tabs':title}
               title={title} min={minimum} max={maximum}
               disabled={!enabled} value={supported?value:''}
-              onChange={event=>{
-                const next=Number(event.target.value);
-                if(enabled&&event.target.value!==''&&Number.isInteger(next)&&
-                  next>=minimum&&next<=maximum)
-                  onChange({...properties,[property!.valueKeys?.[api]??key]:next});
+              onValueChange={next=>{
+                if(enabled)onChange({...properties,[property!.valueKeys?.[api]??key]:next});
               }}/>
           </span>
           {api==='smart_card_grid'&&<select className="smart-design2-count-choice"
