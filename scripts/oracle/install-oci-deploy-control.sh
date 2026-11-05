@@ -41,7 +41,7 @@ import socket
 with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as conn:
     conn.settimeout(12)
     conn.connect("/run/metadrive-mcp-broker.sock")
-    conn.sendall(b'{"action":"deploy_status","service":"api"}\\n'.replace(b"\\n", b"\n"))
+    conn.sendall(b'{"action":"deploy_status","service":"api"}\n')
     line = bytearray()
     while b"\n" not in line and len(line) < 262144:
         chunk = conn.recv(8192)
