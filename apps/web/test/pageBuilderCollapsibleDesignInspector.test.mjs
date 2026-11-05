@@ -69,3 +69,22 @@ test('Fit Width accounts for the actual scroll viewport padding and ignores subp
  assert.match(builder,/Math\.abs\(previous-nextScale\)<0\.0005\?previous:nextScale/);
  assert.doesNotMatch(builder,/previewArea\.clientWidth - 8/);
 });
+
+test('The Design 2 SQL migration consolidates duplicate sections without touching saved metadata',()=>{
+ const sql=read('../../server/src/system-support/migrations/20271116-page-builder-inspector-consolidation.sql');
+ const areas=['Body','Badge','Image','Header','Header Supporting','Table','Row',
+  'Row Supporting','Summary','Summary 2','Footer','Button','Button 2','Button 3','Button 4','Button 5'];
+ for(const area of areas)assert.ok(sql.includes("('"+area+"',"),area);
+ for(const retired of ['Tabs','Card Grid','Focused','Custom Button 1','Custom Button 2'])
+  assert.ok(sql.includes("'"+retired+"'"),retired);
+ for(const key of ['selectedTabColor','tabColor','tabIndex','focusedCardShadow',
+  'focusedTextColor','cardPadding','selectionMode','customButton1','customButton2',
+  'removeButton','qtyIncrease','qtyDecrease'])
+  assert.ok(sql.includes(key),'Missing preserved mapping: '+key);
+ assert.match(sql,/ON CONFLICT\(component_api,area,slot_key\) DO UPDATE/);
+ assert.doesNotMatch(sql,/UPDATE md_page_components|UPDATE md_page_definitions|DELETE FROM md_page_components/);
+ assert.match(ribbon,/const design2SupplementalProperties:UneRibbonProperty\[\]/);
+ assert.match(ribbon,/!slot.slotKey.startsWith\('extra_'\)/);
+ assert.match(ribbon,/smart-design2-supplemental-setting/);
+ assert.match(dock,/margin-top:12px!important/);
+});
